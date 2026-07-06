@@ -89,3 +89,4 @@ is published) and `--write` only rewrites `progress/summary.json` when a
 non-volatile count changed, so nightly runs don't produce noise commits.
 The summary moves only on *verified* progress (promoted functions, complete
 units); WIP fuzzy percentages live in the report artifact alone.
+
