@@ -56,7 +56,9 @@ jobs:
         # matching.yml runs on a self-hosted runner holding game files; a
         # pull_request trigger would let fork PRs reach that machine.
         run: |
-          if grep -q "pull_request" .github/workflows/matching.yml; then
+          # Strip comments first: the workflow's own security comment names
+          # the forbidden trigger, and must not trip the guard itself.
+          if sed 's/#.*//' .github/workflows/matching.yml | grep -q "pull_request"; then
             echo "matching.yml must never have a pull_request trigger"; exit 1
           fi
           echo "OK: matching.yml is push/schedule/dispatch only."

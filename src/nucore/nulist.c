@@ -21,8 +21,7 @@ typedef struct NuList {
     NuListNode *tail;
 } NuList;
 
-/* WIP (state = "asm" in the manifest): scored by objdiff/report only; the
- * matching build still uses the retail bytes until promoted. */
+
 void NuListAppend(NuList *list, NuListNode *node) {
     node->next = 0;
     node->prev = list->tail;
@@ -35,7 +34,7 @@ void NuListAppend(NuList *list, NuListNode *node) {
     }
 }
 
-/* WIP (state = "asm"). */
+
 void NuListRemove(NuList *list, NuListNode *node) {
     if (node->next) {
         node->next->prev = node->prev;
