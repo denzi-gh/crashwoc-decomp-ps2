@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Compile hand-written C with the locked EE GCC. The only way C gets compiled.
 
-Every tool and build mode funnels C compilation through here so three things
-hold everywhere at once:
+Every tool funnels compilation through here so two things hold everywhere:
 
   * Profile discipline: flags come from a named profile in
     config/pal103/profiles.toml (default: the locked matching flags), never
@@ -11,21 +10,17 @@ hold everywhere at once:
     fingerprint (--fingerprint) so a flag or compiler change can never
     silently alter what an existing "matching" result meant.
 
-  * Build modes: one source file serves all three build modes through
-    preprocessor defines only --
-      matching    (no defines)               C for matched functions,
-                                             INCLUDE_ASM fallbacks active
-      equivalent  (-DNON_MATCHING)           reviewed-equivalent C compiled in,
-                                             fallbacks only for unfinished
-      current     (-DSKIP_ASM -DNON_MATCHING) pure contributor C, no fallback
-                                             bytes -- the honest objdiff/report
-                                             object
-
   * Deterministic objects: the 32-bit compiler faults (EOVERFLOW) stat'ing
     large-inode bind-mounted files, so compilation runs in a native scratch
-    directory -- but at a *fixed* path derived from the output object, not a
-    random tempdir, because ee-gcc embeds the build path in the object's debug
-    info. Same input, same object bytes, run after run.
+    directory -- but at a *fixed* path derived from the output, not a random
+    tempdir, because ee-gcc embeds the build path in the object's debug info.
+    Same input, same object bytes, run after run.
+
+Sources contain only hand-written C -- no fallback annotations. The hybrid
+objects the canonical matching build links are produced separately by
+tools/gen_hybrid.py, which uses this module's `compile_s` (C -> assembly) and
+`assemble_s` (assembly -> object, through the same ee-gcc driver so Sony's
+own `as` and flags are used).
 
 Needs the EE GCC (32-bit Linux binary): run in the Containerfile image.
 
@@ -45,15 +40,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 from declib.toolchain import EEGCC
-
-# Preprocessor defines that select what each build mode compiles. See the
-# module docstring; INCLUDE_ASM/NON_MATCHING structure arrives with the hybrid
-# object work -- pure-C sources compile identically under every mode.
-MODE_DEFINES = {
-    "matching": [],
-    "equivalent": ["-DNON_MATCHING"],
-    "current": ["-DSKIP_ASM", "-DNON_MATCHING"],
-}
 
 
 def load_profiles(version="pal103"):
@@ -86,51 +72,71 @@ def profiles_fingerprint(version="pal103"):
     return hashlib.sha256(payload.encode()).hexdigest()
 
 
-def _workdir_for(out_o):
-    """Fixed native scratch directory for one output object.
+def _workdir_for(out_path):
+    """Fixed native scratch directory for one output file.
 
-    Derived from the object's repo-relative path so it is stable across runs
-    (deterministic embedded paths) and unique per object (parallel-safe).
+    Derived from the output's repo-relative path so it is stable across runs
+    (deterministic embedded paths) and unique per output (parallel-safe).
     """
     try:
-        rel = Path(out_o).resolve().relative_to(ROOT).as_posix()
+        rel = Path(out_path).resolve().relative_to(ROOT).as_posix()
     except ValueError:
-        rel = Path(out_o).name
+        rel = Path(out_path).name
     token = re.sub(r"[^A-Za-z0-9_.-]", "_", rel)
     return Path(tempfile.gettempdir()) / "crashwoc-cc" / token
 
 
-def compile_c(src, out_o, profile="default", mode="matching", version="pal103"):
-    """Compile src to out_o with the named profile and build-mode defines."""
+def _stage_headers(work):
+    """Committed headers the source may #include, staged next to it."""
+    include_dir = ROOT / "include"
+    if include_dir.is_dir():
+        for header in include_dir.glob("*.h"):
+            shutil.copy(header, work / header.name)
+
+
+def _run_driver(src, out_name, extra_args, out_path, profile, version):
+    """Stage src into the scratch dir, run the ee-gcc driver, copy the output."""
     src = Path(src)
-    out_o = Path(out_o)
-    flags = [*profile_flags(profile, version), *MODE_DEFINES[mode]]
-    work = _workdir_for(out_o)
+    out_path = Path(out_path)
+    flags = profile_flags(profile, version)
+    work = _workdir_for(out_path)
     if work.exists():
         shutil.rmtree(work)
     work.mkdir(parents=True)
     try:
         shutil.copy(src, work / src.name)
-        obj = work / "out.o"
-        subprocess.run([str(EEGCC), *flags, "-c",
-                        "-o", str(obj), str(work / src.name)],
+        _stage_headers(work)
+        produced = work / out_name
+        subprocess.run([str(EEGCC), *flags, *extra_args,
+                        "-o", str(produced), str(work / src.name)],
                        check=True, capture_output=True, text=True, cwd=work)
-        out_o.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy(obj, out_o)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(produced, out_path)
     finally:
         shutil.rmtree(work, ignore_errors=True)
 
 
+def compile_c(src, out_o, profile="default", version="pal103"):
+    """Compile a C source to an object."""
+    _run_driver(src, "out.o", ["-c"], out_o, profile, version)
+
+
+def compile_s(src, out_s, profile="default", version="pal103"):
+    """Compile a C source to the assembly ee-gcc would feed its assembler."""
+    _run_driver(src, "out.s", ["-S"], out_s, profile, version)
+
+
+def assemble_s(src_s, out_o, profile="default", version="pal103"):
+    """Assemble a .s through the ee-gcc driver -- Sony's own as, same flags."""
+    _run_driver(src_s, "out.o", ["-c"], out_o, profile, version)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("src", nargs="?", help="C source file to compile")
+    parser.add_argument("src", nargs="?", help="C (or .s) source file")
     parser.add_argument("-o", "--output", help="output object path")
     parser.add_argument("--profile", default="default",
                         help="compiler profile name (default: default)")
-    parser.add_argument("--mode", default="matching",
-                        choices=sorted(MODE_DEFINES),
-                        help="build mode selecting preprocessor defines "
-                             "(default: matching)")
     parser.add_argument("--version", default="pal103")
     parser.add_argument("--fingerprint", action="store_true",
                         help="print the profiles fingerprint and exit")
@@ -148,7 +154,7 @@ def main():
         return 2
 
     try:
-        compile_c(args.src, args.output, args.profile, args.mode, args.version)
+        compile_c(args.src, args.output, args.profile, args.version)
     except subprocess.CalledProcessError as exc:
         sys.stderr.write(exc.stderr or "cc.py: ee-gcc failed\n")
         return 1

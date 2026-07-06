@@ -43,7 +43,8 @@ from declib.asmtext import disambiguate, load_symbol_addrs, resolve
 from declib.target import load_target
 from declib.tu import (drop_alignment, load_tu_runs, parse_toml_blocks,
                        prologue_end, split_body)
-from declib.verify import defined_functions, link_text_at, undefined_externals
+from declib.verify import (defined_function_offsets, link_text_at,
+                           undefined_externals)
 
 LABEL_WIDTH = 30
 
@@ -110,7 +111,8 @@ def verify_unit(reporter, src, funcs, elf, delta, prologue, chunk, unit_name,
                     "-o", str(expected_o), str(exp_s)],
                    check=True, capture_output=True, text=True)
 
-    names = [n for n in defined_functions(nm_bin, base_o) if n in funcs]
+    offsets = defined_function_offsets(nm_bin, base_o)
+    names = [n for n in offsets if n in funcs]
     names.sort(key=lambda n: funcs[n][0])
     if not names:
         reporter.result(f"{rel.as_posix()}", False, "no known target functions")
@@ -130,7 +132,9 @@ def verify_unit(reporter, src, funcs, elf, delta, prologue, chunk, unit_name,
         linked = link_text_at(base_o, base_addr, defsyms, tmp)
         for n in names:
             addr, size, _u = funcs[n]
-            got = linked[addr - base_addr: addr - base_addr + size]
+            # Locate the function by its own symbol offset in the object, so
+            # source order and address gaps between C functions never matter.
+            got = linked[offsets[n]: offsets[n] + size]
             want = elf[addr - delta: addr - delta + size]
             ok = got == want
             results.append({"name": n, "addr": addr, "size": size, "match": ok})

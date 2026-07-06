@@ -24,6 +24,23 @@ def defined_functions(nm_bin, obj):
     return names
 
 
+def defined_function_offsets(nm_bin, obj):
+    """{name: .text offset} for an object's defined text symbols.
+
+    In a relocatable object nm's symbol value is the offset within the
+    symbol's section, so this locates each function inside the object's
+    .text regardless of source order or address gaps between functions.
+    """
+    out = subprocess.run([nm_bin, str(obj)], check=True,
+                         capture_output=True, text=True).stdout
+    offsets = {}
+    for line in out.splitlines():
+        parts = line.split()
+        if len(parts) == 3 and parts[1] in ("T", "t"):
+            offsets[parts[2]] = int(parts[0], 16)
+    return offsets
+
+
 def undefined_externals(nm_bin, obj):
     out = subprocess.run([nm_bin, str(obj)], check=True,
                          capture_output=True, text=True).stdout
