@@ -1,0 +1,75 @@
+# Public validation: everything that can be checked without game files or the
+# matching toolchain. Runs on every push and pull request on a stock runner.
+#
+# The protected, game-file-backed verification (expected objects, matching
+# build, byte gates) is a separate workflow on a self-hosted runner; this one
+# guards structure: status manifests, registries, tests, and the invariant
+# that nothing game-derived is ever tracked.
+
+name: validate
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate status manifests
+        run: python tools/status.py --check
+
+      - name: Unit tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Committed JSON and TOML parse
+        run: |
+          python - <<'EOF'
+          import json, sys, tomllib
+          from pathlib import Path
+          failed = False
+          for p in sorted(Path(".").glob("**/*.json")):
+              if ".git" in p.parts or p.parts[0] in ("orig", "asm", "expected",
+                                                     "build", "compiler"):
+                  continue
+              try:
+                  json.loads(p.read_text())
+              except Exception as exc:
+                  print(f"FAIL {p}: {exc}"); failed = True
+          for p in sorted(Path("config").glob("**/*.toml")):
+              try:
+                  tomllib.loads(p.read_text())
+              except Exception as exc:
+                  print(f"FAIL {p}: {exc}"); failed = True
+          sys.exit(1 if failed else 0)
+          EOF
+
+      - name: No game-derived content tracked
+        run: |
+          set -e
+          # Directories that must contain no tracked files at all.
+          bad=$(git ls-files -- orig reference asm expected build compiler tools/download)
+          if [ -n "$bad" ]; then
+            echo "Tracked files in game-derived/toolchain directories:"; echo "$bad"; exit 1
+          fi
+          # Binary artifact extensions that must never be tracked.
+          bad=$(git ls-files -- '*.o' '*.bin' '*.elf' '*.iso' '*.cue')
+          if [ -n "$bad" ]; then
+            echo "Tracked binary artifacts:"; echo "$bad"; exit 1
+          fi
+          # No tracked file may exceed 1 MiB (retail sections are megabytes;
+          # legitimate sources and registries are far smaller).
+          bad=$(git ls-files -z | xargs -0 -I{} sh -c \
+            '[ $(wc -c < "{}") -gt 1048576 ] && echo "{}"' || true)
+          if [ -n "$bad" ]; then
+            echo "Tracked files over 1 MiB:"; echo "$bad"; exit 1
+          fi
+          echo "OK: nothing game-derived is tracked."

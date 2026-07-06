@@ -1,0 +1,54 @@
+# Function status for pal103 unit 7 (nucore/nulist.c).
+#
+# One manifest per translation unit that has hand-written C; a unit with no
+# manifest is entirely `asm`. States: asm (no accepted C), equivalent
+# (reviewed, behaviorally equivalent C that does not match exactly), matching
+# (mechanically byte-exact C). tools/status.py --check validates this file
+# against the mdebug registries; `matching` is only trusted once the verifier
+# reconfirms the bytes.
+
+schema = 1
+unit = "pal103:unit-0007"
+source = "src/nucore/nulist.c"
+profile = "default"
+complete = false
+
+[[function]]
+id = "pal103:unit-0007:00105850:NuListCheck"
+state = "asm"
+
+[[function]]
+id = "pal103:unit-0007:00105908:NuListAppend"
+state = "asm"
+
+[[function]]
+id = "pal103:unit-0007:00105938:NuListInsert"
+state = "asm"
+
+[[function]]
+id = "pal103:unit-0007:00105968:NuListInsertBefore"
+state = "asm"
+
+[[function]]
+id = "pal103:unit-0007:001059c0:NuListInsertAfter"
+state = "asm"
+
+[[function]]
+id = "pal103:unit-0007:00105a18:NuListRemove"
+state = "asm"
+
+[[function]]
+id = "pal103:unit-0007:00105a50:NuListGetHead"
+state = "matching"
+
+[[function]]
+id = "pal103:unit-0007:00105a58:NuListGetTail"
+state = "matching"
+
+[[function]]
+id = "pal103:unit-0007:00105a60:NuListGetNext"
+state = "asm"
+
+[[function]]
+id = "pal103:unit-0007:00105a78:NuListGetPrev"
+state = "asm"
