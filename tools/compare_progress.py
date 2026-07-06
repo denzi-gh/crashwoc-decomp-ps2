@@ -195,8 +195,12 @@ def main():
         args.against.write_text(json.dumps(new, indent=2) + "\n")
         changes_out = ROOT / "build" / args.version / "changes.json"
         changes_out.write_text(json.dumps(changes, indent=2) + "\n")
-        print(f"wrote {args.against.relative_to(ROOT).as_posix()} and "
-              f"{changes_out.relative_to(ROOT).as_posix()}")
+        def rel(path):
+            try:
+                return path.resolve().relative_to(ROOT).as_posix()
+            except ValueError:
+                return path.as_posix()
+        print(f"wrote {rel(args.against)} and {rel(changes_out)}")
 
     if regressions:
         print("\nPROGRESS REGRESSION:")

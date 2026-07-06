@@ -80,6 +80,15 @@ class TestSanitize(unittest.TestCase):
     def test_sanitized_output_passes_the_guard(self):
         self.assertEqual(violations(self.public), [])
 
+    def test_output_is_a_strict_schema_subset(self):
+        # decomp.dev parses the published artifact as a protobuf-JSON
+        # Report; the sanitizer may only remove fields, never add them.
+        self.assertLessEqual(set(self.public),
+                             {"version", "measures", "units", "categories"})
+        for unit in self.public["units"]:
+            self.assertLessEqual(set(unit), {"name", "measures", "sections",
+                                             "functions", "metadata"})
+
     def test_measure_whitelist_is_the_known_cli_schema(self):
         # Every measure the fixture uses must be a real whitelisted key.
         for key in self.public["measures"]:

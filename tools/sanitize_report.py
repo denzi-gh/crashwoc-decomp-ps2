@@ -69,9 +69,14 @@ def _clean_section(sec, dropped, where):
 
 
 def sanitize(report):
-    """(public_report, dropped_field_names) -- pure whitelist projection."""
+    """(public_report, dropped_field_names) -- pure whitelist projection.
+
+    The output must stay a strict SUBSET of objdiff's Report schema (no
+    added fields): decomp.dev parses the artifact as a protobuf-JSON
+    Report, and unknown fields would break it.
+    """
     dropped = set()
-    public = {"schema": 1}
+    public = {}
     if "version" in report:
         public["version"] = report["version"]
 

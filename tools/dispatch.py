@@ -5,17 +5,19 @@
     python tools/dispatch.py ninja expected
     python tools/dispatch.py python tools/verify_hybrid.py
 
-On a POSIX host (inside the container, or a Linux machine with the toolchain
-installed) the command runs directly at the repo root. On Windows it is
-forwarded into the long-lived `crashwoc-dev` container (started on demand --
-tools/dev_container.py) via `docker exec`, with any host paths in the
-arguments translated to their /work equivalents.
+Inside the container (the repo mounted at /work) the command runs directly.
+On any host -- Windows or Linux, including the self-hosted CI runner -- it
+is forwarded into the long-lived `crashwoc-dev` container (started on
+demand, tools/dev_container.py) via `docker exec`, with any host paths in
+the arguments translated to their /work equivalents. A Linux machine with
+the toolchain installed natively can set CRASHWOC_DIRECT=1 to skip the
+container and run directly.
 
 This is the command objdiff is configured with (PR 6): objdiff invokes
 `python tools/dispatch.py ninja <object>` and ninja rebuilds exactly that
 node, wherever objdiff itself is running.
 
-Path translation is deliberately conservative:
+Path translation is deliberately conservative (Windows and POSIX hosts):
   * an absolute path inside the repo  -> /work/<repo-relative, POSIX>
   * an absolute path outside the repo -> error (the container cannot see it)
   * a relative path with backslashes  -> forward slashes
@@ -27,7 +29,7 @@ import os
 import re
 import subprocess
 import sys
-from pathlib import Path, PureWindowsPath
+from pathlib import Path, PurePosixPath, PureWindowsPath
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
@@ -53,9 +55,25 @@ def translate_arg(arg, root=ROOT):
                 f"absolute path outside the repo cannot be dispatched: {arg}")
         rel = parts[len(root_parts):]
         return "/work/" + "/".join(rel) if rel else "/work"
+    root_posix = root.as_posix() if hasattr(root, "as_posix") else str(root)
+    if arg.startswith("/") and root_posix.startswith("/"):
+        # POSIX host (e.g. a Linux CI runner): same conservative rule,
+        # case-sensitive because POSIX paths are.
+        parts = PurePosixPath(arg).parts
+        root_parts = PurePosixPath(root_posix).parts
+        if parts[:len(root_parts)] != root_parts:
+            raise DispatchError(
+                f"absolute path outside the repo cannot be dispatched: {arg}")
+        rel = parts[len(root_parts):]
+        return "/work/" + "/".join(rel) if rel else "/work"
     if "\\" in arg:
         return arg.replace("\\", "/")
     return arg
+
+
+def in_container():
+    """True where the toolchain lives: the repo is the /work bind mount."""
+    return str(ROOT) == "/work" or Path("/.dockerenv").exists()
 
 
 def main(argv):
@@ -64,7 +82,8 @@ def main(argv):
               file=sys.stderr)
         return 2
 
-    if os.name == "posix":
+    if os.name == "posix" and (in_container()
+                               or os.environ.get("CRASHWOC_DIRECT")):
         return subprocess.run(argv, cwd=ROOT).returncode
 
     try:

@@ -223,6 +223,38 @@ class TestDispatchTranslation(unittest.TestCase):
                     "build/pal103/current/nucore/nulist.o"):
             self.assertEqual(self.tr(arg), arg)
 
+    def test_posix_arg_on_windows_root_untouched(self):
+        # A Windows host never claims POSIX absolute paths.
+        self.assertEqual(self.tr("/usr/bin/env"), "/usr/bin/env")
+
+
+class TestDispatchTranslationPosix(unittest.TestCase):
+    """Same rules on a POSIX runner host (e.g. Linux self-hosted CI)."""
+    ROOT = Path("/home/runner/work/crashwoc")
+
+    def tr(self, arg):
+        return dispatch.translate_arg(arg, root=self.ROOT)
+
+    def test_absolute_inside_repo(self):
+        self.assertEqual(self.tr("/home/runner/work/crashwoc/build.ninja"),
+                         "/work/build.ninja")
+
+    def test_repo_root_itself(self):
+        self.assertEqual(self.tr("/home/runner/work/crashwoc"), "/work")
+
+    def test_absolute_outside_repo_rejected(self):
+        with self.assertRaises(dispatch.DispatchError):
+            self.tr("/etc/passwd")
+
+    def test_case_sensitive(self):
+        # POSIX paths compare case-sensitively, unlike Windows.
+        with self.assertRaises(dispatch.DispatchError):
+            self.tr("/home/runner/work/Crashwoc/build.ninja")
+
+    def test_plain_args_untouched(self):
+        for arg in ("ninja", "verify-loaded", "-j8"):
+            self.assertEqual(self.tr(arg), arg)
+
 
 if __name__ == "__main__":
     unittest.main()

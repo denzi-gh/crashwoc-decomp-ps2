@@ -1,0 +1,123 @@
+# Protected verification: the full byte-gated pipeline on a self-hosted
+# runner that holds the game files (docs/runner.md). Game bytes never
+# transit GitHub -- the only things that leave the runner are the sanitized
+# report (whitelist-filtered by tools/sanitize_report.py) and the tiny
+# committed progress baseline.
+#
+# SECURITY INVARIANT: this workflow must NEVER gain a pull_request trigger.
+# It executes on a private machine; only pushes to main, the nightly
+# schedule, and manual dispatch may reach it. Fork PRs therefore never run
+# here (they only get validate.yml on GitHub-hosted runners).
+
+name: matching
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+# One run at a time: the runner keeps incremental state (build/, compiler/)
+# and the dev container is a singleton.
+concurrency:
+  group: matching
+  cancel-in-progress: false
+
+permissions:
+  contents: write # bot-commit of progress/summary.json
+
+jobs:
+  matching:
+    runs-on: [self-hosted, crashwoc]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout (keep runner-local game files and caches)
+        uses: actions/checkout@v4
+        with:
+          # orig/, compiler/, tools/download and build/ are gitignored
+          # runner state; a clean checkout would delete them every run.
+          clean: false
+
+      - name: Game files present
+        run: |
+          if [ ! -f orig/pal103/SLES_503.86 ]; then
+            if [ -z "${CRASHWOC_ORIG_DIR:-}" ]; then
+              echo "orig/pal103/SLES_503.86 missing and CRASHWOC_ORIG_DIR" \
+                   "not set on the runner (see docs/runner.md)" >&2
+              exit 1
+            fi
+            mkdir -p orig/pal103
+            cp -r "$CRASHWOC_ORIG_DIR"/. orig/pal103/
+          fi
+
+      - name: Build container image
+        run: docker build -f Containerfile -t crashwoc-decomp .
+
+      - name: Recreate dev container on the fresh image
+        run: |
+          python tools/dev_container.py stop
+          python tools/dev_container.py start
+
+      - name: Install and fingerprint the locked toolchain
+        run: |
+          python tools/dispatch.py python tools/setup_toolchain.py --download
+          python tools/dispatch.py python tools/fingerprint_compiler.py --component ee-gcc
+          python tools/dispatch.py python tools/fingerprint_compiler.py --component ps2-binutils
+          python tools/dispatch.py python tools/fingerprint_compiler.py --component objdiff
+
+      - name: Verify target binary
+        run: python tools/dispatch.py python tools/verify_target.py
+
+      - name: Committed registries are exactly reproducible
+        run: |
+          python tools/dispatch.py python tools/extract_mdebug.py --check
+          python tools/dispatch.py python tools/extract_data_map.py --check
+          python tools/dispatch.py python tools/status.py --check
+
+      - name: Configure (split, build graph, objdiff config)
+        run: python tools/dispatch.py python configure.py
+
+      - name: Build all object sets
+        run: python tools/dispatch.py ninja expected current matching
+
+      - name: Byte gates -- image identity and every promoted function
+        run: python tools/dispatch.py ninja verify-loaded verify-promoted
+
+      - name: Progress regression gates
+        run: python tools/dispatch.py python tools/compare_progress.py
+
+      - name: Generate and sanitize the report
+        run: python tools/dispatch.py ninja report report-public
+
+      - name: Stage the publishable artifact
+        # Only the whitelist-filtered report is staged, under the filename
+        # decomp.dev expects inside the artifact.
+        run: |
+          rm -rf build/publish
+          mkdir -p build/publish
+          cp build/pal103/report.public.json build/publish/report.json
+
+      - name: Upload decomp.dev report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SLES_503.86_report
+          path: build/publish/report.json
+          if-no-files-found: error
+
+      - name: Update the committed progress baseline
+        # Pushes with GITHUB_TOKEN do not trigger new workflow runs, so
+        # this cannot loop.
+        run: |
+          python tools/dispatch.py python tools/compare_progress.py --write
+          if git diff --quiet progress/summary.json; then
+            echo "baseline unchanged"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add progress/summary.json
+          git commit -m "progress: update summary baseline [skip ci]"
+          git push
