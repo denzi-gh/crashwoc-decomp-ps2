@@ -175,6 +175,42 @@ disassembly, **nothing game-derived is committed**: the extracted `.bin` blobs,
 generated `.s`/`.o` and the linked ELF all land in gitignored `build/baseline/`.
 Only `linker.ld` (addresses only) and the tool are tracked.
 
+## Monolithic assembly baseline
+
+The next step replaces the baseline's `.text` blob with real assembled
+instructions. [tools/assemble_text.py](tools/assemble_text.py) assembles splat's
+whole-program `.text` disassembly (`asm/text.s`), links it at the target's
+`.text` address, and proves the result is byte-identical to the retail `.text`.
+
+```bash
+python tools/assemble_text.py    # assemble asm/text.s, link, compare .text
+```
+
+It checks five things in order:
+
+- **Disambiguate duplicate statics** — four static functions
+  (`ReadNuIFFGeomSkin`, `ReadNuIFFGeomVtx`, `NuNodeRead`, `_fpadd_parts`) share a
+  name across two translation units each. Legal as separate TUs, they collide in
+  a single assembly file, so each definition is renamed to `NAME__<vram>` and
+  each `jal` is repointed to the definition its own encoding already targets. No
+  instruction byte moves.
+- **Assemble** — the transformed text assembles with the locked PS2 `as`
+  (`-march=r5900`).
+- **Resolve external symbols** — every symbol `asm/text.s` references but does
+  not define is resolved to its true address, from the committed mdebug registry,
+  splat's auto lists, or (for address-named auto symbols like `D_00633400`) the
+  name itself.
+- **Link** — `.text` is placed at `0x00100000` with those symbols defined.
+- **Assembled `.text` byte-identical** — the linked `.text` equals the target's
+  `.text` (`elf[0x1000 : 0x1000+0x181530]`) byte-for-byte, SHA-256
+  `25e07defbc3617ff1502295a050c8fea1ee0c5a6d0e52838e82d6b7b3abf63e5`.
+
+Like `--link`, this needs the PS2 binutils (Linux x86-64; run it in the
+[Containerfile](Containerfile) image on non-Linux hosts). **Nothing game-derived
+is committed**: the transformed `.s`, the object, the link script and the linked
+ELF all land in gitignored `build/baseline/`; only this script and the addresses
+it reads are tracked.
+
 ## Completion levels
 
 Progress is tracked against three distinct goals:
