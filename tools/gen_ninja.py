@@ -122,6 +122,11 @@ def emit_ninja(version="pal103", out_path=None):
         f" --set $set -o $out --version {version}",
         "  description = hybrid ($set) $out",
         "",
+        "rule link_image",
+        f"  command = python tools/link_image.py --set $set"
+        f" --version {version}",
+        "  description = link $set image",
+        "",
     ]
 
     # Expected objects: one splitter edge fans out into 247 assemble edges.
@@ -166,9 +171,22 @@ def emit_ninja(version="pal103", out_path=None):
                                   ("set", link_set)])
     L.append("")
 
+    # Full-image links: the matching image is the byte-identity gate
+    # (`ninja verify-loaded`); the equivalent image only has to link.
+    for link_set, objs in (("matching", matching_o),
+                           ("equivalent", equivalent_o)):
+        L += _edge("link_image", [f"build/{version}/image/{link_set}.bin"],
+                   implicit=[*expected_o, *objs, "tools/link_image.py",
+                             "tools/split_text.py"],
+                   variables=[("set", link_set)])
+    L.append("")
+
     for name, outs in (("expected", expected_o), ("current", current_o),
                        ("matching", matching_o), ("equivalent", equivalent_o),
-                       ("fallback", [fallback_stamp])):
+                       ("fallback", [fallback_stamp]),
+                       ("verify-loaded", [f"build/{version}/image/matching.bin"]),
+                       ("image-equivalent",
+                        [f"build/{version}/image/equivalent.bin"])):
         if outs:
             L += _edge("phony", [name], outs)
     L.append("default expected current matching")

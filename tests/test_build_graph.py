@@ -17,6 +17,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 import dispatch
 from gen_ninja import _esc, emit_ninja
 from gen_objdiff import CATEGORIES, classify, emit_objdiff
+from link_image import select_text_objects
 from declib.tu import load_tu_runs
 
 
@@ -66,9 +67,21 @@ class TestEmitNinja(unittest.TestCase):
         self.assertEqual(sets, {"matching", "equivalent"})
 
     def test_phony_targets_and_default(self):
-        for name in ("expected", "current", "matching", "fallback"):
+        for name in ("expected", "current", "matching", "fallback",
+                     "verify-loaded", "image-equivalent"):
             self.assertIn(f"build {name}: phony", self.text)
         self.assertIn("default expected current matching", self.lines)
+
+    def test_image_edges(self):
+        image_edges = self.edges("link_image")
+        self.assertEqual(
+            {e.split()[1].rstrip(":") for e in image_edges},
+            {"build/pal103/image/matching.bin",
+             "build/pal103/image/equivalent.bin"})
+        # The matching image must depend on every .text object it links.
+        (matching,) = [e for e in image_edges if "/matching.bin" in e]
+        n_units = len(load_tu_runs())
+        self.assertGreaterEqual(matching.count(".o"), n_units)
 
     def test_paths_are_relative_posix(self):
         self.assertNotIn("\\", self.text)
@@ -148,6 +161,24 @@ class TestEmitObjdiff(unittest.TestCase):
     def test_paths_are_relative_posix(self):
         text = json.dumps(self.cfg)
         self.assertNotIn("\\", text)
+
+
+class TestSelectTextObjects(unittest.TestCase):
+    def test_hybrid_substitution_in_address_order(self):
+        objs = select_text_objects("pal103", "matching")
+        self.assertEqual(len(objs), len(load_tu_runs()))
+        self.assertEqual([u for u, _p in objs],
+                         [u for u, _a in load_tu_runs()])
+        by_unit = dict(objs)
+        # Unit 7 has a status manifest: its hybrid object replaces the
+        # expected object; its neighbours stay expected.
+        self.assertTrue(str(by_unit[7]).replace("\\", "/").endswith(
+            "build/pal103/matching/nucore/nulist.o"))
+        self.assertTrue(str(by_unit[0]).replace("\\", "/").endswith(
+            "expected/pal103/000_crt0.s.o"))
+        self.assertTrue(str(by_unit[6]).replace("\\", "/").endswith(".o"))
+        hybrids = [p for _u, p in objs if "expected" not in str(p)]
+        self.assertEqual(len(hybrids), 1)
 
 
 class TestDispatchTranslation(unittest.TestCase):
