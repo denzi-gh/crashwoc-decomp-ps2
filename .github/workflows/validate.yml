@@ -52,6 +52,15 @@ jobs:
           sys.exit(1 if failed else 0)
           EOF
 
+      - name: Protected workflow never triggers on pull requests
+        # matching.yml runs on a self-hosted runner holding game files; a
+        # pull_request trigger would let fork PRs reach that machine.
+        run: |
+          if grep -q "pull_request" .github/workflows/matching.yml; then
+            echo "matching.yml must never have a pull_request trigger"; exit 1
+          fi
+          echo "OK: matching.yml is push/schedule/dispatch only."
+
       - name: No game-derived content tracked
         run: |
           set -e
