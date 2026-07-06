@@ -29,12 +29,15 @@ Nothing game-derived is committed: the per-TU `.s`, the objects, the `.incbin`
 blobs, the link script and the linked ELF all land in gitignored build/split/.
 This script and the addresses/units it reads are the only tracked inputs.
 
+The pipeline logic lives in tools/declib/ (tu, asmtext, target, toolchain);
+this file is the CLI. The moved names are re-exported here so other tools'
+historical `import split_text as st` call sites keep working.
+
 Exit status is 0 only if the split is lossless and (when the toolchain is
 available) the linked image matches the packaged hash.
 """
 import argparse
 import hashlib
-import re
 import shutil
 import subprocess
 import sys
@@ -42,143 +45,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
-import assemble_text as at        # disambiguate, resolve, symbol/tool helpers
-import build_baseline as bb       # load_target, derive_tiling, parse_linker_script
+from declib.toolchain import AS, LD, NM, OBJCOPY, Reporter, h, tool_path
+from declib.asmtext import disambiguate, load_symbol_addrs, resolve
+from declib.target import derive_tiling, load_target, parse_linker_script
+from declib.tu import (drop_alignment, glabel_addresses, is_lead,  # noqa: F401
+                       load_tu_runs, load_units, parse_toml_blocks,
+                       prologue_end, split_body)
 
-LABEL_WIDTH = 34
 _GP = 0x00634970                  # config/pal103/sections.json; also in linker.ld
-
-
-def parse_toml_blocks(path, keys):
-    """Yield one dict per `[[...]]` block, pulling `key = value` scalars."""
-    text = path.read_text()
-    for block in re.split(r"\[\[[a-z]+\]\]", text)[1:]:
-        row = {}
-        for key, pat in keys.items():
-            m = re.search(pat, block)
-            if m:
-                row[key] = m.group(1)
-        yield row
-
-
-def load_units():
-    """unit index -> a filesystem-safe base name derived from the source path."""
-    names = {}
-    for row in parse_toml_blocks(ROOT / "config" / "pal103" / "units.toml",
-                                 {"index": r"index = (\d+)", "name": r"name = '([^']*)'"}):
-        base = re.split(r"[\\/]", row["name"])[-1]
-        names[int(row["index"])] = re.sub(r"[^A-Za-z0-9_.-]", "_", base)
-    return names
-
-
-def load_tu_runs():
-    """Ordered [(unit_index, first_vram), ...], one per TU that owns .text code.
-
-    Built from the procedure table: sort procedures by address and start a new
-    run whenever the owning unit changes. The mdebug lays each TU's code out
-    contiguously, so these runs are exactly the .text translation units.
-    """
-    funcs = [(int(r["address"], 16), int(r["unit"]))
-             for r in parse_toml_blocks(
-                 ROOT / "config" / "pal103" / "functions.toml",
-                 {"address": r"address = (0x[0-9A-Fa-f]+)", "unit": r"unit = (\d+)"})]
-    runs = []
-    for addr, unit in sorted(funcs):
-        if not runs or runs[-1][0] != unit:
-            runs.append((unit, addr))
-    return runs
-
-
-def glabel_addresses(lines):
-    """line index of each `glabel` -> the function's first-instruction vram."""
-    out = {}
-    for i, line in enumerate(lines):
-        if line.startswith("glabel "):
-            j = i + 1
-            while j < len(lines) and at.instr_at(lines, j) is None:
-                j += 1
-            if j < len(lines):
-                out[i] = at.instr_at(lines, j)[0]
-    return out
-
-
-# A line that introduces a function block (leading run swept up with the block).
-_BLOCK_LEAD = ("nonmatching ", "matching ", ".align")
-
-
-def is_lead(line):
-    s = line.strip()
-    if s == "" or line.startswith(_BLOCK_LEAD):
-        return True
-    # A standalone comment (e.g. "/* Handwritten function */") but not an
-    # instruction line, which also starts with "/*".
-    return s.startswith("/*") and at.INSTR_RE.search(line) is None
-
-
-def split_body(lines, body_start, cut_addrs):
-    """Partition lines[body_start:] into chunks that start at each cut address.
-
-    A cut is placed at the head of the function block whose first byte is a TU's
-    first-function address -- i.e. just above its leading `.align`/`nonmatching`
-    run -- so each chunk holds whole function blocks and nothing is duplicated.
-    Returns the list of chunk line-lists, in file (address) order.
-    """
-    addr_to_glabel = {a: i for i, a in glabel_addresses(lines).items()}
-    cut_lines = []
-    for a in cut_addrs:
-        gi = addr_to_glabel[a]
-        start = gi
-        while start - 1 >= body_start and is_lead(lines[start - 1]):
-            start -= 1
-        cut_lines.append(start)
-    cut_lines = sorted(set(cut_lines))
-
-    chunks, prev = [], body_start
-    for cut in cut_lines:
-        chunks.append(lines[prev:cut])
-        prev = cut
-    chunks.append(lines[prev:])
-    return chunks
-
-
-def drop_alignment(lines, reporter):
-    """Remove every `.align` directive; they are all no-ops for this .text.
-
-    The disassembly covers .text with one explicit instruction word per four
-    bytes and no address gaps, so no `.align` ever emits a padding byte. Dropping
-    them makes each TU object a pure instruction stream: its section needs no
-    alignment, so it carries no trailing pad and its internal layout no longer
-    depends on the object's base phase (mod 8) -- which a TU that starts at a
-    4-aligned address would otherwise get wrong. Returns the filtered lines, or
-    None if an `.align` unexpectedly sits next to an address discontinuity.
-    """
-    kept, prev_end, dropped, align_pending = [], None, 0, False
-    for line in lines:
-        info = at.INSTR_RE.search(line)
-        if info:
-            addr = int(info.group(1), 16)
-            if prev_end is not None and addr != prev_end and align_pending:
-                reporter.result("Drop no-op .align directives", False,
-                                f"gap 0x{prev_end:x}->0x{addr:x} filled by .align")
-                return None
-            prev_end = addr + 4
-            align_pending = False
-        if line.strip().startswith(".align"):
-            dropped += 1
-            align_pending = True
-            continue
-        kept.append(line)
-    reporter.result("Drop no-op .align directives", True)
-    print(f"  {dropped} .align directives removed (all no-ops)")
-    return kept
-
-
-def prologue_end(lines):
-    """First line that begins content (a function block); end of the header."""
-    for i, line in enumerate(lines):
-        if line.startswith("glabel ") or line.startswith(_BLOCK_LEAD):
-            return i
-    return 0
 
 
 def write_tu_files(chunks, runs, unit_names, prologue, out_dir):
@@ -259,10 +133,10 @@ def nm_defined_undefined(nm_bin, obj):
 def link_full_image(reporter, tu_stems, incbin_objects, nobits, text_addr,
                     elf, pt_load, out_dir):
     """Assemble every TU, link the whole image, compare the packaged hash."""
-    as_bin = at.tool_path(at.AS)
-    ld_bin = at.tool_path(at.LD)
-    nm_bin = at.tool_path(at.NM)
-    objcopy_bin = at.tool_path(at.OBJCOPY)
+    as_bin = tool_path(AS)
+    ld_bin = tool_path(LD)
+    nm_bin = tool_path(NM)
+    objcopy_bin = tool_path(OBJCOPY)
     if not all((as_bin, ld_bin, nm_bin, objcopy_bin)):
         reporter.result("Linked image matches packaged hash", False,
                         "PS2 binutils not found (Linux x86-64; run in the "
@@ -301,8 +175,7 @@ def link_full_image(reporter, tu_stems, incbin_objects, nobits, text_addr,
     reporter.result("Assemble per-TU objects", True)
 
     external = (undefined - defined) - {"_gp"}
-    defsyms, unresolved = at.resolve(sorted(external),
-                                     at.load_symbol_addrs("pal103"))
+    defsyms, unresolved = resolve(sorted(external), load_symbol_addrs("pal103"))
     reporter.result("Resolve external symbols", not unresolved,
                     None if not unresolved
                     else f"{len(unresolved)} unresolved, e.g. {unresolved[:5]}")
@@ -331,8 +204,8 @@ def link_full_image(reporter, tu_stems, incbin_objects, nobits, text_addr,
         return
     reporter.result("Link full loaded image", True)
 
-    load_off = bb.h(pt_load["offset"])
-    filesz = bb.h(pt_load["filesz"])
+    load_off = h(pt_load["offset"])
+    filesz = h(pt_load["filesz"])
     want = hashlib.sha256(elf[load_off:load_off + filesz]).hexdigest()
     got = hashlib.sha256(bin_out.read_bytes()).hexdigest()
     reporter.result("Linked image matches packaged hash", got == want,
@@ -351,17 +224,16 @@ def main():
               file=sys.stderr)
         return 2
 
-    elf, sections_spec, pt_load = bb.load_target(args.version)
-    text_addr = bb.h(next(s for s in sections_spec["sections"]
-                          if s["name"] == ".text")["addr"])
-    incbin_objects, _gaps = bb.derive_tiling(elf, sections_spec, pt_load)
-    _addrs, nobits = bb.parse_linker_script((ROOT / "linker.ld").read_text())
+    elf, sections_spec, pt_load = load_target(args.version)
+    text_addr = h(next(s for s in sections_spec["sections"]
+                       if s["name"] == ".text")["addr"])
+    incbin_objects, _gaps = derive_tiling(elf, sections_spec, pt_load)
+    _addrs, nobits = parse_linker_script((ROOT / "linker.ld").read_text())
 
-    reporter = at.Reporter()
-    reporter.__dict__.setdefault("failed", False)
+    reporter = Reporter()
 
     # Reuse the monolithic baseline's byte-lossless disambiguation, then split.
-    mono, ok = at.disambiguate(text_s.read_text(), reporter)
+    mono, ok = disambiguate(text_s.read_text(), reporter)
     if not ok:
         return _finish(reporter)
     lines = drop_alignment(mono.splitlines(), reporter)

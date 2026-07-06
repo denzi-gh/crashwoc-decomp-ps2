@@ -24,141 +24,35 @@ The extracted section bytes are game-derived, so every `.bin`/`.s`/`.o` output
 lands in the gitignored build/baseline/ tree. linker.ld and this script are the
 only committed artifacts; both carry addresses only, never bytes.
 
+The pipeline logic lives in tools/declib/ (target, toolchain); this file is
+the CLI. The moved names are re-exported here so other tools' historical
+`import build_baseline as bb` call sites keep working.
+
 Exit status is 0 only if the loaded layout and the packaged hash both match.
 """
 import argparse
 import hashlib
-import json
 import shutil
-import struct
 import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "tools"))
+from declib import toolchain
+from declib.toolchain import BINUTILS_DIR, AS, LD, OBJCOPY, h  # noqa: F401
+from declib.target import derive_tiling, load_target, parse_linker_script  # noqa: F401
+
 LABEL_WIDTH = 30
 
-# PS2 binutils names (decompals build), resolved under compiler/ or on PATH.
-BINUTILS_DIR = ROOT / "compiler" / "ps2-binutils-0.10"
-AS = "mips-ps2-decompals-as"
-LD = "mips-ps2-decompals-ld"
-OBJCOPY = "mips-ps2-decompals-objcopy"
+
+def Reporter():
+    return toolchain.Reporter(LABEL_WIDTH)
 
 
-class Reporter:
-    def __init__(self):
-        self.failed = False
-        self.details = []
-
-    def result(self, label, ok, detail=None):
-        print(f"{label + ':':<{LABEL_WIDTH}} {'PASS' if ok else 'FAIL'}")
-        if not ok:
-            self.failed = True
-            if detail:
-                self.details.append(f"{label}: {detail}")
-
-
-def load_target(version):
-    """Return (elf_bytes, sections_spec, pt_load) for the version."""
-    config_dir = ROOT / "config" / version
-    sections_spec = json.loads((config_dir / "sections.json").read_text())
-    version_meta = json.loads((config_dir / "version.json").read_text())
-    elf_path = ROOT / version_meta["files"]["elf"]["path"]
-    elf = elf_path.read_bytes()
-    pt_load = sections_spec["program_headers"][0]
-    return elf, sections_spec, pt_load
-
-
-def h(value):
-    """Section-spec hex string (or int) -> int."""
-    return int(value, 0) if isinstance(value, str) else value
-
-
-def derive_tiling(elf, sections_spec, pt_load):
-    """Tile the loaded file image into ordered incbin objects.
-
-    Every loaded PROGBITS section that carries file bytes becomes an object.
-    Any run of bytes between them that no section covers is checked: an all-zero
-    run is left to the linker (zero fill between explicit addresses); a run with
-    any non-zero byte becomes an explicit `orphan` object so no loaded byte is
-    ever invented or dropped. Returns (objects, gaps) where each object is
-    {name, vaddr, offset, size} and gaps is a list of (offset, size) zero runs.
-    """
-    load_off = h(pt_load["offset"])
-    load_vaddr = h(pt_load["vaddr"])
-    filesz = h(pt_load["filesz"])
-    load_end = load_off + filesz
-
-    # Loaded PROGBITS sections with file content, inside the PT_LOAD file range.
-    loaded = []
-    for s in sections_spec["sections"]:
-        if h(s["type"]) != 1 or h(s["size"]) == 0:
-            continue
-        off = h(s["offset"])
-        if load_off <= off < load_end:
-            loaded.append(s)
-    loaded.sort(key=lambda s: h(s["offset"]))
-
-    objects = []
-    gaps = []
-    orphan_index = 0
-    cursor = load_off
-    for s in loaded:
-        off = h(s["offset"])
-        if off > cursor:  # bytes between the previous object and this section
-            run = elf[cursor:off]
-            if any(run):
-                name = "orphan" if orphan_index == 0 else f"orphan{orphan_index}"
-                orphan_index += 1
-                objects.append({"name": name, "vaddr": load_vaddr + (cursor - load_off),
-                                "offset": cursor, "size": off - cursor})
-            else:
-                gaps.append((cursor, off - cursor))
-        objects.append({"name": s["name"].lstrip("."), "vaddr": h(s["addr"]),
-                        "offset": off, "size": h(s["size"])})
-        cursor = off + h(s["size"])
-
-    if cursor < load_end:  # trailing bytes before filesz end
-        run = elf[cursor:load_end]
-        if any(run):
-            objects.append({"name": f"orphan{orphan_index}",
-                            "vaddr": load_vaddr + (cursor - load_off),
-                            "offset": cursor, "size": load_end - cursor})
-        else:
-            gaps.append((cursor, load_end - cursor))
-    return objects, gaps
-
-
-def parse_linker_script(text):
-    """Extract {section_name: vaddr} and NOLOAD sizes from linker.ld.
-
-    Understands only the constructs this project's script uses: `. = ADDR;`
-    setting the location counter immediately before a `.name : { ... }` output
-    section, and `.name (NOLOAD) : { . += SIZE; }` for bss. Enough to validate
-    that the committed script agrees with the tiling derived from the target.
-    """
-    import re
-    addrs, nobits = {}, {}
-    pending = None
-    set_re = re.compile(r"\.\s*=\s*(0x[0-9A-Fa-f]+)\s*;")
-    sec_re = re.compile(r"(\.[A-Za-z0-9_.]+)\s*(\(NOLOAD\))?\s*:")
-    inc_re = re.compile(r"\.\s*\+=\s*(0x[0-9A-Fa-f]+)\s*;")
-    for line in text.splitlines():
-        line = line.split("/*")[0]
-        m = set_re.search(line)
-        if m:
-            pending = int(m.group(1), 0)
-        m = sec_re.search(line)
-        if m:
-            name = m.group(1).lstrip(".")
-            if pending is not None:
-                addrs[name] = pending
-            if m.group(2):  # NOLOAD
-                size_m = inc_re.search(line)
-                if size_m:
-                    nobits[name] = int(size_m.group(1), 0)
-            pending = None
-    return addrs, nobits
+def tool_path(name):
+    # This tool always allowed a PATH fallback for the binutils.
+    return toolchain.tool_path(name, search_path=True)
 
 
 def write_objects(objects, elf, out_dir):
@@ -257,13 +151,6 @@ def check_packaged_hash(reporter, image, elf, pt_load):
         detail = f"first diff at loaded offset 0x{first:x}; sha256 {got} != {want}"
     reporter.result("Packaged loaded-image hash", image == target, detail)
     return want
-
-
-def tool_path(name):
-    local = BINUTILS_DIR / name
-    if local.is_file():
-        return str(local)
-    return shutil.which(name)
 
 
 def real_link(reporter, objects, out_dir, elf, pt_load, packaged_sha):

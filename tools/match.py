@@ -22,6 +22,9 @@ The hand-written C in src/ is the committed work product; everything this tool
 generates is game-derived and gitignored: base objects in build/src/, expected
 objects in expected/, and objdiff.json.
 
+The pipeline logic lives in tools/declib/ (verify, tu, asmtext, target,
+toolchain); this file is the CLI.
+
 Exit status is 0 only if every function present in src/ matches.
 """
 import argparse
@@ -35,24 +38,25 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
-import assemble_text as at
-import split_text as st
-import build_baseline as bb
+from declib.toolchain import AS, LD, NM, EEGCC, Reporter, h, tool_path
+from declib.asmtext import disambiguate, load_symbol_addrs, resolve
+from declib.target import load_target
+from declib.tu import (drop_alignment, load_tu_runs, parse_toml_blocks,
+                       prologue_end, split_body)
+from declib.verify import defined_functions, link_text_at, undefined_externals
 
 LABEL_WIDTH = 30
-_GP = 0x00634970
-EEGCC = ROOT / "compiler" / "ee-gcc-2.9-ee-991111-01" / "bin" / "ee-gcc"
 
 
 def load_program(version):
     """Return program facts: funcs {name:(addr,size,unit)}, units, elf, delta."""
-    elf, sections_spec, pt_load = bb.load_target(version)
-    delta = bb.h(pt_load["vaddr"]) - bb.h(pt_load["offset"])
+    elf, sections_spec, pt_load = load_target(version)
+    delta = h(pt_load["vaddr"]) - h(pt_load["offset"])
     text = next(s for s in sections_spec["sections"] if s["name"] == ".text")
-    text_addr, text_size = bb.h(text["addr"]), bb.h(text["size"])
+    text_addr, text_size = h(text["addr"]), h(text["size"])
 
     rows = [(r["n"], int(r["a"], 16), int(r["u"]))
-            for r in st.parse_toml_blocks(
+            for r in parse_toml_blocks(
                 ROOT / "config" / version / "functions.toml",
                 {"n": r"name = '([^']*)'", "a": r"address = (0x[0-9A-Fa-f]+)",
                  "u": r"unit = (\d+)"})]
@@ -62,7 +66,7 @@ def load_program(version):
         end = rows[i + 1][1] if i + 1 < len(rows) else text_addr + text_size
         funcs[name] = (addr, end - addr, unit)
 
-    units = {int(r["i"]): r["n"] for r in st.parse_toml_blocks(
+    units = {int(r["i"]): r["n"] for r in parse_toml_blocks(
         ROOT / "config" / version / "units.toml",
         {"i": r"index = (\d+)", "n": r"name = '([^']*)'"})}
     # len(rows), not len(funcs): a few statics share a name across units.
@@ -76,15 +80,15 @@ def unit_slice(reporter, version):
     `.align` directives, partition at the mdebug unit boundaries) so an expected
     object can be assembled for any single unit without rebuilding all of them.
     """
-    mono, ok = at.disambiguate((ROOT / "asm" / "text.s").read_text(), reporter)
+    mono, ok = disambiguate((ROOT / "asm" / "text.s").read_text(), reporter)
     if not ok:
         return None, None
-    lines = st.drop_alignment(mono.splitlines(), reporter)
+    lines = drop_alignment(mono.splitlines(), reporter)
     if lines is None:
         return None, None
-    runs = st.load_tu_runs()
-    body_start = st.prologue_end(lines)
-    chunks = st.split_body(lines, body_start, [a for _u, a in runs[1:]])
+    runs = load_tu_runs()
+    body_start = prologue_end(lines)
+    chunks = split_body(lines, body_start, [a for _u, a in runs[1:]])
     return lines[:body_start], {runs[i][0]: chunks[i] for i in range(len(runs))}
 
 
@@ -105,34 +109,6 @@ def compile_c(src, out_o):
                        check=True, capture_output=True, text=True, cwd=tmp)
         out_o.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(obj, out_o)
-
-
-def defined_functions(nm_bin, obj):
-    out = subprocess.run([nm_bin, str(obj)], check=True,
-                         capture_output=True, text=True).stdout
-    names = []
-    for line in out.splitlines():
-        parts = line.split()
-        if len(parts) == 3 and parts[1] in ("T", "t"):
-            names.append(parts[2])
-    return names
-
-
-def link_text_at(obj, base_addr, defsyms, tmp):
-    """Link obj's .text at base_addr (externals defsym'd) and return raw bytes."""
-    ld_bin, objcopy_bin = at.tool_path(at.LD), at.tool_path(at.OBJCOPY)
-    script = (f"SECTIONS {{\n  . = 0x{base_addr:08X};\n"
-              f"  .text : SUBALIGN(1) {{ {Path(obj).as_posix()}(.text) }}\n"
-              f"  _gp = 0x{_GP:08X};\n  /DISCARD/ : {{ *(*) }}\n}}\n"
-              + "\n".join(f"{n} = 0x{a:08X};" for n, a in defsyms.items()) + "\n")
-    ld = tmp / "link.ld"
-    ld.write_text(script)
-    elf_out, bin_out = tmp / "linked.elf", tmp / "linked.bin"
-    subprocess.run([ld_bin, "-EL", "-T", str(ld), "-o", str(elf_out), str(obj)],
-                   check=True, capture_output=True, text=True)
-    subprocess.run([objcopy_bin, "-O", "binary", "--only-section=.text",
-                    str(elf_out), str(bin_out)], check=True, capture_output=True)
-    return bin_out.read_bytes()
 
 
 def verify_unit(reporter, src, funcs, elf, delta, prologue, chunk, unit_name,
@@ -160,9 +136,9 @@ def verify_unit(reporter, src, funcs, elf, delta, prologue, chunk, unit_name,
         return {"funcs": [], "matched": 0}, (expected_o, base_o)
 
     base_addr = min(funcs[n][0] for n in names)
-    undef = _undefined(nm_bin, base_o)
-    defsyms, unresolved = at.resolve(sorted(undef - {"_gp"}),
-                                     at.load_symbol_addrs("pal103"))
+    undef = undefined_externals(nm_bin, base_o)
+    defsyms, unresolved = resolve(sorted(undef - {"_gp"}),
+                                  load_symbol_addrs("pal103"))
     results = []
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
@@ -188,13 +164,6 @@ def verify_unit(reporter, src, funcs, elf, delta, prologue, chunk, unit_name,
     return {"funcs": results, "matched": matched}, (expected_o, base_o)
 
 
-def _undefined(nm_bin, obj):
-    out = subprocess.run([nm_bin, str(obj)], check=True,
-                         capture_output=True, text=True).stdout
-    return {line.split()[-1] for line in out.splitlines()
-            if re.match(r"\s+U ", line)}
-
-
 def write_objdiff(units):
     """Emit objdiff.json pairing each unit's expected (target) and base object."""
     data = {
@@ -214,7 +183,7 @@ def main():
     parser.add_argument("--version", default="pal103")
     args = parser.parse_args()
 
-    if not EEGCC.is_file() or not at.tool_path(at.LD):
+    if not EEGCC.is_file() or not tool_path(LD):
         print("EE GCC or PS2 binutils not found; run in the Containerfile image "
               "(setup_toolchain.py installs them).", file=sys.stderr)
         return 2
@@ -224,12 +193,12 @@ def main():
         return 2
 
     funcs, units, elf, delta, _ta, text_size, total_funcs = load_program(args.version)
-    reporter = at.Reporter()
+    reporter = Reporter()
     prologue, chunks = unit_slice(reporter, args.version)
     if chunks is None:
         return 1
 
-    nm_bin, as_bin = at.tool_path(at.NM), at.tool_path(at.AS)
+    nm_bin, as_bin = tool_path(NM), tool_path(AS)
     print(f"\nMatching progress: {args.version}\n")
 
     objdiff_units, total_matched, total_bytes = [], 0, 0
