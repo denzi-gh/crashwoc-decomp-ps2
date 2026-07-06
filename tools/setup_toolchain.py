@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Install and verify the locked toolchain described by toolchain.lock.json.
 
-For every component that ships an immutable ``artifact`` (the matching compiler
-and the reconstruction binutils) this tool:
+For every component that ships an immutable ``artifact`` (the matching
+compiler, the reconstruction binutils, and the pinned objdiff-cli) this tool:
 
   1. Locates the archive: an already-downloaded copy in the download cache, or
      downloads it from the locked URL.
@@ -132,12 +132,19 @@ def install_component(name, comp, root, cache_dir, args, lock_dirty):
     if install_dir.exists():
         shutil.rmtree(install_dir)
     install_dir.mkdir(parents=True, exist_ok=True)
-    try:
-        shutil.unpack_archive(str(archive), str(install_dir))
-    except (shutil.ReadError, ValueError, OSError) as exc:
-        print(f"  extraction failed: {exc}", file=sys.stderr)
-        shutil.rmtree(install_dir, ignore_errors=True)
-        return False
+    if artifact.get("kind") == "binary":
+        # The artifact IS the executable (e.g. objdiff-cli): no archive to
+        # unpack, just place it under its locked name and mark it runnable.
+        dest = install_dir / artifact["install_as"]
+        shutil.copyfile(archive, dest)
+        dest.chmod(0o755)
+    else:
+        try:
+            shutil.unpack_archive(str(archive), str(install_dir))
+        except (shutil.ReadError, ValueError, OSError) as exc:
+            print(f"  extraction failed: {exc}", file=sys.stderr)
+            shutil.rmtree(install_dir, ignore_errors=True)
+            return False
     print(f"  installed to {install_dir}")
     return True
 

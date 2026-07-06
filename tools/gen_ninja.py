@@ -11,8 +11,9 @@ Per translation unit (247 .text TUs from the committed mdebug registries):
                         --gen_hybrid.py---> build/<v>/matching/<u>.o
   equivalent same, with reviewed-equivalent functions compiled from C too
 
-Phony targets: expected, current, matching, equivalent, fallback.
-Default: expected + current + matching.
+Phony targets: expected, current, matching, equivalent, fallback, data,
+verify-loaded, image-equivalent, verify-promoted, report, report-public,
+check. Default: expected + current + matching.
 
 The file is generated (never committed) because the edge list is a function
 of committed state: the unit registries, the src/ tree, and the status
@@ -36,7 +37,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
-from declib.toolchain import AS, BINUTILS_DIR
+from declib.toolchain import AS, BINUTILS_DIR, OBJDIFF_CLI
 from declib.tu import load_tu_runs, load_units
 from gen_expected_s import unit_stem
 
@@ -136,6 +137,15 @@ def emit_ninja(version="pal103", out_path=None):
         f"  command = python tools/verify_promoted.py --version {version}",
         "  description = re-verify every promoted function + image gate",
         "",
+        "rule report",
+        f"  command = {(OBJDIFF_CLI.relative_to(ROOT)).as_posix()}"
+        " report generate -f json-pretty -o $out",
+        "  description = objdiff progress report $out",
+        "",
+        "rule sanitize_report",
+        "  command = python tools/sanitize_report.py $in -o $out",
+        "  description = whitelist-filter the report for publication",
+        "",
     ]
 
     # Expected objects: one splitter edge fans out into 247 assemble edges.
@@ -210,6 +220,18 @@ def emit_ninja(version="pal103", out_path=None):
                          "tools/verify_promoted.py", *headers])
     L.append("")
 
+    # Progress report: objdiff-cli scores every unit's current object (or its
+    # absence) against the expected object. Measures only -- nothing here can
+    # fail on a nonmatching function, and nothing here is a byte gate. The
+    # sanitized copy is the only report file that ever leaves the runner.
+    report_json = f"build/{version}/report.json"
+    public_json = f"build/{version}/report.public.json"
+    L += _edge("report", [report_json],
+               implicit=[*expected_o, *current_o, "objdiff.json"])
+    L += _edge("sanitize_report", [public_json], [report_json],
+               implicit=["tools/sanitize_report.py"])
+    L.append("")
+
     for name, outs in (("expected", expected_o), ("current", current_o),
                        ("matching", matching_o), ("equivalent", equivalent_o),
                        ("fallback", [fallback_stamp]),
@@ -218,6 +240,8 @@ def emit_ninja(version="pal103", out_path=None):
                        ("image-equivalent",
                         [f"build/{version}/image/equivalent.bin"]),
                        ("verify-promoted", [verify_json]),
+                       ("report", [report_json]),
+                       ("report-public", [public_json]),
                        ("check", ["current", "verify-loaded",
                                   "verify-promoted"])):
         if outs:

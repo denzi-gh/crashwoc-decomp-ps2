@@ -72,8 +72,19 @@
         "objdiff": {
             "role": "diff",
             "version": "3.7.2",
-            "summary": "Compares reconstructed objects against the target objects to score matching progress.",
-            "source": "https://github.com/encounter/objdiff"
+            "summary": "Compares reconstructed objects against the target objects to score matching progress. The pinned CLI binary generates build/<version>/report.json (ninja report); the GUI is the contributor's own install and is never a gate.",
+            "source": "https://github.com/encounter/objdiff",
+            "artifact": {
+                "url": "https://github.com/encounter/objdiff/releases/download/v3.7.2/objdiff-cli-linux-x86_64",
+                "filename": "objdiff-cli-3.7.2-linux-x86_64",
+                "sha256": "85b7bec041a4d0f3003d3b4ff8f2a436e7dd4135dd653ccb5485476d2c88872b",
+                "kind": "binary",
+                "install_as": "objdiff-cli"
+            },
+            "install_dir": "objdiff-cli-3.7.2",
+            "fingerprints": {
+                "objdiff-cli": "85b7bec041a4d0f3003d3b4ff8f2a436e7dd4135dd653ccb5485476d2c88872b"
+            }
         }
     }
 }

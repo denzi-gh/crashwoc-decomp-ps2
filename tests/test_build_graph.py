@@ -68,9 +68,24 @@ class TestEmitNinja(unittest.TestCase):
 
     def test_phony_targets_and_default(self):
         for name in ("expected", "current", "matching", "fallback", "data",
-                     "verify-loaded", "image-equivalent"):
+                     "verify-loaded", "image-equivalent", "verify-promoted",
+                     "report", "report-public", "check"):
             self.assertIn(f"build {name}: phony", self.text)
         self.assertIn("default expected current matching", self.lines)
+
+    def test_report_edges(self):
+        (report,) = self.edges("report")
+        self.assertTrue(report.startswith("build build/pal103/report.json:"))
+        # The report scores current vs expected, so it must depend on both
+        # object sets plus the objdiff project config.
+        self.assertIn("objdiff.json", report)
+        self.assertGreaterEqual(report.count("expected/pal103/"),
+                                len(load_tu_runs()))
+        self.assertIn("build/pal103/current/", report)
+        (sanitize,) = self.edges("sanitize_report")
+        self.assertTrue(sanitize.startswith(
+            "build build/pal103/report.public.json: sanitize_report "
+            "build/pal103/report.json"))
 
     def test_image_edges(self):
         image_edges = self.edges("link_image")
