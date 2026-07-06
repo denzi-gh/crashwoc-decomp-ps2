@@ -27,6 +27,7 @@ RUN dpkg --add-architecture i386 \
         curl \
         git \
         make \
+        ninja-build \
         xz-utils \
         libc6:i386 \
         libstdc++6:i386 \

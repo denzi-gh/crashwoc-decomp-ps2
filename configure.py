@@ -10,6 +10,10 @@ Steps:
   1. Confirm the disassembler matches the locked versions (splat + backends).
   2. Confirm the target ELF is present (splat validates its sha1).
   3. Run `splat split` on splat.yaml.
+  4. Regenerate build.ninja (tools/gen_ninja.py), so the incremental build
+     graph always reflects the fresh split. `python tools/gen_ninja.py` alone
+     is enough after changes that don't need a re-split (new src file, new
+     status manifest, new header).
 
 With --check, the split is run twice and every generated file is hashed and
 compared, proving the output is byte-for-byte reproducible.
@@ -25,6 +29,9 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
+sys.path.insert(0, str(ROOT / "tools"))
+from gen_ninja import emit_ninja
+
 SPLAT_YAML = ROOT / "splat.yaml"
 LOCK = ROOT / "toolchain.lock.json"
 VERSION_JSON = ROOT / "config" / "pal103" / "version.json"
@@ -173,13 +180,18 @@ def main():
 
     print()
     if args.check:
-        return 0 if determinism_check() else 1
+        if not determinism_check():
+            return 1
+        emit_ninja()
+        return 0
 
     print("Splitting...")
     if not run_split():
         print("\nsplit failed.")
         return 1
-    print("\nSplit complete. Generated asm/ and build/ (both gitignored).")
+    emit_ninja()
+    print("\nSplit complete. Generated asm/, build/ and build.ninja "
+          "(all gitignored).")
     return 0
 
 

@@ -170,23 +170,41 @@ def main():
     parser.add_argument("--set", dest="link_set", default="matching",
                         choices=sorted(LINK_SETS),
                         help="which states compile from C (default: matching)")
+    parser.add_argument("--manifest",
+                        help="build only this status manifest (ninja edge "
+                             "mode) instead of all of them")
+    parser.add_argument("-o", "--output",
+                        help="output object path (only with --manifest; "
+                             "default: the standard build/ location)")
     args = parser.parse_args()
 
-    status_dir = ROOT / "config" / args.version / "status"
-    manifests = sorted(status_dir.rglob("*.toml")) if status_dir.is_dir() else []
-    if not manifests:
-        print("no status manifests; nothing to build.", file=sys.stderr)
-        return 2
+    if args.output and not args.manifest:
+        parser.error("-o requires --manifest")
+    if args.manifest:
+        manifests = [Path(args.manifest)]
+        if not manifests[0].is_file():
+            print(f"manifest not found: {args.manifest}", file=sys.stderr)
+            return 2
+    else:
+        status_dir = ROOT / "config" / args.version / "status"
+        manifests = sorted(status_dir.rglob("*.toml")) if status_dir.is_dir() else []
+        if not manifests:
+            print("no status manifests; nothing to build.", file=sys.stderr)
+            return 2
 
     failed = False
     for manifest in manifests:
         data = tomllib.loads(manifest.read_text())
         rel = Path(data["source"]).relative_to("src").with_suffix(".o")
-        out_o = ROOT / "build" / args.version / args.link_set / rel
+        out_o = (Path(args.output).resolve() if args.output
+                 else ROOT / "build" / args.version / args.link_set / rel)
         try:
             build_hybrid(manifest, out_o, args.link_set, args.version)
-            print(f"{rel.as_posix():<40} -> "
-                  f"{out_o.relative_to(ROOT).as_posix()}")
+            try:
+                shown = out_o.relative_to(ROOT).as_posix()
+            except ValueError:
+                shown = out_o.as_posix()
+            print(f"{rel.as_posix():<40} -> {shown}")
         except HybridError as exc:
             print(f"{rel.as_posix():<40} FAILED: {exc}", file=sys.stderr)
             failed = True
