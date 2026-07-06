@@ -80,6 +80,32 @@ The verifier checks file sizes, SHA-1 and SHA-256 hashes, the parsed
 `SYSTEM.CNF` values, and every field of the ELF header, program headers and
 section header table against the committed registry.
 
+## Symbol registries
+
+The retail executable ships a complete MIPS ECOFF debug section (`.mdebug`,
+magic `0x7009`). It describes every translation unit and procedure in the
+program — their addresses, stack frames and saved-register masks.
+[tools/extract_mdebug.py](tools/extract_mdebug.py) reads it straight out of the
+binary, in native table order, into three deterministic registries:
+
+| File                                                           | Entries | Contents                                        |
+| -------------------------------------------------------------- | ------: | ----------------------------------------------- |
+| [config/pal103/units.toml](config/pal103/units.toml)           |     267 | translation units (file descriptors)            |
+| [config/pal103/functions.toml](config/pal103/functions.toml)   |   3,751 | procedures (address, frame, register masks)      |
+| [config/pal103/symbol_addrs.txt](config/pal103/symbol_addrs.txt) |   6,320 | splat-style `name = address` (functions + data) |
+
+```bash
+python tools/extract_mdebug.py           # (re)generate the registries
+python tools/extract_mdebug.py --check   # verify committed == fresh extraction
+```
+
+The extraction is a byte-exact function of the input ELF: every address is read
+or computed from the tables (`fdr.adr + pdr.adr`), never guessed, and `--check`
+proves regeneration reproduces the committed files. Global data addresses in
+`symbol_addrs.txt` are cross-checked against the allocated section ranges in
+[config/pal103/sections.json](config/pal103/sections.json), so an ECOFF `value`
+that is a size rather than an address can never be emitted as one.
+
 ## Completion levels
 
 Progress is tracked against three distinct goals:
