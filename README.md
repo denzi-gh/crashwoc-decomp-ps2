@@ -211,6 +211,47 @@ is committed**: the transformed `.s`, the object, the link script and the linked
 ELF all land in gitignored `build/baseline/`; only this script and the addresses
 it reads are tracked.
 
+## Translation-unit split
+
+The final structural step splits that single `.text` into one assembly object per
+translation unit, following the boundaries the retail `.mdebug` records (which
+unit owns each procedure), and proves the *whole loaded image* still links
+exactly. [tools/split_text.py](tools/split_text.py) drives it:
+
+```bash
+python tools/split_text.py    # split by TU, assemble each, link the full image
+```
+
+The `.mdebug` procedure table gives 247 translation units that own `.text` code
+(of 267 total units). Each becomes its own `.s` object; the six non-`.text`
+sections stay as `.incbin`, exactly as the binary baseline carries them. It
+checks, in order:
+
+- **Disambiguate duplicate statics** — reuses the monolithic baseline's
+  byte-lossless rename so the four cross-TU static names never collide.
+- **Drop no-op `.align` directives** — the disassembly covers `.text` with one
+  explicit instruction word per four bytes and no address gaps, so every
+  `.align` is a no-op. Dropping them makes each TU a pure instruction stream:
+  no trailing section pad, and no dependence on the object's base phase — which
+  the 11 TUs that start at a 4-aligned (not 8-aligned) address would otherwise
+  assemble wrongly.
+- **Split lossless** — the per-TU bodies are a strict, order-preserving
+  partition of the monolithic body: same lines, nothing added or dropped.
+- **Assemble / resolve / link** — every TU is assembled separately, all external
+  symbols resolved to their true addresses, and the objects linked with the six
+  `.incbin` sections via `SUBALIGN(1)` (pure concatenation) into the full
+  `PT_LOAD` image.
+- **Linked image matches packaged hash** — the reconstructed loaded image is
+  byte-identical, SHA-256
+  `c92a59870d47441bbd3f741eca2be42ccbbab28b7d0670d96e09c2f2340fe438` — the same
+  packaged hash the binary baseline established.
+
+Like the other reconstruction steps this needs the PS2 binutils (Linux x86-64;
+run it in the [Containerfile](Containerfile) image); the split and lossless
+checks are pure Python and run anywhere. **Nothing game-derived is committed**:
+the 247 per-TU `.s`, the objects, the `.incbin` blobs, the link script and the
+linked ELF all land in gitignored `build/split/`.
+
 ## Completion levels
 
 Progress is tracked against three distinct goals:
