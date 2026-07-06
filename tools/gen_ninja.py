@@ -132,6 +132,10 @@ def emit_ninja(version="pal103", out_path=None):
         f" --version {version}",
         "  description = link $set image",
         "",
+        "rule verify_promoted",
+        f"  command = python tools/verify_promoted.py --version {version}",
+        "  description = re-verify every promoted function + image gate",
+        "",
     ]
 
     # Expected objects: one splitter edge fans out into 247 assemble edges.
@@ -155,7 +159,11 @@ def emit_ninja(version="pal103", out_path=None):
 
     # Current and hybrid objects per source file.
     current_o, matching_o, equivalent_o = [], [], []
+    manifest_files, src_files = [], []
     for src_rel, manifest, profile in _sources(version):
+        src_files.append(src_rel)
+        if manifest:
+            manifest_files.append(manifest)
         rel = Path(src_rel).relative_to("src").with_suffix(".o").as_posix()
         cur = f"build/{version}/current/{rel}"
         current_o.append(cur)
@@ -193,13 +201,25 @@ def emit_ninja(version="pal103", out_path=None):
                    variables=[("set", link_set)])
     L.append("")
 
+    # Promotion verification: every `matching` claim re-derived from bytes,
+    # ending in the matching-image SHA gate.
+    verify_json = f"build/{version}/verify_results.json"
+    L += _edge("verify_promoted", [verify_json],
+               implicit=[*manifest_files, *src_files, *expected_o,
+                         data_stamp, fallback_stamp, profiles,
+                         "tools/verify_promoted.py", *headers])
+    L.append("")
+
     for name, outs in (("expected", expected_o), ("current", current_o),
                        ("matching", matching_o), ("equivalent", equivalent_o),
                        ("fallback", [fallback_stamp]),
                        ("data", [data_stamp]),
                        ("verify-loaded", [f"build/{version}/image/matching.bin"]),
                        ("image-equivalent",
-                        [f"build/{version}/image/equivalent.bin"])):
+                        [f"build/{version}/image/equivalent.bin"]),
+                       ("verify-promoted", [verify_json]),
+                       ("check", ["current", "verify-loaded",
+                                  "verify-promoted"])):
         if outs:
             L += _edge("phony", [name], outs)
     L.append("default expected current matching")

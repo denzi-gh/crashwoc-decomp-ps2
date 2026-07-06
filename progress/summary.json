@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "version": "pal103",
+  "commit": "197872e62c210d9640f5c1a38076e527455f40b1",
+  "generated": "2026-07-06T20:39:45Z",
+  "profiles_fingerprint": "ac86bdec7b8cfc2ad0c145ab81bf67d3f187858ddb095b22d5d3f6044ba3a2d8",
+  "code": {
+    "total_bytes": 1578288,
+    "matching_bytes": 16
+  },
+  "functions": {
+    "total": 3751,
+    "matching": 2,
+    "equivalent": 0,
+    "asm": 3749
+  },
+  "data": {
+    "total_bytes": 4665692,
+    "attributed_bytes": 3521418,
+    "exact_source_bytes": 0
+  },
+  "units": {
+    "total": 267,
+    "text_units": 247,
+    "complete": 0
+  },
+  "vu": {
+    "source_percent": 0.0
+  },
+  "dvp": {
+    "source_percent": 0.0
+  },
+  "image": {
+    "loaded_exact": true,
+    "packaged_exact": false,
+    "pure_relink_exact": false
+  }
+}
