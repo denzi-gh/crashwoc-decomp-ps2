@@ -122,6 +122,11 @@ def emit_ninja(version="pal103", out_path=None):
         f" --set $set -o $out --version {version}",
         "  description = hybrid ($set) $out",
         "",
+        "rule data_objects",
+        f"  command = python tools/gen_data_objects.py --version {version}"
+        " && touch $out",
+        "  description = build expected data objects from the data map",
+        "",
         "rule link_image",
         f"  command = python tools/link_image.py --set $set"
         f" --version {version}",
@@ -171,19 +176,27 @@ def emit_ninja(version="pal103", out_path=None):
                                   ("set", link_set)])
     L.append("")
 
+    # Expected data objects (per-range incbin slices from the data map).
+    data_stamp = f"build/{version}/data_objects.stamp"
+    L += _edge("data_objects", [data_stamp],
+               implicit=[f"config/{version}/data_map.toml",
+                         "tools/gen_data_objects.py"])
+    L.append("")
+
     # Full-image links: the matching image is the byte-identity gate
     # (`ninja verify-loaded`); the equivalent image only has to link.
     for link_set, objs in (("matching", matching_o),
                            ("equivalent", equivalent_o)):
         L += _edge("link_image", [f"build/{version}/image/{link_set}.bin"],
-                   implicit=[*expected_o, *objs, "tools/link_image.py",
-                             "tools/split_text.py"],
+                   implicit=[*expected_o, *objs, data_stamp,
+                             "tools/link_image.py"],
                    variables=[("set", link_set)])
     L.append("")
 
     for name, outs in (("expected", expected_o), ("current", current_o),
                        ("matching", matching_o), ("equivalent", equivalent_o),
                        ("fallback", [fallback_stamp]),
+                       ("data", [data_stamp]),
                        ("verify-loaded", [f"build/{version}/image/matching.bin"]),
                        ("image-equivalent",
                         [f"build/{version}/image/equivalent.bin"])):

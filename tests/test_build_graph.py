@@ -67,7 +67,7 @@ class TestEmitNinja(unittest.TestCase):
         self.assertEqual(sets, {"matching", "equivalent"})
 
     def test_phony_targets_and_default(self):
-        for name in ("expected", "current", "matching", "fallback",
+        for name in ("expected", "current", "matching", "fallback", "data",
                      "verify-loaded", "image-equivalent"):
             self.assertIn(f"build {name}: phony", self.text)
         self.assertIn("default expected current matching", self.lines)

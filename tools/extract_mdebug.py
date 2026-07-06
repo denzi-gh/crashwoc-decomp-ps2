@@ -51,6 +51,18 @@ PDR_FMT = "<Iiiiiiiiihhiii"        # adr..cbLineOffset, 52 bytes
 ST_PROC = 6
 ST_STATIC_PROC = 14
 ST_GLOBAL = 1
+ST_STATIC = 2
+
+# Storage classes that place a symbol in a data section (MIPS ECOFF).
+SC_DATA_CLASSES = {
+    2,   # scData
+    3,   # scBss
+    13,  # scSData
+    14,  # scSBss
+    15,  # scRData
+    17,  # scCommon   (resolved to a .bss address in a linked image)
+    18,  # scSCommon
+}
 
 # MIPS $sp / $ra, used to render the frame/return registers legibly.
 REG_NAMES = {29: "sp", 30: "fp", 31: "ra", 0: "zero"}
@@ -162,12 +174,35 @@ class MDebug:
             }
 
     def externals(self):
-        """Yield (name, value, st, sc) per external symbol, in table order."""
+        """Yield (name, value, st, sc, ifd) per external, in table order.
+
+        The EXTR head is `short reserved; short ifd;` (GNU ECOFF layout,
+        little-endian) -- `ifd` is the file descriptor (unit) that DEFINES the
+        symbol, which is what attributes global data to translation units.
+        The layout guess is validated empirically by extract_data_map.py:
+        every procedure external's ifd must equal the procedure's unit from
+        the PDR table.
+        """
         for i in range(self.h["iextMax"]):
-            _flags_ifd, iss, value, bits = struct.unpack_from(
-                "<IiiI", self.data, self.h["cbExtOffset"] + i * EXTR_SIZE)
+            _reserved, ifd, iss, value, bits = struct.unpack_from(
+                "<hhiiI", self.data, self.h["cbExtOffset"] + i * EXTR_SIZE)
             name = self.cstr(self.h["cbSsExtOffset"] + iss) if iss != -1 else ""
-            yield name, value & 0xFFFFFFFF, bits & 0x3f, (bits >> 6) & 0x1f
+            yield name, value & 0xFFFFFFFF, bits & 0x3f, (bits >> 6) & 0x1f, ifd
+
+    def local_data_symbols(self, unit):
+        """Yield (name, address, sc) for `unit`'s static data symbols.
+
+        Walks the unit's local SYMR run for stStatic entries whose storage
+        class is a data section; their `value` is the absolute address in the
+        linked image. This attributes file-local data (statics) the external
+        table can never see.
+        """
+        for i in range(unit["sym_count"]):
+            iss, value, st, sc = self.local_symbol(unit["sym_first"] + i)
+            if st != ST_STATIC or sc not in SC_DATA_CLASSES or iss == -1:
+                continue
+            name = self.cstr(self.h["cbSsOffset"] + unit["ss_base"] + iss)
+            yield name, value & 0xFFFFFFFF, sc
 
 
 # --------------------------------------------------------------------------- #
@@ -286,7 +321,7 @@ def render_symbol_addrs(md, sections_spec, provenance):
             if f["name"]:
                 symbols[(f["address"], f["name"])] = "func"
 
-    for name, value, st, sc in md.externals():
+    for name, value, st, sc, _ifd in md.externals():
         if not name or st in (ST_PROC, ST_STATIC_PROC):
             continue                            # procs already covered above
         if st != ST_GLOBAL:

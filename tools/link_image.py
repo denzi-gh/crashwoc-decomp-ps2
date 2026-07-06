@@ -12,22 +12,23 @@ picks one object, in retail address order:
   * every other unit contributes its expected object
     (expected/<version>/NNN_<name>.o -- the retail slice reassembled).
 
-The six non-.text loaded sections ride along as `.incbin` objects exactly as
-in the baselines, and the result is objcopy'd into the loaded image.
+The data sections are linked from the PER-RANGE expected data objects that
+tools/gen_data_objects.py builds from config/<version>/data_map.toml (one
+object per owning unit, one per unassigned gap, the 0x80 orphan included);
+the link script places every range back at its exact address, so the data
+half of the image is retail-byte-exact by construction. Only `.vutext`
+still rides as a whole-section incbin (VU microcode, no attribution yet).
 
 Two sets, two gates:
 
   * --set matching   must be byte-identical to retail: the SHA-256 of the
                      linked image must equal the retail PT_LOAD bytes.
-                     This is `ninja verify-loaded` -- proof that the
-                     decompiled C really is in the canonical image and the
-                     image is still exact.
+                     This is `ninja verify-loaded`.
   * --set equivalent must link (reviewed-equivalent C included); the SHA is
-                     reported but not required. This is the modding build:
-                     the ELF PCSX2 boots for patches that diverge from
-                     retail. NOTE while externals resolve to fixed retail
-                     addresses (absolute defsyms), modified code must not
-                     change function sizes; a relocatable link is a later
+                     reported but not required. This is the modding build.
+                     NOTE while externals resolve to fixed retail addresses
+                     (absolute defsyms), modified code must not change
+                     function sizes; a relocatable link is a later
                      milestone.
 
 Needs the PS2 binutils: run in the Containerfile image (from the host:
@@ -49,11 +50,19 @@ from declib.toolchain import AS, LD, NM, OBJCOPY, Reporter, h, tool_path
 from declib.asmtext import load_symbol_addrs, resolve
 from declib.target import derive_tiling, load_target, parse_linker_script
 from declib.tu import load_tu_runs, load_units
+from gen_data_objects import (NOBITS_SECTIONS, load_map, object_groups,
+                              section_label)
 from gen_expected_s import unit_stem
-from split_text import (build_link_script, nm_defined_undefined,
-                        write_incbin_objects)
+from split_text import nm_defined_undefined
 
 LINK_SETS = ("matching", "equivalent")
+_GP = 0x00634970                  # config/pal103/sections.json; linker.ld
+
+# The loaded-image pieces this script knows how to place. If the tiling ever
+# discovers anything else (a new orphan run), fail loudly instead of
+# silently dropping bytes.
+_TILING_NAMES = {"text", "vutext", "orphan", "data", "rodata", "lit4",
+                 "sdata"}
 
 
 def manifest_units(version):
@@ -86,6 +95,39 @@ def select_text_objects(version, link_set):
     return objs
 
 
+def build_script(text_addr, text_objs, vutext_vaddr, map_ranges, nobits,
+                 defsyms):
+    """Link script: .text from TU objects, data sections from map ranges."""
+    L = ["SECTIONS", "{", f"    . = 0x{text_addr:08X};",
+         "    .text : SUBALIGN(1)", "    {"]
+    L += [f"        {p.as_posix()}(.text)" for p in text_objs]
+    L.append("    }")
+    L.append(f"    . = 0x{vutext_vaddr:08X};")
+    L.append("    .vutext : { *(.split.vutext) }")
+
+    by_sec = {}
+    for r in map_ranges:
+        by_sec.setdefault(r["section"], []).append(r)
+    for sec, rs in sorted(by_sec.items(), key=lambda kv: kv[1][0]["start"]):
+        rs.sort(key=lambda r: r["start"])
+        L.append(f"    . = 0x{rs[0]['start']:08X};")
+        L.append(f"    .{sec.lstrip('.')} : SUBALIGN(1)")
+        L.append("    {")
+        L += [f"        *(.split.{section_label(r)})" for r in rs]
+        L.append("    }")
+
+    L.append("    . = 0x00633000;")
+    L.append(f"    .sbss (NOLOAD) : {{ . += 0x{nobits['sbss']:06X}; }}")
+    L.append("    . = 0x00633400;")
+    L.append(f"    .bss  (NOLOAD) : {{ . += 0x{nobits['bss']:06X}; }}")
+    L.append(f"    _gp = 0x{_GP:08X};")
+    L.append("    /DISCARD/ : { *(.pdr) *(.reginfo) *(.mdebug*) *(.comment) "
+             "*(.gnu.attributes) }")
+    L.append("}")
+    L += [f"{n} = 0x{a:08X};" for n, a in sorted(defsyms.items())]
+    return "\n".join(L) + "\n"
+
+
 def link_image(reporter, version, link_set):
     """Link the image, compare its SHA to retail; returns (sha_ok, out_bin)."""
     as_bin, ld_bin = tool_path(AS), tool_path(LD)
@@ -98,43 +140,62 @@ def link_image(reporter, version, link_set):
     elf, sections_spec, pt_load = load_target(version)
     text_addr = h(next(s for s in sections_spec["sections"]
                        if s["name"] == ".text")["addr"])
-    incbin_objects, _gaps = derive_tiling(elf, sections_spec, pt_load)
+    tiling, _gaps = derive_tiling(elf, sections_spec, pt_load)
+    names = {o["name"] for o in tiling}
+    if names != _TILING_NAMES:
+        reporter.result("Tiling matches the modeled sections", False,
+                        f"unexpected pieces: {sorted(names ^ _TILING_NAMES)}")
+        return None, None
+    vutext = next(o for o in tiling if o["name"] == "vutext")
     _addrs, nobits = parse_linker_script((ROOT / "linker.ld").read_text())
 
     text_objs = select_text_objects(version, link_set)
     hybrid_count = sum(1 for _u, p in text_objs
                        if p.is_relative_to(ROOT / "build"))
+    map_ranges = [r for r in load_map(version)
+                  if r["section"] not in NOBITS_SECTIONS]
+    data_dir = ROOT / "expected" / version / "data"
+    data_objs = [data_dir / f"{stem}.o"
+                 for stem, _e in object_groups(map_ranges)]
+
     missing = [p.relative_to(ROOT).as_posix()
-               for _u, p in text_objs if not p.is_file()]
-    reporter.result("All .text objects present", not missing,
+               for p in [p for _u, p in text_objs] + data_objs
+               if not p.is_file()]
+    reporter.result("All linked objects present", not missing,
                     None if not missing else
-                    f"{len(missing)} missing (run `ninja expected {link_set}`)"
-                    f", e.g. {missing[:3]}")
+                    f"{len(missing)} missing (run `ninja expected data "
+                    f"{link_set}`), e.g. {missing[:3]}")
     if missing:
         return None, None
-    print(f"  {len(text_objs)} .text objects "
-          f"({hybrid_count} hybrid from C, {len(text_objs) - hybrid_count} "
-          f"expected)")
+    print(f"  {len(text_objs)} .text objects ({hybrid_count} hybrid from C, "
+          f"{len(text_objs) - hybrid_count} expected)")
+    print(f"  {len(data_objs)} data objects over {len(map_ranges)} map ranges")
 
     out_dir = ROOT / "build" / version / "image"
     out_dir.mkdir(parents=True, exist_ok=True)
-    write_incbin_objects(incbin_objects, elf, out_dir)
+
+    # .vutext still rides as one incbin (VU microcode, unattributed).
+    vutext_bin = out_dir / "vutext.bin"
+    vutext_bin.write_bytes(
+        elf[vutext["offset"]:vutext["offset"] + vutext["size"]])
+    (out_dir / "vutext.s").write_text(
+        "/* Generated by tools/link_image.py -- do not edit, do not commit "
+        "(game-derived). */\n"
+        '\t.section .split.vutext, "a", @progbits\n'
+        f'\t.incbin "{vutext_bin.as_posix()}"\n')
 
     defined, undefined = set(), set()
     try:
-        for obj in incbin_objects:
-            if obj["name"] == "text":
-                continue
-            subprocess.run([as_bin, "-EL", "-march=r5900",
-                            "-o", str(out_dir / f"{obj['name']}.o"),
-                            str(out_dir / f"{obj['name']}.s")],
-                           check=True, capture_output=True, text=True)
+        subprocess.run([as_bin, "-EL", "-march=r5900",
+                        "-o", str(out_dir / "vutext.o"),
+                        str(out_dir / "vutext.s")],
+                       check=True, capture_output=True, text=True)
         for _unit, obj in text_objs:
             d, u = nm_defined_undefined(nm_bin, obj)
             defined |= d
             undefined |= u
     except subprocess.CalledProcessError as exc:
-        reporter.result("Assemble incbin sections", False,
+        reporter.result("Assemble vutext incbin", False,
                         (exc.stderr or "as failed").strip().splitlines()[0])
         return None, None
 
@@ -146,21 +207,20 @@ def link_image(reporter, version, link_set):
     if unresolved:
         return None, None
 
-    script = build_link_script(text_addr, [p for _u, p in text_objs],
-                               incbin_objects, nobits, defsyms)
+    script = build_script(text_addr, [p for _u, p in text_objs],
+                          vutext["vaddr"], map_ranges, nobits, defsyms)
     ld_script = out_dir / f"{link_set}.ld"
     ld_script.write_text(script)
     elf_out = out_dir / f"{link_set}.elf"
     bin_out = out_dir / f"{link_set}.bin"
-    incbin_o = [str(out_dir / f"{o['name']}.o")
-                for o in incbin_objects if o["name"] != "text"]
-    sections = ["--only-section=.text"] + [
-        f"--only-section=.{o['name']}"
-        for o in incbin_objects if o["name"] != "text"]
+    sections = ["--only-section=.text", "--only-section=.vutext"] + [
+        f"--only-section=.{s.lstrip('.')}"
+        for s in dict.fromkeys(r["section"] for r in map_ranges)]
     try:
         subprocess.run([ld_bin, "-EL", "-T", str(ld_script), "-o",
                         str(elf_out), *[str(p) for _u, p in text_objs],
-                        *incbin_o],
+                        str(out_dir / "vutext.o"),
+                        *[str(p) for p in data_objs]],
                        check=True, capture_output=True, text=True)
         subprocess.run([objcopy_bin, "-O", "binary", *sections,
                         str(elf_out), str(bin_out)],
