@@ -30,7 +30,6 @@ Exit status is 0 only if every function present in src/ matches.
 import argparse
 import json
 import re
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -38,6 +37,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
+from cc import compile_c
 from declib.toolchain import AS, LD, NM, EEGCC, Reporter, h, tool_path
 from declib.asmtext import disambiguate, load_symbol_addrs, resolve
 from declib.target import load_target
@@ -90,25 +90,6 @@ def unit_slice(reporter, version):
     body_start = prologue_end(lines)
     chunks = split_body(lines, body_start, [a for _u, a in runs[1:]])
     return lines[:body_start], {runs[i][0]: chunks[i] for i in range(len(runs))}
-
-
-def gcc_flags():
-    lock = json.loads((ROOT / "toolchain.lock.json").read_text())
-    return lock["components"]["ee-gcc"]["default_flags"]
-
-
-def compile_c(src, out_o):
-    """Compile with EE GCC. The 32-bit compiler faults stat'ing large-inode
-    bind-mounted files, so build in a native temp dir and copy the object out."""
-    with tempfile.TemporaryDirectory() as tmp:
-        tmp = Path(tmp)
-        shutil.copy(src, tmp / src.name)
-        obj = tmp / "out.o"
-        subprocess.run([str(EEGCC), *gcc_flags(), "-c",
-                        "-o", str(obj), str(tmp / src.name)],
-                       check=True, capture_output=True, text=True, cwd=tmp)
-        out_o.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy(obj, out_o)
 
 
 def verify_unit(reporter, src, funcs, elf, delta, prologue, chunk, unit_name,
