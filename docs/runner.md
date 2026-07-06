@@ -19,8 +19,10 @@ whitelist-sanitized report and the small committed progress baseline.
 - A legally obtained copy of the PAL v1.03 game ELF (`SLES_503.86`).
 
 The workflow's build commands all go through `python tools/dispatch.py`,
-which starts and execs into the long-lived `crashwoc-dev` container — the
-same mechanism used for local development, on both Windows and Linux hosts.
+which starts and execs into a long-lived dev container — the same mechanism
+used for local development, on both Windows and Linux hosts. The container
+name embeds a fingerprint of the checkout path, so the runner's workspace
+and a developer working copy on the same machine never collide.
 (A Linux machine with the toolchain installed natively can set
 `CRASHWOC_DIRECT=1` to skip the container.)
 

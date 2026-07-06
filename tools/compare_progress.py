@@ -192,7 +192,6 @@ def main():
 
     if args.write:
         args.against.parent.mkdir(parents=True, exist_ok=True)
-        args.against.write_text(json.dumps(new, indent=2) + "\n")
         changes_out = ROOT / "build" / args.version / "changes.json"
         changes_out.write_text(json.dumps(changes, indent=2) + "\n")
         def rel(path):
@@ -200,7 +199,15 @@ def main():
                 return path.resolve().relative_to(ROOT).as_posix()
             except ValueError:
                 return path.as_posix()
-        print(f"wrote {rel(args.against)} and {rel(changes_out)}")
+        if changes:
+            # Only meaningful (non-volatile) changes rewrite the baseline:
+            # commit/timestamp churn alone must not hand CI a modified file
+            # to bot-commit on every nightly run.
+            args.against.write_text(json.dumps(new, indent=2) + "\n")
+            print(f"wrote {rel(args.against)} and {rel(changes_out)}")
+        else:
+            print(f"baseline unchanged (volatile fields only); "
+                  f"wrote {rel(changes_out)}")
 
     if regressions:
         print("\nPROGRESS REGRESSION:")

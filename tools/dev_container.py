@@ -24,6 +24,7 @@ If the repository is moved, `stop` then `start` so the bind mount points at
 the new location.
 """
 import argparse
+import hashlib
 import os
 import shutil
 import subprocess
@@ -31,7 +32,13 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-CONTAINER = "crashwoc-dev"
+# The name carries a fingerprint of THIS checkout's location: two checkouts
+# on one machine (e.g. the dev tree and the CI runner's workspace) must
+# never exec into each other's container, because the bind mount points at
+# whichever repo created it first. Override with CRASHWOC_CONTAINER.
+CONTAINER = os.environ.get("CRASHWOC_CONTAINER") or (
+    "crashwoc-dev-"
+    + hashlib.sha256(str(ROOT).casefold().encode()).hexdigest()[:8])
 IMAGE = "crashwoc-decomp"
 
 
