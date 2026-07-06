@@ -212,10 +212,16 @@ def emit_ninja(version="pal103", out_path=None):
     L.append("")
 
     # Promotion verification: every `matching` claim re-derived from bytes,
-    # ending in the matching-image SHA gate.
+    # ending in the matching-image SHA gate. The verifier REWRITES the
+    # current/matching objects and the matching image as part of
+    # re-deriving them, so those edges are declared as inputs here purely
+    # to serialize: ninja must never run this edge in parallel with
+    # another writer of the same files.
     verify_json = f"build/{version}/verify_results.json"
     L += _edge("verify_promoted", [verify_json],
                implicit=[*manifest_files, *src_files, *expected_o,
+                         *current_o, *matching_o,
+                         f"build/{version}/image/matching.bin",
                          data_stamp, fallback_stamp, profiles,
                          "tools/verify_promoted.py", *headers])
     L.append("")

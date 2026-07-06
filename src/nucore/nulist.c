@@ -11,10 +11,43 @@
  * byte-identical to retail.
  */
 
+typedef struct NuListNode {
+    struct NuListNode *next;
+    struct NuListNode *prev;
+} NuListNode;
+
 typedef struct NuList {
-    void *head;
-    void *tail;
+    NuListNode *head;
+    NuListNode *tail;
 } NuList;
+
+/* WIP (state = "asm" in the manifest): scored by objdiff/report only; the
+ * matching build still uses the retail bytes until promoted. */
+void NuListAppend(NuList *list, NuListNode *node) {
+    node->next = 0;
+    node->prev = list->tail;
+    if (list->tail) {
+        list->tail->next = node;
+    }
+    list->tail = node;
+    if (!list->head) {
+        list->head = node;
+    }
+}
+
+/* WIP (state = "asm"). */
+void NuListRemove(NuList *list, NuListNode *node) {
+    if (node->next) {
+        node->next->prev = node->prev;
+    } else {
+        list->tail = node->prev;
+    }
+    if (node->prev) {
+        node->prev->next = node->next;
+    } else {
+        list->head = node->next;
+    }
+}
 
 void *NuListGetHead(NuList *list) {
     return list->head;
