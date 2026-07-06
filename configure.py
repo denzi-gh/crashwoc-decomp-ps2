@@ -31,6 +31,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "tools"))
 from gen_ninja import emit_ninja
+from gen_objdiff import emit_objdiff
 
 SPLAT_YAML = ROOT / "splat.yaml"
 LOCK = ROOT / "toolchain.lock.json"
@@ -183,6 +184,7 @@ def main():
         if not determinism_check():
             return 1
         emit_ninja()
+        emit_objdiff()
         return 0
 
     print("Splitting...")
@@ -190,8 +192,9 @@ def main():
         print("\nsplit failed.")
         return 1
     emit_ninja()
-    print("\nSplit complete. Generated asm/, build/ and build.ninja "
-          "(all gitignored).")
+    emit_objdiff()
+    print("\nSplit complete. Generated asm/, build/, build.ninja and "
+          "objdiff.json (all gitignored).")
     return 0
 
 

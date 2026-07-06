@@ -192,6 +192,12 @@ def main():
     except ValueError:
         pass
     print(f"wrote {Path(rel).as_posix()} (gitignored)")
+    if not args.output:
+        # Regenerating the graph regenerates the objdiff config with it: the
+        # two must agree on every object path.
+        from gen_objdiff import emit_objdiff
+        emit_objdiff(args.version)
+        print("wrote objdiff.json (gitignored)")
     if not (ROOT / "asm" / "text.s").is_file():
         print("note: asm/text.s missing -- run `python configure.py` before "
               "building expected/fallback targets.")

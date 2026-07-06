@@ -5,6 +5,7 @@ manifests) so it can be exercised against the real repo config on any host --
 no game-derived files, no toolchain. dispatch path translation is a pure
 function.
 """
+import json
 import re
 import sys
 import tempfile
@@ -15,6 +16,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 import dispatch
 from gen_ninja import _esc, emit_ninja
+from gen_objdiff import CATEGORIES, classify, emit_objdiff
 from declib.tu import load_tu_runs
 
 
@@ -76,6 +78,76 @@ class TestEmitNinja(unittest.TestCase):
 
     def test_escaping(self):
         self.assertEqual(_esc("a b:c$d"), "a$ b$:c$$d")
+
+
+class TestClassify(unittest.TestCase):
+    CASES = [
+        (r"..\nu2crash.ps2\nucore\nulist.c", "engine", "nucore/nulist"),
+        ("../nu2crash.ps2/nu3d/nugsys.c", "engine", "nu3d/nugsys"),
+        (r".\main.c", "game", "game/main"),
+        ("vu/vu.c", "game", "game/vu"),
+        (r"C:\DOCUME~1\andy\LOCALS~1\Temp\ccAlaaaa.i", "game",
+         "game/ccAlaaaa"),
+        ("/usr/local/sce/ee/lib/crt0.s", "sdk", "sdk/sce/crt0"),
+        ("../../../../../src/newlib/libc/string/strcat.c", "sdk",
+         "sdk/newlib/libc/string/strcat"),
+        ("../../src/gcc/libgcc2.c", "sdk", "sdk/gcc/libgcc2"),
+        ("dp-bit.c", "sdk", "sdk/gcc/dp-bit"),
+        ("graphdev.c", "sdk", "sdk/sce/graphdev"),
+        ("../include/syscall.h", "sdk", "sdk/sce/syscall"),
+    ]
+
+    def test_representative_paths(self):
+        for path, category, name in self.CASES:
+            self.assertEqual(classify(path), (category, name), path)
+
+
+class TestEmitObjdiff(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.tmp = tempfile.TemporaryDirectory()
+        path = Path(cls.tmp.name) / "objdiff.json"
+        emit_objdiff("pal103", path)
+        cls.cfg = json.loads(path.read_text())
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.tmp.cleanup()
+
+    def test_every_text_unit_listed_once(self):
+        names = [u["name"] for u in self.cfg["units"]]
+        self.assertEqual(len(names), len(load_tu_runs()))
+        self.assertEqual(len(names), len(set(names)))
+
+    def test_target_always_base_only_with_source(self):
+        for u in self.cfg["units"]:
+            self.assertTrue(u["target_path"].startswith("expected/pal103/"))
+            src = ROOT / u["metadata"]["source_path"]
+            if src.is_file():
+                self.assertEqual(u["base_path"],
+                                 f"build/pal103/current/{u['name']}.o")
+            else:
+                self.assertNotIn("base_path", u)
+
+    def test_units_use_known_categories(self):
+        ids = {c["id"] for c in CATEGORIES}
+        self.assertEqual(ids, {c["id"]
+                               for c in self.cfg["progress_categories"]})
+        for u in self.cfg["units"]:
+            cats = u["metadata"]["progress_categories"]
+            self.assertEqual(len(cats), 1)
+            self.assertIn(cats[0], ids)
+
+    def test_build_command_is_the_dispatcher(self):
+        self.assertEqual(self.cfg["custom_make"], "python")
+        self.assertEqual(self.cfg["custom_args"],
+                         ["tools/dispatch.py", "ninja"])
+        self.assertTrue(self.cfg["build_target"])
+        self.assertIn("src/**/*.c", self.cfg["watch_patterns"])
+
+    def test_paths_are_relative_posix(self):
+        text = json.dumps(self.cfg)
+        self.assertNotIn("\\", text)
 
 
 class TestDispatchTranslation(unittest.TestCase):

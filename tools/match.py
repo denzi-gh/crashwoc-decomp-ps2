@@ -13,8 +13,8 @@ This is the first tool in the matching loop proper. For every `.c` under src/ it
      external symbol exactly as the reconstruction does) and compares each
      function to the retail bytes. A function matches when its bytes are
      identical.
-  4. Writes objdiff.json so the same target/base object pairs can be opened in
-     objdiff, and prints a progress report.
+  4. Prints a progress report. (objdiff.json is owned by tools/gen_objdiff.py,
+     which lists all 247 units program-wide; this tool no longer writes it.)
 
 Needs the EE GCC and the PS2 binutils together, so it runs in the Containerfile
 image (trixie glibc for the binutils, i386 multilib for the 32-bit compiler).
@@ -28,7 +28,6 @@ toolchain); this file is the CLI.
 Exit status is 0 only if every function present in src/ matches.
 """
 import argparse
-import json
 import re
 import subprocess
 import sys
@@ -149,20 +148,6 @@ def verify_unit(reporter, src, funcs, elf, delta, prologue, chunk, unit_name,
     return {"funcs": results, "matched": matched}, (expected_o, base_o)
 
 
-def write_objdiff(units):
-    """Emit objdiff.json pairing each unit's expected (target) and base object."""
-    data = {
-        "min_version": "2.0.0",
-        "units": [
-            {"name": name,
-             "target_path": str(t.relative_to(ROOT).as_posix()),
-             "base_path": str(b.relative_to(ROOT).as_posix()),
-             "metadata": {"source_path": f"src/{name}.c"}}
-            for name, t, b in units],
-    }
-    (ROOT / "objdiff.json").write_text(json.dumps(data, indent=2) + "\n")
-
-
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--version", default="pal103")
@@ -186,7 +171,7 @@ def main():
     nm_bin, as_bin = tool_path(NM), tool_path(AS)
     print(f"\nMatching progress: {args.version}\n")
 
-    objdiff_units, total_matched, total_bytes = [], 0, 0
+    total_matched, total_bytes = 0, 0
     prog_funcs, prog_matched_funcs = 0, 0
     for src in src_files:
         rel = src.relative_to(ROOT / "src").with_suffix("").as_posix()
@@ -194,9 +179,8 @@ def main():
         # Every function in a src file is expected to belong to one unit.
         unit_idx = _unit_of(src, funcs, units)
         chunk = chunks.get(unit_idx, [])
-        res, (tpath, bpath) = verify_unit(
+        res, _paths = verify_unit(
             reporter, src, funcs, elf, delta, prologue, chunk, rel, nm_bin, as_bin)
-        objdiff_units.append((rel, tpath, bpath))
         for r in res["funcs"]:
             prog_funcs += 1
             if r["match"]:
@@ -204,13 +188,10 @@ def main():
                 total_bytes += r["size"]
         total_matched += res["matched"]
 
-    write_objdiff(objdiff_units)
-
     print(f"\n{'Functions matched:':<{LABEL_WIDTH}} {prog_matched_funcs}/{prog_funcs}")
     print(f"{'Bytes matched:':<{LABEL_WIDTH}} 0x{total_bytes:X} of 0x{text_size:X} "
           f".text ({100.0 * total_bytes / text_size:.4f}%)")
     print(f"{'Total functions in program:':<{LABEL_WIDTH}} {total_funcs}")
-    print("objdiff.json written.")
 
     if reporter.failed:
         print("\nSome functions do not match:")
