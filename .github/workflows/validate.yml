@@ -1,10 +1,11 @@
 # Public validation: everything that can be checked without game files or the
 # matching toolchain. Runs on every push and pull request on a stock runner.
 #
-# The protected, game-file-backed verification (expected objects, matching
-# build, byte gates) is a separate workflow on a self-hosted runner; this one
-# guards structure: status manifests, registries, tests, and the invariant
-# that nothing game-derived is ever tracked.
+# The game-file-backed verification (expected objects, matching build, byte
+# gates) is the separate `matching` workflow, which runs inside the private
+# build image (docs/ci.md); this one guards structure: status manifests,
+# registries, tests, and the invariant that nothing game-derived is ever
+# tracked in THIS repository.
 
 name: validate
 
@@ -51,17 +52,6 @@ jobs:
                   print(f"FAIL {p}: {exc}"); failed = True
           sys.exit(1 if failed else 0)
           EOF
-
-      - name: Protected workflow never triggers on pull requests
-        # matching.yml runs on a self-hosted runner holding game files; a
-        # pull_request trigger would let fork PRs reach that machine.
-        run: |
-          # Strip comments first: the workflow's own security comment names
-          # the forbidden trigger, and must not trip the guard itself.
-          if sed 's/#.*//' .github/workflows/matching.yml | grep -q "pull_request"; then
-            echo "matching.yml must never have a pull_request trigger"; exit 1
-          fi
-          echo "OK: matching.yml is push/schedule/dispatch only."
 
       - name: No game-derived content tracked
         run: |

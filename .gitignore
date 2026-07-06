@@ -23,6 +23,3 @@ compile_commands.json
 # Python bytecode cache
 __pycache__/
 *.pyc
-
-# Self-hosted CI runner installed alongside the repo (docs/runner.md)
-actions-runner

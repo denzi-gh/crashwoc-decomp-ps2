@@ -1,0 +1,45 @@
+# Publish the public toolchain base image (Containerfile) to GHCR.
+#
+# The image contains only the build ENVIRONMENT -- Debian, Python, splat,
+# ninja, i386 runtime libs. No game files and no matching toolchain (those
+# are installed at run time by tools/setup_toolchain.py). The private
+# crashwoc-decomp-ps2-build repository layers the game files on top of
+# this image for CI; local development builds the same Containerfile
+# directly. See docs/ci.md.
+
+name: publish-image
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - Containerfile
+      - requirements.txt
+      - .github/workflows/publish-image.yml
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Containerfile
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/crashwoc-decomp:latest

@@ -1,96 +1,104 @@
-# Protected verification: the full byte-gated pipeline on a self-hosted
-# runner that holds the game files (docs/runner.md). Game bytes never
-# transit GitHub -- the only things that leave the runner are the sanitized
-# report (whitelist-filtered by tools/sanitize_report.py) and the tiny
-# committed progress baseline.
+# Byte-gated verification on GitHub-hosted runners, dtk-template style
+# (docs/ci.md). The job runs inside a PRIVATE container image from the
+# crashwoc-decomp-ps2-build repository: the public toolchain image with the
+# retail game files baked in at /orig. Pulling it needs only GITHUB_TOKEN,
+# authorized by the package's "Manage Actions access" Read grant for this
+# repository.
 #
-# SECURITY INVARIANT: this workflow must NEVER gain a pull_request trigger.
-# It executes on a private machine; only pushes to main, the nightly
-# schedule, and manual dispatch may reach it. Fork PRs therefore never run
-# here (they only get validate.yml on GitHub-hosted runners).
+# Nothing game-derived leaves a run: the only uploads are the sanitized
+# report (whitelist-filtered by tools/sanitize_report.py) and, on main, the
+# tiny committed progress baseline.
 
 name: matching
 
 on:
   push:
     branches: [main]
+  pull_request:
   schedule:
     - cron: "17 3 * * *"
   workflow_dispatch:
 
-# One run at a time: the runner keeps incremental state (build/, compiler/)
-# and the dev container is a singleton.
+# Serialize per ref: main runs queue behind each other; PR runs are
+# independent of main and of other PRs.
 concurrency:
-  group: matching
+  group: matching-${{ github.ref }}
   cancel-in-progress: false
 
 permissions:
-  contents: write # bot-commit of progress/summary.json
+  contents: write # bot-commit of progress/summary.json (main only)
+  packages: read # pull the private build image
 
 jobs:
   matching:
-    runs-on: [self-hosted, crashwoc]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/denzi-gh/crashwoc-decomp-ps2-build:main
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     defaults:
       run:
         shell: bash
     steps:
-      - name: Checkout (keep runner-local game files and caches)
+      - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Git config
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Copy game files from the image
+        run: cp -a /orig .
+
+      - name: Cache locked toolchain
+        uses: actions/cache@v4
         with:
-          # orig/, compiler/, tools/download and build/ are gitignored
-          # runner state; a clean checkout would delete them every run.
-          clean: false
+          path: |
+            tools/download
+            compiler
+          key: toolchain-${{ hashFiles('toolchain.lock.json') }}
 
-      - name: Game files present
-        run: |
-          if [ ! -f orig/pal103/SLES_503.86 ]; then
-            if [ -z "${CRASHWOC_ORIG_DIR:-}" ]; then
-              echo "orig/pal103/SLES_503.86 missing and CRASHWOC_ORIG_DIR" \
-                   "not set on the runner (see docs/runner.md)" >&2
-              exit 1
-            fi
-            mkdir -p orig/pal103
-            cp -r "$CRASHWOC_ORIG_DIR"/. orig/pal103/
-          fi
-
-      - name: Build container image
-        run: docker build -f Containerfile -t crashwoc-decomp .
-
-      - name: Recreate dev container on the fresh image
-        run: |
-          python tools/dev_container.py stop
-          python tools/dev_container.py start
+      - name: Cache build tree
+        uses: actions/cache@v4
+        with:
+          path: |
+            build
+            expected
+            .ninja_deps
+            .ninja_log
+          key: build-${{ github.sha }}
+          restore-keys: build-
 
       - name: Install and fingerprint the locked toolchain
         run: |
-          python tools/dispatch.py python tools/setup_toolchain.py --download
-          python tools/dispatch.py python tools/fingerprint_compiler.py --component ee-gcc
-          python tools/dispatch.py python tools/fingerprint_compiler.py --component ps2-binutils
-          python tools/dispatch.py python tools/fingerprint_compiler.py --component objdiff
+          python tools/setup_toolchain.py --download
+          python tools/fingerprint_compiler.py --component ee-gcc
+          python tools/fingerprint_compiler.py --component ps2-binutils
+          python tools/fingerprint_compiler.py --component objdiff
 
       - name: Verify target binary
-        run: python tools/dispatch.py python tools/verify_target.py
+        run: python tools/verify_target.py
 
       - name: Committed registries are exactly reproducible
         run: |
-          python tools/dispatch.py python tools/extract_mdebug.py --check
-          python tools/dispatch.py python tools/extract_data_map.py --check
-          python tools/dispatch.py python tools/status.py --check
+          python tools/extract_mdebug.py --check
+          python tools/extract_data_map.py --check
+          python tools/status.py --check
 
       - name: Configure (split, build graph, objdiff config)
-        run: python tools/dispatch.py python configure.py
+        run: python configure.py
 
       - name: Build all object sets
-        run: python tools/dispatch.py ninja expected current matching
+        run: ninja expected current matching
 
       - name: Byte gates -- image identity and every promoted function
-        run: python tools/dispatch.py ninja verify-loaded verify-promoted
+        run: ninja verify-loaded verify-promoted
 
       - name: Progress regression gates
-        run: python tools/dispatch.py python tools/compare_progress.py
+        run: python tools/compare_progress.py
 
       - name: Generate and sanitize the report
-        run: python tools/dispatch.py ninja report report-public
+        run: ninja report report-public
 
       - name: Stage the publishable artifact
         # Only the whitelist-filtered report is staged, under the filename
@@ -108,10 +116,12 @@ jobs:
           if-no-files-found: error
 
       - name: Update the committed progress baseline
-        # Pushes with GITHUB_TOKEN do not trigger new workflow runs, so
-        # this cannot loop.
+        # Main-branch pushes only: PRs and nightlies never move the
+        # baseline. GITHUB_TOKEN pushes do not trigger new workflow runs,
+        # so this cannot loop.
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
-          python tools/dispatch.py python tools/compare_progress.py --write
+          python tools/compare_progress.py --write
           if git diff --quiet progress/summary.json; then
             echo "baseline unchanged"
             exit 0
