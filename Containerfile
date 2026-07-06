@@ -33,6 +33,12 @@ RUN dpkg --add-architecture i386 \
 # uv manages the pinned Python tooling (splat, etc.) reproducibly.
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
+# Bake the pinned disassembler into the image. Only requirements.txt is copied
+# in -- no project sources or game files -- so `configure.py` finds splat at the
+# locked version without a network fetch at run time.
+COPY requirements.txt /tmp/requirements.txt
+RUN uv pip install --system -r /tmp/requirements.txt && rm /tmp/requirements.txt
+
 WORKDIR /work
 
 # The repository is expected to be bind-mounted at /work at run time. The image

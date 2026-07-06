@@ -66,7 +66,12 @@
             "version": "0.41.0",
             "summary": "Splits the target ELF into per-section assembly and data. Analysis tool: its output is regenerable and is never a match anchor.",
             "source": "https://github.com/ethteck/splat",
-            "pip": "splat0==0.41.0"
+            "pip": "splat64==0.41.0",
+            "backends": {
+                "summary": "splat delegates disassembly to these; their versions affect the generated asm, so they are pinned for reproducibility. Installed automatically as splat64[mips] dependencies.",
+                "spimdisasm": "1.42.2",
+                "rabbitizer": "1.16.2"
+            }
         },
         "objdiff": {
             "role": "diff",

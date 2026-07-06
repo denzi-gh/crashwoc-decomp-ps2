@@ -106,6 +106,39 @@ proves regeneration reproduces the committed files. Global data addresses in
 [config/pal103/sections.json](config/pal103/sections.json), so an ECOFF `value`
 that is a size rather than an address can never be emitted as one.
 
+## Disassembly (splat bootstrap)
+
+The target ELF is split into per-section assembly and a linker script by
+[splat](https://github.com/ethteck/splat), driven by
+[splat.yaml](splat.yaml). Run it with:
+
+```bash
+python -m pip install -r requirements.txt   # pinned splat + backends
+python configure.py                          # disassemble into asm/ and build/
+python configure.py --check                  # split twice; prove identical output
+```
+
+`configure.py` first checks that the installed disassembler matches the locked
+versions (splat + its `spimdisasm`/`rabbitizer` backends, which determine the
+generated text), confirms the target ELF is present, then runs `splat split`.
+The pinned versions live in [requirements.txt](requirements.txt) and the
+[Containerfile](Containerfile) bakes them into the image.
+
+The whole loaded image is a single `PT_LOAD` segment: file offset `0x1000` maps
+to vram `0x00100000` with a constant delta of `0xFF000`, so one splat code
+segment covers every loaded section. `.bss`/`.sbss` are `NOBITS` and not
+rom-contiguous, so those subsegments carry an explicit vram. splat consumes the
+`symbol_addrs.txt` registry from the previous step for its function and data
+names.
+
+**Nothing splat produces is committed.** Every output is a deterministic
+function of the user-supplied ELF and lands in gitignored directories: assembly
+in `asm/`, and the linker script, raw section dumps (`build/assets/`, which are
+game bytes), generated assembler macros and undefined-symbol lists in `build/`.
+`configure.py --check` regenerates the whole split twice and verifies every
+file is byte-for-byte identical, so the disassembly is reproducible from the
+binary alone.
+
 ## Completion levels
 
 Progress is tracked against three distinct goals:

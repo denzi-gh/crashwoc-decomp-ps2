@@ -1,0 +1,87 @@
+# splat configuration for Crash Bandicoot: The Wrath of Cortex (PAL retail v1.03).
+#
+# splat disassembles the user-supplied target ELF into per-section assembly and
+# data. Nothing it produces is committed: the target is copyrighted and every
+# output here is a deterministic function of it, regenerated locally by
+#   python configure.py
+# All output paths below point at gitignored directories (asm/, build/).
+#
+# The whole PT_LOAD segment is one contiguous block: file offset 0x1000 maps to
+# vram 0x00100000 with a constant delta of 0xFF000, so a single code segment
+# covers every loaded section. bss is NOBITS and not rom-contiguous, so those
+# subsegments carry an explicit vram.
+name: Crash Bandicoot - The Wrath of Cortex (PAL retail v1.03, SLES_503.86)
+sha1: 8e14f866d023fcacedd6a4a448fa6933100ddad1
+
+options:
+  platform: ps2
+  compiler: EEGCC
+  endianness: little
+  basename: SLES_503.86
+
+  # base_path is resolved relative to this file's directory (the repo root).
+  base_path: .
+  target_path: orig/pal103/SLES_503.86
+  elf_path: orig/pal103/SLES_503.86
+
+  # _gp from the target ELF (config/pal103/sections.json).
+  gp_value: 0x00634970
+
+  # Committed symbol registry produced by tools/extract_mdebug.py (PR 3).
+  symbol_addrs_path: config/pal103/symbol_addrs.txt
+
+  # All generated output lands in gitignored directories (asm/, build/). In
+  # particular asset_path holds raw section dumps (game bytes) and the macro
+  # directory holds splat's generated assembler scaffolding -- both regenerable,
+  # neither committed.
+  asm_path: asm
+  data_path: data       # resolved relative to asm_path -> asm/data
+  src_path: src
+  build_path: build
+  asset_path: build/assets
+  generated_asm_macros_directory: build/include
+  cache_path: build/.splache
+  ld_script_path: build/SLES_503.86.ld
+  undefined_funcs_auto_path: build/undefined_funcs_auto.txt
+  undefined_syms_auto_path: build/undefined_syms_auto.txt
+
+  # Bootstrap: emit pure disassembly (.s) only. No C stub files are written
+  # into the committed src/ tree yet; that begins once matching starts.
+  create_c_files: False
+
+  # Preserve the target's own alignment; do not let splat inject padding.
+  subalign: null
+
+  section_order: [".text", ".data", ".rodata", ".sdata", ".sbss", ".bss"]
+
+  # Deterministic output: keep splat from reordering or guessing where it can.
+  find_file_boundaries: False
+  migrate_rodata_to_functions: False
+
+segments:
+  # ELF header + program headers (file 0x0..0x1000). Not loaded; kept as raw
+  # bytes so the split covers the file from offset 0.
+  - [0x0, bin, elf_header]
+
+  # The single loaded segment. Every subsegment's vram is (rom - 0x1000) +
+  # 0x00100000 except bss, which is given explicitly.
+  - name: main
+    type: code
+    start: 0x1000
+    vram: 0x00100000
+    # Total NOBITS span: vram 0x00633000 (.sbss) .. 0x0070698C (.bss end).
+    bss_size: 0xD398C
+    subsegments:
+      - [0x1000, asm, text]        # .text    0x00100000  MIPS code
+      - [0x182530, bin, vutext]    # .vutext  0x00281530  VU microcode (not MIPS)
+      - [0x194700, data, data]     # .data    0x00293700
+      - [0x514480, rodata, rodata] # .rodata  0x00613480
+      - [0x52D980, rodata, lit4]   # .lit4    0x0062C980  gp-relative literals
+      - [0x52F980, data, sdata]    # .sdata   0x0062E980  gp-relative data
+      # bss (NOBITS): explicit vram, no file bytes.
+      - { start: 0x533FBC, type: bss, vram: 0x00633000, name: sbss }  # .sbss
+      - { start: 0x533FBD, type: bss, vram: 0x00633400, name: bss }   # .bss
+
+  # End marker: rom offset one past the last byte of the loaded image
+  # (vram 0x0070698C - 0xFF000).
+  - [0x60798C]

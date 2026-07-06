@@ -1,0 +1,12 @@
+# Pinned Python tooling for reproducing the disassembly.
+#
+# These versions are mirrored in toolchain.lock.json and checked by
+# configure.py. splat delegates disassembly to spimdisasm/rabbitizer, whose
+# versions determine the generated assembly, so both are pinned explicitly in
+# addition to splat's own dependency ranges. The [mips] extra pulls the segment
+# backends splat imports eagerly at startup.
+#
+# Install with:  python -m pip install -r requirements.txt
+splat64[mips]==0.41.0
+spimdisasm==1.42.2
+rabbitizer==1.16.2
