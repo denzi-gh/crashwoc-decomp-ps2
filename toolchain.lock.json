@@ -14,11 +14,7 @@
                 "sha256": "ed684fd98f89d36b0121caab311052089103e3b36241fcef4338cc9ea41c75b8"
             },
             "install_dir": "ee-gcc-2.9-ee-991111-01",
-            "default_flags": [
-                "-O2",
-                "-G8",
-                "-fomit-frame-pointer"
-            ],
+            "flags_registry": "config/pal103/profiles.toml",
             "fingerprints": {
                 "bin/ee-gcc": "64d0a50fef499da0b98177eb5e79e41dfb066ad44246b137c78a266ef97ee265",
                 "ee/bin/as": "296af123052ee39d175e5b3254102aafca105d4f6e975b351a13867f59b04019",

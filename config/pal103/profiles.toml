@@ -1,0 +1,16 @@
+# Named compiler profiles for pal103 matching builds.
+#
+# Every translation unit compiles with `default` unless a proven exception is
+# recorded (a unit's status manifest will name its profile). Flags here are
+# passed verbatim to the locked EE GCC (toolchain.lock.json pins the compiler
+# binaries themselves). tools/cc.py is the only consumer; it folds this file
+# and the compiler fingerprints into a profiles fingerprint so a flag change
+# can never silently alter what an existing "matching" result meant.
+#
+# Add a new profile only with evidence (a function that provably needs it);
+# never edit `default` -- the whole matching baseline is defined by it.
+
+schema = 1
+
+[profile.default]
+flags = ["-O2", "-G8", "-fomit-frame-pointer"]

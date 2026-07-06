@@ -263,8 +263,10 @@ loop:
 python tools/match.py    # compile src/, verify each function, write objdiff.json
 ```
 
-For every `.c` under [src/](src/) it compiles with the locked EE GCC
-(`-O2 -G8 -fomit-frame-pointer`), assembles the matching translation unit's
+For every `.c` under [src/](src/) it compiles with the locked EE GCC via
+[tools/cc.py](tools/cc.py) — flags come from the `default` profile in
+[config/pal103/profiles.toml](config/pal103/profiles.toml)
+(`-O2 -G8 -fomit-frame-pointer`) — assembles the matching translation unit's
 retail disassembly as the "expected" object, links the compiled code at the
 functions' true addresses (resolving externals exactly as the reconstruction
 does), and compares each function to the retail bytes. A function matches when
