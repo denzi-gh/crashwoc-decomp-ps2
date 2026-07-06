@@ -13,7 +13,10 @@
 #
 # Podman works identically (podman build/run).
 
-FROM python:3.12-slim-bookworm
+# Trixie (glibc 2.38+) is required by the decompals PS2 binutils; the EE GCC
+# 2.9 binaries are 32-bit x86, so i386 multilib is added for them. One image
+# thus runs both the matching compiler and the reconstruction binutils.
+FROM python:3.12-slim-trixie
 
 # The EE GCC 2.9-ee-991111-01 binaries are 32-bit x86 ELF executables, so the
 # host needs i386 multilib support to run them.

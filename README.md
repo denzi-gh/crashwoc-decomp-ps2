@@ -252,6 +252,38 @@ checks are pure Python and run anywhere. **Nothing game-derived is committed**:
 the 247 per-TU `.s`, the objects, the `.incbin` blobs, the link script and the
 linked ELF all land in gitignored `build/split/`.
 
+## Matching C
+
+With the loaded image reconstructible from per-TU objects, decompilation proper
+begins: replacing a translation unit's assembly with hand-written C that
+compiles to the exact retail bytes. [tools/match.py](tools/match.py) runs the
+loop:
+
+```bash
+python tools/match.py    # compile src/, verify each function, write objdiff.json
+```
+
+For every `.c` under [src/](src/) it compiles with the locked EE GCC
+(`-O2 -G8 -fomit-frame-pointer`), assembles the matching translation unit's
+retail disassembly as the "expected" object, links the compiled code at the
+functions' true addresses (resolving externals exactly as the reconstruction
+does), and compares each function to the retail bytes. A function matches when
+its bytes are identical. It then writes `objdiff.json` so the same
+target/base object pairs open in [objdiff](https://github.com/encounter/objdiff),
+and prints a progress report.
+
+The first matched unit is [src/nucore/nulist.c](src/nucore/nulist.c):
+`NuListGetHead` and `NuListGetTail` are byte-identical to retail. (Not every
+runtime function is C — `strlen`, for one, is hand-written r5900 SIMD assembly
+in the retail build and stays as asm.)
+
+This step needs both toolchains at once — the EE GCC compiler and the PS2
+binutils — so it runs in the [Containerfile](Containerfile) image, which pairs
+trixie's glibc (for the binutils) with i386 multilib (for the 32-bit compiler).
+The C in `src/` is the committed work product; every generated artifact is
+game-derived and gitignored: base objects in `build/src/`, expected objects in
+`expected/`, and `objdiff.json`.
+
 ## Completion levels
 
 Progress is tracked against three distinct goals:
