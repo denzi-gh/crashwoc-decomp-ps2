@@ -139,6 +139,42 @@ game bytes), generated assembler macros and undefined-symbol lists in `build/`.
 file is byte-for-byte identical, so the disassembly is reproducible from the
 binary alone.
 
+## Binary baseline
+
+Before any code is decompiled, [tools/build_baseline.py](tools/build_baseline.py)
+proves the target's loaded image can be rebuilt from per-section objects placed
+at the exact addresses in [linker.ld](linker.ld) — the identity reconstruction
+every later matching step builds on.
+
+```bash
+python tools/build_baseline.py          # reconstruct + verify (no toolchain needed)
+python tools/build_baseline.py --link    # also link with the real PS2 ee-ld
+```
+
+It tiles the single `PT_LOAD` segment into the loaded `PROGBITS` sections
+(`.text`, `.vutext`, `.data`, `.rodata`, `.lit4`, `.sdata`), carries each as a
+raw `.incbin` object, and checks two things:
+
+- **Loaded layout** — every object address and NOBITS size in `linker.ld` matches
+  the target's section table, and the highest `.bss` address reaches the segment
+  `memsz` end (`0x0070698C`).
+- **Packaged hash** — reconstructing the loaded image (objects at their addresses
+  over zero-filled gaps) reproduces the target's `PT_LOAD` file image exactly:
+  SHA-256 `c92a59870d47441bbd3f741eca2be42ccbbab28b7d0670d96e09c2f2340fe438`.
+
+One 0x80-byte run between `.vutext` and `.data` holds MIPS bytes described by no
+section header; it is carried as an explicit `.orphan` object so no loaded byte
+is ever invented. The three inter-section gaps (before `.rodata`, `.lit4`,
+`.sdata`) are all-zero and recreated as linker fill.
+
+The default run needs no toolchain and is deterministic. `--link` assembles and
+links with the locked PS2 binutils (Linux x86-64; run it in the
+[Containerfile](Containerfile) image on non-Linux hosts) and confirms the real
+`ee-ld` output's loaded image has the same packaged SHA-256. As with the
+disassembly, **nothing game-derived is committed**: the extracted `.bin` blobs,
+generated `.s`/`.o` and the linked ELF all land in gitignored `build/baseline/`.
+Only `linker.ld` (addresses only) and the tool are tracked.
+
 ## Completion levels
 
 Progress is tracked against three distinct goals:

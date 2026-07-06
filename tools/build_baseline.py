@@ -1,0 +1,353 @@
+#!/usr/bin/env python3
+"""Binary baseline: rebuild the target's loaded image from per-section objects.
+
+This is the identity reconstruction that anchors every later matching step. It
+takes the loaded PROGBITS sections of the target ELF, carries each as a raw
+`.incbin` object, and proves that placing those objects at the virtual addresses
+declared in linker.ld reproduces the target's PT_LOAD image exactly -- both its
+layout (every loaded section address and size, and the segment memsz) and its
+packaged hash (the SHA-256 of the loaded file image).
+
+Two levels of proof:
+
+  * Always (no toolchain needed): reconstruct the loaded image in pure Python by
+    placing each object's bytes at its linker.ld address over a zero-filled
+    buffer, exactly as a linker would fill the inter-section gaps. The result is
+    compared byte-for-byte against the target's PT_LOAD image.
+
+  * With --link (needs the locked PS2 binutils): assemble the generated `.s`
+    objects and link them with linker.ld using the real ee-ld, then extract the
+    loaded image with objcopy and compare. This exercises the actual
+    reconstruction path the project will build with.
+
+The extracted section bytes are game-derived, so every `.bin`/`.s`/`.o` output
+lands in the gitignored build/baseline/ tree. linker.ld and this script are the
+only committed artifacts; both carry addresses only, never bytes.
+
+Exit status is 0 only if the loaded layout and the packaged hash both match.
+"""
+import argparse
+import hashlib
+import json
+import shutil
+import struct
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+LABEL_WIDTH = 30
+
+# PS2 binutils names (decompals build), resolved under compiler/ or on PATH.
+BINUTILS_DIR = ROOT / "compiler" / "ps2-binutils-0.10"
+AS = "mips-ps2-decompals-as"
+LD = "mips-ps2-decompals-ld"
+OBJCOPY = "mips-ps2-decompals-objcopy"
+
+
+class Reporter:
+    def __init__(self):
+        self.failed = False
+        self.details = []
+
+    def result(self, label, ok, detail=None):
+        print(f"{label + ':':<{LABEL_WIDTH}} {'PASS' if ok else 'FAIL'}")
+        if not ok:
+            self.failed = True
+            if detail:
+                self.details.append(f"{label}: {detail}")
+
+
+def load_target(version):
+    """Return (elf_bytes, sections_spec, pt_load) for the version."""
+    config_dir = ROOT / "config" / version
+    sections_spec = json.loads((config_dir / "sections.json").read_text())
+    version_meta = json.loads((config_dir / "version.json").read_text())
+    elf_path = ROOT / version_meta["files"]["elf"]["path"]
+    elf = elf_path.read_bytes()
+    pt_load = sections_spec["program_headers"][0]
+    return elf, sections_spec, pt_load
+
+
+def h(value):
+    """Section-spec hex string (or int) -> int."""
+    return int(value, 0) if isinstance(value, str) else value
+
+
+def derive_tiling(elf, sections_spec, pt_load):
+    """Tile the loaded file image into ordered incbin objects.
+
+    Every loaded PROGBITS section that carries file bytes becomes an object.
+    Any run of bytes between them that no section covers is checked: an all-zero
+    run is left to the linker (zero fill between explicit addresses); a run with
+    any non-zero byte becomes an explicit `orphan` object so no loaded byte is
+    ever invented or dropped. Returns (objects, gaps) where each object is
+    {name, vaddr, offset, size} and gaps is a list of (offset, size) zero runs.
+    """
+    load_off = h(pt_load["offset"])
+    load_vaddr = h(pt_load["vaddr"])
+    filesz = h(pt_load["filesz"])
+    load_end = load_off + filesz
+
+    # Loaded PROGBITS sections with file content, inside the PT_LOAD file range.
+    loaded = []
+    for s in sections_spec["sections"]:
+        if h(s["type"]) != 1 or h(s["size"]) == 0:
+            continue
+        off = h(s["offset"])
+        if load_off <= off < load_end:
+            loaded.append(s)
+    loaded.sort(key=lambda s: h(s["offset"]))
+
+    objects = []
+    gaps = []
+    orphan_index = 0
+    cursor = load_off
+    for s in loaded:
+        off = h(s["offset"])
+        if off > cursor:  # bytes between the previous object and this section
+            run = elf[cursor:off]
+            if any(run):
+                name = "orphan" if orphan_index == 0 else f"orphan{orphan_index}"
+                orphan_index += 1
+                objects.append({"name": name, "vaddr": load_vaddr + (cursor - load_off),
+                                "offset": cursor, "size": off - cursor})
+            else:
+                gaps.append((cursor, off - cursor))
+        objects.append({"name": s["name"].lstrip("."), "vaddr": h(s["addr"]),
+                        "offset": off, "size": h(s["size"])})
+        cursor = off + h(s["size"])
+
+    if cursor < load_end:  # trailing bytes before filesz end
+        run = elf[cursor:load_end]
+        if any(run):
+            objects.append({"name": f"orphan{orphan_index}",
+                            "vaddr": load_vaddr + (cursor - load_off),
+                            "offset": cursor, "size": load_end - cursor})
+        else:
+            gaps.append((cursor, load_end - cursor))
+    return objects, gaps
+
+
+def parse_linker_script(text):
+    """Extract {section_name: vaddr} and NOLOAD sizes from linker.ld.
+
+    Understands only the constructs this project's script uses: `. = ADDR;`
+    setting the location counter immediately before a `.name : { ... }` output
+    section, and `.name (NOLOAD) : { . += SIZE; }` for bss. Enough to validate
+    that the committed script agrees with the tiling derived from the target.
+    """
+    import re
+    addrs, nobits = {}, {}
+    pending = None
+    set_re = re.compile(r"\.\s*=\s*(0x[0-9A-Fa-f]+)\s*;")
+    sec_re = re.compile(r"(\.[A-Za-z0-9_.]+)\s*(\(NOLOAD\))?\s*:")
+    inc_re = re.compile(r"\.\s*\+=\s*(0x[0-9A-Fa-f]+)\s*;")
+    for line in text.splitlines():
+        line = line.split("/*")[0]
+        m = set_re.search(line)
+        if m:
+            pending = int(m.group(1), 0)
+        m = sec_re.search(line)
+        if m:
+            name = m.group(1).lstrip(".")
+            if pending is not None:
+                addrs[name] = pending
+            if m.group(2):  # NOLOAD
+                size_m = inc_re.search(line)
+                if size_m:
+                    nobits[name] = int(size_m.group(1), 0)
+            pending = None
+    return addrs, nobits
+
+
+def write_objects(objects, elf, out_dir):
+    """Extract each object's bytes to a .bin and emit an .incbin .s wrapper."""
+    if out_dir.exists():
+        shutil.rmtree(out_dir)
+    out_dir.mkdir(parents=True)
+    for obj in objects:
+        blob = elf[obj["offset"]:obj["offset"] + obj["size"]]
+        bin_path = out_dir / f"{obj['name']}.bin"
+        bin_path.write_bytes(blob)
+        s_path = out_dir / f"{obj['name']}.s"
+        s_path.write_text(
+            f"/* Generated by tools/build_baseline.py -- do not edit, do not "
+            f"commit (game-derived). */\n"
+            f'\t.section .baseline.{obj["name"]}, "a", @progbits\n'
+            f'\t.incbin "{bin_path.as_posix()}"\n')
+
+
+def reconstruct(objects, addrs, elf, pt_load):
+    """Rebuild the loaded image from object bytes placed at linker.ld addresses.
+
+    Models the linker: a zero-filled buffer the size of the loaded file image,
+    with each object copied in at (its linker.ld vaddr - segment vaddr). Returns
+    (image, problems) where problems lists any object missing/out of range.
+    """
+    load_vaddr = h(pt_load["vaddr"])
+    filesz = h(pt_load["filesz"])
+    image = bytearray(filesz)
+    problems = []
+    for obj in objects:
+        vaddr = addrs.get(obj["name"])
+        if vaddr is None:
+            problems.append(f"{obj['name']} not placed by linker.ld")
+            continue
+        pos = vaddr - load_vaddr
+        blob = elf[obj["offset"]:obj["offset"] + obj["size"]]
+        if pos < 0 or pos + len(blob) > filesz:
+            problems.append(f"{obj['name']} @ 0x{vaddr:08x} out of loaded range")
+            continue
+        image[pos:pos + len(blob)] = blob
+    return bytes(image), problems
+
+
+def check_layout(reporter, objects, addrs, nobits, sections_spec, pt_load):
+    """linker.ld addresses/sizes must match the target's loaded section table."""
+    by_name = {s["name"].lstrip("."): s for s in sections_spec["sections"]}
+
+    problems = []
+    for obj in objects:
+        want = addrs.get(obj["name"])
+        if want is None:
+            problems.append(f"{obj['name']}: absent from linker.ld")
+        elif want != obj["vaddr"]:
+            problems.append(
+                f"{obj['name']}: linker.ld 0x{want:08x} != target 0x{obj['vaddr']:08x}")
+    # File-backed sections the script places that the tiling did not produce
+    # (NOLOAD sections carry no file bytes and are checked as memsz below).
+    tiled = {o["name"] for o in objects}
+    for name in addrs:
+        if name not in tiled and name not in nobits:
+            problems.append(f"{name}: in linker.ld but not in target tiling")
+    reporter.result("Loaded section addresses", not problems,
+                    "; ".join(problems) or None)
+
+    # NOBITS sizes and the resulting memsz end.
+    problems = []
+    memsz_end = h(pt_load["vaddr"]) + h(pt_load["memsz"])
+    for name, size in nobits.items():
+        sec = by_name.get(name)
+        if sec is None:
+            problems.append(f"{name}: NOLOAD section not in target")
+        elif h(sec["size"]) != size:
+            problems.append(
+                f"{name}: linker.ld size 0x{size:x} != target 0x{h(sec['size']):x}")
+    # Highest address the script defines (last bss end) must reach memsz.
+    if nobits:
+        last = max(addrs[n] + nobits[n] for n in nobits)
+        if last != memsz_end:
+            problems.append(f"memsz end 0x{last:08x} != target 0x{memsz_end:08x}")
+    reporter.result("Loaded memory size (memsz)", not problems,
+                    "; ".join(problems) or None)
+
+
+def check_packaged_hash(reporter, image, elf, pt_load):
+    """Reconstructed loaded image must equal the target's PT_LOAD file image."""
+    load_off = h(pt_load["offset"])
+    filesz = h(pt_load["filesz"])
+    target = elf[load_off:load_off + filesz]
+    want = hashlib.sha256(target).hexdigest()
+    got = hashlib.sha256(image).hexdigest()
+    detail = None
+    if image != target:
+        first = next((i for i in range(min(len(image), len(target)))
+                      if image[i] != target[i]), min(len(image), len(target)))
+        detail = f"first diff at loaded offset 0x{first:x}; sha256 {got} != {want}"
+    reporter.result("Packaged loaded-image hash", image == target, detail)
+    return want
+
+
+def tool_path(name):
+    local = BINUTILS_DIR / name
+    if local.is_file():
+        return str(local)
+    return shutil.which(name)
+
+
+def real_link(reporter, objects, out_dir, elf, pt_load, packaged_sha):
+    """Assemble + link the objects with the real PS2 binutils, then compare."""
+    as_bin, ld_bin, objcopy_bin = tool_path(AS), tool_path(LD), tool_path(OBJCOPY)
+    if not (as_bin and ld_bin and objcopy_bin):
+        reporter.result("Real ee-ld reconstruction", False,
+                        "PS2 binutils not found under compiler/ or PATH "
+                        "(install via tools/setup_toolchain.py; runs on Linux)")
+        return
+
+    objs = []
+    try:
+        for obj in objects:
+            o = out_dir / f"{obj['name']}.o"
+            subprocess.run([as_bin, "-EL", "-o", str(o),
+                            str(out_dir / f"{obj['name']}.s")],
+                           check=True, capture_output=True)
+            objs.append(str(o))
+        elf_out = out_dir / "baseline.elf"
+        subprocess.run([ld_bin, "-EL", "-T", str(ROOT / "linker.ld"),
+                        "-o", str(elf_out), *objs],
+                       check=True, capture_output=True)
+        img_out = out_dir / "baseline.bin"
+        subprocess.run([objcopy_bin, "-O", "binary",
+                        "--only-section=.text", "--only-section=.vutext",
+                        "--only-section=.orphan", "--only-section=.data",
+                        "--only-section=.rodata", "--only-section=.lit4",
+                        "--only-section=.sdata", str(elf_out), str(img_out)],
+                       check=True, capture_output=True)
+    except subprocess.CalledProcessError as exc:
+        reporter.result("Real ee-ld reconstruction", False,
+                        f"{Path(exc.cmd[0]).name} failed: "
+                        f"{exc.stderr.decode(errors='replace').strip()[:200]}")
+        return
+    except OSError as exc:
+        reporter.result("Real ee-ld reconstruction", False,
+                        f"cannot execute PS2 binutils here ({exc}); they are "
+                        "Linux x86-64 binaries -- run --link on Linux/container")
+        return
+
+    got = hashlib.sha256(img_out.read_bytes()).hexdigest()
+    reporter.result("Real ee-ld reconstruction", got == packaged_sha,
+                    None if got == packaged_sha else f"linked image sha256 {got}")
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--version", default="pal103",
+                        help="target version (default: pal103)")
+    parser.add_argument("--link", action="store_true",
+                        help="also link with the real PS2 binutils if present")
+    args = parser.parse_args()
+
+    elf, sections_spec, pt_load = load_target(args.version)
+    objects, gaps = derive_tiling(elf, sections_spec, pt_load)
+    out_dir = ROOT / "build" / "baseline"
+    write_objects(objects, elf, out_dir)
+
+    addrs, nobits = parse_linker_script((ROOT / "linker.ld").read_text())
+
+    print(f"Binary baseline: {args.version}")
+    print(f"  {len(objects)} incbin objects, {len(gaps)} zero-fill gaps "
+          f"-> {out_dir.relative_to(ROOT).as_posix()}/ (gitignored)")
+    print()
+
+    reporter = Reporter()
+    check_layout(reporter, objects, addrs, nobits, sections_spec, pt_load)
+    image, problems = reconstruct(objects, addrs, elf, pt_load)
+    for p in problems:
+        reporter.result("Reconstruction placement", False, p)
+    packaged_sha = check_packaged_hash(reporter, image, elf, pt_load)
+    if args.link:
+        real_link(reporter, objects, out_dir, elf, pt_load, packaged_sha)
+
+    print()
+    if reporter.failed:
+        print("Binary baseline FAILED:")
+        for detail in reporter.details:
+            print(f"  - {detail}")
+        return 1
+    print(f"Binary baseline OK. Packaged loaded-image sha256:\n  {packaged_sha}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
