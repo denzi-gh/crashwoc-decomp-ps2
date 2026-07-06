@@ -1,0 +1,21 @@
+# Original game files and reference binaries
+/orig/
+/reference/
+
+# Generated split assembly and reconstructed target objects
+/asm/
+/expected/
+
+# Build output
+/build/
+
+# Locked toolchain installs (downloaded by tools/setup_toolchain.py)
+/compiler/
+/tools/download/
+
+# Generated build files
+build.ninja
+objdiff.json
+compile_commands.json
+.ninja_deps
+.ninja_log

@@ -1,0 +1,27 @@
+{
+    "version": "pal103",
+    "name": "Crash Bandicoot: The Wrath of Cortex",
+    "release": "PAL retail v1.03",
+    "serial": "SLES-50386",
+    "video_mode": "PAL",
+    "files": {
+        "elf": {
+            "path": "orig/pal103/SLES_503.86",
+            "size": 6731763,
+            "sha1": "8e14f866d023fcacedd6a4a448fa6933100ddad1",
+            "sha256": "7fc6826d08c42a5a92fc018edae3e520783beb5a8330410251192bfe26b1eca1"
+        },
+        "system_cnf": {
+            "path": "orig/pal103/SYSTEM.CNF",
+            "size": 56,
+            "sha1": "262ad9b15c1c6998567946771723ecdf26dc9c21",
+            "sha256": "86fe327e4576516f57004800b2663c75c8a65a62872f3fdf3aa0618daf23d9c1",
+            "expected_values": {
+                "BOOT2": "cdrom0:\\SLES_503.86;1",
+                "VER": "1.03",
+                "VMODE": "PAL"
+            },
+            "line_ending": "\r\n"
+        }
+    }
+}
