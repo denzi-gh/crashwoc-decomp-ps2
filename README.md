@@ -96,8 +96,47 @@ Progress is tracked against three distinct goals:
 
 Matching uses the original Sony/Cygnus **EE GCC 2.9-ee-991111-01** compiler
 exclusively. Modern compilers are used only for analysis and tooling, never
-for matching results. Toolchain locking and setup will land in a follow-up
-change.
+for matching results.
+
+Every tool is pinned in [toolchain.lock.json](toolchain.lock.json):
+
+| Component      | Version           | Role                                  |
+| -------------- | ----------------- | ------------------------------------- |
+| `ee-gcc`       | 2.9-ee-991111-01  | matching compiler (byte-exact anchor) |
+| `ps2-binutils` | 0.10              | reconstruction assembler + linker     |
+| `python`       | 3.12              | tooling runtime (via uv)              |
+| `splat`        | 0.41.0            | ELF disassembler / splitter           |
+| `objdiff`      | 3.7.2             | object diffing / match scoring        |
+
+The compiler is anchored by SHA-256; the archive itself is user-supplied and
+never committed (`compiler/` and `tools/download/` are gitignored).
+
+### Installing
+
+```bash
+# Place the compiler archive in tools/download/, or set its URL in the lock.
+python tools/setup_toolchain.py --download     # downloads + verifies SHA-256
+python tools/fingerprint_compiler.py --record  # record a per-file manifest
+```
+
+`setup_toolchain.py` verifies every downloaded archive against its locked
+SHA-256 and refuses to install anything whose hash is not yet locked (use
+`--record` to trust and record a hash from a local archive). Once a compiler is
+installed, `fingerprint_compiler.py` verifies that every file of the install is
+byte-identical to a recorded manifest — catching same-version installs that
+would silently change codegen:
+
+```bash
+python tools/fingerprint_compiler.py           # verify against the lock
+```
+
+A reproducible environment is defined in [Containerfile](Containerfile)
+(Python 3.12 plus the host packages the EE toolchain needs):
+
+```bash
+docker build -f Containerfile -t crashwoc-decomp .
+docker run --rm -it -v "$PWD:/work" crashwoc-decomp
+```
 
 ## Legal
 

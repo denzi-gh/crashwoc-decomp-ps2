@@ -1,0 +1,78 @@
+{
+    "schema": 1,
+    "description": "Locked toolchain for crashwoc-decomp-ps2. Every tool that produces or verifies matching output is pinned here by version and, where an immutable artifact exists, by SHA-256. tools/setup_toolchain.py installs from this file; tools/fingerprint_compiler.py verifies the installed compiler against it. A null sha256 means the artifact hash has not been locked yet: setup will refuse to install it until a hash is recorded (via --record on a trusted archive) or supplied by hand.",
+    "install_root": "compiler",
+    "download_cache": "tools/download",
+    "components": {
+        "ee-gcc": {
+            "role": "matching-compiler",
+            "version": "2.9-ee-991111-01",
+            "summary": "Sony/Cygnus EE (Emotion Engine) GCC. The only compiler whose output is accepted as a byte-exact match. Nothing else may be substituted for producing matching results.",
+            "artifact": {
+                "url": "https://github.com/decompme/compilers/releases/download/compilers/ee-gcc2.9-991111-01.tar.xz",
+                "filename": "ee-gcc-2.9-ee-991111-01.tar.gz",
+                "sha256": "ed684fd98f89d36b0121caab311052089103e3b36241fcef4338cc9ea41c75b8"
+            },
+            "install_dir": "ee-gcc-2.9-ee-991111-01",
+            "default_flags": [
+                "-O2",
+                "-G8",
+                "-fomit-frame-pointer"
+            ],
+            "fingerprints": {
+                "bin/ee-gcc": "64d0a50fef499da0b98177eb5e79e41dfb066ad44246b137c78a266ef97ee265",
+                "ee/bin/as": "296af123052ee39d175e5b3254102aafca105d4f6e975b351a13867f59b04019",
+                "lib/gcc-lib/ee/2.9-ee-991111-01/cc1": "b9aef69f93efb949f15ea58189e8eef4a002b9fe4de5d3fcf89c34e1244ec026",
+                "lib/gcc-lib/ee/2.9-ee-991111-01/cc1plus": "da6ef339898e721fa6393f608f7c5de975b9510841d4c2967f318d6108f62512",
+                "lib/gcc-lib/ee/2.9-ee-991111-01/cpp": "f85a54d241e019993fa7a06285d3677856b3b431e10318a587ab029373c603d7"
+            }
+        },
+        "ps2-binutils": {
+            "role": "reconstruction-assembler-linker",
+            "version": "0.10",
+            "summary": "decompals PS2 MIPS binutils (assembler + linker). Used to assemble split .s and link reconstructed objects while rebuilding the target. It reproduces the target; it never redefines what a match is.",
+            "source": "https://github.com/decompals/binutils-mips-ps2-decompals",
+            "artifact": {
+                "url": "https://github.com/decompals/binutils-mips-ps2-decompals/releases/download/v0.10/binutils-mips-ps2-decompals-linux-x86-64.tar.gz",
+                "filename": null,
+                "sha256": "9fe31ea3ee1a37536f9f0e2e12c668e7c3cb99e59f5154bd2f1fc4762473094c"
+            },
+            "install_dir": "ps2-binutils-0.10",
+            "fingerprints": {
+                "mips-ps2-decompals-addr2line": "71e10c2c99c42a7f8b9255a9a5c429d134cb692b13a642a2e2918726132dfede",
+                "mips-ps2-decompals-ar": "e5f69e21b95edc2abb6b59e6ce3a3e7ed607dc637da93bb4c87f515d5801a39a",
+                "mips-ps2-decompals-as": "4c69f3ff50f8d0fbd5c6d23aa04ebee32350c0f6ae290aa4afbd053edcceb29e",
+                "mips-ps2-decompals-c++filt": "265fb5b193a2f29d3e465f61c1b47fa8bb756e6a623a3daa0822fe6ae7ca83de",
+                "mips-ps2-decompals-elfedit": "d56eb2ebd669fc78d8b00c5d4c9762e609b49f011018825d5f5a5b2ea86c7bdc",
+                "mips-ps2-decompals-ld": "c2c8310f716897dc97f135ab38c6f0cba7227b819935c9b33fc07595c87b20e4",
+                "mips-ps2-decompals-nm": "94dc099cccc3b14946fdf47c008b2340c4f8bbc149aabb258acb394ca6cdc8b8",
+                "mips-ps2-decompals-objcopy": "2e4fdc218ede48b3fa499325cfeac288562761d5dadcdfa1f1fc53fef8b86f88",
+                "mips-ps2-decompals-objdump": "f069cae577c24914a9fbaa2b6426cb40d965d6e6e8e2f81834bd29f51d8369ff",
+                "mips-ps2-decompals-ranlib": "d9a2b7fa37449021dcf7dde69ef1c4b778071005de486bace73943468587f224",
+                "mips-ps2-decompals-readelf": "76382e16bf59e01d9a4a9d102d4120faf60c84821d3fd4a9f93e70dc445213bc",
+                "mips-ps2-decompals-size": "899cffb34371d0cb981a987789057682f4839c93b24fae39045a8fb72851dc3c",
+                "mips-ps2-decompals-strings": "1bda512ba40b0f44758597a06633c461cf95d9ec6cf6af16876df3dcdc97fed3",
+                "mips-ps2-decompals-strip": "fce5d577f2ed6bb8bdb61028d44c5b6be87187b55230e1bb41eccb0053cbbf76"
+            }
+        },
+        "python": {
+            "role": "runtime",
+            "version": "3.12",
+            "summary": "Interpreter for all repository tooling. Pinned via uv and the container image; not installed by setup_toolchain.py (which is itself stdlib-only and runs on 3.11+).",
+            "managed_by": "uv"
+        },
+        "splat": {
+            "role": "disassembler",
+            "version": "0.41.0",
+            "summary": "Splits the target ELF into per-section assembly and data. Analysis tool: its output is regenerable and is never a match anchor.",
+            "source": "https://github.com/ethteck/splat",
+            "pip": "splat0==0.41.0"
+        },
+        "objdiff": {
+            "role": "diff",
+            "version": "3.7.2",
+            "summary": "Compares reconstructed objects against the target objects to score matching progress.",
+            "source": "https://github.com/encounter/objdiff"
+        }
+    }
+}

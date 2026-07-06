@@ -1,0 +1,40 @@
+# Reproducible build/analysis environment for crashwoc-decomp-ps2.
+#
+# Pins the Python runtime (3.12, per the plan) and the host packages needed to
+# run the EE GCC cross-compiler and PS2 binutils. It deliberately does NOT bake
+# in the matching toolchain or any game files: those are user-supplied and are
+# never committed or published. Install them at runtime with:
+#
+#   python tools/setup_toolchain.py --download        # fills URLs when locked
+#   python tools/setup_toolchain.py --record          # trust local archives
+#
+# Build:  docker build -f Containerfile -t crashwoc-decomp .
+# Run:    docker run --rm -it -v "$PWD:/work" crashwoc-decomp
+#
+# Podman works identically (podman build/run).
+
+FROM python:3.12-slim-bookworm
+
+# The EE GCC 2.9-ee-991111-01 binaries are 32-bit x86 ELF executables, so the
+# host needs i386 multilib support to run them.
+RUN dpkg --add-architecture i386 \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        curl \
+        git \
+        make \
+        xz-utils \
+        libc6:i386 \
+        libstdc++6:i386 \
+        zlib1g:i386 \
+    && rm -rf /var/lib/apt/lists/*
+
+# uv manages the pinned Python tooling (splat, etc.) reproducibly.
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+WORKDIR /work
+
+# The repository is expected to be bind-mounted at /work at run time. The image
+# stays free of project sources and target binaries by design.
+CMD ["bash"]
