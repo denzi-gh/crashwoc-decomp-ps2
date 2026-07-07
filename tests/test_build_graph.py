@@ -185,15 +185,17 @@ class TestSelectTextObjects(unittest.TestCase):
         self.assertEqual([u for u, _p in objs],
                          [u for u, _a in load_tu_runs()])
         by_unit = dict(objs)
-        # Unit 7 has a status manifest: its hybrid object replaces the
-        # expected object; its neighbours stay expected.
+        # Units 7 and 91 have status manifests: their hybrid objects replace
+        # the expected objects; their neighbours stay expected.
         self.assertTrue(str(by_unit[7]).replace("\\", "/").endswith(
             "build/pal103/matching/nucore/nulist.o"))
+        self.assertTrue(str(by_unit[91]).replace("\\", "/").endswith(
+            "build/pal103/matching/game/creature.o"))
         self.assertTrue(str(by_unit[0]).replace("\\", "/").endswith(
             "expected/pal103/000_crt0.s.o"))
         self.assertTrue(str(by_unit[6]).replace("\\", "/").endswith(".o"))
         hybrids = [p for _u, p in objs if "expected" not in str(p)]
-        self.assertEqual(len(hybrids), 1)
+        self.assertEqual(len(hybrids), 2)
 
 
 class TestDispatchTranslation(unittest.TestCase):

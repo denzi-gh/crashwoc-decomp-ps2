@@ -19,7 +19,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0007:00105908:NuListAppend"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0007:00105938:NuListInsert"
@@ -35,7 +35,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0007:00105a18:NuListRemove"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0007:00105a50:NuListGetHead"

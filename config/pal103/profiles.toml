@@ -1,16 +1,29 @@
 # Named compiler profiles for pal103 matching builds.
 #
 # Every translation unit compiles with `default` unless a proven exception is
-# recorded (a unit's status manifest will name its profile). Flags here are
-# passed verbatim to the locked EE GCC (toolchain.lock.json pins the compiler
-# binaries themselves). tools/cc.py is the only consumer; it folds this file
-# and the compiler fingerprints into a profiles fingerprint so a flag change
-# can never silently alter what an existing "matching" result meant.
+# recorded (a unit's status manifest will name its profile). Each profile
+# names the compiler component (toolchain.lock.json) and the flags passed to
+# it verbatim. tools/cc.py is the only consumer; it folds this file and the
+# referenced compilers' binary fingerprints into a single profiles
+# fingerprint, so a flag or compiler change can never silently alter what an
+# existing "matching" result meant.
 #
-# Add a new profile only with evidence (a function that provably needs it);
-# never edit `default` -- the whole matching baseline is defined by it.
+# 2026-07-07: `default` deliberately switched from ee-gcc 2.9-ee-991111-01 to
+# the identified TT compiler (SN ProDG ee-gcc 2.95.2-EE): the retail ELF was
+# built by two toolchains, and the game/engine TUs -- the only ones with
+# status manifests -- provably cannot match under the Sony 2.9 build (sq/lq
+# callee saves, no R5900 short-loop padding). The full byte-gate suite was
+# re-run green under the new fingerprint. The Sony compiler remains available
+# as profile `sce` for the runtime half of the ELF.
+#
+# Add a new profile only with evidence (a function that provably needs it).
 
 schema = 1
 
 [profile.default]
+compiler = "ee-gcc-tt"
+flags = ["-O2", "-G8", "-fomit-frame-pointer"]
+
+[profile.sce]
+compiler = "ee-gcc"
 flags = ["-O2", "-G8", "-fomit-frame-pointer"]

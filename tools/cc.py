@@ -39,17 +39,17 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
-from declib.toolchain import EEGCC
 
 
 def load_profiles(version="pal103"):
-    """{profile_name: [flags]} from the committed profile registry."""
+    """{profile_name: {"flags": [...], "compiler": component}} from the registry."""
     path = ROOT / "config" / version / "profiles.toml"
     data = tomllib.loads(path.read_text())
-    return {name: spec["flags"] for name, spec in data["profile"].items()}
+    return {name: {"flags": spec["flags"], "compiler": spec["compiler"]}
+            for name, spec in data["profile"].items()}
 
 
-def profile_flags(profile, version="pal103"):
+def profile_spec(profile, version="pal103"):
     profiles = load_profiles(version)
     if profile not in profiles:
         raise SystemExit(f"cc.py: unknown profile '{profile}' "
@@ -58,17 +58,52 @@ def profile_flags(profile, version="pal103"):
     return profiles[profile]
 
 
+def _lock():
+    return json.loads((ROOT / "toolchain.lock.json").read_text())
+
+
+def compiler_command(component, lock=None):
+    """argv prefix that runs a locked compiler component's driver.
+
+    Native ELF drivers run directly; Win32 PE drivers (the SN ProDG build)
+    run under the locked wibo loader and get their exec prefix passed via
+    -B so the driver finds its own cc1/as regardless of install location.
+    """
+    lock = lock or _lock()
+    comp = lock["components"][component]
+    install = ROOT / lock["install_root"] / comp["install_dir"]
+    driver = install / comp.get("driver", "bin/ee-gcc")
+    argv = [str(driver)]
+    if comp.get("runner") == "wibo":
+        wibo_comp = lock["components"]["wibo"]
+        wibo = (ROOT / lock["install_root"] / wibo_comp["install_dir"]
+                / wibo_comp["artifact"]["install_as"])
+        argv = [str(wibo), str(driver)]
+    if comp.get("exec_prefix"):
+        argv.append(f"-B{(install / comp['exec_prefix']).as_posix()}/")
+    return argv, driver
+
+
+def compiler_available(profile="default", version="pal103"):
+    _argv, driver = compiler_command(profile_spec(profile, version)["compiler"])
+    return driver.is_file()
+
+
 def profiles_fingerprint(version="pal103"):
     """SHA-256 over the parsed profile registry and the locked compiler binaries.
 
     Hashes canonicalized content (not raw file bytes) so line endings cannot
-    change the fingerprint; any flag change or compiler-binary change does.
+    change the fingerprint; any flag change, compiler switch, or
+    compiler-binary change does. Every compiler component referenced by any
+    profile is folded in.
     """
     profiles = load_profiles(version)
-    lock = json.loads((ROOT / "toolchain.lock.json").read_text())
-    compiler = lock["components"]["ee-gcc"]["fingerprints"]
+    lock = _lock()
+    fingerprints = {
+        spec["compiler"]: lock["components"][spec["compiler"]]["fingerprints"]
+        for spec in profiles.values()}
     payload = (json.dumps(profiles, sort_keys=True) + "\n"
-               + json.dumps(compiler, sort_keys=True) + "\n")
+               + json.dumps(fingerprints, sort_keys=True) + "\n")
     return hashlib.sha256(payload.encode()).hexdigest()
 
 
@@ -95,10 +130,11 @@ def _stage_headers(work):
 
 
 def _run_driver(src, out_name, extra_args, out_path, profile, version):
-    """Stage src into the scratch dir, run the ee-gcc driver, copy the output."""
+    """Stage src into the scratch dir, run the profile's driver, copy the output."""
     src = Path(src)
     out_path = Path(out_path)
-    flags = profile_flags(profile, version)
+    spec = profile_spec(profile, version)
+    argv, _driver = compiler_command(spec["compiler"])
     work = _workdir_for(out_path)
     if work.exists():
         shutil.rmtree(work)
@@ -107,7 +143,7 @@ def _run_driver(src, out_name, extra_args, out_path, profile, version):
         shutil.copy(src, work / src.name)
         _stage_headers(work)
         produced = work / out_name
-        subprocess.run([str(EEGCC), *flags, *extra_args,
+        subprocess.run([*argv, *spec["flags"], *extra_args,
                         "-o", str(produced), str(work / src.name)],
                        check=True, capture_output=True, text=True, cwd=work)
         out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -148,8 +184,8 @@ def main():
 
     if not args.src or not args.output:
         parser.error("src and -o are required unless --fingerprint")
-    if not EEGCC.is_file():
-        print("EE GCC not found; run in the Containerfile image "
+    if not compiler_available(args.profile, args.version):
+        print("matching compiler not found; run in the Containerfile image "
               "(setup_toolchain.py installs it).", file=sys.stderr)
         return 2
 
