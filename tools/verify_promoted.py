@@ -215,6 +215,13 @@ def main():
         try:
             for manifest in manifests:
                 data = tomllib.loads(manifest.read_text())
+                # Only units with a `matching` function contribute a hybrid to
+                # the image (same rule as gen_ninja); an all-`asm` skeleton has
+                # no function bodies, so its compiled `.s` is just the file
+                # prologue and build_hybrid would (correctly) refuse to parse it.
+                states = {f["state"] for f in data.get("function", [])}
+                if "matching" not in states:
+                    continue
                 rel = Path(data["source"]).relative_to("src").with_suffix(".o")
                 build_hybrid(manifest,
                              ROOT / "build" / args.version / "matching" / rel,

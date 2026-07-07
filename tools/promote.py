@@ -112,12 +112,7 @@ def unit_functions(version, unit_index):
 
 
 def manifest_text(version, unit_index, name, src_rel, profile, funcs):
-    """The exact all-asm status manifest body for a unit.
-
-    Shared by `--init` and tools/gen_source_skeletons.py so both emit
-    byte-identical manifests; keep any change here in lockstep with the
-    committed skeletons (regenerate + `gen_source_skeletons.py --check`).
-    """
+    """The exact all-asm status manifest body for a unit (used by `--init`)."""
     lines = [
         f"# Function status for {version} unit {unit_index} ({name}.c).",
         "#",
