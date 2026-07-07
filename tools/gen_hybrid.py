@@ -30,6 +30,7 @@ game-derived and land in the gitignored build/ tree.
 """
 import argparse
 import re
+import subprocess
 import sys
 import tomllib
 from pathlib import Path
@@ -37,6 +38,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 import cc
+from declib.toolchain import AS, tool_path
 
 LINK_SETS = {"matching": ("matching",), "equivalent": ("matching", "equivalent")}
 
@@ -44,6 +46,11 @@ _ENT_RE = re.compile(r"^\s*\.ent\s+(\S+)")
 _END_RE = re.compile(r"^\s*\.end\s+(\S+)")
 # Directives that may lead a function block (walked back into its segment).
 _LEAD_RE = re.compile(r"^\s*(\.text|\.p2align\s+\d+|\.globl\s+\S+)\s*$")
+# Byte-less symbol metadata ee-gcc emits between/after functions for extern
+# arrays it saw sizes for (`.extern CModel, 117120`): safe to hoist into the
+# prologue -- it only informs the assembler's gp-relative addressing choice
+# and emits no section content.
+_EXTERN_RE = re.compile(r"^\s*\.extern\s+\S+\s*,\s*\d+\s*$")
 # Compiler output this tool cannot splice yet (owned data): fail loudly.
 _DATA_RE = re.compile(
     r"^\s*\.(section|data|sdata|rdata|rodata|lit4|lit8|sbss|bss|comm|lcomm)\b")
@@ -74,6 +81,7 @@ def parse_s(text):
         raise HybridError(f"unbalanced .ent/.end ({len(ents)}/{len(ends)})")
 
     segments = []
+    externs = []
     prologue_end = len(lines)
     prev_end = -1
     for (ei, name), (xi, xname) in zip(ents, ends):
@@ -85,20 +93,25 @@ def parse_s(text):
             start -= 1
         if segments:
             gap = lines[prev_end + 1:start]
-            bad = [g for g in gap if not _is_noise(g)]
+            bad = [g for g in gap
+                   if not _is_noise(g) and not _EXTERN_RE.match(g)]
             if bad:
                 raise HybridError(f"unhandled content before {name}: {bad[0]!r}")
+            externs += [g for g in gap if _EXTERN_RE.match(g)]
         else:
             prologue_end = start
         segments.append((name, lines[start:xi + 1]))
         prev_end = xi
 
-    trailing = [l for l in lines[prev_end + 1:] if not _is_noise(l)]
+    tail = lines[prev_end + 1:]
+    trailing = [l for l in tail
+                if not _is_noise(l) and not _EXTERN_RE.match(l)]
     if trailing:
         raise HybridError(f"unhandled content after last function: "
                           f"{trailing[0]!r}")
+    externs += [l for l in tail if _EXTERN_RE.match(l)]
 
-    prologue = lines[:prologue_end]
+    prologue = lines[:prologue_end] + externs
     for where, chunk in [("prologue", prologue)] + [
             (f"function {n}", seg) for n, seg in segments]:
         for line in chunk:
@@ -106,6 +119,26 @@ def parse_s(text):
                 raise HybridError(f"data section in {where} not supported "
                                   f"yet: {line.strip()!r}")
     return prologue, segments
+
+
+# The decompals `as` encodes two of ee-gcc's pseudo-instructions differently
+# from Sony's `as`, whose choices are what retail contains. Rewriting the
+# compiled segments to the explicit forms makes both assemblers -- and
+# retail -- agree; the byte gates verify the result as always.
+#   move $x,$y   Sony: daddu $x,$y,$0     decompals: or $x,$y,$0
+#   break N      Sony: code in bits 6-15  decompals: code in bits 16-25
+_MOVE_RE = re.compile(r"^(\s*)move(\s+)(\$\w+),(\$\w+)\s*$")
+_BREAK_RE = re.compile(r"^(\s*)break(\s+)(\d+)\s*$")
+
+
+def _sonyize(line):
+    m = _MOVE_RE.match(line)
+    if m:
+        return f"{m.group(1)}daddu{m.group(2)}{m.group(3)},{m.group(4)},$0"
+    m = _BREAK_RE.match(line)
+    if m:
+        return f"{m.group(1)}break{m.group(2)}0,{m.group(3)}"
+    return line
 
 
 def _manifest_functions(data):
@@ -154,14 +187,40 @@ def build_hybrid(manifest_path, out_o, link_set="matching", version="pal103"):
     out_lines = list(prologue)
     for addr, name, state in functions:
         if state in LINK_SETS[link_set]:
-            out_lines += seg_by_name[name]
+            out_lines += [_sonyize(l) for l in seg_by_name[name]]
         else:
             out_lines += _slice_lines(version, unit_dir, name, addr)
     hybrid_s.parent.mkdir(parents=True, exist_ok=True)
     hybrid_s.write_text("\n".join(out_lines) + "\n")
-    cc.assemble_s(hybrid_s, out_o, profile=data.get("profile", "default"),
-                  version=version)
+    _assemble_hybrid(hybrid_s, out_o)
     return hybrid_s
+
+
+def _assemble_hybrid(hybrid_s, out_o):
+    """Assemble the spliced .s with the decompals binutils `as`.
+
+    Sony's own `as` (the original plan) cannot assemble the retail slices:
+    it predates the `%gp_rel(sym)($gp)` relocation syntax, and it carries an
+    unconditional R5900 short-loop erratum workaround that pads backward
+    branches with nops -- retail game code contains unpadded 4-instruction
+    loops, so the padded output can never be byte-identical. The decompals
+    `as` assembles both the slices (it already produces the byte-verified
+    expected objects from the same text) and ee-gcc's compiler output
+    (`.extern SYM, n` + macro forms resolve to R_MIPS_GPREL16 under -G8,
+    probed) without padding. The whole-unit byte gates remain the arbiter
+    of every matching claim, so a divergent encoding fails loudly.
+    """
+    as_bin = tool_path(AS)
+    if not as_bin:
+        raise HybridError(f"{AS} not found (setup_toolchain.py installs it)")
+    out_o = Path(out_o)
+    out_o.parent.mkdir(parents=True, exist_ok=True)
+    proc = subprocess.run(
+        [as_bin, "-EL", "-march=r5900", "-G8",
+         "-o", str(out_o), str(hybrid_s)],
+        capture_output=True, text=True)
+    if proc.returncode != 0:
+        raise HybridError(f"assembling {hybrid_s} failed:\n{proc.stderr}")
 
 
 def main():
