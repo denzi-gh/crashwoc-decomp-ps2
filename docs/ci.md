@@ -21,7 +21,8 @@ crashwoc-decomp-ps2-build (PRIVATE repo)      │
   Dockerfile (COPY orig /orig) ── its build.yml ──► ghcr.io/denzi-gh/crashwoc-decomp-ps2-build:main  [PRIVATE package]
                                                           ▲ matching.yml job container
 matching.yml: cp -a /orig . → cached toolchain install + fingerprints → verify_target
-  → registry --checks → configure → ninja gates → report → sanitized artifact
+  → registry --checks → configure → ninja gates → report → check_report_matches
+  → sanitize → stage → smoke_report → upload artifact
   → progress baseline bot-commit (main pushes only)
 ```
 
@@ -108,6 +109,23 @@ whitelist-sanitized report from `tools/sanitize_report.py` — this is what
 changed counts, a bot commit of `progress/summary.json`. Everything else
 (orig copies, objects, images) dies with the ephemeral runner.
 
+Before the artifact uploads, two gates run against it. `tools/check_report_matches.py`
+(right after `ninja report`) asserts every function `verify_promoted.py` proved
+byte-matching reads 100% in the report. Then, after the artifact is staged to
+`build/publish/report.json`, `tools/smoke_report.py` re-checks the exact bytes
+that will leave the runner: valid JSON, a strict subset of objdiff's Report
+schema (no stray fields), no `orig/` reference / absolute path / embedded byte
+blob, no hollow "100% of nothing" measure, and again every verified matching
+function at 100%. A stale or tampered staged file fails the run before upload.
+
+The report also models the program's data: `tools/gen_objdiff.py` lists one
+target-only unit per linked data object in a dedicated `data` category, so
+`total_data` is honest (real linked bytes, zero matched until C data exists) and
+no artificial code value is invented. Note decomp.dev's treemap only renders
+units with `total_code > 0`; the data units are correctly counted in the report
+and category metrics but do **not** appear as clickable tiles — expected, not a
+regression.
+
 ## PR verification (no fork ever touches the private image)
 
 `matching.yml` deliberately has **no `pull_request` trigger**. A
@@ -144,3 +162,28 @@ is published) and `--write` only rewrites `progress/summary.json` when a
 non-volatile count changed, so nightly runs don't produce noise commits.
 The summary moves only on *verified* progress (promoted functions, complete
 units); WIP fuzzy percentages live in the report artifact alone.
+
+## Rollout checklist
+
+Before opening this branch to `main` and going public:
+
+1. **Local (host, no toolchain):** `python -m unittest discover -s tests -v`,
+   `python tools/status.py --check`, `python tools/gen_ninja.py` and
+   `python tools/gen_objdiff.py` — the graph and objdiff config regenerate
+   deterministically.
+2. **Container, full byte matrix** (`python tools/dispatch.py ...`):
+   `fingerprint_compiler.py --all` → `configure.py --strict` (and
+   `--strict --check` for the nightly path) → `ninja expected current matching`
+   → `ninja verify-loaded verify-promoted` → `compare_progress.py` →
+   `ninja report report-public` → `check_report_matches.py` → stage → `smoke_report.py`.
+3. **Confirm invariants:** loaded matching image is byte-identical to retail
+   (`c92a5987…0fe438`); every `matching` function verified over its full extent;
+   `verify_results.json` ↔ `progress/summary.json` ↔ public report agree; verified
+   matching functions read 100%; data metrics honest (no "100% of nothing"); the
+   `validate.yml` "nothing game-derived is tracked" guard stays green.
+4. **Fork-PR dry run:** a fork PR triggers only `validate.yml`, never `matching.yml`.
+5. **Independent review** of the diff, especially `.github/`, `tools/`, and the
+   toolchain lock. Rebase on `main`, submit, merge only on green byte gates.
+6. **Post-merge:** confirm the `main` run is green, download and eyeball the
+   `SLES_503.86_report` artifact, then make the repo public. The private build
+   image / GHCR package stays private; add the project to decomp.dev last.

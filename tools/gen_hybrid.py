@@ -12,14 +12,18 @@ build links for a unit:
      function: `matching` uses its C segment; everything else uses the
      function's retail slice (build/<version>/fallback/, tools/gen_slices.py).
   3. Segments and slices are spliced in retail ADDRESS order -- the order of
-     functions in the C file never matters -- and the result is assembled
-     back through the ee-gcc driver, so Sony's own `as` with the profile's
-     flags produces the final object.
+     functions in the C file never matters. The spliced assembly is
+     normalized (`_sonyize`: the two pseudo-ops ee-gcc and the decompals
+     binutils encode differently) and assembled with the decompals `as`
+     (declib.toolchain.AS), NOT the ee-gcc driver -- the retail slices are
+     already-assembled text that only that assembler round-trips byte-exactly.
 
 Two link sets exist: `matching` (only exact functions from C) and
 `equivalent` (reviewed-equivalent C compiles in too; slices only for `asm`
 functions). tools/verify_hybrid.py proves the matching set byte-identical to
-retail over the whole unit.
+retail over the whole unit. build_report_object() reuses the same compile and
+normalization to emit objdiff's base object (C functions only, no slices, no
+extent padding) -- a measurement, never linked.
 
 Anything this tool cannot yet represent fails loudly instead of guessing:
 a declared function missing from the C, data sections in the compiler

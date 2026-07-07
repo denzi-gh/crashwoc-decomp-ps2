@@ -127,6 +127,13 @@ jobs:
           mkdir -p build/publish
           cp build/pal103/report.public.json build/publish/report.json
 
+      - name: Smoke-test the staged artifact
+        # Final gate on the exact bytes that will be uploaded: valid JSON, a
+        # strict schema subset, no orig/absolute-path/blob leak, no hollow
+        # "100% of nothing" measure, and every verified matching function at
+        # 100%. Fails the run before anything leaves the container.
+        run: python tools/smoke_report.py
+
       - name: Upload decomp.dev report artifact
         uses: actions/upload-artifact@v4
         with:

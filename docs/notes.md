@@ -207,6 +207,28 @@ just things that came up while building and shouldn't be lost.
 
 ## Resolved
 
+- **Docs match the implementation again, and a smoke test guards the artifact
+  (2026-07-07).** Corrected the stale "Sony's own `as`" claim in gen_hybrid.py's
+  docstring and CLAUDE.md step 4 -- hybrids are normalized (`_sonyize`) and
+  assembled with the decompals `as`, not Sony's. Rewrote README ## Toolchain
+  (the two-compiler setup: `default`=ee-gcc-tt for game/engine, `sce`=ee-gcc for
+  the Sony runtime; wibo; per-file fingerprints) and ## Matching C (clean C +
+  status manifests; hybrid `matching`/`equivalent` sets; the current /
+  report-current / matching / equivalent object sets; verify_promoted +
+  link_image as the canonical byte gate; the objdiff data units and the
+  decomp.dev treemap caveat below). New tools/smoke_report.py runs in
+  matching.yml after the artifact is staged and before upload: it re-checks the
+  exact staged bytes (valid JSON, strict Report-schema subset, no
+  orig/absolute-path/blob leak via sanitize_report.violations, no hollow
+  "100%-of-nothing" measure, every verified matching function at 100% via
+  check_report_matches.check) so a stale or tampered staged file fails the run.
+  ci.md gained the pipeline step, the "what can leave a run" gates, and a rollout
+  checklist. IMPORTANT design fact to preserve: decomp.dev's treemap only renders
+  units with total_code > 0, so the modelled data units are correctly present in
+  the report and category metrics but do NOT show as clickable tiles -- this is
+  expected, and we must never invent an artificial code value to force them to
+  appear.
+
 - **The linked data is now modelled in objdiff, and hollow measures are
   stripped both ways (2026-07-07).** Investigation (reproducible, `-p` probe
   project in build/): objdiff-cli 3.7.2 DOES score a data object that has no
