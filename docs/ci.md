@@ -50,6 +50,48 @@ matching.yml: cp -a /orig . → cached toolchain install + fingerprints → veri
    **Manage Actions access** → add repository `crashwoc-decomp-ps2` with
    the **Read** role.
 
+## Container image pinning
+
+The [Containerfile](../Containerfile) pins every upstream source by immutable
+digest so the build environment is byte-reproducible:
+
+- **Base image**: `python:3.12-slim-trixie@sha256:423ed6ab…199fbf`.
+- **uv**: `ghcr.io/astral-sh/uv:0.11.27@sha256:4d01caf3…693419` (copied in for
+  the `/uv` binary).
+
+The human-readable tags are kept alongside the digests for readability only —
+the `@sha256:` digest is what Docker resolves. Python packages are pinned
+separately in [requirements.txt](../requirements.txt) (`splat64`, `spimdisasm`,
+`rabbitizer`), which must match `toolchain.lock.json`.
+
+### Updating a pinned digest
+
+1. Resolve the new digest from the registry (do not hand-write it). For the
+   base image:
+   ```bash
+   docker buildx imagetools inspect python:3.12-slim-trixie \
+     --format '{{.Manifest.Digest}}'
+   ```
+   For uv, pick a concrete version tag (e.g. a new `0.x.y`) and inspect it:
+   ```bash
+   docker buildx imagetools inspect ghcr.io/astral-sh/uv:0.x.y \
+     --format '{{.Manifest.Digest}}'
+   ```
+   (Without buildx, the registry HTTP API's `Docker-Content-Digest` response
+   header on a `HEAD`/`GET` of the manifest gives the same value.)
+2. Replace the `@sha256:` in the Containerfile (and the tag/version comment).
+   Use the multi-arch index digest, not a single-platform one, so the image
+   stays portable.
+3. Rebuild and re-verify (see below); update this section's digests.
+
+### Tests after a pin update
+
+- `docker build -f Containerfile -t crashwoc-decomp .` succeeds.
+- Inside the image, `uv pip list` shows the locked `splat64`/`spimdisasm`/
+  `rabbitizer` versions, i.e. `python configure.py --strict` passes.
+- The full `matching.yml` pipeline (via the private build image rebuilt
+  `FROM` this base) is green end-to-end.
+
 ## Caching and speed
 
 Two `actions/cache` entries keep runs fast: the locked toolchain
