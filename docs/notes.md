@@ -105,7 +105,30 @@ just things that came up while building and shouldn't be lost.
   unit is a `.c` file, not `.s`/`.S`.
 ### game/creature (unit 91) session findings, 2026-07-07
 
-- **The locked compiler cannot reproduce TT game code's register saves.**
+- **RESOLVED: the TT compiler is identified and locked (2026-07-07).**
+  Candidate sweep over the decomp.me compiler archives (scorecard =
+  per-function byte compare of src/game/creature.c + src/nucore/nulist.c
+  against retail, locked flags): every ee-gcc 2.9 build scores 6-7/19,
+  **SN ProDG ee-gcc 2.95.2-EE (driver "2.9-ee-991111b/r4", decomp.me
+  `ee-gcc2.95.2-273a`) scores 14/19** -- including every previously
+  impossible sq-saving function -- with 2.95.2-274 and 2.95.3-107/-114
+  output-identical on the corpus and 2.95.3-136 ruled out (different frame
+  layout). Locked as component `ee-gcc-tt` (profile `default`); the Sony
+  2.9-991111-01 stays as component `ee-gcc` (profile `sce`) for the
+  runtime half. The Win32 driver runs under the locked `wibo` 1.1.0
+  loader inside the container (proven .text-identical to a native
+  Windows run). gen_hybrid learned the SN spelling `.align 3` as a
+  segment lead. Full gates re-ran green under the new profiles
+  fingerprint; promotions after the switch: ResetPlayerMoves,
+  RemoveCreature, CloseCreatures, StoreLocatorMatrices, ChangeCharacter,
+  NuListAppend, NuListRemove -> **14 matching total**. Still `equivalent`:
+  ModelAnimDuration (retail carries an extra mtc1->c.le.s hazard nop this
+  SN build does not emit -- possibly a different SN patch level),
+  PlayerStartPos/AddCreature/ProcessCreatures/UpdateAnimPacket (ordinary
+  source-shape iteration, first real chance now that the compiler is
+  right). The paragraphs below record the original mismatch evidence.
+
+- **The (previously) locked Sony compiler cannot reproduce TT game code's register saves.**
   Retail game/engine code saves callee-saved GPRs with `sq/lq` (10,484
   sq-saves in .text); `sd`-saves appear ONLY in SCE/newlib/libgcc units
   (1,431). EE GCC 2.9-ee-991111-01 with the locked flags emits `sd/ld`

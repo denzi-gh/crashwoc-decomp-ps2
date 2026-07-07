@@ -25,7 +25,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0091:001cd7c8:ChangeCharacter"
-state = "equivalent"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0091:001cd9a8:PlayerStartPos"
@@ -77,15 +77,15 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0091:001d56a0:ResetPlayerMoves"
-state = "equivalent"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0091:001d5780:RemoveCreature"
-state = "equivalent"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0091:001d57b0:CloseCreatures"
-state = "equivalent"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0091:001d5850:ResetAnimPacket"
@@ -105,4 +105,4 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0091:001d5918:StoreLocatorMatrices"
-state = "equivalent"
+state = "matching"

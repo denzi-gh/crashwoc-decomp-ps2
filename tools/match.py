@@ -36,8 +36,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
-from cc import compile_c
-from declib.toolchain import AS, LD, NM, EEGCC, Reporter, h, tool_path
+from cc import compile_c, compiler_available
+from declib.toolchain import AS, LD, NM, Reporter, h, tool_path
 from declib.asmtext import disambiguate, load_symbol_addrs, resolve
 from declib.target import load_target
 from declib.tu import (drop_alignment, load_tu_runs, parse_toml_blocks,
@@ -153,9 +153,10 @@ def main():
     parser.add_argument("--version", default="pal103")
     args = parser.parse_args()
 
-    if not EEGCC.is_file() or not tool_path(LD):
-        print("EE GCC or PS2 binutils not found; run in the Containerfile image "
-              "(setup_toolchain.py installs them).", file=sys.stderr)
+    if not compiler_available() or not tool_path(LD):
+        print("matching compiler or PS2 binutils not found; run in the "
+              "Containerfile image (setup_toolchain.py installs them).",
+              file=sys.stderr)
         return 2
     src_files = sorted((ROOT / "src").rglob("*.c"))
     if not src_files:

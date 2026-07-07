@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A byte-exact matching decompilation of **Crash Bandicoot: The Wrath of Cortex** (PS2), targeting exactly one build: PAL retail v1.03, `SLES_503.86`. The user supplies the game ELF at `orig/pal103/`; it is never committed. The matching compiler is Sony's **EE GCC 2.9-ee-991111-01** with flags `-O2 -G8 -fomit-frame-pointer` (locked in `toolchain.lock.json` / `config/pal103/profiles.toml`). Modern compilers are for tooling only, never matching.
+A byte-exact matching decompilation of **Crash Bandicoot: The Wrath of Cortex** (PS2), targeting exactly one build: PAL retail v1.03, `SLES_503.86`. The user supplies the game ELF at `orig/pal103/`; it is never committed. The retail ELF was built by TWO toolchains, both locked in `toolchain.lock.json` / `config/pal103/profiles.toml` with flags `-O2 -G8 -fomit-frame-pointer`: the game/engine TUs (profile `default`) match under **SN ProDG EE GCC 2.95.2-EE** (`ee-gcc-tt`, a Win32 binary run under wibo in the container), the Sony runtime half (profile `sce`) under **EE GCC 2.9-ee-991111-01**. Modern compilers are for tooling only, never matching.
 
 ## Hard rules
 

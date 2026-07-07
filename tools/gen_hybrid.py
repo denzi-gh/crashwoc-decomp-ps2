@@ -46,7 +46,9 @@ LINK_SETS = {"matching": ("matching",), "equivalent": ("matching", "equivalent")
 _ENT_RE = re.compile(r"^\s*\.ent\s+(\S+)")
 _END_RE = re.compile(r"^\s*\.end\s+(\S+)")
 # Directives that may lead a function block (walked back into its segment).
-_LEAD_RE = re.compile(r"^\s*(\.text|\.p2align\s+\d+|\.globl\s+\S+)\s*$")
+# (`.p2align N` is the Sony 2.9 spelling, `.align N` the SN 2.95 one; both
+# mean 2^N here.)
+_LEAD_RE = re.compile(r"^\s*(\.text|\.p2align\s+\d+|\.align\s+\d+|\.globl\s+\S+)\s*$")
 # Byte-less symbol metadata ee-gcc emits between/after functions for extern
 # arrays it saw sizes for (`.extern CModel, 117120`): safe to hoist into the
 # prologue -- it only informs the assembler's gp-relative addressing choice
