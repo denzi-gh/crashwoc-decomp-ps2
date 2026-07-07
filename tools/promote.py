@@ -37,6 +37,31 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 from gen_objdiff import unit_table
 from declib.tu import parse_toml_blocks
+from status import load_profile_names
+
+
+def default_profile_for(category):
+    """Safe default compiler profile for a translation-unit category.
+
+    Game and engine code only matches under the SN ProDG compiler (profile
+    `default`); the SCE / newlib / libgcc / runtime half -- all classified
+    `sdk` by gen_objdiff.classify -- needs the Sony compiler (profile `sce`).
+    An explicit --profile override still wins over this default.
+    """
+    return "sce" if category == "sdk" else "default"
+
+
+def resolve_profile(profile, category, known):
+    """The profile to write into a new manifest: an explicit override when
+    given, otherwise the category default. Either way it must be a profile
+    that exists in profiles.toml, so a typo fails loudly at --init time
+    instead of only later in status validation."""
+    chosen = profile if profile is not None else default_profile_for(category)
+    if chosen not in known:
+        raise SystemExit(
+            f"promote --init: unknown profile {chosen!r} "
+            f"(profiles.toml has: {', '.join(sorted(known))})")
+    return chosen
 
 
 def find_entry(version, needle):
@@ -77,7 +102,7 @@ def run_verifier(version):
          "--version", version]).returncode == 0
 
 
-def init_manifest(version, source):
+def init_manifest(version, source, profile=None):
     """Create a fresh all-asm manifest for src/<unit>.c."""
     src_rel = Path(source).as_posix()
     if not (ROOT / src_rel).is_file():
@@ -89,6 +114,9 @@ def init_manifest(version, source):
             f"promote --init: no .text unit is named '{name}' "
             f"(see objdiff.json for the canonical unit names)")
     unit_index = row[0]
+    category = row[3]
+    profile = resolve_profile(profile, category,
+                              load_profile_names(ROOT / "config" / version))
 
     out = ROOT / "config" / version / "status" / f"{name}.toml"
     if out.is_file():
@@ -111,7 +139,7 @@ def init_manifest(version, source):
         "schema = 1",
         f'unit = "{version}:unit-{unit_index:04d}"',
         f'source = "{src_rel}"',
-        'profile = "default"',
+        f'profile = "{profile}"',
         "complete = false",
         "",
     ]
@@ -122,7 +150,7 @@ def init_manifest(version, source):
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text("\n".join(lines))
     print(f"wrote {out.relative_to(ROOT).as_posix()} "
-          f"({len(funcs)} functions, all asm)")
+          f"({len(funcs)} functions, all asm, profile {profile!r})")
     print("Regenerate the build config so the unit gets its hybrid edges:\n"
           "    python tools/gen_ninja.py")
     return 0
@@ -138,11 +166,18 @@ def main():
     parser.add_argument("--init", metavar="SRC",
                         help="create an all-asm manifest for src/<unit>.c "
                              "instead of promoting")
+    parser.add_argument("--profile", default=None,
+                        help="compiler profile for the new --init manifest "
+                             "(default: derived from the unit category -- "
+                             "sce for SDK/SCE/newlib/libgcc, else default); "
+                             "must exist in profiles.toml")
     parser.add_argument("--version", default="pal103")
     args = parser.parse_args()
 
+    if args.profile and not args.init:
+        parser.error("--profile only applies to --init")
     if args.init:
-        return init_manifest(args.version, args.init)
+        return init_manifest(args.version, args.init, args.profile)
     if not args.target:
         parser.error("a function id/name is required (or --init SRC)")
 
