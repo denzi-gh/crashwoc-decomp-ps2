@@ -70,6 +70,7 @@ struct pad_s {
 };
 
 extern float IDLEWAIT;
+extern float SAFEY;
 extern s32 Level;
 extern s32 GameMode;
 extern s32 Adventure;
@@ -138,16 +139,57 @@ void tbslotBeginFn(void *tbset, s32 slot);
 void tbslotEndFn(void *tbset, s32 slot);
 
 
-/* TerrainFailsafe and ModelAnimDuration are reconstructed (see the GC
- * reference) but held out of this file for now: they use float literals
- * (2000000.0f, 0.033333335f) whose bit patterns force the compiler to
- * emit a .lit4 literal pool, and the pipeline does not support data
- * sections from C yet (verify_promoted: "complete units must not own
- * data ranges"). The same holds for ResetPlayer, ManageCreatures,
- * LoadCharacterModels, NewCharacterIdle, UpdateCharacterIdle, MovePlayer,
- * DrawCharacterModel and DrawCreatures (.lit4 pools and/or switch jump
- * tables and/or initialized local aggregates such as EvalModelAnim's
- * `short layertab[2] = {0, 1}`). Reinstate them when data-from-C lands. */
+/* Still held out of this file: ManageCreatures and MovePlayer (switch jump
+ * tables -> .rodata) and EvalModelAnim / DrawCharacterModel / DrawCreatures
+ * (initialized local aggregates such as `short layertab[2] = {0, 1}`
+ * -> .sdata). Float literal pools (.lit4) are supported: gen_hybrid maps
+ * pool-bound li.s constants onto the retail .lit4 slots the function's own
+ * retail slice references. */
+
+
+float ModelAnimDuration(u32 character, u32 action, float start, float end)
+{
+    f32 t;
+    struct CharacterModel *model;
+    s32 index;
+
+    if ((character > 0xBE) || (action > 0x75)) {
+        return 1.0f;
+    }
+    index = CRemap[character];
+    if (index == -1) {
+        return 1.0f;
+    }
+    model = &CModel[index];
+    if (model->anmdata[action] == 0) {
+        return 1.0f;
+    }
+    t = model->anmdata[action]->time;
+    if ((start >= 1.0f) && (start < t)) {
+        if ((end >= 1.0f) && (end < t) && (start < end)) {
+            t = end - start;
+        } else {
+            t -= start;
+        }
+    } else if ((end >= 1.0f) && (end < t)) {
+        if (start < end) {
+            t = end - 1.0f;
+        }
+    }
+    return t * (1.0f / model->animlist[action]->speed) * 0.033333335f;
+}
+
+
+void TerrainFailsafe(struct obj_s *obj)
+{
+    if (obj->shadow != 2000000.0f) {
+        return;
+    }
+    obj->shadow = SAFEY;
+    if (obj->pos.y + obj->bot * obj->SCALE < SAFEY) {
+        obj->pos.y = SAFEY - obj->min.y * obj->SCALE;
+    }
+}
 
 
 void ChangeCharacter(struct creature_s *c, s32 character)

@@ -69,11 +69,11 @@ state = "equivalent"
 
 [[function]]
 id = "pal103:unit-0091:001d5528:ModelAnimDuration"
-state = "asm"
+state = "equivalent"
 
 [[function]]
 id = "pal103:unit-0091:001d5648:TerrainFailsafe"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0091:001d56a0:ResetPlayerMoves"

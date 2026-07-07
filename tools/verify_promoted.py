@@ -10,6 +10,10 @@ For each status manifest this verifier proves, from scratch:
   3. Every `matching` function is BYTE-IDENTICAL to retail over its full
      registry extent [addr, addr+size), where size is the distance to the
      next function -- a shrunken function can never "match" its prefix.
+     The bytes are taken from the freshly rebuilt matching hybrid (the
+     object the canonical image links), which carries gen_hybrid's
+     per-function .lit4 slot mapping; gen_hybrid guarantees a `matching`
+     function's hybrid bytes always come from the C compile.
   4. A `complete` unit must not own data ranges yet (data-from-C is not
      supported until the hybrid can splice data sections); fail loudly
      rather than silently under-verify.
@@ -101,8 +105,28 @@ def verify_manifest(reporter, manifest, version, elf, text_addr, text_off,
 
     matching = {n: e for n, e in nonasm.items() if e["state"] == "matching"}
     if matching:
-        base_addr = min(unit_sizes[n][0] for n in offsets if n in unit_sizes)
-        undef = undefined_externals(nm_bin, current_o)
+        # Byte source is the freshly built MATCHING HYBRID, not the plain
+        # compile: the hybrid object is what the canonical image links, and
+        # it is where gen_hybrid's per-function .lit4 slot mapping lives (a
+        # plain compile lays its literal pool out its own way, so a function
+        # that loads pool constants could never byte-match through it).
+        # gen_hybrid itself guarantees every `matching` function's bytes in
+        # the hybrid come from the C compile, never from a slice.
+        hybrid_o = ROOT / "build" / version / "matching" / rel.with_suffix(".o")
+        try:
+            build_hybrid(manifest, hybrid_o, link_set="matching",
+                         version=version)
+        except HybridError as exc:
+            reporter.result(f"{label} (matching bytes)", False, str(exc))
+            for entry in nonasm.values():
+                results.append({"id": entry["id"], "state": entry["state"],
+                                "verified": False,
+                                "reason": f"hybrid build failed: {exc}"})
+            return
+        hybrid_offsets = defined_function_offsets(nm_bin, hybrid_o)
+        base_addr = min(unit_sizes[n][0]
+                        for n in hybrid_offsets if n in unit_sizes)
+        undef = undefined_externals(nm_bin, hybrid_o)
         defsyms, unresolved = resolve(sorted(undef - {"_gp"}),
                                       load_symbol_addrs(version))
         if unresolved:
@@ -114,12 +138,12 @@ def verify_manifest(reporter, manifest, version, elf, text_addr, text_off,
                                 "reason": "unresolved externals"})
             return
         with tempfile.TemporaryDirectory() as tmp:
-            linked = link_text_at(current_o, base_addr, defsyms, Path(tmp))
+            linked = link_text_at(hybrid_o, base_addr, defsyms, Path(tmp))
         bad = []
         for name, entry in sorted(matching.items(),
                                   key=lambda kv: unit_sizes[kv[0]][0]):
             addr, size = unit_sizes[name]
-            got = linked[offsets[name]: offsets[name] + size]
+            got = linked[hybrid_offsets[name]: hybrid_offsets[name] + size]
             want = elf[text_off + (addr - text_addr):
                        text_off + (addr - text_addr) + size]
             ok = got == want and len(got) == size

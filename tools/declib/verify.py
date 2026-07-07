@@ -11,6 +11,13 @@ from pathlib import Path
 from .toolchain import LD, OBJCOPY, tool_path
 
 _GP = 0x00634970
+# Retail .lit4 base (config/pal103/sections.json). A compiled object's own
+# literal pool is placed here so its R_MIPS_GPREL16 relocs resolve and the
+# .text link succeeds. The pool's internal layout differs from retail's, so
+# functions that load pool constants still (honestly) compare as DIFF here;
+# gen_hybrid's per-function slot mapping is what makes them byte-exact in
+# the verified matching build.
+_LIT4 = 0x0062C980
 
 
 def defined_functions(nm_bin, obj):
@@ -53,6 +60,8 @@ def link_text_at(obj, base_addr, defsyms, tmp):
     ld_bin, objcopy_bin = tool_path(LD), tool_path(OBJCOPY)
     script = (f"SECTIONS {{\n  . = 0x{base_addr:08X};\n"
               f"  .text : SUBALIGN(1) {{ {Path(obj).as_posix()}(.text) }}\n"
+              f"  . = 0x{_LIT4:08X};\n"
+              f"  .lit4 : {{ {Path(obj).as_posix()}(.lit4) }}\n"
               f"  _gp = 0x{_GP:08X};\n  /DISCARD/ : {{ *(*) }}\n}}\n"
               + "\n".join(f"{n} = 0x{a:08X};" for n, a in defsyms.items()) + "\n")
     ld = tmp / "link.ld"
