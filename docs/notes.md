@@ -207,6 +207,19 @@ just things that came up while building and shouldn't be lost.
 
 ## Resolved
 
+- **The published report no longer claims completed data that does not exist
+  (2026-07-07).** objdiff-cli emits the data-completeness measures
+  (matched_data, matched_data_percent, complete_data, complete_data_percent)
+  even when a measures block models zero data bytes -- which renders as "100%
+  data complete" about nothing on decomp.dev. sanitize_report.py now runs
+  `_strip_hollow_data` on every measures block (report, unit, category): when
+  total_data is absent or 0, those derived measures are dropped and the honest
+  total_data (0) is kept. A block that genuinely models data keeps them, so
+  this survives future data-unit modelling untouched (that fuller modelling is
+  the separate, investigation-driven follow-up). The sanitizer still only ever
+  REMOVES fields; the output stays a strict subset of objdiff's Report schema.
+  Nothing here touches a byte gate -- the public report is a measurement only.
+
 - **The `pull_request` trigger was removed from matching.yml to close the
   fork-exfiltration hole (2026-07-07).** The dtk private-image move (entry
   below) had accepted that a fork PR could rewrite the workflow and read

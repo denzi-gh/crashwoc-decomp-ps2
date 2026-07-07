@@ -18,6 +18,13 @@ After filtering, every string in the OUTPUT is scanned; publication aborts
 Function names, addresses and sizes pass on purpose: they are facts already
 committed in the public config/ registries (functions.toml et al).
 
+One honesty rule beyond the whitelist: objdiff-cli emits data-completeness
+measures (matched_data*, complete_data*) even when the report models zero
+data bytes, which reads as "100% data complete" about nothing. Where a
+measures block has no data (total_data absent or 0) those derived measures
+are dropped and the honest total_data (0) is kept; a block that genuinely
+has data keeps them. This never invents a value.
+
 Stdlib only; no toolchain and no game files needed.
 """
 import argparse
@@ -41,10 +48,49 @@ MEASURE_KEYS = frozenset({
 UNIT_METADATA_KEYS = frozenset({"complete", "source_path",
                                 "progress_categories"})
 
+# Data-completeness measures that only carry meaning when data actually
+# exists. objdiff-cli emits them even for a report that models zero data
+# bytes, where "100% data complete" is a claim about nothing. When there is
+# no data (total_data absent or 0) we keep the honest total_data and drop
+# only these derived measures. As soon as real data units exist they pass
+# through untouched. See docs/notes.md (honest data metrics).
+DATA_COMPLETION_KEYS = frozenset({
+    "matched_data", "matched_data_percent",
+    "complete_data", "complete_data_percent",
+})
+
 ORIG_RE = re.compile(r"(^|[\\/])orig([\\/]|$)", re.IGNORECASE)
 ABS_PATH_RE = re.compile(r"^([A-Za-z]:[\\/]|[\\/])")
 HEX_BLOB_RE = re.compile(r"^[0-9a-fA-F]{32,}$")
 B64_BLOB_RE = re.compile(r"^[A-Za-z0-9+/]{64,}={0,2}$")
+
+
+def _measure_zero_or_absent(measures, key):
+    """True if a numeric measure is missing or equals zero.
+
+    objdiff-cli renders integer measures as JSON strings ("0"), so accept
+    both the string and numeric forms; a value that cannot be read as a
+    number is treated as present (do not strip on garbage).
+    """
+    if key not in measures:
+        return True
+    try:
+        return float(measures[key]) == 0.0
+    except (TypeError, ValueError):
+        return False
+
+
+def _strip_hollow_data(measures):
+    """Drop data-completeness measures in place when no data is modelled.
+
+    total_data stays (an honest 0); only the derived matched_/complete_data
+    measures -- which would otherwise report 100% of nothing -- are removed.
+    Applied to every measures block (report, unit, category) independently,
+    so a unit that genuinely has data keeps its data measures.
+    """
+    if _measure_zero_or_absent(measures, "total_data"):
+        for key in DATA_COMPLETION_KEYS:
+            measures.pop(key, None)
 
 
 def _keep(src, dst, keys, dropped, where):
@@ -83,12 +129,14 @@ def sanitize(report):
     public["measures"] = {}
     _keep(report.get("measures", {}), public["measures"], MEASURE_KEYS,
           dropped, "measures")
+    _strip_hollow_data(public["measures"])
 
     public["units"] = []
     for unit in report.get("units", []):
         u = {"name": unit["name"], "measures": {}}
         _keep(unit.get("measures", {}), u["measures"], MEASURE_KEYS,
               dropped, "unit.measures")
+        _strip_hollow_data(u["measures"])
         u["sections"] = [_clean_section(s, dropped, "unit.section")
                          for s in unit.get("sections", [])]
         u["functions"] = [_clean_symbol(f, dropped, "unit.function")
@@ -107,6 +155,7 @@ def sanitize(report):
         c = {"id": cat["id"], "name": cat["name"], "measures": {}}
         _keep(cat.get("measures", {}), c["measures"], MEASURE_KEYS,
               dropped, "category.measures")
+        _strip_hollow_data(c["measures"])
         for key in cat:
             if key not in ("id", "name", "measures"):
                 dropped.add(f"category.{key}")
