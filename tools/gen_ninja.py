@@ -193,9 +193,10 @@ def emit_ninja(version="pal103", out_path=None):
                        implicit=hybrid_implicit,
                        variables=[("manifest", manifest),
                                   ("set", link_set)])
-        # Report base object: C functions only (same normalization as the
-        # hybrid), un-decompiled functions zero-filled. This is objdiff's
-        # base_path, so a verified matching function reads 100% honestly.
+        # Report base object: a symbol for every function the compiler
+        # produced C for (same normalization as the hybrid), un-decompiled
+        # functions omitted. This is objdiff's base_path, so a verified
+        # matching function reads 100% and a WIP function keeps its fuzzy match.
         report_cur = f"build/{version}/report-current/{rel}"
         report_current_o.append(report_cur)
         L += _edge("hybrid", [report_cur], [src_rel, manifest],

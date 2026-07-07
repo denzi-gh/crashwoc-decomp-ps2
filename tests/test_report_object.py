@@ -13,6 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
+import gen_hybrid
 from gen_hybrid import _splice_unit
 
 PROLOGUE = [".text", ".globl foo"]
@@ -66,6 +67,42 @@ class TestReportBaseSplice(unittest.TestCase):
     def test_no_data_directives_emitted(self):
         for bad in (".lit4", ".lit8", ".data", ".rodata", ".sdata"):
             self.assertNotIn(bad, self.text)
+
+
+# A WIP function: C is written (the compiler emitted a segment) but the
+# manifest still says asm. It must appear in the report base (so objdiff shows
+# its fuzzy match) yet stay a retail slice in the matching hybrid.
+WIP_FUNCTIONS = [(0x1000, "foo", "matching"), (0x1080, "wip", "asm")]
+WIP_SEGMENTS = {
+    "foo": [".ent foo", "\tnop", ".end foo"],
+    "wip": [".ent wip", "\tmove\t$4,$5", ".end wip"],   # asm state, but has C
+}
+
+
+class TestWipAsmFunction(unittest.TestCase):
+    def test_report_base_includes_wip_c_regardless_of_state(self):
+        text = "\n".join(_splice_unit(
+            list(PROLOGUE), dict(WIP_SEGMENTS), list(WIP_FUNCTIONS),
+            "unit-0007", "equivalent", "pal103",
+            report_base=True, unit_end=0x1100))
+        compact = re.sub(r"[ \t]+", " ", text)
+        self.assertIn(".ent wip", text)               # symbol present
+        self.assertIn("daddu $4,$5,$0", compact)      # normalized like the rest
+
+    def test_matching_hybrid_slices_the_asm_function_from_retail(self):
+        # Substitute the retail slice reader so the test needs no slice file.
+        original = gen_hybrid._slice_lines
+        gen_hybrid._slice_lines = lambda v, u, n, a: [f"<<RETAIL SLICE {n}>>"]
+        try:
+            text = "\n".join(_splice_unit(
+                list(PROLOGUE), dict(WIP_SEGMENTS), list(WIP_FUNCTIONS),
+                "unit-0007", "matching", "pal103",
+                report_base=False, unit_end=0x1100))
+        finally:
+            gen_hybrid._slice_lines = original
+        self.assertIn("<<RETAIL SLICE wip>>", text)   # asm -> retail fallback
+        self.assertNotIn(".ent wip", text)            # not compiled from C
+        self.assertIn(".ent foo", text)               # matching foo is from C
 
 
 if __name__ == "__main__":

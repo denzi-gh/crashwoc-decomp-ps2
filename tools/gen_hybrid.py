@@ -317,22 +317,24 @@ def _splice_unit(prologue, seg_by_name, functions, unit_dir, link_set,
                  version, report_base, unit_end):
     """Ordered .s lines for one unit.
 
-    Every function with accepted C (per link_set) is compiled and normalized
-    (`_rewrite_lis` maps pool-bound li.s onto the retail .lit4 slots,
-    `_sonyize` fixes the two decompals pseudo-ops). The two modes differ in
-    what they do around those functions:
+    Each included function is normalized identically (`_rewrite_lis` maps
+    pool-bound li.s onto the retail .lit4 slots, `_sonyize` fixes the two
+    decompals pseudo-ops). The two modes differ in which functions they
+    include and in how they treat the rest:
 
-      report_base=False (hybrid): un-decompiled functions are spliced from
-        their retail slice, and each C function is zero-padded to its registry
-        extent so the linked image is byte-exact (gas fails loudly if compiled
-        code overruns its extent).
-      report_base=True  (objdiff report base): un-decompiled functions are
-        omitted entirely (no symbol -> objdiff pairs the retail target with
-        nothing -> 0%), and C functions are NOT extent-padded. objdiff diffs
-        per symbol, so the .lit4/pseudo-op normalization alone makes a matching
-        function byte-identical to its retail symbol (100%); an equivalent
-        function -- which may compile longer than its retail extent -- shows
-        its honest partial match without a backwards-.org failure.
+      report_base=False (hybrid): functions whose manifest state is in
+        link_set compile from C and are zero-padded to their registry extent
+        (so the linked image is byte-exact; gas fails loudly if compiled code
+        overruns its extent); every other function is spliced from its retail
+        slice.
+      report_base=True  (objdiff report base): EVERY function the compiler
+        produced C for gets a symbol -- matching, equivalent, or a WIP
+        function still marked asm -- regardless of manifest state, so its
+        fuzzy match shows honestly (a matching function reads 100%, a WIP
+        function its partial match). Functions with no C are omitted: no
+        symbol, so objdiff pairs the retail target with nothing -> 0%. No
+        extent padding, so an equivalent/WIP function that compiles longer
+        than its retail extent does not trigger a backwards-.org failure.
     """
     out_lines = list(prologue)
     body_lines = []
@@ -340,7 +342,14 @@ def _splice_unit(prologue, seg_by_name, functions, unit_dir, link_set,
     base = functions[0][0]
     ends = [a for a, _n, _s in functions[1:]] + [unit_end]
     for (addr, name, state), end in zip(functions, ends):
-        if state in LINK_SETS[link_set]:
+        # The report base keys off "did the compiler produce C for this
+        # function", not the manifest state, so a WIP function written in C
+        # but still marked asm keeps its fuzzy match in the report. The hybrid
+        # keys off link_set, so an asm/equivalent function stays a retail
+        # slice in the matching image.
+        from_c = name in seg_by_name if report_base \
+            else state in LINK_SETS[link_set]
+        if from_c:
             seg, externs = _rewrite_lis(seg_by_name[name], version, unit_dir,
                                         name, addr, mapper_box)
             out_lines += externs   # symbol metadata; hoisted, emits no bytes
@@ -353,7 +362,7 @@ def _splice_unit(prologue, seg_by_name, functions, unit_dir, link_set,
                 # compiled code overruns its extent.
                 body_lines.append(f".org 0x{end - base:X}, 0")
         elif report_base:
-            continue                 # un-decompiled: no symbol, no bytes
+            continue                 # not implemented in C: no symbol, no bytes
         else:
             body_lines += _slice_lines(version, unit_dir, name, addr)
     out_lines += body_lines
@@ -385,18 +394,20 @@ def build_hybrid(manifest_path, out_o, link_set="matching", version="pal103"):
 def build_report_object(manifest_path, out_o, version="pal103"):
     """Assemble one unit's objdiff report base object; returns the .s path.
 
-    Same C compile and normalization as the matching+equivalent hybrid, but
-    un-decompiled functions are zero-filled instead of spliced from retail:
-    the object carries ONLY C-generated function bytes. A `matching` function
-    is byte-identical to its hybrid (hence to retail), so objdiff scores it
-    100%; an `equivalent` function shows its honest partial match; an `asm`
-    function has no symbol here and shows 0%. No retail slice bytes, and
+    Same C compile and normalization as the hybrid, but the object carries a
+    symbol for EVERY function the compiler produced C for, whatever its
+    manifest state, and nothing else -- un-decompiled functions are omitted
+    (no symbol), never spliced from retail. A `matching` function is
+    byte-identical to its hybrid (hence to retail), so objdiff scores it 100%;
+    an `equivalent` or a WIP-but-still-`asm` function shows its honest fuzzy
+    match; a function with no C shows 0%. No retail slice bytes, and
     `_check_no_data_sections` guarantees it introduces no data section of its
     own -- this is a report-only measurement object, never a link input.
     """
     data = tomllib.loads(Path(manifest_path).read_text())
-    # "equivalent" is the widest from-C set (matching + equivalent), so both
-    # appear in the report; the byte gates never trust this object.
+    # link_set only gates the compile-time "matching/equivalent must be
+    # defined in C" check in _compile_and_split; the report includes functions
+    # by whether the compiler emitted them, not by link_set.
     link_set = "equivalent"
     prologue, seg_by_name, functions, unit_dir = _compile_and_split(
         data, out_o, link_set, version)
