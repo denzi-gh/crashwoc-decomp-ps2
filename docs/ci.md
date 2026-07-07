@@ -5,11 +5,11 @@ Two workflows, both on GitHub-hosted runners:
 - **validate.yml** — every push and PR. Structure only: manifests,
   registries, tests, and the guard that nothing game-derived is tracked in
   this repository. Needs no game files.
-- **matching.yml** — pushes to main, nightly, and manual dispatch only
-  (never on `pull_request`). The full byte-gated pipeline. It needs the
-  retail ELF, which this public repository must never contain — so the job
-  runs *inside* a private container image that has the game files baked in,
-  following
+- **matching.yml** — pushes to any branch in this repo, nightly, and manual
+  dispatch (never on `pull_request`; see the fork-safety note below). The full
+  byte-gated pipeline. It needs the retail ELF, which this public repository
+  must never contain — so the job runs *inside* a private container image that
+  has the game files baked in, following
   [dtk-template's method](https://github.com/encounter/dtk-template/blob/main/docs/github_actions.md).
 
 ```
@@ -135,25 +135,28 @@ the retail game files. Removing the trigger closes that hole entirely;
 `pull_request_target` is **not** used, because it would run the same
 untrusted PR code with the same private resources.
 
-What every PR still gets automatically: **validate.yml** (public,
-GitHub-hosted, no game files) runs on every push and pull request —
-manifests, registries, unit tests, and the "nothing game-derived is tracked"
-guard. That is the full contract a fork PR can rely on.
+Instead, byte verification is driven by the **`push` trigger on any branch**
+(`branches: ["**"]`). This is fork-safe by construction: a push to a fork
+runs in the *fork's* Actions, never in this repository, so untrusted code can
+never reach the private `/orig` image through it. Only someone with write
+access can push a branch here, and their code is as trusted as a push to
+`main`.
 
-Byte verification of a contributed change is a maintainer action:
+The practical payoff — same-repo PRs get their byte gates and a decomp.dev
+progress comment automatically:
 
-1. Let validate.yml run on the PR (automatic, public).
-2. Review the diff — especially any change to `.github/`, `tools/`, or the
-   toolchain lock.
-3. Cherry-pick / merge the reviewed commit onto an **in-repo** branch (not a
-   fork). Only maintainers can push in-repo branches.
-4. Run `matching.yml` on that branch via **workflow_dispatch** (or let the
-   nightly/`main` run cover it). This is the only path that reaches `/orig`,
-   and it only ever runs code a maintainer has vetted.
-5. Merge once the byte gates are green.
+- A **collaborator branch** (same-repo PR): every push runs the full pipeline
+  and uploads `SLES_503.86_report`. The decomp.dev app attaches that artifact
+  to the open PR as a progress-vs-main comment. No manual dispatch needed.
+- A **fork PR**: triggers only **validate.yml** (public, no game files —
+  manifests, registries, unit tests, the "nothing game-derived is tracked"
+  guard). That is the full contract a fork PR can rely on. To byte-verify it,
+  a maintainer reviews the diff (especially `.github/`, `tools/`, the
+  toolchain lock), cherry-picks / merges the vetted commit onto an **in-repo**
+  branch, and lets that branch's push (or `workflow_dispatch`) run the gates.
 
-Non-PR runs never upload the baseline either: the bot-commit step is gated
-to `push` events on `refs/heads/main`.
+Feature-branch and nightly runs never upload the baseline: the bot-commit
+step is gated to `push` events on `refs/heads/main`.
 
 ## Progress publication
 
