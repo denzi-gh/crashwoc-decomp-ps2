@@ -70,11 +70,13 @@ jobs:
           restore-keys: build-
 
       - name: Install and fingerprint the locked toolchain
+        # --all verifies every lock component with an install_dir: both
+        # matching compilers (ee-gcc-tt, ee-gcc), the PE runner wibo,
+        # ps2-binutils and objdiff. A new fingerprinted component enrolls
+        # itself; nothing can be forgotten here.
         run: |
           python tools/setup_toolchain.py --download
-          python tools/fingerprint_compiler.py --component ee-gcc
-          python tools/fingerprint_compiler.py --component ps2-binutils
-          python tools/fingerprint_compiler.py --component objdiff
+          python tools/fingerprint_compiler.py --all
 
       - name: Verify target binary
         run: python tools/verify_target.py
@@ -86,7 +88,15 @@ jobs:
           python tools/status.py --check
 
       - name: Configure (split, build graph, objdiff config)
-        run: python configure.py
+        # --strict makes any splat/backend version drift against the lock
+        # fatal. The nightly additionally runs the deterministic double
+        # split (--check); push/PR runs split once to stay fast.
+        if: github.event_name != 'schedule'
+        run: python configure.py --strict
+
+      - name: Configure with determinism check (nightly)
+        if: github.event_name == 'schedule'
+        run: python configure.py --strict --check
 
       - name: Build all object sets
         run: ninja expected current matching
