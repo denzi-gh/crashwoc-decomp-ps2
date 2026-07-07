@@ -84,6 +84,8 @@ class TestEmitNinja(unittest.TestCase):
         self.assertGreaterEqual(report.count("expected/pal103/"),
                                 len(load_tu_runs()))
         self.assertIn("build/pal103/report-current/", report)
+        # Data objects are report targets too, so their stamp is a dependency.
+        self.assertIn("build/pal103/data_objects.stamp", report)
         (sanitize,) = self.edges("sanitize_report")
         self.assertTrue(sanitize.startswith(
             "build build/pal103/report.public.json: sanitize_report "
@@ -144,13 +146,23 @@ class TestEmitObjdiff(unittest.TestCase):
     def tearDownClass(cls):
         cls.tmp.cleanup()
 
+    def text_units(self):
+        return [u for u in self.cfg["units"]
+                if not u["name"].startswith("data/")]
+
+    def data_units(self):
+        return [u for u in self.cfg["units"]
+                if u["name"].startswith("data/")]
+
     def test_every_text_unit_listed_once(self):
-        names = [u["name"] for u in self.cfg["units"]]
+        names = [u["name"] for u in self.text_units()]
         self.assertEqual(len(names), len(load_tu_runs()))
-        self.assertEqual(len(names), len(set(names)))
+        # Names stay unique across text AND data units.
+        all_names = [u["name"] for u in self.cfg["units"]]
+        self.assertEqual(len(all_names), len(set(all_names)))
 
     def test_target_always_base_only_with_source(self):
-        for u in self.cfg["units"]:
+        for u in self.text_units():
             self.assertTrue(u["target_path"].startswith("expected/pal103/"))
             src = ROOT / u["metadata"]["source_path"]
             if not src.is_file():
@@ -164,6 +176,21 @@ class TestEmitObjdiff(unittest.TestCase):
                 # A source with no manifest yet falls back to raw current.
                 self.assertEqual(u["base_path"],
                                  f"build/pal103/current/{u['name']}.o")
+
+    def test_data_units_are_target_only(self):
+        data = self.data_units()
+        # One unit per linked data object; there are always more gaps/orphans
+        # and owned ranges than text units in this game.
+        self.assertGreater(len(data), 0)
+        for u in data:
+            # Target is the expected data object; no base (no C data yet), so
+            # objdiff reports total_data with an honest zero matched.
+            self.assertTrue(u["target_path"].startswith(
+                "expected/pal103/data/"))
+            self.assertNotIn("base_path", u)
+            self.assertEqual(u["metadata"]["progress_categories"], ["data"])
+            # No source_path: a data object is not decompiled from a .c file.
+            self.assertNotIn("source_path", u["metadata"])
 
     def test_units_use_known_categories(self):
         ids = {c["id"] for c in CATEGORIES}
@@ -184,6 +211,31 @@ class TestEmitObjdiff(unittest.TestCase):
     def test_paths_are_relative_posix(self):
         text = json.dumps(self.cfg)
         self.assertNotIn("\\", text)
+
+
+class TestDataUnits(unittest.TestCase):
+    """gen_objdiff.data_units mirrors the built data objects, deterministically.
+
+    Pure over the committed data map (no game files, no toolchain)."""
+
+    def test_one_unit_per_linked_data_object(self):
+        from gen_objdiff import data_units
+        from gen_data_objects import load_map, object_groups, NOBITS_SECTIONS
+        ranges = [r for r in load_map("pal103")
+                  if r["section"] not in NOBITS_SECTIONS]
+        stems = [stem for stem, _e in object_groups(ranges)]
+        units = data_units("pal103")
+        # Exactly one target-only unit per data object, name/target aligned.
+        self.assertEqual(len(units), len(stems))
+        for u, stem in zip(units, stems):
+            self.assertEqual(u["name"], f"data/{stem}")
+            self.assertEqual(u["target_path"],
+                             f"expected/pal103/data/{stem}.o")
+            self.assertNotIn("base_path", u)
+
+    def test_deterministic(self):
+        from gen_objdiff import data_units
+        self.assertEqual(data_units("pal103"), data_units("pal103"))
 
 
 class TestSelectTextObjects(unittest.TestCase):

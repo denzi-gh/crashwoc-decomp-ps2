@@ -239,11 +239,14 @@ def emit_ninja(version="pal103", out_path=None):
     # Progress report: objdiff-cli scores every unit's report base object (or
     # its absence) against the expected object. Measures only -- nothing here
     # can fail on a nonmatching function, and nothing here is a byte gate. The
-    # sanitized copy is the only report file that ever leaves the runner.
+    # data objects are targets too (objdiff scores their linked bytes), so the
+    # report depends on the data stamp as well. The sanitized copy is the only
+    # report file that ever leaves the runner.
     report_json = f"build/{version}/report.json"
     public_json = f"build/{version}/report.public.json"
     L += _edge("report", [report_json],
-               implicit=[*expected_o, *report_current_o, "objdiff.json"])
+               implicit=[*expected_o, *report_current_o, data_stamp,
+                         "objdiff.json"])
     L += _edge("sanitize_report", [public_json], [report_json],
                implicit=["tools/sanitize_report.py"])
     L.append("")

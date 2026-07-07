@@ -207,6 +207,36 @@ just things that came up while building and shouldn't be lost.
 
 ## Resolved
 
+- **The linked data is now modelled in objdiff, and hollow measures are
+  stripped both ways (2026-07-07).** Investigation (reproducible, `-p` probe
+  project in build/): objdiff-cli 3.7.2 DOES score a data object that has no
+  symbols -- it measures `total_data` from the allocated `.split.*` section
+  bytes, aggregating every `.split.<sec>_<addr>` slice into one logical
+  `.split` section. A target-only unit (no base) reports that `total_data`
+  with matched_data absent (honest 0); a unit whose base equals its target
+  reports matched_data_percent 100. So the preferred modelling is supported.
+  gen_objdiff.data_units() now emits one target-only objdiff unit per linked
+  data object from the committed data map (both per-owner `unit-NNNN` and every
+  `unassigned/<sec>_<addr>` gap/orphan -- all bytes that actually link),
+  named `data/<data-map-stem>` (prefix guarantees no collision with a .text
+  unit) in a dedicated "data" progress category. Report-level `total_data` is
+  now the real linked extent (0x39f... bytes) with 0 matched -- honest. The
+  report edge gains the data-objects stamp as a dependency so the targets
+  exist. Decisions: (a) unassigned ranges ARE modelled (they link, so they are
+  honest data), (b) data gets its OWN category rather than folding into
+  game/engine/sdk, keeping code categories pure. Consequence handled: data
+  units carry zero code, and objdiff emits "100% of no code" (fuzzy_match,
+  matched_code*, matched_functions*) for them -- the mirror of the data lie on
+  code units. sanitize_report._strip_hollow_measures was therefore generalised
+  from data-only to a per-total table (total_code -> matched_code*/complete_code*
+  /fuzzy_match_percent; total_data -> matched_data*/complete_data*;
+  total_functions -> matched_functions*): any derived measure whose total is
+  absent or 0 is dropped, honest totals kept. fuzzy rides with total_code (a
+  data-only unit's fuzzy is objdiff's no-code artifact) -- revisit if C data
+  ever contributes to a unit's fuzzy. No byte gate touched; PR4's invariant
+  still holds (14 matching functions at 100%). objdiff.json/build.ninja stay
+  deterministic (both regenerate byte-identically across two runs).
+
 - **The published report no longer claims completed data that does not exist
   (2026-07-07).** objdiff-cli emits the data-completeness measures
   (matched_data, matched_data_percent, complete_data, complete_data_percent)
