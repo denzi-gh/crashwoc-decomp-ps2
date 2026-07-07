@@ -169,6 +169,7 @@ def emit_ninja(version="pal103", out_path=None):
 
     # Current and hybrid objects per source file.
     current_o, matching_o, equivalent_o = [], [], []
+    report_current_o = []
     manifest_files, src_files = [], []
     for src_rel, manifest, profile in _sources(version):
         src_files.append(src_rel)
@@ -182,16 +183,25 @@ def emit_ninja(version="pal103", out_path=None):
                    variables=[("profile", profile)])
         if manifest is None:
             continue        # no manifest yet: no hybrid object (all-asm unit)
+        hybrid_implicit = [fallback_stamp, profiles, "tools/gen_hybrid.py",
+                           "tools/cc.py", *headers]
         for link_set, bucket in (("matching", matching_o),
                                  ("equivalent", equivalent_o)):
             out = f"build/{version}/{link_set}/{rel}"
             bucket.append(out)
             L += _edge("hybrid", [out], [src_rel, manifest],
-                       implicit=[fallback_stamp, profiles,
-                                 "tools/gen_hybrid.py", "tools/cc.py",
-                                 *headers],
+                       implicit=hybrid_implicit,
                        variables=[("manifest", manifest),
                                   ("set", link_set)])
+        # Report base object: a symbol for every function the compiler
+        # produced C for (same normalization as the hybrid), un-decompiled
+        # functions omitted. This is objdiff's base_path, so a verified
+        # matching function reads 100% and a WIP function keeps its fuzzy match.
+        report_cur = f"build/{version}/report-current/{rel}"
+        report_current_o.append(report_cur)
+        L += _edge("hybrid", [report_cur], [src_rel, manifest],
+                   implicit=hybrid_implicit,
+                   variables=[("manifest", manifest), ("set", "report")])
     L.append("")
 
     # Expected data objects (per-range incbin slices from the data map).
@@ -226,20 +236,24 @@ def emit_ninja(version="pal103", out_path=None):
                          "tools/verify_promoted.py", *headers])
     L.append("")
 
-    # Progress report: objdiff-cli scores every unit's current object (or its
-    # absence) against the expected object. Measures only -- nothing here can
-    # fail on a nonmatching function, and nothing here is a byte gate. The
-    # sanitized copy is the only report file that ever leaves the runner.
+    # Progress report: objdiff-cli scores every unit's report base object (or
+    # its absence) against the expected object. Measures only -- nothing here
+    # can fail on a nonmatching function, and nothing here is a byte gate. The
+    # data objects are targets too (objdiff scores their linked bytes), so the
+    # report depends on the data stamp as well. The sanitized copy is the only
+    # report file that ever leaves the runner.
     report_json = f"build/{version}/report.json"
     public_json = f"build/{version}/report.public.json"
     L += _edge("report", [report_json],
-               implicit=[*expected_o, *current_o, "objdiff.json"])
+               implicit=[*expected_o, *report_current_o, data_stamp,
+                         "objdiff.json"])
     L += _edge("sanitize_report", [public_json], [report_json],
                implicit=["tools/sanitize_report.py"])
     L.append("")
 
     for name, outs in (("expected", expected_o), ("current", current_o),
                        ("matching", matching_o), ("equivalent", equivalent_o),
+                       ("report-current", report_current_o),
                        ("fallback", [fallback_stamp]),
                        ("data", [data_stamp]),
                        ("verify-loaded", [f"build/{version}/image/matching.bin"]),

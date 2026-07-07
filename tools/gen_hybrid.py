@@ -12,14 +12,18 @@ build links for a unit:
      function: `matching` uses its C segment; everything else uses the
      function's retail slice (build/<version>/fallback/, tools/gen_slices.py).
   3. Segments and slices are spliced in retail ADDRESS order -- the order of
-     functions in the C file never matters -- and the result is assembled
-     back through the ee-gcc driver, so Sony's own `as` with the profile's
-     flags produces the final object.
+     functions in the C file never matters. The spliced assembly is
+     normalized (`_sonyize`: the two pseudo-ops ee-gcc and the decompals
+     binutils encode differently) and assembled with the decompals `as`
+     (declib.toolchain.AS), NOT the ee-gcc driver -- the retail slices are
+     already-assembled text that only that assembler round-trips byte-exactly.
 
 Two link sets exist: `matching` (only exact functions from C) and
 `equivalent` (reviewed-equivalent C compiles in too; slices only for `asm`
 functions). tools/verify_hybrid.py proves the matching set byte-identical to
-retail over the whole unit.
+retail over the whole unit. build_report_object() reuses the same compile and
+normalization to emit objdiff's base object (C functions only, no slices, no
+extent padding) -- a measurement, never linked.
 
 Anything this tool cannot yet represent fails loudly instead of guessing:
 a declared function missing from the C, data sections in the compiler
@@ -289,18 +293,17 @@ def _rewrite_lis(seg, version, unit_dir, name, addr, mapper_box):
     return out, externs
 
 
-def build_hybrid(manifest_path, out_o, link_set="matching", version="pal103"):
-    """Assemble one unit's hybrid object; returns the intermediate .s path."""
-    data = tomllib.loads(Path(manifest_path).read_text())
+def _compile_and_split(data, out_o, link_set, version):
+    """Compile the unit's C and split it into (prologue, seg_by_name,
+    functions, unit_dir). Shared by the hybrid link and the report base
+    object -- both start from the same compiler output and the same
+    from-C function set."""
     src = ROOT / data["source"]
     unit_dir = data["unit"].split(":")[1]
     functions = _manifest_functions(data)
     from_c = {name for _a, name, state in functions
               if state in LINK_SETS[link_set]}
-
-    out_o = Path(out_o)
-    hybrid_s = out_o.with_suffix(".s")
-    cs = out_o.with_name(out_o.stem + "_cc.s")
+    cs = Path(out_o).with_name(Path(out_o).stem + "_cc.s")
     cc.compile_s(src, cs, profile=data.get("profile", "default"),
                  version=version)
     prologue, segments = parse_s(cs.read_text())
@@ -311,33 +314,111 @@ def build_hybrid(manifest_path, out_o, link_set="matching", version="pal103"):
     if missing:
         raise HybridError(f"declared {'/'.join(LINK_SETS[link_set])} but not "
                           f"defined in {data['source']}: {', '.join(missing)}")
+    return prologue, seg_by_name, functions, unit_dir
 
+
+def _splice_unit(prologue, seg_by_name, functions, unit_dir, link_set,
+                 version, report_base, unit_end):
+    """Ordered .s lines for one unit.
+
+    Each included function is normalized identically (`_rewrite_lis` maps
+    pool-bound li.s onto the retail .lit4 slots, `_sonyize` fixes the two
+    decompals pseudo-ops). The two modes differ in which functions they
+    include and in how they treat the rest:
+
+      report_base=False (hybrid): functions whose manifest state is in
+        link_set compile from C and are zero-padded to their registry extent
+        (so the linked image is byte-exact; gas fails loudly if compiled code
+        overruns its extent); every other function is spliced from its retail
+        slice.
+      report_base=True  (objdiff report base): EVERY function the compiler
+        produced C for gets a symbol -- matching, equivalent, or a WIP
+        function still marked asm -- regardless of manifest state, so its
+        fuzzy match shows honestly (a matching function reads 100%, a WIP
+        function its partial match). Functions with no C are omitted: no
+        symbol, so objdiff pairs the retail target with nothing -> 0%. No
+        extent padding, so an equivalent/WIP function that compiles longer
+        than its retail extent does not trigger a backwards-.org failure.
+    """
     out_lines = list(prologue)
     body_lines = []
     mapper_box = [None]
     base = functions[0][0]
-    ends = [a for a, _n, _s in functions[1:]] + [_unit_end(unit_dir)]
+    ends = [a for a, _n, _s in functions[1:]] + [unit_end]
     for (addr, name, state), end in zip(functions, ends):
-        if state in LINK_SETS[link_set]:
+        # The report base keys off "did the compiler produce C for this
+        # function", not the manifest state, so a WIP function written in C
+        # but still marked asm keeps its fuzzy match in the report. The hybrid
+        # keys off link_set, so an asm/equivalent function stays a retail
+        # slice in the matching image.
+        from_c = name in seg_by_name if report_base \
+            else state in LINK_SETS[link_set]
+        if from_c:
             seg, externs = _rewrite_lis(seg_by_name[name], version, unit_dir,
                                         name, addr, mapper_box)
             out_lines += externs   # symbol metadata; hoisted, emits no bytes
             body_lines += [_sonyize(l) for l in seg]
-            if end is not None:
+            if end is not None and not report_base:
                 # A function's registry extent runs to the next function and
                 # includes retail's trailing pad nops; the compiler does not
                 # emit those. Zero-fill to the extent end (zero == nop) --
                 # and gas fails loudly ("moving .org backwards") if the
                 # compiled code overruns its extent.
                 body_lines.append(f".org 0x{end - base:X}, 0")
+        elif report_base:
+            continue                 # not implemented in C: no symbol, no bytes
         else:
             body_lines += _slice_lines(version, unit_dir, name, addr)
     out_lines += body_lines
-    hybrid_s.parent.mkdir(parents=True, exist_ok=True)
-    hybrid_s.write_text("\n".join(out_lines) + "\n")
-    _assemble_hybrid(hybrid_s, out_o)
+    return out_lines
+
+
+def _assemble_unit(out_o, out_lines):
+    """Write the spliced .s next to out_o, assemble it, and reject data."""
+    out_o = Path(out_o)
+    unit_s = out_o.with_suffix(".s")
+    unit_s.parent.mkdir(parents=True, exist_ok=True)
+    unit_s.write_text("\n".join(out_lines) + "\n")
+    _assemble_hybrid(unit_s, out_o)
     _check_no_data_sections(out_o)
-    return hybrid_s
+    return unit_s
+
+
+def build_hybrid(manifest_path, out_o, link_set="matching", version="pal103"):
+    """Assemble one unit's hybrid object; returns the intermediate .s path."""
+    data = tomllib.loads(Path(manifest_path).read_text())
+    prologue, seg_by_name, functions, unit_dir = _compile_and_split(
+        data, out_o, link_set, version)
+    out_lines = _splice_unit(prologue, seg_by_name, functions, unit_dir,
+                             link_set, version, report_base=False,
+                             unit_end=_unit_end(unit_dir))
+    return _assemble_unit(out_o, out_lines)
+
+
+def build_report_object(manifest_path, out_o, version="pal103"):
+    """Assemble one unit's objdiff report base object; returns the .s path.
+
+    Same C compile and normalization as the hybrid, but the object carries a
+    symbol for EVERY function the compiler produced C for, whatever its
+    manifest state, and nothing else -- un-decompiled functions are omitted
+    (no symbol), never spliced from retail. A `matching` function is
+    byte-identical to its hybrid (hence to retail), so objdiff scores it 100%;
+    an `equivalent` or a WIP-but-still-`asm` function shows its honest fuzzy
+    match; a function with no C shows 0%. No retail slice bytes, and
+    `_check_no_data_sections` guarantees it introduces no data section of its
+    own -- this is a report-only measurement object, never a link input.
+    """
+    data = tomllib.loads(Path(manifest_path).read_text())
+    # link_set only gates the compile-time "matching/equivalent must be
+    # defined in C" check in _compile_and_split; the report includes functions
+    # by whether the compiler emitted them, not by link_set.
+    link_set = "equivalent"
+    prologue, seg_by_name, functions, unit_dir = _compile_and_split(
+        data, out_o, link_set, version)
+    out_lines = _splice_unit(prologue, seg_by_name, functions, unit_dir,
+                             link_set, version, report_base=True,
+                             unit_end=_unit_end(unit_dir))
+    return _assemble_unit(out_o, out_lines)
 
 
 _DATA_SECTIONS = {".lit4", ".lit8", ".data", ".sdata", ".rdata", ".rodata",
@@ -408,8 +489,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--version", default="pal103")
     parser.add_argument("--set", dest="link_set", default="matching",
-                        choices=sorted(LINK_SETS),
-                        help="which states compile from C (default: matching)")
+                        choices=sorted(LINK_SETS) + ["report"],
+                        help="which states compile from C (default: matching; "
+                             "`report` builds the objdiff report base object)")
     parser.add_argument("--manifest",
                         help="build only this status manifest (ninja edge "
                              "mode) instead of all of them")
@@ -436,10 +518,15 @@ def main():
     for manifest in manifests:
         data = tomllib.loads(manifest.read_text())
         rel = Path(data["source"]).relative_to("src").with_suffix(".o")
+        subdir = "report-current" if args.link_set == "report" \
+            else args.link_set
         out_o = (Path(args.output).resolve() if args.output
-                 else ROOT / "build" / args.version / args.link_set / rel)
+                 else ROOT / "build" / args.version / subdir / rel)
         try:
-            build_hybrid(manifest, out_o, args.link_set, args.version)
+            if args.link_set == "report":
+                build_report_object(manifest, out_o, args.version)
+            else:
+                build_hybrid(manifest, out_o, args.link_set, args.version)
             try:
                 shown = out_o.relative_to(ROOT).as_posix()
             except ValueError:

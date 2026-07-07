@@ -12,6 +12,11 @@ WHOLE program is visible from day one:
   * Units whose source file exists in src/ also get a base object (the plain
     compile of the C -- build/<v>/current/...). Units with no C yet have no
     base: objdiff shows their functions at 0%, which is the honest number.
+  * Every linked data object from the committed data map is modelled too, as
+    a target-only unit in a dedicated "data" category (see data_units): its
+    total_data is the real linked byte count and matched_data is honestly 0
+    until decompiled C data exists. objdiff measures those bytes from the
+    `.split.*` sections directly, so no data symbols are required.
   * Builds go through `python tools/dispatch.py ninja <object>`: on Windows
     that forwards into the dev container, so clicking "build" in objdiff
     rebuilds exactly one ninja node wherever objdiff runs.
@@ -50,6 +55,7 @@ CATEGORIES = [
     {"id": "game", "name": "Game code"},
     {"id": "engine", "name": "Nu engine"},
     {"id": "sdk", "name": "SDK / libc / CRT"},
+    {"id": "data", "name": "Data"},
 ]
 
 
@@ -104,6 +110,39 @@ def unit_table(version):
             for u, s, n, c in rows]
 
 
+def data_units(version):
+    """objdiff units for the linked data objects, in data-map order.
+
+    Every object tools/gen_data_objects.py emits from the committed data map
+    becomes a unit whose target is that expected data object and which has NO
+    base -- there is no decompiled C data yet, so objdiff reports total_data
+    honestly with zero matched. objdiff 3.7.2 measures data from the
+    allocated `.split.*` section bytes, so these units carry a real
+    total_data even though the objects hold no symbols. Names mirror the data
+    map (`data/unit-NNNN`, `data/unassigned/<section>_<addr>`) and are prefixed
+    `data/`, so they never collide with a `.text` unit; the shared
+    object_groups() keeps the model and the built objects in lockstep.
+
+    Pure over the committed data map -- no game files, no toolchain (it does
+    not read the ELF; only the retail bytes inside the objects do, and those
+    stay in gitignored expected/).
+    """
+    # Imported lazily: gen_data_objects pulls in the binutils path helpers,
+    # which are irrelevant here (we never assemble), but keeping the import
+    # local documents that this is the only coupling.
+    from gen_data_objects import load_map, object_groups, NOBITS_SECTIONS
+    ranges = [r for r in load_map(version)
+              if r["section"] not in NOBITS_SECTIONS]
+    units = []
+    for stem, _entries in object_groups(ranges):
+        units.append({
+            "name": f"data/{stem}",
+            "target_path": f"expected/{version}/data/{stem}.o",
+            "metadata": {"progress_categories": ["data"]},
+        })
+    return units
+
+
 def _manifest_info(version):
     """{source_rel: complete} from the status manifests."""
     out = {}
@@ -132,10 +171,21 @@ def emit_objdiff(version="pal103", out_path=None):
             },
         }
         if (ROOT / source).is_file():
-            entry["base_path"] = f"build/{version}/current/{name}.o"
             if source in manifests:
+                # The report base object: C functions with the hybrid's
+                # .lit4/pseudo-op normalization, so a verified matching
+                # function scores 100% (the raw current object misses by the
+                # .lit4 pool placement). Falls back to raw current only for a
+                # source that has no manifest yet (none today; coverage-gated).
+                entry["base_path"] = \
+                    f"build/{version}/report-current/{name}.o"
                 entry["metadata"]["complete"] = manifests[source]
+            else:
+                entry["base_path"] = f"build/{version}/current/{name}.o"
         units.append(entry)
+
+    # Data units: one per linked data object, target only (honest 0 matched).
+    units += data_units(version)
 
     config = {
         "min_version": MIN_VERSION,
@@ -164,11 +214,12 @@ def main():
         shown = shown.relative_to(ROOT)
     except ValueError:
         pass
-    n_units = len(load_tu_runs())
-    with_base = sum(1 for u in json.loads(path.read_text())["units"]
-                    if "base_path" in u)
-    print(f"wrote {Path(shown).as_posix()} (gitignored): {n_units} units, "
-          f"{with_base} with a C base object")
+    all_units = json.loads(path.read_text())["units"]
+    n_text = len(load_tu_runs())
+    n_data = sum(1 for u in all_units if u["name"].startswith("data/"))
+    with_base = sum(1 for u in all_units if "base_path" in u)
+    print(f"wrote {Path(shown).as_posix()} (gitignored): {n_text} text units "
+          f"({with_base} with a C base object) + {n_data} data units")
     return 0
 
 

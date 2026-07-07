@@ -10,6 +10,13 @@ Usage:
   python tools/fingerprint_compiler.py                 # verify against the lock
   python tools/fingerprint_compiler.py --record        # write the manifest
   python tools/fingerprint_compiler.py --component ps2-binutils [--record]
+  python tools/fingerprint_compiler.py --all           # verify every component
+
+`--all` verifies every lock component that carries an install_dir (the matching
+compilers ee-gcc-tt and ee-gcc, the PE runner wibo, ps2-binutils and objdiff),
+so a component the CI would otherwise forget cannot go unchecked. Components
+without an install_dir (python, splat) are analysis dependencies whose versions
+are gated by `python configure.py --strict`, not by file fingerprints.
 
 Verify mode exits 0 only if every recorded file is present and unchanged and no
 unexpected files were added. With an empty manifest, verify reports that no
@@ -84,16 +91,37 @@ def do_verify(name, comp, install_dir):
     return not failures
 
 
+def verifiable_components(lock):
+    """Lock component names that fingerprint verification applies to.
+
+    Every component with an install_dir is a shipped binary whose codegen
+    identity must be pinned file-by-file; components without one (python,
+    splat) are version-gated elsewhere. `--all` and the CI iterate exactly
+    this set, so adding a fingerprinted component to the lock enrolls it in
+    verification automatically -- nothing has to be listed twice.
+    """
+    return [name for name, comp in lock["components"].items()
+            if comp.get("install_dir")]
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--lock", type=Path, default=None)
     parser.add_argument("--root", type=Path, default=None)
-    parser.add_argument("--component", default="ee-gcc",
+    parser.add_argument("--component", default=None,
                         help="component to fingerprint (default: ee-gcc)")
+    parser.add_argument("--all", action="store_true",
+                        help="verify every component with an install_dir "
+                             "(cannot be combined with --component/--record)")
     parser.add_argument("--record", action="store_true",
                         help="write the manifest into the lock instead of "
                              "verifying against it")
     args = parser.parse_args()
+
+    if args.all and (args.component or args.record):
+        print("--all cannot be combined with --component or --record",
+              file=sys.stderr)
+        return 2
 
     repo_root = args.root or Path(__file__).resolve().parent.parent
     lock_path = args.lock or (repo_root / "toolchain.lock.json")
@@ -103,19 +131,49 @@ def main():
         print(f"cannot load {lock_path}: {exc}", file=sys.stderr)
         return 1
 
-    comp = lock["components"].get(args.component)
+    install_root = repo_root / lock.get("install_root", "compiler")
+
+    def verify_one(name):
+        comp = lock["components"].get(name)
+        if comp is None:
+            print(f"unknown component: {name}", file=sys.stderr)
+            return None
+        if "install_dir" not in comp:
+            print(f"{name} has no install_dir; nothing to fingerprint",
+                  file=sys.stderr)
+            return None
+        install_dir = install_root / comp["install_dir"]
+        if not install_dir.is_dir():
+            print(f"{name}: not installed at {install_dir}; "
+                  f"run tools/setup_toolchain.py first", file=sys.stderr)
+            return None
+        return do_verify(name, comp, install_dir)
+
+    if args.all:
+        names = verifiable_components(lock)
+        if not names:
+            print("no components with an install_dir to verify",
+                  file=sys.stderr)
+            return 1
+        ok = True
+        for name in names:
+            result = verify_one(name)
+            ok = bool(result) and ok
+        return 0 if ok else 1
+
+    name = args.component or "ee-gcc"
+    comp = lock["components"].get(name)
     if comp is None:
-        print(f"unknown component: {args.component}", file=sys.stderr)
+        print(f"unknown component: {name}", file=sys.stderr)
         return 1
     if "install_dir" not in comp:
-        print(f"{args.component} has no install_dir; nothing to fingerprint",
+        print(f"{name} has no install_dir; nothing to fingerprint",
               file=sys.stderr)
         return 1
 
-    install_dir = repo_root / lock.get("install_root", "compiler") \
-        / comp["install_dir"]
+    install_dir = install_root / comp["install_dir"]
     if not install_dir.is_dir():
-        print(f"{args.component}: not installed at {install_dir}; "
+        print(f"{name}: not installed at {install_dir}; "
               f"run tools/setup_toolchain.py first", file=sys.stderr)
         return 1
 
@@ -126,7 +184,7 @@ def main():
         print(f"updated {lock_path.name}")
         return 0
 
-    return 0 if do_verify(args.component, comp, install_dir) else 1
+    return 0 if do_verify(name, comp, install_dir) else 1
 
 
 if __name__ == "__main__":

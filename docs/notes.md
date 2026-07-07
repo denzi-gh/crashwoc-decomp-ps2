@@ -207,6 +207,84 @@ just things that came up while building and shouldn't be lost.
 
 ## Resolved
 
+- **Docs match the implementation again, and a smoke test guards the artifact
+  (2026-07-07).** Corrected the stale "Sony's own `as`" claim in gen_hybrid.py's
+  docstring and CLAUDE.md step 4 -- hybrids are normalized (`_sonyize`) and
+  assembled with the decompals `as`, not Sony's. Rewrote README ## Toolchain
+  (the two-compiler setup: `default`=ee-gcc-tt for game/engine, `sce`=ee-gcc for
+  the Sony runtime; wibo; per-file fingerprints) and ## Matching C (clean C +
+  status manifests; hybrid `matching`/`equivalent` sets; the current /
+  report-current / matching / equivalent object sets; verify_promoted +
+  link_image as the canonical byte gate; the objdiff data units and the
+  decomp.dev treemap caveat below). New tools/smoke_report.py runs in
+  matching.yml after the artifact is staged and before upload: it re-checks the
+  exact staged bytes (valid JSON, strict Report-schema subset, no
+  orig/absolute-path/blob leak via sanitize_report.violations, no hollow
+  "100%-of-nothing" measure, every verified matching function at 100% via
+  check_report_matches.check) so a stale or tampered staged file fails the run.
+  ci.md gained the pipeline step, the "what can leave a run" gates, and a rollout
+  checklist. IMPORTANT design fact to preserve: decomp.dev's treemap only renders
+  units with total_code > 0, so the modelled data units are correctly present in
+  the report and category metrics but do NOT show as clickable tiles -- this is
+  expected, and we must never invent an artificial code value to force them to
+  appear.
+
+- **The linked data is now modelled in objdiff, and hollow measures are
+  stripped both ways (2026-07-07).** Investigation (reproducible, `-p` probe
+  project in build/): objdiff-cli 3.7.2 DOES score a data object that has no
+  symbols -- it measures `total_data` from the allocated `.split.*` section
+  bytes, aggregating every `.split.<sec>_<addr>` slice into one logical
+  `.split` section. A target-only unit (no base) reports that `total_data`
+  with matched_data absent (honest 0); a unit whose base equals its target
+  reports matched_data_percent 100. So the preferred modelling is supported.
+  gen_objdiff.data_units() now emits one target-only objdiff unit per linked
+  data object from the committed data map (both per-owner `unit-NNNN` and every
+  `unassigned/<sec>_<addr>` gap/orphan -- all bytes that actually link),
+  named `data/<data-map-stem>` (prefix guarantees no collision with a .text
+  unit) in a dedicated "data" progress category. Report-level `total_data` is
+  now the real linked extent (0x39f... bytes) with 0 matched -- honest. The
+  report edge gains the data-objects stamp as a dependency so the targets
+  exist. Decisions: (a) unassigned ranges ARE modelled (they link, so they are
+  honest data), (b) data gets its OWN category rather than folding into
+  game/engine/sdk, keeping code categories pure. Consequence handled: data
+  units carry zero code, and objdiff emits "100% of no code" (fuzzy_match,
+  matched_code*, matched_functions*) for them -- the mirror of the data lie on
+  code units. sanitize_report._strip_hollow_measures was therefore generalised
+  from data-only to a per-total table (total_code -> matched_code*/complete_code*
+  /fuzzy_match_percent; total_data -> matched_data*/complete_data*;
+  total_functions -> matched_functions*): any derived measure whose total is
+  absent or 0 is dropped, honest totals kept. fuzzy rides with total_code (a
+  data-only unit's fuzzy is objdiff's no-code artifact) -- revisit if C data
+  ever contributes to a unit's fuzzy. No byte gate touched; PR4's invariant
+  still holds (14 matching functions at 100%). objdiff.json/build.ninja stay
+  deterministic (both regenerate byte-identically across two runs).
+
+- **The published report no longer claims completed data that does not exist
+  (2026-07-07).** objdiff-cli emits the data-completeness measures
+  (matched_data, matched_data_percent, complete_data, complete_data_percent)
+  even when a measures block models zero data bytes -- which renders as "100%
+  data complete" about nothing on decomp.dev. sanitize_report.py now runs
+  `_strip_hollow_data` on every measures block (report, unit, category): when
+  total_data is absent or 0, those derived measures are dropped and the honest
+  total_data (0) is kept. A block that genuinely models data keeps them, so
+  this survives future data-unit modelling untouched (that fuller modelling is
+  the separate, investigation-driven follow-up). The sanitizer still only ever
+  REMOVES fields; the output stays a strict subset of objdiff's Report schema.
+  Nothing here touches a byte gate -- the public report is a measurement only.
+
+- **The `pull_request` trigger was removed from matching.yml to close the
+  fork-exfiltration hole (2026-07-07).** The dtk private-image move (entry
+  below) had accepted that a fork PR could rewrite the workflow and read
+  /orig out of the private image. That risk is no longer accepted: matching.yml
+  now triggers on push-to-main, nightly, and workflow_dispatch ONLY -- a fork
+  PR can never start a job with /orig access. validate.yml still runs on every
+  push and PR (public, no game files), so contributors keep full structural
+  feedback. Byte verification of a contributed change is a maintainer action:
+  review the PR, take the reviewed commit onto an in-repo branch, run
+  matching.yml there via workflow_dispatch, then merge. `pull_request_target`
+  is deliberately NOT used (it would run untrusted PR code with the private
+  image just the same). Documented in docs/ci.md ("PR verification").
+
 - **CI moved from a self-hosted runner to the dtk-template private-image
   method (user decision, 2026-07-07).** The founding constraint is
   consciously relaxed from "game files never transit GitHub" to "game
@@ -215,10 +293,10 @@ just things that came up while building and shouldn't be lost.
   (FROM the public toolchain image ghcr.io/denzi-gh/crashwoc-decomp, which
   publish-image.yml keeps fresh from the Containerfile). matching.yml runs
   inside that image on ubuntu-latest -- same gate commands as before,
-  plus actions/cache for the toolchain and the ninja tree. It now ALSO
-  runs on pull requests (dtk-style, accepted fork-exfiltration risk,
-  documented in docs/ci.md); the validate.yml no-pull_request guard was
-  removed with it, and the bot-commit step is gated to main pushes. The
+  plus actions/cache for the toolchain and the ninja tree. It ALSO ran on
+  pull requests (dtk-style, accepted fork-exfiltration risk) -- SUPERSEDED:
+  the pull_request trigger was later removed (see the entry above); the
+  bot-commit step is gated to main pushes. The
   self-hosted runner (registered a day earlier) was deregistered and
   docs/runner.md replaced by docs/ci.md. Why: runner ops (PC uptime,
   registration friction) outweighed the stricter storage stance; sly1,
@@ -234,8 +312,12 @@ just things that came up while building and shouldn't be lost.
   purely for ordering. Exposed by the first real WIP-function demo
   (three consecutive combined runs green after the fix).
 
-- **The protected workflow is the runner-side mirror of the local loop, and
-  fork PRs can never reach it.** `.github/workflows/matching.yml` runs on a
+- **(Historical -- superseded by the dtk private-image move above. The
+  self-hosted runner and docs/runner.md no longer exist; the described
+  validate.yml no-pull_request guard was removed. The push-to-main / nightly
+  / manual-only trigger policy, however, is again the current one.)** The
+  protected workflow is the runner-side mirror of the local loop, and
+  fork PRs can never reach it. `.github/workflows/matching.yml` runs on a
   self-hosted runner labeled `crashwoc` (docs/runner.md is the setup guide)
   on push-to-main, nightly, and manual dispatch ONLY -- validate.yml now
   mechanically fails if matching.yml ever gains a `pull_request` trigger.

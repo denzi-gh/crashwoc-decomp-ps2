@@ -11,16 +11,20 @@
 
 name: matching
 
+# No `pull_request` trigger: this job runs inside the private image with
+# /orig, so an untrusted fork PR must never be able to start it. Public
+# structural checks for PRs live in validate.yml. Maintainers verify a PR by
+# taking its reviewed commit onto an in-repo branch and running this workflow
+# there via workflow_dispatch (see docs/ci.md).
 on:
   push:
     branches: [main]
-  pull_request:
   schedule:
     - cron: "17 3 * * *"
   workflow_dispatch:
 
-# Serialize per ref: main runs queue behind each other; PR runs are
-# independent of main and of other PRs.
+# Serialize per ref: main pushes queue behind each other; a manual run on an
+# internal branch is independent of main.
 concurrency:
   group: matching-${{ github.ref }}
   cancel-in-progress: false
@@ -70,11 +74,13 @@ jobs:
           restore-keys: build-
 
       - name: Install and fingerprint the locked toolchain
+        # --all verifies every lock component with an install_dir: both
+        # matching compilers (ee-gcc-tt, ee-gcc), the PE runner wibo,
+        # ps2-binutils and objdiff. A new fingerprinted component enrolls
+        # itself; nothing can be forgotten here.
         run: |
           python tools/setup_toolchain.py --download
-          python tools/fingerprint_compiler.py --component ee-gcc
-          python tools/fingerprint_compiler.py --component ps2-binutils
-          python tools/fingerprint_compiler.py --component objdiff
+          python tools/fingerprint_compiler.py --all
 
       - name: Verify target binary
         run: python tools/verify_target.py
@@ -86,7 +92,15 @@ jobs:
           python tools/status.py --check
 
       - name: Configure (split, build graph, objdiff config)
-        run: python configure.py
+        # --strict makes any splat/backend version drift against the lock
+        # fatal. The nightly additionally runs the deterministic double
+        # split (--check); push/PR runs split once to stay fast.
+        if: github.event_name != 'schedule'
+        run: python configure.py --strict
+
+      - name: Configure with determinism check (nightly)
+        if: github.event_name == 'schedule'
+        run: python configure.py --strict --check
 
       - name: Build all object sets
         run: ninja expected current matching
@@ -100,6 +114,11 @@ jobs:
       - name: Generate and sanitize the report
         run: ninja report report-public
 
+      - name: Report honors every verified matching function
+        # The public report must show 100% for every function verify_promoted
+        # confirmed as byte-matching. Runs before the artifact is staged.
+        run: python tools/check_report_matches.py
+
       - name: Stage the publishable artifact
         # Only the whitelist-filtered report is staged, under the filename
         # decomp.dev expects inside the artifact.
@@ -107,6 +126,13 @@ jobs:
           rm -rf build/publish
           mkdir -p build/publish
           cp build/pal103/report.public.json build/publish/report.json
+
+      - name: Smoke-test the staged artifact
+        # Final gate on the exact bytes that will be uploaded: valid JSON, a
+        # strict schema subset, no orig/absolute-path/blob leak, no hollow
+        # "100% of nothing" measure, and every verified matching function at
+        # 100%. Fails the run before anything leaves the container.
+        run: python tools/smoke_report.py
 
       - name: Upload decomp.dev report artifact
         uses: actions/upload-artifact@v4

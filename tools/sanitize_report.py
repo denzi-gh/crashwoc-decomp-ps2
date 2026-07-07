@@ -18,6 +18,13 @@ After filtering, every string in the OUTPUT is scanned; publication aborts
 Function names, addresses and sizes pass on purpose: they are facts already
 committed in the public config/ registries (functions.toml et al).
 
+One honesty rule beyond the whitelist: objdiff-cli emits derived measures
+even when their total is zero -- matched_data*/complete_data* for a code unit
+with no data, matched_code*/fuzzy for a data unit with no code -- each reading
+as "100% of nothing". Where a measures block's total is absent or 0, the
+measures that total governs are dropped and the honest total is kept; a block
+with a real total keeps them. This never invents a value.
+
 Stdlib only; no toolchain and no game files needed.
 """
 import argparse
@@ -41,10 +48,58 @@ MEASURE_KEYS = frozenset({
 UNIT_METADATA_KEYS = frozenset({"complete", "source_path",
                                 "progress_categories"})
 
+# A derived measure means nothing when its total is absent or zero. objdiff-cli
+# still emits e.g. matched_code_percent=100 for a data-only unit (zero code) and
+# matched_data_percent=100 for every code unit (zero data) -- "100% of nothing".
+# For each total we drop exactly the derived measures it governs, keeping the
+# honest total (an explicit 0 or its absence). A block with a real total keeps
+# them, so genuine progress -- code today, C-modelled data tomorrow -- passes
+# through untouched. fuzzy_match_percent is code-weighted in this project, so it
+# rides with total_code (a data-only unit's fuzzy is objdiff's 100%-of-no-code
+# artifact; revisit if C data ever contributes to a unit's fuzzy score). This
+# never invents a value. See docs/notes.md (honest data/code metrics).
+HOLLOW_WHEN_TOTAL_ZERO = {
+    "total_code": ("matched_code", "matched_code_percent",
+                   "complete_code", "complete_code_percent",
+                   "fuzzy_match_percent"),
+    "total_data": ("matched_data", "matched_data_percent",
+                   "complete_data", "complete_data_percent"),
+    "total_functions": ("matched_functions", "matched_functions_percent"),
+}
+
 ORIG_RE = re.compile(r"(^|[\\/])orig([\\/]|$)", re.IGNORECASE)
 ABS_PATH_RE = re.compile(r"^([A-Za-z]:[\\/]|[\\/])")
 HEX_BLOB_RE = re.compile(r"^[0-9a-fA-F]{32,}$")
 B64_BLOB_RE = re.compile(r"^[A-Za-z0-9+/]{64,}={0,2}$")
+
+
+def _measure_zero_or_absent(measures, key):
+    """True if a numeric measure is missing or equals zero.
+
+    objdiff-cli renders integer measures as JSON strings ("0"), so accept
+    both the string and numeric forms; a value that cannot be read as a
+    number is treated as present (do not strip on garbage).
+    """
+    if key not in measures:
+        return True
+    try:
+        return float(measures[key]) == 0.0
+    except (TypeError, ValueError):
+        return False
+
+
+def _strip_hollow_measures(measures):
+    """Drop derived measures in place whose total is absent or zero.
+
+    Keeps the honest totals; removes only the matched_/complete_/percent
+    measures that would otherwise report progress against nothing. Applied to
+    every measures block (report, unit, category) independently, so a block
+    that genuinely has code or data keeps its measures.
+    """
+    for total, derived in HOLLOW_WHEN_TOTAL_ZERO.items():
+        if _measure_zero_or_absent(measures, total):
+            for key in derived:
+                measures.pop(key, None)
 
 
 def _keep(src, dst, keys, dropped, where):
@@ -83,12 +138,14 @@ def sanitize(report):
     public["measures"] = {}
     _keep(report.get("measures", {}), public["measures"], MEASURE_KEYS,
           dropped, "measures")
+    _strip_hollow_measures(public["measures"])
 
     public["units"] = []
     for unit in report.get("units", []):
         u = {"name": unit["name"], "measures": {}}
         _keep(unit.get("measures", {}), u["measures"], MEASURE_KEYS,
               dropped, "unit.measures")
+        _strip_hollow_measures(u["measures"])
         u["sections"] = [_clean_section(s, dropped, "unit.section")
                          for s in unit.get("sections", [])]
         u["functions"] = [_clean_symbol(f, dropped, "unit.function")
@@ -107,6 +164,7 @@ def sanitize(report):
         c = {"id": cat["id"], "name": cat["name"], "measures": {}}
         _keep(cat.get("measures", {}), c["measures"], MEASURE_KEYS,
               dropped, "category.measures")
+        _strip_hollow_measures(c["measures"])
         for key in cat:
             if key not in ("id", "name", "measures"):
                 dropped.add(f"category.{key}")

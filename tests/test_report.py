@@ -95,6 +95,117 @@ class TestSanitize(unittest.TestCase):
             self.assertIn(key, MEASURE_KEYS)
 
 
+class TestHollowData(unittest.TestCase):
+    """The data-completeness measures must not claim 100% of nothing."""
+
+    def _report(self, total_data):
+        # A measures block that claims fully-complete data, planted at the
+        # report, unit and category levels.
+        measures = {
+            "fuzzy_match_percent": 2.9,
+            "total_code": "560", "matched_code": "16",
+            "total_data": total_data,
+            "matched_data": "8", "matched_data_percent": 100.0,
+            "complete_data": "8", "complete_data_percent": 100.0,
+        }
+        return {
+            "version": 2,
+            "measures": copy.deepcopy(measures),
+            "units": [{"name": "nucore/nulist",
+                       "measures": copy.deepcopy(measures),
+                       "sections": [], "functions": [], "metadata": {}}],
+            "categories": [{"id": "engine", "name": "Nu engine",
+                            "measures": copy.deepcopy(measures)}],
+        }
+
+    def _blocks(self, public):
+        yield public["measures"]
+        for u in public["units"]:
+            yield u["measures"]
+        for c in public["categories"]:
+            yield c["measures"]
+
+    def test_zero_data_strips_derived_measures_everywhere(self):
+        public, _ = sanitize(self._report("0"))
+        for m in self._blocks(public):
+            self.assertNotIn("matched_data", m)
+            self.assertNotIn("matched_data_percent", m)
+            self.assertNotIn("complete_data", m)
+            self.assertNotIn("complete_data_percent", m)
+            self.assertEqual(m["total_data"], "0")   # honest 0 stays
+            self.assertEqual(m["total_code"], "560")  # code measures untouched
+
+    def test_absent_total_data_also_strips(self):
+        report = self._report("0")
+        for level in (report["measures"], report["units"][0]["measures"],
+                      report["categories"][0]["measures"]):
+            del level["total_data"]
+        public, _ = sanitize(report)
+        for m in self._blocks(public):
+            self.assertNotIn("matched_data_percent", m)
+            self.assertNotIn("complete_data_percent", m)
+
+    def test_real_data_measures_are_preserved(self):
+        public, _ = sanitize(self._report("128"))
+        for m in self._blocks(public):
+            self.assertEqual(m["total_data"], "128")
+            self.assertEqual(m["matched_data_percent"], 100.0)
+            self.assertEqual(m["complete_data_percent"], 100.0)
+
+    def test_output_stays_a_schema_subset(self):
+        # Stripping never introduces a field; the result is still a subset.
+        public, _ = sanitize(self._report("0"))
+        for m in self._blocks(public):
+            self.assertLessEqual(set(m), MEASURE_KEYS)
+
+
+class TestHollowCode(unittest.TestCase):
+    """The mirror of TestHollowData: a data-only unit must not claim 100%
+    code/functions/fuzzy against zero code (objdiff emits those for the data
+    units introduced by the data-map modelling)."""
+
+    def _data_only_report(self):
+        # Shaped like objdiff's output for a target-only data unit: real data
+        # bytes, but "100% of nothing" code/function/fuzzy measures.
+        hollow = {
+            "fuzzy_match_percent": 100.0,
+            "matched_code_percent": 100.0, "complete_code_percent": 100.0,
+            "matched_functions_percent": 100.0,
+            "total_data": "256",
+        }
+        return {
+            "version": 2,
+            "measures": dict(hollow),
+            "units": [{"name": "data/unit-0001", "measures": dict(hollow),
+                       "sections": [], "functions": [], "metadata": {}}],
+            "categories": [{"id": "data", "name": "Data",
+                            "measures": dict(hollow)}],
+        }
+
+    def _blocks(self, public):
+        yield public["measures"]
+        yield public["units"][0]["measures"]
+        yield public["categories"][0]["measures"]
+
+    def test_hollow_code_and_fuzzy_are_stripped(self):
+        public, _ = sanitize(self._data_only_report())
+        for m in self._blocks(public):
+            self.assertNotIn("fuzzy_match_percent", m)
+            self.assertNotIn("matched_code_percent", m)
+            self.assertNotIn("complete_code_percent", m)
+            self.assertNotIn("matched_functions_percent", m)
+            self.assertEqual(m["total_data"], "256")   # honest data stays
+
+    def test_real_code_keeps_fuzzy(self):
+        # A block with actual code keeps its code/fuzzy measures.
+        rep = self._data_only_report()
+        rep["measures"]["total_code"] = "560"
+        rep["measures"]["matched_code"] = "16"
+        public, _ = sanitize(rep)
+        self.assertEqual(public["measures"]["fuzzy_match_percent"], 100.0)
+        self.assertEqual(public["measures"]["matched_code_percent"], 100.0)
+
+
 class TestViolations(unittest.TestCase):
     def test_orig_reference_is_blocked(self):
         found = violations({"name": "orig/pal103/SLES_503.86"})
