@@ -5,10 +5,11 @@ Two workflows, both on GitHub-hosted runners:
 - **validate.yml** — every push and PR. Structure only: manifests,
   registries, tests, and the guard that nothing game-derived is tracked in
   this repository. Needs no game files.
-- **matching.yml** — pushes to main, pull requests, nightly, manual. The
-  full byte-gated pipeline. It needs the retail ELF, which this public
-  repository must never contain — so the job runs *inside* a private
-  container image that has the game files baked in, following
+- **matching.yml** — pushes to main, nightly, and manual dispatch only
+  (never on `pull_request`). The full byte-gated pipeline. It needs the
+  retail ELF, which this public repository must never contain — so the job
+  runs *inside* a private container image that has the game files baked in,
+  following
   [dtk-template's method](https://github.com/encounter/dtk-template/blob/main/docs/github_actions.md).
 
 ```
@@ -65,22 +66,34 @@ whitelist-sanitized report from `tools/sanitize_report.py` — this is what
 changed counts, a bot commit of `progress/summary.json`. Everything else
 (orig copies, objects, images) dies with the ephemeral runner.
 
-## PR builds and the accepted risk
+## PR verification (no fork ever touches the private image)
 
-`matching.yml` runs on pull requests so contributors get byte verification
-before merge. Two consequences, both accepted deliberately:
+`matching.yml` deliberately has **no `pull_request` trigger**. A
+`pull_request` run would execute the workflow file *from the PR branch*
+inside the private `/orig` image, so any fork could rewrite it to exfiltrate
+the retail game files. Removing the trigger closes that hole entirely;
+`pull_request_target` is **not** used, because it would run the same
+untrusted PR code with the same private resources.
 
-- `pull_request` runs use the workflow file **from the PR branch**, so a
-  malicious PR could alter the workflow to exfiltrate `/orig` from the
-  private image. This is the same trade-off every dtk-template project
-  makes; the "secret" is a game file contributors must own anyway.
-- Fork PRs may fail to pull the private image (their `GITHUB_TOKEN` may
-  lack access). validate.yml still checks them; a failed matching job on a
-  fork PR is acceptable noise, and maintainers can re-run the job after
-  merging or pushing the branch in-repo.
+What every PR still gets automatically: **validate.yml** (public,
+GitHub-hosted, no game files) runs on every push and pull request —
+manifests, registries, unit tests, and the "nothing game-derived is tracked"
+guard. That is the full contract a fork PR can rely on.
 
-PR runs never upload the baseline: the bot-commit step is gated to
-`push` events on `refs/heads/main`.
+Byte verification of a contributed change is a maintainer action:
+
+1. Let validate.yml run on the PR (automatic, public).
+2. Review the diff — especially any change to `.github/`, `tools/`, or the
+   toolchain lock.
+3. Cherry-pick / merge the reviewed commit onto an **in-repo** branch (not a
+   fork). Only maintainers can push in-repo branches.
+4. Run `matching.yml` on that branch via **workflow_dispatch** (or let the
+   nightly/`main` run cover it). This is the only path that reaches `/orig`,
+   and it only ever runs code a maintainer has vetted.
+5. Merge once the byte gates are green.
+
+Non-PR runs never upload the baseline either: the bot-commit step is gated
+to `push` events on `refs/heads/main`.
 
 ## Progress publication
 

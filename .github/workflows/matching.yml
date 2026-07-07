@@ -11,16 +11,20 @@
 
 name: matching
 
+# No `pull_request` trigger: this job runs inside the private image with
+# /orig, so an untrusted fork PR must never be able to start it. Public
+# structural checks for PRs live in validate.yml. Maintainers verify a PR by
+# taking its reviewed commit onto an in-repo branch and running this workflow
+# there via workflow_dispatch (see docs/ci.md).
 on:
   push:
     branches: [main]
-  pull_request:
   schedule:
     - cron: "17 3 * * *"
   workflow_dispatch:
 
-# Serialize per ref: main runs queue behind each other; PR runs are
-# independent of main and of other PRs.
+# Serialize per ref: main pushes queue behind each other; a manual run on an
+# internal branch is independent of main.
 concurrency:
   group: matching-${{ github.ref }}
   cancel-in-progress: false

@@ -207,6 +207,19 @@ just things that came up while building and shouldn't be lost.
 
 ## Resolved
 
+- **The `pull_request` trigger was removed from matching.yml to close the
+  fork-exfiltration hole (2026-07-07).** The dtk private-image move (entry
+  below) had accepted that a fork PR could rewrite the workflow and read
+  /orig out of the private image. That risk is no longer accepted: matching.yml
+  now triggers on push-to-main, nightly, and workflow_dispatch ONLY -- a fork
+  PR can never start a job with /orig access. validate.yml still runs on every
+  push and PR (public, no game files), so contributors keep full structural
+  feedback. Byte verification of a contributed change is a maintainer action:
+  review the PR, take the reviewed commit onto an in-repo branch, run
+  matching.yml there via workflow_dispatch, then merge. `pull_request_target`
+  is deliberately NOT used (it would run untrusted PR code with the private
+  image just the same). Documented in docs/ci.md ("PR verification").
+
 - **CI moved from a self-hosted runner to the dtk-template private-image
   method (user decision, 2026-07-07).** The founding constraint is
   consciously relaxed from "game files never transit GitHub" to "game
@@ -215,10 +228,10 @@ just things that came up while building and shouldn't be lost.
   (FROM the public toolchain image ghcr.io/denzi-gh/crashwoc-decomp, which
   publish-image.yml keeps fresh from the Containerfile). matching.yml runs
   inside that image on ubuntu-latest -- same gate commands as before,
-  plus actions/cache for the toolchain and the ninja tree. It now ALSO
-  runs on pull requests (dtk-style, accepted fork-exfiltration risk,
-  documented in docs/ci.md); the validate.yml no-pull_request guard was
-  removed with it, and the bot-commit step is gated to main pushes. The
+  plus actions/cache for the toolchain and the ninja tree. It ALSO ran on
+  pull requests (dtk-style, accepted fork-exfiltration risk) -- SUPERSEDED:
+  the pull_request trigger was later removed (see the entry above); the
+  bot-commit step is gated to main pushes. The
   self-hosted runner (registered a day earlier) was deregistered and
   docs/runner.md replaced by docs/ci.md. Why: runner ops (PC uptime,
   registration friction) outweighed the stricter storage stance; sly1,
@@ -234,8 +247,12 @@ just things that came up while building and shouldn't be lost.
   purely for ordering. Exposed by the first real WIP-function demo
   (three consecutive combined runs green after the fix).
 
-- **The protected workflow is the runner-side mirror of the local loop, and
-  fork PRs can never reach it.** `.github/workflows/matching.yml` runs on a
+- **(Historical -- superseded by the dtk private-image move above. The
+  self-hosted runner and docs/runner.md no longer exist; the described
+  validate.yml no-pull_request guard was removed. The push-to-main / nightly
+  / manual-only trigger policy, however, is again the current one.)** The
+  protected workflow is the runner-side mirror of the local loop, and
+  fork PRs can never reach it. `.github/workflows/matching.yml` runs on a
   self-hosted runner labeled `crashwoc` (docs/runner.md is the setup guide)
   on push-to-main, nightly, and manual dispatch ONLY -- validate.yml now
   mechanically fails if matching.yml ever gains a `pull_request` trigger.
