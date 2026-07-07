@@ -132,9 +132,17 @@ def emit_objdiff(version="pal103", out_path=None):
             },
         }
         if (ROOT / source).is_file():
-            entry["base_path"] = f"build/{version}/current/{name}.o"
             if source in manifests:
+                # The report base object: C functions with the hybrid's
+                # .lit4/pseudo-op normalization, so a verified matching
+                # function scores 100% (the raw current object misses by the
+                # .lit4 pool placement). Falls back to raw current only for a
+                # source that has no manifest yet (none today; coverage-gated).
+                entry["base_path"] = \
+                    f"build/{version}/report-current/{name}.o"
                 entry["metadata"]["complete"] = manifests[source]
+            else:
+                entry["base_path"] = f"build/{version}/current/{name}.o"
         units.append(entry)
 
     config = {

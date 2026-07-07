@@ -114,6 +114,11 @@ jobs:
       - name: Generate and sanitize the report
         run: ninja report report-public
 
+      - name: Report honors every verified matching function
+        # The public report must show 100% for every function verify_promoted
+        # confirmed as byte-matching. Runs before the artifact is staged.
+        run: python tools/check_report_matches.py
+
       - name: Stage the publishable artifact
         # Only the whitelist-filtered report is staged, under the filename
         # decomp.dev expects inside the artifact.
