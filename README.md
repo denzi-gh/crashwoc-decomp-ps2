@@ -3,6 +3,10 @@
 A matching decompilation of **Crash Bandicoot: The Wrath of Cortex** for the
 PlayStation 2.
 
+> **New contributor?** See [CONTRIBUTING.md](CONTRIBUTING.md) — the whole
+> workflow is three commands: `python decomp.py toolchain`, `python decomp.py
+> setup`, then `python decomp.py src/<group>/<unit>.c`.
+
 ## Canonical target
 
 All matching work targets exactly one build:

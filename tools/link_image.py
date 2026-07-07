@@ -65,13 +65,29 @@ _TILING_NAMES = {"text", "vutext", "orphan", "data", "rodata", "lit4",
                  "sdata"}
 
 
-def manifest_units(version):
-    """{unit_index: object path relative to build/<version>/<set>/}."""
+# The function states from which each link set actually compiles C (and so
+# builds a hybrid object). Mirrors gen_ninja / gen_hybrid: an all-`asm` unit
+# builds no hybrid in either set, so its bytes come from the expected object.
+_HYBRID_STATES = {"matching": {"matching"},
+                  "equivalent": {"matching", "equivalent"}}
+
+
+def manifest_units(version, link_set):
+    """{unit_index: object rel path} for units that build a hybrid in this set.
+
+    Only units with a function in a state this set links from C get a hybrid;
+    the rest (e.g. all-`asm` skeletons) fall through to the expected object.
+    """
+    wanted = _HYBRID_STATES[link_set]
     out = {}
     status_dir = ROOT / "config" / version / "status"
     if status_dir.is_dir():
         for m in sorted(status_dir.rglob("*.toml")):
             data = tomllib.loads(m.read_text())
+            states = {f.get("state", "asm")
+                      for f in data.get("function", ())}
+            if not states & wanted:
+                continue
             idx = int(data["unit"].split("unit-")[1])
             out[idx] = Path(data["source"]).relative_to("src").with_suffix(".o")
     return out
@@ -80,9 +96,10 @@ def manifest_units(version):
 def select_text_objects(version, link_set):
     """[(unit_index, object_path)] in retail address order.
 
-    Hybrid object where a status manifest exists, expected object otherwise.
+    Hybrid object where the unit builds one for this link set, expected object
+    otherwise.
     """
-    hybrids = manifest_units(version)
+    hybrids = manifest_units(version, link_set)
     names = load_units()
     objs = []
     for unit, _addr in load_tu_runs():

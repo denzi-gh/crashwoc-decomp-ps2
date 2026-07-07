@@ -57,12 +57,20 @@ class TestEmitNinja(unittest.TestCase):
         cc_edges = self.edges("cc")
         self.assertEqual(len(cc_edges), len(srcs))
 
-    def test_hybrid_edges_per_manifest_and_set(self):
-        manifests = sorted(
-            (ROOT / "config" / "pal103" / "status").rglob("*.toml"))
+    def test_hybrid_edges_reflect_function_states(self):
+        # A hybrid is emitted per link set only where a function reaches the
+        # state that set links from C: `matching` earns matching + report-current
+        # objects, `matching`/`equivalent` earns the equivalent object. An
+        # all-`asm` unit (a fresh skeleton) earns none.
+        import tomllib
+        has_matching = has_equiv = 0
+        for m in (ROOT / "config" / "pal103" / "status").rglob("*.toml"):
+            states = {f.get("state", "asm")
+                      for f in tomllib.loads(m.read_text()).get("function", ())}
+            has_matching += "matching" in states
+            has_equiv += bool(states & {"matching", "equivalent"})
         hybrid_edges = self.edges("hybrid")
-        # matching, equivalent, and the report base object per manifest.
-        self.assertEqual(len(hybrid_edges), 3 * len(manifests))
+        self.assertEqual(len(hybrid_edges), 2 * has_matching + has_equiv)
         sets = {re.search(r"build build/pal103/([\w-]+)/", e).group(1)
                 for e in hybrid_edges}
         self.assertEqual(sets, {"matching", "equivalent", "report-current"})
@@ -162,18 +170,26 @@ class TestEmitObjdiff(unittest.TestCase):
         self.assertEqual(len(all_names), len(set(all_names)))
 
     def test_target_always_base_only_with_source(self):
+        import tomllib
         for u in self.text_units():
             self.assertTrue(u["target_path"].startswith("expected/pal103/"))
             src = ROOT / u["metadata"]["source_path"]
             if not src.is_file():
                 self.assertNotIn("base_path", u)
-            elif "complete" in u["metadata"]:
-                # A manifested source diffs against the report base object.
+                continue
+            manifest = (ROOT / "config" / "pal103" / "status"
+                        / f"{u['name']}.toml")
+            has_matching = manifest.is_file() and any(
+                f.get("state", "asm") == "matching"
+                for f in tomllib.loads(manifest.read_text()).get("function", ()))
+            if has_matching:
+                # A matching unit diffs against the normalized report object.
                 self.assertEqual(
                     u["base_path"],
                     f"build/pal103/report-current/{u['name']}.o")
             else:
-                # A source with no manifest yet falls back to raw current.
+                # No matching function (all-`asm` skeleton, or no manifest yet):
+                # objdiff scores the plain current object.
                 self.assertEqual(u["base_path"],
                                  f"build/pal103/current/{u['name']}.o")
 

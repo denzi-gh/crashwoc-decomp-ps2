@@ -11,23 +11,33 @@
 
 name: matching
 
-# No `pull_request` trigger: this job runs inside the private image with
-# /orig, so an untrusted fork PR must never be able to start it. Public
-# structural checks for PRs live in validate.yml. Maintainers verify a PR by
-# taking its reviewed commit onto an in-repo branch and running this workflow
-# there via workflow_dispatch (see docs/ci.md).
+# Runs on every push to a branch in THIS repository -- not just main. A
+# collaborator's feature-branch push runs the full byte gates and uploads the
+# `SLES_503.86_report` artifact; when that branch has an open PR, the
+# decomp.dev app attaches the artifact to the PR as a progress-vs-main comment
+# (same mechanism the nightly/main runs use, just earlier).
+#
+# There is deliberately NO `pull_request` trigger. A `pull_request` run
+# executes the workflow file *as modified by the PR branch*, so a fork could
+# rewrite it to reach the private `/orig` image and exfiltrate the retail game
+# files -- a job-level `if` cannot stop that, because the fork also controls
+# the `if`. `push` has no such hole: a push to a fork runs in the fork's own
+# Actions, never in this repository, so untrusted code can never reach the
+# private image this way (docs/ci.md). Public structural checks for every PR,
+# including fork PRs, still live in validate.yml.
 on:
   push:
-    branches: [main]
+    branches: ["**"]
   schedule:
     - cron: "17 3 * * *"
   workflow_dispatch:
 
-# Serialize per ref: main pushes queue behind each other; a manual run on an
-# internal branch is independent of main.
+# Serialize per ref. A new push to a feature branch supersedes its in-flight
+# run; `main` is never cancelled mid-flight -- it may be moving the committed
+# baseline.
 concurrency:
   group: matching-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
   contents: write # bot-commit of progress/summary.json (main only)
@@ -142,8 +152,8 @@ jobs:
           if-no-files-found: error
 
       - name: Update the committed progress baseline
-        # Main-branch pushes only: PRs and nightlies never move the
-        # baseline. GITHUB_TOKEN pushes do not trigger new workflow runs,
+        # Main-branch pushes only: feature-branch and nightly runs never move
+        # the baseline. GITHUB_TOKEN pushes do not trigger new workflow runs,
         # so this cannot loop.
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |

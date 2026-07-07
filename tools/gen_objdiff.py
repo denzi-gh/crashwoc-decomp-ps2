@@ -144,13 +144,21 @@ def data_units(version):
 
 
 def _manifest_info(version):
-    """{source_rel: complete} from the status manifests."""
+    """{source_rel: (complete, has_matching)} from the status manifests.
+
+    `has_matching` is True when at least one function is `matching` -- only
+    then does the unit have a report-current object to score against (an
+    all-`asm` unit is scored against its plain `current` object instead).
+    """
     out = {}
     status_dir = ROOT / "config" / version / "status"
     if status_dir.is_dir():
         for m in sorted(status_dir.rglob("*.toml")):
             data = tomllib.loads(m.read_text())
-            out[data["source"]] = bool(data.get("complete", False))
+            has_matching = any(f.get("state", "asm") == "matching"
+                               for f in data.get("function", ()))
+            out[data["source"]] = (bool(data.get("complete", False)),
+                                   has_matching)
     return out
 
 
@@ -172,14 +180,19 @@ def emit_objdiff(version="pal103", out_path=None):
         }
         if (ROOT / source).is_file():
             if source in manifests:
+                complete, has_matching = manifests[source]
                 # The report base object: C functions with the hybrid's
                 # .lit4/pseudo-op normalization, so a verified matching
                 # function scores 100% (the raw current object misses by the
-                # .lit4 pool placement). Falls back to raw current only for a
-                # source that has no manifest yet (none today; coverage-gated).
-                entry["base_path"] = \
-                    f"build/{version}/report-current/{name}.o"
-                entry["metadata"]["complete"] = manifests[source]
+                # .lit4 pool placement). A unit with no `matching` function has
+                # no report-current object, so it is scored against its plain
+                # `current` object (a comment-only skeleton thus reads 0%).
+                if has_matching:
+                    entry["base_path"] = \
+                        f"build/{version}/report-current/{name}.o"
+                else:
+                    entry["base_path"] = f"build/{version}/current/{name}.o"
+                entry["metadata"]["complete"] = complete
             else:
                 entry["base_path"] = f"build/{version}/current/{name}.o"
         units.append(entry)

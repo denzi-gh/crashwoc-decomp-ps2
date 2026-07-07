@@ -272,18 +272,38 @@ just things that came up while building and shouldn't be lost.
   REMOVES fields; the output stays a strict subset of objdiff's Report schema.
   Nothing here touches a byte gate -- the public report is a measurement only.
 
-- **The `pull_request` trigger was removed from matching.yml to close the
-  fork-exfiltration hole (2026-07-07).** The dtk private-image move (entry
-  below) had accepted that a fork PR could rewrite the workflow and read
-  /orig out of the private image. That risk is no longer accepted: matching.yml
-  now triggers on push-to-main, nightly, and workflow_dispatch ONLY -- a fork
-  PR can never start a job with /orig access. validate.yml still runs on every
-  push and PR (public, no game files), so contributors keep full structural
-  feedback. Byte verification of a contributed change is a maintainer action:
-  review the PR, take the reviewed commit onto an in-repo branch, run
-  matching.yml there via workflow_dispatch, then merge. `pull_request_target`
-  is deliberately NOT used (it would run untrusted PR code with the private
-  image just the same). Documented in docs/ci.md ("PR verification").
+- **matching.yml now triggers on push to ANY branch, so same-repo PRs get
+  byte gates + a decomp.dev comment automatically (2026-07-07).** Goal: a
+  collaborator's PR should get the decomp.dev progress-vs-main comment without
+  a manual dispatch. The decomp.dev app posts that comment when it finds a
+  `SLES_503.86_report` artifact for the PR's head commit, so the report has to
+  be built on the PR branch. The naive fix -- adding a `pull_request` trigger
+  gated by a job-level `if: head.repo == this repo` -- is NOT fork-safe: a
+  `pull_request` run executes the workflow file *as modified by the PR branch*,
+  so a fork simply deletes the `if`. Instead the `push` trigger was widened
+  from `branches: [main]` to `branches: ["**"]`. `push` is fork-safe by
+  construction: a push to a fork runs in the fork's own Actions, never in this
+  repo, so untrusted code never reaches the private `/orig` image. A branch
+  push here can only come from someone with write access (trusted, same as a
+  push to main). concurrency now cancels superseded feature-branch runs but
+  never a mid-flight `main` run (`cancel-in-progress: ref != refs/heads/main`).
+  The baseline bot-commit stays gated to push on `refs/heads/main`. Supersedes
+  the entry below; `pull_request` remains deliberately absent, and
+  `pull_request_target` is still never used. Documented in docs/ci.md
+  ("PR verification").
+
+- **(Superseded by the entry above.) The `pull_request` trigger was removed
+  from matching.yml to close the fork-exfiltration hole (2026-07-07).** The dtk
+  private-image move (entry below) had accepted that a fork PR could rewrite the
+  workflow and read /orig out of the private image. That risk is no longer
+  accepted: matching.yml triggers on push, nightly, and workflow_dispatch only
+  -- a fork PR can never start a job with /orig access. validate.yml still runs
+  on every push and PR (public, no game files), so contributors keep full
+  structural feedback. Byte verification of a fork PR is still a maintainer
+  action: review the PR, take the reviewed commit onto an in-repo branch (its
+  push now runs the gates), then merge. `pull_request_target` is deliberately
+  NOT used (it would run untrusted PR code with the private image just the
+  same). Documented in docs/ci.md ("PR verification").
 
 - **CI moved from a self-hosted runner to the dtk-template private-image
   method (user decision, 2026-07-07).** The founding constraint is
