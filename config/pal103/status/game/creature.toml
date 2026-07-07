@@ -29,11 +29,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0091:001cd9a8:PlayerStartPos"
-state = "equivalent"
+state = "asm"
 
 [[function]]
 id = "pal103:unit-0091:001cdae8:AddCreature"
-state = "equivalent"
+state = "asm"
 
 [[function]]
 id = "pal103:unit-0091:001cdea8:NewCharacterIdle"
@@ -65,7 +65,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0091:001d4fc0:UpdateAnimPacket"
-state = "equivalent"
+state = "asm"
 
 [[function]]
 id = "pal103:unit-0091:001d5528:ModelAnimDuration"
