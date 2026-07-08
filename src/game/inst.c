@@ -94,13 +94,16 @@ void InstSceneDestroy(struct nuscene_s *scene) {
 struct nuanimdata_s *InstAnimDataLoad(char *name) {
     struct animdatainst_s *lst;
 
-    lst = (struct animdatainst_s *)NuLstGetNext(animdatainst_pool, 0);
-    while (lst != 0) {
+    lst = 0;
+    while (1) {
+        lst = (struct animdatainst_s *)NuLstGetNext(animdatainst_pool, (struct nulnkhdr_s *)lst);
+        if (lst == 0) {
+            break;
+        }
         if (strcasecmp(name, lst->name) == 0) {
             lst->inst_cnt++;
             return lst->ad;
         }
-        lst = (struct animdatainst_s *)NuLstGetNext(animdatainst_pool, (struct nulnkhdr_s *)lst);
     }
 
     lst = (struct animdatainst_s *)NuLstAlloc(animdatainst_pool);
