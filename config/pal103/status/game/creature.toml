@@ -37,7 +37,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0091:001cdea8:NewCharacterIdle"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0091:001ce230:UpdateCharacterIdle"
@@ -53,7 +53,7 @@ state = "equivalent"
 
 [[function]]
 id = "pal103:unit-0091:001d2470:EvalModelAnim"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0091:001d2728:DrawCharacterModel"

@@ -20,6 +20,7 @@ Nothing here ever ``print()``s to stdout.
 from __future__ import annotations
 
 import argparse
+import asyncio
 import logging
 import os
 import sys
@@ -118,7 +119,7 @@ def build_server(project: DecompProject):
     # -- tools ---------------------------------------------------------------
 
     @mcp.tool()
-    def warm_toolchain() -> dict:
+    async def warm_toolchain() -> dict:
         """Start the Linux toolchain container so later build tools run warm.
 
         Cheap and idempotent: instant when already running, a few seconds
@@ -126,7 +127,7 @@ def build_server(project: DecompProject):
         compile_diff / verify_candidate / promote_matching does not pay
         container cold-start latency inside its (timeout-bounded) call.
         """
-        return warm_container()
+        return await asyncio.to_thread(warm_container)
 
     @mcp.tool()
     def project_health() -> dict:
@@ -177,20 +178,22 @@ def build_server(project: DecompProject):
         return evidence.search_evidence(P(), query, kinds=kinds, limit=limit)
 
     @mcp.tool()
-    def compile_diff(target: str, session_id: str = None,
-                     client: str = None) -> dict:
+    async def compile_diff(target: str, session_id: str = None,
+                           client: str = None) -> dict:
         """Compile the unit and byte-compare over the full extent (locked path)."""
-        return diff.compile_diff(P(), target, session_id=session_id, client=client)
+        return await asyncio.to_thread(
+            diff.compile_diff, P(), target, session_id=session_id, client=client)
 
     @mcp.tool()
-    def verify_candidate(target: str, level: str = "function") -> dict:
+    async def verify_candidate(target: str, level: str = "function") -> dict:
         """Byte verification: function (default) / unit / image (explicit)."""
-        return verification.verify_candidate(P(), target, level=level)
+        return await asyncio.to_thread(
+            verification.verify_candidate, P(), target, level=level)
 
     @mcp.tool()
-    def promote_matching(target: str) -> dict:
+    async def promote_matching(target: str) -> dict:
         """Promote via tools/promote.py (the only writer of state=matching)."""
-        return verification.promote_matching(P(), target)
+        return await asyncio.to_thread(verification.promote_matching, P(), target)
 
     @mcp.tool()
     def start_session(target: str, client: str = None, model: str = None,
@@ -267,9 +270,9 @@ def build_server(project: DecompProject):
         return blockers.list_blockers(P(), target=target)
 
     @mcp.tool()
-    def compiler_probe(profile: str = "default") -> dict:
+    async def compiler_probe(profile: str = "default") -> dict:
         """Compile a fixed tiny snippet through the locked profile (no caller flags)."""
-        return verification.compiler_probe(P(), profile=profile)
+        return await asyncio.to_thread(verification.compiler_probe, P(), profile=profile)
 
     # -- resources -----------------------------------------------------------
 

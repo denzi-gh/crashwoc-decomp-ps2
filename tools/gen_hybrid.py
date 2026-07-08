@@ -356,19 +356,38 @@ def _extract_local_data(lines):
             j += 1
         labels = [_LOCAL_LABEL_RE.match(b).group(1)
                   for b in block if _LOCAL_LABEL_RE.match(b)]
-        if len(labels) != 1:
+        if not labels:
             raise HybridError(
-                f"local data block with labels {labels} unsupported "
-                f"(exactly one private label expected)")
-        # A block whose every payload entry is `.word <symbol>` is a jump table
-        # (relocations); anything else is a constant aggregate we can assemble.
-        payload = [b for b in block if b.strip()
-                   and not _LOCAL_LABEL_RE.match(b)
-                   and not b.strip().split(None, 1)[0] in (".align", ".p2align")]
-        if payload and all(_WORD_LABEL_RE.match(p) for p in payload):
-            local[labels[0]] = _JumpTable(len(payload))
+                "local data block with no private label unsupported")
+        # ee-gcc packs one or more private slots ($LCn/$Ln) between a single
+        # .rdata/.text switch -- e.g. the two format strings of a function that
+        # calls NuDebugMsgProlog twice. Each label names an independent
+        # aggregate that borrows its own retail slot, so partition the block at
+        # every label. A one-label block is the common case and keeps its whole
+        # body (interior .align in a const aggregate is meaningful); when a
+        # block holds several labels the directives between them only align the
+        # next slot, so they are not part of any aggregate's bytes.
+        if len(labels) == 1:
+            segments = [(labels[0], block)]
         else:
-            local[labels[0]] = _assemble_data_bytes(block)
+            segments = []
+            for b in block:
+                m = _LOCAL_LABEL_RE.match(b)
+                if m:
+                    segments.append((m.group(1), []))
+                elif segments and b.strip() and \
+                        b.strip().split(None, 1)[0] not in (".align", ".p2align"):
+                    segments[-1][1].append(b)
+        # A slot whose every payload entry is `.word <symbol>` is a jump table
+        # (relocations); anything else is a constant aggregate we can assemble.
+        for label, seg in segments:
+            payload = [b for b in seg if b.strip()
+                       and not _LOCAL_LABEL_RE.match(b)
+                       and b.strip().split(None, 1)[0] not in (".align", ".p2align")]
+            if payload and all(_WORD_LABEL_RE.match(p) for p in payload):
+                local[label] = _JumpTable(len(payload))
+            else:
+                local[label] = _assemble_data_bytes(seg)
         i = j
     return clean, local
 

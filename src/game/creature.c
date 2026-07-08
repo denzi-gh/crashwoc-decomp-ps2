@@ -9,8 +9,12 @@
  * start positions (+0x14) are used here -- the rest is opaque. */
 struct aitab_s {
     u8 ai_type;              /* 0x00 */
-    u8 unk_0x01[0x13];       /* 0x01 (unverified) */
-    struct nuvec_s pos[9];   /* 0x14 (9 = (0x80-0x14)/0xC) */
+    s8 status;               /* 0x01 */
+    u8 unk_0x02[0x0A];       /* 0x02 (unverified) */
+    f32 time;                /* 0x0C */
+    f32 delay;               /* 0x10 */
+    struct nuvec_s pos[8];   /* 0x14 */
+    struct nuvec_s origin;   /* 0x74 (== pos[8]) */
 }; /* 0x80 */
 
 /* AI type entry (AIType): PS2 stride 0x1C; character (+0x0) and the
@@ -31,11 +35,20 @@ struct panelcount_s {
     u8 pad[3];
 };
 
+/* Per-level record inside Game (stride 0x1C, flags at +0x0). */
+struct gamelevel_s {
+    u16 flags;               /* 0x00 */
+    u8 unk_0x02[0x1A];       /* 0x02 */
+}; /* 0x1C */
+
 /* Only the fields creature.c touches are typed; sizes unverified. */
 struct game_s {
-    u8 unk_0x000[0x3FC];     /* 0x000 (opaque) */
+    u8 unk_0x000[0x28];      /* 0x000 (opaque) */
+    struct gamelevel_s level[35]; /* 0x028 */
     u8 lives;                /* 0x3FC */
     u8 wumpas;               /* 0x3FD */
+    u8 unk_0x3FE[8];         /* 0x3FE */
+    u8 powerbits;            /* 0x406 */
 };
 
 struct ldata_s {
@@ -43,6 +56,7 @@ struct ldata_s {
     unsigned short flags;    /* 0x24 */
     u8 unk_0x26[2];          /* 0x26 */
     unsigned short vehicle;  /* 0x28 */
+    unsigned short farclip;  /* 0x2A */
 };
 
 struct leveldata_s {
@@ -52,7 +66,9 @@ struct leveldata_s {
 }; /* 0x54 */
 
 struct gamecam_s {
-    u8 unk_0x000[0x114];     /* 0x000 (opaque) */
+    u8 unk_0x000[0x10C];     /* 0x000 (opaque) */
+    unsigned short hdg_to_player; /* 0x10C */
+    u8 unk_0x10E[6];         /* 0x10E */
     signed char mode;        /* 0x114 */
 };
 
@@ -103,7 +119,45 @@ extern struct gamecam_s GameCam;
 extern struct pad_s *Pad[];
 extern struct panelcount_s plr_lives;
 extern struct panelcount_s plr_wumpas;
+extern struct panelcount_s plr_bonus_wumpas;
 extern void *app_tbset;
+
+/* Globals ManageCreatures reads/writes (PS2 v1.03 addresses in symbol_addrs). */
+extern f32 AIVISRANGE;
+extern s32 Demo;
+extern s32 Bonus;
+extern s32 GemPath;
+extern s32 Death;
+extern s32 new_mode;
+extern s32 new_level;
+extern s32 bonus_restart;
+extern s32 bonus_lives;
+extern s32 bonus_finish_frame;
+extern s32 save_bonus_crates_destroyed;
+extern s32 LivesLost;
+extern s32 plr_died;
+extern s32 clock_ok;
+extern s32 c_slot;
+extern s32 LEVELAICOUNT;
+extern s32 bonusgem_ok;
+extern s32 boss_dead;
+extern u16 plr_items;
+extern u8 bonus_wumpa_delay;
+extern u8 bonus_life_delay;
+extern f32 bonus_wumpa_wait;
+extern f32 bonus_crates_wait;
+extern f32 bonus_lives_wait;
+
+s32 NuSoundStopStream(s32 channel);
+f32 NuVecDistSqr(struct nuvec_s *a, struct nuvec_s *b, struct nuvec_s *d);
+s32 qrand(void);
+s32 RotDiff(u16 a, u16 b);
+void GameSfx(s32 sfx, struct nuvec_s *pos);
+s32 abs(s32 x);
+
+/* NuDebugMsgProlog(file, line) returns the printf-style logger it prologues. */
+typedef void (*debugmsg_fn)(char *fmt, ...);
+debugmsg_fn NuDebugMsgProlog(char *file, s32 line);
 
 void *memset(void *s, int c, unsigned int n);
 void RemoveGameObject(struct obj_s *obj);
@@ -223,6 +277,263 @@ void TerrainFailsafe(struct obj_s *obj)
     obj->shadow = SAFEY;
     if (obj->pos.y + obj->bot * obj->SCALE < SAFEY) {
         obj->pos.y = SAFEY - obj->min.y * obj->SCALE;
+    }
+}
+
+
+void ManageCreatures(void)
+{
+    struct nuvec_s *p0;
+    f32 d;
+    f32 dist;
+    f32 range2;
+    s32 i;
+    s32 j;
+    s32 free_slot;
+    s32 old_index;
+    s32 index;
+    struct aitab_s *pAI;
+
+    if ((Level == 0x25) || ((LDATA->flags & 0x202) != 0)) {
+        d = (f32)LDATA->farclip;
+    } else {
+        d = AIVISRANGE;
+    }
+    range2 = d;
+    if ((f32)LDATA->farclip < range2) {
+        range2 = (f32)LDATA->farclip;
+    }
+    range2 = range2 * range2;
+
+    if ((player != 0) && (player->used != 0) && (player->obj.dead != 0)) {
+        player->obj.die_time += 0.02f;
+        if (player->obj.die_time >= player->obj.die_duration) {
+            player->obj.die_time = player->obj.die_duration;
+            if ((new_mode == -1) && (new_level == -1)) {
+                if (Demo != 0) {
+                    new_level = 0x23;
+                } else if (Bonus == 2) {
+                    if ((plr_bonus_wumpas.count == 0) &&
+                        (bonus_wumpa_delay == 0) &&
+                        !(bonus_wumpa_wait > 0.0f) &&
+                        (bonus_finish_frame >=
+                         save_bonus_crates_destroyed * 5 + 5) &&
+                        !(bonus_crates_wait > 0.0f) && (bonus_lives == 0) &&
+                        (bonus_life_delay == 0) && !(bonus_lives_wait > 0.0f)) {
+                        NuSoundStopStream(0);
+                        NuSoundStopStream(1);
+                        bonus_restart = 1;
+                        new_mode = GameMode;
+                    }
+                } else if (TimeTrial != 0) {
+                    new_mode = GameMode;
+                } else {
+                    if (plr_lives.count != 0) {
+                        plr_lives.count = plr_lives.count - 1;
+                        if (Adventure != 0) {
+                            LivesLost = LivesLost + 1;
+                            Game.lives = (u8)plr_lives.count;
+                        }
+                        new_mode = GameMode;
+                    } else {
+                        new_level = 0x26;
+                    }
+                    plr_died = 1;
+                }
+            }
+        }
+    }
+
+    free_slot = -1;
+    for (i = 1; i < 9; i++) {
+        if (Character[i].used != 0) {
+            if (Character[i].on == 0) {
+                if (Character[i].off_wait != 0) {
+                    Character[i].off_wait = Character[i].off_wait - 1;
+                    if (Character[i].off_wait == 0) {
+                        RemoveGameObject(&Character[i].obj);
+                        Character[i].used = 0;
+                    }
+                }
+            } else if (Character[i].obj.dead != 0) {
+                Character[i].obj.die_time += 0.02f;
+                if (Character[i].obj.die_time >=
+                    Character[i].obj.die_duration) {
+                    Character[i].obj.die_time = Character[i].obj.die_duration;
+                    Character[i].on = 0;
+                    Character[i].off_wait = 2;
+                    if ((Character[i].i_aitab != -1) &&
+                        (AITab[Character[i].i_aitab].delay <= 0.0f)) {
+                        AITab[Character[i].i_aitab].status = 0;
+                    }
+                }
+            } else {
+                if ((NuVecDistSqr(&AITab[Character[i].i_aitab].origin,
+                                  &player->obj.pos, 0) > range2) ||
+                    ((level_part_2 != 0) &&
+                     (AITab[Character[i].i_aitab].ai_type != 0x4F))) {
+                    Character[i].on = 0;
+                    Character[i].off_wait = 2;
+                    if (Character[i].obj.character == 0x76) {
+                        clock_ok = 0;
+                    }
+                }
+            }
+        } else if (free_slot == -1) {
+            free_slot = i;
+        }
+    }
+
+    if (free_slot == -1) {
+        c_slot = c_slot + 1;
+        if (c_slot == 9) {
+            c_slot = 1;
+        }
+    } else {
+        c_slot = free_slot;
+    }
+
+    p0 = &player->obj.pos;
+    index = -1;
+    if (Character[c_slot].used != 0) {
+        index = Character[c_slot].i_aitab;
+        if (index != -1) {
+            dist = NuVecDistSqr(p0, AITab[Character[c_slot].i_aitab].pos, 0);
+        }
+    }
+
+    old_index = index;
+    pAI = AITab;
+    for (i = 0; i < LEVELAICOUNT; i++, pAI++) {
+        if ((pAI->delay > 0.0f) && (pAI->time > 0.0f)) {
+            pAI->time -= 0.02f;
+            if (pAI->time < 0.0f) {
+                pAI->time = 0.0f;
+            }
+        }
+        for (j = 1; j < 9; j++) {
+            if ((Character[j].used != 0) && (Character[j].i_aitab == i) &&
+                (!(pAI->delay > 0.0f) || (pAI->time != 0.0f))) {
+                goto next;
+            }
+        }
+        if (((level_part_2 == 0) || (pAI->ai_type == 0x4F)) &&
+            (pAI->status != 0) &&
+            (CRemap[AIType[pAI->ai_type].character] != -1)) {
+            switch (pAI->ai_type) {
+            case 0x4C:
+            case 0x4D:
+                if (((Game.level[Level].flags & 8) == 0) &&
+                    ((plr_items & 1) == 0) &&
+                    ((LDATA->flags & 0x200) == 0)) {
+                    goto add;
+                }
+                break;
+            case 0x4E:
+            case 0x4F:
+                if ((Demo == 0) &&
+                    ((Hub == 5) || ((Game.level[Level].flags & 8) != 0)) &&
+                    (TimeTrial == 0) && (clock_ok != 0)) {
+                    goto add;
+                }
+                break;
+            case 0x50:
+            case 0x51:
+                if (((Game.level[Level].flags & 0x10) == 0) &&
+                    ((plr_items & 2) == 0) && (TimeTrial == 0) &&
+                    ((LDATA->flags & 0x200) == 0)) {
+                    goto add;
+                }
+                break;
+            case 0x52:
+            case 0x53:
+                if (((Game.level[Level].flags & 0x20) == 0) &&
+                    ((plr_items & 4) == 0) && (TimeTrial == 0) &&
+                    ((LDATA->flags & 0x200) == 0) && (bonusgem_ok != 0)) {
+                    goto add;
+                }
+                break;
+            case 0x54:
+                if (((Game.level[Level].flags & 0x40) == 0) &&
+                    ((plr_items & 8) == 0) && (TimeTrial == 0) &&
+                    ((LDATA->flags & 0x200) == 0)) {
+                    goto add;
+                }
+                break;
+            case 0x55:
+                if (((Game.level[Level].flags & 0x80) == 0) &&
+                    ((plr_items & 0x20) == 0) && (TimeTrial == 0) &&
+                    ((LDATA->flags & 0x200) == 0)) {
+                    goto add;
+                }
+                break;
+            case 0x56:
+                if (((Game.level[Level].flags & 0x100) == 0) &&
+                    ((plr_items & 0x10) == 0) && (TimeTrial == 0) &&
+                    ((LDATA->flags & 0x200) == 0)) {
+                    goto add;
+                }
+                break;
+            case 0x57:
+                if (((Game.level[Level].flags & 0x200) == 0) &&
+                    ((plr_items & 0x40) == 0) && (TimeTrial == 0) &&
+                    ((LDATA->flags & 0x200) == 0)) {
+                    goto add;
+                }
+                break;
+            case 0x58:
+                if (((Game.level[Level].flags & 0x400) == 0) &&
+                    ((plr_items & 0x80) == 0) && (TimeTrial == 0) &&
+                    ((LDATA->flags & 0x200) == 0)) {
+                    goto add;
+                }
+                break;
+            case 0x5A:
+                if ((Game.powerbits & 0x20) == 0) {
+                    goto add;
+                }
+                break;
+            case 0x59:
+            case 0x5B:
+            case 0x5C:
+            case 0x5D:
+            case 0x5E:
+                if ((boss_dead == 1) && ((LBIT & 0x3E00000) != 0)) {
+                    goto add;
+                }
+                break;
+            default:
+            add:
+                d = NuVecDistSqr(p0, pAI->pos, 0);
+                if ((index == -1) || (d < dist)) {
+                    index = i;
+                    dist = d;
+                }
+                break;
+            }
+        }
+    next:;
+    }
+
+    if ((index != -1) && (index != old_index)) {
+        if (!(AITab[index].delay > 0.0f) || !(AITab[index].time > 0.0f)) {
+            if (Character[c_slot].used != 0) {
+                Character[c_slot].on = 0;
+                Character[c_slot].off_wait = 2;
+                if (Character[c_slot].obj.character == 0x76) {
+                    clock_ok = 0;
+                }
+            } else if (NuVecDistSqr(&AITab[index].origin,
+                                    &player->obj.pos, 0) < range2) {
+                i = AIType[AITab[index].ai_type].character;
+                NuDebugMsgProlog(".\\creature.c", 0x135C)(
+                    "ManageCreatures - new character = %s", CData[i].name);
+                AddCreature(i, c_slot, index);
+                if (AITab[index].delay > 0.0f) {
+                    AITab[index].time = AITab[index].delay;
+                }
+            }
+        }
     }
 }
 
@@ -429,6 +740,106 @@ s32 AddCreature(s32 character, s32 index, s32 i_aitab)
 }
 
 
+s32 NewCharacterIdle(struct creature_s *c, struct CharacterModel *model)
+{
+    s32 i;
+    s32 ok;
+    s32 count;
+    s32 list[118];
+    s32 sfx;
+
+    if (GameMode != 1) {
+        if ((c->idle_mode == 0) && (c->idle_sigh == 0)) {
+            c->idle_sigh = 1;
+            if (model->anmdata[0x3D] != 0) {
+                c->idle_repeat = 1;
+                c->idle_action = 0x3D;
+                sfx = 0x22;
+                goto New;
+            }
+        }
+
+        count = 0;
+        for (i = 0; i < 0x76; i++) {
+            if ((model->anmdata[i] != 0) &&
+                ((model->animlist[i]->flags & 8) != 0)) {
+                ok = 1;
+                if ((c == player) && (c->obj.character == 0)) {
+                    if ((GameMode == 1) &&
+                        ((i == 0x25) || (i == 0x26) || (i == 0x27))) {
+                        ok = 0;
+                    } else if ((i == 0x27) &&
+                               (abs(RotDiff(GameCam.hdg_to_player,
+                                            c->obj.hdg)) < 0x6000)) {
+                        ok = 0;
+                    } else if ((i == 0x29) &&
+                               ((GemPath == 1) || (GemPath == 3) ||
+                                (Death == 1) || (Death == 3) ||
+                                (Bonus == 1) || (Bonus == 3))) {
+                        ok = 0;
+                    }
+                }
+                if (ok) {
+                    list[count++] = i;
+                }
+            }
+        }
+
+        if (count < 1) {
+            return 0;
+        }
+
+    Retry:
+        sfx = -1;
+        i = (count <= 1) ? 0 : qrand() / (0xFFFF / count + 1);
+        c->idle_repeat = 1;
+        c->idle_action = list[i];
+        if (c->obj.character == 0) {
+            switch (c->idle_action) {
+            case 0x29:
+                c->idle_repeat = qrand() / 0x4000 + 2;
+                break;
+            case 0x28:
+                c->idle_repeat = qrand() / 0x2000 + 8;
+                sfx = 0x10;
+                break;
+            case 0x3D:
+                sfx = 0x22;
+                break;
+            case 0x27:
+                break;
+            }
+        }
+        if ((count >= 2) && (c->idle_action == c->old_idle_action)) {
+            goto Retry;
+        }
+
+    New:
+        c->idle_mode = 1;
+        c->old_idle_action = c->idle_action;
+        if ((1 < c->idle_repeat) &&
+            ((model->animlist[c->idle_action]->flags & 1) == 0)) {
+            c->idle_repeat = 1;
+        }
+        c->idle_time = 0.0f;
+        c->idle_wait =
+            (model->anmdata[c->idle_action]->time - 1.0f) * c->idle_repeat;
+        i = model->animlist[c->idle_action]->blend_out_frames;
+        if (i != 0) {
+            c->idle_wait -= i * 0.5999999642f;
+            if (c->idle_wait < 1.0f) {
+                c->idle_wait = 1.0f;
+            }
+        }
+        if (sfx != -1) {
+            GameSfx(sfx, &c->obj.pos);
+        }
+        return 1;
+    }
+    return 0;
+}
+
+
 void UpdateCharacterIdle(struct creature_s *c, s32 character)
 {
     struct CharacterModel *model;
@@ -596,6 +1007,80 @@ void ProcessCreatures(void)
     }
     if (FRAME == 0) {
         tbslotEndFn(app_tbset, 6);
+    }
+}
+
+
+
+extern s32 temp_action;
+extern f32 temp_time;
+
+
+void EvalModelAnim(struct CharacterModel *model, struct anim_s *anim,
+                   struct numtx_s *m, struct numtx_s *tmtx, float ***dwa,
+                   struct numtx_s *mLOCATOR)
+{
+    short layertab[2] = { 0, 1 };
+    short *layer = layertab;
+    s32 nlayers;
+    s32 i;
+
+    nlayers = 1;
+    if (model->character == 0) {
+        nlayers = 2;
+    }
+
+    if ((anim->blend != 0)
+        && (((u16)anim->blend_src_action <= 0x75)
+            && (model->fanmdata[anim->blend_src_action] != 0))
+        && (((u16)anim->blend_dst_action <= 0x75)
+            && (model->fanmdata[anim->blend_dst_action] != 0))) {
+        *dwa = NuHGobjEvalDwaBlend(
+            nlayers, layer,
+            model->fanmdata[anim->blend_src_action], anim->blend_src_time,
+            model->fanmdata[anim->blend_dst_action], anim->blend_dst_time,
+            (float)anim->blend_frame / (float)anim->blend_frames);
+    } else if ((anim->blend == 0)
+               && ((u16)anim->action <= 0x75)
+               && (model->fanmdata[anim->action] != 0)) {
+        *dwa = NuHGobjEvalDwa(nlayers, layer,
+                              model->fanmdata[anim->action],
+                              anim->anim_time);
+    } else {
+        *dwa = 0;
+    }
+
+    if ((anim->blend != 0)
+        && (((u16)anim->blend_src_action < 0x76)
+            && (model->anmdata[anim->blend_src_action] != 0))
+        && (((u16)anim->blend_dst_action < 0x76)
+            && (model->anmdata[anim->blend_dst_action] != 0))) {
+        NuHGobjEvalAnimBlend(
+            model->hobj,
+            model->anmdata[anim->blend_src_action], anim->blend_src_time,
+            model->anmdata[anim->blend_dst_action], anim->blend_dst_time,
+            (float)anim->blend_frame / (float)anim->blend_frames,
+            0, 0, tmtx);
+        temp_action = anim->blend_dst_action;
+        temp_time = anim->blend_dst_time;
+    } else if ((anim->blend == 0)
+               && ((u16)anim->action < 0x76)
+               && (model->anmdata[anim->action] != 0)) {
+        NuHGobjEvalAnim(model->hobj, model->anmdata[anim->action],
+                        anim->anim_time, 0, 0, tmtx);
+        temp_action = anim->action;
+        temp_time = anim->anim_time;
+    } else {
+        NuHGobjEval(model->hobj, 0, 0, tmtx);
+        temp_action = -1;
+    }
+
+    if (mLOCATOR != 0) {
+        for (i = 0; i < 0x10; i++) {
+            if (model->pLOCATOR[i] != 0) {
+                NuHGobjPOIMtx(model->hobj, (u8)i, m, tmtx, &mLOCATOR[i]);
+            }
+        }
     }
 }
 

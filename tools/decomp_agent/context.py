@@ -125,7 +125,11 @@ def get_context(project: DecompProject, target, *, detail=False,
             "confidence": "medium",
             "detail": f"unit owns {len(owned_data)} data range(s); a function "
                       f"touching them may hit initialized_local_sdata / rodata "
-                      f"blockers"})
+                      f"blockers",
+            "kind": "unit_owns_data",
+            "policy": "data_from_c_unsupported",
+            "guidance": "Use extern D_... retail symbols plus aliases; do not "
+                        "define file-scope C globals."})
     if fn.name_is_duplicated:
         hypotheses.append({
             "label": "name duplicated across TUs (disambiguated as NAME__<vram>)",
