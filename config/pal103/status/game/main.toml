@@ -29,7 +29,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0088:001c6778:DrawWorld"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0088:001c6908:DoInput"
@@ -137,7 +137,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0088:001cb318:DrawFade"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0088:001cb358:PauseRumble"
