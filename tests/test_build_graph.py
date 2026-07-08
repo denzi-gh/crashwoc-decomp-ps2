@@ -255,27 +255,62 @@ class TestDataUnits(unittest.TestCase):
 
 
 class TestSelectTextObjects(unittest.TestCase):
+    @staticmethod
+    def _matching_units_from_manifests():
+        """Independently re-derive {unit_index: src-relative object stem} for the
+        units that own a `matching` function, reading the committed status TOMLs
+        directly. This deliberately does NOT call manifest_units: the test's job
+        is to confirm select_text_objects agrees with an independent reading of
+        the same source of truth, so it scales as new units are promoted without
+        editing the test."""
+        try:
+            import tomllib
+        except ModuleNotFoundError:  # py<3.11
+            import tomli as tomllib
+        status_dir = ROOT / "config" / "pal103" / "status"
+        out = {}
+        for m in sorted(status_dir.rglob("*.toml")):
+            data = tomllib.loads(m.read_text())
+            states = {f.get("state", "asm") for f in data.get("function", ())}
+            if "matching" not in states:
+                continue
+            idx = int(data["unit"].split("unit-")[1])
+            stem = str(Path(data["source"]).relative_to("src").with_suffix(""))
+            out[idx] = stem.replace("\\", "/")
+        return out
+
     def test_hybrid_substitution_in_address_order(self):
         objs = select_text_objects("pal103", "matching")
-        self.assertEqual(len(objs), len(load_tu_runs()))
+        # 1. One object per TU, in retail address order.
         self.assertEqual([u for u, _p in objs],
                          [u for u, _a in load_tu_runs()])
+
+        # 2. The hybrid/expected split matches an independent read of the
+        #    manifests -- property, not a hardcoded roster, so promoting a new
+        #    unit needs no edit here.
+        matching = self._matching_units_from_manifests()
+        for unit, path in objs:
+            posix = str(path).replace("\\", "/")
+            if unit in matching:
+                self.assertTrue(
+                    posix.endswith(
+                        f"build/pal103/matching/{matching[unit]}.o"),
+                    f"unit {unit} should build a hybrid, got {posix}")
+            else:
+                self.assertIn("/expected/pal103/", posix,
+                              f"unit {unit} should be expected, got {posix}")
+        hybrids = [p for _u, p in objs if "/expected/" not in
+                   str(p).replace("\\", "/")]
+        self.assertEqual(len(hybrids), len(matching))
+
+        # 3. Two stable anchors guard against a shared bug in both derivations:
+        #    unit 7 (nucore/nulist) has long-promoted matching code; unit 0
+        #    (crt0) is hand-written asm that can never match.
         by_unit = dict(objs)
-        # Units 7, 88, 91 and 108 have promoted matching functions: their hybrid
-        # objects replace the expected objects; their neighbours stay expected.
         self.assertTrue(str(by_unit[7]).replace("\\", "/").endswith(
             "build/pal103/matching/nucore/nulist.o"))
-        self.assertTrue(str(by_unit[88]).replace("\\", "/").endswith(
-            "build/pal103/matching/game/main.o"))
-        self.assertTrue(str(by_unit[91]).replace("\\", "/").endswith(
-            "build/pal103/matching/game/creature.o"))
-        self.assertTrue(str(by_unit[108]).replace("\\", "/").endswith(
-            "build/pal103/matching/game/panel.o"))
         self.assertTrue(str(by_unit[0]).replace("\\", "/").endswith(
             "expected/pal103/000_crt0.s.o"))
-        self.assertTrue(str(by_unit[6]).replace("\\", "/").endswith(".o"))
-        hybrids = [p for _u, p in objs if "expected" not in str(p)]
-        self.assertEqual(len(hybrids), 4)
 
 
 class TestDispatchTranslation(unittest.TestCase):
