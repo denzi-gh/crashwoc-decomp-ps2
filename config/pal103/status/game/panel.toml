@@ -61,7 +61,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0108:00240400:DrawPanel3DObject"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0108:00240648:DrawPanel3DTempCharacter"

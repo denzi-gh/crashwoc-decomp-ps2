@@ -1,0 +1,145 @@
+# Compiler / assembler knowledge registry for pal103 matching.
+#
+# Only *supported*, established behavior belongs here -- each quirk names the
+# profiles it applies to, the observable signature, its effect, how the
+# pipeline already handles it (or that it is an architectural blocker), a
+# confidence, and evidence pointers into the tree. The domain layer
+# (tools/decomp_agent) surfaces these to an AI agent as context; a heuristic or
+# speculative note must NOT be recorded as `proven`.
+#
+# Confidence: proven | likely | hypothesis
+#
+# Regenerate/extend by hand with evidence; this is committed configuration,
+# read by tools/decomp_agent/compiler_knowledge.py.
+
+schema = 1
+
+[[quirk]]
+id = "default.move-pseudo-encoding"
+profiles = ["default", "sce"]
+category = "assembler_normalization"
+signature = "compiler assembly contains a `move $x,$y` pseudo-instruction"
+effect = "the decompals `as` encodes `move` as `or $x,$y,$0`; Sony/retail use `daddu $x,$y,$0`"
+handling = "normalized by tools/gen_hybrid.py::_sonyize before assembly"
+confidence = "proven"
+evidence = ["tools/gen_hybrid.py::_sonyize", "docs/notes.md"]
+
+[[quirk]]
+id = "default.break-operand-encoding"
+profiles = ["default", "sce"]
+category = "assembler_normalization"
+signature = "compiler assembly contains a one-operand `break N`"
+effect = "the two assemblers place the code field in different bit ranges; retail uses `break 0,N`"
+handling = "rewritten to the explicit `break 0,N` form by tools/gen_hybrid.py::_sonyize"
+confidence = "proven"
+evidence = ["tools/gen_hybrid.py::_sonyize"]
+
+[[quirk]]
+id = "default.r5900-short-loop-padding"
+profiles = ["default"]
+category = "loop_shape"
+signature = "a short (<= 3-instruction) backward branch loop"
+effect = "Sony's `as` pads short loops with nops for the R5900 erratum; the SN ProDG build and retail game code do not -- padded output can never byte-match"
+handling = "the matching build assembles hybrids with the decompals `as` (no padding), not Sony's `as`"
+confidence = "proven"
+evidence = ["tools/gen_hybrid.py::_assemble_hybrid", "config/pal103/profiles.toml"]
+
+[[quirk]]
+id = "sce.sq-lq-callee-saves"
+profiles = ["sce"]
+category = "saved_registers"
+signature = "callee-saved GPRs stored/loaded in the prologue/epilogue"
+effect = "the Sony 2.9 build uses 128-bit sq/lq for callee saves; the SN ProDG (default) build uses sd/ld -- a unit built by the wrong compiler cannot match"
+handling = "profile selection: game/engine TUs use `default`, the Sony runtime uses `sce` (never mix)"
+confidence = "proven"
+evidence = ["config/pal103/profiles.toml", "docs/notes.md"]
+
+[[quirk]]
+id = "default.lit4-inline-vs-pool"
+profiles = ["default", "sce"]
+category = "literal_pool"
+signature = "`li.s $fN,<constant>` in the compiler output"
+effect = "a float whose 32-bit image has a zero low half is materialized inline (lui+mtc1, no data); any other float goes to a .lit4 pool slot -- data the hybrid must not own"
+handling = "pool-bound li.s is rewritten to load the retail .lit4 slot by symbol (tools/gen_hybrid.py::_rewrite_lis / Lit4Mapper)"
+confidence = "proven"
+evidence = ["tools/gen_hybrid.py::_rewrite_lis", "tools/gen_hybrid.py::Lit4Mapper"]
+
+[[quirk]]
+id = "default.lit8-unsupported"
+profiles = ["default", "sce"]
+category = "unsupported_lit8"
+signature = "`li.d $fN,<constant>` (double literal) in the compiler output"
+effect = "a double constant needs a .lit8 pool entry; the hybrid pipeline cannot yet map .lit8 slots"
+handling = "ARCHITECTURAL for now: build_hybrid raises HybridError; record a compiler-owned blocker"
+confidence = "proven"
+evidence = ["tools/gen_hybrid.py::_rewrite_lis"]
+
+[[quirk]]
+id = "default.jump-table-rodata"
+profiles = ["default", "sce"]
+category = "jump_table_rodata"
+signature = "a dense switch compiled to an indexed jump through a .rodata table"
+effect = "the compiler emits a jump-table into .rodata; the hybrid may only contribute .text, so table data cannot be owned yet"
+handling = "ARCHITECTURAL for now: the hybrid assembler rejects data sections (_check_no_data_sections)"
+confidence = "likely"
+evidence = ["tools/gen_hybrid.py::_check_no_data_sections"]
+
+[[quirk]]
+id = "default.initialized-local-sdata"
+profiles = ["default", "sce"]
+category = "initialized_local_sdata"
+signature = "an initialized local aggregate (e.g. `static const` array in a function)"
+effect = "the compiler places the initializer in .sdata/.data; the hybrid cannot own data sections yet"
+handling = "ARCHITECTURAL for now: fails loudly in _check_no_data_sections; record a compiler-owned-sdata blocker"
+confidence = "likely"
+evidence = ["tools/gen_hybrid.py::_check_no_data_sections"]
+
+[[quirk]]
+id = "default.duplicate-static-names"
+profiles = ["default", "sce"]
+category = "assembler_normalization"
+signature = "a static function name shared by two translation units"
+effect = "four statics (ReadNuIFFGeomSkin, ReadNuIFFGeomVtx, NuNodeRead, _fpadd_parts) collide across TUs"
+handling = "disambiguated as NAME__<vram>; always address such functions by canonical id"
+confidence = "proven"
+evidence = ["tools/declib/asmtext.py::disambiguate", "docs/notes.md"]
+
+[[quirk]]
+id = "default.function-extent-padding"
+profiles = ["default", "sce"]
+category = "size_difference"
+signature = "a function shorter than its registry extent (gap to the next function)"
+effect = "retail pads a function's tail to the next function with nop; the compiler does not emit that pad"
+handling = "the hybrid zero-fills (nop) to the extent end via `.org`; exact matching is verified over the FULL extent"
+confidence = "proven"
+evidence = ["tools/gen_hybrid.py::_splice_unit", "tools/verify_promoted.py"]
+
+[[quirk]]
+id = "default.decompals-assembler-in-hybrids"
+profiles = ["default", "sce"]
+category = "assembler_normalization"
+signature = "hybrid assembly containing retail slices and %gp_rel(sym) relocations"
+effect = "Sony's `as` predates %gp_rel syntax and adds R5900 loop padding; retail slices only round-trip through the decompals `as`"
+handling = "hybrids are assembled with declib.toolchain.AS (decompals as), never the ee-gcc driver"
+confidence = "proven"
+evidence = ["tools/gen_hybrid.py::_assemble_hybrid"]
+
+[[quirk]]
+id = "default.small-mapped-switch-shape"
+profiles = ["default"]
+category = "codegen_shape"
+signature = "a small switch/if mapping a few non-contiguous integer cases to constants (e.g. object 1/2/3 -> 0x85/0x86/0x87, else -1)"
+effect = "a C `switch` compiles to a binary-search comparison tree (slti + extra li/b), which is larger and reorders the compares; retail SN ee-gcc 2.95.2 emitted a linear if / else-if chain whose final case is a ternary lowered with `movz` (e.g. `xori t,obj,3; li a,-1; li v,0x87; movz a,v,t`)"
+handling = "MATCHING HINT, not pipeline-handled: write the C as `if (x==A) o=..; else if (x==B) o=..; else o = (x==C) ? .. : ..;` so the last case becomes the movz, matching size and compare order. Verified on DrawPanel3DObject (game/panel)."
+confidence = "likely"
+evidence = ["src/game/panel.c::DrawPanel3DObject", "config/pal103/status/game/panel.toml"]
+
+[[quirk]]
+id = "default.repeated-array-element-index"
+profiles = ["default", "sce"]
+category = "codegen_shape"
+signature = "two or more field accesses to the same array element written as arr[i].a, arr[i].b"
+effect = "-O2 does not always CSE the element address across separate arr[i] expressions and recomputes base+i*stride each time (one extra sll/addu per repeat), inflating the function past its extent (`.org backwards`)"
+handling = "MATCHING HINT: bind a pointer once (`T *e = &arr[i];` then `e->a`, `e->b`) so the address is computed a single time. Verified on DrawPanel3DObject's ObjTab[o].scene/.special."
+confidence = "likely"
+evidence = ["src/game/panel.c::DrawPanel3DObject"]
