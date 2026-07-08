@@ -22,14 +22,17 @@ struct sceneinst_s {
     int inst_cnt;
 };
 
-static struct nulsthdr_s *sceneinst_pool;
-static struct nulsthdr_s *animdatainst_pool;
-static struct nulsthdr_s *shaddatainst_pool;
+extern struct nulsthdr_s *D_006309FC;
+extern struct nulsthdr_s *D_00630A00;
+
+#define sceneinst_pool D_006309FC
+#define animdatainst_pool D_00630A00
 
 extern struct nulnkhdr_s *NuLstGetNext(struct nulsthdr_s *hdr, struct nulnkhdr_s *lnk);
 extern struct nulnkhdr_s *NuLstAlloc(struct nulsthdr_s *hdr);
 extern void NuLstFree(struct nulnkhdr_s *lnk);
 extern struct nuscene_s *NuSceneLoad(char *name);
+extern void NuSceneDestroy(struct nuscene_s *scene);
 extern int strcasecmp(const char *s1, const char *s2);
 extern char *strcpy(char *dest, const char *src);
 
@@ -57,4 +60,21 @@ struct nuscene_s *InstSceneLoad(char *name) {
     }
 
     return 0;
+}
+
+void InstSceneDestroy(struct nuscene_s *scene) {
+    struct sceneinst_s *sc;
+
+    sc = (struct sceneinst_s *)NuLstGetNext(sceneinst_pool, 0);
+    while (sc != 0) {
+        if (sc->scene == scene) {
+            sc->inst_cnt--;
+            if (sc->inst_cnt == 0) {
+                NuSceneDestroy(scene);
+                NuLstFree((struct nulnkhdr_s *)sc);
+            }
+            return;
+        }
+        sc = (struct sceneinst_s *)NuLstGetNext(sceneinst_pool, (struct nulnkhdr_s *)sc);
+    }
 }
