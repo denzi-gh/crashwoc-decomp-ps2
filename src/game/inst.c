@@ -233,5 +233,5 @@ void InstClose(void) {
 void InstInit(void) {
     sceneinst_pool = NuLstCreate(0x10, 0x108);
     animdatainst_pool = NuLstCreate(0xc0, 0x108);
-    shaddatainst_pool = NuLstCreate(0x10, 0x108);
+    shaddatainst_pool = NuLstCreate(0x80, 0x108);
 }
