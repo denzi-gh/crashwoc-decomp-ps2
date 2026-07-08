@@ -1,0 +1,16 @@
+# Codex CLI / IDE project MCP configuration (example).
+#
+# Launches the SAME repository-local MCP server Claude Code uses (.mcp.json).
+# No machine-specific absolute paths: `--repo .` resolves against the project
+# directory Codex launches the server from. Model and reasoning-effort choices
+# stay client-side (see docs/decomp_agent.md) and are NOT configured here.
+#
+# Requires the MCP SDK: `python -m pip install -r requirements-mcp.txt`
+# (or use `uv run` as the command if you manage the env with uv).
+
+[mcp_servers.crashwoc_decomp]
+command = "python"
+args = ["-m", "tools.decomp_mcp.server", "--repo", "."]
+enabled = true
+startup_timeout_sec = 20
+tool_timeout_sec = 180

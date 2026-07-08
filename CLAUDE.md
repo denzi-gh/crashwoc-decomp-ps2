@@ -81,3 +81,26 @@ CI (docs/ci.md): `validate.yml` (structure, no game files, every push/PR) and `m
 - The original assembler accepts only numeric GPR names (`jr $31`, not `jr $ra`); `gen_slices.py` handles the rewrite.
 - Four static functions are duplicated across TUs and disambiguated as `NAME__<vram>`.
 - `docs/notes.md` is the running log of quirks, resolved decisions, and invariants — check it before re-deriving a decision, and record new loose ends there.
+
+## Matching MCP / decomp-agent (Claude Code specifics)
+
+The shared, model-independent matching workflow — candidate selection, context,
+compile/diff over the full extent, shared cross-client sessions, blockers,
+verification, promotion — lives in `tools/decomp_agent/` (domain layer) and is
+exposed over MCP by `tools/decomp_mcp/server.py`. **The canonical workflow, stop
+conditions, and session hand-off rules are in [docs/decomp_agent.md](docs/decomp_agent.md)
+— read that; do not duplicate them here.** Codex-specific launch/escalation is
+in `AGENTS.md`.
+
+Launch: this repo ships `.mcp.json` (server `crashwoc-decomp`, stdio,
+`python -m tools.decomp_mcp.server --repo .`). Install the SDK once with
+`python -m pip install -r requirements-mcp.txt`; the domain layer and its CLI
+need no extra packages. Toolchain-bound tools auto-route through
+`tools/dispatch.py` into the container.
+
+Escalation is a **client-side** decision — the MCP never selects a model or
+reasoning level. Use an initial worker configuration for attempts 1–8 and a
+stronger configuration (higher reasoning effort) for 9–20, escalating only while
+the best result is still improving with no architectural blocker or
+oscillation. The shared session ledger lets Claude Code do the initial attempts
+and Codex the escalation, or the reverse.

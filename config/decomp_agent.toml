@@ -1,0 +1,12 @@
+# Marker + compatibility descriptor for the decomp-agent domain layer / MCP.
+#
+# tools/decomp_agent reads this (best-effort) to confirm a directory is this
+# project and to pin the default registry version. Absence is not fatal -- the
+# registries and project markers are the real compatibility gate -- but its
+# presence lets a client validate a root quickly and future-proofs the API
+# contract.
+
+schema = 1
+project = "crashwoc-decomp-ps2"
+domain_api = 1
+default_version = "pal103"

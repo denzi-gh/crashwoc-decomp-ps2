@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "crashwoc-decomp": {
+      "command": "python",
+      "args": ["-m", "tools.decomp_mcp.server", "--repo", "."],
+      "env": {}
+    }
+  }
+}

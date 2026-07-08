@@ -1,0 +1,12 @@
+# Optional dependency for the MCP server (tools/decomp_mcp/server.py).
+#
+# The deterministic domain layer (tools/decomp_agent) and its CLI need NO extra
+# packages -- only the Python 3.11+ standard library -- so public tests and the
+# CLI run without this. Install this only to expose the domain layer over MCP:
+#
+#     python -m pip install -r requirements-mcp.txt
+#
+# The official Model Context Protocol Python SDK; the FastMCP stdio server the
+# domain layer is wrapped in. Provider-agnostic -- any standards-compliant MCP
+# client (Claude Code, Codex CLI/IDE, ...) can drive it.
+mcp>=1.2,<2
