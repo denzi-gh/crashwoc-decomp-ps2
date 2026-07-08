@@ -52,11 +52,15 @@ struct game_s {
 };
 
 struct ldata_s {
-    u8 unk_0x00[0x24];       /* 0x00 (opaque) */
+    u8 unk_0x00[0x04];       /* 0x00 (opaque) */
+    u8 *clist;               /* 0x04 (character-id load list) */
+    u8 unk_0x08[0x1C];       /* 0x08 (opaque) */
     unsigned short flags;    /* 0x24 */
     u8 unk_0x26[2];          /* 0x26 */
     unsigned short vehicle;  /* 0x28 */
     unsigned short farclip;  /* 0x2A */
+    u8 unk_0x2C[0xC];        /* 0x2C */
+    struct nuvec_s vBONUS;   /* 0x38 (bonus-round restart position) */
 };
 
 struct leveldata_s {
@@ -236,7 +240,7 @@ void DrawProbeFX(struct obj_s *obj);
 void ShadRndr(struct numtx_s *mS, void *data, float time, float scale);
 
 
-float ModelAnimDuration(u32 character, u32 action, float start, float end)
+inline float ModelAnimDuration(u32 character, u32 action, float start, float end)
 {
     f32 t;
     struct CharacterModel *model;
@@ -278,6 +282,186 @@ void TerrainFailsafe(struct obj_s *obj)
     if (obj->pos.y + obj->bot * obj->SCALE < SAFEY) {
         obj->pos.y = SAFEY - obj->min.y * obj->SCALE;
     }
+}
+
+
+/* Checkpoint / restart globals (PS2 v1.03 addresses in symbol_addrs). */
+extern s32 cp_iALONG;
+extern s32 cp_iRAIL;
+extern s32 cp_goto;
+extern struct nuvec_s cpGOTO;
+extern struct nuvec_s cpPOS;
+extern struct RPos_s *best_cRPos;
+extern s32 plr_rebound;
+extern f32 ATLASCAMHEIGHT;
+extern struct panelcount_s plr_crates;
+extern f32 D_0062D070;      /* "no shadow" sentinel 2000000.0f (.sdata) */
+extern s32 force_panel_items_update;
+extern s32 force_panel_wumpa_update;
+extern s32 force_panel_crate_update;
+extern s32 force_panel_lives_update;
+extern f32 point_time;
+extern f32 point_duration;
+extern f32 check_time;
+extern f32 check_duration;
+
+void edobjResetAnimsToZero(void);
+void OldTopBot(struct obj_s *obj);
+f32 NewShadowPlat(struct nuvec_s *pos, f32 y);
+void GetSurfaceInfo(struct obj_s *obj, s32 mode, f32 y);
+void ResetAtlas(struct creature_s *c);
+void SetWeatherStartPos(struct creature_s *c);
+void ResetJeep(struct creature_s *c);
+void NewMask(struct mask_s *mask, struct nuvec_s *pos);
+
+
+void ResetPlayer(s32 set)
+{
+    struct creature_s *c;
+    s32 start;
+    s32 water;
+    f32 y;
+
+    if (PLAYERCOUNT != 0) {
+        if (set != 0) {
+            if ((Level != 0x11) || (cp_iALONG < 0x6B)) {
+                edobjResetAnimsToZero();
+            }
+            c = player;
+            PlayerStartPos(player, &player->obj.startpos);
+            start = 0;
+            if ((bonus_restart != 0) &&
+                ((LDATA->vBONUS.x != 0.0f) || (LDATA->vBONUS.y != 0.0f) ||
+                 (LDATA->vBONUS.z != 0.0f))) {
+                c->obj.pos = LDATA->vBONUS;
+            } else {
+                if (cp_goto != -1) {
+                    c->obj.pos = cpGOTO;
+                } else if (cp_iRAIL != -1) {
+                    c->obj.pos = cpPOS;
+                } else {
+                    start = 1;
+                    c->obj.pos = c->obj.startpos;
+                }
+            }
+            if (bonus_restart != 0) {
+                bonus_restart = 0;
+            }
+            water = 0;
+            if ((LBIT & 0x0000000400000040ULL) ||
+                ((Level == 2) && start)) {
+                water = 1;
+            }
+
+            /* ResetPlayerMoves(c)'s body, inlined by hand in the retail
+             * source (there is no call here in the PS2 binary). */
+            c->jump = 0;
+            c->slam = 0;
+            c->spin = 0;
+            c->crawl = 0;
+            c->tiptoe = 0;
+            c->sprint = 0;
+            c->somersault = 0;
+            c->land = 0;
+            c->idle_mode = 0;
+            c->idle_sigh = 0;
+            c->crawl_lock = 1;
+            c->crouch_pos = 0;
+            c->slam_wait = 0;
+            c->spin_wait = 0;
+            c->slide = 0;
+            c->idle_action = 0x22;
+            c->idle_wait = IDLEWAIT * 30.0f;
+            c->obj.idle_gametime = 0.0f;
+            c->idle_time = 0.0f;
+            c->target = 0;
+            c->fire = 0;
+            c->tap = 0;
+            c->freeze = 0;
+            c->obj.transporting = 0;
+            ResetAnimPacket(&c->obj.anim, 0x22);
+            c->obj.frame = 0;
+            c->obj.attack = 0;
+            c->obj.dyrot = 0;
+            c->obj.boing = 0;
+            c->obj.dangle = 0;
+            c->obj.old_ground = 3;
+            c->obj.submerged = 0;
+            c->obj.SCALE = 1.0f;
+            c->obj.scale = 1.0f;
+            c->obj.RADIUS = c->obj.radius;
+            c->obj.ground = 3;
+
+            GetTopBot(c);
+            NewTopBot(&c->obj);
+            OldTopBot(&c->obj);
+            y = NewShadowPlat(&c->obj.pos, 0.0f);
+            GetSurfaceInfo(&c->obj, 1, y);
+            if (cp_goto != -1) {
+                cp_goto = -1;
+            } else if (water != 0) {
+                if (cp_iRAIL != -1) {
+                    c->obj.pos.y -= c->obj.bot * c->obj.SCALE;
+                }
+            } else if ((Level != 0x1D) && (y != D_0062D070)) {
+                c->obj.pos.y = y - c->obj.bot * c->obj.SCALE;
+            }
+            c->obj.oldpos = c->obj.pos;
+            c->obj.mom = v000;
+            ComplexRailPosition(&c->obj.pos, c->obj.RPos.iRAIL,
+                                c->obj.RPos.iALONG, &c->obj.RPos, 1);
+            if ((VEHICLECONTROL == 2) ||
+                ((VEHICLECONTROL == 1) && (c->obj.vehicle == 0x20))) {
+                c->obj.thdg = c->obj.hdg = 0;
+            } else if (Level == 0x19) {
+                c->obj.hdg = 0x4000;
+            } else if (best_cRPos != 0) {
+                c->obj.thdg = c->obj.hdg = best_cRPos->angle;
+            }
+            switch (c->obj.vehicle) {
+            case 0x53:
+                ResetAtlas(c);
+                break;
+            case 0x36:
+                if (Level == 0x18) {
+                    SetWeatherStartPos(c);
+                }
+                break;
+            case 0x63:
+                ResetJeep(c);
+                break;
+            }
+            plr_rebound = 0;
+            ATLASCAMHEIGHT = 2.5f;
+            ResetLights(&c->lights);
+            if ((c->obj.mask != 0) && (c->obj.mask->active != 0)) {
+                if (c->obj.mask->active > 2) {
+                    c->obj.mask->active = 2;
+                }
+                ResetLights(&c->obj.mask->lights);
+            }
+        }
+        plr_crates.count = plr_crates.draw = 0;
+        plr_crates.frame = 0;
+        player->obj.scale = 1.0f;
+        player->obj.dead = 0;
+        player->obj.finished = 0;
+        if ((player->obj.mask != 0) && (player->obj.mask->active == 0) &&
+            (LivesLost > 4)) {
+            NewMask(player->obj.mask, &player->obj.pos);
+        }
+    }
+    if ((Demo == 0) && (GameMode != 1)) {
+        force_panel_items_update = 0x32;
+        force_panel_wumpa_update = 0x32;
+        force_panel_crate_update = 0x32;
+        force_panel_lives_update = 0x32;
+    }
+    boss_dead = 0;
+    point_time = 0.0f;
+    check_duration = 0.0f;
+    check_time = 0.0f;
+    point_duration = 0.0f;
 }
 
 
@@ -535,6 +719,234 @@ void ManageCreatures(void)
             }
         }
     }
+}
+
+
+/* One SpaceGameCut load entry (Level 0x28 only, stride 0x80): the character
+ * id at +0x0 and an inline animation-descriptor table at +0x8. */
+struct space_s {
+    s32 character;            /* 0x00 */
+    s32 unk_0x04;             /* 0x04 */
+    struct animlist anim[5];  /* 0x08 */
+}; /* 0x80 */
+
+/* 3D-font glyph table entry (stride 0xC); only the id and flag byte are used. */
+struct font3dobj_s {
+    short id;                 /* 0x00 */
+    u8 flags;                 /* 0x02 */
+    u8 unk_0x03[9];           /* 0x03 */
+}; /* 0x0C */
+
+extern s8 CLetter[191];
+extern s32 gamecut;
+extern struct space_s *SpaceGameCutTab[][2];
+extern struct CharacterModel *bgload_model[2];
+extern void *superbuffer_ptr;
+extern char tbuf[];
+extern struct font3dobj_s Font3DObjTab[];
+extern struct MoveInfo MineCartMoveInfo;
+
+/* Retail-owned filename fragments and per-variant animation tables. */
+extern char D_0061D270[];   /* .dat path passed to NuDatOpen */
+extern char D_0061D280[];   /* sprintf format for the load screen */
+extern char D_00630980[];
+extern char D_00630988[];
+extern char D_00630990[];
+extern char D_00630998[];
+extern char D_006309A0[];
+extern char D_006309A8[];
+extern struct animlist D_0055C100[];
+extern struct animlist D_0055C178[];
+extern struct animlist D_0055C1C0[];
+extern struct animlist D_0055C2C8[];
+extern struct animlist D_0055C370[];
+extern struct animlist D_0055C3E8[];
+extern struct animlist D_0055CCA0[];
+
+void *NuDatOpen(char *name, s32 mode, s32 arg);
+void NuDatSet(void *dat);
+void NuDatClose(void *dat);
+void LoadScreen(char *name);
+char *NuStrCpy(char *dst, char *src);
+char *NuStrCat(char *dst, char *src);
+struct NUHGOBJ_s *NuGHGRead(void **buf, char *name);
+struct instSHADHDR_s *InstShadDataLoad(char *name);
+void *ShadFindData(struct instSHADHDR_s *hdr, char *name);
+struct NUPOINTOFINTEREST_s *NuHGobjGetPOI(struct NUHGOBJ_s *hobj, u8 i);
+struct nuanimdata_s *InstAnimDataLoad(char *name);
+int sprintf(char *buf, const char *fmt, ...);
+
+
+void LoadCharacterModels(void)
+{
+    s32 i;
+    s32 j;
+    s32 character;
+    s32 cmodel_index;
+    struct space_s *space;
+    struct CharacterModel *model;
+    struct animlist *anim;
+    CharacterData *cdata;
+    void *dat;
+    char charsdat_filename[64];
+
+    for (i = 0; i < 0xBF; i++) {
+        CRemap[i] = -1;
+        CLetter[i] = 0x3F;
+    }
+    for (i = 0x2F; i >= 0; i--) {
+        CModel[i].hobj = 0;
+    }
+
+    if (Level == 0x28) {
+        space = SpaceGameCutTab[gamecut][0];
+    } else {
+        space = 0;
+    }
+
+    dat = NuDatOpen(D_0061D270, 0, 0);
+    NuDatSet(dat);
+
+    if (LDATA->clist != 0) {
+        cmodel_index = 0;
+        model = CModel;
+        for (i = 0; ; i++) {
+            if (space != 0) {
+                character = ((s32 *)space)[i << 5];
+            } else {
+                character = LDATA->clist[i];
+            }
+            if (character == 0xFF) {
+                break;
+            }
+            if (cmodel_index >= 0x30) {
+                break;
+            }
+
+            sprintf(tbuf, D_0061D280, CData[character].name);
+            LoadScreen(tbuf);
+            memset(model, 0, 0x988);
+            if (character < 2) {
+                bgload_model[character] = model;
+            }
+            cdata = &CData[character];
+            NuStrCpy(charsdat_filename, D_00630980);
+            NuStrCat(charsdat_filename, cdata->path);
+            NuStrCat(charsdat_filename, D_00630988);
+            NuStrCpy(tbuf, charsdat_filename);
+            NuStrCat(tbuf, cdata->file);
+            NuStrCat(tbuf, D_00630990);
+            model->hobj = NuGHGRead(&superbuffer_ptr, tbuf);
+            if (model->hobj != 0) {
+                NuStrCpy(tbuf, charsdat_filename);
+                if (character == 0xB2) {
+                    NuStrCat(tbuf, CData[0x44].file);
+                } else {
+                    NuStrCat(tbuf, cdata->file);
+                }
+                NuStrCat(tbuf, D_00630998);
+                model->shadhdr = InstShadDataLoad(tbuf);
+                if (model->shadhdr != 0) {
+                    model->shaddata = ShadFindData(model->shadhdr, 0);
+                }
+                for (j = 0; j < 0x10; j++) {
+                    model->pLOCATOR[j] = NuHGobjGetPOI(model->hobj, (u8)j);
+                }
+                if ((character == 0x54) || (character == 0x9F)) {
+                    NuStrCpy(charsdat_filename, D_00630980);
+                    NuStrCat(charsdat_filename, CData[0].path);
+                    NuStrCat(charsdat_filename, D_00630988);
+                }
+                if (Level == 0x28) {
+                    anim = (struct animlist *)((char *)space + (i << 7) + 8);
+                } else {
+                    anim = cdata->anim;
+                    if (character == 0) {
+                        if ((LBIT & 0x1001002000ULL) && (Level != 0x1E)) {
+                            anim = D_0055C100;
+                        } else if (LBIT & 0x40000) {
+                            anim = D_0055C178;
+                        } else if (LBIT & 0x100210801ULL) {
+                            anim = D_0055C1C0;
+                        } else if (Level == 0x1D) {
+                            anim = D_0055C2C8;
+                        } else if (Level == 0x1C) {
+                            anim = D_0055C370;
+                        } else if (Level == 0x2B) {
+                            anim = D_0055C3E8;
+                        }
+                    } else if (character == 1) {
+                        if (LBIT & 0x4000000) {
+                            anim = D_0055CCA0;
+                        }
+                    }
+                }
+                while ((anim != 0) && (anim->file != 0) &&
+                       (anim->action >= 0) && (anim->action < 0x76)) {
+                    if (anim->levbits & LBIT) {
+                        if (anim->flags & 2) {
+                            if (model->anmdata[anim->action] == 0) {
+                                NuStrCpy(tbuf, charsdat_filename);
+                                NuStrCat(tbuf, anim->file);
+                                NuStrCat(tbuf, D_006309A0);
+                                model->anmdata[anim->action] =
+                                    InstAnimDataLoad(tbuf);
+                                if (model->anmdata[anim->action] != 0) {
+                                    model->animlist[anim->action] = anim;
+                                    if (model->shadhdr != 0) {
+                                        model->sanmdata[anim->action] =
+                                            ShadFindData(model->shadhdr,
+                                                         anim->file);
+                                    }
+                                }
+                            }
+                        }
+                        if (anim->flags & 4) {
+                            if (model->fanmdata[anim->action] == 0) {
+                                NuStrCpy(tbuf, charsdat_filename);
+                                NuStrCat(tbuf, anim->file);
+                                NuStrCat(tbuf, D_006309A8);
+                                model->fanmdata[anim->action] =
+                                    InstAnimDataLoad(tbuf);
+                                if (model->fanmdata[anim->action] != 0) {
+                                    model->fanimlist[anim->action] = anim;
+                                }
+                            }
+                        }
+                    }
+                    anim++;
+                }
+                model->character = character;
+                CRemap[character] = cmodel_index;
+                model++;
+                cmodel_index++;
+            }
+            for (j = 0; j < 0x1A; j++) {
+                if ((Font3DObjTab[j].flags & 1) &&
+                    (Font3DObjTab[j].id == character)) {
+                    CLetter[character] = j + 0x61;
+                    break;
+                }
+            }
+        }
+    }
+
+    NuDatSet(0);
+    if (dat != 0) {
+        NuDatClose(dat);
+    }
+
+    CrashMoveInfo.JUMPLANDFRAMES   = ModelAnimDuration(0, 0x30, 0.0f, 0.0f) * 50.0f;
+    CrashMoveInfo.SLAMWAITFRAMES   = ModelAnimDuration(0, 0x1F, 0.0f, 0.0f) * 50.0f;
+    CrashMoveInfo.SOMERSAULTFRAMES = ModelAnimDuration(0, 0x44, 0.0f, 0.0f) * 50.0f;
+    CrashMoveInfo.SLIDEFRAMES      = ModelAnimDuration(0, 0x43, 0.0f, 0.0f) * 50.0f;
+    CrashMoveInfo.CROUCHINGFRAMES  = ModelAnimDuration(0, 3,    0.0f, 0.0f) * 50.0f;
+    CocoMoveInfo.JUMPLANDFRAMES    = ModelAnimDuration(1, 0x30, 0.0f, 0.0f) * 50.0f;
+    CocoMoveInfo.SLAMWAITFRAMES    = ModelAnimDuration(1, 0x1F, 0.0f, 0.0f) * 50.0f;
+    CocoMoveInfo.SOMERSAULTFRAMES  = ModelAnimDuration(1, 0x44, 0.0f, 0.0f) * 50.0f;
+    CocoMoveInfo.SPINFRAMES        = ModelAnimDuration(1, 0x46, 0.0f, 0.0f) * 50.0f;
+    CocoMoveInfo.SLIDEFRAMES       = ModelAnimDuration(1, 0x43, 0.0f, 0.0f) * 50.0f;
+    MineCartMoveInfo.JUMPFRAMES0   = ModelAnimDuration(0x89, 99, 0.0f, 0.0f) * 50.0f;
 }
 
 

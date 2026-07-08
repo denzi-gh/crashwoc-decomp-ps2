@@ -147,6 +147,13 @@ _JREG_RE = re.compile(
     r"^(\s*)j(\s+)(\$(?:\d+|zero|at|v[01]|a[0-3]|t\d|s[0-8]|k[01]|gp|sp|fp|ra))"
     r"\s*$")
 
+# ee-gcc emits `cvt.w.s $fd,$fs` for the float->int truncation, which Sony's
+# assembler accepts but the decompals `as` rejects on r5900 ("opcode not
+# supported"). The retail disassembly already carries it as a raw `.word`
+# (0x46000064 == `cvt.w.s $f1,$f0`), so encode it the same way here.
+# cop1.S cvt.w = 0x46000024 | (fs << 11) | (fd << 6).
+_CVTWS_RE = re.compile(r"^(\s*)cvt\.w\.s(?:\s+)\$f(\d+)\s*,\s*\$f(\d+)\s*$")
+
 # Float-constant loads. ee-gcc emits `li.s $fN,<decimal>` and leaves the
 # materialization to the assembler: a constant whose float32 image has a
 # zero low half becomes an inline lui+mtc1 (no data, byte-exact, leave it
@@ -603,6 +610,12 @@ def _sonyize(line):
     m = _JREG_RE.match(line)
     if m:
         return f"{m.group(1)}jr{m.group(2)}{m.group(3)}"
+    m = _CVTWS_RE.match(line)
+    if m:
+        fd = int(m.group(2))
+        fs = int(m.group(3))
+        word = 0x46000024 | (fs << 11) | (fd << 6)
+        return f"{m.group(1)}.word 0x{word:08X}"
     return line
 
 
