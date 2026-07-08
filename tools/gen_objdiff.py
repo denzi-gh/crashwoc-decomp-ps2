@@ -51,6 +51,15 @@ from gen_expected_s import unit_stem
 
 MIN_VERSION = "2.7.0"
 
+# decomp.me scratch defaults. The retail game/engine TUs (the ones with status
+# manifests) are built by SN ProDG ee-gcc 2.95.2-EE, identified and locked as
+# component `ee-gcc-tt`; its decomp.me equivalent is preset `ee-gcc2.95.2-273a`
+# on the `ps2` platform (see docs/notes.md, 2026-07-07). c_flags mirror the
+# `default` profile in config/<v>/profiles.toml so scratches build with the
+# same flags matching uses.
+SCRATCH_PLATFORM = "ps2"
+SCRATCH_COMPILER = "ee-gcc2.95.2-273a"
+
 CATEGORIES = [
     {"id": "game", "name": "Game code"},
     {"id": "engine", "name": "Nu engine"},
@@ -143,6 +152,14 @@ def data_units(version):
     return units
 
 
+def _default_cflags(version):
+    """The `default` profile's flags, joined -- the ones matching compiles with."""
+    profiles = ROOT / "config" / version / "profiles.toml"
+    data = tomllib.loads(profiles.read_text())
+    flags = data["profile"]["default"]["flags"]
+    return " ".join(flags)
+
+
 def _manifest_info(version):
     """{source_rel: (complete, has_matching)} from the status manifests.
 
@@ -167,6 +184,18 @@ def emit_objdiff(version="pal103", out_path=None):
     out_path = Path(out_path) if out_path else ROOT / "objdiff.json"
     manifests = _manifest_info(version)
 
+    # Per-unit decomp.me scratch config: objdiff shows the "Create scratch"
+    # button only for units carrying `scratch` with a platform + compiler
+    # (schema puts it at units[].scratch, not project level). The retail
+    # game/engine TUs are built by SN ProDG ee-gcc 2.95.2-EE, whose decomp.me
+    # preset is `ee-gcc2.95.2-273a` on platform `ps2`; c_flags mirror the
+    # `default` profile so scratches build with matching's flags.
+    scratch = {
+        "platform": SCRATCH_PLATFORM,
+        "compiler": SCRATCH_COMPILER,
+        "c_flags": _default_cflags(version),
+    }
+
     units = []
     for _unit, stem, name, category in unit_table(version):
         source = f"src/{name}.c"
@@ -177,6 +206,7 @@ def emit_objdiff(version="pal103", out_path=None):
                 "source_path": source,
                 "progress_categories": [category],
             },
+            "scratch": dict(scratch),
         }
         if (ROOT / source).is_file():
             if source in manifests:
