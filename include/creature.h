@@ -3,15 +3,6 @@
 
 /* PS2 PAL v1.03 (SLES_503.86) layout of the creature/player structures for
  * unit 91 (game/creature, .\creature.c).
- *
- * Every offset and size below is verified against the retail PS2 v1.03
- * assembly of unit 91 (build/pal103/expected_s/091_creature.c.s) unless a
- * comment says otherwise. The field names follow the GameCube decompilation
- * (denzi-gh/crashwoc-decomp-gc, src/gamecode/creature.h) and the alpha-NGC
- * DWARF dump shipped with it, whose creature_s layout (size 0xCE4, ai at
- * 0x18C, m at 0x234, mtxLOCATOR at 0x274, lights at 0xBF4, rumble at 0xCA4)
- * matches the PS2 v1.03 access patterns exactly.
- *
  * Key PS2-verified anchors:
  *   sizeof(struct creature_s) = 0xCE4  (CloseCreatures loop stride,
  *                                       Character array: 9 * 0xCE4 = 0x7404)
@@ -58,7 +49,7 @@ struct nuhspecial_s {
     struct nuspecial_s *special; /* 0x4 */
 }; /* 0x8 */
 
-/* Animation data blob header.  PS2-verified in ModelAnimDuration
+/* Animation data blob header.
  * (time at 0x0). */
 struct nuanimdata_s {
     float time;                        /* 0x0 */
@@ -67,10 +58,7 @@ struct nuanimdata_s {
     struct nuanimdatachunk_s **chunks; /* 0xC */
 }; /* 0x10 */
 
-/* Blended animation state.  PS2-verified in ResetAnimPacket
- * (anim_time 0x0, action 0xC, oldaction 0xE, newaction 0x10, blend 0x1A,
- * flags 0x1B) and EvalModelAnim (blend_src_* 0x4/0x12, blend_dst_* 0x8/0x14,
- * blend_frame 0x16, blend_frames 0x18). */
+/* Blended animation state.*/
 struct anim_s {
     float anim_time;        /* 0x00 */
     float blend_src_time;   /* 0x04 */
@@ -94,7 +82,7 @@ struct pdir_s {
     float Distance;              /* 0x1C */
 }; /* 0x20 */
 
-/* PS2-verified size 0xB0 (creature lights at 0xBF4, rumble at 0xCA4). */
+/* creature lights at 0xBF4 */
 struct Nearest_Light_s {
     int AmbIndex;              /* 0x00 */
     struct nuvec_s AmbCol;     /* 0x04 */
@@ -189,14 +177,11 @@ typedef struct {
 } CharacterData; /* 0x34 */
 
 /* Loaded character model + animation banks.
- * PS2 v1.03 size 0x988 (GC dropped the three shadow-model fields and is
- * 0x7AC).  PS2-verified in LoadCharacterModels / EvalModelAnim /
+ * PS2 v1.03 size 0x988 PS2-verified in LoadCharacterModels / EvalModelAnim /
  * ModelAnimDuration: hobj 0x0, anmdata 0x4, animlist 0x1DC, fanmdata 0x3B4,
  * fanimlist 0x58C, sanmdata 0x764, shadhdr 0x93C, shaddata 0x940,
  * character 0x944, pLOCATOR 0x948.
- * "sanmdata"/"shaddata" are our names for the PS2-only shadow-skin data
- * (filled from InstShadDataLoad / ShadFindData); the retail names are
- * unknown. */
+ */
 struct CharacterModel {
     struct NUHGOBJ_s *hobj;              /* 0x000 */
     struct nuanimdata_s *anmdata[118];   /* 0x004 */
@@ -212,7 +197,7 @@ struct CharacterModel {
     struct NUPOINTOFINTEREST_s *pLOCATOR[16]; /* 0x948 */
 }; /* 0x988 */
 
-/* Aku-aku / mask object.  Layout from the alpha-NGC DWARF dump; the PS2
+/* Aku-aku / mask object.
  * accesses seen so far (active 0x16E, lights 0x98 in ResetPlayer) agree. */
 struct mask_s {
     struct numtx_s mM;              /* 0x000 */
@@ -442,8 +427,9 @@ struct creature_s {
     struct creatcmd_s *cmdcurr;  /* 0x22C */
     struct MoveInfo *OnFootMoveInfo; /* 0x230 */
     struct numtx_s m;          /* 0x234 */
-    struct numtx_s mtxLOCATOR[16][2]; /* 0x274 */
-    struct nuvec_s momLOCATOR[16][2]; /* 0xA74 */
+    struct numtx_s mtxLOCATOR[2][16]; /* 0x274 (model-major: [model][locator],
+                                       * DrawCreatures walks +0x400 per model) */
+    struct nuvec_s momLOCATOR[2][16]; /* 0xA74 */
     struct Nearest_Light_s lights; /* 0xBF4 */
     struct rumble_s rumble;    /* 0xCA4 */
     float idle_time;           /* 0xCA8 */
@@ -493,13 +479,11 @@ struct creature_s {
 struct pad_s; /* game pad state; buttons word verified at +0x564 */
 
 /* ------------------------------------------------------------------ */
-/* Globals owned by creature.c (PS2 v1.03 addresses in comments)       */
+/* Globals owned by creature.c*/
 /* ------------------------------------------------------------------ */
 
 extern struct creature_s Character[9];   /* 0x0057EE38 */
 extern struct creature_s *player;        /* 0x00630968 */
-/* 48 entries on PS2 v1.03 (GC has 49): CloseCreatures' loop bound is
- * 0x1C980 = 48 * 0x988, and CLetter sits at CModel + 48 * 0x988. */
 extern struct CharacterModel CModel[48]; /* 0x005623F8 */
 extern signed char CRemap[191];          /* 0x00562338 */
 
@@ -520,8 +504,7 @@ void ProcessCreatures(void);                         /* 0x001D1FF0 */
 void EvalModelAnim(struct CharacterModel *model, struct anim_s *anim,
                    struct numtx_s *m, struct numtx_s *tmtx, float ***dwa,
                    struct numtx_s *mLOCATOR);        /* 0x001D2470 */
-/* DrawCharacterModel/DrawCreatures: parameter lists taken from the GC
- * decompilation; not yet verified against the PS2 call sites. */
+
 s32 DrawCharacterModel(struct CharacterModel *model, struct anim_s *anim,
                        struct numtx_s *mC, struct numtx_s *mS, s32 render,
                        struct numtx_s *mR, struct numtx_s *loc_mtx,
@@ -542,4 +525,4 @@ void StoreLocatorMatrices(struct CharacterModel *model, struct numtx_s *mC,
                           struct numtx_s *tmtx, struct numtx_s *mtx,
                           struct nuvec_s *mom);      /* 0x001D5918 */
 
-#endif /* GAMECODE_CREATURE_H */
+#endif 

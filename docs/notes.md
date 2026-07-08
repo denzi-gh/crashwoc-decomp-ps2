@@ -5,6 +5,39 @@ just things that came up while building and shouldn't be lost.
 
 ## Open — revisit later
 
+### DrawCreatures (game/creature, 0x001D2F50) — 12 words from fitting
+
+Attempted 2026-07-08 (session `s-20260708-191404-3740f3`). The high-fuzzy WIP
+C is kept in `src/game/creature.c` (state stays `asm`, so the hybrid still
+splices the retail slice and every byte gate passes; a copy also sits at
+`build/pal103/agent_sessions/s-20260708-191404-3740f3-creature.{c,h}.bak`).
+Established facts:
+
+- PAL constants differ from the GC reference: `in_finish_range == 0x32` (not
+  0x3C), spin rotation `spin_frame * 0x1999` (not 0x1555), glass pulse
+  `GameTimer.frame % 0x1E` (not 0x24), skeletal flicker `% 0xA < 5` (not
+  `% 0xC < 6`). `s.y` mirror is `s.y * -1.0` through soft-double
+  (fptodp/dpmul/dptofp), not `-s.y`. Shadows go through
+  `ScaleFlatShadow` + `ShadRndr(&mS, model->shaddata, 1.0f,
+  CData[ch].shadow_scale)` (D_0055FC88 = `&CData[0].shadow_scale`), not the
+  GC stencil path. `D_005F28D6` = `GyroMoveInfo.SPINFRAMES`. The unit .lit4
+  pool has duplicate slots (0.025f x3, 0.05f x2) in first-use order.
+- `StoreLocatorMatrices` must be GNU89 `inline` and defined before
+  DrawCreatures: it is genuinely inlined twice (both spin blocks), and the
+  deferred standalone emission explains its retail address 0x001D5918 at the
+  very end of the unit. With that, frame == 17024 and all 77 calls match in
+  order. `mtxLOCATOR`/`momLOCATOR` are model-major (`[2][16]`, +0x400/+0xC0
+  per model) — the header's `[16][2]` needs flipping when this lands.
+- The one remaining blocker: my build spills `c + 0xCE4` (next-creature) to
+  sp+0x41A0 and keeps the `&mC` web in $s4, while retail keeps next-c in $fp
+  and spills both matrix pointers (0x4198 = hoisted `&mC` temp, 0x41A0 = a
+  per-path `pm = &mC` variable also passed to NuHGobjRndrMtx /
+  DrawCharacterModel). Net +12 words -> `.org backwards`, hybrid unbuildable.
+  Splitting the DrawPlayerJeep result into its own variable did not move the
+  allocation. Next idea: stop gcc coalescing `pm` with the `&mC` CSE web
+  (e.g. different expression forms per block) or find the retail variable set
+  that gives vflag/yrot/bVar9/next-c the callee registers s6/s7/s5/$fp.
+
 ### Symbols / `.mdebug`
 
 - **VU microprogram symbols are dropped.** The 17 `vu_load_*_mpg` / `patch_vu0_mpg`

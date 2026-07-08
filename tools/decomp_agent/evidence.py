@@ -206,7 +206,7 @@ def c_definition_for(project, fn) -> dict:
                 and line[:1] not in (" ", "\t"):
             # Walk forward to the matching closing brace.
             depth, started, body = 0, False, []
-            for j in range(i, min(len(lines), i + 400)):
+            for j in range(i, min(len(lines), i + 2000)):
                 body.append(lines[j])
                 depth += lines[j].count("{") - lines[j].count("}")
                 if "{" in lines[j]:
