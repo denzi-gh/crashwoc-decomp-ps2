@@ -81,6 +81,10 @@ CI (docs/ci.md): `validate.yml` (structure, no game files, every push/PR) and `m
 - The original assembler accepts only numeric GPR names (`jr $31`, not `jr $ra`); `gen_slices.py` handles the rewrite.
 - Four static functions are duplicated across TUs and disambiguated as `NAME__<vram>`.
 - `docs/notes.md` is the running log of quirks, resolved decisions, and invariants — check it before re-deriving a decision, and record new loose ends there.
+- Data-from-C is not supported yet. For retail-owned globals, use `extern D_...`
+  symbols plus readable aliases; do not add file-scope C definitions that emit
+  `.data`, `.sdata`, `.rodata`, `.sbss`, or `.bss`. The canonical policy lives in
+  `docs/decomp_agent.md`.
 
 ## Matching MCP / decomp-agent (Claude Code specifics)
 

@@ -177,6 +177,36 @@ The MCP exposes only typed, domain-specific tools. There is **no**
 through `tools/promote.py`. No arbitrary path, flag, or shell interface exists,
 and no existing byte gate is weakened.
 
+### Data and global-symbol policy
+
+The current matching pipeline is function-first. It verifies C-generated `.text`
+for functions, but general Data-from-C is not supported yet.
+
+Until Data-from-C verification exists for a specific range:
+
+- Do not define file-scope C globals in `src/**/*.c` if they emit `.data`,
+  `.sdata`, `.rodata`, `.sbss`, or `.bss`.
+- Reference retail-owned data with `extern D_...` symbols taken from the PS2
+  disassembly, `target-asm`, `asm/text.s`, or `config/pal103/symbol_addrs.txt`.
+- Give readable names with aliases, not C definitions:
+
+```c
+extern struct nulsthdr_s *D_006309FC;
+#define sceneinst_pool D_006309FC
+```
+Do not replace that with a definition such as:
+
+```c
+static struct nulsthdr_s *sceneinst_pool;
+```
+If compile_diff reaches 100% but promote_matching fails with .data,
+.sdata, .sbss, .bss, or unhandled content after last function, treat
+that as unintended top-level C data. Remove the C data definition and use a
+retail extern D_... reference instead.
+
+Do not mark a unit complete = true while it owns data ranges unless
+Data-from-C verification supports that unit/range.
+
 ## CLI quick reference
 
 ```bash

@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import tempfile
 
 from . import _bridge, schemas
 
@@ -40,15 +41,30 @@ def dispatch_cli(project, cli_args, *, operation="dispatch", timeout=1800) -> di
     cmd = ["python", str(tools / "dispatch.py"), "python", "-m",
            "tools.decomp_agent.cli", "--json", "--repo", str(project.root),
            "--version", project.version, *cli_args]
+    # Redirect the child's stdout/stderr to temp FILES rather than pipes, and
+    # detach its stdin. On Windows a running asyncio ProactorEventLoop (the MCP
+    # stdio server) keeps inheritable handles; a piped ``subprocess.run`` then
+    # hangs forever in ``communicate()`` waiting for a pipe EOF that never comes
+    # because the child inherits a duplicate of the pipe's write end. Waiting on
+    # the process handle with file-backed output sidesteps that deadlock, and
+    # DEVNULL stdin keeps the child from ever touching the parent's JSON-RPC
+    # stream. Behaviour is unchanged for the terminal CLI path.
     try:
-        proc = subprocess.run(cmd, cwd=str(project.root), capture_output=True,
-                              text=True, timeout=timeout)
+        with tempfile.TemporaryFile(mode="w+", encoding="utf-8",
+                                    errors="replace") as out, \
+                tempfile.TemporaryFile(mode="w+", encoding="utf-8",
+                                       errors="replace") as err:
+            proc = subprocess.run(cmd, cwd=str(project.root), stdin=subprocess.DEVNULL,
+                                  stdout=out, stderr=err, timeout=timeout)
+            out.seek(0)
+            err.seek(0)
+            stdout, stderr = out.read(), err.read()
     except (OSError, subprocess.SubprocessError) as exc:
         return schemas.err(operation, f"container dispatch failed: {exc}",
                            code="dispatch")
-    payload = _last_json(proc.stdout)
+    payload = _last_json(stdout)
     if payload is None:
-        tail = (proc.stderr or proc.stdout or "").strip()[-600:]
+        tail = (stderr or stdout or "").strip()[-600:]
         return schemas.err(operation,
                            f"container run produced no JSON (exit {proc.returncode})",
                            code="dispatch", detail=tail)
