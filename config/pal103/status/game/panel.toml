@@ -65,7 +65,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0108:00240648:DrawPanel3DTempCharacter"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0108:00240810:MaxVP"
@@ -77,8 +77,8 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0108:00240958:ResetPanelDebris"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0108:00240980:NextLetter"
-state = "asm"
+state = "matching"
