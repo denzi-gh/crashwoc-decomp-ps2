@@ -57,7 +57,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0091:001d2728:DrawCharacterModel"
-state = "asm"
+state = "equivalent"
 
 [[function]]
 id = "pal103:unit-0091:001d2f50:DrawCreatures"
@@ -65,7 +65,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0091:001d4fc0:UpdateAnimPacket"
-state = "asm"
+state = "equivalent"
 
 [[function]]
 id = "pal103:unit-0091:001d5528:ModelAnimDuration"
