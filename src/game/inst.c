@@ -128,8 +128,8 @@ void InstAnimDataDestroy(struct nuanimdata_s *animdata) {
         if (lst->ad == animdata) {
             lst->inst_cnt--;
             if (lst->inst_cnt == 0) {
-                NuAnimDataDestroy(lst->ad);
                 NuLstFree((struct nulnkhdr_s *)lst);
+                NuAnimDataDestroy(animdata);
             }
             return;
         }
