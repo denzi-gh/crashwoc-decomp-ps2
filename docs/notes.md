@@ -57,14 +57,27 @@ and reg_mask 0xC0FF0000 exact**; 2408/15376 bytes match (fuzzy 15.66).
   `...63...` base-register swap that dominates the whole-function diff
   (register_allocation window [12, 15148]). Retail's callee-saved roles
   (2026-07-08): **$s1 = oldvc** (saved VEHICLECONTROL), **$s4 = c**,
-  **$s5 = veh**, **$s7 = minfo**, and **$s0 = &c->obj** (`addiu $s0,$s4,0x4`
-  at 0x374). So four allocnos (s0–s3) outrank `c`; the candidate has only
-  three, so `c` climbs to s3. **Leading hypothesis:** retail's source keeps a
-  local `obj` pointer (`struct obj_s *obj = &c->obj;`) — heavily used, high
-  priority — that the current C lacks (it dereferences `c->obj.X` directly).
-  Introducing it means rewriting hundreds of `c->obj.` accesses across the
-  4000-line unit; deferred as a large, single-lever refactor to attempt when
-  the function is the focus. Second, smaller diff: the inlined
+  **$s5 = veh**, **$s7 = minfo**.
+- **obj-pointer hypothesis DISPROVEN (attempt 5, 2026-07-08).** Tried the
+  `struct obj_s *obj = &c->obj;` refactor (mechanically rewrote 519 `c->obj.`
+  → `obj->` and 47 `&c->obj` scoped to lines 1562–3055). Result: it *did* move
+  `c` into `$s4` (candidate prologue became `addiu $s3,$s4,4` = obj=$s3,
+  c=$s4), **but the match collapsed to 208/15376 (fuzzy 1.35)** — retail
+  accesses `c->obj.X` **directly as offsets off `c` ($s4)** (`lbu $3,0xca4($s4)`
+  = `0x92830ca4`), it does **not** hold an intermediate obj pointer, and the
+  extra `addiu` shifts the whole prologue. So the earlier "$s0 = &c->obj"
+  reading was a transient live-range, not a persistent pseudo. Cleanly
+  reverted; baseline restored exactly (asm_hash `fe3129bc…`, diff_sig
+  `82d2c980…`, 2408/15376). **Refined model:** both builds allocate the *same*
+  9 callee-saved regs (mask 0xC0FF0000) — this is **not** a missing-variable
+  problem but a **priority tie-break**: `c` and one of retail's $s0–$s3
+  pseudos are adjacent in gcc-2.95 global-alloc priority and swapped rank.
+  Next lever must nudge that ordering (ref-count / live-range of `c` vs the
+  competing pseudo) without adding an addressing indirection — e.g. identify
+  which local occupies retail's $s3 and whether my C computes it with a
+  different live range. Needs the target/candidate prologue register-move maps
+  side by side; `deep_reasoning` escalation flagged by the ledger.
+- Second, smaller diff: the inlined
   UpdateRumble+vibration block (0xB0–0xFC) — retail evaluates `buzz != 0` via
   `sltu a1,zero,v0` into the arg register in the delay slot of the `frame==0`
   branch (arg hoisted before the value branch), which the candidate schedules
