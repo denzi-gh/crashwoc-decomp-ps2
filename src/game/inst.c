@@ -17,6 +17,7 @@ struct nulsthdr_s;
 struct nulnkhdr_s;
 struct nuscene_s;
 struct nuanimdata_s;
+struct shaddata_s;
 
 struct sceneinst_s {
     struct nuscene_s *scene;
@@ -30,11 +31,19 @@ struct animdatainst_s {
     int inst_cnt;
 };
 
+struct shadinst_s {
+    struct shaddata_s *shad;
+    char name[0x100];
+    int inst_cnt;
+};
+
 extern struct nulsthdr_s *D_006309fc;
 extern struct nulsthdr_s *D_00630a00;
+extern struct nulsthdr_s *D_00630a04;
 
 #define sceneinst_pool D_006309fc
 #define animdatainst_pool D_00630a00
+#define shaddatainst_pool D_00630a04
 
 extern union variptr_u superbuffer_ptr;
 extern union variptr_u superbuffer_end;
@@ -46,6 +55,7 @@ extern struct nuscene_s *NuSceneLoad(char *name);
 extern void NuSceneDestroy(struct nuscene_s *scene);
 extern struct nuanimdata_s *NuAnimDataLoadBuff(char *name, union variptr_u *buff, union variptr_u *endbuff);
 extern void NuAnimDataDestroy(struct nuanimdata_s *animdata);
+extern void ShadDataDestroy(struct shaddata_s *shad);
 extern int strcasecmp(const char *s1, const char *s2);
 extern char *strcpy(char *dest, const char *src);
 
@@ -134,5 +144,22 @@ void InstAnimDataDestroy(struct nuanimdata_s *animdata) {
             return;
         }
         lst = (struct animdatainst_s *)NuLstGetNext(animdatainst_pool, (struct nulnkhdr_s *)lst);
+    }
+}
+
+void InstShadDataDestroy(struct shaddata_s *shad) {
+    struct shadinst_s *sdi;
+
+    sdi = (struct shadinst_s *)NuLstGetNext(shaddatainst_pool, 0);
+    while (sdi != 0) {
+        if (sdi->shad == shad) {
+            sdi->inst_cnt--;
+            if (sdi->inst_cnt == 0) {
+                ShadDataDestroy(sdi->shad);
+                NuLstFree((struct nulnkhdr_s *)sdi);
+            }
+            return;
+        }
+        sdi = (struct shadinst_s *)NuLstGetNext(shaddatainst_pool, (struct nulnkhdr_s *)sdi);
     }
 }
