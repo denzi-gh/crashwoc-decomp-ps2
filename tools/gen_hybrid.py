@@ -539,30 +539,38 @@ class Lit4Mapper:
             f"no owned-data symbol the retail slice references and no unique "
             f"address in {unit_dir or 'the unit'}")
 
-    def map_jump_table(self, slice_text, count, context):
-        """Retail `jtbl_`/`jpt_` slot a compiler-emitted switch jump table
-        borrows (borrow-by-structure: the table holds relocations, not bytes,
-        so it is matched by the single auto-named jump-table symbol the
-        function's retail slice addresses, whose table has room for `count`
-        4-byte entries). The compiler's copy is dropped; a byte-exact match
-        then falls out of the retail table (already in the per-range data
-        object) pointing at the matching function's own labels."""
-        cands = set()
-        for sym in set(_SYM_REF_RE.findall(slice_text)):
-            if not _JTBL_NAME_RE.match(sym):
+    def map_jump_tables(self, slice_text, counts, context):
+        """Ordered retail `jtbl_`/`jpt_` slots the compiler's switch jump
+        tables borrow (borrow-by-structure: a table holds relocations, not
+        bytes, so it cannot be byte-matched). `counts` lists the entry count
+        of every compiled table in code appearance order; the retail slots
+        are taken in slice appearance order -- the compiler emits switch
+        tables in source order, which is the order the retail code addresses
+        them: the same positional argument map_for_slice makes for duplicate
+        .lit4 slots. Each slot must have room for its table's 4-byte entries;
+        the compiler's copies are dropped and the whole-unit byte gate
+        verifies the assignment (the retail tables, byte-exact in the
+        per-range data objects, point at the matching function's labels)."""
+        order = []
+        seen = set()
+        for sym in _SYM_REF_RE.findall(slice_text):   # appearance order
+            if sym in seen or not _JTBL_NAME_RE.match(sym):
                 continue
+            seen.add(sym)
+            order.append(sym)
+        if len(order) != len(counts):
+            raise HybridError(
+                f"{context}: {len(counts)} switch jump table(s) in the "
+                f"compiled code but {len(order)} jtbl_/jpt_ symbol(s) in the "
+                f"retail slice ({order}); the C switch shapes do not line up "
+                f"with retail")
+        for sym, count in zip(order, counts):
             addr = self._address_of(sym)
             if addr is None or not self._in_init_data(addr, count * 4):
-                continue
-            cands.add(sym)
-        if len(cands) == 1:
-            return next(iter(cands))
-        if not cands:
-            raise HybridError(
-                f"{context}: switch jump table ({count} entries) matches no "
-                f"jtbl_/jpt_ symbol the retail slice references")
-        raise HybridError(
-            f"{context}: switch jump table maps ambiguously to {sorted(cands)}")
+                raise HybridError(
+                    f"{context}: retail slot {sym} lacks room for the "
+                    f"{count}-entry compiled jump table it would borrow")
+        return order
 
     def map_for_slice(self, slice_text, context):
         """Ordered {float32 bits: [retail .lit4 symbols]} for one slice.
@@ -759,18 +767,41 @@ def _rewrite_local_data(seg, local_data, version, unit_dir, name, addr,
     pass through untouched, so this is free for the common case."""
     if not local_data:
         return seg, []
-    used = {lbl for lbl in local_data if any(lbl in line for line in seg)}
+    # Match a private label only on word boundaries, exactly as the rewrite
+    # below does -- a plain substring test wrongly attributes another
+    # function's `$L161` jump table to a function that merely owns a `$L1610`
+    # branch label (`$L161` is a prefix of `$L1610`), which then fails
+    # map_jump_tables against a slice that has no such table.
+    label_re = {lbl: re.compile(r"(?<![\w$.])" + re.escape(lbl) + r"(?![\w$.])")
+                for lbl in local_data}
+    used = {lbl for lbl in local_data
+            if any(label_re[lbl].search(line) for line in seg)}
     if not used:
         return seg, []
     if mapper_box[0] is None:
         mapper_box[0] = Lit4Mapper(version)
     slice_text = _slice_path(version, unit_dir, name, addr).read_text()
+    # Order labels by first use in the compiled code so jump tables borrow
+    # the retail slots positionally (compiled order == slice order).
+    first_use = {}
+    for idx, line in enumerate(seg):
+        for lbl in used:
+            if lbl not in first_use and label_re[lbl].search(line):
+                first_use[lbl] = idx
+    ordered = sorted(used, key=lambda lbl: first_use[lbl])
+    jt_labels = [lbl for lbl in ordered
+                 if isinstance(local_data[lbl], _JumpTable)]
+    jt_syms = {}
+    if jt_labels:
+        syms = mapper_box[0].map_jump_tables(
+            slice_text, [local_data[lbl].count for lbl in jt_labels], name)
+        jt_syms = dict(zip(jt_labels, syms))
     externs = []
     rename = {}
-    for lbl in used:
+    for lbl in ordered:
         val = local_data[lbl]
         if isinstance(val, _JumpTable):
-            sym = mapper_box[0].map_jump_table(slice_text, val.count, name)
+            sym = jt_syms[lbl]
             externs.append(f"\t.extern\t{sym}, {val.count * 4}")
         else:
             sym = mapper_box[0].map_owned_data(slice_text, val, name, unit_dir)
@@ -779,8 +810,7 @@ def _rewrite_local_data(seg, local_data, version, unit_dir, name, addr,
     out = []
     for line in seg:
         for lbl, sym in rename.items():
-            line = re.sub(r"(?<![\w$.])" + re.escape(lbl) + r"(?![\w$.])",
-                          sym, line)
+            line = label_re[lbl].sub(sym, line)
         out.append(line)
     return out, externs
 

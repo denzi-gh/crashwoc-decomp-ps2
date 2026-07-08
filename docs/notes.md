@@ -5,6 +5,72 @@ just things that came up while building and shouldn't be lost.
 
 ## Open — revisit later
 
+### MovePlayer (game/creature, 0x001CE3E0) — WIP C in tree, fuzzy 15.7%
+
+Session `s-20260708-203123-c057fc` (2026-07-08, resumable). Full C
+reconstruction from the PS2 disassembly is in `src/game/creature.c` (state
+stays `asm`; all byte gates green with it). It compiles clean, the candidate
+hybrid links, and the full-extent diff already has **frame size 368 == 368
+and reg_mask 0xC0FF0000 exact**; 2408/15376 bytes match (fuzzy 15.66).
+
+- **gen_hybrid multi-jump-table support landed (was the A.1 caveat):**
+  `Lit4Mapper.map_jump_table` → `map_jump_tables(slice_text, counts, ctx)` —
+  positional borrow, compiled appearance order onto slice appearance order
+  (same argument as duplicate .lit4 slots); `_rewrite_local_data` orders
+  labels by first use and allocates all tables in one call. Validated on
+  MovePlayer's two switches: PlatformCrush dispatch (6 entries, cases 6–11)
+  → `jtbl_0061D2C0`, surface_type effects (13 entries, cases 1..13) →
+  `jtbl_0061D2E0`. Count mismatch (C switch shape vs retail) fails loudly.
+  247 unit tests pass, `ninja check` image SHA exact after the change.
+- **PAL deltas vs the GC reference** (all verified in disasm): frame dt
+  `0.02f` not 1/60; `GameTimer.frame < 0x32` gate; `in_finish_range == 0x32`;
+  submerged cap 0x32; `allow_jump = 0xA`; `tap = 0x19`; NewBuzz arg 0xA;
+  hdg snap step `0x369` not 0x2D8; gyro intro `< 0x96`; loadsave frames
+  0x32/0x33 and `NewMenu(&Cursor,0x13,3,-1)`; menu ids 0x1F/0x21/0x10/0xE
+  (GC 0x22/0x24/0x12/0x10); sprint pad mask 0x28 (GC 0x88); friction base
+  0.0072 (GC 0.005), submarine 0.00144/0.00072, slide 0.0216, spin-air
+  0.0024, jump ½ / ¼ multipliers; swim sink −0.005; UpdateAnimPacket dt
+  0.59999996f (0x3F199999, round-toward-zero 0.6 — write the exact decimal);
+  tumble anim window uses `speed * 0.59999996f`; NewTerrainScaleY adjust
+  0.0036; water ripple rand scale 1.5258789289873675e-06f. `gotlist[9]` =
+  {8,7,0x10,0x20,0x40,0x80,0x100,0x200,0x400} — local initializer borrows
+  retail `D_0061D290` via map_owned_data (worked first try).
+- Deadzone/fabs comparisons go through soft-double (`fptodp/dpcmp/dpsub`):
+  written as `double d = f; if (d < 0.0) d = 0.0 - d;` then compare against
+  `42.5` (D_0061D2A8) / `0.33333334f` promoted (D_0061D2B0/B8). Bit patterns
+  confirmed equal.
+- `UpdateRumble`/`NewRumble`/`NewBuzz` + `TerrainFailsafe` are now GNU89
+  `inline` defined before MovePlayer (retail inlines all of them; zero
+  standalone `jal`s inside the unit). Their standalone retail addresses
+  (0x1D5648, 0x1D5880, 0x1D58A8, 0x1D5900) interleave with non-inline tail
+  functions — deferred-emission order needs checking when the unit tail is
+  attacked.
+- Struct facts added: `pad_s.paddata` 0x55C (held), `.buttons` 0x564
+  (debounced), `l_alg_x/y` 0x57E/0x57F; `game_s.vibration` +0x9, `.mask`
+  +0x3FE; `gamecam_s.yrot` +0xF8; mech/bazooka fire locator =
+  `mtxLOCATOR[1][0]._30` (0x6A4), sight = `[1][1]._30` (0x6E4); the
+  `objtab_s`/`nuspecial_s`/`tersurface_s` defs were deduped and moved above
+  MovePlayer (single definitions now, DrawCreatures reuses them).
+- **Next session:** iterate register allocation. The dominant lever is that
+  retail keeps `c` in **$s4** (allocno priority 5) while the candidate keeps
+  `c` in **$s3** (priority 4); this single difference is the `...83...`→
+  `...63...` base-register swap that dominates the whole-function diff
+  (register_allocation window [12, 15148]). Retail's callee-saved roles
+  (2026-07-08): **$s1 = oldvc** (saved VEHICLECONTROL), **$s4 = c**,
+  **$s5 = veh**, **$s7 = minfo**, and **$s0 = &c->obj** (`addiu $s0,$s4,0x4`
+  at 0x374). So four allocnos (s0–s3) outrank `c`; the candidate has only
+  three, so `c` climbs to s3. **Leading hypothesis:** retail's source keeps a
+  local `obj` pointer (`struct obj_s *obj = &c->obj;`) — heavily used, high
+  priority — that the current C lacks (it dereferences `c->obj.X` directly).
+  Introducing it means rewriting hundreds of `c->obj.` accesses across the
+  4000-line unit; deferred as a large, single-lever refactor to attempt when
+  the function is the focus. Second, smaller diff: the inlined
+  UpdateRumble+vibration block (0xB0–0xFC) — retail evaluates `buzz != 0` via
+  `sltu a1,zero,v0` into the arg register in the delay slot of the `frame==0`
+  branch (arg hoisted before the value branch), which the candidate schedules
+  after the if/else. Resume with `resume_session s-20260708-203123-c057fc`;
+  regenerate disasm via `cli disasm`.
+
 ### DrawCreatures (game/creature, 0x001D2F50) — 12 words from fitting
 
 Attempted 2026-07-08 (session `s-20260708-191404-3740f3`). The high-fuzzy WIP
@@ -328,6 +394,25 @@ Established facts:
   ResetPlayerMoves' body manually inlined in retail (no call).
 
 ## Resolved
+
+- **gen_hybrid mis-attributed a jump table to the wrong function via a
+  substring match (2026-07-08).** `ninja report` (report_base build, which
+  includes every WIP asm-state function's compiled C) failed with
+  "DrawCreatures: 1 switch jump table(s) in the compiled code but 0
+  jtbl_/jpt_ symbol(s) in the retail slice". Root cause was NOT DrawCreatures'
+  C: its `switch(VEHICLE)` (sparse cases 0x36/0x53/0x63/0x81/0x8B) correctly
+  compiles to a balanced comparison **tree**, exactly like retail (retail
+  DrawCreatures has 0 jump tables, one `jr` = the return). The bug was in
+  `_rewrite_local_data`: `used = {lbl for lbl in local_data if any(lbl in line
+  ...)}` used a plain **substring** test, so ManageCreatures' 19-entry table
+  `$L161` matched DrawCreatures' unrelated branch labels `$L1610/$L1612/$L1614`
+  (`$L161` is a prefix). It then ran map_jump_tables for a table DrawCreatures
+  doesn't own. Fixed by matching private labels on word boundaries with the
+  same `(?<![\w$.])LABEL(?![\w$.])` regex the rewrite already used (both the
+  `used` set and the `first_use` ordering), reusing the compiled patterns in
+  the final `sub`. Regression test in tests/test_fp_pool.py
+  (`TestLocalDataLabelBoundary`); report object builds; 248 unit tests pass.
+
 
 - **Docs match the implementation again, and a smoke test guards the artifact
   (2026-07-07).** Corrected the stale "Sony's own `as`" claim in gen_hybrid.py's

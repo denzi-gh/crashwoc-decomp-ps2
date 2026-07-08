@@ -15,7 +15,27 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
-from gen_hybrid import HybridError, _double_bits, _float_bits, _rewrite_lis
+from gen_hybrid import (HybridError, _JumpTable, _double_bits, _float_bits,
+                        _rewrite_lis, _rewrite_local_data)
+
+
+class TestLocalDataLabelBoundary(unittest.TestCase):
+    """A private jump-table label must be matched on word boundaries. A plain
+    substring test wrongly attributes function A's `$L161` table to function B
+    that merely branches to `$L1610` (`$L161` is a prefix), which then fails
+    map_jump_tables against B's table-free retail slice."""
+
+    def test_prefix_label_is_not_a_false_use(self):
+        # mapper_box sentinel: if the boundary logic is wrong, `used` is
+        # non-empty and the code reaches for the mapper -> AttributeError,
+        # which is a distinct, louder failure than a wrong pass-through.
+        seg = ["\tbne\t$19,$2,$L1610", "$L1610:", "\tsw\t$0,0($3)"]
+        out, externs = _rewrite_local_data(
+            seg, {"$L161": _JumpTable(19)},
+            version="pal103", unit_dir="unit-0091",
+            name="DrawCreatures", addr=0x001d2f50, mapper_box=[object()])
+        self.assertEqual(out, seg)
+        self.assertEqual(externs, [])
 
 
 class TestBitHelpers(unittest.TestCase):
