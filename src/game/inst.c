@@ -55,6 +55,7 @@ extern struct nuscene_s *NuSceneLoad(char *name);
 extern void NuSceneDestroy(struct nuscene_s *scene);
 extern struct nuanimdata_s *NuAnimDataLoadBuff(char *name, union variptr_u *buff, union variptr_u *endbuff);
 extern void NuAnimDataDestroy(struct nuanimdata_s *animdata);
+extern struct shaddata_s *ShadDataLoad(char *name);
 extern void ShadDataDestroy(struct shaddata_s *shad);
 extern int strcasecmp(const char *s1, const char *s2);
 extern char *strcpy(char *dest, const char *src);
@@ -145,6 +146,32 @@ void InstAnimDataDestroy(struct nuanimdata_s *animdata) {
         }
         lst = (struct animdatainst_s *)NuLstGetNext(animdatainst_pool, (struct nulnkhdr_s *)lst);
     }
+}
+
+struct shaddata_s *InstShadDataLoad(char *name) {
+    struct shadinst_s *sdi;
+
+    sdi = (struct shadinst_s *)NuLstGetNext(shaddatainst_pool, 0);
+    while (sdi != 0) {
+        if (strcasecmp(name, sdi->name) == 0) {
+            sdi->inst_cnt++;
+            return sdi->shad;
+        }
+        sdi = (struct shadinst_s *)NuLstGetNext(shaddatainst_pool, (struct nulnkhdr_s *)sdi);
+    }
+
+    sdi = (struct shadinst_s *)NuLstAlloc(shaddatainst_pool);
+    if (sdi != 0) {
+        sdi->shad = ShadDataLoad(name);
+        if (sdi->shad != 0) {
+            strcpy(sdi->name, name);
+            sdi->inst_cnt = 1;
+            return sdi->shad;
+        }
+        NuLstFree((struct nulnkhdr_s *)sdi);
+    }
+
+    return 0;
 }
 
 void InstShadDataDestroy(struct shaddata_s *shad) {
