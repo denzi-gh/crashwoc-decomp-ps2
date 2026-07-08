@@ -45,6 +45,7 @@ extern void NuLstFree(struct nulnkhdr_s *lnk);
 extern struct nuscene_s *NuSceneLoad(char *name);
 extern void NuSceneDestroy(struct nuscene_s *scene);
 extern struct nuanimdata_s *NuAnimDataLoadBuff(char *name, union variptr_u *buff, union variptr_u *endbuff);
+extern void NuAnimDataDestroy(struct nuanimdata_s *animdata);
 extern int strcasecmp(const char *s1, const char *s2);
 extern char *strcpy(char *dest, const char *src);
 
@@ -117,4 +118,21 @@ struct nuanimdata_s *InstAnimDataLoad(char *name) {
     }
 
     return 0;
+}
+
+void InstAnimDataDestroy(struct nuanimdata_s *animdata) {
+    struct animdatainst_s *lst;
+
+    lst = (struct animdatainst_s *)NuLstGetNext(animdatainst_pool, 0);
+    while (lst != 0) {
+        if (lst->ad == animdata) {
+            lst->inst_cnt--;
+            if (lst->inst_cnt == 0) {
+                NuAnimDataDestroy(lst->ad);
+                NuLstFree((struct nulnkhdr_s *)lst);
+            }
+            return;
+        }
+        lst = (struct animdatainst_s *)NuLstGetNext(animdatainst_pool, (struct nulnkhdr_s *)lst);
+    }
 }
