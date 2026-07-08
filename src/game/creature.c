@@ -1,12 +1,4 @@
 /* .\creature.c -- creatures, the player, character models (unit 91).
- *
- * PS2 PAL v1.03 reconstruction.  The GameCube decompilation
- * (denzi-gh/crashwoc-decomp-gc, src/gamecode/creature.c) is the semantic
- * reference; every function here is matched against the retail PS2 bytes
- * (expected/pal103/091_creature.c.o).  This file contains only the
- * decompiled functions; the rest of the unit is spliced from retail
- * assembly by tools/gen_hybrid.py, driven by
- * config/pal103/status/game/creature.toml.
  */
 
 #include "creature.h"
@@ -71,6 +63,7 @@ struct pad_s {
 
 extern float IDLEWAIT;
 extern float SAFEY;
+extern u64 LBIT;
 extern s32 Level;
 extern s32 GameMode;
 extern s32 Adventure;
@@ -137,14 +130,6 @@ void CheckGates(struct obj_s *obj);
 void CheckRings(struct obj_s *obj, s32 *ring);
 void tbslotBeginFn(void *tbset, s32 slot);
 void tbslotEndFn(void *tbset, s32 slot);
-
-
-/* Still held out of this file: ManageCreatures and MovePlayer (switch jump
- * tables -> .rodata) and EvalModelAnim / DrawCharacterModel / DrawCreatures
- * (initialized local aggregates such as `short layertab[2] = {0, 1}`
- * -> .sdata). Float literal pools (.lit4) are supported: gen_hybrid maps
- * pool-bound li.s constants onto the retail .lit4 slots the function's own
- * retail slice references. */
 
 
 float ModelAnimDuration(u32 character, u32 action, float start, float end)
@@ -391,6 +376,67 @@ s32 AddCreature(s32 character, s32 index, s32 i_aitab)
         return 1;
     }
     return 0;
+}
+
+
+void UpdateCharacterIdle(struct creature_s *c, s32 character)
+{
+    struct CharacterModel *model;
+    float t;
+    s32 i;
+
+    i = CRemap[character];
+    if (i != -1) {
+        model = &CModel[i];
+        if ((c->obj.anim.newaction == 0x22) &&
+            ((c->spin == 0) ||
+             (c->spin_frame >= c->spin_frames - c->OnFootMoveInfo->SPINRESETFRAMES))) {
+            c->obj.idle_gametime += 0.02f;
+            /* retail .lit4 slot D_0062D0B4 = 0x3F199999 (0.6 truncated,
+             * not the round-to-nearest 0x3F19999A of a plain 0.6f). */
+            t = 0.5999999642f;
+            if (model->anmdata[c->idle_action] != 0) {
+                t *= model->animlist[c->idle_action]->speed;
+            }
+            c->idle_time += t;
+            switch (c->idle_mode) {
+            case 0:
+                if (c->idle_time > c->idle_wait) {
+                    i = NewCharacterIdle(c, model);
+                    if (i == 0) {
+                        goto StartIdle;
+                    }
+                }
+                break;
+            case 1:
+                if (c->idle_time > c->idle_wait) {
+                    if (((LBIT & 0x200000A1) != 0) && (c->obj.character == 0)) {
+                        i = NewCharacterIdle(c, model);
+                        if (i == 0) {
+                            goto StartIdle;
+                        }
+                    } else {
+                        c->idle_mode = 0;
+                        c->idle_action = 0x22;
+                        c->idle_time = 0.0f;
+                        c->idle_wait = IDLEWAIT * 30.0f;
+                        break;
+                    }
+                }
+                break;
+            }
+            c->obj.anim.newaction = c->idle_action;
+            return;
+        }
+    }
+StartIdle:
+    c->idle_mode = 0;
+    c->idle_sigh = 0;
+    c->idle_action = 0x22;
+    c->old_idle_action = -1;
+    c->obj.idle_gametime = 0.0f;
+    c->idle_time = 0.0f;
+    c->idle_wait = IDLEWAIT * 30.0f;
 }
 
 
