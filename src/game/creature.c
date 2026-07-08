@@ -903,6 +903,80 @@ void ProcessCreatures(void)
 }
 
 
+
+extern s32 temp_action;
+extern f32 temp_time;
+
+
+void EvalModelAnim(struct CharacterModel *model, struct anim_s *anim,
+                   struct numtx_s *m, struct numtx_s *tmtx, float ***dwa,
+                   struct numtx_s *mLOCATOR)
+{
+    short layertab[2] = { 0, 1 };
+    short *layer = layertab;
+    s32 nlayers;
+    s32 i;
+
+    nlayers = 1;
+    if (model->character == 0) {
+        nlayers = 2;
+    }
+
+    if ((anim->blend != 0)
+        && (((u16)anim->blend_src_action <= 0x75)
+            && (model->fanmdata[anim->blend_src_action] != 0))
+        && (((u16)anim->blend_dst_action <= 0x75)
+            && (model->fanmdata[anim->blend_dst_action] != 0))) {
+        *dwa = NuHGobjEvalDwaBlend(
+            nlayers, layer,
+            model->fanmdata[anim->blend_src_action], anim->blend_src_time,
+            model->fanmdata[anim->blend_dst_action], anim->blend_dst_time,
+            (float)anim->blend_frame / (float)anim->blend_frames);
+    } else if ((anim->blend == 0)
+               && ((u16)anim->action <= 0x75)
+               && (model->fanmdata[anim->action] != 0)) {
+        *dwa = NuHGobjEvalDwa(nlayers, layer,
+                              model->fanmdata[anim->action],
+                              anim->anim_time);
+    } else {
+        *dwa = 0;
+    }
+
+    if ((anim->blend != 0)
+        && (((u16)anim->blend_src_action < 0x76)
+            && (model->anmdata[anim->blend_src_action] != 0))
+        && (((u16)anim->blend_dst_action < 0x76)
+            && (model->anmdata[anim->blend_dst_action] != 0))) {
+        NuHGobjEvalAnimBlend(
+            model->hobj,
+            model->anmdata[anim->blend_src_action], anim->blend_src_time,
+            model->anmdata[anim->blend_dst_action], anim->blend_dst_time,
+            (float)anim->blend_frame / (float)anim->blend_frames,
+            0, 0, tmtx);
+        temp_action = anim->blend_dst_action;
+        temp_time = anim->blend_dst_time;
+    } else if ((anim->blend == 0)
+               && ((u16)anim->action < 0x76)
+               && (model->anmdata[anim->action] != 0)) {
+        NuHGobjEvalAnim(model->hobj, model->anmdata[anim->action],
+                        anim->anim_time, 0, 0, tmtx);
+        temp_action = anim->action;
+        temp_time = anim->anim_time;
+    } else {
+        NuHGobjEval(model->hobj, 0, 0, tmtx);
+        temp_action = -1;
+    }
+
+    if (mLOCATOR != 0) {
+        for (i = 0; i < 0x10; i++) {
+            if (model->pLOCATOR[i] != 0) {
+                NuHGobjPOIMtx(model->hobj, (u8)i, m, tmtx, &mLOCATOR[i]);
+            }
+        }
+    }
+}
+
+
 s32 DrawCharacterModel(struct CharacterModel *model, struct anim_s *anim,
                        struct numtx_s *mC, struct numtx_s *mS, s32 render,
                        struct numtx_s *mR, struct numtx_s *loc_mtx,

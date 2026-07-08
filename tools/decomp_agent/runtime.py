@@ -35,40 +35,121 @@ def toolchain_local(project) -> bool:
 
 
 def dispatch_cli(project, cli_args, *, operation="dispatch", timeout=1800) -> dict:
-    """Run ``tools.decomp_agent.cli <cli_args> --json`` inside the container."""
-    tools = _bridge.tools_dir()
-    # Global flags MUST precede the subcommand for argparse.
-    cmd = ["python", str(tools / "dispatch.py"), "python", "-m",
-           "tools.decomp_agent.cli", "--json", "--repo", str(project.root),
-           "--version", project.version, *cli_args]
-    # Redirect the child's stdout/stderr to temp FILES rather than pipes, and
-    # detach its stdin. On Windows a running asyncio ProactorEventLoop (the MCP
-    # stdio server) keeps inheritable handles; a piped ``subprocess.run`` then
-    # hangs forever in ``communicate()`` waiting for a pipe EOF that never comes
-    # because the child inherits a duplicate of the pipe's write end. Waiting on
-    # the process handle with file-backed output sidesteps that deadlock, and
-    # DEVNULL stdin keeps the child from ever touching the parent's JSON-RPC
-    # stream. Behaviour is unchanged for the terminal CLI path.
+    """Run ``tools.decomp_agent.cli <cli_args> --json`` inside the dev container.
+
+    This is invoked from a Windows host (the toolchain is Linux-only), from the
+    MCP server's worker thread. It runs the domain CLI inside the long-lived dev
+    container with a *single* hardened ``docker exec`` -- there is no nested
+    ``python tools/dispatch.py`` process, and no subprocess on this path ever
+    reads a pipe via ``communicate()``.
+
+    Why that matters: the MCP stdio server runs on a Windows asyncio
+    ProactorEventLoop, which keeps inheritable pipe handles alive. A child that
+    inherits a duplicate of such a pipe's write end never lets the parent see
+    EOF, so a piped ``subprocess.run`` (or ``capture_output=True``) can hang
+    forever in ``communicate()``. Every command here instead writes to temp
+    FILES and detaches stdin (``DEVNULL``), so we only ever wait on the process
+    handle. The terminal CLI / ninja / objdiff path still uses
+    ``tools/dispatch.py`` and is unaffected.
+    """
     try:
-        with tempfile.TemporaryFile(mode="w+", encoding="utf-8",
-                                    errors="replace") as out, \
-                tempfile.TemporaryFile(mode="w+", encoding="utf-8",
-                                       errors="replace") as err:
-            proc = subprocess.run(cmd, cwd=str(project.root), stdin=subprocess.DEVNULL,
-                                  stdout=out, stderr=err, timeout=timeout)
-            out.seek(0)
-            err.seek(0)
-            stdout, stderr = out.read(), err.read()
+        dispatch = _bridge.import_tool("dispatch")
+        devc = _bridge.import_tool("dev_container")
+    except Exception as exc:                                    # pragma: no cover
+        return schemas.err(operation, f"cannot import container helpers: {exc}",
+                           code="dispatch")
+
+    try:
+        eng = devc.engine()
+    except devc.ContainerError as exc:
+        return schemas.err(operation, str(exc), code="dispatch")
+
+    ensure_err = _ensure_container(eng, devc)
+    if ensure_err is not None:
+        return schemas.err(operation, ensure_err, code="dispatch")
+
+    # Build the in-container command. Global flags MUST precede the subcommand
+    # for argparse; ``translate_arg`` maps the host repo root to ``/work``.
+    inner = ["python", "-m", "tools.decomp_agent.cli", "--json",
+             "--repo", str(project.root), "--version", project.version, *cli_args]
+    try:
+        translated = [dispatch.translate_arg(a) for a in inner]
+    except dispatch.DispatchError as exc:
+        return schemas.err(operation, str(exc), code="dispatch")
+    cmd = [eng, "exec", "-w", "/work", devc.CONTAINER, *translated]
+
+    try:
+        rc, stdout, stderr = _hardened_run(cmd, cwd=str(project.root),
+                                           timeout=timeout)
     except (OSError, subprocess.SubprocessError) as exc:
         return schemas.err(operation, f"container dispatch failed: {exc}",
                            code="dispatch")
+    if rc == _TIMEOUT_RC:
+        return schemas.err(operation,
+                           f"container run timed out after {timeout}s",
+                           code="dispatch", detail=(stderr or stdout)[-600:])
     payload = _last_json(stdout)
     if payload is None:
         tail = (stderr or stdout or "").strip()[-600:]
         return schemas.err(operation,
-                           f"container run produced no JSON (exit {proc.returncode})",
+                           f"container run produced no JSON (exit {rc})",
                            code="dispatch", detail=tail)
     return payload
+
+
+_TIMEOUT_RC = 124
+
+
+def _hardened_run(cmd, *, cwd=None, timeout=1800):
+    """Blocking subprocess that never reads a pipe: stdin ``DEVNULL``, stdout and
+    stderr to temp FILES. Returns ``(returncode, stdout_text, stderr_text)`` with
+    ``returncode == _TIMEOUT_RC`` on timeout. Deadlock-safe under the Windows
+    Proactor loop (see :func:`dispatch_cli`)."""
+    with tempfile.TemporaryFile(mode="w+", encoding="utf-8",
+                                errors="replace") as out, \
+            tempfile.TemporaryFile(mode="w+", encoding="utf-8",
+                                   errors="replace") as err:
+        try:
+            proc = subprocess.run(cmd, cwd=cwd, stdin=subprocess.DEVNULL,
+                                  stdout=out, stderr=err, timeout=timeout,
+                                  close_fds=True)
+            rc = proc.returncode
+        except subprocess.TimeoutExpired:
+            rc = _TIMEOUT_RC
+        out.seek(0)
+        err.seek(0)
+        return rc, out.read(), err.read()
+
+
+def _ensure_container(eng, devc):
+    """Start the dev container if needed, using the deadlock-safe runner rather
+    than ``dev_container.ensure()`` (which reads pipes via ``communicate()``).
+
+    Returns ``None`` on success, or an error string. Container name, image and
+    bind-mount root are taken from :mod:`dev_container` so this shares the exact
+    same container the CLI / ninja path uses (it stays warm across both)."""
+    try:
+        rc, out, _ = _hardened_run(
+            [eng, "container", "inspect", "--format", "{{.State.Running}}",
+             devc.CONTAINER], timeout=120)
+        if rc == 0:
+            if out.strip() == "true":
+                return None
+            rc2, _, err2 = _hardened_run([eng, "start", devc.CONTAINER],
+                                         timeout=120)
+            return None if rc2 == 0 else \
+                f"could not start container {devc.CONTAINER}: {err2.strip()}"
+        rc3, _, err3 = _hardened_run(
+            [eng, "run", "-d", "--name", devc.CONTAINER,
+             "-v", f"{devc.ROOT}:/work", "-w", "/work",
+             devc.IMAGE, "sleep", "infinity"], timeout=300)
+        if rc3 != 0:
+            return (f"could not start {devc.CONTAINER}: {err3.strip()}\n"
+                    f"Is the image built?  "
+                    f"{eng} build -f Containerfile -t {devc.IMAGE} .")
+        return None
+    except (OSError, subprocess.SubprocessError) as exc:
+        return f"container ensure failed: {exc}"
 
 
 def _last_json(text: str):
