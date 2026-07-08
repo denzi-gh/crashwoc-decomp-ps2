@@ -129,3 +129,201 @@
  *   0x001f1038 SplinePointTilt
  *   0x001f1120 SplinePointAngle
  */
+
+typedef signed char s8;
+typedef unsigned char u8;
+typedef unsigned short u16;
+typedef int s32;
+typedef unsigned int u32;
+
+struct nuvec_s {
+    float x, y, z;
+};
+
+struct hub_s {
+    u8 flags;
+    u8 crystals;
+    char pad1;
+    char pad2;
+};
+
+struct time_s {
+    char name[4];
+    u32 itime;
+};
+
+struct level_s {
+    u16 flags;
+    char pad1;
+    char pad2;
+    struct time_s time[3];
+};
+
+struct game_s {
+    char name[9];
+    u8 vibration;
+    u8 surround;
+    u8 sfx_volume;
+    u8 music_volume;
+    char screen_x;
+    char screen_y;
+    u8 language;
+    struct hub_s hub[6];
+    struct level_s level[35];
+    u8 lives;
+    u8 wumpas;
+    u8 mask;
+    u8 percent;
+    u8 crystals;
+    u8 relics;
+    u8 crate_gems;
+    u8 bonus_gems;
+    u8 gems;
+    u8 gembits;
+    u8 powerbits;
+    u8 empty;
+    u32 cutbits;
+    u8 year;
+    u8 month;
+    u8 day;
+    u8 hours;
+    u8 mins;
+    u8 pad_[3];
+};
+
+struct ldata_s {
+    char *path;
+    u8 *clist;
+    void *pChase;
+    u32 time[3];
+    short music[2];
+    void *pSFX;
+    short nSFX;
+    char pad1;
+    char hub;
+    u16 flags;
+    short character;
+    short vehicle;
+    u16 farclip;
+    struct nuvec_s vSTART;
+    struct nuvec_s vBONUS;
+    float fognear;
+    float fogfar;
+    u8 fogr;
+    u8 fogg;
+    u8 fogb;
+    u8 foga;
+    u8 hazer;
+    u8 hazeg;
+    u8 hazeb;
+    u8 hazea;
+};
+
+struct hdata_s {
+    s8 level[6];
+    s8 i_spl[2];
+    u8 barrier;
+    u8 i_gdeb;
+    short sfx;
+};
+
+extern struct ldata_s LData[];
+extern struct hdata_s HData[6];
+extern s32 platinum_relics;
+extern s32 gold_relics;
+extern s32 sapphire_relics;
+extern s32 temp_hub;
+extern s32 temp_hublevel;
+
+static inline s32 HubFromLevel(s32 level) {
+    s32 j;
+    s32 i;
+
+    if (level == -1) {
+        return -1;
+    }
+    for (i = 0; i < 6; i++) {
+        for (j = 0; j < 6; j++) {
+            if (HData[i].level[j] == level) {
+                temp_hublevel = j;
+                temp_hub = i;
+                return i;
+            }
+        }
+    }
+    return -1;
+}
+
+void CalculateGamePercentage(struct game_s *game) {
+    s32 hub;
+    s32 i;
+
+    game->percent = 0;
+    game->crystals = 0;
+    game->relics = 0;
+    game->crate_gems = 0;
+    game->bonus_gems = 0;
+    game->gems = 0;
+    game->gembits = 0;
+    sapphire_relics = gold_relics = platinum_relics = 0;
+    for (i = 0; i < 6; i++) {
+        game->hub[i].crystals = 0;
+    }
+    for (i = 0; i < 0x23; i++) {
+        hub = HubFromLevel(i);
+        if ((LData[i].flags & 2) != 0) {
+            if ((game->level[i].flags & 0x800) != 0) {
+                game->percent++;
+            }
+        } else {
+            if ((game->level[i].flags & 8) != 0) {
+                game->percent++;
+                game->crystals = game->crystals + 1;
+                game->hub[hub].crystals++;
+            }
+            if ((game->level[i].flags & 7) != 0) {
+                game->percent++;
+                game->relics = game->relics + 1;
+                if ((game->level[i].flags & 4) != 0) {
+                    platinum_relics++;
+                } else {
+                    if ((game->level[i].flags & 2) != 0) {
+                        gold_relics++;
+                    } else {
+                        sapphire_relics++;
+                    }
+                }
+            }
+            if ((game->level[i].flags & 0x10) != 0) {
+                game->percent++;
+                game->crate_gems++;
+                game->gems++;
+            }
+            if ((game->level[i].flags & 0x20) != 0) {
+                game->percent++;
+                game->bonus_gems++;
+                game->gems++;
+            } else if ((game->level[i].flags & 0x40) != 0) {
+                game->percent++;
+                game->gembits |= 1;
+                game->gems++;
+            } else if ((game->level[i].flags & 0x80) != 0) {
+                game->percent++;
+                game->gembits |= 2;
+                game->gems++;
+            } else if ((game->level[i].flags & 0x100) != 0) {
+                game->percent++;
+                game->gembits |= 4;
+                game->gems++;
+            } else if ((game->level[i].flags & 0x200) != 0) {
+                game->percent++;
+                game->gembits |= 8;
+                game->gems++;
+            } else if ((game->level[i].flags & 0x400) != 0) {
+                game->percent++;
+                game->gembits |= 0x10;
+                game->gems++;
+            }
+        }
+    }
+}
