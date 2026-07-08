@@ -45,7 +45,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0108:0023f7a0:UpdatePlayerStats"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0108:0023fa60:AddPanelDebris"

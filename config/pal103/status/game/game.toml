@@ -61,7 +61,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0094:001de090:ResetGame"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001de1d8:InitVehicleToggles"
@@ -225,7 +225,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001eb0b8:OpenGame"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001eb328:BonusTransporter"
@@ -345,7 +345,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0094:001efae0:DefaultGame"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001efb18:ResetLevel"

@@ -140,6 +140,17 @@ struct nuvec_s {
     float x, y, z;
 };
 
+struct nuangvec_s {
+    s32 x, y, z;
+};
+
+struct mask_s {
+    char pad_16c[0x16C];
+    short character; /* 0x16C */
+    u16 active;      /* 0x16E == D_0058A00E */
+    char pad_end[0x190 - 0x170];
+};
+
 struct hub_s {
     u8 flags;
     u8 crystals;
@@ -227,6 +238,7 @@ struct hdata_s {
     short sfx;
 };
 
+extern struct game_s Game;
 extern struct ldata_s LData[];
 extern struct hdata_s HData[6];
 extern s32 platinum_relics;
@@ -234,6 +246,27 @@ extern s32 gold_relics;
 extern s32 sapphire_relics;
 extern s32 temp_hub;
 extern s32 temp_hublevel;
+extern s32 Hub;
+extern char D_0061DFE0[]; /* "MIDGET  " */
+extern u16 D_0058A00E[];   /* Mask.active (absolute, far from $gp) */
+extern struct mask_s Mask;
+extern u8 Cursor[];
+extern u8 GlobalTimer[];
+extern struct nuangvec_s proberot;
+extern s32 probeon;
+extern s32 probey;
+extern s32 probetime;
+extern s32 probecol;
+
+void *memset(void *s, s32 c, u32 n);
+s32 NuStrCpy(char *dst, const char *src);
+void NewLanguage(s32 lang);
+void DefaultTimeTrialNames(s32 which);
+void ResetTimer(void *timer);
+void ResetBonus(void);
+void ResetDeath(void);
+void ResetGemPath(void);
+void CalculateGamePercentage(struct game_s *game);
 
 static inline s32 HubFromLevel(s32 level) {
     s32 j;
@@ -252,6 +285,128 @@ static inline s32 HubFromLevel(s32 level) {
         }
     }
     return -1;
+}
+
+static void inline InitProbe(void) {
+    probeon = 0;
+    probey = 0;
+    probetime = 0;
+    proberot.x = 0;
+    proberot.y = 0;
+    proberot.z = 0;
+    probecol = 0;
+}
+
+void ResetGame(void) {
+    s32 i;
+
+    memset(Cursor, 0, 0x78);
+    for (i = 0; i < 0x2c; i++) {
+        if (0x3de < LData[i].farclip - 10U) {
+            LData[i].farclip = 1000;
+        }
+    }
+    for (i = 0; i < 0x23; i++) {
+        LData[i].hub = HubFromLevel(i);
+    }
+    for (i = 0; i < 1; i++) {
+        (&Mask)[i].character = 3;
+    }
+    ResetTimer(GlobalTimer);
+    InitProbe();
+}
+
+void NewGame(void) {
+    s32 save[7];
+
+    save[0] = Game.vibration;
+    save[1] = Game.surround;
+    save[2] = Game.sfx_volume;
+    save[3] = Game.music_volume;
+    save[4] = Game.screen_x;
+    save[5] = Game.screen_y;
+    save[6] = Game.language;
+    memset(&Game, 0, 0x40C);
+    Game.vibration = save[0];
+    Game.surround = save[1];
+    Game.sfx_volume = save[2];
+    Game.music_volume = save[3];
+    Game.screen_x = save[4];
+    Game.screen_y = save[5];
+    Game.language = save[6];
+    NewLanguage(save[6]);
+    NuStrCpy(Game.name, D_0061DFE0);
+    DefaultTimeTrialNames(1);
+    Game.lives = 4;
+    Game.hub[0].flags = 1;
+    D_0058A00E[0] = (u16)Game.mask;
+    Hub = -1;
+}
+
+void OpenGame(void) {
+    s32 i;
+    s32 j;
+    s32 k;
+
+    for (k = 0; k < 0x23; k++) {
+        Game.level[k].flags = 0;
+    }
+    for (k = 0; k < 6; k++) {
+        Game.hub[k].flags = 0xff;
+        Game.hub[k].crystals = 0;
+        if (k < 5) {
+            for (i = 0; i < 6; i++) {
+                j = HData[k].level[i];
+                if (j != -1) {
+                    if (i < 5) {
+                        Game.level[j].flags = 0x1f;
+                        Game.hub[k].crystals = Game.hub[k].crystals + 1;
+                    } else {
+                        Game.level[j].flags = 0x800;
+                    }
+                }
+            }
+        } else {
+            for (i = 0; i < 5; i++) {
+                j = HData[k].level[i];
+                if (j != -1) {
+                    Game.level[j].flags = 0x17;
+                }
+            }
+        }
+    }
+    Game.level[1].flags = Game.level[1].flags | 0x40;
+    Game.level[17].flags = Game.level[17].flags | 0x80;
+    Game.level[7].flags = Game.level[7].flags | 0x100;
+    Game.level[19].flags = Game.level[19].flags | 0x200;
+    Game.level[10].flags = Game.level[10].flags | 0x400;
+    Game.level[4].flags = Game.level[4].flags | 0x20;
+    Game.level[12].flags = Game.level[12].flags | 0x20;
+    Game.level[14].flags = Game.level[14].flags | 0x20;
+    Game.level[5].flags = Game.level[5].flags | 0x20;
+    Game.level[20].flags = Game.level[20].flags | 0x20;
+    Game.level[33].flags = Game.level[33].flags | 0x20;
+    Game.level[27].flags = Game.level[27].flags | 0x20;
+    Game.level[28].flags = Game.level[28].flags | 0x20;
+    Game.level[29].flags = Game.level[29].flags | 0x20;
+    Game.level[32].flags = Game.level[32].flags | 0x20;
+    Game.level[9].flags = Game.level[9].flags | 0x20;
+    Game.powerbits = 0xff;
+    Game.cutbits = (u32)-1;
+    CalculateGamePercentage(&Game);
+    ResetBonus();
+    ResetDeath();
+    ResetGemPath();
+}
+
+void DefaultGame(void) {
+    Game.vibration = 1;
+    Game.surround = 0;
+    Game.sfx_volume = 100;
+    Game.music_volume = 75;
+    Game.screen_x = 0;
+    Game.screen_y = 0;
+    Game.language = 0;
 }
 
 void CalculateGamePercentage(struct game_s *game) {

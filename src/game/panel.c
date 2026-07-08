@@ -27,23 +27,7 @@
  * WORK IN PROGRESS attempt #2.
  */
 
-typedef unsigned char u8;
-typedef signed char s8;
-typedef unsigned short u16;
-typedef unsigned int u32;
-typedef short s16;
-typedef int s32;
-
-struct nuvec_s {
-    float x, y, z;
-};
-
-struct numtx_s {
-    float _00, _01, _02, _03;
-    float _10, _11, _12, _13;
-    float _20, _21, _22, _23;
-    float _30, _31, _32, _33;
-};
+#include "creature.h"
 
 struct nuinstance_s {
     struct numtx_s matrix;
@@ -112,19 +96,23 @@ struct game_s {
     u8 language;
 };
 
-struct NUHGOBJ_s;
-struct anim_s;
-
-struct CharacterModel {
-    struct NUHGOBJ_s *hobj;
-    u8 _pad[0x984];
-};
-
 extern struct objtab_s ObjTab[201];
 extern struct panel_debris_s PDeb[32];
 extern struct font3dtab_s Font3DTab[];
 extern signed char Font3DRemap[];
-extern struct panel_item_s plr_wumpas, plr_bonus_wumpas;
+/* Panel counter (count +0x0, draw +0x2, frame +0x4).  The complete type must
+ * be visible here -- before UpdatePanelItem and UpdatePlayerStats -- so that
+ * plr_wumpas is recognised as small-data (size 8 <= -G8) and addressed
+ * $gp-relative; an incomplete forward decl would force a larger address load
+ * and desync UpdatePlayerStats by 16 bytes. */
+struct panelcount_s {
+    short count;
+    short draw;
+    signed char frame;
+    u8 pad[3];
+};
+extern struct panelcount_s plr_wumpas;
+extern struct panel_item_s plr_bonus_wumpas;
 extern s32 MAXVPSIZEX, MAXVPSIZEY;
 extern s32 MINVPSIZEX, MINVPSIZEY;
 extern s32 screendump, save_paused, Paused, editor_active;
@@ -340,6 +328,135 @@ void DrawWorldToPanelWumpa(void) {
         w++;
         offset += sizeof(struct screen_wumpa_s);
     } while (w < &base[32]);
+}
+
+/* --- UpdatePlayerStats externs ------------------------------------- */
+
+/* A crate cube (stride 0x90); only the fields UpdatePlayerStats reads are
+ * typed. */
+typedef struct {
+    u8 _pad00[0x30];
+    s8 on;             /* 0x30 */
+    u8 _pad31[0x07];
+    u16 flags;         /* 0x38 */
+    u8 _pad3a[0x04];
+    s8 newtype;        /* 0x3E */
+    u8 _pad3f[0x02];
+    s8 metal_count;    /* 0x41 */
+    u8 _pad42[0x4E];
+} CrateCube;           /* 0x90 */
+
+extern CrateCube Crate[];
+extern s32 CRATECOUNT;
+extern s32 crates_destroyed;
+extern s32 bonus_crates_destroyed;
+extern s32 old_bonus_crates;
+extern s32 save_bonus_crates_destroyed;
+extern s32 Bonus;
+extern s32 bonus_finish_frame;
+extern f32 bonus_crates_wait;
+extern f32 D_0062E640;              /* 1/50 wait decrement (.sdata) */
+extern f32 D_0062E644;              /* -1/50 wait floor (.sdata) */
+extern u16 crate_wumpa;
+extern struct panelcount_s plr_crates;
+extern struct panelcount_s plr_wumpas;
+extern struct panelcount_s plr_lives;
+extern s32 force_panel_lives_update;
+extern s32 mask_crates;
+extern s32 newmask_advise;
+extern f32 WUMPAOBJSX;
+extern f32 PANELSY;
+extern struct mask_s vNEWMASK;
+extern u8 Cursor[];
+
+extern void AddPanelDebris(f32 x, f32 y, s32 obj, f32 z, s32 flag);
+extern void NewMask(struct mask_s *mask, struct mask_s *src);
+extern void NewMenu(void *cursor, s32 a, s32 b, s32 c);
+
+void UpdatePlayerStats(struct creature_s *plr) {
+    CrateCube *crate;
+    s32 i;
+    s32 dead;
+    s32 x;
+
+    crates_destroyed = 0;
+    bonus_crates_destroyed = 0;
+    crate = Crate;
+    for (i = 0; i < CRATECOUNT; i++, crate++) {
+        if (((crate->flags & 0x10) != 0) &&
+            ((crate->on == 0) ||
+             ((crate->newtype == 0xF) && (crate->metal_count != 0)))) {
+            if ((crate->flags & 0x40) != 0) {
+                bonus_crates_destroyed++;
+            } else {
+                crates_destroyed++;
+            }
+        }
+    }
+
+    if ((Bonus == 2) && (plr->obj.dead != 0)) {
+        dead = 1;
+    } else {
+        dead = 0;
+    }
+
+    if (dead) {
+        bonus_crates_destroyed = old_bonus_crates;
+    } else {
+        old_bonus_crates = bonus_crates_destroyed;
+    }
+
+    save_bonus_crates_destroyed = bonus_crates_destroyed;
+
+    if ((Bonus == 4) || (Bonus == 3) || dead) {
+        if (bonus_finish_frame < bonus_crates_destroyed * 5) {
+            x = bonus_finish_frame / 5;
+            if (!dead) {
+                crates_destroyed += x;
+            }
+            bonus_crates_destroyed -= x;
+        } else {
+            if (!dead) {
+                crates_destroyed += bonus_crates_destroyed;
+            }
+            bonus_crates_destroyed = 0;
+        }
+        if (bonus_finish_frame == save_bonus_crates_destroyed * 5 + 4) {
+            bonus_crates_wait = 0.5f;
+        } else if ((bonus_finish_frame >= save_bonus_crates_destroyed * 5 + 5) &&
+                   (bonus_crates_wait -= D_0062E640,
+                    bonus_crates_wait <= 0.0f)) {
+            bonus_crates_wait = D_0062E644;
+        }
+    }
+
+    plr_crates.count = crates_destroyed;
+    plr_wumpas.count += crate_wumpa;
+    while (99 < plr_wumpas.count) {
+        plr_wumpas.count += -100;
+        AddPanelDebris(WUMPAOBJSX, PANELSY, 5, 0.0f, 1);
+    }
+
+    if (99 < plr_lives.count) {
+        plr_lives.count = 99;
+        force_panel_lives_update = 0x32;
+    }
+
+    for (; mask_crates != 0; mask_crates--) {
+        if (plr->obj.mask != 0) {
+            NewMask(plr->obj.mask, &vNEWMASK);
+            if (newmask_advise != 0) {
+                if (plr->obj.mask->active < 3) {
+                    NewMenu(Cursor, 0x21, -1, -1);
+                    ResetAnimPacket(&plr->obj.mask->anim, 0x22);
+                    player->obj.mom.x = 0;
+                    player->obj.mom.z = 0;
+                    player->slide = 0;
+                }
+                newmask_advise = 0;
+            }
+        }
+    }
 }
 
 s32 DrawPanel3DObject(s32 object, float x, float y, float z, float scalex,
