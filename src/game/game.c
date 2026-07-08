@@ -287,7 +287,7 @@ static inline s32 HubFromLevel(s32 level) {
     return -1;
 }
 
-static void InitProbe(void) {
+static void inline InitProbe(void) {
     probeon = 0;
     probey = 0;
     probetime = 0;
