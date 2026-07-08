@@ -13,11 +13,11 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0092:001d5a98:InstSceneLoad"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0092:001d5b58:InstSceneDestroy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0092:001d5bd8:InstAnimDataLoad"
@@ -33,12 +33,12 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0092:001d5dd8:InstShadDataDestroy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0092:001d5e58:InstClose"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0092:001d5f38:InstInit"
-state = "asm"
+state = "matching"
