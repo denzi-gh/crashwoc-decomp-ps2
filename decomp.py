@@ -37,6 +37,14 @@ from gen_objdiff import unit_table
 PY = sys.executable
 PUBLIC_IMAGE = "ghcr.io/denzi-gh/crashwoc-decomp"
 
+# Build tools the container must provide (installed by the Containerfile, not by
+# setup_toolchain.py). A prebuilt public image that predates one of these -- or
+# was built from a different recipe -- would leave the container unable to run
+# the ninja pipeline; `toolchain` validates these and rebuilds locally if any
+# are missing. The locked cross-toolchain (ee-gcc, binutils) is checked
+# separately by fingerprint_compiler.py.
+REQUIRED_CONTAINER_TOOLS = ("ninja", "make")
+
 
 class DecompError(Exception):
     """A user-facing error with a clear, actionable message."""
@@ -213,9 +221,18 @@ def _graph_stale(version, src_rel, manifest_rel):
 # --------------------------------------------------------------------------
 # Commands.
 # --------------------------------------------------------------------------
+def _build_local_image(eng, image):
+    """Build the dev image locally from the Containerfile. Returns True on ok."""
+    return run([eng, "build", "-f", "Containerfile", "-t", image, "."]) == 0
+
+
 def _ensure_image(eng, image):
     """Make the local dev image available: pull the public one and tag it, or
-    fall back to a local Containerfile build. Skips when already present."""
+    fall back to a local Containerfile build. Skips when already present.
+
+    Provenance is not validated here (a present/pulled image may lag the
+    Containerfile); cmd_toolchain checks the container for the required build
+    tools after starting it and rebuilds locally if any are missing."""
     if probe([eng, "image", "inspect", image]) == 0:
         print(f"image {image} already present.")
         return True
@@ -223,7 +240,46 @@ def _ensure_image(eng, image):
     if run([eng, "pull", PUBLIC_IMAGE]) == 0:
         return run([eng, "tag", PUBLIC_IMAGE, image]) == 0
     print("public image unavailable; building locally from Containerfile ...")
-    return run([eng, "build", "-f", "Containerfile", "-t", image, "."]) == 0
+    return _build_local_image(eng, image)
+
+
+def _container_missing_tools(eng, container, tools=REQUIRED_CONTAINER_TOOLS):
+    """Subset of `tools` not found on PATH inside the running container."""
+    return [t for t in tools
+            if probe([eng, "exec", container, "sh", "-c",
+                      f"command -v {t}"]) != 0]
+
+
+def _ensure_container_tools(eng):
+    """Guarantee the running dev container has the required build tools.
+
+    A stale or foreign public image can lack e.g. ninja; trust nothing and
+    verify inside the container. If tools are missing, rebuild the image from
+    the Containerfile, recreate the container, and re-check. Returns True on ok.
+    """
+    import dev_container
+    missing = _container_missing_tools(eng, dev_container.CONTAINER)
+    if not missing:
+        return True
+    print(f"dev container is missing build tool(s): {', '.join(missing)}.\n"
+          f"The dev image is stale or was built without them; rebuilding "
+          f"locally from the Containerfile ...")
+    if not _build_local_image(eng, dev_container.IMAGE):
+        print("decomp toolchain: local image build FAILED.", file=sys.stderr)
+        return False
+    # The old container is a snapshot of the stale image; drop and recreate it.
+    dev_container.stop(eng)
+    try:
+        dev_container.ensure(eng)
+    except dev_container.ContainerError as exc:
+        print(f"decomp toolchain: {exc}", file=sys.stderr)
+        return False
+    missing = _container_missing_tools(eng, dev_container.CONTAINER)
+    if missing:
+        print(f"decomp toolchain: build tool(s) still missing after rebuild: "
+              f"{', '.join(missing)}.", file=sys.stderr)
+        return False
+    return True
 
 
 def cmd_toolchain(version):
@@ -241,6 +297,8 @@ def cmd_toolchain(version):
         dev_container.ensure(eng)
     except dev_container.ContainerError as exc:
         print(f"decomp toolchain: {exc}", file=sys.stderr)
+        return 1
+    if not _ensure_container_tools(eng):
         return 1
     if run(dispatch_cmd("python", "tools/setup_toolchain.py", "--download")):
         print("decomp toolchain: toolchain install FAILED (see above). If a "

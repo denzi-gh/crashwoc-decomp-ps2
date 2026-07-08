@@ -23,6 +23,7 @@ import argparse
 import logging
 import os
 import sys
+import threading
 from pathlib import Path
 
 # Make the sibling ``tools`` importable whether launched as a module or a script.
@@ -35,6 +36,59 @@ from decomp_agent import (health, candidates, context as ctx, evidence, diff,   
                           sessions, blockers, verification, registry as regmod)
 
 log = logging.getLogger("decomp_mcp")
+
+
+def _host_needs_container() -> bool:
+    """True when toolchain calls will be forwarded into the dev container.
+
+    A Linux host running the toolchain natively (in the container, or with
+    CRASHWOC_DIRECT set) skips it -- there is nothing to warm there.
+    """
+    try:
+        import dispatch  # tools/ is on sys.path
+    except Exception:
+        return os.name != "posix"
+    if os.name == "posix" and (dispatch.in_container()
+                               or os.environ.get("CRASHWOC_DIRECT")):
+        return False
+    return True
+
+
+def warm_container() -> dict:
+    """Bring the dev container up; return a small status dict (never raises).
+
+    Cold-start latency (``docker run``/``start``) is the reason the first
+    ``compile_diff``/``verify_candidate``/``promote_matching`` looked frozen:
+    it was paid synchronously inside a blocking MCP call. Paying it here --
+    at startup and via the ``warm_toolchain`` tool -- keeps it off the
+    critical path of those tools.
+    """
+    if not _host_needs_container():
+        return {"ok": True, "state": "native", "warmed": False,
+                "note": "toolchain runs natively on this host; no container"}
+    try:
+        import dev_container
+        before = dev_container.status()
+        eng = dev_container.ensure()
+        return {"ok": True, "engine": eng, "container": dev_container.CONTAINER,
+                "state": dev_container.status(), "was": before, "warmed": True}
+    except Exception as exc:  # engine missing, image absent, docker down
+        log.warning("toolchain warmup failed: %s", exc)
+        return {"ok": False, "warmed": False, "error": str(exc),
+                "note": "build the image: docker build -f Containerfile "
+                        "-t crashwoc-decomp ."}
+
+
+def _warm_container_async() -> None:
+    """Best-effort background warmup at server start (logs to stderr only)."""
+    def _run():
+        res = warm_container()
+        if res.get("warmed"):
+            log.info("dev container warm (%s, was %s)",
+                     res.get("state"), res.get("was"))
+        elif res.get("state") == "native":
+            log.info("toolchain native; no container warmup needed")
+    threading.Thread(target=_run, name="warm-toolchain", daemon=True).start()
 
 
 def resolve_project(repo=None, version=None) -> DecompProject:
@@ -62,6 +116,17 @@ def build_server(project: DecompProject):
     P = lambda: project  # noqa: E731 -- single validated project handle
 
     # -- tools ---------------------------------------------------------------
+
+    @mcp.tool()
+    def warm_toolchain() -> dict:
+        """Start the Linux toolchain container so later build tools run warm.
+
+        Cheap and idempotent: instant when already running, a few seconds
+        cold. Call this once at the start of a matching session so the first
+        compile_diff / verify_candidate / promote_matching does not pay
+        container cold-start latency inside its (timeout-bounded) call.
+        """
+        return warm_container()
 
     @mcp.tool()
     def project_health() -> dict:
@@ -280,6 +345,10 @@ def main(argv=None) -> int:
 
     log.info("serving crashwoc-decomp MCP for %s (version %s)",
              project.root, project.version)
+    # Warm the dev container off the critical path so the first build tool
+    # (compile_diff/verify/promote) doesn't pay cold-start latency inside a
+    # blocking MCP call. Best-effort; failures are logged and ignored.
+    _warm_container_async()
     server = build_server(project)
     server.run(transport="stdio")
     return 0
