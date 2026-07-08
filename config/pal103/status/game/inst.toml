@@ -33,12 +33,12 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0092:001d5dd8:InstShadDataDestroy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0092:001d5e58:InstClose"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0092:001d5f38:InstInit"
-state = "asm"
+state = "matching"
