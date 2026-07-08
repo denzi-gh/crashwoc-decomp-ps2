@@ -27,6 +27,11 @@ extern struct nulsthdr_s *D_00630A00;
 
 #define sceneinst_pool D_006309FC
 #define animdatainst_pool D_00630A00
+extern struct nulsthdr_s *D_006309fc;
+extern struct nulsthdr_s *D_00630a00;
+
+#define sceneinst_pool D_006309fc
+#define animdatainst_pool D_00630a00
 
 extern struct nulnkhdr_s *NuLstGetNext(struct nulsthdr_s *hdr, struct nulnkhdr_s *lnk);
 extern struct nulnkhdr_s *NuLstAlloc(struct nulsthdr_s *hdr);
@@ -70,7 +75,7 @@ void InstSceneDestroy(struct nuscene_s *scene) {
         if (sc->scene == scene) {
             sc->inst_cnt--;
             if (sc->inst_cnt == 0) {
-                NuSceneDestroy(scene);
+                NuSceneDestroy(sc->scene);
                 NuLstFree((struct nulnkhdr_s *)sc);
             }
             return;
