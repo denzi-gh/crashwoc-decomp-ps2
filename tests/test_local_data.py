@@ -88,10 +88,27 @@ class TestExtractLocalData(unittest.TestCase):
         self.assertEqual(clean, lines)
         self.assertEqual(local, {})
 
-    def test_multi_label_block_raises(self):
+    def test_multi_label_block_splits_per_label(self):
+        # ee-gcc packs several private slots between one .sdata/.text switch
+        # (e.g. the two format strings of a function that calls NuDebugMsgProlog
+        # twice); each label is captured as its own aggregate.
+        _clean, local = _extract_local_data(
+            ["\t.sdata", "$LC0:", "\t.word\t1",
+             "$LC1:", "\t.word\t2", "\t.text"])
+        self.assertEqual(local, {"$LC0": b"\x01\x00\x00\x00",
+                                 "$LC1": b"\x02\x00\x00\x00"})
+
+    def test_multi_label_strings_split_without_interior_align(self):
+        # The .align between two strings only aligns the second slot, so it is
+        # not part of the first string's bytes.
+        _clean, local = _extract_local_data(
+            ["\t.rdata", "$LC0:", '\t.ascii\t"ab\\000"',
+             "\t.align\t2", "$LC1:", '\t.ascii\t"cd\\000"', "\t.text"])
+        self.assertEqual(local, {"$LC0": b"ab\x00", "$LC1": b"cd\x00"})
+
+    def test_labelless_block_raises(self):
         with self.assertRaises(HybridError):
-            _extract_local_data(["\t.sdata", "$LC0:", "\t.word\t1",
-                                 "$LC1:", "\t.word\t2", "\t.text"])
+            _extract_local_data(["\t.sdata", "\t.word\t1", "\t.text"])
 
 
 class TestAssembleDataBytes(unittest.TestCase):
