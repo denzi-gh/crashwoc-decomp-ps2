@@ -169,7 +169,8 @@ just things that came up while building and shouldn't be lost.
   zero-low-half constants stay inline lui+mtc1) into `lwc1 $fN, D_0062....`
   against the retail .lit4 slot, mapped BY VALUE from the gp references in
   the function's own retail slice (ambiguity or an unmappable constant
-  fails loudly; li.d/.lit8 unsupported). Two supporting invariants landed
+  fails loudly; li.d/.lit8 support added 2026-07-08, see below). Two
+  supporting invariants landed
   with it: compiled segments are zero-filled to their registry extent with
   `.org` (retail extents include trailing pad nops; gas errors loudly if
   the code overruns), and the assembled hybrid is checked to own NO data
@@ -181,11 +182,88 @@ just things that came up while building and shouldn't be lost.
   (0x0062C980) so it links -- pool-using functions honestly read DIFF
   there and are verified through the hybrid gate. Proof: TerrainFailsafe
   (2000000.0f) is promoted `matching`, image SHA exact.
-- **Compiler-owned data still blocking (remaining kinds).** Switch jump
-  tables -> .rodata (ManageCreatures, MovePlayer) and initialized local
-  aggregates -> .sdata (EvalModelAnim / DrawCharacterModel / DrawCreatures'
-  `short layertab[2] = {0,1}`, visible in retail as D_006309C8) still
-  raise in gen_hybrid by design. ModelAnimDuration's .lit4 ref maps fine
+- **Initialized-local `.sdata` now maps onto the owned retail slot.**
+  gen_hybrid (`_extract_local_data` + `Lit4Mapper.map_owned_data`) pulls a
+  compiler-private initialized aggregate ($LCn in .sdata/.rodata) out of the
+  compiled stream, matches its bytes to the unit-owned data symbol the
+  function's retail slice references, and rewrites `%hi/%lo($LCn)` onto that
+  symbol (`.extern`, no data emitted) -- the same trick `_rewrite_lis` plays
+  for .lit4. `short layertab[2] = {0,1}` (retail D_006309C8) no longer blocks:
+  **DrawCharacterModel is now `equivalent`** (matching C reconstructed from
+  the retail disasm; short of byte-exact only on register allocation -- retail
+  keeps `anim` in s2 and the locator `i` in s4, the locked compiler swaps them
+  -- so it stays equivalent, not matching). Same unblock is now available to
+  EvalModelAnim / DrawCreatures once their C is written. Fixed while here:
+  `map_for_slice` returns ordered slot lists so two `.lit4` slots holding the
+  same value in different branches (D_0062D178 / D_0062D17C, both 9.58738e-05f)
+  map positionally instead of raising "ambiguous".
+- **`li.d`/`.lit8` double pools + address-resolution borrow (2026-07-08).**
+  Two gen_hybrid extensions:
+  (A.2) `_rewrite_lis` now handles `li.d` the same way it handles `li.s`:
+  a double whose float64 image has a zero low WORD (low 32 bits) stays inline
+  (lui+mtc1 pair), anything else is rewritten `ldc1 $fN, D_xxxx` against the
+  retail `.lit8` slot, mapped BY VALUE from the slice's `%gp_rel` references
+  (`Lit4Mapper.map_for_slice8`, positional like `.lit4`). No more
+  "li.d not supported" raise.
+  (A.2b) `li.s`/`li.d` into a *GPR* (not `$fN`) is a DIFFERENT construct: not a
+  pool load but ee-gcc materializing the raw float/double bit pattern inline in
+  an integer register -- e.g. `li.d $5,1.0e1` to pass 10.0 as the `s64` argument
+  of the software-double helper `dpmul` (float→double math on the EE, which has
+  no hardware doubles). Retail expands it inline (`ori $a1,$zero,0x8048;
+  dsll32 $a1,$a1,15` == 0x4024000000000000). `_rewrite_lis` now rewrites these
+  to `dli $reg,0x<bits>` (BOTH sizes use `dli`, never `li`: a high-bit-set
+  float32 image like -1.0 -> 0xBF800000 would `lui`-sign-extend into bits 32-63,
+  so `dli` sets all 64 bits explicitly and zero-extends deterministically).
+  Enabled UpdateAnimPacket (unit 91) to reach `equivalent` (2026-07-08).
+  CAVEAT for a future MATCHING candidate: `dli` is a MACRO, so its expansion is
+  assembler-dependent -- the same class of decompals-`as`-vs-SN-`as` divergence
+  that `_sonyize` normalizes explicitly (move→daddu, break). It byte-matched
+  retail for the 10.0 shape, but an arbitrary double is only best-effort: if the
+  decompals `as` `dli` expansion differs from retail's SN sequence the whole-
+  unit byte gate blocks promotion (loud, safe, never wrong bytes) and the
+  function can't reach `matching` until the explicit sequence is emitted instead.
+  Regex-covered by tests/test_fp_pool.py; the `$fN` negative lookahead keeps
+  pool loads on the lwc1/ldc1 path.
+  (A.4) `map_owned_data` no longer requires a NAMED retail twin: when the
+  compiler-private aggregate's bytes match no slice-referenced symbol, it
+  searches the function's OWN unit data ranges (data_map.toml) for the unique
+  address holding those bytes and emits `D_<vram>` (auto-resolved by the image
+  link's `AUTO_NAME_RE`), at the aggregate's natural alignment so zero padding
+  can't spoof a match. Ambiguity (bytes at >1 address in the unit) still fails
+  loudly. This keeps the hybrid `.text`-only and byte-exact (data still comes
+  from the per-range data object at its retail address) -- the no-data-sections
+  rule was NOT relaxed. The existing named-twin case (layertab -> D_006309C8)
+  takes the fast path unchanged; `ninja check` image SHA still exact.
+  (A.3, same day) `_assemble_data_bytes` now handles the string family
+  (`.ascii` verbatim; `.asciiz`/`.asciz`/`.string` append the NUL) with a
+  quote-aware decoder (`_decode_as_string`: octal `\NNN`, hex `\xHH`, letter
+  escapes; a `#`/`,` inside quotes is literal), so a function-local string
+  literal ($LCn in .rdata) captures its bytes and borrows the retail slot via
+  the same named-twin/address path. `_borrow_addr_in_unit` is now two-tier
+  (natural alignment, then byte-aligned) so an align-1 retail string is still
+  located; any unique equal-bytes address is byte-correct since the bytes come
+  from the per-range data object.
+- **Switch jump tables now borrow the retail jtbl slot (A.1, 2026-07-08).**
+  Ground truth from a throwaway `-O2` switch: ee-gcc emits the table mid-
+  function in a `.rdata` block (`$Ln: .word $Lm ...`, relocations) addressed
+  `%hi/%lo($Ln)` -- absolute, exactly like retail's auto-named `jtbl_<vram>`;
+  and dispatches with `j $reg` where retail has `jr $reg`. `_extract_local_data`
+  already captured that block (`.rdata..`.text`-delimited); the fix detects an
+  all-`.word <label>` payload as a `_JumpTable(count)` marker (not bytes),
+  `Lit4Mapper.map_jump_table` finds the single `jtbl_`/`jpt_` symbol the
+  function's slice addresses (room for `count` entries), and `_rewrite_local_data`
+  repoints `%hi/%lo($Ln)` onto it and drops the compiler's copy -- borrow-by-
+  STRUCTURE, since the entries are relocations and can't be byte-matched. The
+  retail table (byte-exact in the per-range data object) points at the matching
+  function's own labels, so correctness falls out for a matching function.
+  Added `_sonyize` rule `j $reg -> jr $reg` (register set enumerated so a
+  `j $Llabel` is never touched). Validated: parser tested against the real
+  ee-gcc output; `ninja check` SHA still exact. NOT yet byte-validated end to
+  end -- that needs an actual switch function (ManageCreatures 0x9DC / MovePlayer)
+  written in C; the tooling no longer raises, so they are now attemptable, and
+  a pointer-array initializer (`.word GlobalSym`) that isn't a real jtbl fails
+  loudly in map_jump_table (no jtbl_/jpt_ match) rather than corrupting.
+  ModelAnimDuration's .lit4 ref maps fine
   but the function stays `equivalent`: the locked compiler allocates
   registers differently from retail there (an extra `daddu $a1,$v0,$zero`
   copy of action*4 in retail, different lb target reg from the start) --
