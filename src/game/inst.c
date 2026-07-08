@@ -150,6 +150,7 @@ void InstAnimDataDestroy(struct nuanimdata_s *animdata) {
 
 struct shaddata_s *InstShadDataLoad(char *name) {
     struct shadinst_s *sdi;
+    struct shaddata_s *shad;
 
     sdi = (struct shadinst_s *)NuLstGetNext(shaddatainst_pool, 0);
     while (sdi != 0) {
@@ -162,8 +163,9 @@ struct shaddata_s *InstShadDataLoad(char *name) {
 
     sdi = (struct shadinst_s *)NuLstAlloc(shaddatainst_pool);
     if (sdi != 0) {
-        sdi->shad = ShadDataLoad(name);
-        if (sdi->shad != 0) {
+        shad = ShadDataLoad(name);
+        sdi->shad = shad;
+        if (shad != 0) {
             strcpy(sdi->name, name);
             sdi->inst_cnt = 1;
             return sdi->shad;
