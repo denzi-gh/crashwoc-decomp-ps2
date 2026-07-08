@@ -48,6 +48,8 @@ extern struct nulsthdr_s *D_00630a04;
 extern union variptr_u superbuffer_ptr;
 extern union variptr_u superbuffer_end;
 
+extern struct nulsthdr_s *NuLstCreate(int num, int size);
+extern void NuLstDestroy(struct nulsthdr_s *hdr);
 extern struct nulnkhdr_s *NuLstGetNext(struct nulsthdr_s *hdr, struct nulnkhdr_s *lnk);
 extern struct nulnkhdr_s *NuLstAlloc(struct nulsthdr_s *hdr);
 extern void NuLstFree(struct nulnkhdr_s *lnk);
@@ -191,4 +193,45 @@ void InstShadDataDestroy(struct shaddata_s *shad) {
         }
         sdi = (struct shadinst_s *)NuLstGetNext(shaddatainst_pool, (struct nulnkhdr_s *)sdi);
     }
+}
+
+void InstClose(void) {
+    struct shadinst_s *sdi;
+    struct animdatainst_s *adi;
+    struct sceneinst_s *si;
+
+    if (shaddatainst_pool != 0) {
+        sdi = (struct shadinst_s *)NuLstGetNext(shaddatainst_pool, 0);
+        while (sdi != 0) {
+            ShadDataDestroy(sdi->shad);
+            sdi = (struct shadinst_s *)NuLstGetNext(shaddatainst_pool, (struct nulnkhdr_s *)sdi);
+        }
+        NuLstDestroy(shaddatainst_pool);
+        shaddatainst_pool = 0;
+    }
+
+    if (animdatainst_pool != 0) {
+        adi = (struct animdatainst_s *)NuLstGetNext(animdatainst_pool, 0);
+        while (adi != 0) {
+            adi = (struct animdatainst_s *)NuLstGetNext(animdatainst_pool, (struct nulnkhdr_s *)adi);
+        }
+        NuLstDestroy(animdatainst_pool);
+        animdatainst_pool = 0;
+    }
+
+    if (sceneinst_pool != 0) {
+        si = (struct sceneinst_s *)NuLstGetNext(sceneinst_pool, 0);
+        while (si != 0) {
+            NuSceneDestroy(si->scene);
+            si = (struct sceneinst_s *)NuLstGetNext(sceneinst_pool, (struct nulnkhdr_s *)si);
+        }
+        NuLstDestroy(sceneinst_pool);
+        sceneinst_pool = 0;
+    }
+}
+
+void InstInit(void) {
+    sceneinst_pool = NuLstCreate(0x10, 0x108);
+    animdatainst_pool = NuLstCreate(0xc0, 0x108);
+    shaddatainst_pool = NuLstCreate(0x10, 0x108);
 }
