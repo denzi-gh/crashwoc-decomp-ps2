@@ -103,6 +103,17 @@ just things that came up while building and shouldn't be lost.
   asm) compiles to a ~37-instruction scalar routine and cannot converge. Left
   as assembly. When picking "first C function" targets, prefer functions whose
   unit is a `.c` file, not `.s`/`.S`.
+- **Early-return vs wrapped-body changes return-block cross-jumping.** For a
+  guard at the top of a function, writing `if (cond) return X;` (early return)
+  lets gcc cross-jump/merge that `return X` with a *later* identical `return X`
+  into one inline block placed right after the loop body -- one extra branch
+  (`bgtz ...; b epi`) that shifts the whole tail. Wrapping the body instead,
+  `if (!cond) { ...; return Y; } return X;` (as the retail source did), keeps
+  the guard's `return X` at the end and lets a mid-body early return use a
+  single `blez reg, <shared epilogue>` (value in the delay slot). Matched
+  `NewCharacterIdle` (game/creature) in one iteration by switching from the
+  flattened `if (GameMode==1) return 0;` to the wrapped `if (GameMode!=1){...}
+  return 0;` form. Mirror the reference's brace structure, not just its logic.
 ### game/creature (unit 91) session findings, 2026-07-07
 
 - **RESOLVED: the TT compiler is identified and locked (2026-07-07).**

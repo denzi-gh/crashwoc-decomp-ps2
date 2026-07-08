@@ -66,7 +66,9 @@ struct leveldata_s {
 }; /* 0x54 */
 
 struct gamecam_s {
-    u8 unk_0x000[0x114];     /* 0x000 (opaque) */
+    u8 unk_0x000[0x10C];     /* 0x000 (opaque) */
+    unsigned short hdg_to_player; /* 0x10C */
+    u8 unk_0x10E[6];         /* 0x10E */
     signed char mode;        /* 0x114 */
 };
 
@@ -124,6 +126,8 @@ extern void *app_tbset;
 extern f32 AIVISRANGE;
 extern s32 Demo;
 extern s32 Bonus;
+extern s32 GemPath;
+extern s32 Death;
 extern s32 new_mode;
 extern s32 new_level;
 extern s32 bonus_restart;
@@ -146,6 +150,10 @@ extern f32 bonus_lives_wait;
 
 s32 NuSoundStopStream(s32 channel);
 f32 NuVecDistSqr(struct nuvec_s *a, struct nuvec_s *b, struct nuvec_s *d);
+s32 qrand(void);
+s32 RotDiff(u16 a, u16 b);
+void GameSfx(s32 sfx, struct nuvec_s *pos);
+s32 abs(s32 x);
 
 /* NuDebugMsgProlog(file, line) returns the printf-style logger it prologues. */
 typedef void (*debugmsg_fn)(char *fmt, ...);
@@ -726,6 +734,106 @@ s32 AddCreature(s32 character, s32 index, s32 i_aitab)
         c->obj.anim.oldaction = c->obj.anim.action;
         c->obj.anim.newaction = c->obj.anim.action;
         ResetLights(&c->lights);
+        return 1;
+    }
+    return 0;
+}
+
+
+s32 NewCharacterIdle(struct creature_s *c, struct CharacterModel *model)
+{
+    s32 i;
+    s32 ok;
+    s32 count;
+    s32 list[118];
+    s32 sfx;
+
+    if (GameMode != 1) {
+        if ((c->idle_mode == 0) && (c->idle_sigh == 0)) {
+            c->idle_sigh = 1;
+            if (model->anmdata[0x3D] != 0) {
+                c->idle_repeat = 1;
+                c->idle_action = 0x3D;
+                sfx = 0x22;
+                goto New;
+            }
+        }
+
+        count = 0;
+        for (i = 0; i < 0x76; i++) {
+            if ((model->anmdata[i] != 0) &&
+                ((model->animlist[i]->flags & 8) != 0)) {
+                ok = 1;
+                if ((c == player) && (c->obj.character == 0)) {
+                    if ((GameMode == 1) &&
+                        ((i == 0x25) || (i == 0x26) || (i == 0x27))) {
+                        ok = 0;
+                    } else if ((i == 0x27) &&
+                               (abs(RotDiff(GameCam.hdg_to_player,
+                                            c->obj.hdg)) < 0x6000)) {
+                        ok = 0;
+                    } else if ((i == 0x29) &&
+                               ((GemPath == 1) || (GemPath == 3) ||
+                                (Death == 1) || (Death == 3) ||
+                                (Bonus == 1) || (Bonus == 3))) {
+                        ok = 0;
+                    }
+                }
+                if (ok) {
+                    list[count++] = i;
+                }
+            }
+        }
+
+        if (count < 1) {
+            return 0;
+        }
+
+    Retry:
+        sfx = -1;
+        i = (count <= 1) ? 0 : qrand() / (0xFFFF / count + 1);
+        c->idle_repeat = 1;
+        c->idle_action = list[i];
+        if (c->obj.character == 0) {
+            switch (c->idle_action) {
+            case 0x29:
+                c->idle_repeat = qrand() / 0x4000 + 2;
+                break;
+            case 0x28:
+                c->idle_repeat = qrand() / 0x2000 + 8;
+                sfx = 0x10;
+                break;
+            case 0x3D:
+                sfx = 0x22;
+                break;
+            case 0x27:
+                break;
+            }
+        }
+        if ((count >= 2) && (c->idle_action == c->old_idle_action)) {
+            goto Retry;
+        }
+
+    New:
+        c->idle_mode = 1;
+        c->old_idle_action = c->idle_action;
+        if ((1 < c->idle_repeat) &&
+            ((model->animlist[c->idle_action]->flags & 1) == 0)) {
+            c->idle_repeat = 1;
+        }
+        c->idle_time = 0.0f;
+        c->idle_wait =
+            (model->anmdata[c->idle_action]->time - 1.0f) * c->idle_repeat;
+        i = model->animlist[c->idle_action]->blend_out_frames;
+        if (i != 0) {
+            c->idle_wait -= i * 0.5999999642f;
+            if (c->idle_wait < 1.0f) {
+                c->idle_wait = 1.0f;
+            }
+        }
+        if (sfx != -1) {
+            GameSfx(sfx, &c->obj.pos);
+        }
         return 1;
     }
     return 0;
