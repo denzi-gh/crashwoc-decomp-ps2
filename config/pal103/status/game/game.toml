@@ -161,7 +161,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0094:001e3778:MakeEditText"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001e38c8:DrawNameInputTable"
@@ -173,7 +173,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0094:001e3e70:NewMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001e40e0:ProcMenu"
@@ -485,15 +485,15 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0094:001f0de8:InputNewLetter"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001f0e80:CleanLetters"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001f0ed8:NextMenuEntry"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001f0f00:StartTransporter"
