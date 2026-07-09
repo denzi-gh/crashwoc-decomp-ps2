@@ -483,6 +483,79 @@ extern s32 memcard_saveresult_delay;
 extern s32 memcard_formatfailed;
 extern s32 boss_dead;
 
+/* --- InitLevel support --- */
+typedef unsigned long long u64;
+
+struct nuinstance_s {
+    char pad_44[0x44];
+    struct {
+        u32 visible : 1;
+        u32 rest : 31;
+    } flags; /* 0x44 */
+};
+
+struct objspecial_s {
+    char pad_40[0x40];
+    struct nuinstance_s *instance; /* 0x40 */
+};
+
+struct objinfo_s {
+    char pad_4[4];
+    struct objspecial_s *special; /* 0x4 */
+};
+
+struct objtab_s {
+    struct objinfo_s obj; /* 0x0 */
+    char pad_8[0x18];     /* entry stride 0x20 */
+};
+
+extern struct objtab_s ObjTab[];
+extern u8 TempAnim[];
+extern u8 TempAnim2[];
+extern u8 TempLights[];
+extern u8 TempLights2[];
+extern s32 temp_character;
+extern s32 temp_character_action;
+extern s32 temp_character2;
+extern s32 temp_character2_action;
+extern s32 loadsave_frame;
+extern s32 warp_level;
+extern s32 hub_vr_level;
+extern u64 LBIT;
+extern s32 VEHICLECONTROL;
+extern s32 level_part_2;
+extern s32 SKELETALCRASH;
+extern u8 new_hub_flags;
+extern s32 COMPLEXPLAYERSHADOW;
+extern s32 bonusgem_ok;
+extern s32 GemPath;
+extern s32 gempath_begun;
+extern s32 gempath_open;
+extern short plr_items;
+extern struct plr_lives_s plr_crystal;
+extern struct plr_lives_s plr_crategem;
+extern struct plr_lives_s plr_bonusgem;
+extern s32 hubleveltext_level;
+extern float hubleveltext_pos;
+extern s32 HubLevelText;
+extern float plr_invisibility_time;
+extern s32 in_finish_range;
+extern float tumble_moveduration;
+extern struct nuvec_s v000;
+extern struct nuvec_s ai_lookpos;
+
+void InitPositions(void);
+void ResetAnimPacket(void *pkt, s32 action);
+void ResetLights(void *lights);
+void NuLightFogClear(s32 mode);
+void InitCredits(void);
+void InitBugAreas(void);
+s32 *NuBridgeCreate(struct nuinstance_s **instance, struct nuinstance_s *ipost,
+                    struct nuvec_s *start, struct nuvec_s *end, float width,
+                    short yang, float tension, float damp, float gravity,
+                    float plrweight, s32 sections, float postw, float posth,
+                    s32 postint, s32 colour);
+
 void ResetCheckpoint(s32 a, s32 b, float c, void *d);
 void GameSfx(s32 sfx, void *p);
 void NuPs2VideoSetPos(s32 x, s32 y);
@@ -553,6 +626,20 @@ static void inline InitProbe(void) {
     proberot.y = 0;
     proberot.z = 0;
     probecol = 0;
+}
+
+static inline void ResetTempCharacter(s32 character, s32 action) {
+    temp_character = character;
+    temp_character_action = action;
+    ResetAnimPacket(TempAnim, action);
+    ResetLights(TempLights);
+}
+
+static inline void ResetTempCharacter2(s32 character, s32 action) {
+    temp_character2 = character;
+    temp_character2_action = action;
+    ResetAnimPacket(TempAnim2, action);
+    ResetLights(TempLights2);
 }
 
 void ResetGame(void) {
@@ -2117,4 +2204,262 @@ void CleanLetters(char *txt) {
 void NextMenuEntry(float *y, s32 *i) {
     *y += MENUDY * dme_sy;
     *i += 1;
+}
+
+void InitLevel(void) {
+    s32 lp;
+    s32 y;
+    s32 menu;
+    s32 level;
+    struct nuvec_s start;
+    struct nuvec_s end;
+    struct nuinstance_s *ipost;
+    struct nuinstance_s *instgrp[24];
+    u8 bits;
+    s32 open;
+
+    InitPositions();
+    ResetTempCharacter(-1, -1);
+    menu = -1;
+    ResetTempCharacter2(-1, -1);
+    y = -1;
+    level = -1;
+    NuLightFogClear(0);
+    tempanim_waitaudio = 1;
+    switch (Level) {
+    case 0x23:
+        NewGame();
+        y = 0;
+        Hub = -1;
+        menu = 0;
+        ResetTempCharacter(0x60, 0x2b);
+        Demo = 0;
+        break;
+    case 0x25:
+        CalculateGamePercentage(&Game);
+        ResetTempCharacter(2, 0x22);
+        hub_vr_level = -1;
+        loadsave_frame = 0x33;
+        warp_level = -1;
+        break;
+    case 0x27:
+        menu = 0x11;
+        level = 0x25;
+        break;
+    case 0x29:
+        menu = 0x11;
+        level = 0x2b;
+        break;
+    case 0x26:
+        ResetTempCharacter(2, 0x22);
+        menu = 0x12;
+        tempanim_nextaction = 0x73;
+        y = 0;
+        gamesfx_channel = 4;
+        GameSfx(0xc6, NULL);
+        tempanim_waitaudio = 1;
+        cortex_gameover_i = -1;
+        break;
+    case 0x2b:
+        InitCredits();
+        menu = 0x20;
+        ResetTempCharacter(0xbb, 0x22);
+        level = 0x2b;
+        ResetTempCharacter2(0, 0x22);
+        break;
+    case 0xd:
+        ResetTempCharacter(0x62, 0x22);
+        break;
+    case 0x1a:
+        ResetTempCharacter(0xb8, 0x22);
+        break;
+    case 0x12:
+        ResetTempCharacter(0xb9, 0x22);
+        break;
+    case 0x1e:
+        ResetTempCharacter(0xba, 0x22);
+        break;
+    case 0x15:
+    case 0x16:
+    case 0x18:
+        ResetTempCharacter(0xbc, 0x22);
+        break;
+    case 0x13:
+        if ((ObjTab[145].obj.special != NULL) &&
+            (ObjTab[146].obj.special != NULL)) {
+            for (lp = 0; lp < 0x18; lp++) {
+                if (lp & 1) {
+                    instgrp[lp] = ObjTab[145].obj.special->instance;
+                } else {
+                    instgrp[lp] = ObjTab[146].obj.special->instance;
+                }
+            }
+            start.x = 36.3721f;
+            start.y = -0.1f;
+            start.z = 140.7f;
+            end.x = 36.49f;
+            end.y = -0.1f;
+            end.z = 146.84f;
+            NuBridgeCreate(instgrp, NULL, &start, &end, 1.2f, -0x4200, 0.3f,
+                           0.075f, -0.01f, 4.0f, 10, 1.0f, 0.5f, 3,
+                           -0x7f7f7f80);
+            start.x = 206.1f;
+            start.y = 0.0f;
+            start.z = 249.8f;
+            end.x = 213.25f;
+            end.y = 0.0f;
+            end.z = 249.8f;
+            NuBridgeCreate(instgrp, NULL, &start, &end, 1.2f, 0, 0.25f, 0.08f,
+                           -0.005f, 7.0f, 0xc, 1.0f, 0.5f, 3, -0x7f7f7f80);
+        }
+        break;
+    case 8:
+        if (ObjTab[155].obj.special != NULL) {
+            if (ObjTab[158].obj.special != NULL) {
+                ipost = ObjTab[158].obj.special->instance;
+            } else {
+                ipost = NULL;
+            }
+            for (lp = 0; lp < 0x18; lp++) {
+                instgrp[lp] = ObjTab[155].obj.special->instance;
+            }
+            start.x = -79.875f;
+            start.y = -14.2f;
+            start.z = 22.7f;
+            end.x = -79.875f;
+            end.y = -14.2f;
+            end.z = 26.0f;
+            NuBridgeCreate(instgrp, ipost, &start, &end, 1.2f, -0x4000, 0.18f,
+                           0.1f, -0.01f, 4.0f, 7, 1.08f, 0.5f, 3, -0x7f7f7f80);
+            start.x = 52.5f;
+            start.y = -33.7f;
+            start.z = -73.45f;
+            end.x = 63.9f;
+            end.y = -33.7f;
+            end.z = -73.14f;
+            NuBridgeCreate(instgrp, ipost, &start, &end, 1.2f, 0, 0.4f, 0.05f,
+                           -0.004f, 8.0f, 0x11, 1.08f, 0.5f, 3, -0x7f7f7f80);
+            start.x = 70.0f;
+            start.y = -33.7f;
+            start.z = -73.12f;
+            end.x = 77.0f;
+            end.y = -33.7f;
+            end.z = -73.3f;
+            NuBridgeCreate(instgrp, ipost, &start, &end, 1.2f, 0, 0.25f, 0.075f,
+                           -0.008f, 4.0f, 10, 1.08f, 0.5f, 3, -0x7f7f7f80);
+        }
+        break;
+    case 1:
+        if ((ObjTab[159].obj.special != NULL) &&
+            (ObjTab[160].obj.special != NULL)) {
+            ipost = NULL;
+            if (ObjTab[161].obj.special != NULL) {
+                ipost = ObjTab[161].obj.special->instance;
+            }
+            for (lp = 0; lp < 0x18; lp++) {
+                if (lp == (lp / 3) * 3) {
+                    instgrp[lp] = ObjTab[159].obj.special->instance;
+                } else {
+                    instgrp[lp] = ObjTab[160].obj.special->instance;
+                }
+            }
+            start.x = -1.31f;
+            start.y = 18.6f;
+            start.z = 16.23f;
+            end.x = -7.14f;
+            end.y = 18.6f;
+            end.z = 14.8f;
+            NuBridgeCreate(instgrp, ipost, &start, &end, 1.2f, 31000, 0.12f,
+                           0.1f, -0.01f, 4.0f, 7, 1.12f, 0.9f, 3, -0x7fffcfa8);
+            start.x = -8.47f;
+            start.y = 18.6f;
+            start.z = 14.4f;
+            end.x = -13.17f;
+            end.y = 18.6f;
+            end.z = 10.09f;
+            NuBridgeCreate(instgrp, ipost, &start, &end, 1.2f, 25000, 0.12f,
+                           0.1f, -0.01f, 4.0f, 7, 1.12f, 0.9f, 3, -0x7fffcfa8);
+        }
+        break;
+    case 0x22:
+        NuLightFogClear(1);
+        break;
+    }
+    if ((LBIT & 0x3e00000) != 0) {
+        D_0058A00E[0] = 0;
+    }
+    ai_lookpos = v000;
+    ((struct cursor_s *)Cursor)->menu = -1;
+    NewMenu((struct cursor_s *)Cursor, menu, y, level);
+    VEHICLECONTROL = 0;
+    if ((Level == 6) || (Level == 0x1d)) {
+        VEHICLECONTROL = 1;
+    } else if (Level == 0x22) {
+        VEHICLECONTROL = 2;
+    } else {
+        VEHICLECONTROL = 0;
+    }
+    level_part_2 = 0;
+    SKELETALCRASH = 0;
+    if (Level != 0x25) {
+        new_hub_flags = 0;
+        new_lev_flags = 0;
+    }
+    /* ResetItems (inlined) */
+    plr_bonusgem.count = 0;
+    plr_crystal.draw = 0;
+    plr_crystal.count = 0;
+    plr_crategem.draw = 0;
+    plr_crategem.count = 0;
+    plr_bonusgem.draw = 0;
+    plr_items = 0;
+    boss_dead = 0;
+    COMPLEXPLAYERSHADOW = (Level == 0xc);
+    bonusgem_ok = (Level != 5);
+    /* ResetGemPath (inlined) */
+    gempath_begun = 0;
+    GemPath = 0;
+    switch (Level) {
+    case 0xc:
+        bits = 1;
+        break;
+    case 0x21:
+        bits = 2;
+        break;
+    case 0xe:
+        bits = 4;
+        break;
+    case 4:
+        bits = 8;
+        break;
+    case 0x14:
+        bits = 0x10;
+        break;
+    default:
+        bits = 0;
+        break;
+    }
+    if ((Game.gembits & bits) == 0) {
+        open = 0;
+    } else {
+        open = 1;
+    }
+    gempath_open = open;
+    if (ObjTab[101].obj.special != NULL) {
+        ObjTab[101].obj.special->instance->flags.visible = 1 - gempath_open;
+    }
+    hubleveltext_level = -1;
+    hubleveltext_pos = 0.0f;
+    tumble_moveduration = 1.0f;
+    tumble_duration = 1.0f;
+    tumble_time = 1.0f;
+    HubLevelText = 0;
+    InitBugAreas();
+    bonus_restart = 0;
+    plr_invisibility_time = 5.0f;
+    in_finish_range = 0;
+    LivesLost = 0;
+    if ((LBIT & 0x3e00000) != 0) {
+        D_0058A00E[0] = 0;
+    }
 }
