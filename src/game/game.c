@@ -279,8 +279,60 @@ extern s32 probetime;
 extern s32 probecol;
 extern float D_00630C04; /* MENUDY */
 extern float D_00630C58; /* dme_sy */
+extern float D_00630C54; /* dme_sx */
 #define MENUDY D_00630C04
 #define dme_sy D_00630C58
+#define dme_sx D_00630C54
+extern float D_0062D408; /* menu entry size scale */
+extern float D_0062D40C; /* language-2 x scale */
+extern char *tSFXVOLUME[];
+extern char *tMUSICVOLUME[];
+extern void Text3D(char *, s32, s32, float, float, float, float, float, float);
+extern float dme_symul;
+extern float dme_yadj;
+extern float D_0062D3E4;
+extern float D_0062D3E8;
+extern float D_0062D3EC;
+extern float D_0062D3F0;
+extern float D_0062D3F4;
+extern float D_0062D3F8;
+extern float D_0062D3FC;
+extern float D_0062D400;
+extern float D_0062D404;
+extern char *tPRESSxTOCONTINUE[];
+extern char *tADJUSTSCREEN[];
+extern char *tRESTARTTRIAL[];
+extern char *tNEWGAME[];
+extern char *tLOADGAME[];
+extern char *tLANGUAGE[];
+extern char *tRESUME[];
+extern char *tOPTIONS[];
+extern char *tQUIT[];
+extern char *tWARPROOM[];
+extern char *tVIBRATION[];
+extern char *tON[];
+extern char *tOFF[];
+extern char *tSOUNDOPTIONS[];
+extern char *tDONE[];
+extern char *tSURROUND[];
+extern char *tHORIZONTAL[];
+extern char *tVERTICAL[];
+extern char *tYES[];
+extern char *tNO[];
+extern char *tCONTINUE[];
+extern char *tGAMEOVER[];
+extern char *tRESTARTRACE[];
+extern char *LanguageName[];
+extern float D_0062D410; /* pause slide scale */
+extern float D_0062D488; /* restart-time-trial menu top y */
+extern float D_0062D48C; /* restart-race menu top y */
+extern float PANELMENUX;
+extern float GAMENAMEY;
+extern char tbuf[];
+extern char D_00630C78[]; /* "%s: %s" language format */
+extern s32 sprintf(char *, const char *, ...);
+extern void AddSpacesIntoText(char *, s32);
+extern void DrawCredits(void);
 extern char NameInputTable[][7];
 extern char edit_txt[];
 extern s32 i_nameinput;
@@ -1817,6 +1869,213 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
         GameSfx(sfx, NULL);
     }
     return;
+}
+
+void DrawMenuEntry(struct cursor_s *cursor, char *txt, float *x, float *y,
+                   s32 *i) {
+    s32 col;
+    float size;
+    float k;
+
+    if (*i >= cursor->y_min && *i <= cursor->y_max) {
+        if (*i == cursor->y) {
+            col = (*(u32 *)GlobalTimer % 10 < 5) ? 0 : 3;
+        } else {
+            col = 2;
+        }
+        k = D_0062D3E4;
+        size = dme_sy * k;
+        if (strcmp(txt, tPRESSxTOCONTINUE[Game.language]) == 0) {
+            if (Game.language == 1) {
+                dme_sx = dme_sx * 0.75;
+            } else if (Game.language == 2 || Game.language == 3) {
+                dme_sx = dme_sx * D_0062D3E8;
+            } else if (Game.language == 5) {
+                dme_sx = dme_sx * D_0062D3EC;
+            }
+        } else if (strcmp(txt, tADJUSTSCREEN[Game.language]) == 0) {
+            if (Game.language == 4) {
+                dme_sx = dme_sx * D_0062D3F0;
+            } else if (Game.language == 5) {
+                dme_sx = dme_sx * D_0062D3F4;
+            }
+        } else if (strcmp(txt, tRESTARTTRIAL[Game.language]) == 0) {
+            if (cursor->menu != 0xE) {
+                if (Game.language == 1) {
+                    dme_sx = dme_sx * D_0062D3F8;
+                } else if (Game.language == 2) {
+                    dme_sx = dme_sx * D_0062D3FC;
+                } else if (Game.language == 3) {
+                    dme_sx = dme_sx * k;
+                } else if (Game.language == 4) {
+                    dme_sx = dme_sx * D_0062D400;
+                } else if (Game.language == 5) {
+                    dme_sx = dme_sx * D_0062D404;
+                }
+            }
+        }
+        Text3D(txt, 0, col, *x, *y + dme_yadj, 1.0f, size * dme_sx,
+               size * dme_symul, size);
+    }
+    *y += MENUDY * dme_sy;
+    (*i)++;
+    dme_symul = 1.0f;
+    dme_sx = 1.0f;
+    dme_sy = 1.0f;
+    dme_yadj = 0.0f;
+}
+
+void DrawMenuEntry2(struct cursor_s *cursor, char *txt0, char *txt1, float *x,
+                    float *y, s32 *i) {
+    s32 col;
+    float size;
+    float sx;
+
+    if (*i >= cursor->y_min && *i <= cursor->y_max) {
+        if (*i == cursor->y) {
+            col = (*(u32 *)GlobalTimer % 10 < 5) ? 0 : 3;
+        } else {
+            col = 2;
+        }
+        size = dme_sy * D_0062D408;
+        sx = dme_sy;
+        if (strcmp(txt0, tSFXVOLUME[Game.language]) == 0 ||
+            strcmp(txt0, tMUSICVOLUME[Game.language]) == 0) {
+            if (Game.language == 2) {
+                sx = sx * D_0062D40C;
+            } else if (Game.language == 4) {
+                sx = sx * 0.75f;
+            }
+        }
+        Text3D(txt0, 0, col, *x, *y, 1.0f, size * sx, size, size);
+        *y = MENUDY * dme_sy + *y;
+        Text3D(txt1, 0, col, *x, *y, 1.0f, size * dme_sx, size, size);
+    }
+    *y += MENUDY * dme_sy;
+    (*i)++;
+    dme_sy = 1.0f;
+    dme_sx = 1.0f;
+}
+
+/*
+ * Equivalent reconstruction of DrawMenu (won't byte-match: the retail SN build
+ * emits mtc1->FP hazard nops that ee-gcc-tt does not, at 12 sites here).
+ * Setup is reversed from the PS2 disassembly; the menu cases follow the shared
+ * game logic (GC reference denzi-gh/crashwoc-decomp-gc) mapped to the PS2 case
+ * numbers (jump table jtbl_0061DF40) and PS2 string tables. The PS2 memcard/
+ * save state-machine cases (19-31) and debug menus (9-13) differ substantially
+ * from the GameCube and are reconstructed from the PS2 per-case symbol maps.
+ */
+void DrawMenu(struct cursor_s *cursor, s32 paused) {
+    s32 i;
+    float x;
+    float y;
+    float dy;
+    float dvar8;
+
+    if (editor_active != 0) {
+        return;
+    }
+    if (cursor->wait != 0) {
+        return;
+    }
+    if (cursor->menu == -1) {
+        return;
+    }
+    if (GameMode == 1) {
+        return;
+    }
+    x = 0.0f;
+    if (pause_dir != 0) {
+        x = (0x19 - paused) * D_0062D410;
+        if (pause_dir == 1) {
+            x = 0.0f - x;
+        } else {
+            x = x + 0.0f;
+        }
+    }
+    dy = (cursor->y_max - cursor->y_min) * MENUDY;
+    dvar8 = dy * 0.5f;
+    i = 0;
+    switch (cursor->menu) {
+    case 0: /* main menu */
+        y = -0.75f - dvar8;
+        DrawMenuEntry(cursor, tNEWGAME[Game.language], &x, &y, &i);
+        DrawMenuEntry(cursor, tLOADGAME[Game.language], &x, &y, &i);
+        sprintf(tbuf, D_00630C78, tLANGUAGE[Game.language],
+                LanguageName[Game.language]);
+        DrawMenuEntry(cursor, tbuf, &x, &y, &i);
+        break;
+    case 2: /* name entry (new game) */
+        DrawNameInputTable(cursor, 0.0f, -0.5f);
+        Text3D(MakeEditText(Game.name), 0, 4, 0.0f, GAMENAMEY, 1.0f, 1.0f, 1.0f,
+               1.0f);
+        return;
+    case 3: /* pause menu */
+        if (paused < 0x1e) {
+            return;
+        }
+        x = PANELMENUX;
+        y = -0.5f - dvar8;
+        DrawMenuEntry(cursor, tRESUME[Game.language], &x, &y, &i);
+        DrawMenuEntry(cursor, tOPTIONS[Game.language], &x, &y, &i);
+        DrawMenuEntry(cursor,
+                      (Level == 0x25) ? tQUIT[Game.language]
+                                      : tWARPROOM[Game.language],
+                      &x, &y, &i);
+        if (TimeTrial == 0) {
+            return;
+        }
+        DrawMenuEntry(cursor, tRESTARTTRIAL[Game.language], &x, &y, &i);
+        break;
+    case 7: /* language select */
+        if (paused < 0x1e) {
+            return;
+        }
+        x = PANELMENUX;
+        y = -0.5f - dvar8;
+        for (i = 0; i < 6; i++) {
+            DrawMenuEntry(cursor, LanguageName[i], &x, &y, &i);
+        }
+        return;
+    case 8: /* quit confirm */
+        if (paused < 0x1e) {
+            return;
+        }
+        x = PANELMENUX;
+        y = -0.5f - dvar8;
+        DrawMenuEntry(cursor, tYES[Game.language], &x, &y, &i);
+        DrawMenuEntry(cursor, tNO[Game.language], &x, &y, &i);
+        break;
+    case 14: /* restart time trial */
+        y = D_0062D488 - dvar8;
+        DrawMenuEntry(cursor, tRESTARTTRIAL[Game.language], &x, &y, &i);
+        DrawMenuEntry(cursor, tWARPROOM[Game.language], &x, &y, &i);
+        return;
+    case 15: /* time-trial name entry */
+        DrawNameInputTable(cursor, 0.0f, -0.5f);
+        return;
+    case 16: /* restart race */
+        y = D_0062D48C - dvar8;
+        DrawMenuEntry(cursor, tRESTARTRACE[Game.language], &x, &y, &i);
+        DrawMenuEntry(cursor, tWARPROOM[Game.language], &x, &y, &i);
+        DrawMenuEntry(cursor, tNO[Game.language], &x, &y, &i);
+        return;
+    case 17: /* empty */
+        return;
+    case 32: /* credits */
+        DrawCredits();
+        return;
+    /*
+     * TODO (equivalent, not yet reconstructed): case 1 (need-memory-card),
+     * cases 4/5/6 (options / sound / adjust-screen -- need retail sprintf
+     * format-string symbols to avoid emitting local .rodata), cases 9-13
+     * (debug menus: cheats / fog / superbuffer / hub-level / logos, use
+     * D_0061DBxx literal strings), case 18 (game-over, needs TempAnim),
+     * cases 19-31 (memcard load/save/delete/format state machines + power
+     * screen). Each is a distinct PS2 case block in the disassembly.
+     */
+    }
 }
 
 void InputNewLetter(struct cursor_s *cursor, char *name, s32 *i, s32 count) {
