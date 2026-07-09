@@ -5,6 +5,36 @@ just things that came up while building and shouldn't be lost.
 
 ## Open — revisit later
 
+### DrawCredits (game/credits, 0x00260E70) — WIP C in tree, fuzzy 42.9%
+
+Session `s-20260709-101722-1e5028` (2026-07-09). Faithful C is in
+`src/game/credits.c` (state stays `asm`; sibling **InitCredits** in the same
+unit is byte-exact / `matching` / promoted). The reconstruction is
+behaviourally complete and its **register allocation matches retail exactly**
+(`f20/f21/f22/f23/f24 = xscale/size/y/-1.5f/100.0f`, `s0..s4` as retail;
+frame 144, reg_mask/freg_mask exact).
+
+- **The only divergence is one delay-slot `nop`.** At `0xA8` retail leaves the
+  first `bc1f` (the `size > -1.5f` guard) delay slot empty and loads
+  `D_0062E96C` (the `< 1.7f` cutoff) *after* it; ee-gcc's reorg instead fills
+  that slot with the dead-when-taken `lwc1 D_0062E96C` (`0xc7809ffc`). That one
+  extra instruction shifts the entire tail by a word, so the byte diff cascades
+  to 42.9 % even though everything else is identical.
+- The `mtc1 v0,f0 → nop → cvt.s.w` hazard `nop` (the `(float)short` convert) is
+  **re-inserted by the decompals `as`** in the hybrid — raw `ee-gcc -S` output
+  omits it, so ignore that when comparing raw compiler asm; only the `bc1f`
+  slot is real.
+- Retail was built with the *same* SN ee-gcc, so a source-level idiom must exist
+  that makes reorg decline the hoist, but none of these found it: `&&` vs nested
+  `if`s (both 42.9 %, identical bytes); a loop-top `float hi = D_0062E96C;` temp
+  (80.6 % but hoists the load into `f1`, wrong reg, still fills the slot with a
+  hoisted `D_0062E974`); an inner temp after the `-1.5f` check (gcc folds it
+  away → 42.9 %); hoisting the `xscale*step` product to a `step` local
+  (38.8 %, and it adds a 6th saved FP reg). gcc fills that slot with *any*
+  anticipatable dead load; retail simply declined every candidate. Same class
+  of delay-slot reorg artifact as the DrawCreatures near-match. Blocker
+  `no_progress` recorded; candidate for `equivalent` review.
+
 ### MovePlayer (game/creature, 0x001CE3E0) — WIP C in tree, fuzzy 15.7%
 
 Session `s-20260708-203123-c057fc` (2026-07-08, resumable). Full C

@@ -17,4 +17,4 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0124:00260ff8:InitCredits"
-state = "asm"
+state = "matching"

@@ -13,7 +13,7 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0079:001af0f8:NuTriggerSysLoad"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0079:001af278:CheckParentedTriggerWithPos"
@@ -37,11 +37,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0079:001b0c38:NuTriggerSysInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0079:001b0c40:NuTriggerSysRender"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0079:001b0c48:instNuTriggerSysCreate"
@@ -49,24 +49,24 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0079:001b0d70:instNuTriggerSysDestroy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0079:001b0da0:instNuTriggerSetFlag"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0079:001b0e90:instNuTriggerReset"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0079:001b0f48:instNuTriggerEnable"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0079:001b0f60:instNuTriggerDisable"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0079:001b0f70:NuTriggerPull"
-state = "asm"
+state = "matching"
