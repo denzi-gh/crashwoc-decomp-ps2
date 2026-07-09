@@ -15,7 +15,7 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0007:00105850:NuListCheck"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0007:00105908:NuListAppend"
@@ -23,15 +23,15 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0007:00105938:NuListInsert"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0007:00105968:NuListInsertBefore"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0007:001059c0:NuListInsertAfter"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0007:00105a18:NuListRemove"
@@ -47,8 +47,8 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0007:00105a60:NuListGetNext"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0007:00105a78:NuListGetPrev"
-state = "asm"
+state = "matching"
