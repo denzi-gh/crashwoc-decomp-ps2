@@ -5,6 +5,47 @@ just things that came up while building and shouldn't be lost.
 
 ## Open — revisit later
 
+### SetLevel (game/main, 0x001CB600) — faithful C in tree, fuzzy 73.3%
+
+Session `s-20260709-232345-bd8dbe` (2026-07-09). Full-C reconstruction is in
+`src/game/main.c` (state stays `asm`; byte gates unaffected — the hybrid splices
+the retail slice for it). Behaviourally complete and **structurally byte-exact**:
+88/120 bytes match. Prototype `void SetLevel(void)`:
+
+```c
+LDATA = &LData[Level];          /* LData elem 0x54; LDATA gp_rel ptr */
+LBIT  = (u64)1 << Level;        /* sd / dsllv */
+if (pNuCam != 0) {
+    if ((u32)LDATA->farclip > 9) /* farclip u16 @0x2A -> sltiu, reloaded twice */
+        pNuCam->farclip = (float)LDATA->farclip;   /* @0x4C */
+    else
+        pNuCam->farclip = 1000.0f;
+}
+AIVISRANGE = 25.0f;
+```
+
+Names/types from the GC reference (`farclip` both fields). `ldata_s` extended to
+size 0x54 with `farclip` @0x2A; `nucam_s` extended with `farclip` @0x4C. The
+`(u32)` cast is what yields `sltiu` (u16 would promote to signed `int`); the two
+direct field reads (no local) reproduce retail's two `lhu` loads.
+
+- **The only divergence is one hazard `nop`.** Retail's 1000.0f (else) branch is
+  `lui at,0x447A0000; mtc1 at,f0; nop; swc1 f0,0x4C($a1)` (nop @0x660). Our build
+  omits that nop, shifting the tail and the `beqz`(0x628)/`b`(0x650) offsets each
+  by one. `ee-gcc -S` emits a commented `#nop` and defers to the assembler
+  (`.set reorder`); decompals `as` inserts the `mtc1->cvt.s.w` hazard nop (so the
+  cast branch at 0x648 matches) but **not** the `mtc1->swc1` one. Retail's SN
+  ProDG `as` inserts the mtc1->store hazard nop; our SN ee-gcc + decompals `as`
+  do not. The branch layout (1000.0f at the trailing fallthrough label, cast in
+  the `b` delay slot) is fixed by retail, so the store can't be tucked into a
+  delay slot — it needs the standalone nop.
+- **Same class as ModelAnimDuration** (mtc1->c.le.s hazard nop, line ~278) — a
+  `compiler_patchlevel_mismatch` between retail's SN `as` and our locked build.
+  Blocker recorded. Fix is tooling-side: teach decompals `as`/gen_hybrid to emit
+  the `mtc1->{swc1,c.le.s}` hazard nop as it already does for `mtc1->cvt.s.w`;
+  that would make both SetLevel and ModelAnimDuration byte-exact. Candidate for
+  `equivalent` review.
+
 ### DrawCredits (game/credits, 0x00260E70) — WIP C in tree, fuzzy 42.9%
 
 Session `s-20260709-101722-1e5028` (2026-07-09). Faithful C is in

@@ -33,7 +33,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0088:001c6908:DoInput"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0088:001c6cd0:InitPauseRender"
