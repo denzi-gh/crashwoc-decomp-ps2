@@ -12,6 +12,7 @@ A byte-exact matching decompilation of **Crash Bandicoot: The Wrath of Cortex** 
 - **Never commit game-derived content.** `orig/`, `reference/`, `asm/`, `expected/`, `build/`, `compiler/`, `tools/download/`, `objdiff.json`, and `build.ninja` are gitignored. Tracked work products are only: config registries, tools, `linker.ld` (addresses only), docs, and hand-written matching C in `src/`. (Exception: the separate PRIVATE repo `denzi-gh/crashwoc-decomp-ps2-build` holds `orig/` for CI — approved, must stay private.)
 - **Never fabricate hashes or URLs.** Unknown values are explicit `null`; hashes measured from `orig/` are fine.
 - Work proceeds PR-by-PR against the user's plan: do the requested PR, verify its pass condition, stop.
+- **Coop feature tracking**: after implementing or changing a coop-mod feature (`mods/coop/`), update the checklist in `mods/coop/COOP_ROADMAP.md` (tick the box, note status) in the same change. Its mirror in the sibling repo `crashwoc-multiplayer/COOP_ROADMAP.md` tracks the same ladder — keep both current. Any mailbox-layout change must bump `COOP_MAILBOX_VERSION` (`mods/include/coop_mailbox.h`) and the bridge's `COOP_VERSION` together.
 
 ## Toolchain runs in a container
 
