@@ -1,7 +1,8 @@
 #ifndef GAMECODE_CREATURE_H
 #define GAMECODE_CREATURE_H
 
-/* A copy for mod builds lives at mods/include/creature.h -- keep in sync.
+/* MIRROR of /include/creature.h for mod builds (build.py stages only
+ * mods/include/*.h into the compile workdir) -- keep the two in sync.
  *
  * PS2 PAL v1.03 (SLES_503.86) layout of the creature/player structures for
  * unit 91 (game/creature, .\creature.c).

@@ -11,6 +11,7 @@
 #define MODSDK_RETAIL_H
 
 extern int Level;
+extern int PLAYERCOUNT;             /* 0/1 flag: player exists this level */
 extern unsigned short plr_wumpas;   /* HUD wumpa counter, player 0 */
 
 void UpdateLevel(void);   /* per-frame, gameplay levels only */
