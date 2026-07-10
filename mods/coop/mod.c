@@ -43,6 +43,7 @@ static unsigned int remote_frame;    /* last seen remote frame tick */
 static unsigned int stale_frames;    /* frames since remote_frame advanced */
 static unsigned int local_gen;       /* our seq-lock generation */
 static unsigned int local_frame;     /* our tick, mirrored into the slot */
+static unsigned int published_frame; /* SDK frame we last published on */
 
 static struct creature_s g_puppet;   /* the remote player's stand-in */
 static int g_puppet_active;          /* show rule result, handler reads it */
@@ -377,6 +378,17 @@ void coop_draw_creatures(struct creature_s *c, s32 count, s32 render,
     short save_xrot;
     short save_yrot;
 
+    /* Publish our fresh, post-simulation state on the frame's first player
+     * pass (main render precedes the hub reflection pass). ProcessCreatures
+     * has already run, so pos/anim/aim are this frame's -- a frame fresher
+     * than the DoInput pre-hook. coop_tick already published + claimed the
+     * frame when we are not in a playable state. */
+    if (published_frame != modsdk_mailbox.frame && c == Character &&
+        count == 1) {
+        publish_local();
+        published_frame = modsdk_mailbox.frame;
+    }
+
     orig_DrawCreatures(c, count, render, shadow);
     if (g_puppet_active != 0 && c == Character && count == 1 &&
         Level == g_puppet_level && g_puppet.obj.model != 0) {
@@ -417,7 +429,17 @@ void coop_tick(void)
         coop_init();
     }
     modsdk_mailbox.frame++;
-    publish_local();
+    /* Consume + prepare the puppet before this frame's DrawCreatures. Our
+     * own state is published later, from the draw hook, so the peer sees
+     * this frame's post-simulation state instead of the previous frame's
+     * (one 50 Hz frame less latency). But when we are NOT in a playable
+     * state the player pass never runs, so publish the "not present" slot
+     * right here to hide the peer's puppet promptly (menus, FMV), and claim
+     * this frame so the draw hook does not publish a second time. */
+    if (!local_valid()) {
+        publish_local();
+        published_frame = modsdk_mailbox.frame;
+    }
     consume_remote();
     if ((COOP->ctl & COOP_CTL_GHOST) != 0) {
         synth_ghost();
