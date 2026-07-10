@@ -19,6 +19,11 @@
 #define COOP_F_PRESENT 1u /* writer is in a playable level, state valid */
 #define COOP_F_DEAD 2u    /* writer's player is in a death state */
 
+/* CoopMailbox.ctl bits (PC writes, game reads). */
+#define COOP_CTL_GHOST 1u /* self-test: mirror the local player into the
+                           * remote snapshot at pos.x + 2.0 -- a ghost
+                           * puppet shadows the player with no bridge */
+
 typedef struct CoopSlot {              /* 0x50 bytes */
     unsigned int seq_open;             /* 0x00 seq-lock bracket */
     unsigned int frame;                /* 0x04 writer tick, for staleness */
@@ -44,7 +49,9 @@ typedef struct CoopSlot {              /* 0x50 bytes */
 typedef struct CoopMailbox {           /* overlays ModsdkMailbox.payload */
     unsigned int magic;                /* +0x00 (abs 0x706A60) COOP_MAILBOX_MAGIC */
     unsigned int version;              /* +0x04 COOP_MAILBOX_VERSION */
-    unsigned int reserved[2];          /* +0x08 */
+    unsigned int ctl;                  /* +0x08 COOP_CTL_* (PC writes) */
+    unsigned int diag;                 /* +0x0C game writes: bit 0 = puppet
+                                        * shown, bits 8+ = puppet re-inits */
     CoopSlot local;                    /* +0x10 (abs 0x706A70) game writes, bridge reads */
     CoopSlot remote;                   /* +0x60 (abs 0x706AC0) bridge writes, game reads */
 } CoopMailbox;                         /* 0xB0 */

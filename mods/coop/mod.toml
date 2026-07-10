@@ -1,11 +1,11 @@
-# Coop mod, PR 1 scope: publish the local player's state into the mailbox
-# every frame and consume the bridge-written remote slot into a snapshot.
-# Puppet rendering (DrawCreatures replace hook) lands in PR 2.
+# Coop mod: publish the local player's state into the mailbox every frame,
+# consume the bridge-written remote slot, and draw the remote player as a
+# visual-only puppet whenever both sides are in the same level.
 # Hooks DoInput like hello does, so coop and hello cannot be built together.
 
 [mod]
 name = "coop"
-version = "0.1"
+version = "0.2"
 target = "pal103"
 
 [code]
@@ -15,6 +15,11 @@ sources = ["mod.c"]
 function = "DoInput"
 handler = "coop_tick"
 mode = "pre"
+
+[[hook]]
+function = "DrawCreatures"
+handler = "coop_draw_creatures"
+mode = "replace"
 
 [mailbox]
 size = 0x200
