@@ -920,6 +920,44 @@ character!=1 or slide==0, else `*3.0` (NOT `(x+x)*3`); `reach` add consts
 Next: coax allocation order (deep-reasoning escalation) so overlap+is_cuboid take
 `$s0/$s1`, obj takes `$s2`, and distsq coalesces into `f20`.
 
+### InitWorld (game/main, 0x1c57c0, 2712 bytes) — faithful full-C near-match WIP
+
+Full C reconstruction kept in `src/game/main.c` at state=asm (2026-07-10). This
+was the last un-decompiled function in the coop/multiplayer plan
+(`crashwoc-decomp-docs/plan.md`, True-coop world-ownership root). Structure is
+verified block-by-block against ground truth: 175/175 `jal` match, control flow
+exact. It's the big per-level world/asset loader — long runs of
+`NuDisableVBlank()/NuStrCpy(load_txt, <caption>)/NuEnableVBlank()` wrapping the
+real work call, interleaved with `NuGScnRead` (world_scene[0..4]) and
+`sprintf(tbuf,fmt,LevelFileName)+NuFileSize>0` guarded effect/object/anim/clump
+loads. Gated on `LDATA->flags` bits (0x4 world scenes, 0x8 terrain, 0x10 edpp
+effects, 0x40 crates, 0x1 pause) and `Level` values (0xE/0x1F/0x27/0x29 pick the
+scene set; 0x25 savegame icon; 0x23 pause; 0x27/0x29 cut movies). Ends with a
+0x800-byte `qrand()>>8` stack buffer → `NuRndrShadowInit`, then
+`edcrt_used=edwmp_used=edai_used=0`.
+
+Confirmed-exact facts: `LDATA` fields exposed at 0x00 (`char *name`, NuStrCat
+onto LevelFileName) and 0x1C (`void *sfx`, arg 2 of edbitsRegisterSfx) — struct
+edit is offset-preserving (size stays 0x54; DoInput re-verified byte-exact).
+`world_scene[i]=0` clear loop 31→0. The 64-bit LBIT mask `0x5A031894DULL`
+materializes via `li 0x5; dsll16; ori 0xA031; dsll16; ori 0x894D` — decompals
+`as` expands the `dli` to the SAME 5 instrs as retail SN as (verified), so that
+is NOT a blocker. `terraininit` takes 7 args (a0..a3 + t0/t1/t2). superbuffer
+bumps: `(ptr + n + 0xF) & 0xFFFFFFF0`.
+
+Blocker: gcc-2.95 register allocation (same class as [[setlevel-wip-state]] et
+al). Target holds the four hot `%hi(symbol)` bases in callee-saved regs
+(s4=LevelFileName, s6=world_scene, s7=load_txt, fp=tbuf) → 10 saved regs
+(reg_mask 0xc0ff0000, frame 2224). Direct-global C gets 8 (0x807f0000) and is
++4 bytes / one delay-slot nop (the `beqz(flags&4)` slot the target fills with
+`lui %hi(D_0061AED0)`) → overflows the .org-positioned hybrid diff harness.
+Explicit `char *lt/tb/lfn` base locals (CURRENT tree) make it fit + link + score
+(fuzzy 13.569, 368/2712) but drop to 7 callee regs (0x803f0000, frame 2176).
+Neither reproduces the target's %hi-in-callee-reg allocation. Session
+`s-20260710-082142-d199f2`. Resume: coax gcc to promote %hi(load_txt)/%hi(tbuf)
+into s7/fp (deep-reasoning escalation), or accept as near-match — not required
+for the mod (matching build splices the retail slice regardless).
+
 ## Invariants (do not break)
 
 - **Nothing game-derived is committed.** All splat output (asm, linker script,

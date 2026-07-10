@@ -95,7 +95,10 @@ typedef unsigned int u32;
 typedef unsigned long long u64;
 
 struct ldata_s {
-    u8 unk_0x00[0x24];
+    char *name;               /* 0x00 */
+    u8 unk_0x04[0x18];        /* 0x04 */
+    void *sfx;                /* 0x1C */
+    u8 unk_0x20[0x4];         /* 0x20 */
     u16 flags;                /* 0x24 */
     short character;          /* 0x26 */
     u8 unk_0x28[0x2];         /* 0x28 */
@@ -202,6 +205,416 @@ extern void InitChases(void);
 extern void ResetChases(void);
 extern void AddCreature(s32 character, s32 a, s32 b);
 extern void MtlReadEventHandler(void);
+
+extern char LevelFileName[];
+extern char PadRecordPath[];
+extern char tbuf[];
+extern void *world_vd;
+extern s32 WUMPACOUNT;
+extern s32 SFXCOUNT_ALL;
+extern struct nugscn_s *crate_scene;
+extern struct nugscn_s *pause_scene;
+extern struct numtl_s *ShadowMat;
+extern u8 SfxTabGLOBAL[];
+extern u8 D_0057EEA4[];
+extern s32 edcrt_used;
+extern s32 edwmp_used;
+extern s32 edai_used;
+
+extern char D_0062FA80[];
+extern char D_0062FA88[];
+extern char D_0062FA90[];
+extern char D_0062FA98[];
+extern char D_0062FAA0[];
+extern char D_0062FAA8[];
+extern char D_0062FAB0[];
+extern char D_0062FAB8[];
+extern char D_0062FAC0[];
+extern char D_0061AED0[];
+extern char D_0061AEE8[];
+extern char D_0061AF00[];
+extern char D_0061AF20[];
+extern char D_0061AF40[];
+extern char D_0061AF58[];
+extern char D_0061AF78[];
+extern char D_0061AF90[];
+extern char D_0061AFB0[];
+extern char D_0061AFC8[];
+extern char D_0061AFE8[];
+extern char D_0061B000[];
+extern char D_0061B020[];
+extern char D_0061B038[];
+extern char D_0061B058[];
+extern char D_0061B070[];
+extern char D_0061B088[];
+extern char D_0061B0A0[];
+extern char D_0061B0B0[];
+extern char D_0061B0C0[];
+extern char D_0061B0D8[];
+extern char D_0061B0F0[];
+extern char D_0061B108[];
+extern char D_0061B118[];
+extern char D_0061B130[];
+extern char D_0061B150[];
+extern char D_0061B168[];
+extern char D_0061B180[];
+extern char D_0061B1A0[];
+extern char D_0061B1B8[];
+extern char D_0061B1D0[];
+extern char D_0061B1E8[];
+extern char D_0061B200[];
+extern char D_0061B218[];
+extern char D_0061B228[];
+extern char D_0061B248[];
+extern char D_0061B260[];
+extern char D_0061B270[];
+extern char D_0061B280[];
+extern char D_0061B290[];
+extern char D_0061B2A0[];
+extern char D_0061B2B0[];
+extern char D_0061B2C0[];
+extern char D_0061B2D8[];
+
+extern void NuStrCat(char *dst, char *src);
+extern void NuRndrInitWorld(void);
+extern void *visiLoadData(char *name, struct nugscn_s *scene, void **pptr);
+extern void BuildVisiTable(void);
+extern void edobjRegisterBaseScene(struct nugscn_s *scene);
+extern void edbitsRegisterBaseScene(struct nugscn_s *scene);
+extern void NuBridgeRegisterBaseScene(struct nugscn_s *scene);
+extern void edanimRegisterBaseScene(struct nugscn_s *scene);
+extern void edbitsRegisterSfx(void *tab, void *sfx, s32 count, s32 total);
+extern void NuWaterInit(struct nugscn_s *scene);
+extern void NuBridgeInit(void);
+extern void NuWindInit(void);
+extern void NuLightFogClear(s32 a);
+extern s32 saveloadLoadIcon(char *name, void *buf);
+extern void noterraininit(void);
+extern void TerrainSetCur(void *buf);
+extern void terraininit(s32 level, void **pptr, void *end, s32 a, char *name,
+                        struct nugscn_s *scene, s32 b);
+extern void edppDestroyAllParticles(void);
+extern void edppDestroyAllEffects(void);
+extern s32 sprintf(char *buf, char *fmt, ...);
+extern s32 NuFileSize(char *name);
+extern void edppLoadEffects(char *name, s32 a);
+extern void edppMergeEffects(char *name, s32 a);
+extern void InitGameDebris(void);
+extern void edppRestartAllEffectsInLevel(void);
+extern void edobjObjectReset(void);
+extern void edobjFileLoadObjects(char *name);
+extern void edanimParamReset(void);
+extern void edanimFileLoad(char *name);
+extern void edgraClumpsReset(void);
+extern void edgraFileLoad(char *name);
+extern void edgraInitAllClumps(void);
+extern void LoadVehicleStuff(void);
+extern void LoadCutMovie(s32 a);
+extern void StartCutMovie(void);
+extern void TerrainPlatformOldUpdate(void);
+extern void TerrainPlatformNewUpdate(void);
+extern void NuGScnUpdate(struct nugscn_s *scene, float t);
+extern void edobjUpdateObjects(float t);
+extern void edanimUpdateObjects(float t);
+extern void NuBridgeUpdate(void *a);
+extern void NuWindUpdate(void *a);
+extern struct numtl_s *CreateAlphaBlendTexture64(char *name, s32 a, s32 b,
+                                                 s32 c);
+extern void InitSplineTable(void);
+extern void InitObjectTable(void);
+extern void InitRails(void);
+extern void InitWumpa(void);
+extern void ResetMaskFeathers(void);
+extern void InitCrates(void);
+extern void InitVehicleToggles(void);
+extern void InitLevel(void);
+extern s32 qrand(void);
+extern void NuRndrShadowInit(void *buf);
+extern void NuLightMatInit(void);
+
+void InitWorld(void)
+{
+    s32 i;
+    s32 n;
+    char *lt = load_txt;
+    char *tb = tbuf;
+    char *lfn = LevelFileName;
+    char buf[0x800];
+
+    NuStrCpy(lfn, D_0062FA80);
+    NuStrCat(lfn, LDATA->name);
+    NuStrCpy(PadRecordPath, lfn);
+    NuStrCat(PadRecordPath, D_0062FA88);
+
+    for (i = 0x1F; i >= 0; i--) {
+        world_scene[i] = 0;
+    }
+    NuRndrInitWorld();
+
+    if (LDATA->flags & 0x4) {
+        NuDisableVBlank();
+        NuStrCpy(lt, D_0061AED0);
+        NuEnableVBlank();
+        NuStrCpy(tb, lfn);
+        NuStrCat(tb, D_0062FA90);
+
+        if (Level != 0x27 && Level != 0x29) {
+            world_scene[0] = NuGScnRead(&superbuffer_ptr, superbuffer_end, tb);
+            NuStrCpy(tb, lfn);
+            NuStrCat(tb, D_0062FA98);
+            world_vd = visiLoadData(tb, world_scene[0], &superbuffer_ptr);
+            if (world_scene[0] != 0 && world_vd == 0) {
+                BuildVisiTable();
+            }
+        }
+
+        NuDisableVBlank();
+        NuStrCpy(lt, D_0061AEE8);
+        NuEnableVBlank();
+
+        if (Level == 0xE) {
+            world_scene[1] =
+                NuGScnRead(&superbuffer_ptr, superbuffer_end, D_0061AF00);
+        } else if (Level == 0x1F) {
+            world_scene[1] =
+                NuGScnRead(&superbuffer_ptr, superbuffer_end, D_0061AF20);
+        } else if (Level == 0x27 || Level == 0x29) {
+            NuDisableVBlank();
+            NuStrCpy(lt, D_0061AF40);
+            NuEnableVBlank();
+            world_scene[0] =
+                NuGScnRead(&superbuffer_ptr, superbuffer_end, D_0061AF58);
+            NuDisableVBlank();
+            NuStrCpy(lt, D_0061AF78);
+            NuEnableVBlank();
+            world_scene[1] =
+                NuGScnRead(&superbuffer_ptr, superbuffer_end, D_0061AF90);
+            NuDisableVBlank();
+            NuStrCpy(lt, D_0061AFB0);
+            NuEnableVBlank();
+            world_scene[2] =
+                NuGScnRead(&superbuffer_ptr, superbuffer_end, D_0061AFC8);
+            NuDisableVBlank();
+            NuStrCpy(lt, D_0061AFE8);
+            NuEnableVBlank();
+            world_scene[3] =
+                NuGScnRead(&superbuffer_ptr, superbuffer_end, D_0061B000);
+            NuDisableVBlank();
+            NuStrCpy(lt, D_0061B020);
+            NuEnableVBlank();
+            world_scene[4] =
+                NuGScnRead(&superbuffer_ptr, superbuffer_end, D_0061B038);
+        }
+
+        if (LBIT & 0x400000) {
+            world_scene[2] =
+                NuGScnRead(&superbuffer_ptr, superbuffer_end, D_0061B058);
+        } else if (LBIT & 0x5A031894DULL) {
+            world_scene[2] =
+                NuGScnRead(&superbuffer_ptr, superbuffer_end, D_0061B070);
+        }
+    }
+
+    edobjRegisterBaseScene(world_scene[0]);
+    edbitsRegisterBaseScene(world_scene[0]);
+    NuBridgeRegisterBaseScene(world_scene[0]);
+    edanimRegisterBaseScene(world_scene[0]);
+    edbitsRegisterSfx(SfxTabGLOBAL, LDATA->sfx, 0xC5, SFXCOUNT_ALL);
+    NuWaterInit(world_scene[0]);
+    NuBridgeInit();
+    NuWindInit();
+    NuLightFogClear(0);
+
+    if (Level == 0x25) {
+        NuDisableVBlank();
+        NuStrCpy(lt, D_0061B088);
+        NuEnableVBlank();
+        n = saveloadLoadIcon(D_0061B0A0, superbuffer_ptr);
+        superbuffer_ptr =
+            (void *)(((u32)superbuffer_ptr + n + 0xF) & 0xFFFFFFF0);
+    }
+
+    noterraininit();
+    if (LDATA->flags & 0x8) {
+        NuDisableVBlank();
+        NuStrCpy(lt, D_0061B0B0);
+        NuEnableVBlank();
+        TerrainSetCur(superbuffer_ptr);
+        terraininit(Level, &superbuffer_ptr, superbuffer_end, 0, lfn,
+                    world_scene[0], 0);
+        superbuffer_ptr = (void *)(((u32)superbuffer_ptr + 0xF) & 0xFFFFFFF0);
+    }
+
+    WUMPACOUNT = 0;
+    crate_scene = 0;
+    if (LDATA->flags & 0x40) {
+        NuDisableVBlank();
+        NuStrCpy(lt, D_0061B0C0);
+        NuEnableVBlank();
+        crate_scene = NuGScnRead(&superbuffer_ptr, superbuffer_end, D_0061B0D8);
+    }
+
+    pause_scene = 0;
+    if ((LDATA->flags & 0x1) || Level == 0x23) {
+        NuDisableVBlank();
+        NuStrCpy(lt, D_0061B0F0);
+        NuEnableVBlank();
+        pause_scene = NuGScnRead(&superbuffer_ptr, superbuffer_end, D_0061B108);
+    }
+
+    edppDestroyAllParticles();
+    edppDestroyAllEffects();
+
+    if (LDATA->flags & 0x10) {
+        NuDisableVBlank();
+        NuStrCpy(lt, D_0061B118);
+        NuEnableVBlank();
+        sprintf(tb, D_0062FAA0, lfn);
+        if (NuFileSize(tb) > 0) {
+            edppLoadEffects(tb, 1);
+        }
+
+        NuDisableVBlank();
+        NuStrCpy(lt, D_0061B130);
+        NuEnableVBlank();
+        sprintf(tb, D_0061B150);
+        if (NuFileSize(tb) > 0) {
+            edppMergeEffects(tb, 0);
+        }
+
+        NuDisableVBlank();
+        NuStrCpy(lt, D_0061B168);
+        NuEnableVBlank();
+        sprintf(tb, D_0062FAA8, lfn);
+        if (NuFileSize(tb) > 0) {
+            edppMergeEffects(tb, 5);
+        }
+    }
+
+    InitGameDebris();
+    NuDisableVBlank();
+    NuStrCpy(lt, D_0061B180);
+    NuEnableVBlank();
+    edppRestartAllEffectsInLevel();
+
+    NuDisableVBlank();
+    NuStrCpy(lt, D_0061B1A0);
+    NuEnableVBlank();
+    edobjObjectReset();
+
+    NuDisableVBlank();
+    NuStrCpy(lt, D_0061B1B8);
+    NuEnableVBlank();
+    sprintf(tb, D_0062FAB0, lfn);
+    if (NuFileSize(tb) > 0) {
+        edobjFileLoadObjects(tb);
+    }
+
+    edanimParamReset();
+    NuDisableVBlank();
+    NuStrCpy(lt, D_0061B1D0);
+    NuEnableVBlank();
+    sprintf(tb, D_0062FAB8, lfn);
+    if (NuFileSize(tb) > 0) {
+        edanimFileLoad(tb);
+    }
+
+    edgraClumpsReset();
+    NuDisableVBlank();
+    NuStrCpy(lt, D_0061B1E8);
+    NuEnableVBlank();
+    sprintf(tb, D_0062FAC0, lfn);
+    if (NuFileSize(tb) > 0) {
+        edgraFileLoad(tb);
+    }
+
+    edgraInitAllClumps();
+    NuDisableVBlank();
+    NuStrCpy(lt, D_0061B200);
+    NuEnableVBlank();
+    LoadVehicleStuff();
+
+    NuDisableVBlank();
+    NuStrCpy(lt, D_0061B218);
+    NuEnableVBlank();
+
+    if (Level == 0x27) {
+        LoadCutMovie(1);
+        StartCutMovie();
+    } else if (Level == 0x29) {
+        LoadCutMovie(3);
+        StartCutMovie();
+    }
+
+    TerrainPlatformOldUpdate();
+    if (world_scene[0] != 0) {
+        NuGScnUpdate(world_scene[0], 0.0f);
+    }
+    edobjUpdateObjects(0.0f);
+    edanimUpdateObjects(0.0f);
+    NuBridgeUpdate(D_0057EEA4);
+    NuWindUpdate(D_0057EEA4);
+    TerrainPlatformNewUpdate();
+
+    if ((LDATA->flags & 0x1) && Level != 0x25) {
+        NuDisableVBlank();
+        NuStrCpy(lt, D_0061B228);
+        NuEnableVBlank();
+        ShadowMat = CreateAlphaBlendTexture64(D_0061B248, 0, 1, 0x64);
+    }
+
+    ResetCheckpoint(-1, -1, 0, 0.0f);
+
+    NuDisableVBlank();
+    NuStrCpy(lt, D_0061B260);
+    NuEnableVBlank();
+    InitSplineTable();
+
+    NuDisableVBlank();
+    NuStrCpy(lt, D_0061B270);
+    NuEnableVBlank();
+    InitObjectTable();
+
+    NuDisableVBlank();
+    NuStrCpy(lt, D_0061B280);
+    NuEnableVBlank();
+    InitRails();
+
+    NuDisableVBlank();
+    NuStrCpy(lt, D_0061B290);
+    NuEnableVBlank();
+    InitWumpa();
+    ResetMaskFeathers();
+
+    NuDisableVBlank();
+    NuStrCpy(lt, D_0061B2A0);
+    NuEnableVBlank();
+    InitCrates();
+    InitVehicleToggles();
+
+    NuDisableVBlank();
+    NuStrCpy(lt, D_0061B2B0);
+    NuEnableVBlank();
+    InitLevel();
+
+    for (i = 0; i < 0x800; i++) {
+        buf[i] = qrand() >> 8;
+    }
+
+    NuDisableVBlank();
+    NuStrCpy(lt, D_0061B2C0);
+    NuEnableVBlank();
+    NuRndrShadowInit(buf);
+
+    NuDisableVBlank();
+    NuStrCpy(lt, D_0061B2D8);
+    NuEnableVBlank();
+    NuLightMatInit();
+
+    edcrt_used = 0;
+    edwmp_used = 0;
+    edai_used = 0;
+}
 
 void LoadLevel(void)
 {
