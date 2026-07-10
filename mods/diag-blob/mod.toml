@@ -1,0 +1,10 @@
+# Diagnostic: blob + heap carve only, no code, no hooks. If this fails to
+# boot, the ELF shape or heap patch is at fault, not the hook machinery.
+
+[mod]
+name = "diag-blob"
+version = "0.1"
+target = "pal103"
+
+[mailbox]
+size = 0x200

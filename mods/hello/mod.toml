@@ -1,0 +1,20 @@
+# End-to-end proof mod: pre-hooks DoInput (every frame, menus included).
+# Visible: HUD wumpa counter (plr_wumpas) ticks +1/second in-level.
+# External: mailbox magic + frame counter, readable over PINE at the
+# address build.py prints.
+
+[mod]
+name = "hello"
+version = "0.1"
+target = "pal103"
+
+[code]
+sources = ["mod.c"]
+
+[[hook]]
+function = "DoInput"
+handler = "hello_tick"
+mode = "pre"
+
+[mailbox]
+size = 0x200

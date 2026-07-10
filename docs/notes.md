@@ -260,6 +260,21 @@ Established facts:
 
 ### Modding / equivalent build
 
+- **RESOLVED 2026-07-10: modding goes through the fixed-layout injection
+  SDK (`tools/modsdk/`, branch `modding-sdk`), not a relocatable link.**
+  The shift/relink approach (branch `modding-functionality`) was set
+  aside: relocating the image goes stale on every unlabeled non-string
+  data pointer, and mods don't need anything to move. The SDK keeps
+  retail bytes at retail addresses, injects compiled mod code as a second
+  PT_LOAD above the image end, hooks in via `j` trampolines, and carves
+  the heap past the blob with a one-word sbrk-break patch. Design, memory
+  layout, hook contract, and the boot pitfalls (in-place phdr extension,
+  DoInput vs UpdateLevel, WUMPACOUNT vs plr_wumpas) are in
+  docs/modding-sdk.md. Boot-verified the same day in PCSX2 over PINE.
+  Repo split decided alongside: the old multiplayer repo is now
+  `crashwoc-coop` (kept as reference); the new empty
+  `crashwoc-multiplayer` gets the ground-up PC-side network layer, coded
+  against mods/include/mailbox.h.
 - **Relocatable equivalent link is a named milestone (multiplayer needs
   it).** Today every link resolves externals to fixed retail addresses
   (absolute defsyms) and places each TU at its retail offset, so modified

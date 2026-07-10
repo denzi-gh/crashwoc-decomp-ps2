@@ -3,10 +3,8 @@
 tools/verify_target.py has its own parser, but it is retail-shaped: it
 indexes the section-header string table unconditionally and so cannot read
 an ELF without section headers, and it returns spec-comparison dicts rather
-than byte offsets. This reader serves the reconstruction tools instead:
-section sizes of assembled objects (gen_shift_data), loaded-image extraction
-from a linked ELF (link_shift), and header fields for packaging
-(package_elf). Read-only; never writes.
+than byte offsets. This reader serves the modding SDK (tools/modsdk/)
+instead. Read-only; the SDK's writer lives in tools/modsdk/elf_patch.py.
 """
 import struct
 
@@ -98,6 +96,49 @@ def symbol_names(data):
             elif (st_info >> 4) != STB_LOCAL:
                 defined.add(name)
     return defined, undefined
+
+
+def program_headers(data):
+    """[{type,offset,vaddr,paddr,filesz,memsz,flags,align}] from the phdr table."""
+    if data[:4] != b"\x7fELF":
+        raise Elf32Error("not an ELF")
+    e_phoff, = struct.unpack_from("<I", data, 0x1C)
+    e_phentsize, e_phnum = struct.unpack_from("<HH", data, 0x2A)
+    out = []
+    for i in range(e_phnum):
+        (p_type, p_offset, p_vaddr, p_paddr, p_filesz, p_memsz, p_flags,
+         p_align) = struct.unpack_from("<8I", data, e_phoff + i * e_phentsize)
+        out.append({"type": p_type, "offset": p_offset, "vaddr": p_vaddr,
+                    "paddr": p_paddr, "filesz": p_filesz, "memsz": p_memsz,
+                    "flags": p_flags, "align": p_align})
+    return out
+
+
+def symbol_values(data):
+    """{name: st_value} for every globally-bound defined symbol."""
+    if data[:4] != b"\x7fELF":
+        raise Elf32Error("not an ELF")
+    e_shoff, = struct.unpack_from("<I", data, 0x20)
+    e_shentsize, e_shnum, e_shstrndx = struct.unpack_from("<HHH", data, 0x2E)
+    raw = [struct.unpack_from("<10I", data, e_shoff + i * e_shentsize)
+           for i in range(e_shnum)]
+    values = {}
+    for sh in raw:
+        sh_type, sh_offset, sh_size, sh_link, sh_entsize = \
+            sh[1], sh[4], sh[5], sh[6], sh[9]
+        if sh_type != SHT_SYMTAB:
+            continue
+        str_off = raw[sh_link][4]
+        for i in range(sh_size // (sh_entsize or 16)):
+            st_name, st_value, _size, st_info, _other, st_shndx = \
+                struct.unpack_from("<IIIBBH", data, sh_offset + i * 16)
+            if not st_name or st_shndx == SHN_UNDEF:
+                continue
+            if (st_info >> 4) == STB_LOCAL:
+                continue
+            end = data.index(b"\x00", str_off + st_name)
+            values[data[str_off + st_name:end].decode()] = st_value
+    return values
 
 
 def loaded_image(data):
