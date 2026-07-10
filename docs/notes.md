@@ -889,6 +889,37 @@ Established facts:
   is `splat64` (`splat0` 404s). Fixed in `toolchain.lock.json`, with the
   `spimdisasm`/`rabbitizer` backends pinned alongside.
 
+## PlayerCreatureCollisions (game/game_obj, 0x1f9bc0) — faithful near-match WIP
+
+(2026-07-10) Full-C reconstruction of `PlayerCreatureCollisions` (3544 bytes,
+frame 224, ~886 insns) built from the ground-truth disassembly and kept in
+`src/game/game_obj.c` at `state=asm`. It compiles and links over the full
+extent; the structure is faithful (verified block-by-block against `asm/text.s`):
+per-object loop over `pObj[]`, cpos from locator matrix vs `po->pos`,
+cuboid/sphere overlap split, the attack (`!overlap`) branch with the second
+`reach` overlap test + debris, and the physical-overlap branch (top/bottom
+`dir==1`, side-up `.L001FA18C` ctype=2, side-down `.L001FA458` ctype=4, dir==0
+`.L001FA5F8` ctype=1), the shared kill tail (`.L001FA724/72C/730`), and the
+post-loop mask-lose / obj-death / `ObjectToAtlas` epilogue.
+
+Blocked on **register allocation only** (fuzzy 1.467, 52/3544 bytes; ~98% differ
+purely from register renumbering, not logic):
+- target puts `obj` in `$s2` (`daddu $s2,$a0` @0x10), reserving `$s0/$s1` for the
+  short-lived hot loop temps (`overlap`, `is_cuboid`); gcc-2.95 gives me `obj` in
+  `$s1`, shifting every register.
+- one extra callee-saved float: `distsq` lands in `f22` (freg_mask 0x00700000)
+  instead of coalescing into `f20`, which the target reuses for the platform-ride
+  `dx/dz`; this also inflates the frame to 240 vs 224.
+
+Confirmed exact facts to preserve on resume: `maskflag<3` is held once in `$fp`
+(hoisted to `mask_weak`); spin `reach` = `radius*SCALE` then `*2` for
+character!=1 or slide==0, else `*3.0` (NOT `(x+x)*3`); `reach` add consts
+0x3F000000/0x3E800000; bounce consts `D_0062D7C0..D8` are gp-rel floats;
+`po->parent->0x21C` (cast `(s8*)`) drives the obj-death `GetDieAnim` fallback;
+`v010` copied into `obj->vSN` (0x98). Session `s-20260710-071439-be7b01`.
+Next: coax allocation order (deep-reasoning escalation) so overlap+is_cuboid take
+`$s0/$s1`, obj takes `$s2`, and distsq coalesces into `f20`.
+
 ## Invariants (do not break)
 
 - **Nothing game-derived is committed.** All splat output (asm, linker script,

@@ -543,6 +543,12 @@ extern s32 in_finish_range;
 extern float tumble_moveduration;
 extern struct nuvec_s v000;
 extern struct nuvec_s ai_lookpos;
+extern struct nuvec_s lev_ambpos[];
+extern s32 jcrunch;
+extern s32 gamesfx_effect_volume;
+void UpdateDRAINDAMAGE(void);
+s32 UpdateCRUNCHTIME(void);
+void GameSfxLoop(s32 sfx, struct nuvec_s *pos);
 
 void InitPositions(void);
 void ResetAnimPacket(void *pkt, s32 action);
@@ -2461,5 +2467,52 @@ void InitLevel(void) {
     LivesLost = 0;
     if ((LBIT & 0x3e00000) != 0) {
         D_0058A00E[0] = 0;
+    }
+}
+
+void UpdateLevel(void) {
+    s32 sfx;
+    s32 idx;
+    s32 i;
+
+    for (i = 0; i < 5; i++) {
+        lev_ambpos[i] = player->obj.pos;
+    }
+    sfx = -1;
+    idx = 0;
+    switch (Level) {
+    case 23:
+        UpdateDRAINDAMAGE();
+        sfx = 0xCD;
+        break;
+    case 38:
+        sfx = 0xCD;
+        break;
+    case 25:
+        sfx = UpdateCRUNCHTIME();
+        idx = jcrunch;
+        break;
+    case 2:
+        sfx = (VEHICLECONTROL == 0) ? 0xC8 : sfx;
+        break;
+    case 4:
+    case 12:
+    case 20:
+    case 33:
+        sfx = 0xC7;
+        break;
+    case 8:
+        sfx = 0xCB;
+        break;
+    case 14:
+        sfx = 0xD4;
+        break;
+    case 19:
+        sfx = 0xD0;
+        break;
+    }
+    if (sfx != -1) {
+        gamesfx_effect_volume = 0x5FFE;
+        GameSfxLoop(sfx, &lev_ambpos[idx]);
     }
 }

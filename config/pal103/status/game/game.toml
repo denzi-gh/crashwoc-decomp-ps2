@@ -305,7 +305,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0094:001ef658:UpdateLevel"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001ef760:ResetMaskFeathers"
