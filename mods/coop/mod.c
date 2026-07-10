@@ -85,9 +85,20 @@ static void publish_local(void)
         s->anim_time = player->obj.anim.anim_time;
         s->scale = player->obj.SCALE;
         s->shadow = player->obj.shadow;
+        s->target_xrot = player->obj.target_xrot;
+        s->target_yrot = player->obj.target_yrot;
+        s->spin_frame = player->spin_frame;
+        s->spin_frames = player->spin_frames;
+        s->spin = player->spin;
+        s->dangle = player->obj.dangle;
+        s->target = player->target;
+        s->fire = player->fire;
+        s->freeze = player->freeze;
     } else {
         s->level = -1;
         s->flags = 0;
+        s->spin = 0;
+        s->target = 0;
     }
     s->seq_close = local_gen;
 }
@@ -120,6 +131,15 @@ static void consume_remote(void)
         tmp.anim_time = r->anim_time;
         tmp.scale = r->scale;
         tmp.shadow = r->shadow;
+        tmp.target_xrot = r->target_xrot;
+        tmp.target_yrot = r->target_yrot;
+        tmp.spin_frame = r->spin_frame;
+        tmp.spin_frames = r->spin_frames;
+        tmp.spin = r->spin;
+        tmp.dangle = r->dangle;
+        tmp.target = r->target;
+        tmp.fire = r->fire;
+        tmp.freeze = r->freeze;
         tmp.seq_open = c;
         tmp.seq_close = c;
         if (r->seq_open == c) {
@@ -168,6 +188,15 @@ static void synth_ghost(void)
     remote_snap.anim_time = player->obj.anim.anim_time;
     remote_snap.scale = player->obj.SCALE;
     remote_snap.shadow = player->obj.shadow;
+    remote_snap.target_xrot = player->obj.target_xrot;
+    remote_snap.target_yrot = player->obj.target_yrot;
+    remote_snap.spin_frame = player->spin_frame;
+    remote_snap.spin_frames = player->spin_frames;
+    remote_snap.spin = player->spin;
+    remote_snap.dangle = player->obj.dangle;
+    remote_snap.target = player->target;
+    remote_snap.fire = player->fire;
+    remote_snap.freeze = player->freeze;
     stale_frames = 0;
 }
 
@@ -206,7 +235,12 @@ static void puppet_init(short character)
     g_puppet.obj.pLOCATOR = &g_puppet.mtxLOCATOR[0][0];
     g_puppet.obj.model = model;
     g_puppet.obj.character = character;
-    g_puppet.obj.flags = 2;
+    /* bit0 (vflag) marks a player-controlled creature: DrawCreatures only
+     * runs the on-foot spin branch and draws the held-bazooka model[1] for
+     * vflag creatures. With spin/target 0 it renders identically to a plain
+     * creature, so this only adds the spin+bazooka paths when those states
+     * are actually published. */
+    g_puppet.obj.flags = 3;
     g_puppet.obj.vehicle = -1;
     g_puppet.obj.scale = 1.0f;
     g_puppet.obj.SCALE = 1.0f;
@@ -275,6 +309,19 @@ static void puppet_update(void)
      * 2000000.0f "off" sentinels from init. */
     g_puppet.obj.reflect_y = player->obj.reflect_y;
     g_puppet.obj.shadow = remote_snap.shadow;
+    /* Sub-states DrawCreatures reads to reproduce the spin whirl (its own
+     * branch, driven by spin/spin_frame/dangle, not the anim packet) and the
+     * held-bazooka model (drawn when target != 0). target is only tested for
+     * nonzero in the draw path, never dereferenced. */
+    g_puppet.spin = remote_snap.spin;
+    g_puppet.spin_frame = remote_snap.spin_frame;
+    g_puppet.spin_frames = remote_snap.spin_frames;
+    g_puppet.obj.dangle = remote_snap.dangle;
+    g_puppet.target = remote_snap.target;
+    g_puppet.fire = remote_snap.fire;
+    g_puppet.freeze = remote_snap.freeze;
+    g_puppet.obj.target_xrot = remote_snap.target_xrot;
+    g_puppet.obj.target_yrot = remote_snap.target_yrot;
     /* What ProcessCreatures does for real creatures: sample the level
      * lighting at mid-body every frame, else the model renders black. */
     if (USELIGHTS != 0 && LIGHTCREATURES != 0) {
@@ -327,10 +374,24 @@ static void update_puppet(void)
 void coop_draw_creatures(struct creature_s *c, s32 count, s32 render,
                          s32 shadow)
 {
+    short save_xrot;
+    short save_yrot;
+
     orig_DrawCreatures(c, count, render, shadow);
     if (g_puppet_active != 0 && c == Character && count == 1 &&
         Level == g_puppet_level && g_puppet.obj.model != 0) {
+        /* DrawCharacterModel poses the aim joint from the GLOBAL player's
+         * obj.target_xrot/yrot, not from the creature it is drawing. Point
+         * it at the remote aim for the duration of the puppet pass so the
+         * puppet's bazooka aims where the remote player aims, then restore
+         * so the local player is unaffected. */
+        save_xrot = player->obj.target_xrot;
+        save_yrot = player->obj.target_yrot;
+        player->obj.target_xrot = remote_snap.target_xrot;
+        player->obj.target_yrot = remote_snap.target_yrot;
         orig_DrawCreatures(&g_puppet, 1, render, shadow);
+        player->obj.target_xrot = save_xrot;
+        player->obj.target_yrot = save_yrot;
     }
 }
 
