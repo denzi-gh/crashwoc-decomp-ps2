@@ -11,11 +11,14 @@ draw the remote player as a puppet. The puppet is a mod-owned creature
 record fed to the retail renderer by a replace hook on `DrawCreatures`
 (never registered with the engine, so it has no physics, AI, or
 collisions) and it is shown only while both sides report the same level
-and the remote keeps ticking (staleness ~0.6 s). The bridge is PR 3.
+and the remote keeps ticking (staleness ~0.6 s). The bridge lives in the
+`crashwoc-multiplayer` repo: `python -m crashwoc_multiplayer coop-bridge`
+(and `coop-peek` for a one-shot mailbox dump).
 
 Known MVP limits: animations are hard-set (no blending, slight popping on
-action changes), the puppet's own shadow and reflection are off, and
-vehicles are not represented (the puppet renders on foot everywhere).
+action changes) and vehicles are not represented (the puppet renders on
+foot everywhere). The puppet does cast the flat ground shadow (from the
+remote's transmitted shadow height) and the hub floor reflection.
 
 ## Build and boot
 
