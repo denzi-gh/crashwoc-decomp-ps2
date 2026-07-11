@@ -57,15 +57,19 @@ global screen matrix `D_0067A8C0`); pause detected via `Paused` @0x630af4.
 - [~] Label projection: view-space depth (`NuCameraTransformView` @0x113D18) drives distance-scale + behind-camera cull; GS guard-band centre 32768 for screen→ndc — placement/scale calibrating in-game
 - [ ] Final placement/scale sign-off (COOP_LABEL_UP, COOP_DIST_REF, front-cull sign) — needs the pad
 
-**1b — Vehicles + Aku Aku mask rendering:** v3 already carries `vehicle`,
-`vehiclecontrol`, `mask_active`; they are published + consumed into the remote
-snapshot but **not yet applied to the puppet** — it always draws on foot
-(`g_puppet.obj.vehicle = -1`). This sub-stage is the draw-side wiring.
-- [ ] Puppet renders in ground/rail vehicles (`obj.vehicle` → `model[1]`)
-- [ ] Puppet renders in swim mode (body model swap)
-- [ ] Puppet renders in glider/plane/atlas/jeep (bracket own `vehicle.c` draw)
-- [ ] Aku Aku mask on puppet via `DrawMask`/`DrawMaskFeathers` bracket hook
-- [ ] *(optional)* decomp the `vehicle.c` draw routines / `DrawMask` if brackets misbehave
+**1b — Vehicles + Aku Aku mask rendering:** wired 2026-07-11 (code done, needs
+in-game confirm). Puppet is fed `obj.vehicle = remote.vehicle` in `puppet_update`,
+so the *same* `DrawCreatures` call renders every mode; the mask is drawn from the
+`coop_draw_creatures` hook via a puppet-owned `mask_s`. **No decomp required** —
+all by-address calls (`DrawGlider`/`DrawAtlas`/`DrawJeep` read only their creature
+arg; `DrawMask(mask_s*)` draws at the mask's own matrices, shadow bracketed).
+- [x] Puppet renders in ground/rail vehicles (`obj.vehicle` → `model[1]`) — code done
+- [x] Puppet renders in swim mode (global `VEHICLECONTROL == 2` body-swap) — code done
+- [x] Jeep — **confirmed in-game** (`DrawJeep` builds its matrix from pos/hdg)
+- [~] Glider + Atlas — draw entirely from a per-vehicle `NEWBUGGY` at `creature+0x224` (glider pos `+0x30`, atlas ball `+0x20C`), which the puppet lacked → nothing rendered. Best-effort fix: borrow the local player's `Buggy` and override just the world-position vec with the remote pos (`COOP_SPECIAL_VEH` toggle). Position should be right; orientation/anim borrowed from local (Buggy angles not synced yet). Needs in-game re-test.
+- [x] Aku Aku mask on puppet: init via `NewMask(&mask, &puppet.pos)` (not a copy of global `Mask` — that only worked on the side whose local player had a mask), `UpdateMask` + `DrawMask` each frame, shadow bracketed (`COOP_PUPPET_MASK` toggle). Fixes the one-instance-only asymmetry — re-test.
+- [ ] *(follow-up)* sync the vehicle `Buggy` angles / `vehicle_frame` (mailbox field) so glider/ball orientation + anim match the remote, not the local player
+- [ ] *(optional)* a puppet-owned `NEWBUGGY` (needs the struct + spawn decompiled) would remove the borrow hack entirely — this is where decomp would help
 
 ## Stage 3 — Shared collectibles & progression  *(med–high decomp)*
 

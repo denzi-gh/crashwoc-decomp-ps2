@@ -19,6 +19,11 @@ extern struct MoveInfo CrashMoveInfo;
 extern CharacterData CData[];
 extern s32 USELIGHTS;
 extern s32 LIGHTCREATURES;
+/* Aku Aku on the puppet. NewMask(mask,pos) initialises a mask_s (character 3 /
+ * model / anim / lights); DrawMask(mask_s*) renders it at its own matrices (only
+ * its ground shadow reads the global player, which we bracket). Both NewMask and
+ * UpdateMask are declared in creature.h. */
+void DrawMask(struct mask_s *mask);
 
 /* orig_ thunks the SDK provides for the replace hooks. */
 void orig_DrawCreatures(struct creature_s *c, s32 count, s32 render,
@@ -359,6 +364,14 @@ static void puppet_update(void)
      * 2000000.0f "off" sentinels from init. */
     g_puppet.obj.reflect_y = player->obj.reflect_y;
     g_puppet.obj.shadow = remote_snap.shadow;
+    /* Vehicle mode. Both sides are in the same level (the show rule), so the
+     * global VEHICLECONTROL that DrawCreatures reads is already correct for the
+     * puppet; feeding it the remote vehicle id makes the same function render the
+     * on-foot body, the toggled/rail vehicle (model[1]), the swim body-swap, or
+     * the special glider/atlas/jeep draw, exactly as for a local player. The
+     * glider/atlas/jeep draw routines read only their creature argument (checked
+     * against the retail asm), so passing the puppet is safe. -1 = on foot. */
+    g_puppet.obj.vehicle = remote_snap.vehicle;
     /* Sub-states DrawCreatures reads to reproduce the spin whirl (its own
      * branch, driven by spin/spin_frame/dangle, not the anim packet) and the
      * held-bazooka model (drawn when target != 0). target is only tested for
@@ -568,6 +581,105 @@ static void draw_puppet_label(void)
     }
 }
 
+/* Aku Aku mask floating over the puppet. Set COOP_PUPPET_MASK 0 to disable.
+ *
+ * DrawMask(mask_s*) draws the mask model at the mask's own baked matrices
+ * (mM/mS at offset 0); only its ground-shadow pass reads the global player, so
+ * we bracket that around the call. We keep a puppet-owned mask so we never
+ * disturb the local player's own mask. It is initialised with NewMask (which
+ * sets character 3 / model / anim / lights) the first time it activates -- doing
+ * it this way, rather than copying the level's global Mask, is what makes it work
+ * on BOTH instances: the global Mask only has its anim/model set up on the side
+ * whose local player has actually triggered a mask, which is why the copy path
+ * rendered the peer's mask on one instance but only its shadow on the other.
+ * mask_active 1/2 = shield strength, >2 = invincible; the engine clamps >2 to 2
+ * for drawing (creature.c), so pass it straight through. */
+#define COOP_PUPPET_MASK 1
+#if COOP_PUPPET_MASK
+static struct mask_s g_puppet_mask;
+static int g_puppet_mask_ready;
+
+static void draw_puppet_mask(void)
+{
+    struct creature_s *saved;
+
+    if (remote_snap.mask_active == 0) {
+        g_puppet_mask.active = 0;
+        g_puppet_mask_ready = 0;
+        return;
+    }
+    if (!g_puppet_mask_ready) {
+        NewMask(&g_puppet_mask, &g_puppet.obj.pos);
+        g_puppet_mask_ready = 1;
+    }
+    g_puppet_mask.active = remote_snap.mask_active;
+    UpdateMask(&g_puppet_mask, &g_puppet.obj);
+    /* DrawMask's shadow pass reads the global player; point it at the puppet so
+     * the mask shadow lands under the puppet, then restore immediately. */
+    saved = player;
+    player = &g_puppet;
+    DrawMask(&g_puppet_mask);
+    player = saved;
+}
+#endif
+
+/* Glider and Atlas draw entirely from a per-vehicle NEWBUGGY state struct at
+ * creature+0x224 (glider position at Buggy+0x30, atlas ball at Buggy+0x20C), NOT
+ * from obj.pos -- so with the puppet's Buggy NULL nothing rendered. We have no
+ * NEWBUGGY of our own (its spawn/layout is undecompiled), so as a best effort we
+ * borrow the LOCAL player's Buggy (valid -- same vehicle level) and temporarily
+ * overwrite just its world-position vec with the remote position, draw, then
+ * restore. The local vehicle was already drawn in the engine's own pass above,
+ * so this scribble is safe. Orientation/animation stay the local player's (we do
+ * not sync the Buggy angles yet), so the puppet appears at the right spot but
+ * banks/spins like your own vehicle -- matching that needs a new mailbox field.
+ * Set COOP_SPECIAL_VEH 0 to disable (the puppet just won't render there). The
+ * jeep needs none of this: DrawJeep builds its matrix from pos/hdg. */
+#define COOP_SPECIAL_VEH 1
+#if COOP_SPECIAL_VEH
+static struct NEWBUGGY *g_veh_borrow;   /* non-NULL between borrow and restore */
+static int g_veh_off;                   /* byte offset of the position vec */
+static float g_veh_save[3];
+
+static void borrow_vehicle_buggy(void)
+{
+    short v = remote_snap.vehicle;
+    int glider = (v == 0x81 || v == 0x8B || v == 0x36);
+    int atlas = (v == 0x53);
+    float *p;
+
+    if ((glider == 0 && atlas == 0) || VEHICLECONTROL != 1 ||
+        player->Buggy == 0) {
+        return;
+    }
+    g_veh_borrow = player->Buggy;
+    g_veh_off = glider ? 0x30 : 0x20C;
+    g_puppet.Buggy = g_veh_borrow;
+    p = (float *)((char *)g_veh_borrow + g_veh_off);
+    g_veh_save[0] = p[0];
+    g_veh_save[1] = p[1];
+    g_veh_save[2] = p[2];
+    p[0] = remote_snap.pos[0];
+    p[1] = remote_snap.pos[1];
+    p[2] = remote_snap.pos[2];
+}
+
+static void restore_vehicle_buggy(void)
+{
+    float *p;
+
+    if (g_veh_borrow == 0) {
+        return;
+    }
+    p = (float *)((char *)g_veh_borrow + g_veh_off);
+    p[0] = g_veh_save[0];
+    p[1] = g_veh_save[1];
+    p[2] = g_veh_save[2];
+    g_puppet.Buggy = 0;
+    g_veh_borrow = 0;
+}
+#endif
+
 /* Replace hook on DrawCreatures (0x1D2F50): pass everything through, and
  * whenever the engine draws the player pass (Character, count 1 -- the
  * main render and the hub reflection pass; NPCs go through &Character[1])
@@ -601,9 +713,19 @@ void coop_draw_creatures(struct creature_s *c, s32 count, s32 render,
         save_yrot = player->obj.target_yrot;
         player->obj.target_xrot = remote_snap.target_xrot;
         player->obj.target_yrot = remote_snap.target_yrot;
+#if COOP_SPECIAL_VEH
+        borrow_vehicle_buggy();
+#endif
         orig_DrawCreatures(&g_puppet, 1, render, shadow);
+#if COOP_SPECIAL_VEH
+        restore_vehicle_buggy();
+#endif
         player->obj.target_xrot = save_xrot;
         player->obj.target_yrot = save_yrot;
+#if COOP_PUPPET_MASK
+        /* Aku Aku over the puppet, after the body so it composites on top. */
+        draw_puppet_mask();
+#endif
 #if COOP_LABELS
         /* Project the label here, under the 3D world camera, once per frame
          * (the player pass runs twice in the hub: main first, then reflection).
