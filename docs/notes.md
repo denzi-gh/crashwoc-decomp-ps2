@@ -973,6 +973,63 @@ Neither reproduces the target's %hi-in-callee-reg allocation. Session
 into s7/fp (deep-reasoning escalation), or accept as near-match — not required
 for the mod (matching build splices the retail slice regardless).
 
+## game/vehicle — NEWBUGGY special-vehicle transforms (2026-07-11)
+
+Typed `struct NEWBUGGY` (creature_s.Buggy, creature+0x224) from the glider /
+atlasphere transform code. Fields below are PS2-verified from the retail
+disassembly (offset → type → meaning); the coop-mod puppet syncs these.
+
+Glider (read `DrawGlider`, write `ProcessGliderMovement`):
+- 0x28  float   `timer`  (ProcessTimer countdown)
+- 0x30  nuvec   `pos`    glider position → NuMtxTranslate
+- 0x48  nuvec   `vel`    velocity; `pos += vel*dt` each frame
+- 0x70  float   `pitch`  X rotation (NuMtxRotateX)
+- 0x74  float   `roll`   Z rotation (NuMtxSetRotationZ)
+- 0x80  float   `yaw`    Y rotation (NuMtxRotateY)
+- 0x98  s32     `mode`   0 normal / weather-boss branch selector
+- 0xA0  nuvec   `avel`   angular/seek vector (SetNuVec)
+- 0xB4  s32     `enable` transform-enable flag (DrawGlider gates level-0xD branch)
+
+Atlasphere / ball (read `DrawAtlas`, seed `ObjectToAtlas`, write `MoveAtlas`/
+`AdjustAtlasRotations`):
+- 0x20C nuvec   `ball_pos`   position → NuMtxTranslate; MoveAtlas copies it into
+                the character `obj.pos` (± D_00560D44 y-lift), so the character
+                *follows* the ball.
+- 0x23C nuvec   `ball_vel`   velocity; MoveAtlas copies into `obj.mom`.
+                ObjectToAtlas seeds it from `obj->mom / D_0062DE9C` (x,z gated by
+                `temp_xzmomset`) and `obj->mom.y` (0x240).
+- 0x26C float   `atlas_rotparam`  rotation tuning float (AdjustAtlasRotations arg)
+- 0x284 nuquat  `rotquat`        render orientation → NuQuatToMtx (DrawAtlas)
+- 0x294 nuquat  `rotquat_delta`  accumulator; AdjustAtlasRotations NuQuatMuls a
+                frame delta into it.
+
+Angle→NuMtx int units: glider angle * gp const (level 0xD `D_0062D91C`,
+0x1A `D_0062D920`, else `D_0062D924`); `(int)(float)` casts lower to `cvt.w.s`
+(EE FPU is always round-toward-zero, so no `trunc.w.s`). Per-level model-index
+bytes (`D_0056236E/B9/C3` glider, `D_0056238B` ball) live far from `$gp`; declare
+as `extern s8 NAME[]` and read `[0]` so gcc uses %hi/%lo, not a truncating
+`%gp_rel` (R_MIPS_GPREL16 overflow otherwise). Same for the far float lift const
+`D_00560D44[]`.
+
+Match status:
+- `DrawAtlas` — **matching** (byte-exact, promoted; full image re-verifies).
+- `DrawGlider` — faithful full-C near-match kept `state=asm`. Frame(112)/
+  reg_mask(0x800f0000)/freg_mask(0x00300000) all exact; inverted-ternary
+  `lift = (Level!=0xD && Level!=0x1A)?15:0` removes the merge `b`. Blocked +4B on
+  the %hi(mTEMP) rematerialization / `bne` delay-slot scheduling (retail shares
+  one `lui $s1` in the delay slot across the 0x1A/else split; gcc rematerializes
+  per block + speculatively loads the else scale). Same class as
+  [[setlevel-wip-state]] / [[initworld-wip-state]]. Outer-else pointer hoist
+  fits (536B) but over-shares (single addiu) and reshuffles s0–s3 → 47%.
+- `ObjectToAtlas` — faithful near-match `state=asm`, 50% (ball_pos half exact).
+  Diverges on the mom/divisor FP load order (retail dividend-first, gcc hoists
+  the shared divisor) and a `beql` vs `beq` delay-slot fill in the `boing` check.
+- `MoveGlider` — architectural blocker: `.rodata` jump table `jtbl_0061F3B0`
+  + soft-float doubles. Semantics extracted only.
+- `ProcessGliderMovement` (1696B), `MoveAtlas` (608B), `AdjustAtlasRotations`
+  (672B, soft-float doubles) — large physics fns; field semantics extracted,
+  full byte-match deferred (out of scope this pass).
+
 ## Invariants (do not break)
 
 - **Nothing game-derived is committed.** All splat output (asm, linker script,

@@ -501,7 +501,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:0021c1e8:DrawAtlas"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021c270:VehicleSetup"
