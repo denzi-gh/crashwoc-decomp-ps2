@@ -37,16 +37,34 @@ The mailbox contract is unchanged, so the current mod/ELF stays valid.
 - [x] README two-PC setup (UDP port, firewall/port-forward, same COOP_VERSION)
 - [ ] Live two-PC session verified *(needs the user + a peer)*
 
-## Stage 1 — Finish the puppet: vehicles + Aku Aku mask  *(low decomp → mailbox v3)*
+## Stage 1 — Presence polish: names, paused, vehicles, mask  *(mailbox v3)*
 
-- [ ] Mailbox **v3**: add `vehicle`, `mask_active`, `vtog` (+ bump both versions)
-- [ ] Publish/consume/ghost the new fields
+One version bump (v3, slot 0x60→0x70, remote slot →0x706AE0) carries every new
+field so we grow the contract once. Text uses `Text3D` @0x238280 (2D screen)
+positioned by `NuCameraTransformScreen` @0x114048 (world→screen, NULL matrix =
+global screen matrix `D_0067A8C0`); pause detected via `Paused` @0x630af4.
+
+**1a — Name tags + Paused presence (the immediate work):**
+- [x] Mailbox **v3**: add `name[16]`, `paused`, `mask_active`, `vehicle`, `vehiclecontrol` (bump both versions)
+- [x] Publish `paused`/`vehicle`/`mask_active`; consume + `name`; ghost
+- [x] Pause heartbeat: keep publishing while `Paused != 0` so peer stays fresh
+- [x] Paused puppet renders **gray + frozen** (flat gray lights, anim clock held) — confirmed in-game (puppet darkens and holds)
+- [x] Name tag above the remote puppet (project + `Text3D`); own name hidden — renders in-game (must be UPPERCASE: lowercase a–x are icon glyphs)
+- [x] "Paused" label above a paused remote puppet (name hides while paused so they don't overlap)
+- [x] PC side supplies names (`--name` / `--p1-name`/`--p2-name`), injected into the peer slot
+- [x] Names are **optional** — bridge/relay run fine with no name args; only the floating tag is lost, "PAUSED" and all puppet sync still work
+- [~] Label projection: view-space depth (`NuCameraTransformView` @0x113D18) drives distance-scale + behind-camera cull; GS guard-band centre 32768 for screen→ndc — placement/scale calibrating in-game
+- [ ] Final placement/scale sign-off (COOP_LABEL_UP, COOP_DIST_REF, front-cull sign) — needs the pad
+
+**1b — Vehicles + Aku Aku mask rendering:** v3 already carries `vehicle`,
+`vehiclecontrol`, `mask_active`; they are published + consumed into the remote
+snapshot but **not yet applied to the puppet** — it always draws on foot
+(`g_puppet.obj.vehicle = -1`). This sub-stage is the draw-side wiring.
 - [ ] Puppet renders in ground/rail vehicles (`obj.vehicle` → `model[1]`)
 - [ ] Puppet renders in swim mode (body model swap)
 - [ ] Puppet renders in glider/plane/atlas/jeep (bracket own `vehicle.c` draw)
 - [ ] Aku Aku mask on puppet via `DrawMask`/`DrawMaskFeathers` bracket hook
-- [ ] *(optional)* decomp `DrawGlider`/`DrawAtlas`/`DrawPlayerJeep` if bracket misbehaves
-- [ ] *(optional)* decomp `DrawMask`/`UpdateMask`/`MakeMaskMatrix` for a parameterized mask
+- [ ] *(optional)* decomp the `vehicle.c` draw routines / `DrawMask` if brackets misbehave
 
 ## Stage 3 — Shared collectibles & progression  *(med–high decomp)*
 

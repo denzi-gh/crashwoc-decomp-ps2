@@ -14,7 +14,7 @@
 #define COOP_MAILBOX_H
 
 #define COOP_MAILBOX_MAGIC 0x4F435743u /* "CWCO" */
-#define COOP_MAILBOX_VERSION 2u
+#define COOP_MAILBOX_VERSION 3u
 
 #define COOP_F_PRESENT 1u /* writer is in a playable level, state valid */
 #define COOP_F_DEAD 2u    /* writer's player is in a death state */
@@ -24,7 +24,7 @@
                            * remote snapshot at pos.x + 2.0 -- a ghost
                            * puppet shadows the player with no bridge */
 
-typedef struct CoopSlot {              /* 0x60 bytes */
+typedef struct CoopSlot {              /* 0x70 bytes */
     unsigned int seq_open;             /* 0x00 seq-lock bracket */
     unsigned int frame;                /* 0x04 writer tick, for staleness */
     int level;                         /* 0x08 Level global; -1 = not in level */
@@ -52,9 +52,16 @@ typedef struct CoopSlot {              /* 0x60 bytes */
     signed char target;                /* 0x4E target != 0 -> aiming bazooka */
     unsigned char fire;                /* 0x4F fire countdown */
     unsigned char freeze;              /* 0x50 freeze (aim-lock facing) */
-    unsigned char pad[3];              /* 0x51 alignment */
-    unsigned int reserved[2];          /* 0x54 */
-    unsigned int seq_close;            /* 0x5C seq-lock bracket */
+    /* --- v3: presence polish (names, paused, vehicle, mask) --- */
+    unsigned char paused;              /* 0x51 Paused != 0 -> in-game paused */
+    unsigned char mask_active;         /* 0x52 Mask.active: 0/1/2, >2 = invincible */
+    unsigned char vehiclecontrol;      /* 0x53 VEHICLECONTROL: 0 foot/1 vehicle/2 swim */
+    short vehicle;                     /* 0x54 obj.vehicle model id, -1 = none */
+    unsigned char pad0[2];             /* 0x56 alignment */
+    char name[16];                     /* 0x58 remote player name, NUL-terminated
+                                        * (PC-supplied; the game never writes it) */
+    unsigned int reserved;             /* 0x68 */
+    unsigned int seq_close;            /* 0x6C seq-lock bracket */
 } CoopSlot;
 
 typedef struct CoopMailbox {           /* overlays ModsdkMailbox.payload */
@@ -64,7 +71,7 @@ typedef struct CoopMailbox {           /* overlays ModsdkMailbox.payload */
     unsigned int diag;                 /* +0x0C game writes: bit 0 = puppet
                                         * shown, bits 8+ = puppet re-inits */
     CoopSlot local;                    /* +0x10 (abs 0x706A70) game writes, bridge reads */
-    CoopSlot remote;                   /* +0x70 (abs 0x706AD0) bridge writes, game reads */
-} CoopMailbox;                         /* 0xD0 */
+    CoopSlot remote;                   /* +0x80 (abs 0x706AE0) bridge writes, game reads */
+} CoopMailbox;                         /* 0xF0 */
 
 #endif

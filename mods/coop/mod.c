@@ -20,9 +20,10 @@ extern CharacterData CData[];
 extern s32 USELIGHTS;
 extern s32 LIGHTCREATURES;
 
-/* orig_ thunk the SDK provides for the replace hook. */
+/* orig_ thunks the SDK provides for the replace hooks. */
 void orig_DrawCreatures(struct creature_s *c, s32 count, s32 render,
                         s32 shadow);
+void orig_DrawMenu(void *cursor, s32 paused);
 
 #define COOP ((volatile CoopMailbox *)modsdk_mailbox.payload)
 
@@ -95,11 +96,23 @@ static void publish_local(void)
         s->target = player->target;
         s->fire = player->fire;
         s->freeze = player->freeze;
+        s->paused = (unsigned char)(Paused != 0);
+        s->vehicle = player->obj.vehicle;
+        s->vehiclecontrol = (unsigned char)VEHICLECONTROL;
+        s->mask_active = (player->obj.mask != 0)
+                             ? (unsigned char)player->obj.mask->active
+                             : 0;
+        /* name is PC-supplied (the bridge writes it into the peer's slot);
+         * the game never writes it, so leave the field alone here. */
     } else {
         s->level = -1;
         s->flags = 0;
         s->spin = 0;
         s->target = 0;
+        s->paused = 0;
+        s->vehicle = -1;
+        s->vehiclecontrol = 0;
+        s->mask_active = 0;
     }
     s->seq_close = local_gen;
 }
@@ -108,6 +121,7 @@ static void consume_remote(void)
 {
     volatile CoopSlot *r = &COOP->remote;
     unsigned int c;
+    int i;
     CoopSlot tmp;
 
     c = r->seq_close;
@@ -141,6 +155,13 @@ static void consume_remote(void)
         tmp.target = r->target;
         tmp.fire = r->fire;
         tmp.freeze = r->freeze;
+        tmp.paused = r->paused;
+        tmp.vehicle = r->vehicle;
+        tmp.vehiclecontrol = r->vehiclecontrol;
+        tmp.mask_active = r->mask_active;
+        for (i = 0; i < 16; i++) {
+            tmp.name[i] = r->name[i];
+        }
         tmp.seq_open = c;
         tmp.seq_close = c;
         if (r->seq_open == c) {
@@ -198,6 +219,18 @@ static void synth_ghost(void)
     remote_snap.target = player->target;
     remote_snap.fire = player->fire;
     remote_snap.freeze = player->freeze;
+    remote_snap.paused = (unsigned char)(Paused != 0);
+    remote_snap.vehicle = player->obj.vehicle;
+    remote_snap.vehiclecontrol = (unsigned char)VEHICLECONTROL;
+    remote_snap.mask_active = (player->obj.mask != 0)
+                                  ? (unsigned char)player->obj.mask->active
+                                  : 0;
+    remote_snap.name[0] = 'G';
+    remote_snap.name[1] = 'h';
+    remote_snap.name[2] = 'o';
+    remote_snap.name[3] = 's';
+    remote_snap.name[4] = 't';
+    remote_snap.name[5] = 0;
     stale_frames = 0;
 }
 
@@ -279,6 +312,22 @@ static void puppet_init(short character)
     g_puppet_inits++;
 }
 
+/* Flat cool-gray tint for a paused puppet: mid ambient, no directional
+ * contribution. Overwrites colour values only (safe -- never touches the
+ * light-list pointers GetLights set up). */
+static void apply_gray_lights(struct Nearest_Light_s *L)
+{
+    L->AmbCol.x = 0.55f;
+    L->AmbCol.y = 0.55f;
+    L->AmbCol.z = 0.62f;
+    L->dir1.Colour.r = L->dir1.Colour.g = L->dir1.Colour.b = 0.0f;
+    L->dir2.Colour.r = L->dir2.Colour.g = L->dir2.Colour.b = 0.0f;
+    L->dir3.Colour.r = L->dir3.Colour.g = L->dir3.Colour.b = 0.0f;
+    L->glbdirectional.Colour.r = 0.0f;
+    L->glbdirectional.Colour.g = 0.0f;
+    L->glbdirectional.Colour.b = 0.0f;
+}
+
 /* Anim MVP: hard-set the remote action and clock every frame, no blend.
  * Unknown/unloaded actions hold the last valid one. */
 static void puppet_update(void)
@@ -332,6 +381,13 @@ static void puppet_update(void)
         lpos.z = g_puppet.obj.pos.z;
         GetLights(&lpos, &g_puppet.lights, 1);
     }
+    /* A paused peer freezes on its own (its pos/anim_time stop advancing at the
+     * source); tint the lighting flat gray so it reads as "held". Applied after
+     * GetLights so the light pointers stay valid -- this only overwrites colour
+     * values, never structure. */
+    if (remote_snap.paused != 0) {
+        apply_gray_lights(&g_puppet.lights);
+    }
     action = remote_snap.action;
     if (model == 0 || !anim_ok(model, action)) {
         action = g_puppet.obj.anim.action;
@@ -366,6 +422,150 @@ static void update_puppet(void)
     }
     g_puppet_active = show;
     COOP->diag = (g_puppet_inits << 8) | (show ? 1u : 0u);
+}
+
+/* Floating name tag + "Paused" label above the remote puppet.
+ *
+ * Two-phase because the two hooks run under different cameras:
+ *  - update_label_pos() runs in the DrawCreatures hook (3D world camera active)
+ *    and projects the puppet's head to screen space with NuCameraTransformScreen
+ *    (NULL matrix = the world's global screen matrix). It stashes the result.
+ *  - draw_puppet_label() runs in the DrawMenu hook (panel camera active, where
+ *    Text3D actually composites) and draws the stashed position.
+ * Set COOP_LABELS 0 to disable; COOP_LABEL_DEBUG 1 pins a fixed centre position
+ * (projection bypassed) for isolating placement issues. */
+#define COOP_LABELS 1
+#define COOP_LABEL_DEBUG 0
+#define COOP_LABEL_UP 2.0f       /* world units above the puppet origin */
+#define COOP_LABEL_SCALE 1.0f    /* base Text3D glyph scale */
+/* NuCameraTransformScreen returns PS2 GS screen coords (12.4 fixed-point). The
+ * visible frame is centred on the guard-band origin 2048.0 == 32768 in 12.4,
+ * spanning +/- (width/2)<<4 x and +/- (height/2)<<4 y. Map to Text3D's ~-1..1
+ * ndc: ndc = (screen - centre) / half_extent. These are the hardware defaults
+ * (640 wide, 512 tall PAL); nudge from coop-peek's raw screen.x/screen.y. */
+#define COOP_SCR_CX 32768.0f
+#define COOP_SCR_CY 32768.0f
+#define COOP_SCR_HX 5120.0f
+#define COOP_SCR_HY 4096.0f
+/* Perspective text scale from the camera-space depth (world units along the
+ * camera axis): a full-size label sits at COOP_DIST_REF units, closer grows,
+ * farther shrinks. scale = REF/depth, clamped. Tune REF from peek's depth. */
+#define COOP_DIST_REF 22.0f
+#define COOP_SCALE_MIN 0.5f
+#define COOP_SCALE_MAX 1.5f
+/* Cull the label when the puppet is at/behind the camera plane: a behind-camera
+ * point still projects to a (mirrored) on-screen position, which is what made
+ * the tag appear when the camera swung 180 degrees around. view.z is the signed
+ * depth; front is view.z > this small positive near margin. */
+#define COOP_FRONT_MIN 0.5f
+
+static float g_label_x;          /* stashed ndc position (world camera pass) */
+static float g_label_y;
+static float g_label_scale;      /* perspective-scaled glyph size */
+static int g_label_valid;        /* projected, in front, on-screen this frame */
+static unsigned int g_label_frame; /* main-pass latch */
+
+/* Project the puppet head; call from the DrawCreatures hook (world camera).
+ * View space gives the signed camera-axis depth (front/back test + true
+ * perspective distance); the screen transform gives the 2D position. */
+static void update_label_pos(void)
+{
+    struct nuvec_s world;
+    struct nuvec_s screen;
+    struct nuvec_s view;
+    float depth;
+
+    world.x = g_puppet.obj.pos.x;
+    world.y = g_puppet.obj.pos.y + COOP_LABEL_UP;
+    world.z = g_puppet.obj.pos.z;
+    NuCameraTransformView(&view, &world, 1, 0);
+    NuCameraTransformScreen(&screen, &world, 1, 0);
+
+    /* Measurement stash (coop-peek prints these) for calibration. */
+    modsdk_mailbox.reserved[2] = *(unsigned int *)&screen.x;
+    modsdk_mailbox.reserved[3] = *(unsigned int *)&screen.y;
+    modsdk_mailbox.reserved[4] = *(unsigned int *)&view.z;
+
+    depth = view.z;
+    if (depth < 0.0f) {
+        depth = -depth;
+    }
+    g_label_scale = (depth > 0.001f) ? (COOP_DIST_REF / depth) : COOP_SCALE_MAX;
+    if (g_label_scale < COOP_SCALE_MIN) {
+        g_label_scale = COOP_SCALE_MIN;
+    } else if (g_label_scale > COOP_SCALE_MAX) {
+        g_label_scale = COOP_SCALE_MAX;
+    }
+#if COOP_LABEL_DEBUG
+    g_label_x = 0.0f;
+    g_label_y = 0.25f;
+    g_label_scale = COOP_LABEL_SCALE;
+    g_label_valid = 1;
+#else
+    g_label_x = (screen.x - COOP_SCR_CX) / COOP_SCR_HX;
+    g_label_y = (screen.y - COOP_SCR_CY) / COOP_SCR_HY;
+    /* Behind-camera cull + on-screen bound (permissive while calibrating;
+     * tighten to ~1.3 once the mapping is dialled in). If view.z's front sign
+     * is the opposite convention the tag never shows -- then flip this test. */
+    g_label_valid = view.z > COOP_FRONT_MIN &&
+                    g_label_x > -2.5f && g_label_x < 2.5f &&
+                    g_label_y > -2.5f && g_label_y < 2.5f;
+#endif
+}
+
+/* Retail Text3D glyph quirk (PAL v1.03): lowercase a-x are NOT letters -- the
+ * font remaps them to inline object/icon glyphs, so any readable text must be
+ * UPPERCASE. Observed a..x mapping (keep handy; '/' = renders nothing):
+ *   a Crystal            b Sapphire Relic     c Gold Relic
+ *   d Platinum Relic     e Crate Gem          f Time-Trial Clock
+ *   g Sneak power        h Double-Jump power  i Death-Tornado-Spin power
+ *   j Bazooka power      k Sprint power       l Super-Charged-Body-Slam power
+ *   m /                  n /                  o DualShock Circle button
+ *   p green "PlayStation(R)2" text            q /                 r /
+ *   s DualShock Square   t DualShock Triangle u /
+ *   v /                  w /                  x DualShock Cross button
+ * Uppercase A-Z and digits render as normal glyphs. */
+static void upcase_copy(char *dst, char *src, int max)
+{
+    int i;
+    char c;
+
+    for (i = 0; i < max - 1 && src[i] != 0; i++) {
+        c = src[i];
+        if (c >= 'a' && c <= 'z') {
+            c = (char)(c - 'a' + 'A');
+        }
+        dst[i] = c;
+    }
+    dst[i] = 0;
+}
+
+/* Draw the stashed label; call from the DrawMenu hook (Text3D-friendly phase). */
+static void draw_puppet_label(void)
+{
+    float x = g_label_x;
+    float y = g_label_y;
+    float s = g_label_scale;
+    char txt[16];
+
+    if (!g_label_valid) {
+        return;
+    }
+    /* Paused takes over the slot entirely -- the name hides so they don't
+     * overlap; otherwise show the name. */
+    if (remote_snap.paused != 0) {
+        txt[0] = 'P';
+        txt[1] = 'A';
+        txt[2] = 'U';
+        txt[3] = 'S';
+        txt[4] = 'E';
+        txt[5] = 'D';
+        txt[6] = 0;
+        Text3D(txt, 8, 4, x, y, 1.0f, s, s, s);
+    } else if (remote_snap.name[0] != 0) {
+        upcase_copy(txt, remote_snap.name, 16);
+        Text3D(txt, 8, 4, x, y, 1.0f, s, s, s);
+    }
 }
 
 /* Replace hook on DrawCreatures (0x1D2F50): pass everything through, and
@@ -404,7 +604,33 @@ void coop_draw_creatures(struct creature_s *c, s32 count, s32 render,
         orig_DrawCreatures(&g_puppet, 1, render, shadow);
         player->obj.target_xrot = save_xrot;
         player->obj.target_yrot = save_yrot;
+#if COOP_LABELS
+        /* Project the label here, under the 3D world camera, once per frame
+         * (the player pass runs twice in the hub: main first, then reflection).
+         * The DrawMenu hook draws it later using this stashed position. */
+        if (g_label_frame != modsdk_mailbox.frame) {
+            g_label_frame = modsdk_mailbox.frame;
+            update_label_pos();
+        }
+#endif
     }
+}
+
+/* Replace hook on DrawMenu (0x23B... called from DrawPanel): DrawPanel sets up
+ * the panel camera/viewport and then repeatedly does Text3D (queue glyphs into
+ * font3d_scene) -> NuRndrGScnObj (submit). DrawMenu is called every frame in
+ * the middle of that, with the panel camera active and more submit batches
+ * still to come -- so text queued right after DrawMenu is rendered in the
+ * correct HUD context. (Text queued outside DrawPanel, or after its last
+ * submit, is silently dropped -- that was the invisible-text bug.) */
+void coop_draw_menu(void *cursor, s32 paused)
+{
+    orig_DrawMenu(cursor, paused);
+#if COOP_LABELS
+    if (g_puppet_active != 0) {
+        draw_puppet_label();
+    }
+#endif
 }
 
 static void coop_init(void)
@@ -436,7 +662,7 @@ void coop_tick(void)
      * state the player pass never runs, so publish the "not present" slot
      * right here to hide the peer's puppet promptly (menus, FMV), and claim
      * this frame so the draw hook does not publish a second time. */
-    if (!local_valid()) {
+    if (!local_valid() || Paused != 0) {
         publish_local();
         published_frame = modsdk_mailbox.frame;
     }

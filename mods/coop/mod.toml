@@ -21,5 +21,15 @@ function = "DrawCreatures"
 handler = "coop_draw_creatures"
 mode = "replace"
 
+# The name/Paused label is 2D text (Text3D). Text3D only queues glyphs into
+# font3d_scene, which DrawPanel submits with NuRndrGScnObj under the panel
+# camera it sets up mid-function. DrawMenu is called every frame from inside
+# DrawPanel *after* that camera is set and *before* later submit batches, so
+# appending our text right after DrawMenu gets it rendered in the right context.
+[[hook]]
+function = "DrawMenu"
+handler = "coop_draw_menu"
+mode = "replace"
+
 [mailbox]
 size = 0x200
