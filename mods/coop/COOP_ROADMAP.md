@@ -129,13 +129,44 @@ debris effect at the object's mid-body that self-animates in the debris pass.
     now starts at the top and settles down instead of jerking up first.
     Iters: 1 bare ring (no glow, bad descend); 2 JonProbe reuse (glow) but triggered
     on `warp_level` (too late); 3 (v6) timing on zone entry; 4 (v7) node position +
-    smooth descent. **Glow + zone-entry timing confirmed in-game; v7 position/
-    descent needs confirm.**
-- [ ] *(PR2, separate)* **Warp-IN / return-to-hub**: when the remote *returns*
-  to the hub (or a boss stage ends), the puppet should appear/leave with the warp
-  effect rather than pop in/out. Tip (user): all boss stages use a similar
-  teleport-out (Crash warps out with the effect, no teleporter object visible) —
-  find that path and drive the same `AddWarpDebris` on level-entry/exit edges.
+    smooth descent. **CONFIRMED in-game.** (Decorative follow-up: the ring "head"
+    glides toward the local player, not the puppet — deferred.)
+
+**Feature 2 — in-level / to-hub warp-OUT (CUSTOM, code done, needs confirm).**
+KEY: a level exit already has its OWN persistent placed teleporter pad (a type-`0xB1`
+creature, always drawn by the creature loop) — unlike the hub, where the teleporter
+is *summoned* by `JonProbe` from spline nodes with no placed pad. So we must NOT draw
+our own teleporter at a level exit (that made a redundant second one). The teleporter
+(`coop_probe_run`) is therefore **hub-only**. At a level exit we ONLY fire
+`AddWarpDebris` **and hide the puppet's body** the moment the remote reaches the exit
+zone (`in_finish_range > 0`), so it dissolves + despawns *into the existing pad* with
+the effect instead of lingering visible until the level swap. The hub body-vanish
+still uses retail's `warp_level` draw bracket (no extra hide). **No contract change**
+(reuses v7 `in_finish_range`).
+
+**Feature 3 — warp-IN / arrival (CUSTOM, code done, needs confirm).** No retail
+reference — our design. On the puppet's rising show edge (the remote just entered
+the local player's room, `!g_puppet_active`), `coop_warp_in_arm` plays a teleporter
+at the arrival point (`g_puppet.obj.pos`) via the same `coop_probe_run` primitive,
+and the body (+ mask) is held hidden for `COOP_TPIN_REVEAL` (40) frames — long enough
+for the teleporter's beam/lighting to build up first — then revealed, so it
+materialises out of the teleporter instead of popping in; teleporter runs
+`COOP_TPIN_FRAMES` (105). Skipped if the remote arrives already in a warp-out zone.
+The hub warp-OUT and warp-IN teleporters share one draw (mutually exclusive: leaving
+vs arriving). Body-hide (`coop_body_hidden`) is shared by F2 (dissolve) and F3
+(materialise). Gated `#define COOP_TPIN`. **No contract change.** Tunables:
+`COOP_TPIN_FRAMES`/`COOP_TPIN_REVEAL`.
+- Arrival also fires `AddWarpDebris` (materialise sparkle), matching the warp-out.
+- **Departure debris (any non-teleport leave):** on the puppet's falling show edge,
+  if the remote left to another room (`remote.level != Level`, present, not dead)
+  and no warp-out already sparkled it (`!g_warp_latched`), fire a farewell
+  `AddWarpDebris` at its last position. Covers **quit-to-hub from the pause menu**
+  (and any forced/cutscene transition), where the remote never touches a teleport
+  zone so F1/F2 wouldn't fire — it used to just blink out.
+- [ ] *(follow-up)* boss-stage teleport-out variant (effect-only, no teleporter
+  object — retail `finish_type` case); optional `finish_type` sync if needed.
+- [ ] *(follow-up, decorative)* teleporter "head" tracks the puppet, not the
+  local player (the `probepos → probedpos` glide currently chases the local pad).
 
 ## Stage 3 — Shared collectibles & progression  *(med–high decomp)*
 

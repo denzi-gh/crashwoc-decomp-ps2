@@ -63,6 +63,16 @@ static struct nuvec_s g_tp_pos;      /* latched node position (where puppet warp
 static unsigned short g_tp_rot;      /* teleporter spin angle (u16 anglespace) */
 static int g_tp_frame;               /* frames since warp start (bare-ring path) */
 static unsigned int g_tp_frame_drawn; /* SDK frame the beam last ran (once/frame guard) */
+static int g_tpin_active;            /* warp-IN (arrival) teleporter active */
+static struct nuvec_s g_tpin_pos;    /* arrival point (where the puppet materialises) */
+static int g_tpin_frame;             /* frames since arrival */
+static int g_tpin_hide;              /* this arrival hides the body (materialise) vs
+                                      * appears immediately (returning to hub tumble) */
+static int g_last_remote_room = -1;  /* last real remote room (level or hub, ignoring
+                                      * -1 loading/menu); tells a hub RETURN from a
+                                      * fresh hub spawn */
+static int g_warp_out_hide;          /* level-exit: hide the body so it despawns with
+                                      * the warp debris (hub uses the warp_level bracket) */
 
 static int local_valid(void)
 {
@@ -517,6 +527,19 @@ static void puppet_update(void)
 #define COOP_TP_UP 4.5f      /* retail JonProbe trigger raises probepos.y by 4.5 so the
                               * ring starts at the top and glides down; we replicate it */
 #endif
+/* Feature 3 (CUSTOM warp-IN / arrival): no retail reference. */
+#define COOP_TPIN 1          /* arrival teleporter + materialise */
+#ifndef COOP_TPIN_FRAMES
+#define COOP_TPIN_FRAMES 105 /* arrival teleporter total duration (~2.1 s @50 Hz) */
+#endif
+#ifndef COOP_TPIN_REVEAL
+#define COOP_TPIN_REVEAL 40  /* body stays hidden this many frames so the teleporter's
+                              * lighting/beam builds up before the puppet materialises */
+#endif
+#ifndef COOP_TPIN_DEBRIS
+#define COOP_TPIN_DEBRIS 32  /* frame the arrival sparkle fires -- just before the body
+                              * reveal so the debris blooms as the puppet materialises */
+#endif
 
 /* Bare ring model at node, spinning about Y (fallback path). */
 static void draw_teleporter(struct nuvec_s *node)
@@ -575,19 +598,28 @@ static void v3_from_vec(int *d, struct nuvec_s *s)
  * glide destination), exactly reproducing the trigger's initial state -- the ring
  * now appears at the top and settles down smoothly. probetime is set by JonProbe
  * itself each frame. */
-static void probe_ctx_arm(struct nuvec_s *node)
+static void probe_ctx_arm(struct nuvec_s *node, int instant)
 {
     struct nuvec_s top;
     struct probe_ctx z = {0};
     g_pp = z;
     g_pp.probeon = 1;
-    top = *node;
-    top.y += COOP_TP_UP;                /* ring starts at the raised height... */
-    v3_from_vec(g_pp.probepos, &top);  /* ...and glides down toward the node */
     v3_from_vec(g_pp.probedpos, node);
     v3_from_vec(g_pp.probepos2, node);
     v3_from_vec(g_pp.probespk, node);
     v3_from_vec(g_pp.in_finish_pos, node);
+    if (instant) {
+        /* Fully-formed teleporter from frame 0: ring already settled at the node
+         * (no descend) and beam risen + glowing (skip JonProbe's fade-in ramp), so
+         * it is already there when the body appears immediately (hub return). */
+        v3_from_vec(g_pp.probepos, node);
+        g_pp.probey = 0xC8000;   /* beam fully risen (JonProbe's probey clamp) */
+        g_pp.probecol = 0x1900;  /* beam fully glowing (probecol clamp) */
+    } else {
+        top = *node;
+        top.y += COOP_TP_UP;                /* ring starts at the raised height... */
+        v3_from_vec(g_pp.probepos, &top);  /* ...and glides down toward the node */
+    }
 }
 
 /* Swap in the puppet probe context, run the real JonProbe (advances + draws the
@@ -657,33 +689,47 @@ static void coop_probe_run(struct nuvec_s *node)
 }
 #endif /* COOP_TP_BEAM */
 
-/* Hub teleport-out (runs in the SIM hook via coop_tick). Two edges, matching how
- * real Crash's own teleporter behaves:
+/* The puppet's warp effect: the warp-debris sparkle AND the warp sound (SFX 0x1E,
+ * what real Crash plays when it teleports). GameSfx spatialises it at the puppet's
+ * position, so it only carries when the local player is in range. Used for BOTH
+ * teleport-OUT (every despawn edge: hub warp, level exit, non-teleport leaves like a
+ * pause-menu quit) and teleport-IN (materialise), so the puppet never appears or
+ * vanishes silently. */
+static void coop_warp_fx(void)
+{
+    AddWarpDebris(&g_puppet.obj);
+    gamesfx_effect_volume = 0x7ffe;
+    GameSfx(0x1E, &g_puppet.obj.pos);
+}
+
+/* Warp-OUT effects (runs in the SIM hook via coop_tick). The HUB and a LEVEL exit
+ * are deliberately handled DIFFERENTLY:
  *
- *  1. TELEPORTER APPEARS when the remote runs into a hub node's teleport zone --
- *     its in_finish_range ramps >0 the instant it enters, ~1 s BEFORE it commits.
- *     That is JonProbe's own gate, so the puppet's teleporter shows at the same
- *     moment the remote's real one does, not only when it dissolves. Latch the
- *     node under the puppet and arm the probe context.
- *  2. DISSOLVE (AddWarpDebris + the body-vanish via the warp_level bracket in the
- *     draw hook) fires at COMMIT, when warp_level goes != -1 -- the remote slides
- *     into the teleporter and sparks out.
+ *  - HUB (Feature 1): the hub level-select teleporter is *summoned* by JonProbe
+ *    from spline nodes -- there is NO persistent placed pad -- so we draw it for
+ *    the puppet (coop_probe_run), appearing on zone entry (in_finish_range > 0) at
+ *    the synced node (in_finish_pos). The body-vanish is retail's own warp_level
+ *    bracket in the draw hook.
+ *  - LEVEL exit (Feature 2): the level already has its OWN placed teleporter pad
+ *    (a persistent type-0xB1 creature, always drawn). Drawing a second one would
+ *    be wrong. So here we ONLY fire the warp debris and hide the puppet's body, so
+ *    it dissolves + despawns *into the existing pad* with the effect, instead of
+ *    lingering visible until the level swap. No teleporter of our own.
  *
- * Both gated on Level 0x25 (the hub); each latched so its one-shot fires once. */
+ * Each one-shot latched so it fires once per warp. */
 static void coop_warp_effect(void)
 {
-    /* (1) teleporter appears on zone entry */
+    /* (1) HUB teleporter appears on zone entry (Feature 1 only) */
     if (Level == 0x25 && remote_snap.in_finish_range > 0) {
         if (!g_tp_latched) {
-            /* the teleport NODE (synced), not the puppet's entry pos -- so the
-             * ring lands on the pad instead of where the puppet crossed the edge */
+            /* the teleport NODE (synced), not the puppet's entry pos */
             g_tp_pos.x = remote_snap.in_finish_pos[0];
             g_tp_pos.y = remote_snap.in_finish_pos[1];
             g_tp_pos.z = remote_snap.in_finish_pos[2];
             g_tp_rot = 0;
             g_tp_frame = 0;
 #if COOP_TP_BEAM
-            probe_ctx_arm(&g_tp_pos);
+            probe_ctx_arm(&g_tp_pos, 0); /* hub warp-out: normal descend + ramp */
 #endif
             g_tp_latched = 1;
         }
@@ -695,15 +741,95 @@ static void coop_warp_effect(void)
         g_tp_active = 0;
     }
 
-    /* (2) dissolve on commit */
-    if (Level == 0x25 && remote_snap.warp_level != -1) {
-        if (!g_warp_latched) {
-            AddWarpDebris(&g_puppet.obj);
-            g_warp_latched = 1;
+    /* (2) dissolve + despawn */
+    if (Level == 0x25) {
+        /* hub: commit = warp_level; body-vanish is the warp_level draw bracket */
+        if (remote_snap.warp_level != -1) {
+            if (!g_warp_latched) {
+                coop_warp_fx();
+                g_warp_latched = 1;
+            }
+        } else {
+            g_warp_latched = 0;
         }
+        g_warp_out_hide = 0;
     } else {
-        g_warp_latched = 0;
+        /* level exit: the moment the remote reaches the exit zone
+         * (in_finish_range > 0) fire the debris and hide the body, so the puppet
+         * despawns WITH the effect (sooner than waiting for the level swap). */
+        if (remote_snap.in_finish_range > 0) {
+            if (!g_warp_latched) {
+                coop_warp_fx();
+                g_warp_latched = 1;
+            }
+            g_warp_out_hide = 1;
+        } else {
+            g_warp_latched = 0;
+            g_warp_out_hide = 0;
+        }
     }
+}
+
+#if COOP_TPIN
+/* Feature 3 (CUSTOM): warp-IN. When the remote arrives in the local player's room
+ * the puppet currently just pops into existence. Instead play a teleporter at the
+ * arrival point and hold the body hidden for the first COOP_TPIN_REVEAL frames so
+ * it materialises out of the teleporter. No retail reference -- our design; reuses
+ * the same JonProbe probe primitive (coop_probe_run) as the warp-out. Armed on the
+ * puppet's rising show edge; skipped if the remote arrives already in a warp-out
+ * zone (that path owns the teleporter). */
+static void coop_warp_in_arm(void)
+{
+    if (remote_snap.in_finish_range > 0) {
+        return; /* arriving straight into a warp-out zone: leave it to warp-out */
+    }
+    g_tpin_pos = g_puppet.obj.pos; /* the point the puppet materialises at */
+    g_tpin_frame = 0;
+    g_tpin_active = 1;
+    /* Hide the body while it materialises -- EXCEPT when returning to the HUB from a
+     * level (the remote's last real room was a playable level, not the hub): there
+     * Crash tumbles back out at the node, so it should appear immediately. A fresh
+     * hub spawn (came from the menu / was already in the hub) still materialises. */
+    g_tpin_hide = !(Level == 0x25 && g_last_remote_room >= 0 &&
+                    g_last_remote_room != 0x25);
+#if COOP_TP_BEAM
+    /* When the body appears immediately (hub return, !g_tpin_hide) the teleporter
+     * must be fully formed at once so it isn't "late"; when the body materialises
+     * (hidden), let it build up normally during the hide. */
+    probe_ctx_arm(&g_tpin_pos, !g_tpin_hide);
+#endif
+    /* the arrival sparkle is deferred to coop_warp_in_tick (near the reveal) so it
+     * blooms as the body appears, not while it is still hidden */
+}
+
+static void coop_warp_in_tick(void)
+{
+    if (g_tpin_active) {
+        if (g_tpin_frame == COOP_TPIN_DEBRIS) {
+            coop_warp_fx(); /* sparkle + warp sound as it materialises in */
+        }
+        g_tpin_frame++;
+        if (g_tpin_frame >= COOP_TPIN_FRAMES) {
+            g_tpin_active = 0;
+        }
+    }
+}
+
+#endif /* COOP_TPIN */
+
+/* The puppet body is hidden while it is either materialising out of the arrival
+ * teleporter (Feature 3, only when g_tpin_hide) or dissolving into a level-exit pad
+ * (Feature 2). g_tpin_hide is decided per-arrival in coop_warp_in_arm: a fresh spawn
+ * materialises (hidden), but a puppet RETURNING to the hub from a level tumbles back
+ * out at the node and so appears immediately (not hidden). */
+static int coop_body_hidden(void)
+{
+    int hidden = g_warp_out_hide;
+#if COOP_TPIN
+    hidden = hidden ||
+             (g_tpin_active && g_tpin_hide && g_tpin_frame < COOP_TPIN_REVEAL);
+#endif
+    return hidden;
 }
 
 /* The show rule IS the level-independence requirement: the puppet exists
@@ -711,6 +837,7 @@ static void coop_warp_effect(void)
 static void update_puppet(void)
 {
     int show;
+    int arriving;
 
     show = local_valid() &&
            (remote_snap.flags & COOP_F_PRESENT) != 0 &&
@@ -718,16 +845,49 @@ static void update_puppet(void)
            remote_snap.level == Level &&
            stale_frames < STALE_LIMIT;
     if (show) {
+        /* rising show edge = the remote just entered this room (arrival) */
+        arriving = !g_puppet_active;
         if (!g_puppet_active || g_puppet_char != remote_snap.character ||
             g_puppet.obj.model != puppet_model(remote_snap.character)) {
             puppet_init(remote_snap.character);
         }
         puppet_update();
+#if COOP_TPIN
+        if (arriving) {
+            coop_warp_in_arm(); /* after puppet_update so obj.pos is the arrival pt */
+        }
+        coop_warp_in_tick();
+#endif
         coop_warp_effect();
         g_puppet_level = Level;
+    } else {
+        /* Falling show edge: the puppet just despawned. Fire a farewell warp debris
+         * at its last position. This covers quit-to-hub from the pause menu, which
+         * on the remote STOPS publishing (its coop_tick doesn't run during the quit
+         * load), so the local side sees the puppet go stale rather than get a clean
+         * "left" update -- hence we do NOT require COOP_F_PRESENT, a fresh level
+         * field, or stale_frames < limit. A stale-despawn only happens after
+         * STALE_LIMIT frames of silence, i.e. the remote really is gone (quit or
+         * disconnect), both worth a farewell. We only exclude: (a) the LOCAL player
+         * being the one who left (local_valid -- no level to spawn the effect in);
+         * (b) the remote dying (a death, not a warp); (c) a warp-out that already
+         * sparkled it (g_warp_latched: hub warp / level-exit pad). */
+        if (g_puppet_active && !g_warp_latched && local_valid() &&
+            (remote_snap.flags & COOP_F_DEAD) == 0) {
+            coop_warp_fx();
+        }
+#if COOP_TPIN
+        g_tpin_active = 0; /* puppet gone: drop any pending arrival fx */
+#endif
+        g_warp_out_hide = 0;
     }
     g_puppet_active = show;
     COOP->diag = (g_puppet_inits << 8) | (show ? 1u : 0u);
+    /* Track the remote's last REAL room (ignore -1 loading/menu) for the next
+     * arrival's hide decision -- updated after coop_warp_in_arm has read it. */
+    if (remote_snap.level != -1) {
+        g_last_remote_room = remote_snap.level;
+    }
 }
 
 /* Floating name tag + "Paused" label above the remote puppet.
@@ -742,8 +902,9 @@ static void update_puppet(void)
  * (projection bypassed) for isolating placement issues. */
 #define COOP_LABELS 1
 #define COOP_LABEL_DEBUG 0
-#define COOP_LABEL_UP 2.0f       /* world units above the puppet origin */
+#define COOP_LABEL_UP 2.8f       /* world units above the puppet origin (above the head) */
 #define COOP_LABEL_SCALE 1.0f    /* base Text3D glyph scale */
+#define COOP_PAUSED_SCALE 0.3f   /* PAUSED is a small status pip, much smaller than a name */
 /* NuCameraTransformScreen returns PS2 GS screen coords (12.4 fixed-point). The
  * visible frame is centred on the guard-band origin 2048.0 == 32768 in 12.4,
  * spanning +/- (width/2)<<4 x and +/- (height/2)<<4 y. Map to Text3D's ~-1..1
@@ -860,6 +1021,7 @@ static void draw_puppet_label(void)
     /* Paused takes over the slot entirely -- the name hides so they don't
      * overlap; otherwise show the name. */
     if (remote_snap.paused != 0) {
+        float ps = s * COOP_PAUSED_SCALE; /* much smaller status pip above the head */
         txt[0] = 'P';
         txt[1] = 'A';
         txt[2] = 'U';
@@ -867,7 +1029,7 @@ static void draw_puppet_label(void)
         txt[4] = 'E';
         txt[5] = 'D';
         txt[6] = 0;
-        Text3D(txt, 8, 4, x, y, 1.0f, s, s, s);
+        Text3D(txt, 8, 4, x, y, 1.0f, ps, ps, ps);
     } else if (remote_snap.name[0] != 0) {
         upcase_copy(txt, remote_snap.name, 16);
         Text3D(txt, 8, 4, x, y, 1.0f, s, s, s);
@@ -1032,7 +1194,11 @@ void coop_draw_creatures(struct creature_s *c, s32 count, s32 render,
 #if COOP_SPECIAL_VEH
         setup_vehicle_buggy();
 #endif
-        orig_DrawCreatures(&g_puppet, 1, render, shadow);
+        /* Hide the body while it materialises out of an arrival teleporter
+         * (Feature 3) or dissolves into a level-exit pad (Feature 2). The bracket
+         * above is still set/restored so the local player is unaffected. */
+        if (!coop_body_hidden())
+            orig_DrawCreatures(&g_puppet, 1, render, shadow);
 #if COOP_SPECIAL_VEH
         teardown_vehicle_buggy();
 #endif
@@ -1042,26 +1208,41 @@ void coop_draw_creatures(struct creature_s *c, s32 count, s32 render,
         player->obj.target_xrot = save_xrot;
         player->obj.target_yrot = save_yrot;
 #if COOP_PUPPET_MASK
-        /* Aku Aku over the puppet, after the body so it composites on top. */
-        draw_puppet_mask();
+        /* Aku Aku over the puppet, after the body so it composites on top (also
+         * hidden while the body is materialising / dissolving). */
+        if (!coop_body_hidden())
+            draw_puppet_mask();
 #endif
 #if COOP_TELEPORTER
-        /* Hub warp-out: the teleporter at the puppet's node, in sync with the
-         * body-vanish (warp_level bracket) and the debris. State is armed in the
-         * sim hook (coop_warp_effect); this draws it.
+        /* The teleporter at the puppet's node -- one primitive for BOTH the
+         * warp-OUT (Feature 1/2, at in_finish_pos, armed in coop_warp_effect) and
+         * the warp-IN (Feature 3, at the arrival point, armed in coop_warp_in_arm).
+         * They are mutually exclusive (leaving vs arriving), so at most one is
+         * active; pick its position.
          *   COOP_TP_BEAM: reuse the real JonProbe (ring + glowing beam) with an
          *   isolated probe context -- once per frame (it advances state + spawns
          *   debris; the hub player pass runs twice, main + reflection, so guard).
          *   Fallback: the bare spinning ring, drawn every pass. */
-        if (g_tp_active) {
-#if COOP_TP_BEAM
-            if (g_tp_frame_drawn != modsdk_mailbox.frame) {
-                g_tp_frame_drawn = modsdk_mailbox.frame;
-                coop_probe_run(&g_tp_pos);
+        {
+            struct nuvec_s *tele_pos = 0;
+            if (g_tp_active) {
+                tele_pos = &g_tp_pos;
             }
-#else
-            draw_teleporter(&g_tp_pos);
+#if COOP_TPIN
+            else if (g_tpin_active) {
+                tele_pos = &g_tpin_pos;
+            }
 #endif
+            if (tele_pos != 0) {
+#if COOP_TP_BEAM
+                if (g_tp_frame_drawn != modsdk_mailbox.frame) {
+                    g_tp_frame_drawn = modsdk_mailbox.frame;
+                    coop_probe_run(tele_pos);
+                }
+#else
+                draw_teleporter(tele_pos);
+#endif
+            }
         }
 #endif
 #if COOP_LABELS

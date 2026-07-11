@@ -36,6 +36,14 @@ extern float in_finish_pos[3];      /* world position of the teleport node Crash
  * self-animates in the game's debris pass. 0x00260CD8 */
 void AddWarpDebris(struct obj_s *obj);
 
+/* Play a game sound effect. pos != NULL routes through NuSoundPlay3d, which
+ * spatialises + attenuates it by distance from the listener (so it is only
+ * audible when in range); pos == NULL plays it non-positional. gamesfx_effect_volume
+ * is the base volume (-1 = use the sfx's default); set it before the call, the game
+ * resets it to -1 afterwards. SFX 0x1E is the warp/dissolve sound. 0x0024FA90 */
+void GameSfx(int id, struct nuvec_s *pos);
+extern int gamesfx_effect_volume;   /* 0x00632960 */
+
 /* --- Teleporter prop (the spinning hub/level-exit ring) -----------------
  * The teleporter you see is NOT a placed object: JonProbe (0x1DB150) draws it
  * every frame from global probe state via Draw3DCharacter, using the model for
