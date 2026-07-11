@@ -73,6 +73,7 @@ their transform lives in `NEWBUGGY` (`creature+0x224`), now typed by the
 - [x] Aku Aku mask on puppet: init via `NewMask(&mask, &puppet.pos)`, `UpdateMask` + `DrawMask` each frame, shadow bracketed (`COOP_PUPPET_MASK` toggle).
 - [x] *(was optional)* puppet-owned `NEWBUGGY` — done: typed by the `game/vehicle` decomp (merged from `main`), mirrored into `mods/include/creature.h`; borrow hack removed
 - [ ] *(follow-up)* sync vehicle body `anim`/`vehicle_frame` so the mounted body animation (not just the shell) tracks the remote
+- [ ] *(follow-up)* puppet renders the glider-level **Zoffa UFO teleport-in effect + debris** on the remote's side (visual completeness in glider/farm/space-arena levels). Enabler **landed 2026-07-11**: `game/vehicle` `TeleportManager` (`0x00205978`) decompiled + **matching** — respawns each active teleporting Zoffa at one of four camera-relative `TeleportPos` points (cursor `D_006332A4`, advanced on success), clamps above `Level_GliderFloor`, re-aims 90/135° off `PlayerGlider.AngleY`, and seeds `Velocity` by rotating `TeleportVel` through the camera matrix. Ties into Stage 4 (shared enemies); the teleport/`ZoffaSmoke` debris is per-instance sim today, so this is a render-the-remote's-Zoffa task.
 
 ## Stage 3 — Shared collectibles & progression  *(med–high decomp)*
 

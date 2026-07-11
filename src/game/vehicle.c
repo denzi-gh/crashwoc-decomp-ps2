@@ -267,6 +267,103 @@ void NuQuatToMtx(struct nuquat_s *q, struct numtx_s *m);
 void NuHGobjRndr(struct NUHGOBJ_s *hobj, struct numtx_s *m, s32 nlayers,
                  short *layer);
 
+/* ---- Zoffa UFO teleport (glider levels) ------------------------------- */
+
+typedef struct ZOFFASTART {
+    float x;
+    float y;
+    float z;
+    float Angle;
+} ZOFFASTART;                       /* 0x10 */
+
+typedef struct ZOFFASTRUCT {
+    unsigned char MainDraw[0xE0];   /* 0x000  draw/creature block */
+    s32 ActiveMode;                 /* 0x0E0 */
+    float RespawnTimer;             /* 0x0E4 */
+    struct nuvec_s Position;        /* 0x0E8 */
+    struct nuvec_s Velocity;        /* 0x0F4 */
+    struct nuvec_s Resolved;        /* 0x100 */
+    float TiltX;                    /* 0x10C */
+    float TiltZ;                    /* 0x110 */
+    float DestTiltX;                /* 0x114 */
+    float DestTiltZ;                /* 0x118 */
+    float DestAngleY;               /* 0x11C */
+    float AngleY;                   /* 0x120 */
+    s32 NoFireSound;                /* 0x124 */
+    float Temp[6];                  /* 0x128 */
+    float VisibleTimer;             /* 0x140 */
+    float NewDirectionTimer;        /* 0x144 */
+    float NewAltitudeTimer;         /* 0x148 */
+    float NewAltitudeTarget;        /* 0x14C */
+    s32 TerminalDive;               /* 0x150 */
+    s32 Explode;                    /* 0x154 */
+    s32 HitPoints;                  /* 0x158 */
+    s32 FireFrame;                  /* 0x15C */
+    s32 FireNow;                    /* 0x160 */
+    float FireTimer;                /* 0x164 */
+    s32 Seen;                       /* 0x168 */
+    s32 SmkTimer;                   /* 0x16C */
+    struct numtx_s Locators[16];    /* 0x170 */
+    s32 SmokeCounter;               /* 0x570 */
+    float AggressionTimer;          /* 0x574 */
+    s32 PlayerCloseAndVisable;      /* 0x578 */
+    float NotSeenTimer;             /* 0x57C */
+    float AggressionPoints;         /* 0x580 */
+    s32 Teleport;                   /* 0x584 */
+    float NoTeleportTimer;          /* 0x588 */
+    float Speed;                    /* 0x58C */
+    s32 InFront;                    /* 0x590 */
+    s32 FacingTarget;               /* 0x594 */
+    float Dist;                     /* 0x598 */
+    s32 FireSide;                   /* 0x59C */
+    float NotInFrontTimer;          /* 0x5A0 */
+    float LockedOnTimer;            /* 0x5A4 */
+    float KeepSameVelocityTimer;    /* 0x5A8 */
+    float FireBurstTimer;           /* 0x5AC */
+} ZOFFASTRUCT;                      /* 0x5B0 */
+
+typedef struct GLIDERSTRUCT {
+    struct creature_s *Cre;         /* 0x00 */
+    struct nuvec_s vel;             /* 0x04 */
+    s32 Dead;                       /* 0x10 */
+    s32 CocoDead;                   /* 0x14 */
+    float CocoDeadTimer;            /* 0x18 */
+    float CocoDeathSpinX;           /* 0x1C */
+    float CocoDeathSpinZ;           /* 0x20 */
+    float NextEngRum;               /* 0x24 */
+    float FixVelTimer;              /* 0x28 */
+    float ImmuneAsteroidsTimer;     /* 0x2C */
+    struct nuvec_s Position;        /* 0x30 */
+    struct nuvec_s OldPosition;     /* 0x3C */
+    struct nuvec_s Velocity;        /* 0x48 */
+    struct nuvec_s Resolved;        /* 0x54 */
+    struct nuvec_s RailPoint;       /* 0x60 */
+    float RailAngle;                /* 0x6C */
+    float TiltX;                    /* 0x70 */
+    float TiltZ;                    /* 0x74 */
+    float DestTiltX;                /* 0x78 */
+    float DestTiltZ;                /* 0x7C */
+    float AngleY;                   /* 0x80 */
+    /* ... remaining glider fields not needed here ... */
+} GLIDERSTRUCT;
+
+extern ZOFFASTRUCT EnemyZoffa[4];
+extern struct nuvec_s TeleportPos[4];
+extern struct nuvec_s TeleportVel[4];
+extern GLIDERSTRUCT PlayerGlider;
+extern struct numtx_s GameCam;      /* world camera matrix (== GameCam[0].m) */
+extern float Level_GliderFloor;
+extern float D_0062DA14;            /* == 0.8f (KeepSameVelocityTimer seed) */
+extern s32 D_006332A4;              /* Zoffa teleport slot cursor */
+#define ZoffaTeleportIndx D_006332A4
+
+void NuVecMtxTransform(struct nuvec_s *dst, struct nuvec_s *src,
+                       struct numtx_s *m);
+void NuVecMtxRotate(struct nuvec_s *dst, struct nuvec_s *src,
+                    struct numtx_s *m);
+s32 SafeFromCollisions(struct nuvec_s *pos);
+void InitZoffa(ZOFFASTRUCT *z, ZOFFASTART *start);
+
 /* Faithful full-C near-match (state=asm): structure/frame/reg-mask exact, but
  * ee-gcc rematerializes %hi(mTEMP) in each of the Level==0x1A/else blocks and
  * fills the `bne` delay slot with a speculative scale load, where retail shares
@@ -310,6 +407,59 @@ void DrawGlider(struct creature_s *c)
     if (idx != -1) {
         DrawCharacterModel(&CModel[idx], &c->obj.anim, &mTEMP, 0, 1, 0,
                            &c->mtxLOCATOR[1][0], &c->momLOCATOR[1][0], &c->obj);
+    }
+}
+
+/* Respawns each active teleporting Zoffa UFO at one of four camera-relative
+ * teleport points (cursor D_006332A4, advanced on success), clamped above the
+ * glider floor and re-aimed 90/135 degrees off the player's heading, then seeds
+ * its velocity by rotating TeleportVel through the camera matrix. */
+void TeleportManager(void)
+{
+    struct nuvec_s Point;
+    s32 Indx;
+    s32 i;
+    s32 j;
+    ZOFFASTART Start;
+
+    for (i = 0; i < 4; i++) {
+        if ((EnemyZoffa[i].ActiveMode != 0) && (EnemyZoffa[i].Teleport != 0)) {
+            for (j = 0; j < 2; j++) {
+                Indx = (j + ZoffaTeleportIndx) & 3;
+                NuVecMtxTransform(&Point, &TeleportPos[Indx], &GameCam);
+                if (Point.y < Level_GliderFloor) {
+                    Point.y = Level_GliderFloor;
+                }
+                if (SafeFromCollisions(&Point) != 0) {
+                    Start.x = Point.x;
+                    Start.y = Point.y;
+                    Start.z = Point.z;
+                    switch (Indx) {
+                    case 0:
+                        Start.Angle = PlayerGlider.AngleY - 135.0f;
+                        break;
+                    case 1:
+                        Start.Angle = PlayerGlider.AngleY + 135.0f;
+                        break;
+                    case 2:
+                        Start.Angle = PlayerGlider.AngleY - 90.0f;
+                        break;
+                    case 3:
+                        Start.Angle = PlayerGlider.AngleY + 90.0f;
+                        break;
+                    }
+                    InitZoffa(&EnemyZoffa[i], &Start);
+                    EnemyZoffa[i].NoTeleportTimer = 3.0f;
+                    EnemyZoffa[i].KeepSameVelocityTimer = D_0062DA14;
+                    EnemyZoffa[i].Speed = 14.0f;
+                    NuVecMtxRotate(&EnemyZoffa[i].Velocity,
+                                   &TeleportVel[(j + ZoffaTeleportIndx) & 3],
+                                   &GameCam);
+                    ZoffaTeleportIndx = (ZoffaTeleportIndx + 1) & 3;
+                    break;
+                }
+            }
+        }
     }
 }
 

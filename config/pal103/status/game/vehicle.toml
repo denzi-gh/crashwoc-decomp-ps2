@@ -73,7 +73,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:00205978:TeleportManager"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00205be8:MoveZoffaUFO"
