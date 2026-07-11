@@ -37,6 +37,13 @@ struct nucolour3_s {
     float b;
 }; /* 0xC */
 
+struct nuquat_s {
+    float x;
+    float y;
+    float z;
+    float w;
+}; /* 0x10 */
+
 struct numtx_s {
     float _00, _01, _02, _03;
     float _10, _11, _12, _13;
@@ -407,6 +414,43 @@ struct rumble_s {
     unsigned char frame;   /* 0x2 */
     unsigned char frames;  /* 0x3 */
 }; /* 0x4 */
+
+/* ------------------------------------------------------------------ */
+/* NEWBUGGY -- special-vehicle transform state                         */
+/* ------------------------------------------------------------------ */
+
+/* creature_s.Buggy (creature+0x224) points here.  Holds the transform for
+ * the glider / atlasphere ("ball") special vehicles.  Offsets are PS2-verified
+ * in unit game/vehicle (DrawGlider / DrawAtlas / Move* / ObjectToAtlas).
+ * Fields are filled in as the unit is decompiled; gaps are opaque padding. */
+struct NEWBUGGY {
+    char pad_00[0x28];
+    float timer;               /* 0x28  ProcessTimer countdown (ProcessGliderMovement) */
+    char pad_2C[0x30 - 0x2C];
+    struct nuvec_s pos;        /* 0x30  glider position (NuMtxTranslate) */
+    char pad_3C[0x48 - 0x3C];
+    struct nuvec_s vel;        /* 0x48  glider velocity (pos += vel*dt) */
+    char pad_54[0x70 - 0x54];
+    float pitch;               /* 0x70  glider X rotation (NuMtxRotateX) */
+    float roll;                /* 0x74  glider Z rotation (NuMtxSetRotationZ) */
+    char pad_78[0x80 - 0x78];
+    float yaw;                 /* 0x80  glider Y rotation (NuMtxRotateY) */
+    char pad_84[0x98 - 0x84];
+    s32 mode;                  /* 0x98  glider mode flag (0 normal / weather-boss) */
+    char pad_9C[0xA0 - 0x9C];
+    struct nuvec_s avel;       /* 0xA0  glider angular/seek vector (SetNuVec) */
+    char pad_AC[0xB4 - 0xAC];
+    s32 enable;                /* 0xB4  draw/transform enable flag */
+    char pad_B8[0x20C - 0xB8];
+    struct nuvec_s ball_pos;   /* 0x20C  atlasphere position (NuMtxTranslate) */
+    char pad_218[0x23C - 0x218];
+    struct nuvec_s ball_vel;   /* 0x23C  atlasphere velocity (<-> obj->mom) */
+    char pad_248[0x26C - 0x248];
+    float atlas_rotparam;      /* 0x26C  rotation tuning float (AdjustAtlasRotations arg) */
+    char pad_270[0x284 - 0x270];
+    struct nuquat_s rotquat;   /* 0x284  atlasphere render orientation (NuQuatToMtx) */
+    struct nuquat_s rotquat_delta; /* 0x294  rotation accumulator (NuQuatMul target) */
+};
 
 /* ------------------------------------------------------------------ */
 /* creature_s -- one creature / player slot                            */

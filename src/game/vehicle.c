@@ -229,3 +229,125 @@
  *   0x0021fdc0 SmashRockIntoTwo
  *   0x0021feb8 CheckAgainstRocks
  */
+
+#include "creature.h"
+
+extern s32 Level;
+extern struct numtx_s mTEMP;
+
+/* gp-relative angle scale constants used to convert the glider's float roll/
+ * pitch/yaw into NuMtx integer rotation units. */
+extern float D_0062D91C;
+extern float D_0062D920;
+extern float D_0062D924;
+extern struct nuvec_s D_006B75A0;   /* fixed glider translation (level 0xD) */
+
+/* per-level glider model indices into CModel (-1 == none).  These live far
+ * from $gp (retail uses %hi/%lo absolute loads); declare as incomplete arrays
+ * so the compiler does not treat them as gp-relative small data. */
+extern s8 D_0056236E[];
+extern s8 D_005623B9[];
+extern s8 D_005623C3[];
+
+extern s32 AtlasFrame;
+extern s32 tttt;
+extern s8 D_0056238B[];   /* per-level atlasphere model index (far from $gp) */
+
+extern s32 temp_xzmomset;
+extern float D_00560D44[]; /* ball vertical lift offset (far from $gp) */
+extern float D_0062DE9C;   /* ball momentum -> velocity divisor */
+extern float D_0062DEA0;   /* ball 'boing' vertical momentum */
+
+void NuMtxSetRotationX(struct numtx_s *m, s32 r);
+void NuMtxSetRotationZ(struct numtx_s *m, s32 r);
+void NuMtxRotateX(struct numtx_s *m, s32 r);
+void NuMtxRotateY(struct numtx_s *m, s32 r);
+void NuMtxTranslate(struct numtx_s *m, struct nuvec_s *v);
+void NuQuatToMtx(struct nuquat_s *q, struct numtx_s *m);
+void NuHGobjRndr(struct NUHGOBJ_s *hobj, struct numtx_s *m, s32 nlayers,
+                 short *layer);
+
+/* Faithful full-C near-match (state=asm): structure/frame/reg-mask exact, but
+ * ee-gcc rematerializes %hi(mTEMP) in each of the Level==0x1A/else blocks and
+ * fills the `bne` delay slot with a speculative scale load, where retail shares
+ * one `lui $s1,%hi(mTEMP)` in that delay slot (+4 bytes). See docs/notes.md
+ * ("DrawGlider") and the recorded no_progress blocker. */
+void DrawGlider(struct creature_s *c)
+{
+    struct NEWBUGGY *b;
+    float lift;
+    float scale;
+    s8 idx;
+
+    b = c->Buggy;
+    lift = ((Level != 0xD) && (Level != 0x1A)) ? 15.0f : 0.0f;
+
+    if (b->enable && (Level == 0xD)) {
+        NuMtxSetRotationX(&mTEMP, lift * D_0062D91C);
+        NuMtxRotateY(&mTEMP, 0);
+        NuMtxTranslate(&mTEMP, &D_006B75A0);
+    } else if (Level == 0x1A) {
+        scale = D_0062D920;
+        NuMtxSetRotationZ(&mTEMP, b->roll * scale);
+        NuMtxRotateX(&mTEMP, (b->pitch + b->pitch) * scale);
+        NuMtxRotateY(&mTEMP, b->yaw * scale);
+        NuMtxTranslate(&mTEMP, &b->pos);
+    } else {
+        scale = D_0062D924;
+        NuMtxSetRotationZ(&mTEMP, b->roll * scale);
+        NuMtxRotateX(&mTEMP, (b->pitch + lift) * scale);
+        NuMtxRotateY(&mTEMP, b->yaw * scale);
+        NuMtxTranslate(&mTEMP, &b->pos);
+    }
+
+    if (Level == 0x12) {
+        idx = D_005623C3[0];
+    } else if (Level == 0x1A) {
+        idx = D_005623B9[0];
+    } else {
+        idx = D_0056236E[0];
+    }
+    if (idx != -1) {
+        DrawCharacterModel(&CModel[idx], &c->obj.anim, &mTEMP, 0, 1, 0,
+                           &c->mtxLOCATOR[1][0], &c->momLOCATOR[1][0], &c->obj);
+    }
+}
+
+void DrawAtlas(struct creature_s *c)
+{
+    struct numtx_s m;
+    struct NEWBUGGY *b;
+    s8 idx;
+
+    b = c->Buggy;
+    if (AtlasFrame == 0x705) {
+        tttt++;
+    }
+    NuQuatToMtx(&b->rotquat, &m);
+    NuMtxTranslate(&m, &b->ball_pos);
+    idx = D_0056238B[0];
+    if (idx != -1) {
+        NuHGobjRndr(CModel[idx].hobj, &m, 1, 0);
+    }
+}
+
+/* Seeds the ball (atlasphere) NEWBUGGY transform from a character's object:
+ * ball_pos <- obj->pos (+ vertical lift), ball_vel <- obj->mom / divisor.
+ * Faithful near-match (state=asm): first half byte-exact; the mom/divisor FP
+ * load order and the `boing` beql delay-slot differ (scheduling). */
+void ObjectToAtlas(struct obj_s *obj, struct creature_s *c)
+{
+    struct NEWBUGGY *b = c->Buggy;
+
+    b->ball_pos.x = obj->pos.x;
+    b->ball_pos.y = obj->pos.y + D_00560D44[0];
+    b->ball_pos.z = obj->pos.z;
+    if (temp_xzmomset != 0) {
+        b->ball_vel.x = obj->mom.x / D_0062DE9C;
+        b->ball_vel.z = obj->mom.z / D_0062DE9C;
+    }
+    if (obj->boing != 0) {
+        obj->mom.y = D_0062DEA0;
+    }
+    b->ball_vel.y = obj->mom.y;
+}
