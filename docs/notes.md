@@ -5,6 +5,34 @@ just things that came up while building and shouldn't be lost.
 
 ## Open — revisit later
 
+### HubSelect (game/game, 0x001DC7C8) — faithful full-C in tree, fuzzy 9.5%
+
+Session `s-20260711-204712-b3fed2` (2026-07-11). Full-C reconstruction of the
+2368-byte hub-warp/level-select routine is in `src/game/game.c` (with local
+minimal `struct creature_s`/`nugspline_s`/`spltab_s`/`gdeb_s`/`moveinfo_s`
+views; offsets verified against `include/creature.h` — obj at creature+0x4).
+Structure is faithful to the retail disasm (GC `game.c` used only as a naming/
+shape hint): two hub-SFX loops, the `hublevelopen` open/lock grid with the
+`k`-flag debris spawn, and the spline-crossing enter/leave tests with the
+Hub-launch (mom via `NuTrigTable`, `AddGameDebris(0x82)`) and leave-cut switch.
+Compiles + links clean, no unresolved symbols; state stays **asm** (not promoted).
+
+- **Blocked by the SN-assembler FP-hazard nop class** (same as SetLevel /
+  ModelAnimDuration below). `ee-gcc -S` emits commented `#nop` before the
+  `c.lt.s`/`c.le.s` compares and before the `bc1f`/`bc1t` branches; `_sonyize`
+  keeps them as `#nop` and decompals `as` drops them, while retail's SN ProDG
+  `as` materialized real nops. HubSelect has ~12+ float compares (two `d<6`/`d<3`
+  volume gates, ~8 `c.le.s` crossing tests, the spin `c.lt.s`), so each dropped
+  nop shifts the whole tail — hence the low fuzzy despite correct logic.
+  Candidate frame is +16 (288 vs 272), also downstream of the shift.
+- PS2-specific constants that differ from the GC port: first hub-SFX loop uses
+  `GameSfxLoop(0x10F, closest)`; the `i==3` random pitch is
+  `gamesfx_pitch = 0x3AD - (qrand()*0x139)/0x10000` + `GameSfx(0x114,..)`;
+  `NewBuzz(&rumble, 0xA)`; volume slope consts are the gp floats
+  `D_0062D2A4`/`D_0062D2A8`, debris y-lift is `+0.25f` (i<4) else `D_0062D2AC`.
+- Same tooling fix as SetLevel would unblock it (blocker recorded:
+  `build/pal103/agent_blockers/…HubSelect-075fde.json`).
+
 ### SetLevel (game/main, 0x001CB600) — faithful C in tree, fuzzy 73.3%
 
 Session `s-20260709-232345-bd8dbe` (2026-07-09). Full-C reconstruction is in

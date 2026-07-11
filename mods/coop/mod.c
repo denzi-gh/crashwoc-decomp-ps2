@@ -56,7 +56,13 @@ static int g_puppet_active;          /* show rule result, handler reads it */
 static int g_puppet_level;           /* level the puppet was placed in */
 static short g_puppet_char;          /* character the record was built for */
 static unsigned int g_puppet_inits;  /* diagnostic: re-init count */
-static int g_warp_latched;           /* hub warp-out effect fired for this warp */
+static int g_warp_latched;           /* dissolve debris fired for this warp (commit) */
+static int g_tp_latched;             /* teleporter armed for this zone entry */
+static int g_tp_active;              /* teleporter ring should draw this frame */
+static struct nuvec_s g_tp_pos;      /* latched node position (where puppet warps) */
+static unsigned short g_tp_rot;      /* teleporter spin angle (u16 anglespace) */
+static int g_tp_frame;               /* frames since warp start (bare-ring path) */
+static unsigned int g_tp_frame_drawn; /* SDK frame the beam last ran (once/frame guard) */
 
 static int local_valid(void)
 {
@@ -152,6 +158,16 @@ static void publish_local(void)
          * loads. The peer uses it to play the warp effect on our puppet at the
          * right moment instead of just popping us out of existence. */
         s->warp_level = warp_level;
+        /* in_finish_range goes >0 the instant we enter a teleport zone, ~1 s
+         * before warp_level commits -- the peer uses it to make our puppet's
+         * teleporter appear as we run into the zone, like real Crash, instead
+         * of only at the dissolve. */
+        s->in_finish_range = in_finish_range;
+        /* in_finish_pos is the teleport NODE (spline point), not our body pos --
+         * the peer places the puppet's teleporter here so it lands on the pad. */
+        s->in_finish_pos[0] = in_finish_pos[0];
+        s->in_finish_pos[1] = in_finish_pos[1];
+        s->in_finish_pos[2] = in_finish_pos[2];
         /* name is PC-supplied (the bridge writes it into the peer's slot);
          * the game never writes it, so leave the field alone here. */
     } else {
@@ -164,6 +180,10 @@ static void publish_local(void)
         s->vehiclecontrol = 0;
         s->mask_active = 0;
         s->warp_level = -1;
+        s->in_finish_range = 0;
+        s->in_finish_pos[0] = 0.0f;
+        s->in_finish_pos[1] = 0.0f;
+        s->in_finish_pos[2] = 0.0f;
     }
     s->seq_close = local_gen;
 }
@@ -211,6 +231,10 @@ static void consume_remote(void)
         tmp.vehiclecontrol = r->vehiclecontrol;
         tmp.mask_active = r->mask_active;
         tmp.warp_level = r->warp_level;
+        tmp.in_finish_range = r->in_finish_range;
+        tmp.in_finish_pos[0] = r->in_finish_pos[0];
+        tmp.in_finish_pos[1] = r->in_finish_pos[1];
+        tmp.in_finish_pos[2] = r->in_finish_pos[2];
         for (i = 0; i < 16; i++) {
             tmp.name[i] = r->name[i];
         }
@@ -282,6 +306,10 @@ static void synth_ghost(void)
                                   : 0;
     pack_vehicle_xf(remote_snap.vehicle_xf);
     remote_snap.warp_level = -1; /* the ghost never warps */
+    remote_snap.in_finish_range = 0;
+    remote_snap.in_finish_pos[0] = 0.0f;
+    remote_snap.in_finish_pos[1] = 0.0f;
+    remote_snap.in_finish_pos[2] = 0.0f;
     remote_snap.name[0] = 'G';
     remote_snap.name[1] = 'h';
     remote_snap.name[2] = 'o';
@@ -467,16 +495,207 @@ static void puppet_update(void)
     g_puppet.obj.anim.anim_time = remote_snap.anim_time;
 }
 
-/* Hub teleport-out: when the remote steps on a hub teleporter its warp_level
- * goes != -1 while it is still standing in the hub (the puppet is still shown),
- * ~1 s before its level loads. Play AddWarpDebris once at the puppet's position
- * so the local player sees the remote dissolve into the warp effect, exactly as
- * real Crash does, instead of the puppet just blinking out when the level swap
- * hides it. Latched so the finite effect spawns a single time per warp; the
- * effect self-animates in the debris pass after the puppet is hidden. Gated on
- * Level 0x25 (the hub) to match retail (warp_level is only meaningful there). */
+/* Puppet-side teleporter. The teleporter you see in-game is not a placed object:
+ * JonProbe (0x1DB150) renders it every frame from the singleton probe globals --
+ * the spinning ring model (Draw3DCharacter, character 0xB1) AND the glowing beam
+ * (NuLgtArcLaser filaments + rising debris + a probecol intensity ramp). To get
+ * the full faithful effect on the puppet we REUSE the real JonProbe, but with an
+ * isolated probe CONTEXT: we save the local player's probe globals, load a
+ * puppet-owned set, call JonProbe (so it advances + draws the puppet teleporter),
+ * save the puppet set back, and restore the local set. The local player's own
+ * teleporter/warp is never disturbed -- Hub / in_finish_range are read by the
+ * local warp machinery (HubLevelSelect etc.), so they must not leak.
+ *
+ * The bare-ring fallback (COOP_TP_BEAM 0) draws only the static ring model; keep
+ * it in case the JonProbe reuse misbehaves on hardware. */
+#define COOP_TELEPORTER 1
+#define COOP_TP_BEAM 1       /* 1 = full JonProbe reuse (ring+beam); 0 = bare ring */
+#ifndef COOP_TP_SPIN
+#define COOP_TP_SPIN 0xA3    /* bare-ring spin/frame (retail JonProbe proberot.y step) */
+#endif
+#ifndef COOP_TP_UP
+#define COOP_TP_UP 4.5f      /* retail JonProbe trigger raises probepos.y by 4.5 so the
+                              * ring starts at the top and glides down; we replicate it */
+#endif
+
+/* Bare ring model at node, spinning about Y (fallback path). */
+static void draw_teleporter(struct nuvec_s *node)
+{
+    signed char slot = CRemap[COOP_TELEPORTER_CHAR];
+
+    if (slot < 0) {
+        return;
+    }
+    Draw3DCharacter(node, 0, (int)g_tp_rot, 0, 1.0f, 1.0f,
+                    &CModel[(int)slot], -1, 0);
+}
+
+#if COOP_TP_BEAM
+/* Retail probe singleton globals (types per src/game/game.c). vec3s are handled
+ * as opaque 12-byte (3-word) blobs -- JonProbe only touches x/y/z at +0/+4/+8. */
+extern int Hub;
+/* in_finish_range + in_finish_pos are declared in retail.h (publish_local uses
+ * them too). in_finish_pos is float[3] there; the probe swap treats every vec3 as
+ * an int[3] bit-blob, so it is cast to (int *) below. */
+extern int probeon;
+extern int probey;
+extern int probetime;
+extern int probecol;
+extern int probepos[3];
+extern int probedpos[3];
+extern int probepos2[3];
+extern int probespk[3];
+extern int proberot[3];
+void JonProbe(void);
+
+/* Puppet-owned probe state, persisted across frames (the local set is swapped in
+ * and out around each JonProbe call). */
+struct probe_ctx {
+    int Hub, in_finish_range, probeon, probey, probetime, probecol;
+    int in_finish_pos[3], probepos[3], probedpos[3], probepos2[3], probespk[3],
+        proberot[3];
+};
+static struct probe_ctx g_pp;
+
+static void v3cpy(int *d, const int *s) { d[0] = s[0]; d[1] = s[1]; d[2] = s[2]; }
+
+static void v3_from_vec(int *d, struct nuvec_s *s)
+{
+    d[0] = *(int *)&s->x;
+    d[1] = *(int *)&s->y;
+    d[2] = *(int *)&s->z;
+}
+
+/* Arm the puppet probe context at warp start: pre-latched (probeon = 1) so the
+ * reused JonProbe skips its trigger block -- no rumble/SFX on the LOCAL pad. But
+ * the trigger is also where retail raises probepos.y by 4.5 so the ring starts
+ * ABOVE the node and glides down; skipping it left the ring starting AT the node,
+ * so it jerked up to the raised glide target before descending. So we seed
+ * probepos at node + 4.5 (the ring's start) with probedpos/etc at the node (the
+ * glide destination), exactly reproducing the trigger's initial state -- the ring
+ * now appears at the top and settles down smoothly. probetime is set by JonProbe
+ * itself each frame. */
+static void probe_ctx_arm(struct nuvec_s *node)
+{
+    struct nuvec_s top;
+    struct probe_ctx z = {0};
+    g_pp = z;
+    g_pp.probeon = 1;
+    top = *node;
+    top.y += COOP_TP_UP;                /* ring starts at the raised height... */
+    v3_from_vec(g_pp.probepos, &top);  /* ...and glides down toward the node */
+    v3_from_vec(g_pp.probedpos, node);
+    v3_from_vec(g_pp.probepos2, node);
+    v3_from_vec(g_pp.probespk, node);
+    v3_from_vec(g_pp.in_finish_pos, node);
+}
+
+/* Swap in the puppet probe context, run the real JonProbe (advances + draws the
+ * teleporter ring + beam), swap the puppet state back, restore the local set.
+ * MUST run in the draw pass, exactly once per frame. Hub/in_finish_range are
+ * forced to a triggering state (Hub = 0 satisfies JonProbe's != -1 gate; it uses
+ * Hub for nothing else) and in_finish_pos pinned to the node so the beam stays
+ * anchored. */
+static void coop_probe_run(struct nuvec_s *node)
+{
+    struct probe_ctx sav;
+
+    /* save local */
+    sav.Hub = Hub;
+    sav.in_finish_range = in_finish_range;
+    sav.probeon = probeon;
+    sav.probey = probey;
+    sav.probetime = probetime;
+    sav.probecol = probecol;
+    v3cpy(sav.in_finish_pos, (int *)in_finish_pos);
+    v3cpy(sav.probepos, probepos);
+    v3cpy(sav.probedpos, probedpos);
+    v3cpy(sav.probepos2, probepos2);
+    v3cpy(sav.probespk, probespk);
+    v3cpy(sav.proberot, proberot);
+
+    /* load puppet */
+    Hub = 0;
+    in_finish_range = 0x32;
+    probeon = g_pp.probeon;
+    probey = g_pp.probey;
+    probetime = g_pp.probetime;
+    probecol = g_pp.probecol;
+    v3_from_vec((int *)in_finish_pos, node);
+    v3cpy(probepos, g_pp.probepos);
+    v3cpy(probedpos, g_pp.probedpos);
+    v3cpy(probepos2, g_pp.probepos2);
+    v3cpy(probespk, g_pp.probespk);
+    v3cpy(proberot, g_pp.proberot);
+
+    JonProbe();
+
+    /* save puppet back */
+    g_pp.probeon = probeon;
+    g_pp.probey = probey;
+    g_pp.probetime = probetime;
+    g_pp.probecol = probecol;
+    v3cpy(g_pp.probepos, probepos);
+    v3cpy(g_pp.probedpos, probedpos);
+    v3cpy(g_pp.probepos2, probepos2);
+    v3cpy(g_pp.probespk, probespk);
+    v3cpy(g_pp.proberot, proberot);
+
+    /* restore local */
+    Hub = sav.Hub;
+    in_finish_range = sav.in_finish_range;
+    probeon = sav.probeon;
+    probey = sav.probey;
+    probetime = sav.probetime;
+    probecol = sav.probecol;
+    v3cpy((int *)in_finish_pos, sav.in_finish_pos);
+    v3cpy(probepos, sav.probepos);
+    v3cpy(probedpos, sav.probedpos);
+    v3cpy(probepos2, sav.probepos2);
+    v3cpy(probespk, sav.probespk);
+    v3cpy(proberot, sav.proberot);
+}
+#endif /* COOP_TP_BEAM */
+
+/* Hub teleport-out (runs in the SIM hook via coop_tick). Two edges, matching how
+ * real Crash's own teleporter behaves:
+ *
+ *  1. TELEPORTER APPEARS when the remote runs into a hub node's teleport zone --
+ *     its in_finish_range ramps >0 the instant it enters, ~1 s BEFORE it commits.
+ *     That is JonProbe's own gate, so the puppet's teleporter shows at the same
+ *     moment the remote's real one does, not only when it dissolves. Latch the
+ *     node under the puppet and arm the probe context.
+ *  2. DISSOLVE (AddWarpDebris + the body-vanish via the warp_level bracket in the
+ *     draw hook) fires at COMMIT, when warp_level goes != -1 -- the remote slides
+ *     into the teleporter and sparks out.
+ *
+ * Both gated on Level 0x25 (the hub); each latched so its one-shot fires once. */
 static void coop_warp_effect(void)
 {
+    /* (1) teleporter appears on zone entry */
+    if (Level == 0x25 && remote_snap.in_finish_range > 0) {
+        if (!g_tp_latched) {
+            /* the teleport NODE (synced), not the puppet's entry pos -- so the
+             * ring lands on the pad instead of where the puppet crossed the edge */
+            g_tp_pos.x = remote_snap.in_finish_pos[0];
+            g_tp_pos.y = remote_snap.in_finish_pos[1];
+            g_tp_pos.z = remote_snap.in_finish_pos[2];
+            g_tp_rot = 0;
+            g_tp_frame = 0;
+#if COOP_TP_BEAM
+            probe_ctx_arm(&g_tp_pos);
+#endif
+            g_tp_latched = 1;
+        }
+        g_tp_active = 1;
+        g_tp_rot = (unsigned short)(g_tp_rot + COOP_TP_SPIN);
+        g_tp_frame++;
+    } else {
+        g_tp_latched = 0;
+        g_tp_active = 0;
+    }
+
+    /* (2) dissolve on commit */
     if (Level == 0x25 && remote_snap.warp_level != -1) {
         if (!g_warp_latched) {
             AddWarpDebris(&g_puppet.obj);
@@ -825,6 +1044,25 @@ void coop_draw_creatures(struct creature_s *c, s32 count, s32 render,
 #if COOP_PUPPET_MASK
         /* Aku Aku over the puppet, after the body so it composites on top. */
         draw_puppet_mask();
+#endif
+#if COOP_TELEPORTER
+        /* Hub warp-out: the teleporter at the puppet's node, in sync with the
+         * body-vanish (warp_level bracket) and the debris. State is armed in the
+         * sim hook (coop_warp_effect); this draws it.
+         *   COOP_TP_BEAM: reuse the real JonProbe (ring + glowing beam) with an
+         *   isolated probe context -- once per frame (it advances state + spawns
+         *   debris; the hub player pass runs twice, main + reflection, so guard).
+         *   Fallback: the bare spinning ring, drawn every pass. */
+        if (g_tp_active) {
+#if COOP_TP_BEAM
+            if (g_tp_frame_drawn != modsdk_mailbox.frame) {
+                g_tp_frame_drawn = modsdk_mailbox.frame;
+                coop_probe_run(&g_tp_pos);
+            }
+#else
+            draw_teleporter(&g_tp_pos);
+#endif
+        }
 #endif
 #if COOP_LABELS
         /* Project the label here, under the 3D world camera, once per frame

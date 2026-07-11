@@ -88,6 +88,49 @@ debris effect at the object's mid-body that self-animates in the debris pass.
   local player sees the remote dissolve into the warp effect at the right moment,
   then the effect plays out after the level swap hides the puppet. **Code done,
   needs in-game confirm.**
+- [x] **Teleporter ring on warp-OUT** — the actual spinning teleporter *prop*,
+  not just the debris. **Phase-0 finding:** the teleporter is *not* a placed
+  object — `JonProbe` (`0x1DB150`, `game/game`, asm) draws it every frame from
+  the singleton probe globals (`probeon`/`probepos`/`proberot`/`probecol`/…, gated
+  by `Hub != -1 && in_finish_range > 0`) via `Draw3DCharacter` (`0x1EE410`) of
+  character **`0xB1`**'s model (`CModel[CRemap[0xB1]]`). The placed type-`0xB1`
+  creature is only the node marker (`CheckFinish` locates it with
+  `FindNearestCreature(..,0xB1,..)` → `in_finish_pos`; `creature.c:3413` gives it a
+  `DrawProbeFX` glow). The ring model alone (`Draw3DCharacter`) is only the
+  physical prop; the *glowing beam* is a separate procedural effect inside
+  `JonProbe` (two `NuLgtArcLaser` filaments + rising debris + a `probecol`
+  intensity ramp), so a bare model draw shows no glow. **Approach (`COOP_TP_BEAM`):**
+  reuse the real `JonProbe` with an **isolated probe context** — save the local
+  player's probe globals (`Hub`, `in_finish_range`, `in_finish_pos`, `probeon`,
+  `probepos`/`probedpos`/`probepos2`/`probespk`, `probey`/`probecol`/`probetime`,
+  `proberot`), load a puppet-owned set (pre-latched `probeon = 1` so the trigger's
+  rumble/SFX + the +4.5 descend are skipped; positions pinned to the node), call
+  `JonProbe` (it advances + draws ring **and** beam), save the puppet set back,
+  restore the local set. The local player's own teleporter/warp is never
+  disturbed. Runs once/frame (guarded) in the `coop_draw_creatures` puppet pass;
+  armed in the sim hook (`coop_warp_effect`). Bare-ring fallback (`COOP_TP_BEAM 0`)
+  kept in case the reuse misbehaves on hardware.
+  - **Timing = mailbox v6.** The teleporter must appear the moment the remote
+    *runs into* a hub node's teleport zone (like real Crash), not at the dissolve.
+    `HubLevelSelect` (`0x1DD108`) ramps `in_finish_range` 1..0x32 the instant Crash
+    enters the zone — `JonProbe`'s own gate — and only sets `warp_level` once it
+    hits 0x32 (commit). So v6 adds `int in_finish_range` at `0x88` (reuses the old
+    `reserved2`; slot stays `0x90`, addresses unchanged). The puppet's teleporter
+    is armed on `remote.in_finish_range > 0` (zone entry); the dissolve
+    (`AddWarpDebris` + the `warp_level` body-vanish bracket) still fires at commit.
+  - **Position = mailbox v7.** The teleporter belongs at the NODE, not the puppet's
+    entry point (latching the puppet's body pos misplaced the ring — the puppet
+    crosses the zone edge, the pad is at the spline node). `HubLevelSelect` sets
+    `in_finish_pos` to the exact node every frame in the zone, so v7 adds
+    `float in_finish_pos[3]` at `0x8C` (slot grows `0x90`→`0x9C`, remote slot
+    `0x706B00`→`0x706B0C`, mailbox `0x130`→`0x148`). The puppet's teleporter is
+    placed at the synced node. Also fixed the entrance: pre-latching skipped the
+    trigger's `probepos.y += 4.5`, so seed it at node+4.5 (`COOP_TP_UP`) — the ring
+    now starts at the top and settles down instead of jerking up first.
+    Iters: 1 bare ring (no glow, bad descend); 2 JonProbe reuse (glow) but triggered
+    on `warp_level` (too late); 3 (v6) timing on zone entry; 4 (v7) node position +
+    smooth descent. **Glow + zone-entry timing confirmed in-game; v7 position/
+    descent needs confirm.**
 - [ ] *(PR2, separate)* **Warp-IN / return-to-hub**: when the remote *returns*
   to the hub (or a boss stage ends), the puppet should appear/leave with the warp
   effect rather than pop in/out. Tip (user): all boss stages use a similar

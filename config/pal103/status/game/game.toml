@@ -97,7 +97,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0094:001dfff8:CheckFinish"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001e0c68:Draw3DCrateCount"

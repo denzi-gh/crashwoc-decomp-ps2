@@ -648,6 +648,378 @@ static inline void ResetTempCharacter2(s32 character, s32 action) {
     ResetLights(TempLights2);
 }
 
+
+
+
+/* --- HubSelect support --- */
+
+/* Minimal view of a spline table entry / spline (PS2-verified in HubSelect:
+ * SplTab stride 0x18, spl at 0x0; nugspline ptsize 0x2, pts 0x8). */
+struct nugspline_s {
+    char pad_0[2];
+    short ptsize;              /* 0x2 */
+    char pad_4[0x8 - 0x4];
+    char *pts;                 /* 0x8 */
+};
+
+struct spltab_s {
+    struct nugspline_s *spl;   /* 0x0 */
+    char pad_4[0x18 - 0x4];
+};
+
+/* GDeb entry: stride 0x10, .i at 0x0. */
+struct gdeb_s {
+    s32 i;                     /* 0x0 */
+    char pad_4[0x10 - 0x4];
+};
+
+struct hsanimdata_s {
+    float time;                /* 0x0 */
+};
+
+struct hsmodel_s {
+    char pad_0[0x4];
+    struct hsanimdata_s *anmdata[118]; /* 0x4 */
+};
+
+struct moveinfo_s {
+    char pad_0[0x8];
+    float WALKSPEED;           /* 0x08 */
+    char pad_c[0x24 - 0xC];
+    float JUMPHEIGHT;          /* 0x24 */
+    char pad_28[0x30 - 0x28];
+    short JUMPFRAMES2;         /* 0x30 */
+    char pad_32[0x38 - 0x32];
+    short SPINRESETFRAMES;     /* 0x38 */
+};
+
+/* Minimal creature view for HubSelect (obj embedded at +0x4; offsets are
+ * creature-relative, matching include/creature.h). */
+struct creature_s {
+    char pad_0[0x8];
+    struct hsmodel_s *model;   /* 0x08 (obj.model) */
+    char pad_c[0x18 - 0xC];
+    float anim_time;           /* 0x18 (obj.anim.anim_time) */
+    char pad_1c[0x6C - 0x1C];
+    struct nuvec_s pos;        /* 0x6C */
+    struct nuvec_s mom;        /* 0x78 */
+    struct nuvec_s oldpos;     /* 0x84 */
+    char pad_90[0x108 - 0x90];
+    float SCALE;               /* 0x108 */
+    float RADIUS;              /* 0x10C */
+    char pad_110[0x11C - 0x110];
+    float bot;                 /* 0x11C */
+    float top;                 /* 0x120 */
+    char pad_124[0x170 - 0x124];
+    u16 thdg;                  /* 0x170 (obj.thdg) */
+    s8 ground;                 /* 0x172 (obj.ground) */
+    char pad_173[0x230 - 0x173];
+    struct moveinfo_s *OnFootMoveInfo; /* 0x230 */
+    char pad_234[0xCA4 - 0x234];
+    u8 rumble[4];              /* 0xCA4 */
+    char pad_ca8[0xCB6 - 0xCA8];
+    s8 jump;                   /* 0xCB6 */
+    s8 jump_type;              /* 0xCB7 */
+    char pad_cb8[0xCBA - 0xCB8];
+    s8 slam;                   /* 0xCBA */
+    s8 spin;                   /* 0xCBB */
+    s8 crawl;                  /* 0xCBC */
+    s8 crawl_lock;             /* 0xCBD */
+    char pad_cbe[0xCC0 - 0xCBE];
+    u8 somersault;             /* 0xCC0 */
+    u8 land;                   /* 0xCC1 */
+    char pad_cc2[0xCC6 - 0xCC2];
+    short jump_frames;         /* 0xCC6 */
+    short jump_frame;          /* 0xCC8 */
+    char pad_cca[0xCCC - 0xCCA];
+    short spin_frames;         /* 0xCCC */
+    short spin_frame;          /* 0xCCE */
+    char pad_cd0[0xCD2 - 0xCD0];
+    short slide;               /* 0xCD2 */
+    short crouch_pos;          /* 0xCD4 */
+    char pad_cd6[0xCE4 - 0xCD6];
+};
+
+extern struct nuvec_s hubmidpos[2];
+extern struct spltab_s SplTab[];
+extern struct gdeb_s GDeb[];
+extern u8 hublevelopen[];
+extern s32 jonframe1;
+extern s32 plr_rebound;
+extern s32 gamesfx_pitch;
+extern float D_0062D2A0;
+extern float D_0062D2A4;
+extern float D_0062D2A8;
+extern float D_0062D2AC;
+
+float NuVecDist(struct nuvec_s *a, struct nuvec_s *b, struct nuvec_s *c);
+s32 NuAtan2D(float x, float z);
+void NewBuzz(void *rumble, s32 frames);
+void NewCut(s32 cut);
+void AddGameDebris(s32 type, struct nuvec_s *pos);
+void AddVariableShotDebrisEffect(s32 i, struct nuvec_s *pos, s32 a, s32 b, s32 c);
+
+void HubSelect(struct creature_s *c) {
+    struct nuvec_s *closest;
+    struct nuvec_s *p0;
+    struct nuvec_s *p1;
+    struct nuvec_s pos;
+    struct nugspline_s *spl;
+    struct moveinfo_s *mi;
+    float d;
+    float d1;
+    float xold;
+    float zold;
+    float xnew;
+    float znew;
+    s32 i;
+    s32 j;
+    s32 k;
+    s32 ispl;
+    s32 cut;
+    u8 flags;
+    u16 yrot;
+
+    closest = &hubmidpos[0];
+    d = NuVecDist(&c->pos, &hubmidpos[0], NULL);
+    d1 = NuVecDist(&c->pos, &hubmidpos[1], NULL);
+    if (d1 < d) {
+        d = d1;
+        closest = &hubmidpos[1];
+    }
+    if (d < 6.0f) {
+        if (d < 3.0f) {
+            gamesfx_effect_volume = 0x3FFF;
+        } else {
+            gamesfx_effect_volume = 0x3FFF - (s32)((d - 3.0f) * D_0062D2A4 / 3.0f);
+        }
+        gamesfx_effect_volume += gamesfx_effect_volume;
+        GameSfxLoop(0x10F, closest);
+    }
+
+    for (i = 0; i < 6; i++) {
+        if (HData[i].sfx == -1) {
+            continue;
+        }
+        ispl = HData[i].i_spl[0];
+        if (ispl == -1) {
+            continue;
+        }
+        spl = SplTab[ispl].spl;
+        if (spl == NULL) {
+            continue;
+        }
+        p0 = (struct nuvec_s *)(spl->pts + spl->ptsize * 12);
+        d = NuVecDist(&c->pos, p0, NULL);
+        if (d < 6.0f) {
+            if (d < 3.0f) {
+                gamesfx_effect_volume = 0x3FFF;
+            } else {
+                gamesfx_effect_volume = 0x3FFF - (s32)((d - 3.0f) * D_0062D2A8 / 3.0f);
+            }
+            gamesfx_effect_volume += gamesfx_effect_volume;
+            GameSfxLoop(HData[i].sfx, p0);
+            if (i == 3) {
+                if (qrand() < 0x100) {
+                    gamesfx_pitch = 0x3AD - (qrand() * 0x139) / 0x10000;
+                    GameSfx(0x114, p0);
+                }
+            }
+        }
+    }
+
+    if (new_mode != -1) {
+        return;
+    }
+    if (new_level != -1) {
+        return;
+    }
+
+    if (plr_rebound != 0 && c->ground != 0) {
+        plr_rebound = 0;
+        c->mom.x = 0.0f;
+        c->mom.z = 0.0f;
+    }
+
+    xold = c->oldpos.x;
+    zold = c->oldpos.z;
+    xnew = c->pos.x;
+    znew = c->pos.z;
+
+    for (i = 0; i < 6; i++) {
+        flags = Game.hub[i].flags;
+        for (j = 0; j < 6; j++) {
+            hublevelopen[j + i * 6] = 0;
+            if (flags & 1) {
+                k = 1;
+                if (i == 5) {
+                    if (j == 5) {
+                        k = 0;
+                    } else if (Game.relics < (j + 1) * 5) {
+                        k = 0;
+                    }
+                } else {
+                    s32 bits = flags & 6;
+                    if (j <= 4) {
+                        if (bits == 2) {
+                            k = 0;
+                        }
+                    }
+                    if (j == 5) {
+                        if (bits == 0) {
+                            k = 0;
+                        }
+                    }
+                }
+                if (k == 0) {
+                    if ((jonframe1 & 3) == 0) {
+                        if (!(i == 5 && j == 5)) {
+                            ispl = HData[i].i_spl[0];
+                            if (ispl != -1) {
+                                spl = SplTab[ispl].spl;
+                                if (spl != NULL) {
+                                    p0 = (struct nuvec_s *)(spl->pts + (j * 2 + 2) * spl->ptsize);
+                                    pos.x = p0->x;
+                                    pos.z = p0->z;
+                                    if (i < 4) {
+                                        pos.y = p0->y + 0.25f;
+                                    } else {
+                                        pos.y = p0->y + D_0062D2AC;
+                                    }
+                                    AddVariableShotDebrisEffect(GDeb[HData[i].i_gdeb].i, &pos, 1, 0, 0);
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    hublevelopen[j + i * 6] = 1;
+                }
+            }
+        }
+
+        ispl = HData[i].i_spl[0];
+        if (ispl == -1) {
+            continue;
+        }
+        spl = SplTab[ispl].spl;
+        if (spl == NULL) {
+            continue;
+        }
+
+        p0 = (struct nuvec_s *)spl->pts;
+        p1 = (struct nuvec_s *)(spl->pts + spl->ptsize);
+
+        {
+            s32 old_in;
+            s32 new_in;
+
+            old_in = ((xold - p0->x) * (p1->z - p0->z) + (zold - p0->z) * (p0->x - p1->x)) >= 0.0f ? 1 : 0;
+            new_in = ((xnew - p0->x) * (p1->z - p0->z) + (znew - p0->z) * (p0->x - p1->x)) >= 0.0f ? 1 : 0;
+
+            if (old_in != 0) {
+                if (new_in != 0) {
+                    continue;
+                }
+                if (!((xnew - xold) * (p0->z - zold) + (znew - zold) * (xold - p0->x) >= 0.0f)) {
+                    continue;
+                }
+                if (!((xnew - p1->x) * (zold - p1->z) + (znew - p1->z) * (p1->x - xold) >= 0.0f)) {
+                    continue;
+                }
+
+                flags = Game.hub[i].flags;
+                if (flags & 1) {
+                    Hub = i;
+                    return;
+                }
+
+                c->pos.x = c->oldpos.x;
+                c->pos.z = c->oldpos.z;
+                p1 = (struct nuvec_s *)(spl->pts + spl->ptsize);
+                yrot = NuAtan2D(p1->x - p0->x, p1->z - p0->z) + 0x4000;
+
+                if (c->spin != 0) {
+                    mi = c->OnFootMoveInfo;
+                    if (c->spin_frame < c->spin_frames - mi->SPINRESETFRAMES) {
+                        c->mom.x = NuTrigTable[yrot & 0xFFFF] * D_0062D2A0;
+                        c->mom.z = NuTrigTable[(yrot + 0x4000) & 0xFFFF] * D_0062D2A0;
+                        return;
+                    }
+                }
+
+                mi = c->OnFootMoveInfo;
+                c->mom.x = NuTrigTable[yrot & 0xFFFF] * mi->WALKSPEED;
+                c->mom.z = NuTrigTable[(yrot + 0x4000) & 0xFFFF] * mi->WALKSPEED;
+                c->thdg = yrot;
+                c->crawl_lock = 1;
+                c->slam = 0;
+                c->crawl = 0;
+                c->crouch_pos = 0;
+                c->somersault = 0;
+                c->land = 0;
+                c->slide = 0;
+                if (c->jump_type == 3) {
+                    c->mom.y = mi->JUMPHEIGHT * 1.5f / (float)mi->JUMPFRAMES2;
+                } else {
+                    c->mom.y = mi->JUMPHEIGHT / (float)mi->JUMPFRAMES2;
+                }
+                c->jump = 6;
+                c->jump_type = 4;
+                c->jump_frame = c->jump_frames;
+                plr_rebound = 1;
+                if (c->model->anmdata[0x19] != NULL) {
+                    ResetAnimPacket(&c->anim_time, 0x19);
+                    c->anim_time = c->model->anmdata[0x19]->time;
+                }
+                NewBuzz(c->rumble, 0xA);
+                gamesfx_effect_volume = 0x7FFE;
+                GameSfx(0x4B, &c->pos);
+                pos.x = c->pos.x - NuTrigTable[yrot & 0xFFFF] * c->RADIUS;
+                pos.y = c->pos.y + (c->bot + c->top) * c->SCALE * 0.5f;
+                pos.z = c->pos.z - NuTrigTable[(yrot + 0x4000) & 0xFFFF] * c->RADIUS;
+                AddGameDebris(0x82, &pos);
+                return;
+            } else {
+                if (new_in == 0) {
+                    continue;
+                }
+                if (!((xnew - xold) * (p1->z - zold) + (znew - zold) * (xold - p1->x) >= 0.0f)) {
+                    continue;
+                }
+                if (!((xnew - p0->x) * (zold - p0->z) + (znew - p0->z) * (p0->x - xold) >= 0.0f)) {
+                    continue;
+                }
+                if (Game.hub[Hub].flags & 4) {
+                    cut = -1;
+                    switch (Hub) {
+                    case 0:
+                        if ((Game.cutbits & 0x40) == 0) {
+                            cut = 6;
+                        }
+                        break;
+                    case 1:
+                        if ((Game.cutbits & 0x800) == 0) {
+                            cut = 0xB;
+                        }
+                        break;
+                    case 2:
+                        if ((Game.cutbits & 0x10000) == 0) {
+                            cut = 0x10;
+                        }
+                        break;
+                    }
+                    if (cut != -1) {
+                        NewCut(cut);
+                        new_mode = 1;
+                    }
+                }
+                Hub = -1;
+                return;
+            }
+        }
+    }
+}
+
 void ResetGame(void) {
     s32 i;
 
@@ -2515,4 +2887,367 @@ void UpdateLevel(void) {
         gamesfx_effect_volume = 0x5FFE;
         GameSfxLoop(sfx, &lev_ambpos[idx]);
     }
+}
+
+/* --- CheckFinish support --- */
+
+/* Finish-object view of a creature's obj_s (only the fields CheckFinish
+ * touches; PS2-verified offsets: pos 0x68, SCALE 0x104, bot 0x118, top 0x11C,
+ * dead 0x145, finished 0x14F). */
+struct obj_s {
+    char pad_0[0x68];
+    struct nuvec_s pos;         /* 0x68 */
+    char pad_74[0x104 - 0x74];
+    float SCALE;                /* 0x104 */
+    char pad_108[0x118 - 0x108];
+    float bot;                  /* 0x118 */
+    float top;                  /* 0x11C */
+    char pad_120[0x145 - 0x120];
+    s8 dead;                    /* 0x145 */
+    char pad_146[0x14F - 0x146];
+    s8 finished;                /* 0x14F */
+};
+
+struct plrtub_s {
+    char pad_0[0x7];
+    s8 laps;                    /* 0x7 */
+    char pad_8[0x14 - 0x8];
+    s8 place;                   /* 0x14 */
+};
+
+/* TimeTrialTimer (0x00592068) lives far from $gp, so retail addresses it
+ * absolutely; a bare 8-byte struct would be pulled into small-data by -G8.
+ * Size >8 keeps the compiler on absolute (lui/%lo) addressing.  Only itime
+ * (0x4) is read. */
+struct tttimer_s {
+    char name[4];               /* 0x0 */
+    u32 itime;                  /* 0x4 */
+    char pad_8[0x10 - 0x8];
+};
+
+extern s32 finish_type;
+extern struct nuvec_s in_finish_pos;
+extern struct nuvec_s finish_newpos;
+extern struct nuvec_s finish_oldpos;
+extern s32 finish_frames;
+extern s32 finish_frame;
+extern float FINISHRADIUSLEVEL;
+extern float FlyingLevelCompleteTimer;
+extern struct plr_lives_s plr_crates;
+extern s32 DESTRUCTIBLECRATECOUNT;
+extern s32 ChrisBigBossDead;
+extern s32 SmokeyFinished;
+extern s32 SmokeyPosition;
+extern struct plrtub_s PlrTub;
+extern s32 MAXLAPS;
+extern s32 i_ring;
+extern s32 RINGCOUNT;
+extern s32 carpet_place;
+extern struct tttimer_s TimeTrialTimer;
+extern float TT_RELICX;
+extern float TT_RELICY;
+extern float D_0062D318;
+
+s32 GetCurrentLevelObjectives(void);
+float FindNearestCreature(struct nuvec_s *pos, s32 type, struct nuvec_s *out);
+void PickupCrateGem(void);
+void PickupCrystal(void);
+void PickupBonusGem(s32 which);
+void PickupPower(s32 which);
+void AddWarpDebris(struct obj_s *obj, void *p);
+void NewLevelTime(u32 time);
+void AddPanelDebris(float x, float y, s32 a, float b, s32 c);
+void JudderGameCamera(struct gamecam_s *cam, float amount, void *p);
+
+void CheckFinish(struct obj_s *obj) {
+    u16 old_hub_flags;
+    u16 old_lev_flags;
+    struct nuvec_s objmid;
+    struct nuvec_s v;
+    float d;
+    s32 iVar1;
+
+    if (Level == 0x25) {
+        return;
+    }
+    if (obj->dead) {
+        return;
+    }
+    if (Hub == -1) {
+        return;
+    }
+    objmid.x = obj->pos.x;
+    objmid.y = obj->pos.y + (obj->bot + obj->top) * obj->SCALE * 0.5f;
+    objmid.z = obj->pos.z;
+    if (obj->finished == 0) {
+        new_hub_flags = 0;
+        new_lev_flags = 0;
+        finish_type = 0;
+
+        old_hub_flags = Game.hub[Hub].flags;
+        old_lev_flags = Game.level[Level].flags;
+        switch (Level) {
+            default:
+                if (Level == 0x24) {
+                    iVar1 = GetCurrentLevelObjectives();
+                    if (iVar1 != 0) {
+                        return;
+                    }
+                    VEHICLECONTROL = iVar1;
+                    ResetPlayer(1);
+                    level_part_2 = 0;
+                    return;
+                }
+                objmid.y += 0.5f;
+                d = FindNearestCreature(&objmid, 0xb1, &v);
+                if (d > FINISHRADIUSLEVEL * FINISHRADIUSLEVEL) {
+                    in_finish_range = 0;
+                    return;
+                }
+                in_finish_pos = v;
+                finish_newpos = v;
+                in_finish_range = 0x32;
+                finish_oldpos = obj->pos;
+                finish_type = 1;
+                finish_frames = 0x32;
+                break;
+            case 0xd:
+            case 0x12:
+            case 0x1a:
+                if (((TimeTrial == 0) && ((Game.level[Level].flags & 0x10) == 0))
+                    && (((plr_items & 2) == 0) && (plr_crates.count >= DESTRUCTIBLECRATECOUNT))) {
+                    PickupCrateGem();
+                }
+                if (FlyingLevelCompleteTimer != 0.0f) {
+                    return;
+                }
+                finish_newpos = obj->pos;
+                if ((Game.level[Level].flags & 8) == 0) {
+                    PickupCrystal();
+                }
+                finish_frames = 0x32;
+                break;
+            case 0x15:
+            case 0x16:
+            case 0x17:
+            case 0x18:
+            case 0x19:
+                if ((((((Level != 0x18) && (Level != 0x16)) && (Level != 0x15)) || (ChrisBigBossDead != 0))
+                     && ((Level != 0x19) && (Level != 0x17))) && (GetCurrentLevelObjectives() == 0)) {
+                    if ((Game.hub[Hub].flags & 4) == 0) {
+                        if ((boss_dead < 1) && (boss_dead = 1, Level == 0x18)) {
+                            PickupPower(0xa2);
+                        }
+                    } else {
+                        boss_dead = 2;
+                    }
+                }
+                if (boss_dead < 2) {
+                    return;
+                }
+                if (((struct cursor_s *)Cursor)->menu != -1) {
+                    return;
+                }
+                in_finish_range++;
+                if (in_finish_range < 0x32) {
+                    return;
+                }
+                finish_newpos = obj->pos;
+                finish_frames = 0x32;
+                if ((Game.hub[Hub].flags & 6) == 2) {
+                    Game.hub[Hub].flags = Game.hub[Hub].flags | 4;
+                    Game.hub[Hub + 1].flags = Game.hub[Hub + 1].flags | 1;
+                }
+                break;
+            case 0x24:
+                if (TimeTrial != 0) {
+                    return;
+                }
+                if (Game.level[Level].flags & 0x10) {
+                    return;
+                }
+                if ((plr_items & 2) != 0) {
+                    return;
+                }
+                if (plr_crates.count < DESTRUCTIBLECRATECOUNT) {
+                    return;
+                }
+                PickupCrateGem();
+                return;
+            case 3:
+                if ((((TimeTrial == 0) && ((Game.level[Level].flags & 0x10) == 0)) && ((plr_items & 2) == 0))
+                    && (plr_crates.count >= DESTRUCTIBLECRATECOUNT)) {
+                    PickupCrateGem();
+                }
+                if (SmokeyFinished == 0) {
+                    return;
+                }
+                if (in_finish_range == 0) {
+                    GameSfx(0x69, &player->obj.pos);
+                }
+                if (((TimeTrial == 0) && (SmokeyPosition == 1))
+                    && (((Game.level[Level].flags & 8) == 0) && ((plr_items & 1) == 0))) {
+                    PickupCrystal();
+                }
+                in_finish_range++;
+                if (in_finish_range < 0x32) {
+                    return;
+                }
+                finish_newpos = obj->pos;
+                finish_frames = 0x32;
+                break;
+            case 0x1c:
+                if ((((TimeTrial == 0) && ((Game.level[Level].flags & 0x10) == 0)) && ((plr_items & 2) == 0))
+                    && (plr_crates.count >= DESTRUCTIBLECRATECOUNT)) {
+                    PickupCrateGem();
+                }
+                if (PlrTub.laps < MAXLAPS) {
+                    return;
+                }
+                in_finish_range++;
+                if (in_finish_range < 0x32) {
+                    return;
+                }
+                finish_newpos = obj->pos;
+                if (TimeTrial == 0) {
+                    if ((PlrTub.place == 1) && ((Game.level[Level].flags & 0x20) == 0)) {
+                        PickupBonusGem(4);
+                    }
+                }
+                finish_frames = 0x32;
+                break;
+            case 0x1d:
+                if (((TimeTrial == 0) && ((Game.level[Level].flags & 0x10) == 0))
+                    && (((plr_items & 2) == 0) && (plr_crates.count >= DESTRUCTIBLECRATECOUNT))) {
+                    PickupCrateGem();
+                }
+                if (i_ring < RINGCOUNT) {
+                    return;
+                }
+                in_finish_range++;
+                if (in_finish_range < 0x32) {
+                    return;
+                }
+                finish_newpos = obj->pos;
+                if (TimeTrial == 0) {
+                    if ((carpet_place == 2) && ((Game.level[Level].flags & 0x20) == 0)) {
+                        PickupBonusGem(4);
+                    }
+                }
+                finish_frames = 0x32;
+                break;
+        }
+        if ((((Level == 3) && (1 < SmokeyPosition)) || ((Level == 0x1d) && (carpet_place == 1)))
+            || ((Level == 0x1c) && (1 < PlrTub.place))) {
+            obj->finished = 2;
+        } else {
+            obj->finished = 1;
+        }
+        AddWarpDebris(obj, NULL);
+        gamesfx_effect_volume = 0x7ffe;
+        GameSfx(0x1e, &obj->pos);
+        if ((plr_items & 1) != 0) {
+            Game.level[Level].flags = Game.level[Level].flags | 8;
+            if ((Game.hub[Hub].crystals < 5)
+                && (Game.hub[Hub].crystals++, Game.hub[Hub].crystals == 5)) {
+                Game.hub[Hub].flags = Game.hub[Hub].flags | 2;
+            }
+        }
+        if ((LBIT & 0x3e00000) != 0) {
+            Game.level[Level].flags |= 0x800;
+        } else {
+            if (TimeTrial != 0) {
+                if (obj->finished == 1) {
+                    NewLevelTime(TimeTrialTimer.itime);
+                    if (TimeTrialTimer.itime < LDATA->time[2]) {
+                        Game.level[Level].flags |= 7;
+                    } else if (TimeTrialTimer.itime < LDATA->time[1]) {
+                        Game.level[Level].flags |= 3;
+                    } else if (TimeTrialTimer.itime < LDATA->time[0]) {
+                        Game.level[Level].flags |= 1;
+                    }
+                    if ((u32)finish_frames < 0x96) {
+                        finish_frames = 0x96;
+                    }
+                } else {
+                    finish_frames = 0x32;
+                }
+            } else {
+                if ((plr_items & 2) != 0) {
+                    Game.level[Level].flags = Game.level[Level].flags | 0x10;
+                }
+                if ((plr_items & 4) != 0) {
+                    Game.level[Level].flags = Game.level[Level].flags | 0x20;
+                }
+                if ((plr_items & 8) != 0) {
+                    Game.level[Level].flags = Game.level[Level].flags | 0x40;
+                }
+                if ((plr_items & 0x20) != 0) {
+                    Game.level[Level].flags = Game.level[Level].flags | 0x80;
+                }
+                if ((plr_items & 0x10) != 0) {
+                    Game.level[Level].flags = Game.level[Level].flags | 0x100;
+                }
+                if ((plr_items & 0x40) != 0) {
+                    Game.level[Level].flags = Game.level[Level].flags | 0x200;
+                }
+                if ((plr_items & 0x80) != 0) {
+                    Game.level[Level].flags = Game.level[Level].flags | 0x400;
+                }
+            }
+        }
+        new_hub_flags = Game.hub[Hub].flags ^ old_hub_flags;
+        new_lev_flags = Game.level[Level].flags ^ old_lev_flags;
+        Game.level[Level].flags ^= new_lev_flags;
+        if (obj->finished == 0) {
+            return;
+        }
+    }
+    finish_frame++;
+    if (finish_frame != finish_frames) {
+        return;
+    }
+    if (obj->finished == 1) {
+        if (((LBIT & 0x3e00000) != 0) && ((new_lev_flags & 0x800) != 0)) {
+            new_lev_flags = new_lev_flags ^ 0x800;
+            Game.level[Level].flags = Game.level[Level].flags | 0x800;
+        }
+        if (TimeTrial != 0) {
+            if (newleveltime_slot < 3) {
+                if ((new_lev_flags & 7) != 0) {
+                    GameSfx(0x26, NULL);
+                    AddPanelDebris(TT_RELICX, TT_RELICY, 6, 0.125f, 0x10);
+                }
+                NewMenu((struct cursor_s *)Cursor, 0xf, 0, -1);
+            } else {
+                NewMenu((struct cursor_s *)Cursor, 0xe, 0, -1);
+            }
+            JudderGameCamera(&GameCam, D_0062D318, NULL);
+            GameSfx(0x3c, NULL);
+            return;
+        }
+        if (Level == 0x19) {
+            CalculateGamePercentage(&Game);
+            if (Game.gems > 0x2d) {
+                cutmovie = 4;
+                Game.cutbits |= 0x10000000;
+            } else {
+                cutmovie = 3;
+                Game.cutbits |= 0x8000000;
+            }
+            new_level = 0x2b;
+            return;
+        } else {
+            new_level = 0x25;
+        }
+    } else {
+        if (TimeTrial != 0) {
+            NewMenu((struct cursor_s *)Cursor, 0xe, 0, -1);
+        } else if ((Level == 0x1d || Level == 0x1c || Level == 3) && new_lev_flags == 0) {
+            NewMenu((struct cursor_s *)Cursor, 0x10, 0, -1);
+        } else {
+            new_level = 0x25;
+        }
+    }
+    return;
 }

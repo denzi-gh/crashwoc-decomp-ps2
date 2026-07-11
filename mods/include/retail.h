@@ -23,11 +23,35 @@ extern float vtog_duration;         /* mount-transition length */
 extern int warp_level;              /* hub (Level 0x25) teleport target; -1 = not
                                      * warping. Set when Crash steps on a hub
                                      * teleporter, before the level loads. */
+extern int in_finish_range;         /* ramps 1..0x32 while Crash stands in a
+                                     * teleport zone (hub node / level exit);
+                                     * 0 = not in a zone. Goes >0 at zone entry,
+                                     * before warp_level commits. */
+extern float in_finish_pos[3];      /* world position of the teleport node Crash
+                                     * is in range of; set while in_finish_range>0.
+                                     * The teleporter (JonProbe) is drawn here. */
 
 /* Spawn the finite warp-debris effect at an object's mid-body (the "Crash
  * dissolves into sparks" teleport-out look). Fire-and-forget: the effect
  * self-animates in the game's debris pass. 0x00260CD8 */
 void AddWarpDebris(struct obj_s *obj);
+
+/* --- Teleporter prop (the spinning hub/level-exit ring) -----------------
+ * The teleporter you see is NOT a placed object: JonProbe (0x1DB150) draws it
+ * every frame from global probe state via Draw3DCharacter, using the model for
+ * character 0xB1 (CModel[CRemap[0xB1]]). We reuse that same draw primitive to
+ * render a teleporter at the puppet's position, with our own isolated state, so
+ * it never touches the local player's singleton probe globals. CModel/CRemap
+ * are declared in creature.h. */
+#define COOP_TELEPORTER_CHAR 0xB1
+
+/* Draw one character model at a world pos with Euler rotation. scale must be
+ * != 0 (0 early-returns). action = -1 => static pose (no anim eval); rotorder
+ * 0 => X,Y,Z. EABI: pos=a0, rot=a1..a3, scale=f12, anim_time=f13, model=t0,
+ * action=t1, rotorder=t2. 0x001EE410 */
+void Draw3DCharacter(struct nuvec_s *pos, int rotx, int roty, int rotz,
+                     float scale, float anim_time, void *model,
+                     int action, int rotorder);
 
 void UpdateLevel(void);   /* per-frame, gameplay levels only */
 void DoInput(void);       /* per-frame, menus included */

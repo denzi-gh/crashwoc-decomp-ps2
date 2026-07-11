@@ -14,7 +14,7 @@
 #define COOP_MAILBOX_H
 
 #define COOP_MAILBOX_MAGIC 0x4F435743u /* "CWCO" */
-#define COOP_MAILBOX_VERSION 5u
+#define COOP_MAILBOX_VERSION 7u
 
 #define COOP_F_PRESENT 1u /* writer is in a playable level, state valid */
 #define COOP_F_DEAD 2u    /* writer's player is in a death state */
@@ -71,9 +71,24 @@ typedef struct CoopSlot {              /* 0x70 bytes */
                                         * target); -1 = not warping. Lets the
                                         * puppet play AddWarpDebris as it warps
                                         * out of the hub instead of vanishing. */
-    unsigned int reserved2;            /* 0x88 */
-    unsigned int seq_close;            /* 0x8C seq-lock bracket */
-} CoopSlot;                            /* 0x90 */
+    /* --- v6: teleporter-appears-on-zone-entry timing --- */
+    int in_finish_range;               /* 0x88 remote's in_finish_range: ramps
+                                        * 1..0x32 the instant it enters a hub
+                                        * node's teleport zone (JonProbe's gate),
+                                        * BEFORE warp_level commits. 0 = not in a
+                                        * zone. Drives the puppet teleporter's
+                                        * appearance at the right moment. */
+    /* --- v7: teleporter position = the node, not the puppet's entry point --- */
+    float in_finish_pos[3];            /* 0x8C remote's in_finish_pos: the exact
+                                        * teleport NODE world position (the spline
+                                        * point HubLevelSelect slides Crash to),
+                                        * set every frame in the zone. The puppet's
+                                        * teleporter is placed here so it lands on
+                                        * the pad instead of where the puppet first
+                                        * crossed the zone edge. Valid only while
+                                        * in_finish_range > 0. */
+    unsigned int seq_close;            /* 0x98 seq-lock bracket */
+} CoopSlot;                            /* 0x9C */
 
 typedef struct CoopMailbox {           /* overlays ModsdkMailbox.payload */
     unsigned int magic;                /* +0x00 (abs 0x706A60) COOP_MAILBOX_MAGIC */
@@ -82,7 +97,7 @@ typedef struct CoopMailbox {           /* overlays ModsdkMailbox.payload */
     unsigned int diag;                 /* +0x0C game writes: bit 0 = puppet
                                         * shown, bits 8+ = puppet re-inits */
     CoopSlot local;                    /* +0x10 (abs 0x706A70) game writes, bridge reads */
-    CoopSlot remote;                   /* +0xA0 (abs 0x706B00) bridge writes, game reads */
-} CoopMailbox;                         /* 0x130 */
+    CoopSlot remote;                   /* +0xAC (abs 0x706B0C) bridge writes, game reads */
+} CoopMailbox;                         /* 0x148 */
 
 #endif
