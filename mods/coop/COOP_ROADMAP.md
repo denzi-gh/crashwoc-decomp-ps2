@@ -53,6 +53,7 @@ global screen matrix `D_0067A8C0`); pause detected via `Paused` @0x630af4.
 - [x] "Paused" label above a paused remote puppet (name hides while paused so they don't overlap)
 - [x] PC side supplies names (`--name` / `--p1-name`/`--p2-name`), injected into the peer slot
 - [x] Names are **optional** — bridge/relay run fine with no name args; only the floating tag is lost, "PAUSED" and all puppet sync still work
+- [x] Version banner "CRASH: TWOC: MULTIPLAYER Vn" on the **in-game pause menu** (`Paused != 0`) only — not on the title/front-end, not on the live HUD; lets both players eyeball-match layout versions by pausing in a level
 - [~] Label projection: view-space depth (`NuCameraTransformView` @0x113D18) drives distance-scale + behind-camera cull; GS guard-band centre 32768 for screen→ndc — placement/scale calibrating in-game
 - [ ] Final placement/scale sign-off (COOP_LABEL_UP, COOP_DIST_REF, front-cull sign) — needs the pad
 

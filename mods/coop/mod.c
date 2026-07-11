@@ -616,6 +616,23 @@ void coop_draw_creatures(struct creature_s *c, s32 count, s32 render,
     }
 }
 
+/* Version banner on the menus so both players can eyeball-confirm the modded
+ * build loaded and that their layout versions match before playing (a mismatched
+ * COOP_MAILBOX_VERSION means no sync). Shown on the in-game pause menu only
+ * (see the gate in coop_draw_menu) -- not on the title/front-end menus, not on
+ * the live HUD. This is coop-mod-scoped; a general "mods loaded" overlay would
+ * instead live in the SDK. It rides the same Text3D path DrawMenu already uses,
+ * so it renders wherever the menu text does. UPPERCASE only (lowercase a-x are
+ * icon glyphs); the trailing digit is patched to COOP_MAILBOX_VERSION at init. */
+#define COOP_BANNER 1
+static char coop_banner[] = "CRASH: TWOC: MULTIPLAYER V0";
+
+static void draw_version_banner(void)
+{
+    /* Centre-bottom, small. align 8 = centre, colour 4 = visible. */
+    Text3D(coop_banner, 8, 4, 0.0f, 0.88f, 1.0f, 0.5f, 0.5f, 0.5f);
+}
+
 /* Replace hook on DrawMenu (0x23B... called from DrawPanel): DrawPanel sets up
  * the panel camera/viewport and then repeatedly does Text3D (queue glyphs into
  * font3d_scene) -> NuRndrGScnObj (submit). DrawMenu is called every frame in
@@ -631,6 +648,13 @@ void coop_draw_menu(void *cursor, s32 paused)
         draw_puppet_label();
     }
 #endif
+#if COOP_BANNER
+    /* In-game pause menu only (Paused != 0): never on the title/front-end menus
+     * and never on the live HUD. Pause in a level to eyeball-match versions. */
+    if (Paused != 0) {
+        draw_version_banner();
+    }
+#endif
 }
 
 static void coop_init(void)
@@ -643,6 +667,10 @@ static void coop_init(void)
     }
     COOP->magic = COOP_MAILBOX_MAGIC;
     COOP->version = COOP_MAILBOX_VERSION;
+#if COOP_BANNER
+    coop_banner[sizeof(coop_banner) - 2] =
+        (char)('0' + (COOP_MAILBOX_VERSION % 10u));
+#endif
     modsdk_mailbox.frame = 0;
     modsdk_mailbox.version = MODSDK_MAILBOX_VERSION;
     modsdk_mailbox.magic = MODSDK_MAILBOX_MAGIC;
