@@ -14,7 +14,7 @@
 #define COOP_MAILBOX_H
 
 #define COOP_MAILBOX_MAGIC 0x4F435743u /* "CWCO" */
-#define COOP_MAILBOX_VERSION 4u
+#define COOP_MAILBOX_VERSION 5u
 
 #define COOP_F_PRESENT 1u /* writer is in a playable level, state valid */
 #define COOP_F_DEAD 2u    /* writer's player is in a death state */
@@ -66,7 +66,11 @@ typedef struct CoopSlot {              /* 0x70 bytes */
      *   glider: [0]=pitch [1]=roll [2]=yaw  [3..5]=Buggy.pos  [6] unused
      *   atlas : [0..2]=ball_pos             [3..6]=rotquat (x,y,z,w)          */
     float vehicle_xf[7];               /* 0x68 NEWBUGGY transform (see above) */
-    unsigned int reserved;             /* 0x84 */
+    /* --- v5: hub-teleport warp-out effect on the puppet --- */
+    int warp_level;                    /* 0x84 remote's warp_level (hub teleport
+                                        * target); -1 = not warping. Lets the
+                                        * puppet play AddWarpDebris as it warps
+                                        * out of the hub instead of vanishing. */
     unsigned int reserved2;            /* 0x88 */
     unsigned int seq_close;            /* 0x8C seq-lock bracket */
 } CoopSlot;                            /* 0x90 */

@@ -56,6 +56,7 @@ static int g_puppet_active;          /* show rule result, handler reads it */
 static int g_puppet_level;           /* level the puppet was placed in */
 static short g_puppet_char;          /* character the record was built for */
 static unsigned int g_puppet_inits;  /* diagnostic: re-init count */
+static int g_warp_latched;           /* hub warp-out effect fired for this warp */
 
 static int local_valid(void)
 {
@@ -146,6 +147,11 @@ static void publish_local(void)
                              ? (unsigned char)player->obj.mask->active
                              : 0;
         pack_vehicle_xf((float *)s->vehicle_xf);
+        /* Hub teleport-out: warp_level goes != -1 the instant Crash steps on a
+         * teleporter, while still standing in the hub, ~1 s before the level
+         * loads. The peer uses it to play the warp effect on our puppet at the
+         * right moment instead of just popping us out of existence. */
+        s->warp_level = warp_level;
         /* name is PC-supplied (the bridge writes it into the peer's slot);
          * the game never writes it, so leave the field alone here. */
     } else {
@@ -157,6 +163,7 @@ static void publish_local(void)
         s->vehicle = -1;
         s->vehiclecontrol = 0;
         s->mask_active = 0;
+        s->warp_level = -1;
     }
     s->seq_close = local_gen;
 }
@@ -203,6 +210,7 @@ static void consume_remote(void)
         tmp.vehicle = r->vehicle;
         tmp.vehiclecontrol = r->vehiclecontrol;
         tmp.mask_active = r->mask_active;
+        tmp.warp_level = r->warp_level;
         for (i = 0; i < 16; i++) {
             tmp.name[i] = r->name[i];
         }
@@ -273,6 +281,7 @@ static void synth_ghost(void)
                                   ? (unsigned char)player->obj.mask->active
                                   : 0;
     pack_vehicle_xf(remote_snap.vehicle_xf);
+    remote_snap.warp_level = -1; /* the ghost never warps */
     remote_snap.name[0] = 'G';
     remote_snap.name[1] = 'h';
     remote_snap.name[2] = 'o';
@@ -358,6 +367,7 @@ static void puppet_init(short character)
     ResetLights(&g_puppet.lights);
     g_puppet_char = character;
     g_puppet_inits++;
+    g_warp_latched = 0; /* fresh puppet: re-arm the hub warp-out effect */
 }
 
 /* Flat cool-gray tint for a paused puppet: mid ambient, no directional
@@ -457,6 +467,26 @@ static void puppet_update(void)
     g_puppet.obj.anim.anim_time = remote_snap.anim_time;
 }
 
+/* Hub teleport-out: when the remote steps on a hub teleporter its warp_level
+ * goes != -1 while it is still standing in the hub (the puppet is still shown),
+ * ~1 s before its level loads. Play AddWarpDebris once at the puppet's position
+ * so the local player sees the remote dissolve into the warp effect, exactly as
+ * real Crash does, instead of the puppet just blinking out when the level swap
+ * hides it. Latched so the finite effect spawns a single time per warp; the
+ * effect self-animates in the debris pass after the puppet is hidden. Gated on
+ * Level 0x25 (the hub) to match retail (warp_level is only meaningful there). */
+static void coop_warp_effect(void)
+{
+    if (Level == 0x25 && remote_snap.warp_level != -1) {
+        if (!g_warp_latched) {
+            AddWarpDebris(&g_puppet.obj);
+            g_warp_latched = 1;
+        }
+    } else {
+        g_warp_latched = 0;
+    }
+}
+
 /* The show rule IS the level-independence requirement: the puppet exists
  * only while both sides report the same room; nothing else is synced. */
 static void update_puppet(void)
@@ -474,6 +504,7 @@ static void update_puppet(void)
             puppet_init(remote_snap.character);
         }
         puppet_update();
+        coop_warp_effect();
         g_puppet_level = Level;
     }
     g_puppet_active = show;
@@ -731,6 +762,7 @@ void coop_draw_creatures(struct creature_s *c, s32 count, s32 render,
     short save_yrot;
     int save_vctl;
     float save_vtog;
+    int save_warp;
 
     /* Publish our fresh, post-simulation state on the frame's first player
      * pass (main render precedes the hub reflection pass). ProcessCreatures
@@ -767,6 +799,17 @@ void coop_draw_creatures(struct creature_s *c, s32 count, s32 render,
         save_vtog = vtog_time;
         VEHICLECONTROL = remote_snap.vehiclecontrol;
         vtog_time = vtog_duration;
+        /* Hub teleport-out: DrawCreatures (creature.c:3584) stops drawing the
+         * player body while Level==0x25 && warp_level!=-1 -- retail's own "Crash
+         * dissolves into the hub teleporter" vanish. It reads the GLOBAL
+         * warp_level (our LOCAL warp state), so drive it from the remote's for
+         * the puppet pass: the body vanishes the instant the remote commits to
+         * the warp, in sync with the debris (coop_warp_effect) and with the real
+         * Crash on the peer -- instead of the frozen body lingering the ~1 s
+         * until the remote's level field finally flips. Also stops the puppet
+         * wrongly vanishing when the LOCAL player is the one warping. */
+        save_warp = warp_level;
+        warp_level = remote_snap.warp_level;
 #if COOP_SPECIAL_VEH
         setup_vehicle_buggy();
 #endif
@@ -776,6 +819,7 @@ void coop_draw_creatures(struct creature_s *c, s32 count, s32 render,
 #endif
         VEHICLECONTROL = save_vctl;
         vtog_time = save_vtog;
+        warp_level = save_warp;
         player->obj.target_xrot = save_xrot;
         player->obj.target_yrot = save_yrot;
 #if COOP_PUPPET_MASK

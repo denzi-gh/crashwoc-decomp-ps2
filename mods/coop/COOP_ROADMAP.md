@@ -75,6 +75,25 @@ their transform lives in `NEWBUGGY` (`creature+0x224`), now typed by the
 - [ ] *(follow-up)* sync vehicle body `anim`/`vehicle_frame` so the mounted body animation (not just the shell) tracks the remote
 - [ ] *(follow-up)* puppet renders the glider-level **Zoffa UFO teleport-in effect + debris** on the remote's side (visual completeness in glider/farm/space-arena levels). Enabler **landed 2026-07-11**: `game/vehicle` `TeleportManager` (`0x00205978`) decompiled + **matching** — respawns each active teleporting Zoffa at one of four camera-relative `TeleportPos` points (cursor `D_006332A4`, advanced on success), clamps above `Level_GliderFloor`, re-aims 90/135° off `PlayerGlider.AngleY`, and seeds `Velocity` by rotating `TeleportVel` through the camera matrix. Ties into Stage 4 (shared enemies); the teleport/`ZoffaSmoke` debris is per-instance sim today, so this is a render-the-remote's-Zoffa task.
 
+**1c — Hub teleporter warp effect on the puppet** (`mailbox v5`): the puppet
+should warp in/out of the hub with the real teleport effect instead of just
+blinking out when the level swap hides it. Uses `AddWarpDebris(obj)`
+(`0x00260CD8`, `game/game_deb`, already decompiled): a fire-and-forget finite
+debris effect at the object's mid-body that self-animates in the debris pass.
+- [x] **Warp-OUT** (hub → level): mailbox **v5** adds `int warp_level` (`0x84`,
+  reuses the old `reserved`; bumps both versions to 5). `warp_level` (`0x630B9C`)
+  goes != -1 the instant the remote steps on a hub teleporter, ~1 s *before* its
+  level loads while it is still standing in the hub. The mod fires
+  `AddWarpDebris(&puppet.obj)` once (latched, gated on `Level == 0x25`) so the
+  local player sees the remote dissolve into the warp effect at the right moment,
+  then the effect plays out after the level swap hides the puppet. **Code done,
+  needs in-game confirm.**
+- [ ] *(PR2, separate)* **Warp-IN / return-to-hub**: when the remote *returns*
+  to the hub (or a boss stage ends), the puppet should appear/leave with the warp
+  effect rather than pop in/out. Tip (user): all boss stages use a similar
+  teleport-out (Crash warps out with the effect, no teleporter object visible) —
+  find that path and drive the same `AddWarpDebris` on level-entry/exit edges.
+
 ## Stage 3 — Shared collectibles & progression  *(med–high decomp)*
 
 - [ ] 3a: sync `plr_*.count`, `plr_items`, `Game.level[].flags` / `Game` counters
