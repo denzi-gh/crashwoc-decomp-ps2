@@ -35,7 +35,7 @@ The mailbox contract is unchanged, so the current mod/ELF stays valid.
 - [x] `coop-relay` CLI (`--pine-endpoint --peer --listen-port --rate --stats`)
 - [x] `tests/coop/test_coop_relay.py` (framing, version gate, latest-wins, torn, UDP loopback)
 - [x] README two-PC setup (UDP port, firewall/port-forward, same COOP_VERSION)
-- [ ] Live two-PC session verified *(needs the user + a peer)*
+- [x] Live two-PC session verified — played over the internet with a peer (2026-07-11)
 
 ## Stage 1 — Presence polish: names, paused, vehicles, mask  *(mailbox v3)*
 
@@ -60,16 +60,19 @@ global screen matrix `D_0067A8C0`); pause detected via `Paused` @0x630af4.
 **1b — Vehicles + Aku Aku mask rendering:** wired 2026-07-11 (code done, needs
 in-game confirm). Puppet is fed `obj.vehicle = remote.vehicle` in `puppet_update`,
 so the *same* `DrawCreatures` call renders every mode; the mask is drawn from the
-`coop_draw_creatures` hook via a puppet-owned `mask_s`. **No decomp required** —
-all by-address calls (`DrawGlider`/`DrawAtlas`/`DrawJeep` read only their creature
-arg; `DrawMask(mask_s*)` draws at the mask's own matrices, shadow bracketed).
+`coop_draw_creatures` hook via a puppet-owned `mask_s`. Ground/rail/swim/jeep need
+no decomp (by-address calls read only their creature arg). Glider + atlas *did*:
+their transform lives in `NEWBUGGY` (`creature+0x224`), now typed by the
+`game/vehicle` decomp and driven on a puppet-owned copy from **mailbox v4**
+`vehicle_xf[7]`.
 - [x] Puppet renders in ground/rail vehicles (`obj.vehicle` → `model[1]`) — code done
 - [x] Puppet renders in swim mode (global `VEHICLECONTROL == 2` body-swap) — code done
 - [x] Jeep — **confirmed in-game** (`DrawJeep` builds its matrix from pos/hdg)
-- [~] Glider + Atlas — draw entirely from a per-vehicle `NEWBUGGY` at `creature+0x224` (glider pos `+0x30`, atlas ball `+0x20C`), which the puppet lacked → nothing rendered. Best-effort fix: borrow the local player's `Buggy` and override just the world-position vec with the remote pos (`COOP_SPECIAL_VEH` toggle). Position should be right; orientation/anim borrowed from local (Buggy angles not synced yet). Needs in-game re-test.
-- [x] Aku Aku mask on puppet: init via `NewMask(&mask, &puppet.pos)` (not a copy of global `Mask` — that only worked on the side whose local player had a mask), `UpdateMask` + `DrawMask` each frame, shadow bracketed (`COOP_PUPPET_MASK` toggle). Fixes the one-instance-only asymmetry — re-test.
-- [ ] *(follow-up)* sync the vehicle `Buggy` angles / `vehicle_frame` (mailbox field) so glider/ball orientation + anim match the remote, not the local player
-- [ ] *(optional)* a puppet-owned `NEWBUGGY` (needs the struct + spawn decompiled) would remove the borrow hack entirely — this is where decomp would help
+- [x] Glider + Atlas — puppet owns a `NEWBUGGY` (typed from the decomp: unit `game/vehicle` `DrawGlider`/`DrawAtlas`/`ObjectToAtlas`, merged from `main`) driven from a synced **mailbox v4** `vehicle_xf[7]`: glider = pitch/roll/yaw + `Buggy.pos` + `enable`, atlas = `ball_pos` + `rotquat`. Replaces the borrow-the-local-Buggy hack; glider banks + ball spins like the *remote's*. Glider **confirmed in-game** (incl. weather boss). **Tornado Valley (level 0xD) fix:** `enable` is now *synced*, not forced to 1 — forcing 1 pinned the puppet into `DrawGlider`'s fixed-`D_006B75A0` branch instead of the positioned `Buggy.pos` branch, so player 2 was invisible.
+- [x] **Per-remote vehicle mode** — `coop_draw_creatures` brackets the global `VEHICLECONTROL` (and forces `vtog_time == vtog_duration`) to the *remote's* `vehiclecontrol` for the puppet pass. `DrawCreatures` picks the puppet's vehicle from the global (= *local*) mount state, so before this the mech (`0x44`) rendered from our state: a peer in the mech was invisible when we were on foot, and a peer on foot wrongly showed a mech when we were mounted. Now each puppet renders its own mount state. Fixes all toggle-mount `model[1]` vehicles (mech, scooter, snowboard, gyro, sub, minecart, off-roader, fire-engine).
+- [x] Aku Aku mask on puppet: init via `NewMask(&mask, &puppet.pos)`, `UpdateMask` + `DrawMask` each frame, shadow bracketed (`COOP_PUPPET_MASK` toggle).
+- [x] *(was optional)* puppet-owned `NEWBUGGY` — done: typed by the `game/vehicle` decomp (merged from `main`), mirrored into `mods/include/creature.h`; borrow hack removed
+- [ ] *(follow-up)* sync vehicle body `anim`/`vehicle_frame` so the mounted body animation (not just the shell) tracks the remote
 
 ## Stage 3 — Shared collectibles & progression  *(med–high decomp)*
 

@@ -14,7 +14,7 @@
 #define COOP_MAILBOX_H
 
 #define COOP_MAILBOX_MAGIC 0x4F435743u /* "CWCO" */
-#define COOP_MAILBOX_VERSION 3u
+#define COOP_MAILBOX_VERSION 4u
 
 #define COOP_F_PRESENT 1u /* writer is in a playable level, state valid */
 #define COOP_F_DEAD 2u    /* writer's player is in a death state */
@@ -60,9 +60,16 @@ typedef struct CoopSlot {              /* 0x70 bytes */
     unsigned char pad0[2];             /* 0x56 alignment */
     char name[16];                     /* 0x58 remote player name, NUL-terminated
                                         * (PC-supplied; the game never writes it) */
-    unsigned int reserved;             /* 0x68 */
-    unsigned int seq_close;            /* 0x6C seq-lock bracket */
-} CoopSlot;
+    /* --- v4: special-vehicle transform so the puppet's glider banks / ball
+     * spins like the remote's, instead of borrowing the local player's Buggy.
+     * Packed per mode (glider and atlas are mutually exclusive):
+     *   glider: [0]=pitch [1]=roll [2]=yaw  [3..5]=Buggy.pos  [6] unused
+     *   atlas : [0..2]=ball_pos             [3..6]=rotquat (x,y,z,w)          */
+    float vehicle_xf[7];               /* 0x68 NEWBUGGY transform (see above) */
+    unsigned int reserved;             /* 0x84 */
+    unsigned int reserved2;            /* 0x88 */
+    unsigned int seq_close;            /* 0x8C seq-lock bracket */
+} CoopSlot;                            /* 0x90 */
 
 typedef struct CoopMailbox {           /* overlays ModsdkMailbox.payload */
     unsigned int magic;                /* +0x00 (abs 0x706A60) COOP_MAILBOX_MAGIC */
@@ -71,7 +78,7 @@ typedef struct CoopMailbox {           /* overlays ModsdkMailbox.payload */
     unsigned int diag;                 /* +0x0C game writes: bit 0 = puppet
                                         * shown, bits 8+ = puppet re-inits */
     CoopSlot local;                    /* +0x10 (abs 0x706A70) game writes, bridge reads */
-    CoopSlot remote;                   /* +0x80 (abs 0x706AE0) bridge writes, game reads */
-} CoopMailbox;                         /* 0xF0 */
+    CoopSlot remote;                   /* +0xA0 (abs 0x706B00) bridge writes, game reads */
+} CoopMailbox;                         /* 0x130 */
 
 #endif

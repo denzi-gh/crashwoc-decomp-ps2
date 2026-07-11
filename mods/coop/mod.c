@@ -63,6 +63,44 @@ static int local_valid(void)
            player->used != 0;
 }
 
+/* Special vehicles whose transform lives in NEWBUGGY (creature+0x224) rather
+ * than obj.pos: glider variants and the atlasphere ("ball"). */
+static int coop_is_glider(short v) { return v == 0x81 || v == 0x8B || v == 0x36; }
+static int coop_is_atlas(short v) { return v == 0x53; }
+
+/* Pack the local player's NEWBUGGY transform into vehicle_xf[7] (see
+ * coop_mailbox.h): glider = pitch/roll/yaw + Buggy.pos; atlas = ball_pos + quat.
+ * Only meaningful while VEHICLECONTROL == 1 and Buggy != 0. */
+static void pack_vehicle_xf(float *xf)
+{
+    struct NEWBUGGY *b = player->Buggy;
+    short v = player->obj.vehicle;
+
+    if (VEHICLECONTROL != 1 || b == 0) {
+        return;
+    }
+    if (coop_is_glider(v)) {
+        xf[0] = b->pitch;
+        xf[1] = b->roll;
+        xf[2] = b->yaw;
+        xf[3] = b->pos.x;
+        xf[4] = b->pos.y;
+        xf[5] = b->pos.z;
+        /* enable gates DrawGlider's level-0xD fixed-vs-positioned branch; sync
+         * the remote's real value (0 = flies at Buggy.pos, as in Tornado Valley)
+         * rather than forcing it -- forcing 1 pinned the puppet to D_006B75A0. */
+        xf[6] = (float)b->enable;
+    } else if (coop_is_atlas(v)) {
+        xf[0] = b->ball_pos.x;
+        xf[1] = b->ball_pos.y;
+        xf[2] = b->ball_pos.z;
+        xf[3] = b->rotquat.x;
+        xf[4] = b->rotquat.y;
+        xf[5] = b->rotquat.z;
+        xf[6] = b->rotquat.w;
+    }
+}
+
 static void publish_local(void)
 {
     volatile CoopSlot *s = &COOP->local;
@@ -107,6 +145,7 @@ static void publish_local(void)
         s->mask_active = (player->obj.mask != 0)
                              ? (unsigned char)player->obj.mask->active
                              : 0;
+        pack_vehicle_xf((float *)s->vehicle_xf);
         /* name is PC-supplied (the bridge writes it into the peer's slot);
          * the game never writes it, so leave the field alone here. */
     } else {
@@ -166,6 +205,9 @@ static void consume_remote(void)
         tmp.mask_active = r->mask_active;
         for (i = 0; i < 16; i++) {
             tmp.name[i] = r->name[i];
+        }
+        for (i = 0; i < 7; i++) {
+            tmp.vehicle_xf[i] = r->vehicle_xf[i];
         }
         tmp.seq_open = c;
         tmp.seq_close = c;
@@ -230,6 +272,7 @@ static void synth_ghost(void)
     remote_snap.mask_active = (player->obj.mask != 0)
                                   ? (unsigned char)player->obj.mask->active
                                   : 0;
+    pack_vehicle_xf(remote_snap.vehicle_xf);
     remote_snap.name[0] = 'G';
     remote_snap.name[1] = 'h';
     remote_snap.name[2] = 'o';
@@ -624,59 +667,56 @@ static void draw_puppet_mask(void)
 #endif
 
 /* Glider and Atlas draw entirely from a per-vehicle NEWBUGGY state struct at
- * creature+0x224 (glider position at Buggy+0x30, atlas ball at Buggy+0x20C), NOT
- * from obj.pos -- so with the puppet's Buggy NULL nothing rendered. We have no
- * NEWBUGGY of our own (its spawn/layout is undecompiled), so as a best effort we
- * borrow the LOCAL player's Buggy (valid -- same vehicle level) and temporarily
- * overwrite just its world-position vec with the remote position, draw, then
- * restore. The local vehicle was already drawn in the engine's own pass above,
- * so this scribble is safe. Orientation/animation stay the local player's (we do
- * not sync the Buggy angles yet), so the puppet appears at the right spot but
- * banks/spins like your own vehicle -- matching that needs a new mailbox field.
- * Set COOP_SPECIAL_VEH 0 to disable (the puppet just won't render there). The
- * jeep needs none of this: DrawJeep builds its matrix from pos/hdg. */
+ * creature+0x224 (glider position/attitude at Buggy+0x30/0x70.., atlas ball at
+ * Buggy+0x20C/quat 0x284), NOT from obj.pos -- so with the puppet's Buggy NULL
+ * nothing renders. Now that NEWBUGGY is typed (unit game/vehicle: DrawGlider /
+ * DrawAtlas), the puppet owns one and we drive it from the remote player's
+ * synced vehicle_xf: the glider banks with the remote's roll/pitch/yaw and the
+ * ball sits + spins where the remote's does, instead of copying the local
+ * player's vehicle. This replaces the old borrow-the-local-Buggy hack -- no
+ * scribbling on the live player's state. Set COOP_SPECIAL_VEH 0 to disable (the
+ * puppet just won't render in glider/atlas). The jeep needs none of this:
+ * DrawJeep builds its matrix from pos/hdg. DrawCreatures only takes the vehicle
+ * path when the global VEHICLECONTROL == 1, so this is a shared-vehicle-level
+ * feature (both players in the same vehicle level, as expected for coop). */
 #define COOP_SPECIAL_VEH 1
 #if COOP_SPECIAL_VEH
-static struct NEWBUGGY *g_veh_borrow;   /* non-NULL between borrow and restore */
-static int g_veh_off;                   /* byte offset of the position vec */
-static float g_veh_save[3];
+static struct NEWBUGGY g_puppet_buggy;  /* puppet-owned vehicle transform */
 
-static void borrow_vehicle_buggy(void)
+static void setup_vehicle_buggy(void)
 {
     short v = remote_snap.vehicle;
-    int glider = (v == 0x81 || v == 0x8B || v == 0x36);
-    int atlas = (v == 0x53);
-    float *p;
+    float *xf = remote_snap.vehicle_xf;
 
-    if ((glider == 0 && atlas == 0) || VEHICLECONTROL != 1 ||
-        player->Buggy == 0) {
+    g_puppet.Buggy = 0;
+    if (VEHICLECONTROL != 1) {
         return;
     }
-    g_veh_borrow = player->Buggy;
-    g_veh_off = glider ? 0x30 : 0x20C;
-    g_puppet.Buggy = g_veh_borrow;
-    p = (float *)((char *)g_veh_borrow + g_veh_off);
-    g_veh_save[0] = p[0];
-    g_veh_save[1] = p[1];
-    g_veh_save[2] = p[2];
-    p[0] = remote_snap.pos[0];
-    p[1] = remote_snap.pos[1];
-    p[2] = remote_snap.pos[2];
+    if (coop_is_glider(v)) {
+        g_puppet_buggy.pitch = xf[0];
+        g_puppet_buggy.roll = xf[1];
+        g_puppet_buggy.yaw = xf[2];
+        g_puppet_buggy.pos.x = xf[3];
+        g_puppet_buggy.pos.y = xf[4];
+        g_puppet_buggy.pos.z = xf[5];
+        g_puppet_buggy.mode = 0;
+        g_puppet_buggy.enable = (int)xf[6];
+        g_puppet.Buggy = &g_puppet_buggy;
+    } else if (coop_is_atlas(v)) {
+        g_puppet_buggy.ball_pos.x = xf[0];
+        g_puppet_buggy.ball_pos.y = xf[1];
+        g_puppet_buggy.ball_pos.z = xf[2];
+        g_puppet_buggy.rotquat.x = xf[3];
+        g_puppet_buggy.rotquat.y = xf[4];
+        g_puppet_buggy.rotquat.z = xf[5];
+        g_puppet_buggy.rotquat.w = xf[6];
+        g_puppet.Buggy = &g_puppet_buggy;
+    }
 }
 
-static void restore_vehicle_buggy(void)
+static void teardown_vehicle_buggy(void)
 {
-    float *p;
-
-    if (g_veh_borrow == 0) {
-        return;
-    }
-    p = (float *)((char *)g_veh_borrow + g_veh_off);
-    p[0] = g_veh_save[0];
-    p[1] = g_veh_save[1];
-    p[2] = g_veh_save[2];
     g_puppet.Buggy = 0;
-    g_veh_borrow = 0;
 }
 #endif
 
@@ -689,6 +729,8 @@ void coop_draw_creatures(struct creature_s *c, s32 count, s32 render,
 {
     short save_xrot;
     short save_yrot;
+    int save_vctl;
+    float save_vtog;
 
     /* Publish our fresh, post-simulation state on the frame's first player
      * pass (main render precedes the hub reflection pass). ProcessCreatures
@@ -713,13 +755,27 @@ void coop_draw_creatures(struct creature_s *c, s32 count, s32 render,
         save_yrot = player->obj.target_yrot;
         player->obj.target_xrot = remote_snap.target_xrot;
         player->obj.target_yrot = remote_snap.target_yrot;
+        /* DrawCreatures decides the puppet's vehicle from the GLOBAL
+         * VEHICLECONTROL -- the LOCAL player's mount state -- not the puppet's.
+         * When the two players are in different states (one on foot, one in the
+         * mech), that renders the peer's vehicle from our own mount state. Drive
+         * both from the remote's own vehiclecontrol for the puppet pass, and
+         * force vtog_time == vtog_duration so a model[1] vehicle (mech, scooter,
+         * ...) draws as fully mounted regardless of our transition, then restore
+         * so the local player (already drawn above) is untouched. */
+        save_vctl = VEHICLECONTROL;
+        save_vtog = vtog_time;
+        VEHICLECONTROL = remote_snap.vehiclecontrol;
+        vtog_time = vtog_duration;
 #if COOP_SPECIAL_VEH
-        borrow_vehicle_buggy();
+        setup_vehicle_buggy();
 #endif
         orig_DrawCreatures(&g_puppet, 1, render, shadow);
 #if COOP_SPECIAL_VEH
-        restore_vehicle_buggy();
+        teardown_vehicle_buggy();
 #endif
+        VEHICLECONTROL = save_vctl;
+        vtog_time = save_vtog;
         player->obj.target_xrot = save_xrot;
         player->obj.target_yrot = save_yrot;
 #if COOP_PUPPET_MASK

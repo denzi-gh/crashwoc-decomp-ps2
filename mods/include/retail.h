@@ -17,6 +17,8 @@ extern int PLAYERCOUNT;             /* 0/1 flag: player exists this level */
 extern unsigned short plr_wumpas;   /* HUD wumpa counter, player 0 */
 extern int Paused;                  /* 0 = running; ramps 1..0x19 while in-game paused */
 extern int VEHICLECONTROL;          /* 0 on foot / 1 riding vehicle / 2 swimming */
+extern float vtog_time;             /* vehicle mount-transition timer (== vtog_duration when complete) */
+extern float vtog_duration;         /* mount-transition length */
 
 void UpdateLevel(void);   /* per-frame, gameplay levels only */
 void DoInput(void);       /* per-frame, menus included */

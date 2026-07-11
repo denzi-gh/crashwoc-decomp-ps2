@@ -40,6 +40,13 @@ struct nucolour3_s {
     float b;
 }; /* 0xC */
 
+struct nuquat_s {
+    float x;
+    float y;
+    float z;
+    float w;
+}; /* 0x10 */
+
 struct numtx_s {
     float _00, _01, _02, _03;
     float _10, _11, _12, _13;
@@ -410,6 +417,30 @@ struct rumble_s {
     unsigned char frame;   /* 0x2 */
     unsigned char frames;  /* 0x3 */
 }; /* 0x4 */
+
+/* NEWBUGGY -- special-vehicle transform state (creature_s.Buggy, creature+0x224).
+ * Holds the glider / atlasphere ("ball") transform.  Offsets PS2-verified in
+ * unit game/vehicle (DrawGlider / DrawAtlas / ObjectToAtlas); see the full
+ * struct + notes in include/creature.h.  The coop puppet drives its own copy
+ * from the remote player's synced vehicle_xf so it renders the same attitude. */
+struct NEWBUGGY {
+    char pad_00[0x30];
+    struct nuvec_s pos;            /* 0x30  glider position (NuMtxTranslate) */
+    char pad_3C[0x70 - 0x3C];
+    float pitch;                   /* 0x70  glider X rotation (NuMtxRotateX) */
+    float roll;                    /* 0x74  glider Z rotation (NuMtxSetRotationZ) */
+    char pad_78[0x80 - 0x78];
+    float yaw;                     /* 0x80  glider Y rotation (NuMtxRotateY) */
+    char pad_84[0x98 - 0x84];
+    int mode;                      /* 0x98  glider mode flag */
+    char pad_9C[0xB4 - 0x9C];
+    int enable;                    /* 0xB4  draw/transform enable flag */
+    char pad_B8[0x20C - 0xB8];
+    struct nuvec_s ball_pos;       /* 0x20C atlasphere position (NuMtxTranslate) */
+    char pad_218[0x284 - 0x218];
+    struct nuquat_s rotquat;       /* 0x284 atlasphere orientation (NuQuatToMtx) */
+    struct nuquat_s rotquat_delta; /* 0x294 rotation accumulator */
+};
 
 /* ------------------------------------------------------------------ */
 /* creature_s -- one creature / player slot                            */
