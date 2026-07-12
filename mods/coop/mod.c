@@ -29,6 +29,7 @@ void DrawMask(struct mask_s *mask);
 void orig_DrawCreatures(struct creature_s *c, s32 count, s32 render,
                         s32 shadow);
 void orig_DrawMenu(void *cursor, s32 paused);
+void orig_PickupItem(struct obj_s *obj);
 
 #define COOP ((volatile CoopMailbox *)modsdk_mailbox.payload)
 
@@ -74,10 +75,324 @@ static int g_last_remote_room = -1;  /* last real remote room (level or hub, ign
 static int g_warp_out_hide;          /* level-exit: hide the body so it despawns with
                                       * the warp debris (hub uses the warp_level bracket) */
 
+/* --- Stage 3a: shared collectibles & progression state ------------------
+ * Everything here is per-level and ABSOLUTE (bitmaps), reset on Level
+ * change; the persistent progression (Game.level[].flags etc.) needs no
+ * bookkeeping because OR-merging into Game is idempotent. */
+static unsigned int g_item_bits[COOP_ITEM_WORDS];    /* pObj slots WE picked up */
+static unsigned int g_item_applied[COOP_ITEM_WORDS]; /* remote bits already replayed */
+static unsigned int g_crate_bits[COOP_CRATE_WORDS];  /* Stage 3b fills; published 0 */
+static int g_sync_level = -1;        /* level the bitmaps belong to */
+static int g_remote_prev_room = -1;  /* the remote's PREVIOUS distinct room:
+                                      * when its published level changes X->Y
+                                      * this holds X. The award celebration only
+                                      * fires for bits of the level the remote
+                                      * just came from, which is what separates
+                                      * a fresh finish (celebrate) from an
+                                      * initial profile catch-up (silent). */
+static unsigned short g_award_pending[COOP_LEVEL_COUNT]; /* merged bits handed
+                                      * to an award flight; committed by
+                                      * UpdateAwards on pad arrival (retail's
+                                      * own commit), so the level pad/tallies
+                                      * update exactly when the crystal lands
+                                      * instead of seconds early */
+static int g_award_deadline;         /* ticks until pending is force-flushed
+                                      * (award lost mid-flight safety net) */
+static unsigned short g_prev_pending_flags; /* remote pending_flags last tick --
+                                      * a bit FALLING out of it is the exact
+                                      * frame the award pops off the remote's
+                                      * Crash (v9 edge cue) */
+static int g_prev_pending_level = -1; /* remote pending_level last tick */
+/* Nonzero while we replay a remote pickup/break through the real game
+ * functions. Phase 1 uses it to tell echo captures apart (diagnostics);
+ * Stage 3b's ResetCheckpoint suppress-hook and the future asymmetric
+ * reward mode key off the same flag. */
+static int g_coop_applying;
+
 static int local_valid(void)
 {
     return LEVEL_PLAYABLE(Level) && PLAYERCOUNT != 0 && player != 0 &&
            player->used != 0;
+}
+
+/* Replace hook on PickupItem (0x1FCE88): record which pObj slot was taken
+ * into the local item_bits bitmap, then run the real pickup. Every pickup
+ * is captured -- the local player's, and our own replays of remote bits
+ * (the echo is harmless under OR-merge and re-publishing it makes the
+ * bitmap converge from either side). Bonus-round pickups stay personal. */
+void coop_pickup_item(struct obj_s *obj)
+{
+    int i;
+
+    if (Bonus == 0 && LEVEL_PLAYABLE(Level)) {
+        for (i = 0; i < 64; i++) {
+            if (pObj[i] == obj) {
+                g_item_bits[i >> 5] |= 1u << (i & 31);
+                break;
+            }
+        }
+    }
+    orig_PickupItem(obj);
+}
+
+/* The remote's end-of-level celebration, replayed on the puppet. Retail's
+ * award show runs on the REMOTE when it tumbles back into its hub: the
+ * crystal/gem appears over Crash (tumble action 0x56 -- which the puppet
+ * already mirrors via the action sync), pops off with a chime + sparkle,
+ * flies to the finished level's pad, and commits the Game flag bits on
+ * arrival. We replay it with the real AddAward, rewriting the slot to the
+ * flying stage with the puppet as the source; the flight, pad arrival,
+ * sparkles and the COMMIT are all retail's own UpdateAwards. Bits handed to
+ * a flight are NOT merged into Game up front, so the pad marker and the
+ * tallies appear exactly when the crystal lands, like on the remote's
+ * screen (g_award_pending tracks them; a lost flight is force-flushed to a
+ * direct merge after COOP_AWARD_FLUSH ticks).
+ *
+ * Timing: the PRIMARY cue is the v9 pop edge. The remote publishes
+ * pending_flags = new_lev_flags & ~temp_lev_flags: new_lev_flags alone is
+ * NOT the pop signal (the tumble leaves it set until UpdateAwards XOR-clears
+ * it at pad ARRIVAL); the pop frame is where the tumble ORs the group into
+ * temp_lev_flags, so the masked value falls at that exact frame
+ * (coop_award_pop_edge) and our flight launches in the same frame the
+ * remote's does, off a puppet that is in the hold-up pose. The committed
+ * level_flags bit (which only appears when the remote's flight LANDS) is
+ * kept as a late fallback for missed edges. */
+#define COOP_AWARD 1
+#ifndef COOP_AWARD_FLUSH
+#define COOP_AWARD_FLUSH 750 /* ~15 s: pending-award safety flush */
+#endif
+
+#if COOP_AWARD
+/* Spawn core: fly award(s) for `bits` of `level` from the puppet. Shared by
+ * the frame-accurate pop-edge path and the late merge fallback. Returns the
+ * bits actually handed to flights. */
+static unsigned int coop_award_spawn(int level, unsigned int bits)
+{
+    /* creature.c's gotlist: one award per flag group, relic tiers together */
+    static const unsigned short gotlist[9] = {
+        0x8, 0x7, 0x10, 0x20, 0x40, 0x80, 0x100, 0x200, 0x400,
+    };
+    unsigned int spawned_bits = 0;
+    int spawned = 0;
+    int slot;
+    int g;
+    int j;
+
+    if (Level != 0x25 || g_puppet_active == 0 || Hub < 0 || Hub >= 6 ||
+        remote_snap.level != 0x25 || TimeTrial != 0) {
+        return 0;
+    }
+    /* If the LOCAL player earned the same bits simultaneously, their own
+     * award machinery is already handling them -- don't double the show. */
+    bits &= (unsigned int)(unsigned short)~new_lev_flags;
+    /* AddAward samples the LOCAL hub's spline for the pad position, so the
+     * finished level must belong to the hub we are standing in. */
+    for (j = 0; j < 6; j++) {
+        if (HData[Hub].level[j] == level) {
+            break;
+        }
+    }
+    if (j == 6) {
+        return 0;
+    }
+    for (g = 0; g < 9 && spawned < 3; g++) {
+        unsigned int b = bits & gotlist[g];
+
+        if (b == 0) {
+            continue;
+        }
+        slot = i_award; /* AddAward fills Award[i_award] then advances it */
+        if (AddAward(Hub, level, (int)b) == 0) {
+            break;
+        }
+        {
+            struct coop_award_s *aw = &Award[slot];
+
+            /* Skip the held-above-the-LOCAL-player stage: fly immediately,
+             * from the puppet's mid-body (the pop-edge timing means the
+             * puppet is in the hold-up pose right now, same as the remote's
+             * Crash), with the pop chime + sparkle the stage transition
+             * would have played. NEVER leave stage 1 set: it reads the
+             * global player + tumble state. */
+            aw->stage = 0;
+            aw->src[0] = g_puppet.obj.pos.x;
+            aw->src[1] = g_puppet.obj.pos.y + 0.9f;
+            aw->src[2] = g_puppet.obj.pos.z;
+            aw->fx[0] = aw->src[0];
+            aw->fx[1] = aw->src[1] + 1.0f;
+            aw->fx[2] = aw->src[2];
+            GameSfx(0x26, 0);
+            AddGameDebris(0xA1, (struct nuvec_s *)aw->fx);
+            spawned_bits |= b;
+            spawned++;
+        }
+    }
+    return spawned_bits;
+}
+
+/* v9 pop edge: the remote's pending_flags (new_lev_flags & ~temp_lev_flags)
+ * loses a group at the EXACT tumble frame the item pops off its Crash --
+ * spawn our flight on that falling edge instead of waiting ~2 s for the
+ * committed level_flags bit (the v8-only fallback below, kept for missed
+ * edges: stale gaps, or us entering the hub mid-flight). Bits already
+ * committed locally or already in flight are filtered so a staleness resync
+ * can't double-spawn. */
+static void coop_award_pop_edge(void)
+{
+    int level = remote_snap.pending_level;
+    unsigned int fell;
+    unsigned int fly;
+
+    if (remote_gen != 0 && level == g_prev_pending_level && level >= 0 &&
+        level < COOP_LEVEL_COUNT) {
+        fell = g_prev_pending_flags &
+               (unsigned short)~remote_snap.pending_flags &
+               (unsigned short)~Game.level[level].flags &
+               (unsigned short)~g_award_pending[level];
+        if (fell != 0) {
+            fly = coop_award_spawn(level, fell);
+            if (fly != 0) {
+                g_award_pending[level] |= (unsigned short)fly;
+                g_award_deadline = COOP_AWARD_FLUSH;
+            }
+        }
+    }
+    g_prev_pending_flags = remote_snap.pending_flags;
+    g_prev_pending_level = remote_snap.pending_level;
+}
+#endif /* COOP_AWARD */
+
+/* Merge the remote's progression into ours (runs every tick, after
+ * consume_remote). Two tiers:
+ *
+ *  (1) Committed progression -- level_flags / hub_flags / powers -- is
+ *      OR-merged ALWAYS (any level, either side, both directions), then any
+ *      newly-set level/hub bit triggers CalculateGamePercentage, which
+ *      re-derives every tally (percent, crystal counts per hub, gems,
+ *      relics) from the flags. That recompute is what makes a crystal the
+ *      remote earned show up in the local hub UI and save while the players
+ *      are in different places.
+ *  (2) Live in-level state -- plr_items + the item_bits replay -- only
+ *      while both sides are in the SAME level, neither is in a bonus round,
+ *      we are not paused and not mid-death. Replay = the real
+ *      PickupItem(pObj[i]) on each newly-set remote bit whose item is still
+ *      alive, so both games run identical code (symmetric execution; the
+ *      g_coop_applying bracket is the seam a later asymmetric-rewards mode
+ *      hooks into). obj.dead gates double-application.
+ *
+ * Time trials are personal by design: no merging at all while TimeTrial.
+ * Gating on local_valid keeps us from ever merging into an unloaded
+ * profile (menus): Game only holds a real profile while in a level. */
+static void coop_merge(void)
+{
+    unsigned int nw;
+    int changed;
+    int w;
+    int i;
+
+    if (remote_gen == 0 || TimeTrial != 0 || !local_valid()) {
+        return;
+    }
+
+#if COOP_AWARD
+    /* Pending-award upkeep: bits commit when their flight lands (they show
+     * up in Game -- drop them here); a flight lost mid-air (slot overwritten,
+     * hub left) is force-flushed to a plain merge after the deadline. */
+    if (g_award_deadline > 0 && --g_award_deadline == 0) {
+        for (i = 0; i < COOP_LEVEL_COUNT; i++) {
+            g_award_pending[i] = 0;
+        }
+    }
+#endif
+    changed = 0;
+    for (i = 0; i < COOP_LEVEL_COUNT; i++) {
+#if COOP_AWARD
+        g_award_pending[i] &= (unsigned short)~Game.level[i].flags;
+        nw = remote_snap.level_flags[i] &
+             (unsigned short)~Game.level[i].flags &
+             (unsigned short)~g_award_pending[i];
+        if (nw != 0) {
+            /* Late fallback for a missed pop edge (we entered the hub with
+             * the flight already airborne, or a stale gap ate the edge):
+             * only bits of the level the remote just came from celebrate --
+             * profile catch-up bursts merge silently. */
+            unsigned int fly = (g_remote_prev_room == i)
+                                   ? coop_award_spawn(i, nw)
+                                   : 0;
+
+            if (fly != 0) {
+                g_award_pending[i] |= (unsigned short)fly;
+                g_award_deadline = COOP_AWARD_FLUSH;
+                nw &= ~fly;
+            }
+        }
+#else
+        nw = remote_snap.level_flags[i] & (unsigned short)~Game.level[i].flags;
+#endif
+        if (nw != 0) {
+            Game.level[i].flags |= (unsigned short)nw;
+            changed = 1;
+        }
+    }
+    for (i = 0; i < COOP_HUB_COUNT; i++) {
+        nw = remote_snap.hub_flags[i] & (unsigned char)~Game.hub[i].flags;
+        if (nw != 0) {
+            Game.hub[i].flags |= (unsigned char)nw;
+            changed = 1;
+        }
+    }
+    Game.powerbits |= remote_snap.powers; /* not flag-derived: no recompute */
+    if (changed) {
+        CalculateGamePercentage(&Game);
+    }
+
+    if (remote_snap.level != Level || remote_snap.bonus != 0 || Bonus != 0 ||
+        Paused != 0 || player->obj.dead != 0) {
+        return;
+    }
+    plr_items |= remote_snap.items;
+    for (w = 0; w < COOP_ITEM_WORDS; w++) {
+        /* Bits the remote took that we neither took ourselves nor replayed. */
+        nw = remote_snap.item_bits[w] & ~g_item_applied[w] & ~g_item_bits[w];
+        if (nw == 0) {
+            continue;
+        }
+        for (i = 0; i < 32; i++) {
+            if ((nw & (1u << i)) != 0) {
+                struct obj_s *obj = pObj[(w << 5) | i];
+
+                if (obj != 0 && obj->dead == 0) {
+                    g_coop_applying = 1;
+                    PickupItem(obj);
+                    g_coop_applying = 0;
+                }
+            }
+        }
+        /* Mark even the already-dead ones applied: the state converged. */
+        g_item_applied[w] |= nw;
+    }
+}
+
+/* New level (or leaving one): the per-level bitmaps belong to the old room.
+ * Pending award bits are dropped too -- their flights died with the room, so
+ * the next merge tick re-derives and direct-commits them (self-healing). */
+static void coop_progress_reset(void)
+{
+    int i;
+
+    for (i = 0; i < COOP_ITEM_WORDS; i++) {
+        g_item_bits[i] = 0;
+        g_item_applied[i] = 0;
+    }
+    for (i = 0; i < COOP_CRATE_WORDS; i++) {
+        g_crate_bits[i] = 0;
+    }
+#if COOP_AWARD
+    for (i = 0; i < COOP_LEVEL_COUNT; i++) {
+        g_award_pending[i] = 0;
+    }
+    g_award_deadline = 0;
+#endif
 }
 
 /* Special vehicles whose transform lives in NEWBUGGY (creature+0x224) rather
@@ -121,6 +436,7 @@ static void pack_vehicle_xf(float *xf)
 static void publish_local(void)
 {
     volatile CoopSlot *s = &COOP->local;
+    int i;
 
     local_gen++;
     local_frame++;
@@ -178,6 +494,31 @@ static void publish_local(void)
         s->in_finish_pos[0] = in_finish_pos[0];
         s->in_finish_pos[1] = in_finish_pos[1];
         s->in_finish_pos[2] = in_finish_pos[2];
+        /* Progression (Stage 3a): only published from a valid in-level state,
+         * where Game is guaranteed to hold a real loaded profile. */
+        s->bonus = (unsigned char)(Bonus != 0);
+        s->items = plr_items;
+        for (i = 0; i < COOP_LEVEL_COUNT; i++) {
+            s->level_flags[i] = Game.level[i].flags;
+        }
+        s->powers = Game.powerbits;
+        for (i = 0; i < COOP_HUB_COUNT; i++) {
+            s->hub_flags[i] = Game.hub[i].flags;
+        }
+        for (i = 0; i < COOP_CRATE_WORDS; i++) {
+            s->crate_bits[i] = g_crate_bits[i];
+        }
+        for (i = 0; i < COOP_ITEM_WORDS; i++) {
+            s->item_bits[i] = g_item_bits[i];
+        }
+        /* v9: award bits pending AND not yet popped -- new_lev_flags alone
+         * only falls when the flight LANDS (UpdateAwards XOR-clears it at
+         * arrival); the pop frame instead ORs the group into temp_lev_flags
+         * (creature.c tumble). Masking it out makes the published value fall
+         * at the exact pop frame, the peer's celebration cue. */
+        s->pending_flags = (unsigned short)(new_lev_flags &
+                                            (unsigned short)~temp_lev_flags);
+        s->pending_level = (short)last_level;
         /* name is PC-supplied (the bridge writes it into the peer's slot);
          * the game never writes it, so leave the field alone here. */
     } else {
@@ -194,6 +535,25 @@ static void publish_local(void)
         s->in_finish_pos[0] = 0.0f;
         s->in_finish_pos[1] = 0.0f;
         s->in_finish_pos[2] = 0.0f;
+        /* No progression from menus/loading: Game may not hold a loaded
+         * profile, and zeroed words are the OR-merge no-op. */
+        s->bonus = 0;
+        s->items = 0;
+        for (i = 0; i < COOP_LEVEL_COUNT; i++) {
+            s->level_flags[i] = 0;
+        }
+        s->powers = 0;
+        for (i = 0; i < COOP_HUB_COUNT; i++) {
+            s->hub_flags[i] = 0;
+        }
+        for (i = 0; i < COOP_CRATE_WORDS; i++) {
+            s->crate_bits[i] = 0;
+        }
+        for (i = 0; i < COOP_ITEM_WORDS; i++) {
+            s->item_bits[i] = 0;
+        }
+        s->pending_flags = 0;
+        s->pending_level = -1;
     }
     s->seq_close = local_gen;
 }
@@ -251,6 +611,23 @@ static void consume_remote(void)
         for (i = 0; i < 7; i++) {
             tmp.vehicle_xf[i] = r->vehicle_xf[i];
         }
+        tmp.bonus = r->bonus;
+        tmp.items = r->items;
+        for (i = 0; i < COOP_LEVEL_COUNT; i++) {
+            tmp.level_flags[i] = r->level_flags[i];
+        }
+        tmp.powers = r->powers;
+        for (i = 0; i < COOP_HUB_COUNT; i++) {
+            tmp.hub_flags[i] = r->hub_flags[i];
+        }
+        for (i = 0; i < COOP_CRATE_WORDS; i++) {
+            tmp.crate_bits[i] = r->crate_bits[i];
+        }
+        for (i = 0; i < COOP_ITEM_WORDS; i++) {
+            tmp.item_bits[i] = r->item_bits[i];
+        }
+        tmp.pending_flags = r->pending_flags;
+        tmp.pending_level = r->pending_level;
         tmp.seq_open = c;
         tmp.seq_close = c;
         if (r->seq_open == c) {
@@ -274,6 +651,8 @@ static void consume_remote(void)
  * no bridge and no second instance. */
 static void synth_ghost(void)
 {
+    int i;
+
     if (!local_valid()) {
         remote_snap.level = -1;
         remote_snap.flags = 0;
@@ -320,6 +699,27 @@ static void synth_ghost(void)
     remote_snap.in_finish_pos[0] = 0.0f;
     remote_snap.in_finish_pos[1] = 0.0f;
     remote_snap.in_finish_pos[2] = 0.0f;
+    /* Mirror our own progression: coop_merge on a mirror must be a total
+     * no-op (every level/hub bit already set, every item_bits bit either
+     * ours or dead) -- the in-game idempotency self-test. */
+    remote_snap.bonus = (unsigned char)(Bonus != 0);
+    remote_snap.items = plr_items;
+    for (i = 0; i < COOP_LEVEL_COUNT; i++) {
+        remote_snap.level_flags[i] = Game.level[i].flags;
+    }
+    remote_snap.powers = Game.powerbits;
+    for (i = 0; i < COOP_HUB_COUNT; i++) {
+        remote_snap.hub_flags[i] = Game.hub[i].flags;
+    }
+    for (i = 0; i < COOP_CRATE_WORDS; i++) {
+        remote_snap.crate_bits[i] = g_crate_bits[i];
+    }
+    for (i = 0; i < COOP_ITEM_WORDS; i++) {
+        remote_snap.item_bits[i] = g_item_bits[i];
+    }
+    remote_snap.pending_flags = (unsigned short)(new_lev_flags &
+                                                 (unsigned short)~temp_lev_flags);
+    remote_snap.pending_level = (short)last_level;
     remote_snap.name[0] = 'G';
     remote_snap.name[1] = 'h';
     remote_snap.name[2] = 'o';
@@ -884,8 +1284,11 @@ static void update_puppet(void)
     g_puppet_active = show;
     COOP->diag = (g_puppet_inits << 8) | (show ? 1u : 0u);
     /* Track the remote's last REAL room (ignore -1 loading/menu) for the next
-     * arrival's hide decision -- updated after coop_warp_in_arm has read it. */
-    if (remote_snap.level != -1) {
+     * arrival's hide decision -- updated after coop_warp_in_arm has read it.
+     * The room BEFORE it feeds the award celebration: bits of the level the
+     * remote just came from are a fresh finish, everything else is catch-up. */
+    if (remote_snap.level != -1 && remote_snap.level != g_last_remote_room) {
+        g_remote_prev_room = g_last_remote_room;
         g_last_remote_room = remote_snap.level;
     }
 }
@@ -1339,5 +1742,18 @@ void coop_tick(void)
     if ((COOP->ctl & COOP_CTL_GHOST) != 0) {
         synth_ghost();
     }
+    /* Stage 3a: per-level bitmaps die with the room they were built in;
+     * reset BEFORE merging so a stale bitmap never replays into a new
+     * level that reuses the same slot indices. */
+    if (Level != g_sync_level) {
+        g_sync_level = Level;
+        coop_progress_reset();
+    }
+#if COOP_AWARD
+    /* Frame-accurate award-pop cue; must latch every tick (even when a spawn
+     * is gated) so a stale edge can never fire late. */
+    coop_award_pop_edge();
+#endif
+    coop_merge();
     update_puppet();
 }

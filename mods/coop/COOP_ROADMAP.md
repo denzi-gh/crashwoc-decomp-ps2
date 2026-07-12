@@ -170,11 +170,80 @@ vs arriving). Body-hide (`coop_body_hidden`) is shared by F2 (dissolve) and F3
 
 ## Stage 3 — Shared collectibles & progression  *(med–high decomp)*
 
-- [ ] 3a: sync `plr_*.count`, `plr_items`, `Game.level[].flags` / `Game` counters
-- [ ] 3a: pickup-event channel in the mailbox (deltas, de-dup by seq)
-- [ ] *(supports 3a)* decomp `game_obj.c` pickups (`HitItems`, `Pickup*`, collisions)
-- [ ] 3b: per-crate destroyed-state sync + checkpoint reconciliation
-- [ ] *(supports 3b)* decomp `crate.c` (`BreakCrate`, crate save/restore)
+Design locked 2026-07-12 (plan `read-the-coop-notes-harmonic-umbrella.md`):
+**absolute state + OR-merge, no event channel** (the transport has no reliable
+delivery; deltas would need acks/dedup, absolute bitmaps are idempotent for
+free), and **symmetric execution** — both consoles run the real
+`PickupItem`/`BreakCrate` with full rewards, behind the `g_coop_applying`
+seam for a later asymmetric mode. Counters are never synced: `plr_crates` is
+re-derived every frame by `UpdatePlayerStats` and crate wumpa lands via
+deferred screen-wumpa entities, so state converges by replaying the same
+functions, not by copying tallies.
+
+- [x] *(supports 3a)* decomp `game_obj.c` pickups — **matching** 2026-07-12:
+  `KillItem`, `PickupCrystal`, `PickupCrateGem`, `PickupBonusGem`,
+  `PickupPower`, `PickupRelic`, `HitItems`, `PickupItem` (PR-D1/D2)
+- [x] *(supports 3b)* decomp `crate.c` — **matching** 2026-07-12: `BreakCrate`,
+  `SaveCrateTypeData`, `RestoreCrateTypeData` (+ `GetCrateType` faithful
+  near-match); `crate_s`/`crategroup_s` typed (PR-D3). Found+fixed a
+  decompals-as align-after-mtc1 hazard-nop bug along the way.
+- [x] 3a: **mailbox v8** (slot `0x9C`→`0x118`, remote slot →`0x706B88`,
+  mailbox `0x148`→`0x240`, `[mailbox] size = 0x400`): `bonus`, `items`
+  (`plr_items`), `level_flags[35]`, `powers` (`Game.powerbits`),
+  `hub_flags[6]`, `crate_bits[8]` (reserved for 3b), `item_bits[2]`.
+  Bridge codec + offset/roundtrip tests updated in lock-step (v8).
+- [x] 3a: committed progression sync — `level_flags`/`hub_flags`/`powers`
+  OR-merged **always** (cross-level), then `CalculateGamePercentage(&Game)`
+  on any new bit re-derives percent/crystals-per-hub/gems/relics, so a
+  crystal the remote earns shows in the local hub UI + save immediately.
+  Skipped while `TimeTrial`; merge gated on `local_valid` (never into an
+  unloaded profile). **CONFIRMED in-game 2026-07-12.**
+- [x] 3a: live item sync — replace-hook on `PickupItem` records the `pObj[]`
+  slot into `item_bits`; peer replays newly-set bits with the real
+  `PickupItem(pObj[i])` (same level, no bonus either side, not paused/dead,
+  `obj.dead` gates re-apply); `plr_items` OR-merged same-gates. Bitmaps
+  reset on level change; ghost mode doubles as the idempotency self-test
+  (mirrored bitmaps ⇒ zero re-application). **CONFIRMED in-game 2026-07-12.**
+- [~] 3a: **hub award celebration on the puppet** — a newly merged level-flag
+  bit means the remote is mid-celebration (retail only commits a bit when the
+  hub award flight lands), so when both share the hub the mod replays the
+  real show: `AddAward` (0x1DBDC0) spawns the crystal/gem award, the slot is
+  rewritten to the flying stage with the **puppet** as source (its tumble
+  anim is already action-synced), pop chime + `AddGameDebris` 0xA1 sparkle,
+  then retail's `UpdateAwards` flies it to the level pad and **commits on
+  landing** (celebrated bits are deferred via `g_award_pending`, so the pad
+  marker/tallies appear when the crystal lands, not seconds early; lost
+  flights self-heal to a direct merge). Fresh-finish gate = the remote's
+  previous room must be the finished level (a link-freshness warmup does NOT
+  work: the level→hub load always trips the staleness limit and reset it —
+  v1 of this feature silently never fired). Also gated: hub only, puppet
+  visible, level in the local `HData[Hub]`, local `new_lev_flags` overlap
+  skipped, ≤3 awards/tick. v2 confirmed working in-game but ~2 s late (the
+  committed bit only exists after the remote's flight LANDS) and spawned
+  too high (puppet already in the post-tumble jump by then). **v3 = mailbox
+  v9**: publish `pending_flags` + `pending_level` (`last_level`); a group
+  FALLING out of the remote's pending_flags is the pop cue
+  (`coop_award_pop_edge`; slot `0x118`→`0x11C`, remote →`0x706B8C`, mailbox
+  `0x248`; merge-time path kept as late fallback for missed edges). v3
+  shipped `pending_flags = new_lev_flags` and behaved EXACTLY like v2 in
+  game — wrong premise: the tumble does NOT clear `new_lev_flags` at the
+  pop (only the AddAward-failure path does, creature.c:1716); the pop frame
+  ORs the group into **`temp_lev_flags`** (0x006310BE, zeroed by
+  `HubStart`), and `new_lev_flags` is XOR-cleared by `UpdateAwards` only at
+  pad ARRIVAL. **v4 fix (same v9 layout): publish `pending_flags =
+  new_lev_flags & ~temp_lev_flags`** — that value falls at the exact pop
+  frame. Needs in-game confirm.
+- [ ] 3b: per-crate destroyed-state sync (`CrateOff` capture → `crate_bits`,
+  apply via `BreakCrate` + `GetCrateType`, `armed@0x76 == -1` idempotence)
+  + checkpoint reconciliation (`ResetCheckpoint` suppress while applying,
+  `GotoCheckpoint` reconcile + union rule: remote-broken never resurrect)
+- [ ] *(follow-up)* asymmetric reward mode (same level: only the breaker gets
+  rewards). Hard part: crate rewards are deferred screen-wumpa entities that
+  escape any counter bracket — needs an `AddScreenWumpa` suppress hook or
+  catching the spawned wumpa entities.
+- [ ] *(follow-up)* `PickupPower` explainer popup also opens on the applier
+  under symmetric replay — revisit if playtests object.
+- [ ] *(stretch)* shared lives pool; `Wumpa[]` world-fruit entity sync
 
 ## Stage 4 — Shared enemies / shared boss  *(high decomp — capstone)*
 

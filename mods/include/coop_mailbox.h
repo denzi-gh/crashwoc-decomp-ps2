@@ -14,7 +14,13 @@
 #define COOP_MAILBOX_H
 
 #define COOP_MAILBOX_MAGIC 0x4F435743u /* "CWCO" */
-#define COOP_MAILBOX_VERSION 7u
+#define COOP_MAILBOX_VERSION 9u
+
+/* Sizes shared with the v8 progression fields below. */
+#define COOP_LEVEL_COUNT 35   /* Game.level[] entries */
+#define COOP_HUB_COUNT 6      /* Game.hub[] entries */
+#define COOP_CRATE_WORDS 8    /* 256 Crate[] slots / 32 */
+#define COOP_ITEM_WORDS 2     /* 64 pObj[] slots / 32 */
 
 #define COOP_F_PRESENT 1u /* writer is in a playable level, state valid */
 #define COOP_F_DEAD 2u    /* writer's player is in a death state */
@@ -87,8 +93,62 @@ typedef struct CoopSlot {              /* 0x70 bytes */
                                         * the pad instead of where the puppet first
                                         * crossed the zone edge. Valid only while
                                         * in_finish_range > 0. */
-    unsigned int seq_close;            /* 0x98 seq-lock bracket */
-} CoopSlot;                            /* 0x9C */
+    /* --- v8: shared collectibles & progression (Stage 3a). All progression
+     * state is ABSOLUTE (bitmaps / OR-able flag words), never deltas: the
+     * transport has no reliable delivery, so latest-wins + OR-merge is the
+     * whole consistency model. The reader ORs the remote's words into its
+     * own game state and re-derives every tally with
+     * CalculateGamePercentage; re-applying an already-applied bit is a
+     * no-op by construction. */
+    unsigned char bonus;               /* 0x98 Bonus != 0: writer is in a bonus
+                                        * round -- freezes item/crate capture
+                                        * and apply in BOTH directions (bonus
+                                        * progress stays personal). */
+    unsigned char pad1;                /* 0x99 */
+    unsigned short items;              /* 0x9A plr_items: current-level pickup
+                                        * bits (crystal 1, crate gem 2, bonus
+                                        * gems...). OR-merged into the peer's
+                                        * plr_items while both are in the same
+                                        * level and neither is in a bonus. */
+    unsigned short level_flags[COOP_LEVEL_COUNT]; /* 0x9C Game.level[i].flags:
+                                        * committed per-level progression
+                                        * (crystal 8, gems 0x10..0x400, relics
+                                        * 1..7, opened 0x800). OR-merged ALWAYS
+                                        * (cross-level: a crystal earned by the
+                                        * remote shows in the local hub UI via
+                                        * the CalculateGamePercentage recompute
+                                        * even while the players are apart). */
+    unsigned char powers;              /* 0xE2 Game.powerbits (+0x406): boss
+                                        * power-ups. OR-merged always. */
+    unsigned char hub_flags[COOP_HUB_COUNT]; /* 0xE3 Game.hub[i].flags:
+                                        * hub-unlock / boss-progress bits --
+                                        * the one commit product NOT derivable
+                                        * from level_flags. OR-merged always. */
+    unsigned char pad2[3];             /* 0xE9 */
+    unsigned int crate_bits[COOP_CRATE_WORDS]; /* 0xEC broken-crate bitmap by
+                                        * flat Crate[] slot index (bit i = slot
+                                        * i broken by the writer this level).
+                                        * Reserved by v8; the crate capture /
+                                        * apply hooks land in Stage 3b so one
+                                        * version bump covers both. */
+    unsigned int item_bits[COOP_ITEM_WORDS]; /* 0x10C taken-item bitmap by
+                                        * pObj[] slot index. The reader applies
+                                        * newly-set bits with the real
+                                        * PickupItem(pObj[i]) (same level, no
+                                        * bonus, item still alive). */
+    /* --- v9: hub award timing. pending_flags = the writer's end-of-level
+     * award bits that are pending AND not yet popped: new_lev_flags (set at
+     * level finish, only XOR-cleared when the award flight LANDS) masked by
+     * ~temp_lev_flags (the groups the hub tumble already popped off Crash --
+     * OR-ed at the exact AddAward frame). A falling edge here is therefore
+     * the frame-accurate pop cue for the peer to spawn the same award flight
+     * on the puppet -- both new_lev_flags alone (falls at landing) and the
+     * committed level_flags bit (v8's only signal) are ~2 s late.
+     * pending_level = last_level, the level those bits belong to. */
+    unsigned short pending_flags;      /* 0x114 new_lev_flags & ~temp_lev_flags */
+    short pending_level;               /* 0x116 writer's last_level; -1 = none */
+    unsigned int seq_close;            /* 0x118 seq-lock bracket */
+} CoopSlot;                            /* 0x11C */
 
 typedef struct CoopMailbox {           /* overlays ModsdkMailbox.payload */
     unsigned int magic;                /* +0x00 (abs 0x706A60) COOP_MAILBOX_MAGIC */
@@ -97,7 +157,7 @@ typedef struct CoopMailbox {           /* overlays ModsdkMailbox.payload */
     unsigned int diag;                 /* +0x0C game writes: bit 0 = puppet
                                         * shown, bits 8+ = puppet re-inits */
     CoopSlot local;                    /* +0x10 (abs 0x706A70) game writes, bridge reads */
-    CoopSlot remote;                   /* +0xAC (abs 0x706B0C) bridge writes, game reads */
-} CoopMailbox;                         /* 0x148 */
+    CoopSlot remote;                   /* +0x12C (abs 0x706B8C) bridge writes, game reads */
+} CoopMailbox;                         /* 0x248 */
 
 #endif

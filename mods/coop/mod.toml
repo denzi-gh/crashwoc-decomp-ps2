@@ -5,7 +5,7 @@
 
 [mod]
 name = "coop"
-version = "0.2"
+version = "0.3"
 target = "pal103"
 
 [code]
@@ -21,6 +21,14 @@ function = "DrawCreatures"
 handler = "coop_draw_creatures"
 mode = "replace"
 
+# Stage 3a (shared collectibles): record every item pickup into the local
+# slot's item_bits bitmap, then run the real PickupItem. The peer replays
+# newly-set bits with the same function, so both games apply identical state.
+[[hook]]
+function = "PickupItem"
+handler = "coop_pickup_item"
+mode = "replace"
+
 # The name/Paused label is 2D text (Text3D). Text3D only queues glyphs into
 # font3d_scene, which DrawPanel submits with NuRndrGScnObj under the panel
 # camera it sets up mid-function. DrawMenu is called every frame from inside
@@ -31,5 +39,6 @@ function = "DrawMenu"
 handler = "coop_draw_menu"
 mode = "replace"
 
+# 0x20 SDK header + 0x240 CoopMailbox (v8) fits in 0x400 with headroom.
 [mailbox]
-size = 0x200
+size = 0x400

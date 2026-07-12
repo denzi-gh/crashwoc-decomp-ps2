@@ -1058,6 +1058,109 @@ Match status:
   (672B, soft-float doubles) — large physics fns; field semantics extracted,
   full byte-match deferred (out of scope this pass).
 
+## coop Stage 3 Phase 1 — mailbox v8 + 3a item/flag/power sync (2026-07-12)
+
+Mod-side (branch modding-sdk) + bridge (crashwoc-multiplayer, `main`) landed
+together; **two-instance CONFIRMED in-game 2026-07-12**.
+
+**Hub award celebration (follow-up, same day, no contract change):** retail's
+end-of-level show is the hub tumble award — `AddAward` (0x1DBDC0) spawns
+`Award[i_award]` (stride 0x30: progress f32 +0, heading +4, bits u16 +6,
+level s8 +8, stage s8 +9 [1 = held above player, 0 = flying], src vec +0xC,
+fx vec +0x18, dest pad spline +0x24), and `UpdateAwards` (0x1DBF68) rides it
+above the tumbling player, pops it (GameSfx 0x26 + AddGameDebris 0xA1),
+flies it to the pad and **commits `Game.level[].flags |= bits` + XOR-clears
+`new_lev_flags` + CalculateGamePercentage on arrival**. Note `CheckFinish`
+REVERTS its flag writes (game.c:3200) into `new_lev_flags` — the durable
+commit happens per-award at flight arrival (or creature.c:1717 direct when
+`AddAward` returns 0). Consequence: a merged bit ⇒ the remote is
+mid-celebration NOW. The mod replays it on the puppet (`coop_award_celebrate`):
+real `AddAward(Hub, level, group_bits)` per gotlist group ({8, 7, 0x10…0x400},
+creature.c:1564), then rewrites the slot to stage 0 with src = puppet
+mid-body + the pop chime/sparkle; retail flies it and its arrival re-commit
+is idempotent (our merge already OR'd the bits). Gates: Level 0x25, puppet
+active, level ∈ HData[Hub].level[] (AddAward samples the LOCAL hub spline —
+a different-hub peer is skipped), ≤3 awards/tick (Award has 3 cycling
+slots). The stage-1-skip matters: stage 1 reads the GLOBAL player + tumble
+globals — never let a mod-spawned award run it.
+
+**v2 of the gate + deferred commit (same day, after the first cut failed
+in-game):** (a) a link-freshness warmup CANNOT gate the celebration — the
+remote's level→hub load stalls its publishes past STALE_LIMIT and resets
+any warmup right before the tumble commit arrives, so it silently skipped
+every time. Fresh-finish detection is now the remote's PREVIOUS distinct
+room (`g_remote_prev_room`, maintained next to `g_last_remote_room`): only
+bits of the level the remote just came from celebrate; profile catch-up
+bursts (peer was already in the hub / just connected) merge silently.
+(b) celebrated bits are NOT direct-committed — they ride `g_award_pending[35]`
+and retail's UpdateAwards commits them (+ CalculateGamePercentage + pad
+sparkle) when the flight LANDS, so the pad marker no longer "plops up"
+seconds early; safety: pending is dropped on level change (next merge tick
+direct-commits) and force-flushed after 750 ticks if a flight is lost while
+staying in the hub; bits already in the local `new_lev_flags` (0x6310D2 —
+both players finished the same level simultaneously) are skipped, the local
+player's own award commits them.
+
+**v3 = mailbox v9 (same day; v2 was in-game confirmed working but ~2 s late
+and spawned off a jumping puppet):** the committed `level_flags` bit only
+exists AFTER the remote's flight lands, so triggering off it is inherently
+one flight-duration late — and by then the puppet is doing the post-tumble
+jump, which is why the crystal popped out too high. v9 publishes
+`pending_flags` (= the writer's `new_lev_flags`) + `pending_level`
+(= `last_level` 0x630B98) at slot 0x114/0x116; `seq_close` → 0x118, slot
+0x11C, remote abs 0x706B8C, mailbox 0x248. A falling edge in the remote's
+`pending_flags` (coop_award_pop_edge, latched every tick) is the
+frame-accurate pop cue — the local flight launches the same frame as the
+remote's, off a puppet still in the hold-up pose (src = pos + 0.9, retail's
+mid-body). Edge bits are filtered by local Game flags + `g_award_pending`
+(a staleness resync that drops bits without a pop can't double-spawn); the
+merge-time fallback (prev-room gate) stays for missed edges (stale gap over
+the pop, or entering the hub mid-flight). Bridge codec v9 in lock-step
+("…2IHhI"), peek prints `pending X@level`.
+
+**v4 (same day; v3 behaved in-game EXACTLY like v2):** v3's premise was
+wrong. The tumble does NOT clear the gotlist group from `new_lev_flags` at
+the pop — creature.c:1716 (`new_lev_flags = bits ^ (bits | new_lev_flags)`)
+is inside the `AddAward(...) == 0` FAILURE branch (award table full →
+direct commit, no flight). On the normal path the pop frame only does
+`temp_lev_flags |= bits` (0x006310BE, u16; its only other writer is
+`HubStart`, which zeroes it — so it's a clean monotonic per-hub-visit
+"already popped" mask), and `new_lev_flags` keeps the bit until
+`UpdateAwards` XOR-clears it at pad ARRIVAL. Publishing raw `new_lev_flags`
+therefore fell at landing = the same instant as the v8 committed-bit
+trigger. Fix (mod-side only, v9 layout unchanged): publish `pending_flags =
+new_lev_flags & ~temp_lev_flags`, which genuinely falls at the AddAward pop
+frame; reader untouched. Lesson: `new_lev_flags`'s two clear sites (tumble
+failure path vs UpdateAwards arrival) look interchangeable in a summary —
+always check which branch the store sits in.
+
+Contract: `coop_mailbox.h` v7→**v8**, progression block at slot 0x98..0x114
+(`bonus`, `items`, `level_flags[35]`, `powers`, `hub_flags[6]`,
+`crate_bits[8]` reserved for 3b, `item_bits[2]`), slot 0x9C→**0x118**, remote
+slot abs **0x706B88**, CoopMailbox 0x148→**0x240**. `mod.toml [mailbox]`
+0x200→**0x400** and `mailbox.h payload` 0x1E0→0x3E0 (mailbox base 0x706A40 and
+payload 0x706A60 unchanged — only the mod image after the region shifts;
+build verified). Bridge `mailbox.py` codec/addresses/tests + `coop-peek`
+popcount lines updated in lock-step, `COOP_VERSION = 8`.
+
+Mod mechanics (mods/coop/mod.c): `coop_pickup_item` replace-hook on
+`PickupItem` records the `pObj[]` slot into `g_item_bits` (echo captures kept
+— harmless under OR, makes bitmaps converge). `coop_merge` (from `coop_tick`,
+after `consume_remote`): tier 1 OR-merges `level_flags`/`hub_flags`/`powers`
+into `Game` ALWAYS (gated `local_valid` so we never merge into an unloaded
+profile, skipped under `TimeTrial`) and calls `CalculateGamePercentage(&Game)`
+when any flag bit is new (that recompute IS the cross-level crystal
+visibility); tier 2 (same level, `!bonus` either side, `!Paused`, `!dead`)
+ORs `remote.items` into `plr_items` and replays newly-set `item_bits` via
+`g_coop_applying = 1; PickupItem(pObj[i]); g_coop_applying = 0` with
+`obj->dead` as the idempotence gate. Bitmaps reset on `Level` change (before
+merge, so a stale bitmap never replays into a slot-reusing new level).
+Invalid-state publishes zero the whole progression block (zeros are the
+OR-merge no-op). Ghost mode mirrors the local progression → doubles as the
+idempotency self-test (mirror must cause zero re-application).
+`g_coop_applying` is the seam for 3b's ResetCheckpoint suppression and the
+future asymmetric-rewards mode.
+
 ## game/crate — first C bodies (2026-07-12, coop Stage 3 PR-D3)
 
 `BreakCrate` (848B), `SaveCrateTypeData`, `RestoreCrateTypeData` all
