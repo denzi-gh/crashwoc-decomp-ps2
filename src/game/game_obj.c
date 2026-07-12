@@ -90,6 +90,10 @@ extern struct panelcount_s plr_crystal;
 extern struct panelcount_s plr_crategem;
 extern struct panelcount_s plr_bonusgem;
 extern s32 new_power;
+extern s32 new_mode;
+extern s32 new_level;
+extern s32 boss_dead;
+extern u64 LBIT;
 
 /* Save/progress record; only the power bitmask at +0x406 is touched here. */
 struct game_s {
@@ -101,6 +105,11 @@ extern struct game_s Game;
 extern u8 Cursor[];
 
 /* Panel pickup-sparkle x/y screen positions (.lit4 pool). */
+extern f32 D_0062D828;
+extern f32 D_0062D82C;
+extern f32 D_0062D830;
+extern f32 D_0062D834;
+extern f32 D_0062D838;
 extern f32 D_0062D904;
 extern f32 D_0062D908;
 extern f32 D_0062D90C;
@@ -109,6 +118,10 @@ extern f32 D_0062D914;
 
 void AddPanelDebris(f32 x, f32 y, s32 obj, f32 z, s32 flag);
 void NewMenu(void *cursor, s32 a, s32 b, s32 c);
+void ClockOff(void);
+void StartTimeTrial(struct nuvec_s *pos, s32 a);
+s32 GameObjectOverlap(struct obj_s *a, struct obj_s *b, s32 mode);
+void PickupItem(struct obj_s *obj);
 
 extern f32 D_0062D7C0;
 extern f32 D_0062D7C4;
@@ -591,6 +604,110 @@ after_death:
     }
 }
 
+void PickupItem(struct obj_s *obj)
+{
+    struct creature_s *c;
+    s32 power_chr;
+    s32 gembit;
+
+    if (new_mode == -1 && new_level == -1) {
+        /* Retail reads character through an unsigned view (lhu) and indexes
+         * the switch as short; the gem case re-reads the same expression,
+         * which GCSE turns into one load plus a register copy. */
+        switch ((s16)*(u16 *)&obj->character) {
+        case 0x75: /* crystal */
+            plr_items |= 0x1;
+            plr_crystal.count = 1;
+            plr_crystal.frame = 0x19;
+            GameSfx(0x26, 0);
+            AddPanelDebris(0.0f, D_0062D828, 6, 0.125f, 0x10);
+            ClockOff();
+            GameSfx(0x26, 0);
+            break;
+        case 0x76: /* time-trial clock */
+            StartTimeTrial(&obj->pos, 0);
+            break;
+        case 0x77: /* crate gem */
+            plr_items |= 0x2;
+            plr_crategem.count = 1;
+            plr_crategem.frame = 0x19;
+            GameSfx(0x26, 0);
+            AddPanelDebris(D_0062D82C, D_0062D830, 6, 0.125f, 0x10);
+            ClockOff();
+            GameSfx(0x26, 0);
+            break;
+        case 0x78: /* coloured gems */
+        case 0x79:
+        case 0x7A:
+        case 0x7B:
+        case 0x7C:
+        case 0x7D:
+            if ((s16)*(u16 *)&obj->character == 0x79) {
+                gembit = 0x8;
+            } else if ((s16)*(u16 *)&obj->character == 0x7A) {
+                gembit = 0x20;
+            } else if ((s16)*(u16 *)&obj->character == 0x7B) {
+                gembit = 0x10;
+            } else if ((s16)*(u16 *)&obj->character == 0x7C) {
+                gembit = 0x40;
+            } else {
+                gembit = ((s16)*(u16 *)&obj->character == 0x7D) ? 0x80 : 0x4;
+            }
+            plr_items |= gembit;
+            plr_bonusgem.item = gembit;
+            plr_bonusgem.count = 1;
+            plr_bonusgem.frame = 0x19;
+            GameSfx(0x26, 0);
+            AddPanelDebris(D_0062D834, D_0062D838, 6, 0.125f, 0x10);
+            GameSfx(0x26, 0);
+            break;
+        case 0xA2: /* powers */
+        case 0xA3:
+        case 0xA4:
+        case 0xA5:
+        case 0xA6:
+        case 0xA7:
+            if (LBIT & 0x3E00000) {
+                boss_dead = 2;
+            }
+            power_chr = obj->character;
+            switch (power_chr) {
+            case 0xA7:
+                new_power = 0;
+                break;
+            case 0xA5:
+                new_power = 1;
+                break;
+            case 0xA6:
+                new_power = 2;
+                break;
+            case 0xA2:
+                new_power = 3;
+                break;
+            case 0xA4:
+                new_power = 4;
+                break;
+            case 0xA3:
+                new_power = 5;
+                break;
+            }
+            Game.powerbits |= 1 << new_power;
+            NewMenu(Cursor, 0x1F, -1, -1);
+            GameSfx(0x26, 0);
+            if (Level != 0x15 && Level != 0x18) {
+                player->obj.mom.x = 0.0f;
+                player->obj.mom.z = 0.0f;
+                player->slide = 0;
+            }
+            break;
+        }
+    }
+    c = (struct creature_s *)obj->parent;
+    obj->dead = 1;
+    c->off_wait = 2;
+    c->on = 0;
+}
+
 s32 KillPlayer(struct obj_s *obj, s32 anim)
 {
     struct mask_s *mask;
@@ -684,6 +801,35 @@ void PickupPower(s32 character)
         player->obj.mom.z = 0.0f;
         player->slide = 0;
     }
+}
+
+s32 HitItems(struct obj_s *obj)
+{
+    struct obj_s *po;
+    s32 i;
+
+    if (level_part_2 != 0) {
+        return 0;
+    }
+    for (i = 0; i < 0x40; i++) {
+        po = pObj[i];
+        if (po == 0) {
+            continue;
+        }
+        if (po->dead != 0) {
+            continue;
+        }
+        if (po->invisible != 0) {
+            continue;
+        }
+        if ((po->flags & 0x10) != 0) {
+            if (GameObjectOverlap(obj, po, 0) != 0) {
+                PickupItem(po);
+                return 1;
+            }
+        }
+    }
+    return 0;
 }
 
 void PickupRelic(s32 tier)

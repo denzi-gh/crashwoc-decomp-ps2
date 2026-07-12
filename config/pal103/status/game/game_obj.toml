@@ -53,7 +53,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0096:001fce88:PickupItem"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:001fd158:HitCreatures"
@@ -145,7 +145,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:00201140:HitItems"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:00201200:NewTopBot"

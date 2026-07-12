@@ -1058,6 +1058,40 @@ Match status:
   (672B, soft-float doubles) — large physics fns; field semantics extracted,
   full byte-match deferred (out of scope this pass).
 
+## game/game_obj — PickupItem + HitItems (2026-07-12, coop Stage 3 PR-D2)
+
+Both **matching** (720B + 192B). `PickupItem` is the by-character dispatch
+(jtbl base 0x75, 0x33 entries): 0x75 crystal, 0x76 time-trial clock
+(`StartTimeTrial(&obj->pos, 0)`), 0x77 crate gem, 0x78–0x7D coloured gems
+(bit from an if-chain: 0x79→8, 0x7A→0x20, 0x7B→0x10, 0x7C→0x40, 0x7D→0x80,
+else/0x78→4), 0xA2–0xA7 powers (sets `boss_dead = 2` when
+`LBIT & 0x3E00000`). **The power mapping differs from `PickupPower`**:
+here 0xA2→3, 0xA3→5, 0xA4→4, 0xA5→1, 0xA6→2, 0xA7→0. Each pickup case ends
+with a second `GameSfx(0x26, 0)` (cross-jumped tail). Function tail = the
+`KillItem` body written out (dead=1, parent off_wait=2, on=0).
+`HitItems(obj)` scans `pObj[0..0x40)`, skipping null/dead/invisible, and on
+`flags & 0x10` + `GameObjectOverlap(obj, po, 0)` calls `PickupItem(po)` and
+returns 1.
+
+**Matching techniques found:**
+- **GCSE/PRE re-read copy**: retail reads `obj->character` through a u16
+  view (`(s16)*(u16 *)&obj->character`) in BOTH the switch cond and the
+  gem-case compares. GCSE unifies the two loads into one `lhu` plus a
+  **register copy** (`daddu a1, v0`), the copy blocks the lh-fold, and the
+  load dies at the switch subtract (2-address `addiu v0, v0, -0x75`). No
+  local-variable formulation reproduces this — plain copies always get
+  copy-propagated away; the *re-read of the same expression in another
+  basic block* is what makes the pattern. (This exact 4-insn shape is
+  unique to PickupItem in the whole image.)
+- **Switch index type**: switch on a short-typed expression → HImode dance
+  (`addiu; sll; sra; sltiu`); switch on an int local/expression → plain
+  SImode (`lh; addiu; sltiu`). PickupItem's outer switch is short-indexed,
+  its inner power switch reloads through a fresh `s32` local (plain `lh`).
+- **Case-body order = source order**: the inner power switch's bodies sit
+  in VALUE order (0,1,2,3,4,5), so retail listed the cases in that order
+  (0xA7, 0xA5, 0xA6, 0xA2, 0xA4, 0xA3); getting this wrong costs the
+  shared-store crossjump (+4 insns).
+
 ## game/game_obj — pickup handlers (2026-07-12, coop Stage 3 PR-D1)
 
 All six tiny pickup functions matched + promoted first/second try: `KillItem`,
