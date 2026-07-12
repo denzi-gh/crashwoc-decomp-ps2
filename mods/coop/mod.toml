@@ -5,7 +5,7 @@
 
 [mod]
 name = "coop"
-version = "0.3"
+version = "0.4"
 target = "pal103"
 
 [code]
@@ -21,13 +21,12 @@ function = "DrawCreatures"
 handler = "coop_draw_creatures"
 mode = "replace"
 
-# Stage 3a (shared collectibles): record every item pickup into the local
-# slot's item_bits bitmap, then run the real PickupItem. The peer replays
-# newly-set bits with the same function, so both games apply identical state.
-[[hook]]
-function = "PickupItem"
-handler = "coop_pickup_item"
-mode = "replace"
+# Stage 3a note: item sync needs NO capture hook -- the plr_items/powers
+# words already carry WHAT was collected, and each reward bit maps to
+# exactly one object character (PickupItem's dispatch), so the peer finds
+# the live object by identity. (A pObj slot-index channel was removed
+# 2026-07-12: slot order diverges between instances as objects stream in,
+# which replayed the wrong object.)
 
 # The name/Paused label is 2D text (Text3D). Text3D only queues glyphs into
 # font3d_scene, which DrawPanel submits with NuRndrGScnObj under the panel
@@ -39,6 +38,22 @@ function = "DrawMenu"
 handler = "coop_draw_menu"
 mode = "replace"
 
-# 0x20 SDK header + 0x240 CoopMailbox (v8) fits in 0x400 with headroom.
+# Stage 3b (per-crate sync): capture crate deaths at CrateOff -- the one
+# point every crate goes through (stack/TNT/nitro-switch chains bypass
+# BreakCrate); hook GotoCheckpoint to reconcile the bitmaps after a death
+# respawn. Checkpoints are SHARED: replaying a remote checkpoint-crate
+# break runs CrateOff's own ResetCheckpoint (args come from the crate), so
+# both players get the same respawn point -- no hook needed for that.
+[[hook]]
+function = "CrateOff"
+handler = "coop_crate_off"
+mode = "replace"
+
+[[hook]]
+function = "GotoCheckpoint"
+handler = "coop_goto_checkpoint"
+mode = "replace"
+
+# 0x20 SDK header + 0x248 CoopMailbox (v9) fits in 0x400 with headroom.
 [mailbox]
 size = 0x400

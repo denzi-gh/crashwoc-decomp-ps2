@@ -1161,6 +1161,96 @@ idempotency self-test (mirror must cause zero re-application).
 `g_coop_applying` is the seam for 3b's ResetCheckpoint suppression and the
 future asymmetric-rewards mode.
 
+## coop Stage 3 Phase 2 — 3b per-crate sync + checkpoint reconcile (2026-07-12)
+
+No contract change (v9's `crate_bits[8]` was reserved since v8; bridge/relay
+untouched). Three new replace hooks (7 total):
+
+- **Capture `CrateOff`** (0x1F3178), NOT BreakCrate: stack chains,
+  nitro-switch chains and TNT explosions kill crates via direct `CrateOff`
+  calls. Bit set only on a nonzero return (crate really went off), identity
+  = flat `Crate[]` slot (stride 0x90, ≤256, deterministic fill order),
+  `Bonus == 0` gate; applied echoes captured on purpose (bitmap converges
+  from either side).
+- **Apply** in `coop_merge` tier 2 (same level, !bonus, !Paused, !dead):
+  `remote.crate_bits & ~applied & ~own` replay through the real
+  `BreakCrate(group, &Crate[i], GetCrateType(&Crate[i], 0), 0)` under
+  `g_coop_applying`, budget 8/tick (chains amplify). "Already destroyed"
+  uses retail's own UpdatePlayerStats predicate
+  `on == 0 || (newtype == 0xF && metal_count != 0)` (exploded slots keep
+  `on != 0` — plain `on` is NOT the destroyed test) → mark applied
+  silently. TNT/nitro mid-countdown (`armed != -1`) are skipped and
+  retried: their own explosion flips them destroyed. Orphan slots (no
+  CrateGroup covers the index) and `idx >= CRATECOUNT` mark applied and are
+  never touched (slot-divergence guard; `coop-peek` popcounts spot it).
+- **Checkpoints are SHARED** (user decision 2026-07-12, replaced the
+  planned own-checkpoints suppress hook): CrateOff's checkpoint branch
+  calls `ResetCheckpoint(crate+0x31, crate+0x32, crate+0x34f, &crate->pos)`
+  — every arg derives from the CRATE, so the symmetric replay produces the
+  identical respawn point and the same CrateTypeData log baseline on both
+  sides. Feature = simply not intercepting ResetCheckpoint.
+- **Death reset is SHARED** (user decision same day, replaced the union
+  rule): either player's death resets BOTH players' post-checkpoint crates,
+  exactly like retail as a team. Own respawn: the death block runs
+  `RestoreCrateTypeData` + `ResetCrates` BEFORE `GotoCheckpoint`
+  (E5C4C/E5C54 → E5D2C), so in the `GotoCheckpoint` hook (event-driven —
+  death block + debug menu, never polled) the crates are already final:
+  drop the now-intact crates from the published bitmap IMMEDIATELY, then
+  pause the apply loop for a 50-tick (~1 s) settle. The peer triggers on
+  bits FALLING out of the remote's published set (absolute state, robust to
+  stale gaps — a dead-flag edge can be swallowed by staleness, a missing
+  bit is still missing on recovery) and mirrors retail's death-block crate
+  pair `RestoreCrateTypeData(); ResetCrates();` (the REST of that block,
+  ResetWumpa/Chases/AI/etc., is personal world state and is NOT mirrored),
+  arming its own 50-tick apply-pause. The drop-intact sweep additionally
+  runs EVERY processed tick, so any resurrection path (menu restart, the
+  mirror itself) stops being claimed within a tick.
+  **Ordering is load-bearing** (v1 of this feature failed in-game): the
+  drop must happen at respawn and the settle must pause APPLY — v1 dropped
+  at settle EXPIRY, so the dead player's own apply loop re-broke every
+  resurrected crate from the peer's still-stale echo bitmap the moment the
+  settle ended (its applied mask never covers crates it broke first-hand),
+  and the peer never saw a stable falling edge. Symptom: crates popped
+  back broken on the dead side, no reset on the living side.
+  `RestoreCrateTypeData` self-clears `i_cratetypedata` (crate.c:293), so
+  simultaneous deaths double-reset as a no-op. Applied bits re-arm on the
+  falling edge (`applied &= remote` each processed tick), so a genuine
+  re-break after a reset replays; `g_crate_remote_prev` is zeroed on level
+  mismatch (re-entry must not fake a falling edge) but KEPT across
+  pause/own-death so a fall is processed late, not lost.
+  `ResetCheckpoint(-1,-1,0,NULL)` (death block prelude) only invalidates
+  `cp_iRAIL/cp_iALONG` — nothing crate-related, so the two-call mirror is
+  complete. CrateTypeData log cap is 0x20 = 32 entries (SaveCrateTypeData,
+  crate.c:270) — a retail limitation, identical on both sides.
+
+**Item sync reworked to identity-based (2026-07-12, in-game bug):** the
+pObj-slot `item_bits` channel replayed the WRONG object — `pObj[]` fills as
+objects stream in, so slot order diverges between instances whose players
+explored differently (observed: P1's crystal pickup granted P2 the CRATE
+GEM, P2's crystal stayed standing, tallies crossed at level end). The
+"deterministic per level load" assumption from the plan is false. Fix: no
+capture at all — each reward bit maps to exactly ONE object character in
+PickupItem's dispatch (crystal 0x75↔1, crate gem 0x77↔2, coloured gems
+0x78→4 0x79→8 0x7A→0x20 0x7B→0x10 0x7C→0x40 0x7D→0x80; powers
+0xA7→bit0 0xA5→1 0xA6→2 0xA2→3 0xA4→4 0xA3→5; 0x76 = time-trial clock,
+NEVER replay). Merge rule: any LIVE pObj object whose bit ∈
+`plr_items | remote.items` (or ∈ the powers rising edge `npw`, computed
+before tier-1's OR) → real `PickupItem` (grant + despawn + effects),
+≤2/tick, retried while the object is alive (self-healing for objects that
+stream in later); remaining remote items bits OR directly (HUD first).
+Powers replay is EDGE-only: powerbits persist across levels, an
+alive-object rule would auto-collect an owned power on level re-entry.
+`item_bits[2]` stays in the v9 layout as reserved/always-0 (no bump; both
+mods rebuilt together anyway); the PickupItem hook is gone (5 hooks).
+
+`plr_crates`/box counter needs nothing (re-derived every frame). Ghost mode
+mirrors `g_crate_bits` → the apply loop must be a total no-op (idempotency
+self-test). Build: 6 hooks, blob 0x706a00..0x70b53c, mailbox 0x706a40.
+Needs two-instance confirm (wumpa crate, nitro switch, TNT chain, shared
+checkpoint respawn point, death → both players' crates reset + box counters
+equal). Playtest watch-item: a crate un-breaking under the living player
+(retail never resets crates while a player is standing in the level).
+
 ## game/crate — first C bodies (2026-07-12, coop Stage 3 PR-D3)
 
 `BreakCrate` (848B), `SaveCrateTypeData`, `RestoreCrateTypeData` all

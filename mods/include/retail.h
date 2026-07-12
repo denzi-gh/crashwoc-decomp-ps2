@@ -134,6 +134,81 @@ void PickupItem(struct obj_s *obj);
  * (in any level) shows up in the local hub UI and save. 0x001EADD8 */
 void CalculateGamePercentage(struct coop_game_s *game);
 
+/* --- Crates (Stage 3b: per-crate destroyed-state sync) -------------------
+ * Layouts mirror src/game/crate.c (matched BreakCrate's TU). Crate identity
+ * across instances = the flat Crate[] slot index (fill order is
+ * deterministic per level load; region 0x9000 => at most 256 slots).
+ * Retail's own "destroyed" predicate (UpdatePlayerStats, panel.c):
+ * (flags & 0x10) && (on == 0 || (newtype == 0xF && metal_count != 0));
+ * plr_crates is re-derived from it every frame -- never sync counters. */
+struct coop_crate_s {
+    unsigned char pad00[0x30];
+    signed char on;                  /* 0x30 0 = broken or inactive slot */
+    unsigned char pad31[7];
+    unsigned short flags;            /* 0x38 0x10 counts, 0x40 bonus-round */
+    unsigned char pad3a[4];
+    unsigned char newtype;           /* 0x3E 0xF = exploded */
+    unsigned char pad3f[2];
+    unsigned char metal_count;       /* 0x41 nonzero = destroyed by blast */
+    unsigned char pad42[0x34];
+    short armed;                     /* 0x76 -1 = idle; TNT/nitro countdown */
+    unsigned char pad78[0x18];
+};                                   /* 0x90 */
+
+struct coop_crategroup_s {
+    unsigned char pad00[0x10];
+    short first;                     /* 0x10 index of first Crate[] slot */
+    short count;                     /* 0x12 slots in this group */
+    unsigned char pad14[0x1C];
+};                                   /* 0x30 */
+
+extern struct coop_crate_s Crate[];          /* 0x00592E18 */
+extern struct coop_crategroup_s CrateGroup[];/* 0x0059BE18 */
+extern int CRATEGROUPCOUNT;                  /* 0x00631218 */
+extern int CRATECOUNT;                       /* 0x0063121C */
+
+/* Break one crate through the full retail path: dispatches by type (TNT
+ * 0x13 arms the countdown, nitro/nitro-switch chain via direct CrateOff
+ * calls, default -> CrateOff), stack hops, sfx, debris. group must be the
+ * crate's own CrateGroup entry (chains walk it). flags bit 9 is the only
+ * bit CrateOff sees ((flags >> 9) & 1); 0 = plain break. 0x001F6FC0 */
+void BreakCrate(struct coop_crategroup_s *group, struct coop_crate_s *crate,
+                int type, int flags);
+
+/* The single point every crate actually dies through (BreakCrate's default
+ * path, nitro-switch chains, TNT explosions, stack chains). Returns nonzero
+ * if the crate really went off -- the capture hook keys on that. Grants the
+ * rewards (deferred screen-wumpa entities, ?-life panel debris). 0x001F3178 */
+int CrateOff(struct coop_crategroup_s *group, struct coop_crate_s *crate,
+             int a, int b);
+
+/* Effective type of a crate slot (applies newtype/extra/time-trial
+ * remaps; flags=0 for the plain query). 0x001F2DC8 */
+int GetCrateType(struct coop_crate_s *crate, int flags);
+
+/* Move the respawn point (called when a checkpoint crate opens, and with
+ * (-1,-1,0,NULL) on level init). CrateOff's call site derives EVERY
+ * argument from the crate (+0x31, +0x32, +0x34, &pos), so replaying a
+ * remote checkpoint-crate break yields the identical checkpoint on both
+ * sides -- checkpoints are shared by construction. 0x001E9E48 */
+void ResetCheckpoint(int a, int b, float c, void *d);
+
+/* Death respawn: restores the CrateTypeData snapshot + resets crates to the
+ * last checkpoint. The coop hook lets it run, then arms the drop-intact
+ * pass (resurrected crates leave the published bitmap -- the falling edge
+ * the peer's shared death reset triggers on). 0x001F7CC8 */
+int GotoCheckpoint(struct nuvec_s *pos, int dir);
+
+/* The crate-state pair of retail's death block (0x1E4C4C..0x1E4C58) and
+ * of the coop shared death reset: RestoreCrateTypeData un-does the
+ * type-byte changes logged since the last checkpoint baseline and
+ * self-clears the log (double reset = no-op); ResetCrates rebuilds every
+ * crate's runtime state from the type bytes. The rest of the death block
+ * (ResetWumpa/Chases/AI/PlayerEvents/...) is personal world state and is
+ * NOT mirrored on the living player. */
+void RestoreCrateTypeData(void);    /* 0x001F9010 */
+void ResetCrates(void);             /* 0x001F4EE0 */
+
 /* --- Hub award flight (the "crystal appears and flies to the pad" show) --
  * Retail's end-of-level celebration: back in the hub, the tumble animation
  * (action 0x56) spawns one Award per earned flag group via AddAward -- the

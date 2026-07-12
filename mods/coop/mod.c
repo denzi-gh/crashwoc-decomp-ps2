@@ -29,7 +29,9 @@ void DrawMask(struct mask_s *mask);
 void orig_DrawCreatures(struct creature_s *c, s32 count, s32 render,
                         s32 shadow);
 void orig_DrawMenu(void *cursor, s32 paused);
-void orig_PickupItem(struct obj_s *obj);
+int orig_CrateOff(struct coop_crategroup_s *group, struct coop_crate_s *crate,
+                  int a, int b);
+int orig_GotoCheckpoint(struct nuvec_s *pos, int dir);
 
 #define COOP ((volatile CoopMailbox *)modsdk_mailbox.payload)
 
@@ -79,9 +81,30 @@ static int g_warp_out_hide;          /* level-exit: hide the body so it despawns
  * Everything here is per-level and ABSOLUTE (bitmaps), reset on Level
  * change; the persistent progression (Game.level[].flags etc.) needs no
  * bookkeeping because OR-merging into Game is idempotent. */
-static unsigned int g_item_bits[COOP_ITEM_WORDS];    /* pObj slots WE picked up */
-static unsigned int g_item_applied[COOP_ITEM_WORDS]; /* remote bits already replayed */
-static unsigned int g_crate_bits[COOP_CRATE_WORDS];  /* Stage 3b fills; published 0 */
+/* Item identity is the object's CHARACTER code, not a pObj[] slot: pObj
+ * fills as objects stream in, so slot order differs between instances
+ * whose players explored differently (in-game bug 2026-07-12: a crystal
+ * pickup replayed by slot index picked the peer's CRATE GEM). PickupItem's
+ * own dispatch maps every character to exactly one reward bit, so
+ * remote items/powers words + the live object list identify what to
+ * replay unambiguously -- no publish-side capture needed at all. */
+static unsigned int g_crate_bits[COOP_CRATE_WORDS];  /* Crate[] slots that went off
+                                      * HERE (own breaks + applied echoes --
+                                      * the echo makes the bitmaps converge
+                                      * from either side) */
+static unsigned int g_crate_applied[COOP_CRATE_WORDS]; /* remote bits we already
+                                      * broke locally (or found already
+                                      * destroyed); a bit is only meaningful
+                                      * while the remote still publishes it
+                                      * (re-armed on its falling edge) */
+static unsigned int g_crate_remote_prev[COOP_CRATE_WORDS]; /* remote crate bits
+                                      * last processed tick: bits FALLING out
+                                      * = the remote's death respawn just
+                                      * resurrected them (shared death reset
+                                      * cue) */
+static int g_crate_reconcile;        /* ticks left in the post-GotoCheckpoint
+                                      * settle window; the drop-intact pass
+                                      * runs when it hits 0 */
 static int g_sync_level = -1;        /* level the bitmaps belong to */
 static int g_remote_prev_room = -1;  /* the remote's PREVIOUS distinct room:
                                       * when its published level changes X->Y
@@ -115,24 +138,231 @@ static int local_valid(void)
            player->used != 0;
 }
 
-/* Replace hook on PickupItem (0x1FCE88): record which pObj slot was taken
- * into the local item_bits bitmap, then run the real pickup. Every pickup
- * is captured -- the local player's, and our own replays of remote bits
- * (the echo is harmless under OR-merge and re-publishing it makes the
- * bitmap converge from either side). Bonus-round pickups stay personal. */
-void coop_pickup_item(struct obj_s *obj)
+/* PickupItem's dispatch (game_obj.c), inverted: the plr_items bit an
+ * object of this character grants. 0 = not a shareable item; 0x76 (the
+ * time-trial clock) must NEVER be replayed -- it starts a time trial. */
+static unsigned int coop_item_bit(short character)
+{
+    switch (character) {
+    case 0x75: return 0x1;  /* crystal */
+    case 0x77: return 0x2;  /* crate gem */
+    case 0x78: return 0x4;  /* coloured gems, per PickupItem's gembit map */
+    case 0x79: return 0x8;
+    case 0x7A: return 0x20;
+    case 0x7B: return 0x10;
+    case 0x7C: return 0x40;
+    case 0x7D: return 0x80;
+    }
+    return 0;
+}
+
+/* Same inversion for the power items (Game.powerbits bit). */
+static unsigned int coop_power_bit(short character)
+{
+    switch (character) {
+    case 0xA7: return 1u << 0;
+    case 0xA5: return 1u << 1;
+    case 0xA6: return 1u << 2;
+    case 0xA2: return 1u << 3;
+    case 0xA4: return 1u << 4;
+    case 0xA3: return 1u << 5;
+    }
+    return 0;
+}
+
+/* --- Stage 3b: per-crate destroyed-state sync ----------------------------
+ * Capture at CrateOff, the single point every crate actually dies through
+ * (stack chains, nitro-switch chains and TNT explosions bypass BreakCrate,
+ * so hooking BreakCrate would miss them). Apply through the full BreakCrate
+ * so remote breaks replay with retail's own dispatch, chains, sfx and
+ * rewards (symmetric execution -- the g_coop_applying bracket is the future
+ * asymmetric-rewards seam). */
+#define COOP_CRATE_APPLY_MAX 8  /* replayed breaks per tick (chains amplify) */
+#define COOP_CRATE_SETTLE 50    /* ~1 s apply-pause after a death reset: long
+                                 * enough for the peer to see our bits fall,
+                                 * mirror the reset and drop ITS bits (incl.
+                                 * internet relay lag), so neither side
+                                 * re-breaks resurrected crates from the
+                                 * other's stale echo */
+
+static void coop_crate_drop_intact(void);
+
+/* Replace hook on CrateOff (0x1F3178): when a crate REALLY went off
+ * (nonzero return), record its flat Crate[] slot into the published bitmap.
+ * Bonus-round crates stay personal. Applied echoes are captured on purpose:
+ * re-publishing them makes the bitmaps converge from either side. */
+int coop_crate_off(struct coop_crategroup_s *group, struct coop_crate_s *crate,
+                   int a, int b)
+{
+    int ret = orig_CrateOff(group, crate, a, b);
+
+    if (ret != 0 && Bonus == 0 && LEVEL_PLAYABLE(Level)) {
+        int idx = crate - Crate;
+
+        if (idx >= 0 && idx < COOP_CRATE_WORDS * 32) {
+            g_crate_bits[idx >> 5] |= 1u << (idx & 31);
+        }
+    }
+    return ret;
+}
+
+/* Checkpoints are SHARED (user decision 2026-07-12, replacing the earlier
+ * own-checkpoints-only rule): a remote checkpoint-crate break replays
+ * through the full CrateOff path, whose ResetCheckpoint call takes every
+ * argument from the crate itself (+0x31/+0x32/+0x34/&pos) -- so the replay
+ * moves our respawn point to the exact same checkpoint the breaker got,
+ * and both CrateTypeData snapshot baselines reset at the same crate. No
+ * suppress hook needed; simply not intercepting ResetCheckpoint is the
+ * feature. */
+
+/* Replace hook on GotoCheckpoint (0x1F7CC8): the death block runs
+ * RestoreCrateTypeData + ResetCrates BEFORE GotoCheckpoint, so when the
+ * original returns our post-checkpoint crates are already resurrected --
+ * drop them from the published bitmap IMMEDIATELY (the falling edge is the
+ * peer's shared-death-reset cue; publishing it before our apply loop can
+ * run again is what makes the ordering safe), then pause the apply loop
+ * for the settle window so the peer has time to mirror the reset and drop
+ * its own bits -- otherwise we would re-break our freshly resurrected
+ * crates from its stale echo bitmap (our applied mask never covered the
+ * crates we broke first-hand). Event-driven (death block + debug menu),
+ * never polled. */
+int coop_goto_checkpoint(struct nuvec_s *pos, int dir)
+{
+    int ret = orig_GotoCheckpoint(pos, dir);
+
+    coop_crate_drop_intact();
+    g_crate_reconcile = COOP_CRATE_SETTLE;
+    return ret;
+}
+
+/* Retail's own "this crate is gone" predicate (UpdatePlayerStats scans it
+ * every frame): turned off, or blown up in place (exploded outpost slots
+ * keep on != 0). */
+static int coop_crate_destroyed(struct coop_crate_s *crate)
+{
+    return crate->on == 0 ||
+           (crate->newtype == 0xF && crate->metal_count != 0);
+}
+
+static struct coop_crategroup_s *coop_find_crate_group(int idx)
+{
+    int g;
+
+    for (g = 0; g < CRATEGROUPCOUNT; g++) {
+        int first = CrateGroup[g].first;
+
+        if (idx >= first && idx < first + CrateGroup[g].count) {
+            return &CrateGroup[g];
+        }
+    }
+    return 0;
+}
+
+/* Drop published bits whose crate is intact again (after a death reset --
+ * our own respawn's, or a mirrored remote one): stop claiming them broken,
+ * so the peer sees the falling edge / doesn't re-break them. */
+static void coop_crate_drop_intact(void)
 {
     int i;
 
-    if (Bonus == 0 && LEVEL_PLAYABLE(Level)) {
-        for (i = 0; i < 64; i++) {
-            if (pObj[i] == obj) {
-                g_item_bits[i >> 5] |= 1u << (i & 31);
-                break;
-            }
+    for (i = 0; i < CRATECOUNT && i < COOP_CRATE_WORDS * 32; i++) {
+        if ((g_crate_bits[i >> 5] & (1u << (i & 31))) != 0 &&
+            !coop_crate_destroyed(&Crate[i])) {
+            g_crate_bits[i >> 5] &= ~(1u << (i & 31));
         }
     }
-    orig_PickupItem(obj);
+}
+
+/* Replay newly-published remote breaks (called from coop_merge's same-level
+ * tier). Budgeted per tick: each BreakCrate can chain (stacks, TNT), so a
+ * catch-up burst spreads over a few frames instead of one spike. TNT/nitro
+ * mid-countdown (armed != -1) are left pending and retried -- their own
+ * explosion flips them to destroyed and the bit is then marked applied. */
+static void coop_crate_apply(void)
+{
+    int budget = COOP_CRATE_APPLY_MAX;
+    unsigned int fallen = 0;
+    int w;
+    int i;
+
+    /* Applied-bits live only as long as the remote publishes the crate:
+     * re-arm on the falling edge, so a later re-publish (a genuine
+     * re-break after a shared reset) replays again. */
+    for (w = 0; w < COOP_CRATE_WORDS; w++) {
+        fallen |= g_crate_remote_prev[w] & ~remote_snap.crate_bits[w];
+        g_crate_applied[w] &= remote_snap.crate_bits[w];
+        g_crate_remote_prev[w] = remote_snap.crate_bits[w];
+    }
+    /* SHARED DEATH RESET (user decision 2026-07-12): bits falling out of
+     * the remote's published set can only mean its death respawn just
+     * resurrected its post-checkpoint crates (its GotoCheckpoint drop). Run
+     * the crate-state pair of retail's death block here, so the same
+     * crates resurrect for the living player and both box counters stay
+     * identical. Both CrateTypeData logs converge via the echo capture and
+     * share their baseline (the replayed checkpoint), so the restore is
+     * symmetric; it also self-clears, so a double reset (both players
+     * died) is a no-op. Keyed on the absolute published state rather than
+     * the dead flag: a staleness gap can swallow a flag edge, but a
+     * missing bit is still missing when the link recovers. Our own apply
+     * loop pauses for the settle window too -- the remote may publish a
+     * few more stale ticks before its own reset bookkeeping is done. */
+    if (fallen != 0) {
+        g_coop_applying = 1;
+        RestoreCrateTypeData();
+        ResetCrates();
+        g_coop_applying = 0;
+        g_crate_reconcile = COOP_CRATE_SETTLE;
+    }
+    /* Every processed tick: stop claiming crates that are intact again --
+     * covers our GotoCheckpoint respawn, the mirrored reset above, and any
+     * other retail path that resurrects crates (menu restarts) within one
+     * tick, so the peer's falling edge is never stale. */
+    coop_crate_drop_intact();
+    if (g_crate_reconcile > 0) {
+        g_crate_reconcile--;
+        return; /* propagation window: the peer may still echo pre-reset
+                 * bits; applying now would re-break resurrected crates */
+    }
+    for (w = 0; w < COOP_CRATE_WORDS && budget > 0; w++) {
+        unsigned int nw = remote_snap.crate_bits[w] & ~g_crate_applied[w] &
+                          ~g_crate_bits[w];
+
+        if (nw == 0) {
+            continue;
+        }
+        for (i = 0; i < 32 && budget > 0; i++) {
+            unsigned int bit = 1u << i;
+            struct coop_crate_s *crate;
+            struct coop_crategroup_s *group;
+            int idx = (w << 5) | i;
+
+            if ((nw & bit) == 0) {
+                continue;
+            }
+            if (idx >= CRATECOUNT) {
+                g_crate_applied[w] |= bit; /* slot divergence guard */
+                continue;
+            }
+            crate = &Crate[idx];
+            if (coop_crate_destroyed(crate)) {
+                g_crate_applied[w] |= bit; /* already gone: converged */
+                continue;
+            }
+            if (crate->armed != -1) {
+                continue; /* counting down: it will destroy itself */
+            }
+            group = coop_find_crate_group(idx);
+            if (group == 0) {
+                g_crate_applied[w] |= bit; /* orphan slot: never apply */
+                continue;
+            }
+            g_coop_applying = 1;
+            BreakCrate(group, crate, GetCrateType(crate, 0), 0);
+            g_coop_applying = 0;
+            g_crate_applied[w] |= bit;
+            budget--;
+        }
+    }
 }
 
 /* The remote's end-of-level celebration, replayed on the puppet. Retail's
@@ -272,13 +502,14 @@ static void coop_award_pop_edge(void)
  *      relics) from the flags. That recompute is what makes a crystal the
  *      remote earned show up in the local hub UI and save while the players
  *      are in different places.
- *  (2) Live in-level state -- plr_items + the item_bits replay -- only
- *      while both sides are in the SAME level, neither is in a bonus round,
- *      we are not paused and not mid-death. Replay = the real
- *      PickupItem(pObj[i]) on each newly-set remote bit whose item is still
- *      alive, so both games run identical code (symmetric execution; the
- *      g_coop_applying bracket is the seam a later asymmetric-rewards mode
- *      hooks into). obj.dead gates double-application.
+ *  (2) Live in-level state -- plr_items + the identity-based item replay
+ *      (see coop_item_bit) -- only while both sides are in the SAME level,
+ *      neither is in a bonus round, we are not paused and not mid-death.
+ *      Replay = the real PickupItem on the live object whose character
+ *      grants a collected-but-alive reward bit, so both games run identical
+ *      code (symmetric execution; the g_coop_applying bracket is the seam a
+ *      later asymmetric-rewards mode hooks into). obj.dead gates
+ *      double-application.
  *
  * Time trials are personal by design: no merging at all while TimeTrial.
  * Gating on local_valid keeps us from ever merging into an unloaded
@@ -286,6 +517,7 @@ static void coop_award_pop_edge(void)
 static void coop_merge(void)
 {
     unsigned int nw;
+    unsigned int npw;
     int changed;
     int w;
     int i;
@@ -341,36 +573,60 @@ static void coop_merge(void)
             changed = 1;
         }
     }
+    /* Powers rising edge BEFORE the OR: tier 2 uses it to replay the
+     * power object (despawn + popup) when we share the level. */
+    npw = remote_snap.powers & (unsigned int)(unsigned char)~Game.powerbits;
     Game.powerbits |= remote_snap.powers; /* not flag-derived: no recompute */
     if (changed) {
         CalculateGamePercentage(&Game);
     }
 
-    if (remote_snap.level != Level || remote_snap.bonus != 0 || Bonus != 0 ||
-        Paused != 0 || player->obj.dead != 0) {
+    if (remote_snap.level != Level) {
+        /* Different room: the remote's crate bitmap belongs to another
+         * level (or is the fresh zero after its level change) -- forget
+         * the last-seen copy so re-entry never fakes a falling edge. */
+        for (w = 0; w < COOP_CRATE_WORDS; w++) {
+            g_crate_remote_prev[w] = 0;
+        }
         return;
     }
-    plr_items |= remote_snap.items;
-    for (w = 0; w < COOP_ITEM_WORDS; w++) {
-        /* Bits the remote took that we neither took ourselves nor replayed. */
-        nw = remote_snap.item_bits[w] & ~g_item_applied[w] & ~g_item_bits[w];
-        if (nw == 0) {
-            continue;
-        }
-        for (i = 0; i < 32; i++) {
-            if ((nw & (1u << i)) != 0) {
-                struct obj_s *obj = pObj[(w << 5) | i];
+    if (remote_snap.bonus != 0 || Bonus != 0 || Paused != 0 ||
+        player->obj.dead != 0) {
+        /* prev is KEPT: a falling edge during our pause/death or a bonus
+         * round is processed late instead of lost. */
+        return;
+    }
+    /* Identity-based item replay: any LIVE placed item whose reward bit is
+     * already collected (by us -- an earlier replay that ran before the
+     * object streamed in -- or by the remote) gets the real PickupItem:
+     * grants the bit, despawns the object, plays the pickup effects. Our
+     * own pickups never appear here (PickupItem sets obj.dead in the same
+     * call). Capped per tick against sfx bursts; self-healing -- a still-
+     * alive object is retried next tick. */
+    {
+        unsigned int want = (unsigned int)plr_items | remote_snap.items;
+        int replays = 0;
 
-                if (obj != 0 && obj->dead == 0) {
-                    g_coop_applying = 1;
-                    PickupItem(obj);
-                    g_coop_applying = 0;
-                }
+        for (i = 0; i < 64 && replays < 2; i++) {
+            struct obj_s *obj = pObj[i];
+
+            if (obj != 0 && obj->dead == 0 &&
+                ((coop_item_bit(obj->character) & want) != 0 ||
+                 (coop_power_bit(obj->character) & npw) != 0)) {
+                g_coop_applying = 1;
+                PickupItem(obj);
+                g_coop_applying = 0;
+                replays++;
             }
         }
-        /* Mark even the already-dead ones applied: the state converged. */
-        g_item_applied[w] |= nw;
     }
+    /* Bits with no live object here (not streamed in / already gone):
+     * grant the reward directly, the HUD is what matters. Powers were
+     * OR-merged in tier 1; their object replay above is edge-only
+     * (powerbits persist across levels, so an alive-object rule would
+     * auto-collect an owned power when replaying its level). */
+    plr_items |= remote_snap.items;
+    coop_crate_apply();
 }
 
 /* New level (or leaving one): the per-level bitmaps belong to the old room.
@@ -380,13 +636,12 @@ static void coop_progress_reset(void)
 {
     int i;
 
-    for (i = 0; i < COOP_ITEM_WORDS; i++) {
-        g_item_bits[i] = 0;
-        g_item_applied[i] = 0;
-    }
     for (i = 0; i < COOP_CRATE_WORDS; i++) {
         g_crate_bits[i] = 0;
+        g_crate_applied[i] = 0;
+        g_crate_remote_prev[i] = 0;
     }
+    g_crate_reconcile = 0;
 #if COOP_AWARD
     for (i = 0; i < COOP_LEVEL_COUNT; i++) {
         g_award_pending[i] = 0;
@@ -509,7 +764,8 @@ static void publish_local(void)
             s->crate_bits[i] = g_crate_bits[i];
         }
         for (i = 0; i < COOP_ITEM_WORDS; i++) {
-            s->item_bits[i] = g_item_bits[i];
+            s->item_bits[i] = 0; /* reserved again: identity replay needs
+                                  * no capture (items word suffices) */
         }
         /* v9: award bits pending AND not yet popped -- new_lev_flags alone
          * only falls when the flight LANDS (UpdateAwards XOR-clears it at
@@ -700,8 +956,8 @@ static void synth_ghost(void)
     remote_snap.in_finish_pos[1] = 0.0f;
     remote_snap.in_finish_pos[2] = 0.0f;
     /* Mirror our own progression: coop_merge on a mirror must be a total
-     * no-op (every level/hub bit already set, every item_bits bit either
-     * ours or dead) -- the in-game idempotency self-test. */
+     * no-op (every level/hub bit already set, every mirrored items bit's
+     * object already dead) -- the in-game idempotency self-test. */
     remote_snap.bonus = (unsigned char)(Bonus != 0);
     remote_snap.items = plr_items;
     for (i = 0; i < COOP_LEVEL_COUNT; i++) {
@@ -715,7 +971,7 @@ static void synth_ghost(void)
         remote_snap.crate_bits[i] = g_crate_bits[i];
     }
     for (i = 0; i < COOP_ITEM_WORDS; i++) {
-        remote_snap.item_bits[i] = g_item_bits[i];
+        remote_snap.item_bits[i] = 0; /* reserved (identity replay) */
     }
     remote_snap.pending_flags = (unsigned short)(new_lev_flags &
                                                  (unsigned short)~temp_lev_flags);

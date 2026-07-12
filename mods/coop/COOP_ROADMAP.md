@@ -198,13 +198,19 @@ functions, not by copying tallies.
   crystal the remote earns shows in the local hub UI + save immediately.
   Skipped while `TimeTrial`; merge gated on `local_valid` (never into an
   unloaded profile). **CONFIRMED in-game 2026-07-12.**
-- [x] 3a: live item sync — replace-hook on `PickupItem` records the `pObj[]`
-  slot into `item_bits`; peer replays newly-set bits with the real
-  `PickupItem(pObj[i])` (same level, no bonus either side, not paused/dead,
-  `obj.dead` gates re-apply); `plr_items` OR-merged same-gates. Bitmaps
-  reset on level change; ghost mode doubles as the idempotency self-test
-  (mirrored bitmaps ⇒ zero re-application). **CONFIRMED in-game 2026-07-12.**
-- [~] 3a: **hub award celebration on the puppet** — a newly merged level-flag
+- [x] 3a: live item sync — **identity-based** (reworked 2026-07-12): each
+  reward bit maps to exactly one object character (PickupItem's dispatch:
+  crystal 0x75↔1, crate gem 0x77↔2, coloured gems 0x78–0x7D↔4…0x80, powers
+  0xA2–0xA7↔powerbits; 0x76 = time-trial clock, never replayed). Any LIVE
+  placed item whose bit is in `plr_items | remote.items` (or on the powers
+  rising edge) gets the real `PickupItem` — grant + despawn + effects —
+  ≤2/tick, self-healing; bits with no live object OR directly (HUD first).
+  `item_bits` is reserved again (always 0), the `PickupItem` capture hook
+  is gone. The original slot-index channel replayed the WRONG object:
+  `pObj[]` fills as objects stream in, so slot order diverges between
+  instances (in-game bug: a crystal pickup granted the peer the crate gem
+  and left the crystal standing). **CONFIRMED in-game 2026-07-12.**
+- [x] 3a: **hub award celebration on the puppet** — a newly merged level-flag
   bit means the remote is mid-celebration (retail only commits a bit when the
   hub award flight lands), so when both share the hub the mod replays the
   real show: `AddAward` (0x1DBDC0) spawns the crystal/gem award, the slot is
@@ -232,11 +238,44 @@ functions, not by copying tallies.
   `HubStart`), and `new_lev_flags` is XOR-cleared by `UpdateAwards` only at
   pad ARRIVAL. **v4 fix (same v9 layout): publish `pending_flags =
   new_lev_flags & ~temp_lev_flags`** — that value falls at the exact pop
-  frame. Needs in-game confirm.
-- [ ] 3b: per-crate destroyed-state sync (`CrateOff` capture → `crate_bits`,
-  apply via `BreakCrate` + `GetCrateType`, `armed@0x76 == -1` idempotence)
-  + checkpoint reconciliation (`ResetCheckpoint` suppress while applying,
-  `GotoCheckpoint` reconcile + union rule: remote-broken never resurrect)
+  frame. **Confirmed in-game 2026-07-12** (cosmetic tweaks may follow).
+- [x] 3b: per-crate destroyed-state sync + shared checkpoints + shared death
+  reset — capture: replace-hook on `CrateOff` (0x1F3178, the one point every
+  crate dies through; stack/TNT/nitro-switch chains bypass `BreakCrate`)
+  records the flat `Crate[]` slot into `crate_bits` on a nonzero return,
+  bonus-round crates excluded, applied echoes captured on purpose (bitmap
+  convergence). Apply: in `coop_merge`'s same-level tier, newly-published
+  remote bits (`& ~applied & ~own`) replay through the real
+  `BreakCrate(group, &Crate[i], GetCrateType(...), 0)` under
+  `g_coop_applying`, ≤8/tick (chains amplify); already-destroyed slots
+  (retail predicate: `on == 0 || (newtype == 0xF && metal_count)`) mark
+  applied silently; TNT/nitro mid-countdown (`armed != -1`) retried later.
+  **Checkpoints are SHARED** (user decision 2026-07-12, replaced the earlier
+  own-checkpoints plan): the replayed `CrateOff` runs its own
+  `ResetCheckpoint`, whose args all derive from the crate — both players get
+  the identical respawn point and the same `CrateTypeData` log baseline; no
+  hook needed. **Death reset is SHARED** (user decision same day): either
+  player's death resets BOTH players' post-checkpoint crates. Own respawn:
+  the `GotoCheckpoint` hook drops now-intact crates from the published
+  bitmap IMMEDIATELY (retail resets crates before GotoCheckpoint) and
+  pauses the apply loop ~1 s; the peer detects the falling edge in the
+  published set (absolute-state cue — robust to stale gaps, unlike the dead
+  flag), mirrors retail's death-block crate pair
+  `RestoreCrateTypeData(); ResetCrates();` (log self-clears → simultaneous
+  deaths are a no-op), drops its own now-intact bits and pauses its apply
+  too. Ordering is load-bearing: v1 dropped the bits only at settle expiry,
+  so the dead player's own apply loop re-broke every resurrected crate from
+  the peer's still-stale echo the moment the settle ended and no reset ever
+  propagated (the in-game failure of 2026-07-12). Applied-bits re-arm on
+  the falling edge so a genuine re-break after a reset replays; a
+  drop-intact sweep runs every tick so ANY resurrection path (menu restart)
+  stops being claimed within a tick.
+  No contract change (`crate_bits[8]` reserved since v8, still v9);
+  `coop-peek` popcounts cover the slot-order divergence check. Playtest
+  watch-item: a crate un-breaking under the living player's feet (retail
+  never resets crates while a player stands in the level).
+  **Confirmed in-game 2026-07-12** (shared checkpoints, death reset and
+  crate sync behave as intended; 5 hooks after the item-sync rework).
 - [ ] *(follow-up)* asymmetric reward mode (same level: only the breaker gets
   rewards). Hard part: crate rewards are deferred screen-wumpa entities that
   escape any counter bracket — needs an `AddScreenWumpa` suppress hook or

@@ -131,11 +131,16 @@ typedef struct CoopSlot {              /* 0x70 bytes */
                                         * Reserved by v8; the crate capture /
                                         * apply hooks land in Stage 3b so one
                                         * version bump covers both. */
-    unsigned int item_bits[COOP_ITEM_WORDS]; /* 0x10C taken-item bitmap by
-                                        * pObj[] slot index. The reader applies
-                                        * newly-set bits with the real
-                                        * PickupItem(pObj[i]) (same level, no
-                                        * bonus, item still alive). */
+    unsigned int item_bits[COOP_ITEM_WORDS]; /* 0x10C RESERVED (always 0).
+                                        * Was a taken-item bitmap by pObj[]
+                                        * slot index; abandoned 2026-07-12 --
+                                        * pObj fills as objects stream in, so
+                                        * slot order diverges between
+                                        * instances and the replay hit the
+                                        * wrong object. Item replay is now
+                                        * identity-based off the items/powers
+                                        * words (each reward bit maps to one
+                                        * object character). */
     /* --- v9: hub award timing. pending_flags = the writer's end-of-level
      * award bits that are pending AND not yet popped: new_lev_flags (set at
      * level finish, only XOR-cleared when the award flight LANDS) masked by
