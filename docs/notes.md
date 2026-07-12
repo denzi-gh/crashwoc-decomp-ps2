@@ -1058,6 +1058,42 @@ Match status:
   (672B, soft-float doubles) — large physics fns; field semantics extracted,
   full byte-match deferred (out of scope this pass).
 
+## game/crate — first C bodies (2026-07-12, coop Stage 3 PR-D3)
+
+`BreakCrate` (848B), `SaveCrateTypeData`, `RestoreCrateTypeData` all
+**matching** — the first matches in unit 95. `src/game/crate.c` now types
+`crate_s` (stride 0x90: pos@0x10, hop_mom@0x24, on@0x30, type bytes
+0x3A..0x3F all u8 read through (s8) casts with -1 = none, metal_count@0x41,
+grid@0x44/0x48, armed@0x76 s16 with -1 = idle), `crategroup_s` (stride 0x30,
+first@0x10/count@0x12) and `cratesave_s` (crate* + 4 saved bytes).
+
+Semantics locked for the coop mod: `BreakCrate(group, crate, type, flags)` —
+type 0x13 TNT arm (skipped when `flags & 0x200`), 0xE nitro
+(kaboom + newtype=0xF + metal_count=1), 0x11 nitro-switch (chains every
+`GetCrateType(pc,0) == 0x10` crate via direct `CrateOff(pg, pc, 0, 0)`),
+default → `CrateOff(group, crate, 0, (flags >> 9) & 1)` (NOT `flags & 1` —
+bit 9 = the TNT-suppress bit, evaluated in a branch-likely delay slot) plus
+the stack-hop rescan (goto-restart loop, `pc->pos.y == cur->pos.y + 0.5f`,
+`hop_mom = CRATEHOPSPEED` hoisted to a local). TNT/nitro/nitro-switch are
+all gated on `armed == -1`, so re-application is idempotent (coop 3b).
+
+`GetCrateType` stays a faithful **near-match** (state=asm, full C in tree):
+everything byte-identical except ONE `daddu` copy in the `type == 0` movz
+block — reload materializes retail's ITE else-operand copy where our build
+coalesces it; every same-BB C form (ternary, if/else, temp local, destructive
+rebase, assignment-in-cond) produces the 3-insn coalesced form. Resume there
+if a new regalloc technique appears.
+
+**Toolchain bug found + fixed (tools/gen_hybrid.py):** the decompals `as`
+emits TWO spurious COP1-hazard nops when an alignment directive follows an
+FP materialization (`li.s`/`li.d`/raw `mtc1`) in reorder mode — even at an
+already-aligned position (BreakCrate's hop-loop `.p2align 3` after the 0.5f
+lui+mtc1 gained 8 bytes → `.org backwards`). Entering noreorder *after* the
+mtc1 flushes the same nops, so `_fix_fpmacro_align` brackets the pair in
+`.set noreorder … .set reorder`; `_sonyize` also normalizes `.p2align N` →
+`.align N`. Covered by tests/test_hybrid_align.py; all pre-existing matches
+re-verified byte-identical under the change (full image SHA gate).
+
 ## game/game_obj — PickupItem + HitItems (2026-07-12, coop Stage 3 PR-D2)
 
 Both **matching** (720B + 192B). `PickupItem` is the by-character dispatch

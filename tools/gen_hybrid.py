@@ -154,6 +154,22 @@ _JREG_RE = re.compile(
 # cop1.S cvt.w = 0x46000024 | (fs << 11) | (fd << 6).
 _CVTWS_RE = re.compile(r"^(\s*)cvt\.w\.s(?:\s+)\$f(\d+)\s*,\s*\$f(\d+)\s*$")
 
+# ee-gcc aligns loop heads with `.p2align N` (same 2^N meaning as the MIPS
+# `.align N`; normalized below for uniformity).
+_P2ALIGN_RE = re.compile(r"^(\s*)\.p2align\s+(\d+)\s*$")
+
+# decompals-as hazard quirk: when an alignment directive follows an FP
+# materialization (`li.s`/`li.d` macro or a raw `mtc1`) in reorder mode, the
+# directive's frag flush emits TWO spurious COP1-hazard nops even at an
+# already-aligned position (seen in game/crate BreakCrate: the 0.5f
+# lui+mtc1 right before the hop-loop label gained 8 bytes; retail has
+# none). Entering noreorder after the mtc1 flushes the same nops, so the
+# only clean shape is noreorder from before the materialization through
+# the align. _fix_fpmacro_align() brackets exactly that.
+_ALIGN_LINE_RE = re.compile(r"^\s*\.(?:p2)?align\s+\d+\s*$")
+_FPMACRO_LINE_RE = re.compile(r"^\s*(?:li\.[sd]|mtc1)\s")
+_ALIGN_SKIP_RE = re.compile(r"^\s*(?:$|#|\$?[\w.]+:|\.set\s|\.extern\s)")
+
 # Float-constant loads. ee-gcc emits `li.s $fN,<decimal>` and leaves the
 # materialization to the assembler: a constant whose float32 image has a
 # zero low half becomes an inline lui+mtc1 (no data, byte-exact, leave it
@@ -624,7 +640,32 @@ def _sonyize(line):
         fs = int(m.group(3))
         word = 0x46000024 | (fs << 11) | (fd << 6)
         return f"{m.group(1)}.word 0x{word:08X}"
+    m = _P2ALIGN_RE.match(line)
+    if m:
+        return f"{m.group(1)}.align {m.group(2)}"
     return line
+
+
+def _fix_fpmacro_align(lines):
+    """Bracket FP-materialization + alignment pairs in noreorder.
+
+    See _ALIGN_LINE_RE above: without this, the decompals `as` pads two
+    spurious COP1-hazard nops between an mtc1 and a following alignment
+    directive, desyncing the function from its retail extent.
+    """
+    out = list(lines)
+    i = 0
+    while i < len(out):
+        if _ALIGN_LINE_RE.match(out[i]):
+            j = i - 1
+            while j >= 0 and _ALIGN_SKIP_RE.match(out[j]):
+                j -= 1
+            if j >= 0 and _FPMACRO_LINE_RE.match(out[j]):
+                out.insert(i + 1, "\t.set\treorder")
+                out.insert(j, "\t.set\tnoreorder")
+                i += 2
+        i += 1
+    return out
 
 
 def _unit_end(unit_dir):
@@ -882,7 +923,7 @@ def _splice_unit(prologue, seg_by_name, functions, unit_dir, link_set,
             seg, externs = _rewrite_local_data(seg, local_data or {}, version,
                                                unit_dir, name, addr, mapper_box)
             out_lines += externs   # .extern for the borrowed retail data slot
-            body_lines += [_sonyize(l) for l in seg]
+            body_lines += _fix_fpmacro_align([_sonyize(l) for l in seg])
             if end is not None and not report_base:
                 # A function's registry extent runs to the next function and
                 # includes retail's trailing pad nops; the compiler does not
