@@ -1058,6 +1058,25 @@ Match status:
   (672B, soft-float doubles) — large physics fns; field semantics extracted,
   full byte-match deferred (out of scope this pass).
 
+## game/game_obj — pickup handlers (2026-07-12, coop Stage 3 PR-D1)
+
+All six tiny pickup functions matched + promoted first/second try: `KillItem`,
+`PickupCrystal`, `PickupCrateGem`, `PickupBonusGem` (gem bit in $a0),
+`PickupPower` (0xA2..0xA7 → `new_power` via jtbl, `Game.powerbits |= 1<<n`),
+`PickupRelic` (tier byte; relics reuse the crystal panel slot). The `plr_*`
+panel counters are 8-byte `panelcount_s` (count +0, draw +2, frame +4 = sparkle
+timer, byte +7 = variant: relic tier in `plr_crystal`, gem bit in
+`plr_bonusgem`), all $gp-relative.
+
+**Matching technique — adjacent independent global stores are
+scheduler-permuted.** When the ONLY mismatch is the order of neighbouring
+stores to distinct globals, permute the source statements; the compiler applies
+a deterministic reorder, so write the source in the order that lands on retail:
+a 2-store pair emits **reversed** (source `count; frame` → retail
+`frame; count`), the 3-store tail in `PickupPower` emits **rotated right**
+(source `mom.x; mom.z; slide` → retail `slide; mom.x; mom.z`). Same family as
+the "store before call = source order" note from DoInput.
+
 ## Invariants (do not break)
 
 - **Nothing game-derived is committed.** All splat output (asm, linker script,

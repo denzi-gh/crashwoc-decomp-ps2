@@ -72,6 +72,43 @@ extern s32 VEHICLECONTROL;
 extern s32 gamesfx_effect_volume;
 extern f32 NuTrigTable[];
 extern struct nuvec_s v010;
+extern s32 Level;
+
+/* Panel counter (count +0x0, draw +0x2, frame +0x4); 8 bytes <= -G8 so the
+ * plr_* instances are $gp-relative.  The byte at +0x7 carries the picked-up
+ * variant (relic tier in plr_crystal, coloured-gem bit in plr_bonusgem). */
+struct panelcount_s {
+    short count;             /* 0x0 */
+    short draw;              /* 0x2 */
+    signed char frame;       /* 0x4 */
+    u8 pad[2];               /* 0x5 */
+    u8 item;                 /* 0x7 */
+};
+
+extern u16 plr_items;
+extern struct panelcount_s plr_crystal;
+extern struct panelcount_s plr_crategem;
+extern struct panelcount_s plr_bonusgem;
+extern s32 new_power;
+
+/* Save/progress record; only the power bitmask at +0x406 is touched here. */
+struct game_s {
+    u8 unk_0x00[0x406];      /* 0x000 (opaque) */
+    u8 powerbits;            /* 0x406 */
+};
+
+extern struct game_s Game;
+extern u8 Cursor[];
+
+/* Panel pickup-sparkle x/y screen positions (.lit4 pool). */
+extern f32 D_0062D904;
+extern f32 D_0062D908;
+extern f32 D_0062D90C;
+extern f32 D_0062D910;
+extern f32 D_0062D914;
+
+void AddPanelDebris(f32 x, f32 y, s32 obj, f32 z, s32 flag);
+void NewMenu(void *cursor, s32 a, s32 b, s32 c);
 
 extern f32 D_0062D7C0;
 extern f32 D_0062D7C4;
@@ -578,4 +615,81 @@ s32 KillPlayer(struct obj_s *obj, s32 anim)
         return 0;
     }
     return KillGameObject(obj, anim);
+}
+
+void KillItem(struct obj_s *obj)
+{
+    struct creature_s *c = (struct creature_s *)obj->parent;
+
+    obj->dead = 1;
+    c->off_wait = 2;
+    c->on = 0;
+}
+
+void PickupCrystal(void)
+{
+    plr_items |= 0x1;
+    plr_crystal.count = 1;
+    plr_crystal.frame = 0x19;
+    GameSfx(0x26, 0);
+    AddPanelDebris(0.0f, D_0062D904, 6, 0.125f, 0x10);
+}
+
+void PickupCrateGem(void)
+{
+    plr_items |= 0x2;
+    plr_crategem.count = 1;
+    plr_crategem.frame = 0x19;
+    GameSfx(0x26, 0);
+    AddPanelDebris(D_0062D908, D_0062D90C, 6, 0.125f, 0x10);
+}
+
+void PickupBonusGem(s32 gembit)
+{
+    plr_items |= gembit;
+    plr_bonusgem.item = gembit;
+    plr_bonusgem.count = 1;
+    plr_bonusgem.frame = 0x19;
+    GameSfx(0x26, 0);
+    AddPanelDebris(D_0062D910, D_0062D914, 6, 0.125f, 0x10);
+}
+
+void PickupPower(s32 character)
+{
+    switch (character) {
+    case 0xA2:
+        new_power = 0;
+        break;
+    case 0xA3:
+        new_power = 1;
+        break;
+    case 0xA4:
+        new_power = 2;
+        break;
+    case 0xA5:
+        new_power = 3;
+        break;
+    case 0xA6:
+        new_power = 4;
+        break;
+    case 0xA7:
+        new_power = 5;
+        break;
+    }
+    Game.powerbits |= 1 << new_power;
+    NewMenu(Cursor, 0x1F, -1, -1);
+    GameSfx(0x26, 0);
+    if (Level != 0x15 && Level != 0x18) {
+        player->obj.mom.x = 0.0f;
+        player->obj.mom.z = 0.0f;
+        player->slide = 0;
+    }
+}
+
+void PickupRelic(s32 tier)
+{
+    plr_crystal.item = tier;
+    plr_crystal.count = 1;
+    plr_crystal.frame = 0x19;
+    GameSfx(0x26, 0);
 }
