@@ -14,7 +14,7 @@
 #define COOP_MAILBOX_H
 
 #define COOP_MAILBOX_MAGIC 0x4F435743u /* "CWCO" */
-#define COOP_MAILBOX_VERSION 10u
+#define COOP_MAILBOX_VERSION 11u
 
 /* Sizes shared with the v8 progression fields below. */
 #define COOP_LEVEL_COUNT 35   /* Game.level[] entries */
@@ -52,22 +52,28 @@
  * Host->client is ABSOLUTE (latest-wins snapshot); rock throws and balloon
  * hits are MONOTONIC counters so no delivery guarantee is needed. boss_id==0
  * means no authoritative boss ran this frame (both instances run retail).
- * Populated in PR-S4-M; PR-S4-C only reserves the layout (published as 0). */
+ * The host stages the live FireBoss state here; the client applies it to its
+ * own (native-initialised) FireBoss + globals and poses the model from
+ * anim_action/anim_time (no brain anim map needed). Field TYPES match the real
+ * boss state: heading / wallfire_yaw / anim_time are floats (the boss uses
+ * float angles, unlike the player's u16 hdg). v11 layout; 0x48 kept so the
+ * slot/mailbox sizes and the VTNT channel are unchanged from v10. */
 typedef struct CoopBossState {         /* 0x48 bytes */
     unsigned char boss_id;             /* 0x00 0=none, 1=FireBoss (host brain ran) */
-    unsigned char action;              /* 0x01 fireboss_action (FireBoss+0x61C) */
-    short health;                      /* 0x02 FireBoss+0x408 (== FireBossHealth) */
-    float pos[3];                      /* 0x04 FireBoss+0x418 (== FireBossPosition) */
-    unsigned short hdg;                /* 0x10 FireBoss+0x414 render yaw */
-    unsigned short flags;              /* 0x12 COOP_BOSS_F_* */
-    float action_time;                 /* 0x14 FireBoss+0x618 per-state timer */
-    float wallfire_pos[3];             /* 0x18 WallOfFirePosition */
-    unsigned short wallfire_yaw;       /* 0x24 WallOfFireAngleY as u16 */
-    unsigned short rock_count;         /* 0x26 monotonic rock-throw counter (host->client) */
-    float rock_pos[3];                 /* 0x28 last rock spawn position */
-    float rock_vel[3];                 /* 0x34 last rock spawn velocity */
-    unsigned int balloon_hits;         /* 0x40 monotonic balloon-hit counter (client->host) */
-    unsigned int reserved;             /* 0x44 pad / future */
+    unsigned char action;              /* 0x01 fireboss_action (FireBoss+0x61C; 5 => hurt model) */
+    short anim_action;                 /* 0x02 model anim action (FireBoss.model+0x0C = +0x430) */
+    short health;                      /* 0x04 FireBoss+0x408 (== FireBossHealth) */
+    unsigned short flags;              /* 0x06 COOP_BOSS_F_* */
+    unsigned short rock_count;         /* 0x08 monotonic rock-throw counter (host->client) */
+    unsigned char rock_variant;        /* 0x0A last throw variant (0/1); replay deferred */
+    unsigned char pad0;                /* 0x0B */
+    float pos[3];                      /* 0x0C FireBoss+0x418 (== FireBossPosition) */
+    float heading;                     /* 0x18 FireBoss+0x414 render yaw */
+    float anim_time;                   /* 0x1C model anim time (FireBoss.model+0x00 = +0x424) */
+    float wallfire_pos[3];             /* 0x20 WallOfFirePosition */
+    float wallfire_yaw;                /* 0x2C WallOfFireAngleY */
+    unsigned int balloon_hits;         /* 0x30 monotonic balloon-hit counter (client->host) */
+    unsigned int reserved[5];          /* 0x34 future (exact rock pos/vel etc.) */
 } CoopBossState;                       /* 0x48 */
 
 typedef struct CoopSlot {              /* 0x70 bytes */

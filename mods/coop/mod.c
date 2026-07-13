@@ -10,6 +10,7 @@
 #include "mailbox.h"
 #include "retail.h"
 #include "creature.h"
+#include "jeep.h"
 #include "coop_mailbox.h"
 
 /* Not in the mirrored creature.h (they live outside unit 91). */
@@ -33,6 +34,21 @@ int orig_CrateOff(struct coop_crategroup_s *group, struct coop_crate_s *crate,
                   int a, int b);
 int orig_GotoCheckpoint(struct nuvec_s *pos, int dir);
 void orig_PickupItem(struct obj_s *obj);
+void orig_ProcessFireBoss(struct fireboss_s *fb);
+void orig_ProcessJeepBalloon(struct jeepballoon_s *b);
+
+/* Stage 4 shared Fire Boss retail symbols not already in jeep.h/retail.h.
+ * (jeep.h supplies FireBoss, FireBossHealth, FireBossWon/Finished + the
+ * fireboss_s / jeepballoon_s / mymodel_s types.) */
+extern float FireBossPosition[3];   /* 0x005B9708 mirror of FireBoss.pos    */
+extern int WallOfFireOn;            /* 0x00631A9C                           */
+extern int WallOfFireAttatched;     /* 0x00631AA0                           */
+extern float WallOfFireAngleY;      /* 0x00631AA4                           */
+extern float WallOfFireHurtTimer;   /* 0x00631AA8                           */
+extern float WallOfFirePosition[3]; /* 0x005C0FE8                           */
+extern int EndChase;                /* 0x005B9648                           */
+void MyChangeAnim(struct mymodel_s *m, int anim);
+void MyAnimateModelNew(struct mymodel_s *m, float dt);
 
 #define COOP ((volatile CoopMailbox *)modsdk_mailbox.payload)
 
@@ -184,6 +200,18 @@ static int g_vs_mode;                /* COOP->ctl & COOP_CTL_VS, read each tick 
 static int g_vs_p2;                  /* COOP->ctl & COOP_CTL_P2: we are player 2 */
 static unsigned short g_vs_mine;     /* this level's plr_items bits WE claimed */
 static unsigned short g_vs_peer;     /* ... the remote claimed (first) */
+
+/* --- Stage 4 shared Fire Boss (assist-with-snap) --------------------------
+ * g_host: this instance owns the boss brain (COOP_CTL_HOST). The host runs
+ * orig_ProcessFireBoss and stages its state into g_boss_pub; the client skips
+ * orig and mirrors the peer's boss as a puppet, snapping in on join (latched
+ * for the level). balloon_hits is a monotonic counter each way. */
+static int g_host;                   /* COOP->ctl & COOP_CTL_HOST, read each tick */
+static CoopBossState g_boss_pub;     /* host's staged boss state (-> local.boss) */
+static int g_boss_client_latched;    /* client suppression latched this level */
+static short g_boss_last_action;     /* last brain action applied on the client */
+static unsigned int g_balloon_hits;  /* our monotonic balloon-hit counter (->host) */
+static unsigned int g_boss_hits_seen; /* host: peer balloon_hits already applied */
 
 /* Owner of a plr_items bit: 0 = player 1, 1 = player 2, -1 = unclaimed. */
 static int coop_vs_owner(unsigned int bit)
@@ -1306,24 +1334,25 @@ static void coop_zero_boss(volatile CoopBossState *b)
     int i;
     b->boss_id = 0;
     b->action = 0;
+    b->anim_action = 0;
     b->health = 0;
+    b->flags = 0;
+    b->rock_count = 0;
+    b->rock_variant = 0;
+    b->pad0 = 0;
     for (i = 0; i < 3; i++) {
         b->pos[i] = 0.0f;
     }
-    b->hdg = 0;
-    b->flags = 0;
-    b->action_time = 0.0f;
+    b->heading = 0.0f;
+    b->anim_time = 0.0f;
     for (i = 0; i < 3; i++) {
         b->wallfire_pos[i] = 0.0f;
     }
-    b->wallfire_yaw = 0;
-    b->rock_count = 0;
-    for (i = 0; i < 3; i++) {
-        b->rock_pos[i] = 0.0f;
-        b->rock_vel[i] = 0.0f;
-    }
+    b->wallfire_yaw = 0.0f;
     b->balloon_hits = 0;
-    b->reserved = 0;
+    for (i = 0; i < 5; i++) {
+        b->reserved[i] = 0;
+    }
 }
 
 static void coop_copy_boss(volatile CoopBossState *dst, volatile CoopBossState *src)
@@ -1331,24 +1360,25 @@ static void coop_copy_boss(volatile CoopBossState *dst, volatile CoopBossState *
     int i;
     dst->boss_id = src->boss_id;
     dst->action = src->action;
+    dst->anim_action = src->anim_action;
     dst->health = src->health;
+    dst->flags = src->flags;
+    dst->rock_count = src->rock_count;
+    dst->rock_variant = src->rock_variant;
+    dst->pad0 = src->pad0;
     for (i = 0; i < 3; i++) {
         dst->pos[i] = src->pos[i];
     }
-    dst->hdg = src->hdg;
-    dst->flags = src->flags;
-    dst->action_time = src->action_time;
+    dst->heading = src->heading;
+    dst->anim_time = src->anim_time;
     for (i = 0; i < 3; i++) {
         dst->wallfire_pos[i] = src->wallfire_pos[i];
     }
     dst->wallfire_yaw = src->wallfire_yaw;
-    dst->rock_count = src->rock_count;
-    for (i = 0; i < 3; i++) {
-        dst->rock_pos[i] = src->rock_pos[i];
-        dst->rock_vel[i] = src->rock_vel[i];
-    }
     dst->balloon_hits = src->balloon_hits;
-    dst->reserved = src->reserved;
+    for (i = 0; i < 5; i++) {
+        dst->reserved[i] = src->reserved[i];
+    }
 }
 
 static void publish_local(void)
@@ -1360,8 +1390,11 @@ static void publish_local(void)
     local_frame++;
     s->seq_open = local_gen;
     s->frame = local_frame;
-    /* v10: boss block reserved, published as 0 until PR-S4-M. */
-    coop_zero_boss(&s->boss);
+    /* v11 shared boss: the host publishes its staged boss state (g_boss_pub,
+     * boss_id != 0 when its brain ran this frame); every instance also carries
+     * its own monotonic balloon-hit counter back to the host. */
+    coop_copy_boss(&s->boss, &g_boss_pub);
+    s->boss.balloon_hits = g_balloon_hits;
     if (local_valid()) {
         s->level = Level;
         s->flags = COOP_F_PRESENT |
@@ -2646,6 +2679,189 @@ static void coop_init(void)
     modsdk_mailbox.magic = MODSDK_MAILBOX_MAGIC;
 }
 
+/* ================================================================== */
+/* Stage 4: shared Fire Boss (assist-with-snap)                        */
+/* ================================================================== */
+
+#define FIREBOSS_LEVEL 0x16 /* the fire-boss chase level (D2: CheckAgainstFireBoss
+                             * / FireBossWaterFire gate on Level == 0x16) */
+
+/* True while the CLIENT should mirror the host's boss instead of running the
+ * local brain: not the host, in the fire-boss level, the peer is actively
+ * fighting there, and its snapshot is fresh. Latched for the level once
+ * triggered so a momentarily stale snapshot never wakes the local brain on
+ * stale state; the latch clears on any level change (coop_boss_reset). */
+static int coop_boss_client_active(void)
+{
+    if (g_host || Level != FIREBOSS_LEVEL) {
+        return 0;
+    }
+    if (remote_snap.boss.boss_id != 0 && remote_snap.level == Level &&
+        stale_frames < STALE_LIMIT) {
+        g_boss_client_latched = 1;
+    }
+    return g_boss_client_latched;
+}
+
+/* Host: stage the live boss state for publish_local (boss_id = 1 => brain ran). */
+static void coop_boss_stage(struct fireboss_s *fb)
+{
+    unsigned short flags = 0;
+    if (WallOfFireOn) {
+        flags |= COOP_BOSS_F_WALLFIRE_ON;
+    }
+    if (WallOfFireAttatched) {
+        flags |= COOP_BOSS_F_WALLFIRE_ATT;
+    }
+    if (EndChase) {
+        flags |= COOP_BOSS_F_ENDCHASE;
+    }
+    if (FireBossFinished) {
+        flags |= COOP_BOSS_F_FINISHED;
+    }
+    if (FireBossWon) {
+        flags |= COOP_BOSS_F_WON;
+    }
+    if (fb->water_hit) {
+        flags |= COOP_BOSS_F_WATER;
+    }
+    g_boss_pub.boss_id = 1;
+    g_boss_pub.action = (unsigned char)fb->action;
+    g_boss_pub.anim_action = fb->model.anim.action;
+    g_boss_pub.health = (short)fb->health;
+    g_boss_pub.flags = flags;
+    g_boss_pub.pos[0] = fb->pos.x;
+    g_boss_pub.pos[1] = fb->pos.y;
+    g_boss_pub.pos[2] = fb->pos.z;
+    g_boss_pub.heading = fb->heading;
+    g_boss_pub.anim_time = fb->model.anim.anim_time;
+    g_boss_pub.wallfire_pos[0] = WallOfFirePosition[0];
+    g_boss_pub.wallfire_pos[1] = WallOfFirePosition[1];
+    g_boss_pub.wallfire_pos[2] = WallOfFirePosition[2];
+    g_boss_pub.wallfire_yaw = WallOfFireAngleY;
+    /* rock_count / rock_variant: throw replay is a follow-up (needs the throw
+     * variant captured at the AddRock site); left 0 for now. */
+}
+
+/* Client: apply the mirrored boss state to the local (native-initialised)
+ * FireBoss + globals and pose the model from the host's anim state, so the
+ * native DrawFireBoss renders the boss live. */
+static void coop_boss_apply(struct fireboss_s *fb)
+{
+    volatile CoopBossState *b = &remote_snap.boss;
+    unsigned short flags = b->flags;
+
+    g_coop_applying = 1;
+    fb->action = (int)b->action;
+    fb->health = (int)b->health;
+    FireBossHealth = (int)b->health;
+    fb->pos.x = b->pos[0];
+    fb->pos.y = b->pos[1];
+    fb->pos.z = b->pos[2];
+    FireBossPosition[0] = b->pos[0];
+    FireBossPosition[1] = b->pos[1];
+    FireBossPosition[2] = b->pos[2];
+    fb->heading = b->heading;
+
+    WallOfFireOn = (flags & COOP_BOSS_F_WALLFIRE_ON) ? 1 : 0;
+    WallOfFireAttatched = (flags & COOP_BOSS_F_WALLFIRE_ATT) ? 1 : 0;
+    WallOfFireAngleY = b->wallfire_yaw;
+    WallOfFirePosition[0] = b->wallfire_pos[0];
+    WallOfFirePosition[1] = b->wallfire_pos[1];
+    WallOfFirePosition[2] = b->wallfire_pos[2];
+    EndChase = (flags & COOP_BOSS_F_ENDCHASE) ? 1 : 0;
+    fb->water_hit = (flags & COOP_BOSS_F_WATER) ? 1 : 0;
+
+    /* Pose the model: adopt the host's anim action (on change) + time, then
+     * refresh the draw pose without advancing (dt = 0). */
+    if (b->anim_action != g_boss_last_action) {
+        MyChangeAnim(&fb->model, (int)b->anim_action);
+        g_boss_last_action = b->anim_action;
+    }
+    fb->model.anim.anim_time = b->anim_time;
+    MyAnimateModelNew(&fb->model, 0.0f);
+    if (fb->action == 5) {
+        fb->model_hurt.anim.anim_time = b->anim_time;
+        MyAnimateModelNew(&fb->model_hurt, 0.0f);
+    }
+
+    /* Terminal latch fires client-side off the mirrored health, same as the
+     * native ProcessFireBossLevel does. */
+    if ((flags & COOP_BOSS_F_WON) || FireBossHealth <= 0) {
+        FireBossWon = 1;
+        FireBossFinished = 1;
+    }
+    g_coop_applying = 0;
+}
+
+/* Replace hook on ProcessFireBoss (the 6.2KB boss brain). */
+void coop_fire_boss(struct fireboss_s *fb)
+{
+    if (coop_boss_client_active()) {
+        coop_boss_apply(fb);
+        return;
+    }
+    orig_ProcessFireBoss(fb);
+    if (g_host && Level == FIREBOSS_LEVEL) {
+        coop_boss_stage(fb);
+    }
+}
+
+/* Replace hook on ProcessJeepBalloon (the damage site: a hit does
+ * FireBoss.health -= 1). On the client we count our hits as a monotonic
+ * counter and restore the pre-hit health, so the authoritative value (applied
+ * by the host, arriving next snapshot) is the only thing that moves it. */
+void coop_jeep_balloon(struct jeepballoon_s *b)
+{
+    int pre;
+    if (!coop_boss_client_active()) {
+        orig_ProcessJeepBalloon(b);
+        return;
+    }
+    pre = FireBoss.health;
+    orig_ProcessJeepBalloon(b);
+    if (FireBoss.health < pre) {
+        g_balloon_hits += (unsigned int)(pre - FireBoss.health);
+        FireBoss.health = pre;
+    }
+}
+
+/* Host: fold the client's reported balloon hits into the authoritative boss
+ * health so the native brain reacts (stagger / phase) as if hit locally. */
+static void coop_boss_host_tick(void)
+{
+    unsigned int hits;
+    int delta;
+    if (!g_host) {
+        return;
+    }
+    hits = remote_snap.boss.balloon_hits;
+    if (hits == g_boss_hits_seen) {
+        return;
+    }
+    delta = (int)(hits - g_boss_hits_seen);
+    g_boss_hits_seen = hits;
+    if (delta > 0 && Level == FIREBOSS_LEVEL && FireBoss.health > 0) {
+        g_coop_applying = 1;
+        FireBoss.health -= delta;
+        if (FireBoss.health < 0) {
+            FireBoss.health = 0;
+        }
+        FireBossHealth = FireBoss.health;
+        g_coop_applying = 0;
+    }
+}
+
+/* Reset boss baselines on a level change (both directions restart at 0). */
+static void coop_boss_reset(void)
+{
+    coop_zero_boss((volatile CoopBossState *)&g_boss_pub);
+    g_boss_client_latched = 0;
+    g_boss_last_action = -1;
+    g_balloon_hits = 0;
+    g_boss_hits_seen = remote_snap.boss.balloon_hits;
+}
+
 void coop_tick(void)
 {
     if (modsdk_mailbox.magic != MODSDK_MAILBOX_MAGIC ||
@@ -2670,13 +2886,21 @@ void coop_tick(void)
     }
     g_vs_mode = (COOP->ctl & COOP_CTL_VS) != 0;
     g_vs_p2 = (COOP->ctl & COOP_CTL_P2) != 0;
+    g_host = (COOP->ctl & COOP_CTL_HOST) != 0;
+    /* Clear the boss staging each tick; the host re-sets it from coop_fire_boss
+     * when its brain runs, so a level exit self-clears boss_id to 0. */
+    g_boss_pub.boss_id = 0;
     /* Stage 3a: per-level bitmaps die with the room they were built in;
      * reset BEFORE merging so a stale bitmap never replays into a new
      * level that reuses the same slot indices. */
     if (Level != g_sync_level) {
         g_sync_level = Level;
         coop_progress_reset();
+        coop_boss_reset();
     }
+    /* Host: apply the client's balloon-hit delta before this frame's brain
+     * runs, so the native ProcessFireBoss reacts as if hit locally. */
+    coop_boss_host_tick();
 #if COOP_AWARD
     /* Frame-accurate award-pop cue; must latch every tick (even when a spawn
      * is gated) so a stale edge can never fire late. */

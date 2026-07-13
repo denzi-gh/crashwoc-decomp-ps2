@@ -416,8 +416,22 @@ PR ladder D1 → D2 → C → B → M (bridge before mod so M is end-to-end test
   Fire Boss, client assists via balloons + snaps on join — the chase boss stays
   observational; this proves the authority/counter machinery for the generic
   enemy-sharing payoff).
-- [ ] **PR-S4-M** — mod: host publish / client boss puppet / hit counter
-      (first proof: shared Fire Boss, host-authoritative).
+- [~] **PR-S4-M** — mod: host publish / client boss puppet / hit counter
+      (first proof: shared Fire Boss, host-authoritative — **assist-with-snap**).
+      Two replace hooks (`coop_fire_boss` on ProcessFireBoss, `coop_jeep_balloon`
+      on ProcessJeepBalloon). Host runs orig + stages boss state; client skips the
+      brain, mirrors pos/health/heading/wall-of-fire, poses the model from the
+      host's anim action+time (native DrawFireBoss renders it), snaps in on join
+      (latched per level); balloon hits flow client→host as a monotonic counter,
+      host applies the delta so its native brain reacts; boss-death latch fires
+      client-side off mirrored health. No `--host` ⇒ both handlers fall through to
+      orig (bit-identical retail). **Contract redesigned to v11** (0x48 block kept,
+      correct float types: heading/wallfire_yaw/anim_time + anim_action; slot/
+      mailbox sizes unchanged). Mod builds; `ninja check` green; bridge 93 tests +
+      ruff green. **Rock-throw replay deferred** (needs the throw variant captured
+      at AddRock; `rock_count`/`rock_variant` fields reserved). **Needs the live
+      two-instance PINE test** (`coop-bridge --host p1` in Level 0x16) to confirm
+      the 5 in-game criteria; boxed `[~]` until then.
 - [ ] *(stretch)* generic enemy sharing across `Character[1..8]` via a directional
       `CoopEnemyBlock` (identity = `i_aitab`); `ProcessCreatures` /
       `PlayerCreatureCollisions` hooks. Blocked on `MoveCreature` (fully asm).

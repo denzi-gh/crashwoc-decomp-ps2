@@ -64,6 +64,22 @@ function = "GotoCheckpoint"
 handler = "coop_goto_checkpoint"
 mode = "replace"
 
-# 0x20 SDK header + 0x248 CoopMailbox (v9) fits in 0x400 with headroom.
+# Stage 4 (shared Fire Boss): replace the inner boss brain and the balloon
+# damage site. With no --host on either side both handlers fall through to
+# orig (bit-identical retail). The host runs orig and publishes the boss
+# state; the client skips orig, mirrors the state as a puppet, and reports
+# balloon hits back as a monotonic counter.
+[[hook]]
+function = "ProcessFireBoss"
+handler = "coop_fire_boss"
+mode = "replace"
+
+[[hook]]
+function = "ProcessJeepBalloon"
+handler = "coop_jeep_balloon"
+mode = "replace"
+
+# 0x20 SDK header + 0x2D8 CoopMailbox (v11) + VTNT dev channel at
+# payload+0x3D0 all fit in 0x400.
 [mailbox]
 size = 0x400
