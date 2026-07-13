@@ -396,9 +396,26 @@ PR ladder D1 → D2 → C → B → M (bridge before mod so M is end-to-end test
   wall-of-fire flags; client replays via `AddRock`/`MyChangeAnim`/
   `MyAnimateModelNew`; client→host balloon hits as a monotonic counter; camera
   cosmetic-only. `ninja check` green.
-- [ ] **PR-S4-C** — contract mailbox v10 (both repos, lock-step): `COOP_CTL_HOST`,
-  `CoopBossState` in `CoopSlot`, `seq_close`/sizes bumped, VTNT relocated.
-- [ ] **PR-S4-B** — bridge `--host {p1,p2}` (composed per-instance ctl write).
+- [x] **PR-S4-C** — contract mailbox **v10** (both repos, lock-step).
+  `COOP_MAILBOX_VERSION`/`COOP_VERSION` → 10; `COOP_CTL_HOST 0x8`; `CoopBossState`
+  (0x48) appended in `CoopSlot` at +0x118 → `seq_close` 0x118→0x160, slot
+  0x11C→0x164, mailbox 0x248→0x2D8, remote slot 0x706B8C→0x706BD4; VTNT relocated
+  payload+0x248→+0x3D0. `mod.c` zeroes the boss block in publish/synth and copies
+  it in consume (populated in M). Bridge `mailbox.py`: sizes/addresses, `_BOSS_FMT`
+  codec + `CoopBossState`, `coop-peek` boss line; relay `NET_PACKET_SIZE` and the
+  bridge/net version gates follow automatically (v9↔v10 refuses). Mod builds;
+  bridge unittest (84) + ruff green. (Live boot + PINE `coop-peek` v10 check is a
+  hardware step for the user.)
+- [x] **PR-S4-B** — bridge `--host {p1,p2}` (crashwoc-multiplayer `main`). Opt-in
+  CLI flag; the per-cycle ctl write is now composed per instance via
+  `CoopBridge._ctl_for` = `(vs?VS) | (p2 identity?P2) | (host==side?HOST)`, written
+  every cycle (re-init self-heal) whenever VS or HOST is active — VS-only behaviour
+  unchanged. `--stats` surfaces the HOST bit. 9 ctl-composition unittests across
+  vs/host/p1-p2 combos; 93 tests + ruff green. Shared boss stays inert until a host
+  is designated (proof executed in M). **Model: assist-with-snap** (host drives the
+  Fire Boss, client assists via balloons + snaps on join — the chase boss stays
+  observational; this proves the authority/counter machinery for the generic
+  enemy-sharing payoff).
 - [ ] **PR-S4-M** — mod: host publish / client boss puppet / hit counter
       (first proof: shared Fire Boss, host-authoritative).
 - [ ] *(stretch)* generic enemy sharing across `Character[1..8]` via a directional

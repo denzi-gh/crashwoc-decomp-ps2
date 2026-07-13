@@ -14,7 +14,7 @@
 #define COOP_MAILBOX_H
 
 #define COOP_MAILBOX_MAGIC 0x4F435743u /* "CWCO" */
-#define COOP_MAILBOX_VERSION 9u
+#define COOP_MAILBOX_VERSION 10u
 
 /* Sizes shared with the v8 progression fields below. */
 #define COOP_LEVEL_COUNT 35   /* Game.level[] entries */
@@ -36,6 +36,39 @@
 #define COOP_CTL_P2 4u    /* this instance is player 2 (red); unset = player
                            * 1 (blue). Identity comes from which bridge
                            * endpoint (--p1/--p2-endpoint) we are. */
+#define COOP_CTL_HOST 8u  /* Stage 4: this instance is the boss-authority host
+                           * (bridge --host designates exactly one). Unset on
+                           * BOTH sides => shared-boss is inert, retail runs. */
+
+/* CoopBossState.flags bits (host-published boss condition). */
+#define COOP_BOSS_F_WALLFIRE_ON  0x01u /* WallOfFireOn */
+#define COOP_BOSS_F_WALLFIRE_ATT 0x02u /* WallOfFireAttatched */
+#define COOP_BOSS_F_ENDCHASE     0x04u /* EndChase */
+#define COOP_BOSS_F_FINISHED     0x08u /* FireBossFinished */
+#define COOP_BOSS_F_WON          0x10u /* FireBossWon */
+#define COOP_BOSS_F_WATER        0x20u /* water-fire latch (fb+0x67C) */
+
+/* Shared boss authority state (Stage 4). Overlaid in CoopSlot at +0x118.
+ * Host->client is ABSOLUTE (latest-wins snapshot); rock throws and balloon
+ * hits are MONOTONIC counters so no delivery guarantee is needed. boss_id==0
+ * means no authoritative boss ran this frame (both instances run retail).
+ * Populated in PR-S4-M; PR-S4-C only reserves the layout (published as 0). */
+typedef struct CoopBossState {         /* 0x48 bytes */
+    unsigned char boss_id;             /* 0x00 0=none, 1=FireBoss (host brain ran) */
+    unsigned char action;              /* 0x01 fireboss_action (FireBoss+0x61C) */
+    short health;                      /* 0x02 FireBoss+0x408 (== FireBossHealth) */
+    float pos[3];                      /* 0x04 FireBoss+0x418 (== FireBossPosition) */
+    unsigned short hdg;                /* 0x10 FireBoss+0x414 render yaw */
+    unsigned short flags;              /* 0x12 COOP_BOSS_F_* */
+    float action_time;                 /* 0x14 FireBoss+0x618 per-state timer */
+    float wallfire_pos[3];             /* 0x18 WallOfFirePosition */
+    unsigned short wallfire_yaw;       /* 0x24 WallOfFireAngleY as u16 */
+    unsigned short rock_count;         /* 0x26 monotonic rock-throw counter (host->client) */
+    float rock_pos[3];                 /* 0x28 last rock spawn position */
+    float rock_vel[3];                 /* 0x34 last rock spawn velocity */
+    unsigned int balloon_hits;         /* 0x40 monotonic balloon-hit counter (client->host) */
+    unsigned int reserved;             /* 0x44 pad / future */
+} CoopBossState;                       /* 0x48 */
 
 typedef struct CoopSlot {              /* 0x70 bytes */
     unsigned int seq_open;             /* 0x00 seq-lock bracket */
@@ -159,8 +192,12 @@ typedef struct CoopSlot {              /* 0x70 bytes */
      * pending_level = last_level, the level those bits belong to. */
     unsigned short pending_flags;      /* 0x114 new_lev_flags & ~temp_lev_flags */
     short pending_level;               /* 0x116 writer's last_level; -1 = none */
-    unsigned int seq_close;            /* 0x118 seq-lock bracket */
-} CoopSlot;                            /* 0x11C */
+    /* --- v10: shared Fire Boss (Stage 4). Host publishes absolute boss state +
+     * monotonic rock-throw counter; client publishes a monotonic balloon-hit
+     * counter back. boss_id==0 => inert (both run retail). --- */
+    CoopBossState boss;                /* 0x118 */
+    unsigned int seq_close;            /* 0x160 seq-lock bracket */
+} CoopSlot;                            /* 0x164 */
 
 typedef struct CoopMailbox {           /* overlays ModsdkMailbox.payload */
     unsigned int magic;                /* +0x00 (abs 0x706A60) COOP_MAILBOX_MAGIC */
@@ -178,7 +215,7 @@ typedef struct CoopMailbox {           /* overlays ModsdkMailbox.payload */
                                         * stone-HUD tint active,
                                         * bits 8+ = re-inits */
     CoopSlot local;                    /* +0x10 (abs 0x706A70) game writes, bridge reads */
-    CoopSlot remote;                   /* +0x12C (abs 0x706B8C) bridge writes, game reads */
-} CoopMailbox;                         /* 0x248 */
+    CoopSlot remote;                   /* +0x174 (abs 0x706BD4) bridge writes, game reads */
+} CoopMailbox;                         /* 0x2D8 */
 
 #endif

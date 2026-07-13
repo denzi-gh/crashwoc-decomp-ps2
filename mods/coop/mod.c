@@ -465,14 +465,15 @@ static void coop_tint_write(int want)
 }
 
 /* Dev-only live calibration channel: the CoopMailbox occupies payload
- * +0x000..0x247 of the 0x400 mailbox; poke magic 'VTNT' + 3 floats
- * (0..255 scale) at payload+0x248 over PINE and the body diffuse uses
+ * +0x000..0x2D7 of the 0x400 mailbox (v10); poke magic 'VTNT' + 3 floats
+ * (0..255 scale) at payload+0x3D0 over PINE and the body diffuse uses
  * those instead of the table -- colours can be tuned live while the game
  * runs (the tick rewrites every frame while the magic is set). Zero the
- * magic to fall back. Never written by the game or bridge. */
+ * magic to fall back. Never written by the game or bridge. End-pinned so it
+ * clears the mailbox and the reserved 0x2D8..0x3D0 stretch-enemy region. */
 #define COOP_VS_TUNE_MAGIC 0x544E5456u /* 'VTNT' */
 #define COOP_VS_TUNE_BASE \
-    ((volatile unsigned char *)modsdk_mailbox.payload + 0x248)
+    ((volatile unsigned char *)modsdk_mailbox.payload + 0x3D0)
 
 /* The material-diffuse VU-constant quad inside a material/state packet:
  * STCYCL 0x01000101 + UNPACK V4-32 0x6C030013 (to VU addr 0x13), RGBA
@@ -1297,6 +1298,59 @@ static void pack_vehicle_xf(float *xf)
     }
 }
 
+/* v10 shared-boss block. PR-S4-C only reserves the layout: the host publish /
+ * client puppet land in PR-S4-M, so every path here writes zeros for now
+ * (boss_id==0 => inert on the reader). */
+static void coop_zero_boss(volatile CoopBossState *b)
+{
+    int i;
+    b->boss_id = 0;
+    b->action = 0;
+    b->health = 0;
+    for (i = 0; i < 3; i++) {
+        b->pos[i] = 0.0f;
+    }
+    b->hdg = 0;
+    b->flags = 0;
+    b->action_time = 0.0f;
+    for (i = 0; i < 3; i++) {
+        b->wallfire_pos[i] = 0.0f;
+    }
+    b->wallfire_yaw = 0;
+    b->rock_count = 0;
+    for (i = 0; i < 3; i++) {
+        b->rock_pos[i] = 0.0f;
+        b->rock_vel[i] = 0.0f;
+    }
+    b->balloon_hits = 0;
+    b->reserved = 0;
+}
+
+static void coop_copy_boss(volatile CoopBossState *dst, volatile CoopBossState *src)
+{
+    int i;
+    dst->boss_id = src->boss_id;
+    dst->action = src->action;
+    dst->health = src->health;
+    for (i = 0; i < 3; i++) {
+        dst->pos[i] = src->pos[i];
+    }
+    dst->hdg = src->hdg;
+    dst->flags = src->flags;
+    dst->action_time = src->action_time;
+    for (i = 0; i < 3; i++) {
+        dst->wallfire_pos[i] = src->wallfire_pos[i];
+    }
+    dst->wallfire_yaw = src->wallfire_yaw;
+    dst->rock_count = src->rock_count;
+    for (i = 0; i < 3; i++) {
+        dst->rock_pos[i] = src->rock_pos[i];
+        dst->rock_vel[i] = src->rock_vel[i];
+    }
+    dst->balloon_hits = src->balloon_hits;
+    dst->reserved = src->reserved;
+}
+
 static void publish_local(void)
 {
     volatile CoopSlot *s = &COOP->local;
@@ -1306,6 +1360,8 @@ static void publish_local(void)
     local_frame++;
     s->seq_open = local_gen;
     s->frame = local_frame;
+    /* v10: boss block reserved, published as 0 until PR-S4-M. */
+    coop_zero_boss(&s->boss);
     if (local_valid()) {
         s->level = Level;
         s->flags = COOP_F_PRESENT |
@@ -1493,6 +1549,7 @@ static void consume_remote(void)
         }
         tmp.pending_flags = r->pending_flags;
         tmp.pending_level = r->pending_level;
+        coop_copy_boss(&tmp.boss, &r->boss); /* v10: carried for PR-S4-M */
         tmp.seq_open = c;
         tmp.seq_close = c;
         if (r->seq_open == c) {
@@ -1559,6 +1616,7 @@ static void synth_ghost(void)
                                   ? (unsigned char)player->obj.mask->active
                                   : 0;
     pack_vehicle_xf(remote_snap.vehicle_xf);
+    coop_zero_boss(&remote_snap.boss); /* the ghost carries no boss */
     remote_snap.warp_level = -1; /* the ghost never warps */
     remote_snap.in_finish_range = 0;
     remote_snap.in_finish_pos[0] = 0.0f;
