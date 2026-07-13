@@ -1509,6 +1509,46 @@ create. NuErrorFunction ends in `for (;;) {}`. Local-buffer layout: the
 vsprintf body buffer declared first sits at sp+0, the header buffer above it
 (buf/hdr = 0x1000/0x100 error, 0x400/0x100 warning, 0x400/0x400 debug).
 
+## Fire Boss sync surface (PR-S4-D2 → gates PR-S4-C)
+
+`ProcessFireBoss` (0x00228D70, 6.2KB) stays `state=asm`: two dense
+`switch(action)` dispatches compile to `.rodata` jump tables
+(`jtbl_0061FB00` transition, `jtbl_0061FB20` per-frame) that the hybrid
+pipeline cannot own — architectural `compiler_owned_rodata` blocker recorded.
+D2's deliverable is the typing + this sync surface, not a byte match.
+
+State machine: `action` (`fb+0x61C`, 0..5 via the `fireboss_action` enum) with
+`prev_action` (`fb+0x620`) as the transition edge; `mech_phase` (`fb+0x40C`,
+4→0) selects the in/out mech position via `InMechPos`/`OutMechPos`/`*Z` tables
+(`(4-mech_phase)*0xC`). `health<=0` (`fb+0x408`) forces `action=5`.
+
+**Host→client (absolute state, publish each frame):**
+- `action` u8 (`+0x61C`) — drives anim + wall-of-fire; `mech_phase` u8 (`+0x40C`)
+- `health` s16 (`+0x408`, mirrors `FireBossHealth`)
+- `pos[3]` f32 (`+0x418`; Y raycast-clamped; mirrors `FireBossPosition`)
+- `heading` f32/u16 (`+0x414`); `state_timer` f32 (`+0x618`)
+- rock throws: monotonic `rock_count` (bumped when `AddRock` returns non-null →
+  `fb+0x684`), with `throw_pos[3]` (`+0x62C`) + type∈{0,2}. Replay client-side
+  via `AddRock(v000, type, angle)` (`angle` = `D_0062E17C`/`D_0062E180`).
+- wall-of-fire globals the brain writes / `DrawFireBoss` reads →
+  pack as `flags` bits + `wallfire_yaw`: `WallOfFireOn`, `WallOfFireAttatched`,
+  `WallOfFireAngleY` f32, `WallOfFireHurtTimer`; `WallOfFirePosition` derives
+  from `pos`. `water_hit` (`+0x67C`) → flags bit.
+- terminal: `FireBossWon`/`FireBossFinished` set from `FireBossHealth<=0` in
+  `ProcessFireBossLevel` (already matched) — fires client-side off mirrored health.
+
+**Never sync (instance-local pointers, rebuilt locally):** `model.cmodel`
+(`+0x440`), `rock` (`+0x684` AddRock handle), `spline` (`+0x5E4`). Client runs
+`InitFireBoss` (models+spline) once, then drives the puppet with
+`MyChangeAnim(&fb->model, anim_id)` on `action` change + `MyAnimateModelNew(
+&fb->model, dt)` and `(&fb->model_hurt, dt)` every frame so native `DrawFireBoss`
+renders live — same doctrine as the player puppet.
+
+**Client→host:** balloon damage as monotonic `balloon_hits` (client
+`ProcessJeepBalloon` decrements `FireBoss.health` locally; host applies the
+delta). Camera is cosmetic only (`JudderGameCamera(GameCam)` screen-shake +
+`JeepCamTween` global float) — not structural, not synced.
+
 ## Invariants (do not break)
 
 - **Nothing game-derived is committed.** All splat output (asm, linker script,

@@ -385,9 +385,17 @@ PR ladder D1 → D2 → C → B → M (bridge before mod so M is end-to-end test
   DrawJeepBalloon(s) / AddBalloon / BalloonHitFireBoss are faithful near-matches
   kept in tree at `state=asm`; FireBossActionName stays asm (rodata jump table).
   `ninja check` green.
-- [ ] **PR-S4-D2** — decomp `ProcessFireBoss` (0x00228D70, the 6.2KB brain):
-  finish `fireboss_s` typing (scalars vs instance-local pointers), `AddRock`
-  throw-site args, anim-drive pattern, camera-call triage, hit-sphere derivation.
+- [x] **PR-S4-D2** — decomp `ProcessFireBoss` (0x00228D70, the 6.2KB brain).
+  Byte-match is architecturally blocked (two `.rodata` jump tables keyed by
+  `action`; `compiler_owned_rodata` blocker recorded) — stays `state=asm`. Gate
+  delivered: `fireboss_s` tail fully typed (action +0x61C, mech_phase +0x40C,
+  state_timer +0x618, throw timers/pos +0x624..+0x62C; instance-local pointers
+  `model.cmodel`/`rock`/`spline` flagged) and the **sync-surface note**
+  ([docs/notes.md](../../docs/notes.md#fire-boss-sync-surface)): host publishes
+  action/mech_phase/health/pos/heading/state_timer + monotonic rock throws +
+  wall-of-fire flags; client replays via `AddRock`/`MyChangeAnim`/
+  `MyAnimateModelNew`; client→host balloon hits as a monotonic counter; camera
+  cosmetic-only. `ninja check` green.
 - [ ] **PR-S4-C** — contract mailbox v10 (both repos, lock-step): `COOP_CTL_HOST`,
   `CoopBossState` in `CoopSlot`, `seq_close`/sizes bumped, VTNT relocated.
 - [ ] **PR-S4-B** — bridge `--host {p1,p2}` (composed per-instance ctl write).

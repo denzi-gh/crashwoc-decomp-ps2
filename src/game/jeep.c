@@ -158,7 +158,7 @@ void InitFireBoss(struct fireboss_s *fb) {
         return;
     }
     fb->active = 1;
-    fb->max_objectives = 4;
+    fb->mech_phase = 4;
     fb->health = 3;
     FireBossHealth = 3;
 
@@ -177,7 +177,7 @@ void InitFireBoss(struct fireboss_s *fb) {
     fb->heading = (float)ang / D_0062E150 + 180.0f;
     fb->spline_pos2 = tmp;
     fb->pos = tmp;
-    fb->i620 = -1;
+    fb->prev_action = -1;
     fb->active = 1;
     fb->action = 0;
 }

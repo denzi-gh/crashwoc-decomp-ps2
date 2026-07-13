@@ -67,33 +67,42 @@ enum fireboss_action {
 /* Fire-boss state block (FireBoss, 0x690 bytes)                       */
 /* ------------------------------------------------------------------ */
 
-/* Only the render/health/spline tail (0x408..0x690) is typed here; the brain's
- * working state at 0x000..0x407 is decompiled in PR-S4-D2 (ProcessFireBoss). */
+/* The render/health/spline/state tail (0x400..0x690) is typed from ProcessFireBoss
+ * (PR-S4-D2); the remaining brain scratch at 0x000..0x3FF (per-state vectors and
+ * timers) stays padded.  Sync surface for PR-S4-C: scalars marked (sync); the two
+ * pointer fields (`model.cmodel` and `rock`) are instance-local, never synced. */
 struct fireboss_s {
-    char pad_000[0x408];              /* 0x000  brain state (D2)             */
-    s32 health;                       /* 0x408  hits remaining (== FireBossHealth) */
-    s32 max_objectives;               /* 0x40C  (init 4)                     */
+    char pad_000[0x400];              /* 0x000  brain scratch (per-state vecs/timers) */
+    s32 s400;                         /* 0x400  brain scratch                */
+    float f404;                       /* 0x404  brain scratch                */
+    s32 health;                       /* 0x408  (sync) hits remaining (== FireBossHealth) */
+    s32 mech_phase;                   /* 0x40C  (sync) mech phase, 4->0 (indexes InMechPos/OutMechPos) */
     s32 active;                       /* 0x410  alive flag (init 1)          */
-    float heading;                    /* 0x414  render yaw (spline heading)  */
-    struct nuvec_s pos;               /* 0x418  position / hit-sphere centre */
-    struct mymodel_s model;           /* 0x424  main model                   */
+    float heading;                    /* 0x414  (sync) render yaw            */
+    struct nuvec_s pos;               /* 0x418  (sync) position / hit-sphere centre (Y raycast-clamped; mirrors FireBossPosition) */
+    struct mymodel_s model;           /* 0x424  main model (anim.action +0x430, .cmodel +0x440 instance-local) */
     struct mymodel_s model_hurt;      /* 0x504  hurt model (action 5)        */
-    void *spline;                     /* 0x5E4  path spline                  */
+    void *spline;                     /* 0x5E4  path spline (instance-local)  */
     float spline_t;                   /* 0x5E8 */
     float spline_t2;                  /* 0x5EC */
-    float spline_t3;                  /* 0x5F0 */
-    float f5F4;                       /* 0x5F4 */
+    float spline_t3;                  /* 0x5F0  spline param (vs FIREBOSSENDCHASE) */
+    float f5F4;                       /* 0x5F4  spline advance               */
     struct nuvec_s spline_pos;        /* 0x5F8  spline start point           */
     struct nuvec_s spline_pos2;       /* 0x604 */
     float f610;                       /* 0x610  (init 3.0)                   */
     s32 draw_result;                  /* 0x614  MyDrawModelNew result        */
-    char pad_618[0x61C - 0x618];      /* 0x618 */
-    s32 action;                       /* 0x61C  current fireboss_action      */
-    s32 i620;                         /* 0x620  (init -1)                    */
-    char pad_624[0x63C - 0x624];      /* 0x624 */
+    float state_timer;                /* 0x618  (sync) per-state timer       */
+    s32 action;                       /* 0x61C  (sync) current fireboss_action */
+    s32 prev_action;                  /* 0x620  transition tracker (init -1) */
+    float throw_timer;                /* 0x624  (sync) rock-throw anim timer */
+    float throw_cooldown;             /* 0x628  1.0 latched after AddRock    */
+    struct nuvec_s throw_pos;         /* 0x62C  rock spawn position          */
+    char pad_638[0x63C - 0x638];      /* 0x638 */
     struct numtx_s draw_mtx;          /* 0x63C  cached render transform      */
-    s32 water_hit;                    /* 0x67C  water-fire hit latch         */
-    char pad_680[0x690 - 0x680];      /* 0x680 */
+    s32 water_hit;                    /* 0x67C  (sync) water-fire hit latch  */
+    float f680;                       /* 0x680  brain scratch                */
+    void *rock;                       /* 0x684  AddRock() handle / held rock (instance-local) */
+    char pad_688[0x690 - 0x688];      /* 0x688 */
 }; /* 0x690 */
 
 /* ------------------------------------------------------------------ */
