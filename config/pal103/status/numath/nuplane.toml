@@ -17,27 +17,27 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0019:0010c2d0:NuPlnEqn"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0019:0010c388:NuPlnEqnPn"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0019:0010c3d0:NuPlnDist"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0019:0010c408:NuPlnDist2"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0019:0010c4d8:NuPlnLine"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0019:0010c5c0:NuPlnLine2"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0019:0010c768:NuPtInPoly"
@@ -45,27 +45,27 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0019:0010c920:NuPtInPolyXY"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0019:0010ca38:NuPtInPolyYX"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0019:0010cb50:NuPtInPolyXZ"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0019:0010cc68:NuPtInPolyZX"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0019:0010cd80:NuPtInPolyYZ"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0019:0010ce98:NuPtInPolyZY"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0019:0010cfb0:NuLineToPointDistSqr"
@@ -73,16 +73,16 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0019:0010d0d0:NuPointRelToBoundingBox"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0019:0010d1d8:NuClipXPlane"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0019:0010d230:NuClipYPlane"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0019:0010d288:NuClipZPlane"
-state = "asm"
+state = "matching"

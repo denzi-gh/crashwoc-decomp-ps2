@@ -25,23 +25,23 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0013:001069b8:NuVecMtxTranslate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:001069f0:NuVecMtxRotate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:00106a70:NuVecMtxRotateValX"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:00106a98:NuVecMtxRotateValY"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:00106ac0:NuVecMtxRotateValZ"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:00106ae8:NuVecMtxRotateH"
@@ -49,7 +49,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0013:00106ba0:NuVecMtxScale"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:00106bd8:NuVecInvMtxTransform"
@@ -57,7 +57,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0013:00106c70:NuVecInvMtxTranslate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:00106ca8:NuVecInvMtxRotate"
@@ -65,35 +65,35 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0013:00106d28:NuVecInvMtxRotateValX"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:00106d58:NuVecInvMtxRotateValY"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:00106d88:NuVecInvMtxRotateValZ"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:00106db8:NuVecInvMtxScale"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:00106df0:NuVecRotateX"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:00106e58:NuVecRotateY"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:00106ec0:NuVecRotateZ"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:00106f28:NuVecAdd"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:00106f60:NuVecSub"
@@ -101,35 +101,35 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0013:00106f98:NuVecScale"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:00106fc0:NuVecScaleAccum"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:00107000:NuVecInvScale"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:00107038:NuVecCross"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:00107088:NuVecCrossRel"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:001070f8:NuVecDot"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:00107128:NuVecMag"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:00107160:NuVecMagSqr"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:00107188:NuVecNorm"
@@ -157,7 +157,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0013:00107550:NuVecLerp"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:001075a8:NuLineLineIntersect"

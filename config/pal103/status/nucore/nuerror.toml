@@ -13,28 +13,28 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0003:00104360:NuErrorFunction"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0003:00104430:NuWarningFunction"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0003:00104508:NuDebugMsgFunction"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0003:001046a0:NuErrorProlog"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0003:001046f0:NuWarningProlog"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0003:00104740:NuDebugMsgProlog"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0003:00104790:NuAssertMsg"
-state = "asm"
+state = "matching"
