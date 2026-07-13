@@ -435,3 +435,6 @@ PR ladder D1 → D2 → C → B → M (bridge before mod so M is end-to-end test
 - [ ] *(stretch)* generic enemy sharing across `Character[1..8]` via a directional
       `CoopEnemyBlock` (identity = `i_aitab`); `ProcessCreatures` /
       `PlayerCreatureCollisions` hooks. Blocked on `MoveCreature` (fully asm).
+- [ ] *(backlog)* other bosses, glider PvP ("shoot your partner"), atlas ball-vs-ball,
+      shared enemies/hazards — the full function-by-function decomp list is in
+      [docs/coop_decomp.md](../../docs/coop_decomp.md).
