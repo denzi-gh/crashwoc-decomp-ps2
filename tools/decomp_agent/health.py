@@ -111,7 +111,7 @@ def project_health(project: DecompProject) -> dict:
         missing += compat.reasons
     if not elf_present:
         missing.append("target ELF absent (orig/) -- byte gates & compile/diff unavailable")
-        repairs.append("place the retail ELF at orig/%s/ (see README.md)" % project.version)
+        repairs.append("place your legally obtained retail ELF at orig/%s/" % project.version)
     if not asm_present:
         missing.append("generated disassembly absent (asm/text.s)")
         repairs.append("python configure.py")

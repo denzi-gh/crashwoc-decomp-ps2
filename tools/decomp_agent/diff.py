@@ -134,7 +134,7 @@ def _preconditions(project, profile):
     except Exception:
         return schemas.err("compile_diff", "target ELF absent (orig/)",
                            code="tooling", outcome_hint="BLOCKED_TOOLING",
-                           repair="place the retail ELF under orig/ (README.md)")
+                           repair="place your legally obtained retail ELF under orig/")
     return None
 
 

@@ -2051,13 +2051,9 @@ void DrawMenuEntry2(struct cursor_s *cursor, char *txt0, char *txt1, float *x,
 }
 
 /*
- * Equivalent reconstruction of DrawMenu (won't byte-match: the retail SN build
- * emits mtc1->FP hazard nops that ee-gcc-tt does not, at 12 sites here).
- * Setup is reversed from the PS2 disassembly; the menu cases follow the shared
- * game logic (GC reference denzi-gh/crashwoc-decomp-gc) mapped to the PS2 case
- * numbers (jump table jtbl_0061DF40) and PS2 string tables. The PS2 memcard/
- * save state-machine cases (19-31) and debug menus (9-13) differ substantially
- * from the GameCube and are reconstructed from the PS2 per-case symbol maps.
+ * DrawMenu: equivalent reconstruction, stays asm. Won't byte-match -- retail
+ * emits mtc1->FP hazard nops at 12 sites that ee-gcc-tt does not. Cases follow
+ * jump table jtbl_0061DF40 and the PS2 string tables.
  */
 void DrawMenu(struct cursor_s *cursor, s32 paused) {
     s32 i;
@@ -2160,13 +2156,9 @@ void DrawMenu(struct cursor_s *cursor, s32 paused) {
         DrawCredits();
         return;
     /*
-     * TODO (equivalent, not yet reconstructed): case 1 (need-memory-card),
-     * cases 4/5/6 (options / sound / adjust-screen -- need retail sprintf
-     * format-string symbols to avoid emitting local .rodata), cases 9-13
-     * (debug menus: cheats / fog / superbuffer / hub-level / logos, use
-     * D_0061DBxx literal strings), case 18 (game-over, needs TempAnim),
-     * cases 19-31 (memcard load/save/delete/format state machines + power
-     * screen). Each is a distinct PS2 case block in the disassembly.
+     * TODO (not yet reconstructed): case 1 (memory-card), 4/5/6 (options/
+     * sound/screen), 9-13 (debug menus), 18 (game-over), 19-31 (memcard state
+     * machines + power screen) -- each a distinct PS2 case block.
      */
     }
 }

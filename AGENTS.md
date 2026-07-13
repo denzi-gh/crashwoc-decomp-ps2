@@ -1,8 +1,8 @@
-# AGENTS.md — Codex-specific guidance
+# AGENTS.md - Codex-specific guidance
 
 Shared rules, the workflow, canonical ids, source-of-truth order, stop
 conditions and session hand-off are in **[docs/decomp_agent.md](docs/decomp_agent.md)**
-(canonical) — read that first. This file only adds what is specific to OpenAI
+(canonical) - read that first. This file only adds what is specific to OpenAI
 Codex (CLI and IDE).
 
 ## Repository hard rules (apply to every agent)
@@ -30,7 +30,7 @@ tool_timeout_sec = 180
 Install the SDK first: `python -m pip install -r requirements-mcp.txt` (or set
 `command = "uv"`, `args = ["run", "python", "-m", "tools.decomp_mcp.server", "--repo", "."]`
 if you manage the env with uv). `--repo .` resolves against the directory Codex
-launches the server from — no machine-specific absolute paths. Verify the exact
+launches the server from - no machine-specific absolute paths. Verify the exact
 key names against your installed Codex version; the block above is the current
 documented form.
 
@@ -55,7 +55,7 @@ Escalate to `xhigh` only when the session shows all of:
 - budget remains.
 
 `checkpoint_session` / `resume_session` return a capability-based `escalation`
-hint (`deep_reasoning` vs `standard`) and remaining budget — use it as the
+hint (`deep_reasoning` vs `standard`) and remaining budget - use it as the
 trigger, but the model/effort mapping stays here on the client side.
 
 ## Hand-off with Claude Code
@@ -65,5 +65,5 @@ with `client: "codex"` (and your model/effort as opaque metadata). It returns
 the best attempt, prior hypotheses, seen hashes, mismatch categories, blockers
 and remaining budget. If it refuses (`unsafe_resume`), reconcile the reported
 conflict (repo revision, profile fingerprint, source edits, or a foreign lock)
-before continuing — do not force. When you finish or pause, `end_session` to
+before continuing - do not force. When you finish or pause, `end_session` to
 release the lock so Claude Code (or another Codex run) can resume cleanly.

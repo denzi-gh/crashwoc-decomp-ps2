@@ -38,6 +38,45 @@ from decomp_agent import (health, candidates, context as ctx, evidence, diff,   
 
 log = logging.getLogger("decomp_mcp")
 
+# The full workflow the server advertises to clients. Self-contained: a client
+# needs nothing outside this string (and the typed tools) to run the loop.
+SERVER_INSTRUCTIONS = """\
+Deterministic matching-decompilation tools for Crash Bandicoot: The Wrath of \
+Cortex (PS2). Byte-exact matching against one build, PAL retail v1.03.
+
+Identifiers: prefer the canonical function id (version:unit-NNNN:vram:name). A \
+bare name duplicated across units resolves to all candidates and the tools \
+refuse to choose -- retry with a canonical id.
+
+Source-of-truth order (highest first): (1) committed registries + status \
+manifests; (2) the retail target disassembly (get_disassembly) -- the ground \
+truth for a function's own bytes; (3) fresh compile/assemble/link/verify output; \
+(4) current hand-written C and headers; (5) comments, unverified hypotheses, and \
+any cross-platform reference decompilation. A port on another platform is a hint \
+for names and rough structure only -- reconstruct C from the target disassembly \
+and verify every branch/constant/offset against it; never transcribe a port's \
+control flow.
+
+Loop: project_health -> list_candidates -> resolve_target / get_context (read \
+its ground_truth before writing C) -> start_session -> write C in \
+src/<unit>.c -> compile_diff (byte-compare over the full canonical extent; the \
+objdiff percentage is never proof) -> checkpoint_session -> iterate -> \
+verify_candidate --level function -> promote_matching. Never record a blocker \
+without first reading the disassembly.
+
+Stop conditions: initial budget 8 attempts, hard maximum 20; stop after 4 \
+non-improving attempts or 3 consecutive compile failures, on a repeated \
+candidate hash / oscillation with no new hypothesis, or on a proven \
+architectural blocker; restore the best safe checkpoint before ending.
+
+Data policy: the pipeline is function-first and Data-from-C is not verified yet. \
+Do not define file-scope C globals that emit .data/.sdata/.rodata/.sbss/.bss -- \
+reference retail-owned data with extern D_... symbols instead. Never hand-set \
+state=matching (only promote_matching writes it, after byte verification) and \
+never set equivalent (human review only). Model and reasoning-effort choices are \
+the client's.
+"""
+
 
 def _host_needs_container() -> bool:
     """True when toolchain calls will be forwarded into the dev container.
@@ -107,12 +146,7 @@ def build_server(project: DecompProject):
             "    python -m pip install -r requirements-mcp.txt\n"
             f"(import error: {exc})")
 
-    mcp = FastMCP("crashwoc-decomp",
-                  instructions="Deterministic matching-decompilation tools for "
-                               "Crash Bandicoot: The Wrath of Cortex (PS2). "
-                               "Prefer canonical function ids "
-                               "(version:unit-NNNN:vram:name). Model and "
-                               "reasoning-effort choices are the client's.")
+    mcp = FastMCP("crashwoc-decomp", instructions=SERVER_INSTRUCTIONS)
 
     P = lambda: project  # noqa: E731 -- single validated project handle
 
