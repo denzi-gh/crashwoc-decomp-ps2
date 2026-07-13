@@ -1340,6 +1340,115 @@ a 2-store pair emits **reversed** (source `count; frame` → retail
 (source `mom.x; mom.z; slide` → retail `slide; mom.x; mom.z`). Same family as
 the "store before call = source order" note from DoInput.
 
+## Coop VS mode — per-instance model tinting (2026-07-12)
+
+VS mode (`coop-bridge --vs`) needed the crystal rendered in a player colour.
+Findings that made it possible (all asm-verified):
+
+- **No colour parameter exists in the item draw chain** and items are NOT
+  dynamically lit: `DrawCreatures` maps char 0x75 → `ObjTab[0x84]` and
+  `Draw3DObject` (0x1F0980) ends in `NuRndrGScnObj(gobj, mtx)` — no
+  `GetLights`, so the puppet's grey-light trick cannot tint items. The six
+  coloured gems are six separately-baked models (ObjTab 0x89–0x8E).
+- **Gobjs anchor crossfade colour-ref descriptors at gobj+0x5C and +0x64**
+  (`NuGobjApplyCrossFade` 0x1160F0 reads exactly those and calls
+  `NuGobjColourBlendGobj` 0x159010). Wire format (from the blend walk):
+  repeated blocks `{u32 *dst; u32 count; {u32 src0,src1}[count]}`, count==0
+  terminates. `dst` points at the LIVE vertex colours inside the prebuilt
+  VIF packets; `src0`/`src1` are the two baked colour sets and are never
+  written. So a mod tint = walk the descriptor, write
+  `luminance(src0) * playerRGB` into `dst`; restore = write `src0` back
+  verbatim. Idempotent, reversible, zero copies. (GS byte order assumed
+  R-in-low-byte; a swap would just trade red/blue.)
+- **BUT retail never builds them** (probed in-game 2026-07-12: crystal gobj
+  chain resolved perfectly, +0x5C/+0x64 both NULL). The builders are gated
+  on the Nu option global `nugscn_generate_colourref` (0x0062EE28), read at
+  scene load by `NuPs2CreateRenderStream`/`NuPs2CreateFaceOn` — and raising
+  it does NOT help either: `ReadNuIFFGobj` (0x118530) skips the runtime
+  stream builder entirely when the loaded file already carries prebuilt
+  streams (first geom's +0x30 nonzero), which every shipped WoC scene does.
+  Dead tooling both ways.
+- **Working glow tint (2026-07-13, in-game confirmed)**: parse the prebuilt
+  packets directly. Loaded (pre-converted) geom nodes hang off gobj+0xC as
+  `{next, material, packet}`; each packet is a DMA tag + VIF stream, and
+  the per-vertex colours are the **UNPACK V4-8 payloads** (R low byte — the
+  crystal's retail purple is `72 00 6D`). The mod walks the VIF stream
+  (UNPACK sizes from vn/vl; STMASK/STROW/MPG/DIRECT skipped; cnt-chains
+  followed), saves every V4-8 word and rewrites it as
+  `maxcomponent(orig) * playerRGB` (restore = originals back).
+- **The crystal BODY resists all of it** (2026-07-13 probes): the body is
+  the creature model `CModel[CRemap[0x75]]` (skinned, 26 joints), drawn by
+  the regular DrawCreatures model path. Its main surface is texture-only
+  (DECAL): per-creature lights (c->lights, pushed by SetCreatureLights
+  0x2472A0 — ambient read at creature+0xBF8, dir-light POINTERS at
+  +0xC6C..+0xC74) tint only the lit alpha REFLECTION overlay; the body's
+  V4-8 bytes are all `00 00 00 44/7F` (weights or unused — poking them
+  changes nothing), and no pink material constant exists near the model.
+  Recolouring the body means patching the crystal texture's palette (CLUT)
+  in EE RAM — follow-up; map the NuTex upload path first (PCSX2 GS dump
+  is the tool). Shipped VS look: strong player-colour glow + carving,
+  coloured facet reflections, pink body. Dev-only calibration channel:
+  'VTNT' magic + 3 floats at coop payload+0x248 override the body light
+  colour live over PINE.
+- **The pause-panel carving draws the SAME gobj as the world item**:
+  `DrawPanel3DCharacter` (0x239EC0) remaps item ids (0x75→0x84, 0x77→0x88,
+  0x78..0x7D→0x89..0x8E) and resolves
+  `gobj = (*(scene+0x14))[ *( *(special+0x40) + 0x40) ]` — byte-identical to
+  Draw3DObject's chain (0x1F0B40 vs 0x23A130). One tint covers both: own
+  colour pre-claim, winner colour after the claim (the world crystal is
+  gone by then, so the retint only shows in the carving).
+- **Ownership needs no wire data**: a first-hand pickup marks `g_vs_mine`
+  synchronously in the PickupItem hook, while the peer's claim can only
+  arrive later through the bridge (`remote.items` bit not already ours);
+  both sides derive the same owner. Player identity (P1 blue / P2 red) comes
+  from the ctl word: the bridge writes `COOP_CTL_VS` (+`COOP_CTL_P2` on the
+  second endpoint) every cycle — ctl BITS are not a layout change, v9 stays.
+- Bridge-side attribution (`coop/vs.py` `VsRecorder`) is authoritative
+  because the bridge IS the transport: the origin's rising edge is always
+  observed before the echo can be delivered. The first slot per side only
+  primes baselines, so a pre-existing save never generates claims.
+
+## nucore/nuerror — whole unit matched (2026-07-12)
+
+All 7 functions **matching** on the first compile each (unit 3 fully C for
+`.text`; `complete` stays false — the unit still owns 2 data ranges):
+`NuErrorFunction`/`NuWarningFunction`/`NuDebugMsgFunction` (variadic
+printers), `Nu{Error,Warning,DebugMsg}Prolog` (`__FILE__`/`__LINE__`
+stashers returning the printer's address), `NuAssertMsg` (printf wrapper).
+
+**Varargs recipe for this toolchain (first variadic match):** the SN ee-gcc
+install ships NO libc headers — `#include <stdarg.h>` fails with "No include
+path". Define locally:
+
+```c
+typedef char *va_list;
+#define va_start(ap, last) \
+    ((ap) = ((va_list)__builtin_next_arg(last) \
+        - (__builtin_args_info(2) < 8 ? (8 - __builtin_args_info(2)) * 8 : 0)))
+#define va_end(ap)
+```
+
+This is gcc 2.95 `va-mips.h` (EABI): the variadic prologue saves a1..t3 +
+f12..f18 at the frame top, and `va_start` must point at the FIRST anonymous
+GPR save slot. Bare `__builtin_next_arg` points past all 8 GPR slots (was
++0x38 for 1 named arg — the lone diff word before the fix);
+`__builtin_args_info(2)` = named GPR args consumed, so the subtraction lands
+on the saved-a1 slot. `va_arg` wasn't needed (bodies hand the list straight
+to `vsprintf`).
+
+Other facts locked here: sbss error state cluster `D_0063300C` (full path,
+`_fbss+0xC`, unnamed in the registry), `D_00633010` (basename),
+`D_00633014` (line); `strrchr(file, '\\')` with the unconditional
+store-then-reassign global pattern matched directly. Log bookkeeping:
+`D_0062E9E0` = log created, `D_0062E9F4` = NuDebugMsg re-entrancy guard,
+`D_0062E9F8` = message counter (`++ctr` inline in the sprintf arg),
+`errmsg_to_file`/`D_0062E9DC` route to file vs console. NuDebugMsg brackets
+its body in `NuDisableVBlankE`/`NuEnableVBlankE` and appends via
+`NuFileOpen(name, 2)` + `NuFileSeek(f, 0, 2)`, falling back to mode 1
+create. NuErrorFunction ends in `for (;;) {}`. Local-buffer layout: the
+vsprintf body buffer declared first sits at sp+0, the header buffer above it
+(buf/hdr = 0x1000/0x100 error, 0x400/0x100 warning, 0x400/0x400 debug).
+
 ## Invariants (do not break)
 
 - **Nothing game-derived is committed.** All splat output (asm, linker script,

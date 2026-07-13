@@ -134,6 +134,29 @@ void PickupItem(struct obj_s *obj);
  * (in any level) shows up in the local hub UI and save. 0x001EADD8 */
 void CalculateGamePercentage(struct coop_game_s *game);
 
+/* --- Placed-object model table (VS crystal tint) --------------------------
+ * ObjTab (0x00588580, creature.c objtab_s, stride 0x20) backs both the
+ * in-world item draw (DrawCreatures -> Draw3DObject) and the pause-panel
+ * carving (DrawPanel3DCharacter): character 0x75 -> entry 0x84 (crystal),
+ * 0x77 -> 0x88 (crate gem), 0x78..0x7D -> 0x89..0x8E (coloured gems).
+ * Both paths resolve the SAME graphics object:
+ *   inst  = *(void **)(special + 0x40);
+ *   gobj  = ((void **)*(void **)(scene + 0x14))[*(int *)(inst + 0x40)]
+ * (Draw3DObject 0x1F0B40 / DrawPanel3DCharacter 0x23A130 -- byte-identical
+ * chains), so one vertex tint recolours the level crystal AND its carving. */
+struct coop_objtab_s {
+    void *scene;                     /* +0x00 loaded GScene the model lives in */
+    void *special;                   /* +0x04 per-object instance record */
+    unsigned char pad08[0x18];       /* stride 0x20 */
+};
+extern struct coop_objtab_s ObjTab[]; /* 0x00588580, 201 entries
+                                       * NOTE: this gobj is only the item's
+                                       * GLOW; the crystal BODY is the
+                                       * creature model CModel[CRemap[id]]
+                                       * drawn by the regular DrawCreatures
+                                       * path (lit -- tinted via c->lights,
+                                       * not vertex colours). */
+
 /* --- Crates (Stage 3b: per-crate destroyed-state sync) -------------------
  * Layouts mirror src/game/crate.c (matched BreakCrate's TU). Crate identity
  * across instances = the flat Crate[] slot index (fill order is

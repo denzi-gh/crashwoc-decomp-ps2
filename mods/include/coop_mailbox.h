@@ -25,10 +25,17 @@
 #define COOP_F_PRESENT 1u /* writer is in a playable level, state valid */
 #define COOP_F_DEAD 2u    /* writer's player is in a death state */
 
-/* CoopMailbox.ctl bits (PC writes, game reads). */
+/* CoopMailbox.ctl bits (PC writes, game reads). Adding BITS is not a
+ * layout change -- no version bump; an old mod ignores unknown bits. */
 #define COOP_CTL_GHOST 1u /* self-test: mirror the local player into the
                            * remote snapshot at pos.x + 2.0 -- a ghost
                            * puppet shadows the player with no bridge */
+#define COOP_CTL_VS 2u    /* session is VS mode: the mod attributes pickups
+                           * (mine vs peer) and tints the crystal + HUD
+                           * carving in the owner's player colour */
+#define COOP_CTL_P2 4u    /* this instance is player 2 (red); unset = player
+                           * 1 (blue). Identity comes from which bridge
+                           * endpoint (--p1/--p2-endpoint) we are. */
 
 typedef struct CoopSlot {              /* 0x70 bytes */
     unsigned int seq_open;             /* 0x00 seq-lock bracket */
@@ -160,7 +167,13 @@ typedef struct CoopMailbox {           /* overlays ModsdkMailbox.payload */
     unsigned int version;              /* +0x04 COOP_MAILBOX_VERSION */
     unsigned int ctl;                  /* +0x08 COOP_CTL_* (PC writes) */
     unsigned int diag;                 /* +0x0C game writes: bit 0 = puppet
-                                        * shown, bits 8+ = puppet re-inits */
+                                        * shown, bit 1 = VS crystal tint
+                                        * active, bit 2 = VS tint wanted but
+                                        * the glow packets have no V4-8
+                                        * colour block, bit 3 = VS on but the
+                                        * ObjTab[0x84] gobj chain is broken
+                                        * (scene not streamed / no crystal
+                                        * model), bits 8+ = re-inits */
     CoopSlot local;                    /* +0x10 (abs 0x706A70) game writes, bridge reads */
     CoopSlot remote;                   /* +0x12C (abs 0x706B8C) bridge writes, game reads */
 } CoopMailbox;                         /* 0x248 */

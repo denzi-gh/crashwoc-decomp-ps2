@@ -28,6 +28,16 @@ mode = "replace"
 # 2026-07-12: slot order diverges between instances as objects stream in,
 # which replayed the wrong object.)
 
+# VS mode (bridge --vs): PickupItem hook is ATTRIBUTION only -- it marks
+# which plr_items bits were claimed first-hand (vs the merge replay's
+# g_coop_applying echo) so the crystal/carving can be tinted in the owner's
+# player colour. Sync semantics are unchanged; outside VS it is a pure
+# pass-through.
+[[hook]]
+function = "PickupItem"
+handler = "coop_pickup_item"
+mode = "replace"
+
 # The name/Paused label is 2D text (Text3D). Text3D only queues glyphs into
 # font3d_scene, which DrawPanel submits with NuRndrGScnObj under the panel
 # camera it sets up mid-function. DrawMenu is called every frame from inside

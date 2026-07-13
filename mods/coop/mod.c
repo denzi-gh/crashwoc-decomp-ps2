@@ -32,6 +32,7 @@ void orig_DrawMenu(void *cursor, s32 paused);
 int orig_CrateOff(struct coop_crategroup_s *group, struct coop_crate_s *crate,
                   int a, int b);
 int orig_GotoCheckpoint(struct nuvec_s *pos, int dir);
+void orig_PickupItem(struct obj_s *obj);
 
 #define COOP ((volatile CoopMailbox *)modsdk_mailbox.payload)
 
@@ -168,6 +169,342 @@ static unsigned int coop_power_bit(short character)
     case 0xA3: return 1u << 5;
     }
     return 0;
+}
+
+/* --- VS mode (bridge --vs): pickup attribution + player colours ----------
+ * The bridge sets COOP_CTL_VS on both instances and COOP_CTL_P2 on the
+ * second endpoint; gameplay stays fully shared (one crystal, the race is
+ * who touches it first). Each side derives ownership locally and both
+ * agree, because a first-hand pickup marks g_vs_mine synchronously in the
+ * PickupItem hook while the peer's claim can only arrive later through the
+ * bridge (remote items bit not already ours). A genuine same-frame tie
+ * leaves each side believing it won -- cosmetic only; the bridge's stats
+ * file serializes the observations and is the authority. */
+static int g_vs_mode;                /* COOP->ctl & COOP_CTL_VS, read each tick */
+static int g_vs_p2;                  /* COOP->ctl & COOP_CTL_P2: we are player 2 */
+static unsigned short g_vs_mine;     /* this level's plr_items bits WE claimed */
+static unsigned short g_vs_peer;     /* ... the remote claimed (first) */
+
+/* Owner of a plr_items bit: 0 = player 1, 1 = player 2, -1 = unclaimed. */
+static int coop_vs_owner(unsigned int bit)
+{
+    if ((g_vs_mine & bit) != 0) {
+        return g_vs_p2 ? 1 : 0;
+    }
+    if ((g_vs_peer & bit) != 0) {
+        return g_vs_p2 ? 0 : 1;
+    }
+    return -1;
+}
+
+/* Replace hook on PickupItem (0x1FCE88): attribution only -- every pickup
+ * passes through here (HitItems touch + our own merge replay), and the
+ * g_coop_applying bracket tells a first-hand touch from a replayed echo. */
+void coop_pickup_item(struct obj_s *obj)
+{
+    if (g_vs_mode && g_coop_applying == 0 && Bonus == 0) {
+        g_vs_mine |= (unsigned short)coop_item_bit(obj->character);
+    }
+    orig_PickupItem(obj);
+}
+
+/* --- VS crystal tint ------------------------------------------------------
+ * The crystal is TWO renders with different colour sources (both probed
+ * in-game via PINE, 2026-07-13):
+ *
+ * 1. The GLOW -- ObjTab[0x84]'s gobj, billboarded at the camera by
+ *    Draw3DObject (and drawn again as the pause-panel carving by
+ *    DrawPanel3DCharacter via the byte-identical chain, see retail.h).
+ *    Unlit; its colours are baked per vertex inside the prebuilt DMA/VIF
+ *    render packets as UNPACK V4-8 payloads (R in the low byte -- retail's
+ *    purple is 72 00 6D). Retail never builds the crossfade colour-ref
+ *    descriptors (the shipped scenes carry prebuilt streams, which skip
+ *    the runtime stream builder where nugscn_generate_colourref would
+ *    matter), so the mod parses the packets itself: walk the loaded geom
+ *    nodes {next, material, packet} at gobj+0xC, scan each packet's VIF
+ *    stream, and collect every V4-8 payload word. Originals are kept for
+ *    exact restore/retint.
+ *
+ * 2. The BODY -- the creature model CModel[CRemap[0x75]], drawn by the
+ *    normal DrawCreatures model path right after the glow. A LIT gouraud
+ *    model: its baked vertex colours are BLACK; the pink is texture x
+ *    c->lights. Items are not in Character[], so nothing ever recomputes
+ *    their light record -- the DrawCreatures hook overwrites the colour
+ *    fields (the puppet's apply_gray_lights trick) with the player
+ *    colour before passing through. */
+#define COOP_VS_CRYSTAL_OBJ 0x84   /* ObjTab entry of the glow gobj */
+#define COOP_VS_CRYSTAL_CHAR 0x75  /* the crystal creature's character id */
+#define COOP_TINT_SAVE_MAX 256     /* saved V4-8 colour words (glow uses ~51) */
+
+/* EE main RAM sanity for every pointer we chase out of retail data. */
+#define COOP_PTR_OK(p) \
+    ((unsigned int)(p) >= 0x00100000u && (unsigned int)(p) < 0x02000000u)
+
+/* Player colours: P1 blue, P2 red (picked 2026-07-12, tune freely).
+ * Byte RGB for the glow's vertex colours ... */
+static const unsigned char coop_vs_colour[2][3] = {
+    { 64, 128, 255 },  /* player 1: blue */
+    { 255, 64, 48 },   /* player 2: red */
+};
+/* ... and float RGB for the body's light tint (flat ambient, directionals
+ * zeroed, like the puppet gray). In-game finding 2026-07-13: the body's
+ * MAIN surface is texture-only (DECAL -- neither lights nor its all-black
+ * V4-8 vertex bytes move it; recolouring it means patching the texture
+ * palette, a follow-up), but the alpha REFLECTION overlay is lit and takes
+ * this colour -- so the body keeps its pink with clearly coloured facets,
+ * while glow + carving carry the strong player colour. */
+static const float coop_vs_light[2][3] = {
+    { 0.15f, 0.50f, 1.60f },  /* player 1: blue */
+    { 1.80f, 0.20f, 0.15f },  /* player 2: red */
+};
+
+static int g_vs_want = -1;     /* colour index to show this tick; -1 = none */
+static int g_tint_level = -1;  /* level the saved colour words belong to */
+static int g_tint_shown = -2;  /* colour index written: -2 = untinted */
+static unsigned int g_vs_diag; /* bit 1 = tint active, bit 2 = packets have
+                                * no V4-8 colour block, bit 3 = gobj chain
+                                * not resolvable (scene still streaming) */
+static struct {
+    unsigned int *addr;        /* live V4-8 colour word in the packet */
+    unsigned int orig;         /* its baked value (restore/retint source) */
+} g_tint_save[COOP_TINT_SAVE_MAX];
+static int g_tint_save_n;
+
+/* The gobj behind a placed-object ObjTab entry (NULL until the level's
+ * scene has streamed in; every hop is range-checked because we walk live
+ * retail heap structures). */
+static unsigned int *coop_item_gobj(int o)
+{
+    unsigned char *scene = (unsigned char *)ObjTab[o].scene;
+    unsigned char *special = (unsigned char *)ObjTab[o].special;
+    unsigned char *inst;
+    unsigned char *table;
+    unsigned int *gobj;
+    int idx;
+
+    if (!COOP_PTR_OK(scene) || !COOP_PTR_OK(special)) {
+        return 0;
+    }
+    inst = *(unsigned char **)(special + 0x40);
+    if (!COOP_PTR_OK(inst)) {
+        return 0;
+    }
+    idx = *(int *)(inst + 0x40);
+    table = *(unsigned char **)(scene + 0x14);
+    if (!COOP_PTR_OK(table) || idx < 0 || idx >= 0x1000) {
+        return 0;
+    }
+    gobj = *(unsigned int **)(table + idx * 4);
+    return COOP_PTR_OK(gobj) ? gobj : 0;
+}
+
+/* Scan one prebuilt DMA/VIF geometry packet and record every UNPACK V4-8
+ * payload word (the per-vertex colours) into g_tint_save. The walk mirrors
+ * what the DMAC/VIF1 would do: 16-byte DMA tag (2 VIF words ride in its
+ * upper half), then QWC quadwords of VIF codes + data; only cnt-chains
+ * continue to a following tag. Unknown VIF codes stop the scan (whatever
+ * was collected so far stays valid). */
+static void coop_tint_scan_packet(unsigned char *p)
+{
+    int segs;
+
+    for (segs = 0; segs < 4; segs++) {
+        unsigned int tag0 = *(unsigned int *)p;
+        unsigned int qwc = tag0 & 0xFFFF;
+        unsigned int id = (tag0 >> 28) & 7;
+        unsigned char *v = p + 8;
+        unsigned char *end;
+
+        if (qwc == 0 || qwc > 0x800) {
+            return;
+        }
+        end = p + 16 + qwc * 16;
+        while (v + 4 <= end) {
+            unsigned int code = *(unsigned int *)v;
+            unsigned int cmd = (code >> 24) & 0x7F;
+            unsigned int num = (code >> 16) & 0xFF;
+
+            v += 4;
+            if (num == 0) {
+                num = 256;
+            }
+            if (cmd >= 0x60) {                     /* UNPACK */
+                unsigned int vn = ((cmd >> 2) & 3) + 1;
+                unsigned int bits = 32 >> (cmd & 3);
+                unsigned int nbytes = (num * vn * bits + 7) / 8;
+
+                nbytes = (nbytes + 3) & ~3u;
+                if ((cmd & 0xF) == 0xE) {          /* V4-8: colours */
+                    unsigned int i;
+
+                    for (i = 0; i < num && g_tint_save_n < COOP_TINT_SAVE_MAX;
+                         i++) {
+                        unsigned int *cw = (unsigned int *)(v + i * 4);
+
+                        g_tint_save[g_tint_save_n].addr = cw;
+                        g_tint_save[g_tint_save_n].orig = *cw;
+                        g_tint_save_n++;
+                    }
+                }
+                v += nbytes;
+            } else if (cmd == 0x20) {              /* STMASK */
+                v += 4;
+            } else if (cmd == 0x30 || cmd == 0x31) { /* STROW/STCOL */
+                v += 16;
+            } else if (cmd == 0x4A) {              /* MPG */
+                v += num * 8;
+            } else if (cmd == 0x50 || cmd == 0x51) { /* DIRECT/HL */
+                unsigned int imm = code & 0xFFFF;
+
+                v += (imm == 0 ? 0x10000u : imm) * 16;
+            } else if (cmd > 0x17) {               /* not a no-payload code */
+                return;
+            }
+        }
+        if (id != 1) {                             /* only cnt continues */
+            return;
+        }
+        p = end;
+    }
+}
+
+/* (Re)collect the glow's colour words for the current level's scene. */
+static void coop_tint_scan(void)
+{
+    unsigned int *gobj = coop_item_gobj(COOP_VS_CRYSTAL_OBJ);
+    unsigned char *node;
+    int n;
+
+    g_tint_save_n = 0;
+    if (gobj == 0) {
+        return;
+    }
+    /* Loaded (pre-converted) geom node: {next, material, packet}. */
+    node = (unsigned char *)gobj[0xC / 4];
+    for (n = 0; n < 8 && COOP_PTR_OK(node); n++) {
+        unsigned char *pkt = *(unsigned char **)(node + 8);
+
+        if (COOP_PTR_OK(pkt)) {
+            coop_tint_scan_packet(pkt);
+        }
+        node = *(unsigned char **)(node + 0);
+    }
+}
+
+/* want < 0 restores the baked colours; otherwise every vertex becomes
+ * intensity(orig) * player colour (intensity = max component -- luminance
+ * would crush the green-poor purple), keeping the baked alpha. */
+static void coop_tint_write(int want)
+{
+    int i;
+
+    for (i = 0; i < g_tint_save_n; i++) {
+        unsigned int c = g_tint_save[i].orig;
+
+        if (want < 0) {
+            *g_tint_save[i].addr = c;
+        } else {
+            unsigned int r = c & 0xFF;
+            unsigned int g = (c >> 8) & 0xFF;
+            unsigned int b = (c >> 16) & 0xFF;
+            unsigned int inten = r > g ? r : g;
+
+            if (b > inten) {
+                inten = b;
+            }
+            *g_tint_save[i].addr = (c & 0xFF000000u) |
+                (((inten * coop_vs_colour[want][2]) >> 8) << 16) |
+                (((inten * coop_vs_colour[want][1]) >> 8) << 8) |
+                ((inten * coop_vs_colour[want][0]) >> 8);
+        }
+    }
+}
+
+/* Per-tick tint driver. Pre-claim the crystal shows OUR colour (each player
+ * sees their own target); once claimed it re-tints to the WINNER's colour --
+ * the world crystal is gone by then, so the retint is what the pause-panel
+ * carving renders, the same colour on both screens. Level changes rebuild
+ * the scene with freshly baked colours, so old pointers are simply
+ * forgotten, never touched. */
+static void coop_vs_tint_tick(void)
+{
+    int owner;
+
+    if (Level != g_tint_level) {
+        g_tint_level = -1;
+        g_tint_shown = -2;
+        g_tint_save_n = 0;
+    }
+    /* bit 4 is owned by the DrawCreatures hook (set after this tick's diag
+     * push): keep last frame's value so it stays visible over PINE. */
+    g_vs_diag &= 0x10u;
+    if (!g_vs_mode || !local_valid()) {
+        g_vs_want = -1;
+        if (g_tint_shown != -2) {
+            /* VS switched off mid-level: put the baked colours back. */
+            coop_tint_write(-1);
+            g_tint_shown = -2;
+        }
+        return;
+    }
+    owner = coop_vs_owner(0x1);
+    g_vs_want = (owner == -1) ? (g_vs_p2 ? 1 : 0) : owner;
+    if (g_tint_shown == g_vs_want) {
+        g_vs_diag |= 2u;
+        return;
+    }
+    if (g_tint_save_n == 0) {
+        coop_tint_scan();
+        if (g_tint_save_n == 0) {
+            g_vs_diag |= (coop_item_gobj(COOP_VS_CRYSTAL_OBJ) == 0) ? 8u : 4u;
+            return;
+        }
+        g_tint_level = Level;
+    }
+    coop_tint_write(g_vs_want);
+    g_tint_shown = g_vs_want;
+    g_vs_diag |= 2u;
+}
+
+/* The light tint indexes the live Character[] array, so the mirrored
+ * creature_s must match retail's stride and light-record offset exactly
+ * (retail anchors: stride 0xCE4 = CloseCreatures, lights +0xBF4 =
+ * ResetPlayer, obj +0x4). Build breaks here if a mirror struct drifts. */
+typedef char coop_creature_stride_check[
+    (sizeof(struct creature_s) == 0xCE4) ? 1 : -1];
+typedef char coop_creature_lights_check[
+    ((unsigned int)&((struct creature_s *)0)->lights == 0xBF4) ? 1 : -1];
+typedef char coop_creature_char_check[
+    ((unsigned int)&((struct creature_s *)0)->obj.character == 0x34) ? 1 : -1];
+
+/* Dev-only live calibration channel: the CoopMailbox occupies payload
+ * +0x000..0x247 of the 0x400 mailbox; poke magic 'VTNT' + 3 floats at
+ * payload+0x248 over PINE and the body tint uses those instead of the
+ * table -- colours can be tuned live while the game runs. Zero the magic
+ * to fall back. Never written by the game or bridge. */
+#define COOP_VS_TUNE_MAGIC 0x544E5456u /* 'VTNT' */
+#define COOP_VS_TUNE_BASE \
+    ((volatile unsigned char *)modsdk_mailbox.payload + 0x248)
+
+/* Body light tint (see the section comment): flat coloured ambient, no
+ * directional contribution. Colour values only -- the light-list pointers
+ * the record was initialised with stay untouched. */
+static void coop_vs_light_tint(struct Nearest_Light_s *L)
+{
+    const float *t = coop_vs_light[g_vs_want];
+
+    if (*(volatile unsigned int *)COOP_VS_TUNE_BASE == COOP_VS_TUNE_MAGIC) {
+        t = (const float *)(COOP_VS_TUNE_BASE + 4);
+    }
+    L->AmbCol.x = t[0];
+    L->AmbCol.y = t[1];
+    L->AmbCol.z = t[2];
+    L->dir1.Colour.r = L->dir1.Colour.g = L->dir1.Colour.b = 0.0f;
+    L->dir2.Colour.r = L->dir2.Colour.g = L->dir2.Colour.b = 0.0f;
+    L->dir3.Colour.r = L->dir3.Colour.g = L->dir3.Colour.b = 0.0f;
+    L->glbdirectional.Colour.r = 0.0f;
+    L->glbdirectional.Colour.g = 0.0f;
+    L->glbdirectional.Colour.b = 0.0f;
 }
 
 /* --- Stage 3b: per-crate destroyed-state sync ----------------------------
@@ -620,6 +957,12 @@ static void coop_merge(void)
             }
         }
     }
+    /* VS attribution: a remote items bit we did not claim first-hand was
+     * the peer's touch (our own echo is filtered by g_vs_mine, which the
+     * PickupItem hook set before the bit could ever round-trip). */
+    if (g_vs_mode) {
+        g_vs_peer |= (unsigned short)(remote_snap.items & ~g_vs_mine);
+    }
     /* Bits with no live object here (not streamed in / already gone):
      * grant the reward directly, the HUD is what matters. Powers were
      * OR-merged in tier 1; their object replay above is edge-only
@@ -642,6 +985,8 @@ static void coop_progress_reset(void)
         g_crate_remote_prev[i] = 0;
     }
     g_crate_reconcile = 0;
+    g_vs_mine = 0;
+    g_vs_peer = 0;
 #if COOP_AWARD
     for (i = 0; i < COOP_LEVEL_COUNT; i++) {
         g_award_pending[i] = 0;
@@ -1538,7 +1883,7 @@ static void update_puppet(void)
         g_warp_out_hide = 0;
     }
     g_puppet_active = show;
-    COOP->diag = (g_puppet_inits << 8) | (show ? 1u : 0u);
+    COOP->diag = (g_puppet_inits << 8) | (show ? 1u : 0u) | g_vs_diag;
     /* Track the remote's last REAL room (ignore -1 loading/menu) for the next
      * arrival's hide decision -- updated after coop_warp_in_arm has read it.
      * The room BEFORE it feeds the award celebration: bits of the level the
@@ -1815,6 +2160,23 @@ void coop_draw_creatures(struct creature_s *c, s32 count, s32 render,
         published_frame = modsdk_mailbox.frame;
     }
 
+    /* VS: tint every crystal creature's light record before the draw --
+     * the body model is lit (its baked vertex colours are black; the pink
+     * is texture x c->lights) and items are not in Character[], so nothing
+     * recomputes these. One-way: leaving VS mid-level keeps the last tint
+     * until the level reloads (items' lights are never refreshed). */
+    if (g_vs_want >= 0 && render != 0) {
+        s32 i;
+
+        for (i = 0; i < count; i++) {
+            if (c[i].on != 0 &&
+                c[i].obj.character == COOP_VS_CRYSTAL_CHAR) {
+                coop_vs_light_tint(&c[i].lights);
+                g_vs_diag |= 0x10u; /* bit 4: body light tint ran this frame */
+            }
+        }
+    }
+
     orig_DrawCreatures(c, count, render, shadow);
     if (g_puppet_active != 0 && c == Character && count == 1 &&
         Level == g_puppet_level && g_puppet.obj.model != 0) {
@@ -1998,6 +2360,8 @@ void coop_tick(void)
     if ((COOP->ctl & COOP_CTL_GHOST) != 0) {
         synth_ghost();
     }
+    g_vs_mode = (COOP->ctl & COOP_CTL_VS) != 0;
+    g_vs_p2 = (COOP->ctl & COOP_CTL_P2) != 0;
     /* Stage 3a: per-level bitmaps die with the room they were built in;
      * reset BEFORE merging so a stale bitmap never replays into a new
      * level that reuses the same slot indices. */
@@ -2011,5 +2375,6 @@ void coop_tick(void)
     coop_award_pop_edge();
 #endif
     coop_merge();
+    coop_vs_tint_tick();
     update_puppet();
 }

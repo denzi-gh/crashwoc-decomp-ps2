@@ -284,6 +284,51 @@ functions, not by copying tallies.
   under symmetric replay — revisit if playtests object.
 - [ ] *(stretch)* shared lives pool; `Wumpa[]` world-fruit entity sync
 
+## VS Mode — competitive pickup tracking + coloured crystals  *(interlude before Stage 4)*
+
+Bridge `coop-bridge --vs [--vs-stats PATH]`: gameplay stays fully shared
+(one crystal, the race is who touches it first); the bridge sets
+`COOP_CTL_VS` on both instances + `COOP_CTL_P2` on the second endpoint
+(ctl bits only — mailbox layout stays v9), attributes every first claim
+(crystal / crate gem / coloured gems in-level via `items` rising edges,
+relics via `level_flags` tier bits) and writes a JSON stats file live
+(who got what, where, when + totals; summary printed on exit).
+Attribution is bridge-reliable: the origin side's bit is always observed
+before its echo can reach the peer (the bridge IS the transport).
+
+- [x] contract: `COOP_CTL_VS`/`COOP_CTL_P2` (coop_mailbox.h + mailbox.py, no
+  version bump), diag bits 1/2 = tint active / tint unavailable — 2026-07-12
+- [x] bridge: `--vs`/`--vs-stats`, per-cycle ctl writes, `VsRecorder`
+  (`coop/vs.py`, first-wins claims, echo-safe, baseline priming against
+  pre-existing saves) + 15 new tests, 82 green + ruff — 2026-07-12
+- [x] mod: PickupItem attribution hook (6 hooks now; first-hand vs
+  `g_coop_applying` echo), `g_vs_mine`/`g_vs_peer` per level, owner query —
+  2026-07-12
+- [x] coloured crystals (glow + carving + facet reflections; CONFIRMED
+  in-game 2026-07-13): P1 blue / P2 red. The crystal is TWO renders. The
+  GLOW (ObjTab[0x84] gobj, also drawn as the pause-panel carving via a
+  byte-identical chain — Draw3DObject 0x1F0B40 / DrawPanel3DCharacter
+  0x23A130) is tinted by parsing its prebuilt DMA/VIF packets and
+  rewriting the UNPACK V4-8 vertex-colour payloads (originals kept for
+  restore; own colour pre-claim, winner colour after a claim). The BODY
+  (creature model CModel[CRemap[0x75]], skinned, 26 joints) gets a light
+  tint through c->lights in the DrawCreatures hook — this colours its lit
+  alpha REFLECTION overlay only: the main surface is texture-only (DECAL;
+  in-game probes eliminated lights, vertex colours and nearby material
+  constants), so the body keeps its pink with coloured facets. Dead end
+  disproven in-game: crossfade colour-ref descriptors are never built —
+  retail ships pre-converted streams that skip the builder, making the
+  `nugscn_generate_colourref` global dead tooling. Live tuning: poke
+  'VTNT' + 3 floats at payload+0x248 to override the body light colour.
+- [ ] *(follow-up)* fully coloured crystal BODY: patch the crystal
+  texture's palette (CLUT) in EE RAM — needs the texture-upload path
+  (NuTex) mapped first; GS-level analysis (PCSX2 GS dump) is the tool.
+- [ ] *(follow-up)* relay (`coop-relay`) VS support (ctl write + recorder on
+  one side or merged post-hoc)
+- [ ] *(follow-up)* crate-gem / coloured-gem carving tints (same mechanism,
+  ObjTab 0x88..0x8E) + relic display
+- [ ] *(follow-up)* per-level scoreboard overlay in-game (Text3D)
+
 ## Stage 4 — Shared enemies / shared boss  *(high decomp — capstone)*
 
 - [ ] Client `ProcessCreatures` hook suppresses local enemy AI
