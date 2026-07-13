@@ -61,14 +61,10 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0015:00109498:NuMtxSetTranslation"
-# Clean C (no inline asm); byte-exact except retail's load-delay hazard nop,
-# which decompals `as` does not auto-insert. Behaviorally equivalent.
 state = "equivalent"
 
 [[function]]
 id = "pal103:unit-0015:001094f8:NuMtxSetScale"
-# Clean C (no inline asm); byte-exact except retail's load-delay hazard nop,
-# which decompals `as` does not auto-insert. Behaviorally equivalent.
 state = "equivalent"
 
 [[function]]
