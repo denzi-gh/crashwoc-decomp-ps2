@@ -22,7 +22,7 @@ signature = "compiler assembly contains a `move $x,$y` pseudo-instruction"
 effect = "the decompals `as` encodes `move` as `or $x,$y,$0`; Sony/retail use `daddu $x,$y,$0`"
 handling = "normalized by tools/gen_hybrid.py::_sonyize before assembly"
 confidence = "proven"
-evidence = ["tools/gen_hybrid.py::_sonyize", "docs/notes.md"]
+evidence = ["tools/gen_hybrid.py::_sonyize"]
 
 [[quirk]]
 id = "default.break-operand-encoding"
@@ -52,7 +52,7 @@ signature = "callee-saved GPRs stored/loaded in the prologue/epilogue"
 effect = "the Sony 2.9 build uses 128-bit sq/lq for callee saves; the SN ProDG (default) build uses sd/ld -- a unit built by the wrong compiler cannot match"
 handling = "profile selection: game/engine TUs use `default`, the Sony runtime uses `sce` (never mix)"
 confidence = "proven"
-evidence = ["config/pal103/profiles.toml", "docs/notes.md"]
+evidence = ["config/pal103/profiles.toml"]
 
 [[quirk]]
 id = "default.lit4-inline-vs-pool"
@@ -65,34 +65,34 @@ confidence = "proven"
 evidence = ["tools/gen_hybrid.py::_rewrite_lis", "tools/gen_hybrid.py::Lit4Mapper"]
 
 [[quirk]]
-id = "default.lit8-unsupported"
+id = "default.lit8-double-pool"
 profiles = ["default", "sce"]
-category = "unsupported_lit8"
+category = "literal_pool"
 signature = "`li.d $fN,<constant>` (double literal) in the compiler output"
-effect = "a double constant needs a .lit8 pool entry; the hybrid pipeline cannot yet map .lit8 slots"
-handling = "ARCHITECTURAL for now: build_hybrid raises HybridError; record a compiler-owned blocker"
+effect = "a double whose float64 image has a nonzero low word needs a .lit8 pool entry; a zero-low-word double stays inline (lui+mtc1 pair)"
+handling = "SUPPORTED: pool-bound li.d is rewritten to load the retail .lit8 slot by symbol, mapped by value (tools/gen_hybrid.py::_rewrite_lis / Lit4Mapper.map_for_slice8). A `li.d`/`li.s` into a GPR (not $fN) is a raw bit pattern passed to a soft-double helper -- rewritten to `dli $reg,0x<bits>`; the `dli` macro is best-effort and blocks loudly if the decompals-as expansion diverges from retail's SN sequence"
 confidence = "proven"
-evidence = ["tools/gen_hybrid.py::_rewrite_lis"]
+evidence = ["tools/gen_hybrid.py::_rewrite_lis", "tools/gen_hybrid.py::Lit4Mapper.map_for_slice8", "tests/test_fp_pool.py"]
 
 [[quirk]]
 id = "default.jump-table-rodata"
 profiles = ["default", "sce"]
 category = "jump_table_rodata"
-signature = "a dense switch compiled to an indexed jump through a .rodata table"
-effect = "the compiler emits a jump-table into .rodata; the hybrid may only contribute .text, so table data cannot be owned yet"
-handling = "ARCHITECTURAL for now: the hybrid assembler rejects data sections (_check_no_data_sections)"
+signature = "a dense switch compiled to an indexed jump through a .rodata table (`$Ln: .word $Lm ...`, dispatched `j $reg`)"
+effect = "the compiler emits the table as .rodata relocations (absolute, like retail's auto-named `jtbl_<vram>`), which the hybrid may not own as bytes"
+handling = "SUPPORTED by borrow-by-STRUCTURE: the compiled table is detected as a _JumpTable(count) marker and repointed onto the function's own retail jtbl_/jpt_ slot (tools/gen_hybrid.py::map_jump_tables), and `_sonyize` rewrites `j $reg`->`jr $reg`. Requires the C switch to produce the SAME table entry count/order (positional borrow; multiple tables per function OK); a count mismatch fails loudly. A function whose C cannot reproduce the table shape (e.g. MoveCreature's ~15KB multi-table dispatch) stays a blocker."
 confidence = "likely"
-evidence = ["tools/gen_hybrid.py::_check_no_data_sections"]
+evidence = ["tools/gen_hybrid.py::map_jump_tables", "src/game/creature.c::MovePlayer"]
 
 [[quirk]]
 id = "default.initialized-local-sdata"
 profiles = ["default", "sce"]
 category = "initialized_local_sdata"
-signature = "an initialized local aggregate (e.g. `static const` array in a function)"
-effect = "the compiler places the initializer in .sdata/.data; the hybrid cannot own data sections yet"
-handling = "ARCHITECTURAL for now: fails loudly in _check_no_data_sections; record a compiler-owned-sdata blocker"
-confidence = "likely"
-evidence = ["tools/gen_hybrid.py::_check_no_data_sections"]
+signature = "an initialized local aggregate or string (e.g. `short t[2]={0,1}`, a `$LCn` .sdata/.rodata block) in a function"
+effect = "the compiler places the initializer in .sdata/.rodata; the hybrid may not own data sections"
+handling = "SUPPORTED: _extract_local_data pulls the aggregate out and map_owned_data borrows the unit-owned retail data symbol holding those exact bytes (by named twin, or by unique address in the unit's data_map ranges, at natural alignment), rewriting %hi/%lo($LCn) onto it -- no data emitted, hybrid stays .text-only. Strings handled the same way. Unblocked DrawCharacterModel. Ambiguous bytes (>1 address) still fail loudly."
+confidence = "proven"
+evidence = ["tools/gen_hybrid.py::map_owned_data", "tools/gen_hybrid.py::_extract_local_data"]
 
 [[quirk]]
 id = "default.duplicate-static-names"
@@ -102,7 +102,7 @@ signature = "a static function name shared by two translation units"
 effect = "four statics (ReadNuIFFGeomSkin, ReadNuIFFGeomVtx, NuNodeRead, _fpadd_parts) collide across TUs"
 handling = "disambiguated as NAME__<vram>; always address such functions by canonical id"
 confidence = "proven"
-evidence = ["tools/declib/asmtext.py::disambiguate", "docs/notes.md"]
+evidence = ["tools/declib/asmtext.py::disambiguate"]
 
 [[quirk]]
 id = "default.function-extent-padding"
@@ -143,3 +143,103 @@ effect = "-O2 does not always CSE the element address across separate arr[i] exp
 handling = "MATCHING HINT: bind a pointer once (`T *e = &arr[i];` then `e->a`, `e->b`) so the address is computed a single time. Verified on DrawPanel3DObject's ObjTab[o].scene/.special."
 confidence = "likely"
 evidence = ["src/game/panel.c::DrawPanel3DObject"]
+
+[[quirk]]
+id = "default.fp-hazard-nop"
+profiles = ["default"]
+category = "assembler_hazard"
+signature = "an `mtc1` feeding a nearby FP op/store: `mtc1 -> swc1`, `mtc1 -> c.lt.s`/`c.le.s`, or `mtc1 -> cvt.s.w`"
+effect = "retail's SN ProDG `as` materializes a real hazard nop between the mtc1 and the dependent instruction. ee-gcc emits these as commented `#nop` and defers to the assembler; the decompals `as` only re-inserts the `mtc1 -> cvt.s.w` nop and DROPS the `mtc1 -> {swc1, c.le.s}` ones. Each dropped nop shifts the whole tail, so an otherwise byte-exact function reads low fuzzy (register allocation and logic identical)."
+handling = "NOT yet pipeline-handled -- record a blocker and keep the faithful C at state=asm (candidate for `equivalent`). Tooling fix: teach the decompals `as`/gen_hybrid to emit the `mtc1 -> {swc1, c.le.s}` hazard nop as it already does for `mtc1 -> cvt.s.w`; one fix unblocks all functions in this class."
+confidence = "proven"
+evidence = ["src/game/main.c::SetLevel", "src/game/credits.c::DrawCredits", "src/game/creature.c::ModelAnimDuration", "config/pal103/status/game/main.toml"]
+
+[[quirk]]
+id = "default.goto-loop-alignment"
+profiles = ["default"]
+category = "loop_shape"
+signature = "a retail inner-loop head at a NON-8-aligned address with no preceding pad"
+effect = "SN ee-gcc 2.95.2 at -O2 emits `.align 3` (8-byte) loop-head alignment ONLY for explicit loop constructs (which carry a NOTE_INSN_LOOP_BEG) and also lets LICM hoist small `li` constants out of them. A `for`/`while` therefore adds a pad nop + hoisted constants and overruns the extent (`.org backwards`)."
+handling = "MATCHING HINT: when the loop head is not 8-aligned, write the loop with `goto` (label + conditional `goto`); the back-edge carries no loop note, so no `.align` pad and no hoist (constants reload inside the loop, reusing the same reg). Verified on FindAILabel (game/ai): 68 -> 64 bytes, byte-exact."
+confidence = "proven"
+evidence = ["src/game/ai.c::FindAILabel", "config/pal103/status/game/ai.toml"]
+
+[[quirk]]
+id = "default.delay-slot-reorg-fill"
+profiles = ["default"]
+category = "codegen_shape"
+signature = "a float-compare branch (`bc1f`/`bc1t`) whose delay slot retail leaves empty, loading the next FP constant AFTER it"
+effect = "ee-gcc's reorg pass fills the branch delay slot with an anticipatable but dead-when-taken FP load (e.g. `lwc1 D_xxxx`); retail declined every such candidate and left the slot empty. The one extra instruction shifts the whole tail by a word, cascading the byte diff even when allocation and logic match."
+handling = "NOT reliably source-controllable -- record a `no_progress` blocker and keep the C at state=asm (candidate for `equivalent`). Rejected experiments on DrawCredits: `&&` vs nested ifs, a loop-top temp, an inner temp, a product hoist -- none made reorg decline the fill."
+confidence = "proven"
+evidence = ["src/game/credits.c::DrawCredits", "config/pal103/status/game/credits.toml"]
+
+[[quirk]]
+id = "default.whole-fn-callee-save-regalloc"
+profiles = ["default"]
+category = "register_allocation"
+signature = "a large function where both builds allocate the SAME callee-saved mask but assign different pseudos to specific $sN registers"
+effect = "gcc-2.95 global allocation ties on priority for adjacent pseudos and ranks them differently from retail (e.g. MovePlayer: retail keeps `c` in $s4, the candidate in $s3 -- a `...83...`->`...63...` base-register swap across the whole function). Not a missing-variable problem; the mask matches, only the numbering differs, and it dominates the diff."
+handling = "MATCHING HINT / frequent blocker: nudge allocation priority via the live-range/ref-count of the competing locals (an explicit temp, or reordering first-use) WITHOUT adding an addressing indirection -- an intermediate `obj` pointer collapsed MovePlayer to 1.35%. When it cannot be steered, record a `no_progress` blocker and keep at state=asm."
+confidence = "proven"
+evidence = ["src/game/creature.c::MovePlayer", "src/game/game_obj.c::PlayerCreatureCollisions", "src/game/ai.c::ResetAI"]
+
+[[quirk]]
+id = "default.soft-double-abi"
+profiles = ["default", "sce"]
+category = "codegen_shape"
+signature = "any `double`-typed arithmetic or comparison in the C (the EE has no hardware doubles)"
+effect = "retail does NOT use compiler soft-float; float->double math and comparisons go through explicit runtime helpers `fptodp(f32)->u64`, `dpcmp(u64,u64)->s32`, `dpsub`/`dpmul`/`dptofp` (u64 bit patterns). Plain `double` C makes gcc call its own soft-float (`__adddf3` etc.) and never matches."
+handling = "MATCHING HINT: model doubles as `u64` bit patterns and call the explicit helpers (e.g. `d = fptodp(f); if (dpcmp(d, K) < 0) ...`). Verified on numath/nuplane and MovePlayer's deadzone/fabs compares."
+confidence = "proven"
+evidence = ["src/numath/nuplane.c", "src/game/creature.c::MovePlayer", "src/sdk/gcc/dp-bit.c"]
+
+[[quirk]]
+id = "default.early-return-cross-jump"
+profiles = ["default"]
+category = "codegen_shape"
+signature = "a top-of-function guard that returns a value ALSO returned elsewhere in the function"
+effect = "an early `if (cond) return X;` lets gcc cross-jump/merge that `return X` with a later identical `return X` into one block placed after the loop body -- an extra branch that shifts the whole tail."
+handling = "MATCHING HINT: mirror the retail brace structure -- `if (!cond) { ...; return Y; } return X;` -- so the guard's return stays at the end and a mid-body early return uses a single `blez reg,<shared epilogue>` (value in the delay slot). Matched NewCharacterIdle in one iteration by switching to the wrapped form."
+confidence = "proven"
+evidence = ["src/game/creature.c::NewCharacterIdle"]
+
+[[quirk]]
+id = "default.varargs-eabi"
+profiles = ["default"]
+category = "codegen_shape"
+signature = "a variadic (printf-like) function in a game/engine TU"
+effect = "SN ee-gcc 2.95.2 has no usable <stdarg.h>; retail uses a local `va_list` with EABI `__builtin_va_start` plus an `__builtin_args_info(2)` correction for the register-save area. A modern stdarg spelling emits a different prologue."
+handling = "MATCHING RECIPE: declare a local `va_list`, `__builtin_va_start` with the args_info(2) correction (see nucore/nuerror). Proven -- all 7 functions of nucore/nuerror matched."
+confidence = "proven"
+evidence = ["src/nucore/nuerror.c", "config/pal103/status/nucore/nuerror.toml"]
+
+[[quirk]]
+id = "default.pal-float-literal-scaling"
+profiles = ["default"]
+category = "constants"
+signature = "a per-frame rate/threshold constant ported from a 60Hz GameCube reference"
+effect = "PAL v1.03 runs at 50Hz, so GC 60Hz constants are scaled x60/50 and the retail .lit4 slot holds a ROUND-TOWARD-ZERO float image (e.g. dt = 0.59999996f = 0x3F199999 for 0.6, NOT the nearest-even 0.6f). Using the GC value or a rounded literal yields a different .lit4 bit pattern and the mapper mismatches."
+handling = "MATCHING HINT: write the EXACT decimal of the retail .lit4 image (round toward zero), not the mathematically clean value. Confirmed across MovePlayer's dt/friction/sink constants."
+confidence = "proven"
+evidence = ["src/game/creature.c::MovePlayer"]
+
+[[quirk]]
+id = "default.adjacent-global-store-order"
+profiles = ["default", "sce"]
+category = "codegen_shape"
+signature = "two or more stores to adjacent global/struct fields emitted from consecutive C statements"
+effect = "-O2 deterministically permutes adjacent global stores relative to source order: a pair is REVERSED, a triple ROTATES RIGHT. Source order != emission order, so a naive transcription mismatches the store sequence."
+handling = "MATCHING HINT: pre-permute the C statement order to cancel it (pair -> write in reverse; triple -> rotate). Matched SpaceCortexFunction_TakeHit (mom.x/mom.z swap)."
+confidence = "proven"
+evidence = ["src/game/ai.c::SpaceCortexFunction_TakeHit", "src/game/game_obj.c"]
+
+[[quirk]]
+id = "default.gcse-reread-copy"
+profiles = ["default", "sce"]
+category = "codegen_shape"
+signature = "a lone `daddu $x,$y,$0` register copy after a load, with no matching C-level assignment"
+effect = "it is PRE/GCSE re-reading the same memory expression in a later basic block, not a C local copy. Introducing a C temp to 'explain' it adds a real store/reload and diverges."
+handling = "MATCHING HINT: do NOT add a C variable for it -- re-read the SAME expression (same array element / field) in the second block and let GCSE materialize the copy."
+confidence = "likely"
+evidence = ["src/game/game_obj.c"]

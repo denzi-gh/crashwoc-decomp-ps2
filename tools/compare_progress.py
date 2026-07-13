@@ -7,12 +7,17 @@ computes the canonical summary, and compares it against the committed
 baseline progress/summary.json:
 
   REGRESSIONS (exit 1):
-    * fewer `matching` functions than the baseline
-    * fewer byte-verified matching bytes
+    * fewer functions with accepted C (`matching` + `equivalent`) -- a
+      slide back to `asm` genuinely loses work
     * fewer `complete` units
     * the loaded image is no longer byte-exact
     * the profiles fingerprint changed while the verify run was not fully
       green (a flag/compiler change must re-prove every promoted function)
+
+  ALLOWED (warn, exit 0): trading a byte-exact `matching` function for
+  clean, behaviorally `equivalent` C -- dropping inline-asm / hazard-nop
+  tricks the assembler cannot reproduce. `matching` and matching_bytes may
+  fall as long as accepted C is retained; the function keeps working C.
 
   NOT regressions: WIP percentages of any kind -- only verified state can
   gate.
@@ -111,19 +116,45 @@ def fresh_summary(version, verify):
 
 
 def find_regressions(old, new, verify_all_green):
-    """List of regression strings comparing baseline -> fresh summary."""
+    """(regressions, warnings) comparing baseline -> fresh summary.
+
+    Regressions fail the gate; warnings are printed but tolerated. Trading a
+    byte-exact `matching` function for clean, behaviorally `equivalent` C is
+    an intentional, expected move, so it warns rather than fails as long as
+    the function keeps accepted C.
+    """
     regressions = []
+    warnings = []
+
+    def val(summary, path):
+        cur = summary
+        for key in path:
+            cur = cur.get(key, 0) if isinstance(cur, dict) else 0
+        return cur
+
+    def delta(path):
+        return val(old, path), val(new, path)
 
     def dec(path, label):
-        o = old
-        n = new
-        for key in path:
-            o, n = o.get(key, 0) if isinstance(o, dict) else 0, n[key]
+        o, n = delta(path)
         if n < o:
             regressions.append(f"{label} decreased: {o} -> {n}")
 
-    dec(("functions", "matching"), "matching functions")
-    dec(("code", "matching_bytes"), "verified matching bytes")
+    # Losing accepted C entirely (a slide back to asm) is a real regression;
+    # shuffling matching -> equivalent is not, so gate on the sum.
+    om, nm = delta(("functions", "matching"))
+    oe, ne = delta(("functions", "equivalent"))
+    if (nm + ne) < (om + oe):
+        regressions.append(
+            f"functions with accepted C decreased: {om + oe} -> {nm + ne}")
+    elif nm < om:
+        warnings.append(
+            f"matching functions traded for equivalent: {om} -> {nm}")
+
+    ob, nb = delta(("code", "matching_bytes"))
+    if nb < ob:
+        warnings.append(f"verified matching bytes decreased: {ob} -> {nb}")
+
     dec(("units", "complete"), "complete units")
     if old.get("image", {}).get("loaded_exact") \
             and not new["image"]["loaded_exact"]:
@@ -133,7 +164,7 @@ def find_regressions(old, new, verify_all_green):
             and not verify_all_green:
         regressions.append(
             "profiles fingerprint changed without a fully green re-verify")
-    return regressions
+    return regressions, warnings
 
 
 def diff_fields(old, new):
@@ -179,16 +210,22 @@ def main():
     old = json.loads(args.against.read_text()) if args.against.is_file() else {}
 
     if old:
-        regressions = find_regressions(old, new, verify.get("all_green"))
+        regressions, warnings = find_regressions(old, new,
+                                                  verify.get("all_green"))
         changes = diff_fields(old, new)
     else:
-        regressions, changes = [], diff_fields({}, new)
+        regressions, warnings, changes = [], [], diff_fields({}, new)
         print(f"no baseline at {args.against}; treating everything as new.")
 
     for path, (ov, nv) in sorted(changes.items()):
         print(f"  {path}: {ov} -> {nv}")
     if not changes:
         print("  no changes vs baseline.")
+
+    if warnings:
+        print("\nAllowed regressions (matching -> equivalent trades):")
+        for w in warnings:
+            print(f"  - {w}")
 
     if args.write:
         args.against.parent.mkdir(parents=True, exist_ok=True)

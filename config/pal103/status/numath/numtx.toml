@@ -61,11 +61,15 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0015:00109498:NuMtxSetTranslation"
-state = "matching"
+# Clean C (no inline asm); byte-exact except retail's load-delay hazard nop,
+# which decompals `as` does not auto-insert. Behaviorally equivalent.
+state = "equivalent"
 
 [[function]]
 id = "pal103:unit-0015:001094f8:NuMtxSetScale"
-state = "matching"
+# Clean C (no inline asm); byte-exact except retail's load-delay hazard nop,
+# which decompals `as` does not auto-insert. Behaviorally equivalent.
+state = "equivalent"
 
 [[function]]
 id = "pal103:unit-0015:00109558:NuMtxSetRotationX"
@@ -141,7 +145,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0015:0010a270:NuMtxTransposeR"
-state = "matching"
+# Clean C (no inline asm). Byte-exactness required register-pinning asm
+# ($f2-first FP allocation) that ee-gcc will not choose from plain C; the
+# clean C is behaviorally equivalent. Loaded image stays byte-exact via the
+# retail slice spliced for non-matching functions.
+state = "equivalent"
 
 [[function]]
 id = "pal103:unit-0015:0010a2e0:NuMtxTranspose"
@@ -153,7 +161,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0015:0010a498:NuMtxInvR"
-state = "matching"
+# Clean C (no inline asm). Byte-exactness required register-pinning asm
+# ($f4/$f0/$f1/$f2/$f3 pinned) that ee-gcc will not choose from plain C; the
+# clean C is behaviorally equivalent. Loaded image stays byte-exact via the
+# retail slice spliced for non-matching functions.
+state = "equivalent"
 
 [[function]]
 id = "pal103:unit-0015:0010a510:NuMtxDet3"

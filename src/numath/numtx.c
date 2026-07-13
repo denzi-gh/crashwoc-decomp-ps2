@@ -66,29 +66,21 @@ void NuMtxTranslate(struct numtx_s *m, struct nuvec_s *v)
 
 void NuMtxSetTranslation(struct numtx_s *m, struct nuvec_s *v)
 {
-    float x = v->x;
-    float zero = 0.0f;
-
-    __asm__ volatile("nop" : : "f"(zero));
-    m->_30 = x;
+    m->_30 = v->x;
     m->_31 = v->y;
     m->_32 = v->z;
     m->_01 = m->_02 = m->_03 = m->_10 = m->_12 = m->_13 = m->_20 =
-        m->_21 = m->_23 = zero;
+        m->_21 = m->_23 = 0.0f;
     m->_00 = m->_11 = m->_22 = m->_33 = 1.0f;
 }
 
 void NuMtxSetScale(struct numtx_s *m, struct nuvec_s *v)
 {
-    float x = v->x;
-    float zero = 0.0f;
-
-    __asm__ volatile("nop" : : "f"(zero));
-    m->_00 = x;
+    m->_00 = v->x;
     m->_11 = v->y;
     m->_22 = v->z;
     m->_01 = m->_02 = m->_03 = m->_10 = m->_12 = m->_13 = m->_20 =
-        m->_21 = m->_23 = m->_30 = m->_31 = m->_32 = zero;
+        m->_21 = m->_23 = m->_30 = m->_31 = m->_32 = 0.0f;
     m->_33 = 1.0f;
 }
 
@@ -118,7 +110,6 @@ void NuMtxSetRotationY(struct numtx_s *m, int r)
     float s;
 
     c = NuTrigTable[(r + 0x4000) & 0xffff];
-    __asm__ volatile("nop");
     m->_22 = c;
     m->_00 = c;
     s = NuTrigTable[r & 0xffff];
@@ -140,24 +131,20 @@ float NuMtxDet3(struct numtx_s *m)
 
 void NuMtxTransposeR(struct numtx_s *dst, struct numtx_s *src)
 {
-    register float a __asm__("$f2");
-    register float b __asm__("$f0");
-    register float c __asm__("$f1");
+    float a;
+    float b;
 
     a = src->_01;
-    __asm__ volatile("" : "+f"(a));
     b = src->_10;
     dst->_10 = a;
     dst->_01 = b;
     a = src->_02;
-    __asm__ volatile("" : "+f"(a));
     b = src->_20;
     dst->_20 = a;
     dst->_02 = b;
-    c = src->_21;
-    __asm__ volatile("" : "+f"(c));
+    b = src->_21;
     a = src->_12;
-    dst->_12 = c;
+    dst->_12 = b;
     dst->_21 = a;
     dst->_00 = src->_00;
     dst->_11 = src->_11;
@@ -170,36 +157,26 @@ void NuMtxTransposeR(struct numtx_s *dst, struct numtx_s *src)
 
 void NuMtxInvR(struct numtx_s *dst, struct numtx_s *src)
 {
-    register float a __asm__("$f4");
-    register float b __asm__("$f0");
-    register float c __asm__("$f1");
-    register float zero __asm__("$f2");
-    register float one __asm__("$f3");
+    float a;
+    float b;
 
     a = src->_01;
-    __asm__ volatile("" : "+f"(a));
     b = src->_10;
     dst->_10 = a;
     dst->_01 = b;
-    zero = 0.0f;
-    __asm__ volatile("" : : "f"(zero));
     a = src->_02;
-    __asm__ volatile("" : "+f"(a));
     b = src->_20;
     dst->_20 = a;
     dst->_02 = b;
-    one = 1.0f;
-    __asm__ volatile("" : : "f"(one));
-    c = src->_21;
-    __asm__ volatile("" : "+f"(c));
+    b = src->_21;
     a = src->_12;
-    dst->_12 = c;
+    dst->_12 = b;
     dst->_21 = a;
     dst->_00 = src->_00;
     dst->_11 = src->_11;
     dst->_22 = src->_22;
-    dst->_30 = dst->_31 = dst->_32 = dst->_03 = dst->_13 = dst->_23 = zero;
-    dst->_33 = one;
+    dst->_30 = dst->_31 = dst->_32 = dst->_03 = dst->_13 = dst->_23 = 0.0f;
+    dst->_33 = 1.0f;
 }
 
 void NuMtxLookAtZ(struct numtx_s *m, struct nuvec_s *v)

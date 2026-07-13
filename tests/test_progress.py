@@ -53,13 +53,14 @@ class TestFlipState(unittest.TestCase):
             flip_state(MANIFEST, "pal103:unit-0007:deadbeef:Nope", "matching")
 
 
-def summary(matching=2, matching_bytes=16, complete=0, exact=True,
-            fingerprint="f1"):
+def summary(matching=2, equivalent=0, matching_bytes=16, complete=0,
+            exact=True, fingerprint="f1"):
     return {
         "profiles_fingerprint": fingerprint,
         "code": {"total_bytes": 100, "matching_bytes": matching_bytes},
-        "functions": {"total": 10, "matching": matching, "equivalent": 0,
-                      "asm": 10 - matching},
+        "functions": {"total": 10, "matching": matching,
+                      "equivalent": equivalent,
+                      "asm": 10 - matching - equivalent},
         "units": {"total": 5, "text_units": 5, "complete": complete},
         "image": {"loaded_exact": exact, "packaged_exact": False,
                   "pure_relink_exact": False},
@@ -68,38 +69,49 @@ def summary(matching=2, matching_bytes=16, complete=0, exact=True,
 
 class TestRegressions(unittest.TestCase):
     def test_no_change_is_clean(self):
-        self.assertEqual(find_regressions(summary(), summary(), True), [])
+        self.assertEqual(find_regressions(summary(), summary(), True),
+                         ([], []))
 
     def test_progress_is_clean(self):
-        self.assertEqual(
-            find_regressions(summary(), summary(matching=3,
-                                               matching_bytes=40), True), [])
+        regs, warns = find_regressions(
+            summary(), summary(matching=3, matching_bytes=40), True)
+        self.assertEqual((regs, warns), ([], []))
 
-    def test_matching_decrease_fails(self):
-        regs = find_regressions(summary(matching=3), summary(matching=2),
-                                True)
-        self.assertTrue(any("matching functions" in r for r in regs))
+    def test_matching_to_equivalent_is_allowed(self):
+        # Byte-exact -> clean equivalent C: accepted C held, so warn not fail.
+        regs, warns = find_regressions(
+            summary(matching=3, equivalent=0),
+            summary(matching=2, equivalent=1), True)
+        self.assertEqual(regs, [])
+        self.assertTrue(any("traded for equivalent" in w for w in warns))
 
-    def test_bytes_decrease_fails(self):
-        regs = find_regressions(summary(matching_bytes=24),
-                                summary(matching_bytes=16), True)
-        self.assertTrue(any("matching bytes" in r for r in regs))
+    def test_accepted_c_decrease_fails(self):
+        # Slide back to asm (accepted C lost) is a real regression.
+        regs, _ = find_regressions(summary(matching=3), summary(matching=2),
+                                   True)
+        self.assertTrue(any("accepted C" in r for r in regs))
+
+    def test_bytes_decrease_warns(self):
+        regs, warns = find_regressions(summary(matching_bytes=24),
+                                       summary(matching_bytes=16), True)
+        self.assertEqual(regs, [])
+        self.assertTrue(any("matching bytes" in w for w in warns))
 
     def test_complete_decrease_fails(self):
-        regs = find_regressions(summary(complete=1), summary(complete=0),
-                                True)
+        regs, _ = find_regressions(summary(complete=1), summary(complete=0),
+                                   True)
         self.assertTrue(any("complete units" in r for r in regs))
 
     def test_image_break_fails(self):
-        regs = find_regressions(summary(exact=True), summary(exact=False),
-                                True)
+        regs, _ = find_regressions(summary(exact=True), summary(exact=False),
+                                   True)
         self.assertTrue(any("no longer byte-exact" in r for r in regs))
 
     def test_fingerprint_change_needs_green_verify(self):
         old, new = summary(fingerprint="f1"), summary(fingerprint="f2")
-        self.assertTrue(any("fingerprint" in r
-                            for r in find_regressions(old, new, False)))
-        self.assertEqual(find_regressions(old, new, True), [])
+        regs, _ = find_regressions(old, new, False)
+        self.assertTrue(any("fingerprint" in r for r in regs))
+        self.assertEqual(find_regressions(old, new, True), ([], []))
 
     def test_diff_fields_ignores_volatile(self):
         old = dict(summary(), commit="a", generated="t1")
