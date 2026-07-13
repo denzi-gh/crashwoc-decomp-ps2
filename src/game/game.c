@@ -599,6 +599,7 @@ void CalculateGamePercentage(struct game_s *game);
 void GetMenuInfo(struct cursor_s *cur);
 void CleanLetters(char *txt);
 
+/* This is the RNG function*/
 static inline s32 qrand(void) {
     qseed = qseed * 0x24CD + 1;
     qseed = qseed & 0xFFFF;
