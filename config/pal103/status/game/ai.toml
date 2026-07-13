@@ -49,7 +49,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0103:00230c20:FindGongBongerAnim"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0103:00230d28:MoveCreature"
@@ -57,23 +57,23 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0103:00234920:InitAI"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0103:002349c0:FindNearestCreature"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0103:00234ab8:FindAIType"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0103:00234b60:ResetDRAINDAMAGE"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0103:00234ba0:WaterCrunchFunction_Attack"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0103:00234bf0:WaterCrunchFunction_Punch1"
@@ -101,15 +101,15 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0103:00234f20:SpaceCrunchFunction_CheckCortexBack"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0103:00234f28:SpaceCrunchFunction_PunchCortex"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0103:00234f88:SpaceCortexFunction_CheckPunch"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0103:00234f90:SpaceCortexFunction_Defeated"
@@ -121,11 +121,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0103:00235000:RatioDifferenceAlongLine"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0103:00235068:FindAILabel"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0103:002350a8:PlayerLateralInRange"
