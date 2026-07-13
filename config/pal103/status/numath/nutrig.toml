@@ -25,20 +25,20 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0016:0010b1f0:NuTrigInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0016:0010b278:NuAtan2"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0016:0010b2c8:NuAngAdd"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0016:0010b2f0:NuAngSub"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0016:0010b318:NuPower2"
-state = "asm"
+state = "matching"

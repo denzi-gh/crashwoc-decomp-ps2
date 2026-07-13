@@ -61,11 +61,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0015:00109498:NuMtxSetTranslation"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0015:001094f8:NuMtxSetScale"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0015:00109558:NuMtxSetRotationX"
@@ -85,7 +85,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0015:001097e8:NuMtxTranslate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0015:00109820:NuMtxPreTranslate"
@@ -141,7 +141,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0015:0010a270:NuMtxTransposeR"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0015:0010a2e0:NuMtxTranspose"
@@ -153,11 +153,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0015:0010a498:NuMtxInvR"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0015:0010a510:NuMtxDet3"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0015:0010a570:NuMtxAlignX"
@@ -169,7 +169,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0015:0010a760:NuMtxLookAtZ"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0015:0010a7d0:NuMtxAddR"
@@ -181,20 +181,20 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0015:0010a940:NuMtxSkewSymmetric"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0015:0010a9b0:NuMtxGetXAxis"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0015:0010a9d0:NuMtxGetYAxis"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0015:0010a9f0:NuMtxGetZAxis"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0015:0010aa10:NuMtxGetTranslation"
-state = "asm"
+state = "matching"
