@@ -157,11 +157,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0101:0022b1f0:FireBossReset"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022b248:DrawFireBossLevelExtra"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022b278:ProcessFireBossLevel"
@@ -173,11 +173,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0101:0022b370:GetTotalFireBossObjectives"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022b378:GetCurrentFireBossObjectives"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022b388:ProcessGenericTrail"
@@ -281,7 +281,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0101:0022c280:InitJeepBalloons"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022c2a8:ProcessJeepBalloons"
@@ -293,7 +293,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0101:0022c378:FindJeepBalloon"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022c3b8:BalloonHitFireBoss"

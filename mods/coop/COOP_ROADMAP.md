@@ -367,9 +367,32 @@ before its echo can reach the peer (the bridge IS the transport).
 
 ## Stage 4 — Shared enemies / shared boss  *(high decomp — capstone)*
 
-- [ ] Client `ProcessCreatures` hook suppresses local enemy AI
-- [ ] Enemy/boss state array in the mailbox (+ `ai.hits`/`count`/`die_time`)
-- [ ] Client→host hit events (around `PlayerCreatureCollisions`)
-- [ ] First proof: one shared boss (Fire Boss, `jeep.c`) authoritative on host
-- [ ] *(supports Stage 4)* decomp `ProcessFireBoss`/`DrawFireBoss` (`jeep.c`)
-- [ ] *(stretch)* full enemy sharing across `Character[1..8]`
+The mod's first **authority** concept (everything through Stage 3 is symmetric
+OR-merge). One instance is designated host via a new **`COOP_CTL_HOST`** ctl bit
+(PC-written; unset everywhere ⇒ Stage 4 is inert, both sides run retail). The
+Fire Boss (`game/jeep`) is the proof: host runs the boss brain, client renders a
+puppet from mailbox state and reports hits back. Stage-3 doctrine holds: absolute
+state + monotonic counters, no event channel, identity keys never slot indices.
+PR ladder D1 → D2 → C → B → M (bridge before mod so M is end-to-end testable).
+
+- [x] **PR-S4-D1** — decomp fire-boss support ring (`game/jeep`, unit-0101):
+  typed `struct fireboss_s` (0x690, health +0x408 / pos+hit-sphere +0x418 /
+  models +0x424,+0x504 / spline tail +0x5E4..0x620), `struct jeepballoon_s`
+  (0x30) and `enum fireboss_action` in `jeep.h` (+ `mods/include/jeep.h`).
+  6 functions matched+promoted (Get{Total,Current}FireBossObjectives,
+  InitJeepBalloons, FindJeepBalloon, DrawFireBossLevelExtra, FireBossReset);
+  InitFireBoss / DrawFireBoss / CheckAgainstFireBoss / ProcessJeepBalloon(s) /
+  DrawJeepBalloon(s) / AddBalloon / BalloonHitFireBoss are faithful near-matches
+  kept in tree at `state=asm`; FireBossActionName stays asm (rodata jump table).
+  `ninja check` green.
+- [ ] **PR-S4-D2** — decomp `ProcessFireBoss` (0x00228D70, the 6.2KB brain):
+  finish `fireboss_s` typing (scalars vs instance-local pointers), `AddRock`
+  throw-site args, anim-drive pattern, camera-call triage, hit-sphere derivation.
+- [ ] **PR-S4-C** — contract mailbox v10 (both repos, lock-step): `COOP_CTL_HOST`,
+  `CoopBossState` in `CoopSlot`, `seq_close`/sizes bumped, VTNT relocated.
+- [ ] **PR-S4-B** — bridge `--host {p1,p2}` (composed per-instance ctl write).
+- [ ] **PR-S4-M** — mod: host publish / client boss puppet / hit counter
+      (first proof: shared Fire Boss, host-authoritative).
+- [ ] *(stretch)* generic enemy sharing across `Character[1..8]` via a directional
+      `CoopEnemyBlock` (identity = `i_aitab`); `ProcessCreatures` /
+      `PlayerCreatureCollisions` hooks. Blocked on `MoveCreature` (fully asm).
