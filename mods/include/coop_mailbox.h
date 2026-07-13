@@ -167,13 +167,16 @@ typedef struct CoopMailbox {           /* overlays ModsdkMailbox.payload */
     unsigned int version;              /* +0x04 COOP_MAILBOX_VERSION */
     unsigned int ctl;                  /* +0x08 COOP_CTL_* (PC writes) */
     unsigned int diag;                 /* +0x0C game writes: bit 0 = puppet
-                                        * shown, bit 1 = VS crystal tint
+                                        * shown, bit 1 = VS glow tint
                                         * active, bit 2 = VS tint wanted but
                                         * the glow packets have no V4-8
                                         * colour block, bit 3 = VS on but the
                                         * ObjTab[0x84] gobj chain is broken
                                         * (scene not streamed / no crystal
-                                        * model), bits 8+ = re-inits */
+                                        * model), bit 4 = VS body diffuse
+                                        * tint active, bit 5 = VS hub
+                                        * stone-HUD tint active,
+                                        * bits 8+ = re-inits */
     CoopSlot local;                    /* +0x10 (abs 0x706A70) game writes, bridge reads */
     CoopSlot remote;                   /* +0x12C (abs 0x706B8C) bridge writes, game reads */
 } CoopMailbox;                         /* 0x248 */

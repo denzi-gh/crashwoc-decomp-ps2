@@ -304,25 +304,61 @@ before its echo can reach the peer (the bridge IS the transport).
 - [x] mod: PickupItem attribution hook (6 hooks now; first-hand vs
   `g_coop_applying` echo), `g_vs_mine`/`g_vs_peer` per level, owner query —
   2026-07-12
-- [x] coloured crystals (glow + carving + facet reflections; CONFIRMED
-  in-game 2026-07-13): P1 blue / P2 red. The crystal is TWO renders. The
-  GLOW (ObjTab[0x84] gobj, also drawn as the pause-panel carving via a
-  byte-identical chain — Draw3DObject 0x1F0B40 / DrawPanel3DCharacter
-  0x23A130) is tinted by parsing its prebuilt DMA/VIF packets and
-  rewriting the UNPACK V4-8 vertex-colour payloads (originals kept for
-  restore; own colour pre-claim, winner colour after a claim). The BODY
-  (creature model CModel[CRemap[0x75]], skinned, 26 joints) gets a light
-  tint through c->lights in the DrawCreatures hook — this colours its lit
-  alpha REFLECTION overlay only: the main surface is texture-only (DECAL;
-  in-game probes eliminated lights, vertex colours and nearby material
-  constants), so the body keeps its pink with coloured facets. Dead end
+- [x] coloured crystals (glow + carving + FULL body; body recolour
+  poke-confirmed in-game 2026-07-13): P1 blue / P2 red. The crystal is TWO
+  renders. The GLOW (ObjTab[0x84] gobj, also drawn as the pause-panel
+  carving via a byte-identical chain — Draw3DObject 0x1F0B40 /
+  DrawPanel3DCharacter 0x23A130) is tinted by parsing its prebuilt DMA/VIF
+  packets and rewriting the UNPACK V4-8 vertex-colour payloads (originals
+  kept for restore; own colour pre-claim, winner colour after a claim).
+  The BODY (creature model CModel[CRemap[0x75]], skinned, 26 joints): its
+  pink is the MATERIAL DIFFUSE baked into each material state packet as
+  VU1 float constants on a 0..255 scale — signature STCYCL 0x01000101 +
+  UNPACK V4-32 0x6C030013 (to VU addr 0x13), RGBA floats right after
+  (retail = 97.3/0.0/92.7; two packets: opaque surface + alpha reflection
+  overlay); the packet array hangs off hobj+0x08, NULL-terminated. The mod
+  rewrites the RGB floats (alpha kept), replacing the old lights-based
+  reflection tint entirely. Eliminated by in-game pokes before the find:
+  lights, vertex colours, every CLUT and raw image in the global NuTex
+  list (the texture-system map — texlist `*0x0062EBEC`, stride 0xE0,
+  1-based tids, palette packet at ps2tex+0x98 with CLUT data at +0x60,
+  per-frame GS upload — is in docs/notes.md and stays useful). Dead end
   disproven in-game: crossfade colour-ref descriptors are never built —
   retail ships pre-converted streams that skip the builder, making the
   `nugscn_generate_colourref` global dead tooling. Live tuning: poke
-  'VTNT' + 3 floats at payload+0x248 to override the body light colour.
-- [ ] *(follow-up)* fully coloured crystal BODY: patch the crystal
-  texture's palette (CLUT) in EE RAM — needs the texture-upload path
-  (NuTex) mapped first; GS-level analysis (PCSX2 GS dump) is the tool.
+  'VTNT' + 3 floats (0..255) at payload+0x248 to override the body
+  diffuse; diag bit 4 = body tint active.
+- [x] hub level-stone HUD crystal in the WINNER's colour (2026-07-13,
+  found by RAM bisection): the stone HUD draws the crystal from a
+  PANEL-scene material — neither ObjTab[0x84] nor CModel. The mod finds
+  it on the global NuMtl chain (`*0x0062EBA4`, next +0x160, 688 entries,
+  persistent across level changes) by its bit-exact retail crystal
+  diffuse (0x42C2A5A4/0/0x42B966BA), keeps a session-persistent per-level
+  crystal-owner table (filled as claims resolve in-level), and while
+  `hubleveltext_open` tints the quad with `hubleveltext_level`'s winner
+  (retail purple when unclaimed/unknown). Every write re-verifies the
+  UNPACK signature word (stale-pointer guard). Diag bit 5 = stone-HUD
+  tint active. Cross-level attribution fix (same day): peer claims made
+  while the players are in DIFFERENT levels are attributed from the
+  remote slot's (level, items) pair — previously the merge's
+  level-mismatch early-return dropped them and the other instance's
+  stone stayed purple. KNOWN LIMIT: all stone crystals share ONE
+  material, so while a stone's HUD is open every visible stone crystal
+  mirrors that stone's colour (per-stone simultaneous colours would need
+  per-stone model clones).
+- [ ] *(follow-up)* PERSISTENT per-stone hub crystal colours (all stones
+  show their winner at once, no stand-on-stone needed). Feasible via
+  per-stone cloning: every hub stone references ONE shared gobj/material,
+  so clone per claimed stone {gobj header + geom-node triples + the
+  ~224-byte material state packet} while SHARING the heavy vertex/geometry
+  packets (colour = material VU constants only), repoint that stone's
+  instance record (`special+0x40` → `+0x40` gobj index into the scene's
+  `scene+0x14` table) at the clone, tint each clone once by
+  `g_vs_crystal_owner[]`. Budget ≈ a few hundred bytes/stone from the mod
+  heap. Prototype over PINE first: (a) can the scene gobj table take
+  appended entries or must the instance's resolved pointer be patched,
+  (b) re-clone on hub reload (scene heap addresses persist per boot but
+  the table may be rebuilt), (c) restore path when VS turns off.
 - [ ] *(follow-up)* relay (`coop-relay`) VS support (ctl write + recorder on
   one side or merged post-hoc)
 - [ ] *(follow-up)* crate-gem / coloured-gem carving tints (same mechanism,

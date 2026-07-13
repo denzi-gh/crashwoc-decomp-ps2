@@ -1376,20 +1376,80 @@ Findings that made it possible (all asm-verified):
   (UNPACK sizes from vn/vl; STMASK/STROW/MPG/DIRECT skipped; cnt-chains
   followed), saves every V4-8 word and rewrites it as
   `maxcomponent(orig) * playerRGB` (restore = originals back).
-- **The crystal BODY resists all of it** (2026-07-13 probes): the body is
-  the creature model `CModel[CRemap[0x75]]` (skinned, 26 joints), drawn by
-  the regular DrawCreatures model path. Its main surface is texture-only
-  (DECAL): per-creature lights (c->lights, pushed by SetCreatureLights
-  0x2472A0 — ambient read at creature+0xBF8, dir-light POINTERS at
-  +0xC6C..+0xC74) tint only the lit alpha REFLECTION overlay; the body's
-  V4-8 bytes are all `00 00 00 44/7F` (weights or unused — poking them
-  changes nothing), and no pink material constant exists near the model.
-  Recolouring the body means patching the crystal texture's palette (CLUT)
-  in EE RAM — follow-up; map the NuTex upload path first (PCSX2 GS dump
-  is the tool). Shipped VS look: strong player-colour glow + carving,
-  coloured facet reflections, pink body. Dev-only calibration channel:
-  'VTNT' magic + 3 floats at coop payload+0x248 override the body light
-  colour live over PINE.
+- **The crystal BODY: colour = material diffuse as VU1 constants** (found
+  2026-07-13 after eliminating everything else by in-game pokes). The body
+  is the creature model `CModel[CRemap[0x75]]` (skinned, 26 joints), drawn
+  by the regular DrawCreatures model path. NOT the source of its pink:
+  per-creature lights (c->lights, SetCreatureLights 0x2472A0 — they tint
+  only the lit alpha REFLECTION overlay), the body's V4-8 vertex bytes
+  (`00 00 00 44/7F` = weights/unused), and NO texture: tinting every CLUT
+  and raw image in the global NuTex list turned the scene green while the
+  crystal stayed pink. The actual source: each **material state packet**
+  of the model bakes the material diffuse as **VU1 float constants on a
+  0..255 scale** — signature `STCYCL 0x01000101` + `UNPACK V4-32
+  0x6C030013` (3 quads to VU addr 0x13), RGBA floats immediately after;
+  retail crystal = `(97.3, 0.0, 92.7)` with alpha 64 (opaque main
+  surface) / 68.8 (alpha reflection overlay). The packet array hangs off
+  **hobj+0x08, NULL-terminated** (crystal has exactly these two). Poking
+  the two RGB float triples recoloured the world crystal instantly. The
+  mod (coop_body_scan/coop_body_write) rewrites the RGB floats (alpha
+  kept), replacing the old lights-based reflection-only tint; diag bit 4 =
+  body tint active. Dev calibration: 'VTNT' magic + 3 floats (0..255) at
+  coop payload+0x248 override the diffuse live over PINE (rewritten every
+  tick while set).
+- **NuTex texture-system map** (derived for the hunt, kept for future
+  texture work — e.g. gem tints or texture swaps): texture list base =
+  `*(u32 *)0x0062EBEC` (`D_0062EBEC`), stride 0xE0, tids are 1-BASED;
+  entry+0x18 (u64) bit 0x10000 = valid; entry+0x04 = size hint
+  (NuTexWidth/Height both read it). The PS2 part is entry+0x20 (ps2tex):
+  +0x14 = mip-0 raw image data pointer (EE RAM), +0x93 = GS PSM byte
+  (0x00 CT32 / 0x01 CT24 / 0x13 T8 / 0x14 T4 / 0x1B T8H), +0x98 = palette
+  upload packet (+0x9C = stream-temp override; CLUT data at packet+0x60 —
+  16 RGBA32 entries for T4, 256 CSM1-swizzled for T8: blocks 1/2 of each
+  32-colour group swap, see NuPs2ChangeTexPal 0x168618). `NuTexPalChange`
+  (0x11ED98) takes `(tid, newPal)` and does the swizzled copy-in.
+  Uploads are rebuilt per frame from EE RAM inside the render-list build
+  (NuTexAccomodateRS path-3 chain, markers 0xACEB00B5/0xBABEF00D), so
+  poking pixel/palette bytes in EE RAM shows up immediately — no GS-cache
+  invalidation needed. Materials (`NuMtl`) link textures at mtl+0x1A4
+  (tid, `NuMtlBuildRenderList` 0x1AFF0 feeds it to NuTexSet); mtl render
+  chain at +0x160. CAUTION: the two PSMT8H entries are 16×16 utility
+  ramps whose "palette packet" is a different, much smaller layout —
+  writing 1KB at +0x60 there corrupts the heap (crashed the game once
+  during the hunt).
+  Shipped VS look: strong player-colour glow + carving + fully coloured
+  body on both surfaces.
+- **HUB level-stone HUD crystal = a THIRD render source** (RAM bisection
+  2026-07-13): with glow AND body tinted, the stone HUD stayed pink. It is
+  a PANEL-scene material (at 0x100xxxx, a separately loaded scene) — found
+  by scanning the heap for the diffuse signature with purple floats and
+  bisecting pokes. Mod-usable anchor: the **global NuMtl chain** at
+  `*(u32 *)0x0062EBA4` with next at **+0x160** (688 materials spanning all
+  loaded scenes; verified identical layout on both instances, hub and
+  level, and persistent across level changes — the +0x168 walk that
+  NuMtlDisplayMtl uses only yields 1 entry, +0x160 is the real chain).
+  The stone-HUD material is identified by its bit-exact retail crystal
+  diffuse `0x42C2A5A4 / 0x0 / 0x42B966BA`; the only other chain matches
+  are the two ObjTab[0x84] glow material diffuses, which are invisible
+  (poke-proven), so tinting all matches is safe. The mod keeps a
+  session per-level crystal-owner table and colours the stone HUD by
+  `hubleveltext_level`'s winner while `hubleveltext_open` (globals
+  0x631090/0x631098, written by HubSelect, read by DrawPanel). Writes
+  re-verify the UNPACK signature word first (stale-heap guard).
+  Gotchas found in the first two-instance hub test: (1) peer claims made
+  while the players were in DIFFERENT levels never reached the other
+  instance's owner table — the merge's level-mismatch early-return sits
+  before the g_vs_peer attribution; fixed by attributing the remote
+  slot's crystal bit against `remote_snap.level` (first-wins guard keeps
+  own claims; echoes can't appear cross-level because item replays only
+  run level-matched). (2) ALL hub stone crystals render from the ONE
+  shared material, so while a stone HUD is open every visible stone
+  crystal mirrors that stone's colour — per-stone simultaneous colours
+  need per-stone gobj/material clones (roadmapped follow-up: clone gobj
+  header + geom nodes + the 224-byte material state packet per claimed
+  stone, SHARE the vertex packets, repoint the stone's instance record
+  gobj index, tint clones once; prototype the scene-table append vs
+  pointer-patch question over PINE first).
 - **The pause-panel carving draws the SAME gobj as the world item**:
   `DrawPanel3DCharacter` (0x239EC0) remaps item ids (0x75→0x84, 0x77→0x88,
   0x78..0x7D→0x89..0x8E) and resolves

@@ -154,8 +154,10 @@ extern struct coop_objtab_s ObjTab[]; /* 0x00588580, 201 entries
                                        * GLOW; the crystal BODY is the
                                        * creature model CModel[CRemap[id]]
                                        * drawn by the regular DrawCreatures
-                                       * path (lit -- tinted via c->lights,
-                                       * not vertex colours). */
+                                       * path -- its colour is the material
+                                       * DIFFUSE baked as VU1 float
+                                       * constants in the state packets at
+                                       * hobj+0x08 (see mod.c VS section). */
 
 /* --- Crates (Stage 3b: per-crate destroyed-state sync) -------------------
  * Layouts mirror src/game/crate.c (matched BreakCrate's TU). Crate identity

@@ -226,15 +226,41 @@ void coop_pickup_item(struct obj_s *obj)
  *    exact restore/retint.
  *
  * 2. The BODY -- the creature model CModel[CRemap[0x75]], drawn by the
- *    normal DrawCreatures model path right after the glow. A LIT gouraud
- *    model: its baked vertex colours are BLACK; the pink is texture x
- *    c->lights. Items are not in Character[], so nothing ever recomputes
- *    their light record -- the DrawCreatures hook overwrites the colour
- *    fields (the puppet's apply_gray_lights trick) with the player
- *    colour before passing through. */
+ *    normal DrawCreatures model path right after the glow. Its pink is
+ *    NEITHER a texture NOR lighting NOR vertex colours (all disproven by
+ *    pokes -- including tinting every CLUT and raw image in the global
+ *    NuTex list): it is the MATERIAL DIFFUSE, baked into each material
+ *    state packet of the model as VU1 float constants on a 0..255 scale
+ *    (STCYCL 0x01000101 + UNPACK V4-32 0x6C030013 to VU addr 0x13, RGBA
+ *    floats right after; retail crystal = 97.3/0.0/92.7). hobj+0x08
+ *    points to the model's NULL-terminated material state packet array
+ *    (crystal: opaque main surface + alpha reflection overlay). Poking
+ *    those floats recoloured the crystal live, 2026-07-13. */
 #define COOP_VS_CRYSTAL_OBJ 0x84   /* ObjTab entry of the glow gobj */
 #define COOP_VS_CRYSTAL_CHAR 0x75  /* the crystal creature's character id */
 #define COOP_TINT_SAVE_MAX 256     /* saved V4-8 colour words (glow uses ~51) */
+#define COOP_BODY_SAVE_MAX 4       /* material state packets (crystal has 2) */
+#define COOP_PANEL_SAVE_MAX 4      /* global-chain materials with the exact
+                                    * retail crystal diffuse (hub finds 3:
+                                    * the stone-HUD panel mtl + the two
+                                    * invisible ObjTab[0x84] mtl diffuses) */
+#define COOP_VS_LEVEL_MAX 40       /* per-level crystal owner table bound */
+
+/* Retail crystal material diffuse, bit-exact (97.32, 0.0, 92.70 on the
+ * 0..255 VU-constant scale) -- the search key for panel materials. */
+#define COOP_CRYSTAL_DIFF_R 0x42C2A5A4u
+#define COOP_CRYSTAL_DIFF_G 0x00000000u
+#define COOP_CRYSTAL_DIFF_B 0x42B966BAu
+
+/* Global NuMtl chain head (every loaded scene's materials, next at +0x160;
+ * probed 2026-07-13: 688 entries, identical layout on both instances,
+ * persistent across level changes). Not in symbol_addrs.txt, so addressed
+ * directly. */
+#define COOP_MTL_LIST_HEAD (*(unsigned char *volatile *)0x0062EBA4u)
+
+/* HUB level-stone HUD context (game globals, linked by name). */
+extern int hubleveltext_level;
+extern int hubleveltext_open;
 
 /* EE main RAM sanity for every pointer we chase out of retail data. */
 #define COOP_PTR_OK(p) \
@@ -246,29 +272,47 @@ static const unsigned char coop_vs_colour[2][3] = {
     { 64, 128, 255 },  /* player 1: blue */
     { 255, 64, 48 },   /* player 2: red */
 };
-/* ... and float RGB for the body's light tint (flat ambient, directionals
- * zeroed, like the puppet gray). In-game finding 2026-07-13: the body's
- * MAIN surface is texture-only (DECAL -- neither lights nor its all-black
- * V4-8 vertex bytes move it; recolouring it means patching the texture
- * palette, a follow-up), but the alpha REFLECTION overlay is lit and takes
- * this colour -- so the body keeps its pink with clearly coloured facets,
- * while glow + carving carry the strong player colour. */
-static const float coop_vs_light[2][3] = {
-    { 0.15f, 0.50f, 1.60f },  /* player 1: blue */
-    { 1.80f, 0.20f, 0.15f },  /* player 2: red */
+/* ... and float RGB (0..255 scale, the VU-constant convention) for the
+ * body's material diffuse. Chosen against the retail purple's brightness
+ * (max component 97): strong hues that read clearly at the crystal's
+ * translucency. Poke-confirmed in-game 2026-07-13. */
+static const float coop_vs_body[2][3] = {
+    { 40.0f, 96.0f, 255.0f },  /* player 1: blue */
+    { 255.0f, 44.0f, 32.0f },  /* player 2: red */
 };
 
 static int g_vs_want = -1;     /* colour index to show this tick; -1 = none */
 static int g_tint_level = -1;  /* level the saved colour words belong to */
-static int g_tint_shown = -2;  /* colour index written: -2 = untinted */
-static unsigned int g_vs_diag; /* bit 1 = tint active, bit 2 = packets have
-                                * no V4-8 colour block, bit 3 = gobj chain
-                                * not resolvable (scene still streaming) */
+static int g_tint_shown = -2;  /* glow colour index written: -2 = untinted */
+static int g_body_shown = -2;  /* body colour index written: -2 = untinted */
+static int g_panel_shown = -2; /* stone-HUD colour written: -2 = untinted */
+static unsigned int g_vs_diag; /* bit 1 = glow tint active, bit 2 = packets
+                                * have no V4-8 colour block, bit 3 = gobj
+                                * chain not resolvable (scene streaming),
+                                * bit 4 = body diffuse tint active,
+                                * bit 5 = stone-HUD panel tint active */
 static struct {
     unsigned int *addr;        /* live V4-8 colour word in the packet */
     unsigned int orig;         /* its baked value (restore/retint source) */
 } g_tint_save[COOP_TINT_SAVE_MAX];
 static int g_tint_save_n;
+static struct {
+    float *addr;               /* diffuse RGBA floats in a state packet */
+    float orig[3];             /* baked RGB (alpha never touched) */
+} g_body_save[COOP_BODY_SAVE_MAX];
+static int g_body_save_n;
+static struct {
+    float *addr;               /* exact-purple diffuse on the global chain */
+    float orig[3];
+} g_panel_save[COOP_PANEL_SAVE_MAX];
+static int g_panel_save_n;
+
+/* Session-persistent crystal winner per level: 0 = unknown / unclaimed,
+ * 1 = P1, 2 = P2. Filled whenever a claim resolves while playing a level;
+ * the hub's level-stone HUD reads it to show each stone's crystal in the
+ * winner's colour. Lost on game restart (the stats JSON is the durable
+ * record). */
+static unsigned char g_vs_crystal_owner[COOP_VS_LEVEL_MAX];
 
 /* The gobj behind a placed-object ObjTab entry (NULL until the level's
  * scene has streamed in; every hop is range-checked because we walk live
@@ -420,12 +464,186 @@ static void coop_tint_write(int want)
     }
 }
 
+/* Dev-only live calibration channel: the CoopMailbox occupies payload
+ * +0x000..0x247 of the 0x400 mailbox; poke magic 'VTNT' + 3 floats
+ * (0..255 scale) at payload+0x248 over PINE and the body diffuse uses
+ * those instead of the table -- colours can be tuned live while the game
+ * runs (the tick rewrites every frame while the magic is set). Zero the
+ * magic to fall back. Never written by the game or bridge. */
+#define COOP_VS_TUNE_MAGIC 0x544E5456u /* 'VTNT' */
+#define COOP_VS_TUNE_BASE \
+    ((volatile unsigned char *)modsdk_mailbox.payload + 0x248)
+
+/* The material-diffuse VU-constant quad inside a material/state packet:
+ * STCYCL 0x01000101 + UNPACK V4-32 0x6C030013 (to VU addr 0x13), RGBA
+ * floats right after. Returns 0 when the signature is absent. */
+static float *coop_pkt_diffuse(unsigned int *w, int max_words)
+{
+    int i;
+
+    for (i = 0; i + 5 < max_words; i++) {
+        if (w[i] == 0x01000101u && w[i + 1] == 0x6C030013u) {
+            return (float *)&w[i + 2];
+        }
+    }
+    return 0;
+}
+
+/* (Re)collect the crystal BODY's diffuse float quads (see the section
+ * comment for the discovery trail). One quad per material state packet;
+ * the signature scan is bounded by each packet's own DMA-tag QWC. */
+static void coop_body_scan(void)
+{
+    unsigned char *hobj;
+    unsigned int **mats;
+    int m;
+
+    g_body_save_n = 0;
+    if (CRemap[COOP_VS_CRYSTAL_CHAR] == -1) {
+        return;
+    }
+    hobj = (unsigned char *)CModel[CRemap[COOP_VS_CRYSTAL_CHAR]].hobj;
+    if (!COOP_PTR_OK(hobj)) {
+        return;
+    }
+    mats = *(unsigned int ***)(hobj + 8);
+    if (!COOP_PTR_OK(mats)) {
+        return;
+    }
+    for (m = 0; m < COOP_BODY_SAVE_MAX && COOP_PTR_OK(mats[m]); m++) {
+        unsigned int *w = mats[m];
+        int total = 4 + (int)(w[0] & 0xFFFF) * 4; /* tag + QWC, in words */
+        float *f;
+
+        if (total > 4 + 0x40 * 4) {
+            continue;
+        }
+        f = coop_pkt_diffuse(w, total);
+        if (f != 0 &&
+            f[0] >= 0.0f && f[0] <= 256.0f &&
+            f[1] >= 0.0f && f[1] <= 256.0f &&
+            f[2] >= 0.0f && f[2] <= 256.0f) {
+            g_body_save[g_body_save_n].addr = f;
+            g_body_save[g_body_save_n].orig[0] = f[0];
+            g_body_save[g_body_save_n].orig[1] = f[1];
+            g_body_save[g_body_save_n].orig[2] = f[2];
+            g_body_save_n++;
+        }
+    }
+}
+
+/* Collect every material on the global NuMtl chain whose diffuse is the
+ * bit-exact retail crystal purple. In the hub that is the level-stone
+ * HUD's crystal model (a PANEL-scene material -- neither ObjTab[0x84] nor
+ * CModel, found by RAM bisection 2026-07-13) plus the two ObjTab[0x84]
+ * glow material diffuses, which are never visible (the glow's colour is
+ * its V4-8 vertex data) -- tinting them too is harmless. The chain and
+ * its materials persist across level changes (probed: identical on both
+ * instances, hub and level). */
+static void coop_panel_scan(void)
+{
+    unsigned char *m = COOP_MTL_LIST_HEAD;
+    int n;
+
+    g_panel_save_n = 0;
+    for (n = 0; n < 2048 && COOP_PTR_OK(m); n++) {
+        float *f = coop_pkt_diffuse((unsigned int *)m, 0x40);
+
+        if (f != 0 && g_panel_save_n < COOP_PANEL_SAVE_MAX) {
+            int match = ((unsigned int *)f)[0] == COOP_CRYSTAL_DIFF_R &&
+                        ((unsigned int *)f)[1] == COOP_CRYSTAL_DIFF_G &&
+                        ((unsigned int *)f)[2] == COOP_CRYSTAL_DIFF_B;
+            int p;
+
+            /* A mod re-init can find the quads still carrying a player
+             * colour from the previous instance: adopt those too. */
+            for (p = 0; p < 2 && !match; p++) {
+                match = f[0] == coop_vs_body[p][0] &&
+                        f[1] == coop_vs_body[p][1] &&
+                        f[2] == coop_vs_body[p][2];
+            }
+            if (match) {
+                union { unsigned int u; float fl; } cr, cg, cb;
+
+                cr.u = COOP_CRYSTAL_DIFF_R;
+                cg.u = COOP_CRYSTAL_DIFF_G;
+                cb.u = COOP_CRYSTAL_DIFF_B;
+                g_panel_save[g_panel_save_n].addr = f;
+                g_panel_save[g_panel_save_n].orig[0] = cr.fl;
+                g_panel_save[g_panel_save_n].orig[1] = cg.fl;
+                g_panel_save[g_panel_save_n].orig[2] = cb.fl;
+                g_panel_save_n++;
+            }
+        }
+        m = *(unsigned char **)(m + 0x160);
+    }
+}
+
+/* want < 0 restores retail purple. Every write re-verifies the UNPACK
+ * signature word right before the quad -- if the owning scene was ever
+ * freed and the heap reused, the signature is gone and the write is
+ * skipped (and the stale entry dropped). */
+static void coop_panel_write(int want)
+{
+    int i;
+
+    for (i = 0; i < g_panel_save_n; i++) {
+        float *f = g_panel_save[i].addr;
+
+        if (!COOP_PTR_OK(f) || ((unsigned int *)f)[-1] != 0x6C030013u) {
+            g_panel_save[i] = g_panel_save[--g_panel_save_n];
+            i--;
+            continue;
+        }
+        if (want < 0) {
+            f[0] = g_panel_save[i].orig[0];
+            f[1] = g_panel_save[i].orig[1];
+            f[2] = g_panel_save[i].orig[2];
+        } else {
+            f[0] = coop_vs_body[want][0];
+            f[1] = coop_vs_body[want][1];
+            f[2] = coop_vs_body[want][2];
+        }
+    }
+}
+
+/* want < 0 restores the baked diffuse; otherwise writes the player colour
+ * (or the live VTNT override). Alpha floats stay untouched, so the
+ * reflection overlay keeps its retail translucency. */
+static void coop_body_write(int want)
+{
+    const float *t = 0;
+    int i;
+
+    if (want >= 0) {
+        t = coop_vs_body[want];
+        if (*(volatile unsigned int *)COOP_VS_TUNE_BASE ==
+            COOP_VS_TUNE_MAGIC) {
+            t = (const float *)(COOP_VS_TUNE_BASE + 4);
+        }
+    }
+    for (i = 0; i < g_body_save_n; i++) {
+        float *f = g_body_save[i].addr;
+
+        if (t == 0) {
+            f[0] = g_body_save[i].orig[0];
+            f[1] = g_body_save[i].orig[1];
+            f[2] = g_body_save[i].orig[2];
+        } else {
+            f[0] = t[0];
+            f[1] = t[1];
+            f[2] = t[2];
+        }
+    }
+}
+
 /* Per-tick tint driver. Pre-claim the crystal shows OUR colour (each player
  * sees their own target); once claimed it re-tints to the WINNER's colour --
  * the world crystal is gone by then, so the retint is what the pause-panel
  * carving renders, the same colour on both screens. Level changes rebuild
  * the scene with freshly baked colours, so old pointers are simply
- * forgotten, never touched. */
+ * forgotten, never touched (the body's CModel may survive a level change,
+ * but re-deriving its two quads costs nothing). */
 static void coop_vs_tint_tick(void)
 {
     int owner;
@@ -434,10 +652,10 @@ static void coop_vs_tint_tick(void)
         g_tint_level = -1;
         g_tint_shown = -2;
         g_tint_save_n = 0;
+        g_body_shown = -2;
+        g_body_save_n = 0;
     }
-    /* bit 4 is owned by the DrawCreatures hook (set after this tick's diag
-     * push): keep last frame's value so it stays visible over PINE. */
-    g_vs_diag &= 0x10u;
+    g_vs_diag = 0;
     if (!g_vs_mode || !local_valid()) {
         g_vs_want = -1;
         if (g_tint_shown != -2) {
@@ -445,30 +663,91 @@ static void coop_vs_tint_tick(void)
             coop_tint_write(-1);
             g_tint_shown = -2;
         }
+        if (g_body_shown != -2) {
+            coop_body_write(-1);
+            g_body_shown = -2;
+        }
+        if (g_panel_shown != -2) {
+            coop_panel_write(-1);
+            g_panel_shown = -2;
+        }
         return;
     }
     owner = coop_vs_owner(0x1);
     g_vs_want = (owner == -1) ? (g_vs_p2 ? 1 : 0) : owner;
+    /* Remember this level's crystal winner for the hub stone HUD (ties and
+     * level re-entries follow the same first-hand-vs-echo rule as the
+     * in-level tint; the bridge's stats JSON stays the authority). */
+    if (owner >= 0 && (unsigned int)Level < COOP_VS_LEVEL_MAX) {
+        g_vs_crystal_owner[Level] = (unsigned char)(owner + 1);
+    }
+
+    /* Glow + carving vertex colours. */
     if (g_tint_shown == g_vs_want) {
         g_vs_diag |= 2u;
-        return;
-    }
-    if (g_tint_save_n == 0) {
-        coop_tint_scan();
+    } else {
+        if (g_tint_save_n == 0) {
+            coop_tint_scan();
+        }
         if (g_tint_save_n == 0) {
             g_vs_diag |= (coop_item_gobj(COOP_VS_CRYSTAL_OBJ) == 0) ? 8u : 4u;
-            return;
+        } else {
+            g_tint_level = Level;
+            coop_tint_write(g_vs_want);
+            g_tint_shown = g_vs_want;
+            g_vs_diag |= 2u;
         }
-        g_tint_level = Level;
     }
-    coop_tint_write(g_vs_want);
-    g_tint_shown = g_vs_want;
-    g_vs_diag |= 2u;
+
+    /* Body material diffuse. While the VTNT tuning magic is set, rewrite
+     * every tick so pokes show up live. */
+    if (*(volatile unsigned int *)COOP_VS_TUNE_BASE == COOP_VS_TUNE_MAGIC) {
+        g_body_shown = -2;
+    }
+    if (g_body_shown != g_vs_want) {
+        if (g_body_save_n == 0) {
+            coop_body_scan();
+        }
+        if (g_body_save_n != 0) {
+            g_tint_level = Level;
+            coop_body_write(g_vs_want);
+            g_body_shown = g_vs_want;
+        }
+    }
+    if (g_body_save_n != 0 && g_body_shown == g_vs_want) {
+        g_vs_diag |= 0x10u;
+    }
+
+    /* HUB level-stone HUD: while a stone's panel is open, show that
+     * level's crystal in its winner's colour; retail purple while
+     * unclaimed or unknown. hubleveltext_open is only ever set in the
+     * hub, so this is inert everywhere else. */
+    {
+        int pw = -1;
+
+        if (hubleveltext_open != 0 &&
+            (unsigned int)hubleveltext_level < COOP_VS_LEVEL_MAX &&
+            g_vs_crystal_owner[hubleveltext_level] != 0) {
+            pw = g_vs_crystal_owner[hubleveltext_level] - 1;
+        }
+        if (g_panel_shown != pw) {
+            if (g_panel_save_n == 0) {
+                coop_panel_scan();
+            }
+            if (g_panel_save_n != 0) {
+                coop_panel_write(pw);
+                g_panel_shown = pw;
+            }
+        }
+        if (g_panel_save_n != 0 && g_panel_shown >= 0) {
+            g_vs_diag |= 0x20u;
+        }
+    }
 }
 
-/* The light tint indexes the live Character[] array, so the mirrored
- * creature_s must match retail's stride and light-record offset exactly
- * (retail anchors: stride 0xCE4 = CloseCreatures, lights +0xBF4 =
+/* The puppet's gray lights index the live Character[] array, so the
+ * mirrored creature_s must match retail's stride and light-record offset
+ * exactly (retail anchors: stride 0xCE4 = CloseCreatures, lights +0xBF4 =
  * ResetPlayer, obj +0x4). Build breaks here if a mirror struct drifts. */
 typedef char coop_creature_stride_check[
     (sizeof(struct creature_s) == 0xCE4) ? 1 : -1];
@@ -476,36 +755,6 @@ typedef char coop_creature_lights_check[
     ((unsigned int)&((struct creature_s *)0)->lights == 0xBF4) ? 1 : -1];
 typedef char coop_creature_char_check[
     ((unsigned int)&((struct creature_s *)0)->obj.character == 0x34) ? 1 : -1];
-
-/* Dev-only live calibration channel: the CoopMailbox occupies payload
- * +0x000..0x247 of the 0x400 mailbox; poke magic 'VTNT' + 3 floats at
- * payload+0x248 over PINE and the body tint uses those instead of the
- * table -- colours can be tuned live while the game runs. Zero the magic
- * to fall back. Never written by the game or bridge. */
-#define COOP_VS_TUNE_MAGIC 0x544E5456u /* 'VTNT' */
-#define COOP_VS_TUNE_BASE \
-    ((volatile unsigned char *)modsdk_mailbox.payload + 0x248)
-
-/* Body light tint (see the section comment): flat coloured ambient, no
- * directional contribution. Colour values only -- the light-list pointers
- * the record was initialised with stay untouched. */
-static void coop_vs_light_tint(struct Nearest_Light_s *L)
-{
-    const float *t = coop_vs_light[g_vs_want];
-
-    if (*(volatile unsigned int *)COOP_VS_TUNE_BASE == COOP_VS_TUNE_MAGIC) {
-        t = (const float *)(COOP_VS_TUNE_BASE + 4);
-    }
-    L->AmbCol.x = t[0];
-    L->AmbCol.y = t[1];
-    L->AmbCol.z = t[2];
-    L->dir1.Colour.r = L->dir1.Colour.g = L->dir1.Colour.b = 0.0f;
-    L->dir2.Colour.r = L->dir2.Colour.g = L->dir2.Colour.b = 0.0f;
-    L->dir3.Colour.r = L->dir3.Colour.g = L->dir3.Colour.b = 0.0f;
-    L->glbdirectional.Colour.r = 0.0f;
-    L->glbdirectional.Colour.g = 0.0f;
-    L->glbdirectional.Colour.b = 0.0f;
-}
 
 /* --- Stage 3b: per-crate destroyed-state sync ----------------------------
  * Capture at CrateOff, the single point every crate actually dies through
@@ -918,6 +1167,21 @@ static void coop_merge(void)
         CalculateGamePercentage(&Game);
     }
 
+    /* VS cross-level attribution: a crystal bit in the remote slot while
+     * the peer is in a DIFFERENT level is always the peer's first-hand
+     * claim of THAT level's crystal (item replays only run when levels
+     * match, so our own echo can never appear cross-level; and if we
+     * claimed it while sharing the room earlier, the owner table already
+     * says so -- the ==0 guard keeps first-wins). Without this, claims
+     * made while the players are in different levels were never
+     * attributed on the other instance (hub stone HUD showed unknown). */
+    if (g_vs_mode && remote_snap.level != Level &&
+        (remote_snap.items & 1u) != 0 &&
+        (unsigned int)remote_snap.level < COOP_VS_LEVEL_MAX &&
+        g_vs_crystal_owner[remote_snap.level] == 0) {
+        g_vs_crystal_owner[remote_snap.level] =
+            (unsigned char)(g_vs_p2 ? 1 : 2); /* the PEER's index + 1 */
+    }
     if (remote_snap.level != Level) {
         /* Different room: the remote's crate bitmap belongs to another
          * level (or is the fresh zero after its level change) -- forget
@@ -2160,23 +2424,9 @@ void coop_draw_creatures(struct creature_s *c, s32 count, s32 render,
         published_frame = modsdk_mailbox.frame;
     }
 
-    /* VS: tint every crystal creature's light record before the draw --
-     * the body model is lit (its baked vertex colours are black; the pink
-     * is texture x c->lights) and items are not in Character[], so nothing
-     * recomputes these. One-way: leaving VS mid-level keeps the last tint
-     * until the level reloads (items' lights are never refreshed). */
-    if (g_vs_want >= 0 && render != 0) {
-        s32 i;
-
-        for (i = 0; i < count; i++) {
-            if (c[i].on != 0 &&
-                c[i].obj.character == COOP_VS_CRYSTAL_CHAR) {
-                coop_vs_light_tint(&c[i].lights);
-                g_vs_diag |= 0x10u; /* bit 4: body light tint ran this frame */
-            }
-        }
-    }
-
+    /* (The former per-draw crystal light tint is gone: the body colour is
+     * material diffuse in the model's state packets, handled once per
+     * change by coop_vs_tint_tick -- no per-frame work needed here.) */
     orig_DrawCreatures(c, count, render, shadow);
     if (g_puppet_active != 0 && c == Character && count == 1 &&
         Level == g_puppet_level && g_puppet.obj.model != 0) {
