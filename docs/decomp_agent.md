@@ -10,13 +10,13 @@ everything shared lives **here**, and this file wins on policy.
 
 Two repository-local layers:
 
-- **`tools/decomp_agent/`** — a deterministic, model-independent domain layer.
+- **`tools/decomp_agent/`** - a deterministic, model-independent domain layer.
   It works without MCP and without any LLM: it reads the committed registries,
   ranks candidates, builds context, drives the *existing* locked toolchain for
   compile/diff/verify, records shared sessions and blockers, and delegates
   promotion to `tools/promote.py`. Every operation is rooted through an explicit
   `DecompProject(root)` and returns JSON-compatible dicts.
-- **`tools/decomp_mcp/server.py`** — a thin FastMCP stdio server that validates
+- **`tools/decomp_mcp/server.py`** - a thin FastMCP stdio server that validates
   inputs and calls the domain layer. It contains **no** provider- or
   model-selection logic.
 
@@ -28,7 +28,7 @@ container.
 
 1. committed registries + status manifests (`config/pal103/…`)
 2. **the retail target disassembly** (`get_disassembly` / the `target-asm`
-   resource / `asm/text.s`) — the ground truth for a function's own bytes
+   resource / `asm/text.s`) - the ground truth for a function's own bytes
 3. fresh compiler / assembler / linker / byte-verification output
 4. current hand-written C and committed headers
 5. maintained docs (`docs/notes.md`, this file)
@@ -37,11 +37,11 @@ container.
 
 A source comment never overrides `profiles.toml`, `status/`, `functions.toml`,
 or `units.toml`. The effective compiler is resolved from the unit's status
-manifest (if any) else the category default — never from a comment.
+manifest (if any) else the category default - never from a comment.
 
 ### Reference decompilations are hints, never authority
 
-A decompilation of the same game on **another platform** is rank 6 — a hint for
+A decompilation of the same game on **another platform** is rank 6 - a hint for
 names, call order, and rough structure only. A different compiler and a
 different CPU produce different codegen: branch directions, dispatch constants,
 immediate materialization, struct offsets, and even control-flow shape all
@@ -59,7 +59,7 @@ iteration.
 Never record a blocker or end a session `BLOCKED_*` without first retrieving the
 target disassembly for the function (`get_disassembly`). "It didn't match from
 the reference" is not a blocker. A blocker is a *proven* pipeline limit visible
-in the disassembly or the compile output — e.g. the function owns a `.rodata`
+in the disassembly or the compile output - e.g. the function owns a `.rodata`
 jump table (`compiler_owned_rodata`), or needs a `.lit8` double pool. Record
 those with the specific kind and evidence; keep iterating on everything else.
 
@@ -72,32 +72,32 @@ pal103:unit-0007:00105a60:NuListGetNext
 ```
 
 A bare name that is duplicated across translation units (four disambiguated
-statics) resolves to **all** candidates — the tools return ambiguity and never
+statics) resolves to **all** candidates - the tools return ambiguity and never
 choose. Retry with a canonical id.
 
 ## The loop
 
-1. `project_health` — is the repo ready? (never builds; returns repair commands)
-2. `list_candidates` — deterministic ranked targets (small, leaf, C-unit, unit
+1. `project_health` - is the repo ready? (never builds; returns repair commands)
+2. `list_candidates` - deterministic ranked targets (small, leaf, C-unit, unit
    momentum). No LLM, no embeddings; every ranking carries its reasons.
-3. `resolve_target` / `get_context` — authoritative dossier, split into
+3. `resolve_target` / `get_context` - authoritative dossier, split into
    **facts / ground_truth / classifications / hypotheses / unknowns**. The
    `ground_truth` block points at (and, when small, inlines) the target
    disassembly; `get_disassembly` fetches it in full. Read it before writing C.
    Missing types and prototypes are reported as unknowns, never guessed.
-4. `start_session` — open a shared, resumable session for the target.
-5. Write C in `src/<unit>.c` (your client's normal editing tools — the MCP does
+4. `start_session` - open a shared, resumable session for the target.
+5. Write C in `src/<unit>.c` (your client's normal editing tools - the MCP does
    **not** edit files, except the guarded best-candidate restore).
-6. `compile_diff` — compile the unit through `tools/cc.py` and byte-compare over
+6. `compile_diff` - compile the unit through `tools/cc.py` and byte-compare over
    the **full canonical extent**. `exact = true` means byte equality over the
    whole extent, not a matching prefix. objdiff percentage is never proof.
-7. `checkpoint_session` — record every experiment (hypothesis, hashes, diff
+7. `checkpoint_session` - record every experiment (hypothesis, hashes, diff
    signature, classifications). Repeats and oscillation are detected for you.
 8. Iterate. Stop when a stop condition fires (below).
-9. `verify_candidate --level function` — independent full-extent byte check.
-10. `promote_matching` — delegates to `tools/promote.py` (the sole writer of
+9. `verify_candidate --level function` - independent full-extent byte check.
+10. `promote_matching` - delegates to `tools/promote.py` (the sole writer of
     `state = matching`; it verifies and rolls back on failure). The MCP never
-    edits a manifest and never sets `equivalent` — equivalence is a human
+    edits a manifest and never sets `equivalent` - equivalence is a human
     review decision.
 
 If blocked, `record_blocker` with a structured kind so the obstacle is not
@@ -124,11 +124,11 @@ capability-based (never model-named) `escalation` hint. Outcomes:
 ## Shared cross-client sessions
 
 Sessions live in `build/pal103/agent_sessions/` (gitignored) as atomic JSON
-ledgers — independent of any conversation. **Claude Code can start a session
+ledgers - independent of any conversation. **Claude Code can start a session
 that Codex resumes, and vice-versa.** A single-writer lock (naming the owning
 client) prevents concurrent writers; stale locks (older than 2h) are detectable
 and recovered only through the explicit `recover_session_lock`. Client/model
-metadata on a checkpoint is diagnostic only — it never affects byte
+metadata on a checkpoint is diagnostic only - it never affects byte
 verification, ranking, or promotion.
 
 Optionally, a client may pass `input_tokens` / `output_tokens` on
@@ -167,7 +167,7 @@ client-side decision (see CLAUDE.md / AGENTS.md).
 `compile_diff`, `verify_candidate`, `promote_matching`, and `compiler_probe`
 need the locked toolchain. On a host without it (e.g. Windows) they are
 transparently routed into the dev container via `tools/dispatch.py`; inside the
-container they run in-process. This is automatic — callers just invoke the tool.
+container they run in-process. This is automatic - callers just invoke the tool.
 
 ## Security boundary
 

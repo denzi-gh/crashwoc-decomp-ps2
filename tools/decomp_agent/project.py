@@ -12,8 +12,10 @@ Root resolution order (used by the CLI and MCP entry points):
   3. the current working directory
 
 A directory only validates as a project when the load-bearing files exist
-(``CLAUDE.md``, the three registries, ``tools/cc.py`` etc.), so an unrelated
-directory is rejected up front instead of failing deep inside an operation.
+(``tools/cc.py``, ``tools/promote.py``, the three registries, etc.), so an
+unrelated directory is rejected up front instead of failing deep inside an
+operation. The markers are all code/registry files -- the domain layer depends
+on no documentation file.
 """
 from __future__ import annotations
 
@@ -23,8 +25,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 # Files that must all be present for a directory to be a compatible project.
+# All markers are code files: the domain layer depends on no documentation file.
 REQUIRED_MARKERS = (
-    "CLAUDE.md",
     "tools/cc.py",
     "tools/dispatch.py",
     "tools/promote.py",

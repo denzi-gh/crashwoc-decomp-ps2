@@ -5,7 +5,7 @@
 # are installed at run time by tools/setup_toolchain.py). The private
 # crashwoc-decomp-ps2-build repository layers the game files on top of
 # this image for CI; local development builds the same Containerfile
-# directly. See docs/ci.md.
+# directly. See docs/pipeline.md, "CI" section.
 
 name: publish-image
 

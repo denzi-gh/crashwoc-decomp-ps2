@@ -3,7 +3,7 @@
 #
 # The game-file-backed verification (expected objects, matching build, byte
 # gates) is the separate `matching` workflow, which runs inside the private
-# build image (docs/ci.md); this one guards structure: status manifests,
+# build image (docs/pipeline.md, "CI" section); this one guards structure: status manifests,
 # registries, tests, and the invariant that nothing game-derived is ever
 # tracked in THIS repository.
 

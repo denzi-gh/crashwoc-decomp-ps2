@@ -1,30 +1,17 @@
 # Byte-gated verification on GitHub-hosted runners, dtk-template style
-# (docs/ci.md). The job runs inside a PRIVATE container image from the
+# (docs/pipeline.md, "CI" section). The job runs inside a PRIVATE container image from the
 # crashwoc-decomp-ps2-build repository: the public toolchain image with the
 # retail game files baked in at /orig. Pulling it needs only GITHUB_TOKEN,
 # authorized by the package's "Manage Actions access" Read grant for this
 # repository.
 #
-# Nothing game-derived leaves a run: the only uploads are the sanitized
-# report (whitelist-filtered by tools/sanitize_report.py) and, on main, the
-# tiny committed progress baseline.
+# Nothing game-derived leaves a run and the pipeline never writes back to the
+# repo: the only output is the sanitized report artifact (whitelist-filtered
+# by tools/sanitize_report.py). Progress history for a site comes from the
+# accumulated report artifacts (e.g. decomp.dev), not a committed baseline.
 
 name: matching
 
-# Runs on every push to a branch in THIS repository -- not just main. A
-# collaborator's feature-branch push runs the full byte gates and uploads the
-# `SLES_503.86_report` artifact; when that branch has an open PR, the
-# decomp.dev app attaches the artifact to the PR as a progress-vs-main comment
-# (same mechanism the nightly/main runs use, just earlier).
-#
-# There is deliberately NO `pull_request` trigger. A `pull_request` run
-# executes the workflow file *as modified by the PR branch*, so a fork could
-# rewrite it to reach the private `/orig` image and exfiltrate the retail game
-# files -- a job-level `if` cannot stop that, because the fork also controls
-# the `if`. `push` has no such hole: a push to a fork runs in the fork's own
-# Actions, never in this repository, so untrusted code can never reach the
-# private image this way (docs/ci.md). Public structural checks for every PR,
-# including fork PRs, still live in validate.yml.
 on:
   push:
     branches: ["**"]
@@ -33,14 +20,14 @@ on:
   workflow_dispatch:
 
 # Serialize per ref. A new push to a feature branch supersedes its in-flight
-# run; `main` is never cancelled mid-flight -- it may be moving the committed
-# baseline.
+# run; `main` is never cancelled mid-flight so its published report always
+# finishes.
 concurrency:
   group: matching-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
-  contents: write # bot-commit of progress/summary.json (main only)
+  contents: read # checkout only; the pipeline never writes back to the repo
   packages: read # pull the private build image
 
 jobs:
@@ -118,9 +105,6 @@ jobs:
       - name: Byte gates -- image identity and every promoted function
         run: ninja verify-loaded verify-promoted
 
-      - name: Progress regression gates
-        run: python tools/compare_progress.py
-
       - name: Generate and sanitize the report
         run: ninja report report-public
 
@@ -150,20 +134,3 @@ jobs:
           name: SLES_503.86_report
           path: build/publish/report.json
           if-no-files-found: error
-
-      - name: Update the committed progress baseline
-        # Main-branch pushes only: feature-branch and nightly runs never move
-        # the baseline. GITHUB_TOKEN pushes do not trigger new workflow runs,
-        # so this cannot loop.
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-          python tools/compare_progress.py --write
-          if git diff --quiet progress/summary.json; then
-            echo "baseline unchanged"
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add progress/summary.json
-          git commit -m "progress: update summary baseline [skip ci]"
-          git push

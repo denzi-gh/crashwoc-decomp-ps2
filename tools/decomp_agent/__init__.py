@@ -13,12 +13,13 @@ through the thin MCP server in ``tools/decomp_mcp``. Every operation:
 The authority order every module honours (highest first):
 
   1. committed machine-readable registries + status manifests
-  2. fresh compiler / assembler / linker / byte-verification output
-  3. current hand-written C and committed headers
-  4. maintained docs (docs/notes.md, docs/decomp_agent.md)
+  2. the retail target disassembly (ground truth for a function's own bytes)
+  3. fresh compiler / assembler / linker / byte-verification output
+  4. current hand-written C and committed headers
   5. comments and unverified hypotheses
 
-See ``docs/decomp_agent.md`` for the shared cross-client workflow.
+The full cross-client workflow is embedded in the MCP server's ``instructions``
+(``tools/decomp_mcp/server.py``); the domain layer needs no documentation file.
 """
 
 DOMAIN_API = 1

@@ -133,7 +133,6 @@ def make_project(tmp: Path, version="pal103") -> DecompProject:
     (tmp / "tools").mkdir(parents=True)
     for marker in ("cc.py", "dispatch.py", "promote.py"):
         (tmp / "tools" / marker).write_text("# stub\n")
-    (tmp / "CLAUDE.md").write_text("# stub\n")
     cfg = tmp / "config" / version
     cfg.mkdir(parents=True)
     (cfg / "units.toml").write_text(UNITS)
