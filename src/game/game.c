@@ -668,6 +668,16 @@ void ResetGame(void) {
     InitProbe();
 }
 
+void ResetTimer(void *timer) {
+    s32 *t = timer;
+
+    t[0] = 0;
+    t[1] = 0;
+    t[2] = 0;
+    t[3] = 0;
+    t[4] = 0;
+}
+
 void NewGame(void) {
     s32 save[7];
 

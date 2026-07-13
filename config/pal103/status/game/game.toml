@@ -409,7 +409,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0094:001f01e8:ResetTimer"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001f0200:UpdateTimer"
