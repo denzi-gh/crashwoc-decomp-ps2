@@ -1,18 +1,18 @@
 {
   "schema": 1,
   "version": "pal103",
-  "commit": "6a0e678a39f9c3bcdb28e4def534d342f7927b0d",
-  "generated": "2026-07-13T06:18:56Z",
+  "commit": "3dfe266dbc8bf8a0b8b171a6100d6c858e144d38",
+  "generated": "2026-07-13T14:32:42Z",
   "profiles_fingerprint": "08e8bac4d9f2966fbfd78338e2803f8194712522ab099b180130ff433bfbd382",
   "code": {
     "total_bytes": 1578288,
-    "matching_bytes": 21320
+    "matching_bytes": 22584
   },
   "functions": {
     "total": 3751,
-    "matching": 132,
+    "matching": 143,
     "equivalent": 4,
-    "asm": 3615
+    "asm": 3604
   },
   "data": {
     "total_bytes": 4665692,
