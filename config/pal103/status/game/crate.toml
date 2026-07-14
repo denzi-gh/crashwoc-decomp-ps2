@@ -209,11 +209,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0095:001f8fb8:SaveCrateTypeData"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f9010:RestoreCrateTypeData"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f9078:ResetAllCrateTypes"
@@ -225,12 +225,12 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f9168:CrateInSlot"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f91d0:ResetInvisibility"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f9208:ResetCrate"
-state = "asm"
+state = "matching"

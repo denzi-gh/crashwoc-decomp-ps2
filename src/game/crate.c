@@ -104,6 +104,57 @@ struct CrateCube {
     s8 type2;                /* 0x3B */
     s8 type3;                /* 0x3C */
     s8 type4;                /* 0x3D */
+    s8 newtype;              /* 0x3E */
+    s8 subtype;              /* 0x3F */
+    s8 i;                    /* 0x40 */
+    s8 metal_count;          /* 0x41 */
+    s8 appeared;             /* 0x42 */
+    s8 in_range;             /* 0x43 */
+    s16 dx;                  /* 0x44 */
+    s16 dy;                  /* 0x46 */
+    s16 dz;                  /* 0x48 */
+    s16 iU;                  /* 0x4A */
+    s16 iD;                  /* 0x4C */
+    s16 iN;                  /* 0x4E */
+    s16 iS;                  /* 0x50 */
+    s16 iE;                  /* 0x52 */
+    s16 iW;                  /* 0x54 */
+    s16 trigger;             /* 0x56 */
+    s8 counter;              /* 0x58 */
+    s8 anim_cycle;           /* 0x59 */
+    s16 index;               /* 0x5A */
+    f32 anim_time;           /* 0x5C */
+    f32 anim_duration;       /* 0x60 */
+    f32 anim_speed;          /* 0x64 */
+    u16 xrot0;               /* 0x68 */
+    u16 zrot0;               /* 0x6A */
+    u16 xrot;                /* 0x6C */
+    u16 zrot;                /* 0x6E */
+    u16 surface_xrot;        /* 0x70 */
+    u16 surface_zrot;        /* 0x72 */
+    s16 character;           /* 0x74 */
+    s16 action;              /* 0x76 */
+    struct nuvec_s colbox[2];/* 0x78 */
+};
+
+struct CrateCubeGroup {
+    struct nuvec_s origin;   /* 0x00 */
+    f32 radius;              /* 0x0C */
+    s16 iCrate;              /* 0x10 */
+    s16 nCrates;             /* 0x12 */
+    u16 angle;               /* 0x14 */
+    s8 pad1;                 /* 0x16 */
+    s8 pad2;                 /* 0x17 */
+    struct nuvec_s minclip;  /* 0x18 */
+    struct nuvec_s maxclip;  /* 0x24 */
+};
+
+struct CRATETYPEDATA {
+    struct CrateCube *crate; /* 0x00 */
+    s8 type1;                /* 0x04 */
+    s8 type2;                /* 0x05 */
+    s8 type3;                /* 0x06 */
+    s8 type4;                /* 0x07 */
 };
 
 struct BoxExpType {
@@ -119,6 +170,16 @@ extern s32 CRATECOUNT;
 extern s32 CRATEGROUPCOUNT;
 extern s32 iBOXEXP;
 extern struct BoxExpType BoxExpList[];
+extern struct CrateCube Crate[];
+extern struct CRATETYPEDATA CrateTypeData[];
+extern s32 i_cratetypedata;
+extern s32 Level;
+extern f32 plr_invisibility_time;
+extern f32 WATERBOSSGLASSMIX;
+extern f32 glass_mix;
+extern s32 glass_col_mix;
+extern s32 glass_enabled;
+extern s32 glass_col_enabled;
 
 
 void InitCrateExplosions(void) {
@@ -162,4 +223,73 @@ void ResetCrateType2(struct CrateCube *crt) {
         return;
     }
     crt->model->type[1] = crt->type1;
+}
+
+void SaveCrateTypeData(struct CrateCube *crate) {
+    struct CRATETYPEDATA *data;
+
+    if (i_cratetypedata > 0x1f) {
+        return;
+    }
+    data = &CrateTypeData[i_cratetypedata];
+    data->crate = crate;
+    data->type1 = crate->type1;
+    data->type2 = crate->type2;
+    data->type3 = crate->type3;
+    data->type4 = crate->type4;
+    i_cratetypedata++;
+}
+
+void RestoreCrateTypeData(void) {
+    s32 i;
+
+    struct CRATETYPEDATA *data;
+
+    data = CrateTypeData;
+    for (i = 0; i < i_cratetypedata; i++, data++) {
+        data->crate->type1 = data->type1;
+        data->crate->type2 = data->type2;
+        data->crate->type3 = data->type3;
+        data->crate->type4 = data->type4;
+    }
+    i_cratetypedata = 0;
+}
+
+struct CrateCube *CrateInSlot(struct CrateCubeGroup *group, s32 x, s32 y,
+                              s32 z) {
+    struct CrateCube *crate;
+    s32 i;
+
+    crate = &Crate[group->iCrate];
+    for (i = 0; i < group->nCrates; i++, crate++) {
+        if (((crate->dx == x) && (crate->dy == y)) && (crate->dz == z)) {
+            return crate;
+        }
+    }
+    return 0;
+}
+
+void ResetInvisibility(void) {
+    plr_invisibility_time = 5.0f;
+    glass_mix = (Level != 0x17) ? 0.0f : WATERBOSSGLASSMIX;
+    glass_col_mix = 0;
+    glass_enabled = 0;
+    glass_col_enabled = 0;
+}
+
+void ResetCrate(struct CrateCube *crt) {
+    crt->oldy = crt->pos0.y;
+    crt->pos.y = crt->pos0.y;
+    crt->mom = 0.0f;
+    crt->newtype = -1;
+    crt->subtype = -1;
+    if (((crt->type1 == 6) || (crt->type2 == 6)) ||
+        ((crt->type1 == 0 && (crt->type3 == 6)))) {
+        crt->counter = 0xa;
+    } else {
+        crt->counter = 0;
+    }
+    crt->metal_count = 0;
+    crt->action = -1;
+    crt->appeared = 0;
 }
