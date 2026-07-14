@@ -133,11 +133,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0101:0022ae40:NewGenerateJeepMatrix"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022aef8:GenerateJeepWheelPoint"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022af30:DrawJeepTrails"
@@ -173,11 +173,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0101:0022b370:GetTotalFireBossObjectives"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022b378:GetCurrentFireBossObjectives"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022b388:ProcessGenericTrail"

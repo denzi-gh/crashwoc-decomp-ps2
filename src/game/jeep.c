@@ -75,3 +75,53 @@
  *   0x0022c378 FindJeepBalloon
  *   0x0022c3b8 BalloonHitFireBoss
  */
+
+#include "creature.h"
+
+extern struct nuvec_s BaseWheelPosition[];
+
+struct fireboss_s {
+    u8 unk_0x00[0x408];
+    s32 HitPoints;        /* 0x408 */
+};
+extern struct fireboss_s FireBoss;
+
+extern void NuMtxSetRotationX(struct numtx_s *m, short ang);
+extern void NuMtxRotateZ(struct numtx_s *m, short ang);
+extern void NuMtxRotateY(struct numtx_s *m, short ang);
+extern void NuMtxRotateX(struct numtx_s *m, short ang);
+extern void NuMtxTranslate(struct numtx_s *m, struct nuvec_s *pos);
+extern void NuVecScale(f32 scale, struct nuvec_s *dest, struct nuvec_s *src);
+extern void NuVecScaleAccum(f32 scale, struct nuvec_s *dest, struct nuvec_s *src);
+
+
+void NewGenerateJeepMatrix(struct numtx_s *Mat, short YAng, short SurfaceX,
+                           short SurfaceZ, short TiltX, short TiltZ,
+                           struct nuvec_s *Pos) {
+    NuMtxSetRotationX(Mat, TiltX);
+    NuMtxRotateZ(Mat, TiltZ);
+    NuMtxRotateY(Mat, YAng);
+    NuMtxRotateZ(Mat, SurfaceZ);
+    NuMtxRotateX(Mat, SurfaceX);
+    if (Pos != 0) {
+        NuMtxTranslate(Mat, Pos);
+    }
+}
+
+struct nuvec_s GenerateJeepWheelPoint(s32 WheelId) {
+    return BaseWheelPosition[WheelId];
+}
+
+s32 GetTotalFireBossObjectives(void) {
+    return 3;
+}
+
+s32 GetCurrentFireBossObjectives(void) {
+    return FireBoss.HitPoints;
+}
+
+void BlendNUVECs(struct nuvec_s *Dest, struct nuvec_s *A, struct nuvec_s *B,
+                 f32 Blend) {
+    NuVecScale(1.0f - Blend, Dest, A);
+    NuVecScaleAccum(Blend, Dest, B);
+}
