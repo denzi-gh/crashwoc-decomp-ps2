@@ -48,3 +48,110 @@
  *   0x002586a8 AnimateDIVE
  *   0x002586d0 ResetTub
  */
+
+#include "creature.h"
+
+extern s32 FlyingLevelVictoryDance;
+extern struct MoveInfo CrashMoveInfo;
+
+
+void AnimateMINECART(struct creature_s *plr) {
+    if ((u32)plr->obj.dead > 1) {
+        plr->obj.anim.newaction = plr->obj.die_action;
+    } else {
+        if (plr->jump != 0) {
+            if (plr->jump_frame >= plr->jump_frames) {
+                plr->obj.anim.newaction = 0x68;
+            } else {
+                plr->obj.anim.newaction = 99;
+            }
+        } else {
+            plr->obj.anim.newaction = 0x68;
+        }
+    }
+    UpdateCharacterIdle(plr, 0);
+}
+
+void AnimateGLIDER(struct creature_s *plr) {
+    if (FlyingLevelVictoryDance != 0) {
+        if (plr->obj.anim.newaction != 0x75) {
+            plr->obj.anim.oldaction = plr->obj.anim.action;
+        }
+        plr->obj.anim.newaction = 0x75;
+    } else {
+        if ((plr->obj.pad_speed > 0.0f) && (plr->obj.pad_angle > 0x9555) &&
+            (plr->obj.pad_angle < 0xeaab)) {
+            plr->obj.anim.newaction = 0x65;
+        } else {
+            if ((plr->obj.pad_speed > 0.0f) && (plr->obj.pad_angle > 0x1555)) {
+                if (plr->obj.pad_angle > 0x6aaa) {
+                    plr->obj.anim.newaction = 0x62;
+                } else {
+                    plr->obj.anim.newaction = 0x67;
+                }
+            } else {
+                plr->obj.anim.newaction = 0x62;
+            }
+        }
+    }
+    UpdateCharacterIdle(plr, 0);
+}
+
+void AnimateDROPSHIP(struct creature_s *plr) {
+    if (FlyingLevelVictoryDance != 0) {
+        if (plr->obj.anim.newaction != 0x75) {
+            plr->obj.anim.oldaction = plr->obj.anim.action;
+        }
+        plr->obj.anim.newaction = 0x75;
+    } else {
+        plr->obj.anim.newaction = 0x62;
+    }
+    UpdateCharacterIdle(plr, 1);
+}
+
+void AnimateATLASPHERE(struct creature_s *plr) {
+    if ((u32)plr->obj.dead > 1) {
+        plr->obj.anim.newaction = plr->obj.die_action;
+    } else {
+        if ((plr->obj.pad_speed == 0.0f) &&
+            (plr->obj.xz_distance < 0.005f)) {
+            plr->obj.anim.newaction = 0x22;
+        } else {
+            if (plr->obj.xz_distance < CrashMoveInfo.WALKSPEED) {
+                plr->obj.anim.newaction = 0x71;
+            } else {
+                plr->obj.anim.newaction = 0x68;
+            }
+        }
+    }
+    UpdateCharacterIdle(plr, 0);
+}
+
+void AnimateJEEP(struct creature_s *plr) {
+    if ((u32)plr->obj.dead < 2) {
+        plr->obj.anim.newaction = 0x68;
+    } else {
+        plr->obj.anim.newaction = plr->obj.die_action;
+    }
+    UpdateCharacterIdle(plr, 0);
+}
+
+void AnimateMOSQUITO(struct creature_s *plr) {
+    if (FlyingLevelVictoryDance != 0) {
+        if (plr->obj.anim.newaction != 0x75) {
+            plr->obj.anim.oldaction = plr->obj.anim.action;
+        }
+        plr->obj.anim.newaction = 0x75;
+    } else {
+        plr->obj.anim.newaction = 0x62;
+    }
+    UpdateCharacterIdle(plr, 0);
+}
+
+void AnimateDIVE(struct creature_s *plr, f32 ratio) {
+    if (ratio < 0.333f) {
+        plr->obj.anim.newaction = 0x2c;
+        return;
+    }
+    plr->obj.anim.newaction = 0x44;
+}
