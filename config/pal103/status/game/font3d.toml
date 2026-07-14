@@ -17,7 +17,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0106:00237ec8:Reset3DFontObjects"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0106:00237ff0:Update3DFontObjects"
@@ -33,8 +33,8 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0106:00238b48:CombinationCharacterBD"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0106:00238ba0:CombinationCharacterBC"
-state = "asm"
+state = "matching"
