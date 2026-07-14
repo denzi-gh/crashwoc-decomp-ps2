@@ -29,7 +29,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0123:00260c20:AddGameDebrisMtx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0123:00260cd8:AddWarpDebris"

@@ -28,6 +28,15 @@ extern void AddFiniteShotDebrisEffect(s32 *key, s32 effect, struct nuvec_s *pos,
                                       s32 n);
 extern void AddVariableShotDebrisEffect(s32 effect, struct nuvec_s *pos, s32 n,
                                         short xrot, short yrot);
+extern void AddVariableShotDebrisEffectMtx2(s32 effect, struct nuvec_s *pos,
+                                            s32 n, struct numtx_s *m1,
+                                            struct numtx_s *m2);
+extern void NuMtxSetRotationX(struct numtx_s *m, s32 angle);
+extern void NuMtxMulR(struct numtx_s *dst, struct numtx_s *a,
+                      struct numtx_s *b);
+
+extern struct numtx_s mTEMP;
+extern struct numtx_s numtx_identity;
 
 
 void InitGameDebris(void) {
@@ -53,6 +62,15 @@ void AddGameDebris(s32 i, struct nuvec_s *pos) {
 void AddGameDebrisRot(s32 i, struct nuvec_s *pos, s32 n, u16 xrot, u16 yrot) {
     if (NODEBRIS == 0 && (u32)i < 0xaa && GDeb[i].i != -1) {
         AddVariableShotDebrisEffect(GDeb[i].i, pos, n, xrot, yrot + 0x4000);
+    }
+}
+
+void AddGameDebrisMtx(s32 i, struct nuvec_s *pos, s32 n, struct numtx_s *m) {
+    if (NODEBRIS == 0 && (u32)i < 0xaa && GDeb[i].i != -1) {
+        NuMtxSetRotationX(&mTEMP, 0x4000);
+        NuMtxMulR(&mTEMP, &mTEMP, m);
+        AddVariableShotDebrisEffectMtx2(GDeb[i].i, pos, n, &mTEMP,
+                                        &numtx_identity);
     }
 }
 
