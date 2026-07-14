@@ -98,11 +98,19 @@ Per-function outcomes: `as-is` (GC draft matched unchanged), `tweaked`
 |----------------|-----|--------|---------|-------|---------|----------|---------|
 | `game/chase`   | 10  | 10     | 0       | 0     | 0       | 0        | 0       |
 | `game/vehterr` | 9   | 9      | 0       | 0     | 0       | 0        | 0       |
-| `game/listman` | 9   | 5      | 0       | 0     | 0       | 0        | 0       |
+| `game/listman` | 9   | 5      | 8       | 3     | 1       | 4        | 1       |
 | `game/game_deb`| 7   | 7      | 0       | 0     | 0       | 0        | 0       |
 
-**Measured pilot hit rate:** _(pending — fill in after Phase 2, then stop and
-report to the user; the hit rate decides bulk-wave pacing.)_
+Notes:
+- `game/listman` (done 2026-07-14): of the 5 GC-referenced fns, 4 matched
+  (NuLstDestroy/NuLstAlloc/NuLstFree as-is once the GC `0x8000` in-use flag was
+  corrected to `0x10000`; NuLstGetNext tweaked). NuLstCreate is a faithful
+  near-match (state=asm, regalloc s0/s1 wall). The other 4 fns had no GC
+  reference and were reconstructed from asm — all 4 matched. Total 8/9 matching.
+  Reusable ee-gcc levers logged in the memory `gc-migration-listman-lessons`.
+
+**Measured pilot hit rate:** _(pending — fill in after all 4 pilot units, then
+stop and report to the user; the hit rate decides bulk-wave pacing.)_
 
 ### Phase 3 — bulk waves
 
