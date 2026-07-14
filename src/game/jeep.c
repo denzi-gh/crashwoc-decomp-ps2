@@ -153,6 +153,19 @@ struct JEEPBALLOON {
 };
 extern struct JEEPBALLOON JeepBalloon[];
 
+struct enemyjeep_s {
+    struct nuvec_s Position;        /* 0x000 */
+    u8 Draw[0x730];                 /* 0x00C */
+    s8 Active;                      /* 0x73C */
+    s8 DrawOn;                      /* 0x73D */
+    s8 TrailOn;                     /* 0x73E */
+    s8 Pad;                         /* 0x73F */
+};
+extern struct enemyjeep_s EnemyJeep[];
+extern void DrawEnemyJeep(struct enemyjeep_s *j);
+extern void ProcessEnemyJeep(struct enemyjeep_s *j);
+extern void MyAnimateModelNew(void *draw, f32 dt);
+
 struct spline_s {
     s16 len;                        /* 0x0 */
     s16 ptsize;                     /* 0x2 */
@@ -448,4 +461,38 @@ struct JEEPBALLOON *FindJeepBalloon(void) {
         }
     }
     return 0;
+}
+
+void DrawEnemyJeeps(void) {
+    s32 i;
+
+    for (i = 0; i < 4; i++) {
+        if (EnemyJeep[i].Active != 0) {
+            DrawEnemyJeep(&EnemyJeep[i]);
+        }
+    }
+}
+
+void ProcessEnemyJeeps(void) {
+    s32 i;
+
+    for (i = 0; i < 4; i++) {
+        if (EnemyJeep[i].Active != 0) {
+            ProcessEnemyJeep(&EnemyJeep[i]);
+        }
+    }
+}
+
+inline void AnimateForLightsEnemyJeep(struct enemyjeep_s *j) {
+    MyAnimateModelNew(&j->Draw, 0.5999999642f);
+}
+
+void AnimateForLightsEnemyJeeps(void) {
+    s32 i;
+
+    for (i = 0; i < 4; i++) {
+        if (EnemyJeep[i].Active != 0) {
+            AnimateForLightsEnemyJeep(&EnemyJeep[i]);
+        }
+    }
 }

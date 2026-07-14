@@ -233,19 +233,19 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0101:0022bdd8:AnimateForLightsEnemyJeep"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022bdf8:DrawEnemyJeeps"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022be50:ProcessEnemyJeeps"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022bea8:AnimateForLightsEnemyJeeps"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022bf10:LoadBuggyData"
