@@ -66,6 +66,10 @@ extern s32 ChrisInTheHouse;
 extern void NuRndrLine3dDbg(s32 colour, f32 x0, f32 y0, f32 z0, f32 x1, f32 y1,
                             f32 z1);
 
+struct MYDRAW {
+    struct anim_s Anim;   /* 0x00 */
+};
+
 
 s16 GetVolumeI(f32 vol) {
     s32 v = (s32)(vol * 16383.0f);
@@ -329,6 +333,17 @@ f32 fsign(f32 x) {
         return 1.0f;
     }
     return -1.0f;
+}
+
+void MyResetAnimPacket(struct MYDRAW *Draw, s32 Action) {
+    ResetAnimPacket(&Draw->Anim, Action);
+    Draw->Anim.flags = 0;
+}
+
+void MyChangeAnim(struct MYDRAW *Draw, s32 Action) {
+    Draw->Anim.flags = 0;
+    Draw->Anim.oldaction = Draw->Anim.action;
+    Draw->Anim.newaction = (s16)Action;
 }
 
 struct nuvec_s SetNuVec(f32 x, f32 y, f32 z) {

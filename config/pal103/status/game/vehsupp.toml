@@ -153,11 +153,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0099:00221840:MyResetAnimPacket"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00221868:MyChangeAnim"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00221880:ACos360f"
