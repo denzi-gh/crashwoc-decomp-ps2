@@ -377,6 +377,14 @@ void FindGongBongerAnim(struct nuvec_s *pos, struct gongbuf_s *out)
     }
 }
 
+/* Faithful near-match (~53.7%): structurally exact (control flow, constants,
+ * offsets, the slt loop bound, all three calls). Blocked purely on the
+ * whole-function callee-save register permutation: retail assigns
+ * s0..s7 = pp,amt,c,debkeydata,end,GDeb,stride,-1; ee-gcc here gives
+ * pp,c,amt,stride,-1,end,debkeydata,GDeb. The eight loop-invariant values tie
+ * on freq*live_length and break by allocno birth order, which no source
+ * reordering shifts without adding instructions. Same wall as ResetCRUNCHTIME
+ * (default.whole-fn-callee-save-regalloc). Stays state=asm. */
 s32 WaterCrunchFunction_Punch1(struct creature_s *c)
 {
     s32 key;
@@ -393,7 +401,7 @@ s32 WaterCrunchFunction_Punch1(struct creature_s *c)
         debkeydata[key].field_4C2 = amt;
         amt -= 0xA;
         pp++;
-    } while (pp != &punchpos1[4]);
+    } while (pp < &punchpos1[4]);
     return 1;
 }
 

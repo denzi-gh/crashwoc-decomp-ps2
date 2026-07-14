@@ -53,10 +53,15 @@
 
 extern s32 FlyingLevelVictoryDance;
 extern struct MoveInfo CrashMoveInfo;
+extern struct MoveInfo SwimmingMoveInfo;
 extern s32 Level;
 extern s32 SmokeyCountDownValue;
 extern struct RPos_s *best_cRPos;
 extern f32 D_0062E844;
+
+u64 fptodp(f32 value);
+s32 dpcmp(u64 a, u64 b);
+u64 dpsub(u64 a, u64 b);
 
 struct pad_s {
     u8 unk_0x000[0x55C];     /* 0x000 (opaque) */
@@ -97,6 +102,34 @@ void AnimateGYRO(struct creature_s *plr, struct pad_s *pad) {
         plr->obj.anim.newaction = 0x62;
     }
     UpdateCharacterIdle(plr, 0);
+}
+
+void AnimateSWIMMING(struct creature_s *plr) {
+    struct MoveInfo *info = &SwimmingMoveInfo;
+    u64 d;
+
+    if ((u32)plr->obj.dead >= 2) {
+        plr->obj.anim.newaction = plr->obj.die_action;
+    } else if ((plr->spin != 0) &&
+               (plr->spin_frame <
+                plr->spin_frames - plr->OnFootMoveInfo->SPINRESETFRAMES)) {
+        plr->obj.anim.newaction = 0x46;
+    } else if (plr->obj.pad_speed > 0.0f) {
+        plr->obj.anim.newaction = 0x4C;
+    } else if (plr->tap != 0) {
+        plr->obj.anim.newaction = 0x4C;
+    } else {
+        d = fptodp(plr->obj.mom.z);
+        if (dpcmp(d, 0) < 0) {
+            d = dpsub(0, d);
+        }
+        if (dpcmp(d, fptodp(info->WALKSPEED)) > 0) {
+            plr->obj.anim.newaction = 0x4C;
+        } else {
+            plr->obj.anim.newaction = 0x22;
+        }
+    }
+    UpdateCharacterIdle(plr, 0x73);
 }
 
 void AnimateOFFROADER(struct creature_s *plr) {

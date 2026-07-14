@@ -128,6 +128,12 @@ extern f32 D_0062D914;
 
 void AddPanelDebris(f32 x, f32 y, s32 obj, f32 z, s32 flag);
 
+extern s32 new_power;
+extern u8 Game[];
+extern u8 Cursor[];
+extern s32 Level;
+void NewMenu(void *cursor, s32 menu, s32 mode, s32 item);
+
 void PlayerCreatureCollisions(struct obj_s *obj)
 {
     s32 i;
@@ -637,6 +643,37 @@ void PickupBonusGem(s32 mask) {
     D_00632054 = 0x19;
     GameSfx(0x26, 0);
     AddPanelDebris(D_0062D910, D_0062D914, 6, 0.125f, 0x10);
+}
+
+void PickupPower(s32 type) {
+    switch (type) {
+    case 0xA2:
+        new_power = 0;
+        break;
+    case 0xA3:
+        new_power = 1;
+        break;
+    case 0xA4:
+        new_power = 2;
+        break;
+    case 0xA5:
+        new_power = 3;
+        break;
+    case 0xA6:
+        new_power = 4;
+        break;
+    case 0xA7:
+        new_power = 5;
+        break;
+    }
+    Game[0x406] |= 1 << new_power;
+    NewMenu(Cursor, 0x1F, -1, -1);
+    GameSfx(0x26, 0);
+    if (Level != 0x15 && Level != 0x18) {
+        player->obj.mom.x = 0.0f;
+        player->obj.mom.z = 0.0f;
+        player->slide = 0;
+    }
 }
 
 void ClearGameObjects(void) {

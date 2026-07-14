@@ -141,7 +141,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0096:00201068:PickupPower"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:00201140:HitItems"

@@ -879,6 +879,35 @@ void DrawFade(void)
     }
 }
 
+extern char D_0061B550[];
+extern void *superbuffer_reset_base;
+extern s32 bgload_complete;
+extern void BGLoadScreenInit(s32 a);
+extern void InitLevelSfxTables(void);
+extern void InitGlobalSfx(void);
+
+void BGLoadSfxFn(void)
+{
+    char *msg = D_0061B550;
+    s32 done = 1;
+
+    NuDisableVBlank();
+    NuStrCpy(load_txt, msg);
+    NuEnableVBlank();
+
+    superbuffer_ptr = superbuffer_reset_base;
+    font3d_initialised = 0;
+    font3d_scene = NuGScnRead(&superbuffer_ptr, superbuffer_end, D_0061AE58);
+    InitFont3D(font3d_scene);
+    font3d_initialised = done;
+    BGLoadScreenInit(0);
+    InitLevelSfxTables();
+    InitGlobalSfx();
+    bgload_complete = done;
+    for (;;) {
+    }
+}
+
 void SetLevel(void)
 {
     LDATA = &LData[Level];

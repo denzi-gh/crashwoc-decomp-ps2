@@ -2552,10 +2552,46 @@ struct wumpa_s {
     s32 field_38;         /* 0x38 */
     float field_3C;       /* 0x3C */
     signed char field_40; /* 0x40 */
-    char pad_41[0x7];     /* 0x41 */
+    signed char field_41; /* 0x41 */
+    short field_42;       /* 0x42 */
+    char pad_44[0x4];     /* 0x44 */
     signed char field_48; /* 0x48 */
     signed char field_49; /* 0x49 */
 };
+
+struct winfo_s {
+    char pad_0[0x40];
+    float field_40;   /* 0x40 */
+    char pad_44[0x4]; /* 0x44 */
+    short field_48;   /* 0x48 */
+    short field_4A;   /* 0x4A */
+    char pad_4c[0x4]; /* 0x4C, stride 0x50 */
+};
+
+extern struct wumpa_s Wumpa[320];
+extern struct winfo_s WInfo[8];
+extern s32 WUMPACOUNT;
+void LoadWumpa(struct wumpa_s *w);
+
+void InitWumpa(void) {
+    s32 i;
+
+    memset(Wumpa, 0, sizeof(Wumpa));
+    WUMPACOUNT = 0;
+    if (LDATA->flags & 0x80) {
+        LoadWumpa(Wumpa);
+    }
+    for (i = 0; i < 320; i++) {
+        Wumpa[i].field_41 = -1;
+        Wumpa[i].field_42 = -1;
+    }
+    for (i = 0; i < 8; i++) {
+        WInfo[i].field_48 = 0;
+        WInfo[i].field_4A = 0x7AE;
+        WInfo[i].field_40 = 0.75f;
+    }
+    ResetWumpa();
+}
 
 void NuVecRotateX(struct nuvec_s *dst, struct nuvec_s *src, s32 angle);
 void NuVecRotateY(struct nuvec_s *dst, struct nuvec_s *src, s32 angle);
