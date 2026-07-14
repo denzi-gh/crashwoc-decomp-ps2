@@ -129,11 +129,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:00200f58:PickupCrystal"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:00200fb0:PickupCrateGem"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:00201008:PickupBonusGem"

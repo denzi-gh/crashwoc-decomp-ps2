@@ -141,11 +141,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0099:002216d8:MyInitModelNew"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00221760:MyDrawModelNew"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:002217f8:MyAnimateModelNew"

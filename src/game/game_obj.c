@@ -95,6 +95,27 @@ void NuVecRotateY(struct nuvec_s *dst, struct nuvec_s *src, s32 angle);
 s32 GetDieAnim(struct obj_s *obj, s32 anim);
 void ObjectToAtlas(struct obj_s *obj, struct creature_s *player);
 
+struct plr_lives_s {
+    short count; /* 0x0 */
+    short draw;  /* 0x2 */
+};
+
+extern u16 plr_items;
+extern struct plr_lives_s plr_crystal;
+extern struct plr_lives_s plr_crategem;
+extern struct plr_lives_s plr_bonusgem;
+extern u8 D_00632044;
+extern u8 D_0063204C;
+extern u8 D_00632054;
+extern u8 D_00632057;
+extern f32 D_0062D904;
+extern f32 D_0062D908;
+extern f32 D_0062D90C;
+extern f32 D_0062D910;
+extern f32 D_0062D914;
+
+void AddPanelDebris(f32 x, f32 y, s32 obj, f32 z, s32 flag);
+
 void PlayerCreatureCollisions(struct obj_s *obj)
 {
     s32 i;
@@ -579,6 +600,31 @@ s32 KillPlayer(struct obj_s *obj, s32 anim)
         return 0;
     }
     return KillGameObject(obj, anim);
+}
+
+void PickupCrystal(void) {
+    plr_crystal.count = 1;
+    D_00632044 = 0x19;
+    plr_items |= 1;
+    GameSfx(0x26, 0);
+    AddPanelDebris(0.0f, D_0062D904, 6, 0.125f, 0x10);
+}
+
+void PickupCrateGem(void) {
+    plr_crategem.count = 1;
+    D_0063204C = 0x19;
+    plr_items |= 2;
+    GameSfx(0x26, 0);
+    AddPanelDebris(D_0062D908, D_0062D90C, 6, 0.125f, 0x10);
+}
+
+void PickupBonusGem(s32 mask) {
+    plr_items |= mask;
+    D_00632057 = mask;
+    plr_bonusgem.count = 1;
+    D_00632054 = 0x19;
+    GameSfx(0x26, 0);
+    AddPanelDebris(D_0062D910, D_0062D914, 6, 0.125f, 0x10);
 }
 
 void ClearGameObjects(void) {

@@ -381,7 +381,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0094:001efd70:FindClock"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001efdb8:SaveWumpa"
@@ -469,7 +469,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0094:001f0c80:DrawLevel"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001f0cf0:InitProbe"

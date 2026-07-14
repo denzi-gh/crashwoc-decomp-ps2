@@ -546,8 +546,21 @@ extern struct nuvec_s ai_lookpos;
 extern struct nuvec_s lev_ambpos[];
 extern s32 jcrunch;
 extern s32 gamesfx_effect_volume;
+
+/* creature_s subset for FindClock (full layout in creature.h) */
+struct creatobj_s {
+    signed char used;    /* 0x00 */
+    signed char on;      /* 0x01 */
+    char pad_2[0x32];
+    short character;     /* 0x34 (obj.character) */
+    char pad_36[0xCAE];  /* stride 0xCE4 */
+};
+extern struct creatobj_s Character[9]; /* 0x0057EE38 */
 void UpdateDRAINDAMAGE(void);
 s32 UpdateCRUNCHTIME(void);
+void DrawDRAINDAMAGE(void);
+void DrawCRUNCHTIME(void);
+void HubDrawItems(void);
 void GameSfxLoop(s32 sfx, struct nuvec_s *pos);
 
 void InitPositions(void);
@@ -2517,5 +2530,30 @@ void UpdateLevel(void) {
     if (sfx != -1) {
         gamesfx_effect_volume = 0x5FFE;
         GameSfxLoop(sfx, &lev_ambpos[idx]);
+    }
+}
+
+struct creatobj_s *FindClock(void) {
+    s32 i;
+
+    for (i = 1; i < 9; i++) {
+        if (Character[i].on != 0 && Character[i].character == 0x76) {
+            return &Character[i];
+        }
+    }
+    return NULL;
+}
+
+void DrawLevel(void) {
+    switch (Level) {
+    case 37:
+        HubDrawItems();
+        break;
+    case 25:
+        DrawCRUNCHTIME();
+        break;
+    case 23:
+        DrawDRAINDAMAGE();
+        break;
     }
 }

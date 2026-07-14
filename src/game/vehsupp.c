@@ -68,8 +68,21 @@ extern void NuRndrLine3dDbg(s32 colour, f32 x0, f32 y0, f32 z0, f32 x1, f32 y1,
                             f32 z1);
 
 struct MYDRAW {
-    struct anim_s Anim;   /* 0x00 */
+    struct anim_s Anim;               /* 0x00 */
+    struct CharacterModel *model;     /* 0x1C */
+    s32 index;                        /* 0x20 */
+    s32 numjoints;                    /* 0x24 */
+    void *jointlist;                  /* 0x28 */
+    s32 field2C;                      /* 0x2C */
+    struct Nearest_Light_s lights;    /* 0x30 */
 };
+
+extern s32 ChrisJointOveride;
+extern s32 ChrisNumJoints;
+extern void *ChrisJointList;
+
+extern void ResetLights(struct Nearest_Light_s *nl);
+extern void SetNearestLights(struct Nearest_Light_s *l);
 
 
 s16 GetVolumeI(f32 vol) {
@@ -334,6 +347,45 @@ f32 fsign(f32 x) {
         return 1.0f;
     }
     return -1.0f;
+}
+
+s32 MyInitModelNew(struct MYDRAW *Draw, s32 index, s32 action, s32 numjoints,
+                   void *jointlist, s32 arg6) {
+    s32 remap = CRemap[index];
+
+    if (remap == -1) {
+        return 0;
+    }
+
+    Draw->model = &CModel[remap];
+    Draw->index = index;
+    Draw->numjoints = numjoints;
+    Draw->jointlist = jointlist;
+    Draw->field2C = arg6;
+    ResetAnimPacket(&Draw->Anim, action);
+    ResetLights(&Draw->lights);
+    return 1;
+}
+
+s32 MyDrawModelNew(struct MYDRAW *Draw, struct numtx_s *mC,
+                   struct numtx_s *loc_mtx) {
+    s32 result;
+
+    if (Draw->model == 0) {
+        return 0;
+    }
+
+    if (Draw->numjoints != 0) {
+        ChrisJointOveride = 1;
+        ChrisNumJoints = Draw->numjoints;
+        ChrisJointList = Draw->jointlist;
+    }
+
+    SetNearestLights(&Draw->lights);
+    result = DrawCharacterModel(Draw->model, &Draw->Anim, mC, 0, 1, 0, loc_mtx,
+                                0, 0);
+    ChrisJointOveride = 0;
+    return result;
 }
 
 void MyResetAnimPacket(struct MYDRAW *Draw, s32 Action) {
