@@ -161,7 +161,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0101:0022b248:DrawFireBossLevelExtra"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022b278:ProcessFireBossLevel"
@@ -169,7 +169,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0101:0022b340:DrawWesternArenaTemp"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022b370:GetTotalFireBossObjectives"
@@ -201,7 +201,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0101:0022b698:LimitSpeedZbyXZ"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022b718:AddBalloon"

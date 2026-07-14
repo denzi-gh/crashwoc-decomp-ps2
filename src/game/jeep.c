@@ -93,6 +93,13 @@ extern void NuMtxRotateX(struct numtx_s *m, short ang);
 extern void NuMtxTranslate(struct numtx_s *m, struct nuvec_s *pos);
 extern void NuVecScale(f32 scale, struct nuvec_s *dest, struct nuvec_s *src);
 extern void NuVecScaleAccum(f32 scale, struct nuvec_s *dest, struct nuvec_s *src);
+extern void DrawFireBoss(struct fireboss_s *fb);
+extern void DrawJeepRocks(void);
+extern void DrawVehMasks(void);
+extern void *app_fnt;
+extern void NuFntSet(void *fnt);
+extern void NuFntSetPen(u32 colour);
+extern f32 NuFsqrt(f32 x);
 
 
 void NewGenerateJeepMatrix(struct numtx_s *Mat, short YAng, short SurfaceX,
@@ -112,12 +119,39 @@ struct nuvec_s GenerateJeepWheelPoint(s32 WheelId) {
     return BaseWheelPosition[WheelId];
 }
 
+void DrawFireBossLevelExtra(void) {
+    DrawFireBoss(&FireBoss);
+    DrawJeepRocks();
+    DrawVehMasks();
+}
+
+void DrawWesternArenaTemp(void) {
+    NuFntSet(app_fnt);
+    NuFntSetPen(0x7F7F7F7F);
+}
+
 s32 GetTotalFireBossObjectives(void) {
     return 3;
 }
 
 s32 GetCurrentFireBossObjectives(void) {
     return FireBoss.HitPoints;
+}
+
+void LimitSpeedZbyXZ(struct nuvec_s *Vec, f32 LimitSpeed) {
+    f32 MaxZ;
+
+    if (Vec->x > LimitSpeed) {
+        Vec->x = LimitSpeed;
+    } else {
+        if (Vec->x < -LimitSpeed) {
+            Vec->x = -LimitSpeed;
+        }
+    }
+    MaxZ = NuFsqrt(LimitSpeed * LimitSpeed - Vec->x * Vec->x) * 1.1f;
+    if (Vec->z > MaxZ) {
+        Vec->z = MaxZ;
+    }
 }
 
 void BlendNUVECs(struct nuvec_s *Dest, struct nuvec_s *A, struct nuvec_s *B,
