@@ -21,7 +21,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0115:0024e2e0:InitClouds"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0115:0024e400:DoClouds"

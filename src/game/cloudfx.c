@@ -22,10 +22,39 @@ extern void *tttex;
 extern void *clouds_rs;
 extern u8 D_00293090[];
 
+struct nuivec_s {
+    s32 x;
+    s32 y;
+    s32 z;
+};
+
+extern struct nuvec_s groff[];
+extern struct nuivec_s grphase[];
+extern struct nuivec_s grphaserate[];
+
 extern void cloudInit();
 extern void NuMtlDestroy(void *mtl);
 extern void *NuRndrStreamAllocStream(void *a0, void *a1, s32 a2);
+extern f32 NuRandFloat(void);
+extern int rand(void);
 
+
+void InitClouds(void *buffer, void *buffend) {
+    s32 n;
+
+    cloudInit(buffer, buffend);
+    for (n = 0; n < 10; n++) {
+        groff[n].x = NuRandFloat();
+        groff[n].y = NuRandFloat();
+        groff[n].z = NuRandFloat();
+        grphase[n].x = rand() << 1;
+        grphase[n].y = rand() << 1;
+        grphase[n].z = rand() << 1;
+        grphaserate[n].x = (rand() & 0xff) + 0x80;
+        grphaserate[n].y = (rand() & 0xff) + 0x80;
+        grphaserate[n].z = (rand() & 0xff) + 0x80;
+    }
+}
 
 void cloudProcess(void) {
     if (cloudreset != 0) {
