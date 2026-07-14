@@ -181,11 +181,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f8938:LowestActiveCrate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f89c8:CrateInTheWay"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f8a40:CrateOnTop"
