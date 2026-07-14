@@ -17,15 +17,15 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0123:00260ae8:InitGameDebris"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0123:00260b60:AddGameDebris"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0123:00260bb8:AddGameDebrisRot"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0123:00260c20:AddGameDebrisMtx"
