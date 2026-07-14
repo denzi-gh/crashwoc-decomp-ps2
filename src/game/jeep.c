@@ -204,6 +204,7 @@ extern s32 SmokeyCam;
 
 extern void NuVecSub(struct nuvec_s *dest, struct nuvec_s *a, struct nuvec_s *b);
 extern s32 NuAtan2D(f32 x, f32 z);
+extern void *memset(void *s, s32 c, s32 n);
 
 extern s32 FireBossFinished;
 extern s32 FireBossWon;
@@ -412,7 +413,7 @@ void BlendNUVECs(struct nuvec_s *Dest, struct nuvec_s *A, struct nuvec_s *B,
 void WesternRaceManager(void) {
 }
 
-void EmptyTrail(s32 i) {
+inline void EmptyTrail(s32 i) {
     s32 j;
 
     for (j = 0; j < 0x20; j++) {
@@ -420,6 +421,14 @@ void EmptyTrail(s32 i) {
     }
     TrailPntr[i] = 0;
     TrailAir[i] = 0;
+}
+
+void NewInitTrail(void) {
+    s32 i;
+
+    for (i = 0; i < 0x14; i++) {
+        EmptyTrail(i);
+    }
 }
 
 void NewFadeOutLastTrail(struct jeeptrail_s *trail, s32 start, s32 count) {
@@ -452,7 +461,7 @@ void InitJeepBalloons(void) {
     }
 }
 
-struct JEEPBALLOON *FindJeepBalloon(void) {
+inline struct JEEPBALLOON *FindJeepBalloon(void) {
     s32 i;
 
     for (i = 0; i < 6; i++) {
@@ -461,6 +470,25 @@ struct JEEPBALLOON *FindJeepBalloon(void) {
         }
     }
     return 0;
+}
+
+s32 AddBalloon(struct nuvec_s *Pos, struct nuvec_s *Vel) {
+    struct JEEPBALLOON *Balloon;
+    s32 i;
+
+    Balloon = FindJeepBalloon();
+    if (Balloon != 0) {
+        memset(Balloon, 0, 0x30);
+        Balloon->Active = 1;
+        Balloon->Vel = *Vel;
+        Balloon->Pos = *Pos;
+        Balloon->Life = 5.0f;
+        Balloon->AngY = (short)NuAtan2D(Vel->x * 100.0f, Vel->z * 100.0f);
+        i = 1;
+    } else {
+        i = 0;
+    }
+    return i;
 }
 
 void DrawEnemyJeeps(void) {

@@ -189,7 +189,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022b498:NewInitTrail"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022b508:SteeringUpdate"
@@ -205,7 +205,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022b718:AddBalloon"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022b810:CheckAgainstFireBoss"
