@@ -42,10 +42,13 @@ extern s32 FurtherALONG(s32 iRAIL, s32 iALONG, f32 fALONG, s32 iRAIL2,
 extern s32 FurtherBEHIND(s32 iRAIL, s32 iALONG, f32 fALONG, s32 iRAIL2,
                          s32 iALONG2, f32 fALONG2);
 
-/* spline table: entry stride 0x18, .spl @0x0 (SplTab[70]=0x690 in ResetBug);
- * spline .len @0x0 (lh in ResetBug). */
+/* spline table: entry stride 0x18, .spl @0x0 (SplTab[70]=0x690, SplTab[67]=0x648).
+ * spline .len @0x0, .ptsize @0x2, .pts @0x8 (verified in InitBugAreas). */
 struct spline_s {
     s16 len;          /* 0x0 */
+    s16 ptsize;       /* 0x2 */
+    u8 pad4[0x4];     /* 0x4 */
+    u8 *pts;          /* 0x8 */
 };
 struct spltab_s {
     struct spline_s *spl;   /* 0x0 */
@@ -56,9 +59,15 @@ extern struct spltab_s SplTab[];
 extern struct nuvec_s D_006FFA90;   /* bug_splpos */
 extern f32 D_006333B8;              /* bug_splratio */
 
+extern s32 temp_iRAIL;
+extern u16 temp_iALONG;
+extern f32 temp_fALONG;
+
 extern s32 NearestSplinePoint(struct nuvec_s *pos, struct spline_s *spl);
 extern void PointAlongSpline(struct spline_s *spl, f32 ratio,
                              struct nuvec_s *out, void *a3, void *a4);
+extern void GetALONG(struct nuvec_s *pos, void *rpos, s32 iRAIL, s32 iALONG,
+                     s32 info);
 
 /* File-scope statics in the retail TU (data-from-C unsupported -> extern). */
 extern struct nuvec_s D_006FFA80;   /* bug_pos */
@@ -80,6 +89,38 @@ extern void Draw3DCharacter(struct nuvec_s *pos, s32 xrot, s32 yrot, s32 z,
                             struct CharacterModel *model, f32 scale, s32 action,
                             f32 anim_time, s32 last);
 
+
+void InitBugAreas(void) {
+    s32 index;
+    s32 i;
+    struct nuvec_s *vec;
+
+    for (i = 0; i < 4; i++) {
+        BugArea[i].in_iRAIL = -1;
+        BugArea[i].out_iRAIL = -1;
+    }
+    if (SplTab[67].spl != 0) {
+        for (i = 0; i < SplTab[67].spl->len; i++) {
+            vec = (struct nuvec_s *)(SplTab[67].spl->pts +
+                                     i * (s32)SplTab[67].spl->ptsize);
+            GetALONG(vec, 0, -1, -1, 1);
+            if (temp_iRAIL != -1 && (Rail + temp_iRAIL)->type == 0) {
+                if ((i & 1) != 0) {
+                    index = i / 2;
+                    BugArea[index].out_iRAIL = temp_iRAIL;
+                    BugArea[index].out_iALONG = temp_iALONG;
+                    BugArea[index].out_fALONG = temp_fALONG;
+                } else {
+                    index = i / 2;
+                    BugArea[index].in_iRAIL = temp_iRAIL;
+                    BugArea[index].in_iALONG = temp_iALONG;
+                    BugArea[index].in_fALONG = temp_fALONG;
+                }
+            }
+        }
+    }
+    D_006333B8 = 0.0f;
+}
 
 void ResetBug(void) {
     s32 i;
