@@ -29,8 +29,8 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0122:0025fa00:AddBugLight"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0122:0025fa88:DrawBug"
-state = "asm"
+state = "matching"
