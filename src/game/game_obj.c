@@ -579,3 +579,54 @@ s32 KillPlayer(struct obj_s *obj, s32 anim)
     }
     return KillGameObject(obj, anim);
 }
+
+void ClearGameObjects(void) {
+    s32 i;
+
+    for (i = 0; i < 0x40; i++) {
+        pObj[i] = 0;
+    }
+}
+
+void CountGameObjects(void) {
+    s32 i;
+
+    for (i = 64; i > 0; i--) {
+        if (pObj[i - 1] != 0) {
+            break;
+        }
+    }
+    GAMEOBJECTCOUNT = i;
+}
+
+s32 CylinderCylinderOverlapXZ(struct nuvec_s *p0, f32 r0, struct nuvec_s *p1,
+                              f32 r1) {
+    f32 dz;
+    f32 dx;
+
+    dx = p1->x - p0->x;
+    dz = p1->z - p0->z;
+    if (dx * dx + dz * dz <= r0 * r0 + r1 * r1) {
+        return 1;
+    }
+    return 0;
+}
+
+void NewTopBot(struct obj_s *obj) {
+    obj->objbot = obj->pos.y + obj->bot * obj->SCALE;
+    obj->objtop = obj->pos.y + obj->top * obj->SCALE;
+}
+
+void OldTopBot(struct obj_s *obj) {
+    obj->oldobjbot = obj->objbot;
+    obj->oldobjtop = obj->objtop;
+}
+
+void KillItem(struct obj_s *obj) {
+    struct creature_s *c;
+
+    c = (struct creature_s *)obj->parent;
+    obj->dead = 1;
+    c->on = 0;
+    c->off_wait = 2;
+}

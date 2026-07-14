@@ -89,7 +89,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0096:00200ab0:ClearGameObjects"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:00200ad8:ResetGameObject"
@@ -109,7 +109,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0096:00200d30:CylinderCylinderOverlapXZ"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:00200d80:FlyGameObject"
@@ -125,7 +125,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:00200f38:KillItem"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:00200f58:PickupCrystal"
@@ -149,11 +149,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0096:00201200:NewTopBot"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:00201230:OldTopBot"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:00201248:FindAnglesZX"
@@ -169,7 +169,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0096:002013d8:CountGameObjects"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:00201418:PickupRelic"
