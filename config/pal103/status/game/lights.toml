@@ -21,7 +21,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0111:00244a98:ResetLights"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0111:00244c10:DrawHighLightBox"
@@ -69,7 +69,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0111:002476d8:InitObjectLights"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0111:002477d0:RotateDirectionalLight"
