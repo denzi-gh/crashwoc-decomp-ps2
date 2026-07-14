@@ -100,6 +100,57 @@ extern void *app_fnt;
 extern void NuFntSet(void *fnt);
 extern void NuFntSetPen(u32 colour);
 extern f32 NuFsqrt(f32 x);
+extern f32 fsign(f32 x);
+extern double pow(double, double);
+extern f32 NewShadowMaskPlat(struct nuvec_s *pos, f32 y0, s32 flag);
+extern s32 ShadowInfo(void);
+
+struct JEEPSTRUCT {
+    u8 _pad_000[0x7F4];
+    f32 TiltSeekTime;               /* 0x7F4 */
+    u16 aTiltX;                     /* 0x7F8 */
+    u16 aTiltZ;                     /* 0x7FA */
+    u16 aDestTiltX;                 /* 0x7FC */
+    u16 aDestTiltZ;                 /* 0x7FE */
+    u8 _pad_800[0x84C - 0x800];
+    f32 FloorHeight;                /* 0x84C */
+    s32 TerrainType;                /* 0x850 */
+    u8 _pad_854[0x8F8 - 0x854];
+    struct nuvec_s ActualPosition;  /* 0x8F8 */
+};
+
+struct GENERICTRAIL {
+    struct nuvec_s Position;        /* 0x00 */
+    struct nuvec_s OldPosition;     /* 0x0C */
+    f32 TrailWidth;                 /* 0x18 */
+    f32 Radius;                     /* 0x1C */
+    s32 Platform;                   /* 0x20 */
+    s32 pad_24;                     /* 0x24 */
+};
+extern struct GENERICTRAIL GenericTrail[];
+extern void ProcessJeepTrail(struct GENERICTRAIL *t, s32 i);
+
+extern void NuVecSub(struct nuvec_s *dest, struct nuvec_s *a, struct nuvec_s *b);
+extern s32 NuAtan2D(f32 x, f32 z);
+
+extern s32 FireBossFinished;
+extern s32 FireBossWon;
+extern s32 ChrisBigBossDead;
+extern s32 VEHICLECONTROL;
+extern s32 WaterTimer;
+extern s32 FireBossHoldPlayer;
+extern s32 FireBossHealth;
+extern s32 SMASHRUMPOWER;
+extern void InitVehMasks(void);
+extern void InitVehMask(s32 a, s32 b);
+extern void InitFireBoss(struct fireboss_s *fb);
+extern void InitJeepRocks(void);
+extern void ProcessFireBoss(struct fireboss_s *fb);
+extern void ProcessJeepRocks(void);
+extern void ProcessVehMasks(void);
+extern void ProcessRockRockCollisions(void);
+extern s32 CheckAgainstRocks(struct nuvec_s *pos, struct nuvec_s *vel);
+extern void KillPlayer(struct obj_s *obj, s32 type);
 
 
 void NewGenerateJeepMatrix(struct numtx_s *Mat, short YAng, short SurfaceX,
@@ -119,6 +170,40 @@ struct nuvec_s GenerateJeepWheelPoint(s32 WheelId) {
     return BaseWheelPosition[WheelId];
 }
 
+void FireBossReset(void) {
+    FireBossFinished = 0;
+    FireBossWon = 0;
+    ChrisBigBossDead = 0;
+    InitVehMasks();
+    InitVehMask(0, 0x56);
+    InitVehMask(1, 3);
+    InitFireBoss(&FireBoss);
+    InitJeepRocks();
+    VEHICLECONTROL = 0;
+    WaterTimer = 0;
+}
+
+void ProcessFireBossLevel(void) {
+    struct nuvec_s Rel;
+
+    ProcessFireBoss(&FireBoss);
+    ProcessJeepRocks();
+    ProcessVehMasks();
+    ProcessRockRockCollisions();
+    NuVecSub(&Rel, &player->obj.pos, &player->obj.oldpos);
+    if (CheckAgainstRocks(&player->obj.pos, &Rel) != 0) {
+        NewRumble(&player->rumble, SMASHRUMPOWER);
+        NewBuzz(&player->rumble, 5);
+        if (FireBossHoldPlayer == 0 && FireBoss.HitPoints > 0) {
+            KillPlayer(&player->obj, 0xD);
+        }
+    }
+    if (FireBossHealth < 1) {
+        FireBossFinished = 1;
+        FireBossWon = 1;
+    }
+}
+
 void DrawFireBossLevelExtra(void) {
     DrawFireBoss(&FireBoss);
     DrawJeepRocks();
@@ -136,6 +221,70 @@ s32 GetTotalFireBossObjectives(void) {
 
 s32 GetCurrentFireBossObjectives(void) {
     return FireBoss.HitPoints;
+}
+
+void ProcessGenericTrail(s32 id, struct nuvec_s *pos, f32 Radius, f32 width) {
+    GenericTrail[id].OldPosition = GenericTrail[id].Position;
+    GenericTrail[id].Radius = Radius;
+    GenericTrail[id].Position = *pos;
+    GenericTrail[id].TrailWidth = width;
+    GenericTrail[id].Platform = -1;
+    ProcessJeepTrail(GenericTrail + id, id);
+}
+
+u16 NewFindTrailAng(struct nuvec_s *A, struct nuvec_s *B) {
+    struct nuvec_s Line;
+
+    NuVecSub(&Line, B, A);
+    return (u16)(NuAtan2D(Line.x, Line.z) - 0x2000);
+}
+
+void FindTerrainType(struct JEEPSTRUCT *Jeep) {
+    struct nuvec_s Pos;
+    f32 FloorY;
+
+    Pos = Jeep->ActualPosition;
+    Pos.y += 1.0f;
+    FloorY = Jeep->ActualPosition.y - NewShadowMaskPlat(&Pos, 0.0f, -1);
+    Jeep->FloorHeight = FloorY;
+    if (FloorY < 0.1f) {
+        Jeep->TerrainType = ShadowInfo();
+    } else {
+        Jeep->TerrainType = -1;
+    }
+}
+
+void SteeringUpdate(f32 *val, f32 target) {
+    f32 step;
+
+    step = fsign(target - *val) * 0.025f;
+    if (target < *val) {
+        *val = *val + step;
+        if (*val < target) {
+            *val = target;
+        }
+    } else if (*val < target) {
+        *val = *val + step;
+        if (target < *val) {
+            *val = target;
+        }
+    }
+}
+
+void TiltSeek(struct JEEPSTRUCT *Jeep, f32 DeltaTime) {
+    f32 rate;
+    f32 TempX;
+    f32 TempZ;
+
+    if (Jeep->TiltSeekTime == 0.0f) {
+        rate = 1.0f;
+    } else {
+        rate = (f32)(1.0 - 1.0 / pow(2.0, DeltaTime / Jeep->TiltSeekTime));
+    }
+    TempX = (f32)(s16)(Jeep->aDestTiltX - Jeep->aTiltX) * rate;
+    TempZ = (f32)(s16)(Jeep->aDestTiltZ - Jeep->aTiltZ) * rate;
+    Jeep->aTiltX += (short)TempX;
+    Jeep->aTiltZ += (short)TempZ;
 }
 
 void LimitSpeedZbyXZ(struct nuvec_s *Vec, f32 LimitSpeed) {
@@ -158,4 +307,7 @@ void BlendNUVECs(struct nuvec_s *Dest, struct nuvec_s *A, struct nuvec_s *B,
                  f32 Blend) {
     NuVecScale(1.0f - Blend, Dest, A);
     NuVecScaleAccum(Blend, Dest, B);
+}
+
+void WesternRaceManager(void) {
 }

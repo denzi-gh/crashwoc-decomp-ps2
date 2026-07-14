@@ -157,7 +157,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0101:0022b1f0:FireBossReset"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022b248:DrawFireBossLevelExtra"
@@ -165,7 +165,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022b278:ProcessFireBossLevel"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022b340:DrawWesternArenaTemp"
@@ -181,11 +181,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022b388:ProcessGenericTrail"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022b408:FindTerrainType"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022b498:NewInitTrail"
@@ -253,7 +253,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0101:0022c008:WesternRaceManager"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022c010:EmptyTrail"
@@ -265,7 +265,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0101:0022c0e8:NewFindTrailAng"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022c120:JonnySteam"
