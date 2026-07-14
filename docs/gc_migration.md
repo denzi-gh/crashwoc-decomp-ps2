@@ -144,6 +144,7 @@ regalloc-sensitive code.
 |----------------|-----------|---------|-------|---------|----------|---------------|
 | `game/bug`     | 5         | 5       | 0     | 5       | 0        | UpdateBugLight (2224B FP, deferred) |
 | `game/cloudfx` | 5         | 5       | 0     | 1       | 4        | cloudInit/cloudRender/DoClouds/TimeTunnelInit/TimeTunnelRender (larger, pending) |
+| `game/font3d`  | 3         | 3       | 0     | 3       | 0        | RemapAccentedCharacter/Update3DFontObjects/InitFont3D/Text3D (pending) |
 
 Notes:
 - `game/bug` (5/6): InitBugAreas, InBugArea, ResetBug, AddBugLight, DrawBug all
@@ -157,6 +158,14 @@ Notes:
   matched with two PS2 divergences from GC (no `srand`, loop count 10 not 20).
   Remaining 5 are larger (vertex-buffer / render / NuRndrGobj) — pending.
 
+- `game/font3d` (3/7): CombinationCharacterBC/BD (string-pair scan over extern
+  char tables), Reset3DFontObjects. The last diverges from GC -- PS2 computes a
+  randomized `anim_time = qrand()*rate*(anmdata[action]->time - 1) + 1` instead
+  of `1.0f`; matched by dropping `volatile` (CSE the action load) and forcing
+  both loop-invariant FP constants (1.0f, D_0062E350) into ordered explicit
+  locals so the save-mask and preheader order match.
+
 New reusable levers recorded in memory `gc-migration-listman-lessons`:
 empty-stub / dropped-call / PAL-loop-count divergences, `(arr+i)->field`
-offset-first regalloc fix, mul.s operand order, EABI split arg registers.
+offset-first regalloc fix, mul.s operand order, EABI split arg registers,
+ordered-explicit-locals FP-constant hoist, drop-volatile CSE.
