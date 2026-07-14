@@ -89,6 +89,7 @@ void NuVecScale(struct nuvec_s *dst, struct nuvec_s *src, f32 s);
 void GameSfx(s32 sfx, struct nuvec_s *pos);
 s32 NuAtan2D(f32 x, f32 z);
 f32 NuFsqrt(f32 x);
+extern void *memset(void *s, s32 c, s32 n);
 void NuVecRotateX(struct nuvec_s *dst, struct nuvec_s *src, s32 angle);
 void NuVecRotateY(struct nuvec_s *dst, struct nuvec_s *src, s32 angle);
 s32 GetDieAnim(struct obj_s *obj, s32 anim);
@@ -588,7 +589,7 @@ void ClearGameObjects(void) {
     }
 }
 
-void CountGameObjects(void) {
+inline void CountGameObjects(void) {
     s32 i;
 
     for (i = 64; i > 0; i--) {
@@ -629,4 +630,57 @@ void KillItem(struct obj_s *obj) {
     obj->dead = 1;
     c->on = 0;
     c->off_wait = 2;
+}
+
+void ResetGameObject(struct obj_s *obj) {
+    memset(obj, 0, 0x188);
+    obj->reflect_y = 2000000.0f;
+    obj->SCALE = 1.0f;
+    obj->RPos.iRAIL = -1;
+    obj->RPos.iALONG = -1;
+    obj->layer_type = -1;
+    obj->roof_type = -1;
+    obj->scale = 1.0f;
+}
+
+void RemoveGameObject(struct obj_s *obj) {
+    s32 i;
+
+    for (i = 0; i < 64; i++) {
+        if (pObj[i] == obj) {
+            pObj[i] = 0;
+            i = 64;
+        }
+    }
+    CountGameObjects();
+}
+
+f32 GameObjectRadius(struct obj_s *obj) {
+    f32 r;
+
+    r = obj->radius * obj->SCALE;
+    if ((obj->attack & 8) != 0) {
+        return r + 0.5f;
+    }
+    if ((obj->attack & 4) != 0) {
+        return r + 0.25f;
+    }
+    if ((obj->attack & 2) != 0) {
+        if ((obj->character == 1) &&
+            (*(short *)((int)&obj->parent[8].startpos.y + 2) != 0)) {
+            return r * 3.0f;
+        } else {
+            return r + r;
+        }
+    }
+    return r;
+}
+
+void FlyGameObject(struct obj_s *obj, u16 yrot) {
+    obj->mom.x = 0.0f;
+    obj->mom.y = 0.0f;
+    obj->mom.z = 0.1999999881f;
+    NuVecRotateX(&obj->mom, &obj->mom, -0x400);
+    NuVecRotateY(&obj->mom, &obj->mom, yrot);
+    GameSfx(0x37, &obj->pos);
 }
