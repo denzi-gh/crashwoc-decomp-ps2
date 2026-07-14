@@ -49,11 +49,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0088:001c70b0:MiniGame"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0088:001c70b8:MiniGameRender"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0088:001c70c0:MiniGameRenderScore"

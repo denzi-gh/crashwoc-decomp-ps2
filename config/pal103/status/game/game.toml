@@ -341,7 +341,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0094:001efac0:ResetItems"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001efae0:DefaultGame"

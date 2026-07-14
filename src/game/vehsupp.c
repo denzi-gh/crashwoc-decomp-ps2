@@ -63,6 +63,7 @@ extern double pow(double, double);
 extern double fmod(double, double);
 extern f32 NuTrigTable[];
 extern s32 ChrisInTheHouse;
+extern struct nuvec_s D_006B75C0[];
 extern void NuRndrLine3dDbg(s32 colour, f32 x0, f32 y0, f32 z0, f32 x1, f32 y1,
                             f32 z1);
 
@@ -352,6 +353,13 @@ struct nuvec_s SetNuVec(f32 x, f32 y, f32 z) {
     v.y = y;
     v.z = z;
     return v;
+}
+
+struct nuvec_s *SetNuVecPntr(f32 x, f32 y, f32 z) {
+    D_006B75C0[0].x = x;
+    D_006B75C0[0].y = y;
+    D_006B75C0[0].z = z;
+    return &D_006B75C0[0];
 }
 
 struct nuquat_s SetNuQuat(f32 x, f32 y, f32 z, f32 w) {

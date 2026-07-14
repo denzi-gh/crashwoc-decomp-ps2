@@ -887,6 +887,14 @@ extern void PauseGameAudio(s32 a);
 extern void GameSfx(s32 id, s32 a);
 extern void NuPs2VideoSetPos(s32 x, s32 y);
 
+void MiniGame(void)
+{
+}
+
+void MiniGameRender(void)
+{
+}
+
 void DoInput(void)
 {
     struct nupad_s *pad = Pad[0];

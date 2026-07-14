@@ -751,6 +751,16 @@ void OpenGame(void) {
     ResetGemPath();
 }
 
+void ResetItems(void) {
+    plr_items = 0;
+    plr_crystal.draw = 0;
+    plr_crystal.count = 0;
+    plr_crategem.draw = 0;
+    plr_crategem.count = 0;
+    plr_bonusgem.draw = 0;
+    plr_bonusgem.count = 0;
+}
+
 void DefaultGame(void) {
     Game.vibration = 1;
     Game.surround = 0;
