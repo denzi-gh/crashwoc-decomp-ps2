@@ -35,8 +35,15 @@ extern void NuMtxSetRotationX(struct numtx_s *m, s32 angle);
 extern void NuMtxMulR(struct numtx_s *dst, struct numtx_s *a,
                       struct numtx_s *b);
 
+extern void AddDeb3(struct nuvec_s *pos, s32 effect, s32 n, void *arg);
+
 extern struct numtx_s mTEMP;
 extern struct numtx_s numtx_identity;
+
+extern s32 jeepbits[];
+extern s32 helibits[];
+extern s32 mechbits[];
+extern s32 atlasbits[];
 
 
 void InitGameDebris(void) {
@@ -50,7 +57,7 @@ void InitGameDebris(void) {
     }
 }
 
-void AddGameDebris(s32 i, struct nuvec_s *pos) {
+inline void AddGameDebris(s32 i, struct nuvec_s *pos) {
     s32 key;
 
     if (NODEBRIS == 0 && (u32)i < 0xaa && GDeb[i].i != -1) {
@@ -62,6 +69,43 @@ void AddGameDebris(s32 i, struct nuvec_s *pos) {
 void AddGameDebrisRot(s32 i, struct nuvec_s *pos, s32 n, u16 xrot, u16 yrot) {
     if (NODEBRIS == 0 && (u32)i < 0xaa && GDeb[i].i != -1) {
         AddVariableShotDebrisEffect(GDeb[i].i, pos, n, xrot, yrot + 0x4000);
+    }
+}
+
+/*
+ * Faithful near-match (state=asm): retail inlines AddGameDebris(0x8E,pos) at
+ * case 0x20 -- reproduced by the `inline` on AddGameDebris above (gnu89: emits
+ * standalone AND inlines), so the frame (0x60) and reg_mask (0x800f0000) match.
+ * Residual is a register-allocation difference: retail keeps %hi(jeepbits) in
+ * s1 and rematerialises &jeepbits after the inlined body. 288-byte extent
+ * exact so the hybrid splice is unaffected.
+ */
+void AddMechanicalDebris(struct nuvec_s *pos, s32 vehicle) {
+    s32 i;
+    s32 *pt;
+
+    pt = jeepbits;
+    i = 1;
+    switch (vehicle) {
+    case 0x44:
+    case 0xB2:
+        i = 1;
+        pt = mechbits;
+        break;
+    case 0x53:
+        pt = atlasbits;
+        break;
+    case 0x3B:
+        pt = helibits;
+        break;
+    case 0x20:
+        AddGameDebris(0x8E, pos);
+        i = 6;
+        break;
+    }
+    while (*pt != -1) {
+        AddDeb3(pos, pt[0], i, 0);
+        pt++;
     }
 }
 
