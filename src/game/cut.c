@@ -46,6 +46,58 @@ extern struct nuvec_s cutdir[];
 extern void NuGCutSceneSysRender(void);
 extern void NuVecNorm(struct nuvec_s *out, struct nuvec_s *in);
 
+extern s32 cutmovie;
+extern s32 cut_on;
+extern s32 logos_played;
+extern char Cursor[];
+extern s32 D_00633388;                 /* cutworldix */
+
+struct csc_s {
+    void *obj;            /* 0x0 */
+    char *path;           /* 0x4 */
+    char *name;           /* 0x8 */
+};                        /* 0xC */
+
+extern struct csc_s *CutChar;
+
+extern void NewMenu(void *cursor, s32 a, s32 b, s32 c);
+extern void GameMusic(s32 sfx, s32 i);
+extern s32 strcasecmp(char *a, char *b);
+
+
+void CutSceneEndFunction(void *icutscene) {
+    if (cutmovie == 0) {
+        NewMenu(Cursor, 0, 0, -1);
+        if (logos_played == 0) {
+            GameMusic(0xaa, 0);
+        }
+    } else {
+        cut_on = 0;
+    }
+}
+
+void CutSceneNextLogoFunction(void *icutscene) {
+    D_00633388++;
+    NewMenu(Cursor, 0, 0, -1);
+    if (logos_played == 0) {
+        GameMusic(0xaa, 0);
+    }
+}
+
+void *FindCutChar(char *name) {
+    struct csc_s *chr;
+
+    chr = CutChar;
+    if (CutChar != 0) {
+        for (; chr->path != 0; chr++) {
+            if (strcasecmp(name, chr->name) == 0) {
+                return chr->obj;
+            }
+        }
+    }
+    return 0;
+}
+
 
 void DrawCutMovie(void) {
     NuGCutSceneSysRender();

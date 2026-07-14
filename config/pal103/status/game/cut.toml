@@ -81,7 +81,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0121:0025e798:FindCutChar"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0121:0025e808:AppCutSceneFindCharacters"
@@ -93,7 +93,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0121:0025ea08:CutSceneEndFunction"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0121:0025ea60:CutSceneNextFunction"
@@ -101,7 +101,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0121:0025eb48:CutSceneNextLogoFunction"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0121:0025eb98:UpdateCutMovieCamera"
