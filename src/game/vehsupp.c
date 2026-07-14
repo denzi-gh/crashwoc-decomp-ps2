@@ -48,3 +48,122 @@
  *   0x00221a70 SetNuQuat
  *   0x00221ab0 ControlledDist
  */
+
+#include "creature.h"
+
+extern s32 Level;
+extern s32 Paused;
+extern s32 gamesfx_effect_volume;
+extern s32 gamesfx_pitch;
+
+extern void GameSfx(s32 Id, struct nuvec_s *Pos);
+extern void GameSfxLoop(s32 Id, struct nuvec_s *Pos);
+extern int rand(void);
+
+
+s16 GetVolumeI(f32 vol) {
+    s32 v = (s32)(vol * 16383.0f);
+    if (v > 0x7FFF) {
+        v = 0x7FFF;
+    }
+    return (s16)v;
+}
+
+void MyGameSfx(s32 Id, struct nuvec_s *Pos, s32 Vol) {
+    if (Level == 0x15 && Pos != 0) {
+        Vol = Vol * 5;
+    }
+    gamesfx_effect_volume = Vol;
+    GameSfx(Id, Pos);
+}
+
+void MyGameSfxLoop(s32 Id, struct nuvec_s *Pos, s32 Vol) {
+    if (Level == 0x15 && Pos != 0) {
+        Vol = Vol * 5;
+    }
+    gamesfx_effect_volume = Vol;
+    GameSfxLoop(Id, Pos);
+}
+
+void MyGameSfxLoopVolPitch(s32 Id, struct nuvec_s *Pos, s32 Vol, s32 Pitch) {
+    if (Level == 0x15 && Pos != 0) {
+        Vol = Vol * 5;
+    }
+    gamesfx_effect_volume = Vol;
+    gamesfx_pitch = Pitch;
+    GameSfxLoop(Id, Pos);
+}
+
+void ApplyFriction(f32 *val, f32 rate, f32 dt) {
+    f32 v = *val;
+    f32 f = rate * dt;
+
+    if (v > 0.0f) {
+        if (f > v) {
+            *val = 0.0f;
+            return;
+        }
+        *val = v - f;
+    } else {
+        if (f > -v) {
+            *val = 0.0f;
+            return;
+        }
+        *val = v + f;
+    }
+}
+
+f32 DotProduct(struct nuvec_s *A, struct nuvec_s *B) {
+    return A->x * B->x + A->y * B->y + A->z * B->z;
+}
+
+void CrossProduct(struct nuvec_s *dest, struct nuvec_s *A, struct nuvec_s *B) {
+    struct nuvec_s result;
+    result.x = A->y * B->z - A->z * B->y;
+    result.y = A->z * B->x - A->x * B->z;
+    result.z = A->x * B->y - A->y * B->x;
+    *dest = result;
+}
+
+s32 ProcessTimer(f32 *Timer) {
+    if (Paused == 0) {
+        *Timer -= 1.0f / 50.0f;
+    }
+    if (*Timer <= 0.0f) {
+        *Timer = 0.0f;
+        return 1;
+    }
+    return 0;
+}
+
+f32 frand(void) {
+    return (f32)(rand() % 16384) * (1.0f / 16384.0f);
+}
+
+f32 frandPN(void) {
+    return (f32)(rand() % 16384) * (1.0f / 8192.0f) - 1.0f;
+}
+
+f32 fsign(f32 x) {
+    if (x >= 0.0f) {
+        return 1.0f;
+    }
+    return -1.0f;
+}
+
+struct nuvec_s SetNuVec(f32 x, f32 y, f32 z) {
+    struct nuvec_s v;
+    v.x = x;
+    v.y = y;
+    v.z = z;
+    return v;
+}
+
+struct nuquat_s SetNuQuat(f32 x, f32 y, f32 z, f32 w) {
+    struct nuquat_s q;
+    q.x = x;
+    q.y = y;
+    q.z = z;
+    q.w = w;
+    return q;
+}

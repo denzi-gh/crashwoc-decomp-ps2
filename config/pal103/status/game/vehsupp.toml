@@ -25,23 +25,23 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0099:00220820:GetVolumeI"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00220850:MyGameSfx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00220888:MyGameSfxLoop"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:002208c0:MyGameSfxLoopVolPitch"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:002208f8:ApplyFriction"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00220950:Rationalise360f"
@@ -53,7 +53,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0099:00220a70:DotProduct"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00220aa0:CrossProduct"
@@ -61,7 +61,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0099:00220b10:ProcessTimer"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00220b58:DrawSphere"
@@ -173,7 +173,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0099:002219f8:SetNuVec"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00221a30:SetNuVecPntr"
@@ -185,7 +185,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0099:00221a70:SetNuQuat"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00221ab0:ControlledDist"
