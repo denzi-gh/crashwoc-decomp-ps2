@@ -37,16 +37,16 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0115:0024f280:cloudProcess"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0115:0024f2a8:CloseClouds"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0115:0024f2b0:TimeTunnelClose"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0115:0024f2e0:CloudFxInit"
-state = "asm"
+state = "matching"
