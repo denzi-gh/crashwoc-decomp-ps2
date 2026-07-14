@@ -145,6 +145,7 @@ regalloc-sensitive code.
 | `game/bug`     | 5         | 5       | 0     | 5       | 0        | UpdateBugLight (2224B FP, deferred) |
 | `game/cloudfx` | 5         | 5       | 0     | 1       | 4        | cloudInit/cloudRender/DoClouds/TimeTunnelInit/TimeTunnelRender (larger, pending) |
 | `game/font3d`  | 3         | 3       | 0     | 3       | 0        | RemapAccentedCharacter/Update3DFontObjects/InitFont3D/Text3D (pending) |
+| `game/sfx`     | 7         | 5       | 0     | 5       | 0        | PauseGameAudio + GameSfx near; 3 init fns + GameAudioUpdate + TestLocalSfx blocked (data-from-C / mtc1 wall) |
 
 Notes:
 - `game/bug` (5/6): InitBugAreas, InBugArea, ResetBug, AddBugLight, DrawBug all
@@ -169,3 +170,20 @@ New reusable levers recorded in memory `gc-migration-listman-lessons`:
 empty-stub / dropped-call / PAL-loop-count divergences, `(arr+i)->field`
 offset-first regalloc fix, mul.s operand order, EABI split arg registers,
 ordered-explicit-locals FP-constant hoist, drop-volatile CSE.
+
+- `game/sfx` (5/7 attempted matched, 2 near): ResumeGameAudio/ResetGameSfx/
+  UpdateGameSfx/GameMusic/GameSfxLoop byte-exact. PS2 divergences from GC:
+  ResumeGameAudio calls NuSoundSetChannelPitch(4,0x75A,0) not NuSoundResumeSfx;
+  PauseGameAudio fully rewritten (2 channel loops); global SFX count 0xB1->0xC5
+  and local base -0xB1->-0xC5 (PAL); GameMusic/GameSfxLoop dropped the
+  strcpy(sfxpath,...) and GameSfxLoop dropped the NuSoundPlayLoop else.
+  New lever: **pointer do-while + `(s32)` cast** for a signed-`slt`, no-entry-
+  guard, no-reversal, single-pointer-IV loop (UpdateGameSfx global loop). Store-
+  permutation lever reused: pre-rotate the trailing `gamesfx_*=-1` cleanup source
+  left so gcc's right-rotation lands on retail order.
+  Near-matches: **PauseGameAudio** (8B, 2nd-loop compare-reg/branch-form
+  regalloc coin-flip); **GameSfx** (structurally exact, blocked by the documented
+  decompals-`as` mtc1->add.s hazard-nop omission from `dist2+2.0f<dist1`).
+  Blocked (data-from-C, unregistered string/table constants): InitLevelSfxTables,
+  InitGlobalSfx, InitLocalSfx, TestLocalSfx. GameAudioUpdate deferred (FP fades,
+  same mtc1-nop wall class).
