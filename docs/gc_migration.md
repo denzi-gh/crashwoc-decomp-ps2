@@ -136,6 +136,27 @@ recommend proceeding to Phase 3 bulk waves, expecting a high as-is/tweaked rate
 on small leaf functions and near-matches concentrated in FP-heavy and
 regalloc-sensitive code.
 
-### Phase 3 — bulk waves
+### Phase 3 — bulk waves (in progress from 2026-07-14)
 
-_(populated after user go-ahead.)_
+**Wave A** (`game/`), smallest-first. Same outcome legend as Phase 2.
+
+| Unit           | attempted | matched | as-is | tweaked | from-asm | near/deferred |
+|----------------|-----------|---------|-------|---------|----------|---------------|
+| `game/bug`     | 5         | 5       | 0     | 5       | 0        | UpdateBugLight (2224B FP, deferred) |
+| `game/cloudfx` | 5         | 5       | 0     | 1       | 4        | cloudInit/cloudRender/DoClouds/TimeTunnelInit/TimeTunnelRender (larger, pending) |
+
+Notes:
+- `game/bug` (5/6): InitBugAreas, InBugArea, ResetBug, AddBugLight, DrawBug all
+  byte-exact. Heavy extern-D_ data unit; callee signatures (Draw3DCharacter,
+  NuLightAddSpotXSpanFade) re-derived from PS2 call sites (EABI split int/float
+  regs). InBugArea needed the `(Rail+i)->type` offset-first regalloc lever.
+  Only UpdateBugLight (2224B, FP-compare heavy) left — deferred with the other
+  big FP routines.
+- `game/cloudfx` (5/10): the 4 small tail fns (CloseClouds empty-stub,
+  cloudProcess, TimeTunnelClose, CloudFxInit) rebuilt from asm; InitClouds
+  matched with two PS2 divergences from GC (no `srand`, loop count 10 not 20).
+  Remaining 5 are larger (vertex-buffer / render / NuRndrGobj) — pending.
+
+New reusable levers recorded in memory `gc-migration-listman-lessons`:
+empty-stub / dropped-call / PAL-loop-count divergences, `(arr+i)->field`
+offset-first regalloc fix, mul.s operand order, EABI split arg registers.
