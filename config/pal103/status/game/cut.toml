@@ -69,11 +69,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0121:0025e650:DrawCutMovie"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0121:0025e670:NewCut"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0121:0025e698:LoadCutSceneCharacters"
@@ -113,8 +113,8 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0121:0025ed88:MakeDirLightColour"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0121:0025edb8:MakeLightDirection"
-state = "asm"
+state = "matching"

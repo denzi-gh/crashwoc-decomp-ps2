@@ -30,3 +30,41 @@
  *   0x0025ed88 MakeDirLightColour
  *   0x0025edb8 MakeLightDirection
  */
+
+#include "creature.h"
+
+struct game_s {
+    u8 unk_0x00[0x408];
+    s32 cutbits;          /* 0x408 */
+};
+
+extern struct game_s Game;
+extern s32 gamecut;
+extern struct nucolour3_s cutdircol[];
+extern struct nuvec_s cutdir[];
+
+extern void NuGCutSceneSysRender(void);
+extern void NuVecNorm(struct nuvec_s *out, struct nuvec_s *in);
+
+
+void DrawCutMovie(void) {
+    NuGCutSceneSysRender();
+}
+
+void NewCut(s32 i) {
+    gamecut = i;
+    Game.cutbits |= 1 << i;
+}
+
+void MakeDirLightColour(s32 ix, f32 r, f32 g, f32 b) {
+    cutdircol[ix].r = r;
+    cutdircol[ix].g = g;
+    cutdircol[ix].b = b;
+}
+
+void MakeLightDirection(s32 ix, f32 x, f32 y, f32 z) {
+    cutdir[ix].x = x;
+    cutdir[ix].y = y;
+    cutdir[ix].z = z;
+    NuVecNorm(&cutdir[ix], &cutdir[ix]);
+}
