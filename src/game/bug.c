@@ -42,6 +42,24 @@ extern s32 FurtherALONG(s32 iRAIL, s32 iALONG, f32 fALONG, s32 iRAIL2,
 extern s32 FurtherBEHIND(s32 iRAIL, s32 iALONG, f32 fALONG, s32 iRAIL2,
                          s32 iALONG2, f32 fALONG2);
 
+/* spline table: entry stride 0x18, .spl @0x0 (SplTab[70]=0x690 in ResetBug);
+ * spline .len @0x0 (lh in ResetBug). */
+struct spline_s {
+    s16 len;          /* 0x0 */
+};
+struct spltab_s {
+    struct spline_s *spl;   /* 0x0 */
+    u8 pad[0x14];
+};
+
+extern struct spltab_s SplTab[];
+extern struct nuvec_s D_006FFA90;   /* bug_splpos */
+extern f32 D_006333B8;              /* bug_splratio */
+
+extern s32 NearestSplinePoint(struct nuvec_s *pos, struct spline_s *spl);
+extern void PointAlongSpline(struct spline_s *spl, f32 ratio,
+                             struct nuvec_s *out, void *a3, void *a4);
+
 /* File-scope statics in the retail TU (data-from-C unsupported -> extern). */
 extern struct nuvec_s D_006FFA80;   /* bug_pos */
 extern f32 D_006333A8;              /* bug_scale */
@@ -62,6 +80,21 @@ extern void Draw3DCharacter(struct nuvec_s *pos, s32 xrot, s32 yrot, s32 z,
                             struct CharacterModel *model, f32 scale, s32 action,
                             f32 anim_time, s32 last);
 
+
+void ResetBug(void) {
+    s32 i;
+
+    ResetAnimPacket(&BugAnim, 0x22);
+    D_006333B0 = 0.0f;
+    i = NearestSplinePoint(&player->obj.pos, SplTab[70].spl);
+    if (i != -1) {
+        D_006333B8 = (f32)i / (f32)(s32)(SplTab[70].spl->len - 1U);
+    } else {
+        D_006333B8 = 0.0f;
+    }
+    PointAlongSpline(SplTab[70].spl, D_006333B8, &D_006FFA90, 0, 0);
+    D_006FFA90 = D_006FFA80;
+}
 
 s32 InBugArea(s32 iRAIL, s32 iALONG, f32 fALONG) {
     s32 i;
