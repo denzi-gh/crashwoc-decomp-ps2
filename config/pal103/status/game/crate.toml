@@ -157,7 +157,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0095:001f83d8:StartExclamationCrateSequence"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f8458:DestroyAllNitroCrates"

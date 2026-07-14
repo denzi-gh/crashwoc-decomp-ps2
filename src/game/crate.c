@@ -183,6 +183,10 @@ extern s32 glass_col_mix;
 extern s32 glass_enabled;
 extern s32 glass_col_enabled;
 extern s32 GetCrateType(struct CrateCube *crt, s32 flags);
+extern struct CrateCubeGroup *temp_pGroup;
+extern struct CrateCube *temp_pCrate;
+extern void AddKaboom(s32 type, struct nuvec_s *pos, f32 radius);
+extern void GameSfx(s32 id, struct nuvec_s *pos);
 
 
 void InitCrateExplosions(void) {
@@ -240,6 +244,21 @@ struct crate_s *AddCrate(s32 type, struct nuvec_s *pos) {
 void DestroyCrate(struct crate_s *crate) {
     NuLstFree((struct nulnkhdr_s *)crate);
     num_crates_used--;
+}
+
+void StartExclamationCrateSequence(struct CrateCubeGroup *group,
+                                   struct CrateCube *crate) {
+    struct nuvec_s pos;
+
+    pos.x = crate->pos.x;
+    pos.y = crate->pos.y + 0.25f;
+    pos.z = crate->pos.z;
+    temp_pGroup = group;
+    temp_pCrate = crate;
+    AddKaboom(0x20, &pos, 0.0f);
+    crate->newtype = 0xf;
+    crate->metal_count = 1;
+    GameSfx(0x35, &temp_pCrate->pos);
 }
 
 s32 LowestCrate(struct CrateCubeGroup *group, struct CrateCube *crate) {
