@@ -45,4 +45,4 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0100:00223a70:FindSurfaceRotXZFromNormal"
-state = "asm"
+state = "matching"
