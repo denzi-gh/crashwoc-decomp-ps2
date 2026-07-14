@@ -57,28 +57,28 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0112:0024c778:CoalSpark"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0112:0024c7e0:CoalBreak"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0112:0024c830:RockSpark"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0112:0024c8a8:RockBreak"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0112:0024c908:DynaBreak"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0112:0024c950:InitRandSFX"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0112:0024c960:JonMaskFPS"
-state = "asm"
+state = "matching"
