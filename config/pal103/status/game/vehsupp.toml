@@ -73,15 +73,15 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0099:00220d00:DrawCross"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00220db0:DrawLine"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00220df0:DrawLineRel"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00220e40:SeekHalfLife"

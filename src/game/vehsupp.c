@@ -62,6 +62,9 @@ extern int rand(void);
 extern double pow(double, double);
 extern double fmod(double, double);
 extern f32 NuTrigTable[];
+extern s32 ChrisInTheHouse;
+extern void NuRndrLine3dDbg(s32 colour, f32 x0, f32 y0, f32 z0, f32 x1, f32 y1,
+                            f32 z1);
 
 
 s16 GetVolumeI(f32 vol) {
@@ -145,6 +148,30 @@ s32 ProcessTimer(f32 *Timer) {
         return 1;
     }
     return 0;
+}
+
+void DrawCross(struct nuvec_s *pos, s32 colour, f32 size) {
+    if (ChrisInTheHouse) {
+        NuRndrLine3dDbg(colour, pos->x - size, pos->y, pos->z, pos->x + size,
+                        pos->y, pos->z);
+        NuRndrLine3dDbg(colour, pos->x, pos->y - size, pos->z, pos->x,
+                        pos->y + size, pos->z);
+        NuRndrLine3dDbg(colour, pos->x, pos->y, pos->z - size, pos->x, pos->y,
+                        pos->z + size);
+    }
+}
+
+void DrawLine(struct nuvec_s *p0, struct nuvec_s *p1, s32 colour) {
+    if (ChrisInTheHouse) {
+        NuRndrLine3dDbg(colour, p0->x, p0->y, p0->z, p1->x, p1->y, p1->z);
+    }
+}
+
+void DrawLineRel(struct nuvec_s *p0, struct nuvec_s *rel, s32 colour) {
+    if (ChrisInTheHouse) {
+        NuRndrLine3dDbg(colour, p0->x, p0->y, p0->z, p0->x + rel->x,
+                        p0->y + rel->y, p0->z + rel->z);
+    }
 }
 
 void SeekHalfLife(f32 *dest, f32 target, f32 halflife, f32 dt) {
