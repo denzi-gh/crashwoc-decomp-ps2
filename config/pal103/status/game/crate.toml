@@ -121,19 +121,19 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0095:001f7f20:InitCrateExplosions"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f7f50:NextCrate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f7f78:ResetAllCrates"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f7fb8:CloseCrates"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f7fe0:AddCrate"
@@ -141,7 +141,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0095:001f8090:DestroyCrate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f80b8:DrawCrate"
@@ -221,7 +221,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0095:001f9148:ResetCrateType2"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f9168:CrateInSlot"
