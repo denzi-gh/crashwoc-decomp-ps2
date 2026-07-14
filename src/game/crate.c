@@ -187,6 +187,14 @@ extern struct CrateCubeGroup *temp_pGroup;
 extern struct CrateCube *temp_pCrate;
 extern void AddKaboom(s32 type, struct nuvec_s *pos, f32 radius);
 extern void GameSfx(s32 id, struct nuvec_s *pos);
+extern s32 level_part_2;
+extern s32 temp_crate_type;
+extern struct CrateCube *InCrate(f32 x, f32 z, f32 top, f32 bot, f32 radius);
+extern void BreakCrate(struct CrateCubeGroup *group, struct CrateCube *crate,
+                       s32 type, s32 attack);
+extern struct CrateCubeGroup CrateGroup[];
+extern s32 FurtherALONG(s32 iRAIL, s32 iALONG, f32 fALONG, s32 iRAIL2,
+                        s32 iALONG2, f32 fALONG2);
 
 
 void InitCrateExplosions(void) {
@@ -244,6 +252,51 @@ struct crate_s *AddCrate(s32 type, struct nuvec_s *pos) {
 void DestroyCrate(struct crate_s *crate) {
     NuLstFree((struct nulnkhdr_s *)crate);
     num_crates_used--;
+}
+
+s32 WipeCrates(s32 iRAIL0, s32 iALONG0, f32 fALONG0, s32 iRAIL1, s32 iALONG1,
+               f32 fALONG1, s32 destroy) {
+    struct CrateCubeGroup *group;
+    struct CrateCube *crate;
+    s32 i;
+    s32 j;
+    s32 type;
+
+    group = CrateGroup;
+    for (i = 0; i < CRATEGROUPCOUNT; i++, group++) {
+        crate = &Crate[group->iCrate];
+        for (j = 0; j < group->nCrates; j++, crate++) {
+            if (crate->on != 0) {
+                type = GetCrateType(crate, 0);
+                if ((u32)(type + 1) > 1 &&
+                    (FurtherALONG(crate->iRAIL, crate->iALONG, crate->fALONG,
+                                  iRAIL0, iALONG0, fALONG0) != 0) &&
+                    (FurtherALONG(iRAIL1, iALONG1, fALONG1, crate->iRAIL,
+                                  crate->iALONG, crate->fALONG) != 0) &&
+                    ((destroy == 1) || ((destroy == 2 && (type != 7)) &&
+                                        (type != 0xe && (type != 0x11))))) {
+                    BreakCrate(group, crate, type, 0x200);
+                }
+            }
+        }
+    }
+    return 0;
+}
+
+s32 HitCrates(struct obj_s *obj, s32 destroy) {
+    if ((level_part_2 == 0) &&
+        (InCrate(obj->pos.x, obj->pos.z, (obj->pos.y + obj->top * obj->SCALE),
+                 (obj->pos.y + obj->bot * obj->SCALE), obj->RADIUS) != 0)) {
+        if ((destroy == 1) ||
+            ((((destroy == 2 && (temp_crate_type != 7)) &&
+               (temp_crate_type != 0xe)) && (temp_crate_type != 0x11)))) {
+            BreakCrate(temp_pGroup, temp_pCrate, temp_crate_type,
+                       (u16)obj->attack);
+        }
+        return 1;
+    } else {
+        return 0;
+    }
 }
 
 void StartExclamationCrateSequence(struct CrateCubeGroup *group,

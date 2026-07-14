@@ -197,11 +197,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0095:001f8c38:HitCrates"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f8cf8:WipeCrates"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f8ea0:RayIntersectCylinder"
