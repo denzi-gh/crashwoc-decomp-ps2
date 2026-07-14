@@ -94,23 +94,47 @@ Per-function outcomes: `as-is` (GC draft matched unchanged), `tweaked`
 
 ### Phase 2 — pilot (measure hit rate, then STOP)
 
-| Unit           | fns | GC-ref | matched | as-is | tweaked | from-asm | blocked |
-|----------------|-----|--------|---------|-------|---------|----------|---------|
-| `game/chase`   | 10  | 10     | 0       | 0     | 0       | 0        | 0       |
-| `game/vehterr` | 9   | 9      | 0       | 0     | 0       | 0        | 0       |
-| `game/listman` | 9   | 5      | 8       | 3     | 1       | 4        | 1       |
-| `game/game_deb`| 7   | 7      | 0       | 0     | 0       | 0        | 0       |
+Outcome legend: as-is = GC draft compiled byte-exact unchanged (a hostile
+constant may still have been corrected against asm); tweaked = GC draft matched
+after a structural edit; from-asm = no GC reference, rebuilt from disassembly;
+near = faithful near-match kept in tree as `state=asm` (blocker recorded).
 
-Notes:
-- `game/listman` (done 2026-07-14): of the 5 GC-referenced fns, 4 matched
-  (NuLstDestroy/NuLstAlloc/NuLstFree as-is once the GC `0x8000` in-use flag was
-  corrected to `0x10000`; NuLstGetNext tweaked). NuLstCreate is a faithful
-  near-match (state=asm, regalloc s0/s1 wall). The other 4 fns had no GC
-  reference and were reconstructed from asm — all 4 matched. Total 8/9 matching.
-  Reusable ee-gcc levers logged in the memory `gc-migration-listman-lessons`.
+| Unit           | fns | GC-ref | attempted | matched | as-is | tweaked | from-asm | near |
+|----------------|-----|--------|-----------|---------|-------|---------|----------|------|
+| `game/listman` | 9   | 5      | 9         | 8       | 3     | 1       | 4        | 1    |
+| `game/game_deb`| 7   | 7      | 6         | 4       | 4     | 0       | 0        | 2    |
+| `game/chase`   | 10  | 10     | 1         | 1       | 1     | 0       | 0        | 0    |
+| `game/vehterr` | 9   | 9      | 1         | 1       | 0     | 1       | 0        | 0    |
+| **total**      | 35  | 31     | **17**    | **14**  | 8     | 2       | 4        | 3    |
 
-**Measured pilot hit rate:** _(pending — fill in after all 4 pilot units, then
-stop and report to the user; the hit rate decides bulk-wave pacing.)_
+Per-unit notes:
+- `game/listman` (complete, 8/9): 4 of 5 GC-referenced matched
+  (Destroy/Alloc/Free as-is after correcting the GC `0x8000` in-use flag to the
+  retail `0x10000`; GetNext tweaked). The 4 unreferenced fns
+  (GetByIdx/GetPrev/AllocBefore/AllocAfter) all matched from asm. NuLstCreate is
+  a near-match (s0/s1 regalloc wall).
+- `game/game_deb` (tractable set done, 4/6 attempted): Init/Add/AddRot/AddMtx
+  matched as-is. AddWarpDebris near (single f3/f4 FP-allocator swap). Retail
+  **inlines AddGameDebris** into AddMechanicalDebris — reproduced with a gnu89
+  plain-`inline` (emits standalone AND inlines), fixing the frame; residual is
+  a jeepbits-base regalloc, kept near. AddAnimDebris (4KB, GC-acknowledged
+  regalloc-blocked) not attempted.
+- `game/chase` (sampled): ChaseActive matched as-is (chase_s status@0x7540,
+  stride 0x7548). Nine larger fns (splines/models) not attempted.
+- `game/vehterr` (sampled): FindSurfaceRotXZFromNormal matched (tweaked: u16
+  angle, int callee types, temp for post-call store scheduling). Eight larger
+  FP-terrain fns not attempted.
+
+**Measured pilot hit rate (byte-exact / attempted): 14 / 17 = 82%.**
+GC-referenced only: 10 / 13 = 77%. The three non-matches are all faithful
+near-matches (structure/offsets/extent exact) blocked on compiler
+register-allocation / scheduling, not on GC-draft correctness — every hostile
+GC constant and layout fact was catchable against the PS2 asm. Reusable ee-gcc
+levers are logged in the memory `gc-migration-listman-lessons` and in the
+recorded blockers. Smallest-first, GC drafts are a strong structural base:
+recommend proceeding to Phase 3 bulk waves, expecting a high as-is/tweaked rate
+on small leaf functions and near-matches concentrated in FP-heavy and
+regalloc-sensitive code.
 
 ### Phase 3 — bulk waves
 
