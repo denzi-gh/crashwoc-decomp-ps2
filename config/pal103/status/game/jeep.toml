@@ -281,7 +281,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0101:0022c280:InitJeepBalloons"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022c2a8:ProcessJeepBalloons"
@@ -293,7 +293,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0101:0022c378:FindJeepBalloon"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022c3b8:BalloonHitFireBoss"

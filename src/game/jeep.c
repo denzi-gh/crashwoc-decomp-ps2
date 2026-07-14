@@ -130,13 +130,28 @@ struct GENERICTRAIL {
 extern struct GENERICTRAIL GenericTrail[];
 extern void ProcessJeepTrail(struct GENERICTRAIL *t, s32 i);
 
-struct JEEPTRAILPT {
+struct jeeptrail_s {
     struct nuvec_s pos1;            /* 0x00 */
-    u8 pad_0C[0x20 - 0x0C];
+    struct nuvec_s pos2;            /* 0x0C */
+    s32 intensity;                  /* 0x18 */
+    s32 RealIntensity;              /* 0x1C */
 };
-extern struct JEEPTRAILPT JeepTrail[][0x20];
+extern struct jeeptrail_s JeepTrail[][0x20];
 extern s32 TrailPntr[];
 extern s32 TrailAir[];
+
+struct JEEPBALLOON {
+    struct nuvec_s Pos;             /* 0x00 */
+    struct nuvec_s Vel;             /* 0x0C */
+    s32 Active;                     /* 0x18 */
+    s32 Seen;                       /* 0x1C */
+    s32 Explode;                    /* 0x20 */
+    s32 SmallDamage;                /* 0x24 */
+    f32 Life;                       /* 0x28 */
+    s16 AngY;                       /* 0x2C */
+    s16 unk;                        /* 0x2E */
+};
+extern struct JEEPBALLOON JeepBalloon[];
 
 struct spline_s {
     s16 len;                        /* 0x0 */
@@ -392,4 +407,45 @@ void EmptyTrail(s32 i) {
     }
     TrailPntr[i] = 0;
     TrailAir[i] = 0;
+}
+
+void NewFadeOutLastTrail(struct jeeptrail_s *trail, s32 start, s32 count) {
+    s32 j;
+    f32 step;
+    f32 fade;
+
+    step = 1.0f / (f32)(count + 1);
+    fade = step;
+    j = 0;
+    if (count <= 0) {
+        return;
+    }
+    do {
+        struct jeeptrail_s *p = &trail[(start - j) & 0x1F];
+        if (p->pos1.x == -10000.0f) {
+            break;
+        }
+        j++;
+        p->intensity = (s32)((f32)p->RealIntensity * fade);
+        fade += step;
+    } while (j < count);
+}
+
+void InitJeepBalloons(void) {
+    s32 i;
+
+    for (i = 0; i < 6; i++) {
+        JeepBalloon[i].Active = 0;
+    }
+}
+
+struct JEEPBALLOON *FindJeepBalloon(void) {
+    s32 i;
+
+    for (i = 0; i < 6; i++) {
+        if (JeepBalloon[i].Active == 0) {
+            return &JeepBalloon[i];
+        }
+    }
+    return 0;
 }
