@@ -101,7 +101,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0095:001f7310:HitCrateBalloons"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f7490:RayIntersectCuboid"

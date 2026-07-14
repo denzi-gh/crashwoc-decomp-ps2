@@ -195,6 +195,9 @@ extern void BreakCrate(struct CrateCubeGroup *group, struct CrateCube *crate,
 extern struct CrateCubeGroup CrateGroup[];
 extern s32 FurtherALONG(s32 iRAIL, s32 iALONG, f32 fALONG, s32 iRAIL2,
                         s32 iALONG2, f32 fALONG2);
+extern f32 CRATEBALLOONRADIUS;
+extern f32 CRATEBALLOONOFFSET;
+extern void NuVecSub(struct nuvec_s *dest, struct nuvec_s *a, struct nuvec_s *b);
 
 
 void InitCrateExplosions(void) {
@@ -252,6 +255,44 @@ struct crate_s *AddCrate(s32 type, struct nuvec_s *pos) {
 void DestroyCrate(struct crate_s *crate) {
     NuLstFree((struct nulnkhdr_s *)crate);
     num_crates_used--;
+}
+
+struct CrateCube *HitCrateBalloons(struct nuvec_s *pos, f32 radius) {
+    struct CrateCubeGroup *group;
+    struct CrateCube *crate;
+    f32 r2;
+    s32 iVar1;
+    s32 iVar3;
+    struct nuvec_s v;
+    struct nuvec_s d;
+
+    temp_pGroup = 0;
+    temp_pCrate = 0;
+    if (level_part_2 != 0) {
+        return temp_pCrate;
+    }
+    group = CrateGroup;
+    r2 = (radius + CRATEBALLOONRADIUS);
+    r2 *= r2;
+    for (iVar1 = 0; iVar1 < CRATEGROUPCOUNT; iVar1++, group++) {
+        crate = Crate + group->iCrate;
+        for (iVar3 = 0; iVar3 < group->nCrates; iVar3++, crate++) {
+            if ((crate->on != 0) && ((crate->flags & 0x400) != 0)) {
+                v.x = crate->pos.x;
+                v.y = crate->pos.y + CRATEBALLOONOFFSET;
+                v.z = crate->pos.z;
+                NuVecSub(&d, pos, &v);
+                if ((d.x * d.x + d.y * d.y + d.z * d.z) < r2) {
+                    temp_crate_type = GetCrateType(crate, 0);
+                    temp_pGroup = group;
+                    temp_pCrate = crate;
+                    GameSfx(0x50, &v);
+                    return temp_pCrate;
+                }
+            }
+        }
+    }
+    return temp_pCrate;
 }
 
 s32 WipeCrates(s32 iRAIL0, s32 iALONG0, f32 fALONG0, s32 iRAIL1, s32 iALONG1,
