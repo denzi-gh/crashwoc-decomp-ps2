@@ -33,7 +33,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0090:001cbc00:NuLstFree"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0090:001cbc60:NuLstGetByIdx"
