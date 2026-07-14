@@ -78,3 +78,20 @@ things that shouldn't be re-derived. Resolved history lives in git.
   patch needs it). Today links pin externals to fixed retail addresses, so
   equivalent-build edits must stay same-size or trampoline into slack. Booting
   `build/pal103/image/equivalent.elf` in PCSX2 is untested.
+
+## Matching lever: many-field 64-bit GS/render register via bitfield union
+
+When retail configures a wide (u64) hardware register by writing many small
+adjacent bitfields — e.g. `CreateFadeMtl` (game/main) setting seven GS-register
+fields inside the material's `0x168` word — the explicit `(v & ~mask) | val`
+C form is functionally identical but loses gcc's register tie-break (the folded
+flags value lands in the wrong GPR, e.g. `$t2` instead of retail's `$v1`).
+
+Reproduce retail's allocation with the real source idiom instead: a
+`union { u64 raw; struct { ... bitfields ... } bits; }`, with `pad` bitfields to
+land each real field at its exact bit position, assignments written in retail's
+**emission order**, and each full-width field written as its **max value** so gcc
+folds the whole thing to a single OR chain. This matched `CreateFadeMtl`
+byte-exact where the mask form could not. Same class of fix as other
+whole-function regalloc tie-breaks — the difference is purely which GPR holds
+the intermediate, and only the union spelling steers it.

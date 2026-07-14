@@ -129,11 +129,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0088:001cb180:CreateFadeMtl"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0088:001cb280:UpdateFade"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0088:001cb318:DrawFade"

@@ -389,7 +389,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0094:001efe80:FlyWumpa"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001eff20:AddFlyingWumpa"

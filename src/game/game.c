@@ -2544,6 +2544,68 @@ struct creatobj_s *FindClock(void) {
     return NULL;
 }
 
+struct wumpa_s {
+    char pad_0[0x18];
+    struct nuvec_s pos;   /* 0x18 */
+    struct nuvec_s mom;   /* 0x24 */
+    char pad_30[0x8];     /* 0x30 */
+    s32 field_38;         /* 0x38 */
+    float field_3C;       /* 0x3C */
+    signed char field_40; /* 0x40 */
+    char pad_41[0x7];     /* 0x41 */
+    signed char field_48; /* 0x48 */
+    signed char field_49; /* 0x49 */
+};
+
+void NuVecRotateX(struct nuvec_s *dst, struct nuvec_s *src, s32 angle);
+void NuVecRotateY(struct nuvec_s *dst, struct nuvec_s *src, s32 angle);
+extern float D_0062D700;
+
+void FlyWumpa(struct wumpa_s *obj) {
+    obj->mom.x = 0.0f;
+    obj->mom.y = 0.0f;
+    obj->mom.z = D_0062D700;
+    NuVecRotateX(&obj->mom, &obj->mom, -0x400);
+    NuVecRotateY(&obj->mom, &obj->mom, qrand());
+    obj->field_38 = 0;
+    obj->field_40 = 3;
+    obj->field_3C = 2.0f;
+    obj->field_48 = 0;
+    obj->field_49 = 0;
+    GameSfx(0x2A, &obj->pos);
+}
+
+struct newwumpa_s {
+    float x, y, z;        /* 0x0, 0x4, 0x8 */
+    char pad_c[0x10];     /* 0xC */
+    signed char count;    /* 0x1C */
+    signed char b1d;      /* 0x1D */
+    signed char b1e;      /* 0x1E */
+    signed char b1f;      /* 0x1F */
+    signed char b20;      /* 0x20 */
+    char pad_21[0x3];     /* 0x21, stride 0x24 */
+};
+extern struct newwumpa_s NewWumpa[];
+extern s32 i_newwumpa;
+extern s32 sw_hack;
+extern s32 Bonus;
+
+void AddScreenWumpa(float x, float y, float z, s32 n) {
+    NewWumpa[i_newwumpa].x = x;
+    NewWumpa[i_newwumpa].y = y;
+    NewWumpa[i_newwumpa].z = z;
+    NewWumpa[i_newwumpa].count = (n > 0) ? n : 1;
+    NewWumpa[i_newwumpa].b1d = 0;
+    NewWumpa[i_newwumpa].b1e = 0;
+    NewWumpa[i_newwumpa].b1f = (Bonus == 2 || sw_hack != 0);
+    NewWumpa[i_newwumpa].b20 = 1;
+    i_newwumpa++;
+    if (i_newwumpa == 0x20) {
+        i_newwumpa = 0;
+    }
+    sw_hack = 0;
+}
+
 void DrawLevel(void) {
     switch (Level) {
     case 37:

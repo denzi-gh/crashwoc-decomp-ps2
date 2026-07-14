@@ -53,7 +53,78 @@
 
 extern s32 FlyingLevelVictoryDance;
 extern struct MoveInfo CrashMoveInfo;
+extern s32 Level;
+extern s32 SmokeyCountDownValue;
+extern struct RPos_s *best_cRPos;
+extern f32 D_0062E844;
 
+struct pad_s {
+    u8 unk_0x000[0x55C];     /* 0x000 (opaque) */
+    unsigned int paddata;    /* 0x55C (held buttons) */
+    u8 unk_0x560[4];         /* 0x560 */
+    unsigned int buttons;    /* 0x564 (debounced buttons) */
+    u8 unk_0x568[0x16];      /* 0x568 */
+    u8 l_alg_x;              /* 0x57E */
+    u8 l_alg_y;              /* 0x57F */
+};
+extern struct pad_s *Pad[];
+
+s32 RotDiff(u16 a, u16 b);
+
+
+void AnimateGYRO(struct creature_s *plr, struct pad_s *pad) {
+    s32 held = pad->paddata & 0x60;
+
+    if ((plr->spin != 0) &&
+        (plr->spin_frame <
+         plr->spin_frames - plr->OnFootMoveInfo->SPINRESETFRAMES)) {
+        plr->obj.anim.newaction = 0x69;
+    } else if (plr->tap != 0) {
+        plr->obj.anim.newaction = 0x67;
+    } else if ((held == 0x40) || (held == 0x20)) {
+        plr->obj.anim.newaction = 0x70;
+    } else if (plr->obj.pad_speed > 0.0f) {
+        if (0xC000u < (u16)(plr->obj.pad_angle - 0x2000)) {
+            plr->obj.anim.newaction = 0x5A;
+        } else if ((u16)(plr->obj.pad_angle - 0x6001) < 0x3FFFu) {
+            plr->obj.anim.newaction = 0x70;
+        } else if ((s16)plr->obj.pad_angle >= 0) {
+            plr->obj.anim.newaction = (plr->obj.direction == 0) ? 0x67 : 0x65;
+        } else {
+            plr->obj.anim.newaction = (plr->obj.direction == 0) ? 0x65 : 0x67;
+        }
+    } else {
+        plr->obj.anim.newaction = 0x62;
+    }
+    UpdateCharacterIdle(plr, 0);
+}
+
+void AnimateOFFROADER(struct creature_s *plr) {
+    s32 d;
+
+    if (best_cRPos != 0) {
+        d = RotDiff(best_cRPos->angle, plr->obj.hdg);
+    } else {
+        d = 0;
+    }
+    if ((u32)plr->obj.dead >= 2) {
+        plr->obj.anim.newaction = plr->obj.die_action;
+    } else {
+        if ((Level == 3) &&
+            ((Pad[0] == 0) || ((Pad[0]->paddata & 0x60) == 0) ||
+             (SmokeyCountDownValue > 0)) &&
+            (plr->obj.xz_distance < D_0062E844)) {
+            plr->obj.anim.newaction = 0x62;
+        } else if (d >= 0x801) {
+            plr->obj.anim.newaction = 0x67;
+        } else if (d < -0x800) {
+            plr->obj.anim.newaction = 0x65;
+        } else {
+            plr->obj.anim.newaction = 0x68;
+        }
+    }
+    UpdateCharacterIdle(plr, 0);
+}
 
 void AnimateMINECART(struct creature_s *plr) {
     if ((u32)plr->obj.dead > 1) {

@@ -29,7 +29,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0103:0022f858:DrawDRAINDAMAGE"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0103:0022f928:WaterCrunchFunction_Spladoosh"

@@ -66,6 +66,18 @@ extern s32 level_part_2;
 extern s32 temp_xzmomset;
 extern s32 GAMEOBJECTCOUNT;
 extern struct obj_s *pObj[];
+
+/* Projectile record; obj header at 0x0, active flag at 0x1A9, stride 0x1B0. */
+struct projectile_s {
+    struct obj_s obj;    /* 0x000 */
+    u8 unk_0x188[0x21];  /* 0x188 */
+    s8 active;           /* 0x1A9 */
+    u8 unk_0x1AA[0x6];   /* 0x1AA */
+};
+
+extern struct projectile_s Projectile[16];
+extern s32 jonglow;
+extern s32 jonglowsize;
 extern s32 temp_cuboid_side;
 extern f32 temp_cuboid_bounce_angle;
 extern s32 VEHICLECONTROL;
@@ -689,6 +701,36 @@ void ResetGameObject(struct obj_s *obj) {
     obj->scale = 1.0f;
 }
 
+s32 AddGameObject(struct obj_s *obj, struct obj_s *parent) {
+    s32 i;
+    s32 added;
+
+    memset(obj, 0, 0x188);
+    obj->SCALE = 1.0f;
+    obj->scale = 1.0f;
+    obj->RPos.iRAIL = -1;
+    obj->RPos.iALONG = -1;
+    obj->layer_type = -1;
+    obj->roof_type = -1;
+    obj->reflect_y = 2000000.0f;
+
+    for (i = 0; i < 64; i++) {
+        if (pObj[i] == 0) {
+            break;
+        }
+    }
+    if (i < 64) {
+        pObj[i] = obj;
+        obj->parent = parent;
+        obj->i = i;
+        added = 1;
+    } else {
+        added = 0;
+    }
+    CountGameObjects();
+    return added;
+}
+
 void RemoveGameObject(struct obj_s *obj) {
     s32 i;
 
@@ -699,6 +741,29 @@ void RemoveGameObject(struct obj_s *obj) {
         }
     }
     CountGameObjects();
+}
+
+void ResetProjectiles(void) {
+    s32 i;
+    s32 j;
+    struct projectile_s *p;
+
+    p = Projectile;
+    for (i = 0; i < 16; i++) {
+        if (p->active) {
+            for (j = 0; j < 64; j++) {
+                if (pObj[j] == &p->obj) {
+                    pObj[j] = 0;
+                    j = 64;
+                }
+            }
+            CountGameObjects();
+            p->active = 0;
+        }
+        p++;
+    }
+    jonglow = 0;
+    jonglowsize = 0;
 }
 
 f32 GameObjectRadius(struct obj_s *obj) {

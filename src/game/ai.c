@@ -146,6 +146,36 @@ extern char D_0061FFF8[];
 void *NuSpecialFind(void *scene, void *out, char *name);
 void *memset(void *s, s32 c, u32 n);
 
+extern s32 D_00633318;
+extern s32 D_0063331C;
+extern s32 D_00633320;
+extern s32 D_00633324;
+extern s32 D_00633328;
+extern s32 D_00631B94;
+extern s32 jcrunch;
+extern s32 CrunchTime_Intro;
+extern s32 fire_attack_on;
+extern s32 earth_attack_on;
+extern s32 water_attack_on;
+extern s32 weather_attack_on[];        /* 0x005c8xxx (absolute-addressed array) */
+extern u8 D_005C8870[];
+extern struct nuvec_s D_0061FFB0;
+void InitVehMasks(void);
+void InitVehMask(s32 a, s32 b);
+void SetNewMaskStuff(s32 a, void *b, struct nuvec_s *c, s32 d, s32 e,
+                     f32 f, f32 g, f32 h, f32 i, f32 j);
+
+extern u16 D_00633304;
+extern u16 D_00633306;
+extern struct CharacterModel *D_00633310;
+extern f32 D_0062E268;
+extern f32 NuTrigTable[];
+extern struct nuvec_s D_006B7610;      /* DRAINDAMAGE base position */
+extern struct anim_s D_006B7620;       /* DRAINDAMAGE anim packet */
+void Draw3DCharacter(struct nuvec_s *pos, s32 xrot, s32 yrot, s32 z,
+                     struct CharacterModel *model, f32 scale, s32 action,
+                     f32 anim_time, s32 last);
+
 extern u8 GDeb[];                      /* 0x0060dd00 (gdeb_s[], byte-accessed here) */
 extern struct nuvec_s punchpos1[4];    /* 0x005c7e08 */
 extern struct nuvec_s punchpos2[4];    /* 0x005c7e38 */
@@ -400,6 +430,55 @@ s32 WaterCrunchFunction_Defeated(void)
 {
     boss_dead = (Game[Hub * 4 + 0x10] & 4) ? 2 : 1;
     return 1;
+}
+
+void DrawDRAINDAMAGE(void)
+{
+    struct nuvec_s pos;
+
+    if (D_00633310 != 0 && D_00633300 != 0) {
+        pos.x = D_006B7610.x + NuTrigTable[(u16)D_00633308[0]] * D_0062E268;
+        pos.y = D_006B7610.y + NuTrigTable[(u16)D_00633308[1]] * D_0062E268;
+        pos.z = D_006B7610.z + NuTrigTable[(u16)D_00633308[2]] * D_0062E268;
+        Draw3DCharacter(&pos, D_00633304, (D_00633306 - 0x8000) & 0xffff, 0,
+                        D_00633310, 3.0f, D_006B7620.action,
+                        D_006B7620.anim_time, 0);
+    }
+}
+
+/* Faithful near-match (~81.5%): structurally exact. Blocked on the two -1
+ * stores: retail materializes 0xFFFFFFFF once with lui+ori CSE'd into $v1,
+ * kept live across the loop-counter setup (forcing the counter to $a0).
+ * Signed 0xFFFFFFFF -> cheap `addiu -1` rematerialized per use; unsigned gets
+ * the lui+ori but the scheduler then groups both $v1 stores adjacently (frees
+ * $v1 early). Source reordering doesn't move the scheduler. Scheduling/regalloc
+ * wall (see default.whole-fn-callee-save-regalloc). */
+void ResetCRUNCHTIME(void)
+{
+    s32 i;
+    struct nuvec_s v;
+
+    fire_attack_on = 0xFFFFFFFF;
+    jcrunch = 0;
+    D_00631B94 = 0;
+    D_00633314 = 0;
+    earth_attack_on = 0;
+    D_00633318 = 0;
+    water_attack_on = 0;
+    D_0063331C = 0;
+    D_00633320 = 0xFFFFFFFF;
+    D_00633324 = 0;
+    for (i = 8; i >= 0; i--) {
+        weather_attack_on[i] = 0;
+    }
+    D_00633328 = 0;
+    CrunchTime_Intro = 1;
+
+    InitVehMasks();
+    InitVehMask(0, 3);
+    v = D_0061FFB0;
+    SetNewMaskStuff(0, D_005C8870, &v, 0, 0,
+                    0.0f, -540.0f, 1.0f, 1.0f, 0.0f);
 }
 
 s32 SpaceCrunchFunction_NewCount(struct creature_s *c)

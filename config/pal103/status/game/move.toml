@@ -81,7 +81,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0117:002552f8:AnimateGYRO"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:002553f0:DrawCarpet"
@@ -137,7 +137,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0117:00258020:AnimateOFFROADER"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:002580f8:AnimateSUBMARINE"

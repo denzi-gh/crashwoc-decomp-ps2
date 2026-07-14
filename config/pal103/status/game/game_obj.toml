@@ -97,7 +97,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:00200b38:AddGameObject"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:00200c38:RemoveGameObject"
@@ -165,7 +165,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0096:00201320:ResetProjectiles"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:002013d8:CountGameObjects"
