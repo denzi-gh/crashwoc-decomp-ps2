@@ -77,7 +77,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0093:001dafd0:InSplineArea"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0093:001db078:AddCross"

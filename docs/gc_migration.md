@@ -147,6 +147,7 @@ regalloc-sensitive code.
 | `game/font3d`  | 3         | 3       | 0     | 3       | 0        | RemapAccentedCharacter/Update3DFontObjects/InitFont3D/Text3D (pending) |
 | `game/sfx`     | 7         | 5       | 0     | 5       | 0        | PauseGameAudio + GameSfx near; 3 init fns + GameAudioUpdate + TestLocalSfx blocked (data-from-C / mtc1 wall) |
 | `game/lights`  | 9         | 8       | 4     | 4       | 1        | SetLights near (parallel-move); 11 larger FP-proportion/editor/data fns pending |
+| `game/camera`  | 7         | 6       | 3     | 3       | 0        | JudderGameCamera near (mtc1->c.lt.s wall); shared rail helpers GetALONG/Further* matched; 12 larger fns pending |
 
 Notes:
 - `game/bug` (5/6): InitBugAreas, InBugArea, ResetBug, AddBugLight, DrawBug all

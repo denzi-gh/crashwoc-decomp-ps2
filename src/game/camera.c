@@ -64,6 +64,15 @@ extern s32 temp_iALONG;
 
 extern void ComplexRailPosition(struct nuvec_s *pos, s32 iRAIL, s32 iALONG,
                                 struct RPos_s *rpos, s32 a4);
+extern f32 NuVecDist(struct nuvec_s *a, struct nuvec_s *b, void *c);
+
+/* nugspline_s: len@0x0, ptsize@0x2, pts@0x8. */
+struct nugspline_s {
+    s16 len;          /* 0x0 */
+    s16 ptsize;       /* 0x2 */
+    u8 pad4[0x4];
+    u8 *pts;          /* 0x8 */
+};
 
 
 void ResetGameCameras(struct cammtx_s *Gamecam, s32 n) {
@@ -87,6 +96,42 @@ void BlendGameCamera(struct cammtx_s *cam, f32 time) {
     cam->old_zrot = cam->new_zrot;
     cam->blend_time = 0.0f;
     cam->blend_duration = time;
+}
+
+void JudderGameCamera(struct cammtx_s *cam, f32 time, struct nuvec_s *pos) {
+    f32 d;
+
+    if (time > cam->judder) {
+        if (pos != 0) {
+            d = NuVecDist(&player->obj.pos, pos, 0);
+            if (d < 10.0f) {
+                cam->judder = time * ((10.0f - d) / 10.0f);
+            }
+        } else {
+            cam->judder = time;
+        }
+    }
+}
+
+s32 InSplineArea(struct nuvec_s *pos, struct nugspline_s *spl) {
+    struct nuvec_s *p0;
+    struct nuvec_s *p1;
+    s32 i;
+    s32 j;
+
+    for (i = 1; i < spl->len; i++) {
+        p1 = (struct nuvec_s *)((s32)spl->pts + i * spl->ptsize);
+        j = i + 1;
+        if (j == spl->len) {
+            j = 1;
+        }
+        p0 = (struct nuvec_s *)((s32)spl->pts + j * spl->ptsize);
+        if (!((pos->x - p1->x) * (p0->z - p1->z) +
+              (pos->z - p1->z) * (p1->x - p0->x) >= 0.0f)) {
+            return 0;
+        }
+    }
+    return 1;
 }
 
 void GetALONG(struct nuvec_s *pos, struct RPos_s *rpos, s32 iRAIL, s32 iALONG,
