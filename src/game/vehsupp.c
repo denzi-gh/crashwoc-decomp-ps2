@@ -59,6 +59,9 @@ extern s32 gamesfx_pitch;
 extern void GameSfx(s32 Id, struct nuvec_s *Pos);
 extern void GameSfxLoop(s32 Id, struct nuvec_s *Pos);
 extern int rand(void);
+extern double pow(double, double);
+extern double fmod(double, double);
+extern f32 NuTrigTable[];
 
 
 s16 GetVolumeI(f32 vol) {
@@ -113,6 +116,14 @@ void ApplyFriction(f32 *val, f32 rate, f32 dt) {
     }
 }
 
+f32 Rationalise360f(f32 a) {
+    a = (f32)(fmod(a + 180.0f, 360.0) - 180.0);
+    if (a < -180.0f) {
+        a += 360.0f;
+    }
+    return a;
+}
+
 f32 DotProduct(struct nuvec_s *A, struct nuvec_s *B) {
     return A->x * B->x + A->y * B->y + A->z * B->z;
 }
@@ -134,6 +145,148 @@ s32 ProcessTimer(f32 *Timer) {
         return 1;
     }
     return 0;
+}
+
+void SeekHalfLife(f32 *dest, f32 target, f32 halflife, f32 dt) {
+    f32 rate;
+
+    if (halflife == 0.0f) {
+        rate = 1.0f;
+    } else {
+        rate = (f32)(1.0 - 1.0 / pow(2.0, dt / halflife));
+    }
+    *dest = *dest + (target - *dest) * rate;
+}
+
+void SeekHalfLifeLim(f32 *dest, f32 target, f32 limit, f32 halflife, f32 dt) {
+    f32 rate;
+    f32 change;
+    f32 lim;
+    f32 cur;
+
+    if (halflife == 0.0f) {
+        rate = 1.0f;
+    } else {
+        rate = (f32)(1.0 - 1.0 / pow(2.0, dt / halflife));
+    }
+
+    cur = *dest;
+    lim = limit * dt;
+    change = (target - cur) * rate;
+
+    if (change > lim) {
+        change = lim;
+    } else if (change < -lim) {
+        change = -lim;
+    }
+
+    *dest = cur + change;
+}
+
+void SeekHalfLifeNUVEC(struct nuvec_s *src, struct nuvec_s *target, f32 halflife,
+                       f32 dt) {
+    f32 rate;
+    struct nuvec_s diff;
+
+    if (halflife == 0.0f) {
+        rate = 1.0f;
+    } else {
+        rate = (f32)(1.0 - 1.0 / pow(2.0, dt / halflife));
+    }
+
+    diff.x = target->x - src->x;
+    diff.y = target->y - src->y;
+    diff.z = target->z - src->z;
+    src->x = diff.x * rate + src->x;
+    src->y = diff.y * rate + src->y;
+    src->z = diff.z * rate + src->z;
+}
+
+void SeekAngHalfLife360f(f32 *dest, f32 target, f32 halflife, f32 dt) {
+    f32 rate;
+    f32 diff;
+
+    if (halflife == 0.0f) {
+        rate = 1.0f;
+    } else {
+        rate = (f32)(1.0 - 1.0 / pow(2.0, dt / halflife));
+    }
+
+    diff = Rationalise360f(target - *dest);
+    *dest = rate * diff + *dest;
+}
+
+void SeekAngLimHalfLife360f(f32 *dest, f32 target, f32 max_speed, f32 halflife,
+                            f32 dt) {
+    f32 rate;
+    f32 change;
+    f32 lim;
+
+    lim = max_speed * dt;
+
+    if (halflife == 0.0f) {
+        rate = 1.0f;
+    } else {
+        rate = (f32)(1.0 - 1.0 / pow(2.0, dt / halflife));
+    }
+
+    change = rate * Rationalise360f(target - *dest);
+
+    if (change > lim) {
+        change = lim;
+    }
+    if (change < -lim) {
+        change = -lim;
+    }
+
+    *dest += change;
+}
+
+void SeekAngHalfLife(u16 *dest, u16 target, f32 halflife, f32 dt) {
+    f32 rate;
+    f32 diff;
+    f32 cur;
+    f32 result;
+
+    if (halflife == 0.0f) {
+        rate = 1.0f;
+    } else {
+        rate = (f32)(1.0 - 1.0 / pow(2.0, dt / halflife));
+    }
+
+    diff = (f32)(s16)(target - *dest);
+    cur = (f32)(s16)*dest;
+    result = rate * diff + cur;
+    *dest = (u16)(s32)result;
+}
+
+s32 LimitAng360f(f32 *dest, f32 min, f32 max) {
+    f32 a;
+    s32 result = 0;
+
+    a = (f32)(fmod(*dest + 180.0f, 360.0) - 180.0);
+    if (a < -180.0f) {
+        a += 360.0f;
+    }
+
+    if (a < min) {
+        a = min;
+    } else if (a > max) {
+        a = max;
+    } else {
+        result = 1;
+    }
+
+    *dest = a;
+    return result;
+}
+
+f32 Sin360f(f32 a) {
+    return NuTrigTable[(u16)(s32)(a * 182.0444489f)];
+}
+
+f32 Cos360f(f32 a) {
+    return NuTrigTable[(u16)((s32)(a * 182.0444489f) + 0x4000)];
 }
 
 f32 frand(void) {

@@ -85,7 +85,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0099:00220e40:SeekHalfLife"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00220ee0:SeekHalfLifeLim"
@@ -113,11 +113,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0099:00221418:Sin360f"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00221448:Cos360f"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00221480:frand"
