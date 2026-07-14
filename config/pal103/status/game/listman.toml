@@ -21,7 +21,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0090:001cbaf0:NuLstAlloc"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0090:001cbb48:NuLstAllocBefore"
