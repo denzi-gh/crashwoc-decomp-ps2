@@ -67,7 +67,9 @@ struct nulnkhdr_s;
 
 extern struct nulnkhdr_s *NuLstGetNext(struct nulsthdr_s *hdr,
                                        struct nulnkhdr_s *lnk);
+extern struct nulnkhdr_s *NuLstAlloc(struct nulsthdr_s *hdr);
 extern void NuLstFree(struct nulnkhdr_s *lnk);
+extern void *memset(void *s, s32 c, s32 n);
 extern struct nulsthdr_s *NuLstCreate(int num, int size);
 extern void NuLstDestroy(struct nulsthdr_s *hdr);
 
@@ -212,9 +214,49 @@ void CloseCrates(void) {
     }
 }
 
+struct crate_s *AddCrate(s32 type, struct nuvec_s *pos) {
+    struct crate_s *crate;
+
+    crate = (struct crate_s *)NuLstAlloc(crates);
+    if (crate != 0) {
+        memset(crate, 0, 0x28);
+        crate->pos = *pos;
+        crate->type[1] = type;
+        crate->type[3] = -1;
+        crate->type[0] = type;
+        crate->type[2] = -1;
+        crate->draw = 1;
+        crate->orientation = 0;
+        crate->linked = 0;
+        crate->offz = 0;
+        crate->offy = 0;
+        crate->offx = 0;
+        num_crates_used++;
+    }
+    return crate;
+}
+
 void DestroyCrate(struct crate_s *crate) {
     NuLstFree((struct nulnkhdr_s *)crate);
     num_crates_used--;
+}
+
+s32 LowestCrate(struct CrateCubeGroup *group, struct CrateCube *crate) {
+    struct CrateCube *crate2;
+    s32 i;
+    s32 dx;
+    s32 dz;
+
+    crate2 = &Crate[group->iCrate];
+    dx = crate->dx;
+    dz = crate->dz;
+    for (i = 0; i < group->nCrates; i++, crate2++) {
+        if ((((crate2 != crate) && (crate2->dx == dx)) && (crate2->dz == dz)) &&
+            ((crate2->pos0).y < (crate->pos0).y)) {
+            return 0;
+        }
+    }
+    return 1;
 }
 
 void ResetCrateType2(struct CrateCube *crt) {

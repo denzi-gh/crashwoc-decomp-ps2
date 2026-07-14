@@ -137,7 +137,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f7fe0:AddCrate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f8090:DestroyCrate"
@@ -177,7 +177,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0095:001f88b0:LowestCrate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f8938:LowestActiveCrate"
