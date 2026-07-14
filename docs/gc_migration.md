@@ -148,6 +148,7 @@ regalloc-sensitive code.
 | `game/sfx`     | 7         | 5       | 0     | 5       | 0        | PauseGameAudio + GameSfx near; 3 init fns + GameAudioUpdate + TestLocalSfx blocked (data-from-C / mtc1 wall) |
 | `game/lights`  | 9         | 8       | 4     | 4       | 1        | SetLights near (parallel-move); 11 larger FP-proportion/editor/data fns pending |
 | `game/camera`  | 7         | 6       | 3     | 3       | 0        | JudderGameCamera near (mtc1->c.lt.s wall); shared rail helpers GetALONG/Further* matched; 12 larger fns pending |
+| `game/deb3`    | 8         | 8       | 6     | 2       | 0        | 8 debris helpers all byte-exact; 2 PAL 0x3c->0x32 divergences (JonMaskFPS, PlayRandSFX); 11 larger RBody/AddDeb3/Proc/Launch fns pending |
 
 Notes:
 - `game/bug` (5/6): InitBugAreas, InBugArea, ResetBug, AddBugLight, DrawBug all

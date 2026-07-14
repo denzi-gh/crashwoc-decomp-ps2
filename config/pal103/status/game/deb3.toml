@@ -13,7 +13,7 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0112:00247aa0:PlayRandSFX"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0112:00247bc8:RBodyInitClasses"

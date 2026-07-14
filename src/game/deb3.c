@@ -47,6 +47,40 @@ extern void AddGameDebris(s32 id, struct nuvec_s *pos);
 extern void GameSfx(s32 id, struct nuvec_s *pos);
 extern void AddFiniteShotDebrisEffect(s32 *key, s32 effect, struct nuvec_s *pos,
                                       s32 n);
+extern s32 qrand(void);
+
+struct camera_s {
+    struct numtx_s mtx;   /* 0x00 */
+};
+extern struct camera_s global_camera;
+
+
+void PlayRandSFX(void) {
+    struct nuvec_s vec;
+    s32 iVar1;
+
+    if (rsfxpt != 0) {
+        rsfxcount -= 0x3c;
+        if (rsfxcount < 1) {
+            vec.x = global_camera.mtx._30 +
+                    (s32)(qrand() - 0x8000U) * 0.00024414062f;
+            vec.y = global_camera.mtx._31 +
+                    (s32)(qrand() - 0x8000U) * 0.00024414062f;
+            vec.z = global_camera.mtx._32 +
+                    (s32)(qrand() - 0x8000U) * 0.00024414062f;
+            iVar1 = qrand() * *rsfxpt;
+            if (iVar1 < 0) {
+                iVar1 += 0xffff;
+            }
+            rsfxcount = ((iVar1 >> 0x10) + rsfxpt[1]) * 0x32;
+            iVar1 = qrand() * rsfxpt[2];
+            if (iVar1 < 0) {
+                iVar1 += 0xffff;
+            }
+            GameSfx(rsfxpt[(iVar1 >> 0x10) + 3], &vec);
+        }
+    }
+}
 
 
 void InitRandSFX(void) {
