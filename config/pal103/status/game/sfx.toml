@@ -33,7 +33,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0116:0024fd30:GameSfxLoop"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0116:0024fe88:GameAudioUpdate"
@@ -45,7 +45,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0116:00250310:GameMusic"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0116:00250458:PauseGameAudio"

@@ -18,20 +18,48 @@
 
 #include "creature.h"
 
-/* pSFX entry: wait@0x17, stride 0x30 (verified in UpdateGameSfx/ResetGameSfx). */
+/* pSFX entry (offsets verified in GameMusic/GameSfxLoop), stride 0x30. */
 struct pSFX {
-    u8 pad0[0x17];
+    u8 pad0[0x10];
+    u16 pitch;        /* 0x10 */
+    u16 volume;       /* 0x12 */
+    u8 buzz;          /* 0x14 */
+    u8 rumble;        /* 0x15 */
+    u8 delay;         /* 0x16 */
     u8 wait;          /* 0x17 */
-    u8 pad1[0x18];
+    u8 pad1[0x8];
+    s8 type;          /* 0x20 */
+    u8 pad2[0xF];
 };                    /* 0x30 */
 
 extern struct pSFX SfxTabGLOBAL[];
 extern struct pSFX *CurSfxTabLocal;
 extern s32 SFXCOUNT_ALL;
 
+struct game_s {
+    u8 unk_0x00[0xB];
+    u8 sfx_volume;        /* 0x0B */
+    u8 music_volume;      /* 0x0C */
+    u8 unk_0x0D[3];
+};                        /* 0x10 */
+
+extern struct game_s Game;
+extern s32 game_music;
+extern s32 gamesfx_volume;
+extern s32 gamesfx_effect_volume;
+extern s32 gamesfx_pitch;
+extern s32 gamesfx_channel;
+extern s32 gamesfx_edbits;
+extern s32 PLAYERCOUNT;
+
 extern void NuSoundSetChannelPitch(s32 chan, s32 pitch, s32 a2);
 extern void NuSoundUpdate(void);
 extern void SOUND_StopSound(s32 chan);
+extern s32 NuSoundStopStream(s32 channel);
+extern void NuSoundPlayStereo(s32 track, s32 sfx2, s32 volL, s32 volR, s32 pitch);
+extern void NuSoundPlayStereo2(s32 track, s32 sfx2, s32 volL, s32 volR, s32 pitch);
+extern void NuSoundPlay3dLoopSfx(struct nuvec_s *pos, s32 sfx, s32 volL, s32 volR,
+                                 s32 pitch);
 
 
 void UpdateGameSfx(void) {
@@ -99,4 +127,91 @@ void PauseGameAudio(s32 pause) {
 
 void ResumeGameAudio(void) {
     NuSoundSetChannelPitch(4, 0x75A, 0);
+}
+
+void GameSfxLoop(s32 sfx, struct nuvec_s *pos) {
+    struct pSFX *info;
+    s32 vol;
+    s32 pitch;
+
+    if (sfx < 0) {
+        goto cleanup;
+    }
+    if (sfx >= SFXCOUNT_ALL) {
+        goto cleanup;
+    }
+    if (sfx < 0xC5) {
+        info = &SfxTabGLOBAL[sfx];
+    } else {
+        info = &CurSfxTabLocal[sfx - 0xC5];
+    }
+    if (info->wait != 0) {
+        goto cleanup;
+    }
+    if (gamesfx_volume == -1) {
+        vol = Game.sfx_volume;
+    } else {
+        vol = gamesfx_volume;
+    }
+    if (gamesfx_effect_volume == -1) {
+        vol = info->volume * vol / 100;
+    } else {
+        vol = gamesfx_effect_volume * vol / 100;
+    }
+    if (gamesfx_pitch == -1) {
+        pitch = info->pitch;
+    } else {
+        pitch = gamesfx_pitch;
+    }
+    if (pos != 0) {
+        NuSoundPlay3dLoopSfx(pos, sfx, vol, vol, pitch);
+    }
+    if (PLAYERCOUNT != 0 && gamesfx_edbits == 0) {
+        if (info->buzz != 0) {
+            NewBuzz((struct rumble_s *)((char *)player + 0xCA4), info->buzz);
+        }
+        if (info->rumble != 0) {
+            NewRumble((struct rumble_s *)((char *)player + 0xCA4), info->rumble);
+        }
+    }
+    info->wait = info->delay;
+cleanup:
+    gamesfx_edbits = 0;
+    gamesfx_effect_volume = -1;
+    gamesfx_channel = -1;
+    gamesfx_volume = -1;
+    gamesfx_pitch = -1;
+}
+
+void GameMusic(s32 sfx, s32 i) {
+    struct pSFX *info;
+    s32 vol;
+
+    if (sfx < 0) {
+        return;
+    }
+    if (sfx >= SFXCOUNT_ALL - 1) {
+        return;
+    }
+    if (sfx < 0xC5) {
+        info = &SfxTabGLOBAL[sfx];
+    } else {
+        info = &CurSfxTabLocal[sfx - 0xC5];
+    }
+    if (info->type == 1) {
+        vol = Game.music_volume * 0x1BFF / 100;
+    } else {
+        vol = info->volume * Game.sfx_volume / 100;
+    }
+    if (i == 0) {
+        NuSoundStopStream(0);
+        NuSoundStopStream(1);
+        NuSoundPlayStereo(sfx, sfx + 1, vol, vol, info->pitch);
+    } else {
+        NuSoundStopStream(2);
+        NuSoundStopStream(3);
+        NuSoundPlayStereo2(sfx, sfx + 1, vol, vol, info->pitch);
+    }
+    NuSoundUpdate();
+    game_music = sfx;
 }
