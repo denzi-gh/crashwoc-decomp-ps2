@@ -130,6 +130,50 @@ struct GENERICTRAIL {
 extern struct GENERICTRAIL GenericTrail[];
 extern void ProcessJeepTrail(struct GENERICTRAIL *t, s32 i);
 
+struct JEEPTRAILPT {
+    struct nuvec_s pos1;            /* 0x00 */
+    u8 pad_0C[0x20 - 0x0C];
+};
+extern struct JEEPTRAILPT JeepTrail[][0x20];
+extern s32 TrailPntr[];
+extern s32 TrailAir[];
+
+struct spline_s {
+    s16 len;                        /* 0x0 */
+    s16 ptsize;                     /* 0x2 */
+    u8 pad4[0x4];                   /* 0x4 */
+    u8 *pts;                        /* 0x8 */
+};
+struct spltab_s {
+    struct spline_s *spl;           /* 0x0 */
+    u8 pad[0x14];
+};
+extern struct spltab_s SplTab[];
+extern void PointAlongSpline(struct spline_s *spl, f32 ratio,
+                             struct nuvec_s *out, void *a3, void *a4);
+
+struct SPLINEFOLLOW {
+    struct spline_s *Spline;        /* 0x00 */
+    f32 Cur;                        /* 0x04 */
+    f32 Nex;                        /* 0x08 */
+    f32 Act;                        /* 0x0C */
+    f32 Inc;                        /* 0x10 */
+    struct nuvec_s CurPos;          /* 0x14 */
+    struct nuvec_s NexPos;          /* 0x20 */
+};
+extern struct SPLINEFOLLOW JeepFollowSpline;
+
+extern void InitEnemyJeeps(void);
+extern s32 D_005BBCC4[];              /* PlayerJeep.Finished (far .data -> absolute) */
+extern struct spline_s *D_00586394[]; /* Rail[0].pCAM (far .data -> absolute) */
+extern f32 WesternCountdown;
+extern s32 SmokeyFinished;
+extern f32 WesternTime;
+extern s32 SmokeyCountDownValue;
+extern struct spline_s *JeepIntroLookSpline;
+extern struct spline_s *JeepIntroCamSpline;
+extern s32 SmokeyCam;
+
 extern void NuVecSub(struct nuvec_s *dest, struct nuvec_s *a, struct nuvec_s *b);
 extern s32 NuAtan2D(f32 x, f32 z);
 
@@ -168,6 +212,34 @@ void NewGenerateJeepMatrix(struct numtx_s *Mat, short YAng, short SurfaceX,
 
 struct nuvec_s GenerateJeepWheelPoint(s32 WheelId) {
     return BaseWheelPosition[WheelId];
+}
+
+void WesternArenaReset(s32 PlayerDead) {
+    struct nuvec_s Temp;
+
+    D_005BBCC4[0] = 0;
+    SmokeyFinished = 0;
+    WesternTime = 0;
+    WesternCountdown = 5.999f;
+    SmokeyCountDownValue = 0;
+    InitEnemyJeeps();
+    JeepIntroCamSpline = SplTab[68].spl;
+    JeepIntroLookSpline = SplTab[69].spl;
+    if (SplTab[68].spl != 0 && SplTab[69].spl != 0) {
+        SmokeyCam = 0x15;
+    } else {
+        SmokeyCam = 0x14;
+    }
+    JeepFollowSpline.Spline = D_00586394[0];
+    if (D_00586394[0] != 0) {
+        JeepFollowSpline.Cur = 0.0f;
+        JeepFollowSpline.Inc = 0.0005f;
+        JeepFollowSpline.Nex = 0.0f;
+        JeepFollowSpline.Act = 0.0f;
+        PointAlongSpline(D_00586394[0], 0.0f, &Temp, 0, 0);
+        JeepFollowSpline.CurPos = Temp;
+        JeepFollowSpline.NexPos = Temp;
+    }
 }
 
 void FireBossReset(void) {
@@ -310,4 +382,14 @@ void BlendNUVECs(struct nuvec_s *Dest, struct nuvec_s *A, struct nuvec_s *B,
 }
 
 void WesternRaceManager(void) {
+}
+
+void EmptyTrail(s32 i) {
+    s32 j;
+
+    for (j = 0; j < 0x20; j++) {
+        JeepTrail[i][j].pos1.x = -10000.0f;
+    }
+    TrailPntr[i] = 0;
+    TrailAir[i] = 0;
 }

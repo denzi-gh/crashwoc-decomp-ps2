@@ -145,7 +145,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0101:0022afd8:WesternArenaReset"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022b0b0:DrawWesternArenaLevelExtra"
@@ -257,7 +257,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022c010:EmptyTrail"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022c068:NewFadeOutLastTrail"
