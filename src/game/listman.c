@@ -42,35 +42,6 @@ extern void NuMemFreeFn(void *ptr, char *file, int line);
 extern char D_0061B600[];  /* "..\nu2crash.ps2\...\listman.c" filename string */
 
 
-struct nulsthdr_s *NuLstCreate(int elcnt, int elsize) {
-    struct nulsthdr_s *list;
-    struct nulnkhdr_s *curr;
-    struct nulnkhdr_s *start;
-    int n;
-
-    list = (struct nulsthdr_s *)NuMemAllocFn(elcnt * (elsize + 0x10) + 0x10,
-                                             D_0061B600, 0x24);
-    if (list != 0) {
-        curr = (struct nulnkhdr_s *)(list + 1);
-        list->free = curr;
-        list->head = 0;
-        list->elcnt = (short)elcnt;
-        list->elsize = (short)elsize;
-        start = (struct nulnkhdr_s *)((char *)curr + elsize + 0x10);
-        for (n = 1; n < elcnt; n++) {
-            curr->succ = start;
-            curr->id = (short)(n - 1);
-            curr->owner = list;
-            curr = start;
-            start = (struct nulnkhdr_s *)((char *)start + (elsize + 0x10));
-        }
-        curr->owner = list;
-        curr->id = (short)(n - 1);
-        curr->succ = 0;
-    }
-    return list;
-}
-
 void NuLstDestroy(struct nulsthdr_s *hdr) {
     NuMemFreeFn(hdr, D_0061B600, 0x40);
 }
@@ -120,12 +91,9 @@ struct nulnkhdr_s *NuLstGetNext(struct nulsthdr_s *hdr, struct nulnkhdr_s *lnk) 
 
     if (lnk != 0) {
         rv = (lnk - 1)->succ;
-        if (rv == 0) {
-            return 0;
-        }
-        return rv + 1;
+    } else {
+        rv = hdr->head;
     }
-    rv = hdr->head;
     if (rv == 0) {
         return 0;
     }
