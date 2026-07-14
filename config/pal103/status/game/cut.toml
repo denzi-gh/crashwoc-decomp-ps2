@@ -61,11 +61,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0121:0025e598:InitCutScenes"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0121:0025e5d0:UpdateCutMovie"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0121:0025e650:DrawCutMovie"

@@ -64,6 +64,47 @@ extern void NewMenu(void *cursor, s32 a, s32 b, s32 c);
 extern void GameMusic(s32 sfx, s32 i);
 extern s32 strcasecmp(char *a, char *b);
 
+extern s32 cutmovie_hold;
+extern s32 Paused;
+extern u8 D_0060B398[];                 /* cutscene_locatorfns */
+
+struct cutinst_s {
+    u8 unk_0x00[0x74];
+    f32 rate;             /* 0x74 */
+};
+extern struct cutinst_s *D_006FF700[];  /* CutInst */
+extern s32 D_006FF780[];                /* CutAudio */
+#define CutInst D_006FF700
+#define CutAudio D_006FF780
+#define cutworldix D_00633388
+
+extern void AppCutSceneFindCharacters(void *cutscene);
+extern void AppCutSceneCharacterRender(void);
+extern void NuGCutSceneSysInit(void *fns);
+extern void NuSetCutSceneFindCharactersFn(void *fn);
+extern void NuSetCutSceneCharacterRenderFn(void *fn);
+extern s32 NuSoundKeyStatus(s32 chan);
+extern void SetCutMovieRate(void);
+extern void NuGCutSceneSysUpdate(s32 paused);
+
+
+void InitCutScenes(void) {
+    NuGCutSceneSysInit(D_0060B398);
+    NuSetCutSceneFindCharactersFn((void *)AppCutSceneFindCharacters);
+    NuSetCutSceneCharacterRenderFn((void *)AppCutSceneCharacterRender);
+}
+
+void UpdateCutMovie(void) {
+    if (cutmovie_hold != 0 && CutAudio[cutworldix] != -1 &&
+        NuSoundKeyStatus(4) != 1) {
+        CutInst[cutworldix]->rate = 0.0f;
+    } else {
+        cutmovie_hold = 0;
+        SetCutMovieRate();
+    }
+    NuGCutSceneSysUpdate(Paused);
+}
+
 
 void CutSceneEndFunction(void *icutscene) {
     if (cutmovie == 0) {
