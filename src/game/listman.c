@@ -82,6 +82,53 @@ void NuLstDestroy(struct nulsthdr_s *hdr) {
     NuMemFreeFn(hdr, D_0061B600, 0x40);
 }
 
+struct nulnkhdr_s *NuLstAllocBefore(struct nulnkhdr_s *at) {
+    struct nulsthdr_s *hdr;
+    struct nulnkhdr_s *rv;
+
+    at -= 1;
+    hdr = at->owner;
+    rv = hdr->free;
+    if (rv != 0) {
+        hdr->free = rv->succ;
+        rv->succ = at;
+        rv->prev = at->prev;
+        at->prev = rv;
+        if (rv->prev != 0) {
+            rv->prev->succ = rv;
+        } else {
+            hdr->head = rv;
+        }
+        *(unsigned int *)&rv->id = *(unsigned int *)&rv->id | 0x10000;
+        return rv + 1;
+    }
+    return 0;
+}
+
+struct nulnkhdr_s *NuLstAllocAfter(struct nulnkhdr_s *at) {
+    struct nulsthdr_s *hdr;
+    struct nulnkhdr_s *rv;
+    struct nulnkhdr_s *next;
+
+    at -= 1;
+    hdr = at->owner;
+    rv = hdr->free;
+    if (rv != 0) {
+        hdr->free = rv->succ;
+        rv->prev = at;
+        next = at->succ;
+        rv->succ = next;
+        if (next != 0) {
+            next->prev = rv;
+        } else {
+            hdr->tail = rv;
+        }
+        *(unsigned int *)&rv->id = *(unsigned int *)&rv->id | 0x10000;
+        return rv + 1;
+    }
+    return 0;
+}
+
 struct nulnkhdr_s *NuLstAlloc(struct nulsthdr_s *hdr) {
     struct nulnkhdr_s *rv;
 
@@ -122,6 +169,16 @@ void NuLstFree(struct nulnkhdr_s *lnk) {
     *(unsigned int *)&lnk->id = *(unsigned int *)&lnk->id & 0xFFFEFFFF;
 }
 
+struct nulnkhdr_s *NuLstGetByIdx(struct nulsthdr_s *hdr, int idx) {
+    struct nulnkhdr_s *lnk;
+
+    lnk = (struct nulnkhdr_s *)((char *)hdr + (hdr->elsize + (idx << 4) + 0x10));
+    if (*(unsigned int *)&lnk->id & 0x10000) {
+        return lnk + 1;
+    }
+    return 0;
+}
+
 struct nulnkhdr_s *NuLstGetNext(struct nulsthdr_s *hdr, struct nulnkhdr_s *lnk) {
     struct nulnkhdr_s *rv;
 
@@ -129,6 +186,20 @@ struct nulnkhdr_s *NuLstGetNext(struct nulsthdr_s *hdr, struct nulnkhdr_s *lnk) 
         rv = (lnk - 1)->succ;
     } else {
         rv = hdr->head;
+    }
+    if (rv == 0) {
+        return 0;
+    }
+    return rv + 1;
+}
+
+struct nulnkhdr_s *NuLstGetPrev(struct nulsthdr_s *hdr, struct nulnkhdr_s *lnk) {
+    struct nulnkhdr_s *rv;
+
+    if (lnk != 0) {
+        rv = (lnk - 1)->prev;
+    } else {
+        rv = hdr->tail;
     }
     if (rv == 0) {
         return 0;
