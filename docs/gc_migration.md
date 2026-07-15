@@ -80,11 +80,17 @@ File-level relocations (override the dir rule):
 Add new relocations to `FILE_MAP` in `tools/xref_gc.py` (and note here) as
 they are discovered.
 
-## Overlap (measured 2026-07-14 by `xref_gc.py`)
+## Overlap (measured by `xref_gc.py`; refreshed 2026-07-15)
 
 - **1366** of 3487 status-carried PS2 functions have a GC twin
   (**1309** exact, 57 name-only).
-- **1289** of those are still `state=asm` — the migration pool.
+- **1147** of those are still `state=asm` — the migration pool.
+
+**`gc_xref.toml` embeds each function's `state`, so it goes stale on every
+promotion** and `xref_gc.py --check` fails until it is regenerated. It had drifted
+by 143 states (1289 → 1147) before being refreshed on 2026-07-15. Re-run
+`python tools/xref_gc.py` whenever you promote, or treat the state column as
+advisory and read the status manifests instead — they are the source of truth.
 
 ## Scoreboard
 
@@ -135,6 +141,61 @@ recorded blockers. Smallest-first, GC drafts are a strong structural base:
 recommend proceeding to Phase 3 bulk waves, expecting a high as-is/tweaked rate
 on small leaf functions and near-matches concentrated in FP-heavy and
 regalloc-sensitive code.
+
+### Assembler fix — mtc1 hazard nop (2026-07-15)
+
+Not a migration wave: a `_sonyize` fix in `tools/gen_hybrid.py`. The decompals
+`as` inserts the `mtc1`→`c.cond.s` hazard nop only on a register dependency;
+Sony's `as` inserts it whenever the compare is adjacent. Full rule, retail proof
+pair, and the falsified `#nop`-marker theory are in docs/notes.md; unit tests in
+`tests/test_hazard_nop.py`.
+
+**+4 matching (298 → 302), no regressions** (`verify-promoted` re-derived all
+298 prior claims, `verify-loaded` reproduced the retail SHA):
+- `fsign` (game/vehsupp) — was 33.3%, the C was always correct.
+- `JudderGameCamera` (game/camera) — was a recorded near-match.
+- `ModelAnimDuration` (game/creature) — **was `state=equivalent`**, now
+  byte-verified `matching` (equivalent count 8 → 7).
+- `NuLineToPointDistSqr` (numath/nuplane) — 56.9% → 100%. Was *not* in the
+  documented backlog; found only by auditing every site where the rule fires.
+
+Audited across all 35 non-sdk units, the rule fires in **12 `matching`
+functions** (ProcessTimer, NuPlnDist2, AnimateGYRO/GLIDER/ATLASPHERE/DIVE,
+RatioDifferenceAlongLine, AddBugLight, DrawPanel3DObject, + the fixed ones) —
+all still byte-exact, so `verify-promoted` is real evidence of idempotency, not
+a vacuous gate. It fires in 11 `asm` functions; measured before/after, **nothing
+regressed**: NuLineToPointDistSqr went exact, MovePlayer improved slightly
+(12968→12960 differing bytes), the other 9 are byte-identical (dependent cases
+where the assembler already inserted the nop, so the explicit one changes
+nothing).
+
+The documented backlog predicted ~25 beneficiaries; the rest are **not** this
+wall (regalloc/scheduling, `.rodata` doubles).
+
+**The second claimed assembler bug does not exist on this branch.** The
+decompals `as` does hoist into a bare `j $31` slot (probed), but *not* for `jal`
+(it leaves the nop retail has). And gcc never emits a hoistable bare return
+here: across all 35 non-sdk units there are 41 bare `j $31` in reorder mode — 29
+preceded by a label, 11 by a directive, 1 by `li.s` (a *macro*: lui+mtc1 = two
+instructions, which cannot fit a one-slot delay, so gas will not hoist it, and
+that function — ModelAnimDuration — matches). **0 hoistable.** Beware the
+false positive: `InitCrateExplosions`/`CalculateGamePercentage` look hoistable
+until you notice their predecessor sits in a bgez delay slot inside gcc's own
+noreorder block; both are `matching`. The only claimed cases,
+NuVpSetSize/NuVpInit, live on the unmerged `nu3d/nuvport` branch — re-evaluate
+there, not here.
+
+### Wave A cont. — game/vehsupp (2026-07-15)
+
++3 matching, each byte-exact on the **first** attempt (24 matching in the unit):
+- `SetNuVecPntrA` (32B) — `SetNuVecPntr` twin on `D_006B75D0`.
+- `ACos360f` (40B) — `90.0f - ASin360f(x)`; needs `extern f32 ASin360f(f32)`
+  since ASin360f is earlier in the same TU and still asm.
+- `MyAnimateModelNew` (72B) — `oldaction = action`, then
+  `UpdateAnimPacket(model, &Anim, dt, 0.0f)` (EABI: dt passes through $f12,
+  the 0.0f literal lands in $f13) and `GetLights(field2C, &lights, 1)`.
+  `field2C` is really a `nuvec_s *`; cast at the call rather than retype the
+  struct, which would disturb the matching `MyInitModelNew`.
 
 ### Phase 3 — bulk waves (in progress from 2026-07-14)
 

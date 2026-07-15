@@ -64,8 +64,11 @@ extern double fmod(double, double);
 extern f32 NuTrigTable[];
 extern s32 ChrisInTheHouse;
 extern struct nuvec_s D_006B75C0[];
+extern struct nuvec_s D_006B75D0[];
 extern void NuRndrLine3dDbg(s32 colour, f32 x0, f32 y0, f32 z0, f32 x1, f32 y1,
                             f32 z1);
+/* Earlier in this TU, still asm. */
+extern f32 ASin360f(f32 x);
 
 struct MYDRAW {
     struct anim_s Anim;               /* 0x00 */
@@ -83,6 +86,10 @@ extern void *ChrisJointList;
 
 extern void ResetLights(struct Nearest_Light_s *nl);
 extern void SetNearestLights(struct Nearest_Light_s *l);
+extern void GetLights(struct nuvec_s *pos, struct Nearest_Light_s *lights,
+                      s32 mode);
+extern void UpdateAnimPacket(struct CharacterModel *mod, struct anim_s *anim,
+                             f32 dt, f32 xz_distance);
 
 
 s16 GetVolumeI(f32 vol) {
@@ -388,6 +395,12 @@ s32 MyDrawModelNew(struct MYDRAW *Draw, struct numtx_s *mC,
     return result;
 }
 
+void MyAnimateModelNew(struct MYDRAW *Draw, f32 dt) {
+    Draw->Anim.oldaction = Draw->Anim.action;
+    UpdateAnimPacket(Draw->model, &Draw->Anim, dt, 0.0f);
+    GetLights((struct nuvec_s *)Draw->field2C, &Draw->lights, 1);
+}
+
 void MyResetAnimPacket(struct MYDRAW *Draw, s32 Action) {
     ResetAnimPacket(&Draw->Anim, Action);
     Draw->Anim.flags = 0;
@@ -397,6 +410,10 @@ void MyChangeAnim(struct MYDRAW *Draw, s32 Action) {
     Draw->Anim.flags = 0;
     Draw->Anim.oldaction = Draw->Anim.action;
     Draw->Anim.newaction = (s16)Action;
+}
+
+f32 ACos360f(f32 x) {
+    return 90.0f - ASin360f(x);
 }
 
 struct nuvec_s SetNuVec(f32 x, f32 y, f32 z) {
@@ -412,6 +429,13 @@ struct nuvec_s *SetNuVecPntr(f32 x, f32 y, f32 z) {
     D_006B75C0[0].y = y;
     D_006B75C0[0].z = z;
     return &D_006B75C0[0];
+}
+
+struct nuvec_s *SetNuVecPntrA(f32 x, f32 y, f32 z) {
+    D_006B75D0[0].x = x;
+    D_006B75D0[0].y = y;
+    D_006B75D0[0].z = z;
+    return &D_006B75D0[0];
 }
 
 struct nuquat_s SetNuQuat(f32 x, f32 y, f32 z, f32 w) {

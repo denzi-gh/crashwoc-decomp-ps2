@@ -129,7 +129,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0099:00221530:fsign"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00221560:GetLocatorMtx"
@@ -149,7 +149,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:002217f8:MyAnimateModelNew"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00221840:MyResetAnimPacket"
@@ -161,7 +161,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00221880:ACos360f"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:002218a8:ASin"
@@ -181,7 +181,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00221a50:SetNuVecPntrA"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00221a70:SetNuQuat"

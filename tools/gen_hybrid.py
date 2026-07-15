@@ -154,6 +154,31 @@ _JREG_RE = re.compile(
 # cop1.S cvt.w = 0x46000024 | (fs << 11) | (fd << 6).
 _CVTWS_RE = re.compile(r"^(\s*)cvt\.w\.s(?:\s+)\$f(\d+)\s*,\s*\$f(\d+)\s*$")
 
+# R5900 mtc1 hazard nop. An `mtc1` immediately followed by an FP compare needs
+# a nop between them, and the two assemblers disagree on when: Sony's `as`
+# (whose choices retail contains) inserts it whenever the compare is adjacent,
+# the decompals `as` only when the compare also *reads the register mtc1 just
+# wrote*. Where gcc left an independent compare adjacent, retail has the nop and
+# the decompals `as` drops it, so the function assembles one word short and the
+# whole tail shifts -- the wall behind a documented backlog of near-matches.
+#
+# Usually neither instruction is even visible here: `li.s $f0,1.0` is an
+# assembler macro that expands to `lui $at,0x3f80` + `mtc1 $at,$f0` (retail
+# fsign @0x221530 is exactly this -- mtc1 $at,$f0 / nop / c.le.s $f1,$f12, on
+# disjoint registers). So the trigger is "the previous instruction writes an FP
+# register through mtc1", which is either a literal `mtc1` or an inline `li.s`
+# (the pool-bound ones are already lwc1 by the time _sonyize runs).
+#
+# Inserting the nop explicitly is safe in both cases and needs no dependency
+# analysis of our own: with a real `nop` ahead of it the compare no longer sees
+# a hazard, so the decompals `as` adds nothing, and the dependent case that it
+# *would* have handled comes out with exactly one nop either way (probed both).
+# Only the compare class is claimed here -- the byte gates carry the proof, so
+# widen it (add.s, swc1, ...) only against retail evidence, one class at a time.
+_MTC1_RE = re.compile(r"^\s*mtc1\s+\$\w+\s*,\s*\$f\d+\s*$")
+_LIS_INLINE_RE = re.compile(r"^\s*li\.s\s+\$f\d+\s*,")
+_CCOND_RE = re.compile(r"^\s*c\.(?:eq|lt|le|ueq|ult|ule|f|un|olt|ole)\.s\s+\$f")
+
 # Float-constant loads. ee-gcc emits `li.s $fN,<decimal>` and leaves the
 # materialization to the assembler: a constant whose float32 image has a
 # zero low half becomes an inline lui+mtc1 (no data, byte-exact, leave it
@@ -627,6 +652,33 @@ def _sonyize(line):
     return line
 
 
+def _writes_fpr_via_mtc1(line):
+    """Does this line assemble to an mtc1 as its last instruction? (_MTC1_RE)"""
+    return bool(_MTC1_RE.match(line) or _LIS_INLINE_RE.match(line))
+
+
+def _sonyize_seg(seg):
+    """`_sonyize` over one function segment, plus the mtc1 hazard nops.
+
+    Line-by-line except that a nop is materialized between an mtc1-writing
+    instruction and an adjacent FP compare (see _MTC1_RE): a hazard Sony's `as`
+    covers unconditionally and the decompals `as` only on a register
+    dependency. Comment/blank lines do not separate the two -- gcc emits its own
+    `#nop` markers between them, and those are only annotations (retail
+    ApplyFriction has no nop at one of them), never a nop to materialize.
+    """
+    out = []
+    prev_insn = None
+    for line in seg:
+        if _CCOND_RE.match(line) and prev_insn is not None \
+                and _writes_fpr_via_mtc1(prev_insn):
+            out.append("\tnop")
+        out.append(_sonyize(line))
+        if not _is_noise(line):
+            prev_insn = line
+    return out
+
+
 def _unit_end(unit_dir):
     """End address of a unit (= next unit's start), or None for the last."""
     from declib.tu import load_tu_runs
@@ -882,7 +934,7 @@ def _splice_unit(prologue, seg_by_name, functions, unit_dir, link_set,
             seg, externs = _rewrite_local_data(seg, local_data or {}, version,
                                                unit_dir, name, addr, mapper_box)
             out_lines += externs   # .extern for the borrowed retail data slot
-            body_lines += [_sonyize(l) for l in seg]
+            body_lines += _sonyize_seg(seg)
             if end is not None and not report_base:
                 # A function's registry extent runs to the next function and
                 # includes retail's trailing pad nops; the compiler does not

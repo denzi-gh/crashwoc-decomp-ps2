@@ -24,9 +24,21 @@ things that shouldn't be re-derived. Resolved history lives in git.
   `%gp_rel(sym)($gp)` and pads loops, corrupting spliced slices. `gen_hybrid`'s
   `_sonyize` normalizes the two pseudo-op encodings that differ (`move`→`daddu`,
   one-operand `break N`).
-- **`mtc1→{swc1,c.le.s}` hazard nop.** Retail's SN `as` inserts it; the decompals
-  `as` inserts only the `mtc1→cvt.s.w` one. This blocks a few otherwise-exact
-  functions (SetLevel, ModelAnimDuration) - a tooling fix, not a source problem.
+- **`mtc1`→FP-compare hazard nop (fixed 2026-07-15, `_sonyize`).** The two
+  assemblers agreed on the latency all along and disagreed on the *dependency*:
+  Sony's `as` inserts the nop whenever a `c.cond.s` is adjacent to an `mtc1`, the
+  decompals `as` only when the compare reads the register the `mtc1` just wrote.
+  Retail `fsign` @0x221530 is the proof - `mtc1 $at,$f0` / nop / `c.le.s
+  $f1,$f12`, disjoint registers - while retail `ApplyFriction` @0x2208f8 has *no*
+  nop where one instruction already separates them. Usually neither instruction
+  is visible in the `.s`: `li.s $f0,1.0` is a macro expanding to `lui $at` +
+  `mtc1 $at,$f0`. `_sonyize` now materializes the nop; an explicit one is
+  idempotent (the compare no longer sees a hazard, so `as` adds nothing, and the
+  dependent case yields exactly one either way). Only the compare class is
+  claimed - widen to add.s/swc1 only against retail evidence.
+  **ee-gcc's `#nop` comment lines are NOT this marker** and must not be
+  materialized: retail ApplyFriction has no nop at one of them. They are
+  annotations, not instructions - an earlier note claimed otherwise and was wrong.
 - **Data/pool codegen is supported** in `gen_hybrid` (see
   `config/pal103/compiler_knowledge.toml`): `.lit4`/`.lit8` pools mapped by value,
   initialized-local `.sdata`/`.rodata` borrowed onto the owned retail slot, switch
