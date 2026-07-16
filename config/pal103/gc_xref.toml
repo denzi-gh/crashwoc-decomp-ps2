@@ -3,7 +3,7 @@
 # twins (rank-6 structural hints; re-derive every fact from PS2 asm).
 # 1366 of 3487 status-carried PS2 functions have a GC
 # reference: 1309 exact (unit agrees), 57 name-only.
-# 1147 of the referenced functions are still state=asm.
+# 1141 of the referenced functions are still state=asm.
 
 [[xref]]
 id = 'pal103:unit-0103:0022ef10:LoadAI'
@@ -609,7 +609,7 @@ confidence = 'exact'
 id = 'pal103:unit-0095:001f11c8:InitCrates'
 unit = 'game/crate'
 addr = 0x001f11c8
-state = 'asm'
+state = 'matching'
 gc_file = 'src/gamecode/crate.c'
 gc_line_start = 257
 gc_line_end = 287
@@ -649,7 +649,7 @@ confidence = 'exact'
 id = 'pal103:unit-0095:001f21a8:HeightSortCrateData'
 unit = 'game/crate'
 addr = 0x001f21a8
-state = 'asm'
+state = 'matching'
 gc_file = 'src/gamecode/crate.c'
 gc_line_start = 689
 gc_line_end = 718
@@ -789,7 +789,7 @@ confidence = 'exact'
 id = 'pal103:unit-0095:001f6aa8:CrateBottomAbove'
 unit = 'game/crate'
 addr = 0x001f6aa8
-state = 'asm'
+state = 'matching'
 gc_file = 'src/gamecode/crate.c'
 gc_line_start = 2622
 gc_line_end = 2658
@@ -839,7 +839,7 @@ confidence = 'exact'
 id = 'pal103:unit-0095:001f77a0:CrateRayCast'
 unit = 'game/crate'
 addr = 0x001f77a0
-state = 'asm'
+state = 'matching'
 gc_file = 'src/gamecode/crate.c'
 gc_line_start = 2358
 gc_line_end = 2416
@@ -899,7 +899,7 @@ confidence = 'exact'
 id = 'pal103:unit-0095:001f8158:OpenPreviousCheckpoints'
 unit = 'game/crate'
 addr = 0x001f8158
-state = 'asm'
+state = 'matching'
 gc_file = 'src/gamecode/crate.c'
 gc_line_start = 573
 gc_line_end = 594
@@ -919,7 +919,7 @@ confidence = 'exact'
 id = 'pal103:unit-0095:001f8458:DestroyAllNitroCrates'
 unit = 'game/crate'
 addr = 0x001f8458
-state = 'asm'
+state = 'matching'
 gc_file = 'src/gamecode/crate.c'
 gc_line_start = 1970
 gc_line_end = 1997
