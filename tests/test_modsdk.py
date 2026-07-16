@@ -189,6 +189,41 @@ class TestGenHooks(unittest.TestCase):
             gen_hooks.emit_stub(plan, 0x001EF658,
                                 [0x0C09E320, 0x00000000], 0x00707800)
 
+    def test_supplant_no_thunk_no_orig(self):
+        plan, size, provides = self.plan_one("supplant")
+        self.assertEqual(size, 0)            # occupies no stub space
+        self.assertEqual(provides, {})       # and exports no orig_
+        stub = gen_hooks.emit_stub(plan, 0x001EF658, self.DISPLACED,
+                                   0x00707800)
+        self.assertEqual(stub, b"")
+        patch = gen_hooks.emit_patch(plan, 0x001EF658, self.DISPLACED,
+                                     0x00707800)
+        self.assertEqual(patch[:4], mips.j(0x00707800).to_bytes(4, "little"))
+        self.assertEqual(patch[4:], b"\x00\x00\x00\x00")
+
+    def test_supplant_accepts_a_jump_prologue(self):
+        """The reason supplant exists.
+
+        NuRndrLine3dDbg's entire body is `jr $ra; nop`. `replace` refuses it
+        because it cannot relocate a jump into an orig_ thunk -- but supplant
+        never replays the displaced words, so the site is fine.
+        """
+        jr_ra_nop = [0x03E00008, 0x00000000]
+        pre, _s, _p = self.plan_one("pre")
+        with self.assertRaises(mips.HookSiteError):
+            gen_hooks.emit_stub(pre, 0x0012FDF0, jr_ra_nop, 0x00707800)
+
+        plan, _size, _provides = self.plan_one("supplant")
+        self.assertEqual(
+            gen_hooks.emit_stub(plan, 0x0012FDF0, jr_ra_nop, 0x00707800), b"")
+        patch = gen_hooks.emit_patch(plan, 0x0012FDF0, jr_ra_nop, 0x00707800)
+        self.assertEqual(patch[:4], mips.j(0x00707800).to_bytes(4, "little"))
+
+    def test_supplant_still_rejects_unaligned_target(self):
+        plan, _size, _p = self.plan_one("supplant")
+        with self.assertRaises(mips.HookSiteError):
+            gen_hooks.emit_stub(plan, 0x0012FDF2, self.DISPLACED, 0x00707800)
+
 
 def make_mini_elf():
     """A synthetic single-PT_LOAD ELF shaped like the retail one."""

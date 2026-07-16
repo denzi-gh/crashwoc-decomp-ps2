@@ -2,7 +2,7 @@
 
     [mod]           name, version, target = "pal103"
     [code]          sources = ["mod.c"]            (optional)
-    [[hook]]        function, handler, mode = "pre" | "replace"
+    [[hook]]        function, handler, mode = "pre" | "replace" | "supplant"
     [[data_patch]]  address (or symbol + offset), bytes = "hex"
     [mailbox]       size                           (one mod per build)
 
@@ -16,7 +16,7 @@ from pathlib import Path
 
 NAME_RE = re.compile(r"^[a-z0-9_-]+$")
 IDENT_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
-HOOK_MODES = ("pre", "replace")
+HOOK_MODES = ("pre", "replace", "supplant")
 TARGETS = ("pal103",)
 
 

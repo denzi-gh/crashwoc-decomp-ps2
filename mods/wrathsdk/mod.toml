@@ -1,0 +1,65 @@
+# WrathSDK: revive retail's debug line renderer.
+#
+# NuRndrLine3dDbg (0x0012FDF0) is `jr $ra; nop` -- an empty stub, so every debug
+# renderer that calls it draws nothing no matter which flags are set. This mod
+# supplants it with a queue and drains that queue during the 3D pass. See mod.c
+# for why a queue and not a direct forward (short version: most callers run in
+# the UPDATE phase, where NuRndrLine3d cannot submit).
+#
+# Realistically this revives DrawCross (8 live callers: JeepCam, MovePlayerJeep,
+# ProcessFireBoss, DrawWeatherBoss_a, ProcessBigGun, ProcessSpaceArenaLevel,
+# FindZoffaRestartPoint, ZoffaSmoke) and DrawLine (JeepCam, ProcessBigGun).
+# The rest of the family -- TerrDraw, DrawWallSpline, DrawAxes, DrawSphere,
+# TempDrawLights, DrawCube, ... -- has NO callers and stays dead regardless.
+#
+# Deliberately hooks nothing the coop mod hooks (it owns DoInput/DrawCreatures/
+# PickupItem/DrawMenu/CrateOff/GotoCheckpoint/ProcessFireBoss/ProcessJeepBalloon),
+# so the two compose into one ELF:
+#   python tools/modsdk/build.py mods/coop/mod.toml mods/wrathsdk/mod.toml
+#
+# Nothing here draws by itself -- it only restores the primitive. What appears is
+# still gated by each caller's own flag (ChrisInTheHouse, LocIndx, ...), which
+# are pokeable over PINE; see the wrathsdk repo's README.
+
+[mod]
+name = "wrathsdk"
+version = "0.8"
+target = "pal103"
+
+[code]
+sources = ["mod.c"]
+
+# `supplant` rather than `replace`: NuRndrLine3dDbg's own body is a jump, so
+# `replace` refuses the site while building its orig_ thunk. A no-op stub has no
+# original worth calling, so discarding it is exactly right.
+[[hook]]
+function = "NuRndrLine3dDbg"
+handler = "wrath_line3d_dbg"
+mode = "supplant"
+
+# The drain. DrawLevel is called once per frame from main (0x001CA430), late in
+# the 3D pass with the world camera live, takes no arguments, and is hooked by
+# nobody else.
+[[hook]]
+function = "DrawLevel"
+handler = "wrath_draw_level"
+mode = "replace"
+
+# Editor boot. UpdateLevel (0x001EF658, void, called once per frame from main at
+# 0x001C9C44) is the update-phase counterpart -- edmainInit does file I/O and
+# allocates a camera, which must not happen mid-render. Poke wrath_editor_arm=1
+# to fire it once. See mod.c for why registration is the missing piece.
+[[hook]]
+function = "UpdateLevel"
+handler = "wrath_update_level"
+mode = "replace"
+
+# Editor UI font scale. main hardcodes NuFntScale(12, 12) just before
+# edmainRender (0x001CA4C8); that constant is why the editor UI renders wrong --
+# the community's E3 Demo codes patch the same site ("Font Scale Corrector").
+# Re-applying it here (after main's call) keeps both numbers pokeable over PINE
+# instead of baking in a guess. Defaults to 12/12 = retail behaviour.
+[[hook]]
+function = "edmainRender"
+handler = "wrath_edmain_render"
+mode = "replace"

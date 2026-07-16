@@ -1,14 +1,24 @@
 """Hook trampolines: prologue patches + stub code.
 
-  pre      T+0: j stub; nop   stub saves ra,a0-a3,t0-t3, calls the handler,
+  pre       T+0: j stub; nop  stub saves ra,a0-a3,t0-t3, calls the handler,
                               restores, replays the two displaced words,
                               resumes at T+8. Float arg regs are NOT saved.
-  replace  T+0: j H; nop      plus an orig_<T> thunk so the handler can
+  replace   T+0: j H; nop     plus an orig_<T> thunk so the handler can
                               still call the original.
+  supplant  T+0: j H; nop     no thunk, no orig_<T>: the original is
+                              discarded outright.
 
 Stubs sit at the start of each mod's blob slice, so orig_<name> addresses
-exist before the mod is linked. Both displaced words must pass
-mips.is_relocatable or the hook is refused.
+exist before the mod is linked.
+
+`pre` and `replace` replay the two displaced words from a new address, so both
+must pass mips.is_relocatable or the hook is refused. `supplant` never replays
+them, so that check does not apply -- which is the whole point: it is the only
+way to hook a target whose own prologue is position-dependent. The motivating
+case is a stub like `NuRndrLine3dDbg` (`jr $ra; nop`, 8 bytes): its body *is* a
+jump, so `replace` refuses it, yet there is nothing there worth calling. Use
+`supplant` only when discarding the original is intended -- there is no way to
+get it back.
 """
 from dataclasses import dataclass
 
@@ -32,17 +42,21 @@ class StubPlan:
     size: int
 
 
+_STUB_SIZES = {"pre": PRE_STUB_SIZE, "replace": REPLACE_THUNK_SIZE,
+               "supplant": 0}
+
+
 def plan_stubs(hooks, stub_base):
     """Returns (plans, total_size, {orig_<fn>: thunk addr})."""
     plans, provides = [], {}
     addr = stub_base
     for h in hooks:
-        size = PRE_STUB_SIZE if h.mode == "pre" else REPLACE_THUNK_SIZE
+        size = _STUB_SIZES[h.mode]
         plans.append(StubPlan(function=h.function, handler=h.handler,
                               mode=h.mode, stub_addr=addr, size=size))
         if h.mode == "replace":
             provides[f"orig_{h.function}"] = addr
-        addr += size
+        addr += size          # supplant occupies no stub space
     return plans, addr - stub_base, provides
 
 
@@ -64,6 +78,13 @@ def _check_reach(src, dst):
 
 
 def emit_stub(plan, target, displaced, handler_addr):
+    if plan.mode == "supplant":
+        # No thunk: the original is discarded, so the displaced words are never
+        # replayed and are not required to be relocatable.
+        if target % 4:
+            raise mips.HookSiteError(
+                f"{plan.function}: address 0x{target:x} unaligned")
+        return b""
     _check_displaced(plan.function, target, displaced)
     resume = target + 8
     if plan.mode == "pre":
@@ -88,6 +109,10 @@ def emit_stub(plan, target, displaced, handler_addr):
 
 def emit_patch(plan, target, displaced, handler_addr):
     """The two words written over the hooked function's prologue."""
+    if plan.mode == "supplant":
+        _check_reach(target, handler_addr)
+        return (mips.j(handler_addr).to_bytes(4, "little")
+                + mips.NOP.to_bytes(4, "little"))
     _check_displaced(plan.function, target, displaced)
     if plan.mode == "pre":
         _check_reach(target, plan.stub_addr)
