@@ -33,7 +33,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0079:001afc78:DebugRenderTriggers"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0079:001b0c38:NuTriggerSysInit"

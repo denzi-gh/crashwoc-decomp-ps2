@@ -107,3 +107,61 @@ folds the whole thing to a single OR chain. This matched `CreateFadeMtl`
 byte-exact where the mask form could not. Same class of fix as other
 whole-function regalloc tie-breaks — the difference is purely which GPR holds
 the intermediate, and only the union spelling steers it.
+
+## Matching lever: unsigned switch index removes gcc's low-bound range test
+
+For a dense `switch` over small non-negative constants (e.g. a shape/type tag
+with cases 0/1/2/3), the **signedness of the switch expression** decides the
+dispatch shape, and it is worth several instructions:
+
+- **`int` index**: gcc cannot prove `index >= 0`, so the tree's left subtree
+  needs a bound test. Because the empty `case 0:` shares a label with the
+  implicit default, gcc folds "`< 1` → default" and "`== 0` → default" into a
+  single **`slt index,2` + `bnel`** range test (2 insns, and it steals the
+  `beq`'s delay slot so case 1 cannot use `beql`).
+- **`unsigned int` index**: `index >= 0` is known, the bound test disappears and
+  gcc emits a flat equality chain — `beq 1` / **`beqz`** / `beq 2` / `beq 3` /
+  `b default` — in *preorder of the balanced case tree* (root first: 1, 0, 2, 3).
+
+Retail's `DebugRenderTriggers` (gamelib/trigger) shows the unsigned form, so the
+sub-record tag `NuTriggerSub.type` is `unsigned int`. Writing it `int` costs +1
+insn per switch and blocks the match. `case 0: break;`, `case 0: continue;` and
+an explicit `default:` all compile identically — they do **not** un-fold the
+range test; only the signedness does.
+
+Diagnostic: an `slt <index>,<maxcase+1>` right after the first `beq` in a
+dispatch chain means "make the index unsigned", not "reorder the cases".
+
+Confirmed by probe (three switch spellings compiled through the locked profile);
+see also the sibling dispatches in `CheckParentedTriggerWithPos` /
+`CheckUnparentedTriggerWithPos`, which use the same 1/0/2/3 order and are the
+next targets in this unit.
+
+### Same function, supporting levers
+- `NuRndrLine3d(line,0,0)` takes **two 0x24-stride vertices** (pos at `+0x00`,
+  colour at `+0x18`); the pair is one `struct NuRndrVtx line[2]` local, and the
+  two `col = -1` stores emit **reversed** (write `line[1]` first) — the adjacent-
+  store permutation already noted for game/game_obj.
+- Block-scoped temps get **overlapping** frame slots across disjoint `if`/`else`
+  arms (parented arm: vec@0x50 + mtx@0x60; unparented arm: mtx@0x50), and every
+  stack slot is 16-byte aligned. Declaration order inside each arm sets the
+  offsets.
+- Explicit pointer locals (`trig = &sys->triggers[i]`, `sub = &def->subs[k]`)
+  give retail's stable base registers: `addu base,base,index`. Indexing inline
+  instead yields `addu dst,index,base` and swaps the loop-head allocation.
+
+- **Anchor caller searches.** `jal[ \t]+NuRndrLine3d` also matches
+  `NuRndrLine3dDbg`, which is a `jr $ra; nop` **stub**. The whole
+  `TerrDraw`/`SphereDraw`/`DrawWallSpline`/`DrawCube`/`edlightDraw*` family calls
+  the stub and can never render. Use `/jal[ \t]+NAME$/`.
+- **Check the data before the code.** `DebugRenderTriggers` is live, correct,
+  armed by default, and calls the real `NuRndrLine3d` — and still draws nothing:
+  **zero `.trg` files ship on the disc**, so `g_NuTriggerSysList` is 0 in every
+  level. A renderer with no data is indistinguishable from a broken one until you
+  look at the disc. Same trap twice more: `specterr`'s renderer is armed but
+  nothing builds its input, and `LData[0x2A]` ("testzone") names assets that were
+  never shipped.
+- **A `.lit4` constant is not a variable.** It is a **shared compiler literal**
+  for the whole TU (`TerrDraw` gates on `65535.0f` from `.lit4`). Patching one
+  corrupts every other use of that value. Only `sdata`/`sbss` globals are real
+  switches — worth knowing when reading any gate.
