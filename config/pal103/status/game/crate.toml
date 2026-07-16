@@ -13,7 +13,7 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0095:001f11c8:InitCrates"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f1308:NewCrateAnimation"
@@ -33,7 +33,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0095:001f21a8:HeightSortCrateData"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f2548:ConvertCrateData"
@@ -89,7 +89,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0095:001f6aa8:CrateBottomAbove"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f6ce0:InCrate"
@@ -109,7 +109,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0095:001f77a0:CrateRayCast"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f7aa0:CrateSafety"
@@ -149,7 +149,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0095:001f8158:OpenPreviousCheckpoints"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f82a0:FindOverlap"
@@ -161,7 +161,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f8458:DestroyAllNitroCrates"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f85d8:HopCratesAbove"
