@@ -57,4 +57,4 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0116:00250518:TestLocalSfx"
-state = "asm"
+state = "matching"

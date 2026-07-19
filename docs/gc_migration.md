@@ -84,13 +84,16 @@ they are discovered.
 
 - **1366** of 3487 status-carried PS2 functions have a GC twin
   (**1309** exact, 57 name-only).
-- **1147** of those are still `state=asm` — the migration pool.
+- **1090** of those are still `state=asm` — the migration pool (270 twins now
+  `matching`, measured 2026-07-19 against the status manifests).
 
 **`gc_xref.toml` embeds each function's `state`, so it goes stale on every
 promotion** and `xref_gc.py --check` fails until it is regenerated. It had drifted
 by 143 states (1289 → 1147) before being refreshed on 2026-07-15. Re-run
 `python tools/xref_gc.py` whenever you promote, or treat the state column as
 advisory and read the status manifests instead — they are the source of truth.
+Branch-wide state totals (2026-07-19): **364 matching / 7 equivalent / 3116 asm**
+(3487 status-carried functions).
 
 ## Scoreboard
 
@@ -230,16 +233,44 @@ against the widened rule before assuming it is covered.
   `field2C` is really a `nuvec_s *`; cast at the call rather than retype the
   struct, which would disturb the matching `MyInitModelNew`.
 
+### Wave A cont. — game/{bug,cloudfx,sfx,font3d} (2026-07-19)
+
+Four units revisited in parallel (one subagent each), smallest-remaining-first.
+**+5 matching (359 → 364), no regressions** (each promotion ran the full byte
+gate; the loaded image still reproduces retail SHA `c92a5987…0fe438`):
+
+- `game/cloudfx` 5→7: cloudInit, DoClouds (both from-asm — GC render twins are
+  useless; PS2 rewrote the unit for the console DMA/VU1 path).
+- `game/font3d` 3→5: InitFont3D (tweaked from twin), RemapAccentedCharacter
+  (as-is, jtbl borrowed).
+- `game/sfx` 5→6: TestLocalSfx (from-asm, no twin).
+- `game/bug` 5→5: UpdateBugLight attempted, faithful near-match, blocked.
+
+Cross-cutting findings this wave:
+1. **GC render/DMA twins are hostile for PS2**: cloudfx (cloudInit/DoClouds/
+   cloudRender/TimeTunnel*) and font3d Text3D all had to be reconstructed from asm
+   — the "exact" GC hints did not apply after the PS2 console rewrite.
+2. **A "data-from-C" blocker class was mis-classified**: game/sfx
+   InitGlobalSfx/InitLevelSfxTables level tables and SFX strings are
+   extern-referenceable retail data, not data-from-C. Re-audit other
+   `data-from-C` blockers the same way before trusting them — the real wall there
+   is regalloc/scheduling. Only genuine compiler-emitted `.rodata` (jump tables,
+   `switch(language)` selectors as in InitLocalSfx) is a true data-from-C wall.
+3. The **mtc1-hazard-nop widening** tooling fix remains the single highest-leverage
+   next step: it would unblock GameSfx (+ likely GameAudioUpdate) and reaches into
+   UpdateBugLight's 7-site wall — a one-`_sonyize`-rule change vs per-function
+   hand-work. See the 2026-07-16 "WIDENING EVIDENCE" subsection above.
+
 ### Phase 3 — bulk waves (in progress from 2026-07-14)
 
 **Wave A** (`game/`), smallest-first. Same outcome legend as Phase 2.
 
 | Unit           | attempted | matched | as-is | tweaked | from-asm | near/deferred |
 |----------------|-----------|---------|-------|---------|----------|---------------|
-| `game/bug`     | 5         | 5       | 0     | 5       | 0        | UpdateBugLight (2224B FP, deferred) |
-| `game/cloudfx` | 5         | 5       | 0     | 1       | 4        | cloudInit/cloudRender/DoClouds/TimeTunnelInit/TimeTunnelRender (larger, pending) |
-| `game/font3d`  | 3         | 3       | 0     | 3       | 0        | RemapAccentedCharacter/Update3DFontObjects/InitFont3D/Text3D (pending) |
-| `game/sfx`     | 7         | 5       | 0     | 5       | 0        | PauseGameAudio + GameSfx near; 3 init fns + GameAudioUpdate + TestLocalSfx blocked (data-from-C / mtc1 wall) |
+| `game/bug`     | 6         | 5       | 0     | 5       | 0        | UpdateBugLight now a faithful near-match (11.9%, 2224B PAL rewrite from asm) — 3 simultaneous walls: delay-slot-fill + mtc1-hazard (7 sites) + callee-save $f25/$f26 |
+| `game/cloudfx` | 9         | 7       | 0     | 1       | 6        | +2 (2026-07-19): cloudInit (448B), DoClouds (1096B) — both from-asm (GC render twins useless). Near: cloudRender (VU1/GIF/DMA packet, callee-save regalloc), TimeTunnelInit (24.7%, 3-way $s1/$s2/$s3). TimeTunnelRender (1920B, DoClouds-like driver) analyzed, deferred |
+| `game/font3d`  | 7         | 5       | 1     | 4       | 0        | +2 (2026-07-19): InitFont3D (440B, tweaked), RemapAccentedCharacter (368B, as-is, jtbl borrowed). Near: Update3DFontObjects 92.6% (whole-fn FP $f2/$f3 tie, 4 spellings→same hash), Text3D from-asm (GC twin hostile for PAL; all divergences decoded) |
+| `game/sfx`     | 12        | 6       | 0     | 5       | 1        | +1 (2026-07-19): TestLocalSfx (112B, from-asm, no twin). **Data-from-C reclassified**: Init{Level,Global}Sfx tables/strings are extern-referenceable retail data — real wall is regalloc/scheduling; both now faithful near-matches. Only InitLocalSfx has genuine compiler-owned jtbl rodata. PauseGameAudio (8B coin-flip) + GameSfx (mtc1→add.s) + GameAudioUpdate (soft-double+mtc1) near/blocked |
 | `game/lights`  | 9         | 8       | 4     | 4       | 1        | SetLights near (parallel-move); 11 larger FP-proportion/editor/data fns pending |
 | `game/camera`  | 7         | 6       | 3     | 3       | 0        | JudderGameCamera near (mtc1->c.lt.s wall); shared rail helpers GetALONG/Further* matched; 12 larger fns pending |
 | `game/deb3`    | 8         | 8       | 6     | 2       | 0        | 8 debris helpers all byte-exact; 2 PAL 0x3c->0x32 divergences (JonMaskFPS, PlayRandSFX); 11 larger RBody/AddDeb3/Proc/Launch fns pending |
@@ -258,26 +289,56 @@ Notes:
   byte-exact. Heavy extern-D_ data unit; callee signatures (Draw3DCharacter,
   NuLightAddSpotXSpanFade) re-derived from PS2 call sites (EABI split int/float
   regs). InBugArea needed the `(Rail+i)->type` offset-first regalloc lever.
-  Only UpdateBugLight (2224B, FP-compare heavy) left — deferred with the other
-  big FP routines.
-- `game/cloudfx` (5/10): the 4 small tail fns (CloseClouds empty-stub,
-  cloudProcess, TimeTunnelClose, CloudFxInit) rebuilt from asm; InitClouds
-  matched with two PS2 divergences from GC (no `srand`, loop count 10 not 20).
-  Remaining 5 are larger (vertex-buffer / render / NuRndrGobj) — pending.
+  UpdateBugLight (2224B, FP-compare heavy) was attempted 2026-07-19 and is now a
+  faithful near-match kept at `state=asm`: a substantial PAL rewrite reconstructed
+  from asm (GC inline consts are gp-rel named globals D_0062E914…/D_00632CD8…;
+  extra mech/tail wobble-lerp; PAL 50Hz immediates verified). Structurally exact
+  (264/2224), blocked by three proven walls at once — delay-slot-reorg-fill,
+  mtc1-hazard-nop (7 sites: 0x25f200/2ac/450/54c/584/89c/8b8), and a whole-fn
+  callee-save regalloc tie ($f25 vs $f26).
+- `game/cloudfx` (7/10, updated 2026-07-19): the 4 small tail fns (CloseClouds
+  empty-stub, cloudProcess, TimeTunnelClose, CloudFxInit) rebuilt from asm;
+  InitClouds matched with two PS2 divergences from GC (no `srand`, loop count 10
+  not 20). **+cloudInit (448B) and +DoClouds (1096B)** matched from asm — the GC
+  render twins are structurally useless (PS2 rewrote cloudfx for the console HW).
+  cloudInit: RNG loop into s16 `clouds[]`, 64-bit material-attrib bitfield edit
+  (`ld/sd` at +0x168, `dsll` masks), FP scale is 16.0f not 8.0, `clouds[i]`
+  subscript (not pre-loop ptr) so the IV base lands in the preheader. DoClouds:
+  trig-drift/wrap loop, drops NuCameraEnableClipping, `D_00632904` disable flag,
+  calls cloudRender with 7 int + 2 float EABI args (reorder the float params
+  earlier in the signature to match arg-load scheduling — int/float arg registers
+  count independently). Near-matches kept asm: cloudRender (1264B hand-written
+  VU1/GIF/DMA packet builder, whole-fn callee-save regalloc wall) and
+  TimeTunnelInit (24.7%, 3-way $s1/$s2/$s3 permutation). TimeTunnelRender (1920B,
+  DoClouds-like driver) analyzed and deferred as the best next-session target.
 
-- `game/font3d` (3/7): CombinationCharacterBC/BD (string-pair scan over extern
-  char tables), Reset3DFontObjects. The last diverges from GC -- PS2 computes a
-  randomized `anim_time = qrand()*rate*(anmdata[action]->time - 1) + 1` instead
-  of `1.0f`; matched by dropping `volatile` (CSE the action load) and forcing
-  both loop-invariant FP constants (1.0f, D_0062E350) into ordered explicit
-  locals so the save-mask and preheader order match.
+- `game/font3d` (5/7, updated 2026-07-19): CombinationCharacterBC/BD (string-pair
+  scan over extern char tables), Reset3DFontObjects. Reset3DFontObjects diverges
+  from GC -- PS2 computes a randomized
+  `anim_time = qrand()*rate*(anmdata[action]->time - 1) + 1` instead of `1.0f`;
+  matched by dropping `volatile` (CSE the action load) and forcing both
+  loop-invariant FP constants (1.0f, D_0062E350) into ordered explicit locals so
+  the save-mask and preheader order match. **+InitFont3D (440B)** matched (ported
+  from the GC twin, every offset re-derived: Font3DTab ascii@0/obj{scene@4,
+  special@8}/name@0xC stride 0x10; Font3DAccentTab obj{scene@0,special@4}/name@8
+  stride 0xC; nugscn_s mtls@0x8/nummtl@0xC; numtl_s special_id@0x1C6;
+  Font3DMtlTab[5][2]; &Tab[i].obj / &MtlTab[i][1] reproduce as base+addend).
+  **+RemapAccentedCharacter (368B)** matched (GC twin verbatim; 110-entry
+  jtbl_00620510 borrowed by structure, switch on `(s8)((u8)*c - 0x80)`, min case
+  −128). Near-matches kept asm: Update3DFontObjects 92.6% (whole-fn FP tie —
+  retail `rate` in $f3 / `1.0f` in $f2, candidate swaps; 4 spellings → identical
+  hash 402231ec) and Text3D (2248B; GC twin badly misleading for PAL v1.03, every
+  divergence decoded from asm: swapped alignment masks vert=`align&5`/
+  horiz=`align&0xA`, extra `'p'` cases, general scale-1.0 set `{x,t,o,s}`, no
+  safe-area/pulsate/rotate, magic floats gp-rel D_0062E358/35C/360, Comb*BD/BC
+  inlined) — from-asm base at 0.7%, needs a dedicated multi-iteration budget.
 
 New reusable levers recorded in memory `gc-migration-listman-lessons`:
 empty-stub / dropped-call / PAL-loop-count divergences, `(arr+i)->field`
 offset-first regalloc fix, mul.s operand order, EABI split arg registers,
 ordered-explicit-locals FP-constant hoist, drop-volatile CSE.
 
-- `game/sfx` (5/7 attempted matched, 2 near): ResumeGameAudio/ResetGameSfx/
+- `game/sfx` (6/12, updated 2026-07-19): ResumeGameAudio/ResetGameSfx/
   UpdateGameSfx/GameMusic/GameSfxLoop byte-exact. PS2 divergences from GC:
   ResumeGameAudio calls NuSoundSetChannelPitch(4,0x75A,0) not NuSoundResumeSfx;
   PauseGameAudio fully rewritten (2 channel loops); global SFX count 0xB1->0xC5
@@ -287,9 +348,19 @@ ordered-explicit-locals FP-constant hoist, drop-volatile CSE.
   guard, no-reversal, single-pointer-IV loop (UpdateGameSfx global loop). Store-
   permutation lever reused: pre-rotate the trailing `gamesfx_*=-1` cleanup source
   left so gcc's right-rotation lands on retail order.
-  Near-matches: **PauseGameAudio** (8B, 2nd-loop compare-reg/branch-form
-  regalloc coin-flip); **GameSfx** (structurally exact, blocked by the documented
-  decompals-`as` mtc1->add.s hazard-nop omission from `dist2+2.0f<dist1`).
-  Blocked (data-from-C, unregistered string/table constants): InitLevelSfxTables,
-  InitGlobalSfx, InitLocalSfx, TestLocalSfx. GameAudioUpdate deferred (FP fades,
-  same mtc1-nop wall class).
+  **+TestLocalSfx (112B)** matched from asm (no twin): infinite loop of
+  `InitLocalSfx(table, count)` + `NuSoundKillAllAudio()` over three externed level
+  tables (D_005E99C0/0xD0, D_005E9FC0/0xD2, D_005E9120/0xCE), `soundtestcount++`.
+  **Data-from-C reclassified 2026-07-19:** the level tables and SFX strings are
+  retail-owned data referenced as `extern D_...` (the ai.c pattern) — **not**
+  data-from-C blocked. InitGlobalSfx and InitLevelSfxTables are now faithful
+  near-matches (do-while + separate `base` ptr → correct frame 112 / reg_mask
+  0x803f0000; LData mapping fully decoded, ldata_s pSFX@0x1C/nSFX@0x20 stride
+  0x54); residual is pure gcc store scheduling / $s0↔$s1 numbering, not
+  source-steerable. Only **InitLocalSfx** is genuinely blocked (two
+  `switch(language)` selectors emit jtbl_006286A0/C0 into .rodata = real
+  data-from-C). Near-matches: **PauseGameAudio** (8B, 2nd-loop compare-reg/
+  branch-form regalloc coin-flip); **GameSfx** (structurally exact, blocked by the
+  documented decompals-`as` mtc1->add.s hazard-nop omission from `dist2+2.0f<dist1`
+  @0xcc). **GameAudioUpdate** deferred (1040B, soft-float dp abs, gp-rel PAL fade
+  consts D_0062E788/78C, same mtc1-nop wall class).

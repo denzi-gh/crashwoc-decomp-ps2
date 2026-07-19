@@ -13,7 +13,7 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0106:00237d58:RemapAccentedCharacter"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0106:00237ec8:Reset3DFontObjects"
@@ -25,7 +25,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0106:002380c8:InitFont3D"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0106:00238280:Text3D"
