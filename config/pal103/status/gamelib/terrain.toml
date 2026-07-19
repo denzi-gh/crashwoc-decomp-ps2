@@ -61,11 +61,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0068:00172808:DeRotateTerrain"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00172bb8:DeRotatePoint"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00172cc0:InsidePolLines"
@@ -89,11 +89,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0068:00176270:CheckSphere"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00176428:CheckSphereTer"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:001765c8:HitPoly"
@@ -149,7 +149,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0068:0017c6e0:TerrainSideClamp"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:0017c7d8:TerrShapeSideStep"
@@ -225,7 +225,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0068:00181bb8:TerrainSetCur"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00181bc0:NewShadow"
@@ -277,23 +277,23 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0068:00182280:NewShapeInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00182290:CrashDataPtr"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00182298:noterraininit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:001822b8:TerrainInfo"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:001822d8:ShadowInfo"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:001822f8:ShadowRoofInfo"
@@ -337,7 +337,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0068:00182548:PlatformCrush"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00182550:TerrainPlatGetMtx"
@@ -345,11 +345,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0068:00182588:TerrainPlatId"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00182590:NewScanInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:001825a8:NewScanHandel"
@@ -357,7 +357,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0068:00182610:NewRaySetDisablePalt"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00182618:DrawPlatform"
@@ -365,7 +365,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0068:001826e8:TerrFlush"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:001826f8:DrawWallSpline"
@@ -373,11 +373,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0068:001827a8:DerotateMovementVector"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00182858:InsideLineF"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00182898:ScanTerrId"
@@ -401,7 +401,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0068:00182b00:TerrainMoveImpactData"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00182c08:PlatformConnect"
@@ -409,4 +409,4 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0068:00182ca0:OffPlat"
-state = "asm"
+state = "matching"
