@@ -144,24 +144,142 @@ void ApplyFriction(f32 *val, f32 rate, f32 dt) {
     }
 }
 
+/* Retail .rodata doubles (far from gp): 360.0 and 180.0, loaded via ld. */
+extern double D_0061FA38[]; /* 360.0 */
+extern double D_0061FA40[]; /* 180.0 */
+
 f32 Rationalise360f(f32 a) {
-    a = (f32)(fmod(a + 180.0f, 360.0) - 180.0);
+    a = (f32)(fmod(a + 180.0f, D_0061FA38[0]) - D_0061FA40[0]);
     if (a < -180.0f) {
         a += 360.0f;
     }
     return a;
 }
 
+f32 ASin360f(f32 val) {
+    f32 sign;
+    s32 hi, lo, mid, step;
+    f32 t_lo, t_hi, range, frac;
+    f32 lo_f, hi_f;
+
+    if (val < 0.0f) {
+        val = -val;
+        sign = -1.0f;
+    } else {
+        sign = 1.0f;
+    }
+
+    if (val >= 1.0f) {
+        return sign * 90.0f;
+    }
+
+    hi = 0x4000;
+    lo = 0;
+    step = 0x2000;
+
+    while (step != 0) {
+        mid = lo + step;
+        if (NuTrigTable[mid] >= val) {
+            hi = mid;
+        } else {
+            lo = mid;
+        }
+        step >>= 1;
+    }
+
+    t_hi = NuTrigTable[hi];
+    t_lo = NuTrigTable[lo];
+    lo_f = (f32)lo;
+    frac = val - t_lo;
+    range = t_hi - t_lo;
+    hi_f = (f32)hi;
+
+    if (range > 0.0f) {
+        lo_f += (hi_f - lo_f) * frac / range;
+    }
+
+    return sign * lo_f / 182.0444489f;
+}
+
+s16 ASin(f32 val) {
+    s32 positive;
+    s32 lo, mid, step;
+
+    positive = (val >= 0.0f);
+    if (!positive) {
+        val = -val;
+    }
+
+    if (val >= 1.0f) {
+        return positive ? 0x4000 : -0x4000;
+    }
+
+    lo = 0;
+    step = 0x2000;
+    while (step != 0) {
+        mid = lo + step;
+        if (NuTrigTable[mid] < val) {
+            lo = mid;
+        }
+        step >>= 1;
+    }
+
+    if (positive) {
+        return lo;
+    }
+    return -lo;
+}
+
+s16 ACos(f32 val) {
+    s32 positive;
+    s32 lo, mid, step;
+    s32 idx;
+
+    positive = (val >= 0.0f);
+    if (!positive) {
+        val = -val;
+    }
+
+    if (val >= 1.0f) {
+        idx = positive ? 0x4000 : -0x4000;
+    } else {
+        lo = 0;
+        step = 0x2000;
+        while (step != 0) {
+            mid = lo + step;
+            if (NuTrigTable[mid] < val) {
+                lo = mid;
+            }
+            step >>= 1;
+        }
+        idx = positive ? lo : -lo;
+    }
+
+    return 0x4000 - idx;
+}
+
+extern s32 SHEIGHT;
+extern u64 fptodp(f32 value);
+extern char D_0061FA18[];
+extern void NuFntPrintEx(s32 x, s32 y, s32 colour, char *fmt, ...);
+
+void PrintVec(s32 line, struct nuvec_s *v) {
+    NuFntPrintEx(100, SHEIGHT * line / 2, 0, D_0061FA18, fptodp(v->x),
+                 fptodp(v->y), fptodp(v->z));
+}
+
 f32 DotProduct(struct nuvec_s *A, struct nuvec_s *B) {
     return A->x * B->x + A->y * B->y + A->z * B->z;
 }
 
-void CrossProduct(struct nuvec_s *dest, struct nuvec_s *A, struct nuvec_s *B) {
+struct nuvec_s *CrossProduct(struct nuvec_s *dest, struct nuvec_s *A,
+                             struct nuvec_s *B) {
     struct nuvec_s result;
     result.x = A->y * B->z - A->z * B->y;
     result.y = A->z * B->x - A->x * B->z;
     result.z = A->x * B->y - A->y * B->x;
     *dest = result;
+    return dest;
 }
 
 s32 ProcessTimer(f32 *Timer) {
@@ -173,6 +291,41 @@ s32 ProcessTimer(f32 *Timer) {
         return 1;
     }
     return 0;
+}
+
+extern void SphereDraw(struct nuvec_s *pos, f32 radius);
+
+void DrawSphere(struct nuvec_s *pos, f32 radius, f32 factor) {
+    struct nuvec_s v;
+    if (ChrisInTheHouse) {
+        v = *pos;
+        v.y -= radius * factor;
+        SphereDraw(&v, radius);
+    }
+}
+
+extern f32 D_0062DF34;
+extern void NuVecRotateY(struct nuvec_s *dst, struct nuvec_s *src, s32 angle);
+
+void DrawDeformedCross(struct nuvec_s *center, struct nuvec_s *size, s32 colour,
+                       f32 angle) {
+    s32 i;
+
+    if (ChrisInTheHouse) {
+        s32 a = (s32)(angle * D_0062DF34);
+        struct nuvec_s p[3] = {
+            {size->x, 0.0f, 0.0f},
+            {0.0f, size->y, 0.0f},
+            {0.0f, 0.0f, size->z},
+        };
+
+        for (i = 0; i < 3; i++) {
+            NuVecRotateY(&p[i], &p[i], a);
+            NuRndrLine3dDbg(colour, center->x - p[i].x, center->y - p[i].y,
+                            center->z - p[i].z, center->x + p[i].x,
+                            center->y + p[i].y, center->z + p[i].z);
+        }
+    }
 }
 
 void DrawCross(struct nuvec_s *pos, s32 colour, f32 size) {
@@ -213,8 +366,6 @@ void SeekHalfLife(f32 *dest, f32 target, f32 halflife, f32 dt) {
 void SeekHalfLifeLim(f32 *dest, f32 target, f32 limit, f32 halflife, f32 dt) {
     f32 rate;
     f32 change;
-    f32 lim;
-    f32 cur;
 
     if (halflife == 0.0f) {
         rate = 1.0f;
@@ -222,17 +373,16 @@ void SeekHalfLifeLim(f32 *dest, f32 target, f32 limit, f32 halflife, f32 dt) {
         rate = (f32)(1.0 - 1.0 / pow(2.0, dt / halflife));
     }
 
-    cur = *dest;
-    lim = limit * dt;
-    change = (target - cur) * rate;
+    limit = limit * dt;
+    change = (target - *dest) * rate;
 
-    if (change > lim) {
-        change = lim;
-    } else if (change < -lim) {
-        change = -lim;
+    if (change > limit) {
+        change = limit;
+    } else if (change < -limit) {
+        change = -limit;
     }
 
-    *dest = cur + change;
+    *dest = *dest + change;
 }
 
 void SeekHalfLifeNUVEC(struct nuvec_s *src, struct nuvec_s *target, f32 halflife,
@@ -249,9 +399,9 @@ void SeekHalfLifeNUVEC(struct nuvec_s *src, struct nuvec_s *target, f32 halflife
     diff.x = target->x - src->x;
     diff.y = target->y - src->y;
     diff.z = target->z - src->z;
-    src->x = diff.x * rate + src->x;
-    src->y = diff.y * rate + src->y;
-    src->z = diff.z * rate + src->z;
+    src->x = src->x + diff.x * rate;
+    src->y = src->y + diff.y * rate;
+    src->z = src->z + diff.z * rate;
 }
 
 void SeekAngHalfLife360f(f32 *dest, f32 target, f32 halflife, f32 dt) {
@@ -265,13 +415,13 @@ void SeekAngHalfLife360f(f32 *dest, f32 target, f32 halflife, f32 dt) {
     }
 
     diff = Rationalise360f(target - *dest);
-    *dest = rate * diff + *dest;
+    rate = rate * diff;
+    *dest = *dest + rate;
 }
 
 void SeekAngLimHalfLife360f(f32 *dest, f32 target, f32 max_speed, f32 halflife,
                             f32 dt) {
     f32 rate;
-    f32 change;
     f32 lim;
 
     lim = max_speed * dt;
@@ -282,19 +432,19 @@ void SeekAngLimHalfLife360f(f32 *dest, f32 target, f32 max_speed, f32 halflife,
         rate = (f32)(1.0 - 1.0 / pow(2.0, dt / halflife));
     }
 
-    change = rate * Rationalise360f(target - *dest);
+    rate = rate * Rationalise360f(target - *dest);
 
-    if (change > lim) {
-        change = lim;
+    if (rate > lim) {
+        rate = lim;
     }
-    if (change < -lim) {
-        change = -lim;
+    if (rate < -lim) {
+        rate = -lim;
     }
 
-    *dest += change;
+    *dest = *dest + rate;
 }
 
-void SeekAngHalfLife(u16 *dest, u16 target, f32 halflife, f32 dt) {
+void SeekAngHalfLife(u16 *dest, s16 target, f32 halflife, f32 dt) {
     f32 rate;
     f32 diff;
     f32 cur;
@@ -308,15 +458,20 @@ void SeekAngHalfLife(u16 *dest, u16 target, f32 halflife, f32 dt) {
 
     diff = (f32)(s16)(target - *dest);
     cur = (f32)(s16)*dest;
-    result = rate * diff + cur;
-    *dest = (u16)(s32)result;
+    rate = rate * diff;
+    rate = rate + cur;
+    *dest = (u16)(s32)rate;
 }
+
+/* Retail .rodata doubles (far from gp): 360.0 and 180.0, loaded via ld. */
+extern double D_0061FA48[]; /* 360.0 */
+extern double D_0061FA50[]; /* 180.0 */
 
 s32 LimitAng360f(f32 *dest, f32 min, f32 max) {
     f32 a;
     s32 result = 0;
 
-    a = (f32)(fmod(*dest + 180.0f, 360.0) - 180.0);
+    a = (f32)(fmod(*dest + 180.0f, D_0061FA48[0]) - D_0061FA50[0]);
     if (a < -180.0f) {
         a += 360.0f;
     }
@@ -342,11 +497,15 @@ f32 Cos360f(f32 a) {
 }
 
 f32 frand(void) {
-    return (f32)(rand() % 16384) * (1.0f / 16384.0f);
+    s32 m = rand() % 16384;
+    f32 f = (f32)m;
+    return f * (1.0f / 16384.0f);
 }
 
 f32 frandPN(void) {
-    return (f32)(rand() % 16384) * (1.0f / 8192.0f) - 1.0f;
+    s32 m = rand() % 16384;
+    f32 f = (f32)m;
+    return f * (1.0f / 8192.0f) - 1.0f;
 }
 
 f32 fsign(f32 x) {
@@ -354,6 +513,63 @@ f32 fsign(f32 x) {
         return 1.0f;
     }
     return -1.0f;
+}
+
+extern f32 D_0062DF40;
+extern void NuMtxSetRotationY(struct numtx_s *m, s32 r);
+extern void NuHGobjEval(struct NUHGOBJ_s *hobj, s32 nJ, struct NUJOINTANIM_s *pJ,
+                        struct numtx_s *tmtx);
+extern void NuHGobjEvalAnim(struct NUHGOBJ_s *hobj, struct nuanimdata_s *data,
+                            f32 time, s32 nJ, struct NUJOINTANIM_s *pJ,
+                            struct numtx_s *tmtx);
+extern void NuHGobjPOIMtx(struct NUHGOBJ_s *hobj, u8 i, struct numtx_s *mC,
+                          struct numtx_s *tmtx, struct numtx_s *m);
+
+void GetLocatorMtx(struct CharacterModel *model, struct numtx_s *dest,
+                   f32 angle) {
+    struct numtx_s BaseMat;
+    struct numtx_s tmtx[256];
+    s32 i;
+    struct numtx_s *d;
+
+    if (model == 0) {
+        return;
+    }
+
+    NuMtxSetRotationY(&BaseMat, (s32)(angle * D_0062DF40));
+    NuHGobjEval(model->hobj, 0, 0, tmtx);
+
+    d = dest;
+    for (i = 0; i <= 15; i++) {
+        if (model->pLOCATOR[i] != 0) {
+            NuHGobjPOIMtx(model->hobj, (u8)i, &BaseMat, tmtx, d);
+        }
+        d++;
+    }
+}
+
+void GetLocatorMtxMyDraw(struct MYDRAW *Draw, struct numtx_s *dest,
+                         struct numtx_s *baseMtx) {
+    struct numtx_s tmtx[256];
+    struct CharacterModel *model;
+    s32 i;
+    struct numtx_s *d;
+
+    model = Draw->model;
+    if (model == 0) {
+        return;
+    }
+
+    NuHGobjEvalAnim(model->hobj, model->anmdata[Draw->Anim.action],
+                    Draw->Anim.anim_time, 0, 0, tmtx);
+
+    d = dest;
+    for (i = 0; i <= 15; i++) {
+        if (Draw->model->pLOCATOR[i] != 0) {
+            NuHGobjPOIMtx(Draw->model->hobj, (u8)i, baseMtx, tmtx, d);
+        }
+        d++;
+    }
 }
 
 s32 MyInitModelNew(struct MYDRAW *Draw, s32 index, s32 action, s32 numjoints,
@@ -445,4 +661,124 @@ struct nuquat_s SetNuQuat(f32 x, f32 y, f32 z, f32 w) {
     q.z = z;
     q.w = w;
     return q;
+}
+
+extern void NuVecSub(struct nuvec_s *d, struct nuvec_s *a, struct nuvec_s *b);
+extern f32 NuFsqrt(f32 x);
+
+f32 ControlledDist(struct nuvec_s *A, struct nuvec_s *B, s32 control) {
+    struct nuvec_s diff;
+    f32 dist = 0.0f;
+    f32 *p;
+    s32 i;
+
+    p = &diff.x;
+    NuVecSub(&diff, A, B);
+
+    for (i = 0; i < 3; i++) {
+        f32 v = *p;
+        if (v > 0.0f) {
+            if (control & 1) {
+                dist += v * v;
+            }
+        } else if (v < 0.0f) {
+            if (control & 2) {
+                dist += v * v;
+            }
+        }
+        p++;
+        control >>= 4;
+    }
+
+    return NuFsqrt(dist);
+}
+
+struct MYSPLINE {
+    struct spline_s *Spline;   /* 0x00 verified in FindSplineClosestPointAndDist (lw 0(s2)->PointAlongSpline) */
+    f32 Cur;                   /* 0x04 verified (swc1/lwc1 0x4) */
+    f32 Nex;                   /* 0x08 verified (lwc1/swc1 0x8) */
+    f32 Act;                   /* 0x0C */
+    f32 Inc;                   /* 0x10 verified (lwc1 0x10) */
+    struct nuvec_s CurPos;     /* 0x14 verified (addiu s2,0x14; sdl/sdr copy) */
+    struct nuvec_s NexPos;     /* 0x20 verified (addiu s2,0x20) */
+    f32 LookaheadDist;         /* 0x2C */
+};
+
+extern void PointAlongSpline(struct spline_s *spl, f32 ratio,
+                             struct nuvec_s *out, void *a3, void *a4);
+
+static inline f32 SplineControlledDist(struct nuvec_s *A, struct nuvec_s *B,
+                                       s32 control) {
+    struct nuvec_s diff;
+    f32 dist = 0.0f;
+    f32 *p;
+    s32 i;
+
+    p = &diff.x;
+    NuVecSub(&diff, A, B);
+
+    for (i = 0; i < 3; i++) {
+        f32 v = *p;
+        if (v > 0.0f) {
+            if (control & 1) {
+                dist += v * v;
+            }
+        } else if (v < 0.0f) {
+            if (control & 2) {
+                dist += v * v;
+            }
+        }
+        p++;
+        control >>= 4;
+    }
+
+    return NuFsqrt(dist);
+}
+
+f32 FindSplineClosestPointAndDist(struct MYSPLINE *Spline, s32 Control,
+                                  struct nuvec_s *Point,
+                                  struct nuvec_s *TargetPoint, s32 Wrap,
+                                  s32 BigLook) {
+    f32 dist_cur, dist_nex;
+
+    dist_cur = SplineControlledDist(&Spline->CurPos, Point, Control);
+    dist_nex = SplineControlledDist(&Spline->NexPos, Point, Control);
+
+    while (1) {
+        if (dist_nex < dist_cur || Spline->Cur == Spline->Nex) {
+            if (Spline->Nex == 1.0f && Wrap == 0) {
+                break;
+            }
+        } else {
+            break;
+        }
+
+        dist_cur = dist_nex;
+        Spline->CurPos = Spline->NexPos;
+        Spline->Cur = Spline->Nex;
+        Spline->Nex = Spline->Nex + Spline->Inc;
+
+        if (Spline->Nex > 1.0f) {
+            if (Wrap) {
+                Spline->Nex -= 1.0f;
+            } else {
+                Spline->Nex = 1.0f;
+            }
+        } else if (Spline->Nex < 0.0f) {
+            if (Wrap) {
+                Spline->Nex += 1.0f;
+            } else {
+                Spline->Nex = 0.0f;
+            }
+        }
+
+        PointAlongSpline(Spline->Spline, Spline->Nex, &Spline->NexPos, 0, 0);
+        dist_nex = SplineControlledDist(&Spline->NexPos, Point, Control);
+    }
+
+    if (TargetPoint != 0) {
+        *TargetPoint = Spline->CurPos;
+    }
+
+    return dist_cur;
 }

@@ -21,7 +21,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0099:00220710:ASin360f"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00220820:GetVolumeI"
@@ -49,7 +49,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0099:002209d0:PrintVec"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00220a70:DotProduct"
@@ -57,7 +57,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00220aa0:CrossProduct"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00220b10:ProcessTimer"
@@ -65,7 +65,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00220b58:DrawSphere"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00220ba8:DrawDeformedCross"
@@ -89,23 +89,23 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00220ee0:SeekHalfLifeLim"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00220fc8:SeekHalfLifeNUVEC"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:002210b0:SeekAngHalfLife360f"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00221168:SeekAngLimHalfLife360f"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00221250:SeekAngHalfLife"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00221330:LimitAng360f"
@@ -121,11 +121,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00221480:frand"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:002214d0:frandPN"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00221530:fsign"
@@ -133,11 +133,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00221560:GetLocatorMtx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00221620:GetLocatorMtxMyDraw"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:002216d8:MyInitModelNew"
