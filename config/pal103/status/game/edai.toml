@@ -13,7 +13,7 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0105:00236260:edaiHIGHLIGHT"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0105:002363c0:AdjustPosY"
@@ -21,11 +21,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0105:00236570:edaiJUMP"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0105:00236660:edaiDrawInfo"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0105:00236800:DrawCube"
@@ -41,7 +41,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0105:002375c0:edaiInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0105:002376c8:edaiDoInput"
@@ -49,40 +49,40 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0105:002379b8:DrawAxes"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0105:00237ab8:edaiCbCancelSelectType"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0105:00237ae0:edaicbSetType"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0105:00237b08:edaicbSaveAIData"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0105:00237b40:edaicbTerrainToggle"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0105:00237b50:edaiCbCancelOptMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0105:00237b58:edaiClose"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0105:00237b78:edaiEnter"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0105:00237c40:edaiProc"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0105:00237d00:edaiRender"
-state = "asm"
+state = "matching"
