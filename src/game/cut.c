@@ -193,7 +193,6 @@ extern u8 CutAnim[];
 extern u8 CutVortexAnim[];
 extern s32 gamecut_finished;
 extern s32 NuAtan2D(f32 x, f32 z);
-extern void ResetAnimPacket(void *anim, s32 action);
 extern void NuAnimData2CalcTime(void *anim, f32 currf, struct nuanimtime_s *atime);
 extern s32 NuGCutLocatorIsVisble(void *locator, f32 currf, struct nuanimtime_s *atime,
                                  void *null);
