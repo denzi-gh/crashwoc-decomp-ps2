@@ -609,7 +609,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:0021d2c8:DrawGliderDebugStuff"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021d300:DrawZoffa"
@@ -617,7 +617,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:0021d3b8:FindFreeHova"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021d3f0:InitSatellite"
@@ -629,7 +629,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:0021d610:ProcessSatellites"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021d668:DrawSatellites"
@@ -637,11 +637,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:0021d7d8:ProcessSpaceStations"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021d848:DrawSpaceStations"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021d8b0:GrabGliderBullet"
@@ -885,7 +885,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:0021fb68:PointsSame"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021fbb8:FindTrailAng"
