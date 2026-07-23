@@ -25,7 +25,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0079:001af8a8:NuTriggerSysUpdate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0079:001afaa8:WeaponCheckTriggers"

@@ -49,15 +49,26 @@ struct cammtx_s {
     u8 unk_0x11B[0x1];
 };                                /* 0x11C */
 
-/* Rail[i].type @0x26, stride 0x28 (mirrors src/game/ai.c and bug.c). */
+/* rail_s: stride 0x28. type @0x26 (mirrors src/game/ai.c and bug.c). */
+struct nugspline_s;
 struct rail_s {
-    u8 unk_0x00[0x26];
-    s8 type;
-    u8 unk_0x27;
-};
+    struct nugspline_s *pINPLAT;   /* 0x00 */
+    struct nugspline_s *pINCAM;    /* 0x04 */
+    struct nugspline_s *pLEFT;     /* 0x08 */
+    struct nugspline_s *pCAM;      /* 0x0C */
+    struct nugspline_s *pRIGHT;    /* 0x10 */
+    struct nugspline_s *pOUTCAM;   /* 0x14 */
+    struct nugspline_s *pOUTPLAT;  /* 0x18 */
+    f32 in_distance;               /* 0x1C */
+    f32 out_distance;              /* 0x20 */
+    s16 edges;                     /* 0x24 */
+    s8 type;                       /* 0x26 */
+    s8 circuit;                    /* 0x27 */
+};                                 /* 0x28 */
 
 extern struct rail_s Rail[];
 extern struct RPos_s TempRPos;
+extern s32 temp_rail_end;
 extern s32 nRAILS;
 extern s32 temp_iRAIL;
 extern s32 temp_iALONG;
@@ -73,6 +84,79 @@ struct nugspline_s {
     u8 pad4[0x4];
     u8 *pts;          /* 0x8 */
 };
+
+
+void MoveRailPosition(struct nuvec_s *dst, struct RPos_s *rpos, f32 distance,
+                      s32 direction) {
+    struct rail_s *rail;
+    struct RPos_s RPos;
+    struct nuvec_s *p1;
+    struct nuvec_s *p;
+    f32 f;
+    f32 d;
+    s32 i0;
+    s32 i1;
+
+    d = distance;
+    temp_rail_end = 0;
+    TempRPos = RPos = *rpos;
+    if ((RPos.iRAIL == -1) || ((s32)RPos.iALONG == -1)) {
+        return;
+    }
+    *dst = RPos.pos;
+    rail = &Rail[RPos.iRAIL];
+Loop:
+    i1 = RPos.iALONG;
+    i0 = i1 + 1;
+    if ((i0 == rail->edges) && (rail->circuit != 0)) {
+        i0 = 0;
+    }
+    p1 = (struct nuvec_s *)(rail->pCAM->pts + (i1 * rail->pCAM->ptsize));
+    p = (struct nuvec_s *)(rail->pCAM->pts + (i0 * rail->pCAM->ptsize));
+    if (direction == 0) {
+        p1 = p;
+    }
+    f = NuVecDist(dst, p1, 0);
+    if (d > f) {
+        d = (d - f);
+        *dst = *p1;
+        if (direction == 0) {
+            if (rail->circuit != 0) {
+                RPos.iALONG++;
+                if (RPos.iALONG == rail->edges) {
+                    RPos.iALONG = direction;
+                }
+                goto Loop;
+            } else {
+                if (RPos.iALONG < rail->edges) {
+                    RPos.iALONG++;
+                    goto Loop;
+                }
+                temp_rail_end = 1;
+                goto end;
+            }
+        }
+        if (rail->circuit != 0) {
+            RPos.iALONG--;
+            if (RPos.iALONG == -1) {
+                RPos.iALONG = rail->edges;
+                RPos.iALONG--;
+            }
+            goto Loop;
+        }
+        if (RPos.iALONG > 0) {
+            RPos.iALONG--;
+            goto Loop;
+        }
+        temp_rail_end = 2;
+    } else {
+        dst->x = (p1->x - dst->x) * (d / f) + dst->x;
+        dst->y = (p1->y - dst->y) * (d / f) + dst->y;
+        dst->z = (p1->z - dst->z) * (d / f) + dst->z;
+    }
+end:
+    TempRPos = RPos;
+}
 
 
 void ResetGameCameras(struct cammtx_s *Gamecam, s32 n) {

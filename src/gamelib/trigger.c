@@ -65,9 +65,11 @@ typedef struct NuTriggerSub {
 /* One trigger definition record (0x34 bytes), tiled in the loaded blob. */
 typedef struct NuTriggerDef {
     char *name;              /* 0x00 -- relocated on load */
-    char pad04[6];           /* 0x04 */
+    unsigned int mode;       /* 0x04 -- 1 spatial, 2 disabled, else manual */
+    char pad08[2];           /* 0x08 */
     unsigned char resetflag; /* 0x0A -- default flag byte */
-    char pad0b[5];           /* 0x0B */
+    char pad0b[1];           /* 0x0B */
+    int defflags;            /* 0x0C -- bit2 = emit un-pull script */
     f32 radius;              /* 0x10 */
     struct nuvec_s bbmin;    /* 0x14 */
     struct nuvec_s bbmax;    /* 0x20 */
@@ -95,8 +97,11 @@ typedef struct NuTrigger {
 /* One animated node of the owning scene instance; the trigger's parent
  * index selects one of these. */
 struct NuTriggerNode {
-    struct numtx_s mtx; /* 0x00 */
-    char pad40[0x10];   /* 0x40 */
+    struct numtx_s mtx;        /* 0x00 */
+    char pad40[4];             /* 0x40 */
+    int flags;                 /* 0x44 -- bit0 = active */
+    struct NuTriggerNode *ref; /* 0x48 -- optional override node */
+    char pad4c[4];             /* 0x4C */
 };
 
 struct NuSceneInstData {
@@ -134,6 +139,10 @@ extern char D_00619EF8[];
 extern char D_00619F20[];
 extern char D_00619F60[];
 
+int CheckParentedTriggerWithPos(NuTriggerDef *def, struct NuTriggerNode *node,
+                                struct nuvec_s *pos, float radius);
+int CheckUnparentedTriggerWithPos(NuTriggerDef *def, struct nuvec_s *pos,
+                                  float radius);
 void NuRndrLine3d(struct NuRndrVtx *line, void *arg1, struct numtx_s *mtx);
 void NuVecMtxTransform(struct nuvec_s *dst, struct nuvec_s *src,
                        struct numtx_s *mtx);
@@ -192,6 +201,81 @@ void *NuTriggerSysLoad(char *name, void **heap, void **heapend)
     }
 
     return blob;
+}
+
+
+void NuTriggerSysUpdate(struct nuvec_s *pos, f32 radius)
+{
+    NuTriggerSys *sys;
+    NuTriggerDefHdr *def;
+    struct NuSceneInstData *inst;
+    NuTriggerDef *d;
+    NuTrigger *trig;
+    int i;
+    int active;
+    char buf[32];
+
+    for (sys = g_NuTriggerSysList; sys != 0; sys = sys->next) {
+        inst = sys->data->inst;
+        def = sys->def;
+        if (sys->userflags & 1)
+            continue;
+        for (i = 0; i < def->count; i++) {
+            trig = &sys->triggers[i];
+            d = &def->defs[i];
+
+            active = 1;
+            if (trig->flags == 0xFF) {
+                if (trig->state & 1) {
+                    if (!(d->defflags & 4))
+                        active = 0;
+                }
+            } else {
+                active = 0;
+            }
+
+            if (active) {
+                switch (d->mode) {
+                case 1:
+                    if (d->parent >= 0) {
+                        struct NuTriggerNode *node = &inst->nodes[d->parent];
+                        active = 0;
+                        if (node->flags & 1) {
+                            if (node->ref == 0)
+                                active = CheckParentedTriggerWithPos(
+                                    d, node, pos, radius);
+                            else
+                                active = CheckParentedTriggerWithPos(
+                                    d, node->ref, pos, radius);
+                        }
+                    } else {
+                        active = CheckUnparentedTriggerWithPos(d, pos, radius);
+                    }
+                    break;
+                case 0:
+                    break;
+                case 2:
+                    active = 0;
+                    break;
+                }
+            }
+
+            if (active) {
+                if (!(trig->state & 1)) {
+                    NuSceneInstanceRunScript(sys->data, d->name);
+                    trig->state |= 1;
+                }
+            } else {
+                if (trig->state & 1) {
+                    if (d->defflags & 4) {
+                        sprintf(buf, D_00619F60, d->name);
+                        NuSceneInstanceRunScript(sys->data, buf);
+                        trig->state &= 0xFE;
+                    }
+                }
+            }
+        }
+    }
 }
 
 
