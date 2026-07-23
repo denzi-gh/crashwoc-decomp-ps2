@@ -23,3 +23,178 @@
  *   0x00247908 edlightDrawCross
  *   0x00247a20 SortLights
  */
+
+#include "creature.h"
+
+extern s32 USELIGHTS;
+extern s32 LIGHTCREATURES;
+extern s32 LIGHTCOUNT;
+extern s32 glb_dir_error_flag;
+extern s32 glb_amb_error_flag;
+extern f32 sf;
+extern f32 sf2;
+extern struct nuvec_s v001;
+
+/* lights_s: type@0x0, globalflag@0x3C, stride 0x48 (verified in UpdateGlobals). */
+struct lights_s {
+    s32 type;          /* 0x00 */
+    u8 unk_0x04[0x38];
+    u8 globalflag;     /* 0x3C */
+    u8 unk_0x3D[0xB];
+};                     /* 0x48 */
+
+extern struct lights_s Lights[];
+
+/* Object light block filled by InitObjectLights (dir[3], col[3], AmbCol). */
+struct objlights_s {
+    struct nuvec_s dir[3];      /* 0x00 */
+    struct nucolour3_s col[3];  /* 0x24 */
+    struct nuvec_s AmbCol;      /* 0x48 */
+};                              /* 0x54 */
+
+extern void FindNearestLights(struct nuvec_s *pos, struct Nearest_Light_s *nl,
+                              s32 mode);
+extern void FindLightProportion(struct nuvec_s *pos, struct Nearest_Light_s *nl);
+extern void NuRndrSetDirectionalLights(struct nuvec_s *d0, struct nucolour3_s *c0,
+                                       struct nuvec_s *d1, struct nucolour3_s *c1,
+                                       struct nuvec_s *d2, struct nucolour3_s *c2);
+extern void NuRndrSetAmbientLight(struct nuvec_s *amb);
+extern void NuVecRotateX(struct nuvec_s *out, struct nuvec_s *in, s32 ang);
+extern void NuVecRotateY(struct nuvec_s *out, struct nuvec_s *in, s32 ang);
+void ResetLights(struct Nearest_Light_s *nl);
+
+
+inline void SetLights(struct nucolour3_s *vCOL0, struct nuvec_s *vDIR0,
+                      struct nucolour3_s *vCOL1, struct nuvec_s *vDIR1,
+                      struct nucolour3_s *vCOL2, struct nuvec_s *vDIR2,
+                      struct nuvec_s *vAMB) {
+    NuRndrSetDirectionalLights(vDIR0, vCOL0, vDIR1, vCOL1, vDIR2, vCOL2);
+    NuRndrSetAmbientLight(vAMB);
+}
+
+void GetLights(struct nuvec_s *pos, struct Nearest_Light_s *nearest_lights,
+               s32 SearchMode) {
+    FindNearestLights(pos, nearest_lights, SearchMode);
+    FindLightProportion(pos, nearest_lights);
+}
+
+void RotateDirectionalLight(struct nuvec_s *v, s32 xrot, s32 yrot) {
+    NuVecRotateX(v, &v001, xrot);
+    NuVecRotateY(v, v, yrot);
+}
+
+inline void UpdateGlobals(struct Nearest_Light_s *nl) {
+    s32 i;
+    s32 found_amb;
+    s32 found_dir;
+
+    glb_dir_error_flag = -1;
+    glb_amb_error_flag = -1;
+    found_amb = 0;
+    found_dir = 0;
+    nl->glbambindex = -1;
+    nl->glbdirectional.Index = -1;
+    for (i = 0; i < LIGHTCOUNT && (!found_amb || !found_dir); i++) {
+        if (Lights[i].type == 0 && Lights[i].globalflag == 4) {
+            nl->glbambindex = i;
+            found_amb = 1;
+            glb_amb_error_flag = 1;
+        }
+        if ((Lights[i].type == 1 || Lights[i].type == 2) &&
+            Lights[i].globalflag == 4) {
+            nl->glbdirectional.Index = i;
+            found_dir = 1;
+            glb_dir_error_flag = 1;
+        }
+    }
+}
+
+void ResetLights(struct Nearest_Light_s *nl) {
+    nl->pDir1st = &nl->dir1;
+    nl->pDir2nd = &nl->dir2;
+    nl->pDir3rd = &nl->dir3;
+    nl->ambientdist = 8000.0f;
+    nl->dir1.Distance = 8000.0f;
+    nl->dir2.Distance = 8000.0f;
+    nl->dir3.Distance = 8000.0f;
+    nl->AmbIndex = -1;
+    nl->AmbCol.x = 0.0f;
+    nl->AmbCol.y = 0.0f;
+    nl->AmbCol.z = 0.0f;
+    nl->dir1.Index = -1;
+    nl->dir2.Index = -1;
+    nl->dir3.Index = -1;
+    nl->pDir1st->Direction.x = 0.0f;
+    nl->pDir1st->Direction.y = 0.0f;
+    nl->pDir1st->Direction.z = 0.0f;
+    nl->pDir3rd->Direction.x = 0.0f;
+    nl->pDir2nd->Direction.x = 0.0f;
+    nl->pDir2nd->Direction.y = 0.0f;
+    nl->pDir2nd->Direction.z = 0.0f;
+    nl->pDir3rd->Direction.x = 0.0f;
+    nl->pDir3rd->Direction.x = 0.0f;
+    nl->pDir3rd->Direction.y = 0.0f;
+    nl->pDir3rd->Direction.z = 0.0f;
+    nl->pDir3rd->Direction.x = 0.0f;
+    nl->negativeindex = -1;
+    nl->negativedist = 8000.0f;
+    UpdateGlobals(nl);
+}
+
+void InitObjectLights(struct nuvec_s *pos, struct objlights_s *out) {
+    struct Nearest_Light_s nl;
+
+    ResetLights(&nl);
+    GetLights(pos, &nl, 0);
+    out->dir[0] = nl.pDir1st->Direction;
+    out->dir[1] = nl.pDir2nd->Direction;
+    out->dir[2] = nl.pDir3rd->Direction;
+    out->col[0] = nl.pDir1st->Colour;
+    out->col[1] = nl.pDir2nd->Colour;
+    out->col[2] = nl.pDir3rd->Colour;
+    out->AmbCol = nl.AmbCol;
+}
+
+void SetNearestLights(struct Nearest_Light_s *l) {
+    if (USELIGHTS != 0 && LIGHTCREATURES != 0) {
+        SetLights(&l->pDir1st->Colour, &l->pDir1st->Direction, &l->pDir2nd->Colour,
+                  &l->pDir2nd->Direction, &l->pDir3rd->Colour, &l->pDir3rd->Direction,
+                  &l->AmbCol);
+    }
+}
+
+void ScaleColour(struct nucolour3_s *colour, u8 r, u8 g, u8 b, u8 power) {
+    if (power == 6) {
+        colour->r = (s32)r * sf2;
+        colour->g = (s32)g * sf2;
+        colour->b = (s32)b * sf2;
+    } else if (power == 7) {
+        colour->r = (s32)r * sf;
+        colour->g = (s32)g * sf;
+        colour->b = (s32)b * sf;
+    }
+}
+
+void SortLights(struct Nearest_Light_s *nearLgt) {
+    struct pdir_s *tptr;
+    struct pdir_s *tptr2;
+
+    tptr = nearLgt->pDir1st;
+    tptr2 = nearLgt->pDir2nd;
+    if (tptr->Distance > tptr2->Distance) {
+        nearLgt->pDir1st = tptr2;
+        nearLgt->pDir2nd = tptr;
+    }
+    tptr = nearLgt->pDir2nd;
+    tptr2 = nearLgt->pDir3rd;
+    if (tptr->Distance > tptr2->Distance) {
+        nearLgt->pDir2nd = tptr2;
+        nearLgt->pDir3rd = tptr;
+    }
+    tptr2 = nearLgt->pDir1st;
+    tptr = nearLgt->pDir2nd;
+    if (tptr2->Distance > tptr->Distance) {
+        nearLgt->pDir1st = tptr;
+        nearLgt->pDir2nd = tptr2;
+    }
+}

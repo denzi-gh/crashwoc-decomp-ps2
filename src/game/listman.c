@@ -11,4 +11,198 @@
  *   0x001cbc60 NuLstGetByIdx
  *   0x001cbc98 NuLstGetNext
  *   0x001cbcc0 NuLstGetPrev
+ *
+ * Free-list pool allocator. Each element is preceded by a 0x10-byte
+ * nulnkhdr_s; the returned/consumed pointer is (hdr + 1). The "in use" flag
+ * is 0x10000 (bit 16), verified in NuLstAlloc/NuLstFree -- the GC reference
+ * had 0x8000, which is wrong for this build.
  */
+
+struct nulnkhdr_s;
+
+struct nulsthdr_s {
+    struct nulnkhdr_s *free;   /* +0x0  verified in NuLstAlloc/NuLstCreate */
+    struct nulnkhdr_s *head;   /* +0x4  verified in NuLstAlloc/NuLstFree */
+    struct nulnkhdr_s *tail;   /* +0x8  verified in NuLstAlloc/NuLstFree */
+    short elcnt;               /* +0xC  verified in NuLstCreate (sh) */
+    short elsize;              /* +0xE  verified in NuLstCreate (sh) */
+};
+
+struct nulnkhdr_s {
+    struct nulsthdr_s *owner;  /* +0x0  verified in NuLstFree/NuLstCreate */
+    struct nulnkhdr_s *succ;   /* +0x4  verified in NuLstAlloc/NuLstGetNext */
+    struct nulnkhdr_s *prev;   /* +0x8  verified in NuLstAlloc/NuLstFree */
+    short id;                  /* +0xC  verified in NuLstCreate (sh) */
+    short flags;               /* +0xE  (0x10000 in-use bit lives here) */
+};
+
+extern void *NuMemAllocFn(int size, char *file, int line);
+extern void NuMemFreeFn(void *ptr, char *file, int line);
+
+extern char D_0061B600[];  /* "..\nu2crash.ps2\...\listman.c" filename string */
+
+
+/*
+ * Faithful near-match (state=asm): structure, offsets, control flow and the
+ * 192-byte extent are exact, but ee-gcc colours elsize->s1 / elcnt->s0 here
+ * where retail has elsize->s0 / elcnt->s1. The swap survived operand-order and
+ * explicit-stride rewrites (35% / 39% / 14%); it is a register-allocation wall,
+ * not a structural gap. Kept in tree per the WIP-near-match convention.
+ */
+struct nulsthdr_s *NuLstCreate(int elcnt, int elsize) {
+    struct nulsthdr_s *list;
+    struct nulnkhdr_s *curr;
+    struct nulnkhdr_s *start;
+    int n;
+
+    list = (struct nulsthdr_s *)NuMemAllocFn((elsize + 0x10) * elcnt + 0x10,
+                                             D_0061B600, 0x24);
+    if (list != 0) {
+        curr = (struct nulnkhdr_s *)(list + 1);
+        list->free = curr;
+        list->head = 0;
+        list->elcnt = (short)elcnt;
+        list->elsize = (short)elsize;
+        start = (struct nulnkhdr_s *)((char *)curr + elsize + 0x10);
+        for (n = 1; n < elcnt; n++) {
+            curr->succ = start;
+            curr->id = (short)(n - 1);
+            curr->owner = list;
+            curr = start;
+            start = (struct nulnkhdr_s *)((char *)start + (elsize + 0x10));
+        }
+        curr->owner = list;
+        curr->id = (short)(n - 1);
+        curr->succ = 0;
+    }
+    return list;
+}
+
+void NuLstDestroy(struct nulsthdr_s *hdr) {
+    NuMemFreeFn(hdr, D_0061B600, 0x40);
+}
+
+struct nulnkhdr_s *NuLstAllocBefore(struct nulnkhdr_s *at) {
+    struct nulsthdr_s *hdr;
+    struct nulnkhdr_s *rv;
+
+    at -= 1;
+    hdr = at->owner;
+    rv = hdr->free;
+    if (rv != 0) {
+        hdr->free = rv->succ;
+        rv->succ = at;
+        rv->prev = at->prev;
+        at->prev = rv;
+        if (rv->prev != 0) {
+            rv->prev->succ = rv;
+        } else {
+            hdr->head = rv;
+        }
+        *(unsigned int *)&rv->id = *(unsigned int *)&rv->id | 0x10000;
+        return rv + 1;
+    }
+    return 0;
+}
+
+struct nulnkhdr_s *NuLstAllocAfter(struct nulnkhdr_s *at) {
+    struct nulsthdr_s *hdr;
+    struct nulnkhdr_s *rv;
+    struct nulnkhdr_s *next;
+
+    at -= 1;
+    hdr = at->owner;
+    rv = hdr->free;
+    if (rv != 0) {
+        hdr->free = rv->succ;
+        rv->prev = at;
+        next = at->succ;
+        rv->succ = next;
+        if (next != 0) {
+            next->prev = rv;
+        } else {
+            hdr->tail = rv;
+        }
+        *(unsigned int *)&rv->id = *(unsigned int *)&rv->id | 0x10000;
+        return rv + 1;
+    }
+    return 0;
+}
+
+struct nulnkhdr_s *NuLstAlloc(struct nulsthdr_s *hdr) {
+    struct nulnkhdr_s *rv;
+
+    rv = hdr->free;
+    if (rv != 0) {
+        hdr->free = rv->succ;
+        rv->succ = hdr->head;
+        if (hdr->head != 0) {
+            hdr->head->prev = rv;
+        } else {
+            hdr->tail = rv;
+        }
+        rv->prev = 0;
+        hdr->head = rv;
+        *(unsigned int *)&rv->id = *(unsigned int *)&rv->id | 0x10000;
+        return rv + 1;
+    }
+    return 0;
+}
+
+void NuLstFree(struct nulnkhdr_s *lnk) {
+    struct nulsthdr_s *hdr;
+
+    lnk -= 1;
+    hdr = lnk->owner;
+    if (lnk->succ != 0) {
+        lnk->succ->prev = lnk->prev;
+    } else {
+        hdr->tail = lnk->prev;
+    }
+    if (lnk->prev != 0) {
+        lnk->prev->succ = lnk->succ;
+    } else {
+        hdr->head = lnk->succ;
+    }
+    lnk->succ = hdr->free;
+    hdr->free = lnk;
+    *(unsigned int *)&lnk->id = *(unsigned int *)&lnk->id & 0xFFFEFFFF;
+}
+
+struct nulnkhdr_s *NuLstGetByIdx(struct nulsthdr_s *hdr, int idx) {
+    struct nulnkhdr_s *lnk;
+
+    lnk = (struct nulnkhdr_s *)((char *)hdr + (hdr->elsize + (idx << 4) + 0x10));
+    if (*(unsigned int *)&lnk->id & 0x10000) {
+        return lnk + 1;
+    }
+    return 0;
+}
+
+struct nulnkhdr_s *NuLstGetNext(struct nulsthdr_s *hdr, struct nulnkhdr_s *lnk) {
+    struct nulnkhdr_s *rv;
+
+    if (lnk != 0) {
+        rv = (lnk - 1)->succ;
+    } else {
+        rv = hdr->head;
+    }
+    if (rv == 0) {
+        return 0;
+    }
+    return rv + 1;
+}
+
+struct nulnkhdr_s *NuLstGetPrev(struct nulsthdr_s *hdr, struct nulnkhdr_s *lnk) {
+    struct nulnkhdr_s *rv;
+
+    if (lnk != 0) {
+        rv = (lnk - 1)->prev;
+    } else {
+        rv = hdr->tail;
+    }
+    if (rv == 0) {
+        return 0;
+    }
+    return rv + 1;
+}

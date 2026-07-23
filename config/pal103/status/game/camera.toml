@@ -41,27 +41,27 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0093:001dac00:GetALONG"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0093:001dac58:FurtherALONG"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0093:001dace0:FurtherBEHIND"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0093:001dad68:ResetGameCameras"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0093:001dada0:JudderGameCamera"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0093:001dae28:BlendGameCamera"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0093:001dae68:InitCameraTargetMaterial"
@@ -77,7 +77,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0093:001dafd0:InSplineArea"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0093:001db078:AddCross"

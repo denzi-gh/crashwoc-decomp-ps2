@@ -66,6 +66,18 @@ extern s32 level_part_2;
 extern s32 temp_xzmomset;
 extern s32 GAMEOBJECTCOUNT;
 extern struct obj_s *pObj[];
+
+/* Projectile record; obj header at 0x0, active flag at 0x1A9, stride 0x1B0. */
+struct projectile_s {
+    struct obj_s obj;    /* 0x000 */
+    u8 unk_0x188[0x21];  /* 0x188 */
+    s8 active;           /* 0x1A9 */
+    u8 unk_0x1AA[0x6];   /* 0x1AA */
+};
+
+extern struct projectile_s Projectile[16];
+extern s32 jonglow;
+extern s32 jonglowsize;
 extern s32 temp_cuboid_side;
 extern f32 temp_cuboid_bounce_angle;
 extern s32 VEHICLECONTROL;
@@ -89,10 +101,38 @@ void NuVecScale(struct nuvec_s *dst, struct nuvec_s *src, f32 s);
 void GameSfx(s32 sfx, struct nuvec_s *pos);
 s32 NuAtan2D(f32 x, f32 z);
 f32 NuFsqrt(f32 x);
+extern void *memset(void *s, s32 c, s32 n);
 void NuVecRotateX(struct nuvec_s *dst, struct nuvec_s *src, s32 angle);
 void NuVecRotateY(struct nuvec_s *dst, struct nuvec_s *src, s32 angle);
 s32 GetDieAnim(struct obj_s *obj, s32 anim);
 void ObjectToAtlas(struct obj_s *obj, struct creature_s *player);
+
+struct plr_lives_s {
+    short count; /* 0x0 */
+    short draw;  /* 0x2 */
+};
+
+extern u16 plr_items;
+extern struct plr_lives_s plr_crystal;
+extern struct plr_lives_s plr_crategem;
+extern struct plr_lives_s plr_bonusgem;
+extern u8 D_00632044;
+extern u8 D_0063204C;
+extern u8 D_00632054;
+extern u8 D_00632057;
+extern f32 D_0062D904;
+extern f32 D_0062D908;
+extern f32 D_0062D90C;
+extern f32 D_0062D910;
+extern f32 D_0062D914;
+
+void AddPanelDebris(f32 x, f32 y, s32 obj, f32 z, s32 flag);
+
+extern s32 new_power;
+extern u8 Game[];
+extern u8 Cursor[];
+extern s32 Level;
+void NewMenu(void *cursor, s32 menu, s32 mode, s32 item);
 
 void PlayerCreatureCollisions(struct obj_s *obj)
 {
@@ -578,4 +618,217 @@ s32 KillPlayer(struct obj_s *obj, s32 anim)
         return 0;
     }
     return KillGameObject(obj, anim);
+}
+
+void PickupCrystal(void) {
+    plr_crystal.count = 1;
+    D_00632044 = 0x19;
+    plr_items |= 1;
+    GameSfx(0x26, 0);
+    AddPanelDebris(0.0f, D_0062D904, 6, 0.125f, 0x10);
+}
+
+void PickupCrateGem(void) {
+    plr_crategem.count = 1;
+    D_0063204C = 0x19;
+    plr_items |= 2;
+    GameSfx(0x26, 0);
+    AddPanelDebris(D_0062D908, D_0062D90C, 6, 0.125f, 0x10);
+}
+
+void PickupBonusGem(s32 mask) {
+    plr_items |= mask;
+    D_00632057 = mask;
+    plr_bonusgem.count = 1;
+    D_00632054 = 0x19;
+    GameSfx(0x26, 0);
+    AddPanelDebris(D_0062D910, D_0062D914, 6, 0.125f, 0x10);
+}
+
+void PickupPower(s32 type) {
+    switch (type) {
+    case 0xA2:
+        new_power = 0;
+        break;
+    case 0xA3:
+        new_power = 1;
+        break;
+    case 0xA4:
+        new_power = 2;
+        break;
+    case 0xA5:
+        new_power = 3;
+        break;
+    case 0xA6:
+        new_power = 4;
+        break;
+    case 0xA7:
+        new_power = 5;
+        break;
+    }
+    Game[0x406] |= 1 << new_power;
+    NewMenu(Cursor, 0x1F, -1, -1);
+    GameSfx(0x26, 0);
+    if (Level != 0x15 && Level != 0x18) {
+        player->obj.mom.x = 0.0f;
+        player->obj.mom.z = 0.0f;
+        player->slide = 0;
+    }
+}
+
+void ClearGameObjects(void) {
+    s32 i;
+
+    for (i = 0; i < 0x40; i++) {
+        pObj[i] = 0;
+    }
+}
+
+inline void CountGameObjects(void) {
+    s32 i;
+
+    for (i = 64; i > 0; i--) {
+        if (pObj[i - 1] != 0) {
+            break;
+        }
+    }
+    GAMEOBJECTCOUNT = i;
+}
+
+s32 CylinderCylinderOverlapXZ(struct nuvec_s *p0, f32 r0, struct nuvec_s *p1,
+                              f32 r1) {
+    f32 dz;
+    f32 dx;
+
+    dx = p1->x - p0->x;
+    dz = p1->z - p0->z;
+    if (dx * dx + dz * dz <= r0 * r0 + r1 * r1) {
+        return 1;
+    }
+    return 0;
+}
+
+void NewTopBot(struct obj_s *obj) {
+    obj->objbot = obj->pos.y + obj->bot * obj->SCALE;
+    obj->objtop = obj->pos.y + obj->top * obj->SCALE;
+}
+
+void OldTopBot(struct obj_s *obj) {
+    obj->oldobjbot = obj->objbot;
+    obj->oldobjtop = obj->objtop;
+}
+
+void KillItem(struct obj_s *obj) {
+    struct creature_s *c;
+
+    c = (struct creature_s *)obj->parent;
+    obj->dead = 1;
+    c->on = 0;
+    c->off_wait = 2;
+}
+
+void ResetGameObject(struct obj_s *obj) {
+    memset(obj, 0, 0x188);
+    obj->reflect_y = 2000000.0f;
+    obj->SCALE = 1.0f;
+    obj->RPos.iRAIL = -1;
+    obj->RPos.iALONG = -1;
+    obj->layer_type = -1;
+    obj->roof_type = -1;
+    obj->scale = 1.0f;
+}
+
+s32 AddGameObject(struct obj_s *obj, struct obj_s *parent) {
+    s32 i;
+    s32 added;
+
+    memset(obj, 0, 0x188);
+    obj->SCALE = 1.0f;
+    obj->scale = 1.0f;
+    obj->RPos.iRAIL = -1;
+    obj->RPos.iALONG = -1;
+    obj->layer_type = -1;
+    obj->roof_type = -1;
+    obj->reflect_y = 2000000.0f;
+
+    for (i = 0; i < 64; i++) {
+        if (pObj[i] == 0) {
+            break;
+        }
+    }
+    if (i < 64) {
+        pObj[i] = obj;
+        obj->parent = parent;
+        obj->i = i;
+        added = 1;
+    } else {
+        added = 0;
+    }
+    CountGameObjects();
+    return added;
+}
+
+void RemoveGameObject(struct obj_s *obj) {
+    s32 i;
+
+    for (i = 0; i < 64; i++) {
+        if (pObj[i] == obj) {
+            pObj[i] = 0;
+            i = 64;
+        }
+    }
+    CountGameObjects();
+}
+
+void ResetProjectiles(void) {
+    s32 i;
+    s32 j;
+    struct projectile_s *p;
+
+    p = Projectile;
+    for (i = 0; i < 16; i++) {
+        if (p->active) {
+            for (j = 0; j < 64; j++) {
+                if (pObj[j] == &p->obj) {
+                    pObj[j] = 0;
+                    j = 64;
+                }
+            }
+            CountGameObjects();
+            p->active = 0;
+        }
+        p++;
+    }
+    jonglow = 0;
+    jonglowsize = 0;
+}
+
+f32 GameObjectRadius(struct obj_s *obj) {
+    f32 r;
+
+    r = obj->radius * obj->SCALE;
+    if ((obj->attack & 8) != 0) {
+        return r + 0.5f;
+    }
+    if ((obj->attack & 4) != 0) {
+        return r + 0.25f;
+    }
+    if ((obj->attack & 2) != 0) {
+        if ((obj->character == 1) &&
+            (*(short *)((int)&obj->parent[8].startpos.y + 2) != 0)) {
+            return r * 3.0f;
+        } else {
+            return r + r;
+        }
+    }
+    return r;
+}
+
+void FlyGameObject(struct obj_s *obj, u16 yrot) {
+    obj->mom.x = 0.0f;
+    obj->mom.y = 0.0f;
+    obj->mom.z = 0.1999999881f;
+    NuVecRotateX(&obj->mom, &obj->mom, -0x400);
+    NuVecRotateY(&obj->mom, &obj->mom, yrot);
+    GameSfx(0x37, &obj->pos);
 }

@@ -81,7 +81,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0117:002552f8:AnimateGYRO"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:002553f0:DrawCarpet"
@@ -137,7 +137,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0117:00258020:AnimateOFFROADER"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:002580f8:AnimateSUBMARINE"
@@ -145,27 +145,27 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0117:00258158:AnimateMINECART"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:002581b0:AnimateGLIDER"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:00258270:AnimateDROPSHIP"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:002582c0:AnimateATLASPHERE"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:00258348:AnimateJEEP"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:00258380:AnimateMOSQUITO"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:002583d0:ResetGates"
@@ -185,7 +185,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0117:002586a8:AnimateDIVE"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:002586d0:ResetTub"

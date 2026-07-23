@@ -351,3 +351,378 @@ void ObjectToAtlas(struct obj_s *obj, struct creature_s *c)
     }
     b->ball_vel.y = obj->mom.y;
 }
+
+/* ------------------------------------------------------------------ */
+/* Small leaf functions (game/vehicle)                                 */
+/* ------------------------------------------------------------------ */
+
+extern s32 JeepInControl;
+extern s32 NumRockPanel;
+extern s32 D_005B7918[];   /* rumble player health % (far) */
+extern s32 D_005B7CA0[];   /* current rumble objectives (far) */
+extern struct nuvec_s D_005B44F8[]; /* weather boss position (far) */
+extern struct spline_s D_005B4548;  /* weather boss spline (far) */
+extern struct nuvec_s D_006B75B0;   /* weather start pos temp (far) */
+extern struct NEWBUGGY PlayerGlider;
+extern struct nuvec_s v000;
+
+extern void ProcessFireFlyIntro(void);
+extern void InitWeatherBoss_a(void);
+extern void ProcessWeatherBoss_a(void *wb);
+extern void DrawWeatherBoss_a(void *wb);
+extern void AddRockVel(struct nuvec_s *pos, struct nuvec_s *vel, s32 owner);
+extern void *memset(void *dst, s32 val, s32 len);
+extern char *best_cRPos;
+
+extern s32 WeatherBoss[];   /* weather boss state block (far) */
+extern u8 VehicleMask[];    /* veh mask block, memset 0x2E8 (far) */
+
+/* HovaBlimp array, stride 0x134, 6 entries. */
+struct hovablimp_s {
+    s32 active;                /* 0x00 */
+    char pad_04[0x134 - 0x04];
+};
+extern struct hovablimp_s HovaBlimp[];
+
+/* JeepRock array, stride 0x3D4, 6 entries. */
+struct jeeprock_s {
+    char pad_00[0x18];
+    s32 exists;                /* 0x18 */
+    char pad_1C[0x3D4 - 0x1C];
+};
+extern struct jeeprock_s JeepRock[];
+
+void AddGliderHitPoints(void)
+{
+    struct NEWBUGGY *b = player->Buggy;
+
+    b->health += 25;
+    if (b->health > 100) {
+        b->health = 100;
+    }
+}
+
+void VehicleSetup(void)
+{
+    JeepInControl = 0;
+}
+
+void SetWeatherStartPos(void *x)
+{
+    D_006B75B0 = *(struct nuvec_s *)((char *)x + 0x6C);
+    PlayerGlider.pos = D_006B75B0;
+}
+
+s32 GetRumblePlayerHealthPercentage(void)
+{
+    return D_005B7918[0];
+}
+
+s32 GetGliderHealthPercentage(struct creature_s *c)
+{
+    struct NEWBUGGY *b = c->Buggy;
+
+    if (b != 0) {
+        return b->health;
+    }
+    return 100;
+}
+
+void InitVehMasks(void)
+{
+    memset(VehicleMask, 0, 0x2E8);
+}
+
+void ProcessCrashteroidsIntro(void)
+{
+    ProcessFireFlyIntro();
+}
+
+struct nuvec_s *GetWeatherBossPos(void)
+{
+    return D_005B44F8;
+}
+
+struct spline_s *GetWeatherBossSpline(void)
+{
+    return &D_005B4548;
+}
+
+void GliderWeatherBossRailStuff(struct creature_s *c)
+{
+    if (best_cRPos != 0) {
+        *(struct nuvec_s *)((char *)c + 0x60) =
+            *(struct nuvec_s *)(best_cRPos + 0x18);
+    }
+}
+
+s32 GetCurrentFarmObjectives(void)
+{
+    s32 count = 0;
+    s32 i;
+
+    for (i = 0; i < 6; i++) {
+        if (HovaBlimp[i].active != 0) {
+            count++;
+        }
+    }
+    return count;
+}
+
+void InitWeatherBoss(void)
+{
+    InitWeatherBoss_a();
+}
+
+void ProcessWeatherBoss(void)
+{
+    if (WeatherBoss[0] != 0) {
+        ProcessWeatherBoss_a(WeatherBoss);
+    }
+}
+
+void DrawWeatherBoss(void)
+{
+    if (WeatherBoss[0] != 0) {
+        DrawWeatherBoss_a(WeatherBoss);
+    }
+}
+
+s32 GetCurrentRumbleObjectives(void)
+{
+    return D_005B7CA0[0];
+}
+
+void InitJeepRocks(void)
+{
+    s32 i;
+
+    for (i = 5; i >= 0; i--) {
+        JeepRock[i].exists = 0;
+    }
+}
+
+void InitRumblePanel(void)
+{
+    NumRockPanel = 0;
+}
+
+void AddRock(struct nuvec_s *pos, s32 owner)
+{
+    AddRockVel(pos, &v000, owner);
+}
+
+/* ------------------------------------------------------------------ */
+
+/* BattleShipList: stride 0x554, 6 entries. */
+struct battleship_s {
+    s32 active;                /* 0x000 */
+    char pad_004[0x510 - 0x004];
+    s32 field510;              /* 0x510 */
+    char pad_514[0x554 - 0x514];
+};
+extern struct battleship_s BattleShipList[];
+
+/* BigGunList: stride 0x154, 12 entries. */
+struct biggun_s {
+    s32 active;                /* 0x000 */
+    char pad_004[0x120 - 0x004];
+    s32 field120;              /* 0x120 */
+    char pad_124[0x154 - 0x124];
+};
+extern struct biggun_s BigGunList[];
+
+/* SpaceStationList: stride 0xD0, 3 entries. */
+struct spacestation_s {
+    char pad_00[0x40];
+    s32 field40;               /* 0x40 */
+    char pad_44[0xD0 - 0x44];
+};
+extern struct spacestation_s SpaceStationList[];
+
+/* trail array: stride 0x20, 128 entries. */
+struct trail_s {
+    f32 field0;                /* 0x00 */
+    char pad_04[0x20 - 0x04];
+};
+extern struct trail_s trail[128];
+extern f32 D_0062DF00;
+extern s32 trailpt;
+extern s32 trailair;
+
+extern s32 EarthBoss[];    /* far; field 0x10 at [4] */
+extern u8 PlayerAtlas[];   /* far */
+extern void ProcessAtlasAtlasCollisions_a(void *atlas, void *boss);
+extern void KillGameObject(struct obj_s *obj, s32 type);
+
+s32 GetCurrentFireFlyObjectives(void)
+{
+    s32 count = 0;
+    s32 i;
+
+    for (i = 0; i < 6; i++) {
+        struct battleship_s *bs = &BattleShipList[i];
+        if (bs->active != 0) {
+            count += bs->field510 > 0;
+        }
+    }
+    return count;
+}
+
+s32 GetCurrentWeatherResearchObjectives(void)
+{
+    s32 count = 0;
+    s32 i;
+
+    for (i = 0; i < 12; i++) {
+        if (BigGunList[i].active != 0) {
+            if (BigGunList[i].field120 != 2) {
+                count++;
+            }
+        }
+    }
+    return count;
+}
+
+s32 GetCurrentSpaceArenaObjectives(void)
+{
+    s32 count = 0;
+    s32 i;
+
+    for (i = 0; i < 3; i++) {
+        if (SpaceStationList[i].field40 != 0) {
+            count++;
+        }
+    }
+    return count;
+}
+
+void KillAtlasphere(struct NEWBUGGY *b)
+{
+    struct creature_s *c = b->owner;
+    struct creature_s *o;
+
+    if (c != 0) {
+        b->fieldC = 1;
+        *((s8 *)c + 0x17E) = 0;
+        b->ball_vel = v000;
+        o = b->owner;
+        if (*((s8 *)o + 0x149) == 0) {
+            KillGameObject(&o->obj, 0xB);
+        }
+    }
+}
+
+void InitTrail(void)
+{
+    s32 i;
+
+    for (i = 127; i >= 0; i--) {
+        trail[i].field0 = D_0062DF00;
+    }
+    trailpt = 0;
+    trailair = 0;
+}
+
+void ProcessAtlasAtlasCollisions(void)
+{
+    if (EarthBoss[4] > 0) {
+        ProcessAtlasAtlasCollisions_a(PlayerAtlas, EarthBoss);
+    }
+}
+
+/* ------------------------------------------------------------------ */
+
+/* SatelliteList: stride 0x124, 9 entries. */
+struct satellite_s {
+    s32 active;                /* 0x00 */
+    char pad_04[0x124 - 0x04];
+};
+extern struct satellite_s SatelliteList[];
+
+extern s32 D_005A74C8[];   /* far scratch, zeroed each ProcessSpaceStations */
+extern void *app_fnt;
+
+extern void NuRndrTrail(s32 pt, struct trail_s *trail, s32 count);
+extern void DrawJeepTrails(void);
+extern void NuFntSet(void *fnt);
+extern void NuFntSetPen(s32 col);
+extern void NuFntScale(s32 x, s32 y);
+extern void ProcessSatellite(struct satellite_s *s);
+extern void ProcessSpaceStation(struct spacestation_s *s);
+extern void DrawSpaceStation(struct spacestation_s *s);
+
+void DrawVehicleTrail(void)
+{
+    if (Level == 0) {
+        NuRndrTrail(trailpt, trail, 0x80);
+    }
+    DrawJeepTrails();
+}
+
+void DrawGliderDebugStuff(void)
+{
+    NuFntSet(app_fnt);
+    NuFntSetPen(0x7F7F7F7F);
+    NuFntScale(0x10, 0x10);
+}
+
+struct hovablimp_s *FindFreeHova(void)
+{
+    s32 i;
+
+    for (i = 0; i < 6; i++) {
+        if (HovaBlimp[i].active == 0) {
+            return &HovaBlimp[i];
+        }
+    }
+    return 0;
+}
+
+void ProcessSatellites(void)
+{
+    s32 i;
+
+    for (i = 0; i < 9; i++) {
+        if (SatelliteList[i].active != 0) {
+            ProcessSatellite(&SatelliteList[i]);
+        }
+    }
+}
+
+void ProcessSpaceStations(void)
+{
+    s32 i;
+
+    D_005A74C8[0] = 0;
+    for (i = 0; i < 3; i++) {
+        if (SpaceStationList[i].field40 != 0) {
+            ProcessSpaceStation(&SpaceStationList[i]);
+        }
+    }
+}
+
+void DrawSpaceStations(void)
+{
+    s32 i;
+
+    for (i = 0; i < 3; i++) {
+        if (SpaceStationList[i].field40 != 0) {
+            DrawSpaceStation(&SpaceStationList[i]);
+        }
+    }
+}
+
+s32 PointsSame(struct nuvec_s *a, struct nuvec_s *b)
+{
+    s32 r = 0;
+
+    if (a->x == b->x) {
+        if (a->y == b->y) {
+            if (a->z == b->z) {
+                r = 1;
+            }
+        }
+    }
+    return r;
+}

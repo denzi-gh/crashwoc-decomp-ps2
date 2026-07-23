@@ -25,7 +25,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0116:0024fa08:UpdateGameSfx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0116:0024fa90:GameSfx"
@@ -33,7 +33,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0116:0024fd30:GameSfxLoop"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0116:0024fe88:GameAudioUpdate"
@@ -41,11 +41,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0116:00250298:ResetGameSfx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0116:00250310:GameMusic"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0116:00250458:PauseGameAudio"
@@ -53,8 +53,8 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0116:002504f0:ResumeGameAudio"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0116:00250518:TestLocalSfx"
-state = "asm"
+state = "matching"

@@ -76,6 +76,8 @@ extern struct gamecam_s *pCam;
 extern struct numtl_s *DebMat[8];
 
 extern s32 fadeval;
+extern s32 fade_rate;
+extern s32 fadehack;
 extern s32 SWIDTH;
 extern s32 SHEIGHT;
 extern s32 D_00633264;              /* fade colour */
@@ -797,11 +799,112 @@ void DrawWorld(void)
     }
 }
 
+/* NuMaterial: 64-bit render-flags register lives at 0x168. */
+struct numtl_s {
+    u8 unk_0x00[0x168];
+    u64 reg168;
+};
+
+struct fadebits {
+    u64 pad0 : 32;
+    u64 f32 : 4;  /* bits 32-35 */
+    u64 f36 : 2;  /* bits 36-37 */
+    u64 pad38 : 2;
+    u64 f40 : 2;  /* bits 40-41 */
+    u64 f42 : 2;  /* bits 42-43 */
+    u64 pad44 : 2;
+    u64 f46 : 2;  /* bits 46-47 */
+    u64 f48 : 2;  /* bits 48-49 */
+    u64 f50 : 1;  /* bit  50    */
+    u64 pad51 : 13;
+};
+
+union fadereg {
+    u64 raw;
+    struct fadebits b;
+};
+
+extern struct numtl_s *NuMtlCreate(s32 a);
+extern void NuMtlUpdate(struct numtl_s *m);
+
+void CreateFadeMtl(void)
+{
+    struct numtl_s *m = NuMtlCreate(1);
+    union fadereg u;
+
+    u.raw = m->reg168;
+    u.b.f46 = 3;
+    u.b.f36 = 1;
+    u.b.f48 = 2;
+    u.b.f40 = 1;
+    u.b.f42 = 1;
+    u.b.f50 = 1;
+    u.b.f32 = 3;
+
+    D_00633260 = m;
+    m->reg168 = u.raw;
+    NuMtlUpdate(m);
+}
+
+void UpdateFade(void)
+{
+    s32 old = fadeval;
+
+    fadeval = old + fade_rate;
+    if (fadeval >= 0x100) {
+        fadeval = 0xFF;
+    } else if (fadeval < 0) {
+        fadeval = 0;
+    }
+
+    if (old < 0xFF && fadeval == 0xFF) {
+        fadehack = 1;
+    } else if (fadehack != 0) {
+        fadehack--;
+    }
+
+    if (fadeval == 0 || fadeval == 0xFF) {
+        fade_rate = 0;
+    }
+
+    D_00633264 =
+        fadeval | (fadeval << 8) | (fadeval << 16) | 0x80000000;
+}
+
 void DrawFade(void)
 {
     if (fadeval != 0) {
         NuRndrRect2di(0, 0, SWIDTH << 4, SHEIGHT << 3, D_00633264,
                       D_00633260);
+    }
+}
+
+extern char D_0061B550[];
+extern void *superbuffer_reset_base;
+extern s32 bgload_complete;
+extern void BGLoadScreenInit(s32 a);
+extern void InitLevelSfxTables(void);
+extern void InitGlobalSfx(void);
+
+void BGLoadSfxFn(void)
+{
+    char *msg = D_0061B550;
+    s32 done = 1;
+
+    NuDisableVBlank();
+    NuStrCpy(load_txt, msg);
+    NuEnableVBlank();
+
+    superbuffer_ptr = superbuffer_reset_base;
+    font3d_initialised = 0;
+    font3d_scene = NuGScnRead(&superbuffer_ptr, superbuffer_end, D_0061AE58);
+    InitFont3D(font3d_scene);
+    font3d_initialised = done;
+    BGLoadScreenInit(0);
+    InitLevelSfxTables();
+    InitGlobalSfx();
+    bgload_complete = done;
+    for (;;) {
     }
 }
 
@@ -886,6 +989,14 @@ extern void ResetTimer(struct timer_s *t);
 extern void PauseGameAudio(s32 a);
 extern void GameSfx(s32 id, s32 a);
 extern void NuPs2VideoSetPos(s32 x, s32 y);
+
+void MiniGame(void)
+{
+}
+
+void MiniGameRender(void)
+{
+}
 
 void DoInput(void)
 {

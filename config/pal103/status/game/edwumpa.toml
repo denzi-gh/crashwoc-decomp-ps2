@@ -13,7 +13,7 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0104:00235280:edwmpDrawInfo"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0104:002353a8:edwmpDRAW"
@@ -33,28 +33,28 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0104:00235fd0:edwmpDELETE"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0104:00236058:edwmpInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0104:002360f8:edwmpClose"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0104:00236118:edwmpEnter"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0104:002361c0:edwmpRender"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0104:00236218:edwmpcbSaveWumpaData"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0104:00236258:edwmpCbCancelOptMenu"
-state = "asm"
+state = "matching"

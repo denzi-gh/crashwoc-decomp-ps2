@@ -57,7 +57,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0102:0022e368:edcrtDrawInfo"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0102:0022e520:edcrtcbMemCardLoadCratesMenu"
@@ -73,23 +73,23 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0102:0022e8a8:edcrtcbCancelMemCardMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0102:0022e8d0:edcrtCbSaveCrateData"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0102:0022e918:edcrtcbSetCrateType"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0102:0022e978:edcrtcbCancelSpecificTypeMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0102:0022e9a0:edcrtcbCancelCrateTypesMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0102:0022e9c8:edcrtcbResetCratesMenu"
@@ -97,64 +97,64 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0102:0022eb00:edcrtcbDisplayType"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0102:0022eb38:edcrtcbCancelDisplayTypeMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0102:0022eb60:edcrtcbTerrainToggle"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0102:0022eb70:edcrtcbShowTriggersToggle"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0102:0022eb80:edcrtCbCancelOptMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0102:0022eb88:edcrtClose"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0102:0022eba8:edcrtEnter"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0102:0022ec60:edcrtProc"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0102:0022ecc0:edcrtRender"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0102:0022ed28:edcrtcbMemCardCancelLoadEffectsMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0102:0022ed50:edcrtcbChangeFileName"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0102:0022ed78:edcrtcbCancelChangeFileNameMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0102:0022eda0:edcrtcbMemCardDeleteCrates"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0102:0022ee60:edcrtcbMemCardCancelDeleteEffectsMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0102:0022ee88:edcrtcbResetCrates"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0102:0022eee8:edcrtcbCancelResetCratesMenu"
-state = "asm"
+state = "matching"

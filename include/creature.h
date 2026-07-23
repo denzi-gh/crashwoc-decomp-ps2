@@ -424,7 +424,10 @@ struct rumble_s {
  * in unit game/vehicle (DrawGlider / DrawAtlas / Move* / ObjectToAtlas).
  * Fields are filled in as the unit is decompiled; gaps are opaque padding. */
 struct NEWBUGGY {
-    char pad_00[0x28];
+    struct creature_s *owner;  /* 0x00  owning creature (KillAtlasphere) */
+    char pad_04[0x0C - 0x04];
+    s32 fieldC;                /* 0x0C  kill flag (KillAtlasphere) */
+    char pad_10[0x28 - 0x10];
     float timer;               /* 0x28  ProcessTimer countdown (ProcessGliderMovement) */
     char pad_2C[0x30 - 0x2C];
     struct nuvec_s pos;        /* 0x30  glider position (NuMtxTranslate) */
@@ -441,7 +444,9 @@ struct NEWBUGGY {
     struct nuvec_s avel;       /* 0xA0  glider angular/seek vector (SetNuVec) */
     char pad_AC[0xB4 - 0xAC];
     s32 enable;                /* 0xB4  draw/transform enable flag */
-    char pad_B8[0x20C - 0xB8];
+    char pad_B8[0xBC - 0xB8];
+    s32 health;                /* 0xBC  glider hit points (0..100) */
+    char pad_C0[0x20C - 0xC0];
     struct nuvec_s ball_pos;   /* 0x20C  atlasphere position (NuMtxTranslate) */
     char pad_218[0x23C - 0x218];
     struct nuvec_s ball_vel;   /* 0x23C  atlasphere velocity (<-> obj->mom) */

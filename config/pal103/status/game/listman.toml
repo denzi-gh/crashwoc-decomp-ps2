@@ -17,32 +17,32 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0090:001cbac8:NuLstDestroy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0090:001cbaf0:NuLstAlloc"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0090:001cbb48:NuLstAllocBefore"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0090:001cbba8:NuLstAllocAfter"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0090:001cbc00:NuLstFree"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0090:001cbc60:NuLstGetByIdx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0090:001cbc98:NuLstGetNext"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0090:001cbcc0:NuLstGetPrev"
-state = "asm"
+state = "matching"
