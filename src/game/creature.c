@@ -746,7 +746,9 @@ struct space_s {
 struct font3dobj_s {
     short id;                 /* 0x00 */
     u8 flags;                 /* 0x02 */
-    u8 unk_0x03[9];           /* 0x03 */
+    signed char action;
+    f32 anim_time;
+    f32 scale;
 }; /* 0x0C */
 
 extern s8 CLetter[191];
@@ -781,9 +783,9 @@ void NuDatClose(void *dat);
 void LoadScreen(char *name);
 char *NuStrCpy(char *dst, char *src);
 char *NuStrCat(char *dst, char *src);
-struct NUHGOBJ_s *NuGHGRead(void **buf, char *name);
-struct instSHADHDR_s *InstShadDataLoad(char *name);
-void *ShadFindData(struct instSHADHDR_s *hdr, char *name);
+struct NUHGOBJ_s* NuGHGRead(void* buff, char* name);
+void *InstShadDataLoad(char *name);
+struct NUSHADOWDATA_s *ShadFindData(int *hdr, char *name);
 struct NUPOINTOFINTEREST_s *NuHGobjGetPOI(struct NUHGOBJ_s *hobj, u8 i);
 struct nuanimdata_s *InstAnimDataLoad(char *name);
 int sprintf(char *buf, const char *fmt, ...);
@@ -828,13 +830,7 @@ void LoadCharacterModels(void)
             } else {
                 character = LDATA->clist[i];
             }
-            if (character == 0xFF) {
-                break;
-            }
-            if (cmodel_index >= 0x30) {
-                break;
-            }
-
+            if ((character != 0xFF) && (cmodel_index < 0x30)) break;
             sprintf(tbuf, D_0061D280, CData[character].name);
             LoadScreen(tbuf);
             memset(model, 0, 0x988);
@@ -859,7 +855,7 @@ void LoadCharacterModels(void)
                 NuStrCat(tbuf, D_00630998);
                 model->shadhdr = InstShadDataLoad(tbuf);
                 if (model->shadhdr != 0) {
-                    model->shaddata = ShadFindData(model->shadhdr, 0);
+                    model->shaddata[anim->action] = ShadFindData(&model->shadhdr, 0);
                 }
                 for (j = 0; j < 0x10; j++) {
                     model->pLOCATOR[j] = NuHGobjGetPOI(model->hobj, (u8)j);
@@ -874,11 +870,11 @@ void LoadCharacterModels(void)
                 } else {
                     anim = cdata->anim;
                     if (character == 0) {
-                        if ((LBIT & 0x1001002000ULL) && (Level != 0x1E)) {
+                        if ((LBIT & 0x1001002000U) && (Level != 0x1E)) {
                             anim = D_0055C100;
                         } else if (LBIT & 0x40000) {
                             anim = D_0055C178;
-                        } else if (LBIT & 0x100210801ULL) {
+                        } else if (LBIT & 0x100210801U) {
                             anim = D_0055C1C0;
                         } else if (Level == 0x1D) {
                             anim = D_0055C2C8;
@@ -906,8 +902,8 @@ void LoadCharacterModels(void)
                                 if (model->anmdata[anim->action] != 0) {
                                     model->animlist[anim->action] = anim;
                                     if (model->shadhdr != 0) {
-                                        model->sanmdata[anim->action] =
-                                            ShadFindData(model->shadhdr,
+                                        model->shaddata[anim->action] =
+                                            ShadFindData((int *)model->shadhdr,
                                                          anim->file);
                                     }
                                 }
@@ -942,7 +938,6 @@ void LoadCharacterModels(void)
             }
         }
     }
-
     NuDatSet(0);
     if (dat != 0) {
         NuDatClose(dat);
@@ -960,7 +955,6 @@ void LoadCharacterModels(void)
     CocoMoveInfo.SLIDEFRAMES       = ModelAnimDuration(1, 0x43, 0.0f, 0.0f) * 50.0f;
     MineCartMoveInfo.JUMPFRAMES0   = ModelAnimDuration(0x89, 99, 0.0f, 0.0f) * 50.0f;
 }
-
 
 void ChangeCharacter(struct creature_s *c, s32 character)
 {
@@ -3420,18 +3414,18 @@ AfterEval:
             if (model->shadhdr != 0) {
                 scale = CData[model->character].shadow_scale;
                 if (model->character == 0x99) {
-                    ShadRndr(mS, model->sanmdata[98], 1.0f, scale);
+                    ShadRndr(mS, model->shaddata[98], 1.0f, scale);
                 } else if (anim->blend != 0) {
                     if (((u16)anim->blend_dst_action < 0x76)
                         && (model->anmdata[anim->blend_dst_action] != 0)) {
-                        ShadRndr(mS, model->sanmdata[anim->blend_dst_action],
+                        ShadRndr(mS, model->shaddata[anim->blend_dst_action],
                                  anim->blend_dst_time, scale);
                     } else {
                         ShadRndr(mS, model->shaddata, 1.0f, scale);
                     }
                 } else if (((u16)anim->action < 0x76)
                            && (model->anmdata[anim->action] != 0)) {
-                    ShadRndr(mS, model->sanmdata[anim->action],
+                    ShadRndr(mS, model->shaddata[anim->action],
                              anim->anim_time, scale);
                 } else {
                     ShadRndr(mS, model->shaddata, 1.0f, scale);
@@ -3741,7 +3735,7 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                     mS._30 = c->obj.pos.x;
                     mS._31 = c->obj.shadow + 0.025f;
                     mS._32 = c->obj.pos.z;
-                    if (model[0]->sanmdata != 0) {
+                    if (model[0]->shaddata != 0) {
                         ShadRndr(&mS, model[0]->shaddata, 1.0f,
                                  CData[model[0]->character].shadow_scale);
                     }
@@ -3826,7 +3820,7 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                     mS._30 = c->obj.pos.x;
                     mS._31 = c->obj.shadow + 0.025f;
                     mS._32 = c->obj.pos.z;
-                    if (model[0]->sanmdata != 0) {
+                    if (model[0]->shaddata != 0) {
                         ShadRndr(&mS, model[0]->shaddata, 1.0f,
                                  CData[model[0]->character].shadow_scale);
                     }
