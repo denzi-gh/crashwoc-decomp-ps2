@@ -1,16 +1,5 @@
-#ifndef GAMECODE_CREATURE_H
-#define GAMECODE_CREATURE_H
-
-/* PS2 PAL v1.03 (SLES_503.86) layout of the creature/player structures for
- * unit 91 (game/creature, .\creature.c).
- * Key PS2-verified anchors:
- *   sizeof(struct creature_s) = 0xCE4  (CloseCreatures loop stride,
- *                                       Character array: 9 * 0xCE4 = 0x7404)
- *   sizeof(struct obj_s)      = 0x188  (obj at creature+0x4; radius = obj+0xE4,
- *                                       ground = obj+0x16E, touch = obj+0x187)
- *   sizeof(struct CharacterModel) = 0x988 (CloseCreatures CModel loop stride,
- *                                          ModelAnimDuration index scaling)
- */
+#ifndef GAMECODE_NUGSCN_H
+#define GAMECODE_NUGSCN_H
 
 typedef unsigned char u8;
 typedef signed char s8;
@@ -70,43 +59,6 @@ struct nuhspecial_s {
     struct nugscn_s *scene;    /* 0x0 */
     struct nuspecial_s *special; /* 0x4 */
 }; /* 0x8 */
-
-// Size: 0x30, DWARF: 0xAE76
-struct NUELLIPSOID_s
-{
-    struct nuvec_s centre; // Offset: 0x0, DWARF: 0xAE98
-    struct nuvec_s y_axis; // Offset: 0xC, DWARF: 0xAEC3
-    struct nuvec_s x_axis; // Offset: 0x18, DWARF: 0xAEEE
-    struct nuvec_s z_axis; // Offset: 0x24, DWARF: 0xAF19
-};
-
-// Size: 0x40, DWARF: 0xAF48
-struct NUCYLINDER_s
-{
-    struct nuvec_s centre; // Offset: 0x0, DWARF: 0xAF69
-    struct nuvec_s y_axis; // Offset: 0xC, DWARF: 0xAF94
-    struct nuvec4_s x_axis; // Offset: 0x18, DWARF: 0xAFBF
-    struct nuvec4_s z_axis; // Offset: 0x28, DWARF: 0xAFEA
-    char pad[8]; // Offset: 0x38, DWARF: 0xB015
-};
-
-// Size: 0x8, DWARF: 0xB041
-struct NUSHADOWMESH_s
-{
-    struct nuvec4_s* normals; // Offset: 0x0, DWARF: 0xB064
-    struct nuvec4_s* verts; // Offset: 0x4, DWARF: 0xB093
-};
-
-struct NUSHADOWDATA_s
-{
-    struct NUELLIPSOID_s* ellipsoids; // Offset: 0x0, DWARF: 0x9C6E
-    struct NUCYLINDER_s* cylinders; // Offset: 0x4, DWARF: 0x9CA0
-    struct NUSHADOWMESH_s* shadow_meshes; // Offset: 0x8, DWARF: 0x9CD1
-    unsigned char nellipsoids; // Offset: 0xC, DWARF: 0x9D06
-    unsigned char ncylinders; // Offset: 0xD, DWARF: 0x9D34
-    unsigned char nshadow_meshes; // Offset: 0xE, DWARF: 0x9D61
-    unsigned char joint; // Offset: 0xF, DWARF: 0x9D92
-};
 
 /* Animation data blob header.
  * (time at 0x0). */
@@ -247,9 +199,9 @@ struct CharacterModel {
     struct animlist *animlist[118];      /* 0x1DC */
     struct nuanimdata_s *fanmdata[118];  /* 0x3B4 */
     struct animlist *fanimlist[118];     /* 0x58C */
-    struct NUSHADOWDATA_s *shaddata[118];  /* 0x764  shadow anim data (PS2 only) */
+    struct nuanimdata_s *sanmdata[118];  /* 0x764  shadow anim data (PS2 only) */
     struct instSHADHDR_s *shadhdr;       /* 0x93C  shadow header (PS2 only) */
-    struct NUSHADOWDATA_s *shaddatarest;          /* 0x940  shadow model (PS2 only) */
+    struct NUHGOBJ_s *shaddata;          /* 0x940  shadow model (PS2 only) */
     short character;                     /* 0x944 */
     char pad1;                           /* 0x946 */
     char pad2;                           /* 0x947 */
@@ -579,51 +531,256 @@ struct creature_s {
 
 struct pad_s; /* game pad state; buttons word verified at +0x564 */
 
+
+enum nufaceontype_s {
+	NUFACEON_FACEON = 0,
+	NUFACEON_FACEY = 1
+};
+
+struct nufaceongeom_s { // 0x20
+	/* 0x00 */ struct nufaceongeom_s *next;
+	/* 0x04 */ struct numtl_s *mtl;
+	/* 0x08 */ int mtl_id;
+	/* 0x0c */ enum nufaceontype_s faceon_type;
+	/* 0x10 */ struct nufaceon_s *faceons;
+	/* 0x14 */ int nfaceons;
+	/* 0x18 */ float faceon_radius;
+	/* 0x1c */ void *dmastream;
+};
+
+// Size: 0x18
+ struct nufaceon_s
+{
+    struct nuvec_s point;
+    f32 width;
+    f32 height;
+    int colour;
+};
+
+ struct NUBLENDGEOM_s {
+    int nblends;
+    struct nuvec_s** blend_offsets;
+    int* ix;
+    struct nuvec_s* offsets;
+};
+
+// Size: 0x10
+struct NUVTXSKININFO_s
+{
+    f32 wts[3];
+    unsigned char joint_ixs[3];
+    unsigned char pad;
+};
+
+struct skinv_s { // 0x10
+	/* 0x0 */ struct nuvec_s4_s *pnts;
+	/* 0x4 */ struct nuvec_s4_s *nrms;
+	/* 0x8 */ short unsigned int *pid;
+	/* 0xc */ short unsigned int *nid;
+};
+
+/* 0x0c */ union nx_u { // 0x4
+	/* 0x0c */ float f32;
+	/* 0x0c */ short unsigned int u16[2];
+	/* 0x0c */ unsigned char u8[4];
+};
+
+struct nuvupnt_s { // 0x30
+	/* 0x00 */ float px;
+	/* 0x04 */ float py;
+	/* 0x08 */ float pz;
+	/* 0x0c */ union nx_u nx;
+	/* 0x10 */ int u;
+	/* 0x14 */ int v;
+	/* 0x18 */ int ny;
+	/* 0x1c */ int nz;
+	/* 0x20 */ int r;
+	/* 0x24 */ int g;
+	/* 0x28 */ int b;
+	/* 0x2c */ int a;
+}
+
+struct _sceDmaTag
+{
+    unsigned short qwc;
+    unsigned char mark;
+    unsigned char id;
+    struct _sceDmaTag* next;
+    u32 p[2];
+};
+
+struct nuvutri_s { // 0xa0
+	/* 0x00 */ struct _sceDmaTag dt;
+	/* 0x10 */ struct nuvupnt_s pnts[3];
+};
+
+struct nutristream_s { // 0xb0
+	/* 0x00 */ int count;
+	/* 0x04 */ int pad[3];
+	/* 0x10 */ struct nuvutri_s tris[1];
+};
+
+enum nuvtxtype_e
+{
+    NUVT_PS = 17,
+    NUVT_LC1 = 81,
+    NUVT_TLTC1 = 83,
+    NUVT_SK3TC1 = 93,
+    NUVT_TC1 = 89
+};
+
+// Size: 0x24
+struct nuvtx_tc1_s
+{
+    struct nuvec_s pnt;
+    struct nuvec_s nrm;
+    int diffuse;
+    f32 tc[2];
+};
+
+struct nuprim_s
+{
+    struct nuprim_s* next;
+    enum nuprimtype_e type;
+    unsigned short cnt;
+    unsigned short max;
+    unsigned short* vid;
+    struct nuplane_s* pln;
+    s32 idxbuff;
+    s32 cached;
+    short skinmtxlookup[16];
+}; // 0x3c
+
+struct nuskin_s
+{
+    struct nuskin_s* next;
+    s32 vtxoffset;
+    s32 vtxcnt;
+    s32 mtxcnt;
+    s32* mtxid;
+    f32* weights;
+};
+
+struct nugeom_s { // 0x50
+	/* 0x00 */ struct nugeom_s *next;
+	/* 0x04 */ struct numtl_s *mtl;
+	/* 0x08 */ struct _sceDmaTag *dmastream;
+	/* 0x0c */ void *skindma;
+	/* 0x10 */ struct nutristream_s *tristream;
+	/* 0x14 */ int mtl_id;
+	/* 0x18 */ enum nuvtxtype_e vtxtype;
+	/* 0x1c */ int vtxflags;
+	/* 0x20 */ int vtxcnt;
+	/* 0x24 */ int vtxmax;
+	/* 0x28 */ struct nuvtx_tc1_s *vtxptr;
+	/* 0x2c */ struct nuprim_s *prim;
+	/* 0x30 */ struct nuskin_s *skin;
+	/* 0x34 */ struct NUVTXSKININFO_s *vtxskininfo;
+	/* 0x38 */ struct NuVec *cntrl_pts;
+	/* 0x3c */ int ncntrl_pts;
+	/* 0x40 */ int dma_len;
+	/* 0x44 */ struct skinv_s *skinv;
+	/* 0x48 */ struct NUBLENDGEOM_s *blendgeom;
+	/* 0x4c */ int id;
+};
+
+struct nugeomps2_s { // 0x14
+	/* 0x00 */ struct nugeom_s *next;
+	/* 0x04 */ struct numtl_s *mtl;
+	/* 0x08 */ void *dmastream;
+	/* 0x0c */ void *skindma;
+	/* 0x10 */ struct nutristream_s *tristream;
+};
+
+// Size: 0x18c //PS2 Specific
+struct primdef_s
+{
+    struct nuvtx_tc1_s vrts[3];
+    int vid[3];
+    f32 weights[15][3];
+    int mtxid[15];
+    int nummtx;
+    int sorted;
+    int baseid;
+    char pad[24];
+};
+
+enum gobjtype_s {
+	NUGOBJ_MESH = 0,
+	NUGOBJ_FACEON = 1,
+	NUGOBJ_FACEON2 = 2,
+	NUGOBJ_MESHANDFACEON2 = 3,
+	NUGOBJ_HASNOMESH = 4
+};
+
+struct NUGOBJFLAGS_s { // 0x4
+	/* 0x0:0 */ int prelit : 1;
+	/* 0x0:1 */ int lod : 1;
+	/* 0x0:2 */ int lospan : 1;
+	/* 0x0:3 */ int hasskindata : 1;
+	/* 0x0:4 */ int hasuniformstripping : 1;
+	/* 0x0:5 */ int issplit : 1;
+	/* 0x0:6 */ int pad : 26;
+};
+
+struct nugobj_s { // 0x6c
+	/* 0x00 */ struct nugobj_s *sysnext;
+	/* 0x04 */ struct nugobj_s *syslast;
+	/* 0x08 */ enum gobjtype_s type;
+	/* 0x0c */ struct nugeom_s *geom;
+	/* 0x10 */ struct nufaceongeom_s *faceon_geom;
+	/* 0x14 */ float r;
+	/* 0x18 */ float r2;
+	/* 0x1c */ struct nuvec_s min;
+	/* 0x28 */ struct nuvec_s max;
+	/* 0x34 */ struct nuvec_s cntr;
+	/* 0x40 */ float cntr_r;
+	/* 0x44 */ float cntr_r2;
+	/* 0x48 */ int flags;
+	/* 0x4c */ struct nugobj_s *next_gobj;
+	/* 0x50 */ struct nuvec_s origin;
+	/* 0x5c */ struct nucolourref_s *colourref;
+	/* 0x60 */ int colourref_size;
+	/* 0x64 */ struct nucolourref_s *focolourref;
+	/* 0x68 */ int focolourref_size;
+};
+
+union NUGOBJEX_s { // 0xc
+	/* 0x0 */ struct nuvec_s origin;
+	/* 0x0 */ struct { // 0xc
+		/* 0x0 */ float dist;
+		/* 0x4 */ float dist2;
+		/* 0x8:0 */ short unsigned int centre_at_origin : 1;
+		/* 0x9 */ char pad[2];
+	} lod;
+};
+
+struct nufgobj_s { // 0x5c
+	/* 0x00 */ struct nugobj_s *sysnext;
+	/* 0x04 */ struct nugobj_s *syslast;
+	/* 0x08 */ enum gobjtype_s type;
+	/* 0x0c */ int geom;
+	/* 0x10 */ int faceon_geom;
+	/* 0x14 */ float r;
+	/* 0x18 */ float r2;
+	/* 0x1c */ struct nuvec_s min;
+	/* 0x28 */ struct nuvec_s max;
+	/* 0x34 */ struct nuvec_s cntr;
+	/* 0x40 */ float cntr_r;
+	/* 0x44 */ float cntr_r2;
+	/* 0x48 */ struct NUGOBJFLAGS_s flags;
+	/* 0x4c */ int next_gobj;
+	/* 0x50 */ union NUGOBJEX_s exdata;
+};
+
 /* ------------------------------------------------------------------ */
-/* Globals owned by creature.c*/
+/* Globals owned by nugscn.c*/
 /* ------------------------------------------------------------------ */
 
-extern struct creature_s Character[9];   /* 0x0057EE38 */
-extern struct creature_s *player;        /* 0x00630968 */
-extern struct CharacterModel CModel[48]; /* 0x005623F8 */
-extern signed char CRemap[191];          /* 0x00562338 */
 
 /* ------------------------------------------------------------------ */
-/* Functions of unit 91 (game/creature)                                */
+/* Functions of unit X (game/nugscn)                                */
 /* ------------------------------------------------------------------ */
 
-void ResetPlayer(s32 warp);                          /* 0x001CBCE8 */
-void ManageCreatures(void);                          /* 0x001CC218 */
-void LoadCharacterModels(void);                      /* 0x001CCBF8 */
-void ChangeCharacter(struct creature_s *c, s32 character); /* 0x001CD7C8 */
-void PlayerStartPos(struct creature_s *c, struct nuvec_s *pos); /* 0x001CD9A8 */
-s32 AddCreature(s32 character, s32 index, s32 i_aitab); /* 0x001CDAE8 */
-s32 NewCharacterIdle(struct creature_s *c, struct CharacterModel *model); /* 0x001CDEA8 */
-void UpdateCharacterIdle(struct creature_s *c, s32 character); /* 0x001CE230 */
-void MovePlayer(struct creature_s *c, struct pad_s *pad); /* 0x001CE3E0 */
-void ProcessCreatures(void);                         /* 0x001D1FF0 */
-void EvalModelAnim(struct CharacterModel *model, struct anim_s *anim,
-                   struct numtx_s *m, struct numtx_s *tmtx, float ***dwa,
-                   struct numtx_s *mLOCATOR);        /* 0x001D2470 */
-
-s32 DrawCharacterModel(struct CharacterModel *model, struct anim_s *anim,
-                       struct numtx_s *mC, struct numtx_s *mS, s32 render,
-                       struct numtx_s *mR, struct numtx_s *loc_mtx,
-                       struct nuvec_s *loc_mom, struct obj_s *obj); /* 0x001D2728 */
-void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow); /* 0x001D2F50 */
-void UpdateAnimPacket(struct CharacterModel *mod, struct anim_s *anim,
-                      float dt, float xz_distance);  /* 0x001D4FC0 */
-float ModelAnimDuration(u32 character, u32 action, float start, float end); /* 0x001D5528 */
-void TerrainFailsafe(struct obj_s *obj);             /* 0x001D5648 */
-void ResetPlayerMoves(struct creature_s *c);         /* 0x001D56A0 */
-void RemoveCreature(struct creature_s *c);           /* 0x001D5780 */
-void CloseCreatures(void);                           /* 0x001D57B0 */
-void ResetAnimPacket(struct anim_s *anim, s32 action); /* 0x001D5850 */
-void UpdateRumble(struct rumble_s *rumble);          /* 0x001D5880 */
-void NewRumble(struct rumble_s *rumble, s32 power);  /* 0x001D58A8 */
-void NewBuzz(struct rumble_s *rumble, s32 frames);   /* 0x001D5900 */
-void StoreLocatorMatrices(struct CharacterModel *model, struct numtx_s *mC,
-                          struct numtx_s *tmtx, struct numtx_s *mtx,
-                          struct nuvec_s *mom);      /* 0x001D5918 */
 
 #endif 

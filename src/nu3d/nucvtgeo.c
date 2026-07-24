@@ -26,3 +26,18 @@
  *   0x00155390 NuCvtGeoAddColourRef
  *   0x001553d8 NuCvtDestroyPacketInfo
  */
+
+struct nucolourref_s { // 0xc
+	/* 0x0 */ unsigned int *addr;
+	/* 0x4 */ int count;
+	/* 0x8 */ unsigned int cols;
+};
+
+
+void NuCvtGeoFixup(struct nucolourref_s* ref, int offset) {
+        while(ref->count != 0)
+        {
+            ref->addr = (int)((char*)offset + (int)ref->addr);
+            ref = (char*)ref + ((ref->count * 8) + 8);
+        }
+}

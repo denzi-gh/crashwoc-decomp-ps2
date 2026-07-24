@@ -65,3 +65,26 @@
  *   0x00103880 NuDatSet
  *   0x00103888 NuDatFileFindTree
  */
+
+enum nufilemode_e {
+	NUFILE_READ = 0,
+	NUFILE_WRITE = 1,
+	NUFILE_APPEND = 2,
+	NUFILE_READ_NOWAIT = 3,
+	NUFILE_MODE_CNT = 4
+};
+
+struct numemfile_s {
+    char* start;              /* 0x00 */
+    char* end;               /* 0x04 */
+    char *curr;  	     /* 0x08 */
+    enum nufilemode_e mode;  /* 0x0c */
+    int used;  	            /* 0x10 */
+}; /* 0x14 */
+
+struct numemfile_s memfiles[20];
+
+void* NuMemFileAddr(int fh)
+{
+  return memfiles[fh + -0x400].curr;
+}

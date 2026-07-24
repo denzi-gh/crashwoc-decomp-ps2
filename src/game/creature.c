@@ -746,7 +746,9 @@ struct space_s {
 struct font3dobj_s {
     short id;                 /* 0x00 */
     u8 flags;                 /* 0x02 */
-    u8 unk_0x03[9];           /* 0x03 */
+    signed char action;
+    f32 anim_time;
+    f32 scale;
 }; /* 0x0C */
 
 extern s8 CLetter[191];
@@ -781,8 +783,8 @@ void NuDatClose(void *dat);
 void LoadScreen(char *name);
 char *NuStrCpy(char *dst, char *src);
 char *NuStrCat(char *dst, char *src);
-struct NUHGOBJ_s *NuGHGRead(void **buf, char *name);
-int *InstShadDataLoad(char *name);
+struct NUHGOBJ_s* NuGHGRead(void* buff, char* name);
+void *InstShadDataLoad(char *name);
 struct NUSHADOWDATA_s *ShadFindData(int *hdr, char *name);
 struct NUPOINTOFINTEREST_s *NuHGobjGetPOI(struct NUHGOBJ_s *hobj, u8 i);
 struct nuanimdata_s *InstAnimDataLoad(char *name);
@@ -828,13 +830,7 @@ void LoadCharacterModels(void)
             } else {
                 character = LDATA->clist[i];
             }
-            if (character == 0xFF) {
-                break;
-            }
-            if (cmodel_index >= 0x30) {
-                break;
-            }
-
+            if ((character != 0xFF) && (cmodel_index < 0x30)) break;
             sprintf(tbuf, D_0061D280, CData[character].name);
             LoadScreen(tbuf);
             memset(model, 0, 0x988);
@@ -857,7 +853,7 @@ void LoadCharacterModels(void)
                     NuStrCat(tbuf, cdata->file);
                 }
                 NuStrCat(tbuf, D_00630998);
-                model->shadhdr = *(int *)InstShadDataLoad(tbuf);
+                model->shadhdr = InstShadDataLoad(tbuf);
                 if (model->shadhdr != 0) {
                     model->shaddata[anim->action] = ShadFindData(&model->shadhdr, 0);
                 }
@@ -874,11 +870,11 @@ void LoadCharacterModels(void)
                 } else {
                     anim = cdata->anim;
                     if (character == 0) {
-                        if ((LBIT & 0x1001002000ULL) && (Level != 0x1E)) {
+                        if ((LBIT & 0x1001002000U) && (Level != 0x1E)) {
                             anim = D_0055C100;
                         } else if (LBIT & 0x40000) {
                             anim = D_0055C178;
-                        } else if (LBIT & 0x100210801ULL) {
+                        } else if (LBIT & 0x100210801U) {
                             anim = D_0055C1C0;
                         } else if (Level == 0x1D) {
                             anim = D_0055C2C8;
@@ -942,7 +938,6 @@ void LoadCharacterModels(void)
             }
         }
     }
-
     NuDatSet(0);
     if (dat != 0) {
         NuDatClose(dat);
@@ -960,7 +955,6 @@ void LoadCharacterModels(void)
     CocoMoveInfo.SLIDEFRAMES       = ModelAnimDuration(1, 0x43, 0.0f, 0.0f) * 50.0f;
     MineCartMoveInfo.JUMPFRAMES0   = ModelAnimDuration(0x89, 99, 0.0f, 0.0f) * 50.0f;
 }
-
 
 void ChangeCharacter(struct creature_s *c, s32 character)
 {
