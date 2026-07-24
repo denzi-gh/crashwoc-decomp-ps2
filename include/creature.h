@@ -25,11 +25,26 @@ typedef float f32;
 /* Shared small math / engine types                                    */
 /* ------------------------------------------------------------------ */
 
+enum nufilemode_e {
+	NUFILE_READ = 0,
+	NUFILE_WRITE = 1,
+	NUFILE_APPEND = 2,
+	NUFILE_READ_NOWAIT = 3,
+	NUFILE_MODE_CNT = 4
+};
+
 struct nuvec_s {
     float x;
     float y;
     float z;
 }; /* 0xC */
+
+struct nuvec4_s {
+    float x;
+    float y;
+    float z;
+    float w;
+}; /* 0x10 */
 
 struct nucolour3_s {
     float r;

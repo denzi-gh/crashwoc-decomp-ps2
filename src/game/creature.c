@@ -782,8 +782,8 @@ void LoadScreen(char *name);
 char *NuStrCpy(char *dst, char *src);
 char *NuStrCat(char *dst, char *src);
 struct NUHGOBJ_s *NuGHGRead(void **buf, char *name);
-struct instSHADHDR_s *InstShadDataLoad(char *name);
-void *ShadFindData(struct instSHADHDR_s *hdr, char *name);
+int *InstShadDataLoad(char *name);
+struct NUSHADOWDATA_s *ShadFindData(int *hdr, char *name);
 struct NUPOINTOFINTEREST_s *NuHGobjGetPOI(struct NUHGOBJ_s *hobj, u8 i);
 struct nuanimdata_s *InstAnimDataLoad(char *name);
 int sprintf(char *buf, const char *fmt, ...);
@@ -857,9 +857,9 @@ void LoadCharacterModels(void)
                     NuStrCat(tbuf, cdata->file);
                 }
                 NuStrCat(tbuf, D_00630998);
-                model->shadhdr = InstShadDataLoad(tbuf);
+                model->shadhdr = *(int *)InstShadDataLoad(tbuf);
                 if (model->shadhdr != 0) {
-                    model->shaddata = ShadFindData(model->shadhdr, 0);
+                    model->shaddata[anim->action] = ShadFindData(&model->shadhdr, 0);
                 }
                 for (j = 0; j < 0x10; j++) {
                     model->pLOCATOR[j] = NuHGobjGetPOI(model->hobj, (u8)j);
@@ -906,8 +906,8 @@ void LoadCharacterModels(void)
                                 if (model->anmdata[anim->action] != 0) {
                                     model->animlist[anim->action] = anim;
                                     if (model->shadhdr != 0) {
-                                        model->sanmdata[anim->action] =
-                                            ShadFindData(model->shadhdr,
+                                        model->shaddata[anim->action] =
+                                            ShadFindData((int *)model->shadhdr,
                                                          anim->file);
                                     }
                                 }
@@ -3420,18 +3420,18 @@ AfterEval:
             if (model->shadhdr != 0) {
                 scale = CData[model->character].shadow_scale;
                 if (model->character == 0x99) {
-                    ShadRndr(mS, model->sanmdata[98], 1.0f, scale);
+                    ShadRndr(mS, model->shaddata[98], 1.0f, scale);
                 } else if (anim->blend != 0) {
                     if (((u16)anim->blend_dst_action < 0x76)
                         && (model->anmdata[anim->blend_dst_action] != 0)) {
-                        ShadRndr(mS, model->sanmdata[anim->blend_dst_action],
+                        ShadRndr(mS, model->shaddata[anim->blend_dst_action],
                                  anim->blend_dst_time, scale);
                     } else {
                         ShadRndr(mS, model->shaddata, 1.0f, scale);
                     }
                 } else if (((u16)anim->action < 0x76)
                            && (model->anmdata[anim->action] != 0)) {
-                    ShadRndr(mS, model->sanmdata[anim->action],
+                    ShadRndr(mS, model->shaddata[anim->action],
                              anim->anim_time, scale);
                 } else {
                     ShadRndr(mS, model->shaddata, 1.0f, scale);
@@ -3741,7 +3741,7 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                     mS._30 = c->obj.pos.x;
                     mS._31 = c->obj.shadow + 0.025f;
                     mS._32 = c->obj.pos.z;
-                    if (model[0]->sanmdata != 0) {
+                    if (model[0]->shaddata != 0) {
                         ShadRndr(&mS, model[0]->shaddata, 1.0f,
                                  CData[model[0]->character].shadow_scale);
                     }
@@ -3826,7 +3826,7 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                     mS._30 = c->obj.pos.x;
                     mS._31 = c->obj.shadow + 0.025f;
                     mS._32 = c->obj.pos.z;
-                    if (model[0]->sanmdata != 0) {
+                    if (model[0]->shaddata != 0) {
                         ShadRndr(&mS, model[0]->shaddata, 1.0f,
                                  CData[model[0]->character].shadow_scale);
                     }
