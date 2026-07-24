@@ -41,7 +41,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0118:0025ab58:ChaseActive"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0118:0025ab98:UpdateChases"

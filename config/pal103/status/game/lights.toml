@@ -21,7 +21,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0111:00244a98:ResetLights"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0111:00244c10:DrawHighLightBox"
@@ -61,27 +61,27 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0111:002475d0:UpdateGlobals"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0111:00247698:GetLights"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0111:002476d8:InitObjectLights"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0111:002477d0:RotateDirectionalLight"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0111:00247820:SetNearestLights"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0111:00247888:ScaleColour"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0111:00247908:edlightDrawCross"
@@ -89,4 +89,4 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0111:00247a20:SortLights"
-state = "asm"
+state = "matching"

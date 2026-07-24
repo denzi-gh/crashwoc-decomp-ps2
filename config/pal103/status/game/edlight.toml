@@ -73,7 +73,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0110:00243b48:edlightRender"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0110:00243c78:edlightHighlightDirection"
@@ -81,7 +81,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0110:00243d68:edlightDrawLights"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0110:00243df0:edlightcb_r_sliderval"
@@ -97,31 +97,31 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0110:00244000:edlightcbSaveLightData"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0110:00244038:edlightCbCancelOptMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0110:00244040:edlightClose"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0110:00244060:edlightEnter"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0110:00244108:edlightMakeNUCOLOUR3"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0110:00244158:edlightWarning"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0110:002441a8:edlightDrawLightBlock"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0110:00244220:cbDoubleMenu"
@@ -133,12 +133,12 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0110:002444c0:cbSelDoubleType"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0110:00244558:cbCancelDoubleMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0110:00244580:cbCancelGlbMenu"
-state = "asm"
+state = "matching"

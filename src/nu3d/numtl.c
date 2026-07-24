@@ -30,3 +30,7 @@
  *   0x0011c430 NuMtlUpdateAll
  *   0x0011c4b0 NuMtlDisplayMtl
  */
+
+void *NuMtlGetStateBlockDma(void *dma) {
+    return dma;
+}

@@ -85,7 +85,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0038:0011c198:NuMtlGetStateBlockDma"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0038:0011c1a0:NuMtlGetZupd"

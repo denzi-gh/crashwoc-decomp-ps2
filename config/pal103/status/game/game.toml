@@ -21,11 +21,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0094:001dbae8:DrawTempCharacter"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001dbc80:DrawTempCharacter2"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001dbdc0:AddAward"
@@ -93,7 +93,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0094:001dfee8:InitPositions"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001dfff8:CheckFinish"
@@ -105,11 +105,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0094:001e0ed0:LoadWumpa"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001e0fc8:InitWumpa"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001e1080:ResetWumpa"
@@ -125,7 +125,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0094:001e1980:WipeWumpa"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001e1a98:UpdateScreenWumpas"
@@ -157,7 +157,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0094:001e3660:DrawMaskFeathers"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001e3778:MakeEditText"
@@ -213,7 +213,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0094:001eab98:DefaultTimeTrialNames"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001eacf0:NewGame"
@@ -233,11 +233,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0094:001ebc88:BonusTiming"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001ebe70:ResetDeath"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001ebf80:DeathTransporter"
@@ -257,11 +257,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0094:001ed8e8:InitGameMode"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001edac0:InitSplineTable"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001edbc8:PointAlongSpline"
@@ -269,11 +269,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0094:001ee138:InitObjectTable"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001ee278:RatioBetweenEdges"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001ee410:Draw3DCharacter"
@@ -309,7 +309,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001ef760:ResetMaskFeathers"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001ef788:AddMaskFeathers"
@@ -317,31 +317,31 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0094:001ef920:UpdateMaskFeathers"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001ef970:ResetKabooms"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001ef9a0:HubFromLevel"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001efa10:ResetAwards"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001efa40:ResetTempCharacter"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001efa78:ResetTimeTrial"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001efac0:ResetItems"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001efae0:DefaultGame"
@@ -349,39 +349,39 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001efb18:ResetLevel"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001efb38:ResetBonus"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001efb40:ResetGemPath"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001efbe8:qrand"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001efc08:RotDiff"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001efc40:SeekRot"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001efc80:TurnRot"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001efcf0:ClockOff"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001efd70:FindClock"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001efdb8:SaveWumpa"
@@ -389,7 +389,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0094:001efe80:FlyWumpa"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001eff20:AddFlyingWumpa"
@@ -405,7 +405,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0094:001f0178:MakeLevelTimeString"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001f01e8:ResetTimer"
@@ -417,7 +417,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0094:001f0278:AheadOfCheckpoint"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001f0310:NewMask"
@@ -425,23 +425,23 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0094:001f03e8:NearestSplinePoint"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001f04a8:SplineDistance"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001f0558:PlayerObjectAnimCollision"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001f0658:DistanceToLine"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001f0730:RatioAlongLine"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001f0830:AnglesBetweenPoints"
@@ -457,7 +457,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0094:001f0ba0:StartHGobjAnim"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001f0be0:StopHGobjAnim"
@@ -465,23 +465,23 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0094:001f0c20:ResetHGobjAnim"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001f0c80:DrawLevel"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001f0cf0:InitProbe"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001f0d18:ResetTempCharacter2"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001f0d50:WumpaHitTerrain"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001f0de8:InputNewLetter"
@@ -497,20 +497,20 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001f0f00:StartTransporter"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001f0f90:FinishTransporter"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001f1000:TransporterGo"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001f1038:SplinePointTilt"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001f1120:SplinePointAngle"
-state = "asm"
+state = "matching"
