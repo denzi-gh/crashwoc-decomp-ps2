@@ -33,7 +33,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0111:002450c8:FindNearestLights"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0111:00245c48:CalculateSingleLightProportion"

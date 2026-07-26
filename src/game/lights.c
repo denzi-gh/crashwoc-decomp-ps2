@@ -35,13 +35,23 @@ extern f32 sf;
 extern f32 sf2;
 extern struct nuvec_s v001;
 
-/* lights_s: type@0x0, globalflag@0x3C, stride 0x48 (verified in UpdateGlobals). */
+/* lights_s: type@0x0, globalflag@0x3C, stride 0x48 (verified in UpdateGlobals).
+ * pos@0x04, r/g/b@0x20..0x22, direction@0x30, brightness@0x3E all verified
+ * against FindNearestLights. */
 struct lights_s {
-    s32 type;          /* 0x00 */
-    u8 unk_0x04[0x38];
-    u8 globalflag;     /* 0x3C */
-    u8 unk_0x3D[0xB];
-};                     /* 0x48 */
+    s32 type;                    /* 0x00 */
+    struct nuvec_s pos;          /* 0x04 */
+    u8 unk_0x10[0x10];           /* 0x10 */
+    u8 r;                        /* 0x20 */
+    u8 g;                        /* 0x21 */
+    u8 b;                        /* 0x22 */
+    u8 unk_0x23[0xD];            /* 0x23 */
+    struct nuvec_s direction;    /* 0x30 */
+    u8 globalflag;               /* 0x3C */
+    u8 unk_0x3D;                 /* 0x3D */
+    u8 brightness;               /* 0x3E */
+    u8 unk_0x3F[0x9];            /* 0x3F */
+};                               /* 0x48 */
 
 extern struct lights_s Lights[];
 
@@ -52,9 +62,10 @@ struct objlights_s {
     struct nuvec_s AmbCol;      /* 0x48 */
 };                              /* 0x54 */
 
-extern void FindNearestLights(struct nuvec_s *pos, struct Nearest_Light_s *nl,
-                              s32 mode);
 extern void FindLightProportion(struct nuvec_s *pos, struct Nearest_Light_s *nl);
+extern f32 NuVecDist(struct nuvec_s *a, struct nuvec_s *b, void *c);
+extern void NuVecSub(struct nuvec_s *d, struct nuvec_s *a, struct nuvec_s *b);
+extern void NuVecNorm(struct nuvec_s *d, struct nuvec_s *a);
 extern void NuRndrSetDirectionalLights(struct nuvec_s *d0, struct nucolour3_s *c0,
                                        struct nuvec_s *d1, struct nucolour3_s *c1,
                                        struct nuvec_s *d2, struct nucolour3_s *c2);
@@ -62,6 +73,8 @@ extern void NuRndrSetAmbientLight(struct nuvec_s *amb);
 extern void NuVecRotateX(struct nuvec_s *out, struct nuvec_s *in, s32 ang);
 extern void NuVecRotateY(struct nuvec_s *out, struct nuvec_s *in, s32 ang);
 void ResetLights(struct Nearest_Light_s *nl);
+s32 FindNearestLights(struct nuvec_s *vec, struct Nearest_Light_s *nearest_light,
+                      s32 SearchMode);
 
 
 inline void SetLights(struct nucolour3_s *vCOL0, struct nuvec_s *vDIR0,
@@ -163,7 +176,7 @@ void SetNearestLights(struct Nearest_Light_s *l) {
     }
 }
 
-void ScaleColour(struct nucolour3_s *colour, u8 r, u8 g, u8 b, u8 power) {
+inline void ScaleColour(struct nucolour3_s *colour, u8 r, u8 g, u8 b, u8 power) {
     if (power == 6) {
         colour->r = (s32)r * sf2;
         colour->g = (s32)g * sf2;
@@ -197,4 +210,233 @@ void SortLights(struct Nearest_Light_s *nearLgt) {
         nearLgt->pDir1st = tptr;
         nearLgt->pDir2nd = tptr2;
     }
+}
+
+s32 FindNearestLights(struct nuvec_s *vec, struct Nearest_Light_s *nearest_light,
+                      s32 SearchMode) {
+    u8 i;
+    u8 loop;
+    u8 PrevIndex;
+    f32 distance;
+    s32 scount;
+    struct nuvec_s direction;
+    f32 sfactor;
+    struct pdir_s *tptr;
+    struct pdir_s *tptr2;
+
+    PrevIndex = nearest_light->AmbIndex;
+    loop = nearest_light->CurLoopIndex;
+    scount = 0x10;
+    if (LIGHTCOUNT == 0) {
+        return 0;
+    }
+    if (SearchMode == 0 || LIGHTCOUNT < 0x10) {
+        scount = LIGHTCOUNT;
+    }
+    if (nearest_light->pDir1st->Index != -1) {
+        nearest_light->pDir1st->Distance =
+            NuVecDist(&Lights[nearest_light->pDir1st->Index].pos, vec, 0);
+    }
+    if (nearest_light->pDir2nd->Index != -1) {
+        nearest_light->pDir2nd->Distance =
+            NuVecDist(&Lights[nearest_light->pDir2nd->Index].pos, vec, 0);
+    }
+    if (nearest_light->pDir3rd->Index != -1) {
+        nearest_light->pDir3rd->Distance =
+            NuVecDist(&Lights[nearest_light->pDir3rd->Index].pos, vec, 0);
+    }
+    if (nearest_light->negativeindex != -1) {
+        nearest_light->negativedist =
+            NuVecDist(&Lights[nearest_light->negativeindex].pos, vec, 0);
+    }
+    if (nearest_light->AmbIndex != -1) {
+        nearest_light->ambientdist =
+            NuVecDist(&Lights[nearest_light->AmbIndex].pos, vec, 0);
+    }
+    tptr = nearest_light->pDir1st;
+    tptr2 = nearest_light->pDir2nd;
+    if (tptr->Distance > tptr2->Distance) {
+        nearest_light->pDir1st = tptr2;
+        nearest_light->pDir2nd = tptr;
+    }
+    tptr = nearest_light->pDir2nd;
+    tptr2 = nearest_light->pDir3rd;
+    if (tptr->Distance > tptr2->Distance) {
+        nearest_light->pDir2nd = tptr2;
+        nearest_light->pDir3rd = tptr;
+    }
+    tptr = nearest_light->pDir1st;
+    tptr2 = nearest_light->pDir2nd;
+    if (tptr->Distance > tptr2->Distance) {
+        nearest_light->pDir1st = tptr2;
+        nearest_light->pDir2nd = tptr;
+    }
+    for (i = 0; i < scount; i++, loop++) {
+        if (loop == LIGHTCOUNT) {
+            loop = 0;
+        }
+        distance = NuVecDist(&Lights[loop].pos, vec, 0);
+        if (Lights[loop].type == 3) {
+            if (distance < nearest_light->negativedist) {
+                nearest_light->negativedist = distance;
+                nearest_light->negativeindex = loop;
+            }
+        } else if (Lights[loop].type == 0) {
+            if (loop != nearest_light->glbambindex &&
+                distance < nearest_light->ambientdist) {
+                nearest_light->ambientdist = distance;
+                nearest_light->AmbIndex = loop;
+            }
+        } else if ((Lights[loop].type == 1 || Lights[loop].type == 2) &&
+                   loop != nearest_light->pDir1st->Index) {
+            if (loop != nearest_light->pDir2nd->Index &&
+                loop != nearest_light->pDir3rd->Index &&
+                loop != nearest_light->glbdirectional.Index) {
+                if (distance < nearest_light->pDir1st->Distance) {
+                    nearest_light->pDir3rd->Index = nearest_light->pDir2nd->Index;
+                    nearest_light->pDir2nd->Index = nearest_light->pDir1st->Index;
+                    nearest_light->pDir1st->Index = loop;
+                    nearest_light->pDir3rd->Distance =
+                        nearest_light->pDir2nd->Distance;
+                    nearest_light->pDir2nd->Distance =
+                        nearest_light->pDir1st->Distance;
+                    nearest_light->pDir1st->Distance = distance;
+                } else if (distance < nearest_light->pDir2nd->Distance) {
+                    nearest_light->pDir3rd->Index = nearest_light->pDir2nd->Index;
+                    nearest_light->pDir2nd->Index = loop;
+                    nearest_light->pDir3rd->Distance =
+                        nearest_light->pDir2nd->Distance;
+                    nearest_light->pDir2nd->Distance = distance;
+                } else if (distance < nearest_light->pDir3rd->Distance) {
+                    nearest_light->pDir3rd->Index = loop;
+                    nearest_light->pDir3rd->Distance = distance;
+                }
+            }
+        }
+    }
+    nearest_light->CurLoopIndex = loop;
+    if (nearest_light->AmbIndex == PrevIndex) {
+        nearest_light->ambientdist =
+            NuVecDist(&Lights[nearest_light->AmbIndex].pos, vec, 0);
+    }
+    if (nearest_light->AmbIndex != -1) {
+        if (Lights[nearest_light->AmbIndex].brightness == 6) {
+            sfactor = sf2;
+        } else if (Lights[nearest_light->AmbIndex].brightness == 7) {
+            sfactor = sf;
+        }
+        nearest_light->AmbCol.x = sfactor * Lights[nearest_light->AmbIndex].r;
+        nearest_light->AmbCol.y = sfactor * Lights[nearest_light->AmbIndex].g;
+        nearest_light->AmbCol.z = sfactor * Lights[nearest_light->AmbIndex].b;
+    } else if (nearest_light->glbambindex != -1) {
+        nearest_light->AmbCol.x = sf * Lights[nearest_light->glbambindex].r;
+        nearest_light->AmbCol.y = sf * Lights[nearest_light->glbambindex].g;
+        nearest_light->AmbCol.z = sf * Lights[nearest_light->glbambindex].b;
+    }
+    if (nearest_light->pDir1st->Index != -1) {
+        if (Lights[nearest_light->pDir1st->Index].type == 2) {
+            NuVecSub(&direction, &Lights[nearest_light->pDir1st->Index].pos, vec);
+            NuVecNorm(&direction, &direction);
+            nearest_light->pDir1st->Direction = direction;
+        } else {
+            nearest_light->pDir1st->Direction =
+                Lights[nearest_light->pDir1st->Index].direction;
+        }
+        ScaleColour(&nearest_light->pDir1st->Colour,
+                    Lights[nearest_light->pDir1st->Index].r,
+                    Lights[nearest_light->pDir1st->Index].g,
+                    Lights[nearest_light->pDir1st->Index].b,
+                    Lights[nearest_light->pDir1st->Index].brightness);
+    } else if (nearest_light->glbdirectional.Index != -1 &&
+               (Lights[nearest_light->glbdirectional.Index].type == 1 ||
+                Lights[nearest_light->glbdirectional.Index].type == 2)) {
+        if (Lights[nearest_light->pDir1st->Index].brightness == 6) {
+            sfactor = sf2;
+        } else if (Lights[nearest_light->pDir1st->Index].brightness == 7) {
+            sfactor = sf;
+        }
+        nearest_light->pDir1st->Colour.r =
+            sfactor * Lights[nearest_light->glbdirectional.Index].r;
+        nearest_light->pDir1st->Colour.g =
+            sfactor * Lights[nearest_light->glbdirectional.Index].g;
+        nearest_light->pDir1st->Colour.b =
+            sfactor * Lights[nearest_light->glbdirectional.Index].b;
+        nearest_light->pDir1st->Distance = 8000.0f;
+    } else {
+        nearest_light->pDir1st->Colour.r = 0.0f;
+        nearest_light->pDir1st->Colour.g = 0.0f;
+        nearest_light->pDir1st->Colour.b = 0.0f;
+        nearest_light->pDir1st->Distance = 8000.0f;
+    }
+    if (nearest_light->pDir2nd->Index != -1) {
+        if (Lights[nearest_light->pDir2nd->Index].type == 2) {
+            NuVecSub(&direction, &Lights[nearest_light->pDir2nd->Index].pos, vec);
+            NuVecNorm(&direction, &direction);
+            nearest_light->pDir2nd->Direction = direction;
+        } else {
+            nearest_light->pDir2nd->Direction =
+                Lights[nearest_light->pDir2nd->Index].direction;
+        }
+        ScaleColour(&nearest_light->pDir2nd->Colour,
+                    Lights[nearest_light->pDir2nd->Index].r,
+                    Lights[nearest_light->pDir2nd->Index].g,
+                    Lights[nearest_light->pDir2nd->Index].b,
+                    Lights[nearest_light->pDir2nd->Index].brightness);
+    } else if (nearest_light->glbdirectional.Index != -1 &&
+               (Lights[nearest_light->glbdirectional.Index].type == 1 ||
+                Lights[nearest_light->glbdirectional.Index].type == 2)) {
+        if (Lights[nearest_light->pDir2nd->Index].brightness == 6) {
+            sfactor = sf2;
+        } else if (Lights[nearest_light->pDir2nd->Index].brightness == 7) {
+            sfactor = sf;
+        }
+        nearest_light->pDir2nd->Colour.r =
+            sfactor * Lights[nearest_light->glbdirectional.Index].r;
+        nearest_light->pDir2nd->Colour.g =
+            sfactor * Lights[nearest_light->glbdirectional.Index].g;
+        nearest_light->pDir2nd->Colour.b =
+            sfactor * Lights[nearest_light->glbdirectional.Index].b;
+        nearest_light->pDir2nd->Distance = 8000.0f;
+    } else {
+        nearest_light->pDir2nd->Colour.r = 0.0f;
+        nearest_light->pDir2nd->Colour.g = 0.0f;
+        nearest_light->pDir2nd->Colour.b = 0.0f;
+        nearest_light->pDir2nd->Distance = 8000.0f;
+    }
+    if (nearest_light->pDir3rd->Index != -1) {
+        if (Lights[nearest_light->pDir3rd->Index].type == 2) {
+            NuVecSub(&direction, &Lights[nearest_light->pDir3rd->Index].pos, vec);
+            NuVecNorm(&direction, &direction);
+            nearest_light->pDir3rd->Direction = direction;
+        } else {
+            nearest_light->pDir3rd->Direction =
+                Lights[nearest_light->pDir3rd->Index].direction;
+        }
+        ScaleColour(&nearest_light->pDir3rd->Colour,
+                    Lights[nearest_light->pDir3rd->Index].r,
+                    Lights[nearest_light->pDir3rd->Index].g,
+                    Lights[nearest_light->pDir3rd->Index].b,
+                    Lights[nearest_light->pDir3rd->Index].brightness);
+    } else if (nearest_light->glbdirectional.Index != -1 &&
+               (Lights[nearest_light->glbdirectional.Index].type == 1 ||
+                Lights[nearest_light->glbdirectional.Index].type == 2)) {
+        if (Lights[nearest_light->pDir3rd->Index].brightness == 6) {
+            sfactor = sf2;
+        } else if (Lights[nearest_light->pDir3rd->Index].brightness == 7) {
+            sfactor = sf;
+        }
+        nearest_light->pDir3rd->Colour.r =
+            sfactor * Lights[nearest_light->glbdirectional.Index].r;
+        nearest_light->pDir3rd->Colour.g =
+            sfactor * Lights[nearest_light->glbdirectional.Index].g;
+        nearest_light->pDir3rd->Colour.b =
+            sfactor * Lights[nearest_light->glbdirectional.Index].b;
+        nearest_light->pDir3rd->Distance = 8000.0f;
+    } else {
+        nearest_light->pDir3rd->Colour.r = 0.0f;
+        nearest_light->pDir3rd->Colour.g = 0.0f;
+        nearest_light->pDir3rd->Colour.b = 0.0f;
+        nearest_light->pDir3rd->Distance = 8000.0f;
+    }
+    return 1;
 }
