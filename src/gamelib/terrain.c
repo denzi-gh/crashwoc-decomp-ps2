@@ -243,6 +243,23 @@ extern s32 PlatCrush;
 extern s32 terrhitflags;
 extern s32 platinrange;
 extern struct nuvec_s ShadNorm;
+extern struct nuvec_s EShadNorm;
+extern struct nuvec_s ShadRoofNorm;
+extern struct nuvec_s EShadRoofNorm;
+extern f32 EShadY;
+extern f32 ShadRoofY;
+extern f32 EShadRoofY;
+extern tertype *EShadPoly;
+extern tertype *ShadRoofPoly;
+extern tertype *EShadRoofPoly;
+extern short castnum;
+extern short ecastnum;
+extern short castroofnum;
+extern short ecastroofnum;
+extern short shadhit;
+extern short eshadhit;
+extern short shadroofhit;
+extern short eshadroofhit;
 extern s32 testlock;
 extern s32 curSphereter;
 extern s32 curPickInst;
@@ -392,6 +409,298 @@ short InsideLineF(float _x, float _z, float _x0, float _z0, float _x1, float _z1
     } else {
         return 1;
     }
+}
+
+/* Retail NewCast has no calls, yet every inside-line test still materializes
+ * InsideLineF's 0/1 return into a GPR before it is tested (and the last one
+ * feeds a movn): the body was inlined by the compiler, not folded into a
+ * branch. Expanding it through this inline twin reproduces that shape. */
+static __inline__ short INSIDELINEF(float _x, float _z, float _x0, float _z0,
+                                    float _x1, float _z1) {
+    if ((_x - _x0) * (_z1 - _z0) + (_z - _z0) * (_x0 - _x1) < 0.0f) {
+        return 0;
+    } else {
+        return 1;
+    }
+}
+
+//NGC MATCH
+float NewCast(struct nuvec_s *pos, float ytol) {
+    short *CurData;
+    tertype **curter;
+    tertype *ter;
+    short castnum2;
+    short ecastnum2;
+    float ht;
+    float ht2;
+    struct nuvec_s norm;
+    struct nuvec_s norm2;
+    tertype *terhit1;
+    tertype *terhit2;
+    float eht;
+    float eht2;
+    struct nuvec_s enorm;
+    struct nuvec_s enorm2;
+    tertype *eterhit1;
+    tertype *eterhit2;
+    s32 objnum;
+    s32 lp;
+    s32 t;
+    s32 line;
+    float tx;
+    float ty;
+    float tz;
+
+    ht = -2000000.0f;
+    ht2 = 2000000.0f;
+    terhit1 = 0;
+    terhit2 = 0;
+    eht = -2000000.0f;
+    eht2 = 2000000.0f;
+    eterhit1 = 0;
+    eterhit2 = 0;
+    tx = 0.0f;
+    tz = 0.0f;
+    castnum2 = -1;
+    castnum = -1;
+    ecastnum2 = -1;
+    ecastnum = -1;
+    CurData = (short *)TerI->hitdata;
+    while (*(short *)CurData > 0) {
+        tx = pos->x - CurTerr->terr[*(short *)((s32)CurData + 2)].Location.x;
+        tz = pos->z - CurTerr->terr[*(short *)((s32)CurData + 2)].Location.z;
+        objnum = *(short *)((s32)CurData + 2);
+        curter = (tertype **)(CurData + 2);
+        lp = *(short *)CurData;
+        for (; lp > 0; lp--, curter++) {
+            ter = (tertype *)*curter;
+            if (ter->norm[1].y > 65535.0f) {
+                t = 0;
+                if (ter->norm[0].y > 0.0f) {
+                    if (((INSIDELINEF(tx, tz, ter->pnts[1].x, ter->pnts[1].z, ter->pnts[0].x, ter->pnts[0].z) != 0)
+                         && (INSIDELINEF(tx, tz, ter->pnts[0].x, ter->pnts[0].z, ter->pnts[2].x, ter->pnts[2].z) != 0))
+                        && (INSIDELINEF(tx, tz, ter->pnts[2].x, ter->pnts[2].z, ter->pnts[1].x, ter->pnts[1].z) != 0))
+                    {
+                        t = 1;
+                    }
+                } else {
+                    if ((((ter->norm[0].y < 0.0f)
+                          && (INSIDELINEF(tx, tz, ter->pnts[0].x, ter->pnts[0].z, ter->pnts[1].x, ter->pnts[1].z) != 0))
+                         && (INSIDELINEF(tx, tz, ter->pnts[2].x, ter->pnts[2].z, ter->pnts[0].x, ter->pnts[0].z) != 0))
+                        && (INSIDELINEF(tx, tz, ter->pnts[1].x, ter->pnts[1].z, ter->pnts[2].x, ter->pnts[2].z) != 0))
+                    {
+                        t = 2;
+                    }
+                }
+                if (t != 0) {
+                    ty = (ter->norm[0].x * (tx - ter->pnts[0].x) + ter->norm[0].z * (tz - ter->pnts[0].z))
+                        / -ter->norm[0].y;
+                    ty += ter->pnts[0].y + CurTerr->terr[objnum].Location.y;
+                    if (ter->info[1] != 0) {
+                        if (((ty <= pos->y) && (ty > eht)) && (t == 1)) {
+                            eht = ty;
+                            eterhit1 = ter;
+                            enorm = ter->norm[0];
+                            ecastnum = objnum;
+                        } else {
+                            if ((((ty > pos->y) && (ty <= eht2)) && (ty < pos->y + ytol))
+                                && ((ty != eht2 || (ter->norm[0].y < enorm2.y))))
+                            {
+                                eterhit2 = ter;
+                                enorm2 = ter->norm[0];
+                                eht2 = ty;
+                                ecastnum2 = objnum;
+                            }
+                        }
+                    } else if (((ty <= pos->y) && (ty > ht)) && (t == 1)) {
+                        ht = ty;
+                        terhit1 = ter;
+                        norm = ter->norm[0];
+                        castnum = objnum;
+                    } else {
+                        if ((((ty > pos->y) && (ty <= ht2)) && (ty < pos->y + ytol))
+                            && ((ty != ht2 || (ter->norm[0].y < norm2.y))))
+                        {
+                            terhit2 = ter;
+                            norm2 = ter->norm[0];
+                            ht2 = ty;
+                            castnum2 = objnum;
+                        }
+                    }
+                }
+            } else {
+                t = 0;
+                if (ter->norm[0].y > 0.0f) {
+                    if (((INSIDELINEF(tx, tz, ter->pnts[1].x, ter->pnts[1].z, ter->pnts[0].x, ter->pnts[0].z) != 0)
+                         && (INSIDELINEF(tx, tz, ter->pnts[0].x, ter->pnts[0].z, ter->pnts[2].x, ter->pnts[2].z) != 0))
+                        && ((INSIDELINEF(tx, tz, ter->pnts[3].x, ter->pnts[3].z, ter->pnts[1].x, ter->pnts[1].z) != 0
+                             && (INSIDELINEF(tx, tz, ter->pnts[2].x, ter->pnts[2].z, ter->pnts[3].x, ter->pnts[3].z) != 0))))
+                    {
+                        t = 1;
+                    }
+                } else {
+                    if ((((ter->norm[0].y < 0.0f)
+                          && (INSIDELINEF(tx, tz, ter->pnts[0].x, ter->pnts[0].z, ter->pnts[1].x, ter->pnts[1].z) != 0))
+                         && (INSIDELINEF(tx, tz, ter->pnts[2].x, ter->pnts[2].z, ter->pnts[0].x, ter->pnts[0].z) != 0))
+                        && ((INSIDELINEF(tx, tz, ter->pnts[1].x, ter->pnts[1].z, ter->pnts[3].x, ter->pnts[3].z) != 0
+                             && (INSIDELINEF(tx, tz, ter->pnts[3].x, ter->pnts[3].z, ter->pnts[2].x, ter->pnts[2].z) != 0))))
+                    {
+                        t = 2;
+                    }
+                }
+                if (t != 0) {
+                    if (t == 1) {
+                        line = INSIDELINEF(tx, tz, ter->pnts[2].x, ter->pnts[2].z, ter->pnts[1].x, ter->pnts[1].z);
+                    } else {
+                        line = INSIDELINEF(tx, tz, ter->pnts[1].x, ter->pnts[1].z, ter->pnts[2].x, ter->pnts[2].z);
+                    }
+                    if ((line != 0) || (ter->norm[1].y == 0.0f)) {
+                        ty = (ter->norm[0].x * (tx - ter->pnts[0].x) + ter->norm[0].z * (tz - ter->pnts[0].z))
+                            / -ter->norm[0].y;
+                        ty += ter->pnts[0].y + CurTerr->terr[objnum].Location.y;
+                        if (ter->info[1] != 0) {
+                            if (((ty <= pos->y) && (ty > eht)) && (t == 1)) {
+                                eterhit1 = ter;
+                                eht = ty;
+                                enorm = ter->norm[0];
+                                ecastnum = objnum;
+                            } else {
+                                if (((ty > pos->y) && (ty <= eht2))
+                                    && ((ty < pos->y + ytol && ((ty != eht2 || (ter->norm[0].y < enorm2.y))))))
+                                {
+                                    eterhit2 = ter;
+                                    enorm2 = ter->norm[0];
+                                    eht2 = ty;
+                                    ecastnum2 = objnum;
+                                }
+                            }
+                        } else if (((ty <= pos->y) && (ty > ht)) && (t == 1)) {
+                            terhit1 = ter;
+                            ht = ty;
+                            norm = ter->norm[0];
+                            castnum = objnum;
+                        } else {
+                            if (((ty > pos->y) && (ty <= ht2))
+                                && ((ty < pos->y + ytol && ((ty != ht2 || (ter->norm[0].y < norm2.y))))))
+                            {
+                                terhit2 = ter;
+                                norm2 = ter->norm[0];
+                                ht2 = ty;
+                                castnum2 = objnum;
+                            }
+                        }
+                    } else {
+                        ty = (ter->norm[1].x * (tx - ter->pnts[3].x) + ter->norm[1].z * (tz - ter->pnts[3].z))
+                            / -ter->norm[1].y;
+                        ty += ter->pnts[3].y + CurTerr->terr[objnum].Location.y;
+                        if (ter->info[1] != 0) {
+                            if (((ty <= pos->y) && (ty > eht)) && (t == 1)) {
+                                eterhit1 = ter;
+                                eht = ty;
+                                enorm = ter->norm[1];
+                                ecastnum = objnum;
+                            } else {
+                                if (((ty > pos->y) && (ty <= eht2))
+                                    && ((ty < pos->y + ytol && ((ty != eht2 || (ter->norm[1].y < enorm2.y))))))
+                                {
+                                    eterhit2 = ter;
+                                    enorm2 = ter->norm[1];
+                                    eht2 = ty;
+                                    ecastnum2 = objnum;
+                                }
+                            }
+                        } else if (((ty <= pos->y) && (ty > ht)) && (t == 1)) {
+                            terhit1 = ter;
+                            ht = ty;
+                            norm = ter->norm[1];
+                            castnum = objnum;
+                        } else {
+                            if (((ty > pos->y) && (ty <= ht2))
+                                && ((ty < pos->y + ytol && ((ty != ht2 || (ter->norm[1].y < norm2.y))))))
+                            {
+                                terhit2 = ter;
+                                norm2 = ter->norm[1];
+                                ht2 = ty;
+                                castnum2 = objnum;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        CurData = (short *)curter;
+    }
+    if ((eht2 < 2000000.0f) && (enorm2.y < 0.0f)) {
+        eshadroofhit = 1;
+        EShadRoofY = eht2;
+        EShadRoofNorm.x = enorm2.x;
+        EShadRoofNorm.y = enorm2.y;
+        EShadRoofNorm.z = enorm2.z;
+        EShadRoofPoly = eterhit2;
+        ecastroofnum = ecastnum2;
+    } else {
+        EShadRoofY = 2000000.0f;
+        EShadRoofPoly = 0;
+    }
+    if ((eht2 < 2000000.0f) && (enorm2.y > 0.0f)) {
+        eshadhit = 1;
+        EShadY = eht2;
+        EShadNorm.x = enorm2.x;
+        EShadNorm.y = enorm2.y;
+        EShadNorm.z = enorm2.z;
+        EShadPoly = eterhit2;
+        ecastnum = ecastnum2;
+    } else {
+        if (eht > -2000000.0f) {
+            eshadhit = 2;
+            EShadY = eht;
+            EShadNorm.x = enorm.x;
+            EShadNorm.y = enorm.y;
+            EShadNorm.z = enorm.z;
+            EShadPoly = eterhit1;
+        } else {
+            eshadhit = 3;
+            EShadY = 2000000.0f;
+            EShadNorm.y = 1.0f;
+            EShadPoly = 0;
+        }
+    }
+    if ((ht2 < 2000000.0f) && (norm2.y < 0.0f)) {
+        shadroofhit = 1;
+        ShadRoofY = ht2;
+        ShadRoofNorm.x = norm2.x;
+        ShadRoofNorm.y = norm2.y;
+        ShadRoofNorm.z = norm2.z;
+        ShadRoofPoly = terhit2;
+        castroofnum = castnum2;
+    } else {
+        ShadRoofY = 2000000.0f;
+        ShadRoofPoly = 0;
+    }
+    if ((ht2 < 2000000.0f) && (norm2.y > 0.0f)) {
+        shadhit = 1;
+        pos->y = ht2;
+        ShadNorm.x = norm2.x;
+        ShadNorm.y = norm2.y;
+        ShadNorm.z = norm2.z;
+        ShadPoly = terhit2;
+        castnum = castnum2;
+    } else {
+        if (ht > -2000000.0f) {
+            shadhit = 2;
+            ShadNorm.x = norm.x;
+            ShadNorm.y = norm.y;
+            ShadNorm.z = norm.z;
+            ShadPoly = terhit1;
+            pos->y = ht;
+        } else {
+            shadhit = 3;
+            pos->y = 2000000.0f;
+            ShadNorm.y = 1.0f;
+            ShadPoly = 0;
+        }
+    }
+    return 0.0f;
 }
 
 // NGC MATCH (PS2 layout/control flow verified against 0x00176270)

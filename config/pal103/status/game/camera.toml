@@ -17,7 +17,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0093:001d6228:BestRailPosition"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0093:001d6850:ComplexRailPosition"
