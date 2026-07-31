@@ -82,9 +82,271 @@ struct numemfile_s {
     int used;  	            /* 0x10 */
 }; /* 0x14 */
 
+struct fileinfo_s {
+    int handle;                     /* 0x00 */
+    int read_pos;                   /* 0x04 */
+    int file_pos;	            /* 0x08 */
+    int file_length;                /* 0x0c */
+    int buff_start;  	            /* 0x10 */
+    int buff_length;  	            /* 0x14 */
+    int use_buff;  	            /* 0x18 */
+    int start_lsn;  	            /* 0x1c */
+}; /* 0x20 */
+
+struct NUDATFINFO_s {
+    int foffset;              /* 0x00 */
+    int flen;                 /* 0x04 */
+    int uplen;	              /* 0x08 */
+    int ppack;                /* 0x0c */
+}; /* 0x10 */
+
+struct NUDFNODE_s {
+    short childix;              /* 0x00 */
+    short sibix;                /* 0x02 */
+    char* txt;	                /* 0x04 */
+}; /* 0x08 */
+
+struct nudathdr_s {
+    int ver;                      /* 0x00 */
+    int nfiles;                   /* 0x04 */
+    struct NUDATFINFO_s * finfo;  /* 0x08 */
+    int treecnt;                  /* 0x0c */
+    struct NUDFNODE_s * filetree; /* 0x10 */
+    int leafnamesize;             /* 0x14 */
+    char * leafnames;             /* 0x18 */
+    int dfhandle;                 /* 0x1c */
+    int fh;                       /* 0x20 */
+    short intalloc;               /* 0x24 */
+    short openmode;               /* 0x26 */
+    int start_lsn;                /* 0x28 */
+}; /* 0x2c */
+
+struct filebuff_s {
+    struct fileinfo_s * info;    /* 0x00 */
+    int time;                    /* 0x04 */
+    char data[4096];             /* 0x08 */
+}; /* 0x1008 */
+
+struct filebuff_s file_buff[4];
 struct numemfile_s memfiles[20];
+struct fileinfo_s file_info[16];
+char* filesys_root[4];
+struct nudathdr_s* curr_dat;
+int nufile_buffering_enabled;
+int nufile_deviceid;
+char working_dir[256];
+int fmode[4];
 
 void* NuMemFileAddr(int fh)
 {
   return memfiles[fh + -0x400].curr;
+}
+
+
+extern char RO_62BAB0[];
+extern char STR_0062BB90[];
+extern char STR_0062BBD0[];
+extern char STR_0062BBE8[];
+extern char STR_0062BC18[];
+extern char STR_006456B0[];
+extern char STR_006456C0[];
+
+
+int NuDatFileOpen(struct nudathdr_s* ndh, char* fname, enum nufilemode_e mode);
+int NuFileSeek(int fh, int offset, int origin);
+int NuFileStatus(int fh);
+//void * memset (void * __s, int __c, unsigned long __n);
+int sceOpen(char * name, int flag, ...);
+char* strcat(char* __dest, const char* __src);
+char* strcpy(char* __dest, const char* __src);
+int strlen(const char* __s);
+
+typedef void (*NuErrorFunc)(const char *fmt, ...);
+
+extern NuErrorFunc NuErrorProlog(const char *file, int line);
+
+extern NuErrorFunc NuDebugMsgProlog(const char *file, int line);
+
+
+int NuFileOpen(char* file, enum nufilemode_e mode) {
+    int fh;
+    int fp;
+    int iVar5;
+    int sVar6;
+    char* pbVar8;
+    char lfile[256];
+
+    if (curr_dat != 0) {
+        fp = NuDatFileOpen(curr_dat, file, mode);
+        if (fp != 0)
+            return fp;
+    }
+    strcpy(lfile, filesys_root[nufile_deviceid]);
+    strcat(lfile, working_dir);
+    strcat(lfile, file);
+    pbVar8 = (char*)(lfile + (int)strlen(filesys_root[nufile_deviceid]));
+    for (sVar6 = 0; pbVar8[sVar6] != 0; sVar6++) {
+        if (pbVar8[sVar6] >= 0x61 && pbVar8[sVar6] < 0x7b) {
+            pbVar8[sVar6] -= 0x20;
+        }
+    }
+    if (nufile_deviceid == 1) {
+        strcat(lfile, STR_006456B0);
+    }
+    if (NUFILE_READ_NOWAIT < mode) {
+        NuErrorProlog("..\\nu2.ps2\\nucore\\nufile.c", 0x214)(STR_006456C0);
+    }
+    fp = sceOpen(lfile, fmode[mode]);
+    if (fp < 0) {
+        NuDebugMsgProlog("..\\nu2.ps2\\nucore\\nufile.c", 0x218)(
+            "!!!!!!!!!!!!!!!!!!! opening file %s failed!!!!!!!!!!!!!!!!!!!!1", lfile
+        );
+    } else {
+        NuDebugMsgProlog("..\\nu2.ps2\\nucore\\nufile.c", 0x21b)("opening file %s ok!(%d)", lfile);
+        fh = fp + 1;
+        memset(&file_info[fp], 0, 0x20);
+        file_info[fp].handle = fh;
+        if (mode != NUFILE_WRITE) {
+            do {
+                iVar5 = NuFileSeek(fh, 0, 2);
+                if (iVar5 >= 0)
+                    break;
+                NuDebugMsgProlog("..\\nu2.ps2\\nucore\\nufile.c", 0x225)("NuFileOpen - size seek failed - retrying");
+            } while (1);
+            file_info[fp].file_length = iVar5;
+            if (mode == NUFILE_READ_NOWAIT) {
+                do {
+                } while (NuFileStatus(fh) != 0);
+            }
+            do {
+                if (NuFileSeek(fh, 0, 0) >= 0)
+                    break;
+                NuDebugMsgProlog("..\\nu2.ps2\\nucore\\nufile.c", 0x230)(
+                    "NuFileOpen - size seek restore failed - retrying"
+                );
+            } while (1);
+            if (mode == NUFILE_READ_NOWAIT) {
+                do {
+                } while (NuFileStatus(fh) != 0);
+            }
+        } else {
+            file_info[fp].file_length = 0;
+        }
+        if (mode == NUFILE_READ) {
+            file_info[fp].use_buff = nufile_buffering_enabled;
+        }
+    }
+    return fp;
+}
+
+extern char RO_62BAB0[];
+extern char STR_006456C0[];
+extern int file_time_count;
+
+int sceLseek(int fd, int offset, int how);
+int sceRead(int fd, void * addr, int size);
+int NuDatFileRead (int fh, void * data, int size);
+
+
+int NuFileRead(int fh, void* data, int size) {
+    struct fileinfo_s* info;
+    int iVar1;
+    int iVar2;
+    int iVar3;
+    int iVar5;
+    int __n;
+    int iVar6;
+    int iVar8;
+    char* datac;
+    int sVar11;
+    int __n_00;
+    struct filebuff_s *buff;
+
+    sVar11 = size;
+    if (fh > 0x400) {
+        if (fh > 0x7ff) {
+            return NuDatFileRead(fh, data, size);
+        }
+        datac = memfiles[fh - 0x400].curr;
+        __n_00 = (int)(memfiles[fh - 0x400].end + (1 - (int)&datac[__n_00]));
+        if (__n_00 >= sVar11) {
+            __n_00 = sVar11;
+        }
+        if (__n_00 != 0) {
+            memcpy(data, &datac[__n_00], __n_00);
+        }
+    } else {
+        iVar2 = fh - 1;
+        info = &file_info[iVar2];
+        if (info->use_buff != 0) {
+            if (info->start_lsn == 0) {
+                // data = &file_buff[0];
+                iVar3 = file_time_count;
+                iVar5 = 0;
+                for (iVar6 = 0; iVar6 < 4; iVar6++) {
+                    iVar1 = file_buff[iVar6].time;
+                    iVar8 = iVar6;
+                    if (iVar3 <= iVar1) {
+                        iVar1 = iVar3;
+                        iVar8 = iVar5;
+                    }
+                    iVar3 = iVar1;
+                    // data = data + 0x4002;
+                    iVar5 = iVar8;
+                }
+                //iVar8 = iVar8 * 0x10008;
+                buff = &file_buff[iVar8];
+                if (buff->info->handle != 0) {
+                    buff->info->start_lsn = 0;
+                }
+                iVar3 = info->buff_length;
+                buff->time = file_time_count;
+                //buff->info->handle = info->handle;
+                file_time_count++;
+                //info->start_lsn = buff->info->start_lsn;
+                if (iVar3 != 0) {
+                    sceLseek(info->handle, -iVar3, 1);
+                    iVar3 = sceRead(info->handle, buff->data, info->buff_length);
+                    if (iVar3 != info->buff_length) {
+                        NuErrorProlog("..\\nu2.ps2\\nucore\\nufile.c", 0x286)(STR_006456C0);
+                    }
+                }
+            }
+            __n_00 = 0;
+            while ((sVar11 > 0 && (iVar3 = info->read_pos, iVar3 < info->file_length))) {
+                if ((iVar3 < info->buff_start) || (info->buff_start + info->buff_length >= iVar3)) {
+                    iVar5 = info->file_pos;
+// LAB_00100edc:
+                    if (iVar3 == iVar5) {
+                        iVar3 = info->start_lsn;
+                    } else {
+                        sceLseek(info->handle, iVar3, 0);
+                        info->file_pos = info->read_pos;
+                        iVar3 = info->start_lsn;
+                    }
+                    iVar5 = sceRead(info->handle, (void*)(iVar3 + 8), 0x10000);
+                    iVar3 = info->file_pos;
+                    info->buff_length = iVar5;
+                    info->buff_start = iVar3;
+                    info->file_pos = iVar3 + iVar5;
+                }
+                iVar3 = info->read_pos - info->buff_start;
+                __n = (info->buff_length - iVar3);
+                if (sVar11 <= __n) {
+                    __n = sVar11;
+                }
+                if (__n != 0) {
+                    memcpy(data, (void*)(iVar3 + info->start_lsn), __n);
+                }
+                iVar3 = (int)__n;
+                data = (void*)((int)data + iVar3);
+                __n_00 += iVar3;
+                sVar11 -= iVar3;
+                info->read_pos += iVar3;
+            }
+        } else {
+            __n_00 = sceRead(iVar2, data, size);
+        }
+    }
+    return __n_00;
 }
