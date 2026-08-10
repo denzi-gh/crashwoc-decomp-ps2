@@ -21,11 +21,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0095:001f1488:DrawCrates"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f1cc8:FindLocalCrate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f1e00:ReadInCrateData"
@@ -57,7 +57,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0095:001f3960:CrateBounceReaction"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f3ed8:UpdateCrates"
@@ -145,7 +145,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f80b8:DrawCrate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f8158:OpenPreviousCheckpoints"
@@ -153,7 +153,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f82a0:FindOverlap"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f83d8:StartExclamationCrateSequence"
@@ -205,7 +205,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f8ea0:RayIntersectCylinder"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f8fb8:SaveCrateTypeData"
@@ -217,7 +217,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f9078:ResetAllCrateTypes"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f9148:ResetCrateType2"
