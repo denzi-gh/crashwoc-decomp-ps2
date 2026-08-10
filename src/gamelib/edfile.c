@@ -174,8 +174,7 @@ int EdFileClose(void) {
     return 0;
 }
 
-
-static inline void EdFileWrite(void *data,int size) {
+static inline void EdFileWrite_in (void *data,int size) {
     int cnt;
 
     while (size > 0) {
@@ -204,7 +203,7 @@ static inline void EdFileWrite(void *data,int size) {
       }
 }
 
-static inline void EdFileRead(void *data,int size) {
+static inline void EdFileRead_in (void *data,int size) {
   int cnt;
 
   while (size > 0) {
@@ -233,63 +232,122 @@ static inline void EdFileRead(void *data,int size) {
   }
 }
 
+
 void EdFileWriteFloat(float data) {
-  EdFileWrite(&data,4);
+  EdFileWrite_in(&data,4);
 }
 
 void EdFileWriteInt(int data) {
-  EdFileWrite(&data,4);
+  EdFileWrite_in(&data,4);
 }
 
 void EdFileWriteUnsignedInt(int data) {
-  EdFileWrite(&data,4);
+  EdFileWrite_in(&data,4);
 }
 
 void EdFileWriteShort(short data) {
-  EdFileWrite(&data,2);
+  EdFileWrite_in(&data,2);
 }
 
 void EdFileWriteChar(char data) {
-  EdFileWrite(&data,1);
+  EdFileWrite_in(&data,1);
 }
 
 float EdFileReadFloat(void) {
   float data;
 
-  EdFileRead(&data,4);
+  EdFileRead_in(&data,4);
   return data;
 }
 
 int EdFileReadInt(void) {
   int data;
 
-  EdFileRead(&data,4);
+  EdFileRead_in(&data,4);
   return data;
 }
 
 unsigned int EdFileReadUnsignedInt(void) {
   unsigned int data;
 
-  EdFileRead(&data,4);
+  EdFileRead_in(&data,4);
   return data;
 }
 
 short EdFileReadShort(void) {
   short data;
 
-  EdFileRead(&data,2);
+  EdFileRead_in(&data,2);
   return data;
 }
 
 char EdFileReadChar(void) {
   char data;
 
-  EdFileRead(&data,1);
+  EdFileRead_in(&data,1);
   return data;
 }
 
 void EdFileSetMedia(int media) {
   edfile_media = media;
+}
+
+void EdFileWrite(void *data,int size) {
+    int cnt;
+
+    while (size > 0) {
+        cnt = (0x1000 - edfile_buffer_pointer);
+        if (size < (0x1000 - edfile_buffer_pointer)) {
+          cnt = size;
+        }
+        memcpy(edfile_buffer + edfile_buffer_pointer,data,cnt);
+        size -= cnt;
+        edfile_buffer_pointer = edfile_buffer_pointer + cnt;
+        data = (void *)(data + cnt);
+        if ((edfile_buffer_pointer == 0x1000) && (edfile_handle != -1)) {
+          switch (edfile_media) {
+          case 0:
+          break;
+          case 1:
+              NuFileWrite(edfile_handle, &edfile_buffer, 0x1000);
+              edfile_buffer_pointer = 0;
+              break;
+          case 2:
+              NuMcWrite(edfile_handle, &edfile_buffer, 0x1000, 0);
+              edfile_buffer_pointer = 0;
+              break;
+          }
+        }
+      }
+}
+
+void EdFileRead(void *data,int size) {
+  int cnt;
+
+  while (size > 0) {
+    cnt = (0x1000 - edfile_buffer_pointer);
+    if (size < (0x1000 - edfile_buffer_pointer)) {
+      cnt = size;
+    }
+    memcpy(data,&edfile_buffer[edfile_buffer_pointer],cnt);
+    size -= cnt;
+    edfile_buffer_pointer = edfile_buffer_pointer + cnt;
+    data = (void *)(data + cnt);
+    if ((edfile_buffer_pointer == 0x1000) && (edfile_handle != -1)) {
+      switch (edfile_media) {
+            case 0:
+            break;
+            case 1:
+                NuFileRead(edfile_handle, &edfile_buffer, 0x1000);
+                edfile_buffer_pointer = 0;
+            break;
+            case 2:
+                NuMcRead(edfile_handle, &edfile_buffer, 0x1000, 0);
+                edfile_buffer_pointer = 0;
+            break;
+        }
+    }
+  }
 }
 
 int EdFileWriteMemCard(char *fname,int size,void *data) {
@@ -299,7 +357,7 @@ int EdFileWriteMemCard(char *fname,int size,void *data) {
   if (EdFileOpen(fname,NUFILE_WRITE) == 0) {
     return 0;
   }
-  EdFileWrite(data,size);
+  EdFileWrite_in(data,size);
   return EdFileClose();
 }
 
@@ -308,7 +366,7 @@ int EdFileReadMemCard(char *fname,int size,void *data) {
   if (EdFileOpen(fname,NUFILE_READ) == 0) {
     return 0;
   }
-  EdFileRead(data,size);
+  EdFileRead_in(data,size);
   return EdFileClose();
 }
 
