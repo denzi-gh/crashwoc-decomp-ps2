@@ -45,7 +45,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0038:0011be38:NuMtlValid"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0038:0011be50:NuMtlInit"
@@ -53,7 +53,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0038:0011be98:NuMtlGetSysBuffSize"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0038:0011bea8:NuMtlInitEx"
@@ -81,7 +81,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0038:0011c170:NuMtlReadEventSetHandler"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0038:0011c198:NuMtlGetStateBlockDma"
@@ -97,7 +97,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0038:0011c2c0:NuMtlIterate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0038:0011c300:NuMtlRemove"
@@ -105,7 +105,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0038:0011c358:NuMtlReadEventDefault"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0038:0011c360:NuMtlInsert"
