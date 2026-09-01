@@ -249,7 +249,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0001:00103860:NuDatOpen"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00103880:NuDatSet"

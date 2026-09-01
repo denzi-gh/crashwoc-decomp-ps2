@@ -45,7 +45,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0030:00111420:NuStreamGetOutputBuffer"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00111438:NuRndrSwapStreamBuffers"
