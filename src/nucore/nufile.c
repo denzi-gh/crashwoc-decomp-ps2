@@ -261,6 +261,8 @@ extern char STR_0062BB90[];
 extern char STR_0062BBD0[];
 extern char STR_0062BBE8[];
 extern char STR_0062BC18[];
+extern char D_006134B0[];
+#define nufile_file             D_006134B0
 extern char STR_006456B0[];
 extern char STR_006456C0[];
 
@@ -313,29 +315,29 @@ int NuFileSifLoadModule(char *file,int args,char *argp) {
   }
   rv = sceSifLoadModule(path,args,argp);
   if (rv < 0) {
-      NuDebugMsgProlog("..\nu2.ps2\nucore\nufile.c", 0x1B8)
+      NuDebugMsgProlog(nufile_file, 0x1B8)
           ("Unable to load SIF module \"%s\"", path);
       iVar2 = -rv;
       switch (iVar2) {
       case 0x10000:
-          NuDebugMsgProlog("..\nu2.ps2\nucore\nufile.c", 0x1BC)
+          NuDebugMsgProlog(nufile_file, 0x1BC)
               ("Binding the IOP module failed");
           break;
       case 0x10004:
-          NuDebugMsgProlog("..\nu2.ps2\nucore\nufile.c", 0x1C0)
+          NuDebugMsgProlog(nufile_file, 0x1C0)
               ("The IOP module version does not match");
           break;
       case 0x10001:
-          NuDebugMsgProlog("..\nu2.ps2\nucore\nufile.c", 0x1C4)
+          NuDebugMsgProlog(nufile_file, 0x1C4)
               ("RPC to the IOP mailed");
           break;
       default:
-          NuDebugMsgProlog("..\nu2.ps2\nucore\nufile.c", 0x1C8)
+          NuDebugMsgProlog(nufile_file, 0x1C8)
               ("Unknown error code %d", rv);
           break;
       }
   } else {
-      NuDebugMsgProlog("..\nu2.ps2\nucore\nufile.c", 0x1CD)
+      NuDebugMsgProlog(nufile_file, 0x1CD)
           ("Successfully loaded IRX Module: %s", path);
   }
   return rv;
@@ -368,15 +370,15 @@ int NuFileOpen(char* file, enum nufilemode_e mode) {
         strcat(lfile, STR_006456B0);
     }
     if (NUFILE_READ_NOWAIT < mode) {
-        NuErrorProlog("..\\nu2.ps2\\nucore\\nufile.c", 0x214)(STR_006456C0);
+        NuErrorProlog(nufile_file, 0x214)(STR_006456C0);
     }
     fp = sceOpen(lfile, fmode[mode]);
     if (fp < 0) {
-        NuDebugMsgProlog("..\\nu2.ps2\\nucore\\nufile.c", 0x218)(
+        NuDebugMsgProlog(nufile_file, 0x218)(
             "!!!!!!!!!!!!!!!!!!! opening file %s failed!!!!!!!!!!!!!!!!!!!!1", lfile
         );
     } else {
-        NuDebugMsgProlog("..\\nu2.ps2\\nucore\\nufile.c", 0x21b)("opening file %s ok!(%d)", lfile);
+        NuDebugMsgProlog(nufile_file, 0x21b)("opening file %s ok!(%d)", lfile);
         fh = fp + 1;
         memset(&file_info[fp], 0, 0x20);
         file_info[fp].handle = fh;
@@ -385,7 +387,7 @@ int NuFileOpen(char* file, enum nufilemode_e mode) {
                 iVar5 = NuFileSeek(fh, 0, 2);
                 if (iVar5 >= 0)
                     break;
-                NuDebugMsgProlog("..\\nu2.ps2\\nucore\\nufile.c", 0x225)("NuFileOpen - size seek failed - retrying");
+                NuDebugMsgProlog(nufile_file, 0x225)("NuFileOpen - size seek failed - retrying");
             } while (1);
             file_info[fp].file_length = iVar5;
             if (mode == NUFILE_READ_NOWAIT) {
@@ -395,7 +397,7 @@ int NuFileOpen(char* file, enum nufilemode_e mode) {
             do {
                 if (NuFileSeek(fh, 0, 0) >= 0)
                     break;
-                NuDebugMsgProlog("..\\nu2.ps2\\nucore\\nufile.c", 0x230)(
+                NuDebugMsgProlog(nufile_file, 0x230)(
                     "NuFileOpen - size seek restore failed - retrying"
                 );
             } while (1);
@@ -505,12 +507,12 @@ int NuFileSize(char *fname) {
         }
         else {
           while (iVar2 = sceLseek(fd,0,1), iVar2 < 0) {
-            NuDebugMsgProlog("..\\nu2.ps2\\nucore\\nufile.c",0x306)
+            NuDebugMsgProlog(nufile_file,0x306)
             ("NuFilePos - seek failed %d - retrying",iVar2);
           }
         }
       }
-      NuDebugMsgProlog("..\\nu2.ps2\\nucore\\nufile.c",0x247)
+      NuDebugMsgProlog(nufile_file,0x247)
       ("closing file (%d)",iVar3);
       if (iVar3 >= 0x400) {
         NuMemFileClose(iVar3);
@@ -518,7 +520,7 @@ int NuFileSize(char *fname) {
       else {
         while( 1 ) {
           if (sceClose(iVar3) > -1) break;
-          NuDebugMsgProlog("..\\nu2.ps2\\nucore\\nufile.c",0x24e)
+          NuDebugMsgProlog(nufile_file,0x24e)
           ("NuFileClose - close failed, retrying");
         }
         if (file_info[iVar3].start_lsn != 0) {
@@ -557,19 +559,19 @@ void* NuFileLoad(char *fname) {
       iVar3 = file_info[iVar2 - 1].file_length;
     }
     if (iVar3 > 0) {
-      data = NuMemAllocFn(iVar3,"..\\nu2.ps2\\nucore\\nufile.c",0x35e);
+      data = NuMemAllocFn(iVar3,nufile_file,0x35e);
       if (data != 0) {
         NuFileRead(iVar2,data,iVar3);
       }
     }
-    NuDebugMsgProlog("..\\nu2.ps2\\nucore\\nufile.c",0x247)("closing file (%d)",iVar2);
+    NuDebugMsgProlog(nufile_file,0x247)("closing file (%d)",iVar2);
     if (iVar2 >= 0x400) {
       NuMemFileClose(iVar2);
     }
     else {
       iVar2--;
       while(sceClose(iVar2) < 0) {
-        NuDebugMsgProlog("..\\nu2.ps2\\nucore\\nufile.c",0x24e)
+        NuDebugMsgProlog(nufile_file,0x24e)
         ("NuFileClose - close failed, retrying");
       }
       if (file_info[iVar2].start_lsn != 0) {
@@ -615,14 +617,14 @@ int NuFileLoadBuffer(char *filename,void *mem,int buffsize) {
       }
       if ((size < buffsize) && (size != 0)) {
         while (NuFileRead(fh,mem,size) < 0) {
-          NuDebugMsgProlog("..\\nu2.ps2\\nucore\\nufile.c",0x391)
+          NuDebugMsgProlog(nufile_file,0x391)
           ("NuFileLoadBuffer - recoverable read failure - retrying");
           while (NuFileSeek(fh,0,0) < 0) {
-            NuDebugMsgProlog("..\\nu2.ps2\\nucore\\nufile.c",0x393)
+            NuDebugMsgProlog(nufile_file,0x393)
             ("NuFileLoadBuffer - recoverable seek failure - retrying");
           }
         }
-        NuDebugMsgProlog("..\\nu2.ps2\\nucore\\nufile.c",0x247)
+        NuDebugMsgProlog(nufile_file,0x247)
         ("closing file (%d)",fh);
         if (fh >= 0x400) {
           NuMemFileClose(fh);
@@ -630,7 +632,7 @@ int NuFileLoadBuffer(char *filename,void *mem,int buffsize) {
         else {
           fh--;
           while(sceClose(fh) < 0) {
-            NuDebugMsgProlog("..\\nu2.ps2\\nucore\\nufile.c",0x24e)
+            NuDebugMsgProlog(nufile_file,0x24e)
             ("NuFileClose - close failed, retrying");
           }
           if (file_info[fh].start_lsn != 0) {
@@ -640,7 +642,7 @@ int NuFileLoadBuffer(char *filename,void *mem,int buffsize) {
         }
       }
     }
-    NuDebugMsgProlog("..\\nu2.ps2\\nucore\\nufile.c",0x247)
+    NuDebugMsgProlog(nufile_file,0x247)
     ("closing file (%d)",fh);
     if (fh >= 0x400) {
       NuMemFileClose(fh);
@@ -648,7 +650,7 @@ int NuFileLoadBuffer(char *filename,void *mem,int buffsize) {
     }
       fh--;
       while(sceClose(fh) < 0) {
-        NuDebugMsgProlog("..\\nu2.ps2\\nucore\\nufile.c",0x24e)
+        NuDebugMsgProlog(nufile_file,0x24e)
         ("NuFileClose - close failed, retrying");
       }
       if (file_info[fh].start_lsn != 0) {
@@ -719,7 +721,7 @@ int NuFileRead(int fh, void* data, int size) {
                     sceLseek(info->handle, -iVar3, 1);
                     iVar3 = sceRead(info->handle, buff->data, info->buff_length);
                     if (iVar3 != info->buff_length) {
-                        NuErrorProlog("..\\nu2.ps2\\nucore\\nufile.c", 0x286)(STR_006456C0);
+                        NuErrorProlog(nufile_file, 0x286)(STR_006456C0);
                     }
                 }
             }

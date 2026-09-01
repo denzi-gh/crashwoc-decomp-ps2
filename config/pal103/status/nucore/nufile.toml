@@ -169,7 +169,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0001:00103018:NuFileGetBlkSize"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00103038:NuFileAppendPath"
@@ -217,7 +217,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0001:00103530:NuMemFileAddr"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00103550:NuMemFileRead"
@@ -241,7 +241,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0001:00103810:NuDatFileOpenSize"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00103830:NuDatFileClose"
