@@ -41,3 +41,56 @@
  *   0x00114568 NuCameraGet
  *   0x00114608 NuCameraTransformScissorClip
  */
+
+typedef struct NuMtx {
+    float m[4][4];
+} NuMtx;
+
+typedef struct NuCamera {
+    NuMtx mtx;
+    float fov;
+    float aspect;
+    float nearclip;
+    float farclip;
+} NuCamera;
+
+
+extern NuCamera global_camera;
+
+extern NuMtx D_0067A700;
+#define view_mtx D_0067A700
+
+extern int D_0062EB3C;
+#define state_buffer_count D_0062EB3C
+
+extern float D_00633048;
+#define clip_ratio_x D_00633048
+
+extern float D_0063304C;
+#define clip_ratio_y D_0063304C
+
+
+void NuCameraClearStateBuffer(void) {
+    state_buffer_count = 0;
+}
+
+
+NuCamera *NuCameraGetCam(void) {
+    return &global_camera;
+}
+
+
+NuMtx *NuCameraGetMtx(void) {
+    return &global_camera.mtx;
+}
+
+
+NuMtx *NuCameraGetViewMtx(void) {
+    return &view_mtx;
+}
+
+
+void NuCameraGetClippingRatios(float *xratio, float *yratio) {
+    *xratio = clip_ratio_x;
+    *yratio = clip_ratio_y;
+}

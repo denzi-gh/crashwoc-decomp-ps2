@@ -31,6 +31,81 @@
  *   0x0011c4b0 NuMtlDisplayMtl
  */
 
+typedef unsigned char u8;
+typedef unsigned long long u64;
+
+typedef struct NuMtl {
+    u8 unk000[0x120];
+    u64 flags;
+    u8 unk128[0x38];
+    struct NuMtl *next;
+    u8 unk164[0x6C];
+} NuMtl;
+
+typedef int (*NuMtlReadEventFunc)(NuMtl *mtl);
+
+#define NUMTL_VALID 0x01
+
+extern int NuMtlReadEventDefault(NuMtl *mtl);
+
+extern NuMtlReadEventFunc NuMtlReadEvent;
+
+extern NuMtl *D_0062EBA4;
+#define mtl_list D_0062EBA4
+
+extern NuMtl *D_0062EBDC;
+#define mtl_iter D_0062EBDC
+
+
+int NuMtlValid(NuMtl *mtl) {
+    u64 flags;
+
+    flags = mtl->flags;
+    return -((u8)flags & NUMTL_VALID);
+}
+
+
+int NuMtlGetSysBuffSize(int count) {
+    return count * sizeof(NuMtl);
+}
+
+
+NuMtlReadEventFunc NuMtlReadEventSetHandler(NuMtlReadEventFunc handler) {
+    NuMtlReadEventFunc old;
+
+    old = NuMtlReadEvent;
+    if (handler) {
+        NuMtlReadEvent = handler;
+    } else {
+        NuMtlReadEvent = NuMtlReadEventDefault;
+    }
+    return old;
+}
+
+
 void *NuMtlGetStateBlockDma(void *dma) {
     return dma;
+}
+
+
+NuMtl *NuMtlIterate(int restart) {
+    NuMtl *mtl;
+
+    if (restart) {
+        mtl = mtl_list;
+        if (mtl) {
+            mtl_iter = mtl->next;
+        }
+        return mtl;
+    }
+    mtl = mtl_iter;
+    if (mtl) {
+        mtl_iter = mtl->next;
+    }
+    return mtl;
+}
+
+
+int NuMtlReadEventDefault(NuMtl *mtl) {
+    return 0;
 }
