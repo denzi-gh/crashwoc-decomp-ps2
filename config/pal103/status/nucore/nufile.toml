@@ -105,7 +105,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0001:00102be0:NuFileOpenSize"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00102c20:NuFileClose"
@@ -137,7 +137,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00102ec0:NuFileReadChar"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00102ee8:NuFileWrite"
@@ -145,27 +145,27 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00102f08:NuFileWriteFloat"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00102f30:NuFileWriteInt"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00102f58:NuFileWriteUnsignedInt"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00102f80:NuFileWriteShort"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00102fa8:NuFileWriteChar"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00102fd0:NuFileWriteString"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00103018:NuFileGetBlkSize"
@@ -233,7 +233,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0001:00103728:NuDatFileRead"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00103760:NuDatFileSeek"
@@ -245,7 +245,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00103830:NuDatFileClose"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00103860:NuDatOpen"

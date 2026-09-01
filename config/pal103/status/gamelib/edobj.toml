@@ -285,23 +285,23 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019fdb0:edobjcbCancelInstanceMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019fdd8:edobjcbCancelSwitchTypeMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019fe00:edobjcbCancelSwitchMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019fe28:edobjcbCancelAnimPropertiesMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019fe50:edobjcbCancelWayPropertiesMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019fe78:edobjcbSetBouncyPlayerGrav"
@@ -337,11 +337,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0071:001a0220:edobjcbCancelLocalSoundMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:001a0248:edobjcbCancelParticleTypeMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:001a0270:edobjcbLocalParticleTypeMenu"
@@ -349,7 +349,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0071:001a03e8:edobjcbCancelLocalParticleMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:001a0410:edobjcbParticleMenu"
@@ -361,7 +361,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0071:001a0650:edobjcbCancelBouncyMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:001a0678:edobjClose"
@@ -389,7 +389,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0071:001a0a78:edobjcbCancelLocalSoundTypeMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:001a0aa0:edobjcbCancelLocalParticleTypeMenu"

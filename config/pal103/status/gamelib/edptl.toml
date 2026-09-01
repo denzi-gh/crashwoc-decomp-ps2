@@ -365,7 +365,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0070:001951e0:cbCancelChangeGenRateMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00195208:cbChangeETimeMenu"
@@ -385,7 +385,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0070:00195518:cbCancelMessageMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00195540:cbSelEffectList"
@@ -393,7 +393,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0070:00195610:cbCancelEffectListMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00195638:edptlcbSetSwitchId"
@@ -409,11 +409,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0070:00195850:edptlcbCancelSwitchMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00195878:edptlcbCancelGroupMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:001958a0:edptlcbSetMasterGroup"
@@ -429,7 +429,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00195940:edptlcbCancelDpadModeMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00195968:edptlcbJumpToGameLocation"
@@ -437,7 +437,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0070:00195998:cbPtlCancelTypeMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:001959c0:cbPtlCancelColMenu"
@@ -449,7 +449,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0070:00195a28:edptlcbCancelBounceMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00195a50:cbChangeNumCollSpheres"
@@ -477,11 +477,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0070:00195e68:edptlcbCancelSoundIDMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00195e90:edptlcbCancelSoundControlMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00195eb8:edptlcbCancelSoundXMenu"
