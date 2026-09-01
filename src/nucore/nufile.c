@@ -90,7 +90,7 @@ struct fileinfo_s {
     int buff_start;  	            /* 0x10 */
     int buff_length;  	            /* 0x14 */
     int use_buff;  	            /* 0x18 */
-    int start_lsn;  	            /* 0x1c */
+    int start_lsn;  	            /* 0x1c or struct filebuff_s* buff; */
 }; /* 0x20 */
 
 struct NUDATFINFO_s {
@@ -147,7 +147,10 @@ struct nudathdr_s* curr_dat;
 int nufile_buffering_enabled;
 int nufile_deviceid;
 char working_dir[256];
-int fmode[4];
+int fmode[4]; 
+int nufile_deviceid;
+int nufile_try_packed;
+char* iop_img_name = "cdrom0:\\SYS\\IOPRP23.IMG;1";
 
 void* NuMemFileAddr(int fh)
 {
@@ -486,6 +489,83 @@ void* NuFileLoad(char *fname) {
   return data;
 }
 
+extern char RO_62BAB0[];
+extern char RO_62BC50[];
+extern char RO_62BC68[];
+extern char STR_0062BCB8[];
+extern char STR_0062BCF0[];
+
+extern int NuPPLoadBuffer(int fh, void * mem, int buffsize);
+extern int NuDatFileLoadBuffer(struct nudathdr_s* ndh, char * fname, void * mem, int buffsize);
+
+int NuFileLoadBuffer(char *filename,void *mem,int buffsize) {
+  int size;
+  int fh;
+  
+  size = 0;
+  if (curr_dat != 0) {
+    size = NuDatFileLoadBuffer(curr_dat,filename,mem,buffsize);
+  }
+  if (size != 0) return size;
+  fh = NuFileOpen(filename,NUFILE_READ);
+  if (fh != 0) {
+    if (nufile_try_packed != 0) {
+      size = NuPPLoadBuffer(fh,mem,buffsize);
+    }
+    else {
+      if (fh >= 0x800) {
+        size = NuDatFileOpenSize(fh);
+      }
+      else {
+        fh--;
+        size = file_info[fh].file_length;
+      }
+      if ((size < buffsize) && (size != 0)) {
+        while (NuFileRead(fh,mem,size) < 0) {
+          NuDebugMsgProlog("..\\nu2.ps2\\nucore\\nufile.c",0x391)
+          ("NuFileLoadBuffer - recoverable read failure - retrying");
+          while (NuFileSeek(fh,0,0) < 0) {
+            NuDebugMsgProlog("..\\nu2.ps2\\nucore\\nufile.c",0x393)
+            ("NuFileLoadBuffer - recoverable seek failure - retrying");
+          }
+        }
+        NuDebugMsgProlog("..\\nu2.ps2\\nucore\\nufile.c",0x247)
+        ("closing file (%d)",fh);
+        if (fh >= 0x400) {
+          NuMemFileClose(fh);
+        }
+        else {
+          fh--;
+          while(sceClose(fh) < 0) {
+            NuDebugMsgProlog("..\\nu2.ps2\\nucore\\nufile.c",0x24e)
+            ("NuFileClose - close failed, retrying");
+          }
+          if (file_info[fh].start_lsn != 0) {
+            file_info[fh].start_lsn = 0;
+          }
+          memset(&file_info[fh],0,0x20);
+        }
+      }
+    }
+    NuDebugMsgProlog("..\\nu2.ps2\\nucore\\nufile.c",0x247)
+    ("closing file (%d)",fh);
+    if (fh >= 0x400) {
+      NuMemFileClose(fh);
+      return size;
+    }
+      fh--;
+      while(sceClose(fh) < 0) {
+        NuDebugMsgProlog("..\\nu2.ps2\\nucore\\nufile.c",0x24e)
+        ("NuFileClose - close failed, retrying");
+      }
+      if (file_info[fh].start_lsn != 0) {
+        file_info[fh].start_lsn = 0;
+      }
+      memset(&file_info[fh],0,0x20);
+  }
+  return size;
+}
+
 int NuFileRead(int fh, void* data, int size) {
     struct fileinfo_s* info;
     int iVar1;
@@ -587,4 +667,38 @@ int NuFileRead(int fh, void* data, int size) {
         }
     }
     return __n_00;
+}
+
+extern int sceCdDiskReady(int mode);
+extern int sceCdInit(int mode);
+extern int sceCdMmode(int media);
+extern int sceFsReset();
+extern void sceSifInitRpc();
+extern int sceSifRebootIop(const char *img_name);
+extern int sceSifSyncIop();
+
+void NuFileInitEx(int deviceid,int rebootiop) {
+  nufile_deviceid = deviceid;
+  if ((deviceid == 1) || (deviceid == 3)) {
+    sceSifInitRpc(0);
+    sceCdInit(0);
+    if (rebootiop != 0) {
+      do {
+      } while (sceSifRebootIop(iop_img_name) == 0);
+      do {
+      } while (sceSifSyncIop() == 0);
+      sceSifInitRpc(0);
+      sceCdInit(0);
+    }
+    if (nufile_deviceid == 1) {
+      sceCdMmode(1);
+    }
+    else {
+      sceCdMmode(2);
+    }
+    sceFsReset();
+    sceCdDiskReady(0);
+  }
+  memset(memfiles,0,0x190);
+  memset(datfiles,0,0x230);
 }
