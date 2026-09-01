@@ -225,15 +225,15 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0060:0016b1e0:NuPs2GetCurrentBackBuffer"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0060:0016b210:NuPs2GetCurrentFrontBuffer"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0060:0016b240:NuPs2GetCurrentZBuffer"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0060:0016b270:NuPs2GetRenderRange"
@@ -265,7 +265,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0060:0016b430:ifnVif1"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0060:0016b440:ifnVBlankE"
@@ -285,4 +285,4 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0060:0016b770:GetElapsedTime"
-state = "asm"
+state = "matching"

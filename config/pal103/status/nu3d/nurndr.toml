@@ -305,7 +305,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0040:0012f800:NuRndrClose"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012f808:NuRndrBeginScene"
@@ -329,19 +329,19 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0040:0012fa98:NuRndrGlobalMtl"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012faa0:NuRndrFogColour"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012faa8:NuRndrFogDistance"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012fab0:NuRndrFogMode"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012fab8:NuRndrParticleGroup"
@@ -357,11 +357,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0040:0012fdf0:NuRndrLine3dDbg"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012fdf8:NuRndrLine3dDbgFlush"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012fe00:NuRndrTri3dClip"
@@ -373,7 +373,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0040:0012fe50:NuRndrQuad3d"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012fe58:NuRndrFlush"
@@ -381,7 +381,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0040:0012fea8:NuRndrShadowOnOff"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012feb0:NuRndrRectUV3diNS"
@@ -461,7 +461,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0040:00130920:NuRndrTest"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00130928:NuRndrAnglesZX"

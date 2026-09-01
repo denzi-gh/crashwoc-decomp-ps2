@@ -265,7 +265,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0070:001945f0:ParticleReset"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00194620:edppDestroyAllParticles"
@@ -273,7 +273,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0070:00194688:edppDestroyAllEffects"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:001946b8:edppRegisterLevel"
@@ -281,7 +281,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0070:00194708:edppRegisterPointerToGameCharLocation"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00194728:edppPtlDestroy"
@@ -333,7 +333,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0070:00194dd8:edptlcbApplyBounceOffset"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00194e38:edptlcbApplyBounceFactor"
@@ -417,7 +417,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0070:001958a0:edptlcbSetMasterGroup"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:001958b8:edptlcbSetGroup"
@@ -425,7 +425,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0070:00195930:edptlcbSetDpadMode"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00195940:edptlcbCancelDpadModeMenu"
@@ -601,7 +601,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0070:00196cf0:cbPtlSnapToggle"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00196d00:edptlcbResetParticles"
@@ -609,7 +609,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0070:00196d70:cbPtlCancel"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00196d78:edppClose"
@@ -621,7 +621,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0070:00196e78:edppApply"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00196e80:cbChangeName"
@@ -661,7 +661,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0070:00197130:cbPtlChangeSScale"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00197148:cbPtlCancelSScaleMenu"

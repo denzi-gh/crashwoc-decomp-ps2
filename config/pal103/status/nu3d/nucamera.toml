@@ -33,7 +33,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0031:00113690:NuCameraDestroy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0031:001136b8:NuCameraSetVPortClipMtx"
@@ -77,11 +77,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0031:00113b98:NuCameraGetProjectionMtx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0031:00113ba8:NuCameraGetScalingMtx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0031:00113bb8:NuCameraGetVPCSMtx"
@@ -89,15 +89,15 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0031:00113bc8:NuCameraGetPCMtx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0031:00113bd8:NuCameraGetPCSMtx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0031:00113be8:NuCameraGetVPCMtx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0031:00113bf8:NuCameraGetClipMtx"
@@ -133,7 +133,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0031:00114488:NuCameraDistSqr"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0031:001144b0:NuCameraDist"
@@ -149,7 +149,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0031:00114518:NuCameraClipTestPointVport"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0031:00114540:NuCameraClipTestPointScissor"
