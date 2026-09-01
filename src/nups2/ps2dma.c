@@ -39,3 +39,96 @@
  *   0x0016d5e0 CrcChain
  *   0x0016d700 VU1_DmaGetStatusI
  */
+
+typedef unsigned char u8;
+typedef unsigned short u16;
+typedef unsigned int u32;
+
+typedef struct DmaTag {
+    u16 qwc;
+    u8 pad;
+    u8 id;
+    u32 addr;
+    u32 vifcode[2];
+} __attribute__((aligned(16))) DmaTag;
+
+#define VIF0_CHCR       (*(volatile int *)0x10008000)
+#define VIF1_CHCR       (*(volatile int *)0x10009000)
+#define GIF_CHCR        (*(volatile int *)0x1000A000)
+#define SPR_FROM_CHCR   (*(volatile int *)0x1000D000)
+#define SPR_TO_CHCR     (*(volatile int *)0x1000D400)
+
+#define SCRATCHPAD_BASE 0x70000000
+
+extern DmaTag D_002EA550;
+extern DmaTag D_002EA570;
+extern u32 *D_0062F0E0;
+extern DmaTag *vpdmatag_curr;
+
+#define dmatag_cnt      D_002EA550
+#define dmatag_end      D_002EA570
+#define nuscratch_ptr   D_0062F0E0
+
+
+void NuScratchReset(void)
+{
+    nuscratch_ptr = (u32 *)SCRATCHPAD_BASE;
+}
+
+
+void NuScratchRelease(void)
+{
+    nuscratch_ptr = (u32 *)nuscratch_ptr[-1];
+}
+
+
+DmaTag *vpDmaTag_Cnt(DmaTag *tag)
+{
+    vpdmatag_curr = tag;
+    *tag = dmatag_cnt;
+    return tag + 1;
+}
+
+
+DmaTag *vpDmaTag_End(DmaTag *tag)
+{
+    vpdmatag_curr = tag;
+    *tag = dmatag_end;
+    return tag + 1;
+}
+
+
+int VU0_DmaGetStatus(void)
+{
+    return VIF0_CHCR & 0x100;
+}
+
+
+int SPR_DmaGetWriteStatus(void)
+{
+    return (SPR_TO_CHCR >> 8) & 1;
+}
+
+
+int SPR_DmaGetReadStatus(void)
+{
+    return (SPR_FROM_CHCR >> 8) & 1;
+}
+
+
+int GS_DmaGetWriteStatus(void)
+{
+    return (GIF_CHCR >> 8) & 1;
+}
+
+
+DmaTag *VifTagDummy(DmaTag *tag, void *user)
+{
+    return tag;
+}
+
+
+int VU1_DmaGetStatusI(void)
+{
+    return VIF1_CHCR & 0x100;
+}

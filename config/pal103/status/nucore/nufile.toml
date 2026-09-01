@@ -121,19 +121,19 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0001:00102e20:NuFileReadFloat"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00102e48:NuFileReadInt"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00102e70:NuFileReadUnsignedInt"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00102e98:NuFileReadShort"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00102ec0:NuFileReadChar"
@@ -141,7 +141,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0001:00102ee8:NuFileWrite"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00102f08:NuFileWriteFloat"
@@ -253,7 +253,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0001:00103880:NuDatSet"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00103888:NuDatFileFindTree"

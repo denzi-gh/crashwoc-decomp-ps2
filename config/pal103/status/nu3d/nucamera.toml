@@ -85,7 +85,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0031:00113bb8:NuCameraGetVPCSMtx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0031:00113bc8:NuCameraGetPCMtx"

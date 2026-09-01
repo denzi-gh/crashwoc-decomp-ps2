@@ -174,3 +174,115 @@
  *   0x00197310 cbMemCardCancelDeleteEffectsMenu
  *   0x00197338 CreateMessageMenu
  */
+
+struct edptlitem_s {
+    char pad00[0xC];
+    int value;
+    unsigned char toggle;
+    char pad11[0x3B];
+    float fvalue;
+};
+
+struct edppptl_s {
+    char pad00[0x10];
+    int debris;
+    char pad14[0x2C];
+    float bounceoffset;
+    char pad44[0x8];
+};
+
+struct debkey_s {
+    char pad000[0x558];
+    float bounceoffset;
+    char pad55C[0x10];
+};
+
+struct nuvec_s;
+
+extern struct edppptl_s edpp_ptls[256];
+
+extern int edpp_nextalloc;
+extern int edpp_nearest;
+extern int debris_render_group;
+extern int effect_types_used;
+
+extern void *debtab[128];
+extern struct debkey_s debkeydata[];
+
+extern int edpp_dpad_mode;
+extern int edpp_snap_enabled;
+extern void *edpp_active_menu;
+extern int D_0062F314;
+
+#define edpp_slider_scale D_0062F314
+
+extern void edmainRegisterLocVec(struct nuvec_s *loc);
+
+
+void ParticleReset(void) {
+    int i;
+
+    for (i = 0; i < 256; i++) {
+        edpp_ptls[i].debris = -1;
+    }
+    edpp_nextalloc = 0;
+}
+
+
+void edppDestroyAllEffects(void) {
+    int i;
+
+    for (i = 1; i < 128; i++) {
+        debtab[i] = 0;
+    }
+    effect_types_used = 1;
+}
+
+
+void edppRegisterPointerToGameCharLocation(struct nuvec_s *loc) {
+    edmainRegisterLocVec(loc);
+}
+
+
+void edptlcbApplyBounceOffset(void *menu, struct edptlitem_s *item) {
+    struct debkey_s *deb;
+
+    if (edpp_nearest == -1) {
+        return;
+    }
+    if (edpp_ptls[edpp_nearest].debris == -1) {
+        return;
+    }
+    edpp_ptls[edpp_nearest].bounceoffset = item->fvalue;
+    deb = &debkeydata[edpp_ptls[edpp_nearest].debris];
+    deb->bounceoffset = item->fvalue;
+}
+
+
+void edptlcbSetMasterGroup(void *menu, struct edptlitem_s *item) {
+    debris_render_group = item->fvalue;
+}
+
+
+void edptlcbSetDpadMode(void *menu, struct edptlitem_s *item) {
+    edpp_dpad_mode = item->value;
+}
+
+
+void cbPtlSnapToggle(void *menu, struct edptlitem_s *item) {
+    edpp_snap_enabled = item->toggle;
+}
+
+
+void cbPtlCancel(void) {
+    edpp_active_menu = 0;
+}
+
+
+void edppApply(void) {
+}
+
+
+void cbPtlChangeSScale(void *menu, struct edptlitem_s *item) {
+    edpp_slider_scale = item->fvalue;
+}

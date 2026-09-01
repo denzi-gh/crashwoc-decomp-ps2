@@ -137,28 +137,122 @@ struct nudatfile_s {
     int ppack;                /* 0x18 */
 }; /* 0x1c */
 
-struct nudatfile_s datfiles[20];
-struct filebuff_s file_buff[4];
-extern int forig[4];
-struct numemfile_s memfiles[20];
-struct fileinfo_s file_info[16];
-char* filesys_root[4];
-struct nudathdr_s* curr_dat;
-int nufile_buffering_enabled;
-int nufile_deviceid;
-char working_dir[256];
-int fmode[4]; 
-int nufile_deviceid;
-int nufile_try_packed;
-char* iop_img_name = "cdrom0:\\SYS\\IOPRP23.IMG;1";
+struct nublk_s {
+    int id;                   /* 0x00 */
+    int size;                 /* 0x04 */
+    int start;                /* 0x08 */
+}; /* 0x0c */
+
+extern struct nudatfile_s D_006396D8[20];
+extern struct filebuff_s D_00639B08[4];
+extern struct numemfile_s D_00639548[20];
+extern struct fileinfo_s D_00639908[16];
+extern struct nublk_s D_00633548[];
+extern char* D_00293720[4];
+extern struct nudathdr_s* D_0062E998;
+extern int D_0062E99C;
+extern char D_00293730[256];
+extern int D_00293700[4];
+extern int D_00293710[4];
+extern int D_0062E9A0;
+extern int D_0062E980;
+extern int nufile_buffering_enabled;
+extern int nufile_try_packed;
+extern char* iop_img_name;
+
+#define datfiles                D_006396D8
+#define file_buff               D_00639B08
+#define memfiles                D_00639548
+#define file_info               D_00639908
+#define filesys_root            D_00293720
+#define curr_dat                D_0062E998
+#define nufile_deviceid         D_0062E99C
+#define working_dir             D_00293730
+#define fmode                   D_00293700
+#define forig                   D_00293710
+#define file_time_count         D_0062E9A0
+#define blk_stack               D_00633548
+#define blk_level               D_0062E980
+
+int sceWrite(int fd, void *addr, int size);
+int NuFileRead(int fh, void *data, int size);
+
+
+float NuFileReadFloat(int fh)
+{
+    float v;
+
+    NuFileRead(fh, &v, sizeof(v));
+    return v;
+}
+
+
+int NuFileReadInt(int fh)
+{
+    int v;
+
+    NuFileRead(fh, &v, sizeof(v));
+    return v;
+}
+
+
+unsigned int NuFileReadUnsignedInt(int fh)
+{
+    unsigned int v;
+
+    NuFileRead(fh, &v, sizeof(v));
+    return v;
+}
+
+
+short NuFileReadShort(int fh)
+{
+    short v;
+
+    NuFileRead(fh, &v, sizeof(v));
+    return v;
+}
+
+
+int NuFileWrite(int fh, void *data, int size)
+{
+    return sceWrite(fh - 1, data, size);
+}
+
+
+int NuFileGetBlkSize(void)
+{
+    return blk_stack[blk_level].size;
+}
+
 
 void* NuMemFileAddr(int fh)
 {
-  return memfiles[fh + -0x400].curr;
+    return memfiles[fh - 0x400].curr;
 }
 
-int NuDatFileOpenSize(int fh) {
-  return datfiles[fh - 0x800].len;
+
+int NuDatFileOpenSize(int fh)
+{
+    int ix = fh - 0x800;
+    struct nudatfile_s *df = &datfiles[ix];
+
+    return df->len;
+}
+
+
+struct nudathdr_s* NuDatOpenEx(char* fname, char** mem, int* used, short mode);
+
+
+struct nudathdr_s* NuDatOpen(char* fname, char** mem, int* used)
+{
+    return NuDatOpenEx(fname, mem, used, 0);
+}
+
+
+void NuDatSet(struct nudathdr_s* ndh)
+{
+    curr_dat = ndh;
 }
 
 
@@ -321,7 +415,6 @@ int NuFileOpen(char* file, enum nufilemode_e mode) {
 
 extern char RO_62BAB0[];
 extern char STR_006456C0[];
-extern int file_time_count;
 
 int sceLseek(int fd, int offset, int how);
 int sceRead(int fd, void * addr, int size);
