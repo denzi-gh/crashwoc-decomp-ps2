@@ -193,12 +193,19 @@ _CCOND_RE = re.compile(r"^\s*c\.(?:eq|lt|le|ueq|ult|ule|f|un|olt|ole)\.s\s+\$f")
 _LIS_RE = re.compile(r"^\s*li\.s\s+(\$f\d+),(\S+)\s*$")
 _LID_RE = re.compile(r"^\s*li\.d\s+(\$f\d+),(\S+)\s*$")
 # `li.s`/`li.d` into a *GPR* (not `$fN`): ee-gcc materializes the raw float/
-# double bit pattern inline in an integer register -- e.g. `li.d $5,1.0e1` to
-# pass 10.0 as the `s64` argument of the software double helpers (dpmul et al).
+# double bit pattern in an integer register -- e.g. `li.d $5,1.0e1` to pass
+# 10.0 as the `s64` argument of the software double helpers (dpmul et al).
 # This is not a .lit4/.lit8 pool load, and the decompals `as` rejects the
-# float-syntax GPR macro; retail expands it inline as an integer immediate
-# (`ori $a1,$zero,0x8048; dsll32 $a1,$a1,15` for 10.0). We rewrite it to the
-# integer `li`/`dli` the assembler does expand, over the raw bit pattern.
+# float-syntax GPR macro, so it must be rewritten. Sony's `as` picks one of two
+# expansions, and which one is visible in retail: a cheap image built inline
+# (10.0 -> `ori $a1,$zero,0x8048; dsll32 $a1,$a1,15`), or -- when inline would
+# cost more -- the constant pooled into the unit's own initialized data and
+# loaded `lui $at,%hi(SYM)` + `ld $reg,%lo(SYM)($at)` (every `f < 0.249`
+# soft-double compare in game/crate). Pooled bytes are data the hybrid must not
+# own, but retail already holds them and the function's own slice names the
+# slot, so a 64-bit image equal to a slot the slice addresses borrows it
+# (Lit4Mapper.map_gpr_pool8); everything else becomes the integer `li`/`dli`
+# the assembler does expand, over the raw bit pattern.
 _LI_GPR_RE = re.compile(r"^\s*(li\.[sd])\s+(\$(?!f\d)\S+),(\S+)\s*$")
 _GPREL_SYM_RE = re.compile(r"%gp_rel\(([A-Za-z_$][\w$]*)\)")
 
@@ -632,6 +639,39 @@ class Lit4Mapper:
             by_bits.setdefault(self._value8_at(addr), []).append(sym)
         return by_bits
 
+    def map_gpr_pool8(self, slice_text, context):
+        """Ordered {float64 bits: [retail symbols]} for the 64-bit constants
+        one slice loads out of pooled initialized data.
+
+        Sony's `as` pools a `li.d $gpr,<decimal>` whose image would cost more
+        to build inline than to load, putting it in the unit's own .rodata and
+        addressing it `lui $at,%hi(SYM)` + `ld $reg,%lo(SYM)($at)` -- unlike
+        .lit4/.lit8 this is %hi/%lo, not gp-relative, so map_for_slice8 never
+        sees it. The retail slice names the slots, so the hybrid borrows them
+        rather than owning the bytes. Slots stay in slice appearance order and
+        are consumed positionally, exactly like map_for_slice: gcc 2.95 does
+        not dedup equal doubles, so three source-level `0.249` literals get
+        three identical slots and each load addresses its own (FindLocalCrate:
+        D_0061EE90/98/A0).
+
+        A candidate must be 8-aligned (`ld`), lie in file-backed initialized
+        data, and hold exactly the wanted image. Only the 64-bit form borrows:
+        a 4-byte float image could plausibly coincide with unrelated data the
+        slice happens to reference, 8 bytes cannot. Constants with no such slot
+        fall through to the inline `dli` expansion, and the whole-unit byte
+        gate is the arbiter either way."""
+        by_bits = {}
+        seen = set()
+        for sym in _SYM_REF_RE.findall(slice_text):     # appearance order
+            if sym in seen:
+                continue
+            seen.add(sym)
+            addr = self._address_of(sym)
+            if addr is None or addr % 8 or not self._in_init_data(addr, 8):
+                continue
+            by_bits.setdefault(self._value8_at(addr), []).append(sym)
+        return by_bits
+
 
 def _sonyize(line):
     m = _MOVE_RE.match(line)
@@ -734,22 +774,22 @@ def _rewrite_lis(seg, version, unit_dir, name, addr, mapper_box):
     """
     if not any("li.s" in l or "li.d" in l for l in seg):
         return seg, []
-    maps = {}                      # size (4/8) -> {bits: [syms]}
-    used = {}                      # (size, bits) -> slots of that value spent
+    maps = {}                      # kind (4/8/"gpr8") -> {bits: [syms]}
+    used = {}                      # (kind, bits) -> slots of that value spent
     slice_cache = [None]
     out, externs = [], []
 
-    def slots_for(size, bits):
-        if size not in maps:
+    def slots_for(kind, bits):
+        if kind not in maps:
             if mapper_box[0] is None:
                 mapper_box[0] = Lit4Mapper(version)
             if slice_cache[0] is None:
                 slice_cache[0] = _slice_path(
                     version, unit_dir, name, addr).read_text()
-            fn = (mapper_box[0].map_for_slice if size == 4
-                  else mapper_box[0].map_for_slice8)
-            maps[size] = fn(slice_cache[0], name)
-        return maps[size].get(bits, ())
+            method = {4: "map_for_slice", 8: "map_for_slice8",
+                      "gpr8": "map_gpr_pool8"}[kind]
+            maps[kind] = getattr(mapper_box[0], method)(slice_cache[0], name)
+        return maps[kind].get(bits, ())
 
     for line in seg:
         ms, md = _LIS_RE.match(line), _LID_RE.match(line)
@@ -773,6 +813,24 @@ def _rewrite_lis(seg, version, unit_dir, name, addr, mapper_box):
                     except ValueError:
                         raise HybridError(
                             f"{name}: unparseable {op} constant {const!r}")
+                    # Costly images are pooled by Sony's `as` into unit-owned
+                    # data instead of built inline; borrow retail's slot when
+                    # the function's own slice addresses one holding exactly
+                    # these bytes (map_gpr_pool8), positionally per value.
+                    slots = slots_for("gpr8", bits) if op == "li.d" else ()
+                    k = used.get(("gpr8", bits), 0)
+                    if k < len(slots):
+                        sym = slots[k]
+                        used[("gpr8", bits)] = k + 1
+                        # Explicit %hi/%lo, not the `ld $reg,SYM` macro: under
+                        # -G8 an 8-byte `.extern` is a small symbol and the
+                        # macro would collapse to a single gp-relative load.
+                        out.append("\t.set\tnoat")
+                        out.append(f"\tlui\t$at,%hi({sym})")
+                        out.append(f"\tld\t{reg},%lo({sym})($at)")
+                        out.append("\t.set\tat")
+                        externs.append(f"\t.extern\t{sym}, 8")
+                        continue
                     # Emit `dli` (64-bit explicit) for BOTH sizes: `li` on a
                     # high-bit-set float32 image (e.g. -1.0 -> 0xBF800000) would
                     # `lui`-sign-extend into bits 32-63; `dli` sets all 64 bits
