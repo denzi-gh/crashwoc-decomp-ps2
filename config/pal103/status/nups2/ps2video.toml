@@ -141,7 +141,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0060:0016a8e8:NuPs2GetRenderWidth"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0060:0016a8f8:NuPs2GetRenderHeight"
@@ -249,11 +249,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0060:0016b2a0:timeUserReset"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0060:0016b2c0:timeUserRead"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0060:0016b2d0:NuIntAddAllHandlers"

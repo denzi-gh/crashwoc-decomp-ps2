@@ -57,7 +57,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0031:00113b18:NuCameraSetAxes"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0031:00113b40:NuCameraGetAxes"

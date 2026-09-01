@@ -179,6 +179,36 @@ _MTC1_RE = re.compile(r"^\s*mtc1\s+\$\w+\s*,\s*\$f\d+\s*$")
 _LIS_INLINE_RE = re.compile(r"^\s*li\.s\s+\$f\d+\s*,")
 _CCOND_RE = re.compile(r"^\s*c\.(?:eq|lt|le|ueq|ult|ule|f|un|olt|ole)\.s\s+\$f")
 
+# Unfilled branch delay slots. ee-gcc fills a delay slot itself only inside an
+# explicit `.set noreorder` / `.set nomacro` block; every branch it emits
+# outside one -- in practice the `j $31` ending a leaf function whose last
+# instruction the scheduler could not sink into the slot -- is left empty for
+# the assembler to fill, and the two assemblers fill it differently. Sony's
+# `as` always drops in a `nop`; the decompals `as` in `.set reorder` mode
+# instead *swaps* the preceding instruction into the slot. So retail reads
+#
+#     cvt.s.w $f0,$f0 / jr $31 / nop        (NuPs2GetRenderWidth @0x16A8E8)
+#
+# where the decompals `as` emits `jr $31 / cvt.s.w $f0,$f0` -- one word short,
+# shifting every function after it. Reproduce Sony's choice explicitly: wrap a
+# reorder-mode branch in `.set noreorder` and write the `nop` out. Where the
+# decompals `as` could not have swapped anyway it already emitted exactly this
+# nop, so the rewrite is a no-op there; the byte gates carry the proof.
+_SET_REORDER_RE = re.compile(r"^\s*\.set\s+(no)?reorder\s*$")
+_MNEMONIC_RE = re.compile(r"^\s+([a-z][a-z0-9._]*)\b")
+_BRANCH_OPS = frozenset((
+    "b", "bal", "j", "jr", "jal", "jalr",
+    "beq", "bne", "beqz", "bnez", "blez", "bgtz", "bltz", "bgez",
+    "bltzal", "bgezal", "bgt", "bge", "blt", "ble",
+    "bgtu", "bgeu", "bltu", "bleu", "bc1t", "bc1f",
+))
+
+
+def _is_branch(line):
+    m = _MNEMONIC_RE.match(line)
+    return bool(m) and m.group(1) in _BRANCH_OPS
+
+
 # Float-constant loads. ee-gcc emits `li.s $fN,<decimal>` and leaves the
 # materialization to the assembler: a constant whose float32 image has a
 # zero low half becomes an inline lui+mtc1 (no data, byte-exact, leave it
@@ -698,21 +728,41 @@ def _writes_fpr_via_mtc1(line):
 
 
 def _sonyize_seg(seg):
-    """`_sonyize` over one function segment, plus the mtc1 hazard nops.
+    """`_sonyize` over one function segment, plus the two assembler-gap nops.
 
-    Line-by-line except that a nop is materialized between an mtc1-writing
-    instruction and an adjacent FP compare (see _MTC1_RE): a hazard Sony's `as`
-    covers unconditionally and the decompals `as` only on a register
-    dependency. Comment/blank lines do not separate the two -- gcc emits its own
-    `#nop` markers between them, and those are only annotations (retail
-    ApplyFriction has no nop at one of them), never a nop to materialize.
+    Line-by-line, except for the two nops Sony's `as` writes and the decompals
+    `as` does not:
+
+      * between an mtc1-writing instruction and an adjacent FP compare (see
+        _MTC1_RE): a hazard Sony's `as` covers unconditionally and the
+        decompals `as` only on a register dependency. Comment/blank lines do
+        not separate the two -- gcc emits its own `#nop` markers between them,
+        and those are only annotations (retail ApplyFriction has no nop at one
+        of them), never a nop to materialize.
+      * in the delay slot of a branch gcc left unfilled (see _BRANCH_OPS):
+        Sony's `as` nops it, the decompals `as` swaps the preceding
+        instruction in. The branch is wrapped in `.set noreorder` so the swap
+        cannot happen, and the nop is written out.
     """
     out = []
     prev_insn = None
+    reorder = True
     for line in seg:
-        if _CCOND_RE.match(line) and prev_insn is not None \
-                and _writes_fpr_via_mtc1(prev_insn):
+        m = _SET_REORDER_RE.match(line)
+        if m:
+            reorder = m.group(1) is None
+            out.append(line)
+            continue
+        if (_CCOND_RE.match(line) and prev_insn is not None
+                and _writes_fpr_via_mtc1(prev_insn)):
             out.append("\tnop")
+        if reorder and _is_branch(line):
+            out.append("\t.set\tnoreorder")
+            out.append(_sonyize(line))
+            out.append("\tnop")
+            out.append("\t.set\treorder")
+            prev_insn = "\tnop"
+            continue
         out.append(_sonyize(line))
         if not _is_noise(line):
             prev_insn = line

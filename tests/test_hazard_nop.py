@@ -71,9 +71,11 @@ class TestHazardNop(unittest.TestCase):
         self.assertEqual(got, ["lw\t$2,0($4)", "c.le.s\t$f1,$f12"])
 
     def test_sonyize_rewrites_still_apply(self):
-        # _sonyize_seg must remain a superset of _sonyize.
+        # _sonyize_seg must remain a superset of _sonyize. (The trailing jump
+        # also picks up its delay-slot nop -- see tests/test_delay_slot.py.)
         got = _insns(["\tmove\t$2,$3", "\tj\t$31"])
-        self.assertEqual(got, ["daddu\t$2,$3,$0", "jr\t$31"])
+        self.assertEqual(got, ["daddu\t$2,$3,$0", ".set\tnoreorder",
+                               "jr\t$31", "nop", ".set\treorder"])
 
 
 if __name__ == "__main__":
