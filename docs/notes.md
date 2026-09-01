@@ -244,3 +244,372 @@ blockers:
   no `#nop` there, so the nop is purely Sony's `as`) plus gcc CSE-ing the two
   `(const_double 0.0)` operands of `dpcmp`/`dpsub` into one hoisted pseudo where
   retail rematerialises `$zero` at both sites. Both must be fixed together.
+
+## nups2/ps2dma + gamelib/terrain + gamelib/gcutscn, session 2026-09-01 (31 matched)
+
+Three units in parallel, 31 functions byte-exact, no blockers. Agents matched
+only; promotion was run sequentially afterwards because `promote.py` re-verifies
+the whole matching set per promotion (~2m48s at 508 functions) and concurrent
+promotions roll each other back.
+
+### Matching lever: bitfield store keeps the displacement folded
+
+`PlatInstRotate` is `lw 0x4C($v1)` / `and` / `or` / `sw 0x4C($v1)` with a
+*single* `addu $v1,$v1,$a0`. The obvious read-modify-write
+`p->status = (p->status & ~1) | (rot & 1)` makes gcc CSE the whole address
+(`addu $3,$3,76` plus `addu $3,$3,$4`, displacement 0) -- one instruction too
+many. A **bitfield store** (`status.bit.rotate = rot`) goes through
+`store_bit_field` on a single `MEM`, so the `+4` array base stays folded into the
+0x4C displacement and only one address `addu` is emitted.
+
+General rule: **when retail shows the same non-zero displacement on both the `lw`
+and the `sw` of a read-modify-write, the source was a bitfield assignment, not an
+explicit mask/or.**
+
+Corollaries, both useful as evidence when reading a listing:
+
+- Signedness decides how `~1` is materialised. With `u32`, `& ~1` becomes
+  `li $6,-65536; ori $6,$6,0xfffe` (0xFFFFFFFE stays positive in the 64-bit
+  HOST_WIDE_INT). In signed/bitfield context it is a single `addiu $r,$zero,-2`.
+  **A lone `addiu rX,$zero,-2` before an `and` means a signed or bitfield
+  operand.**
+- An unsigned 1-bit extract (`p->status.bit.hit`) gives `lw; srl 1; andi 1`;
+  a signed `(x >> 1) & 1` gives `sra` -- gcc 2.95 does not narrow
+  `ashiftrt`+`and` to `lshiftrt`.
+
+### Matching lever: `!(x & bit)` lowers to sra/xori/andi
+
+`return !(p->flags & 2);` compiles to `lw; sra $v0,$v0,1; xori $v0,$v0,1;
+andi $v0,$v0,1` -- the tested bit is shifted to bit 0, inverted, then masked.
+Do **not** read a retail `sra k / xori 1 / andi 1` triple as a bitfield or as
+`~(x>>k)&1`; the plain readable `!(x & (1<<k))` is the source. `(x & 2) == 0`
+and `!((x>>1)&1)` produce the same code; `~(x>>1)&1` does not (it emits `nor`).
+
+### Matching lever: memory-mapped registers are `li`, not %hi/%lo
+
+Retail's DMAC status readers materialise the register address as
+`lui $v1,0x1000 / ori $v1,$v1,0x8000 / lw $v0,0($v1)`. That is exactly what
+`*(volatile int *)0x10008000` produces: a CONST_INT address is not a legitimate
+MIPS address, so gcc `force_reg`s it into one `li`, which the assembler expands
+to `lui`+`ori`. Do not reach for an `extern` symbol or a shared struct base
+pointer -- retail rebuilds the full address per register (`VU0_DmaWrite`
+materialises 0x10008020, 0x10008030, 0x1000E010 and 0x10008000 separately), so
+one `#define REG (*(volatile int *)ADDR)` per register is the right source shape.
+A getter's `sra` (rather than `srl`) additionally proves the register is declared
+`volatile int`: `(chcr >> 8) & 1` only matches signed; `u32` yields `srl`.
+
+### Matching lever: `lq`/`sq` template copy needs `aligned(16)`
+
+`vpDmaTag_Cnt`/`_End` copy a 16-byte DMAtag template out of `.data` with a single
+`lq`/`sq` pair plus a separate `addiu $t0` for the address. Plain
+`*tag = template;` reproduces that exactly -- including the extra `addiu` and the
+register allocation -- **only** if the struct typedef carries
+`__attribute__((aligned(16)))`. Without it the type is 4-byte aligned and gcc
+emits four `lw`/`sw` pairs. The same recipe should unblock `vpDmaTag_Ref`
+(D_002EA560) and `vpDmaTag_EndEx` (D_002EA580); note D_002EA580 sits exactly at
+the exclusive end of unit-62's `.data` range 0x2ea460-0x2ea580 in `data_map.toml`,
+so that one needs a data-ownership check first.
+
+### Smaller facts
+
+- **`.extern sym, N` drives `%gp_rel`.** Declaring `extern <real 4-byte type>
+  sym;` makes gcc emit `.extern sym, 4`, and gas under `-G8` assembles a bare
+  `sw $4,sym` into `sw $a0, %gp_rel(sym)($gp)`. A function-pointer typedef is
+  enough -- no `D_` alias or definition is needed for a symbol already in
+  `symbol_addrs.txt`. This is the same size-driven rule as the nu3d/nucamera
+  note above, seen from the emission side.
+- **Two-sided bound folds to one `sltiu`.** `if ((id >= 0) && (id < 128))`
+  compiles to a single `sltiu $v0,$a0,0x80`; the parameter does not need to be
+  made unsigned.
+- **Trailing pad nops are free.** gcc's per-function `.align 3` produces retail's
+  nop padding, so a 12- or 20-byte body matches a 16- or 24-byte canonical extent
+  with no special handling.
+- **Probe before spending an attempt.** All three agents pre-validated candidate
+  codegen shapes with throwaway `tools/cc.py -S` compiles in a scratch dir, then
+  spent one `compile_diff` each. 29 of 31 functions matched on attempt 1.
+
+### Structure facts
+
+- **`TerrainSetType`**: `terr` @0x00, `platdata[128]` (stride 100, a real `mult`)
+  @0x04, `wallinfo` @0x3204, `TrackInfo[4]` (stride 0xC) @0x3208. So
+  `platdata[i].curmtx` = `CurTerr + i*100 + 0x44`, `.status` = `+0x4C`, whose
+  bit 0 = rotate and bit 1 = hit (the `status |= 2` in `NewTerrainScaleY` is the
+  same bit). `ScanTerrId`/`AllocTerrId`'s two parallel 0xC-stride pointers are
+  just gcc's givs for `CurTerr->TrackInfo[c].ptrid` and `&CurTerr->TrackInfo[c]`;
+  a plain `for (c = 0; c < 4; c++)` reproduces both.
+- **`DmaTag`** (16 B, 16-aligned): `u16 qwc @0; u8 pad @2; u8 id @3`
+  (`vpDmaTag_Set` writes `id << 4` into byte 3 = DMAtag ID bits 30:28);
+  `u32 addr @4`; `u32 vifcode[2] @8/@0xC`. Retail templates: `D_002EA550` CNT,
+  `D_002EA560` REF, `D_002EA570` END, `D_002EA580` ENDEX. `D_0062F0E0`
+  (`.sdata`, gp-relative) is the scratchpad bump pointer -- `NuScratchReset` sets
+  it to 0x70000000, the allocators store the previous value as a link word and
+  advance past it, `NuScratchRelease` pops via `ptr[-1]`. Channel CHCRs used
+  here: 0x10008000 VIF0, 0x10009000 VIF1, 0x1000A000 GIF, 0x1000D000 fromSPR,
+  0x1000D400 toSPR. `VifTagDummy` is a dead identity stub -- no `jal` and no data
+  reference anywhere in `asm/text.s`.
+- **`NuGCutScene`** (0x94 B): `0x00 next`, `0x04 prev`, `0x08 name[16]`,
+  `0x18 mtx` (NuMtx, 0x40), `0x58 def`, `0x5C centre` (vec4, transformed in
+  place), `0x6C flags`, `0x70 time` (1.0f at Start), `0x74 speed` (1.0f at
+  Create), `0x78 camsys`, `0x7C rigidsys`, `0x80 charsys`, `0x84 locatorsys`,
+  `0x88 triggersys`, `0x8C chain`, `0x90 endcallback`. Flags: 0x002
+  running/started, 0x010 matrix set, 0x100 disabled, 0x200 updated-this-frame.
+  `D_0063322C` is the list head. Handler globals with signatures read off their
+  `jalr` sites: `NuCutSceneCharacterRender(scene, def, character, desc, float)`
+  @0x62F7E0, `NuCutSceneCharacterRelease(character)` @0x62F7E4,
+  `NuCutSceneFindCharacters(void)` @0x62F7E8,
+  `NuCutSceneCharacterCreateData(desc, character, heap)` @0x62F7EC,
+  `NuCutSceneRigidCollisionCheck(rigid, NuMtx*)` @0x62F7F0, and `locatorfns`
+  @0x62F7F4 -- a pointer to a name-terminated array of 8-byte
+  `{const char *name; void (*func)();}` entries indexed by `sll 3`.
+
+## 100-function parallel session, 2026-09-01 (10 units, 96 matched, 4 blockers)
+
+Ten waves of ten single-function agents across ten disjoint units (nucore/nufile,
+nu3d/nustream, nu3d/nucamera, nu3d/nutex, nu3d/nurndr, nu3d/nulight,
+nups2/ps2video, nups2/clipping, gamelib/debris, gamelib/edptl, gamelib/edobj).
+Agents matched only; promotion ran afterwards in a single serial chain.
+
+### Reading the disassembly: shape rules
+
+- **Guard polarity: ee-gcc emits the INVERTED branch and places the `if`-body
+  block LAST.** Retail's `bgez $a0,L / <inline return 0> / L: <body>` comes from
+  the *positive* guard `if (i >= 0) { return body; } return 0;`. The intuitive
+  `if (i < 0) return 0; return body;` produces the mirror image and stalls around
+  30%. Whichever exit retail places inline is the source's trailing `return`.
+- **Three handle templates, not interchangeable.** Value accessor:
+  `tex--; if (tex >= 0) { return TexList[tex].f; } return 0;`. Void mutator:
+  guards on the *original* handle with the decrement inside the body --
+  `if (tex > 0) { tex--; TexList[tex].f = v; }` giving `blez` with the `addiu -1`
+  in the delay slot. Forwarder: see below.
+- **Never write `arr[i - 1].f` when retail shows an explicit `addiu -1`.** gcc
+  folds `(i-1)*STRIDE` into `i*STRIDE - STRIDE` and absorbs it into the store
+  displacement, costing an instruction. A separate `i--;` statement is a real
+  assignment and is never folded. Same trap as `&arr[expr - CONST]`, which folds
+  into `%hi/%lo(sym-N)`.
+- **`sll rX,16 / sra rX,16` in a tiny setter proves a `short` PARAMETER**, not a
+  mask: SN ee-gcc sign-extends an incoming `s16` argument in the prologue even
+  when its only use is an `sh` that would truncate anyway. Declaring it `s32`
+  deletes both instructions.
+- **A 3-instruction leaf whose only real instruction is
+  `addiu $vN,$gp,%gp_rel(SYM)` returns the ADDRESS**, not the value.
+- **`sltiu $v0,$v0,1` on a call result is plain `!call(...)`** -- no cast, no
+  `== 0` spelling.
+- **A prolog / `jal` / `nop` / epilog body with NO argument setup is a pure
+  forwarding wrapper** whose parameter list equals the callee's; the `nop` is
+  expected, not a reorg artefact. The argument-zeroing variant emits one
+  `daddu $aN,$zero,$zero` (or `addiu $aN,$zero,<default>`) per defaulted
+  argument, the last landing in the `jal` delay slot with no `nop`. EE EABI
+  passes arguments in `$a0-$a3, $t0, $t1`, so a wrapper touching `$t0`/`$t1` is
+  passing arguments, not scratch.
+- **`beqz $a0,L; lw $v0,A / jr $ra; lw $v0,B / L: jr $ra; nop` is plain
+  `if (p) return B; return A;`** -- the taken-path load is hoisted into the
+  branch delay slot and the target block collapses to a duplicated
+  `jr $ra; nop`. No ternary, no `movz`.
+
+### Loop direction has THREE cases
+
+gcc-2.95's `check_dbra_loop` may reverse a whole loop, induction variable
+included:
+
+- **descending retail pointer** = a reversed *ascending-from-0* source loop;
+- **ascending pointer + down-counter** = an ascending loop whose reversal was
+  *blocked* -- by a `jal` in the body **or** by a non-zero start index;
+- the order of the two constant setups disambiguates: **`li -1` before
+  `li <n-1>` means the counter was synthesized by reversal** (`move_movables`
+  inserts the hoisted `li -1` before `loop_start`, `check_dbra_loop` inserts its
+  counter init afterwards); the reverse order means the source already counted
+  down.
+
+### Addressing: which register the `addu` writes into
+
+For a `%hi/%lo`-based array element with a non-power-of-2 stride, the inline
+subscript and the pointer local pick different `addu` operand orders. Mechanism:
+MIPS `LEGITIMIZE_ADDRESS` swaps `PLUS(symbol, reg)` so the register comes first,
+which only the pointer form reaches.
+
+**Probe both spellings rather than trusting a remembered direction** -- this
+session found the mapping stated one way in the existing gamelib/terrain note and
+the other way in gamelib/edptl, and both were correct for their own function.
+`(arr + i)->f` and `(*(arr + i)).f` behave as the pointer local. The rule does
+*not* apply when the base is a pointer LOADED from memory (e.g.
+`extern NuTex *TexList`) -- there the plain subscript already gives the right
+form.
+
+### Types steer register ties
+
+**`int` parameters plus explicit `(u64)` casts are not cosmetic.** Packing
+`x0 | x1<<16 | y0<<32 | y1<<48` with `u64` parameters ties the whole `or` chain
+to `$a0`; with `int` parameters and explicit casts it ties each `or` to the
+*shifted* operand, which is what retail has. gcc folds the SI-to-DI cast away
+(the EE ABI keeps `int` sign-extended) but the extra RTL moves local-alloc's tie.
+`unsigned int` emits real zero-extension pairs, `u16` an `andi` per operand, no
+cast at all gives 32-bit `sll`. Eight spellings were probed; only one matches.
+Field order inside the expression is free -- write the readable ascending form.
+
+### Signature recovery for stubs: three evidence classes
+
+An empty body emits the same two words for ANY signature, so name the parameters
+from the CALLERS and say which class you are in:
+
+1. **`jal` sites with argument setup** -- signature inferable (14 sites gave
+   `NuRndrLine3dDbg` a 7-parameter signature; one site gave
+   `NuRndrShadowOnOff(int)`; three sites gave `NuLightFogClear(int)`).
+2. **call sites with no argument setup and no `$v0` consumer** -- positive
+   evidence for `void f(void)`.
+3. **no callers at all** -- the signature is an explicit *style choice*; say so
+   plainly rather than dressing it up as inferred (`NuRndrFogMode`,
+   `NuRndrQuad3d`, `NuRndrTest`, `NuLightClose`).
+
+Do not infer the flavour from the name: the PS2 fog trio looked like setters and
+were empty stubs, while `NuLightFogClear` was reported as a stub by one agent and
+is in fact a one-store setter. Read the second instruction.
+
+### The assembler delay-slot wall (4 blockers, one family, discriminator unproven)
+
+Where **gcc leaves the `jr $ra` delay slot unfilled** (bare `j $31` in
+`.set reorder` mode, no `.set noreorder` wrapper of its own), SN's `as` left
+retail's `nop` and the decompals `as` swaps the preceding instruction in:
+
+| function | swapped-in instruction |
+|---|---|
+| `NuPs2GetRenderWidth` 0x16a8e8 | `cvt.s.w` |
+| `timeUserRead` 0x16b2c0 | volatile `lw` |
+| `timeUserReset` 0x16b2a0 | volatile `sw` |
+| `NuCameraSetAxes` 0x113b18 | plain `sw` |
+
+All four are faithful near-matches (75-80%, codegen otherwise
+instruction-identical) left at `state = asm`.
+
+**Do not apply a blanket fix.** SN's `as` demonstrably DOES swap FP arithmetic
+into return delay slots -- retail has 13 `add.s`, 8 `div.s`, 3 `mul.s`, 133
+`swc1`, 4 `lwc1` there, and ~13 already-promoted functions depend on it. A
+blanket `.set noreorder` over compiled segments would regress every one. Two
+narrower fixes were proposed, each verified against its own case:
+
+- **volatile accesses**: gcc 2.95 brackets every volatile access with
+  `#.set volatile` / `#.set novolatile` -- emitted *commented out* because this
+  build targets gas, while SN's gcc was configured for the MIPS assembler and
+  emitted them live. `tools/gen_hybrid.py::_sonyize` ignores those lines
+  entirely. Translating them to `.set noreorder` / `.set reorder` reproduces
+  retail exactly and is self-delimiting.
+- **the general unfilled `j $31`**: wrap compiled segments in `.set noreorder`
+  (as retail slices already are) or materialize an explicit `nop` -- but this is
+  the form that would regress the FP cases, so it needs a discriminator first.
+
+Observed so far: SN's `as` moves `add.s`/`div.s`/`mul.s`/`sub.s`/`swc1`/`lwc1`,
+but not `sw`, `cvt.s.w`, or volatile accesses. **A single unifying rule is not
+established** -- this is an open question, not a solved one. Either fix needs a
+full `ninja verify-promoted` before it can be trusted. Related but distinct: a
+trailing `sdr` (part of a length-2 unaligned-store pattern) is never swapped by
+either assembler, so `NuMtxMul`/`NuMtxSetIdentity` match today.
+
+### Traps and tooling
+
+- **`.extern` of an INVENTED name breaks the whole unit.** Unlike `.comm` it
+  emits no bytes, but gas still puts the name in the symtab and `compile_diff`
+  reports it under `unresolved_symbols` and refuses to link -- even when no
+  from-C function references it. Every file-scope name must be a registered
+  symbol, a splat `dlabel` from `asm/data/*.s`, or a `D_<vram>` alias.
+- **`.comm` is a promotion landmine that hides until the first promotion.** A
+  unit with zero `matching` functions never builds a hybrid, so pre-existing
+  file-scope tentative definitions sit undetected; `nucore/nufile` had nine and
+  no function in it could ever have been promoted. Sweep `src/**` for bare
+  `T name[N];` at file scope before targeting a fresh unit.
+- **`verify_candidate --level unit` shells out to the repo-wide
+  `verify_promoted.py`** (only `--skip-image` differs) and rewrites the shared
+  `build/pal103/verify_results.json`. It races other agents and returns results
+  reflecting *other* units' state. Only `--level function` is safe while agents
+  run in parallel. A lone `exact: false` with a null byte count should be re-run
+  before it is believed.
+- **`get_context.facts.gp_relative_references` is unreliable for objects over the
+  `-G8` threshold** -- it mislabelled 64-byte `NuMtx` externs as gp-relative six
+  times in one unit. The disassembly (rank 2) is authoritative.
+- **`tools/cc.py -o foo.s` writes an OBJECT, not assembly.** Use `cc.compile_s`.
+  Probe files must live inside the repo (e.g. `build/probe/`) and dispatch takes
+  a repo-relative path -- an absolute `/work/...` path gets mangled by Git Bash.
+  Putting many candidate spellings in ONE probe TU costs one container
+  round-trip; agents that probed first matched on attempt 1 almost without
+  exception.
+- **`promote.py` re-verifies the entire matching set on every promotion** (~3 min
+  at ~550 functions) and **two promotion loops must never run at once** -- this
+  session lost about an hour to a duplicated drainer whose concurrent promotions
+  rolled each other back while each reported all-PASS. Serial promotion after
+  all agents finish is the only reliable order.
+- **Line endings are mixed across `src/`** (nurndr/nufile/nucamera/edobj are
+  CRLF; ps2video/nutex/debris/edptl/clipping are LF). Check bytes before a
+  scripted edit; a blanket normalization rewrites the whole file.
+
+### Retail source bug: `NuTexHeight` returns the width
+
+`NuTexHeight` (0x11e910) and `NuTexWidth` (0x11e8e8) are byte-for-byte identical
+apart from labels -- both end `lw $v0, 0x4($v1)`. It is a copy-paste bug in the
+original source, matched faithfully. The no-comment rule means `src/nu3d/nutex.c`
+carries no hint of this, so **do not "fix" it** -- that breaks the match.
+
+### Structure facts
+
+- **`NuTex`** (0xE0, 1-based handles, gp-relative *pointer* `D_0062EBEC`):
+  `type` @0x00, `width` @0x04, u16 refcount / 64-bit flag word @0x18
+  (0x10000 in-use, 0x20000 external memory), GS VRAM address @0xCC.
+  `D_0062EBF0` allocation cursor, `D_0063305C` slot count, `gs_botfree`
+  0x0062ec40, `gs_top` 0x0062ec3c, temp pointer `D_00633068`.
+- **`nu3d/nucamera` matrix block is NOT a contiguous 0x40 run**: view A700,
+  projection A740, scaling A780, VPC A840, PC A880, VPCS A8C0, PCS A900 -- A7C0
+  and A800 belong to something else. Read each function's own `%hi/%lo` pair.
+  `D_002D3EB0` = camera axes (`NuVec3`, 12 B), `D_002D3EF0` = translation row
+  (`global_camera + 0x30`), `D_00614170` = the TU's `__FILE__` string (pinning
+  `NuCameraDestroy` to source line 74).
+- **`nu3d/nustream`**: `D_00633020`/`D_00633024` output-buffer bases,
+  `D_00633028` write cursor, `D_00633038` packed SCISSOR_1 (SCAX0/SCAX1/SCAY0/
+  SCAY1 at bits 0/16/32/48; argument order is `(x0,y0,x1,y1)`, so `a1`/`a2` are
+  swapped relative to field order), `D_00633040` packed XY-offset,
+  `rndrstream_scissor_id` 0x62EA8C / `rndrstream_xyoffset_id` 0x62EA8E (15-bit
+  dirty counters), `D_0062EA74` buffer index, `D_0062EA90` buffer size,
+  `D_0062EAC0` ZB-state valid flag, `rndrstream_free` 0x0062EB00 bump cursor.
+- **`nucore/nufile`**: `fmode` D_00293700, `forig` D_00293710, `filesys_root`
+  D_00293720, `working_dir[256]` D_00293730, `curr_dat` D_0062E998,
+  `nufile_deviceid` D_0062E99C, `file_time_count` D_0062E9A0, `blk_level`
+  D_0062E980, `blk_stack` D_00633548 (`{int id; int size; int start;}`, 0xC),
+  `memfiles[20]` 0x14 D_00639548, `datfiles[20]` 0x1C D_006396D8 (`len` @0x08),
+  `file_info[16]` 0x20 D_00639908, `file_buff[4]` **0x10008** D_00639B08.
+  Handles: fd-range (<0x400) = OS fd + 1, memfiles = `fh - 0x400`, datfiles =
+  `fh - 0x800`. `NuDatOpenEx(char*, char**, int*, short)`. **Still open**: the
+  `struct filebuff_s` typedef says `char data[4096]` but the stride proves
+  0x10000.
+- **`gamelib/debris`**: `debkeydata` @0x00320eb0 stride **0x56C** -- `s16 on`
+  @0x484, `s16 limit` @0x486, `s16 index` @0x48A, `s32 trigger` @0x548,
+  `float bounceoffset` @0x558, `s16 groupid` @0x568. `struct debpart_s` (32 B):
+  `pos` @0x00, `time` @0x0C, `mom` @0x10, `rate` @0x1C. `gencodetab` @0x00320E70
+  = momentum-adjust callbacks `void (*)(deb_s*, debinfo_s*, debpart_s*)`,
+  `[1]=FromPos [2]=FromPosRev [3]=FromSplash [4]=FromAshRock [5]=FromPosRevTree
+  [6]=FromPosAll`; `gensorttab` @0x00320E48 = the `GenDebIndex*` generators.
+  `DebrisOff`/`DebrisOn` take `s32 *key`; `DebrisSetTrigger`/`SetGroupID` take
+  the key directly. **`src/game/ai.c`, `src/gamelib/debris.c` and
+  `src/gamelib/edptl.c` each declare a partial view of this same record -- worth
+  unifying.**
+- **`gamelib/edptl` / `gamelib/edobj` share the editor menu-item struct**:
+  `int value` @0x0C, `unsigned char toggle` @0x10, `float fvalue` @0x4C, with the
+  callback ABI `(void *menu, struct <unit>item_s *item)`. `int_global =
+  item->fvalue;` gives `lwc1`/`cvt.w.s`/`swc1` with **no** `mfc1` (that appears
+  only when the destination is narrower than 32 bits). Not every callback has the
+  `edobj_nearest != -1` guard -- adding one emits a branch that is not there, and
+  `frame_size == 0` / `reg_mask == 0` proves there is no trailing call.
+  `ObjectPath` @0x0048cb00 stride 0x3EC: `+0x04` anim speed (float), `+0x10` anim
+  pause (float), `+0x24` anim start offset (int), `+0x12C` switch type,
+  `+0x130` switch id (int), `+0x134` switch var (float), `+0x138` switch delay
+  (float), `+0x320 int sound_id[8]`, `+0x340 int sound_type[8]`,
+  `+0x360 float sound_timing[8]`, `+0x380` float[3] positions stride 0xC,
+  emitter count `+0x20`. `edpp_ptls` @0x00484f18 256 x 0x4C: position @0x00,
+  debris handle @0x10 (-1 = free), `float bounceoffset` @0x40. Editor state block
+  `.sdata` 0x0062F624..0x0062F650 (nine ints, `-1` = nothing selected).
+- **`nups2/clipping`**: `clipflags` 0x0062F1EC; outcodes RIGHT 0x01, LEFT 0x02,
+  TOP 0x04, BOTTOM 0x08, ZFAR 0x10, ZNEAR 0x20; `ClipPolygon` does
+  `clipflags <<= 6` per vertex, so `TestPrev*` reads the same bits shifted by 6.
+  All ten `TestCurr*`/`TestPrev*` are now matched.
+- **`nups2/ps2video`**: EE timers T0_MODE 0x10000010 (`0x82` = clock/256 +
+  start), T0_COUNT 0x10000000, T1_COUNT 0x10000800 (swap timing). GS frame
+  packets are GIF A+D pairs: FRAME_1 at `D_002EA190`/`D_002EA300`, ZBUF_1 at
+  +0x10 (`D_002EA1A0`/`D_002EA310`); parity polarity differs per accessor and
+  must be read, not assumed. `ifnVif1` is the VIF1 INTC handler and contains the
+  **first inline asm in `src/`** -- SCE's `ExitHandler()` as
+  `__asm__ volatile ("sync\n\tei")`, which needs no special hybrid handling.

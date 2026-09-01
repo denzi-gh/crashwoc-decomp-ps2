@@ -66,3 +66,100 @@
  *   0x00189f30 AddDebrisEffectToStack
  *   0x00189f60 DebrisDoSounds
  */
+
+#include "creature.h"
+
+struct debinfo_s;
+
+struct deb_s {
+    u8 pad_000[0x484];
+    s16 on;
+    s16 limit;
+    u8 pad_488[2];
+    s16 index;
+    u8 pad_48C[0xDC];
+    s16 groupid;
+    u8 pad_56A[2];
+};
+
+struct debpart_s {
+    struct nuvec_s pos;
+    f32 time;
+    struct nuvec_s mom;
+    f32 rate;
+};
+
+extern struct deb_s debkeydata[];
+extern s32 debris_render_group;
+extern struct nuvec_s *CutoffCameraVec;
+
+void SetupDebris(void);
+struct debpart_s *GenDebIndex(struct deb_s *deb, struct debinfo_s *info);
+
+
+void DebrisOff(s32 *key) {
+    struct deb_s *deb;
+
+    if (*key != -1) {
+        deb = &debkeydata[*key];
+        deb->on = 0;
+    }
+}
+
+
+void DebrisOn(s32 *key) {
+    struct deb_s *deb;
+
+    if (*key != -1) {
+        deb = &debkeydata[*key];
+        deb->on = 1;
+    }
+}
+
+
+void DebrisSetGroupID(s32 key, s16 groupid) {
+    struct deb_s *deb;
+
+    if (key != -1) {
+        deb = &debkeydata[key];
+        deb->groupid = groupid;
+    }
+}
+
+
+void DebrisSetup(void) {
+    SetupDebris();
+}
+
+
+void DebrisSetRenderGroup(s32 group) {
+    debris_render_group = group;
+}
+
+
+void DebrisRegisterCutoffCameraVec(struct nuvec_s *vec) {
+    CutoffCameraVec = vec;
+}
+
+
+struct debpart_s *GenDebIndexSort(struct deb_s *deb, struct debinfo_s *info) {
+    return GenDebIndex(deb, info);
+}
+
+
+void GenDebMomAdjFromPosRev(struct deb_s *deb, struct debinfo_s *info, struct debpart_s *part) {
+    part->mom.x = -part->pos.x;
+    part->mom.z = -part->pos.z;
+}
+
+
+void GenDebMomAdjFromSplash(struct deb_s *deb, struct debinfo_s *info, struct debpart_s *part) {
+    part->mom.x = part->pos.x * 4.0f;
+    part->mom.z = part->pos.z * 4.0f;
+}
+
+
+void GenDebMomAdjFromAshRock(struct deb_s *deb, struct debinfo_s *info, struct debpart_s *part) {
+    part->mom.x = part->pos.x * 16.0f;
+    part->mom.z = part->pos.z * 16.0f;
+}

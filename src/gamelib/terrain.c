@@ -187,12 +187,20 @@ typedef struct {
     f32 radius;               /* 0x34 */
 } TerrainSituType; /* 0x38 */
 
+typedef union {
+    u32 all;
+    struct {
+        u32 rotate : 1;
+        u32 hit : 1;
+    } bit;
+} PlatStatusType;
+
 typedef struct {
     u8 oldmtx[0x40];          /* 0x00 */
     void *curmtx;             /* 0x40 */
     s16 terrno;               /* 0x44 */
     s16 instance;             /* 0x46 */
-    u32 status;               /* 0x48 */
+    PlatStatusType status;    /* 0x48 */
     s16 hitcnt;               /* 0x4C */
     s16 pad;                  /* 0x4E */
     f32 plrgrav;              /* 0x50 */
@@ -1163,6 +1171,33 @@ s32 ShadowInfo(void) {
     return -1;
 }
 
+s32 ShadowRoofInfo(void) {
+    if (ShadRoofPoly != 0) {
+        return ShadRoofPoly->info[0];
+    }
+    return -1;
+}
+
+s32 EShadowRoofInfo(void) {
+    if (EShadRoofPoly != 0) {
+        return EShadRoofPoly->info[1];
+    }
+    return -1;
+}
+
+void ShadowDir(struct nuvec_s *dir) {
+    dir->x = ShadPoly->pnts[1].x - ShadPoly->pnts[0].x;
+    dir->y = ShadPoly->pnts[1].y - ShadPoly->pnts[0].y;
+    dir->z = ShadPoly->pnts[1].z - ShadPoly->pnts[0].z;
+}
+
+s32 EShadowInfo(void) {
+    if (EShadPoly != 0) {
+        return EShadPoly->info[1];
+    }
+    return -1;
+}
+
 void noterraininit(void) {
     terraincnt = 0;
     platinrange = 0;
@@ -1171,6 +1206,30 @@ void noterraininit(void) {
     curSphereter = 0;
     TerrShapeAdjCnt = 0;
     curPickInst = 0;
+}
+
+void UpdatePlatinst(s32 id, void *mtx) {
+    if ((id >= 0) && (id < 128)) {
+        CurTerr->platdata[id].curmtx = mtx;
+    }
+}
+
+void PlatInstRotate(s32 id, s32 rot) {
+    CurTerr->platdata[id].status.bit.rotate = rot;
+}
+
+s32 PlatInstGetHit(s32 id) {
+    if ((id >= 0) && (id < 128)) {
+        return CurTerr->platdata[id].status.bit.hit;
+    }
+    return 0;
+}
+
+void TerrainPlatGetMtx(s32 id, u8 **oldmtx, void **curmtx) {
+    if (id >= 0) {
+        *oldmtx = CurTerr->platdata[id].oldmtx;
+        *curmtx = CurTerr->platdata[id].curmtx;
+    }
 }
 
 s32 TerrainPlatId(void) {
@@ -1194,6 +1253,28 @@ void TerrFlush(void) {
     curSphereter = 0;
     TerrShapeAdjCnt = 0;
     curPickInst = 0;
+}
+
+TerrainTrackInfoType *ScanTerrId(void *id) {
+    s32 c;
+
+    for (c = 0; c < 4; c++) {
+        if (CurTerr->TrackInfo[c].ptrid == id) {
+            return &CurTerr->TrackInfo[c];
+        }
+    }
+    return 0;
+}
+
+TerrainTrackInfoType *AllocTerrId(void) {
+    s32 c;
+
+    for (c = 0; c < 4; c++) {
+        if (CurTerr->TrackInfo[c].ptrid == 0) {
+            return &CurTerr->TrackInfo[c];
+        }
+    }
+    return 0;
 }
 
 void OffPlat(void) {
@@ -1414,7 +1495,7 @@ track_info_done:
                 ShadNorm = TerI->uhitnorm;
                 if ((TerI->uhitnorm.y > D_0062CDC4) && (TerI->hitterrno >= 0) &&
                     (CurTerr->terr[TerI->hitterrno].type == 1)) {
-                    CurTerr->platdata[TerrShapeAdjCnt * CurTerr->terr[TerI->hitterrno].info].status |= 2;
+                    CurTerr->platdata[TerrShapeAdjCnt * CurTerr->terr[TerI->hitterrno].info].status.all |= 2;
                 }
             }
             if (TerrShapeAdjCnt != 0) {

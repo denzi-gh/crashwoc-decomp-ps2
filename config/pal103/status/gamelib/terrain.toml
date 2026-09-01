@@ -297,19 +297,19 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:001822f8:ShadowRoofInfo"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00182318:EShadowRoofInfo"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00182338:ShadowDir"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00182370:EShadowInfo"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00182390:FindPlatInst"
@@ -317,11 +317,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0068:00182410:UpdatePlatinst"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00182438:PlatInstRotate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00182468:PlatInstBounce"
@@ -329,7 +329,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0068:001824c8:PlatInstGetHit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:001824f8:PlatImpactInfo"
@@ -341,7 +341,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00182550:TerrainPlatGetMtx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00182588:TerrainPlatId"
@@ -381,11 +381,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00182898:ScanTerrId"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:001828d8:AllocTerrId"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00182918:FullDeflect"

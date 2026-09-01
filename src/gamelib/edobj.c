@@ -103,3 +103,118 @@
  *   0x001a0b18 edobjcbSetSoundType
  *   0x001a0b78 edobjcbCancelSoundTypeMenu
  */
+
+struct nugscn_s;
+
+struct edobjitem_s {
+    char pad00[0x4C];
+    float fvalue;
+};
+
+struct edobject_s {
+    char pad000[0x24];
+    int anim_start_offset;
+    char pad028[0x130 - 0x28];
+    int switch_id;
+    float switch_var;
+    float switch_delay;
+    char pad13c[0x340 - 0x13C];
+    int sound_type[8];
+    float sound_timing[8];
+    char pad380[0x3EC - 0x380];
+};
+
+extern struct edobject_s ObjectPath[];
+
+extern struct nugscn_s *edobj_base_scene;
+extern void *edobj_active_menu;
+extern void *edobj_options_menu;
+extern int edobj_nearest;
+extern int edobj_nearest_sound;
+extern int edobj_waypoint_mode;
+extern int edobj_copy_mode;
+extern int edobj_particle_mode;
+extern int edobj_sound_mode;
+extern int edobj_particle_type;
+extern int edobj_sound_type;
+extern int edobj_snap_xz;
+extern int edobj_snap_y;
+
+extern void edbitsRegisterLevel(char *filename, int whatgame);
+extern void eduiMenuDestroy(void *menu);
+
+
+void edobjRegisterLevel(char *filename, int whatgame)
+{
+    edbitsRegisterLevel(filename, whatgame);
+}
+
+
+void edobjRegisterBaseScene(struct nugscn_s *scene)
+{
+    edobj_base_scene = scene;
+}
+
+
+void edobjcbCancelOptMenu(void)
+{
+    edobj_active_menu = 0;
+}
+
+
+void edobjcbChangeAnimStartOffset(void *menu, struct edobjitem_s *item)
+{
+    if (edobj_nearest != -1) {
+        ObjectPath[edobj_nearest].anim_start_offset = item->fvalue;
+    }
+}
+
+
+void edobjcbSetSwitchId(void *menu, struct edobjitem_s *item)
+{
+    if (edobj_nearest != -1) {
+        ObjectPath[edobj_nearest].switch_id = item->fvalue;
+    }
+}
+
+
+void edobjcbSetSwitchDelay(void *menu, struct edobjitem_s *item)
+{
+    if (edobj_nearest != -1) {
+        ObjectPath[edobj_nearest].switch_delay = item->fvalue;
+    }
+}
+
+
+void edobjcbSetSwitchVar(void *menu, struct edobjitem_s *item)
+{
+    if (edobj_nearest != -1) {
+        ObjectPath[edobj_nearest].switch_var = item->fvalue;
+    }
+}
+
+
+void edobjcbSetSoundTiming(void *menu, struct edobjitem_s *item)
+{
+    ObjectPath[edobj_nearest].sound_timing[edobj_nearest_sound] = item->fvalue;
+}
+
+
+void edobjClose(void)
+{
+    eduiMenuDestroy(edobj_options_menu);
+}
+
+
+void edobjEnter(void)
+{
+    edobj_nearest = -1;
+    edobj_waypoint_mode = 0;
+    edobj_copy_mode = 0;
+    edobj_particle_mode = 0;
+    edobj_sound_mode = 0;
+    edobj_particle_type = -1;
+    edobj_sound_type = -1;
+    edobj_snap_xz = 0;
+    edobj_snap_y = 0;
+}

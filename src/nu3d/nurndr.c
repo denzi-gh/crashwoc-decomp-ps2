@@ -117,3 +117,53 @@
  *   0x00130920 NuRndrTest
  *   0x00130928 NuRndrAnglesZX
  */
+
+typedef unsigned int u32;
+
+extern struct numtl_s *D_00633078;
+#define GlobalMtl D_00633078
+
+extern int nurndr_shadowson;
+
+
+void NuRndrClose(void) {
+}
+
+
+void NuRndrGlobalMtl(struct numtl_s *mtl) {
+    GlobalMtl = mtl;
+}
+
+
+void NuRndrFogColour(u32 colour) {
+}
+
+
+void NuRndrFogDistance(float near, float far) {
+}
+
+
+void NuRndrFogMode(u32 mode) {
+}
+
+
+void NuRndrLine3dDbg(u32 colour, float x0, float y0, float z0, float x1, float y1, float z1) {
+}
+
+
+void NuRndrLine3dDbgFlush(void) {
+}
+
+
+int NuRndrQuad3d(void *verts, struct numtl_s *mtl) {
+    return 1;
+}
+
+
+void NuRndrShadowOnOff(int on) {
+    nurndr_shadowson = on;
+}
+
+
+void NuRndrTest(void) {
+}

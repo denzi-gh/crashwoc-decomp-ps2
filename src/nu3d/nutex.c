@@ -50,3 +50,92 @@
  *   0x0011ef80 NuTexSetZBuffer
  *   0x0011eff8 NuTexGetTextAddr
  */
+
+typedef unsigned char u8;
+typedef unsigned short u16;
+
+typedef struct NuTex {
+    int type;
+    int width;
+    u8 unk008[0x10];
+    u16 refcount;
+    u8 unk01A[0xB2];
+    int gsaddr;
+    u8 unk0D0[0x10];
+} NuTex;
+
+extern NuTex *D_0062EBEC;
+#define TexList D_0062EBEC
+
+extern int gs_botfree;
+extern int D_00633068;
+#define gs_tempfree D_00633068
+
+extern int NuTexReadBitmapMMEx(char *name, int mipmaps, int *addr, int *addrend);
+extern int NuTexCreateEx(NuTex *spec, void *extmem, int extsize);
+extern int NuTexRecoverNativeDataEx(int tex, void *dest, int size, int header, int image, int palette);
+
+
+int NuTexGetSysBuffSize(int count) {
+    return count * sizeof(NuTex);
+}
+
+
+int NuTexReadBitmap(char *name) {
+    return NuTexReadBitmapMMEx(name, 0, 0, 0);
+}
+
+
+int NuTexReadBitmapMM(char *name, int mipmaps) {
+    return NuTexReadBitmapMMEx(name, mipmaps, 0, 0);
+}
+
+
+int NuTexCreate(NuTex *spec) {
+    return NuTexCreateEx(spec, 0, 0);
+}
+
+
+int NuTexType(int tex) {
+    tex--;
+    if (tex >= 0) {
+        return TexList[tex].type;
+    }
+    return 0;
+}
+
+
+int NuTexWidth(int tex) {
+    tex--;
+    if (tex >= 0) {
+        return TexList[tex].width;
+    }
+    return 0;
+}
+
+
+int NuTexHeight(int tex) {
+    tex--;
+    if (tex >= 0) {
+        return TexList[tex].width;
+    }
+    return 0;
+}
+
+
+int NuTexRecoverNativeData(int tex, void *dest, int size) {
+    return NuTexRecoverNativeDataEx(tex, dest, size, 1, 1, 1);
+}
+
+
+void NuTexFlushTemp(void) {
+    gs_tempfree = gs_botfree;
+}
+
+
+void NuTexAssignAddr(int tex, int addr) {
+    if (tex > 0) {
+        tex--;
+        TexList[tex].gsaddr = addr;
+    }
+}
