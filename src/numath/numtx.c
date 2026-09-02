@@ -56,6 +56,61 @@
 void NuVecNorm(struct nuvec_s *dst, struct nuvec_s *src);
 void NuMtxAlignZ(struct numtx_s *m, struct nuvec_s *v);
 extern float NuTrigTable[];
+extern struct numtx_s D_002921a0; //gm
+
+void NuMtxSetRotateXYZ(struct numtx_s* m, struct nuangvec_s* a)
+{
+    float sx; 
+    float cx; 
+    float sy;
+    float cy; 
+    float sz; 
+    float cz;
+    
+	cx = NuTrigTable[a->x + 0x4000 & 0xffff];
+	sx = NuTrigTable[a->x & 0xffff];
+	cy = NuTrigTable[a->y + 0x4000 & 0xffff];
+	sy = NuTrigTable[a->y & 0xffff];
+	cz = NuTrigTable[a->z + 0x4000 & 0xffff];
+	sz = NuTrigTable[a->z & 0xffff];
+	m->_00 = cy * cz;
+	m->_01 = cy * sz;
+	m->_02 = -sy;
+	m->_03 = 0.00000000f;
+	m->_10 = sx * sy * cz - cx * sz;
+	m->_11 = sx * sy * sz + cx * cz;
+	m->_12 = sx * cy;
+	m->_13 = 0.00000000f;
+	m->_23 = 0.00000000f;
+	m->_30 = 0.00000000f;
+	m->_31 = 0.00000000f;
+	m->_32 = 0.00000000f;
+	m->_33 = 1.00000000f;
+	m->_20 = cx * sy * cz + sx * sz;
+	m->_21 = cx * sy * sz - sx * cz;
+	m->_22 = cx * cy;
+}
+
+void NuMtxMul(struct numtx_s* dest, struct numtx_s* a, struct numtx_s* b)
+{
+	D_002921a0._00 = a->_00 * b->_00 + a->_01 * b->_10 + a->_02 * b->_20;
+	D_002921a0._01 = a->_00 * b->_01 + a->_01 * b->_11 + a->_02 * b->_21;
+	D_002921a0._02 = a->_00 * b->_02 + a->_01 * b->_12 + a->_02 * b->_22;
+	D_002921a0._03 = 0.00000000f;
+	D_002921a0._10 = a->_10 * b->_00 + a->_11 * b->_10 + a->_12 * b->_20;
+	D_002921a0._11 = a->_10 * b->_01 + a->_11 * b->_11 + a->_12 * b->_21;
+	D_002921a0._12 = a->_10 * b->_02 + a->_11 * b->_12 + a->_12 * b->_22;
+	D_002921a0._13 = 0.00000000f;
+	D_002921a0._20 = a->_20 * b->_00 + a->_21 * b->_10 + a->_22 * b->_20;
+	D_002921a0._21 = a->_20 * b->_01 + a->_21 * b->_11 + a->_22 * b->_21;
+	D_002921a0._22 = a->_20 * b->_02 + a->_21 * b->_12 + a->_22 * b->_22;
+	D_002921a0._23 = 0.00000000f;
+	D_002921a0._30 = a->_30 * b->_00 + a->_31 * b->_10 + a->_32 * b->_20 + b->_30;
+	D_002921a0._31 = a->_30 * b->_01 + a->_31 * b->_11 + a->_32 * b->_21 + b->_31;
+	D_002921a0._32 = a->_30 * b->_02 + a->_31 * b->_12 + a->_32 * b->_22 + b->_32;
+	D_002921a0._33 = 1.00000000f;
+	*dest = D_002921a0;
+}
 
 void NuMtxTranslate(struct numtx_s *m, struct nuvec_s *v)
 {
