@@ -449,17 +449,6 @@ void NuMtxInvR(struct numtx_s *dst, struct numtx_s *src)
     dst->_33 = 1.0f;
 }
 
-void NuMtxLookAtZ(struct numtx_s *m, struct nuvec_s *v)
-{
-    struct nuvec_s d;
-
-    d.x = v->x - m->_30;
-    d.y = v->y - m->_31;
-    d.z = v->z - m->_32;
-    NuVecNorm(&d, &d);
-    NuMtxAlignZ(m, &d);
-}
-
 void NuMtxSkewSymmetric(struct numtx_s *m, struct nuvec_s *v)
 {
     m->_00 = 0.0f;
