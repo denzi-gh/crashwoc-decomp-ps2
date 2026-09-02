@@ -39,6 +39,13 @@ struct nuvec_s {
     float z;
 }; /* 0xC */
 
+struct nuangvec_s
+{
+    int x;
+    int y;
+    int z;
+}; /* 0xC */
+
 struct nuvec4_s {
     float x;
     float y;
