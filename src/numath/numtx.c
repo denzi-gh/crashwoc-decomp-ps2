@@ -185,7 +185,55 @@ void NuMtxInvRSS(struct numtx_s* dest, struct numtx_s* m)
 
 void NuVecCross(struct nuvec_s* dest, struct nuvec_s* a, struct nuvec_s* b);
 float NuVecDot(struct nuvec_s* a, struct nuvec_s* b);
+float NuFabs(float);
+float NuFsqrt(float); 
 extern float FLT_00643780;
+
+void NuMtxAlignZ(struct numtx_s* m, struct nuvec_s * v)
+{
+  float *a;
+  float *b;
+  float fVar1;
+  float fVar2;
+  float fVar3;
+  
+  a = &m->_10;
+  b = &m->_20;
+  fVar2 = m->_00 * m->_00 + m->_01 * m->_01 + m->_02 * m->_02;
+  fVar3 = m->_10 * m->_10 + m->_11 * m->_11 + m->_12 * m->_12;
+  fVar1 = NuFsqrt((m->_20 * m->_20 + m->_21 * m->_21 + m->_22 * m->_22) /
+                  (v->x * v->x + v->y * v->y + v->z * v->z));
+  m->_20 = fVar1 * v->x;
+  m->_21 = fVar1 * v->y;
+  m->_22 = fVar1 * v->z;
+  fVar1 = NuVecDot((struct nuvec_s*)a,(struct nuvec_s*)b);
+  fVar1 = NuFabs(fVar1);
+  if (FLT_00643780 < fVar1) {
+    NuVecCross((struct nuvec_s*)a,(struct nuvec_s*)b,(struct nuvec_s*)m);
+    fVar1 = NuFsqrt(fVar3 / (m->_10 * m->_10 + m->_11 * m->_11 + m->_12 * m->_12));
+    m->_10 = m->_10 * fVar1;
+    m->_11 = m->_11 * fVar1;
+    m->_12 = m->_12 * fVar1;
+    NuVecCross((struct nuvec_s*)m,(struct nuvec_s*)a,(struct nuvec_s*)b);
+    fVar1 = NuFsqrt(fVar2 / (m->_00 * m->_00 + m->_01 * m->_01 + m->_02 * m->_02));
+    m->_00 = m->_00 * fVar1;
+    m->_01 = m->_01 * fVar1;
+    m->_02 = m->_02 * fVar1;
+  }
+  else {
+    NuVecCross((struct nuvec_s*)m,(struct nuvec_s*)a,(struct nuvec_s*)b);
+    fVar1 = NuFsqrt(fVar2 / (m->_00 * m->_00 + m->_01 * m->_01 + m->_02 * m->_02));
+    m->_00 = m->_00 * fVar1;
+    m->_01 = m->_01 * fVar1;
+    m->_02 = m->_02 * fVar1;
+    NuVecCross((struct nuvec_s*)a,(struct nuvec_s*)b,(struct nuvec_s*)m);
+    fVar1 = NuFsqrt(fVar3 / (m->_10 * m->_10 + m->_11 * m->_11 + m->_12 * m->_12));
+    m->_10 = m->_10 * fVar1;
+    m->_11 = m->_11 * fVar1;
+    m->_12 = m->_12 * fVar1;
+  }
+  return;
+}
 
 void NuMtxTranslate(struct numtx_s *m, struct nuvec_s *v)
 {
