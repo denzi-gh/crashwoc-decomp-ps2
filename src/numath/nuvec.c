@@ -62,25 +62,24 @@ f32 NuMtxDet3(struct numtx_s *mtx);
 extern f32 NuTrigTable[];
 
 void NuVecRotateAxis(struct nuvec_s *dst, struct nuvec_s *src, void *unused,
-                     struct nuvec_s *rot)
-{
-    f32 sx = NuTrigTable[(int)rot->x & 0xffff];
-    f32 sy = NuTrigTable[(int)rot->y & 0xffff];
-    f32 sz = NuTrigTable[(int)rot->z & 0xffff];
+                     struct nuvec_s *rot) {
     f32 cx = NuTrigTable[(int)(rot->x + 16384.0f) & 0xffff];
+    f32 sx = NuTrigTable[(int)rot->x & 0xffff];
     f32 cy = NuTrigTable[(int)(rot->y + 16384.0f) & 0xffff];
+    f32 sy = NuTrigTable[(int)rot->y & 0xffff];
     f32 cz = NuTrigTable[(int)(rot->z + 16384.0f) & 0xffff];
+    f32 sz = NuTrigTable[(int)rot->z & 0xffff];
     f32 x = src->x * (cy * cz) +
             src->y * (sx * sy * cz - cx * sz) +
             src->z * (cx * sy * cz + sx * sz);
-    f32 z = src->y * (sx * cy) + src->z * (cx * cy) - src->x * sy;
     f32 y = src->x * (cy * sz) +
             src->y * (sx * sy * sz + cx * cz) +
             src->z * (cx * sy * sz - sx * cz);
 
+    f32 z = src->y * (sx * cy) + src->z * (cx * cy) - src->x * sy;
     dst->x = x;
-    dst->z = z;
     dst->y = y;
+    dst->z = z;
 }
 
 void NuVecMtxTranslate(struct nuvec_s *dst, struct nuvec_s *src,
@@ -401,23 +400,27 @@ void NuVecLerp(struct nuvec_s *dst, struct nuvec_s *a, struct nuvec_s *b,
 f32 NuVecDist(struct nuvec_s *a, struct nuvec_s *b, struct nuvec_s *diff)
 {
     struct nuvec_s local;
-    f32 first;
-    f32 last;
+    f32 temp;
 
     if (diff == 0) {
         local.x = a->x - b->x;
         local.y = a->y - b->y;
         local.z = a->z - b->z;
-        first = local.x * local.x + local.y * local.y;
-        last = local.z * local.z;
+        diff = &local;
+        temp = diff->x * diff->x;
+        temp += diff->y * diff->y;
+        temp += diff->z * diff->z;
     } else {
-        diff->x = a->x - b->x;
+        temp = a->x;
+        temp -= b->x;         
+        diff->x = temp;
         diff->y = a->y - b->y;
         diff->z = a->z - b->z;
-        first = diff->x * diff->x + diff->y * diff->y;
-        last = diff->z * diff->z;
+        temp = diff->x * diff->x;
+        temp += diff->y * diff->y;
+        temp += diff->z * diff->z;
     }
-    return NuFsqrt(first + last);
+    return NuFsqrt(temp);
 }
 
 f32 NuVecDistSqr(struct nuvec_s *a, struct nuvec_s *b,
@@ -443,45 +446,45 @@ f32 NuVecDistSqr(struct nuvec_s *a, struct nuvec_s *b,
     return first + last;
 }
 
-f32 NuVecXZDist(struct nuvec_s *a, struct nuvec_s *b,
-                struct nuvec_s *diff)
+f32 NuVecXZDist(struct nuvec_s *a, struct nuvec_s *b,struct nuvec_s *diff)
 {
     struct nuvec_s local;
-    f32 first;
-    f32 last;
+    f32 temp;
 
     if (diff == 0) {
         local.x = a->x - b->x;
         local.y = 0.0f;
         local.z = a->z - b->z;
-        first = local.x * local.x + local.y;
-        last = local.z * local.z;
+        diff = &local;
+        temp = diff->x * diff->x;
+        temp += diff->y;
+        temp += diff->z * diff->z;
     } else {
-        diff->x = a->x - b->x;
+        temp = a->x;
+        temp -= b->x;         
+        diff->x = temp;
         diff->y = 0.0f;
         diff->z = a->z - b->z;
-        first = diff->x * diff->x + diff->y;
-        last = diff->z * diff->z;
+        temp = diff->x * diff->x;
+        temp += diff->y;
+        temp += diff->z * diff->z;
     }
-    return NuFsqrt(first + last);
+    return NuFsqrt(temp);
 }
 
-f32 NuVecXZDistSqr(struct nuvec_s *a, struct nuvec_s *b,
-                   struct nuvec_s *diff)
-{
+f32 NuVecXZDistSqr(struct nuvec_s *a, struct nuvec_s *b, struct nuvec_s *diff) {
     struct nuvec_s local;
     f32 first;
     f32 last;
 
     if (diff == 0) {
-        struct nuvec_s *d = &local;
-
-        d->x = a->x - b->x;
-        d->y = 0.0f;
-        d->z = a->z - b->z;
-        first = d->x * d->x + d->y;
-        last = d->z * d->z;
-    } else {
+		local.x = a->x - b->x;
+		local.y = 0.0f;
+		local.z = a->z - b->z;
+        diff = &local;
+        first = diff->x * diff->x + diff->y;
+        last = diff->z * diff->z;
+    } else {       
         diff->x = a->x - b->x;
         diff->y = 0.0f;
         diff->z = a->z - b->z;
