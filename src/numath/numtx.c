@@ -529,28 +529,23 @@ void NuMtxTransposeR(struct numtx_s *dst, struct numtx_s *src)
     dst->_33 = src->_33;
 }
 
-void NuMtxInvR(struct numtx_s *dst, struct numtx_s *src)
-{
-    float a;
-    float b;
+void NuMtxInvR(struct numtx_s* dest, struct numtx_s* m) {
+    float tmp;
 
-    a = src->_01;
-    b = src->_10;
-    dst->_10 = a;
-    dst->_01 = b;
-    a = src->_02;
-    b = src->_20;
-    dst->_20 = a;
-    dst->_02 = b;
-    b = src->_21;
-    a = src->_12;
-    dst->_12 = b;
-    dst->_21 = a;
-    dst->_00 = src->_00;
-    dst->_11 = src->_11;
-    dst->_22 = src->_22;
-    dst->_30 = dst->_31 = dst->_32 = dst->_03 = dst->_13 = dst->_23 = 0.0f;
-    dst->_33 = 1.0f;
+    tmp = m->_01;
+    dest->_01 = m->_10;
+    dest->_10 = tmp;
+    tmp = m->_02;
+    dest->_02 = m->_20;
+    dest->_20 = tmp;
+    tmp = m->_12;
+    dest->_12 = m->_21;
+    dest->_21 = tmp;
+    dest->_00 = m->_00;
+    dest->_11 = m->_11;
+    dest->_22 = m->_22;
+    dest->_30 = dest->_31 = dest->_32 = dest->_03 = dest->_13 = dest->_23 = 0.0f;
+    dest->_33 = 1.0f;
 }
 
 void NuMtxSkewSymmetric(struct numtx_s *m, struct nuvec_s *v)
