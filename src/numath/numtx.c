@@ -187,9 +187,9 @@ void NuVecCross(struct nuvec_s* dest, struct nuvec_s* a, struct nuvec_s* b);
 float NuVecDot(struct nuvec_s* a, struct nuvec_s* b);
 float NuFabs(float);
 float NuFsqrt(float); 
-extern float FLT_00643780;
+extern float D_00643780; //0.86602539f
 
-void NuMtxAlignZ(struct numtx_s* m, struct nuvec_s * v)
+void NuMtxAlignZ(struct numtx_s *m, struct nuvec_s *v)
 {
   float *a;
   float *b;
@@ -208,7 +208,7 @@ void NuMtxAlignZ(struct numtx_s* m, struct nuvec_s * v)
   m->_22 = fVar1 * v->z;
   fVar1 = NuVecDot((struct nuvec_s*)a,(struct nuvec_s*)b);
   fVar1 = NuFabs(fVar1);
-  if (FLT_00643780 < fVar1) {
+  if (0.86602539f < fVar1) {
     NuVecCross((struct nuvec_s*)a,(struct nuvec_s*)b,(struct nuvec_s*)m);
     fVar1 = NuFsqrt(fVar3 / (m->_10 * m->_10 + m->_11 * m->_11 + m->_12 * m->_12));
     m->_10 = m->_10 * fVar1;
@@ -233,6 +233,98 @@ void NuMtxAlignZ(struct numtx_s* m, struct nuvec_s * v)
     m->_12 = m->_12 * fVar1;
   }
   return;
+}
+
+void NuMtxAlignX(struct numtx_s *m,struct nuvec_s *v) {
+  float fVar4;
+  
+  m->_00 = v->x;
+  m->_01 = v->y;
+  m->_02 = v->z;
+  m->_20 = m->_01 * m->_12 - m->_02 * m->_11;
+  m->_21 = m->_02 * m->_10 - m->_00 * m->_12;
+  m->_22 = m->_00 * m->_11 - m->_01 * m->_10;
+  fVar4 = (1.0f / (float)sqrt(m->_20 * m->_20 + m->_21 * m->_21 + m->_22 * m->_22));
+  m->_20 = m->_20 * fVar4;
+  m->_21 = m->_21 * fVar4;
+  m->_22 = m->_22 * fVar4;
+  m->_10 = m->_21 * m->_02 - m->_22 * m->_01;
+  m->_11 = m->_22 * m->_00 - m->_20 * m->_02;
+  m->_12 = m->_20 * m->_01 - m->_21 * m->_00;
+}
+
+void NuMtxAlignY(struct numtx_s *m,struct nuvec_s *v) {
+  float fVar4;
+  
+  m->_10 = v->x;
+  m->_11 = v->y;
+  m->_12 = v->z;
+  m->_00 = m->_11 * m->_22 - m->_12 * m->_21;
+  m->_01 = m->_12 * m->_20 - m->_10 * m->_22;
+  m->_02 = m->_10 * m->_21 - m->_11 * m->_20;
+  fVar4 = (1.0f / (float)sqrt(m->_00 * m->_00 + m->_01 * m->_01 + m->_02 * m->_02));
+  m->_00 = m->_00 * fVar4;
+  m->_01 = m->_01 * fVar4;
+  m->_02 = m->_02 * fVar4;
+  m->_20 = m->_01 * m->_12 - m->_02 * m->_11;
+  m->_21 = m->_02 * m->_10 - m->_00 * m->_12;
+  m->_22 = m->_00 * m->_11 - m->_01 * m->_10;
+}
+
+void NuMtxLookAtX(struct numtx_s *dest,struct nuvec_s *pnt) {
+  struct nuvec_s v;
+  
+  v.x = pnt->x - dest->_30;
+  v.y = pnt->y - dest->_31;
+  v.z = pnt->z - dest->_32;
+  NuVecNorm(&v,&v);
+  NuMtxAlignX(dest,&v);
+}
+
+void NuMtxLookAtY(struct numtx_s *dest,struct nuvec_s *pnt) {
+  struct nuvec_s v;
+  
+  v.x = pnt->x - dest->_30;
+  v.y = pnt->y - dest->_31;
+  v.z = pnt->z - dest->_32;
+  NuVecNorm(&v,&v);
+  NuMtxAlignY(dest,&v);
+}
+
+void NuMtxLookAtZ(struct numtx_s *dest,struct nuvec_s *pnt) {
+  struct nuvec_s v;
+  
+  v.x = pnt->x - dest->_30;
+  v.y = pnt->y - dest->_31;
+  v.z = pnt->z - dest->_32;
+  NuVecNorm(&v,&v);
+  NuMtxAlignZ(dest,&v);
+}
+
+void NuMtxOrth(struct numtx_s* m)
+{
+    float mag;
+    float t1;
+    float t2;
+    float t3;
+    float t4;
+    
+	mag = NuFsqrt(m->_00 * m->_00 + m->_01 * m->_01 + m->_02 * m->_02);
+	t3 = 1.0f / mag;
+	m->_00 = m->_00 * t3;
+	m->_01 = m->_01 * t3;
+	m->_02 = m->_02 * t3;
+	mag = NuFsqrt(m->_10 * m->_10 + m->_11 * m->_11 + m->_12 * m->_12);
+	t3 = 1.0f / mag;
+	t1 = m->_10 * t3;
+	t2 = m->_11 * t3;
+	t4 = m->_12 * t3;
+	m->_20 = m->_01 * t4 - m->_02 * t2;
+	m->_21 = m->_02 * t1 - m->_00 * t4;
+	m->_22 = m->_00 * t2 - m->_01 * t1;
+	m->_10 = m->_21 * m->_02 - m->_22 * m->_01;
+	m->_11 = m->_22 * m->_00 - m->_20 * m->_02;
+	m->_12 = m->_20 * m->_01 - m->_21 * m->_00;
 }
 
 void NuMtxTranslate(struct numtx_s *m, struct nuvec_s *v)
