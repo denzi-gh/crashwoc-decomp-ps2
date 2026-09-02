@@ -460,21 +460,18 @@ void NuMtxSetScale(struct numtx_s *m, struct nuvec_s *v)
 
 void NuMtxSetRotationX(struct numtx_s *m, int r)
 {
-    float zero = 0.0f;
     float c;
     float s;
-
+    
     c = NuTrigTable[(r + 0x4000) & 0xffff];
-    m->_11 = c;
-    m->_22 = c;
-    m->_33 = 1.0f;
+	m->_22 = c;
+	m->_11 = c;
     s = NuTrigTable[r & 0xffff];
-    m->_01 = zero;
-    m->_12 = s;
-    m->_00 = 1.0f;
-    m->_21 = -s;
-    m->_32 = m->_02 = m->_03 = m->_23 = m->_10 = m->_20 = m->_13 =
-        m->_30 = m->_31 = zero;
+	m->_12 = s;
+	m->_00 = 1.0f;
+	m->_21 = -s;
+	m->_01 = m->_02 = m->_03 = m->_23 = m->_10 = m->_20 = m->_13 = m->_30 = m->_31 = m->_32 = 0.0f;
+	m->_33 = 1.0f;
 }
 
 void NuMtxSetRotationY(struct numtx_s *m, int r)
