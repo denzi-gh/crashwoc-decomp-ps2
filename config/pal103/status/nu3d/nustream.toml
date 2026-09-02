@@ -45,7 +45,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0030:00111420:NuStreamGetOutputBuffer"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00111438:NuRndrSwapStreamBuffers"
@@ -85,7 +85,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0030:001118e8:NuRndrSetGlobalAlpha"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:001118f0:NuRndrSetFxMtx"
@@ -129,7 +129,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0030:00111c78:NuRndrStreamSetDirectionalLights"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00111c80:NuRndrStreamSetAmbientLight"

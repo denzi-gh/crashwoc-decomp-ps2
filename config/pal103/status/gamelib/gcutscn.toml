@@ -57,7 +57,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0078:001ad0b8:NuGCutSceneSysInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001ad0c8:NuGCutSceneSysUpdate"
@@ -69,23 +69,23 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0078:001ad188:NuSetCutSceneCharacterRenderFn"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001ad190:NuSetCutSceneCharacterReleaseFn"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001ad198:NuSetCutSceneFindCharactersFn"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001ad1a0:NuSetCutSceneCharacterCreateDataFn"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001ad1a8:NuSetCutSceneRigidCollisionCheckFn"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001ad1b0:instNuGCutSceneCharGetStartMtx"
@@ -109,7 +109,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0078:001ad580:instNuGCutSceneIsFinished"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001ad598:instNuGCutSceneStart"
@@ -149,19 +149,19 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0078:001ad9a0:instNuGCutSceneChain"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001ad9a8:instNuGCutSceneSetEndCallback"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001ad9b0:instNuGCutSceneEnable"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001ad9c8:instNuGCutSceneDisable"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001ad9d8:NuGCutLocatorIsVisble"

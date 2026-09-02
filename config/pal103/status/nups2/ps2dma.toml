@@ -37,7 +37,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0062:0016cda0:NuScratchReset"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016cdb0:NuScratchAlloc32"
@@ -53,7 +53,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0062:0016ce78:NuScratchRelease"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016ce88:vpDmaTag_Set"
@@ -61,11 +61,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0062:0016ceb0:vpDmaTag_Cnt"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016ced0:vpDmaTag_End"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016cef0:vpDmaTag_EndEx"
@@ -81,7 +81,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0062:0016cfa8:VU0_DmaGetStatus"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016cfc0:GS_DmaGetStatus"
@@ -117,11 +117,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0062:0016d400:SPR_DmaGetWriteStatus"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016d418:SPR_DmaGetReadStatus"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016d430:GS_DmaWriteN"
@@ -129,7 +129,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0062:0016d498:GS_DmaGetWriteStatus"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016d4b0:vtBeginDirect"
@@ -141,7 +141,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0062:0016d4f8:VifTagDummy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016d500:VifTagWalk"
@@ -153,4 +153,4 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0062:0016d700:VU1_DmaGetStatusI"
-state = "asm"
+state = "matching"

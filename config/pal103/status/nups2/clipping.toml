@@ -25,7 +25,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0067:0016fc50:TestCurrZN"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0067:0016fc60:TestCurrLeft"

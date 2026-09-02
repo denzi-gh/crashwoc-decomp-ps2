@@ -72,3 +72,129 @@
  *   0x001aef38 instNuGCutLocatorSysUpdate
  *   0x001af030 instNuGCutCharSysRender
  */
+
+typedef struct NuMtx {
+    float m[4][4];
+} NuMtx;
+
+typedef struct NuVec4 {
+    float x;
+    float y;
+    float z;
+    float w;
+} NuVec4;
+
+typedef struct NuGCutScene NuGCutScene;
+typedef struct NuGCutSceneDef NuGCutSceneDef;
+typedef struct NuGCutCharDesc NuGCutCharDesc;
+typedef struct NuGCutChar NuGCutChar;
+typedef struct NuGCutRigid NuGCutRigid;
+typedef struct NuGCutCamSys NuGCutCamSys;
+typedef struct NuGCutRigidSys NuGCutRigidSys;
+typedef struct NuGCutCharSys NuGCutCharSys;
+typedef struct NuGCutLocatorSys NuGCutLocatorSys;
+typedef struct NuGCutTriggerSys NuGCutTriggerSys;
+
+typedef void (*NuGCutSceneEndFn)(NuGCutScene *scene);
+
+struct NuGCutScene {
+    NuGCutScene *next;              /* 0x00 */
+    NuGCutScene *prev;              /* 0x04 */
+    char name[16];                  /* 0x08 */
+    NuMtx mtx;                      /* 0x18 */
+    NuGCutSceneDef *def;            /* 0x58 */
+    NuVec4 centre;                  /* 0x5C */
+    int flags;                      /* 0x6C */
+    float time;                     /* 0x70 */
+    float speed;                    /* 0x74 */
+    NuGCutCamSys *camsys;           /* 0x78 */
+    NuGCutRigidSys *rigidsys;       /* 0x7C */
+    NuGCutCharSys *charsys;         /* 0x80 */
+    NuGCutLocatorSys *locatorsys;   /* 0x84 */
+    NuGCutTriggerSys *triggersys;   /* 0x88 */
+    NuGCutScene *chain;             /* 0x8C */
+    NuGCutSceneEndFn endcallback;   /* 0x90 */
+};                                  /* 0x94 */
+
+#define NUGCUTSCENE_RUNNING  0x002
+#define NUGCUTSCENE_DISABLED 0x100
+
+typedef struct NuGCutLocatorFn {
+    const char *name;
+    void (*func)();
+} NuGCutLocatorFn;
+
+typedef void (*NuCutSceneCharacterRenderFn)(NuGCutScene *scene, NuGCutSceneDef *def,
+                                            NuGCutChar *character, NuGCutCharDesc *desc,
+                                            float time);
+typedef void (*NuCutSceneCharacterReleaseFn)(NuGCutChar *character);
+typedef void (*NuCutSceneFindCharactersFn)(void);
+typedef void (*NuCutSceneCharacterCreateDataFn)(NuGCutCharDesc *desc, NuGCutChar *character,
+                                                void *heap);
+typedef void (*NuCutSceneRigidCollisionCheckFn)(NuGCutRigid *rigid, NuMtx *mtx);
+
+extern NuCutSceneCharacterRenderFn NuCutSceneCharacterRender;
+extern NuCutSceneCharacterReleaseFn NuCutSceneCharacterRelease;
+extern NuCutSceneFindCharactersFn NuCutSceneFindCharacters;
+extern NuCutSceneCharacterCreateDataFn NuCutSceneCharacterCreateData;
+extern NuCutSceneRigidCollisionCheckFn NuCutSceneRigidCollisionCheck;
+extern NuGCutLocatorFn *locatorfns;
+
+extern NuGCutScene *D_0063322C;
+#define cutscenelist D_0063322C
+
+
+void NuGCutSceneSysInit(NuGCutLocatorFn *fns) {
+    locatorfns = fns;
+    cutscenelist = 0;
+}
+
+
+void NuSetCutSceneCharacterRenderFn(NuCutSceneCharacterRenderFn fn) {
+    NuCutSceneCharacterRender = fn;
+}
+
+
+void NuSetCutSceneCharacterReleaseFn(NuCutSceneCharacterReleaseFn fn) {
+    NuCutSceneCharacterRelease = fn;
+}
+
+
+void NuSetCutSceneFindCharactersFn(NuCutSceneFindCharactersFn fn) {
+    NuCutSceneFindCharacters = fn;
+}
+
+
+void NuSetCutSceneCharacterCreateDataFn(NuCutSceneCharacterCreateDataFn fn) {
+    NuCutSceneCharacterCreateData = fn;
+}
+
+
+void NuSetCutSceneRigidCollisionCheckFn(NuCutSceneRigidCollisionCheckFn fn) {
+    NuCutSceneRigidCollisionCheck = fn;
+}
+
+
+int instNuGCutSceneIsFinished(NuGCutScene *scene) {
+    return !(scene->flags & NUGCUTSCENE_RUNNING);
+}
+
+
+void instNuGCutSceneChain(NuGCutScene *scene, NuGCutScene *chain) {
+    scene->chain = chain;
+}
+
+
+void instNuGCutSceneSetEndCallback(NuGCutScene *scene, NuGCutSceneEndFn callback) {
+    scene->endcallback = callback;
+}
+
+
+void instNuGCutSceneEnable(NuGCutScene *scene) {
+    scene->flags &= ~NUGCUTSCENE_DISABLED;
+}
+
+
+void instNuGCutSceneDisable(NuGCutScene *scene) {
+    scene->flags |= NUGCUTSCENE_DISABLED;
+}

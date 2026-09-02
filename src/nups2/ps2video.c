@@ -72,3 +72,104 @@
  *   0x0016b690 GenerateGammaTable
  *   0x0016b770 GetElapsedTime
  */
+
+typedef unsigned long long u64;
+
+/* GIF A+D pair: a GS register value followed by its register address. */
+typedef struct NuPs2GsReg {
+    u64 data;
+    u64 addr;
+} NuPs2GsReg;
+
+/* EE timer 1 counter: a free-running 16-bit tick used for screen-swap timing. */
+#define EE_T1_COUNT (*(volatile unsigned int *)0x10000800)
+#define EE_T0_COUNT (*(volatile unsigned int *)0x10000000)
+#define EE_T0_MODE  (*(volatile unsigned int *)0x10000010)
+
+#define ExitHandler() __asm__ volatile ("sync\n\tei")
+
+extern int PS2_REZ_W;
+extern int D_006331C4;
+extern volatile int D_0062F03C;
+extern int D_006331F8;
+extern NuPs2GsReg D_002EA190;
+extern NuPs2GsReg D_002EA1A0;
+extern NuPs2GsReg D_002EA300;
+extern NuPs2GsReg D_002EA310;
+
+#define NuPs2FrameCount D_006331C4
+#define NuPs2SwapTime   D_0062F03C
+#define NuPs2SwapDelay  D_006331F8
+#define NuPs2FrameReg0  D_002EA190
+#define NuPs2ZBufReg0   D_002EA1A0
+#define NuPs2FrameReg1  D_002EA300
+#define NuPs2ZBufReg1   D_002EA310
+
+
+float NuPs2GetRenderWidth(void)
+{
+    return (float)PS2_REZ_W;
+}
+
+
+void NuPs2GetCurrentBackBuffer(u64 *buf)
+{
+    if (NuPs2FrameCount & 1) {
+        *buf = NuPs2FrameReg0.data;
+    } else {
+        *buf = NuPs2FrameReg1.data;
+    }
+}
+
+
+void NuPs2GetCurrentFrontBuffer(u64 *buf)
+{
+    if (NuPs2FrameCount & 1) {
+        *buf = NuPs2FrameReg1.data;
+    } else {
+        *buf = NuPs2FrameReg0.data;
+    }
+}
+
+
+void NuPs2GetCurrentZBuffer(u64 *buf)
+{
+    if (NuPs2FrameCount & 1) {
+        *buf = NuPs2ZBufReg0.data;
+    } else {
+        *buf = NuPs2ZBufReg1.data;
+    }
+}
+
+
+void timeUserReset(void)
+{
+    EE_T0_MODE = 0x82;
+    EE_T0_COUNT = 0;
+}
+
+
+unsigned int timeUserRead(void)
+{
+    return EE_T0_COUNT;
+}
+
+
+int ifnVif1(int ca)
+{
+    ExitHandler();
+    return 0;
+}
+
+
+int GetElapsedTime(void)
+{
+    int elapsed;
+
+    elapsed = EE_T1_COUNT - NuPs2SwapTime;
+    NuPs2SwapDelay = elapsed;
+    if (elapsed < 0) {
+        NuPs2SwapDelay = elapsed + 0x10000;
+    }
+    return NuPs2SwapDelay;
+}

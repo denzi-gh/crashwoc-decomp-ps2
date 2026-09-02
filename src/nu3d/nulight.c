@@ -29,3 +29,15 @@
  *   0x00140400 NuLightSprMake
  *   0x001404e8 NuLgtRand
  */
+
+
+extern int NuRndrFogClear;
+
+
+void NuLightClose(void) {
+}
+
+
+void NuLightFogClear(int clear) {
+    NuRndrFogClear = clear;
+}
