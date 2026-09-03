@@ -128,6 +128,16 @@ extern struct edobject_s ObjectPath[];
 
 extern struct nugscn_s *edobj_base_scene;
 extern void *edobj_active_menu;
+extern void *edobj_instance_menu;
+extern void *edobj_switchtype_menu;
+extern void *edobj_switch_menu;
+extern void *edobj_animprop_menu;
+extern void *edobj_wayprop_menu;
+extern void *edobj_localsound_menu;
+extern void *edobj_localsoundtype_menu;
+extern void *edobj_particletype_menu;
+extern void *edobj_localparticle_menu;
+extern void *edobj_bouncy_menu;
 extern void *edobj_options_menu;
 extern int edobj_nearest;
 extern int edobj_nearest_sound;
@@ -194,9 +204,72 @@ void edobjcbSetSwitchVar(void *menu, struct edobjitem_s *item)
 }
 
 
+void edobjcbCancelInstanceMenu(void)
+{
+    eduiMenuDestroy(edobj_instance_menu);
+    edobj_instance_menu = 0;
+}
+
+
+void edobjcbCancelSwitchTypeMenu(void)
+{
+    eduiMenuDestroy(edobj_switchtype_menu);
+    edobj_switchtype_menu = 0;
+}
+
+
+void edobjcbCancelSwitchMenu(void)
+{
+    eduiMenuDestroy(edobj_switch_menu);
+    edobj_switch_menu = 0;
+}
+
+
+void edobjcbCancelAnimPropertiesMenu(void)
+{
+    eduiMenuDestroy(edobj_animprop_menu);
+    edobj_animprop_menu = 0;
+}
+
+
+void edobjcbCancelWayPropertiesMenu(void)
+{
+    eduiMenuDestroy(edobj_wayprop_menu);
+    edobj_wayprop_menu = 0;
+}
+
+
 void edobjcbSetSoundTiming(void *menu, struct edobjitem_s *item)
 {
     ObjectPath[edobj_nearest].sound_timing[edobj_nearest_sound] = item->fvalue;
+}
+
+
+void edobjcbCancelLocalSoundMenu(void)
+{
+    eduiMenuDestroy(edobj_localsound_menu);
+    edobj_localsound_menu = 0;
+}
+
+
+void edobjcbCancelParticleTypeMenu(void)
+{
+    eduiMenuDestroy(edobj_particletype_menu);
+    edobj_particletype_menu = 0;
+}
+
+
+void edobjcbCancelLocalParticleMenu(void)
+{
+    eduiMenuDestroy(edobj_localparticle_menu);
+    edobj_localparticle_menu = 0;
+}
+
+
+void edobjcbCancelBouncyMenu(void)
+{
+    eduiMenuDestroy(edobj_bouncy_menu);
+    edobj_bouncy_menu = 0;
 }
 
 
@@ -217,4 +290,11 @@ void edobjEnter(void)
     edobj_sound_type = -1;
     edobj_snap_xz = 0;
     edobj_snap_y = 0;
+}
+
+
+void edobjcbCancelLocalSoundTypeMenu(void)
+{
+    eduiMenuDestroy(edobj_localsoundtype_menu);
+    edobj_localsoundtype_menu = 0;
 }

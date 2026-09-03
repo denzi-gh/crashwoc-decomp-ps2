@@ -29,39 +29,39 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0067:0016fc60:TestCurrLeft"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0067:0016fc70:TestCurrRight"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0067:0016fc80:TestCurrTop"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0067:0016fc90:TestCurrBottom"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0067:0016fca0:TestPrevZN"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0067:0016fcb0:TestPrevLeft"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0067:0016fcc0:TestPrevRight"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0067:0016fcd0:TestPrevTop"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0067:0016fce0:TestPrevBottom"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0067:0016fcf0:IntersectZN"

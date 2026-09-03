@@ -61,7 +61,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0039:0011e438:NuTexGetSysBuffSize"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0039:0011e448:NuTexInitEx"
@@ -85,15 +85,15 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0039:0011e730:NuTexReadBitmap"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0039:0011e758:NuTexReadBitmapMM"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0039:0011e778:NuTexCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0039:0011e798:NuTexDestroy"
@@ -109,15 +109,15 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0039:0011e8c0:NuTexType"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0039:0011e8e8:NuTexWidth"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0039:0011e910:NuTexHeight"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0039:0011e938:NuTexHasAlpha"
@@ -145,7 +145,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0039:0011eba0:NuTexRecoverNativeData"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0039:0011ebc8:NuTexReadNative"
@@ -157,11 +157,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0039:0011ec98:NuTexFlushTemp"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0039:0011eca8:NuTexAssignAddr"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0039:0011ecd0:NuTexAssignTempAddr"
