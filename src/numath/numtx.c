@@ -56,9 +56,9 @@
 void NuVecNorm(struct nuvec_s *dst, struct nuvec_s *src);
 void NuMtxAlignZ(struct numtx_s *m, struct nuvec_s *v);
 extern float NuTrigTable[];
-struct numtx_s D_002921a0; //gm
-struct numtx_s D_002921e0; //numtx_identity
-struct numtx_s D_00292220; //numtx_zero
+extern struct numtx_s D_002921a0; //gm
+extern struct numtx_s D_002921e0; //numtx_identity
+extern struct numtx_s D_00292220; //numtx_zero
 
 void NuMtxSetRotateXYZ(struct numtx_s* m, struct nuangvec_s* a)
 {
