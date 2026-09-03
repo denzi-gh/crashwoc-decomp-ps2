@@ -823,3 +823,12 @@ void NuFileInit(int deviceid) {
     memset(&memfiles, 0, 0x190);
     memset(&datfiles, 0, 0x230);
 }
+
+int NuFileOpenSize(int fh)
+{
+    if (fh >= 0x800) {
+        return NuDatFileOpenSize(fh);
+    }
+    fh--;
+    return file_info[fh].file_length;
+}
