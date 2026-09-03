@@ -3,19 +3,30 @@
 
     python tools/promote.py NuListGetHead
     python tools/promote.py pal103:unit-0007:00105a50:NuListGetHead
+    python tools/promote.py A B C            # one verifier run for all three
+    python tools/promote.py --targets-file ready.txt
     python tools/promote.py --init src/nucore/nulist.c
 
 A hand-edited `state = "matching"` is never trusted (and the container CI
 re-verifies every claim); this tool makes the honest path the easy path:
 
-  1. Find the function's manifest entry (by full id, or by name when the
-     name is unique across manifests) and flip its state in the file.
+  1. Find each function's manifest entry (by full id, or by name when the
+     name is unique across manifests) and flip its state in the file. All
+     targets are resolved before anything is written, so a typo cannot
+     leave a batch half-flipped.
   2. Run the full promotion verifier (tools/verify_promoted.py): manifest
-     consistency, the function's bytes against retail over its whole
+     consistency, each function's bytes against retail over its whole
      registry extent, every previously promoted function again, and the
      matching-image SHA gate.
-  3. If ANYTHING fails, the manifest edit is rolled back exactly and the
+  3. If ANYTHING fails, every manifest edit is rolled back exactly and the
      failure is reported -- the repo never holds an unverified promotion.
+
+Because step 2 re-derives *every* `matching` claim in the repo, promoting N
+functions together is exactly as strong a proof as promoting them one by one
+-- and costs one verifier run instead of N (that run is several minutes and
+grows with the matching set). The only difference is granularity of failure:
+a batch rolls back whole, so re-run the targets individually, or in halves,
+to find the one that does not hold.
 
 `--init` creates the status manifest for a source file that doesn't have
 one yet (every function `asm`), deriving the unit from the canonical
@@ -166,10 +177,26 @@ def init_manifest(version, source, profile=None):
     return 0
 
 
+def read_manifest(path):
+    """Manifest text, byte-preserving (see the newline="" note in promote)."""
+    with open(path, encoding="utf-8", newline="") as f:
+        return f.read()
+
+
+def write_manifest(path, text):
+    with open(path, "w", encoding="utf-8", newline="") as f:
+        f.write(text)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("target", nargs="?",
-                        help="function id or unique function name")
+    parser.add_argument("target", nargs="*",
+                        help="function id(s) or unique function name(s); "
+                             "several are flipped together and proved by a "
+                             "single verifier run")
+    parser.add_argument("--targets-file", metavar="FILE",
+                        help="read additional targets from FILE, one per line "
+                             "(blank lines and #-comments ignored)")
     parser.add_argument("--to", default="matching", choices=("matching",),
                         help="target state (only `matching`; `equivalent` is "
                              "a reviewed hand edit)")
@@ -188,32 +215,58 @@ def main():
         parser.error("--profile only applies to --init")
     if args.init:
         return init_manifest(args.version, args.init, args.profile)
-    if not args.target:
+
+    targets = list(args.target)
+    if args.targets_file:
+        for line in Path(args.targets_file).read_text().splitlines():
+            line = line.split("#", 1)[0].strip()
+            if line:
+                targets.append(line)
+    if not targets:
         parser.error("a function id/name is required (or --init SRC)")
 
-    manifest, fid, state = find_entry(args.version, args.target)
-    rel = manifest.relative_to(ROOT).as_posix()
-    if state == "matching":
-        print(f"{fid} is already `matching` in {rel}; nothing to do.")
+    # Resolve every target first: a typo must not leave half the batch flipped.
+    pending = []                       # [(manifest, fid, old_state)]
+    for t in targets:
+        manifest, fid, state = find_entry(args.version, t)
+        rel = manifest.relative_to(ROOT).as_posix()
+        if state == "matching":
+            print(f"{fid} is already `matching` in {rel}; nothing to do.")
+            continue
+        pending.append((manifest, fid, state))
+    if not pending:
         return 0
 
     # newline="" everywhere: the edit must be byte-preserving outside the
-    # one flipped word, whatever line endings the file uses and whatever
-    # platform this runs on.
-    with open(manifest, encoding="utf-8", newline="") as f:
-        original = f.read()
-    with open(manifest, "w", encoding="utf-8", newline="") as f:
-        f.write(flip_state(original, fid, "matching"))
-    print(f"{fid}: {state} -> matching in {rel}; verifying...\n", flush=True)
+    # flipped words, whatever line endings the file uses and whatever
+    # platform this runs on. One original per manifest, so several functions
+    # in the same file compose instead of clobbering each other.
+    originals = {}
+    for manifest, fid, _ in pending:
+        if manifest not in originals:
+            originals[manifest] = read_manifest(manifest)
+        write_manifest(manifest,
+                       flip_state(read_manifest(manifest), fid, "matching"))
+
+    for manifest, fid, state in pending:
+        rel = manifest.relative_to(ROOT).as_posix()
+        print(f"{fid}: {state} -> matching in {rel}")
+    print(f"\nverifying {len(pending)} promotion(s) in "
+          f"{len(originals)} manifest(s)...\n", flush=True)
 
     if run_verifier(args.version):
-        print(f"\nPromoted {fid} to `matching`. Commit {rel}.")
+        for manifest, fid, _ in pending:
+            print(f"Promoted {fid} to `matching`.")
+        print(f"\nCommit: {', '.join(sorted(m.relative_to(ROOT).as_posix() for m in originals))}")
         return 0
 
-    with open(manifest, "w", encoding="utf-8", newline="") as f:
-        f.write(original)
-    print(f"\nVerification FAILED; rolled back {rel} (still `{state}`).",
-          file=sys.stderr)
+    for manifest, text in originals.items():
+        write_manifest(manifest, text)
+    print(f"\nVerification FAILED; rolled back all {len(pending)} promotion(s) "
+          f"in {len(originals)} manifest(s).", file=sys.stderr)
+    if len(pending) > 1:
+        print("Re-run the targets individually (or in halves) to find the "
+              "one that does not hold.", file=sys.stderr)
     return 1
 
 

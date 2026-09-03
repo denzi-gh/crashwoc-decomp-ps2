@@ -39,6 +39,12 @@ things that shouldn't be re-derived. Resolved history lives in git.
   **ee-gcc's `#nop` comment lines are NOT this marker** and must not be
   materialized: retail ApplyFriction has no nop at one of them. They are
   annotations, not instructions - an earlier note claimed otherwise and was wrong.
+- **Unfilled branch delay-slot nop (fixed 2026-09-01, `_sonyize_seg`).** A
+  branch gcc emits in `.set reorder` mode has an empty delay slot: Sony's `as`
+  fills it with a `nop`, the decompals `as` swaps the preceding instruction in.
+  The rewrite wraps such a branch in `.set noreorder` and writes the nop out;
+  branches gcc filled itself sit inside its own `.set noreorder` block and pass
+  through untouched. See "The assembler delay-slot wall" below.
 - **Data/pool codegen is supported** in `gen_hybrid` (see
   `config/pal103/compiler_knowledge.toml`): `.lit4`/`.lit8` pools mapped by value,
   initialized-local `.sdata`/`.rodata` borrowed onto the owned retail slot, switch
@@ -464,44 +470,44 @@ Do not infer the flavour from the name: the PS2 fog trio looked like setters and
 were empty stubs, while `NuLightFogClear` was reported as a stub by one agent and
 is in fact a one-store setter. Read the second instruction.
 
-### The assembler delay-slot wall (4 blockers, one family, discriminator unproven)
+### The assembler delay-slot wall (fixed 2026-09-01, `_sonyize_seg`)
 
-Where **gcc leaves the `jr $ra` delay slot unfilled** (bare `j $31` in
-`.set reorder` mode, no `.set noreorder` wrapper of its own), SN's `as` left
-retail's `nop` and the decompals `as` swaps the preceding instruction in:
+Where **gcc leaves a branch delay slot unfilled** (a bare `j $31` or branch in
+`.set reorder` mode, with no `.set noreorder` wrapper of its own) SN's `as`
+always fills it with the `nop` retail contains, while the decompals `as`
+*swaps the preceding instruction in* -- one word short, shifting every function
+after it. Four faithful near-matches sat on this:
 
-| function | swapped-in instruction |
+| function | instruction the decompals `as` swapped in |
 |---|---|
 | `NuPs2GetRenderWidth` 0x16a8e8 | `cvt.s.w` |
 | `timeUserRead` 0x16b2c0 | volatile `lw` |
 | `timeUserReset` 0x16b2a0 | volatile `sw` |
 | `NuCameraSetAxes` 0x113b18 | plain `sw` |
 
-All four are faithful near-matches (75-80%, codegen otherwise
-instruction-identical) left at `state = asm`.
+`_sonyize_seg` now tracks gcc's own `.set noreorder` / `.set reorder` state and,
+for a branch emitted in reorder mode, wraps it in `.set noreorder` and writes
+the `nop` out. All four are promoted; `ninja check` (verify-loaded +
+verify-promoted over all 54 hybrid units, full image SHA) passes unchanged.
 
-**Do not apply a blanket fix.** SN's `as` demonstrably DOES swap FP arithmetic
-into return delay slots -- retail has 13 `add.s`, 8 `div.s`, 3 `mul.s`, 133
-`swc1`, 4 `lwc1` there, and ~13 already-promoted functions depend on it. A
-blanket `.set noreorder` over compiled segments would regress every one. Two
-narrower fixes were proposed, each verified against its own case:
+**The earlier "do not apply a blanket fix" warning here was wrong**, and is
+recorded so it is not re-derived. It rested on counting retail return delay
+slots (13 `add.s`, 8 `div.s`, 3 `mul.s`, 133 `swc1`, 4 `lwc1`) and concluding
+SN's `as` had moved them there. It had not: **gcc's own delay-slot scheduler**
+filled those, and gcc brackets every slot it fills with `.set noreorder` /
+`.set nomacro`, so the rewrite passes them through untouched. Retail
+`cbPtlChangeSScale` @0x197130 settles it from the other side -- `lwc1` /
+`cvt.w.s` / `swc1 $f1,%gp_rel(D_0062F314)($gp)` / `jr $ra` / `nop`: an FP store
+gcc did *not* sink, and retail keeps the nop. Related but distinct: a trailing
+`sdr` (part of a length-2 unaligned-store pattern) is never swapped by either
+assembler, so `NuMtxMul`/`NuMtxSetIdentity` matched even before this.
 
-- **volatile accesses**: gcc 2.95 brackets every volatile access with
-  `#.set volatile` / `#.set novolatile` -- emitted *commented out* because this
-  build targets gas, while SN's gcc was configured for the MIPS assembler and
-  emitted them live. `tools/gen_hybrid.py::_sonyize` ignores those lines
-  entirely. Translating them to `.set noreorder` / `.set reorder` reproduces
-  retail exactly and is self-delimiting.
-- **the general unfilled `j $31`**: wrap compiled segments in `.set noreorder`
-  (as retail slices already are) or materialize an explicit `nop` -- but this is
-  the form that would regress the FP cases, so it needs a discriminator first.
-
-Observed so far: SN's `as` moves `add.s`/`div.s`/`mul.s`/`sub.s`/`swc1`/`lwc1`,
-but not `sw`, `cvt.s.w`, or volatile accesses. **A single unifying rule is not
-established** -- this is an open question, not a solved one. Either fix needs a
-full `ninja verify-promoted` before it can be trusted. Related but distinct: a
-trailing `sdr` (part of a length-2 unaligned-store pattern) is never swapped by
-either assembler, so `NuMtxMul`/`NuMtxSetIdentity` match today.
+Left unused: gcc 2.95 brackets every volatile access with `#.set volatile` /
+`#.set novolatile`, emitted *commented out* because this build targets gas while
+SN's gcc was configured for the MIPS assembler and emitted them live. The
+delay-slot rewrite already covers both volatile blockers, so those markers stay
+ignored -- reach for them only if a volatile-ordering difference turns up
+somewhere the delay-slot rule does not explain.
 
 ### Traps and tooling
 

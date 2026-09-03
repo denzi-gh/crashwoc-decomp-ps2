@@ -61,11 +61,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0030:00111650:NuRndrSetXYOffset"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00111670:NuRndrSetScissor"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:001116a0:NuRndrSetZFix"
@@ -93,11 +93,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0030:00111988:NuRndrStreamGetScissor"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00111998:NuRndrStreamGetOffset"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:001119a8:NuRndrStreamResetStream"
@@ -117,7 +117,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0030:00111b38:NuRndrStreamAlloc"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00111b50:NuRndrStreamAddMtl"
@@ -133,7 +133,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00111c80:NuRndrStreamSetAmbientLight"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00111c88:NuRndrStreamSetViewMtx"
@@ -153,7 +153,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0030:00111f18:NuRndrStreamClearZBState"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00111f20:NuRndrStreamSetZBState"

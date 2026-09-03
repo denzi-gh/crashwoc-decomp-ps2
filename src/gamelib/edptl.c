@@ -212,11 +212,22 @@ extern struct debkey_s debkeydata[];
 extern int edpp_dpad_mode;
 extern int edpp_snap_enabled;
 extern void *edpp_active_menu;
+extern void *changegenratemenu;
+extern void *messagemenu;
+extern void *effectlistmenu;
+extern void *edptl_switch_menu;
+extern void *edptl_group_menu;
+extern void *dpadmodemenu;
+extern void *ptltypemenu;
+extern void *edptl_bounce_menu;
+extern void *edptl_soundid_menu;
+extern void *edptl_soundcontrol_menu;
 extern int D_0062F314;
 
 #define edpp_slider_scale D_0062F314
 
 extern void edmainRegisterLocVec(struct nuvec_s *loc);
+extern void eduiMenuDestroy(void *menu);
 
 
 void ParticleReset(void) {
@@ -259,6 +270,36 @@ void edptlcbApplyBounceOffset(void *menu, struct edptlitem_s *item) {
 }
 
 
+void cbCancelChangeGenRateMenu(void) {
+    eduiMenuDestroy(changegenratemenu);
+    changegenratemenu = 0;
+}
+
+
+void cbCancelMessageMenu(void) {
+    eduiMenuDestroy(messagemenu);
+    messagemenu = 0;
+}
+
+
+void cbCancelEffectListMenu(void) {
+    eduiMenuDestroy(effectlistmenu);
+    effectlistmenu = 0;
+}
+
+
+void edptlcbCancelSwitchMenu(void) {
+    eduiMenuDestroy(edptl_switch_menu);
+    edptl_switch_menu = 0;
+}
+
+
+void edptlcbCancelGroupMenu(void) {
+    eduiMenuDestroy(edptl_group_menu);
+    edptl_group_menu = 0;
+}
+
+
 void edptlcbSetMasterGroup(void *menu, struct edptlitem_s *item) {
     debris_render_group = item->fvalue;
 }
@@ -266,6 +307,36 @@ void edptlcbSetMasterGroup(void *menu, struct edptlitem_s *item) {
 
 void edptlcbSetDpadMode(void *menu, struct edptlitem_s *item) {
     edpp_dpad_mode = item->value;
+}
+
+
+void edptlcbCancelDpadModeMenu(void) {
+    eduiMenuDestroy(dpadmodemenu);
+    dpadmodemenu = 0;
+}
+
+
+void cbPtlCancelTypeMenu(void) {
+    eduiMenuDestroy(ptltypemenu);
+    ptltypemenu = 0;
+}
+
+
+void edptlcbCancelBounceMenu(void) {
+    eduiMenuDestroy(edptl_bounce_menu);
+    edptl_bounce_menu = 0;
+}
+
+
+void edptlcbCancelSoundIDMenu(void) {
+    eduiMenuDestroy(edptl_soundid_menu);
+    edptl_soundid_menu = 0;
+}
+
+
+void edptlcbCancelSoundControlMenu(void) {
+    eduiMenuDestroy(edptl_soundcontrol_menu);
+    edptl_soundcontrol_menu = 0;
 }
 
 
