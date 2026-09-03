@@ -113,11 +113,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0069:00188eb0:DebrisOff"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:00188ee0:DebrisOn"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:00188f10:AddFiniteShotDebrisEffect"
@@ -165,15 +165,15 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0069:00189660:DebrisSetGroupID"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:00189690:DebrisSetup"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:001896b0:DebrisSetRenderGroup"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:001896b8:LookupDebrisEffect"
@@ -181,7 +181,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0069:00189730:DebrisRegisterCutoffCameraVec"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:00189738:CameraEmitterDistance"
@@ -209,7 +209,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0069:001899b8:GenDebIndexSort"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:001899d8:GenDebMomAdjFromPos"
@@ -221,15 +221,15 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0069:00189a68:GenDebMomAdjFromPosRev"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:00189a88:GenDebMomAdjFromSplash"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:00189ab0:GenDebMomAdjFromAshRock"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:00189ad8:GenDebMomAdjFromPosRevTree"

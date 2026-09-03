@@ -53,7 +53,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0042:0013ff70:NuLightClose"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0042:0013ff78:NuLightCreate"
@@ -85,7 +85,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0042:001401b0:NuLightFogClear"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0042:001401b8:NuLgtArcLaser"

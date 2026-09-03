@@ -215,9 +215,60 @@ short NuFileReadShort(int fh)
 }
 
 
+char NuFileReadChar(int fh)
+{
+    char v;
+
+    NuFileRead(fh, &v, sizeof(v));
+    return v;
+}
+
+
 int NuFileWrite(int fh, void *data, int size)
 {
     return sceWrite(fh - 1, data, size);
+}
+
+
+void NuFileWriteFloat(int fh, float v)
+{
+    sceWrite(fh - 1, &v, sizeof(v));
+}
+
+
+void NuFileWriteInt(int fh, int v)
+{
+    sceWrite(fh - 1, &v, sizeof(v));
+}
+
+
+void NuFileWriteUnsignedInt(int fh, unsigned int v)
+{
+    sceWrite(fh - 1, &v, sizeof(v));
+}
+
+
+void NuFileWriteShort(int fh, short v)
+{
+    sceWrite(fh - 1, &v, sizeof(v));
+}
+
+
+void NuFileWriteChar(int fh, char v)
+{
+    sceWrite(fh - 1, &v, sizeof(v));
+}
+
+
+int strlen(const char* __s);
+
+
+void NuFileWriteString(int fh, char* s)
+{
+    int len;
+
+    len = strlen(s);
+    sceWrite(fh - 1, s, len);
 }
 
 
@@ -233,12 +284,27 @@ void* NuMemFileAddr(int fh)
 }
 
 
+int NuDatFileRead(int fh, void *data, int size)
+{
+    return NuFileRead(datfiles[fh - 0x800].ndh->fh, data, size);
+}
+
+
 int NuDatFileOpenSize(int fh)
 {
     int ix = fh - 0x800;
     struct nudatfile_s *df = &datfiles[ix];
 
     return df->len;
+}
+
+
+void NuDatFileClose(int fh)
+{
+    int ix = fh - 0x800;
+
+    datfiles[ix].ndh->dfhandle = 0;
+    datfiles[ix].pos = 0;
 }
 
 
