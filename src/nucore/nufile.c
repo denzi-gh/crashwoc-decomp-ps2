@@ -175,6 +175,7 @@ extern char* iop_img_name;
 #define blk_level               D_0062E980
 
 int sceWrite(int fd, void *addr, int size);
+int sceIoctl(int fd, int req, void*);
 int NuFileRead(int fh, void *data, int size);
 
 
@@ -864,6 +865,30 @@ void NuFileInitEx(int deviceid,int rebootiop) {
   memset(datfiles,0,0x230);
 }
 
+void NuFileInit(int deviceid) {
+    nufile_deviceid = deviceid;
+    if ((deviceid == 1) || (deviceid == 3)) {
+        sceSifInitRpc(0);
+        sceCdInit(0);
+        do {
+
+        } while (sceSifRebootIop(iop_img_name) == 0);
+        do {
+
+        } while (sceSifSyncIop() == 0);
+        sceSifInitRpc(0);
+        sceCdInit(0);
+        if (nufile_deviceid == 1) {
+            sceCdMmode(1);
+        } else {
+            sceCdMmode(2);
+        }
+        sceFsReset();
+        sceCdDiskReady(0);
+    }
+    memset(&memfiles, 0, 0x190);
+    memset(&datfiles, 0, 0x230);
+}
 
 int NuFileOpenSize(int fh)
 {
