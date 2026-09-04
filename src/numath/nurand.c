@@ -37,23 +37,23 @@ long NuRand(struct nunrand_s* nrand) {
     long temp_s0;
     long temp_v0;
 
-    temp = (nrand != NULL) ? nrand : &global_rand;
+    temp = (nrand != 0) ? nrand : &global_rand;
     temp_s0 = temp->idum ^ 0x075BD924;
     temp->idum = temp_s0;
     temp_v0 = __divdi3(temp_s0, 0x31E5);
     temp->idum = ((temp_s0 - (temp_v0 * 0x31E5)) * 0x41A7) - (temp_v0 * 0xB14);
     if (temp->idum < 0) {
-        temp->idum = (s64) (temp->idum + 0x7FFFFFFF);
+        temp->idum = (long) (temp->idum + 0x7FFFFFFF);
     }
-    temp->idum = (s64) (temp->idum ^ 0x075BD924);
+    temp->idum = (long) (temp->idum ^ 0x075BD924);
     return temp->idum;
 }
 
 f32 NuFloatRand(struct nunrand_s * nrand) {
-    s64 temp_v0;
+    long temp_v0;
     struct nunrand_s* temp;
 
-    temp = (nrand != NULL) ? nrand : &global_rand;
+    temp = (nrand != 0) ? nrand : &global_rand;
     temp->idum = temp->idum ^ 0x075BD924;
     temp_v0 = __divdi3(temp->idum, 0x31E5);
     temp->idum = ((temp->idum - (temp_v0 * 0x31E5)) * 0x41A7) - (temp_v0 * 0xB14);
@@ -61,7 +61,7 @@ f32 NuFloatRand(struct nunrand_s * nrand) {
         temp->idum = temp->idum + 0x7FFFFFFF;
     }
     temp->idum = temp->idum ^ 0x075BD924;
-    return __floatdisf((s32) temp->idum) * 4.656613e-10f;
+    return __floatdisf((int) temp->idum) * 4.656613e-10f;
 }
 
 float NuRandFloat(void) {
