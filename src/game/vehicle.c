@@ -392,6 +392,27 @@ struct jeeprock_s {
 };
 extern struct jeeprock_s JeepRock[];
 
+extern s32 RumbleDisplayMode;
+extern s32 RumbleStoreTotalRoks;
+
+s32 GetRumbleTotalRoks(void)
+{
+    s32 count;
+    s32 i;
+
+    if (RumbleDisplayMode == -1) {
+        return RumbleStoreTotalRoks;
+    }
+    count = 0;
+    for (i = 0; i < 6; i++) {
+        if (JeepRock[i].exists != 0) {
+            count++;
+        }
+    }
+    RumbleStoreTotalRoks = count;
+    return count;
+}
+
 void AddGliderHitPoints(void)
 {
     struct NEWBUGGY *b = player->Buggy;
@@ -426,6 +447,21 @@ s32 GetGliderHealthPercentage(struct creature_s *c)
         return b->health;
     }
     return 100;
+}
+
+extern void LoadWesternArenaData(void);
+extern s32 jonfirst;
+
+void LoadVehicleStuff(void)
+{
+    switch (Level) {
+    case 3:
+        LoadWesternArenaData();
+        break;
+    case 0xD:
+        jonfirst = 0;
+        break;
+    }
 }
 
 void InitVehMasks(void)
@@ -472,6 +508,22 @@ s32 GetCurrentFarmObjectives(void)
 void InitWeatherBoss(void)
 {
     InitWeatherBoss_a();
+}
+
+struct MYDRAW;
+extern struct MYDRAW IconMainDraw;
+extern s32 BazookaIconOn;
+extern struct nuvec_s BazookaTokenCurrentPos;
+extern void NuMtxSetTranslation(struct numtx_s *m, struct nuvec_s *v);
+extern s32 MyDrawModelNew(struct MYDRAW *Draw, struct numtx_s *mC,
+                          struct numtx_s *loc_mtx);
+
+void DrawBazookaToken(void)
+{
+    if (BazookaIconOn) {
+        NuMtxSetTranslation(&mTEMP, &BazookaTokenCurrentPos);
+        MyDrawModelNew(&IconMainDraw, &mTEMP, 0);
+    }
 }
 
 void ProcessWeatherBoss(void)
@@ -624,6 +676,19 @@ void InitTrail(void)
     trailair = 0;
 }
 
+extern struct nuvec_s D_0061F750[]; /* fixed ray direction, far from $gp */
+extern f32 D_0062DF04;
+extern s32 TryUnembeddPointDirSimple(struct nuvec_s *pos, struct nuvec_s *dir,
+                                     s16 *handle, s32 n, f32 x, f32 y);
+
+void UnembedRayCastAtlasSimple(struct NEWBUGGY *b, s16 *handle)
+{
+    struct nuvec_s dir = D_0061F750[0];
+
+    TryUnembeddPointDirSimple(&b->ball_pos, &dir, handle, 5, b->atlas_rotparam,
+                              D_0062DF04);
+}
+
 void ProcessAtlasAtlasCollisions(void)
 {
     if (EarthBoss[4] > 0) {
@@ -713,6 +778,98 @@ void DrawSpaceStations(void)
     }
 }
 
+struct asteroid_s {
+    s32 active;                /* 0x00 */
+    char pad_04[0x2C - 0x04];
+    f32 radius;                /* 0x2C */
+    char pad_30[0x4C - 0x30];
+};
+extern struct asteroid_s AsteroidList[];   /* far; 100 entries, InitAsteroid's argument is always 0 */
+extern void InitAsteroid(s32 x);
+
+s32 CountAsteroids(void)
+{
+    f32 sum = 0.0f;
+    s32 i;
+
+    for (i = 0; i < 100; i++) {
+        if (AsteroidList[i].active != 0) {
+            sum += AsteroidList[i].radius * AsteroidList[i].radius * 0.25f;
+        }
+    }
+    return (s32)sum;
+}
+
+void InitAsteroids(void)
+{
+    s32 i;
+
+    memset(AsteroidList, 0, 0x1DB0);
+    for (i = 0x1D; i >= 0; i--) {
+        InitAsteroid(0);
+    }
+}
+
+struct wbbolt_s {
+    s32 active;                /* 0x00 */
+    char pad_04[0x24 - 0x04];
+    s32 type;                  /* 0x24 */
+    char pad_28[0x30 - 0x28];
+};
+extern struct wbbolt_s BoltList[];
+
+struct wbbolt_s *FindFreeWBBoltOfType(s32 type)
+{
+    struct wbbolt_s *b;
+    s32 i;
+
+    b = BoltList;
+    for (i = 0; i < 0x78; i++) {
+        if (b->active != 0) {
+            if (b->type == type) {
+                return b;
+            }
+        }
+        b++;
+    }
+    return 0;
+}
+
+struct wbbolt_s *FindFreeWBBolt(void)
+{
+    struct wbbolt_s *b;
+    s32 i;
+
+    b = BoltList;
+    for (i = 0; i < 0x78; i++) {
+        if (b->active == 0) {
+            return b;
+        }
+        b++;
+    }
+    return 0;
+}
+
+extern void DrawEarthBoss(void);
+extern void DrawJeepRocks(void);
+extern void DrawVehMasks(void);
+
+void DrawEarthBossLevelExtra(void)
+{
+    DrawEarthBoss();
+    DrawJeepRocks();
+    DrawVehMasks();
+}
+
+f32 PointLineSide(struct nuvec_s *p, struct nuvec_s *a, struct nuvec_s *b)
+{
+    f32 px = p->x, pz = p->z;
+    f32 ax = a->x, az = a->z;
+    f32 bx = b->x, bz = b->z;
+
+    return (bx - px) * (bz - az) - (bz - pz) * (bx - ax);
+}
+
 s32 PointsSame(struct nuvec_s *a, struct nuvec_s *b)
 {
     s32 r = 0;
@@ -725,4 +882,27 @@ s32 PointsSame(struct nuvec_s *a, struct nuvec_s *b)
         }
     }
     return r;
+}
+
+extern void NuVecSub(struct nuvec_s *d, struct nuvec_s *a, struct nuvec_s *b);
+extern s32 NuAtan2D(f32 x, f32 z);
+
+u16 FindTrailAng(struct nuvec_s *a, struct nuvec_s *b)
+{
+    struct nuvec_s d;
+
+    NuVecSub(&d, b, a);
+    return (u16)(NuAtan2D(d.x, d.z) - 0x2000);
+}
+
+struct jeeprock_s *FindJeepRock(void)
+{
+    s32 i;
+
+    for (i = 0; i < 6; i++) {
+        if (JeepRock[i].exists == 0) {
+            return &JeepRock[i];
+        }
+    }
+    return 0;
 }

@@ -49,7 +49,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00111438:NuRndrSwapStreamBuffers"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00111470:FaceYDirStream"
@@ -73,15 +73,15 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0030:00111738:NuRndrSetDirectionalLights"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:001117f0:NuRndrSetDirectionalLights4"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:001118b0:NuRndrSetAmbientLight"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:001118e8:NuRndrSetGlobalAlpha"
@@ -89,7 +89,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:001118f0:NuRndrSetFxMtx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00111988:NuRndrStreamGetScissor"
@@ -101,7 +101,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:001119a8:NuRndrStreamResetStream"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:001119e8:NuRndrStreamResetStreams"
@@ -109,11 +109,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0030:00111a68:NuRndrVu1Draw"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00111ad8:NuRndrStreamFxMPG"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00111b38:NuRndrStreamAlloc"
@@ -141,7 +141,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0030:00111d28:NuRndrStreamSetViewMtxScissorClip"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00111d98:NuRndrStreamSetLocalMtxEx"
@@ -161,7 +161,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0030:00112000:NuRndrStreamAddZBState"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00112060:CheckRndrStream"

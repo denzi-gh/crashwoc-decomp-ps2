@@ -83,6 +83,8 @@ extern struct nuvec_s BaseWheelPosition[];
 struct fireboss_s {
     u8 unk_0x00[0x408];
     s32 HitPoints;        /* 0x408 */
+    u8 unk_0x40C[0xC];    /* 0x40C */
+    struct nuvec_s Pos;    /* 0x418 */
 };
 extern struct fireboss_s FireBoss;
 
@@ -92,8 +94,23 @@ extern void NuMtxRotateY(struct numtx_s *m, short ang);
 extern void NuMtxRotateX(struct numtx_s *m, short ang);
 extern void NuMtxTranslate(struct numtx_s *m, struct nuvec_s *pos);
 extern void NuVecScale(f32 scale, struct nuvec_s *dest, struct nuvec_s *src);
-extern void NuVecScaleAccum(f32 scale, struct nuvec_s *dest, struct nuvec_s *src);
+extern void NuVecScaleAccum(struct nuvec_s *dest, struct nuvec_s *src, f32 scale);
 extern void DrawFireBoss(struct fireboss_s *fb);
+extern struct numtx_s *DrawJeep(struct NEWBUGGY *Buggy);
+extern void AddVariableShotDebrisEffect(s32 effect, struct nuvec_s *pos, s32 n,
+                                        u16 xrot, u16 yrot);
+extern s32 D_0060E720[];
+extern f32 D_0062E258;
+extern f32 D_0062E25C;
+extern s32 TrailActive[];
+extern s32 D_005C162C[];
+extern char D_006319D8[];
+extern char D_006319E0[];
+extern char D_0061FB40[];
+extern char D_006319E8[];
+extern char D_0061FB50[];
+extern char D_006319F0[];
+extern char D_006319F8[];
 extern void DrawJeepRocks(void);
 extern void DrawVehMasks(void);
 extern void *app_fnt;
@@ -285,6 +302,8 @@ struct JEEPBALLOON {
     s16 unk;                        /* 0x2E */
 };
 extern struct JEEPBALLOON JeepBalloon[];
+extern void ProcessJeepBalloon(struct JEEPBALLOON *b);
+extern void DrawJeepBalloon(struct JEEPBALLOON *b);
 
 struct enemyjeep_s {
     struct nuvec_s Position;        /* 0x000 */
@@ -382,6 +401,19 @@ extern struct nuvec_s IdealCamPos;
 extern struct nuvec_s IdealObjPos;
 extern f32 D_005B9548[4];           /* MinHeight[4] (retail-owned .data) */
 #define MinHeight D_005B9548
+
+struct numtx_s *DrawPlayerJeep(struct creature_s *Cre) {
+    struct NEWBUGGY *Buggy = Cre->Buggy;
+
+    if (Buggy == 0 || VEHICLECONTROL == 0) {
+        return 0;
+    }
+    if (Cre->obj.vehicle == 0x63) {
+        return DrawJeep(Buggy);
+    }
+    return 0;
+}
+
 
 inline void NewGenerateJeepMatrix(struct numtx_s *Mat, short YAng,
                                  short SurfaceX, short SurfaceZ, short TiltX,
@@ -652,6 +684,17 @@ void WesternArenaReset(s32 PlayerDead) {
     }
 }
 
+void DrawWesternArenaLevelExtra(void) {
+    s32 i;
+
+    for (i = 0; i < 4; i++) {
+        if (EnemyJeep[i].Active != 0) {
+            DrawEnemyJeep(&EnemyJeep[i]);
+        }
+    }
+}
+
+
 void FireBossReset(void) {
     FireBossFinished = 0;
     FireBossWon = 0;
@@ -788,7 +831,7 @@ void LimitSpeedZbyXZ(struct nuvec_s *Vec, f32 LimitSpeed) {
 void BlendNUVECs(struct nuvec_s *Dest, struct nuvec_s *A, struct nuvec_s *B,
                  f32 Blend) {
     NuVecScale(1.0f - Blend, Dest, A);
-    NuVecScaleAccum(Blend, Dest, B);
+    NuVecScaleAccum(Dest, B, Blend);
 }
 
 void WesternRaceManager(void) {
@@ -817,22 +860,84 @@ void NewFadeOutLastTrail(struct jeeptrail_s *trail, s32 start, s32 count) {
     f32 step;
     f32 fade;
 
-    step = 1.0f / (f32)(count + 1);
-    fade = step;
     j = 0;
+    fade = 0.0f;
+    step = 1.0f / (f32)(count + 1);
+    fade += step;
     if (count <= 0) {
         return;
     }
     do {
-        struct jeeptrail_s *p = &trail[(start - j) & 0x1F];
-        if (p->pos1.x == -10000.0f) {
+        s32 idx = (start - j) & 0x1F;
+        if (trail[idx].pos1.x == -10000.0f) {
             break;
         }
         j++;
-        p->intensity = (s32)((f32)p->RealIntensity * fade);
+        trail[idx].intensity = (s32)((f32)trail[idx].RealIntensity * fade);
         fade += step;
     } while (j < count);
 }
+
+
+void ProcessJeepTrails(void) {
+    s32 i;
+
+    if (Level == 3 || Level == 0x16) {
+        for (i = 0; i < 20; i++) {
+            if (TrailActive[i] != 0) {
+                TrailActive[i]--;
+                if (TrailActive[i] == 0) {
+                    EmptyTrail(i);
+                }
+            }
+        }
+    }
+}
+
+
+void JonnySteam(struct fireboss_s *fb) {
+    struct nuvec_s pos;
+
+    if (*(f32 *)((u8 *)fb + 0x680) < 3.0f) {
+        pos = fb->Pos;
+        pos.y += 1.5f;
+        AddVariableShotDebrisEffect(D_0060E720[0], &pos, 1, 0, 0);
+    }
+}
+
+
+void JonnyBossSmashEffect(struct fireboss_s *fb) {
+    u8 *p;
+    s32 i;
+
+    DrawCross(&fb->Pos, 0xFF00, 1.0f);
+    p = (u8 *)fb + 0xB0;
+    for (i = 0; i < 10; i++) {
+        DrawCross((struct nuvec_s *)p, 0xFF, 1.0f);
+        p += 0x40;
+    }
+}
+
+
+char *FireBossActionName(void) {
+    switch (D_005C162C[0]) {
+    case 0:
+        return D_006319D8;
+    case 1:
+        return D_006319E0;
+    case 2:
+        return D_0061FB40;
+    case 3:
+        return D_006319E8;
+    case 4:
+        return D_0061FB50;
+    case 5:
+        return D_006319F0;
+    default:
+        return D_006319F8;
+    }
+}
+
 
 void InitJeepBalloons(void) {
     s32 i;
@@ -841,6 +946,28 @@ void InitJeepBalloons(void) {
         JeepBalloon[i].Active = 0;
     }
 }
+
+void ProcessJeepBalloons(void) {
+    s32 i;
+
+    for (i = 0; i < 6; i++) {
+        if (JeepBalloon[i].Active != 0) {
+            ProcessJeepBalloon(&JeepBalloon[i]);
+        }
+    }
+}
+
+
+void DrawJeepBalloons(void) {
+    s32 i;
+
+    for (i = 0; i < 6; i++) {
+        if (JeepBalloon[i].Active != 0) {
+            DrawJeepBalloon(&JeepBalloon[i]);
+        }
+    }
+}
+
 
 inline struct JEEPBALLOON *FindJeepBalloon(void) {
     s32 i;
@@ -852,6 +979,26 @@ inline struct JEEPBALLOON *FindJeepBalloon(void) {
     }
     return 0;
 }
+
+
+s32 BalloonHitFireBoss(struct nuvec_s *pos) {
+    f32 dx;
+    f32 dz;
+    f32 top;
+
+    top = FireBoss.Pos.y + D_0062E25C;
+    dx = FireBoss.Pos.x - pos->x;
+    dz = FireBoss.Pos.z - pos->z;
+    if (dx * dx + dz * dz < D_0062E258) {
+        if (FireBoss.Pos.y <= pos->y) {
+            if (pos->y <= top) {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
 
 s32 AddBalloon(struct nuvec_s *Pos, struct nuvec_s *Vel) {
     struct JEEPBALLOON *Balloon;

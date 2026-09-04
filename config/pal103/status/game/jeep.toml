@@ -97,7 +97,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0101:00228900:ProcessJeepTrails"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:002289b0:InitFireBoss"
@@ -129,7 +129,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0101:0022adf8:DrawPlayerJeep"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022ae40:NewGenerateJeepMatrix"
@@ -149,7 +149,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022b0b0:DrawWesternArenaLevelExtra"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022b108:ProcessWesternArenaLevel"
@@ -225,7 +225,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0101:0022bca8:BlendNUVECs"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022bd00:InitEnemyJeep"
@@ -261,7 +261,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022c068:NewFadeOutLastTrail"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022c0e8:NewFindTrailAng"
@@ -269,15 +269,15 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022c120:JonnySteam"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022c198:JonnyBossSmashEffect"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022c200:FireBossActionName"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022c280:InitJeepBalloons"
@@ -285,11 +285,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022c2a8:ProcessJeepBalloons"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022c310:DrawJeepBalloons"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022c378:FindJeepBalloon"
@@ -297,4 +297,4 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022c3b8:BalloonHitFireBoss"
-state = "asm"
+state = "matching"

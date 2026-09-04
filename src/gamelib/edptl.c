@@ -187,15 +187,41 @@ struct edptlitem_s {
 struct edppptl_s {
     char pad00[0x10];
     int debris;
-    char pad14[0x2C];
+    char pad14[0x24];
+    float switchvar;
+    char pad3C[0x4];
     float bounceoffset;
-    char pad44[0x8];
+    float bouncefactor;
+    char pad48[0x4];
 };
 
 struct debkey_s {
-    char pad000[0x558];
+    char pad000[0x482];
+    short debtype;
+    char pad484[0xCC];
+    float switchvar;
+    char pad554[0x4];
     float bounceoffset;
-    char pad55C[0x10];
+    float bouncefactor;
+    char pad560[0xC];
+};
+
+struct debtypedef_s {
+    char pad00[0x30];
+    float drawcutoff;
+    float emitvel;
+};
+
+struct edptlconfirmmenu_s {
+    char pad00[0x24];
+    void (*callback)(void *menu, int arg);
+    char pad28[0x8];
+    int detacharg;
+};
+
+struct pad_s {
+    unsigned char unk_0x000[0x564];
+    unsigned int buttons;
 };
 
 struct nuvec_s;
@@ -263,6 +289,7 @@ extern int D_0062F340;
 #define collenvmenu D_0062F354
 
 extern void edmainRegisterLocVec(struct nuvec_s *loc);
+extern void eduiMenuDetach(void *menu);
 extern void eduiMenuDestroy(void *menu);
 extern char *strcpy(char *dst, const char *src);
 extern void edcamSetPosAng(void *pos, void *ang, int flags);
@@ -273,6 +300,27 @@ extern char D_00484DC0[];
 
 extern char D_006B3B30[];
 
+extern void *ptljibmenu;
+extern void *ptlsizemenu;
+extern void *texturemenu;
+extern void *textureselectmenu;
+extern int D_0062F328;
+extern int D_0062F32C;
+extern int D_0062F330;
+extern int D_0062F334;
+extern int D_0062F344;
+extern int D_0062F348;
+extern int D_0062F34C;
+extern int D_0062F350;
+extern unsigned char D_0062F358;
+extern char D_00484DE0[];
+extern int D_0062F318;
+
+extern void NuStrCpy(char *dst, char *src);
+extern void DebFreeInstantly(int *key);
+extern void edppDoInput(struct pad_s *pad);
+extern void eduiMenuProcess(void *menu, struct pad_s *pad);
+
 
 void ParticleReset(void) {
     int i;
@@ -281,6 +329,18 @@ void ParticleReset(void) {
         edpp_ptls[i].debris = -1;
     }
     edpp_nextalloc = 0;
+}
+
+
+void edppDestroyAllParticles(void) {
+    int i;
+
+    for (i = 0; i < 256; i++) {
+        if (edpp_ptls[i].debris != -1) {
+            DebFreeInstantly(&edpp_ptls[i].debris);
+            edpp_ptls[i].debris = -1;
+        }
+    }
 }
 
 
@@ -294,8 +354,40 @@ void edppDestroyAllEffects(void) {
 }
 
 
+void edppRegisterLevel(char *path, int id) {
+    if (path != 0) {
+        NuStrCpy(D_00484DE0, path);
+    } else {
+        D_00484DE0[0] = 0;
+    }
+    D_0062F358 = id;
+}
+
+
 void edppRegisterPointerToGameCharLocation(struct nuvec_s *loc) {
     edmainRegisterLocVec(loc);
+}
+
+
+void edppPtlDestroy(int index) {
+    if (edpp_ptls[index].debris != -1) {
+        DebFreeInstantly(&edpp_ptls[index].debris);
+        edpp_ptls[index].debris = -1;
+    }
+}
+
+
+int edppProc(struct pad_s *pad) {
+    unsigned int mask;
+
+    D_0062F318 += 5;
+    if (edpp_active_menu != 0) {
+        eduiMenuProcess(edpp_active_menu, pad);
+        return 0;
+    }
+    edppDoInput(pad);
+    mask = 0x800;
+    return (pad->buttons & mask) != 0;
 }
 
 
@@ -325,9 +417,65 @@ void edptlcbApplyBounceOffset(void *menu, struct edptlitem_s *item) {
 }
 
 
+void edptlcbApplyBounceFactor(void *menu, struct edptlitem_s *item) {
+    struct debkey_s *deb;
+
+    if (edpp_nearest == -1) {
+        return;
+    }
+    if (edpp_ptls[edpp_nearest].debris == -1) {
+        return;
+    }
+    edpp_ptls[edpp_nearest].bouncefactor = item->fvalue;
+    deb = &debkeydata[edpp_ptls[edpp_nearest].debris];
+    deb->bouncefactor = item->fvalue;
+}
+
+
+void cbPtlChangeEmitVel(void *menu, struct edptlitem_s *item) {
+    struct debkey_s *deb;
+    struct debtypedef_s *dt;
+
+    if (edpp_nearest == -1) {
+        return;
+    }
+    if (edpp_ptls[edpp_nearest].debris == -1) {
+        return;
+    }
+    deb = &debkeydata[edpp_ptls[edpp_nearest].debris];
+    dt = debtab[deb->debtype];
+    dt->emitvel = item->fvalue;
+}
+
+
+void cbPtlChangeDrawCutOff(void *menu, struct edptlitem_s *item) {
+    struct debkey_s *deb;
+    struct debtypedef_s *dt;
+
+    if (edpp_nearest == -1) {
+        return;
+    }
+    if (edpp_ptls[edpp_nearest].debris == -1) {
+        return;
+    }
+    deb = &debkeydata[edpp_ptls[edpp_nearest].debris];
+    dt = debtab[deb->debtype];
+    dt->drawcutoff = item->fvalue;
+}
+
+
 void cbCancelChangeGenRateMenu(void) {
     eduiMenuDestroy(changegenratemenu);
     changegenratemenu = 0;
+}
+
+
+void cbPtlSelType(void *menu, struct edptlitem_s *item) {
+    eduiMenuDetach(menu);
+    eduiMenuDestroy(menu);
+    ptltypemenu = 0;
+    edpp_create_type = item->value;
+    edpp_active_menu = 0;
 }
 
 
@@ -340,6 +488,18 @@ void cbCancelMessageMenu(void) {
 void cbCancelEffectListMenu(void) {
     eduiMenuDestroy(effectlistmenu);
     effectlistmenu = 0;
+}
+
+
+void edptlcbSetSwitchVar(void *menu, struct edptlitem_s *item) {
+    if (edpp_nearest == -1) {
+        return;
+    }
+    if (edpp_ptls[edpp_nearest].debris == -1) {
+        return;
+    }
+    edpp_ptls[edpp_nearest].switchvar = item->fvalue;
+    debkeydata[edpp_ptls[edpp_nearest].debris].switchvar = item->fvalue;
 }
 
 
@@ -391,6 +551,16 @@ void cbPtlCancelColMenu(void) {
 }
 
 
+void cbPtlCancelJibMenu(void) {
+    eduiMenuDestroy(ptljibmenu);
+    ptljibmenu = 0;
+    D_0062F344 = 0;
+    D_0062F348 = 0;
+    D_0062F34C = 0;
+    D_0062F350 = 0;
+}
+
+
 void edptlcbCancelBounceMenu(void) {
     eduiMenuDestroy(edptl_bounce_menu);
     edptl_bounce_menu = 0;
@@ -422,6 +592,16 @@ void cbPtlCancelCollMenu(void) {
 }
 
 
+void cbPtlCancelSizeMenu(void) {
+    eduiMenuDestroy(ptlsizemenu);
+    ptlsizemenu = 0;
+    D_0062F328 = 0;
+    D_0062F32C = 0;
+    D_0062F330 = 0;
+    D_0062F334 = 0;
+}
+
+
 void cbPtlCancelRotMenu(void) {
     eduiMenuDestroy(ptlrotmenu);
     ptlrotmenu = 0;
@@ -446,6 +626,16 @@ void cbPtlCancelVarEmitMenu(void) {
 void cbPtlCancelVarStartMenu(void) {
     eduiMenuDestroy(ptlvarstartmenu);
     ptlvarstartmenu = 0;
+}
+
+
+void cbPtlCancelTextureMenu(void) {
+    if (textureselectmenu != 0) {
+        eduiMenuDestroy(textureselectmenu);
+        textureselectmenu = 0;
+    }
+    eduiMenuDestroy(texturemenu);
+    texturemenu = 0;
 }
 
 
@@ -517,9 +707,35 @@ void edppApply(void) {
 }
 
 
+void cbChangeName(void *menu, struct edptlitem_s *item) {
+    char *deb;
+
+    if (edpp_create_type != -1) {
+        deb = debtab[edpp_create_type];
+        if (deb != 0) {
+            strcpy(deb, item->text);
+        }
+    }
+}
+
+
 void cbCancelChangeETimeMenu(void) {
     eduiMenuDestroy(etimemenu);
     etimemenu = 0;
+}
+
+
+void cbConfirmMenuNo(struct edptlconfirmmenu_s *menu) {
+    int arg;
+
+    arg = 0;
+    if (menu->detacharg != 0) {
+        arg = menu->detacharg;
+        eduiMenuDetach(menu);
+    }
+    if (menu->callback != 0) {
+        menu->callback(menu, arg);
+    }
 }
 
 

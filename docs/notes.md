@@ -750,3 +750,175 @@ field directly with `count++`. Struct: `NuGCutSceneDef` rigiddef@0x14 / triggerd
 bytes@0x8/9/A reset at start, max(u8)@0xB, count(u8)@0xC; `NuGCutCamTgt` (16B)
 ptr@0/f32@4/f32@8/char@0xC; scene flag 0x200=updated-this-frame, 0x001 a low state bit
 cleared with RUNNING(0x2) on reset.
+
+## Parallel session 2026-09-04 (c): edptl / vehicle / nustream / main / nufile / jeep (71 matched, 6 blockers)
+
+6 agents x 2 waves, one warm unit each (same agent re-owned its unit across
+waves so wave 2 inherited the warmed file), small-first. 77 attempted, **71
+byte-exact**, batch-promoted in one serial `promote.py --targets-file` run, full
+loaded image re-verified byte-identical (`ninja check`). Per unit: edptl +13/14,
+vehicle +13/14, nufile +12/12, main +12/13, jeep +11/11, nustream +10/13. Nearly
+every match landed on attempt 1 after probing candidate spellings in one scratch
+TU first.
+
+### New reusable levers
+
+- **Dead local *aggregate* copy from a global survives GCC 2.95 dead-store
+  elimination and compiles to a real block-move; dead scalar locals don't.**
+  `minigamedata_s save = D_0061B4B0;` (3xu32, **align 4**) reproduces retail's
+  `ldl/ldr+lw` / `sdl/sdr+sw` split; align-1 gives the wrong `lwl/lwr` tail.
+  Corollary: a 16-byte extent that is real code (not padding) can need a dead
+  `char buf[16];` local purely to emit the `addiu sp,-0x10 / jr ra / addiu sp,0x10`
+  frame (`MiniGameRenderScore`); a truly empty body gives the 8-byte `jr/nop`.
+- **Bare scalar `extern s32 D_X;` is `-G8`-eligible and emits
+  `%gp_rel`/`R_MIPS_GPREL16`; for a symbol far from `$gp` the *linker* fails with
+  `relocation truncated to fit` -- NOT a compile error, so `compile_diff`'s
+  `compiler_ok` passes and only the link step (or `--level function`) reveals it.**
+  Retail addresses these with plain `lui/lw`. Fix: declare `extern s32 NAME[];`
+  and reference `NAME[0]`. Generalizes the existing "`extern T NAME[]` for far
+  floats/doubles" note to *any* scalar type, with a distinct symptom (ld
+  relocation-truncated) from the compile-time GPREL16-overflow case.
+- **A bare global reused across an intervening call needs a local to keep its
+  `$sN` save/frame (required, not stylistic).** Passing `D_0061B4E0` directly into
+  `NuStrCpy(load_txt, D_0061B4E0)` after `NuDisableVBlank()` lets gcc recompute the
+  address post-call, dropping the `$s0` save and shrinking the frame 32->16;
+  `char *msg = D_0061B4E0;` before the call restores retail's save
+  (`BGLoadLevel`/`LoadScreen`/`BGLoadSfxFn`).
+- **A struct must be declared >8 bytes to force `lui`/`%hi` over `%gp_rel`, even
+  if only two fields are read.** `MGCheckRng`'s `mg_player_actpos` reads 2 floats
+  but retail uses `lui/addiu`; model it as a 12-byte vec3 (unread tail) so it
+  crosses the `-G8` threshold.
+- **Retail `slt` (not `sltu`) on a loop bound means an index-typed source loop,
+  even when the compiled shape looks pointer-based.** gcc always lowers pointer
+  `LT_EXPR` to unsigned; a signed `for (i=0;i<N;i++)` keeps the same
+  strength-reduced pointer-vs-limit `bnel` shape but stays signed
+  (`InitCreatureModels`).
+- **A pointer-bounded `for (p=arr; p<&arr[N]; p++)` over a constant `N` can emit an
+  unwanted upfront `sltu`+`beq` guard** (gcc can't prove the range is non-empty),
+  overrunning the extent (`.org backwards`). The index-subscript form
+  `for (i=0;i<N;i++)` lets gcc prove `N>0` and drops the guard, matching retail's
+  unconditional-first-iteration do-while shape (`CountAsteroids`).
+- **`beql`/`bnel` (branch-likely) vs a plain branch tracks the loop-*test*
+  instruction class, not trip count.** Accumulate loops (always complete) use
+  `beql`/`bnel` when the continuation test is a pointer-vs-end `slt`/`sltu`, but a
+  plain `bgez` when it is a downcounter; search loops with an early `return` inside
+  the body use plain `bne`/`beqz` regardless of trip count.
+- **A multi-field struct-fill with duplicate-valued fields does not emit in C
+  declaration order** -- gcc treats the fungible same-value stores as reorderable
+  and resolves them by whole-unit register pressure. Treat a probe's field order as
+  a hypothesis only; the real fix loop is `compile_diff` + manually decoding the
+  mismatched words (rs/rt/rd/imm) to see which fields swapped, not further isolated
+  probing (`NuMemFileOpen`, 5-field init, 3 iterations).
+- **Register-*count* lever:** a cheap independent computation (`&global_string`)
+  gets a callee-saved register only if its live range is forced -- assigning it to a
+  local *before* the `if` (not inline in the true branch) gave `NuFileSetCurrentDirectory`
+  retail's 2-saved (`s0`+`s1`) prologue instead of 1. Same family as "explicit temp
+  flips regalloc", but for register count.
+- **Early `v0 = 1` return materialization is easy to miss.** All four rndrstream
+  setters (`SetAmbientLight`, `SetDirectionalLights`, `SetDirectionalLights4`,
+  `SetFxMtx`) compute `addiu v0,zero,1` as their *second* instruction and
+  `return 1` unconditionally; missing it stole `$v0` from the destination-pointer
+  role and cascaded a whole-body tie mismatch (`SetFxMtx` scored 2.6%). Check for
+  it before assuming a leaf "setter" is `void`.
+- **Two textually-identical sibling shapes can need OPPOSITE regalloc idioms.**
+  `edptlcbApplyBounceFactor` matched with `deb = &debkeydata[..]; deb->field = x;`
+  but `edptlcbSetSwitchVar` needed the *direct* double-index
+  `debkeydata[..].field = x;` (no intermediate pointer) to flip a v0/v1 tie -- never
+  assume a sibling's working shape transfers.
+- **Single-bit test canonicalization:** `(x & POW2) != 0` with a compile-time single
+  bit gets canonicalized to `sra N; andi 1`; retail sometimes has `andi MASK;
+  sltu $0,v`. Assigning the mask to a local first (`unsigned int mask = 0x800;
+  return (x & mask) != 0;`) defeats the canonicalization.
+- **Negated-ternary polarity:** for a shared-tail 3-way dispatch where two arms share
+  code, `(cond != X) ? A : B` (negated, operands swapped) reproduces retail's
+  non-inverted `beq`-to-target shape where `switch`/if-else-if and `(cond == X) ? B :
+  A` both invert (`NuRndrStreamFxMPG`; standing recipe).
+- **A zero-init accumulator compiles to `add.s`, not `mov.s`.** `fade = 0.0f;
+  step = 1.0f/(count+1); fade += step;` gives `mtc1 $zero` early / `div.s` late /
+  `add.s` in the branch delay slot; a plain `fade = step;` gives `mov.s` and swaps
+  which register holds `step` vs `fade` (`NewFadeOutLastTrail`).
+- **3-element trailing-field write:** for `col[0..2].a`, ascending C order does not
+  match; write `col[2]` (from a distinct constant) first, then `col[1]`, `col[0]` --
+  the "pair reverses" rule applied to the two order-free zero-writes, composing across
+  3 elements.
+- **Padding-promoted-to-field:** when a second function over the same struct proves a
+  byte range you modeled as padding is a real, separately-managed field (here
+  `nurndrstream_s.unk_0x14`, zeroed by the *array* reset but not the *single*),
+  convert the pad to a named field -- evidence composes across functions in a unit.
+- **`arr[idx].f` (index local) and `p = &arr[i]; p->f` (pointer local) pick opposite
+  `addu` operand orders** -- third data point (`trail[idx].x` -> `addu v1,v0,a0`
+  matches; pointer-local -> `addu v1,a0,v0` wrong). Reindexing via the subscript form
+  still CSE'd one computed address.
+- **Cancel/menu stubs keep source order for null-runs; the adjacent-store
+  reverse/rotate rule fires ONLY for stores at adjacent addresses.** `cbPtlSelType`
+  writes three *non-adjacent* globals in plain source order; `cbPtlCancelTextureMenu`
+  mixes a conditional single-null with a following unconditional single-null.
+- **Guard-/tail-call polarity is per-function -- probe every one.** `nucore/nufile`
+  showed four distinct shapes in one unit (flattened early-return, wrapped body,
+  single `||`, and a nested `if(a){if(b){...}}`); the "guard polarity" heuristic does
+  not always predict which. Faithful reconstructions of retail quirks: `NuFileAppendPath`'s
+  `if(*p++!=sep){*p++=sep;}` (post-increment always runs; retail compares against the
+  NUL so the store always fires), and `NuFileWriteStringV`'s `sceWrite(fh-1, buf,
+  strlen(fmt))` -- `strlen` of the *format* string, not the formatted buffer, with
+  `len = strlen(fmt);` as its own statement to schedule `fh-1` late.
+
+### New / confirmed blocker classes (proven, left state=asm)
+
+- **`jal` delay-slot nop-vs-fill (the INVERSE of the `_sonyize` wall).** gcc fills
+  the `jal NuGScnRead` delay slot with an independent store where retail keeps an
+  explicit `nop` (`LoadFont3D`, 7 orderings). `_sonyize` cannot help -- it adds a nop
+  where gcc left the slot empty, not the reverse. The same statements match when
+  *inlined* into a larger function (`BGLoadSfxFn`), so it is isolation-dependent.
+- **Tail-only global vs loop-setup global competing for a branch delay slot.** A
+  `blez`-gated loop needs one extern array's address immediately while an unconditional
+  tail store needs a second array's address; retail fills the loop-guard's slot with
+  the loop one, ee-gcc prefers the tail one (or computes it two instructions early).
+  12 variants, no phrasing controls it (`NuRndrStreamResetStreams`, 59.4%).
+- **Pure integer load-vs-store scheduling for back-to-back calls.** An independent
+  load competing with a preceding global store as delay-slot fillers for two opaque
+  calls: the decompals build hoists the load earliest, retail leaves it as the second
+  call's own delay slot (`NuRndrStreamPrependMPG`, 92.3%). Distinct from the
+  fp-hazard-nop / delay-slot-reorg-fill classes -- no float, no branch.
+- **Commutative `addu` operand order is not source-controllable.** For a
+  `count += (a > b)` accumulate, gcc canonicalizes the `addu` operand order the same
+  way for every spelling (7 tried); when retail's order differs it is structural
+  (`GetCurrentFireFlyObjectives`, 94.4%).
+- **Register $s0/$s1 tie flip.** ee-gcc ties a signed-char param to `$s0` and a struct
+  pointer to `$s1`; retail ties them opposite, costing one `move` that shifts the tail
+  (`NuRndrStreamAddTex`, 9 spellings).
+- **List-scheduler prologue-adjust + post-call delay-slot fill** differ from retail
+  with no source control (`edppProc`, 4 orderings).
+
+### Struct & symbol facts
+
+- **gamelib/edptl:** `edptlitem_s` {value@0x0C, toggle@0x10, char text[8]@0x44,
+  fvalue@0x4C}; `edptlconfirmmenu_s` {callback(void(*)(void*,int))@0x24, detacharg@0x30}
+  (passed as the callback's sole param, not the `(void*menu, item*)` pair);
+  `edppptl_s` {debris@0x10 (-1=free), switchvar(f)@0x38, bounceoffset(f)@0x40,
+  bouncefactor(f)@0x44}; `debkey_s` {debtype(short)@0x482, switchvar(f)@0x550,
+  bounceoffset(f)@0x558, bouncefactor(f)@0x55C}; `debtypedef_s` = `debtab[]` pointee
+  {drawcutoff(f)@0x30, emitvel(f)@0x34}; `pad_s` {buttons(u32)@0x564}. `DebFreeInstantly`
+  takes `s32 *key`. `edppRegisterLevel` is a two-field setter (NuStrCpy/else-clear +
+  id store), NOT an ObjectPath array-append (inherited hint was wrong).
+- **game/vehicle:** `wbbolt_s` {active@0x00, type(s32)@0x24, stride 0x30};
+  `asteroid_s` {active@0x00, radius(f)@0x2C, stride 0x4C, `AsteroidList` = 0x1DB0
+  bytes}; `NEWBUGGY` {ball_pos@0x20C, atlas_rotparam@0x26C}; `struct MYDRAW` is
+  TU-local to vehsupp.c -- a bare opaque `struct MYDRAW;` forward decl suffices for a
+  pointer-only param. `FindTrailAng` == jeep.c `NewFindTrailAng`
+  (`NuVecSub(&d,b,a); return (u16)(NuAtan2D(d.x,d.z)-0x2000);`).
+- **nu3d/nustream:** `nurndrstream_s` stride 0x38 {cur@0x00, tex@0x04, unk_0x14 (real
+  field, zeroed by ResetStreams only), zbuf@0x10, mpgtag@0x18, short -2 sentinels
+  @0x24/0x26/0x28, unk_0x30 (int bitmask, `&4` tested)}. `rndrstream_rt_light_buffer`:
+  SoA `dirx/diry/dirz[3]`@0x10/0x20/0x30, `col[3]` nucolour4_s@0x40/0x50/0x60, ambient
+  rgba@0x70. `D_00679B40[]` = stream pool (count `D_00633028`); `D_0067A590`+0x10 = NuMtx.
+  `NuRndrSwapStreamBuffers` toggles buffer-index `D_0062EA74` (signed %2) + forwards to
+  `NuRndrInitStreams` (does not swap the bases directly). All four `*light*`/`*fx*`
+  setters `return 1`.
+- **nucore/nufile:** `NuMemFileOpen(char*start,int size,int mode)` fills a free
+  `memfiles[]` slot (stride 0x14): end=start+size-1, curr=start, used=1, returns i+0x400;
+  fails (0) on size<=0 or mode!=0. New symbols `D_0062E9B8` (char[] suffix via NuStrCat),
+  `D_0062E9C0/C8/CC/D0`, `NuMemFreeFn(void*,char*,int)`.
+- **game/jeep:** `fireboss_s` {HitPoints(s32)@0x408, Pos(nuvec_s)@0x418} (proven 3 ways).
+  `AddVariableShotDebrisEffect(s32, nuvec_s*, s32, u16, u16)` (real def fwd-declared
+  creature.c:1485). `FireBossActionName` = switch over `D_005C162C[0]`, 6 dense cases +
+  default (jtbl_0061FC70); `char *(void)` signature is a style choice (no C callers yet).

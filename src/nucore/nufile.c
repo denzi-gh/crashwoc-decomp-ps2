@@ -278,9 +278,169 @@ int NuFileGetBlkSize(void)
 }
 
 
+char* strcpy(char* __dest, const char* __src);
+
+
+int NuFileAppendPath(char *dest, char *s1, char *s2)
+{
+    char *p;
+
+    strcpy(dest, s1);
+    p = dest + strlen(dest);
+    if (*p++ != '\\') {
+        *p++ = '\\';
+    }
+    strcpy(p, s2);
+    return strlen(dest);
+}
+
+
+char* strrchr(const char* __s, int __c);
+int strncpy(char* __dest, const char* __src, unsigned long __n);
+
+
+int NuFileExtractPath(char *dest, char *path)
+{
+    char *p;
+    int len;
+
+    p = strrchr(path, '\\');
+    if (p) {
+        p++;
+    } else {
+        p = path;
+    }
+    len = p - path;
+    strncpy(dest, path, len);
+    dest[len] = 0;
+    return len;
+}
+
+
+int NuFileExtractFilename(char *dest, char *path)
+{
+    char *p;
+
+    p = strrchr(path, '\\');
+    if (p) {
+        p++;
+    } else {
+        p = path;
+    }
+    strcpy(dest, p);
+    return strlen(dest);
+}
+
+
+int NuFileExtractExt(char *dest, char *path)
+{
+    char *p;
+
+    p = strrchr(path, '.');
+    if (p) {
+        p++;
+    } else {
+        p = path;
+    }
+    strcpy(dest, p);
+    return strlen(dest);
+}
+
+
+extern char D_006134B0[];
+#define nufile_file D_006134B0
+
+extern void *D_0062E9CC;
+extern void *D_0062E9D0;
+extern int D_0062E9C8;
+extern void NuMemFreeFn(void *ptr, char *file, int line);
+
+
+void NuFileTidyAddress(void)
+{
+    if (D_0062E9CC != 0) {
+        NuMemFreeFn(D_0062E9CC, nufile_file, 0x574);
+        D_0062E9CC = 0;
+    }
+    if (D_0062E9D0 != 0) {
+        NuMemFreeFn(D_0062E9D0, nufile_file, 0x579);
+        D_0062E9D0 = 0;
+    }
+    D_0062E9C8 = 0;
+}
+
+
+int NuMemFileOpen(char *start, int size, int mode)
+{
+    int i;
+    struct numemfile_s *mf;
+    char *end;
+
+    if (size > 0) {
+        if (mode == 0) {
+            end = start + size - 1;
+            mf = memfiles;
+            for (i = 0; i < 20; i++) {
+                if (mf->used == 0) {
+                    mf->end = end;
+                    mf->start = start;
+                    mf->curr = start;
+                    mf->mode = mode;
+                    mf->used = 1;
+                    return i + 0x400;
+                }
+                mf++;
+            }
+        }
+    }
+    return 0;
+}
+
+
+void NuDatFileClose(int fh);
+
+
+void NuMemFileClose(int fh)
+{
+    if (fh >= 0x800) {
+        NuDatFileClose(fh);
+        return;
+    }
+    fh -= 0x400;
+    memfiles[fh].used = 0;
+}
+
+
+int NuDatFilePos(int fh);
+
+
+int NuMemFilePos(int fh)
+{
+    if (fh >= 0x800) {
+        return NuDatFilePos(fh);
+    }
+    fh -= 0x400;
+    return (int)memfiles[fh].curr - (int)memfiles[fh].start;
+}
+
+
 void* NuMemFileAddr(int fh)
 {
     return memfiles[fh - 0x400].curr;
+}
+
+
+int NuFileSeek(int fh, int offset, int origin);
+
+
+int NuDatFilePos(int fh)
+{
+    int ix;
+    struct nudatfile_s *df;
+
+    ix = fh - 0x800;
+    df = &datfiles[ix];
+    return NuFileSeek(df->ndh->fh, 0, 1) - df->start;
 }
 
 
@@ -831,6 +991,30 @@ int NuFileRead(int fh, void* data, int size) {
     return __n_00;
 }
 
+
+typedef char *va_list;
+#define va_start(ap, last) \
+    ((ap) = ((va_list)__builtin_next_arg(last) \
+        - (__builtin_args_info(2) < 8 ? (8 - __builtin_args_info(2)) * 8 : 0)))
+#define va_end(ap)
+
+extern int vsprintf(char *buf, const char *fmt, va_list args);
+
+
+void NuFileWriteStringV(int fh, char *fmt, ...)
+{
+    char buf[0x400];
+    va_list args;
+    int len;
+
+    va_start(args, fmt);
+    vsprintf(buf, fmt, args);
+    va_end(args);
+    len = strlen(fmt);
+    sceWrite(fh - 1, buf, len);
+}
+
+
 extern int sceCdDiskReady(int mode);
 extern int sceCdInit(int mode);
 extern int sceCdMmode(int media);
@@ -890,6 +1074,24 @@ void NuFileInit(int deviceid) {
     memset(&datfiles, 0, 0x230);
 }
 
+
+extern char D_0062E9B8[];
+
+
+void NuFileSetCurrentDirectory(char *dir)
+{
+    char *suffix;
+
+    suffix = D_0062E9B8;
+    if (dir[0] != 0) {
+        strcpy(working_dir, dir);
+        NuStrCat(working_dir, suffix);
+    } else {
+        working_dir[0] = 0;
+    }
+}
+
+
 int NuFileOpenSize(int fh)
 {
     if (fh >= 0x800) {
@@ -897,4 +1099,21 @@ int NuFileOpenSize(int fh)
     }
     fh--;
     return file_info[fh].file_length;
+}
+
+
+extern char D_0062E9C0[];
+
+
+int NuFileStatus(int fh)
+{
+    int status;
+
+    if (fh < 0x400) {
+        if (sceIoctl(fh - 1, 1, &status) != 0) {
+            NuErrorProlog(nufile_file, 0x269)(D_0062E9C0);
+        }
+        return status;
+    }
+    return 0;
 }

@@ -990,12 +990,32 @@ extern void PauseGameAudio(s32 a);
 extern void GameSfx(s32 id, s32 a);
 extern void NuPs2VideoSetPos(s32 x, s32 y);
 
+typedef struct {
+    u32 score;
+    u32 time;
+    u32 flags;
+} minigamedata_s;
+
+extern minigamedata_s D_0061B4B0;
+
+void MiniGameReset(void)
+{
+    minigamedata_s save = D_0061B4B0;
+}
+
+
 void MiniGame(void)
 {
 }
 
 void MiniGameRender(void)
 {
+}
+
+
+void MiniGameRenderScore(void)
+{
+    char buf[16];
 }
 
 void DoInput(void)
@@ -1130,5 +1150,146 @@ void DoInput(void)
         pausestats_frame = 0;
         PauseGameAudio(1);
         GameSfx(0x36, 0);
+    }
+}
+
+
+void ResetSuperBuffer(void)
+{
+    superbuffer_ptr = superbuffer_reset_base;
+}
+
+
+void SuperBufferMakeResident(void)
+{
+    superbuffer_reset_base = superbuffer_ptr;
+}
+
+
+void PauseGame(void)
+{
+    pause_dir = 1;
+    NewMenu(&Cursor, 3, 0, -1);
+    ResetTimer(&PauseTimer);
+    pausestats_frame = 0;
+    PauseGameAudio(1);
+    GameSfx(0x36, 0);
+}
+
+
+extern void ResumeGameAudio(void);
+
+void ResumeGame(void)
+{
+    ResumeGameAudio();
+}
+
+
+void LoadScreen(char *name)
+{
+    NuDisableVBlank();
+    NuStrCpy(load_txt, name);
+    NuEnableVBlank();
+}
+
+
+void LoadFont3D(void)
+{
+    font3d_initialised = 0;
+    font3d_scene = NuGScnRead(&superbuffer_ptr, superbuffer_end, D_0061AE58);
+    InitFont3D(font3d_scene);
+}
+
+
+void InitCreatureModels(void)
+{
+    s32 i;
+
+    for (i = 0; i < 9; i++) {
+        Character[i].f0 = 0;
+        Character[i].f1 = 0;
+        Character[i].f2 = 0;
+    }
+    GAMEOBJECTCOUNT = 0;
+    LoadScreen(D_0061AE88);
+    LoadCharacterModels();
+}
+
+
+extern void NuPs2PadSetMotors(struct nupad_s *pad, s32 a, s32 b);
+
+void PauseRumble(void)
+{
+    if (Pad[0]) {
+        NuPs2PadSetMotors(Pad[0], pausebuzz != 0, 0);
+    }
+    if (Pad[1]) {
+        NuPs2PadSetMotors(Pad[1], 0, 0);
+    }
+}
+
+
+struct nutex_s;
+
+extern struct numtl_s *pause_src_mtl;
+extern struct numtl_s *pause_rndr_mtl;
+extern struct nutex_s *pause_rt;
+extern void NuMtlDestroy(struct numtl_s *mtl);
+extern void NuTexDestroy(struct nutex_s *tex);
+
+void ClosePauseRender(void)
+{
+    if (pause_src_mtl) {
+        NuMtlDestroy(pause_src_mtl);
+    }
+    if (pause_rndr_mtl) {
+        NuMtlDestroy(pause_rndr_mtl);
+    }
+    if (pause_rt) {
+        NuTexDestroy(pause_rt);
+    }
+    pause_src_mtl = 0;
+    pause_rndr_mtl = 0;
+    pause_rt = 0;
+}
+
+
+struct vec2_s {
+    float x;
+    float y;
+};
+
+struct vec3_s {
+    float x;
+    float y;
+    float z;
+};
+
+extern struct vec3_s mg_player_actpos;
+extern float mg_colldist;
+
+s32 MGCheckRng(struct vec2_s *pos)
+{
+    float dx = pos->x - mg_player_actpos.x;
+    float dy = pos->y - mg_player_actpos.y;
+    return dx * dx + dy * dy < mg_colldist;
+}
+
+
+extern char D_0061B4E0[];
+
+void BGLoadLevel(void)
+{
+    char *msg = D_0061B4E0;
+
+    NuDisableVBlank();
+    NuStrCpy(load_txt, msg);
+    NuEnableVBlank();
+
+    superbuffer_ptr = superbuffer_reset_base;
+    BGLoadScreenInit(1);
+    LoadLevel();
+    bgload_complete = 1;
+    for (;;) {
     }
 }
