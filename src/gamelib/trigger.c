@@ -35,6 +35,26 @@ struct numtx_s {
     f32 _33;            /* 0x3C */
 };
 
+struct numtx2_s
+{
+    f32 _00;
+    f32 _01;
+    f32 _02;
+    f32 _03;
+    f32 _10;
+    f32 _11;
+    f32 _12;
+    f32 _13;
+    f32 _20;
+    f32 _21;
+    f32 _22;
+    f32 _23;
+    f32 _30;
+    f32 _31;
+    f32 _32;
+    f32 _33;
+};
+
 union variptr_u
 {
     void *voidptr;
@@ -148,9 +168,9 @@ struct NuSceneInst {
 typedef struct NuTriggerSys {
     struct NuTriggerSys *next; /* 0x00 */
     struct NuTriggerSys *prev; /* 0x04 */
-    NuTriggerDefHdr *def;      /* 0x08 -- the definition passed in a0 */
+    NuTriggerDefHdr *def;      /* 0x08 NUTRIGGERSYS triggersys; -- the definition passed in a0 */
     NuTrigger *triggers;       /* 0x0C -- per-trigger array (def->count * 4) */
-    struct NuSceneInst *data;  /* 0x10 -- opaque payload passed in a1 */
+    struct NuSceneInst *data;  /* 0x10 void* gscene; -- opaque payload passed in a1 */
     int userflags;             /* 0x14 -- bit0 = disabled */
 } NuTriggerSys;
 
@@ -191,6 +211,63 @@ extern int D_0062F800;
 
 extern NuTriggerSys* D_00649fb0;
 #define active_triggersys_instances D_00649fb0
+
+
+enum NUTRIGGERPRIMTYPES_e {
+    NUTRIGGERPRIMTYPE_CYLINDER = 3,
+    NUTRIGGERPRIMTYPE_CUBE = 2,
+    NUTRIGGERPRIMTYPE_SPHERE = 1,
+    NUTRIGGERPRIMTYPE_NONE = 0,
+};
+
+struct NUTRIGGERPRIM_s {
+    // total size: 0x8
+    enum NUTRIGGERPRIMTYPES_e type; // offset 0x0, size 0x4
+    void * data; // offset 0x4, size 0x4
+};
+
+enum NUTRIGGERTYPE_s {
+    NUTRIGGER_PLAYER_WEAPON_CONTACT = 2,
+    NUTRIGGER_PLAYER_CONTACT = 1,
+    NUTRIGGER_AUTO = 0,
+};
+
+struct NUTRIGGERPRIM_CUBE_s { // 0x58
+	/* 0x00 */ struct numtx2_s invmtx;
+	/* 0x40 */ struct nuvec_s min;
+	/* 0x4c */ struct nuvec_s max;
+};
+
+struct NUTRIGGERPRIM_CYLINDER_s { // 0x14
+	/* 0x00 */ struct nuvec_s bottom;
+	/* 0x0c */ float height;
+	/* 0x10 */ float radius;
+};
+
+struct NUTRIGGERPRIM_SPHERE_s { // 0x10
+	/* 0x0 */ struct nuvec_s centre;
+	/* 0xc */ float radius;
+};
+
+struct NUTRIGGER_s {
+    // total size: 0x34
+    char * triggername; // offset 0x0, size 0x4
+    enum NUTRIGGERTYPE_s trigger_type; // offset 0x4, size 0x4
+    short hitpoints; // offset 0x8, size 0x2
+    char enableflags; // offset 0xA, size 0x1
+    char pad; // offset 0xB, size 0x1
+    int scale_transform : 1; // offset 0xC, size 0x4
+    int display_box : 1; // offset 0xC, size 0x4
+    int persistant : 1; // offset 0xC, size 0x4
+    float radius; // offset 0x10, size 0x4
+    struct nuvec_s min; // offset 0x14, size 0xC
+    struct nuvec_s max; // offset 0x20, size 0xC
+    short numprims; // offset 0x2C, size 0x2
+    short instance_ix; // offset 0x2E, size 0x2
+    struct NUTRIGGERPRIM_s * prims; // offset 0x30, size 0x4
+};
+
+int CheckParentedTriggerWithPos(struct NUTRIGGER_s* trigger, struct numtx2_s* mtx, struct nuvec_s* pos, float r);
 
 
 void *NuTriggerSysLoad(char *name, void **heap, void **heapend)
@@ -732,8 +809,8 @@ NuTriggerSys *instNuTriggerSysCreate(NuTriggerDefHdr *triggersys,void *gscene,un
 
         active_triggersys_instances = itriggersys;
 
-        itriggersys->gscene = gscene;
-        itriggersys->triggersys = triggersys;
+        itriggersys->data = gscene;
+        itriggersys->def = triggersys;
         itriggersys->triggers = (NuTrigger *)buff->voidptr;
 
         buff->intaddr += triggersys->count * 4;
@@ -816,61 +893,7 @@ void NuTriggerPull(NuTriggerSys *sys, NuTriggerDef *def, NuTrigger *trig, int pu
     }
 }
 
-enum NUTRIGGERPRIMTYPES_e {
-    NUTRIGGERPRIMTYPE_CYLINDER = 3,
-    NUTRIGGERPRIMTYPE_CUBE = 2,
-    NUTRIGGERPRIMTYPE_SPHERE = 1,
-    NUTRIGGERPRIMTYPE_NONE = 0,
-};
-
-struct NUTRIGGERPRIM_s {
-    // total size: 0x8
-    enum NUTRIGGERPRIMTYPES_e type; // offset 0x0, size 0x4
-    void * data; // offset 0x4, size 0x4
-};
-
-enum NUTRIGGERTYPE_s {
-    NUTRIGGER_PLAYER_WEAPON_CONTACT = 2,
-    NUTRIGGER_PLAYER_CONTACT = 1,
-    NUTRIGGER_AUTO = 0,
-};
-
-struct NUTRIGGERPRIM_CUBE_s { // 0x58
-	/* 0x00 */ struct numtx_s invmtx;
-	/* 0x40 */ struct nuvec_s min;
-	/* 0x4c */ struct nuvec_s max;
-};
-
-struct NUTRIGGERPRIM_CYLINDER_s { // 0x14
-	/* 0x00 */ struct nuvec_s bottom;
-	/* 0x0c */ float height;
-	/* 0x10 */ float radius;
-};
-
-struct NUTRIGGERPRIM_SPHERE_s { // 0x10
-	/* 0x0 */ struct nuvec_s centre;
-	/* 0xc */ float radius;
-};
-
-struct NUTRIGGER_s {
-    // total size: 0x34
-    char * triggername; // offset 0x0, size 0x4
-    enum NUTRIGGERTYPE_s trigger_type; // offset 0x4, size 0x4
-    short hitpoints; // offset 0x8, size 0x2
-    char enableflags; // offset 0xA, size 0x1
-    char pad; // offset 0xB, size 0x1
-    int scale_transform : 1; // offset 0xC, size 0x4
-    int display_box : 1; // offset 0xC, size 0x4
-    int persistant : 1; // offset 0xC, size 0x4
-    float radius; // offset 0x10, size 0x4
-    struct nuvec_s min; // offset 0x14, size 0xC
-    struct nuvec_s max; // offset 0x20, size 0xC
-    short numprims; // offset 0x2C, size 0x2
-    short instance_ix; // offset 0x2E, size 0x2
-    struct NUTRIGGERPRIM_s * prims; // offset 0x30, size 0x4
-};
-
-int CheckParentedTriggerWithPos(struct NUTRIGGER_s* trigger, struct numtx_s* mtx, struct nuvec_s* pos, float r) {
+int CheckParentedTriggerWithPos(struct NUTRIGGER_s* trigger, struct numtx2_s* mtx, struct nuvec_s* pos, float r) {
     int i;
     struct NUTRIGGERPRIM_s* prim;
     struct nuvec_s dp;
