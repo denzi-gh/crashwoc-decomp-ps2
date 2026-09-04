@@ -153,15 +153,15 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0069:00189598:DebrisEmiterPos"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:001895d0:DebrisReflectionOrientation"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:00189620:DebrisSetTrigger"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:00189660:DebrisSetGroupID"
@@ -185,7 +185,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:00189738:CameraEmitterDistance"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:00189768:DebrisFindAllOfType"
@@ -193,15 +193,15 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0069:001897f8:FindDebrisEffectStack"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:00189858:RemoveDebrisEffectFromStack"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:001898a0:AddChunkControlToStack"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:001898d0:SolveQuadratic"
@@ -217,7 +217,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0069:00189a38:GenDebMomAdjFromPosAll"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:00189a68:GenDebMomAdjFromPosRev"
@@ -241,15 +241,15 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0069:00189d80:DebAlloc"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:00189de0:RemoveChunkControlFromStack"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:00189e28:DebFreeWithoutKey"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:00189e70:DebrisEmitterOrientationMtx"
@@ -257,7 +257,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0069:00189f30:AddDebrisEffectToStack"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:00189f60:DebrisDoSounds"

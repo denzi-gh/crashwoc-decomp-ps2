@@ -53,13 +53,21 @@
 
 typedef unsigned char u8;
 typedef unsigned short u16;
+typedef long long s64;
 
 typedef struct NuTex {
     int type;
     int width;
     u8 unk008[0x10];
-    u16 refcount;
-    u8 unk01A[0xB2];
+    union {
+        u16 refcount;
+        s64 flags;
+    };
+    u8 unk020[0x30];
+    int reqsize[10];
+    u8 unk078[0x10];
+    u16 texaddr;
+    u8 unk08A[0x42];
     int gsaddr;
     u8 unk0D0[0x10];
 } NuTex;
@@ -71,13 +79,28 @@ extern int gs_botfree;
 extern int D_00633068;
 #define gs_tempfree D_00633068
 
+extern int D_0062EC04;
+#define gs_reserve_sp D_0062EC04
+extern int D_0067D640[256];
+#define gs_reserve_stack D_0067D640
+
 extern int NuTexReadBitmapMMEx(char *name, int mipmaps, int *addr, int *addrend);
 extern int NuTexCreateEx(NuTex *spec, void *extmem, int extsize);
 extern int NuTexRecoverNativeDataEx(int tex, void *dest, int size, int header, int image, int palette);
+extern void NuPs2ChangeTexPal(void *pal);
+extern void NuPs2ChangeTexPalStreamTemp(void *pal);
 
 
 int NuTexGetSysBuffSize(int count) {
     return count * sizeof(NuTex);
+}
+
+
+void NuTexUnReserve(void) {
+    if (gs_reserve_sp) {
+        gs_reserve_sp--;
+        gs_botfree = gs_reserve_stack[gs_reserve_sp];
+    }
 }
 
 
@@ -93,6 +116,24 @@ int NuTexReadBitmapMM(char *name, int mipmaps) {
 
 int NuTexCreate(NuTex *spec) {
     return NuTexCreateEx(spec, 0, 0);
+}
+
+
+short NuTexRef(int tex) {
+    tex--;
+    if (tex >= 0) {
+        return ++TexList[tex].refcount;
+    }
+    return 0;
+}
+
+
+short NuTexUnRef(int tex) {
+    tex--;
+    if (tex >= 0) {
+        return --TexList[tex].refcount;
+    }
+    return 0;
 }
 
 
@@ -123,6 +164,48 @@ int NuTexHeight(int tex) {
 }
 
 
+int NuTexHasAlpha(int tex) {
+    int type;
+
+    tex--;
+    if (tex >= 0) {
+        type = TexList[tex].type;
+        if (type == 1 || type == 3) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+
+int NuTexAlphaBits(int type) {
+    if (type == 1) goto b4;
+    if (type == 0) goto b0;
+    if (type == 2) goto b0;
+    if (type == 3) goto b8;
+    goto def;
+b0:
+    return 0;
+b4:
+    return 4;
+b8:
+    return 8;
+def:
+    return 0;
+}
+
+
+int NuTexPalSize(int type) {
+    switch (type) {
+    case 5:
+        return 0x400;
+    case 4:
+        return 0x40;
+    }
+    return 0;
+}
+
+
 int NuTexRecoverNativeData(int tex, void *dest, int size) {
     return NuTexRecoverNativeDataEx(tex, dest, size, 1, 1, 1);
 }
@@ -138,4 +221,54 @@ void NuTexAssignAddr(int tex, int addr) {
         tex--;
         TexList[tex].gsaddr = addr;
     }
+}
+
+
+void NuTexAssignTempAddr(int tex) {
+    if (tex > 0) {
+        tex--;
+        gs_tempfree = (gs_tempfree + 31) & 0xFFFFFFE0;
+        TexList[tex].gsaddr = gs_tempfree;
+        gs_tempfree += TexList[tex].reqsize[0];
+    }
+}
+
+
+int NuTexGetReqSize(int tex, int level) {
+    if (tex > 0) {
+        tex--;
+        return TexList[tex].reqsize[level] << 8;
+    }
+    return 0;
+}
+
+
+void NuTexCloneTempAddr(int dst, int src) {
+    if (dst > 0 && src > 0) {
+        dst--;
+        src--;
+        TexList[dst].gsaddr = TexList[src].gsaddr;
+    }
+}
+
+
+void NuTexPalChange(int tex) {
+    if (tex > 0) {
+        NuPs2ChangeTexPal(TexList[tex - 1].unk020);
+    }
+}
+
+
+void NuTexPalChangeStreamTemp(int tex) {
+    if (tex > 0) {
+        NuPs2ChangeTexPalStreamTemp(TexList[tex - 1].unk020);
+    }
+}
+
+
+int NuTexGetTextAddr(int tex) {
+    if (TexList[tex - 1].flags & 0x10000) {
+        return TexList[tex - 1].texaddr ? TexList[tex - 1].texaddr : gs_botfree;
+    }
+    return 0;
 }
