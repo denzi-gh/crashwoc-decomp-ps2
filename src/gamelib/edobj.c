@@ -107,24 +107,44 @@
 struct nugscn_s;
 
 struct edobjitem_s {
-    char pad00[0x4C];
+    char pad00[0x10];
+    unsigned char toggle;
+    char pad11[0x4C - 0x11];
     float fvalue;
 };
 
 struct edobject_s {
-    char pad000[0x24];
+    int instance;
+    float anim_speed;
+    int oscillate;
+    char pad00c[0x10 - 0x0C];
+    float anim_pause;
+    char pad014[0x24 - 0x14];
     int anim_start_offset;
     char pad028[0x130 - 0x28];
     int switch_id;
     float switch_var;
     float switch_delay;
-    char pad13c[0x340 - 0x13C];
+    char pad13c[0x1DC - 0x13C];
+    int particle_rate[8];
+    int particle_switch[8];
+    char pad21c[0x340 - 0x21C];
     int sound_type[8];
     float sound_timing[8];
-    char pad380[0x3EC - 0x380];
+    char pad380[0x3E0 - 0x380];
+    float bouncy_player_grav;
+    float bouncy_tension;
+    float bouncy_damping;
+};
+
+struct edobjinstance_s {
+    char pad00[0x40];
+    int id;
+    char pad44[0x50 - 0x44];
 };
 
 extern struct edobject_s ObjectPath[];
+extern struct edobjinstance_s ObjectInstance[];
 
 extern struct nugscn_s *edobj_base_scene;
 extern void *edobj_active_menu;
@@ -149,9 +169,17 @@ extern int edobj_particle_type;
 extern int edobj_sound_type;
 extern int edobj_snap_xz;
 extern int edobj_snap_y;
+extern int edobj_nearest_particle;
+extern int edobj_next_instance;
+extern void *edobj_particle_menu;
+extern void *edobj_localparticletype_menu;
+extern void *edobj_sound_menu;
+extern void *edobj_soundtype_menu;
 
 extern void edbitsRegisterLevel(char *filename, int whatgame);
 extern void eduiMenuDestroy(void *menu);
+extern void edobjObjectDestroy(int instance);
+extern void edobjConvertPathToAnim(int instance);
 
 
 void edobjRegisterLevel(char *filename, int whatgame)
@@ -166,9 +194,51 @@ void edobjRegisterBaseScene(struct nugscn_s *scene)
 }
 
 
+void edobjObjectReset(void)
+{
+    struct edobjinstance_s *oi;
+    int i;
+
+    oi = ObjectInstance;
+    for (i = 0; i < 64; i++) {
+        ObjectPath[i].instance = -1;
+        oi[i].id = -1;
+    }
+    edobj_next_instance = 0;
+}
+
+
+void edobjObjectDestroyAll(void)
+{
+    int i;
+
+    for (i = 0; i < 64; i++) {
+        edobjObjectDestroy(i);
+    }
+}
+
+
 void edobjcbCancelOptMenu(void)
 {
     edobj_active_menu = 0;
+}
+
+
+void edobjcbChangeAnimSpeed(void *menu, struct edobjitem_s *item)
+{
+    if (edobj_nearest != -1) {
+        ObjectPath[edobj_nearest].anim_speed = item->fvalue;
+        edobjConvertPathToAnim(edobj_nearest);
+    }
+}
+
+
+void edobjcbChangeAnimPause(void *menu, struct edobjitem_s *item)
+{
+    if (edobj_nearest != -1) {
+        ObjectPath[edobj_nearest].anim_pause = item->fvalue;
+        edobjConvertPathToAnim(edobj_nearest);
+    }
 }
 
 
@@ -176,6 +246,23 @@ void edobjcbChangeAnimStartOffset(void *menu, struct edobjitem_s *item)
 {
     if (edobj_nearest != -1) {
         ObjectPath[edobj_nearest].anim_start_offset = item->fvalue;
+    }
+}
+
+
+void edobjcbOscillateToggle(void *menu, struct edobjitem_s *item)
+{
+    if (edobj_nearest != -1) {
+        ObjectPath[edobj_nearest].oscillate = item->toggle;
+        edobjConvertPathToAnim(edobj_nearest);
+    }
+}
+
+
+void edobjcbToggleParticleSwitch(void *menu, struct edobjitem_s *item)
+{
+    if (edobj_nearest != -1) {
+        ObjectPath[edobj_nearest].particle_switch[edobj_nearest_particle] = item->toggle;
     }
 }
 
@@ -239,9 +326,42 @@ void edobjcbCancelWayPropertiesMenu(void)
 }
 
 
+void edobjcbSetBouncyPlayerGrav(void *menu, struct edobjitem_s *item)
+{
+    if (edobj_nearest != -1) {
+        ObjectPath[edobj_nearest].bouncy_player_grav = item->fvalue;
+        edobjConvertPathToAnim(edobj_nearest);
+    }
+}
+
+
+void edobjcbSetBouncyTension(void *menu, struct edobjitem_s *item)
+{
+    if (edobj_nearest != -1) {
+        ObjectPath[edobj_nearest].bouncy_tension = item->fvalue;
+        edobjConvertPathToAnim(edobj_nearest);
+    }
+}
+
+
+void edobjcbSetBouncyDamping(void *menu, struct edobjitem_s *item)
+{
+    if (edobj_nearest != -1) {
+        ObjectPath[edobj_nearest].bouncy_damping = item->fvalue;
+        edobjConvertPathToAnim(edobj_nearest);
+    }
+}
+
+
 void edobjcbSetSoundTiming(void *menu, struct edobjitem_s *item)
 {
     ObjectPath[edobj_nearest].sound_timing[edobj_nearest_sound] = item->fvalue;
+}
+
+
+void edobjcbSetParticleRate(void *menu, struct edobjitem_s *item)
+{
+    ObjectPath[edobj_nearest].particle_rate[edobj_nearest_particle] = item->fvalue;
 }
 
 
@@ -297,4 +417,32 @@ void edobjcbCancelLocalSoundTypeMenu(void)
 {
     eduiMenuDestroy(edobj_localsoundtype_menu);
     edobj_localsoundtype_menu = 0;
+}
+
+
+void edobjcbCancelLocalParticleTypeMenu(void)
+{
+    eduiMenuDestroy(edobj_localparticletype_menu);
+    edobj_localparticletype_menu = 0;
+}
+
+
+void edobjcbCancelParticleMenu(void)
+{
+    eduiMenuDestroy(edobj_particle_menu);
+    edobj_particle_menu = 0;
+}
+
+
+void edobjcbCancelSoundMenu(void)
+{
+    eduiMenuDestroy(edobj_sound_menu);
+    edobj_sound_menu = 0;
+}
+
+
+void edobjcbCancelSoundTypeMenu(void)
+{
+    eduiMenuDestroy(edobj_soundtype_menu);
+    edobj_soundtype_menu = 0;
 }

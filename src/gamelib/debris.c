@@ -72,12 +72,28 @@
 struct debinfo_s;
 
 struct deb_s {
-    u8 pad_000[0x484];
+    s32 field_000;
+    u8 pad_004[0x47C];
+    s16 field_480;
+    u8 pad_482[2];
     s16 on;
     s16 limit;
     u8 pad_488[2];
     s16 index;
-    u8 pad_48C[0xDC];
+    s16 field_48C;
+    s16 field_48E;
+    struct nuvec_s emitpos;
+    u8 pad_49C[0x14];
+    struct deb_s *next;
+    u8 pad_4B4[0x94];
+    s32 trigger;
+    s32 trigger_param;
+    f32 trigger_value;
+    s16 reflect_a;
+    s16 reflect_b;
+    f32 reflect_x;
+    f32 reflect_y;
+    u8 pad_560[8];
     s16 groupid;
     u8 pad_56A[2];
 };
@@ -89,12 +105,24 @@ struct debpart_s {
     f32 rate;
 };
 
+struct chunkctrl_s {
+    u8 pad_000[0x10];
+    struct chunkctrl_s *next;
+};
+
 extern struct deb_s debkeydata[];
+extern struct deb_s *debris_emitter_stack[];
+extern s16 freedebkeys[];
+extern s32 freedebkeyptr;
 extern s32 debris_render_group;
 extern struct nuvec_s *CutoffCameraVec;
+extern f32 D_0062CEB8;
+#define deb_mom_scale D_0062CEB8
 
 void SetupDebris(void);
 struct debpart_s *GenDebIndex(struct deb_s *deb, struct debinfo_s *info);
+f32 NuVecDist(struct nuvec_s *a, struct nuvec_s *b, void *c);
+void DebFree(s32 *key);
 
 
 void DebrisOff(s32 *key) {
@@ -113,6 +141,34 @@ void DebrisOn(s32 *key) {
     if (*key != -1) {
         deb = &debkeydata[*key];
         deb->on = 1;
+    }
+}
+
+
+void DebrisEmiterPos(s32 key, f32 x, f32 y, f32 z) {
+    if (key != -1) {
+        debkeydata[key].emitpos.x = x;
+        debkeydata[key].emitpos.y = y;
+        debkeydata[key].emitpos.z = z;
+    }
+}
+
+
+void DebrisReflectionOrientation(s32 key, s16 a, s16 b, f32 x, f32 y) {
+    if (key != -1) {
+        debkeydata[key].reflect_a = a;
+        debkeydata[key].reflect_b = b;
+        debkeydata[key].reflect_x = x;
+        debkeydata[key].reflect_y = y;
+    }
+}
+
+
+void DebrisSetTrigger(s32 key, s32 trigger, s32 param, f32 value) {
+    if (key != -1) {
+        debkeydata[key].trigger = trigger;
+        debkeydata[key].trigger_param = param;
+        debkeydata[key].trigger_value = value;
     }
 }
 
@@ -142,8 +198,82 @@ void DebrisRegisterCutoffCameraVec(struct nuvec_s *vec) {
 }
 
 
+f32 CameraEmitterDistance(struct nuvec_s *pos) {
+    if (CutoffCameraVec == 0) {
+        return 0.0f;
+    }
+    return NuVecDist(pos, CutoffCameraVec, 0);
+}
+
+
+struct deb_s **FindDebrisEffectStack(struct deb_s *node) {
+    struct deb_s **list;
+    struct deb_s *cur;
+    s32 i;
+
+    for (i = 0; i < 32; i++) {
+        list = &debris_emitter_stack[i];
+        if (*list != 0) {
+            do {
+                cur = *list;
+                if (cur == node) {
+                    return &debris_emitter_stack[i];
+                }
+                list = &cur->next;
+            } while (*list != 0);
+        }
+    }
+    return 0;
+}
+
+
+void RemoveDebrisEffectFromStack(struct deb_s *node, struct deb_s **list) {
+    struct deb_s *cur;
+
+    if (*list != 0) {
+        if (*list == node) {
+            *list = node->next;
+        } else {
+            do {
+                cur = *list;
+                list = &cur->next;
+                if (cur->next == 0) {
+                    break;
+                }
+                if (cur->next == node) {
+                    cur->next = node->next;
+                    break;
+                }
+            } while (1);
+        }
+    }
+    node->next = 0;
+}
+
+
+void AddChunkControlToStack(struct chunkctrl_s *node, struct chunkctrl_s **list) {
+    struct chunkctrl_s *cur;
+
+    if (*list != 0) {
+        do {
+            cur = *list;
+            list = &cur->next;
+        } while (cur->next != 0);
+    }
+    *list = node;
+    node->next = 0;
+}
+
+
 struct debpart_s *GenDebIndexSort(struct deb_s *deb, struct debinfo_s *info) {
     return GenDebIndex(deb, info);
+}
+
+
+void GenDebMomAdjFromPosAll(struct deb_s *deb, struct debinfo_s *info, struct debpart_s *part) {
+    part->mom.x = part->pos.x * deb_mom_scale;
+    part->mom.y = part->pos.y * deb_mom_scale;
+    part->mom.z = part->pos.z * deb_mom_scale;
 }
 
 
@@ -162,4 +292,76 @@ void GenDebMomAdjFromSplash(struct deb_s *deb, struct debinfo_s *info, struct de
 void GenDebMomAdjFromAshRock(struct deb_s *deb, struct debinfo_s *info, struct debpart_s *part) {
     part->mom.x = part->pos.x * 16.0f;
     part->mom.z = part->pos.z * 16.0f;
+}
+
+
+s32 DebAlloc(void) {
+    s32 key;
+    struct deb_s *deb;
+
+    if (freedebkeyptr >= 256) {
+        return -1;
+    }
+    key = freedebkeys[freedebkeyptr++];
+    deb = &debkeydata[key];
+    deb->field_480 = 0;
+    deb->limit = 0;
+    deb->field_48C = 0;
+    deb->field_48E = 0;
+    deb->field_000 = 0;
+    return key;
+}
+
+
+void RemoveChunkControlFromStack(struct chunkctrl_s *node, struct chunkctrl_s **list) {
+    struct chunkctrl_s *cur;
+
+    if (*list != 0) {
+        if (*list == node) {
+            *list = node->next;
+        } else {
+            do {
+                cur = *list;
+                list = &cur->next;
+                if (cur->next == 0) {
+                    break;
+                }
+                if (cur->next == node) {
+                    cur->next = node->next;
+                    break;
+                }
+            } while (1);
+        }
+    }
+    node->next = 0;
+}
+
+
+void DebFreeWithoutKey(struct deb_s *deb) {
+    s32 i;
+    s32 key;
+
+    for (i = 0; i < 256; i++) {
+        if (&debkeydata[i] == deb) {
+            key = i;
+            DebFree(&key);
+            break;
+        }
+    }
+}
+
+
+void AddDebrisEffectToStack(struct deb_s *node, struct deb_s **list) {
+    struct deb_s *cur;
+
+    if (node->next != 0) {
+        node->next = 0;
+    }
+    if (*list != 0) {
+        do {
+            cur = *list;
+            list = &cur->next;
+        } while (cur->next != 0);
+    }
+    *list = node;
 }
