@@ -188,10 +188,6 @@ extern char D_00619EF8[];
 extern char D_00619F20[];
 extern char D_00619F60[];
 
-int CheckParentedTriggerWithPos(NuTriggerDef *def, struct NuTriggerNode *node,
-                                struct nuvec_s *pos, float radius);
-int CheckUnparentedTriggerWithPos(NuTriggerDef *def, struct nuvec_s *pos,
-                                  float radius);
 void NuRndrLine3d(struct NuRndrVtx *line, void *arg1, struct numtx_s *mtx);
 void NuVecMtxTransform(struct nuvec_s *dst, struct nuvec_s *src,
                        struct numtx_s *mtx);
@@ -268,6 +264,7 @@ struct NUTRIGGER_s {
 };
 
 int CheckParentedTriggerWithPos(struct NUTRIGGER_s* trigger, struct numtx2_s* mtx, struct nuvec_s* pos, float r);
+int CheckUnparentedTriggerWithPos(NuTriggerDef *def, struct nuvec_s *pos,float radius);
 
 
 void *NuTriggerSysLoad(char *name, void **heap, void **heapend)
@@ -352,10 +349,10 @@ void NuTriggerSysUpdate(struct nuvec_s *pos, f32 radius)
                         if (node->flags & 1) {
                             if (node->ref == 0)
                                 active = CheckParentedTriggerWithPos(
-                                    d, node, pos, radius);
+                                    (struct NUTRIGGER_s*)d, (struct numtx2_s*)&node->mtx, pos, radius);
                             else
                                 active = CheckParentedTriggerWithPos(
-                                    d, node->ref, pos, radius);
+                                    (struct NUTRIGGER_s*)d, (struct numtx2_s*)&node->ref->mtx, pos, radius);
                         }
                     } else {
                         active = CheckUnparentedTriggerWithPos(d, pos, radius);
@@ -899,7 +896,7 @@ int CheckParentedTriggerWithPos(struct NUTRIGGER_s* trigger, struct numtx2_s* mt
     struct nuvec_s dp;
     struct nuvec_s vr;
     struct nuvec_s lpos;
-    struct numtx_s invmtx;
+    struct numtx2_s invmtx;
     float fVar6;
     float fVar7;
     float fVar8;
@@ -918,8 +915,8 @@ int CheckParentedTriggerWithPos(struct NUTRIGGER_s* trigger, struct numtx2_s* mt
     fVar6 = trigger->radius + r;
     if (fVar6 * fVar6 < dp.x * dp.x + dp.y * dp.y + dp.z * dp.z) {
         if ((trigger->scale_transform & 1U) != 0) {
-            NuMtxInvH(&invmtx, mtx);
-            NuVecMtxTransform(&lpos, pos, &invmtx);
+            NuMtxInvH((struct numtx_s *)&invmtx, (struct numtx_s *)mtx);
+            NuVecMtxTransform(&lpos, pos, (struct numtx_s *)&invmtx);
             vr.x = vr.y = vr.z = r;
             NuVecMtxTransform(&vr, &vr, &invmtx);
             NuVecSub(&vr, &vr, (struct nuvec_s*)&invmtx._30);
@@ -932,7 +929,7 @@ int CheckParentedTriggerWithPos(struct NUTRIGGER_s* trigger, struct numtx2_s* mt
             switch (prim->type) {
                 case NUTRIGGERPRIMTYPE_SPHERE:
                     sphere = prim->data;
-                    NuVecMtxTransform(&centre, &sphere->centre, mtx);
+                    NuVecMtxTransform(&centre, &sphere->centre, (struct numtx_s *)mtx);
                     fVar7 = (float)NuVecDistSqr(pos, &centre, &dp);
                     fVar6 = sphere->radius + r;
                     if (fVar7 < fVar6 * fVar6) {
@@ -944,8 +941,8 @@ int CheckParentedTriggerWithPos(struct NUTRIGGER_s* trigger, struct numtx2_s* mt
                     break;
                 case NUTRIGGERPRIMTYPE_CUBE:
                     cube = prim->data;
-                    NuVecMtxTransform(&lpos2, &lpos, &cube->invmtx);
-                    NuVecMtxTransform(&lvr, &vr, &cube->invmtx);
+                    NuVecMtxTransform(&lpos2, &lpos, (struct numtx_s *)&cube->invmtx);
+                    NuVecMtxTransform(&lvr, &vr, (struct numtx_s *)&cube->invmtx);
                     NuVecSub(&lvr, &lvr, (struct nuvec_s*)&cube->invmtx._30);
                     lvr.x = NuFabs(lvr.x);
                     lvr.y = NuFabs(lvr.y);
@@ -960,7 +957,7 @@ int CheckParentedTriggerWithPos(struct NUTRIGGER_s* trigger, struct numtx2_s* mt
                     break;
                 case NUTRIGGERPRIMTYPE_CYLINDER:
                     cylinder = prim->data;
-                    NuVecMtxTransform(&bottom, &cylinder->bottom, mtx);
+                    NuVecMtxTransform(&bottom, &cylinder->bottom, (struct numtx_s *)mtx);
                     if ((bottom.y - r > pos->y) || (pos->y > bottom.y + cylinder->height + r)) {
                         break;
                     }
