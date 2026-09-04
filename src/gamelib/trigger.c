@@ -35,6 +35,35 @@ struct numtx_s {
     f32 _33;            /* 0x3C */
 };
 
+union variptr_u
+{
+    void *voidptr;
+    signed char *s8;
+    unsigned char *u8;
+    short unsigned int *u16;
+    short int *s16;
+    unsigned int *u32;
+    unsigned int *s32;
+    long unsigned int *u64;
+    float *f32;
+    struct nuvec_s* vec3;
+    void* vec4;
+    void* ivec3;
+    void* ivec4;
+    struct numtx_s* mtx44;
+    void* mtl;
+    void *vutri;
+    void *tristream;
+    unsigned int* viftag;
+    unsigned int intaddr;
+    void* dmatag;
+    void *giftag;
+    void *zbuf;
+    void *test;
+    void *prmode;
+    void *frame;
+};
+
 /* Renderer vertex; NuRndrLine3d takes two of them. */
 struct NuRndrVtx {
     struct nuvec_s pos; /* 0x00 */
@@ -159,6 +188,9 @@ extern int D_0062F7FC;
 
 extern int D_0062F800;
 #define g_DbgTriggerOff D_0062F800
+
+extern NuTriggerSys* D_00649fb0;
+#define active_triggersys_instances D_00649fb0
 
 
 void *NuTriggerSysLoad(char *name, void **heap, void **heapend)
@@ -678,41 +710,41 @@ void NuTriggerSysRender(void)
 }
 
 
-NuTriggerSys *instNuTriggerSysCreate(NuTriggerDefHdr *def, void *data, void **heap)
-{
-    NuTriggerSys *sys = 0;
+NuTriggerSys *instNuTriggerSysCreate(NuTriggerDefHdr *triggersys,void *gscene,union variptr_u *buff) {
+    NuTriggerSys *itriggersys = 0;
     int i;
 
-    if (def == 0)
-        goto out;
-    if (data == 0)
-        goto out;
-    if (*(int *)((char *)data + 0x10) == 0)
-        goto out;
+    if (triggersys != 0 &&
+        gscene != 0 &&
+        *(int *)((char *)gscene + 0x10) != 0) {
 
-    sys = (NuTriggerSys *)(((unsigned int)*heap + 0xF) & ~0xFU);
-    *heap = (char *)sys + 0x18;
-    memset(sys, 0, 0x18);
+        buff->intaddr = (buff->intaddr + 0xF) & ~0xF;
+        itriggersys = buff->voidptr;
 
-    sys->prev = 0;
-    sys->next = g_NuTriggerSysList;
-    if (g_NuTriggerSysList)
-        g_NuTriggerSysList->prev = sys;
-    g_NuTriggerSysList = sys;
+        buff->voidptr = itriggersys + 1;
+        memset(itriggersys, 0, 0x18);
 
-    sys->data = data;
-    sys->def = def;
-    sys->triggers = (NuTrigger *)*heap;
-    *heap = (char *)*heap + def->count * 4;
-    memset(sys->triggers, 0, def->count * 4);
+        itriggersys->prev = 0;
+        itriggersys->next = active_triggersys_instances;
 
-    for (i = 0; i < def->count; i++)
-        sys->triggers[i].flags = def->defs[i].resetflag;
+        if (active_triggersys_instances)
+            active_triggersys_instances->prev = itriggersys;
 
-out:
-    return sys;
+        active_triggersys_instances = itriggersys;
+
+        itriggersys->gscene = gscene;
+        itriggersys->triggersys = triggersys;
+        itriggersys->triggers = (NuTrigger *)buff->voidptr;
+
+        buff->intaddr += triggersys->count * 4;
+        memset(itriggersys->triggers, 0, triggersys->count * 4);
+
+        for (i = 0; i < triggersys->count; i++)
+            itriggersys->triggers[i].flags = triggersys->defs[i].resetflag;
+    }
+
+    return itriggersys;
 }
-
 
 void instNuTriggerSysDestroy(NuTriggerSys *sys)
 {
@@ -782,4 +814,144 @@ void NuTriggerPull(NuTriggerSys *sys, NuTriggerDef *def, NuTrigger *trig, int pu
         NuSceneInstanceRunScript(sys->data, buf);
         trig->state &= 0xFE;
     }
+}
+
+enum NUTRIGGERPRIMTYPES_e {
+    NUTRIGGERPRIMTYPE_CYLINDER = 3,
+    NUTRIGGERPRIMTYPE_CUBE = 2,
+    NUTRIGGERPRIMTYPE_SPHERE = 1,
+    NUTRIGGERPRIMTYPE_NONE = 0,
+};
+
+struct NUTRIGGERPRIM_s {
+    // total size: 0x8
+    enum NUTRIGGERPRIMTYPES_e type; // offset 0x0, size 0x4
+    void * data; // offset 0x4, size 0x4
+};
+
+enum NUTRIGGERTYPE_s {
+    NUTRIGGER_PLAYER_WEAPON_CONTACT = 2,
+    NUTRIGGER_PLAYER_CONTACT = 1,
+    NUTRIGGER_AUTO = 0,
+};
+
+struct NUTRIGGERPRIM_CUBE_s { // 0x58
+	/* 0x00 */ struct numtx_s invmtx;
+	/* 0x40 */ struct nuvec_s min;
+	/* 0x4c */ struct nuvec_s max;
+};
+
+struct NUTRIGGERPRIM_CYLINDER_s { // 0x14
+	/* 0x00 */ struct nuvec_s bottom;
+	/* 0x0c */ float height;
+	/* 0x10 */ float radius;
+};
+
+struct NUTRIGGERPRIM_SPHERE_s { // 0x10
+	/* 0x0 */ struct nuvec_s centre;
+	/* 0xc */ float radius;
+};
+
+struct NUTRIGGER_s {
+    // total size: 0x34
+    char * triggername; // offset 0x0, size 0x4
+    enum NUTRIGGERTYPE_s trigger_type; // offset 0x4, size 0x4
+    short hitpoints; // offset 0x8, size 0x2
+    char enableflags; // offset 0xA, size 0x1
+    char pad; // offset 0xB, size 0x1
+    int scale_transform : 1; // offset 0xC, size 0x4
+    int display_box : 1; // offset 0xC, size 0x4
+    int persistant : 1; // offset 0xC, size 0x4
+    float radius; // offset 0x10, size 0x4
+    struct nuvec_s min; // offset 0x14, size 0xC
+    struct nuvec_s max; // offset 0x20, size 0xC
+    short numprims; // offset 0x2C, size 0x2
+    short instance_ix; // offset 0x2E, size 0x2
+    struct NUTRIGGERPRIM_s * prims; // offset 0x30, size 0x4
+};
+
+int CheckParentedTriggerWithPos(struct NUTRIGGER_s* trigger, struct numtx_s* mtx, struct nuvec_s* pos, float r) {
+    int i;
+    struct NUTRIGGERPRIM_s* prim;
+    struct nuvec_s dp;
+    struct nuvec_s vr;
+    struct nuvec_s lpos;
+    struct numtx_s invmtx;
+    float fVar6;
+    float fVar7;
+    float fVar8;
+    float f;
+    struct NUTRIGGERPRIM_SPHERE_s* sphere;
+    struct nuvec_s centre;
+    struct NUTRIGGERPRIM_CUBE_s* cube;
+    struct nuvec_s lpos2;
+    struct nuvec_s lvr;
+    struct NUTRIGGERPRIM_CYLINDER_s* cylinder;
+    struct nuvec_s bottom;
+
+    dp.x = pos->x - mtx->_30;
+    dp.y = pos->y - mtx->_31;
+    dp.z = pos->z - mtx->_32;
+    fVar6 = trigger->radius + r;
+    if (fVar6 * fVar6 < dp.x * dp.x + dp.y * dp.y + dp.z * dp.z) {
+        if ((trigger->scale_transform & 1U) != 0) {
+            NuMtxInvH(&invmtx, mtx);
+            NuVecMtxTransform(&lpos, pos, &invmtx);
+            vr.x = vr.y = vr.z = r;
+            NuVecMtxTransform(&vr, &vr, &invmtx);
+            NuVecSub(&vr, &vr, (struct nuvec_s*)&invmtx._30);
+            vr.x = NuFabs(vr.x);
+            vr.y = NuFabs(vr.y);
+            vr.z = NuFabs(vr.z);
+        }
+        for (i = 0; i < trigger->numprims; i++) {
+            prim = (struct NUTRIGGERPRIM_s*)(trigger->prims) + i;
+            switch (prim->type) {
+                case NUTRIGGERPRIMTYPE_SPHERE:
+                    sphere = prim->data;
+                    NuVecMtxTransform(&centre, &sphere->centre, mtx);
+                    fVar7 = (float)NuVecDistSqr(pos, &centre, &dp);
+                    fVar6 = sphere->radius + r;
+                    if (fVar7 < fVar6 * fVar6) {
+                        return 1;
+                    }
+                    // i = trigger->numprims;
+                    break;
+                case NUTRIGGERPRIMTYPE_NONE:
+                    break;
+                case NUTRIGGERPRIMTYPE_CUBE:
+                    cube = prim->data;
+                    NuVecMtxTransform(&lpos2, &lpos, &cube->invmtx);
+                    NuVecMtxTransform(&lvr, &vr, &cube->invmtx);
+                    NuVecSub(&lvr, &lvr, (struct nuvec_s*)&cube->invmtx._30);
+                    lvr.x = NuFabs(lvr.x);
+                    lvr.y = NuFabs(lvr.y);
+                    lvr.z = NuFabs(lvr.z);
+                    if ((cube->max.x < lpos2.x - lvr.x) || (cube->min.x > lpos2.x + lvr.x)
+                        || (cube->max.y < lpos2.y - lvr.y) || (cube->min.y > lpos2.y + lvr.y)
+                        || (cube->max.z < lpos2.z - lvr.z) || (cube->min.z > lpos2.z + lvr.z))
+                    {
+                        break;
+                    }
+                    return 1;
+                    break;
+                case NUTRIGGERPRIMTYPE_CYLINDER:
+                    cylinder = prim->data;
+                    NuVecMtxTransform(&bottom, &cylinder->bottom, mtx);
+                    if ((bottom.y - r > pos->y) || (pos->y > bottom.y + cylinder->height + r)) {
+                        break;
+                    }
+                    fVar7 = pos->x - bottom.x;
+                    fVar8 = pos->z - bottom.z;
+                    f = fVar7 * fVar7 + fVar8 * fVar8;
+                    fVar6 = cylinder->radius + r;
+                    fVar6 *= fVar6;
+                    if (f < fVar6) {
+                        return 1;
+                    }
+                    break;
+            }
+        }
+    }
+    return 0;
 }
