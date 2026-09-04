@@ -676,3 +676,77 @@ debris +12, nutex +11), full image re-verified byte-identical. All four files ar
   register counter and a SEPARATE stack `key`, assigning `key = i; DebFree(&key);`
   only at the call site; plain `bne` (advance in delay) is right, an explicit `p++`
   gives a wrong `bnel`.
+
+### Parallel session 2026-09-04 (b): edptl / edobj / nurndr / gcutscn (51 matched, 1 divergence)
+
+4 agents x 2 waves, one unit each, small-first. All 52 attempts matched at
+`--level function` on attempt 1 (every agent probed spellings in one TU first),
+but the batch `promote.py` (full gap-to-next extent) rolled back on ONE:
+`edobjPlayerObjectDistance` (0x19f338) diverges over its full extent though the
+function-level diff was exact -- the verify gap the template warns about. Re-run
+of the other 51 promoted clean; full image re-verified byte-identical. Net
++51: edptl +13, edobj +12 (13 attempted, 1 held back), nurndr +13, gcutscn +13.
+`edobjPlayerObjectDistance` left state=asm as a faithful near-match; the trailing
+region past the function body is what disagrees -- investigate the gap-to-next
+extent before re-attempting (it is an FP distance leaf: `if (edmainQueryLocVec()
+== 0) return 0.0f; return NuVecDist(&ObjectInstance[obj].pos,
+edmainQueryLocVec(), 0);`, `return 0.0f` = `mtc1 $zero,$f0`).
+
+**Cancel/menu stubs (edptl):** the wave-1 "multi-null keeps SOURCE order" finding
+extends to 3 and 4 nulled globals (`cbPtlCancelColMenu` nulls 3, `cbPtlCancelRotMenu`
+nulls 4, all source order after `eduiMenuDestroy` -- the adjacent-store
+reverse/rotate rule does NOT fire for a post-destroy null run). `edptlcbEmptyClipboard`
+is a save/restore around a global-input callee: `saved = g; g = clip; cb(); g = saved;
+clip = -1;` -- `saved` naturally lands in `$s0` (live across the call), the
+`g = clip` store fills the `jal` delay slot. `cbChangeFileName` proved
+`edptlitem_s` has a `char text[8]` @0x44 (between toggle@0x10 and fvalue@0x4C).
+
+**edobj struct + levers:** `edobject_s` (stride 0x3EC) per-waypoint layout is
+position `waypoints[8]`@0x2C, `waypoint_speed[8]`@0x8C, `waypoint_rot[8]`(nuvec)@0xAC;
+`switch_type`(int)@0x12C just before switch_id@0x130; `edobjinstance_s` (stride 0x50)
+`pos`(nuvec)@0x30, id@0x40. A gp-global leaf called twice is NOT CSE'd -- write the
+call twice (`edmainQueryLocVec()` for the null-check and again for the arg).
+if/else vs ternary store: `type=item->value; if(type==0)type=-1; g=type;` if-converts
+to `movz`; the branchy `g=...; if(sentinel)g=-1; else g=item->value;` keeps `bne`+`b`
+and TAIL-MERGES the two stores into one `sw` ONLY when the compared reg is also the
+else-value (SetParticleType, sentinel 0); when the sentinel is a distinct constant
+occupying the compare reg (SetSoundType, 99999) the two stores stay separate.
+Byte-field-into-int-temp (`on = item->toggle; g = on; if(on)...`) reads the byte once
+and fills the `beqz` delay slot with the `sw` (SnapY/SnapXZ); reading `item->toggle`
+twice re-reads because the global store aliases it.
+
+**nurndr:** a 12-byte `NuVec3 {float x,y,z}` value copy from a param pointer emits
+`ldl/ldr`(0-7)+`lw`(8-11) (and the `sdl/sdr`+`sw` mirror) with NO aligned attribute --
+retail's shape (`NuRndrShadowDirCol` copies `*dir` into `curlight`@0x2e4e48). To
+reproduce a global RE-READ after a call, snapshot before and `+=` after:
+`n = g; g += f(...,n,...);` (`NuRndrSplineSearch`: `NuRndrShadMaskCount += NuSplineFindAllSub(spline, D_0062ECA8, &NuRndrShadMasks[n], 32 - n)`). The
+`_sonyize_seg` reorder-branch fix also covers a `.set reorder` conditional branch
+(`beqz/nop`) sitting between two if-gated calls, not just bare `jal`s
+(`NuRndrEndSceneEx`/`NuRndrFlush`, which are byte-identical twins `void f(int flags)`).
+Running-pointer DMA-tag fill `p = vpDmaTag_RetEx(...); *p++ = 0x60010063; *p = 0;
+vpDmaTag_Close(p+1);` matches; a low-half-zero `li` collapses to a bare `lui`.
+`NuRndrStarfield` is a NuError "not implemented" stub (same call-through-returned-fnptr
+as `nulist.c::NuListCheck`). New gp/data: ot_tri 0x2dcdd8 (memset 0x4000),
+ot_highest gp@0x62ed00, curlight NuVec3 0x2e4e48, curlightcol gp@0x62ed18,
+NRFanData gp@0x62ecdc, NuRndrShadMasks 0x2d6798 (int, stride 4); `numtl_s` embeds a
+`NuRndrStream` @0x124, `numtl_defaultmtl3d` gp-ptr@0x62ebe4.
+
+**gcutscn:** the matrix-op scene wrappers share one shape --
+`scene->flags |= 0x10; NuMtx<op>(&scene->mtx, arg); instNuGCutSceneCalculateCentre(scene, &scene->mtx);` -- and a trailing `float` arg (angle) rides `$f12` forwarded to the
+matrix op with no extra move (`RotateY` = `SetPos` with the op swapped). Two adjacent
+`flags &= ~A; flags &= ~B;` do NOT fold: gcc keeps two `and`s with the masks
+materialized separately (`addiu -N`) and elides the intermediate store, so
+`lw; and; and; sw` with two distinct `addiu -N` = two source statements (a single
+`&= ~(A|B)` folds to one `and`). `instNuGCutSceneFind` is a `for(s=list; s;
+s=s->next) if(strcasecmp(name,s->name)==0) return s;` -- head read once via `%gp_rel`
+into a saved reg, `bnel` with `s=s->next` in the delay slot. Post-increment
+array-append (`instNuGCutSceneAddCamTgt`): `if(sys && sys->count < sys->max){
+E *e = &sys->targets[sys->count++]; ...; return 1;} return 0;` -- the `u8 count` is
+read once into a temp, `andi 0xFF` gives the zero-extended value feeding BOTH the
+`sltu` bound and the `sll` index while the RAW byte feeds the `+1` store; caching
+count in a local instead removes the `andi` and relocates the pointer arg, so use the
+field directly with `count++`. Struct: `NuGCutSceneDef` rigiddef@0x14 / triggerdef@0x24
+(deref-then-`[0]`=count); `NuGCutCamSys` targets(NuGCutCamTgt[])@0x0, cams(4B[])@0x4,
+bytes@0x8/9/A reset at start, max(u8)@0xB, count(u8)@0xC; `NuGCutCamTgt` (16B)
+ptr@0/f32@4/f32@8/char@0xC; scene flag 0x200=updated-this-frame, 0x001 a low state bit
+cleared with RUNNING(0x2) on reset.
