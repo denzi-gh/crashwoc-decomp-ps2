@@ -43,7 +43,7 @@ float NuFsign(float f)
 }
 
 float NuFres(float f) {
-    uint temp = *(uint *)&f;
+    unsigned int temp = *(unsigned int *)&f;
 
     return (float)pow(
         2.0,
@@ -60,7 +60,7 @@ int NuEquiv(float f1, float f2)
     result = f1 - f2;
     temp = *(int *)&result;
     temp &= 0x7fffffff;
-    diff = *(float *)&temp;
+    result = *(float *)&temp;
 
     rv = (result < fetol) ? 1 : 0;
     return rv;
