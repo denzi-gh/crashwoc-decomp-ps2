@@ -161,7 +161,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019f238:edobjObjectReset"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019f278:edobjLookupInstance"
@@ -169,7 +169,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0071:0019f300:edobjObjectDestroyAll"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019f338:edobjPlayerObjectDistance"
@@ -217,11 +217,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0071:0019f868:edobjcbChangeAnimSpeed"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019f8a8:edobjcbChangeAnimPause"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019f8e8:edobjcbChangeAnimStartOffset"
@@ -229,7 +229,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019f920:edobjcbOscillateToggle"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019f960:edobjcbSnapYToggle"
@@ -241,7 +241,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0071:0019fa20:edobjcbToggleParticleSwitch"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019fa60:edobjcbChangeWaypointSpeed"
@@ -305,15 +305,15 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019fe78:edobjcbSetBouncyPlayerGrav"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019feb8:edobjcbSetBouncyTension"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019fef8:edobjcbSetBouncyDamping"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019ff38:edobjcbToggleSoundType"
@@ -329,7 +329,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0071:001a0070:edobjcbSetParticleRate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:001a00a8:edobjcbLocalSoundTypeMenu"
@@ -393,15 +393,15 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:001a0aa0:edobjcbCancelLocalParticleTypeMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:001a0ac8:edobjcbCancelParticleMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:001a0af0:edobjcbCancelSoundMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:001a0b18:edobjcbSetSoundType"
@@ -409,4 +409,4 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0071:001a0b78:edobjcbCancelSoundTypeMenu"
-state = "asm"
+state = "matching"

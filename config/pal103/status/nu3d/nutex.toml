@@ -81,7 +81,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0039:0011e700:NuTexUnReserve"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0039:0011e730:NuTexReadBitmap"
@@ -101,11 +101,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0039:0011e850:NuTexRef"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0039:0011e888:NuTexUnRef"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0039:0011e8c0:NuTexType"
@@ -121,11 +121,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0039:0011e938:NuTexHasAlpha"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0039:0011e978:NuTexAlphaBits"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0039:0011e9c8:NuTexPixelSize"
@@ -141,7 +141,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0039:0011eb70:NuTexPalSize"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0039:0011eba0:NuTexRecoverNativeData"
@@ -165,23 +165,23 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0039:0011ecd0:NuTexAssignTempAddr"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0039:0011ed20:NuTexGetReqSize"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0039:0011ed58:NuTexCloneTempAddr"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0039:0011ed98:NuTexPalChange"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0039:0011edd0:NuTexPalChangeStreamTemp"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0039:0011ee08:NuTexGetTex0"

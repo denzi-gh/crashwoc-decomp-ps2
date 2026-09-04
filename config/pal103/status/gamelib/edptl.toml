@@ -485,7 +485,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00195eb8:edptlcbCancelSoundXMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00195ee0:edptlcbSoundsMenu"
@@ -493,7 +493,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0070:00196030:cbPtlCancelCollMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00196058:cbPtlCancelSizeMenu"
@@ -505,15 +505,15 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0070:001960c0:cbPtlCancelCutOffMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:001960e8:cbPtlCancelVarEmitMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00196110:cbPtlCancelVarStartMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00196138:cbPtlSScaleMenu"
@@ -549,15 +549,15 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0070:001965c8:cbPtlCancelEmitTimeMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:001965f0:cbPtlCancelEmitVelMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00196618:cbPtlCancelGravMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00196640:cbMemCardEraseConfirm"
@@ -581,23 +581,23 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0070:00196c28:cbCancelMemCardMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00196c50:edptlcbCancelClipboardMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00196c78:cbPtlCancelDataMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00196ca0:cbPtlCancelEmitMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00196cc8:cbPtlCancelGSortMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00196cf0:cbPtlSnapToggle"
@@ -613,7 +613,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00196d78:edppClose"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00196da0:edppEnter"
@@ -637,7 +637,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0070:00196fa8:cbCancelChangeETimeMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00196fd0:cbConfirmMenuNo"

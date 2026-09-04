@@ -619,3 +619,60 @@ carries no hint of this, so **do not "fix" it** -- that breaks the match.
   must be read, not assumed. `ifnVif1` is the VIF1 INTC handler and contains the
   **first inline asm in `src/`** -- SCE's `ExitHandler()` as
   `__asm__ volatile ("sync\n\tei")`, which needs no special hybrid handling.
+
+### Parallel session 2026-09-04: edptl / edobj / nutex / debris (52 matched, 1 blocker)
+
+4 agents x 2 waves, one unit each; batch-promoted 52 (edptl +15, edobj +14,
+debris +12, nutex +11), full image re-verified byte-identical. All four files are
+**CRLF** now -- the LF note at line ~546 is stale for edptl/nutex/debris.
+
+- **Cancel-stub store order (edptl):** a `eduiMenuDestroy(menu); menu = 0;` cancel
+  stub that nulls TWO gp-relative globals keeps them in **source order** (`a=0; b=0`
+  -> `sw a; sw b`); the "pairs reverse" rule did not apply. The null is not
+  guaranteed -- `edppClose` is two `eduiMenuDestroy` calls and nulls nothing (read
+  the second-to-last instruction); back-to-back calls with no arg setup reproduce
+  retail's delay-slot arg scheduling from plain source-order calls.
+- **Secondary-array pointer local flips the biv (edobj):** in a two-parallel-array
+  loop with a $v0/$v1 induction-pointer tie, keep the loop-controlling array a direct
+  global subscript and give the SECONDARY array a pointer local (`oi = ObjectInstance;
+  oi[i].id`). Same family as "explicit temp flips regalloc".
+- **`edobject_s` (stride 0x3EC) additions:** `+0x00` int instance id (-1=unused),
+  `+0x08` int oscillate (from item->toggle via lbu+sw), `+0x1DC int particle_rate[8]`,
+  `+0x1FC int particle_switch[8]` (both indexed by edobj_nearest_particle),
+  `+0x3E0/+0x3E4/+0x3E8` float bouncy player_grav/tension/damping. `edobjitem_s`
+  gains `unsigned char toggle` @0x10. Guard is `if (edobj_nearest != -1) { ... }`;
+  the field store schedules into the `jal edobjConvertPathToAnim` delay slot on its
+  own. gp globals: edobj_nearest, edobj_nearest_particle 0x62f62c,
+  edobj_next_instance 0x62f620, menu ptrs 0x62f554/55c/564/570.
+- **Alignment-mask materialization (nutex, broadly reusable):** `x & ~31` makes gcc
+  load `-32` with a single `addiu`; retail uses `lui/ori`. Spelling the mask as the
+  unsigned literal **`& 0xFFFFFFE0`** (or `~31u`) forces `lui 0xFFFF; ori 0xFFE0` and
+  can cascade the whole regalloc into a match (NuTexAssignTempAddr).
+- **Linear compare-chain dispatch (nutex):** a `switch` over contiguous small cases
+  balances into an `slt` range split; an if-chain if-converts the tail into
+  `xori/movn`. To reproduce retail's linear `beq` chain with separate return blocks
+  (default LAST, reached by an explicit `b`), use explicit `goto` labels with
+  `return 0` placed last (NuTexAlphaBits).
+- **`NuTex` additions:** union `{ u16 refcount; s64 flags; }` @0x18 (0x10000 in-use,
+  0x20000 external), `int reqsize[]` @0x50 (value <<8), `u16 texaddr` @0x88
+  (0 -> gs_botfree), `int gsaddr` @0xCC, palette region @0x20. `long` is 64-bit
+  here (emits `ld`); anonymous unions compile in SN ee-gcc 2.95.
+- **TexList[tex-1] element-offset fold:** a SINGLE access of `TexList[tex-1].f` folds
+  `(tex-1)*0xE0 + off` into one displacement (gcc keeps undecremented `tex` in the
+  multiply). A DOUBLE access of the same element CSEs `&TexList[tex-1]` and emits an
+  extra `addu` no C spelling avoids. **BLOCKER:** `NuTexGetTextAddr` (0x11eff8) reads
+  @0x18 and @0x88 off one element, +1 word past the 56B extent, left state=asm.
+- **Pointer-to-pointer list walk (debris, verified twice):** FIND reuses the
+  clobbered walker for the guard read (`list=&arr[i]; if(*list){do{cur=*list;
+  list=&cur->next;}while(*list);}`) so gcc recomputes `base+i*4` while a separate
+  strength-reduced pointer serves the return `&arr[i]`. REMOVE = peeled head check +
+  `do{cur=*list; list=&cur->next; if(cur->next==0)break;
+  if(cur->next==node){cur->next=node->next;break;}}while(1); node->next=0;` with the
+  `list=&cur->next` advance BEFORE the two ifs (fills the beqz/bnel delay slots);
+  retargeting the same source to `chunkctrl_s` (next@0x10) matched with no changes.
+  `deb_s`: emitpos@0x490, next@0x4B0, reflect_a/b s16 @0x554/0x556, reflect_x/y f32
+  @0x558/0x55C.
+- **Address-of loop var (debris):** a loop passing `&local` to a callee keeps a
+  register counter and a SEPARATE stack `key`, assigning `key = i; DebFree(&key);`
+  only at the call site; plain `bne` (advance in delay) is right, an explicit `p++`
+  gives a wrong `bnel`.
