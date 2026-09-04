@@ -485,7 +485,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:0021bfc8:GetRumbleTotalRoks"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021c018:AddGliderHitPoints"
@@ -509,7 +509,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021c278:SetWeatherStartPos"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021c2c8:GetRumblePlayerHealthPercentage"
@@ -525,7 +525,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:0021c370:LoadVehicleStuff"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021c3b8:ObjectToAtlas"
@@ -673,7 +673,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:0021dd48:CountAsteroids"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021dda0:RespawnAsteroids"
@@ -681,7 +681,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:0021de38:InitAsteroids"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021de80:ProcessAsteroids"
@@ -753,7 +753,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:0021eb08:DrawBazookaToken"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021eb58:FireWBBolt"
@@ -805,11 +805,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:0021f1b0:FindFreeWBBoltOfType"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021f1f8:FindFreeWBBolt"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021f230:InitWBBolts"
@@ -821,7 +821,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:0021f380:DrawEarthBossLevelExtra"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021f3b0:EarthBossReset"
@@ -849,7 +849,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:0021f578:UnembedRayCastAtlasSimple"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021f5c8:InitAtlas"
@@ -881,7 +881,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:0021fb30:PointLineSide"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021fb68:PointsSame"
@@ -889,11 +889,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021fbb8:FindTrailAng"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021fbf0:FindJeepRock"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021fc30:KeepHoldOnRock"

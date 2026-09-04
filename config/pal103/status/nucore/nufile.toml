@@ -41,7 +41,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0001:00100fc0:NuFileWriteStringV"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00101038:NuFileBeginBlkRead"
@@ -101,7 +101,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0001:00102b78:NuFileSetCurrentDirectory"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00102be0:NuFileOpenSize"
@@ -113,7 +113,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0001:00102ce0:NuFileStatus"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00102d38:NuFilePos"
@@ -173,15 +173,15 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00103038:NuFileAppendPath"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:001030a0:NuFileExtractPath"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00103110:NuFileExtractFilename"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00103168:NuFileExtractFile"
@@ -189,7 +189,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0001:001031f8:NuFileExtractExt"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00103250:NuFileInitAddress"
@@ -197,7 +197,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0001:001032e8:NuFileTidyAddress"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00103338:NuFilePatchAddress"
@@ -205,15 +205,15 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0001:00103430:NuMemFileOpen"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00103498:NuMemFileClose"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:001034e0:NuMemFilePos"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00103530:NuMemFileAddr"
@@ -229,7 +229,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0001:001036d8:NuDatFilePos"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00103728:NuDatFileRead"

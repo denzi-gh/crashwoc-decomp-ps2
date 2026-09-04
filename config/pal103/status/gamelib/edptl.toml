@@ -269,7 +269,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00194620:edppDestroyAllParticles"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00194688:edppDestroyAllEffects"
@@ -277,7 +277,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:001946b8:edppRegisterLevel"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00194708:edppRegisterPointerToGameCharLocation"
@@ -285,7 +285,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00194728:edppPtlDestroy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00194780:edppPtlChangeType"
@@ -337,11 +337,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00194e38:edptlcbApplyBounceFactor"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00194e98:cbPtlChangeEmitVel"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00194f00:cbPtlChangeX"
@@ -357,7 +357,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0070:001950f8:cbPtlChangeDrawCutOff"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00195160:cbPtlChangeGenRate"
@@ -377,7 +377,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0070:00195408:cbPtlSelType"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00195450:cbPtlSelGCode"
@@ -401,7 +401,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0070:001956a0:edptlcbSetSwitchVar"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00195700:edptlcbSwitchTypeMenu"
@@ -445,7 +445,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:001959f0:cbPtlCancelJibMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00195a28:edptlcbCancelBounceMenu"
@@ -497,7 +497,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00196058:cbPtlCancelSizeMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00196090:cbPtlCancelRotMenu"
@@ -529,7 +529,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0070:00196390:cbPtlCancelTextureMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:001963c8:cbPtlChangeIvalOn"
@@ -625,7 +625,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00196e80:cbChangeName"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00196ec8:cbCancelChangeNameMenu"
@@ -641,7 +641,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00196fd0:cbConfirmMenuNo"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00197020:cbCancelConfirmMenu"

@@ -45,7 +45,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0088:001c7080:MiniGameReset"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0088:001c70b0:MiniGame"
@@ -57,7 +57,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0088:001c70c0:MiniGameRenderScore"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0088:001c70d0:BGLoadScreenInit"
@@ -81,23 +81,23 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0088:001cab58:ResetSuperBuffer"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0088:001cab68:SuperBufferMakeResident"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0088:001cab78:PauseGame"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0088:001cabd0:ResumeGame"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0088:001cabf0:LoadScreen"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0088:001cac30:TextureCreateEx"
@@ -113,7 +113,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0088:001caf88:InitCreatureModels"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0088:001cafe0:InitCreatures"
@@ -141,7 +141,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0088:001cb358:PauseRumble"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0088:001cb3a8:InitLights"
@@ -149,15 +149,15 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0088:001cb410:ClosePauseRender"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0088:001cb468:MGCheckRng"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0088:001cb4b8:BGLoadLevel"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0088:001cb510:BGLoadCutScene"
