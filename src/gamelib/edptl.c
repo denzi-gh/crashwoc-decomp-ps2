@@ -222,9 +222,27 @@ extern void *ptltypemenu;
 extern void *edptl_bounce_menu;
 extern void *edptl_soundid_menu;
 extern void *edptl_soundcontrol_menu;
+extern void *edptl_soundx_menu;
+extern void *collmenu;
+extern void *ptlcutoffmenu;
+extern void *ptlvaremitmenu;
+extern void *ptlvarstartmenu;
+extern void *emittimemenu;
+extern void *ptlemitvelmenu;
+extern void *ptlgravmenu;
+extern void *memcardmenu;
+extern void *ptlclipmenu;
+extern void *ptldatamenu;
+extern void *ptlemitmenu;
+extern void *ptlgsortmenu;
+extern void *ptloptmenu;
+extern void *ptlgcodemenu;
+extern void *etimemenu;
+extern void *D_0062F354;
 extern int D_0062F314;
 
 #define edpp_slider_scale D_0062F314
+#define collenvmenu D_0062F354
 
 extern void edmainRegisterLocVec(struct nuvec_s *loc);
 extern void eduiMenuDestroy(void *menu);
@@ -340,6 +358,85 @@ void edptlcbCancelSoundControlMenu(void) {
 }
 
 
+void edptlcbCancelSoundXMenu(void) {
+    eduiMenuDestroy(edptl_soundx_menu);
+    edptl_soundx_menu = 0;
+}
+
+
+void cbPtlCancelCollMenu(void) {
+    eduiMenuDestroy(collmenu);
+    collmenu = 0;
+    collenvmenu = 0;
+}
+
+
+void cbPtlCancelCutOffMenu(void) {
+    eduiMenuDestroy(ptlcutoffmenu);
+    ptlcutoffmenu = 0;
+}
+
+
+void cbPtlCancelVarEmitMenu(void) {
+    eduiMenuDestroy(ptlvaremitmenu);
+    ptlvaremitmenu = 0;
+}
+
+
+void cbPtlCancelVarStartMenu(void) {
+    eduiMenuDestroy(ptlvarstartmenu);
+    ptlvarstartmenu = 0;
+}
+
+
+void cbPtlCancelEmitTimeMenu(void) {
+    eduiMenuDestroy(emittimemenu);
+    emittimemenu = 0;
+}
+
+
+void cbPtlCancelEmitVelMenu(void) {
+    eduiMenuDestroy(ptlemitvelmenu);
+    ptlemitvelmenu = 0;
+}
+
+
+void cbPtlCancelGravMenu(void) {
+    eduiMenuDestroy(ptlgravmenu);
+    ptlgravmenu = 0;
+}
+
+
+void cbCancelMemCardMenu(void) {
+    eduiMenuDestroy(memcardmenu);
+    memcardmenu = 0;
+}
+
+
+void edptlcbCancelClipboardMenu(void) {
+    eduiMenuDestroy(ptlclipmenu);
+    ptlclipmenu = 0;
+}
+
+
+void cbPtlCancelDataMenu(void) {
+    eduiMenuDestroy(ptldatamenu);
+    ptldatamenu = 0;
+}
+
+
+void cbPtlCancelEmitMenu(void) {
+    eduiMenuDestroy(ptlemitmenu);
+    ptlemitmenu = 0;
+}
+
+
+void cbPtlCancelGSortMenu(void) {
+    eduiMenuDestroy(ptlgsortmenu);
+    ptlgsortmenu = 0;
+}
+
+
 void cbPtlSnapToggle(void *menu, struct edptlitem_s *item) {
     edpp_snap_enabled = item->toggle;
 }
@@ -350,7 +447,19 @@ void cbPtlCancel(void) {
 }
 
 
+void edppClose(void) {
+    eduiMenuDestroy(ptloptmenu);
+    eduiMenuDestroy(ptlgcodemenu);
+}
+
+
 void edppApply(void) {
+}
+
+
+void cbCancelChangeETimeMenu(void) {
+    eduiMenuDestroy(etimemenu);
+    etimemenu = 0;
 }
 
 
