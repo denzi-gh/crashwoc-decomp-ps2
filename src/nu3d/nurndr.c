@@ -125,8 +125,76 @@ extern struct numtl_s *D_00633078;
 
 extern int nurndr_shadowson;
 
+extern struct numtl_s *numtl_defaultmtl3d;
+
+extern float NuRndrWaterLevel;
+extern u32 NuRndrWaterTint;
+extern int NuRndrShadMaskCount;
+
+typedef struct nurndrfoot_s {
+    char unk00[0x32];
+    char active;
+    char unk33[5];
+} nurndrfoot_s;
+
+extern nurndrfoot_s NuRndrFootData[];
+
+typedef void (*NuErrorFunc)(const char *fmt, ...);
+extern NuErrorFunc NuErrorProlog(const char *file, int line);
+extern char D_00614770[];
+extern char D_00614790[];
+
+extern int NuHGobjRndrMtxDwa(void *hobj, void *mtx, int a2, int a3, void *dwa, int blend);
+extern int NuRndrStreamTri3dClip(void *verts, int num, void *mtx, void *strm);
+extern int NuRndrStreamTriStrip3dClip(void *verts, int num, void *mtx, void *strm);
+extern void NuMtlBuildRenderList(void);
+extern void NuRndrOTFlush(void);
+extern void NuRndrStreamFlush(void);
+
+typedef struct { float x, y, z; } NuVec3;
+
+extern void *memset(void *s, int c, unsigned int n);
+extern char ot_tri[];
+extern int ot_highest;
+
+extern NuVec3 curlight;
+extern u32 curlightcol;
+extern int NRFanData;
+extern int NuRndrShadowLightFan(void);
+
+extern int NuRndrShadMasks[];
+extern unsigned char D_0062ECA8[];
+extern int NuSplineFindAllSub(void *spline, void *buf, int *masks, int maxcount);
+
+extern unsigned int D_00689A80[];
+extern u32 *vpDmaTag_RetEx(void *buf, u32 a1, u32 a2);
+extern void vpDmaTag_Close(void *p);
+
+
+int NuHGobjRndrMtx(void *hobj, void *mtx, int a2, int a3, void *dwa) {
+    return NuHGobjRndrMtxDwa(hobj, mtx, a2, a3, dwa, 0);
+}
+
 
 void NuRndrClose(void) {
+}
+
+
+void NuRndrEndScene(void) {
+    NuMtlBuildRenderList();
+    NuRndrOTFlush();
+    NuRndrStreamFlush();
+}
+
+
+void NuRndrEndSceneEx(int flags) {
+    if (flags & 1) {
+        NuMtlBuildRenderList();
+    }
+    if (flags & 2) {
+        NuRndrOTFlush();
+    }
+    NuRndrStreamFlush();
 }
 
 
@@ -147,6 +215,11 @@ void NuRndrFogMode(u32 mode) {
 }
 
 
+void NuRndrStarfield(void) {
+    NuErrorProlog(D_00614770, 0x5D5)(D_00614790);
+}
+
+
 void NuRndrLine3dDbg(u32 colour, float x0, float y0, float z0, float x1, float y1, float z1) {
 }
 
@@ -155,13 +228,87 @@ void NuRndrLine3dDbgFlush(void) {
 }
 
 
+int NuRndrTri3dClip(void *verts, int num, void *mtx, struct numtl_s *mtl) {
+    struct numtl_s *m;
+
+    m = mtl ? mtl : numtl_defaultmtl3d;
+    return NuRndrStreamTri3dClip(verts, num, mtx, (char *)m + 0x124);
+}
+
+
+int NuRndrTriStrip3dClip(void *verts, int num, void *mtx, struct numtl_s *mtl) {
+    struct numtl_s *m;
+
+    m = mtl ? mtl : numtl_defaultmtl3d;
+    return NuRndrStreamTriStrip3dClip(verts, num, mtx, (char *)m + 0x124);
+}
+
+
 int NuRndrQuad3d(void *verts, struct numtl_s *mtl) {
     return 1;
 }
 
 
+void NuRndrFlush(int flags) {
+    if (flags & 1) {
+        NuMtlBuildRenderList();
+    }
+    if (flags & 2) {
+        NuRndrOTFlush();
+    }
+    NuRndrStreamFlush();
+}
+
+
 void NuRndrShadowOnOff(int on) {
     nurndr_shadowson = on;
+}
+
+
+void NuRndrShadowDirCol(NuVec3 *dir, u32 col) {
+    curlight = *dir;
+    curlightcol = col;
+    NRFanData = NuRndrShadowLightFan();
+}
+
+
+void NuRndrWaterLevelTint(float level, u32 tint) {
+    NuRndrWaterLevel = level;
+    NuRndrWaterTint = tint;
+}
+
+
+void NuRndrInitWorld(void) {
+    int i;
+
+    NuRndrShadMaskCount = 0;
+    for (i = 0; i < 64; i++) {
+        NuRndrFootData[i].active = 0;
+    }
+}
+
+
+void NuRndrSplineSearch(void *spline) {
+    int n;
+
+    n = NuRndrShadMaskCount;
+    NuRndrShadMaskCount += NuSplineFindAllSub(spline, D_0062ECA8, &NuRndrShadMasks[n], 32 - n);
+}
+
+
+void NuRndrDeformerWeightsArrayInit(void) {
+    u32 *p;
+
+    p = vpDmaTag_RetEx(D_00689A80, 0x13000000, 0x01000101);
+    *p++ = 0x60010063;
+    *p = 0;
+    vpDmaTag_Close(p + 1);
+}
+
+
+void OTTriInit(void) {
+    memset(ot_tri, 0, 0x4000);
+    ot_highest = 0;
 }
 
 
