@@ -185,11 +185,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0071:0019f498:edobjLookupInstanceIndex"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019f4f8:edobjSoundPlace"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019f540:edobjParticlePlace"
@@ -197,7 +197,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0071:0019f5c8:edobjWaypointPlace"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019f628:edobjObjectPlace"
@@ -233,11 +233,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019f960:edobjcbSnapYToggle"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019f9c0:edobjcbSnapXZToggle"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019fa20:edobjcbToggleParticleSwitch"
@@ -245,15 +245,15 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019fa60:edobjcbChangeWaypointSpeed"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019fab8:edobjcbChangeWaypointXRot"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019fb20:edobjcbChangeWaypointYRot"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019fb88:edobjcbChangeWaypointZRot"
@@ -265,11 +265,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0071:0019fc70:edobjcbSetInstanceType"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019fcb8:edobjcbSetSwitchType"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019fd18:edobjcbSetSwitchId"
@@ -325,7 +325,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:001a0020:edobjcbSetParticleType"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:001a0070:edobjcbSetParticleRate"
@@ -405,7 +405,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:001a0b18:edobjcbSetSoundType"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:001a0b78:edobjcbCancelSoundTypeMenu"

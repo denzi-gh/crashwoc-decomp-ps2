@@ -179,7 +179,8 @@ struct edptlitem_s {
     char pad00[0xC];
     int value;
     unsigned char toggle;
-    char pad11[0x3B];
+    char pad11[0x33];
+    char text[8];
     float fvalue;
 };
 
@@ -238,14 +239,39 @@ extern void *ptlgsortmenu;
 extern void *ptloptmenu;
 extern void *ptlgcodemenu;
 extern void *etimemenu;
+extern void *confirmmenu;
+extern void *edptl_switchtype_menu;
+extern void *edptl_sounds_menu;
+extern void *sscalemenu;
+extern void *filenamemenu;
+extern void *loadeffectsmenu;
+extern void *mergeeffectsmenu;
+extern void *deleteeffectsmenu;
+extern void *ptlcolmenu;
+extern void *ptlrotmenu;
 extern void *D_0062F354;
 extern int D_0062F314;
+extern int edptl_clipboard_entry;
+extern int edpp_create_type;
+extern int D_0062F320;
+extern int D_0062F324;
+extern int D_0062F338;
+extern int D_0062F33C;
+extern int D_0062F340;
 
 #define edpp_slider_scale D_0062F314
 #define collenvmenu D_0062F354
 
 extern void edmainRegisterLocVec(struct nuvec_s *loc);
 extern void eduiMenuDestroy(void *menu);
+extern char *strcpy(char *dst, const char *src);
+extern void edcamSetPosAng(void *pos, void *ang, int flags);
+extern void cbPtlDeleteEffect(void);
+
+extern char D_00484DC0[];
+#define savefilename D_00484DC0
+
+extern char D_006B3B30[];
 
 
 void ParticleReset(void) {
@@ -270,6 +296,17 @@ void edppDestroyAllEffects(void) {
 
 void edppRegisterPointerToGameCharLocation(struct nuvec_s *loc) {
     edmainRegisterLocVec(loc);
+}
+
+
+void edptlcbEmptyClipboard(void) {
+    int saved;
+
+    saved = edpp_create_type;
+    edpp_create_type = edptl_clipboard_entry;
+    cbPtlDeleteEffect();
+    edpp_create_type = saved;
+    edptl_clipboard_entry = -1;
 }
 
 
@@ -334,9 +371,23 @@ void edptlcbCancelDpadModeMenu(void) {
 }
 
 
+void edptlcbJumpToGameLocation(void *menu, struct edptlitem_s *item) {
+    item->toggle = 0;
+    edcamSetPosAng(D_006B3B30, 0, 0);
+}
+
+
 void cbPtlCancelTypeMenu(void) {
     eduiMenuDestroy(ptltypemenu);
     ptltypemenu = 0;
+}
+
+
+void cbPtlCancelColMenu(void) {
+    eduiMenuDestroy(ptlcolmenu);
+    ptlcolmenu = 0;
+    D_0062F320 = 0;
+    D_0062F324 = 0;
 }
 
 
@@ -368,6 +419,15 @@ void cbPtlCancelCollMenu(void) {
     eduiMenuDestroy(collmenu);
     collmenu = 0;
     collenvmenu = 0;
+}
+
+
+void cbPtlCancelRotMenu(void) {
+    eduiMenuDestroy(ptlrotmenu);
+    ptlrotmenu = 0;
+    D_0062F338 = 0;
+    D_0062F33C = 0;
+    D_0062F340 = 0;
 }
 
 
@@ -463,6 +523,59 @@ void cbCancelChangeETimeMenu(void) {
 }
 
 
+void cbCancelConfirmMenu(void) {
+    eduiMenuDestroy(confirmmenu);
+    confirmmenu = 0;
+}
+
+
+void edptlcbCancelSwitchTypeMenu(void) {
+    eduiMenuDestroy(edptl_switchtype_menu);
+    edptl_switchtype_menu = 0;
+}
+
+
+void edptlcbCancelSoundsMenu(void) {
+    eduiMenuDestroy(edptl_sounds_menu);
+    edptl_sounds_menu = 0;
+}
+
+
 void cbPtlChangeSScale(void *menu, struct edptlitem_s *item) {
     edpp_slider_scale = item->fvalue;
+}
+
+
+void cbPtlCancelSScaleMenu(void) {
+    eduiMenuDestroy(sscalemenu);
+    sscalemenu = 0;
+}
+
+
+void cbChangeFileName(void *menu, struct edptlitem_s *item) {
+    strcpy(savefilename, item->text);
+}
+
+
+void cbCancelChangeFileNameMenu(void) {
+    eduiMenuDestroy(filenamemenu);
+    filenamemenu = 0;
+}
+
+
+void cbMemCardCancelLoadEffectsMenu(void) {
+    eduiMenuDestroy(loadeffectsmenu);
+    loadeffectsmenu = 0;
+}
+
+
+void cbMemCardCancelMergeEffectsMenu(void) {
+    eduiMenuDestroy(mergeeffectsmenu);
+    mergeeffectsmenu = 0;
+}
+
+
+void cbMemCardCancelDeleteEffectsMenu(void) {
+    eduiMenuDestroy(deleteeffectsmenu);
+    deleteeffectsmenu = 0;
 }
