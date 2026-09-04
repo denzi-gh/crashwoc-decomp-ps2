@@ -55,6 +55,8 @@
 
 void NuVecNorm(struct nuvec_s *dst, struct nuvec_s *src);
 void NuMtxAlignZ(struct numtx_s *m, struct nuvec_s *v);
+double cos(double);
+double sin(double);
 extern float NuTrigTable[];
 extern struct numtx_s D_002921a0; //gm
 extern struct numtx_s D_002921e0; //numtx_identity
@@ -510,6 +512,233 @@ void NuMtxScale(struct numtx_s *m,struct nuvec_s *s)
   m->_32 = m->_32 * s->z;
 }
 
+struct nuvec_s NuMtxGetScale(struct numtx_s* m)
+{
+    struct nuvec_s scale;
+    
+	scale.x = sqrt(m->_00 * m->_00 + m->_01 * m->_01 + m->_02 * m->_02);
+	scale.y = sqrt(m->_10 * m->_10 + m->_11 * m->_11 + m->_12 * m->_12);
+	scale.z = sqrt(m->_20 * m->_20 + m->_21 * m->_21 + m->_22 * m->_22);
+
+    return scale;
+}
+
+void NuMtxPreScale(struct numtx_s *m,struct nuvec_s *s) {
+  m->_00 = m->_00 * s->x;
+  m->_01 = m->_01 * s->x;
+  m->_02 = m->_02 * s->x;
+  m->_10 = m->_10 * s->y;
+  m->_11 = m->_11 * s->y;
+  m->_12 = m->_12 * s->y;
+  m->_20 = m->_20 * s->z;
+  m->_21 = m->_21 * s->z;
+  m->_22 = m->_22 * s->z;
+}
+
+void NuMtxRotateX(struct numtx_s *m,int a) {
+  float cosx;
+  float sinx;
+  float _01;
+  float _11;
+  float _21;
+  float _31;
+  
+  cosx = NuTrigTable[a + 0x4000U & 0xffff];
+  sinx = NuTrigTable[a & 0xffff];
+  _01 = m->_01;
+  _11 = m->_11;
+  _21 = m->_21;
+  _31 = m->_31;
+  m->_01 = _01 * cosx - m->_02 * sinx;
+  m->_02 = _01 * sinx + m->_02 * cosx;
+  m->_11 = _11 * cosx - m->_12 * sinx;
+  m->_12 = _11 * sinx + m->_12 * cosx;
+  m->_21 = _21 * cosx - m->_22 * sinx;
+  m->_22 = _21 * sinx + m->_22 * cosx;
+  m->_31 = _31 * cosx - m->_32 * sinx;
+  m->_32 = _31 * sinx + m->_32 * cosx;
+}
+
+void NuMtxRotateXR(float x,struct numtx_s *m) {
+  float cosx;
+  float sinx;
+  float _01;
+  float _11;
+  float _21;
+  float _31;
+  
+  cosx = (float)(double)cos((double)x);
+  sinx = (float)(double)sin((double)x);
+  _01 = m->_01;
+  _11 = m->_11;
+  _21 = m->_21;
+  _31 = m->_31;
+  m->_01 = _01 * cosx - m->_02 * sinx;
+  m->_02 = _01 * sinx + m->_02 * cosx;
+  m->_11 = _11 * cosx - m->_12 * sinx;
+  m->_12 = _11 * sinx + m->_12 * cosx;
+  m->_21 = _21 * cosx - m->_22 * sinx;
+  m->_22 = _21 * sinx + m->_22 * cosx;
+  m->_31 = _31 * cosx - m->_32 * sinx;
+  m->_32 = _31 * sinx + m->_32 * cosx;
+}
+
+void NuMtxPreRotateX(struct numtx_s *m,int a) {
+  float cosx;
+  float sinx;
+  float _10;
+  float _11;
+  float _12;
+  
+  cosx = NuTrigTable[a + 0x4000U & 0xffff];
+  sinx = NuTrigTable[a & 0xffff];
+  _10 = m->_10;
+  _11 = m->_11;
+  _12 = m->_12;
+  m->_10 = cosx * _10 + sinx * m->_20;
+  m->_11 = cosx * _11 + sinx * m->_21;
+  m->_12 = cosx * _12 + sinx * m->_22;
+  m->_20 = cosx * m->_20 - sinx * _10;
+  m->_21 = cosx * m->_21 - sinx * _11;
+  m->_22 = cosx * m->_22 - sinx * _12;
+}
+
+void NuMtxRotateY(struct numtx_s *m,int a) {
+  float cosy;
+  float siny;
+  float _00;
+  float _10;
+  float _20;
+  float _30;
+  
+  cosy = NuTrigTable[a + 0x4000U & 0xffff];
+  siny = NuTrigTable[a & 0xffff];
+  _00 = m->_00;
+  _10 = m->_10;
+  _20 = m->_20;
+  _30 = m->_30;
+  m->_00 = _00 * cosy + m->_02 * siny;
+  m->_02 = m->_02 * cosy - _00 * siny;
+  m->_10 = _10 * cosy + m->_12 * siny;
+  m->_12 = m->_12 * cosy - _10 * siny;
+  m->_20 = _20 * cosy + m->_22 * siny;
+  m->_22 = m->_22 * cosy - _20 * siny;
+  m->_30 = _30 * cosy + m->_32 * siny;
+  m->_32 = m->_32 * cosy - _30 * siny;
+}
+
+void NuMtxRotateYR(float x,struct numtx_s *m) {
+  float cosy;
+  float siny;
+  float _00;
+  float _10;
+  float _30;
+  float _20;
+  
+  cosy = cos((double)x);
+  siny = sin((double)x);
+  _00 = m->_00;
+  _10 = m->_10;
+  _20 = m->_20;
+  _30 = m->_30;
+  m->_00 = _00 * cosy + m->_02 * siny;
+  m->_02 = m->_02 * cosy - _00 * siny;
+  m->_10 = _10 * cosy + m->_12 * siny;
+  m->_12 = m->_12 * cosy - _10 * siny;
+  m->_20 = _20 * cosy + m->_22 * siny;
+  m->_22 = m->_22 * cosy - _20 * siny;
+  m->_30 = _30 * cosy + m->_32 * siny;
+  m->_32 = m->_32 * cosy - _30 * siny;
+}
+
+void NuMtxPreRotateY(struct numtx_s *m,int a) {
+  float cosy;
+  float siny;
+  float _01;
+  float _00;
+  float _02;
+  
+  cosy = NuTrigTable[a + 0x4000U & 0xffff];
+  siny = NuTrigTable[a & 0xffff];
+  _00 = m->_00;
+  _01 = m->_01;
+  _02 = m->_02;
+  m->_00 = cosy * _00 - siny * m->_20;
+  m->_01 = cosy * _01 - siny * m->_21;
+  m->_02 = cosy * _02 - siny * m->_22;
+  m->_20 = siny * _00 + cosy * m->_20;
+  m->_21 = siny * _01 + cosy * m->_21;
+  m->_22 = siny * _02 + cosy * m->_22;
+}
+
+void NuMtxRotateZ(struct numtx_s *m,int a) {
+  float cosz;
+  float sinz;
+  float _00;
+  float _10;
+  float _20;
+  float _30;
+  
+  cosz = NuTrigTable[a + 0x4000U & 0xffff];
+  sinz = NuTrigTable[a & 0xffff];
+  _00 = m->_00;
+  _10 = m->_10;
+  _20 = m->_20;
+  _30 = m->_30;
+  m->_00 = _00 * cosz - m->_01 * sinz;
+  m->_01 = _00 * sinz + m->_01 * cosz;
+  m->_10 = _10 * cosz - m->_11 * sinz;
+  m->_11 = _10 * sinz + m->_11 * cosz;
+  m->_20 = _20 * cosz - m->_21 * sinz;
+  m->_21 = _20 * sinz + m->_21 * cosz;
+  m->_30 = _30 * cosz - m->_31 * sinz;
+  m->_31 = _30 * sinz + m->_31 * cosz;
+}
+
+void NuMtxRotateZR(float x,struct numtx_s *m) {
+  float cosz;
+  float sinz;
+  float _00;
+  float _10;
+  float _20;
+  float _30;
+  
+  cosz = (float)cos((double)x);
+  sinz = (float)sin((double)x);
+  _00 = m->_00;
+  _10 = m->_10;
+  _20 = m->_20;
+  _30 = m->_30;
+  m->_00 = _00 * cosz - m->_01 * sinz;
+  m->_01 = _00 * sinz + m->_01 * cosz;
+  m->_10 = _10 * cosz - m->_11 * sinz;
+  m->_11 = _10 * sinz + m->_11 * cosz;
+  m->_20 = _20 * cosz - m->_21 * sinz;
+  m->_21 = _20 * sinz + m->_21 * cosz;
+  m->_30 = _30 * cosz - m->_31 * sinz;
+  m->_31 = _30 * sinz + m->_31 * cosz;
+}
+
+void NuMtxPreRotateZ(struct numtx_s *m,int a) {
+  float cosz;
+  float sinz;
+  float _00;
+  float _01;
+  float _02;
+  
+  cosz = NuTrigTable[a + 0x4000U & 0xffff];
+  sinz = NuTrigTable[a & 0xffff];
+  _00 = m->_00;
+  _01 = m->_01;
+  _02 = m->_02;
+  m->_00 = cosz * _00 + sinz * m->_10;
+  m->_01 = cosz * _01 + sinz * m->_11;
+  m->_02 = cosz * _02 + sinz * m->_12;
+  m->_10 = cosz * m->_10 - sinz * _00;
+  m->_11 = cosz * m->_11 - sinz * _01;
+  m->_12 = cosz * m->_12 - sinz * _02;
+}
+
 void NuMtxSetTranslation(struct numtx_s *m, struct nuvec_s *v)
 {
     m->_30 = v->x;
@@ -582,30 +811,83 @@ float NuMtxDet3(struct numtx_s *m)
            m->_02 * (m->_10 * m->_21 - m->_11 * m->_20);
 }
 
-void NuMtxTransposeR(struct numtx_s *dst, struct numtx_s *src)
+void NuMtxTransposeR(struct numtx_s *m, struct numtx_s *m0)
 {
-    float a;
-    float b;
+  float t;
+    
+  t = m0->_01;
+  m->_01 = m0->_10;
+  m->_10 = t;  
+  t = m0->_02;
+  m->_02 = m0->_20;
+  m->_20 = t;
+  t = m0->_12;
+  m->_12 = m0->_21;
+  m->_21 = t;
+  m->_00 = m0->_00;
+  m->_11 = m0->_11;
+  m->_22 = m0->_22;
+  m->_30 = m0->_30;
+  m->_31 = m0->_31;
+  m->_32 = m0->_32;
+  m->_33 = m0->_33;
+}
 
-    a = src->_01;
-    b = src->_10;
-    dst->_10 = a;
-    dst->_01 = b;
-    a = src->_02;
-    b = src->_20;
-    dst->_20 = a;
-    dst->_02 = b;
-    b = src->_21;
-    a = src->_12;
-    dst->_12 = b;
-    dst->_21 = a;
-    dst->_00 = src->_00;
-    dst->_11 = src->_11;
-    dst->_22 = src->_22;
-    dst->_30 = src->_30;
-    dst->_31 = src->_31;
-    dst->_32 = src->_32;
-    dst->_33 = src->_33;
+void NuMtxTranspose(struct numtx_s *m,struct numtx_s *m0) {
+  float t;
+
+  t = m0->_01;
+  m->_01 = m0->_10;
+  m->_10 = t;
+    
+  t = m0->_02;
+  m->_02 = m0->_20;
+  m->_20 = t;
+    
+  t = m0->_03;
+  m->_03 = m0->_30;
+  m->_30 = t;
+    
+  t = m0->_10;
+  m->_10 = m0->_01;
+  m->_01 = t;
+    
+  t = m0->_12;
+  m->_12 = m0->_21;
+  m->_21 = t;
+    
+  t = m0->_13;
+  m->_13 = m0->_31;
+  m->_31 = t;
+    
+  t = m0->_20;
+  m->_20 = m0->_02;
+  m->_02 = t;
+    
+  t = m0->_21;
+  m->_21 = m0->_12;
+  m->_12 = t;
+    
+  t = m0->_23;
+  m->_23 = m0->_32;
+  m->_32 = t;
+    
+  t = m0->_30;
+  m->_30 = m0->_03;
+  m->_03 = t;
+    
+  t = m0->_31;
+  m->_31 = m0->_13;
+  m->_13 = t;
+    
+  t = m0->_32;
+  m->_32 = m0->_23;
+  m->_23 = t;
+    
+  m->_00 = m0->_00;
+  m->_11 = m0->_11;
+  m->_22 = m0->_22;
+  m->_33 = m0->_33;
 }
 
 void NuMtxInvR(struct numtx_s* dest, struct numtx_s* m) {
