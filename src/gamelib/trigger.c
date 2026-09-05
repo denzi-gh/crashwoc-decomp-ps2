@@ -246,25 +246,111 @@ struct NUTRIGGERPRIM_SPHERE_s { // 0x10
 };
 
 struct NUTRIGGER_s {
-    // total size: 0x34
-    char * triggername; // offset 0x0, size 0x4
-    enum NUTRIGGERTYPE_s trigger_type; // offset 0x4, size 0x4
-    short hitpoints; // offset 0x8, size 0x2
-    char enableflags; // offset 0xA, size 0x1
-    char pad; // offset 0xB, size 0x1
-    int scale_transform : 1; // offset 0xC, size 0x4
-    int display_box : 1; // offset 0xC, size 0x4
-    int persistant : 1; // offset 0xC, size 0x4
-    float radius; // offset 0x10, size 0x4
-    struct nuvec_s min; // offset 0x14, size 0xC
-    struct nuvec_s max; // offset 0x20, size 0xC
-    short numprims; // offset 0x2C, size 0x2
-    short instance_ix; // offset 0x2E, size 0x2
-    struct NUTRIGGERPRIM_s * prims; // offset 0x30, size 0x4
+    char * triggername;
+    enum NUTRIGGERTYPE_s trigger_type;
+    short hitpoints;
+    char enableflags;
+    char pad;
+    int scale_transform : 1;
+    int display_box : 1;
+    int persistant : 1;
+    float radius;
+    struct nuvec_s min;
+    struct nuvec_s max;
+    short numprims;
+    short instance_ix;
+    struct NUTRIGGERPRIM_s * prims;
+};
+
+struct nuinstflags_s {
+    int visible : 1;
+    int onscreen : 1;
+    int visitest : 1;
+    int isanimated : 1;
+};
+
+struct instNUTRIGGER_s {
+    short hitpoints;
+    unsigned char enableflags;
+    char flags;
+};
+
+struct nuinstanim_s {
+    struct numtx2_s mtx;
+    float tfactor;
+    float tfirst;
+    float tinterval;
+    float ltime;
+    unsigned int playing : 1;
+    unsigned int backwards : 1;
+    unsigned int waiting : 1;
+    unsigned int repeating : 1;
+    unsigned int oscillate : 1;
+    int ipad[2];
+    unsigned char anim_ix;
+    char pad[3];
+};
+
+struct nuinstance_s {
+    struct numtx2_s mtx;
+    int objid;
+    struct nuinstflags_s flags;
+    struct nuinstanim_s * anim;
+    short room_group;
+    char special_flag;
+    char pad[1];
+};
+
+struct nugscn_s
+{
+	short* tids;
+	int numtid;
+	void** mtls;
+	int nummtl;
+	int numgobj;
+	void** gobjs;
+	int numinstance;
+	struct nuinstance_s* instances;
+	int numspecial;
+	void* specials;
+	void* splinedata;
+	int numsplines;
+	void* splines;
+	char* nametable;
+	int numexspecials;
+	void* exspecials;
+	int exallocix;
+	void* instanimblock;
+	void** instanimdata;
+	int numinstanceixs;
+	short* instanceixs;
+	short crossfade;
+	short crossfaderate;
+	int crossfadefirst;
+	int numtexanims;
+	void* texanims;
+	short* texanim_tids;
+	short* instancelightix;
+};
+
+struct NUTRIGGERSYS_s {
+    int version;
+    int address_offset;
+    int ntriggers;
+    struct NUTRIGGER_s* triggers;
+};
+
+struct instNUTRIGGERSYS_s {
+    struct instNUTRIGGERSYS_s * next;
+    struct instNUTRIGGERSYS_s * prev;
+    struct NUTRIGGERSYS_s * triggersys;
+    struct instNUTRIGGER_s * itriggers;
+    void* gscene;
+    int is_disabled : 1;
 };
 
 int CheckParentedTriggerWithPos(struct NUTRIGGER_s* trigger, struct numtx2_s* mtx, struct nuvec_s* pos, float r);
-int CheckUnparentedTriggerWithPos(NuTriggerDef *def, struct nuvec_s *pos,float radius);
+int CheckUnparentedTriggerWithPos(struct NUTRIGGER_s* trigger, struct nuvec_s* pos, float r);
 
 
 void *NuTriggerSysLoad(char *name, void **heap, void **heapend)
@@ -355,7 +441,7 @@ void NuTriggerSysUpdate(struct nuvec_s *pos, f32 radius)
                                     (struct NUTRIGGER_s*)d, (struct numtx2_s*)&node->ref->mtx, pos, radius);
                         }
                     } else {
-                        active = CheckUnparentedTriggerWithPos(d, pos, radius);
+                        active = CheckUnparentedTriggerWithPos((struct NUTRIGGER_s*)d, pos, radius);
                     }
                     break;
                 case 0:
@@ -890,6 +976,8 @@ void NuTriggerPull(NuTriggerSys *sys, NuTriggerDef *def, NuTrigger *trig, int pu
     }
 }
 
+float NuVecDistSqr(struct nuvec_s* v0, struct nuvec_s* v1, struct nuvec_s* d);
+
 int CheckParentedTriggerWithPos(struct NUTRIGGER_s* trigger, struct numtx2_s* mtx, struct nuvec_s* pos, float r) {
     int i;
     struct NUTRIGGERPRIM_s* prim;
@@ -897,9 +985,6 @@ int CheckParentedTriggerWithPos(struct NUTRIGGER_s* trigger, struct numtx2_s* mt
     struct nuvec_s vr;
     struct nuvec_s lpos;
     struct numtx2_s invmtx;
-    float fVar6;
-    float fVar7;
-    float fVar8;
     float f;
     struct NUTRIGGERPRIM_SPHERE_s* sphere;
     struct nuvec_s centre;
@@ -912,13 +997,12 @@ int CheckParentedTriggerWithPos(struct NUTRIGGER_s* trigger, struct numtx2_s* mt
     dp.x = pos->x - mtx->_30;
     dp.y = pos->y - mtx->_31;
     dp.z = pos->z - mtx->_32;
-    fVar6 = trigger->radius + r;
-    if (fVar6 * fVar6 < dp.x * dp.x + dp.y * dp.y + dp.z * dp.z) {
+    if (dp.x * dp.x + dp.y * dp.y + dp.z * dp.z > (trigger->radius + r) * (trigger->radius + r)) {
         if ((trigger->scale_transform & 1U) != 0) {
             NuMtxInvH((struct numtx_s *)&invmtx, (struct numtx_s *)mtx);
             NuVecMtxTransform(&lpos, pos, (struct numtx_s *)&invmtx);
             vr.x = vr.y = vr.z = r;
-            NuVecMtxTransform(&vr, &vr, &invmtx);
+            NuVecMtxTransform(&vr, &vr, (struct numtx_s *)&invmtx);
             NuVecSub(&vr, &vr, (struct nuvec_s*)&invmtx._30);
             vr.x = NuFabs(vr.x);
             vr.y = NuFabs(vr.y);
@@ -930,12 +1014,9 @@ int CheckParentedTriggerWithPos(struct NUTRIGGER_s* trigger, struct numtx2_s* mt
                 case NUTRIGGERPRIMTYPE_SPHERE:
                     sphere = prim->data;
                     NuVecMtxTransform(&centre, &sphere->centre, (struct numtx_s *)mtx);
-                    fVar7 = (float)NuVecDistSqr(pos, &centre, &dp);
-                    fVar6 = sphere->radius + r;
-                    if (fVar7 < fVar6 * fVar6) {
+                    if (NuVecDistSqr(pos, &centre, &dp) < (sphere->radius + r) * (sphere->radius + r)) {
                         return 1;
                     }
-                    // i = trigger->numprims;
                     break;
                 case NUTRIGGERPRIMTYPE_NONE:
                     break;
@@ -961,15 +1042,114 @@ int CheckParentedTriggerWithPos(struct NUTRIGGER_s* trigger, struct numtx2_s* mt
                     if ((bottom.y - r > pos->y) || (pos->y > bottom.y + cylinder->height + r)) {
                         break;
                     }
-                    fVar7 = pos->x - bottom.x;
-                    fVar8 = pos->z - bottom.z;
-                    f = fVar7 * fVar7 + fVar8 * fVar8;
-                    fVar6 = cylinder->radius + r;
-                    fVar6 *= fVar6;
-                    if (f < fVar6) {
+
+                    f = (pos->x - bottom.x) * (pos->x - bottom.x) + (pos->z - bottom.z) * (pos->z - bottom.z);
+                    if (f < (cylinder->radius + r) * (cylinder->radius + r)) {
                         return 1;
                     }
                     break;
+            }
+        }
+    }
+    return 0;
+}
+
+int CheckUnparentedTriggerWithPos(struct NUTRIGGER_s* trigger, struct nuvec_s* pos, float r) {
+    int i;
+    struct NUTRIGGERPRIM_s* prim;
+    struct NUTRIGGERPRIM_SPHERE_s* sphere;
+    struct nuvec_s dp;
+    struct NUTRIGGERPRIM_CUBE_s* cube;
+    struct nuvec_s lpos;
+    float f;
+    struct NUTRIGGERPRIM_CYLINDER_s* cylinder;
+
+    if ((((trigger->max.x < pos->x - r) || (pos->x + r < trigger->min.x)) || (trigger->max.y < pos->y - r))
+        || (((pos->y + r < trigger->min.y || (trigger->max.z < pos->z - r)) || ((pos->z + r < trigger->min.z)))))
+    {
+        return 0;
+    }
+    for (i = 0; i < trigger->numprims; i++) {
+        prim = trigger->prims + i;
+        switch (prim->type) {
+            case NUTRIGGERPRIMTYPE_SPHERE:
+                sphere = prim->data;
+                if (NuVecDistSqr(pos, &sphere->centre, &dp) < (sphere->radius + r) * (sphere->radius + r)) {
+                    return 1;
+                }
+                break;
+            case NUTRIGGERPRIMTYPE_CUBE:
+                cube = prim->data;
+                NuVecMtxTransform(&lpos, pos, (struct numtx_s *)&cube->invmtx);
+                if ((cube->max.x < lpos.x - r) || (cube->min.x > lpos.x + r) || (cube->max.y < lpos.y - r)
+                    || (cube->min.y > lpos.y + r) || (cube->max.z < lpos.z - r) || (cube->min.z > lpos.z + r))
+                {
+                    break;
+                }
+                return 1;
+            case NUTRIGGERPRIMTYPE_CYLINDER:
+                cylinder = prim->data;
+                if ((cylinder->bottom.y - r > pos->y) || (pos->y > cylinder->bottom.y + cylinder->height + r)) {
+                    break;
+                }
+
+                f = (pos->x - cylinder->bottom.x) * (pos->x - cylinder->bottom.x)
+                    + (pos->z - cylinder->bottom.z) * (pos->z - cylinder->bottom.z);
+                if (f < (cylinder->radius + r) * (cylinder->radius + r)) {
+                    return 1;
+                }
+                break;
+            case NUTRIGGERPRIMTYPE_NONE:
+                break;
+        }
+    }
+    return 0;
+}
+
+int WeaponCheckTriggers(struct nuvec_s* pos, float r, int hitpoints) {
+    struct instNUTRIGGERSYS_s* itriggersys;
+    int i;
+    struct NUTRIGGERSYS_s* triggersys;
+    struct nugscn_s* gscene;
+    struct NUTRIGGER_s* trigger;
+    struct instNUTRIGGER_s* itrigger;
+    struct nuinstance_s* instance;
+    char script[32];
+    int check;
+
+    for(itriggersys = active_triggersys_instances; itriggersys != 0; itriggersys = itriggersys->next) {
+        gscene = *(struct nugscn_s**)(itriggersys->gscene + 0x10);
+        triggersys = itriggersys->triggersys;
+        if ((itriggersys->is_disabled & 1) == 0) {
+            for (i = 0; i < triggersys->ntriggers; i++) {
+                trigger = triggersys->triggers + i;
+                itrigger = itriggersys->itriggers + i;
+                //script[i] = trigger->triggername + i * 0xd;
+                if (((itrigger->flags & 1U) == 0) && ((itrigger->enableflags == 0xff) && (trigger->trigger_type > 1))) {
+                    if (trigger->trigger_type == NUTRIGGER_PLAYER_WEAPON_CONTACT) {
+                        if (trigger->instance_ix >= 0) {
+                            instance = gscene->instances + trigger->instance_ix;
+                            if ((instance->flags.visible & 1) == 0) {
+                                continue;
+                            }
+                            if (instance->anim != 0) {
+                                check = CheckParentedTriggerWithPos(trigger, &instance->anim->mtx, pos, r);
+                            } else {
+                                check = CheckParentedTriggerWithPos(trigger, &instance->mtx, pos, r);
+                            }
+                        } else {
+                            check = CheckUnparentedTriggerWithPos(trigger, pos, r);
+                        }
+                        if (check != 0) {
+                            itrigger->hitpoints += hitpoints;
+                            if (trigger->hitpoints <= itrigger->hitpoints) {
+                                NuSceneInstanceRunScript(itriggersys->gscene, trigger->triggername);
+                                itrigger->flags = itrigger->flags | 1;
+                            }
+                            return 1;
+                        }
+                    }
+                }
             }
         }
     }
