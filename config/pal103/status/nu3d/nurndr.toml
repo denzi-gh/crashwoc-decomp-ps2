@@ -293,7 +293,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0040:0012f6c0:NuHGobjRndrMtx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012f6e0:NuRndrInitEx"
@@ -317,11 +317,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0040:0012f990:NuRndrEndScene"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012f9c0:NuRndrEndSceneEx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012fa10:NuRndrSwapScreen"
@@ -349,7 +349,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0040:0012fc68:NuRndrStarfield"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012fc98:NuRndrRect"
@@ -365,11 +365,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012fe00:NuRndrTri3dClip"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012fe28:NuRndrTriStrip3dClip"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012fe50:NuRndrQuad3d"
@@ -377,7 +377,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012fe58:NuRndrFlush"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012fea8:NuRndrShadowOnOff"
@@ -393,11 +393,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0040:00130078:NuRndrShadowDirCol"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:001300b8:NuRndrWaterLevelTint"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:001300c8:NuRndrAddShadow"
@@ -417,11 +417,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0040:001303a0:NuRndrInitWorld"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:001303d0:NuRndrSplineSearch"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00130418:NuRndrCreateBlendShapeDeformerWeightsArray"
@@ -429,7 +429,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0040:001304a0:NuRndrDeformerWeightsArrayInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:001304e8:NuRndrFxBlueOrGreenData"
@@ -441,7 +441,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0040:00130690:OTTriInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:001306c0:OTTriInsert"
