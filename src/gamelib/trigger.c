@@ -998,6 +998,8 @@ int CheckParentedTriggerWithPos(struct NUTRIGGER_s* trigger, struct numtx2_s* mt
     dp.y = pos->y - mtx->_31;
     dp.z = pos->z - mtx->_32;
     if (dp.x * dp.x + dp.y * dp.y + dp.z * dp.z > (trigger->radius + r) * (trigger->radius + r)) {
+	return 0;
+    }
         if ((trigger->scale_transform & 1U) != 0) {
             NuMtxInvH((struct numtx_s *)&invmtx, (struct numtx_s *)mtx);
             NuVecMtxTransform(&lpos, pos, (struct numtx_s *)&invmtx);
@@ -1048,7 +1050,6 @@ int CheckParentedTriggerWithPos(struct NUTRIGGER_s* trigger, struct numtx2_s* mt
                         return 1;
                     }
                     break;
-            }
         }
     }
     return 0;
