@@ -24,6 +24,16 @@
 
 #include "creature.h"
 
+typedef struct
+{
+    struct nuvec_s start;    /* 0x00 */
+    struct nuvec_s end;      /* 0x0C */ 
+    int time;                /* 0x18 */
+    int ang;                 /* 0x1C */
+} ELEC; /* 0x20 */
+
+extern ELEC H2OElec[22];
+
 struct deb3_s;
 
 
@@ -77,8 +87,8 @@ extern f32 D_0062E778;   /* minimum ShadNorm.y for debris to come to rest */
 
 extern void NuMtxSetIdentity(struct numtx_s *m);
 extern void RBodyMove(struct deb3_s *deb, f32 dt);
-extern void RBodyImpact(struct deb3_s *deb, struct nuvec_s *pos,
-                        struct nuvec_s *norm);
+extern void RBodyImpact(struct deb3_s *deb, struct nuvec_s *pnt,
+                        struct nuvec_s *nrm);
 extern void CubeImpact(struct numtx_s *mat, struct numtx_s *nmat,
                        struct nuvec_s *norm, f32 size,
                        struct nuvec_s *impact);
@@ -87,9 +97,9 @@ extern void FullReflect(struct nuvec_s *n, struct nuvec_s *l,
 extern s32 NewRayCast(struct nuvec_s *pos, struct nuvec_s *dir, f32 size);
 
 struct gdeb_s {
-    s32 i;                /* 0x0 */
+    int i;                /* 0x0 */
     char *name;           /* 0x4 */
-    u64 levbits;          /* 0x8 */
+    unsigned long levbits;          /* 0x8 */
 };
 
 extern struct gdeb_s GDeb[170];
@@ -101,6 +111,31 @@ extern void GameSfx(s32 id, struct nuvec_s *pos);
 extern void AddFiniteShotDebrisEffect(s32 *key, s32 effect, struct nuvec_s *pos,
                                       s32 n);
 extern s32 qrand(void);
+extern void NuVecAdd(struct nuvec_s* v, struct nuvec_s* v0, struct nuvec_s* v1);
+extern float NuVecDot(struct nuvec_s* v0, struct nuvec_s* v1);
+extern void NuVecCross(struct nuvec_s* v, struct nuvec_s* v0, struct nuvec_s* v1);
+extern void NuVecInvMtxRotate(struct nuvec_s* v, struct nuvec_s* v0, struct numtx_s* m0);
+extern void NuVecSub(struct nuvec_s* v, struct nuvec_s* v0, struct nuvec_s* v1);
+
+struct CortLight_s {
+    int unk00;
+    int unk04;
+    int unk08;
+    int unk0C;
+    int unk10;
+    int unk14;
+};
+
+extern int cortlights[132];
+extern int lcrunch;
+extern int wdir;
+extern int wtimer;
+extern int debpt;
+extern float HotCoals[13];
+extern float D_0062e6b8; // 99999.0f
+extern float D_0062e6bc; //-0.725f
+extern float D_0062e6c0; // 2.225f
+//2000000.0f
 
 struct camera_s {
     struct numtx_s mtx;   /* 0x00 */
@@ -134,8 +169,9 @@ struct nunode_s {
 };
 
 struct nuspecial_s {
-    u8 unk_0x00[0x40];        /* 0x00 */
-    struct nunode_s *node;    /* 0x40 */
+    struct numtx_s mtx;        /* 0x00 */
+    u8 unk_0x00[0xC];          /* 0x40 */
+    struct nunode_s *node;     /* 0x4c */
 };
 
 struct nugspline_s {
@@ -188,7 +224,6 @@ extern struct nugscn_s *world_scene[32];
 extern struct nugspline_s *pVIS;
 extern s32 iVIS;
 extern char *HutList[];
-extern s32 cortlights[42];
 extern u32 cortcols[];
 extern struct firedrop_s firedrop[16];
 extern f32 HotRocks[73];
@@ -252,6 +287,55 @@ extern void PlayRandSFX(void);
 
 #define JONMASK(v, a) JonMaskFPS((v), (a))
 
+extern struct numtx_s numtx_identity;
+
+
+void RBodyInitClasses(void)
+{
+    struct rbclass_s *rbc0;
+    struct rbclass_s *rbc1;
+    struct rbclass_s *rbc2;
+    struct rbclass_s *rbc3;
+    struct rbclass_s *rbc4;
+
+    rbc0 = &rbclass[0];
+    rbc1 = &rbclass[1];
+    rbc2 = &rbclass[2];
+    rbc4 = &rbclass[4];
+    rbc3 = &rbclass[3];
+
+    rbc0->invBodyInertiaTensor = numtx_identity;
+    rbc0->invBodyInertiaTensor._00 = 0.4f;
+    rbc0->invBodyInertiaTensor._11 = 0.4f;
+    rbc0->invBodyInertiaTensor._22 = 0.4f;
+    rbc0->mass = 1.0f;
+    rbc0->kr = 0.5f;
+    rbc0->kf = 0.1f;
+
+    rbc1->invBodyInertiaTensor = numtx_identity;
+    rbc1->invBodyInertiaTensor._00 = 60.0f;
+    rbc1->invBodyInertiaTensor._11 = 60.0f;
+    rbc1->invBodyInertiaTensor._22 = 60.0f;
+    rbc1->mass = 0.1f;
+    rbc1->kr = 0.9f;
+    rbc1->kf = 0.2f;
+
+    rbc2->invBodyInertiaTensor = numtx_identity;
+    rbc2->invBodyInertiaTensor._00 = 24.0f;
+    rbc2->invBodyInertiaTensor._11 = 60.0f;
+    rbc2->invBodyInertiaTensor._22 = 24.0f;
+    rbc2->mass = 0.1f;
+    rbc2->kr = 0.75f;
+    rbc2->kf = 0.2f;
+
+    rbc3->mass = 0.0f;
+    rbc3->kr = 0.9f;
+    rbc3->kf = 0.0f;
+
+    rbc4->mass = 0.0f;
+    rbc4->kr = 0.75f;
+    rbc4->kf = 10.0f;
+}
 
 void PlayRandSFX(void) {
     struct nuvec_s vec;
@@ -357,6 +441,223 @@ void CoalSpark(struct deb3_s *deb) {
     }
 }
 
+void RBodyMove(struct deb3_s *deb,float dt) {
+  struct rbclass_s * rbc;
+  struct numtx_s tm;
+  struct numtx_s tmtx;
+  struct nuvec_s v;
+  
+  rbc = &rbclass[deb->info->classid];
+  if (rbc->mass != 0.0f) {
+    tmtx = deb->mtx;
+    NuVecScale(&v,&deb->angularvelocity,dt);
+    NuMtxSkewSymmetric(&tmtx,&v);
+    NuMtxMulR(&tmtx,&deb->mtx,&tmtx);
+    NuMtxAddR(&tmtx,&tmtx,&deb->mtx);
+    tmtx._30 = deb->mtx._30 + (deb->velocity.x * dt);
+    tmtx._31 = deb->mtx._31 + (deb->velocity.y * dt);
+    tmtx._32 = deb->mtx._32 + (deb->velocity.z * dt);
+    deb->velocity.y += deb->grav * dt;
+    NuMtxOrth(&tmtx);
+    NuMtxInvR(&tm,&tmtx);
+    NuMtxMulR(&deb->invWorldInertiaTensor,&tm,&rbc->invBodyInertiaTensor);
+    NuMtxMulR(&deb->invWorldInertiaTensor,&deb->invWorldInertiaTensor,&tmtx);
+    NuVecInvMtxRotate(&deb->angularvelocity,&deb->angularMomentum,&deb->invWorldInertiaTensor);
+    deb->mtx = tmtx;
+  }
+  else {
+    if (rbc->kf != 0.0f) {
+      NuMtxPreRotateX(&deb->mtx,deb->angularMomentum.x);
+      NuMtxPreRotateY(&deb->mtx,deb->angularMomentum.y);
+      NuMtxPreRotateZ(&deb->mtx,deb->angularMomentum.z);
+    }
+    deb->mtx._30 = deb->mtx._30 + (deb->velocity.x * dt);
+    deb->mtx._31 = deb->mtx._31 + (deb->velocity.y * dt);
+    deb->mtx._32 = deb->mtx._32 + (deb->velocity.z * dt);
+    deb->velocity.y = deb->velocity.y + (deb->grav * dt); 
+  }
+}
+
+void RBodyImpact(struct deb3_s *deb,struct nuvec_s *pnt,struct nuvec_s *nrm) {
+  struct rbclass_s* rbc;
+  struct nuvec_s R;
+  struct nuvec_s velocity;
+  struct nuvec_s v;
+  struct nuvec_s impulse;
+  float impulseD;
+  float impulseND;
+
+  rbc = &rbclass[deb->info->classid];
+  NuVecSub(&R,pnt,(struct nuvec_s *)&(deb->mtx)._30);
+  NuVecCross(&velocity,&R,&deb->angularvelocity);
+  NuVecAdd(&velocity,&velocity,&deb->velocity);
+  impulseD = NuVecDot(&velocity,nrm);
+  impulseND = (impulseD * -(rbc->kr + 1.0f));
+  NuVecCross(&v,&R,nrm);
+  NuVecInvMtxRotate(&v,&v,&deb->invWorldInertiaTensor);
+  NuVecCross(&v,&v,&R);
+  impulseD = NuVecDot(&v,nrm);
+  impulseD = (impulseND / ((1.0f / rbc->mass) + impulseD));
+  impulse.x = impulseD * nrm->x;
+  impulse.y = impulseD * nrm->y;
+  impulse.z = impulseD * nrm->z;
+  deb->velocity.x = deb->velocity.x + (impulse.x / rbc->mass );
+  deb->velocity.y = deb->velocity.y + impulse.y / rbc->mass;
+  deb->velocity.z = deb->velocity.z + impulse.z / rbc->mass;
+  NuVecCross(&v,&impulse,&R);
+  deb->angularMomentum.x = deb->angularMomentum.x + v.x;
+  deb->angularMomentum.y = deb->angularMomentum.y + v.y;
+  deb->angularMomentum.z = deb->angularMomentum.z + v.z;
+  NuVecInvMtxRotate(&v,&deb->angularMomentum,&deb->invWorldInertiaTensor);
+  deb->angularvelocity.x = deb->angularvelocity.x + v.x;
+  deb->angularvelocity.y = deb->angularvelocity.y + v.y;
+  deb->angularvelocity.z = deb->angularvelocity.z + v.z;
+}
+
+void InitDeb3(void) {
+    int *p;
+    int *end;
+
+    rsfxcount = 0;
+    rsfxpt = 0;
+    memset(firedrop, 0, 0x140);
+    torndist = D_0062e6b8;
+    debpt = 0;
+    firedroppt = 0;
+    dropfire = 0;
+    hutexplode = 0;
+    hutframe = 0;
+    exroty = 0;
+    jonframe1 = 0;
+    subprop = 0;
+    water1 = 0;
+    water2 = 0;
+    wdir = 0;
+    wtimer = 0;
+    xrayon = 0;
+    jcrunch = 0;
+    lcrunch = 0;
+    cmask = 0;
+    dmask = 0;
+    maskx = 0;
+    masky = 0;
+    maskoff = 0;
+    maskrot = 0;
+
+    p = cortlights;
+    end = p + 126;
+
+    do {
+        p[0] = qrand();
+        p[1] = qrand();
+        p[2] = qrand();
+        p[3] = (qrand() & 0x7f) + 0x80;
+        p[4] = (qrand() & 0x7f) + 0x80;
+        p[5] = (qrand() & 0x7f) + 0x80;
+
+        p += 6;
+    } while ((int)p < (int)end);
+    memset(deb3, 0, 0x3800);
+    RBodyInitClasses();
+    rockpt = 0;
+    if (Level == 1) {
+        rockpt = HotRocks;
+    }
+    if (Level == 0x11) {
+        rockpt = HotCoals;
+    }
+    if (Level == 0x14) {
+        floor1 = D_0062e6bc;
+        roof1 = D_0062e6c0;
+        flooron = 0;
+        roofon = 0;
+    }
+}
+
+void JonExtraDraw(void) {
+    ELEC* pt;
+    int i;
+    int d;
+    int col;
+    
+    struct nuvec_s vec;
+
+    if (Level == 0x19) {
+        switch (cmask) {
+            default:
+                i = -1;
+                d = 0x7e;
+                break;
+            case 1:
+                i = CRemap[85];
+                d = 0x7e;
+                break;
+            case 2:
+                i = CRemap[87];
+                d = 0x7f;
+                break;
+            case 3:
+                i = CRemap[86];
+                d = 0x80;
+                break;
+            case 4:
+                i = CRemap[88];
+                d = 0x81;
+                break;
+        }
+        vec.x = 0.0f;
+        vec.y = 5.0f - NuTrigTable[(u16)(maskoff / 0x3c)] * 3.0f;
+        vec.z = 2.87f;
+        vec.x = NuTrigTable[(u16)(maskx / 0x3c)] * 1.5f + vec.x;
+        vec.y += (NuTrigTable[(u16)(masky / 0x3c)] * 0.75f);
+        vec.z = NuTrigTable[(u16)((maskx / 0x3c) + 0x4000)] * 3.0f + vec.z;
+        if (i != -1) {
+            Draw3DCharacter(&vec, 0, (unsigned short)(NuTrigTable[(unsigned short)(maskrot / 0x3c)] * 8192.0f), 0, &CModel[i], -1, 1.0f, 1.0f, 0);
+            vec.y += 0.2f;
+            if (Paused == 0) {
+                AddVariableShotDebrisEffect(GDeb[d].i, &vec, 1, 0, 0);
+            }
+        }
+    }
+    if (Level != 2) {
+        return;
+    }
+    pt = (ELEC*)&H2OElec[0];
+    if (Paused != 0) {
+        return;
+    }
+        for (pt; pt->start.x != 99999.0f; pt++) {
+            vec.x = pt->start.x - player->obj.pos.x;
+            vec.z = pt->start.z - player->obj.pos.z;
+            if ((vec.x * vec.x + vec.z * vec.z) < 625.0f) {
+                pt->time = pt->time - 0x3c;
+                if (pt->time < 0) {
+                    pt->time = ((qrand() & 0xff) + 0x3c) * 0x3c;
+                    pt->ang = qrand() & 0xffff;
+                }
+                if (pt->time < 0x960) {
+                    if (qrand() < 0x4000) {
+                        GameSfx(0x89, &pt->start);
+                    }
+                    if (pt->time > 0x5a0) {
+                        col = ((0x28 - pt->time) << 4) / 0x3c;
+                    } else if (pt->time < 0x3c0) {
+                        col = (pt->time << 4) / 0x3c;
+                    } else {
+                        col = 0x80;
+                    }
+                    col = col << 0x18;
+                    vec.x = NuTrigTable[pt->ang & 0xffff] * 0.47999999f;
+                    vec.y = 0.0f;
+                    vec.z = NuTrigTable[(pt->ang + 0x4000U) & 0x3fffc / 4] * 0.47999999f;
+                    NuLgtArcLaser( 0, &pt->start, &pt->end, &vec, 0.05f, 0.1f, 0.01f, 0.1f, col + 0x00FF7F00);
+                    NuLgtArcLaser(0, &pt->start, &pt->end, &vec, 0.4f, 0.3f, 0.001f, 0.1f, col | 0x800000);
+                    AddVariableShotDebrisEffect(GDeb[143].i, &pt->end, 1, 0, 0);
+                }
+            }
+        }
+    return;
+}
 
 void LaunchObjects(void) {
     struct nuvec_s vec;
@@ -1136,184 +1437,220 @@ void LaunchObjects(void) {
     PlayRandSFX();
 }
 
+void NuRndrAddShadow(struct nuvec_s * pos, float r, int shade, int xrot, int yrot, int zrot);
+int NuSpecialDrawAt(struct nuhspecial_s * sph, struct numtx_s * mtx);
 
 void ProcDeb3(void) {
-    s32 loop;
-    s32 flag;
-    struct deb3_s *deb;
-    struct nuvec_s vec;
-    struct nuvec_s t;
-    struct numtx_s mat;
-    f32 dist;
-    f32 dx;
-    f32 dy;
-    f32 dz;
-    f32 radius;
-    f32 r;
-
-    LaunchObjects();
-    deb = deb3;
-    NuMtxSetIdentity(&mat);
-    radius = (player->obj.max.y - player->obj.min.y) * player->obj.SCALE * 0.5f;
-    for (loop = 0; loop < 0x40; deb++, loop++) {
-        if (deb->timer != 0) {
-            deb->diff.x *= 0.5f;
-            deb->diff.y *= 0.5f;
-            deb->diff.z *= 0.5f;
-            if ((deb->status & 1) == 0) {
-                mat = deb->mtx;
-                RBodyMove(deb, D_0062E774);
-                if ((deb->info->info & 6) != 0) {
-                    dx = deb->mtx._30 - player->obj.pos.x;
-                    dy = deb->mtx._31
-                         - (player->obj.pos.y
-                            + (player->obj.bot + player->obj.top)
-                                  * player->obj.SCALE * 0.5f);
-                    dz = deb->mtx._32 - player->obj.pos.z;
-                    r = deb->info->size * 0.5f + radius;
-                    if (dx * dx + dy * dy + dz * dz < r * r) {
-                        if ((deb->info->info & 2) != 0
-                            && deb->info->type == 0x93) {
-                            player->freeze = 100;
-                            player->spin = 0;
-                            GameSfx(0x54, &player->obj.pos);
-                        }
+  int loop;
+  int flag;
+  struct deb3_s *deb;
+  struct nuvec_s vec;
+  struct nuvec_s t;
+  struct numtx_s mat;
+  float dist;
+  float dx;
+  float dy;
+  float dz;
+  float radius;
+  float r;
+  
+  LaunchObjects();
+  deb = deb3;
+  NuMtxSetIdentity(&mat);
+  radius = ((player->obj.max.y - player->obj.min.y) * player->obj.SCALE * 0.5f);
+  for(loop = 0; loop < 0x40; deb++, loop++) {
+    if (deb->timer != 0) {
+      deb->diff.x *= 0.5f;
+      deb->diff.y *= 0.5f;
+      deb->diff.z *= 0.5f;
+      if ((deb->status & 1) == 0) {
+        mat = deb->mtx;
+        RBodyMove(deb,D_0062E774);
+        if ((deb->info->info & 6U) != 0) {
+          dx = deb->mtx._30 - player->obj.pos.x;
+          dy = deb->mtx._31 - (player->obj.pos.y + ((player->obj.bot + player->obj.top) * player->obj.SCALE) * 0.5f);
+          dz = deb->mtx._32 - player->obj.pos.z;
+          r = (deb->info->size * 0.5f + radius);
+          if (dx * dx + dy * dy + dz * dz < r * r) {
+            if (((deb->info->info & 2U) != 0) && (deb->info->type == 0x93)) {
+              player->freeze = 0x78;
+              player->spin = 0;
+              GameSfx(0x54,&player->obj.pos);
+            }
+            deb->timer = 1;
+            deb->status |= 4;
+          }
+        }
+        deb->check--;
+        if (deb->check < 1) {
+          if (deb->norm.y != 100.0f) {
+            deb->diff.x += (deb->mtx._30 - deb->impact.x);
+            deb->diff.y += (deb->mtx._31 - deb->impact.y);
+            deb->diff.z += (deb->mtx._32 - deb->impact.z);
+            deb->mtx._30 = deb->impact.x;
+            deb->mtx._31 = deb->impact.y;
+            deb->mtx._32 = deb->impact.z;
+            if (deb->info->impact != 0) {
+              (*deb->info->impact)(deb);
+            }
+            if (rbclass[deb->info->classid].mass != 0.0f) {
+              t = deb->impact;
+              CubeImpact(&mat,&deb->mtx,&deb->norm,(deb->info->size * 0.5f),&t);
+              deb->norm.x = -deb->norm.x;
+              deb->norm.y = -deb->norm.y;
+              deb->norm.z = -deb->norm.z;
+              RBodyImpact(deb,&t,&deb->norm);
+            }
+            else {
+              FullReflect(&deb->norm,&deb->velocity,&deb->velocity);
+              deb->velocity.x *= rbclass[deb->info->classid].kr;
+              deb->velocity.y *= rbclass[deb->info->classid].kr;
+              deb->velocity.z *= rbclass[deb->info->classid].kr;
+              if (rbclass[deb->info->classid].kf != 0.0f) {
+                deb->angularMomentum.x = (qrand() - 0x8000 >> 8) * rbclass[deb->info->classid].kf;
+                deb->angularMomentum.y = (qrand() - 0x8000 >> 8) * rbclass[deb->info->classid].kf;
+                deb->angularMomentum.z = (qrand() - 0x8000 >> 8) * rbclass[deb->info->classid].kf;
+              }
+            }
+            if (deb->info->type == 0x93) {
+              GameSfx(0x44,(struct nuvec_s *)&deb->mtx._30);
+            }
+          }
+          vec.x = ((deb->velocity.x * 8.0f) / 60.0f);
+          vec.y = ((deb->velocity.y * 8.0f) / 60.0f);
+          vec.z = ((deb->velocity.z * 8.0f) / 60.0f);
+          dist = (vec.x * vec.x + vec.y * vec.y + vec.z * vec.z);
+          t.x = deb->mtx._30;
+          t.y = deb->mtx._31;
+          t.z = deb->mtx._32;
+          if ((deb->info->info & 8U) != 0) {
+            flag = 0;
+          }
+          else {
+            flag = NewRayCast(&t,&vec,deb->info->size);
+          }
+          if (flag == 0) {
+            deb->status |= 2;
+          }
+          if (((flag == 1) || (flag == 2) || (flag == 3) || (flag == 4) || (flag == 5) || (flag == 6)
+              || (flag == 7) || (flag == 8) || (flag == 9) || (flag == 10) || (flag == 11) || (flag == 12)
+              || (flag == 13) || (flag == 14) || (flag == 15)) 
+              || (flag > 0xf) && ((deb->status & 2U) != 0)) {
+                deb->impact.x = t.x + vec.x;
+                deb->impact.y = t.y + vec.y;
+                deb->impact.z = t.z + vec.z;
+                deb->norm = ShadNorm;
+                vec.x = vec.x * vec.x + vec.y * vec.y + vec.z * vec.z;
+                vec.x = NuFsqrt(vec.x);
+                dist = NuFsqrt(dist);
+                if (dist == 0.0f) {
+                  deb->check = 0;
+                }
+                else {
+                  deb->check = (vec.x * 8.0f) / dist;
+                }
+                if (deb->check == 0) {
+                  deb->diff.x += (deb->mtx._30 - deb->impact.x);
+                  deb->diff.y += (deb->mtx._31 - deb->impact.y);
+                  deb->diff.z += (deb->mtx._32 - deb->impact.z);
+                  deb->mtx._30 = deb->impact.x;
+                  deb->mtx._31 = deb->impact.y;
+                  deb->mtx._32 = deb->impact.z;
+                  deb->count++;
+                  if (deb->count > 4) {
+                    if (ShadNorm.y > D_0062E778) {
+                      if ((deb->info->info & 1U) != 0) {
                         deb->timer = 1;
-                        deb->status |= 4;
+                      }
+                      else {
+                        deb->status |= 1;
+                      }
                     }
-                }
-                deb->check--;
-                if (deb->check < 1) {
-                    if (deb->norm.y != 100.0f) {
-                        deb->diff.x += deb->mtx._30 - deb->impact.x;
-                        deb->diff.y += deb->mtx._31 - deb->impact.y;
-                        deb->diff.z += deb->mtx._32 - deb->impact.z;
-                        deb->mtx._30 = deb->impact.x;
-                        deb->mtx._31 = deb->impact.y;
-                        deb->mtx._32 = deb->impact.z;
-                        if (deb->info->impact != 0) {
-                            (*deb->info->impact)(deb);
-                        }
-                        if (rbclass[deb->info->classid].mass != 0.0f) {
-                            t = deb->impact;
-                            CubeImpact(&mat, &deb->mtx, &deb->norm,
-                                       deb->info->size * 0.5f, &t);
-                            deb->norm.x = -deb->norm.x;
-                            deb->norm.y = -deb->norm.y;
-                            deb->norm.z = -deb->norm.z;
-                            RBodyImpact(deb, &t, &deb->norm);
-                        } else {
-                            FullReflect(&deb->norm, &deb->velocity,
-                                        &deb->velocity);
-                            deb->velocity.x *=
-                                rbclass[deb->info->classid].kr;
-                            deb->velocity.y *=
-                                rbclass[deb->info->classid].kr;
-                            deb->velocity.z *=
-                                rbclass[deb->info->classid].kr;
-                            if (rbclass[deb->info->classid].kf != 0.0f) {
-                                deb->angularMomentum.x =
-                                    (qrand() - 0x8000 >> 8)
-                                    * rbclass[deb->info->classid].kf;
-                                deb->angularMomentum.y =
-                                    (qrand() - 0x8000 >> 8)
-                                    * rbclass[deb->info->classid].kf;
-                                deb->angularMomentum.z =
-                                    (qrand() - 0x8000 >> 8)
-                                    * rbclass[deb->info->classid].kf;
-                            }
-                        }
-                        if (deb->info->type == 0x93) {
-                            GameSfx(0x44, (struct nuvec_s *)&deb->mtx._30);
-                        }
-                    }
-                    vec.x = deb->velocity.x * 8.0f / 50.0f;
-                    vec.y = deb->velocity.y * 8.0f / 50.0f;
-                    vec.z = deb->velocity.z * 8.0f / 50.0f;
-                    dist = vec.x * vec.x + vec.y * vec.y + vec.z * vec.z;
-                    t.x = deb->mtx._30;
-                    t.y = deb->mtx._31;
-                    t.z = deb->mtx._32;
-                    if ((deb->info->info & 8) != 0) {
-                        flag = 0;
-                    } else {
-                        flag = NewRayCast(&t, &vec, deb->info->size);
-                    }
-                    if (flag == 0) {
-                        deb->status |= 2;
-                    }
-                    if ((flag >= 1 && flag <= 15)
-                        || (flag > 15 && (deb->status & 2) != 0)) {
-                        deb->impact.x = t.x + vec.x;
-                        deb->impact.y = t.y + vec.y;
-                        deb->impact.z = t.z + vec.z;
-                        deb->norm = ShadNorm;
-                        vec.x = vec.x * vec.x + vec.y * vec.y + vec.z * vec.z;
-                        vec.x = NuFsqrt(vec.x);
-                        dist = NuFsqrt(dist);
-                        if (dist == 0.0f) {
-                            deb->check = 0;
-                        } else {
-                            deb->check = vec.x * 8.0f / dist;
-                        }
-                        if (deb->check == 0) {
-                            deb->diff.x += deb->mtx._30 - deb->impact.x;
-                            deb->diff.y += deb->mtx._31 - deb->impact.y;
-                            deb->diff.z += deb->mtx._32 - deb->impact.z;
-                            deb->mtx._30 = deb->impact.x;
-                            deb->mtx._31 = deb->impact.y;
-                            deb->mtx._32 = deb->impact.z;
-                            deb->count++;
-                            if (deb->count > 4) {
-                                if (D_0062E778 < ShadNorm.y) {
-                                    if ((deb->info->info & 1) != 0) {
-                                        deb->timer = 1;
-                                    } else {
-                                        deb->status |= 1;
-                                    }
-                                }
-                            }
-                        } else {
-                            deb->count = 0;
-                        }
-                    } else {
-                        deb->check = 8;
-                        deb->norm.y = 100.0f;
-                        deb->count = 0;
-                    }
-                }
-            }
-            deb->mtx._30 += deb->diff.x;
-            deb->mtx._31 += deb->diff.y;
-            deb->mtx._32 += deb->diff.z;
-            vec.x = deb->mtx._30;
-            vec.y = deb->mtx._31;
-            vec.z = deb->mtx._32;
-            if (deb->info->deb != 0 && (deb->status & 1) == 0) {
-                if (deb->info->rate > 0) {
-                    AddVariableShotDebrisEffect(GDeb[deb->info->deb].i, &vec,
-                                                deb->info->rate, 0, 0);
+                  }
                 } else {
-                    if (deb->timer % -deb->info->rate == 0) {
-                        AddVariableShotDebrisEffect(GDeb[deb->info->deb].i,
-                                                    &vec, 1, 0, 0);
-                    }
+                    deb->count = 0;
                 }
-            }
-            deb->mtx._30 -= deb->diff.x;
-            deb->mtx._31 -= deb->diff.y;
-            deb->mtx._32 -= deb->diff.z;
-            deb->timer--;
-            if (deb->timer < 1) {
-                if (deb->info->end != 0) {
-                    (*deb->info->end)(deb);
-                }
-                if (deb->info->type == 0x93) {
-                    GameSfx(0x70, (struct nuvec_s *)&deb->mtx._30);
-                }
-            } else if ((deb->info->info & 0x10) != 0) {
-                deb->shadow = NewShadow((struct nuvec_s *)&deb->mtx._30, 0.0f);
+            } else {
+                    deb->check = 8;
+                    deb->norm.y = 100.0f;
+                    deb->count = 0;
             }
         }
+      }
+      deb->mtx._30 += deb->diff.x;
+      deb->mtx._31 += deb->diff.y;
+      deb->mtx._32 += deb->diff.z;
+      vec.x = deb->mtx._30;
+      vec.y = deb->mtx._31;
+      vec.z = deb->mtx._32;
+      if ((deb->info->deb != 0) && ((deb->status & 1U) == 0)) {
+        if (deb->info->rate > 0) {
+          AddVariableShotDebrisEffect(GDeb[deb->info->deb].i,&vec,deb->info->rate,0,0);
+        }
+        else {
+          if (deb->timer % -deb->info->rate == 0) {
+            AddVariableShotDebrisEffect(GDeb[deb->info->deb].i,&vec,1,0,0);
+          }
+        }
+      }
+      deb->mtx._30 -= deb->diff.x;
+      deb->mtx._31 -= deb->diff.y;
+      deb->mtx._32 -= deb->diff.z;
+      deb->timer--;
+      if (deb->timer < 1) {
+        if (deb->info->end != 0) {
+          (*deb->info->end)(deb);
+        }
+        if (deb->info->type == 0x93) {
+          GameSfx(0x70,(struct nuvec_s *)&deb->mtx._30);
+        }
+      }
+      else if ((deb->info->info & 0x10U) != 0) {
+        deb->shadow = NewShadow((struct nuvec_s *)&deb->mtx._30,0.0f);
+      }
     }
+  }
+}
+
+static void DrawDeb3() {
+  struct nuvec_s pos;
+  struct deb3_s *deb;
+  float r;
+  int i;
+  int j;
+  
+  JonExtraDraw();
+  deb = deb3;
+  for(i = 0; i < 0x40; i++, deb++) {
+    if (deb->timer != 0) {
+      if (ObjTab[deb->info->type].obj.special != 0) {
+        NuSpecialDrawAt(&ObjTab[deb->info->type].obj,&deb->mtx);
+        if ((deb->info->info & 0x10U) != 0) {
+          if (deb->shadow != 2000000.0f) {
+            pos.x = deb->mtx._30;
+            pos.y = deb->shadow;
+            pos.z = deb->mtx._32;
+            r = (deb->info->size * 0.75f);
+            if (r > 0.0f) {
+              NuRndrAddShadow(&pos,r,0x7f,0,0,0);
+            }
+          }
+        }
+      }
+    }
+  }
+  if (rockpt == HotRocks) {
+    i = (int)(pVIS - world_scene[0]->splines);
+    if ((i == 1) && (iVIS < 0x8d)) {
+      if (ObjTab[i + 0x3e].obj.special != 0) {
+        NuSpecialDrawAt(&ObjTab[i + 0x3e].obj,&(ObjTab[i + 0x3e].obj.special)->mtx);
+      }
+    }
+    else if (((i == 6 || i == 7) || (i == 9))) {
+        i = 64;
+        if ((ObjTab[i].obj.special != 0))  {
+            NuSpecialDrawAt(&ObjTab[i].obj,&(ObjTab[i].obj.special)->mtx);
+        }
+    }
+  }
 }
