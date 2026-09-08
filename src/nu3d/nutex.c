@@ -164,10 +164,10 @@ extern int D_0062EC04;
 extern int D_0067D640[256];
 #define gs_reserve_stack D_0067D640
 
-int nutex_alloc_cnt;
-int tex_allocmax;
-int tpid;
-struct nusystex_s * tinfo;
+extern int D_0062ebf4;
+#define nutex_alloc_cnt D_0062ebf4
+extern struct nusystex_s * D_0062ebec;
+#define tinfo D_0062ebec
 
 extern int NuTexReadBitmapMMEx(char *name, int mipmaps, int *addr, int *addrend);
 extern int NuTexCreateEx(NuTex *spec, void *extmem, int extsize);
