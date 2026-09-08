@@ -166,7 +166,7 @@ extern int D_0067D640[256];
 
 extern int D_0062ebf4;
 #define nutex_alloc_cnt D_0062ebf4
-extern struct nusystex_s * D_0062ebec;
+extern struct nusystex_s* D_0062ebec;
 #define tinfo D_0062ebec
 
 extern int NuTexReadBitmapMMEx(char *name, int mipmaps, int *addr, int *addrend);
@@ -229,14 +229,14 @@ void NuMemFreeFn(void * addr, char * file, int line);
 void NuTexDestroy(int tid) {
   tid--;
   if (tid >= 0) {
-    if ((tinfo[tid].ref & 0x20000U) == 0) {
-      if (tinfo[tid].tex.bits != 0) {
-        NuMemFreeFn(tinfo[tid].tex.bits,"..\\nu2.ps2\\nu3d\\nutex.c",0x3f6);
-        tinfo[tid].tex.bits = 0;
+    if ((D_0062ebec[tid].ref & 0x20000U) == 0) {
+      if (D_0062ebec[tid].tex.bits != 0) {
+        NuMemFreeFn(D_0062ebec[tid].tex.bits,"..\\nu2.ps2\\nu3d\\nutex.c",0x3f6);
+        D_0062ebec[tid].tex.bits = 0;
       }
-      NuPs2TxDestroy(&tinfo[tid].ps2tex);
+      NuPs2TxDestroy(&D_0062ebec[tid].ps2tex);
     }
-    tinfo[tid].ref = tinfo[tid].ref & 0xfffffffffffeffff;
+    D_0062ebec[tid].ref = D_0062ebec[tid].ref & 0xfffffffffffeffff;
     nutex_alloc_cnt--;
   }
 }
