@@ -13,8 +13,8 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0201:00271000:_printf_r"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0201:00271040:printf"
-state = "asm"
+state = "matching"
