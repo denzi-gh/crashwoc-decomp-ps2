@@ -13,8 +13,8 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0202:00271090:srand"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0202:002710a0:rand"
-state = "asm"
+state = "matching"
