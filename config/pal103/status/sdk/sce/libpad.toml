@@ -25,7 +25,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0148:002648b8:scePadEnd"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:00264938:scePadPortOpen"
@@ -37,35 +37,35 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0148:00264bd8:scePadGetDmaStr"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:00264c38:scePadGetFrameCount"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:00264c88:scePadRead"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:00264d08:scePadGetState"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:00264d80:scePadStateIntToStr"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:00264db8:scePadSetReqState"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:00264e20:scePadGetReqState"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:00264e70:scePadReqIntToStr"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:00264ea8:scePadInfoAct"
@@ -101,15 +101,15 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0148:002655d0:scePadInfoPressMode"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:00265630:scePadEnterPressMode"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:00265688:scePadExitPressMode"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:002656e0:scePadSetVrefParam"
