@@ -13,15 +13,15 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0064:0016e890:CreateDmaPartEffectList"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0064:0016eac0:CreateDmaParticleSet"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0064:0016ebb0:LinkDmaParticalSets"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0064:0016ec48:PartDebugHeader"
