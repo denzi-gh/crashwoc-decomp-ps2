@@ -13,27 +13,27 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0102:0022c430:edcrtDrawSpecialCrates"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0102:0022c6b8:edcrtDrawBoxyThing"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0102:0022caf0:WriteCrateData"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0102:0022cd68:edcrtcbMemCardSaveCrates"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0102:0022d128:edcrtcbMemCardLoadCrates"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0102:0022d500:edcrtcbMemCardMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0102:0022d7d0:edcrtcbSpecificTypeMenu"
@@ -41,19 +41,19 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0102:0022d978:edcrtcbCrateTypesMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0102:0022dae0:edcrtcbDisplayTypeMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0102:0022dcc8:edcrtInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0102:0022df08:edcrtDoInput"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0102:0022e368:edcrtDrawInfo"
@@ -65,7 +65,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0102:0022e670:edcrtcbChangeFileNameMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0102:0022e758:edcrtcbMemCardDeleteCratesMenu"
@@ -93,7 +93,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0102:0022e9c8:edcrtcbResetCratesMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0102:0022eb00:edcrtcbDisplayType"
