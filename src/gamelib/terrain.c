@@ -217,27 +217,101 @@ typedef struct {
 } TerrainGroupType; /* 0x14 */
 
 typedef struct {
+    f32 x;                                /* 0x000 */
+    f32 y;                                /* 0x004 */
+    f32 z;                                /* 0x008 */
+    f32 x2;                               /* 0x00C */
+    f32 y2;                               /* 0x010 */
+    f32 z2;                               /* 0x014 */
+    s16 timer;                            /* 0x018 */
+    s16 pad;                              /* 0x01A */
+    tertype *hitdata[512];                /* 0x01C */
+} TerrainPollType; /* 0x81C */
+
+typedef struct {
     TerrainSituType *terr;                /* 0x0000 */
     TerrainPlatformType platdata[128];    /* 0x0004 */
     void *wallinfo;                       /* 0x3204 */
     TerrainTrackInfoType TrackInfo[4];    /* 0x3208 */
-    TerrainGroupType terrgroup[256];      /* 0x3238 */
-    TerrainGroupType platgroup;           /* 0x4638 */
+    TerrainGroupType terrgroup[257];      /* 0x3238 */
     s32 miny;                             /* 0x464C */
     s32 terrgroupcnt;                     /* 0x4650 */
     s16 terrlist[4096];                   /* 0x4654 */
+    TerrainPollType pollist[9];           /* 0x6654 */
 } TerrainSetType;
 
 typedef struct {
     TerrainSituType *terr;                /* 0x0000 */
     void *data;                           /* 0x0004 */
     s16 typeterr[128];                    /* 0x0008 */
+    TerrainPlatformType platdata[128];    /* 0x0108 */
+    void *wallinfo;                       /* 0x3308 */
 } PickupTerrType;
 
 typedef struct {
     struct nuvec_s pos;                   /* 0x00 */
     f32 radius;                           /* 0x0C */
 } SphereType;
+
+typedef struct {
+    s32 offset;
+    struct nuvec_s translation;
+    s16 type;
+    s16 info;
+    s16 rx;
+    s16 ry;
+    s16 rz;
+    s16 pad;
+    struct nuvec_s rotation;
+    u32 flags;
+    s16 prim;
+    s16 id;
+    s32 datapos;
+} OffType;
+
+typedef struct {
+    s32 count;
+    OffType offlist[512];
+} OffFileType;
+
+typedef struct {
+    u16 count;
+    u16 val;
+    struct nuvec_s spl[4096];
+} WallSplineType;
+
+struct nuinstanim_s {
+    struct numtx_s mtx;
+};
+
+struct nuinstance_s {
+    struct numtx_s mtx;                   /* 0x00 */
+    s32 objid;                            /* 0x40 */
+    struct {
+        u32 visible : 1;
+    } flags;                              /* 0x44 */
+    struct nuinstanim_s *anim;            /* 0x48 */
+    s32 pad;                              /* 0x4C */
+}; /* 0x50 */
+
+struct nugscn_s {
+    s32 *tids;                            /* 0x00 */
+    s32 numtid;                           /* 0x04 */
+    struct numtl_s **mtls;                /* 0x08 */
+    s32 nummtl;                           /* 0x0C */
+    s32 numgobj;                          /* 0x10 */
+    struct nugobj_s **gobjs;              /* 0x14 */
+    s32 numinstance;                      /* 0x18 */
+    struct nuinstance_s *instances;       /* 0x1C */
+};
+
+struct nucamera_s {
+    struct numtx_s mtx;
+    f32 fov;
+    f32 aspect;
+    f32 nearclip;
+    f32 farclip;
+};
 
 extern TerTempInfoType *TerI;
 extern TerrShapeType *TerrShape;
@@ -328,6 +402,497 @@ extern s32 NewScanHandelFull(struct nuvec_s *pos, struct nuvec_s *vel, s32 extra
                              s32 platscan, f32 size);
 extern s32 NewScanHandelSubset(void *handel, struct nuvec_s *pos, struct nuvec_s *vel,
                                s32 platscan, f32 size);
+extern void TerrDrawPlat(tertype *ter, short terrno);
+extern void NuRndrLine3dDbg(f32 x0, f32 y0, f32 z0, f32 x1, f32 y1, f32 z1, u32 colour);
+extern struct nuvec_s WallSplList[128];
+extern s32 WallSplCount;
+extern struct nucamera_s global_camera;
+typedef void (*NuDebugMsgFn)();
+extern NuDebugMsgFn NuDebugMsgProlog(char *file, s32 line);
+extern char *strcpy(char *dst, const char *src);
+extern char *strcat(char *dst, const char *src);
+extern s32 NuFileLoadBuffer(char *name, void *buf, s32 max);
+extern char D_006178D0[];
+extern char D_006178F8[];
+extern char D_0062F1F8[];
+#define terrain_source_file D_006178D0
+#define terrain_store_msg D_006178F8
+#define terrain_file_ext D_0062F1F8
+extern void *memset(void *s, s32 c, s32 n);
+extern s32 nufile_buffering_enabled;
+
+s32 ReadTerrain(char *name, s32 situ, short **store, TerrainSetType *terrset) {
+    OffFileType *offfile;
+    WallSplineType *wallspl;
+    s32 lp;
+    s32 count;
+    s32 a;
+    s32 b;
+    f32 minx;
+    f32 maxx;
+    f32 minz;
+    f32 maxz;
+    char filename[100];
+
+    NuDebugMsgProlog(terrain_source_file, 0x313)(terrain_store_msg, store);
+    strcpy(filename, name);
+    strcat(filename, terrain_file_ext);
+    if (NuFileLoadBuffer(filename, *store, 0x7FFFFFFF) == 0) {
+        return -1;
+    }
+    offfile = (OffFileType *)(*store + *(s32 *)*store);
+    *store += 2;
+    count = 0;
+    terrset->wallinfo = 0;
+    crashdata = 0;
+    for (lp = 0; lp < offfile->count; lp++) {
+        switch (offfile->offlist[lp].type) {
+            case -1:
+                break;
+            case 0:
+            case 1:
+                terrset->terr[situ].id = offfile->offlist[lp].id;
+                terrset->terr[situ].type = offfile->offlist[lp].type;
+                terrset->terr[situ].info = offfile->offlist[lp].info;
+                terrset->terr[situ].Location.x = offfile->offlist[lp].translation.x;
+                terrset->terr[situ].Location.y = offfile->offlist[lp].translation.y;
+                terrset->terr[situ].Location.z = offfile->offlist[lp].translation.z;
+                terrset->terr[situ].model = *store;
+                terrset->terr[situ].flags = offfile->offlist[lp].flags;
+                count++;
+                situ++;
+                break;
+            case 2:
+                if (*(s32 *)*store == 0x12345678) {
+                    *(void **)*store = terrset->wallinfo;
+                    terrset->wallinfo = *store + 2;
+                    ((WallSplineType *)terrset->wallinfo)->count--;
+                }
+                break;
+            case 3:
+                crashdata = *store;
+                break;
+        }
+        *store += offfile->offlist[lp].offset;
+    }
+    for (wallspl = terrset->wallinfo; wallspl != 0; wallspl = ((WallSplineType **)wallspl)[-1]) {
+        for (a = 0; a < wallspl->count; a += 16) {
+            if (wallspl->spl[a].y != 2147483647.0f) {
+                if (a + 15 < wallspl->count) {
+                    minx = maxx = wallspl->spl[a].x;
+                    minz = maxz = wallspl->spl[a].z;
+                    for (b = a + 1; b <= a + 16; b++) {
+                        if (wallspl->spl[b].x < minx) {
+                            minx = wallspl->spl[b].x;
+                        }
+                        if (wallspl->spl[b].x > maxx) {
+                            maxx = wallspl->spl[b].x;
+                        }
+                        if (wallspl->spl[b].z < minz) {
+                            minz = wallspl->spl[b].z;
+                        }
+                        if (wallspl->spl[b].z > maxz) {
+                            maxz = wallspl->spl[b].z;
+                        }
+                    }
+                    wallspl->spl[a].y = minx;
+                    wallspl->spl[a + 1].y = maxx;
+                    wallspl->spl[a + 2].y = minz;
+                    wallspl->spl[a + 3].y = maxz;
+                } else {
+                    wallspl->spl[a].y = 2147483647.0f;
+                }
+            }
+        }
+    }
+    return count;
+}
+
+
+short *terraininit(s32 levelnum, short **store, short *endstore, s32 opt, char *name,
+                   struct nugscn_s *gscene, s32 gsid) {
+    TerrainSituType *mbuf;
+    tertype *ter;
+    TerrainGroupType *group;
+    s32 c;
+    s32 b;
+    s32 tx;
+    s32 tz;
+    f32 terminx;
+    f32 termaxx;
+    f32 terminy;
+    f32 termaxy;
+    f32 terminz;
+    f32 termaxz;
+    f32 maxradius;
+    f32 radiussq;
+    s32 xsteps;
+    s32 zsteps;
+    s32 lp;
+    short id[2048];
+    f32 minx[2048];
+    f32 maxx[2048];
+    f32 minz[2048];
+    f32 maxz[2048];
+    s32 platid;
+    s32 index;
+    s32 buffering;
+    TerrainSetType *terrset;
+    short *rv;
+
+    rv = *store;
+    terrset = (TerrainSetType *)*store;
+    *store += 0x57A8;
+    terrset->terr = (TerrainSituType *)*store;
+    *store += 0xEE00;
+    for (lp = 0; lp < 9; lp++) {
+        terrset->pollist[lp].timer = 0;
+        terrset->pollist[lp].hitdata[0] = 0;
+    }
+    memset(terrset->terr, 0, 0x1C000);
+    c = 0;
+    mbuf = terrset->terr;
+    while (c < 0x800) {
+        mbuf->type = -1;
+        c++;
+        mbuf++;
+    }
+    for (c = 0; c < 257; c++) {
+        terrset->terrgroup[c].count = 0;
+    }
+    for (c = 0; c < 128; c++) {
+        terrset->platdata[c].curmtx = 0;
+        terrset->platdata[c].plrgrav = 0.0f;
+        terrset->platdata[c].ypos = 0.0f;
+        terrset->platdata[c].yvel = 0.0f;
+        terrset->platdata[c].damp = 0.0f;
+        terrset->platdata[c].tension = 0.0f;
+    }
+    for (c = 0; c < 4; c++) {
+        terrset->TrackInfo[c].ptrid = 0;
+    }
+    buffering = nufile_buffering_enabled;
+    nufile_buffering_enabled = 0;
+    terraincnt = 0;
+    curSphereter = 0;
+    platinrange = 0;
+    platid = 0;
+    ShadPoly = 0;
+    TerrPoly = 0;
+    PlatImpactId = 0;
+    situtotal = ReadTerrain(name, 0, store, terrset);
+    if (situtotal < 0) {
+        *store = rv;
+        return 0;
+    }
+    terrset->miny = 0x7FFFFFFF;
+    c = 0;
+    mbuf = terrset->terr;
+    while (c < 0x800) {
+        if ((mbuf->type == 0) || (mbuf->type == 1)) {
+            maxradius = 0.0f;
+            terminx = 200000000.0f;
+            terminy = 200000000.0f;
+            terminz = 200000000.0f;
+            termaxx = -200000000.0f;
+            termaxy = -200000000.0f;
+            termaxz = -200000000.0f;
+            group = (TerrainGroupType *)mbuf->model;
+            while (group->start >= 0) {
+                b = group->count;
+                ter = (tertype *)(group + 1);
+                while (b > 0) {
+                    if (ter->info[0] == 0xFF) {
+                        ter->info[0] = ter->info[1];
+                        ter->info[1] = 0;
+                        ter->info[2] |= 0x80;
+                    }
+                    if (ter->minx < terminx) {
+                        terminx = ter->minx;
+                    }
+                    if (ter->miny < terminy) {
+                        terminy = ter->miny;
+                    }
+                    if (ter->minz < terminz) {
+                        terminz = ter->minz;
+                    }
+                    if (ter->maxx > termaxx) {
+                        termaxx = ter->maxx;
+                    }
+                    if (ter->maxy > termaxy) {
+                        termaxy = ter->maxy;
+                    }
+                    if (ter->maxz > termaxz) {
+                        termaxz = ter->maxz;
+                    }
+                    if (ter->pnts[0].y + mbuf->Location.y < (f32)terrset->miny) {
+                        terrset->miny = ter->pnts[0].y + mbuf->Location.y;
+                    }
+                    if (ter->pnts[1].y + mbuf->Location.y < (f32)terrset->miny) {
+                        terrset->miny = ter->pnts[1].y + mbuf->Location.y;
+                    }
+                    if (ter->pnts[2].y + mbuf->Location.y < (f32)terrset->miny) {
+                        terrset->miny = ter->pnts[2].y + mbuf->Location.y;
+                    }
+                    if (ter->pnts[3].y + mbuf->Location.y < (f32)terrset->miny) {
+                        terrset->miny = ter->pnts[3].y + mbuf->Location.y;
+                    }
+                    radiussq = ter->pnts[0].x * ter->pnts[0].x + ter->pnts[0].y * ter->pnts[0].y +
+                         ter->pnts[0].z * ter->pnts[0].z;
+                    if (maxradius < radiussq) {
+                        maxradius = radiussq;
+                    }
+                    radiussq = ter->pnts[1].x * ter->pnts[1].x + ter->pnts[1].y * ter->pnts[1].y +
+                         ter->pnts[1].z * ter->pnts[1].z;
+                    if (maxradius < radiussq) {
+                        maxradius = radiussq;
+                    }
+                    radiussq = ter->pnts[2].x * ter->pnts[2].x + ter->pnts[2].y * ter->pnts[2].y +
+                         ter->pnts[2].z * ter->pnts[2].z;
+                    if (maxradius < radiussq) {
+                        maxradius = radiussq;
+                    }
+                    radiussq = ter->pnts[3].x * ter->pnts[3].x + ter->pnts[3].y * ter->pnts[3].y +
+                         ter->pnts[3].z * ter->pnts[3].z;
+                    if (maxradius < radiussq) {
+                        maxradius = radiussq;
+                    }
+                    ter++;
+                    b--;
+                }
+                group = (TerrainGroupType *)ter;
+            }
+            mbuf->radius = maxradius;
+            if (mbuf->type == 1) {
+                mbuf->min.x = terminx;
+                mbuf->min.y = terminy;
+                mbuf->min.z = terminz;
+                mbuf->max.x = termaxx;
+                mbuf->max.y = termaxy;
+                mbuf->max.z = termaxz;
+            } else {
+                mbuf->min.x = terminx + mbuf->Location.x;
+                mbuf->min.y = terminy + mbuf->Location.y;
+                mbuf->min.z = terminz + mbuf->Location.z;
+                mbuf->max.x = termaxx + mbuf->Location.x;
+                mbuf->max.y = termaxy + mbuf->Location.y;
+                mbuf->max.z = termaxz + mbuf->Location.z;
+            }
+            terraincnt++;
+        }
+        mbuf++;
+        c++;
+    }
+    terminx = 200000000.0f;
+    terminy = 200000000.0f;
+    terminz = 200000000.0f;
+    termaxx = -200000000.0f;
+    termaxy = -200000000.0f;
+    termaxz = -200000000.0f;
+    c = 0;
+    mbuf = &terrset->terr[c];
+    while (c < 0x800) {
+        if ((mbuf->type == 0) || (mbuf->type == 1)) {
+            group = (TerrainGroupType *)mbuf->model;
+            while (group->start >= 0) {
+                b = group->count;
+                if (group->bounds[0] + mbuf->Location.x < terminx) {
+                    terminx = group->bounds[0] + mbuf->Location.x;
+                }
+                if (group->bounds[1] + mbuf->Location.x > termaxx) {
+                    termaxx = group->bounds[1] + mbuf->Location.x;
+                }
+                if (group->bounds[2] + mbuf->Location.z < terminz) {
+                    terminz = group->bounds[2] + mbuf->Location.z;
+                }
+                if (group->bounds[3] + mbuf->Location.z > termaxz) {
+                    termaxz = group->bounds[3] + mbuf->Location.z;
+                }
+                ter = (tertype *)(group + 1);
+                group = (TerrainGroupType *)&ter[b];
+            }
+        }
+        mbuf++;
+        c++;
+    }
+    terlistptr = 0;
+    xsteps = 5;
+    zsteps = 5;
+    c = 0;
+    mbuf = &terrset->terr[c];
+    while (c < 0x800) {
+        if (mbuf->type == 0) {
+            group = (TerrainGroupType *)mbuf->model;
+            minx[c] = 200000000.0f;
+            minz[c] = 200000000.0f;
+            maxx[c] = -200000000.0f;
+            maxz[c] = -200000000.0f;
+            while (group->start >= 0) {
+                b = group->count;
+                if (group->bounds[0] + mbuf->Location.x < minx[c]) {
+                    minx[c] = group->bounds[0] + mbuf->Location.x;
+                }
+                if (group->bounds[1] + mbuf->Location.x > maxx[c]) {
+                    maxx[c] = group->bounds[1] + mbuf->Location.x;
+                }
+                if (group->bounds[2] + mbuf->Location.z < minz[c]) {
+                    minz[c] = group->bounds[2] + mbuf->Location.z;
+                }
+                if (group->bounds[3] + mbuf->Location.z > maxz[c]) {
+                    maxz[c] = group->bounds[3] + mbuf->Location.z;
+                }
+                ter = (tertype *)(group + 1);
+                group = (TerrainGroupType *)&ter[b];
+            }
+            tx = ((minx[c] + maxx[c]) / 2.0f) - terminx;
+            tx = (tx * xsteps) / (termaxx - terminx);
+            if (tx < 0) {
+                tx = 0;
+            }
+            if (tx > xsteps - 1) {
+                tx = xsteps - 1;
+            }
+            tz = ((minz[c] + maxz[c]) / 2.0f) - terminz;
+            tz = (tz * zsteps) / (termaxz - terminz);
+            if (tz < 0) {
+                tz = 0;
+            }
+            if (tz > zsteps - 1) {
+                tz = zsteps - 1;
+            }
+            id[c] = tx + tz * xsteps;
+        }
+        mbuf++;
+        c++;
+    }
+    terrset->terrgroupcnt = 0;
+    for (lp = 0; lp < xsteps * zsteps; lp++) {
+        terminx = 200000000.0f;
+        terminy = 200000000.0f;
+        terminz = 200000000.0f;
+        termaxx = -200000000.0f;
+        termaxy = -200000000.0f;
+        termaxz = -200000000.0f;
+        terrset->terrgroup[terrset->terrgroupcnt].start = terlistptr;
+        c = 0;
+        mbuf = &terrset->terr[c];
+        while (c < 0x800) {
+            if ((id[c] == lp) && (mbuf->type == 0)) {
+                if (minx[c] < terminx) {
+                    terminx = minx[c];
+                }
+                if (minz[c] < terminz) {
+                    terminz = minz[c];
+                }
+                if (maxx[c] > termaxx) {
+                    termaxx = maxx[c];
+                }
+                if (maxz[c] > termaxz) {
+                    termaxz = maxz[c];
+                }
+                terrset->terrgroup[terrset->terrgroupcnt].count++;
+                terrset->terrlist[terlistptr++] = c;
+            }
+            mbuf++;
+            c++;
+        }
+        if (terrset->terrgroup[terrset->terrgroupcnt].count != 0) {
+            terrset->terrgroup[terrset->terrgroupcnt].bounds[0] = terminx;
+            terrset->terrgroup[terrset->terrgroupcnt].bounds[1] = terminz;
+            terrset->terrgroup[terrset->terrgroupcnt].bounds[2] = termaxx;
+            terrset->terrgroup[terrset->terrgroupcnt].bounds[3] = termaxz;
+            terrset->terrgroupcnt++;
+        }
+    }
+    terrset->terrgroup[256].start = terlistptr;
+    c = 0;
+    mbuf = &terrset->terr[c];
+    while (c < 0x800) {
+        if (mbuf->type == 1) {
+            terrset->terrlist[terlistptr++] = c;
+            terrset->terrgroup[256].count++;
+            if (platid < 128) {
+                index = mbuf->info;
+                mbuf->info = platid;
+                if (index < gscene->numinstance) {
+                    terrset->platdata[mbuf->info].status.bit.rotate = mbuf->flags & 1;
+                    if (gscene->instances[index].anim != 0) {
+                        terrset->platdata[mbuf->info].curmtx = &gscene->instances[index].anim->mtx;
+                    } else {
+                        terrset->platdata[mbuf->info].curmtx = &gscene->instances[index].mtx;
+                    }
+                    terrset->platdata[mbuf->info].instance = index;
+                    terrset->platdata[mbuf->info].terrno = c;
+                    if (gscene->instances[index].flags.visible == 0) {
+                        mbuf->type = -1;
+                    }
+                    platid++;
+                } else {
+                    mbuf->type = -1;
+                }
+            } else {
+                mbuf->type = -1;
+            }
+        }
+        mbuf++;
+        c++;
+    }
+    nufile_buffering_enabled = buffering;
+    curSphereter = 0;
+    TerrShapeAdjCnt = 0;
+    curPickInst = 0;
+    return rv;
+}
+
+
+s32 ReadTerrainPickup(char *name, short **store, PickupTerrType *pickup) {
+    OffFileType *offfile;
+    s32 lp;
+    s32 count;
+    char filename[100];
+
+    strcpy(filename, name);
+    strcat(filename, terrain_file_ext);
+    NuFileLoadBuffer(filename, *store, 0x7FFFFFFF);
+    offfile = (OffFileType *)(*store + *(s32 *)*store);
+    *store += 2;
+    count = 0;
+    crashdata = 0;
+    for (lp = 0; lp < offfile->count; lp++) {
+        switch (offfile->offlist[lp].type) {
+            case -1:
+                break;
+            case 0:
+            case 1:
+                pickup->terr[count].id = offfile->offlist[lp].id;
+                if ((pickup->terr[count].id > 0) && (pickup->terr[count].id < 128)) {
+                    pickup->typeterr[pickup->terr[count].id] = count;
+                }
+                pickup->terr[count].type = offfile->offlist[lp].type;
+                pickup->terr[count].info = offfile->offlist[lp].info;
+                pickup->terr[count].Location.x = offfile->offlist[lp].translation.x;
+                pickup->terr[count].Location.y = offfile->offlist[lp].translation.y;
+                pickup->terr[count].Location.z = offfile->offlist[lp].translation.z;
+                pickup->terr[count].model = *store;
+                pickup->terr[count].flags = offfile->offlist[lp].flags;
+                count++;
+                break;
+            case 2:
+                if (*(s32 *)*store == 0x12345678) {
+                    *(void **)*store = pickup->wallinfo;
+                    pickup->wallinfo = *store + 2;
+                    ((WallSplineType *)pickup->wallinfo)->count--;
+                }
+                break;
+            case 3:
+                crashdata = *store;
+                break;
+        }
+        *store += offfile->offlist[lp].offset;
+    }
+    return count;
+}
+
 
 void TerrainPlatformOldUpdate(void) {
     s32 i;
@@ -499,6 +1064,274 @@ short InsideLineF(float _x, float _z, float _x0, float _z0, float _x1, float _z1
         return 1;
     }
 }
+
+void NewScan(struct nuvec_s *ppos, s32 extramask, s32 platscan) {
+    struct nuvec_s pos;
+    s32 a;
+    s32 b;
+    s32 c;
+    s32 id;
+    s32 hitcnt;
+    s32 index;
+    s32 lp;
+    s32 curobj;
+    short *curdata;
+    tertype **curter;
+    tertype *ter;
+    tertype **hitdata;
+    tertype **maxdata;
+    short *lastwrite;
+    short *list;
+    f32 maxx;
+    f32 maxz;
+    f32 tmaxx;
+    f32 tmaxz;
+    f32 minx;
+    f32 minz;
+    f32 tminx;
+    f32 tminz;
+    TerrainSituType *situ;
+    TerrainGroupType *group;
+
+    pos = *ppos;
+    index = -1;
+    b = 0x7FFFFFFF;
+    id = -1;
+    for (lp = 0; lp < 8; lp++) {
+        if ((CurTerr->pollist[lp].timer > 0) && ((pos.x + 1.0f) - CurTerr->pollist[lp].x < 2.0f) &&
+            ((pos.z + 1.0f) - CurTerr->pollist[lp].z < 2.0f) &&
+            ((pos.x + 1.0f) - CurTerr->pollist[lp].x > 0.0f) &&
+            ((pos.z + 1.0f) - CurTerr->pollist[lp].z > 0.0f)) {
+            id = lp;
+            break;
+        }
+        if (CurTerr->pollist[lp].timer < b) {
+            b = CurTerr->pollist[lp].timer;
+            index = lp;
+        }
+    }
+    if (id >= 0) {
+        lastwrite = (short *)TerI->hitdata;
+        index = id;
+        CurTerr->pollist[index].timer = 8;
+        maxx = pos.x + 0.1f;
+        maxz = pos.z + 0.1f;
+        minx = pos.x - 0.1f;
+        minz = pos.z - 0.1f;
+        hitdata = TerI->hitdata + 1;
+        maxdata = hitdata + 0x1FC;
+        hitcnt = 0;
+        curdata = (short *)CurTerr->pollist[index].hitdata;
+        while (*curdata > 0) {
+            curobj = curdata[1];
+            situ = &CurTerr->terr[curobj];
+            curter = (tertype **)(curdata + 2);
+            if ((maxx >= situ->min.x) && (maxz >= situ->min.z) && (minx <= situ->max.x) &&
+                (minz < situ->max.z) && (situ->type != -1)) {
+                tmaxx = maxx - situ->Location.x;
+                tmaxz = maxz - situ->Location.z;
+                tminx = minx - situ->Location.x;
+                tminz = minz - situ->Location.z;
+                for (lp = *curdata; lp > 0; lp--, curter++) {
+                    ter = *curter;
+                    if ((tmaxx >= ter->minx) && (tminx < ter->maxx) && (tmaxz >= ter->minz) &&
+                        (tminz < ter->maxz) && (hitdata < maxdata) &&
+                        ((ter->info[1] == 0) || ((ter->info[1] & extramask) != 0))) {
+                        *hitdata = ter;
+                        hitdata++;
+                        hitcnt++;
+                    }
+                }
+                if (hitcnt != 0) {
+                    lastwrite[0] = hitcnt;
+                    lastwrite[1] = curobj;
+                    lastwrite = (short *)hitdata;
+                    hitdata++;
+                    hitcnt = 0;
+                }
+                curdata = (short *)curter;
+            } else {
+                curdata = (short *)(curter + *curdata);
+            }
+        }
+    } else {
+        TerI->hitcnt = 0;
+        lastwrite = (short *)CurTerr->pollist[index].hitdata;
+        hitdata = CurTerr->pollist[index].hitdata + 1;
+        maxdata = hitdata + 0x1FC;
+        hitcnt = 0;
+        maxx = pos.x + 1.0f;
+        maxz = pos.z + 1.0f;
+        minx = pos.x - 1.0f;
+        minz = pos.z - 1.0f;
+        for (a = 0; a < CurTerr->terrgroupcnt; a++) {
+            if ((maxx >= CurTerr->terrgroup[a].bounds[0]) && (maxz >= CurTerr->terrgroup[a].bounds[1]) &&
+                (minx <= CurTerr->terrgroup[a].bounds[2]) && (minz <= CurTerr->terrgroup[a].bounds[3])) {
+                list = CurTerr->terrlist + CurTerr->terrgroup[a].start;
+                for (b = 0; b < CurTerr->terrgroup[a].count; b++, list++) {
+                    situ = &CurTerr->terr[*list];
+                    if ((maxx >= situ->min.x) && (maxz >= situ->min.z) && (minx <= situ->max.x) &&
+                        (minz < situ->max.z) && (situ->type != -1)) {
+                        tmaxx = maxx - situ->Location.x;
+                        tmaxz = maxz - situ->Location.z;
+                        tminx = minx - situ->Location.x;
+                        tminz = minz - situ->Location.z;
+                        group = (TerrainGroupType *)situ->model;
+                        while (group->start >= 0) {
+                            c = group->count;
+                            ter = (tertype *)(group + 1);
+                            if ((tmaxx >= group->bounds[0]) && (tminx < group->bounds[1])) {
+                                if ((tmaxz >= group->bounds[2]) && (tminz < group->bounds[3])) {
+                                    for (; c > 0; c--) {
+                                        if ((tmaxx >= ter->minx) && (tminx < ter->maxx) &&
+                                            (tmaxz >= ter->minz) && (tminz < ter->maxz) &&
+                                            (hitdata < maxdata)) {
+                                            *hitdata = ter;
+                                            hitdata++;
+                                            hitcnt++;
+                                        }
+                                        ter++;
+                                    }
+                                    group = (TerrainGroupType *)ter;
+                                } else {
+                                    group = (TerrainGroupType *)(ter + c);
+                                }
+                            } else {
+                                group = (TerrainGroupType *)(ter + c);
+                            }
+                        }
+                        if (hitcnt != 0) {
+                            lastwrite[0] = hitcnt;
+                            lastwrite[1] = *list;
+                            lastwrite = (short *)hitdata;
+                            hitdata++;
+                            hitcnt = 0;
+                        }
+                    }
+                }
+            }
+        }
+        CurTerr->pollist[index].timer = 8;
+        CurTerr->pollist[index].x = ppos->x;
+        CurTerr->pollist[index].z = ppos->z;
+        lastwrite[0] = 0;
+        lastwrite[1] = 0;
+        lastwrite = (short *)TerI->hitdata;
+        maxx = pos.x + 0.1f;
+        maxz = pos.z + 0.1f;
+        minx = pos.x - 0.1f;
+        minz = pos.z - 0.1f;
+        hitdata = TerI->hitdata + 1;
+        maxdata = hitdata + 0x1FC;
+        hitcnt = 0;
+        curdata = (short *)CurTerr->pollist[index].hitdata;
+        while (*curdata > 0) {
+            curobj = curdata[1];
+            situ = &CurTerr->terr[curobj];
+            curter = (tertype **)(curdata + 2);
+            if ((maxx >= situ->min.x) && (maxz >= situ->min.z) && (minx <= situ->max.x) &&
+                (minz < situ->max.z) && (situ->type != -1)) {
+                tmaxx = maxx - situ->Location.x;
+                tmaxz = maxz - situ->Location.z;
+                tminx = minx - situ->Location.x;
+                tminz = minz - situ->Location.z;
+                for (lp = *curdata; lp > 0; lp--, curter++) {
+                    ter = *curter;
+                    if ((tmaxx >= ter->minx) && (tminx < ter->maxx) && (tmaxz >= ter->minz) &&
+                        (tminz < ter->maxz) && (hitdata < maxdata) &&
+                        ((ter->info[1] == 0) || ((ter->info[1] & extramask) != 0))) {
+                        *hitdata = ter;
+                        hitdata++;
+                        hitcnt++;
+                    }
+                }
+                if (hitcnt != 0) {
+                    lastwrite[0] = hitcnt;
+                    lastwrite[1] = curobj;
+                    lastwrite = (short *)hitdata;
+                    hitdata++;
+                    hitcnt = 0;
+                }
+                curdata = (short *)curter;
+            } else {
+                curdata = (short *)(curter + *curdata);
+            }
+        }
+    }
+    a = 256;
+    minx -= 0.05f;
+    maxx += 0.05f;
+    minz -= 0.05f;
+    maxz += 0.05f;
+    if (platscan != 0) {
+        list = CurTerr->terrlist + CurTerr->terrgroup[a].start;
+        for (b = 0; b < CurTerr->terrgroup[a].count; b++, list++) {
+            situ = &CurTerr->terr[*list];
+            if (CurTerr->platdata[situ->info].curmtx != 0) {
+                if (CurTerr->platdata[situ->info].curmtx->_30 > CurTerr->platdata[situ->info].oldmtx._30) {
+                    tminx = minx - situ->Location.x;
+                    tmaxx = (maxx + (CurTerr->platdata[situ->info].curmtx->_30 -
+                              CurTerr->platdata[situ->info].oldmtx._30) * 1.5f) - situ->Location.x;
+                } else {
+                    tmaxx = maxx - situ->Location.x;
+                    tminx = (minx + (CurTerr->platdata[situ->info].curmtx->_30 -
+                              CurTerr->platdata[situ->info].oldmtx._30) * 1.5f) - situ->Location.x;
+                }
+                if (CurTerr->platdata[situ->info].curmtx->_32 > CurTerr->platdata[situ->info].oldmtx._32) {
+                    tminz = minz - situ->Location.z;
+                    tmaxz = (maxz + (CurTerr->platdata[situ->info].curmtx->_32 -
+                              CurTerr->platdata[situ->info].oldmtx._32) * 1.5f) - situ->Location.z;
+                } else {
+                    tmaxz = maxz - situ->Location.z;
+                    tminz = (minz + (CurTerr->platdata[situ->info].curmtx->_32 -
+                              CurTerr->platdata[situ->info].oldmtx._32) * 1.5f) - situ->Location.z;
+                }
+            } else {
+                tmaxx = maxx - situ->Location.x;
+                tminx = minx - situ->Location.x;
+                tmaxz = maxz - situ->Location.z;
+                tminz = minz - situ->Location.z;
+            }
+            if ((tmaxx >= situ->min.x) && (tmaxz >= situ->min.z) && (tminx <= situ->max.x) &&
+                (tminz < situ->max.z) && (situ->type != -1)) {
+                group = (TerrainGroupType *)situ->model;
+                while (group->start >= 0) {
+                    c = group->count;
+                    ter = (tertype *)(group + 1);
+                    if ((tmaxx >= group->bounds[0]) && (tminx < group->bounds[1])) {
+                        if ((tmaxz >= group->bounds[2]) && (tminz < group->bounds[3])) {
+                            for (; c > 0; c--) {
+                                if ((tmaxx >= ter->minx) && (tminx < ter->maxx) && (tmaxz >= ter->minz) &&
+                                    (tminz < ter->maxz) && (hitdata < maxdata) &&
+                                    ((ter->info[1] == 0) || ((ter->info[1] & extramask) != 0))) {
+                                    *hitdata = ter;
+                                    hitdata++;
+                                    hitcnt++;
+                                }
+                                ter++;
+                            }
+                            group = (TerrainGroupType *)ter;
+                        } else {
+                            group = (TerrainGroupType *)(ter + c);
+                        }
+                    } else {
+                        group = (TerrainGroupType *)(ter + c);
+                    }
+                }
+                if (hitcnt != 0) {
+                    lastwrite[0] = hitcnt;
+                    lastwrite[1] = *list;
+                    lastwrite = (short *)hitdata;
+                    hitdata++;
+                    hitcnt = 0;
+                }
+            }
+        }
+    }
+    lastwrite[0] = 0;
+    lastwrite[1] = 0;
+}
+
 
 /* Retail NewCast has no calls, yet every inside-line test still materializes
  * InsideLineF's 0/1 return into a GPR before it is tested (and the last one
@@ -1228,6 +2061,43 @@ found:
     }
 }
 
+void TerrainImpactNorm(void) {
+    f32 scale;
+
+    TerrainMoveImpactData();
+    switch (TerI->hittype) {
+        case 4:
+        case 0x14:
+            terrhitflags |= 4;
+        case 2:
+        case 3:
+        case 0x12:
+        case 0x13:
+            RotateVec(&TerI->hitnorm, &TerI->hitnorm);
+            if ((TerI->hittype & 0x10) == 0) {
+                TerI->hitnorm.x = TerI->hitnorm.x * TerI->sizediv;
+                TerI->hitnorm.y = TerI->hitnorm.y * TerI->sizediv;
+                TerI->hitnorm.z = TerI->hitnorm.z * TerI->sizediv;
+            }
+        case 1:
+        case 0x11:
+            if (TerI->yscale == 1.0f) {
+                TerI->uhitnorm.x = TerI->hitnorm.x;
+                TerI->uhitnorm.y = TerI->hitnorm.y;
+                TerI->uhitnorm.z = TerI->hitnorm.z;
+            } else {
+                scale = 1.0f / NuFsqrt(TerI->hitnorm.x * TerI->hitnorm.x +
+                                       TerI->hitnorm.y * TerI->hitnorm.y * TerI->inyscalesq +
+                                       TerI->hitnorm.z * TerI->hitnorm.z);
+                TerI->uhitnorm.x = TerI->hitnorm.x * scale;
+                TerI->uhitnorm.y = TerI->hitnorm.y * TerI->inyscale * scale;
+                TerI->uhitnorm.z = TerI->hitnorm.z * scale;
+            }
+            break;
+    }
+}
+
+
 void TerrainImpact(struct nuvec_s *vpos, struct nuvec_s *vvel, u8 *flags) {
     f32 dx;
     f32 dy;
@@ -1358,6 +2228,101 @@ s32 TerrainImpactPlatform(u8 *flags) {
     return 1;
 }
 
+void StorePlatImpact(void) {
+    struct nuvec_s hitnorm;
+    f32 scale;
+
+    if ((TerI->hittype == 0) || (TerI->hitterrno == -1)) {
+        return;
+    }
+    if (CurTerr->terr[TerI->hitterrno].type != 1) {
+        return;
+    }
+    hitnorm = TerI->hitnorm;
+    switch (TerI->hittype) {
+        case 2:
+        case 3:
+        case 4:
+        case 0x12:
+        case 0x13:
+        case 0x14:
+            RotateVec(&hitnorm, &hitnorm);
+            if ((TerI->hittype & 0x10) == 0) {
+                hitnorm.x = hitnorm.x * TerI->sizediv;
+                hitnorm.y = hitnorm.y * TerI->sizediv;
+                hitnorm.z = hitnorm.z * TerI->sizediv;
+            }
+        case 1:
+        case 0x11:
+            if (TerI->yscale != 1.0f) {
+                scale = 1.0f / NuFsqrt(hitnorm.x * hitnorm.x +
+                                       hitnorm.y * hitnorm.y * TerI->inyscalesq +
+                                       hitnorm.z * hitnorm.z);
+                hitnorm.x = hitnorm.x * scale;
+                hitnorm.y = hitnorm.y * (TerI->inyscale * scale);
+                hitnorm.z = hitnorm.z * scale;
+            }
+            PlatImpactId = CurTerr->terr[TerI->hitterrno].info;
+            PlatImpactNorm = hitnorm;
+            PlatImpactTer = *TerI->hitter;
+            break;
+    }
+}
+
+
+s32 NewPlatInst(struct numtx_s *mtx, s32 instance) {
+    s32 orig;
+    s32 i;
+    s32 platid;
+
+    if (terlistptr >= 0x1000) {
+        return -1;
+    }
+    if (situtotal >= 0x800) {
+        return -1;
+    }
+    if (mtx == 0) {
+        return -1;
+    }
+    platid = -1;
+    for (i = 0; i < 128; i++) {
+        if (CurTerr->platdata[i].curmtx == 0) {
+            platid = i;
+            break;
+        }
+    }
+    if (platid == -1) {
+        return -1;
+    }
+    orig = -1;
+    for (i = 0; i < 128; i++) {
+        if ((CurTerr->platdata[i].curmtx != 0) && (CurTerr->platdata[i].instance == instance)) {
+            orig = i;
+            break;
+        }
+    }
+    if (orig == -1) {
+        return -1;
+    }
+    CurTerr->terr[situtotal] = CurTerr->terr[CurTerr->platdata[orig].terrno];
+    CurTerr->terr[situtotal].info = platid;
+    CurTerr->terr[situtotal].type = 1;
+    CurTerr->platdata[platid].curmtx = mtx;
+    CurTerr->platdata[platid].instance = instance;
+    CurTerr->platdata[platid].terrno = situtotal;
+    CurTerr->platdata[platid].status.bit.rotate = 0;
+    CurTerr->terrlist[terlistptr++] = situtotal;
+    CurTerr->platdata[platid].plrgrav = 0.0f;
+    CurTerr->platdata[platid].ypos = 0.0f;
+    CurTerr->platdata[platid].yvel = 0.0f;
+    CurTerr->platdata[platid].damp = 0.0f;
+    CurTerr->platdata[platid].tension = 0.0f;
+    situtotal++;
+    CurTerr->terrgroup[256].count++;
+    return platid;
+}
+
+
 s32 DeletePlatinst(s32 id) {
     s32 i;
     s32 slot;
@@ -1371,16 +2336,47 @@ s32 DeletePlatinst(s32 id) {
     CurTerr->terr[CurTerr->platdata[id].terrno] = CurTerr->terr[situtotal];
     CurTerr->terr[situtotal].type = -1;
     CurTerr->platdata[id].curmtx = 0;
-    slot = CurTerr->platgroup.start;
-    for (i = 0; i < CurTerr->platgroup.count; i++, slot++) {
+    slot = CurTerr->terrgroup[256].start;
+    for (i = 0; i < CurTerr->terrgroup[256].count; i++, slot++) {
         if (CurTerr->terrlist[slot] == situtotal) {
             CurTerr->terrlist[slot] = CurTerr->terrlist[terlistptr];
             break;
         }
     }
-    CurTerr->platgroup.count--;
+    CurTerr->terrgroup[256].count--;
     return 1;
 }
+
+void TerrShowCamTerr(void) {
+    plathitid = -1;
+    TerrPolyObj = -1;
+    TerrPoly = 0;
+    PlatCrush = 0;
+    terrhitflags = 0;
+    TerI = (TerTempInfoType *)NuScratchAlloc32(0x930);
+    TerI->yscale = 1.0f;
+    TerI->yscalesq = TerI->yscale * TerI->yscale;
+    TerI->inyscale = 1.0f / TerI->yscale;
+    TerI->inyscalesq = TerI->inyscale * TerI->inyscale;
+    TerI->size = 0.1f;
+    TerI->sizediv = 1.0f / TerI->size;
+    TerI->sizesq = TerI->size * TerI->size;
+    TerI->origpos.x = TerI->curpos.x = global_camera.mtx._30 - 2.0f;
+    TerI->origpos.y = TerI->curpos.y = global_camera.mtx._31 - 2.0f;
+    TerI->origpos.z = TerI->curpos.z = global_camera.mtx._32 - 2.0f;
+    TerI->origvel.x = TerI->curvel.x = 4.0f;
+    TerI->origvel.y = TerI->curvel.y = 4.0f;
+    TerI->origvel.z = TerI->curvel.z = 4.0f;
+    TerI->id = 0;
+    TerI->stopflag = 0.0f;
+    TerI->flags = 0;
+    TerI->scanmode = 0;
+    TerI->timeadj = 0.01f;
+    TerI->impactadj = 0.00001f;
+    ScanTerrain(1, 1);
+    NuScratchRelease();
+}
+
 
 void TerrainSetCur(void *curterr) {
     CurTerr = curterr;
@@ -1493,6 +2489,20 @@ f32 NewShadowTolPlat(struct nuvec_s *ppos, f32 size, f32 tol) {
     TerI = NuScratchAlloc32(0x930);
     pos = *ppos;
     NewScan(&pos, 0, 1);
+    NewCast(&pos, tol);
+    NuScratchRelease();
+    return pos.y;
+}
+
+f32 NewShadowTolMaskPlat(struct nuvec_s *ppos, f32 size, f32 tol, s32 extramask) {
+    struct nuvec_s pos;
+
+    if (CurTerr == 0) {
+        return 2000000.0f;
+    }
+    TerI = NuScratchAlloc32(0x930);
+    pos = *ppos;
+    NewScan(&pos, extramask, 1);
     NewCast(&pos, tol);
     NuScratchRelease();
     return pos.y;
@@ -1685,11 +2695,58 @@ void NewRaySetDisablePalt(s32 disable) {
     TerrPlatDis = disable;
 }
 
+
+void DrawPlatform(s32 id) {
+    TerrainSituType *terr;
+    TerrainGroupType *group;
+    s32 count;
+    tertype *ter;
+
+    if (id >= 0) {
+        terr = &CurTerr->terr[CurTerr->platdata[id].terrno];
+        if ((terr->type == 0) || (terr->type == 1)) {
+            group = (TerrainGroupType *)terr->model;
+            while (group->start >= 0) {
+                ter = (tertype *)(group + 1);
+                for (count = group->count; count > 0; count--) {
+                    TerrDrawPlat(ter, CurTerr->platdata[id].terrno);
+                    ter++;
+                }
+                group = (TerrainGroupType *)ter;
+            }
+        }
+    }
+}
+
+
 void TerrFlush(void) {
     curSphereter = 0;
     TerrShapeAdjCnt = 0;
     curPickInst = 0;
 }
+
+
+void DrawWallSpline(f32 y) {
+    struct nuvec_s end;
+    struct nuvec_s start;
+    s32 lp;
+
+    if (WallSplCount != 0) {
+        for (lp = 0; lp < WallSplCount; lp += 2) {
+            start.x = WallSplList[lp].x;
+            start.z = WallSplList[lp].z;
+            if (lp == WallSplCount) {
+                end.x = start.x;
+                end.z = start.z;
+            } else {
+                end.x = WallSplList[lp + 1].x;
+                end.z = WallSplList[lp + 1].z;
+            }
+            NuRndrLine3dDbg(start.x, y, start.z, end.x, y, end.z, 0x80808080);
+        }
+    }
+}
+
 
 TerrainTrackInfoType *ScanTerrId(void *id) {
     s32 c;
@@ -1712,6 +2769,22 @@ TerrainTrackInfoType *AllocTerrId(void) {
     }
     return 0;
 }
+
+
+s32 FullDeflectTest(struct nuvec_s *norm, struct nuvec_s *vel, struct nuvec_s *out) {
+    f32 dot;
+
+    dot = norm->x * -vel->x + norm->y * -vel->y + norm->z * -vel->z + 0.001f;
+    NuFsqrt(vel->x * vel->x + vel->y * vel->y + vel->z * vel->z);
+    out->x = norm->x * dot + vel->x;
+    out->y = norm->y * dot + vel->y;
+    out->z = norm->z * dot + vel->z;
+    if (dot > 0.0f) {
+        return 1;
+    }
+    return 0;
+}
+
 
 void FullReflect(struct nuvec_s *norm, struct nuvec_s *vel, struct nuvec_s *out) {
     f32 dot;

@@ -13,15 +13,15 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0068:0016fde8:ReadTerrain"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00170190:terraininit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00170ca8:ReadTerrainPickup"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00170ec0:terrainpickupinit"
@@ -73,7 +73,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0068:00173308:NewScan"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00173d80:NewScanRot"
@@ -117,7 +117,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0068:001796c0:TerrainImpactNorm"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00179900:TerrainImpact"
@@ -137,7 +137,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0068:0017b450:StorePlatImpact"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:0017b6b0:PlatformChecks"
@@ -185,7 +185,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0068:0017de50:NewPlatInst"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:0017e0a8:DeletePlatinst"
@@ -221,7 +221,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0068:00181ab0:TerrShowCamTerr"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00181bb8:TerrainSetCur"
@@ -261,7 +261,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00182010:NewShadowTolMaskPlat"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:001820a8:AddCollisionSphere"
@@ -361,7 +361,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00182618:DrawPlatform"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:001826e8:TerrFlush"
@@ -369,7 +369,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:001826f8:DrawWallSpline"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:001827a8:DerotateMovementVector"
@@ -393,7 +393,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00182990:FullDeflectTest"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00182a80:FullReflect"
