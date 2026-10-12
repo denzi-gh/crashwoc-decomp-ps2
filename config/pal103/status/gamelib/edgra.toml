@@ -13,39 +13,39 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0083:001b5e70:edgraInitAllClumps"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0083:001b6180:edgracbInstanceMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0083:001b6318:edgracbClumpPropertiesMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0083:001b64b8:edgraDetermineNearestClump"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0083:001b65f8:edgraClumpCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0083:001b66f8:edgraDoInput"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0083:001b6a30:edgraDrawCursor"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0083:001b6d60:edgraFileSave"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0083:001b6eb0:edgraFileLoad"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0083:001b7060:edgraRender"
@@ -105,12 +105,12 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0083:001b7638:edgraProc"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0083:001b7698:edgracbFileSave"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0083:001b7770:edgracbFileLoad"
-state = "asm"
+state = "matching"
