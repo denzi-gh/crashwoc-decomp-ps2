@@ -41,7 +41,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0070:0018b530:TidyAllEffects"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018b808:cbPtlDeleteEffect"
@@ -53,15 +53,15 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0070:0018bba0:cbPtlCopyEffect"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018bd58:cbPtlChangeY"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018bf38:cbPtlChangeZ"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018c118:UpdateTotalPtls"
@@ -85,11 +85,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0070:0018c950:cbPtlSelGSort"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018ca60:cbEffectListMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018cba8:edptlcbSwitchMenu"
@@ -97,11 +97,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0070:0018cd40:edptlcbGroupMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018ce80:edptlcbDpadModeMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018d000:cbPtlTypeMenu"
@@ -117,7 +117,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0070:0018d6e0:edptlcbBounceMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018d840:edptlcbSoundIDMenu"
@@ -237,7 +237,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0070:00192f78:cbMemCardDeleteEffects"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00193120:cbMemCardMenu"
@@ -289,7 +289,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00194780:edppPtlChangeType"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00194848:edppWrite"
@@ -461,7 +461,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00195b98:cbPtlApplyCollEnv"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00195c80:edptlcbSetSoundID"
