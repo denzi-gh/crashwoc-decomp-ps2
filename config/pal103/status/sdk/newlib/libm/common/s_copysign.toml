@@ -13,4 +13,4 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0179:0026cfc0:copysign"
-state = "asm"
+state = "matching"
