@@ -13,15 +13,15 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0071:00197420:edobjUpdateObjects"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:001981e8:edobjRenderObjects"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:001983b0:edobjDetermineNearestObject"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:00198500:edobjDetermineNearestWaypoint"
@@ -57,11 +57,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0071:0019ad10:edobjWaypointCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019ae48:edobjWaypointDestroy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019afe8:edobjObjectCreate"
@@ -73,7 +73,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0071:0019b348:edobjObjectDestroy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019b428:edobjDoInput"
@@ -145,7 +145,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0071:0019f050:edobjRender"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019f190:edobjRegisterLevel"
@@ -201,7 +201,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019f628:edobjObjectPlace"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019f6d8:edobjcbCancelOptMenu"
@@ -209,11 +209,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019f6e0:edobjcbFileSaveObjects"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019f7b8:edobjcbFileLoadObjects"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019f868:edobjcbChangeAnimSpeed"
@@ -353,11 +353,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:001a0410:edobjcbParticleMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:001a0530:edobjcbSoundMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:001a0650:edobjcbCancelBouncyMenu"
