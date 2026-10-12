@@ -12,7 +12,10 @@
  *   0x001d5f38 InstInit
  */
 
-union variptr_u;
+union variptr_u {
+    void *voidptr;
+};
+
 struct nulsthdr_s;
 struct nulnkhdr_s;
 struct nuscene_s;
@@ -56,8 +59,8 @@ extern void NuLstFree(struct nulnkhdr_s *lnk);
 extern struct nuscene_s *NuSceneLoad(char *name);
 extern void NuSceneDestroy(struct nuscene_s *scene);
 extern struct nuanimdata_s *NuAnimDataLoadBuff(char *name, union variptr_u *buff, union variptr_u *endbuff);
-extern void NuAnimDataDestroy(struct nuanimdata_s *animdata);
-extern struct shaddata_s *ShadDataLoad(char *name);
+extern struct shaddata_s *ShadDataLoad(char *name, union variptr_u *buff, union variptr_u endbuff);
+extern int NuFileSize(char *name);
 extern void ShadDataDestroy(struct shaddata_s *shad);
 extern int strcasecmp(const char *s1, const char *s2);
 extern char *strcpy(char *dest, const char *src);
@@ -142,7 +145,6 @@ void InstAnimDataDestroy(struct nuanimdata_s *animdata) {
             lst->inst_cnt--;
             if (lst->inst_cnt == 0) {
                 NuLstFree((struct nulnkhdr_s *)lst);
-                NuAnimDataDestroy(animdata);
             }
             return;
         }
@@ -163,9 +165,13 @@ struct shaddata_s *InstShadDataLoad(char *name) {
         sdi = (struct shadinst_s *)NuLstGetNext(shaddatainst_pool, (struct nulnkhdr_s *)sdi);
     }
 
+    if (NuFileSize(name) <= 0) {
+        return 0;
+    }
+
     sdi = (struct shadinst_s *)NuLstAlloc(shaddatainst_pool);
     if (sdi != 0) {
-        shad = ShadDataLoad(name);
+        shad = ShadDataLoad(name, &superbuffer_ptr, superbuffer_end);
         sdi->shad = shad;
         if (shad != 0) {
             strcpy(sdi->name, name);
