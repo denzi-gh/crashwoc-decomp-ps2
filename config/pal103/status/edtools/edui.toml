@@ -13,27 +13,27 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0085:001b7f00:eduiInitMaterials"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001b8158:eduicbRenderSelWithClipColour"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001b8468:eduicbRenderCheck"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001b8650:eduiItemTextPickCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001b87f0:eduiAddTextPickEnt"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001b8aa8:eduicbProcessTextPick"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001b8e38:eduicbRenderTextPick"
@@ -41,15 +41,15 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0085:001b9108:eduiAddGradPickCFG"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001b9860:eduiGradStageSetHSV"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001b9a60:eduiGradStageAddRGB"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001b9cb8:eduiGradPickRead"
@@ -133,7 +133,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001bf8e0:eduiItemSelCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001bfa68:eduiItemSelWithClipColourCreate"
@@ -197,7 +197,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001c09f8:eduiItemSliderCreateInt"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001c0b00:eduiItemNumberCreate"
@@ -233,7 +233,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001c1020:eduiMenuFitWidth"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001c1138:eduiInit"
@@ -273,7 +273,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001c1780:cbgpcfgAdd"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001c1888:cbgpcfgDel"
