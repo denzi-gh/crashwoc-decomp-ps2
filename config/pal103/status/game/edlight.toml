@@ -17,15 +17,15 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0110:002411a8:edlightDrawInfo"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0110:00241658:edlightDrawLightAxis"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0110:002418a0:edlightHighlight"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0110:002419d8:edlightDrawBox"
@@ -41,19 +41,19 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0110:002422f0:edlightDrawRadius"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0110:00242518:edlightAdd"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0110:00242668:edlightDelete"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0110:00242840:cbSelGlbType"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0110:00242960:edlightInit"
@@ -77,7 +77,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0110:00243c78:edlightHighlightDirection"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0110:00243d68:edlightDrawLights"
@@ -85,15 +85,15 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0110:00243df0:edlightcb_r_sliderval"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0110:00243ea0:edlightcb_g_sliderval"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0110:00243f50:edlightcb_b_sliderval"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0110:00244000:edlightcbSaveLightData"
