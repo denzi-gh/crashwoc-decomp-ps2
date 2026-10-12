@@ -13,7 +13,7 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0094:001db150:JonProbe"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001db900:UpdateTempCharacter"
@@ -29,7 +29,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001dbdc0:AddAward"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001dbf68:UpdateAwards"
@@ -81,7 +81,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0094:001df310:AddKaboom"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001df588:UpdateKabooms"
@@ -121,7 +121,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0094:001e17d8:HitWumpa"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001e1980:WipeWumpa"
@@ -153,7 +153,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0094:001e3458:LoseMask"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001e3660:DrawMaskFeathers"
@@ -201,7 +201,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0094:001ea228:GameTiming"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001ea858:NewLevelTime"
@@ -281,7 +281,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0094:001ee7b8:DrawParallax"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001ee8b8:RayIntersectSphere"
@@ -313,7 +313,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001ef788:AddMaskFeathers"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001ef920:UpdateMaskFeathers"
@@ -413,7 +413,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001f0200:UpdateTimer"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001f0278:AheadOfCheckpoint"

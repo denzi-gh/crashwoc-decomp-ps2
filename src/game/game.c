@@ -387,10 +387,18 @@ struct pmask_s {
 struct pobj_s {
     char pad_c[0xC];
     struct pmask_s *mask; /* 0xC */
-    char pad_10[0x6C - 0x10];
+    char pad_10[0x18 - 0x10];
+    float anim_time;      /* 0x18 */
+    char pad_1c[0x6C - 0x1C];
     struct nuvec_s pos;   /* 0x6C */
-    char pad_78[0x16E - 0x78];
+    char pad_78[0x153 - 0x78];
+    signed char finished; /* 0x153 */
+    char pad_154[0x16E - 0x154];
     u16 hdg;              /* 0x16E */
+    char pad_170[0x274 - 0x170];
+    struct numtx_s mtxLOCATOR[2][16]; /* 0x274 */
+    char pad_a74[0xCA4 - 0xA74];
+    u8 rumble[4]; /* 0xCA4 */
 };
 
 struct player_s {
@@ -697,8 +705,8 @@ inline s32 HubFromLevel(s32 level) {
     for (i = 0; i < 6; i++) {
         for (j = 0; j < 6; j++) {
             if (HData[i].level[j] == level) {
-                temp_hublevel = j;
                 temp_hub = i;
+                temp_hublevel = j;
                 return i;
             }
         }
@@ -2770,7 +2778,7 @@ void ResetMaskFeathers(void) {
 /* stride 0x30; fields verified in AddAward */
 struct award_s {
     float time;        /* 0x0 */
-    short yrot;        /* 0x4 */
+    u16 yrot;          /* 0x4 */
     u16 got;           /* 0x6 */
     signed char level; /* 0x8 */
     signed char wait; /* 0x9 */
@@ -2889,8 +2897,8 @@ void UpdateMaskFeathers(void) {
 
 extern struct gtimer_s TimeTrialTimer;
 extern s32 TimeTrial;
-extern s32 TimeTrialWait;
-extern s32 timetrial_frame;
+extern float TimeTrialWait;
+extern u32 timetrial_frame;
 extern s32 clock_ok;
 extern s32 PLAYERCOUNT;
 
@@ -2929,9 +2937,7 @@ u16 TurnRot(u16 a, u16 b, s32 rate) {
     return (a - rate) & 0xFFFF;
 }
 
-extern float D_0062D70C; /* PAL timer step (1/50) */
-
-void UpdateTimer(void *timer) {
+inline void UpdateTimer(void *timer) {
     struct gtimer_s *t = timer;
 
     t->frame++;
@@ -2941,8 +2947,8 @@ void UpdateTimer(void *timer) {
     if (t->isec > 299) {
         t->isec -= 0x12C;
     }
-    t->ftime += D_0062D70C;
-    t->fsec += D_0062D70C;
+    t->ftime += 0.02f;
+    t->fsec += 0.02f;
     if (t->fsec >= 1.0f) {
         t->fsec -= 1.0f;
     }
@@ -3725,25 +3731,19 @@ extern s32 temp_tenths;
 extern char D_0061DFD0[]; /* "%i:%c%c.%c%c" */
 
 void MakeTimeI(s32 time, s32 hours, char *txt) {
-    s32 t;
-
-    /* Faithful near-match (68.3%), kept as state=asm -- see blocker.
-     * `-1 < time` reproduces retail's `li -1; slt v0,v0,a0` exactly; the
-     * residual is gcc selecting movz (copy time, then zero it) where retail
-     * does `t = 0; movn t,time,cond`, which shifts $t1->$a3 downstream. */
-    t = (-1 < time) ? time : 0;
-    t = t / 3;
-    if (hours != 0) {
-        temp_hours = t / 360000;
-        /* PS2 uses a modulo here; GC wrote `t/6000 - temp_hours*60` (equal, but
-         * that form emits mult+subu instead of retail's mfhi). */
-        temp_minutes = (t / 6000) % 60;
-    } else {
-        temp_minutes = t / 6000;
+    if (time < 0) {
+        time = 0;
     }
-    temp_hundredths = t % 100;
+    time /= 3;
+    if (hours != 0) {
+        temp_hours = time / 360000;
+        temp_minutes = (time / 6000) % 60;
+    } else {
+        temp_minutes = time / 6000;
+    }
+    temp_seconds = (time / 100) % 60;
+    temp_hundredths = time % 100;
     temp_tenths = temp_hundredths / 10;
-    temp_seconds = (t / 100) % 0x3c;
     if (txt != NULL) {
         sprintf(txt, D_0061DFD0, temp_minutes, temp_seconds / 10 + 0x30,
                 temp_seconds % 10 + 0x30, temp_tenths + 0x30,
@@ -4070,61 +4070,52 @@ inline void AddMaskFeathers(struct mask_s *mask) {
 extern s32 i_award;
 
 s32 AddAward(s32 hub, s32 level, u16 got) {
-    s32 i0;
     struct award_s *award;
     struct nugspline_s *spl;
     struct nuvec_s *p0;
     struct nuvec_s *p1;
     s32 i;
-    s32 j;
     s32 ang;
 
-    if (hub != -1 && level != -1 && HData[hub].i_spl[1] != -1) {
-        spl = SplTab[HData[hub].i_spl[1]].spl;
-        if (spl == NULL) {
-            return 0;
-        }
-        HubFromLevel(level);
-        i0 = temp_hublevel;
-        if (i0 == -1) {
-            return 0;
-        }
-        if ((got & 7) != 0) {
-            ang = 2;
-        } else if ((got & 8) != 0) {
-            ang = 1;
-        } else if ((got & 0x10) != 0) {
-            ang = 0;
-        } else {
-            ang = 3;
-        }
-        award = &Award[i_award];
-        i = ang * 2;
-        i += i0 * 8;
-        j = i + 1;
-        i *= spl->ptsize;
-        j *= spl->ptsize;
-        p0 = (struct nuvec_s *)&spl->pts[i];
-        p1 = (struct nuvec_s *)&spl->pts[j];
-        award->time = 0.0f;
-        award->yrot = NuAtan2D(p1->x - p0->x, p1->z - p0->z);
-        award->level = level;
-        award->got = got;
-        award->newpos = *p0;
-        award->wait = 1;
-        i_award++;
-        if (i_award == 3) {
-            i_award = 0;
-        }
-        return 1;
+    if (hub == -1 || level == -1 || HData[hub].i_spl[1] == -1) {
+        return 0;
     }
-    return 0;
+    spl = SplTab[HData[hub].i_spl[1]].spl;
+    if (spl == NULL) {
+        return 0;
+    }
+    HubFromLevel(level);
+    i = temp_hublevel;
+    if (i == -1) {
+        return 0;
+    }
+    if ((got & 7) != 0) {
+        ang = 2;
+    } else if ((got & 8) != 0) {
+        ang = 1;
+    } else if ((got & 0x10) != 0) {
+        ang = 0;
+    } else {
+        ang = 3;
+    }
+    award = &Award[i_award];
+    i = i * 8 + ang * 2;
+    p0 = (struct nuvec_s *)&spl->pts[i * spl->ptsize];
+    p1 = (struct nuvec_s *)&spl->pts[(i + 1) * spl->ptsize];
+    award->time = 0.0f;
+    award->yrot = NuAtan2D(p1->x - p0->x, p1->z - p0->z);
+    award->got = got;
+    award->level = level;
+    award->newpos = *p0;
+    award->wait = 1;
+    i_award++;
+    if (i_award == 3) {
+        i_award = 0;
+    }
+    return 1;
 }
 
 extern s32 GDeb[];
-extern float D_0062D334; /* hit radius pad (GC 0.1f) */
-extern float D_0062D338; /* hit y pad (GC 0.1f) */
-extern float D_0062D33C; /* hit-fly speed (FlyWumpa uses D_0062D700) */
 extern void AddFiniteShotDebrisEffect(s32 *key, s32 i, struct nuvec_s *pos,
                                       s32 n);
 
@@ -4142,12 +4133,12 @@ s32 HitWumpa(struct tobj_s *obj, s32 destroy) {
         objtop = obj->pos.y + obj->top * obj->SCALE;
         objbot = obj->pos.y + obj->bot * obj->SCALE;
         wumpa = Wumpa;
-        r2 = obj->radius + D_0062D334;
+        r2 = obj->radius + 0.1f;
         r2 *= r2;
         for (i = 0; i < 0x140; i++, wumpa++) {
             if ((u8)wumpa->field_40 == 1 || (u8)wumpa->field_40 == 2) {
-                if (objtop < wumpa->pos.y - D_0062D338 ||
-                    objbot > wumpa->pos.y + D_0062D338) {
+                if (objtop < wumpa->pos.y - 0.1f ||
+                    objbot > wumpa->pos.y + 0.1f) {
                     continue;
                 }
                 dx = (wumpa->pos.x - obj->pos.x) * (wumpa->pos.x - obj->pos.x);
@@ -4159,11 +4150,9 @@ s32 HitWumpa(struct tobj_s *obj, s32 destroy) {
                                                   1);
                         wumpa->field_40 = 0;
                     } else {
-                        /* FlyWumpa's body copied in source (retail reads
-                         * D_0062D33C here, a third distinct speed constant) */
                         wumpa->mom.x = 0.0f;
                         wumpa->mom.y = 0.0f;
-                        wumpa->mom.z = D_0062D33C;
+                        wumpa->mom.z = 0.19999999f;
                         NuVecRotateX(&wumpa->mom, &wumpa->mom, -0x400);
                         NuVecRotateY(&wumpa->mom, &wumpa->mom, qrand());
                         wumpa->field_38 = 0;
@@ -4179,6 +4168,145 @@ s32 HitWumpa(struct tobj_s *obj, s32 destroy) {
         }
     }
     return 0;
+}
+
+extern struct gtimer_s GameTimer;
+extern struct gtimer_s PauseTimer;
+extern u32 finish_frame;
+extern s32 pausestats_frame;
+extern float start_time;
+extern struct nupad_s *Pad[];
+extern struct plr_lives_s plr_wumpas;
+extern s32 force_panel_wumpa_update;
+extern s32 force_panel_crate_update;
+extern s32 force_panel_lives_update;
+extern s32 force_panel_items_update;
+extern struct plr_lives_s plr_crates;
+extern float check_time;
+extern float check_duration;
+extern float point_time;
+extern float point_duration;
+extern s32 FlyingLevelExtro;
+extern s32 bonus_frame;
+extern u16 PANELWUMPAYROT;
+extern u16 PANELCRATEYROT;
+extern u16 panel_head_xrot;
+extern u16 panel_head_yrot;
+extern s32 tt_flash;
+extern void UpdatePanelItem(struct plr_lives_s *item, s32 reset, s32 snap_allowed);
+extern void Update3DFontObjects(void);
+extern void GameAudioUpdate(void);
+
+void GameTiming(void) {
+    s32 sfx;
+    s32 flash;
+
+    if (pause_dir == 1) {
+        Paused++;
+        if (Paused == 0x19) {
+            pause_dir = 0;
+        }
+    } else if (pause_dir == 2) {
+        Paused--;
+        if (Paused == 0) {
+            pause_dir = 0;
+            NewMenu((struct cursor_s *)Cursor, -1, -1, -1);
+            ResumeGame();
+        }
+    }
+    if (Paused != 0) {
+        if (Paused == 0x19) {
+            UpdateTimer(&PauseTimer);
+            pausestats_frame++;
+        }
+    } else {
+        UpdateTimer(&GameTimer);
+        if (force_panel_wumpa_update != 0) {
+            force_panel_wumpa_update--;
+        }
+        if (force_panel_crate_update != 0) {
+            force_panel_crate_update--;
+        }
+        if (force_panel_lives_update != 0) {
+            force_panel_lives_update--;
+        }
+        if (force_panel_items_update != 0) {
+            force_panel_items_update--;
+        }
+        if (Pad[0] != NULL && (Pad[0]->paddata & 0x10) != 0 && GameMode != 1) {
+            force_panel_wumpa_update = 50;
+            if (TimeTrial == 0 && LDATA->hub != -1) {
+                force_panel_crate_update = 50;
+            }
+            force_panel_lives_update = 50;
+            force_panel_items_update = 50;
+        }
+        UpdatePanelItem(&plr_wumpas, force_panel_wumpa_update, 1);
+        UpdatePanelItem(&plr_crates, force_panel_crate_update, 0);
+        UpdatePanelItem(&plr_lives, force_panel_lives_update, 1);
+        UpdatePanelItem(&plr_crystal, force_panel_items_update, 1);
+        UpdatePanelItem(&plr_crategem, force_panel_items_update, 1);
+        UpdatePanelItem(&plr_bonusgem, force_panel_items_update, 1);
+        if (check_time < check_duration) {
+            check_time += 0.02f;
+            if (check_time >= check_duration) {
+                check_time = check_duration;
+                point_time = 0.0f;
+            }
+        }
+        if (point_time < point_duration) {
+            point_time += 0.02f;
+            if (point_time >= point_duration) {
+                point_time = point_duration;
+            }
+        }
+        if (start_time > 0.0f) {
+            start_time -= 0.02f;
+            if (start_time < 0.0f) {
+                start_time = 0.0f;
+            }
+        }
+        if (TimeTrial != 0) {
+            if (TimeTrialWait > 0.0f) {
+                if (timetrial_frame % 12 == 0) {
+                    GameSfx(0x4E, NULL);
+                }
+                TimeTrialWait -= 0.02f;
+                if (TimeTrialWait < 0.0f) {
+                    TimeTrialWait = 0.0f;
+                }
+            } else if (player->obj.finished == 0 && FlyingLevelExtro == 0) {
+                UpdateTimer(&TimeTrialTimer);
+            }
+            timetrial_frame++;
+        }
+        if (Bonus == 2) {
+            bonus_frame++;
+        }
+        PANELWUMPAYROT -= 0x7C1;
+        PANELCRATEYROT -= 0x28F;
+        panel_head_xrot = 0;
+        panel_head_yrot = 0;
+        if (Level != 0x1A ? GameTimer.frame == 0x96 : GameTimer.frame == 0x19) {
+            sfx = -1;
+            if (Level == 0xD || Level == 0x1A) {
+                sfx = 0xC7;
+            }
+            if (sfx != -1) {
+                gamesfx_channel = 4;
+                GameSfx(sfx + Game.language, NULL);
+            }
+        }
+        flash = 0;
+        if (TimeTrial != 0 && player->obj.finished == 1) {
+            flash = (finish_frame % 50 > 36) ? 0 : player->obj.finished;
+        }
+        tt_flash = flash;
+    }
+    UpdateTimer(MenuTimer);
+    UpdateTimer(GlobalTimer);
+    Update3DFontObjects();
+    GameAudioUpdate();
 }
 
 extern char D_00630D10[]; /* "___" */
@@ -4214,11 +4342,6 @@ void NewLevelTime(s32 t) {
     newleveltime_slot = i;
 }
 
-extern struct gtimer_s GameTimer;
-extern struct gtimer_s PauseTimer;
-extern s32 finish_frame;
-extern s32 pausestats_frame;
-extern float start_time;
 extern void ResetTubs(void);
 extern void InitGameCut(void);
 extern void ResetDRAINDAMAGE(void);
@@ -4279,8 +4402,176 @@ struct animpkt_s {
     u8 flags; /* 0x1B */
 };
 
-extern struct nupad_s *Pad[];
 extern s32 TESTCORTEXVOICES;
+extern struct nuvec_s in_finish_pos;
+extern struct nuvec_s probepos;
+extern struct nuvec_s probedpos;
+extern struct nuvec_s probespk;
+extern struct nuvec_s probepos2;
+extern s32 gamesfx_pitch;
+extern float NuFabs(float x);
+extern float NuVecDist(struct nuvec_s *a, struct nuvec_s *b, struct nuvec_s *d);
+extern void NuLgtArcLaser(s32 type, struct nuvec_s *start, struct nuvec_s *end,
+                          struct nuvec_s *mid, float a, float b, float c, float d,
+                          u32 col);
+extern void AddVariableShotDebrisEffect(s32 type, struct nuvec_s *pos, s32 count,
+                                        s32 a, s32 b);
+void Draw3DCharacter(struct nuvec_s *pos, u16 xrot, u16 yrot, u16 zrot,
+                     struct cmodel_s *model, float scale, s32 action,
+                     float anim_time, s32 last);
+
+void JonProbe(void) {
+    struct nuvec_s pos;
+    struct nuvec_s end;
+    struct nuvec_s off;
+    struct nuvec_s oldpos;
+    s32 charging;
+    float x;
+    float z;
+    float dist;
+    s32 col;
+    s32 ang;
+    s32 vol;
+    s32 i;
+
+    if (Hub != -1 && in_finish_range > 0) {
+        if (probeon == 0) {
+            probepos = in_finish_pos;
+            probepos.y += 4.5f;
+            probeon = 1;
+            GameSfx(0x82, &probepos);
+            NewRumble(player->obj.rumble, 0x7F);
+            NewBuzz(player->obj.rumble, 5);
+        }
+        probetime = 0x5DC;
+        probedpos = in_finish_pos;
+    }
+    oldpos = probepos;
+    if (probeon == 0) {
+        return;
+    }
+    if (Paused == 0) {
+        if (probetime != 0) {
+            probetime -= 0x3C;
+            if (probetime < 0) {
+                probetime = 0;
+            }
+            probey += 0x5A00;
+            if (probey > 0xC8000) {
+                probey = 0xC8000;
+            }
+        } else {
+            probey -= 0x5A00;
+            if (probey < 0) {
+                probey = 0;
+                probeon = 0;
+                GameSfx(0x82, &probepos);
+                NewRumble(player->obj.rumble, 0x7F);
+                NewBuzz(player->obj.rumble, 5);
+            }
+        }
+        pos = probedpos;
+        pos.y += 4.5f - NuTrigTable[(probey / 50) & 0xFFFF] * 2.5f;
+        x = (probepos.x - pos.x) * 0.0625f;
+        if (x > 0.1f) {
+            x = 0.1f;
+        }
+        if (x < -0.1f) {
+            x = -0.1f;
+        }
+        probepos.x -= x;
+        z = (probepos.z - pos.z) * 0.0625f;
+        if (z > 0.1f) {
+            z = 0.1f;
+        }
+        if (z < -0.1f) {
+            z = -0.1f;
+        }
+        probepos.y -= (probepos.y - pos.y) * 0.5f;
+        probepos.z -= z;
+        proberot.y = (proberot.y + 0xA3) & 0xFFFF;
+        if (NuFabs(x) < 0.005f && NuFabs(z) < 0.005f && probey == 0xC8000) {
+            if (probecol == 0) {
+                gamesfx_effect_volume = 0xBFFD;
+                GameSfx(0x4B, &probepos);
+            }
+            probespk = probepos;
+            pos = probepos;
+            AddVariableShotDebrisEffect(GDeb[304], &pos, 1, -0x8000, 0);
+            probecol += 0xF0;
+            if (probecol > 0x1900) {
+                probecol = 0x1900;
+            }
+            charging = 0;
+        } else {
+            in_finish_range = 1;
+            probecol -= 0xF0;
+            if (probecol < 0) {
+                probecol = 0;
+            }
+            charging = 1;
+        }
+    }
+    if (probecol != 0) {
+        ang = proberot.y + 0xBB8;
+        col = (probecol / 50) << 24;
+        for (i = 0; i < 3; i++) {
+            pos = probespk;
+            end.y = pos.y;
+            pos.y -= 0.05;
+            end.y -= 1.8f;
+            if (charging != 0) {
+                pos.y -= (float)(0x80 - probecol / 50) * 0.015625f;
+                x = (float)(probecol / 50) / 426.66666f;
+                z = (float)(probecol / 50) / 266.66669f;
+            } else {
+                x = 0.3f;
+                z = 0.48f;
+            }
+            off.x = NuTrigTable[ang & 0xFFFF] * z;
+            off.z = NuTrigTable[(ang + 0x4000) & 0xFFFF] * z;
+            off.y = 0.0f;
+            pos.x += off.x;
+            pos.z += off.z;
+            end.x = pos.x + off.x;
+            end.z = pos.z + off.z;
+            if (Paused == 0) {
+                NuLgtArcLaser(0, &end, &pos, &off, 0.1f, 0.1f, 0.01f, x,
+                              col + 0xFF7F3F);
+                NuLgtArcLaser(0, &end, &pos, &off, 0.4f, 0.3f, 0.001f, x,
+                              col + 0x800040);
+                AddVariableShotDebrisEffect(GDeb[312], &end, 1, 0, 0);
+                AddVariableShotDebrisEffect(GDeb[312], &pos, 1, -0x8000, 0);
+            }
+            ang += 0x5555;
+        }
+    }
+    if (CRemap[0xB1] != -1) {
+        Draw3DCharacter(&probepos, proberot.x, proberot.y, proberot.z,
+                        &CModel[CRemap[0xB1]], 1.0f, -1, 1.0f, 0);
+    }
+    vol = 16383.0f - NuVecDist(&probepos, &oldpos, 0) * 16383.0f / 0.06f;
+    if (vol > 0) {
+        gamesfx_effect_volume = vol;
+        gamesfx_pitch = 0x75A;
+        GameSfxLoop(0x61, &probepos);
+    }
+    probepos2 = probepos;
+    dist = NuVecDist(&probepos, &oldpos, 0);
+    vol = dist * 16383.0f / 0.06f;
+    if (vol >= 0x4000) {
+        vol = 0x3FFF;
+    }
+    if (vol > 0) {
+        gamesfx_effect_volume = vol;
+        gamesfx_pitch = dist * 4700.0005f + 470.0f;
+        if (gamesfx_pitch > 0x3AD) {
+            gamesfx_pitch = 0x3AD;
+        }
+        GameSfxLoop(0x3A, &probepos2);
+    }
+}
+
 extern float D_0062D274;
 extern float D_0062D278;
 extern void UpdateAnimPacket(struct cmodel_s *m, struct animpkt_s *a, float r,
@@ -4354,60 +4645,142 @@ void UpdateTempCharacter(void) {
 
 extern s32 tumble_character;
 extern float tumble_item_addtime;
-extern float D_0062D27C; /* award time step (PAL; GC 1/60) */
-extern float D_0062D280;
-extern float D_0062D284;
 extern void NuVecAdd(struct nuvec_s *d, struct nuvec_s *a, struct nuvec_s *b);
 extern void AddGameDebris(s32 i, struct nuvec_s *pos);
 
 void UpdateAwards(void) {
-    float fVar5;
     struct award_s *award;
-    float old_time;
+    float time;
+    float y;
     s32 i;
 
     award = Award;
-    for (i = 0; i < 3; i++) {
-        old_time = award->time;
-        if (old_time < 1.0f) {
-            if (award->wait) {
-                if (!tumble_character) {
+    for (i = 0; i < 3; i++, award++) {
+        time = award->time;
+        if (time < 1.0f) {
+            if (award->wait != 0) {
+                if (tumble_character == 0) {
                     NuVecAdd(&award->oldpos0,
-                             (struct nuvec_s *)((char *)player + 0x464),
-                             (struct nuvec_s *)((char *)player + 0x4A4));
+                             (struct nuvec_s *)player->obj.mtxLOCATOR[0][7].m[3],
+                             (struct nuvec_s *)player->obj.mtxLOCATOR[0][8].m[3]);
                     NuVecScale(0.5f, &award->oldpos0, &award->oldpos0);
                 } else {
-                    award->oldpos0 = *(struct nuvec_s *)((char *)player + 0x364);
+                    award->oldpos0 =
+                        *(struct nuvec_s *)player->obj.mtxLOCATOR[0][3].m[3];
                 }
                 award->oldpos1.x = award->oldpos0.x;
-                fVar5 = award->oldpos0.y;
-                award->oldpos1.y =
-                    (tumble_character == 1) ? fVar5 + 1.0f : fVar5 + 0.5f;
+                y = award->oldpos0.y;
+                if (tumble_character == 1) {
+                    y += 1.0f;
+                } else {
+                    y += 0.5f;
+                }
+                award->oldpos1.y = y;
                 award->oldpos1.z = award->oldpos0.z;
-                if (*(float *)((char *)player + 0x18) >= tumble_item_addtime) {
+                if (player->obj.anim_time >= tumble_item_addtime) {
                     award->wait = 0;
                     GameSfx(0x26, NULL);
-                    AddGameDebris(0xa1, &award->oldpos1);
+                    AddGameDebris(0xA1, &award->oldpos1);
                 }
             } else {
-                old_time += D_0062D27C;
-                award->time = old_time;
-                if (old_time >= 1.0f) {
+                time += 0.02f;
+                award->time = time;
+                if (time >= 1.0f) {
                     award->time = 1.0f;
-                    new_lev_flags = new_lev_flags | award->got;
+                    new_lev_flags |= award->got;
                     new_lev_flags ^= award->got;
-                    Game.level[award->level].flags =
-                        Game.level[award->level].flags | award->got;
+                    Game.level[award->level].flags |= award->got;
                     CalculateGamePercentage(&Game);
-                    AddGameDebris(0xa1, &award->newpos);
-                } else if (old_time < D_0062D280) {
-                    award->oldpos1.y =
-                        award->oldpos1.y +
-                        (award->oldpos1.y - award->oldpos1.y) * D_0062D284;
+                    AddGameDebris(0xA1, &award->newpos);
+                } else if (time < 0.666f) {
+                    award->oldpos0.y +=
+                        (award->oldpos1.y - award->oldpos0.y) * 0.1f;
                 }
             }
         }
-        award++;
+    }
+}
+
+extern float tumble_item_starttime;
+s32 Draw3DObject(s32 object, struct nuvec_s *pos, u16 xrot, u16 yrot, u16 zrot,
+                 float scalex, float scaley, float scalez,
+                 struct nugscn_s *scn, struct objspecial_s *obj, s32 rot);
+
+void DrawAwards(void) {
+    struct award_s *award;
+    struct nuvec_s pos;
+    float scale;
+    float t;
+    s32 object;
+    s32 character;
+    s32 model;
+    s32 i;
+
+    award = Award;
+    for (i = 0; i < 3; i++, award++) {
+        if (award->time < 1.0f) {
+            if (award->wait != 0) {
+                pos = award->oldpos0;
+                t = tumble_item_starttime + 1.0f;
+                scale = (player->obj.anim_time - t) / (tumble_item_addtime - t);
+                if (scale > 1.0f) {
+                    scale = 1.0f;
+                }
+                if (scale < 0.333f) {
+                    scale = 0.0f;
+                } else {
+                    scale = (scale - 0.333f) / 0.667f;
+                }
+            } else if (award->time < 0.666f) {
+                scale = 1.0f;
+                pos = award->oldpos0;
+            } else {
+                t = (award->time - 0.666f) / 0.334f;
+                pos.x = award->oldpos0.x + (award->newpos.x - award->oldpos0.x) * t;
+                pos.y = award->oldpos0.y + (award->newpos.y - award->oldpos0.y) * t;
+                pos.z = award->oldpos0.z + (award->newpos.z - award->oldpos0.z) * t;
+                scale = 1.0f;
+            }
+            object = -1;
+            character = -1;
+            if ((award->got & 4) != 0) {
+                object = 1;
+            } else if ((award->got & 2) != 0) {
+                object = 2;
+            } else if ((award->got & 1) != 0) {
+                object = 3;
+            } else if (award->got == 8) {
+                object = 0xC1;
+            } else if (award->got == 0x10) {
+                object = 0xC2;
+            } else if (award->got == 0x20) {
+                object = 0xC3;
+            } else if (award->got == 0x40) {
+                object = 0xC4;
+            } else if (award->got == 0x80) {
+                object = 0xC5;
+            } else if (award->got == 0x100) {
+                object = 0xC6;
+            } else if (award->got == 0x200) {
+                object = 0xC8;
+            } else if (award->got == 0x400) {
+                object = 0xC7;
+            }
+            if (object != -1) {
+                if (ObjTab[object].obj.special != NULL) {
+                    Draw3DObject(object, &pos, 0, award->yrot, 0, scale * 0.77f,
+                                 scale * 0.77f, scale * 0.77f,
+                                 ObjTab[object].obj.scene,
+                                 ObjTab[object].obj.special, 0);
+                }
+            } else if (character != -1) {
+                model = CRemap[character];
+                if (model != -1) {
+                    Draw3DCharacter(&pos, 0, award->yrot, 0, &CModel[model],
+                                    scale * 0.77f, -1, 1.0f, 0);
+                }
+            }
+        }
     }
 }
 
@@ -4480,7 +4853,6 @@ extern u8 bonus_life_delay;
 extern s32 bonus_lives;
 extern float bonus_wumpa_wait;
 extern float bonus_lives_wait;
-extern struct plr_lives_s plr_wumpas;
 extern struct plr_lives_s plr_bonus_wumpas;
 extern float BONUSWUMPAOBJSX;
 extern float BONUSLIVESOBJSX;
@@ -4614,10 +4986,9 @@ void LoseMask(struct tobj_s *plr) {
     AddMaskFeathers(plr->mask);
     plr->mask->active--;
     plr->f17A = 0x96;
-    plr->mom.x = 0.0f;
-    plr->mom.z = 0.0f;
-    NewBuzz((char *)player + 0xCA4, 0x19);
-    NewRumble((char *)player + 0xCA4, 0x7F);
+    plr->mom.x = plr->mom.z = 0.0f;
+    NewBuzz(player->obj.rumble, 0x19);
+    NewRumble(player->obj.rumble, 0x7F);
 }
 
 /* vtog_s: stride 0x84 (VTog[i] -> +0x84 in ResetVehicleControl's loop).
@@ -4723,11 +5094,6 @@ end:
 }
 
 extern void JudderGameCamera(struct gamecam_s *cam, struct nuvec_s *pos, float amt);
-extern float D_0062D300;
-extern float D_0062D304;
-extern float D_0062D308;
-extern float D_0062D30C;
-extern float D_0062D310;
 
 /* Only the fields AddKaboom reads are known (lhu 0x5A / lhu 0x14). */
 struct crate_s {
@@ -4740,20 +5106,11 @@ struct group_s {
     u16 f14; /* 0x14 */
 };
 
-extern void JudderGameCamera(struct gamecam_s *cam, struct nuvec_s *pos, float amt);
-extern float D_0062D300;
-extern float D_0062D304;
-extern float D_0062D308;
-extern float D_0062D30C;
-extern float D_0062D310;
 extern struct crate_s *temp_pCrate;
 extern struct group_s *temp_pGroup;
 
 void AddKaboom(s32 type, struct nuvec_s *pos, float t) {
     struct kaboom_s *k;
-    struct gamecam_s *jcam;
-    struct nuvec_s *jpos;
-    float jamt;
     s32 sfx;
     float rate;
 
@@ -4772,22 +5129,31 @@ void AddKaboom(s32 type, struct nuvec_s *pos, float t) {
         break;
     case 4:
         k->t1 = 1.25f;
-        jcam = &GameCam;
-        jamt = D_0062D300;
-        jpos = 0;
         k->t0 = 0.0f;
-        goto judder;
+        rate = 3.0f;
+        JudderGameCamera(&GameCam, 0, 0.2f);
+        break;
     case 8:
         k->t1 = 1.75f;
         k->t0 = 0.0f;
-        rate = D_0062D308;
-        JudderGameCamera(&GameCam, 0, D_0062D304);
+        rate = 4.2f;
+        JudderGameCamera(&GameCam, 0, 0.4f);
         break;
     case 0x10:
         k->t1 = 3.0f;
         k->t0 = 0.0f;
         rate = 7.5f;
-        JudderGameCamera(&GameCam, &k->pos, D_0062D30C);
+        JudderGameCamera(&GameCam, &k->pos, 0.3f);
+        break;
+    case 0x80:
+    case 0x100:
+        if (type == 0x80) {
+            sfx = 0x3B;
+        }
+        k->t1 = 1.0f;
+        k->t0 = 0.0f;
+        rate = 3.0f;
+        JudderGameCamera(&GameCam, &k->pos, 0.3f);
         break;
     case 0x20:
     case 0x40:
@@ -4796,18 +5162,6 @@ void AddKaboom(s32 type, struct nuvec_s *pos, float t) {
         rate = 15.0f;
         k->crate = temp_pCrate->f5A;
         k->group = temp_pGroup->f14;
-        break;
-    case 0x80:
-    case 0x100:
-        sfx = ((type ^ 0x80) == 0) ? 0x3B : sfx;
-        k->t1 = 1.0f;
-        k->t0 = 0.0f;
-        jcam = &GameCam;
-        jamt = D_0062D310;
-        jpos = &k->pos;
-    judder:
-        rate = 3.0f;
-        JudderGameCamera(jcam, jpos, jamt);
         break;
     }
 
