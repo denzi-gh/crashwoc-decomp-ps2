@@ -13,15 +13,15 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0034:00114bd0:NuVpUpdate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0034:00114cf0:NuVpSetScalingMtx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0034:00114da8:NuVpInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0034:00114ea0:NuVpRestore"

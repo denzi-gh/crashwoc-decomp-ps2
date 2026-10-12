@@ -33,7 +33,10 @@ typedef struct NuViewport {
     float clip_top;
     float clip_right;
     float clip_bottom;
-    unsigned char pad30[0x10];
+    float clip_scale_x;
+    float clip_scale_y;
+    float guard_scale_x;
+    float guard_scale_y;
 } NuViewport;
 
 typedef struct NuViewportMatrix {
@@ -48,6 +51,73 @@ extern int D_00633058;
 #define current_viewport D_0067D4C0
 #define viewport_scaling_matrix D_0067D500
 #define viewport_dirty D_00633058
+
+void NuPs2GetViewport(NuViewport *viewport);
+void NuVpSetScalingMtx(void);
+
+
+void NuVpUpdate(void)
+{
+    if (viewport_dirty) {
+        viewport_dirty = 0;
+        NuVpSetScalingMtx();
+        if (current_viewport.clip_left == 0.0f && current_viewport.clip_right == 1.0f) {
+            current_viewport.clip_scale_x = 1.0f;
+            current_viewport.guard_scale_x = (float)current_viewport.width / 57600.0f;
+        } else {
+            current_viewport.clip_scale_x = current_viewport.guard_scale_x =
+                1.0f / (current_viewport.clip_right - current_viewport.clip_left);
+        }
+        if (current_viewport.clip_top == 0.0f && current_viewport.clip_bottom == 1.0f) {
+            current_viewport.clip_scale_y = 1.0f;
+            current_viewport.guard_scale_y = (float)current_viewport.height / 57600.0f;
+        } else {
+            current_viewport.clip_scale_y = current_viewport.guard_scale_y =
+                1.0f / (current_viewport.clip_bottom - current_viewport.clip_top);
+        }
+    }
+}
+
+
+void NuVpSetScalingMtx(void)
+{
+    NuViewport *viewport = &current_viewport;
+    NuViewportMatrix *matrix = &viewport_scaling_matrix;
+    float width = (float)viewport->width;
+    float height = (float)viewport->height;
+
+    matrix->elements[0] = width * 0.5f;
+    matrix->elements[1] = 0.0f;
+    matrix->elements[2] = 0.0f;
+    matrix->elements[3] = 0.0f;
+    matrix->elements[4] = 0.0f;
+    matrix->elements[5] = -height * 0.5f;
+    matrix->elements[6] = 0.0f;
+    matrix->elements[7] = 0.0f;
+    matrix->elements[8] = 0.0f;
+    matrix->elements[9] = 0.0f;
+    matrix->elements[10] = viewport->zmax - viewport->zmin;
+    matrix->elements[11] = 0.0f;
+    matrix->elements[12] = (float)viewport->x + width * viewport->centre_x;
+    matrix->elements[13] = (float)viewport->y + height * viewport->centre_y;
+    matrix->elements[14] = viewport->zmin;
+    matrix->elements[15] = 1.0f;
+}
+
+
+void NuVpInit(void)
+{
+    NuPs2GetViewport(&default_viewport);
+    default_viewport.centre_x = 0.5f;
+    default_viewport.centre_y = 0.5f;
+    default_viewport.clip_left = 0.0f;
+    default_viewport.clip_top = 0.0f;
+    default_viewport.clip_right = 1.0f;
+    default_viewport.clip_bottom = 1.0f;
+    current_viewport = default_viewport;
+    viewport_dirty = 1;
+    NuVpUpdate();
+}
 
 
 void NuVpRestore(void)
