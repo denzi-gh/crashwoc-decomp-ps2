@@ -184,6 +184,14 @@ struct edptlitem_s {
     float fvalue;
 };
 
+struct edptltexitem_s {
+    char pad00[0x44];
+    float x0;
+    float y0;
+    float x1;
+    float y1;
+};
+
 struct nuvec_s {
     float x;
     float y;
@@ -198,7 +206,8 @@ struct edppptl_s {
     short roty;
     short emitrotz;
     short emitroty;
-    char pad1C[0x14];
+    int offset;
+    char name[0x10];
     int switchtype;
     int switchid;
     float switchvar;
@@ -210,13 +219,22 @@ struct edppptl_s {
     char pad4A[0x2];
 };
 
+struct debcollsphere_s {
+    struct nuvec_s vel;
+    float time;
+};
+
 struct debkey_s {
     char pad000[0x482];
     short debtype;
-    char pad484[0x24];
+    char pad484[0xC];
+    struct nuvec_s emitpos;
+    char pad49C[0xC];
     void *gensort;
     void *gencode;
-    char pad4B0[0x98];
+    char pad4B0[0x14];
+    struct debcollsphere_s collspheres[8];
+    char pad544[0x4];
     int switchtype;
     int switchid;
     float switchvar;
@@ -238,6 +256,13 @@ struct debenvkey_s {
     float value;
 };
 
+struct debcolkey_s {
+    float time;
+    float r;
+    float g;
+    float b;
+};
+
 struct debsound_s {
     int id;
     int control;
@@ -249,7 +274,8 @@ struct debtypedef_s {
     signed char effectlist;
     char pad11[0x1];
     short genrate;
-    char pad14[0x4];
+    short numptls;
+    char pad16[0x2];
     short ivalon;
     short ivalonran;
     short ivaloff;
@@ -271,16 +297,28 @@ struct debtypedef_s {
     float etime;
     char padA0[0x8];
     float jib[4];
-    char padB8[0xC0];
+    struct debcolkey_s colenv[8];
+    struct debenvkey_s alphaenv[8];
     float collenvmin;
     float collenvmax;
     struct debenvkey_s defcollenv[8];
-    char pad1C0[0x118];
+    char pad1C0[0x108];
+    float texu0;
+    float texu1;
+    float texv0;
+    float texv1;
     struct debphysics_s *physics;
     struct debenvkey_s collenv[8];
-    unsigned char numcollspheres;
+    signed char numcollspheres;
     char pad31D[0x7];
     struct debsound_s sounds[4];
+};
+
+struct nurndrvtx_s {
+    struct nuvec_s pnt;
+    char pad0C[0x18 - 0x0C];
+    int colour;
+    char pad1C[0x24 - 0x1C];
 };
 
 struct edptlgradkey_s {
@@ -325,8 +363,15 @@ struct debrender_s {
 };
 
 struct pad_s {
-    unsigned char unk_0x000[0x564];
+    char pad000[0x55C];
+    unsigned int paddata;
+    char pad560[0x564 - 0x560];
     unsigned int buttons;
+    char pad568[0x580 - 0x568];
+    unsigned char right_pressure;
+    unsigned char left_pressure;
+    unsigned char up_pressure;
+    unsigned char down_pressure;
 };
 
 extern struct edppptl_s edpp_ptls[256];
@@ -364,13 +409,13 @@ extern void *ptlemitvelmenu;
 extern void *ptlgravmenu;
 extern void *memcardmenu;
 extern void *ptlclipmenu;
-extern void *ptldatamenu;
-extern void *ptlemitmenu;
+extern struct edptlmenu_s *ptldatamenu;
+extern struct edptlmenu_s *ptlemitmenu;
 extern void *ptlgsortmenu;
 extern void *ptloptmenu;
 extern void *ptlgcodemenu;
 extern void *etimemenu;
-extern void *confirmmenu;
+extern struct edptlmenu_s *confirmmenu;
 extern void *edptl_switchtype_menu;
 extern void *edptl_sounds_menu;
 extern struct edptlmenu_s *sscalemenu;
@@ -384,26 +429,31 @@ extern void *D_0062F354;
 extern int D_0062F314;
 extern int edptl_clipboard_entry;
 extern int edpp_create_type;
-extern int D_0062F320;
-extern int D_0062F324;
+extern void *D_0062F320;
+extern void *D_0062F324;
 extern int D_0062F338;
 extern int D_0062F33C;
 extern int D_0062F340;
 
 #define edpp_slider_scale D_0062F314
 #define collenvmenu D_0062F354
+#define colgradmenu D_0062F320
+#define alphagradmenu D_0062F324
 
 extern void edmainRegisterLocVec(struct nuvec_s *loc);
 extern void eduiMenuDetach(void *menu);
 extern void eduiMenuDestroy(void *menu);
 extern char *strcpy(char *dst, const char *src);
 extern void edcamSetPosAng(void *pos, void *ang, int flags);
-extern void cbPtlDeleteEffect(void);
+extern void cbPtlDeleteEffect(struct edptlmenu_s *menu);
 
 extern int sprintf(char *buf, const char *fmt, ...);
 
 extern char D_0062F368[];
 #define copynameformat D_0062F368
+
+extern char D_0062F360[];
+#define newnameformat D_0062F360
 
 extern char D_00484DC0[];
 #define savefilename D_00484DC0
@@ -453,7 +503,7 @@ extern int NuFileReadInt(void *file);
 extern float NuFileReadFloat(void *file);
 extern void NuFileWriteInt(void *file, int value);
 extern void NuFileWriteFloat(void *file, float value);
-extern void edppPtlCreate(struct nuvec_s *pos, int type);
+extern int edppPtlCreate(struct nuvec_s *pos, int type);
 extern void edppRestartAllEffectsInLevel(void);
 extern void edcamSet(void);
 extern void edppDrawCursor(void);
@@ -461,12 +511,12 @@ extern void eduiMenuRender(void *menu);
 extern void GenericDebinfoDmaTypeUpdate(struct debtypedef_s *dt);
 static void CreateMessageMenu(struct edptlmenu_s *parent, char *message, int flags);
 
-extern short edpp_rotz;
-extern short edpp_roty;
-extern short edpp_emitrotz;
-extern short edpp_emitroty;
-extern short edpp_refrotz;
-extern short edpp_refroty;
+extern int edpp_rotz;
+extern int edpp_roty;
+extern int edpp_emitrotz;
+extern int edpp_emitroty;
+extern int edpp_refrotz;
+extern int edpp_refroty;
 extern int edpp_first_time_this_level;
 extern void *gencodetab[];
 extern void *gensorttab[];
@@ -489,9 +539,10 @@ extern char D_0062F370[];
 #define messagemenutitle D_0062F370
 
 extern void DebrisEmiterPos(int key, float x, float y, float z);
-extern void DebrisOrientation(int key, int rotz, int roty);
-extern void DebrisEmitterOrientation(int key, int rotz, int roty);
-extern void DebrisReflectionOrientation(int key, float offset, float factor, int rotz, int roty);
+extern void DebrisOrientation(int key, short rotz, short roty);
+extern void DebrisEmitterOrientation(int key, short rotz, short roty);
+extern void DebrisReflectionOrientation(int key, float offset, float factor, short rotz,
+                                        short roty);
 extern struct nuvec_s *edmainQueryLocVec(void);
 extern void *memset(void *dst, int value, unsigned int size);
 extern struct edptlmenu_s *eduiMenuCreate(int x, int y, int w, int h, void *font, void *cancelcb,
@@ -562,6 +613,172 @@ extern int sceMcSync(int mode, int *cmd, int *result);
 #define memcardfilenames D_00489B60
 #define memcardresult D_00633218
 extern void cbChangeFileName(void *menu, struct edptlitem_s *item);
+extern void cbPtlCancelDataMenu(void);
+extern void cbChangeNameMenu(struct edptlmenu_s *menu);
+extern void cbFileSaveEffects(struct edptlmenu_s *menu);
+extern void cbFileLoadEffects(struct edptlmenu_s *menu);
+extern void cbMemCardMenu(struct edptlmenu_s *menu);
+extern void edptlcbClipboardMenu(struct edptlmenu_s *menu);
+extern char D_006188C8[];
+extern char D_006188D8[];
+extern char D_006188E8[];
+extern char D_006188F8[];
+extern char D_00618908[];
+extern char D_00618920[];
+extern char D_00618930[];
+extern char D_00618940[];
+extern char D_00618958[];
+extern char D_00618968[];
+
+#define datamenutitle D_006188C8
+#define datamenutypename D_006188D8
+#define datamenudelete D_006188E8
+#define datamenucopy D_006188F8
+#define datamenusavegeneral D_00618908
+#define datamenusavelevel D_00618920
+#define datamenusavechar D_00618930
+#define datamenuloadall D_00618940
+#define datamenumemcard D_00618958
+#define datamenuclipboard D_00618968
+extern void cbPtlCancelEmitMenu(void);
+extern void cbPtlEmitVelMenu(struct edptlmenu_s *menu);
+extern void cbPtlGravMenu(struct edptlmenu_s *menu);
+extern void cbPtlVarStartMenu(struct edptlmenu_s *menu);
+extern void cbPtlVarEmitMenu(struct edptlmenu_s *menu);
+extern void cbChangeGenRateMenu(struct edptlmenu_s *menu);
+extern void cbChangeETimeMenu(struct edptlmenu_s *menu);
+extern void cbPtlEmitTimeMenu(struct edptlmenu_s *menu);
+extern void cbPtlCutOffMenu(struct edptlmenu_s *menu);
+extern char D_00618978[];
+extern char D_00618990[];
+extern char D_006189A0[];
+extern char D_006189B0[];
+extern char D_006189C0[];
+extern char D_006189D8[];
+extern char D_006189F0[];
+extern char D_00618A00[];
+extern char D_00618A18[];
+extern char D_00618A30[];
+
+#define emitmenutitle D_00618978
+#define emitmenuvel D_00618990
+#define emitmenugravity D_006189A0
+#define emitmenurandomstart D_006189B0
+#define emitmenubasevector D_006189C0
+#define emitmenuvariation D_006189D8
+#define emitmenugenrate D_006189F0
+#define emitmenulife D_00618A00
+#define emitmenutiming D_00618A18
+#define emitmenucutoff D_00618A30
+extern void cbCancelConfirmMenu(void);
+extern void cbConfirmMenuNo(struct edptlmenu_s *menu);
+extern void cbMemCardErase(struct edptlmenu_s *menu);
+extern char D_006185C8[];
+extern char D_0062F378[];
+extern char D_0062F380[];
+
+#define memcarderasetitle D_006185C8
+#define confirmnolabel D_0062F378
+#define confirmyeslabel D_0062F380
+extern int edpp_offset;
+extern void DebrisStartOffset(int key, int offset);
+extern void DebrisSetGroupID(int key, short groupid);
+extern struct nuvec_s edpp_cam_pos;
+extern float edpp_cam_ax;
+extern float edpp_cam_ay;
+extern void edppDetermineNearest(float range);
+extern void edcamMove(struct pad_s *pad);
+extern void edcamSetPos(struct nuvec_s *pos);
+extern void edcamGetPosAng(struct nuvec_s *pos, float *ax, float *ay);
+extern void edcamGetPosAngSnap(struct nuvec_s *pos, float *ax, float *ay);
+extern void SphereDraw(struct nuvec_s *pos, float radius, float scale);
+extern void *edpp_boxmtl;
+extern void NuVecSub(struct nuvec_s *d, struct nuvec_s *a, struct nuvec_s *b);
+extern void NuVecRotateZ(struct nuvec_s *out, struct nuvec_s *in, int angle);
+extern void NuVecRotateY(struct nuvec_s *out, struct nuvec_s *in, int angle);
+extern void NuRndrLine3d(struct nurndrvtx_s *line, void *mtl, void *mtx);
+extern void NuRndrRect2di(int x, int y, int w, int h, int colour, void *mtl);
+extern void NuRndrLine2di(int x0, int y0, int x1, int y1, int colour, void *mtl);
+extern void NuFntSet(void *fnt);
+extern void NuFntSetPen(int colour);
+extern void NuFntPrintEx(int x, int y, int flags, char *fmt, ...);
+extern char D_00617E28[];
+extern char D_00617E38[];
+extern char D_00617E50[];
+extern char D_00617E68[];
+extern char D_00617E80[];
+extern char D_00617E98[];
+extern char D_00617EB0[];
+extern char D_00617EC8[];
+extern char D_00617ED8[];
+extern char D_00617EF0[];
+extern char D_00617F00[];
+extern char D_00617F18[];
+extern char D_00617F30[];
+extern char D_00617F48[];
+extern char D_00617F60[];
+
+#define infoboxtitle D_00617E28
+#define infolistlevel D_00617E38
+#define infolistgeneral D_00617E50
+#define infolistchar D_00617E68
+#define infonotype D_00617E80
+#define infotype D_00617E98
+#define infonoclipboard D_00617EB0
+#define infoclipboard D_00617EC8
+#define infonohighlight D_00617ED8
+#define infohighlight D_00617EF0
+#define infoparticles D_00617F00
+#define infodpademit D_00617F18
+#define infodpadgrav D_00617F30
+#define infodpadoffset D_00617F48
+#define infodpadreflect D_00617F60
+
+
+int edppPtlCreate(struct nuvec_s *pos, int type) {
+    int start;
+
+    start = edpp_nextalloc;
+    for (;;) {
+        if (edpp_ptls[edpp_nextalloc].debris == -1) {
+            goto found;
+        }
+        edpp_nextalloc++;
+        if (edpp_nextalloc > 256) {
+            edpp_nextalloc = 0;
+        }
+        if (edpp_nextalloc == start) {
+            return -1;
+        }
+    }
+found:
+    AddDebrisEffect(&edpp_ptls[edpp_nextalloc].debris, type, pos->x, pos->y, pos->z);
+    if (edpp_ptls[edpp_nextalloc].debris != -1) {
+        DebrisOrientation(edpp_ptls[edpp_nextalloc].debris, edpp_rotz, edpp_roty);
+        DebrisEmitterOrientation(edpp_ptls[edpp_nextalloc].debris, edpp_emitrotz, edpp_emitroty);
+        DebrisStartOffset(edpp_ptls[edpp_nextalloc].debris, edpp_offset);
+        DebrisReflectionOrientation(edpp_ptls[edpp_nextalloc].debris, 0.0f, 0.9f, edpp_refrotz,
+                                    edpp_refroty);
+        DebrisSetGroupID(edpp_ptls[edpp_nextalloc].debris, 0);
+        edpp_ptls[edpp_nextalloc].group = 0;
+        edpp_ptls[edpp_nextalloc].bounceoffset = 0.0f;
+        edpp_ptls[edpp_nextalloc].bouncefactor = 0.9f;
+        edpp_ptls[edpp_nextalloc].pos = *pos;
+        edpp_ptls[edpp_nextalloc].type = type;
+        edpp_ptls[edpp_nextalloc].rotz = edpp_rotz;
+        edpp_ptls[edpp_nextalloc].roty = edpp_roty;
+        edpp_ptls[edpp_nextalloc].emitrotz = edpp_emitrotz;
+        edpp_ptls[edpp_nextalloc].emitroty = edpp_emitroty;
+        edpp_ptls[edpp_nextalloc].offset = edpp_offset;
+        edpp_ptls[edpp_nextalloc].switchtype = 0;
+        edpp_ptls[edpp_nextalloc].switchid = -1;
+        edpp_ptls[edpp_nextalloc].switchvar = 0.0f;
+        strcpy(edpp_ptls[edpp_nextalloc].name, debtab[type]->name);
+        start = edpp_nextalloc++;
+        return start;
+    }
+    return -1;
+}
 
 
 int edppPtlPlace(int index, struct nuvec_s *pos) {
@@ -578,6 +795,367 @@ int edppPtlPlace(int index, struct nuvec_s *pos) {
     edpp_ptls[index].refrotz = edpp_refrotz;
     edpp_ptls[index].refroty = edpp_refroty;
     return index;
+}
+
+
+void edppDoInput(struct pad_s *pad) {
+    int i;
+
+    if (pad->paddata & 0x100) {
+        if (edpp_nearest != -1) {
+            if (pad->buttons & 0x8) {
+                i = edpp_nearest;
+                do {
+                    i++;
+                    if (i == 256) {
+                        i %= 256;
+                    }
+                } while (edpp_ptls[i].debris == -1);
+                edpp_nearest = i;
+            }
+            if (pad->buttons & 0x2) {
+                do {
+                    edpp_nearest--;
+                    if (edpp_nearest == -1) {
+                        edpp_nearest = 255;
+                    }
+                } while (edpp_ptls[edpp_nearest].debris == -1);
+            }
+        } else {
+            edppDetermineNearest(-1.0f);
+        }
+        if (edpp_nearest != -1) {
+            edcamSetPos(&edpp_ptls[edpp_nearest].pos);
+            edpp_rotz = edpp_ptls[edpp_nearest].rotz;
+            edpp_roty = edpp_ptls[edpp_nearest].roty;
+            edpp_emitrotz = edpp_ptls[edpp_nearest].emitrotz;
+            edpp_emitroty = edpp_ptls[edpp_nearest].emitroty;
+            edpp_offset = edpp_ptls[edpp_nearest].offset;
+            edpp_create_type = edpp_ptls[edpp_nearest].type;
+            edpp_effect_list = debtab[edpp_create_type]->effectlist;
+        }
+    } else {
+        edcamMove(pad);
+    }
+    if (edpp_snap_enabled) {
+        edcamGetPosAngSnap(&edpp_cam_pos, &edpp_cam_ax, &edpp_cam_ay);
+    } else {
+        edcamGetPosAng(&edpp_cam_pos, &edpp_cam_ax, &edpp_cam_ay);
+    }
+    if (pad->buttons & 0x80) {
+        edpp_active_menu = ptloptmenu;
+    }
+    if ((pad->buttons & 0x40) && edpp_create_type != -1) {
+        edppPtlCreate(&edpp_cam_pos, edpp_create_type);
+    }
+    if (pad->paddata & 0x20) {
+        if (edpp_nearest != -1) {
+            edppPtlPlace(edpp_nearest, &edpp_cam_pos);
+        }
+    } else {
+        edppDetermineNearest(1.0f);
+    }
+    if (pad->buttons & 0x10) {
+        if (edpp_nearest != -1) {
+            i = edpp_nearest;
+            if (edpp_ptls[i].debris != -1) {
+                DebFreeInstantly(&edpp_ptls[i].debris);
+                edpp_ptls[i].debris = -1;
+            }
+        }
+        edpp_nearest = -1;
+    }
+    if (edpp_dpad_mode == 1) {
+        edpp_roty += pad->right_pressure;
+        edpp_roty -= pad->left_pressure;
+        edpp_rotz += pad->up_pressure;
+        if (edpp_rotz > 0) {
+            edpp_rotz = 0;
+        }
+        edpp_rotz -= pad->down_pressure;
+        if (edpp_rotz < -0x8000) {
+            edpp_rotz = -0x8000;
+        }
+    } else if (edpp_dpad_mode == 0) {
+        edpp_emitroty += pad->right_pressure;
+        edpp_emitroty -= pad->left_pressure;
+        edpp_emitrotz += pad->up_pressure;
+        if (edpp_emitrotz > 0x8000) {
+            edpp_emitrotz = 0x8000;
+        }
+        edpp_emitrotz -= pad->down_pressure;
+        if (edpp_emitrotz < -0x8000) {
+            edpp_emitrotz = -0x8000;
+        }
+    } else if (edpp_dpad_mode == 3) {
+        edpp_refroty += pad->right_pressure;
+        edpp_refroty -= pad->left_pressure;
+        edpp_refrotz += pad->up_pressure;
+        if (edpp_refrotz > 0) {
+            edpp_refrotz = 0;
+        }
+        edpp_refrotz -= pad->down_pressure;
+        if (edpp_refrotz < -0x8000) {
+            edpp_refrotz = -0x8000;
+        }
+    } else if (edpp_dpad_mode == 2) {
+        if (pad->up_pressure == 0xFF || (pad->buttons & 0x1000)) {
+            edpp_offset++;
+        }
+        if (pad->down_pressure == 0xFF || (pad->buttons & 0x4000)) {
+            edpp_offset--;
+        }
+        if (edpp_offset < 0) {
+            edpp_offset = 0;
+        }
+    }
+}
+
+
+void edppDrawSpheres(struct debtypedef_s *dt, int key) {
+    struct nuvec_s pos;
+    float t;
+    float life;
+    float size;
+    int i;
+    int j;
+
+    if (dt->numcollspheres == 0) {
+        return;
+    }
+    for (i = 0; i < dt->numcollspheres; i++) {
+        t = debkeydata[key].collspheres[i].time;
+        if (t == -1.0f) {
+            continue;
+        }
+        pos.x = debkeydata[key].collspheres[i].vel.x * t + debkeydata[key].emitpos.x;
+        pos.y = debkeydata[key].collspheres[i].vel.y * t + dt->gravity * (t * t)
+              + debkeydata[key].emitpos.y;
+        pos.z = debkeydata[key].collspheres[i].vel.z * t + debkeydata[key].emitpos.z;
+        life = t / dt->etime;
+        for (j = 0; j < 7; j++) {
+            if (dt->collenv[j].time <= life && life <= dt->collenv[j + 1].time) {
+                break;
+            }
+        }
+        size = dt->collenv[j].value + (life - dt->collenv[j].time)
+             / (dt->collenv[j + 1].time - dt->collenv[j].time)
+             * (dt->collenv[j + 1].value - dt->collenv[j].value);
+        pos.y -= size;
+        SphereDraw(&pos, size, 1.0f);
+    }
+}
+
+
+void edppDrawCursor(void) {
+    struct nurndrvtx_s line[2];
+    struct nuvec_s v;
+    struct debtypedef_s *dt;
+
+    v.x = 0.5f;
+    v.y = 0.0f;
+    v.z = 0.0f;
+    NuVecRotateZ(&v, &v, edpp_rotz);
+    NuVecRotateY(&v, &v, edpp_roty);
+    line[0].pnt.x = edpp_cam_pos.x - v.x;
+    line[0].pnt.y = edpp_cam_pos.y - v.y;
+    line[0].pnt.z = edpp_cam_pos.z - v.z;
+    line[1].pnt.x = edpp_cam_pos.x + v.x;
+    line[1].pnt.y = edpp_cam_pos.y + v.y;
+    line[1].pnt.z = edpp_cam_pos.z + v.z;
+    line[0].colour = -1;
+    line[1].colour = -1;
+    NuRndrLine3d(line, edpp_mtl, 0);
+    v.x = 0.0f;
+    v.y = 0.5f;
+    v.z = 0.0f;
+    NuVecRotateZ(&v, &v, edpp_rotz);
+    NuVecRotateY(&v, &v, edpp_roty);
+    line[0].pnt.x = edpp_cam_pos.x - v.x;
+    line[0].pnt.y = edpp_cam_pos.y - v.y;
+    line[0].pnt.z = edpp_cam_pos.z - v.z;
+    line[1].pnt.x = edpp_cam_pos.x;
+    line[1].pnt.y = edpp_cam_pos.y;
+    line[1].pnt.z = edpp_cam_pos.z;
+    line[0].colour = -1;
+    line[1].colour = -1;
+    NuRndrLine3d(line, edpp_mtl, 0);
+    line[0].pnt.x = edpp_cam_pos.x;
+    line[0].pnt.y = edpp_cam_pos.y;
+    line[0].pnt.z = edpp_cam_pos.z;
+    line[1].pnt.x = edpp_cam_pos.x + v.x;
+    line[1].pnt.y = edpp_cam_pos.y + v.y;
+    line[1].pnt.z = edpp_cam_pos.z + v.z;
+    line[0].colour = 0xFF00FF00;
+    line[1].colour = 0xFF00FF00;
+    NuRndrLine3d(line, edpp_mtl, 0);
+    v.x = 0.0f;
+    v.y = 0.0f;
+    v.z = 0.5f;
+    NuVecRotateZ(&v, &v, edpp_rotz);
+    NuVecRotateY(&v, &v, edpp_roty);
+    line[0].pnt.x = edpp_cam_pos.x - v.x;
+    line[0].pnt.y = edpp_cam_pos.y - v.y;
+    line[0].pnt.z = edpp_cam_pos.z - v.z;
+    line[1].pnt.x = edpp_cam_pos.x + v.x;
+    line[1].pnt.y = edpp_cam_pos.y + v.y;
+    line[1].pnt.z = edpp_cam_pos.z + v.z;
+    line[0].colour = -1;
+    line[1].colour = -1;
+    NuRndrLine3d(line, edpp_mtl, 0);
+    v.x = 0.0f;
+    v.y = 0.375f;
+    v.z = 0.0f;
+    NuVecRotateZ(&v, &v, edpp_emitrotz);
+    NuVecRotateY(&v, &v, edpp_emitroty);
+    NuVecRotateZ(&v, &v, edpp_rotz);
+    NuVecRotateY(&v, &v, edpp_roty);
+    line[0].pnt.x = edpp_cam_pos.x;
+    line[0].pnt.y = edpp_cam_pos.y;
+    line[0].pnt.z = edpp_cam_pos.z;
+    line[1].pnt.x = edpp_cam_pos.x + v.x;
+    line[1].pnt.y = edpp_cam_pos.y + v.y;
+    line[1].pnt.z = edpp_cam_pos.z + v.z;
+    line[0].colour = 0xFF0000FF;
+    line[1].colour = 0xFF0000FF;
+    NuRndrLine3d(line, edpp_mtl, 0);
+    if (edpp_dpad_mode == 3) {
+        v.x = 0.0f;
+        v.y = 0.25f;
+        v.z = 0.0f;
+        NuVecRotateZ(&v, &v, edpp_refrotz);
+        NuVecRotateY(&v, &v, edpp_refroty);
+        NuVecRotateZ(&v, &v, edpp_rotz);
+        NuVecRotateY(&v, &v, edpp_roty);
+        line[0].pnt.x = edpp_cam_pos.x;
+        line[0].pnt.y = edpp_cam_pos.y;
+        line[0].pnt.z = edpp_cam_pos.z;
+        line[1].pnt.x = edpp_cam_pos.x + v.x;
+        line[1].pnt.y = edpp_cam_pos.y + v.y;
+        line[1].pnt.z = edpp_cam_pos.z + v.z;
+        line[0].colour = 0xFFFF0000;
+        line[1].colour = 0xFFFF0000;
+        NuRndrLine3d(line, edpp_mtl, 0);
+        if (edpp_nearest != -1) {
+            v.x = 0.0f;
+            v.y = edpp_ptls[edpp_nearest].bounceoffset;
+            v.z = 0.0f;
+            NuVecRotateZ(&v, &v, edpp_refrotz);
+            NuVecRotateY(&v, &v, edpp_refroty);
+            NuVecRotateZ(&v, &v, edpp_rotz);
+            NuVecRotateY(&v, &v, edpp_roty);
+            edbitsDrawCube(edpp_cam_pos.x + v.x, edpp_cam_pos.y + v.y, edpp_cam_pos.z + v.z,
+                           0.25f, 0.0f, 0.25f, edpp_refrotz, edpp_refroty, edpp_rotz, edpp_roty,
+                           0xFFFF0000, edpp_mtl);
+        }
+    }
+    NuRndrRect2di(0x1720, 0x9B0, 0xDC0, 0x410, 0x80808080, edpp_boxmtl);
+    NuRndrRect2di(0x1710, 0x8F0, 0xDE0, 0xC0, 0x80000000, edpp_boxmtl);
+    NuRndrLine2di(0x1710, 0x9B0, 0x1710, 0xDC8, 0x80000000, edpp_boxmtl);
+    NuRndrLine2di(0x24F0, 0x9B0, 0x24F0, 0xDC8, 0x80000000, edpp_boxmtl);
+    NuRndrLine2di(0x1710, 0xDC8, 0x24F0, 0xDC8, 0x80000000, edpp_boxmtl);
+    NuFntSet(app_fnt);
+    NuFntSetPen(0x80808080);
+    NuFntPrintEx(0x17C0, 0x988, 0, infoboxtitle);
+    NuFntSetPen(0x80000000);
+    if (edpp_effect_list == 1) {
+        NuFntPrintEx(0x17C0, 0xA50, 0, infolistlevel);
+    } else if (edpp_effect_list == 0) {
+        NuFntPrintEx(0x17C0, 0xA50, 0, infolistgeneral);
+    } else if (edpp_effect_list == 5) {
+        NuFntPrintEx(0x17C0, 0xA50, 0, infolistchar);
+    }
+    if (edpp_create_type == -1) {
+        NuFntPrintEx(0x17C0, 0xAF0, 0, infonotype);
+    } else {
+        NuFntPrintEx(0x17C0, 0xAF0, 0, infotype, debtab[edpp_create_type]->name);
+    }
+    if (edptl_clipboard_entry == -1) {
+        NuFntPrintEx(0x17C0, 0xB90, 0, infonoclipboard);
+    } else {
+        NuFntPrintEx(0x17C0, 0xB90, 0, infoclipboard, debtab[edptl_clipboard_entry]->name);
+    }
+    if (edpp_nearest == -1) {
+        NuFntPrintEx(0x17C0, 0xC30, 0, infonohighlight);
+    } else {
+        dt = debtab[debkeydata[edpp_ptls[edpp_nearest].debris].debtype];
+        if (dt->gensort == 0) {
+            edbitsDrawCube(edpp_cam_pos.x, edpp_cam_pos.y, edpp_cam_pos.z, dt->varstart.x,
+                           dt->varstart.y, dt->varstart.z, edpp_emitrotz, edpp_emitroty,
+                           edpp_rotz, edpp_roty, 0xFF0000FF, edpp_mtl);
+            edppDrawSpheres(dt, edpp_ptls[edpp_nearest].debris);
+        }
+        NuFntPrintEx(0x17C0, 0xC30, 0, infohighlight, dt->name);
+        NuFntPrintEx(0x17C0, 0xCD0, 0, infoparticles, dt->numptls,
+                     ((dt->numptls - 1) / 32 + 1) * 32);
+    }
+    if (edpp_dpad_mode == 0) {
+        NuFntPrintEx(0x17C0, 0xD70, 0, infodpademit);
+    } else if (edpp_dpad_mode == 1) {
+        NuFntPrintEx(0x17C0, 0xD70, 0, infodpadgrav);
+    } else if (edpp_dpad_mode == 2) {
+        NuFntPrintEx(0x17C0, 0xD70, 0, infodpadoffset, edpp_offset);
+    } else if (edpp_dpad_mode == 3) {
+        NuFntPrintEx(0x17C0, 0xD70, 0, infodpadreflect);
+    }
+}
+
+
+void edppDetermineNearest(float range) {
+    struct nuvec_s d;
+    float dist;
+    int i;
+
+    if (edpp_nearest != -1) {
+        NuVecSub(&d, &edpp_cam_pos, &edpp_ptls[edpp_nearest].pos);
+        if (d.x * d.x + d.y * d.y + d.z * d.z == 0.0) {
+            return;
+        }
+    }
+    edpp_nearest = -1;
+    for (i = 0; i < 256; i++) {
+        if (edpp_ptls[i].debris != -1) {
+            NuVecSub(&d, &edpp_cam_pos, &edpp_ptls[i].pos);
+            dist = d.x * d.x + d.y * d.y + d.z * d.z;
+            if (range < 0.0f || dist < range) {
+                edpp_nearest = i;
+                range = dist;
+            }
+        }
+    }
+}
+
+
+void cbPtlApplyGrad(void) {
+    struct edptlgradkey_s keys[8];
+    struct debtypedef_s *coldt;
+    struct debtypedef_s *alphadt;
+    int count;
+    int i;
+    int j;
+
+    count = eduiGradPickRead(colgradmenu, keys, 8);
+    if (count >= 2 && count <= 8 && edpp_nearest != -1
+        && edpp_ptls[edpp_nearest].debris != -1) {
+        coldt = debtab[debkeydata[edpp_ptls[edpp_nearest].debris].debtype];
+        for (i = 0; i < count; i++) {
+            coldt->colenv[i].time = keys[i].time;
+            coldt->colenv[i].r = keys[i].value[0] * 255.0;
+            coldt->colenv[i].g = keys[i].value[1] * 255.0;
+            coldt->colenv[i].b = keys[i].value[2] * 255.0;
+        }
+        GenericDebinfoDmaTypeUpdate(coldt);
+    }
+    count = eduiGradPickRead(alphagradmenu, keys, 8);
+    if (count >= 2 && count <= 8 && edpp_nearest != -1
+        && edpp_ptls[edpp_nearest].debris != -1) {
+        alphadt = debtab[debkeydata[edpp_ptls[edpp_nearest].debris].debtype];
+        for (j = 0; j < count; j++) {
+            alphadt->alphaenv[j].time = keys[j].time;
+            alphadt->alphaenv[j].value = keys[j].value[0] * 255.0;
+        }
+        GenericDebinfoDmaTypeUpdate(alphadt);
+    }
 }
 
 
@@ -609,6 +1187,63 @@ void TidyAllEffects(void) {
             *debtab[j] = *debtab[0];
             debtab[j] = 0;
         }
+    }
+}
+
+
+void cbPtlDeleteEffect(struct edptlmenu_s *menu) {
+    int arg;
+    int i;
+
+    arg = 0;
+    if (edpp_ptls[edpp_nearest].type == edpp_create_type) {
+        edpp_nearest = -1;
+    }
+    for (i = 0; i < 256; i++) {
+        if (edpp_ptls[i].type == edpp_create_type && edpp_ptls[i].debris != -1) {
+            DebFreeInstantly(&edpp_ptls[i].debris);
+            edpp_ptls[i].debris = -1;
+        }
+    }
+    edppDetermineNearest(1.0f);
+    *debtab[edpp_create_type] = *debtab[0];
+    debtab[edpp_create_type] = 0;
+    effect_types_used--;
+    if (menu->detacharg != 0) {
+        arg = menu->detacharg;
+        eduiMenuDetach(menu);
+    }
+    if (menu->callback != 0) {
+        menu->callback(menu, arg);
+    }
+    edpp_create_type = -1;
+}
+
+
+void cbPtlAddEffect(struct edptlmenu_s *menu) {
+    int arg;
+    int i;
+
+    arg = 0;
+    if (effect_types_used < 128) {
+        for (i = 1; i < 128; i++) {
+            if (debtab[i] == 0) {
+                debtab[i] = &effecttypes[i];
+                *debtab[i] = *debtab[0];
+                sprintf(debtab[i]->name, newnameformat, i);
+                debtab[i]->effectlist = edpp_effect_list;
+                edpp_create_type = i;
+                effect_types_used++;
+                break;
+            }
+        }
+    }
+    if (menu->detacharg != 0) {
+        arg = menu->detacharg;
+        eduiMenuDetach(menu);
+    }
+    if (menu->callback != 0) {
+        menu->callback(menu, arg);
     }
 }
 
@@ -824,6 +1459,89 @@ void edptlcbBounceMenu(struct edptlmenu_s *menu) {
 }
 
 
+void cbPtlDataMenu(struct edptlmenu_s *menu) {
+    struct edptlfont_s font;
+
+    font = edpp_menu_font;
+    ptldatamenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt, cbPtlCancelDataMenu,
+                                 datamenutitle);
+    if (ptldatamenu != 0) {
+        eduiMenuAddItem(ptldatamenu, eduiItemSelCreate(1, &font, 0, 0, cbChangeNameMenu,
+                                                       datamenutypename));
+        if (edpp_create_type != -1) {
+            eduiMenuAddItem(ptldatamenu, eduiItemSelCreate(1, &font, 0, 0, cbPtlDeleteEffect,
+                                                           datamenudelete));
+            eduiMenuAddItem(ptldatamenu, eduiItemSelCreate(1, &font, 0, 0, cbPtlCopyEffect,
+                                                           datamenucopy));
+        }
+        if (edpp_effect_list == 0) {
+            eduiMenuAddItem(ptldatamenu, eduiItemSelCreate(1, &font, 0, 0, cbFileSaveEffects,
+                                                           datamenusavegeneral));
+        } else if (edpp_effect_list == 1) {
+            eduiMenuAddItem(ptldatamenu, eduiItemSelCreate(1, &font, 0, 0, cbFileSaveEffects,
+                                                           datamenusavelevel));
+        } else if (edpp_effect_list == 5) {
+            eduiMenuAddItem(ptldatamenu, eduiItemSelCreate(1, &font, 0, 0, cbFileSaveEffects,
+                                                           datamenusavechar));
+        }
+        eduiMenuAddItem(ptldatamenu, eduiItemSelCreate(1, &font, 0, 0, cbFileLoadEffects,
+                                                       datamenuloadall));
+        eduiMenuAddItem(ptldatamenu, eduiItemSelCreate(1, &font, 0, 0, cbMemCardMenu,
+                                                       datamenumemcard));
+        if (edpp_create_type != -1) {
+            eduiMenuAddItem(ptldatamenu, eduiItemSelCreate(1, &font, 0, 0, edptlcbClipboardMenu,
+                                                           datamenuclipboard));
+        }
+        eduiMenuAttach(menu, ptldatamenu);
+        ptldatamenu->x = menu->x + 10;
+        ptldatamenu->y = menu->y + 40;
+    }
+}
+
+
+void cbPtlEmitMenu(struct edptlmenu_s *menu) {
+    struct edptlfont_s font;
+    struct debtypedef_s *dt;
+
+    font = edpp_menu_font;
+    if (edpp_nearest == -1) {
+        return;
+    }
+    if (edpp_ptls[edpp_nearest].debris == -1) {
+        return;
+    }
+    dt = debtab[debkeydata[edpp_ptls[edpp_nearest].debris].debtype];
+    ptlemitmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0x12C, app_fnt, cbPtlCancelEmitMenu,
+                                 emitmenutitle);
+    if (ptlemitmenu != 0) {
+        eduiMenuAddItem(ptlemitmenu, eduiItemSelCreate(1, &font, 0, 0, cbPtlEmitVelMenu,
+                                                       emitmenuvel));
+        eduiMenuAddItem(ptlemitmenu, eduiItemSelCreate(1, &font, 0, 0, cbPtlGravMenu,
+                                                       emitmenugravity));
+        if (dt->gensort == 0 || dt->gensort == 8 || dt->gensort == 9 || dt->gensort == 10) {
+            eduiMenuAddItem(ptlemitmenu, eduiItemSelCreate(1, &font, 0, 0, cbPtlVarStartMenu,
+                                                           emitmenurandomstart));
+        } else if (dt->gensort == 6 || dt->gensort == 7) {
+            eduiMenuAddItem(ptlemitmenu, eduiItemSelCreate(1, &font, 0, 0, cbPtlVarStartMenu,
+                                                           emitmenubasevector));
+        }
+        eduiMenuAddItem(ptlemitmenu, eduiItemSelCreate(1, &font, 0, 0, cbPtlVarEmitMenu,
+                                                       emitmenuvariation));
+        eduiMenuAddItem(ptlemitmenu, eduiItemSelCreate(1, &font, 0, 0, cbChangeGenRateMenu,
+                                                       emitmenugenrate));
+        eduiMenuAddItem(ptlemitmenu, eduiItemSelCreate(1, &font, 0, 0, cbChangeETimeMenu,
+                                                       emitmenulife));
+        eduiMenuAddItem(ptlemitmenu, eduiItemSelCreate(1, &font, 0, 0, cbPtlEmitTimeMenu,
+                                                       emitmenutiming));
+        eduiMenuAddItem(ptlemitmenu, eduiItemSelCreate(1, &font, 0, 0, cbPtlCutOffMenu,
+                                                       emitmenucutoff));
+    }
+    eduiMenuAttach(menu, ptlemitmenu);
+    ptlemitmenu->x = menu->x + 10;
+    ptlemitmenu->y = menu->y + 40;
+}
+
+
 void ParticleReset(void) {
     int i;
 
@@ -982,12 +1700,12 @@ void cbPtlChangeGrav(void *menu, struct edptlitem_s *item) {
 }
 
 
-void edptlcbEmptyClipboard(void) {
+void edptlcbEmptyClipboard(struct edptlmenu_s *menu) {
     int saved;
 
     saved = edpp_create_type;
     edpp_create_type = edptl_clipboard_entry;
-    cbPtlDeleteEffect();
+    cbPtlDeleteEffect(menu);
     edpp_create_type = saved;
     edptl_clipboard_entry = -1;
 }
@@ -1347,8 +2065,8 @@ void cbPtlCancelTypeMenu(void) {
 void cbPtlCancelColMenu(void) {
     eduiMenuDestroy(ptlcolmenu);
     ptlcolmenu = 0;
-    D_0062F320 = 0;
-    D_0062F324 = 0;
+    colgradmenu = 0;
+    alphagradmenu = 0;
 }
 
 
@@ -1585,6 +2303,35 @@ void cbPtlSScaleMenu(struct edptlmenu_s *menu) {
 }
 
 
+void cbPtlChangeTextureSelect(struct edptlmenu_s *menu, struct edptltexitem_s *item) {
+    struct debkey_s *deb;
+    struct debtypedef_s *dt;
+    int arg;
+
+    arg = 0;
+    if (edpp_nearest == -1) {
+        return;
+    }
+    if (edpp_ptls[edpp_nearest].debris == -1) {
+        return;
+    }
+    deb = &debkeydata[edpp_ptls[edpp_nearest].debris];
+    dt = debtab[deb->debtype];
+    dt->texu0 = item->x0 * 256.0f + 524288.0f;
+    dt->texu1 = item->x1 * 256.0f + 524288.0f;
+    dt->texv0 = item->y0 * 256.0f + 524288.0f;
+    dt->texv1 = item->y1 * 256.0f + 524288.0f;
+    if (menu->detacharg != 0) {
+        arg = menu->detacharg;
+        eduiMenuDetach(menu);
+    }
+    if (menu->callback != 0) {
+        menu->callback(menu, arg);
+    }
+    GenericDebinfoDmaTypeUpdate(dt);
+}
+
+
 void cbPtlSelTextureType(void *menu, struct edptlitem_s *item) {
     struct debkey_s *deb;
     struct debtypedef_s *dt;
@@ -1694,6 +2441,27 @@ void cbPtlCancelEmitVelMenu(void) {
 void cbPtlCancelGravMenu(void) {
     eduiMenuDestroy(ptlgravmenu);
     ptlgravmenu = 0;
+}
+
+
+static inline void CreateConfirmMenu(struct edptlmenu_s *parent, char *title, void *yescb) {
+    struct edptlfont_s font;
+
+    font = edpp_menu_font;
+    confirmmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt, cbCancelConfirmMenu, title);
+    if (confirmmenu != 0) {
+        eduiMenuAddItem(confirmmenu, eduiItemSelCreate(1, &font, 0, 0, cbConfirmMenuNo,
+                                                       confirmnolabel));
+        eduiMenuAddItem(confirmmenu, eduiItemSelCreate(1, &font, 0, 0, yescb, confirmyeslabel));
+        eduiMenuAttach(parent, confirmmenu);
+        confirmmenu->x = parent->x + 10;
+        confirmmenu->y = parent->y + 40;
+    }
+}
+
+
+void cbMemCardEraseConfirm(struct edptlmenu_s *menu) {
+    CreateConfirmMenu(menu, memcarderasetitle, cbMemCardErase);
 }
 
 

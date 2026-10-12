@@ -13,7 +13,7 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0070:0018a058:edppPtlCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018a280:edppPtlPlace"
@@ -21,11 +21,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018a380:edppDoInput"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018a7a8:edppDrawSpheres"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018a9a0:edppDrawCursor"
@@ -33,11 +33,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0070:0018b1a8:edppDetermineNearest"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018b2f0:cbPtlApplyGrad"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018b530:TidyAllEffects"
@@ -45,11 +45,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018b808:cbPtlDeleteEffect"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018b9f8:cbPtlAddEffect"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018bba0:cbPtlCopyEffect"
@@ -249,11 +249,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0070:00193770:cbPtlDataMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:001939e8:cbPtlEmitMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00193cd0:cbPtlGSortMenu"
@@ -521,7 +521,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00196218:cbPtlChangeTextureSelect"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00196328:cbPtlSelTextureType"
@@ -561,7 +561,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00196640:cbMemCardEraseConfirm"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00196750:cbChangeFileNameMenu"
