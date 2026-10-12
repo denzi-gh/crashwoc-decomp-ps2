@@ -65,7 +65,7 @@ extern u8 D_006B7680[];             /* load thread stack (0x48000) */
 extern char D_00628798[];           /* __FILE__ */
 extern char D_006287A8[];           /* thread-started message */
 extern char D_006287C8[];           /* thread-ended message */
-extern char _gp[];
+extern int _gp;
 
 void BGSuspendMain(void) {
     if (loadthread_id != 0) {
@@ -97,7 +97,7 @@ void BGLoadStart(void (*func)(void *)) {
     th_param.stack = D_006B7680;
     th_param.stackSize = 0x48000;
     th_param.initPriority = 2;
-    th_param.gpReg = _gp;
+    th_param.gpReg = &_gp;
     th_param.entry = func;
     th_param.option = 0;
     bgload_complete = 0;
