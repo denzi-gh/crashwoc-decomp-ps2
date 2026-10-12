@@ -13,11 +13,11 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0062:0016b9a0:GSRegDecode"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016bd00:DirectDecode"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016bfe8:VTDecode"
@@ -25,7 +25,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0062:0016c8f0:TagWalk"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016cc18:gsBeginGifPacket"
@@ -89,11 +89,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016d028:GS_DmaWrite"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016d0e0:VU1_DmaWrite"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016d198:VU1_DmaWriteN"
@@ -145,7 +145,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016d500:VifTagWalk"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016d5e0:CrcChain"
