@@ -13,7 +13,7 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0093:001d5f80:InitRails"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0093:001d6228:BestRailPosition"
@@ -21,7 +21,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0093:001d6850:ComplexRailPosition"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0093:001d6b08:MoveRailPosition"
@@ -29,7 +29,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0093:001d6e08:RailInfo"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0093:001d73b8:MoveGameCamera"
@@ -37,7 +37,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0093:001daaf8:DrawCameraTarget"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0093:001dac00:GetALONG"
@@ -65,11 +65,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0093:001dae68:InitCameraTargetMaterial"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0093:001daf10:DrawMtlLine3D"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0093:001daf58:LookUpDownRail"
@@ -81,4 +81,4 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0093:001db078:AddCross"
-state = "asm"
+state = "matching"

@@ -91,6 +91,15 @@ extern s32 temp_iALONG;
 extern f32 temp_fALONG;
 extern f32 temp_fACROSS;
 extern s32 Level;
+extern s32 Bonus;
+extern s32 Death;
+extern s32 GemPath;
+extern struct RPos_s cRPos[];
+extern struct RPos_s temp_cRPos[];
+extern struct RPos_s *best_cRPos;
+extern struct RPos_s *temp_best_cRPos;
+extern s32 cRPosCOUNT;
+extern s32 temp_cRPosCOUNT;
 
 extern void ComplexRailPosition(struct nuvec_s *pos, s32 iRAIL, s32 iALONG,
                                 struct RPos_s *rpos, s32 a4);
@@ -101,6 +110,11 @@ extern f32 RatioBetweenEdges(struct nuvec_s *pos, struct nuvec_s *p0,
 extern void RailInfo(struct RPos_s *rpos, struct nuvec_s *pos, u16 *angle,
                      u16 *cam_angle, u8 *mode);
 extern int abs(int value);
+extern double fabs(double x);
+extern f32 NuTrigTable[];
+extern s32 RotDiff(u16 a, u16 b);
+extern s32 NuAtan2D(f32 x, f32 z);
+extern f32 NuFsqrt(f32 x);
 
 /* nugspline_s: dist@0x0, ptsize@0x2, pts@0x8. */
 struct nugspline_s {
@@ -109,6 +123,113 @@ struct nugspline_s {
     u8 pad4[0x4];
     u8 *pts;          /* 0x8 */
 };
+
+
+struct nugscn_s;
+
+extern struct nugscn_s *world_scene[];
+extern char tbuf[];
+extern char *tRailExt[];
+extern char *tInPlatRail;
+extern char *tInCamRail;
+extern char *tLeftRail;
+extern char *tCamRail;
+extern char *tRightRail;
+extern char *tOutCamRail;
+extern char *tOutPlatRail;
+
+extern char D_00630AA0[];
+#define fmt_railname D_00630AA0
+extern char D_00630A70[];
+#define railext_bonus D_00630A70
+extern char D_00630A68[];
+#define railext_death D_00630A68
+extern char D_00630A60[];
+#define railext_gem D_00630A60
+
+extern s32 sprintf(char *buf, const char *fmt, ...);
+extern s32 strcmp(const char *a, const char *b);
+extern struct nugspline_s *NuSplineFind(struct nugscn_s *scene, char *name);
+extern f32 SplineDistance(struct nugspline_s *spl);
+
+
+void InitRails(void) {
+    struct rail_s *rail;
+    s32 i;
+    s16 camlen;
+    s16 leftlen;
+    s16 rightlen;
+
+    nRAILS = 0;
+    if (world_scene[0] != 0) {
+        rail = Rail;
+        for (i = 0; i < 8; i++, rail++) {
+            rail->in_distance = 25.0f;
+            rail->out_distance = 25.0f;
+            rail->type = -1;
+            rail->pINPLAT = 0;
+            rail->pINCAM = 0;
+            rail->pLEFT = 0;
+            rail->pCAM = 0;
+            rail->pRIGHT = 0;
+            rail->pOUTCAM = 0;
+            rail->pOUTPLAT = 0;
+            rail->circuit = 0;
+            sprintf(tbuf, fmt_railname, tCamRail, tRailExt[i]);
+            rail->pCAM = NuSplineFind(world_scene[0], tbuf);
+            if (rail->pCAM == 0) {
+                continue;
+            }
+            camlen = rail->pCAM->dist;
+            if (camlen < 2) {
+                continue;
+            }
+            sprintf(tbuf, fmt_railname, tLeftRail, tRailExt[i]);
+            rail->pLEFT = NuSplineFind(world_scene[0], tbuf);
+            if (rail->pLEFT == 0) {
+                continue;
+            }
+            leftlen = rail->pLEFT->dist;
+            if (leftlen != camlen) {
+                continue;
+            }
+            sprintf(tbuf, fmt_railname, tRightRail, tRailExt[i]);
+            rail->pRIGHT = NuSplineFind(world_scene[0], tbuf);
+            if (rail->pRIGHT == 0) {
+                continue;
+            }
+            rightlen = rail->pRIGHT->dist;
+            if (rightlen != leftlen) {
+                continue;
+            }
+            rail->edges = rightlen - 1;
+            sprintf(tbuf, fmt_railname, tInPlatRail, tRailExt[i]);
+            rail->pINPLAT = NuSplineFind(world_scene[0], tbuf);
+            if (rail->pINPLAT != 0) {
+                rail->in_distance = SplineDistance(rail->pINPLAT);
+            }
+            sprintf(tbuf, fmt_railname, tInCamRail, tRailExt[i]);
+            rail->pINCAM = NuSplineFind(world_scene[0], tbuf);
+            sprintf(tbuf, fmt_railname, tOutPlatRail, tRailExt[i]);
+            rail->pOUTPLAT = NuSplineFind(world_scene[0], tbuf);
+            if (rail->pOUTPLAT != 0) {
+                rail->out_distance = SplineDistance(rail->pOUTPLAT);
+            }
+            sprintf(tbuf, fmt_railname, tOutCamRail, tRailExt[i]);
+            rail->pOUTCAM = NuSplineFind(world_scene[0], tbuf);
+            if (strcmp(tRailExt[i], railext_bonus) == 0) {
+                rail->type = 1;
+            } else if (strcmp(tRailExt[i], railext_death) == 0) {
+                rail->type = 2;
+            } else if (strcmp(tRailExt[i], railext_gem) == 0) {
+                rail->type = 3;
+            } else {
+                rail->type = 0;
+            }
+            nRAILS++;
+        }
+    }
+}
 
 
 /* dbest and iVar6 are deliberately left uninitialised: retail never seeds
@@ -283,6 +404,75 @@ Finish:
 }
 
 
+void ComplexRailPosition(struct nuvec_s *pos, s32 iRAIL, s32 iALONG,
+                         struct RPos_s *rpos, s32 set) {
+    struct RPos_s *list;
+    struct RPos_s *best;
+    s32 i;
+    s32 bonus;
+    s32 death;
+    s32 gempath;
+    s32 count;
+    f32 d;
+    f32 dbest;
+
+    if (set != 0) {
+        list = cRPos;
+    } else {
+        list = temp_cRPos;
+    }
+    if (set != 0) {
+        bonus = (u32)(Bonus - 1) < 3;
+        death = (u32)(Death - 1) < 3;
+        gempath = (u32)(GemPath - 1) < 3;
+    }
+    count = 0;
+    best = 0;
+    if (iRAIL == -1) {
+        iRAIL = 0;
+        iALONG = -1;
+    }
+    for (i = 0; i < 8; i++) {
+        if ((set == 0) ||
+            ((bonus == 0 || Rail[iRAIL].type == 1) &&
+             (death == 0 || Rail[iRAIL].type == 2) &&
+             (gempath == 0 || Rail[iRAIL].type == 3) &&
+             (bonus != 0 || death != 0 || gempath != 0 ||
+              Rail[iRAIL].type == 0))) {
+            dbest = BestRailPosition(pos, &list[count], iRAIL, iALONG);
+            if (list[count].iRAIL != -1 && list[count].iALONG != -1) {
+                if (best == 0 || dbest < d) {
+                    best = &list[count];
+                    d = dbest;
+                }
+                count++;
+                if (count == 3) {
+                    break;
+                }
+            }
+        }
+        iRAIL = (iRAIL + 1) % 8;
+        iALONG = -1;
+    }
+    if (best != 0) {
+        *rpos = *best;
+    } else {
+        rpos->iRAIL = rpos->iALONG = -1;
+    }
+    if (set != 0) {
+        best_cRPos = best;
+        cRPosCOUNT = count;
+    } else {
+        temp_best_cRPos = best;
+        temp_cRPosCOUNT = count;
+    }
+    temp_iRAIL = rpos->iRAIL;
+    temp_iALONG = rpos->iALONG;
+    temp_fALONG = rpos->fALONG;
+    temp_fACROSS = rpos->fACROSS;
+}
+
+
 void MoveRailPosition(struct nuvec_s *dst, struct RPos_s *rpos, f32 distance,
                       s32 direction) {
     struct rail_s *rail;
@@ -353,6 +543,113 @@ Loop:
     }
 end:
     TempRPos = RPos;
+}
+
+
+void RailInfo(struct RPos_s *rpos, struct nuvec_s *pos, u16 *angle,
+              u16 *cam_angle, u8 *mode) {
+    struct rail_s *rail;
+    struct nuvec_s *pL;
+    struct nuvec_s *pR;
+    struct nuvec_s *pC;
+    struct nuvec_s *p0;
+    struct nuvec_s *p1;
+    struct nuvec_s v0;
+    struct nuvec_s v1;
+    struct nuvec_s mid;
+    struct nuvec_s vC;
+    s32 i0;
+    s32 i1;
+    s32 rot0;
+    s32 rot1;
+    u16 ang;
+    f32 dx;
+    f32 dz;
+    f32 l;
+    f32 dp;
+
+    if (rpos->iRAIL == -1 || rpos->iALONG == -1) {
+        return;
+    }
+    i0 = rpos->iALONG;
+    i1 = i0 + 1;
+    rail = &Rail[rpos->iRAIL];
+    if (i1 == rail->edges && rail->circuit != 0) {
+        i1 = 0;
+    }
+    if (pos != 0) {
+        p0 = (struct nuvec_s *)(rail->pCAM->pts + i0 * rail->pCAM->ptsize);
+        p1 = (struct nuvec_s *)(rail->pCAM->pts + i1 * rail->pCAM->ptsize);
+        pos->x = p0->x + (p1->x - p0->x) * rpos->fALONG;
+        pos->y = p0->y + (p1->y - p0->y) * rpos->fALONG;
+        pos->z = p0->z + (p1->z - p0->z) * rpos->fALONG;
+    }
+    if (angle != 0) {
+        pL = (struct nuvec_s *)(rail->pLEFT->pts + i0 * rail->pLEFT->ptsize);
+        pR = (struct nuvec_s *)(rail->pRIGHT->pts + i0 * rail->pRIGHT->ptsize);
+        v0.x = (pL->x + pR->x) * 0.5f;
+        v0.z = (pL->z + pR->z) * 0.5f;
+        rot0 = NuAtan2D(pR->x - pL->x, pR->z - pL->z);
+        pL = (struct nuvec_s *)(rail->pLEFT->pts + i1 * rail->pLEFT->ptsize);
+        pR = (struct nuvec_s *)(rail->pRIGHT->pts + i1 * rail->pRIGHT->ptsize);
+        v1.x = (pL->x + pR->x) * 0.5f;
+        v1.z = (pL->z + pR->z) * 0.5f;
+        rot1 = NuAtan2D(pR->x - pL->x, pR->z - pL->z);
+        *angle = rot0 + (s32)(rpos->fALONG * RotDiff(rot0, rot1)) - 0x4000;
+        if (mode != 0) {
+            if (pos != 0) {
+                ang = *angle;
+                mid.x = v0.x + (v1.x - v0.x) * rpos->fALONG;
+                mid.z = v0.z + (v1.z - v0.z) * rpos->fALONG;
+                v0.x = NuTrigTable[ang];
+                v0.z = NuTrigTable[(ang + 0x4000) & 0xFFFF];
+                dx = mid.x - pos->x;
+                dz = mid.z - pos->z;
+                l = 1.0f / NuFsqrt(dx * dx + dz * dz);
+                v1.x = dx * l;
+                v1.z = dz * l;
+                dp = v0.x * v1.x + v0.z * v1.z;
+                if (dp > 0.866f) {
+                    *mode = 1;
+                } else if (dp < -0.866f) {
+                    *mode = 2;
+                } else if (fabs(dp) < 0.5) {
+                    if (RotDiff(NuAtan2D(dx, dz), *angle) > 0) {
+                        *mode = 4;
+                    } else {
+                        *mode = 8;
+                    }
+                } else {
+                    *mode = 0;
+                }
+            } else {
+                *mode = 0;
+            }
+        }
+    }
+    if (cam_angle != 0) {
+        pC = (struct nuvec_s *)(rail->pCAM->pts + i0 * rail->pCAM->ptsize);
+        pL = (struct nuvec_s *)(rail->pLEFT->pts + i0 * rail->pLEFT->ptsize);
+        pR = (struct nuvec_s *)(rail->pRIGHT->pts + i0 * rail->pRIGHT->ptsize);
+        v0.x = (pL->x + pR->x) * 0.5f;
+        v0.z = (pL->z + pR->z) * 0.5f;
+        vC = *pC;
+        if (Level == 6 || Level == 0x22) {
+            vC.x += 5.0f;
+        }
+        rot0 = NuAtan2D(v0.x - vC.x, v0.z - vC.z);
+        pC = (struct nuvec_s *)(rail->pCAM->pts + i1 * rail->pCAM->ptsize);
+        pL = (struct nuvec_s *)(rail->pLEFT->pts + i1 * rail->pLEFT->ptsize);
+        pR = (struct nuvec_s *)(rail->pRIGHT->pts + i1 * rail->pRIGHT->ptsize);
+        v1.x = (pL->x + pR->x) * 0.5f;
+        v1.z = (pL->z + pR->z) * 0.5f;
+        vC = *pC;
+        if (Level == 6 || Level == 0x22) {
+            vC.x += 5.0f;
+        }
+        rot1 = NuAtan2D(v1.x - vC.x, v1.z - vC.z);
+        *cam_angle = rot0 + (s32)(rpos->fALONG * RotDiff(rot0, rot1));
+    }
 }
 
 
@@ -475,7 +772,6 @@ extern struct cammtx_s GameCam[];
 extern CharacterData CData[];
 extern struct anim_s TempAnim;
 extern struct numtx_s cutscenecammtx;
-extern f32 NuTrigTable[];
 
 extern s32 set_cutscenecammtx;
 extern s32 cut_on;
@@ -487,17 +783,11 @@ extern s32 VEHICLECONTROL;
 extern s32 GameMode;
 extern s32 level_part_2;
 extern u64 LBIT;
-extern s32 Death;
-extern s32 Bonus;
-extern s32 GemPath;
 extern s32 CrunchTime_Intro;
 extern s32 DrainDamage_Intro;
 extern s32 SpaceCortex_Defeated;
 extern s32 temp_creature_i;
 
-extern struct RPos_s cRPos[];
-extern struct RPos_s *best_cRPos;
-extern s32 cRPosCOUNT;
 extern u16 best_railangle;
 
 extern f32 vtog_time;
@@ -549,14 +839,10 @@ extern void JeepCam(struct cammtx_s *cam);
 extern void JeepCamFollowAng(struct cammtx_s *cam, s32 a1);
 extern void JeepCamIntro(struct cammtx_s *cam);
 extern void NuCameraSet(struct nucam_s *cam);
-extern s32 RotDiff(u16 a, u16 b);
 extern u16 TurnRot(u16 a, u16 b, s32 rate);
 extern u16 SeekRot(u16 a, u16 dist, s32 rate);
-extern s32 NuAtan2D(f32 x, f32 z);
-extern f32 NuFsqrt(f32 x);
 extern double sqrt(double x);
 extern double fmod(double x, double y);
-extern double fabs(double x);
 extern void NuVecAdd(struct nuvec_s *d, struct nuvec_s *a, struct nuvec_s *b);
 extern void NuVecSub(struct nuvec_s *d, struct nuvec_s *a, struct nuvec_s *b);
 extern void NuVecNorm(struct nuvec_s *d, struct nuvec_s *a);
@@ -1682,6 +1968,67 @@ Finish:
     }
 }
 
+struct numtlattrib_s {
+    u64 unk0 : 32;
+    u64 alpha : 4;                /* bits 32-35 */
+    u64 unk36 : 8;
+    u64 cull : 2;                 /* bits 44-45 */
+    u64 zmode : 2;                /* bits 46-47 */
+    u64 unk48 : 16;
+};
+
+struct numtl_s {
+    u8 unk_0x000[0x168];
+    struct numtlattrib_s attrib;  /* 0x168 */
+    u8 unk_0x170[0x10];
+    struct nucolour3_s diffuse;   /* 0x180 */
+    u8 unk_0x18C[0x14];
+    f32 alpha;                    /* 0x1A0 */
+};
+
+struct nurndrvtx_s {
+    struct nuvec_s pnt;           /* 0x00 */
+    u8 unk_0x0C[0xC];
+    s32 colour;                   /* 0x18 */
+    u8 unk_0x1C[0x8];
+};                                /* 0x24 */
+
+extern struct numtl_s *D_00633268;
+#define camtarget_mtl D_00633268
+
+extern struct numtl_s *NuMtlCreate(s32 n);
+extern void NuMtlUpdate(struct numtl_s *mtl);
+extern void NuRndrLine3d(struct nurndrvtx_s *line, struct numtl_s *mtl,
+                         struct numtx_s *mtx);
+extern void NuRndrLine3dDbg(u32 colour, f32 x0, f32 y0, f32 z0, f32 x1,
+                            f32 y1, f32 z1);
+
+inline void DrawMtlLine3D(struct numtl_s *mtl, f32 x0, f32 y0, f32 z0, f32 x1,
+                          f32 y1, f32 z1) {
+    struct nurndrvtx_s line[2];
+
+    line[0].pnt.x = x0;
+    line[0].pnt.y = y0;
+    line[0].pnt.z = z0;
+    line[1].pnt.x = x1;
+    line[1].pnt.y = y1;
+    line[1].pnt.z = z1;
+    line[0].colour = -1;
+    line[1].colour = -1;
+    NuRndrLine3d(line, mtl, 0);
+}
+
+
+void DrawCameraTarget(struct nuvec_s *pos) {
+    DrawMtlLine3D(camtarget_mtl, pos->x - 0.25f, pos->y, pos->z,
+                  pos->x + 0.25f, pos->y, pos->z);
+    DrawMtlLine3D(camtarget_mtl, pos->x, pos->y - 0.25f, pos->z,
+                  pos->x, pos->y + 0.25f, pos->z);
+    DrawMtlLine3D(camtarget_mtl, pos->x, pos->y, pos->z - 0.25f,
+                  pos->x, pos->y, pos->z + 0.25f);
+}
+
+
 void GetALONG(struct nuvec_s *pos, struct RPos_s *rpos, s32 iRAIL, s32 iALONG,
               s32 info) {
     if (rpos == 0) {
@@ -1751,4 +2098,39 @@ s32 FurtherBEHIND(s32 iRAIL0, s32 iALONG0, f32 fALONG0, s32 iRAIL1, s32 iALONG1,
         return 1;
     }
     return 0;
+}
+
+
+void InitCameraTargetMaterial(void) {
+    struct numtl_s *mtl;
+
+    mtl = NuMtlCreate(1);
+    camtarget_mtl = mtl;
+    mtl->attrib.cull = 2;
+    mtl->attrib.zmode = 0;
+    mtl->diffuse.r = 0.5f;
+    mtl->diffuse.g = 0.5f;
+    mtl->diffuse.b = 0.5f;
+    mtl->alpha = 1.0f;
+    mtl->attrib.alpha = 0;
+    NuMtlUpdate(mtl);
+}
+
+
+void AddCross(struct nuvec_s *pos, u32 colour, f32 size) {
+    f32 line[6];
+    s32 axis;
+    s32 i;
+
+    for (axis = 0; axis < 3; axis++) {
+        for (i = 0; i < 2; i++) {
+            line[i * 3 + 0] = pos->x;
+            line[i * 3 + 1] = pos->y;
+            line[i * 3 + 2] = pos->z;
+        }
+        line[axis] -= size;
+        line[axis + 3] += size;
+        NuRndrLine3dDbg(colour, line[0], line[1], line[2], line[3], line[4],
+                        line[5]);
+    }
 }
