@@ -13,27 +13,27 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0073:001a1198:edanimUpdateObjects"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a1ce8:edanimDetermineNearestAnim"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a1e90:edanimDetermineNearestParticle"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a2088:edanimDetermineNearestSound"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a2280:edanimParamCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a2398:edanimSoundCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a24c8:edanimSoundDestroy"
@@ -213,7 +213,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a5d70:edanimcbParticleMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a5e90:edanimcbLocalSoundTypeMenu"
@@ -225,7 +225,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a6030:edanimcbSoundMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a6150:edanimcbCancelOptMenu"
@@ -233,11 +233,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a6158:edanimcbFileSave"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a6230:edanimcbFileLoad"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a62d8:edanimcbMCTBCardPresent"
@@ -261,7 +261,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a6478:edanimcbMCTBCardSaveSlot"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a6500:edanimcbMCTBCardLoadSlot"
@@ -301,7 +301,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a6828:edanimcbSetLocalParticleType"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a68c0:edanimcbCancelLocalParticleTypeMenu"

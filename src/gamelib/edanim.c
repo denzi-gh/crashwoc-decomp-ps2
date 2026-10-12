@@ -90,15 +90,43 @@ struct nuvec_s {
     float z;
 };
 
+struct numtx_s {
+    float _00, _01, _02, _03;
+    float _10, _11, _12, _13;
+    float _20, _21, _22, _23;
+    struct nuvec_s pos;
+    float _33;
+};
+
+struct nuinstanim_s {
+    struct numtx_s mtx;
+    float tfactor;
+    float tfirst;
+    float tinterval;
+    float ltime;
+    unsigned int playing : 1;
+    unsigned int backwards : 1;
+    unsigned int waiting : 1;
+    unsigned int repeating : 1;
+    unsigned int oscillate : 1;
+    int ipad[2];
+    unsigned char anim_ix;
+};
+
+struct nuanimdata_s {
+    float time;
+};
+
 struct nuinstance_s {
-    float mtx[4][4];
-    char pad40[0x50 - 0x40];
+    struct numtx_s mtx;
+    int objid;
+    int flags;
+    struct nuinstanim_s *anim;
+    char pad4c[0x50 - 0x4C];
 };
 
 struct nuspecial_s {
-    float rot[3][4];
-    struct nuvec_s pos;
-    float pos_w;
+    struct numtx_s mtx;
     struct nuinstance_s *instance;
     char *name;
     char pad48[0x50 - 0x48];
@@ -110,6 +138,8 @@ struct nugscn_s {
     struct nuinstance_s *instances;
     int numspecial;
     struct nuspecial_s *specials;
+    char pad28[0x48 - 0x28];
+    struct nuanimdata_s **instanimdata;
 };
 
 struct edanimitem_s {
@@ -120,6 +150,21 @@ struct edanimitem_s {
     float fvalue;
 };
 
+struct eduimenu_s {
+    struct edanimitem_s *head;
+    struct edanimitem_s *tail;
+    struct edanimitem_s *current;
+    struct edanimitem_s *cursor;
+    int x;
+    int y;
+    int w;
+    int h;
+};
+
+struct eduistyle_s {
+    unsigned int colour[4];
+};
+
 struct pad_s {
     char pad000[0x564];
     unsigned int buttons;
@@ -127,18 +172,20 @@ struct pad_s {
 
 struct edanimparam_s {
     int id;
-    char pad004[0x0C - 0x04];
+    int particle_count;
+    int sound_count;
     int switch_type;
     int switch_id;
     float switch_var;
     float switch_delay;
-    char pad01c[0xBC - 0x1C];
+    char particle_name[8][16];
+    int particle_type[8];
     int particle_rate[8];
     int particle_switch[8];
     struct nuvec_s particle_pos[8];
-    unsigned short particle_rotz[8];
-    unsigned short particle_roty[8];
-    char pad17c[0x180 - 0x17C];
+    short particle_rotz[8];
+    short particle_roty[8];
+    float sound_last_time;
     char sound_name[8][16];
     int sound_type[8];
     int sound_switch[8];
@@ -152,6 +199,7 @@ struct edanimparam_s {
 
 extern struct edanimparam_s AnimParams[];
 
+extern struct nuvec_s edanim_cam_pos;
 extern struct nugscn_s *edanim_base_scene;
 extern void *edanim_active_menu;
 extern void *edanim_bouncy_menu;
@@ -161,9 +209,9 @@ extern void *edanim_localsound_menu;
 extern void *edanim_localsoundtype_menu;
 extern void *edanim_mctb_menu;
 extern void *edanim_options_menu;
-extern void *edanim_particle_menu;
+extern struct eduimenu_s *edanim_particle_menu;
 extern void *edanim_particletype_menu;
-extern void *edanim_sound_menu;
+extern struct eduimenu_s *edanim_sound_menu;
 extern void *edanim_switch_menu;
 extern void *edanim_switchtype_menu;
 extern int edanim_nearest;
@@ -179,6 +227,30 @@ extern unsigned short edanim_emitrotz;
 extern unsigned short edanim_emitroty;
 extern void *edanim_mtl_zoff;
 extern void *edanim_soundtype_menu;
+extern char *debtab[];
+
+extern void *app_fnt;
+extern struct eduistyle_s D_00619328;
+extern char D_00619520[];
+extern char D_00619538[];
+extern char D_00619550[];
+extern char D_00619620[];
+extern char D_00619630[];
+extern char D_00619640[];
+
+#define edanim_item_style D_00619328
+#define particle_menu_title D_00619520
+#define particle_menu_text_type D_00619538
+#define particle_menu_text_local D_00619550
+#define sound_menu_title D_00619620
+#define sound_menu_text_type D_00619630
+#define sound_menu_text_local D_00619640
+
+extern unsigned char object_switches[];
+extern struct numtx_s numtx_identity;
+extern int D_0062F69C;
+
+#define edanim_frame_count D_0062F69C
 
 extern char D_0062F6E0[];
 extern char D_006196B0[];
@@ -187,6 +259,26 @@ extern char D_006196D0[];
 extern char D_006196E0[];
 extern char D_006196F0[];
 extern char D_00619700[];
+
+extern signed char edbits_what_game;
+extern char edbits_level_filename[];
+extern char D_00619660[];
+extern char D_0062F6D8[];
+extern char D_00619670[];
+extern char D_00619680[];
+extern char D_00619690[];
+extern char D_006196A0[];
+extern char D_00619728[];
+extern char D_00619738[];
+
+#define anim_file_format_game1 D_00619660
+#define anim_file_format_game2 D_0062F6D8
+#define anim_text_saved D_00619670
+#define anim_text_save_failed D_00619680
+#define anim_text_loaded D_00619690
+#define anim_text_load_failed D_006196A0
+#define mctb_text_slot_name D_00619728
+#define mctb_text_save_failed D_00619738
 
 #define mctb_text_present D_0062F6E0
 #define mctb_text_not_present D_006196B0
@@ -219,6 +311,7 @@ extern void eduiMenuDetach(void *menu);
 extern void eduiCreateMessageMenu(void *menu, char *text, int flag);
 extern struct nuvec_s *edmainQueryLocVec(void);
 extern float NuVecDist(struct nuvec_s *a, struct nuvec_s *b, void *c);
+extern void NuVecAdd(struct nuvec_s *dst, struct nuvec_s *a, struct nuvec_s *b);
 extern void NuVecSub(struct nuvec_s *dst, struct nuvec_s *a, struct nuvec_s *b);
 extern void PlatInstBounce(int instance, float player_grav, float tension, float damping);
 extern int saveloadCheckCardPresent(void);
@@ -227,6 +320,7 @@ extern int saveloadCheckCardFormatted(void);
 extern int saveloadCheckCardFreeSpace(int port);
 extern int sprintf(char *buf, const char *fmt, ...);
 extern int saveloadCheckSlotsUsed(void);
+extern int saveloadSaveSlot(int slot, char *text, int size);
 extern int saveloadLoadSlot(int slot, char *text, int size);
 extern int saveloadDeleteSlot(int slot);
 extern int saveloadUnFormatCard(void);
@@ -240,6 +334,35 @@ extern void edcamSet(void);
 extern void NuFntScale(int x, int y);
 extern void eduiMenuRender(void *menu);
 extern void eduiMenuProcess(void *menu, struct pad_s *pad);
+extern int edanimFileSave(char *filename);
+extern void edanimFileLoad(char *filename);
+extern int NuFileSize(char *name);
+extern struct eduimenu_s *eduiMenuCreate(int x, int y, int w, int h, void *font,
+                                         void *cancel, char *title);
+extern struct edanimitem_s *eduiItemSelCreate(int value, struct eduistyle_s *style, int on,
+                                              int group, void *select, char *text);
+extern struct edanimitem_s *eduiMenuAddItem(struct eduimenu_s *menu, struct edanimitem_s *item);
+extern int eduiMenuAttach(void *menu, struct eduimenu_s *child);
+extern int edanimLookupInstanceIndex(int special);
+extern int FindPlatInst(int instance);
+extern void edanimcbParticleTypeMenu(struct eduimenu_s *menu);
+extern void edanimcbLocalParticleMenu(struct eduimenu_s *menu);
+extern void edanimcbSoundTypeMenu(struct eduimenu_s *menu);
+extern void edanimcbLocalSoundMenu(struct eduimenu_s *menu);
+extern void edanimcbCancelParticleMenu(void);
+extern void edanimcbCancelSoundMenu(void);
+extern void NuMtxInvRSS(struct numtx_s *dst, struct numtx_s *src);
+extern void NuMtxMul(struct numtx_s *dst, struct numtx_s *a, struct numtx_s *b);
+extern void NuMtxRotateZ(struct numtx_s *m, int angle);
+extern void NuMtxRotateY(struct numtx_s *m, int angle);
+extern void NuVecMtxTransform(struct nuvec_s *dst, struct nuvec_s *src, struct numtx_s *m);
+extern void AddVariableShotDebrisEffectMtx2(int effect, struct nuvec_s *pos, int count,
+                                            struct numtx_s *mtx, struct numtx_s *orient);
+extern int LookupDebrisEffect(char *name);
+extern void edanimParticleDestroy(int param, int slot);
+extern void edbitsSoundPlay(struct nuvec_s *pos, int id);
+extern int edbitsLookupSoundFX(char *name);
+extern void edanimSoundDestroy(int param, int slot);
 extern void edanimDrawCursor(void);
 extern void edanimRenderParticleEmitters(int param);
 extern void edanimRenderSoundEmitters(int param);
@@ -247,6 +370,367 @@ extern void edanimDoInput(struct pad_s *pad);
 extern void edanimDetermineNearestAnim(float range);
 extern void edanimDetermineNearestParticle(float range);
 extern void edanimDetermineNearestSound(float range);
+
+
+static inline float edanimParamDistance(int param)
+{
+    if (edmainQueryLocVec() != 0) {
+        return NuVecDist(&edanim_base_scene->specials[AnimParams[param].id].mtx.pos,
+                         edmainQueryLocVec(), 0);
+    }
+    return 0.0f;
+}
+
+
+void edanimUpdateObjects(float dt)
+{
+    int i;
+    int j;
+    int k;
+    struct nuinstance_s *instance;
+    struct nuinstanim_s *instanim;
+    struct nuvec_s emit;
+    struct numtx_s tmtx;
+    struct numtx_s orient;
+    int sid;
+
+    if (edanim_base_scene == 0) {
+        return;
+    }
+    for (i = 0; i < 64; i++) {
+        if (AnimParams[i].id == -1) {
+            continue;
+        }
+        instance = edanim_base_scene->specials[AnimParams[i].id].instance;
+        instanim = instance->anim;
+        if (instanim != 0) {
+            switch (AnimParams[i].switch_type) {
+            case 0:
+                break;
+            case 1:
+                instanim->playing = 0;
+                if (AnimParams[i].switch_id != -1 && object_switches[AnimParams[i].switch_id] != 0) {
+                    instanim->playing = 1;
+                }
+                break;
+            case 2:
+                instanim->repeating = 0;
+                if (AnimParams[i].switch_id != -1 && object_switches[AnimParams[i].switch_id] != 0
+                    && !instanim->playing) {
+                    instanim->ltime = 1.0f;
+                    instanim->playing = 1;
+                    instanim->waiting = 0;
+                    instanim->backwards = 0;
+                }
+                break;
+            case 3:
+                instanim->repeating = 1;
+                if (AnimParams[i].switch_id != -1 && object_switches[AnimParams[i].switch_id] != 0) {
+                    instanim->playing = 1;
+                }
+                break;
+            case 4:
+                if (edanimParamDistance(i) < AnimParams[i].switch_var) {
+                    instanim->playing = 1;
+                } else {
+                    instanim->playing = 0;
+                }
+                break;
+            case 5:
+                instanim->repeating = 0;
+                if (edanimParamDistance(i) < AnimParams[i].switch_var && !instanim->playing) {
+                    instanim->playing = 1;
+                    instanim->ltime = 1.0f;
+                    instanim->waiting = 0;
+                    instanim->backwards = 0;
+                }
+                break;
+            case 6:
+                instanim->repeating = 1;
+                if (edanimParamDistance(i) < AnimParams[i].switch_var) {
+                    instanim->playing = 1;
+                }
+                break;
+            case 7:
+            case 8:
+            case 9:
+                break;
+            case 10:
+                instanim->ltime = 1.0f;
+                instanim->playing = 0;
+                break;
+            case 11:
+                instanim->playing = 1;
+                break;
+            case 12:
+                instanim->playing = 1;
+                instanim->repeating = 1;
+                break;
+            }
+            if (i == edanim_nearest_param_id && (edanim_particle_mode || edanim_sound_mode)) {
+                instanim->ltime = 1.0f;
+            }
+        }
+        for (j = 0; j < (int)dt; j++) {
+            for (k = 0; k < AnimParams[i].particle_count; k++) {
+                if (AnimParams[i].particle_type[k] != -1) {
+                    if (AnimParams[i].particle_switch[k] != 0 && instanim == 0) {
+                        continue;
+                    }
+                    if (AnimParams[i].particle_switch[k] != 0 && !instanim->playing) {
+                        continue;
+                    }
+                    if (AnimParams[i].particle_switch[k] != 0
+                        && instanim->ltime
+                               >= edanim_base_scene->instanimdata[instanim->anim_ix]->time) {
+                        continue;
+                    }
+                    if (instanim != 0) {
+                        NuMtxInvRSS(&tmtx, &edanim_base_scene->specials[AnimParams[i].id].mtx);
+                        NuMtxMul(&tmtx, &tmtx, &instanim->mtx);
+                    } else {
+                        NuMtxInvRSS(&tmtx, &edanim_base_scene->specials[AnimParams[i].id].mtx);
+                        NuMtxMul(&tmtx, &tmtx, &instance->mtx);
+                    }
+                    emit = AnimParams[i].particle_pos[k];
+                    NuVecMtxTransform(&emit, &emit, &tmtx);
+                    orient = numtx_identity;
+                    NuMtxRotateZ(&orient, AnimParams[i].particle_rotz[k]);
+                    NuMtxRotateY(&orient, AnimParams[i].particle_roty[k]);
+                    NuMtxMul(&tmtx, &orient, &tmtx);
+                    if (AnimParams[i].particle_rate[k] > 0) {
+                        AddVariableShotDebrisEffectMtx2(AnimParams[i].particle_type[k], &emit,
+                                                        AnimParams[i].particle_rate[k], &tmtx,
+                                                        &numtx_identity);
+                    } else if (AnimParams[i].particle_rate[k] < 0
+                               && (edanim_frame_count + j)
+                                          % (AnimParams[i].particle_rate[k] >= 0
+                                                 ? AnimParams[i].particle_rate[k]
+                                                 : -AnimParams[i].particle_rate[k])
+                                      == 0) {
+                        AddVariableShotDebrisEffectMtx2(AnimParams[i].particle_type[k], &emit, 1,
+                                                        &tmtx, &numtx_identity);
+                    }
+                } else if (AnimParams[i].particle_name[k][0] != 0) {
+                    AnimParams[i].particle_type[k] =
+                        LookupDebrisEffect(AnimParams[i].particle_name[k]);
+                    if (AnimParams[i].particle_type[k] == -1) {
+                        edanimParticleDestroy(i, k);
+                        k--;
+                    }
+                }
+            }
+        }
+        for (j = 0; j < AnimParams[i].sound_count; j++) {
+            if (AnimParams[i].sound_type[j] != -1) {
+                sid = -1;
+                if (AnimParams[i].sound_switch[j] == 1) {
+                    if ((int)(edanim_frame_count + dt) / (int)AnimParams[i].sound_timing[j]
+                        > edanim_frame_count / (int)AnimParams[i].sound_timing[j]) {
+                        sid = AnimParams[i].sound_type[j];
+                    }
+                } else if (instanim != 0) {
+                    if (instanim->ltime >= AnimParams[i].sound_timing[j]
+                        && AnimParams[i].sound_timing[j] > AnimParams[i].sound_last_time) {
+                        sid = AnimParams[i].sound_type[j];
+                    }
+                    if (instanim->oscillate && instanim->ltime <= AnimParams[i].sound_timing[j]
+                        && AnimParams[i].sound_timing[j]
+                               < ((int)AnimParams[i].sound_last_time >= 0
+                                      ? (int)AnimParams[i].sound_last_time
+                                      : -(int)AnimParams[i].sound_last_time)) {
+                        sid = AnimParams[i].sound_type[j];
+                    }
+                }
+                if (sid != -1) {
+                    if (instanim != 0) {
+                        NuMtxInvRSS(&tmtx, &edanim_base_scene->specials[AnimParams[i].id].mtx);
+                        NuMtxMul(&tmtx, &tmtx, &instanim->mtx);
+                    } else {
+                        NuMtxInvRSS(&tmtx, &edanim_base_scene->specials[AnimParams[i].id].mtx);
+                        NuMtxMul(&tmtx, &tmtx, &instance->mtx);
+                    }
+                    emit = AnimParams[i].sound_pos[k];
+                    NuVecMtxTransform(&emit, &emit, &tmtx);
+                    edbitsSoundPlay(&emit, sid);
+                }
+            } else if (AnimParams[i].sound_name[j][0] != 0) {
+                AnimParams[i].sound_type[j] = edbitsLookupSoundFX(AnimParams[i].sound_name[j]);
+                if (AnimParams[i].sound_type[j] == -1) {
+                    edanimSoundDestroy(i, j);
+                    j--;
+                }
+            }
+        }
+        if (instanim != 0) {
+            if (instanim->oscillate) {
+                AnimParams[i].sound_last_time = -instanim->ltime;
+            } else {
+                AnimParams[i].sound_last_time = instanim->ltime;
+            }
+        }
+    }
+    edanim_frame_count += (int)dt;
+}
+
+
+void edanimDetermineNearestAnim(float range)
+{
+    struct nuvec_s delta;
+    float dist;
+    int i;
+
+    if (edanim_base_scene == 0) {
+        return;
+    }
+    if (edanim_nearest != -1) {
+        NuVecSub(&delta, &edanim_cam_pos,
+                 &edanim_base_scene->specials[edanim_nearest].instance->mtx.pos);
+        if (delta.x * delta.x + delta.y * delta.y + delta.z * delta.z == 0.0) {
+            return;
+        }
+    }
+    edanim_nearest = -1;
+    edanim_nearest_param_id = -1;
+    for (i = 0; i < edanim_base_scene->numspecial; i++) {
+        NuVecSub(&delta, &edanim_cam_pos, &edanim_base_scene->specials[i].instance->mtx.pos);
+        dist = delta.x * delta.x + delta.y * delta.y + delta.z * delta.z;
+        if (range < 0.0f || dist < range) {
+            edanim_nearest = i;
+            range = dist;
+        }
+    }
+    if (edanim_nearest != -1) {
+        for (i = 0; i < 64; i++) {
+            if (AnimParams[i].id == edanim_nearest) {
+                edanim_nearest_param_id = i;
+                break;
+            }
+        }
+    }
+}
+
+
+void edanimDetermineNearestParticle(float range)
+{
+    struct nuvec_s delta;
+    struct nuvec_s pos;
+    struct nuvec_s *origin;
+    float dist;
+    int i;
+
+    if (edanim_nearest == -1 || edanim_nearest_param_id == -1) {
+        edanim_nearest_particle = -1;
+        return;
+    }
+    origin = &edanim_base_scene->specials[edanim_nearest].mtx.pos;
+    if (edanim_nearest_particle != -1) {
+        NuVecAdd(&pos, origin,
+                 &AnimParams[edanim_nearest_param_id].particle_pos[edanim_nearest_particle]);
+        NuVecSub(&delta, &edanim_cam_pos, &pos);
+        if (delta.x * delta.x + delta.y * delta.y + delta.z * delta.z == 0.0) {
+            return;
+        }
+    }
+    edanim_nearest_particle = -1;
+    for (i = 0; i < AnimParams[edanim_nearest_param_id].particle_count; i++) {
+        NuVecAdd(&pos, origin, &AnimParams[edanim_nearest_param_id].particle_pos[i]);
+        NuVecSub(&delta, &edanim_cam_pos, &pos);
+        dist = delta.x * delta.x + delta.y * delta.y + delta.z * delta.z;
+        if (range < 0.0f || dist < range) {
+            edanim_nearest_particle = i;
+            range = dist;
+        }
+    }
+}
+
+
+void edanimDetermineNearestSound(float range)
+{
+    struct nuvec_s delta;
+    struct nuvec_s pos;
+    struct nuvec_s *origin;
+    float dist;
+    int i;
+
+    if (edanim_nearest == -1 || edanim_nearest_param_id == -1) {
+        edanim_nearest_sound = -1;
+        return;
+    }
+    origin = &edanim_base_scene->specials[edanim_nearest].mtx.pos;
+    if (edanim_nearest_sound != -1) {
+        NuVecAdd(&pos, origin,
+                 &AnimParams[edanim_nearest_param_id].sound_pos[edanim_nearest_sound]);
+        NuVecSub(&delta, &edanim_cam_pos, &pos);
+        if (delta.x * delta.x + delta.y * delta.y + delta.z * delta.z == 0.0) {
+            return;
+        }
+    }
+    edanim_nearest_sound = -1;
+    for (i = 0; i < AnimParams[edanim_nearest_param_id].sound_count; i++) {
+        NuVecAdd(&pos, origin, &AnimParams[edanim_nearest_param_id].sound_pos[i]);
+        NuVecSub(&delta, &edanim_cam_pos, &pos);
+        dist = delta.x * delta.x + delta.y * delta.y + delta.z * delta.z;
+        if (range < 0.0f || dist < range) {
+            edanim_nearest_sound = i;
+            range = dist;
+        }
+    }
+}
+
+
+int edanimParamCreate(int special)
+{
+    int param;
+
+    param = edanim_next_param;
+    for (;;) {
+        if (AnimParams[edanim_next_param].id == -1) {
+            goto found;
+        }
+        edanim_next_param++;
+        if (edanim_next_param > 64) {
+            edanim_next_param = 0;
+        }
+        if (edanim_next_param == param) {
+            return -1;
+        }
+    }
+found:
+    AnimParams[edanim_next_param].id = special;
+    AnimParams[edanim_next_param].particle_count = 0;
+    AnimParams[edanim_next_param].bouncy_instance =
+        FindPlatInst(edanimLookupInstanceIndex(special));
+    AnimParams[edanim_next_param].bouncy_player_grav = 0.0f;
+    AnimParams[edanim_next_param].bouncy_tension = 0.0f;
+    AnimParams[edanim_next_param].bouncy_damping = 0.0f;
+    if (AnimParams[edanim_next_param].bouncy_instance != -1) {
+        PlatInstBounce(AnimParams[edanim_next_param].bouncy_instance,
+                       AnimParams[edanim_next_param].bouncy_player_grav,
+                       AnimParams[edanim_next_param].bouncy_tension,
+                       AnimParams[edanim_next_param].bouncy_damping);
+    }
+    param = edanim_next_param++;
+    return param;
+}
+
+
+void edanimSoundCreate(struct nuvec_s *wpos)
+{
+    int slot;
+
+    slot = AnimParams[edanim_nearest_param_id].sound_count;
+    if (slot != 8 && edanim_sound_type != -1) {
+        NuVecSub(&AnimParams[edanim_nearest_param_id].sound_pos[slot], wpos,
+                 &edanim_base_scene->specials[edanim_nearest].mtx.pos);
+        AnimParams[edanim_nearest_param_id].sound_type[slot] = edanim_sound_type;
+        AnimParams[edanim_nearest_param_id].sound_switch[slot] = 1;
+        strcpy(AnimParams[edanim_nearest_param_id].sound_name[slot],
+               edbitsGetSoundName(edanim_sound_type));
+        AnimParams[edanim_nearest_param_id].sound_timing[slot] = 50.0f;
+        AnimParams[edanim_nearest_param_id].sound_count++;
+    }
+}
 
 
 void edanimRender(void)
@@ -267,7 +751,7 @@ void edanimRender(void)
             colour = 0xFF808080;
         }
         instance = edanim_base_scene->specials[edanim_nearest].instance;
-        edbitsDrawCube(instance->mtx[3][0], instance->mtx[3][1], instance->mtx[3][2],
+        edbitsDrawCube(instance->mtx.pos.x, instance->mtx.pos.y, instance->mtx.pos.z,
                        0.5f, 0.5f, 0.5f, 0, 0, 0, 0, colour, edanim_mtl_zoff);
         if (edanim_particle_mode) {
             edanimRenderParticleEmitters(edanim_nearest_param_id);
@@ -335,7 +819,7 @@ void edanimParamReset(void)
 float edanimPlayerAnimDistance(int param)
 {
     if (edmainQueryLocVec() != 0) {
-        return NuVecDist(&edanim_base_scene->specials[AnimParams[param].id].pos,
+        return NuVecDist(&edanim_base_scene->specials[AnimParams[param].id].mtx.pos,
                          edmainQueryLocVec(), 0);
     }
     return 0.0f;
@@ -352,7 +836,7 @@ void edanimParamDestroy(int param)
 
 void edanimSoundPlace(int slot, struct nuvec_s *wpos)
 {
-    struct nuvec_s *origin = &edanim_base_scene->specials[edanim_nearest].pos;
+    struct nuvec_s *origin = &edanim_base_scene->specials[edanim_nearest].mtx.pos;
 
     NuVecSub(&AnimParams[edanim_nearest_param_id].sound_pos[slot], wpos, origin);
 }
@@ -360,7 +844,7 @@ void edanimSoundPlace(int slot, struct nuvec_s *wpos)
 
 void edanimParticlePlace(int slot, struct nuvec_s *wpos)
 {
-    struct nuvec_s *origin = &edanim_base_scene->specials[edanim_nearest].pos;
+    struct nuvec_s *origin = &edanim_base_scene->specials[edanim_nearest].mtx.pos;
 
     NuVecSub(&AnimParams[edanim_nearest_param_id].particle_pos[slot], wpos, origin);
     AnimParams[edanim_nearest_param_id].particle_rotz[slot] = edanim_emitrotz;
@@ -537,6 +1021,31 @@ void edanimcbCancelLocalParticleMenu(void)
 }
 
 
+void edanimcbParticleMenu(struct eduimenu_s *menu)
+{
+    struct eduistyle_s style;
+
+    style = edanim_item_style;
+    if (edanim_nearest_param_id != -1) {
+        edanim_particle_menu = eduiMenuCreate(70, 70, 250, 300, app_fnt,
+                                              edanimcbCancelParticleMenu, particle_menu_title);
+        if (edanim_particle_menu != 0) {
+            eduiMenuAddItem(edanim_particle_menu,
+                            eduiItemSelCreate(1, &style, 0, 0, edanimcbParticleTypeMenu,
+                                              particle_menu_text_type));
+            if (edanim_nearest_particle != -1) {
+                eduiMenuAddItem(edanim_particle_menu,
+                                eduiItemSelCreate(1, &style, 0, 0, edanimcbLocalParticleMenu,
+                                                  particle_menu_text_local));
+            }
+            eduiMenuAttach(menu, edanim_particle_menu);
+            edanim_particle_menu->x = menu->x + 10;
+            edanim_particle_menu->y = menu->y + 40;
+        }
+    }
+}
+
+
 void edanimcbCancelLocalSoundMenu(void)
 {
     eduiMenuDestroy(edanim_localsound_menu);
@@ -544,9 +1053,80 @@ void edanimcbCancelLocalSoundMenu(void)
 }
 
 
+void edanimcbSoundMenu(struct eduimenu_s *menu)
+{
+    struct eduistyle_s style;
+
+    style = edanim_item_style;
+    if (edanim_nearest_param_id != -1) {
+        edanim_sound_menu = eduiMenuCreate(70, 70, 250, 300, app_fnt,
+                                           edanimcbCancelSoundMenu, sound_menu_title);
+        if (edanim_sound_menu != 0) {
+            eduiMenuAddItem(edanim_sound_menu,
+                            eduiItemSelCreate(1, &style, 0, 0, edanimcbSoundTypeMenu,
+                                              sound_menu_text_type));
+            if (edanim_nearest_sound != -1) {
+                eduiMenuAddItem(edanim_sound_menu,
+                                eduiItemSelCreate(1, &style, 0, 0, edanimcbLocalSoundMenu,
+                                                  sound_menu_text_local));
+            }
+            eduiMenuAttach(menu, edanim_sound_menu);
+            edanim_sound_menu->x = menu->x + 10;
+            edanim_sound_menu->y = menu->y + 40;
+        }
+    }
+}
+
+
 void edanimcbCancelOptMenu(void)
 {
     edanim_active_menu = 0;
+}
+
+
+void edanimcbFileSave(void *menu)
+{
+    char filename[256];
+
+    if (edbits_what_game == 1) {
+        sprintf(filename, anim_file_format_game1, edbits_level_filename);
+        if (edanimFileSave(filename)) {
+            eduiCreateMessageMenu(menu, anim_text_saved, 1);
+        } else {
+            eduiCreateMessageMenu(menu, anim_text_save_failed, 0);
+        }
+    } else if (edbits_what_game == 2) {
+        sprintf(filename, anim_file_format_game2, edbits_level_filename);
+        if (edanimFileSave(filename)) {
+            eduiCreateMessageMenu(menu, anim_text_saved, 1);
+        } else {
+            eduiCreateMessageMenu(menu, anim_text_save_failed, 0);
+        }
+    } else {
+        eduiCreateMessageMenu(menu, anim_text_save_failed, 0);
+    }
+}
+
+
+void edanimcbFileLoad(void *menu)
+{
+    char filename[256];
+
+    if (edbits_what_game == 1) {
+        sprintf(filename, anim_file_format_game1, edbits_level_filename);
+        if (NuFileSize(filename) > 0) {
+            edanimFileLoad(filename);
+        }
+        eduiCreateMessageMenu(menu, anim_text_loaded, 1);
+    } else if (edbits_what_game == 2) {
+        sprintf(filename, anim_file_format_game2, edbits_level_filename);
+        if (NuFileSize(filename) > 0) {
+            edanimFileLoad(filename);
+        }
+        eduiCreateMessageMenu(menu, anim_text_loaded, 1);
+    } else {
+        eduiCreateMessageMenu(menu, anim_text_load_failed, 0);
+    }
 }
 
 
@@ -599,6 +1179,19 @@ void edanimcbMCTBCardSlotsUsed(void *menu)
     used = saveloadCheckSlotsUsed();
     sprintf(text, mctb_text_slots_used, used);
     eduiCreateMessageMenu(menu, text, 1);
+}
+
+
+void edanimcbMCTBCardSaveSlot(void *menu, struct edanimitem_s *item)
+{
+    char text[32];
+
+    sprintf(text, mctb_text_slot_name, item->value);
+    if (saveloadSaveSlot(item->value, text, 32)) {
+        eduiCreateMessageMenu(menu, anim_text_saved, 1);
+    } else {
+        eduiCreateMessageMenu(menu, mctb_text_save_failed, 0);
+    }
 }
 
 
@@ -699,6 +1292,18 @@ void edanimcbSetLocalSoundType(void *menu, struct edanimitem_s *item)
     strcpy(AnimParams[edanim_nearest_param_id].sound_name[edanim_nearest_sound],
            edbitsGetSoundName(item->value));
     edanim_sound_type = item->value;
+}
+
+
+void edanimcbSetLocalParticleType(void *menu, struct edanimitem_s *item)
+{
+    eduiMenuDetach(menu);
+    eduiMenuDestroy(menu);
+    edanim_localparticletype_menu = 0;
+    AnimParams[edanim_nearest_param_id].particle_type[edanim_nearest_particle] = item->value;
+    strcpy(AnimParams[edanim_nearest_param_id].particle_name[edanim_nearest_particle],
+           debtab[edanim_nearest_particle]);
+    edanim_particle_type = item->value;
 }
 
 
