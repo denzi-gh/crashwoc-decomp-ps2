@@ -181,51 +181,51 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00190298:cbFileSaveEffects"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00190640:FileLoadSingleEffectType"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00190a00:edppLoadEffects"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00190fd0:edppRestartAllEffectsInLevel"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00191118:edppMergeEffects"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:001913e8:cbFileLoadEffects"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00191718:edppMemCardSaveEffects"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00191dd8:cbMemCardSaveEffects"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00191ff0:cbMemCardSaveEffectTypes"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00192208:MemCardLoadSingleEffectType"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00192588:edppMemCardLoadEffects"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00192950:cbMemCardLoadEffects"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00192b60:edppMemCardMergeEffects"

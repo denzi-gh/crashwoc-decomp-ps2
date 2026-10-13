@@ -324,7 +324,8 @@ struct debtypedef_s {
     struct debphysics_s *physics;
     struct debenvkey_s collenv[8];
     signed char numcollspheres;
-    char pad31D[0x7];
+    char pad31D[0x3];
+    int key;
     struct debsound_s sounds[4];
 };
 
@@ -511,7 +512,7 @@ extern struct edptlitem_s *D_0062F344;
 extern struct edptlitem_s *D_0062F348;
 extern struct edptlitem_s *D_0062F34C;
 extern struct edptlitem_s *D_0062F350;
-extern unsigned char D_0062F358;
+extern signed char D_0062F358;
 extern char D_00484DE0[];
 extern int D_0062F318;
 
@@ -983,12 +984,69 @@ extern char D_0062F3D0[];
 #define texturemenutitle D_0062F3D0
 extern void EdFileSetMedia(int media);
 extern int EdFileOpen(char *name, int mode);
-extern void EdFileClose(void);
+extern int EdFileClose(void);
 extern void EdFileWrite(void *data, int size);
 extern void EdFileWriteInt(int data);
 extern void EdFileWriteShort(short data);
 extern void EdFileWriteChar(char data);
 extern void EdFileWriteFloat(float data);
+extern int LookupDebrisEffect(char *name);
+extern void DebrisSetTrigger(int key, int type, int id, float var);
+extern void cbCancelMessageMenu(void);
+extern void ParticleReset(void);
+extern char D_00618610[];
+extern char D_00618620[];
+extern char D_00618648[];
+extern char D_00618658[];
+
+#define savedokmessage D_00618610
+#define saveerrormessage D_00618620
+#define loadedokmessage D_00618648
+#define loaderrormessage D_00618658
+
+struct mcdirent_s {
+    char pad00[0x20];
+    char name[32];
+};
+
+extern struct mcdirent_s mcdir[];
+extern int sceMcGetDir(int port, int slot, char *name, unsigned int mode, int maxent,
+                       struct mcdirent_s *table);
+extern char D_0062F3F8[];
+extern char D_0062F400[];
+extern char D_0062F408[];
+extern char D_0062F410[];
+extern char D_00618668[];
+extern char D_00618680[];
+
+#define effectsfilter D_0062F3F8
+#define effectsnameformat D_0062F400
+#define effecttypesfilter D_0062F408
+#define effecttypesnameformat D_0062F410
+#define toomanyeffectsmessage D_00618668
+#define toomanytypesmessage D_00618680
+
+extern int freeDmaDebType;
+extern int EdFileReadInt(void);
+extern int NuFileSize(char *name);
+extern void *memcpy(void *dst, const void *src, unsigned int size);
+extern void EdFileRead(void *data, int size);
+extern float EdFileReadFloat(void);
+extern short EdFileReadShort(void);
+extern char EdFileReadChar(void);
+extern char D_006185E8[];
+extern char D_00618600[];
+extern char D_00618630[];
+extern char D_0062F3E8[];
+extern char D_0062F3F0[];
+
+#define edpp_level_path D_00484DE0
+#define edpp_level_type D_0062F358
+#define genericeffectsfile D_006185E8
+#define leveleffectsformat D_00618600
+#define generalptlfile D_00618630
+#define levelptlformat D_0062F3E8
+#define charptlformat D_0062F3F0
 
 
 
@@ -2811,6 +2869,796 @@ int edppSaveEffects(char *filename, signed char list) {
         return 1;
     }
     return 0;
+}
+
+
+static inline void ShowMessageMenu(struct edptlmenu_s *parent, char *message, int flags) {
+    struct edptlfont_s font;
+
+    font = edpp_message_font;
+    if (flags == 1) {
+        font.colour = 0x8000C000;
+    }
+    messagemenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt, cbCancelMessageMenu,
+                                 messagemenutitle);
+    if (messagemenu != 0) {
+        eduiMenuAddItem(messagemenu, eduiItemSelCreate(1, &font, 0, 0, 0, message));
+        eduiMenuAttach(parent, messagemenu);
+        messagemenu->x = parent->x + 10;
+        messagemenu->y = parent->y + 40;
+    }
+}
+
+
+void cbFileSaveEffects(struct edptlmenu_s *menu) {
+    char filename[256];
+
+    if (edpp_level_type == 1) {
+        if (edpp_effect_list == 0) {
+            sprintf(filename, genericeffectsfile);
+        } else {
+            sprintf(filename, leveleffectsformat, edpp_level_path);
+        }
+        if (edppSaveEffects(filename, edpp_effect_list)) {
+            ShowMessageMenu(menu, savedokmessage, 1);
+        } else {
+            ShowMessageMenu(menu, saveerrormessage, 0);
+        }
+    } else if (edpp_level_type == 2) {
+        if (edpp_effect_list == 0) {
+            sprintf(filename, generalptlfile);
+        } else if (edpp_effect_list == 1) {
+            sprintf(filename, levelptlformat, edpp_level_path);
+        } else if (edpp_effect_list == 5) {
+            sprintf(filename, charptlformat, edpp_level_path);
+        } else {
+            ShowMessageMenu(menu, saveerrormessage, 0);
+        }
+        if (edppSaveEffects(filename, edpp_effect_list)) {
+            ShowMessageMenu(menu, savedokmessage, 1);
+        } else {
+            ShowMessageMenu(menu, saveerrormessage, 0);
+        }
+    } else {
+        ShowMessageMenu(menu, saveerrormessage, 0);
+    }
+}
+
+
+void FileLoadSingleEffectType(struct debtypedef_s *dt, int version, signed char list) {
+    int i;
+
+    EdFileRead(dt->name, 0x10);
+    dt->effectlist = list;
+    dt->genrate = EdFileReadShort();
+    dt->numptls = EdFileReadShort();
+    dt->startoffset = EdFileReadShort();
+    dt->ivalon = EdFileReadShort();
+    dt->ivalonran = EdFileReadShort();
+    dt->ivaloff = EdFileReadShort();
+    dt->ivaloffran = EdFileReadShort();
+    dt->gensort = EdFileReadChar();
+    dt->gencode = EdFileReadChar();
+    dt->texturetype = EdFileReadChar();
+    dt->reserved23 = EdFileReadChar();
+    dt->reserved24 = EdFileReadFloat();
+    if (version < 6) {
+        dt->cuton = 0.0f;
+        dt->cutoff = 25.0f;
+    } else {
+        dt->cuton = EdFileReadFloat();
+        dt->cutoff = EdFileReadFloat();
+    }
+    if (version < 10) {
+        dt->drawcutoff = 0.0f;
+    } else {
+        dt->drawcutoff = EdFileReadFloat();
+    }
+    if (version < 7) {
+        EdFileReadInt();
+        EdFileReadInt();
+    }
+    dt->emitvel = EdFileReadFloat();
+    EdFileRead(&dt->varemit, 0xC);
+    EdFileRead(&dt->varemitrand, 0xC);
+    EdFileRead(&dt->varstart, 0xC);
+    EdFileRead(&dt->varstartrand, 0xC);
+    dt->posrange.x = EdFileReadFloat();
+    dt->posrange.y = EdFileReadFloat();
+    dt->posrange.z = EdFileReadFloat();
+    dt->posbase.x = EdFileReadFloat();
+    dt->posbase.y = EdFileReadFloat();
+    dt->posbase.z = EdFileReadFloat();
+    dt->momrange.x = EdFileReadFloat();
+    dt->momrange.y = EdFileReadFloat();
+    dt->momrange.z = EdFileReadFloat();
+    dt->mombase.x = EdFileReadFloat();
+    dt->mombase.y = EdFileReadFloat();
+    dt->mombase.z = EdFileReadFloat();
+    dt->gravity = EdFileReadFloat();
+    dt->etime = EdFileReadFloat();
+    dt->frames = EdFileReadShort();
+    dt->columns = EdFileReadChar();
+    dt->rows = EdFileReadChar();
+    dt->frame = EdFileReadFloat();
+    dt->jib[0] = EdFileReadFloat();
+    dt->jib[1] = EdFileReadFloat();
+    dt->jib[2] = EdFileReadFloat();
+    dt->jib[3] = EdFileReadFloat();
+    for (i = 0; i < 8; i++) {
+        EdFileRead(&dt->colenv[i], 0x10);
+    }
+    for (i = 0; i < 8; i++) {
+        EdFileRead(&dt->alphaenv[i], 8);
+    }
+    dt->sizemin = EdFileReadFloat();
+    dt->sizemax = EdFileReadFloat();
+    for (i = 0; i < 8; i++) {
+        EdFileRead(&dt->widthenv[i], 8);
+    }
+    for (i = 0; i < 8; i++) {
+        EdFileRead(&dt->heightenv[i], 8);
+    }
+    dt->rotmin = EdFileReadFloat();
+    dt->rotmax = EdFileReadFloat();
+    for (i = 0; i < 8; i++) {
+        EdFileRead(&dt->rotenv[i], 8);
+    }
+    for (i = 0; i < 8; i++) {
+        EdFileRead(&dt->extraenv0[i], 8);
+    }
+    for (i = 0; i < 8; i++) {
+        EdFileRead(&dt->extraenv1[i], 8);
+    }
+    dt->texu0 = EdFileReadFloat();
+    dt->texu1 = EdFileReadFloat();
+    dt->texv0 = EdFileReadFloat();
+    dt->texv1 = EdFileReadFloat();
+    if (version > 2) {
+        for (i = 0; i < 8; i++) {
+            EdFileRead(&dt->collenv[i], 8);
+        }
+        dt->numcollspheres = EdFileReadChar();
+    } else {
+        dt->numcollspheres = 0;
+    }
+    for (i = 0; i < 4; i++) {
+        if (version > 10) {
+            EdFileRead(&dt->sounds[i], 0xC);
+        } else {
+            dt->sounds[i].id = -1;
+            dt->sounds[i].control = 0;
+            dt->sounds[i].delay = 0;
+        }
+    }
+}
+
+
+int edppLoadEffects(char *filename, signed char list) {
+    int current_version;
+    int version;
+    int numptls;
+    int count;
+    int i;
+
+    current_version = 15;
+    EdFileSetMedia(1);
+    if (!EdFileOpen(filename, 0)) {
+        return 0;
+    }
+    version = EdFileReadInt();
+    if (version > current_version) {
+        EdFileClose();
+        return 0;
+    }
+    if (version > 1) {
+        effect_types_used = EdFileReadInt();
+    } else {
+        effect_types_used = 128;
+    }
+    if (version > 3) {
+        effect_types_used++;
+    }
+    if (version < 4) {
+        for (i = 0; i < effect_types_used; i++) {
+            FileLoadSingleEffectType(&effecttypes[i], version, list);
+        }
+    } else {
+        for (i = 1; i < effect_types_used; i++) {
+            FileLoadSingleEffectType(&effecttypes[i], version, list);
+        }
+    }
+    for (i = effect_types_used; i < 128; i++) {
+        effecttypes[i] = effecttypes[0];
+    }
+    if (version < 4) {
+        EdFileRead(debtab, 0x200);
+        effect_types_used = 0;
+        for (i = 0; i < 128; i++) {
+            if (debtab[i] != 0) {
+                debtab[i] = &effecttypes[i];
+                effect_types_used++;
+                UpdateTotalPtls(&effecttypes[i]);
+            }
+        }
+    } else {
+        for (i = 0; i < 128; i++) {
+            if (i < effect_types_used) {
+                debtab[i] = &effecttypes[i];
+                UpdateTotalPtls(&effecttypes[i]);
+            } else {
+                debtab[i] = 0;
+            }
+        }
+    }
+    if (list == 1 || list == 2) {
+        ParticleReset();
+        if (version < 5) {
+            for (i = 0; i < 256; i++) {
+                EdFileRead(&edpp_ptls[i].pos, 0xC);
+                edpp_ptls[i].type = EdFileReadInt();
+                edpp_ptls[i].debris = EdFileReadInt();
+                edpp_ptls[i].emitrotz = EdFileReadInt();
+                edpp_ptls[i].emitroty = EdFileReadInt();
+                if (debtab[edpp_ptls[i].type] == 0) {
+                    edpp_ptls[i].name[0] = 0;
+                } else {
+                    memcpy(edpp_ptls[i].name, debtab[edpp_ptls[i].type]->name, 0x10);
+                }
+                edpp_ptls[i].offset = 0;
+                edpp_ptls[i].switchtype = 0;
+                edpp_ptls[i].switchid = -1;
+                edpp_ptls[i].switchvar = 0.0f;
+            }
+        } else {
+            numptls = EdFileReadInt();
+            count = (numptls > 256) ? 256 : numptls;
+            for (i = 0; i < count; i++) {
+                EdFileRead(&edpp_ptls[i].pos, 0xC);
+                if (version < 7) {
+                    edpp_ptls[i].rotz = 0;
+                    edpp_ptls[i].roty = 0;
+                    edpp_ptls[i].emitrotz = EdFileReadInt();
+                    edpp_ptls[i].emitroty = EdFileReadInt();
+                } else {
+                    edpp_ptls[i].rotz = EdFileReadShort();
+                    edpp_ptls[i].roty = EdFileReadShort();
+                    edpp_ptls[i].emitrotz = EdFileReadShort();
+                    edpp_ptls[i].emitroty = EdFileReadShort();
+                }
+                if (version < 8) {
+                    edpp_ptls[i].offset = 0;
+                } else {
+                    edpp_ptls[i].offset = EdFileReadInt();
+                }
+                EdFileRead(edpp_ptls[i].name, 0x10);
+                edpp_ptls[i].debris = i;
+                edpp_ptls[i].type = LookupDebrisEffect(edpp_ptls[i].name);
+                if (version > 8) {
+                    edpp_ptls[i].switchtype = EdFileReadInt();
+                    edpp_ptls[i].switchid = EdFileReadInt();
+                    edpp_ptls[i].switchvar = EdFileReadFloat();
+                } else {
+                    edpp_ptls[i].switchtype = 0;
+                    edpp_ptls[i].switchid = -1;
+                    edpp_ptls[i].switchvar = 0.0f;
+                }
+                if (version > 11) {
+                    edpp_ptls[i].refrotz = EdFileReadShort();
+                    edpp_ptls[i].refroty = EdFileReadShort();
+                    edpp_ptls[i].bounceoffset = EdFileReadFloat();
+                } else {
+                    edpp_ptls[i].refrotz = 0;
+                    edpp_ptls[i].refroty = 0;
+                    edpp_ptls[i].bounceoffset = 0.0f;
+                }
+                if (version > 12) {
+                    edpp_ptls[i].bouncefactor = EdFileReadFloat();
+                } else {
+                    edpp_ptls[i].bouncefactor = 0.9f;
+                }
+                if (version > 14) {
+                    edpp_ptls[i].group = EdFileReadShort();
+                } else {
+                    edpp_ptls[i].group = 0;
+                }
+            }
+        }
+    }
+    EdFileClose();
+    for (i = 0; i < 128; i++) {
+        effecttypes[i].physics = 0;
+        effecttypes[i].key = -1;
+    }
+    freeDmaDebType = 0;
+    edppDetermineNearest(1.0f);
+    return 1;
+}
+
+
+void edppRestartAllEffectsInLevel(void) {
+    int i;
+
+    for (i = 0; i < 256; i++) {
+        if (edpp_ptls[i].debris != -1) {
+            edpp_ptls[i].debris = -1;
+            edpp_ptls[i].type = LookupDebrisEffect(edpp_ptls[i].name);
+            AddDebrisEffect(&edpp_ptls[i].debris, edpp_ptls[i].type, edpp_ptls[i].pos.x,
+                            edpp_ptls[i].pos.y, edpp_ptls[i].pos.z);
+            if (edpp_ptls[i].debris != -1) {
+                DebrisOrientation(edpp_ptls[i].debris, edpp_ptls[i].rotz, edpp_ptls[i].roty);
+                DebrisEmitterOrientation(edpp_ptls[i].debris, edpp_ptls[i].emitrotz,
+                                         edpp_ptls[i].emitroty);
+                DebrisStartOffset(edpp_ptls[i].debris, edpp_ptls[i].offset);
+                DebrisSetTrigger(edpp_ptls[i].debris, edpp_ptls[i].switchtype,
+                                 edpp_ptls[i].switchid, edpp_ptls[i].switchvar);
+                DebrisReflectionOrientation(edpp_ptls[i].debris, edpp_ptls[i].bounceoffset,
+                                            edpp_ptls[i].bouncefactor, edpp_ptls[i].refrotz,
+                                            edpp_ptls[i].refroty);
+                DebrisSetGroupID(edpp_ptls[i].debris, edpp_ptls[i].group);
+            }
+        }
+    }
+}
+
+
+int edppMergeEffects(char *filename, signed char list) {
+    struct debtypedef_s discard;
+    int version;
+    int count;
+    int i;
+
+    TidyAllEffects();
+    EdFileSetMedia(1);
+    if (!EdFileOpen(filename, 0)) {
+        return 0;
+    }
+    version = EdFileReadInt();
+    if (version < 2) {
+        EdFileClose();
+        return 0;
+    }
+    count = EdFileReadInt();
+    if (version < 4) {
+        count--;
+        FileLoadSingleEffectType(&discard, version, list);
+    }
+    if (effect_types_used + count > 128) {
+        count = 128 - effect_types_used;
+    }
+    for (i = effect_types_used; i < effect_types_used + count; i++) {
+        FileLoadSingleEffectType(&effecttypes[i], version, list);
+    }
+    for (i = effect_types_used + count; i < 128; i++) {
+        effecttypes[i] = effecttypes[0];
+    }
+    for (i = effect_types_used; i < effect_types_used + count; i++) {
+        debtab[i] = &effecttypes[i];
+        UpdateTotalPtls(&effecttypes[i]);
+    }
+    effect_types_used += count;
+    EdFileClose();
+    for (i = 0; i < 128; i++) {
+        effecttypes[i].physics = 0;
+        effecttypes[i].key = -1;
+    }
+    freeDmaDebType = 0;
+    return 1;
+}
+
+
+void cbFileLoadEffects(struct edptlmenu_s *menu) {
+    char filename[256];
+    int i;
+    int j;
+
+    for (i = 0; i < 256; i++) {
+        if (edpp_ptls[i].debris != -1) {
+            DebFreeInstantly(&edpp_ptls[i].debris);
+            edpp_ptls[i].debris = -1;
+        }
+    }
+    for (j = 1; j < 128; j++) {
+        debtab[j] = 0;
+    }
+    effect_types_used = 1;
+    if (edpp_level_type == 1) {
+        sprintf(filename, leveleffectsformat, edpp_level_path);
+        if (NuFileSize(filename) > 0) {
+            edppLoadEffects(filename, 1);
+        }
+        sprintf(filename, genericeffectsfile);
+        if (NuFileSize(filename) > 0) {
+            edppMergeEffects(filename, 0);
+        }
+        edppRestartAllEffectsInLevel();
+        ShowMessageMenu(menu, loadedokmessage, 1);
+    } else if (edpp_level_type == 2) {
+        sprintf(filename, levelptlformat, edpp_level_path);
+        if (NuFileSize(filename) > 0) {
+            edppLoadEffects(filename, 1);
+        }
+        sprintf(filename, generalptlfile);
+        if (NuFileSize(filename) > 0) {
+            edppMergeEffects(filename, 0);
+        }
+        sprintf(filename, charptlformat, edpp_level_path);
+        if (NuFileSize(filename) > 0) {
+            edppMergeEffects(filename, 5);
+        }
+        edppRestartAllEffectsInLevel();
+        ShowMessageMenu(menu, loadedokmessage, 1);
+    } else {
+        ShowMessageMenu(menu, loaderrormessage, 0);
+    }
+}
+
+
+int edppMemCardSaveEffects(char *filename, signed char list) {
+    int numtypes;
+    int numptls;
+    int i;
+    int j;
+
+    TidyAllEffects();
+    numtypes = 0;
+    numptls = 0;
+    for (i = 1; i < effect_types_used; i++) {
+        if (effecttypes[i].effectlist == list || list == 2) {
+            numtypes++;
+        }
+    }
+    EdFileSetMedia(2);
+    if (!EdFileOpen(filename, 1)) {
+        return 0;
+    }
+    EdFileWriteInt(15);
+    EdFileWriteInt(numtypes);
+    for (i = 1; i < effect_types_used; i++) {
+        if (effecttypes[i].effectlist == list || list == 2) {
+            EdFileWrite(effecttypes[i].name, 0x10);
+            EdFileWriteChar(effecttypes[i].effectlist);
+            EdFileWriteShort(effecttypes[i].genrate);
+            EdFileWriteShort(effecttypes[i].numptls);
+            EdFileWriteShort(effecttypes[i].startoffset);
+            EdFileWriteShort(effecttypes[i].ivalon);
+            EdFileWriteShort(effecttypes[i].ivalonran);
+            EdFileWriteShort(effecttypes[i].ivaloff);
+            EdFileWriteShort(effecttypes[i].ivaloffran);
+            EdFileWriteChar(effecttypes[i].gensort);
+            EdFileWriteChar(effecttypes[i].gencode);
+            EdFileWriteChar(effecttypes[i].texturetype);
+            EdFileWriteChar(effecttypes[i].reserved23);
+            EdFileWriteFloat(effecttypes[i].reserved24);
+            EdFileWriteFloat(effecttypes[i].cuton);
+            EdFileWriteFloat(effecttypes[i].cutoff);
+            EdFileWriteFloat(effecttypes[i].drawcutoff);
+            EdFileWriteFloat(effecttypes[i].emitvel);
+            EdFileWrite(&effecttypes[i].varemit, 0xC);
+            EdFileWrite(&effecttypes[i].varemitrand, 0xC);
+            EdFileWrite(&effecttypes[i].varstart, 0xC);
+            EdFileWrite(&effecttypes[i].varstartrand, 0xC);
+            EdFileWriteFloat(effecttypes[i].posrange.x);
+            EdFileWriteFloat(effecttypes[i].posrange.y);
+            EdFileWriteFloat(effecttypes[i].posrange.z);
+            EdFileWriteFloat(effecttypes[i].posbase.x);
+            EdFileWriteFloat(effecttypes[i].posbase.y);
+            EdFileWriteFloat(effecttypes[i].posbase.z);
+            EdFileWriteFloat(effecttypes[i].momrange.x);
+            EdFileWriteFloat(effecttypes[i].momrange.y);
+            EdFileWriteFloat(effecttypes[i].momrange.z);
+            EdFileWriteFloat(effecttypes[i].mombase.x);
+            EdFileWriteFloat(effecttypes[i].mombase.y);
+            EdFileWriteFloat(effecttypes[i].mombase.z);
+            EdFileWriteFloat(effecttypes[i].gravity);
+            EdFileWriteFloat(effecttypes[i].etime);
+            EdFileWriteShort(effecttypes[i].frames);
+            EdFileWriteChar(effecttypes[i].columns);
+            EdFileWriteChar(effecttypes[i].rows);
+            EdFileWriteFloat(effecttypes[i].frame);
+            EdFileWriteFloat(effecttypes[i].jib[0]);
+            EdFileWriteFloat(effecttypes[i].jib[1]);
+            EdFileWriteFloat(effecttypes[i].jib[2]);
+            EdFileWriteFloat(effecttypes[i].jib[3]);
+            for (j = 0; j < 8; j++) {
+                EdFileWrite(&effecttypes[i].colenv[j], 0x10);
+            }
+            for (j = 0; j < 8; j++) {
+                EdFileWrite(&effecttypes[i].alphaenv[j], 8);
+            }
+            EdFileWriteFloat(effecttypes[i].sizemin);
+            EdFileWriteFloat(effecttypes[i].sizemax);
+            for (j = 0; j < 8; j++) {
+                EdFileWrite(&effecttypes[i].widthenv[j], 8);
+            }
+            for (j = 0; j < 8; j++) {
+                EdFileWrite(&effecttypes[i].heightenv[j], 8);
+            }
+            EdFileWriteFloat(effecttypes[i].rotmin);
+            EdFileWriteFloat(effecttypes[i].rotmax);
+            for (j = 0; j < 8; j++) {
+                EdFileWrite(&effecttypes[i].rotenv[j], 8);
+            }
+            for (j = 0; j < 8; j++) {
+                EdFileWrite(&effecttypes[i].extraenv0[j], 8);
+            }
+            for (j = 0; j < 8; j++) {
+                EdFileWrite(&effecttypes[i].extraenv1[j], 8);
+            }
+            EdFileWriteFloat(effecttypes[i].texu0);
+            EdFileWriteFloat(effecttypes[i].texu1);
+            EdFileWriteFloat(effecttypes[i].texv0);
+            EdFileWriteFloat(effecttypes[i].texv1);
+            for (j = 0; j < 8; j++) {
+                EdFileWrite(&effecttypes[i].collenv[j], 8);
+            }
+            EdFileWriteChar(effecttypes[i].numcollspheres);
+            for (j = 0; j < 4; j++) {
+                EdFileWrite(&effecttypes[i].sounds[j], 0xC);
+            }
+        }
+    }
+    if (list == 2) {
+        for (i = 0; i < 256; i++) {
+            if (edpp_ptls[i].debris != -1) {
+                numptls++;
+            }
+        }
+        EdFileWriteInt(numptls);
+        for (i = 0; i < 256; i++) {
+            if (edpp_ptls[i].debris != -1) {
+                EdFileWrite(&edpp_ptls[i].pos, 0xC);
+                EdFileWriteShort(edpp_ptls[i].rotz);
+                EdFileWriteShort(edpp_ptls[i].roty);
+                EdFileWriteShort(edpp_ptls[i].emitrotz);
+                EdFileWriteShort(edpp_ptls[i].emitroty);
+                EdFileWriteInt(edpp_ptls[i].offset);
+                EdFileWrite(debtab[edpp_ptls[i].type]->name, 0x10);
+                EdFileWriteInt(edpp_ptls[i].switchtype);
+                EdFileWriteInt(edpp_ptls[i].switchid);
+                EdFileWriteFloat(edpp_ptls[i].switchvar);
+                EdFileWriteShort(edpp_ptls[i].refrotz);
+                EdFileWriteShort(edpp_ptls[i].refroty);
+                EdFileWriteFloat(edpp_ptls[i].bounceoffset);
+                EdFileWriteFloat(edpp_ptls[i].bouncefactor);
+                EdFileWriteShort(edpp_ptls[i].group);
+            }
+        }
+    } else {
+        EdFileWriteInt(0);
+    }
+    return EdFileClose() != 0;
+}
+
+
+void cbMemCardSaveEffects(struct edptlmenu_s *menu) {
+    char filename[256];
+
+    sceMcGetDir(0, 0, effectsfilter, 0, 10, mcdir);
+    sceMcSync(0, 0, &memcardresult);
+    if (memcardresult >= 8) {
+        ShowMessageMenu(menu, toomanyeffectsmessage, 0);
+    } else {
+        sprintf(filename, effectsnameformat, savefilename);
+        if (edppMemCardSaveEffects(filename, 2)) {
+            ShowMessageMenu(menu, savedokmessage, 1);
+        } else {
+            ShowMessageMenu(menu, saveerrormessage, 0);
+        }
+    }
+}
+
+
+void cbMemCardSaveEffectTypes(struct edptlmenu_s *menu) {
+    char filename[256];
+
+    sceMcGetDir(0, 0, effecttypesfilter, 0, 10, mcdir);
+    sceMcSync(0, 0, &memcardresult);
+    if (memcardresult >= 8) {
+        ShowMessageMenu(menu, toomanytypesmessage, 0);
+    } else {
+        sprintf(filename, effecttypesnameformat, savefilename);
+        if (edppMemCardSaveEffects(filename, edpp_effect_list)) {
+            ShowMessageMenu(menu, savedokmessage, 1);
+        } else {
+            ShowMessageMenu(menu, saveerrormessage, 0);
+        }
+    }
+}
+
+
+void MemCardLoadSingleEffectType(struct debtypedef_s *dt, int version, signed char list) {
+    int i;
+
+    EdFileRead(dt->name, 0x10);
+    dt->effectlist = EdFileReadChar();
+    if (list != 2) {
+        dt->effectlist = list;
+    }
+    dt->genrate = EdFileReadShort();
+    dt->numptls = EdFileReadShort();
+    dt->startoffset = EdFileReadShort();
+    dt->ivalon = EdFileReadShort();
+    dt->ivalonran = EdFileReadShort();
+    dt->ivaloff = EdFileReadShort();
+    dt->ivaloffran = EdFileReadShort();
+    dt->gensort = EdFileReadChar();
+    dt->gencode = EdFileReadChar();
+    dt->texturetype = EdFileReadChar();
+    dt->reserved23 = EdFileReadChar();
+    dt->reserved24 = EdFileReadFloat();
+    dt->cuton = EdFileReadFloat();
+    dt->cutoff = EdFileReadFloat();
+    if (version < 10) {
+        dt->drawcutoff = 0.0f;
+    } else {
+        dt->drawcutoff = EdFileReadFloat();
+    }
+    dt->emitvel = EdFileReadFloat();
+    EdFileRead(&dt->varemit, 0xC);
+    EdFileRead(&dt->varemitrand, 0xC);
+    EdFileRead(&dt->varstart, 0xC);
+    EdFileRead(&dt->varstartrand, 0xC);
+    dt->posrange.x = EdFileReadFloat();
+    dt->posrange.y = EdFileReadFloat();
+    dt->posrange.z = EdFileReadFloat();
+    dt->posbase.x = EdFileReadFloat();
+    dt->posbase.y = EdFileReadFloat();
+    dt->posbase.z = EdFileReadFloat();
+    dt->momrange.x = EdFileReadFloat();
+    dt->momrange.y = EdFileReadFloat();
+    dt->momrange.z = EdFileReadFloat();
+    dt->mombase.x = EdFileReadFloat();
+    dt->mombase.y = EdFileReadFloat();
+    dt->mombase.z = EdFileReadFloat();
+    dt->gravity = EdFileReadFloat();
+    dt->etime = EdFileReadFloat();
+    dt->frames = EdFileReadShort();
+    dt->columns = EdFileReadChar();
+    dt->rows = EdFileReadChar();
+    dt->frame = EdFileReadFloat();
+    dt->jib[0] = EdFileReadFloat();
+    dt->jib[1] = EdFileReadFloat();
+    dt->jib[2] = EdFileReadFloat();
+    dt->jib[3] = EdFileReadFloat();
+    for (i = 0; i < 8; i++) {
+        EdFileRead(&dt->colenv[i], 0x10);
+    }
+    for (i = 0; i < 8; i++) {
+        EdFileRead(&dt->alphaenv[i], 8);
+    }
+    dt->sizemin = EdFileReadFloat();
+    dt->sizemax = EdFileReadFloat();
+    for (i = 0; i < 8; i++) {
+        EdFileRead(&dt->widthenv[i], 8);
+    }
+    for (i = 0; i < 8; i++) {
+        EdFileRead(&dt->heightenv[i], 8);
+    }
+    dt->rotmin = EdFileReadFloat();
+    dt->rotmax = EdFileReadFloat();
+    for (i = 0; i < 8; i++) {
+        EdFileRead(&dt->rotenv[i], 8);
+    }
+    for (i = 0; i < 8; i++) {
+        EdFileRead(&dt->extraenv0[i], 8);
+    }
+    for (i = 0; i < 8; i++) {
+        EdFileRead(&dt->extraenv1[i], 8);
+    }
+    dt->texu0 = EdFileReadFloat();
+    dt->texu1 = EdFileReadFloat();
+    dt->texv0 = EdFileReadFloat();
+    dt->texv1 = EdFileReadFloat();
+    for (i = 0; i < 8; i++) {
+        EdFileRead(&dt->collenv[i], 8);
+    }
+    dt->numcollspheres = EdFileReadChar();
+    for (i = 0; i < 4; i++) {
+        if (version > 10) {
+            EdFileRead(&dt->sounds[i], 0xC);
+        } else {
+            dt->sounds[i].id = -1;
+            dt->sounds[i].control = 0;
+            dt->sounds[i].delay = 0;
+        }
+    }
+}
+
+
+int edppMemCardLoadEffects(char *filename, signed char list) {
+    int current_version;
+    int version;
+    int numptls;
+    int count;
+    int i;
+
+    current_version = 15;
+    EdFileSetMedia(2);
+    if (!EdFileOpen(filename, 0)) {
+        return 0;
+    }
+    version = EdFileReadInt();
+    if (version < 14 || version > current_version) {
+        EdFileClose();
+        return 0;
+    }
+    effect_types_used = EdFileReadInt() + 1;
+    for (i = 1; i < effect_types_used; i++) {
+        MemCardLoadSingleEffectType(&effecttypes[i], version, list);
+    }
+    for (i = effect_types_used; i < 128; i++) {
+        effecttypes[i] = effecttypes[0];
+    }
+    for (i = 0; i < 128; i++) {
+        if (i < effect_types_used) {
+            debtab[i] = &effecttypes[i];
+            UpdateTotalPtls(&effecttypes[i]);
+        } else {
+            debtab[i] = 0;
+        }
+    }
+    if (list == 1 || list == 2) {
+        ParticleReset();
+        numptls = EdFileReadInt();
+        count = (numptls > 256) ? 256 : numptls;
+        for (i = 0; i < count; i++) {
+            EdFileRead(&edpp_ptls[i].pos, 0xC);
+            edpp_ptls[i].rotz = EdFileReadShort();
+            edpp_ptls[i].roty = EdFileReadShort();
+            edpp_ptls[i].emitrotz = EdFileReadShort();
+            edpp_ptls[i].emitroty = EdFileReadShort();
+            edpp_ptls[i].offset = EdFileReadInt();
+            EdFileRead(edpp_ptls[i].name, 0x10);
+            edpp_ptls[i].debris = i;
+            edpp_ptls[i].type = LookupDebrisEffect(edpp_ptls[i].name);
+            edpp_ptls[i].switchtype = EdFileReadInt();
+            edpp_ptls[i].switchid = EdFileReadInt();
+            edpp_ptls[i].switchvar = EdFileReadFloat();
+            edpp_ptls[i].refrotz = EdFileReadShort();
+            edpp_ptls[i].refroty = EdFileReadShort();
+            edpp_ptls[i].bounceoffset = EdFileReadFloat();
+            edpp_ptls[i].bouncefactor = EdFileReadFloat();
+            if (version > 14) {
+                edpp_ptls[i].group = EdFileReadShort();
+            } else {
+                edpp_ptls[i].group = 0;
+            }
+        }
+    }
+    EdFileClose();
+    for (i = 0; i < 128; i++) {
+        effecttypes[i].physics = 0;
+        effecttypes[i].key = -1;
+    }
+    freeDmaDebType = 0;
+    edppDetermineNearest(1.0f);
+    return 1;
+}
+
+
+void cbMemCardLoadEffects(struct edptlmenu_s *menu, struct edptlitem_s *item) {
+    char filename[256];
+    int i;
+    int j;
+
+    for (i = 0; i < 256; i++) {
+        if (edpp_ptls[i].debris != -1) {
+            DebFreeInstantly(&edpp_ptls[i].debris);
+            edpp_ptls[i].debris = -1;
+        }
+    }
+    for (j = 1; j < 128; j++) {
+        debtab[j] = 0;
+    }
+    effect_types_used = 1;
+    sprintf(filename, memcardfilenames[item->value]);
+    if (edppMemCardLoadEffects(filename, 2)) {
+        edppRestartAllEffectsInLevel();
+        ShowMessageMenu(menu, loadedokmessage, 1);
+    } else {
+        ShowMessageMenu(menu, loaderrormessage, 0);
+    }
 }
 
 
