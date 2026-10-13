@@ -13,44 +13,44 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0063:0016d718:NuPs2ReadPad"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0063:0016e4d8:NuPs2ClosePad"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0063:0016e518:NuPs2OpenPad"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0063:0016e638:NuPs2ApplyDeadZone"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0063:0016e698:InitPadPlayRecord"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0063:0016e740:SavePadRecord"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0063:0016e7c0:PadRecPtr"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0063:0016e7e0:NuPs2PadDemoEnd"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0063:0016e7e8:NuPs2PadSetMotors"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0063:0016e830:PadPlayOff"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0063:0016e838:DeadZoneValue"
-state = "asm"
+state = "matching"
