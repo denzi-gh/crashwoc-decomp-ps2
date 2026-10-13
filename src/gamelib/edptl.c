@@ -444,7 +444,7 @@ extern struct edptlmenu_s *sscalemenu;
 extern struct edptlmenu_s *filenamemenu;
 extern struct edptlmenu_s *loadeffectsmenu;
 extern struct edptlmenu_s *mergeeffectsmenu;
-extern void *deleteeffectsmenu;
+extern struct edptlmenu_s *deleteeffectsmenu;
 extern struct edptlmenu_s *ptlcolmenu;
 extern struct edptlmenu_s *ptlrotmenu;
 extern void *D_0062F354;
@@ -856,6 +856,8 @@ extern void edptlcbCancelSoundsMenu(void);
 extern void cbMemCardCancelLoadEffectsMenu(void);
 extern void cbMemCardCancelMergeEffectsMenu(void);
 extern void cbMemCardMergeEffects(struct edptlmenu_s *menu, struct edptlitem_s *item);
+extern void cbMemCardCancelDeleteEffectsMenu(void);
+extern void cbMemCardDeleteEffects(struct edptlmenu_s *menu, struct edptlitem_s *item);
 extern char D_00618000[];
 extern char D_0062F3A0[];
 extern char D_00618010[];
@@ -863,6 +865,7 @@ extern char D_00618230[];
 extern char D_00618240[];
 extern char D_006186A0[];
 extern char D_006186C0[];
+extern char D_006186F8[];
 
 #define switchtypetitle D_00618000
 #define nonelabel D_0062F3A0
@@ -871,6 +874,7 @@ extern char D_006186C0[];
 #define soundsmenuformat D_00618240
 #define loadeffectstitle D_006186A0
 #define mergeeffectstitle D_006186C0
+#define deleteeffectstitle D_006186F8
 extern void cbChangeName(void *menu, struct edptlitem_s *item);
 extern void cbCancelChangeNameMenu(void *menu);
 extern void cbPtlChangeETime(void *menu, struct edptlitem_s *item);
@@ -5320,6 +5324,30 @@ void cbMemCardMergeEffectsMenu(struct edptlmenu_s *menu) {
             eduiMenuAttach(menu, mergeeffectsmenu);
             mergeeffectsmenu->x = menu->x + 10;
             mergeeffectsmenu->y = menu->y + 40;
+        }
+    }
+}
+
+
+void cbMemCardDeleteEffectsMenu(struct edptlmenu_s *menu) {
+    struct edptlfont_s font;
+    int i;
+
+    font = edpp_menu_font;
+    sceMcGetDir(0, 0, effectsfilter, 0, 10, mcdir);
+    sceMcSync(0, 0, &memcardresult);
+    if (memcardresult > 0) {
+        deleteeffectsmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt,
+                                           cbMemCardCancelDeleteEffectsMenu, deleteeffectstitle);
+        if (deleteeffectsmenu != 0) {
+            for (i = 0; i < memcardresult; i++) {
+                eduiMenuAddItem(deleteeffectsmenu, eduiItemSelCreate(i, &font, 0, 0,
+                                                                     cbMemCardDeleteEffects,
+                                                                     mcdir[i].name));
+            }
+            eduiMenuAttach(menu, deleteeffectsmenu);
+            deleteeffectsmenu->x = menu->x + 10;
+            deleteeffectsmenu->y = menu->y + 40;
         }
     }
 }

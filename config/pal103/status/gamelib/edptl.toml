@@ -577,7 +577,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00196ad8:cbMemCardDeleteEffectsMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00196c28:cbCancelMemCardMenu"
