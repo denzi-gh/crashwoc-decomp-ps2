@@ -21,7 +21,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0117:00250908:UpdateChaseRunAnim"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:00250a98:MoveCRASH"
@@ -29,7 +29,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0117:00251c98:AnimateCRASH"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:00252248:MoveSWIMMING"
@@ -41,7 +41,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0117:00252d18:AnimateCOCO"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:00252fb0:MoveSCOOTER"
@@ -73,7 +73,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0117:002547c0:AnimateFIREENGINE"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:002548a8:MoveGYRO"
@@ -85,7 +85,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:002553f0:DrawCarpet"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:002554e0:MoveSUBMARINE"
@@ -133,7 +133,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0117:00257f88:AnimateSCOOTER"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:00258020:AnimateOFFROADER"
@@ -141,7 +141,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:002580f8:AnimateSUBMARINE"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:00258158:AnimateMINECART"
@@ -169,19 +169,19 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:002583d0:ResetGates"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:002584b8:ResetPlayerEvents"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:00258568:UpdateArrow"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:00258618:DrawPanel3DArrow"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:002586a8:AnimateDIVE"
@@ -189,4 +189,4 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:002586d0:ResetTub"
-state = "asm"
+state = "matching"
