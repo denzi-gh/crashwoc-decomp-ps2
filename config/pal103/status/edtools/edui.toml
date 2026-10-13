@@ -53,7 +53,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001b9cb8:eduiGradPickRead"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001b9f20:eduicbProcessGradPick"
@@ -65,11 +65,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0085:001ba380:eduiItemGreyPickCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001ba540:eduicbProcessColourPick"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001ba910:eduicbRenderColourPick"
@@ -77,11 +77,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0085:001bbc50:eduicbRenderGreyPick"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001bbf10:eduicbProcessTexturePick"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001bc2d0:eduicbRenderTexturePick"
@@ -89,19 +89,19 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0085:001bc8b0:eduiItemSliderCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001bcac8:eduicbProcessSlider"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001bcfe8:eduicbRenderSlider"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001bd2c8:eduicbRenderSliderInt"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001bd538:eduiCreateMessageMenu"
@@ -173,7 +173,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0085:001c0560:eduiItemColourPickCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001c06f8:eduiItemTexturePickCreate"
