@@ -138,7 +138,26 @@ struct nuinstanim_s {
     char pad5d[3];
 };
 
-struct nuanimcurveset_s;
+struct nuanimkey_s {
+    float time;
+    float dtime;
+    float c;
+    float d;
+};
+
+struct nuanimcurve_s {
+    unsigned int mask;
+    struct nuanimkey_s *animkeys;
+    int numkeys;
+    unsigned int flags;
+};
+
+struct nuanimcurveset_s {
+    int flags;
+    float *constants;
+    struct nuanimcurve_s **set;
+    signed char ncurves;
+};
 
 struct nuanimdatachunk_s {
     int numnodes;
@@ -162,12 +181,21 @@ struct nuanimtime_s {
 };
 
 struct pad_s {
-    char pad000[0x564];
+    char pad000[0x55C];
+    unsigned int paddata;
+    char pad560[0x564 - 0x560];
     unsigned int buttons;
+    char pad568[0x580 - 0x568];
+    unsigned char rotleft;
+    unsigned char rotright;
+    unsigned char rotup;
+    unsigned char rotdown;
 };
 
 struct nuinstance_s {
-    char pad00[0x50];
+    struct numtx_s mtx;
+    int objid;
+    char pad44[0x50 - 0x44];
 };
 
 struct nuspecial_s {
@@ -215,7 +243,7 @@ struct edobject_s {
     int instance;
     float anim_speed;
     int oscillate;
-    char pad00c[0x10 - 0x0C];
+    int repeating;
     float anim_pause;
     int num_waypoints;
     int total_time;
@@ -249,6 +277,13 @@ struct edobject_s {
     float bouncy_damping;
 };
 
+struct nurndrvtx_s {
+    struct nuvec_s pnt;
+    char pad0c[0x18 - 0x0C];
+    int colour;
+    char pad1c[0x24 - 0x1C];
+};
+
 struct nuinstflags_s {
     int visible : 1;
     int onscreen : 1;
@@ -267,6 +302,7 @@ struct edobjinstance_s {
 extern struct edobject_s ObjectPath[];
 extern struct edobjinstance_s ObjectInstance[];
 extern struct nuanimdata_s *ObjectAnim[];
+extern struct nuinstanim_s ObjectInstAnim[];
 
 extern struct nugscn_s *edobj_base_scene;
 extern void *edobj_active_menu;
@@ -301,28 +337,52 @@ extern int edobj_nearest_waypoint;
 extern int edobj_instance_type;
 extern struct nuvec_s edobj_snap_vec;
 extern struct nuvec_s edobj_cam_pos;
-extern unsigned short edobj_emitrotz;
-extern unsigned short edobj_emitroty;
+extern int edobj_cam_ax;
+extern int edobj_cam_ay;
+extern int edobj_emitrotz;
+extern int edobj_emitroty;
 extern struct camera_s global_camera;
 extern char *debtab[];
+extern float D_0062CF04;
 extern float D_0062CF24;
 extern float D_0062CF28;
 extern float D_0062CF2C;
 extern int D_0062F57C;
 extern float D_0062F588;
+extern float D_0062F58C[];
 
 #define edobj_blink_timer D_0062F57C
 #define edobj_time D_0062F588
+#define edobj_curve_unused D_0062F58C[0]
+
+#define OBJECT_CURVESET(obj) (ObjectAnim[obj]->chunks[0]->animcurvesets[0])
+#define edobj_default_anim_speed D_0062CF04
 
 extern signed char edbits_what_game;
 extern char edbits_level_filename[];
+extern void *edobj_mtl;
 extern void *edobj_mtl_zoff;
+extern struct numtx_s edobj_cursor_matrix;
 extern char D_00618D80[];
 extern char D_00618D90[];
 extern char D_00618DA0[];
 extern char D_00618DB0[];
 extern char D_00618DC0[];
 extern char D_0062F598[];
+extern char D_00618C78[];
+extern char D_00618C88[];
+extern char D_00618CA0[];
+extern char D_00618CB0[];
+extern char D_00618CC8[];
+extern char D_00618CD8[];
+extern char D_00618CF0[];
+extern char D_00618D08[];
+extern char D_00618D18[];
+extern char D_00618D30[];
+extern char D_00618D48[];
+extern char D_00618D58[];
+extern char D_00618D70[];
+extern char D_0062F590[];
 extern struct eduistyle_s D_00618DD0;
 extern char D_006190B0[];
 extern char D_006190C8[];
@@ -338,6 +398,20 @@ extern void *app_fnt;
 #define edobj_load_ok_msg D_00618DB0
 #define edobj_load_fail_msg D_00618DC0
 #define edobj_obj_file_fmt D_0062F598
+#define info_box_title D_00618C78
+#define info_inst_none D_00618C88
+#define info_inst_fmt D_00618CA0
+#define info_highlight_none D_00618CB0
+#define info_locked_fmt D_00618CC8
+#define info_waypoints_fmt D_00618CD8
+#define info_hilite_wp_none D_00618CF0
+#define info_hilite_wp_fmt D_00618D08
+#define info_particles_fmt D_00618D18
+#define info_type_none D_00618D30
+#define info_type_fmt D_00618D48
+#define info_sounds_fmt D_00618D58
+#define info_highlight_fmt D_00618D70
+#define info_coord_fmt D_0062F590
 #define edobj_item_style D_00618DD0
 #define particle_menu_title D_006190B0
 #define particle_menu_text_type D_006190C8
@@ -352,7 +426,10 @@ extern void eduiMenuDetach(void *menu);
 extern void edobjObjectDestroy(int instance);
 extern void edobjConvertPathToAnim(int instance);
 extern void edcamSetPos(struct nuvec_s *pos);
+extern void edcamMove(struct pad_s *pad);
+extern void edcamGetPosAng(struct nuvec_s *pos, int *ax, int *ay);
 extern void NuVecSub(struct nuvec_s *dst, struct nuvec_s *a, struct nuvec_s *b);
+extern void NuVecAdd(struct nuvec_s *dst, struct nuvec_s *a, struct nuvec_s *b);
 extern float NuVecDist(struct nuvec_s *a, struct nuvec_s *b, void *c);
 extern struct nuvec_s *edmainQueryLocVec(void);
 extern float NuFsqrt(float x);
@@ -366,6 +443,15 @@ extern void edobjDetermineNearestWaypoint(float range);
 extern void edobjDetermineNearestParticle(float range);
 extern void edobjDetermineNearestSound(float range);
 extern void NuAnimDataDestroy(struct nuanimdata_s *animdata);
+extern struct nuanimdata_s *NuAnimDataCreate(int nchunks);
+extern struct nuanimdatachunk_s *NuAnimDataChunkCreate(int numnodes);
+extern struct nuanimcurveset_s *NuAnimCurveSetCreate(int ncurves);
+extern struct nuanimcurve_s *NuAnimCurveCreate(int numkeys);
+extern void NuAnimCurveDestroy(struct nuanimcurve_s *curve);
+extern int NewPlatInst(struct numtx_s *mtx, int instance);
+extern void UpdatePlatinst(int platinst, struct numtx_s *mtx);
+extern void PlatInstRotate(int platinst, int rotate);
+extern void PlatInstBounce(int platinst, float player_grav, float tension, float damping);
 extern int DeletePlatinst(int id);
 extern void *memset(void *dst, int c, unsigned int n);
 extern int sprintf(char *buf, const char *fmt, ...);
@@ -382,6 +468,14 @@ extern void edobjRenderWaypoints(int obj);
 extern void edobjRenderParticleEmitters(int obj);
 extern void edobjRenderSoundEmitters(int obj);
 extern void NuFntScale(int x, int y);
+extern void NuFntSet(void *font);
+extern void NuFntSetPen(int colour);
+extern void NuFntPrintEx(int x, int y, int flags, char *fmt, ...);
+extern int NuRndrLine3d(struct nurndrvtx_s *line, void *mtl, struct numtx_s *mtx);
+extern void NuRndrRect2di(int x, int y, int w, int h, int colour, void *mtl);
+extern void NuRndrLine2di(int x0, int y0, int x1, int y1, int colour, void *mtl);
+extern void NuVecRotateZ(struct nuvec_s *dst, struct nuvec_s *src, int angle);
+extern void NuVecRotateY(struct nuvec_s *dst, struct nuvec_s *src, int angle);
 extern void eduiMenuRender(void *menu);
 extern int NuRndrGScnObj(struct nugobj_s *gobj, struct numtx_s *mtx);
 extern unsigned char object_switches[];
@@ -754,6 +848,543 @@ void edobjDetermineNearestObject(float range)
 }
 
 
+void edobjDetermineNearestWaypoint(float range)
+{
+    struct nuvec_s delta;
+    float dist;
+    int i;
+
+    if (edobj_nearest == -1) {
+        edobj_nearest_waypoint = -1;
+        return;
+    }
+    if (edobj_nearest_waypoint != -1) {
+        NuVecSub(&delta, &edobj_cam_pos,
+                 &ObjectPath[edobj_nearest].waypoints[edobj_nearest_waypoint]);
+        if (delta.x * delta.x + delta.y * delta.y + delta.z * delta.z == 0.0) {
+            return;
+        }
+    }
+    edobj_nearest_waypoint = -1;
+    for (i = 0; i < ObjectPath[edobj_nearest].num_waypoints; i++) {
+        NuVecSub(&delta, &edobj_cam_pos, &ObjectPath[edobj_nearest].waypoints[i]);
+        dist = delta.x * delta.x + delta.y * delta.y + delta.z * delta.z;
+        if (range < 0.0f || dist < range) {
+            edobj_nearest_waypoint = i;
+            range = dist;
+        }
+    }
+}
+
+
+void edobjDetermineNearestParticle(float range)
+{
+    struct nuvec_s delta;
+    struct nuvec_s pos;
+    float dist;
+    int i;
+
+    if (edobj_nearest == -1) {
+        edobj_nearest_particle = -1;
+        return;
+    }
+    if (edobj_nearest_particle != -1) {
+        NuVecAdd(&pos, &ObjectPath[edobj_nearest].waypoints[0],
+                 &ObjectPath[edobj_nearest].particle_pos[edobj_nearest_particle]);
+        NuVecSub(&delta, &edobj_cam_pos, &pos);
+        if (delta.x * delta.x + delta.y * delta.y + delta.z * delta.z == 0.0) {
+            return;
+        }
+    }
+    edobj_nearest_particle = -1;
+    for (i = 0; i < ObjectPath[edobj_nearest].num_particles; i++) {
+        NuVecAdd(&pos, &ObjectPath[edobj_nearest].waypoints[0],
+                 &ObjectPath[edobj_nearest].particle_pos[i]);
+        NuVecSub(&delta, &edobj_cam_pos, &pos);
+        dist = delta.x * delta.x + delta.y * delta.y + delta.z * delta.z;
+        if (range < 0.0f || dist < range) {
+            edobj_nearest_particle = i;
+            range = dist;
+        }
+    }
+}
+
+
+void edobjDetermineNearestSound(float range)
+{
+    struct nuvec_s delta;
+    struct nuvec_s pos;
+    float dist;
+    int i;
+
+    if (edobj_nearest == -1) {
+        edobj_nearest_sound = -1;
+        return;
+    }
+    if (edobj_nearest_sound != -1) {
+        NuVecAdd(&pos, &ObjectPath[edobj_nearest].waypoints[0],
+                 &ObjectPath[edobj_nearest].sound_pos[edobj_nearest_sound]);
+        NuVecSub(&delta, &edobj_cam_pos, &pos);
+        if (delta.x * delta.x + delta.y * delta.y + delta.z * delta.z == 0.0) {
+            return;
+        }
+    }
+    edobj_nearest_sound = -1;
+    for (i = 0; i < ObjectPath[edobj_nearest].num_sounds; i++) {
+        NuVecAdd(&pos, &ObjectPath[edobj_nearest].waypoints[0],
+                 &ObjectPath[edobj_nearest].sound_pos[i]);
+        NuVecSub(&delta, &edobj_cam_pos, &pos);
+        dist = delta.x * delta.x + delta.y * delta.y + delta.z * delta.z;
+        if (range < 0.0f || dist < range) {
+            edobj_nearest_sound = i;
+            range = dist;
+        }
+    }
+}
+
+
+inline int edobjLookupInstanceIndex(int special)
+{
+    int i;
+
+    if (edobj_base_scene == 0) {
+        return -1;
+    }
+    for (i = 0; i < edobj_base_scene->numinstance; i++) {
+        if (&edobj_base_scene->instances[i]
+            == edobj_base_scene->specials[special].instance) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+
+void edobjConvertPathToAnim(int obj)
+{
+    int rotating;
+    unsigned int mask;
+    struct nuanimkey_s *key;
+    int num;
+    int changed;
+    int time;
+    int i;
+    int j;
+
+    ObjectInstance[obj].anim = 0;
+    NuMtxSetIdentity(&ObjectInstance[obj].mtx);
+    ObjectInstance[obj].mtx.pos.x = ObjectPath[obj].waypoints[0].x;
+    ObjectInstance[obj].mtx.pos.y = ObjectPath[obj].waypoints[0].y;
+    ObjectInstance[obj].mtx.pos.z = ObjectPath[obj].waypoints[0].z;
+    num = ObjectPath[obj].num_waypoints;
+    if (ObjectPath[obj].platinst == -1) {
+        ObjectPath[obj].platinst = NewPlatInst(&ObjectInstance[obj].mtx,
+                                               edobjLookupInstanceIndex(ObjectPath[obj].instance));
+    } else {
+        UpdatePlatinst(ObjectPath[obj].platinst, &ObjectInstance[obj].mtx);
+        PlatInstRotate(ObjectPath[obj].platinst, 0);
+    }
+    PlatInstBounce(ObjectPath[obj].platinst, ObjectPath[obj].bouncy_player_grav,
+                   ObjectPath[obj].bouncy_tension, ObjectPath[obj].bouncy_damping);
+    if (num < 2) {
+        return;
+    }
+    if (ObjectAnim[obj] == 0) {
+        ObjectAnim[obj] = NuAnimDataCreate(1);
+        ObjectAnim[obj]->chunks[0] = NuAnimDataChunkCreate(1);
+        ObjectAnim[obj]->nchunks = 1;
+        ObjectAnim[obj]->chunks[0]->animcurvesets[0] = NuAnimCurveSetCreate(9);
+        OBJECT_CURVESET(obj)->flags = 1;
+    }
+    ObjectAnim[obj]->time = 1.0f;
+    time = 0;
+    mask = 1;
+    for (i = 0; i < num - 1; i++) {
+        ObjectAnim[obj]->time += ObjectPath[obj].waypoint_time[i];
+        time += ObjectPath[obj].waypoint_time[i];
+        mask |= 1 << time;
+    }
+
+    changed = 0;
+    for (i = 1; i < num; i++) {
+        if (ObjectPath[obj].waypoints[i].x != ObjectPath[obj].waypoints[0].x) {
+            changed = 1;
+            break;
+        }
+    }
+    if (changed) {
+        OBJECT_CURVESET(obj)->constants[0] = edobj_curve_unused;
+        if (OBJECT_CURVESET(obj)->set[0] == 0) {
+            OBJECT_CURVESET(obj)->set[0] = NuAnimCurveCreate(num);
+        }
+        if (OBJECT_CURVESET(obj)->set[0]->numkeys != num) {
+            NuAnimCurveDestroy(OBJECT_CURVESET(obj)->set[0]);
+            OBJECT_CURVESET(obj)->set[0] = NuAnimCurveCreate(num);
+        }
+        OBJECT_CURVESET(obj)->set[0]->mask = mask;
+        for (i = 0; i < num; i++) {
+            key = &OBJECT_CURVESET(obj)->set[0]->animkeys[i];
+            key->time = 1.0f;
+            for (j = 0; j < i; j++) {
+                key->time += ObjectPath[obj].waypoint_time[j];
+            }
+            if (i == num - 1) {
+                key->dtime = 0.0f;
+            } else {
+                key->dtime = 1.0 / (float)ObjectPath[obj].waypoint_time[i];
+            }
+            if (i == 0) {
+                key->c = (ObjectPath[obj].waypoints[i + 1].x - ObjectPath[obj].waypoints[i].x) * 0.5
+                       * ObjectPath[obj].waypoint_speed[i];
+            } else if (i == num - 1) {
+                key->c = (ObjectPath[obj].waypoints[i].x - ObjectPath[obj].waypoints[i - 1].x) * 0.5
+                       * ObjectPath[obj].waypoint_speed[i];
+            } else {
+                key->c = (ObjectPath[obj].waypoints[i + 1].x - ObjectPath[obj].waypoints[i - 1].x)
+                       * ObjectPath[obj].waypoint_speed[i];
+            }
+            key->d = ObjectPath[obj].waypoints[i].x - ObjectPath[obj].waypoints[0].x;
+        }
+    } else {
+        OBJECT_CURVESET(obj)->constants[0] = 0.0f;
+        if (OBJECT_CURVESET(obj)->set[0] != 0) {
+            NuAnimCurveDestroy(OBJECT_CURVESET(obj)->set[0]);
+            OBJECT_CURVESET(obj)->set[0] = 0;
+        }
+    }
+
+    changed = 0;
+    for (i = 1; i < num; i++) {
+        if (ObjectPath[obj].waypoints[i].y != ObjectPath[obj].waypoints[0].y) {
+            changed = 1;
+            break;
+        }
+    }
+    if (changed) {
+        OBJECT_CURVESET(obj)->constants[1] = edobj_curve_unused;
+        if (OBJECT_CURVESET(obj)->set[1] == 0) {
+            OBJECT_CURVESET(obj)->set[1] = NuAnimCurveCreate(num);
+        }
+        if (OBJECT_CURVESET(obj)->set[1]->numkeys != num) {
+            NuAnimCurveDestroy(OBJECT_CURVESET(obj)->set[1]);
+            OBJECT_CURVESET(obj)->set[1] = NuAnimCurveCreate(num);
+        }
+        OBJECT_CURVESET(obj)->set[1]->mask = mask;
+        for (i = 0; i < num; i++) {
+            key = &OBJECT_CURVESET(obj)->set[1]->animkeys[i];
+            key->time = 1.0f;
+            for (j = 0; j < i; j++) {
+                key->time += ObjectPath[obj].waypoint_time[j];
+            }
+            if (i == num - 1) {
+                key->dtime = 0.0f;
+            } else {
+                key->dtime = 1.0 / (float)ObjectPath[obj].waypoint_time[i];
+            }
+            if (i == 0) {
+                key->c = (ObjectPath[obj].waypoints[i + 1].y - ObjectPath[obj].waypoints[i].y) * 0.5
+                       * ObjectPath[obj].waypoint_speed[i];
+            } else if (i == num - 1) {
+                key->c = (ObjectPath[obj].waypoints[i].y - ObjectPath[obj].waypoints[i - 1].y) * 0.5
+                       * ObjectPath[obj].waypoint_speed[i];
+            } else {
+                key->c = (ObjectPath[obj].waypoints[i + 1].y - ObjectPath[obj].waypoints[i - 1].y)
+                       * ObjectPath[obj].waypoint_speed[i];
+            }
+            key->d = ObjectPath[obj].waypoints[i].y - ObjectPath[obj].waypoints[0].y;
+        }
+    } else {
+        OBJECT_CURVESET(obj)->constants[1] = 0.0f;
+        if (OBJECT_CURVESET(obj)->set[1] != 0) {
+            NuAnimCurveDestroy(OBJECT_CURVESET(obj)->set[1]);
+            OBJECT_CURVESET(obj)->set[1] = 0;
+        }
+    }
+
+    changed = 0;
+    for (i = 1; i < num; i++) {
+        if (ObjectPath[obj].waypoints[i].z != ObjectPath[obj].waypoints[0].z) {
+            changed = 1;
+            break;
+        }
+    }
+    if (changed) {
+        OBJECT_CURVESET(obj)->constants[2] = edobj_curve_unused;
+        if (OBJECT_CURVESET(obj)->set[2] == 0) {
+            OBJECT_CURVESET(obj)->set[2] = NuAnimCurveCreate(num);
+        }
+        if (OBJECT_CURVESET(obj)->set[2]->numkeys != num) {
+            NuAnimCurveDestroy(OBJECT_CURVESET(obj)->set[2]);
+            OBJECT_CURVESET(obj)->set[2] = NuAnimCurveCreate(num);
+        }
+        OBJECT_CURVESET(obj)->set[2]->mask = mask;
+        for (i = 0; i < num; i++) {
+            key = &OBJECT_CURVESET(obj)->set[2]->animkeys[i];
+            key->time = 1.0f;
+            for (j = 0; j < i; j++) {
+                key->time += ObjectPath[obj].waypoint_time[j];
+            }
+            if (i == num - 1) {
+                key->dtime = 0.0f;
+            } else {
+                key->dtime = 1.0 / (float)ObjectPath[obj].waypoint_time[i];
+            }
+            if (i == 0) {
+                key->c = (ObjectPath[obj].waypoints[i + 1].z - ObjectPath[obj].waypoints[i].z) * 0.5
+                       * ObjectPath[obj].waypoint_speed[i];
+            } else if (i == num - 1) {
+                key->c = (ObjectPath[obj].waypoints[i].z - ObjectPath[obj].waypoints[i - 1].z) * 0.5
+                       * ObjectPath[obj].waypoint_speed[i];
+            } else {
+                key->c = -(ObjectPath[obj].waypoints[i + 1].z - ObjectPath[obj].waypoints[i - 1].z)
+                       * ObjectPath[obj].waypoint_speed[i];
+            }
+            key->d = -(ObjectPath[obj].waypoints[i].z - ObjectPath[obj].waypoints[0].z);
+        }
+    } else {
+        OBJECT_CURVESET(obj)->constants[2] = 0.0f;
+        if (OBJECT_CURVESET(obj)->set[2] != 0) {
+            NuAnimCurveDestroy(OBJECT_CURVESET(obj)->set[2]);
+            OBJECT_CURVESET(obj)->set[2] = 0;
+        }
+    }
+
+    rotating = 0;
+    changed = 0;
+    for (i = 1; i < num; i++) {
+        if (ObjectPath[obj].waypoint_rot[i].x != ObjectPath[obj].waypoint_rot[0].x) {
+            changed = 1;
+            rotating = 1;
+            break;
+        }
+    }
+    if (changed) {
+        OBJECT_CURVESET(obj)->constants[3] = edobj_curve_unused;
+        if (OBJECT_CURVESET(obj)->set[3] == 0) {
+            OBJECT_CURVESET(obj)->set[3] = NuAnimCurveCreate(num);
+        }
+        if (OBJECT_CURVESET(obj)->set[3]->numkeys != num) {
+            NuAnimCurveDestroy(OBJECT_CURVESET(obj)->set[3]);
+            OBJECT_CURVESET(obj)->set[3] = NuAnimCurveCreate(num);
+        }
+        OBJECT_CURVESET(obj)->set[3]->mask = mask;
+        for (i = 0; i < num; i++) {
+            key = &OBJECT_CURVESET(obj)->set[3]->animkeys[i];
+            key->time = 1.0f;
+            for (j = 0; j < i; j++) {
+                key->time += ObjectPath[obj].waypoint_time[j];
+            }
+            if (i == num - 1) {
+                key->dtime = 0.0f;
+            } else {
+                key->dtime = 1.0 / (float)ObjectPath[obj].waypoint_time[i];
+            }
+            if (i == 0) {
+                key->c = (ObjectPath[obj].waypoint_rot[i + 1].x - ObjectPath[obj].waypoint_rot[i].x) * 0.5
+                       * ObjectPath[obj].waypoint_speed[i];
+            } else if (i == num - 1) {
+                key->c = (ObjectPath[obj].waypoint_rot[i].x - ObjectPath[obj].waypoint_rot[i - 1].x) * 0.5
+                       * ObjectPath[obj].waypoint_speed[i];
+            } else {
+                key->c = (ObjectPath[obj].waypoint_rot[i + 1].x - ObjectPath[obj].waypoint_rot[i - 1].x)
+                       * ObjectPath[obj].waypoint_speed[i];
+            }
+            key->d = ObjectPath[obj].waypoint_rot[i].x;
+        }
+    } else {
+        OBJECT_CURVESET(obj)->constants[3] = ObjectPath[obj].waypoint_rot[0].x;
+        if (OBJECT_CURVESET(obj)->set[3] != 0) {
+            NuAnimCurveDestroy(OBJECT_CURVESET(obj)->set[3]);
+            OBJECT_CURVESET(obj)->set[3] = 0;
+        }
+    }
+
+    changed = 0;
+    for (i = 1; i < num; i++) {
+        if (ObjectPath[obj].waypoint_rot[i].y != ObjectPath[obj].waypoint_rot[0].y) {
+            changed = 1;
+            rotating = 1;
+            break;
+        }
+    }
+    if (changed) {
+        OBJECT_CURVESET(obj)->constants[4] = edobj_curve_unused;
+        if (OBJECT_CURVESET(obj)->set[4] == 0) {
+            OBJECT_CURVESET(obj)->set[4] = NuAnimCurveCreate(num);
+        }
+        if (OBJECT_CURVESET(obj)->set[4]->numkeys != num) {
+            NuAnimCurveDestroy(OBJECT_CURVESET(obj)->set[4]);
+            OBJECT_CURVESET(obj)->set[4] = NuAnimCurveCreate(num);
+        }
+        OBJECT_CURVESET(obj)->set[4]->mask = mask;
+        for (i = 0; i < num; i++) {
+            key = &OBJECT_CURVESET(obj)->set[4]->animkeys[i];
+            key->time = 1.0f;
+            for (j = 0; j < i; j++) {
+                key->time += ObjectPath[obj].waypoint_time[j];
+            }
+            if (i == num - 1) {
+                key->dtime = 0.0f;
+            } else {
+                key->dtime = 1.0 / (float)ObjectPath[obj].waypoint_time[i];
+            }
+            if (i == 0) {
+                key->c = (ObjectPath[obj].waypoint_rot[i + 1].y - ObjectPath[obj].waypoint_rot[i].y) * 0.5
+                       * ObjectPath[obj].waypoint_speed[i];
+            } else if (i == num - 1) {
+                key->c = (ObjectPath[obj].waypoint_rot[i].y - ObjectPath[obj].waypoint_rot[i - 1].y) * 0.5
+                       * ObjectPath[obj].waypoint_speed[i];
+            } else {
+                key->c = (ObjectPath[obj].waypoint_rot[i + 1].y - ObjectPath[obj].waypoint_rot[i - 1].y)
+                       * ObjectPath[obj].waypoint_speed[i];
+            }
+            key->d = ObjectPath[obj].waypoint_rot[i].y;
+        }
+    } else {
+        OBJECT_CURVESET(obj)->constants[4] = ObjectPath[obj].waypoint_rot[0].y;
+        if (OBJECT_CURVESET(obj)->set[4] != 0) {
+            NuAnimCurveDestroy(OBJECT_CURVESET(obj)->set[4]);
+            OBJECT_CURVESET(obj)->set[4] = 0;
+        }
+    }
+
+    changed = 0;
+    for (i = 1; i < num; i++) {
+        if (ObjectPath[obj].waypoint_rot[i].z != ObjectPath[obj].waypoint_rot[0].z) {
+            changed = 1;
+            rotating = 1;
+            break;
+        }
+    }
+    if (changed) {
+        OBJECT_CURVESET(obj)->constants[5] = edobj_curve_unused;
+        if (OBJECT_CURVESET(obj)->set[5] == 0) {
+            OBJECT_CURVESET(obj)->set[5] = NuAnimCurveCreate(num);
+        }
+        if (OBJECT_CURVESET(obj)->set[5]->numkeys != num) {
+            NuAnimCurveDestroy(OBJECT_CURVESET(obj)->set[5]);
+            OBJECT_CURVESET(obj)->set[5] = NuAnimCurveCreate(num);
+        }
+        OBJECT_CURVESET(obj)->set[5]->mask = mask;
+        for (i = 0; i < num; i++) {
+            key = &OBJECT_CURVESET(obj)->set[5]->animkeys[i];
+            key->time = 1.0f;
+            for (j = 0; j < i; j++) {
+                key->time += ObjectPath[obj].waypoint_time[j];
+            }
+            if (i == num - 1) {
+                key->dtime = 0.0f;
+            } else {
+                key->dtime = 1.0 / (float)ObjectPath[obj].waypoint_time[i];
+            }
+            if (i == 0) {
+                key->c = (ObjectPath[obj].waypoint_rot[i + 1].z - ObjectPath[obj].waypoint_rot[i].z) * 0.5
+                       * ObjectPath[obj].waypoint_speed[i];
+            } else if (i == num - 1) {
+                key->c = (ObjectPath[obj].waypoint_rot[i].z - ObjectPath[obj].waypoint_rot[i - 1].z) * 0.5
+                       * ObjectPath[obj].waypoint_speed[i];
+            } else {
+                key->c = (ObjectPath[obj].waypoint_rot[i + 1].z - ObjectPath[obj].waypoint_rot[i - 1].z)
+                       * ObjectPath[obj].waypoint_speed[i];
+            }
+            key->d = ObjectPath[obj].waypoint_rot[i].z;
+        }
+    } else {
+        OBJECT_CURVESET(obj)->constants[5] = ObjectPath[obj].waypoint_rot[0].z;
+        if (OBJECT_CURVESET(obj)->set[5] != 0) {
+            NuAnimCurveDestroy(OBJECT_CURVESET(obj)->set[5]);
+            OBJECT_CURVESET(obj)->set[5] = 0;
+        }
+    }
+
+    if (ObjectPath[obj].waypoint_rot[0].x != 0.0f || ObjectPath[obj].waypoint_rot[0].y != 0.0f
+        || ObjectPath[obj].waypoint_rot[0].z != 0.0f) {
+        rotating = 1;
+    }
+    ObjectInstance[obj].anim = &ObjectInstAnim[obj];
+    if (ObjectPath[obj].platinst != -1) {
+        UpdatePlatinst(ObjectPath[obj].platinst, &ObjectInstAnim[obj].mtx);
+        if (rotating) {
+            PlatInstRotate(ObjectPath[obj].platinst, 1);
+        }
+    }
+    ObjectInstAnim[obj].tfactor = ObjectPath[obj].anim_speed;
+    ObjectInstAnim[obj].playing = 0;
+    ObjectInstAnim[obj].repeating = ObjectPath[obj].repeating;
+    ObjectInstAnim[obj].oscillate = ObjectPath[obj].oscillate;
+    if (!ObjectPath[obj].oscillate) {
+        ObjectInstAnim[obj].backwards = 0;
+    }
+    ObjectInstAnim[obj].anim_ix = obj;
+    ObjectInstAnim[obj].tinterval = ObjectPath[obj].anim_pause;
+}
+
+
+void edobjSoundCreate(struct nuvec_s *pos)
+{
+    int slot;
+
+    slot = ObjectPath[edobj_nearest].num_sounds;
+    if (slot != 8 && edobj_sound_type != -1) {
+        NuVecSub(&ObjectPath[edobj_nearest].sound_pos[slot], pos,
+                 &ObjectPath[edobj_nearest].waypoints[0]);
+        ObjectPath[edobj_nearest].sound_id[slot] = edobj_sound_type;
+        ObjectPath[edobj_nearest].sound_type[slot] = 1;
+        strcpy(ObjectPath[edobj_nearest].sound_name[slot], edbitsGetSoundName(edobj_sound_type));
+        ObjectPath[edobj_nearest].sound_timing[slot] = 50.0f;
+        ObjectPath[edobj_nearest].num_sounds++;
+    }
+}
+
+
+void edobjSoundDestroy(int obj, int slot)
+{
+    int i;
+
+    for (i = slot; i < ObjectPath[obj].num_sounds - 1; i++) {
+        ObjectPath[obj].sound_id[i] = ObjectPath[obj].sound_id[i + 1];
+        ObjectPath[obj].sound_timing[i] = ObjectPath[obj].sound_timing[i + 1];
+        ObjectPath[obj].sound_pos[i] = ObjectPath[obj].sound_pos[i + 1];
+        strcpy(ObjectPath[obj].sound_name[i], ObjectPath[obj].sound_name[i + 1]);
+    }
+    ObjectPath[obj].num_sounds--;
+}
+
+
+void edobjParticleCreate(struct nuvec_s *pos)
+{
+    int slot;
+
+    slot = ObjectPath[edobj_nearest].num_particles;
+    if (slot != 8 && edobj_particle_type != -1) {
+        NuVecSub(&ObjectPath[edobj_nearest].particle_pos[slot], pos,
+                 &ObjectPath[edobj_nearest].waypoints[0]);
+        ObjectPath[edobj_nearest].particle_rotz[slot] = edobj_emitrotz;
+        ObjectPath[edobj_nearest].particle_roty[slot] = edobj_emitroty;
+        ObjectPath[edobj_nearest].particle_type[slot] = edobj_particle_type;
+        strcpy(ObjectPath[edobj_nearest].particle_name[slot], debtab[edobj_particle_type]);
+        ObjectPath[edobj_nearest].particle_rate[slot] = 1;
+        ObjectPath[edobj_nearest].particle_switch[slot] = 0;
+        ObjectPath[edobj_nearest].num_particles++;
+    }
+}
+
+
+void edobjParticleDestroy(int obj, int slot)
+{
+    int i;
+
+    for (i = slot; i < ObjectPath[obj].num_particles - 1; i++) {
+        ObjectPath[obj].particle_type[i] = ObjectPath[obj].particle_type[i + 1];
+        ObjectPath[obj].particle_rate[i] = ObjectPath[obj].particle_rate[i + 1];
+        ObjectPath[obj].particle_switch[i] = ObjectPath[obj].particle_switch[i + 1];
+        ObjectPath[obj].particle_pos[i] = ObjectPath[obj].particle_pos[i + 1];
+        strcpy(ObjectPath[obj].particle_name[i], ObjectPath[obj].particle_name[i + 1]);
+    }
+    ObjectPath[obj].num_particles--;
+}
+
+
 void edobjWaypointCreate(struct nuvec_s *pos)
 {
     if (ObjectPath[edobj_nearest].num_waypoints != 8) {
@@ -793,6 +1424,80 @@ void edobjWaypointDestroy(int index)
 }
 
 
+int edobjObjectCreate(struct nuvec_s *pos, int special)
+{
+    struct nuvec_s delta;
+    int start;
+    int obj;
+    int objid;
+    int i;
+
+    start = edobj_next_instance;
+    obj = start;
+    do {
+        if (ObjectInstance[obj].id == -1) {
+            break;
+        }
+        edobj_next_instance = obj + 1;
+        if (edobj_next_instance > 64) {
+            edobj_next_instance = 0;
+        }
+        obj = edobj_next_instance;
+        if (obj == start) {
+            return -1;
+        }
+    } while (1);
+    objid = edobj_base_scene->specials[special].instance->objid;
+    ObjectPath[obj].instance = special;
+    ObjectPath[obj].num_waypoints = 1;
+    ObjectPath[obj].total_time = 1;
+    ObjectPath[obj].num_particles = 0;
+    ObjectPath[obj].num_sounds = 0;
+    ObjectPath[obj].anim_speed = edobj_default_anim_speed;
+    ObjectPath[obj].oscillate = 1;
+    ObjectPath[obj].repeating = 1;
+    ObjectPath[obj].anim_pause = 0.0f;
+    ObjectPath[obj].waypoint_time[0] = 0;
+    ObjectPath[obj].anim_start_offset = 0;
+    ObjectPath[obj].platinst = -1;
+    ObjectPath[obj].switch_type = 0;
+    ObjectPath[obj].switch_id = -1;
+    ObjectPath[obj].switch_var = 0.0f;
+    ObjectPath[obj].bouncy_player_grav = 0.0f;
+    ObjectPath[obj].bouncy_tension = 0.0f;
+    ObjectInstance[obj].id = objid;
+    ObjectPath[obj].bouncy_damping = 0.0f;
+    NuVecSub(&delta, &ObjectPath[obj].waypoints[0], pos);
+    for (i = 0; i < ObjectPath[obj].num_waypoints; i++) {
+        NuVecSub(&ObjectPath[obj].waypoints[i], &ObjectPath[obj].waypoints[i], &delta);
+    }
+    edobjConvertPathToAnim(obj);
+    start = edobj_next_instance++;
+    return start;
+}
+
+
+int edobjObjectCreateCopy(struct nuvec_s *pos, int src)
+{
+    struct nuvec_s delta;
+    int obj;
+    int i;
+
+    obj = edobjObjectCreate(pos, ObjectPath[src].instance);
+    if (obj == -1) {
+        return -1;
+    }
+    ObjectPath[obj] = ObjectPath[src];
+    ObjectPath[obj].platinst = -1;
+    NuVecSub(&delta, &ObjectPath[obj].waypoints[0], pos);
+    for (i = 0; i < ObjectPath[obj].num_waypoints; i++) {
+        NuVecSub(&ObjectPath[obj].waypoints[i], &ObjectPath[obj].waypoints[i], &delta);
+    }
+    edobjConvertPathToAnim(obj);
+    return obj;
+}
+
+
 void edobjObjectDestroy(int obj)
 {
     if (ObjectInstance[obj].id != -1) {
@@ -807,6 +1512,388 @@ void edobjObjectDestroy(int obj)
         ObjectInstance[obj].id = -1;
         ObjectPath[obj].instance = -1;
     }
+}
+
+
+inline void edobjSoundPlace(int slot, struct nuvec_s *wpos)
+{
+    NuVecSub(&ObjectPath[edobj_nearest].sound_pos[slot], wpos,
+             &ObjectPath[edobj_nearest].waypoints[0]);
+}
+
+
+inline void edobjParticlePlace(int slot, struct nuvec_s *wpos)
+{
+    NuVecSub(&ObjectPath[edobj_nearest].particle_pos[slot], wpos,
+             &ObjectPath[edobj_nearest].waypoints[0]);
+    ObjectPath[edobj_nearest].particle_rotz[slot] = edobj_emitrotz;
+    ObjectPath[edobj_nearest].particle_roty[slot] = edobj_emitroty;
+}
+
+
+inline void edobjWaypointPlace(int index, struct nuvec_s *wpos)
+{
+    ObjectPath[edobj_nearest].waypoints[index] = *wpos;
+    edobjConvertPathToAnim(edobj_nearest);
+}
+
+
+inline void edobjObjectPlace(int obj, struct nuvec_s *pos)
+{
+    struct nuvec_s delta;
+    int i;
+
+    NuVecSub(&delta, &ObjectPath[obj].waypoints[0], pos);
+    for (i = 0; i < ObjectPath[obj].num_waypoints; i++) {
+        NuVecSub(&ObjectPath[obj].waypoints[i], &ObjectPath[obj].waypoints[i], &delta);
+    }
+    edobjConvertPathToAnim(obj);
+}
+
+
+void edobjDoInput(struct pad_s *pad)
+{
+    struct nuvec_s pos;
+    int obj;
+
+    if (!(pad->paddata & 0x100)) {
+        edcamMove(pad);
+    }
+    if (pad->paddata & 0x100) {
+        if (!edobj_copy_mode && !edobj_particle_mode && !edobj_sound_mode && (pad->buttons & 0x40)) {
+            if (edobj_waypoint_mode) {
+                edobj_waypoint_mode = 0;
+            } else if (edobj_nearest != -1) {
+                edobj_nearest_waypoint = 0;
+                edobj_waypoint_mode = 1;
+            }
+        }
+        if (!edobj_waypoint_mode && !edobj_particle_mode && !edobj_sound_mode && (pad->buttons & 0x20)) {
+            if (edobj_copy_mode) {
+                edobj_copy_mode = 0;
+            } else if (edobj_nearest != -1) {
+                edobj_copy_mode = 1;
+            }
+        }
+        if (!edobj_waypoint_mode && !edobj_copy_mode && !edobj_sound_mode && (pad->buttons & 0x80)) {
+            if (edobj_particle_mode) {
+                edobj_particle_mode = 0;
+            } else if (edobj_nearest != -1) {
+                edobj_nearest_particle = -1;
+                edobj_particle_mode = 1;
+            }
+        }
+        if (!edobj_waypoint_mode && !edobj_copy_mode && !edobj_particle_mode && (pad->buttons & 0x10)) {
+            if (edobj_sound_mode) {
+                edobj_sound_mode = 0;
+            } else if (edobj_nearest != -1) {
+                edobj_nearest_sound = -1;
+                edobj_sound_mode = 1;
+            }
+        }
+        if (edobj_waypoint_mode) {
+            if (edobj_nearest_waypoint != -1) {
+                if (pad->buttons & 8) {
+                    edobj_nearest_waypoint++;
+                    if (edobj_nearest_waypoint == ObjectPath[edobj_nearest].num_waypoints) {
+                        edobj_nearest_waypoint = 0;
+                    }
+                }
+                if (pad->buttons & 2) {
+                    edobj_nearest_waypoint--;
+                    if (edobj_nearest_waypoint == -1) {
+                        edobj_nearest_waypoint = ObjectPath[edobj_nearest].num_waypoints - 1;
+                    }
+                }
+            } else {
+                edobjDetermineNearestWaypoint(-1.0f);
+            }
+            if (edobj_nearest_waypoint != -1) {
+                edcamSetPos(&ObjectPath[edobj_nearest].waypoints[edobj_nearest_waypoint]);
+            }
+        } else if (!edobj_copy_mode) {
+            if (edobj_particle_mode) {
+                if (edobj_nearest_particle != -1) {
+                    if (pad->buttons & 8) {
+                        edobj_nearest_particle++;
+                        if (edobj_nearest_particle == ObjectPath[edobj_nearest].num_particles) {
+                            edobj_nearest_particle = 0;
+                        }
+                    }
+                    if (pad->buttons & 2) {
+                        edobj_nearest_particle--;
+                        if (edobj_nearest_particle == -1) {
+                            edobj_nearest_particle = ObjectPath[edobj_nearest].num_particles - 1;
+                        }
+                    }
+                } else {
+                    edobjDetermineNearestParticle(-1.0f);
+                }
+                if (edobj_nearest_particle != -1) {
+                    NuVecAdd(&pos, &ObjectPath[edobj_nearest].waypoints[0],
+                             &ObjectPath[edobj_nearest].particle_pos[edobj_nearest_particle]);
+                    edcamSetPos(&pos);
+                    edobj_emitrotz = ObjectPath[edobj_nearest].particle_rotz[edobj_nearest_particle];
+                    edobj_emitroty = ObjectPath[edobj_nearest].particle_roty[edobj_nearest_particle];
+                    edobj_particle_type =
+                        ObjectPath[edobj_nearest].particle_type[edobj_nearest_particle];
+                }
+            } else if (edobj_sound_mode) {
+                if (edobj_nearest_sound != -1) {
+                    if (pad->buttons & 8) {
+                        edobj_nearest_sound++;
+                        if (edobj_nearest_sound == ObjectPath[edobj_nearest].num_sounds) {
+                            edobj_nearest_sound = 0;
+                        }
+                    }
+                    if (pad->buttons & 2) {
+                        edobj_nearest_sound--;
+                        if (edobj_nearest_sound == -1) {
+                            edobj_nearest_sound = ObjectPath[edobj_nearest].num_sounds - 1;
+                        }
+                    }
+                } else {
+                    edobjDetermineNearestSound(-1.0f);
+                }
+                if (edobj_nearest_sound != -1) {
+                    NuVecAdd(&pos, &ObjectPath[edobj_nearest].waypoints[0],
+                             &ObjectPath[edobj_nearest].sound_pos[edobj_nearest_sound]);
+                    edcamSetPos(&pos);
+                    edobj_sound_type = ObjectPath[edobj_nearest].sound_id[edobj_nearest_sound];
+                }
+            } else {
+                if (edobj_nearest != -1) {
+                    if (pad->buttons & 8) {
+                        obj = edobj_nearest;
+                        do {
+                            obj++;
+                            if (obj == 64) {
+                                obj %= 64;
+                            }
+                        } while (ObjectPath[obj].instance == -1);
+                        edobj_nearest = obj;
+                    }
+                    if (pad->buttons & 2) {
+                        do {
+                            edobj_nearest--;
+                            if (edobj_nearest == -1) {
+                                edobj_nearest = 63;
+                            }
+                        } while (ObjectPath[edobj_nearest].instance == -1);
+                    }
+                } else {
+                    edobjDetermineNearestObject(-1.0f);
+                }
+                if (edobj_nearest != -1) {
+                    edcamSetPos(&ObjectPath[edobj_nearest].waypoints[0]);
+                }
+            }
+        }
+    }
+    edcamGetPosAng(&edobj_cam_pos, &edobj_cam_ax, &edobj_cam_ay);
+    if (edobj_snap_y) {
+        edobj_cam_pos.y = edobj_snap_vec.y
+                        + (int)(((edobj_cam_pos.y - edobj_snap_vec.y) + 0.25) * 2.0) * 0.5f;
+    }
+    if (edobj_snap_xz) {
+        edobj_cam_pos.x = edobj_snap_vec.x
+                        + (int)(((edobj_cam_pos.x - edobj_snap_vec.x) + 0.25) * 2.0) * 0.5f;
+        edobj_cam_pos.z = edobj_snap_vec.z
+                        + (int)(((edobj_cam_pos.z - edobj_snap_vec.z) + 0.25) * 2.0) * 0.5f;
+    }
+    if (!(pad->paddata & 0x100)) {
+        if (pad->buttons & 0x80) {
+            edobj_active_menu = edobj_options_menu;
+        }
+        if (pad->buttons & 0x40) {
+            if (edobj_waypoint_mode) {
+                edobjWaypointCreate(&edobj_cam_pos);
+            } else if (edobj_copy_mode) {
+                edobjObjectCreateCopy(&edobj_cam_pos, edobj_nearest);
+            } else if (edobj_particle_mode) {
+                edobjParticleCreate(&edobj_cam_pos);
+            } else if (edobj_sound_mode) {
+                edobjSoundCreate(&edobj_cam_pos);
+            } else if (edobj_instance_type != -1) {
+                edobjObjectCreate(&edobj_cam_pos, edobj_instance_type);
+            }
+        }
+        if (pad->paddata & 0x20) {
+            if (edobj_waypoint_mode) {
+                if (edobj_nearest_waypoint != -1) {
+                    edobjWaypointPlace(edobj_nearest_waypoint, &edobj_cam_pos);
+                }
+            } else if (!edobj_copy_mode) {
+                if (edobj_particle_mode) {
+                    if (edobj_nearest_particle != -1) {
+                        edobjParticlePlace(edobj_nearest_particle, &edobj_cam_pos);
+                    }
+                } else if (edobj_sound_mode) {
+                    if (edobj_nearest_sound != -1) {
+                        edobjSoundPlace(edobj_nearest_sound, &edobj_cam_pos);
+                    }
+                } else if (edobj_nearest != -1) {
+                    edobjObjectPlace(edobj_nearest, &edobj_cam_pos);
+                }
+            }
+        }
+        if (pad->buttons & 0x10) {
+            if (edobj_waypoint_mode) {
+                if (edobj_nearest_waypoint != -1) {
+                    edobjWaypointDestroy(edobj_nearest_waypoint);
+                }
+            } else if (!edobj_copy_mode) {
+                if (edobj_particle_mode) {
+                    if (edobj_nearest_particle != -1) {
+                        edobjParticleDestroy(edobj_nearest, edobj_nearest_particle);
+                        edobj_nearest_particle = -1;
+                    }
+                } else if (edobj_sound_mode) {
+                    if (edobj_nearest_sound != -1) {
+                        edobjSoundDestroy(edobj_nearest, edobj_nearest_sound);
+                        edobj_nearest_sound = -1;
+                    }
+                } else {
+                    if (edobj_nearest != -1) {
+                        edobjObjectDestroy(edobj_nearest);
+                    }
+                    edobj_nearest = -1;
+                }
+            }
+        }
+    }
+    if (edobj_particle_mode) {
+        edobj_emitroty += pad->rotleft;
+        edobj_emitroty -= pad->rotright;
+        edobj_emitrotz += pad->rotup;
+        if (edobj_emitrotz > 0) {
+            edobj_emitrotz = 0;
+        }
+        edobj_emitrotz -= pad->rotdown;
+        if (edobj_emitrotz < -0x8000) {
+            edobj_emitrotz = -0x8000;
+        }
+    }
+}
+
+
+void edobjDrawCursor(void)
+{
+    struct nurndrvtx_s line[2];
+    struct nuvec_s dir;
+    int type;
+
+    line[0].pnt.x = edobj_cam_pos.x - 0.5f;
+    line[0].pnt.y = edobj_cam_pos.y;
+    line[0].pnt.z = edobj_cam_pos.z;
+    line[0].colour = -1;
+    line[1].pnt.x = edobj_cam_pos.x + 0.5f;
+    line[1].pnt.y = edobj_cam_pos.y;
+    line[1].pnt.z = edobj_cam_pos.z;
+    line[1].colour = -1;
+    NuRndrLine3d(line, edobj_mtl, 0);
+    line[0].pnt.x = edobj_cam_pos.x;
+    line[0].pnt.y = edobj_cam_pos.y - 0.5f;
+    line[0].pnt.z = edobj_cam_pos.z;
+    line[0].colour = -1;
+    line[1].pnt.x = edobj_cam_pos.x;
+    line[1].pnt.y = edobj_cam_pos.y + 0.5f;
+    line[1].pnt.z = edobj_cam_pos.z;
+    line[1].colour = -1;
+    NuRndrLine3d(line, edobj_mtl, 0);
+    line[0].pnt.x = edobj_cam_pos.x;
+    line[0].pnt.y = edobj_cam_pos.y;
+    line[0].pnt.z = edobj_cam_pos.z - 0.5f;
+    line[0].colour = -1;
+    line[1].pnt.x = edobj_cam_pos.x;
+    line[1].pnt.y = edobj_cam_pos.y;
+    line[1].pnt.z = edobj_cam_pos.z + 0.5f;
+    line[1].colour = -1;
+    NuRndrLine3d(line, edobj_mtl, 0);
+    if (edobj_particle_mode) {
+        dir.x = 0.0f;
+        dir.y = 0.375f;
+        dir.z = 0.0f;
+        NuVecRotateZ(&dir, &dir, edobj_emitrotz);
+        NuVecRotateY(&dir, &dir, edobj_emitroty);
+        line[0].pnt.x = edobj_cam_pos.x;
+        line[0].pnt.y = edobj_cam_pos.y;
+        line[0].pnt.z = edobj_cam_pos.z;
+        line[0].colour = 0xFF0000FF;
+        line[1].pnt.x = edobj_cam_pos.x + dir.x;
+        line[1].pnt.y = edobj_cam_pos.y + dir.y;
+        line[1].pnt.z = edobj_cam_pos.z + dir.z;
+        line[1].colour = 0xFF0000FF;
+        NuRndrLine3d(line, edobj_mtl, 0);
+    }
+    if (!edobj_waypoint_mode && !edobj_particle_mode) {
+        if (edobj_copy_mode) {
+            type = ObjectPath[edobj_nearest].instance;
+        } else {
+            type = edobj_instance_type;
+        }
+        if (type != -1 && edobj_blink_timer % 150 < 75) {
+            NuMtxSetIdentity(&edobj_cursor_matrix);
+            edobj_cursor_matrix.pos.x = edobj_cam_pos.x;
+            edobj_cursor_matrix.pos.y = edobj_cam_pos.y;
+            edobj_cursor_matrix.pos.z = edobj_cam_pos.z;
+            NuRndrGScnObj(edobj_base_scene->gobjs[edobj_base_scene->specials[type].instance->objid],
+                          &edobj_cursor_matrix);
+        }
+    }
+    NuRndrRect2di(0x1720, 0xA50, 0xDC0, 0x370, 0x80808080, edobj_mtl_zoff);
+    NuRndrRect2di(0x1710, 0x990, 0xDE0, 0xC0, 0x80000000, edobj_mtl_zoff);
+    NuRndrLine2di(0x1710, 0xA50, 0x1710, 0xDC8, 0x80000000, edobj_mtl_zoff);
+    NuRndrLine2di(0x24F0, 0xA50, 0x24F0, 0xDC8, 0x80000000, edobj_mtl_zoff);
+    NuRndrLine2di(0x1710, 0xDC8, 0x24F0, 0xDC8, 0x80000000, edobj_mtl_zoff);
+    NuFntSet(app_fnt);
+    NuFntSetPen(0x80808080);
+    NuFntPrintEx(0x17C0, 0xA28, 0, info_box_title);
+    NuFntSetPen(0x80000000);
+    if (edobj_instance_type == -1) {
+        NuFntPrintEx(0x17C0, 0xAF0, 0, info_inst_none);
+    } else {
+        NuFntPrintEx(0x17C0, 0xAF0, 0, info_inst_fmt,
+                     edobj_base_scene->specials[edobj_instance_type].name);
+    }
+    if (edobj_nearest == -1) {
+        NuFntPrintEx(0x17C0, 0xB90, 0, info_highlight_none);
+    } else if (edobj_waypoint_mode) {
+        NuFntPrintEx(0x17C0, 0xB90, 0, info_locked_fmt,
+                     edobj_base_scene->specials[ObjectPath[edobj_nearest].instance].name);
+        NuFntPrintEx(0x1810, 0xC30, 0, info_waypoints_fmt, ObjectPath[edobj_nearest].num_waypoints,
+                     8);
+        if (edobj_nearest_waypoint == -1) {
+            NuFntPrintEx(0x1810, 0xCD0, 0, info_hilite_wp_none);
+        } else {
+            NuFntPrintEx(0x1810, 0xCD0, 0, info_hilite_wp_fmt, edobj_nearest_waypoint + 1);
+        }
+    } else if (edobj_particle_mode) {
+        NuFntPrintEx(0x17C0, 0xB90, 0, info_locked_fmt,
+                     edobj_base_scene->specials[ObjectPath[edobj_nearest].instance].name);
+        NuFntPrintEx(0x1810, 0xC30, 0, info_particles_fmt, ObjectPath[edobj_nearest].num_particles,
+                     8);
+        if (edobj_particle_type == -1) {
+            NuFntPrintEx(0x1810, 0xCD0, 0, info_type_none);
+        } else {
+            NuFntPrintEx(0x1810, 0xCD0, 0, info_type_fmt, debtab[edobj_particle_type]);
+        }
+    } else if (edobj_sound_mode) {
+        NuFntPrintEx(0x17C0, 0xB90, 0, info_locked_fmt,
+                     edobj_base_scene->specials[ObjectPath[edobj_nearest].instance].name);
+        NuFntPrintEx(0x1810, 0xC30, 0, info_sounds_fmt, ObjectPath[edobj_nearest].num_sounds, 8);
+        if (edobj_sound_type == -1) {
+            NuFntPrintEx(0x1810, 0xCD0, 0, info_type_none);
+        } else {
+            NuFntPrintEx(0x1810, 0xCD0, 0, info_type_fmt, edbitsGetSoundName(edobj_sound_type));
+        }
+    } else {
+        NuFntPrintEx(0x17C0, 0xB90, 0, info_highlight_fmt,
+                     edobj_base_scene->specials[ObjectPath[edobj_nearest].instance].name);
+    }
+    NuFntPrintEx(0x17C0, 0xD70, 0, info_coord_fmt, edobj_cam_pos.x);
+    NuFntPrintEx(0x1C20, 0xD70, 0, info_coord_fmt, edobj_cam_pos.y);
+    NuFntPrintEx(0x2080, 0xD70, 0, info_coord_fmt, edobj_cam_pos.z);
 }
 
 
@@ -936,59 +2023,6 @@ void edobjcbResetAnims(void *menu, struct edobjitem_s *item)
             anim->playing = 0;
         }
     }
-}
-
-
-int edobjLookupInstanceIndex(int special)
-{
-    int i;
-
-    if (edobj_base_scene == 0) {
-        return -1;
-    }
-    for (i = 0; i < edobj_base_scene->numinstance; i++) {
-        if (&edobj_base_scene->instances[i]
-            == edobj_base_scene->specials[special].instance) {
-            return i;
-        }
-    }
-    return -1;
-}
-
-
-void edobjSoundPlace(int slot, struct nuvec_s *wpos)
-{
-    NuVecSub(&ObjectPath[edobj_nearest].sound_pos[slot], wpos,
-             &ObjectPath[edobj_nearest].waypoints[0]);
-}
-
-
-void edobjParticlePlace(int slot, struct nuvec_s *wpos)
-{
-    NuVecSub(&ObjectPath[edobj_nearest].particle_pos[slot], wpos,
-             &ObjectPath[edobj_nearest].waypoints[0]);
-    ObjectPath[edobj_nearest].particle_rotz[slot] = edobj_emitrotz;
-    ObjectPath[edobj_nearest].particle_roty[slot] = edobj_emitroty;
-}
-
-
-void edobjWaypointPlace(int index, struct nuvec_s *wpos)
-{
-    ObjectPath[edobj_nearest].waypoints[index] = *wpos;
-    edobjConvertPathToAnim(edobj_nearest);
-}
-
-
-void edobjObjectPlace(int obj, struct nuvec_s *pos)
-{
-    struct nuvec_s delta;
-    int i;
-
-    NuVecSub(&delta, &ObjectPath[obj].waypoints[0], pos);
-    for (i = 0; i < ObjectPath[obj].num_waypoints; i++) {
-        NuVecSub(&ObjectPath[obj].waypoints[i], &ObjectPath[obj].waypoints[i], &delta);
-    }
-    edobjConvertPathToAnim(obj);
 }
 
 
