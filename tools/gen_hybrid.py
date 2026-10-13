@@ -240,6 +240,8 @@ _LEAVE_DATA_RE = re.compile(
     r"^\s*\.(text|ent|globl)\b|^\s*\.section\s+\.text\b")
 # Symbol names in %hi/%lo/%gp_rel operands (candidate owned-data slots).
 _SYM_REF_RE = re.compile(r"%(?:hi|lo|gp_rel)\(([A-Za-z_$][\w$]*)\)")
+# Symbols a retail slice loads a doubleword from (`ld $reg, %lo(SYM)($at)`).
+_LD_LO_SYM_RE = re.compile(r"\bld\s+\$\w+,\s*%lo\(([A-Za-z_$][\w$]*)\)")
 # Initialized-data sections whose bytes exist in the ELF image (a private
 # aggregate can only borrow a slot that actually holds matching bytes).
 _OWNED_INIT_DATA = {".sdata", ".sdata2", ".data", ".rdata", ".rodata",
@@ -673,12 +675,16 @@ class Lit4Mapper:
         A candidate must be 8-aligned (`ld`), lie in file-backed initialized
         data, and hold exactly the wanted image. Only the 64-bit form borrows:
         a 4-byte float image could plausibly coincide with unrelated data the
-        slice happens to reference, 8 bytes cannot. Constants with no such slot
-        fall through to the inline `dli` expansion, and the whole-unit byte
-        gate is the arbiter either way."""
+        slice happens to reference, 8 bytes cannot. Only symbols the slice
+        actually `ld`s count: a table whose base the slice merely takes
+        (`lui`/`addiu`) can hold the wanted image in its first element without
+        retail ever loading it from there (__ieee754_pow: bp[0] = 1.0 at
+        D_0062B530, while retail builds its 1.0 inline). Constants with no
+        such slot fall through to the inline `dli` expansion, and the
+        whole-unit byte gate is the arbiter either way."""
         by_bits = {}
         seen = set()
-        for sym in _SYM_REF_RE.findall(slice_text):     # appearance order
+        for sym in _LD_LO_SYM_RE.findall(slice_text):   # appearance order
             if sym in seen:
                 continue
             seen.add(sym)
@@ -837,7 +843,25 @@ def _rewrite_lis(seg, version, unit_dir, name, addr, mapper_box):
             maps[kind] = getattr(mapper_box[0], method)(slice_cache[0], name)
         return maps[kind].get(bits, ())
 
+    reorder = True
+
+    def emit_unswappable(lines):
+        # Sony's `as` never moves part of a `li.d $gpr` expansion into a
+        # following branch delay slot -- it leaves a nop there (__kernel_cos
+        # `b` at 0x0026B4B8, __ieee754_rem_pio2 `jal` at 0x0026AB9C). The
+        # decompals `as` would swap the last instruction in; one it emitted
+        # under noreorder is never a swap candidate, so it fills the slot
+        # with a nop instead.
+        if reorder:
+            out.append("\t.set\tnoreorder")
+        out.extend(lines)
+        if reorder:
+            out.append("\t.set\treorder")
+
     for line in seg:
+        mr = _SET_REORDER_RE.match(line)
+        if mr:
+            reorder = mr.group(1) is None
         ms, md = _LIS_RE.match(line), _LID_RE.match(line)
         if ms:
             reg, const, size, load, low = ms.group(1), ms.group(2), 4, "lwc1", \
@@ -871,10 +895,12 @@ def _rewrite_lis(seg, version, unit_dir, name, addr, mapper_box):
                         # Explicit %hi/%lo, not the `ld $reg,SYM` macro: under
                         # -G8 an 8-byte `.extern` is a small symbol and the
                         # macro would collapse to a single gp-relative load.
-                        out.append("\t.set\tnoat")
-                        out.append(f"\tlui\t$at,%hi({sym})")
-                        out.append(f"\tld\t{reg},%lo({sym})($at)")
-                        out.append("\t.set\tat")
+                        emit_unswappable([
+                            "\t.set\tnoat",
+                            f"\tlui\t$at,%hi({sym})",
+                            f"\tld\t{reg},%lo({sym})($at)",
+                            "\t.set\tat",
+                        ])
                         externs.append(f"\t.extern\t{sym}, 8")
                         continue
                     # Emit `dli` (64-bit explicit) for BOTH sizes: `li` on a
@@ -883,8 +909,10 @@ def _rewrite_lis(seg, version, unit_dir, name, addr, mapper_box):
                     # deterministically so the register holds exactly the raw
                     # bit pattern, zero-extended. The byte gate is the backstop
                     # if decompals `as` ever expands `dli` unlike retail's SN as.
-                    width = 16 if op == "li.d" else 8
-                    out.append(f"\tdli\t{reg},0x{bits:0{width}X}")
+                    if op == "li.d":
+                        emit_unswappable([f"\tdli\t{reg},0x{bits:016X}"])
+                    else:
+                        out.append(f"\tdli\t{reg},0x{bits:08X}")
                     continue
                 raise HybridError(f"{name}: unparseable fp-pool load {s!r}")
             out.append(line)

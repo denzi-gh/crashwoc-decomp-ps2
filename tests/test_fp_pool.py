@@ -18,8 +18,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 import gen_hybrid
-from gen_hybrid import (HybridError, _JumpTable, _double_bits, _float_bits,
-                        _rewrite_lis, _rewrite_local_data)
+from gen_hybrid import (HybridError, _JumpTable, _LD_LO_SYM_RE, _double_bits,
+                        _float_bits, _rewrite_lis, _rewrite_local_data)
 
 
 class TestLocalDataLabelBoundary(unittest.TestCase):
@@ -118,6 +118,11 @@ class _StubMapper:
 _ZERO_POINT_249 = 0x3FCFDF3B645A1CAC
 
 
+def _unswappable(*lines):
+    """A `li.d $gpr` expansion as _rewrite_lis emits it in reorder mode."""
+    return ["\t.set\tnoreorder", *lines, "\t.set\treorder"]
+
+
 class TestRewriteGprImmediate(unittest.TestCase):
     # `li.s`/`li.d` into a *GPR* is ee-gcc handing the raw float/double bit
     # pattern to the assembler (e.g. 10.0 as the s64 arg of the dpmul
@@ -142,7 +147,8 @@ class TestRewriteGprImmediate(unittest.TestCase):
         # falls through to the `dli` the decompals `as` expands.
         mapper = _StubMapper()
         out, externs, _ = self._run(["\tli.d\t$5,1.0e1", "\tjr\t$31"], mapper)
-        self.assertEqual(out, ["\tdli\t$5,0x4024000000000000", "\tjr\t$31"])
+        self.assertEqual(out, _unswappable("\tdli\t$5,0x4024000000000000")
+                         + ["\tjr\t$31"])
         self.assertEqual(externs, [])       # inline, no borrowed slot
         self.assertEqual(mapper.calls, 1)
 
@@ -157,10 +163,10 @@ class TestRewriteGprImmediate(unittest.TestCase):
         self.assertEqual(out, [
             line
             for sym in ("D_0061EE90", "D_0061EE98", "D_0061EEA0")
-            for line in ("\t.set\tnoat",
-                         f"\tlui\t$at,%hi({sym})",
-                         f"\tld\t$5,%lo({sym})($at)",
-                         "\t.set\tat")])
+            for line in _unswappable("\t.set\tnoat",
+                                     f"\tlui\t$at,%hi({sym})",
+                                     f"\tld\t$5,%lo({sym})($at)",
+                                     "\t.set\tat")])
         self.assertEqual(externs, ["\t.extern\tD_0061EE90, 8",
                                    "\t.extern\tD_0061EE98, 8",
                                    "\t.extern\tD_0061EEA0, 8"])
@@ -172,7 +178,8 @@ class TestRewriteGprImmediate(unittest.TestCase):
         mapper = _StubMapper({_ZERO_POINT_249: ["D_0061EE90"]})
         out, externs, _ = self._run(
             ["\tli.d\t$5,2.48999999999999999112e-1"] * 2, mapper)
-        self.assertEqual(out[-1], f"\tdli\t$5,0x{_ZERO_POINT_249:016X}")
+        self.assertEqual(out[-3:], _unswappable(
+            f"\tdli\t$5,0x{_ZERO_POINT_249:016X}"))
         self.assertEqual(externs, ["\t.extern\tD_0061EE90, 8"])
 
     def test_float_into_gpr_becomes_dli_zero_extended(self):
@@ -195,12 +202,53 @@ class TestRewriteGprImmediate(unittest.TestCase):
         # ee-gcc may spell the GPR by ABI name ($a1) rather than number ($5);
         # the $fN negative lookahead must still route it here, not to the pool.
         out, externs, _ = self._run(["\tli.d\t$a1,1.0e1"], _StubMapper())
-        self.assertEqual(out, ["\tdli\t$a1,0x4024000000000000"])
+        self.assertEqual(out, _unswappable("\tdli\t$a1,0x4024000000000000"))
         self.assertEqual(externs, [])
+
+    def test_double_into_gpr_is_never_swapped_into_a_delay_slot(self):
+        # __kernel_cos 0x0026B4B4: Sony's `as` leaves the `li.d` expansion
+        # whole before the branch and writes a nop into its delay slot. The
+        # noreorder wrapper keeps the decompals `as` from swapping the
+        # trailing dsll32 in; reorder mode resumes for the branch itself.
+        out, _, _ = self._run(["\tli.d\t$4,1.0e0", "\tb\t$L12"],
+                              _StubMapper())
+        self.assertEqual(out, _unswappable("\tdli\t$4,0x3FF0000000000000")
+                         + ["\tb\t$L12"])
+
+    def test_double_into_gpr_inside_noreorder_is_not_rewrapped(self):
+        # Inside a noreorder region nothing is swapped anyway, and a closing
+        # `.set reorder` there would wrongly end the region early.
+        seg = ["\t.set\tnoreorder", "\tli.d\t$4,1.0e0", "\t.set\treorder"]
+        out, _, _ = self._run(seg, _StubMapper())
+        self.assertEqual(out, ["\t.set\tnoreorder",
+                               "\tdli\t$4,0x3FF0000000000000",
+                               "\t.set\treorder"])
+
+    def test_float_into_gpr_is_not_wrapped(self):
+        # Only the `li.d` form is proven unswappable in retail; `li.s` keeps
+        # its plain `dli`.
+        out, _, _ = self._run(["\tli.s\t$4,0.5", "\tjr\t$31"])
+        self.assertEqual(out, ["\tdli\t$4,0x3F000000", "\tjr\t$31"])
 
     def test_unparseable_gpr_constant_raises(self):
         with self.assertRaises(HybridError):
             self._run(["\tli.d\t$5,notanumber"])
+
+
+class TestPooledSlotCandidates(unittest.TestCase):
+    # map_gpr_pool8 only borrows slots the retail slice actually `ld`s. A
+    # table base the slice merely takes (`lui`/`addiu`) is not a pooled
+    # constant even when its first element holds the wanted image
+    # (__ieee754_pow: bp[0] = 1.0 at D_0062B530, built inline in retail).
+    def test_ld_reference_is_a_candidate(self):
+        text = "ld         $5, %lo(D_0062B8D8)($1)"
+        self.assertEqual(_LD_LO_SYM_RE.findall(text), ["D_0062B8D8"])
+
+    def test_address_taken_table_is_not_a_candidate(self):
+        text = ("lui        $2, %hi(D_0062B530)\n"
+                "addiu      $2, $2, %lo(D_0062B530)\n"
+                "ldc1       $f0, %lo(D_0062B540)($1)\n")
+        self.assertEqual(_LD_LO_SYM_RE.findall(text), [])
 
 
 if __name__ == "__main__":
