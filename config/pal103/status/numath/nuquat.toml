@@ -17,7 +17,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0018:0010b700:NuQuatSlerp"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0018:0010b9f0:NuQuatToMtx"
@@ -25,28 +25,28 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0018:0010bac8:NuQuatAdd"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0018:0010bb10:NuQuatSub"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0018:0010bb58:NuQuatMul"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0018:0010bc60:NuQuatInv"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0018:0010bcd8:NuQuatNormalise"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0018:0010bdd0:NuQuatMagnitude"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0018:0010be00:NuQuatLerp"
-state = "asm"
+state = "matching"

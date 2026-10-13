@@ -70,6 +70,7 @@ void NuMtxToQuat(struct numtx_s *m, struct nuquat_s *q)
     }
 }
 
+
 void NuQuatSlerp(struct nuquat_s *dst, struct nuquat_s *a,
                  struct nuquat_s *b, float t)
 {
@@ -107,6 +108,7 @@ void NuQuatSlerp(struct nuquat_s *dst, struct nuquat_s *a,
     dst->z = weight_a * a->z + weight_b * end.z;
     dst->w = weight_a * a->w + weight_b * end.w;
 }
+
 
 void NuQuatToMtx(struct nuquat_s *q, struct numtx_s *m)
 {
@@ -147,6 +149,7 @@ void NuQuatToMtx(struct nuquat_s *q, struct numtx_s *m)
     m->_22 = ww - xx - yy + zz;
 }
 
+
 void NuQuatAdd(struct nuquat_s *dst, struct nuquat_s *a, struct nuquat_s *b)
 {
     dst->w = a->w + b->w;
@@ -154,6 +157,7 @@ void NuQuatAdd(struct nuquat_s *dst, struct nuquat_s *a, struct nuquat_s *b)
     dst->y = a->y + b->y;
     dst->z = a->z + b->z;
 }
+
 
 void NuQuatSub(struct nuquat_s *dst, struct nuquat_s *a, struct nuquat_s *b)
 {
@@ -163,6 +167,7 @@ void NuQuatSub(struct nuquat_s *dst, struct nuquat_s *a, struct nuquat_s *b)
     dst->z = a->z - b->z;
 }
 
+
 void NuQuatMul(struct nuquat_s *dst, struct nuquat_s *a, struct nuquat_s *b)
 {
     dst->w = a->w * b->w - a->x * b->x - a->y * b->y - a->z * b->z;
@@ -171,16 +176,6 @@ void NuQuatMul(struct nuquat_s *dst, struct nuquat_s *a, struct nuquat_s *b)
     dst->z = a->w * b->z + a->z * b->w + a->x * b->y - a->y * b->x;
 }
 
-void NuQuatLerp(struct nuquat_s *dst, struct nuquat_s *a,
-                struct nuquat_s *b, float t)
-{
-    float omt = 1.0f - t;
-
-    dst->x = omt * a->x + t * b->x;
-    dst->y = omt * a->y + t * b->y;
-    dst->z = omt * a->z + t * b->z;
-    dst->w = omt * a->w + t * b->w;
-}
 
 void NuQuatInv(struct nuquat_s *dst, struct nuquat_s *q)
 {
@@ -192,6 +187,7 @@ void NuQuatInv(struct nuquat_s *dst, struct nuquat_s *q)
     dst->y = -q->y * inv_mag;
     dst->z = -q->z * inv_mag;
 }
+
 
 void NuQuatNormalise(struct nuquat_s *dst, struct nuquat_s *q)
 {
@@ -209,7 +205,20 @@ void NuQuatNormalise(struct nuquat_s *dst, struct nuquat_s *q)
     }
 }
 
+
 float NuQuatMagnitude(struct nuquat_s *q)
 {
     return q->w * q->w + q->x * q->x + q->y * q->y + q->z * q->z;
+}
+
+
+void NuQuatLerp(struct nuquat_s *dst, struct nuquat_s *a,
+                struct nuquat_s *b, float t)
+{
+    float omt = 1.0f - t;
+
+    dst->x = omt * a->x + t * b->x;
+    dst->y = omt * a->y + t * b->y;
+    dst->z = omt * a->z + t * b->z;
+    dst->w = omt * a->w + t * b->w;
 }
