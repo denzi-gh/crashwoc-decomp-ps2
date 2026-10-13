@@ -65,23 +65,23 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018c118:UpdateTotalPtls"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018c2a8:cbChangeGenRateMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018c410:cbPtlCopySize"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018c618:cbPtlApplySize"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018c7f0:cbPtlApplyRot"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018c950:cbPtlSelGSort"
@@ -93,7 +93,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018cba8:edptlcbSwitchMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018cd40:edptlcbGroupMenu"
@@ -105,15 +105,15 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018d000:cbPtlTypeMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018d188:cbPtlColMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018d4b8:cbPtlJibMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018d6e0:edptlcbBounceMenu"
@@ -121,15 +121,15 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018d840:edptlcbSoundIDMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018da58:edptlcbSoundControlMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018dd28:edptlcbSoundXMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018def8:cbPtlCollMenu"
