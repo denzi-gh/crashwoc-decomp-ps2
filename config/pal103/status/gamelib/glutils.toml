@@ -13,16 +13,16 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0072:001a0ba0:CreateAlphaBlendTexture256_32"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0072:001a0d48:CreateAlphaBlendTexture64"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0072:001a0ec0:CreateSubtractiveTexture"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0072:001a0fd8:CreateAlphaBlendTexturewh_32"
-state = "asm"
+state = "matching"
