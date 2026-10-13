@@ -33,11 +33,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0189:0026fbe0:fpmul"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0189:0026fdd8:fpdiv"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0189:0026ff38:__fpcmp_parts_f"
@@ -57,7 +57,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0189:002701e8:fptoui"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0189:00270280:__negsf2"

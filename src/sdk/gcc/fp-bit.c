@@ -62,6 +62,7 @@ typedef union {
 #define IMPLICIT_1 (1 << (FRACBITS + NGARDS))
 #define IMPLICIT_2 (1U << (FRACBITS + 1 + NGARDS))
 #define F_D_BITOFF 30
+#define FRACHIGH 0x80000000
 
 extern fp_number_type D_00702A60;
 #define __thenan_sf D_00702A60
@@ -297,6 +298,168 @@ FLO_type fpsub(FLO_type arg_a, FLO_type arg_b) {
 }
 
 
+static inline fp_number_type *_fpmul_parts(fp_number_type *a, fp_number_type *b, fp_number_type *tmp) {
+    fractype low = 0;
+    fractype high = 0;
+
+    if (isnan(a)) {
+        a->sign = a->sign != b->sign;
+        return a;
+    }
+    if (isnan(b)) {
+        b->sign = a->sign != b->sign;
+        return b;
+    }
+    if (isinf(a)) {
+        if (iszero(b)) {
+            return nan();
+        }
+        a->sign = a->sign != b->sign;
+        return a;
+    }
+    if (isinf(b)) {
+        if (iszero(a)) {
+            return nan();
+        }
+        b->sign = a->sign != b->sign;
+        return b;
+    }
+    if (iszero(a)) {
+        a->sign = a->sign != b->sign;
+        return a;
+    }
+    if (iszero(b)) {
+        b->sign = a->sign != b->sign;
+        return b;
+    }
+
+    {
+        long long answer = (long long)a->fraction.ll * (long long)b->fraction.ll;
+
+        high = answer >> 32;
+        low = answer;
+    }
+
+    tmp->normal_exp = a->normal_exp + b->normal_exp;
+    tmp->sign = a->sign != b->sign;
+    tmp->normal_exp += 2;
+    while (high >= IMPLICIT_2) {
+        tmp->normal_exp++;
+        if (high & 1) {
+            low >>= 1;
+            low |= FRACHIGH;
+        }
+        high >>= 1;
+    }
+    while (high < IMPLICIT_1) {
+        tmp->normal_exp--;
+        high <<= 1;
+        if (low & FRACHIGH) {
+            high |= 1;
+        }
+        low <<= 1;
+    }
+    if ((high & GARDMASK) == GARDMSB) {
+        if (high & (1 << NGARDS)) {
+            high += GARDROUND + 1;
+        } else if (low) {
+            high += GARDROUND + 1;
+        }
+    }
+    tmp->fraction.ll = high;
+    tmp->class = CLASS_NUMBER;
+    return tmp;
+}
+
+
+FLO_type fpmul(FLO_type arg_a, FLO_type arg_b) {
+    fp_number_type a;
+    fp_number_type b;
+    fp_number_type tmp;
+    fp_number_type *res;
+
+    __unpack_f((FLO_union_type *)&arg_a, &a);
+    __unpack_f((FLO_union_type *)&arg_b, &b);
+    res = _fpmul_parts(&a, &b, &tmp);
+    return __pack_f(res);
+}
+
+
+static inline fp_number_type *_fpdiv_parts(fp_number_type *a, fp_number_type *b) {
+    fractype bit;
+    fractype numerator;
+    fractype denominator;
+    fractype quotient;
+
+    if (isnan(a)) {
+        return a;
+    }
+    if (isnan(b)) {
+        return b;
+    }
+
+    a->sign = a->sign ^ b->sign;
+
+    if (isinf(a) || iszero(a)) {
+        if (a->class == b->class) {
+            return nan();
+        }
+        return a;
+    }
+    if (isinf(b)) {
+        a->fraction.ll = 0;
+        a->normal_exp = 0;
+        return a;
+    }
+    if (iszero(b)) {
+        a->class = CLASS_INFINITY;
+        return a;
+    }
+
+    a->normal_exp = a->normal_exp - b->normal_exp;
+    numerator = a->fraction.ll;
+    denominator = b->fraction.ll;
+
+    if (numerator < denominator) {
+        numerator *= 2;
+        a->normal_exp--;
+    }
+    bit = IMPLICIT_1;
+    quotient = 0;
+    while (bit) {
+        if (numerator >= denominator) {
+            quotient |= bit;
+            numerator -= denominator;
+        }
+        bit >>= 1;
+        numerator *= 2;
+    }
+
+    if ((quotient & GARDMASK) == GARDMSB) {
+        if (quotient & (1 << NGARDS)) {
+            quotient += GARDROUND + 1;
+        } else if (numerator) {
+            quotient += GARDROUND + 1;
+        }
+    }
+
+    a->fraction.ll = quotient;
+    return a;
+}
+
+
+FLO_type fpdiv(FLO_type arg_a, FLO_type arg_b) {
+    fp_number_type a;
+    fp_number_type b;
+    fp_number_type *res;
+
+    __unpack_f((FLO_union_type *)&arg_a, &a);
+    __unpack_f((FLO_union_type *)&arg_b, &b);
+    res = _fpdiv_parts(&a, &b);
+    return __pack_f(res);
+}
+
+
 int __fpcmp_parts_f(fp_number_type *a, fp_number_type *b) {
     if (isnan(a) || isnan(b)) {
         return 1;
@@ -396,6 +559,35 @@ int fptosi(FLO_type arg_a) {
     }
     tmp = a.fraction.ll >> ((FRACBITS + NGARDS) - a.normal_exp);
     return a.sign ? -tmp : tmp;
+}
+
+
+unsigned int fptoui(FLO_type arg_a) {
+    fp_number_type a;
+
+    __unpack_f((FLO_union_type *)&arg_a, &a);
+    if (iszero(&a)) {
+        return 0;
+    }
+    if (isnan(&a)) {
+        return 0;
+    }
+    if (a.sign) {
+        return 0;
+    }
+    if (isinf(&a)) {
+        return 0xffffffff;
+    }
+    if (a.normal_exp < 0) {
+        return 0;
+    }
+    if (a.normal_exp > 31) {
+        return 0xffffffff;
+    } else if (a.normal_exp > FRACBITS + NGARDS) {
+        return a.fraction.ll << (a.normal_exp - (FRACBITS + NGARDS));
+    } else {
+        return a.fraction.ll >> ((FRACBITS + NGARDS) - a.normal_exp);
+    }
 }
 
 
