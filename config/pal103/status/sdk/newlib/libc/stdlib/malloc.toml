@@ -13,8 +13,8 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0195:002703e0:malloc"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0195:00270408:free"
-state = "asm"
+state = "matching"
