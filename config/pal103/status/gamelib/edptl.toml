@@ -229,11 +229,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00192b60:edppMemCardMergeEffects"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00192df8:cbMemCardMergeEffects"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00192f78:cbMemCardDeleteEffects"
@@ -241,11 +241,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00193120:cbMemCardMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00193550:edptlcbClipboardMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00193770:cbPtlDataMenu"
@@ -257,11 +257,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00193cd0:cbPtlGSortMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00193f10:edppInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:001945f0:ParticleReset"
@@ -317,7 +317,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00194ba0:cbChangeNameMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00194ca8:edptlcbEmptyClipboard"
@@ -369,7 +369,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00195208:cbChangeETimeMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00195348:cbPtlApplyJib"
@@ -405,7 +405,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00195700:edptlcbSwitchTypeMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00195850:edptlcbCancelSwitchMenu"
@@ -489,7 +489,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00195ee0:edptlcbSoundsMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00196030:cbPtlCancelCollMenu"
@@ -569,11 +569,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00196838:cbMemCardLoadEffectsMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00196988:cbMemCardMergeEffectsMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00196ad8:cbMemCardDeleteEffectsMenu"
