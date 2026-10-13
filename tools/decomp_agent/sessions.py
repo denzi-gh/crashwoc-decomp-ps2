@@ -278,14 +278,18 @@ def checkpoint_session(project, session_id, *, kind="experiment",
                        output_tokens=None) -> dict:
     """Record one experiment; update counters and repeat/oscillation flags.
 
-    ``input_tokens`` / ``output_tokens`` are optional client-reported
-    diagnostics; they are accumulated per client and per model but never affect
-    verification, ranking or promotion.
+    ``classifications``: compile_diff records or bare category names. Token
+    counts are diagnostics only.
     """
     try:
         _require_lock(project, session_id, client)
     except LockError as exc:
         return schemas.err("checkpoint_session", str(exc), code="locked")
+    try:
+        classifications = _normalize_classifications(classifications)
+    except ValueError as exc:
+        return schemas.err("checkpoint_session", str(exc),
+                           code="bad_classifications")
 
     ledger = _read_ledger(project, session_id)
     n = ledger["attempt_count"] + 1
@@ -434,9 +438,12 @@ def end_session(project, session_id, *, outcome=None, client=None,
     except LockError as exc:
         return schemas.err("end_session", str(exc), code="locked")
     ledger = _read_ledger(project, session_id)
-    if outcome and outcome not in schemas.OUTCOMES:
-        return schemas.err("end_session", f"unknown outcome {outcome!r}",
-                           code="bad_outcome")
+    if outcome:
+        outcome = str(outcome).strip().upper()
+        if outcome not in schemas.OUTCOMES:
+            return schemas.err("end_session", f"unknown outcome {outcome!r}",
+                               code="bad_outcome",
+                               allowed=list(schemas.OUTCOMES))
     ledger["outcome"] = outcome or ledger.get("outcome") or "NO_PROGRESS"
     if blocker_status:
         ledger["blocker_status"] = blocker_status
@@ -650,6 +657,20 @@ def _accumulate_tokens(ledger, input_tokens, output_tokens, client, model):
         row["input"] += i
         row["output"] += o
         row["total"] += i + o
+
+
+def _normalize_classifications(classifications):
+    """[{"category": ...}, ...] from category names and/or record dicts."""
+    out = []
+    for c in classifications or []:
+        if isinstance(c, str):
+            out.append({"category": c})
+        elif isinstance(c, dict):
+            out.append(c)
+        else:
+            raise ValueError(f"classification must be a category name or a "
+                             f"record dict, not {type(c).__name__}")
+    return out
 
 
 def _remaining_budget(ledger):

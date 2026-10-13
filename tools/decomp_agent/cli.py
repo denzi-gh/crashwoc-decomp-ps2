@@ -204,7 +204,23 @@ def build_parser():
     rl = ss.add_parser("recover-lock"); rl.add_argument("id"); rl.add_argument("--client")
     s.set_defaults(func=cmd_session)
 
+    _accept_global_options(p)
     return p
+
+
+def _accept_global_options(parser):
+    """Also accept --repo/--version/--json after any subcommand."""
+    for action in parser._actions:
+        if not isinstance(action, argparse._SubParsersAction):
+            continue
+        for child in {id(c): c for c in action.choices.values()}.values():
+            child.add_argument("--repo", default=argparse.SUPPRESS,
+                               help=argparse.SUPPRESS)
+            child.add_argument("--version", default=argparse.SUPPRESS,
+                               help=argparse.SUPPRESS)
+            child.add_argument("--json", action="store_true",
+                               default=argparse.SUPPRESS, help=argparse.SUPPRESS)
+            _accept_global_options(child)
 
 
 def _print(result, as_json):

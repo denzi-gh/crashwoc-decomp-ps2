@@ -46,7 +46,8 @@ def report_with(head=100.0, terrain=100.0, drop=None):
 class TestVerifiedMatching(unittest.TestCase):
     def test_only_matching_and_verified(self):
         self.assertEqual(verified_matching(VERIFY),
-                         [(7, "NuListGetHead"), (91, "TerrainFailsafe")])
+                         [(7, "NuListGetHead", 0x105a50),
+                          (91, "TerrainFailsafe", 0x300000)])
 
 
 class TestCheck(unittest.TestCase):
@@ -70,6 +71,15 @@ class TestCheck(unittest.TestCase):
     def test_missing_unit_is_flagged(self):
         _matched, problems = check(VERIFY, report_with(drop="unit"), UNIT_NAME)
         self.assertTrue(any("absent from the report" in p for p in problems))
+
+    def test_duplicated_static_reads_under_its_retail_label(self):
+        # A static several units define is NAME__<VRAM> in the report.
+        report = report_with()
+        report["units"][1]["functions"] = [
+            {"name": "TerrainFailsafe__00300000", "fuzzy_match_percent": 100.0}]
+        matched, problems = check(VERIFY, report, UNIT_NAME)
+        self.assertEqual(problems, [])
+        self.assertEqual(matched, 2)
 
     def test_equivalent_and_unverified_are_not_required(self):
         # Only the two matching+verified functions are checked; the report

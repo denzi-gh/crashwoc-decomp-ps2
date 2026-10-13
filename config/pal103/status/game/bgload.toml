@@ -13,20 +13,20 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0120:0025b668:BGSuspendMain"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0120:0025b6c0:BGLoadInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0120:0025b720:BGLoadStart"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0120:0025b7b0:BGLoadEnd"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0120:0025b800:VBlankFn"
-state = "asm"
+state = "matching"

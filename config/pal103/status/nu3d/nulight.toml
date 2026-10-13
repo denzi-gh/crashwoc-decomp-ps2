@@ -57,31 +57,31 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0042:0013ff78:NuLightCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0042:0013ffc0:NuLightDestroy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0042:00140018:NuLightGetLight"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0042:00140030:NuLigthSetPolyHazeMat"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0042:00140088:NuLightAddSpot"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0042:00140108:NuLightAddSpotXSpanFade"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0042:00140190:NuLightFog"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0042:001401b0:NuLightFogClear"
@@ -89,28 +89,28 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0042:001401b8:NuLgtArcLaser"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0042:001402c8:NuLgtSetArcMat"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0042:001402e0:NuLightAddHazePoly"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0042:00140340:NuLightSprDmaOpen"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0042:001403d0:NuLightSprDmaClose"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0042:00140400:NuLightSprMake"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0042:001404e8:NuLgtRand"
-state = "asm"
+state = "matching"

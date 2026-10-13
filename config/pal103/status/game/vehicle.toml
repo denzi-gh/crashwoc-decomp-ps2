@@ -125,7 +125,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:00208a28:AddGliderBullet"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00208bf0:CollideGliderBullets"
@@ -421,7 +421,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:00219f90:TrailPointInPoly"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021a138:SetTrailPos"
@@ -441,7 +441,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:0021ae90:AllRoksSkyward"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021af28:DrawJeepRocks"
@@ -473,15 +473,15 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:0021be58:MoveVehicle"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021bed8:GetRumbleCrunchRoks"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021bf50:GetRumblePlayerRoks"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021bfc8:GetRumbleTotalRoks"
@@ -521,7 +521,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021c2f8:GetMaxLevelObjectives"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021c370:LoadVehicleStuff"
@@ -541,7 +541,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021c580:InitVehMask"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021c5f0:SetNewMaskStuff"
@@ -549,7 +549,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:0021c718:CollideWithBattleShips"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021c798:ProcessCrashteroidsIntro"
@@ -577,7 +577,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:0021cc00:PickGliderTarget"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021ccd0:AddGliderBomb"
@@ -593,19 +593,19 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:0021cfd8:InitWeatherBossTarget"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021d040:ProcessWeatherBossTarget"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021d0f8:ExplodeGlider"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021d1d8:DeadGliderWB"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021d2c8:DrawGliderDebugStuff"
@@ -613,7 +613,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021d300:DrawZoffa"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021d3b8:FindFreeHova"
@@ -621,7 +621,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021d3f0:InitSatellite"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021d4e8:DrawSatellite"
@@ -645,11 +645,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021d8b0:GrabGliderBullet"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021d958:FreeGliderBullet"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021da20:InitPlane"
@@ -657,19 +657,19 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:0021db00:DrawPlane"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021db68:DrawFarmLevelExtra"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021dbf0:FindFreeAsteroid"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021dc90:GetRandomGliderLevelEdgePoint"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021dd48:CountAsteroids"
@@ -689,7 +689,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:0021df38:DrawAsteroids"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021df90:PossIntersect"
@@ -713,7 +713,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:0021e3f0:ProcessGunBoats"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021e448:InitBigGun"
@@ -725,7 +725,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:0021e6c8:ProcessBigGuns"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021e720:DrawBigGuns"
@@ -737,7 +737,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:0021e8c0:ProcessBattleShips"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021e918:PrintWeatherBossAction"
@@ -761,11 +761,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:0021ed08:WeatherBossNextAction"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021ed80:GetCurrentWeatherBossObjectives"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021ede0:ProcessWeatherBoss"
@@ -785,7 +785,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:0021ef90:ProcessWeatherResearchLevel"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021eff8:GetCurrentWeatherResearchObjectives"
@@ -797,7 +797,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021f078:InitLighteningHail"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021f0d8:DrawLighteningHail"
@@ -813,7 +813,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021f230:InitWBBolts"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021f2b0:InitWBIntro"
@@ -825,7 +825,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021f3b0:EarthBossReset"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021f410:GetCurrentRumbleObjectives"
@@ -861,7 +861,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:0021f8d8:UpdateRumbleCamTween"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021f9a0:InitRumblePanel"
@@ -877,7 +877,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:0021fa98:FadeOutLastTrail"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021fb30:PointLineSide"
@@ -897,7 +897,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021fc30:KeepHoldOnRock"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021fcb8:AddRock"

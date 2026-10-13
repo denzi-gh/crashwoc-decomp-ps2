@@ -17,7 +17,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0111:00244818:SaveLights"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0111:00244a98:ResetLights"
@@ -25,11 +25,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0111:00244c10:DrawHighLightBox"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0111:00244f48:TempDrawLights"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0111:002450c8:FindNearestLights"
@@ -37,27 +37,27 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0111:00245c48:CalculateSingleLightProportion"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0111:00246180:FindLightProportion"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0111:00246778:LightEverythingInEditor"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0111:00246d40:SetLevelLights"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0111:002472a0:SetCreatureLights"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0111:00247580:SetLights"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0111:002475d0:UpdateGlobals"
@@ -85,7 +85,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0111:00247908:edlightDrawCross"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0111:00247a20:SortLights"

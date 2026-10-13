@@ -29,7 +29,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0105:00236800:DrawCube"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0105:00236bc0:edaiDRAW"
@@ -37,7 +37,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0105:00237418:edaicbSelectType"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0105:002375c0:edaiInit"
@@ -45,7 +45,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0105:002376c8:edaiDoInput"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0105:002379b8:DrawAxes"

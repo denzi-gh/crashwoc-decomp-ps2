@@ -25,11 +25,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0043:00140d40:NuAnimDataFixPtrs"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:00140f38:NuAnimData2FixPtrs"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:00141080:NuAnimCurveCalcVal2"
@@ -81,11 +81,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0043:00144518:NuAnimDataLoadBuff"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:001445f8:NuAnimDataDestroy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:00144688:NuAnimDataCalcTime"
@@ -93,7 +93,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0043:001447c8:NuAnimDataCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:00144838:NuAnimCurveSetCreate"
@@ -113,7 +113,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0043:00144c18:NuAnimCurveDestroy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:00144c68:NuAnimCurveWrite"
@@ -125,15 +125,15 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0043:00144e28:NuAnimKeyWrite"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:00144e88:NuAnimKeyRead"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:00144ee8:NuAnimDataFindVersion"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:00144f50:NuAnimData2LoadBuff"
@@ -153,8 +153,8 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0043:001452f0:buildBitCountTable"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:00145358:NuAnimCurveScale"
-state = "asm"
+state = "matching"

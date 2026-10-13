@@ -21,3 +21,59 @@
  *   0x00131f60 NuFntSetPen
  *   0x00131f98 NuFntPrintLenV
  */
+
+extern int D_0062ED3C;
+extern int D_0062ED40;
+#define font_x D_0062ED3C
+#define font_y D_0062ED40
+
+void NuFntMoveRel(int x, int y)
+{
+    font_x += x;
+    font_y += y;
+}
+
+/* Font header: only the fields these setters read (offsets from retail). */
+struct nufont_s {
+    char pad0[0xC];
+    int height;     /* 0x0C */
+    char pad10[0x4];
+    int base;       /* 0x14 */
+};
+
+extern struct nufont_s *NuFntCur;
+extern struct nufont_s *system_font;
+extern int NuFntBase;
+extern int NuFntHeight;
+extern int D_0062ED34;
+extern int D_0062ED38;
+extern int D_002E8570[4];
+#define font_xscale D_0062ED34
+#define font_yscale D_0062ED38
+#define font_pen D_002E8570
+
+void NuFntSet(struct nufont_s *font)
+{
+    if (font == 0) {
+        font = system_font;
+    }
+    NuFntCur = font;
+    NuFntHeight = (font->height << 3) * font_yscale >> 4;
+    NuFntBase = (font->base << 3) * font_yscale >> 4;
+}
+
+void NuFntScale(int xscale, int yscale)
+{
+    font_xscale = xscale;
+    font_yscale = yscale;
+    NuFntHeight = (NuFntCur->height << 3) * yscale >> 4;
+    NuFntBase = (NuFntCur->base << 3) * yscale >> 4;
+}
+
+void NuFntSetPen(int colour)
+{
+    font_pen[0] = colour & 0xFF;
+    font_pen[1] = (colour >> 8) & 0xFF;
+    font_pen[2] = (colour >> 16) & 0xFF;
+    font_pen[3] = (colour >> 24) & 0xFF;
+}

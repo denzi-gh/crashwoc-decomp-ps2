@@ -1,16 +1,4 @@
-"""Unit tests for gen_hybrid's mtc1 -> FP-compare hazard nop (`_sonyize_seg`).
-
-Toolchain-free: these pin the *rule*, not the bytes -- the byte gates
-(verify-promoted / verify-loaded, which need orig/) carry the proof that the
-rule reproduces retail.
-
-The rule, from two retail functions:
-  fsign @0x221530        mtc1 $at,$f0 / nop / c.le.s $f1,$f12   (disjoint regs)
-  ApplyFriction @0x2208f8 mtc1 $zero,$f2 / lwc1 $f1 / c.lt.s $f2,$f1  (no nop)
-Sony's `as` nops whenever a compare is *adjacent* to an mtc1, regardless of any
-register dependency; the decompals `as` only on a dependency. One instruction of
-separation is enough for both, so only the adjacent case is materialized.
-"""
+"""gen_hybrid's mtc1 hazard nop on compares (toolchain-free)."""
 import sys
 import unittest
 from pathlib import Path
@@ -60,11 +48,41 @@ class TestHazardNop(unittest.TestCase):
         got = _insns(["\tmtc1\t$1,$f0", "\t#nop", "\tc.le.s\t$f1,$f12"])
         self.assertEqual(got, ["mtc1\t$1,$f0", "nop", "c.le.s\t$f1,$f12"])
 
-    def test_non_compare_fp_use_is_not_claimed(self):
-        # Only the compare class is evidenced against retail; add.s/swc1 stay
-        # untouched until a retail function proves them.
+    def test_non_compare_reader_of_the_pair_gets_a_nop(self):
+        # The rule is per register pair, not per instruction class: add.s
+        # reading $f1 (the mate of $f0) is padded like a compare.
         got = _insns(["\tmtc1\t$1,$f0", "\tadd.s\t$f4,$f1,$f12"])
-        self.assertEqual(got, ["mtc1\t$1,$f0", "add.s\t$f4,$f1,$f12"])
+        self.assertEqual(got, ["mtc1\t$1,$f0", "nop", "add.s\t$f4,$f1,$f12"])
+
+    def test_inline_lis_hazard_padding_precedes_join_label(self):
+        # Incoming branches must skip the nop needed by the fall-through load.
+        got = _insns(["\tli.s\t$f0,1.0", "$Ljoin:",
+                      "\tc.lt.s\t$f0,$f15"])
+        self.assertEqual(got, ["li.s\t$f0,1.0", "nop", "$Ljoin:",
+                               "c.lt.s\t$f0,$f15"])
+
+    def test_literal_mtc1_hazard_crosses_comments_and_multiple_labels(self):
+        got = _insns(["\tmtc1\t$0,$f0", "\t#nop", "$Lfirst:",
+                      "", "$Ljoin:", "\tc.lt.s\t$f13,$f0"])
+        self.assertEqual(got, ["mtc1\t$0,$f0", "nop", "$Lfirst:",
+                               "$Ljoin:", "c.lt.s\t$f13,$f0"])
+
+    def test_explicit_padding_before_join_label_is_not_duplicated(self):
+        seg = ["\tli.s\t$f0,1.0", "\tnop", "$Ljoin:",
+               "\tc.lt.s\t$f0,$f15"]
+        self.assertEqual(_insns(seg), [l.strip() for l in seg])
+        self.assertEqual(_sonyize_seg(_sonyize_seg(seg)), _sonyize_seg(seg))
+
+    def test_instruction_after_join_label_separates_the_hazard(self):
+        seg = ["\tli.s\t$f0,1.0", "$Ljoin:", "\tlw\t$2,0($4)",
+               "\tc.lt.s\t$f0,$f15"]
+        self.assertEqual(_insns(seg), [l.strip() for l in seg])
+
+    def test_non_compare_after_join_label_is_padded_before_it(self):
+        # retail CrateOff 0x1F3600: lui/mtc1 $at,$f1 / nop / LABEL: add.s
+        seg = ["\tli.s\t$f0,1.0", "$Ljoin:", "\tadd.s\t$f4,$f0,$f12"]
+        self.assertEqual(_insns(seg), ["li.s\t$f0,1.0", "nop", "$Ljoin:",
+                                       "add.s\t$f4,$f0,$f12"])
 
     def test_compare_after_unrelated_instruction_is_untouched(self):
         got = _insns(["\tlw\t$2,0($4)", "\tc.le.s\t$f1,$f12"])

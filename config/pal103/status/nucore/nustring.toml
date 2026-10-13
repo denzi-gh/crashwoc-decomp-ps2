@@ -13,19 +13,19 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0008:00105a90:NuStrCat"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0008:00105ad0:NuStrCpy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0008:00105af0:NuStrLen"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0008:00105b18:NuStrStr"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0008:00105b98:NuStrIStr"

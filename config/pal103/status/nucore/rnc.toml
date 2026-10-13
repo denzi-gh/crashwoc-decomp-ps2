@@ -13,7 +13,7 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0012:00105db0:NuPPLoadBuffer"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0012:001060f0:NuPPUnpack"
@@ -21,4 +21,4 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0012:001065f8:NuPPGetSize"
-state = "asm"
+state = "matching"

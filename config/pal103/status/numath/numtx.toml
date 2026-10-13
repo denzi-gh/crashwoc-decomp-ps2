@@ -13,19 +13,19 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0015:00107b00:NuMtxSetRotateXYZ"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0015:00107c18:NuMtxMul"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0015:00107f20:NuMtxMulH"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0015:001083b8:NuMtxMulR"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0015:00108628:NuMtxInvRSS"
@@ -53,11 +53,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0015:00109378:NuMtxSetZero"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0015:00109408:NuMtxSetIdentity"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0015:00109498:NuMtxSetTranslation"
@@ -81,7 +81,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0015:001096f0:NuMtxSetRotationAxis"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0015:001097e8:NuMtxTranslate"
@@ -89,11 +89,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0015:00109820:NuMtxPreTranslate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0015:001098d0:NuMtxScale"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0015:00109998:NuMtxGetScale"
@@ -101,11 +101,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0015:00109a58:NuMtxPreScale"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0015:00109af0:NuMtxRotateX"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0015:00109bc0:NuMtxRotateXR"
@@ -113,11 +113,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0015:00109cc8:NuMtxPreRotateX"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0015:00109d70:NuMtxRotateY"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0015:00109e40:NuMtxRotateYR"
@@ -125,11 +125,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0015:00109f48:NuMtxPreRotateY"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0015:00109ff0:NuMtxRotateZ"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0015:0010a0c0:NuMtxRotateZR"
@@ -137,31 +137,23 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0015:0010a1c8:NuMtxPreRotateZ"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0015:0010a270:NuMtxTransposeR"
-# Clean C (no inline asm). Byte-exactness required register-pinning asm
-# ($f2-first FP allocation) that ee-gcc will not choose from plain C; the
-# clean C is behaviorally equivalent. Loaded image stays byte-exact via the
-# retail slice spliced for non-matching functions.
-state = "equivalent"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0015:0010a2e0:NuMtxTranspose"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0015:0010a3c8:NuMtxInv"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0015:0010a498:NuMtxInvR"
-# Clean C (no inline asm). Byte-exactness required register-pinning asm
-# ($f4/$f0/$f1/$f2/$f3 pinned) that ee-gcc will not choose from plain C; the
-# clean C is behaviorally equivalent. Loaded image stays byte-exact via the
-# retail slice spliced for non-matching functions.
-state = "equivalent"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0015:0010a510:NuMtxDet3"
@@ -181,11 +173,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0015:0010a7d0:NuMtxAddR"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0015:0010a888:NuMtxSubR"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0015:0010a940:NuMtxSkewSymmetric"

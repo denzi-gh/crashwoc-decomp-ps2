@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Verify hybrid translation units: whole-unit bytes and current-object purity.
 
-For every unit with a status manifest this tool proves the two properties the
-hybrid object model rests on:
+For every unit with a `matching` function this tool proves the two properties
+the hybrid object model rests on:
 
   * The matching hybrid is byte-exact for the WHOLE unit. tools/gen_hybrid.py
     splices the clean C (functions the manifest marks `matching`) with the
@@ -21,7 +21,7 @@ hybrid object model rests on:
 Needs the EE GCC and PS2 binutils: run in the Containerfile image. Outputs
 land in gitignored build/<version>/{matching,current}/.
 
-Exit status is 0 only if every manifested unit passes both checks.
+Exit status is 0 only if every such unit passes both checks.
 """
 import argparse
 import sys
@@ -61,6 +61,9 @@ def unit_range(unit_index, text_addr, text_size):
 def check_unit(reporter, manifest, version, elf, text_addr, text_off, text_size,
                nm_bin):
     data = tomllib.loads(manifest.read_text())
+    # Only units with a `matching` function have a hybrid.
+    if not any(f["state"] == "matching" for f in data.get("function", [])):
+        return
     src = ROOT / data["source"]
     rel = Path(data["source"]).relative_to("src").with_suffix("")
     unit_index = int(data["unit"].split("unit-")[1])
@@ -141,7 +144,7 @@ def main():
         return 2
 
     elf, text_addr, text_off, text_size = load_text_target(args.version)
-    print(f"Hybrid verification: {args.version}, {len(manifests)} unit(s)\n")
+    print(f"Hybrid verification: {args.version}, {len(manifests)} manifest(s)\n")
     reporter = Reporter(LABEL_WIDTH)
     for manifest in manifests:
         check_unit(reporter, manifest, args.version, elf, text_addr, text_off,

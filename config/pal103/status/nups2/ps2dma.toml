@@ -13,11 +13,11 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0062:0016b9a0:GSRegDecode"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016bd00:DirectDecode"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016bfe8:VTDecode"
@@ -25,15 +25,15 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0062:0016c8f0:TagWalk"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016cc18:gsBeginGifPacket"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016ccc0:gsCloseGifPacket"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016cda0:NuScratchReset"
@@ -41,15 +41,15 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016cdb0:NuScratchAlloc32"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016cde8:NuScratchAlloc64"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016ce30:NuScratchAlloc128"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016ce78:NuScratchRelease"
@@ -57,7 +57,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016ce88:vpDmaTag_Set"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016ceb0:vpDmaTag_Cnt"
@@ -69,15 +69,15 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016cef0:vpDmaTag_EndEx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016cf18:vpDmaTag_Ref"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016cf40:VU0_DmaWrite"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016cfa8:VU0_DmaGetStatus"
@@ -85,35 +85,35 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016cfc0:GS_DmaGetStatus"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016d028:GS_DmaWrite"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016d0e0:VU1_DmaWrite"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016d198:VU1_DmaWriteN"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016d218:VU1_DmaRead"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016d298:VU1_DmaGetStatus"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016d310:SPR_DmaWriteN"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016d388:SPR_DmaReadN"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016d400:SPR_DmaGetWriteStatus"
@@ -125,7 +125,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016d430:GS_DmaWriteN"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016d498:GS_DmaGetWriteStatus"
@@ -133,7 +133,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016d4b0:vtBeginDirect"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016d4d0:vtCloseDirect"
@@ -145,7 +145,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016d500:VifTagWalk"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016d5e0:CrcChain"

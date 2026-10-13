@@ -61,7 +61,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001ad0c8:NuGCutSceneSysUpdate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001ad130:NuGCutSceneSysRender"
@@ -93,7 +93,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0078:001ad2d0:NuGCutSceneFixUp"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001ad358:instNuGCutSceneCreate"
@@ -105,7 +105,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001ad518:instNuGCutSceneDestroy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001ad580:instNuGCutSceneIsFinished"
@@ -113,11 +113,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001ad598:instNuGCutSceneStart"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001ad630:instNuGCutSceneEnd"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001ad6c8:instNuGCutSceneReset"
@@ -125,7 +125,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001ad720:instNuGCutSceneCreateCamTgtArray"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001ad788:instNuGCutSceneAddCamTgt"
@@ -137,7 +137,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001ad830:instNuGCutSceneTranslate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001ad8a0:instNuGCutSceneRotateY"
@@ -145,7 +145,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001ad8f0:instNuGCutSceneSetMtx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001ad9a0:instNuGCutSceneChain"
@@ -165,7 +165,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001ad9d8:NuGCutLocatorIsVisble"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001ada90:CalculateLocatorDirection"
@@ -173,19 +173,19 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0078:001adb98:instNuGCutLocatorUpdate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001adc20:NuGCutCamsSysFixPtrs"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001adc90:instNuGCutSceneCalculateCentre"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001add20:instNuCGutCamSysCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001adde0:instNuGCutCamSysStart"
@@ -201,7 +201,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0078:001ae098:NuCGutLocatorSysCreateInst"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001ae138:instNuGCutLocatorSysEnd"
@@ -213,7 +213,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001ae1a8:NuGCutRigidSysFixPtrs"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001ae290:NuGCutRigidSysFixUp"
@@ -225,7 +225,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0078:001ae510:instNuGCutRigidSysReset"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001ae630:instNuGCutRigidSysStart"
@@ -245,11 +245,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0078:001ae8f0:instNuGCutCharSysEnd"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001ae9e8:NuGCutTriggerSysFixPtrs"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001aeaa0:NuGCutTriggerSysFixUp"
@@ -257,11 +257,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0078:001aebb0:instNuCGutTriggerSysCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001aec50:instNuGCutTriggerSysUpdate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001aed38:instNuGCutTriggerSysStart"
@@ -269,11 +269,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001aed80:instNuGCutSceneRender"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001aee28:StateAnimEvaluate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001aeef8:StateAnimFixPtrs"
@@ -281,8 +281,8 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001aef38:instNuGCutLocatorSysUpdate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0078:001af030:instNuGCutCharSysRender"
-state = "asm"
+state = "matching"

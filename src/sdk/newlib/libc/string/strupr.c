@@ -4,3 +4,24 @@
  * Functions:
  *   0x00273450 strupr
  */
+
+extern const char _ctype_[];
+
+#define _L 02
+#define islower(c) ((_ctype_ + 1)[(int)(c)] & _L)
+#define _toupper(c) ((c) - 'a' + 'A')
+
+char *strupr(char *a)
+{
+    char *ret = a;
+
+    while (*a != '\0') {
+        int c = *a;
+
+        if (islower(c)) {
+            *a = _toupper(c);
+        }
+        ++a;
+    }
+    return ret;
+}

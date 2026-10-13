@@ -33,35 +33,35 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0035:00115f68:NuGobjInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0035:00115fa0:NuGobjClose"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0035:00115fe8:NuGobjCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0035:00116048:NuGobjAddGeom"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0035:00116080:NuGobjAddFaceOnGeom"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0035:001160b8:NuGobjCalcPlanes"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0035:001160f0:NuGobjApplyCrossFade"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0035:00116160:NuGeomCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0035:001161b8:NuGeomDestroy"
@@ -81,11 +81,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0035:00116398:NuGeomAddPrim"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0035:001163d0:NuGeomAddSkin"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0035:00116408:NuPrimCreate"
@@ -97,8 +97,8 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0035:00116528:NuVtxStride"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0035:00116558:NuPrimStride"
-state = "asm"
+state = "matching"

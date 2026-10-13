@@ -13,320 +13,320 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0073:001a1198:edanimUpdateObjects"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a1ce8:edanimDetermineNearestAnim"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a1e90:edanimDetermineNearestParticle"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a2088:edanimDetermineNearestSound"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a2280:edanimParamCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a2398:edanimSoundCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a24c8:edanimSoundDestroy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a2610:edanimParticleCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a2750:edanimParticleDestroy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a28a0:edanimDoInput"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a2fa0:edanimFileSave"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a32a8:edanimFileLoad"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a3810:edanimDrawCursor"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a3c90:edanimcbSwitchTypeMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a41b0:edanimcbSwitchMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a4398:edanimcbBouncyMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a4548:edanimcbParticleTypeMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a46c8:edanimcbLocalParticleMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a4858:edanimcbLocalSoundMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a4ab0:edanimcbMCTBMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a4dd8:edanimInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a50c8:edanimRenderParticleEmitters"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a5260:edanimRenderSoundEmitters"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a5390:edanimRender"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a5490:edanimLookupInstanceIndex"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a54f0:edanimRegisterBaseScene"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a54f8:edanimLookupSpecial"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a5580:edanimParamReset"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a55b0:edanimPlayerAnimDistance"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a5628:edanimParamDestroy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a5658:edanimSoundPlace"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a56b0:edanimParticlePlace"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a5750:edanimcbSetSwitchType"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a57b0:edanimcbSetSwitchId"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a57f0:edanimcbSetSwitchDelay"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a5828:edanimcbSetSwitchVar"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a5860:edanimcbCancelSwitchTypeMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a5888:edanimcbCancelSwitchMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a58b0:edanimcbSetBouncyPlayerGrav"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a5910:edanimcbSetBouncyTension"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a5970:edanimcbSetBouncyDamping"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a59d0:edanimcbCancelBouncyMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a59f8:edanimcbToggleSoundType"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a5ab0:edanimcbSetSoundTiming"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a5ae0:edanimcbToggleParticleSwitch"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a5b20:edanimcbSetParticleType"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a5b70:edanimcbSetParticleRate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a5ba8:edanimcbCancelParticleTypeMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a5bd0:edanimcbLocalParticleTypeMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a5d48:edanimcbCancelLocalParticleMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a5d70:edanimcbParticleMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a5e90:edanimcbLocalSoundTypeMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a6008:edanimcbCancelLocalSoundMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a6030:edanimcbSoundMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a6150:edanimcbCancelOptMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a6158:edanimcbFileSave"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a6230:edanimcbFileLoad"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a62d8:edanimcbMCTBCardPresent"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a6330:edanimcbMCTBCardType"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a6388:edanimcbMCTBCardCheckFormat"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a63e0:edanimcbMCTBCardFreeSpace"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a6430:edanimcbMCTBCardSlotsUsed"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a6478:edanimcbMCTBCardSaveSlot"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a6500:edanimcbMCTBCardLoadSlot"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a6560:edanimcbMCTBCardDeleteSlot"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a65c0:edanimcbMCTBCardUnFormat"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a6618:edanimcbMCTBCardFormat"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a6670:edanimcbCancelMCTBMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a6698:edanimClose"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a66b8:edanimEnter"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a66d8:edanimProc"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a6790:edanimcbSetLocalSoundType"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a6828:edanimcbSetLocalParticleType"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a68c0:edanimcbCancelLocalParticleTypeMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a68e8:edanimcbCancelParticleMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a6910:edanimcbSoundTypeMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a6a90:edanimcbCancelLocalSoundTypeMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a6ab8:edanimcbCancelSoundMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a6ae0:edanimcbSetSoundType"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a6b40:edanimcbCancelSoundTypeMenu"
-state = "asm"
+state = "matching"

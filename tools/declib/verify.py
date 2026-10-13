@@ -31,12 +31,17 @@ def defined_functions(nm_bin, obj):
     return names
 
 
+_DUP_STATIC_RE = re.compile(r"^(.+)__[0-9A-F]{8}$")
+
+
 def defined_function_offsets(nm_bin, obj):
     """{name: .text offset} for an object's defined text symbols.
 
     In a relocatable object nm's symbol value is the offset within the
     symbol's section, so this locates each function inside the object's
     .text regardless of source order or address gaps between functions.
+
+    Duplicated statics (NAME__<VRAM>) are also listed under NAME.
     """
     out = subprocess.run([nm_bin, str(obj)], check=True,
                          capture_output=True, text=True).stdout
@@ -45,6 +50,10 @@ def defined_function_offsets(nm_bin, obj):
         parts = line.split()
         if len(parts) == 3 and parts[1] in ("T", "t"):
             offsets[parts[2]] = int(parts[0], 16)
+    for name, offset in list(offsets.items()):
+        m = _DUP_STATIC_RE.match(name)
+        if m:
+            offsets.setdefault(m.group(1), offset)
     return offsets
 
 

@@ -13,60 +13,60 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0034:00114bd0:NuVpUpdate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0034:00114cf0:NuVpSetScalingMtx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0034:00114da8:NuVpInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0034:00114ea0:NuVpRestore"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0034:00114f40:NuVpSetPosition"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0034:00114f68:NuVpSetSize"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0034:00114f90:NuVpSetZRange"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0034:00114fb0:NuVpSetCentre"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0034:00114fd0:NuVpSetClipping"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0034:00115078:NuVpGetScalingMtx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0034:00115110:NuVpVirtualWidth"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0034:00115128:NuVpVirtualHeight"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0034:00115140:NuVpPixelWidth"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0034:00115168:NuVpPixelHeight"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0034:00115190:NuVpGetCurrentViewport"
-state = "asm"
+state = "matching"

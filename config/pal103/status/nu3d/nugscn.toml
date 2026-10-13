@@ -25,7 +25,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0044:00145998:CalcDimsAddFaceOn"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:00145aa0:CvtNuIFFGeomDef"
@@ -45,7 +45,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0044:00146350:MakeFaceOnDma"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:001464b8:CvtNuIFFGeomTri"
@@ -93,7 +93,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0044:00148928:NuGScnDuplicate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:00148c90:ReadObjSet"
@@ -109,7 +109,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0044:00149b40:ReadAnimationLibrary"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:00149d50:ReadSplineSet"
@@ -145,83 +145,83 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0044:0014baf0:NuGScnSetTmpWkspc"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:0014bb00:NuGScnSetCfg"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:0014bb08:NuGScnRemove"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:0014bbd0:NuGScnLoad"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:0014bcb8:NuGScnRead"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:0014bdb8:NuGScnTranslate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:0014be20:NuGScnAddExt"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:0014be60:NuExtSpecialDuplicate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:0014bf98:NuExtSpecialDelete"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:0014bfb0:NuGSceneSetCrossFade"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:0014c000:NuGSceneProcessCrossFade"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:0014c098:NuGScnMtlUpdate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:0014c0a0:NuSpecialFind"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:0014c130:NuSpecialGetPos"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:0014c160:NuSpecialGetMtx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:0014c1f8:NuSpecialDrawAt"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:0014c230:NuSplineFind"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:0014c2b8:NuSplineFindAllSub"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:0014c370:NuSplineGetRandomPoint"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:0014c428:NuSceneReAssignTexAnims"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:0014c488:CvtNuIFFGeom"
@@ -229,7 +229,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0044:0014c5f0:CvtNuIFFFaceOnGeom"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:0014c6d8:CvtNuIFFNodeHierarchy"
@@ -237,4 +237,4 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0044:0014c768:FindSplinePtSize"
-state = "asm"
+state = "matching"

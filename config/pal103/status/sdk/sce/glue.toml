@@ -13,7 +13,7 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0248:00279110:sceResetttyinit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0248:00279120:VSync"
@@ -33,19 +33,19 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0248:002792b8:open"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0248:002792e0:close"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0248:002792e8:ioctl"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0248:002792f0:lseek"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0248:002792f8:sbrk"
@@ -53,24 +53,24 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0248:002793a8:isatty"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0248:002793b0:fstat"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0248:002793c8:getpid"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0248:002793d0:kill"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0248:002793f8:stat"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0248:00279420:unlink"
-state = "asm"
+state = "matching"

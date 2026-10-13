@@ -24,12 +24,13 @@ from gen_objdiff import unit_table
 
 
 def verified_matching(verify):
-    """[(unit_index, function_name)] for every confirmed `matching` function."""
+    """[(unit_index, function_name, address)] for every confirmed `matching`
+    function."""
     out = []
     for f in verify.get("functions", []):
         if f.get("state") == "matching" and f.get("verified"):
-            _v, unit, _addr, name = f["id"].split(":")
-            out.append((int(unit.split("-")[1]), name))
+            _v, unit, addr, name = f["id"].split(":")
+            out.append((int(unit.split("-")[1]), name, int(addr, 16)))
     return out
 
 
@@ -43,7 +44,9 @@ def check(verify, report, unit_name):
     units_by_name = {u["name"]: u for u in report.get("units", [])}
     problems = []
     matched = 0
-    for unit_index, fname in verified_matching(verify):
+    for unit_index, fname, addr in verified_matching(verify):
+        # Duplicated statics appear as NAME__<VRAM>.
+        names = (fname, f"{fname}__{addr:08X}")
         uname = unit_name.get(unit_index)
         runit = units_by_name.get(uname)
         if runit is None:
@@ -51,7 +54,7 @@ def check(verify, report, unit_name):
                             f"absent from the report")
             continue
         fn = next((f for f in runit.get("functions", [])
-                   if f.get("name") == fname), None)
+                   if f.get("name") in names), None)
         if fn is None:
             problems.append(f"{fname}: not present in report unit {uname!r}")
             continue

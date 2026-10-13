@@ -13,215 +13,215 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0087:001c2290:SOUND_CopyIOPBuffer"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c23f8:SOUND_CancelCheckStereo"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c2470:init_adpcm"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c27a0:TransferAllSpotFX"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c29c0:SOUND_StoreLocalStart"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c2ab8:SOUND_RestoreLocalStart"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c2bb0:SOUND_InitAdpcmLocal"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c2ca8:NuSoundInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c2da8:NuSoundApply3d"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c3008:NuSoundUpdate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c31c8:NuSoundFlushLoops"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c32d8:NuSoundPlay"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c3498:NuSoundPlayChan"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c35f0:NuSoundPlay3d"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c37a8:NuSoundPlay3dChan"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c3900:NuSoundPlayStereo"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c3b28:NuSoundPlayStereo2"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c3d48:NuSoundPlay3dLoopSfx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c3f40:NuSoundKillAllAudio"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c41f0:SOUND_StopSound"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c4230:NuSoundSetChannelPitch"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c4290:NuSoundGetSteroPitch"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c4298:NuSoundStopStream"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c42e0:NuSoundLocalSet"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c4440:NuSoundListener"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c4448:NuSoundKeyStatus"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c4470:NuSoundSetGlobalDat"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c44b0:NuSoundSetLocalDat"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c44f0:SOUND_SIFTransfer"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c4540:SOUND_InitIOP"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c45d0:SetIOPCommand"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c4698:SetIOPCommandEx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c4760:FlushIOPCommand"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c4808:SOUND_AllChannelEffectsOff"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c48c8:SOUND_AllChannelEffectsOn"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c4988:SOUND_SetChannelEffectOff"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c4a48:SOUND_SetChannelEffectOn"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c4b08:SOUND_SetEffectMasterVolume"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c4bd0:SOUND_DisableEffects"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c4c90:SOUND_EnableEffects"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c4d68:SOUND_FindFreeSPUChannel"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c4de0:SOUND_SetSPUWriteAddress"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c4e18:SOUND_AllocateStreamBuffer"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c4e60:SOUND_PlayStream"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c4ef0:SOUND_PlaySFX"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c4f60:SOUND_TransferSFX"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c4f90:SOUND_SetChannelVolume"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c4fe0:SOUND_SetChannelPitch"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c5028:SOUND_GetStatus"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c5050:SOUND_Pause"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c5070:SOUND_Resume"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c5090:SOUND_InitStreamData"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c50b0:SOUND_InitSPU"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c50f0:SOUND_AddSamples"
@@ -229,28 +229,28 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0087:001c5230:SOUND_SetMaxStreamLimit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c5258:SOUND_CheckAndStartStereo"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c5320:SOUND_SetChannelPitchStereo"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c5368:SOUND_CloseStreamBuffer"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c5390:NuSoundInitLoopInfo"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c53d0:NuSoundFindFree"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c5428:NuSoundFindLoopInfo"
-state = "asm"
+state = "matching"

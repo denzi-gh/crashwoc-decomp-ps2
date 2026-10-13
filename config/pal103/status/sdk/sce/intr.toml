@@ -53,7 +53,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0250:00279908:kCopy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0250:00279940:GetEntryAddress"

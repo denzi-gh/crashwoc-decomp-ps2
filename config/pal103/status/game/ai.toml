@@ -25,7 +25,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0103:0022f568:UpdateDRAINDAMAGE"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0103:0022f858:DrawDRAINDAMAGE"
@@ -33,7 +33,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0103:0022f928:WaterCrunchFunction_Spladoosh"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0103:0022fac8:UpdateCRUNCHTIME"
@@ -41,11 +41,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0103:002308c0:DrawCRUNCHTIME"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0103:00230ae0:SpaceCrunchFunction_NewPoint"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0103:00230c20:FindGongBongerAnim"

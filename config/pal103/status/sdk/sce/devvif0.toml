@@ -17,11 +17,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0146:00263eb8:sceDevVif0Pause"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0146:00263f20:sceDevVif0Continue"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0146:00263f60:sceDevVif0PutErr"
@@ -33,7 +33,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0146:00263f90:sceDevVif0Sync"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0146:00263fe0:sceDevVif0GetCnd"

@@ -39,7 +39,8 @@ extern s32 D_00631C40;
 extern s32 D_00631C44;
 extern s32 D_00631C48;
 extern void *edai_options_menu;
-extern void *edai_selecttype_menu;
+struct edmenu_s;
+extern struct edmenu_s *edai_selecttype_menu;
 extern struct nuvec_s edai_cam_pos;
 extern u8 LevelAIType[];
 extern u8 D_006203F8[];
@@ -80,17 +81,11 @@ extern s32 D_00631C4C;
 extern s32 D_00631C50;
 
 struct aitype_s {
-    u8 unk_0x00[0x2];
+    s16 character;           /* 0x0 */
     s16 count;               /* 0x2 */
     u8 unk_0x04[0x18];
 };                           /* 0x1C */
 extern struct aitype_s AIType[];
-
-struct aihl_s {
-    struct nuvec_s pos[8];   /* 0x00, stride 0x0C */
-    u8 unk_0x60[0x20];
-};                           /* 0x80 */
-extern struct aihl_s D_005CA154[];
 
 extern void NuVecSub(struct nuvec_s *dst, struct nuvec_s *a, struct nuvec_s *b);
 
@@ -112,17 +107,10 @@ extern s32 VEHICLECONTROL;
 extern struct nuvec_s *pos_START;
 extern f32 edai_cam_ax;
 extern f32 edai_cam_ay;
-extern void edcamMove(void);
+extern void edcamMove(struct pad_s *pad);
 extern void edcamGetPosAng(struct nuvec_s *pos, f32 *ax, f32 *ay);
 extern void AdjustPosY(struct nuvec_s *pos);
 
-extern f32 D_0062E33C;
-extern f32 D_0062E340;
-extern f32 D_0062E344;
-extern u64 fptodp(f32 x);
-extern s32 dpcmp(u64 a, u64 b);
-extern u64 dpsub(u64 a, u64 b);
-extern f32 dptofp(u64 x);
 
 extern void NuFntSetPen(s32 col);
 extern void NuFntPrintEx(s32 x, s32 y, s32 flag, const char *fmt, ...);
@@ -165,6 +153,22 @@ struct eduiitem_s {
 extern struct eduiitem_s *edui_last_item;
 
 extern void edcamSetPos(struct nuvec_s *pos);
+
+struct gametimer_s {
+    u32 frame;               /* 0x00 */
+    u8 unk_0x04[0x14];
+};
+extern struct gametimer_s GlobalTimer;
+extern CharacterData CData[];
+extern struct numtx_s mTEMP;
+extern s32 D_005CD1D0[8];
+
+extern void NuMtxSetScale(struct numtx_s *m, struct nuvec_s *s);
+extern void NuMtxRotateY(struct numtx_s *m, s32 ang);
+extern void NuMtxTranslate(struct numtx_s *m, struct nuvec_s *v);
+extern s32 NuAtan2D(f32 x, f32 z);
+extern void NuHGobjRndr(struct NUHGOBJ_s *hobj, struct numtx_s *m, s32 nlayers,
+                        s16 *layer);
 extern void NuRndrLine3dDbg(s32 colour, f32 x0, f32 y0, f32 z0, f32 x1, f32 y1,
                             f32 z1);
 extern void *eduiMenuCreate(s32 x, s32 y, s32 w, s32 h, void *font,
@@ -173,14 +177,14 @@ extern void *eduiItemSelCreate(s32 a0, void *tmpl, s32 a2, s32 a3, void *cb,
                                void *label);
 extern void *eduiItemToggleCreate(s32 a0, void *tmpl, s32 a2, s32 a3, void *cb,
                                   void *label);
-extern void eduiMenuAddItem(void *menu, void *item);
-extern void *eduiItemCheckCreate(s32 a0, void *tmpl, s32 a2, s32 a3, void *cb,
-                                 void *label);
-extern void eduiMenuAttach(void *item, void *menu);
+extern void *eduiMenuAddItem(void *menu, void *item);
+extern void *eduiItemCheckCreate(u32 value, void *style, s32 checked,
+                                 s32 group, void *cb, void *label);
+extern s32 eduiMenuAttach(void *menu, void *child);
 
 /* callbacks referenced by edaiInit / edaicbSelectType */
 void edaiCbCancelOptMenu(void);
-void edaicbSelectType(void *item);
+void edaicbSelectType(struct edmenu_s *parent);
 void edaicbSaveAIData(s32 arg);
 void edaicbTerrainToggle(s32 a0, u8 *item);
 void edaicbSetType(s32 a0, u8 *item);
@@ -219,61 +223,55 @@ void edaiHIGHLIGHT(void)
     }
 }
 
-void AdjustPosY(struct nuvec_s *obj)
+void AdjustPosY(struct nuvec_s *pos)
 {
     f32 best;
-    f32 bestval;
+    f32 y;
     f32 v;
     s32 found;
-    u64 d;
+    double d;
 
     if (D_00631C3C == 0) {
         return;
     }
     found = 0;
-    if (D_0063334C != D_0062E33C) {
-        bestval = D_0063334C;
-        d = fptodp(bestval - obj->y);
-        if (dpcmp(d, 0) < 0) {
-            d = dpsub(0, d);
+    if (D_0063334C != 2000000.0f) {
+        y = D_0063334C;
+        d = y - pos->y;
+        if (d < 0.0) {
+            d = 0.0 - d;
         }
-        best = dptofp(d);
+        best = d;
         found = 1;
     }
-    v = D_00633350;
-    if (v != D_0062E340) {
-        if (found == 0) {
-            bestval = v;
-            found = 1;
-        } else {
-            d = fptodp(v - obj->y);
-            if (dpcmp(d, 0) < 0) {
-                d = dpsub(0, d);
-            }
-            if (dpcmp(d, fptodp(best)) < 0) {
-                bestval = v;
-                found = 1;
+    if (D_00633350 != 2000000.0f) {
+        v = D_00633350;
+        if (found) {
+            d = v - pos->y;
+            if (d < 0.0) {
+                d = 0.0 - d;
             }
         }
-    }
-    v = D_00633354;
-    if (v != D_0062E344) {
-        if (found == 0) {
-            bestval = v;
+        if (!found || d < best) {
+            y = v;
             found = 1;
-        } else {
-            d = fptodp(v - obj->y);
-            if (dpcmp(d, 0) < 0) {
-                d = dpsub(0, d);
+        }
+    }
+    if (D_00633354 != 2000000.0f) {
+        v = D_00633354;
+        if (found) {
+            d = v - pos->y;
+            if (d < 0.0) {
+                d = 0.0 - d;
             }
-            if (dpcmp(d, fptodp(best)) < 0) {
-                bestval = v;
-                found = 1;
-            }
+        }
+        if (!found || d < best) {
+            y = v;
+            found = 1;
         }
     }
     if (found) {
-        obj->y = bestval;
+        pos->y = y;
     }
 }
 
@@ -303,11 +301,11 @@ void edaiJUMP(void)
     }
 }
 
-void edaicbSelectType(void *item)
+void edaicbSelectType(struct edmenu_s *parent)
 {
     struct edai_itemdef_s buf;
-    struct edmenu_s *menu;
     s32 i;
+    s32 sel;
 
     buf = D_006203D8;
     edai_selecttype_menu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt,
@@ -317,19 +315,18 @@ void edaicbSelectType(void *item)
                         eduiItemCheckCreate(-1, &buf, D_00631C40 == -1, 1,
                                             edaicbSetType, D_00631C78));
         for (i = 0; i < LEVELAITYPES; i++) {
-            s32 sel = (D_00631C40 == i);
+            sel = (D_00631C40 == i);
             eduiMenuAddItem(edai_selecttype_menu,
                             eduiItemCheckCreate(i, &buf, sel, 1,
                                                 edaicbSetType,
                                                 D_005C9520[LevelAIType[i]]));
-            if (sel) {
-                menu = (struct edmenu_s *)edai_selecttype_menu;
-                menu->sel_item = edui_last_item;
+            if (sel == 1) {
+                edai_selecttype_menu->sel_item = edui_last_item;
             }
         }
-        menu = (struct edmenu_s *)edai_selecttype_menu;
-        menu->x = ((struct edmenu_s *)item)->x + 0xA;
-        menu->y = ((struct edmenu_s *)item)->y + 0x28;
+        eduiMenuAttach(parent, edai_selecttype_menu);
+        edai_selecttype_menu->x = parent->x + 10;
+        edai_selecttype_menu->y = parent->y + 40;
     }
 }
 
@@ -359,24 +356,14 @@ void edaiDrawInfo(void)
 
 void DrawCube(struct nuvec_s *pos, s32 ang, f32 len)
 {
-    f32 bx[4];
+    f32 bx[4] = {-len, -len, len, len};
     f32 rx[4];
-    f32 bz[4];
+    f32 bz[4] = {-len, len, len, -len};
     f32 rz[4];
-    f32 c;
-    f32 s;
+    f32 c = NuTrigTable[(ang + 0x4000) & 0xFFFF];
+    f32 s = NuTrigTable[ang & 0xFFFF];
     s32 i;
 
-    bx[0] = -len;
-    bx[1] = -len;
-    bx[2] = len;
-    bx[3] = len;
-    bz[0] = -len;
-    bz[1] = len;
-    bz[2] = len;
-    bz[3] = -len;
-    c = NuTrigTable[(ang + 0x4000) & 0xFFFF];
-    s = NuTrigTable[ang & 0xFFFF];
     for (i = 0; i < 4; i++) {
         rx[i] = bx[i] * c + bz[i] * s;
         rz[i] = -(bx[i] * s) + bz[i] * c;
@@ -407,6 +394,109 @@ void DrawCube(struct nuvec_s *pos, s32 ang, f32 len)
                     pos->x + rx[0], pos->y + len, pos->z + rz[0]);
 }
 
+inline void DrawAxes(struct nuvec_s *pos, s32 ang, s32 col, f32 len)
+{
+    f32 s;
+    f32 c;
+
+    NuRndrLine3dDbg(col, pos->x, pos->y - len, pos->z, pos->x, pos->y + len,
+                    pos->z);
+    s = NuTrigTable[ang & 0xFFFF] * len;
+    c = NuTrigTable[(ang + 0x4000) & 0xFFFF] * len;
+    NuRndrLine3dDbg(col, pos->x - s, pos->y, pos->z - c, pos->x + s, pos->y,
+                    pos->z + c);
+    NuRndrLine3dDbg(col, pos->x + c, pos->y, pos->z - s, pos->x - c, pos->y,
+                    pos->z + s);
+}
+
+
+void edaiDRAW(void)
+{
+    struct nuvec_s v;
+    struct nuvec_s *pos;
+    u16 ang;
+    s32 i;
+    s32 j;
+    s32 count;
+    s32 character;
+    struct aitype_s *type;
+    struct nuvec_s *next;
+
+    ang = ((GlobalTimer.frame % 200) << 16) / 200;
+    for (i = 0; i < LEVELAICOUNT; i++) {
+        type = &AIType[AITab[i].ai_type];
+        count = type->count;
+        for (j = 0; j < count; j++) {
+            pos = &AITab[i].pos[j];
+            if (j == 0) {
+                character = AIType[AITab[i].ai_type].character;
+                v.x = v.y = v.z = CData[character].scale;
+                NuMtxSetScale(&mTEMP, &v);
+                NuMtxRotateY(&mTEMP,
+                             (count != 1)
+                                 ? NuAtan2D(pos[1].x - pos[0].x,
+                                            pos[1].z - pos[0].z) + 0x8000
+                                 : 0x8000);
+                NuMtxTranslate(&mTEMP, pos);
+                if (CRemap[character] != -1) {
+                    NuHGobjRndr(CModel[CRemap[character]].hobj, &mTEMP, 1, 0);
+                }
+            }
+            DrawAxes(pos, ang, D_005CD1D0[j], 0.125f);
+            if (count > 1) {
+                next = pos + 1;
+                if (j < count - 1) {
+                    NuRndrLine3dDbg(D_005CD1D0[j], pos->x, pos->y, pos->z,
+                                    next->x, next->y, next->z);
+                }
+            }
+        }
+    }
+    if (D_00631C48 != 0) {
+        for (j = 0; j < D_00631C48; j++) {
+            pos = &AITab[i].pos[j];
+            DrawAxes(pos, ang, D_005CD1D0[j], 0.125f);
+        }
+        NuRndrLine3dDbg(D_005CD1D0[j - 1], pos->x, pos->y, pos->z,
+                        edai_cam_pos.x, edai_cam_pos.y, edai_cam_pos.z);
+        pos = AITab[i].pos;
+    } else {
+        pos = &edai_cam_pos;
+    }
+    if (D_00631C4C != -1) {
+        DrawCube(&AITab[D_00631C4C].pos[D_00631C50], ang, 0.125f);
+    } else if (D_00631C40 >= 0 && GlobalTimer.frame % 50 < 25) {
+        character = AIType[D_00631C44].character;
+        v.x = v.y = v.z = CData[character].scale * 0.5f;
+        NuMtxSetScale(&mTEMP, &v);
+        NuMtxRotateY(&mTEMP,
+                     (D_00631C48 == 0)
+                         ? ang + 0x8000
+                         : NuAtan2D(edai_cam_pos.x - pos->x,
+                                    edai_cam_pos.z - pos->z) + 0x8000);
+        NuMtxTranslate(&mTEMP, pos);
+        if (CRemap[character] != -1) {
+            NuHGobjRndr(CModel[CRemap[character]].hobj, &mTEMP, 1, 0);
+        }
+    }
+    if (D_00631C3C != 0) {
+        v.x = edai_cam_pos.x;
+        v.z = edai_cam_pos.z;
+        if (D_0063334C != 2000000.0f) {
+            v.y = D_0063334C;
+            DrawAxes(&v, 0x2000, 0xFF00FF, 0.125f);
+        }
+        if (D_00633350 != 2000000.0f) {
+            v.y = D_00633350;
+            DrawAxes(&v, 0x2000, 0xFF00FF, 0.125f);
+        }
+        if (D_00633354 != 2000000.0f) {
+            v.y = D_00633354;
+            DrawAxes(&v, 0x2000, 0xFF00FF, 0.125f);
+        }
+    }
+}
+
 void edaiInit(void)
 {
     struct edai_itemdef_s buf;
@@ -431,11 +521,12 @@ void edaiInit(void)
 void edaiDoInput(struct pad_s *pad)
 {
     s32 i;
+    struct aitype_s *type;
 
-    edcamMove();
+    edcamMove(pad);
     edcamGetPosAng(&edai_cam_pos, &edai_cam_ax, &edai_cam_ay);
     if (VEHICLECONTROL == 2 ||
-        (VEHICLECONTROL == 1 && *(s16 *)((u8 *)player + 0x36) == 0x20)) {
+        (VEHICLECONTROL == 1 && player->obj.vehicle == 0x20)) {
         if (pos_START != 0) {
             edai_cam_pos.x = pos_START->x;
             edcamSetPos(&edai_cam_pos);
@@ -447,8 +538,8 @@ void edaiDoInput(struct pad_s *pad)
     if ((pad->buttons & 0x40) && LEVELAICOUNT != 0x60 && D_00631C40 >= 0) {
         AITab[LEVELAICOUNT].pos[D_00631C48] = edai_cam_pos;
         AdjustPosY(&AITab[LEVELAICOUNT].pos[D_00631C48]);
-        D_00631C48++;
-        if (D_00631C48 == AIType[D_00631C44].count) {
+        type = &AIType[D_00631C44];
+        if (++D_00631C48 == type->count) {
             AITab[LEVELAICOUNT].ai_type = D_00631C44;
             LEVELAICOUNT++;
             ResetAI();
@@ -476,21 +567,6 @@ void edaiDoInput(struct pad_s *pad)
     if (pad->paddata & 0x100) {
         edaiJUMP();
     }
-}
-
-void DrawAxes(struct nuvec_s *pos, s32 ang, s32 col, f32 len)
-{
-    f32 s;
-    f32 c;
-
-    NuRndrLine3dDbg(col, pos->x, pos->y - len, pos->z, pos->x, pos->y + len,
-                    pos->z);
-    s = NuTrigTable[ang & 0xFFFF] * len;
-    c = NuTrigTable[(ang + 0x4000) & 0xFFFF] * len;
-    NuRndrLine3dDbg(col, pos->x - s, pos->y, pos->z - c, pos->x + s, pos->y,
-                    pos->z + c);
-    NuRndrLine3dDbg(col, pos->x + c, pos->y, pos->z - s, pos->x - c, pos->y,
-                    pos->z + s);
 }
 
 void edaiCbCancelSelectType(void)

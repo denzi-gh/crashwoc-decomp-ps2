@@ -257,7 +257,6 @@ void UpdateBugLight(struct creature_s *c) {
     f32 d1;
     f32 dr;
     f32 qr;
-    f32 target;
     u16 a;
 
     D_006333B0 = 0.0f;
@@ -288,17 +287,17 @@ void UpdateBugLight(struct creature_s *c) {
         D_006333A8 = D_00632CE4 + NuTrigTable[D_006333A6] * D_00632CE4 * D_0062E91C;
         if (D_00633398 > 0.0f) {
             D_006FFA80.x = player->obj.pos.x;
-            D_006FFA80.y = player->obj.top * player->obj.SCALE + player->obj.pos.y;
+            D_006FFA80.y = player->obj.pos.y + player->obj.top * player->obj.SCALE;
             D_006FFA80.z = player->obj.pos.z;
             a = NuAtan2D(D_006FFA80.x - GameCam.x, D_006FFA80.z - GameCam.z);
-            D_006FFA80.x = NuTrigTable[a] * D_00632CD8 + D_006FFA80.x;
+            D_006FFA80.x = D_006FFA80.x + NuTrigTable[a] * D_00632CD8;
             D_006333AC = 1.5f;
-            D_006FFA80.z = NuTrigTable[(u16)(a + 0x4000)] * D_00632CD8 + D_006FFA80.z;
+            D_006FFA80.z = D_006FFA80.z + NuTrigTable[(u16)(a + 0x4000)] * D_00632CD8;
         }
         D_006333B0 = D_00633398;
         qr = (f32)qrand();
-        target = D_00632CDC + (qr * D_0062E920 - 0.5f) * 0.25f;
-        D_006333A8 = D_006333A8 + (target - D_006333A8) * D_0062E924;
+        d0 = D_00632CDC + (qr * D_0062E920 - 0.5f) * 0.25f;
+        D_006333A8 = D_006333A8 + (d0 - D_006333A8) * D_0062E924;
         return;
     }
     if (Level != 0x1b) {
@@ -312,8 +311,8 @@ void UpdateBugLight(struct creature_s *c) {
             if ((best_cRPos->mode & 0xc) != 0) {
                 r = D_00632CE0 * D_0062E928;
             }
-            pos.x = NuTrigTable[best_cRPos->angle] * r + pos.x;
-            pos.z = NuTrigTable[(u16)(best_cRPos->angle + 0x4000)] * r + pos.z;
+            pos.x = pos.x + NuTrigTable[best_cRPos->angle] * r;
+            pos.z = pos.z + NuTrigTable[(u16)(best_cRPos->angle + 0x4000)] * r;
         }
         d0 = D_006333B8;
         PointAlongSpline(SplTab[70].spl, d0, &v, 0, 0);
@@ -351,25 +350,25 @@ void UpdateBugLight(struct creature_s *c) {
             }
         }
         PointAlongSpline(SplTab[70].spl, D_006333B8, &pos, 0, 0);
-        D_006FFA90.x = (pos.x - D_006FFA90.x) * D_0062E93C + D_006FFA90.x;
-        D_006FFA90.y = (pos.y - D_006FFA90.y) * D_0062E93C + D_006FFA90.y;
-        D_006FFA90.z = (pos.z - D_006FFA90.z) * D_0062E93C + D_006FFA90.z;
+        D_006FFA90.x = D_006FFA90.x + (pos.x - D_006FFA90.x) * D_0062E93C;
+        D_006FFA90.y = D_006FFA90.y + (pos.y - D_006FFA90.y) * D_0062E93C;
+        D_006FFA90.z = D_006FFA90.z + (pos.z - D_006FFA90.z) * D_0062E93C;
         D_006FFA80 = D_006FFA90;
     } else {
         D_006FFA80.x = player->obj.pos.x;
-        D_006FFA80.y = player->obj.top * player->obj.SCALE + player->obj.pos.y;
+        D_006FFA80.y = player->obj.pos.y + player->obj.top * player->obj.SCALE;
         D_006FFA80.z = player->obj.pos.z;
         a = NuAtan2D(D_006FFA80.x - GameCam.x, D_006FFA80.z - GameCam.z);
-        D_006FFA80.x = NuTrigTable[a] * D_00632CE0 + D_006FFA80.x;
-        D_006FFA80.z = NuTrigTable[(u16)(a + 0x4000)] * D_00632CE0 + D_006FFA80.z;
+        D_006FFA80.x = D_006FFA80.x + NuTrigTable[a] * D_00632CE0;
+        D_006FFA80.z = D_006FFA80.z + NuTrigTable[(u16)(a + 0x4000)] * D_00632CE0;
     }
     D_006333A0 += 0x276;
     D_006333A2 += 0x162;
     D_006333A4 += 0x414;
     D_006333A8 = D_00632CE4 + NuTrigTable[D_006333A6] * D_00632CE4 * D_0062E940;
-    D_006FFA80.x = NuTrigTable[D_006333A0] * 0.25f + D_006FFA80.x;
-    D_006FFA80.y = NuTrigTable[D_006333A2] * 0.25f + D_006FFA80.y;
-    D_006FFA80.z = NuTrigTable[D_006333A4] * 0.25f + D_006FFA80.z;
+    D_006FFA80.x = D_006FFA80.x + NuTrigTable[D_006333A0] * 0.25f;
+    D_006FFA80.y = D_006FFA80.y + NuTrigTable[D_006333A2] * 0.25f;
+    D_006FFA80.z = D_006FFA80.z + NuTrigTable[D_006333A4] * 0.25f;
     NuVecSub(&v, &D_006FFA80, &oldpos);
     a = NuAtan2D(v.y, NuFsqrt(v.x * v.x + v.z * v.z));
     D_006333B4 = SeekRot(D_006333B4, a, 3);

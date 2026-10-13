@@ -192,8 +192,12 @@ def _build_and_compare(project, reg, fn, unit, profile):
     exact = linked_ok and got == want and len(got) == fn.size
     windows, matching_bytes = _diff_words(want, got) if linked_ok else ([], 0)
 
-    frame, rmask, fmask = _parse_frame(Path(spliced_s), fn.name)
-    cand_seg = _extract_segment(Path(spliced_s), fn.name)
+    # Duplicated statics are labelled NAME__<VRAM> in the spliced .s.
+    seg_name = f"{fn.name}__{fn.address:08X}"
+    if seg_name not in offsets:
+        seg_name = fn.name
+    frame, rmask, fmask = _parse_frame(Path(spliced_s), seg_name)
+    cand_seg = _extract_segment(Path(spliced_s), seg_name)
 
     return {
         "compile_ok": True,

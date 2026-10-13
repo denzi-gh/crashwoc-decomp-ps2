@@ -81,34 +81,682 @@ typedef struct NuPs2GsReg {
     u64 addr;
 } NuPs2GsReg;
 
+typedef struct GsDisplay {
+    u64 dx : 12;
+    u64 dy : 11;
+    u64 magh : 4;
+    u64 magv : 2;
+    u64 pad29 : 3;
+    u64 dw : 12;
+    u64 dh : 11;
+    u64 pad55 : 9;
+} GsDisplay;
+
+typedef struct GsDispEnv {
+    u64 pmode;
+    u64 smode2;
+    u64 dispfb;
+    GsDisplay display;
+    u64 bgcolor;
+} GsDispEnv;
+
+typedef struct TbSet {
+    int values[16][2];
+    int begin[16];
+    char pad0C0[0x80];
+    int current[16];
+    int extra[16];
+} TbSet;
+
+typedef struct NuVBlankHandler {
+    struct NuVBlankHandler *next;
+    struct NuVBlankHandler *prev;
+    void (*fn)(void);
+    int priority;
+} NuVBlankHandler;
+
 /* EE timer 1 counter: a free-running 16-bit tick used for screen-swap timing. */
 #define EE_T1_COUNT (*(volatile unsigned int *)0x10000800)
 #define EE_T0_COUNT (*(volatile unsigned int *)0x10000000)
 #define EE_T0_MODE  (*(volatile unsigned int *)0x10000010)
+#define D1_CHCR     (*(volatile unsigned int *)0x10009000)
+#define D1_MADR     (*(volatile unsigned int *)0x10009010)
+#define D1_TADR     (*(volatile unsigned int *)0x10009030)
+#define D2_CHCR     (*(volatile unsigned int *)0x1000A000)
+#define D2_MADR     (*(volatile unsigned int *)0x1000A010)
+#define D2_TADR     (*(volatile unsigned int *)0x1000A030)
+#define D_ENABLEW   (*(volatile unsigned int *)0x1000F590)
+
+extern int sceMcOpen(int port, int slot, const char *name, int mode);
+extern int sceMcRead(int fd, void *buf, int size);
+extern int sceMcWrite(int fd, const void *buf, int size);
+extern int sceMcClose(int fd);
+extern int sceMcDelete(int port, int slot, const char *name);
+extern int sceMcSeek(int fd, int offset, int mode);
+extern int sceMcSync(int mode, int *cmd, int *result);
+extern int abs(int value);
+extern void NuPs2ScreenSwap(int vsync);
+extern int EnableIntc(int cause);
+extern int VU1_DmaGetStatus(void);
+extern int sceGsSyncPath(int mode, unsigned short timeout);
+extern int DisableIntc(int cause);
+extern void NuMemFreeFn(void *ptr, char *file, int line);
+extern void *memcpy(void *dst, const void *src, unsigned int n);
 
 #define ExitHandler() __asm__ volatile ("sync\n\tei")
 
 extern int PS2_REZ_W;
+extern int PS2_REZ_H;
+extern int PS2_VCNTR_X;
+extern int PS2_VCNTR_Y;
 extern int D_006331C4;
 extern volatile int D_0062F03C;
 extern int D_006331F8;
+extern TbSet *D_0062F034;
+extern int D_006331E8;
+extern int D_006331EC;
+extern int D_006331F0;
+extern int D_006331F4;
+extern GsDispEnv ps2video_display_cfg[2];
+extern int D_0062F08C;
+extern int D_0062F090;
+extern int D_0062F094;
+extern int D_0062F098;
+extern int D_0062F09C;
+extern int D_0062F0A0;
+extern int gs_dma_status;
+extern int vu1_dma_status;
+extern int nutex_use_path3;
 extern NuPs2GsReg D_002EA190;
 extern NuPs2GsReg D_002EA1A0;
 extern NuPs2GsReg D_002EA300;
 extern NuPs2GsReg D_002EA310;
+extern char D_006164E0[];
+extern int D_0062F06C;
+extern int D_0062F074;
+extern int D_0062F078;
+extern int D_0062F080;
+extern int D_0062F058;
+extern NuVBlankHandler *D_0062F070;
+extern NuVBlankHandler *D_0062F07C;
+extern int D_006331CC;
 
 #define NuPs2FrameCount D_006331C4
 #define NuPs2SwapTime   D_0062F03C
 #define NuPs2SwapDelay  D_006331F8
+#define NuPs2DisplayX0  D_006331E8
+#define NuPs2DisplayX1  D_006331EC
+#define NuPs2DisplayY0  D_006331F0
+#define NuPs2DisplayY1  D_006331F4
+#define NuPs2DispEnv    ps2video_display_cfg
+#define idmac_vif1_waiting  D_0062F08C
+#define idmac_gs_waiting    D_0062F090
+#define idmac_gs_count      D_0062F094
+#define idmac_vif1_count    D_0062F098
+#define idmac_gs_burst      D_0062F09C
+#define idmac_gs_burst_left D_0062F0A0
 #define NuPs2FrameReg0  D_002EA190
 #define NuPs2ZBufReg0   D_002EA1A0
 #define NuPs2FrameReg1  D_002EA300
 #define NuPs2ZBufReg1   D_002EA310
+#define ps2video_file   D_006164E0
+#define vblank_end_handler    D_0062F06C
+#define vblank_end_disable    D_0062F074
+#define vblank_start_handler  D_0062F078
+#define vblank_start_disable  D_0062F080
+#define auto_screen_swap      D_0062F058
+#define vblank_end_list       D_0062F070
+#define vblank_start_list     D_0062F07C
+#define in_vblank_end         D_006331CC
+
+
+inline int GetElapsedTime(void)
+{
+    int elapsed;
+
+    elapsed = EE_T1_COUNT - NuPs2SwapTime;
+    NuPs2SwapDelay = elapsed;
+    if (elapsed < 0) {
+        NuPs2SwapDelay = elapsed + 0x10000;
+    }
+    return NuPs2SwapDelay;
+}
+
+
+static inline int tbslotEnd(TbSet *set, int slot)
+{
+    unsigned int elapsed;
+
+    set = set != 0 ? set : D_0062F034;
+    slot &= 0xF;
+    elapsed = EE_T1_COUNT - set->begin[slot];
+    if (elapsed > 0xFFFF) {
+        elapsed += 0xFFFF;
+    }
+    set->values[slot][1 - set->current[slot]] += elapsed;
+    return set->values[slot][1 - set->current[slot]];
+}
+
+
+int idmacGs(int channel)
+{
+    unsigned int tadr;
+    unsigned int addr;
+    unsigned int tag;
+
+    if (channel == 2) {
+        tadr = D2_TADR;
+        addr = D2_MADR & 0x7FFFFFFF;
+        tag = (D2_CHCR >> 16) & 0xFF;
+        if (((D2_CHCR >> 28) & 7) == 7) {
+            gs_dma_status = 0;
+        }
+        if (tag == 0x19) {
+            idmac_gs_count++;
+            if (idmac_vif1_waiting) {
+                D_ENABLEW = 0x10000;
+                D2_CHCR |= 0x100;
+                D1_CHCR |= 0x100;
+                D_ENABLEW = 0;
+                idmac_vif1_waiting = 0;
+            } else {
+                if (nutex_use_path3) {
+                    addr = *(unsigned int *)addr | 0x20000000;
+                    ((unsigned char *)addr)[3] &= 0x7F;
+                }
+                if (idmac_gs_burst_left) {
+                    if (gs_dma_status) {
+                        D_ENABLEW = 0x10000;
+                        D2_CHCR |= 0x100;
+                        D_ENABLEW = 0;
+                    }
+                    idmac_gs_burst_left--;
+                } else {
+                    idmac_gs_waiting = 1;
+                    idmac_gs_burst_left = idmac_gs_burst;
+                }
+            }
+        } else {
+            gs_dma_status = 0;
+        }
+    }
+    return 1;
+}
+
+
+int idmacVif1(int channel)
+{
+    unsigned int tadr;
+    unsigned char *packet;
+
+    if (channel == 1) {
+        tadr = D1_TADR;
+        packet = (unsigned char *)((D1_MADR & 0x7FFFFFFF) | 0x20000000);
+        if (((D1_CHCR >> 16) & 0xFF) == 0x18) {
+            idmac_vif1_count++;
+            if (packet[-0xD] & 0x80) {
+                idmac_vif1_waiting = channel;
+            } else {
+                D_ENABLEW = 0x10000;
+                D1_CHCR |= 0x100;
+                D_ENABLEW = 0;
+            }
+            if (idmac_gs_waiting) {
+                D_ENABLEW = 0x10000;
+                D2_CHCR |= 0x100;
+                D_ENABLEW = 0;
+                idmac_gs_waiting = 0;
+            }
+        } else {
+            tbslotEnd(0, 1);
+            vu1_dma_status = 0;
+        }
+        return 1;
+    }
+    return 1;
+}
+
+
+int NuMcOpen(int port, int slot, const char *name, int mode, int async)
+{
+    int cmd;
+    int result;
+
+    result = sceMcOpen(port, slot, name, mode);
+    if (!async) {
+        sceMcSync(0, &cmd, &result);
+    }
+    return result;
+}
+
+
+int NuMcRead(int fd, void *buf, int size, int async)
+{
+    int cmd;
+    int result;
+
+    result = sceMcRead(fd, buf, size);
+    if (!async) {
+        sceMcSync(0, &cmd, &result);
+    }
+    return result;
+}
+
+
+int NuMcWrite(int fd, const void *buf, int size, int async)
+{
+    int cmd;
+    int result;
+
+    result = sceMcWrite(fd, buf, size);
+    if (!async) {
+        sceMcSync(0, &cmd, &result);
+    }
+    return result;
+}
+
+
+int NuMcClose(int fd, int async)
+{
+    int cmd;
+    int result;
+
+    result = sceMcClose(fd);
+    if (!async) {
+        sceMcSync(0, &cmd, &result);
+    }
+    return result;
+}
+
+
+int NuMcDelete(int port, int slot, const char *name, int async)
+{
+    int cmd;
+    int result;
+
+    result = sceMcDelete(port, slot, name);
+    if (!async) {
+        sceMcSync(0, &cmd, &result);
+    }
+    return result;
+}
+
+
+int NuMcSeek(int fd, int offset, int mode, int async)
+{
+    int cmd;
+    int result;
+
+    result = sceMcSeek(fd, offset, mode);
+    if (!async) {
+        sceMcSync(0, &cmd, &result);
+    }
+    return result;
+}
+
+
+int NuMcWriteFloat(int fd, float value, int async)
+{
+    int cmd;
+    int result;
+
+    result = sceMcWrite(fd, &value, sizeof(value));
+    if (!async) {
+        sceMcSync(0, &cmd, &result);
+    }
+    return result;
+}
+
+
+int NuMcWriteInt(int fd, int value, int async)
+{
+    int cmd;
+    int result;
+
+    result = sceMcWrite(fd, &value, sizeof(value));
+    if (!async) {
+        sceMcSync(0, &cmd, &result);
+    }
+    return result;
+}
+
+
+int NuMcWriteUnsignedInt(int fd, unsigned int value, int async)
+{
+    int cmd;
+    int result;
+
+    result = sceMcWrite(fd, &value, sizeof(value));
+    if (!async) {
+        sceMcSync(0, &cmd, &result);
+    }
+    return result;
+}
+
+
+int NuMcWriteShort(int fd, short value, int async)
+{
+    int cmd;
+    int result;
+
+    result = sceMcWrite(fd, &value, sizeof(value));
+    if (!async) {
+        sceMcSync(0, &cmd, &result);
+    }
+    return result;
+}
+
+
+int NuMcWriteChar(int fd, char value, int async)
+{
+    int cmd;
+    int result;
+
+    result = sceMcWrite(fd, &value, sizeof(value));
+    if (!async) {
+        sceMcSync(0, &cmd, &result);
+    }
+    return result;
+}
+
+
+float NuMcReadFloat(int fd)
+{
+    float value;
+    int cmd;
+    int result;
+
+    result = sceMcRead(fd, &value, sizeof(value));
+    sceMcSync(0, &cmd, &result);
+    return value;
+}
+
+
+int NuMcReadInt(int fd)
+{
+    int value;
+    int cmd;
+    int result;
+
+    result = sceMcRead(fd, &value, sizeof(value));
+    sceMcSync(0, &cmd, &result);
+    return value;
+}
+
+
+unsigned int NuMcReadUnsignedInt(int fd)
+{
+    unsigned int value;
+    int cmd;
+    int result;
+
+    result = sceMcRead(fd, &value, sizeof(value));
+    sceMcSync(0, &cmd, &result);
+    return value;
+}
+
+
+short NuMcReadShort(int fd)
+{
+    short value;
+    int cmd;
+    int result;
+
+    result = sceMcRead(fd, &value, sizeof(value));
+    sceMcSync(0, &cmd, &result);
+    return value;
+}
+
+
+char NuMcReadChar(int fd)
+{
+    char value;
+    int cmd;
+    int result;
+
+    result = sceMcRead(fd, &value, sizeof(value));
+    sceMcSync(0, &cmd, &result);
+    return value;
+}
+
+
+void tbsetDestroy(TbSet *set)
+{
+    NuMemFreeFn(set, ps2video_file, 0x1E7);
+}
+
+
+void tbslotReset(TbSet *set, int slot)
+{
+    int current;
+
+    set = set != 0 ? set : D_0062F034;
+    slot &= 0xF;
+    current = set->current[slot] ^ 1;
+    set->current[slot] = current;
+    set->values[slot][current ? 0 : 1] = 0;
+}
+
+
+int tbslotLastValue(TbSet *set, int slot)
+{
+    set = set != 0 ? set : D_0062F034;
+    slot &= 0xF;
+    return set->values[slot][set->current[slot]];
+}
+
+
+void tbslotBeginFn(TbSet *set, int slot)
+{
+    set = set != 0 ? set : D_0062F034;
+    slot &= 0xF;
+    set->begin[slot] = EE_T1_COUNT;
+    set->extra[slot] = 0;
+}
+
+
+void tbslotBeginExFn(TbSet *set, int slot, int extra)
+{
+    set = set != 0 ? set : D_0062F034;
+    slot &= 0xF;
+    set->begin[slot] = EE_T1_COUNT;
+    set->extra[slot] = extra;
+}
 
 
 float NuPs2GetRenderWidth(void)
 {
     return (float)PS2_REZ_W;
+}
+
+
+float NuPs2GetRenderHeight(void)
+{
+    return (float)PS2_REZ_H;
+}
+
+
+void NuPs2VideoSetPos(int x, int y)
+{
+    NuPs2DispEnv[0].display.dx = NuPs2DisplayX0 + x;
+    NuPs2DispEnv[0].display.dy = NuPs2DisplayY0 + y;
+    NuPs2DispEnv[1].display.dx = NuPs2DisplayX1 + x;
+    NuPs2DispEnv[1].display.dy = NuPs2DisplayY1 + y;
+}
+
+
+void NuPs2EnableAutoScreenSwap(void)
+{
+    if (!auto_screen_swap) {
+        while (VU1_DmaGetStatus()) {
+        }
+        sceGsSyncPath(0, 0);
+        while (abs(GetElapsedTime()) < 50) {
+        }
+        auto_screen_swap = 1;
+    }
+}
+
+
+void NuPs2DisableAutoScreenSwap(void)
+{
+    if (auto_screen_swap) {
+        while (abs(GetElapsedTime()) >= 100) {
+        }
+        auto_screen_swap = 0;
+        sceGsSyncPath(0, 0);
+    }
+}
+
+
+void NuEnableVBlankE(void)
+{
+    if (vblank_end_handler) {
+        if (--vblank_end_disable == 0) {
+            EnableIntc(3);
+        }
+    }
+}
+
+
+void NuDisableVBlankE(void)
+{
+    if (vblank_end_handler) {
+        if (vblank_end_disable == 0) {
+            DisableIntc(3);
+        }
+        vblank_end_disable++;
+    }
+}
+
+
+void NuIntRemVBlankE(NuVBlankHandler *handler)
+{
+    DisableIntc(3);
+    if (handler->prev) {
+        handler->prev->next = handler->next;
+    } else {
+        vblank_end_list = handler->next;
+    }
+    if (handler->next) {
+        handler->next->prev = handler->prev;
+    }
+    EnableIntc(3);
+}
+
+
+void NuEnableVBlankS(void)
+{
+    if (vblank_start_handler) {
+        if (--vblank_start_disable == 0) {
+            EnableIntc(2);
+        }
+    }
+}
+
+
+void NuDisableVBlankS(void)
+{
+    if (vblank_start_handler) {
+        if (vblank_start_disable == 0) {
+            DisableIntc(2);
+        }
+        vblank_start_disable++;
+    }
+}
+
+
+void NuIntRemVBlankS(NuVBlankHandler *handler)
+{
+    DisableIntc(2);
+    if (handler->prev) {
+        handler->prev->next = handler->next;
+    } else {
+        vblank_start_list = handler->next;
+    }
+    if (handler->next) {
+        handler->next->prev = handler->prev;
+    }
+    EnableIntc(2);
+}
+
+
+void NuEnableVBlank(void)
+{
+    if (vblank_start_handler) {
+        if (--vblank_start_disable == 0) {
+            EnableIntc(2);
+        }
+    }
+    if (vblank_end_handler) {
+        if (--vblank_end_disable == 0) {
+            EnableIntc(3);
+        }
+    }
+}
+
+
+void NuDisableVBlank(void)
+{
+    if (vblank_end_handler) {
+        if (vblank_end_disable == 0) {
+            DisableIntc(3);
+        }
+        vblank_end_disable++;
+    }
+    if (vblank_start_handler) {
+        if (vblank_start_disable == 0) {
+            DisableIntc(2);
+        }
+        vblank_start_disable++;
+    }
+}
+
+
+void ps2videoGetFreeMem(int *pages, int *bytes)
+{
+    int used;
+
+    used = (PS2_REZ_W * PS2_REZ_H * 3 + 63) / 64;
+    if (pages) {
+        *pages = used;
+    }
+    if (bytes) {
+        *bytes = 0x400000 - used * 256;
+    }
+}
+
+
+void *NuPs2CopyCurrentBackBuffer(void *buf)
+{
+    if (NuPs2FrameCount & 1) {
+        memcpy(buf, &NuPs2FrameReg0, sizeof(NuPs2GsReg));
+    } else {
+        memcpy(buf, &NuPs2FrameReg1, sizeof(NuPs2GsReg));
+    }
+    return (char *)buf + sizeof(NuPs2GsReg);
+}
+
+
+void *NuPs2CopyCurrentFrontBuffer(void *buf)
+{
+    if (NuPs2FrameCount & 1) {
+        memcpy(buf, &NuPs2FrameReg1, sizeof(NuPs2GsReg));
+    } else {
+        memcpy(buf, &NuPs2FrameReg0, sizeof(NuPs2GsReg));
+    }
+    return (char *)buf + sizeof(NuPs2GsReg);
+}
+
+
+void *NuPs2CopyCurrentZBuffer(void *buf)
+{
+    if (NuPs2FrameCount & 1) {
+        memcpy(buf, &NuPs2ZBufReg0, sizeof(NuPs2GsReg));
+    } else {
+        memcpy(buf, &NuPs2ZBufReg1, sizeof(NuPs2GsReg));
+    }
+    return (char *)buf + sizeof(NuPs2GsReg);
 }
 
 
@@ -142,6 +790,24 @@ void NuPs2GetCurrentZBuffer(u64 *buf)
 }
 
 
+float NuPs2GetRenderRange(void)
+{
+    return 4096.0f;
+}
+
+
+float NuPs2GetRenderXCentre(void)
+{
+    return (float)PS2_VCNTR_X;
+}
+
+
+float NuPs2GetRenderYCentre(void)
+{
+    return (float)PS2_VCNTR_Y;
+}
+
+
 void timeUserReset(void)
 {
     EE_T0_MODE = 0x82;
@@ -162,14 +828,18 @@ int ifnVif1(int ca)
 }
 
 
-int GetElapsedTime(void)
+int ifnVBlankE(int ca)
 {
-    int elapsed;
+    NuVBlankHandler *handler;
 
-    elapsed = EE_T1_COUNT - NuPs2SwapTime;
-    NuPs2SwapDelay = elapsed;
-    if (elapsed < 0) {
-        NuPs2SwapDelay = elapsed + 0x10000;
+    in_vblank_end = 1;
+    if (auto_screen_swap) {
+        NuPs2ScreenSwap(1);
     }
-    return NuPs2SwapDelay;
+    for (handler = vblank_end_list; handler; handler = handler->next) {
+        handler->fn();
+    }
+    in_vblank_end = 0;
+    ExitHandler();
+    return 1;
 }

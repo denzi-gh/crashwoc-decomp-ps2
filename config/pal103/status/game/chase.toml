@@ -17,27 +17,27 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0118:00258db0:UpdateCrateBallsOfFireDoors"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0118:00259160:ResetChases"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0118:002592f8:InitChase"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0118:00259798:UpdateChase"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0118:0025a588:DrawChases"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0118:0025aab8:NuSplineFindPartial"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0118:0025ab58:ChaseActive"
@@ -45,8 +45,8 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0118:0025ab98:UpdateChases"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0118:0025ac98:NearestChaserDistance"
-state = "asm"
+state = "matching"

@@ -26,6 +26,7 @@ import os
 import sys
 import threading
 from pathlib import Path
+from typing import Annotated, Literal, Optional, Union
 
 # Make the sibling ``tools`` importable whether launched as a module or a script.
 _TOOLS = Path(__file__).resolve().parent.parent
@@ -34,9 +35,25 @@ if str(_TOOLS) not in sys.path:
 
 from decomp_agent.project import DecompProject, ProjectError, ENV_PROJECT_DIR  # noqa: E402
 from decomp_agent import (health, candidates, context as ctx, evidence, diff,   # noqa: E402
-                          sessions, blockers, verification, registry as regmod)
+                          sessions, blockers, verification, registry as regmod,
+                          schemas)
 
 log = logging.getLogger("decomp_mcp")
+
+# Tool parameter types: Optional so null is accepted, enums from schemas.
+BlockerKind = Literal[schemas.BLOCKER_KINDS]
+Confidence = Literal[schemas.CONFIDENCE]
+VerifyLevel = Literal[schemas.VERIFY_LEVELS]
+EvidenceKind = Literal[schemas.EVIDENCE_KINDS]
+# A compile_diff classification record, or just its category name.
+Classification = Union[str, dict]
+try:
+    from pydantic import Field
+    # Advertised, not validated: end_session matches case-insensitively.
+    Outcome = Annotated[Optional[str], Field(
+        json_schema_extra={"enum": [*schemas.OUTCOMES, None]})]
+except Exception:  # pragma: no cover - pydantic ships with the MCP SDK
+    Outcome = Optional[str]
 
 # The full workflow the server advertises to clients. Self-contained: a client
 # needs nothing outside this string (and the typed tools) to run the loop.
@@ -169,8 +186,10 @@ def build_server(project: DecompProject):
         return health.project_health(P())
 
     @mcp.tool()
-    def list_candidates(scope: str = None, profile: str = None,
-                        category: str = None, max_size: int = None,
+    def list_candidates(scope: Optional[str] = None,
+                        profile: Optional[str] = None,
+                        category: Optional[str] = None,
+                        max_size: Optional[int] = None,
                         require_c_unit: bool = False,
                         prefer_leaf_functions: bool = False,
                         limit: int = 20) -> dict:
@@ -207,19 +226,20 @@ def build_server(project: DecompProject):
         return ctx.get_disassembly(P(), target)
 
     @mcp.tool()
-    def search_evidence(query: str, kinds: list = None, limit: int = 40) -> dict:
+    def search_evidence(query: str, kinds: Optional[list[EvidenceKind]] = None,
+                        limit: int = 40) -> dict:
         """Deterministic search across registries, source, headers, history."""
         return evidence.search_evidence(P(), query, kinds=kinds, limit=limit)
 
     @mcp.tool()
-    async def compile_diff(target: str, session_id: str = None,
-                           client: str = None) -> dict:
+    async def compile_diff(target: str, session_id: Optional[str] = None,
+                           client: Optional[str] = None) -> dict:
         """Compile the unit and byte-compare over the full extent (locked path)."""
         return await asyncio.to_thread(
             diff.compile_diff, P(), target, session_id=session_id, client=client)
 
     @mcp.tool()
-    async def verify_candidate(target: str, level: str = "function") -> dict:
+    async def verify_candidate(target: str, level: VerifyLevel = "function") -> dict:
         """Byte verification: function (default) / unit / image (explicit)."""
         return await asyncio.to_thread(
             verification.verify_candidate, P(), target, level=level)
@@ -230,33 +250,40 @@ def build_server(project: DecompProject):
         return await asyncio.to_thread(verification.promote_matching, P(), target)
 
     @mcp.tool()
-    def start_session(target: str, client: str = None, model: str = None,
-                      reasoning_effort: str = None) -> dict:
+    def start_session(target: str, client: Optional[str] = None,
+                      model: Optional[str] = None,
+                      reasoning_effort: Optional[str] = None) -> dict:
         """Create a shared, resumable experiment session for a target."""
         return sessions.start_session(P(), target, client=client, model=model,
                                       reasoning_effort=reasoning_effort)
 
     @mcp.tool()
-    def resume_session(session_id: str, client: str = None) -> dict:
+    def resume_session(session_id: str, client: Optional[str] = None) -> dict:
         """Return everything needed to continue a session; refuses unsafe resume."""
         return sessions.resume_session(P(), session_id, client=client)
 
     @mcp.tool()
-    def checkpoint_session(session_id: str, hypothesis: str = None,
-                           expected_effect: str = None, source_hash: str = None,
-                           source_snapshot: str = None,
-                           candidate_asm_hash: str = None, target_hash: str = None,
-                           diff_signature: str = None, fuzzy_score: float = None,
-                           matching_bytes: int = None, differing_bytes: int = None,
-                           classifications: list = None, compile_ok: bool = None,
-                           exact: bool = None, client: str = None,
-                           model: str = None, reasoning_effort: str = None,
-                           input_tokens: int = None,
-                           output_tokens: int = None) -> dict:
+    def checkpoint_session(session_id: str, hypothesis: Optional[str] = None,
+                           expected_effect: Optional[str] = None,
+                           source_hash: Optional[str] = None,
+                           source_snapshot: Optional[str] = None,
+                           candidate_asm_hash: Optional[str] = None,
+                           target_hash: Optional[str] = None,
+                           diff_signature: Optional[str] = None,
+                           fuzzy_score: Optional[float] = None,
+                           matching_bytes: Optional[int] = None,
+                           differing_bytes: Optional[int] = None,
+                           classifications: Optional[list[Classification]] = None,
+                           compile_ok: Optional[bool] = None,
+                           exact: Optional[bool] = None,
+                           client: Optional[str] = None,
+                           model: Optional[str] = None,
+                           reasoning_effort: Optional[str] = None,
+                           input_tokens: Optional[int] = None,
+                           output_tokens: Optional[int] = None) -> dict:
         """Record one experiment; updates counters and repeat/oscillation flags.
 
-        Optional input_tokens/output_tokens are opaque diagnostics accumulated
-        per client/model; they never affect verification, ranking or promotion.
+        ``classifications``: compile_diff records or bare category names.
         """
         return sessions.checkpoint_session(
             P(), session_id, hypothesis=hypothesis, expected_effect=expected_effect,
@@ -269,37 +296,46 @@ def build_server(project: DecompProject):
             input_tokens=input_tokens, output_tokens=output_tokens)
 
     @mcp.tool()
-    def end_session(session_id: str, outcome: str = None,
-                    client: str = None) -> dict:
-        """Finalize a session with an outcome and release its lock."""
-        return sessions.end_session(P(), session_id, outcome=outcome, client=client)
+    def end_session(session_id: str, outcome: Outcome = None,
+                    client: Optional[str] = None,
+                    blocker_status: Optional[str] = None) -> dict:
+        """Finalize a session (any outcome casing) and release its lock."""
+        return sessions.end_session(P(), session_id, outcome=outcome, client=client,
+                                    blocker_status=blocker_status)
 
     @mcp.tool()
     def restore_best_candidate(session_id: str, force: bool = False,
-                               client: str = None) -> dict:
+                               client: Optional[str] = None) -> dict:
         """Restore the best attempt's source (guarded; returns conflict, never clobbers)."""
         return sessions.restore_best_candidate(P(), session_id, force=force,
                                                client=client)
 
     @mcp.tool()
-    def recover_session_lock(session_id: str, client: str = None) -> dict:
+    def recover_session_lock(session_id: str, client: Optional[str] = None) -> dict:
         """Break a *stale* session lock and take ownership (refuses a fresh lock)."""
         return sessions.recover_lock(P(), session_id, client=client)
 
     @mcp.tool()
-    def record_blocker(target: str, kind: str, confidence: str = "medium",
-                       evidence: list = None, session_id: str = None,
-                       recommended_human_action: str = None,
-                       recommended_tooling_action: str = None,
-                       client: str = None) -> dict:
-        """Record a structured blocker (why this function cannot match yet)."""
+    def record_blocker(target: str, kind: BlockerKind,
+                       confidence: Confidence = "medium",
+                       evidence: Optional[list[str]] = None,
+                       session_id: Optional[str] = None,
+                       architectural: Optional[bool] = None,
+                       best_attempt: Optional[int] = None,
+                       remaining_mismatch: Optional[str] = None,
+                       recommended_human_action: Optional[str] = None,
+                       recommended_tooling_action: Optional[str] = None,
+                       client: Optional[str] = None) -> dict:
+        """Record a structured blocker; architectural ones leave candidates."""
         return blockers.record_blocker(
             P(), target, kind=kind, confidence=confidence, evidence=evidence,
-            session_id=session_id, recommended_human_action=recommended_human_action,
+            session_id=session_id, architectural=architectural,
+            best_attempt=best_attempt, remaining_mismatch=remaining_mismatch,
+            recommended_human_action=recommended_human_action,
             recommended_tooling_action=recommended_tooling_action, client=client)
 
     @mcp.tool()
-    def list_blockers(target: str = None) -> dict:
+    def list_blockers(target: Optional[str] = None) -> dict:
         """List recorded blockers (optionally for one target)."""
         return blockers.list_blockers(P(), target=target)
 

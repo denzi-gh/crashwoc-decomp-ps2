@@ -16,3 +16,23 @@
  *   0x002636e8 sceDevVu0GetCnd
  *   0x002637c8 sceDevVu0PutCnd
  */
+
+int sceDevVu0Sync(void);
+void sceDevVu0Exec(unsigned short addr);
+unsigned short sceDevVu0GetTpc(void);
+
+
+int sceDevVu0Continue(void)
+{
+    int resumed = 0;
+
+    switch (sceDevVu0Sync()) {
+    case 1:
+    case 2:
+    case 3:
+        resumed = 1;
+        sceDevVu0Exec(sceDevVu0GetTpc());
+        break;
+    }
+    return resumed;
+}

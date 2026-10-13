@@ -13,35 +13,35 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0030:001103f8:NuRndrInitStreams"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00110580:NuRndrStreamInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:001106e8:NuRndrStreamAllocStream"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00110838:NuRndrStreamFlush"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00110a50:NuRndrStreamSetMisc"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00110e28:NuRndrStreamSetLocalMtx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00110f08:NuRndrSetViewMtx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00111208:NuRndrSetSpecularLight"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00111420:NuStreamGetOutputBuffer"
@@ -53,7 +53,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00111470:FaceYDirStream"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00111538:NuRndrSetLocalMtx"
@@ -69,7 +69,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:001116a0:NuRndrSetZFix"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00111738:NuRndrSetDirectionalLights"
@@ -121,11 +121,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00111b50:NuRndrStreamAddMtl"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00111c18:NuRndrStreamAddTex"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00111c78:NuRndrStreamSetDirectionalLights"
@@ -137,7 +137,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00111c88:NuRndrStreamSetViewMtx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00111d28:NuRndrStreamSetViewMtxScissorClip"
@@ -145,7 +145,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00111d98:NuRndrStreamSetLocalMtxEx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00111eb0:NuRndrStreamPrependMPG"
@@ -157,7 +157,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00111f20:NuRndrStreamSetZBState"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00112000:NuRndrStreamAddZBState"
@@ -165,4 +165,4 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00112060:CheckRndrStream"
-state = "asm"
+state = "matching"

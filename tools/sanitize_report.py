@@ -57,7 +57,7 @@ UNIT_METADATA_KEYS = frozenset({"complete", "source_path",
 # through untouched. fuzzy_match_percent is code-weighted in this project, so it
 # rides with total_code (a data-only unit's fuzzy is objdiff's 100%-of-no-code
 # artifact; revisit if C data ever contributes to a unit's fuzzy score). This
-# never invents a value. See docs/notes.md (honest data/code metrics).
+# never invents a value.
 HOLLOW_WHEN_TOTAL_ZERO = {
     "total_code": ("matched_code", "matched_code_percent",
                    "complete_code", "complete_code_percent",

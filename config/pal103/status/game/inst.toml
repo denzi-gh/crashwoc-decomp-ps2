@@ -21,15 +21,15 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0092:001d5bd8:InstAnimDataLoad"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0092:001d5ca0:InstAnimDataDestroy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0092:001d5d08:InstShadDataLoad"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0092:001d5dd8:InstShadDataDestroy"

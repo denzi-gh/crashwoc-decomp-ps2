@@ -51,7 +51,7 @@ binary, in native table order, into three deterministic registries:
 | ----------------------------------------------------------------- | ------: | ----------------------------------------------- |
 | [config/pal103/units.toml](../config/pal103/units.toml)           |     267 | translation units (file descriptors)            |
 | [config/pal103/functions.toml](../config/pal103/functions.toml)   |   3,751 | procedures (address, frame, register masks)      |
-| [config/pal103/symbol_addrs.txt](../config/pal103/symbol_addrs.txt) |   6,320 | splat-style `name = address` (functions + data) |
+| [config/pal103/symbol_addrs.txt](../config/pal103/symbol_addrs.txt) |   6,302 | splat-style `name = address` (functions + data) |
 
 ```bash
 python tools/extract_mdebug.py           # (re)generate the registries

@@ -45,7 +45,11 @@
 
 
 typedef unsigned short u16;
+typedef unsigned char u8;
 typedef unsigned long long u64;
+typedef unsigned int u128 __attribute__((mode(TI)));
+
+typedef void (*NuDebugMsgFn)(char *fmt, ...);
 
 struct nuvec_s {
     float x;
@@ -65,26 +69,44 @@ struct nucolour4_s {
 };
 
 struct nurndrstream_s {
-    void *cur;
-    void *tex;
-    int unk_0x08;
-    int unk_0x0C;
+    void *start;
+    u8 *cur;
+    void *txtr_start;
+    void *txtr_end;
     void *zbuf;
-    int unk_0x14;
+    struct NuMtl *mtl;
     void *mpgtag;
-    char pad_0x1C[4];
-    int unk_0x20;
-    short unk_0x24;
-    short unk_0x26;
-    short unk_0x28;
+    unsigned int sortkey;
+    int local_mtx_id;
+    short view_mtx_id;
+    short scissor_id;
+    short xyoffset_id;
     char pad_0x2A[2];
-    int unk_0x2C;
-    int unk_0x30;
-    int unk_0x34;
+    void *light_addr;
+    unsigned int flags;
+    int mtl_tid;
 };
 
+typedef struct {
+    u16 qwc;
+    u8 mark;
+    u8 id;
+    void *addr;
+    unsigned int vif0;
+    unsigned int vif1;
+} NuDmaTag;
+
+typedef union {
+    u128 qw;
+    NuDmaTag tag;
+} NuDmaTagQw;
+
+typedef struct {
+    float m[16];
+} NuMtx;
+
 struct nurtlight_s {
-    char pad_0x00[0x10];
+    NuDmaTagQw cnt;
     float dirx[3];
     char pad_0x1C[4];
     float diry[3];
@@ -96,46 +118,84 @@ struct nurtlight_s {
     float g;
     float b;
     float a;
+    NuDmaTagQw ref;
 };
 
-struct nurndrfx_s {
-    char pad[4];
-    void *cur;
+struct nuspecpkt_s {
+    NuDmaTagQw cnt;
+    NuMtx mtx;
+    struct nucolour4_s col;
+    NuDmaTagQw ref;
 };
 
 struct nuzbstate_s {
     char pad[0x24];
-    int unk_0x24;
+    int zmask;
+};
+
+typedef struct NuMtl {
+    char pad_0x000[0x1A4];
+    int tid;
+    char pad_0x1A8[0x1C];
+    signed char tex_mode;
+} NuMtl;
+
+struct nulocalmtxpkt_s {
+    char tag[0x10];
+    NuMtx mtx;
+    int unpack;
+    short mode;
+    char pad_0x56[6];
+    unsigned int mscal;
+    unsigned int flush;
 };
 
 typedef struct {
-    float m[16];
-} NuMtx;
+    int x;
+    int y;
+    int width;
+    int height;
+} NuViewport;
+
+struct nucamera_s {
+    NuMtx mtx;
+    float fov;
+    float aspect;
+    float nearclip;
+    float farclip;
+    char pad_0x50[0x10];
+};
+
+union vifword_u {
+    unsigned int u;
+    float f;
+};
 
 struct nurndrfxmtx_s {
-    char pad[0x10];
+    NuDmaTagQw cnt;
     NuMtx mtx;
+    NuDmaTagQw ref;
 };
 
 
-extern void *D_00633020;
+extern unsigned char *D_00633020;
 #define stream_outbuf0 D_00633020
 
-extern void *D_00633024;
+extern unsigned char *D_00633024;
 #define stream_outbuf1 D_00633024
 
-extern u64 D_00633038;
-#define rndrstream_scissor D_00633038
+extern u64 D_00633038[1];
+#define rndrstream_scissor D_00633038[0]
 
-extern u64 D_00633040;
-#define rndrstream_offset D_00633040
+extern u64 D_00633040[1];
+#define rndrstream_offset D_00633040[0]
 
 extern int D_0062EAC0;
 #define zbstate_set D_0062EAC0
 
-extern u16 rndrstream_scissor_id;
+extern short rndrstream_scissor_id;
 
-extern u16 rndrstream_xyoffset_id;
+extern short rndrstream_xyoffset_id;
 
 extern char *rndrstream_free;
 
@@ -144,41 +204,49 @@ extern int D_0062EA74;
 
 extern void NuRndrInitStreams(void);
 
+extern void NuRndrStreamResetStreams(int flag);
+
+extern struct nurndrstream_s *NuRndrStreamAllocStream(unsigned int sortkey, void *mpgtag, unsigned int flags);
+
 extern struct nurtlight_s rndrstream_rt_light_buffer;
 
-extern void *rndrstream_rt_light_addr;
+extern void *rndrstream_rt_light_addr[1];
 
 extern void *gs_top;
 
-extern struct nurndrfx_s *rndrstream_fx;
+extern struct nurndrstream_s *rndrstream_fx;
 
 extern void *rndrstream_fx_microcode;
 
 extern char D_0028CFF0[];
 
 extern char D_00289020[];
+#define fx_microcode_default D_00289020
 
 extern void *vpDmaTag_Call(void *cur, void *microcode);
 
 extern void *vpDmaTag_Next(void *cur, void *mode);
 
-extern void NuTexAccomodateRS(struct nurndrstream_s *stream, void *ptr, signed char tex);
+extern void NuTexAccomodateRS(struct nurndrstream_s *stream, int tid);
 
-extern void *NuTexSet(void *tex0, void *ptr, signed char tex);
+extern void *NuTexSet(void *dma, int tid, signed char mode);
 
-extern void *NuTexGetTex0(void *ptr);
+extern void *NuTexGetTex0(int tid);
 
 extern struct nuzbstate_s D_0067A600;
+#define zbstate_pkt D_0067A600
 
 extern int D_002D3E00[];
+#define zmask_table D_002D3E00
 
 extern void NuMemCopy128(void *dst, void *src, int count);
 
-extern void *rndrstream_fx_mtx_addr;
+extern void *rndrstream_fx_mtx_addr[1];
 
 extern struct nurndrfxmtx_s D_0067A590;
+#define rndrstream_fx_mtx D_0067A590
 
-extern void *txtrstream_start;
+extern void *txtrstream_start[1];
 
 extern void *rndrstream_start;
 
@@ -193,14 +261,615 @@ extern void tbslotReset(int a, int b);
 extern void tbslotBeginFn(int a, int b);
 
 extern int D_0062EA84;
+#define view_mtx_pkt_size D_0062EA84
 
 extern char D_0067A460[];
+#define clip_view_mtx_pkt D_0067A460
+
+extern char D_0067A3C0[];
+#define view_mtx_pkt D_0067A3C0
 
 extern int D_00633028;
+#define rndrstream_count D_00633028
 
 extern struct nurndrstream_s D_00679B40[];
+#define rndrstream_pool D_00679B40
 
-extern int D_00633030;
+extern int rndrstream_local_mtx_id;
+
+extern void *rndrstream_last_mtx[1];
+
+extern int D_0062EA80;
+#define local_mtx_pkt_size D_0062EA80
+
+extern struct nulocalmtxpkt_s D_0067A340;
+#define local_mtx_pkt D_0067A340
+
+extern float NuTrigTable[];
+
+extern char D_0067A500[];
+#define faceon_dir_pkt D_0067A500
+
+extern NuViewport *NuVpGetCurrentViewport(void);
+
+extern void *vpDmaTag_Cnt(void *packet);
+
+extern void *vpDmaTag_Close(void *packet);
+
+extern float D_0062EA78;
+#define rndrstream_zfix D_0062EA78
+
+extern int D_0062EAB8;
+#define view_mtx_id_next D_0062EAB8
+
+extern short rndrstream_view_mtx_id;
+
+extern NuMtx D_0067A2C0;
+#define zfix_mtx D_0067A2C0
+
+extern NuMtx D_0067A300;
+#define view_mtx D_0067A300
+
+extern NuMtx D_0067A3D0;
+#define vu1_view_mtx D_0067A3D0
+
+extern NuMtx D_0067A470;
+#define vu1_clip_view_mtx D_0067A470
+
+extern void NuMtxMulH(NuMtx *dst, NuMtx *a, NuMtx *b);
+
+extern int NuMtlValid(NuMtl *mtl);
+
+extern void *NuMtlGetStateBlockDma(NuMtl *mtl);
+
+extern int NuMtlGetZupd(NuMtl *mtl);
+
+extern void *NuRndrStreamAddZBState(void *stream, int index);
+
+extern u8 *vpDmaTag_CntEx(void *packet, unsigned int vif0, unsigned int vif1);
+
+extern void *vtBeginDirect(void *packet, unsigned int irq);
+
+extern void *vtCloseDirect(void *packet);
+
+extern void *gsBeginGifPacket(void *packet, int nloop, int eop, int pre,
+                              int prim, int flg, int nreg, ...);
+
+extern void *gsCloseGifPacket(void *packet);
+
+extern int D_0062EA70;
+#define stream_outbuf_size D_0062EA70
+
+extern char D_006140D0[];
+#define nustream_file D_006140D0
+
+extern char D_006140F0[];
+#define trashed_stream_a_msg D_006140F0
+
+extern char D_00614108[];
+#define trashed_stream_b_msg D_00614108
+
+extern NuDebugMsgFn NuDebugMsgProlog(char *file, int line);
+
+extern int D_0062EA90;
+#define stream_outbuf_offset D_0062EA90
+
+extern int D_0062EA94;
+#define stream_outbuf_cycle D_0062EA94
+
+extern int D_0062EA98;
+#define stream_outbuf_cycle_delay D_0062EA98
+
+extern int D_0062EA9C;
+#define stream_outbuf_cycle_len D_0062EA9C
+
+extern NuDmaTag *rndrstream_end[1];
+
+extern NuDmaTag *txtrstream_end[1];
+
+extern u8 *frame_base;
+
+extern struct nurndrstream_s *rndrstream_system;
+
+extern void NuRndrStreamLink(struct nurndrstream_s *stream);
+
+extern void NuMtxSetIdentity(NuMtx *m);
+
+extern struct nurndrstream_s *D_0067A240[];
+#define rndrstream_sorted D_0067A240
+
+extern int sortstreams_enabled;
+
+extern void *memset(void *dst, int value, unsigned int size);
+
+extern void *NuMemAllocFn(int size, char *file, int line);
+
+extern struct nurndrstream_s *rndrstream_mtl_sort;
+
+extern struct nurndrstream_s *rndrstream_faceon;
+
+extern struct nurndrstream_s *rndrstream_3d_u;
+
+extern struct nurndrstream_s *rndrstream_3d_l;
+
+extern struct nurndrstream_s *rndrstream_2d;
+
+extern struct nurndrstream_s *rndrstream_ptl;
+
+extern struct nurndrstream_s *rndrstream_ot_sort;
+
+extern char D_002834E0[];
+#define rndr3d_l_microcode D_002834E0
+
+extern char D_00284620[];
+#define rndr3d_u_microcode D_00284620
+
+extern char D_002885B0[];
+#define faceon_microcode D_002885B0
+
+extern char D_002888E0[];
+#define ptl_microcode D_002888E0
+
+extern int testfclip;
+
+extern int D_0062EAA4;
+#define rt_light_dirty D_0062EAA4
+
+extern int D_0062EAA8;
+#define spec_dirty D_0062EAA8
+
+extern int D_0062EAAC;
+#define fx_mtx_dirty D_0062EAAC
+
+extern struct nuspecpkt_s D_0067A520;
+#define rndrstream_spec D_0067A520
+
+extern NuDmaTagQw D_002D3EA0;
+#define rt_light_reftag D_002D3EA0
+
+extern NuDmaTagQw D_0067A580;
+#define spec_reftag D_0067A580
+
+extern NuDmaTagQw D_0067A5E0;
+#define fx_mtx_reftag D_0067A5E0
+
+extern char D_00614148[];
+#define bad_attrib_msg D_00614148
+
+extern NuDebugMsgFn NuErrorProlog(char *file, int line);
+
+extern u8 *vpDmaTag_RefEx(void *packet, void *addr, int qwc, unsigned int vif1);
+
+extern void *D_00633030[1];
+#define rndrstream_spec_addr D_00633030[0]
+
+extern char D_00614120[];
+#define stream_overflow_msg D_00614120
+
+extern int D_0062EABC;
+#define view_mtx_pkt_dirty D_0062EABC
+
+extern NuMtx D_0067A420;
+#define vu1_proj_mtx D_0067A420
+
+extern NuMtx D_0067A4C0;
+#define vu1_clip_proj_mtx D_0067A4C0
+
+extern struct nuvec_s D_002D3DE0;
+#define spec_light_dir D_002D3DE0
+
+extern struct nucolour4_s D_002D3DF0;
+#define spec_light_col D_002D3DF0
+
+extern struct nuvec_s D_002D3E08;
+#define spec_view_dir D_002D3E08
+
+extern struct nucamera_s global_camera;
+
+extern NuMtx numtx_identity;
+
+extern void NuVecInvMtxRotate(struct nuvec_s *dst, struct nuvec_s *src, NuMtx *m);
+
+extern void NuVecMtxRotate(struct nuvec_s *dst, struct nuvec_s *src, NuMtx *m);
+
+extern void NuVecLerp(struct nuvec_s *dst, struct nuvec_s *a, struct nuvec_s *b, float t);
+
+extern void NuVecNorm(struct nuvec_s *dst, struct nuvec_s *src);
+
+extern void NuMtxAlignZ(NuMtx *m, struct nuvec_s *dir);
+
+extern int D_0062EAB4;
+#define local_mtx_pkt_dirty D_0062EAB4
+
+extern int D_0062EAB0;
+#define local_mtx_id_next D_0062EAB0
+
+extern int D_0063302C;
+#define local_mtx_clip D_0063302C
+
+extern void *NuRndrStreamPrependMPG(struct nurndrstream_s *stream, void *tag);
+
+
+void NuRndrInitStreams(void)
+{
+    int wrap;
+    struct nurndrstream_s *sys;
+
+    if (stream_outbuf_cycle) {
+        if (stream_outbuf_cycle_delay == 0) {
+            stream_outbuf_cycle_delay = 10;
+            wrap = stream_outbuf_offset / stream_outbuf_cycle_len;
+            stream_outbuf_offset++;
+        }
+        stream_outbuf_cycle_delay--;
+    }
+    switch (rndrstream_buffer_index) {
+    case 0:
+        rndrstream_free = stream_outbuf0 + stream_outbuf_offset;
+        break;
+    case 1:
+        rndrstream_free = stream_outbuf1 + stream_outbuf_offset;
+        break;
+    case 2:
+        break;
+    }
+    if ((unsigned int)rndrstream_free & 0xF) {
+        rndrstream_free = (char *)(((unsigned int)rndrstream_free + 0xF) & ~0xF);
+    }
+    rndrstream_start = 0;
+    frame_base = rndrstream_free;
+    rndrstream_end[0] = 0;
+    txtrstream_start[0] = 0;
+    txtrstream_end[0] = 0;
+    NuRndrStreamResetStreams(1);
+    sys = rndrstream_system;
+    NuRndrStreamLink(sys);
+    sys->cur = vpDmaTag_CntEx(sys->cur, 0x13000000, 0x50000000) - 4;
+    sys->cur = vtBeginDirect(sys->cur, 0);
+    sys->cur = gsBeginGifPacket(sys->cur, 0, 1, 0, 0, 0, 1, 0xE);
+    *((u64 *)sys->cur)++ = 0;
+    *((u64 *)sys->cur)++ = 0x1A;
+    sys->cur = gsCloseGifPacket(sys->cur);
+    sys->cur = vtCloseDirect(sys->cur);
+    vpDmaTag_Close(sys->cur);
+    rndrstream_free = vpDmaTag_Next(sys->cur, 0);
+    NuMtxSetIdentity(&zfix_mtx);
+}
+
+
+void NuRndrStreamInit(int size)
+{
+    rndrstream_count = 0;
+    stream_outbuf0 = NuMemAllocFn(size, nustream_file, 0x207);
+    stream_outbuf1 = NuMemAllocFn(size, nustream_file, 0x208);
+    stream_outbuf_size = size;
+    rndrstream_system = NuRndrStreamAllocStream(0x7FFFFFFF, 0, 0);
+    rndrstream_mtl_sort = NuRndrStreamAllocStream(0x1000000, 0, 0x3D);
+    rndrstream_faceon = NuRndrStreamAllocStream(0x1000000, faceon_microcode, 0x3C);
+    rndrstream_3d_u = NuRndrStreamAllocStream(0x10000000, rndr3d_u_microcode, 0x3C);
+    rndrstream_3d_l = NuRndrStreamAllocStream(0x10000000, rndr3d_l_microcode, 0x3D);
+    rndrstream_2d = NuRndrStreamAllocStream(0x100000, 0, 0x10);
+    rndrstream_ptl = NuRndrStreamAllocStream(0xFFFFFF, ptl_microcode, 0x3C);
+    rndrstream_fx = NuRndrStreamAllocStream(0xFFFFFF, fx_microcode_default, 0x3C);
+    rndrstream_ot_sort = NuRndrStreamAllocStream(0xFFFFFF, 0, 0x3D);
+    rndrstream_buffer_index = 0;
+    memset(stream_outbuf0, 0, size);
+    memset(stream_outbuf1, 0, size);
+    rndrstream_fx_microcode = fx_microcode_default;
+    NuRndrInitStreams();
+}
+
+
+struct nurndrstream_s *NuRndrStreamAllocStream(unsigned int sortkey, void *mpgtag, unsigned int flags)
+{
+    struct nurndrstream_s *stream;
+    int i;
+    int j;
+
+    if (rndrstream_count < 32) {
+        stream = &rndrstream_pool[rndrstream_count];
+        memset(stream, 0, sizeof(struct nurndrstream_s));
+        stream->mpgtag = mpgtag;
+        stream->flags = flags;
+        stream->mtl = 0;
+        stream->sortkey = sortkey;
+        stream->start = 0;
+        stream->cur = 0;
+        stream->txtr_start = 0;
+        stream->txtr_end = 0;
+        stream->local_mtx_id = -2;
+        stream->view_mtx_id = -2;
+        stream->scissor_id = -2;
+        stream->light_addr = 0;
+        stream->mtl_tid = 0;
+        stream->xyoffset_id = -2;
+        stream->zbuf = gs_top;
+        rndrstream_sorted[rndrstream_count] = stream;
+        if (sortstreams_enabled) {
+            for (i = 0; i < rndrstream_count; i++) {
+                if (sortkey >= rndrstream_sorted[i]->sortkey) {
+                    for (j = rndrstream_count + 1; j > i; j--) {
+                        rndrstream_sorted[j] = rndrstream_sorted[j - 1];
+                    }
+                    rndrstream_sorted[i] = stream;
+                    break;
+                }
+            }
+        }
+        rndrstream_count++;
+        return stream;
+    }
+    return 0;
+}
+
+
+void NuRndrStreamFlush(void)
+{
+    struct nurndrstream_s *stream;
+    struct nurndrstream_s *s;
+    void *mpg;
+    int i;
+    int n;
+
+    mpg = 0;
+    if ((u8 *)rndrstream_free > frame_base + stream_outbuf_size) {
+        NuErrorProlog(nustream_file, 0x324)(stream_overflow_msg);
+    }
+    for (i = 0; i < rndrstream_count; i++) {
+        stream = rndrstream_sorted[i];
+        if (stream->start) {
+            if (i == 0 && rndrstream_start == 0) {
+                mpg = NuRndrStreamPrependMPG(stream, mpg);
+                rndrstream_start = stream->start;
+            }
+            if (rndrstream_end[0]) {
+                mpg = NuRndrStreamPrependMPG(stream, mpg);
+                rndrstream_end[0]->addr = stream->start;
+                rndrstream_end[0]->id = 0x20;
+            }
+            rndrstream_end[0] = (NuDmaTag *)stream->cur;
+        }
+        if (stream->txtr_start) {
+            if (txtrstream_start[0] == 0) {
+                txtrstream_start[0] = stream->txtr_start;
+            }
+            if (txtrstream_end[0]) {
+                txtrstream_end[0]->addr = stream->txtr_start;
+                txtrstream_end[0]->id = (txtrstream_end[0]->id & 0x80) | 0x20;
+            }
+            txtrstream_end[0] = stream->txtr_end;
+        }
+    }
+    if (rndrstream_end[0]) {
+        rndrstream_end[0]->id = 0x70;
+        rndrstream_end[0]->mark = 0xD;
+        rndrstream_end[0]->vif0 = 0x13000000;
+        rndrstream_end[0]->vif1 = 0;
+    }
+    if (txtrstream_end[0]) {
+        txtrstream_end[0]->id = (txtrstream_end[0]->id & 0x80) | 0x70;
+    }
+    if (rndrstream_count > 0) {
+        s = rndrstream_pool;
+        n = rndrstream_count;
+        do {
+            s->mtl = 0;
+            s->start = 0;
+            s->cur = 0;
+            s->txtr_start = 0;
+            s->txtr_end = 0;
+            s->local_mtx_id = -2;
+            s->view_mtx_id = -2;
+            s->scissor_id = -2;
+            s->xyoffset_id = -2;
+            s->light_addr = 0;
+            s->mtl_tid = 0;
+            s->zbuf = gs_top;
+            s++;
+            n--;
+        } while (n != 0);
+    }
+    rndrstream_rt_light_addr[0] = 0;
+    rndrstream_spec_addr = 0;
+    rndrstream_fx_microcode = fx_microcode_default;
+    rndrstream_fx_mtx_addr[0] = 0;
+}
+
+
+void NuRndrStreamSetMisc(struct nurndrstream_s *stream)
+{
+    u8 *pkt;
+
+    if (stream->scissor_id != rndrstream_scissor_id || stream->xyoffset_id != rndrstream_xyoffset_id) {
+        stream->cur = vpDmaTag_CntEx(stream->cur, 0x13000000, 0x50000000) - 4;
+        stream->cur = vtBeginDirect(stream->cur, 0);
+        stream->cur = gsBeginGifPacket(stream->cur, 0, 1, 0, 0, 0, 1, 0xE);
+        *((u64 *)stream->cur)++ = rndrstream_offset;
+        *((u64 *)stream->cur)++ = 0x18;
+        *((u64 *)stream->cur)++ = rndrstream_scissor;
+        *((u64 *)stream->cur)++ = 0x40;
+        stream->cur = gsCloseGifPacket(stream->cur);
+        stream->cur = vtCloseDirect(stream->cur);
+        stream->cur = vpDmaTag_Close(stream->cur);
+        stream->scissor_id = rndrstream_scissor_id;
+        stream->xyoffset_id = rndrstream_xyoffset_id;
+    }
+    switch (stream->flags & 0x43) {
+    case 0:
+        break;
+    case 1:
+        if (rt_light_dirty) {
+            rt_light_dirty = 0;
+            pkt = vpDmaTag_CntEx(&rndrstream_rt_light_buffer, 0, 0x6C07000C);
+            ((NuDmaTag *)pkt)[-1].mark = 0x15;
+            ((NuDmaTag *)pkt)[-1].qwc = 7;
+            pkt = vpDmaTag_RefEx(&rt_light_reftag, 0, 0, 0x6C07000C);
+            ((NuDmaTag *)pkt)[-1].mark = 0x15;
+            ((NuDmaTag *)pkt)[-1].qwc = 7;
+        }
+        if (rndrstream_rt_light_addr[0] == 0) {
+            rndrstream_rt_light_addr[0] = stream->cur + 0x10;
+            NuMemCopy128(stream->cur, &rndrstream_rt_light_buffer, 8);
+            stream->cur += 0x80;
+            rndrstream_rt_light_buffer.ref.tag.addr = rndrstream_rt_light_addr[0];
+        } else if (stream->light_addr != rndrstream_rt_light_addr[0]) {
+            *((NuDmaTagQw *)stream->cur)++ = rndrstream_rt_light_buffer.ref;
+        }
+        stream->light_addr = rndrstream_rt_light_addr[0];
+        break;
+    case 2:
+        if (spec_dirty) {
+            spec_dirty = 0;
+            pkt = vpDmaTag_CntEx(&rndrstream_spec, 0, 0x6C05000C);
+            ((NuDmaTag *)pkt)[-1].mark = 0x17;
+            ((NuDmaTag *)pkt)[-1].qwc = 5;
+            pkt = vpDmaTag_RefEx(&spec_reftag, 0, 0, 0x6C05000C);
+            ((NuDmaTag *)pkt)[-1].mark = 0x17;
+            ((NuDmaTag *)pkt)[-1].qwc = 5;
+        }
+        if (rndrstream_spec_addr == 0) {
+            rndrstream_spec_addr = stream->cur + 0x10;
+            NuMemCopy128(stream->cur, &rndrstream_spec, 6);
+            stream->cur += 0x60;
+            rndrstream_spec.ref.tag.addr = rndrstream_spec_addr;
+        } else if (stream->light_addr != rndrstream_spec_addr) {
+            *((NuDmaTagQw *)stream->cur)++ = rndrstream_spec.ref;
+        }
+        stream->light_addr = rndrstream_spec_addr;
+        break;
+    case 0x40:
+        if (fx_mtx_dirty) {
+            fx_mtx_dirty = 0;
+            pkt = vpDmaTag_CntEx(&rndrstream_fx_mtx, 0, 0x6C04000C);
+            ((NuDmaTag *)pkt)[-1].mark = 0x17;
+            ((NuDmaTag *)pkt)[-1].qwc = 4;
+            pkt = vpDmaTag_RefEx(&fx_mtx_reftag, 0, 0, 0x6C04000C);
+            ((NuDmaTag *)pkt)[-1].mark = 0x17;
+            ((NuDmaTag *)pkt)[-1].qwc = 4;
+        }
+        if (rndrstream_fx_mtx_addr[0] == 0) {
+            rndrstream_fx_mtx_addr[0] = stream->cur + 0x10;
+            NuMemCopy128(stream->cur, &rndrstream_fx_mtx, 5);
+            stream->cur += 0x50;
+            rndrstream_fx_mtx.ref.tag.addr = rndrstream_fx_mtx_addr[0];
+        } else if (stream->light_addr != rndrstream_fx_mtx_addr[0]) {
+            *((NuDmaTagQw *)stream->cur)++ = rndrstream_fx_mtx.ref;
+        }
+        stream->light_addr = rndrstream_fx_mtx_addr[0];
+        break;
+    default:
+        NuErrorProlog(nustream_file, 0x45C)(bad_attrib_msg);
+        break;
+    }
+}
+
+
+int NuRndrStreamSetLocalMtx(struct nurndrstream_s *stream)
+{
+    int done;
+
+    done = 0;
+    if (stream->local_mtx_id != rndrstream_local_mtx_id && (stream->flags & 8)) {
+        switch (stream->flags & 0x43) {
+        case 1:
+            local_mtx_pkt.mode = 1;
+            break;
+        case 2:
+        case 0x40:
+            local_mtx_pkt.mode = 4;
+            break;
+        default:
+            local_mtx_pkt.mode = 0;
+            break;
+        }
+        rndrstream_last_mtx[0] = stream->cur;
+        NuMemCopy128(stream->cur, &local_mtx_pkt, local_mtx_pkt_size >> 4);
+        stream->cur += local_mtx_pkt_size;
+        stream->local_mtx_id = rndrstream_local_mtx_id;
+        done = 1;
+    }
+    return done;
+}
+
+
+int NuRndrSetViewMtx(NuMtx *vm, NuMtx *pm, NuMtx *clip_pm)
+{
+    u8 *pkt;
+
+    view_mtx = *vm;
+    if (view_mtx_pkt_dirty) {
+        view_mtx_pkt_dirty = 0;
+        pkt = vpDmaTag_CntEx(view_mtx_pkt, 0, 0x6C040004);
+        if (rndrstream_zfix != 0.0f) {
+            NuMtxMulH(((NuMtx *)pkt)++, &view_mtx, &zfix_mtx);
+        } else {
+            NuMemCopy128(((NuMtx *)pkt)++, &view_mtx, 4);
+        }
+        *((u64 *)pkt)++ = 0;
+        *((unsigned int *)pkt)++ = 0;
+        *((unsigned int *)pkt)++ = 0x6C040008;
+        NuMemCopy128(((NuMtx *)pkt)++, pm, 4);
+        view_mtx_pkt_size = (char *)vpDmaTag_Close(pkt) - view_mtx_pkt;
+        pkt = vpDmaTag_CntEx(clip_view_mtx_pkt, 0, 0x6C040004);
+        if (rndrstream_zfix != 0.0f) {
+            NuMtxMulH(((NuMtx *)pkt)++, &view_mtx, &zfix_mtx);
+        } else {
+            NuMemCopy128(((NuMtx *)pkt)++, &view_mtx, 4);
+        }
+        *((u64 *)pkt)++ = 0;
+        *((unsigned int *)pkt)++ = 0;
+        *((unsigned int *)pkt)++ = 0x6C040008;
+        NuMemCopy128(((NuMtx *)pkt)++, clip_pm, 4);
+        vpDmaTag_Close(pkt);
+    } else {
+        if (rndrstream_zfix != 0.0f) {
+            NuMtxMulH(&vu1_view_mtx, &view_mtx, &zfix_mtx);
+            NuMtxMulH(&vu1_clip_view_mtx, &view_mtx, &zfix_mtx);
+        } else {
+            NuMemCopy128(&vu1_view_mtx, &view_mtx, 4);
+            NuMemCopy128(&vu1_clip_view_mtx, &view_mtx, 4);
+        }
+        NuMemCopy128(&vu1_proj_mtx, pm, 4);
+        NuMemCopy128(&vu1_clip_proj_mtx, clip_pm, 4);
+    }
+    rndrstream_view_mtx_id = view_mtx_id_next++;
+    view_mtx_id_next &= 0x7FFF;
+    return 1;
+}
+
+
+int NuRndrSetSpecularLight(struct nuvec_s *dir, struct nucolour4_s *col)
+{
+    struct nuvec_s v;
+    float half;
+
+    if (dir) {
+        spec_light_dir = *dir;
+    }
+    if (col) {
+        spec_light_col = *col;
+    }
+    half = 0.5f;
+    NuVecInvMtxRotate(&v, &spec_light_dir, &global_camera.mtx);
+    rndrstream_spec.col = spec_light_col;
+    if (v.z >= half) {
+        rndrstream_spec.col.a *= (1.0f - v.z) * 2.0f;
+    }
+    NuVecLerp(&v, &v, &spec_view_dir, half);
+    NuVecMtxRotate(&v, &v, &global_camera.mtx);
+    NuVecNorm(&v, &v);
+    rndrstream_spec.mtx = numtx_identity;
+    NuMtxAlignZ(&rndrstream_spec.mtx, &v);
+    rndrstream_spec.mtx.m[8] = -rndrstream_spec.mtx.m[8];
+    rndrstream_spec.mtx.m[9] = -rndrstream_spec.mtx.m[9];
+    rndrstream_spec.mtx.m[10] = -rndrstream_spec.mtx.m[10];
+    rndrstream_spec.mtx.m[14] = rndrstream_spec.mtx.m[3] = rndrstream_spec.mtx.m[7] = rndrstream_spec.mtx.m[11] = 0.0f;
+    rndrstream_spec.mtx.m[12] = half;
+    rndrstream_spec.mtx.m[13] = half;
+    rndrstream_spec.mtx.m[15] = 1.0f;
+    rndrstream_spec_addr = 0;
+    return 1;
+}
 
 
 void *NuStreamGetOutputBuffer(int index)
@@ -219,6 +888,56 @@ void NuRndrSwapStreamBuffers(void)
 }
 
 
+void FaceYDirStream(int angle)
+{
+    NuViewport *vp;
+    union vifword_u *pkt;
+
+    vp = NuVpGetCurrentViewport();
+    pkt = vpDmaTag_Cnt(faceon_dir_pkt);
+    pkt--;
+    pkt->u = 0x6C010016;
+    pkt++;
+    pkt->f = NuTrigTable[(u16)(angle + 0x4000)];
+    pkt++;
+    pkt->f = vp->width * 9.765625146e-05f;
+    pkt++;
+    pkt->f = -NuTrigTable[(u16)angle];
+    pkt++;
+    pkt->f = vp->height * 0.0002790178696f;
+    pkt++;
+    vpDmaTag_Close(pkt);
+}
+
+
+int NuRndrSetLocalMtx(NuMtx *mtx, int clip)
+{
+    u8 *pkt;
+    unsigned int *code;
+
+    if (local_mtx_pkt_dirty) {
+        local_mtx_pkt_dirty = 0;
+        pkt = vpDmaTag_CntEx(local_mtx_pkt.tag, 0, 0x6C040000);
+        ((NuDmaTag *)pkt)[-1].mark = 0x14;
+        NuMemCopy128(pkt, mtx, 4);
+        pkt += 0x40;
+        *((unsigned int *)pkt)++ = 0x6D010017;
+        code = (unsigned int *)(pkt + 8);
+        *((short *)pkt)++ = 0;
+        code[0] = (clip != 1) ? 0x14000002 : 0x14000000;
+        code[1] = 0x17000000;
+        local_mtx_pkt_size = (char *)vpDmaTag_Close(code + 2) - local_mtx_pkt.tag;
+    } else {
+        NuMemCopy128(&local_mtx_pkt.mtx, mtx, 4);
+        local_mtx_pkt.mscal = (clip != 1) ? 0x14000002 : 0x14000000;
+    }
+    local_mtx_clip = clip;
+    rndrstream_local_mtx_id = local_mtx_id_next++;
+    local_mtx_id_next &= 0x7FFF;
+    return 1;
+}
+
+
 void NuRndrSetXYOffset(int x, int y)
 {
     rndrstream_offset = (u64)x | ((u64)y << 32);
@@ -230,6 +949,23 @@ void NuRndrSetScissor(int x0, int y0, int x1, int y1)
 {
     rndrstream_scissor = (u64)x0 | ((u64)x1 << 16) | ((u64)y0 << 32) | ((u64)y1 << 48);
     rndrstream_scissor_id = (rndrstream_scissor_id + 1) & 0x7FFF;
+}
+
+
+int NuRndrSetZFix(int zfix)
+{
+    float z;
+
+    z = zfix;
+    if (z != rndrstream_zfix) {
+        rndrstream_zfix = z;
+        zfix_mtx.m[14] = z;
+        NuMtxMulH(&vu1_view_mtx, &view_mtx, &zfix_mtx);
+        NuMtxMulH(&vu1_clip_view_mtx, &view_mtx, &zfix_mtx);
+        rndrstream_view_mtx_id = view_mtx_id_next++;
+        view_mtx_id_next &= 0x7FFF;
+    }
+    return 1;
 }
 
 
@@ -252,7 +988,7 @@ int NuRndrSetDirectionalLights(struct nuvec_s *d0, struct nucolour3_s *c0,
     rndrstream_rt_light_buffer.col[2].a = 1.0f;
     rndrstream_rt_light_buffer.col[1].a = 0.0f;
     rndrstream_rt_light_buffer.col[0].a = 0.0f;
-    rndrstream_rt_light_addr = 0;
+    rndrstream_rt_light_addr[0] = 0;
     return 1;
 }
 
@@ -273,7 +1009,7 @@ int NuRndrSetDirectionalLights4(struct nuvec_s *d0, struct nucolour4_s *c0,
     rndrstream_rt_light_buffer.col[0] = *c0;
     rndrstream_rt_light_buffer.col[1] = *c1;
     rndrstream_rt_light_buffer.col[2] = *c2;
-    rndrstream_rt_light_addr = 0;
+    rndrstream_rt_light_addr[0] = 0;
     return 1;
 }
 
@@ -284,7 +1020,7 @@ int NuRndrSetAmbientLight(struct nucolour3_s *colour)
     rndrstream_rt_light_buffer.g = colour->g;
     rndrstream_rt_light_buffer.b = colour->b;
     rndrstream_rt_light_buffer.a = 1.0f;
-    rndrstream_rt_light_addr = 0;
+    rndrstream_rt_light_addr[0] = 0;
     return 1;
 }
 
@@ -297,8 +1033,8 @@ int NuRndrSetGlobalAlpha(float alpha)
 
 int NuRndrSetFxMtx(NuMtx *mtx)
 {
-    D_0067A590.mtx = *mtx;
-    rndrstream_fx_mtx_addr = 0;
+    rndrstream_fx_mtx.mtx = *mtx;
+    rndrstream_fx_mtx_addr[0] = 0;
     return 1;
 }
 
@@ -317,18 +1053,18 @@ u64 *NuRndrStreamGetOffset(void)
 
 void NuRndrStreamResetStream(struct nurndrstream_s *stream, int flag)
 {
+    stream->start = 0;
     stream->cur = 0;
-    stream->tex = 0;
-    stream->unk_0x08 = 0;
-    stream->unk_0x0C = 0;
+    stream->txtr_start = 0;
+    stream->txtr_end = 0;
     if (flag) {
         stream->zbuf = gs_top;
-        stream->unk_0x20 = -2;
-        stream->unk_0x24 = -2;
-        stream->unk_0x26 = -2;
-        stream->unk_0x2C = 0;
-        stream->unk_0x34 = 0;
-        stream->unk_0x28 = -2;
+        stream->local_mtx_id = -2;
+        stream->view_mtx_id = -2;
+        stream->scissor_id = -2;
+        stream->light_addr = 0;
+        stream->mtl_tid = 0;
+        stream->xyoffset_id = -2;
     }
 }
 
@@ -339,33 +1075,33 @@ void NuRndrStreamResetStreams(int flag)
     int n;
     int i;
 
-    n = D_00633028;
+    n = rndrstream_count;
     if (n > 0) {
-        s = D_00679B40;
+        s = rndrstream_pool;
         i = n;
         do {
-            s->unk_0x14 = 0;
+            s->mtl = 0;
+            s->start = 0;
             s->cur = 0;
-            s->tex = 0;
-            s->unk_0x08 = 0;
+            s->txtr_start = 0;
             if (flag) {
-                s->unk_0x0C = 0;
-                s->unk_0x20 = -2;
-                s->unk_0x24 = -2;
-                s->unk_0x26 = -2;
-                s->unk_0x28 = -2;
-                s->unk_0x2C = 0;
-                s->unk_0x34 = 0;
+                s->txtr_end = 0;
+                s->local_mtx_id = -2;
+                s->view_mtx_id = -2;
+                s->scissor_id = -2;
+                s->xyoffset_id = -2;
+                s->light_addr = 0;
+                s->mtl_tid = 0;
                 s->zbuf = gs_top;
             }
             s++;
             i--;
         } while (i != 0);
     }
-    rndrstream_rt_light_addr = 0;
-    D_00633030 = 0;
+    rndrstream_rt_light_addr[0] = 0;
+    rndrstream_spec_addr = 0;
     rndrstream_fx_microcode = D_00289020;
-    rndrstream_fx_mtx_addr = 0;
+    rndrstream_fx_mtx_addr[0] = 0;
 }
 
 
@@ -373,8 +1109,8 @@ void NuRndrVu1Draw(void)
 {
     __asm__ volatile ("sync");
     FlushCache(0);
-    if (txtrstream_start != 0) {
-        GS_DmaWrite(txtrstream_start, 1);
+    if (txtrstream_start[0] != 0) {
+        GS_DmaWrite(txtrstream_start[0], 1);
     }
     VU1_DmaWrite(rndrstream_start, 1);
     tbslotReset(0, 1);
@@ -410,11 +1146,30 @@ void *NuRndrStreamAlloc(int qwords)
 }
 
 
-void *NuRndrStreamAddTex(struct nurndrstream_s *stream, void *ptr, signed char tex)
+int NuRndrStreamAddMtl(struct nurndrstream_s *stream, NuMtl *mtl)
 {
-    NuTexAccomodateRS(stream, ptr, tex);
-    stream->tex = NuTexSet(stream->tex, ptr, tex);
-    return NuTexGetTex0(ptr);
+    if (!NuMtlValid(mtl)) {
+        return 0;
+    }
+    if (mtl != 0 && mtl != stream->mtl && (stream->flags & 0x10)) {
+        if (stream->mtl_tid != mtl->tid) {
+            stream->mtl_tid = mtl->tid;
+            NuTexAccomodateRS(stream, mtl->tid);
+            stream->cur = NuTexSet(stream->cur, mtl->tid, mtl->tex_mode);
+        }
+        stream->cur = vpDmaTag_Call(stream->cur, NuMtlGetStateBlockDma(mtl));
+        stream->cur = NuRndrStreamAddZBState(stream->cur, NuMtlGetZupd(mtl));
+    }
+    stream->mtl = mtl;
+    return 1;
+}
+
+
+void *NuRndrStreamAddTex(struct nurndrstream_s *stream, int tid, signed char mode)
+{
+    NuTexAccomodateRS(stream, tid);
+    stream->cur = NuTexSet(stream->cur, tid, mode);
+    return NuTexGetTex0(tid);
 }
 
 
@@ -434,18 +1189,67 @@ int NuRndrStreamSetAmbientLight(struct nurndrstream_s *stream,
 }
 
 
+int NuRndrStreamSetViewMtx(struct nurndrstream_s *stream)
+{
+    if (stream->view_mtx_id == rndrstream_view_mtx_id) {
+        return 0;
+    }
+    if ((stream->flags & 4) && view_mtx_pkt_size != 1) {
+        NuMemCopy128(stream->cur, view_mtx_pkt, view_mtx_pkt_size >> 4);
+        stream->cur += view_mtx_pkt_size;
+        NuMemCopy128(stream->cur, faceon_dir_pkt, 2);
+        stream->cur += 0x20;
+        stream->view_mtx_id = rndrstream_view_mtx_id;
+        return 1;
+    }
+    return 0;
+}
+
+
 int NuRndrStreamSetViewMtxScissorClip(struct nurndrstream_s *stream)
 {
-    if (!(stream->unk_0x30 & 4)) {
+    if (!(stream->flags & 4)) {
         return 0;
     }
-    if (D_0062EA84 == 1) {
+    if (view_mtx_pkt_size == 1) {
         return 0;
     }
-    NuMemCopy128(stream->tex, D_0067A460, D_0062EA84 >> 4);
-    stream->unk_0x24 = -2;
-    stream->tex = (char *)stream->tex + D_0062EA84;
+    NuMemCopy128(stream->cur, clip_view_mtx_pkt, view_mtx_pkt_size >> 4);
+    stream->view_mtx_id = -2;
+    stream->cur += view_mtx_pkt_size;
     return 1;
+}
+
+
+int NuRndrStreamSetLocalMtxEx(struct nurndrstream_s *stream, int clip)
+{
+    if (stream->local_mtx_id != rndrstream_local_mtx_id && (stream->flags & 8)) {
+        switch (stream->flags & 0x43) {
+        case 1:
+            local_mtx_pkt.mode = 1;
+            break;
+        case 2:
+        case 0x40:
+            local_mtx_pkt.mode = 4;
+            break;
+        default:
+            local_mtx_pkt.mode = 0;
+            break;
+        }
+        rndrstream_last_mtx[0] = stream->cur;
+        NuMemCopy128(stream->cur, &local_mtx_pkt, local_mtx_pkt_size >> 4);
+        stream->cur += local_mtx_pkt_size;
+        stream->local_mtx_id = rndrstream_local_mtx_id;
+        if (clip) {
+            if (testfclip) {
+                stream->cur = vpDmaTag_CntEx(stream->cur, 0x1400000E, 0x17000000);
+            } else {
+                stream->cur = vpDmaTag_CntEx(stream->cur, 0x1400000A, 0x17000000);
+            }
+        }
+        return 1;
+    }
+    return 0;
 }
 
 
@@ -460,8 +1264,8 @@ void *NuRndrStreamPrependMPG(struct nurndrstream_s *stream, void *tag)
     }
     old_free = rndrstream_free;
     rndrstream_free = vpDmaTag_Call(rndrstream_free, cur);
-    rndrstream_free = vpDmaTag_Next(rndrstream_free, stream->cur);
-    stream->cur = old_free;
+    rndrstream_free = vpDmaTag_Next(rndrstream_free, stream->start);
+    stream->start = old_free;
     return stream->mpgtag;
 }
 
@@ -472,12 +1276,52 @@ void NuRndrStreamClearZBState(void)
 }
 
 
+void NuRndrStreamSetZBState(unsigned int zbuf, unsigned int psm, int zmask)
+{
+    u8 *pkt;
+    u64 zbp;
+    u64 format;
+    u64 mask;
+
+    pkt = vpDmaTag_CntEx(&zbstate_pkt, 0x11000000, 0x50000000);
+    pkt[-14] = 0xC;
+    pkt = vtBeginDirect(pkt - 4, 0);
+    pkt = gsBeginGifPacket(pkt, 0, 1, 0, 0, 0, 1, 0xE);
+    zbp = zbuf >> 5;
+    format = psm;
+    mask = zmask;
+    *(u64 *)pkt = zbp | format << 24 | mask << 32;
+    pkt += 8;
+    *(u64 *)pkt = 0x4E;
+    pkt += 8;
+    pkt = gsCloseGifPacket(pkt);
+    pkt = vtCloseDirect(pkt);
+    vpDmaTag_Close(pkt);
+    zbstate_set = 1;
+}
+
+
 void *NuRndrStreamAddZBState(void *stream, int index)
 {
     if (zbstate_set) {
-        D_0067A600.unk_0x24 = D_002D3E00[index];
-        NuMemCopy128(stream, &D_0067A600, 3);
+        zbstate_pkt.zmask = zmask_table[index];
+        NuMemCopy128(stream, &zbstate_pkt, 3);
         stream = (char *)stream + 0x30;
     }
     return stream;
+}
+
+
+void CheckRndrStream(void)
+{
+    int i;
+
+    for (i = 0; i < stream_outbuf_size; i++) {
+        if (stream_outbuf0[i]) {
+            NuDebugMsgProlog(nustream_file, 0x238)(trashed_stream_a_msg);
+        }
+        if (stream_outbuf1[i]) {
+            NuDebugMsgProlog(nustream_file, 0x23B)(trashed_stream_b_msg);
+        }
+    }
 }

@@ -13,19 +13,19 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0017:0010b348:NuFabs"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0017:0010b368:NuFnabs"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0017:0010b388:NuFneg"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0017:0010b3a8:NuFsign"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0017:0010b3d0:NuFres"
@@ -33,8 +33,8 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0017:0010b418:NuEquiv"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0017:0010b458:NuEquivTollerance"
-state = "asm"
+state = "matching"

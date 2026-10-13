@@ -58,7 +58,27 @@ typedef struct NuCamera {
     float aspect;
     float nearclip;
     float farclip;
+    unsigned char unknown_50[0x10];
 } NuCamera;
+
+/* The state-buffer stride is 0x2b4; the camera occupies its first 0x60 bytes. */
+typedef struct NuCameraState {
+    NuCamera camera;
+    NuMtx view;
+    NuMtx projection;
+    NuMtx scaling;
+    NuMtx vport_clip;
+    NuMtx scissor_clip;
+    NuMtx vpc;
+    NuMtx pc;
+    NuMtx vpcs;
+    NuMtx pcs;
+    int reflect;
+    float clip_x;
+    float clip_y;
+    float clip_z;
+    float clip_w;
+} NuCameraState;
 
 
 extern NuCamera global_camera;
@@ -78,6 +98,12 @@ extern NuMtx D_0067A740;
 extern NuMtx D_0067A780;
 #define scaling_mtx D_0067A780
 
+extern NuMtx D_0067A7C0;
+#define vport_clip_mtx D_0067A7C0
+
+extern NuMtx D_0067A800;
+#define scissor_clip_mtx D_0067A800
+
 extern NuMtx D_0067A840;
 #define vpc_mtx D_0067A840
 
@@ -93,11 +119,23 @@ extern NuMtx D_0067A900;
 extern int D_0062EB3C;
 #define state_buffer_count D_0062EB3C
 
+extern NuCameraState D_0067A940[16];
+#define state_buffer D_0067A940
+
+extern int D_0062EB38;
+#define camera_reflect D_0062EB38
+
 extern float D_00633048;
 #define clip_ratio_x D_00633048
 
 extern float D_0063304C;
 #define clip_ratio_y D_0063304C
+
+extern float D_00633050;
+#define clip_ratio_z D_00633050
+
+extern float D_00633054;
+#define clip_ratio_w D_00633054
 
 extern char D_00614170[];
 #define nucamera_file D_00614170
@@ -105,6 +143,64 @@ extern char D_00614170[];
 extern void NuMemFreeFn(void *ptr, char *file, int line);
 extern float NuVecDistSqr(NuVec3 *a, NuVec3 *b, NuVec3 *diff);
 extern int NuVecClipTestPointVU0(NuVec3 *pos, NuMtx *clipmtx);
+extern int NuAtan2D(float x, float z);
+extern void FaceYDirStream(int angle);
+extern void NuRndrSetViewMtx(NuMtx *vpcs, NuMtx *vpc, NuMtx *scissor);
+
+
+int NuCameraSaveState(void) {
+    int index = -1;
+    NuCameraState *state;
+
+    if (state_buffer_count < 16) {
+        index = state_buffer_count++;
+        state = &state_buffer[index];
+        state->camera = global_camera;
+        state->view = view_mtx;
+        state->projection = projection_mtx;
+        state->scaling = scaling_mtx;
+        state->vport_clip = vport_clip_mtx;
+        state->scissor_clip = scissor_clip_mtx;
+        state->vpc = vpc_mtx;
+        state->pc = pc_mtx;
+        state->vpcs = vpcs_mtx;
+        state->pcs = pcs_mtx;
+        state->reflect = camera_reflect;
+        state->clip_x = clip_ratio_x;
+        state->clip_y = clip_ratio_y;
+        state->clip_z = clip_ratio_z;
+        state->clip_w = clip_ratio_w;
+    }
+    return index + 1;
+}
+
+
+void NuCameraRestoreState(int handle) {
+    int index = handle - 1;
+    NuCameraState *state;
+
+    if (index < state_buffer_count) {
+        state = &state_buffer[index];
+        global_camera = state->camera;
+        view_mtx = state->view;
+        projection_mtx = state->projection;
+        scaling_mtx = state->scaling;
+        vport_clip_mtx = state->vport_clip;
+        scissor_clip_mtx = state->scissor_clip;
+        vpc_mtx = state->vpc;
+        pc_mtx = state->pc;
+        vpcs_mtx = state->vpcs;
+        pcs_mtx = state->pcs;
+        camera_reflect = state->reflect;
+        clip_ratio_x = state->clip_x;
+        clip_ratio_y = state->clip_y;
+        clip_ratio_z = state->clip_z;
+        clip_ratio_w = state->clip_w;
+        FaceYDirStream(NuAtan2D(-global_camera.mtx.m[2][0],
+                              -global_camera.mtx.m[2][2]));
+        NuRndrSetViewMtx(&vpcs_mtx, &vpc_mtx, &scissor_clip_mtx);
+    }
+}
 
 
 void NuCameraDestroy(NuCamera *cam) {
@@ -121,6 +217,11 @@ void NuCameraClearStateBuffer(void) {
 
 void NuCameraSetAxes(NuVec3 *axes) {
     camera_axes = *axes;
+}
+
+
+void NuCameraGetAxes(NuVec3 *axes) {
+    *axes = camera_axes;
 }
 
 
@@ -171,6 +272,11 @@ NuMtx *NuCameraGetVPCMtx(void) {
 
 float NuCameraDistSqr(NuVec3 *pos) {
     return NuVecDistSqr(pos, &camera_trans, 0);
+}
+
+
+void NuCameraGetTrans(NuVec3 *trans) {
+    *trans = camera_trans;
 }
 
 

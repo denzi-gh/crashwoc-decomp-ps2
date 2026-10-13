@@ -13,23 +13,23 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0254:0027ac20:_set_sreg"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0254:0027ac40:_change_addr"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0254:0027ac50:sceSifGetSreg"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0254:0027ac68:sceSifSetSreg"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0254:0027ac88:sceSifGetDataTable"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0254:0027ac98:sceSifInitCmd"
@@ -37,35 +37,35 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0254:0027af18:sceSifExitCmd"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0254:0027af50:sceSifSetCmdBuffer"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0254:0027af68:sceSifSetSysCmdBuffer"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0254:0027af80:sceSifAddCmdHandler"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0254:0027afb0:sceSifRemoveCmdHandler"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0254:0027afd8:_sceSifSendCmd"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0254:0027b110:sceSifSendCmd"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0254:0027b150:isceSifSendCmd"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0254:0027b190:_sceSifCmdIntrHdlr"

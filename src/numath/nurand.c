@@ -14,8 +14,10 @@ struct nunrand_s {
     long idum;
 };
 
-struct nunrand_s global_rand;
-static long fseed;
+extern struct nunrand_s D_0062EA60;
+extern long D_0062EA68;
+#define global_rand D_0062EA60
+#define fseed D_0062EA68
 
 long int __divdi3 (long int u, long int v);
 float __floatdisf (long i);

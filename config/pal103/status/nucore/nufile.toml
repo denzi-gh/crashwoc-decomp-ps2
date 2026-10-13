@@ -89,15 +89,15 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0001:001028f8:NuFileInitEx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:001029f0:NuFileInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00102ad8:NuFileGetCurrentPath"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00102b78:NuFileSetCurrentDirectory"
@@ -109,7 +109,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00102c20:NuFileClose"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00102ce0:NuFileStatus"
@@ -117,7 +117,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00102d38:NuFilePos"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00102e20:NuFileReadFloat"
@@ -185,7 +185,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00103168:NuFileExtractFile"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:001031f8:NuFileExtractExt"
@@ -193,7 +193,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00103250:NuFileInitAddress"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:001032e8:NuFileTidyAddress"
@@ -221,11 +221,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00103550:NuMemFileRead"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:001035f0:NuMemFileSeek"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:001036d8:NuDatFilePos"
@@ -237,7 +237,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00103760:NuDatFileSeek"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00103810:NuDatFileOpenSize"
@@ -257,4 +257,4 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00103888:NuDatFileFindTree"
-state = "asm"
+state = "matching"

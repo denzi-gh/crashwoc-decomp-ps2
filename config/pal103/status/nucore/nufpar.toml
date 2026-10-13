@@ -25,19 +25,19 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0002:00103ec0:NuFParGetPos"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0002:00103ef0:NuFParSetPos"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0002:00103f30:NuFParPushCom"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0002:00103f60:NuFParPopCom"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0002:00103f78:NuFParInterpretWord"
@@ -45,7 +45,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0002:00104048:NuFParUnGetWord"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0002:00104058:NuFParGetWord"

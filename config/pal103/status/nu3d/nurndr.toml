@@ -45,7 +45,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0040:00120a78:NuRndrFxSprite2Set"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00120e60:NuRndrFxCode"
@@ -281,7 +281,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0040:0012ee58:NuRndrWaterRippleUpdate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012ef88:NuRndrStreamQuadWRip"
@@ -289,7 +289,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0040:0012f640:NuHGobjRndr"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012f6c0:NuHGobjRndrMtx"
@@ -297,11 +297,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012f6e0:NuRndrInitEx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012f770:NuRndrInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012f800:NuRndrClose"
@@ -385,11 +385,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012feb0:NuRndrRectUV3diNS"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00130000:NuRndrFx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00130078:NuRndrShadowDirCol"
@@ -409,7 +409,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0040:00130230:NuRndrAddWaterRipple"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:001302a8:NuRndrWaterRip"
@@ -437,7 +437,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0040:00130638:NuRndrOTInsertItem"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00130690:OTTriInit"
@@ -445,11 +445,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:001306c0:OTTriInsert"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00130740:GlobalCam3DNClip"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:001307c0:RotateCyl"
@@ -465,4 +465,4 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00130928:NuRndrAnglesZX"
-state = "asm"
+state = "matching"

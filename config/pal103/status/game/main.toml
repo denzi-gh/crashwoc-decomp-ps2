@@ -37,11 +37,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0088:001c6cd0:InitPauseRender"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0088:001c6ed0:HandlePauseRender"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0088:001c7080:MiniGameReset"
@@ -101,7 +101,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0088:001cac30:TextureCreateEx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0088:001cae50:InitTexAnimScripts"

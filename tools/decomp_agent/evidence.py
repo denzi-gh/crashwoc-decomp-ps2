@@ -67,6 +67,10 @@ def search_evidence(project: DecompProject, query: str, *, kinds=None,
     q = str(query).strip()
     ql = q.lower()
     kinds = set(kinds) if kinds else None
+    unknown = sorted(kinds - set(schemas.EVIDENCE_KINDS)) if kinds else []
+    if unknown:
+        return schemas.err("search_evidence", f"unknown kind(s) {unknown}",
+                           code="bad_kind", allowed=list(schemas.EVIDENCE_KINDS))
 
     def want(kind):
         return kinds is None or kind in kinds
@@ -148,6 +152,51 @@ def search_evidence(project: DecompProject, query: str, *, kinds=None,
 
 # --- target-assembly / C extraction helpers (shared with context.py) --------
 
+# `/* fileoff vram word */` comment splat emits before every instruction (same
+# shape as declib.asmtext.INSTR_RE). The word is in file (little-endian) order.
+_INSTR_RE = re.compile(
+    r"/\*\s*[0-9A-Fa-f]+\s+([0-9A-Fa-f]{8})\s+([0-9A-Fa-f]{8})\s*\*/")
+
+
+def instr_vram_word(line):
+    """(vram, instruction word) from a splat instruction comment, or None."""
+    m = _INSTR_RE.search(line)
+    if not m:
+        return None
+    return (int(m.group(1), 16),
+            int.from_bytes(bytes.fromhex(m.group(2)), "little"))
+
+
+def jal_target(line):
+    """Absolute target address a `jal` line encodes, or None."""
+    parsed = instr_vram_word(line)
+    if parsed is None:
+        return None
+    vram, word = parsed
+    if word >> 26 != 0x03:
+        return None
+    return ((vram + 4) & 0xF0000000) | ((word & 0x03FFFFFF) << 2)
+
+
+def _glabel_index(lines, fn):
+    """Index of fn's `glabel` in asm/text.s, or None; a duplicated static's
+    copy is picked by its first instruction's address."""
+    first = None
+    for i, line in enumerate(lines):
+        if not (line.startswith("glabel ") and line.split()[1] == fn.name):
+            continue
+        if first is None:
+            first = i
+        for nxt in lines[i + 1:i + 9]:
+            if nxt.startswith(("glabel ", "endlabel ")):
+                break
+            parsed = instr_vram_word(nxt)
+            if parsed is not None:
+                if parsed[0] == fn.address:
+                    return i
+                break
+    return None if fn.name_is_duplicated else first
+
 
 def target_asm_for(project, fn) -> dict:
     """Extract one function's disassembly listing from asm/text.s (if present).
@@ -161,11 +210,7 @@ def target_asm_for(project, fn) -> dict:
         return {"available": False, "reason": "asm/text.s absent (run configure.py)",
                 "text": None, "callees": [], "referenced_symbols": []}
     lines = path.read_text(errors="replace").splitlines()
-    start = None
-    for i, line in enumerate(lines):
-        if line.startswith("glabel ") and line.split()[1] == fn.name:
-            start = i
-            break
+    start = _glabel_index(lines, fn)
     if start is None:
         return {"available": False, "reason": f"{fn.name} not found in asm/text.s",
                 "text": None, "callees": [], "referenced_symbols": []}

@@ -66,11 +66,29 @@ BLOCKER_KINDS = (
     "unresolved_symbol",
     "unit_level_coupling",
     "toolchain_failure",
+    # Assembler differs from retail's SN `as`; fixed in gen_hybrid, not in C.
+    "assembler_normalization",
     "no_progress",
     "budget_exhausted",
     "stale_session",
     "source_conflict",
     "unknown",
+)
+
+# verify_candidate levels.
+VERIFY_LEVELS = ("function", "unit", "image")
+
+# search_evidence source kinds.
+EVIDENCE_KINDS = (
+    "functions",
+    "units",
+    "symbols",
+    "status",
+    "source",
+    "headers",
+    "compiler_knowledge",
+    "sessions",
+    "blockers",
 )
 
 # Recommended attempt budgets (documented stop policy; not enforced by MCP).

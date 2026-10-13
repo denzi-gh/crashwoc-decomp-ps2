@@ -54,7 +54,7 @@ MIN_VERSION = "2.7.0"
 # decomp.me scratch defaults. The retail game/engine TUs (the ones with status
 # manifests) are built by SN ProDG ee-gcc 2.95.2-EE, identified and locked as
 # component `ee-gcc-tt`; its decomp.me equivalent is preset `ee-gcc2.95.2-273a`
-# on the `ps2` platform (see docs/notes.md, 2026-07-07). c_flags mirror the
+# on the `ps2` platform. c_flags mirror the
 # `default` profile in config/<v>/profiles.toml so scratches build with the
 # same flags matching uses.
 SCRATCH_PLATFORM = "ps2"

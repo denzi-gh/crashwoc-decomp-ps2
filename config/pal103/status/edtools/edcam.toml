@@ -13,48 +13,48 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0086:001c1cf8:edcamMove"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0086:001c2070:edcamSetSpeed"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0086:001c2088:edcamSetAdjustFreedom"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0086:001c2110:edcamSet"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0086:001c2178:edcamSetPos"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0086:001c2198:edcamSetAng"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0086:001c21a8:edcamSetDist"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0086:001c21b8:edcamGetDist"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0086:001c21c8:edcamSetPosAng"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0086:001c21f8:edcamGetPosAng"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0086:001c2240:edcamGetPosAngSnap"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0086:001c2288:edcamGetPosPointer"
-state = "asm"
+state = "matching"

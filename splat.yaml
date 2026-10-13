@@ -27,8 +27,13 @@ options:
   # _gp from the target ELF (config/pal103/sections.json).
   gp_value: 0x00634970
 
-  # Committed symbol registry produced by tools/extract_mdebug.py (PR 3).
-  symbol_addrs_path: config/pal103/symbol_addrs.txt
+  # Committed symbol registry produced by tools/extract_mdebug.py (PR 3), plus
+  # hand-written splat-only ignore ranges: lui/addiu constants that fall
+  # outside the loaded image (0xFFFF, 0xFFFFFF, ...) must stay immediates, not
+  # become fake D_ symbols whose relocations no compiled C can reproduce.
+  symbol_addrs_path:
+    - config/pal103/symbol_addrs.txt
+    - config/pal103/splat_ignore.txt
 
   # All generated output lands in gitignored directories (asm/, build/). In
   # particular asset_path holds raw section dumps (game bytes) and the macro

@@ -27,9 +27,9 @@ from .registry import Registry
 
 
 def verify_candidate(project: DecompProject, target, *, level="function") -> dict:
-    if level not in ("function", "unit", "image"):
+    if level not in schemas.VERIFY_LEVELS:
         return schemas.err("verify_candidate", f"unknown level {level!r}",
-                           code="bad_level")
+                           code="bad_level", allowed=list(schemas.VERIFY_LEVELS))
     reg = Registry(project)
     res = reg.resolve(target)
     if level != "image":

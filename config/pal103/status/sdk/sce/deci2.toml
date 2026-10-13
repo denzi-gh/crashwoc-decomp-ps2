@@ -13,40 +13,40 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0262:00280c20:sceDeci2Open"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0262:00280c68:sceDeci2Close"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0262:00280c90:sceDeci2ReqSend"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0262:00280cc0:sceDeci2Poll"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0262:00280ce8:sceDeci2ExRecv"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0262:00280d20:sceDeci2ExSend"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0262:00280d58:sceDeci2ExReqSend"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0262:00280d88:sceDeci2ExLock"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0262:00280db0:sceDeci2ExUnLock"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0262:00280dd8:kputs"
-state = "asm"
+state = "matching"

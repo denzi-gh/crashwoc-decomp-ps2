@@ -13,16 +13,16 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0076:001a8850:CreateSpecialTerrainData"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0076:001a8a38:SpecialTerrainInstanceCollideCheck"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0076:001a9020:SpecialTerrainTestRender"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0076:001a99e8:SpecialTerrainCollideCheck"
-state = "asm"
+state = "matching"

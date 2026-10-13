@@ -802,7 +802,11 @@ void DrawWorld(void)
 /* NuMaterial: 64-bit render-flags register lives at 0x168. */
 struct numtl_s {
     u8 unk_0x00[0x168];
-    u64 reg168;
+    u64 reg168;              /* 0x168 */
+    u8 unk_0x170[0x30];      /* 0x170 */
+    float f1A0;              /* 0x1A0 */
+    s32 tid;                 /* 0x1A4 texture id */
+    s32 alpha;               /* 0x1A8 */
 };
 
 struct fadebits {
@@ -1251,6 +1255,148 @@ void ClosePauseRender(void)
     pause_src_mtl = 0;
     pause_rndr_mtl = 0;
     pause_rt = 0;
+}
+
+/* Texture descriptor handed to NuTexCreate (type 0xB = render target). */
+struct nutexdesc_s {
+    s32 type;                /* 0x00 */
+    s32 width;               /* 0x04 */
+    s32 height;              /* 0x08 */
+    s32 pad[5];              /* 0x0C */
+}; /* 0x20 */
+
+struct nuviewport_s;
+extern s32 pause_rndr_on;
+extern s32 D_0062FB54;                 /* Paused state of the previous frame */
+extern s32 PS2_REZ_W;
+extern s32 PS2_REZ_H;
+extern s32 screendump;
+extern struct nutex_s *NuTexCreate(struct nutexdesc_s *desc);
+extern s32 NuRndrBeginScene(s32 a);
+extern s32 NuRndrBeginSceneEx(struct nutex_s *rt, s32 a, s32 b);
+extern void NuRndrEndScene(void);
+extern void NuRndrClear(s32 mode, s32 col, float z);
+extern void NuRndrFlush(s32 flags);
+extern s32 *NuVpGetCurrentViewport(void);
+extern void NuRndrRectUV2di(s32 x, s32 y, s32 w, s32 h, float u0, float v0, float u1, float v1,
+                            u32 col, struct numtl_s *mtl);
+extern s32 NuPower2(s32 value);
+
+#define MTLATTR(m) (*(struct fadebits *)&(m)->reg168)
+
+void InitPauseRender(void)
+{
+    struct nutexdesc_s desc;
+
+    desc.type = 0xB;
+    desc.width = 0x100;
+    desc.height = 0x100;
+    pause_rt = NuTexCreate(&desc);
+
+    pause_rndr_mtl = NuMtlCreate(1);
+    pause_rndr_mtl->f1A0 = 1.0f;
+    pause_rndr_mtl->tid = (s32)pause_rt;
+    MTLATTR(pause_rndr_mtl).f46 = 3;
+    MTLATTR(pause_rndr_mtl).f40 = 1;
+    MTLATTR(pause_rndr_mtl).f42 = 1;
+    MTLATTR(pause_rndr_mtl).f36 = 1;
+    MTLATTR(pause_rndr_mtl).f48 = 2;
+    MTLATTR(pause_rndr_mtl).f50 = 1;
+    MTLATTR(pause_rndr_mtl).f32 = 0;
+    pause_rndr_mtl->alpha = 0x7FFF;
+    NuMtlUpdate(pause_rndr_mtl);
+
+    pause_src_mtl = NuMtlCreate(1);
+    pause_src_mtl->f1A0 = 1.0f;
+    pause_src_mtl->tid = -1;
+    MTLATTR(pause_src_mtl).f46 = 3;
+    MTLATTR(pause_src_mtl).f40 = 1;
+    MTLATTR(pause_src_mtl).f42 = 1;
+    MTLATTR(pause_src_mtl).f36 = 1;
+    MTLATTR(pause_src_mtl).f48 = 2;
+    MTLATTR(pause_src_mtl).f50 = 1;
+    MTLATTR(pause_src_mtl).f32 = 0;
+    pause_src_mtl->alpha = 0x7FFE;
+    NuMtlUpdate(pause_src_mtl);
+
+    pause_rndr_on = 0;
+}
+
+void HandlePauseRender(void)
+{
+    s32 *vp;
+    float u;
+    float v;
+
+    if (pause_rndr_on != 0 && pause_rt != 0 && NuRndrBeginScene(-1) != 0) {
+        vp = NuVpGetCurrentViewport();
+        NuRndrClear(5, 0, 1.0f);
+        NuRndrRectUV2di(0, 0, vp[2], vp[3], 0.0f, 0.0f, 1.0f, 1.0f, 0x80808080, pause_rndr_mtl);
+        NuRndrEndScene();
+    }
+    if (Paused != 0 && D_0062FB54 == 0) {
+        u = (PS2_REZ_W - 1.0f) / NuPower2(PS2_REZ_W);
+        v = (PS2_REZ_H - 1.0f) / NuPower2(PS2_REZ_H);
+        if (pause_rt != 0) {
+            NuRndrFlush(3);
+            if (NuRndrBeginSceneEx(pause_rt, -2, 0) != 0) {
+                NuRndrRectUV2di(0, 0, 0xFF0, 0xFF0, 0.0f, 0.0f, u, v, 0x80808080, pause_src_mtl);
+                NuRndrEndScene();
+            }
+        }
+        pause_rndr_on = 1;
+    }
+    if (Paused == 0 && D_0062FB54 != 0) {
+        pause_rndr_on = 0;
+    }
+    D_0062FB54 = Paused;
+    if (editor_active != 0) {
+        pause_rndr_on = 0;
+    }
+    if (screendump != 0) {
+        pause_rndr_on = 0;
+    }
+}
+
+extern s32 NuTexReadBitmapMM(char *name, s32 mipmaps);
+extern s32 NuTexReadBitmapMMEx(char *name, s32 mipmaps, s32 *addr, s32 *addrend);
+extern s32 NuTexCreateEx(s32 spec, void *extmem, s32 extsize);
+extern void NuMemSetExternal(void *addr, s32 size);
+
+void TextureCreateEx(char *name, struct numtl_s **mtl, s32 *tid, void *extmem, s32 extsize,
+                     s32 *addr, s32 *addrend)
+{
+    s32 a;
+
+    if (NuFileSize(name) < 0) {
+        *mtl = 0;
+        *tid = 0;
+        return;
+    }
+    if (addr != 0) {
+        a = *addr;
+        *tid = NuTexReadBitmapMMEx(name, 0, &a, addrend);
+    } else {
+        *tid = NuTexReadBitmapMM(name, 0);
+    }
+    *mtl = NuMtlCreate(1);
+    MTLATTR(*mtl).f46 = 3;
+    MTLATTR(*mtl).f36 = 1;
+    MTLATTR(*mtl).f48 = 2;
+    MTLATTR(*mtl).f40 = 1;
+    MTLATTR(*mtl).f42 = 1;
+    MTLATTR(*mtl).f50 = 1;
+    MTLATTR(*mtl).f32 = 0;
+    if (extmem != 0) {
+        (*mtl)->tid = NuTexCreateEx(*tid, extmem, extsize);
+    } else {
+        (*mtl)->tid = (s32)NuTexCreate((struct nutexdesc_s *)*tid);
+    }
+    NuMtlUpdate(*mtl);
+    if (addr != 0) {
+        *tid = 0;
+    }
+    NuMemSetExternal(0, 0);
 }
 
 

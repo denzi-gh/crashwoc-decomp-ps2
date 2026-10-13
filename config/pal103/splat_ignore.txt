@@ -1,0 +1,9 @@
+// Splat-only ignore ranges (hand-written; not part of the extracted registry).
+// spimdisasm symbolizes lui/addiu pairs even when the value lies outside the
+// loaded image, turning constants such as 0xFFFF into fake D_ symbols with
+// relocations. Nothing is mapped below the PT_LOAD start (0x00100000) or
+// past its end (0x0070698C, kept: crt0's bss-end address) up to the EE
+// register space (0x10000000).
+
+out_of_image_low = 0x00000000; // ignore:true size:0x100000
+out_of_image_high = 0x00706990; // ignore:true size:0xF8F9670

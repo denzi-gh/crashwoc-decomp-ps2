@@ -13,8 +13,9 @@ build links for a unit:
      function's retail slice (build/<version>/fallback/, tools/gen_slices.py).
   3. Segments and slices are spliced in retail ADDRESS order -- the order of
      functions in the C file never matters. The spliced assembly is
-     normalized (`_sonyize`: the two pseudo-ops ee-gcc and the decompals
-     binutils encode differently) and assembled with the decompals `as`
+     normalized (`_sonyize_seg`: the pseudo-ops ee-gcc and the decompals
+     binutils encode differently, plus the hazard and delay-slot nops the two
+     assemblers disagree on) and assembled with the decompals `as`
      (declib.toolchain.AS), NOT the ee-gcc driver -- the retail slices are
      already-assembled text that only that assembler round-trips byte-exactly.
 
@@ -53,6 +54,8 @@ _END_RE = re.compile(r"^\s*\.end\s+(\S+)")
 # (`.p2align N` is the Sony 2.9 spelling, `.align N` the SN 2.95 one; both
 # mean 2^N here.)
 _LEAD_RE = re.compile(r"^\s*(\.text|\.p2align\s+\d+|\.align\s+\d+|\.globl\s+\S+)\s*$")
+# `.file` markers emit no bytes; allowed anywhere noise is.
+_FILE_RE = re.compile(r'^\s*\.file\s+(?:\d+\s+)?".*"\s*$')
 # Byte-less symbol metadata ee-gcc emits between/after functions for extern
 # arrays it saw sizes for (`.extern CModel, 117120`): safe to hoist into the
 # prologue -- it only informs the assembler's gp-relative addressing choice
@@ -75,14 +78,8 @@ def _is_noise(line):
 def parse_s(text):
     """(prologue_lines, [(name, segment_lines)...]) from `ee-gcc -S` output.
 
-    A segment runs from the function's lead directives (.text/.p2align/.globl)
-    through its `.end`. Anything between segments, after the last one, or in
-    a data section is unsupported for now and raises instead of guessing.
-
-    ee-gcc's private initialized aggregates ($LCn in a data section) are pulled
-    out first (see _extract_local_data) and returned as {label: bytes} so the
-    remaining stream is pure text; the caller remaps each onto the retail
-    owned-data slot the function's slice names.
+    Local initialized aggregates come back separately as {label: bytes};
+    anything unexpected raises.
     """
     lines, local_data = _extract_local_data(text.splitlines())
     ents = [(i, m.group(1)) for i, l in enumerate(lines)
@@ -101,12 +98,13 @@ def parse_s(text):
             raise HybridError(f".ent {name} paired with .end {xname}")
         start = ei
         while start - 1 > prev_end and (
-                _LEAD_RE.match(lines[start - 1]) or not lines[start - 1].strip()):
+                _LEAD_RE.match(lines[start - 1]) or _FILE_RE.match(lines[start - 1])
+                or not lines[start - 1].strip()):
             start -= 1
         if segments:
             gap = lines[prev_end + 1:start]
-            bad = [g for g in gap
-                   if not _is_noise(g) and not _EXTERN_RE.match(g)]
+            bad = [g for g in gap if not _is_noise(g)
+                   and not _EXTERN_RE.match(g) and not _FILE_RE.match(g)]
             if bad:
                 raise HybridError(f"unhandled content before {name}: {bad[0]!r}")
             externs += [g for g in gap if _EXTERN_RE.match(g)]
@@ -115,9 +113,10 @@ def parse_s(text):
         segments.append((name, lines[start:xi + 1]))
         prev_end = xi
 
-    tail = lines[prev_end + 1:]
-    trailing = [l for l in tail
-                if not _is_noise(l) and not _EXTERN_RE.match(l)]
+    # A skeleton unit is all prologue.
+    tail = lines[prev_end + 1:] if segments else []
+    trailing = [l for l in tail if not _is_noise(l)
+                and not _EXTERN_RE.match(l) and not _FILE_RE.match(l)]
     if trailing:
         raise HybridError(f"unhandled content after last function: "
                           f"{trailing[0]!r}")
@@ -147,37 +146,22 @@ _JREG_RE = re.compile(
     r"^(\s*)j(\s+)(\$(?:\d+|zero|at|v[01]|a[0-3]|t\d|s[0-8]|k[01]|gp|sp|fp|ra))"
     r"\s*$")
 
-# ee-gcc emits `cvt.w.s $fd,$fs` for the float->int truncation, which Sony's
-# assembler accepts but the decompals `as` rejects on r5900 ("opcode not
-# supported"). The retail disassembly already carries it as a raw `.word`
-# (0x46000064 == `cvt.w.s $f1,$f0`), so encode it the same way here.
-# cop1.S cvt.w = 0x46000024 | (fs << 11) | (fd << 6).
+# The decompals `as` rejects `cvt.w.s`; `trunc.w.s` is the same encoding. A raw
+# `.word` would get a hazard nop after mfc1/mtc1 that retail does not have.
 _CVTWS_RE = re.compile(r"^(\s*)cvt\.w\.s(?:\s+)\$f(\d+)\s*,\s*\$f(\d+)\s*$")
 
-# R5900 mtc1 hazard nop. An `mtc1` immediately followed by an FP compare needs
-# a nop between them, and the two assemblers disagree on when: Sony's `as`
-# (whose choices retail contains) inserts it whenever the compare is adjacent,
-# the decompals `as` only when the compare also *reads the register mtc1 just
-# wrote*. Where gcc left an independent compare adjacent, retail has the nop and
-# the decompals `as` drops it, so the function assembles one word short and the
-# whole tail shifts -- the wall behind a documented backlog of near-matches.
-#
-# Usually neither instruction is even visible here: `li.s $f0,1.0` is an
-# assembler macro that expands to `lui $at,0x3f80` + `mtc1 $at,$f0` (retail
-# fsign @0x221530 is exactly this -- mtc1 $at,$f0 / nop / c.le.s $f1,$f12, on
-# disjoint registers). So the trigger is "the previous instruction writes an FP
-# register through mtc1", which is either a literal `mtc1` or an inline `li.s`
-# (the pool-bound ones are already lwc1 by the time _sonyize runs).
-#
-# Inserting the nop explicitly is safe in both cases and needs no dependency
-# analysis of our own: with a real `nop` ahead of it the compare no longer sees
-# a hazard, so the decompals `as` adds nothing, and the dependent case that it
-# *would* have handled comes out with exactly one nop either way (probed both).
-# Only the compare class is claimed here -- the byte gates carry the proof, so
-# widen it (add.s, swc1, ...) only against retail evidence, one class at a time.
+# R5900 mtc1 hazard: SN's `as` pads a nop after `mtc1 rX,$fN` (or an inline
+# `li.s`, also across a label) iff the next instruction reads $fN or its
+# even/odd pair mate; the decompals `as` pads only exact dependencies.
 _MTC1_RE = re.compile(r"^\s*mtc1\s+\$\w+\s*,\s*\$f\d+\s*$")
 _LIS_INLINE_RE = re.compile(r"^\s*li\.s\s+\$f\d+\s*,")
-_CCOND_RE = re.compile(r"^\s*c\.(?:eq|lt|le|ueq|ult|ule|f|un|olt|ole)\.s\s+\$f")
+_MTC1_DEST_RE = re.compile(r"^\s*(?:mtc1\s+\$\w+\s*,|li\.s\s+)\s*\$f(\d+)")
+_FPR_RE = re.compile(r"\$f(\d+)\b")
+# READ_ALL ops read every FPR operand, NO_READ ops none; any other FP op
+# writes its first operand and reads the rest.
+_FPR_READ_ALL = frozenset(("s.s", "swc1", "mfc1", "adda.s", "suba.s",
+                           "mula.s", "madda.s", "msuba.s"))
+_FPR_NO_READ = frozenset(("l.s", "lwc1", "mtc1", "li.s"))
 
 # Unfilled branch delay slots. ee-gcc fills a delay slot itself only inside an
 # explicit `.set noreorder` / `.set nomacro` block; every branch it emits
@@ -194,6 +178,8 @@ _CCOND_RE = re.compile(r"^\s*c\.(?:eq|lt|le|ueq|ult|ule|f|un|olt|ole)\.s\s+\$f")
 # reorder-mode branch in `.set noreorder` and write the `nop` out. Where the
 # decompals `as` could not have swapped anyway it already emitted exactly this
 # nop, so the rewrite is a no-op there; the byte gates carry the proof.
+# Not for profile `sce`: its retail assembler swapped too (sceDevVif0Reset
+# ends `jr $ra / sw`).
 _SET_REORDER_RE = re.compile(r"^\s*\.set\s+(no)?reorder\s*$")
 _MNEMONIC_RE = re.compile(r"^\s+([a-z][a-z0-9._]*)\b")
 _BRANCH_OPS = frozenset((
@@ -715,10 +701,7 @@ def _sonyize(line):
         return f"{m.group(1)}jr{m.group(2)}{m.group(3)}"
     m = _CVTWS_RE.match(line)
     if m:
-        fd = int(m.group(2))
-        fs = int(m.group(3))
-        word = 0x46000024 | (fs << 11) | (fd << 6)
-        return f"{m.group(1)}.word 0x{word:08X}"
+        return f"{m.group(1)}trunc.w.s\t$f{m.group(2)},$f{m.group(3)}"
     return line
 
 
@@ -727,45 +710,58 @@ def _writes_fpr_via_mtc1(line):
     return bool(_MTC1_RE.match(line) or _LIS_INLINE_RE.match(line))
 
 
-def _sonyize_seg(seg):
-    """`_sonyize` over one function segment, plus the two assembler-gap nops.
+def _fpr_reads(line):
+    """FPR numbers one compiled instruction line reads (see _FPR_READ_ALL)."""
+    m = _MNEMONIC_RE.match(line)
+    if not m:
+        return set()
+    mnemonic = m.group(1)
+    operands = line[m.end():].split("#", 1)[0]
+    regs = [int(r) for r in _FPR_RE.findall(operands)]
+    if not regs or mnemonic in _FPR_NO_READ:
+        return set()
+    if mnemonic in _FPR_READ_ALL or mnemonic.startswith("c."):
+        return set(regs)
+    return set(regs[1:])
 
-    Line-by-line, except for the two nops Sony's `as` writes and the decompals
-    `as` does not:
 
-      * between an mtc1-writing instruction and an adjacent FP compare (see
-        _MTC1_RE): a hazard Sony's `as` covers unconditionally and the
-        decompals `as` only on a register dependency. Comment/blank lines do
-        not separate the two -- gcc emits its own `#nop` markers between them,
-        and those are only annotations (retail ApplyFriction has no nop at one
-        of them), never a nop to materialize.
-      * in the delay slot of a branch gcc left unfilled (see _BRANCH_OPS):
-        Sony's `as` nops it, the decompals `as` swaps the preceding
-        instruction in. The branch is wrapped in `.set noreorder` so the swap
-        cannot happen, and the nop is written out.
-    """
+def _mtc1_hazard(line, following):
+    """True if SN's `as` pads a nop between `line` and `following`."""
+    m = _MTC1_DEST_RE.match(line)
+    if not m:
+        return False
+    pair = int(m.group(1)) // 2
+    return any(r // 2 == pair for r in _fpr_reads(following))
+
+
+def _sonyize_seg(seg, profile="default"):
+    """`_sonyize` over one function segment, plus the nops SN's `as` writes and
+    the decompals `as` does not: the mtc1 pair hazard (placed before any label)
+    and, except for profile `sce`, unfilled branch delay slots."""
     out = []
-    prev_insn = None
     reorder = True
-    for line in seg:
+    pad_slots = profile != "sce"
+    for index, line in enumerate(seg):
         m = _SET_REORDER_RE.match(line)
         if m:
             reorder = m.group(1) is None
             out.append(line)
             continue
-        if (_CCOND_RE.match(line) and prev_insn is not None
-                and _writes_fpr_via_mtc1(prev_insn)):
-            out.append("\tnop")
-        if reorder and _is_branch(line):
+        if pad_slots and reorder and _is_branch(line):
             out.append("\t.set\tnoreorder")
             out.append(_sonyize(line))
             out.append("\tnop")
             out.append("\t.set\treorder")
-            prev_insn = "\tnop"
             continue
         out.append(_sonyize(line))
-        if not _is_noise(line):
-            prev_insn = line
+        if _writes_fpr_via_mtc1(line):
+            next_index = index + 1
+            while next_index < len(seg) and (
+                    _is_noise(seg[next_index])
+                    or _LOCAL_LABEL_RE.match(seg[next_index])):
+                next_index += 1
+            if next_index < len(seg) and _mtc1_hazard(line, seg[next_index]):
+                out.append("\tnop")
     return out
 
 
@@ -989,6 +985,9 @@ def _compile_and_split(data, out_o, link_set, version):
     cc.compile_s(src, cs, profile=data.get("profile", "default"),
                  version=version)
     prologue, segments, local_data = parse_s(cs.read_text())
+    rename = _duplicate_static_labels(functions, version)
+    prologue = _relabel(prologue, rename)
+    segments = [(name, _relabel(seg, rename)) for name, seg in segments]
     seg_by_name = dict(segments)
     if len(seg_by_name) != len(segments):
         raise HybridError("duplicate function names in compiler output")
@@ -1000,27 +999,13 @@ def _compile_and_split(data, out_o, link_set, version):
 
 
 def _splice_unit(prologue, seg_by_name, functions, unit_dir, link_set,
-                 version, report_base, unit_end, local_data=None):
+                 version, report_base, unit_end, local_data=None,
+                 profile="default"):
     """Ordered .s lines for one unit.
 
-    Each included function is normalized identically (`_rewrite_lis` maps
-    pool-bound li.s onto the retail .lit4 slots, `_sonyize` fixes the two
-    decompals pseudo-ops). The two modes differ in which functions they
-    include and in how they treat the rest:
-
-      report_base=False (hybrid): functions whose manifest state is in
-        link_set compile from C and are zero-padded to their registry extent
-        (so the linked image is byte-exact; gas fails loudly if compiled code
-        overruns its extent); every other function is spliced from its retail
-        slice.
-      report_base=True  (objdiff report base): EVERY function the compiler
-        produced C for gets a symbol -- matching, equivalent, or a WIP
-        function still marked asm -- regardless of manifest state, so its
-        fuzzy match shows honestly (a matching function reads 100%, a WIP
-        function its partial match). Functions with no C are omitted: no
-        symbol, so objdiff pairs the retail target with nothing -> 0%. No
-        extent padding, so an equivalent/WIP function that compiles longer
-        than its retail extent does not trigger a backwards-.org failure.
+    Hybrid: link_set functions from C, padded to their extent; the rest from
+    retail slices. Report base: every function that has C, unpadded; nothing
+    else.
     """
     out_lines = list(prologue)
     body_lines = []
@@ -1042,7 +1027,7 @@ def _splice_unit(prologue, seg_by_name, functions, unit_dir, link_set,
             seg, externs = _rewrite_local_data(seg, local_data or {}, version,
                                                unit_dir, name, addr, mapper_box)
             out_lines += externs   # .extern for the borrowed retail data slot
-            body_lines += _sonyize_seg(seg)
+            body_lines += _sonyize_seg(seg, profile)
             if end is not None and not report_base:
                 # A function's registry extent runs to the next function and
                 # includes retail's trailing pad nops; the compiler does not
@@ -1076,7 +1061,8 @@ def build_hybrid(manifest_path, out_o, link_set="matching", version="pal103"):
         data, out_o, link_set, version)
     out_lines = _splice_unit(prologue, seg_by_name, functions, unit_dir,
                              link_set, version, report_base=False,
-                             unit_end=_unit_end(unit_dir), local_data=local_data)
+                             unit_end=_unit_end(unit_dir), local_data=local_data,
+                             profile=data.get("profile", "default"))
     return _assemble_unit(out_o, out_lines)
 
 
@@ -1102,8 +1088,28 @@ def build_report_object(manifest_path, out_o, version="pal103"):
         data, out_o, link_set, version)
     out_lines = _splice_unit(prologue, seg_by_name, functions, unit_dir,
                              link_set, version, report_base=True,
-                             unit_end=_unit_end(unit_dir), local_data=local_data)
+                             unit_end=_unit_end(unit_dir), local_data=local_data,
+                             profile=data.get("profile", "default"))
     return _assemble_unit(out_o, out_lines)
+
+
+def _duplicate_static_labels(functions, version):
+    """{NAME: NAME__<VRAM>} for this unit's duplicated statics, the label the
+    retail slices use (declib.asmtext.disambiguate)."""
+    text = (ROOT / "config" / version / "functions.toml").read_text()
+    names = re.findall(r"^name = '([^']*)'", text, re.M)
+    dups = {n for n in set(names) if names.count(n) > 1}
+    return {name: f"{name}__{addr:08X}" for addr, name, _s in functions
+            if name in dups}
+
+
+def _relabel(lines, rename):
+    """Rewrite every whole-symbol occurrence of a key of `rename`."""
+    if not rename:
+        return lines
+    pattern = re.compile(r"(?<![\w.$])(" + "|".join(map(re.escape, rename))
+                         + r")(?![\w$])")
+    return [pattern.sub(lambda m: rename[m.group(1)], l) for l in lines]
 
 
 _DATA_SECTIONS = {".lit4", ".lit8", ".data", ".sdata", ".rdata", ".rodata",
@@ -1154,7 +1160,12 @@ def _assemble_hybrid(hybrid_s, out_o):
     `as` assembles both the slices (it already produces the byte-verified
     expected objects from the same text) and ee-gcc's compiler output
     (`.extern SYM, n` + macro forms resolve to R_MIPS_GPREL16 under -G8,
-    probed) without padding. The whole-unit byte gates remain the arbiter
+    probed) without padding. Internal alignment directives still emit their
+    required padding, but section-end rounding must be disabled: a retail TU
+    can end on a four-byte boundary even when C uses eight-byte alignment
+    internally (nucore/nustring). The canonical extents already own all tail
+    padding; adding more shifts subsequent TUs in the loaded image.
+    The whole-unit byte gates remain the arbiter
     of every matching claim, so a divergent encoding fails loudly.
     """
     as_bin = tool_path(AS)
@@ -1163,7 +1174,7 @@ def _assemble_hybrid(hybrid_s, out_o):
     out_o = Path(out_o)
     out_o.parent.mkdir(parents=True, exist_ok=True)
     proc = subprocess.run(
-        [as_bin, "-EL", "-march=r5900", "-G8",
+        [as_bin, "-EL", "-march=r5900", "-G8", "-no-pad-sections",
          "-o", str(out_o), str(hybrid_s)],
         capture_output=True, text=True)
     if proc.returncode != 0:

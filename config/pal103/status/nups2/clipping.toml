@@ -13,15 +13,15 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0067:0016efb0:AddClipPoint"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0067:0016f1e0:ClipPolygon"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0067:0016f728:ClipDrawTriangle"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0067:0016fc50:TestCurrZN"
@@ -65,20 +65,20 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0067:0016fcf0:IntersectZN"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0067:0016fd28:IntersectLeft"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0067:0016fd58:IntersectRight"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0067:0016fd80:IntersectTop"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0067:0016fdb0:IntersectBottom"
-state = "asm"
+state = "matching"

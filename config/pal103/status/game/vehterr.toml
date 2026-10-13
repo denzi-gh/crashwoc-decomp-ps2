@@ -13,11 +13,11 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0100:00221b60:TryUnembeddPointDir"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0100:00221de0:BestGuessActualsJeep"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0100:00222198:MyCast"
@@ -37,11 +37,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0100:002237a8:TryUnembeddPointSafe"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0100:00223948:FindVehicleNormalGiven4Points"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0100:00223a70:FindSurfaceRotXZFromNormal"

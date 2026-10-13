@@ -17,11 +17,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0096:001f9558:ObjectCylinderCollision"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:001f99e0:GameObjectOverlap"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:001f9bc0:PlayerCreatureCollisions"
@@ -37,31 +37,31 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0096:001fbef0:WumpaCollisions"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:001fc100:MoveLoopXZ"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:001fc2e0:GetSurfaceInfo"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:001fc788:ObjectRotation"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:001fce88:PickupItem"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:001fd158:HitCreatures"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:001fd2e0:WipeCreatures"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:001fd4a8:KillGameObject"
@@ -69,23 +69,23 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0096:001fe0a0:AddProjectile"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:001feeb0:UpdateProjectiles"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:00200050:DrawProjectiles"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:002005f8:CreatureTopBelow"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:002007b0:CreatureRayCast"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:00200ab0:ClearGameObjects"
@@ -117,7 +117,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:00200df8:GetDieAnim"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:00200e90:KillPlayer"
@@ -137,7 +137,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:00201008:PickupBonusGem"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:00201068:PickupPower"
@@ -145,7 +145,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:00201140:HitItems"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:00201200:NewTopBot"
@@ -157,7 +157,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:00201248:FindAnglesZX"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:002012a0:ScaleFlatShadow"
@@ -173,4 +173,4 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:00201418:PickupRelic"
-state = "asm"
+state = "matching"

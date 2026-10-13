@@ -16,3 +16,14 @@
  *   0x00279940 GetEntryAddress
  *   0x00279950 InitAlarm
  */
+
+
+int kCopy(unsigned int *dst, unsigned int *src, unsigned int size)
+{
+    unsigned int i;
+
+    for (i = 0; i < size / 4; i++) {
+        *dst++ = *src++;
+    }
+    return 0;
+}

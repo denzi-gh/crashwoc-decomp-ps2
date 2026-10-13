@@ -17,8 +17,9 @@ For each status manifest this verifier proves, from scratch:
   4. A `complete` unit must not own data ranges yet (data-from-C is not
      supported until the hybrid can splice data sections); fail loudly
      rather than silently under-verify.
-  5. The image gate: rebuild every matching hybrid and link the full
-     matching image -- it must reproduce the retail loaded-image SHA.
+  5. The image gate: link the full matching image from the hybrids step 3
+     rebuilt (rebuilding any it did not) -- it must reproduce the retail
+     loaded-image SHA.
 
 Results land in build/<version>/verify_results.json (the artifact the
 progress tooling and CI consume), stamped with the profiles fingerprint so
@@ -69,8 +70,8 @@ def function_sizes(version):
 
 
 def verify_manifest(reporter, manifest, version, elf, text_addr, text_off,
-                    sizes, nm_bin, results):
-    """Verify one manifest's function claims; append per-function results."""
+                    sizes, nm_bin, results, built=None):
+    """Verify one manifest's claims; add it to `built` once rebuilt."""
     data = tomllib.loads(manifest.read_text())
     src = ROOT / data["source"]
     rel = Path(data["source"]).relative_to("src").with_suffix("")
@@ -123,6 +124,8 @@ def verify_manifest(reporter, manifest, version, elf, text_addr, text_off,
                                 "verified": False,
                                 "reason": f"hybrid build failed: {exc}"})
             return
+        if built is not None:
+            built.add(manifest)
         hybrid_offsets = defined_function_offsets(nm_bin, hybrid_o)
         base_addr = min(unit_sizes[n][0]
                         for n in hybrid_offsets if n in unit_sizes)
@@ -202,12 +205,13 @@ def main():
                               sorted(bad.items())[:3]) or None)
 
     results = []
+    built = set()                 # manifests verify_manifest rebuilt a hybrid for
     if not bad:
         elf, text_addr, text_off, _size = load_text_target(args.version)
         sizes = function_sizes(args.version)
         for manifest in manifests:
             verify_manifest(reporter, manifest, args.version, elf, text_addr,
-                            text_off, sizes, nm_bin, results)
+                            text_off, sizes, nm_bin, results, built)
 
     # 5. Image gate over freshly rebuilt hybrids.
     image = {"matching_sha256": None, "exact": False}
@@ -221,6 +225,8 @@ def main():
                 # prologue and build_hybrid would (correctly) refuse to parse it.
                 states = {f["state"] for f in data.get("function", [])}
                 if "matching" not in states:
+                    continue
+                if manifest in built:     # already rebuilt by verify_manifest
                     continue
                 rel = Path(data["source"]).relative_to("src").with_suffix(".o")
                 build_hybrid(manifest,

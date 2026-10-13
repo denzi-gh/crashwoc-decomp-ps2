@@ -13,11 +13,11 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0050:00155408:ShareEdge"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0050:001555f0:WriteWeights"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0050:001558d8:AddPointDataToPacket"
@@ -69,36 +69,36 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0050:00158cb8:NuPs2CreateSkin"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0050:00158d38:NuPs2DestroySkin"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0050:00158de8:CloseSkinning"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0050:00158e18:InitSkinning"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0050:00158e68:ResetSkinning"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0050:00158e78:NuPs2SetTempSkinBuffer"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0050:00158ec8:NuCvtSknInstFix"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0050:00158f08:NuCvtSknInstUnFix"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0050:00158f48:PrevPktIdx"
-state = "asm"
+state = "matching"

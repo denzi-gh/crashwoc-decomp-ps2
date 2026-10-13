@@ -578,5 +578,190 @@ class TestSchemas(unittest.TestCase):
         self.assertEqual(c["confidence"], "low")
 
 
+DUP_ASM = """\
+glabel NuListGetHead
+    /* 1040 00100040 4000040C */  jal DupStatic
+    /* 1044 00100044 00000000 */  nop
+glabel MainLoop
+    /* 1140 00100140 8000040C */  jal DupStatic
+    /* 1144 00100144 00000000 */  nop
+glabel DupStatic
+    /* 1100 00100100 0800E003 */  jr $ra
+    /* 1104 00100104 01000224 */  addiu $v0, $zero, 1
+glabel DupStatic
+    /* 1200 00100200 0800E003 */  jr $ra
+    /* 1204 00100204 02000224 */  addiu $v0, $zero, 2
+"""
+
+
+class TestDuplicateStaticListings(unittest.TestCase):
+    """Each copy of a duplicated static gets its own listing."""
+
+    COPY1 = "pal103:unit-0001:00100100:DupStatic"
+    COPY2 = "pal103:unit-0002:00100200:DupStatic"
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.p = make_project(Path(self._tmp.name))
+        (self.p.root / "asm").mkdir()
+        (self.p.root / "asm" / "text.s").write_text(DUP_ASM)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def test_disassembly_selected_by_address(self):
+        one = ctx.get_disassembly(self.p, self.COPY1)["disassembly"]
+        two = ctx.get_disassembly(self.p, self.COPY2)["disassembly"]
+        self.assertIn("$zero, 1", one)
+        self.assertNotIn("$zero, 2", one)
+        self.assertIn("$zero, 2", two)
+
+    def test_context_ground_truth_selected_by_address(self):
+        d = ctx.get_context(self.p, self.COPY2)
+        self.assertIn("$zero, 2", d["target_asm"]["text"])
+
+    def test_callers_attributed_per_copy(self):
+        one = ctx.get_context(self.p, self.COPY1, detail=True)
+        two = ctx.get_context(self.p, self.COPY2, detail=True)
+        self.assertEqual(one["known_callers"], ["NuListGetHead"])
+        self.assertEqual(two["known_callers"], ["MainLoop"])
+
+    def test_unconfirmable_copy_is_unavailable(self):
+        (self.p.root / "asm" / "text.s").write_text(
+            "glabel DupStatic\n    jr $ra\nglabel DupStatic\n    jr $ra\n")
+        d = ctx.get_disassembly(self.p, self.COPY2)
+        self.assertFalse(d["available"])
+
+    def test_jal_target_decodes_encoding(self):
+        self.assertEqual(evidence.jal_target(
+            "    /* 1040 00100040 4000040C */  jal DupStatic"), 0x00100100)
+        self.assertIsNone(evidence.jal_target(
+            "    /* 1044 00100044 00000000 */  nop"))
+
+
+class TestApiVocabularies(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.p = make_project(Path(self._tmp.name))
+        self.sid = sessions.start_session(self.p, "NuListDoWork",
+                                          client="c")["session_id"]
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def test_checkpoint_accepts_category_names(self):
+        r = sessions.checkpoint_session(
+            self.p, self.sid, client="c", fuzzy_score=10, compile_ok=True,
+            classifications=["register_allocation",
+                             {"category": "delay_slot", "confidence": "high"}])
+        self.assertTrue(r["ok"])
+        self.assertEqual(r["attempt"]["classifications"],
+                         [{"category": "register_allocation"},
+                          {"category": "delay_slot", "confidence": "high"}])
+        ledger = sessions.get_session(self.p, self.sid)["session"]
+        self.assertEqual(ledger["mismatch_categories"],
+                         ["register_allocation", "delay_slot"])
+
+    def test_checkpoint_rejects_malformed_classification(self):
+        r = sessions.checkpoint_session(self.p, self.sid, client="c",
+                                        classifications=[3])
+        self.assertFalse(r["ok"])
+        self.assertEqual(r["error"]["code"], "bad_classifications")
+        self.assertEqual(sessions.get_session(self.p, self.sid)["session"]["attempt_count"], 0)
+
+    def test_end_session_outcome_case_insensitive(self):
+        r = sessions.end_session(self.p, self.sid, outcome="blocked_tooling",
+                                 client="c")
+        self.assertTrue(r["ok"])
+        self.assertEqual(r["session"]["outcome"], "BLOCKED_TOOLING")
+
+    def test_end_session_bad_outcome_lists_allowed(self):
+        r = sessions.end_session(self.p, self.sid, outcome="BLOCKED", client="c")
+        self.assertFalse(r["ok"])
+        self.assertEqual(r["error"]["code"], "bad_outcome")
+        self.assertEqual(r["allowed"], list(schemas.OUTCOMES))
+
+    def test_search_evidence_rejects_unknown_kind(self):
+        r = evidence.search_evidence(self.p, "NuListGetHead", kinds=["bogus"])
+        self.assertFalse(r["ok"])
+        self.assertEqual(r["error"]["code"], "bad_kind")
+        ok = evidence.search_evidence(self.p, "NuListGetHead", kinds=["functions"])
+        self.assertTrue(ok["ok"])
+        self.assertTrue(ok["hits"])
+
+    def test_assembler_normalization_blocker_keeps_ranking(self):
+        fid = "pal103:unit-0001:00100060:NuListDoWork"
+        r = blockers.record_blocker(self.p, "NuListDoWork",
+                                    kind="assembler_normalization")
+        self.assertTrue(r["ok"])
+        self.assertFalse(r["blocker"]["architectural"])
+        ids = {c["id"] for c in candidates.list_candidates(self.p, limit=50)["candidates"]}
+        self.assertIn(fid, ids)
+        blockers.record_blocker(self.p, "NuListDoWork",
+                                kind="assembler_normalization", architectural=True)
+        ids = {c["id"] for c in candidates.list_candidates(self.p, limit=50)["candidates"]}
+        self.assertNotIn(fid, ids)
+
+
+class TestCliGlobalOptions(unittest.TestCase):
+    def test_global_options_before_or_after_subcommand(self):
+        from decomp_agent import cli
+        parse = cli.build_parser().parse_args
+        self.assertTrue(parse(["--json", "candidates"]).json)
+        self.assertTrue(parse(["candidates", "--json"]).json)
+        self.assertFalse(parse(["candidates"]).json)
+        self.assertTrue(parse(["session", "end", "s-1", "--json"]).json)
+        args = parse(["--repo", "r", "--version", "v", "resolve", "x"])
+        self.assertEqual((args.repo, args.version), ("r", "v"))
+        args = parse(["resolve", "x", "--repo", "r2"])
+        self.assertEqual((args.repo, args.version), ("r2", None))
+
+
+try:
+    import mcp  # noqa: F401
+    HAVE_MCP = True
+except Exception:
+    HAVE_MCP = False
+
+
+@unittest.skipUnless(HAVE_MCP, "MCP SDK not installed (requirements-mcp.txt)")
+class TestMcpSchemas(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        import asyncio
+        from decomp_mcp import server
+        cls._tmp = tempfile.TemporaryDirectory()
+        p = make_project(Path(cls._tmp.name))
+        tools = asyncio.run(server.build_server(p).list_tools())
+        cls.props = {t.name: t.inputSchema["properties"] for t in tools}
+
+    @classmethod
+    def tearDownClass(cls):
+        cls._tmp.cleanup()
+
+    def test_optional_params_accept_null(self):
+        for tool, props in self.props.items():
+            for name, prop in props.items():
+                if "default" in prop and prop["default"] is None:
+                    types = [a.get("type") for a in prop.get("anyOf", [])]
+                    self.assertIn("null", types, f"{tool}.{name}")
+
+    def test_vocabularies_are_enums(self):
+        s = self.props
+        self.assertEqual(s["end_session"]["outcome"]["enum"],
+                         [*schemas.OUTCOMES, None])
+        self.assertEqual(s["record_blocker"]["kind"]["enum"],
+                         list(schemas.BLOCKER_KINDS))
+        self.assertIn("assembler_normalization",
+                      s["record_blocker"]["kind"]["enum"])
+        self.assertEqual(s["record_blocker"]["confidence"]["enum"],
+                         list(schemas.CONFIDENCE))
+        self.assertEqual(s["verify_candidate"]["level"]["enum"],
+                         list(schemas.VERIFY_LEVELS))
+        kinds = s["search_evidence"]["kinds"]["anyOf"][0]["items"]["enum"]
+        self.assertEqual(kinds, list(schemas.EVIDENCE_KINDS))
+        self.assertIn("architectural", s["record_blocker"])
+
+
 if __name__ == "__main__":
     unittest.main()

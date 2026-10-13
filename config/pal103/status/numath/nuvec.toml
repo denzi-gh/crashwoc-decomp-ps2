@@ -97,7 +97,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:00106f60:NuVecSub"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:00106f98:NuVecScale"

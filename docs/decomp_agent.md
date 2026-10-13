@@ -31,7 +31,7 @@ container.
    resource / `asm/text.s`) - the ground truth for a function's own bytes
 3. fresh compiler / assembler / linker / byte-verification output
 4. current hand-written C and committed headers
-5. maintained docs (`docs/notes.md`, this file)
+5. maintained docs (this file)
 6. comments, unverified hypotheses, **and any cross-platform reference
    decompilation** (e.g. a GameCube/PC port)
 
@@ -92,7 +92,9 @@ choose. Retry with a canonical id.
    the **full canonical extent**. `exact = true` means byte equality over the
    whole extent, not a matching prefix. objdiff percentage is never proof.
 7. `checkpoint_session` - record every experiment (hypothesis, hashes, diff
-   signature, classifications). Repeats and oscillation are detected for you.
+   signature, classifications). `classifications` takes `compile_diff`'s
+   classification records as returned, or bare category names such as
+   `"register_allocation"`. Repeats and oscillation are detected for you.
 8. Iterate. Stop when a stop condition fires (below).
 9. `verify_candidate --level function` - independent full-extent byte check.
 10. `promote_matching` - delegates to `tools/promote.py` (the sole writer of
@@ -101,7 +103,12 @@ choose. Retry with a canonical id.
     review decision.
 
 If blocked, `record_blocker` with a structured kind so the obstacle is not
-rediscovered and candidate ranking can skip it.
+rediscovered. Only *architectural* kinds (compiler-owned data, `.lit8`, ...)
+drop a function from candidate ranking; `architectural` overrides the kind's
+default. An otherwise exact function that only the assembler lays out
+differently (a hazard nop, an unfilled delay slot) is
+`assembler_normalization` - temporary, since the fix belongs in the hybrid
+normalization, not the C.
 
 ## Stop conditions (recommended)
 
@@ -116,7 +123,8 @@ rediscovered and candidate ranking can skip it.
 - restore the best safe checkpoint before ending
 
 `checkpoint_session` and `resume_session` return a `stop` recommendation and a
-capability-based (never model-named) `escalation` hint. Outcomes:
+capability-based (never model-named) `escalation` hint. Outcomes
+(`end_session` matches them case-insensitively):
 `MATCHING`, `BLOCKED_TOOLING`, `BLOCKED_MISSING_CONTEXT`,
 `LIKELY_EQUIVALENT_REVIEW_REQUIRED`, `NO_PROGRESS`, `BUDGET_EXHAUSTED`,
 `STALE_SESSION`, `SOURCE_CONFLICT`.
@@ -219,4 +227,4 @@ python -m tools.decomp_agent.cli session resume <sid> --client codex
 python -m tools.decomp_agent.cli verify pal103:unit-0007:00105a60:NuListGetNext --level function
 ```
 
-All accept `--repo`, `--version`, `--json`.
+All accept `--repo`, `--version`, `--json`, before or after the subcommand.

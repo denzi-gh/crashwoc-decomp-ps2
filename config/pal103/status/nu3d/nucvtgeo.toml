@@ -21,7 +21,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0049:00150f28:NuCvtSizeDmaBezTriCFromIdx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0049:00151020:NuCvtDmaBezTriCFromIdx"
@@ -57,7 +57,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0049:00154b40:NuCvtCalcFastPoint"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0049:00154cd0:NuPs2CreateRenderStream"
@@ -65,23 +65,23 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0049:00155140:NuPs2DestroyRenderStream"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0049:00155178:NuCvtGeoSetColourRefOffset"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0049:00155180:NuCvtGeoFixup"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0049:001551c0:NuCvtGeoBeginColourRef"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0049:001551d8:NuCvtGeoEndColourRef"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0049:00155210:NuCvtSizeDmaFaceOn"
@@ -89,16 +89,16 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0049:001552b8:NuCvtSizeDmaFaceY"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0049:00155360:NuCvtSetMaxSpan"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0049:00155390:NuCvtGeoAddColourRef"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0049:001553d8:NuCvtDestroyPacketInfo"
-state = "asm"
+state = "matching"

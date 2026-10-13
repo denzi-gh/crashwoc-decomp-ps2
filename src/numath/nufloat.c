@@ -12,7 +12,8 @@
  */
 
 double pow(double x, double y);
-extern float fetol; //D_00645750 //0.0099999998f
+extern float D_0062EA50;
+#define fetol D_0062EA50
 
 float NuFabs(float f) {
     int i = *(int *)&f;

@@ -45,11 +45,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0004:001052a0:NuMemSetDiscardable"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0004:001052b0:NuMemFlushDiscardable"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0004:001052d0:NuMemCreateDiscardable"
@@ -61,7 +61,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0004:00105360:NuMemSetExternal"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0004:00105390:NuMemFree"

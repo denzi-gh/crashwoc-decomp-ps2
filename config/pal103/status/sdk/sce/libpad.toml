@@ -13,19 +13,19 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0148:002645a8:_send_to_iop"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:002646d8:scePadInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:00264818:scePadInit2"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:002648b8:scePadEnd"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:00264938:scePadPortOpen"
@@ -33,100 +33,100 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0148:00264b20:scePadPortClose"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:00264bd8:scePadGetDmaStr"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:00264c38:scePadGetFrameCount"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:00264c88:scePadRead"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:00264d08:scePadGetState"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:00264d80:scePadStateIntToStr"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:00264db8:scePadSetReqState"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:00264e20:scePadGetReqState"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:00264e70:scePadReqIntToStr"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:00264ea8:scePadInfoAct"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:00264fc8:scePadInfoComb"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:002650e8:scePadInfoMode"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:00265220:scePadSetMainMode"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:002652d8:scePadSetActDirect"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:00265390:scePadSetActAlign"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:00265468:scePadGetButtonMask"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:00265520:scePadSetButtonInfo"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:002655d0:scePadInfoPressMode"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:00265630:scePadEnterPressMode"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:00265688:scePadExitPressMode"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:002656e0:scePadSetVrefParam"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:002657b0:scePadGetPortMax"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:00265818:scePadGetSlotMax"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:00265880:scePadGetModVersion"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:002658e8:scePadSetWarningLevel"
-state = "asm"
+state = "matching"

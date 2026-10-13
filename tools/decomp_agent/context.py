@@ -255,6 +255,10 @@ def _derive_callers(project, fn):
         if line.startswith("glabel "):
             cur = line.split()[1]
         elif pat.search(line) and cur and cur not in callers and cur != fn.name:
+            # Duplicated statics: match the call by its target address.
+            if fn.name_is_duplicated and \
+                    evidence.jal_target(line) not in (None, fn.address):
+                continue
             callers.append(cur)
     return callers
 
