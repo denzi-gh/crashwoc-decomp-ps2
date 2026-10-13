@@ -389,9 +389,17 @@ struct pobj_s {
     struct pmask_s *mask; /* 0xC */
     char pad_10[0x18 - 0x10];
     float anim_time;      /* 0x18 */
-    char pad_1c[0x6C - 0x1C];
+    char pad_1c[0x36 - 0x1C];
+    short vehicle;        /* 0x36 */
+    char pad_38[0x6C - 0x38];
     struct nuvec_s pos;   /* 0x6C */
-    char pad_78[0x153 - 0x78];
+    char pad_78[0x108 - 0x78];
+    float SCALE;          /* 0x108 */
+    char pad_10c[0x120 - 0x10C];
+    float top;            /* 0x120 */
+    char pad_124[0x149 - 0x124];
+    signed char dead;     /* 0x149 */
+    char pad_14a[0x153 - 0x14A];
     signed char finished; /* 0x153 */
     char pad_154[0x16E - 0x154];
     u16 hdg;              /* 0x16E */
@@ -458,6 +466,10 @@ struct gamecam_s {
     float x; /* 0xA4 */
     float y; /* 0xA8 */
     float z; /* 0xAC */
+    char pad_b0[0xF8 - 0xB0];
+    u16 yrot; /* 0xF8 */
+    char pad_fa[0x114 - 0xFA];
+    signed char mode; /* 0x114 */
 };
 extern struct gamecam_s GameCam;
 extern s32 gamesfx_volume;
@@ -2799,13 +2811,13 @@ void ResetAwards(void) {
 /* kaboom_s stride 0x24 (i_kaboom*0x24 at 0x001DF320; ResetKabooms memsets
  * 0xA20 = 0x48 * 0x24, matching the i_kaboom==0x48 wrap). */
 struct kaboom_s {
-    short type; /* 0x0 */
+    u16 type; /* 0x0 */
     short crate; /* 0x2 */
     struct nuvec_s pos; /* 0x4 (ldl/ldr + lw 12-byte copy) */
     float t0; /* 0x10 */
     float t1; /* 0x14 */
-    s32 f18; /* 0x18 */
-    float rate; /* 0x1C */
+    float time; /* 0x18 */
+    float duration; /* 0x1C */
     short group; /* 0x20 */
     char pad_22[2];
 };
@@ -3002,11 +3014,26 @@ void MakeTimeF(float time, s32 hours, char *txt) {
     MakeTimeI(time * 300.0f, hours, txt);
 }
 
+struct animpkt_s {
+    float time; /* 0x0 */
+    char pad_4[0xC - 0x4];
+    u16 action;    /* 0xC */
+    u16 oldaction; /* 0xE */
+    u16 newaction; /* 0x10 */
+    char pad_12[0x1B - 0x12];
+    u8 flags; /* 0x1B */
+};
+
 /* transporter object: offsets verified in FinishTransporter / StartTransporter */
 struct tobj_s {
     char pad_8[0x8];
     struct mask_s *mask; /* 0x8 (LoseMask) */
-    char pad_c[0x68 - 0xC];
+    char pad_c[0x14 - 0xC];
+    struct animpkt_s anim; /* 0x14 (ToggleVehicle) */
+    char pad_30[0x32 - 0x30];
+    short vehicle; /* 0x32 (ToggleVehicle) */
+    u32 flags; /* 0x34 (UpdateKabooms) */
+    char pad_38[0x68 - 0x38];
     struct nuvec_s pos; /* 0x68 */
     struct nuvec_s mom;    /* 0x74 */
     struct nuvec_s oldpos; /* 0x80 */
@@ -3024,12 +3051,23 @@ struct tobj_s {
     float top;    /* 0x11C */
     char pad_120[0x145 - 0x120];
     signed char dead; /* 0x145 */
-    char pad_146[0x166 - 0x146];
+    char pad_146[0x14A - 0x146];
+    u16 kaboom_mask; /* 0x14A (UpdateKabooms) */
+    char pad_14c[0x14F - 0x14C];
+    signed char finished; /* 0x14F (CheckFinish) */
+    char pad_150[0x166 - 0x150];
     short dyrot; /* 0x166 */
     char pad_168[0x16A - 0x168];
     short hdg; /* 0x16A */
-    char pad_16c[0x17A - 0x16C];
+    char pad_16c[0x172 - 0x16C];
+    signed char invincible; /* 0x172 (UpdateKabooms) */
+    char pad_173[0x17A - 0x173];
     u8 f17A; /* 0x17A (LoseMask; unsigned -- retail li 0x96, not -0x6A) */
+    char pad_17b[0x185 - 0x17B];
+    u8 f185;     /* 0x185 (ToggleVehicle) */
+    u8 exploded; /* 0x186 (UpdateKabooms) */
+    char pad_187[0x230 - 0x187];
+    struct numtx_s mtx; /* 0x230 (ToggleVehicle) */
 };
 
 void FinishTransporter(struct tobj_s *cyl, struct tobj_s *obj) {
@@ -3603,6 +3641,8 @@ struct rpos_s {
     short iALONG; /* 0x2 */
     char pad_4[4];
     float fALONG; /* 0x8 */
+    float fACROSS; /* 0xC */
+    u16 angle; /* 0x10 */
 };
 
 extern s32 FurtherALONG(s32 iRAIL0, s32 iALONG0, float fALONG0, s32 iRAIL1,
@@ -4393,14 +4433,6 @@ void InitGameMode(s32 mode) {
 
 /* animpacket: action +0xC / oldaction +0xE / newaction +0x10 / flags +0x1B
  * verified in UpdateTempCharacter */
-struct animpkt_s {
-    char pad_c[0xC];
-    u16 action;    /* 0xC */
-    u16 oldaction; /* 0xE */
-    u16 newaction; /* 0x10 */
-    char pad_12[0x1B - 0x12];
-    u8 flags; /* 0x1B */
-};
 
 extern s32 TESTCORTEXVOICES;
 extern struct nuvec_s in_finish_pos;
@@ -4784,6 +4816,478 @@ void DrawAwards(void) {
     }
 }
 
+extern u16 temp_lev_flags;
+extern u16 tumble_hdg;
+extern struct nuvec_s tumble_oldpos;
+extern struct nuvec_s tumble_newpos;
+extern float tumble_cycleduration;
+extern float D_0062D29C;
+extern float NewShadowMaskPlat(struct nuvec_s *pos, float y, s32 layer);
+extern float ModelAnimDuration(u32 character, u32 action, float start, float end);
+
+void HubStart(struct tobj_s *obj, s32 hub, s32 level, struct nuvec_s *pos) {
+    struct nugspline_s *spl;
+    struct nuvec_s *p0;
+    struct nuvec_s *p1;
+    float y;
+    float end;
+    s32 i_spl;
+    s32 h;
+    s32 l;
+
+    if (level != -1 && (new_lev_flags & 0x800) != 0) {
+        new_lev_flags ^= 0x800;
+        Game.level[level].flags |= 0x800;
+        CalculateGamePercentage(&Game);
+    }
+    tumble_action = -1;
+    tumble_time = tumble_duration = 0.0f;
+    temp_lev_flags = 0;
+    i_spl = HData[hub].i_spl[0];
+    if (i_spl == -1 || SplTab[i_spl].spl == NULL) {
+        *pos = v000;
+        return;
+    }
+    if (level != -1) {
+        for (h = 0; h < 6; h++) {
+            for (l = 0; l < 6; l++) {
+                if (HData[h].level[l] == level) {
+                    temp_hub = h;
+                    temp_hublevel = l;
+                    goto found;
+                }
+            }
+        }
+    }
+found:
+    spl = SplTab[i_spl].spl;
+    p0 = (struct nuvec_s *)(spl->pts + (temp_hublevel * 2 + 2) * spl->ptsize);
+    tumble_oldpos = *p0;
+    p1 = (struct nuvec_s *)(spl->pts + (temp_hublevel * 2 + 3) * spl->ptsize);
+    pos->x = p0->x + (p1->x - p0->x) * 2.0f;
+    pos->y = p0->y;
+    pos->z = p0->z + (p1->z - p0->z) * 2.0f;
+    y = NewShadowMaskPlat(pos, 0.0f, -1);
+    if (y != D_0062D29C) {
+        pos->y = y;
+    }
+    tumble_newpos.x = pos->x;
+    tumble_newpos.y = pos->y - obj->bot * obj->SCALE;
+    tumble_newpos.z = pos->z;
+    *pos = tumble_newpos;
+    tumble_hdg = NuAtan2D(p1->x - p0->x, p1->z - p0->z);
+    tumble_action = new_lev_flags ? 0x56 : 0x55;
+    tumble_time = 0.0f;
+    tumble_duration = ModelAnimDuration(tumble_character, tumble_action, 0.0f, 0.0f);
+    if (tumble_character == 1) {
+        tumble_item_starttime = 46.0f;
+        tumble_item_addtime = 90.0f;
+        end = 25.0f;
+    } else {
+        end = 25.0f;
+        if (tumble_action == 0x56) {
+            end = 19.0f;
+        }
+        tumble_item_starttime = 32.0f;
+        tumble_item_addtime = 50.0f;
+    }
+    tumble_moveduration = ModelAnimDuration(tumble_character, tumble_action, 0.0f, end);
+    tumble_cycleduration = ModelAnimDuration(tumble_character, tumble_action, 0.0f,
+                                             tumble_item_starttime);
+}
+
+extern s32 HubLevel;
+extern s32 HubLevel_available;
+extern u16 HubLevelAngle;
+extern s32 hubleveltext_i;
+extern s32 hubleveltext_open;
+extern s32 hub_vr_image;
+extern u32 finish_frames;
+extern u8 hublevelopen[6][6];
+extern float FINISHRADIUSHUB;
+extern struct nuvec_s hubwarp_oldpos;
+extern struct nuvec_s hubwarp_newpos;
+extern void AddWarpDebris(struct tobj_s *obj, struct nuvec_s *pos);
+
+void HubLevelSelect(struct tobj_s *obj, s32 hub) {
+    struct nuvec_s pos;
+    struct nuvec_s d;
+    struct nuvec_s *p0;
+    struct nuvec_s *p1;
+    float range;
+    float dx;
+    float dz;
+    float dist;
+    float best;
+    double dy;
+    u16 ang;
+    s32 i_spl;
+    s32 level;
+    s32 i;
+
+    if (warp_level != -1) {
+        finish_frame++;
+        if (finish_frame == finish_frames) {
+            new_level = HData[hub].level[HubLevel];
+        }
+        if (hubleveltext_pos > 0.333f) {
+            hubleveltext_pos -= 0.02f;
+            if (hubleveltext_pos < 0.333f) {
+                hubleveltext_pos = 0.333f;
+            }
+        } else if (hubleveltext_pos < 0.333f) {
+            hubleveltext_pos += 0.02f;
+            if (hubleveltext_pos > 0.333f) {
+                hubleveltext_pos = 0.333f;
+            }
+        }
+        return;
+    }
+    HubLevel = -1;
+    finish_frame = 0;
+    HubLevel_available = 0;
+    level = -1;
+    if (new_mode != -1 || new_level != -1 || hub == -1) {
+        goto text;
+    }
+    i_spl = HData[hub].i_spl[0];
+    if (i_spl == -1 || SplTab[i_spl].spl == NULL || Game.hub[hub].flags == 0) {
+        goto text;
+    }
+    range = 4.0f;
+    if (hub == 5) {
+        range = 16.0f;
+    }
+    for (i = 0; i < 6; i++) {
+        if (hub == 5 && i == hub) {
+            continue;
+        }
+        p0 = (struct nuvec_s *)(SplTab[i_spl].spl->pts +
+                                (i * 2 + 2) * SplTab[i_spl].spl->ptsize);
+        dx = p0->x - obj->pos.x;
+        dz = p0->z - obj->pos.z;
+        dist = dx * dx + dz * dz;
+        if (dist < range && (HubLevel == -1 || dist < best)) {
+            HubLevel = i;
+            best = dist;
+            hub_vr_level = i;
+        }
+    }
+    if (HubLevel == -1 || hublevelopen[hub][HubLevel] == 0) {
+        in_finish_range = 0;
+    } else {
+        HubLevel_available = 1;
+    }
+    level = HData[hub].level[HubLevel];
+    if (HubLevel != -1) {
+        if (Level == 0x25 && tumble_time < tumble_duration && last_hub != -1) {
+            in_finish_range = 0;
+        } else {
+            p0 = (struct nuvec_s *)(SplTab[i_spl].spl->pts +
+                                  (HubLevel * 2 + 2) * SplTab[i_spl].spl->ptsize);
+            p1 = (struct nuvec_s *)(SplTab[i_spl].spl->pts +
+                                  (HubLevel * 2 + 3) * SplTab[i_spl].spl->ptsize);
+            ang = NuAtan2D(obj->pos.x - p0->x, obj->pos.z - p0->z);
+            pos.x = p0->x;
+            pos.y = p0->y + 1.0f;
+            pos.z = p0->z;
+            d.x = obj->pos.x - pos.x;
+            d.y = obj->pos.y + (obj->bot + obj->top) * obj->SCALE * 0.5f - pos.y;
+            d.z = obj->pos.z - pos.z;
+            if (d.x * d.x + d.z * d.z < FINISHRADIUSHUB * FINISHRADIUSHUB) {
+                dy = d.y;
+                if (dy < 0.0) {
+                    dy = 0.0 - dy;
+                }
+                if (dy < 5.0) {
+                    in_finish_pos = *p0;
+                    if (HubLevel_available != 0) {
+                        in_finish_range++;
+                        if (in_finish_range < 50) {
+                            goto text;
+                        }
+                    }
+                    if (level == -1) {
+                        HubLevel = -1;
+                    } else if (HubLevel_available != 0) {
+                        if (HubLevel < 5) {
+                            hub_vr_image = level;
+                        }
+                        p0 = (struct nuvec_s *)(SplTab[i_spl].spl->pts +
+                                              (HubLevel * 2 + 2) * SplTab[i_spl].spl->ptsize);
+                        p1 = (struct nuvec_s *)(SplTab[i_spl].spl->pts +
+                                              (HubLevel * 2 + 3) * SplTab[i_spl].spl->ptsize);
+                        level = HData[hub].level[HubLevel];
+                        HubLevelAngle = NuAtan2D(p1->x - p0->x, p1->z - p0->z);
+                        warp_level = HData[hub].level[HubLevel];
+                        AddWarpDebris(obj, &pos);
+                        finish_frames = 50;
+                        hubwarp_oldpos = obj->pos;
+                        hubwarp_newpos = *p0;
+                        gamesfx_effect_volume = 0x7FFE;
+                        GameSfx(0x1E, &obj->pos);
+                        goto text;
+                    }
+                    if (Level == 0x25 && tumble_time < tumble_duration && last_hub != -1) {
+                        goto text;
+                    }
+                    if (HubLevel == 5) {
+                        obj->mom.x = NuTrigTable[ang] * 0.06f;
+                        obj->mom.z = NuTrigTable[(u16)(ang + 0x4000)] * 0.06f;
+                    } else {
+                        ang = NuAtan2D(p1->x - p0->x, p1->z - p0->z);
+                        obj->mom.x = NuTrigTable[ang] * 0.06f;
+                        obj->mom.z = NuTrigTable[(u16)(ang + 0x4000)] * 0.06f;
+                    }
+                } else {
+                    in_finish_range = 0;
+                }
+            } else {
+                in_finish_range = 0;
+            }
+        }
+    } else {
+        in_finish_range = 0;
+    }
+text:
+    best = 0.0f;
+    if (level != -1) {
+        if (hubleveltext_pos == 0.0f) {
+            hubleveltext_i = HubLevel;
+            hubleveltext_open = HubLevel_available;
+            hubleveltext_level = level;
+        }
+        if (hubleveltext_level != -1 && level == hubleveltext_level &&
+            tumble_time == tumble_duration) {
+            best = 0.333f;
+        }
+    }
+    if (hubleveltext_pos > best) {
+        hubleveltext_pos -= 0.02f;
+        if (hubleveltext_pos < best) {
+            hubleveltext_pos = best;
+        }
+    } else if (hubleveltext_pos < best) {
+        hubleveltext_pos += 0.02f;
+        if (hubleveltext_pos > best) {
+            hubleveltext_pos = best;
+        }
+    }
+    if (hubleveltext_pos == 0.0f) {
+        hubleveltext_level = -1;
+    }
+}
+
+extern struct rpos_s *best_cRPos;
+extern float hub_vr_scale;
+extern float hub_vr_newscale;
+extern struct nuvec_s hub_vr_pos;
+extern u16 hub_vr_xrot;
+extern u16 hub_vr_yrot;
+
+void HubMoveVR(void) {
+    struct nuvec_s pos;
+    struct nugspline_s *spl;
+    struct nuvec_s *p0;
+    struct nuvec_s *p1;
+    float t;
+    float scale;
+    float dx;
+    float dy;
+    float dz;
+    u32 across;
+    u32 i;
+    s32 i_spl;
+    u16 xrot;
+    u16 yrot;
+
+    if (hub_vr_level == -1) {
+        hub_vr_scale = hub_vr_newscale = 0.0f;
+    } else if (hub_vr_scale > hub_vr_newscale) {
+        hub_vr_scale -= 0.04f;
+        if (hub_vr_scale < hub_vr_newscale) {
+            hub_vr_scale = hub_vr_newscale;
+        }
+    } else if (hub_vr_scale < hub_vr_newscale) {
+        hub_vr_scale += 0.04f;
+        if (hub_vr_scale > hub_vr_newscale) {
+            hub_vr_scale = hub_vr_newscale;
+        }
+    }
+    if (Hub == -1) {
+        return;
+    }
+    i_spl = HData[Hub].i_spl[0];
+    if (i_spl == -1 || best_cRPos == NULL) {
+        return;
+    }
+    spl = SplTab[i_spl].spl;
+    if (spl == NULL) {
+        return;
+    }
+    across = (s32)(best_cRPos->fACROSS * 262144.0f);
+    i = across >> 16;
+    p0 = (struct nuvec_s *)(spl->pts + (i + 14) * spl->ptsize);
+    pos.x = p0->x;
+    pos.y = p0->y;
+    pos.z = p0->z;
+    if (i < 4) {
+        across &= 0xFFFF;
+        if (across != 0) {
+            p1 = (struct nuvec_s *)(spl->pts + (i + 15) * spl->ptsize);
+            t = across * (1.0f / 65536.0f);
+            pos.x += (p1->x - p0->x) * t;
+            pos.y += (p1->y - p0->y) * t;
+            pos.z += (p1->z - p0->z) * t;
+        }
+    }
+    hub_vr_pos.x += (pos.x - hub_vr_pos.x) * 0.1f;
+    hub_vr_pos.y += (pos.y - hub_vr_pos.y) * 0.1f;
+    hub_vr_pos.z += (pos.z - hub_vr_pos.z) * 0.1f;
+    scale = 0.0f;
+    if (HubLevel_available != 0 && HubLevel >= 0 && HubLevel < 5) {
+        scale = 1.0f;
+    }
+    hub_vr_newscale = scale;
+    dx = player->obj.pos.x - hub_vr_pos.x;
+    dy = player->obj.pos.y + player->obj.top * player->obj.SCALE - hub_vr_pos.y;
+    dz = player->obj.pos.z - hub_vr_pos.z;
+    xrot = panel_head_yrot - NuAtan2D(dy, NuFsqrt(dx * dx + dz * dz));
+    yrot = panel_head_xrot + NuAtan2D(dx, dz);
+    hub_vr_xrot = SeekRot(hub_vr_xrot, xrot, 2);
+    hub_vr_yrot = SeekRot(hub_vr_yrot, yrot, 2);
+}
+
+
+void HubDrawItems(void) {
+    struct objspecial_s *special;
+    struct nugspline_s *spl;
+    struct nuvec_s *p0;
+    struct nuvec_s *p1;
+    s32 level;
+    s32 language;
+    s32 object;
+    s32 character;
+    s32 i;
+    s32 n;
+    s32 k;
+
+    language = 0;
+    if (Game.language != 'c') {
+        language = Game.language;
+    }
+    for (i = 0; i < 6; i++) {
+        if (ObjTab[0x73 + i].obj.special != NULL) {
+            if (GameMode != 1 && i == language) {
+                ObjTab[0x73 + i].obj.special->instance->flags.visible = 1;
+            } else {
+                ObjTab[0x73 + i].obj.special->instance->flags.visible = 0;
+            }
+        }
+    }
+    special = ObjTab[0x79].obj.special;
+    if (special != NULL) {
+        if (GameMode == 1) {
+            special->instance->flags.visible = 1;
+        } else {
+            special->instance->flags.visible = 0;
+        }
+    }
+    if (hub_vr_scale > 0.0f) {
+        n = 0x66;
+        if (hubleveltext_level != -1 && hubleveltext_pos == 0.333f) {
+            n = hubleveltext_level + 0x17;
+        }
+        Draw3DObject(n, &hub_vr_pos, hub_vr_xrot, hub_vr_yrot, 0, hub_vr_scale,
+                     hub_vr_scale, hub_vr_scale, ObjTab[n].obj.scene,
+                     ObjTab[n].obj.special, 0);
+        Draw3DObject(0x16, &hub_vr_pos, hub_vr_xrot, hub_vr_yrot, 0, hub_vr_scale,
+                     hub_vr_scale, hub_vr_scale, ObjTab[0x16].obj.scene,
+                     ObjTab[0x16].obj.special, 0);
+    }
+    for (i = 0; i < 6; i++) {
+        n = HData[i].barrier;
+        if (n != 0xFF && ObjTab[n].obj.special != NULL) {
+            ObjTab[n].obj.special->instance->flags.visible = Game.hub[i].flags ^ 1;
+        }
+        n = HData[i].i_spl[1];
+        if (n == -1) {
+            continue;
+        }
+        spl = SplTab[n].spl;
+        if (spl == NULL) {
+            continue;
+        }
+        for (n = 0; n < 6; n++) {
+            if (i == 5 && n == i) {
+                continue;
+            }
+            if (n == 5) {
+                continue;
+            }
+            for (k = 0; k < 4; k++) {
+                level = HData[i].level[n];
+                if (level == -1) {
+                    continue;
+                }
+                p0 = (struct nuvec_s *)(spl->pts + (n * 8 + k * 2) * spl->ptsize);
+                p1 = (struct nuvec_s *)(spl->pts + (n * 8 + k * 2 + 1) * spl->ptsize);
+                object = -1;
+                character = -1;
+                switch (k) {
+                case 0:
+                    if ((Game.level[level].flags & 0x10) != 0) {
+                        object = 0xC2;
+                    }
+                    break;
+                case 1:
+                    if ((Game.level[level].flags & 8) != 0) {
+                        object = 0xC1;
+                    }
+                    break;
+                case 2:
+                    if ((Game.level[level].flags & 4) != 0) {
+                        object = 1;
+                    } else if ((Game.level[level].flags & 2) != 0) {
+                        object = 2;
+                    } else if ((Game.level[level].flags & 1) != 0) {
+                        object = 3;
+                    }
+                    break;
+                case 3:
+                    if ((Game.level[level].flags & 0x20) != 0) {
+                        object = 0xC3;
+                    } else if ((Game.level[level].flags & 0x40) != 0) {
+                        object = 0xC4;
+                    } else if ((Game.level[level].flags & 0x80) != 0) {
+                        object = 0xC5;
+                    } else if ((Game.level[level].flags & 0x100) != 0) {
+                        object = 0xC6;
+                    } else if ((Game.level[level].flags & 0x200) != 0) {
+                        object = 0xC8;
+                    } else if ((Game.level[level].flags & 0x400) != 0) {
+                        object = 0xC7;
+                    }
+                    break;
+                }
+                if (object != -1) {
+                    if (ObjTab[object].obj.special != NULL) {
+                        Draw3DObject(object, p0, 0, NuAtan2D(p1->x - p0->x, p1->z - p0->z), 0,
+                                     0.77f, 0.77f, 0.77f, ObjTab[object].obj.scene,
+                                     ObjTab[object].obj.special, 0);
+                    }
+                } else if (character != -1) {
+                    if (CRemap[character] != -1) {
+                        Draw3DCharacter(p0, 0, NuAtan2D(p1->x - p0->x, p1->z - p0->z), 0,
+                                        &CModel[CRemap[character]], 0.77f, -1, 1.0f, 0);
+                    }
+                }
+            }
+        }
+    }
+    JonProbe();
+}
+
 extern void NuMtxRotateX(struct numtx_s *m, s32 a);
 extern void NuMtxRotateZ(struct numtx_s *m, s32 a);
 
@@ -4992,25 +5496,104 @@ void LoseMask(struct tobj_s *plr) {
 }
 
 /* vtog_s: stride 0x84 (VTog[i] -> +0x84 in ResetVehicleControl's loop).
- * active +0x0 (lw), type +0x74 (lb), then a packed iRAIL/iALONG/fALONG at
- * +0x75/+0x76/+0x78 -- NOT rpos_s (which is 0x0/0x2/0x8); re-derived from the
- * lb/lh/lwc1 offsets at 0x001DE4D4-0x001DE4E0. */
+ * Fields verified in InitVehicleToggles; iRAIL/iALONG/fALONG are a packed copy
+ * of TempRPos at +0x75/+0x76/+0x78 (NOT an rpos_s). */
 struct vtog_s {
-    s32 active; /* 0x0 */
-    char pad_4[0x74 - 0x4];
-    signed char type; /* 0x74 */
+    struct nugspline_s *spl;  /* 0x0 */
+    struct nugspline_s *cam;  /* 0x4 */
+    struct nugspline_s *look; /* 0x8 */
+    struct numtx_s mtx;       /* 0xC */
+    struct nuvec_s pos;      /* 0x4C */
+    struct animpkt_s anim;   /* 0x58 */
+    signed char type;  /* 0x74 */
     signed char iRAIL; /* 0x75 */
-    short iALONG; /* 0x76 */
-    float fALONG; /* 0x78 */
-    char pad_7C[0x84 - 0x7C];
+    short iALONG;      /* 0x76 */
+    float fALONG;      /* 0x78 */
+    u16 xrot;          /* 0x7C */
+    u16 angle;         /* 0x7E */
+    u16 zrot;          /* 0x80 */
+    char pad_82[0x84 - 0x82];
 };
+
+extern struct vtog_s VTog[];
+extern s32 vtog_action;
+extern struct rpos_s TempRPos;
+extern struct nuvec_s ShadNorm;
+extern u16 temp_xrot;
+extern u16 temp_zrot;
+extern float D_0062D2E8;
+extern char D_0061D7F8[]; /* "vehicle_trigger_%.2i_in" */
+extern char D_0061D810[]; /* "vehicle_trigger_%.2i_out" */
+extern char D_0061D830[]; /* "vehicle_cam_%.2i" */
+extern char D_0061D848[]; /* "vehicle_look_%.2i" */
+extern void GetALONG(struct nuvec_s *pos, struct rpos_s *rpos, s32 iRAIL, s32 iALONG,
+                     s32 dir);
+extern float NewShadowMask(struct nuvec_s *pos, float y, s32 flag);
+extern void FindAnglesZX(struct nuvec_s *norm);
+
+void InitVehicleToggles(void) {
+    struct vtog_s *vt;
+    float y;
+    s32 vehicle;
+    s32 i;
+
+    vehicle = LDATA->vehicle;
+    if (vehicle == 0x44 || vehicle == 0xB2 || vehicle == 0x3B || vehicle == 0x20) {
+        vtog_action = 0x62;
+    } else if (vehicle == -1) {
+        vtog_action = -1;
+    } else {
+        vtog_action = 0x68;
+    }
+    vt = VTog;
+    for (i = 0; i < 6; i++, vt++) {
+        vt->spl = NULL;
+        if (world_scene[0] == NULL) {
+            continue;
+        }
+        sprintf(tbuf, D_0061D7F8, i);
+        vt->spl = NuSplineFind(world_scene[0], tbuf);
+        if (vt->spl != NULL) {
+            vt->type = 0;
+        } else {
+            sprintf(tbuf, D_0061D810, i);
+            vt->spl = NuSplineFind(world_scene[0], tbuf);
+            if (vt->spl == NULL) {
+                continue;
+            }
+            vt->type = 1;
+        }
+        if (vt->spl->len != 3) {
+            vt->spl = NULL;
+            continue;
+        }
+        vt->pos = *(struct nuvec_s *)(vt->spl->pts + vt->spl->ptsize * 2);
+        GetALONG(&vt->pos, NULL, -1, -1, 2);
+        vt->iRAIL = TempRPos.iRAIL;
+        vt->iALONG = TempRPos.iALONG;
+        vt->fALONG = TempRPos.fALONG;
+        vt->angle = TempRPos.angle;
+        if (vt->type != 0 || (LBIT & 0x10080010) == 0) {
+            y = NewShadowMask(&vt->pos, 0.0f, -1);
+            if (y != D_0062D2E8) {
+                vt->pos.y = y;
+                FindAnglesZX(&ShadNorm);
+                vt->xrot = temp_xrot;
+                vt->zrot = temp_zrot;
+            }
+        }
+        sprintf(tbuf, D_0061D830, i);
+        vt->cam = NuSplineFind(world_scene[0], tbuf);
+        sprintf(tbuf, D_0061D848, i);
+        vt->look = NuSplineFind(world_scene[0], tbuf);
+    }
+}
 
 extern s32 FurtherBEHIND(s32 iRAIL0, s32 iALONG0, float fALONG0, s32 iRAIL1,
                          s32 iALONG1, float fALONG1);
-extern struct vtog_s VTog[];
 extern struct vtog_s D_0058AF24[];
-extern s32 vtog_time;
-extern s32 vtog_duration;
+extern float vtog_time;
+extern float vtog_duration;
 
 void ResetVehicleControl(s32 iRAIL, s32 iALONG, float fALONG) {
     struct vtog_s *vt;
@@ -5020,10 +5603,8 @@ void ResetVehicleControl(s32 iRAIL, s32 iALONG, float fALONG) {
 
     hit = Level != 0xF;
     done = 0;
-    i = 0;
-    vt = VTog;
-    do {
-        if (vt->active != 0 &&
+    for (i = 0, vt = VTog; i < 6; i++, vt++) {
+        if (vt->spl != NULL &&
             FurtherALONG(vt->iRAIL, vt->iALONG, vt->fALONG, iRAIL, iALONG,
                          fALONG)) {
             if (Level == 0xF && i >= 2) {
@@ -5035,28 +5616,26 @@ void ResetVehicleControl(s32 iRAIL, s32 iALONG, float fALONG) {
                     }
                     hit = 1;
                 }
-            } else if (!done) {
-                if (vt->type == 1) {
-                    VEHICLECONTROL = 1;
-                } else if ((LBIT & 0x400000040ULL) != 0) {
-                    VEHICLECONTROL = 2;
-                } else {
-                    VEHICLECONTROL = 0;
+            } else {
+                if (!done) {
+                    if (vt->type == 1) {
+                        VEHICLECONTROL = 1;
+                    } else if ((LBIT & 0x400000040ULL) != 0) {
+                        VEHICLECONTROL = 2;
+                    } else {
+                        VEHICLECONTROL = 0;
+                    }
                 }
                 done = 1;
             }
         }
-        i++;
         if (hit && done) {
             goto end;
         }
-        vt++;
-    } while (i < 6);
+    }
 
-    i = 5;
-    vt = D_0058AF24;
-    do {
-        if (vt->active != 0 &&
+    for (i = 5, vt = D_0058AF24; i >= 0; i--, vt--) {
+        if (vt->spl != NULL &&
             FurtherBEHIND(vt->iRAIL, vt->iALONG, vt->fALONG, iRAIL, iALONG,
                           fALONG)) {
             if (Level == 0xF && i >= 2) {
@@ -5068,46 +5647,369 @@ void ResetVehicleControl(s32 iRAIL, s32 iALONG, float fALONG) {
                     }
                     hit = 1;
                 }
-            } else if (!done) {
-                if (vt->type == 1) {
-                    if ((LBIT & 0x400000040ULL) != 0) {
-                        VEHICLECONTROL = 2;
+            } else {
+                if (!done) {
+                    if (vt->type == 1) {
+                        if ((LBIT & 0x400000040ULL) != 0) {
+                            VEHICLECONTROL = 2;
+                        } else {
+                            VEHICLECONTROL = 0;
+                        }
                     } else {
-                        VEHICLECONTROL = 0;
+                        VEHICLECONTROL = 1;
                     }
-                } else {
-                    VEHICLECONTROL = 1;
                 }
                 done = 1;
             }
         }
-        i--;
         if (hit && done) {
             goto end;
         }
-        vt--;
-    } while (i >= 0);
+    }
 
 end:
-    vtog_time = 0;
-    vtog_duration = 0;
+    vtog_time = 0.0f;
+    vtog_duration = 0.0f;
+}
+
+/* CData entry, stride 0x34 */
+struct chardata_s {
+    char pad_0[0x14];
+    struct nuvec_s min; /* 0x14 */
+    struct nuvec_s max; /* 0x20 */
+    float scale;        /* 0x2C */
+    float shadow_scale; /* 0x30 */
+};
+
+extern struct chardata_s CData[];
+extern struct numtx_s mTEMP;
+extern struct nuvec_s AshesMechInPos;
+extern struct vtog_s *pVTog;
+extern s32 vtog_blend;
+extern u16 vtog_angle;
+extern float D_0062D2FC;
+extern float NewShadow(struct nuvec_s *pos, float y);
+extern void NuMtxSetRotationY(struct numtx_s *m, s32 ang);
+extern s32 DrawCharacterModel(struct cmodel_s *model, struct animpkt_s *anim,
+                              struct numtx_s *mC, struct numtx_s *mS, s32 render,
+                              struct numtx_s *mR, struct numtx_s *loc_mtx,
+                              struct nuvec_s *loc_mom, void *obj);
+
+extern struct nuvec_s vtog_oldpos;
+extern struct nuvec_s vtog_newpos;
+extern struct nuvec_s AshesMechOutPos;
+extern float AshesMechInZ;
+extern float AshesMechOutZ;
+extern float D_0062D2EC;
+extern float D_0062D2F0;
+extern float D_0062D2F4;
+extern float D_0062D2F8;
+extern void ResetPlayerMoves(struct bcreature_s *c);
+extern void AddMechanicalDebris(struct nuvec_s *pos, s32 vehicle);
+extern void BlendGameCamera(struct gamecam_s *cam, float t);
+extern void JudderGameCamera(struct gamecam_s *cam, struct nuvec_s *pos, float amt);
+
+void ToggleVehicle(struct bcreature_s *c) {
+    struct nuvec_s p0;
+    struct nuvec_s p1;
+    struct nuvec_s oldpos;
+    struct nuvec_s newpos;
+    struct nuvec_s pos;
+    struct vtog_s *vt;
+    struct nugspline_s *spl;
+    struct nuvec_s *pt0;
+    struct nuvec_s *pt1;
+    float y;
+    s32 mirror;
+    s32 oldside;
+    s32 newside;
+    s32 i;
+
+    if (c->obj.dead != 0) {
+        return;
+    }
+    mirror = 0;
+    if (Level == 6 || Level == 0x22) {
+        mirror = 1;
+    }
+    if (mirror) {
+        oldpos.x = -c->obj.oldpos.y;
+        oldpos.y = c->obj.oldpos.x;
+        oldpos.z = c->obj.oldpos.z;
+        newpos.x = -c->obj.pos.y;
+        newpos.y = c->obj.pos.x;
+        newpos.z = c->obj.pos.z;
+    } else {
+        oldpos = c->obj.oldpos;
+        newpos = c->obj.pos;
+    }
+    if (Level == 0x16) {
+        if (VEHICLECONTROL == 0 && oldpos.z >= AshesMechInZ && newpos.z < AshesMechInZ) {
+            VEHICLECONTROL = 1;
+            vtog_oldpos = c->obj.pos;
+            ResetPlayerMoves(c);
+            vtog_time = 0.0f;
+            vtog_duration = 1.0f;
+            vtog_newpos = AshesMechInPos;
+            y = NewShadow(&vtog_newpos, vtog_time);
+            if (y != D_0062D2EC) {
+                vtog_newpos.y = y - c->obj.bot * c->obj.SCALE;
+            }
+            vtog_blend = 1;
+            vtog_angle = 0;
+            pVTog = NULL;
+            AddGameDebris(0x10, &c->obj.pos);
+            AddGameDebris(0x11, &c->obj.pos);
+            GameSfx(0x2F, &c->obj.pos);
+            return;
+        }
+        if (VEHICLECONTROL == 1 && oldpos.z < AshesMechOutZ && AshesMechOutZ <= newpos.z) {
+            VEHICLECONTROL = 0;
+            vtog_oldpos = c->obj.pos;
+            ResetPlayerMoves(c);
+            vtog_time = 0.0f;
+            vtog_duration = 1.0f;
+            vtog_newpos = AshesMechOutPos;
+            y = NewShadow(&vtog_newpos, vtog_time);
+            if (y != D_0062D2F0) {
+                vtog_newpos.y = y - c->obj.bot * c->obj.SCALE;
+            }
+            vtog_blend = 1;
+            vtog_angle = 0;
+            pVTog = NULL;
+            AddGameDebris(0x10, &c->obj.pos);
+            AddGameDebris(0x11, &c->obj.pos);
+            GameSfx(0x2F, &c->obj.pos);
+            pos.x = c->obj.pos.x;
+            pos.y = c->obj.pos.y + (c->obj.bot + c->obj.top) * c->obj.SCALE * 0.5f;
+            pos.z = c->obj.pos.z;
+            AddMechanicalDebris(&pos, 0xB2);
+            GameSfx(0x3B, &c->obj.pos);
+            JudderGameCamera(&GameCam, NULL, D_0062D2F4);
+            return;
+        }
+    }
+    for (i = 0, vt = VTog; i < 6; i++, vt++) {
+        spl = vt->spl;
+        if (spl == NULL) {
+            continue;
+        }
+        if (Level != 0xF || i < 2) {
+            if (vt->type == 0 && VEHICLECONTROL == 1) {
+                continue;
+            }
+            if (vt->type == 1 && VEHICLECONTROL != 1) {
+                continue;
+            }
+        }
+        pt0 = (struct nuvec_s *)spl->pts;
+        pt1 = (struct nuvec_s *)(spl->pts + spl->ptsize);
+        if (mirror) {
+            p0.x = -pt0->y;
+            p0.y = pt0->x;
+            p0.z = pt0->z;
+            p1.x = -pt1->y;
+            p1.y = pt1->x;
+            p1.z = pt1->z;
+        } else {
+            p0 = *pt0;
+            p1 = *pt1;
+        }
+        oldside = (oldpos.x - p0.x) * (p1.z - p0.z) + (oldpos.z - p0.z) * (p0.x - p1.x) >= 0.0f;
+        newside = (newpos.x - p0.x) * (p1.z - p0.z) + (newpos.z - p0.z) * (p0.x - p1.x) >= 0.0f;
+        if (oldside && !newside &&
+            (newpos.x - oldpos.x) * (p0.z - oldpos.z) + (newpos.z - oldpos.z) * (oldpos.x - p0.x) >= 0.0f &&
+            (newpos.x - p1.x) * (oldpos.z - p1.z) + (newpos.z - p1.z) * (p1.x - oldpos.x) >= 0.0f) {
+            if (Level == 0xF && i >= 2) {
+                if (vt->type == 0) {
+                    SKELETALCRASH = 1;
+                    GameSfx(0x1E, NULL);
+                } else {
+                    SKELETALCRASH = 0;
+                    GameSfx(0x21, NULL);
+                }
+                return;
+            }
+            vtog_oldpos = c->obj.pos;
+            if (vt->type == 0) {
+                VEHICLECONTROL = 1;
+            } else if ((LBIT & 0x400000040ULL) != 0) {
+                VEHICLECONTROL = 2;
+            } else {
+                VEHICLECONTROL = 0;
+            }
+            ResetPlayerMoves(c);
+            vtog_newpos.x = vt->pos.x;
+            vtog_newpos.y = vt->pos.y - c->obj.bot * c->obj.SCALE;
+            vtog_duration = 1.0f;
+            vtog_newpos.z = vt->pos.z;
+            vtog_time = 0.0f;
+            if (mirror && pos_START != NULL) {
+                vtog_newpos.x = pos_START->x;
+            }
+            vtog_blend = 1;
+            vt->mtx = c->obj.mtx;
+            if (vt->type == 0) {
+                ResetAnimPacket(&vt->anim, vtog_action);
+            } else {
+                vt->anim = c->obj.anim;
+            }
+            if (c->obj.vehicle == 0xA1) {
+                BlendGameCamera(&GameCam, 1.0f);
+            } else if (vt->cam != NULL && vtog_blend != 0) {
+                GameCam.mode = -1;
+            }
+            if (vt->type == 0) {
+                AddGameDebris(0x10, &c->obj.pos);
+                AddGameDebris(0x11, &c->obj.pos);
+                GameSfx(0x2F, &c->obj.pos);
+                if (Level == 4) {
+                    c->obj.f185 = 0;
+                }
+            } else {
+                AddGameDebris(0x10, &c->obj.pos);
+                AddGameDebris(0x11, &c->obj.pos);
+                GameSfx(0x2F, &c->obj.pos);
+                pos.x = c->obj.pos.x;
+                pos.y = c->obj.pos.y + (c->obj.bot + c->obj.top) * c->obj.SCALE * 0.5f;
+                pos.z = c->obj.pos.z;
+                switch (c->obj.vehicle) {
+                case 0x3B:
+                case 0x44:
+                case 0x63:
+                case 0x99:
+                case 0xB2:
+                    GameSfx(0x69, &pos);
+                    AddMechanicalDebris(&pos, c->obj.vehicle);
+                    break;
+                case 0x20:
+                    AddMechanicalDebris(&pos, 0x20);
+                    break;
+                }
+                GameSfx(0x3B, &c->obj.pos);
+                JudderGameCamera(&GameCam, NULL, D_0062D2F8);
+            }
+            pVTog = vt;
+            vtog_angle = vt->angle;
+            return;
+        }
+        if (!oldside && newside &&
+            (newpos.x - oldpos.x) * (p1.z - oldpos.z) + (newpos.z - oldpos.z) * (oldpos.x - p1.x) >= 0.0f &&
+            (newpos.x - p0.x) * (oldpos.z - p0.z) + (newpos.z - p0.z) * (p0.x - oldpos.x) >= 0.0f) {
+            if (Level == 0xF && i >= 2) {
+                if (vt->type == 0) {
+                    SKELETALCRASH = 0;
+                    GameSfx(0x21, NULL);
+                } else {
+                    SKELETALCRASH = 1;
+                    GameSfx(0x1E, NULL);
+                }
+            }
+            return;
+        }
+    }
+}
+
+void DrawNextVehicle(s32 render) {
+    struct nuvec_s pos;
+    struct animpkt_s anim;
+    struct cmodel_s *model;
+    struct vtog_s *vt;
+    float y;
+    s32 vehicle;
+    s32 i;
+
+    vehicle = player->obj.vehicle;
+    if (vehicle == -1) {
+        return;
+    }
+    i = CRemap[vehicle];
+    if (i == -1) {
+        return;
+    }
+    model = &CModel[i];
+    if (Level == 0x16 && (VEHICLECONTROL == 0 || vtog_time < vtog_duration)) {
+        pos = AshesMechInPos;
+        y = NewShadow(&pos, 0.0f);
+        if (y != D_0062D2FC) {
+            pos.y = y;
+            FindAnglesZX(&ShadNorm);
+        } else {
+            temp_zrot = 0;
+            temp_xrot = 0;
+        }
+        NuMtxSetRotationY(&mTEMP, vtog_angle + 0x8000);
+        NuMtxRotateZ(&mTEMP, temp_zrot);
+        NuMtxRotateX(&mTEMP, temp_xrot);
+        NuMtxTranslate(&mTEMP, &pos);
+        ResetAnimPacket(&anim, 0x62);
+        DrawCharacterModel(model, &anim, &mTEMP, NULL, render, NULL, NULL, NULL, NULL);
+    }
+    for (i = 0, vt = VTog; i < 6; i++, vt++) {
+        if (Level == 0xF && i >= 2) {
+            continue;
+        }
+        if ((vtog_time < vtog_duration && vtog_blend != 0 && vt == pVTog) ||
+            (best_cRPos != NULL && VEHICLECONTROL != 1 && vt->spl != NULL &&
+             FurtherALONG(vt->iRAIL, vt->iALONG, vt->fALONG, best_cRPos->iRAIL,
+                          best_cRPos->iALONG, best_cRPos->fALONG))) {
+            if (vt->type != 0) {
+                return;
+            }
+            NuMtxSetIdentity(&mTEMP);
+            NuMtxRotateY(&mTEMP, vt->angle + 0x8000);
+            NuMtxRotateZ(&mTEMP, vt->zrot);
+            NuMtxRotateX(&mTEMP, vt->xrot);
+            pos.x = vt->pos.x;
+            pos.y = vt->pos.y - CData[vehicle].min.y * CData[vehicle].scale;
+            pos.z = vt->pos.z;
+            NuMtxTranslate(&mTEMP, &vt->pos);
+            ResetAnimPacket(&vt->anim, vtog_action);
+            DrawCharacterModel(model, &vt->anim, &mTEMP, NULL, render, NULL, NULL, NULL,
+                               NULL);
+            return;
+        }
+    }
 }
 
 extern void JudderGameCamera(struct gamecam_s *cam, struct nuvec_s *pos, float amt);
 
 /* Only the fields AddKaboom reads are known (lhu 0x5A / lhu 0x14). */
-struct crate_s {
-    char pad_0[0x5A];
-    u16 f5A; /* 0x5A */
+/* CrateCube subset, stride 0x90 */
+struct cratecube_s {
+    char pad_0[0x10];
+    struct nuvec_s pos;   /* 0x10 */
+    char pad_1c[0x30 - 0x1C];
+    signed char on;       /* 0x30 */
+    char pad_31[0x3C - 0x31];
+    signed char type3;    /* 0x3C */
+    char pad_3d;
+    signed char newtype;  /* 0x3E */
+    char pad_3f[0x42 - 0x3F];
+    signed char appeared; /* 0x42 */
+    char pad_43[0x56 - 0x43];
+    short trigger;        /* 0x56 */
+    char pad_58[0x5A - 0x58];
+    u16 index;            /* 0x5A */
+    char pad_5c[0x76 - 0x5C];
+    short action;         /* 0x76 */
+    char pad_78[0x90 - 0x78];
 };
 
-struct group_s {
-    char pad_0[0x14];
-    u16 f14; /* 0x14 */
+/* CrateCubeGroup, stride 0x30 */
+struct crategroup_s {
+    struct nuvec_s origin;  /* 0x0 */
+    float radius;           /* 0xC */
+    short iCrate;           /* 0x10 */
+    short nCrates;          /* 0x12 */
+    u16 angle;              /* 0x14 */
+    char pad_16[2];
+    struct nuvec_s minclip; /* 0x18 */
+    struct nuvec_s maxclip; /* 0x24 */
 };
 
-extern struct crate_s *temp_pCrate;
-extern struct group_s *temp_pGroup;
+extern struct cratecube_s *temp_pCrate;
+extern struct crategroup_s *temp_pGroup;
 
 void AddKaboom(s32 type, struct nuvec_s *pos, float t) {
     struct kaboom_s *k;
@@ -5116,7 +6018,7 @@ void AddKaboom(s32 type, struct nuvec_s *pos, float t) {
 
     k = &Kaboom[i_kaboom];
     sfx = -1;
-    k->f18 = 0;
+    k->time = 0.0f;
     k->type = type;
     k->pos = *pos;
 
@@ -5160,20 +6062,612 @@ void AddKaboom(s32 type, struct nuvec_s *pos, float t) {
         k->t0 = 0.0f;
         k->t1 = 50.0f;
         rate = 15.0f;
-        k->crate = temp_pCrate->f5A;
-        k->group = temp_pGroup->f14;
+        k->crate = temp_pCrate->index;
+        k->group = temp_pGroup->angle;
         break;
     }
 
     if (0.0f < t) {
         k->t1 = t;
     }
-    k->rate = (k->t1 - k->t0) / rate;
+    k->duration = (k->t1 - k->t0) / rate;
     i_kaboom++;
     if (i_kaboom == 0x48) {
         i_kaboom = 0;
     }
     if (sfx != -1) {
         GameSfx(sfx, &k->pos);
+    }
+}
+
+extern struct crategroup_s CrateGroup[];
+extern struct cratecube_s Crate[];
+extern s32 CRATEGROUPCOUNT;
+extern float CRATEHOPSPEED;
+extern struct tobj_s *pObj[64];
+extern float D_0062D314; /* kaboom time step */
+extern s32 GetCrateType(struct cratecube_s *crate, s32 flags);
+extern s32 NewCrateAnimation(struct cratecube_s *crate, s32 character, s32 action, s32 flag);
+extern s32 CrateOff(struct crategroup_s *group, struct cratecube_s *crate, s32 type, s32 b);
+extern void StartExclamationCrateSequence(struct crategroup_s *group, struct cratecube_s *crate);
+extern void DestroyAllNitroCrates(struct crategroup_s *group, struct cratecube_s *crate);
+extern void HopCratesAbove(float speed, struct crategroup_s *group, struct cratecube_s *crate);
+extern s32 KillPlayer(struct tobj_s *obj, s32 anim);
+extern void PickupItem(struct tobj_s *obj);
+extern void FlyGameObject(struct tobj_s *obj, u16 yrot);
+extern s32 KillGameObject(struct tobj_s *obj, s32 anim);
+
+void UpdateKabooms(void) {
+    struct nuvec_s pos;
+    struct nuvec_s d;
+    s32 key;
+    struct kaboom_s *k;
+    struct crategroup_s *group;
+    struct cratecube_s *crate;
+    struct tobj_s *obj;
+    struct wumpa_s *wumpa;
+    float r;
+    float r2;
+    s32 type;
+    s32 i;
+    s32 j;
+    s32 n;
+
+    k = Kaboom;
+    for (i = 0; i < 0x48; i++, k++) {
+        if (!(k->time < k->duration)) {
+            continue;
+        }
+        if ((k->type & 0x40) != 0) {
+            continue;
+        }
+        r = k->t0 + (k->t1 - k->t0) * (k->time / k->duration);
+        r2 = r * r;
+        group = CrateGroup;
+        for (j = 0; j < CRATEGROUPCOUNT; j++, group++) {
+            if (k->pos.x < group->minclip.x - r || group->maxclip.x + r < k->pos.x ||
+                k->pos.z < group->minclip.z - r || group->maxclip.z + r < k->pos.z ||
+                k->pos.y < group->minclip.y - r || group->maxclip.y + r < k->pos.y) {
+                continue;
+            }
+            crate = &Crate[group->iCrate];
+            for (n = 0; n < group->nCrates; n++, crate++) {
+                if (crate->on == 0) {
+                    continue;
+                }
+                type = GetCrateType(crate, 0);
+                if (type == 0x13 && (k->type & 0xC) == 0) {
+                    NewCrateAnimation(crate, 0x13, 0x58, 0);
+                    GameSfx(0x39, &crate->pos);
+                    continue;
+                }
+                if (!((k->type == 0x20 && type == 0 && crate->type3 != -1 && k->crate != -1 &&
+                       crate->trigger == k->crate) ||
+                      (k->type != 0x20 && type != 0))) {
+                    continue;
+                }
+                pos.x = crate->pos.x;
+                pos.y = crate->pos.y + 0.25f;
+                pos.z = crate->pos.z;
+                NuVecSub(&d, &k->pos, &pos);
+                if (!(d.x * d.x + d.y * d.y + d.z * d.z < r2)) {
+                    continue;
+                }
+                if (k->type == 0x20) {
+                    crate->newtype = crate->type3;
+                    if (crate->type3 == 3) {
+                        NewCrateAnimation(crate, 3, 0x22, 1);
+                    }
+                    if (crate->newtype != 0) {
+                        crate->appeared = 1;
+                    }
+                } else if (type == 0xE) {
+                    if (crate->action == -1 && NewCrateAnimation(crate, 0xE, 0x35, 0) == 0) {
+                        StartExclamationCrateSequence(group, crate);
+                    }
+                } else if (type == 0x11) {
+                    if (crate->action == -1 && NewCrateAnimation(crate, 0x11, 0x35, 0) == 0) {
+                        DestroyAllNitroCrates(group, crate);
+                    }
+                } else if (CrateOff(group, crate, k->type, 0) != 0) {
+                    HopCratesAbove(CRATEHOPSPEED, group, crate);
+                }
+            }
+        }
+        if (k->type != 0x20) {
+            for (j = 0; j < 64; j++) {
+                obj = pObj[j];
+                if (obj == NULL || obj->dead != 0 || obj->invincible != 0) {
+                    continue;
+                }
+                if ((obj->flags & 1) != 0 && (k->type & 0x18C) != 0) {
+                    continue;
+                }
+                if ((obj->flags & 4) != 0) {
+                    if ((k->type & 0x10) != 0) {
+                        continue;
+                    }
+                    if (k->type == 4 && (obj->kaboom_mask & 4) == 0) {
+                        continue;
+                    }
+                    if (k->type == 8 && (obj->kaboom_mask & 8) == 0) {
+                        continue;
+                    }
+                }
+                if ((obj->flags & 0x10) != 0 && (k->type & 0xC) == 0) {
+                    continue;
+                }
+                if ((obj->flags & 8) != 0) {
+                    continue;
+                }
+                pos.x = obj->pos.x;
+                pos.y = obj->pos.y + (obj->bot + obj->top) * obj->SCALE * 0.5f;
+                pos.z = obj->pos.z;
+                NuVecSub(&d, &pos, &k->pos);
+                if (!(d.x * d.x + d.y * d.y + d.z * d.z < r2)) {
+                    continue;
+                }
+                if ((obj->flags & 1) != 0) {
+                    KillPlayer(obj, 6);
+                } else if ((obj->flags & 0x10) != 0) {
+                    PickupItem(obj);
+                } else if ((obj->flags & 0x40004) == 0x40004) {
+                    obj->exploded = 1;
+                } else {
+                    FlyGameObject(obj, NuAtan2D(d.x, d.z));
+                    KillGameObject(obj, 1);
+                }
+            }
+            if (k->type != 0x20 && TimeTrial == 0) {
+                wumpa = Wumpa;
+                for (j = 0; j < 320; j++, wumpa++) {
+                    if (wumpa->field_40 != 2 &&
+                        (wumpa->field_40 != 1 || (k->type & 0xC) != 0)) {
+                        continue;
+                    }
+                    NuVecSub(&d, &k->pos, &wumpa->pos);
+                    if (!(d.x * d.x + d.y * d.y + d.z * d.z < r2)) {
+                        continue;
+                    }
+                    if ((k->type & 0xC) != 0) {
+                        if (player->obj.dead == 0) {
+                            AddScreenWumpa(wumpa->pos.x, wumpa->pos.y, wumpa->pos.z, 1);
+                        }
+                        wumpa->field_40 = 0;
+                        key = -1;
+                        AddFiniteShotDebrisEffect(&key, GDeb[520], &wumpa->pos, 1);
+                    } else {
+                        FlyWumpa(wumpa);
+                    }
+                }
+            }
+        }
+        k->time += D_0062D314;
+        if (k->time > k->duration) {
+            k->time = k->duration;
+        }
+    }
+}
+
+void DrawKabooms(void) {
+    struct nuvec_s scale;
+    struct kaboom_s *k;
+    float r;
+    u16 ang;
+    s32 nextang;
+    s32 object;
+    s32 i;
+    s32 j;
+
+    k = Kaboom;
+    for (i = 0; i < 0x48; i++, k++) {
+        if (!(k->time < k->duration)) {
+            continue;
+        }
+        if ((k->type & 0x181) != 0) {
+            object = 0xB;
+        } else if ((k->type & 2) != 0) {
+            object = 0xC;
+        } else if ((k->type & 0x1C) != 0) {
+            object = 0xD;
+        } else if ((k->type & 0x60) != 0) {
+            object = 0xF;
+        } else {
+            continue;
+        }
+        if (ObjTab[object].obj.special == NULL) {
+            continue;
+        }
+        if (object == 0xF) {
+            scale.x = scale.y = scale.z = (k->duration - k->time) / k->duration;
+            r = k->t0 + (k->t1 - k->t0) * (k->time / k->duration);
+            ang = k->group;
+            for (j = 0; j < 4; j++) {
+                NuMtxSetScale(&mTEMP, &scale);
+                nextang = ang + 0x4000;
+                NuMtxRotateY(&mTEMP, ang);
+                mTEMP.m[3][0] = k->pos.x + NuTrigTable[ang] * r;
+                mTEMP.m[3][1] = k->pos.y;
+                mTEMP.m[3][2] = k->pos.z + NuTrigTable[nextang & 0xFFFF] * r;
+                NuRndrGScnObj(ObjTab[object].obj.scene->gobjs[ObjTab[object].obj.special->instance->objid],
+                              &mTEMP);
+                ang = nextang;
+            }
+        } else {
+            scale.x = scale.y = scale.z =
+                k->t0 + (k->t1 - k->t0) * (k->time / k->duration);
+            NuMtxSetScale(&mTEMP, &scale);
+            NuMtxTranslate(&mTEMP, &k->pos);
+            NuRndrGScnObj(ObjTab[object].obj.scene->gobjs[ObjTab[object].obj.special->instance->objid],
+                          &mTEMP);
+        }
+    }
+}
+
+/* race opponent state (OppTub/PlrTub) */
+struct tubinfo_s {
+    void *c;            /* 0x0 */
+    s8 track;           /* 0x4 */
+    s8 count;           /* 0x5 */
+    u8 wait;            /* 0x6 */
+    s8 laps;            /* 0x7 */
+    float time;         /* 0x8 */
+    float duration;     /* 0xC */
+    float lap_position; /* 0x10 */
+    s8 place;           /* 0x14 */
+};
+
+extern struct tubinfo_s PlrTub;
+extern struct nuvec_s finish_newpos;
+extern struct nuvec_s finish_oldpos;
+extern s32 finish_type;
+extern float FINISHRADIUSLEVEL;
+extern float FlyingLevelCompleteTimer;
+extern s32 ChrisBigBossDead;
+extern s32 SmokeyFinished;
+extern s32 SmokeyPosition;
+extern s32 MAXLAPS;
+extern s32 i_ring;
+extern s32 RINGCOUNT;
+extern s32 carpet_place;
+extern s32 DESTRUCTIBLECRATECOUNT;
+extern float TT_RELICX;
+extern float TT_RELICY;
+extern float D_0062D318;
+extern float FindNearestCreature(struct nuvec_s *pos, s32 type, struct nuvec_s *out);
+extern s32 GetCurrentLevelObjectives(void);
+extern void PickupCrateGem(void);
+extern void PickupCrystal(void);
+extern void PickupBonusGem(s32 mask);
+extern void PickupPower(s32 type);
+
+void CheckFinish(struct tobj_s *obj) {
+    struct nuvec_s pos;
+    struct nuvec_s nearest;
+    float dist;
+    u16 lev_flags;
+    s32 hub_flags;
+
+    if (Level == 0x25 || obj->dead != 0 || Hub == -1) {
+        return;
+    }
+    pos.x = obj->pos.x;
+    pos.y = obj->pos.y + (obj->bot + obj->top) * obj->SCALE * 0.5f;
+    pos.z = obj->pos.z;
+    if (obj->finished == 0) {
+        hub_flags = Game.hub[Hub].flags;
+        lev_flags = Game.level[Level].flags;
+        new_hub_flags = 0;
+        new_lev_flags = 0;
+        finish_type = 0;
+        switch (Level) {
+        default:
+            if (Level == 0x24) {
+                if (GetCurrentLevelObjectives() == 0) {
+                    VEHICLECONTROL = 0;
+                    ResetPlayer(1);
+                    level_part_2 = 0;
+                }
+                return;
+            }
+            pos.y += 0.5f;
+            dist = FindNearestCreature(&pos, 0xB1, &nearest);
+            if (FINISHRADIUSLEVEL * FINISHRADIUSLEVEL < dist) {
+                in_finish_range = 0;
+                return;
+            }
+            in_finish_pos = nearest;
+            finish_newpos = nearest;
+            in_finish_range = 50;
+            finish_oldpos = obj->pos;
+            finish_type = 1;
+            finish_frames = 50;
+            break;
+
+        case 0xD:
+        case 0x12:
+        case 0x1A:
+            if (TimeTrial == 0 && (Game.level[Level].flags & 0x10) == 0 &&
+                (plr_items & 2) == 0 && plr_crates.count >= DESTRUCTIBLECRATECOUNT) {
+                PickupCrateGem();
+            }
+            if (FlyingLevelCompleteTimer != 0.0f) {
+                return;
+            }
+            finish_newpos = obj->pos;
+            if ((Game.level[Level].flags & 8) == 0) {
+                PickupCrystal();
+            }
+            finish_frames = 50;
+            break;
+        case 0x15:
+        case 0x16:
+        case 0x17:
+        case 0x18:
+        case 0x19:
+            if ((Level == 0x18 || Level == 0x16 || Level == 0x15) && ChrisBigBossDead == 0) {
+            } else if (Level != 0x19 && Level != 0x17 && GetCurrentLevelObjectives() == 0) {
+                if ((Game.hub[Hub].flags & 4) == 0) {
+                    if (boss_dead <= 0) {
+                        boss_dead = 1;
+                        if (Level == 0x18) {
+                            PickupPower(0xA2);
+                        }
+                    }
+                } else {
+                    boss_dead = 2;
+                }
+            }
+            if (boss_dead < 2) {
+                return;
+            }
+            if (((struct cursor_s *)Cursor)->menu != -1) {
+                return;
+            }
+            in_finish_range++;
+            if (in_finish_range < 50) {
+                return;
+            }
+            finish_newpos = obj->pos;
+            finish_frames = 50;
+            if ((Game.hub[Hub].flags & 6) == 2) {
+                Game.hub[Hub].flags |= 4;
+                Game.hub[Hub + 1].flags |= 1;
+            }
+            break;
+        case 0x24:
+            if (TimeTrial == 0 && (Game.level[Level].flags & 0x10) == 0 &&
+                (plr_items & 2) == 0 && plr_crates.count >= DESTRUCTIBLECRATECOUNT) {
+                PickupCrateGem();
+            }
+            return;
+        case 0x3:
+            if (TimeTrial == 0 && (Game.level[Level].flags & 0x10) == 0 &&
+                (plr_items & 2) == 0 && plr_crates.count >= DESTRUCTIBLECRATECOUNT) {
+                PickupCrateGem();
+            }
+            if (SmokeyFinished == 0) {
+                return;
+            }
+            if (in_finish_range == 0) {
+                GameSfx(0x69, &player->obj.pos);
+            }
+            if (TimeTrial == 0 && SmokeyPosition == 1 && (Game.level[Level].flags & 8) == 0 &&
+                (plr_items & 1) == 0) {
+                PickupCrystal();
+            }
+            in_finish_range++;
+            if (in_finish_range < 50) {
+                return;
+            }
+            finish_newpos = obj->pos;
+            finish_frames = 50;
+            break;
+        case 0x1C:
+            if (TimeTrial == 0 && (Game.level[Level].flags & 0x10) == 0 &&
+                (plr_items & 2) == 0 && plr_crates.count >= DESTRUCTIBLECRATECOUNT) {
+                PickupCrateGem();
+            }
+            if (PlrTub.laps < MAXLAPS) {
+                return;
+            }
+            in_finish_range++;
+            if (in_finish_range < 50) {
+                return;
+            }
+            finish_newpos = obj->pos;
+            if (TimeTrial == 0 && PlrTub.place == 1 && (Game.level[Level].flags & 0x20) == 0) {
+                PickupBonusGem(4);
+            }
+            finish_frames = 50;
+            break;
+        case 0x1D:
+            if (TimeTrial == 0 && (Game.level[Level].flags & 0x10) == 0 &&
+                (plr_items & 2) == 0 && plr_crates.count >= DESTRUCTIBLECRATECOUNT) {
+                PickupCrateGem();
+            }
+            if (i_ring < RINGCOUNT) {
+                return;
+            }
+            in_finish_range++;
+            if (in_finish_range < 50) {
+                return;
+            }
+            finish_newpos = obj->pos;
+            if (TimeTrial == 0 && carpet_place == 2 && (Game.level[Level].flags & 0x20) == 0) {
+                PickupBonusGem(4);
+            }
+            finish_frames = 50;
+            break;
+        }
+        if ((Level == 3 && SmokeyPosition >= 2) || (Level == 0x1D && carpet_place == 1) ||
+            (Level == 0x1C && PlrTub.place >= 2)) {
+            obj->finished = 2;
+        } else {
+            obj->finished = 1;
+        }
+        AddWarpDebris(obj, NULL);
+        gamesfx_effect_volume = 0x7FFE;
+        GameSfx(0x1E, &obj->pos);
+        if ((plr_items & 1) != 0) {
+            Game.level[Level].flags |= 8;
+            if (Game.hub[Hub].crystals < 5) {
+                Game.hub[Hub].crystals++;
+                if (Game.hub[Hub].crystals == 5) {
+                    Game.hub[Hub].flags |= 2;
+                }
+            }
+        }
+        if ((LBIT & 0x3E00000) != 0) {
+            Game.level[Level].flags |= 0x800;
+        } else if (TimeTrial != 0) {
+            if (obj->finished == 1) {
+                NewLevelTime(TimeTrialTimer.itime);
+                if (TimeTrialTimer.itime < LDATA->time[2]) {
+                    Game.level[Level].flags |= 7;
+                } else if (TimeTrialTimer.itime < LDATA->time[1]) {
+                    Game.level[Level].flags |= 3;
+                } else if (TimeTrialTimer.itime < LDATA->time[0]) {
+                    Game.level[Level].flags |= 1;
+                }
+                if (finish_frames < 0x96) {
+                    finish_frames = 0x96;
+                }
+            } else {
+                finish_frames = 50;
+            }
+        } else {
+            if ((plr_items & 2) != 0) {
+                Game.level[Level].flags |= 0x10;
+            }
+            if ((plr_items & 4) != 0) {
+                Game.level[Level].flags |= 0x20;
+            }
+            if ((plr_items & 8) != 0) {
+                Game.level[Level].flags |= 0x40;
+            }
+            if ((plr_items & 0x20) != 0) {
+                Game.level[Level].flags |= 0x80;
+            }
+            if ((plr_items & 0x10) != 0) {
+                Game.level[Level].flags |= 0x100;
+            }
+            if ((plr_items & 0x40) != 0) {
+                Game.level[Level].flags |= 0x200;
+            }
+            if ((plr_items & 0x80) != 0) {
+                Game.level[Level].flags |= 0x400;
+            }
+        }
+        new_hub_flags = Game.hub[Hub].flags ^ hub_flags;
+        new_lev_flags = Game.level[Level].flags ^ lev_flags;
+        Game.level[Level].flags ^= new_lev_flags;
+        if (obj->finished == 0) {
+            return;
+        }
+    }
+    finish_frame++;
+    if (finish_frame != finish_frames) {
+        return;
+    }
+    if (obj->finished == 1) {
+        if ((LBIT & 0x3E00000) != 0 && (new_lev_flags & 0x800) != 0) {
+            new_lev_flags ^= 0x800;
+            Game.level[Level].flags |= 0x800;
+        }
+        if (TimeTrial != 0) {
+            if (newleveltime_slot < 3) {
+                if ((new_lev_flags & 7) != 0) {
+                    GameSfx(0x26, NULL);
+                    AddPanelDebris(TT_RELICX, TT_RELICY, 6, 0.125f, 0x10);
+                }
+                NewMenu((struct cursor_s *)Cursor, 0xF, 0, -1);
+            } else {
+                NewMenu((struct cursor_s *)Cursor, 0xE, 0, -1);
+            }
+            JudderGameCamera(&GameCam, NULL, D_0062D318);
+            GameSfx(0x3C, NULL);
+            return;
+        }
+        if (Level == 0x19) {
+            CalculateGamePercentage(&Game);
+            if (Game.gems >= 0x2E) {
+                cutmovie = 4;
+                Game.cutbits |= 0x10000000;
+            } else {
+                cutmovie = 3;
+                Game.cutbits |= 0x8000000;
+            }
+            new_level = 0x2B;
+        } else {
+            new_level = 0x25;
+        }
+        return;
+    }
+    if (TimeTrial != 0) {
+        NewMenu((struct cursor_s *)Cursor, 0xE, 0, -1);
+        return;
+    }
+    if ((Level == 0x1C || Level == 0x1D || Level == 3) && new_lev_flags == 0) {
+        NewMenu((struct cursor_s *)Cursor, 0x10, 0, -1);
+        return;
+    }
+    new_level = 0x25;
+}
+
+/* Font3DTab entry, stride 0x10 */
+struct font3d_s {
+    char pad_0[0x8];
+    struct objspecial_s *special; /* 0x8 */
+    char pad_c[0x10 - 0xC];
+};
+
+extern struct font3d_s Font3DTab[];
+extern s8 Font3DRemap[];
+extern struct nugscn_s *font3d_scene;
+extern struct nuvec_s D_0061D8E8; /* crate count icon scale {1.5, 1.5, 1.5} */
+extern char D_00630BC0[];         /* "%i/%i" */
+extern float CRATECOUNT3DSEPERATION;
+extern float CRATECOUNT3DSCALE;
+extern s32 DESTRUCTIBLECRATECOUNT;
+extern s32 strlen(const char *s);
+
+void Draw3DCrateCount(struct nuvec_s *pos, u16 angle) {
+    struct nuvec_s v;
+    float dx;
+    float dz;
+    char *c;
+    s32 len;
+    s32 i;
+    u16 ang;
+
+    v = D_0061D8E8;
+    NuMtxSetScale(&mTEMP, &v);
+    NuMtxRotateY(&mTEMP, angle);
+    NuMtxTranslate(&mTEMP, pos);
+    NuRndrGScnObj(ObjTab[0x10].obj.scene->gobjs[ObjTab[0x10].obj.special->instance->objid],
+                  &mTEMP);
+    if (font3d_scene == NULL) {
+        return;
+    }
+    ang = GameCam.yrot;
+    v = *pos;
+    v.x -= NuTrigTable[ang] * CRATECOUNT3DSEPERATION;
+    v.z -= NuTrigTable[(u16)(ang + 0x4000)] * CRATECOUNT3DSEPERATION;
+    dx = NuTrigTable[(u16)(ang + 0x4000)] * CRATECOUNT3DSCALE;
+    dz = NuTrigTable[(u16)(ang - 0x8000)] * CRATECOUNT3DSCALE;
+    sprintf(tbuf, D_00630BC0, plr_crates.draw, DESTRUCTIBLECRATECOUNT);
+    len = strlen(tbuf);
+    v.x -= dx * (len - 1) * 0.5f;
+    v.z -= dz * (len - 1) * 0.5f;
+    for (i = 0; i < len; i++) {
+        c = &tbuf[i];
+        if (Font3DRemap[*c] != -1) {
+            Draw3DObject(-1, &v, 0, ang, 0, CRATECOUNT3DSCALE, CRATECOUNT3DSCALE,
+                         CRATECOUNT3DSCALE, font3d_scene, Font3DTab[Font3DRemap[*c]].special,
+                         0);
+        }
+        v.x += dx;
+        v.z += dz;
     }
 }

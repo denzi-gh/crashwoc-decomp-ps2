@@ -41,7 +41,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0094:001dc458:HubStart"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001dc7c8:HubSelect"
@@ -49,11 +49,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0094:001dd108:HubLevelSelect"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001dd7f0:HubMoveVR"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001ddb20:HubDrawItems"
@@ -65,19 +65,19 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001de1d8:InitVehicleToggles"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001de458:ResetVehicleControl"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001de678:ToggleVehicle"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001df008:DrawNextVehicle"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001df310:AddKaboom"
@@ -85,11 +85,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001df588:UpdateKabooms"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001dfc70:DrawKabooms"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001dfee8:InitPositions"
@@ -97,11 +97,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001dfff8:CheckFinish"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001e0c68:Draw3DCrateCount"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001e0ed0:LoadWumpa"
