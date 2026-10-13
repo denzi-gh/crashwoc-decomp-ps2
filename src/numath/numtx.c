@@ -188,108 +188,112 @@ void NuMtxInvRSS(struct numtx_s* dest, struct numtx_s* m)
 	dest->_33 = 1.0f;
 }
 
-void NuMtxInvH(struct numtx_s *mi,struct numtx_s *m0) {
-    int cnt;
-    int iVar4;
-    int iVar5;
-    int iVar9;
-
-    double a [4] [4];
+void NuMtxInvH(struct numtx_s *mi, struct numtx_s *m0)
+{
+    double a[4][4];
+    int p[4];
     int i;
     int j;
-    int p [4];
-    double dVar10;
-    double uVar12;
-    double uVar13;
-    double dVar12;
-    double dVar13;
-    double dVar14;
-    char bVar1;
-    
-    a[0][0] = (double)m0->_00;
-    a[0][1] = (double)m0->_01;
-    a[0][2] = (double)m0->_02;
-    a[0][3] = (double)m0->_03;
-    a[1][0] = (double)m0->_10;
-    a[1][1] = (double)m0->_11;
-    a[1][2] = (double)m0->_12;
-    a[1][3] = (double)m0->_13;
-    a[2][0] = (double)m0->_20;
-    a[2][1] = (double)m0->_21;
-    a[2][2] = (double)m0->_22;
-    a[2][3] = (double)m0->_23;
-    a[3][0] = (double)m0->_30;
-    a[3][1] = (double)m0->_31;
-    a[3][2] = (double)m0->_32;
-    a[3][3] = (double)m0->_33;
-    
-    for(iVar4 = 0; iVar4 < 4; iVar4++ ) {
-        p[iVar4] = 0;
-        dVar12 = 0.0;
-        for (iVar5 = iVar4; iVar5 < 4; iVar5++) {
-            dVar13 = 0.0;
-            for (i = 0; i < 4; i++) {
-                dVar10 = ((u32)a[iVar5][i] & 0x7fffffff);
-                dVar13 += dVar10;
-            } 
-            dVar10 = (double)((u32)a[iVar5][iVar4] & 0x7fffffff);
-            if (dVar12 < dVar10 / dVar13) {
-                p[iVar4] = iVar5;
-                dVar12 = dVar10 / dVar13;
+    int k;
+    double best;
+    double sum;
+    double v;
+    double pivot;
+    double tmp;
+
+    a[0][0] = m0->_00;
+    a[0][1] = m0->_01;
+    a[0][2] = m0->_02;
+    a[0][3] = m0->_03;
+    a[1][0] = m0->_10;
+    a[1][1] = m0->_11;
+    a[1][2] = m0->_12;
+    a[1][3] = m0->_13;
+    a[2][0] = m0->_20;
+    a[2][1] = m0->_21;
+    a[2][2] = m0->_22;
+    a[2][3] = m0->_23;
+    a[3][0] = m0->_30;
+    a[3][1] = m0->_31;
+    a[3][2] = m0->_32;
+    a[3][3] = m0->_33;
+
+    for (i = 0; i < 4; i++) {
+        best = 0.0;
+        p[i] = 0;
+        for (j = i; j < 4; j++) {
+            sum = 0.0;
+            for (k = i; k < 4; k++) {
+                v = a[j][k];
+                if (v < 0.0) {
+                    v = -v;
+                }
+                sum += v;
+            }
+            v = a[j][i];
+            if (v < 0.0) {
+                v = -v;
+            }
+            v = v / sum;
+            if (best < v) {
+                p[i] = j;
+                best = v;
             }
         }
-        if (dVar12 == 0.0) break;
-        if (p[iVar4] != iVar4) {
-            for (j = 0; j < 4; j++) {
-                uVar12 = a[iVar4][j];
-                a[iVar4][j] = a[p[iVar4]][j];
-                a[p[iVar4]][j] = uVar12;
+        if (best == 0.0) {
+            return;
+        }
+        if (p[i] != i) {
+            for (k = 0; k < 4; k++) {
+                tmp = a[i][k];
+                a[i][k] = a[p[i]][k];
+                a[p[i]][k] = tmp;
             }
         }
-        dVar14 = a[iVar4][iVar4];
-        for (i = 0; i < 4; i++) {
-            if (i != iVar4) {
-                a[iVar4][i] = -a[iVar4][i] / dVar14;
-                for (iVar9 = 0; iVar9 < 4; iVar9++) {
-                    if (iVar9 != iVar4) {
-                        a[iVar9][i] += a[iVar9][iVar4] * a[iVar4][i];
+        pivot = a[i][i];
+        for (k = 0; k < 4; k++) {
+            if (k != i) {
+                a[i][k] = -a[i][k] / pivot;
+                for (j = 0; j < 4; j++) {
+                    if (j != i) {
+                        a[j][k] += a[j][i] * a[i][k];
                     }
                 }
             }
-        } 
-        for (cnt = 0; cnt < 4; cnt++) {
-            a[cnt][iVar4] = a[cnt][iVar4] / dVar14;
         }
-        a[iVar4][iVar4] = 1.0 / dVar14;
+        for (j = 0; j < 4; j++) {
+            a[j][i] = a[j][i] / pivot;
+        }
+        a[i][i] = 1.0 / pivot;
     }
-    
-    for (iVar4 = 4; iVar4 >= 0; iVar4--) {
-        if (p[iVar4] != iVar4) {
-            for (j = 0; j < 4; j++) {
-                uVar13 = a[j][iVar4];
-                a[j][iVar4] = a[j][p[iVar4]];
-                a[j][p[iVar4]] = uVar13;
-            } 
-        }
-    } 
-    mi->_00 = (float)a[0][0];
-    mi->_01 = (float)a[0][1];
-    mi->_02 = (float)a[0][2];
-    mi->_03 = (float)a[0][3];
-    mi->_10 = (float)a[1][0];
-    mi->_11 = (float)a[1][1];
-    mi->_12 = (float)a[1][2];
-    mi->_13 = (float)a[1][3];
-    mi->_20 = (float)a[2][0];
-    mi->_21 = (float)a[2][1];
-    mi->_22 = (float)a[2][2];
-    mi->_23 = (float)a[2][3];
-    mi->_30 = (float)a[3][0];
-    mi->_31 = (float)a[3][1];
-    mi->_32 = (float)a[3][2];
-    mi->_33 = (float)a[3][3];
-}
 
+    for (i = 3; i >= 0; i--) {
+        if (p[i] != i) {
+            for (k = 0; k < 4; k++) {
+                tmp = a[k][i];
+                a[k][i] = a[k][p[i]];
+                a[k][p[i]] = tmp;
+            }
+        }
+    }
+
+    mi->_00 = a[0][0];
+    mi->_01 = a[0][1];
+    mi->_02 = a[0][2];
+    mi->_03 = a[0][3];
+    mi->_10 = a[1][0];
+    mi->_11 = a[1][1];
+    mi->_12 = a[1][2];
+    mi->_13 = a[1][3];
+    mi->_20 = a[2][0];
+    mi->_21 = a[2][1];
+    mi->_22 = a[2][2];
+    mi->_23 = a[2][3];
+    mi->_30 = a[3][0];
+    mi->_31 = a[3][1];
+    mi->_32 = a[3][2];
+    mi->_33 = a[3][3];
+}
 
 
 void NuVecCross(struct nuvec_s* dest, struct nuvec_s* a, struct nuvec_s* b);
@@ -300,52 +304,50 @@ extern float D_00643780; //0.86602539f
 
 void NuMtxAlignZ(struct numtx_s *m, struct nuvec_s *v)
 {
-  float *a;
-  float *b;
-  float fVar1;
-  float fVar2;
-  float fVar3;
-  
-  a = &m->_10;
-  b = &m->_20;
-  fVar2 = m->_00 * m->_00 + m->_01 * m->_01 + m->_02 * m->_02;
-  fVar3 = m->_10 * m->_10 + m->_11 * m->_11 + m->_12 * m->_12;
-  fVar1 = NuFsqrt((m->_20 * m->_20 + m->_21 * m->_21 + m->_22 * m->_22) /
-                  (v->x * v->x + v->y * v->y + v->z * v->z));
-  m->_20 = fVar1 * v->x;
-  m->_21 = fVar1 * v->y;
-  m->_22 = fVar1 * v->z;
-  fVar1 = NuVecDot((struct nuvec_s*)a,(struct nuvec_s*)b);
-  fVar1 = NuFabs(fVar1);
-  if (0.86602539f < fVar1) {
-    NuVecCross((struct nuvec_s*)a,(struct nuvec_s*)b,(struct nuvec_s*)m);
-    fVar1 = NuFsqrt(fVar3 / (m->_10 * m->_10 + m->_11 * m->_11 + m->_12 * m->_12));
-    m->_10 = m->_10 * fVar1;
-    m->_11 = m->_11 * fVar1;
-    m->_12 = m->_12 * fVar1;
-    NuVecCross((struct nuvec_s*)m,(struct nuvec_s*)a,(struct nuvec_s*)b);
-    fVar1 = NuFsqrt(fVar2 / (m->_00 * m->_00 + m->_01 * m->_01 + m->_02 * m->_02));
-    m->_00 = m->_00 * fVar1;
-    m->_01 = m->_01 * fVar1;
-    m->_02 = m->_02 * fVar1;
-  }
-  else {
-    NuVecCross((struct nuvec_s*)m,(struct nuvec_s*)a,(struct nuvec_s*)b);
-    fVar1 = NuFsqrt(fVar2 / (m->_00 * m->_00 + m->_01 * m->_01 + m->_02 * m->_02));
-    m->_00 = m->_00 * fVar1;
-    m->_01 = m->_01 * fVar1;
-    m->_02 = m->_02 * fVar1;
-    NuVecCross((struct nuvec_s*)a,(struct nuvec_s*)b,(struct nuvec_s*)m);
-    fVar1 = NuFsqrt(fVar3 / (m->_10 * m->_10 + m->_11 * m->_11 + m->_12 * m->_12));
-    m->_10 = m->_10 * fVar1;
-    m->_11 = m->_11 * fVar1;
-    m->_12 = m->_12 * fVar1;
-  }
-  return;
+    struct nuvec_s *xaxis;
+    struct nuvec_s *yaxis;
+    struct nuvec_s *zaxis;
+    float scale;
+    float xlen2;
+    float ylen2;
+
+    xaxis = (struct nuvec_s *)&m->_00;
+    yaxis = (struct nuvec_s *)&m->_10;
+    zaxis = (struct nuvec_s *)&m->_20;
+    xlen2 = m->_00 * m->_00 + m->_01 * m->_01 + m->_02 * m->_02;
+    ylen2 = m->_10 * m->_10 + m->_11 * m->_11 + m->_12 * m->_12;
+    scale = NuFsqrt((m->_20 * m->_20 + m->_21 * m->_21 + m->_22 * m->_22) /
+                    (v->x * v->x + v->y * v->y + v->z * v->z));
+    m->_20 = scale * v->x;
+    m->_21 = scale * v->y;
+    m->_22 = scale * v->z;
+    if (0.86602539f < NuFabs(NuVecDot(yaxis, zaxis))) {
+        NuVecCross(yaxis, zaxis, xaxis);
+        scale = NuFsqrt(ylen2 / (m->_10 * m->_10 + m->_11 * m->_11 + m->_12 * m->_12));
+        m->_10 = m->_10 * scale;
+        m->_11 = m->_11 * scale;
+        m->_12 = m->_12 * scale;
+        NuVecCross(xaxis, yaxis, zaxis);
+        scale = NuFsqrt(xlen2 / (m->_00 * m->_00 + m->_01 * m->_01 + m->_02 * m->_02));
+        m->_00 = m->_00 * scale;
+        m->_01 = m->_01 * scale;
+        m->_02 = m->_02 * scale;
+    } else {
+        NuVecCross(xaxis, yaxis, zaxis);
+        scale = NuFsqrt(xlen2 / (m->_00 * m->_00 + m->_01 * m->_01 + m->_02 * m->_02));
+        m->_00 = m->_00 * scale;
+        m->_01 = m->_01 * scale;
+        m->_02 = m->_02 * scale;
+        NuVecCross(yaxis, zaxis, xaxis);
+        scale = NuFsqrt(ylen2 / (m->_10 * m->_10 + m->_11 * m->_11 + m->_12 * m->_12));
+        m->_10 = m->_10 * scale;
+        m->_11 = m->_11 * scale;
+        m->_12 = m->_12 * scale;
+    }
 }
 
-void NuMtxAlignX(struct numtx_s *m,struct nuvec_s *v) {
-  float fVar4;
+inline void NuMtxAlignX(struct numtx_s *m,struct nuvec_s *v) {
+  float scale;
   
   m->_00 = v->x;
   m->_01 = v->y;
@@ -353,17 +355,17 @@ void NuMtxAlignX(struct numtx_s *m,struct nuvec_s *v) {
   m->_20 = m->_01 * m->_12 - m->_02 * m->_11;
   m->_21 = m->_02 * m->_10 - m->_00 * m->_12;
   m->_22 = m->_00 * m->_11 - m->_01 * m->_10;
-  fVar4 = (1.0f / (float)sqrt(m->_20 * m->_20 + m->_21 * m->_21 + m->_22 * m->_22));
-  m->_20 = m->_20 * fVar4;
-  m->_21 = m->_21 * fVar4;
-  m->_22 = m->_22 * fVar4;
+  scale = (1.0f / NuFsqrt(m->_20 * m->_20 + m->_21 * m->_21 + m->_22 * m->_22));
+  m->_20 = m->_20 * scale;
+  m->_21 = m->_21 * scale;
+  m->_22 = m->_22 * scale;
   m->_10 = m->_21 * m->_02 - m->_22 * m->_01;
   m->_11 = m->_22 * m->_00 - m->_20 * m->_02;
   m->_12 = m->_20 * m->_01 - m->_21 * m->_00;
 }
 
-void NuMtxAlignY(struct numtx_s *m,struct nuvec_s *v) {
-  float fVar4;
+inline void NuMtxAlignY(struct numtx_s *m,struct nuvec_s *v) {
+  float scale;
   
   m->_10 = v->x;
   m->_11 = v->y;
@@ -371,10 +373,10 @@ void NuMtxAlignY(struct numtx_s *m,struct nuvec_s *v) {
   m->_00 = m->_11 * m->_22 - m->_12 * m->_21;
   m->_01 = m->_12 * m->_20 - m->_10 * m->_22;
   m->_02 = m->_10 * m->_21 - m->_11 * m->_20;
-  fVar4 = (1.0f / (float)sqrt(m->_00 * m->_00 + m->_01 * m->_01 + m->_02 * m->_02));
-  m->_00 = m->_00 * fVar4;
-  m->_01 = m->_01 * fVar4;
-  m->_02 = m->_02 * fVar4;
+  scale = (1.0f / NuFsqrt(m->_00 * m->_00 + m->_01 * m->_01 + m->_02 * m->_02));
+  m->_00 = m->_00 * scale;
+  m->_01 = m->_01 * scale;
+  m->_02 = m->_02 * scale;
   m->_20 = m->_01 * m->_12 - m->_02 * m->_11;
   m->_21 = m->_02 * m->_10 - m->_00 * m->_12;
   m->_22 = m->_00 * m->_11 - m->_01 * m->_10;
@@ -518,9 +520,9 @@ struct nuvec_s NuMtxGetScale(struct numtx_s* m)
 {
     struct nuvec_s scale;
     
-	scale.x = sqrt(m->_00 * m->_00 + m->_01 * m->_01 + m->_02 * m->_02);
-	scale.y = sqrt(m->_10 * m->_10 + m->_11 * m->_11 + m->_12 * m->_12);
-	scale.z = sqrt(m->_20 * m->_20 + m->_21 * m->_21 + m->_22 * m->_22);
+	scale.x = NuFsqrt(m->_00 * m->_00 + m->_01 * m->_01 + m->_02 * m->_02);
+	scale.y = NuFsqrt(m->_10 * m->_10 + m->_11 * m->_11 + m->_12 * m->_12);
+	scale.z = NuFsqrt(m->_20 * m->_20 + m->_21 * m->_21 + m->_22 * m->_22);
 
     return scale;
 }
@@ -563,7 +565,7 @@ void NuMtxRotateX(struct numtx_s *m, int a)
     m->_32 = _31 * sinx + m->_32 * cosx;
 }
 
-void NuMtxRotateXR(float x,struct numtx_s *m) {
+void NuMtxRotateXR(float angle, struct numtx_s *m) {
   float cosx;
   float sinx;
   float _01;
@@ -571,8 +573,8 @@ void NuMtxRotateXR(float x,struct numtx_s *m) {
   float _21;
   float _31;
   
-  cosx = (float)(double)cos((double)x);
-  sinx = (float)(double)sin((double)x);
+  cosx = cos(angle);
+  sinx = sin(angle);
   _01 = m->_01;
   _11 = m->_11;
   _21 = m->_21;
@@ -631,7 +633,7 @@ void NuMtxRotateY(struct numtx_s *m,int a) {
   m->_32 = m->_32 * cosy - _30 * siny;
 }
 
-void NuMtxRotateYR(float x,struct numtx_s *m) {
+void NuMtxRotateYR(float angle, struct numtx_s *m) {
   float cosy;
   float siny;
   float _00;
@@ -639,8 +641,8 @@ void NuMtxRotateYR(float x,struct numtx_s *m) {
   float _30;
   float _20;
   
-  cosy = cos((double)x);
-  siny = sin((double)x);
+  cosy = cos(angle);
+  siny = sin(angle);
   _00 = m->_00;
   _10 = m->_10;
   _20 = m->_20;
@@ -699,7 +701,7 @@ void NuMtxRotateZ(struct numtx_s *m,int a) {
   m->_31 = _30 * sinz + m->_31 * cosz;
 }
 
-void NuMtxRotateZR(float x,struct numtx_s *m) {
+void NuMtxRotateZR(float angle, struct numtx_s *m) {
   float cosz;
   float sinz;
   float _00;
@@ -707,8 +709,8 @@ void NuMtxRotateZR(float x,struct numtx_s *m) {
   float _20;
   float _30;
   
-  cosz = (float)cos((double)x);
-  sinz = (float)sin((double)x);
+  cosz = cos(angle);
+  sinz = sin(angle);
   _00 = m->_00;
   _10 = m->_10;
   _20 = m->_20;
