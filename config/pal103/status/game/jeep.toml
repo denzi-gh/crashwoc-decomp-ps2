@@ -33,31 +33,31 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0101:00224fc0:ProcessJeepMovement"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:002256d0:SetUpJeepWheelPositions"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:00225908:ResetJeep"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:00225b80:DrawJeep"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:00225d98:DrawJeepDebugStuff"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:00225ec8:JeepCamFollowAng"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:00226958:JeepCamIntro"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:00226c98:JeepCam"
@@ -69,7 +69,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0101:00227550:InitEnemyJeeps"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:002277a0:DrawEnemyJeep"
@@ -85,7 +85,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0101:00228070:CurrentWesternPosition"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:002281c8:NewSetTrailPos"
@@ -121,7 +121,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022a9a8:ProcessJeepBalloon"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022aaf8:FireBossWaterFire"
@@ -213,7 +213,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0101:0022b950:PackBuggyData"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022ba80:LimitCam"
