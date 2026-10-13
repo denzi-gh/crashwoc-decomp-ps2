@@ -315,6 +315,14 @@ struct nuinstflags_s {
     int isanimated : 1;
 };
 
+struct debtypedef_s {
+    char name[0x10];
+    char pad10[0x20 - 0x10];
+    signed char gensort;
+    char pad21[0x50 - 0x21];
+    struct nuvec_s varstart;
+};
+
 struct edobjinstance_s {
     struct numtx_s mtx;
     int id;
@@ -336,7 +344,7 @@ extern struct eduimenu_s *edobj_switch_menu;
 extern struct eduimenu_s *edobj_animprop_menu;
 extern struct eduimenu_s *edobj_wayprop_menu;
 extern struct eduimenu_s *edobj_localsound_menu;
-extern void *edobj_localsoundtype_menu;
+extern struct eduimenu_s *edobj_localsoundtype_menu;
 extern struct eduimenu_s *edobj_particletype_menu;
 extern struct eduimenu_s *edobj_localparticle_menu;
 extern struct eduimenu_s *edobj_bouncy_menu;
@@ -354,9 +362,9 @@ extern int edobj_snap_y;
 extern int edobj_nearest_particle;
 extern int edobj_next_instance;
 extern struct eduimenu_s *edobj_particle_menu;
-extern void *edobj_localparticletype_menu;
+extern struct eduimenu_s *edobj_localparticletype_menu;
 extern struct eduimenu_s *edobj_sound_menu;
-extern void *edobj_soundtype_menu;
+extern struct eduimenu_s *edobj_soundtype_menu;
 extern int edobj_nearest_waypoint;
 extern int edobj_instance_type;
 extern struct nuvec_s edobj_snap_vec;
@@ -366,7 +374,7 @@ extern int edobj_cam_ay;
 extern int edobj_emitrotz;
 extern int edobj_emitroty;
 extern struct camera_s global_camera;
-extern char *debtab[];
+extern struct debtypedef_s *debtab[];
 extern float D_0062CF04;
 extern float D_0062CF24;
 extern float D_0062CF28;
@@ -500,6 +508,9 @@ extern char D_00619140[];
 extern char D_00619150[];
 extern char D_0062F5E0[];
 extern char D_0062F5E8[];
+extern char D_00618F88[];
+extern char D_00618F98[];
+extern char D_00619030[];
 
 #define instance_menu_title D_00618DE0
 #define menu_text_none D_0062F5A0
@@ -557,6 +568,9 @@ extern char D_0062F5E8[];
 #define bouncy_menu_text_grav D_00619150
 #define bouncy_menu_text_tension D_0062F5E0
 #define bouncy_menu_text_damping D_0062F5E8
+#define soundtype_menu_title D_00618F88
+#define localsoundtype_menu_title D_00618F98
+#define localparticletype_menu_title D_00619030
 
 extern void edbitsRegisterLevel(char *filename, int whatgame);
 extern void eduiMenuDestroy(void *menu);
@@ -602,6 +616,7 @@ extern void edcamSet(void);
 extern void edobjDrawCursor(void);
 extern void edbitsDrawCube(float x, float y, float z, float sizex, float sizey, float sizez,
                            int rotx, int roty, int rotz, int flags, int colour, void *mtl);
+extern void edbitsDrawDiagonalCross(float x, float y, float z, float size, int colour, void *mtl);
 extern void edobjRenderWaypoints(int obj);
 extern void edobjRenderParticleEmitters(int obj);
 extern void edobjRenderSoundEmitters(int obj);
@@ -717,6 +732,13 @@ extern void edobjcbFileLoadObjects(void *menu);
 extern void edobjcbResetAnims(void *menu, struct edobjitem_s *item);
 extern void edobjcbSnapYToggle(void *menu, struct edobjitem_s *item);
 extern void edobjcbSnapXZToggle(void *menu, struct edobjitem_s *item);
+extern int edSfxAllCount;
+extern void edobjcbSetLocalSoundType(void *menu, struct edobjitem_s *item);
+extern void edobjcbSetLocalParticleType(void *menu, struct edobjitem_s *item);
+extern void edobjcbSetSoundType(void *menu, struct edobjitem_s *item);
+extern void edobjcbCancelLocalSoundTypeMenu(void);
+extern void edobjcbCancelLocalParticleTypeMenu(void);
+extern void edobjcbCancelSoundTypeMenu(void);
 
 
 inline float edobjPlayerObjectDistance(int obj)
@@ -1568,7 +1590,7 @@ void edobjParticleCreate(struct nuvec_s *pos)
         ObjectPath[edobj_nearest].particle_rotz[slot] = edobj_emitrotz;
         ObjectPath[edobj_nearest].particle_roty[slot] = edobj_emitroty;
         ObjectPath[edobj_nearest].particle_type[slot] = edobj_particle_type;
-        strcpy(ObjectPath[edobj_nearest].particle_name[slot], debtab[edobj_particle_type]);
+        strcpy(ObjectPath[edobj_nearest].particle_name[slot], debtab[edobj_particle_type]->name);
         ObjectPath[edobj_nearest].particle_rate[slot] = 1;
         ObjectPath[edobj_nearest].particle_switch[slot] = 0;
         ObjectPath[edobj_nearest].num_particles++;
@@ -2082,7 +2104,7 @@ void edobjDrawCursor(void)
         if (edobj_particle_type == -1) {
             NuFntPrintEx(0x1810, 0xCD0, 0, info_type_none);
         } else {
-            NuFntPrintEx(0x1810, 0xCD0, 0, info_type_fmt, debtab[edobj_particle_type]);
+            NuFntPrintEx(0x1810, 0xCD0, 0, info_type_fmt, debtab[edobj_particle_type]->name);
         }
     } else if (edobj_sound_mode) {
         NuFntPrintEx(0x17C0, 0xB90, 0, info_locked_fmt,
@@ -2657,7 +2679,7 @@ void edobjcbParticleTypeMenu(struct eduimenu_s *menu)
                 }
                 eduiMenuAddItem(edobj_particletype_menu,
                                 eduiItemCheckCreate(i, &style, selected, 1,
-                                                    edobjcbSetParticleType, debtab[i]));
+                                                    edobjcbSetParticleType, debtab[i]->name));
                 if (selected == 1) {
                     edobj_particletype_menu->current = edui_last_item;
                 }
@@ -2804,6 +2826,86 @@ void edobjInit(void)
         eduiMenuAddItem(edobj_options_menu,
                         eduiItemToggleCreate(0, &style, edobj_snap_xz, 2, edobjcbSnapXZToggle,
                                              options_text_snap_xz));
+    }
+}
+
+
+void edobjRenderSoundEmitters(int obj)
+{
+    int colour;
+    int i;
+
+    for (i = 0; i < ObjectPath[obj].num_sounds; i++) {
+        if (ObjectPath[obj].sound_id[i] != -1) {
+            colour = -1;
+            if (edobj_sound_mode && edobj_nearest_sound == i) {
+                colour = 0xFFFF0000;
+            }
+            edbitsDrawDiagonalCross(ObjectPath[obj].waypoints[0].x + ObjectPath[obj].sound_pos[i].x,
+                                    ObjectPath[obj].waypoints[0].y + ObjectPath[obj].sound_pos[i].y,
+                                    ObjectPath[obj].waypoints[0].z + ObjectPath[obj].sound_pos[i].z,
+                                    0.25f, colour, edobj_mtl_zoff);
+        }
+    }
+}
+
+
+void edobjRenderParticleEmitters(int obj)
+{
+    struct debtypedef_s *type;
+    int colour;
+    int i;
+
+    for (i = 0; i < ObjectPath[obj].num_particles; i++) {
+        if (ObjectPath[obj].particle_type[i] != -1) {
+            if (edobj_particle_mode && edobj_nearest_particle == i) {
+                type = debtab[ObjectPath[obj].particle_type[i]];
+                if (type->gensort == 0) {
+                    edbitsDrawCube(
+                        ObjectPath[obj].waypoints[0].x + ObjectPath[obj].particle_pos[i].x,
+                        ObjectPath[obj].waypoints[0].y + ObjectPath[obj].particle_pos[i].y,
+                        ObjectPath[obj].waypoints[0].z + ObjectPath[obj].particle_pos[i].z,
+                        type->varstart.x, type->varstart.y, type->varstart.z, edobj_emitrotz,
+                        edobj_emitroty, 0, 0, 0xFF008000, edobj_mtl_zoff);
+                }
+                colour = 0xFF00FF00;
+            } else {
+                colour = -1;
+            }
+            edbitsDrawDiagonalCross(
+                ObjectPath[obj].waypoints[0].x + ObjectPath[obj].particle_pos[i].x,
+                ObjectPath[obj].waypoints[0].y + ObjectPath[obj].particle_pos[i].y,
+                ObjectPath[obj].waypoints[0].z + ObjectPath[obj].particle_pos[i].z, 0.25f, colour,
+                edobj_mtl_zoff);
+        }
+    }
+}
+
+
+void edobjRenderWaypoints(int obj)
+{
+    struct nurndrvtx_s line[2];
+    int colour;
+    int i;
+
+    for (i = 0; i < ObjectPath[obj].num_waypoints; i++) {
+        colour = -1;
+        if (edobj_waypoint_mode && edobj_nearest_waypoint == i) {
+            colour = 0xFF0000FF;
+        }
+        edbitsDrawDiagonalCross(ObjectPath[obj].waypoints[i].x, ObjectPath[obj].waypoints[i].y,
+                                ObjectPath[obj].waypoints[i].z, 0.25f, colour, edobj_mtl_zoff);
+        if (i > 0) {
+            line[0].pnt.x = ObjectPath[obj].waypoints[i - 1].x;
+            line[0].pnt.y = ObjectPath[obj].waypoints[i - 1].y;
+            line[0].pnt.z = ObjectPath[obj].waypoints[i - 1].z;
+            line[0].colour = -1;
+            line[1].pnt.x = ObjectPath[obj].waypoints[i].x;
+            line[1].pnt.y = ObjectPath[obj].waypoints[i].y;
+            line[1].pnt.z = ObjectPath[obj].waypoints[i].z;
+            line[1].colour = -1;
+            NuRndrLine3d(line, edobj_mtl_zoff, 0);
+        }
     }
 }
 
@@ -3236,6 +3338,36 @@ void edobjcbSetParticleRate(void *menu, struct edobjitem_s *item)
 }
 
 
+void edobjcbLocalSoundTypeMenu(struct eduimenu_s *menu)
+{
+    struct eduistyle_s style;
+    int selected;
+    int i;
+
+    style = edobj_item_style;
+    edobj_localsoundtype_menu = eduiMenuCreate(70, 70, 180, 250, app_fnt,
+                                               edobjcbCancelLocalSoundTypeMenu,
+                                               localsoundtype_menu_title);
+    if (edobj_localsoundtype_menu != 0) {
+        for (i = 0; i < edSfxAllCount; i++) {
+            selected = 0;
+            if (ObjectPath[edobj_nearest].sound_id[edobj_nearest_sound] == i) {
+                selected = 1;
+            }
+            eduiMenuAddItem(edobj_localsoundtype_menu,
+                            eduiItemCheckCreate(i, &style, selected, 1, edobjcbSetLocalSoundType,
+                                                edbitsGetSoundName(i)));
+            if (selected == 1) {
+                edobj_localsoundtype_menu->current = edui_last_item;
+            }
+        }
+        eduiMenuAttach(menu, edobj_localsoundtype_menu);
+        edobj_localsoundtype_menu->x = menu->x + 10;
+        edobj_localsoundtype_menu->y = menu->y + 40;
+    }
+}
+
+
 void edobjcbCancelLocalSoundMenu(void)
 {
     eduiMenuDestroy(edobj_localsound_menu);
@@ -3247,6 +3379,38 @@ void edobjcbCancelParticleTypeMenu(void)
 {
     eduiMenuDestroy(edobj_particletype_menu);
     edobj_particletype_menu = 0;
+}
+
+
+void edobjcbLocalParticleTypeMenu(struct eduimenu_s *menu)
+{
+    struct eduistyle_s style;
+    int selected;
+    int i;
+
+    style = edobj_item_style;
+    edobj_localparticletype_menu = eduiMenuCreate(70, 70, 250, 200, app_fnt,
+                                                  edobjcbCancelLocalParticleTypeMenu,
+                                                  localparticletype_menu_title);
+    if (edobj_localparticletype_menu != 0) {
+        for (i = 1; i < 128; i++) {
+            if (debtab[i] != 0) {
+                selected = 0;
+                if (ObjectPath[edobj_nearest].particle_type[edobj_nearest_particle] == i) {
+                    selected = 1;
+                }
+                eduiMenuAddItem(edobj_localparticletype_menu,
+                                eduiItemCheckCreate(i, &style, selected, 1,
+                                                    edobjcbSetLocalParticleType, debtab[i]->name));
+                if (selected == 1) {
+                    edobj_localparticletype_menu->current = edui_last_item;
+                }
+            }
+        }
+        eduiMenuAttach(menu, edobj_localparticletype_menu);
+        edobj_localparticletype_menu->x = menu->x + 10;
+        edobj_localparticletype_menu->y = menu->y + 40;
+    }
 }
 
 
@@ -3381,8 +3545,40 @@ void edobjcbSetLocalParticleType(void *menu, struct edobjitem_s *item)
     edobj_localparticletype_menu = 0;
     ObjectPath[edobj_nearest].particle_type[edobj_nearest_particle] = item->value;
     strcpy(ObjectPath[edobj_nearest].particle_name[edobj_nearest_particle],
-           debtab[item->value]);
+           debtab[item->value]->name);
     edobj_particle_type = item->value;
+}
+
+
+void edobjcbSoundTypeMenu(struct eduimenu_s *menu)
+{
+    struct eduistyle_s style;
+    int selected;
+    int i;
+
+    style = edobj_item_style;
+    edobj_soundtype_menu = eduiMenuCreate(70, 70, 180, 250, app_fnt, edobjcbCancelSoundTypeMenu,
+                                          soundtype_menu_title);
+    if (edobj_soundtype_menu != 0) {
+        eduiMenuAddItem(edobj_soundtype_menu,
+                        eduiItemCheckCreate(99999, &style, edobj_sound_type == -1, 0,
+                                            edobjcbSetSoundType, particletype_text_none));
+        for (i = 0; i < edSfxAllCount; i++) {
+            selected = 0;
+            if (edobj_sound_type == i) {
+                selected = 1;
+            }
+            eduiMenuAddItem(edobj_soundtype_menu,
+                            eduiItemCheckCreate(i, &style, selected, 1, edobjcbSetSoundType,
+                                                edbitsGetSoundName(i)));
+            if (selected == 1) {
+                edobj_soundtype_menu->current = edui_last_item;
+            }
+        }
+        eduiMenuAttach(menu, edobj_soundtype_menu);
+        edobj_soundtype_menu->x = menu->x + 10;
+        edobj_soundtype_menu->y = menu->y + 40;
+    }
 }
 
 

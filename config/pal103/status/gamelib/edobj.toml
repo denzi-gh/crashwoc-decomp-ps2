@@ -133,15 +133,15 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019ebe0:edobjRenderSoundEmitters"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019ed20:edobjRenderParticleEmitters"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019eec0:edobjRenderWaypoints"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019f050:edobjRender"
@@ -333,7 +333,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:001a00a8:edobjcbLocalSoundTypeMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:001a0220:edobjcbCancelLocalSoundMenu"
@@ -345,7 +345,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:001a0270:edobjcbLocalParticleTypeMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:001a03e8:edobjcbCancelLocalParticleMenu"
@@ -385,7 +385,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:001a08f8:edobjcbSoundTypeMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:001a0a78:edobjcbCancelLocalSoundTypeMenu"
