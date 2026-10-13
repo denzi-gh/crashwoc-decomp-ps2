@@ -13,7 +13,7 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0061:0016b7a0:NuPs2InitVU"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0061:0016b7f8:VU1_DisplayFRegs"
@@ -25,4 +25,4 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0061:0016b948:VU1_LoadXD"
-state = "asm"
+state = "matching"
