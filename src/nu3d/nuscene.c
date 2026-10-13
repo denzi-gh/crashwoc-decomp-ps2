@@ -77,6 +77,20 @@ struct nuvec_s {
     float z;
 }; /* 0x0C */
 
+struct nucolour_s {
+    unsigned int r : 8;
+    unsigned int g : 8;
+    unsigned int b : 8;
+    unsigned int a : 8;
+};
+
+struct nuvtx_s {
+    struct nuvec_s pnt;             /* 0x00 */
+    struct nuvec_s nrm;             /* 0x0C */
+    struct nucolour_s diffuse;      /* 0x18 */
+    float tc[2];                    /* 0x1C */
+}; /* 0x24 */
+
 struct nuprim_s {
     char pad00[0x10];
     unsigned short *vid;            /* 0x10 */
@@ -110,7 +124,8 @@ struct nugeom_s {
     int mtl_id;                     /* 0x14 */
     char pad18[0x08];
     int vtxcnt;                     /* 0x20 */
-    char pad24[0x08];
+    int vtxmax;                     /* 0x24 */
+    struct nuvtx_s *vtx;            /* 0x28 */
     struct nuprim_s *prim;          /* 0x2C */
     struct nuskin_s *skins;         /* 0x30 */
     void *vtxskininfo;              /* 0x34 */
@@ -296,9 +311,11 @@ extern void NuPs2CreateRenderStream(struct nugobj_s *gobj);
 extern void NuPs2CreateFaceOn(struct nugobj_s *gobj);
 extern void NuPs2CreateSkin(struct nugobj_s *gobj);
 extern void NuGeomAddSkin(struct nugeom_s *geom, struct nuskin_s *skin);
-extern void ReadNuIFFGeomVtx(int fh, struct nugeom_s *geom);
-extern void ReadNuIFFGeomPrim(int fh, struct nugeom_s *geom);
+void ReadNuIFFGeomVtx(int fh, struct nugeom_s *geom);
+void ReadNuIFFGeomPrim(int fh, struct nugeom_s *geom);
 void ReadNuIFFGeomCntrl(int fh, struct nugeom_s *geom);
+void ReadNuIFFGeomTri(int fh, struct nugeom_s *geom, int type);
+void ReadNuIFFGeomBezTri(int fh, struct nugeom_s *geom);
 static void ReadNuIFFGeomSkin(int fh, struct nugeom_s *geom);
 void ReadNuIFFBlendShape(int fh, struct nugeom_s *geom);
 void ReadNuIFFFaceOnGeom(int fh, struct nufaceongeom_s *fgeom);
@@ -346,6 +363,8 @@ extern char D_00614328[];
 extern char D_00614340[];
 extern char D_00614358[];
 extern char D_00614378[];
+extern char D_006143A8[];
+extern char D_006143D0[];
 extern char D_006143E8[];
 extern char D_00614408[];
 extern char D_00614428[];
@@ -357,6 +376,8 @@ extern char D_00614448[];
 #define reading_splineset_msg D_00614340
 #define reading_gobjset_msg D_00614358
 #define gobj_defined_msg D_00614378
+#define vtx_lock_failed_msg D_006143A8
+#define unknown_prim_msg D_006143D0
 #define unknown_node_msg D_006143E8
 #define unknown_block_msg D_00614408
 #define loading_scene_msg D_00614428
@@ -1148,6 +1169,37 @@ void ReadNuIFFGeomDef(int fh, struct nuscene_s *scene) {
 }
 
 
+void ReadNuIFFGeomVtx(int fh, struct nugeom_s *geom) {
+    int count;
+    int size;
+    int i;
+    struct nuvtx_s *vtx;
+    struct nucolour_s src;
+    struct nucolour_s dst;
+
+    count = NuFileReadInt(fh);
+    if (count) {
+        size = count * sizeof(struct nuvtx_s);
+        vtx = NuMemAllocFn(size, nuscene_srcfile, 0x371);
+        geom->vtx = vtx;
+        geom->vtxcnt = count;
+        geom->vtxmax = count;
+        if (!vtx) {
+            NuErrorProlog(nuscene_srcfile, 0x378)(vtx_lock_failed_msg);
+        }
+        NuFileRead(fh, vtx, size);
+        for (i = 0; i < count; i++) {
+            src = vtx[i].diffuse;
+            dst.r = src.b;
+            dst.g = src.g;
+            dst.b = src.r;
+            dst.a = src.a;
+            vtx[i].diffuse = dst;
+        }
+    }
+}
+
+
 void ReadNuIFFGeomCntrl(int fh, struct nugeom_s *geom) {
     int count;
     int size;
@@ -1158,6 +1210,32 @@ void ReadNuIFFGeomCntrl(int fh, struct nugeom_s *geom) {
         size = count * sizeof(struct nucntrl_s);
         geom->cntrls = NuMemAllocFn(size, nuscene_srcfile, 0x398);
         NuFileRead(fh, geom->cntrls, size);
+    }
+}
+
+
+void ReadNuIFFGeomPrim(int fh, struct nugeom_s *geom) {
+    int nprims;
+    int i;
+
+    nprims = NuFileReadInt(fh);
+    if (nprims) {
+        for (i = 0; i < nprims; i++) {
+            switch (NuFileReadInt(fh)) {
+            case 5:
+                ReadNuIFFGeomTri(fh, geom, 5);
+                break;
+            case 6:
+                ReadNuIFFGeomTri(fh, geom, 6);
+                break;
+            case 8:
+                ReadNuIFFGeomBezTri(fh, geom);
+                break;
+            default:
+                NuErrorProlog(nuscene_srcfile, 0x3C5)(unknown_prim_msg);
+                break;
+            }
+        }
     }
 }
 
