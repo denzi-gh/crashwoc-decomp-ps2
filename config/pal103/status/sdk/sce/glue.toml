@@ -21,15 +21,15 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0248:00279160:VSync2"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0248:002791c0:write"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0248:00279240:read"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0248:002792b8:open"

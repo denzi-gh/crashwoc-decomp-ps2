@@ -24,6 +24,10 @@
 #define EIO 5
 #define S_IFCHR 0x2000
 
+#define INTC_STAT (*(volatile int *)0x1000F000)
+#define INTC_STAT_SAMPLE (*(int *)0x1000F000)
+#define INTC_VBLANK_START 4
+
 struct stat {
     short st_dev;
     short st_ino;
@@ -49,10 +53,58 @@ extern int D_00612BB8[];
 
 extern int *__errno(void);
 extern void Exit(int status);
+extern void SetVSyncFlag(volatile int *flag, volatile long *count);
+extern int sceTtyInit(void);
+extern int sceTtyWrite(const char *buf, int len);
+extern int sceTtyRead(char *buf, int len);
 
 
 void sceResetttyinit(void) {
     tty_initialized[0] = 0;
+}
+
+
+long VSync2(void) {
+    volatile int vsync_seen;
+    volatile long vsync_count;
+
+    vsync_seen = 0;
+    SetVSyncFlag(&vsync_seen, &vsync_count);
+    INTC_STAT = INTC_VBLANK_START;
+wait:
+    if (!(INTC_STAT_SAMPLE & INTC_VBLANK_START) && vsync_seen == 0) {
+        goto wait;
+    }
+    INTC_STAT = INTC_VBLANK_START;
+    return vsync_count;
+}
+
+
+int write(int fd, const char *buf, int len) {
+    if (fd == 1 || fd == 2) {
+        if (!tty_initialized[0]) {
+            if (!sceTtyInit()) {
+                return -1;
+            }
+            tty_initialized[0] = 1;
+        }
+        return sceTtyWrite(buf, len);
+    }
+    return -1;
+}
+
+
+int read(int fd, char *buf, int len) {
+    if (fd == 0) {
+        if (!tty_initialized[0]) {
+            if (!sceTtyInit()) {
+                return -1;
+            }
+            tty_initialized[0] = 1;
+        }
+        return sceTtyRead(buf, len);
+    }
+    return -1;
 }
 
 
