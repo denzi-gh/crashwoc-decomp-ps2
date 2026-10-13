@@ -17,11 +17,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0149:00265978:sceCdDelayThread"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0149:002659e0:sceCdCallback"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0149:00265a38:_sceCd_cd_callback"
@@ -37,7 +37,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0149:00265c70:_sceCd_cd_read_intr"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0149:00265d10:cmd_sem_init"
@@ -45,19 +45,19 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0149:00265da8:cdvd_exit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0149:00265e28:sceCdPOffCallback"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0149:00265e98:_sceCd_Poff_Intr"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0149:00265ed8:PowerOffCB"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0149:00265f40:sceCdSearchFile"
@@ -69,15 +69,15 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0149:002663b0:sceCdNcmdDiskReady"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0149:00266448:sceCdSync"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0149:002664e8:sceCdSyncS"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0149:00266558:_sceCd_scmd_prechk"
