@@ -85,23 +85,23 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a4858:edanimcbLocalSoundMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a4ab0:edanimcbMCTBMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a4dd8:edanimInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a50c8:edanimRenderParticleEmitters"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a5260:edanimRenderSoundEmitters"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a5390:edanimRender"
@@ -205,7 +205,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a5bd0:edanimcbLocalParticleTypeMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a5d48:edanimcbCancelLocalParticleMenu"
@@ -217,7 +217,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a5e90:edanimcbLocalSoundTypeMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a6008:edanimcbCancelLocalSoundMenu"
@@ -313,7 +313,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a6910:edanimcbSoundTypeMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a6a90:edanimcbCancelLocalSoundTypeMenu"
