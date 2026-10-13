@@ -17,11 +17,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0060:00168c80:NuPs2Init"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0060:00168db8:NuPs2InitIOP"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0060:00169160:idmacGs"
@@ -41,7 +41,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0060:00169e90:NuPs2ScreenSwap"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0060:0016a148:NuMcOpen"
@@ -109,7 +109,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0060:0016a570:tbsetCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0060:0016a680:tbsetDestroy"
@@ -137,7 +137,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0060:0016a800:tbInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0060:0016a8e8:NuPs2GetRenderWidth"
@@ -165,7 +165,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0060:0016abd0:NuPs2GetViewport"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0060:0016ac58:NuEnableVBlankE"
@@ -177,7 +177,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0060:0016acd0:NuIntAddVBlankE"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0060:0016ad88:NuIntRemVBlankE"
@@ -193,7 +193,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0060:0016ae60:NuIntAddVBlankS"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0060:0016af18:NuIntRemVBlankS"
@@ -257,11 +257,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0060:0016b2d0:NuIntAddAllHandlers"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0060:0016b3a8:NuIntRemoveAllHandlers"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0060:0016b430:ifnVif1"
@@ -273,7 +273,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0060:0016b4b0:ifnVBlankS"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0060:0016b518:NuPs2FlushVRam"
@@ -281,7 +281,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0060:0016b690:GenerateGammaTable"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0060:0016b770:GetElapsedTime"
