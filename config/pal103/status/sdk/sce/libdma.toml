@@ -13,35 +13,35 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0143:00262a58:memclr"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0143:00262a90:sceDmaGetChan"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0143:00262ab8:sceDmaReset"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0143:00262b98:sceDmaDebug"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0143:00262ba8:sceDmaPutEnv"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0143:00262d80:sceDmaGetEnv"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0143:00262db8:sceDmaPutStallAddr"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0143:00262de0:sceDmaSend"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0143:00262eb8:sceDmaSendN"
@@ -53,7 +53,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0143:00263088:sceDmaRecv"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0143:00263150:sceDmaRecvN"
@@ -65,7 +65,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0143:00263330:sceDmaSync"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0143:002633f8:sceDmaWatch"
@@ -73,8 +73,8 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0143:002634c8:sceDmaPause"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0143:00263510:sceDmaRestart"
-state = "asm"
+state = "matching"
