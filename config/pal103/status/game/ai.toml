@@ -13,15 +13,15 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0103:0022ef10:LoadAI"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0103:0022f148:SaveAI"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0103:0022f2c8:ResetAI"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0103:0022f568:UpdateDRAINDAMAGE"
@@ -77,15 +77,15 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0103:00234bf0:WaterCrunchFunction_Punch1"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0103:00234cc8:WaterCrunchFunction_Punch2"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0103:00234da0:WaterCrunchFunction_Defeated"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0103:00234dd8:ResetCRUNCHTIME"
@@ -93,11 +93,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0103:00234eb0:SpaceCrunchFunction_NewCount"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0103:00234ef0:SpaceCrunchFunction_AttackCortex"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0103:00234f20:SpaceCrunchFunction_CheckCortexBack"
@@ -113,11 +113,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0103:00234f90:SpaceCortexFunction_Defeated"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0103:00234fd0:SpaceCortexFunction_TakeHit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0103:00235000:RatioDifferenceAlongLine"
@@ -129,8 +129,8 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0103:002350a8:PlayerLateralInRange"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0103:00235198:PlayerLateralOutOfRange"
-state = "asm"
+state = "matching"

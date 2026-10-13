@@ -70,15 +70,15 @@ struct rail_s {
     u8 unk_0x27;             /* 0x27 */
 }; /* 0x28 */
 
-/* Saved AI path positions (D_005CA154): stride 0x80 per AI entry, up to 10
- * nuvec sub-points (AIType[ai_type].label of them) written by SaveAI. */
+/* AI path positions (D_005CA154 == AITab[0].pos): stride 0x80 per AI entry,
+ * AIType[ai_type].label nuvec sub-points each. */
 struct aipath_s {
     struct nuvec_s pos[10];  /* 0x00 (0x78) */
     u8 pad[8];               /* 0x78 */
 }; /* 0x80 */
 
 extern struct aitype_s AIType[];       /* 0x005c9518 */
-extern struct aitab_s AITab[];         /* 0x005c9558 */
+extern struct aitab_s AITab[];         /* 0x005ca140 */
 extern struct rail_s Rail[];           /* 0x00586388 */
 extern struct RPos_s gempath_RPos;     /* 0x0058b518 */
 extern u8 LevelAIType[];               /* 0x005ca0d0 */
@@ -120,14 +120,11 @@ f32 NuFileReadFloat(void *f);                      /* 0x00102e20 */
 s32 NuFileReadInt(void *f);                        /* 0x00102e48 */
 s32 NuFileReadChar(void *f);                       /* 0x00102ec0 */
 void NuFileWriteFloat(void *f, f32 v);             /* 0x00102f08 */
-void NuFileWriteInt(void *f, s32 v);               /* 0x00102f30 */
+s32 NuFileWriteInt(void *f, s32 v);                /* 0x00102f30 */
 void NuFileWriteChar(void *f, s32 v);              /* 0x00102fa8 */
 s32 qrand(void);
 f32 NuFsqrt(f32 x);
 f32 RatioAlongLine(struct nuvec_s *pos, struct nuvec_s *a, struct nuvec_s *b); /* 0x001f0730 */
-u64 fptodp(f32 value);                 /* 0x002702e8 */
-s32 dpcmp(u64 a, u64 b);               /* 0x0026f448 */
-u64 dpsub(u64 a, u64 b);               /* 0x0026eeb8 */
 
 extern s32 D_00633300;
 extern s32 DrainDamage_Intro;
@@ -137,7 +134,26 @@ extern s32 D_0063333C;
 extern s32 SpaceCortex_Defeated;
 extern s32 boss_dead;
 extern s32 Hub;
-extern u8 Game[];
+struct hub_s {
+    u8 flags;
+    u8 crystals;
+    char pad1;
+    char pad2;
+};
+
+struct game_s {
+    char name[9];
+    u8 vibration;
+    u8 surround;
+    u8 sfx_volume;
+    u8 music_volume;
+    char screen_x;
+    char screen_y;
+    u8 language;
+    struct hub_s hub[6];
+};
+
+extern struct game_s Game;
 extern s32 D_00633314;
 extern s32 gamesfx_effect_volume;
 extern void *world_scene[32];
@@ -192,19 +208,26 @@ void Draw3DCharacter(struct nuvec_s *pos, s32 xrot, s32 yrot, s32 z,
                      struct CharacterModel *model, f32 scale, s32 action,
                      f32 anim_time, s32 last);
 
-extern u8 GDeb[];                      /* 0x0060dd00 (gdeb_s[], byte-accessed here) */
-extern struct nuvec_s punchpos1[4];    /* 0x005c7e08 */
-extern struct nuvec_s punchpos2[4];    /* 0x005c7e38 */
-void AddFiniteShotDebrisEffect(s32 *key, void *effect, struct nuvec_s *pos, s32 n);
-void DebrisEmitterOrientation(s32 key, s32 a, s32 hdg);
+struct gdeb_s {
+    s32 i;
+    char *name;
+    unsigned long levbits;
+};
 
-/* debris key record (debkeydata): PS2 stride 0x56C; a short at +0x4C2. */
-struct debkey_s {
-    u8 pad0[0x4C2];          /* 0x000 */
-    s16 field_4C2;           /* 0x4C2 */
+/* debris emitter (debkeydata): PS2 stride 0x56C; delay at +0x4C2. */
+struct deb_s {
+    u8 pad0[0x4C0];          /* 0x000 */
+    s16 oncount;             /* 0x4C0 */
+    s16 delay;               /* 0x4C2 */
     u8 pad1[0xA8];           /* 0x4C4 */
 }; /* 0x56C */
-extern struct debkey_s debkeydata[]; /* 0x00320eb0 */
+
+extern struct gdeb_s GDeb[170];        /* 0x0060dd00 */
+extern struct deb_s debkeydata[];      /* 0x00320eb0 */
+extern struct nuvec_s punchpos1[4];    /* 0x005c7e08 */
+extern struct nuvec_s punchpos2[4];    /* 0x005c7e38 */
+void AddFiniteShotDebrisEffect(s32 *key, s32 effect, struct nuvec_s *pos, s32 n);
+void DebrisEmitterOrientation(s32 key, s32 a, s32 hdg);
 
 /* gong-bonger locator lookup (FindGongBongerAnim) */
 struct gongnode_s {
@@ -242,7 +265,7 @@ void InitAI(void)
     ResetAI();
 }
 
-s32 FindAIType(char *name, s32 type)
+inline s32 FindAIType(char *name, s32 type)
 {
     s32 i;
 
@@ -263,9 +286,8 @@ void ResetAI(void)
     s32 n;
     s32 flag;
     struct aitab_s *ai;
-    struct creature_s *c;
-    u8 irail;
-    s32 rail_idx;
+    struct rail_s *rail;
+    s32 irail;
     s32 j;
 
     flag = 0;
@@ -277,22 +299,20 @@ void ResetAI(void)
     ai = AITab;
     for (n = 0; n < LEVELAICOUNT; n++, ai++) {
         GetALONG(&ai->pos[0], 0, -1, -1, 1);
-        irail = temp_iRAIL;
-        ai->iRAIL = irail;
+        ai->iRAIL = temp_iRAIL;
         ai->iALONG = temp_iALONG;
         ai->fALONG = temp_fALONG;
 
-        rail_idx = (s8)irail;
-        if (rail_idx != -1 && Rail[rail_idx].type == 3) {
+        irail = (s8)temp_iRAIL;
+        rail = Rail;
+        if (irail != -1 && rail[irail].type == 3) {
             if (flag) {
-                ai->status = 1;
+                goto active;
             }
-        } else if (bonus_restart == 0) {
-            if (AheadOfCheckpoint(ai->iRAIL, ai->iALONG, ai->fALONG)) {
-                ai->status = 1;
-            }
+        } else if (bonus_restart == 0 && AheadOfCheckpoint(ai->iRAIL, ai->iALONG, ai->fALONG)) {
+        active:
+            ai->status = 1;
         }
-
         ai->time = 0;
         ai->delay = AIType[ai->ai_type].delay;
         ai->origin = ai->pos[0];
@@ -306,14 +326,15 @@ void ResetAI(void)
         }
     }
 
-    for (c = &Character[1]; c < &Character[9]; c++) {
-        if (c->used != 0) {
-            RemoveGameObject(&c->obj);
-            c->used = 0;
-            c->on = 0;
+    for (n = 1; n < 9; n++) {
+        if (Character[n].used != 0) {
+            RemoveGameObject(&Character[n].obj);
+            Character[n].used = 0;
+            Character[n].on = 0;
         }
     }
 }
+
 
 void FindGongBongerAnim(struct nuvec_s *pos, struct gongbuf_s *out)
 {
@@ -339,53 +360,41 @@ void FindGongBongerAnim(struct nuvec_s *pos, struct gongbuf_s *out)
     }
 }
 
-/* Faithful near-match (~53.7%): structurally exact (control flow, constants,
- * offsets, the slt loop bound, all three calls). Blocked purely on the
- * whole-function callee-save register permutation: retail assigns
- * s0..s7 = pp,amt,c,debkeydata,end,GDeb,stride,-1; ee-gcc here gives
- * pp,c,amt,stride,-1,end,debkeydata,GDeb. The eight loop-invariant values tie
- * on freq*live_length and break by allocno birth order, which no source
- * reordering shifts without adding instructions. Same wall as ResetCRUNCHTIME
- * (default.whole-fn-callee-save-regalloc). Stays state=asm. */
 s32 WaterCrunchFunction_Punch1(struct creature_s *c)
 {
+    struct deb_s *deb;
     s32 key;
-    s32 amt;
-    struct nuvec_s *pp;
+    s32 i;
 
     GameSfx(0xCB, &c->obj.pos);
-    amt = 0x1E;
-    pp = punchpos1;
-    do {
+    for (i = 0; i < 4; i++) {
         key = -1;
-        AddFiniteShotDebrisEffect(&key, *(void **)(GDeb + 0x8D0), pp, 1);
+        AddFiniteShotDebrisEffect(&key, GDeb[141].i, &punchpos1[i], 1);
         DebrisEmitterOrientation(key, 0, (s16)c->obj.hdg);
-        debkeydata[key].field_4C2 = amt;
-        amt -= 0xA;
-        pp++;
-    } while (pp < &punchpos1[4]);
+        deb = &debkeydata[key];
+        deb->delay = 30 - i * 10;
+    }
     return 1;
 }
+
 
 s32 WaterCrunchFunction_Punch2(struct creature_s *c)
 {
+    struct deb_s *deb;
     s32 key;
-    s32 amt;
-    struct nuvec_s *pp;
+    s32 i;
 
     GameSfx(0xCB, &c->obj.pos);
-    amt = 0x1E;
-    pp = punchpos2;
-    do {
+    for (i = 0; i < 4; i++) {
         key = -1;
-        AddFiniteShotDebrisEffect(&key, *(void **)(GDeb + 0x8D0), pp, 1);
+        AddFiniteShotDebrisEffect(&key, GDeb[141].i, &punchpos2[i], 1);
         DebrisEmitterOrientation(key, 0, (s16)c->obj.hdg);
-        debkeydata[key].field_4C2 = amt;
-        amt -= 0xA;
-        pp++;
-    } while (pp != &punchpos2[4]);
+        deb = &debkeydata[key];
+        deb->delay = 30 - i * 10;
+    }
     return 1;
 }
+
 
 s32 WaterCrunchFunction_Attack(struct creature_s *c)
 {
@@ -398,7 +407,7 @@ s32 WaterCrunchFunction_Attack(struct creature_s *c)
 
 s32 WaterCrunchFunction_Defeated(void)
 {
-    boss_dead = (Game[Hub * 4 + 0x10] & 4) ? 2 : 1;
+    boss_dead = (Game.hub[Hub].flags & 4) ? 2 : 1;
     return 1;
 }
 
@@ -929,32 +938,24 @@ s32 SpaceCrunchFunction_NewPoint(struct creature_s *c, struct nuvec_s *pos)
 
 s32 SpaceCrunchFunction_NewCount(struct creature_s *c)
 {
-    s32 v;
-    u8 one = 1;
-
-    if (D_00633314 == 1) {
-        v = 2;
-        goto ee4;
+    switch ((u32)D_00633314) {
+    case 0:
+    default:
+        c->ai.count = 1;
+        break;
+    case 1:
+        c->ai.count = 2;
+        break;
+    case 2:
+        c->ai.count = 4;
+        break;
+    case 3:
+        c->ai.count = 8;
+        break;
     }
-    if (D_00633314 == 0) {
-        goto edc;
-    }
-    if (D_00633314 == 2) {
-        v = 4;
-        goto ee4;
-    }
-    if (D_00633314 == 3) {
-        v = 8;
-        goto ee4;
-    }
-edc:
-    c->ai.count = one;
-    goto ee8;
-ee4:
-    c->ai.count = v;
-ee8:
     return 1;
 }
+
 
 s32 SpaceCrunchFunction_AttackCortex(struct creature_s *c, struct nuvec_s *v)
 {
@@ -984,8 +985,8 @@ s32 SpaceCrunchFunction_CheckCortexBack(void)
 
 s32 SpaceCortexFunction_Defeated(void)
 {
+    boss_dead = (Game.hub[Hub].flags & 4) ? 2 : 1;
     SpaceCortex_Defeated = 1;
-    boss_dead = (Game[Hub * 4 + 0x10] & 4) ? 2 : 1;
     return 1;
 }
 
@@ -1031,12 +1032,11 @@ void LoadAI(void)
     void *file;
     s32 size;
     s32 count;
-    s32 e;
-    char namebuf[16];
-    s32 found;
-    s32 subcount;
+    s32 n;
+    char name[16];
+    s32 points;
+    s32 type;
     s32 i;
-    s32 k;
     s32 slot;
 
     sprintf(tbuf, D_00631B88, LevelFileName);
@@ -1047,52 +1047,35 @@ void LoadAI(void)
     }
 
     count = NuFileReadInt(file);
-    if (count > 0) {
-        for (e = 1; e <= count; e++) {
-            for (i = 0; i < 16; i++) {
-                namebuf[i] = NuFileReadChar(file);
-            }
-            subcount = NuFileReadInt(file);
-
-            for (found = 0; found < 107; found++) {
-                if (strcmp(namebuf, AIType[found].name) == 0) {
-                    if (subcount == AIType[found].label) {
-                        if (subcount < 9) {
-                            goto found_it;
-                        }
-                    }
-                }
-            }
-            found = -1;
-        found_it:
-
-            if (subcount > 0) {
-                for (k = 0; k < subcount; k++) {
-                    slot = found != -1 ? k : 0;
-                    D_005CA154[LEVELAICOUNT].pos[slot].x = NuFileReadFloat(file);
-                    D_005CA154[LEVELAICOUNT].pos[slot].y = NuFileReadFloat(file);
-                    D_005CA154[LEVELAICOUNT].pos[slot].z = NuFileReadFloat(file);
-                }
-            }
-
-            if (found != -1) {
-                AITab[LEVELAICOUNT++].ai_type = found;
-            }
+    for (n = 0; n < count; n++) {
+        for (i = 0; i < 16; i++) {
+            name[i] = NuFileReadChar(file);
+        }
+        points = NuFileReadInt(file);
+        type = FindAIType(name, points);
+        for (i = 0; i < points; i++) {
+            slot = (type != -1) ? i : 0;
+            AITab[LEVELAICOUNT].pos[slot].x = NuFileReadFloat(file);
+            AITab[LEVELAICOUNT].pos[slot].y = NuFileReadFloat(file);
+            AITab[LEVELAICOUNT].pos[slot].z = NuFileReadFloat(file);
+        }
+        if (type != -1) {
+            AITab[LEVELAICOUNT].ai_type = type;
+            LEVELAICOUNT++;
         }
     }
 
     NuFileClose(file);
 }
 
+
 void SaveAI(void)
 {
     void *file;
     s32 i;
+    s32 j;
     u8 type;
     s32 count;
-    s32 j;
-    char *cp;
-    struct nuvec_s *p;
 
     sprintf(tbuf, D_00631B88, LevelFileName);
     file = NuFileOpen(tbuf, 1);
@@ -1103,23 +1086,15 @@ void SaveAI(void)
     NuFileWriteInt(file, LEVELAICOUNT);
     for (i = 0; i < LEVELAICOUNT; i++) {
         type = AITab[i].ai_type;
-
-        cp = AIType[type].name;
-        for (j = 15; j >= 0; j--) {
-            NuFileWriteChar(file, *cp);
-            cp++;
+        for (j = 0; j < 16; j++) {
+            NuFileWriteChar(file, AIType[type].name[j]);
         }
-
         count = AIType[type].label;
         NuFileWriteInt(file, count);
-        if (count > 0) {
-            p = D_005CA154[i].pos;
-            do {
-                NuFileWriteFloat(file, p->x);
-                NuFileWriteFloat(file, p->y);
-                NuFileWriteFloat(file, p->z);
-                p++;
-            } while (--count != 0);
+        for (j = 0; j < count; j++) {
+            NuFileWriteFloat(file, AITab[i].pos[j].x);
+            NuFileWriteFloat(file, AITab[i].pos[j].y);
+            NuFileWriteFloat(file, AITab[i].pos[j].z);
         }
     }
 
@@ -1191,21 +1166,22 @@ inline s32 PlayerLateralInRange(struct nuvec_s *line, struct nuvec_s *a, struct 
     f32 dx;
     f32 dz;
     f32 d;
-    u64 dd;
+    double dist;
 
     ratio = RatioAlongLine(line, a, b) - p0;
-    dz = (b->z - a->z) * ratio;
     dx = (b->x - a->x) * ratio;
+    dz = (b->z - a->z) * ratio;
     d = NuFsqrt(dx * dx + dz * dz);
     if (ratio < 0.0f) {
         d = -d;
     }
-    dd = fptodp(d);
-    if (dpcmp(dd, 0) < 0) {
-        dd = dpsub(0, dd);
+    dist = d;
+    if (dist < 0.0) {
+        dist = -dist;
     }
-    return dpcmp(dd, fptodp(p1)) < 0;
+    return dist < p1;
 }
+
 
 inline s32 PlayerLateralOutOfRange(struct nuvec_s *line, struct nuvec_s *a, struct nuvec_s *b, f32 p0, f32 p1)
 {
@@ -1213,20 +1189,20 @@ inline s32 PlayerLateralOutOfRange(struct nuvec_s *line, struct nuvec_s *a, stru
     f32 dx;
     f32 dz;
     f32 d;
-    u64 dd;
+    double dist;
 
     ratio = RatioAlongLine(line, a, b) - p0;
-    dz = (b->z - a->z) * ratio;
     dx = (b->x - a->x) * ratio;
+    dz = (b->z - a->z) * ratio;
     d = NuFsqrt(dx * dx + dz * dz);
     if (ratio < 0.0f) {
         d = -d;
     }
-    dd = fptodp(d);
-    if (dpcmp(dd, 0) < 0) {
-        dd = dpsub(0, dd);
+    dist = d;
+    if (dist < 0.0) {
+        dist = -dist;
     }
-    return dpcmp(dd, fptodp(p1)) > 0;
+    return dist > p1;
 }
 
 extern struct nuvec_s v000;
