@@ -65,7 +65,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0101:002273c0:ProcessEnemyJeep"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:00227550:InitEnemyJeeps"
@@ -77,11 +77,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0101:00227c38:PlayerHitBuggies"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:00227ec8:LoadWesternArenaData"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:00228070:CurrentWesternPosition"
@@ -101,11 +101,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:002289b0:InitFireBoss"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:00228b10:DrawFireBoss"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:00228d70:ProcessFireBoss"
@@ -113,7 +113,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0101:0022a5a8:DrawFireBossDebugStuff"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022a8e0:DrawJeepBalloon"
@@ -125,7 +125,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022aaf8:FireBossWaterFire"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022adf8:DrawPlayerJeep"
@@ -209,7 +209,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022b810:CheckAgainstFireBoss"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022b950:PackBuggyData"
@@ -221,7 +221,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022bb50:DoCamMtx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:0022bca8:BlendNUVECs"
