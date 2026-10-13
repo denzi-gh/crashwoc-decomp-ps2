@@ -13,7 +13,7 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0059:00165ff0:QuantizeTexture"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0059:00166330:GenTextureLoad"
@@ -21,11 +21,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0059:001670a8:GenPaletteLoad"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0059:00167398:Ps2TxSetStateData"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0059:001675a8:Ps2TxSetSurfaceStateData"
@@ -37,7 +37,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0059:00167b10:NuPs2ChangeTexPalStreamTemp"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0059:00167c98:NuPs2TintTexPalStreamTemp"
@@ -53,24 +53,24 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0059:00168430:Ps2TxValToPowerOfTwo"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0059:00168470:NuPs2TxDestroy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0059:00168500:NuPs2TxUploadPal"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0059:00168618:NuPs2ChangeTexPal"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0059:00168718:Ps2TxGetTex0"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0059:00168788:GetTexturePreLoad"
-state = "asm"
+state = "matching"
