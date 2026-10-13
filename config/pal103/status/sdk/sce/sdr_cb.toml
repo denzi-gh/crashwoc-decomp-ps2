@@ -13,12 +13,12 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0181:0026d300:sceSdRemoteCallbackInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0181:0026d3d8:_sdrCBThread"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0181:0026d440:_sdrCB"
-state = "asm"
+state = "matching"
