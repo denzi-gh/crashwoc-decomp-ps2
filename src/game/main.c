@@ -133,7 +133,7 @@ extern float AIVISRANGE;
 extern struct numtl_s *CrateMat;
 extern struct nugscn_s *wumpa_scene;
 extern struct nugscn_s *font3d_scene;
-extern s32 font3d_initialised;
+extern volatile s32 font3d_initialised;
 extern s32 GAMEOBJECTCOUNT;
 extern s32 i_cratetypedata;
 extern s32 PLAYERCOUNT;
@@ -143,6 +143,7 @@ extern void *superbuffer_end;
 extern char load_txt[];
 extern u8 texanimbuff[];
 extern struct texanimref_s D_004C1300[];
+#define texanimscripts D_004C1300
 extern struct hazecol_s D_0062FAC8[];
 extern struct hazecol_s D_0062FAD0[];
 extern struct character_s Character[];
@@ -189,7 +190,7 @@ extern void *memset(void *dst, s32 c, u32 n);
 extern s32 NuTexAnimProgReadScript(void **buf, void *script);
 extern msgfn_t NuDebugMsgProlog(char *file, s32 line);
 extern void NuDatClose(void *dat);
-extern void NuMtlReadEventSetHandler(void (*handler)(void));
+extern void NuMtlReadEventSetHandler(s32 (*handler)(struct numtl_s *mtl));
 extern struct nugscn_s *NuGScnRead(void **pptr, void *end, char *name);
 extern void InitFont3D(struct nugscn_s *scene);
 extern void LoadScreen(char *name);
@@ -205,8 +206,8 @@ extern void LoadLights(void);
 extern void InitAI(void);
 extern void InitChases(void);
 extern void ResetChases(void);
-extern void AddCreature(s32 character, s32 a, s32 b);
-extern void MtlReadEventHandler(void);
+extern s32 AddCreature(s32 character, s32 index, s32 i_aitab);
+extern s32 MtlReadEventHandler(struct numtl_s *mtl);
 
 extern char LevelFileName[];
 extern char PadRecordPath[];
@@ -311,7 +312,7 @@ extern void edgraClumpsReset(void);
 extern void edgraFileLoad(char *name);
 extern void edgraInitAllClumps(void);
 extern void LoadVehicleStuff(void);
-extern void LoadCutMovie(s32 a);
+extern s32 LoadCutMovie(s32 movie);
 extern void StartCutMovie(void);
 extern void TerrainPlatformOldUpdate(void);
 extern void TerrainPlatformNewUpdate(void);
@@ -618,54 +619,12 @@ void InitWorld(void)
     edai_used = 0;
 }
 
-void LoadLevel(void)
+inline void InitTexAnimScripts(void)
 {
-    struct texanimref_s *e;
-    struct character_s *p;
-    struct hazecol_s haze0;
-    struct hazecol_s haze1;
+    struct texanimref_s *list = texanimscripts;
     void *dat;
     void *animbuf;
     msgfn_t dbg;
-
-    if ((LDATA->flags & 0x40) && CrateMat == 0) {
-        NuDisableVBlank();
-        NuStrCpy(load_txt, D_0061B2E8);
-        NuEnableVBlank();
-        CrateMat = CreateAlphaBlendTexture256_32(D_0061B308, 0, 1, 0x100, 0);
-    }
-
-    NuDisableVBlank();
-    NuStrCpy(load_txt, D_0061B318);
-    NuEnableVBlank();
-    ParticleReset();
-
-    NuDisableVBlank();
-    NuStrCpy(load_txt, D_0061B330);
-    NuEnableVBlank();
-    InitSpecular();
-
-    NuDisableVBlank();
-    NuStrCpy(load_txt, D_0061B340);
-    NuEnableVBlank();
-    InitEnviro();
-
-    NuDisableVBlank();
-    NuStrCpy(load_txt, D_0061B350);
-    NuEnableVBlank();
-    InitGlass();
-
-    NuDisableVBlank();
-    NuStrCpy(load_txt, D_0061B360);
-    NuEnableVBlank();
-
-    if (LBIT & 0x200000A1) {
-        InitClouds();
-    }
-
-    NuDisableVBlank();
-    NuStrCpy(load_txt, D_0061B370);
-    NuEnableVBlank();
 
     NuTexAnimProgSysInit();
     dat = NuDatOpen(D_0062FA48, 0, 0);
@@ -673,11 +632,11 @@ void LoadLevel(void)
     animbuf = texanimbuff;
     memset(texanimbuff, 0, 0x8000);
 
-    for (e = D_004C1300; e->script != 0; e++) {
-        if ((e->lbit & LBIT) != 0 &&
-            NuTexAnimProgReadScript(&animbuf, e->script) == 0) {
+    for (; list->script != 0; list++) {
+        if ((list->lbit & LBIT) != 0 &&
+            NuTexAnimProgReadScript(&animbuf, list->script) == 0) {
             dbg = NuDebugMsgProlog(D_0061AE18, 0x4FF);
-            dbg(D_0061AE28, e->script);
+            dbg(D_0061AE28, list->script);
         }
     }
 
@@ -685,75 +644,26 @@ void LoadLevel(void)
     if (dat != 0) {
         NuDatClose(dat);
     }
-    NuMtlReadEventSetHandler(MtlReadEventHandler);
+}
 
-    wumpa_scene = 0;
-    if (LDATA->flags & 0x100) {
-        NuDisableVBlank();
-        NuStrCpy(load_txt, D_0061B388);
-        NuEnableVBlank();
-        wumpa_scene = NuGScnRead(&superbuffer_ptr, superbuffer_end, D_0061B3A0);
+
+inline void InitCreatureModels(void)
+{
+    s32 i;
+
+    for (i = 0; i < 9; i++) {
+        Character[i].f0 = 0;
+        Character[i].f1 = 0;
+        Character[i].f2 = 0;
     }
-
-    NuDisableVBlank();
-    NuStrCpy(load_txt, D_0061B3B0);
-    NuEnableVBlank();
-
-    if (Level != 0x28) {
-        font3d_initialised = 0;
-        font3d_scene = NuGScnRead(&superbuffer_ptr, superbuffer_end, D_0061AE58);
-        InitFont3D(font3d_scene);
-    }
-
-    NuDisableVBlank();
-    NuStrCpy(load_txt, D_0061B3C0);
-    NuEnableVBlank();
-
-    p = Character;
-    do {
-        p->f0 = 0;
-        p->f1 = 0;
-        p->f2 = 0;
-        p++;
-    } while (p < &Character[9]);
     GAMEOBJECTCOUNT = 0;
     LoadScreen(D_0061AE88);
     LoadCharacterModels();
+}
 
-    haze0 = D_0062FAC8[0];
-    haze1 = D_0062FAD0[0];
-    NuLigthSetPolyHazeMat(DebMat[4], &haze0, &haze1);
 
-    ClearGameObjects();
-    ResetCheckpoint(-1, -1, 0, 0.0f);
-
-    NuDisableVBlank();
-    NuStrCpy(load_txt, D_0061B3D8);
-    NuEnableVBlank();
-    InitWorld();
-
-    i_cratetypedata = 0;
-    if (LDATA->flags & 0x40) {
-        NuDisableVBlank();
-        NuStrCpy(load_txt, D_0061B3E8);
-        NuEnableVBlank();
-        if (ReadCrateData() != 0) {
-            NuDisableVBlank();
-            NuStrCpy(load_txt, D_0061B400);
-            NuEnableVBlank();
-            ReadInCrateData();
-        }
-    }
-
-    NuDisableVBlank();
-    NuStrCpy(load_txt, D_0061B418);
-    NuEnableVBlank();
-    LoadLights();
-
-    NuDisableVBlank();
-    NuStrCpy(load_txt, D_0061B428);
-    NuEnableVBlank();
-
+inline void InitCreatures(void)
+{
     LoadScreen(D_0061AEA0);
     InitAI();
     LoadScreen(D_0061AEB0);
@@ -768,6 +678,90 @@ void LoadLevel(void)
         PLAYERCOUNT = 0;
     }
 }
+
+
+inline void LoadScreen(char *name)
+{
+    NuDisableVBlank();
+    NuStrCpy(load_txt, name);
+    NuEnableVBlank();
+}
+
+
+inline void LoadFont3D(void)
+{
+    font3d_initialised = 0;
+    font3d_scene = NuGScnRead(&superbuffer_ptr, superbuffer_end, D_0061AE58);
+    InitFont3D(font3d_scene);
+}
+
+
+void LoadLevel(void)
+{
+    struct hazecol_s haze0;
+    struct hazecol_s haze1;
+
+    if ((LDATA->flags & 0x40) && CrateMat == 0) {
+        LoadScreen(D_0061B2E8);
+        CrateMat = CreateAlphaBlendTexture256_32(D_0061B308, 0, 1, 0x100, 0);
+    }
+
+    LoadScreen(D_0061B318);
+    ParticleReset();
+    LoadScreen(D_0061B330);
+    InitSpecular();
+    LoadScreen(D_0061B340);
+    InitEnviro();
+    LoadScreen(D_0061B350);
+    InitGlass();
+    LoadScreen(D_0061B360);
+    if (LBIT & 0x200000A1) {
+        InitClouds();
+    }
+    LoadScreen(D_0061B370);
+
+    InitTexAnimScripts();
+    NuMtlReadEventSetHandler(MtlReadEventHandler);
+
+    wumpa_scene = 0;
+    if (LDATA->flags & 0x100) {
+        LoadScreen(D_0061B388);
+        wumpa_scene = NuGScnRead(&superbuffer_ptr, superbuffer_end, D_0061B3A0);
+    }
+
+    LoadScreen(D_0061B3B0);
+    if (Level != 0x28) {
+        LoadFont3D();
+    }
+
+    LoadScreen(D_0061B3C0);
+    InitCreatureModels();
+
+    haze0 = D_0062FAC8[0];
+    haze1 = D_0062FAD0[0];
+    NuLigthSetPolyHazeMat(DebMat[4], &haze0, &haze1);
+
+    ClearGameObjects();
+    ResetCheckpoint(-1, -1, 0, 0.0f);
+
+    LoadScreen(D_0061B3D8);
+    InitWorld();
+
+    i_cratetypedata = 0;
+    if (LDATA->flags & 0x40) {
+        LoadScreen(D_0061B3E8);
+        if (ReadCrateData() != 0) {
+            LoadScreen(D_0061B400);
+            ReadInCrateData();
+        }
+    }
+
+    LoadScreen(D_0061B418);
+    LoadLights();
+    LoadScreen(D_0061B428);
+    InitCreatures();
+}
+
 
 void DrawWorld(void)
 {
@@ -807,6 +801,8 @@ struct numtl_s {
     float f1A0;              /* 0x1A0 */
     s32 tid;                 /* 0x1A4 texture id */
     s32 alpha;               /* 0x1A8 */
+    u8 unk_0x1AC[0x19];      /* 0x1AC */
+    u8 fxid;                 /* 0x1C5 */
 };
 
 struct fadebits {
@@ -850,7 +846,7 @@ void CreateFadeMtl(void)
     NuMtlUpdate(m);
 }
 
-void UpdateFade(void)
+inline void UpdateFade(void)
 {
     s32 old = fadeval;
 
@@ -875,7 +871,7 @@ void UpdateFade(void)
         fadeval | (fadeval << 8) | (fadeval << 16) | 0x80000000;
 }
 
-void DrawFade(void)
+inline void DrawFade(void)
 {
     if (fadeval != 0) {
         NuRndrRect2di(0, 0, SWIDTH << 4, SHEIGHT << 3, D_00633264,
@@ -885,7 +881,7 @@ void DrawFade(void)
 
 extern char D_0061B550[];
 extern void *superbuffer_reset_base;
-extern s32 bgload_complete;
+extern volatile s32 bgload_complete;
 extern void BGLoadScreenInit(s32 a);
 extern void InitLevelSfxTables(void);
 extern void InitGlobalSfx(void);
@@ -937,11 +933,21 @@ struct nupad_s {
     u8 stick_y;                  /* 0x57F */
 };
 
+struct mask_s {
+    u8 unk_0x000[0x16E];
+    short active;                /* 0x16E */
+};
+
 struct player_s {
-    u8 unk_0x00[0x149];
-    s8 f_0x149;                  /* 0x149 */
+    s8 used;                     /* 0x000 */
+    u8 unk_0x001[0xC - 0x1];     /* 0x001 */
+    struct mask_s *mask;         /* 0x00C */
+    u8 unk_0x010[0x149 - 0x10];  /* 0x010 */
+    s8 dead;                     /* 0x149 */
     u8 unk_0x14A[0x153 - 0x14A]; /* 0x14A */
-    s8 f_0x153;                  /* 0x153 */
+    s8 finished;                 /* 0x153 */
+    u8 unk_0x154[0xCE1 - 0x154]; /* 0x154 */
+    u8 freeze;                   /* 0xCE1 */
 };
 
 struct cursor_s {
@@ -954,7 +960,7 @@ struct game_s {
     u8 unk_0x00[0xD];
     s8 f_0x0D;                   /* 0x0D */
     s8 f_0x0E;                   /* 0x0E */
-    u8 unk_0x0F[1];
+    u8 language;                 /* 0x0F */
 }; /* 0x10 */
 
 struct timer_s {
@@ -1032,7 +1038,7 @@ void DoInput(void)
 
     if (NuPs2ReadPad(pad)) {
         if (pad_record != 0) {
-            if ((pad->buttons & 0x800) || player->f_0x149 != 0) {
+            if ((pad->buttons & 0x800) || player->dead != 0) {
                 SavePadRecord(PadRecordPath);
                 pad_record = 0;
             }
@@ -1083,7 +1089,7 @@ void DoInput(void)
 
         if (Paused == 0 && Cursor.menu == -1 &&
             !(PLAYERCOUNT != 0 &&
-              (player->f_0x153 != 0 ||
+              (player->finished != 0 ||
                (Level == 0x25 && tumble_time < tumble_duration &&
                 last_hub != -1)))) {
             pause_dir = 1;
@@ -1140,7 +1146,7 @@ void DoInput(void)
             return;
         }
         if (PLAYERCOUNT != 0) {
-            if (player->f_0x153 != 0) {
+            if (player->finished != 0) {
                 return;
             }
             if (Level == 0x25 && tumble_time < tumble_duration &&
@@ -1155,6 +1161,91 @@ void DoInput(void)
         PauseGameAudio(1);
         GameSfx(0x36, 0);
     }
+}
+
+
+struct nuhgobj_s;
+struct nuanimdata_s;
+
+extern char D_0061B4D0[];
+extern s32 bgloadlastcharacter;
+extern char *bgloadcharnames[];
+extern char *bgloadanimnames[];
+extern struct nuhgobj_s *bgloadchr[2];
+extern struct nuanimdata_s *bgloadanim[2];
+
+extern void TimeTunnelInit(void *buffer, void *buffend);
+extern struct nuhgobj_s *NuGHGRead(void *buffer, char *name);
+extern struct nuanimdata_s *NuAnimDataLoadBuff(char *name, void *buffer, void *buffend);
+
+void BGLoadScreenInit(s32 loadchars)
+{
+    void **buffend = &superbuffer_end;
+    void *buffer = (char *)superbuffer_end - 0x100000;
+    void *dat;
+    s32 c;
+
+    TimeTunnelInit(&buffer, buffend);
+    if (loadchars != 0) {
+        dat = NuDatOpen(D_0061B4D0, 0, 0);
+        NuDatSet(dat);
+        c = bgloadlastcharacter;
+        if (c >= 0 && c < 2) {
+            bgloadchr[c] = NuGHGRead(&buffer, bgloadcharnames[c]);
+            bgloadanim[c] = NuAnimDataLoadBuff(bgloadanimnames[c], &buffer, buffend);
+            bgloadlastcharacter = -1;
+        }
+        if (LDATA->character >= 0 && LDATA->character < 2) {
+            bgloadanim[LDATA->character] =
+                NuAnimDataLoadBuff(bgloadanimnames[LDATA->character], &superbuffer_ptr, buffend);
+        }
+        NuDatSet(0);
+        if (dat != 0) {
+            NuDatClose(dat);
+        }
+    }
+}
+
+
+extern s32 texanimbits;
+extern float WeatherBossSkeletonTimer;
+extern s32 WeatherBossDead;
+extern void NuTexAnimSetSignals(s32 bits);
+extern void NuTexAnimProcess(void);
+
+void SetTexAnimSignals(void)
+{
+    if (player->used != 0 &&
+        (player->dead == 3 || player->dead == 8 || player->freeze != 0)) {
+        texanimbits |= 2;
+    } else {
+        texanimbits &= 0xFFFFFFFD;
+    }
+    if (player->mask != 0 && player->mask->active > 1) {
+        texanimbits |= 4;
+    } else {
+        texanimbits &= 0xFFFFFFFB;
+    }
+    if (player->used != 0 && player->dead != 0 && player->dead != 0x12) {
+        texanimbits |= 0x20;
+    } else {
+        texanimbits &= 0xFFFFFFDF;
+    }
+    if (Level == 0x17) {
+        texanimbits |= 0x40;
+    } else {
+        texanimbits &= 0xFFFFFFBF;
+    }
+    if (Level == 0x18 && WeatherBossSkeletonTimer != 0.0f) {
+        texanimbits |= 0x100;
+    } else {
+        texanimbits &= 0xFFFFFEFF;
+    }
+    if (Level == 0x18 && WeatherBossDead != 0) {
+        texanimbits |= 0x200;
+    }
+    NuTexAnimSetSignals(texanimbits);
+    NuTexAnimProcess();
 }
 
 
@@ -1189,37 +1280,6 @@ void ResumeGame(void)
 }
 
 
-void LoadScreen(char *name)
-{
-    NuDisableVBlank();
-    NuStrCpy(load_txt, name);
-    NuEnableVBlank();
-}
-
-
-void LoadFont3D(void)
-{
-    font3d_initialised = 0;
-    font3d_scene = NuGScnRead(&superbuffer_ptr, superbuffer_end, D_0061AE58);
-    InitFont3D(font3d_scene);
-}
-
-
-void InitCreatureModels(void)
-{
-    s32 i;
-
-    for (i = 0; i < 9; i++) {
-        Character[i].f0 = 0;
-        Character[i].f1 = 0;
-        Character[i].f2 = 0;
-    }
-    GAMEOBJECTCOUNT = 0;
-    LoadScreen(D_0061AE88);
-    LoadCharacterModels();
-}
-
-
 extern void NuPs2PadSetMotors(struct nupad_s *pad, s32 a, s32 b);
 
 void PauseRumble(void)
@@ -1229,6 +1289,51 @@ void PauseRumble(void)
     }
     if (Pad[1]) {
         NuPs2PadSetMotors(Pad[1], 0, 0);
+    }
+}
+
+
+struct vec2_s {
+    float x;
+    float y;
+};
+
+struct vec3_s {
+    float x;
+    float y;
+    float z;
+};
+
+struct nulight_s {
+    s32 type;                    /* 0x00 */
+    s32 on;                      /* 0x04 */
+    struct vec3_s ambient;       /* 0x08 */
+    struct vec3_s diffuse;       /* 0x14 */
+    u8 unk_0x20[0x20];           /* 0x20 */
+    struct numtx_s mtx;          /* 0x40 */
+};
+
+extern struct nulight_s *D_0062FAE8;
+#define level_light D_0062FAE8
+
+extern struct nulight_s *NuLightCreate(void);
+extern void NuLightUpdate(struct nulight_s *light);
+extern void NuMtxSetRotationX(struct numtx_s *m, s32 angle);
+
+void InitLights(void)
+{
+    level_light = NuLightCreate();
+    if (level_light != 0) {
+        level_light->type = 0;
+        level_light->on = 1;
+        level_light->ambient.x = 0.0f;
+        level_light->ambient.y = 0.0f;
+        level_light->ambient.z = 0.0f;
+        level_light->diffuse.x = 0.0f;
+        level_light->diffuse.y = 0.0f;
+        level_light->diffuse.z = 1.0f;
+        NuMtxSetRotationX(&level_light->mtx, 0xC000);
+        NuLightUpdate(level_light);
     }
 }
 
@@ -1262,7 +1367,11 @@ struct nutexdesc_s {
     s32 type;                /* 0x00 */
     s32 width;               /* 0x04 */
     s32 height;              /* 0x08 */
-    s32 pad[5];              /* 0x0C */
+    s32 mmcnt;               /* 0x0C */
+    void *bits;              /* 0x10 */
+    void *pal;               /* 0x14 */
+    s32 decal;               /* 0x18 */
+    s32 linear;              /* 0x1C */
 }; /* 0x20 */
 
 struct nuviewport_s;
@@ -1363,6 +1472,28 @@ extern s32 NuTexReadBitmapMMEx(char *name, s32 mipmaps, s32 *addr, s32 *addrend)
 extern s32 NuTexCreateEx(s32 spec, void *extmem, s32 extsize);
 extern void NuMemSetExternal(void *addr, s32 size);
 
+void TextureCreate(char *name, struct numtl_s **mtl, s32 *tid)
+{
+    if (NuFileSize(name) < 0) {
+        *mtl = 0;
+        *tid = 0;
+        return;
+    }
+    *tid = NuTexReadBitmapMM(name, 0);
+    *mtl = NuMtlCreate(1);
+    MTLATTR(*mtl).f46 = 3;
+    MTLATTR(*mtl).f36 = 1;
+    MTLATTR(*mtl).f48 = 2;
+    MTLATTR(*mtl).f40 = 1;
+    MTLATTR(*mtl).f42 = 1;
+    MTLATTR(*mtl).f50 = 1;
+    MTLATTR(*mtl).f32 = 0;
+    (*mtl)->tid = (s32)NuTexCreate((struct nutexdesc_s *)*tid);
+    NuMtlUpdate(*mtl);
+    NuMemSetExternal(0, 0);
+}
+
+
 void TextureCreateEx(char *name, struct numtl_s **mtl, s32 *tid, void *extmem, s32 extsize,
                      s32 *addr, s32 *addrend)
 {
@@ -1400,16 +1531,52 @@ void TextureCreateEx(char *name, struct numtl_s **mtl, s32 *tid, void *extmem, s
 }
 
 
-struct vec2_s {
-    float x;
-    float y;
-};
+extern void GlassGivenMaterial(struct numtl_s *mtl);
+extern void EnviroGivenMaterial(struct numtl_s *mtl);
+extern void SpecularGivenMaterial(struct numtl_s *mtl);
+extern void FlickerPalGivenMaterial(struct numtl_s *mtl);
 
-struct vec3_s {
-    float x;
-    float y;
-    float z;
-};
+s32 MtlReadEventHandler(struct numtl_s *mtl)
+{
+    s32 handled = 0;
+
+    if (mtl->fxid != 0 && !(mtl->fxid & 0x80)) {
+        if (mtl->fxid & 1) {
+            GlassGivenMaterial(mtl);
+            handled = 1;
+        }
+        if (mtl->fxid & 0x10) {
+            EnviroGivenMaterial(mtl);
+        }
+        if (mtl->fxid & 2) {
+            SpecularGivenMaterial(mtl);
+        }
+        if (mtl->fxid & 8) {
+            FlickerPalGivenMaterial(mtl);
+        }
+    }
+    return handled;
+}
+
+
+extern void NuMemFreeFn(void *ptr, char *file, s32 line);
+
+void TextureDestroy(struct numtl_s *mtl, struct nutexdesc_s *tex)
+{
+    if (mtl != 0) {
+        NuMtlDestroy(mtl);
+        if (mtl->tid != 0) {
+            NuTexDestroy((struct nutex_s *)mtl->tid);
+        }
+    }
+    if (tex != 0) {
+        if (tex->bits != 0) {
+            NuMemFreeFn(tex->bits, D_0061AE18, 0x70A);
+        }
+        NuMemFreeFn(tex, D_0061AE18, 0x70B);
+    }
+}
+
 
 extern struct vec3_s mg_player_actpos;
 extern float mg_colldist;
@@ -1438,4 +1605,104 @@ void BGLoadLevel(void)
     bgload_complete = 1;
     for (;;) {
     }
+}
+
+
+extern char D_0061B530[];
+extern s32 bg_cutmovie_id;
+extern s32 bg_cutloadrv;
+
+void BGLoadCutScene(void)
+{
+    LoadScreen(D_0061B530);
+    BGLoadScreenInit(0);
+    bg_cutloadrv = LoadCutMovie(bg_cutmovie_id);
+    bgload_complete = 1;
+    for (;;) {
+    }
+}
+
+
+extern struct numtx_s numtx_identity;
+extern struct vec3_s bgload_campos;
+extern char *tLOADING[];
+extern s32 mg_frame;
+extern struct timer_s GameTimer;
+
+extern void NuRndrSwapScreen(s32 a);
+extern void BGLoadStart(void (*func)(void));
+extern void BGLoadEnd(void);
+extern void BGSuspendMain(void);
+extern void NuVpSetSize(float width, float height);
+extern void NuSoundUpdate(void);
+extern void NuMtxTranslate(struct numtx_s *m, struct vec3_s *v);
+extern void TimeTunnelRender(void);
+extern void TimeTunnelClose(void);
+extern void DrawGameMessage(char *text, s32 frame, float y);
+extern void UpdateTimer(struct timer_s *timer);
+extern void NuRndrVu1Draw(void);
+extern void NuRndrSwapStreamBuffers(void);
+
+s32 BGLoadCutMovie(s32 movie)
+{
+    s32 done;
+
+    if (NuRndrBeginScene(-1) != 0) {
+        NuRndrEndScene();
+        NuRndrSwapScreen(-1);
+    }
+    bg_cutmovie_id = movie;
+    BGLoadStart(BGLoadCutScene);
+    done = 0;
+    fade_rate = -10;
+    fadeval = 0xFF;
+    NuVpSetSize(PS2_REZ_W << 4, PS2_REZ_H << 4);
+
+    do {
+        NuSoundUpdate();
+        pNuCam->mtx = numtx_identity;
+        NuMtxTranslate(&pNuCam->mtx, &bgload_campos);
+        NuCameraSet(pNuCam);
+        if (NuRndrBeginScene(-1) != 0) {
+            NuRndrClear(3, 0, 1.0f);
+            TimeTunnelRender();
+            if (font3d_scene != 0 && font3d_initialised != 0) {
+                pNuCam->mtx = numtx_identity;
+                NuCameraSet(pNuCam);
+                if (mg_frame < 0) {
+                    mg_frame = 0;
+                } else {
+                    mg_frame++;
+                }
+                DrawGameMessage(tLOADING[Game.language], mg_frame, 0.8f);
+            }
+            UpdateFade();
+            DrawFade();
+            UpdateTimer(&GameTimer);
+            NuRndrEndScene();
+        }
+        BGSuspendMain();
+        NuRndrVu1Draw();
+        NuRndrSwapStreamBuffers();
+        if (bgload_complete == 1) {
+            fade_rate = 10;
+            bgload_complete++;
+        }
+        if (bgload_complete != 0 && fadeval == 0xFF) {
+            done = 1;
+        }
+    } while (done == 0);
+
+    BGLoadEnd();
+    if (NuRndrBeginScene(-1) != 0) {
+        NuRndrEndScene();
+        NuRndrSwapScreen(-1);
+    }
+    if (NuRndrBeginScene(-1) != 0) {
+        NuRndrEndScene();
+        NuRndrSwapScreen(-1);
+    }
+    TimeTunnelClose();
+    fadeval = 0xFF;
+    return bg_cutloadrv;
 }
