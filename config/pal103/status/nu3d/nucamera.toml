@@ -13,11 +13,11 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0031:00112118:NuCameraSetProjectionMtx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0031:001122f8:NuCameraSetEx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0031:001129b0:NuCameraSaveState"
@@ -29,7 +29,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0031:00113618:NuCameraCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0031:00113690:NuCameraDestroy"
@@ -37,15 +37,15 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0031:001136b8:NuCameraSetVPortClipMtx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0031:00113808:NuCameraSetScissorClipMtx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0031:00113958:NuCameraSet"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0031:00113988:NuCameraClearStateBuffer"
@@ -53,7 +53,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0031:00113990:NuCameraSetReflect"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0031:00113b18:NuCameraSetAxes"
@@ -101,7 +101,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0031:00113bf8:NuCameraGetClipMtx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0031:00113d18:NuCameraTransformView"
@@ -125,7 +125,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0031:00114268:NuCameraClipTestExtents"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0031:001142d8:NuCameraClipTestPoints"
@@ -137,7 +137,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0031:001144b0:NuCameraDist"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0031:001144d8:NuCameraGetTrans"
@@ -153,11 +153,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0031:00114540:NuCameraClipTestPointScissor"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0031:00114568:NuCameraGet"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0031:00114608:NuCameraTransformScissorClip"

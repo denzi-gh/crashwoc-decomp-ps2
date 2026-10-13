@@ -58,8 +58,38 @@ typedef struct NuCamera {
     float aspect;
     float nearclip;
     float farclip;
-    unsigned char unknown_50[0x10];
+    float portalnearclip;
+    NuVec3 scale;
 } NuCamera;
+
+typedef struct NuViewport {
+    int x;
+    int y;
+    int width;
+    int height;
+    float zmin;
+    float zmax;
+    float centre_x;
+    float centre_y;
+    float clip_left;
+    float clip_top;
+    float clip_right;
+    float clip_bottom;
+    float clip_scale_x;
+    float clip_scale_y;
+    float guard_scale_x;
+    float guard_scale_y;
+} NuViewport;
+
+typedef struct NuCameraReflect {
+    int type;
+    NuMtx mtx;
+    NuMtx clip;
+} NuCameraReflect;
+
+struct NuColour4;
+
+typedef void (*NuErrorFunc)(const char *fmt, ...);
 
 /* The state-buffer stride is 0x2b4; the camera occupies its first 0x60 bytes. */
 typedef struct NuCameraState {
@@ -137,8 +167,20 @@ extern float D_00633050;
 extern float D_00633054;
 #define clip_ratio_w D_00633054
 
+extern NuMtx D_0067A630;
+#define scissor_proj_mtx D_0067A630
+
+extern NuCameraReflect D_0067A670;
+#define camera_reflection D_0067A670
+
 extern char D_00614170[];
 #define nucamera_file D_00614170
+
+extern char D_0062EB58[];
+#define assert_msg D_0062EB58
+
+extern float nucamera_farclip_hack;
+extern float NuTrigTable[];
 
 extern void NuMemFreeFn(void *ptr, char *file, int line);
 extern float NuVecDistSqr(NuVec3 *a, NuVec3 *b, NuVec3 *diff);
@@ -146,6 +188,159 @@ extern int NuVecClipTestPointVU0(NuVec3 *pos, NuMtx *clipmtx);
 extern int NuAtan2D(float x, float z);
 extern void FaceYDirStream(int angle);
 extern void NuRndrSetViewMtx(NuMtx *vpcs, NuMtx *vpc, NuMtx *scissor);
+extern void *NuMemAllocFn(int size, char *file, int line);
+extern void NuMtxSetIdentity(NuMtx *m);
+extern float NuVecDist(NuVec3 *a, NuVec3 *b, NuVec3 *diff);
+extern void NuCameraInitClipTestVU0(NuMtx *vpc, NuMtx *scissor);
+extern int NuCameraClipTestExtentsVU0(NuVec3 *min, NuVec3 *max);
+extern NuViewport *NuVpGetCurrentViewport(void);
+extern void NuMtxMulVU0(NuMtx *dst, NuMtx *a, NuMtx *b);
+extern void *memset(void *s, int c, int n);
+extern NuErrorFunc NuErrorProlog(const char *file, int line);
+extern double fabs(double x);
+extern void NuVpUpdate(void);
+extern void NuVpGetScalingMtx(NuMtx *m);
+extern void NuMtxInv(NuMtx *dst, NuMtx *src);
+extern void NuMtxInvVU0(NuMtx *dst, NuMtx *src);
+extern void NuMtxScaleVU0(NuMtx *m, NuVec3 *scale);
+extern void NuMtxMul(NuMtx *dst, NuMtx *a, NuMtx *b);
+extern int NuRndrSetSpecularLight(NuVec3 *dir, struct NuColour4 *colour);
+extern NuMtx numtx_identity;
+
+
+void NuCameraSetProjectionMtx(NuMtx *m, float fov, float aspect, float nearclip, float farclip) {
+    float depth = farclip - nearclip;
+    int angle;
+    float *sine;
+    float cot;
+    float q;
+
+    if (!(fabs(depth) > 0.01f)) {
+        NuErrorProlog(nucamera_file, 0xA0)(assert_msg);
+    }
+    angle = (int)(fov * 0.5f * 10430.378f);
+    sine = &NuTrigTable[angle & 0xFFFF];
+    if (!(fabs(*sine) > 0.01f)) {
+        NuErrorProlog(nucamera_file, 0xA1)(assert_msg);
+    }
+    q = farclip / depth;
+    cot = NuTrigTable[(angle + 0x4000) & 0xFFFF] / *sine;
+    memset(m, 0, sizeof(NuMtx));
+    m->m[0][0] = aspect * cot;
+    m->m[1][1] = cot;
+    m->m[2][2] = q;
+    m->m[2][3] = 1.0f;
+    m->m[3][2] = -q * nearclip;
+}
+
+
+inline void NuCameraSetVPortClipMtx(NuMtx *dst, NuMtx *view, NuCamera *cam, int keep) {
+    NuViewport *vp;
+    float farclip;
+    float nearclip;
+    float cot;
+    float xscale;
+    float yscale;
+    int angle;
+
+    if (!keep) {
+        vp = NuVpGetCurrentViewport();
+        angle = (int)(cam->fov * 0.5f * 10430.378f);
+        farclip = cam->farclip - nucamera_farclip_hack;
+        nearclip = cam->nearclip;
+        cot = NuTrigTable[(angle + 0x4000) & 0xFFFF] / NuTrigTable[angle & 0xFFFF];
+        xscale = vp->clip_scale_x * (cam->aspect * cot);
+        yscale = vp->clip_scale_y * cot;
+        memset(&pc_mtx, 0, sizeof(NuMtx));
+        pc_mtx.m[0][0] = xscale;
+        pc_mtx.m[1][1] = yscale;
+        pc_mtx.m[2][2] = (farclip + nearclip) / (farclip - nearclip);
+        pc_mtx.m[2][3] = 1.0f;
+        pc_mtx.m[3][2] = farclip * -2.0f * nearclip / (farclip - nearclip);
+    }
+    NuMtxMulVU0(dst, view, &pc_mtx);
+}
+
+
+inline void NuCameraSetScissorClipMtx(NuMtx *dst, NuMtx *view, NuCamera *cam, int keep) {
+    NuViewport *vp;
+    float farclip;
+    float nearclip;
+    float cot;
+    float xscale;
+    float yscale;
+    int angle;
+
+    if (!keep) {
+        vp = NuVpGetCurrentViewport();
+        angle = (int)(cam->fov * 0.5f * 10430.378f);
+        farclip = cam->farclip - nucamera_farclip_hack;
+        nearclip = cam->nearclip;
+        cot = NuTrigTable[(angle + 0x4000) & 0xFFFF] / NuTrigTable[angle & 0xFFFF];
+        xscale = vp->guard_scale_x * cam->aspect * cot;
+        yscale = vp->guard_scale_y * cot;
+        memset(&scissor_proj_mtx, 0, sizeof(NuMtx));
+        scissor_proj_mtx.m[0][0] = xscale;
+        scissor_proj_mtx.m[1][1] = yscale;
+        scissor_proj_mtx.m[2][2] = (farclip + nearclip) / (farclip - nearclip);
+        scissor_proj_mtx.m[2][3] = 1.0f;
+        scissor_proj_mtx.m[3][2] = farclip * -2.0f * nearclip / (farclip - nearclip);
+    }
+    NuMtxMulVU0(dst, view, &scissor_proj_mtx);
+}
+
+
+void NuCameraSetEx(NuCamera *cam, int keep) {
+    NuMtx caminv;
+    NuMtx reflectinv;
+    NuMtx flip;
+    float tanfov;
+    float xratio;
+    int angle;
+
+    global_camera = *cam;
+    FaceYDirStream(NuAtan2D(-global_camera.mtx.m[2][0], -global_camera.mtx.m[2][2]));
+    if (!keep) {
+        NuVpUpdate();
+    }
+    if (!camera_reflect) {
+        NuMtxInvVU0(&view_mtx, &global_camera.mtx);
+        NuMtxScaleVU0(&view_mtx, &global_camera.scale);
+    } else {
+        flip = numtx_identity;
+        flip.m[1][1] = -1.0f;
+        NuMtxInv(&caminv, &global_camera.mtx);
+        NuMtxInv(&reflectinv, &camera_reflection.mtx);
+        view_mtx = reflectinv;
+        if (camera_reflect == 1) {
+            NuMtxMul(&view_mtx, &view_mtx, &flip);
+        }
+        NuMtxMul(&view_mtx, &view_mtx, &camera_reflection.mtx);
+        NuMtxMul(&view_mtx, &view_mtx, &caminv);
+    }
+    if (!keep) {
+        NuCameraSetProjectionMtx(&projection_mtx, global_camera.fov, global_camera.aspect,
+                                 global_camera.nearclip, global_camera.farclip);
+    }
+    NuCameraSetVPortClipMtx(&vpc_mtx, &view_mtx, &global_camera, keep);
+    NuCameraSetScissorClipMtx(&scissor_clip_mtx, &view_mtx, &global_camera, keep);
+    NuVpGetScalingMtx(&scaling_mtx);
+    NuMtxMulVU0(&vport_clip_mtx, &view_mtx, &projection_mtx);
+    NuMtxMulVU0(&vpcs_mtx, &vport_clip_mtx, &scaling_mtx);
+    NuMtxMulVU0(&pcs_mtx, &projection_mtx, &scaling_mtx);
+    camera_reflection.clip = vpc_mtx;
+    if (!keep) {
+        angle = (int)(global_camera.fov * 0.5f * 10430.378f);
+        tanfov = NuTrigTable[angle & 0xFFFF] / NuTrigTable[(angle + 0x4000) & 0xFFFF];
+        xratio = tanfov / global_camera.aspect;
+        clip_ratio_x = xratio;
+        clip_ratio_y = tanfov;
+        clip_ratio_z = xratio * 5120.0f;
+        clip_ratio_w = tanfov * 1792.0f;
+    }
+    NuRndrSetViewMtx(&vpcs_mtx, &vpc_mtx, &scissor_clip_mtx);
+    NuRndrSetSpecularLight(0, 0);
+}
 
 
 int NuCameraSaveState(void) {
@@ -203,6 +398,22 @@ void NuCameraRestoreState(int handle) {
 }
 
 
+NuCamera *NuCameraCreate(void) {
+    NuCamera *cam = NuMemAllocFn(sizeof(NuCamera), nucamera_file, 0x3A);
+
+    NuMtxSetIdentity(&cam->mtx);
+    cam->nearclip = 0.15f;
+    cam->farclip = 10000.0f;
+    cam->fov = 0.75f;
+    cam->aspect = 0.75f;
+    cam->portalnearclip = 0.0f;
+    cam->scale.z = 1.0f;
+    cam->scale.y = 1.0f;
+    cam->scale.x = 1.0f;
+    return cam;
+}
+
+
 void NuCameraDestroy(NuCamera *cam) {
     if (cam) {
         NuMemFreeFn(cam, nucamera_file, 0x4A);
@@ -210,8 +421,22 @@ void NuCameraDestroy(NuCamera *cam) {
 }
 
 
+inline void NuCameraSet(NuCamera *cam) {
+    while (cam == (NuCamera *)1) {
+    }
+    NuCameraSetEx(cam, 0);
+}
+
+
 void NuCameraClearStateBuffer(void) {
     state_buffer_count = 0;
+}
+
+
+void NuCameraSetReflect(NuCamera *cam, NuCameraReflect *reflect) {
+    camera_reflection = *reflect;
+    NuCameraSet(cam);
+    *reflect = camera_reflection;
 }
 
 
@@ -270,8 +495,35 @@ NuMtx *NuCameraGetVPCMtx(void) {
 }
 
 
+void NuCameraGetClipMtx(NuMtx *vpc, NuMtx *scissor) {
+    if (vpc) {
+        *vpc = vpc_mtx;
+    }
+    if (scissor) {
+        *scissor = scissor_clip_mtx;
+    }
+}
+
+
+int NuCameraClipTestExtents(NuVec3 *min, NuVec3 *max) {
+    int result;
+
+    NuCameraInitClipTestVU0(&vpc_mtx, &scissor_clip_mtx);
+    result = NuCameraClipTestExtentsVU0(min, max);
+    if (!(result & 0x3F)) {
+        return (result & 0x3F00) ? 2 : 1;
+    }
+    return 0;
+}
+
+
 float NuCameraDistSqr(NuVec3 *pos) {
     return NuVecDistSqr(pos, &camera_trans, 0);
+}
+
+
+float NuCameraDist(NuVec3 *pos) {
+    return NuVecDist(pos, &camera_trans, 0);
 }
 
 
@@ -288,4 +540,14 @@ void NuCameraGetClippingRatios(float *xratio, float *yratio) {
 
 int NuCameraClipTestPointVport(NuVec3 *pos) {
     return !NuVecClipTestPointVU0(pos, &vpc_mtx);
+}
+
+
+int NuCameraClipTestPointScissor(NuVec3 *pos) {
+    return !NuVecClipTestPointVU0(pos, &scissor_clip_mtx);
+}
+
+
+void NuCameraGet(NuCamera *cam) {
+    *cam = global_camera;
 }
