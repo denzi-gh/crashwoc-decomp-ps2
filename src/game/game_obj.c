@@ -72,15 +72,15 @@ extern struct obj_s *pObj[];
 /* Projectile record; obj header at 0x0, active flag at 0x1A9, stride 0x1B0. */
 struct projectile_s {
     struct obj_s obj;        /* 0x000 */
-    struct nuvec_s unk_0x188; /* 0x188 */
-    struct nuvec_s unk_0x194; /* 0x194 */
+    struct nuvec_s srcpos;   /* 0x188 */
+    struct nuvec_s dstpos;   /* 0x194 */
     f32 time;                /* 0x1A0 */
     f32 duration;            /* 0x1A4 */
     s8 type;                 /* 0x1A8 */
     s8 active;               /* 0x1A9 */
     short object;            /* 0x1AA */
-    s8 unk_0x1AC;            /* 0x1AC */
-    u8 unk_0x1AD;            /* 0x1AD */
+    s8 kill;                 /* 0x1AC */
+    u8 owner_safety;         /* 0x1AD */
     u8 unk_0x1AE[0x2];       /* 0x1AE */
 };
 
@@ -102,6 +102,24 @@ extern f32 D_0062D7CC;
 extern f32 D_0062D7D0;
 extern f32 D_0062D7D4;
 extern f32 D_0062D7D8;
+extern s32 i_projectile;
+extern f32 jonwidth;
+extern f32 jonwidth2;
+extern s32 FIZZLEVOL;
+extern struct nuvec_s v000;
+f32 NewShadow(struct nuvec_s *pos, f32 y);
+f32 NewShadowMaskPlat(struct nuvec_s *pos, f32 y, s32 extramask);
+f32 NuVecDist(struct nuvec_s *a, struct nuvec_s *b, struct nuvec_s *d);
+f32 NuVecMag(struct nuvec_s *v);
+s32 NewRayCast(struct nuvec_s *pos, struct nuvec_s *ray, f32 size);
+extern f32 GRAVITY;
+extern f32 D_005F28F8[];
+#define terminal_fall_speed D_005F28F8[0]
+void NuVecAdd(struct nuvec_s *d, struct nuvec_s *a, struct nuvec_s *b);
+s32 HitCrates(struct obj_s *obj, s32 destroy);
+s32 HitWumpa(struct obj_s *obj, s32 destroy);
+void AddKaboom(s32 type, struct nuvec_s *pos, f32 radius);
+void AddVariableShotDebrisEffect(s32 type, struct nuvec_s *pos, s32 count, s16 rotz, s16 roty);
 
 void NewTopBot(struct obj_s *obj);
 s32 GameObjectOverlap(struct obj_s *a, struct obj_s *b, s32 find_angle);
@@ -254,6 +272,7 @@ extern s32 Paused;
 extern s32 FRAME;
 extern s32 FRAMES;
 extern struct gamecam_s GameCam[];
+void JudderGameCamera(struct gamecam_s *cam, f32 time, struct nuvec_s *pos);
 extern s32 InvincibilityCHEAT;
 extern s32 bonus_crates_destroyed;
 extern s32 old_bonus_crates;
@@ -1931,6 +1950,759 @@ s32 KillGameObject(struct obj_s *obj, s32 anim) {
 }
 
 
+inline void CountGameObjects(void) {
+    s32 i;
+
+    for (i = 64; i > 0; i--) {
+        if (pObj[i - 1] != 0) {
+            break;
+        }
+    }
+    GAMEOBJECTCOUNT = i;
+}
+
+inline s32 AddGameObject(struct obj_s *obj, struct obj_s *parent) {
+    s32 i;
+    s32 added;
+
+    memset(obj, 0, 0x188);
+    obj->SCALE = 1.0f;
+    obj->scale = 1.0f;
+    obj->RPos.iRAIL = -1;
+    obj->RPos.iALONG = -1;
+    obj->layer_type = -1;
+    obj->roof_type = -1;
+    obj->reflect_y = 2000000.0f;
+
+    for (i = 0; i < 64; i++) {
+        if (pObj[i] == 0) {
+            break;
+        }
+    }
+    if (i < 64) {
+        pObj[i] = obj;
+        obj->parent = parent;
+        obj->i = i;
+        added = 1;
+    } else {
+        added = 0;
+    }
+    CountGameObjects();
+    return added;
+}
+
+inline void RemoveGameObject(struct obj_s *obj) {
+    s32 i;
+
+    for (i = 0; i < 64; i++) {
+        if (pObj[i] == obj) {
+            pObj[i] = 0;
+            i = 64;
+        }
+    }
+    CountGameObjects();
+}
+
+
+void AddProjectile(struct nuvec_s *src, struct nuvec_s *dst, struct nuvec_s *mom, s32 type,
+                   u16 yrot, struct obj_s *owner) {
+    struct nuvec_s v;
+    struct projectile_s *p;
+    f32 f;
+    f32 y;
+    s32 sfx;
+    s32 sfxvol;
+
+    p = &Projectile[i_projectile];
+    if (p->active) {
+        RemoveGameObject(&p->obj);
+    }
+    memset(p, 0, sizeof(struct projectile_s));
+    sfx = -1;
+    sfxvol = -1;
+    if (AddGameObject(&p->obj, &p->obj)) {
+        p->obj.max.y = 0.1f;
+        p->obj.min.y = -0.1f;
+        p->obj.RADIUS = 0.1f;
+        p->obj.radius = 0.1f;
+        p->obj.SCALE = 1.0f;
+        p->obj.scale = 1.0f;
+        p->obj.flags = 8;
+        if (src != 0) {
+            p->obj.pos = *src;
+        } else {
+            p->obj.pos = v000;
+        }
+        if (mom != 0) {
+            p->obj.mom = *mom;
+        } else {
+            p->obj.mom = v000;
+        }
+        p->srcpos = p->obj.pos;
+        if (dst != 0) {
+            p->dstpos = *dst;
+        } else {
+            p->dstpos = player->obj.pos;
+        }
+        p->type = type;
+        p->time = 0.0f;
+        p->object = -1;
+        p->kill = -1;
+
+        switch (p->type) {
+        case 14:
+            if (qrand() < 0x8000) {
+                struct nuvec_s v0 = {-3.73f, 0.0f, 4.26f};
+                struct nuvec_s v1 = {3.73f, 0.0f, 4.26f};
+                struct nuvec_s v2 = {1.63f, 0.0f, 2.44f};
+                struct nuvec_s v3 = {-1.63f, 0.0f, 2.44f};
+                struct nuvec_s pos[2];
+
+                f = qrand() * (1.0f / 65535.0f);
+                pos[0].x = v0.x + (v1.x - v0.x) * f;
+                pos[0].y = v0.y + (v1.y - v0.y) * f;
+                pos[0].z = v0.z + (v1.z - v0.z) * f;
+                pos[1].x = v3.x + (v2.x - v3.x) * f;
+                pos[1].y = v3.y + (v2.y - v3.y) * f;
+                pos[1].z = v3.z + (v2.z - v3.z) * f;
+                f = qrand() * (1.0f / 65535.0f);
+                v.x = pos[1].x + (pos[0].x - pos[1].x) * f;
+                v.y = pos[1].y + (pos[0].y - pos[1].y) * f;
+                v.z = pos[1].z + (pos[0].z - pos[1].z) * f;
+                p->obj.pos = v;
+            } else {
+                p->obj.pos = player->obj.pos;
+            }
+            p->obj.shadow = NewShadow(&p->obj.pos, 0.0f);
+            if (p->obj.shadow != 2000000.0f) {
+                p->obj.pos.y = p->obj.shadow;
+            } else {
+                p->obj.shadow = p->obj.pos.y;
+            }
+            p->obj.pos.y += 7.0f;
+            p->obj.mom.y = -0.099999994f;
+            p->obj.flags |= 0xC00;
+            p->object = 0x98;
+            p->duration = 2.0f;
+            sfx = 8;
+            p->obj.xrot = qrand();
+            p->obj.hdg = qrand();
+            break;
+        case 3:
+            p->obj.hdg = yrot;
+            f = 0.06f;
+            p->obj.flags |= 0x4800;
+            p->duration = 3.0f;
+            p->obj.mom.x = NuTrigTable[p->obj.hdg] * f;
+            p->obj.mom.z = NuTrigTable[(p->obj.hdg + 0x4000) & 0xFFFF] * f;
+            p->object = 0x3C;
+            p->obj.xrot = 0x8000;
+            p->obj.mom.y = 0.0f;
+            break;
+        case 11:
+            if (dst != 0) {
+                p->duration = NuVecDist(src, dst, 0) / 5.0f;
+                p->obj.mom.x = (dst->x - src->x) / (p->duration * 50.0f);
+                p->obj.mom.y = (dst->y - src->y) / (p->duration * 50.0f);
+                p->obj.mom.z = (dst->z - src->z) / (p->duration * 50.0f);
+            } else {
+                p->obj.mom.x = NuTrigTable[yrot] * 5.0f;
+                p->obj.mom.z = NuTrigTable[(u16)(yrot + 0x4000)] * 5.0f;
+                p->duration = 1.0f;
+            }
+            p->object = -1;
+            p->obj.flags |= 0x4800;
+            break;
+        case 2:
+            p->obj.RADIUS = 0.2f;
+            p->obj.radius = 0.2f;
+            p->obj.min.y = -p->obj.RADIUS;
+            p->obj.max.y = 0.2f;
+            p->duration = 2.5f;
+            p->obj.flags |= 0x4800;
+            p->obj.mom.y = 0.0f;
+            if (owner != 0) {
+                p->obj.shadow = owner->pos.y + owner->bot * owner->SCALE;
+            } else {
+                p->obj.shadow = p->obj.pos.y;
+            }
+            p->object = 1;
+            jonglow = 0;
+            jonglowsize = 0.0f;
+            if (player->obj.character == 0) {
+                p->kill = 0xF;
+            }
+            sfxvol = FIZZLEVOL;
+            sfx = 0x4B;
+            break;
+        case 1:
+            p->duration = 1.0f;
+            p->obj.flags |= 0x4800;
+            p->object = 0;
+            break;
+        case 12:
+            jonwidth = 0.0f;
+        case 13:
+            p->obj.hdg = yrot;
+            y = NewShadowMaskPlat((owner != 0) ? &owner->pos : &p->obj.pos, 0.0f, -1);
+            if (p->type == 13) {
+                p->obj.min.y = -0.375f;
+                p->obj.max.y = 0.375f;
+                if (y != 2000000.0f) {
+                    p->obj.pos.y = y + 0.375f;
+                }
+                p->obj.RADIUS = 0.375f;
+                p->obj.radius = 0.375f;
+            } else {
+                p->obj.min.y = -0.5f;
+                p->obj.max.y = 0.5f;
+                if (y != 2000000.0f) {
+                    p->obj.pos.y = y + 0.75f + 0.5f;
+                }
+                p->obj.RADIUS = 0.5f;
+                p->obj.radius = 0.5f;
+            }
+            p->obj.min.x = -1.0f;
+            p->obj.min.z = -0.1f;
+            p->obj.max.z = 0.1f;
+            p->duration = 3.0f;
+            p->obj.mom.x = NuTrigTable[yrot] * 5.0f * 0.02f;
+            p->obj.mom.z = NuTrigTable[(u16)(yrot + 0x4000)] * 5.0f * 0.02f;
+            p->obj.hdg = yrot;
+            p->object = -1;
+            p->obj.max.x = 1.0f;
+            p->obj.SCALE = 1.0f;
+            p->obj.scale = 1.0f;
+            p->obj.flags |= 0xC00;
+            if (p->type == 13) {
+                jonwidth2 = 0.0f;
+            }
+            p->kill = 4;
+            break;
+        case 4:
+            p->obj.flags |= 0x4000;
+            p->obj.RADIUS = 0.1f;
+            p->obj.radius = 0.1f;
+            p->duration = 2.0f;
+            p->object = 0x6A;
+            p->obj.hdg = yrot - 0x8000;
+            sfx = 0x88;
+            p->obj.direction = qrand() / 0x8000;
+            p->obj.zrot = qrand();
+            p->obj.SCALE = 0.6f;
+            break;
+        case 10:
+            p->obj.flags |= 0x4000;
+            p->object = 0x6B;
+            p->duration = 2.0f;
+            sfx = 0x5D;
+            p->obj.hdg = qrand();
+            p->obj.xrot = qrand();
+            p->obj.direction = qrand() / 0x8000;
+            p->owner_safety = 10;
+            p->obj.shadow = NewShadowMaskPlat(&p->obj.pos, 0.0f, -1);
+            break;
+        case 5:
+            p->duration = 1.333f;
+            p->obj.mom.x = NuTrigTable[yrot] * 5.0f * 0.02f;
+            p->obj.mom.z = NuTrigTable[(u16)(yrot + 0x4000)] * 5.0f * 0.02f;
+            p->obj.flags |= 0x4800;
+            p->object = 0x53;
+            p->obj.hdg = yrot - 0x8000;
+            break;
+        case 6:
+            p->obj.RADIUS = 0.25f;
+            p->obj.radius = 0.25f;
+            p->obj.min.y = -p->obj.RADIUS;
+            p->obj.max.y = 0.25f;
+            p->duration = 2.0f;
+            p->object = -1;
+            y = NewShadowMaskPlat(&p->dstpos, 0.0f, -1);
+            if (y != 2000000.0f) {
+                p->dstpos.y = y - p->obj.min.y * p->obj.SCALE;
+            }
+            p->obj.flags |= 0xC00;
+            break;
+        case 16:
+        case 17:
+            if (owner != 0) {
+                p->obj.mom.x = p->obj.pos.x - owner->pos.x;
+                p->obj.mom.y = 0.0f;
+                p->obj.mom.z = p->obj.pos.z - owner->pos.z;
+                f = 0.12f / NuFsqrt(p->obj.mom.x * p->obj.mom.x + p->obj.mom.z * p->obj.mom.z);
+                p->duration = 0.5f;
+                p->obj.flags |= 0xC00;
+                p->object = -1;
+                p->obj.mom.x *= f;
+                p->obj.mom.z *= f;
+            }
+            break;
+        case 8:
+            p->obj.RADIUS = 0.1f;
+            p->obj.radius = 0.1f;
+            p->obj.min.y = -p->obj.RADIUS;
+            p->obj.max.y = 0.1f;
+            p->duration = 1.0f;
+            p->obj.hdg = yrot;
+            p->object = 100;
+            y = NewShadowMaskPlat(&p->dstpos, 0.0f, -1);
+            if (y != 2000000.0f) {
+                p->dstpos.y = y - p->obj.min.y * p->obj.SCALE;
+            }
+            p->obj.xrot = 0x2000;
+            p->obj.flags |= 0xC00;
+            break;
+        case 9:
+            p->obj.RADIUS = 0.1f;
+            p->obj.radius = 0.1f;
+            p->obj.min.y = -p->obj.RADIUS;
+            p->obj.max.y = 0.1f;
+            p->duration = 1.0f;
+            p->obj.hdg = yrot;
+            p->object = 0x95;
+            y = NewShadowMaskPlat(&p->dstpos, 0.0f, -1);
+            if (y != 2000000.0f) {
+                p->dstpos.y = y - p->obj.min.y * p->obj.SCALE;
+            }
+            p->obj.xrot = 0xAAB;
+            p->obj.flags |= 0xC00;
+            p->kill = 2;
+            sfx = 0x83;
+            break;
+        case 15:
+            p->obj.RADIUS = 0.1f;
+            p->obj.radius = 0.1f;
+            p->obj.min.y = -p->obj.RADIUS;
+            p->obj.max.y = 0.1f;
+            p->duration = 1.0f;
+            p->obj.hdg = yrot;
+            p->object = -1;
+            y = NewShadowMaskPlat(&p->dstpos, 0.0f, -1);
+            if (y != 2000000.0f) {
+                p->dstpos.y = y - p->obj.min.y * p->obj.SCALE;
+            }
+            p->obj.flags |= 0xC00;
+            break;
+        case 7:
+            p->duration = 3.0f;
+            p->obj.mom.x = NuTrigTable[yrot] * 0.02f;
+            p->obj.mom.z = NuTrigTable[(u16)(yrot + 0x4000)] * 0.02f;
+            p->obj.flags |= 0x800;
+            p->object = 0;
+            break;
+        default:
+            p->duration = 3.0f;
+            p->obj.flags |= 0x400;
+            p->object = 0;
+            break;
+        }
+
+        if (p->type == 4 || p->type == 5) {
+            f = p->duration * 50.0f;
+            v.x = p->obj.mom.x * f;
+            v.y = p->obj.mom.y * f;
+            v.z = p->obj.mom.z * f;
+            f = NuVecMag(&v);
+            if (NewRayCast(&p->obj.pos, &v, 0.0f)) {
+                p->duration *= NuVecMag(&v) / f;
+            }
+        }
+        p->obj.bot = p->obj.min.y;
+        p->obj.top = p->obj.max.y;
+        p->active = 1;
+    }
+
+    i_projectile++;
+    if (i_projectile == 16) {
+        i_projectile = 0;
+    }
+    if (sfx != -1) {
+        if (sfxvol != -1) {
+            gamesfx_effect_volume = sfxvol;
+        }
+        GameSfx(sfx, &p->obj.pos);
+    }
+}
+
+
+inline void NewTopBot(struct obj_s *obj) {
+    obj->objbot = obj->pos.y + obj->bot * obj->SCALE;
+    obj->objtop = obj->pos.y + obj->top * obj->SCALE;
+}
+
+inline s32 HitItems(struct obj_s *obj) {
+    s32 i;
+    struct obj_s *item;
+
+    if (level_part_2 != 0) {
+        return 0;
+    }
+    for (i = 0; i < 64; i++) {
+        item = pObj[i];
+        if (item != 0 && item->dead == 0 && item->invisible == 0 &&
+            (item->flags & 0x10) && GameObjectOverlap(obj, item, 0)) {
+            PickupItem(item);
+            return 1;
+        }
+    }
+    return 0;
+}
+
+inline s32 GetDieAnim(struct obj_s *obj, s32 anim) {
+    if (VEHICLECONTROL == 1 && obj->vehicle != -1) {
+        if (anim == 6 && obj->vehicle == 0x99) {
+            return 0xC;
+        }
+        return 0xB;
+    }
+    if (VEHICLECONTROL == 2) {
+        return 0xE;
+    }
+    if (anim == -1) {
+        if (Level == 0x17 || qrand() <= 0x7FFF) {
+            return 2;
+        }
+        return 3;
+    }
+    return anim;
+}
+
+inline s32 KillPlayer(struct obj_s *obj, s32 anim)
+{
+    struct mask_s *mask;
+
+    if (obj->dead) {
+        return 0;
+    }
+    if (obj->finished) {
+        return 0;
+    }
+    if (obj->invincible) {
+        return 0;
+    }
+    if (vtog_time < vtog_duration && vtog_blend != 0) {
+        return 0;
+    }
+    mask = obj->mask;
+    if (mask != 0 && mask->active != 0 && (LDATA->flags & 0xE00) == 0) {
+        if (mask->active < 3) {
+            LoseMask(obj);
+        }
+        return 0;
+    }
+    return KillGameObject(obj, anim);
+}
+
+
+void UpdateProjectiles(void) {
+    struct nuvec_s vec;
+    struct creature_s *plr;
+    struct projectile_s *p;
+    f32 tmul;
+    f32 speed;
+    f32 d;
+    f32 f;
+    f32 width;
+    f32 r;
+    f32 dx;
+    f32 dz;
+    s32 i;
+    s32 sfx;
+    s32 sfxvol;
+    s32 expired;
+    s32 kill;
+    s32 loop;
+    s32 hit;
+
+    if (level_part_2 != 0) {
+        return;
+    }
+    plr = player;
+    GetTopBot(plr);
+    NewTopBot(&plr->obj);
+    p = Projectile;
+    for (i = 0; i < 16; i++, p++) {
+        if (!p->active) {
+            continue;
+        }
+        expired = 0;
+        sfx = -1;
+        sfxvol = -1;
+        p->time += 0.02f;
+        if (p->time >= p->duration) {
+            expired = 1;
+            p->active = 0;
+        } else {
+            tmul = p->time / p->duration;
+            p->obj.oldpos = p->obj.pos;
+            if (p->owner_safety != 0) {
+                p->owner_safety--;
+            }
+
+            switch (p->type) {
+            case 14:
+                p->obj.xrot += 0x384;
+                p->obj.zrot += 0x514;
+                NuVecAdd(&p->obj.pos, &p->obj.pos, &p->obj.mom);
+                if (p->obj.pos.y + p->obj.bot * p->obj.SCALE < p->obj.shadow) {
+                    p->obj.pos.y = p->obj.shadow - p->obj.bot * p->obj.SCALE;
+                    p->active = 0;
+                }
+                AddVariableShotDebrisEffect(GDeb[116].i, &p->obj.pos, 1, 0, 0);
+                break;
+            case 3:
+                p->obj.xrot -= 0xA3D;
+                NuVecAdd(&p->obj.pos, &p->obj.pos, &p->obj.mom);
+                break;
+            case 2:
+                if (plr->obj.dead == 0) {
+                    dx = plr->obj.pos.x - p->obj.pos.x;
+                    dz = plr->obj.pos.z - p->obj.pos.z;
+                    speed = 0.035f;
+                    d = NuFsqrt(dx * dx + dz * dz);
+                    if (d > speed) {
+                        f = 1.0f / d * speed;
+                        p->obj.pos.x += dx * f;
+                        p->obj.pos.z += dz * f;
+                    }
+                    NuVecSub(&p->obj.mom, &p->obj.pos, &p->obj.oldpos);
+                } else {
+                    NuVecAdd(&p->obj.pos, &p->obj.pos, &p->obj.mom);
+                }
+                p->obj.pos.y += (p->obj.shadow + p->obj.RADIUS * 2.0f - p->obj.pos.y) * 0.02f * 5.0f;
+                AddVariableShotDebrisEffect(GDeb[37].i, &p->obj.pos, 1, 0, 0);
+                break;
+            case 1:
+                p->obj.pos.x = p->srcpos.x + (p->dstpos.x - p->srcpos.x) * tmul;
+                p->obj.pos.y = p->srcpos.y + (p->dstpos.y - p->srcpos.y) * tmul;
+                p->obj.pos.z = p->srcpos.z + (p->dstpos.z - p->srcpos.z) * tmul;
+                break;
+            case 4:
+                NuVecAdd(&p->obj.pos, &p->obj.pos, &p->obj.mom);
+                if (p->obj.direction == 0) {
+                    p->obj.zrot += 0x51E;
+                } else {
+                    p->obj.zrot -= 0x51E;
+                }
+                if (HitCreatures(&p->obj, 2, 5) || HitCrates(&p->obj, 1) || HitItems(&p->obj) ||
+                    HitWumpa(&p->obj, 1)) {
+                    p->active = 0;
+                }
+                AddVariableShotDebrisEffect(GDeb[20].i, &p->obj.pos, 1, 0, 0);
+                if (qrand() < 0x1000) {
+                    sfx = 0x92;
+                }
+                break;
+            case 5:
+                NuVecAdd(&p->obj.pos, &p->obj.pos, &p->obj.mom);
+                AddVariableShotDebrisEffect(GDeb[21].i, &p->obj.pos, 1, 0, 0);
+                break;
+            case 11:
+                NuVecAdd(&p->obj.pos, &p->obj.pos, &p->obj.mom);
+                AddVariableShotDebrisEffect(GDeb[114].i, &p->obj.pos, 1, 0, 0);
+                break;
+            case 10:
+                p->obj.mom.y += (-terminal_fall_speed - p->obj.mom.y) * 0.02f;
+                NuVecAdd(&p->obj.pos, &p->obj.pos, &p->obj.mom);
+                AddVariableShotDebrisEffect(GDeb[20].i, &p->obj.pos, 1, 0, 0);
+                if (p->obj.direction == 0) {
+                    p->obj.hdg += 0x249;
+                } else {
+                    p->obj.hdg -= 0x249;
+                }
+                p->obj.xrot += 0x51E;
+                if (p->obj.shadow != 2000000.0f &&
+                    p->obj.pos.y + p->obj.bot * p->obj.SCALE < p->obj.shadow) {
+                    p->obj.pos.y = p->obj.shadow - p->obj.bot * p->obj.SCALE;
+                    p->active = 0;
+                } else if (HitCreatures(&p->obj, 2, 5) || HitCrates(&p->obj, 1) ||
+                           HitItems(&p->obj) || HitWumpa(&p->obj, 1)) {
+                    p->active = 0;
+                }
+                if (qrand() < 0x1000) {
+                    sfx = 0x92;
+                }
+                break;
+            case 6:
+                p->obj.pos.x = p->srcpos.x + (p->dstpos.x - p->srcpos.x) * tmul;
+                p->obj.pos.y = p->srcpos.y + (p->dstpos.y - p->srcpos.y) * tmul;
+                p->obj.pos.z = p->srcpos.z + (p->dstpos.z - p->srcpos.z) * tmul;
+                p->obj.pos.y += NuTrigTable[(u16)(tmul * 32768.0f)] * 10.0f;
+                AddVariableShotDebrisEffect(GDeb[135].i, &p->obj.pos, 1, 0, 0);
+                break;
+            case 8:
+                p->obj.pos.x = p->srcpos.x + (p->dstpos.x - p->srcpos.x) * tmul;
+                p->obj.pos.y = p->srcpos.y + (p->dstpos.y - p->srcpos.y) * tmul;
+                p->obj.pos.z = p->srcpos.z + (p->dstpos.z - p->srcpos.z) * tmul;
+                p->obj.xrot += 0x47A;
+                p->obj.pos.y += NuTrigTable[(u16)(tmul * 32768.0f)] * 1.5f;
+                break;
+            case 9:
+                p->obj.pos.x = p->srcpos.x + (p->dstpos.x - p->srcpos.x) * tmul;
+                p->obj.pos.y = p->srcpos.y + (p->dstpos.y - p->srcpos.y) * tmul;
+                p->obj.pos.z = p->srcpos.z + (p->dstpos.z - p->srcpos.z) * tmul;
+                p->obj.xrot -= 0xDA;
+                p->obj.pos.y += NuTrigTable[(u16)(tmul * 32768.0f)];
+                break;
+            case 15:
+                p->obj.pos.x = p->srcpos.x + (p->dstpos.x - p->srcpos.x) * tmul;
+                p->obj.pos.y = p->dstpos.y + (p->srcpos.y - p->dstpos.y) *
+                               NuTrigTable[(u16)(tmul * 16384.0f + 16384.0f)];
+                p->obj.pos.z = p->srcpos.z + (p->dstpos.z - p->srcpos.z) * tmul;
+                AddVariableShotDebrisEffect(GDeb[144].i, &p->obj.pos, 1, 0, 0);
+                break;
+            case 7:
+                NuVecAdd(&p->obj.pos, &p->obj.pos, &p->obj.mom);
+                p->obj.SCALE = tmul * 2.0f + 1.0f;
+                p->obj.RADIUS = p->obj.radius * p->obj.SCALE;
+                break;
+            case 16:
+                p->obj.mom.y += GRAVITY;
+                p->obj.pos.x += p->obj.mom.x;
+                p->obj.pos.y += p->obj.mom.y;
+                p->obj.pos.z += p->obj.mom.z;
+                AddVariableShotDebrisEffect(GDeb[135].i, &p->obj.pos, 1, 0, 0);
+                break;
+            case 17:
+                p->obj.mom.y += GRAVITY;
+                p->obj.pos.x += p->obj.mom.x;
+                p->obj.pos.y += p->obj.mom.y;
+                p->obj.pos.z += p->obj.mom.z;
+                AddVariableShotDebrisEffect(GDeb[99].i, &p->obj.pos, 1, 0, 0);
+                break;
+            case 12:
+                NuVecAdd(&p->obj.pos, &p->obj.pos, &p->obj.mom);
+                for (loop = 0; loop < 5; loop++) {
+                    width = jonwidth * (f32)(qrand() - 0x8000) * (1.0f / 32768.0f);
+                    vec.x = p->obj.pos.x + NuTrigTable[(p->obj.hdg + 0x4000) & 0xFFFF] * width;
+                    vec.y = p->obj.pos.y;
+                    vec.z = p->obj.pos.z + NuTrigTable[(p->obj.hdg + 0x8000) & 0xFFFF] * width;
+                    AddVariableShotDebrisEffect(GDeb[139].i, &vec, 1, 0, p->obj.hdg);
+                }
+                jonwidth += 0.025f;
+                if (jonwidth > 1.5f) {
+                    jonwidth = 1.5f;
+                }
+                break;
+            case 13:
+                NuVecAdd(&p->obj.pos, &p->obj.pos, &p->obj.mom);
+                for (loop = 0; loop < 10; loop++) {
+                    width = jonwidth2 * (f32)(qrand() - 0x8000) * (1.0f / 32768.0f);
+                    vec.x = p->obj.pos.x + NuTrigTable[(p->obj.hdg + 0x4000) & 0xFFFF] * width;
+                    vec.y = p->obj.pos.y;
+                    vec.z = p->obj.pos.z + NuTrigTable[(p->obj.hdg + 0x8000) & 0xFFFF] * width;
+                    AddVariableShotDebrisEffect(GDeb[138].i, &vec, 1, 0, p->obj.hdg);
+                }
+                jonwidth2 += 0.025f;
+                if (jonwidth2 > 1.5f) {
+                    jonwidth2 = 1.5f;
+                }
+                break;
+            default:
+                NuVecAdd(&p->obj.pos, &p->obj.pos, &p->obj.mom);
+                break;
+            }
+
+            NewTopBot(&p->obj);
+            if ((p->obj.flags & 0x400) && p->type != 14) {
+                p->obj.shadow = NewShadowMaskPlat(&p->obj.pos, 0.0f, -1);
+                if (p->obj.shadow != 2000000.0f) {
+                    p->obj.surface_type = ShadowInfo();
+                    p->obj.reflect_y = (TerSurface[p->obj.surface_type].flags & 4) ? p->obj.shadow
+                                                                                   : 2000000.0f;
+                    FindAnglesZX(&ShadNorm);
+                    p->obj.surface_xrot = temp_xrot;
+                    p->obj.surface_zrot = temp_zrot;
+                    if ((p->type == 16 || p->type == 17) &&
+                        p->obj.pos.y + p->obj.bot * p->obj.SCALE < p->obj.shadow) {
+                        p->obj.pos.y = p->obj.shadow - p->obj.bot * p->obj.SCALE;
+                        p->active = 0;
+                    }
+                }
+            }
+
+            if ((p->obj.flags & 0x800) && plr->obj.dead == 0 && p->owner_safety == 0 &&
+                !(p->obj.objtop < plr->obj.objbot) && !(p->obj.objbot > plr->obj.objtop)) {
+                hit = 0;
+                if (p->type == 12 || p->type == 13) {
+                    hit = (CylinderCuboidOverlapXZ(&plr->obj.pos, &p->obj, &p->obj.pos,
+                                                   plr->obj.RADIUS) != 0);
+                } else {
+                    dx = plr->obj.pos.x - p->obj.pos.x;
+                    dz = plr->obj.pos.z - p->obj.pos.z;
+                    d = dx * dx + dz * dz;
+                    r = plr->obj.RADIUS + p->obj.RADIUS;
+                    if (d < r * r) {
+                        hit = 1;
+                    }
+                }
+                if (hit) {
+                    kill = (p->kill != -1) ? p->kill : 6;
+                    KillPlayer(&plr->obj, GetDieAnim(&plr->obj, kill));
+                    if (p->type == 2) {
+                        AddGameDebris(0x58, &p->obj.pos);
+                    }
+                    p->active = 0;
+                }
+            }
+        }
+
+        if (!p->active) {
+            switch (p->type) {
+            case 9:
+                AddGameDebris(3, &p->obj.pos);
+                sfx = 0x20;
+                break;
+            case 14:
+                JudderGameCamera(GameCam, 0.15f, 0);
+                AddGameDebris(0x79, &p->obj.pos);
+                sfx = 0x5F;
+                break;
+            case 10:
+                AddKaboom(0x80, &p->obj.pos, 0.0f);
+                AddGameDebris(5, &p->obj.pos);
+                break;
+            case 4:
+                AddGameDebris(5, &p->obj.pos);
+                GameSfx(0x3B, &p->obj.pos);
+                JudderGameCamera(GameCam, 0.3f, &p->obj.pos);
+                break;
+            case 8:
+            case 11:
+            case 15:
+                AddGameDebris(0x4B, &p->obj.pos);
+                sfx = 0x45;
+                break;
+            case 6:
+            case 16:
+                AddGameDebris(0x88, &p->obj.pos);
+                break;
+            case 2:
+                sfx = 0x9C;
+                break;
+            case 17:
+                AddGameDebris(0x96, &p->obj.pos);
+                break;
+            case 12:
+            case 13:
+                if (!expired) {
+                    sfx = 0x47;
+                    sfxvol = 0xBFFD;
+                }
+                break;
+            }
+            RemoveGameObject(&p->obj);
+        }
+        if (sfx != -1) {
+            if (sfxvol != -1) {
+                gamesfx_effect_volume = sfxvol;
+            }
+            GameSfx(sfx, &p->obj.pos);
+        }
+    }
+}
+
+
 void DrawProjectiles(void) {
     struct numtx_s m;
     struct nuvec_s scale;
@@ -2197,52 +2969,6 @@ s32 CreatureRayCast(struct nuvec_s *start, struct nuvec_s *end) {
 }
 
 
-s32 GetDieAnim(struct obj_s *obj, s32 anim) {
-    if (VEHICLECONTROL == 1 && obj->vehicle != -1) {
-        if (anim == 6 && obj->vehicle == 0x99) {
-            return 0xC;
-        }
-        return 0xB;
-    }
-    if (VEHICLECONTROL == 2) {
-        return 0xE;
-    }
-    if (anim == -1) {
-        if (Level == 0x17 || qrand() <= 0x7FFF) {
-            return 2;
-        }
-        return 3;
-    }
-    return anim;
-}
-
-
-s32 KillPlayer(struct obj_s *obj, s32 anim)
-{
-    struct mask_s *mask;
-
-    if (obj->dead) {
-        return 0;
-    }
-    if (obj->finished) {
-        return 0;
-    }
-    if (obj->invincible) {
-        return 0;
-    }
-    if (vtog_time < vtog_duration && vtog_blend != 0) {
-        return 0;
-    }
-    mask = obj->mask;
-    if (mask != 0 && mask->active != 0 && (LDATA->flags & 0xE00) == 0) {
-        if (mask->active < 3) {
-            LoseMask(obj);
-        }
-        return 0;
-    }
-    return KillGameObject(obj, anim);
-}
-
 void PickupCrystal(void) {
     plr_crystal.count = 1;
     plr_crystal.frame = 0x19;
@@ -2300,41 +3026,12 @@ void PickupPower(s32 type) {
 }
 
 
-s32 HitItems(struct obj_s *obj) {
-    s32 i;
-    struct obj_s *item;
-
-    if (level_part_2 != 0) {
-        return 0;
-    }
-    for (i = 0; i < 64; i++) {
-        item = pObj[i];
-        if (item != 0 && item->dead == 0 && item->invisible == 0 &&
-            (item->flags & 0x10) && GameObjectOverlap(obj, item, 0)) {
-            PickupItem(item);
-            return 1;
-        }
-    }
-    return 0;
-}
-
 void ClearGameObjects(void) {
     s32 i;
 
     for (i = 0; i < 0x40; i++) {
         pObj[i] = 0;
     }
-}
-
-inline void CountGameObjects(void) {
-    s32 i;
-
-    for (i = 64; i > 0; i--) {
-        if (pObj[i - 1] != 0) {
-            break;
-        }
-    }
-    GAMEOBJECTCOUNT = i;
 }
 
 s32 CylinderCylinderOverlapXZ(struct nuvec_s *p0, f32 r0, struct nuvec_s *p1,
@@ -2348,11 +3045,6 @@ s32 CylinderCylinderOverlapXZ(struct nuvec_s *p0, f32 r0, struct nuvec_s *p1,
         return 1;
     }
     return 0;
-}
-
-void NewTopBot(struct obj_s *obj) {
-    obj->objbot = obj->pos.y + obj->bot * obj->SCALE;
-    obj->objtop = obj->pos.y + obj->top * obj->SCALE;
 }
 
 void OldTopBot(struct obj_s *obj) {
@@ -2394,48 +3086,6 @@ void ResetGameObject(struct obj_s *obj) {
     obj->layer_type = -1;
     obj->roof_type = -1;
     obj->scale = 1.0f;
-}
-
-s32 AddGameObject(struct obj_s *obj, struct obj_s *parent) {
-    s32 i;
-    s32 added;
-
-    memset(obj, 0, 0x188);
-    obj->SCALE = 1.0f;
-    obj->scale = 1.0f;
-    obj->RPos.iRAIL = -1;
-    obj->RPos.iALONG = -1;
-    obj->layer_type = -1;
-    obj->roof_type = -1;
-    obj->reflect_y = 2000000.0f;
-
-    for (i = 0; i < 64; i++) {
-        if (pObj[i] == 0) {
-            break;
-        }
-    }
-    if (i < 64) {
-        pObj[i] = obj;
-        obj->parent = parent;
-        obj->i = i;
-        added = 1;
-    } else {
-        added = 0;
-    }
-    CountGameObjects();
-    return added;
-}
-
-void RemoveGameObject(struct obj_s *obj) {
-    s32 i;
-
-    for (i = 0; i < 64; i++) {
-        if (pObj[i] == obj) {
-            pObj[i] = 0;
-            i = 64;
-        }
-    }
-    CountGameObjects();
 }
 
 void ResetProjectiles(void) {

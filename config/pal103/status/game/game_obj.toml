@@ -69,11 +69,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0096:001fe0a0:AddProjectile"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:001feeb0:UpdateProjectiles"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:00200050:DrawProjectiles"
