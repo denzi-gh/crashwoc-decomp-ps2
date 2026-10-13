@@ -13,4 +13,4 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0167:0026b588:__kernel_rem_pio2"
-state = "asm"
+state = "matching"
