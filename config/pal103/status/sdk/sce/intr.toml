@@ -61,4 +61,4 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0250:00279950:InitAlarm"
-state = "asm"
+state = "matching"
