@@ -13,7 +13,7 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0027:0010e708:NuBezierCubicPatchEvaluatePartials"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0027:0010eab8:NuBezierCubicPatchPartialsUUVV"
@@ -37,11 +37,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0027:0010f6f0:NuBezierCubicPatchPartialsU"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0027:0010f7e0:NuBezierCubicPatchPartialsV"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0027:0010f8d0:NuBezierCubicPatchPartialsVV"
@@ -61,36 +61,36 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0027:0010fe00:NuBezierQuadraticTriangleEvaluateBarycentric"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0027:0010fed0:NuBezierQuadraticTriangleEvaluateParametric"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0027:0010ffb0:NuBezierQuadraticTrianglePartialsUU"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0027:00110040:NuBezierQuadraticTrianglePartialsVV"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0027:001100c8:NuBezierQuadraticTrianglePartialsUeV"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0027:00110150:NuCubicToBez3"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0027:001101a8:NuBez3ToCubic"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0027:00110210:NuBez3Subdiv"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0027:001102b0:NuBez3EvaluateX"
-state = "asm"
+state = "matching"
