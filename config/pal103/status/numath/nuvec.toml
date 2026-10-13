@@ -17,11 +17,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0013:00106848:NuVecMtxTransform"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:001068e0:NuVecMtxTransformH"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:001069b8:NuVecMtxTranslate"
@@ -45,7 +45,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:00106ae8:NuVecMtxRotateH"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:00106ba0:NuVecMtxScale"
@@ -61,7 +61,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:00106ca8:NuVecInvMtxRotate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:00106d28:NuVecInvMtxRotateValX"
@@ -161,4 +161,4 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:001075a8:NuLineLineIntersect"
-state = "asm"
+state = "matching"
