@@ -13,4 +13,4 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0205:00271670:_sbrk_r"
-state = "asm"
+state = "matching"
