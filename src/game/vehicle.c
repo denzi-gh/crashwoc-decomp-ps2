@@ -262,6 +262,7 @@ void NuMtxSetRotationX(struct numtx_s *m, s32 r);
 void NuMtxSetRotationZ(struct numtx_s *m, s32 r);
 void NuMtxRotateX(struct numtx_s *m, s32 r);
 void NuMtxRotateY(struct numtx_s *m, s32 r);
+void NuMtxRotateZ(struct numtx_s *m, s32 r);
 void NuMtxTranslate(struct numtx_s *m, struct nuvec_s *v);
 void NuQuatToMtx(struct nuquat_s *q, struct numtx_s *m);
 void NuHGobjRndr(struct NUHGOBJ_s *hobj, struct numtx_s *m, s32 nlayers,
@@ -383,18 +384,6 @@ struct earthboss_s {
 };
 extern struct earthboss_s EarthBoss;
 
-/* WeatherBoss state block (far). */
-struct weatherboss_s {
-    s32 active;                /* 0x000 */
-    char pad_004[0x5EC - 0x004];
-    s32 objectives[4];         /* 0x5EC */
-    char pad_5FC[0x608 - 0x5FC];
-    s32 nextaction;            /* 0x608 */
-    char pad_60C[0x618 - 0x60C];
-    s32 action;                /* 0x618 */
-    char pad_61C[0x660 - 0x61C];
-};
-extern struct weatherboss_s WeatherBoss;
 struct MYDRAW {
     struct anim_s anim;            /* 0x00 */
     struct CharacterModel *model;  /* 0x1C */
@@ -404,6 +393,23 @@ struct MYDRAW {
     s32 field2C;                   /* 0x2C */
     struct Nearest_Light_s lights; /* 0x30 */
 };
+
+/* WeatherBoss state block (far). */
+struct weatherboss_s {
+    s32 active;                /* 0x000 */
+    char pad_004[0x0F0 - 0x004];
+    struct MYDRAW draw;        /* 0x0F0 */
+    char pad_1D0[0x5EC - 0x1D0];
+    s32 objectives[4];         /* 0x5EC */
+    char pad_5FC[0x600 - 0x5FC];
+    f32 dist;                  /* 0x600 */
+    f32 lastdist;              /* 0x604 */
+    s32 nextaction;            /* 0x608 */
+    char pad_60C[0x618 - 0x60C];
+    s32 action;                /* 0x618 */
+    char pad_61C[0x660 - 0x61C];
+};
+extern struct weatherboss_s WeatherBoss;
 
 /* VehicleMask: stride 0x174, 2 entries. */
 struct vehmask_s {
@@ -443,16 +449,22 @@ struct jeeprock_s {
     struct nuvec_s pos;        /* 0x000 */
     struct nuvec_s vel;        /* 0x00C */
     s32 exists;                /* 0x018 */
-    char pad_01C[0x23C - 0x01C];
+    s32 seen;                  /* 0x01C */
+    char pad_020[0x06C - 0x020];
+    s32 grounded;              /* 0x06C */
+    char pad_070[0x23C - 0x070];
     struct nuvec_s holdpos;    /* 0x23C */
     struct nuvec_s oldholdpos; /* 0x248 */
     char pad_254[0x26C - 0x254];
     struct nuvec_s holdvel;    /* 0x26C */
-    char pad_278[0x3B4 - 0x278];
+    char pad_278[0x2B4 - 0x278];
+    struct nuquat_s quat;      /* 0x2B4 */
+    char pad_2C4[0x3B4 - 0x2C4];
     s32 held;                  /* 0x3B4 */
     s32 owner;                 /* 0x3B8 */
     f32 size;                  /* 0x3BC */
-    char pad_3C0[0x3D4 - 0x3C0];
+    struct nuvec_s scale;      /* 0x3C0 */
+    char pad_3CC[0x3D4 - 0x3CC];
 };
 extern struct jeeprock_s JeepRock[];
 
@@ -461,6 +473,29 @@ extern s32 RumbleStoreTotalRoks;
 extern s32 RumbleStoreCrunchRoks;
 extern s32 RumbleStoreCrashRoks;
 extern s32 ShootRockSound;
+
+extern struct nuvec_s D_005B7E9C;
+#define rumble_sfx_pos D_005B7E9C
+extern void MyGameSfx(s32 id, struct nuvec_s *pos, s32 vol);
+extern struct nuvec_s SetNuVec(f32 x, f32 y, f32 z);
+
+void ShootRoksSkyward(void)
+{
+    s32 i;
+
+    RumbleDisplayMode = -1;
+    MyGameSfx(0xCD, &rumble_sfx_pos, 0x7FFF);
+    ShootRockSound = 1;
+    for (i = 0; i < 6; i++) {
+        if (JeepRock[i].exists != 0) {
+            JeepRock[i].holdvel = SetNuVec(0.0f, 13.0f, 0.0f);
+            JeepRock[i].owner = 20;
+            JeepRock[i].grounded = 0;
+            JeepRock[i].size = 10.0f;
+        }
+    }
+}
+
 
 s32 AllRoksSkyward(void)
 {
@@ -713,6 +748,22 @@ s32 GetCurrentFarmObjectives(void)
     return count;
 }
 
+
+extern f32 NewShadowMaskPlat(struct nuvec_s *pos, f32 size, s32 extramask);
+extern s32 ShadowInfo(void);
+extern double fabs(double x);
+
+s32 FindSurfaceType(struct nuvec_s *pos)
+{
+    struct nuvec_s probe = *pos;
+
+    probe.y += 0.5f;
+    if (fabs(pos->y - NewShadowMaskPlat(&probe, 0.0f, -1)) < 0.05f) {
+        return ShadowInfo();
+    }
+    return -1;
+}
+
 void InitWeatherBoss(void)
 {
     InitWeatherBoss_a();
@@ -749,6 +800,20 @@ inline void DrawPlane(struct plane_s *plane)
 }
 
 extern struct plane_s PlayerPlane;
+
+void InitPlane(struct nuvec_s *pos, f32 speed, f32 time)
+{
+    memset(&PlayerPlane, 0, sizeof(struct plane_s));
+    PlayerPlane.active = 1;
+    if (MyInitModelNew(&PlayerPlane.draw, 0x51, 0x22, 0, 0, &PlayerPlane.pos) == 0) {
+        PlayerPlane.active = 0;
+    }
+    PlayerPlane.pos = *pos;
+    PlayerPlane.vel = SetNuVec(0.0f, 0.0f, -speed);
+    PlayerPlane.actiontimer = time;
+    PlayerPlane.actionstatus = 0;
+}
+
 extern void DrawZoffaUFOs(void);
 extern void DrawAllHovaBlimps(void);
 extern void DrawGliderBullets(void);
@@ -762,6 +827,30 @@ void DrawFarmLevelExtra(void)
     DrawGliderBullets();
     DrawGliderTarget();
 }
+
+extern struct nuvec_s BazookaTokenPos;
+extern struct nuvec_s D_005A73E8;
+#define bazooka_token_dest D_005A73E8
+extern void NuVecScale(struct nuvec_s *dst, struct nuvec_s *src, f32 scale);
+extern void NuVecScaleAccum(struct nuvec_s *dst, struct nuvec_s *src, f32 scale);
+extern void MyAnimateModelNew(struct MYDRAW *draw, f32 dt);
+
+void ProcessBazookaToken(void)
+{
+    struct nuvec_s pos;
+    f32 t;
+
+    if (BazookaIconOn) {
+        t = WeatherBoss.draw.anim.anim_time /
+            WeatherBoss.draw.model->anmdata[WeatherBoss.draw.anim.action]->time;
+        NuVecScale(&pos, &BazookaTokenPos, 1.0f - t);
+        NuVecScaleAccum(&pos, &bazooka_token_dest, t);
+        pos.y += t * 0.75f;
+        BazookaTokenCurrentPos = pos;
+        MyAnimateModelNew(&IconMainDraw, 0.59999996f);
+    }
+}
+
 
 void DrawBazookaToken(void)
 {
@@ -878,12 +967,74 @@ void AddRock(struct nuvec_s *pos, s32 owner)
     AddRockVel(pos, &v000, owner);
 }
 
+
+struct nuinstance_s {
+    struct numtx_s matrix;     /* 0x00 */
+    s32 objid;                 /* 0x40 */
+};
+
+struct nugscn_s {
+    short *tids;               /* 0x00 */
+    s32 numtid;                /* 0x04 */
+    void *mtls;                /* 0x08 */
+    s32 nummtl;                /* 0x0C */
+    s32 numgobj;               /* 0x10 */
+    void **gobjs;              /* 0x14 */
+};
+
+struct nuspecial_s {
+    struct numtx_s mtx;              /* 0x00 */
+    struct nuinstance_s *instance;   /* 0x40 */
+};
+
+struct objtab_s {
+    struct nugscn_s *scene;          /* 0x00 */
+    struct nuspecial_s *special;     /* 0x04 */
+    char pad_08[0x20 - 0x08];
+};
+
+extern struct objtab_s ObjTab[];
+extern void NuMtxPreScale(struct numtx_s *m, struct nuvec_s *s);
+extern s32 NuRndrGScnObj(void *gobj, struct numtx_s *m);
+
+void DrawJeepRock(struct jeeprock_s *rock)
+{
+    struct objtab_s *entry;
+    struct nuspecial_s *special;
+    s32 obj;
+
+    NuQuatToMtx(&rock->quat, &mTEMP);
+    NuMtxPreScale(&mTEMP, &rock->scale);
+    NuMtxTranslate(&mTEMP, &rock->holdpos);
+    if (Level == 0x16) {
+        obj = 0x58;
+    } else if (rock->owner == 20 || rock->owner == 1) {
+        obj = 0xA9;
+    } else {
+        obj = (rock->owner == -1) ? 0xAB : 0xAA;
+    }
+    rock->seen = 0;
+    entry = &ObjTab[obj];
+    special = entry->special;
+    if (special != 0) {
+        rock->seen = NuRndrGScnObj(entry->scene->gobjs[special->instance->objid],
+                                   &mTEMP);
+    }
+}
+
 /* ------------------------------------------------------------------ */
 
 /* BattleShipList: stride 0x554, 6 entries. */
 struct battleship_s {
     s32 active;                /* 0x000 */
-    char pad_004[0x510 - 0x004];
+    struct MYDRAW draw;        /* 0x004 */
+    struct numtx_s locators[16]; /* 0x0E4 */
+    struct nuvec_s pos;        /* 0x4E4 */
+    f32 yaw;                   /* 0x4F0 */
+    f32 pitch;                 /* 0x4F4 */
+    f32 roll;                  /* 0x4F8 */
+    char pad_4FC[0x50C - 0x4FC];
+    s32 seen;                  /* 0x50C */
     s32 field510;              /* 0x510 */
     char pad_514[0x554 - 0x514];
 };
@@ -904,14 +1055,52 @@ s32 CollideWithBattleShips(struct nuvec_s *pos, f32 radius)
     return 0;
 }
 
+
+void DrawBattleShip(struct battleship_s *ship)
+{
+    NuMtxSetRotationX(&mTEMP, ship->pitch * 182.04445f);
+    NuMtxRotateZ(&mTEMP, ship->roll * 182.04445f);
+    NuMtxRotateY(&mTEMP, ship->yaw * 182.04445f);
+    NuMtxTranslate(&mTEMP, &ship->pos);
+    ship->seen = MyDrawModelNew(&ship->draw, &mTEMP, ship->locators);
+}
+
 /* BigGunList: stride 0x154, 12 entries. */
 struct biggun_s {
     s32 active;                /* 0x000 */
-    char pad_004[0x120 - 0x004];
+    char pad_004[0x0E4 - 0x004];
+    struct nuvec_s pos;        /* 0x0E4 */
+    char pad_0F0[0x0F8 - 0x0F0];
+    f32 yaw;                   /* 0x0F8 */
+    f32 pitch;                 /* 0x0FC */
+    f32 yawwobble;             /* 0x100 */
+    char pad_104[0x120 - 0x104];
     s32 field120;              /* 0x120 */
     char pad_124[0x154 - 0x124];
 };
 extern struct biggun_s BigGunList[];
+
+inline void DrawBigGun(struct biggun_s *gun)
+{
+    struct nuvec_s scale = {1.5f, 1.5f, 1.5f};
+
+    NuMtxSetScale(&mTEMP, &scale);
+    NuMtxRotateX(&mTEMP, gun->pitch * 182.04445f);
+    NuMtxRotateY(&mTEMP, (gun->yaw + gun->yawwobble) * 182.04445f);
+    NuMtxTranslate(&mTEMP, &gun->pos);
+}
+
+
+void DrawBigGuns(void)
+{
+    s32 i;
+
+    for (i = 0; i < 12; i++) {
+        if (BigGunList[i].active != 0) {
+            DrawBigGun(&BigGunList[i]);
+        }
+    }
+}
 
 /* SpaceStationList: stride 0xD0, 3 entries. */
 struct spacestation_s {
@@ -1281,7 +1470,8 @@ void FreeGliderBullet(s32 index, s32 enemy)
 
 struct asteroid_s {
     s32 active;                /* 0x00 */
-    char pad_04[0x2C - 0x04];
+    struct nuvec_s pos;        /* 0x04 */
+    char pad_10[0x2C - 0x10];
     f32 radius;                /* 0x2C */
     char pad_30[0x38 - 0x30];
     s32 inview;                /* 0x38 */
@@ -1326,7 +1516,7 @@ struct nuvec_s GetRandomGliderLevelEdgePoint(void)
     return point;
 }
 
-s32 CountAsteroids(void)
+inline s32 CountAsteroids(void)
 {
     f32 sum = 0.0f;
     s32 i;
@@ -1339,6 +1529,16 @@ s32 CountAsteroids(void)
     return (s32)sum;
 }
 
+
+void RespawnAsteroids(void)
+{
+    s32 i;
+
+    for (i = CountAsteroids(); i < 30; i++) {
+        InitAsteroid(1);
+    }
+}
+
 void InitAsteroids(void)
 {
     s32 i;
@@ -1346,6 +1546,29 @@ void InitAsteroids(void)
     memset(AsteroidList, 0, 0x1DB0);
     for (i = 0x1D; i >= 0; i--) {
         InitAsteroid(0);
+    }
+}
+
+
+extern s32 AsteroidDebug;
+extern void ProcessAsteroid(struct asteroid_s *asteroid);
+extern void DrawCross(struct nuvec_s *pos, s32 colour, f32 size);
+
+void ProcessAsteroids(void)
+{
+    s32 i;
+
+    if (AsteroidDebug == -1) {
+        for (i = 0; i < 100; i++) {
+            if (AsteroidList[i].active != 0) {
+                ProcessAsteroid(&AsteroidList[i]);
+            }
+        }
+    } else {
+        if (AsteroidList[AsteroidDebug].active != 0) {
+            ProcessAsteroid(&AsteroidList[AsteroidDebug]);
+        }
+        DrawCross(&AsteroidList[AsteroidDebug].pos, 0xFF, 10.0f);
     }
 }
 
@@ -1581,7 +1804,6 @@ void MoveVehicle(struct creature_s *c, struct pad_s *pad)
 extern struct nuvec_s WeatherBossTargetPos;
 extern struct nuvec_s WeatherBossTargetVel;
 extern f32 WeatherBossTargetAppearTimer;
-extern struct nuvec_s SetNuVec(f32 x, f32 y, f32 z);
 
 void InitWeatherBossTarget(void)
 {
@@ -1612,6 +1834,56 @@ void ProcessWeatherBossTarget(void)
 }
 
 
+struct spltab_s {
+    struct spline_s *spl;      /* 0x00 */
+    char pad_04[0x18 - 0x04];
+};
+
+struct splinepath_s {
+    struct spline_s *spl;      /* 0x00 */
+    f32 ratio;                 /* 0x04 */
+    f32 oldratio;              /* 0x08 */
+    char pad_0C[0x10 - 0x0C];
+    f32 speed;                 /* 0x10 */
+    struct nuvec_s pos;        /* 0x14 */
+    struct nuvec_s lastpos;    /* 0x20 */
+    s32 finished;              /* 0x2C */
+};
+
+extern struct spltab_s SplTab[];
+extern struct splinepath_s WeatherBossIntroSpline;
+extern struct nuvec_s WBIntroGliderPos;
+extern f32 WBBOSSINTRODIST;
+extern f32 WeatherBossTargetAppearTime;
+extern f32 WBIntroTweenTime;
+extern f32 WBIntroTweenTimer;
+extern void PointAlongSpline(struct spline_s *spl, f32 ratio, struct nuvec_s *dst,
+                             u16 *angle, u16 *tilt);
+
+void InitWBIntro(void)
+{
+    struct splinepath_s *path = &WeatherBossIntroSpline;
+    u16 angle;
+
+    WBIntroOn = 0;
+    path->spl = SplTab[72].spl;
+    if (path->spl != 0) {
+        path->ratio = 0.0f;
+        path->speed = 0.00002f;
+        path->oldratio = 0.0f;
+        PointAlongSpline(path->spl, path->ratio, &WBIntroGliderPos, &angle, 0);
+        path->pos = WBIntroGliderPos;
+        path->lastpos = WBIntroGliderPos;
+        WeatherBoss.dist = WBBOSSINTRODIST;
+        WeatherBoss.lastdist = WBBOSSINTRODIST;
+        path->finished = 0;
+        WeatherBossTargetAppearTimer = WeatherBossTargetAppearTime;
+        WBIntroTweenTimer = WBIntroTweenTime;
+        WBIntroOn = 1;
+    }
+}
+
+
 struct panelcount_s {
     short count;
     short draw;
@@ -1639,7 +1911,6 @@ extern s32 new_mode;
 extern s32 new_level;
 extern s32 D_0063329C;
 #define glider_restart_timer D_0063329C
-extern void MyGameSfx(s32 id, struct nuvec_s *pos, s32 vol);
 
 inline void ExplodeGlider(struct gliderstate_s *glider)
 {
@@ -1694,9 +1965,28 @@ void DrawAsteroids(void)
 /* GunBoatList: stride 0x134, 4 entries. */
 struct gunboat_s {
     s32 active;                /* 0x000 */
-    char pad_004[0x134 - 0x004];
+    char pad_004[0x008 - 0x004];
+    struct MYDRAW draw;        /* 0x008 */
+    struct nuvec_s pos;        /* 0x0E8 */
+    f32 yaw;                   /* 0x0F4 */
+    f32 pitch;                 /* 0x0F8 */
+    f32 yawwobble;             /* 0x0FC */
+    char pad_100[0x118 - 0x100];
+    s32 seen;                  /* 0x118 */
+    char pad_11C[0x134 - 0x11C];
 };
 extern struct gunboat_s GunBoatList[];
+
+void DrawGunBoat(struct gunboat_s *boat)
+{
+    struct nuvec_s scale = {1.5f, 1.5f, 1.5f};
+
+    NuMtxSetScale(&mTEMP, &scale);
+    NuMtxRotateX(&mTEMP, boat->pitch * 182.04445f);
+    NuMtxRotateY(&mTEMP, (boat->yaw + boat->yawwobble) * 182.04445f);
+    NuMtxTranslate(&mTEMP, &boat->pos);
+    boat->seen = MyDrawModelNew(&boat->draw, &mTEMP, 0);
+}
 extern void ProcessGunBoat(struct gunboat_s *boat);
 
 void ProcessGunBoats(void)

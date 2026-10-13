@@ -437,7 +437,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:0021adc0:ShootRoksSkyward"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021ae90:AllRoksSkyward"
@@ -653,7 +653,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021da20:InitPlane"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021db00:DrawPlane"
@@ -677,7 +677,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021dda0:RespawnAsteroids"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021de38:InitAsteroids"
@@ -685,7 +685,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021de80:ProcessAsteroids"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021df38:DrawAsteroids"
@@ -701,7 +701,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021e158:FindSurfaceType"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021e210:InitGunBoat"
@@ -709,7 +709,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:0021e330:DrawGunBoat"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021e3f0:ProcessGunBoats"
@@ -721,7 +721,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:0021e618:DrawBigGun"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021e6c8:ProcessBigGuns"
@@ -729,11 +729,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021e720:DrawBigGuns"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021e818:DrawBattleShip"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021e8c0:ProcessBattleShips"
@@ -749,7 +749,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021ea40:ProcessBazookaToken"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021eb08:DrawBazookaToken"
@@ -817,7 +817,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021f2b0:InitWBIntro"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021f380:DrawEarthBossLevelExtra"
@@ -905,7 +905,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021fce0:DrawJeepRock"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021fdc0:SmashRockIntoTwo"
