@@ -209,11 +209,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00180858:TerrainTrackBack"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00180af0:ScanTerrainPlatform"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00181888:NewRayCastPlatForm"

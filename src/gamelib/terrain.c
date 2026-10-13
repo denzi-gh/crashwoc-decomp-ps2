@@ -391,6 +391,7 @@ extern void *NuScratchAlloc32(s32 size);
 extern void NuScratchRelease(void);
 extern void ScanTerrain(s32 a0, s32 a1);
 extern void ScanTerrainHandel(s32 extramask, short *Handel);
+extern void ScanTerrainPlatform(s32 terrno, s32 extramask, s32 platscan);
 extern u64 fptodp(f32 value);
 extern s32 dpcmp(u64 a, u64 b);
 extern u64 dpsub(u64 a, u64 b);
@@ -5716,6 +5717,387 @@ s32 NewRayCastSetHandel(struct nuvec_s *vpos, struct nuvec_s *vvel, f32 size, f3
     TerI->timeadj = timeadj;
     TerI->impactadj = impactadj;
     ScanTerrainHandel(0, handel);
+    DerotateMovementVector();
+    HitTerrain();
+    if (TerI->hittype != 0) {
+        RayImpact(vvel);
+        TerrainImpactNorm();
+        ShadNorm = TerI->hitnorm;
+    }
+    NuScratchRelease();
+    return TerI->hittype;
+}
+
+
+s32 TerrainTrackBack(struct nuvec_s *pos, struct nuvec_s *vel, struct nuvec_s *dest, f32 size,
+                     f32 timeadj) {
+    if ((CurTerr == 0) || (TerrPolyObj == -1)) {
+        return 0;
+    }
+    TerI = (TerTempInfoType *)NuScratchAlloc32(0x930);
+    TerI->inyscalesq = TerI->inyscale = TerI->yscalesq = TerI->yscale = 1.0f;
+    TerI->size = size;
+    TerI->sizediv = 1.0f / TerI->size;
+    TerI->sizesq = TerI->size * TerI->size;
+    TerI->curpos.x = pos->x + vel->x * (size + 0.5f);
+    TerI->curpos.y = pos->y + vel->y * (size + 0.5f);
+    TerI->curpos.z = pos->z + vel->z * (size + 0.5f);
+    TerI->curvel.x = -vel->x * (size + 0.8f);
+    TerI->curvel.y = -vel->y * (size + 0.8f);
+    TerI->curvel.z = -vel->z * (size + 0.8f);
+    TerI->id = -1;
+    TerI->flags = 0;
+    DerotateMovementVector();
+    HitTerrPoly(TerrPoly, TerrPolyObj);
+    switch (TerI->hittype) {
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+            TerI->hittime -= timeadj;
+            if (TerI->hittime < 0.0f) {
+                TerI->hittime = 0.0f;
+            }
+            dest->x = TerI->curpos.x + TerI->curvel.x * TerI->hittime;
+            dest->y = TerI->curpos.y + TerI->curvel.y * TerI->hittime;
+            dest->z = TerI->curpos.z + TerI->curvel.z * TerI->hittime;
+            break;
+        case 0:
+        case 0x11:
+        case 0x12:
+        case 0x13:
+        case 0x14:
+            dest->x = TerI->curpos.x;
+            dest->y = TerI->curpos.y;
+            dest->z = TerI->curpos.z;
+            break;
+    }
+    NuScratchRelease();
+    return TerI->hittype;
+}
+
+
+void ScanTerrainPlatform(s32 terrno, s32 extramask, s32 platscan) {
+    s32 hitcnt;
+    s32 c;
+    tertype **hitdata;
+    tertype **maxdata;
+    short *lastwrite;
+    s32 scalecnt;
+    TerrainSituType *situ;
+    TerrainGroupType *group;
+    tertype *ter;
+    f32 maxx;
+    f32 maxy;
+    f32 maxz;
+    f32 minx;
+    f32 miny;
+    f32 minz;
+    f32 tmaxx;
+    f32 tmaxy;
+    f32 tmaxz;
+    f32 tminx;
+    f32 tminy;
+    f32 tminz;
+    f32 radmov;
+    f32 mag;
+    struct nuvec4_s rotpnts[4];
+    struct nuvec4_s rotnorm[2];
+
+    ScaleTerrain = ScaleTerrainT1;
+    scalecnt = 0;
+    TerI->hitcnt = 0;
+    lastwrite = (short *)TerI->hitdata;
+    hitdata = TerI->hitdata + 1;
+    maxdata = hitdata + 0x1FC;
+    platinrange = 0;
+    TerI->plathit = -1;
+    hitcnt = 0;
+    switch (TerI->scanmode) {
+        default:
+            radmov = TerI->curvel.x * TerI->curvel.x + TerI->curvel.y * TerI->curvel.y +
+                     TerI->curvel.z * TerI->curvel.z;
+            radmov += TerI->sizesq + 0.02f;
+            maxx = TerI->curpos.x + radmov;
+            maxy = TerI->curpos.y + radmov * TerI->yscale;
+            maxz = TerI->curpos.z + radmov;
+            minx = TerI->curpos.x - radmov;
+            miny = TerI->curpos.y - radmov * TerI->yscale;
+            minz = TerI->curpos.z - radmov;
+            break;
+        case 1:
+            if (TerI->curvel.x > 0.0f) {
+                minx = TerI->curpos.x - 0.02f - TerI->size;
+                maxx = TerI->curpos.x + TerI->curvel.x + 0.02f + TerI->size;
+            } else {
+                minx = TerI->curpos.x + TerI->curvel.x - 0.02f - TerI->size;
+                maxx = TerI->curpos.x + 0.02f + TerI->size;
+            }
+            if (TerI->curvel.y > 0.0f) {
+                miny = TerI->curpos.y - 0.02f - TerI->size;
+                maxy = TerI->curpos.y + TerI->curvel.y + 0.02f + TerI->size;
+            } else {
+                miny = TerI->curpos.y + TerI->curvel.y - 0.02f - TerI->size;
+                maxy = TerI->curpos.y + 0.02f + TerI->size;
+            }
+            if (TerI->curvel.z > 0.0f) {
+                minz = TerI->curpos.z - 0.02f - TerI->size;
+                maxz = TerI->curpos.z + TerI->curvel.z + 0.02f + TerI->size;
+            } else {
+                minz = TerI->curpos.z + TerI->curvel.z - 0.02f - TerI->size;
+                maxz = TerI->curpos.z + 0.02f + TerI->size;
+            }
+            radmov = (minx - maxx) * (minx - maxx) + (miny - maxy) * (miny - maxy) +
+                     (minz - maxz) * (minz - maxz);
+            radmov += TerI->size + 0.02f;
+            break;
+    }
+    TerI->PlatScanStart = lastwrite;
+    minx -= 0.05f;
+    maxx += 0.05f;
+    miny -= 0.05f;
+    maxy += 0.05f;
+    minz -= 0.05f;
+    maxz += 0.05f;
+    situ = &CurTerr->terr[terrno];
+    if (CurTerr->platdata[situ->info].curmtx != 0) {
+        if (CurTerr->platdata[situ->info].curmtx->_30 > CurTerr->platdata[situ->info].oldmtx._30) {
+            tminx = minx - situ->Location.x;
+            tmaxx = (maxx + (CurTerr->platdata[situ->info].curmtx->_30 -
+                             CurTerr->platdata[situ->info].oldmtx._30) * 1.5f) -
+                    situ->Location.x;
+        } else {
+            tmaxx = maxx - situ->Location.x;
+            tminx = (minx + (CurTerr->platdata[situ->info].curmtx->_30 -
+                             CurTerr->platdata[situ->info].oldmtx._30) * 1.5f) -
+                    situ->Location.x;
+        }
+        if (CurTerr->platdata[situ->info].curmtx->_31 > CurTerr->platdata[situ->info].oldmtx._31) {
+            tminy = miny - situ->Location.y;
+            tmaxy = (maxy + (CurTerr->platdata[situ->info].curmtx->_31 -
+                             CurTerr->platdata[situ->info].oldmtx._31) * 1.5f) -
+                    situ->Location.y;
+        } else {
+            tmaxy = maxy - situ->Location.y;
+            tminy = (miny + (CurTerr->platdata[situ->info].curmtx->_31 -
+                             CurTerr->platdata[situ->info].oldmtx._31) * 1.5f) -
+                    situ->Location.y;
+        }
+        if (CurTerr->platdata[situ->info].curmtx->_32 > CurTerr->platdata[situ->info].oldmtx._32) {
+            tminz = minz - situ->Location.z;
+            tmaxz = (maxz + (CurTerr->platdata[situ->info].curmtx->_32 -
+                             CurTerr->platdata[situ->info].oldmtx._32) * 1.5f) -
+                    situ->Location.z;
+        } else {
+            tmaxz = maxz - situ->Location.z;
+            tminz = (minz + (CurTerr->platdata[situ->info].curmtx->_32 -
+                             CurTerr->platdata[situ->info].oldmtx._32) * 1.5f) -
+                    situ->Location.z;
+        }
+    } else {
+        tmaxx = maxx - situ->Location.x;
+        tminx = minx - situ->Location.x;
+        tmaxy = maxy - situ->Location.y;
+        tminy = miny - situ->Location.y;
+        tmaxz = maxz - situ->Location.z;
+        tminz = minz - situ->Location.z;
+    }
+    if (CurTerr->platdata[situ->info].status.bit.rotate) {
+        tminx = ((maxx + minx) * 0.5f - situ->Location.x) * ((maxx + minx) * 0.5f - situ->Location.x) +
+             (((maxy + miny) * 0.5f - situ->Location.y) * TerI->inyscale) *
+                 (((maxy + miny) * 0.5f - situ->Location.y) * TerI->inyscale) +
+             ((maxz + minz) * 0.5f - situ->Location.z) * ((maxz + minz) * 0.5f - situ->Location.z);
+        if ((situ->type != -1) && (tminx < situ->radius + radmov)) {
+            group = (TerrainGroupType *)situ->model;
+            while (group->start >= 0) {
+                ter = (tertype *)(group + 1);
+                for (c = group->count; c > 0; c--, ter++) {
+                    platinrange = 1;
+                    if ((hitdata < maxdata) && ((ter->info[1] == 0) || ((ter->info[1] & extramask) != 0))) {
+                        rotpnts[0].x = ter->pnts[0].x;
+                        rotpnts[0].y = ter->pnts[0].y;
+                        rotpnts[0].z = ter->pnts[0].z;
+                        rotpnts[0].w = 0.0f;
+                        rotpnts[1].x = ter->pnts[1].x;
+                        rotpnts[1].y = ter->pnts[1].y;
+                        rotpnts[1].z = ter->pnts[1].z;
+                        rotpnts[1].w = 0.0f;
+                        rotpnts[2].x = ter->pnts[2].x;
+                        rotpnts[2].y = ter->pnts[2].y;
+                        rotpnts[2].z = ter->pnts[2].z;
+                        rotpnts[2].w = 0.0f;
+                        rotpnts[3].x = ter->pnts[3].x;
+                        rotpnts[3].y = ter->pnts[3].y;
+                        rotpnts[3].z = ter->pnts[3].z;
+                        rotpnts[3].w = 0.0f;
+                        NuVec4MtxTransformVU0(&rotpnts[0], &rotpnts[0], CurTerr->platdata[situ->info].curmtx);
+                        NuVec4MtxTransformVU0(&rotpnts[1], &rotpnts[1], CurTerr->platdata[situ->info].curmtx);
+                        NuVec4MtxTransformVU0(&rotpnts[2], &rotpnts[2], CurTerr->platdata[situ->info].curmtx);
+                        NuVec4MtxTransformVU0(&rotpnts[3], &rotpnts[3], CurTerr->platdata[situ->info].curmtx);
+                        rotnorm[0].x = ter->norm[0].x;
+                        rotnorm[0].y = ter->norm[0].y;
+                        rotnorm[0].z = ter->norm[0].z;
+                        rotnorm[0].w = 0.0f;
+                        NuVec4MtxTransformVU0(&rotnorm[0], &rotnorm[0], CurTerr->platdata[situ->info].curmtx);
+                        if (ter->norm[1].y < 65535.0f) {
+                            rotnorm[1].x = ter->norm[1].x;
+                            rotnorm[1].y = ter->norm[1].y;
+                            rotnorm[1].z = ter->norm[1].z;
+                            rotnorm[1].w = 0.0f;
+                            NuVec4MtxTransformVU0(&rotnorm[1], &rotnorm[1], CurTerr->platdata[situ->info].curmtx);
+                        }
+                        ScaleTerrain[scalecnt].info[0] = ter->info[0];
+                        ScaleTerrain[scalecnt].info[1] = ter->info[1];
+                        ScaleTerrain[scalecnt].info[2] = ter->info[2];
+                        ScaleTerrain[scalecnt].info[3] = ter->info[3];
+                        ScaleTerrain[scalecnt].pnts[0].x = rotpnts[0].x;
+                        ScaleTerrain[scalecnt].pnts[0].z = rotpnts[0].z;
+                        ScaleTerrain[scalecnt].pnts[0].y =
+                            (rotpnts[0].y + situ->Location.y) * TerI->inyscale - situ->Location.y;
+                        ScaleTerrain[scalecnt].pnts[1].x = rotpnts[1].x;
+                        ScaleTerrain[scalecnt].pnts[1].z = rotpnts[1].z;
+                        ScaleTerrain[scalecnt].pnts[1].y =
+                            (rotpnts[1].y + situ->Location.y) * TerI->inyscale - situ->Location.y;
+                        ScaleTerrain[scalecnt].pnts[2].x = rotpnts[2].x;
+                        ScaleTerrain[scalecnt].pnts[2].z = rotpnts[2].z;
+                        ScaleTerrain[scalecnt].pnts[2].y =
+                            (rotpnts[2].y + situ->Location.y) * TerI->inyscale - situ->Location.y;
+                        if (ter->norm[1].y < 65535.0f) {
+                            ScaleTerrain[scalecnt].pnts[3].x = rotpnts[3].x;
+                            ScaleTerrain[scalecnt].pnts[3].z = rotpnts[3].z;
+                            ScaleTerrain[scalecnt].pnts[3].y =
+                                (rotpnts[3].y + situ->Location.y) * TerI->inyscale - situ->Location.y;
+                            mag = 1.0f / NuFsqrt(rotnorm[1].x * rotnorm[1].x +
+                                                rotnorm[1].y * rotnorm[1].y * TerI->yscalesq +
+                                                rotnorm[1].z * rotnorm[1].z);
+                            ScaleTerrain[scalecnt].norm[1].x = rotnorm[1].x * mag;
+                            ScaleTerrain[scalecnt].norm[1].y = rotnorm[1].y * TerI->yscale * mag;
+                            ScaleTerrain[scalecnt].norm[1].z = rotnorm[1].z * mag;
+                        } else {
+                            ScaleTerrain[scalecnt].norm[1].y = 65536.0f;
+                        }
+                        hitcnt++;
+                        mag = 1.0f / NuFsqrt(rotnorm[0].x * rotnorm[0].x +
+                                            rotnorm[0].y * rotnorm[0].y * TerI->yscalesq +
+                                            rotnorm[0].z * rotnorm[0].z);
+                        ScaleTerrain[scalecnt].norm[0].x = rotnorm[0].x * mag;
+                        ScaleTerrain[scalecnt].norm[0].y = rotnorm[0].y * TerI->yscale * mag;
+                        ScaleTerrain[scalecnt].norm[0].z = rotnorm[0].z * mag;
+                        *hitdata++ = &ScaleTerrain[scalecnt++];
+                    }
+                }
+                group = (TerrainGroupType *)ter;
+            }
+            if (hitcnt != 0) {
+                lastwrite[0] = hitcnt;
+                lastwrite[1] = terrno;
+                lastwrite = (short *)hitdata;
+            }
+        }
+    } else if ((tmaxx >= situ->min.x) && (tmaxy >= situ->min.y) && (tmaxz >= situ->min.z) &&
+               (tminx <= situ->max.x) && (tminy < situ->max.y) && (tminz < situ->max.z) &&
+               (situ->type != -1)) {
+        group = (TerrainGroupType *)situ->model;
+        while (group->start >= 0) {
+            ter = (tertype *)(group + 1);
+            c = group->count;
+            if ((tmaxx >= group->bounds[0]) && (tminx < group->bounds[1])) {
+                if ((tmaxz >= group->bounds[2]) && (tminz < group->bounds[3])) {
+                    for (; c > 0; c--, ter++) {
+                        if ((tmaxx >= ter->minx) && (tminx < ter->maxx) && (tmaxz >= ter->minz) &&
+                            (tminz < ter->maxz) && (tmaxy >= ter->miny) && (tminy < ter->maxy)) {
+                            platinrange = 1;
+                            if ((hitdata < maxdata) &&
+                                ((ter->info[1] == 0) || ((ter->info[1] & extramask) != 0))) {
+                                if (TerI->yscale == 1.0f) {
+                                    *hitdata++ = ter;
+                                    hitcnt++;
+                                } else {
+                                    ScaleTerrain[scalecnt].info[0] = ter->info[0];
+                                    ScaleTerrain[scalecnt].info[1] = ter->info[1];
+                                    ScaleTerrain[scalecnt].info[2] = ter->info[2];
+                                    ScaleTerrain[scalecnt].info[3] = ter->info[3];
+                                    ScaleTerrain[scalecnt].pnts[0].x = ter->pnts[0].x;
+                                    ScaleTerrain[scalecnt].pnts[0].z = ter->pnts[0].z;
+                                    ScaleTerrain[scalecnt].pnts[0].y =
+                                        (ter->pnts[0].y + situ->Location.y) * TerI->inyscale - situ->Location.y;
+                                    ScaleTerrain[scalecnt].pnts[1].x = ter->pnts[1].x;
+                                    ScaleTerrain[scalecnt].pnts[1].z = ter->pnts[1].z;
+                                    ScaleTerrain[scalecnt].pnts[1].y =
+                                        (ter->pnts[1].y + situ->Location.y) * TerI->inyscale - situ->Location.y;
+                                    ScaleTerrain[scalecnt].pnts[2].x = ter->pnts[2].x;
+                                    ScaleTerrain[scalecnt].pnts[2].z = ter->pnts[2].z;
+                                    ScaleTerrain[scalecnt].pnts[2].y =
+                                        (ter->pnts[2].y + situ->Location.y) * TerI->inyscale - situ->Location.y;
+                                    if (ter->norm[1].y < 65535.0f) {
+                                        ScaleTerrain[scalecnt].pnts[3].x = ter->pnts[3].x;
+                                        ScaleTerrain[scalecnt].pnts[3].z = ter->pnts[3].z;
+                                        ScaleTerrain[scalecnt].pnts[3].y =
+                                            (ter->pnts[3].y + situ->Location.y) * TerI->inyscale -
+                                            situ->Location.y;
+                                        mag = 1.0f / NuFsqrt(ter->norm[1].x * ter->norm[1].x +
+                                                            ter->norm[1].y * ter->norm[1].y * TerI->yscalesq +
+                                                            ter->norm[1].z * ter->norm[1].z);
+                                        ScaleTerrain[scalecnt].norm[1].x = ter->norm[1].x * mag;
+                                        ScaleTerrain[scalecnt].norm[1].y = ter->norm[1].y * TerI->yscale * mag;
+                                        ScaleTerrain[scalecnt].norm[1].z = ter->norm[1].z * mag;
+                                    } else {
+                                        ScaleTerrain[scalecnt].norm[1].y = 65536.0f;
+                                    }
+                                    hitcnt++;
+                                    mag = 1.0f / NuFsqrt(ter->norm[0].x * ter->norm[0].x +
+                                                        ter->norm[0].y * ter->norm[0].y * TerI->yscalesq +
+                                                        ter->norm[0].z * ter->norm[0].z);
+                                    ScaleTerrain[scalecnt].norm[0].x = ter->norm[0].x * mag;
+                                    ScaleTerrain[scalecnt].norm[0].y = ter->norm[0].y * TerI->yscale * mag;
+                                    ScaleTerrain[scalecnt].norm[0].z = ter->norm[0].z * mag;
+                                    *hitdata++ = &ScaleTerrain[scalecnt++];
+                                }
+                            }
+                        }
+                    }
+                    group = (TerrainGroupType *)ter;
+                } else {
+                    group = (TerrainGroupType *)(ter + c);
+                }
+            } else {
+                group = (TerrainGroupType *)(ter + c);
+            }
+        }
+        if (hitcnt != 0) {
+            lastwrite[0] = hitcnt;
+            lastwrite[1] = terrno;
+            lastwrite = (short *)hitdata;
+        }
+    }
+    lastwrite[0] = 0;
+    lastwrite[1] = 0;
+}
+
+
+s32 NewRayCastPlatForm(struct nuvec_s *vpos, struct nuvec_s *vvel, s32 platid, f32 size,
+                       f32 timeadj) {
+    if (CurTerr == 0) {
+        return 0;
+    }
+    plathitid = -1;
+    TerrPolyObj = -1;
+    TerrPoly = 0;
+    TerI = (TerTempInfoType *)NuScratchAlloc32(0x930);
+    TerI->inyscalesq = TerI->inyscale = TerI->yscalesq = TerI->yscale = 1.0f;
+    TerI->size = size;
+    TerI->sizediv = 1.0f / TerI->size;
+    TerI->sizesq = TerI->size * TerI->size;
+    TerI->origpos.x = TerI->curpos.x = vpos->x;
+    TerI->origpos.y = TerI->curpos.y = vpos->y;
+    TerI->origpos.z = TerI->curpos.z = vpos->z;
+    TerI->origvel = TerI->curvel = *vvel;
+    TerI->id = -1;
+    TerI->flags = 0;
+    TerI->scanmode = 1;
+    TerI->timeadj = timeadj;
+    TerI->impactadj = 0.0f;
+    ScanTerrainPlatform(CurTerr->platdata[platid].terrno, 0, 1);
     DerotateMovementVector();
     HitTerrain();
     if (TerI->hittype != 0) {
