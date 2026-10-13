@@ -13,24 +13,24 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0005:001053b0:NuMemBlkCreateHigh"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0005:00105498:NuMemBlkCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0005:00105560:NuMemBlkDestroy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0005:00105588:NuMemBlkAlloc"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0005:001055d8:NuMemBlkFree"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0005:00105630:NuMemBlkCheckFreeList"
-state = "asm"
+state = "matching"
