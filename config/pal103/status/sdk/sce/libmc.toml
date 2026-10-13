@@ -17,15 +17,15 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0150:00266e20:_lmcGetClientPtr"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0150:00266e50:sceMcChangeThreadPriority"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0150:00266f08:sceMcGetSlotMax"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0150:00266fc8:sceMcOpen"
@@ -33,19 +33,19 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0150:00267100:sceMcMkdir"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0150:00267138:sceMcClose"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0150:002671f0:sceMcSeek"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0150:002672c8:mceIntrReadFixAlign"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0150:00267358:sceMcRead"
@@ -61,7 +61,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0150:00267620:mcDelayThread"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0150:00267668:sceMcSync"
@@ -69,7 +69,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0150:00267748:mceGetInfoApdx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0150:002677a0:sceMcGetInfo"
@@ -81,7 +81,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0150:00267a80:mceStorePwd"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0150:00267b08:sceMcChdir"
@@ -97,7 +97,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0150:00267e48:sceMcFlush"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0150:00267f00:sceMcSetFileInfo"
