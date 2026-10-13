@@ -51,6 +51,8 @@
 struct ldata_s {
     u8 unk_0x00[0x24];       /* 0x00 (opaque) */
     unsigned short flags;    /* 0x24 */
+    u8 unk_0x26[0x4];        /* 0x26 */
+    unsigned short farclip;  /* 0x2A */
 };
 
 extern struct ldata_s *LDATA;
@@ -69,15 +71,22 @@ extern struct obj_s *pObj[];
 
 /* Projectile record; obj header at 0x0, active flag at 0x1A9, stride 0x1B0. */
 struct projectile_s {
-    struct obj_s obj;    /* 0x000 */
-    u8 unk_0x188[0x21];  /* 0x188 */
-    s8 active;           /* 0x1A9 */
-    u8 unk_0x1AA[0x6];   /* 0x1AA */
+    struct obj_s obj;        /* 0x000 */
+    struct nuvec_s unk_0x188; /* 0x188 */
+    struct nuvec_s unk_0x194; /* 0x194 */
+    f32 time;                /* 0x1A0 */
+    f32 duration;            /* 0x1A4 */
+    s8 type;                 /* 0x1A8 */
+    s8 active;               /* 0x1A9 */
+    short object;            /* 0x1AA */
+    s8 unk_0x1AC;            /* 0x1AC */
+    u8 unk_0x1AD;            /* 0x1AD */
+    u8 unk_0x1AE[0x2];       /* 0x1AE */
 };
 
 extern struct projectile_s Projectile[16];
 extern s32 jonglow;
-extern s32 jonglowsize;
+extern f32 jonglowsize;
 extern s32 temp_cuboid_side;
 extern f32 temp_cuboid_bounce_angle;
 extern s32 VEHICLECONTROL;
@@ -144,6 +153,131 @@ extern s32 boss_dead;
 void ClockOff(void);
 void StartTimeTrial(struct nuvec_s *pos, s32 clock);
 void NewMenu(void *cursor, s32 menu, s32 mode, s32 item);
+
+struct wumpa_s {
+    struct nuvec_s pos0;  /* 0x00 */
+    struct nuvec_s pos1;  /* 0x0C */
+    struct nuvec_s pos;   /* 0x18 */
+    u8 unk_0x24[0x1C];    /* 0x24 */
+    s8 state;             /* 0x40 */
+    u8 unk_0x41[0xB];     /* 0x41 */
+};                        /* 0x4C */
+
+struct winfo_s {
+    u8 unk_0x00[0x44];    /* 0x00 */
+    f32 height;           /* 0x44 */
+    u8 unk_0x48[0x8];     /* 0x48 */
+};                        /* 0x50 */
+
+struct gdeb_s {
+    s32 i;                /* 0x0 */
+    char *name;           /* 0x4 */
+    u64 levbits;          /* 0x8 */
+};                        /* 0x10 */
+
+extern s32 TimeTrial;
+extern struct wumpa_s Wumpa[320];
+extern struct winfo_s WInfo[8];
+extern struct gdeb_s GDeb[170];
+
+void FlyWumpa(struct wumpa_s *wumpa);
+void AddScreenWumpa(f32 x, f32 y, f32 z, s32 n);
+void AddFiniteShotDebrisEffect(s32 *key, s32 effect, struct nuvec_s *pos, s32 n);
+
+extern f32 in_speed;
+extern f32 in_s_friction;
+extern f32 in_f_friction;
+extern double fabs(double x);
+
+struct tersurface_s {
+    f32 friction;         /* 0x0 */
+    s16 unk_0x04;         /* 0x4 */
+    u16 flags;            /* 0x6 */
+};                        /* 0x8 */
+
+extern struct tersurface_s TerSurface[];
+extern struct tersurface_s TerLayer[];
+extern f32 SAFEY;
+extern f32 EShadY;
+extern f32 ShadRoofY;
+extern struct nuvec_s ShadNorm;
+extern struct nuvec_s EShadNorm;
+extern struct nuvec_s ShadRoofNorm;
+extern u16 plr_conveyor_yrot;
+extern struct nuvec_s plr_conveyor_mom;
+extern u16 temp_roof_xrot;
+extern u16 temp_roof_zrot;
+
+s32 ShadowInfo(void);
+s32 EShadowInfo(void);
+s32 ShadowRoofInfo(void);
+void ShadowDir(struct nuvec_s *dir);
+s32 RotDiff(u16 a, u16 b);
+u16 SeekRot(u16 a, u16 target, s32 rate);
+void GetALONG(struct nuvec_s *pos, struct RPos_s *rpos, s32 iRAIL, s32 iALONG, s32 dir);
+s32 FurtherALONG(s32 iRAIL, s32 iALONG, f32 fALONG, s32 iRAIL2, s32 iALONG2, f32 fALONG2);
+f32 CrateBottomAbove(struct nuvec_s *pos);
+s32 RayIntersectCuboid(struct nuvec_s *p0, struct nuvec_s *p1, struct nuvec_s *min, struct nuvec_s *max);
+extern f32 temp_ratio;
+
+struct nuinstance_s {
+    struct numtx_s mtx;      /* 0x00 */
+    s32 objid;               /* 0x40 */
+};
+
+struct nuspecial_s {
+    struct numtx_s mtx;            /* 0x00 */
+    struct nuinstance_s *instance; /* 0x40 */
+};
+
+struct nugscn_s {
+    u8 unk_0x00[0x14];       /* 0x00 */
+    void **gobjs;            /* 0x14 */
+};
+
+struct objtab_s {
+    struct nugscn_s *scene;      /* 0x00 */
+    struct nuspecial_s *special; /* 0x04 */
+    u8 unk_0x08[0x18];           /* 0x08 */
+};                               /* 0x20 */
+
+struct gamecam_s {
+    u8 unk_0x00[0xA4];       /* 0x00 */
+    struct nuvec_s pos;      /* 0xA4 */
+};
+
+extern struct objtab_s ObjTab[];
+extern struct gamecam_s *pCam;
+extern struct nuvec_s jonglowpos;
+extern s32 D_00588824[];
+extern s32 Paused;
+extern s32 FRAME;
+extern s32 FRAMES;
+extern struct gamecam_s GameCam[];
+extern s32 InvincibilityCHEAT;
+extern s32 bonus_crates_destroyed;
+extern s32 old_bonus_crates;
+extern f32 plr_invisibility_time;
+extern s32 Hub;
+
+void BlendGameCamera(struct gamecam_s *cam, f32 time);
+void ResetAnimPacket(struct anim_s *anim, s32 action);
+void AddExtraLife(struct nuvec_s *pos, s32 pdeb);
+void AddMechanicalDebris(struct nuvec_s *pos, s32 vehicle);
+
+void NuMtxSetRotationX(struct numtx_s *m, s32 r);
+void NuMtxSetRotationY(struct numtx_s *m, s32 r);
+void NuMtxRotateX(struct numtx_s *m, s32 r);
+void NuMtxRotateY(struct numtx_s *m, s32 r);
+void NuMtxRotateZ(struct numtx_s *m, s32 r);
+void NuMtxSetScale(struct numtx_s *m, struct nuvec_s *s);
+void NuMtxTranslate(struct numtx_s *m, struct nuvec_s *v);
+void NuMtxSetTranslation(struct numtx_s *m, struct nuvec_s *v);
+s32 NuRndrGScnObj(void *gobj, struct numtx_s *m);
+void NuLightAddSpot(struct nuvec_s *pos, f32 size, u32 colour, s32 mode);
+void NuRndrAddShadow(struct nuvec_s *pos, s32 alpha, s32 xrot, s32 yrot, s32 zrot, f32 size);
+extern s32 temp_face;
+extern s32 abs(s32 x);
 
 
 s32 CylinderCuboidOverlapXZ(struct nuvec_s *pos, struct obj_s *obj,
@@ -914,6 +1048,357 @@ void GetTopBot(struct creature_s *c) {
     }
 }
 
+
+s32 WumpaCollisions(struct obj_s *obj) {
+    s32 i;
+    s32 key;
+    f32 r;
+    f32 reach;
+    f32 y;
+    f32 dx;
+    f32 dz;
+    struct wumpa_s *w;
+    struct winfo_s *info;
+
+    if (TimeTrial == 0) {
+        if (level_part_2 != 0) {
+            return 0;
+        }
+        r = obj->radius * obj->SCALE;
+        if (obj->attack & 8) {
+            reach = r + 0.5f;
+        } else if (obj->attack & 4) {
+            reach = r + 0.25f;
+        } else {
+            if (obj->attack & 2) {
+                if (obj->character == 1 &&
+                    ((struct creature_s *)obj->parent)->slide != 0) {
+                    r = r * 3.0f;
+                } else {
+                    r = r + r;
+                }
+            }
+            reach = r;
+        }
+        reach = reach + 0.2f;
+        reach = reach * reach;
+        w = Wumpa;
+        for (i = 0; i < 320; i++, w++) {
+            if (w->state != 2) {
+                continue;
+            }
+            info = &WInfo[i & 7];
+            y = w->pos.y + info->height;
+            if (!(obj->pos.y + obj->bot * obj->SCALE < y + 0.1f)) {
+                continue;
+            }
+            if (!(y - 0.1f < obj->pos.y + obj->top * obj->SCALE)) {
+                continue;
+            }
+            dx = obj->pos.x - w->pos.x;
+            dz = obj->pos.z - w->pos.z;
+            if (!(dx * dx + dz * dz < reach)) {
+                continue;
+            }
+            if (obj->attack & 2) {
+                FlyWumpa(w);
+            } else if (obj->dead == 0) {
+                AddScreenWumpa(w->pos.x, y, w->pos.z, 1);
+                key = -1;
+                AddFiniteShotDebrisEffect(&key, GDeb[130].i, &w->pos, 1);
+                w->state = 0;
+                GameSfx(0x2C, &obj->pos);
+            }
+            return 0;
+        }
+    }
+    return 0;
+}
+
+
+void MoveLoopXZ(struct obj_s *obj, u16 *hdg) {
+    struct nuvec_s v;
+    u16 angle;
+
+    if (hdg != 0) {
+        angle = *hdg;
+    } else {
+        angle = obj->hdg;
+    }
+    NuVecRotateY(&v, &obj->mom, -angle);
+
+    if (v.x > 0.0f) {
+        v.x -= in_s_friction;
+        if (v.x < 0.0f) {
+            v.x = 0.0f;
+        }
+    } else if (v.x < 0.0f) {
+        v.x += in_s_friction;
+        if (v.x > 0.0f) {
+            v.x = 0.0f;
+        }
+    }
+    if (v.x < -0.08999999613f) {
+        v.x = v.x + (-0.08999999613f - v.x) * 0.25f;
+    } else if (v.x > 0.08999999613f) {
+        v.x = v.x + (0.08999999613f - v.x) * 0.25f;
+    }
+    obj->side = v.x;
+    obj->abs_side = fabs(v.x);
+
+    if (v.z > in_speed) {
+        v.z -= in_f_friction;
+        if (v.z < in_speed) {
+            v.z = in_speed;
+        }
+    } else if (v.z < in_speed) {
+        v.z += in_f_friction;
+        if (v.z > in_speed) {
+            v.z = in_speed;
+        }
+    }
+    obj->forward = v.z;
+    obj->abs_forward = fabs(v.z);
+
+    NuVecRotateY(&obj->mom, &v, angle);
+}
+
+
+inline void FindAnglesZX(struct nuvec_s *v) {
+    struct nuvec_s rotated;
+    u16 xrot;
+    u16 zrot;
+
+    xrot = NuAtan2D(v->z, v->y);
+    temp_xrot = xrot;
+    NuVecRotateX(&rotated, v, -xrot);
+    zrot = NuAtan2D(rotated.x, rotated.y);
+    temp_zrot = -zrot;
+}
+
+
+void GetSurfaceInfo(struct obj_s *obj, s32 mode, f32 reflect) {
+    struct nuvec_s dir;
+    u32 surface;
+    s32 old_surface;
+    u16 yrot;
+
+    if (reflect != 2000000.0f) {
+        surface = ShadowInfo();
+        if (surface >= 16) {
+            surface = 0;
+        }
+        obj->reflect_y = (TerSurface[surface].flags & 4) ? reflect : 2000000.0f;
+    } else {
+        obj->reflect_y = 2000000.0f;
+        surface = 0;
+    }
+
+    if (mode != 0) {
+        old_surface = obj->surface_type;
+        obj->surface_type = surface;
+        if (obj->shadow == 2000000.0f) {
+            obj->shadow = SAFEY;
+            obj->vSN = v010;
+        } else {
+            obj->vSN = ShadNorm;
+            if ((obj->flags & 1) && obj->ground != 0 && mode >= 2) {
+                if (obj->surface_type == 6) {
+                    ShadowDir(&dir);
+                    plr_conveyor_yrot = NuAtan2D(dir.x, dir.z) + 0x4000;
+                    obj->pos.x += NuTrigTable[plr_conveyor_yrot] * 0.03f;
+                    obj->pos.z += NuTrigTable[(plr_conveyor_yrot + 0x4000) & 0xFFFF] * 0.03f;
+                    NuVecSub(&plr_conveyor_mom, &obj->pos, &obj->oldpos);
+                } else if (old_surface == 6) {
+                    yrot = NuAtan2D(plr_conveyor_mom.x, plr_conveyor_mom.z);
+                    if (fabs(RotDiff(plr_conveyor_yrot, yrot)) < 16384.0) {
+                        obj->mom.x = NuTrigTable[plr_conveyor_yrot] * 0.03f * 2.0f;
+                        obj->mom.z = NuTrigTable[(u16)(plr_conveyor_yrot + 0x4000)] * 0.03f * 2.0f;
+                    }
+                }
+            }
+        }
+    }
+
+    obj->layer_shadow = EShadY;
+    if (EShadY != 2000000.0f && obj->pos.y + obj->bot * obj->SCALE < EShadY) {
+        obj->layer_type = EShadowInfo();
+        if ((u8)obj->layer_type >= 11) {
+            obj->layer_type = 0;
+        }
+        if (!(TerLayer[obj->layer_type].flags & 0x40)) {
+            obj->vLN = EShadNorm;
+            FindAnglesZX(&obj->vLN);
+            obj->layer_xrot = temp_xrot;
+            obj->layer_zrot = temp_zrot;
+            goto roof;
+        }
+    }
+    obj->layer_type = -1;
+    obj->vLN = v010;
+    obj->layer_xrot = 0;
+    obj->layer_zrot = 0;
+
+roof:
+    obj->roof_y = ShadRoofY;
+    if (ShadRoofY != 2000000.0f && obj->pos.y + obj->bot * obj->SCALE < ShadRoofY) {
+        obj->roof_type = ShadowRoofInfo();
+        if ((u8)obj->roof_type >= 16) {
+            obj->roof_type = 0;
+        }
+        obj->vRN.x = -ShadRoofNorm.x;
+        obj->vRN.y = -ShadRoofNorm.y;
+        obj->vRN.z = -ShadRoofNorm.z;
+        FindAnglesZX(&obj->vRN);
+        temp_roof_xrot = temp_xrot;
+        temp_roof_zrot = temp_zrot;
+    } else {
+        obj->roof_type = -1;
+        obj->vRN = v010;
+        temp_roof_xrot = 0;
+        temp_roof_zrot = 0;
+    }
+}
+
+
+void ObjectRotation(struct obj_s *obj, s32 mode, s32 blend) {
+    struct nuvec_s v;
+    f32 t;
+    s32 vehicle;
+    s32 grounded;
+    s32 blended;
+    u16 xrot;
+    u16 pitch;
+    u16 zrot;
+
+    vehicle = -1;
+    if (obj == &player->obj && VEHICLECONTROL == 1 && obj->vehicle != -1) {
+        vehicle = obj->vehicle;
+    }
+    grounded = (obj->pos.y + obj->bot * obj->SCALE - obj->shadow < 0.25f) ? 1 : 0;
+
+    blended = 0;
+    if (obj->vSN.x == 0.0f && obj->vSN.y == 1.0f && obj->vSN.z == 0.0f) {
+        temp_xrot = 0;
+        temp_zrot = 0;
+    } else {
+        if (blend) {
+            t = obj->xz_distance / 0.1999999881f;
+            v = obj->vSN;
+            if (t > 1.0f) {
+                t = 1.0f;
+            }
+            blended = 1;
+            v.x = v010.x + (v.x - v010.x) * t;
+            v.y = v010.y + (v.y - v010.y) * t;
+            v.z = v010.z + (v.z - v010.z) * t;
+            FindAnglesZX(&v);
+            xrot = temp_xrot;
+            zrot = temp_zrot;
+        }
+        FindAnglesZX(&obj->vSN);
+    }
+
+    if (obj->flags & 0x10000) {
+        if (mode == 1) {
+            obj->surface_xrot = temp_xrot;
+            obj->surface_zrot = temp_zrot;
+            obj->roof_xrot = temp_roof_xrot;
+            obj->xrot = temp_roof_xrot;
+            obj->roof_zrot = temp_roof_zrot;
+            obj->zrot = temp_roof_zrot;
+        } else if (mode == 2) {
+            obj->surface_xrot = SeekRot(obj->surface_xrot, temp_xrot, 3);
+            obj->surface_zrot = SeekRot(obj->surface_zrot, temp_zrot, 3);
+            obj->roof_xrot = SeekRot(obj->roof_xrot, temp_roof_xrot, 3);
+            obj->roof_zrot = SeekRot(obj->roof_zrot, temp_roof_zrot, 3);
+            obj->xrot = SeekRot(obj->xrot, obj->roof_xrot, 2);
+            obj->zrot = SeekRot(obj->zrot, obj->roof_zrot, 2);
+        }
+    } else if (mode == 1) {
+        obj->surface_xrot = temp_xrot;
+        obj->surface_zrot = temp_zrot;
+        if (grounded == 0 || vehicle == 0x3B) {
+            obj->zrot = 0;
+            obj->xrot = 0;
+        } else {
+            obj->xrot = temp_xrot;
+            obj->zrot = temp_zrot;
+        }
+    } else if (mode == 2) {
+        if (obj == &player->obj && VEHICLECONTROL == 2) {
+            obj->surface_xrot = SeekRot(obj->surface_xrot, temp_xrot, 3);
+            obj->surface_zrot = SeekRot(obj->surface_zrot, temp_zrot, 3);
+            if (obj->pad_speed == 0.0f || fabs(obj->pad_dx) < 0.33333334f) {
+                xrot = obj->pad_dz * 16384.0f;
+            } else {
+                xrot = 0x4000 - abs(RotDiff(0, obj->pad_angle));
+            }
+            if (obj->shadow != 2000000.0f && xrot > 0x8000 && xrot <= 0xF554) {
+                t = obj->pos.y + obj->bot * obj->SCALE - obj->shadow;
+                if (t < 1.0f) {
+                    xrot = -(s32)(t * 16384.0f);
+                    goto seek;
+                }
+            }
+            if (obj->roof_y != 2000000.0f && (s16)xrot >= 0 && xrot >= 0xAAC) {
+                t = obj->roof_y - (obj->pos.y + obj->top * obj->SCALE);
+                if (t < 1.0f) {
+                    goto tilt;
+                }
+            }
+            v.x = obj->pos.x;
+            v.z = obj->pos.z;
+            v.y = obj->pos.y + (obj->bot + obj->top) * obj->SCALE * 0.5f;
+            t = CrateBottomAbove(&v);
+            if (t != 2000000.0f && (s16)xrot >= 0) {
+                t = t - (obj->pos.y + obj->top * obj->SCALE);
+                if (t < 1.0f) {
+                    if (t < 0.0f) {
+                        t = 0.0f;
+                    }
+                tilt:
+                    xrot = t * 16384.0f;
+                }
+            }
+        seek:
+            obj->xrot = SeekRot(obj->xrot, xrot, 5);
+            obj->zrot = 0;
+        } else if (vehicle == 0x20) {
+            obj->surface_xrot = SeekRot(obj->surface_xrot, temp_xrot, 3);
+            obj->surface_zrot = SeekRot(obj->surface_zrot, temp_zrot, 3);
+            if (obj->pad_speed > 0.0) {
+                pitch = 0x4000 - abs(RotDiff(0, obj->pad_angle));
+            } else {
+                pitch = 0;
+            }
+            obj->xrot = SeekRot(obj->xrot, pitch, 5);
+            obj->zrot = 0;
+        } else {
+            obj->surface_xrot = SeekRot(obj->surface_xrot, temp_xrot, 3);
+            obj->surface_zrot = SeekRot(obj->surface_zrot, temp_zrot, 3);
+            if (vehicle != 0x3B) {
+                if (grounded != 0) {
+                    if (blended == 0) {
+                        xrot = obj->surface_xrot;
+                        zrot = obj->surface_zrot;
+                    }
+                } else {
+                    zrot = 0;
+                    xrot = 0;
+                }
+                if (!(obj->flags & 0x20000) && (grounded != 0 || vehicle != 0x99)) {
+                    obj->xrot = SeekRot(obj->xrot, xrot, 2);
+                    obj->zrot = SeekRot(obj->zrot, zrot, 2);
+                }
+            } else {
+                obj->zrot = 0;
+                obj->xrot = 0;
+            }
+        }
+    }
+}
+
 void PickupItem(struct obj_s *obj) {
     struct creature_s *c;
     s32 mask;
@@ -1012,6 +1497,703 @@ void PickupItem(struct obj_s *obj) {
     obj->dead = 1;
     c->on = 0;
     c->off_wait = 2;
+}
+
+
+inline void FlyGameObject(struct obj_s *obj, u16 yrot) {
+    obj->mom.x = 0.0f;
+    obj->mom.y = 0.0f;
+    obj->mom.z = 0.1999999881f;
+    NuVecRotateX(&obj->mom, &obj->mom, -0x400);
+    NuVecRotateY(&obj->mom, &obj->mom, yrot);
+    GameSfx(0x37, &obj->pos);
+}
+
+s32 HitCreatures(struct obj_s *obj, s32 how, s32 hit_type) {
+    s32 i;
+    struct obj_s *po;
+
+    if (level_part_2 == 0) {
+        for (i = 0; i < 64; i++) {
+            po = pObj[i];
+            if (po == 0 || po->dead != 0 || po->invisible != 0 || (po->flags & 1)) {
+                continue;
+            }
+            if ((po->flags & 4) && GameObjectOverlap(obj, po, 1)) {
+                if (po->vulnerable & 0x100) {
+                    if (po->flags & 0x40000) {
+                        po->kill_contact = 1;
+                    } else if (how == 2) {
+                        KillGameObject(po, 0x15);
+                    } else if (how != 0) {
+                        KillGameObject(po, 4);
+                    } else {
+                        FlyGameObject(po, temp_yrot);
+                        KillGameObject(po, 1);
+                    }
+                }
+                ((struct creature_s *)po->parent)->hit_type = hit_type;
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+
+s32 WipeCreatures(struct RPos_s *rpos) {
+    s32 i;
+    struct obj_s *po;
+    struct nuvec_s pos;
+
+    if (level_part_2 != 0) {
+        return 0;
+    }
+    for (i = 0; i < 64; i++) {
+        po = pObj[i];
+        if (po == 0 || po->dead != 0 || po->invisible != 0 || (po->flags & 1)) {
+            continue;
+        }
+        if (po->flags & 4) {
+            if (po->flags & 0x2000) {
+                if (po->draw_frame == 0 || po->pLOCATOR == 0 ||
+                    (po->model != 0 && po->model->pLOCATOR[0] == 0)) {
+                    continue;
+                }
+                pos.x = po->pLOCATOR->_30;
+                pos.y = po->pLOCATOR->_31;
+                pos.z = po->pLOCATOR->_32;
+            } else {
+                pos = po->pos;
+            }
+            GetALONG(&pos, &po->RPos, po->RPos.iRAIL, po->RPos.iALONG, 1);
+            if (FurtherALONG(rpos->iRAIL, rpos->iALONG, rpos->fALONG,
+                             po->RPos.iRAIL, po->RPos.iALONG, po->RPos.fALONG)) {
+                FlyGameObject(po, NuAtan2D(rpos->pos.x - pos.x, rpos->pos.z - pos.z));
+                KillGameObject(po, 1);
+            }
+        }
+    }
+    return 0;
+}
+
+
+s32 KillGameObject(struct obj_s *obj, s32 anim) {
+    struct nuvec_s pos;
+    s32 vehicle;
+    s32 sfx;
+    s32 check_anim;
+    u16 angle;
+    f32 delay;
+    f32 duration;
+
+    vehicle = -1;
+    sfx = -1;
+    obj->dead = anim;
+    pos.x = obj->pos.x;
+    pos.z = obj->pos.z;
+    pos.y = obj->pos.y + (obj->bot + obj->top) * obj->SCALE * 0.5f;
+    if (obj == &player->obj && VEHICLECONTROL == 1 && obj->vehicle != -1) {
+        vehicle = obj->vehicle;
+    }
+    if (anim == 0x14) {
+        anim = 6;
+        if (obj->flags & 1) {
+            if (VEHICLECONTROL == 2) {
+                anim = 0xE;
+            } else if (VEHICLECONTROL == 1 && obj->vehicle != -1) {
+                anim = 0xB;
+            } else if (Level == 0xF) {
+                anim = 0xD;
+            }
+        }
+        obj->dead = anim;
+    }
+
+    if (obj->flags & 1) {
+        if (obj->transporting != 0 || InvincibilityCHEAT != 0) {
+            obj->dead = 0;
+            return 0;
+        }
+        if (vehicle == 0x44 || vehicle == 0xB2 || vehicle == 0x20 || vehicle == 0x3B ||
+            vehicle == 0x53) {
+            obj->dead = 0x16;
+        } else if (anim == 0x11 && VEHICLECONTROL == 1 && obj->vehicle == 0x20) {
+            obj->dead = 1;
+        }
+        if (obj->dead != 0) {
+            old_bonus_crates = bonus_crates_destroyed;
+            NewBuzz(&player->rumble, 0x32);
+            NewRumble(&player->rumble, 0xFF);
+            if (vehicle == 0xA1) {
+                sfx = 0x71;
+            }
+        }
+        if (sfx != -1) {
+            GameSfx(sfx, &obj->pos);
+        }
+    }
+    obj->die_time = 0.0f;
+
+    sfx = -1;
+    delay = obj->die_time;
+    angle = NuAtan2D(GameCam->pos.x - obj->pos.x, GameCam->pos.z - obj->pos.z);
+    check_anim = (obj->dead != 0x16);
+    switch (obj->character) {
+    case 0:
+        sfx = 0x15;
+        switch (obj->dead) {
+        case 6:
+            obj->die_model[0] = CRemap[10];
+            sfx = 0x16;
+            delay = 1.0f;
+            obj->die_model[1] = -1;
+            obj->die_action = 0x18;
+            break;
+        case 14:
+            obj->die_model[0] = CRemap[0x9D];
+            delay = 1.0f;
+            obj->die_model[1] = -1;
+            obj->die_action = 0x18;
+            break;
+        case 5:
+            obj->die_model[0] = CRemap[10];
+            sfx = 8;
+            delay = 1.0f;
+            obj->die_model[1] = -1;
+            obj->die_action = 0x19;
+            break;
+        case 3:
+            obj->die_model[0] = CRemap[0];
+            obj->die_model[1] = CRemap[7];
+            obj->die_action = 0x1D;
+            break;
+        case 8:
+            sfx = 9;
+            obj->die_model[0] = CRemap[0];
+            obj->die_model[1] = CRemap[0x4F];
+            obj->die_action = 0xF;
+            break;
+        case 9:
+            obj->die_model[0] = CRemap[0];
+            obj->die_model[1] = -1;
+            obj->die_action = 0xF;
+            break;
+        case 10:
+            obj->die_model[0] = CRemap[0];
+            delay = 1.0f;
+            obj->die_model[1] = -1;
+            obj->die_action = 0x17;
+            break;
+        case 11:
+            obj->die_model[0] = CRemap[0];
+            if (obj->vehicle != 0x63 && obj->vehicle != 0x36 && obj->vehicle != 0x81 &&
+                obj->vehicle != 0x53 && obj->vehicle != 0x8B) {
+                obj->die_model[1] = CRemap[obj->vehicle];
+            }
+            delay = 1.0f;
+            obj->die_action = 0x59;
+            break;
+        case 12:
+            obj->die_model[0] = CRemap[0];
+            if (obj->vehicle != 0x63 && obj->vehicle != 0x36 && obj->vehicle != 0x81 &&
+                obj->vehicle != 0x53 && obj->vehicle != 0x8B) {
+                obj->die_model[1] = CRemap[obj->vehicle];
+            }
+            delay = 1.0f;
+            obj->die_action = 0x5B;
+            break;
+        case 13:
+            obj->die_model[0] = CRemap[0x97];
+            sfx = 7;
+            delay = 1.0f;
+            obj->die_model[1] = -1;
+            obj->die_action = 1;
+            break;
+        case 15:
+            obj->die_model[0] = CRemap[0x9E];
+            delay = 1.0f;
+            obj->die_model[1] = -1;
+            obj->die_action = 0xE;
+            break;
+        case 16:
+            obj->die_model[0] = CRemap[0];
+            sfx = 0x1D;
+            delay = 1.0f;
+            obj->die_model[1] = -1;
+            obj->die_action = 0x10;
+            break;
+        case 17:
+            if (LBIT & 0x400000040) {
+                obj->die_model[0] = CRemap[0x73];
+                obj->die_model[1] = CRemap[0xB0];
+            } else {
+                obj->die_model[0] = CRemap[0];
+                obj->die_model[1] = CRemap[0xAF];
+            }
+            delay = 2.0f;
+            obj->die_action = 0x12;
+            break;
+        case 18:
+            delay = 1.0f;
+            sfx = 0x23;
+            obj->die_model[0] = CRemap[0];
+            obj->die_model[1] = CRemap[0xA8];
+            obj->die_action = 0x10;
+            break;
+        case 19:
+            obj->die_model[0] = CRemap[0];
+            sfx = 0x24;
+            delay = 1.0f;
+            obj->die_model[1] = -1;
+            obj->die_action = 0x11;
+            break;
+        case 4:
+            obj->die_model[0] = CRemap[0];
+            check_anim = 0;
+            delay = 3.0f;
+            obj->die_model[1] = -1;
+            obj->die_action = -1;
+            break;
+        case 7:
+        default:
+            obj->die_model[0] = CRemap[0];
+            sfx = 0x14;
+            delay = 1.0f;
+            obj->die_model[1] = -1;
+            obj->die_action = 0xE;
+            break;
+        }
+        break;
+    case 1:
+        switch (obj->dead) {
+        case 10:
+            obj->die_model[0] = CRemap[1];
+            delay = 1.0f;
+            obj->die_model[1] = -1;
+            obj->die_action = 0x17;
+            break;
+        case 11:
+            obj->die_model[0] = CRemap[1];
+            delay = 1.0f;
+            obj->die_model[1] = CRemap[obj->vehicle];
+            obj->die_action = 0x59;
+            break;
+        case 12:
+            obj->die_model[0] = CRemap[1];
+            if (obj->vehicle != 0x81) {
+                obj->die_model[1] = CRemap[obj->vehicle];
+            }
+            delay = 1.0f;
+            obj->die_action = 0x5B;
+            break;
+        case 3:
+            obj->die_model[0] = CRemap[1];
+            obj->die_model[1] = CRemap[7];
+            obj->die_action = 0x1D;
+            break;
+        default:
+            obj->die_model[0] = CRemap[1];
+            obj->die_model[1] = -1;
+            obj->die_action = 0xE;
+            break;
+        }
+        break;
+    case 0xF:
+        obj->die_model[0] = CRemap[0xF];
+        obj->die_action = 0xE;
+        if (obj->dead == 6) {
+            obj->die_model[0] = CRemap[0x10];
+            if (obj->die_model[0] != -1) {
+                obj->die_action = 0x18;
+            }
+        }
+        obj->die_model[1] = -1;
+        break;
+    default:
+        obj->die_model[0] = CRemap[obj->character];
+        obj->die_model[1] = -1;
+        obj->die_action = -1;
+        if (obj->dead != 4 && obj->dead != 7 && obj->dead != 0x15) {
+            obj->dead = 1;
+        }
+        check_anim = 0;
+        break;
+    }
+
+    if (obj->die_model[0] == -1) {
+        obj->dead = 1;
+    } else if (check_anim && CModel[obj->die_model[0]].anmdata[obj->die_action] == 0) {
+        obj->dead = 1;
+    }
+    if (obj->dead == 1) {
+        obj->oldpos = obj->pos;
+        obj->die_model[0] = CRemap[obj->character];
+        obj->die_action = -1;
+    }
+
+    switch (obj->dead) {
+    case 3:
+        plr_invisibility_time = 0.0f;
+        obj->hdg = angle - 0x8000;
+        obj->die_duration =
+            (CModel[obj->die_model[0]].anmdata[obj->die_action]->time - 1.0f) *
+            (1.0f / (CModel[obj->die_model[0]].animlist[obj->die_action]->speed * 30.0f)) + delay;
+        BlendGameCamera(GameCam, obj->die_duration * 0.5f);
+        break;
+    case 8:
+        obj->pos.y = obj->layer_shadow;
+        obj->hdg = angle - 0x8000;
+        BlendGameCamera(GameCam, 0.5f);
+        obj->die_duration =
+            (CModel[obj->die_model[0]].anmdata[obj->die_action]->time - 1.0f) *
+            (1.0f / (CModel[obj->die_model[0]].animlist[obj->die_action]->speed * 30.0f)) + delay;
+        BlendGameCamera(GameCam, obj->die_duration * 0.5f);
+        break;
+    case 17:
+        obj->hdg = angle;
+        obj->xrot = 0;
+        obj->zrot = 0;
+        obj->die_duration =
+            (CModel[obj->die_model[0]].anmdata[obj->die_action]->time - 1.0f) *
+            (1.0f / (CModel[obj->die_model[0]].animlist[obj->die_action]->speed * 30.0f)) + delay;
+        break;
+    case 2:
+    case 5:
+    case 6:
+    case 10:
+    case 11:
+    case 12:
+    case 14:
+    case 16:
+    case 18:
+    case 19:
+        duration = (CModel[obj->die_model[0]].anmdata[obj->die_action]->time - 1.0f) *
+                   (1.0f / (CModel[obj->die_model[0]].animlist[obj->die_action]->speed * 30.0f));
+        obj->die_duration = duration;
+        if (obj->dead == 2 && obj == &player->obj) {
+            BlendGameCamera(GameCam, duration * 0.5f);
+        }
+        obj->die_duration = obj->die_duration + delay;
+        break;
+    case 9:
+    case 13:
+        obj->hdg = angle;
+        obj->die_duration =
+            (CModel[obj->die_model[0]].anmdata[obj->die_action]->time - 1.0f) *
+            (1.0f / (CModel[obj->die_model[0]].animlist[obj->die_action]->speed * 30.0f)) + delay;
+        break;
+    case 7:
+        obj->die_duration = 0.0f;
+        break;
+    case 15:
+        obj->hdg = angle;
+        obj->die_duration = 3.0f;
+        obj->pos.y = obj->pos.y + (obj->bot + obj->top) * obj->SCALE * 0.5f;
+        BlendGameCamera(GameCam, 1.0f);
+        break;
+    case 4:
+        obj->die_duration = 0.0f;
+        obj->die_duration = delay + obj->die_duration;
+        AddGameDebris(7, &pos);
+        break;
+    case 22:
+        obj->die_model[0] = CRemap[obj->character];
+        obj->die_model[1] = -1;
+        sfx = 0x3B;
+        obj->die_duration = 3.0f;
+        obj->die_action = -1;
+        AddMechanicalDebris(&obj->pos, vehicle);
+        break;
+    case 21:
+        obj->die_duration = 0.0f;
+        AddGameDebris(0x8E, &pos);
+        sfx = 0x47;
+        break;
+    default:
+        obj->die_duration = 0.5f;
+        break;
+    }
+
+    if (obj->die_action != -1 && obj->dead != 10) {
+        ResetAnimPacket(&obj->anim, obj->die_action);
+    }
+    if (obj->flags & 0x20) {
+        boss_dead = (Game[Hub * 4 + 0x10] & 4) ? 2 : 1;
+    }
+    if (obj->character == 0x46) {
+        AddExtraLife(&pos, 2);
+    }
+    if (sfx != -1) {
+        GameSfx(sfx, &obj->pos);
+    }
+    return 1;
+}
+
+
+void DrawProjectiles(void) {
+    struct numtx_s m;
+    struct nuvec_s scale;
+    struct projectile_s *p;
+    struct objtab_s *ot;
+    s32 i;
+    s32 glow;
+    f32 farclip;
+    f32 farsq;
+    f32 distsq;
+    f32 ratio;
+    f32 size;
+    f32 shadow_scale;
+    f32 dx;
+    f32 dz;
+
+    if (level_part_2 != 0) {
+        return;
+    }
+    if ((LDATA->flags & 0x202) || Level == 0x1C) {
+        farclip = LDATA->farclip;
+    } else {
+        farclip = 25.0f;
+    }
+    if (LDATA->farclip < farclip) {
+        farclip = LDATA->farclip;
+    }
+    farsq = farclip * farclip;
+
+    p = Projectile;
+    glow = 0;
+    for (i = 0; i < 16; i++, p++) {
+        if (!p->active) {
+            continue;
+        }
+        dx = pCam->pos.x - p->obj.pos.x;
+        dz = pCam->pos.z - p->obj.pos.z;
+        distsq = dx * dx + dz * dz;
+        if (!(distsq < farsq)) {
+            continue;
+        }
+        ratio = p->time / p->duration;
+        switch (p->type) {
+        case 3:
+        case 8:
+        case 9:
+        case 14:
+        case 15:
+            NuMtxSetRotationX(&m, p->obj.xrot);
+            NuMtxRotateY(&m, p->obj.hdg + 0x8000);
+            NuMtxTranslate(&m, &p->obj.pos);
+            break;
+        case 4:
+            if (p->time < 0.2f) {
+                scale.x = p->time / 0.2f;
+            } else {
+                scale.x = 1.0f;
+            }
+            scale.z = scale.x * p->obj.SCALE;
+            scale.y = scale.z;
+            scale.x = scale.z;
+            NuMtxSetScale(&m, &scale);
+            NuMtxRotateZ(&m, p->obj.zrot);
+            NuMtxRotateY(&m, p->obj.hdg);
+            NuMtxTranslate(&m, &p->obj.pos);
+            break;
+        case 5:
+            NuMtxSetRotationY(&m, p->obj.hdg);
+            NuMtxTranslate(&m, &p->obj.pos);
+            break;
+        case 7:
+            scale.z = p->obj.SCALE;
+            scale.y = p->obj.SCALE;
+            scale.x = p->obj.SCALE;
+            NuMtxSetScale(&m, &scale);
+            NuMtxTranslate(&m, &p->obj.pos);
+            break;
+        case 10:
+            if (p->time < 0.2f) {
+                scale.x = p->time / 0.2f;
+            } else {
+                scale.x = 1.0f;
+            }
+            scale.z = scale.x * p->obj.SCALE;
+            scale.y = scale.z;
+            scale.x = scale.z;
+            NuMtxSetScale(&m, &scale);
+            NuMtxRotateX(&m, NuTrigTable[p->obj.xrot] * 2731.0f);
+            NuMtxRotateY(&m, p->obj.hdg);
+            NuMtxTranslate(&m, &p->obj.pos);
+            break;
+        default:
+            NuMtxSetTranslation(&m, &p->obj.pos);
+            break;
+        }
+        if (p->object != -1) {
+            ot = &ObjTab[p->object];
+            if (ot->special != 0) {
+                if (p->object == 1) {
+                    jonglow = (jonglow + 0x600) & 0xFFFF;
+                    size = NuTrigTable[jonglow] / 6.0f + 1.5f;
+                    if (Paused == 0 && FRAME == FRAMES - 1) {
+                        NuLightAddSpot(&p->obj.pos, size, 0xFF200020, 0);
+                    }
+                    jonglowsize = size;
+                    jonglowpos = p->obj.pos;
+                    glow = 1;
+                } else {
+                    NuRndrGScnObj(ot->scene->gobjs[ot->special->instance->objid], &m);
+                }
+            }
+        }
+        if (distsq < farsq && (p->obj.flags & 0x4400) == 0x400 &&
+            p->obj.shadow != 2000000.0f && D_00588824[0] != 0) {
+            if (p->type == 6 || p->type == 8) {
+                shadow_scale = 1.0f - NuTrigTable[(u16)(ratio * 32768.0f)];
+            } else if (p->type == 14) {
+                shadow_scale = p->obj.pos.y + p->obj.bot * p->obj.SCALE - p->obj.shadow;
+                if (shadow_scale < 4.0f) {
+                    shadow_scale = 5.0f;
+                } else if (shadow_scale > 7.0f) {
+                    shadow_scale = 0.0f;
+                } else {
+                    shadow_scale = 5.0f - (shadow_scale - 4.0f) * 1.666666627f;
+                }
+            } else {
+                shadow_scale = 2.0f;
+            }
+            m._30 = p->obj.pos.x;
+            m._31 = p->obj.shadow + 0.025f;
+            m._32 = p->obj.pos.z;
+            NuRndrAddShadow((struct nuvec_s *)&m._30, 0x7F, p->obj.surface_xrot, 0, p->obj.surface_zrot,
+                            shadow_scale * p->obj.RADIUS);
+        }
+    }
+    if (glow == 0 && jonglowsize > 0.0f) {
+        jonglowsize -= 0.1f;
+        if (Paused == 0 && FRAME == FRAMES - 1) {
+            NuLightAddSpot(&jonglowpos, jonglowsize, 0xFF200020, 0);
+        }
+    }
+}
+
+
+f32 CreatureTopBelow(struct nuvec_s *pos, u32 flags) {
+    s32 i;
+    struct obj_s *po;
+    struct nuvec_s cpos;
+    f32 dx;
+    f32 dz;
+    f32 top;
+    f32 best;
+
+    best = 2000000.0f;
+    for (i = 0; i < GAMEOBJECTCOUNT; i++) {
+        po = pObj[i];
+        if (po == 0 || po->invisible != 0) {
+            continue;
+        }
+        if (po->flags & flags) {
+            if (po->flags & 0x2000) {
+                if (po->draw_frame == 0) {
+                    continue;
+                }
+                if (po->pLOCATOR != 0 && po->model->pLOCATOR[0] != 0) {
+                    cpos.x = po->pLOCATOR->_30;
+                    cpos.y = po->pLOCATOR->_31;
+                    cpos.z = po->pLOCATOR->_32;
+                } else {
+                    cpos = po->pos;
+                }
+            } else {
+                cpos = po->pos;
+            }
+            if (po->flags & 0x8000) {
+                if (!CylinderCuboidOverlapXZ(pos, po, &cpos, 0.0f)) {
+                    continue;
+                }
+            } else {
+                dx = pos->x - cpos.x;
+                dz = pos->z - cpos.z;
+                if (dx * dx + dz * dz > po->RADIUS * po->RADIUS) {
+                    continue;
+                }
+            }
+            top = po->pos.y + po->top * po->SCALE;
+            if (best == 2000000.0f || top > best) {
+                best = top;
+            }
+        }
+    }
+    return best;
+}
+
+
+s32 CreatureRayCast(struct nuvec_s *start, struct nuvec_s *end) {
+    s32 i;
+    s32 face;
+    struct obj_s *po;
+    struct nuvec_s s;
+    struct nuvec_s e;
+    struct nuvec_s cpos;
+    struct nuvec_s min;
+    struct nuvec_s max;
+    f32 best;
+
+    best = 1.0f;
+    for (i = 0; i < GAMEOBJECTCOUNT; i++) {
+        po = pObj[i];
+        if (po == 0 || po->invisible != 0) {
+            continue;
+        }
+        if (po->flags & 0x14) {
+            if (po->flags & 0x2000) {
+                if (po->draw_frame == 0) {
+                    continue;
+                }
+                if (po->pLOCATOR != 0 && po->model->pLOCATOR[0] != 0) {
+                    cpos.x = po->pLOCATOR->_30;
+                    cpos.y = po->pLOCATOR->_31;
+                    cpos.z = po->pLOCATOR->_32;
+                } else {
+                    cpos = po->pos;
+                }
+            } else {
+                cpos = po->pos;
+            }
+            if (po->flags & 0x8000) {
+                NuVecSub(&s, start, &cpos);
+                NuVecSub(&e, end, &cpos);
+                NuVecRotateY(&s, &s, -po->hdg);
+                NuVecRotateY(&e, &e, -po->hdg);
+                min.x = po->min.x * po->SCALE;
+                min.y = po->min.y * po->SCALE;
+                min.z = po->min.z * po->SCALE;
+                max.x = po->max.x * po->SCALE;
+                max.y = po->max.y * po->SCALE;
+                max.z = po->max.z * po->SCALE;
+                if (RayIntersectCuboid(&s, &e, &min, &max) && temp_ratio < best) {
+                    best = temp_ratio;
+                    face = temp_face;
+                }
+            } else {
+                NuVecSub(&s, start, &cpos);
+                NuVecSub(&e, end, &cpos);
+                NuVecRotateY(&s, &s, -po->hdg);
+                NuVecRotateY(&e, &e, -po->hdg);
+                min.x = -po->RADIUS;
+                min.y = po->min.y * po->SCALE;
+                min.z = -po->RADIUS;
+                max.x = po->RADIUS;
+                max.y = po->max.y * po->SCALE;
+                max.z = po->RADIUS;
+                if (RayIntersectCuboid(&s, &e, &min, &max) && temp_ratio < best) {
+                    face = temp_face;
+                    best = temp_ratio;
+                }
+            }
+        }
+    }
+    temp_face = face;
+    temp_ratio = best;
+    return best < 1.0f;
 }
 
 
@@ -1179,17 +2361,6 @@ void OldTopBot(struct obj_s *obj) {
 }
 
 
-void FindAnglesZX(struct nuvec_s *v) {
-    struct nuvec_s rotated;
-    u16 xrot;
-
-    xrot = NuAtan2D(v->z, v->y);
-    temp_xrot = xrot;
-    NuVecRotateX(&rotated, v, -xrot);
-    temp_zrot = -NuAtan2D(rotated.x, rotated.y);
-}
-
-
 void ScaleFlatShadow(struct nuvec_s *s, f32 y, f32 shadow, f32 scale) {
     f32 dy;
 
@@ -1311,14 +2482,6 @@ f32 GameObjectRadius(struct obj_s *obj) {
     return r;
 }
 
-void FlyGameObject(struct obj_s *obj, u16 yrot) {
-    obj->mom.x = 0.0f;
-    obj->mom.y = 0.0f;
-    obj->mom.z = 0.1999999881f;
-    NuVecRotateX(&obj->mom, &obj->mom, -0x400);
-    NuVecRotateY(&obj->mom, &obj->mom, yrot);
-    GameSfx(0x37, &obj->pos);
-}
 
 
 void PickupRelic(s32 relic) {

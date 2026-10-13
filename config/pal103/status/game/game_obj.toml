@@ -37,19 +37,19 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0096:001fbef0:WumpaCollisions"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:001fc100:MoveLoopXZ"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:001fc2e0:GetSurfaceInfo"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:001fc788:ObjectRotation"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:001fce88:PickupItem"
@@ -57,11 +57,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:001fd158:HitCreatures"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:001fd2e0:WipeCreatures"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:001fd4a8:KillGameObject"
@@ -77,15 +77,15 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0096:00200050:DrawProjectiles"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:002005f8:CreatureTopBelow"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:002007b0:CreatureRayCast"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:00200ab0:ClearGameObjects"
