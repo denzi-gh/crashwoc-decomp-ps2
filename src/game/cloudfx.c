@@ -155,6 +155,18 @@ extern struct nuvec_s ttoff[];
 extern s32 superbuffer_ptr;
 extern u8 D_00625298[];
 
+extern struct nuvec_s ttvel[];
+extern s32 ttgmul[];
+extern struct nuvec_s tt_colours[];
+extern u16 tt_density[];
+extern u16 ttdenrate[];
+extern struct nuvec_s ttcoff[];
+extern struct nuvec_s ttcvel[];
+extern struct nuvec_s ttccol[];
+extern u16 tt_cdensity[];
+extern u16 ttcdenrate[];
+extern f32 D_0063291C;
+
 extern void NuVecRotateY(struct nuvec_s *dst, struct nuvec_s *src, s32 angle);
 extern void TextureCreateEx(void *desc, void *mtl, void *tex, void *sbptr,
                             void *buf, void *buf2, void *buffend);
@@ -351,6 +363,80 @@ void TimeTunnelInit(void *buffer, void *buffend) {
         mtl->field_1A8 = 0x7FFF;
         NuMtlUpdateEx(mtl, 1);
         mtl->fxdata = D_00293090;
+    }
+}
+
+void TimeTunnelRender(void) {
+    struct nuvec_s col;
+    s32 i;
+    s32 j;
+    f32 density;
+
+    col = D_00625288;
+    if (D_00632904 != 0 || ttmtl == 0) {
+        return;
+    }
+    if (++ttmtlcnt < 4) {
+        return;
+    }
+    for (i = 0; i < 5; i++) {
+        ttoff[i].x = 0.0f;
+        ttoff[i].y += ttvel[i].y;
+        ttoff[i].z += ttoff[i].x;
+        while (1.0f < ttoff[i].x) {
+            ttoff[i].x = ttoff[i].x - 2.0f;
+        }
+        while (1.0f < ttoff[i].y) {
+            ttoff[i].y = ttoff[i].y - 2.0f;
+        }
+        while (1.0f < ttoff[i].z) {
+            ttoff[i].z = ttoff[i].z - 2.0f;
+        }
+        while (ttoff[i].x < -1.0f) {
+            ttoff[i].x = ttoff[i].x + 2.0f;
+        }
+        while (ttoff[i].y < -1.0f) {
+            ttoff[i].y = ttoff[i].y + 2.0f;
+        }
+        while (ttoff[i].z < -1.0f) {
+            ttoff[i].z = ttoff[i].z + 2.0f;
+        }
+        density = NuTrigTable[tt_density[i]] * 16.0f + 48.0f;
+        tt_density[i] += ttdenrate[i];
+        cloudRender(D_002D3EF0, &ttoff[i], D_00632908 * 0.5f, D_00632910, (s32)density,
+                    D_0063290C, ttptls, ttmtl, &col);
+        for (j = 0; j < ttgmul[i]; j++) {
+            cloudRender(D_002D3EF0, &ttoff[i], D_00632908 / ((f32)j * 0.1f + 1.0f),
+                        D_00632910, (s32)density, D_0063290C, &ttptls[D_0063290C * j], ttmtl,
+                        &tt_colours[i]);
+        }
+    }
+    for (i = 0; i < 2; i++) {
+        ttcoff[i].x = 0.0f;
+        ttcoff[i].y += ttcvel[i].y;
+        ttcoff[i].z += 0.0f;
+        while (1.0f < ttcoff[i].x) {
+            ttcoff[i].x = ttcoff[i].x - 2.0f;
+        }
+        while (1.0f < ttcoff[i].y) {
+            ttcoff[i].y = ttcoff[i].y - 2.0f;
+        }
+        while (1.0f < ttcoff[i].z) {
+            ttcoff[i].z = ttcoff[i].z - 2.0f;
+        }
+        while (ttcoff[i].x < -1.0f) {
+            ttcoff[i].x = ttcoff[i].x + 2.0f;
+        }
+        while (ttcoff[i].y < -1.0f) {
+            ttcoff[i].y = ttcoff[i].y + 2.0f;
+        }
+        while (ttcoff[i].z < -1.0f) {
+            ttcoff[i].z = ttcoff[i].z + 2.0f;
+        }
+        density = NuTrigTable[tt_cdensity[i]] * 16.0f + 32.0f;
+        tt_cdensity[i] += ttcdenrate[i];
+        cloudRender(D_002D3EF0, &ttcoff[i], D_0063291C, D_00632910, (s32)density,
+                    D_0063290C, ttptls, ttmtl, &ttccol[i]);
     }
 }
 
