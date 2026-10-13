@@ -13,11 +13,11 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0040:0011f030:NuRndrSetZBuffer"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0011f1b8:NuRndrSetRTarget"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0011f3d0:NuRndrClear"
@@ -65,7 +65,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0040:00121988:NuRndrOTInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00121a98:NuRndrOTInsertTriBatch"
@@ -85,7 +85,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0040:00122850:NuRndrCylCapMakeData"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00122b88:NuRndrCylMakeData"
@@ -309,11 +309,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012f808:NuRndrBeginScene"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012f8c8:NuRndrBeginSceneEx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012f990:NuRndrEndScene"
@@ -325,7 +325,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012fa10:NuRndrSwapScreen"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012fa98:NuRndrGlobalMtl"
@@ -401,11 +401,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:001300c8:NuRndrAddShadow"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:001301a0:NuRndrShadPolys"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00130230:NuRndrAddWaterRipple"
@@ -413,7 +413,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:001302a8:NuRndrWaterRip"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:001303a0:NuRndrInitWorld"
@@ -425,7 +425,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00130418:NuRndrCreateBlendShapeDeformerWeightsArray"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:001304a0:NuRndrDeformerWeightsArrayInit"
@@ -457,7 +457,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0040:00130888:DeRotateVectorAngles"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00130920:NuRndrTest"
