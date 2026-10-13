@@ -37,44 +37,44 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0080:001b2448:NuSceneManagerSysInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0080:001b2450:NuSceneManagerSysUpdate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0080:001b24a0:NuSceneInstanceDestroy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0080:001b2558:NuSceneInstanceTranslate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0080:001b25d0:NuSceneInstanceRotateY"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0080:001b2648:NuSceneInstanceEnable"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0080:001b26e0:NuSceneInstanceDisable"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0080:001b2778:NuSceneInstanceSetRate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0080:001b2780:SceneInstanceFindCutsceneInst"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0080:001b2820:NuSceneManagerSysRender"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0080:001b2868:NuSceneManagerSetPtrToPlayerMtx"
-state = "asm"
+state = "matching"
