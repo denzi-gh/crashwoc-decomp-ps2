@@ -88,13 +88,25 @@ typedef struct sceSifClientData {
     void *serve;
 } sceSifClientData;
 
+typedef struct nuvec4_s {
+    float x;
+    float y;
+    float z;
+    float w;
+} nuvec4_s;
+
+typedef struct numtx_s {
+    float m[4][4];
+} numtx_s;
+
 typedef struct NuSoundLoopInfo {
-    int id;
-    short pitch;
+    nuvec_s *pos;
+    short playing;
     short channel;
-    short active;
+    short timer;
     short pad;
-    int reserved;
+    short left;
+    short right;
 } NuSoundLoopInfo;
 
 typedef struct SFXINFO {
@@ -119,13 +131,21 @@ extern int sceSifCallRpc(sceSifClientData *client, unsigned int function,
                          void *end_param);
 extern int sceSifCheckStatRpc(sceSifRpcData *rpcd);
 extern NuDebugMsgFn NuDebugMsgProlog(char *file, int line);
+extern NuDebugMsgFn NuErrorProlog(char *file, int line);
+extern int sceGsSyncV(int mode);
+extern float NuFsqrt(float x);
+extern numtx_s *NuCameraGetVPCMtx(void);
+extern void NuVec4MtxTransformH(nuvec4_s *dst, nuvec4_s *src, numtx_s *mtx);
+
+int NuSoundApply3d(nuvec_s *pos, int *left, int *right);
 
 void SOUND_CopyIOPBuffer(void);
-void init_adpcm(SFXINFO *sfx_info);
-void TransferAllSpotFX(int mode);
+int init_adpcm(SFXINFO *sfx_info);
+void TransferAllSpotFX(int first);
 void SOUND_StoreLocalStart(void);
 void SetIOPCommand(short command, short count);
 void SetIOPCommandEx(short command, short size, void *data);
+int FlushIOPCommand(int mode);
 
 extern short IOPCommandData[];
 extern unsigned short senddata[];
@@ -134,8 +154,23 @@ extern int IOP_Cnt;
 extern int nusound_irx_loaded;
 extern char D_0061AA20[];
 extern char D_0061AA38[];
+extern char D_0061AA60[];
 extern char D_0061AA78[];
+extern char D_0061AAB0[];
+extern char D_0061AAD0[];
+extern char D_0061AAF8[];
+extern char D_0061AB10[];
 extern char D_0061AB30[];
+extern char D_0061AB70[];
+extern char D_0061AB90[];
+extern char D_0061ABB0[];
+extern char D_0061ABD0[];
+extern int D_0062F9D4;
+extern nuvec_s D_002D3EF0;
+extern float nusound_fade_start;
+extern float nusound_fade_end;
+extern int nusound_dpl_enabled;
+extern int NoSoundPlease;
 extern sceSifClientData D_006B4100;
 extern SFXINFO D_006B4128[];
 extern volatile unsigned char SOUND_SPUKeyStatus[];
@@ -163,10 +198,24 @@ extern int Release;
 #define nusound_source_file D_0061AA38
 #define irx_not_loaded_message D_0061AB30
 #define iop_buffer_full_message D_0061AA78
+#define too_many_samples_message D_0061AA60
+#define spotfx_start_message D_0061AAB0
+#define spotfx_done_message D_0061AAD0
+#define spotfx_failed_message D_0061AAF8
+#define spotfx_end_message D_0061AB10
+#define stereo_message D_0061AB70
+#define stereo2_message D_0061AB90
+#define kill_audio_start_message D_0061ABB0
+#define kill_audio_done_message D_0061ABD0
+#define sound_sample_count D_0062F9D4
+#define camera_position D_002D3EF0
 #define sound_rpc_client D_006B4100
 #define sound_sample_info D_006B4128
 
 #define SOUND_RPC_ID 0x12345
+
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 static inline int sound_rpc_transfer(int function, void *data, int mode)
 {
@@ -275,6 +324,161 @@ static inline int find_free_channel(int channel)
 }
 
 
+static inline void bind_sound_rpc(void)
+{
+    int delay;
+
+    sceSifInitRpc(0);
+    while (1) {
+        if (sceSifBindRpc(&sound_rpc_client, SOUND_RPC_ID, 0) < 0) {
+            printf(bind_error_message);
+            while (1) {
+            }
+        }
+        delay = 10000;
+        while (delay--) {
+        }
+        if (sound_rpc_client.serve != 0) {
+            break;
+        }
+    }
+}
+
+
+static inline void init_spu(void)
+{
+    char path[256];
+
+    NuFileGetCurrentPath(path);
+    SetIOPCommandEx(7, strlen(path) + 1, path);
+}
+
+
+static inline void request_status(int request)
+{
+    IOPCommandData[0] = request;
+    SetIOPCommand(9, 1);
+}
+
+
+static inline void transfer_sfx(int sample, int channel)
+{
+    IOPCommandData[0] = sample;
+    IOPCommandData[1] = channel;
+    SetIOPCommand(6, 2);
+}
+
+
+static inline int set_channel_volume(unsigned int channel, int left, int right)
+{
+    if (channel >= 0x30) {
+        return -1;
+    }
+    IOPCommandData[0] = channel;
+    IOPCommandData[1] = left;
+    IOPCommandData[2] = right;
+    SetIOPCommand(2, 3);
+    return 0;
+}
+
+
+static inline int set_channel_pitch(unsigned int channel, int pitch)
+{
+    if (channel >= 0x30) {
+        return -1;
+    }
+    IOPCommandData[0] = channel;
+    IOPCommandData[1] = pitch;
+    SetIOPCommand(3, 2);
+    return 0;
+}
+
+
+static inline void set_spu_write_address(unsigned int address)
+{
+    IOPCommandData[0] = address >> 16;
+    IOPCommandData[1] = address;
+    SetIOPCommand(0xE, 2);
+}
+
+
+static inline void allocate_stream_buffer(int stream, unsigned int address,
+                                          unsigned int size)
+{
+    IOPCommandData[0] = stream;
+    IOPCommandData[1] = address >> 16;
+    IOPCommandData[2] = address;
+    IOPCommandData[3] = size >> 16;
+    IOPCommandData[4] = size;
+    SetIOPCommand(0xD, 5);
+}
+
+
+static inline void set_max_stream_limit(int limit)
+{
+    IOPCommandData[0] = limit;
+    SetIOPCommand(0x10, 1);
+}
+
+
+static inline void check_and_start_stereo(int stream, int left_channel,
+                                          int right_channel)
+{
+    IOPCommandData[0] = stream;
+    IOPCommandData[1] = left_channel;
+    IOPCommandData[2] = right_channel;
+    queue_iop_command(0x11, 3);
+}
+
+
+static inline void transfer_sample_infos(SFXINFO *info)
+{
+    int batch;
+
+    batch = 12;
+    while (info->filename[0] != 0) {
+        if (batch == 0) {
+            FlushIOPCommand(0);
+            batch = 12;
+        }
+        batch--;
+        if (sound_sample_count < 300) {
+            sound_sample_info[sound_sample_count] = *info;
+            SetIOPCommandEx(0x1A, sizeof(SFXINFO), info);
+            info++;
+            sound_sample_count++;
+        } else {
+            NuErrorProlog(nusound_source_file, 0x234)(too_many_samples_message);
+        }
+    }
+}
+
+
+static inline NuSoundLoopInfo *find_loop_info(nuvec_s *pos)
+{
+    NuSoundLoopInfo *info;
+    int free;
+    int i;
+
+    free = -1;
+    for (i = 0; i < 8; i++) {
+        info = &NuSndLoopInfo[i];
+        if (info->timer == 0) {
+            free = i;
+        }
+        if (info->pos == pos) {
+            return info;
+        }
+    }
+    if (free == -1) {
+        return 0;
+    }
+    NuSndLoopInfo[free].pos = pos;
+    NuSndLoopInfo[free].playing = 0;
+    return &NuSndLoopInfo[free];
+}
+
+
 void SOUND_CopyIOPBuffer(void)
 {
     int i;
@@ -309,6 +513,59 @@ void SOUND_CancelCheckStereo(void)
 }
 
 
+int init_adpcm(SFXINFO *sfx_info)
+{
+    int i;
+
+    bind_sound_rpc();
+    init_spu();
+    flush_iop_commands(0);
+    transfer_sample_infos(sfx_info);
+    FlushIOPCommand(0);
+    SetIOPCommand(0xC, 0);
+    for (i = 0; i < 5; i++) {
+        allocate_stream_buffer(i, 0x5010 + i * 0xD700, 0xD700);
+    }
+    set_spu_write_address(0x48310);
+    set_max_stream_limit(5);
+    flush_iop_commands(0);
+    return 0;
+}
+
+
+void TransferAllSpotFX(int first)
+{
+    int failures;
+    int i;
+
+    failures = 0;
+    if (NoSoundPlease) {
+        return;
+    }
+    printf(spotfx_start_message);
+    for (i = first; i < 1000; i++) {
+        transfer_sfx(i + 0x1000, i);
+        request_status(-1);
+        flush_iop_commands(0);
+        SOUND_CopyIOPBuffer();
+        while (SOUND_SFX_TRANSFER_STATUS) {
+            flush_iop_commands(0);
+            request_status(-1);
+        }
+        if (SOUND_SFX_TRANSFER_END == 1) {
+            printf(spotfx_done_message, failures);
+            return;
+        }
+        if (SOUND_SFX_TRANSFER_END == 2) {
+            printf(spotfx_failed_message, i + 0x1000);
+        } else {
+            failures++;
+        }
+    }
+    printf(spotfx_end_message);
+}
+
+
 void SOUND_StoreLocalStart(void)
 {
     queue_iop_command(0x1B, 0);
@@ -339,15 +596,128 @@ void NuSoundInit(SFXINFO *sfx_info)
         return;
     }
     for (i = 0; i < 8; i++) {
-        NuSndLoopInfo[i].id = 0;
+        NuSndLoopInfo[i].pos = 0;
         NuSndLoopInfo[i].channel = i + 0x18;
-        NuSndLoopInfo[i].active = 0;
-        NuSndLoopInfo[i].pitch = 0;
+        NuSndLoopInfo[i].timer = 0;
+        NuSndLoopInfo[i].playing = 0;
     }
     init_adpcm(sfx_info);
     flush_iop_commands(0);
     TransferAllSpotFX(0);
     SOUND_StoreLocalStart();
+}
+
+
+int NuSoundApply3d(nuvec_s *pos, int *left, int *right)
+{
+    nuvec4_s screen;
+    float dx;
+    float dy;
+    float dz;
+    float dist;
+    float fade;
+    float pan;
+    float volume_left;
+    float volume_right;
+
+    if (NuSoundListenPos == 0) {
+        NuSoundListenPos = &camera_position;
+    }
+    dx = pos->x - NuSoundListenPos->x;
+    dy = pos->y - NuSoundListenPos->y;
+    dz = pos->z - NuSoundListenPos->z;
+    dist = NuFsqrt(dx * dx + dy * dy + dz * dz);
+    if (dist > nusound_fade_end) {
+        return 0;
+    }
+    if (dist > nusound_fade_start) {
+        fade = (nusound_fade_end - dist) / (nusound_fade_end - nusound_fade_start);
+    } else {
+        fade = 1.0f;
+    }
+    volume_left = *left;
+    volume_right = *right;
+    screen.x = pos->x;
+    screen.y = pos->y;
+    screen.z = pos->z;
+    screen.w = 1.0f;
+    NuVec4MtxTransformH(&screen, &screen, NuCameraGetVPCMtx());
+    if (screen.w != 0.0f) {
+        screen.x /= screen.w;
+    }
+    if (screen.w < 0.0f) {
+        screen.x = -screen.x;
+        if (nusound_dpl_enabled) {
+            volume_right = -volume_right;
+        }
+    }
+    pan = MAX(-1.0f, MIN(1.0f, screen.x));
+    screen.x = pan;
+    volume_left *= (1.0f - pan) * 0.5f * fade;
+    volume_right *= (pan + 1.0f) * 0.5f * fade;
+    if (volume_left > 16383.0f) {
+        volume_left = 16383.0f;
+    }
+    if (volume_right > 16383.0f) {
+        volume_right = 16383.0f;
+    }
+    if (volume_left < -16383.0f) {
+        volume_left = -16383.0f;
+    }
+    if (volume_right < -16383.0f) {
+        volume_right = -16383.0f;
+    }
+    *left = volume_left;
+    *right = volume_right;
+    return 1;
+}
+
+
+void NuSoundUpdate(void)
+{
+    NuSoundLoopInfo *info;
+    int left;
+    int right;
+    int i;
+
+    if (nusound_irx_loaded) {
+        info = NuSndLoopInfo;
+        for (i = 0; i < 8; info++, i++) {
+            if (info->timer != 0) {
+                if (--info->timer == 0) {
+                    info->playing = 0;
+                }
+                if (info->timer < 8) {
+                    left = info->left * info->timer / 8;
+                    right = info->right * info->timer / 8;
+                    if (NuSoundApply3d(info->pos, &left, &right) == 0) {
+                        set_channel_volume(info->channel, 0, 0);
+                    } else {
+                        set_channel_volume(info->channel, left, right);
+                    }
+                }
+            }
+        }
+        request_status(SOUND_IOP_REQUEST_LOAD);
+        flush_iop_commands(1);
+    }
+}
+
+
+void NuSoundFlushLoops(void)
+{
+    NuSoundLoopInfo *info;
+    int i;
+
+    if (nusound_irx_loaded) {
+        info = NuSndLoopInfo;
+        for (i = 0; i < 8; i++, info++) {
+            info->playing = 0;
+            set_channel_volume(info->channel, 0, 0);
+        }
+        request_status(SOUND_IOP_REQUEST_LOAD);
+        flush_iop_commands(1);
+    }
 }
 
 
@@ -407,6 +777,154 @@ void NuSoundPlayChan(int sfx, int left, int right, int pitch, int channel)
 }
 
 
+void NuSoundPlay3d(nuvec_s *pos, int sfx, int left, int right, int pitch)
+{
+    if (nusound_irx_loaded) {
+        if (NuSoundApply3d(pos, &left, &right)) {
+            if (sound_sample_info[sfx].id >= 0x1000) {
+                SChan = find_free_channel(SChan);
+                play_sfx(sound_sample_info[sfx].id, SChan, left, right, pitch,
+                         Attack, Release);
+                SChan = (SChan - 6 + 1) % 0x12 + 6;
+            } else {
+                play_stream(sound_sample_info[sfx].id, 0x80, 0, left, right,
+                            pitch, 2, Attack, Release);
+            }
+        }
+    }
+}
+
+
+void NuSoundPlay3dChan(nuvec_s *pos, int sfx, int left, int right, int pitch,
+                       int channel)
+{
+    int sample;
+
+    if (nusound_irx_loaded) {
+        if (NuSoundApply3d(pos, &left, &right)) {
+            sample = sound_sample_info[sfx].id;
+            if (sample >= 0x1000) {
+                play_sfx(sample, channel, left, right, pitch, Attack, Release);
+            } else {
+                play_stream(sample, channel, channel, left, right, pitch, 2,
+                            Attack, Release);
+            }
+        }
+    }
+}
+
+
+void NuSoundPlayStereo(int sfx_left, int sfx_right, int left, int right,
+                       int pitch)
+{
+    if (sound_sample_info[sfx_left].id < 0x1000
+        && sound_sample_info[sfx_right].id < 0x1000) {
+        printf(stereo_message);
+        if (left >= 0x4000) {
+            left = 0x3FFF;
+        }
+        if (left <= -0x4000) {
+            left = -0x3FFF;
+        }
+        if (right >= 0x4000) {
+            right = 0x3FFF;
+        }
+        if (right <= -0x4000) {
+            right = -0x3FFF;
+        }
+        NuSndSteroPitch = pitch;
+        play_stream(sound_sample_info[sfx_left].id, 0, 0, left, 0, 0, 2,
+                    Attack, Release);
+        play_stream(sound_sample_info[sfx_right].id, 1, 1, 0, right, 0, 2,
+                    Attack, Release);
+        check_and_start_stereo(0, 1, pitch);
+    }
+}
+
+
+void NuSoundPlayStereo2(int sfx_left, int sfx_right, int left, int right,
+                        int pitch)
+{
+    if (sound_sample_info[sfx_left].id < 0x1000
+        && sound_sample_info[sfx_right].id < 0x1000) {
+        printf(stereo2_message);
+        if (left >= 0x4000) {
+            left = 0x3FFF;
+        }
+        if (left <= -0x4000) {
+            left = -0x3FFF;
+        }
+        if (right >= 0x4000) {
+            right = 0x3FFF;
+        }
+        if (right <= -0x4000) {
+            right = -0x3FFF;
+        }
+        play_stream(sound_sample_info[sfx_left].id, 2, 2, left, 0, 0, 2,
+                    Attack, Release);
+        play_stream(sound_sample_info[sfx_right].id, 3, 3, 0, right, 0, 2,
+                    Attack, Release);
+        check_and_start_stereo(2, 3, pitch);
+    }
+}
+
+
+void NuSoundPlay3dLoopSfx(nuvec_s *pos, int sfx, int left, int right, int pitch)
+{
+    NuSoundLoopInfo *info;
+    int base_left;
+    int base_right;
+
+    if (nusound_irx_loaded) {
+        base_left = left;
+        base_right = right;
+        if (NuSoundApply3d(pos, &left, &right)) {
+            if (sound_sample_info[sfx].id >= 0x1000) {
+                info = find_loop_info(pos);
+                if (info) {
+                    if (info->playing == 0) {
+                        info->playing = 1;
+                        play_sfx(sound_sample_info[sfx].id, info->channel, left,
+                                 right, pitch, Attack, Release);
+                    } else {
+                        set_channel_volume(info->channel, left, right);
+                        set_channel_pitch(info->channel, pitch);
+                    }
+                    info->timer = 12;
+                    info->right = base_right;
+                    info->left = base_left;
+                }
+            }
+        }
+    }
+}
+
+
+void NuSoundKillAllAudio(void)
+{
+    if (nusound_irx_loaded) {
+        printf(kill_audio_start_message);
+        while (1) {
+            queue_iop_command(0x21, 0);
+            flush_iop_commands(0);
+            request_status(-1);
+            flush_iop_commands(0);
+            if (SOUND_SHUTOFF_STATUS) {
+                break;
+            }
+            sceGsSyncV(0);
+        }
+        do {
+            sceGsSyncV(0);
+            flush_iop_commands(0);
+            request_status(-1);
+            flush_iop_commands(0);
+        } while (SOUND_SHUTOFF_STATUS);
+        printf(kill_audio_done_message);
+    }
+}
+
+
 int SOUND_StopSound(unsigned int channel)
 {
     if (channel >= 0x30) {
@@ -456,6 +974,17 @@ int NuSoundStopStream(int stream)
 }
 
 
+void NuSoundLocalSet(SFXINFO *sfx_info, int unused, int first)
+{
+    SOUND_RestoreLocalStart();
+    sound_sample_count = first;
+    transfer_sample_infos(sfx_info);
+    FlushIOPCommand(0);
+    SOUND_InitAdpcmLocal();
+    TransferAllSpotFX(first);
+}
+
+
 void NuSoundListener(nuvec_s *pos)
 {
     NuSoundListenPos = pos;
@@ -491,22 +1020,7 @@ int SOUND_SIFTransfer(int function, void *data, int mode)
 
 int SOUND_InitIOP(void)
 {
-    int delay;
-
-    sceSifInitRpc(0);
-    while (1) {
-        if (sceSifBindRpc(&sound_rpc_client, SOUND_RPC_ID, 0) < 0) {
-            printf(bind_error_message);
-            while (1) {
-            }
-        }
-        delay = 10000;
-        while (delay--) {
-        }
-        if (sound_rpc_client.serve != 0) {
-            break;
-        }
-    }
+    bind_sound_rpc();
     return 1;
 }
 
@@ -629,21 +1143,14 @@ int SOUND_FindFreeSPUChannel(unsigned int first, unsigned int last)
 
 void SOUND_SetSPUWriteAddress(unsigned int address)
 {
-    IOPCommandData[0] = address >> 16;
-    IOPCommandData[1] = address;
-    SetIOPCommand(0xE, 2);
+    set_spu_write_address(address);
 }
 
 
 void SOUND_AllocateStreamBuffer(int stream, unsigned int address,
                                 unsigned int size)
 {
-    IOPCommandData[0] = stream;
-    IOPCommandData[1] = address >> 16;
-    IOPCommandData[2] = address;
-    IOPCommandData[3] = size >> 16;
-    IOPCommandData[4] = size;
-    SetIOPCommand(0xD, 5);
+    allocate_stream_buffer(stream, address, size);
 }
 
 
@@ -676,9 +1183,7 @@ int SOUND_PlaySFX(int sample, unsigned int channel, int left, int right,
 
 void SOUND_TransferSFX(int sample, int channel)
 {
-    IOPCommandData[0] = sample;
-    IOPCommandData[1] = channel;
-    SetIOPCommand(6, 2);
+    transfer_sfx(sample, channel);
 }
 
 
@@ -709,8 +1214,7 @@ int SOUND_SetChannelPitch(unsigned int channel, int pitch)
 
 void SOUND_GetStatus(int request)
 {
-    IOPCommandData[0] = request;
-    SetIOPCommand(9, 1);
+    request_status(request);
 }
 
 
@@ -734,26 +1238,19 @@ void SOUND_InitStreamData(void)
 
 void SOUND_InitSPU(void)
 {
-    char path[256];
-
-    NuFileGetCurrentPath(path);
-    SetIOPCommandEx(7, strlen(path) + 1, path);
+    init_spu();
 }
 
 
 void SOUND_SetMaxStreamLimit(int limit)
 {
-    IOPCommandData[0] = limit;
-    SetIOPCommand(0x10, 1);
+    set_max_stream_limit(limit);
 }
 
 
 void SOUND_CheckAndStartStereo(int stream, int left_channel, int right_channel)
 {
-    IOPCommandData[0] = stream;
-    IOPCommandData[1] = left_channel;
-    IOPCommandData[2] = right_channel;
-    queue_iop_command(0x11, 3);
+    check_and_start_stereo(stream, left_channel, right_channel);
 }
 
 
@@ -781,10 +1278,10 @@ void NuSoundInitLoopInfo(void)
     int i;
 
     for (i = 0; i < 8; i++) {
-        NuSndLoopInfo[i].id = 0;
+        NuSndLoopInfo[i].pos = 0;
         NuSndLoopInfo[i].channel = i + 0x18;
-        NuSndLoopInfo[i].active = 0;
-        NuSndLoopInfo[i].pitch = 0;
+        NuSndLoopInfo[i].timer = 0;
+        NuSndLoopInfo[i].playing = 0;
     }
 }
 
@@ -795,7 +1292,7 @@ int NuSoundFindFree(int channel)
 }
 
 
-NuSoundLoopInfo *NuSoundFindLoopInfo(int id)
+NuSoundLoopInfo *NuSoundFindLoopInfo(nuvec_s *pos)
 {
     NuSoundLoopInfo *info;
     int free;
@@ -804,17 +1301,17 @@ NuSoundLoopInfo *NuSoundFindLoopInfo(int id)
     free = -1;
     for (i = 0; i < 8; i++) {
         info = &NuSndLoopInfo[i];
-        if (info->active == 0) {
+        if (info->timer == 0) {
             free = i;
         }
-        if (info->id == id) {
+        if (info->pos == pos) {
             return info;
         }
     }
     if (free == -1) {
         return 0;
     }
-    NuSndLoopInfo[free].id = id;
-    NuSndLoopInfo[free].pitch = 0;
+    NuSndLoopInfo[free].pos = pos;
+    NuSndLoopInfo[free].playing = 0;
     return &NuSndLoopInfo[free];
 }

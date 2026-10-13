@@ -21,11 +21,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c2470:init_adpcm"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c27a0:TransferAllSpotFX"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c29c0:SOUND_StoreLocalStart"
@@ -45,15 +45,15 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c2da8:NuSoundApply3d"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c3008:NuSoundUpdate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c31c8:NuSoundFlushLoops"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c32d8:NuSoundPlay"
@@ -65,27 +65,27 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c35f0:NuSoundPlay3d"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c37a8:NuSoundPlay3dChan"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c3900:NuSoundPlayStereo"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c3b28:NuSoundPlayStereo2"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c3d48:NuSoundPlay3dLoopSfx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c3f40:NuSoundKillAllAudio"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c41f0:SOUND_StopSound"
@@ -105,7 +105,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c42e0:NuSoundLocalSet"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c4440:NuSoundListener"
