@@ -101,11 +101,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:00187800:Debris"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:00188b40:DebrisCollisionCheck"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:00188e08:AddDebEff"
@@ -125,11 +125,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:00188f80:AddVariableShotDebrisEffect"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:00189090:AddVariableShotDebrisEffectMtx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:001891a0:DebReAlloc"
@@ -237,7 +237,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:00189bc0:CreateCopyMat"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:00189d80:DebAlloc"

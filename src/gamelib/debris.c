@@ -73,8 +73,8 @@ struct debinfo_s;
 struct debpart_s;
 
 struct debemit_s {
+    struct nuvec_s mom;
     f32 time;
-    u8 pad_04[0xC];
 };
 struct debchunk_s;
 
@@ -101,9 +101,7 @@ struct deb_s {
     s32 instances;
     s16 oncount;
     s16 delay;
-    u8 pad_4C4[0xC];
-    struct debemit_s emits[7];
-    u8 pad_540[4];
+    struct debemit_s emits[8];
     s16 emitflag;
     s16 emitting;
     s32 trigger;
@@ -154,7 +152,9 @@ union debchannel_u {
 
 struct debinfo_s {
     char name[0x10];
-    u8 pad_10[6];
+    u8 pad_10[2];
+    s16 emitrate;
+    s16 partcount;
     s16 startoffset;
     s16 ival_on;
     s16 ival_on_ran;
@@ -199,7 +199,7 @@ struct debinfo_s {
     f32 u1;
     f32 v1;
     struct debdma_s *dmatype;
-    u8 pad_2DC[0x40];
+    struct debkey_s radiuskeys[8];
     s8 emitcount;
     u8 pad_31D[3];
     s32 key;
@@ -337,17 +337,22 @@ extern s32 debris_sfx;
 extern struct debdma_s *DmaDebTypes[];
 extern s32 freeDmaDebType;
 extern f32 globaltime;
+extern u8 object_switches[];
 extern f32 D_0062CEA4;
 #define deb_randtime_scale D_0062CEA4
 
 void SetupDebris(void);
 struct debpart_s *GenDebIndex(struct deb_s *deb, struct debinfo_s *info);
 f32 NuVecDist(struct nuvec_s *a, struct nuvec_s *b, void *c);
+f32 NuVecDistSqr(struct nuvec_s *a, struct nuvec_s *b, void *c);
 void DebFree(s32 *key);
 void DebFreeInstantly(s32 *key);
 struct deb_s **FindDebrisEffectStack(struct deb_s *node);
 void RemoveDebrisEffectFromStack(struct deb_s *node, struct deb_s **list);
 void DebReAlloc2(struct deb_s *deb);
+void DebReAlloc(struct deb_s *deb, s32 count);
+void DebFreeWithoutKey(struct deb_s *deb);
+void DebrisDoSounds(struct deb_s *deb, s32 type);
 void AddDebrisEffect(s32 *key, s32 type, f32 x, f32 y, f32 z);
 void NuMtxRotateZ(struct numtx_s *m, s32 angle);
 void NuMtxRotateY(struct numtx_s *m, s32 angle);
@@ -356,6 +361,7 @@ s32 strcmp(const char *a, const char *b);
 f32 NuFsqrt(f32 x);
 double sqrt(double x);
 s32 rand(void);
+s32 abs(s32 x);
 void edbitsSoundPlay(struct nuvec_s *pos, s32 id);
 void NuVecMtxTransform(struct nuvec_s *out, struct nuvec_s *in, struct numtx_s *mtx);
 void NuVecRotateY(struct nuvec_s *out, struct nuvec_s *in, s32 angle);
@@ -1180,15 +1186,13 @@ inline void RemoveChunkControlFromStack(struct chunkctrl_s *node, struct chunkct
                 cur = *list;
                 list = &cur->next;
                 if (cur->next == 0) {
-                    break;
+                    goto unlinked;
                 }
-                if (cur->next == node) {
-                    cur->next = node->next;
-                    break;
-                }
-            } while (1);
+            } while (cur->next != node);
+            cur->next = node->next;
         }
     }
+unlinked:
     node->next = 0;
 }
 
@@ -1567,6 +1571,405 @@ void DebrisDraw(void) {
 }
 
 
+inline void RemoveDebrisEffectFromStack(struct deb_s *node, struct deb_s **list) {
+    struct deb_s *cur;
+
+    if (*list != 0) {
+        if (*list == node) {
+            *list = node->next;
+        } else {
+            do {
+                cur = *list;
+                list = &cur->next;
+                if (cur->next == 0) {
+                    break;
+                }
+                if (cur->next == node) {
+                    cur->next = node->next;
+                    break;
+                }
+            } while (1);
+        }
+    }
+    node->next = 0;
+}
+
+
+inline void DebReAlloc(struct deb_s *deb, s32 count) {
+    deb->reqcount = count;
+    deb->reqchunkcount = (count + 31) / 32;
+    if (deb->reqchunkcount == deb->chunkcount) {
+        deb->limit = count;
+    } else {
+        DebReAlloc2(deb);
+    }
+}
+
+
+inline void DebFreeWithoutKey(struct deb_s *deb) {
+    s32 i;
+    s32 key;
+
+    for (i = 0; i < 256; i++) {
+        if (&debkeydata[i] == deb) {
+            key = i;
+            DebFree(&key);
+            break;
+        }
+    }
+}
+
+
+inline void DebrisDoSounds(struct deb_s *deb, s32 type) {
+    struct debinfo_s *info;
+    s32 i;
+
+    info = debtab[deb->debtype];
+    for (i = 0; i < 4; i++) {
+        if (info->sounds[i].id != -1 && info->sounds[i].type == type && deb->soundtimer[i] <= 0) {
+            debris_sfx = 1;
+            edbitsSoundPlay(&deb->emitpos, info->sounds[i].id);
+            if (type == 1 || type == 2) {
+                deb->soundtimer[i] = 9999;
+            } else {
+                deb->soundtimer[i] = info->sounds[i].delay;
+            }
+        }
+    }
+}
+
+
+void Debris(s32 paused) {
+    struct debinfo_s *info;
+    union {
+        struct deb_s *deb;
+        struct chunkctrl_s *ctrl;
+    } cur;
+    struct deb_s *nextdeb;
+    struct chunkctrl_s *nextctrl;
+    struct debpart_s *part;
+    f32 dist;
+    f32 root1;
+    f32 root2;
+    s32 keep;
+    s32 slot;
+    s32 i;
+    s32 j;
+
+    if (debris_draw_on == 0 || paused != 0) {
+        return;
+    }
+    globaltime += 1.0 / 60.0;
+    globalframes++;
+    cur.deb = debris_emitter_stack[debris_emitter_stack_index];
+    while (cur.deb != 0) {
+        nextdeb = cur.deb->next;
+        info = debtab[cur.deb->debtype];
+        switch (cur.deb->trigger) {
+        case 0:
+            break;
+        case 1:
+            if (cur.deb->trigger_param != -1) {
+                cur.deb->on = object_switches[cur.deb->trigger_param];
+            }
+            break;
+        }
+        if (cur.deb->on != 0) {
+            DebrisDoSounds(cur.deb, 1);
+            DebrisDoSounds(cur.deb, 2);
+            DebrisDoSounds(cur.deb, 4);
+        }
+        if (info->emitcount != 0) {
+            for (i = 0; i < info->emitcount; i++) {
+                if (cur.deb->emits[i].time != -1.0f) {
+                    cur.deb->emits[i].time += 1.0 / 60.0;
+                    if (cur.deb->emits[i].time > info->etime) {
+                        cur.deb->emits[i].time = -1.0f;
+                    }
+                }
+            }
+            cur.deb->emitting--;
+            if (cur.deb->delay == 0 && cur.deb->on != 0 && cur.deb->emitting <= 0) {
+                struct nuvec_s v;
+
+                cur.deb->emits[cur.deb->emitflag].time = 0.0f;
+                v.x = 0.0f;
+                v.y = info->mom_ybias;
+                v.z = 0.0f;
+                NuVecMtxTransform(&v, &v, &cur.deb->emitrotmtx);
+                cur.deb->emits[cur.deb->emitflag].mom = v;
+                cur.deb->emitflag++;
+                if (cur.deb->emitflag >= info->emitcount) {
+                    cur.deb->emitflag = 0;
+                }
+                cur.deb->emitting = info->etime * 60.0f / info->emitcount;
+            }
+        }
+        if (cur.deb->reqcount != cur.deb->limit) {
+            DebReAlloc2(cur.deb);
+        }
+        if (cur.deb->delay == 0) {
+            dist = CameraEmitterDistance(&cur.deb->emitpos);
+            if (cur.deb->on != 0 && info->mindist <= dist && dist <= info->maxdist
+                && (debris_render_group == 0 || cur.deb->groupid == 0 || cur.deb->groupid == debris_render_group)) {
+                if (cur.deb->reqchunkcount == 0) {
+                    DebReAlloc(cur.deb, info->partcount);
+                }
+                if (cur.deb->chunkcount > 0) {
+                    if (info->emitrate > 0) {
+                        for (j = 0; j < info->emitrate; j++) {
+                            cur.deb->gensort(cur.deb, info);
+                            DebrisDoSounds(cur.deb, 3);
+                        }
+                    } else if (info->emitrate < 0 && globalframes % abs(info->emitrate) == 0) {
+                        cur.deb->gensort(cur.deb, info);
+                        DebrisDoSounds(cur.deb, 3);
+                    }
+                }
+            } else if (cur.deb->reqchunkcount != 0) {
+                DebReAlloc(cur.deb, 0);
+            }
+            cur.deb->delay = 1;
+            cur.deb->oncount--;
+            if (cur.deb->oncount == 0) {
+                cur.deb->delay += info->ival_off + (s32)(rand() * ((f32)info->ival_off_ran * 4.656612873077393e-10));
+                cur.deb->oncount = info->ival_on + (s32)(rand() * ((f32)info->ival_on_ran * 4.656612873077393e-10));
+                for (i = 0; i < 4; i++) {
+                    if (info->sounds[i].id != -1) {
+                        if (info->sounds[i].type == 1) {
+                            cur.deb->soundtimer[i] = cur.deb->delay;
+                        } else if (info->sounds[i].type == 2) {
+                            cur.deb->soundtimer[i] = cur.deb->delay + cur.deb->oncount - 1;
+                        }
+                    }
+                }
+                if (cur.deb->instances != 0 && --cur.deb->instances == 0) {
+                    DebFreeWithoutKey(cur.deb);
+                    cur.deb->delay = 33;
+                }
+            }
+        }
+        if (info->emitcount != 0) {
+            RemoveDebrisEffectFromStack(cur.deb, &debris_emitter_stack[debris_emitter_stack_index]);
+            AddDebrisEffectToStack(cur.deb, &debris_emitter_stack[(debris_emitter_stack_index + 1) & 31]);
+            cur.deb->delay--;
+            for (i = 0; i < 4; i++) {
+                cur.deb->soundtimer[i]--;
+            }
+        } else if (cur.deb->delay >= 32) {
+            cur.deb->delay -= 32;
+            for (i = 0; i < 4; i++) {
+                cur.deb->soundtimer[i] -= 32;
+            }
+        } else {
+            RemoveDebrisEffectFromStack(cur.deb, &debris_emitter_stack[debris_emitter_stack_index]);
+            AddDebrisEffectToStack(cur.deb, &debris_emitter_stack[(debris_emitter_stack_index + cur.deb->delay) & 31]);
+            for (i = 0; i < 4; i++) {
+                cur.deb->soundtimer[i] -= cur.deb->delay;
+            }
+            cur.deb->delay = 0;
+        }
+        cur.deb = nextdeb;
+    }
+    debris_emitter_stack_index = (debris_emitter_stack_index + 1) & 31;
+    for (cur.ctrl = debris_chunk_control_stack[debris_chunk_control_stack_index]; cur.ctrl != 0; cur.ctrl = nextctrl) {
+        nextctrl = cur.ctrl->next;
+        if (cur.ctrl->life == 0) {
+            if (cur.ctrl->state == 5) {
+                f32 vel;
+                f32 oldmom;
+                f32 oldmove;
+
+                info = debtab[cur.ctrl->debtype];
+                part = &cur.ctrl->chunk->parts[cur.ctrl->partindex];
+                keep = 0;
+                vel = cur.ctrl->bouncetime * info->gtime * 2.0f;
+                oldmom = part->mom.y;
+                oldmove = oldmom * cur.ctrl->bouncetime;
+                part->mom.y = -cur.ctrl->reflect_y * (part->mom.y + vel) - vel;
+                part->pos.y -= part->mom.y * cur.ctrl->bouncetime - oldmove;
+                if (SolveQuadratic(info->gtime, part->mom.y, part->pos.y - cur.ctrl->reflect_x, &root1, &root2)
+                    && (root1 > root2 ? root1 : root2) < info->etime) {
+                    cur.ctrl->life = ((root1 > root2 ? root1 : root2) - cur.ctrl->bouncetime) * 60.0f;
+                    cur.ctrl->bouncetime = root1 > root2 ? root1 : root2;
+                    if (cur.ctrl->life == 0) {
+                        part->pos.y = cur.ctrl->reflect_x;
+                        part->mom.y = 0.0f;
+                    } else {
+                        if (cur.ctrl->life >= 32) {
+                            cur.ctrl->life -= 32;
+                        } else {
+                            RemoveChunkControlFromStack(cur.ctrl,
+                                                        &debris_chunk_control_stack[debris_chunk_control_stack_index]);
+                            AddChunkControlToStack(cur.ctrl, &debris_chunk_control_stack[(debris_chunk_control_stack_index
+                                                                                          + cur.ctrl->life) & 31]);
+                            cur.ctrl->life = 0;
+                        }
+                        keep = 1;
+                    }
+                }
+                if (keep == 0) {
+                    RemoveChunkControlFromStack(cur.ctrl,
+                                                &debris_chunk_control_stack[debris_chunk_control_stack_index]);
+                    freechunkcontrolsptr--;
+                    freechunkcontrols[freechunkcontrolsptr] = cur.ctrl;
+                    cur.ctrl->chunk = 0;
+                }
+            } else if (cur.ctrl->state == 6) {
+                struct nuvec_s normal = {1.0f, 0.0f, 0.0f};
+                f32 dot;
+                f32 oldmovex;
+                f32 oldmovez;
+                f32 newmovex;
+                f32 newmovez;
+
+                part = &cur.ctrl->chunk->parts[cur.ctrl->partindex];
+                NuVecRotateY(&normal, &normal, cur.ctrl->reflect_a);
+                dot = (part->mom.x * normal.x + part->mom.z * normal.z) * -(cur.ctrl->reflect_y + 1.0f);
+                oldmovex = part->mom.x * cur.ctrl->bouncetime;
+                oldmovez = part->mom.z * cur.ctrl->bouncetime;
+                part->mom.x += dot * normal.x;
+                part->mom.z += dot * normal.z;
+                newmovex = part->mom.x * cur.ctrl->bouncetime;
+                newmovez = part->mom.z * cur.ctrl->bouncetime;
+                part->pos.x -= newmovex - oldmovex;
+                part->pos.z -= newmovez - oldmovez;
+                RemoveChunkControlFromStack(cur.ctrl, &debris_chunk_control_stack[debris_chunk_control_stack_index]);
+                freechunkcontrolsptr--;
+                freechunkcontrols[freechunkcontrolsptr] = cur.ctrl;
+                cur.ctrl->chunk = 0;
+            } else if (cur.ctrl->state == 3) {
+                freedebchkptr--;
+                freedebchunks[freedebchkptr] = cur.ctrl->chunk;
+                RemoveChunkControlFromStack(cur.ctrl, &debris_chunk_control_stack[debris_chunk_control_stack_index]);
+                freechunkcontrolsptr--;
+                freechunkcontrols[freechunkcontrolsptr] = cur.ctrl;
+                cur.ctrl->chunk = 0;
+            } else if (cur.ctrl->state == 2) {
+                LinkDmaParticalSets(&cur.ctrl->chunk, 1);
+                RemoveChunkControlFromStack(cur.ctrl, &debris_chunk_control_stack[debris_chunk_control_stack_index]);
+                AddChunkControlToStack(cur.ctrl,
+                                       &debris_chunk_control_stack[(debris_chunk_control_stack_index + 4) & 31]);
+                cur.ctrl->life = 0;
+                cur.ctrl->state = 3;
+            } else if (cur.ctrl->state == 0) {
+                for (slot = 0; slot < 256; slot++) {
+                    if (ParticleChunkRenderStack[slot].chunk == cur.ctrl->chunk) {
+                        ParticleChunkRenderStack[slot].chunk = 0;
+                        ParticleChunkRenderStack[slot].info = 0;
+                        ParticleChunkRenderStack[slot].deb = 0;
+                        break;
+                    }
+                }
+                RemoveChunkControlFromStack(cur.ctrl, &debris_chunk_control_stack[debris_chunk_control_stack_index]);
+                AddChunkControlToStack(cur.ctrl,
+                                       &debris_chunk_control_stack[(debris_chunk_control_stack_index + 4) & 31]);
+                cur.ctrl->life = 0;
+                cur.ctrl->state = 3;
+            } else if (cur.ctrl->state == 1) {
+                slot = 0;
+                for (i = 0; i < cur.ctrl->deb->chunkcount; i++) {
+                    if (cur.ctrl->deb->chunks[i] == cur.ctrl->chunk) {
+                        slot = i;
+                        break;
+                    }
+                }
+                for (i = slot; i < cur.ctrl->deb->chunkcount - 1; i++) {
+                    cur.ctrl->deb->chunks[i] = cur.ctrl->deb->chunks[i + 1];
+                }
+                cur.ctrl->deb->chunks[cur.ctrl->deb->chunkcount - 1] = 0;
+                cur.ctrl->deb->chunkcount--;
+                cur.ctrl->deb->ctrlcount--;
+                if (cur.ctrl->deb->chunkcount > 0) {
+                    cur.ctrl->deb->index -= 32;
+                    cur.ctrl->deb->limit -= 32;
+                } else {
+                    cur.ctrl->deb->index = 0;
+                    cur.ctrl->deb->limit = 0;
+                }
+                if (cur.ctrl->deb->chunkcount > 0) {
+                    LinkDmaParticalSets(cur.ctrl->deb->chunks, cur.ctrl->deb->chunkcount);
+                } else {
+                    cur.ctrl->deb->chunks[0] = 0;
+                }
+                if (slot == 0) {
+                    for (i = 0; i < 256; i++) {
+                        if (ParticleChunkRenderStack[i].chunk == cur.ctrl->chunk) {
+                            ParticleChunkRenderStack[i].chunk = cur.ctrl->deb->chunks[0];
+                            if (cur.ctrl->deb->chunkcount == 0) {
+                                ParticleChunkRenderStack[i].info = 0;
+                                ParticleChunkRenderStack[i].deb = 0;
+                            }
+                            break;
+                        }
+                    }
+                }
+                RemoveChunkControlFromStack(cur.ctrl, &debris_chunk_control_stack[debris_chunk_control_stack_index]);
+                AddChunkControlToStack(cur.ctrl,
+                                       &debris_chunk_control_stack[(debris_chunk_control_stack_index + 4) & 31]);
+                cur.ctrl->life = 0;
+                cur.ctrl->state = 2;
+            }
+        } else if (cur.ctrl->life >= 32) {
+            cur.ctrl->life -= 32;
+        } else {
+            RemoveChunkControlFromStack(cur.ctrl, &debris_chunk_control_stack[debris_chunk_control_stack_index]);
+            AddChunkControlToStack(cur.ctrl, &debris_chunk_control_stack[(debris_chunk_control_stack_index
+                                                                          + cur.ctrl->life) & 31]);
+            cur.ctrl->life = 0;
+        }
+    }
+    debris_chunk_control_stack_index = (debris_chunk_control_stack_index + 1) & 31;
+}
+
+
+s32 DebrisCollisionCheck(struct nuvec_s *pos, f32 radius) {
+    struct nuvec_s v;
+    struct debinfo_s *info;
+    f32 t;
+    f32 nt;
+    f32 size;
+    s32 i;
+    s32 j;
+    s32 k;
+
+    size = 0.0f;
+    for (i = 0; i < 256; i++) {
+        if (debkeydata[i].debtype == 0 || debkeydata[i].debtype == -1) {
+            continue;
+        }
+        info = debtab[debkeydata[i].debtype];
+        if (info->emitcount == 0) {
+            continue;
+        }
+        for (j = 0; j < info->emitcount; j++) {
+            t = debkeydata[i].emits[j].time;
+            if (t != -1.0f) {
+                v.x = debkeydata[i].emits[j].mom.x * t;
+                v.y = debkeydata[i].emits[j].mom.y * t;
+                v.z = debkeydata[i].emits[j].mom.z * t;
+                v.y += info->gtime * (t * t);
+                v.x += debkeydata[i].emitpos.x;
+                v.y += debkeydata[i].emitpos.y;
+                v.z += debkeydata[i].emitpos.z;
+                nt = t / info->etime;
+                k = 0;
+                while (k < 7 && !(info->radiuskeys[k].time <= nt && nt <= info->radiuskeys[k + 1].time)) {
+                    k++;
+                }
+                size = info->radiuskeys[k].value
+                     + (nt - info->radiuskeys[k].time) / (info->radiuskeys[k + 1].time - info->radiuskeys[k].time)
+                       * (info->radiuskeys[k + 1].value - info->radiuskeys[k].value);
+            }
+            if (NuVecDistSqr(pos, &v, 0) < (radius + size) * (radius + size)) {
+                return i;
+            }
+        }
+    }
+    return -1;
+}
+
+
 void AddDebEff(s32 key, s32 param, s32 count) {
     s32 i;
 
@@ -1607,14 +2010,24 @@ void AddFiniteShotDebrisEffect(s32 *key, s32 type, struct nuvec_s *pos, s32 inst
 }
 
 
-void DebReAlloc(struct deb_s *deb, s32 count) {
-    deb->reqcount = count;
-    deb->reqchunkcount = (count + 31) / 32;
-    if (deb->reqchunkcount == deb->chunkcount) {
-        deb->limit = count;
-    } else {
-        DebReAlloc2(deb);
-    }
+void AddVariableShotDebrisEffect(s32 type, struct nuvec_s *pos, s32 count, s16 rotz, s16 roty) {
+    struct numtx_s emitmtx;
+
+    emitmtx = numtx_identity;
+    NuMtxRotateZ(&emitmtx, rotz);
+    NuMtxRotateY(&emitmtx, roty);
+    AddVariableShotDebrisEffectMtx2(type, pos, count, &emitmtx, &numtx_identity);
+}
+
+
+void AddVariableShotDebrisEffectMtx(s32 type, struct nuvec_s *pos, s32 count, s16 rotz, s16 roty,
+                                    struct numtx_s *mtx) {
+    struct numtx_s emitmtx;
+
+    emitmtx = numtx_identity;
+    NuMtxRotateZ(&emitmtx, rotz);
+    NuMtxRotateY(&emitmtx, roty);
+    AddVariableShotDebrisEffectMtx2(type, pos, count, &emitmtx, mtx);
 }
 
 
@@ -1774,30 +2187,6 @@ struct deb_s **FindDebrisEffectStack(struct deb_s *node) {
 }
 
 
-void RemoveDebrisEffectFromStack(struct deb_s *node, struct deb_s **list) {
-    struct deb_s *cur;
-
-    if (*list != 0) {
-        if (*list == node) {
-            *list = node->next;
-        } else {
-            do {
-                cur = *list;
-                list = &cur->next;
-                if (cur->next == 0) {
-                    break;
-                }
-                if (cur->next == node) {
-                    cur->next = node->next;
-                    break;
-                }
-            } while (1);
-        }
-    }
-    node->next = 0;
-}
-
-
 struct debpart_s *GenDebIndexSort(struct deb_s *deb, struct debinfo_s *info) {
     return GenDebIndex(deb, info);
 }
@@ -1842,17 +2231,29 @@ void GenDebMomAdjFromPosRevTree(struct deb_s *deb, struct debinfo_s *info, struc
 }
 
 
-void DebFreeWithoutKey(struct deb_s *deb) {
-    s32 i;
-    s32 key;
+struct numtl_s *CreateCopyMat(struct numtl_s *src, s32 blend, s32 alphamode, s32 zmode, s32 filter) {
+    struct numtl_s *mtl;
 
-    for (i = 0; i < 256; i++) {
-        if (&debkeydata[i] == deb) {
-            key = i;
-            DebFree(&key);
-            break;
-        }
+    mtl = NuMtlCreate(1);
+    mtl->diffuse.r = 1.0f;
+    mtl->diffuse.g = 1.0f;
+    mtl->diffuse.b = 1.0f;
+    mtl->alpha = 0.999f;
+    mtl->attrib.cull = 2;
+    mtl->attrib.zmode = zmode;
+    mtl->attrib.filter = filter;
+    mtl->attrib.alpha = alphamode;
+    if (blend != 0) {
+        mtl->attrib2.blend = 1;
+        mtl->attrib2.dither = 0;
     }
+    mtl->attrib.utc = 1;
+    mtl->attrib.vtc = 1;
+    mtl->tid = src->tid;
+    mtl->alpha_sort = src->alpha_sort;
+    mtl->attrib2.fx = 1;
+    NuMtlUpdate(mtl);
+    return mtl;
 }
 
 
@@ -1862,24 +2263,5 @@ void DebrisEmitterOrientationMtx(s32 key, struct numtx_s *mtx) {
         debkeydata[key].emitrotmtx._30 = 0.0f;
         debkeydata[key].emitrotmtx._31 = 0.0f;
         debkeydata[key].emitrotmtx._32 = 0.0f;
-    }
-}
-
-
-void DebrisDoSounds(struct deb_s *deb, s32 type) {
-    struct debinfo_s *info;
-    s32 i;
-
-    info = debtab[deb->debtype];
-    for (i = 0; i < 4; i++) {
-        if (info->sounds[i].id != -1 && info->sounds[i].type == type && deb->soundtimer[i] <= 0) {
-            debris_sfx = 1;
-            edbitsSoundPlay(&deb->emitpos, info->sounds[i].id);
-            if (type == 1 || type == 2) {
-                deb->soundtimer[i] = 9999;
-            } else {
-                deb->soundtimer[i] = info->sounds[i].delay;
-            }
-        }
     }
 }
