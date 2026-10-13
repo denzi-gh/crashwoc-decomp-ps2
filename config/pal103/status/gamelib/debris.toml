@@ -25,19 +25,19 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:001838d0:GenDebIndexRadialRotor"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:00183b98:GenDebIndexSpheroid"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:00183e58:GenDebIndexBounceY"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:00184328:GenDebIndexBounceXZ"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:00184790:GenDebIndexPos"
@@ -49,11 +49,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:00184b20:GenDebIndexWaterFall"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:00184d68:GenDebIndexWaterFallSplash"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:00184f70:CreateAlphaBlendTexture256"
@@ -73,7 +73,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0069:00185fa0:DebReAlloc2"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:001864b8:DebFree"
@@ -89,15 +89,15 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:00186a68:AddVariableShotDebrisEffectMtx2"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:00187098:AddDebrisEffect"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:00187568:DebrisDraw"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:00187800:Debris"
