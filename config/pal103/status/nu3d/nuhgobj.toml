@@ -49,27 +49,27 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0048:0014fce8:NuHGobjDestroy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0048:0014fdb8:NuHGobjPOIMtx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0048:0014fe28:NuHGobjPOIMtxWithCheck"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0048:0014feb8:NuHGobjGetPOI"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0048:0014fef8:NuHGobjJointMtx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0048:0014ff30:NuHGobjJointMtxWithCheck"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0048:0014ff88:NuHGobjBoundingSphereToSphere"
@@ -77,24 +77,24 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0048:001500e0:NuHGobjBoundingBoxToSphere"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0048:001501c8:NuHGobjBoundingCylinderToSphere"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0048:00150278:NuHGobjBoundingSphereToLine"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0048:00150338:NuHGobjReadForCutScene"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0048:001503f0:ReadNuIFFCollideData"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0048:001504c8:NuGHGFixupGobj"
-state = "asm"
+state = "matching"
