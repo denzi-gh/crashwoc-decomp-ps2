@@ -7,3 +7,6 @@
 
 out_of_image_low = 0x00000000; // ignore:true size:0x100000
 out_of_image_high = 0x00706990; // ignore:true size:0xF8F9670
+// The EE uncached RAM alias (0x20000000 | addr, 32 MB) is only ever reached
+// by OR-ing 0x20000000 into a pointer; it never names a symbol.
+uncached_ram_alias = 0x20000000; // ignore:true size:0x2000000
