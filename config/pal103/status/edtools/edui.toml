@@ -105,7 +105,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001bd538:eduiCreateMessageMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001bd800:eduiMenuRender"
@@ -117,15 +117,15 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001bde10:CreateTestMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001befa8:eduicbProcessColourSlider"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001bf548:eduicbRenderColourSlider"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001bf828:eduiItemSetText"
@@ -137,15 +137,15 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001bfa68:eduiItemSelWithClipColourCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001bfc00:eduiItemCheckCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001bfdb0:eduiItemToggleCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001bff60:eduiGradStageAdd"
@@ -157,11 +157,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001c00b8:eduiItemGradPickCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001c0228:eduiItemGreyGradPickCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001c03a8:eduiItemColourPickSetHSV"
@@ -177,7 +177,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001c06f8:eduiItemTexturePickCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001c0890:eduiItemSliderSetVal"
