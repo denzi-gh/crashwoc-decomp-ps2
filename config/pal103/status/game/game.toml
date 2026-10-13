@@ -113,11 +113,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001e1080:ResetWumpa"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001e1300:UpdateWumpa"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001e17d8:HitWumpa"
@@ -129,27 +129,27 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001e1a98:UpdateScreenWumpas"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001e1d48:DrawWumpa"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001e21c0:AddTempWumpa"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001e23e8:MakeMaskMatrix"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001e25e0:UpdateMask"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001e3170:DrawMask"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001e3458:LoseMask"
@@ -165,7 +165,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001e38c8:DrawNameInputTable"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001e3cf8:GetMenuInfo"
@@ -181,11 +181,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0094:001e63f8:DrawMenuEntry"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001e66d8:DrawMenuEntry2"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001e68d8:DrawMenu"

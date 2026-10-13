@@ -151,25 +151,71 @@ struct numtx_s {
 };
 
 
+struct nucolour3_s {
+    float r; /* 0x0 */
+    float g; /* 0x4 */
+    float b; /* 0x8 */
+};
+
+struct pdir_s {
+    s32 index;                 /* 0x0 */
+    struct nuvec_s direction;  /* 0x4 */
+    struct nucolour3_s colour; /* 0x10 */
+    float distance;            /* 0x1C */
+};
+
+struct nearlight_s {
+    s32 ambindex;            /* 0x0 */
+    struct nuvec_s ambcol;   /* 0x4 */
+    float ambientdist;       /* 0x10 */
+    s32 curloopindex;        /* 0x14 */
+    struct pdir_s dir[3];    /* 0x18 */
+    struct pdir_s *pDir1st;  /* 0x78 */
+    struct pdir_s *pDir2nd;  /* 0x7C */
+    struct pdir_s *pDir3rd;  /* 0x80 */
+    s32 glbambindex;         /* 0x84 */
+    s32 negativeindex;       /* 0x88 */
+    float negativedist;      /* 0x8C */
+    struct pdir_s glbdirectional; /* 0x90 */
+};
+
+struct animpkt_s {
+    float time; /* 0x0 */
+    char pad_4[0xC - 0x4];
+    u16 action;    /* 0xC */
+    u16 oldaction; /* 0xE */
+    u16 newaction; /* 0x10 */
+    char pad_12[0x1B - 0x12];
+    u8 flags; /* 0x1B */
+};
+
 /* offsets verified in NewMask; `active` is signed (retail tests it with
  * lh + slti, not lhu + sltiu). */
 struct mask_s {
-    struct numtx_s mM; /* 0x0 (AddMaskFeathers) */
-    struct numtx_s mS; /* 0x40 */
-    struct nuvec_s pos; /* 0x80 */
-    char pad_8c[0x98 - 0x8C];
-    u8 lights[0x164 - 0x98]; /* 0x98 */
-    float scale;  /* 0x164 */
-    float shadow; /* 0x168 (AddMaskFeathers) */
-    short character; /* 0x16C */
-    short active;    /* 0x16E == D_0058A00E */
-    char pad_170[0x174 - 0x170];
-    u16 xrot;         /* 0x174 (MakeMaskMatrix) */
-    u16 yrot;         /* 0x176 */
-    char pad_178[0x17A - 0x178];
-    u16 surface_xrot; /* 0x17A */
-    u16 surface_zrot; /* 0x17C */
-    char pad_end[0x190 - 0x17E];
+    struct numtx_s mM;          /* 0x0 */
+    struct numtx_s mS;          /* 0x40 */
+    struct nuvec_s pos;         /* 0x80 */
+    struct nuvec_s newpos;      /* 0x8C */
+    struct nearlight_s lights;  /* 0x98 */
+    struct animpkt_s anim;      /* 0x148 */
+    float scale;                /* 0x164 */
+    float shadow;               /* 0x168 */
+    short character;            /* 0x16C */
+    short active;               /* 0x16E */
+    short sfx;                  /* 0x170 */
+    char pad_172[2];
+    u16 xrot;                   /* 0x174 */
+    u16 yrot;                   /* 0x176 */
+    u16 angle;                  /* 0x178 */
+    u16 surface_xrot;           /* 0x17A */
+    u16 surface_zrot;           /* 0x17C */
+    u16 wibble_ang[3];          /* 0x17E */
+    float idle_time;            /* 0x184 */
+    float idle_duration;        /* 0x188 */
+    signed char idle_mode;      /* 0x18C */
+    signed char reflect;        /* 0x18D */
+    u8 offset_frame;            /* 0x18E */
+    signed char hold;           /* 0x18F */
 };
 
 struct hub_s {
@@ -289,7 +335,7 @@ extern s32 Hub;
 extern char D_0061DFE0[]; /* "MIDGET  " */
 extern u16 D_0058A00E[];   /* Mask.active (absolute, far from $gp) */
 extern struct mask_s Mask;
-extern u8 Cursor[];
+extern struct cursor_s Cursor;
 extern u8 GlobalTimer[];
 extern struct nuangvec_s proberot;
 extern s32 probeon;
@@ -302,22 +348,12 @@ extern float D_00630C54; /* dme_sx */
 #define MENUDY D_00630C04
 #define dme_sy D_00630C58
 #define dme_sx D_00630C54
-extern float D_0062D408; /* menu entry size scale */
-extern float D_0062D40C; /* language-2 x scale */
 extern char *tSFXVOLUME[];
 extern char *tMUSICVOLUME[];
-extern void Text3D(char *, s32, s32, float, float, float, float, float, float);
+extern void Text3D(char *txt, float x, float y, float z, float scalex, float scaley,
+                   float scalez, s32 align, s32 colour);
 extern float dme_symul;
 extern float dme_yadj;
-extern float D_0062D3E4;
-extern float D_0062D3E8;
-extern float D_0062D3EC;
-extern float D_0062D3F0;
-extern float D_0062D3F4;
-extern float D_0062D3F8;
-extern float D_0062D3FC;
-extern float D_0062D400;
-extern float D_0062D404;
 extern char *tPRESSxTOCONTINUE[];
 extern char *tADJUSTSCREEN[];
 extern char *tRESTARTTRIAL[];
@@ -384,18 +420,25 @@ struct pmask_s {
     short active;  /* 0x16E */
 };
 
+struct moveinfo_s {
+    char pad_0[0x38];
+    short SPINRESETFRAMES; /* 0x38 */
+};
+
 struct pobj_s {
     char pad_c[0xC];
     struct pmask_s *mask; /* 0xC */
     char pad_10[0x18 - 0x10];
     float anim_time;      /* 0x18 */
-    char pad_1c[0x36 - 0x1C];
+    char pad_1c[0x34 - 0x1C];
+    short character;      /* 0x34 */
     short vehicle;        /* 0x36 */
     char pad_38[0x6C - 0x38];
     struct nuvec_s pos;   /* 0x6C */
     char pad_78[0x108 - 0x78];
     float SCALE;          /* 0x108 */
-    char pad_10c[0x120 - 0x10C];
+    char pad_10c[0x11C - 0x10C];
+    float bot;            /* 0x11C */
     float top;            /* 0x120 */
     char pad_124[0x149 - 0x124];
     signed char dead;     /* 0x149 */
@@ -403,10 +446,17 @@ struct pobj_s {
     signed char finished; /* 0x153 */
     char pad_154[0x16E - 0x154];
     u16 hdg;              /* 0x16E */
-    char pad_170[0x274 - 0x170];
+    char pad_170[0x230 - 0x170];
+    struct moveinfo_s *OnFootMoveInfo; /* 0x230 */
+    char pad_234[0x274 - 0x234];
     struct numtx_s mtxLOCATOR[2][16]; /* 0x274 */
     char pad_a74[0xCA4 - 0xA74];
     u8 rumble[4]; /* 0xCA4 */
+    char pad_ca8[0xCBB - 0xCA8];
+    signed char spin;     /* 0xCBB */
+    char pad_cbc[0xCCC - 0xCBC];
+    short spin_frames;    /* 0xCCC */
+    short spin_frame;     /* 0xCCE */
 };
 
 struct player_s {
@@ -430,7 +480,7 @@ struct cmodel_s {
     void *shadow_model; /* 0x79C */
     char pad_7a0[0x93C - 0x7A0];
     void *shadow; /* 0x93C */
-    char pad_940[0x944 - 0x940];
+    void *shaddata; /* 0x940 */
     short character; /* 0x944 (also the D_0055FC88 shadow index) */
     char pad_946[0x988 - 0x946];
 };
@@ -462,7 +512,10 @@ extern u8 D_0058B117[];
 extern float NuTrigTable[];
 extern float nusound_fade_start;
 struct gamecam_s {
-    char pad_a4[0xA4];
+    char pad_0[0x80];
+    struct nuvec_s vX; /* 0x80 */
+    struct nuvec_s vY; /* 0x8C */
+    struct nuvec_s vZ; /* 0x98 */
     float x; /* 0xA4 */
     float y; /* 0xA8 */
     float z; /* 0xAC */
@@ -753,7 +806,7 @@ inline void ResetTempCharacter2(s32 character, s32 action) {
 void ResetGame(void) {
     s32 i;
 
-    memset(Cursor, 0, 0x78);
+    memset(&Cursor, 0, 0x78);
     for (i = 0; i < 0x2c; i++) {
         if (0x3de < LData[i].farclip - 10U) {
             LData[i].farclip = 1000;
@@ -2076,11 +2129,80 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
     return;
 }
 
+extern char *tCANCEL[];
+extern s32 DrawPanel3DObject(s32 object, float x, float y, float z, float scalex,
+                             float scaley, float scalez, u16 xrot, u16 yrot,
+                             u16 zrot, struct nugscn_s *scn,
+                             struct objspecial_s *obj, s32 rot);
+
+void DrawNameInputTable(struct cursor_s *cursor, float x0, float y0) {
+    float size;
+    float step;
+    float width;
+    float x;
+    float y;
+    s32 col;
+    s32 i;
+    s32 j;
+
+    if (Game.language == 'c') {
+        tbuf[1] = ' ';
+        tbuf[2] = 0;
+    } else {
+        tbuf[1] = 0;
+    }
+    size = 0.6f;
+    step = 0.1f;
+    width = size * step;
+    y = y0 - (cursor->y_max - cursor->y_min) * MENUDY * 0.5f;
+    for (i = 0; i < 4; i++) {
+        x = x0 - (cursor->x_max - cursor->x_min) * width * 0.5f;
+        for (j = cursor->x_min; j <= cursor->x_max; j++) {
+            tbuf[0] = NameInputTable[i][j];
+            if (i == cursor->y && j == cursor->x) {
+                col = (*(u32 *)GlobalTimer % 10 < 5) ? 0 : 3;
+            } else {
+                col = 2;
+            }
+            Text3D(tbuf, x, y, 1.0f, size, size, size, 0, col);
+            x += size * step;
+        }
+        y += MENUDY;
+    }
+    if (cursor->y_max >= 4) {
+        if (cursor->y == 4) {
+            col = (*(u32 *)GlobalTimer % 10 < 5) ? 0 : 3;
+        } else {
+            col = 2;
+        }
+        Text3D(tDONE[Game.language], x0, y, 1.0f, size, size, size, 0, col);
+        y += MENUDY;
+    }
+    if (cursor->y_max >= 5) {
+        if (cursor->y == 5) {
+            col = (*(u32 *)GlobalTimer % 10 < 5) ? 0 : 3;
+        } else {
+            col = 2;
+        }
+        Text3D(tCANCEL[Game.language], x0, y, 1.0f, size, size, size, 0, col);
+    }
+    if (cutmovie == -1) {
+        if (cursor->menu == 2) {
+            DrawPanel3DObject(0x81, x0, y0, 1.0f, 0.11875f, 0.125f, 0.125f, 0xC000, 0,
+                              0, ObjTab[129].obj.scene, ObjTab[129].obj.special, 0);
+            DrawPanel3DObject(0x81, 0.0f, 0.5f, 1.0f, 0.2f, 0.125f, 0.06f, 0xC000, 0, 0,
+                              ObjTab[129].obj.scene, ObjTab[129].obj.special, 0);
+        } else {
+            DrawPanel3DObject(0x81, x0, y0, 1.0f, 0.11875f, 0.125f, 0.11875f, 0xC000,
+                              0, 0, ObjTab[129].obj.scene, ObjTab[129].obj.special, 0);
+        }
+    }
+}
+
 void DrawMenuEntry(struct cursor_s *cursor, char *txt, float *x, float *y,
                    s32 *i) {
     s32 col;
     float size;
-    float k;
 
     if (*i >= cursor->y_min && *i <= cursor->y_max) {
         if (*i == cursor->y) {
@@ -2088,45 +2210,44 @@ void DrawMenuEntry(struct cursor_s *cursor, char *txt, float *x, float *y,
         } else {
             col = 2;
         }
-        k = D_0062D3E4;
-        size = dme_sy * k;
+        size = dme_sy * 0.6f;
         if (strcmp(txt, tPRESSxTOCONTINUE[Game.language]) == 0) {
             if (Game.language == 1) {
                 dme_sx = dme_sx * 0.75;
             } else if (Game.language == 2 || Game.language == 3) {
-                dme_sx = dme_sx * D_0062D3E8;
+                dme_sx = dme_sx * 0.95f;
             } else if (Game.language == 5) {
-                dme_sx = dme_sx * D_0062D3EC;
+                dme_sx = dme_sx * 0.85f;
             }
         } else if (strcmp(txt, tADJUSTSCREEN[Game.language]) == 0) {
             if (Game.language == 4) {
-                dme_sx = dme_sx * D_0062D3F0;
+                dme_sx = dme_sx * 0.9f;
             } else if (Game.language == 5) {
-                dme_sx = dme_sx * D_0062D3F4;
+                dme_sx = dme_sx * 0.95f;
             }
         } else if (strcmp(txt, tRESTARTTRIAL[Game.language]) == 0) {
             if (cursor->menu != 0xE) {
                 if (Game.language == 1) {
-                    dme_sx = dme_sx * D_0062D3F8;
+                    dme_sx = dme_sx * 0.55f;
                 } else if (Game.language == 2) {
-                    dme_sx = dme_sx * D_0062D3FC;
+                    dme_sx = dme_sx * 0.65f;
                 } else if (Game.language == 3) {
-                    dme_sx = dme_sx * k;
+                    dme_sx = dme_sx * 0.6f;
                 } else if (Game.language == 4) {
-                    dme_sx = dme_sx * D_0062D400;
+                    dme_sx = dme_sx * 0.8f;
                 } else if (Game.language == 5) {
-                    dme_sx = dme_sx * D_0062D404;
+                    dme_sx = dme_sx * 0.7f;
                 }
             }
         }
-        Text3D(txt, 0, col, *x, *y + dme_yadj, 1.0f, size * dme_sx,
-               size * dme_symul, size);
+        Text3D(txt, *x, *y + dme_yadj, 1.0f, size * dme_sx, size * dme_symul, size,
+               0, col);
     }
     *y += MENUDY * dme_sy;
     (*i)++;
-    dme_symul = 1.0f;
     dme_sx = 1.0f;
     dme_sy = 1.0f;
+    dme_symul = 1.0f;
     dme_yadj = 0.0f;
 }
 
@@ -2142,24 +2263,24 @@ void DrawMenuEntry2(struct cursor_s *cursor, char *txt0, char *txt1, float *x,
         } else {
             col = 2;
         }
-        size = dme_sy * D_0062D408;
+        size = dme_sy * 0.6f;
         sx = dme_sy;
         if (strcmp(txt0, tSFXVOLUME[Game.language]) == 0 ||
             strcmp(txt0, tMUSICVOLUME[Game.language]) == 0) {
             if (Game.language == 2) {
-                sx = sx * D_0062D40C;
+                sx = sx * 0.9f;
             } else if (Game.language == 4) {
                 sx = sx * 0.75f;
             }
         }
-        Text3D(txt0, 0, col, *x, *y, 1.0f, size * sx, size, size);
-        *y = MENUDY * dme_sy + *y;
-        Text3D(txt1, 0, col, *x, *y, 1.0f, size * dme_sx, size, size);
+        Text3D(txt0, *x, *y, 1.0f, size * sx, size, size, 0, col);
+        *y += MENUDY * dme_sy;
+        Text3D(txt1, *x, *y, 1.0f, size * dme_sx, size, size, 0, col);
     }
     *y += MENUDY * dme_sy;
     (*i)++;
-    dme_sy = 1.0f;
     dme_sx = 1.0f;
+    dme_sy = 1.0f;
 }
 
 /*
@@ -2209,8 +2330,8 @@ void DrawMenu(struct cursor_s *cursor, s32 paused) {
         break;
     case 2: /* name entry (new game) */
         DrawNameInputTable(cursor, 0.0f, -0.5f);
-        Text3D(MakeEditText(Game.name), 0, 4, 0.0f, GAMENAMEY, 1.0f, 1.0f, 1.0f,
-               1.0f);
+        Text3D(MakeEditText(Game.name), 0.0f, GAMENAMEY, 1.0f, 1.0f, 1.0f, 1.0f,
+               0, 4);
         return;
     case 3: /* pause menu */
         if (paused < 0x1e) {
@@ -2499,8 +2620,8 @@ void InitLevel(void) {
         D_0058A00E[0] = 0;
     }
     ai_lookpos = v000;
-    ((struct cursor_s *)Cursor)->menu = -1;
-    NewMenu((struct cursor_s *)Cursor, menu, y, level);
+    Cursor.menu = -1;
+    NewMenu(&Cursor, menu, y, level);
     VEHICLECONTROL = 0;
     if ((Level == 6) || (Level == 0x1d)) {
         VEHICLECONTROL = 1;
@@ -2633,31 +2754,32 @@ struct creatobj_s *FindClock(void) {
 }
 
 struct wumpa_s {
-    struct nuvec_s pos0; /* 0x0 (file-loaded spawn point; see LoadWumpa) */
-    struct nuvec_s pos1; /* 0xC (verified in AddFlyingWumpa) */
-    struct nuvec_s pos;   /* 0x18 */
-    struct nuvec_s mom;   /* 0x24 */
-    float shadow;         /* 0x30 (AddFlyingWumpa) */
-    char pad_34[0x38 - 0x34];
-    s32 field_38;         /* 0x38 */
-    float field_3C;       /* 0x3C */
-    signed char field_40; /* 0x40 */
-    signed char field_41; /* 0x41 */
-    short field_42;       /* 0x42 */
-    float field_44;       /* 0x44 (fALONG; verified in WipeWumpa) */
-    signed char field_48; /* 0x48 */
-    signed char field_49; /* 0x49 */
-    char pad_4a;
-    signed char surface_type; /* 0x4B (AddFlyingWumpa) */
+    struct nuvec_s pos0;      /* 0x0 */
+    struct nuvec_s pos1;      /* 0xC */
+    struct nuvec_s pos;       /* 0x18 */
+    struct nuvec_s mom;       /* 0x24 */
+    float shadow;             /* 0x30 */
+    u16 surface_xrot;         /* 0x34 */
+    u16 surface_zrot;         /* 0x36 */
+    float time;               /* 0x38 */
+    float duration;           /* 0x3C */
+    signed char active;       /* 0x40 */
+    signed char iRAIL;        /* 0x41 */
+    short iALONG;             /* 0x42 */
+    float fALONG;             /* 0x44 */
+    signed char destroy;      /* 0x48 */
+    signed char fired;        /* 0x49 */
+    signed char in_range;     /* 0x4A */
+    signed char surface_type; /* 0x4B */
 };
 
 struct winfo_s {
-    char pad_0[0x40];
-    float field_40;   /* 0x40 */
-    char pad_44[0x4]; /* 0x44 */
-    short field_48;   /* 0x48 */
+    struct numtx_s m; /* 0x0 */
+    float scale;      /* 0x40 */
+    float dy;         /* 0x44 */
+    u16 angle;        /* 0x48 */
     short field_4A;   /* 0x4A */
-    char pad_4c[0x4]; /* 0x4C, stride 0x50 */
+    char pad_4c[0x50 - 0x4C];
 };
 
 extern struct wumpa_s Wumpa[320];
@@ -2676,13 +2798,13 @@ void InitWumpa(void) {
         LoadWumpa();
     }
     for (i = 0; i < 320; i++) {
-        Wumpa[i].field_41 = -1;
-        Wumpa[i].field_42 = -1;
+        Wumpa[i].iRAIL = -1;
+        Wumpa[i].iALONG = -1;
     }
     for (i = 0; i < 8; i++) {
-        WInfo[i].field_48 = 0;
+        WInfo[i].angle = 0;
         WInfo[i].field_4A = 0x7AE;
-        WInfo[i].field_40 = 0.75f;
+        WInfo[i].scale = 0.75f;
     }
     ResetWumpa();
 }
@@ -2697,23 +2819,24 @@ void FlyWumpa(struct wumpa_s *obj) {
     obj->mom.z = D_0062D700;
     NuVecRotateX(&obj->mom, &obj->mom, -0x400);
     NuVecRotateY(&obj->mom, &obj->mom, qrand());
-    obj->field_38 = 0;
-    obj->field_40 = 3;
-    obj->field_3C = 2.0f;
-    obj->field_48 = 0;
-    obj->field_49 = 0;
+    obj->time = 0;
+    obj->active = 3;
+    obj->duration = 2.0f;
+    obj->destroy = 0;
+    obj->fired = 0;
     GameSfx(0x2A, &obj->pos);
 }
 
 struct newwumpa_s {
-    float x, y, z;        /* 0x0, 0x4, 0x8 */
-    char pad_c[0x10];     /* 0xC */
-    signed char count;    /* 0x1C */
-    signed char b1d;      /* 0x1D */
-    signed char b1e;      /* 0x1E */
-    signed char b1f;      /* 0x1F */
-    signed char b20;      /* 0x20 */
-    char pad_21[0x3];     /* 0x21, stride 0x24 */
+    struct nuvec_s pos;        /* 0x0 */
+    struct nuvec_s screen;     /* 0xC */
+    float scale;               /* 0x18 */
+    u8 count;                  /* 0x1C */
+    u8 delay;                  /* 0x1D */
+    signed char transformed;   /* 0x1E */
+    signed char bonus;         /* 0x1F */
+    signed char active;        /* 0x20 */
+    char pad_21[0x24 - 0x21];
 };
 extern struct newwumpa_s NewWumpa[];
 extern s32 i_newwumpa;
@@ -2724,14 +2847,14 @@ void AddScreenWumpa(float x, float y, float z, s32 n) {
     if (n < 1) {
         n = 1;
     }
-    NewWumpa[i_newwumpa].x = x;
-    NewWumpa[i_newwumpa].y = y;
-    NewWumpa[i_newwumpa].z = z;
+    NewWumpa[i_newwumpa].pos.x = x;
+    NewWumpa[i_newwumpa].pos.y = y;
+    NewWumpa[i_newwumpa].pos.z = z;
     NewWumpa[i_newwumpa].count = n;
-    NewWumpa[i_newwumpa].b1d = 0;
-    NewWumpa[i_newwumpa].b1e = 0;
-    NewWumpa[i_newwumpa].b1f = (Bonus == 2 || sw_hack != 0);
-    NewWumpa[i_newwumpa].b20 = 1;
+    NewWumpa[i_newwumpa].delay = 0;
+    NewWumpa[i_newwumpa].transformed = 0;
+    NewWumpa[i_newwumpa].bonus = (Bonus == 2 || sw_hack != 0);
+    NewWumpa[i_newwumpa].active = 1;
     i_newwumpa++;
     if (i_newwumpa == 0x20) {
         i_newwumpa = 0;
@@ -2848,16 +2971,6 @@ void TransporterGo(void) {
     NewBuzz((char *)player + 0xCA4, 5);
 }
 
-u16 SeekRot(u16 a, u16 b, s32 shift) {
-    s32 diff = b - a;
-    if (0x8000 < diff) {
-        diff -= 0x10000;
-    } else if (diff < -0x8000) {
-        diff += 0x10000;
-    }
-    return a + (diff >> shift);
-}
-
 s32 StartHGobjAnim(struct objinfo_s *obj) {
     if (obj->special != NULL && obj->special->instance != NULL &&
         obj->special->instance->anim != NULL) {
@@ -2930,7 +3043,7 @@ inline void ResetTimeTrial(void) {
     clock_ok = tmp;
 }
 
-u16 TurnRot(u16 a, u16 b, s32 rate) {
+inline u16 TurnRot(u16 a, u16 b, s32 rate) {
     s32 d;
 
     if (b == a) {
@@ -3014,21 +3127,13 @@ void MakeTimeF(float time, s32 hours, char *txt) {
     MakeTimeI(time * 300.0f, hours, txt);
 }
 
-struct animpkt_s {
-    float time; /* 0x0 */
-    char pad_4[0xC - 0x4];
-    u16 action;    /* 0xC */
-    u16 oldaction; /* 0xE */
-    u16 newaction; /* 0x10 */
-    char pad_12[0x1B - 0x12];
-    u8 flags; /* 0x1B */
-};
-
 /* transporter object: offsets verified in FinishTransporter / StartTransporter */
 struct tobj_s {
-    char pad_8[0x8];
+    struct player_s *parent; /* 0x0 */
+    char pad_4[0x8 - 0x4];
     struct mask_s *mask; /* 0x8 (LoseMask) */
-    char pad_c[0x14 - 0xC];
+    char pad_c[0x10 - 0xC];
+    struct numtx_s *pLOCATOR; /* 0x10 */
     struct animpkt_s anim; /* 0x14 (ToggleVehicle) */
     char pad_30[0x32 - 0x30];
     short vehicle; /* 0x32 (ToggleVehicle) */
@@ -3049,9 +3154,12 @@ struct tobj_s {
     float objtop; /* 0x114 */
     float bot;    /* 0x118 */
     float top;    /* 0x11C */
-    char pad_120[0x145 - 0x120];
+    char pad_120[0x134 - 0x120];
+    float idle_gametime; /* 0x134 */
+    char pad_138[0x145 - 0x138];
     signed char dead; /* 0x145 */
-    char pad_146[0x14A - 0x146];
+    char pad_146[0x148 - 0x146];
+    short attack; /* 0x148 */
     u16 kaboom_mask; /* 0x14A (UpdateKabooms) */
     char pad_14c[0x14F - 0x14C];
     signed char finished; /* 0x14F (CheckFinish) */
@@ -3066,8 +3174,7 @@ struct tobj_s {
     char pad_17b[0x185 - 0x17B];
     u8 f185;     /* 0x185 (ToggleVehicle) */
     u8 exploded; /* 0x186 (UpdateKabooms) */
-    char pad_187[0x230 - 0x187];
-    struct numtx_s mtx; /* 0x230 (ToggleVehicle) */
+    char pad_187[0x190 - 0x187];
 };
 
 void FinishTransporter(struct tobj_s *cyl, struct tobj_s *obj) {
@@ -3152,13 +3259,13 @@ inline void WumpaHitTerrain(struct wumpa_s *wmp) {
     struct nuvec_s ray;
 
     /* PAL: 50.0f (GC 60Hz used 60.0f) */
-    f = wmp->field_3C * 50.0f;
+    f = wmp->duration * 50.0f;
     ray.x = wmp->mom.x * f;
     ray.y = wmp->mom.y * f;
     ray.z = wmp->mom.z * f;
     f = NuVecMag(&ray);
     if (NewRayCast(&wmp->pos, &ray, 0.0f) != 0) {
-        wmp->field_3C *= (NuVecMag(&ray) / f);
+        wmp->duration *= (NuVecMag(&ray) / f);
     }
 }
 
@@ -3375,7 +3482,7 @@ void NewMask(struct mask_s *mask, struct nuvec_s *pos) {
                  * `pos == NULL` branch delay slot (retail leaves a nop). */
                 mask->character = 3;
                 mask->scale = D_0062D710;
-                ResetLights(mask->lights);
+                ResetLights(&mask->lights);
             }
             mask->active++;
         } else {
@@ -3446,7 +3553,9 @@ void SaveWumpa(void) {
 }
 
 struct gcam_s {
-    struct numtx_s m; /* 0x0 */
+    struct numtx_s m;   /* 0x0 */
+    char pad_40[0xA4 - 0x40];
+    struct nuvec_s pos; /* 0xA4 */
 };
 
 extern struct gcam_s *pCam;
@@ -3643,6 +3752,8 @@ struct rpos_s {
     float fALONG; /* 0x8 */
     float fACROSS; /* 0xC */
     u16 angle; /* 0x10 */
+    char pad_12[0x14 - 0x12];
+    u8 mode; /* 0x14 */
 };
 
 extern s32 FurtherALONG(s32 iRAIL0, s32 iALONG0, float fALONG0, s32 iRAIL1,
@@ -3658,10 +3769,10 @@ s32 WipeWumpa(struct rpos_s *rpos) {
     }
     wumpa = Wumpa;
     for (i = 0; i < 0x140; i++) {
-        if (((u8)wumpa->field_40 == 1 || (u8)wumpa->field_40 == 2) &&
+        if (((u8)wumpa->active == 1 || (u8)wumpa->active == 2) &&
             FurtherALONG(rpos->iRAIL, rpos->iALONG, rpos->fALONG,
-                         wumpa->field_41, wumpa->field_42,
-                         wumpa->field_44) != 0) {
+                         wumpa->iRAIL, wumpa->iALONG,
+                         wumpa->fALONG) != 0) {
             /* FlyWumpa's body, copied in source (retail reads D_0062D340 here,
              * not FlyWumpa's D_0062D700, so it cannot be that function inlined) */
             wumpa->mom.x = 0.0f;
@@ -3669,11 +3780,11 @@ s32 WipeWumpa(struct rpos_s *rpos) {
             wumpa->mom.z = D_0062D340;
             NuVecRotateX(&wumpa->mom, &wumpa->mom, -0x400);
             NuVecRotateY(&wumpa->mom, &wumpa->mom, qrand());
-            wumpa->field_38 = 0;
-            wumpa->field_40 = 3;
-            wumpa->field_3C = 2.0f;
-            wumpa->field_48 = 0;
-            wumpa->field_49 = 0;
+            wumpa->time = 0;
+            wumpa->active = 3;
+            wumpa->duration = 2.0f;
+            wumpa->destroy = 0;
+            wumpa->fired = 0;
             GameSfx(0x2A, &wumpa->pos);
             return 1;
         }
@@ -3969,19 +4080,19 @@ void AddFlyingWumpa(struct nuvec_s *src, struct nuvec_s *dir,
     wumpa->pos0 = wumpa->pos1;
     wumpa->pos = wumpa->pos0;
     wumpa->shadow = D_0062D704;
-    wumpa->field_40 = 3;
-    wumpa->field_38 = 0;
-    wumpa->field_3C = 2.0f;
+    wumpa->active = 3;
+    wumpa->time = 0;
+    wumpa->duration = 2.0f;
     wumpa->surface_type = -1;
     NuVecScale(D_0062D708, &wumpa->mom, dir);
     WumpaHitTerrain(wumpa);
     if (destroy == 3) {
         destroy = 2;
-        wumpa->field_49 = 2;
+        wumpa->fired = 2;
     } else {
-        wumpa->field_49 = 1;
+        wumpa->fired = 1;
     }
-    wumpa->field_48 = destroy;
+    wumpa->destroy = destroy;
     i_tempwumpa++;
     if (i_tempwumpa == 0x40) {
         i_tempwumpa = 0;
@@ -4176,7 +4287,7 @@ s32 HitWumpa(struct tobj_s *obj, s32 destroy) {
         r2 = obj->radius + 0.1f;
         r2 *= r2;
         for (i = 0; i < 0x140; i++, wumpa++) {
-            if ((u8)wumpa->field_40 == 1 || (u8)wumpa->field_40 == 2) {
+            if ((u8)wumpa->active == 1 || (u8)wumpa->active == 2) {
                 if (objtop < wumpa->pos.y - 0.1f ||
                     objbot > wumpa->pos.y + 0.1f) {
                     continue;
@@ -4188,18 +4299,18 @@ s32 HitWumpa(struct tobj_s *obj, s32 destroy) {
                         key = -1;
                         AddFiniteShotDebrisEffect(&key, GDeb[520], &wumpa->pos,
                                                   1);
-                        wumpa->field_40 = 0;
+                        wumpa->active = 0;
                     } else {
                         wumpa->mom.x = 0.0f;
                         wumpa->mom.y = 0.0f;
                         wumpa->mom.z = 0.19999999f;
                         NuVecRotateX(&wumpa->mom, &wumpa->mom, -0x400);
                         NuVecRotateY(&wumpa->mom, &wumpa->mom, qrand());
-                        wumpa->field_38 = 0;
-                        wumpa->field_40 = 3;
-                        wumpa->field_3C = 2.0f;
-                        wumpa->field_48 = 0;
-                        wumpa->field_49 = 0;
+                        wumpa->time = 0;
+                        wumpa->active = 3;
+                        wumpa->duration = 2.0f;
+                        wumpa->destroy = 0;
+                        wumpa->fired = 0;
                         GameSfx(0x2A, &wumpa->pos);
                     }
                     return 1;
@@ -4250,7 +4361,7 @@ void GameTiming(void) {
         Paused--;
         if (Paused == 0) {
             pause_dir = 0;
-            NewMenu((struct cursor_s *)Cursor, -1, -1, -1);
+            NewMenu(&Cursor, -1, -1, -1);
             ResumeGame();
         }
     }
@@ -4395,12 +4506,12 @@ void InitGameMode(s32 mode) {
     ResetTimer(MenuTimer);
     ResetTimeTrial();
     if (force_menu != -1) {
-        NewMenu((struct cursor_s *)Cursor, force_menu, -1, -1);
+        NewMenu(&Cursor, force_menu, -1, -1);
         force_menu = -1;
     } else {
         if ((LDATA->flags & 1) != 0) {
             start_time = 3.0f;
-            NewMenu((struct cursor_s *)Cursor, -1, -1, -1);
+            NewMenu(&Cursor, -1, -1, -1);
         } else {
             start_time = 0.0f;
         }
@@ -5370,6 +5481,8 @@ extern void AddPanelDebris(float x, float y, s32 i, float scale, s32 n);
 struct bcreature_s {
     char pad_4[4];
     struct tobj_s obj; /* 0x4 */
+    char pad_194[0x234 - 0x194];
+    struct numtx_s mtx; /* 0x234 */
 };
 
 void BonusTiming(struct bcreature_s *plr) {
@@ -5432,8 +5545,6 @@ void BonusTiming(struct bcreature_s *plr) {
     }
 }
 
-extern float D_0062D35C; /* mask "no shadow" sentinel (GC 2000000.0f) */
-extern float D_0062D360; /* shadow y bias (GC 0.025f) */
 extern void NuMtxMulR(struct numtx_s *d, struct numtx_s *a, struct numtx_s *b);
 extern void ScaleFlatShadow(struct nuvec_s *s, float y, float shadow, float f);
 
@@ -5441,28 +5552,23 @@ void MakeMaskMatrix(struct mask_s *mask, struct numtx_s *mM, struct numtx_s *mS,
                     struct numtx_s *mLOCATOR, float scale) {
     struct nuvec_s s;
     u16 yrot;
+    s32 wobble;
 
-    if (mM != NULL) {
+    if (mM != 0) {
         s.x = s.y = s.z = scale * mask->scale;
         NuMtxSetScale(mM, &s);
         yrot = mask->yrot - 0x8000;
         if (mask->active > 2) {
-            if (mLOCATOR != NULL) {
+            if (mLOCATOR != 0) {
                 NuMtxMulR(mM, mM, mLOCATOR);
                 mask->pos.x = mLOCATOR->m[3][0];
                 mask->pos.y = mLOCATOR->m[3][1];
                 mask->pos.z = mLOCATOR->m[3][2];
             } else {
-                NuMtxRotateX(
-                    mM, (s32)(NuTrigTable[(GameTimer.frame & 0xf) * 0x1000] *
-                              8192.0f) &
-                            0xffff);
-                NuMtxRotateZ(
-                    mM,
-                    (s32)(NuTrigTable[(u16)((GameTimer.frame & 0xf) * 0x1000 +
-                                            0x4000)] *
-                          8192.0f) &
-                        0xffff);
+                wobble = (GameTimer.frame & 0xF) * 0x1000;
+                NuMtxRotateX(mM, (s32)(NuTrigTable[wobble] * 8192.0f) & 0xFFFF);
+                wobble = (GameTimer.frame & 0xF) * 0x1000;
+                NuMtxRotateZ(mM, (s32)(NuTrigTable[(u16)(wobble + 0x4000)] * 8192.0f) & 0xFFFF);
                 NuMtxRotateY(mM, yrot);
             }
         } else {
@@ -5470,14 +5576,14 @@ void MakeMaskMatrix(struct mask_s *mask, struct numtx_s *mM, struct numtx_s *mS,
             NuMtxRotateY(mM, yrot);
         }
         NuMtxTranslate(mM, &mask->pos);
-        if (mS != NULL && mask->shadow != D_0062D35C) {
+        if (mS != 0 && mask->shadow != 2000000.0f) {
             ScaleFlatShadow(&s, mask->pos.y, mask->shadow, 1.0f);
             NuMtxSetScale(mS, &s);
             NuMtxRotateY(mS, yrot);
             NuMtxRotateZ(mS, mask->surface_zrot);
             NuMtxRotateX(mS, mask->surface_xrot);
             mS->m[3][0] = mask->pos.x;
-            mS->m[3][1] = mask->shadow + D_0062D360;
+            mS->m[3][1] = mask->shadow + 0.025f;
             mS->m[3][2] = mask->pos.z;
         }
     }
@@ -5848,7 +5954,7 @@ void ToggleVehicle(struct bcreature_s *c) {
                 vtog_newpos.x = pos_START->x;
             }
             vtog_blend = 1;
-            vt->mtx = c->obj.mtx;
+            vt->mtx = c->mtx;
             if (vt->type == 0) {
                 ResetAnimPacket(&vt->anim, vtog_action);
             } else {
@@ -5981,7 +6087,10 @@ struct cratecube_s {
     struct nuvec_s pos;   /* 0x10 */
     char pad_1c[0x30 - 0x1C];
     signed char on;       /* 0x30 */
-    char pad_31[0x3C - 0x31];
+    signed char iRAIL;    /* 0x31 */
+    short iALONG;         /* 0x32 */
+    float fALONG;         /* 0x34 */
+    char pad_38[0x3C - 0x38];
     signed char type3;    /* 0x3C */
     char pad_3d;
     signed char newtype;  /* 0x3E */
@@ -6010,6 +6119,707 @@ struct crategroup_s {
 
 extern struct cratecube_s *temp_pCrate;
 extern struct crategroup_s *temp_pGroup;
+extern s32 ShadowInfo(void);
+
+void AddTempWumpa(struct cratecube_s *crate, s32 n, float x, float y, float z) {
+    struct wumpa_s *wumpa;
+    float dist;
+    u16 ang;
+    s32 i;
+
+    if (TimeTrial != 0) {
+        return;
+    }
+    for (i = 0; i < n; i++) {
+        wumpa = &Wumpa[i_tempwumpa + 0x100];
+        wumpa->pos0.x = x;
+        wumpa->pos0.y = y;
+        wumpa->pos0.z = z;
+        if (n > 1) {
+            ang = qrand();
+            dist = qrand() * 1.5259022e-05f * 0.25f;
+            wumpa->pos1.x = x + NuTrigTable[ang] * dist;
+            wumpa->pos1.y = y;
+            wumpa->pos1.z = z + NuTrigTable[(u16)(ang + 0x4000)] * dist;
+        } else {
+            wumpa->pos1 = wumpa->pos0;
+        }
+        wumpa->pos = wumpa->pos0;
+        wumpa->shadow = NewShadowMask(&wumpa->pos1, 0.0f, -1);
+        wumpa->iRAIL = crate->iRAIL;
+        wumpa->iALONG = crate->iALONG;
+        wumpa->fALONG = crate->fALONG;
+        wumpa->active = 1;
+        wumpa->time = 0.0f;
+        if (wumpa->shadow != 2000000.0f) {
+            wumpa->surface_type = ShadowInfo();
+            FindAnglesZX(&ShadNorm);
+            wumpa->surface_xrot = temp_xrot;
+            wumpa->surface_zrot = temp_zrot;
+        } else {
+            wumpa->surface_type = -1;
+        }
+        i_tempwumpa++;
+        if (i_tempwumpa == 0x40) {
+            i_tempwumpa = 0;
+        }
+    }
+}
+
+struct wscr_s {
+    struct nuvec_s pos; /* 0x0 */
+    float timer;        /* 0xC */
+    float x;            /* 0x10 */
+    float y;            /* 0x14 */
+    float scale;        /* 0x18 */
+    signed char bonus;  /* 0x1C */
+    char pad_1d[0x20 - 0x1D];
+};
+
+extern struct wscr_s WScr[32];
+extern struct rpos_s gempath_RPos;
+extern signed char temp_iRAIL;
+extern short temp_iALONG;
+extern float temp_fALONG;
+
+void ResetWumpa(void) {
+    struct wumpa_s *wumpa;
+    s32 gempath_reset;
+    s32 i;
+
+    gempath_reset = 0;
+    if (Rail[7].type == 3) {
+        gempath_reset = AheadOfCheckpoint(gempath_RPos.iRAIL, gempath_RPos.iALONG,
+                                          gempath_RPos.fALONG) != 0;
+    }
+    wumpa = Wumpa;
+    for (i = 0; i < WUMPACOUNT; i++, wumpa++) {
+        GetALONG(&wumpa->pos0, 0, -1, -1, 1);
+        wumpa->iRAIL = temp_iRAIL;
+        wumpa->iALONG = temp_iALONG;
+        wumpa->fALONG = temp_fALONG;
+        wumpa->pos1 = wumpa->pos0;
+        wumpa->pos = wumpa->pos1;
+        wumpa->shadow = NewShadowMask(&wumpa->pos, 0.0f, -1);
+        if (wumpa->shadow != 2000000.0f) {
+            wumpa->surface_type = ShadowInfo();
+            FindAnglesZX(&ShadNorm);
+            wumpa->surface_xrot = temp_xrot;
+            wumpa->surface_zrot = temp_zrot;
+        } else {
+            wumpa->surface_xrot = 0;
+            wumpa->surface_type = -1;
+            wumpa->surface_zrot = 0;
+        }
+        if (wumpa->iRAIL != -1 && Rail[wumpa->iRAIL].type == 1 && Bonus == 4) {
+            if (wumpa->active != 2) {
+                wumpa->active = 0;
+            }
+        } else if (wumpa->iRAIL != -1 && Rail[wumpa->iRAIL].type == 3) {
+            if (gempath_reset) {
+                goto collected;
+            }
+        } else if (AheadOfCheckpoint(wumpa->iRAIL, wumpa->iALONG, wumpa->fALONG)) {
+        collected:
+            wumpa->active = 2;
+        } else if (wumpa->active != 2) {
+            wumpa->active = 0;
+        }
+    }
+    for (; i < 320; i++, wumpa++) {
+        wumpa->active = 0;
+    }
+    for (i = 0; i < 32; i++) {
+        NewWumpa[i].active = 0;
+    }
+    for (i = 0; i < 32; i++) {
+        WScr[i].timer = 0.0f;
+    }
+}
+
+extern s32 i_screenwumpa;
+extern s32 mg_wumpatot;
+extern float WUMPAOBJSX;
+extern float PANELSY;
+extern double fabs(double x);
+
+void UpdateScreenWumpas(void) {
+    struct nuvec_s v[2];
+    struct newwumpa_s *anew;
+    struct wscr_s *scr;
+    s32 i;
+
+    scr = WScr;
+    for (i = 0; i < 32; i++, scr++) {
+        if (0.0f < scr->timer) {
+            scr->timer = scr->timer - 0.02f;
+            if (scr->timer < 0.0f) {
+                scr->timer = 0.0f;
+                if (sw_hack != 0) {
+                    mg_wumpatot++;
+                    GameSfx(0x19, 0);
+                } else if (scr->bonus != 0) {
+                    plr_bonus_wumpas.count++;
+                } else {
+                    plr_wumpas.count++;
+                }
+            }
+        }
+    }
+    anew = NewWumpa;
+    for (i = 0; i < 32; i++, anew++) {
+        if (anew->active != 0) {
+            if (anew->delay == 0) {
+                if (anew->transformed == 0) {
+                    anew->transformed = 1;
+                    NuCameraTransformScreenClip(&anew->screen, &anew->pos, 1, 0);
+                    v[0].x = anew->pos.x + GameCam.vX.x * 0.1f;
+                    v[0].y = anew->pos.y + GameCam.vX.y * 0.1f;
+                    v[0].z = anew->pos.z + GameCam.vX.z * 0.1f;
+                    NuCameraTransformScreenClip(&v[1], v, 1, 0);
+                    anew->scale = fabs(anew->screen.x - v[1].x) * 3.6363637f;
+                }
+                scr = &WScr[i_screenwumpa];
+                scr->pos = anew->screen;
+                scr->scale = anew->scale;
+                scr->timer = 0.25f;
+                if (anew->bonus != 0) {
+                    scr->x = BONUSWUMPAOBJSX;
+                    scr->y = BONUSPANELSY;
+                    scr->bonus = 1;
+                } else {
+                    scr->x = WUMPAOBJSX;
+                    scr->y = PANELSY;
+                    scr->bonus = 0;
+                    force_panel_wumpa_update = 50;
+                }
+                i_screenwumpa++;
+                if (i_screenwumpa == 32) {
+                    i_screenwumpa = 0;
+                }
+                anew->count--;
+                if (anew->count == 0) {
+                    anew->active = 0;
+                    continue;
+                }
+                anew->delay = 10;
+            } else {
+                anew->delay--;
+            }
+        }
+    }
+    sw_hack = 0;
+}
+
+extern s32 USELIGHTS;
+extern s32 LIGHTMASK;
+extern void SetLights(struct nucolour3_s *col0, struct nuvec_s *dir0,
+                      struct nucolour3_s *col1, struct nuvec_s *dir1,
+                      struct nucolour3_s *col2, struct nuvec_s *dir2,
+                      struct nuvec_s *amb);
+extern void SetLevelLights(void);
+
+void DrawMask(struct mask_s *mask) {
+    struct numtx_s tmtx[0x100];
+    struct numtx_s mM;
+    struct numtx_s mS;
+    float **dwa;
+    struct cmodel_s *model;
+    s32 i;
+
+    if (mask->active != 0) {
+        i = CRemap[mask->character];
+        if (i != -1) {
+            model = &CModel[i];
+            mM = mask->mM;
+            mS = mask->mS;
+            EvalModelAnim(model, &mask->anim, &mM, tmtx, &dwa, 0);
+            if (USELIGHTS != 0 && LIGHTMASK != 0) {
+                SetLights(&mask->lights.pDir1st->colour, &mask->lights.pDir1st->direction,
+                          &mask->lights.pDir2nd->colour, &mask->lights.pDir2nd->direction,
+                          &mask->lights.pDir3rd->colour, &mask->lights.pDir3rd->direction,
+                          &mask->lights.ambcol);
+            }
+            NuHGobjRndrMtxDwa(model->hobj, &mM, 1, 0, tmtx, dwa);
+            if (mask->shadow != 2000000.0f) {
+                if (mask->reflect != 0) {
+                    mM.m[0][1] = -mM.m[0][1];
+                    mM.m[1][1] = -mM.m[1][1];
+                    mM.m[2][1] = -mM.m[2][1];
+                    mM.m[3][1] = mask->shadow - (mM.m[3][1] - mask->shadow);
+                    NuHGobjRndrMtxDwa(model->hobj, &mM, 1, 0, tmtx, dwa);
+                }
+                if ((LDATA->flags & 0x1000) == 0 && VEHICLECONTROL != 2 &&
+                    (VEHICLECONTROL != 1 || player->obj.vehicle != 0x20) &&
+                    model->shadow != 0) {
+                    ShadRndr(&mS, model->shaddata, 1.0f,
+                             CData[model->character].shadow_scale);
+                }
+            }
+            if (USELIGHTS != 0 && LIGHTMASK != 0) {
+                SetLevelLights();
+            }
+        }
+    }
+}
+
+struct tersurface_s {
+    float friction; /* 0x0 */
+    short field_4;  /* 0x4 */
+    u16 flags;      /* 0x6 */
+};
+
+extern struct tersurface_s TerSurface[];
+extern void NuRndrAddShadow(struct nuvec_s *pos, float size, s32 alpha, s32 xrot,
+                            s32 yrot, s32 zrot);
+
+void DrawWumpa(void) {
+    struct nuvec_s s;
+    struct nuvec_s v;
+    struct winfo_s *info;
+    struct wumpa_s *wumpa;
+    struct numtx_s *m;
+    float dx;
+    float dz;
+    float dx2;
+    float dz2;
+    float r2;
+    s32 alpha;
+    s32 i;
+
+    if (ObjTab[0].obj.special != 0) {
+        r2 = 25.0f;
+        if (LDATA->farclip < 25.0f) {
+            r2 = LDATA->farclip;
+        }
+        r2 *= r2;
+        wumpa = Wumpa;
+        for (i = 0; i < 320; i++, wumpa++) {
+            wumpa->in_range = 0;
+            if (wumpa->active == 0 ||
+                (TimeTrial != 0 && (wumpa->active != 3 || wumpa->destroy == 0))) {
+                continue;
+            }
+            dx = pCam->pos.x - wumpa->pos.x;
+            dz = pCam->pos.z - wumpa->pos.z;
+            dx2 = dx * dx;
+            dz2 = dz * dz;
+            if (editor_active == 0 && dx2 + dz2 > r2) {
+                continue;
+            }
+            wumpa->in_range = 1;
+            info = &WInfo[i & 7];
+            if (wumpa->shadow != 2000000.0f && VEHICLECONTROL != 2 &&
+                (VEHICLECONTROL != 1 || player->obj.vehicle != 0x20) &&
+                (TerSurface[wumpa->surface_type].flags & 1) == 0) {
+                v.x = wumpa->pos1.x;
+                v.y = wumpa->shadow;
+                v.z = wumpa->pos1.z;
+                if (wumpa->active == 3) {
+                    alpha = 0x7F - (s32)(wumpa->time * 5.0f / wumpa->duration * 127.0f);
+                } else if (wumpa->active == 1) {
+                    alpha = (s32)(wumpa->time / 0.75f * 127.0f);
+                } else {
+                    alpha = 0x7F;
+                }
+                if (alpha > 0) {
+                    NuRndrAddShadow(&v, info->scale * 0.25f, alpha, wumpa->surface_xrot,
+                                    info->angle, wumpa->surface_zrot);
+                }
+            }
+            if (wumpa->active == 3) {
+                s.x = 1.0f - wumpa->time * 0.5f;
+                if (wumpa->fired != 0 && wumpa->time < 0.1f) {
+                    if (wumpa->fired == 2) {
+                        s.x = 0.0f;
+                    } else {
+                        s.x = s.x * (wumpa->time / 0.1f);
+                    }
+                }
+            } else {
+                s.x = 1.0f;
+            }
+            if (s.x > 0.0f) {
+                if (s.x != 1.0f) {
+                    s.y = s.z = s.x;
+                    NuMtxSetScale(&mTEMP, &s);
+                    NuMtxMulR(&mTEMP, &mTEMP, &info->m);
+                    m = &mTEMP;
+                } else {
+                    m = &info->m;
+                }
+                m->m[3][0] = wumpa->pos.x;
+                m->m[3][1] = wumpa->pos.y + info->dy;
+                m->m[3][2] = wumpa->pos.z;
+                NuRndrGScnObj(ObjTab[0].obj.scene->gobjs[ObjTab[0].obj.special->instance->objid],
+                              m);
+                if (TerSurface[wumpa->surface_type].flags & 4) {
+                    mTEMP = *m;
+                    mTEMP.m[0][1] = -mTEMP.m[0][1];
+                    mTEMP.m[1][1] = -mTEMP.m[1][1];
+                    mTEMP.m[2][1] = -mTEMP.m[2][1];
+                    mTEMP.m[3][1] = wumpa->shadow - (mTEMP.m[3][1] - wumpa->shadow);
+                    NuRndrGScnObj(
+                        ObjTab[0].obj.scene->gobjs[ObjTab[0].obj.special->instance->objid],
+                        &mTEMP);
+                }
+            }
+        }
+    }
+}
+
+extern u16 wumpa_a[];
+extern struct numtx_s numtx_identity;
+extern s32 HitCreatures(struct tobj_s *obj, s32 destroy, s32 type);
+extern s32 HitCrates(struct tobj_s *obj, s32 destroy);
+extern s32 HitItems(struct tobj_s *obj);
+void AddKaboom(s32 type, struct nuvec_s *pos, float t);
+
+void UpdateWumpa(void) {
+    u16 la[3];
+    struct nuvec_s scale;
+    struct tobj_s hitobj;
+    struct winfo_s *info;
+    struct wumpa_s *wumpa;
+    s32 key;
+    s32 active;
+    s32 i;
+    u16 rx;
+    u16 rz;
+    float size;
+    float t;
+
+    la[0] = wumpa_a[0] += 0x28F;
+    la[1] = wumpa_a[1] += 0x300;
+    la[2] = wumpa_a[2] += 0x400;
+    info = WInfo;
+    for (i = 0; i < 8; i++) {
+        info->angle -= info->field_4A;
+        info->dy = NuTrigTable[la[0]] * 0.05f;
+        rx = (s32)(NuTrigTable[la[1]] * 2048.0f);
+        rz = (s32)(NuTrigTable[la[2]] * 2048.0f);
+        info->m = numtx_identity;
+        scale.z = info->scale;
+        scale.y = info->scale;
+        scale.x = info->scale;
+        NuMtxSetScale(&info->m, &scale);
+        NuMtxRotateY(&info->m, info->angle);
+        NuMtxRotateZ(&info->m, rz);
+        NuMtxRotateX(&info->m, rx);
+        la[0] += 0x2000;
+        la[1] += 0x2000;
+        la[2] += 0x2000;
+        info++;
+    }
+    hitobj.bot = -0.1f;
+    hitobj.top = 0.1f;
+    hitobj.finished = 0;
+    hitobj.dead = 0;
+    hitobj.attack = 0;
+    hitobj.pLOCATOR = 0;
+    hitobj.flags = 0;
+    wumpa = Wumpa;
+    for (i = 0; i < 320; i++, wumpa++) {
+        active = wumpa->active;
+        if (active == 1) {
+            wumpa->time += 0.02f;
+            if (wumpa->time >= 0.75f) {
+                wumpa->time = 0.75f;
+                wumpa->pos = wumpa->pos1;
+                wumpa->active = 2;
+            } else {
+                t = wumpa->time / 0.75f;
+                wumpa->pos.x = wumpa->pos0.x + (wumpa->pos1.x - wumpa->pos0.x) * t;
+                wumpa->pos.y = wumpa->pos0.y + (wumpa->pos1.y - wumpa->pos0.y) * t;
+                wumpa->pos.z = wumpa->pos0.z + (wumpa->pos1.z - wumpa->pos0.z) * t;
+                wumpa->pos.y += NuTrigTable[(u16)(s32)(t * 32768.0f)];
+            }
+        } else if (active == 3) {
+            wumpa->time += 0.02f;
+            if (wumpa->time < wumpa->duration) {
+                NuVecAdd(&wumpa->pos, &wumpa->pos, &wumpa->mom);
+                hitobj.pos = wumpa->pos;
+                size = 1.0f - wumpa->time * 0.5f;
+                hitobj.SCALE = size;
+                hitobj.radius = size * 0.1f;
+                if (wumpa->destroy == 2) {
+                    hitobj.SCALE = size + size;
+                }
+                if (HitCreatures(&hitobj, 1, 2) != 0 ||
+                    HitCrates(&hitobj, wumpa->destroy != 0) != 0 ||
+                    HitItems(&hitobj) != 0 ||
+                    (wumpa->destroy != 0 && HitWumpa(&hitobj, 1) != 0)) {
+                    key = -1;
+                    AddFiniteShotDebrisEffect(&key, GDeb[520], &wumpa->pos, 1);
+                    wumpa->active = 0;
+                }
+            } else {
+                key = -1;
+                AddFiniteShotDebrisEffect(&key, GDeb[520], &wumpa->pos, 1);
+                wumpa->active = 0;
+            }
+        }
+        if (active != 0 && wumpa->active == 0 && wumpa->destroy != 0) {
+            if (wumpa->destroy == 2) {
+                AddKaboom(0x100, &wumpa->pos, 0.0f);
+                GameSfx(0x31, &wumpa->pos);
+            } else {
+                GameSfx(4, &wumpa->pos);
+            }
+        }
+    }
+}
+
+#define ABS(x) ((x) < 0 ? -(x) : (x))
+
+extern float CrateTopBelow(struct nuvec_s *pos);
+extern float CreatureTopBelow(struct nuvec_s *pos, s32 flags);
+extern void GetLights(struct nuvec_s *pos, struct nearlight_s *lights, s32 glbflag);
+
+inline u16 SeekRot(u16 a, u16 b, s32 shift) {
+    s32 diff = b - a;
+    if (0x8000 < diff) {
+        diff -= 0x10000;
+    } else if (diff < -0x8000) {
+        diff += 0x10000;
+    }
+    return a + (diff >> shift);
+}
+
+void UpdateMask(struct mask_s *mask, struct tobj_s *obj) {
+    struct nuvec_s v;
+    struct nuvec_s oldpos;
+    struct numtx_s *mtx;
+    float dx;
+    float dz;
+    float dist;
+    float wibble;
+    float below;
+    s32 diff;
+    s32 locked;
+    s32 i;
+    u16 target;
+    u16 yrot;
+    u16 xrot;
+
+    if (CRemap[3] == -1) {
+        return;
+    }
+    if (obj->idle_gametime > 0.0f && Cursor.menu != 0x21) {
+        mask->idle_time += 0.02f;
+        if (mask->idle_time >= mask->idle_duration) {
+            float rnd;
+
+            do {
+                i = qrand() / 0x5556;
+            } while (i == mask->idle_mode);
+            mask->idle_mode = i;
+            mask->idle_time = 0.0f;
+            rnd = qrand() * 1.5259022e-05f;
+            mask->idle_duration = rnd + rnd + 3.0f;
+        }
+    } else {
+        float rnd;
+
+        mask->idle_mode = 0;
+        mask->idle_time = 0.0f;
+        rnd = qrand() * 1.5259022e-05f;
+        mask->idle_duration = rnd + rnd + 3.0f;
+    }
+    dx = obj->pos.x - mask->pos.x;
+    dz = obj->pos.z - mask->pos.z;
+    dist = NuFsqrt(dx * dx + dz * dz);
+    if (Cursor.menu == 0x21) {
+        mask->newpos.x = GameCam.x + GameCam.vZ.x + GameCam.vX.x * 0.25f;
+        mask->newpos.y = GameCam.y + GameCam.vZ.y + GameCam.vX.y * 0.25f;
+        mask->newpos.z = GameCam.z + GameCam.vZ.z + GameCam.vX.z * 0.25f;
+    } else {
+        if (best_cRPos != 0) {
+            target = best_cRPos->angle;
+            diff = RotDiff(obj->hdg, target);
+            if (best_cRPos->mode & 3) {
+                if (best_cRPos->fACROSS > 0.5f) {
+                    target -= 0x4000;
+                    if (ABS(diff) > 0x4000) {
+                        target += 0x1555;
+                    } else {
+                        target -= 0x1555;
+                    }
+                } else {
+                    target += 0x4000;
+                    if (ABS(diff) > 0x4000) {
+                        target -= 0x1555;
+                    } else {
+                        target += 0x1555;
+                    }
+                }
+            } else if (best_cRPos->mode & 4) {
+                target += 0x4000;
+                if (ABS(diff) < 0x4000) {
+                    target += 0x2000;
+                } else {
+                    target -= 0x2000;
+                }
+            } else if (best_cRPos->mode & 8) {
+                target -= 0x4000;
+                if (ABS(diff) < 0x4000) {
+                    target -= 0x2000;
+                } else {
+                    target += 0x2000;
+                }
+            } else {
+                goto face_camera;
+            }
+        } else {
+        face_camera:
+            target = NuAtan2D(GameCam.x - mask->pos.x, GameCam.z - mask->pos.z);
+            if (RotDiff(GameCam.yrot, obj->hdg) < 0) {
+                target -= 0x2000;
+            } else {
+                target += 0x2000;
+            }
+        }
+        mask->angle = TurnRot(mask->angle, target, 0x51E);
+        mask->newpos.x = obj->pos.x + NuTrigTable[mask->angle] * 0.7f;
+        mask->newpos.y = obj->pos.y + obj->top * obj->SCALE;
+        if (dist < 1.0f) {
+            mask->newpos.y -= 0.1f;
+        } else if (dist < 1.5f) {
+            mask->newpos.y -= ((dist - 1.0f) + (dist - 1.0f)) * 0.2f + 0.1f;
+        } else {
+            mask->newpos.y -= 0.3f;
+        }
+        mask->newpos.z = obj->pos.z + NuTrigTable[(u16)(mask->angle + 0x4000)] * 0.7f;
+    }
+    if (dist < 1.0f || Cursor.menu == 0x21) {
+        mask->wibble_ang[0] += 0xD8;
+        mask->wibble_ang[1] += 0x138;
+        mask->wibble_ang[2] += 0x10E;
+        wibble = 0.1f;
+    } else {
+        mask->wibble_ang[0] += 0x360;
+        mask->wibble_ang[1] += 0x4E0;
+        mask->wibble_ang[2] += 0x438;
+        wibble = (dist - 1.0f) * 0.4f + 0.1f;
+    }
+    mask->newpos.x += NuTrigTable[mask->wibble_ang[0]] * wibble;
+    mask->newpos.y += NuTrigTable[mask->wibble_ang[1]] * wibble * 0.5f;
+    mask->newpos.z += NuTrigTable[mask->wibble_ang[2]] * wibble;
+    if (mask->idle_mode == 1 || Cursor.menu == 0x21) {
+        target = NuAtan2D(GameCam.x - mask->pos.x, GameCam.z - mask->pos.z);
+    } else if (mask->idle_mode == 0) {
+        target = obj->hdg;
+    } else if (mask->idle_mode == 2) {
+        target = NuAtan2D(obj->pos.x - mask->pos.x, obj->pos.z - mask->pos.z);
+    }
+    yrot = mask->yrot;
+    if (obj->idle_gametime > 0.0f) {
+        i = 0x147;
+    } else {
+        i = 0x28F;
+    }
+    mask->yrot = TurnRot(yrot, target, i);
+    mask->shadow = NewShadowMaskPlat(&mask->pos, 0.0f, -1);
+    mask->surface_xrot = 0;
+    mask->surface_zrot = 0;
+    if (mask->shadow != 2000000.0f) {
+        i = ShadowInfo();
+        if (TerSurface[i].flags & 1) {
+            mask->shadow = 2000000.0f;
+        } else {
+            mask->reflect = (TerSurface[i].flags >> 2) & 1;
+            v = ShadNorm;
+            FindAnglesZX(&v);
+            mask->surface_xrot = temp_xrot;
+            mask->surface_zrot = temp_zrot;
+        }
+    } else {
+        mask->reflect = 0;
+    }
+    below = CrateTopBelow(&mask->pos);
+    if (below != 2000000.0f && (mask->shadow == 2000000.0f || below > mask->shadow)) {
+        mask->shadow = below;
+        mask->reflect = 0;
+        mask->surface_xrot = 0;
+        mask->surface_zrot = 0;
+    }
+    below = CreatureTopBelow(&mask->pos, 4);
+    if (below != 2000000.0f && (mask->shadow == 2000000.0f || below > mask->shadow)) {
+        mask->shadow = below;
+        mask->reflect = 0;
+        mask->surface_xrot = 0;
+        mask->surface_zrot = 0;
+    }
+    if (GameTimer.frame != 0) {
+        oldpos = mask->pos;
+        mask->pos.x += (mask->newpos.x - mask->pos.x) * 0.05f;
+        mask->pos.y += (mask->newpos.y - mask->pos.y) * 0.05f;
+        mask->pos.z += (mask->newpos.z - mask->pos.z) * 0.05f;
+        dx = mask->pos.x - oldpos.x;
+        dz = mask->pos.z - oldpos.z;
+        dist = NuFsqrt(dx * dx + dz * dz);
+        if (dist > 0.06f) {
+            xrot = 0xF555;
+        } else {
+            xrot = (s32)(dist * 16.666668f * -2731.0f);
+        }
+    } else {
+        mask->pos = mask->newpos;
+        xrot = 0;
+    }
+    mask->xrot = SeekRot(mask->xrot, xrot, 2);
+    mask->anim.oldaction = mask->anim.action;
+    mask->anim.newaction = 0x22;
+    UpdateAnimPacket(&CModel[CRemap[3]], &mask->anim, 0.5999999642f, 0.0f);
+    mtx = 0;
+    locked = 0;
+    if (obj->parent == player) {
+        if (player->obj.character == 0) {
+            if (mask->active > 2 && player->obj.spin != 0 && player->obj.spin_frame > 0 &&
+                player->obj.spin_frame <
+                    player->obj.spin_frames - player->obj.OnFootMoveInfo->SPINRESETFRAMES) {
+                i = 0;
+            } else {
+                i = (LBIT & 0x400000040) ? 0 : 3;
+                if (mask->active > 2 && player->obj.spin != 0 &&
+                    (player->obj.spin_frame == 0 ||
+                     player->obj.spin_frame <
+                         player->obj.spin_frames -
+                             (player->obj.OnFootMoveInfo->SPINRESETFRAMES - 1))) {
+                    locked = 1;
+                }
+            }
+        } else {
+            i = 2;
+        }
+        if (i != -1) {
+            mtx = &player->obj.mtxLOCATOR[0][i];
+        }
+    }
+    if (locked) {
+        mask->pos.x = mask->mM.m[3][0];
+        mask->pos.y = mask->mM.m[3][1];
+        mask->pos.z = mask->mM.m[3][2];
+    } else {
+        MakeMaskMatrix(mask, &mask->mM, &mask->mS, mtx, 1.0f);
+    }
+    if (mask->active > 2) {
+        v.x = player->obj.pos.x;
+        v.y = player->obj.pos.y +
+              (player->obj.bot + player->obj.top) * player->obj.SCALE * 0.5f;
+        v.z = player->obj.pos.z;
+        AddVariableShotDebrisEffect(GDeb[620], &v, 1, 0, 0);
+    } else if (mask->active > 1) {
+        v.x = mask->pos.x;
+        v.y = mask->pos.y;
+        v.z = mask->pos.z;
+        AddVariableShotDebrisEffect(GDeb[624], &v, 1, 0, 0);
+    }
+    if (USELIGHTS != 0 && LIGHTMASK != 0) {
+        GetLights(&mask->pos, &mask->lights, 1);
+    }
+}
+
 
 void AddKaboom(s32 type, struct nuvec_s *pos, float t) {
     struct kaboom_s *k;
@@ -6221,8 +7031,8 @@ void UpdateKabooms(void) {
             if (k->type != 0x20 && TimeTrial == 0) {
                 wumpa = Wumpa;
                 for (j = 0; j < 320; j++, wumpa++) {
-                    if (wumpa->field_40 != 2 &&
-                        (wumpa->field_40 != 1 || (k->type & 0xC) != 0)) {
+                    if (wumpa->active != 2 &&
+                        (wumpa->active != 1 || (k->type & 0xC) != 0)) {
                         continue;
                     }
                     NuVecSub(&d, &k->pos, &wumpa->pos);
@@ -6233,7 +7043,7 @@ void UpdateKabooms(void) {
                         if (player->obj.dead == 0) {
                             AddScreenWumpa(wumpa->pos.x, wumpa->pos.y, wumpa->pos.z, 1);
                         }
-                        wumpa->field_40 = 0;
+                        wumpa->active = 0;
                         key = -1;
                         AddFiniteShotDebrisEffect(&key, GDeb[520], &wumpa->pos, 1);
                     } else {
@@ -6421,7 +7231,7 @@ void CheckFinish(struct tobj_s *obj) {
             if (boss_dead < 2) {
                 return;
             }
-            if (((struct cursor_s *)Cursor)->menu != -1) {
+            if (Cursor.menu != -1) {
                 return;
             }
             in_finish_range++;
@@ -6581,9 +7391,9 @@ void CheckFinish(struct tobj_s *obj) {
                     GameSfx(0x26, NULL);
                     AddPanelDebris(TT_RELICX, TT_RELICY, 6, 0.125f, 0x10);
                 }
-                NewMenu((struct cursor_s *)Cursor, 0xF, 0, -1);
+                NewMenu(&Cursor, 0xF, 0, -1);
             } else {
-                NewMenu((struct cursor_s *)Cursor, 0xE, 0, -1);
+                NewMenu(&Cursor, 0xE, 0, -1);
             }
             JudderGameCamera(&GameCam, NULL, D_0062D318);
             GameSfx(0x3C, NULL);
@@ -6605,11 +7415,11 @@ void CheckFinish(struct tobj_s *obj) {
         return;
     }
     if (TimeTrial != 0) {
-        NewMenu((struct cursor_s *)Cursor, 0xE, 0, -1);
+        NewMenu(&Cursor, 0xE, 0, -1);
         return;
     }
     if ((Level == 0x1C || Level == 0x1D || Level == 3) && new_lev_flags == 0) {
-        NewMenu((struct cursor_s *)Cursor, 0x10, 0, -1);
+        NewMenu(&Cursor, 0x10, 0, -1);
         return;
     }
     new_level = 0x25;
