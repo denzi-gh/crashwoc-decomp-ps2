@@ -580,7 +580,23 @@ struct cammtx_s {
     s32 xrot;                       /* 0xF4 */
     s32 yrot;                       /* 0xF8 */
     s32 zrot;                       /* 0xFC */
-}; /* 0x100 (head only) */
+    u16 old_xrot;                   /* 0x100 */
+    u16 new_xrot;                   /* 0x102 */
+    u16 old_yrot;                   /* 0x104 */
+    u16 new_yrot;                   /* 0x106 */
+    u16 old_zrot;                   /* 0x108 */
+    u16 new_zrot;                   /* 0x10A */
+    u16 hdg_to_player;              /* 0x10C */
+    s16 route;                      /* 0x10E */
+    s16 i0;                         /* 0x110 */
+    s16 i1;                         /* 0x112 */
+    s8 mode;                        /* 0x114 */
+    s8 iRAIL;                       /* 0x115 */
+    s16 iALONG;                     /* 0x116 */
+    u16 angle;                      /* 0x118 */
+    s8 vertical;                    /* 0x11A */
+    u8 unk_0x11B[0x1];
+}; /* 0x11C */
 struct rail_s {
     struct spline_s *pINPLAT;       /* 0x00 */
     struct spline_s *pINCAM;        /* 0x04 */
@@ -633,7 +649,16 @@ extern void NuVecRotateX(struct nuvec_s *dst, struct nuvec_s *src, s32 angle);
 extern void NuVecRotateY(struct nuvec_s *dst, struct nuvec_s *src, s32 angle);
 extern void JeepCamFollowAng(struct cammtx_s *cam, s32 blend);
 extern s32 AddBalloon(struct nuvec_s *Pos, struct nuvec_s *Vel);
-extern void DrawCross(struct nuvec_s *pos, s32 colour, f32 size);
+extern void DrawCross(struct nuvec_s *pos, f32 size, s32 colour);
+extern void DrawLine(struct nuvec_s *p0, struct nuvec_s *p1, s32 colour);
+extern void MoveRailPosition(struct nuvec_s *dst, struct RPos_s *rpos,
+                             f32 distance, s32 direction);
+extern struct RPos_s cRPos[];
+extern s32 cRPosCOUNT;
+extern f32 JCDist;
+extern s32 ChrisInTheHouse;
+extern s32 HighCam;
+extern struct nuvec_s FireBossPosition;
 
 extern s32 JeepFrame;
 extern s32 JeepInControl;
@@ -1035,7 +1060,7 @@ void MovePlayerJeep(struct creature_s *Cre, struct pad_s *Pad) {
         Jeep->CantMove = 0;
     }
     if (Jeep->DownHole != 0) {
-        DrawCross((struct nuvec_s *)&Jeep->RestartPoint, 0xFFFFFF, 1.0f);
+        DrawCross((struct nuvec_s *)&Jeep->RestartPoint, 1.0f, 0xFFFFFF);
     }
 }
 
@@ -1722,6 +1747,117 @@ void JeepCamIntro(struct cammtx_s *Cam) {
 }
 
 
+void JeepCam(struct cammtx_s *Cam) {
+    struct obj_s *obj = &PlayerJeep.Cre->obj;
+    struct nuvec_s Pos;
+    struct nuvec_s Obj;
+    struct nuvec_s RailPoint;
+    struct nuvec_s RailFar;
+    struct nuvec_s RailNear;
+    struct nuvec_s Target;
+    struct nuvec_s RailSide;
+    struct nuvec_s RailCentre;
+    struct nuvec_s ToCentre;
+    f32 Dist;
+    s32 i;
+    s32 Sum;
+    u16 Angle;
+
+    if (ResetJeepCamera != 0) {
+        ResetJeepCamera = 0;
+    }
+    Dist = JCDist;
+    if (best_cRPos != 0 && cRPosCOUNT != 0) {
+        RailFar = v000;
+        RailNear = v000;
+        RailCentre = v000;
+        for (i = 0; i < cRPosCOUNT; i++) {
+            MoveRailPosition(&RailPoint, &cRPos[i], 0.0f, 1);
+            NuVecAdd(&RailCentre, &RailCentre, &RailPoint);
+            MoveRailPosition(&RailPoint, &cRPos[i], 6.0f, 1);
+            NuVecAdd(&RailFar, &RailFar, &RailPoint);
+            MoveRailPosition(&RailPoint, &cRPos[i], 5.5f, 1);
+            NuVecAdd(&RailNear, &RailNear, &RailPoint);
+        }
+        NuVecSub(&Target, &RailFar, &RailNear);
+        PlayerJeep.aBaseMoveAng = NuAtan2D(Target.x, Target.z);
+        NuVecScale(&RailCentre, &RailCentre, 1.0f / cRPosCOUNT);
+        NuVecSub(&RailSide, &RailNear, &RailCentre);
+        NuVecSub(&ToCentre, &RailCentre, &PlayerJeep.Move.ActualPosition);
+        PlayerJeep.CentRailDist =
+            NuFsqrt(ToCentre.x * ToCentre.x + ToCentre.z * ToCentre.z) *
+            fsign(ToCentre.x * RailSide.z - ToCentre.z * RailSide.x);
+        if (ChrisInTheHouse != 0) {
+            NuVecScale(&RailFar, &RailFar, 1.0f / cRPosCOUNT);
+            NuVecScale(&RailNear, &RailNear, 1.0f / cRPosCOUNT);
+            DrawCross(&RailFar, 0.1f, 0xFF00);
+            DrawCross(&RailNear, 0.1f, 0xFF0000);
+            DrawLine(&RailFar, &RailNear, 0xFFFFFF);
+        }
+    }
+    if (best_cRPos != 0 && cRPosCOUNT != 0) {
+        Obj = v000;
+        for (i = 0; i < cRPosCOUNT; i++) {
+            MoveRailPosition(&RailPoint, &cRPos[i], Dist, 0);
+            NuVecAdd(&Obj, &Obj, &RailPoint);
+        }
+        NuVecScale(&Obj, &Obj, 1.0f / cRPosCOUNT);
+        Cam->vertical = 0;
+        Pos = v000;
+        for (i = 0; i < cRPosCOUNT; i++) {
+            MoveRailPosition(&RailPoint, &cRPos[i], Dist, 0);
+            NuVecAdd(&Pos, &Pos, &RailPoint);
+        }
+        NuVecScale(&Pos, &Pos, 1.0f / cRPosCOUNT);
+        Angle = cRPos[0].cam_angle;
+        if (cRPosCOUNT > 1) {
+            Sum = 0;
+            for (i = 1; i < cRPosCOUNT; i++) {
+                Sum += RotDiff(Angle, cRPos[i].cam_angle);
+            }
+            Angle += Sum / (cRPosCOUNT - 1);
+        }
+    } else {
+        Pos = Cam->pos;
+    }
+    if (HighCam != 0) {
+        Pos.y += 5.0f;
+    }
+    Obj.x = (obj->pos.x + Obj.x * 3.0f) * 0.25f;
+    Obj.y = (obj->pos.y + (obj->bot + obj->top) * obj->SCALE * 0.5f + Obj.y) *
+            0.5f;
+    Obj.z = (obj->pos.z + Obj.z * 3.0f) * 0.25f;
+    if (JeepRailCamTween != 0.0f && Level == 0x16) {
+        NuVecSub(&RailFar, &FireBossPosition, &Obj);
+        NuVecScaleAccum(&Obj, &RailFar, JeepRailCamTween);
+    }
+    Obj.x = obj->pos.x;
+    Obj.y = obj->pos.y + (obj->bot + obj->top) * obj->SCALE * 0.5f;
+    Obj.z = obj->pos.z;
+    if (HighCam != 0) {
+        Obj.y += 4.0f;
+    }
+    if (JeepRailCamTween2 != 0.0f && Level == 0x16) {
+        JeepRailCamTween2 -= 0.015f;
+        if (JeepRailCamTween2 < 0.0f) {
+            JeepRailCamTween2 = 0.0f;
+        }
+        NuVecSub(&RailNear, &JeepCamPos2, &Pos);
+        NuVecScaleAccum(&Pos, &RailNear, JeepRailCamTween2);
+        Target = PlayerJeep.Move.ActualPosition;
+        Target.y += 1.0f;
+        NuVecSub(&RailNear, &Target, &Obj);
+        NuVecScaleAccum(&Obj, &RailNear, JeepRailCamTween2);
+    }
+    JeepvObj = Obj;
+    JeepvPos = Pos;
+    if (best_cRPos != 0) {
+        pVIS = Rail[best_cRPos->iRAIL].pCAM;
+        iVIS = best_cRPos->iALONG;
+    }
+}
+
+
 void ProcessEnemyJeep(struct enemyjeep_s *Jeep) {
     s32 index = Jeep - EnemyJeep;
     s32 i;
@@ -2161,7 +2297,7 @@ void ProcessJeepBalloon(struct JEEPBALLOON *Balloon) {
         Balloon->Active = 0;
         AddGameDebris(0x41, &Balloon->Pos);
     }
-    DrawCross(&Balloon->Pos, 0xFFFFFF, 0.5f);
+    DrawCross(&Balloon->Pos, 0.5f, 0xFFFFFF);
 }
 
 
@@ -2707,10 +2843,10 @@ void JonnyBossSmashEffect(struct fireboss_s *fb) {
     u8 *p;
     s32 i;
 
-    DrawCross(&fb->Pos, 0xFF00, 1.0f);
+    DrawCross(&fb->Pos, 1.0f, 0xFF00);
     p = (u8 *)fb + 0xB0;
     for (i = 0; i < 10; i++) {
-        DrawCross((struct nuvec_s *)p, 0xFF, 1.0f);
+        DrawCross((struct nuvec_s *)p, 1.0f, 0xFF);
         p += 0x40;
     }
 }
