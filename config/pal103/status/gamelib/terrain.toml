@@ -25,7 +25,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00170ec0:terrainpickupinit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00171220:TerrainPlatformOldUpdate"
@@ -33,23 +33,23 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00171310:TerrainPlatformNewUpdate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00171630:TerrDraw"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:001719e8:TerrDrawSitu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00171d28:TerrDrawPlat"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00172298:SphereDraw"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:001724f8:RotateVec"
@@ -69,7 +69,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00172cc0:InsidePolLines"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00173308:NewScan"
@@ -85,7 +85,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0068:00175b10:CheckCylinder"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00176270:CheckSphere"
@@ -101,7 +101,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0068:00176b48:HitWallSpline"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00177330:HitTerrain"
@@ -129,7 +129,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0068:0017a180:TerrainPlatformMoveCheck"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:0017a4e0:TerrainPlatformEmbedded"
