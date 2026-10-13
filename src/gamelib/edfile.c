@@ -25,387 +25,317 @@
  */
 
 
-enum nufilemode_e {
-	NUFILE_READ = 0,
-	NUFILE_WRITE = 1,
-	NUFILE_APPEND = 2,
-	NUFILE_READ_NOWAIT = 3,
-	NUFILE_MODE_CNT = 4
+#define EDFILE_BUFFER_SIZE 0x1000
+
+enum edfile_media_e {
+    EDFILE_MEDIA_NONE = 0,
+    EDFILE_MEDIA_HOST = 1,
+    EDFILE_MEDIA_MEMCARD = 2
 };
 
-int NuFileOpen(char * file, enum nufilemode_e mode);
-int NuFileRead(int fh, void * data, int size);
-int NuMcRead(int fd, void * buff, int size, int async);
-int NuFileWrite (int fh, void * data, int size);
-int NuMcWrite (int fd, void * buff, int size, int async);
-void NuFileClose(int fh);
-int sceMcClose(int fd);
-int sceMcOpen(int port, int slot, const char* name, int mode);
-int sceMcSync(int mode, int* cmd, int* result);
-int sceMcRead(int fd, void* buff, int size);
-char edfile_buffer[4096];
-int edfile_buffer_pointer;
-int edfile_handle;
-int edfile_lock[2];
-int edfile_mcresult;
-int edfile_media;
-int edfile_write_flag;
+enum nufilemode_e {
+    NUFILE_READ = 0,
+    NUFILE_WRITE = 1,
+    NUFILE_APPEND = 2,
+    NUFILE_READ_NOWAIT = 3,
+    NUFILE_MODE_CNT = 4
+};
+
+extern int NuFileOpen(char *file, enum nufilemode_e mode);
+extern int NuFileRead(int fh, void *data, int size);
+extern int NuFileWrite(int fh, void *data, int size);
+extern void NuFileClose(int fh);
+extern int NuMcRead(int fd, void *buff, int size, int async);
+extern int NuMcWrite(int fd, void *buff, int size, int async);
+extern int sceMcOpen(int port, int slot, const char *name, int mode);
+extern int sceMcClose(int fd);
+extern int sceMcSync(int mode, int *cmd, int *result);
+extern void *memset(void *dst, int value, unsigned int size);
+extern void *memcpy(void *dst, const void *src, unsigned int size);
+
+extern char edfile_buffer[EDFILE_BUFFER_SIZE];
+extern int edfile_handle;
+extern int edfile_write_flag;
+extern int edfile_mcresult;
+extern int edfile_lock[2];
+extern int edfile_buffer_pointer;
+extern int D_0062F748;
+#define edfile_media D_0062F748
 
 
-int EdFileOpen(char *name,enum nufilemode_e mode) {
-  int fh;
-  
-  fh = edfile_handle;
-  if (edfile_handle == -1) {
-    memset(edfile_buffer,0,0x1000);
-    edfile_buffer_pointer = 0;
-    edfile_lock[1] = 0;
-    edfile_lock[0] = 0;
-    edfile_handle = fh;
-    edfile_write_flag = 0;
+static inline void EdFileReadBlock(void) {
     switch (edfile_media) {
-        case 0:
+    case EDFILE_MEDIA_NONE:
+        break;
+    case EDFILE_MEDIA_HOST:
+        NuFileRead(edfile_handle, edfile_buffer, EDFILE_BUFFER_SIZE);
+        edfile_buffer_pointer = 0;
+        break;
+    case EDFILE_MEDIA_MEMCARD:
+        NuMcRead(edfile_handle, edfile_buffer, EDFILE_BUFFER_SIZE, 0);
+        edfile_buffer_pointer = 0;
+        break;
+    }
+}
+
+
+static inline void EdFileWriteBlock(int size) {
+    switch (edfile_media) {
+    case EDFILE_MEDIA_NONE:
+        break;
+    case EDFILE_MEDIA_HOST:
+        NuFileWrite(edfile_handle, edfile_buffer, size);
+        edfile_buffer_pointer = 0;
+        break;
+    case EDFILE_MEDIA_MEMCARD:
+        NuMcWrite(edfile_handle, edfile_buffer, size, 0);
+        edfile_buffer_pointer = 0;
+        break;
+    }
+}
+
+
+static inline void EdFileWriteData(char *data, int size) {
+    int count;
+
+    while (size > 0) {
+        count = EDFILE_BUFFER_SIZE - edfile_buffer_pointer;
+        if (size < EDFILE_BUFFER_SIZE - edfile_buffer_pointer) {
+            count = size;
+        }
+        memcpy(edfile_buffer + edfile_buffer_pointer, data, count);
+        size -= count;
+        edfile_buffer_pointer += count;
+        data += count;
+        if (edfile_buffer_pointer == EDFILE_BUFFER_SIZE && edfile_handle != -1) {
+            EdFileWriteBlock(EDFILE_BUFFER_SIZE);
+        }
+    }
+}
+
+
+static inline void EdFileReadData(char *data, int size) {
+    int count;
+
+    while (size > 0) {
+        count = EDFILE_BUFFER_SIZE - edfile_buffer_pointer;
+        if (size < EDFILE_BUFFER_SIZE - edfile_buffer_pointer) {
+            count = size;
+        }
+        memcpy(data, edfile_buffer + edfile_buffer_pointer, count);
+        size -= count;
+        edfile_buffer_pointer += count;
+        data += count;
+        if (edfile_buffer_pointer == EDFILE_BUFFER_SIZE && edfile_handle != -1) {
+            EdFileReadBlock();
+        }
+    }
+}
+
+
+int EdFileOpen(char *name, enum nufilemode_e mode) {
+    if (edfile_handle == -1) {
+        memset(edfile_buffer, 0, EDFILE_BUFFER_SIZE);
+        edfile_buffer_pointer = 0;
+        edfile_lock[1] = 0;
+        edfile_lock[0] = 0;
+        edfile_handle = -1;
+        edfile_write_flag = 0;
+        switch (edfile_media) {
+        case EDFILE_MEDIA_NONE:
         default:
             return 0;
-        break;
-        case 1:
-          if (mode != NUFILE_READ) {
-            if (mode != NUFILE_WRITE) {
+        case EDFILE_MEDIA_HOST:
+            if (mode != NUFILE_READ) {
+                if (mode != NUFILE_WRITE) {
+                    return 0;
+                }
+                edfile_write_flag = 1;
+                edfile_handle = NuFileOpen(name, NUFILE_WRITE);
+                if (edfile_handle != -1) {
+                    return 1;
+                }
                 return 0;
             }
-            edfile_write_flag = edfile_media;
-            edfile_handle = NuFileOpen(name,NUFILE_WRITE);
-            if (edfile_handle != -1) return 1;
-            return 0;
-          }
-          edfile_handle = NuFileOpen(name,NUFILE_READ);
-          if (edfile_handle == -1) {
-              return 0;
-          }
-            switch (edfile_media) {
-                case 0:
-                break;
-                case 1:
-                    NuFileRead(edfile_handle,edfile_buffer,0x1000);
-                    edfile_buffer_pointer = 0;
-                break;
-                case 2:
-                    NuMcRead(edfile_handle,edfile_buffer,0x1000,0);
-                    edfile_buffer_pointer = 0;
-                break;
-            }
-        break;
-        case 2:
-          if (mode != NUFILE_READ) {
-            if (mode != NUFILE_WRITE) {
+            edfile_handle = NuFileOpen(name, NUFILE_READ);
+            if (edfile_handle == -1) {
                 return 0;
             }
-                sceMcOpen(0,0,name,0x200);
-                sceMcSync(0,0,&edfile_mcresult);
+            EdFileReadBlock();
+            break;
+        case EDFILE_MEDIA_MEMCARD:
+            if (mode != NUFILE_READ) {
+                if (mode != NUFILE_WRITE) {
+                    return 0;
+                }
+                sceMcOpen(0, 0, name, 0x200);
+                sceMcSync(0, 0, &edfile_mcresult);
                 if (edfile_mcresult < 0) {
-                  return 0;
+                    return 0;
                 }
                 edfile_handle = edfile_mcresult;
                 edfile_write_flag = 1;
                 return 1;
-          }
-          sceMcOpen(0,0,name,1);
-          sceMcSync(0,0,&edfile_mcresult);
-          if (edfile_mcresult < 0) {
-            return 0;
-          }
-          edfile_handle = edfile_mcresult;
-          if (edfile_mcresult != -1) {
-            switch (edfile_media) {
-                case 0:
-                break;
-                case 1:
-                    NuFileRead(edfile_handle,edfile_buffer,0x1000);
-                    edfile_buffer_pointer = 0;
-                break;
-                case 2:
-                    NuMcRead(edfile_handle,edfile_buffer,0x1000,0);
-                    edfile_buffer_pointer = 0;
-                break;
             }
-          }
-        break;
+            sceMcOpen(0, 0, name, 1);
+            sceMcSync(0, 0, &edfile_mcresult);
+            if (edfile_mcresult < 0) {
+                return 0;
+            }
+            edfile_handle = edfile_mcresult;
+            if (edfile_mcresult != -1) {
+                EdFileReadBlock();
+            }
+            break;
+        }
+        return 1;
     }
-    return 1;
-  }
-  return 0;
+    return 0;
 }
+
 
 int EdFileClose(void) {
     if (edfile_handle != -1) {
-        if ((edfile_write_flag != 0) && (edfile_buffer_pointer != 0)) {
-            switch (edfile_media) {
-            case 0:
-            break;
-            case 1:
-                NuFileWrite(edfile_handle, &edfile_buffer, edfile_buffer_pointer);
-                edfile_buffer_pointer = 0;
-                break;
-            case 2:
-                NuMcWrite(edfile_handle, &edfile_buffer, edfile_buffer_pointer, 0);
-                edfile_buffer_pointer = 0;
-                break;
-            }
+        if (edfile_write_flag != 0 && edfile_buffer_pointer != 0) {
+            EdFileWriteBlock(edfile_buffer_pointer);
         }
         switch (edfile_media) {
-            case 0:
+        case EDFILE_MEDIA_NONE:
             break;
-            case 1:
-                NuFileClose(edfile_handle);
-                edfile_media = 0;
-                edfile_handle = -1;
-                return 1;
-            break;
-            case 2:
-                sceMcClose(edfile_handle);
-                sceMcSync(0, 0, 0);
-                edfile_media = 0;
-                edfile_handle = -1;
-                return 1;
-            break;
+        case EDFILE_MEDIA_HOST:
+            NuFileClose(edfile_handle);
+            edfile_media = EDFILE_MEDIA_NONE;
+            edfile_handle = -1;
+            return 1;
+        case EDFILE_MEDIA_MEMCARD:
+            sceMcClose(edfile_handle);
+            sceMcSync(0, 0, 0);
+            edfile_media = EDFILE_MEDIA_NONE;
+            edfile_handle = -1;
+            return 1;
         }
-
     }
     return 0;
 }
 
-static inline void EdFileWrite_in (void *data,int size) {
-    int cnt;
 
-    while (size > 0) {
-        cnt = (0x1000 - edfile_buffer_pointer);
-        if (size < (0x1000 - edfile_buffer_pointer)) {
-          cnt = size;
-        }
-        memcpy(edfile_buffer + edfile_buffer_pointer,data,cnt);
-        size -= cnt;
-        edfile_buffer_pointer = edfile_buffer_pointer + cnt;
-        data = (void *)(data + cnt);
-        if ((edfile_buffer_pointer == 0x1000) && (edfile_handle != -1)) {
-          switch (edfile_media) {
-          case 0:
-          break;
-          case 1:
-              NuFileWrite(edfile_handle, &edfile_buffer, 0x1000);
-              edfile_buffer_pointer = 0;
-              break;
-          case 2:
-              NuMcWrite(edfile_handle, &edfile_buffer, 0x1000, 0);
-              edfile_buffer_pointer = 0;
-              break;
-          }
-        }
-      }
-}
-
-static inline void EdFileRead_in (void *data,int size) {
-  int cnt;
-
-  while (size > 0) {
-    cnt = (0x1000 - edfile_buffer_pointer);
-    if (size < (0x1000 - edfile_buffer_pointer)) {
-      cnt = size;
-    }
-    memcpy(data,&edfile_buffer[edfile_buffer_pointer],cnt);
-    size -= cnt;
-    edfile_buffer_pointer = edfile_buffer_pointer + cnt;
-    data = (void *)(data + cnt);
-    if ((edfile_buffer_pointer == 0x1000) && (edfile_handle != -1)) {
-      switch (edfile_media) {
-            case 0:
-            break;
-            case 1:
-                NuFileRead(edfile_handle, &edfile_buffer, 0x1000);
-                edfile_buffer_pointer = 0;
-            break;
-            case 2:
-                NuMcRead(edfile_handle, &edfile_buffer, 0x1000, 0);
-                edfile_buffer_pointer = 0;
-            break;
-        }
-    }
-  }
+void EdFileWriteFloat(float value) {
+    EdFileWriteData((char *)&value, sizeof(value));
 }
 
 
-void EdFileWriteFloat(float data) {
-  EdFileWrite_in(&data,4);
+void EdFileWriteInt(int value) {
+    EdFileWriteData((char *)&value, sizeof(value));
 }
 
-void EdFileWriteInt(int data) {
-  EdFileWrite_in(&data,4);
+
+void EdFileWriteUnsignedInt(unsigned int value) {
+    EdFileWriteData((char *)&value, sizeof(value));
 }
 
-void EdFileWriteUnsignedInt(int data) {
-  EdFileWrite_in(&data,4);
+
+void EdFileWriteShort(short value) {
+    EdFileWriteData((char *)&value, sizeof(value));
 }
 
-void EdFileWriteShort(short data) {
-  EdFileWrite_in(&data,2);
+
+void EdFileWriteChar(char value) {
+    EdFileWriteData(&value, sizeof(value));
 }
 
-void EdFileWriteChar(char data) {
-  EdFileWrite_in(&data,1);
-}
 
 float EdFileReadFloat(void) {
-  float data;
+    float value;
 
-  EdFileRead_in(&data,4);
-  return data;
+    EdFileReadData((char *)&value, sizeof(value));
+    return value;
 }
+
 
 int EdFileReadInt(void) {
-  int data;
+    int value;
 
-  EdFileRead_in(&data,4);
-  return data;
+    EdFileReadData((char *)&value, sizeof(value));
+    return value;
 }
+
 
 unsigned int EdFileReadUnsignedInt(void) {
-  unsigned int data;
+    unsigned int value;
 
-  EdFileRead_in(&data,4);
-  return data;
+    EdFileReadData((char *)&value, sizeof(value));
+    return value;
 }
+
 
 short EdFileReadShort(void) {
-  short data;
+    short value;
 
-  EdFileRead_in(&data,2);
-  return data;
+    EdFileReadData((char *)&value, sizeof(value));
+    return value;
 }
+
 
 char EdFileReadChar(void) {
-  char data;
+    char value;
 
-  EdFileRead_in(&data,1);
-  return data;
+    EdFileReadData(&value, sizeof(value));
+    return value;
 }
+
 
 void EdFileSetMedia(int media) {
-  edfile_media = media;
+    edfile_media = media;
 }
 
-void EdFileWrite(void *data,int size) {
-    int cnt;
 
-    while (size > 0) {
-        cnt = (0x1000 - edfile_buffer_pointer);
-        if (size < (0x1000 - edfile_buffer_pointer)) {
-          cnt = size;
-        }
-        memcpy(edfile_buffer + edfile_buffer_pointer,data,cnt);
-        size -= cnt;
-        edfile_buffer_pointer = edfile_buffer_pointer + cnt;
-        data = (void *)(data + cnt);
-        if ((edfile_buffer_pointer == 0x1000) && (edfile_handle != -1)) {
-          switch (edfile_media) {
-          case 0:
-          break;
-          case 1:
-              NuFileWrite(edfile_handle, &edfile_buffer, 0x1000);
-              edfile_buffer_pointer = 0;
-              break;
-          case 2:
-              NuMcWrite(edfile_handle, &edfile_buffer, 0x1000, 0);
-              edfile_buffer_pointer = 0;
-              break;
-          }
-        }
-      }
+void EdFileWrite(void *data, int size) {
+    EdFileWriteData(data, size);
 }
 
-void EdFileRead(void *data,int size) {
-  int cnt;
 
-  while (size > 0) {
-    cnt = (0x1000 - edfile_buffer_pointer);
-    if (size < (0x1000 - edfile_buffer_pointer)) {
-      cnt = size;
+void EdFileRead(void *data, int size) {
+    EdFileReadData(data, size);
+}
+
+
+int EdFileWriteMemCard(char *name, int size, void *data) {
+    edfile_media = EDFILE_MEDIA_MEMCARD;
+    if (EdFileOpen(name, NUFILE_WRITE) == 0) {
+        return 0;
     }
-    memcpy(data,&edfile_buffer[edfile_buffer_pointer],cnt);
-    size -= cnt;
-    edfile_buffer_pointer = edfile_buffer_pointer + cnt;
-    data = (void *)(data + cnt);
-    if ((edfile_buffer_pointer == 0x1000) && (edfile_handle != -1)) {
-      switch (edfile_media) {
-            case 0:
-            break;
-            case 1:
-                NuFileRead(edfile_handle, &edfile_buffer, 0x1000);
-                edfile_buffer_pointer = 0;
-            break;
-            case 2:
-                NuMcRead(edfile_handle, &edfile_buffer, 0x1000, 0);
-                edfile_buffer_pointer = 0;
-            break;
-        }
+    EdFileWriteData(data, size);
+    return EdFileClose();
+}
+
+
+int EdFileReadMemCard(char *name, int size, void *data) {
+    edfile_media = EDFILE_MEDIA_MEMCARD;
+    if (EdFileOpen(name, NUFILE_READ) == 0) {
+        return 0;
     }
-  }
+    EdFileReadData(data, size);
+    return EdFileClose();
 }
 
-int EdFileWriteMemCard(char *fname,int size,void *data) {
-  int cnt;
-  
-  edfile_media = 2;
-  if (EdFileOpen(fname,NUFILE_WRITE) == 0) {
-    return 0;
-  }
-  EdFileWrite_in(data,size);
-  return EdFileClose();
-}
-
-int EdFileReadMemCard(char *fname,int size,void *data) {
-  edfile_media = 2;
-  if (EdFileOpen(fname,NUFILE_READ) == 0) {
-    return 0;
-  }
-  EdFileRead_in(data,size);
-  return EdFileClose();
-}
 
 void EdFileResetBuffers(void) {
-  memset(edfile_buffer,0,0x1000);
-  edfile_buffer_pointer = 0;
-  edfile_lock[0] = edfile_lock[1] = 0;
+    memset(edfile_buffer, 0, EDFILE_BUFFER_SIZE);
+    edfile_buffer_pointer = 0;
+    edfile_lock[1] = 0;
+    edfile_lock[0] = 0;
 }
+
 
 void EdFileFillBuffer(void) {
     if (edfile_handle != -1) {
-        switch (edfile_media) {
-        case 0:
-            break;
-        case 1:
-            NuFileRead(edfile_handle, &edfile_buffer, 0x1000);
-            edfile_buffer_pointer = 0;
-            break;
-        case 2:
-            NuMcRead(edfile_handle, &edfile_buffer, 0x1000, 0);
-            edfile_buffer_pointer = 0;
-            break;
-        }
+        EdFileReadBlock();
     }
 }
 
+
 void EdFileFlushBuffer(void) {
-    if ((edfile_handle != -1) && (edfile_buffer_pointer != 0)) {
-        switch (edfile_media) {
-        case 0:
-            break;
-        case 1:
-            NuFileWrite(edfile_handle, &edfile_buffer, edfile_buffer_pointer);
-            edfile_buffer_pointer = 0;
-            break;
-        case 2:
-            NuMcWrite(edfile_handle, &edfile_buffer, edfile_buffer_pointer, 0);
-            edfile_buffer_pointer = 0;
-            break;
-        }
+    if (edfile_handle != -1 && edfile_buffer_pointer != 0) {
+        EdFileWriteBlock(edfile_buffer_pointer);
     }
 }
