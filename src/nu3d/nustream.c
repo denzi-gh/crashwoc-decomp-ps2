@@ -101,6 +101,10 @@ typedef union {
     NuDmaTag tag;
 } NuDmaTagQw;
 
+typedef struct {
+    float m[16];
+} NuMtx;
+
 struct nurtlight_s {
     NuDmaTagQw cnt;
     float dirx[3];
@@ -119,7 +123,8 @@ struct nurtlight_s {
 
 struct nuspecpkt_s {
     NuDmaTagQw cnt;
-    u128 data[5];
+    NuMtx mtx;
+    struct nucolour4_s col;
     NuDmaTagQw ref;
 };
 
@@ -127,10 +132,6 @@ struct nuzbstate_s {
     char pad[0x24];
     int zmask;
 };
-
-typedef struct {
-    float m[16];
-} NuMtx;
 
 typedef struct NuMtl {
     char pad_0x000[0x1A4];
@@ -144,6 +145,9 @@ struct nulocalmtxpkt_s {
     NuMtx mtx;
     int unpack;
     short mode;
+    char pad_0x56[6];
+    unsigned int mscal;
+    unsigned int flush;
 };
 
 typedef struct {
@@ -152,6 +156,15 @@ typedef struct {
     int width;
     int height;
 } NuViewport;
+
+struct nucamera_s {
+    NuMtx mtx;
+    float fov;
+    float aspect;
+    float nearclip;
+    float farclip;
+    char pad_0x50[0x10];
+};
 
 union vifword_u {
     unsigned int u;
@@ -233,7 +246,7 @@ extern void *rndrstream_fx_mtx_addr[1];
 extern struct nurndrfxmtx_s D_0067A590;
 #define rndrstream_fx_mtx D_0067A590
 
-extern void *txtrstream_start;
+extern void *txtrstream_start[1];
 
 extern void *rndrstream_start;
 
@@ -350,9 +363,9 @@ extern int D_0062EA98;
 extern int D_0062EA9C;
 #define stream_outbuf_cycle_len D_0062EA9C
 
-extern void *rndrstream_end;
+extern NuDmaTag *rndrstream_end[1];
 
-extern void *txtrstream_end;
+extern NuDmaTag *txtrstream_end[1];
 
 extern u8 *frame_base;
 
@@ -430,6 +443,52 @@ extern u8 *vpDmaTag_RefEx(void *packet, void *addr, int qwc, unsigned int vif1);
 extern void *D_00633030[1];
 #define rndrstream_spec_addr D_00633030[0]
 
+extern char D_00614120[];
+#define stream_overflow_msg D_00614120
+
+extern int D_0062EABC;
+#define view_mtx_pkt_dirty D_0062EABC
+
+extern NuMtx D_0067A420;
+#define vu1_proj_mtx D_0067A420
+
+extern NuMtx D_0067A4C0;
+#define vu1_clip_proj_mtx D_0067A4C0
+
+extern struct nuvec_s D_002D3DE0;
+#define spec_light_dir D_002D3DE0
+
+extern struct nucolour4_s D_002D3DF0;
+#define spec_light_col D_002D3DF0
+
+extern struct nuvec_s D_002D3E08;
+#define spec_view_dir D_002D3E08
+
+extern struct nucamera_s global_camera;
+
+extern NuMtx numtx_identity;
+
+extern void NuVecInvMtxRotate(struct nuvec_s *dst, struct nuvec_s *src, NuMtx *m);
+
+extern void NuVecMtxRotate(struct nuvec_s *dst, struct nuvec_s *src, NuMtx *m);
+
+extern void NuVecLerp(struct nuvec_s *dst, struct nuvec_s *a, struct nuvec_s *b, float t);
+
+extern void NuVecNorm(struct nuvec_s *dst, struct nuvec_s *src);
+
+extern void NuMtxAlignZ(NuMtx *m, struct nuvec_s *dir);
+
+extern int D_0062EAB4;
+#define local_mtx_pkt_dirty D_0062EAB4
+
+extern int D_0062EAB0;
+#define local_mtx_id_next D_0062EAB0
+
+extern int D_0063302C;
+#define local_mtx_clip D_0063302C
+
+extern void *NuRndrStreamPrependMPG(struct nurndrstream_s *stream, void *tag);
+
 
 void NuRndrInitStreams(void)
 {
@@ -459,9 +518,9 @@ void NuRndrInitStreams(void)
     }
     rndrstream_start = 0;
     frame_base = rndrstream_free;
-    rndrstream_end = 0;
-    txtrstream_start = 0;
-    txtrstream_end = 0;
+    rndrstream_end[0] = 0;
+    txtrstream_start[0] = 0;
+    txtrstream_end[0] = 0;
     NuRndrStreamResetStreams(1);
     sys = rndrstream_system;
     NuRndrStreamLink(sys);
@@ -541,6 +600,79 @@ struct nurndrstream_s *NuRndrStreamAllocStream(unsigned int sortkey, void *mpgta
         return stream;
     }
     return 0;
+}
+
+
+void NuRndrStreamFlush(void)
+{
+    struct nurndrstream_s *stream;
+    struct nurndrstream_s *s;
+    void *mpg;
+    int i;
+    int n;
+
+    mpg = 0;
+    if ((u8 *)rndrstream_free > frame_base + stream_outbuf_size) {
+        NuErrorProlog(nustream_file, 0x324)(stream_overflow_msg);
+    }
+    for (i = 0; i < rndrstream_count; i++) {
+        stream = rndrstream_sorted[i];
+        if (stream->start) {
+            if (i == 0 && rndrstream_start == 0) {
+                mpg = NuRndrStreamPrependMPG(stream, mpg);
+                rndrstream_start = stream->start;
+            }
+            if (rndrstream_end[0]) {
+                mpg = NuRndrStreamPrependMPG(stream, mpg);
+                rndrstream_end[0]->addr = stream->start;
+                rndrstream_end[0]->id = 0x20;
+            }
+            rndrstream_end[0] = (NuDmaTag *)stream->cur;
+        }
+        if (stream->txtr_start) {
+            if (txtrstream_start[0] == 0) {
+                txtrstream_start[0] = stream->txtr_start;
+            }
+            if (txtrstream_end[0]) {
+                txtrstream_end[0]->addr = stream->txtr_start;
+                txtrstream_end[0]->id = (txtrstream_end[0]->id & 0x80) | 0x20;
+            }
+            txtrstream_end[0] = stream->txtr_end;
+        }
+    }
+    if (rndrstream_end[0]) {
+        rndrstream_end[0]->id = 0x70;
+        rndrstream_end[0]->mark = 0xD;
+        rndrstream_end[0]->vif0 = 0x13000000;
+        rndrstream_end[0]->vif1 = 0;
+    }
+    if (txtrstream_end[0]) {
+        txtrstream_end[0]->id = (txtrstream_end[0]->id & 0x80) | 0x70;
+    }
+    if (rndrstream_count > 0) {
+        s = rndrstream_pool;
+        n = rndrstream_count;
+        do {
+            s->mtl = 0;
+            s->start = 0;
+            s->cur = 0;
+            s->txtr_start = 0;
+            s->txtr_end = 0;
+            s->local_mtx_id = -2;
+            s->view_mtx_id = -2;
+            s->scissor_id = -2;
+            s->xyoffset_id = -2;
+            s->light_addr = 0;
+            s->mtl_tid = 0;
+            s->zbuf = gs_top;
+            s++;
+            n--;
+        } while (n != 0);
+    }
+    rndrstream_rt_light_addr[0] = 0;
+    rndrstream_spec_addr = 0;
+    rndrstream_fx_microcode = fx_microcode_default;
+    rndrstream_fx_mtx_addr[0] = 0;
 }
 
 
@@ -660,6 +792,86 @@ int NuRndrStreamSetLocalMtx(struct nurndrstream_s *stream)
 }
 
 
+int NuRndrSetViewMtx(NuMtx *vm, NuMtx *pm, NuMtx *clip_pm)
+{
+    u8 *pkt;
+
+    view_mtx = *vm;
+    if (view_mtx_pkt_dirty) {
+        view_mtx_pkt_dirty = 0;
+        pkt = vpDmaTag_CntEx(view_mtx_pkt, 0, 0x6C040004);
+        if (rndrstream_zfix != 0.0f) {
+            NuMtxMulH(((NuMtx *)pkt)++, &view_mtx, &zfix_mtx);
+        } else {
+            NuMemCopy128(((NuMtx *)pkt)++, &view_mtx, 4);
+        }
+        *((u64 *)pkt)++ = 0;
+        *((unsigned int *)pkt)++ = 0;
+        *((unsigned int *)pkt)++ = 0x6C040008;
+        NuMemCopy128(((NuMtx *)pkt)++, pm, 4);
+        view_mtx_pkt_size = (char *)vpDmaTag_Close(pkt) - view_mtx_pkt;
+        pkt = vpDmaTag_CntEx(clip_view_mtx_pkt, 0, 0x6C040004);
+        if (rndrstream_zfix != 0.0f) {
+            NuMtxMulH(((NuMtx *)pkt)++, &view_mtx, &zfix_mtx);
+        } else {
+            NuMemCopy128(((NuMtx *)pkt)++, &view_mtx, 4);
+        }
+        *((u64 *)pkt)++ = 0;
+        *((unsigned int *)pkt)++ = 0;
+        *((unsigned int *)pkt)++ = 0x6C040008;
+        NuMemCopy128(((NuMtx *)pkt)++, clip_pm, 4);
+        vpDmaTag_Close(pkt);
+    } else {
+        if (rndrstream_zfix != 0.0f) {
+            NuMtxMulH(&vu1_view_mtx, &view_mtx, &zfix_mtx);
+            NuMtxMulH(&vu1_clip_view_mtx, &view_mtx, &zfix_mtx);
+        } else {
+            NuMemCopy128(&vu1_view_mtx, &view_mtx, 4);
+            NuMemCopy128(&vu1_clip_view_mtx, &view_mtx, 4);
+        }
+        NuMemCopy128(&vu1_proj_mtx, pm, 4);
+        NuMemCopy128(&vu1_clip_proj_mtx, clip_pm, 4);
+    }
+    rndrstream_view_mtx_id = view_mtx_id_next++;
+    view_mtx_id_next &= 0x7FFF;
+    return 1;
+}
+
+
+int NuRndrSetSpecularLight(struct nuvec_s *dir, struct nucolour4_s *col)
+{
+    struct nuvec_s v;
+    float half;
+
+    if (dir) {
+        spec_light_dir = *dir;
+    }
+    if (col) {
+        spec_light_col = *col;
+    }
+    half = 0.5f;
+    NuVecInvMtxRotate(&v, &spec_light_dir, &global_camera.mtx);
+    rndrstream_spec.col = spec_light_col;
+    if (v.z >= half) {
+        rndrstream_spec.col.a *= (1.0f - v.z) * 2.0f;
+    }
+    NuVecLerp(&v, &v, &spec_view_dir, half);
+    NuVecMtxRotate(&v, &v, &global_camera.mtx);
+    NuVecNorm(&v, &v);
+    rndrstream_spec.mtx = numtx_identity;
+    NuMtxAlignZ(&rndrstream_spec.mtx, &v);
+    rndrstream_spec.mtx.m[8] = -rndrstream_spec.mtx.m[8];
+    rndrstream_spec.mtx.m[9] = -rndrstream_spec.mtx.m[9];
+    rndrstream_spec.mtx.m[10] = -rndrstream_spec.mtx.m[10];
+    rndrstream_spec.mtx.m[14] = rndrstream_spec.mtx.m[3] = rndrstream_spec.mtx.m[7] = rndrstream_spec.mtx.m[11] = 0.0f;
+    rndrstream_spec.mtx.m[12] = half;
+    rndrstream_spec.mtx.m[13] = half;
+    rndrstream_spec.mtx.m[15] = 1.0f;
+    rndrstream_spec_addr = 0;
+    return 1;
+}
+
+
 void *NuStreamGetOutputBuffer(int index)
 {
     if (index) {
@@ -695,6 +907,34 @@ void FaceYDirStream(int angle)
     pkt->f = vp->height * 0.0002790178696f;
     pkt++;
     vpDmaTag_Close(pkt);
+}
+
+
+int NuRndrSetLocalMtx(NuMtx *mtx, int clip)
+{
+    u8 *pkt;
+    unsigned int *code;
+
+    if (local_mtx_pkt_dirty) {
+        local_mtx_pkt_dirty = 0;
+        pkt = vpDmaTag_CntEx(local_mtx_pkt.tag, 0, 0x6C040000);
+        ((NuDmaTag *)pkt)[-1].mark = 0x14;
+        NuMemCopy128(pkt, mtx, 4);
+        pkt += 0x40;
+        *((unsigned int *)pkt)++ = 0x6D010017;
+        code = (unsigned int *)(pkt + 8);
+        *((short *)pkt)++ = 0;
+        code[0] = (clip != 1) ? 0x14000002 : 0x14000000;
+        code[1] = 0x17000000;
+        local_mtx_pkt_size = (char *)vpDmaTag_Close(code + 2) - local_mtx_pkt.tag;
+    } else {
+        NuMemCopy128(&local_mtx_pkt.mtx, mtx, 4);
+        local_mtx_pkt.mscal = (clip != 1) ? 0x14000002 : 0x14000000;
+    }
+    local_mtx_clip = clip;
+    rndrstream_local_mtx_id = local_mtx_id_next++;
+    local_mtx_id_next &= 0x7FFF;
+    return 1;
 }
 
 
@@ -869,8 +1109,8 @@ void NuRndrVu1Draw(void)
 {
     __asm__ volatile ("sync");
     FlushCache(0);
-    if (txtrstream_start != 0) {
-        GS_DmaWrite(txtrstream_start, 1);
+    if (txtrstream_start[0] != 0) {
+        GS_DmaWrite(txtrstream_start[0], 1);
     }
     VU1_DmaWrite(rndrstream_start, 1);
     tbslotReset(0, 1);

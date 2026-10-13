@@ -25,7 +25,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00110838:NuRndrStreamFlush"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00110a50:NuRndrStreamSetMisc"
@@ -37,11 +37,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00110f08:NuRndrSetViewMtx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00111208:NuRndrSetSpecularLight"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00111420:NuStreamGetOutputBuffer"
