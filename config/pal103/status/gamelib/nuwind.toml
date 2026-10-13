@@ -13,7 +13,7 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0082:001b51e0:NuWindCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0082:001b5498:NuWindUpdate"
@@ -21,28 +21,28 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0082:001b5c80:NuWindInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0082:001b5c98:NuWindDraw"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0082:001b5db0:NuWindRand"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0082:001b5dd0:NuWindAllocateGrp"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0082:001b5e08:NuWindFreeGrp"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0082:001b5e20:NuWindAllocMtxs"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0082:001b5e58:NuWindFreeMtxs"
-state = "asm"
+state = "matching"
