@@ -13,35 +13,35 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0004:001047c8:NuMemAlloc"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0004:00104958:NuMemReAlloc"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0004:00104a78:NuMemAllocFn"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0004:00104d08:NuMemReAllocFn"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0004:00104f78:NuMemFreeFn"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0004:00105118:NuMemValidateFn"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0004:001051b0:NuMemDumpFn"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0004:00105268:NuMemFlushFn"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0004:001052a0:NuMemSetDiscardable"
@@ -53,11 +53,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0004:001052d0:NuMemCreateDiscardable"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0004:00105338:NuMemDestroyDiscardable"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0004:00105360:NuMemSetExternal"
@@ -65,4 +65,4 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0004:00105390:NuMemFree"
-state = "asm"
+state = "matching"
