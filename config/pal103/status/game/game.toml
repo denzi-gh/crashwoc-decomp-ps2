@@ -193,7 +193,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0094:001e9e48:ResetCheckpoint"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001ea0e0:MakeTimeI"
@@ -205,11 +205,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001ea858:NewLevelTime"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001eaa18:StartTimeTrial"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001eab98:DefaultTimeTrialNames"
@@ -229,7 +229,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001eb328:BonusTransporter"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001ebc88:BonusTiming"
@@ -241,15 +241,15 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001ebf80:DeathTransporter"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001ec658:GemPathTransporter"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001ecd10:DrawTransporters"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001ecf50:InitLevel"
@@ -265,7 +265,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001edbc8:PointAlongSpline"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001ee138:InitObjectTable"

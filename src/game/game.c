@@ -464,8 +464,12 @@ struct player_s {
 };
 
 struct plr_lives_s {
-    short count; /* 0x0 */
-    short draw;  /* 0x2 */
+    short count;          /* 0x0 */
+    short draw;           /* 0x2 */
+    signed char timer;    /* 0x4 */
+    signed char delay;    /* 0x5 */
+    u8 sfx_delay;         /* 0x6 */
+    char pad_7;
 };
 
 struct anmdata_s {
@@ -688,13 +692,66 @@ extern struct nuvec_s lev_ambpos[];
 extern s32 jcrunch;
 extern s32 gamesfx_effect_volume;
 
+/* transporter object: offsets verified in FinishTransporter / StartTransporter */
+struct tobj_s {
+    struct player_s *parent; /* 0x0 */
+    char pad_4[0x8 - 0x4];
+    struct mask_s *mask; /* 0x8 (LoseMask) */
+    char pad_c[0x10 - 0xC];
+    struct numtx_s *pLOCATOR; /* 0x10 */
+    struct animpkt_s anim; /* 0x14 (ToggleVehicle) */
+    short character; /* 0x30 */
+    short vehicle; /* 0x32 (ToggleVehicle) */
+    u32 flags; /* 0x34 (UpdateKabooms) */
+    char pad_38[0x68 - 0x38];
+    struct nuvec_s pos; /* 0x68 */
+    struct nuvec_s mom;    /* 0x74 */
+    struct nuvec_s oldpos; /* 0x80 */
+    char pad_8c[0xE4 - 0x8C];
+    float RADIUS; /* 0xE4 */
+    struct nuvec_s min; /* 0xE8 */
+    struct nuvec_s max; /* 0xF4 */
+    float old_SCALE; /* 0x100 */
+    float SCALE;     /* 0x104 */
+    float radius; /* 0x108 */
+    float scale;  /* 0x10C */
+    /* objbot/objtop/dead verified in PlayerObjectAnimCollision */
+    float objbot; /* 0x110 */
+    float objtop; /* 0x114 */
+    float bot;    /* 0x118 */
+    float top;    /* 0x11C */
+    char pad_120[0x134 - 0x120];
+    float idle_gametime; /* 0x134 */
+    char pad_138[0x145 - 0x138];
+    signed char dead; /* 0x145 */
+    char pad_146[0x148 - 0x146];
+    short attack; /* 0x148 */
+    u16 kaboom_mask; /* 0x14A (UpdateKabooms) */
+    char pad_14c[0x14F - 0x14C];
+    signed char finished; /* 0x14F (CheckFinish) */
+    char pad_150[0x166 - 0x150];
+    short dyrot; /* 0x166 */
+    char pad_168[0x16A - 0x168];
+    short hdg; /* 0x16A */
+    char pad_16c[0x172 - 0x16C];
+    signed char invincible; /* 0x172 (UpdateKabooms) */
+    char pad_173[0x174 - 0x173];
+    signed char transporting; /* 0x174 */
+    char pad_175[0x17A - 0x175];
+    u8 f17A; /* 0x17A (LoseMask; unsigned -- retail li 0x96, not -0x6A) */
+    char pad_17b[0x185 - 0x17B];
+    u8 f185;     /* 0x185 (ToggleVehicle) */
+    u8 exploded; /* 0x186 (UpdateKabooms) */
+    char pad_187[0x188 - 0x187];
+};
+
 /* creature_s subset for FindClock (full layout in creature.h) */
 struct creatobj_s {
     signed char used;    /* 0x00 */
     signed char on;      /* 0x01 */
-    char pad_2[0x32];
-    short character;     /* 0x34 (obj.character) */
-    char pad_36[0xCAE];  /* stride 0xCE4 */
+    char pad_2[0x4 - 0x2];
+    struct tobj_s obj;   /* 0x04 */
+    char pad_18c[0xCE4 - 0x18C];
 };
 extern struct creatobj_s Character[9]; /* 0x0057EE38 */
 void UpdateDRAINDAMAGE(void);
@@ -716,7 +773,7 @@ s32 *NuBridgeCreate(struct nuinstance_s **instance, struct nuinstance_s *ipost,
                     float plrweight, s32 sections, float postw, float posth,
                     s32 postint, s32 colour);
 
-void ResetCheckpoint(s32 a, s32 b, float c, void *d);
+void ResetCheckpoint(s32 iRAIL, s32 iALONG, float fALONG, struct nuvec_s *pos);
 void GameSfx(s32 sfx, void *p);
 void NuPs2VideoSetPos(s32 x, s32 y);
 void ResetItems(void);
@@ -2449,12 +2506,12 @@ void InitLevel(void) {
     u8 bits;
     s32 open;
 
-    InitPositions();
-    ResetTempCharacter(-1, -1);
     menu = -1;
-    ResetTempCharacter2(-1, -1);
     y = -1;
     level = -1;
+    InitPositions();
+    ResetTempCharacter(-1, -1);
+    ResetTempCharacter2(-1, -1);
     NuLightFogClear(0);
     tempanim_waitaudio = 1;
     switch (Level) {
@@ -2588,7 +2645,7 @@ void InitLevel(void) {
                 ipost = ObjTab[161].obj.special->instance;
             }
             for (lp = 0; lp < 0x18; lp++) {
-                if (lp == (lp / 3) * 3) {
+                if (lp % 3 == 0) {
                     instgrp[lp] = ObjTab[159].obj.special->instance;
                 } else {
                     instgrp[lp] = ObjTab[160].obj.special->instance;
@@ -2677,7 +2734,7 @@ void InitLevel(void) {
     }
     gempath_open = open;
     if (ObjTab[101].obj.special != NULL) {
-        ObjTab[101].obj.special->instance->flags.visible = 1 - gempath_open;
+        ObjTab[101].obj.special->instance->flags.visible = gempath_open ^ 1;
     }
     hubleveltext_level = -1;
     hubleveltext_pos = 0.0f;
@@ -2746,7 +2803,7 @@ struct creatobj_s *FindClock(void) {
     s32 i;
 
     for (i = 1; i < 9; i++) {
-        if (Character[i].on != 0 && Character[i].character == 0x76) {
+        if (Character[i].on != 0 && Character[i].obj.character == 0x76) {
             return &Character[i];
         }
     }
@@ -2966,7 +3023,7 @@ inline s32 RotDiff(u16 a, u16 b) {
 
 extern void NewBuzz(void *p, s32 n);
 
-void TransporterGo(void) {
+inline void TransporterGo(void) {
     GameSfx(0x82, &player->obj.pos);
     NewBuzz((char *)player + 0xCA4, 5);
 }
@@ -3079,28 +3136,19 @@ inline void UpdateTimer(void *timer) {
     }
 }
 
-extern void KillItem(void *p);
+extern void KillItem(struct tobj_s *obj);
 
 /* gnu89 plain inline: standalone AND inlined into StartTimeTrial. */
 inline void ClockOff(void) {
-    struct creatobj_s *base = Character;
-    struct creatobj_s *end = base + 9;
     struct creatobj_s *c;
-    char *o;
+    s32 i;
 
-    /* pointer do-while + (s32) cast: gives retail's signed `slt`, no loop-entry
-     * guard, and two independent 0xCE4-stride IVs (creature base + &obj).
-     * `base` is used at three distinct offsets so gcc keeps the bare symbol
-     * address in a temp and derives s0/s1/s2 from it, as retail does. */
-    c = base + 1;
-    o = (char *)base + 0xCE8; /* &Character[1].obj */
-    do {
-        if (c->on != 0 && c->character == 0x76) {
-            KillItem(o);
+    for (i = 1; i < 9; i++) {
+        c = &Character[i];
+        if (c->on != 0 && c->obj.character == 0x76) {
+            KillItem(&c->obj);
         }
-        c++;
-        o += 0xCE4;
-    } while ((s32)c < (s32)end);
+    }
     clock_ok = 0;
 }
 
@@ -3127,57 +3175,8 @@ void MakeTimeF(float time, s32 hours, char *txt) {
     MakeTimeI(time * 300.0f, hours, txt);
 }
 
-/* transporter object: offsets verified in FinishTransporter / StartTransporter */
-struct tobj_s {
-    struct player_s *parent; /* 0x0 */
-    char pad_4[0x8 - 0x4];
-    struct mask_s *mask; /* 0x8 (LoseMask) */
-    char pad_c[0x10 - 0xC];
-    struct numtx_s *pLOCATOR; /* 0x10 */
-    struct animpkt_s anim; /* 0x14 (ToggleVehicle) */
-    char pad_30[0x32 - 0x30];
-    short vehicle; /* 0x32 (ToggleVehicle) */
-    u32 flags; /* 0x34 (UpdateKabooms) */
-    char pad_38[0x68 - 0x38];
-    struct nuvec_s pos; /* 0x68 */
-    struct nuvec_s mom;    /* 0x74 */
-    struct nuvec_s oldpos; /* 0x80 */
-    char pad_8c[0xE4 - 0x8C];
-    float RADIUS; /* 0xE4 */
-    char pad_e8[0x100 - 0xE8];
-    float old_SCALE; /* 0x100 */
-    float SCALE;     /* 0x104 */
-    float radius; /* 0x108 */
-    float scale;  /* 0x10C */
-    /* objbot/objtop/dead verified in PlayerObjectAnimCollision */
-    float objbot; /* 0x110 */
-    float objtop; /* 0x114 */
-    float bot;    /* 0x118 */
-    float top;    /* 0x11C */
-    char pad_120[0x134 - 0x120];
-    float idle_gametime; /* 0x134 */
-    char pad_138[0x145 - 0x138];
-    signed char dead; /* 0x145 */
-    char pad_146[0x148 - 0x146];
-    short attack; /* 0x148 */
-    u16 kaboom_mask; /* 0x14A (UpdateKabooms) */
-    char pad_14c[0x14F - 0x14C];
-    signed char finished; /* 0x14F (CheckFinish) */
-    char pad_150[0x166 - 0x150];
-    short dyrot; /* 0x166 */
-    char pad_168[0x16A - 0x168];
-    short hdg; /* 0x16A */
-    char pad_16c[0x172 - 0x16C];
-    signed char invincible; /* 0x172 (UpdateKabooms) */
-    char pad_173[0x17A - 0x173];
-    u8 f17A; /* 0x17A (LoseMask; unsigned -- retail li 0x96, not -0x6A) */
-    char pad_17b[0x185 - 0x17B];
-    u8 f185;     /* 0x185 (ToggleVehicle) */
-    u8 exploded; /* 0x186 (UpdateKabooms) */
-    char pad_187[0x190 - 0x187];
-};
 
-void FinishTransporter(struct tobj_s *cyl, struct tobj_s *obj) {
+inline void FinishTransporter(struct tobj_s *cyl, struct tobj_s *obj) {
     cyl->oldpos = cyl->pos;
     cyl->mom = v000;
     cyl->dyrot = 0;
@@ -3191,11 +3190,10 @@ inline void StartTransporter(struct tobj_s *cyl, struct nuvec_s *pos) {
     cyl->oldpos = *pos;
     cyl->pos = cyl->oldpos;
     cyl->mom = v000;
-    /* the two (0.5f,1.0f) groups emit swapped -- pre-swap them in source */
     cyl->radius = 0.5f;
+    cyl->RADIUS = 0.5f;
     cyl->scale = 1.0f;
     cyl->SCALE = 1.0f;
-    cyl->RADIUS = 0.5f;
     cyl->old_SCALE = 1.0f;
     cyl->top = 0.0f;
     cyl->bot = -1.0f;
@@ -3205,10 +3203,18 @@ inline void StartTransporter(struct tobj_s *cyl, struct nuvec_s *pos) {
 /* Rail entry stride 0x28; type (+0x26) verified in AheadOfCheckpoint,
  * spline (+0x0) in ResetDeath (D_00586478 == &Rail[6]) */
 struct rail_s {
-    struct nugspline_s *spline; /* 0x0 */
-    char pad_4[0x26 - 0x4];
-    signed char type; /* 0x26 */
-    char pad_27[0x28 - 0x27];
+    struct nugspline_s *pINPLAT; /* 0x0 */
+    struct nugspline_s *pINCAM;   /* 0x4 */
+    struct nugspline_s *pLEFT;    /* 0x8 */
+    struct nugspline_s *pCAM;     /* 0xC */
+    struct nugspline_s *pRIGHT;   /* 0x10 */
+    struct nugspline_s *pOUTCAM;  /* 0x14 */
+    struct nugspline_s *pOUTPLAT; /* 0x18 */
+    float in_distance;            /* 0x1C */
+    float out_distance;           /* 0x20 */
+    short edges;                  /* 0x24 */
+    signed char type;             /* 0x26 */
+    signed char circuit;          /* 0x27 */
 };
 extern struct rail_s Rail[];
 extern s32 cp_iRAIL;
@@ -3364,7 +3370,7 @@ float SplineDistance(struct nugspline_s *spl) {
     return d;
 }
 
-u16 SplinePointAngle(struct nugspline_s *spl, s32 i) {
+inline u16 SplinePointAngle(struct nugspline_s *spl, s32 i) {
     struct nuvec_s *p0;
     struct nuvec_s *p1;
     float dx;
@@ -3419,7 +3425,7 @@ void AnglesBetweenPoints(struct nuvec_s *from, struct nuvec_s *to, u16 *xrot,
 }
 
 
-u16 SplinePointTilt(struct nugspline_s *spl, s32 i) {
+inline u16 SplinePointTilt(struct nugspline_s *spl, s32 i) {
     struct nuvec_s *p0;
     struct nuvec_s *p1;
     float dx;
@@ -3445,6 +3451,60 @@ u16 SplinePointTilt(struct nugspline_s *spl, s32 i) {
     }
     d = NuFsqrt(dx * dx + dz * dz);
     return NuAtan2D(dy, d);
+}
+
+extern u32 iTEMP;
+
+void PointAlongSpline(struct nugspline_s *spl, float ratio, struct nuvec_s *pos,
+                      u16 *ang, u16 *tilt) {
+    struct nuvec_s *p0;
+    struct nuvec_s *p1;
+    u32 t;
+    u32 i;
+    float f;
+    u16 rot;
+
+    if (ang != NULL) {
+        *ang = 0;
+    }
+    if (tilt != NULL) {
+        *tilt = 0;
+    }
+    if (spl == NULL) {
+        return;
+    }
+    if (ratio > 1.0f) {
+        ratio = 1.0f;
+    } else if (ratio < 0.0f) {
+        ratio = 0.0f;
+    }
+    t = (s32)(ratio * (float)(u32)((spl->len - 1) << 16));
+    i = t >> 16;
+    iTEMP = i;
+    p0 = (struct nuvec_s *)(spl->pts + i * spl->ptsize);
+    *pos = *p0;
+    if (ang != NULL) {
+        *ang = SplinePointAngle(spl, i);
+    }
+    if (tilt != NULL) {
+        *tilt = SplinePointTilt(spl, i);
+    }
+    t &= 0xFFFF;
+    if (i < spl->len - 1 && t != 0) {
+        p1 = (struct nuvec_s *)(spl->pts + (i + 1) * spl->ptsize);
+        f = t * (1.0f / 65536.0f);
+        pos->x += (p1->x - p0->x) * f;
+        pos->y += (p1->y - p0->y) * f;
+        pos->z += (p1->z - p0->z) * f;
+        if (ang != NULL) {
+            rot = SplinePointAngle(spl, i + 1);
+            *ang += (s32)(f * RotDiff(*ang, rot));
+        }
+        if (tilt != NULL) {
+            rot = SplinePointTilt(spl, i + 1);
+            *tilt += (s32)(f * RotDiff(*tilt, rot));
+        }
+    }
 }
 
 /* gnu89 plain inline: standalone AND inlined twice into RatioBetweenEdges. */
@@ -3635,11 +3695,52 @@ void ResetDeath(void) {
     if (death_rail.type != -1 && Level == 0x25 && Hub == 5 &&
         last_level != 0x26 && last_level != -1) {
         StartTransporter(&death_obj,
-                         (struct nuvec_s *)(death_rail.spline->pts +
-                                            (death_rail.spline->len - 1) *
-                                                death_rail.spline->ptsize));
+                         (struct nuvec_s *)(death_rail.pINPLAT->pts +
+                                            (death_rail.pINPLAT->len - 1) *
+                                                death_rail.pINPLAT->ptsize));
         Death = 2;
         death_begun = 1;
+    }
+}
+
+
+extern struct tobj_s bonus_obj[2];
+extern struct tobj_s gempath_obj;
+extern s32 ChaseActive(void);
+s32 Draw3DObject(s32 object, struct nuvec_s *pos, u16 xrot, u16 yrot, u16 zrot,
+                 float scalex, float scaley, float scalez,
+                 struct nugscn_s *scn, struct objspecial_s *obj, s32 rot);
+
+void DrawTransporters(void) {
+    s32 i;
+
+    if (TimeTrial != 0) {
+        return;
+    }
+    if (ChaseActive() != -1) {
+        return;
+    }
+    i = 4;
+    if (ObjTab[i].obj.special != NULL && Rail[5].type != -1 && VEHICLECONTROL != 1) {
+        Draw3DObject(i, &bonus_obj[0].pos, 0, bonus_obj[0].hdg, 0, 1.0f, 1.0f, 1.0f,
+                     ObjTab[i].obj.scene, ObjTab[i].obj.special, 0);
+        Draw3DObject(i, &bonus_obj[1].pos, 0, bonus_obj[1].hdg, 0, 1.0f, 1.0f, 1.0f,
+                     ObjTab[i].obj.scene, ObjTab[i].obj.special, 0);
+    }
+    if (Level == 0x25 && (Game.hub[5].flags & 1) == 0) {
+        return;
+    }
+    i = LostLife ? 6 : 5;
+    if (ObjTab[i].obj.special != NULL && Rail[6].type != -1 &&
+        (VEHICLECONTROL != 1 || player->obj.vehicle == 0x44)) {
+        Draw3DObject(i, &death_obj.pos, 0, death_obj.hdg, 0, 1.0f, 1.0f, 1.0f,
+                     ObjTab[i].obj.scene, ObjTab[i].obj.special, 0);
+    }
+    i = gempath_open ? 7 : 8;
+    if (ObjTab[i].obj.special != NULL && Rail[7].type != -1 &&
+        (VEHICLECONTROL != 1 || player->obj.vehicle == 0x44)) {
+        Draw3DObject(i, &gempath_obj.pos, 0, gempath_obj.hdg, 0, 1.0f, 1.0f, 1.0f,
+                     ObjTab[i].obj.scene, ObjTab[i].obj.special, 0);
     }
 }
 
@@ -3793,6 +3894,56 @@ s32 WipeWumpa(struct rpos_s *rpos) {
     return 0;
 }
 
+extern struct nuvec_s cpPOS;
+extern char *tCHECK[];
+extern char *tPOINT[];
+extern s32 nCheckLetters;
+extern s32 nPointLetters;
+extern float CPLTIME;
+extern float CPLDELAY;
+extern float CHECKWAIT;
+extern float check_time;
+extern float check_delay;
+extern float check_duration;
+extern float point_time;
+extern float point_delay;
+extern float point_duration;
+extern s32 JStrLen(char *txt);
+extern s32 strlen(const char *s);
+extern void OpenPreviousCheckpoints(s32 iRAIL, s32 iALONG, float fALONG);
+
+void ResetCheckpoint(s32 iRAIL, s32 iALONG, float fALONG, struct nuvec_s *pos) {
+    if (pos != NULL && iRAIL != -1 && Rail[iRAIL].type == 0 &&
+        (cp_iRAIL == -1 ||
+         FurtherALONG(iRAIL, iALONG, fALONG, cp_iRAIL, cp_iALONG, cp_fALONG) != 0)) {
+        cpPOS = *pos;
+        cp_iRAIL = iRAIL;
+        cp_iALONG = iALONG;
+        cp_fALONG = fALONG;
+        if (Game.language == 'c') {
+            nCheckLetters = JStrLen(tCHECK[Game.language]);
+        } else {
+            nCheckLetters = strlen(tCHECK[Game.language]);
+        }
+        check_time = 0.0f;
+        check_delay = CPLTIME * nCheckLetters + CPLDELAY;
+        check_duration = CHECKWAIT + check_delay + (nCheckLetters - 1) * CPLTIME;
+        if (Game.language == 'c') {
+            nPointLetters = JStrLen(tPOINT[Game.language]);
+        } else {
+            nPointLetters = strlen(tPOINT[Game.language]);
+        }
+        LivesLost = 0;
+        point_delay = CPLTIME * nPointLetters + CPLDELAY;
+        point_time = point_duration = CHECKWAIT + point_delay + (nPointLetters - 1) * CPLTIME;
+        ClockOff();
+        OpenPreviousCheckpoints(iRAIL, iALONG, fALONG);
+        return;
+    }
+    cp_iALONG = -1;
+    cp_iRAIL = -1;
+}
+
 /* Font3DObjTab entry stride 0xC; i (+0x0) / flags (+0x2) verified in
  * InitObjectTable */
 struct font3dobj_s {
@@ -3837,8 +3988,8 @@ extern struct shadinfo_s D_0055FC88[];
 extern float D_0062D3B8;
 extern void NuHGobjEvalAnim(void *hobj, void *anm, float t, s32 a, void *b,
                             struct numtx_s *mtx);
-extern void NuHGobjRndrMtx(void *hobj, void *m, s32 a, void *b,
-                           struct numtx_s *mtx);
+extern s32 NuHGobjRndrMtx(void *hobj, void *m, s32 a, void *b,
+                          struct numtx_s *mtx);
 extern void ShadRndr(void *a, void *b, float t, float r);
 
 void DrawMaskFeathers(void) {
@@ -4101,10 +4252,6 @@ void AddFlyingWumpa(struct nuvec_s *src, struct nuvec_s *dir,
 
 extern struct nuvec_s TTScrPos;
 extern float TEXTZMUL;
-extern float D_0062D5C8;
-extern float D_0062D5CC;
-extern float D_0062D5D0;
-extern float D_0062D5D4;
 extern float tt_sx;
 extern float tt_sy;
 extern void NuCameraTransformScreenClip(struct nuvec_s *dst, struct nuvec_s *src,
@@ -4118,20 +4265,20 @@ void StartTimeTrial(struct nuvec_s *pos, s32 clock) {
         ClockOff();
     }
     NuCameraTransformScreenClip(&TTScrPos, pos, 1, 0);
-    TTScrPos.z = (1.0f - TTScrPos.z) * (TEXTZMUL / D_0062D5C8);
+    TTScrPos.z = (1.0f - TTScrPos.z) * (TEXTZMUL / 0.1f);
     if (ObjTab[101].obj.special != NULL) {
         ObjTab[101].obj.special->instance->flags.visible = 1;
     }
     if (Level == 0x1D) {
-        tt_sx = D_0062D5CC;
+        tt_sx = -0.1f;
     } else if (LDATA->flags & 0x200) {
         tt_sx = 0.0f;
     } else if (Level == 0x1C) {
         tt_sx = 0.0f;
     } else {
-        tt_sx = D_0062D5D0;
+        tt_sx = 0.6f;
     }
-    tt_sy = D_0062D5D4;
+    tt_sy = -0.85f;
 }
 
 float RatioBetweenEdges(struct nuvec_s *pos, struct nuvec_s *p0,
@@ -4461,34 +4608,29 @@ void GameTiming(void) {
 }
 
 extern char D_00630D10[]; /* "___" */
+#define new_time_name D_00630D10
 
 void NewLevelTime(s32 t) {
     s32 i;
     s32 j;
-    u32 *p;
 
-    /* walking u32* over the .itime fields: retail's IV loads at +0 and steps
-     * +8 (a struct time_s* would load at +4). */
-    i = 0;
-    p = &Game.level[Level].time[0].itime;
-    while (*p != 0 && *p < t) {
-        i++;
-        if (i >= 3) {
-            newleveltime_slot = i;
-            return;
+    for (i = 0; i < 3; i++) {
+        if (Game.level[Level].time[i].itime == 0 || Game.level[Level].time[i].itime >= t) {
+            break;
         }
-        p += 2;
     }
-    for (j = 2; j > i; j--) {
-        Game.level[Level].time[j] = Game.level[Level].time[j - 1];
-    }
-    Game.level[Level].time[i].itime = t;
-    NuStrCpy(Game.level[Level].time[i].name, D_00630D10);
-    if (i < 2 && Game.level[Level].time[2].itime == 0) {
-        NuStrCpy(Game.level[Level].time[2].name, PlaceName3[2][Game.language]);
-    }
-    if (i < 1 && Game.level[Level].time[1].itime == 0) {
-        NuStrCpy(Game.level[Level].time[1].name, PlaceName3[1][Game.language]);
+    if (i < 3) {
+        for (j = 2; j > i; j--) {
+            Game.level[Level].time[j] = Game.level[Level].time[j - 1];
+        }
+        Game.level[Level].time[i].itime = t;
+        NuStrCpy(Game.level[Level].time[i].name, new_time_name);
+        if (i < 2 && Game.level[Level].time[2].itime == 0) {
+            NuStrCpy(Game.level[Level].time[2].name, PlaceName3[2][Game.language]);
+        }
+        if (i < 1 && Game.level[Level].time[1].itime == 0) {
+            NuStrCpy(Game.level[Level].time[1].name, PlaceName3[1][Game.language]);
+        }
     }
     newleveltime_slot = i;
 }
@@ -4559,9 +4701,9 @@ extern void NuLgtArcLaser(s32 type, struct nuvec_s *start, struct nuvec_s *end,
                           u32 col);
 extern void AddVariableShotDebrisEffect(s32 type, struct nuvec_s *pos, s32 count,
                                         s32 a, s32 b);
-void Draw3DCharacter(struct nuvec_s *pos, u16 xrot, u16 yrot, u16 zrot,
-                     struct cmodel_s *model, float scale, s32 action,
-                     float anim_time, s32 last);
+s32 Draw3DCharacter(struct nuvec_s *pos, u16 xrot, u16 yrot, u16 zrot,
+                    struct cmodel_s *model, float scale, s32 action, float anim_time,
+                    s32 rot);
 
 void JonProbe(void) {
     struct nuvec_s pos;
@@ -4848,6 +4990,8 @@ extern float tumble_item_starttime;
 s32 Draw3DObject(s32 object, struct nuvec_s *pos, u16 xrot, u16 yrot, u16 zrot,
                  float scalex, float scaley, float scalez,
                  struct nugscn_s *scn, struct objspecial_s *obj, s32 rot);
+extern void NuMtxRotateX(struct numtx_s *m, s32 a);
+extern void NuMtxRotateZ(struct numtx_s *m, s32 a);
 
 void DrawAwards(void) {
     struct award_s *award;
@@ -5399,68 +5543,6 @@ void HubDrawItems(void) {
     JonProbe();
 }
 
-extern void NuMtxRotateX(struct numtx_s *m, s32 a);
-extern void NuMtxRotateZ(struct numtx_s *m, s32 a);
-
-/* The GC draft is WRONG here (same trap as DrawPanel3DObject, see
- * docs/decomp_agent.md): it drops the 1/2/3 -> 0x85/0x86/0x87 dispatch and
- * nests the render inside the Level check. Retail guards only the recursion;
- * the render always runs. */
-s32 Draw3DObject(s32 object, struct nuvec_s *pos, u16 xrot, u16 yrot, u16 zrot,
-                 float scalex, float scaley, float scalez,
-                 struct nugscn_s *scn, struct objspecial_s *obj, s32 rot) {
-    struct numtx_s m;
-    struct nuvec_s s;
-    s32 o;
-
-    if (scn != NULL && obj != NULL &&
-        (scalex != 0.0f || scaley != 0.0f || scalez != 0.0f)) {
-        if (Level != 0x25) {
-            if (object == 1) {
-                o = 0x85;
-            } else if (object == 2) {
-                o = 0x86;
-            } else {
-                o = (object == 3) ? 0x87 : -1;
-            }
-            if (o != -1) {
-                Draw3DObject(o, pos, xrot, yrot, zrot, scalex, scaley, scalez,
-                             ObjTab[o].obj.scene, ObjTab[o].obj.special, rot);
-            }
-        }
-        s.x = scalex;
-        s.y = scaley;
-        s.z = scalez;
-        NuMtxSetScale(&m, &s);
-        switch (rot) {
-        case 0:
-            if (xrot != 0) {
-                NuMtxRotateX(&m, xrot);
-            }
-            if (yrot != 0) {
-                NuMtxRotateY(&m, yrot);
-            }
-            if (zrot != 0) {
-                NuMtxRotateZ(&m, zrot);
-            }
-            break;
-        case 1:
-            if (yrot != 0) {
-                NuMtxRotateY(&m, yrot);
-            }
-            if (xrot != 0) {
-                NuMtxRotateX(&m, xrot);
-            }
-            if (zrot != 0) {
-                NuMtxRotateZ(&m, zrot);
-            }
-            break;
-        }
-        NuMtxTranslate(&m, pos);
-        return NuRndrGScnObj(scn->gobjs[obj->instance->objid], &m);
-    }
-    return 0;
-}
 
 extern s32 bonus_finish_frame;
 extern u8 bonus_wumpa_delay;
@@ -5481,7 +5563,7 @@ extern void AddPanelDebris(float x, float y, s32 i, float scale, s32 n);
 struct bcreature_s {
     char pad_4[4];
     struct tobj_s obj; /* 0x4 */
-    char pad_194[0x234 - 0x194];
+    char pad_18c[0x234 - 0x18C];
     struct numtx_s mtx; /* 0x234 */
 };
 
@@ -7480,4 +7562,624 @@ void Draw3DCrateCount(struct nuvec_s *pos, u16 angle) {
         v.x += dx;
         v.z += dz;
     }
+}
+
+
+extern float gempath_time;
+extern float gempath_duration;
+extern s32 gempath_lock;
+extern struct nugspline_s *gempath_pCAM;
+extern struct nugspline_s *gempath_pPLAT;
+extern struct rail_s D_005864A0;
+#define gempath_rail D_005864A0
+extern s32 ObjectCylinderCollision(struct tobj_s *obj, struct tobj_s *cyl, s32 flag,
+                                   float scale);
+
+void GemPathTransporter(struct bcreature_s *plr) {
+    struct nuvec_s pos;
+    struct tobj_s *cyl;
+    float t;
+    s32 state;
+    s32 hit;
+    s32 move;
+    s32 finished;
+    s32 i;
+
+    finished = 0;
+    move = 0;
+    if (TimeTrial != 0) {
+        return;
+    }
+    if (VEHICLECONTROL == 1 && plr->obj.vehicle != 0x44) {
+        return;
+    }
+    if (ChaseActive() != -1) {
+        return;
+    }
+    if (gempath_rail.type == -1 || gempath_rail.pINPLAT == NULL) {
+        return;
+    }
+    i = gempath_open ? 7 : 8;
+    if (ObjTab[i].obj.special == NULL) {
+        return;
+    }
+    state = GemPath;
+    switch (state) {
+    case 0:
+        if (gempath_begun == 0) {
+            StartTransporter(&gempath_obj, (struct nuvec_s *)gempath_rail.pINPLAT->pts);
+            GetALONG(&gempath_obj.pos, &gempath_RPos, -1, -1, 1);
+            gempath_begun = 1;
+            gempath_lock = 1;
+            gempath_pCAM = gempath_rail.pINCAM;
+            gempath_pPLAT = gempath_rail.pINPLAT;
+            gempath_duration = gempath_rail.in_distance * 0.2f;
+            if (gempath_duration > 10.0f) {
+                gempath_duration = 10.0f;
+            } else if (gempath_duration < 5.0f) {
+                gempath_duration = 5.0f;
+            }
+        }
+        if (gempath_open != 0) {
+            hit = ObjectCylinderCollision(&plr->obj, &gempath_obj, 0, 1.0f);
+            if (gempath_lock == 0) {
+                if (hit == 2) {
+                    GemPath = 1;
+                    TransporterGo();
+                    gempath_time = 0.0f;
+                    BlendGameCamera(&GameCam, 1.0f);
+                }
+            } else if (hit != 2) {
+                gempath_lock = 0;
+            }
+        }
+        break;
+    case 1:
+        if (gempath_time < gempath_duration) {
+            gempath_time = gempath_time + 0.02f;
+            if (gempath_time >= gempath_duration) {
+                gempath_time = gempath_duration;
+            }
+        } else {
+            GemPath = 2;
+            TransporterGo();
+            FinishTransporter(&gempath_obj, &plr->obj);
+            BlendGameCamera(&GameCam, 1.0f);
+            gempath_lock = 1;
+            finished = 1;
+        }
+        cyl = &gempath_obj;
+        move = 1;
+        break;
+    case 2:
+        hit = ObjectCylinderCollision(&plr->obj, &gempath_obj, 0, 1.0f);
+        if (gempath_lock == 0) {
+            if (hit == 2) {
+                GemPath = 3;
+                TransporterGo();
+                gempath_time = 0.0f;
+                BlendGameCamera(&GameCam, 1.0f);
+            }
+        } else if (hit != 2) {
+            gempath_lock = 0;
+        }
+        break;
+    case 3:
+        if (gempath_time < gempath_duration) {
+            gempath_time = gempath_time + 0.02f;
+            if (gempath_time >= gempath_duration) {
+                gempath_time = gempath_duration;
+            }
+        } else {
+            GemPath = 0;
+            TransporterGo();
+            FinishTransporter(&gempath_obj, &plr->obj);
+            BlendGameCamera(&GameCam, 1.0f);
+            gempath_lock = 1;
+            finished = 1;
+        }
+        cyl = &gempath_obj;
+        move = 1;
+        break;
+    }
+    if (move != 0) {
+        plr->obj.mom.y = 0.0f;
+        cyl->oldpos = cyl->pos;
+        t = gempath_time / gempath_duration;
+        if (GemPath == 3 || state == 3) {
+            t = 1.0f - t;
+        }
+        PointAlongSpline(gempath_pPLAT,
+                         (-NuTrigTable[(u16)(t * 32768.0f + 16384.0f)] + 1.0f) * 0.5f, &pos,
+                         NULL, NULL);
+        cyl->pos.x += (pos.x - cyl->pos.x) * 0.1f;
+        cyl->pos.y += (pos.y - cyl->pos.y) * 0.1f;
+        cyl->pos.z += (pos.z - cyl->pos.z) * 0.1f;
+        NuVecSub(&cyl->mom, &cyl->pos, &cyl->oldpos);
+        cyl->dyrot = 0;
+        plr->obj.pos.y = cyl->pos.y + cyl->top * cyl->SCALE -
+                         plr->obj.min.y * plr->obj.SCALE;
+        ObjectCylinderCollision(&plr->obj, cyl, 1,
+                                1.0f - gempath_time / gempath_duration);
+        plr->obj.pos.y = cyl->pos.y + cyl->top * cyl->SCALE -
+                         plr->obj.min.y * plr->obj.SCALE;
+        if (finished == 0) {
+            plr->obj.transporting = 1;
+        }
+    } else {
+        gempath_obj.oldpos = gempath_obj.pos;
+        gempath_obj.mom = v000;
+        gempath_obj.dyrot = 0;
+    }
+}
+
+
+extern float death_time;
+extern float death_duration;
+extern s32 death_lock;
+extern struct nugspline_s *death_pCAM;
+extern struct nugspline_s *death_pPLAT;
+
+void DeathTransporter(struct bcreature_s *plr) {
+    struct nuvec_s pos;
+    struct tobj_s *cyl;
+    float t;
+    s32 state;
+    s32 hit;
+    s32 move;
+    s32 finished;
+    s32 i;
+
+    finished = 0;
+    move = 0;
+    if (TimeTrial != 0) {
+        return;
+    }
+    if (VEHICLECONTROL == 1 && plr->obj.vehicle != 0x44) {
+        return;
+    }
+    if (ChaseActive() != -1) {
+        return;
+    }
+    if (Level == 0x25 && (Game.hub[5].flags & 1) == 0) {
+        return;
+    }
+    if (death_rail.type == -1 || death_rail.pINPLAT == NULL) {
+        return;
+    }
+    i = LostLife ? 6 : 5;
+    if (ObjTab[i].obj.special == NULL) {
+        return;
+    }
+    state = Death;
+    switch (state) {
+    case 0:
+        if (death_begun == 0) {
+            StartTransporter(&death_obj, (struct nuvec_s *)death_rail.pINPLAT->pts);
+            death_begun = 1;
+            death_lock = 1;
+            death_pCAM = death_rail.pINCAM;
+            death_pPLAT = death_rail.pINPLAT;
+            death_duration = death_rail.in_distance * 0.2f;
+            if (death_duration > 10.0f) {
+                death_duration = 10.0f;
+            } else if (death_duration < 5.0f) {
+                death_duration = 5.0f;
+            }
+        }
+        if (LostLife == 0) {
+            hit = ObjectCylinderCollision(&plr->obj, &death_obj, 0, 1.0f);
+            if (death_lock == 0) {
+                if (hit == 2) {
+                    Death = 1;
+                    TransporterGo();
+                    if (Level == 0x25) {
+                        GameSfx(0x111, NULL);
+                    }
+                    death_time = 0.0f;
+                    BlendGameCamera(&GameCam, 1.0f);
+                }
+            } else if (hit != 2) {
+                death_lock = 0;
+            }
+        }
+        break;
+    case 1:
+        if (death_time < death_duration) {
+            death_time = death_time + 0.02f;
+            if (death_time >= death_duration) {
+                death_time = death_duration;
+            }
+        } else {
+            Death = 2;
+            TransporterGo();
+            FinishTransporter(&death_obj, &plr->obj);
+            BlendGameCamera(&GameCam, 1.0f);
+            death_lock = 1;
+            finished = 1;
+        }
+        cyl = &death_obj;
+        move = 1;
+        break;
+    case 2:
+        hit = ObjectCylinderCollision(&plr->obj, &death_obj, 0, 1.0f);
+        if (death_lock == 0) {
+            if (hit == 2) {
+                Death = 3;
+                TransporterGo();
+                if (Level == 0x25) {
+                    GameSfx(0x111, NULL);
+                }
+                death_time = 0.0f;
+                BlendGameCamera(&GameCam, 1.0f);
+            }
+        } else if (hit != 2) {
+            death_lock = 0;
+        }
+        break;
+    case 3:
+        if (death_time < death_duration) {
+            death_time = death_time + 0.02f;
+            if (death_time >= death_duration) {
+                death_time = death_duration;
+            }
+        } else {
+            Death = 0;
+            TransporterGo();
+            FinishTransporter(&death_obj, &plr->obj);
+            BlendGameCamera(&GameCam, 1.0f);
+            death_lock = 1;
+            finished = 1;
+        }
+        cyl = &death_obj;
+        move = 1;
+        break;
+    }
+    if (move != 0) {
+        plr->obj.mom.y = 0.0f;
+        cyl->oldpos = cyl->pos;
+        t = death_time / death_duration;
+        if (Death == 3 || state == 3) {
+            t = 1.0f - t;
+        }
+        PointAlongSpline(death_pPLAT,
+                         (-NuTrigTable[(u16)(t * 32768.0f + 16384.0f)] + 1.0f) * 0.5f, &pos,
+                         NULL, NULL);
+        cyl->pos.x += (pos.x - cyl->pos.x) * 0.1f;
+        cyl->pos.y += (pos.y - cyl->pos.y) * 0.1f;
+        cyl->pos.z += (pos.z - cyl->pos.z) * 0.1f;
+        NuVecSub(&cyl->mom, &cyl->pos, &cyl->oldpos);
+        cyl->dyrot = 0;
+        plr->obj.pos.y = cyl->pos.y + cyl->top * cyl->SCALE - plr->obj.min.y * plr->obj.SCALE;
+        ObjectCylinderCollision(&plr->obj, cyl, 1, 1.0f - death_time / death_duration);
+        if (finished == 0) {
+            plr->obj.transporting = 1;
+        }
+    } else {
+        death_obj.oldpos = death_obj.pos;
+        death_obj.mom = v000;
+        death_obj.dyrot = 0;
+    }
+}
+
+
+extern struct nugspline_s *bonus_pCAM;
+extern struct nugspline_s *bonus_pPLAT;
+extern float bonus_time;
+extern float bonus_duration;
+extern float bonus_crates_wait;
+extern float bonus_panel_wait;
+extern u8 bonus_crate_delay;
+extern void GameMusic(s32 music, s32 i);
+
+void BonusTransporter(struct bcreature_s *plr) {
+    struct nuvec_s pos;
+    struct rail_s *rail;
+    struct tobj_s *cyl;
+    float old;
+    float mid;
+    s32 move;
+    s32 finished;
+
+    finished = 0;
+    move = 0;
+    if (TimeTrial != 0) {
+        return;
+    }
+    if (VEHICLECONTROL == 1) {
+        return;
+    }
+    if (ChaseActive() != -1) {
+        return;
+    }
+    rail = &Rail[5];
+    if (rail->type == -1 || rail->pINPLAT == NULL || rail->pOUTPLAT == NULL) {
+        return;
+    }
+    if (ObjTab[4].obj.special == NULL) {
+        return;
+    }
+    switch (Bonus) {
+    case 0:
+        StartTransporter(&bonus_obj[0], (struct nuvec_s *)rail->pINPLAT->pts);
+        StartTransporter(&bonus_obj[1], (struct nuvec_s *)rail->pOUTPLAT->pts);
+        if (ObjectCylinderCollision(&plr->obj, &bonus_obj[0], 0, 1.0f) == 2) {
+            Bonus = 1;
+            TransporterGo();
+            bonus_pCAM = rail->pINCAM;
+            bonus_pPLAT = rail->pINPLAT;
+            bonus_time = 0.0f;
+            bonus_duration = rail->in_distance * 0.2f;
+            if (bonus_duration > 10.0f) {
+                bonus_duration = 10.0f;
+            } else if (bonus_duration < 5.0f) {
+                bonus_duration = 5.0f;
+            }
+            plr_bonus_wumpas.sfx_delay = 0;
+            plr_bonus_wumpas.delay = 0;
+            plr_bonus_wumpas.draw = 0;
+            plr_bonus_wumpas.count = 0;
+            bonus_lives = 0;
+            bonus_frame = 0;
+            BlendGameCamera(&GameCam, 1.0f);
+            bonus_wumpa_delay = 5;
+            bonus_crate_delay = 5;
+            bonus_life_delay = 1;
+            bonus_wumpa_wait = 0.0f;
+            bonus_crates_wait = 0.0f;
+            bonus_lives_wait = 0.0f;
+            bonus_finish_frame = 0;
+        }
+        break;
+    case 1:
+        if (bonus_time < bonus_duration) {
+            old = bonus_time;
+            bonus_time += 0.02f;
+            if (bonus_time >= bonus_duration) {
+                bonus_time = bonus_duration;
+            }
+            mid = bonus_duration * 0.5f;
+            if (old < mid - 0.25f && bonus_time >= mid - 0.25f) {
+                NuSoundStopStream(0);
+                NuSoundStopStream(1);
+            }
+            if (old < mid + 0.25f && bonus_time >= mid + 0.25f) {
+                GameMusic(LDATA->music[1], 0);
+            }
+        } else {
+            Bonus = 2;
+            TransporterGo();
+            FinishTransporter(&bonus_obj[0], &plr->obj);
+            BlendGameCamera(&GameCam, 1.0f);
+            bonus_panel_wait = 0.5f;
+            finished = 1;
+        }
+        cyl = &bonus_obj[0];
+        move = 1;
+        break;
+    case 2:
+        if (bonus_panel_wait > 0.0f) {
+            bonus_panel_wait = bonus_panel_wait - 0.02f;
+            if (bonus_panel_wait < 0.0f) {
+                bonus_panel_wait = 0.0f;
+            }
+        }
+        if (ObjectCylinderCollision(&plr->obj, &bonus_obj[1], 0, 1.0f) == 2) {
+            Bonus = 3;
+            TransporterGo();
+            bonus_pCAM = rail->pOUTCAM;
+            bonus_pPLAT = rail->pOUTPLAT;
+            bonus_time = 0.0f;
+            bonus_duration = rail->out_distance * 0.2f;
+            if (bonus_duration > 10.0f) {
+                bonus_duration = 10.0f;
+            } else if (bonus_duration < 5.0f) {
+                bonus_duration = 5.0f;
+            }
+            BlendGameCamera(&GameCam, 1.0f);
+        } else {
+            ObjectCylinderCollision(&plr->obj, &bonus_obj[0], 0, 1.0f);
+        }
+        plr_bonus_wumpas.timer = 0x19;
+        UpdatePanelItem(&plr_bonus_wumpas, 0x19, 0);
+        if (Bonus == 3 && plr_bonus_wumpas.count != 0) {
+            GameSfx(0x2C, NULL);
+        }
+        break;
+    case 3:
+        if (bonus_time < bonus_duration) {
+            old = bonus_time;
+            bonus_time += 0.02f;
+            if (bonus_time >= bonus_duration) {
+                bonus_time = bonus_duration;
+            }
+            mid = bonus_duration * 0.5f;
+            if (old < mid - 0.25f && bonus_time >= mid - 0.25f) {
+                NuSoundStopStream(0);
+                NuSoundStopStream(1);
+            }
+            if (old < mid + 0.25f && bonus_time >= mid + 0.25f) {
+                GameMusic(LDATA->music[0], 0);
+            }
+        } else {
+            Bonus = 4;
+            TransporterGo();
+            FinishTransporter(&bonus_obj[1], &plr->obj);
+            BlendGameCamera(&GameCam, 1.0f);
+            finished = 1;
+        }
+        cyl = &bonus_obj[1];
+        move = 1;
+        break;
+    case 4:
+        ObjectCylinderCollision(&plr->obj, &bonus_obj[1], 0, 1.0f);
+        break;
+    }
+    if (move != 0) {
+        plr->obj.mom.y = 0.0f;
+        cyl->oldpos = cyl->pos;
+        PointAlongSpline(bonus_pPLAT,
+                         (-NuTrigTable[(u16)(bonus_time / bonus_duration * 32768.0f + 16384.0f)] +
+                          1.0f) * 0.5f,
+                         &pos, NULL, NULL);
+        cyl->pos.x += (pos.x - cyl->pos.x) * 0.1f;
+        cyl->pos.y += (pos.y - cyl->pos.y) * 0.1f;
+        cyl->pos.z += (pos.z - cyl->pos.z) * 0.1f;
+        NuVecSub(&cyl->mom, &cyl->pos, &cyl->oldpos);
+        cyl->dyrot = 0;
+        plr->obj.pos.y = cyl->pos.y + cyl->top * cyl->SCALE - plr->obj.min.y * plr->obj.SCALE;
+        ObjectCylinderCollision(&plr->obj, cyl, 1, 1.0f - bonus_time / bonus_duration);
+        if (finished == 0) {
+            plr->obj.transporting = 1;
+        }
+    } else {
+        bonus_obj[0].oldpos = bonus_obj[0].pos;
+        bonus_obj[1].oldpos = bonus_obj[1].pos;
+        bonus_obj[0].mom = v000;
+        bonus_obj[1].mom = v000;
+        bonus_obj[0].dyrot = 0;
+        bonus_obj[1].dyrot = 0;
+    }
+}
+
+
+extern void NuMtxRotateX(struct numtx_s *m, s32 a);
+extern void NuMtxRotateZ(struct numtx_s *m, s32 a);
+
+/* The GC draft is WRONG here (same trap as DrawPanel3DObject, see
+ * docs/decomp_agent.md): it drops the 1/2/3 -> 0x85/0x86/0x87 dispatch and
+ * nests the render inside the Level check. Retail guards only the recursion;
+ * the render always runs. */
+inline s32 Draw3DObject(s32 object, struct nuvec_s *pos, u16 xrot, u16 yrot,
+                        u16 zrot, float scalex, float scaley, float scalez,
+                        struct nugscn_s *scn, struct objspecial_s *obj, s32 rot) {
+    struct numtx_s m;
+    struct nuvec_s s;
+    s32 o;
+
+    if (scn != NULL && obj != NULL &&
+        (scalex != 0.0f || scaley != 0.0f || scalez != 0.0f)) {
+        if (Level != 0x25) {
+            if (object == 1) {
+                o = 0x85;
+            } else if (object == 2) {
+                o = 0x86;
+            } else {
+                o = (object == 3) ? 0x87 : -1;
+            }
+            if (o != -1) {
+                Draw3DObject(o, pos, xrot, yrot, zrot, scalex, scaley, scalez,
+                             ObjTab[o].obj.scene, ObjTab[o].obj.special, rot);
+            }
+        }
+        s.x = scalex;
+        s.y = scaley;
+        s.z = scalez;
+        NuMtxSetScale(&m, &s);
+        switch (rot) {
+        case 0:
+            if (xrot != 0) {
+                NuMtxRotateX(&m, xrot);
+            }
+            if (yrot != 0) {
+                NuMtxRotateY(&m, yrot);
+            }
+            if (zrot != 0) {
+                NuMtxRotateZ(&m, zrot);
+            }
+            break;
+        case 1:
+            if (yrot != 0) {
+                NuMtxRotateY(&m, yrot);
+            }
+            if (xrot != 0) {
+                NuMtxRotateX(&m, xrot);
+            }
+            if (zrot != 0) {
+                NuMtxRotateZ(&m, zrot);
+            }
+            break;
+        }
+        NuMtxTranslate(&m, pos);
+        return NuRndrGScnObj(scn->gobjs[obj->instance->objid], &m);
+    }
+    return 0;
+}
+
+
+extern void NuHGobjEval(void *hobj, s32 n, void *joints, struct numtx_s *mtx);
+
+s32 Draw3DCharacter(struct nuvec_s *pos, u16 xrot, u16 yrot, u16 zrot,
+                    struct cmodel_s *model, float scale, s32 action, float anim_time,
+                    s32 rot) {
+    struct numtx_s m;
+    struct numtx_s mtx[256];
+    struct nuvec_s s;
+    s32 object;
+    s32 character;
+
+    if (model != NULL && scale != 0.0f) {
+        if (Level != 0x25) {
+            character = model->character;
+            if (character == 0x75) {
+                object = 0x84;
+            } else if (character == 0x77) {
+                object = 0x88;
+            } else if (character == 0x78) {
+                object = 0x89;
+            } else if (character == 0x79) {
+                object = 0x8A;
+            } else if (character == 0x7A) {
+                object = 0x8B;
+            } else if (character == 0x7B) {
+                object = 0x8C;
+            } else if (character == 0x7C) {
+                object = 0x8D;
+            } else {
+                object = (character == 0x7D) ? 0x8E : -1;
+            }
+            if (object != -1) {
+                Draw3DObject(object, pos, 0,
+                             NuAtan2D(pos->x - GameCam.x, pos->z - GameCam.z), 0, scale,
+                             scale, scale, ObjTab[object].obj.scene,
+                             ObjTab[object].obj.special, 0);
+            }
+        }
+        s.z = scale;
+        s.y = scale;
+        s.x = scale;
+        NuMtxSetScale(&m, &s);
+        switch (rot) {
+        case 0:
+            if (xrot != 0) {
+                NuMtxRotateX(&m, xrot);
+            }
+            if (yrot != 0) {
+                NuMtxRotateY(&m, yrot);
+            }
+            if (zrot != 0) {
+                NuMtxRotateZ(&m, zrot);
+            }
+            break;
+        case 1:
+            if (yrot != 0) {
+                NuMtxRotateY(&m, yrot);
+            }
+            if (xrot != 0) {
+                NuMtxRotateX(&m, xrot);
+            }
+            if (zrot != 0) {
+                NuMtxRotateZ(&m, zrot);
+            }
+            break;
+        }
+        NuMtxTranslate(&m, pos);
+        if (action >= 0 && action < 0x76 && model->anmdata[action] != NULL) {
+            NuHGobjEvalAnim(model->hobj, model->anmdata[action], anim_time, 0, NULL, mtx);
+        } else {
+            NuHGobjEval(model->hobj, 0, NULL, mtx);
+        }
+        return NuHGobjRndrMtx(model->hobj, &m, 1, NULL, mtx);
+    }
+    return 0;
 }
