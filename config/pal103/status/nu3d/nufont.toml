@@ -13,11 +13,11 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0041:001309a8:NuFntLoad"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0041:00130be8:NuFntLoadMem"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0041:00130e00:NuFntCreate"
@@ -25,15 +25,15 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0041:00131480:NuFntPrintChar"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0041:00131640:NuFntPrintV"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0041:00131930:NuFntPrint"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0041:00131990:NuFntPrintLen"
@@ -45,11 +45,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0041:00131ce8:NuFntInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0041:00131d70:NuFntClose"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0041:00131dd8:NuFntSet"
@@ -57,7 +57,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0041:00131e18:NuFntDestroy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0041:00131e78:NuFntScale"
@@ -65,7 +65,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0041:00131eb0:NuFntMoveAbs"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0041:00131ef8:NuFntMoveRel"
@@ -73,7 +73,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0041:00131f18:NuFntPos"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0041:00131f60:NuFntSetPen"
@@ -81,4 +81,4 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0041:00131f98:NuFntPrintLenV"
-state = "asm"
+state = "matching"
