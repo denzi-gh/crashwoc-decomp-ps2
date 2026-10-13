@@ -20,7 +20,6 @@ extern long D_0062EA68;
 #define fseed D_0062EA68
 
 long int __divdi3 (long int u, long int v);
-float __floatdisf (long i);
 
 void NuRandSetSeed(struct nunrand_s *nrand,int seed) {
   struct nunrand_s *temp;
@@ -32,47 +31,59 @@ void NuRandSetSeed(struct nunrand_s *nrand,int seed) {
   temp->idum = seed;
 }
 
-long NuRand(struct nunrand_s* nrand) {
-    struct nunrand_s* temp;
-    long temp_s0;
-    long temp_v0;
+long NuRand(struct nunrand_s *nrand) {
+    long seed;
+    long quotient;
 
-    temp = (nrand != 0) ? nrand : &global_rand;
-    temp_s0 = temp->idum ^ 0x075BD924;
-    temp->idum = temp_s0;
-    temp_v0 = __divdi3(temp_s0, 0x31E5);
-    temp->idum = ((temp_s0 - (temp_v0 * 0x31E5)) * 0x41A7) - (temp_v0 * 0xB14);
-    if (temp->idum < 0) {
-        temp->idum = (long) (temp->idum + 0x7FFFFFFF);
+    if (nrand == 0) {
+        nrand = &global_rand;
     }
-    temp->idum = (long) (temp->idum ^ 0x075BD924);
-    return temp->idum;
+    seed = nrand->idum ^ 0x075BD924;
+    nrand->idum = seed;
+    quotient = seed / 0x31E5;
+    nrand->idum = (seed - quotient * 0x31E5) * 0x41A7 - quotient * 0xB14;
+    if (nrand->idum < 0) {
+        nrand->idum += 0x7FFFFFFF;
+    }
+    nrand->idum ^= 0x075BD924;
+    return nrand->idum;
 }
 
-float NuFloatRand(struct nunrand_s * nrand) {
-    long temp_v0;
-    struct nunrand_s* temp;
 
-    temp = (nrand != 0) ? nrand : &global_rand;
-    temp->idum = temp->idum ^ 0x075BD924;
-    temp_v0 = __divdi3(temp->idum, 0x31E5);
-    temp->idum = ((temp->idum - (temp_v0 * 0x31E5)) * 0x41A7) - (temp_v0 * 0xB14);
-    if (temp->idum < 0) {
-        temp->idum = temp->idum + 0x7FFFFFFF;
+float NuFloatRand(struct nunrand_s *nrand) {
+    long quotient;
+
+    if (nrand == 0) {
+        nrand = &global_rand;
     }
-    temp->idum = temp->idum ^ 0x075BD924;
-    return __floatdisf((int) temp->idum) * 4.656613e-10f;
+    nrand->idum ^= 0x075BD924;
+    quotient = __divdi3(nrand->idum, 0x31E5);
+    nrand->idum = (nrand->idum - quotient * 0x31E5) * 0x41A7 - quotient * 0xB14;
+    if (nrand->idum < 0) {
+        nrand->idum += 0x7FFFFFFF;
+    }
+    nrand->idum ^= 0x075BD924;
+    return nrand->idum * 4.656613e-10f;
 }
+
 
 float NuRandFloat(void) {
-  fseed = (fseed * 0x19660d) + 0x3C6EF35F;
-  return (float)((int)(fseed & 0x7fffff) | 0x3f800000) - 1.0f;
+    union {
+        float f;
+        int i;
+    } bits;
+
+    fseed = fseed * 0x19660D + 0x3C6EF35F;
+    bits.i = (fseed & 0x7FFFFF) | 0x3F800000;
+    return bits.f - 1.0f;
 }
 
-unsigned int NuRandInt(void) {
-  fseed = fseed * 0x19660d + 0x3c6ef35f;
-  return fseed;
+
+int NuRandInt(void) {
+    fseed = fseed * 0x19660D + 0x3C6EF35F;
+    return fseed;
 }
+
 
 void NuRandSeed(unsigned int seed) {
   fseed = seed;
