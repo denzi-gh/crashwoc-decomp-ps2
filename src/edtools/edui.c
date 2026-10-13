@@ -100,6 +100,7 @@ typedef float f32;
 #define EDUI_ITEM_COLOURPICK   9
 #define EDUI_ITEM_GREYPICK     10
 #define EDUI_ITEM_TEXTUREPICK  11
+#define EDUI_ITEM_COLOURSLIDER 12
 
 typedef struct eduigradstage_s {
     struct eduigradstage_s *next;
@@ -175,7 +176,7 @@ typedef struct eduiitem_s {
     u32 type;
     void *data;
     u8 on;
-    u8 states;
+    signed char align;
     u8 unk_0x12[0x2];
     s32 group;
     s32 x;
@@ -372,6 +373,9 @@ s32 eduicbProcessSlider(EDUIMENU *menu, EDUIITEM *item, NUPAD *pad);
 s32 eduicbRenderSlider(EDUIMENU *menu, EDUIITEM *item, s32 x, s32 y, s32 w,
                        s32 highlight);
 void eduicbItemSliderDestroy(EDUIMENU *menu, EDUIITEM *item);
+s32 eduicbProcessColourSlider(EDUIMENU *menu, EDUIITEM *item, NUPAD *pad);
+s32 eduicbRenderColourSlider(EDUIMENU *menu, EDUIITEM *item, s32 x, s32 y,
+                             s32 w, s32 highlight);
 void eduiAddGradPickCFG(EDUIMENU *menu, EDUIITEM *pick);
 void eduiGradStageSetHSV(EDUIGRADSTAGE *stage, f32 h, f32 s, f32 v);
 void eduiGradStageDelete(EDUIITEM *pick, EDUIGRADSTAGE *stage);
@@ -741,7 +745,7 @@ inline EDUIITEM *eduiItemSelCreate(void *data, EDUISTYLE *style, s32 on,
         item->type = EDUI_ITEM_SEL;
         item->data = data;
         item->style = *style;
-        item->states = 2;
+        item->align = 2;
         item->group = group;
         item->on = on;
         item->process = eduicbProcessSel;
@@ -815,7 +819,7 @@ EDUIITEM *eduiItemTextPickCreate(void *data, EDUISTYLE *style,
         item->type = EDUI_ITEM_TEXTPICK;
         item->data = data;
         item->style = *style;
-        item->states = 2;
+        item->align = 2;
         item->group = 0;
         item->process = eduicbProcessTextPick;
         item->render = eduicbRenderTextPick;
@@ -1316,7 +1320,7 @@ inline EDUIITEM *eduiItemGradPickCreate(void *data, EDUISTYLE *style,
         item->type = EDUI_ITEM_GRADPICK;
         item->data = data;
         item->style = *style;
-        item->states = 2;
+        item->align = 2;
         item->group = 0;
         item->process = eduicbProcessGradPick;
         item->render = eduicbRenderGradPick;
@@ -1367,7 +1371,7 @@ inline EDUIITEM *eduiItemColourPickCreate(void *data, EDUISTYLE *style,
         item->type = EDUI_ITEM_COLOURPICK;
         item->data = data;
         item->style = *style;
-        item->states = 2;
+        item->align = 2;
         item->group = 0;
         item->process = eduicbProcessColourPick;
         item->render = eduicbRenderColourPick;
@@ -1414,7 +1418,7 @@ EDUIITEM *eduiItemTexturePickCreate(void *data, EDUISTYLE *style,
         item->type = EDUI_ITEM_TEXTUREPICK;
         item->data = data;
         item->style = *style;
-        item->states = 2;
+        item->align = 2;
         item->group = 0;
         item->process = eduicbProcessTexturePick;
         item->render = eduicbRenderTexturePick;
@@ -1491,7 +1495,7 @@ EDUIITEM *eduiItemSliderCreate(void *data, EDUISTYLE *style, s32 group,
         item->type = EDUI_ITEM_SLIDER;
         item->data = data;
         item->style = *style;
-        item->states = 2;
+        item->align = 2;
         item->group = group;
         item->process = eduicbProcessSlider;
         item->render = eduicbRenderSlider;
@@ -1538,6 +1542,42 @@ EDUIITEM *eduiItemNumberCreate(void *data, void *style, s32 group, void *cb,
         item->render = eduicbRenderNumber;
     }
     return item;
+}
+
+
+EDUIITEM *eduiItemColourSliderCreate(void *data, EDUISTYLE *style, s32 group,
+                                     void (*change)(EDUIMENU *menu,
+                                                    EDUIITEM *item,
+                                                    s32 buttons),
+                                     f32 min, f32 range, f32 val, u8 r, u8 g,
+                                     u8 b, char *text) {
+    EDUIITEM *item;
+
+    item = NuMemAllocFn(0x68, edui_srcfile, 0xB40);
+    if (item) {
+        memset(item, 0, 0x68);
+        item->type = EDUI_ITEM_COLOURSLIDER;
+        item->data = data;
+        item->style = *style;
+        item->align = 2;
+        item->group = group;
+        item->process = eduicbProcessColourSlider;
+        item->render = eduicbRenderColourSlider;
+        item->destroy = eduicbItemSliderDestroy;
+        eduiItemSetText(item, text);
+        item->u.slider.change = change;
+        item->u.slider.min = min;
+        item->u.slider.range = range;
+        item->u.slider.r = r;
+        item->u.slider.g = g;
+        item->u.slider.b = b;
+        item->u.slider.fmt = 0;
+        item->u.slider.granularity = 1.0f;
+        eduiItemSliderSetFmt(item, "(%d)");
+        eduiItemSliderSetValEx(item, val, 1, 1);
+        return item;
+    }
+    return 0;
 }
 
 
@@ -2410,6 +2450,34 @@ s32 eduicbProcessSel(EDUIMENU *menu, EDUIITEM *item, NUPAD *pad, f32 dt) {
 }
 
 
+s32 eduicbRenderSel(EDUIMENU *menu, EDUIITEM *item, s32 x, s32 y, s32 w,
+                    s32 highlight) {
+    s32 height;
+    s32 texty;
+
+    height = (NuFntHeight + (NuFntHeight >> 2)) >> 3;
+    item->x = x;
+    item->y = y;
+    texty = ((height * 8 - NuFntHeight) >> 1) + NuFntBase;
+    NuRndrRect2di(x * 16, y * 8, w * 16, height * 8,
+                  item->style.colour[item->on], edui_mtl[ui_bgmtl]);
+    NuFntSetPen(item->style.pen[item->on]);
+    switch (item->align) {
+    case 0:
+        NuFntPrintEx(x * 16, y * 8 + texty, 0, item->text);
+        break;
+    case 1:
+        NuFntPrintEx((x + w) * 16, y * 8 + texty, 1, item->text);
+        break;
+    case 2:
+    default:
+        NuFntPrintEx((x * 2 + w) * 8, y * 8 + texty, item->align, item->text);
+        break;
+    }
+    return height;
+}
+
+
 inline void eduicbItemDestroy(EDUIMENU *menu, EDUIITEM *item) {
     if (item->text) {
         NuMemFreeFn(item->text, edui_srcfile, 0x180);
@@ -2424,6 +2492,26 @@ void eduicbItemSliderDestroy(EDUIMENU *menu, EDUIITEM *item) {
         NuMemFreeFn(item->u.slider.fmt, edui_srcfile, 0x84F);
     }
     eduicbItemDestroy(menu, item);
+}
+
+
+s32 eduicbRenderNumber(EDUIMENU *menu, EDUIITEM *item, s32 x, s32 y, s32 w,
+                       s32 highlight) {
+    s32 height;
+    s32 texty;
+    char text[512];
+
+    height = (NuFntHeight + (NuFntHeight >> 2)) >> 3;
+    item->x = x;
+    item->y = y;
+    texty = ((height * 8 - NuFntHeight) >> 1) + NuFntBase;
+    NuRndrRect2di(x * 16, y * 8, w * 16, height * 8,
+                  item->style.colour[item->on], edui_mtl[ui_bgmtl]);
+    NuFntSetPen(item->style.pen[item->on]);
+    NuStrCpy(text, item->text);
+    NuStrCat(text, item->u.slider.fmt);
+    NuFntPrintEx(x * 16, y * 8 + texty, 0, text, item->u.slider.val);
+    return height;
 }
 
 

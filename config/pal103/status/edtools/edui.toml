@@ -205,7 +205,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001c0b38:eduiItemColourSliderCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001c0d80:eduiMenuDestroy"
@@ -249,7 +249,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001c12f0:eduicbRenderSel"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001c1450:eduicbItemSliderDestroy"
@@ -257,7 +257,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001c14c8:eduicbRenderNumber"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001c15d0:eduicbItemDestroy"
