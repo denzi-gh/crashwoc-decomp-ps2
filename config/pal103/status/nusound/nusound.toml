@@ -225,7 +225,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c50f0:SOUND_AddSamples"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0087:001c5230:SOUND_SetMaxStreamLimit"

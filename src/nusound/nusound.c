@@ -1242,6 +1242,13 @@ void SOUND_InitSPU(void)
 }
 
 
+void SOUND_AddSamples(SFXINFO *sfx_info)
+{
+    transfer_sample_infos(sfx_info);
+    FlushIOPCommand(0);
+}
+
+
 void SOUND_SetMaxStreamLimit(int limit)
 {
     set_max_stream_limit(limit);
