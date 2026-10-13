@@ -13,35 +13,35 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0039:0011c590:NuTexReadBitmapMMEx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0039:0011cb90:NuTexReadBitmapMem"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0039:0011cfb8:NuTexSetRenderTarget"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0039:0011d108:NuTexCreateEx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0039:0011d300:NuTexCreateStream"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0039:0011d450:NuTexAccomodateRS"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0039:0011d580:NuTexAccomodate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0039:0011d6e0:NuTexSet"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0039:0011d848:NuTexDisplayTexturePage"
@@ -49,11 +49,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0039:0011dbb8:NuTexRecoverNativeDataEx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0039:0011de90:NuTexCreateNative"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0039:0011e2d0:NuTexWriteMaterialSettings"
@@ -73,7 +73,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0039:0011e5d0:NuTexClose"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0039:0011e690:NuTexReserve"
@@ -189,7 +189,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0039:0011ee60:NuTexSetPal"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0039:0011ef80:NuTexSetZBuffer"
@@ -197,4 +197,4 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0039:0011eff8:NuTexGetTextAddr"
-state = "asm"
+state = "matching"
