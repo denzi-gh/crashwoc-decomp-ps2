@@ -13,24 +13,24 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0089:001cb678:DrawParticles"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0089:001cb798:InitParticles"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0089:001cb7b8:CloseParticles"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0089:001cb7e0:AddParticle"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0089:001cb8c8:DestroyParticlesByHandle"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0089:001cb958:ProcessParticles"
-state = "asm"
+state = "matching"
