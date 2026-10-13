@@ -13,20 +13,20 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0113:0024c980:ShadRndr"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0113:0024cc20:ShadDataLoad"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0113:0024cee0:ShadDataDestroy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0113:0024cf78:ShadFindData"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0113:0024d020:ShadComInit"
-state = "asm"
+state = "matching"
