@@ -13,15 +13,15 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0067:0016efb0:AddClipPoint"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0067:0016f1e0:ClipPolygon"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0067:0016f728:ClipDrawTriangle"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0067:0016fc50:TestCurrZN"
