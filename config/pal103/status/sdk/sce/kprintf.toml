@@ -13,32 +13,32 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0253:0027a2a8:kputchar"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0253:0027a2e0:deci2Putchar"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0253:0027a390:serialPutchar"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0253:0027a3c8:ftoi"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0253:0027a458:printfloat"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0253:0027a5c0:_printf"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0253:0027ab88:kprintf"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0253:0027abc0:scePrintf"
-state = "asm"
+state = "matching"
