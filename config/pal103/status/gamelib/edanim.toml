@@ -37,51 +37,51 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a24c8:edanimSoundDestroy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a2610:edanimParticleCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a2750:edanimParticleDestroy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a28a0:edanimDoInput"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a2fa0:edanimFileSave"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a32a8:edanimFileLoad"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a3810:edanimDrawCursor"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a3c90:edanimcbSwitchTypeMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a41b0:edanimcbSwitchMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a4398:edanimcbBouncyMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a4548:edanimcbParticleTypeMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a46c8:edanimcbLocalParticleMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0073:001a4858:edanimcbLocalSoundMenu"
