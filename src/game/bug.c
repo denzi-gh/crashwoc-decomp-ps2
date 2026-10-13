@@ -56,8 +56,10 @@ struct spltab_s {
 };
 
 extern struct spltab_s SplTab[];
-extern struct nuvec_s D_006FFA90;   /* bug_splpos */
-extern f32 D_006333B8;              /* bug_splratio */
+extern struct nuvec_s D_006FFA90;
+#define bug_splpos D_006FFA90
+extern f32 D_006333B8;
+#define bug_splratio D_006333B8
 
 extern s32 temp_iRAIL;
 extern u16 temp_iALONG;
@@ -70,13 +72,20 @@ extern void GetALONG(struct nuvec_s *pos, void *rpos, s32 iRAIL, s32 iALONG,
                      s32 info);
 
 /* File-scope statics in the retail TU (data-from-C unsupported -> extern). */
-extern struct nuvec_s D_006FFA80;   /* bug_pos */
-extern f32 D_006333A8;              /* bug_scale */
-extern f32 D_006333AC;              /* spot fade arg */
-extern f32 D_006333B0;              /* bug_fade (guard + alpha) */
-extern f32 D_00632CD4;              /* alpha divisor */
-extern u16 D_006333B4;              /* bug_xrot */
-extern u16 D_006333B6;              /* bug_yrot */
+extern struct nuvec_s D_006FFA80;
+#define bug_pos D_006FFA80
+extern f32 D_006333A8;
+#define bug_scale D_006333A8
+extern f32 D_006333AC;
+#define bug_span D_006333AC
+extern f32 D_006333B0;
+#define bug_fade D_006333B0
+extern f32 D_00632CD4;
+#define BUGFADETIME D_00632CD4
+extern u16 D_006333B4;
+#define bug_xrot D_006333B4
+extern u16 D_006333B6;
+#define bug_yrot D_006333B6
 extern struct anim_s BugAnim;
 extern s32 FRAME;
 extern s32 FRAMES;
@@ -107,43 +116,21 @@ extern void AddGameDebris(s32 type, struct nuvec_s *pos);
 extern void UpdateAnimPacket(struct CharacterModel *mod, struct anim_s *anim,
                              f32 dt, f32 xz_distance);
 
-/* Retail-owned .sdata scalars this TU never defines (data-from-C unsupported).
- * Named-global "constants" (fade/scale rates) held gp-relative in the PS2 build
- * -- each is its own gp_rel symbol, so reference them individually. */
-extern f32 D_00632CD8; /* mechlight_distance                */
-extern f32 D_00632CDC; /* mech-scale random target base     */
-extern f32 D_00632CE0; /* buglight_distance_                */
-extern f32 D_00632CE4; /* bug-scale wobble base             */
-extern f32 D_0062E914; /* mechlight_fade decrement          */
-extern f32 D_0062E918; /* mechlight_fade increment          */
-extern f32 D_0062E91C; /* mech bug-scale wobble factor      */
-extern f32 D_0062E920; /* mech bug-scale random factor      */
-extern f32 D_0062E924; /* mech bug-scale lerp factor        */
-extern f32 D_0062E928; /* best_cRPos distance multiplier    */
-extern f32 D_0062E92C; /* spline dr base                    */
-extern f32 D_0062E930; /* spline dr when sprinting          */
-extern f32 D_0062E934; /* bug_splratio decrement factor     */
-extern f32 D_0062E938; /* bug_splratio increment factor     */
-extern f32 D_0062E93C; /* bug_splpos lerp factor            */
-extern f32 D_0062E940; /* tail bug-scale wobble factor      */
-extern f32 D_0062E944; /* UpdateAnimPacket dt               */
-extern f32 D_0062E948; /* buglight_fade decrement           */
-extern f32 D_0062E94C; /* buglight_fade increment           */
+extern f32 D_00632CD8;
+#define mechlight_distance D_00632CD8
+extern f32 D_00632CDC;
+#define mechlight_scale D_00632CDC
+extern f32 D_00632CE0;
+#define buglight_distance D_00632CE0
+extern f32 D_00632CE4;
+#define bug_scale_base D_00632CE4
 
-extern f32 D_00633398; /* mechlight_fade  */
-extern f32 D_0063339C; /* buglight_fade   */
-extern u16 D_006333A0; /* buglight_ang[0] */
-extern u16 D_006333A2; /* buglight_ang[1] */
-extern u16 D_006333A4; /* buglight_ang[2] */
-extern u16 D_006333A6; /* buglight_ang[3] */
-/* D_006333A8 bug_scale, D_006333AC spot-span, D_006333B0 bug_fade,
- * D_006333B4 bug_xrot, D_006333B6 bug_yrot, D_006333B8 bug_splratio,
- * D_006FFA80 bug_pos, D_006FFA90 bug_splpos, D_00632CD4 BUGFADETIME
- * are declared above.  All struct offsets re-derived from PS2 loads/stores:
- *   c->obj.RPos.iRAIL +0x48, iALONG +0x4A, fALONG +0x50 (InBugArea args)
- *   c->sprint +0xCBF ; player->obj.pos +0x6C, SCALE +0x108, top +0x120
- *   GameCam.x +0xA4 / .z +0xAC ; best_cRPos->angle +0x10, mode +0x14 */
-#define BUGFADETIME D_00632CD4
+extern f32 D_00633398;
+#define mechlight_fade D_00633398
+extern f32 D_0063339C;
+#define buglight_fade D_0063339C
+extern u16 D_006333A0[4];
+#define buglight_ang D_006333A0
 
 /* PS2 signatures derived from these call sites (EABI: int and float args use
  * independent register files a0.. / f12..). */
@@ -183,22 +170,22 @@ void InitBugAreas(void) {
             }
         }
     }
-    D_006333B8 = 0.0f;
+    bug_splratio = 0.0f;
 }
 
 void ResetBug(void) {
     s32 i;
 
     ResetAnimPacket(&BugAnim, 0x22);
-    D_006333B0 = 0.0f;
+    bug_fade = 0.0f;
     i = NearestSplinePoint(&player->obj.pos, SplTab[70].spl);
     if (i != -1) {
-        D_006333B8 = (f32)i / (f32)(s32)(SplTab[70].spl->len - 1U);
+        bug_splratio = (f32)i / (f32)(s32)(SplTab[70].spl->len - 1U);
     } else {
-        D_006333B8 = 0.0f;
+        bug_splratio = 0.0f;
     }
-    PointAlongSpline(SplTab[70].spl, D_006333B8, &D_006FFA90, 0, 0);
-    D_006FFA90 = D_006FFA80;
+    PointAlongSpline(SplTab[70].spl, bug_splratio, &bug_splpos, 0, 0);
+    bug_splpos = bug_pos;
 }
 
 s32 InBugArea(s32 iRAIL, s32 iALONG, f32 fALONG) {
@@ -223,32 +210,13 @@ s32 InBugArea(s32 iRAIL, s32 iALONG, f32 fALONG) {
     return -1;
 }
 
-void AddBugLight(void) {
-    if (D_006333B0 > 0.0f) {
-        if (FRAME == FRAMES - 1) {
-            NuLightAddSpotXSpanFade(&D_006FFA80, D_006333A8, D_006333AC,
-                                    0xFF000000, 1,
-                                    128 - (s32)(D_006333B0 * (128.0f / D_00632CD4)),
-                                    1);
-        }
-    }
-}
-
-void DrawBug(void) {
-    if (Level == 0x1b && CRemap[174] != -1) {
-        Draw3DCharacter(&D_006FFA80, D_006333B4, (D_006333B6 - 0x8000) & 0xffff,
-                        0, &CModel[CRemap[174]], 1.25f, BugAnim.action,
-                        BugAnim.anim_time, 0);
-    }
-}
-
 void UpdateBugLight(struct creature_s *c) {
     struct nuvec_s oldpos;
     struct nuvec_s v;
     struct nuvec_s v0;
     struct nuvec_s v1;
     struct nuvec_s pos;
-    f32 f;
+    f32 fade;
     f32 r;
     f32 r0;
     f32 r1;
@@ -256,10 +224,10 @@ void UpdateBugLight(struct creature_s *c) {
     f32 d0;
     f32 d1;
     f32 dr;
-    f32 qr;
-    u16 a;
+    f32 rnd;
+    u16 ang;
 
-    D_006333B0 = 0.0f;
+    bug_fade = 0.0f;
     if ((LBIT & 0x88100000) == 0) {
         return;
     }
@@ -267,67 +235,67 @@ void UpdateBugLight(struct creature_s *c) {
         ((InBugArea((s32)c->obj.RPos.iRAIL, (s32)c->obj.RPos.iALONG,
                     c->obj.RPos.fALONG) != -1) &&
          (((LBIT & 0x80100000) == 0) || (VEHICLECONTROL == 1)))) {
-        f = BUGFADETIME;
+        fade = BUGFADETIME;
     } else {
-        f = 0.0f;
+        fade = 0.0f;
     }
-    D_006333A6 += qrand() / 0x40 * 6;
+    buglight_ang[3] += qrand() / 0x40 * 6;
     if ((LBIT & 0x80100000) != 0) {
-        if (D_00633398 > f) {
-            D_00633398 -= D_0062E914;
-            if (D_00633398 < f) {
-                D_00633398 = f;
+        if (mechlight_fade > fade) {
+            mechlight_fade -= 0.02f;
+            if (mechlight_fade < fade) {
+                mechlight_fade = fade;
             }
-        } else if (D_00633398 < f) {
-            D_00633398 += D_0062E918;
-            if (D_00633398 > f) {
-                D_00633398 = f;
+        } else if (mechlight_fade < fade) {
+            mechlight_fade += 0.02f;
+            if (mechlight_fade > fade) {
+                mechlight_fade = fade;
             }
         }
-        D_006333A8 = D_00632CE4 + NuTrigTable[D_006333A6] * D_00632CE4 * D_0062E91C;
-        if (D_00633398 > 0.0f) {
-            D_006FFA80.x = player->obj.pos.x;
-            D_006FFA80.y = player->obj.pos.y + player->obj.top * player->obj.SCALE;
-            D_006FFA80.z = player->obj.pos.z;
-            a = NuAtan2D(D_006FFA80.x - GameCam.x, D_006FFA80.z - GameCam.z);
-            D_006FFA80.x = D_006FFA80.x + NuTrigTable[a] * D_00632CD8;
-            D_006333AC = 1.5f;
-            D_006FFA80.z = D_006FFA80.z + NuTrigTable[(u16)(a + 0x4000)] * D_00632CD8;
+        bug_scale = bug_scale_base + NuTrigTable[buglight_ang[3]] * bug_scale_base * 0.025f;
+        if (mechlight_fade > 0.0f) {
+            bug_pos.x = player->obj.pos.x;
+            bug_pos.y = player->obj.pos.y + player->obj.top * player->obj.SCALE;
+            bug_pos.z = player->obj.pos.z;
+            ang = NuAtan2D(bug_pos.x - GameCam.x, bug_pos.z - GameCam.z);
+            bug_pos.x = bug_pos.x + NuTrigTable[ang] * mechlight_distance;
+            bug_span = 1.5f;
+            bug_pos.z = bug_pos.z + NuTrigTable[(u16)(ang + 0x4000)] * mechlight_distance;
         }
-        D_006333B0 = D_00633398;
-        qr = (f32)qrand();
-        d0 = D_00632CDC + (qr * D_0062E920 - 0.5f) * 0.25f;
-        D_006333A8 = D_006333A8 + (d0 - D_006333A8) * D_0062E924;
+        bug_fade = mechlight_fade;
+        rnd = (f32)qrand();
+        d0 = mechlight_scale + (rnd * (1.0f / 65535.0f) - 0.5f) * 0.25f;
+        bug_scale = bug_scale + (d0 - bug_scale) * 0.02f;
         return;
     }
     if (Level != 0x1b) {
         return;
     }
-    oldpos = D_006FFA80;
+    oldpos = bug_pos;
     if (SplTab[70].spl != 0) {
         pos = player->obj.pos;
         if (best_cRPos != 0) {
-            r = D_00632CE0;
+            r = buglight_distance;
             if ((best_cRPos->mode & 0xc) != 0) {
-                r = D_00632CE0 * D_0062E928;
+                r = buglight_distance * 0.333f;
             }
             pos.x = pos.x + NuTrigTable[best_cRPos->angle] * r;
             pos.z = pos.z + NuTrigTable[(u16)(best_cRPos->angle + 0x4000)] * r;
         }
-        d0 = D_006333B8;
+        d0 = bug_splratio;
         PointAlongSpline(SplTab[70].spl, d0, &v, 0, 0);
         r = NuVecDistSqr(&pos, &v, 0);
-        dr = D_0062E92C;
+        dr = 0.001f;
         if (c->sprint != 0) {
-            dr = D_0062E930;
+            dr = 0.002f;
         }
-        r0 = D_006333B8 - dr;
+        r0 = bug_splratio - dr;
         if (r0 < 0.0f) {
             r0 = 0.0f;
         }
         PointAlongSpline(SplTab[70].spl, r0, &v0, 0, 0);
         d = NuVecDistSqr(&pos, &v0, 0);
-        r1 = D_006333B8 + dr;
+        r1 = bug_splratio + dr;
         if (r1 > 1.0f) {
             r1 = 1.0f;
         }
@@ -338,63 +306,82 @@ void UpdateBugLight(struct creature_s *c) {
         } else if ((d1 < r) && (d1 < d)) {
             d0 = r1;
         }
-        if (D_006333B8 > d0) {
-            D_006333B8 = D_006333B8 - dr * D_0062E934 * 10.0f;
-            if (D_006333B8 < d0) {
-                D_006333B8 = d0;
+        if (bug_splratio > d0) {
+            bug_splratio = bug_splratio - dr * 0.02f * 10.0f;
+            if (bug_splratio < d0) {
+                bug_splratio = d0;
             }
-        } else if (D_006333B8 < d0) {
-            D_006333B8 = D_006333B8 + dr * D_0062E938 * 10.0f;
-            if (D_006333B8 > d0) {
-                D_006333B8 = d0;
+        } else if (bug_splratio < d0) {
+            bug_splratio = bug_splratio + dr * 0.02f * 10.0f;
+            if (bug_splratio > d0) {
+                bug_splratio = d0;
             }
         }
-        PointAlongSpline(SplTab[70].spl, D_006333B8, &pos, 0, 0);
-        D_006FFA90.x = D_006FFA90.x + (pos.x - D_006FFA90.x) * D_0062E93C;
-        D_006FFA90.y = D_006FFA90.y + (pos.y - D_006FFA90.y) * D_0062E93C;
-        D_006FFA90.z = D_006FFA90.z + (pos.z - D_006FFA90.z) * D_0062E93C;
-        D_006FFA80 = D_006FFA90;
+        PointAlongSpline(SplTab[70].spl, bug_splratio, &pos, 0, 0);
+        bug_splpos.x = bug_splpos.x + (pos.x - bug_splpos.x) * 0.3f;
+        bug_splpos.y = bug_splpos.y + (pos.y - bug_splpos.y) * 0.3f;
+        bug_splpos.z = bug_splpos.z + (pos.z - bug_splpos.z) * 0.3f;
+        bug_pos = bug_splpos;
     } else {
-        D_006FFA80.x = player->obj.pos.x;
-        D_006FFA80.y = player->obj.pos.y + player->obj.top * player->obj.SCALE;
-        D_006FFA80.z = player->obj.pos.z;
-        a = NuAtan2D(D_006FFA80.x - GameCam.x, D_006FFA80.z - GameCam.z);
-        D_006FFA80.x = D_006FFA80.x + NuTrigTable[a] * D_00632CE0;
-        D_006FFA80.z = D_006FFA80.z + NuTrigTable[(u16)(a + 0x4000)] * D_00632CE0;
+        bug_pos.x = player->obj.pos.x;
+        bug_pos.y = player->obj.pos.y + player->obj.top * player->obj.SCALE;
+        bug_pos.z = player->obj.pos.z;
+        ang = NuAtan2D(bug_pos.x - GameCam.x, bug_pos.z - GameCam.z);
+        bug_pos.x = bug_pos.x + NuTrigTable[ang] * buglight_distance;
+        bug_pos.z = bug_pos.z + NuTrigTable[(u16)(ang + 0x4000)] * buglight_distance;
     }
-    D_006333A0 += 0x276;
-    D_006333A2 += 0x162;
-    D_006333A4 += 0x414;
-    D_006333A8 = D_00632CE4 + NuTrigTable[D_006333A6] * D_00632CE4 * D_0062E940;
-    D_006FFA80.x = D_006FFA80.x + NuTrigTable[D_006333A0] * 0.25f;
-    D_006FFA80.y = D_006FFA80.y + NuTrigTable[D_006333A2] * 0.25f;
-    D_006FFA80.z = D_006FFA80.z + NuTrigTable[D_006333A4] * 0.25f;
-    NuVecSub(&v, &D_006FFA80, &oldpos);
-    a = NuAtan2D(v.y, NuFsqrt(v.x * v.x + v.z * v.z));
-    D_006333B4 = SeekRot(D_006333B4, a, 3);
-    a = NuAtan2D(v.x, v.z);
-    D_006333B6 = SeekRot(D_006333B6, a, 3);
+    buglight_ang[0] += 0x276;
+    buglight_ang[1] += 0x162;
+    buglight_ang[2] += 0x414;
+    bug_scale = bug_scale_base + NuTrigTable[buglight_ang[3]] * bug_scale_base * 0.025f;
+    bug_pos.x = bug_pos.x + NuTrigTable[buglight_ang[0]] * 0.25f;
+    bug_pos.y = bug_pos.y + NuTrigTable[buglight_ang[1]] * 0.25f;
+    bug_pos.z = bug_pos.z + NuTrigTable[buglight_ang[2]] * 0.25f;
+    NuVecSub(&v, &bug_pos, &oldpos);
+    ang = NuAtan2D(v.y, NuFsqrt(v.x * v.x + v.z * v.z));
+    bug_xrot = SeekRot(bug_xrot, ang, 3);
+    ang = NuAtan2D(v.x, v.z);
+    bug_yrot = SeekRot(bug_yrot, ang, 3);
     if (CRemap[174] != -1) {
         BugAnim.oldaction = BugAnim.action;
-        UpdateAnimPacket(&CModel[CRemap[174]], &BugAnim, D_0062E944, 0.0f);
+        UpdateAnimPacket(&CModel[CRemap[174]], &BugAnim, 0.59999996f, 0.0f);
     }
-    if (D_0063339C > f) {
-        D_0063339C -= D_0062E948;
-        if (D_0063339C < f) {
-            D_0063339C = f;
+    if (buglight_fade > fade) {
+        buglight_fade -= 0.02f;
+        if (buglight_fade < fade) {
+            buglight_fade = fade;
         }
-    } else if (D_0063339C < f) {
-        D_0063339C += D_0062E94C;
-        if (D_0063339C > f) {
-            D_0063339C = f;
+    } else if (buglight_fade < fade) {
+        buglight_fade += 0.02f;
+        if (buglight_fade > fade) {
+            buglight_fade = fade;
         }
     }
-    if (D_0063339C > 0.0f) {
-        D_006333AC = 1.0f;
+    if (buglight_fade > 0.0f) {
+        bug_span = 1.0f;
     }
-    D_006333B0 = D_0063339C;
+    bug_fade = buglight_fade;
     if (0x7fff < qrand()) {
         return;
     }
-    AddGameDebris(0x9c, &D_006FFA80);
+    AddGameDebris(0x9c, &bug_pos);
+}
+
+void AddBugLight(void) {
+    if (bug_fade > 0.0f) {
+        if (FRAME == FRAMES - 1) {
+            NuLightAddSpotXSpanFade(&bug_pos, bug_scale, bug_span,
+                                    0xFF000000, 1,
+                                    128 - (s32)(bug_fade * (128.0f / BUGFADETIME)),
+                                    1);
+        }
+    }
+}
+
+void DrawBug(void) {
+    if (Level == 0x1b && CRemap[174] != -1) {
+        Draw3DCharacter(&bug_pos, bug_xrot, (bug_yrot - 0x8000) & 0xffff,
+                        0, &CModel[CRemap[174]], 1.25f, BugAnim.action,
+                        BugAnim.anim_time, 0);
+    }
 }
