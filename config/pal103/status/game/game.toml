@@ -285,15 +285,15 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001ee8b8:RayIntersectSphere"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001eeb50:WumpaRayCast"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001eee78:GameRayCast"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001ef0d8:DrawTarget"
@@ -301,7 +301,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0094:001ef430:DrawProbeFX"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001ef658:UpdateLevel"
@@ -393,7 +393,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001eff20:AddFlyingWumpa"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001f0098:AddScreenWumpa"

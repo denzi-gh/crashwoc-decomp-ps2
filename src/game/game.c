@@ -425,12 +425,23 @@ struct moveinfo_s {
     short SPINRESETFRAMES; /* 0x38 */
 };
 
+struct panim_s {
+    float time;             /* 0x0 */
+    char pad_4[0xC - 0x4];
+    short action;           /* 0xC */
+    char pad_e[0x12 - 0xE];
+    short blend_src_action; /* 0x12 */
+    short blend_dst_action; /* 0x14 */
+    char pad_16[0x1A - 0x16];
+    signed char blend;      /* 0x1A */
+    char pad_1b;
+};
+
 struct pobj_s {
     char pad_c[0xC];
     struct pmask_s *mask; /* 0xC */
     char pad_10[0x18 - 0x10];
-    float anim_time;      /* 0x18 */
-    char pad_1c[0x34 - 0x1C];
+    struct panim_s anim;  /* 0x18 */
     short character;      /* 0x34 */
     short vehicle;        /* 0x36 */
     char pad_38[0x6C - 0x38];
@@ -444,7 +455,10 @@ struct pobj_s {
     signed char dead;     /* 0x149 */
     char pad_14a[0x153 - 0x14A];
     signed char finished; /* 0x153 */
-    char pad_154[0x16E - 0x154];
+    char pad_154[0x166 - 0x154];
+    u16 target_xrot;      /* 0x166 */
+    u16 target_yrot;      /* 0x168 */
+    char pad_16a[0x16E - 0x16A];
     u16 hdg;              /* 0x16E */
     char pad_170[0x230 - 0x170];
     struct moveinfo_s *OnFootMoveInfo; /* 0x230 */
@@ -457,6 +471,12 @@ struct pobj_s {
     char pad_cbc[0xCCC - 0xCBC];
     short spin_frames;    /* 0xCCC */
     short spin_frame;     /* 0xCCE */
+    char pad_cd0[0xCDA - 0xCD0];
+    u8 fire;              /* 0xCDA */
+    char pad_cdb;
+    signed char target;      /* 0xCDC */
+    signed char target_wait; /* 0xCDD */
+    signed char fire_lock;   /* 0xCDE */
 };
 
 struct player_s {
@@ -520,9 +540,7 @@ struct gamecam_s {
     struct nuvec_s vX; /* 0x80 */
     struct nuvec_s vY; /* 0x8C */
     struct nuvec_s vZ; /* 0x98 */
-    float x; /* 0xA4 */
-    float y; /* 0xA8 */
-    float z; /* 0xAC */
+    struct nuvec_s pos; /* 0xA4 */
     char pad_b0[0xF8 - 0xB0];
     u16 yrot; /* 0xF8 */
     char pad_fa[0x114 - 0xFA];
@@ -1415,9 +1433,9 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
             if (qrand() < 0x1000) {
                 if (temp_surround != 0) {
                     s32 angle = qrand();
-                    pos[0] = GameCam.x + NuTrigTable[angle] * nusound_fade_start;
-                    pos[1] = GameCam.y;
-                    pos[2] = GameCam.z + NuTrigTable[(angle + 0x4000) & 0xFFFF] * nusound_fade_start;
+                    pos[0] = GameCam.pos.x + NuTrigTable[angle] * nusound_fade_start;
+                    pos[1] = GameCam.pos.y;
+                    pos[2] = GameCam.pos.z + NuTrigTable[(angle + 0x4000) & 0xFFFF] * nusound_fade_start;
                     gamesfx_volume = temp_sfx_volume;
                     GameSfx(test_sfx[qrand() / 0x4000], pos);
                 }
@@ -4216,26 +4234,22 @@ void GetMenuInfo(struct cursor_s *cur) {
 }
 
 extern s32 i_tempwumpa;
-extern float D_0062D704; /* flying-wumpa shadow y (GC 2000000.0f) */
-extern float D_0062D708; /* flying-wumpa mom scale (GC 0.1666667f) */
 extern void NuVecScale(float s, struct nuvec_s *d, struct nuvec_s *v);
 
 void AddFlyingWumpa(struct nuvec_s *src, struct nuvec_s *dir,
                     struct nuvec_s *dst, s32 destroy) {
     struct wumpa_s *wumpa;
 
-    /* &Wumpa[i_tempwumpa + 0x100]: single reference, so gcc folds the +0x4C00
-     * into the reloc (retail's D_00590170 == &Wumpa[0x100]). */
     wumpa = &Wumpa[i_tempwumpa + 0x100];
     wumpa->pos1 = *src;
     wumpa->pos0 = wumpa->pos1;
     wumpa->pos = wumpa->pos0;
-    wumpa->shadow = D_0062D704;
-    wumpa->active = 3;
-    wumpa->time = 0;
-    wumpa->duration = 2.0f;
+    wumpa->shadow = 2000000.0f;
     wumpa->surface_type = -1;
-    NuVecScale(D_0062D708, &wumpa->mom, dir);
+    wumpa->active = 3;
+    wumpa->duration = 2.0f;
+    wumpa->time = 0;
+    NuVecScale(0.19999999f, &wumpa->mom, dir);
     WumpaHitTerrain(wumpa);
     if (destroy == 3) {
         destroy = 2;
@@ -4857,6 +4871,207 @@ void JonProbe(void) {
     }
 }
 
+extern float temp_ratio;
+extern s32 plr_target_found;
+extern struct nuvec_s plr_target_pos[];
+extern s32 CrateRayCast(struct nuvec_s *p0, struct nuvec_s *p1);
+extern s32 CreatureRayCast(struct nuvec_s *start, struct nuvec_s *end);
+s32 RayIntersectSphere(struct nuvec_s *p0, struct nuvec_s *p1,
+                       struct nuvec_s *pos, float radius);
+s32 WumpaRayCast(struct nuvec_s *p0, struct nuvec_s *p1, float ratio0);
+extern float NuVecDot(struct nuvec_s *a, struct nuvec_s *b);
+
+s32 RayIntersectSphere(struct nuvec_s *p0, struct nuvec_s *p1,
+                       struct nuvec_s *pos, float radius) {
+    struct nuvec_s ray;
+    struct nuvec_s v;
+    struct nuvec_s min;
+    struct nuvec_s max;
+    float ratio;
+    float dp0;
+    float dp1;
+
+    ratio = 1.0f;
+    min.x = (p0->x < p1->x) ? p0->x : p1->x;
+    if (!(pos->x + radius < min.x)) {
+        min.y = (p0->y < p1->y) ? p0->y : p1->y;
+        if (!(pos->y + radius < min.y)) {
+            min.z = (p0->z < p1->z) ? p0->z : p1->z;
+            if (!(pos->z + radius < min.z)) {
+                max.x = (p0->x > p1->x) ? p0->x : p1->x;
+                if (!(pos->x - radius > max.x)) {
+                    max.y = (p0->y > p1->y) ? p0->y : p1->y;
+                    if (!(pos->y - radius > max.y)) {
+                        max.z = (p0->z > p1->z) ? p0->z : p1->z;
+                        if (!(pos->z - radius > max.z)) {
+                            NuVecSub(&ray, p1, p0);
+                            NuVecSub(&v, pos, p0);
+                            dp0 = NuVecDot(&ray, &v);
+                            dp1 = NuVecDot(&ray, &ray);
+                            if (0.0f <= dp0 && dp0 <= dp1) {
+                                dp0 = dp0 / dp1;
+                                v.x = p0->x + (p1->x - p0->x) * dp0;
+                                v.y = p0->y + (p1->y - p0->y) * dp0;
+                                v.z = p0->z + (p1->z - p0->z) * dp0;
+                                NuVecSub(&v, pos, &v);
+                                if (v.x * v.x + v.y * v.y + v.z * v.z <
+                                    radius * radius) {
+                                    ratio = dp0;
+                                }
+                            }
+                            temp_ratio = ratio;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return ratio < 1.0f;
+}
+
+s32 WumpaRayCast(struct nuvec_s *p0, struct nuvec_s *p1, float ratio0) {
+    struct wumpa_s *wmp;
+    struct nuvec_s min;
+    struct nuvec_s max;
+    struct nuvec_s ray;
+    struct nuvec_s v;
+    float ratio;
+    float dp_ray;
+    float dp0;
+    float dp;
+    float r;
+    float r2;
+    s32 i;
+
+    ratio = ratio0;
+    min.x = (p0->x < p1->x) ? p0->x : p1->x;
+    min.y = (p0->y < p1->y) ? p0->y : p1->y;
+    min.z = (p0->z < p1->z) ? p0->z : p1->z;
+    max.x = (p0->x > p1->x) ? p0->x : p1->x;
+    max.y = (p0->y > p1->y) ? p0->y : p1->y;
+    max.z = (p0->z > p1->z) ? p0->z : p1->z;
+    NuVecSub(&ray, p1, p0);
+    dp_ray = NuVecDot(&ray, &ray);
+    wmp = Wumpa;
+    r = 0.2f;
+    r2 = r * r;
+    for (i = 0; i < 0x140; i++, wmp++) {
+        if (wmp->active != 2 || wmp->in_range == 0) {
+            continue;
+        }
+        if (wmp->pos.x + r < min.x || wmp->pos.z + r < min.z) {
+            continue;
+        }
+        if (wmp->pos.x - r > max.x || wmp->pos.z - r > max.z) {
+            continue;
+        }
+        if (wmp->pos.y + r < min.y || wmp->pos.y - r > max.y) {
+            continue;
+        }
+        NuVecSub(&v, &wmp->pos, p0);
+        dp = NuVecDot(&ray, &v);
+        if (dp >= 0.0f && dp <= dp_ray) {
+            dp0 = dp / dp_ray;
+            if (dp0 < ratio) {
+                v.x = p0->x + (p1->x - p0->x) * dp0;
+                v.y = p0->y + (p1->y - p0->y) * dp0;
+                v.z = p0->z + (p1->z - p0->z) * dp0;
+                NuVecSub(&v, &wmp->pos, &v);
+                if (v.x * v.x + v.y * v.y + v.z * v.z < r2) {
+                    ratio = dp0;
+                }
+            }
+        }
+    }
+    temp_ratio = ratio;
+    return ratio < 1.0f;
+}
+
+void GameRayCast(struct nuvec_s *src, struct nuvec_s *dir, float d,
+                 struct nuvec_s *dst) {
+    struct nuvec_s end;
+    struct nuvec_s v;
+    float ratio;
+    float length;
+
+    ratio = 1.0f;
+    end.x = src->x + dir->x * d;
+    end.y = src->y + dir->y * d;
+    end.z = src->z + dir->z * d;
+    length = NuVecDist(&end, src, 0);
+    if (RayIntersectSphere(src, &end, &GameCam.pos, ratio) != 0 &&
+        temp_ratio < ratio) {
+        temp_ratio -= ratio / length;
+        if (0.0f <= temp_ratio) {
+            plr_target_found = 0;
+            ratio = temp_ratio;
+        }
+    }
+    if (CrateRayCast(src, &end) != 0 && temp_ratio < ratio) {
+        plr_target_found = 1;
+        ratio = temp_ratio;
+    }
+    if (CreatureRayCast(src, &end) != 0 && temp_ratio < ratio) {
+        plr_target_found = 1;
+        ratio = temp_ratio;
+    }
+    if (WumpaRayCast(src, &end, ratio) != 0 && temp_ratio < ratio) {
+        temp_ratio -= 0.1f / length;
+        if (0.0f <= temp_ratio) {
+            plr_target_found = 1;
+            ratio = temp_ratio;
+        }
+    }
+    if (ratio < 1.0f) {
+        dst->x = src->x + (end.x - src->x) * ratio;
+        dst->y = src->y + (end.y - src->y) * ratio;
+        dst->z = src->z + (end.z - src->z) * ratio;
+    } else {
+        *dst = end;
+    }
+    NuVecSub(&v, dst, src);
+    if (NewRayCast(src, &v, 0.0f) != 0) {
+        NuVecAdd(&plr_target_pos[1], &plr_target_pos[0], &v);
+        plr_target_found = 0;
+    }
+}
+
+void DrawProbeFX(struct tobj_s *obj) {
+    struct nuvec_s pos;
+    struct nuvec_s end;
+    struct nuvec_s off;
+    s32 ang;
+    s32 i;
+
+    if (Paused == 0) {
+        pos = obj->pos;
+        AddVariableShotDebrisEffect(GDeb[304], &pos, 1, -0x8000, 0);
+    }
+    ang = (u16)obj->hdg + 0xBB8;
+    for (i = 0; i < 3; i++) {
+        pos = obj->pos;
+        end.y = pos.y;
+        pos.y -= 0.05;
+        end.y -= 1.8f;
+        off.x = NuTrigTable[ang & 0xFFFF] * 0.48f;
+        off.y = 0.0f;
+        off.z = NuTrigTable[(ang + 0x4000) & 0xFFFF] * 0.48f;
+        pos.x += off.x;
+        pos.z += off.z;
+        end.x = pos.x + off.x;
+        end.z = pos.z + off.z;
+        ang += 0x5555;
+        if (Paused == 0) {
+            NuLgtArcLaser(0, &end, &pos, &off, 0.1f, 0.1f, 0.01f, 0.3f,
+                          0x80FF7F3F);
+            NuLgtArcLaser(0, &end, &pos, &off, 0.4f, 0.3f, 0.001f, 0.3f,
+                          0x80800040);
+            AddVariableShotDebrisEffect(GDeb[312], &end, 1, 0, 0);
+            AddVariableShotDebrisEffect(GDeb[312], &pos, 1, -0x8000, 0);
+        }
+    }
+}
+
 extern float D_0062D274;
 extern float D_0062D278;
 extern void UpdateAnimPacket(struct cmodel_s *m, struct animpkt_s *a, float r,
@@ -4962,7 +5177,7 @@ void UpdateAwards(void) {
                 }
                 award->oldpos1.y = y;
                 award->oldpos1.z = award->oldpos0.z;
-                if (player->obj.anim_time >= tumble_item_addtime) {
+                if (player->obj.anim.time >= tumble_item_addtime) {
                     award->wait = 0;
                     GameSfx(0x26, NULL);
                     AddGameDebris(0xA1, &award->oldpos1);
@@ -5009,7 +5224,7 @@ void DrawAwards(void) {
             if (award->wait != 0) {
                 pos = award->oldpos0;
                 t = tumble_item_starttime + 1.0f;
-                scale = (player->obj.anim_time - t) / (tumble_item_addtime - t);
+                scale = (player->obj.anim.time - t) / (tumble_item_addtime - t);
                 if (scale > 1.0f) {
                     scale = 1.0f;
                 }
@@ -6712,9 +6927,9 @@ void UpdateMask(struct mask_s *mask, struct tobj_s *obj) {
     dz = obj->pos.z - mask->pos.z;
     dist = NuFsqrt(dx * dx + dz * dz);
     if (Cursor.menu == 0x21) {
-        mask->newpos.x = GameCam.x + GameCam.vZ.x + GameCam.vX.x * 0.25f;
-        mask->newpos.y = GameCam.y + GameCam.vZ.y + GameCam.vX.y * 0.25f;
-        mask->newpos.z = GameCam.z + GameCam.vZ.z + GameCam.vX.z * 0.25f;
+        mask->newpos.x = GameCam.pos.x + GameCam.vZ.x + GameCam.vX.x * 0.25f;
+        mask->newpos.y = GameCam.pos.y + GameCam.vZ.y + GameCam.vX.y * 0.25f;
+        mask->newpos.z = GameCam.pos.z + GameCam.vZ.z + GameCam.vX.z * 0.25f;
     } else {
         if (best_cRPos != 0) {
             target = best_cRPos->angle;
@@ -6754,7 +6969,7 @@ void UpdateMask(struct mask_s *mask, struct tobj_s *obj) {
             }
         } else {
         face_camera:
-            target = NuAtan2D(GameCam.x - mask->pos.x, GameCam.z - mask->pos.z);
+            target = NuAtan2D(GameCam.pos.x - mask->pos.x, GameCam.pos.z - mask->pos.z);
             if (RotDiff(GameCam.yrot, obj->hdg) < 0) {
                 target -= 0x2000;
             } else {
@@ -6788,7 +7003,7 @@ void UpdateMask(struct mask_s *mask, struct tobj_s *obj) {
     mask->newpos.y += NuTrigTable[mask->wibble_ang[1]] * wibble * 0.5f;
     mask->newpos.z += NuTrigTable[mask->wibble_ang[2]] * wibble;
     if (mask->idle_mode == 1 || Cursor.menu == 0x21) {
-        target = NuAtan2D(GameCam.x - mask->pos.x, GameCam.z - mask->pos.z);
+        target = NuAtan2D(GameCam.pos.x - mask->pos.x, GameCam.pos.z - mask->pos.z);
     } else if (mask->idle_mode == 0) {
         target = obj->hdg;
     } else if (mask->idle_mode == 2) {
@@ -8107,6 +8322,54 @@ inline s32 Draw3DObject(s32 object, struct nuvec_s *pos, u16 xrot, u16 yrot,
 }
 
 
+extern s32 plr_target_frame;
+extern struct nuvec_s plr_target_sightpos;
+
+void DrawTarget(void) {
+    struct panim_s *anim;
+    struct nuvec_s v;
+    s32 i;
+
+    if (player->obj.target == 0) {
+        return;
+    }
+    if (player->obj.target_wait != 0) {
+        return;
+    }
+    if (player->obj.fire_lock == 0 && player->obj.dead == 0 &&
+        player->obj.finished == 0 && boss_dead == 0 &&
+        player->obj.fire == 0 && plr_target_frame > 0) {
+        anim = &player->obj.anim;
+        if (VEHICLECONTROL != 1 ||
+            (player->obj.vehicle != 0x44 && player->obj.vehicle != 0xB2)) {
+            if (anim->blend != 0) {
+                if (anim->blend_src_action != 0x4E &&
+                    anim->blend_src_action != 0x50) {
+                    return;
+                }
+                if (anim->blend_dst_action != 0x4E &&
+                    anim->blend_dst_action != 0x50) {
+                    return;
+                }
+            } else if (anim->action != 0x4E && anim->action != 0x50) {
+                return;
+            }
+        }
+        NuVecSub(&v, &plr_target_pos[1], &plr_target_sightpos);
+        Draw3DObject(0x94, &plr_target_sightpos,
+                     NuAtan2D(v.y, NuFsqrt(v.x * v.x + v.z * v.z)),
+                     NuAtan2D(v.x, v.z) + 0x8000, 0, 1.0f, 1.0f, NuVecMag(&v),
+                     ObjTab[0x94].obj.scene, ObjTab[0x94].obj.special, 0);
+        i = 0x82;
+        if (plr_target_found != 0) {
+            i = 0x83;
+        }
+        Draw3DObject(i, &plr_target_pos[1], -player->obj.target_xrot,
+                     player->obj.hdg + player->obj.target_yrot, 0, 1.0f, 1.0f,
+                     1.0f, ObjTab[i].obj.scene, ObjTab[i].obj.special, 0);
+    }
+}
+
 extern void NuHGobjEval(void *hobj, s32 n, void *joints, struct numtx_s *mtx);
 
 s32 Draw3DCharacter(struct nuvec_s *pos, u16 xrot, u16 yrot, u16 zrot,
@@ -8140,7 +8403,7 @@ s32 Draw3DCharacter(struct nuvec_s *pos, u16 xrot, u16 yrot, u16 zrot,
             }
             if (object != -1) {
                 Draw3DObject(object, pos, 0,
-                             NuAtan2D(pos->x - GameCam.x, pos->z - GameCam.z), 0, scale,
+                             NuAtan2D(pos->x - GameCam.pos.x, pos->z - GameCam.pos.z), 0, scale,
                              scale, scale, ObjTab[object].obj.scene,
                              ObjTab[object].obj.special, 0);
             }
