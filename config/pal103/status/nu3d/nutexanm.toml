@@ -29,11 +29,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0053:00159508:pftaBtex"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0053:00159760:pftaGosub"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0053:00159890:pftaUntiltex"
@@ -41,11 +41,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0053:001599d0:NuTexAnimProgReadScript"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0053:00159c78:NuTexAnimEnvProc"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0053:0015a4a8:NuTexAnimProgSysInit"
@@ -109,7 +109,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0053:0015aac0:NuTexAnimCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0053:0015ac30:NuTexAnimAddList"
@@ -153,7 +153,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0053:0015b0d8:pftaLabel"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0053:0015b1e0:pftaRet"

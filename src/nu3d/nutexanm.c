@@ -54,7 +54,12 @@ typedef struct NuFPar {
     int line_num;
 } NuFPar;
 
-struct numtl_s;
+struct numtl_s {
+    char pad000[0x1A4];
+    int tid;
+};
+
+struct nunrand_s;
 
 typedef void (*NuErrorFunc)(const char *fmt, ...);
 
@@ -73,6 +78,11 @@ enum {
     NTA_END = 14,
     NTA_XREF = 15
 };
+
+typedef struct NuFParCommand {
+    char *name;
+    void (*func)(NuFPar *parser);
+} NuFParCommand;
 
 typedef struct NuTexAnimProg {
     struct NuTexAnimProg *next;
@@ -116,6 +126,7 @@ typedef struct NuTexAnim {
     struct numtl_s *mtl;
     NuTexAnimEnv *env;
     char *name;
+    char *scriptname;
 } NuTexAnim;
 
 typedef struct NuTexAnimList {
@@ -130,6 +141,7 @@ extern NuTexAnimList ntalsysbuff[64];
 extern NuTexAnimList *ntal_first;
 extern NuTexAnimList *ntal_free;
 
+extern NuFParCommand D_002E9100[];
 extern NuTexAnimProg *D_0062EF30;
 extern int D_00633188;
 extern int D_0063318C;
@@ -141,9 +153,16 @@ extern char D_00615900[];
 extern char D_00615980[];
 extern char D_006159A8[];
 extern char D_006159D8[];
+extern char D_00615960[];
+extern char D_00615A30[];
+extern char D_00615A68[];
+extern char D_00615AA0[];
+extern char D_00615AE0[];
+extern char D_00615B18[];
 extern char D_006AE528[64][21];
 extern char D_006AEA68[256][21];
 
+#define nta_commands D_002E9100
 #define ntap_first D_0062EF30
 #define nta_numlabels D_00633188
 #define nta_numxdefs D_0063318C
@@ -155,6 +174,12 @@ extern char D_006AEA68[256][21];
 #define nta_unknown_condition_msg D_00615980
 #define nta_too_many_labels_msg D_006159A8
 #define nta_too_many_xdefs_msg D_006159D8
+#define nta_bad_condition_msg D_00615960
+#define nta_call_overflow_msg D_00615A30
+#define nta_call_underflow_msg D_00615A68
+#define nta_repeat_overflow_msg D_00615AA0
+#define nta_repend_msg D_00615AE0
+#define nta_untiltex_msg D_00615B18
 #define nta_label_names D_006AE528
 #define nta_xdef_names D_006AEA68
 
@@ -167,12 +192,20 @@ extern int NuFileWrite(int fh, void *data, int size);
 extern void NuFileClose(int fh);
 extern int NuFParGetWord(NuFPar *parser);
 extern int NuFParGetInt(NuFPar *parser);
+extern NuFPar *NuFParCreate(char *name);
+extern void NuFParDestroy(NuFPar *parser);
+extern int NuFParGetLine(NuFPar *parser);
+extern int NuFParPushCom(NuFPar *parser, NuFParCommand *commands);
+extern int NuFParInterpretWord(NuFPar *parser);
 extern void NuDisableVBlank(void);
 extern void NuEnableVBlank(void);
+extern long NuRand(struct nunrand_s *rand);
 extern NuErrorFunc NuErrorProlog(const char *file, int line);
 extern void NuTexAnimEnvProc(NuTexAnimEnv *env);
 extern int strcasecmp(char *a, char *b);
 extern unsigned int strlen(const char *s);
+extern void *memset(void *dst, int value, unsigned int size);
+extern void *memcpy(void *dst, const void *src, unsigned int size);
 extern char *strcpy(char *dst, const char *src);
 extern void NuStrCpy(char *dst, char *src);
 
@@ -299,6 +332,65 @@ void pftaXRef(NuFPar *parser)
 }
 
 
+void pftaBtex(NuFPar *parser)
+{
+    int condition;
+    int tex;
+    int label;
+
+    NuFParGetWord(parser);
+    switch (parser->word[0]) {
+    case '=':
+        condition = 0;
+        break;
+    case '<':
+        switch (parser->word[1]) {
+        case '>':
+            condition = 5;
+            break;
+        case '=':
+            condition = 3;
+            break;
+        default:
+            condition = 1;
+            break;
+        }
+        break;
+    case '>':
+        if (parser->word[1] == '=') {
+            condition = 4;
+        } else {
+            condition = 2;
+        }
+        break;
+    case '!':
+        condition = 5;
+        break;
+    default:
+        NuErrorProlog(nutexanm_srcfile, 0x1EC)(nta_unknown_condition_msg, parser->word, parser->line_num);
+        break;
+    }
+    tex = NuFParGetInt(parser);
+    NuFParGetWord(parser);
+    label = NuTexAnimLabelIndex(parser->word);
+    nta_prog->code[nta_prog->num_codes++] = NTA_BTEX;
+    nta_prog->code[nta_prog->num_codes++] = condition;
+    nta_prog->code[nta_prog->num_codes++] = tex;
+    nta_prog->code[nta_prog->num_codes++] = label;
+}
+
+
+void pftaGosub(NuFPar *parser)
+{
+    int label;
+
+    NuFParGetWord(parser);
+    label = NuTexAnimLabelIndex(parser->word);
+    nta_prog->code[nta_prog->num_codes++] = NTA_GOSUB;
+    nta_prog->code[nta_prog->num_codes++] = label;
+}
+
+
 void pftaUntiltex(NuFPar *parser)
 {
     int condition;
@@ -340,6 +432,290 @@ void pftaUntiltex(NuFPar *parser)
     nta_prog->code[nta_prog->num_codes++] = NTA_UNTILTEX;
     nta_prog->code[nta_prog->num_codes++] = condition;
     nta_prog->code[nta_prog->num_codes++] = tex;
+}
+
+
+inline void NuTexAnimProgInit(NuTexAnimProg *prog)
+{
+    int i;
+
+    if (prog) {
+        for (i = 0; i < 32; i++) {
+            prog->off_pc[i] = -1;
+            prog->on_pc[i] = -1;
+        }
+        prog->num_codes = 0;
+        prog->on_mask = 0;
+        prog->off_mask = 0;
+        prog->name[0] = 0;
+        prog->num_xdefs = 0;
+        prog->dynalloc = 0;
+    }
+}
+
+
+NuTexAnimProg *NuTexAnimProgReadScript(char **buff, char *name)
+{
+    NuTexAnimProg *mem;
+    NuTexAnimProg *prog;
+    NuFPar *parser;
+    int len;
+    int label;
+    short *end;
+
+    if (buff) {
+        mem = (NuTexAnimProg *)*buff;
+        mem = (NuTexAnimProg *)(((int)mem + 3) & 0xFFFFFFFC);
+    } else {
+        mem = NuMemAllocFn(0x400, nutexanm_srcfile, 0x2FC);
+    }
+    memset(nta_label_names, 0, sizeof(nta_label_names));
+    prog = 0;
+    nta_numlabels = 0;
+    parser = NuFParCreate(name);
+    if (parser) {
+        NuFParPushCom(parser, nta_commands);
+        prog = mem;
+        NuTexAnimProgInit(prog);
+        nta_prog = mem;
+        while (NuFParGetLine(parser)) {
+            len = NuFParGetWord(parser);
+            if (len && !NuFParInterpretWord(parser) && parser->word[0] && parser->word[len - 1] == ':') {
+                parser->word[len - 1] = 0;
+                label = NuTexAnimLabelIndex(parser->word);
+                nta_labels[label] = nta_prog->num_codes;
+            }
+        }
+        end = &mem->code[mem->num_codes];
+        mem = (NuTexAnimProg *)end;
+        if (buff) {
+            *buff = (char *)end;
+        }
+        NuFParDestroy(parser);
+        NuTexAnimProgAssembleEnd(prog);
+        prog->next = ntap_first;
+        if (ntap_first) {
+            ntap_first->prev = prog;
+        }
+        prog->prev = 0;
+        ntap_first = prog;
+    }
+    return prog;
+}
+
+
+static inline int NuTexAnimCondition(int condition, int value, int ref)
+{
+    switch (condition) {
+    case 0:
+        if (value == ref) {
+            return 1;
+        }
+        break;
+    case 1:
+        if (value < ref) {
+            return 1;
+        }
+        break;
+    case 2:
+        if (value > ref) {
+            return 1;
+        }
+        break;
+    case 3:
+        if (value <= ref) {
+            return 1;
+        }
+        break;
+    case 4:
+        if (value >= ref) {
+            return 1;
+        }
+        break;
+    case 5:
+        if (value != ref) {
+            return 1;
+        }
+        break;
+    default:
+        NuErrorProlog(nutexanm_srcfile, 0x1BE)(nta_bad_condition_msg, condition);
+        break;
+    }
+    return 0;
+}
+
+
+void NuTexAnimEnvProc(NuTexAnimEnv *env)
+{
+    NuTexAnimProg *prog;
+    NuTexAnimList *list;
+    NuTexAnim *anim;
+    NuTexAnimEnv *other;
+    NuTexAnimProg *other_prog;
+    int done;
+    int i;
+    int signal;
+    int tex;
+    int xdef;
+
+    done = 0;
+    prog = env->prog;
+    if (!prog) {
+        return;
+    }
+    if (nta_signals_off & prog->off_mask) {
+        for (signal = 0; signal < 32; signal++) {
+            if (nta_signals_off & (1 << signal) & prog->off_mask) {
+                env->pc = prog->off_pc[signal];
+                env->wait = 0;
+                env->call_depth = 0;
+                env->repeat_depth = 0;
+                break;
+            }
+        }
+    }
+    if (nta_signals_on & prog->on_mask) {
+        for (signal = 0; signal < 32; signal++) {
+            if (nta_signals_on & (1 << signal) & prog->on_mask) {
+                env->pc = prog->on_pc[signal];
+                env->wait = 0;
+                env->call_depth = 0;
+                env->repeat_depth = 0;
+                break;
+            }
+        }
+    }
+    if (env->wait) {
+        env->wait--;
+        return;
+    }
+    do {
+        switch (prog->code[env->pc]) {
+        case NTA_TEX:
+            env->tex = prog->code[env->pc + 1];
+            env->mtl->tid = env->tids[env->tex];
+            env->pc += 2;
+            env->wait = env->wait_base;
+            if (env->wait_random) {
+                env->wait += NuRand(0) % env->wait_random;
+            }
+            done = 1;
+            break;
+        case NTA_TEXADJ:
+            tex = env->tex + prog->code[env->pc + 1];
+            if (tex < prog->code[env->pc + 2]) {
+                tex = prog->code[env->pc + 2];
+            }
+            if (tex > prog->code[env->pc + 3]) {
+                tex = prog->code[env->pc + 3];
+            }
+            env->tex = tex;
+            env->mtl->tid = env->tids[tex];
+            env->pc += 4;
+            env->wait = env->wait_base;
+            if (env->wait_random) {
+                env->wait += NuRand(0) % env->wait_random;
+            }
+            done = 1;
+            break;
+        case NTA_WAIT:
+            env->wait = prog->code[env->pc + 1];
+            if (prog->code[env->pc + 2]) {
+                env->wait += NuRand(0) % prog->code[env->pc + 2];
+            }
+            done = 1;
+            env->pc += 3;
+            break;
+        case NTA_RATE:
+            env->wait_base = prog->code[env->pc + 1];
+            env->wait_random = prog->code[env->pc + 2];
+            env->pc += 3;
+            break;
+        case NTA_GOTO:
+            env->pc = prog->code[env->pc + 1];
+            break;
+        case NTA_BTEX:
+            if (NuTexAnimCondition(prog->code[env->pc + 1], env->tex, prog->code[env->pc + 2])) {
+                env->pc = prog->code[env->pc + 3];
+            } else {
+                env->pc += 4;
+            }
+            break;
+        case NTA_GOSUB:
+            if (env->call_depth >= 16) {
+                NuErrorProlog(nutexanm_srcfile, 0x3C8)(nta_call_overflow_msg, env->pc);
+            }
+            env->call_stack[env->call_depth++] = env->pc + 2;
+            env->pc = prog->code[env->pc + 1];
+            break;
+        case NTA_RET:
+            if (env->call_depth == 0) {
+                NuErrorProlog(nutexanm_srcfile, 0x3D0)(nta_call_underflow_msg, env->pc);
+            }
+            env->pc = env->call_stack[--env->call_depth];
+            break;
+        case NTA_REPEAT:
+            if (env->repeat_depth >= 16) {
+                NuErrorProlog(nutexanm_srcfile, 0x3D8)(nta_repeat_overflow_msg, env->pc);
+            }
+            env->repeat_count[env->repeat_depth] = prog->code[env->pc + 1];
+            if (prog->code[env->pc + 2]) {
+                env->repeat_count[env->repeat_depth] += NuRand(0) % prog->code[env->pc + 2];
+            }
+            env->pc += 3;
+            env->repeat_pc[env->repeat_depth++] = env->pc;
+            break;
+        case NTA_REPEND:
+            if (env->repeat_depth == 0) {
+                NuErrorProlog(nutexanm_srcfile, 0x3E2)(nta_repend_msg, env->pc);
+            }
+            if (!env->repeat_count[env->repeat_depth - 1]) {
+                env->repeat_depth--;
+                env->pc++;
+            } else {
+                env->pc = env->repeat_pc[env->repeat_depth - 1];
+                env->repeat_count[env->repeat_depth - 1]--;
+            }
+            break;
+        case NTA_UNTILTEX:
+            if (env->repeat_depth == 0) {
+                NuErrorProlog(nutexanm_srcfile, 0x3F0)(nta_untiltex_msg, env->pc);
+            }
+            if (NuTexAnimCondition(prog->code[env->pc + 1], env->tex, prog->code[env->pc + 2])
+                || !env->repeat_count[env->repeat_depth - 1]) {
+                env->pc += 3;
+                env->repeat_depth--;
+            } else {
+                env->pc = env->repeat_pc[env->repeat_depth - 1];
+                env->repeat_count[env->repeat_depth - 1]--;
+            }
+            break;
+        case NTA_END:
+            done = 1;
+            break;
+        case NTA_XREF:
+            xdef = prog->code[env->pc + 1];
+            for (list = ntal_first; list; list = list->next) {
+                for (anim = list->anims; anim; anim = anim->next) {
+                    other = anim->env;
+                    if (other && other != env && other->prog && other->prog->num_xdefs) {
+                        other_prog = other->prog;
+                        for (i = 0; i < other_prog->num_xdefs; i++) {
+                            if (other_prog->xdef_label[i] == xdef) {
+                                other->pc = other_prog->xdef_pc[i];
+                                other->wait = 0;
+                                other->call_depth = 0;
+                                other->repeat_depth = 0;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            env->pc += 2;
+            break;
+        }
+    } while (!done);
 }
 
 
@@ -392,25 +768,6 @@ void NuTexAnimProgDestroy(NuTexAnimProg *prog)
     }
     if (prog->dynalloc) {
         NuMemFreeFn(prog, nutexanm_srcfile, 0xAD);
-    }
-}
-
-
-inline void NuTexAnimProgInit(NuTexAnimProg *prog)
-{
-    int i;
-
-    if (prog) {
-        for (i = 0; i < 32; i++) {
-            prog->off_pc[i] = -1;
-            prog->on_pc[i] = -1;
-        }
-        prog->num_codes = 0;
-        prog->on_mask = 0;
-        prog->off_mask = 0;
-        prog->name[0] = 0;
-        prog->num_xdefs = 0;
-        prog->dynalloc = 0;
     }
 }
 
@@ -507,7 +864,7 @@ inline void NuTexAnimEnvReset(NuTexAnimEnv *env)
 }
 
 
-NuTexAnimEnv *NuTexAnimEnvCreate(char **buff, struct numtl_s *mtl, short *tids, NuTexAnimProg *prog)
+inline NuTexAnimEnv *NuTexAnimEnvCreate(char **buff, struct numtl_s *mtl, short *tids, NuTexAnimProg *prog)
 {
     NuTexAnimEnv *env;
 
@@ -585,6 +942,29 @@ void NuTexAnimDestroy(NuTexAnim *anim)
     if (anim->dynalloc) {
         NuMemFreeFn(anim, nutexanm_srcfile, 0x4AE);
     }
+}
+
+
+NuTexAnim *NuTexAnimCreate(char **buff, NuTexAnimProg *prog, struct numtl_s *mtl, short *tids, int num_tids)
+{
+    NuTexAnim *anim;
+
+    if (buff) {
+        anim = (NuTexAnim *)(((int)*buff + 3) & 0xFFFFFFFC);
+        *buff = (char *)anim + sizeof(NuTexAnim);
+        *buff += num_tids * sizeof(short);
+    } else {
+        anim = NuMemAllocFn(sizeof(NuTexAnim) + num_tids * sizeof(short), nutexanm_srcfile, 0x4CC);
+    }
+    anim->prev = 0;
+    anim->next = 0;
+    anim->num_tids = num_tids;
+    anim->mtl = mtl;
+    anim->name = 0;
+    anim->tids = (short *)(anim + 1);
+    memcpy(anim->tids, tids, num_tids * sizeof(short));
+    anim->env = NuTexAnimEnvCreate(buff, mtl, anim->tids, prog);
+    return anim;
 }
 
 
@@ -717,6 +1097,16 @@ void pftaOff(NuFPar *parser)
     signal = NuFParGetInt(parser);
     nta_prog->off_pc[signal] = nta_prog->num_codes;
     nta_prog->off_mask |= 1 << signal;
+}
+
+
+void pftaLabel(NuFPar *parser)
+{
+    int label;
+
+    NuFParGetWord(parser);
+    label = NuTexAnimLabelIndex(parser->word);
+    nta_labels[label] = nta_prog->num_codes;
 }
 
 
