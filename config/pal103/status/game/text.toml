@@ -13,12 +13,12 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0109:002409e8:NewLanguage"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0109:00240b88:AddSpacesIntoText"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0109:00240c48:JStrLen"
-state = "asm"
+state = "matching"
