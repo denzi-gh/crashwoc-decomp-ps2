@@ -190,6 +190,8 @@ struct edptltexitem_s {
     float y0;
     float x1;
     float y1;
+    void *change;
+    void *mtl;
 };
 
 struct nuvec_s {
@@ -275,15 +277,16 @@ struct debtypedef_s {
     char pad11[0x1];
     short genrate;
     short numptls;
-    char pad16[0x2];
+    short startoffset;
     short ivalon;
     short ivalonran;
     short ivaloff;
     short ivaloffran;
     signed char gensort;
-    unsigned char gencode;
-    unsigned char texturetype;
-    char pad23[0x5];
+    signed char gencode;
+    signed char texturetype;
+    signed char reserved23;
+    float reserved24;
     float cuton;
     float cutoff;
     float drawcutoff;
@@ -292,10 +295,16 @@ struct debtypedef_s {
     struct nuvec_s varemitrand;
     struct nuvec_s varstart;
     struct nuvec_s varstartrand;
-    char pad68[0x30];
+    struct nuvec_s posrange;
+    struct nuvec_s posbase;
+    struct nuvec_s momrange;
+    struct nuvec_s mombase;
     float gravity;
     float etime;
-    char padA0[0x8];
+    short frames;
+    signed char columns;
+    signed char rows;
+    float frame;
     float jib[4];
     struct debcolkey_s colenv[8];
     struct debenvkey_s alphaenv[8];
@@ -306,7 +315,8 @@ struct debtypedef_s {
     float rotmin;
     float rotmax;
     struct debenvkey_s rotenv[8];
-    char pad248[0x80];
+    struct debenvkey_s extraenv0[8];
+    struct debenvkey_s extraenv1[8];
     float texu0;
     float texu1;
     float texv0;
@@ -411,13 +421,13 @@ extern struct edptlmenu_s *edptl_bounce_menu;
 extern struct edptlmenu_s *edptl_soundid_menu;
 extern struct edptlmenu_s *edptl_soundcontrol_menu;
 extern struct edptlmenu_s *edptl_soundx_menu;
-extern void *collmenu;
-extern void *ptlcutoffmenu;
-extern void *ptlvaremitmenu;
-extern void *ptlvarstartmenu;
-extern void *emittimemenu;
-extern void *ptlemitvelmenu;
-extern void *ptlgravmenu;
+extern struct edptlmenu_s *collmenu;
+extern struct edptlmenu_s *ptlcutoffmenu;
+extern struct edptlmenu_s *ptlvaremitmenu;
+extern struct edptlmenu_s *ptlvarstartmenu;
+extern struct edptlmenu_s *emittimemenu;
+extern struct edptlmenu_s *ptlemitvelmenu;
+extern struct edptlmenu_s *ptlgravmenu;
 extern void *memcardmenu;
 extern void *ptlclipmenu;
 extern struct edptlmenu_s *ptldatamenu;
@@ -435,7 +445,7 @@ extern void *loadeffectsmenu;
 extern void *mergeeffectsmenu;
 extern void *deleteeffectsmenu;
 extern struct edptlmenu_s *ptlcolmenu;
-extern void *ptlrotmenu;
+extern struct edptlmenu_s *ptlrotmenu;
 extern void *D_0062F354;
 extern int D_0062F314;
 extern int edptl_clipboard_entry;
@@ -473,9 +483,9 @@ extern struct nuvec_s D_006B3B30;
 #define edpp_game_loc D_006B3B30
 
 extern struct edptlmenu_s *ptljibmenu;
-extern void *ptlsizemenu;
-extern void *texturemenu;
-extern void *textureselectmenu;
+extern struct edptlmenu_s *ptlsizemenu;
+extern struct edptlmenu_s *texturemenu;
+extern struct edptlmenu_s *textureselectmenu;
 extern struct edptlgradmenu_s *D_0062F328;
 extern struct edptlgradmenu_s *D_0062F32C;
 extern struct edptlitem_s *D_0062F330;
@@ -839,6 +849,147 @@ extern void edptlcbCancelSoundControlMenu(void);
 extern void edptlcbSetSoundControl(void *menu, struct edptlitem_s *item);
 extern void edptlcbCancelSoundXMenu(void);
 extern void edptlcbChangeSoundDelay(void *menu, struct edptlitem_s *item);
+extern struct numtl_s *DebMat[8];
+extern void eduiItemSliderSetFmt(void *item, char *fmt);
+extern void eduiItemSliderSetGranularity(void *item, float granularity);
+extern void *eduiItemTexturePickCreate(void *data, struct edptlfont_s *font, void *cb, char *label);
+extern void cbPtlCancelCollMenu(void);
+extern void cbPtlApplyCollEnv(void);
+extern void cbChangeNumCollSpheres(void *menu, struct edptlitem_s *item);
+extern void cbPtlDefaultCollEnv(struct edptlmenu_s *menu);
+extern void cbPtlCancelSizeMenu(void);
+extern void cbPtlCancelRotMenu(void);
+extern void cbPtlCancelCutOffMenu(void);
+extern void cbPtlChangeCutOff(void *menu, struct edptlitem_s *item);
+extern void cbPtlChangeCutOn(void *menu, struct edptlitem_s *item);
+extern void cbPtlChangeDrawCutOff(void *menu, struct edptlitem_s *item);
+extern void cbPtlCancelVarEmitMenu(void);
+extern void cbPtlCancelVarStartMenu(void);
+extern void cbPtlChangeX(void *menu, struct edptlitem_s *item);
+extern void cbPtlChangeTextureSelect(struct edptlmenu_s *menu, struct edptltexitem_s *item);
+extern void cbPtlCancelTextureMenu(void);
+extern void cbPtlSelTextureType(void *menu, struct edptlitem_s *item);
+extern void cbPtlCancelEmitTimeMenu(void);
+extern void cbPtlChangeIvalOn(void *menu, struct edptlitem_s *item);
+extern void cbPtlChangeIvalOnRan(void *menu, struct edptlitem_s *item);
+extern void cbPtlChangeIvalOff(void *menu, struct edptlitem_s *item);
+extern void cbPtlChangeIvalOffRan(void *menu, struct edptlitem_s *item);
+extern void cbPtlCancelEmitVelMenu(void);
+extern void cbPtlChangeEmitVel(void *menu, struct edptlitem_s *item);
+extern void cbPtlCancelGravMenu(void);
+extern void cbPtlChangeGrav(void *menu, struct edptlitem_s *item);
+extern char D_00618250[];
+extern char D_00618268[];
+extern char D_00618280[];
+extern char D_00618290[];
+extern char D_006182A8[];
+extern char D_006182B8[];
+extern char D_006182C8[];
+extern char D_006182D8[];
+extern char D_006182E8[];
+extern char D_006182F8[];
+extern char D_00618308[];
+extern char D_00618320[];
+extern char D_00618340[];
+extern char D_00618358[];
+extern char D_00618370[];
+extern char D_00618380[];
+extern char D_00618390[];
+extern char D_006183A0[];
+extern char D_006183B0[];
+extern char D_006183C0[];
+extern char D_006183D0[];
+extern char D_006183E8[];
+extern char D_006183F8[];
+extern char D_00618408[];
+extern char D_00618418[];
+extern char D_00618428[];
+extern char D_00618438[];
+extern char D_00618448[];
+extern char D_00618458[];
+extern char D_00618468[];
+extern char D_00618478[];
+extern char D_00618488[];
+extern char D_006184A0[];
+extern char D_006184B0[];
+extern char D_006184C0[];
+extern char D_006184D0[];
+extern char D_006184E0[];
+extern char D_006184F0[];
+extern char D_00618510[];
+extern char D_00618520[];
+extern char D_00618530[];
+extern char D_00618540[];
+extern char D_00618550[];
+extern char D_00618568[];
+extern char D_0062F3D8[];
+extern char D_00618578[];
+extern char D_00618588[];
+extern char D_00618598[];
+extern char D_006185A8[];
+extern char D_0062F3E0[];
+extern char D_0062F3D0[];
+
+#define collmenutitle D_00618250
+#define collenvlabel D_00618268
+#define numsphereslabel D_00618280
+#define defaultenvlabel D_00618290
+#define sizemenutitle D_006182A8
+#define widthenvlabel D_006182B8
+#define heightenvlabel D_006182C8
+#define minsizelabel D_006182D8
+#define onedecimalfmt D_006182E8
+#define maxsizelabel D_006182F8
+#define copywidthlabel D_00618308
+#define copyheightlabel D_00618320
+#define rotmenutitle D_00618340
+#define rotenvlabel D_00618358
+#define minrotlabel D_00618370
+#define maxrotlabel D_00618380
+#define cutoffmenutitle D_00618390
+#define cutofflabel D_006183A0
+#define cutonlabel D_006183B0
+#define drawcutofflabel D_006183C0
+#define varemitmenutitle D_006183D0
+#define randemitxlabel D_006183E8
+#define randemitylabel D_006183F8
+#define randemitzlabel D_00618408
+#define randmagxlabel D_00618418
+#define randrotylabel D_00618428
+#define randrotzlabel D_00618438
+#define randmaglabel D_00618448
+#define steprotylabel D_00618458
+#define steprotzlabel D_00618468
+#define randstarttitle D_00618478
+#define baseemittitle D_00618488
+#define randstartxlabel D_006184A0
+#define randstartylabel D_006184B0
+#define randstartzlabel D_006184C0
+#define basemaglabel D_006184D0
+#define baserotylabel D_006184E0
+#define baserotzlabel D_006184F0
+#define textureselecttitle D_00618510
+#define additivelabel D_00618520
+#define modulationlabel D_00618530
+#define subtractivelabel D_00618540
+#define textureselectorlabel D_00618550
+#define emittimemenutitle D_00618568
+#define ontimelabel D_0062F3D8
+#define randontimelabel D_00618578
+#define offtimelabel D_00618588
+#define randofftimelabel D_00618598
+#define emitveltitle D_006185A8
+#define gravitytitle D_0062F3E0
+#define texturemenutitle D_0062F3D0
+extern void EdFileSetMedia(int media);
+extern int EdFileOpen(char *name, int mode);
+extern void EdFileClose(void);
+extern void EdFileWrite(void *data, int size);
+extern void EdFileWriteInt(int data);
+extern void EdFileWriteShort(short data);
+extern void EdFileWriteChar(char data);
+extern void EdFileWriteFloat(float data);
+
 
 
 int edppPtlCreate(struct nuvec_s *pos, int type) {
@@ -2030,6 +2181,636 @@ void edptlcbSoundXMenu(struct edptlmenu_s *menu, struct edptlitem_s *item) {
         edptl_soundx_menu->x = menu->x + 10;
         edptl_soundx_menu->y = menu->y + 40;
     }
+}
+
+
+void cbPtlCollMenu(struct edptlmenu_s *menu) {
+    struct edptlfont_s font;
+    struct debkey_s *deb;
+    struct debtypedef_s *dt;
+    float ratio;
+    int i;
+
+    font = edpp_menu_font;
+    if (edpp_nearest == -1) {
+        return;
+    }
+    if (edpp_ptls[edpp_nearest].debris == -1) {
+        return;
+    }
+    deb = &debkeydata[edpp_ptls[edpp_nearest].debris];
+    dt = debtab[deb->debtype];
+    collmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0x12C, app_fnt, cbPtlCancelCollMenu, collmenutitle);
+    if (collmenu != 0) {
+        eduiMenuAddItem(collmenu, eduiItemGreyGradPickCreate(0, &font, cbPtlApplyCollEnv,
+                                                             collenvlabel));
+        collenvmenu = edui_last_item;
+        for (i = 0; i < 8; i++) {
+            if (dt->sizemin == dt->sizemax) {
+                ratio = 1.0f;
+            } else {
+                ratio = (dt->collenv[i].value - dt->sizemin / 10000.0f)
+                      / ((dt->sizemax - dt->sizemin) / 10000.0f);
+            }
+            eduiGradStageAddRGB(collenvmenu, dt->collenv[i].time, ratio, ratio, ratio);
+            if (dt->collenv[i].time == 1.0f) {
+                break;
+            }
+        }
+        eduiMenuAddItem(collmenu, eduiItemSliderCreateInt(0, &font, 0, cbChangeNumCollSpheres, 0, 8,
+                                                          dt->numcollspheres, numsphereslabel));
+        eduiMenuAddItem(collmenu, eduiItemSelCreate(1, &font, 0, 0, cbPtlDefaultCollEnv,
+                                                    defaultenvlabel));
+        eduiMenuAttach(menu, collmenu);
+        collmenu->x = menu->x + 10;
+        collmenu->y = menu->y + 40;
+    }
+}
+
+
+void cbPtlSizeMenu(struct edptlmenu_s *menu) {
+    struct edptlfont_s font;
+    struct debkey_s *deb;
+    struct debtypedef_s *dt;
+    float ratio;
+    int i;
+
+    font = edpp_menu_font;
+    if (edpp_nearest == -1) {
+        return;
+    }
+    if (edpp_ptls[edpp_nearest].debris == -1) {
+        return;
+    }
+    deb = &debkeydata[edpp_ptls[edpp_nearest].debris];
+    dt = debtab[deb->debtype];
+    ptlsizemenu = eduiMenuCreate(0x46, 0x46, 0xDC, 0x12C, app_fnt, cbPtlCancelSizeMenu,
+                                 sizemenutitle);
+    if (ptlsizemenu != 0) {
+        eduiMenuAddItem(ptlsizemenu, eduiItemGreyGradPickCreate(0, &font, cbPtlApplySize,
+                                                                widthenvlabel));
+        widthgradmenu = edui_last_item;
+        for (i = 0; i < 8; i++) {
+            if (dt->sizemin == dt->sizemax) {
+                ratio = 1.0f;
+            } else {
+                ratio = (dt->widthenv[i].value - dt->sizemin) / (dt->sizemax - dt->sizemin);
+            }
+            eduiGradStageAddRGB(widthgradmenu, dt->widthenv[i].time, ratio, ratio, ratio);
+            if (dt->widthenv[i].time == 1.0f) {
+                break;
+            }
+        }
+        eduiMenuAddItem(ptlsizemenu, eduiItemGreyGradPickCreate(0, &font, cbPtlApplySize,
+                                                                heightenvlabel));
+        heightgradmenu = edui_last_item;
+        for (i = 0; i < 8; i++) {
+            if (dt->sizemin == dt->sizemax) {
+                ratio = 1.0f;
+            } else {
+                ratio = (dt->heightenv[i].value - dt->sizemin) / (dt->sizemax - dt->sizemin);
+            }
+            eduiGradStageAddRGB(heightgradmenu, dt->heightenv[i].time, ratio, ratio, ratio);
+            if (dt->heightenv[i].time == 1.0f) {
+                break;
+            }
+        }
+        eduiMenuAddItem(ptlsizemenu, eduiItemSliderCreate(0, &font, 0, cbPtlApplySize, 0.0f,
+                                                          edpp_slider_scale * 5000.0, dt->sizemin,
+                                                          minsizelabel));
+        sizeminitem = edui_last_item;
+        eduiItemSliderSetFmt(edui_last_item, onedecimalfmt);
+        eduiItemSliderSetGranularity(edui_last_item, 0.1f);
+        eduiMenuAddItem(ptlsizemenu, eduiItemSliderCreate(0, &font, 0, cbPtlApplySize, 0.0f,
+                                                          edpp_slider_scale * 5000.0, dt->sizemax,
+                                                          maxsizelabel));
+        sizemaxitem = edui_last_item;
+        eduiItemSliderSetFmt(edui_last_item, onedecimalfmt);
+        eduiItemSliderSetGranularity(edui_last_item, 0.1f);
+        eduiMenuAddItem(ptlsizemenu, eduiItemSelCreate(1, &font, 0, 0, cbPtlCopySize,
+                                                       copywidthlabel));
+        eduiMenuAddItem(ptlsizemenu, eduiItemSelCreate(2, &font, 0, 0, cbPtlCopySize,
+                                                       copyheightlabel));
+        eduiMenuAttach(menu, ptlsizemenu);
+        ptlsizemenu->x = menu->x + 10;
+        ptlsizemenu->y = menu->y + 40;
+    }
+}
+
+
+void cbPtlRotMenu(struct edptlmenu_s *menu) {
+    struct edptlfont_s font;
+    struct debkey_s *deb;
+    struct debtypedef_s *dt;
+    float ratio;
+    int i;
+
+    font = edpp_menu_font;
+    if (edpp_nearest == -1) {
+        return;
+    }
+    if (edpp_ptls[edpp_nearest].debris == -1) {
+        return;
+    }
+    deb = &debkeydata[edpp_ptls[edpp_nearest].debris];
+    dt = debtab[deb->debtype];
+    ptlrotmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0x12C, app_fnt, cbPtlCancelRotMenu, rotmenutitle);
+    if (ptlrotmenu != 0) {
+        eduiMenuAddItem(ptlrotmenu, eduiItemGreyGradPickCreate(0, &font, cbPtlApplyRot,
+                                                               rotenvlabel));
+        rotgradmenu = edui_last_item;
+        for (i = 0; i < 8; i++) {
+            if (dt->rotmin == dt->rotmax) {
+                ratio = 1.0f;
+            } else {
+                ratio = (dt->rotenv[i].value * (360.0f / 65536.0f) - dt->rotmin)
+                      / (dt->rotmax - dt->rotmin);
+            }
+            eduiGradStageAddRGB(rotgradmenu, dt->rotenv[i].time, ratio, ratio, ratio);
+            if (dt->rotenv[i].time == 1.0f) {
+                break;
+            }
+        }
+        eduiMenuAddItem(ptlrotmenu, eduiItemSliderCreate(0, &font, 0, cbPtlApplyRot, -720.0f,
+                                                         1440.0f, dt->rotmin, minrotlabel));
+        rotminitem = edui_last_item;
+        eduiItemSliderSetFmt(edui_last_item, onedecimalfmt);
+        eduiItemSliderSetGranularity(edui_last_item, 0.1f);
+        eduiMenuAddItem(ptlrotmenu, eduiItemSliderCreate(0, &font, 0, cbPtlApplyRot, -720.0f,
+                                                         1440.0f, dt->rotmax, maxrotlabel));
+        rotmaxitem = edui_last_item;
+        eduiItemSliderSetFmt(edui_last_item, onedecimalfmt);
+        eduiItemSliderSetGranularity(edui_last_item, 0.1f);
+        eduiMenuAttach(menu, ptlrotmenu);
+        ptlrotmenu->x = menu->x + 10;
+        ptlrotmenu->y = menu->y + 40;
+    }
+}
+
+
+void cbPtlCutOffMenu(struct edptlmenu_s *menu) {
+    struct edptlfont_s font;
+    struct debkey_s *deb;
+    struct debtypedef_s *dt;
+
+    font = edpp_menu_font;
+    if (edpp_nearest == -1) {
+        return;
+    }
+    if (edpp_ptls[edpp_nearest].debris == -1) {
+        return;
+    }
+    deb = &debkeydata[edpp_ptls[edpp_nearest].debris];
+    dt = debtab[deb->debtype];
+    ptlcutoffmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0x12C, app_fnt, cbPtlCancelCutOffMenu,
+                                   cutoffmenutitle);
+    if (ptlcutoffmenu != 0) {
+        eduiMenuAddItem(ptlcutoffmenu, eduiItemSliderCreate(0, &font, 0, cbPtlChangeCutOff, 0.0f,
+                                                            edpp_slider_scale * 25.0, dt->cutoff,
+                                                            cutofflabel));
+        eduiMenuAddItem(ptlcutoffmenu, eduiItemSliderCreate(0, &font, 0, cbPtlChangeCutOn, 0.0f,
+                                                            edpp_slider_scale * 25.0, dt->cuton,
+                                                            cutonlabel));
+        eduiMenuAddItem(ptlcutoffmenu, eduiItemSliderCreate(0, &font, 0, cbPtlChangeDrawCutOff,
+                                                            0.0f, edpp_slider_scale * 25.0,
+                                                            dt->drawcutoff, drawcutofflabel));
+        eduiMenuAttach(menu, ptlcutoffmenu);
+        ptlcutoffmenu->x = menu->x + 10;
+        ptlcutoffmenu->y = menu->y + 40;
+    }
+}
+
+
+void cbPtlVarEmitMenu(struct edptlmenu_s *menu) {
+    struct edptlfont_s font;
+    struct debkey_s *deb;
+    struct debtypedef_s *dt;
+
+    font = edpp_menu_font;
+    if (edpp_nearest == -1) {
+        return;
+    }
+    if (edpp_ptls[edpp_nearest].debris == -1) {
+        return;
+    }
+    deb = &debkeydata[edpp_ptls[edpp_nearest].debris];
+    dt = debtab[deb->debtype];
+    ptlvaremitmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0x12C, app_fnt, cbPtlCancelVarEmitMenu,
+                                    varemitmenutitle);
+    if (ptlvaremitmenu != 0) {
+        if (dt->gensort == 0 || dt->gensort == 8 || dt->gensort == 9 || dt->gensort == 10) {
+            eduiMenuAddItem(ptlvaremitmenu,
+                            eduiItemSliderCreate(0, &font, 0, cbPtlChangeX, 0.0f,
+                                                 edpp_slider_scale * 5.0, dt->varemit.x,
+                                                 randemitxlabel));
+            eduiMenuAddItem(ptlvaremitmenu,
+                            eduiItemSliderCreate(0, &font, 0, cbPtlChangeY, 0.0f,
+                                                 edpp_slider_scale * 5.0, dt->varemit.y,
+                                                 randemitylabel));
+            eduiMenuAddItem(ptlvaremitmenu,
+                            eduiItemSliderCreate(0, &font, 0, cbPtlChangeZ, 0.0f,
+                                                 edpp_slider_scale * 5.0, dt->varemit.z,
+                                                 randemitzlabel));
+        } else if (dt->gensort == 6) {
+            eduiMenuAddItem(ptlvaremitmenu,
+                            eduiItemSliderCreate(0, &font, 0, cbPtlChangeX, 0.0f,
+                                                 edpp_slider_scale * 5.0, dt->varemit.x,
+                                                 randmagxlabel));
+            eduiMenuAddItem(ptlvaremitmenu,
+                            eduiItemSliderCreate(0, &font, 0, cbPtlChangeY, 0.0f, 180.0f,
+                                                 dt->varemit.y * (360.0f / 65536.0f),
+                                                 randrotylabel));
+            eduiItemSliderSetFmt(edui_last_item, onedecimalfmt);
+            eduiItemSliderSetGranularity(edui_last_item, 0.1f);
+            eduiMenuAddItem(ptlvaremitmenu,
+                            eduiItemSliderCreate(0, &font, 0, cbPtlChangeZ, 0.0f, 180.0f,
+                                                 dt->varemit.z * (360.0f / 65536.0f),
+                                                 randrotzlabel));
+            eduiItemSliderSetFmt(edui_last_item, onedecimalfmt);
+            eduiItemSliderSetGranularity(edui_last_item, 0.1f);
+        } else if (dt->gensort == 7) {
+            eduiMenuAddItem(ptlvaremitmenu,
+                            eduiItemSliderCreate(0, &font, 0, cbPtlChangeX, 0.0f,
+                                                 edpp_slider_scale * 5.0, dt->varemit.x,
+                                                 randmaglabel));
+            eduiMenuAddItem(ptlvaremitmenu,
+                            eduiItemSliderCreate(0, &font, 0, cbPtlChangeY, -90.0f, 180.0f,
+                                                 dt->varemit.y * (360.0f / 65536.0f),
+                                                 steprotylabel));
+            eduiItemSliderSetFmt(edui_last_item, onedecimalfmt);
+            eduiItemSliderSetGranularity(edui_last_item, 0.1f);
+            eduiMenuAddItem(ptlvaremitmenu,
+                            eduiItemSliderCreate(0, &font, 0, cbPtlChangeZ, -90.0f, 180.0f,
+                                                 dt->varemit.z * (360.0f / 65536.0f),
+                                                 steprotzlabel));
+            eduiItemSliderSetFmt(edui_last_item, onedecimalfmt);
+            eduiItemSliderSetGranularity(edui_last_item, 0.1f);
+        }
+        eduiMenuAttach(menu, ptlvaremitmenu);
+        ptlvaremitmenu->x = menu->x + 10;
+        ptlvaremitmenu->y = menu->y + 40;
+    }
+}
+
+
+void cbPtlVarStartMenu(struct edptlmenu_s *menu) {
+    struct edptlfont_s font;
+    struct debkey_s *deb;
+    struct debtypedef_s *dt;
+
+    font = edpp_menu_font;
+    if (edpp_nearest == -1) {
+        return;
+    }
+    if (edpp_ptls[edpp_nearest].debris == -1) {
+        return;
+    }
+    deb = &debkeydata[edpp_ptls[edpp_nearest].debris];
+    dt = debtab[deb->debtype];
+    if (dt->gensort == 0 || dt->gensort == 8 || dt->gensort == 9 || dt->gensort == 10) {
+        ptlvarstartmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0x12C, app_fnt, cbPtlCancelVarStartMenu,
+                                         randstarttitle);
+    } else if (dt->gensort == 6 || dt->gensort == 7) {
+        ptlvarstartmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0x12C, app_fnt, cbPtlCancelVarStartMenu,
+                                         baseemittitle);
+    }
+    if (ptlvarstartmenu != 0) {
+        if (dt->gensort == 0 || dt->gensort == 8 || dt->gensort == 9 || dt->gensort == 10) {
+            eduiMenuAddItem(ptlvarstartmenu,
+                            eduiItemSliderCreate(0, &font, 0, cbPtlChangeX, 0.0f,
+                                                 edpp_slider_scale * 5.0, dt->varstart.x,
+                                                 randstartxlabel));
+            eduiMenuAddItem(ptlvarstartmenu,
+                            eduiItemSliderCreate(0, &font, 0, cbPtlChangeY, 0.0f,
+                                                 edpp_slider_scale * 5.0, dt->varstart.y,
+                                                 randstartylabel));
+            eduiMenuAddItem(ptlvarstartmenu,
+                            eduiItemSliderCreate(0, &font, 0, cbPtlChangeZ, 0.0f,
+                                                 edpp_slider_scale * 5.0, dt->varstart.z,
+                                                 randstartzlabel));
+        } else if (dt->gensort == 6 || dt->gensort == 7) {
+            eduiMenuAddItem(ptlvarstartmenu,
+                            eduiItemSliderCreate(0, &font, 0, cbPtlChangeX, 0.0f,
+                                                 edpp_slider_scale * 5.0, dt->varstart.x,
+                                                 basemaglabel));
+            eduiMenuAddItem(ptlvarstartmenu,
+                            eduiItemSliderCreate(0, &font, 0, cbPtlChangeY, -180.0f, 360.0f,
+                                                 dt->varstart.y * (360.0f / 65536.0f),
+                                                 baserotylabel));
+            eduiItemSliderSetFmt(edui_last_item, onedecimalfmt);
+            eduiItemSliderSetGranularity(edui_last_item, 0.1f);
+            eduiMenuAddItem(ptlvarstartmenu,
+                            eduiItemSliderCreate(0, &font, 0, cbPtlChangeZ, -180.0f, 180.0f,
+                                                 dt->varstart.z * (360.0f / 65536.0f),
+                                                 baserotzlabel));
+            eduiItemSliderSetFmt(edui_last_item, onedecimalfmt);
+            eduiItemSliderSetGranularity(edui_last_item, 0.1f);
+        }
+        eduiMenuAttach(menu, ptlvarstartmenu);
+        ptlvarstartmenu->x = menu->x + 10;
+        ptlvarstartmenu->y = menu->y + 40;
+    }
+}
+
+
+void cbPtlTextureSelectMenu(struct edptlmenu_s *menu) {
+    struct edptlfont_s font;
+    struct debkey_s *deb;
+    struct debtypedef_s *dt;
+    struct edptltexitem_s *item;
+
+    font = edpp_menu_font;
+    if (edpp_nearest == -1) {
+        return;
+    }
+    if (edpp_ptls[edpp_nearest].debris == -1) {
+        return;
+    }
+    deb = &debkeydata[edpp_ptls[edpp_nearest].debris];
+    dt = debtab[deb->debtype];
+    if (textureselectmenu == 0) {
+        textureselectmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0x12C, app_fnt, 0,
+                                           textureselecttitle);
+        if (textureselectmenu == 0) {
+            return;
+        }
+        eduiMenuAddItem(textureselectmenu,
+                        eduiItemTexturePickCreate(0, &font, cbPtlChangeTextureSelect,
+                                                  textureselecttitle));
+        item = (struct edptltexitem_s *)edui_last_item;
+        item->mtl = DebMat[1];
+        item->x0 = (dt->texu0 - 524288.0f) * (1.0f / 256.0f);
+        item->x1 = (dt->texu1 - 524288.0f) * (1.0f / 256.0f);
+        item->y0 = (dt->texv0 - 524288.0f) * (1.0f / 256.0f);
+        item->y1 = (dt->texv1 - 524288.0f) * (1.0f / 256.0f);
+    }
+    if (textureselectmenu != 0) {
+        eduiMenuAttach(menu, textureselectmenu);
+        textureselectmenu->x = menu->x + 10;
+        textureselectmenu->y = menu->y + 40;
+    }
+}
+
+
+void cbPtlTextureMenu(struct edptlmenu_s *menu) {
+    struct edptlfont_s font;
+    struct debkey_s *deb;
+    struct debtypedef_s *dt;
+
+    font = edpp_menu_font;
+    if (edpp_nearest == -1) {
+        return;
+    }
+    if (edpp_ptls[edpp_nearest].debris == -1) {
+        return;
+    }
+    deb = &debkeydata[edpp_ptls[edpp_nearest].debris];
+    dt = debtab[deb->debtype];
+    texturemenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0x12C, app_fnt, cbPtlCancelTextureMenu,
+                                 texturemenutitle);
+    if (texturemenu != 0) {
+        eduiMenuAddItem(texturemenu, eduiItemCheckCreate(0, &font, dt->texturetype == 0, 1,
+                                                         cbPtlSelTextureType, additivelabel));
+        eduiMenuAddItem(texturemenu, eduiItemCheckCreate(2, &font, dt->texturetype == 2, 1,
+                                                         cbPtlSelTextureType, modulationlabel));
+        eduiMenuAddItem(texturemenu, eduiItemCheckCreate(3, &font, dt->texturetype == 3, 1,
+                                                         cbPtlSelTextureType, subtractivelabel));
+        eduiMenuAddItem(texturemenu, eduiItemSelCreate(1, &font, 0, 0, cbPtlTextureSelectMenu,
+                                                       textureselectorlabel));
+        eduiMenuAttach(menu, texturemenu);
+        texturemenu->x = menu->x + 10;
+        texturemenu->y = menu->y + 40;
+    }
+}
+
+
+void cbPtlEmitTimeMenu(struct edptlmenu_s *menu) {
+    struct edptlfont_s font;
+    struct debkey_s *deb;
+    struct debtypedef_s *dt;
+
+    font = edpp_menu_font;
+    if (edpp_nearest == -1) {
+        return;
+    }
+    if (edpp_ptls[edpp_nearest].debris == -1) {
+        return;
+    }
+    deb = &debkeydata[edpp_ptls[edpp_nearest].debris];
+    dt = debtab[deb->debtype];
+    emittimemenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0x12C, app_fnt, cbPtlCancelEmitTimeMenu,
+                                  emittimemenutitle);
+    if (emittimemenu != 0) {
+        eduiMenuAddItem(emittimemenu,
+                        eduiItemSliderCreateInt(0, &font, 0, cbPtlChangeIvalOn, 1,
+                                                edpp_slider_scale * 120.0 - 1.0, dt->ivalon,
+                                                ontimelabel));
+        eduiMenuAddItem(emittimemenu,
+                        eduiItemSliderCreateInt(0, &font, 0, cbPtlChangeIvalOnRan, 0,
+                                                edpp_slider_scale * 120.0, dt->ivalonran,
+                                                randontimelabel));
+        eduiMenuAddItem(emittimemenu,
+                        eduiItemSliderCreateInt(0, &font, 0, cbPtlChangeIvalOff, 0,
+                                                edpp_slider_scale * 120.0, dt->ivaloff,
+                                                offtimelabel));
+        eduiMenuAddItem(emittimemenu,
+                        eduiItemSliderCreateInt(0, &font, 0, cbPtlChangeIvalOffRan, 0,
+                                                edpp_slider_scale * 120.0, dt->ivaloffran,
+                                                randofftimelabel));
+        eduiMenuAttach(menu, emittimemenu);
+        emittimemenu->x = menu->x + 10;
+        emittimemenu->y = menu->y + 40;
+    }
+}
+
+
+void cbPtlEmitVelMenu(struct edptlmenu_s *menu) {
+    struct edptlfont_s font;
+    struct debkey_s *deb;
+    struct debtypedef_s *dt;
+
+    font = edpp_menu_font;
+    if (edpp_nearest == -1) {
+        return;
+    }
+    if (edpp_ptls[edpp_nearest].debris == -1) {
+        return;
+    }
+    deb = &debkeydata[edpp_ptls[edpp_nearest].debris];
+    dt = debtab[deb->debtype];
+    ptlemitvelmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt, cbPtlCancelEmitVelMenu,
+                                    emitveltitle);
+    if (ptlemitvelmenu != 0) {
+        eduiMenuAddItem(ptlemitvelmenu, eduiItemSliderCreate(0, &font, 0, cbPtlChangeEmitVel, 0.0f,
+                                                             edpp_slider_scale * 10.0, dt->emitvel,
+                                                             emitveltitle));
+        eduiMenuAttach(menu, ptlemitvelmenu);
+        ptlemitvelmenu->x = menu->x + 10;
+        ptlemitvelmenu->y = menu->y + 40;
+    }
+}
+
+
+void cbPtlGravMenu(struct edptlmenu_s *menu) {
+    struct edptlfont_s font;
+    struct debkey_s *deb;
+    struct debtypedef_s *dt;
+
+    font = edpp_menu_font;
+    if (edpp_nearest == -1) {
+        return;
+    }
+    if (edpp_ptls[edpp_nearest].debris == -1) {
+        return;
+    }
+    deb = &debkeydata[edpp_ptls[edpp_nearest].debris];
+    dt = debtab[deb->debtype];
+    ptlgravmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt, cbPtlCancelGravMenu,
+                                 gravitytitle);
+    if (ptlgravmenu != 0) {
+        eduiMenuAddItem(ptlgravmenu, eduiItemSliderCreate(0, &font, 0, cbPtlChangeGrav,
+                                                          edpp_slider_scale * -10.0,
+                                                          edpp_slider_scale * 20.0, dt->gravity,
+                                                          gravitytitle));
+        eduiMenuAttach(menu, ptlgravmenu);
+        ptlgravmenu->x = menu->x + 10;
+        ptlgravmenu->y = menu->y + 40;
+    }
+}
+
+
+int edppSaveEffects(char *filename, signed char list) {
+    int numtypes;
+    int numptls;
+    int i;
+    int j;
+
+    TidyAllEffects();
+    numtypes = 0;
+    numptls = 0;
+    for (i = 1; i < effect_types_used; i++) {
+        if (effecttypes[i].effectlist == list || list == 2) {
+            numtypes++;
+        }
+    }
+    EdFileSetMedia(1);
+    if (EdFileOpen(filename, 1)) {
+        EdFileWriteInt(15);
+        EdFileWriteInt(numtypes);
+        for (i = 1; i < effect_types_used; i++) {
+            if (effecttypes[i].effectlist == list || list == 2) {
+                EdFileWrite(effecttypes[i].name, 0x10);
+                EdFileWriteShort(effecttypes[i].genrate);
+                EdFileWriteShort(effecttypes[i].numptls);
+                EdFileWriteShort(effecttypes[i].startoffset);
+                EdFileWriteShort(effecttypes[i].ivalon);
+                EdFileWriteShort(effecttypes[i].ivalonran);
+                EdFileWriteShort(effecttypes[i].ivaloff);
+                EdFileWriteShort(effecttypes[i].ivaloffran);
+                EdFileWriteChar(effecttypes[i].gensort);
+                EdFileWriteChar(effecttypes[i].gencode);
+                EdFileWriteChar(effecttypes[i].texturetype);
+                EdFileWriteChar(effecttypes[i].reserved23);
+                EdFileWriteFloat(effecttypes[i].reserved24);
+                EdFileWriteFloat(effecttypes[i].cuton);
+                EdFileWriteFloat(effecttypes[i].cutoff);
+                EdFileWriteFloat(effecttypes[i].drawcutoff);
+                EdFileWriteFloat(effecttypes[i].emitvel);
+                EdFileWrite(&effecttypes[i].varemit, 0xC);
+                EdFileWrite(&effecttypes[i].varemitrand, 0xC);
+                EdFileWrite(&effecttypes[i].varstart, 0xC);
+                EdFileWrite(&effecttypes[i].varstartrand, 0xC);
+                EdFileWriteFloat(effecttypes[i].posrange.x);
+                EdFileWriteFloat(effecttypes[i].posrange.y);
+                EdFileWriteFloat(effecttypes[i].posrange.z);
+                EdFileWriteFloat(effecttypes[i].posbase.x);
+                EdFileWriteFloat(effecttypes[i].posbase.y);
+                EdFileWriteFloat(effecttypes[i].posbase.z);
+                EdFileWriteFloat(effecttypes[i].momrange.x);
+                EdFileWriteFloat(effecttypes[i].momrange.y);
+                EdFileWriteFloat(effecttypes[i].momrange.z);
+                EdFileWriteFloat(effecttypes[i].mombase.x);
+                EdFileWriteFloat(effecttypes[i].mombase.y);
+                EdFileWriteFloat(effecttypes[i].mombase.z);
+                EdFileWriteFloat(effecttypes[i].gravity);
+                EdFileWriteFloat(effecttypes[i].etime);
+                EdFileWriteShort(effecttypes[i].frames);
+                EdFileWriteChar(effecttypes[i].columns);
+                EdFileWriteChar(effecttypes[i].rows);
+                EdFileWriteFloat(effecttypes[i].frame);
+                EdFileWriteFloat(effecttypes[i].jib[0]);
+                EdFileWriteFloat(effecttypes[i].jib[1]);
+                EdFileWriteFloat(effecttypes[i].jib[2]);
+                EdFileWriteFloat(effecttypes[i].jib[3]);
+                for (j = 0; j < 8; j++) {
+                    EdFileWrite(&effecttypes[i].colenv[j], 0x10);
+                }
+                for (j = 0; j < 8; j++) {
+                    EdFileWrite(&effecttypes[i].alphaenv[j], 8);
+                }
+                EdFileWriteFloat(effecttypes[i].sizemin);
+                EdFileWriteFloat(effecttypes[i].sizemax);
+                for (j = 0; j < 8; j++) {
+                    EdFileWrite(&effecttypes[i].widthenv[j], 8);
+                }
+                for (j = 0; j < 8; j++) {
+                    EdFileWrite(&effecttypes[i].heightenv[j], 8);
+                }
+                EdFileWriteFloat(effecttypes[i].rotmin);
+                EdFileWriteFloat(effecttypes[i].rotmax);
+                for (j = 0; j < 8; j++) {
+                    EdFileWrite(&effecttypes[i].rotenv[j], 8);
+                }
+                for (j = 0; j < 8; j++) {
+                    EdFileWrite(&effecttypes[i].extraenv0[j], 8);
+                }
+                for (j = 0; j < 8; j++) {
+                    EdFileWrite(&effecttypes[i].extraenv1[j], 8);
+                }
+                EdFileWriteFloat(effecttypes[i].texu0);
+                EdFileWriteFloat(effecttypes[i].texu1);
+                EdFileWriteFloat(effecttypes[i].texv0);
+                EdFileWriteFloat(effecttypes[i].texv1);
+                for (j = 0; j < 8; j++) {
+                    EdFileWrite(&effecttypes[i].collenv[j], 8);
+                }
+                EdFileWriteChar(effecttypes[i].numcollspheres);
+                for (j = 0; j < 4; j++) {
+                    EdFileWrite(&effecttypes[i].sounds[j], 0xC);
+                }
+            }
+        }
+        if (list == 1 || list == 2) {
+            for (i = 0; i < 256; i++) {
+                if (edpp_ptls[i].debris != -1) {
+                    numptls++;
+                }
+            }
+            EdFileWriteInt(numptls);
+            for (i = 0; i < 256; i++) {
+                if (edpp_ptls[i].debris != -1) {
+                    EdFileWrite(&edpp_ptls[i].pos, 0xC);
+                    EdFileWriteShort(edpp_ptls[i].rotz);
+                    EdFileWriteShort(edpp_ptls[i].roty);
+                    EdFileWriteShort(edpp_ptls[i].emitrotz);
+                    EdFileWriteShort(edpp_ptls[i].emitroty);
+                    EdFileWriteInt(edpp_ptls[i].offset);
+                    EdFileWrite(debtab[edpp_ptls[i].type]->name, 0x10);
+                    EdFileWriteInt(edpp_ptls[i].switchtype);
+                    EdFileWriteInt(edpp_ptls[i].switchid);
+                    EdFileWriteFloat(edpp_ptls[i].switchvar);
+                    EdFileWriteShort(edpp_ptls[i].refrotz);
+                    EdFileWriteShort(edpp_ptls[i].refroty);
+                    EdFileWriteFloat(edpp_ptls[i].bounceoffset);
+                    EdFileWriteFloat(edpp_ptls[i].bouncefactor);
+                    EdFileWriteShort(edpp_ptls[i].group);
+                }
+            }
+        }
+        EdFileClose();
+        return 1;
+    }
+    return 0;
 }
 
 

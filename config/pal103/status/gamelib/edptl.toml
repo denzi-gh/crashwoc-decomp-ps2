@@ -133,51 +133,51 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018def8:cbPtlCollMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018e148:cbPtlSizeMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018e540:cbPtlRotMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018e800:cbPtlCutOffMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018ea28:cbPtlVarEmitMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018eef8:cbPtlVarStartMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018f2e8:cbPtlTextureSelectMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018f480:cbPtlTextureMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018f658:cbPtlEmitTimeMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018f8e0:cbPtlEmitVelMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018fa48:cbPtlGravMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018fbe0:edppSaveEffects"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00190298:cbFileSaveEffects"
