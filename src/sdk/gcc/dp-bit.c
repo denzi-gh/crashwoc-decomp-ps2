@@ -32,9 +32,11 @@
 #define QUIET_NAN     0x8000000000000
 #define IMPLICIT_1    (1L << (FRACBITS + NGARDS))
 #define IMPLICIT_2    (1L << (FRACBITS + 1 + NGARDS))
+#define FRACHIGH      0x8000000000000000L
 #define F_D_BITOFF    30
 #define BITS_PER_SI   32
 #define MAX_SI_INT    0x7FFFFFFF
+#define MAX_USI_INT   0xFFFFFFFF
 #define NO_DENORMALS  1
 
 typedef enum {
@@ -49,7 +51,10 @@ typedef struct {
     fp_class_type class;
     unsigned int sign;
     int normal_exp;
-    unsigned long fraction;
+    union {
+        unsigned long ll;
+        unsigned int l[2];
+    } fraction;
 } fp_number_type;
 
 typedef union {
@@ -83,7 +88,7 @@ static inline int iszero(fp_number_type *x) {
 
 double __pack_d(fp_number_type *src) {
     FLO_union_type dst;
-    unsigned long fraction = src->fraction;
+    unsigned long fraction = src->fraction.ll;
     int sign = src->sign;
     int exp = 0;
 
@@ -153,7 +158,7 @@ void __unpack_d(FLO_union_type *src, fp_number_type *dst) {
                 fraction <<= 1;
                 dst->normal_exp--;
             }
-            dst->fraction = fraction;
+            dst->fraction.ll = fraction;
         }
     } else if (exp == EXPMAX) {
         if (fraction == 0) {
@@ -164,12 +169,12 @@ void __unpack_d(FLO_union_type *src, fp_number_type *dst) {
             } else {
                 dst->class = CLASS_SNAN;
             }
-            dst->fraction = fraction;
+            dst->fraction.ll = fraction;
         }
     } else {
         dst->normal_exp = exp - EXPBIAS;
         dst->class = CLASS_NUMBER;
-        dst->fraction = (fraction << NGARDS) | IMPLICIT_1;
+        dst->fraction.ll = (fraction << NGARDS) | IMPLICIT_1;
     }
 }
 
@@ -211,8 +216,8 @@ static fp_number_type *_fpadd_parts(fp_number_type *a, fp_number_type *b, fp_num
 
     a_normal_exp = a->normal_exp;
     b_normal_exp = b->normal_exp;
-    a_fraction = a->fraction;
-    b_fraction = b->fraction;
+    a_fraction = a->fraction.ll;
+    b_fraction = b->fraction.ll;
 
     diff = a_normal_exp - b_normal_exp;
     if (diff < 0) {
@@ -246,24 +251,24 @@ static fp_number_type *_fpadd_parts(fp_number_type *a, fp_number_type *b, fp_num
         if (tfraction >= 0) {
             tmp->sign = 0;
             tmp->normal_exp = a_normal_exp;
-            tmp->fraction = tfraction;
+            tmp->fraction.ll = tfraction;
         } else {
             tmp->sign = 1;
             tmp->normal_exp = a_normal_exp;
-            tmp->fraction = -tfraction;
+            tmp->fraction.ll = -tfraction;
         }
-        while (tmp->fraction < IMPLICIT_1 && tmp->fraction) {
-            tmp->fraction <<= 1;
+        while (tmp->fraction.ll < IMPLICIT_1 && tmp->fraction.ll) {
+            tmp->fraction.ll <<= 1;
             tmp->normal_exp--;
         }
     } else {
         tmp->sign = a->sign;
         tmp->normal_exp = a_normal_exp;
-        tmp->fraction = a_fraction + b_fraction;
+        tmp->fraction.ll = a_fraction + b_fraction;
     }
     tmp->class = CLASS_NUMBER;
-    if (tmp->fraction >= IMPLICIT_2) {
-        tmp->fraction = (tmp->fraction & 1) | (tmp->fraction >> 1);
+    if (tmp->fraction.ll >= IMPLICIT_2) {
+        tmp->fraction.ll = (tmp->fraction.ll & 1) | (tmp->fraction.ll >> 1);
         tmp->normal_exp++;
     }
     return tmp;
@@ -303,6 +308,194 @@ double dpsub(double arg_a, double arg_b) {
 }
 
 
+static inline fp_number_type *_fpmul_parts(fp_number_type *a, fp_number_type *b, fp_number_type *tmp) {
+    unsigned long low = 0;
+    unsigned long high = 0;
+
+    if (isnan(a)) {
+        a->sign = a->sign != b->sign;
+        return a;
+    }
+    if (isnan(b)) {
+        b->sign = a->sign != b->sign;
+        return b;
+    }
+    if (isinf(a)) {
+        if (iszero(b)) {
+            return &thenan;
+        }
+        a->sign = a->sign != b->sign;
+        return a;
+    }
+    if (isinf(b)) {
+        if (iszero(a)) {
+            return &thenan;
+        }
+        b->sign = a->sign != b->sign;
+        return b;
+    }
+    if (iszero(a)) {
+        a->sign = a->sign != b->sign;
+        return a;
+    }
+    if (iszero(b)) {
+        b->sign = a->sign != b->sign;
+        return b;
+    }
+
+    {
+        unsigned long nl = a->fraction.ll & 0xFFFFFFFF;
+        unsigned long nh = a->fraction.ll >> 32;
+        unsigned long ml = b->fraction.ll & 0xFFFFFFFF;
+        unsigned long mh = b->fraction.ll >> 32;
+        unsigned long pp_ll = ml * nl;
+        unsigned long pp_hl = mh * nl;
+        unsigned long pp_lh = ml * nh;
+        unsigned long pp_hh = mh * nh;
+        unsigned long res2 = 0;
+        unsigned long res0 = 0;
+        unsigned long ps_hh = pp_hl + pp_lh;
+
+        if (ps_hh < pp_hl) {
+            res2 += 0x100000000L;
+        }
+        pp_hl = (ps_hh << 32) & 0xFFFFFFFF00000000L;
+        res0 = pp_ll + pp_hl;
+        if (res0 < pp_ll) {
+            res2++;
+        }
+        res2 += ((ps_hh >> 32) & 0xFFFFFFFFL) + pp_hh;
+        high = res2;
+        low = res0;
+    }
+
+    tmp->normal_exp = a->normal_exp + b->normal_exp;
+    tmp->sign = a->sign != b->sign;
+    tmp->normal_exp += 4;
+    while (high >= IMPLICIT_2) {
+        tmp->normal_exp++;
+        if (high & 1) {
+            low >>= 1;
+            low |= FRACHIGH;
+        }
+        high >>= 1;
+    }
+    while (high < IMPLICIT_1) {
+        tmp->normal_exp--;
+        high <<= 1;
+        if (low & FRACHIGH) {
+            high |= 1;
+        }
+        low <<= 1;
+    }
+    if ((high & GARDMASK) == GARDMSB) {
+        if (high & (1 << NGARDS)) {
+            high += GARDROUND + 1;
+        } else if (low) {
+            high += GARDROUND + 1;
+        }
+    }
+    tmp->fraction.ll = high;
+    tmp->class = CLASS_NUMBER;
+    return tmp;
+}
+
+
+double dpmul(double arg_a, double arg_b) {
+    fp_number_type a;
+    fp_number_type b;
+    fp_number_type tmp;
+    fp_number_type *res;
+    FLO_union_type au, bu;
+
+    au.value = arg_a;
+    bu.value = arg_b;
+    __unpack_d(&au, &a);
+    __unpack_d(&bu, &b);
+    res = _fpmul_parts(&a, &b, &tmp);
+    return __pack_d(res);
+}
+
+
+static inline fp_number_type *_fpdiv_parts(fp_number_type *a, fp_number_type *b) {
+    unsigned long bit;
+    unsigned long numerator;
+    unsigned long denominator;
+    unsigned long quotient;
+
+    if (isnan(a)) {
+        return a;
+    }
+    if (isnan(b)) {
+        return b;
+    }
+
+    a->sign = a->sign ^ b->sign;
+
+    if (isinf(a) || iszero(a)) {
+        if (a->class == b->class) {
+            return &thenan;
+        }
+        return a;
+    }
+
+    if (isinf(b)) {
+        a->fraction.ll = 0;
+        a->normal_exp = 0;
+        return a;
+    }
+    if (iszero(b)) {
+        a->class = CLASS_INFINITY;
+        return a;
+    }
+
+    a->normal_exp = a->normal_exp - b->normal_exp;
+    numerator = a->fraction.ll;
+    denominator = b->fraction.ll;
+
+    if (numerator < denominator) {
+        numerator *= 2;
+        a->normal_exp--;
+    }
+    bit = IMPLICIT_1;
+    quotient = 0;
+    while (bit) {
+        if (numerator >= denominator) {
+            quotient |= bit;
+            numerator -= denominator;
+        }
+        bit >>= 1;
+        numerator *= 2;
+    }
+
+    if ((quotient & GARDMASK) == GARDMSB) {
+        if (quotient & (1 << NGARDS)) {
+            quotient += GARDROUND + 1;
+        } else if (numerator) {
+            quotient += GARDROUND + 1;
+        }
+    }
+
+    a->fraction.ll = quotient;
+    return a;
+}
+
+
+double dpdiv(double arg_a, double arg_b) {
+    fp_number_type a;
+    fp_number_type b;
+    fp_number_type *res;
+    FLO_union_type au, bu;
+
+    au.value = arg_a;
+    bu.value = arg_b;
+    __unpack_d(&au, &a);
+    __unpack_d(&bu, &b);
+    res = _fpdiv_parts(&a, &b);
+    return __pack_d(res);
+}
+
+
 int __fpcmp_parts_d(fp_number_type *a, fp_number_type *b) {
     if (isnan(a) || isnan(b)) {
         return 1;
@@ -334,10 +527,10 @@ int __fpcmp_parts_d(fp_number_type *a, fp_number_type *b) {
     if (a->normal_exp < b->normal_exp) {
         return a->sign ? 1 : -1;
     }
-    if (a->fraction > b->fraction) {
+    if (a->fraction.ll > b->fraction.ll) {
         return a->sign ? -1 : 1;
     }
-    if (a->fraction < b->fraction) {
+    if (a->fraction.ll < b->fraction.ll) {
         return a->sign ? 1 : -1;
     }
     return 0;
@@ -370,12 +563,12 @@ double litodp(int arg_a) {
             if (arg_a == -MAX_SI_INT - 1) {
                 return -MAX_SI_INT - 1;
             }
-            in.fraction = -arg_a;
+            in.fraction.ll = -arg_a;
         } else {
-            in.fraction = arg_a;
+            in.fraction.ll = arg_a;
         }
-        while (in.fraction < IMPLICIT_1) {
-            in.fraction <<= 1;
+        while (in.fraction.ll < IMPLICIT_1) {
+            in.fraction.ll <<= 1;
             in.normal_exp -= 1;
         }
     }
@@ -405,8 +598,39 @@ int dptoli(double arg_a) {
     if (a.normal_exp > BITS_PER_SI - 2) {
         return a.sign ? -MAX_SI_INT - 1 : MAX_SI_INT;
     }
-    tmp = a.fraction >> (FRACBITS + NGARDS - a.normal_exp);
+    tmp = a.fraction.ll >> (FRACBITS + NGARDS - a.normal_exp);
     return a.sign ? -tmp : tmp;
+}
+
+
+unsigned int dptoul(double arg_a) {
+    fp_number_type a;
+    FLO_union_type au;
+
+    au.value = arg_a;
+    __unpack_d(&au, &a);
+    if (iszero(&a)) {
+        return 0;
+    }
+    if (isnan(&a)) {
+        return 0;
+    }
+    if (a.sign) {
+        return 0;
+    }
+    if (isinf(&a)) {
+        return MAX_USI_INT;
+    }
+    if (a.normal_exp < 0) {
+        return 0;
+    }
+    if (a.normal_exp > BITS_PER_SI - 1) {
+        return MAX_USI_INT;
+    } else if (a.normal_exp > FRACBITS + NGARDS) {
+        return a.fraction.ll << (a.normal_exp - (FRACBITS + NGARDS));
+    } else {
+        return a.fraction.ll >> (FRACBITS + NGARDS - a.normal_exp);
+    }
 }
 
 
@@ -427,7 +651,7 @@ double __make_dp(fp_class_type class, unsigned int sign, int exp, unsigned long 
     in.class = class;
     in.sign = sign;
     in.normal_exp = exp;
-    in.fraction = frac;
+    in.fraction.ll = frac;
     return __pack_d(&in);
 }
 
@@ -439,8 +663,8 @@ float dptofp(double arg_a) {
 
     au.value = arg_a;
     __unpack_d(&au, &in);
-    sffrac = in.fraction >> F_D_BITOFF;
-    if ((in.fraction & ((1 << F_D_BITOFF) - 1)) != 0) {
+    sffrac = in.fraction.ll >> F_D_BITOFF;
+    if ((in.fraction.ll & ((1 << F_D_BITOFF) - 1)) != 0) {
         sffrac |= 1;
     }
     return __make_fp(in.class, in.sign, in.normal_exp, sffrac);
