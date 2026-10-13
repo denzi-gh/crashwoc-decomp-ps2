@@ -29,15 +29,15 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0110:002419d8:edlightDrawBox"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0110:00241d00:edlightDrawSelection"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0110:00242190:edlightDrawDirection"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0110:002422f0:edlightDrawRadius"
@@ -57,19 +57,19 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0110:00242960:edlightInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0110:00242da0:edlightClosestLight"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0110:00242ee0:edlightDoInput"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0110:00243988:edlightProc"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0110:00243b48:edlightRender"
@@ -125,11 +125,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0110:00244220:cbDoubleMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0110:00244370:cbGlbMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0110:002444c0:cbSelDoubleType"
