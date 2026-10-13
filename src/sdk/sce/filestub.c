@@ -41,3 +41,154 @@
  *   0x0027f498 sceSymlink
  *   0x0027f678 sceReadlink
  */
+
+#define FS_NIOB 32
+#define FS_IOB_BUSY 0x10000000
+
+typedef struct SemaParam {
+    int currentCount;
+    int maxCount;
+    int initCount;
+    int numWaitThreads;
+    unsigned int attr;
+    unsigned int option;
+} SemaParam;
+
+typedef struct FsIob {
+    int fd;
+    int flags;
+    int pad[2];
+} FsIob;
+
+extern int D_00613400[];
+extern int D_00613404[];
+extern int D_00613408[];
+extern int D_0061340C[];
+extern FsIob D_00706280[];
+extern char D_007064A8[];
+
+#define fs_initialized  D_00613400[0]
+#define fs_sema         D_00613404[0]
+#define fs_iob_sema     D_00613408[0]
+#define fs_io_sema      D_0061340C[0]
+#define fs_iob          D_00706280
+#define fs_iop_version  D_007064A8
+
+extern int CreateSema(SemaParam *param);
+extern int WaitSema(int sema);
+extern int SignalSema(int sema);
+extern void *memset(void *dest, int c, unsigned int n);
+extern int _sceCallCode(const char *name, int code);
+
+
+void _sceFsIobSemaMK(void)
+{
+    SemaParam sema;
+
+    if (fs_iob_sema == -1) {
+        sema.initCount = 1;
+        sema.maxCount = 1;
+        sema.option = 0;
+        fs_iob_sema = CreateSema(&sema);
+        fs_io_sema = CreateSema(&sema);
+    }
+}
+
+
+FsIob *new_iob(void)
+{
+    FsIob *iob;
+
+    _sceFsIobSemaMK();
+    WaitSema(fs_iob_sema);
+    for (iob = fs_iob; iob < &fs_iob[FS_NIOB]; iob++) {
+        if (iob->flags == 0) {
+            iob->flags = FS_IOB_BUSY;
+            SignalSema(fs_iob_sema);
+            return iob;
+        }
+    }
+    SignalSema(fs_iob_sema);
+    return 0;
+}
+
+
+FsIob *get_iob(int fd)
+{
+    FsIob *iob;
+
+    _sceFsIobSemaMK();
+    WaitSema(fs_iob_sema);
+    if (fd < 0 || fd >= FS_NIOB) {
+        SignalSema(fs_iob_sema);
+        return 0;
+    }
+    iob = &fs_iob[fd];
+    SignalSema(fs_iob_sema);
+    return iob;
+}
+
+
+void _sceFsSemInit(void)
+{
+    SemaParam sema;
+
+    if (fs_sema == -1) {
+        sema.initCount = 1;
+        sema.maxCount = 1;
+        sema.option = 0;
+        fs_sema = CreateSema(&sema);
+    }
+}
+
+
+int _sceFsWaitS(void)
+{
+    _sceFsSemInit();
+    WaitSema(fs_sema);
+    return 0;
+}
+
+
+void _sceFsSigSema(void)
+{
+    SignalSema(fs_sema);
+}
+
+
+int sceFsReset(void)
+{
+    fs_initialized = 0;
+    memset(fs_iop_version, 0, 4);
+    return 0;
+}
+
+
+int sceRemove(const char *name)
+{
+    return _sceCallCode(name, 6);
+}
+
+
+int sceRmdir(const char *name)
+{
+    return _sceCallCode(name, 8);
+}
+
+
+int sceDelDrv(const char *name)
+{
+    return _sceCallCode(name, 0x10);
+}
+
+
+int sceChdir(const char *name)
+{
+    return _sceCallCode(name, 0x12);
+}
+
+
+int sceUmount(const char *name)
+{
+    return _sceCallCode(name, 0x15);
+}

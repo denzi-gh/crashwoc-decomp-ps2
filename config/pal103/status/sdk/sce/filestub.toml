@@ -13,15 +13,15 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0256:0027c2c8:_sceFsIobSemaMK"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027c328:new_iob"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027c3b0:get_iob"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027c420:_sceFs_Rcv_Intr"
@@ -29,15 +29,15 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0256:0027c7e0:_sceFsSemInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027c830:_sceFsWaitS"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027c860:_sceFsSigSema"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027c870:sceFsInit"
@@ -49,7 +49,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0256:0027caa0:sceFsReset"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027cad8:sceOpen"
@@ -85,7 +85,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0256:0027dd18:sceRemove"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027dd38:sceMkdir"
@@ -93,7 +93,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0256:0027dee8:sceRmdir"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027df08:sceFormat"
@@ -105,7 +105,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0256:0027e298:sceDelDrv"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027e2b8:sceDopen"
@@ -133,7 +133,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0256:0027ebe8:sceChdir"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027ec08:sceSync"
@@ -145,7 +145,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0256:0027f010:sceUmount"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027f030:sceLseek64"
