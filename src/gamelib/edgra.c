@@ -52,6 +52,24 @@ struct nuvec4_s {
     float w;
 };
 
+struct numtlattrib_s {
+    unsigned long long unk0 : 32;
+    unsigned long long alpha : 4;
+    unsigned long long unk36 : 8;
+    unsigned long long cull : 2;
+    unsigned long long zmode : 2;
+    unsigned long long unk48 : 16;
+};
+
+struct numtl_s {
+    char pad000[0x168];
+    struct numtlattrib_s attrib;
+    char pad170[0x180 - 0x170];
+    struct nuvec_s diffuse;
+    char pad18c[0x1A0 - 0x18C];
+    float alpha;
+};
+
 struct nurndrvtx_s {
     struct nuvec_s pnt;
     char pad0c[0x18 - 0x0C];
@@ -134,8 +152,8 @@ extern struct nuvec_s edgra_cam_pos;
 extern float edgra_cam_ax;
 extern float edgra_cam_ay;
 extern void *app_fnt;
-extern void *edgra_mtl;
-extern void *edgra_mtl_zoff;
+extern struct numtl_s *edgra_mtl;
+extern struct numtl_s *edgra_mtl_zoff;
 extern void *edui_last_item;
 
 extern char D_0061A678[];
@@ -144,6 +162,10 @@ extern char D_0061A688[];
 extern char D_0061A698[];
 extern char D_0061A6A8[];
 extern char D_0061A6B8[];
+extern char D_0061A6C8[];
+extern char D_0061A6E0[];
+extern char D_0061A6F0[];
+extern char D_0062F890[];
 
 extern struct eduistyle_s D_0061A5A8;
 extern char D_0061A5B8[];
@@ -180,8 +202,20 @@ extern char D_0062F880[];
 #define edgra_text_save_error D_0061A698
 #define edgra_text_loaded_ok D_0061A6A8
 #define edgra_text_load_error D_0061A6B8
+#define edgra_text_clumpproperties D_0061A6C8
+#define edgra_text_save_grass D_0061A6E0
+#define edgra_text_load_grass D_0061A6F0
+#define edgra_options_menu_title D_0062F890
 
 extern void eduiMenuDestroy(void *menu);
+extern void eduiMenuRender(struct eduimenu_s *menu);
+extern void *eduiItemSelCreate(int value, struct eduistyle_s *style, int on, int group, void *cb,
+                               char *label);
+extern struct numtl_s *NuMtlCreate(int count);
+extern void NuMtlUpdate(struct numtl_s *mtl);
+extern void NuFntScale(int x, int y);
+extern void edcamSet(void);
+extern void edbitsDrawDiagonalCross(float x, float y, float z, float size, int colour, void *mtl);
 extern void eduiMenuDetach(void *menu);
 extern void edcamMove(void);
 extern void NuWindInit(void);
@@ -231,6 +265,9 @@ extern void edgracbSetClumpHeight(void *menu, struct edgraitem_s *item);
 extern void edgracbToggleClumpReactive(void *menu, struct edgraitem_s *item);
 extern void edgracbCancelInstanceMenu(void);
 extern void edgracbCancelClumpPropertiesMenu(void);
+extern void edgracbCancelOptMenu(void);
+extern void edgracbFileSave(void *menu);
+extern void edgracbFileLoad(void *menu);
 
 
 void edgraInitAllClumps(void)
@@ -628,6 +665,29 @@ int edgraFileLoad(char *filename)
 }
 
 
+void edgraRender(void)
+{
+    struct nuvec_s pos;
+
+    edcamSet();
+    edgraDrawCursor();
+    if (edgra_nearest != -1) {
+        edbitsDrawDiagonalCross(GrassClumps[edgra_nearest].pos.x, GrassClumps[edgra_nearest].pos.y,
+                                GrassClumps[edgra_nearest].pos.z, 0.125f, 0xFF80FFFF,
+                                edgra_mtl_zoff);
+        edbitsDrawCircleXY(&GrassClumps[edgra_nearest].pos, GrassClumps[edgra_nearest].radius,
+                           0xFF80FFFF, edgra_mtl_zoff);
+        pos = GrassClumps[edgra_nearest].pos;
+        pos.y += GrassClumps[edgra_nearest].height;
+        edbitsDrawCircleXY(&pos, GrassClumps[edgra_nearest].radius, 0xFF80FFFF, edgra_mtl_zoff);
+    }
+    if (edgra_active_menu != 0) {
+        NuFntScale(12, 12);
+        eduiMenuRender(edgra_active_menu);
+    }
+}
+
+
 inline void edgraClumpsReset(void)
 {
     int i;
@@ -636,6 +696,54 @@ inline void edgraClumpsReset(void)
         GrassClumps[i].size = 0;
     }
     edgra_next_clump = 0;
+}
+
+
+void edgraInit(void)
+{
+    struct eduistyle_s style;
+    struct numtl_s *mtl;
+    struct numtl_s *zoff;
+
+    style = edgra_item_style;
+    edgraClumpsReset();
+    mtl = NuMtlCreate(1);
+    edgra_mtl = mtl;
+    mtl->attrib.cull = 2;
+    mtl->attrib.zmode = 0;
+    mtl->diffuse.x = 0.5f;
+    mtl->diffuse.y = 0.5f;
+    mtl->diffuse.z = 0.5f;
+    mtl->alpha = 1.0f;
+    mtl->attrib.alpha = 0;
+    NuMtlUpdate(mtl);
+    zoff = NuMtlCreate(1);
+    edgra_mtl_zoff = zoff;
+    zoff->attrib.cull = 2;
+    zoff->attrib.zmode = 3;
+    zoff->diffuse.x = 0.5f;
+    zoff->diffuse.y = 0.5f;
+    zoff->diffuse.z = 0.5f;
+    zoff->alpha = 1.0f;
+    zoff->attrib.alpha = 0;
+    NuMtlUpdate(zoff);
+    edgra_instance_type = -1;
+    edgra_options_menu = eduiMenuCreate(70, 70, 220, 300, app_fnt, edgracbCancelOptMenu,
+                                        edgra_options_menu_title);
+    if (edgra_options_menu != 0) {
+        eduiMenuAddItem(edgra_options_menu,
+                        eduiItemSelCreate(1, &style, 0, 0, edgracbInstanceMenu,
+                                          edgra_instance_menu_title));
+        eduiMenuAddItem(edgra_options_menu,
+                        eduiItemSelCreate(1, &style, 0, 0, edgracbClumpPropertiesMenu,
+                                          edgra_text_clumpproperties));
+        eduiMenuAddItem(edgra_options_menu,
+                        eduiItemSelCreate(1, &style, 0, 0, edgracbFileSave,
+                                          edgra_text_save_grass));
+        eduiMenuAddItem(edgra_options_menu,
+                        eduiItemSelCreate(1, &style, 0, 0, edgracbFileLoad,
+                                          edgra_text_load_grass));
+    }
 }
 
 

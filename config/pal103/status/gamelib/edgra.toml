@@ -49,11 +49,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0083:001b7060:edgraRender"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0083:001b7190:edgraInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0083:001b73f0:edgraClumpsReset"
