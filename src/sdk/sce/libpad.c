@@ -44,11 +44,19 @@ typedef struct sceSifClientData {
     void *server;
 } sceSifClientData;
 
+typedef struct sceSifDmaData {
+    void *data;
+    void *addr;
+    unsigned int size;
+    unsigned int mode;
+} sceSifDmaData;
+
 typedef struct PadDmaFrame {
     unsigned char data[32];
     unsigned int act_direct[2];
     unsigned int act_align[2];
-    unsigned char act_info[32];
+    unsigned char act_info[4][4];
+    unsigned char comb_info[4][4];
     unsigned short mode_table[4];
     int frame;
     int retries;
@@ -76,6 +84,11 @@ typedef struct PadIopCommand {
     int size;
     unsigned char data[20];
 } PadIopCommand;
+
+typedef struct PadIopBuffer {
+    PadIopCommand command;
+    unsigned char reserved[32];
+} PadIopBuffer;
 
 typedef struct PadSlot {
     PadDmaFrame *dma;
@@ -136,15 +149,19 @@ typedef struct PadRpcBuffer {
 
 extern sceSifClientData D_006FFAC0[2];
 extern PadSlot D_006FFB10[2][4];
+extern PadIopBuffer D_006FFC00[2][4];
 extern PadRpcBuffer D_006FFE00;
 extern int D_00610930[];
+extern int D_00610934[];
 extern char *D_00610938[];
 extern char *D_00610958[];
 
 #define pad_clients     D_006FFAC0
 #define pad_slots       D_006FFB10
+#define pad_commands    D_006FFC00
 #define pad_rpc         D_006FFE00
 #define pad_initialized D_00610930
+#define pad_debug       D_00610934
 #define pad_state_names D_00610938
 #define pad_req_names   D_00610958
 
@@ -152,10 +169,81 @@ extern int sceSifCallRpc(sceSifClientData *client, unsigned int fno,
                          unsigned int mode, void *send, int ssize,
                          void *receive, int rsize, void (*end_func)(void *),
                          void *end_param);
-extern int SyncDCache(void *start, void *end);
+extern void SyncDCache(void *start, void *end);
 extern void *memcpy(void *dest, const void *src, unsigned int n);
+extern void *memset(void *dest, int c, unsigned int n);
 extern char *strcpy(char *dest, const char *src);
-extern void _send_to_iop(int port, int slot);
+extern int sceSifBindRpc(sceSifClientData *client, unsigned int request,
+                         unsigned int mode);
+extern int sceSifDmaStat(unsigned int id);
+extern unsigned int sceSifSetDma(sceSifDmaData *sdd, int len);
+extern int printf(const char *fmt, ...);
+extern int scePadGetModVersion(void);
+
+
+void _send_to_iop(int port, int slot) {
+    sceSifDmaData transfer[16];
+    PadIopCommand *command;
+    char *dest;
+    unsigned int id;
+
+    command = pad_slots[port][slot].command;
+    if (sceSifDmaStat(pad_slots[port][slot].dma_id) >= 0) {
+        if (pad_debug[0]) {
+            printf("libpad: sceSifSetDma faild\n");
+        }
+        return;
+    }
+    command->sequence++;
+    dest = (char *)pad_slots[port][slot].iop_addr + ((command->sequence & 1) << 5);
+    SyncDCache(command, command + 1);
+    transfer[0].data = command;
+    transfer[0].addr = dest;
+    transfer[0].size = 0x20;
+    transfer[0].mode = 0;
+    id = sceSifSetDma(transfer, 1);
+    if (id == 0) {
+        if (pad_debug[0]) {
+            printf("libpad: sceSifSetDma faild\n");
+        }
+    }
+    pad_slots[port][slot].dma_id = id;
+}
+
+
+int scePadInit(int mode) {
+    int version;
+    int wait;
+
+    pad_initialized[0] = 1;
+    while (1) {
+        sceSifBindRpc(&pad_clients[0], 0x80000100, 0);
+        if (pad_clients[0].server != 0) {
+            break;
+        }
+        wait = 0x10000;
+        while (wait--) {
+        }
+    }
+    while (1) {
+        sceSifBindRpc(&pad_clients[1], 0x80000101, 0);
+        if (pad_clients[1].server != 0) {
+            break;
+        }
+        wait = 0x10000;
+        while (wait--) {
+        }
+    }
+    version = scePadGetModVersion();
+    if ((version >> 8) != 4) {
+        if (pad_debug[0]) {
+            printf("libpad: Module version mismatch ");
+            printf("[libpad.a = %d.%d, padman.irx = %d.%d]\n", 4, 0, version >> 8, version & 0xFF);
+        }
+        return 0;
+    }
+    return scePadInit2(mode);
+}
 
 
 int scePadInit2(int mode) {
@@ -190,6 +278,51 @@ int scePadEnd(void) {
         pad_initialized[0] = 0;
     }
     return result;
+}
+
+
+int scePadPortOpen(int port, int slot, void *addr) {
+    PadDmaFrame *frame;
+    PadIopCommand *command;
+    int i;
+
+    if ((unsigned int)addr & 0x3F) {
+        if (pad_debug[0]) {
+            printf("libpad: buffer addr is not 64 byte align. %08x\n", addr);
+        }
+        return 0;
+    }
+    if (pad_slots[port][slot].opened == 1) {
+        if (pad_debug[0]) {
+            printf("libpad: pad port is already open [%d][%d]\n", port, slot);
+        }
+        return 0;
+    }
+    frame = addr;
+    for (i = 0; i < 2; i++) {
+        frame->frame = 0;
+        frame->state = 5;
+        frame->req_state = 2;
+        frame->data_ready = 0;
+        memset(frame->data, 0xFF, 0x20);
+        frame->length = 0;
+        frame++;
+    }
+    pad_rpc.command = 1;
+    pad_rpc.u.common.port = port;
+    pad_rpc.u.common.slot = slot;
+    pad_rpc.u.common.param = (int)addr;
+    if (sceSifCallRpc(&pad_clients[0], 1, 0, &pad_rpc, 128, &pad_rpc, 128, 0, 0) < 0) {
+        return 0;
+    }
+    command = &pad_commands[port][slot].command;
+    pad_slots[port][slot].opened = 1;
+    command->sequence = 0;
+    pad_slots[port][slot].dma_id = 0;
+    pad_slots[port][slot].dma = addr;
+    pad_slots[port][slot].iop_addr = pad_rpc.u.common.iop_addr;
+    pad_slots[port][slot].command = command;
+    return pad_rpc.u.common.result;
 }
 
 
@@ -289,6 +422,116 @@ void scePadReqIntToStr(unsigned int state, char *str) {
     } else {
         strcpy(str, "");
     }
+}
+
+
+int scePadInfoAct(int port, int slot, int actno, int term) {
+    PadDmaFrame *frame;
+
+    if (pad_slots[port][slot].opened == 0) {
+        return 0;
+    }
+    frame = scePadGetDmaStr(port, slot);
+    if (frame->task != 1) {
+        return 0;
+    }
+    if (frame->mode_config < 2) {
+        return 0;
+    }
+    if (actno < frame->act_count) {
+        if (actno == -1) {
+            return frame->act_count;
+        }
+        switch (term) {
+        case 1:
+            return frame->act_info[actno][0];
+        case 2:
+            return frame->act_info[actno][1];
+        case 3:
+            return frame->act_info[actno][2];
+        case 4:
+            return frame->act_info[actno][3];
+        }
+    }
+    return 0;
+}
+
+
+int scePadInfoComb(int port, int slot, int listno, int offs) {
+    PadDmaFrame *frame;
+
+    if (pad_slots[port][slot].opened == 0) {
+        return 0;
+    }
+    frame = scePadGetDmaStr(port, slot);
+    if (frame->task != 1) {
+        return 0;
+    }
+    if (frame->mode_config < 2) {
+        return 0;
+    }
+    if (listno == -1) {
+        return frame->comb_count;
+    }
+    if (listno >= frame->comb_count) {
+        return 0;
+    }
+    switch (offs) {
+    case -1:
+        return frame->comb_info[listno][0];
+    case 0:
+        return frame->comb_info[listno][1];
+    case 1:
+        return frame->comb_info[listno][2];
+    case 2:
+        return frame->comb_info[listno][3];
+    }
+    return 0;
+}
+
+
+int scePadInfoMode(int port, int slot, int term, int offs) {
+    PadDmaFrame *frame;
+
+    if (pad_slots[port][slot].opened == 0) {
+        return 0;
+    }
+    frame = scePadGetDmaStr(port, slot);
+    if (frame->task != 1) {
+        return 0;
+    }
+    if (frame->req_state == 2) {
+        return 0;
+    }
+    switch (term) {
+    case 1:
+        if (frame->mode_cur_id == 0xF3) {
+            return 0;
+        }
+        return frame->mode_cur_id >> 4;
+    case 2:
+        if (frame->mode_config == 1) {
+            return 0;
+        }
+        return frame->mode_table[frame->mode_cur_offset];
+    case 3:
+        if (frame->mode_config == 1) {
+            return 0;
+        }
+        return frame->mode_cur_offset;
+    case 4:
+        if (frame->mode_config == 1) {
+            return 0;
+        }
+        if (offs == -1) {
+            return frame->mode_count;
+        }
+        if (offs < frame->mode_count) {
+            return frame->mode_table[offs];
+        }
+        return 0;
+    }
+    return 0;
 }
 
 

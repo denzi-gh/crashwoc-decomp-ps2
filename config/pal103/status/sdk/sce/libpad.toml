@@ -13,11 +13,11 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0148:002645a8:_send_to_iop"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:002646d8:scePadInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:00264818:scePadInit2"
@@ -69,15 +69,15 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:00264ea8:scePadInfoAct"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:00264fc8:scePadInfoComb"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:002650e8:scePadInfoMode"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:00265220:scePadSetMainMode"
