@@ -13,23 +13,23 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0035:001151a0:NuGobjDestroy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0035:001152e8:NuGobjCalcFaceOnDims"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0035:00115678:NuGobjCalcDims"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0035:00115978:NuPrimCalcPlanes"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0035:00115d30:NuCreateStarfield"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0035:00115f68:NuGobjInit"
@@ -65,19 +65,19 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0035:001161b8:NuGeomDestroy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0035:001162b0:NuFaceOnGeomCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0035:001162f8:NuFaceOnGeomDestroy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0035:00116348:NuGeomCalcPlanes"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0035:00116398:NuGeomAddPrim"
@@ -89,11 +89,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0035:00116408:NuPrimCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0035:001164c0:NuPrimDestroy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0035:00116528:NuVtxStride"
