@@ -13,11 +13,11 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0251:00279a28:topThread"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0251:00279b00:InitThread"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0251:00279bd8:iWakeupThread"
@@ -25,7 +25,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0251:00279c70:iRotateThreadReadyQueue"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0251:00279cf0:iSuspendThread"
