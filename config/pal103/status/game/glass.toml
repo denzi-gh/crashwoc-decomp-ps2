@@ -13,44 +13,44 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0107:00238bf8:InitGlass"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0107:00239190:GlassGivenMaterial"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0107:00239540:ProcessGlass"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0107:002396b8:DoGlass"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0107:002398f0:InitSpecular"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0107:00239960:InitEnviro"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0107:002399d0:SpecularGivenMaterial"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0107:00239b38:EnviroGivenMaterial"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0107:00239ca8:InitFlickerPal"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0107:00239cb0:FlickerPalGivenMaterial"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0107:00239cb8:DrawGlassCreatures"
-state = "asm"
+state = "matching"
