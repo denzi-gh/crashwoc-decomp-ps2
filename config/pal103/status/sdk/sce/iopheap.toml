@@ -13,24 +13,24 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0257:0027f840:sceSifInitIopHeap"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0257:0027f8c8:sceSifAllocIopHeap"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0257:0027f938:sceSifAllocSysMemory"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0257:0027f9b8:sceSifFreeSysMemory"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0257:0027fa30:sceSifFreeIopHeap"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0257:0027fa50:sceSifLoadIopHeap"
-state = "asm"
+state = "matching"
