@@ -13,7 +13,7 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0043:00140508:NuAnimDataWrite"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:00140850:NuAnimDataRead"
@@ -37,7 +37,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0043:00141220:NuAnimCurve2CalcVal"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:00141500:NuAnimCurveSetApplyToJoint"
@@ -89,7 +89,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:00144688:NuAnimDataCalcTime"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:001447c8:NuAnimDataCreate"
@@ -97,11 +97,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:00144838:NuAnimCurveSetCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:001448f8:NuAnimCurveSetDestroy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:001449e0:NuAnimCurveSetWrite"
@@ -109,7 +109,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0043:00144b68:NuAnimCurveCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:00144c18:NuAnimCurveDestroy"
@@ -117,11 +117,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:00144c68:NuAnimCurveWrite"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:00144d50:NuAnimCurveRead"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:00144e28:NuAnimKeyWrite"
@@ -137,19 +137,19 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:00144f50:NuAnimData2LoadBuff"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:00145030:NuAnimData2CalcTime"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:00145170:NuAnimDataChunkCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:00145220:NuAnimDataChunkDestroy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:001452f0:buildBitCountTable"
