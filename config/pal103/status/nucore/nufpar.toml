@@ -13,15 +13,15 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0002:00103978:NuFParGetLine"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0002:00103ca0:NuFParGetInt"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0002:00103da8:NuFParGetFloat"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0002:00103ec0:NuFParGetPos"
@@ -41,7 +41,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0002:00103f78:NuFParInterpretWord"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0002:00104048:NuFParUnGetWord"
@@ -49,24 +49,24 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0002:00104058:NuFParGetWord"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0002:00104140:NuFParClose"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0002:00104168:NuFParOpen"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0002:001041e0:NuFParDestroy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0002:00104220:NuFParCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0002:001042b8:NuGetChar"
-state = "asm"
+state = "matching"
