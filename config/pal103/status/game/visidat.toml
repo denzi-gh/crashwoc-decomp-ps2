@@ -13,7 +13,7 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0114:0024d0b0:visiSetSplineKnot"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0114:0024d238:visiLoadData"
@@ -21,4 +21,4 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0114:0024dc20:visiReset"
-state = "asm"
+state = "matching"
