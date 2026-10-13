@@ -57,7 +57,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0254:0027afd8:_sceSifSendCmd"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0254:0027b110:sceSifSendCmd"
