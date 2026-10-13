@@ -13,7 +13,7 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0054:0015b378:mtlSetDefaults"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0054:0015b510:NuFPatchMakeMaterial"
@@ -85,31 +85,31 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0054:00162258:NuFPatchHeightFieldIndexFast"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0054:00162510:NuFPatchGetStream"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0054:00162518:NuRndrFPatchEnd"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0054:00162598:NuRndrFPatch"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0054:001625b8:NuRndrFPatchN"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0054:00162628:NuFPatchAnimateWaterTable"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0054:00162728:NuFPatchTesselateSphere"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0054:00162750:NuFPatchLightTexture"
@@ -117,15 +117,15 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0054:00162968:NuFPatchSetTidsN"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0054:00162998:NuRndrFPatchHeightFieldIndex"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0054:00162a08:NuFPatchLightPoint"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0054:00162ae0:testShadowCast"
