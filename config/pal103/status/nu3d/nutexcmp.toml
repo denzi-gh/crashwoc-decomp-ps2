@@ -13,15 +13,15 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0055:00162b88:Blend16Pixels"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0055:00162e40:NuTexCreateLowResColourMap"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0055:00163070:BilinearExpand"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0055:00163230:NuTexCreateLuminanceMultiplyMap"
