@@ -13,31 +13,31 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0236:002773d8:_Balloc"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0236:00277480:_Bfree"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0236:002774b0:_multadd"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0236:002775c8:_s2b"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0236:00277710:_hi0bits"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0236:00277798:_lo0bits"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0236:00277858:_i2b"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0236:00277890:_multiply"
@@ -45,7 +45,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0236:00277ac0:_pow5mult"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0236:00277bc0:_lshift"
@@ -53,7 +53,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0236:00277d38:__mcmp"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0236:00277da0:__mdiff"
@@ -61,7 +61,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0236:00277f30:_ulp"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0236:00277fc8:_b2d"
@@ -73,8 +73,8 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0236:002782c8:_ratio"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0236:00278388:_mprec_log10"
-state = "asm"
+state = "matching"
