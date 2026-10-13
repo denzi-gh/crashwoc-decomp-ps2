@@ -133,7 +133,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:0017a4e0:TerrainPlatformEmbedded"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:0017b450:StorePlatImpact"
@@ -141,11 +141,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:0017b6b0:PlatformChecks"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:0017c2c8:NewTerrain"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:0017c6e0:TerrainSideClamp"
@@ -157,7 +157,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0068:0017cbe8:CubeImpact"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:0017cec8:NewTerrainScaleY"
@@ -169,19 +169,19 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:0017d5e8:NewRayCast"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:0017d7f0:NewRayCastMask"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:0017da00:NewRayCastSet"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:0017dc20:NewRayCastSetMask"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:0017de50:NewPlatInst"
@@ -197,15 +197,15 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0068:0017f288:NewScanHandelSubset"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:0017fbf8:ScanTerrainHandel"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00180630:NewRayCastSetHandel"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00180858:TerrainTrackBack"
