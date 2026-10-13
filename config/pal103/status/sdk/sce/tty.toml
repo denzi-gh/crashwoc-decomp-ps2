@@ -13,19 +13,19 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0252:00279d88:QueueInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0252:00279db0:QueuePeekWriteDone"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0252:00279df0:QueuePeekReadDone"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0252:00279e30:sceTtyHandler"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0252:00279fc8:sceTtyWrite"
@@ -33,8 +33,8 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0252:0027a118:sceTtyRead"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0252:0027a1e8:sceTtyInit"
-state = "asm"
+state = "matching"
