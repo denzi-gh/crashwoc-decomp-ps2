@@ -85,7 +85,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019c570:edobjFileSaveObjects"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019c968:edobjFileLoadObjects"
@@ -93,43 +93,43 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0071:0019d430:edobjcbInstanceMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019d5c0:edobjcbSwitchTypeMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019d9d8:edobjcbSwitchMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019dbd8:edobjcbAnimPropertiesMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019de08:edobjcbWayPropertiesMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019e130:edobjcbLocalSoundMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019e358:edobjcbParticleTypeMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019e4d8:edobjcbLocalParticleMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019e668:edobjcbBouncyMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019e818:edobjInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019ebe0:edobjRenderSoundEmitters"
