@@ -13,35 +13,35 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0074:001a6b68:edbitsSoundPlay"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0074:001a6cd8:edqrand"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0074:001a6cf8:edbitsRegisterLevel"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0074:001a6d48:edbitsRegisterSfx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0074:001a6d60:edbitsDrawCube"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0074:001a70c0:edbitsDrawDiagonalCross"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0074:001a7228:edbitsLookupSoundFX"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0074:001a7308:edbitsGetSoundName"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0074:001a7340:edbitsDrawCircleXY"
@@ -49,12 +49,12 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0074:001a7468:edbitsLookupInstance"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0074:001a74f0:edbitsSetSoundFxVolume"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0074:001a74f8:edbitsRegisterBaseScene"
-state = "asm"
+state = "matching"
