@@ -17,11 +17,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0112:00247bc8:RBodyInitClasses"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0112:00247e18:RBodyMove"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0112:00248118:RBodyImpact"
@@ -29,19 +29,19 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0112:00248310:InitDeb3"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0112:002484d8:AddDeb3Ang"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0112:00248ae0:AddDeb3"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0112:00249108:JonExtraDraw"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0112:002495a8:LaunchObjects"
@@ -49,7 +49,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0112:0024bcc0:ProcDeb3"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0112:0024c5b0:DrawDeb3"

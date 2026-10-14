@@ -79,6 +79,25 @@ struct rbclass_s {
 }; /* 0x4C */
 
 extern struct deb3_s deb3[64];
+struct deb3emit_s {
+    f32 yoff;
+    f32 grav;
+    f32 px;
+    f32 py;
+    f32 pz;
+    f32 vx;
+    f32 vy;
+    f32 vz;
+    f32 ang;
+};
+
+extern struct deb3emit_s Deb3Emit[7];
+extern struct deb3info Deb3Info[27];
+extern void NuMtxSetRotateXYZ(struct numtx_s *m, struct nuangvec_s *a);
+extern void NuMtxTranslate(struct numtx_s *m, struct nuvec_s *v);
+extern void NuVecRotateX(struct nuvec_s *dst, struct nuvec_s *src, s32 angle);
+extern void NuVecRotateY(struct nuvec_s *dst, struct nuvec_s *src, s32 angle);
+
 extern struct rbclass_s rbclass[5];
 extern struct nuvec_s ShadNorm;
 
@@ -116,6 +135,21 @@ extern float NuVecDot(struct nuvec_s* v0, struct nuvec_s* v1);
 extern void NuVecCross(struct nuvec_s* v, struct nuvec_s* v0, struct nuvec_s* v1);
 extern void NuVecInvMtxRotate(struct nuvec_s* v, struct nuvec_s* v0, struct numtx_s* m0);
 extern void NuVecSub(struct nuvec_s* v, struct nuvec_s* v0, struct nuvec_s* v1);
+extern void NuVecScale(struct nuvec_s *dst, struct nuvec_s *src, f32 scale);
+extern void NuMtxSkewSymmetric(struct numtx_s *m, struct nuvec_s *v);
+extern void NuMtxMulR(struct numtx_s *dst, struct numtx_s *a, struct numtx_s *b);
+extern void NuMtxAddR(struct numtx_s *dst, struct numtx_s *a, struct numtx_s *b);
+extern void NuMtxOrth(struct numtx_s *m);
+extern void NuMtxInvR(struct numtx_s *dst, struct numtx_s *src);
+extern void NuMtxPreRotateX(struct numtx_s *m, s32 angle);
+extern void NuMtxPreRotateY(struct numtx_s *m, s32 angle);
+extern void NuMtxPreRotateZ(struct numtx_s *m, s32 angle);
+extern void Draw3DCharacter(struct nuvec_s *pos, s32 xrot, s32 yrot, s32 z,
+                            struct CharacterModel *model, f32 scale, s32 action,
+                            f32 anim_time, s32 last);
+extern void NuLgtArcLaser(s32 type, struct nuvec_s *start, struct nuvec_s *end,
+                          struct nuvec_s *mid, f32 a, f32 b, f32 c, f32 d,
+                          u32 col);
 
 struct CortLight_s {
     int unk00;
@@ -132,10 +166,6 @@ extern int wdir;
 extern int wtimer;
 extern int debpt;
 extern float HotCoals[13];
-extern float D_0062e6b8; // 99999.0f
-extern float D_0062e6bc; //-0.725f
-extern float D_0062e6c0; // 2.225f
-//2000000.0f
 
 struct camera_s {
     struct numtx_s mtx;   /* 0x00 */
@@ -269,7 +299,7 @@ extern s32 firedroppt;
 extern void AddVariableShotDebrisEffect(s32 type, struct nuvec_s *pos,
                                         s32 count, s32 a, s32 b);
 extern struct deb3_s *AddDeb3Ang(struct nuvec_s *pos, s32 db, s32 emit,
-                                 void *angle, s32 rotx, s32 roty);
+                                 struct nuangvec_s *angle, s32 rotx, s32 roty);
 extern s32 NuAtan2D(f32 x, f32 z);
 extern f32 NuFsqrt(f32 x);
 extern f32 NewShadow(struct nuvec_s *pos, f32 y);
@@ -290,51 +320,62 @@ extern void PlayRandSFX(void);
 extern struct numtx_s numtx_identity;
 
 
+static inline void RBodySetSphereClass(s32 classid, f32 r, f32 mass, f32 kr,
+                                       f32 kf)
+{
+    struct rbclass_s *rbc;
+
+    rbc = &rbclass[classid];
+    rbc->invBodyInertiaTensor = numtx_identity;
+    rbc->invBodyInertiaTensor._00 = mass * 0.4f * r * r;
+    rbc->invBodyInertiaTensor._11 = mass * 0.4f * r * r;
+    rbc->invBodyInertiaTensor._22 = mass * 0.4f * r * r;
+    rbc->mass = mass;
+    rbc->kr = kr;
+    rbc->kf = kf;
+}
+
+
+static inline void RBodySetFakeClass(s32 classid, f32 r, f32 kr)
+{
+    struct rbclass_s *rbc;
+
+    rbc = &rbclass[classid];
+    rbc->mass = 0.0f;
+    rbc->kr = kr;
+    rbc->kf = r;
+}
+
+
+static inline void RBodySetCubiodClass(s32 classid, f32 dx, f32 dy, f32 dz,
+                                       f32 mass, f32 kr, f32 kf)
+{
+    struct rbclass_s *rbc;
+    f32 dz2;
+    f32 dx2;
+    f32 dy2;
+
+    dx2 = dx * 0.5f;
+    dy2 = dy * 0.5f;
+    dz2 = dz * 0.5f;
+    rbc = &rbclass[classid];
+    rbc->invBodyInertiaTensor = numtx_identity;
+    rbc->invBodyInertiaTensor._00 = 3.0f / (mass * (dy2 * dy2 + dz2 * dz2));
+    rbc->invBodyInertiaTensor._11 = 3.0f / (mass * (dx2 * dx2 + dz2 * dz2));
+    rbc->invBodyInertiaTensor._22 = 3.0f / (mass * (dx2 * dx2 + dy2 * dy2));
+    rbc->mass = mass;
+    rbc->kr = kr;
+    rbc->kf = kf;
+}
+
+
 void RBodyInitClasses(void)
 {
-    struct rbclass_s *rbc0;
-    struct rbclass_s *rbc1;
-    struct rbclass_s *rbc2;
-    struct rbclass_s *rbc3;
-    struct rbclass_s *rbc4;
-
-    rbc0 = &rbclass[0];
-    rbc1 = &rbclass[1];
-    rbc2 = &rbclass[2];
-    rbc4 = &rbclass[4];
-    rbc3 = &rbclass[3];
-
-    rbc0->invBodyInertiaTensor = numtx_identity;
-    rbc0->invBodyInertiaTensor._00 = 0.4f;
-    rbc0->invBodyInertiaTensor._11 = 0.4f;
-    rbc0->invBodyInertiaTensor._22 = 0.4f;
-    rbc0->mass = 1.0f;
-    rbc0->kr = 0.5f;
-    rbc0->kf = 0.1f;
-
-    rbc1->invBodyInertiaTensor = numtx_identity;
-    rbc1->invBodyInertiaTensor._00 = 60.0f;
-    rbc1->invBodyInertiaTensor._11 = 60.0f;
-    rbc1->invBodyInertiaTensor._22 = 60.0f;
-    rbc1->mass = 0.1f;
-    rbc1->kr = 0.9f;
-    rbc1->kf = 0.2f;
-
-    rbc2->invBodyInertiaTensor = numtx_identity;
-    rbc2->invBodyInertiaTensor._00 = 24.0f;
-    rbc2->invBodyInertiaTensor._11 = 60.0f;
-    rbc2->invBodyInertiaTensor._22 = 24.0f;
-    rbc2->mass = 0.1f;
-    rbc2->kr = 0.75f;
-    rbc2->kf = 0.2f;
-
-    rbc3->mass = 0.0f;
-    rbc3->kr = 0.9f;
-    rbc3->kf = 0.0f;
-
-    rbc4->mass = 0.0f;
-    rbc4->kr = 0.75f;
-    rbc4->kf = 10.0f;
+    RBodySetSphereClass(0, 1.0f, 1.0f, 0.5f, 0.1f);
+    RBodySetCubiodClass(1, 1.0f, 1.0f, 1.0f, 0.1f, 0.9f, 0.2f);
+    RBodySetCubiodClass(2, 1.0f, 2.0f, 1.0f, 0.1f, 0.75f, 0.2f);
+    RBodySetFakeClass(3, 0.0f, 0.9f);
+    RBodySetFakeClass(4, 10.0f, 0.75f);
 }
 
 void PlayRandSFX(void) {
@@ -441,41 +482,43 @@ void CoalSpark(struct deb3_s *deb) {
     }
 }
 
-void RBodyMove(struct deb3_s *deb,float dt) {
-  struct rbclass_s * rbc;
-  struct numtx_s tm;
-  struct numtx_s tmtx;
-  struct nuvec_s v;
-  
-  rbc = &rbclass[deb->info->classid];
-  if (rbc->mass != 0.0f) {
-    tmtx = deb->mtx;
-    NuVecScale(&v,&deb->angularvelocity,dt);
-    NuMtxSkewSymmetric(&tmtx,&v);
-    NuMtxMulR(&tmtx,&deb->mtx,&tmtx);
-    NuMtxAddR(&tmtx,&tmtx,&deb->mtx);
-    tmtx._30 = deb->mtx._30 + (deb->velocity.x * dt);
-    tmtx._31 = deb->mtx._31 + (deb->velocity.y * dt);
-    tmtx._32 = deb->mtx._32 + (deb->velocity.z * dt);
-    deb->velocity.y += deb->grav * dt;
-    NuMtxOrth(&tmtx);
-    NuMtxInvR(&tm,&tmtx);
-    NuMtxMulR(&deb->invWorldInertiaTensor,&tm,&rbc->invBodyInertiaTensor);
-    NuMtxMulR(&deb->invWorldInertiaTensor,&deb->invWorldInertiaTensor,&tmtx);
-    NuVecInvMtxRotate(&deb->angularvelocity,&deb->angularMomentum,&deb->invWorldInertiaTensor);
-    deb->mtx = tmtx;
-  }
-  else {
-    if (rbc->kf != 0.0f) {
-      NuMtxPreRotateX(&deb->mtx,deb->angularMomentum.x);
-      NuMtxPreRotateY(&deb->mtx,deb->angularMomentum.y);
-      NuMtxPreRotateZ(&deb->mtx,deb->angularMomentum.z);
+void RBodyMove(struct deb3_s *deb, f32 dt)
+{
+    struct rbclass_s *rbc;
+    struct numtx_s tm;
+    struct numtx_s tmtx;
+    struct nuvec_s v;
+
+    rbc = &rbclass[deb->info->classid];
+    if (rbc->mass != 0.0f) {
+        tmtx = deb->mtx;
+        NuVecScale(&v, &deb->angularvelocity, dt);
+        NuMtxSkewSymmetric(&tmtx, &v);
+        NuMtxMulR(&tmtx, &deb->mtx, &tmtx);
+        NuMtxAddR(&tmtx, &tmtx, &deb->mtx);
+        tmtx._30 = deb->mtx._30 + deb->velocity.x * dt;
+        tmtx._31 = deb->mtx._31 + deb->velocity.y * dt;
+        tmtx._32 = deb->mtx._32 + deb->velocity.z * dt;
+        deb->velocity.y += deb->grav * dt;
+        NuMtxOrth(&tmtx);
+        NuMtxInvR(&tm, &tmtx);
+        NuMtxMulR(&deb->invWorldInertiaTensor, &tm, &rbc->invBodyInertiaTensor);
+        NuMtxMulR(&deb->invWorldInertiaTensor, &deb->invWorldInertiaTensor,
+                  &tmtx);
+        NuVecInvMtxRotate(&deb->angularvelocity, &deb->angularMomentum,
+                          &deb->invWorldInertiaTensor);
+        deb->mtx = tmtx;
+    } else {
+        if (rbc->kf != 0.0f) {
+            NuMtxPreRotateX(&deb->mtx, deb->angularMomentum.x);
+            NuMtxPreRotateY(&deb->mtx, deb->angularMomentum.y);
+            NuMtxPreRotateZ(&deb->mtx, deb->angularMomentum.z);
+        }
+        deb->mtx._30 = deb->mtx._30 + deb->velocity.x * dt;
+        deb->mtx._31 = deb->mtx._31 + deb->velocity.y * dt;
+        deb->mtx._32 = deb->mtx._32 + deb->velocity.z * dt;
+        deb->velocity.y = deb->velocity.y + deb->grav * dt;
     }
-    deb->mtx._30 = deb->mtx._30 + (deb->velocity.x * dt);
-    deb->mtx._31 = deb->mtx._31 + (deb->velocity.y * dt);
-    deb->mtx._32 = deb->mtx._32 + (deb->velocity.z * dt);
-    deb->velocity.y = deb->velocity.y + (deb->grav * dt); 
-  }
 }
 
 void RBodyImpact(struct deb3_s *deb,struct nuvec_s *pnt,struct nuvec_s *nrm) {
@@ -514,14 +557,14 @@ void RBodyImpact(struct deb3_s *deb,struct nuvec_s *pnt,struct nuvec_s *nrm) {
   deb->angularvelocity.z = deb->angularvelocity.z + v.z;
 }
 
-void InitDeb3(void) {
-    int *p;
-    int *end;
+void InitDeb3(void)
+{
+    s32 i;
 
     rsfxcount = 0;
     rsfxpt = 0;
     memset(firedrop, 0, 0x140);
-    torndist = D_0062e6b8;
+    torndist = 99999.0f;
     debpt = 0;
     firedroppt = 0;
     dropfire = 0;
@@ -543,20 +586,14 @@ void InitDeb3(void) {
     masky = 0;
     maskoff = 0;
     maskrot = 0;
-
-    p = cortlights;
-    end = p + 126;
-
-    do {
-        p[0] = qrand();
-        p[1] = qrand();
-        p[2] = qrand();
-        p[3] = (qrand() & 0x7f) + 0x80;
-        p[4] = (qrand() & 0x7f) + 0x80;
-        p[5] = (qrand() & 0x7f) + 0x80;
-
-        p += 6;
-    } while ((int)p < (int)end);
+    for (i = 0; i < 21; i++) {
+        cortlights[i * 6] = qrand();
+        cortlights[i * 6 + 1] = qrand();
+        cortlights[i * 6 + 2] = qrand();
+        cortlights[i * 6 + 3] = ((qrand() & 0x7F) + 0x80) * 60 / 50;
+        cortlights[i * 6 + 4] = ((qrand() & 0x7F) + 0x80) * 60 / 50;
+        cortlights[i * 6 + 5] = ((qrand() & 0x7F) + 0x80) * 60 / 50;
+    }
     memset(deb3, 0, 0x3800);
     RBodyInitClasses();
     rockpt = 0;
@@ -567,52 +604,289 @@ void InitDeb3(void) {
         rockpt = HotCoals;
     }
     if (Level == 0x14) {
-        floor1 = D_0062e6bc;
-        roof1 = D_0062e6c0;
+        floor1 = -0.725f;
+        roof1 = 2.225f;
         flooron = 0;
         roofon = 0;
     }
 }
 
-void JonExtraDraw(void) {
-    ELEC* pt;
-    int i;
-    int d;
-    int col;
-    
+struct deb3_s *AddDeb3Ang(struct nuvec_s *pos, s32 db, s32 emit,
+                          struct nuangvec_s *angle, s32 rotx, s32 roty)
+{
+    s32 loop;
+    s32 flag;
+    struct deb3_s *deb;
+    f32 dist;
+    f32 ang2;
+    struct nuvec_s vec;
+    struct nuvec_s t;
+    struct nuangvec_s ang;
+
+    for (loop = 0; loop < 64; loop++) {
+        if ((f32)deb3[debpt & 0x3F].timer == 0.0f) {
+            deb = &deb3[debpt & 0x3F];
+            pos->x += Deb3Emit[emit].px * (f32)((qrand() - 0x8000) >> 8)
+                      * 0.0078125f;
+            pos->y += Deb3Emit[emit].py * (f32)((qrand() - 0x8000) >> 8)
+                      * 0.0078125f;
+            pos->z += Deb3Emit[emit].pz * (f32)((qrand() - 0x8000) >> 8)
+                      * 0.0078125f;
+            if (angle != 0) {
+                ang = *angle;
+            } else {
+                ang.x = qrand();
+                ang.y = qrand();
+                ang.z = qrand();
+            }
+            NuMtxSetRotateXYZ(&deb->mtx, &ang);
+            NuMtxTranslate(&deb->mtx, pos);
+            vec.x = Deb3Emit[emit].vx * (f32)((qrand() - 0x8000) >> 8)
+                    / 100.0f;
+            vec.y = (Deb3Emit[emit].vy * (f32)((qrand() - 0x8000) >> 8)
+                     + Deb3Emit[emit].yoff * 128.0f) / 100.0f;
+            vec.z = Deb3Emit[emit].vz * (f32)((qrand() - 0x8000) >> 8)
+                    / 100.0f;
+            NuVecRotateX(&vec, &vec, rotx);
+            NuVecRotateY(&vec, &vec, roty);
+            deb->velocity.x = vec.x;
+            deb->velocity.y = vec.y;
+            deb->velocity.z = vec.z;
+            deb->grav = Deb3Emit[emit].grav + Deb3Emit[emit].grav;
+            deb->angularvelocity.x = 0.0f;
+            deb->angularvelocity.y = 0.0f;
+            deb->angularvelocity.z = 0.0f;
+            deb->info = &Deb3Info[db];
+            ang2 = Deb3Emit[emit].ang;
+            if (ang2 != 0.0f) {
+                if (rbclass[deb->info->classid].mass != 0.0f) {
+                    ang2 = ang2 / 2560.0f;
+                }
+                deb->angularMomentum.x =
+                    (f32)((qrand() - 0x8000) >> 8) * ang2;
+                deb->angularMomentum.y =
+                    (f32)((qrand() - 0x8000) >> 8) * ang2;
+                deb->angularMomentum.z =
+                    (f32)((qrand() - 0x8000) >> 8) * ang2;
+            } else {
+                deb->angularMomentum.x = 0.0f;
+                deb->angularMomentum.y = 0.0f;
+                deb->angularMomentum.z = 0.0f;
+            }
+            deb->status = 0;
+            deb->timer = deb->info->timer * 50.0f;
+            deb->count = 0;
+            deb->diff.x = 0.0f;
+            deb->diff.y = 0.0f;
+            deb->diff.z = 0.0f;
+            deb->data = deb->info->data;
+            vec.x = deb->velocity.x * 8.0f / 50.0f;
+            vec.y = deb->velocity.y * 8.0f / 50.0f;
+            vec.z = deb->velocity.z * 8.0f / 50.0f;
+            t.x = deb->mtx._30;
+            t.y = deb->mtx._31;
+            t.z = deb->mtx._32;
+            dist = vec.x * vec.x + vec.y * vec.y + vec.z * vec.z;
+            if ((deb->info->info & 8) != 0) {
+                flag = 0;
+            } else {
+                flag = NewRayCast(&t, &vec, deb->info->size);
+            }
+            if (flag == 0) {
+                deb->status |= 2;
+            }
+            if ((u32)(flag - 1) < 15
+                || (flag > 15 && (deb->status & 2) != 0)) {
+                deb->impact.x = t.x + vec.x;
+                deb->impact.y = t.y + vec.y;
+                deb->impact.z = t.z + vec.z;
+                deb->norm = ShadNorm;
+                vec.x = vec.x * vec.x + vec.y * vec.y + vec.z * vec.z;
+                vec.x = NuFsqrt(vec.x);
+                dist = NuFsqrt(dist);
+                if (dist == 0.0f) {
+                    deb->check = 0;
+                } else {
+                    deb->check = vec.x * 8.0f / dist;
+                }
+                if (deb->check == 0) {
+                    deb->mtx._30 = deb->impact.x;
+                    deb->mtx._31 = deb->impact.y;
+                    deb->mtx._32 = deb->impact.z;
+                }
+            } else {
+                deb->check = 8;
+                deb->norm.y = 100.0f;
+            }
+            return deb;
+        }
+        debpt++;
+    }
+    debpt &= 0x3F;
+    return 0;
+}
+
+
+struct deb3_s *AddDeb3(struct nuvec_s *pos, s32 db, s32 emit,
+                       struct nuangvec_s *angle)
+{
+    s32 loop;
+    s32 flag;
+    struct deb3_s *deb;
+    f32 dist;
+    f32 ang2;
+    struct nuvec_s vec;
+    struct nuvec_s t;
+    struct nuangvec_s ang;
+
+    for (loop = 0; loop < 64; loop++) {
+        if ((f32)deb3[debpt & 0x3F].timer == 0.0f) {
+            deb = &deb3[debpt & 0x3F];
+            pos->x += Deb3Emit[emit].px * (f32)((qrand() - 0x8000) >> 8)
+                      * 0.0078125f;
+            pos->y += Deb3Emit[emit].py * (f32)((qrand() - 0x8000) >> 8)
+                      * 0.0078125f;
+            pos->z += Deb3Emit[emit].pz * (f32)((qrand() - 0x8000) >> 8)
+                      * 0.0078125f;
+            if (angle != 0) {
+                ang = *angle;
+            } else {
+                ang.x = qrand();
+                ang.y = qrand();
+                ang.z = qrand();
+            }
+            NuMtxSetRotateXYZ(&deb->mtx, &ang);
+            NuMtxTranslate(&deb->mtx, pos);
+            deb->velocity.y =
+                (Deb3Emit[emit].vy * (f32)((qrand() - 0x8000) >> 8)
+                 + Deb3Emit[emit].yoff * 128.0f) / 100.0f;
+            if (Deb3Emit[emit].vx >= 0.0f) {
+                deb->velocity.x = Deb3Emit[emit].vx
+                                  * (f32)((qrand() - 0x8000) >> 8) / 100.0f;
+                deb->velocity.z = Deb3Emit[emit].vz
+                                  * (f32)((qrand() - 0x8000) >> 8) / 100.0f;
+            } else {
+                deb->velocity.x = Deb3Emit[emit].vz
+                                  * NuTrigTable[(u16)angle->y];
+                deb->velocity.z = Deb3Emit[emit].vz
+                                  * NuTrigTable[(angle->y + 0x4000) & 0xFFFF];
+            }
+            deb->grav = Deb3Emit[emit].grav + Deb3Emit[emit].grav;
+            deb->angularvelocity.x = 0.0f;
+            deb->angularvelocity.y = 0.0f;
+            deb->angularvelocity.z = 0.0f;
+            deb->info = &Deb3Info[db];
+            ang2 = Deb3Emit[emit].ang;
+            if (ang2 != 0.0f) {
+                if (rbclass[deb->info->classid].mass != 0.0f) {
+                    ang2 = ang2 / 2560.0f;
+                }
+                deb->angularMomentum.x =
+                    (f32)((qrand() - 0x8000) >> 8) * ang2;
+                deb->angularMomentum.y =
+                    (f32)((qrand() - 0x8000) >> 8) * ang2;
+                deb->angularMomentum.z =
+                    (f32)((qrand() - 0x8000) >> 8) * ang2;
+            } else {
+                deb->angularMomentum.x = 0.0f;
+                deb->angularMomentum.y = 0.0f;
+                deb->angularMomentum.z = 0.0f;
+            }
+            deb->status = 0;
+            deb->timer = deb->info->timer * 50.0f;
+            deb->count = 0;
+            deb->diff.x = 0.0f;
+            deb->diff.y = 0.0f;
+            deb->diff.z = 0.0f;
+            deb->data = deb->info->data;
+            vec.x = deb->velocity.x * 8.0f / 50.0f;
+            vec.y = deb->velocity.y * 8.0f / 50.0f;
+            vec.z = deb->velocity.z * 8.0f / 50.0f;
+            t.x = deb->mtx._30;
+            t.y = deb->mtx._31;
+            t.z = deb->mtx._32;
+            dist = vec.x * vec.x + vec.y * vec.y + vec.z * vec.z;
+            if ((deb->info->info & 8) != 0) {
+                flag = 0;
+            } else {
+                flag = NewRayCast(&t, &vec, deb->info->size);
+            }
+            if (flag == 0) {
+                deb->status |= 2;
+            }
+            if ((u32)(flag - 1) < 15
+                || (flag > 15 && (deb->status & 2) != 0)) {
+                deb->impact.x = t.x + vec.x;
+                deb->impact.y = t.y + vec.y;
+                deb->impact.z = t.z + vec.z;
+                deb->norm = ShadNorm;
+                vec.x = vec.x * vec.x + vec.y * vec.y + vec.z * vec.z;
+                vec.x = NuFsqrt(vec.x);
+                dist = NuFsqrt(dist);
+                if (dist == 0.0f) {
+                    deb->check = 0;
+                } else {
+                    deb->check = vec.x * 8.0f / dist;
+                }
+                if (deb->check == 0) {
+                    deb->mtx._30 = deb->impact.x;
+                    deb->mtx._31 = deb->impact.y;
+                    deb->mtx._32 = deb->impact.z;
+                }
+            } else {
+                deb->check = 8;
+                deb->norm.y = 100.0f;
+            }
+            return deb;
+        }
+        debpt++;
+    }
+    debpt &= 0x3F;
+    return 0;
+}
+
+
+void JonExtraDraw(void)
+{
+    ELEC *pt;
+    s32 i;
+    s32 d;
+    s32 col;
     struct nuvec_s vec;
 
     if (Level == 0x19) {
         switch (cmask) {
-            default:
-                i = -1;
-                d = 0x7e;
-                break;
-            case 1:
-                i = CRemap[85];
-                d = 0x7e;
-                break;
-            case 2:
-                i = CRemap[87];
-                d = 0x7f;
-                break;
-            case 3:
-                i = CRemap[86];
-                d = 0x80;
-                break;
-            case 4:
-                i = CRemap[88];
-                d = 0x81;
-                break;
+        default:
+            i = -1;
+            d = 0x7E;
+            break;
+        case 1:
+            i = CRemap[85];
+            d = 0x7E;
+            break;
+        case 2:
+            i = CRemap[87];
+            d = 0x7F;
+            break;
+        case 3:
+            i = CRemap[86];
+            d = 0x80;
+            break;
+        case 4:
+            i = CRemap[88];
+            d = 0x81;
+            break;
         }
         vec.x = 0.0f;
-        vec.y = 5.0f - NuTrigTable[(u16)(maskoff / 0x3c)] * 3.0f;
+        vec.y = 5.0f - NuTrigTable[(u16)(maskoff / 50)] * 3.0f;
         vec.z = 2.87f;
-        vec.x = NuTrigTable[(u16)(maskx / 0x3c)] * 1.5f + vec.x;
-        vec.y += (NuTrigTable[(u16)(masky / 0x3c)] * 0.75f);
-        vec.z = NuTrigTable[(u16)((maskx / 0x3c) + 0x4000)] * 3.0f + vec.z;
+        vec.x = NuTrigTable[(u16)(maskx / 50)] * 1.5f + vec.x;
+        vec.y += NuTrigTable[(u16)(masky / 50)] * 0.75f;
+        vec.z = NuTrigTable[(u16)(maskx / 50 + 0x4000)] * 3.0f + vec.z;
         if (i != -1) {
-            Draw3DCharacter(&vec, 0, (unsigned short)(NuTrigTable[(unsigned short)(maskrot / 0x3c)] * 8192.0f), 0, &CModel[i], -1, 1.0f, 1.0f, 0);
+            Draw3DCharacter(&vec, 0,
+                            (u16)(NuTrigTable[(u16)(maskrot / 50)] * 8192.0f),
+                            0, &CModel[i], 1.0f, -1, 1.0f, 0);
             vec.y += 0.2f;
             if (Paused == 0) {
                 AddVariableShotDebrisEffect(GDeb[d].i, &vec, 1, 0, 0);
@@ -622,41 +896,42 @@ void JonExtraDraw(void) {
     if (Level != 2) {
         return;
     }
-    pt = (ELEC*)&H2OElec[0];
+    pt = H2OElec;
     if (Paused != 0) {
         return;
     }
-        for (pt; pt->start.x != 99999.0f; pt++) {
-            vec.x = pt->start.x - player->obj.pos.x;
-            vec.z = pt->start.z - player->obj.pos.z;
-            if ((vec.x * vec.x + vec.z * vec.z) < 625.0f) {
-                pt->time = pt->time - 0x3c;
-                if (pt->time < 0) {
-                    pt->time = ((qrand() & 0xff) + 0x3c) * 0x3c;
-                    pt->ang = qrand() & 0xffff;
+    for (; pt->start.x != 99999.0f; pt++) {
+        vec.x = pt->start.x - player->obj.pos.x;
+        vec.z = pt->start.z - player->obj.pos.z;
+        if (vec.x * vec.x + vec.z * vec.z < 625.0f) {
+            pt->time -= 60;
+            if (pt->time < 0) {
+                pt->time = ((qrand() & 0xFF) + 60) * 50;
+                pt->ang = qrand() & 0xFFFF;
+            }
+            if (pt->time < 2000) {
+                if (qrand() < 0x4000) {
+                    GameSfx(0x89, &pt->start);
                 }
-                if (pt->time < 0x960) {
-                    if (qrand() < 0x4000) {
-                        GameSfx(0x89, &pt->start);
-                    }
-                    if (pt->time > 0x5a0) {
-                        col = ((0x28 - pt->time) << 4) / 0x3c;
-                    } else if (pt->time < 0x3c0) {
-                        col = (pt->time << 4) / 0x3c;
-                    } else {
-                        col = 0x80;
-                    }
-                    col = col << 0x18;
-                    vec.x = NuTrigTable[pt->ang & 0xffff] * 0.47999999f;
-                    vec.y = 0.0f;
-                    vec.z = NuTrigTable[(pt->ang + 0x4000U) & 0x3fffc / 4] * 0.47999999f;
-                    NuLgtArcLaser( 0, &pt->start, &pt->end, &vec, 0.05f, 0.1f, 0.01f, 0.1f, col + 0x00FF7F00);
-                    NuLgtArcLaser(0, &pt->start, &pt->end, &vec, 0.4f, 0.3f, 0.001f, 0.1f, col | 0x800000);
-                    AddVariableShotDebrisEffect(GDeb[143].i, &pt->end, 1, 0, 0);
+                if (pt->time > 1200) {
+                    col = ((40 - pt->time) << 4) / 50;
+                } else if (pt->time < 800) {
+                    col = (pt->time << 4) / 50;
+                } else {
+                    col = 0x80;
                 }
+                col <<= 24;
+                vec.x = NuTrigTable[pt->ang & 0xFFFF] * 0.48f;
+                vec.y = 0.0f;
+                vec.z = NuTrigTable[(pt->ang + 0x4000) & 0xFFFF] * 0.48f;
+                NuLgtArcLaser(0, &pt->start, &pt->end, &vec, 0.05f, 0.1f,
+                              0.01f, 0.1f, col | 0xFF7F00);
+                NuLgtArcLaser(0, &pt->start, &pt->end, &vec, 0.4f, 0.3f,
+                              0.001f, 0.1f, col | 0x800000);
+                AddVariableShotDebrisEffect(GDeb[143].i, &pt->end, 1, 0, 0);
             }
         }
-    return;
+    }
 }
 
 void LaunchObjects(void) {
@@ -1473,7 +1748,7 @@ void ProcDeb3(void) {
           r = (deb->info->size * 0.5f + radius);
           if (dx * dx + dy * dy + dz * dz < r * r) {
             if (((deb->info->info & 2U) != 0) && (deb->info->type == 0x93)) {
-              player->freeze = 0x78;
+              player->freeze = 100;
               player->spin = 0;
               GameSfx(0x54,&player->obj.pos);
             }
@@ -1516,9 +1791,9 @@ void ProcDeb3(void) {
               GameSfx(0x44,(struct nuvec_s *)&deb->mtx._30);
             }
           }
-          vec.x = ((deb->velocity.x * 8.0f) / 60.0f);
-          vec.y = ((deb->velocity.y * 8.0f) / 60.0f);
-          vec.z = ((deb->velocity.z * 8.0f) / 60.0f);
+          vec.x = ((deb->velocity.x * 8.0f) / 50.0f);
+          vec.y = ((deb->velocity.y * 8.0f) / 50.0f);
+          vec.z = ((deb->velocity.z * 8.0f) / 50.0f);
           dist = (vec.x * vec.x + vec.y * vec.y + vec.z * vec.z);
           t.x = deb->mtx._30;
           t.y = deb->mtx._31;
