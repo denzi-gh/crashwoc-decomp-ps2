@@ -13,7 +13,7 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0150:00266c68:sceMcInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0150:00266e20:_lmcGetClientPtr"
@@ -29,7 +29,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0150:00266fc8:sceMcOpen"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0150:00267100:sceMcMkdir"
@@ -49,11 +49,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0150:00267358:sceMcRead"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0150:00267478:sceMcWrite"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0150:002675f8:mcHearAlarm"
@@ -65,7 +65,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0150:00267668:sceMcSync"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0150:00267748:mceGetInfoApdx"
@@ -73,11 +73,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0150:002677a0:sceMcGetInfo"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0150:00267928:sceMcGetDir"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0150:00267a80:mceStorePwd"
@@ -85,15 +85,15 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0150:00267b08:sceMcChdir"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0150:00267c58:sceMcFormat"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0150:00267d20:sceMcDelete"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0150:00267e48:sceMcFlush"
@@ -101,7 +101,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0150:00267f00:sceMcSetFileInfo"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0150:002680d8:sceMcRename"
@@ -109,7 +109,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0150:00268240:sceMcUnformat"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0150:00268308:sceMcGetEntSpace"
