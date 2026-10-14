@@ -42,7 +42,11 @@ struct numtx_s {
     f32 _30, _31, _32, _33;
 };
 
-struct numtl_s;
+struct numtl_s {
+    char pad000[0x1A4];
+    int tid;
+    char pad1A8[0x28];
+} __attribute__((aligned(16)));
 struct SkinDmaTag;
 
 struct nugeom_s {
@@ -50,6 +54,10 @@ struct nugeom_s {
     struct numtl_s *mtl;
     void *dmastream;
     struct SkinDmaTag *skindma;
+    char pad10[0x04];
+    int mtl_id;
+    char pad18[0x28];
+    int dmasize;
 };
 
 struct nugobj_s {
@@ -57,15 +65,82 @@ struct nugobj_s {
     struct nugobj_s *syslast;
     int type;
     struct nugeom_s *geom;
-    char pad10[0x3C];
+    void *faceon_geom;
+    f32 r;
+    f32 r2;
+    struct nuvec_s min;
+    struct nuvec_s max;
+    struct nuvec_s cntr;
+    f32 cntr_r;
+    f32 cntr_r2;
+    int ngobjs;
     struct nugobj_s *next_gobj;
+    struct nuvec_s origin;
+};
+
+struct nughggeom_s {
+    struct nughggeom_s *next;
+    int mtl_id;
+    int dmastream;
+    int skindma;
 };
 
 struct NUPOINTOFINTEREST_s {
     struct numtx_s offset;
-    int id;
+    char *name;
     u8 parent_joint;
     char pad45[0x0B];
+};
+
+struct NUJOINTDATA_s {
+    struct numtx_s orient;
+    struct nuvec_s locator_offset;
+    char *name;
+    char parent_ix;
+    u8 flags;
+    char pad52[0x0E];
+};
+
+struct NUHLAYERDATA_s {
+    char *name;
+    struct nugobj_s **gobjs;
+    struct nugobj_s *skin_object;
+    struct nugobj_s **blend_gobjs;
+    struct nugobj_s *blend_skin_object;
+};
+
+struct nushadowvtx_s {
+    struct nuvec_s pos;
+    int count;
+};
+
+struct nushadowmesh_s {
+    struct nushadowvtx_s *first;
+    struct nushadowvtx_s *second;
+};
+
+struct nushadowdata_s {
+    void *ellipsoids;
+    void *cylinders;
+    struct nushadowmesh_s *meshes;
+    u8 numellipsoids;
+    u8 numcylinders;
+    u8 nummeshes;
+    u8 last;
+};
+
+struct nutexanimenv_s;
+
+struct nutexanim_s {
+    struct nutexanim_s *succ;
+    struct nutexanim_s *prev;
+    short *tids;
+    short numtids;
+    unsigned int dynalloc : 1;
+    struct numtl_s *mtl;
+    struct nutexanimenv_s *env;
+    char *ntaname;
+    char *scriptname;
 };
 
 struct nuhcollideentry_s {
@@ -84,15 +159,17 @@ struct NUHGOBJ_s {
     struct numtl_s **mtls;
     int nummtl;
     int type;
-    char pad14[0x0C];
+    struct NUJOINTDATA_s *joints;
+    struct numtx_s *T;
+    struct numtx_s *INV_WT;
     u8 *joint_ixs;
-    char pad24[0x04];
+    struct NUHLAYERDATA_s *layers;
     struct NUPOINTOFINTEREST_s *pois;
     u8 *poi_ixs;
     char *string_table;             /* 0x30 */
     int string_table_size;          /* 0x34 */
     f32 scale;
-    char pad3C[0x04];
+    struct nushadowdata_s *shadow;
     f32 sphere_radius;
     f32 sphere_y;
     struct nuvec_s bbox_min;
@@ -102,22 +179,26 @@ struct NUHGOBJ_s {
     f32 cyl_radius;
     struct nuhcollide_s *collide;
     int numtexanims;                /* 0x70 */
-    void *texanims;                 /* 0x74 */
+    struct nutexanim_s *texanims;   /* 0x74 */
     short *texanim_tids;            /* 0x78 */
-    char pad7C[0x01];
+    u8 num_joints;
     u8 num_joint_ixs;
-    char pad7E[0x02];
+    u8 num_layers;
+    u8 num_pois;
     u8 num_poi_ixs;
     char pad81[0x03];
 };
 
 extern void *NuMemAllocFn(int size, char *file, int line);
+extern void NuMemFreeFn(void *ptr, char *file, int line);
 extern void *memset(void *s, int c, unsigned int n);
 extern int NuFileBeginBlkRead(int fh, int blockid);
 extern void NuFileEndBlkRead(int fh);
 extern int NuFileGetBlkSize(int fh);
 extern int NuFileRead(int fh, void *buf, int size);
-extern void NuTexAnimRemoveList(void *list);
+extern void NuTexAnimRemoveList(struct nutexanim_s *list);
+extern void NuTexAnimDestroy(struct nutexanim_s *anim);
+extern void NuGobjDestroy(struct nugobj_s *gobj);
 extern void NuMtlDestroy(struct numtl_s *mtl);
 extern void NuTexDestroy(int tid);
 extern void NuMtxMulVU0(struct numtx_s *dst, struct numtx_s *a, struct numtx_s *b);
@@ -125,8 +206,16 @@ extern void NuVecInvMtxTransform(struct nuvec_s *dst, struct nuvec_s *src, struc
 extern void NuVecMtxTransform(struct nuvec_s *dst, struct nuvec_s *src, struct numtx_s *mtx);
 extern f32 NuLineToPointDistSqr(struct nuvec_s *p0, struct nuvec_s *p1, struct nuvec_s *point);
 extern void NuCvtSknInstFix(struct SkinDmaTag *tag);
-extern void NuHGobjDestroyDynamic(struct NUHGOBJ_s *hobj);
 extern void ReadNuIFFHGobjSet(int fh, struct NUHGOBJ_s *hobj);
+extern void NuMtxMul(struct numtx_s *dst, struct numtx_s *a, struct numtx_s *b);
+extern void NuVecSub(struct nuvec_s *dst, struct nuvec_s *a, struct nuvec_s *b);
+extern void *memcpy(void *dst, const void *src, unsigned int n);
+extern void NuCvtSknInstUnFix(struct SkinDmaTag *tag);
+extern int NuPointRelToBoundingBox(struct nuvec_s *point, struct nuvec_s *max, struct nuvec_s *min);
+extern void NuVecNorm(struct nuvec_s *dst, struct nuvec_s *src);
+extern void NuClipXPlane(struct nuvec_s *out, struct nuvec_s *point, struct nuvec_s *dir, f32 *x);
+extern void NuClipYPlane(struct nuvec_s *out, struct nuvec_s *point, struct nuvec_s *dir, f32 *y);
+extern void NuClipZPlane(struct nuvec_s *out, struct nuvec_s *point, struct nuvec_s *dir, f32 *z);
 
 extern char D_00615290[];
 
@@ -134,6 +223,241 @@ extern char D_00615290[];
 
 #define NU_RELPTR(p) ((p) ? (void *)((char *)&(p) + (int)(p)) : 0)
 #define NU_OFFSET_PTR(off, base) ((void *)((int)(off) + (base)))
+
+
+struct nuhcollidesphere_s {
+    struct nuvec_s centre;
+    f32 radius;
+    u8 joint;
+};
+
+
+int NuHGobjBoundingBoxToLine(struct NUHGOBJ_s *hobj, struct numtx_s *mtx, struct nuvec_s *p0,
+                             struct nuvec_s *p1, f32 radius) {
+    struct nuvec_s local0;
+    struct nuvec_s local1;
+    struct nuvec_s dir;
+    struct nuvec_s hit;
+    struct nuvec_s min;
+    struct nuvec_s max;
+    int code0;
+    int code1;
+
+    min.x = hobj->bbox_min.x - radius;
+    min.y = hobj->bbox_min.y - radius;
+    min.z = hobj->bbox_min.z - radius;
+    max.x = hobj->bbox_max.x + radius;
+    max.y = hobj->bbox_max.y + radius;
+    max.z = hobj->bbox_max.z + radius;
+    NuVecInvMtxTransform(&local0, p0, mtx);
+    code0 = NuPointRelToBoundingBox(&local0, &max, &min);
+    if (code0 == 0) {
+        return 1;
+    }
+    NuVecInvMtxTransform(&local1, p1, mtx);
+    code1 = NuPointRelToBoundingBox(&local1, &max, &min);
+    if (code1 == 0) {
+        return 1;
+    }
+    if (code0 & code1) {
+        return 0;
+    }
+    NuVecSub(&dir, &local1, &local0);
+    NuVecNorm(&dir, &dir);
+    if (code0 & 1) {
+        NuClipXPlane(&hit, &local0, &dir, &max.x);
+        if (hit.y < max.y && min.y < hit.y && hit.z < max.z && min.z < hit.z) {
+            return 1;
+        }
+    } else if (code0 & 8) {
+        NuClipXPlane(&hit, &local0, &dir, &min.x);
+        if (hit.y < max.y && min.y < hit.y && hit.z < max.z && min.z < hit.z) {
+            return 1;
+        }
+    }
+    if (code0 & 2) {
+        NuClipYPlane(&hit, &local0, &dir, &max.y);
+        if (hit.x < max.x && min.x < hit.x && hit.z < max.z && min.z < hit.z) {
+            return 1;
+        }
+    } else if (code0 & 0x10) {
+        NuClipYPlane(&hit, &local0, &dir, &min.y);
+        if (hit.x < max.x && min.x < hit.x && hit.z < max.z && min.z < hit.z) {
+            return 1;
+        }
+    }
+    if (code0 & 4) {
+        NuClipZPlane(&hit, &local0, &dir, &max.z);
+        if (hit.x < max.x && min.x < hit.x && hit.y < max.y && min.y < hit.y) {
+            return 1;
+        }
+    } else if (code0 & 0x20) {
+        NuClipZPlane(&hit, &local0, &dir, &min.z);
+        if (hit.x < max.x && min.x < hit.x && hit.y < max.y && min.y < hit.y) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+
+int NuHGobjCollideSphere(struct NUHGOBJ_s *hobj, struct numtx_s *wm, struct numtx_s *tmtx,
+                         struct nuvec_s *pos, f32 radius, struct nuvec_s *hit) {
+    struct nuvec_s d;
+    struct numtx_s jm;
+    struct nuhcollide_s *collide;
+    struct nuhcollidesphere_s *sphere;
+    struct nuhcollideentry_s *entry;
+    unsigned int i;
+    f32 reach;
+
+    d.x = pos->x - wm->_30;
+    d.y = pos->y - (wm->_31 + hobj->sphere_y);
+    d.z = pos->z - wm->_32;
+    reach = hobj->sphere_radius + radius;
+    if (d.x * d.x + d.y * d.y + d.z * d.z < reach * reach) {
+        collide = hobj->collide;
+        if (collide) {
+            for (i = 0; i < collide->nentries; i++) {
+                entry = &collide->entries[i];
+                if (entry->type == 1) {
+                    sphere = entry->data;
+                    NuMtxMul(&jm, &tmtx[sphere->joint], wm);
+                    NuVecInvMtxTransform(&d, pos, &jm);
+                    NuVecSub(&d, &d, &sphere->centre);
+                    if (d.x * d.x + d.y * d.y + d.z * d.z < (radius + sphere->radius) * (radius + sphere->radius)) {
+                        if (hit) {
+                            hit->x = wm->_30;
+                            hit->y = wm->_31 + hobj->sphere_y;
+                            hit->z = wm->_32;
+                        }
+                        return 1;
+                    }
+                }
+            }
+        } else {
+            if (hit) {
+                hit->x = wm->_30;
+                hit->y = wm->_31 + hobj->sphere_y;
+                hit->z = wm->_32;
+            }
+            return 1;
+        }
+    }
+    return 0;
+}
+
+
+void NuHGobjDestroyDynamic(struct NUHGOBJ_s *hobj) {
+    struct nushadowdata_s *shadow;
+    struct nushadowdata_s *next;
+    int i;
+    int j;
+
+    if (hobj->texanims) {
+        NuTexAnimRemoveList(hobj->texanims);
+    }
+    if (hobj->shadow) {
+        for (shadow = hobj->shadow; shadow->last != 0xFF; shadow = next) {
+            if (shadow->ellipsoids) {
+                NuMemFreeFn(shadow->ellipsoids, nuhgobj_file, 0xFE);
+            }
+            if (shadow->cylinders) {
+                NuMemFreeFn(shadow->cylinders, nuhgobj_file, 0x101);
+            }
+            next = shadow + 1;
+            if (shadow->meshes) {
+                while (shadow->nummeshes) {
+                    shadow->nummeshes--;
+                    if (shadow->meshes[shadow->nummeshes].first) {
+                        NuMemFreeFn(shadow->meshes[shadow->nummeshes].first, nuhgobj_file, 0x107);
+                    }
+                    if (shadow->meshes[shadow->nummeshes].second) {
+                        NuMemFreeFn(shadow->meshes[shadow->nummeshes].second, nuhgobj_file, 0x109);
+                    }
+                }
+                NuMemFreeFn(shadow->meshes, nuhgobj_file, 0x10B);
+            }
+        }
+        NuMemFreeFn(hobj->shadow, nuhgobj_file, 0x10F);
+    }
+    if (hobj->string_table) {
+        NuMemFreeFn(hobj->string_table, nuhgobj_file, 0x113);
+    }
+    if (hobj->joints) {
+        NuMemFreeFn(hobj->joints, nuhgobj_file, 0x115);
+    }
+    if (hobj->T) {
+        NuMemFreeFn(hobj->T, nuhgobj_file, 0x117);
+    }
+    if (hobj->INV_WT) {
+        NuMemFreeFn(hobj->INV_WT, nuhgobj_file, 0x119);
+    }
+    if (hobj->layers) {
+        for (i = 0; i < hobj->num_layers; i++) {
+            if (hobj->layers[i].gobjs) {
+                for (j = 0; j < hobj->num_joints; j++) {
+                    if (hobj->layers[i].gobjs[j]) {
+                        NuGobjDestroy(hobj->layers[i].gobjs[j]);
+                    }
+                }
+                NuMemFreeFn(hobj->layers[i].gobjs, nuhgobj_file, 0x126);
+            }
+            if (hobj->layers[i].blend_gobjs) {
+                for (j = 0; j < hobj->num_joints; j++) {
+                    if (hobj->layers[i].blend_gobjs[j]) {
+                        NuGobjDestroy(hobj->layers[i].blend_gobjs[j]);
+                    }
+                }
+                NuMemFreeFn(hobj->layers[i].blend_gobjs, nuhgobj_file, 0x130);
+            }
+            if (hobj->layers[i].skin_object) {
+                NuGobjDestroy(hobj->layers[i].skin_object);
+            }
+            if (hobj->layers[i].blend_skin_object) {
+                NuGobjDestroy(hobj->layers[i].blend_skin_object);
+            }
+        }
+        NuMemFreeFn(hobj->layers, nuhgobj_file, 0x138);
+    }
+    if (hobj->mtls) {
+        for (i = 0; i < hobj->nummtl; i++) {
+            NuMtlDestroy(hobj->mtls[i]);
+        }
+        NuMemFreeFn(hobj->mtls, nuhgobj_file, 0x140);
+    }
+    if (hobj->tids) {
+        for (i = 0; i < hobj->numtid; i++) {
+            NuTexDestroy(hobj->tids[i]);
+        }
+        NuMemFreeFn(hobj->tids, nuhgobj_file, 0x148);
+    }
+    if (hobj->texanims) {
+        NuTexAnimRemoveList(hobj->texanims);
+    }
+    for (i = 0; i < hobj->numtexanims; i++) {
+        NuTexAnimDestroy(&hobj->texanims[i]);
+    }
+    if (hobj->texanims) {
+        NuMemFreeFn(hobj->texanims, nuhgobj_file, 0x151);
+    }
+    if (hobj->texanim_tids) {
+        NuMemFreeFn(hobj->texanim_tids, nuhgobj_file, 0x154);
+    }
+    if (hobj->poi_ixs) {
+        NuMemFreeFn(hobj->poi_ixs, nuhgobj_file, 0x157);
+    }
+    if (hobj->joint_ixs) {
+        NuMemFreeFn(hobj->joint_ixs, nuhgobj_file, 0x15A);
+    }
+    if (hobj->pois) {
+        NuMemFreeFn(hobj->pois, nuhgobj_file, 0x15D);
+    }
+    if (hobj->collide) {
+        NuMemFreeFn(hobj->collide, nuhgobj_file, 0x160);
+    }
+    NuMemFreeFn(hobj, nuhgobj_file, 0x162);
+}
 
 
 void NuHGobjDestroy(struct NUHGOBJ_s *hobj) {
@@ -340,7 +664,6 @@ extern int NuFileSize(char *name);
 extern int NuFileLoadBuffer(char *name, void *buf, int size);
 extern int NuMemFileOpen(void *buf, int size, int mode);
 extern void NuFileClose(int fh);
-extern void NuMemFreeFn(void *ptr, char *file, int line);
 extern char *strlwr(char *s);
 typedef void (*NuErrorFunc)(const char *fmt, ...);
 extern NuErrorFunc NuErrorProlog(const char *file, int line);
@@ -379,6 +702,177 @@ struct NUHGOBJ_s *NuHGobjLoad(char *file) {
         NuErrorProlog(nuhgobj_file, 0x1B7)(msg_hgobj_alloc_failed, size);
     }
     return hobj;
+}
+
+
+extern int NuFileReadInt(int fh);
+extern char NuFileReadChar(int fh);
+extern float NuFileReadFloat(int fh);
+extern struct nugobj_s *ReadNuIFFGeom(int fh, struct numtl_s **mtls);
+extern char D_00615310[];
+extern char D_00615330[];
+extern char D_00615358[];
+extern char D_00615380[];
+#define msg_shadow_alloc_failed D_00615310
+#define msg_ellipsoid_alloc_failed D_00615330
+#define msg_cylinder_alloc_failed D_00615358
+#define msg_mesh_alloc_failed D_00615380
+
+void ReadNuIFFHGobjSet(int fh, struct NUHGOBJ_s *hobj) {
+    struct nushadowdata_s *shadow;
+    int numshadows;
+    int size;
+    int ix;
+    int i;
+    int j;
+
+    hobj->num_joints = NuFileReadChar(fh);
+    if (hobj->num_joints) {
+        hobj->joints = NuMemAllocFn(hobj->num_joints * sizeof(struct NUJOINTDATA_s), nuhgobj_file, 0x22C);
+        memset(hobj->joints, 0, hobj->num_joints * sizeof(struct NUJOINTDATA_s));
+        hobj->T = NuMemAllocFn(hobj->num_joints * sizeof(struct numtx_s), nuhgobj_file, 0x22E);
+        memset(hobj->T, 0, hobj->num_joints * sizeof(struct numtx_s));
+        hobj->INV_WT = NuMemAllocFn(hobj->num_joints * sizeof(struct numtx_s), nuhgobj_file, 0x230);
+        memset(hobj->INV_WT, 0, hobj->num_joints * sizeof(struct numtx_s));
+        for (i = 0; i < hobj->num_joints; i++) {
+            NuFileRead(fh, &hobj->joints[i].flags, 1);
+            NuFileRead(fh, &hobj->T[i], sizeof(struct numtx_s));
+            NuFileRead(fh, &hobj->INV_WT[i], sizeof(struct numtx_s));
+            NuFileRead(fh, &hobj->joints[i].orient, sizeof(struct numtx_s));
+            NuFileRead(fh, &hobj->joints[i].locator_offset, sizeof(struct nuvec_s));
+            hobj->joints[i].parent_ix = NuFileReadChar(fh);
+            ix = NuFileReadInt(fh);
+            if (ix) {
+                hobj->joints[i].name = &hobj->string_table[ix - 1];
+            }
+        }
+        hobj->num_joint_ixs = NuFileReadChar(fh);
+        if (hobj->num_joint_ixs) {
+            hobj->joint_ixs = NuMemAllocFn(hobj->num_joint_ixs, nuhgobj_file, 0x252);
+            NuFileRead(fh, hobj->joint_ixs, hobj->num_joint_ixs);
+        }
+        hobj->num_poi_ixs = NuFileReadChar(fh);
+        if (hobj->num_poi_ixs) {
+            hobj->poi_ixs = NuMemAllocFn(hobj->num_poi_ixs, nuhgobj_file, 0x259);
+            NuFileRead(fh, hobj->poi_ixs, hobj->num_poi_ixs);
+        }
+        hobj->num_layers = NuFileReadChar(fh);
+        if (hobj->num_layers) {
+            hobj->layers = NuMemAllocFn(hobj->num_layers * sizeof(struct NUHLAYERDATA_s), nuhgobj_file, 0x263);
+            memset(hobj->layers, 0, hobj->num_layers * sizeof(struct NUHLAYERDATA_s));
+            for (i = 0; i < hobj->num_layers; i++) {
+                ix = NuFileReadInt(fh);
+                if (ix) {
+                    hobj->layers[i].name = &hobj->string_table[ix - 1];
+                }
+                if (NuFileReadChar(fh)) {
+                    hobj->layers[i].gobjs = NuMemAllocFn(hobj->num_joints * sizeof(struct nugobj_s *), nuhgobj_file, 0x271);
+                    memset(hobj->layers[i].gobjs, 0, hobj->num_joints * sizeof(struct nugobj_s *));
+                    for (j = 0; j < hobj->num_joints; j++) {
+                        if (NuFileReadChar(fh)) {
+                            hobj->layers[i].gobjs[j] = ReadNuIFFGeom(fh, hobj->mtls);
+                        }
+                    }
+                }
+                if (NuFileReadChar(fh)) {
+                    hobj->layers[i].skin_object = ReadNuIFFGeom(fh, hobj->mtls);
+                }
+                if (NuFileReadChar(fh)) {
+                    hobj->layers[i].blend_gobjs = NuMemAllocFn(hobj->num_joints * sizeof(struct nugobj_s *), nuhgobj_file, 0x283);
+                    memset(hobj->layers[i].blend_gobjs, 0, hobj->num_joints * sizeof(struct nugobj_s *));
+                    for (j = 0; j < hobj->num_joints; j++) {
+                        if (NuFileReadChar(fh)) {
+                            hobj->layers[i].blend_gobjs[j] = ReadNuIFFGeom(fh, hobj->mtls);
+                        }
+                    }
+                }
+                if (NuFileReadChar(fh)) {
+                    hobj->layers[i].blend_skin_object = ReadNuIFFGeom(fh, hobj->mtls);
+                }
+            }
+        }
+        hobj->num_pois = NuFileReadChar(fh);
+        if (hobj->num_pois) {
+            hobj->pois = NuMemAllocFn(hobj->num_pois * sizeof(struct NUPOINTOFINTEREST_s), nuhgobj_file, 0x298);
+            memset(hobj->pois, 0, hobj->num_pois * sizeof(struct NUPOINTOFINTEREST_s));
+            for (i = 0; i < hobj->num_pois; i++) {
+                hobj->pois[i].parent_joint = NuFileReadChar(fh);
+                NuFileRead(fh, &hobj->pois[i].offset, sizeof(struct numtx_s));
+                ix = NuFileReadInt(fh);
+                if (ix) {
+                    hobj->pois[i].name = &hobj->string_table[ix - 1];
+                }
+            }
+        }
+        numshadows = NuFileReadChar(fh);
+        if (numshadows) {
+            hobj->shadow = NuMemAllocFn((numshadows + 1) * sizeof(struct nushadowdata_s), nuhgobj_file, 0x2B0);
+            if (!hobj->shadow) {
+                NuErrorProlog(nuhgobj_file, 0x2B3)(msg_shadow_alloc_failed);
+            }
+            memset(hobj->shadow, 0, (numshadows + 1) * sizeof(struct nushadowdata_s));
+            hobj->shadow[numshadows].last = 0xFF;
+            for (i = 0; i < numshadows; i++) {
+                shadow = &hobj->shadow[i];
+                shadow->ellipsoids = 0;
+                shadow->meshes = 0;
+                shadow->cylinders = 0;
+                shadow->numellipsoids = NuFileReadChar(fh);
+                if (shadow->numellipsoids) {
+                    size = shadow->numellipsoids * 0x30;
+                    shadow->ellipsoids = NuMemAllocFn(size, nuhgobj_file, 0x2C6);
+                    if (!shadow->ellipsoids) {
+                        NuErrorProlog(nuhgobj_file, 0x2C8)(msg_ellipsoid_alloc_failed);
+                    }
+                    NuFileRead(fh, shadow->ellipsoids, size);
+                }
+                shadow->numcylinders = NuFileReadChar(fh);
+                if (shadow->numcylinders) {
+                    size = shadow->numcylinders * 0x40;
+                    shadow->cylinders = NuMemAllocFn(size, nuhgobj_file, 0x2D1);
+                    if (!shadow->cylinders) {
+                        NuErrorProlog(nuhgobj_file, 0x2D3)(msg_cylinder_alloc_failed);
+                    }
+                    NuFileRead(fh, shadow->cylinders, size);
+                }
+                shadow->nummeshes = NuFileReadChar(fh);
+                if (shadow->nummeshes) {
+                    size = shadow->nummeshes * sizeof(struct nushadowmesh_s);
+                    shadow->meshes = NuMemAllocFn(size, nuhgobj_file, 0x2DC);
+                    if (!shadow->meshes) {
+                        NuErrorProlog(nuhgobj_file, 0x2DE)(msg_mesh_alloc_failed);
+                    }
+                    memset(shadow->meshes, 0, size);
+                    for (j = 0; j < shadow->nummeshes; j++) {
+                        size = NuFileReadInt(fh) * 0x10;
+                        shadow->meshes[j].first = NuMemAllocFn(size, nuhgobj_file, 0x2E6);
+                        NuFileRead(fh, shadow->meshes[j].first, size);
+                        size = NuFileReadInt(fh) * 0x10;
+                        shadow->meshes[j].second = NuMemAllocFn(size, nuhgobj_file, 0x2EB);
+                        NuFileRead(fh, shadow->meshes[j].second, size);
+                    }
+                }
+                shadow->last = NuFileReadChar(fh);
+            }
+        }
+    }
+    hobj->sphere_radius = NuFileReadFloat(fh);
+    hobj->sphere_y = NuFileReadFloat(fh);
+    hobj->bbox_min.x = NuFileReadFloat(fh);
+    hobj->bbox_min.y = NuFileReadFloat(fh);
+    hobj->bbox_min.z = NuFileReadFloat(fh);
+    hobj->bbox_max.x = NuFileReadFloat(fh);
+    hobj->bbox_max.y = NuFileReadFloat(fh);
+    hobj->bbox_max.z = NuFileReadFloat(fh);
+    hobj->cyl_y = NuFileReadFloat(fh);
+    hobj->cyl_height = NuFileReadFloat(fh);
+    hobj->cyl_radius = NuFileReadFloat(fh);
+    if (hobj->bbox_min.x == 0.0f && hobj->bbox_min.y == 0.0f && hobj->bbox_min.z == 0.0f) {
+        hobj->bbox_min.x = hobj->bbox_min.y = hobj->bbox_min.z = -1.0f;
+    }
+    if (hobj->bbox_max.x == 0.0f && hobj->bbox_max.y == 0.0f && hobj->bbox_max.z == 0.0f) {
+        hobj->bbox_max.x = hobj->bbox_max.y = hobj->bbox_max.z = 1.0f;
+    }
 }
 
 
@@ -497,7 +991,67 @@ void ReadNuIFFHGobj(int fh, struct NUHGOBJ_s *hobj) {
 }
 
 
-void NuGHGFixupGobj(int base, struct nugobj_s *gobj, struct NUHGOBJ_s *hobj) {
+char *NuGHGWriteGobj(char *base, char *ptr, struct NUHGOBJ_s *hobj, struct nugobj_s *gobj,
+                     int *offset) {
+    struct nugobj_s *out;
+    struct nugobj_s *last;
+    struct nugeom_s *geom;
+    struct nughggeom_s *ogeom;
+    struct nughggeom_s *lastgeom;
+
+    last = 0;
+    *offset = 0;
+    while (gobj) {
+        ptr = (char *)(((unsigned int)ptr + 3) & ~3);
+        out = (struct nugobj_s *)ptr;
+        if (last) {
+            last->next_gobj = (struct nugobj_s *)(ptr - base);
+        } else {
+            *offset = ptr - base;
+        }
+        ptr = (char *)&out[1];
+        memcpy(out, gobj, sizeof(struct nugobj_s));
+        out->faceon_geom = 0;
+        lastgeom = 0;
+        for (geom = gobj->geom; geom; geom = geom->next) {
+            ptr = (char *)(((unsigned int)ptr + 3) & ~3);
+            ogeom = (struct nughggeom_s *)ptr;
+            if (lastgeom) {
+                lastgeom->next = (struct nughggeom_s *)(ptr - base);
+            } else {
+                out->geom = (struct nugeom_s *)(ptr - base);
+            }
+            ogeom->next = 0;
+            ogeom->mtl_id = geom->mtl_id;
+            ptr = (char *)&ogeom[1];
+            if (geom->dmastream) {
+                ptr = (char *)(((unsigned int)ptr + 0xF) & ~0xF);
+                ogeom->dmastream = ptr - base;
+                memcpy(ptr, geom->dmastream, geom->dmasize);
+                ptr += geom->dmasize;
+            } else {
+                ogeom->dmastream = 0;
+            }
+            if (geom->skindma) {
+                ptr = (char *)(((unsigned int)ptr + 0xF) & ~0xF);
+                ogeom->skindma = ptr - base;
+                NuCvtSknInstUnFix(geom->skindma);
+                memcpy(ptr, geom->skindma, geom->dmasize);
+                NuCvtSknInstFix(geom->skindma);
+                ptr += geom->dmasize;
+            } else {
+                ogeom->skindma = 0;
+            }
+            lastgeom = ogeom;
+        }
+        last = out;
+        gobj = gobj->next_gobj;
+    }
+    return ptr;
+}
+
+
+inline void NuGHGFixupGobj(int base, struct nugobj_s *gobj, struct NUHGOBJ_s *hobj) {
     struct nugeom_s *geom;
 
     while (gobj) {
@@ -525,4 +1079,246 @@ void NuGHGFixupGobj(int base, struct nugobj_s *gobj, struct NUHGOBJ_s *hobj) {
             gobj = 0;
         }
     }
+}
+
+
+struct nughgheader_s {
+    int size;
+    int version;
+    int numtid;
+    int tids;
+    int nummtl;
+    int mtls;
+    int num_joints;
+    int joints;
+    int T;
+    int INV_WT;
+    int num_joint_ixs;
+    int joint_ixs;
+    int string_table;
+    int string_table_size;
+    int num_poi_ixs;
+    int poi_ixs;
+    int num_pois;
+    int pois;
+    int num_layers;
+    int layers;
+    int shadow;
+    f32 sphere_radius;
+    f32 sphere_y;
+    struct nuvec_s bbox_min;
+    struct nuvec_s bbox_max;
+    f32 cyl_y;
+    f32 cyl_height;
+    f32 cyl_radius;
+    int collide;
+    f32 scale;
+    int numtexanims;
+    int texanims;
+};
+
+typedef int (*NuMtlReadEventFunc)(struct numtl_s *mtl);
+
+extern int NuTexCreateNative(void *data);
+extern void *NuTexAnimProgFind(char *name);
+extern struct nutexanimenv_s *NuTexAnimEnvCreate(void *buff, struct numtl_s *mtl, short *tids, void *prog);
+extern void NuTexAnimAddList(struct nutexanim_s *list);
+extern void NuDisableVBlank(void);
+extern void NuEnableVBlank(void);
+extern void NuMtlAdd(struct numtl_s *mtl);
+extern void NuMtlUpdate(struct numtl_s *mtl);
+extern NuMtlReadEventFunc NuMtlReadEvent;
+extern int D_0062EECC;
+extern char D_00615470[];
+extern char D_006154C0[];
+extern char D_00615510[];
+extern char D_00615520[];
+#define nughg_version D_0062EECC
+#define msg_ghg_file_old D_00615470
+#define msg_ghg_loader_old D_006154C0
+#define msg_ghg_reading D_00615510
+#define msg_ghg_read_size D_00615520
+
+struct NUHGOBJ_s *NuGHGRead(char **buffer, char *file) {
+    struct nughgheader_s *header;
+    struct NUHGOBJ_s *hobj;
+    struct NUHLAYERDATA_s *layer;
+    struct nugobj_s **gobjs;
+    struct nuhcollide_s *collide;
+    struct nuhcollideentry_s *entry;
+    struct nutexanim_s *anim;
+    struct nushadowdata_s *shadow;
+    struct nushadowmesh_s *mesh;
+    struct numtl_s *mtl;
+    int *texoffsets;
+    void *prog;
+    char *ptr[1];
+    int base;
+    int i;
+    int j;
+
+    hobj = 0;
+    ptr[0] = (char *)(((unsigned int)*buffer + 0xF) & ~0xF);
+    base = (int)ptr[0];
+    if (NuFileLoadBuffer(file, ptr[0], 0x7FFFFFFF) > 0) {
+        header = (struct nughgheader_s *)ptr[0];
+        if (header->version < nughg_version) {
+            NuErrorProlog(nuhgobj_file, 0x61D)(msg_ghg_file_old, header->version, nughg_version);
+        }
+        if (header->version > nughg_version) {
+            NuErrorProlog(nuhgobj_file, 0x61F)(msg_ghg_loader_old, header->version, nughg_version);
+        }
+        NuDebugMsgProlog(nuhgobj_file, 0x622)(msg_ghg_reading, file);
+        hobj = (struct NUHGOBJ_s *)(((unsigned int)ptr[0] + ((struct nughgheader_s *)ptr[0])->size + 0xF) & ~0xF);
+        ptr[0] = (char *)&hobj[1];
+        memset(hobj, 0, sizeof(struct NUHGOBJ_s));
+        hobj->type = 1;
+        if (header->tids) {
+            hobj->tids = (short *)(base + header->tids);
+            hobj->numtid = header->numtid;
+            texoffsets = (int *)(base + header->tids);
+            for (i = 0; i < hobj->numtid; i++) {
+                hobj->tids[i] = NuTexCreateNative((void *)(base + texoffsets[i]));
+            }
+        }
+        if (header->mtls) {
+            hobj->mtls = (struct numtl_s **)(base + header->mtls);
+            hobj->nummtl = header->nummtl;
+            for (i = 0; i < hobj->nummtl; i++) {
+                hobj->mtls[i] = (struct numtl_s *)(base + (int)hobj->mtls[i]);
+                mtl = hobj->mtls[i];
+                if (mtl->tid) {
+                    mtl->tid = hobj->tids[mtl->tid - 1];
+                }
+                NuDisableVBlank();
+                NuMtlAdd(hobj->mtls[i]);
+                if (!NuMtlReadEvent(hobj->mtls[i])) {
+                    NuMtlUpdate(hobj->mtls[i]);
+                }
+                NuEnableVBlank();
+            }
+        }
+        hobj->scale = header->scale;
+        hobj->string_table = (char *)(base + header->string_table);
+        hobj->string_table_size = header->string_table_size;
+        hobj->num_joints = header->num_joints;
+        hobj->joints = (struct NUJOINTDATA_s *)(base + header->joints);
+        hobj->T = (struct numtx_s *)(base + header->T);
+        hobj->INV_WT = (struct numtx_s *)(base + header->INV_WT);
+        hobj->num_joint_ixs = header->num_joint_ixs;
+        hobj->joint_ixs = (u8 *)(base + header->joint_ixs);
+        for (i = 0; i < hobj->num_joints; i++) {
+            if (hobj->joints[i].name) {
+                hobj->joints[i].name = NU_OFFSET_PTR(hobj->joints[i].name, base);
+            }
+        }
+        if (header->num_poi_ixs) {
+            hobj->num_poi_ixs = header->num_poi_ixs;
+            hobj->poi_ixs = (u8 *)(base + header->poi_ixs);
+        }
+        if (header->num_pois) {
+            hobj->num_pois = header->num_pois;
+            hobj->pois = (struct NUPOINTOFINTEREST_s *)(base + header->pois);
+            for (i = 0; i < hobj->num_pois; i++) {
+                if (hobj->pois[i].name) {
+                    hobj->pois[i].name = NU_OFFSET_PTR(hobj->pois[i].name, base);
+                }
+            }
+        }
+        layer = (struct NUHLAYERDATA_s *)(base + header->layers);
+        hobj->layers = layer;
+        hobj->num_layers = header->num_layers;
+        for (i = 0; i < hobj->num_layers; i++) {
+            if (layer->name) {
+                layer->name = NU_OFFSET_PTR(layer->name, base);
+            }
+            if (layer->gobjs) {
+                gobjs = layer->gobjs = NU_OFFSET_PTR(layer->gobjs, base);
+                for (j = 0; j < hobj->num_joints; j++) {
+                    if (gobjs[j]) {
+                        NuGHGFixupGobj(base, gobjs[j] = NU_OFFSET_PTR(gobjs[j], base), hobj);
+                    }
+                }
+            }
+            if (layer->skin_object) {
+                NuGHGFixupGobj(base, layer->skin_object = NU_OFFSET_PTR(layer->skin_object, base), hobj);
+            }
+            if (layer->blend_gobjs) {
+                gobjs = layer->blend_gobjs = NU_OFFSET_PTR(layer->blend_gobjs, base);
+                for (j = 0; j < hobj->num_joints; j++) {
+                    if (gobjs[j]) {
+                        NuGHGFixupGobj(base, gobjs[j] = NU_OFFSET_PTR(gobjs[j], base), hobj);
+                    }
+                }
+            }
+            if (layer->blend_skin_object) {
+                NuGHGFixupGobj(base, layer->blend_skin_object = NU_OFFSET_PTR(layer->blend_skin_object, base), hobj);
+            }
+            layer++;
+        }
+        hobj->sphere_radius = header->sphere_radius;
+        hobj->sphere_y = header->sphere_y;
+        hobj->bbox_min = header->bbox_min;
+        hobj->bbox_max = header->bbox_max;
+        hobj->cyl_y = header->cyl_y;
+        hobj->cyl_height = header->cyl_height;
+        hobj->cyl_radius = header->cyl_radius;
+        hobj->collide = 0;
+        if (header->collide) {
+            collide = hobj->collide = NU_OFFSET_PTR(header->collide, base);
+            collide->entries = NU_OFFSET_PTR(collide->entries, base);
+            for (i = 0; i < collide->nentries; i++) {
+                entry = &collide->entries[i];
+                entry->data = NU_OFFSET_PTR(entry->data, base);
+            }
+        }
+        hobj->numtexanims = header->numtexanims;
+        if (hobj->numtexanims) {
+            hobj->texanims = (struct nutexanim_s *)(base + header->texanims);
+            for (i = 0; i < hobj->numtexanims; i++) {
+                anim = &hobj->texanims[i];
+                anim->tids = (short *)(base + (int)anim->tids);
+                anim->prev = 0;
+                anim->succ = 0;
+                for (j = 0; j < anim->numtids; j++) {
+                    anim->tids[j] = hobj->tids[anim->tids[j]];
+                }
+                anim->mtl = hobj->mtls[(int)anim->mtl];
+                anim->scriptname = NU_OFFSET_PTR(anim->scriptname, base);
+                anim->ntaname = NU_OFFSET_PTR(anim->ntaname, base);
+                prog = NuTexAnimProgFind(anim->scriptname);
+                ptr[0] = (char *)(((unsigned int)ptr[0] + 0xF) & ~0xF);
+                anim->env = NuTexAnimEnvCreate(ptr, anim->mtl, anim->tids, prog);
+            }
+            for (j = 0; j < hobj->numtexanims - 1; j++) {
+                hobj->texanims[j].succ = &hobj->texanims[j] + 1;
+                hobj->texanims[j + 1].prev = &hobj->texanims[j];
+            }
+            NuTexAnimAddList(hobj->texanims);
+        }
+        hobj->shadow = 0;
+        if (header->shadow) {
+            shadow = hobj->shadow = NU_OFFSET_PTR(header->shadow, base);
+            for (; shadow->last != 0xFF; shadow++) {
+                if (shadow->numellipsoids) {
+                    shadow->ellipsoids = NU_OFFSET_PTR(shadow->ellipsoids, base);
+                }
+                if (shadow->numcylinders) {
+                    shadow->cylinders = NU_OFFSET_PTR(shadow->cylinders, base);
+                }
+                if (shadow->nummeshes) {
+                    mesh = shadow->meshes = NU_OFFSET_PTR(shadow->meshes, base);
+                    for (i = 0; i < shadow->nummeshes; i++) {
+                        mesh->second = NU_OFFSET_PTR(mesh->second, base);
+                        mesh->first = NU_OFFSET_PTR(mesh->first, base);
+                        mesh++;
+                    }
+                }
+            }
+        }
+        ptr[0] = (char *)(((unsigned int)ptr[0] + 0xF) & ~0xF);
+        NuDebugMsgProlog(nuhgobj_file, 0x70C)(msg_ghg_read_size, file, ptr[0] - *buffer);
+        *buffer = ptr[0];
+    }
+    return hobj;
 }
