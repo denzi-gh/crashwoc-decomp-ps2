@@ -135,6 +135,77 @@ typedef struct nuanimtime_s {
     unsigned int time_byte;
 } NuAnimTime;
 
+typedef struct nuvec_s {
+    float x;
+    float y;
+    float z;
+} NuVec;
+
+typedef struct nuangvec_s {
+    int x;
+    int y;
+    int z;
+} NuAngVec;
+
+typedef struct numtx_s {
+    float _00, _01, _02, _03;
+    float _10, _11, _12, _13;
+    float _20, _21, _22, _23;
+    float _30, _31, _32, _33;
+} NuMtx;
+
+typedef struct nujointdata_s {
+    NuMtx orient;
+    NuVec locator_offset;
+    char *name;
+    unsigned char parent_ix;
+    unsigned char flags;
+    char pad[10];
+} NuJointData;
+
+typedef struct nujointanim_s {
+    float rx;
+    float ry;
+    float rz;
+    float tx;
+    float ty;
+    float tz;
+    float sx;
+    float sy;
+    float sz;
+    short max_rx;
+    short max_ry;
+    short max_rz;
+    short min_rx;
+    short min_ry;
+    short min_rz;
+    unsigned char joint_id;
+    signed char flags;
+    char pad[2];
+} NuJointAnim;
+
+typedef struct nunode_s {
+    char *name;
+    int id;
+    int type;
+    int num_children;
+    struct nunode_s *parent;
+    struct nunode_s *child;
+    struct nunode_s *next;
+    void *data;
+} NuNode;
+
+typedef struct nujointnode_s {
+    NuNode node;
+    NuMtx orient;
+    NuMtx mtx;
+    NuMtx wmtx;
+    char pad_e0[0x18];
+    NuVec scale;
+    NuVec pivot;
+    unsigned char flags;
+} NuJointNode;
+
 
 typedef void (*NuErrorFunc)(const char *fmt, ...);
 
@@ -153,8 +224,23 @@ extern int strlen(const char *s);
 extern int NuFileReadInt(int fh);
 extern int NuFileWriteFloat(int fh, float value);
 extern float NuFileReadFloat(int fh);
+extern char NuFileReadChar(int fh);
+extern NuAnimData *NuAnimDataCreate(int nchunks);
+extern NuAnimDataChunk *NuAnimDataChunkCreate(int numnodes);
+extern NuAnimCurveSet *NuAnimCurveSetCreate(int ncurves);
 extern double floor(double x);
 extern void NuAnimDataChunkDestroy(NuAnimDataChunk *chunk);
+extern void NuMtxSetIdentity(NuMtx *m);
+extern void NuMtxSetRotateXYZ(NuMtx *m, NuAngVec *a);
+extern void NuMtxPreScale(NuMtx *m, NuVec *s);
+extern void NuMtxTranslate(NuMtx *m, NuVec *t);
+extern void NuMtxSetRotateXYZVU0(NuMtx *m, NuAngVec *a);
+extern void NuMtxMulRVU0(NuMtx *dst, NuMtx *a, NuMtx *b);
+extern void NuMtxMulR(NuMtx *dst, NuMtx *a, NuMtx *b);
+extern void NuMtxScale(NuMtx *m, NuVec *s);
+extern void NuMtxPreTranslate(NuMtx *m, NuVec *t);
+extern void NuMtxPreScaleVU0(NuMtx *m, NuVec *s);
+extern void NuMtxScaleVU0(NuMtx *m, NuVec *s);
 
 extern unsigned char D_006ADC00[256];
 extern int D_0062EE18;
@@ -166,6 +252,9 @@ extern char D_00614BC8[];
 extern char D_00614C10[];
 extern char D_00614C50[];
 extern char D_0062EE20[];
+extern char D_00614CB8[];
+extern char D_00614CD0[];
+extern char D_00614CE8[];
 
 #define bitcount_table D_006ADC00
 #define bitcount_table_built D_0062EE18
@@ -174,6 +263,9 @@ extern char D_0062EE20[];
 #define nuanim_new_format_msg D_00614B20
 #define nuanim_old_format_msg D_00614B60
 #define nuanim_assert_msg D_0062EE20
+#define nuanim_bad_index_msg D_00614CB8
+#define nuanim_bad_curveset_msg D_00614CD0
+#define nuanim_blend_bad_curveset_msg D_00614CE8
 #define nuanim_keytype_none_msg D_00614BC8
 #define nuanim_keytype_small_msg D_00614C10
 #define nuanim_keytype_boolean_msg D_00614C50
@@ -276,6 +368,84 @@ void NuAnimDataWrite(int fh, NuAnimData *data) {
             }
         }
     }
+}
+
+
+NuAnimData *NuAnimDataRead(int fh) {
+    NuAnimData *data;
+    NuAnimDataChunk *chunk;
+    NuAnimCurve *curve;
+    NuAnimKey *key;
+    char *names;
+    float time;
+    int size;
+    int numnodes;
+    int ncurves;
+    int count;
+    int i;
+    int j;
+    int k;
+
+    if (!bitcount_table_built) {
+        buildBitCountTable();
+    }
+    size = NuFileReadInt(fh);
+    if (size) {
+        names = NuMemAllocFn(size, nuanim_srcfile, 0x18B);
+        NuFileRead(fh, names, size);
+    } else {
+        names = 0;
+    }
+    time = NuFileReadFloat(fh);
+    data = NuAnimDataCreate(NuFileReadInt(fh));
+    data->time = time;
+    data->node_names = names;
+    for (i = 0; i < data->nchunks; i++) {
+        numnodes = NuFileReadInt(fh);
+        chunk = NuAnimDataChunkCreate(numnodes);
+        data->chunks[i] = chunk;
+        chunk->numnodes = numnodes;
+        count = NuFileReadInt(fh);
+        if (count) {
+            chunk->keys = NuMemAllocFn(count * sizeof(NuAnimKey), nuanim_srcfile, 0x1A5);
+            NuFileRead(fh, chunk->keys, count * sizeof(NuAnimKey));
+        } else {
+            chunk->keys = 0;
+        }
+        key = chunk->keys;
+        count = NuFileReadInt(fh);
+        if (count) {
+            chunk->curves = NuMemAllocFn(count * sizeof(NuAnimCurve), nuanim_srcfile, 0x1B2);
+            NuFileRead(fh, chunk->curves, count * sizeof(NuAnimCurve));
+        } else {
+            chunk->curves = 0;
+        }
+        for (j = 0; j < numnodes; j++) {
+            ncurves = NuFileReadChar(fh);
+            if (ncurves) {
+                chunk->animcurvesets[j] = NuAnimCurveSetCreate(ncurves);
+                chunk->animcurvesets[j]->flags = NuFileReadInt(fh);
+                for (k = 0; k < chunk->animcurvesets[j]->ncurves; k++) {
+                    chunk->animcurvesets[j]->constants[k] = NuFileReadFloat(fh);
+                }
+            }
+        }
+        curve = chunk->curves;
+        for (j = 0; j < chunk->numnodes; j++) {
+            if (chunk->animcurvesets[j]) {
+                for (k = 0; k < chunk->animcurvesets[j]->ncurves; k++) {
+                    if (chunk->animcurvesets[j]->constants[k] == 3.40282347e+38f) {
+                        chunk->animcurvesets[j]->set[k] = curve;
+                        chunk->num_valid_animcurvesets++;
+                        curve->animkeys = key;
+                        key += curve->numkeys;
+                        curve++;
+                    }
+                }
+            }
+        }
+    }
+    return data;
 }
 
 
@@ -473,10 +643,1111 @@ float NuAnimCurve2CalcVal(NuAnimCurve2 *curve, NuAnimTime *atime, int keytype) {
 }
 
 
+void NuAnimCurveSetApplyToJoint(NuAnimDataChunk *chunk, NuAnimTime *atime, int node, NuJointNode *joint) {
+    NuVec t;
+    NuVec r;
+    NuVec p;
+    NuAngVec ang;
+    NuVec s;
+    NuMtx *m;
+    NuAnimCurveSet *curveset;
+    NuJointNode *parent;
+
+    m = &joint->mtx;
+    if (node < 0 || node >= chunk->numnodes) {
+        NuErrorProlog(nuanim_srcfile, 0x590)(nuanim_bad_index_msg);
+    }
+    curveset = chunk->animcurvesets[node];
+    if (!curveset) {
+        NuErrorProlog(nuanim_srcfile, 0x595)(nuanim_bad_curveset_msg);
+    }
+    if (curveset->flags & 1) {
+        if (curveset->set[3]) {
+            r.x = NuAnimCurveCalcVal2(curveset->set[3], atime);
+        } else {
+            r.x = curveset->constants[3];
+        }
+        if (curveset->set[4]) {
+            r.y = NuAnimCurveCalcVal2(curveset->set[4], atime);
+        } else {
+            r.y = curveset->constants[4];
+        }
+        if (curveset->set[5]) {
+            r.z = NuAnimCurveCalcVal2(curveset->set[5], atime);
+        } else {
+            r.z = curveset->constants[5];
+        }
+        ang.x = (int)(r.x * 10430.378f);
+        ang.y = (int)(r.y * 10430.378f);
+        ang.z = (int)(r.z * 10430.378f);
+        NuMtxSetRotateXYZ(m, &ang);
+    } else {
+        NuMtxSetIdentity(m);
+    }
+    if (curveset->flags & 0x20) {
+        NuMtxMulR(m, m, &joint->orient);
+    }
+    if (curveset->flags & 8) {
+        if (curveset->set[6]) {
+            joint->scale.x = NuAnimCurveCalcVal2(curveset->set[6], atime);
+        } else {
+            joint->scale.x = curveset->constants[6];
+        }
+        if (curveset->set[7]) {
+            joint->scale.y = NuAnimCurveCalcVal2(curveset->set[7], atime);
+        } else {
+            joint->scale.y = curveset->constants[7];
+        }
+        if (curveset->set[8]) {
+            joint->scale.z = NuAnimCurveCalcVal2(curveset->set[8], atime);
+        } else {
+            joint->scale.z = curveset->constants[8];
+        }
+        NuMtxPreScale(m, &joint->scale);
+    }
+    if (curveset->flags & 0x10) {
+        parent = (NuJointNode *)joint->node.parent;
+        s.x = 1.0f / parent->scale.x;
+        s.y = 1.0f / parent->scale.y;
+        s.z = 1.0f / parent->scale.z;
+        NuMtxScale(m, &s);
+    }
+    if (curveset->set[0]) {
+        t.x = NuAnimCurveCalcVal2(curveset->set[0], atime);
+    } else {
+        t.x = curveset->constants[0];
+    }
+    if (curveset->set[1]) {
+        t.y = NuAnimCurveCalcVal2(curveset->set[1], atime);
+    } else {
+        t.y = curveset->constants[1];
+    }
+    if (curveset->set[2]) {
+        t.z = NuAnimCurveCalcVal2(curveset->set[2], atime);
+    } else {
+        t.z = curveset->constants[2];
+    }
+    NuMtxTranslate(m, &t);
+    if (joint->flags & 8) {
+        NuMtxPreTranslate(m, &joint->pivot);
+        p.x = -joint->pivot.x;
+        p.y = -joint->pivot.y;
+        p.z = -joint->pivot.z;
+        NuMtxTranslate(m, &p);
+    }
+    m->_02 = -m->_02;
+    m->_12 = -m->_12;
+    m->_20 = -m->_20;
+    m->_21 = -m->_21;
+    m->_23 = -m->_23;
+    m->_32 = -m->_32;
+}
+
+
+void NuAnimCurveSetApplyBlendToJoint(NuAnimDataChunk *chunk1, NuAnimTime *atime1, NuAnimDataChunk *chunk2,
+                                     NuAnimTime *atime2, float blend, int node, NuJointNode *joint) {
+    NuVec lo;
+    NuAngVec rf;
+    float r[3];
+    float r1[3];
+    float r2[3];
+    float s[3];
+    float t[3];
+    NuVec invscale;
+    float omblend;
+    int i;
+    NuMtx *m;
+    NuAnimCurveSet *curveset1;
+    NuAnimCurveSet *curveset2;
+    NuJointNode *parent;
+
+    m = &joint->mtx;
+    omblend = 1.0f - blend;
+    curveset1 = chunk1->animcurvesets[0];
+    if (!curveset1) {
+        NuErrorProlog(nuanim_srcfile, 0x619)(nuanim_blend_bad_curveset_msg);
+    }
+    curveset2 = chunk2->animcurvesets[node];
+    if (!curveset2) {
+        NuErrorProlog(nuanim_srcfile, 0x61B)(nuanim_blend_bad_curveset_msg);
+    }
+    if ((curveset1->flags & 1) || (curveset2->flags & 1)) {
+        for (i = 3; i < 6; i++) {
+            if (curveset1->set[i]) {
+                r1[i - 3] = NuAnimCurveCalcVal2(curveset1->set[i], atime1);
+            } else {
+                r1[i - 3] = curveset1->constants[i];
+            }
+            if (curveset2->set[i]) {
+                r2[i - 3] = NuAnimCurveCalcVal2(curveset2->set[i], atime2);
+            } else {
+                r2[i - 3] = curveset2->constants[i];
+            }
+        }
+        r1[0] -= (r1[0] - r2[0] > 3.1415927f) ? 6.2831855f : 0.0f;
+        r2[0] -= (r2[0] - r1[0] > 3.1415927f) ? 6.2831855f : 0.0f;
+        r1[1] -= (r1[1] - r2[1] > 3.1415927f) ? 6.2831855f : 0.0f;
+        r2[1] -= (r2[1] - r1[1] > 3.1415927f) ? 6.2831855f : 0.0f;
+        r1[2] -= (r1[2] - r2[2] > 3.1415927f) ? 6.2831855f : 0.0f;
+        r2[2] -= (r2[2] - r1[2] > 3.1415927f) ? 6.2831855f : 0.0f;
+        r[0] = r1[0] * omblend + r2[0] * blend;
+        r[1] = r1[1] * omblend + r2[1] * blend;
+        r[2] = r1[2] * omblend + r2[2] * blend;
+        rf.x = (int)(r[0] * 10430.378f);
+        rf.y = (int)(r[1] * 10430.378f);
+        rf.z = (int)(r[2] * 10430.378f);
+        NuMtxSetRotateXYZVU0(m, &rf);
+    } else {
+        NuMtxSetIdentity(m);
+    }
+    if ((curveset1->flags & 0x20) || (curveset2->flags & 0x20)) {
+        NuMtxMulRVU0(m, m, &joint->orient);
+    }
+    if ((curveset1->flags & 8) || (curveset2->flags & 8)) {
+        for (i = 6; i < 9; i++) {
+            if (curveset1->set[i]) {
+                s[i - 6] = omblend * NuAnimCurveCalcVal2(curveset1->set[i], atime1);
+            } else {
+                s[i - 6] = omblend * curveset1->constants[i];
+            }
+            if (curveset2->set[i]) {
+                s[i - 6] += blend * NuAnimCurveCalcVal2(curveset2->set[i], atime2);
+            } else {
+                s[i - 6] += blend * curveset2->constants[i];
+            }
+        }
+        joint->scale.x = s[0];
+        joint->scale.y = s[1];
+        joint->scale.z = s[2];
+        NuMtxPreScale(m, &joint->scale);
+    }
+    if ((curveset1->flags & 0x10) || (curveset2->flags & 0x10)) {
+        parent = (NuJointNode *)joint->node.parent;
+        invscale.x = 1.0f / parent->scale.x;
+        invscale.y = 1.0f / parent->scale.y;
+        invscale.z = 1.0f / parent->scale.z;
+        NuMtxScaleVU0(m, &invscale);
+    }
+    for (i = 0; i < 3; i++) {
+        if (curveset1->set[i]) {
+            t[i] = omblend * NuAnimCurveCalcVal2(curveset1->set[i], atime1);
+        } else {
+            t[i] = omblend * curveset1->constants[i];
+        }
+        if (curveset2->set[i]) {
+            t[i] += blend * NuAnimCurveCalcVal2(curveset2->set[i], atime2);
+        } else {
+            t[i] += blend * curveset2->constants[i];
+        }
+    }
+    NuMtxTranslate(m, (NuVec *)t);
+    if (joint->flags & 8) {
+        NuMtxPreTranslate(m, &joint->pivot);
+        lo.x = -joint->pivot.x;
+        lo.y = -joint->pivot.y;
+        lo.z = -joint->pivot.z;
+        NuMtxTranslate(m, &lo);
+    }
+    m->_02 = -m->_02;
+    m->_12 = -m->_12;
+    m->_20 = -m->_20;
+    m->_21 = -m->_21;
+    m->_23 = -m->_23;
+    m->_32 = -m->_32;
+}
+
+
+void NuAnimCurveSetApplyBlendToJoint2(NuAnimCurveSet *curveset1, NuAnimTime *atime1, NuAnimCurveSet *curveset2,
+                                      NuAnimTime *atime2, float blend, NuJointData *joint, NuVec *scale,
+                                      NuVec *parentscale, NuMtx *m, NuJointAnim *offset) {
+    NuVec lo;
+    NuAngVec rf;
+    float r[3];
+    float r1[3];
+    float r2[3];
+    float s1[3];
+    float s2[3];
+    float t[3];
+    NuVec invscale;
+    float omblend;
+    int i;
+    signed char procflags;
+
+    omblend = 1.0f - blend;
+    if (offset) {
+        procflags = offset->flags;
+    } else {
+        procflags = 0;
+    }
+    if ((curveset1->flags & 1) || (curveset2->flags & 1) || (procflags & 1)) {
+        for (i = 3; i < 6; i++) {
+            if (curveset1->set[i]) {
+                r1[i - 3] = NuAnimCurveCalcVal2(curveset1->set[i], atime1);
+            } else {
+                r1[i - 3] = curveset1->constants[i];
+            }
+            if (curveset2->set[i]) {
+                r2[i - 3] = NuAnimCurveCalcVal2(curveset2->set[i], atime2);
+            } else {
+                r2[i - 3] = curveset2->constants[i];
+            }
+        }
+        r1[0] -= (r1[0] - r2[0] > 3.1415927f) ? 6.2831855f : 0.0f;
+        r2[0] -= (r2[0] - r1[0] > 3.1415927f) ? 6.2831855f : 0.0f;
+        r1[1] -= (r1[1] - r2[1] > 3.1415927f) ? 6.2831855f : 0.0f;
+        r2[1] -= (r2[1] - r1[1] > 3.1415927f) ? 6.2831855f : 0.0f;
+        r1[2] -= (r1[2] - r2[2] > 3.1415927f) ? 6.2831855f : 0.0f;
+        r2[2] -= (r2[2] - r1[2] > 3.1415927f) ? 6.2831855f : 0.0f;
+        r[0] = r1[0] * omblend + r2[0] * blend;
+        r[1] = r1[1] * omblend + r2[1] * blend;
+        r[2] = r1[2] * omblend + r2[2] * blend;
+        if (procflags & 1) {
+            r[0] += offset->rx;
+            r[1] += offset->ry;
+            r[2] += offset->rz;
+            rf.x = (int)(r[0] * 10430.378f);
+            rf.y = (int)(r[1] * 10430.378f);
+            rf.z = (int)(r[2] * 10430.378f);
+            if (procflags & 8) {
+                rf.x &= 0xFFFF;
+                if (rf.x > 0x7FFF) {
+                    rf.x -= 0x10000;
+                }
+                if (rf.x > offset->max_rx) {
+                    rf.x = offset->max_rx;
+                } else if (rf.x < offset->min_rx) {
+                    rf.x = offset->min_rx;
+                }
+            }
+            if (procflags & 0x10) {
+                rf.y &= 0xFFFF;
+                if (rf.y > 0x7FFF) {
+                    rf.y -= 0x10000;
+                }
+                if (rf.y > offset->max_ry) {
+                    rf.y = offset->max_ry;
+                } else if (rf.y < offset->min_ry) {
+                    rf.y = offset->min_ry;
+                }
+            }
+            if (procflags & 0x20) {
+                rf.z &= 0xFFFF;
+                if (rf.z > 0x7FFF) {
+                    rf.z -= 0x10000;
+                }
+                if (rf.z > offset->max_rz) {
+                    rf.z = offset->max_rz;
+                } else if (rf.z < offset->min_rz) {
+                    rf.z = offset->min_rz;
+                }
+            }
+        } else {
+            rf.x = (int)(r[0] * 10430.378f);
+            rf.y = (int)(r[1] * 10430.378f);
+            rf.z = (int)(r[2] * 10430.378f);
+        }
+        NuMtxSetRotateXYZVU0(m, &rf);
+    } else {
+        NuMtxSetIdentity(m);
+    }
+    if ((curveset1->flags & 0x20) || (curveset2->flags & 0x20)) {
+        NuMtxMulRVU0(m, m, &joint->orient);
+    }
+    if ((curveset1->flags & 8) || (curveset2->flags & 8) || (procflags & 4)) {
+        for (i = 6; i < 9; i++) {
+            if (curveset1->set[i]) {
+                s1[i - 6] = NuAnimCurveCalcVal2(curveset1->set[i], atime1);
+            } else {
+                s1[i - 6] = curveset1->constants[i];
+            }
+            if (curveset2->set[i]) {
+                s2[i - 6] = NuAnimCurveCalcVal2(curveset2->set[i], atime2);
+            } else {
+                s2[i - 6] = curveset2->constants[i];
+            }
+        }
+        scale->x = s1[0] * blend + s2[0] * omblend;
+        scale->y = s1[1] * blend + s2[1] * omblend;
+        scale->z = s1[2] * blend + s2[2] * omblend;
+        if (procflags & 4) {
+            scale->x += offset->sx;
+            scale->y += offset->sy;
+            scale->z += offset->sz;
+        }
+        NuMtxPreScaleVU0(m, scale);
+        scale->x *= parentscale->x;
+        scale->y *= parentscale->y;
+        scale->z *= parentscale->z;
+    } else {
+        *scale = *parentscale;
+    }
+    if ((curveset1->flags | curveset2->flags) & 0x10) {
+        invscale.x = 1.0f / parentscale->x;
+        invscale.y = 1.0f / parentscale->y;
+        invscale.z = 1.0f / parentscale->z;
+        NuMtxScaleVU0(m, &invscale);
+        scale->x *= invscale.x;
+        scale->y *= invscale.y;
+        scale->z *= invscale.z;
+    }
+    for (i = 0; i < 3; i++) {
+        if (curveset1->set[i]) {
+            t[i] = omblend * NuAnimCurveCalcVal2(curveset1->set[i], atime1);
+        } else {
+            t[i] = omblend * curveset1->constants[i];
+        }
+        if (curveset2->set[i]) {
+            t[i] += blend * NuAnimCurveCalcVal2(curveset2->set[i], atime2);
+        } else {
+            t[i] += blend * curveset2->constants[i];
+        }
+    }
+    if (procflags & 2) {
+        t[0] += offset->tx;
+        t[1] += offset->ty;
+        t[2] += offset->tz;
+    }
+    NuMtxTranslate(m, (NuVec *)t);
+    if (joint->flags & 8) {
+        NuMtxPreTranslate(m, &joint->locator_offset);
+        lo.x = -joint->locator_offset.x;
+        lo.y = -joint->locator_offset.y;
+        lo.z = -joint->locator_offset.z;
+        NuMtxTranslate(m, &lo);
+    }
+    m->_02 = -m->_02;
+    m->_12 = -m->_12;
+    m->_20 = -m->_20;
+    m->_21 = -m->_21;
+    m->_23 = -m->_23;
+    m->_32 = -m->_32;
+}
+
+
+void NuAnimCurve2SetApplyBlendToJoint2(NuAnimCurve2 *curves1, signed char *curveflags1, signed char curvesetflags1,
+                                       NuAnimTime *atime1, NuAnimCurve2 *curves2, signed char *curveflags2,
+                                       signed char curvesetflags2, NuAnimTime *atime2, float blend, NuJointData *joint,
+                                       NuVec *scale, NuVec *parentscale, NuMtx *m, NuJointAnim *offset) {
+    NuVec lo;
+    NuAngVec rf;
+    float r[3];
+    float r1[3];
+    float r2[3];
+    float s1[3];
+    float s2[3];
+    float t[3];
+    NuVec invscale;
+    float omblend;
+    int i;
+    signed char procflags;
+
+    omblend = 1.0f - blend;
+    if (offset) {
+        procflags = offset->flags;
+    } else {
+        procflags = 0;
+    }
+    if ((curvesetflags1 & 1) || (curvesetflags2 & 1) || (procflags & 1)) {
+        for (i = 3; i < 6; i++) {
+            r1[i - 3] = NuAnimCurve2CalcVal(&curves1[i], atime1, curveflags1[i]);
+            r2[i - 3] = NuAnimCurve2CalcVal(&curves2[i], atime2, curveflags2[i]);
+        }
+        r1[0] -= (r1[0] - r2[0] > 3.1415927f) ? 6.2831855f : 0.0f;
+        r2[0] -= (r2[0] - r1[0] > 3.1415927f) ? 6.2831855f : 0.0f;
+        r1[1] -= (r1[1] - r2[1] > 3.1415927f) ? 6.2831855f : 0.0f;
+        r2[1] -= (r2[1] - r1[1] > 3.1415927f) ? 6.2831855f : 0.0f;
+        r1[2] -= (r1[2] - r2[2] > 3.1415927f) ? 6.2831855f : 0.0f;
+        r2[2] -= (r2[2] - r1[2] > 3.1415927f) ? 6.2831855f : 0.0f;
+        r[0] = r1[0] * omblend + r2[0] * blend;
+        r[1] = r1[1] * omblend + r2[1] * blend;
+        r[2] = r1[2] * omblend + r2[2] * blend;
+        if (procflags & 1) {
+            r[0] += offset->rx;
+            r[1] += offset->ry;
+            r[2] += offset->rz;
+            rf.x = (int)(r[0] * 10430.378f);
+            rf.y = (int)(r[1] * 10430.378f);
+            rf.z = (int)(r[2] * 10430.378f);
+            if (procflags & 8) {
+                rf.x &= 0xFFFF;
+                if (rf.x > 0x7FFF) {
+                    rf.x -= 0x10000;
+                }
+                if (rf.x > offset->max_rx) {
+                    rf.x = offset->max_rx;
+                } else if (rf.x < offset->min_rx) {
+                    rf.x = offset->min_rx;
+                }
+            }
+            if (procflags & 0x10) {
+                rf.y &= 0xFFFF;
+                if (rf.y > 0x7FFF) {
+                    rf.y -= 0x10000;
+                }
+                if (rf.y > offset->max_ry) {
+                    rf.y = offset->max_ry;
+                } else if (rf.y < offset->min_ry) {
+                    rf.y = offset->min_ry;
+                }
+            }
+            if (procflags & 0x20) {
+                rf.z &= 0xFFFF;
+                if (rf.z > 0x7FFF) {
+                    rf.z -= 0x10000;
+                }
+                if (rf.z > offset->max_rz) {
+                    rf.z = offset->max_rz;
+                } else if (rf.z < offset->min_rz) {
+                    rf.z = offset->min_rz;
+                }
+            }
+        } else {
+            rf.x = (int)(r[0] * 10430.378f);
+            rf.y = (int)(r[1] * 10430.378f);
+            rf.z = (int)(r[2] * 10430.378f);
+        }
+        NuMtxSetRotateXYZVU0(m, &rf);
+    } else {
+        NuMtxSetIdentity(m);
+    }
+    if ((curvesetflags1 & 0x20) || (curvesetflags2 & 0x20)) {
+        NuMtxMulRVU0(m, m, &joint->orient);
+    }
+    if ((curvesetflags1 & 8) || (curvesetflags2 & 8) || (procflags & 4)) {
+        for (i = 6; i < 9; i++) {
+            s1[i - 6] = NuAnimCurve2CalcVal(&curves1[i], atime1, curveflags1[i]);
+            s2[i - 6] = NuAnimCurve2CalcVal(&curves2[i], atime2, curveflags2[i]);
+        }
+        scale->x = s1[0] * blend + s2[0] * omblend;
+        scale->y = s1[1] * blend + s2[1] * omblend;
+        scale->z = s1[2] * blend + s2[2] * omblend;
+        if (procflags & 4) {
+            scale->x += offset->sx;
+            scale->y += offset->sy;
+            scale->z += offset->sz;
+        }
+        NuMtxPreScaleVU0(m, scale);
+        scale->x *= parentscale->x;
+        scale->y *= parentscale->y;
+        scale->z *= parentscale->z;
+    } else {
+        *scale = *parentscale;
+    }
+    if ((curvesetflags1 | curvesetflags2) & 0x10) {
+        invscale.x = 1.0f / parentscale->x;
+        invscale.y = 1.0f / parentscale->y;
+        invscale.z = 1.0f / parentscale->z;
+        NuMtxScaleVU0(m, &invscale);
+        scale->x *= invscale.x;
+        scale->y *= invscale.y;
+        scale->z *= invscale.z;
+    }
+    for (i = 0; i < 3; i++) {
+        t[i] = omblend * NuAnimCurve2CalcVal(&curves1[i], atime1, curveflags1[i]);
+        t[i] += blend * NuAnimCurve2CalcVal(&curves2[i], atime2, curveflags2[i]);
+    }
+    if (procflags & 2) {
+        t[0] += offset->tx;
+        t[1] += offset->ty;
+        t[2] += offset->tz;
+    }
+    NuMtxTranslate(m, (NuVec *)t);
+    if (joint->flags & 8) {
+        NuMtxPreTranslate(m, &joint->locator_offset);
+        lo.x = -joint->locator_offset.x;
+        lo.y = -joint->locator_offset.y;
+        lo.z = -joint->locator_offset.z;
+        NuMtxTranslate(m, &lo);
+    }
+    m->_02 = -m->_02;
+    m->_12 = -m->_12;
+    m->_20 = -m->_20;
+    m->_21 = -m->_21;
+    m->_23 = -m->_23;
+    m->_32 = -m->_32;
+}
+
+
+void NuAnimCurveSetApplyToJoint2(NuAnimCurveSet *curveset, NuAnimTime *atime, NuJointData *joint, NuVec *scale,
+                                 NuVec *parentscale, NuMtx *m, NuJointAnim *offset) {
+    signed char procflags;
+    NuVec t;
+    NuVec r;
+    NuVec lo;
+    NuAngVec rf;
+    NuVec invscale;
+
+    if (offset) {
+        procflags = offset->flags;
+    } else {
+        procflags = 0;
+    }
+    if ((curveset->flags & 1) || (procflags & 1)) {
+        if (curveset->flags & 1) {
+            if (curveset->set[3]) {
+                r.x = NuAnimCurveCalcVal2(curveset->set[3], atime);
+            } else {
+                r.x = curveset->constants[3];
+            }
+            if (curveset->set[4]) {
+                r.y = NuAnimCurveCalcVal2(curveset->set[4], atime);
+            } else {
+                r.y = curveset->constants[4];
+            }
+            if (curveset->set[5]) {
+                r.z = NuAnimCurveCalcVal2(curveset->set[5], atime);
+            } else {
+                r.z = curveset->constants[5];
+            }
+        } else {
+            r.x = r.y = r.z = 0.0f;
+        }
+        if (procflags & 1) {
+            r.x += offset->rx;
+            r.y += offset->ry;
+            r.z += offset->rz;
+            rf.x = (int)(r.x * 10430.378f);
+            rf.y = (int)(r.y * 10430.378f);
+            rf.z = (int)(r.z * 10430.378f);
+            if (procflags & 8) {
+                rf.x &= 0xFFFF;
+                if (rf.x > 0x7FFF) {
+                    rf.x -= 0x10000;
+                }
+                if (rf.x > offset->max_rx) {
+                    rf.x = offset->max_rx;
+                } else if (rf.x < offset->min_rx) {
+                    rf.x = offset->min_rx;
+                }
+            }
+            if (procflags & 0x10) {
+                rf.y &= 0xFFFF;
+                if (rf.y > 0x7FFF) {
+                    rf.y -= 0x10000;
+                }
+                if (rf.y > offset->max_ry) {
+                    rf.y = offset->max_ry;
+                } else if (rf.y < offset->min_ry) {
+                    rf.y = offset->min_ry;
+                }
+            }
+            if (procflags & 0x20) {
+                rf.z &= 0xFFFF;
+                if (rf.z > 0x7FFF) {
+                    rf.z -= 0x10000;
+                }
+                if (rf.z > offset->max_rz) {
+                    rf.z = offset->max_rz;
+                } else if (rf.z < offset->min_rz) {
+                    rf.z = offset->min_rz;
+                }
+            }
+        } else {
+            rf.x = (int)(r.x * 10430.378f);
+            rf.y = (int)(r.y * 10430.378f);
+            rf.z = (int)(r.z * 10430.378f);
+        }
+        NuMtxSetRotateXYZVU0(m, &rf);
+    } else {
+        NuMtxSetIdentity(m);
+    }
+    if (curveset->flags & 0x20) {
+        NuMtxMulRVU0(m, m, &joint->orient);
+    }
+    if ((curveset->flags & 8) || (procflags & 4)) {
+        if (curveset->flags & 8) {
+            if (curveset->set[6]) {
+                scale->x = NuAnimCurveCalcVal2(curveset->set[6], atime);
+            } else {
+                scale->x = curveset->constants[6];
+            }
+            if (curveset->set[7]) {
+                scale->y = NuAnimCurveCalcVal2(curveset->set[7], atime);
+            } else {
+                scale->y = curveset->constants[7];
+            }
+            if (curveset->set[8]) {
+                scale->z = NuAnimCurveCalcVal2(curveset->set[8], atime);
+            } else {
+                scale->z = curveset->constants[8];
+            }
+        } else {
+            scale->x = scale->y = scale->z = 0.0f;
+        }
+        if (procflags & 4) {
+            scale->x += offset->sx;
+            scale->y += offset->sy;
+            scale->z += offset->sz;
+        }
+        NuMtxPreScaleVU0(m, scale);
+        scale->x *= parentscale->x;
+        scale->y *= parentscale->y;
+        scale->z *= parentscale->z;
+    } else {
+        *scale = *parentscale;
+    }
+    if ((curveset->flags & 0x10) && parentscale) {
+        invscale.x = 1.0f / parentscale->x;
+        invscale.y = 1.0f / parentscale->y;
+        invscale.z = 1.0f / parentscale->z;
+        NuMtxScaleVU0(m, &invscale);
+        scale->x *= invscale.x;
+        scale->y *= invscale.y;
+        scale->z *= invscale.z;
+    }
+    if (curveset->set[0]) {
+        t.x = NuAnimCurveCalcVal2(curveset->set[0], atime);
+    } else {
+        t.x = curveset->constants[0];
+    }
+    if (curveset->set[1]) {
+        t.y = NuAnimCurveCalcVal2(curveset->set[1], atime);
+    } else {
+        t.y = curveset->constants[1];
+    }
+    if (curveset->set[2]) {
+        t.z = NuAnimCurveCalcVal2(curveset->set[2], atime);
+    } else {
+        t.z = curveset->constants[2];
+    }
+    if (procflags & 2) {
+        t.x += offset->tx;
+        t.y += offset->ty;
+        t.z += offset->tz;
+    }
+    NuMtxTranslate(m, &t);
+    if (joint->flags & 8) {
+        NuMtxPreTranslate(m, &joint->locator_offset);
+        lo.x = -joint->locator_offset.x;
+        lo.y = -joint->locator_offset.y;
+        lo.z = -joint->locator_offset.z;
+        NuMtxTranslate(m, &lo);
+    }
+    m->_02 = -m->_02;
+    m->_12 = -m->_12;
+    m->_20 = -m->_20;
+    m->_21 = -m->_21;
+    m->_23 = -m->_23;
+    m->_32 = -m->_32;
+}
+
+
+void NuAnimCurve2SetApplyToJoint(NuAnimCurve2 *curves, signed char *curveflags, signed char curvesetflags,
+                                 NuAnimTime *atime, NuJointData *joint, NuVec *scale, NuVec *parentscale,
+                                 NuMtx *m, NuJointAnim *offset) {
+    signed char procflags;
+    NuVec t;
+    NuVec r;
+    NuVec lo;
+    NuAngVec rf;
+    NuVec invscale;
+
+    if (offset) {
+        procflags = offset->flags;
+    } else {
+        procflags = 0;
+    }
+    if ((curvesetflags & 1) || (procflags & 1)) {
+        if (curvesetflags & 1) {
+            r.x = NuAnimCurve2CalcVal(&curves[3], atime, curveflags[3]);
+            r.y = NuAnimCurve2CalcVal(&curves[4], atime, curveflags[4]);
+            r.z = NuAnimCurve2CalcVal(&curves[5], atime, curveflags[5]);
+        } else {
+            r.x = r.y = r.z = 0.0f;
+        }
+        if (procflags & 1) {
+            r.x += offset->rx;
+            r.y += offset->ry;
+            r.z += offset->rz;
+            rf.x = (int)(r.x * 10430.378f);
+            rf.y = (int)(r.y * 10430.378f);
+            rf.z = (int)(r.z * 10430.378f);
+            if (procflags & 8) {
+                rf.x &= 0xFFFF;
+                if (rf.x > 0x7FFF) {
+                    rf.x -= 0x10000;
+                }
+                if (rf.x > offset->max_rx) {
+                    rf.x = offset->max_rx;
+                } else if (rf.x < offset->min_rx) {
+                    rf.x = offset->min_rx;
+                }
+            }
+            if (procflags & 0x10) {
+                rf.y &= 0xFFFF;
+                if (rf.y > 0x7FFF) {
+                    rf.y -= 0x10000;
+                }
+                if (rf.y > offset->max_ry) {
+                    rf.y = offset->max_ry;
+                } else if (rf.y < offset->min_ry) {
+                    rf.y = offset->min_ry;
+                }
+            }
+            if (procflags & 0x20) {
+                rf.z &= 0xFFFF;
+                if (rf.z > 0x7FFF) {
+                    rf.z -= 0x10000;
+                }
+                if (rf.z > offset->max_rz) {
+                    rf.z = offset->max_rz;
+                } else if (rf.z < offset->min_rz) {
+                    rf.z = offset->min_rz;
+                }
+            }
+        } else {
+            rf.x = (int)(r.x * 10430.378f);
+            rf.y = (int)(r.y * 10430.378f);
+            rf.z = (int)(r.z * 10430.378f);
+        }
+        NuMtxSetRotateXYZVU0(m, &rf);
+    } else {
+        NuMtxSetIdentity(m);
+    }
+    if (curvesetflags & 0x20) {
+        NuMtxMulRVU0(m, m, &joint->orient);
+    }
+    if ((curvesetflags & 8) || (procflags & 4)) {
+        if (curvesetflags & 8) {
+            scale->x = NuAnimCurve2CalcVal(&curves[6], atime, curveflags[6]);
+            scale->y = NuAnimCurve2CalcVal(&curves[7], atime, curveflags[7]);
+            scale->z = NuAnimCurve2CalcVal(&curves[8], atime, curveflags[8]);
+        } else {
+            scale->x = scale->y = scale->z = 0.0f;
+        }
+        if (procflags & 4) {
+            scale->x += offset->sx;
+            scale->y += offset->sy;
+            scale->z += offset->sz;
+        }
+        NuMtxPreScaleVU0(m, scale);
+        scale->x *= parentscale->x;
+        scale->y *= parentscale->y;
+        scale->z *= parentscale->z;
+    } else {
+        *scale = *parentscale;
+    }
+    if ((curvesetflags & 0x10) && parentscale) {
+        invscale.x = 1.0f / parentscale->x;
+        invscale.y = 1.0f / parentscale->y;
+        invscale.z = 1.0f / parentscale->z;
+        NuMtxScaleVU0(m, &invscale);
+        scale->x *= invscale.x;
+        scale->y *= invscale.y;
+        scale->z *= invscale.z;
+    }
+    t.x = NuAnimCurve2CalcVal(&curves[0], atime, curveflags[0]);
+    t.y = NuAnimCurve2CalcVal(&curves[1], atime, curveflags[1]);
+    t.z = NuAnimCurve2CalcVal(&curves[2], atime, curveflags[2]);
+    if (procflags & 2) {
+        t.x += offset->tx;
+        t.y += offset->ty;
+        t.z += offset->tz;
+    }
+    NuMtxTranslate(m, &t);
+    if (joint->flags & 8) {
+        NuMtxPreTranslate(m, &joint->locator_offset);
+        lo.x = -joint->locator_offset.x;
+        lo.y = -joint->locator_offset.y;
+        lo.z = -joint->locator_offset.z;
+        NuMtxTranslate(m, &lo);
+    }
+    m->_02 = -m->_02;
+    m->_12 = -m->_12;
+    m->_20 = -m->_20;
+    m->_21 = -m->_21;
+    m->_23 = -m->_23;
+    m->_32 = -m->_32;
+}
+
+
+void NuAnimCurveSetApplyToJointBasic(NuAnimCurveSet *curveset, NuAnimTime *atime, NuJointData *joint,
+                                     NuVec *scale, NuVec *parentscale, NuMtx *m, NuJointAnim *offset) {
+    signed char procflags;
+    NuVec r;
+    NuAngVec rf;
+
+    if (offset) {
+        procflags = offset->flags;
+    } else {
+        procflags = 0;
+    }
+    if (curveset->set[3]) {
+        r.x = NuAnimCurveCalcVal2(curveset->set[3], atime);
+    } else {
+        r.x = curveset->constants[3];
+    }
+    if (curveset->set[4]) {
+        r.y = NuAnimCurveCalcVal2(curveset->set[4], atime);
+    } else {
+        r.y = curveset->constants[4];
+    }
+    if (curveset->set[5]) {
+        r.z = NuAnimCurveCalcVal2(curveset->set[5], atime);
+    } else {
+        r.z = curveset->constants[5];
+    }
+    if (procflags & 1) {
+        r.x += offset->rx;
+        r.y += offset->ry;
+        r.z += offset->rz;
+        rf.x = (int)(r.x * 10430.378f);
+        rf.y = (int)(r.y * 10430.378f);
+        rf.z = (int)(r.z * 10430.378f);
+        if (procflags & 8) {
+            rf.x &= 0xFFFF;
+            if (rf.x > 0x7FFF) {
+                rf.x -= 0x10000;
+            }
+            if (rf.x > offset->max_rx) {
+                rf.x = offset->max_rx;
+            } else if (rf.x < offset->min_rx) {
+                rf.x = offset->min_rx;
+            }
+        }
+        if (procflags & 0x10) {
+            rf.y &= 0xFFFF;
+            if (rf.y > 0x7FFF) {
+                rf.y -= 0x10000;
+            }
+            if (rf.y > offset->max_ry) {
+                rf.y = offset->max_ry;
+            } else if (rf.y < offset->min_ry) {
+                rf.y = offset->min_ry;
+            }
+        }
+        if (procflags & 0x20) {
+            rf.z &= 0xFFFF;
+            if (rf.z > 0x7FFF) {
+                rf.z -= 0x10000;
+            }
+            if (rf.z > offset->max_rz) {
+                rf.z = offset->max_rz;
+            } else if (rf.z < offset->min_rz) {
+                rf.z = offset->min_rz;
+            }
+        }
+    } else {
+        rf.x = (int)(r.x * 10430.378f);
+        rf.y = (int)(r.y * 10430.378f);
+        rf.z = (int)(r.z * 10430.378f);
+    }
+    NuMtxSetRotateXYZVU0(m, &rf);
+    if (curveset->flags & 0x20) {
+        NuMtxMulRVU0(m, m, &joint->orient);
+    }
+    m->_30 = curveset->constants[0];
+    m->_31 = curveset->constants[1];
+    m->_32 = curveset->constants[2];
+    if (procflags & 2) {
+        m->_30 += offset->tx;
+        m->_31 += offset->ty;
+        m->_32 += offset->tz;
+    }
+    *scale = *parentscale;
+    m->_02 = -m->_02;
+    m->_12 = -m->_12;
+    m->_20 = -m->_20;
+    m->_21 = -m->_21;
+    m->_23 = -m->_23;
+    m->_32 = -m->_32;
+}
+
+
+void NuAnimCurve2SetApplyToJointBasic(NuAnimCurve2 *curves, signed char *curveflags, signed char curvesetflags,
+                                      NuAnimTime *atime, NuJointData *joint, NuVec *scale, NuVec *parentscale,
+                                      NuMtx *m, NuJointAnim *offset) {
+    signed char procflags;
+    NuVec r;
+    NuAngVec rf;
+
+    if (offset) {
+        procflags = offset->flags;
+    } else {
+        procflags = 0;
+    }
+    r.x = NuAnimCurve2CalcVal(&curves[3], atime, curveflags[3]);
+    r.y = NuAnimCurve2CalcVal(&curves[4], atime, curveflags[4]);
+    r.z = NuAnimCurve2CalcVal(&curves[5], atime, curveflags[5]);
+    if (procflags & 1) {
+        r.x += offset->rx;
+        r.y += offset->ry;
+        r.z += offset->rz;
+        rf.x = (int)(r.x * 10430.378f);
+        rf.y = (int)(r.y * 10430.378f);
+        rf.z = (int)(r.z * 10430.378f);
+        if (procflags & 8) {
+            rf.x &= 0xFFFF;
+            if (rf.x > 0x7FFF) {
+                rf.x -= 0x10000;
+            }
+            if (rf.x > offset->max_rx) {
+                rf.x = offset->max_rx;
+            } else if (rf.x < offset->min_rx) {
+                rf.x = offset->min_rx;
+            }
+        }
+        if (procflags & 0x10) {
+            rf.y &= 0xFFFF;
+            if (rf.y > 0x7FFF) {
+                rf.y -= 0x10000;
+            }
+            if (rf.y > offset->max_ry) {
+                rf.y = offset->max_ry;
+            } else if (rf.y < offset->min_ry) {
+                rf.y = offset->min_ry;
+            }
+        }
+        if (procflags & 0x20) {
+            rf.z &= 0xFFFF;
+            if (rf.z > 0x7FFF) {
+                rf.z -= 0x10000;
+            }
+            if (rf.z > offset->max_rz) {
+                rf.z = offset->max_rz;
+            } else if (rf.z < offset->min_rz) {
+                rf.z = offset->min_rz;
+            }
+        }
+    } else {
+        rf.x = (int)(r.x * 10430.378f);
+        rf.y = (int)(r.y * 10430.378f);
+        rf.z = (int)(r.z * 10430.378f);
+    }
+    NuMtxSetRotateXYZVU0(m, &rf);
+    if (curvesetflags & 0x20) {
+        NuMtxMulRVU0(m, m, &joint->orient);
+    }
+    m->_30 = curves[0].constant;
+    m->_31 = curves[1].constant;
+    m->_32 = curves[2].constant;
+    if (procflags & 2) {
+        m->_30 += offset->tx;
+        m->_31 += offset->ty;
+        m->_32 += offset->tz;
+    }
+    *scale = *parentscale;
+    m->_02 = -m->_02;
+    m->_12 = -m->_12;
+    m->_20 = -m->_20;
+    m->_21 = -m->_21;
+    m->_23 = -m->_23;
+    m->_32 = -m->_32;
+}
+
+
+void NuAnimCurveSetApplyToMatrix(NuAnimCurveSet *curveset, NuAnimTime *atime, NuMtx *m) {
+    NuVec t;
+    NuVec r;
+    NuAngVec ang;
+    NuVec s;
+
+    if (curveset->flags & 1) {
+        if (curveset->set[3]) {
+            r.x = NuAnimCurveCalcVal2(curveset->set[3], atime);
+        } else {
+            r.x = curveset->constants[3];
+        }
+        if (curveset->set[4]) {
+            r.y = NuAnimCurveCalcVal2(curveset->set[4], atime);
+        } else {
+            r.y = curveset->constants[4];
+        }
+        if (curveset->set[5]) {
+            r.z = NuAnimCurveCalcVal2(curveset->set[5], atime);
+        } else {
+            r.z = curveset->constants[5];
+        }
+        ang.x = (int)(r.x * 10430.378f);
+        ang.y = (int)(r.y * 10430.378f);
+        ang.z = (int)(r.z * 10430.378f);
+        NuMtxSetRotateXYZ(m, &ang);
+    } else {
+        NuMtxSetIdentity(m);
+    }
+    if (curveset->flags & 8) {
+        if (curveset->set[6]) {
+            s.x = NuAnimCurveCalcVal2(curveset->set[6], atime);
+        } else {
+            s.x = curveset->constants[6];
+        }
+        if (curveset->set[7]) {
+            s.y = NuAnimCurveCalcVal2(curveset->set[7], atime);
+        } else {
+            s.y = curveset->constants[7];
+        }
+        if (curveset->set[8]) {
+            s.z = NuAnimCurveCalcVal2(curveset->set[8], atime);
+        } else {
+            s.z = curveset->constants[8];
+        }
+        NuMtxPreScale(m, &s);
+    }
+    if (curveset->set[0]) {
+        t.x = NuAnimCurveCalcVal2(curveset->set[0], atime);
+    } else {
+        t.x = curveset->constants[0];
+    }
+    if (curveset->set[1]) {
+        t.y = NuAnimCurveCalcVal2(curveset->set[1], atime);
+    } else {
+        t.y = curveset->constants[1];
+    }
+    if (curveset->set[2]) {
+        t.z = NuAnimCurveCalcVal2(curveset->set[2], atime);
+    } else {
+        t.z = curveset->constants[2];
+    }
+    NuMtxTranslate(m, &t);
+    m->_02 = -m->_02;
+    m->_12 = -m->_12;
+    m->_20 = -m->_20;
+    m->_21 = -m->_21;
+    m->_23 = -m->_23;
+    m->_32 = -m->_32;
+}
+
+
+void NuAnimCurve2SetApplyToMatrix(NuAnimCurve2 *curves, signed char *curveflags, signed char curvesetflags,
+                                  NuAnimTime *atime, NuMtx *m) {
+    NuVec t;
+    NuVec r;
+    NuAngVec ang;
+    NuVec s;
+
+    if (curvesetflags & 1) {
+        r.x = NuAnimCurve2CalcVal(&curves[3], atime, curveflags[3]);
+        r.y = NuAnimCurve2CalcVal(&curves[4], atime, curveflags[4]);
+        r.z = NuAnimCurve2CalcVal(&curves[5], atime, curveflags[5]);
+        ang.x = (int)(r.x * 10430.378f);
+        ang.y = (int)(r.y * 10430.378f);
+        ang.z = (int)(r.z * 10430.378f);
+        NuMtxSetRotateXYZ(m, &ang);
+    } else {
+        NuMtxSetIdentity(m);
+    }
+    if (curvesetflags & 8) {
+        s.x = NuAnimCurve2CalcVal(&curves[6], atime, curveflags[6]);
+        s.y = NuAnimCurve2CalcVal(&curves[7], atime, curveflags[7]);
+        s.z = NuAnimCurve2CalcVal(&curves[8], atime, curveflags[8]);
+        NuMtxPreScale(m, &s);
+    }
+    t.x = NuAnimCurve2CalcVal(&curves[0], atime, curveflags[0]);
+    t.y = NuAnimCurve2CalcVal(&curves[1], atime, curveflags[1]);
+    t.z = NuAnimCurve2CalcVal(&curves[2], atime, curveflags[2]);
+    NuMtxTranslate(m, &t);
+    m->_02 = -m->_02;
+    m->_12 = -m->_12;
+    m->_20 = -m->_20;
+    m->_21 = -m->_21;
+    m->_23 = -m->_23;
+    m->_32 = -m->_32;
+}
+
+
 extern NuErrorFunc NuDebugMsgProlog(const char *file, int line);
 extern void *NuStreamGetOutputBuffer(int stream);
 extern int NuMemFileOpen(void *buf, int size, int mode);
-extern NuAnimData *NuAnimDataRead(int fh);
 extern char D_00614A80[];
 extern char D_00614AA0[];
 #define nuanim_load_deprecated_msg D_00614A80

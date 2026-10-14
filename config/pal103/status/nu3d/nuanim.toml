@@ -17,7 +17,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:00140850:NuAnimDataRead"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:00140c00:NuAnimDataLoad"
@@ -41,43 +41,43 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:00141500:NuAnimCurveSetApplyToJoint"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:00141898:NuAnimCurveSetApplyBlendToJoint"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:00141e88:NuAnimCurveSetApplyBlendToJoint2"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:001426f8:NuAnimCurve2SetApplyBlendToJoint2"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:00142f08:NuAnimCurveSetApplyToJoint2"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:00143510:NuAnimCurve2SetApplyToJoint"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:00143a70:NuAnimCurveSetApplyToJointBasic"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:00143dc8:NuAnimCurve2SetApplyToJointBasic"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:001440e8:NuAnimCurveSetApplyToMatrix"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:00144350:NuAnimCurve2SetApplyToMatrix"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:00144518:NuAnimDataLoadBuff"
