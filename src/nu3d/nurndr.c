@@ -121,6 +121,7 @@
 typedef unsigned int u32;
 typedef unsigned short u16;
 typedef unsigned long long u64;
+typedef unsigned int u128 __attribute__((mode(TI)));
 
 typedef struct { float x, y, z; } NuVec3;
 
@@ -162,6 +163,23 @@ typedef struct GsZbufReg {
     u64 pad21 : 31;
 } GsZbufReg;
 
+typedef struct GsTestReg {
+    u64 ate : 1;
+    u64 atst : 3;
+    u64 aref : 8;
+    u64 afail : 2;
+    u64 date : 1;
+    u64 datm : 1;
+    u64 zte : 1;
+    u64 ztst : 2;
+    u64 pad13 : 45;
+} GsTestReg;
+
+typedef struct GsZbufPair {
+    GsZbufReg zbuf;
+    u64 addr;
+} GsZbufPair;
+
 typedef struct {
     NuMtx mtx;
     float fov;
@@ -189,6 +207,7 @@ extern nurndrfoot_s NuRndrFootData[];
 typedef void (*NuErrorFunc)(const char *fmt, ...);
 extern NuErrorFunc NuErrorProlog(const char *file, int line);
 extern char D_00614770[];
+#define nurndr_file D_00614770
 extern char D_00614790[];
 
 extern int NuHGobjRndrMtxDwa(void *hobj, NuMtx *mtx, int nlayers, short *layer, NuMtx *dwa, int blend);
@@ -205,10 +224,10 @@ extern void NuFntInit(void);
 extern void NuMtxSetIdentity(NuMtx *m);
 extern void NuRndrDeformerWeightsArrayInit(void);
 extern void NuRndrOTInit(void);
-extern int NuRndrCylMakeData(void);
+extern u32 *NuRndrCylMakeData(void);
 extern void NuRndrShadowDirCol(NuVec3 *dir, u32 col);
 extern u32 *NRCylCapData;
-extern int NRCylData;
+extern u32 *NRCylData;
 extern int NuRndrShadowCnt;
 extern NuMtx D_00689A40;
 #define rndr_identity_mtx D_00689A40
@@ -297,12 +316,64 @@ extern int D_0063307C;
 #define ot_batch_free D_0063307C
 extern u32 D_006ACB00[];
 #define cylcap_packet D_006ACB00
+extern u32 D_006ACD00[];
+#define cyl_packet D_006ACD00
 
 
 /* Only the packet cursor at offset 4 is used by the 2D packet writers. */
 struct RndrPacketStream {
     void *unknown_00;
     u32 *cur;
+};
+
+struct numtl_s {
+    char pad000[0x124];
+    struct RndrPacketStream stream;  /* 0x124 */
+    char pad12c[0x10];
+    void *mpgtag;                   /* 0x13C */
+    char pad140[0x28];
+    struct numtl_s *next;           /* 0x168 */
+    char pad16c[0x5A];
+    unsigned char special_id;       /* 0x1C6 */
+};
+
+struct nutribatch_s {
+    int count;
+    int pad04[3];
+    u128 tris[1];
+};
+
+struct nugeom_s {
+    struct nugeom_s *next;
+    struct numtl_s *mtl;
+    void *dma;
+    int pad0c;
+    struct nutribatch_s *otbatch;
+};
+
+struct nufaceongeom_s {
+    struct nufaceongeom_s *next;
+    struct numtl_s *mtl;
+    int pad08;
+    int worldspace;
+    char pad10[0xC];
+    void *dmastream;
+};
+
+struct nugobj_s {
+    char pad00[0xC];
+    struct nugeom_s *geom;
+    struct nufaceongeom_s *faceon_geom;
+    char pad14[8];
+    NuVec3 min;
+    NuVec3 max;
+    char pad34[0x14];
+    int ngobjs;
+    struct nugobj_s *next_gobj;
+    NuVec3 origin;
+    char pad5c[4];
+    int ntris;
+    char pad64[8];
 };
 
 extern struct RndrPacketStream *rndrstream_2d;
@@ -393,6 +464,40 @@ extern u32 *NuPs2CopyCurrentZBuffer(u32 *packet);
 extern u32 *NuTexSetZBuffer(u32 *packet, int tex);
 
 extern u32 *NuRndrStreamAlloc(int count);
+extern int D_0062EC60;
+#define nurndr_gscnobj_enable D_0062EC60
+extern int D_0062EC5C;
+#define nurndr_debug_geom D_0062EC5C
+extern char D_006147A8[];
+#define err_geom_no_mtl D_006147A8
+extern char D_006147C8[];
+#define err_fgeom_no_mtl D_006147C8
+extern struct numtl_s *nurndr_forced_mtl;
+extern struct numtl_s **nurndr_forced_mtl_table;
+extern NuErrorFunc NuDebugMsgProlog(const char *file, int line);
+extern void NuMtxMul(NuMtx *dst, NuMtx *a, NuMtx *b);
+extern int NuCameraClipTestExtents(NuVec3 *min, NuVec3 *max, NuMtx *wm);
+extern void NuRndrOTInsertTriBatch(NuMtx *mtx, int clip, struct numtl_s *mtl, void *tris, int count);
+extern int NuRndrStreamSetViewMtx(struct RndrPacketStream *stream);
+extern int NuRndrStreamSetLocalMtxEx(struct RndrPacketStream *stream, int mode);
+extern u32 *vpDmaTag_Call(u32 *packet, void *addr);
+extern u16 *NuRndrStreamGetScissor(void);
+extern int *NuRndrStreamGetOffset(void);
+extern GsZbufPair D_002EA1A0;
+#define NuPs2ZBufReg0 D_002EA1A0
+extern u32 *vpDmaTag_Cnt(u32 *packet);
+extern float NuVpPixelWidth(float width);
+extern float NuVpPixelHeight(float height);
+
+struct nuvtx2d_s {
+    float x, y, z;
+    float rhw;
+    union {
+        int colour;
+        unsigned char rgba[4];
+    };
+    float u, v;
+};
 
 void NuRndrSetZBuffer(struct RndrPacketStream *stream, int zbuffer) {
     GsFrameReg frame;
@@ -472,6 +577,501 @@ void NuRndrSetRTarget(struct RndrPacketStream *stream, int target) {
     } else {
         stream->cur = NuTexSetRenderTarget(stream->cur, target);
     }
+}
+
+
+void NuRndrClear(int flags, int colour, float depth) {
+    struct RndrPacketStream *stream;
+    u16 *scissor;
+    int *offset;
+    int z;
+    int x;
+    int xmax;
+    int y0;
+    int y1;
+
+    if (flags & 4) {
+        NuRndrStreamFlush();
+    } else {
+        NuMtlBuildRenderList();
+        NuRndrOTFlush();
+        NuRndrStreamFlush();
+    }
+    stream = rndrstream_system;
+    NuRndrStreamLink(stream);
+    NuRndrStreamSetMisc(stream);
+    scissor = NuRndrStreamGetScissor();
+    offset = NuRndrStreamGetOffset();
+    stream->cur = vpDmaTag_CntEx(stream->cur, 0, 0x50000000) - 1;
+    stream->cur = vtBeginDirect(stream->cur, 0);
+    stream->cur = gsBeginGifPacket(stream->cur, 0, 1, 0, 0, 0, 1, 0xE);
+    *((u64 *)stream->cur)++ = NuPs2ZBufReg0.zbuf.zbp | (NuPs2ZBufReg0.zbuf.psm << 24);
+    *((u64 *)stream->cur)++ = 0x4E;
+    stream->cur = gsCloseGifPacket(stream->cur);
+    stream->cur = vtCloseDirect(stream->cur);
+    stream->cur = vpDmaTag_Close(stream->cur);
+    stream->cur = NuRndrStreamAddZBState(stream->cur, 1);
+    stream->cur = vpDmaTag_CntEx(stream->cur, 0, 0) - 1;
+    stream->cur = vtBeginDirect(stream->cur, 0);
+    stream->cur = gsBeginGifPacket(stream->cur, 0, 1, 0, 0, 0, 1, 0xE);
+    *((u64 *)stream->cur)++ = 0;
+    *((u64 *)stream->cur)++ = 0x1B;
+    *(u64 *)stream->cur = 0;
+    switch (flags & 3) {
+    case 1:
+        ((GsTestReg *)stream->cur)->ate = 1;
+        ((GsTestReg *)stream->cur)->atst = 0;
+        ((GsTestReg *)stream->cur)->afail = 1;
+        break;
+    case 2:
+        ((GsTestReg *)stream->cur)->ate = 1;
+        ((GsTestReg *)stream->cur)->atst = 0;
+        ((GsTestReg *)stream->cur)->afail = 2;
+        break;
+    case 3:
+    default:
+        ((GsTestReg *)stream->cur)->ate = 0;
+        break;
+    }
+    ((GsTestReg *)stream->cur)->date = 0;
+    ((GsTestReg *)stream->cur)->zte = 1;
+    ((GsTestReg *)stream->cur)->ztst = 1;
+    ((u64 *)stream->cur)++;
+    *((u64 *)stream->cur)++ = 0x47;
+    stream->cur = gsCloseGifPacket(stream->cur);
+    z = (1.0f - depth) * 8388607.0f;
+    stream->cur = gsBeginGifPacket(stream->cur, 0, 1, 1, 6, 0, 3, 1, 5, 5);
+    x = scissor[0] * 16 + offset[0];
+    xmax = scissor[1] * 16 + offset[0] + 16;
+    y0 = scissor[2] * 16 + offset[1];
+    y1 = scissor[3] * 16 + offset[1] + 16;
+    do {
+        *stream->cur++ = colour & 0xFF;
+        *stream->cur++ = (colour >> 8) & 0xFF;
+        *stream->cur++ = (colour >> 16) & 0xFF;
+        *stream->cur++ = (colour >> 24) & 0xFF;
+        *stream->cur++ = x;
+        *stream->cur++ = y0;
+        *stream->cur++ = z;
+        *stream->cur++ = 0;
+        *stream->cur++ = (x + 0x400 < xmax) ? x + 0x400 : xmax;
+        *stream->cur++ = y1;
+        *stream->cur++ = z;
+        *stream->cur++ = 0;
+        x += 0x400;
+    } while (x < xmax);
+    stream->cur = gsCloseGifPacket(stream->cur);
+    stream->cur = vtCloseDirect(stream->cur);
+    stream->cur = vpDmaTag_Close(stream->cur);
+    rndrstream_free = vpDmaTag_Next(stream->cur, 0);
+}
+
+
+void NuRndrGradClear(int mode, int topcolour, int bottomcolour, float depth) {
+    struct RndrPacketStream *stream;
+    int z;
+
+    NuMtlBuildRenderList();
+    NuRndrOTFlush();
+    NuRndrStreamFlush();
+    stream = rndrstream_system;
+    NuRndrStreamLink(stream);
+    NuRndrStreamSetMisc(stream);
+    stream->cur = vpDmaTag_CntEx(stream->cur, 0, 0x50000000) - 1;
+    stream->cur = vtBeginDirect(stream->cur, 0);
+    stream->cur = gsBeginGifPacket(stream->cur, 0, 1, 0, 0, 0, 1, 0xE);
+    *((u64 *)stream->cur)++ = NuPs2ZBufReg0.zbuf.zbp | (NuPs2ZBufReg0.zbuf.psm << 24);
+    *((u64 *)stream->cur)++ = 0x4E;
+    stream->cur = gsCloseGifPacket(stream->cur);
+    stream->cur = vtCloseDirect(stream->cur);
+    stream->cur = vpDmaTag_Close(stream->cur);
+    stream->cur = NuRndrStreamAddZBState(stream->cur, 1);
+    stream->cur = vpDmaTag_Cnt(stream->cur);
+    ((unsigned char *)stream->cur)[-14] = 0x10;
+    *stream->cur++ = 0;
+    *stream->cur++ = 0;
+    *stream->cur++ = 0x10000000;
+    *stream->cur++ = 0x5000000C;
+    *((u64 *)stream->cur)++ = 0x2002000000000001ULL;
+    *((u64 *)stream->cur)++ = 0xEEE;
+    *((u64 *)stream->cur)++ = 8;
+    *((u64 *)stream->cur)++ = 0x1B;
+    *(u64 *)stream->cur = 0;
+    switch (mode) {
+    case 1:
+        ((GsTestReg *)stream->cur)->ate = 1;
+        ((GsTestReg *)stream->cur)->atst = 0;
+        ((GsTestReg *)stream->cur)->afail = 1;
+        break;
+    case 2:
+        ((GsTestReg *)stream->cur)->ate = 1;
+        ((GsTestReg *)stream->cur)->atst = 0;
+        ((GsTestReg *)stream->cur)->afail = 2;
+        break;
+    case 3:
+    default:
+        ((GsTestReg *)stream->cur)->ate = 0;
+        break;
+    }
+    ((GsTestReg *)stream->cur)->date = 0;
+    ((GsTestReg *)stream->cur)->zte = 1;
+    ((GsTestReg *)stream->cur)->ztst = 1;
+    ((u64 *)stream->cur)++;
+    *((u64 *)stream->cur)++ = 0x47;
+    z = (1.0f - depth) * 8388607.0f;
+    *((u64 *)stream->cur)++ = 0x2002400000008004ULL;
+    *((u64 *)stream->cur)++ = 0x51;
+    *stream->cur++ = topcolour & 0xFF;
+    *stream->cur++ = (topcolour >> 8) & 0xFF;
+    *stream->cur++ = (topcolour >> 16) & 0xFF;
+    *stream->cur++ = 0x80;
+    *stream->cur++ = (int)NuVpPixelWidth(0.0f);
+    *stream->cur++ = (int)NuVpPixelHeight(0.0f);
+    *stream->cur++ = z;
+    *stream->cur++ = 0;
+    *stream->cur++ = topcolour & 0xFF;
+    *stream->cur++ = (topcolour >> 8) & 0xFF;
+    *stream->cur++ = (topcolour >> 16) & 0xFF;
+    *stream->cur++ = 0x80;
+    *stream->cur++ = (int)NuVpPixelWidth(1.0f);
+    *stream->cur++ = (int)NuVpPixelHeight(0.0f);
+    *stream->cur++ = z;
+    *stream->cur++ = 0;
+    *stream->cur++ = bottomcolour & 0xFF;
+    *stream->cur++ = (bottomcolour >> 8) & 0xFF;
+    *stream->cur++ = (bottomcolour >> 16) & 0xFF;
+    *stream->cur++ = 0x80;
+    *stream->cur++ = (int)NuVpPixelWidth(0.0f);
+    *stream->cur++ = (int)NuVpPixelHeight(1.0f);
+    *stream->cur++ = z;
+    *stream->cur++ = 0;
+    *stream->cur++ = bottomcolour & 0xFF;
+    *stream->cur++ = (bottomcolour >> 8) & 0xFF;
+    *stream->cur++ = (bottomcolour >> 16) & 0xFF;
+    *stream->cur++ = 0x80;
+    *stream->cur++ = (int)NuVpPixelWidth(1.0f);
+    *stream->cur++ = (int)NuVpPixelHeight(1.0f);
+    *stream->cur++ = z;
+    *stream->cur++ = 0;
+    stream->cur = vpDmaTag_Close(stream->cur);
+    rndrstream_free = vpDmaTag_Next(stream->cur, 0);
+}
+
+
+int NuRndrGScnObj(struct nugobj_s *gobj, NuMtx *wm) {
+    NuMtx mtx;
+    NuMtx offset;
+    int clip;
+    int instanced;
+    int n;
+    int vis;
+    int geomidx;
+    struct RndrPacketStream *stream;
+    struct numtl_s *lastmtl;
+    struct numtl_s *mtl;
+    struct nugeom_s *geom;
+    struct nufaceongeom_s *fgeom;
+
+    clip = -1;
+    if (!nurndr_gscnobj_enable) {
+        return 1;
+    }
+    n = gobj->ngobjs;
+    instanced = n > 1;
+    stream = 0;
+    lastmtl = 0;
+    while (n-- != 0) {
+        if (instanced) {
+            NuMtxSetIdentity(&offset);
+            offset.m[3][0] = gobj->origin.x;
+            offset.m[3][1] = gobj->origin.y;
+            offset.m[3][2] = gobj->origin.z;
+            NuMtxMul(&mtx, &offset, wm);
+            vis = NuCameraClipTestExtents(&gobj->min, &gobj->max, &mtx);
+        } else {
+            vis = NuCameraClipTestExtents(&gobj->min, &gobj->max, wm);
+        }
+        if (clip == -1) {
+            clip = vis;
+        } else if ((clip == 1 && vis != 1) || (clip == 0 && vis != 0)) {
+            clip = 2;
+        }
+        if (vis) {
+            nurndr_tritot_this_frame += gobj->ntris;
+            if (instanced) {
+                NuRndrSetLocalMtx(&mtx, vis);
+            } else {
+                NuRndrSetLocalMtx(wm, vis);
+            }
+            geom = gobj->geom;
+            if (geom) {
+                geomidx = -1;
+                do {
+                geomidx++;
+                if (nurndr_debug_geom && geomidx != nurndr_debug_geom) {
+                    continue;
+                }
+                mtl = nurndr_forced_mtl;
+                if (!mtl) {
+                    mtl = geom->mtl;
+                    if (!mtl) {
+                        NuDebugMsgProlog(nurndr_file, 0x62B)(err_geom_no_mtl);
+                    }
+                }
+                if (nurndr_forced_mtl_table && mtl->special_id) {
+                    if (nurndr_forced_mtl_table[mtl->special_id]) {
+                        mtl = nurndr_forced_mtl_table[mtl->special_id];
+                    }
+                }
+                do {
+                    if (mtl != lastmtl) {
+                        rndrstream_3d = &mtl->stream;
+                        lastmtl = mtl;
+                        if (stream != rndrstream_3d) {
+                            if (stream) {
+                                rndrstream_free = vpDmaTag_Next(stream->cur, 0);
+                            }
+                            stream = rndrstream_3d;
+                            NuRndrStreamLink(stream);
+                            NuRndrStreamSetMisc(rndrstream_3d);
+                            NuRndrStreamSetViewMtx(rndrstream_3d);
+                            NuRndrStreamSetLocalMtx(rndrstream_3d);
+                        }
+                    }
+                    if (geom->dma) {
+                        rndrstream_3d->cur = vpDmaTag_Call(rndrstream_3d->cur, geom->dma);
+                        ((unsigned char *)rndrstream_3d->cur)[-14] = 4;
+                    }
+                    if (geom->otbatch) {
+                        rndrstream_free = vpDmaTag_Next(rndrstream_3d->cur, 0);
+                        if (instanced) {
+                            NuRndrOTInsertTriBatch(&mtx, vis, mtl, geom->otbatch->tris, geom->otbatch->count);
+                        } else {
+                            NuRndrOTInsertTriBatch(wm, vis, mtl, geom->otbatch->tris, geom->otbatch->count);
+                        }
+                        NuRndrStreamLink(rndrstream_3d);
+                    }
+                    mtl = mtl->next;
+                } while (mtl);
+                } while ((geom = geom->next));
+            }
+            for (fgeom = gobj->faceon_geom; fgeom; fgeom = fgeom->next) {
+                mtl = fgeom->mtl;
+                if (!mtl) {
+                    NuDebugMsgProlog(nurndr_file, 0x666)(err_fgeom_no_mtl);
+                }
+                if (mtl != lastmtl) {
+                    rndrstream_3d = &mtl->stream;
+                    lastmtl = mtl;
+                    if (stream != rndrstream_3d) {
+                        if (stream) {
+                            rndrstream_free = vpDmaTag_Next(stream->cur, 0);
+                        }
+                        stream = rndrstream_3d;
+                        NuRndrStreamLink(stream);
+                        NuRndrStreamSetMisc(rndrstream_3d);
+                        NuRndrStreamSetViewMtx(rndrstream_3d);
+                        if (!fgeom->worldspace) {
+                            NuRndrStreamSetLocalMtxEx(rndrstream_3d, 1);
+                        } else {
+                            NuRndrStreamSetLocalMtxEx(rndrstream_3d, 2);
+                        }
+                    }
+                }
+                if (fgeom->dmastream) {
+                    rndrstream_3d->cur = vpDmaTag_Call(rndrstream_3d->cur, fgeom->dmastream);
+                    ((unsigned char *)rndrstream_3d->cur)[-14] = 4;
+                }
+            }
+            if (stream) {
+                rndrstream_free = vpDmaTag_Next(rndrstream_3d->cur, 0);
+                stream = 0;
+                lastmtl = 0;
+            }
+        }
+        gobj++;
+    }
+    return clip;
+}
+
+
+int NuRndrGobj(struct nugobj_s *gobj, NuMtx *wm) {
+    NuMtx mtx;
+    NuMtx offset;
+    int clip;
+    int instanced;
+    int vis;
+    struct RndrPacketStream *stream;
+    struct numtl_s *lastmtl;
+    struct numtl_s *mtl;
+    struct nugeom_s *geom;
+    struct nufaceongeom_s *fgeom;
+    struct numtl_s *faceonmtl;
+
+    clip = -1;
+    stream = 0;
+    lastmtl = 0;
+    instanced = gobj->next_gobj != 0;
+    for (; gobj; gobj = gobj->next_gobj) {
+        if (instanced) {
+            NuMtxSetIdentity(&offset);
+            offset.m[3][0] = gobj->origin.x;
+            offset.m[3][1] = gobj->origin.y;
+            offset.m[3][2] = gobj->origin.z;
+            NuMtxMul(&mtx, &offset, wm);
+            vis = NuCameraClipTestExtents(&gobj->min, &gobj->max, &mtx);
+        } else {
+            vis = NuCameraClipTestExtents(&gobj->min, &gobj->max, wm);
+        }
+        if (clip == -1) {
+            clip = vis;
+        } else if ((clip == 1 && vis != 1) || (clip == 0 && vis != 0)) {
+            clip = 2;
+        }
+        if (vis) {
+            if (instanced) {
+                NuRndrSetLocalMtx(&mtx, vis);
+            } else {
+                NuRndrSetLocalMtx(wm, vis);
+            }
+            for (geom = gobj->geom; geom; geom = geom->next) {
+                mtl = geom->mtl;
+                if (!mtl) {
+                    NuDebugMsgProlog(nurndr_file, 0x6D5)(err_geom_no_mtl);
+                } else if (nurndr_forced_mtl) {
+                    mtl = nurndr_forced_mtl;
+                } else if (nurndr_forced_mtl_table && mtl->special_id) {
+                    if (nurndr_forced_mtl_table[mtl->special_id]) {
+                        mtl = nurndr_forced_mtl_table[mtl->special_id];
+                    }
+                }
+                do {
+                    if (mtl != lastmtl) {
+                        rndrstream_3d = &mtl->stream;
+                        lastmtl = mtl;
+                        if (stream != rndrstream_3d) {
+                            if (stream) {
+                                rndrstream_free = vpDmaTag_Next(stream->cur, 0);
+                            }
+                            stream = rndrstream_3d;
+                            NuRndrStreamLink(stream);
+                            NuRndrStreamSetMisc(rndrstream_3d);
+                            NuRndrStreamSetViewMtx(rndrstream_3d);
+                            NuRndrStreamSetLocalMtx(rndrstream_3d);
+                        }
+                    }
+                    rndrstream_3d->cur = vpDmaTag_Call(rndrstream_3d->cur, geom->dma);
+                    ((unsigned char *)rndrstream_3d->cur)[-14] = 4;
+                    mtl = mtl->next;
+                } while (mtl);
+            }
+            for (fgeom = gobj->faceon_geom; fgeom; fgeom = fgeom->next) {
+                if (!fgeom->mtl) {
+                    NuDebugMsgProlog(nurndr_file, 0x707)(err_fgeom_no_mtl);
+                }
+                faceonmtl = fgeom->mtl;
+                if (faceonmtl != lastmtl) {
+                    rndrstream_3d = &faceonmtl->stream;
+                    lastmtl = faceonmtl;
+                    if (stream != rndrstream_3d) {
+                        if (stream) {
+                            rndrstream_free = vpDmaTag_Next(stream->cur, 0);
+                        }
+                        stream = rndrstream_3d;
+                        NuRndrStreamLink(stream);
+                        NuRndrStreamSetMisc(rndrstream_3d);
+                        NuRndrStreamSetViewMtx(rndrstream_3d);
+                        if (!fgeom->worldspace) {
+                            NuRndrStreamSetLocalMtxEx(rndrstream_3d, 1);
+                        } else {
+                            NuRndrStreamSetLocalMtxEx(rndrstream_3d, 2);
+                        }
+                    }
+                }
+                rndrstream_3d->cur = vpDmaTag_Call(rndrstream_3d->cur, fgeom->dmastream);
+                ((unsigned char *)rndrstream_3d->cur)[-14] = 4;
+            }
+            if (stream) {
+                rndrstream_free = vpDmaTag_Next(rndrstream_3d->cur, 0);
+                stream = 0;
+                lastmtl = 0;
+            }
+        }
+    }
+    return clip;
+}
+
+
+struct FxSprite {
+    float parameter_00;
+    int parameter_04;
+    int count;
+    float parameter_0c;
+    float parameter_10;
+    float parameter_14;
+    float parameter_18;
+    int parameter_1c[16];
+    int colour[16];
+    float channel[12][16];
+};
+
+u32 *NuRndrFxSpriteSet(u32 code, struct FxSprite *fx) {
+    u32 tag[8];
+    u32 *base;
+    u32 *packet;
+    int i;
+
+    base = NuRndrStreamAlloc(fx->count * 5 + 8);
+    packet = vpDmaTag_RetEx(base, 0x13000000,
+        ((fx->count * 5 + 4) << 16) | 0x6c008000);
+    *(unsigned long long *)tag = 0x1003400000008001ULL;
+    *packet++ = tag[0];
+    *packet++ = tag[1];
+    *packet++ = 1;
+    *packet++ = 0;
+    *(unsigned long long *)tag = 0x4403400000008001ULL;
+    *packet++ = tag[0];
+    *packet++ = tag[1];
+    *packet++ = 0x5252;
+    *packet++ = 0;
+    *(float *)packet++ = fx->parameter_00;
+    *packet++ = 0;
+    *packet++ = fx->parameter_04;
+    *packet++ = fx->count;
+    *(float *)packet++ = fx->parameter_14;
+    *(float *)packet++ = fx->parameter_18;
+    *(float *)packet++ = fx->parameter_0c;
+    *(float *)packet++ = fx->parameter_10;
+
+    for (i = 0; i < fx->count; i++) {
+        *packet++ = 0;
+        *packet++ = 0;
+        *packet++ = 0;
+        *packet++ = fx->parameter_1c[i];
+        *packet++ = fx->colour[i];
+        *packet++ = fx->colour[i] >> 8;
+        *packet++ = (short)(fx->colour[i] >> 16);
+        *packet++ = (signed char)(fx->colour[i] >> 24);
+        *(float *)packet++ = fx->channel[2][i];
+        *(float *)packet++ = fx->channel[3][i];
+        *(float *)packet++ = fx->channel[0][i];
+        *(float *)packet++ = fx->channel[1][i];
+        *(float *)packet++ = fx->channel[6][i];
+        *(float *)packet++ = fx->channel[7][i];
+        *(float *)packet++ = fx->channel[4][i];
+        *(float *)packet++ = fx->channel[5][i];
+        *(float *)packet++ = fx->channel[10][i];
+        *(float *)packet++ = fx->channel[11][i];
+        *(float *)packet++ = fx->channel[8][i];
+        *(float *)packet++ = fx->channel[9][i];
+    }
+
+    *packet++ = code | 0x14000000;
+    *packet++ = 0x13000000;
+    *packet++ = 0;
+    *packet++ = 0;
+    vpDmaTag_Close(packet);
+    return base;
 }
 
 
@@ -656,6 +1256,212 @@ u32 *NuRndrCylCapMakeData(void) {
 }
 
 
+u32 *NuRndrCylMakeData(void) {
+    GifTagQuad strip;
+    GifTagQuad fan;
+    u32 *base;
+    u32 *packet;
+
+    strip.dword[0] = 0x3002400000008000ULL;
+    strip.dword[1] = 0x512;
+    fan.dword[0] = 0x3002C00000008000ULL;
+    fan.dword[1] = 0x512;
+    packet = cyl_packet;
+    base = packet;
+    packet = vpDmaTag_RetEx(base, 0, 0x6C010056);
+    *packet++ = fan.word[0];
+    *packet++ = fan.word[1];
+    *packet++ = fan.word[2];
+    *packet++ = fan.word[3];
+    strip.tag.nloop = 10;
+    *packet++ = 0x6C0180D2;
+    *packet++ = strip.word[0];
+    *packet++ = strip.word[1];
+    *packet++ = strip.word[2];
+    *packet++ = strip.word[3];
+    *packet++ = 0x6D018002;
+    *((u16 *)packet)++ = 0x1E;
+    *((u16 *)packet)++ = 0;
+    *((u16 *)packet)++ = 0;
+    *((u16 *)packet)++ = 0;
+    *packet++ = 0x6C0680AF;
+    *packet++ = 5;
+    *packet++ = 0;
+    *packet++ = 0;
+    *packet++ = 0;
+    *((float *)packet)++ = 1.0f;
+    *((float *)packet)++ = 0.0f;
+    *((float *)packet)++ = 1.0f;
+    *((float *)packet)++ = 0.0f;
+    *((float *)packet)++ = -1.0f;
+    *((float *)packet)++ = 0.0f;
+    *((float *)packet)++ = 1.0f;
+    *((float *)packet)++ = 0.0f;
+    *((float *)packet)++ = -1.0f;
+    *((float *)packet)++ = 0.0f;
+    *((float *)packet)++ = -1.0f;
+    *((float *)packet)++ = 0.0f;
+    *((float *)packet)++ = 1.0f;
+    *((float *)packet)++ = 0.0f;
+    *((float *)packet)++ = -1.0f;
+    *((float *)packet)++ = 0.0f;
+    *((float *)packet)++ = 1.0f;
+    *((float *)packet)++ = 0.0f;
+    *((float *)packet)++ = 1.0f;
+    *((float *)packet)++ = 0.0f;
+    vpDmaTag_Close(packet);
+    return base;
+}
+
+
+int NuRndrLine2d(struct nuvtx2d_s *vtx, struct numtl_s *mtl) {
+    int i;
+
+    if (!mtl) {
+        mtl = numtl_defaultmtl2d;
+    }
+    NuRndrStreamLink(rndrstream_2d);
+    NuRndrStreamSetMisc(rndrstream_2d);
+    NuRndrStreamAddMtl(rndrstream_2d, mtl);
+    rndrstream_2d->cur = vpDmaTag_Cnt(rndrstream_2d->cur);
+    *rndrstream_2d->cur++ = 0;
+    *rndrstream_2d->cur++ = 0;
+    *rndrstream_2d->cur++ = 0x11000000;
+    *rndrstream_2d->cur++ = 0x50000007;
+    *((u64 *)rndrstream_2d->cur)++ = 0x3000C00000008002ULL;
+    *((u64 *)rndrstream_2d->cur)++ = 0x512;
+    for (i = 0; i < 2; i++) {
+        *((float *)rndrstream_2d->cur)++ = vtx->u;
+        *((float *)rndrstream_2d->cur)++ = vtx->v;
+        *((float *)rndrstream_2d->cur)++ = vtx->rhw;
+        rndrstream_2d->cur++;
+        *rndrstream_2d->cur++ = vtx->rgba[0];
+        *rndrstream_2d->cur++ = vtx->rgba[1];
+        *rndrstream_2d->cur++ = vtx->rgba[2];
+        *rndrstream_2d->cur++ = vtx->rgba[3];
+        *rndrstream_2d->cur++ = (int)NuVpPixelWidth(vtx->x);
+        *rndrstream_2d->cur++ = (int)NuVpPixelHeight(vtx->y);
+        *rndrstream_2d->cur++ = (int)vtx->z;
+        *rndrstream_2d->cur++ = 0;
+        vtx++;
+    }
+    rndrstream_2d->cur = vpDmaTag_Close(rndrstream_2d->cur);
+    rndrstream_free = vpDmaTag_Next(rndrstream_2d->cur, 0);
+    return 1;
+}
+
+
+int NuRndrLineStrip2d(struct nuvtx2d_s *vtx, struct numtl_s *mtl, int count) {
+    int i;
+
+    if (!mtl) {
+        mtl = numtl_defaultmtl2d;
+    }
+    NuRndrStreamLink(rndrstream_2d);
+    NuRndrStreamSetMisc(rndrstream_2d);
+    NuRndrStreamAddMtl(rndrstream_2d, mtl);
+    rndrstream_2d->cur = vpDmaTag_Cnt(rndrstream_2d->cur);
+    *rndrstream_2d->cur++ = 0;
+    *rndrstream_2d->cur++ = 0;
+    *rndrstream_2d->cur++ = 0x10000000;
+    *rndrstream_2d->cur++ = (count * 3 + 1) | 0x50000000;
+    *((u64 *)rndrstream_2d->cur)++ = (count | 0x8000) | 0x3000C00000000000ULL;
+    *((u64 *)rndrstream_2d->cur)++ = 0x512;
+    for (i = 0; i < count; i++) {
+        *((float *)rndrstream_2d->cur)++ = vtx->u;
+        *((float *)rndrstream_2d->cur)++ = vtx->v;
+        *((float *)rndrstream_2d->cur)++ = vtx->rhw;
+        rndrstream_2d->cur++;
+        *rndrstream_2d->cur++ = vtx->rgba[0];
+        *rndrstream_2d->cur++ = vtx->rgba[1];
+        *rndrstream_2d->cur++ = vtx->rgba[2];
+        *rndrstream_2d->cur++ = vtx->rgba[3];
+        *rndrstream_2d->cur++ = (int)NuVpPixelWidth(vtx->x);
+        *rndrstream_2d->cur++ = (int)NuVpPixelHeight(vtx->y);
+        *rndrstream_2d->cur++ = (int)vtx->z;
+        *rndrstream_2d->cur++ = 0;
+        vtx++;
+    }
+    rndrstream_2d->cur = vpDmaTag_Close(rndrstream_2d->cur);
+    rndrstream_free = vpDmaTag_Next(rndrstream_2d->cur, 0);
+    return 1;
+}
+
+
+int NuRndrTri2d(struct nuvtx2d_s *vtx, struct numtl_s *mtl) {
+    int i;
+
+    if (!mtl) {
+        mtl = numtl_defaultmtl2d;
+    }
+    NuRndrStreamLink(rndrstream_2d);
+    NuRndrStreamSetMisc(rndrstream_2d);
+    NuRndrStreamAddMtl(rndrstream_2d, mtl);
+    rndrstream_2d->cur = vpDmaTag_Cnt(rndrstream_2d->cur);
+    *rndrstream_2d->cur++ = 0;
+    *rndrstream_2d->cur++ = 0;
+    *rndrstream_2d->cur++ = 0x10000000;
+    *rndrstream_2d->cur++ = 0x5000000A;
+    *((u64 *)rndrstream_2d->cur)++ = 0x3001C00000008003ULL;
+    *((u64 *)rndrstream_2d->cur)++ = 0x512;
+    for (i = 0; i < 3; i++) {
+        *((float *)rndrstream_2d->cur)++ = vtx->u;
+        *((float *)rndrstream_2d->cur)++ = vtx->v;
+        *((float *)rndrstream_2d->cur)++ = vtx->rhw;
+        rndrstream_2d->cur++;
+        *rndrstream_2d->cur++ = vtx->rgba[0];
+        *rndrstream_2d->cur++ = vtx->rgba[1];
+        *rndrstream_2d->cur++ = vtx->rgba[2];
+        *rndrstream_2d->cur++ = vtx->rgba[3];
+        *rndrstream_2d->cur++ = (int)NuVpPixelWidth(vtx->x);
+        *rndrstream_2d->cur++ = (int)NuVpPixelHeight(vtx->y);
+        *rndrstream_2d->cur++ = (int)vtx->z;
+        *rndrstream_2d->cur++ = 0;
+        vtx++;
+    }
+    rndrstream_2d->cur = vpDmaTag_Close(rndrstream_2d->cur);
+    rndrstream_free = vpDmaTag_Next(rndrstream_2d->cur, 0);
+    return 1;
+}
+
+
+int NuRndrTriStrip2d(struct nuvtx2d_s *vtx, struct numtl_s *mtl, int count) {
+    int i;
+
+    if (!mtl) {
+        mtl = numtl_defaultmtl2d;
+    }
+    NuRndrStreamLink(rndrstream_2d);
+    NuRndrStreamSetMisc(rndrstream_2d);
+    NuRndrStreamAddMtl(rndrstream_2d, mtl);
+    rndrstream_2d->cur = vpDmaTag_Cnt(rndrstream_2d->cur);
+    *rndrstream_2d->cur++ = 0;
+    *rndrstream_2d->cur++ = 0;
+    *rndrstream_2d->cur++ = 0x10000000;
+    *rndrstream_2d->cur++ = (count * 3 + 1) | 0x50000000;
+    *((u64 *)rndrstream_2d->cur)++ = (count | 0x8000) | 0x3002400000000000ULL;
+    *((u64 *)rndrstream_2d->cur)++ = 0x512;
+    for (i = 0; i < count; i++) {
+        *((float *)rndrstream_2d->cur)++ = vtx->u;
+        *((float *)rndrstream_2d->cur)++ = vtx->v;
+        *((float *)rndrstream_2d->cur)++ = vtx->rhw;
+        rndrstream_2d->cur++;
+        *rndrstream_2d->cur++ = vtx->rgba[0];
+        *rndrstream_2d->cur++ = vtx->rgba[1];
+        *rndrstream_2d->cur++ = vtx->rgba[2];
+        *rndrstream_2d->cur++ = vtx->rgba[3];
+        *rndrstream_2d->cur++ = (int)NuVpPixelWidth(vtx->x);
+        *rndrstream_2d->cur++ = (int)NuVpPixelHeight(vtx->y);
+        *rndrstream_2d->cur++ = (int)vtx->z;
+        *rndrstream_2d->cur++ = 0;
+        vtx++;
+    }
+    rndrstream_2d->cur = vpDmaTag_Close(rndrstream_2d->cur);
+    rndrstream_free = vpDmaTag_Next(rndrstream_2d->cur, 0);
+    return 1;
+}
+
+
 void NuRndrGradRect2di(int x, int y, int width, int height,
                       unsigned char *colours, struct numtl_s *mtl) {
     x += (PS2_VCNTR_X - (PS2_REZ_W >> 1)) << 4;
@@ -717,6 +1523,79 @@ void NuRndrGradRect2di(int x, int y, int width, int height,
     rndrstream_2d->cur = vtCloseDirect(rndrstream_2d->cur);
     rndrstream_2d->cur = vpDmaTag_Close(rndrstream_2d->cur);
     rndrstream_free = vpDmaTag_Next(rndrstream_2d->cur, 0);
+}
+
+
+int NuRndrQuad2d(struct nuvtx2d_s *vtx, struct numtl_s *mtl) {
+    int i;
+
+    if (!mtl) {
+        mtl = numtl_defaultmtl2d;
+    }
+    NuRndrStreamLink(rndrstream_2d);
+    NuRndrStreamSetMisc(rndrstream_2d);
+    NuRndrStreamAddMtl(rndrstream_2d, mtl);
+    rndrstream_2d->cur = vpDmaTag_Cnt(rndrstream_2d->cur);
+    *rndrstream_2d->cur++ = 0;
+    *rndrstream_2d->cur++ = 0;
+    *rndrstream_2d->cur++ = 0x10000000;
+    *rndrstream_2d->cur++ = 0x5000000D;
+    *((u64 *)rndrstream_2d->cur)++ = 0x3002400000008004ULL;
+    *((u64 *)rndrstream_2d->cur)++ = 0x512;
+    for (i = 0; i < 4; i++) {
+        *((float *)rndrstream_2d->cur)++ = vtx->u * vtx->rhw;
+        *((float *)rndrstream_2d->cur)++ = vtx->v * vtx->rhw;
+        *((float *)rndrstream_2d->cur)++ = vtx->rhw;
+        rndrstream_2d->cur++;
+        *rndrstream_2d->cur++ = vtx->rgba[0];
+        *rndrstream_2d->cur++ = vtx->rgba[1];
+        *rndrstream_2d->cur++ = vtx->rgba[2];
+        *rndrstream_2d->cur++ = vtx->rgba[3];
+        *rndrstream_2d->cur++ = (int)NuVpPixelWidth(vtx->x);
+        *rndrstream_2d->cur++ = (int)NuVpPixelHeight(vtx->y);
+        *rndrstream_2d->cur++ = (int)vtx->z;
+        *rndrstream_2d->cur++ = 0;
+        vtx++;
+    }
+    rndrstream_2d->cur = vpDmaTag_Close(rndrstream_2d->cur);
+    rndrstream_free = vpDmaTag_Next(rndrstream_2d->cur, 0);
+    return 1;
+}
+
+
+int NuRndrTriStripGif(u32 *data, int count, struct numtl_s *mtl) {
+    int i;
+
+    if (!mtl) {
+        mtl = numtl_defaultmtl2d;
+    }
+    NuRndrStreamLink(rndrstream_2d);
+    NuRndrStreamSetMisc(rndrstream_2d);
+    NuRndrStreamAddMtl(rndrstream_2d, mtl);
+    rndrstream_2d->cur = vpDmaTag_Cnt(rndrstream_2d->cur);
+    *rndrstream_2d->cur++ = 0;
+    *rndrstream_2d->cur++ = 0;
+    *rndrstream_2d->cur++ = 0x10000000;
+    *rndrstream_2d->cur++ = (count * 3 + 1) | 0x50000000;
+    *((u64 *)rndrstream_2d->cur)++ = (count | 0x8000) | 0x3002400000000000ULL;
+    *((u64 *)rndrstream_2d->cur)++ = 0x512;
+    for (i = 0; i < count; i++) {
+        *((float *)rndrstream_2d->cur)++ = *((float *)data)++;
+        *((float *)rndrstream_2d->cur)++ = *((float *)data)++;
+        *((float *)rndrstream_2d->cur)++ = *((float *)data)++;
+        *((float *)rndrstream_2d->cur)++ = *((float *)data)++;
+        *rndrstream_2d->cur++ = *data++;
+        *rndrstream_2d->cur++ = *data++;
+        *rndrstream_2d->cur++ = *data++;
+        *rndrstream_2d->cur++ = *data++;
+        *rndrstream_2d->cur++ = *data++;
+        *rndrstream_2d->cur++ = *data++;
+        *rndrstream_2d->cur++ = *data++;
+        *rndrstream_2d->cur++ = *data++;
+    }
+    rndrstream_2d->cur = vpDmaTag_Close(rndrstream_2d->cur);
+    rndrstream_free = vpDmaTag_Next(rndrstream_2d->cur, 0);
+    return 1;
 }
 
 
@@ -906,15 +1785,6 @@ struct nurndrrect_s {
     float u0, v0, u1, v1;
     struct numtl_s *mtl;
 };
-
-struct nuvtx2d_s {
-    float x, y, z;
-    float rhw;
-    int colour;
-    float u, v;
-};
-
-extern void NuRndrQuad2d(struct nuvtx2d_s *vtx, struct numtl_s *mtl);
 
 void NuRndrRect(struct nurndrrect_s *rect) {
     struct nuvtx2d_s vtx[4];
@@ -1253,17 +2123,8 @@ void NuRndrDeformerWeightsArrayInit(void) {
 }
 
 
-/* Only the material's microprogram tag is needed here. */
-struct numtl_s {
-    char pad000[0x13C];
-    void *mpgtag;                   /* 0x13C */
-};
-
-typedef unsigned int u128 __attribute__((mode(TI)));
 
 extern struct RndrPacketStream *rndrstream_ot_sort;
-extern int NuRndrStreamSetViewMtx(struct RndrPacketStream *stream);
-extern u32 *vpDmaTag_Call(u32 *packet, void *addr);
 
 /* Near-match (stays asm): retail loads stream->cur before materialising the
    ot_close_packet / bin addresses, so the quadword copy schedules differently. */
