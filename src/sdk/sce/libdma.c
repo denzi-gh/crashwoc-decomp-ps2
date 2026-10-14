@@ -269,6 +269,40 @@ void sceDmaSend(sceDmaChan *d, void *tag)
 }
 
 
+void sceDmaSendN(sceDmaChan *d, void *addr, int size)
+{
+    DmaChcr chcr;
+
+    dma_wait(d, DMA_SYNC_TIMEOUT);
+    if (d->madr != (void *)-1) {
+        d->madr = addr;
+    }
+    chcr = d->chcr.bits;
+    d->qwc = size;
+    chcr.mod = 0;
+    chcr.dir = 1;
+    chcr.str = 1;
+    d->chcr.bits = chcr;
+}
+
+
+void sceDmaSendI(sceDmaChan *d, void *addr, int size)
+{
+    DmaChcr chcr;
+
+    dma_wait(d, DMA_SYNC_TIMEOUT);
+    if (d->madr != (void *)-1) {
+        d->madr = addr;
+    }
+    chcr = d->chcr.bits;
+    d->qwc = size;
+    chcr.mod = 2;
+    chcr.dir = 1;
+    chcr.str = 1;
+    d->chcr.bits = chcr;
+}
+
+
 void sceDmaRecv(sceDmaChan *d)
 {
     DmaChcr chcr;
@@ -277,6 +311,40 @@ void sceDmaRecv(sceDmaChan *d)
     chcr = d->chcr.bits;
     d->qwc = 0;
     chcr.mod = 1;
+    chcr.dir = 0;
+    chcr.str = 1;
+    d->chcr.bits = chcr;
+}
+
+
+void sceDmaRecvN(sceDmaChan *d, void *addr, int size)
+{
+    DmaChcr chcr;
+
+    dma_wait(d, DMA_SYNC_TIMEOUT);
+    if (d->madr != (void *)-1) {
+        d->madr = addr;
+    }
+    chcr = d->chcr.bits;
+    d->qwc = size;
+    chcr.mod = 0;
+    chcr.dir = 0;
+    chcr.str = 1;
+    d->chcr.bits = chcr;
+}
+
+
+void sceDmaRecvI(sceDmaChan *d, void *addr, int size)
+{
+    DmaChcr chcr;
+
+    dma_wait(d, DMA_SYNC_TIMEOUT);
+    if (d->madr != (void *)-1) {
+        d->madr = addr;
+    }
+    chcr = d->chcr.bits;
+    d->qwc = size;
+    chcr.mod = 2;
     chcr.dir = 0;
     chcr.str = 1;
     d->chcr.bits = chcr;
@@ -294,6 +362,30 @@ int sceDmaSync(sceDmaChan *d, int mode, int timeout)
         timeout = DMA_SYNC_TIMEOUT;
     }
     while (d->chcr.word & DMA_CHCR_STR) {
+        if (--timeout < 0) {
+            printf("libdma: sync timeout\n");
+            chcr = d->chcr.bits;
+            while (chcr.str) {
+                chcr.str = 0;
+                d->chcr.bits = chcr;
+            }
+        }
+    }
+    return 0;
+}
+
+
+int sceDmaWatch(sceDmaChan *d, void *addr, int mode, int timeout)
+{
+    DmaChcr chcr;
+
+    if (mode == 1) {
+        return d->madr < addr;
+    }
+    if (timeout == 0) {
+        timeout = DMA_SYNC_TIMEOUT;
+    }
+    while (d->madr < addr) {
         if (--timeout < 0) {
             printf("libdma: sync timeout\n");
             chcr = d->chcr.bits;

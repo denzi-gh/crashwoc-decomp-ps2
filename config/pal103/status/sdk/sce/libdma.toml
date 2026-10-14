@@ -45,11 +45,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0143:00262eb8:sceDmaSendN"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0143:00262fa0:sceDmaSendI"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0143:00263088:sceDmaRecv"
@@ -57,11 +57,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0143:00263150:sceDmaRecvN"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0143:00263240:sceDmaRecvI"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0143:00263330:sceDmaSync"
@@ -69,7 +69,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0143:002633f8:sceDmaWatch"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0143:002634c8:sceDmaPause"
