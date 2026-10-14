@@ -17,11 +17,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0054:0015b510:NuFPatchMakeMaterial"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0054:0015b6b8:initCamera"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0054:0015ba00:NuRndrFPatchBegin"
@@ -33,15 +33,15 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0054:0015caa8:NuRndrFPatchCameraUpdate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0054:0015cc28:NuRndrFPatchHeightField"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0054:0015d068:NuFPatchHeightFieldIndexSlow"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0054:0015d510:NuFPatchHeightFieldIndex"
@@ -49,7 +49,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0054:0015dfd0:NuMtxBilinear"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0054:0015e2b0:NuFPatchSplit"
@@ -61,7 +61,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0054:0015ec18:NuFPatchTesselateSphereRec"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0054:0015eef8:NuFPatchUpdateLight"
