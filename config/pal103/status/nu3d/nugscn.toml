@@ -17,7 +17,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:00145508:CvtNuIFFTextureSet"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:00145890:CvtNuIFFSplineSet"
@@ -29,19 +29,19 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:00145aa0:CvtNuIFFGeomDef"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:00145e30:ReadNuIFFGeomSkin"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:00145fd0:ReadNuIFFGeomVtx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:001461b0:CvtNuIFFGeomPrim"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:00146350:MakeFaceOnDma"
@@ -49,11 +49,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:001464b8:CvtNuIFFGeomTri"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:00146728:CvtNuIFFGeomTriStrip"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:001469e8:CvtNuIFFInstSet"
@@ -61,19 +61,19 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:00146b50:CvtNuIFFAnimationLibrary"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:001470e0:CvtNuIFFScene"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:001475b8:CvtNuIFFGScene"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:00147b50:NuGScnConvertScene"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:00147dd0:NuNodeRead"
@@ -117,7 +117,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0044:0014a060:DbgBlkType"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:0014a258:NuGScnLoadFix"
