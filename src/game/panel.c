@@ -21,10 +21,9 @@
  *   0x00240958 ResetPanelDebris
  *   0x00240980 NextLetter
  *
- * DrawPanel3DObject reconstructed from the PS2 disassembly: null/scale guard,
- * object-id dispatch (1->0x85, 2->0x86, 3->0x87) that recurses on the resolved
- * ObjTab entry (then falls through to render), scale/switch(rot)/render.
- * WORK IN PROGRESS attempt #2.
+ * DrawPanel3DObject and NextLetter are public inline functions: gcc 2.95
+ * expands them into every later caller and defers their out-of-line copies
+ * to the end of the unit.
  */
 
 #include "creature.h"
@@ -55,18 +54,37 @@ struct nuspecial_s {
 struct objtab_s {
     struct nugscn_s *scene;
     struct nuspecial_s *special;
-    u8 _pad[24];
+    u8 _pad08[5];
+    u8 font3d_letter;
+    u8 _pad0e[18];
 };
 
-struct panel_debris_s {
-    u8 _pad[0x3D];
-    u8 active;
-    u8 _pad2[2];
+struct pdebinfo_s {
+    s32 i_objtab;
+    float duration;
+    float gravity;
+};
+
+struct pdeb_s {
+    struct pdebinfo_s *info;
+    struct nuvec_s oldpos;
+    struct nuvec_s pos;
+    struct nuvec_s mom;
+    float time;
+    float oldscale;
+    float scale;
+    u16 xrot;
+    u16 yrot;
+    u16 zrot;
+    s16 i_objtab;
+    s8 type;
+    s8 active;
+    u8 _pad[2];
 };
 
 struct font3dtab_s {
     u8 _pad[8];
-    s32 value;
+    struct nuspecial_s *special;
     u8 _pad2[4];
 };
 
@@ -91,13 +109,60 @@ struct screen_wumpa_s {
     u8 _pad1d[3];
 };
 
+struct hub_s {
+    u8 flags;
+    u8 crystals;
+    char pad1;
+    char pad2;
+};
+
+struct time_s {
+    char name[4];
+    u32 itime;
+};
+
+struct level_s {
+    u16 flags;
+    char pad1;
+    char pad2;
+    struct time_s time[3];
+};
+
 struct game_s {
-    u8 _pad[0xF];
+    char name[9];
+    u8 vibration;
+    u8 surround;
+    u8 sfx_volume;
+    u8 music_volume;
+    char screen_x;
+    char screen_y;
     u8 language;
+    struct hub_s hub[6];
+    struct level_s level[35];
+};
+
+struct gametimer_s {
+    u32 frame;
+    u8 _pad04[0x14];
+};
+
+struct ldata_s {
+    char *path;
+    u8 *clist;
+    void *pChase;
+    u32 time[3];
+    short music[2];
+    void *pSFX;
+    short nSFX;
+    char pad1;
+    char hub;
+    u16 flags;
+    short character;
+    u8 _pad28[0x2C];
 };
 
 extern struct objtab_s ObjTab[201];
-extern struct panel_debris_s PDeb[32];
+extern struct pdeb_s PDeb[32];
 extern struct font3dtab_s Font3DTab[];
 extern signed char Font3DRemap[];
 /* Panel counter (count +0x0, draw +0x2, frame +0x4).  The complete type must
@@ -128,10 +193,15 @@ extern char tbuf[];
 extern char D_00631F58[];
 extern char D_00631F60[];
 extern char D_00631F68[];
+#define tOUTOF_SPACED D_00631F58
+#define tOUTOF D_00631F60
+#define tINTFORMAT D_00631F68
 extern float font3d_xleft, font3d_ytop, font3d_xright, font3d_ybottom;
 extern struct screen_wumpa_s WScr[32];
-extern float D_0062E3A4;
 extern u16 PANELWUMPAYROT;
+extern f32 NuTrigTable[];
+extern float FONT3D_JSCALEX;
+extern struct gametimer_s GameTimer;
 
 extern void NuMtxSetScale(struct numtx_s *, struct nuvec_s *);
 extern void NuMtxRotateX(struct numtx_s *, u16);
@@ -145,190 +215,569 @@ extern void EvalModelAnim(struct CharacterModel *, struct anim_s *,
                           struct numtx_s *);
 extern s32 NuHGobjRndrMtxDwa(struct NUHGOBJ_s *, struct numtx_s *, s32,
                              short *, struct numtx_s *, float **);
-extern void Text3D(char *, s32, s32, float, float, float, float, float, float);
+extern void Text3D(char *txt, float x, float y, float z, float scalex, float scaley,
+                   float scalez, s32 align, s32 colour);
 extern s32 sprintf(char *, char *, ...);
 extern void AddSpacesIntoText(char *, s32);
 
-void UpdatePanelItem(struct panel_item_s *item, s32 reset, s32 snap_allowed) {
-    s32 timer;
-    u32 timer_u;
-    s32 next_timer;
-    s32 value;
-    s32 target;
-
-    timer = item->timer;
-    timer_u = (u8)item->timer;
-    if (timer == 0x19) {
-        if (item->delay != 0) {
-            item->delay = (u8)item->delay - 1;
-        }
-        if (reset != 0) {
-            item->delay = 0x32;
-        }
-        if (item->sfx_delay != 0) {
-            item->sfx_delay--;
-        } else {
-            value = item->value;
-            target = item->target;
-            if (value < target) {
-                item->value = value + 1;
-                if ((item == &plr_wumpas) || (item == &plr_bonus_wumpas)) {
-                    GameSfx(0x19, 0);
-                    item->sfx_delay = 5;
-                }
-                item->delay = 0x32;
-            } else if (target < value) {
-                item->value = target;
-                item->delay = 0x32;
-            }
-        }
-        if ((item->value == item->target) && (item->delay == 0)) {
-            item->timer--;
-        }
-    } else {
-        if (reset == 0) {
-            value = item->value;
-            target = item->target;
-            if ((snap_allowed == 0) || (value != target)) {
-                if ((snap_allowed == 0) || (new_mode != -1) ||
-                    (new_level != new_mode)) {
-                    if (value != target) {
-                        item->value = target;
-                    }
-                    if (item->timer > 0) {
-                        item->timer--;
-                    }
-                    return;
-                }
-            } else {
-                if (item->timer > 0) {
-                    item->timer--;
-                }
-                return;
-            }
-        }
-        if (timer < 0x19) {
-            next_timer = timer_u + 2;
-            item->timer = next_timer;
-            if ((s8)next_timer >= 0x1A) {
-                item->timer = 0x19;
-            }
-        }
-    }
-}
-
-void BigOutOf(s32 outof, s32 max, float x, float y, float scale) {
-    char *text;
-    s32 out;
-    s32 maximum;
-    char *fmt;
-    float xleft;
-    float half;
-    float xsave;
-    float ysave;
-    float scale_save;
-    float one;
-    float ytop;
-    float xright;
-    float ybottom;
-
-    xsave = x;
-    ysave = y;
-    scale_save = scale;
-    out = outof;
-    maximum = max;
-    if (Game.language == 0x63) {
-        text = D_00631F58;
-    } else {
-        text = D_00631F60;
-    }
-    one = 1.0f;
-    Text3D(text, 0, 0, xsave, ysave, one, scale_save + scale_save,
-           scale_save + scale_save, scale_save + scale_save);
-
-    xleft = font3d_xleft;
-    ytop = font3d_ytop;
-    xright = font3d_xright;
-    ybottom = font3d_ybottom;
-    fmt = D_00631F68;
-    sprintf(tbuf, fmt, out);
-    if (Game.language == 0x63) {
-        AddSpacesIntoText(tbuf, 1);
-    }
-    half = 0.5f;
-    Text3D(tbuf, 8, 0, xsave + ((xleft - xsave) * half),
-           ysave + ((ytop - ysave) * half), one, scale_save, scale_save,
-           scale_save);
-
-    sprintf(tbuf, fmt, maximum);
-    if (Game.language == 0x63) {
-        AddSpacesIntoText(tbuf, 1);
-    }
-    Text3D(tbuf, 2, 0, xsave + ((xright - xsave) * half),
-           ysave + ((ybottom - ysave) * half), one, scale_save, scale_save,
-           scale_save);
-}
-
-void DrawWorldToPanelWumpa(void) {
+inline s32 DrawPanel3DObject(s32 object, float x, float y, float z, float scalex,
+                      float scaley, float scalez, u16 xrot, u16 yrot, u16 zrot,
+                      struct nugscn_s *scn, struct nuspecial_s *obj, s32 rot) {
     struct numtx_s m;
     struct nuvec_s s;
-    struct screen_wumpa_s *base;
-    struct screen_wumpa_s *entry;
-    struct screen_wumpa_s *w;
-    struct objtab_s *objtab;
-    struct nugscn_s *scn;
-    struct nuspecial_s *obj;
-    float t;
-    float x;
-    float y;
-    float scale;
-    float scale_target;
-    u16 xrot;
-    s32 offset;
+    struct objtab_s *e;
+    s32 o;
 
-    base = WScr;
-    w = base;
-    offset = 0;
-    do {
-        entry = (struct screen_wumpa_s *)((u8 *)base + offset);
-        if (entry->timer > 0.0f) {
-            t = (0.25f - entry->timer) * 4.0f;
-            if (w->spin != 0) {
-                scale_target = 0.125f;
-            } else {
-                scale_target = D_0062E3A4;
-            }
-            scale = w->scale + ((scale_target - w->scale) * t);
-            x = w->x + ((entry->target_x - w->x) * t);
-            y = entry->y + ((entry->target_y - entry->y) * t);
-            xrot = 0;
-            if (w->spin == 0) {
-                xrot = 0xE800;
-            }
-            objtab = ObjTab;
-            scn = objtab->scene;
-            obj = objtab->special;
-            if (((scn != 0) && (obj != 0)) && (scale != 0.0f)) {
-                s.x = scale;
-                s.y = scale;
-                s.z = scale;
-                NuMtxSetScale(&m, &s);
-                if (PANELWUMPAYROT != 0) {
-                    NuMtxRotateY(&m, PANELWUMPAYROT);
+    if (((scn != 0) && (obj != 0)) &&
+        ((scalex != 0.0f) || ((scaley != 0.0f) || (scalez != 0.0f)))) {
+        if (object == 1) {
+            o = 0x85;
+        } else if (object == 2) {
+            o = 0x86;
+        } else {
+            o = (object == 3) ? 0x87 : -1;
+        }
+        if (o != -1) {
+            e = &ObjTab[o];
+            DrawPanel3DObject(o, x, y, z, scalex, scaley, scalez, 0, 0, 0,
+                              e->scene, e->special, 0);
+        }
+        s.x = scalex;
+        s.y = scaley;
+        s.z = scalez;
+        NuMtxSetScale(&m, &s);
+        switch (rot) {
+            case 0:
+                if (xrot != 0) {
+                    NuMtxRotateX(&m, xrot);
+                }
+                if (yrot != 0) {
+                    NuMtxRotateY(&m, yrot);
+                }
+                if (zrot != 0) {
+                    NuMtxRotateZ(&m, zrot);
+                }
+                break;
+            case 1:
+                if (yrot != 0) {
+                    NuMtxRotateY(&m, yrot);
                 }
                 if (xrot != 0) {
                     NuMtxRotateX(&m, xrot);
                 }
-                m._32 = 1.0f;
-                m._30 = x * PANEL3DMULX;
-                m._31 = y * PANEL3DMULY;
-                NuRndrGScnObj(scn->gobjs[obj->instance->objid], &m);
+                if (zrot != 0) {
+                    NuMtxRotateZ(&m, zrot);
+                }
+                break;
+        }
+        m._32 = z;
+        m._30 = x * PANEL3DMULX;
+        m._31 = y * PANEL3DMULY;
+        return NuRndrGScnObj(scn->gobjs[obj->instance->objid], &m);
+    }
+    return 0;
+}
+
+inline s32 NextLetter(char *text, struct nuspecial_s **obj) {
+    s32 c;
+
+    if (text == 0) {
+        return 1;
+    }
+    if (obj != 0) {
+        obj[1] = 0;
+        obj[0] = 0;
+    }
+    c = Font3DRemap[*text];
+    if ((c != -1) && (obj != 0)) {
+        obj[0] = Font3DTab[c].special;
+    }
+    return 1;
+}
+
+
+void UpdatePanelItem(struct panel_item_s *item, s32 reset, s32 snap_allowed) {
+    if (item->timer == 25) {
+        if (item->delay != 0) {
+            item->delay--;
+        }
+        if (reset != 0) {
+            item->delay = 50;
+        }
+        if (item->sfx_delay != 0) {
+            item->sfx_delay--;
+        } else if (item->value < item->target) {
+            item->value++;
+            if ((item == (struct panel_item_s *)&plr_wumpas) || (item == &plr_bonus_wumpas)) {
+                GameSfx(0x19, 0);
+                item->sfx_delay = 5;
+            }
+            item->delay = 50;
+        } else if (item->target < item->value) {
+            item->value = item->target;
+            item->delay = 50;
+        }
+        if ((item->value == item->target) && (item->delay == 0)) {
+            item->timer--;
+        }
+    } else if ((reset != 0) ||
+               ((snap_allowed != 0) && (item->value != item->target) &&
+                (new_mode == -1) && (new_level == new_mode))) {
+        if (item->timer < 25) {
+            item->timer += 2;
+            if (item->timer > 25) {
+                item->timer = 25;
             }
         }
-        w++;
-        offset += sizeof(struct screen_wumpa_s);
-    } while (w < &base[32]);
+    } else {
+        if (item->value != item->target) {
+            item->value = item->target;
+        }
+        if (item->timer > 0) {
+            item->timer--;
+        }
+    }
 }
+
+
+extern struct ldata_s LData[];
+extern s32 Level;
+extern s32 HubFromLevel(s32 level);
+extern void MakeTimeI(s32 time, s32 mode, char *txt);
+extern void MakeLevelTimeString(struct time_s *time, char *txt);
+
+void DrawTimeTrialTimes(s32 level, float x, float y) {
+    float dy;
+    s32 i;
+    s32 j;
+    float t;
+
+    i = -1;
+    if (((Game.level[level].flags & 8) != 0) || (HubFromLevel(level) == 5)) {
+        if ((Game.level[level].flags & 1) == 0) {
+            i = 3;
+            t = LData[level].time[0];
+        } else if ((Game.level[level].flags & 2) == 0) {
+            i = 2;
+            t = LData[level].time[1];
+        } else if ((Game.level[level].flags & 4) == 0) {
+            i = 1;
+            t = LData[level].time[2];
+        }
+    }
+
+    if (Level == 0x25) {
+        DrawPanel3DObject(0x81, x, y - 0.03f, 1.01f, 0.15f, 0.13f,
+                          (i != -1) ? 0.11f : 0.08f, 0xC000, 0, 0,
+                          ObjTab[129].scene, ObjTab[129].special, 0);
+    }
+
+    dy = -0.125f;
+    y -= dy;
+    if (i != -1) {
+        if (Game.language == 0x63) {
+            tbuf[0] = tbuf[1] = tbuf[2] = tbuf[3] = ' ';
+            tbuf[4] = ObjTab[i].font3d_letter;
+            tbuf[5] = tbuf[6] = tbuf[7] = ' ';
+        } else {
+            tbuf[0] = ' ';
+            tbuf[1] = ' ';
+            tbuf[2] = ObjTab[i].font3d_letter;
+            tbuf[3] = ' ';
+        }
+
+        y -= dy * 1.25f * 0.5f;
+        MakeTimeI(t, 0, (Game.language == 0x63) ? tbuf + 8 : tbuf + 4);
+        Text3D(tbuf, x, y, 1.0f, (Game.language == 0x63) ? 0.55f : 0.6f,
+               0.6f, 0.6f, 0, 3);
+        y += dy * 1.25f;
+    }
+
+    for (j = 0; j < 3; j++) {
+        MakeLevelTimeString(&Game.level[level].time[j], tbuf);
+        Text3D(tbuf, x, y, 1.0f, 0.6f, 0.6f, 0.6f, 0, 0);
+        y += dy;
+    }
+}
+
+
+void BigOutOf(float x, float y, float scale, s32 value, s32 total) {
+    char *txt;
+    float x0;
+    float y0;
+    float x1;
+    float y1;
+
+    if (Game.language == 0x63) {
+        txt = tOUTOF_SPACED;
+    } else {
+        txt = tOUTOF;
+    }
+    Text3D(txt, x, y, 1.0f, scale + scale, scale + scale, scale + scale, 0,
+           0);
+    x0 = font3d_xleft;
+    y0 = font3d_ytop;
+    x1 = font3d_xright;
+    y1 = font3d_ybottom;
+    sprintf(tbuf, tINTFORMAT, value);
+    if (Game.language == 0x63) {
+        AddSpacesIntoText(tbuf, 1);
+    }
+    Text3D(tbuf, x + (x0 - x) * 0.5f, y + (y0 - y) * 0.5f, 1.0f, scale, scale,
+           scale, 8, 0);
+    sprintf(tbuf, tINTFORMAT, total);
+    if (Game.language == 0x63) {
+        AddSpacesIntoText(tbuf, 1);
+    }
+    Text3D(tbuf, x + (x1 - x) * 0.5f, y + (y1 - y) * 0.5f, 1.0f, scale, scale,
+           scale, 2, 0);
+}
+
+
+extern void NuHGobjEvalAnim(struct NUHGOBJ_s *hobj, struct nuanimdata_s *data,
+                            f32 time, s32 nJ, void *pJ,
+                            struct numtx_s *tmtx);
+extern void NuHGobjEval(struct NUHGOBJ_s *hobj, s32 nJ, void *pJ,
+                        struct numtx_s *tmtx);
+extern s32 NuHGobjRndrMtx(struct NUHGOBJ_s *hobj, struct numtx_s *m,
+                          s32 nlayers, s16 *layer, struct numtx_s *tmtx);
+
+s32 DrawPanel3DCharacter(s32 character, float x, float y, float z,
+                         float scalex, float scaley, float scalez, u16 xrot,
+                         u16 yrot, u16 zrot, s32 action, float anim_time,
+                         s32 rot) {
+    struct numtx_s m;
+    struct numtx_s tmtx[0x100];
+    struct nuvec_s s;
+    struct CharacterModel *model;
+    s32 id;
+    struct objtab_s *tab;
+
+    if ((scalex == 0.0f) && (scaley == 0.0f) && (scalez == 0.0f)) {
+        return 0;
+    }
+    if ((u32)character > 0xBE) {
+        return 0;
+    }
+    id = CRemap[character];
+    if (id == -1) {
+        return 0;
+    }
+    model = &CModel[id];
+    if (character == 0x75) {
+        id = 0x84;
+    } else if (character == 0x77) {
+        id = 0x88;
+    } else if (character == 0x78) {
+        id = 0x89;
+    } else if (character == 0x79) {
+        id = 0x8A;
+    } else if (character == 0x7A) {
+        id = 0x8B;
+    } else if (character == 0x7B) {
+        id = 0x8C;
+    } else if (character == 0x7C) {
+        id = 0x8D;
+    } else if (character == 0x7D) {
+        id = 0x8E;
+    } else {
+        id = -1;
+    }
+    if (id != -1) {
+        tab = &ObjTab[id];
+        DrawPanel3DObject(id, x, y, z, scalex, scaley, scalez, 0, 0, 0,
+                          tab->scene, tab->special, 0);
+    }
+    s.x = scalex;
+    s.y = scaley;
+    s.z = scalez;
+    NuMtxSetScale(&m, &s);
+    switch (rot) {
+        case 0:
+            if (xrot != 0) {
+                NuMtxRotateX(&m, xrot);
+            }
+            if (yrot != 0) {
+                NuMtxRotateY(&m, yrot);
+            }
+            if (zrot != 0) {
+                NuMtxRotateZ(&m, zrot);
+            }
+            break;
+        case 1:
+            if (yrot != 0) {
+                NuMtxRotateY(&m, yrot);
+            }
+            if (xrot != 0) {
+                NuMtxRotateX(&m, xrot);
+            }
+            if (zrot != 0) {
+                NuMtxRotateZ(&m, zrot);
+            }
+            break;
+    }
+    m._32 = z;
+    m._30 = x * PANEL3DMULX;
+    m._31 = y * PANEL3DMULY;
+    if (((u32)action < 0x76) && (model->anmdata[action] != 0)) {
+        NuHGobjEvalAnim(model->hobj, model->anmdata[action], anim_time, 0, 0,
+                        tmtx);
+    } else {
+        NuHGobjEval(model->hobj, 0, 0, tmtx);
+    }
+    return NuHGobjRndrMtx(model->hobj, &m, 1, 0, tmtx);
+}
+
+
+struct cammtx_s {
+    u8 _pad[0xF8];
+    s32 yrot;
+};
+
+extern struct cammtx_s GameCam[];
+extern struct nugscn_s *font3d_scene;
+extern struct nuvec_s cpPOS;
+extern char *tCHECK[];
+extern char *tPOINT[];
+extern s32 nCheckLetters;
+extern s32 nPointLetters;
+extern float check_time;
+extern float check_duration;
+extern float check_delay;
+extern float point_time;
+extern float point_duration;
+extern float point_delay;
+extern float CHECKWAIT;
+extern float POINTWAIT;
+extern float CPLTIME;
+extern float CHECKPOINT3DSCALE;
+extern float CHECKPOINT3DSEPERATION;
+extern float CHECKPOINT3DHEIGHT;
+extern s32 Draw3DObject(s32 object, struct nuvec_s *pos, u16 xrot, u16 yrot,
+                        u16 zrot, f32 scalex, f32 scaley, f32 scalez,
+                        struct nugscn_s *scn, struct nuspecial_s *obj, s32 rot);
+
+void Draw3DCheckpointLetters(void) {
+    s32 i;
+    s32 j;
+    u16 ang;
+    float dx;
+    float dz;
+    float t;
+    float f;
+    float x;
+    float time;
+    struct nuvec_s pos;
+    struct nuvec_s s;
+    char *txt;
+    struct nuspecial_s *obj[2];
+
+    if (font3d_scene != 0) {
+        dx = NuTrigTable[(GameCam->yrot + 0x4000) & 0xFFFF] *
+             CHECKPOINT3DSEPERATION;
+        dz = NuTrigTable[(GameCam->yrot - 0x8000) & 0xFFFF] *
+             CHECKPOINT3DSEPERATION;
+        ang = ((GameTimer.frame % 150) << 16) / 150;
+        if ((check_time < check_duration) && (check_time >= CHECKWAIT)) {
+            time = check_time - CHECKWAIT;
+            txt = tCHECK[Game.language];
+            for (i = 0; i < nCheckLetters; i++, ang += 0x176A) {
+                t = CPLTIME * i;
+                txt = &txt[NextLetter(txt, obj)];
+                if ((obj[0] != 0) && (time >= t) && (time < t + check_delay)) {
+                    f = time - t;
+                    x = (nCheckLetters - 1) * CHECKPOINT3DSEPERATION * 0.5f * -1.0f +
+                        i * CHECKPOINT3DSEPERATION;
+                    pos.x = cpPOS.x;
+                    pos.y = cpPOS.y + 0.25f + CHECKPOINT3DHEIGHT;
+                    pos.y += NuTrigTable[ang] * 0.125f;
+                    pos.z = cpPOS.z;
+                    if (f < CPLTIME) {
+                        pos.x += (pos.x + dx * x - pos.x) * f * (1.0f / CPLTIME);
+                        pos.y = cpPOS.y + (pos.y - cpPOS.y) * f * (1.0f / CPLTIME);
+                        pos.z += (pos.z + dz * x - pos.z) * f * (1.0f / CPLTIME);
+                        s.x = CHECKPOINT3DSCALE * f * (1.0f / CPLTIME);
+                    } else {
+                        if (f >= check_delay - CPLTIME) {
+                            x -= (f - (check_delay - CPLTIME)) / CPLTIME * 5.0f;
+                        }
+                        pos.x = cpPOS.x + dx * x;
+                        pos.z = cpPOS.z + dz * x;
+                        s.x = CHECKPOINT3DSCALE;
+                    }
+                    s.z = s.x;
+                    s.y = s.x;
+                    if (Game.language == 0x63) {
+                        s.x *= FONT3D_JSCALEX;
+                    }
+                    for (j = 0; j < 2; j++) {
+                        if (obj[j] != 0) {
+                            Draw3DObject(-1, &pos, 0, GameCam->yrot, 0, s.x, s.y,
+                                         (j == 1) ? s.z * 1.5f : s.z,
+                                         font3d_scene, obj[j], 0);
+                        }
+                    }
+                }
+            }
+        }
+        if ((point_time < point_duration) && (point_time >= POINTWAIT)) {
+            time = point_time - POINTWAIT;
+            txt = tPOINT[Game.language];
+            for (i = 0; i < nPointLetters; i++, ang += 0x176A) {
+                t = CPLTIME * i;
+                txt = &txt[NextLetter(txt, obj)];
+                if ((obj[0] != 0) && (time >= t) && (time < t + point_delay)) {
+                    f = time - t;
+                    x = (nPointLetters - 1) * CHECKPOINT3DSEPERATION * 0.5f * -1.0f +
+                        i * CHECKPOINT3DSEPERATION;
+                    pos.x = cpPOS.x;
+                    pos.y = cpPOS.y + 0.25f + CHECKPOINT3DHEIGHT;
+                    pos.y += NuTrigTable[ang] * 0.125f;
+                    pos.z = cpPOS.z;
+                    if (f < CPLTIME) {
+                        pos.x += (pos.x + dx * x - pos.x) * f * (1.0f / CPLTIME);
+                        pos.y = cpPOS.y + (pos.y - cpPOS.y) * f * (1.0f / CPLTIME);
+                        pos.z += (pos.z + dz * x - pos.z) * f * (1.0f / CPLTIME);
+                        s.x = CHECKPOINT3DSCALE * f * (1.0f / CPLTIME);
+                    } else {
+                        if (f >= point_delay - CPLTIME) {
+                            x -= (f - (point_delay - CPLTIME)) / CPLTIME * 5.0f;
+                        }
+                        pos.x = cpPOS.x + dx * x;
+                        pos.z = cpPOS.z + dz * x;
+                        s.x = CHECKPOINT3DSCALE;
+                    }
+                    s.z = s.x;
+                    s.y = s.x;
+                    if (Game.language == 0x63) {
+                        s.x *= FONT3D_JSCALEX;
+                    }
+                    for (j = 0; j < 2; j++) {
+                        if (obj[j] != 0) {
+                            Draw3DObject(-1, &pos, 0, GameCam->yrot, 0, s.x, s.y,
+                                         (j == 1) ? s.z * 1.5f : s.z,
+                                         font3d_scene, obj[j], 0);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+extern char *tLOADING[];
+extern s32 JStrLen(char *txt);
+extern int strlen(const char *s);
+extern int strcmp(const char *a, const char *b);
+extern s32 CombinationCharacterBD(char c0, char c1);
+extern s32 CombinationCharacterBC(char c0, char c1);
+
+void DrawGameMessage(char *txt, s32 message_frame, float ys) {
+    s32 i;
+    s32 j;
+    s32 len;
+    s32 frame;
+    s32 frames[4];
+    float xs;
+    float size;
+    float sx;
+    char msg[5];
+    char *p;
+    s32 x;
+
+    if (Game.language == 0x63) {
+        len = JStrLen(txt);
+    } else {
+        len = strlen(txt);
+    }
+
+    frame = (len - 1) * 16;
+    frames[0] = frame;
+    frames[1] = frame + 0x19;
+    frames[2] = frame + 0x3E;
+    frames[3] = frame + 0x70;
+
+    x = (frames[2] + message_frame) % frames[3];
+
+    i = -1;
+    if (x < frames[0]) {
+        if (x % 16 < 11) {
+            i = x / 16 + 1;
+        }
+    } else if (x < frames[1]) {
+        if ((x - frames[0]) < 18) {
+            i = len;
+        }
+    } else if (x < frames[2]) {
+        if ((x - frames[1]) < 31) {
+            i = len;
+        }
+    } else if (((x - frames[2]) % 50) < 43) {
+        i = len;
+    }
+
+    if (i != -1) {
+        size = 1.0f;
+        if ((strcmp(txt, tLOADING[Game.language]) == 0) &&
+            (Game.language == 3)) {
+            size = 0.8f;
+        }
+
+        xs = -((len - 1) * 0.1f * size * 0.5f);
+        sx = (Game.language != 0x63) ? 1.0f : FONT3D_JSCALEX;
+        p = txt;
+        for (j = 0; j < i; j++) {
+            if (Game.language == 0x63) {
+                msg[0] = *p++;
+                msg[1] = *p++;
+                if ((p[0] == 0x42) &&
+                    (((p[1] == 0x44) &&
+                      (CombinationCharacterBD(msg[0], msg[1]) != 0)) ||
+                     ((p[1] == 0x43) &&
+                      (CombinationCharacterBC(msg[0], msg[1]) != 0)))) {
+                    msg[2] = *p++;
+                    msg[3] = *p++;
+                    msg[4] = 0;
+                } else {
+                    msg[2] = 0;
+                }
+            } else {
+                msg[0] = *p++;
+                msg[1] = 0;
+            }
+            Text3D(msg, xs, ys, 1.0f, size * sx, 1.0f, 1.0f, 0, 4);
+            xs = size * 0.1f + xs;
+        }
+    }
+}
+
+
+void DrawWorldToPanelWumpa(void) {
+    float xs;
+    float ys;
+    float f;
+    float size;
+    s32 i;
+    float x;
+    float y;
+
+    for (i = 0; i < 32; i++) {
+        if (WScr[i].timer > 0.0f) {
+            x = WScr[i].x;
+            y = WScr[i].y;
+            f = (0.25f - WScr[i].timer) * 4.0f;
+            size = WScr[i].scale +
+                   ((WScr[i].spin != 0 ? 0.125f : 0.2f) - WScr[i].scale) * f;
+            xs = x + (WScr[i].target_x - x) * f;
+            ys = y + (WScr[i].target_y - y) * f;
+            DrawPanel3DObject(0, xs, ys, 1.0f, size, size, size,
+                              WScr[i].spin ? 0 : 0xE800, PANELWUMPAYROT, 0,
+                              ObjTab[0].scene, ObjTab[0].special, 1);
+        }
+    }
+}
+
 
 /* --- UpdatePlayerStats externs ------------------------------------- */
 
@@ -369,7 +818,7 @@ extern f32 PANELSY;
 extern struct mask_s vNEWMASK;
 extern u8 Cursor[];
 
-extern void AddPanelDebris(f32 x, f32 y, s32 obj, f32 z, s32 flag);
+extern void AddPanelDebris(f32 x, f32 y, s32 type, f32 scale, s32 count);
 extern void NewMask(struct mask_s *mask, struct mask_s *src);
 extern void NewMenu(void *cursor, s32 a, s32 b, s32 c);
 
@@ -459,63 +908,221 @@ void UpdatePlayerStats(struct creature_s *plr) {
     }
 }
 
-s32 DrawPanel3DObject(s32 object, float x, float y, float z, float scalex,
-                      float scaley, float scalez, u16 xrot, u16 yrot, u16 zrot,
-                      struct nugscn_s *scn, struct nuspecial_s *obj, s32 rot) {
-    struct numtx_s m;
-    struct nuvec_s s;
-    struct objtab_s *e;
-    s32 o;
+extern struct pdebinfo_s PDebInfo[];
+extern struct ldata_s *LDATA;
+extern s32 i_pdeb;
+extern s32 qrand(void);
 
-    if (((scn != 0) && (obj != 0)) &&
-        ((scalex != 0.0f) || ((scaley != 0.0f) || (scalez != 0.0f)))) {
-        if (object == 1) {
-            o = 0x85;
-        } else if (object == 2) {
-            o = 0x86;
-        } else {
-            o = (object == 3) ? 0x87 : -1;
+void AddPanelDebris(f32 x, f32 y, s32 type, f32 scale, s32 count) {
+    struct pdeb_s *deb;
+    f32 f;
+    s32 i;
+    u32 i_objtab;
+
+    i = count;
+    do {
+        if ((u32)type < 7) {
+            deb = &PDeb[i_pdeb];
+            deb->info = &PDebInfo[type];
+            i_objtab = deb->info->i_objtab;
+            if ((i_objtab == 0x11) && (LDATA->character == 1)) {
+                i_objtab = 0x12;
+            }
+            if ((i_objtab < 0xC9) && ((ObjTab + i_objtab)->special != 0)) {
+                deb->type = type;
+                deb->xrot = 0;
+                deb->yrot = 0;
+                deb->zrot = 0;
+                switch ((s8)type) {
+                    case 1:
+                        deb->mom.x = qrand() * 1.5259022e-05f * 0.5f * 0.02f;
+                        deb->mom.y = (qrand() * 1.5259022e-05f + 2.0f) * 0.02f;
+                        deb->pos.x = x + (deb->mom.x + deb->mom.x);
+                        deb->pos.y = (y + 0.05f) + deb->mom.y;
+                        break;
+                    case 2:
+                    case 3:
+                    case 4:
+                    case 5:
+                        deb->pos.x = x;
+                        deb->pos.y = y;
+                        deb->oldpos = deb->pos;
+                        deb->oldscale = scale;
+                        break;
+                    case 6:
+                        deb->zrot = qrand() / 2 + 0xC000;
+                        f = qrand() * 1.5259022e-05f * 0.02f;
+                        deb->mom.x = NuTrigTable[deb->zrot] * f;
+                        deb->mom.y =
+                            NuTrigTable[(deb->zrot + 0x4000) & 0xFFFF] * f;
+                        deb->pos.x = x + (deb->mom.x + deb->mom.x);
+                        deb->pos.y = y + (deb->mom.y + deb->mom.y);
+                        break;
+                    default:
+                        deb->mom.x = 0.0f;
+                        deb->mom.y = 0.0f;
+                        deb->pos.x = x;
+                        deb->pos.y = y;
+                        break;
+                }
+                deb->i_objtab = i_objtab;
+                deb->time = 0.0f;
+                deb->active = 1;
+                i_pdeb++;
+                if (i_pdeb == 0x20) {
+                    i_pdeb = 0;
+                }
+            }
         }
-        if (o != -1) {
-            e = &ObjTab[o];
-            DrawPanel3DObject(o, x, y, z, scalex, scaley, scalez, 0, 0, 0,
-                              e->scene, e->special, 0);
-        }
-        s.x = scalex;
-        s.y = scaley;
-        s.z = scalez;
-        NuMtxSetScale(&m, &s);
-        switch (rot) {
-            case 0:
-                if (xrot != 0) {
-                    NuMtxRotateX(&m, xrot);
-                }
-                if (yrot != 0) {
-                    NuMtxRotateY(&m, yrot);
-                }
-                if (zrot != 0) {
-                    NuMtxRotateZ(&m, zrot);
-                }
-                break;
-            case 1:
-                if (yrot != 0) {
-                    NuMtxRotateY(&m, yrot);
-                }
-                if (xrot != 0) {
-                    NuMtxRotateX(&m, xrot);
-                }
-                if (zrot != 0) {
-                    NuMtxRotateZ(&m, zrot);
-                }
-                break;
-        }
-        m._32 = z;
-        m._30 = x * PANEL3DMULX;
-        m._31 = y * PANEL3DMULY;
-        return NuRndrGScnObj(scn->gobjs[obj->instance->objid], &m);
-    }
-    return 0;
+        i--;
+    } while (i > 0);
 }
+
+
+extern f32 BONUSWUMPAOBJSX;
+extern f32 BONUSPANELSY;
+extern f32 NEWLIFEOBJSX;
+extern f32 LIVESOBJSX;
+extern f32 NEWBONUSLIFEOBJSX;
+extern f32 BONUSLIVESOBJSX;
+extern f32 LIFESCALE;
+extern f32 BONUSLIFESCALE;
+extern u16 panel_head_xrot;
+extern u16 panel_head_yrot;
+extern s32 bonus_lives;
+extern s32 NuAtan2D(f32 x, f32 z);
+
+void UpdatePanelDebris(void) {
+    struct pdeb_s *deb;
+    float tmul;
+    float xs[2];
+    float ys;
+    float scale;
+    float f;
+    float old_time;
+    s32 i;
+
+    deb = PDeb;
+    for (i = 0; i < 32; i++, deb++) {
+        if (deb->active != 0) {
+            old_time = deb->time;
+            deb->time += 0.02f;
+            if (deb->time < deb->info->duration) {
+                tmul = deb->time / deb->info->duration;
+                switch (deb->type) {
+                    case 0:
+                        deb->pos.x = BONUSWUMPAOBJSX +
+                                     (WUMPAOBJSX - BONUSWUMPAOBJSX) * 0.9f * tmul;
+                        deb->pos.y = BONUSPANELSY +
+                                     (PANELSY - BONUSPANELSY) * 0.9f * tmul;
+                        deb->xrot = tmul * -5529.5996f;
+                        deb->yrot = -(((GameTimer.frame % 33) << 16) / 33);
+                        deb->scale = tmul * 0.075f + 0.125f;
+                        break;
+                    case 1:
+                        deb->pos.x += deb->mom.x;
+                        deb->mom.y += deb->info->gravity;
+                        deb->pos.y += deb->mom.y;
+                        deb->xrot = 0;
+                        deb->yrot = -(((GameTimer.frame % 33) << 16) / 33);
+                        deb->scale = 0.125f;
+                        break;
+                    case 2:
+                    case 3:
+                    case 4:
+                    case 5:
+                        if (deb->type == 3) {
+                            xs[0] = NEWBONUSLIFEOBJSX;
+                            xs[1] = BONUSLIVESOBJSX;
+                            ys = BONUSPANELSY;
+                            scale = BONUSLIFESCALE;
+                            deb->xrot = panel_head_xrot;
+                        } else {
+                            xs[0] = NEWLIFEOBJSX;
+                            xs[1] = LIVESOBJSX;
+                            ys = PANELSY;
+                            scale = LIFESCALE;
+                            if ((deb->type == 2) || (deb->type == 5)) {
+                                deb->xrot = panel_head_xrot - 0x1000;
+                            } else {
+                                deb->xrot = panel_head_xrot - tmul * 4096.0f;
+                            }
+                        }
+                        if (deb->time < 0.25f) {
+                            f = deb->time * 4.0f;
+                            deb->pos.x = deb->oldpos.x + (xs[0] - deb->oldpos.x) * f;
+                            deb->pos.y = deb->oldpos.y + (ys - deb->oldpos.y) * f;
+                            deb->scale = deb->oldscale + (scale - deb->oldscale) * f;
+                        } else if (deb->time < 1.0f) {
+                            if (old_time < 0.25f) {
+                                GameSfx(0x2B, 0);
+                            }
+                            if ((deb->time - 0.02f) < 0.25f) {
+                                force_panel_lives_update = 50;
+                            }
+                            deb->pos.x = xs[0];
+                            deb->pos.y = ys;
+                        } else {
+                            f = (deb->time - 1.0f) * 2.0f;
+                            deb->pos.x = xs[0] + (xs[1] - xs[0]) * f;
+                        }
+                        deb->yrot = panel_head_yrot + 0x2000;
+                        break;
+                    case 6:
+                        deb->pos.x += deb->mom.x;
+                        deb->mom.y += deb->info->gravity;
+                        deb->pos.y = deb->pos.y + deb->mom.y;
+                        if ((deb->mom.x != 0.0f) || (deb->mom.y != 0.0f)) {
+                            deb->zrot = -NuAtan2D(deb->mom.x, deb->mom.y);
+                        }
+                        deb->scale = (1.0f - tmul) * 0.125f;
+                        break;
+                }
+            } else {
+                if ((deb->type == 2) || (deb->type == 4) || (deb->type == 5)) {
+                    if (plr_lives.count < 99) {
+                        plr_lives.count++;
+                    }
+                } else if (deb->type == 3) {
+                    bonus_lives++;
+                }
+                deb->active = 0;
+            }
+        }
+    }
+}
+
+
+extern double fmod(double, double);
+
+void DrawPanelDebris(void) {
+    struct pdeb_s *deb;
+    s32 i;
+    float f;
+    struct objtab_s *tab;
+
+    deb = PDeb;
+    for (i = 0; i < 32; i++, deb++) {
+        if (deb->active != 0) {
+            if ((deb->type == 5) || (deb->type == 4) || (deb->type == 3) ||
+                (deb->type == 2)) {
+                if ((0.25f <= deb->time) && (deb->time < 1.0f)) {
+                    f = fmod(deb->time - 0.25f, 0.25f);
+                    if ((0.0625f <= f) && (f < 0.1875f)) {
+                        continue;
+                    }
+                }
+            }
+            tab = &ObjTab[deb->i_objtab];
+            DrawPanel3DObject(deb->i_objtab, deb->pos.x, deb->pos.y, 1.0f,
+                              deb->scale, deb->scale, deb->scale, deb->xrot,
+                              deb->yrot, deb->zrot,
+                              tab->scene,
+                              tab->special, 1);
+        }
+    }
+}
+
 
 s32 DrawPanel3DTempCharacter(u16 xrot, u16 yrot, u16 zrot, s32 rot, float x,
                              float y, float z, float scale) {
@@ -597,7 +1204,7 @@ void GameVP(void) {
 }
 
 void ResetPanelDebris(void) {
-    struct panel_debris_s *deb;
+    struct pdeb_s *deb;
     s32 i;
 
     deb = PDeb;
@@ -607,21 +1214,4 @@ void ResetPanelDebris(void) {
         i--;
         deb++;
     } while (i >= 0);
-}
-
-s32 NextLetter(char *text, s32 *out) {
-    s32 c;
-
-    if (text == 0) {
-        return 1;
-    }
-    if (out != 0) {
-        out[1] = 0;
-        out[0] = 0;
-    }
-    c = Font3DRemap[*text];
-    if ((c != -1) && (out != 0)) {
-        out[0] = Font3DTab[c].value;
-    }
-    return 1;
 }

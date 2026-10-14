@@ -13,31 +13,31 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0108:00239d50:UpdatePanelItem"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0108:00239ec0:DrawPanel3DCharacter"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0108:0023a2b8:Draw3DCheckpointLetters"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0108:0023a9b0:DrawGameMessage"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0108:0023acc0:DrawTimeTrialTimes"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0108:0023b078:BigOutOf"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0108:0023b258:DrawWorldToPanelWumpa"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0108:0023b450:DrawPanel"
@@ -49,15 +49,15 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0108:0023fa60:AddPanelDebris"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0108:0023fd38:UpdatePanelDebris"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0108:00240150:DrawPanelDebris"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0108:00240400:DrawPanel3DObject"
