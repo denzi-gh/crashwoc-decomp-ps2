@@ -13,19 +13,19 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0038:0011a900:CreateStateBlock"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0038:0011ace8:NuMtlAnimate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0038:0011aff0:NuMtlBuildRenderList"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0038:0011b1a0:NuMtlCreateDefault"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0038:0011b2c8:NuMtlAlloc"
@@ -33,15 +33,15 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0038:0011b3c8:NuMtlCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0038:0011b550:NuMtlRead"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0038:0011bae8:NuMtlUpdateEx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0038:0011be38:NuMtlValid"
