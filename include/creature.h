@@ -5,6 +5,7 @@
 
 #include "numath/numathtypes.h"
 #include "nu3d/nugscn.h"
+#include "nu3d/nuanim.h"
 
 /* PS2 PAL v1.03 (SLES_503.86) layout of the creature/player structures for
  * unit 91 (game/creature, .\creature.c).
@@ -65,15 +66,6 @@ struct NUSHADOWDATA_s
     unsigned char nshadow_meshes; // Offset: 0xE, DWARF: 0x9D61
     unsigned char joint; // Offset: 0xF, DWARF: 0x9D92
 };
-
-/* Animation data blob header.
- * (time at 0x0). */
-struct nuanimdata_s {
-    float time;                        /* 0x0 */
-    char *node_name;                   /* 0x4 */
-    int nchunks;                       /* 0x8 */
-    struct nuanimdatachunk_s **chunks; /* 0xC */
-}; /* 0x10 */
 
 /* Blended animation state.*/
 struct anim_s {

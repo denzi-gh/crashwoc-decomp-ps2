@@ -92,6 +92,7 @@
 #include "nu3d/numtl.h"
 #include "nu3d/nugobj.h"
 #include "nu3d/nugscn.h"
+#include "nu3d/nuanim.h"
 
 struct debtypedef_s {
     char name[0x10];
@@ -99,10 +100,6 @@ struct debtypedef_s {
     signed char gensort;
     char pad21[0x50 - 0x21];
     struct nuvec_s varstart;
-};
-
-struct nuanimdata_s {
-    float time;
 };
 
 struct edanimitem_s {

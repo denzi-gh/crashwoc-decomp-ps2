@@ -10,6 +10,7 @@
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
 #include "nu3d/nugscn.h"
+#include "nu3d/nuanim.h"
 
 #include "creature.h"
 
@@ -202,18 +203,6 @@ void CheckGates(struct obj_s *obj);
 void CheckRings(struct obj_s *obj, s32 *ring);
 void tbslotBeginFn(void *tbset, s32 slot);
 void tbslotEndFn(void *tbset, s32 slot);
-
-/* One joint-animation override entry passed to the NuHGobj eval routines.
- * Only the fields DrawCharacterModel writes are typed (stride 0x34). */
-struct NUJOINTANIM_s {
-    float rx, ry, rz;        /* 0x00 */
-    float tx, ty, tz;        /* 0x0C */
-    float sx, sy, sz;        /* 0x18 */
-    u8 unk_0x24[0xC];        /* 0x24 */
-    u8 joint_id;             /* 0x30 */
-    u8 flags;                /* 0x31 */
-    u8 pad[2];               /* 0x32 */
-}; /* 0x34 */
 
 /* Global frame counter (size 0x18, GameTimer .. PauseTimer); only
  * .frame (0x0, u32) is touched here. Sized >0x8 so it is not gp-relative. */

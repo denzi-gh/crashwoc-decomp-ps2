@@ -41,8 +41,7 @@
 #include "nu3d/nunode.h"
 #include "nu3d/nugscn.h"
 #include "nu3d/nuscene.h"
-
-struct nuanimdata_s;
+#include "nu3d/nuanim.h"
 
 struct nucntrl_s {
     char pad00[0x0C];
@@ -77,7 +76,6 @@ extern void NuNodeDestroyHierarchy(struct nunode_s *node);
 extern int NuFileOpen(char *name, int mode);
 extern void NuFileClose(int fh);
 extern char *strlwr(char *s);
-extern struct nuanimdata_s *NuAnimDataRead(int fh);
 
 extern int show_strip;
 extern int info_tricount;

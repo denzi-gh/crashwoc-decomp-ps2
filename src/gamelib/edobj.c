@@ -112,51 +112,10 @@
 #include "nu3d/numtl.h"
 #include "nu3d/nugobj.h"
 #include "nu3d/nugscn.h"
+#include "nu3d/nuanim.h"
 
 struct camera_s {
     struct numtx_s mtx;
-};
-
-struct nuanimkey_s {
-    float time;
-    float dtime;
-    float c;
-    float d;
-};
-
-struct nuanimcurve_s {
-    unsigned int mask;
-    struct nuanimkey_s *animkeys;
-    int numkeys;
-    unsigned int flags;
-};
-
-struct nuanimcurveset_s {
-    int flags;
-    float *constants;
-    struct nuanimcurve_s **set;
-    signed char ncurves;
-};
-
-struct nuanimdatachunk_s {
-    int numnodes;
-    int num_valid_animcurvesets;
-    struct nuanimcurveset_s **animcurvesets;
-};
-
-struct nuanimdata_s {
-    float time;
-    char *node_names;
-    int nchunks;
-    struct nuanimdatachunk_s **chunks;
-};
-
-struct nuanimtime_s {
-    float time;
-    float time_offset;
-    int chunk;
-    unsigned int time_mask;
-    unsigned int time_byte;
 };
 
 struct pad_s {
@@ -506,11 +465,6 @@ extern void edobjDetermineNearestObject(float range);
 extern void edobjDetermineNearestWaypoint(float range);
 extern void edobjDetermineNearestParticle(float range);
 extern void edobjDetermineNearestSound(float range);
-extern void NuAnimDataDestroy(struct nuanimdata_s *animdata);
-extern struct nuanimdata_s *NuAnimDataCreate(int nchunks);
-extern struct nuanimdatachunk_s *NuAnimDataChunkCreate(int numnodes);
-extern struct nuanimcurveset_s *NuAnimCurveSetCreate(int ncurves);
-extern struct nuanimcurve_s *NuAnimCurveCreate(int numkeys);
 extern void NuAnimCurveDestroy(struct nuanimcurve_s *curve);
 extern int NewPlatInst(struct numtx_s *mtx, int instance);
 extern void UpdatePlatinst(int platinst, struct numtx_s *mtx);
@@ -542,10 +496,6 @@ extern int NuRndrGScnObj(struct nugobj_s *gobj, struct numtx_s *mtx);
 extern unsigned char object_switches[];
 extern struct numtx_s numtx_identity;
 extern int PlatImpactInfo(struct nuvec_s *norm, int *info0, int *info1);
-extern void NuAnimDataCalcTime(struct nuanimdata_s *animdata, float time,
-                               struct nuanimtime_s *atime);
-extern void NuAnimCurveSetApplyToMatrix(struct nuanimcurveset_s *set, struct nuanimtime_s *atime,
-                                        struct numtx_s *m);
 extern void AddVariableShotDebrisEffectMtx2(int effect, struct nuvec_s *pos, int n,
                                             struct numtx_s *m1, struct numtx_s *m2);
 extern int LookupDebrisEffect(char *name);
@@ -1147,7 +1097,7 @@ void edobjConvertPathToAnim(int obj)
             NuAnimCurveDestroy(OBJECT_CURVESET(obj)->set[0]);
             OBJECT_CURVESET(obj)->set[0] = NuAnimCurveCreate(num);
         }
-        OBJECT_CURVESET(obj)->set[0]->mask = mask;
+        OBJECT_CURVESET(obj)->set[0]->mask.bits = mask;
         for (i = 0; i < num; i++) {
             key = &OBJECT_CURVESET(obj)->set[0]->animkeys[i];
             key->time = 1.0f;
@@ -1195,7 +1145,7 @@ void edobjConvertPathToAnim(int obj)
             NuAnimCurveDestroy(OBJECT_CURVESET(obj)->set[1]);
             OBJECT_CURVESET(obj)->set[1] = NuAnimCurveCreate(num);
         }
-        OBJECT_CURVESET(obj)->set[1]->mask = mask;
+        OBJECT_CURVESET(obj)->set[1]->mask.bits = mask;
         for (i = 0; i < num; i++) {
             key = &OBJECT_CURVESET(obj)->set[1]->animkeys[i];
             key->time = 1.0f;
@@ -1243,7 +1193,7 @@ void edobjConvertPathToAnim(int obj)
             NuAnimCurveDestroy(OBJECT_CURVESET(obj)->set[2]);
             OBJECT_CURVESET(obj)->set[2] = NuAnimCurveCreate(num);
         }
-        OBJECT_CURVESET(obj)->set[2]->mask = mask;
+        OBJECT_CURVESET(obj)->set[2]->mask.bits = mask;
         for (i = 0; i < num; i++) {
             key = &OBJECT_CURVESET(obj)->set[2]->animkeys[i];
             key->time = 1.0f;
@@ -1293,7 +1243,7 @@ void edobjConvertPathToAnim(int obj)
             NuAnimCurveDestroy(OBJECT_CURVESET(obj)->set[3]);
             OBJECT_CURVESET(obj)->set[3] = NuAnimCurveCreate(num);
         }
-        OBJECT_CURVESET(obj)->set[3]->mask = mask;
+        OBJECT_CURVESET(obj)->set[3]->mask.bits = mask;
         for (i = 0; i < num; i++) {
             key = &OBJECT_CURVESET(obj)->set[3]->animkeys[i];
             key->time = 1.0f;
@@ -1342,7 +1292,7 @@ void edobjConvertPathToAnim(int obj)
             NuAnimCurveDestroy(OBJECT_CURVESET(obj)->set[4]);
             OBJECT_CURVESET(obj)->set[4] = NuAnimCurveCreate(num);
         }
-        OBJECT_CURVESET(obj)->set[4]->mask = mask;
+        OBJECT_CURVESET(obj)->set[4]->mask.bits = mask;
         for (i = 0; i < num; i++) {
             key = &OBJECT_CURVESET(obj)->set[4]->animkeys[i];
             key->time = 1.0f;
@@ -1391,7 +1341,7 @@ void edobjConvertPathToAnim(int obj)
             NuAnimCurveDestroy(OBJECT_CURVESET(obj)->set[5]);
             OBJECT_CURVESET(obj)->set[5] = NuAnimCurveCreate(num);
         }
-        OBJECT_CURVESET(obj)->set[5]->mask = mask;
+        OBJECT_CURVESET(obj)->set[5]->mask.bits = mask;
         for (i = 0; i < num; i++) {
             key = &OBJECT_CURVESET(obj)->set[5]->animkeys[i];
             key->time = 1.0f;

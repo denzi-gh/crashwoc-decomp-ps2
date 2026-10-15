@@ -43,9 +43,10 @@
 #include "numath/numtx.h"
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
+#include "nu3d/nuanim.h"
+#include "gamelib/gcutscn.h"
 
 #include "creature.h"
-#include "gcutscn.h"
 
 struct hub_s {
     u8 flags;
@@ -127,11 +128,11 @@ extern void GameMusic(s32 sfx, s32 i);
 
 extern s32 cutmovie_hold;
 extern s32 Paused;
-extern NuGCutLocatorFn D_0060B398[];
+extern struct NUGCUTLOCFNDATA_s D_0060B398[];
 #define cutscene_locatorfns D_0060B398
 
-extern NuGCutSceneDef *D_006FF680[];
-extern NuGCutScene *D_006FF700[];
+extern struct NUGCUTSCENE_s *D_006FF680[];
+extern struct instNUGCUTSCENE_s *D_006FF700[];
 extern s32 D_006FF780[];
 #define CutScene D_006FF680
 #define CutInst D_006FF700
@@ -141,7 +142,7 @@ extern u32 texanimbits;
 extern f32 TITLESTARTTIME;
 extern f32 TITLEFPS;
 
-static void AppCutSceneFindCharacters(NuGCutSceneDef *cutscene);
+static void AppCutSceneFindCharacters(struct NUGCUTSCENE_s *cutscene);
 extern s32 NuSoundKeyStatus(s32 chan);
 extern void SetCutMovieRate(void);
 
@@ -164,14 +165,6 @@ extern s32 Level;
 extern s32 NuSoundStopStream(s32 chan);
 extern void GameSfx(s32 sfx, s32 a);
 
-struct nuanimtime_s {
-    f32 time;                        /* 0x0 */
-    f32 time_offset;                 /* 0x4 */
-    s32 chunk;                       /* 0x8 */
-    u32 time_mask;                   /* 0xC */
-    u32 time_byte;                   /* 0x10 */
-};
-
 extern s32 fade_rate;
 extern s32 fadeval;
 extern void NuSoundUpdate(void);
@@ -193,7 +186,6 @@ extern void *SpaceGameCutTab[][2];
 extern struct anim_s CutAnim;
 extern struct anim_s CutVortexAnim;
 extern s32 gamecut_finished;
-extern void NuAnimData2CalcTime(void *anim, f32 currf, struct nuanimtime_s *atime);
 
 extern s32 NuHGobjRndrMtxDwa(struct NUHGOBJ_s *hobj, struct numtx_s *m,
                              s32 nlayers, short *layer, struct numtx_s *tmtx,
@@ -208,8 +200,8 @@ extern void NuMtxMulVU0(struct numtx_s *dst, struct numtx_s *a, struct numtx_s *
 
 /* Cutscene character render callback: animate and draw one character, then
  * update the locators attached to it (on a joint, or to the character). */
-void AppCutSceneCharacterRender(NuGCutScene *icutscene, NuGCutSceneDef *cutscene,
-                                NuGCutChar *icutchar, NuGCutCharDesc *cutchar,
+void AppCutSceneCharacterRender(struct instNUGCUTSCENE_s *icutscene, struct NUGCUTSCENE_s *cutscene,
+                                struct instNUGCUTCHAR_s *icutchar, struct NUGCUTCHAR_s *cutchar,
                                 f32 current_frame) {
     struct numtx_s mtx;
     struct numtx_s tmtx[256];
@@ -218,9 +210,9 @@ void AppCutSceneCharacterRender(NuGCutScene *icutscene, NuGCutSceneDef *cutscene
     s32 is_visible;
     struct NUHGOBJ_s *obj;
     float **dwa;
-    NuGCutLocatorDef *locatorsys;
-    NuGCutLocatorSys *ilocatorsys;
-    NuGCutLocatorData *locator;
+    struct NUGCUTLOCATORSYS_s *locatorsys;
+    struct instNUGCUTLOCATORSYS_s *ilocatorsys;
+    struct NUGCUTLOCATOR_s *locator;
     s32 locix;
     s32 j;
 
@@ -308,7 +300,7 @@ struct nudathdr_s;
 extern void NuDatSet(struct nudathdr_s *ndh);
 extern void NuDatClose(struct nudathdr_s *ndh);
 struct nutexanimprog_s;
-void CutSceneNextLogoFunction(NuGCutScene *icutscene);
+void CutSceneNextLogoFunction(struct instNUGCUTSCENE_s *icutscene);
 
 struct scenecache_s {
     char *path;           /* 0x0 */
@@ -322,8 +314,8 @@ extern s32 D_006FF800[];
 extern char *superbuffer_end;
 extern void InitSpecular(void);
 extern void InitEnviro(void);
-void CutSceneEndFunction(NuGCutScene *icutscene);
-void CutSceneNextFunction(NuGCutScene *icutscene);
+void CutSceneEndFunction(struct instNUGCUTSCENE_s *icutscene);
+void CutSceneNextFunction(struct instNUGCUTSCENE_s *icutscene);
 
 /* Load each character model once, sharing already-loaded ones by path.
  * Inline: LoadCutComponents carries a copy of it in retail. */
@@ -913,8 +905,8 @@ void UpdateCutMovie(void) {
 }
 
 
-void locatorfn_fadeout(NuGCutScene *icutscene, NuGCutLocatorDef *locatorsys,
-                       NuGCutLocator *ilocator, NuGCutLocatorData *locator, f32 currf,
+void locatorfn_fadeout(struct instNUGCUTSCENE_s *icutscene, struct NUGCUTLOCATORSYS_s *locatorsys,
+                       struct instNUGCUTLOCATOR_s *ilocator, struct NUGCUTLOCATOR_s *locator, f32 currf,
                        struct numtx_s *wm) {
     struct nuanimtime_s atime;
     f32 remaining;
@@ -930,7 +922,7 @@ void locatorfn_fadeout(NuGCutScene *icutscene, NuGCutLocatorDef *locatorsys,
     }
 }
 
-void CutSceneEndFunction(NuGCutScene *icutscene) {
+void CutSceneEndFunction(struct instNUGCUTSCENE_s *icutscene) {
     if (cutmovie == 0) {
         NewMenu(Cursor, 0, 0, -1);
         if (logos_played == 0) {
@@ -941,7 +933,7 @@ void CutSceneEndFunction(NuGCutScene *icutscene) {
     }
 }
 
-void CutSceneNextFunction(NuGCutScene *icutscene) {
+void CutSceneNextFunction(struct instNUGCUTSCENE_s *icutscene) {
     s32 sfx;
 
     cutworldix++;
@@ -966,7 +958,7 @@ void CutSceneNextFunction(NuGCutScene *icutscene) {
     }
 }
 
-void CutSceneNextLogoFunction(NuGCutScene *icutscene) {
+void CutSceneNextLogoFunction(struct instNUGCUTSCENE_s *icutscene) {
     cutworldix++;
     NewMenu(Cursor, 0, 0, -1);
     if (logos_played == 0) {
@@ -994,10 +986,10 @@ extern char D_00629350[];                /* "AppCutSceneFindCharacters: cannot f
 #define cut_srcfile D_00632BC0
 #define nocutchar_msg D_00629350
 
-static void AppCutSceneFindCharacters(NuGCutSceneDef *cutscene) {
-    NuGCutCharDef *charSys;
-    NuGCutCharDesc *cutchar;
-    NuGCutLocatorDef *locator;
+static void AppCutSceneFindCharacters(struct NUGCUTSCENE_s *cutscene) {
+    struct NUGCUTCHARSYS_s *charSys;
+    struct NUGCUTCHAR_s *cutchar;
+    struct NUGCUTLOCATORSYS_s *locator;
     s32 i;
 
     charSys = cutscene->chardef;

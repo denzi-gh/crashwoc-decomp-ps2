@@ -26,9 +26,9 @@
 #include "nucore/nuerror.h"
 #include "numath/numathtypes.h"
 #include "nu3d/nugscn.h"
+#include "gamelib/gcutscn.h"
 
 typedef struct NuTriggerSys NuTriggerSys;
-typedef struct NuGCutSceneDef NuGCutSceneDef;
 
 typedef struct NuFPar {
     int handle;
@@ -38,15 +38,9 @@ typedef struct NuFPar {
     int line_num;
 } NuFPar;
 
-typedef struct NuGCutScene {
-    struct NuGCutScene *next;       /* 0x00 */
-    struct NuGCutScene *prev;       /* 0x04 */
-    char name[16];                  /* 0x08 */
-} NuGCutScene;
-
 typedef struct NuSceneCutscene {
     char *name;                     /* 0x00 */
-    NuGCutSceneDef *def;            /* 0x04 */
+    struct NUGCUTSCENE_s *def;      /* 0x04 */
     int ninstances;                 /* 0x08 */
     void *instances;                /* 0x0C */
 } NuSceneCutscene;
@@ -78,7 +72,7 @@ typedef struct NuSceneInstance {
     NuTriggerSys *triggers;         /* 0x14 */
     float rate;                     /* 0x18 */
     int flags;                      /* 0x1C */
-    NuGCutScene **cutscenes;        /* 0x20 */
+    struct instNUGCUTSCENE_s **cutscenes; /* 0x20 */
 } NuSceneInstance;
 
 #define NUSCENEINST_DISABLED 0x2
@@ -93,7 +87,6 @@ extern short *terraininit(int levelnum, char **heap, char *heapend, int opt, cha
                           struct nugscn_s *gscene, int gsid);
 extern void *CreateSpecialTerrainData(int levelnum, struct nugscn_s *gscene, char **heap, char **heapend);
 extern void *NuTriggerSysLoad(char *name, char **heap, char **heapend);
-extern void NuGCutSceneFixUp(NuGCutSceneDef *def, struct nugscn_s *gscene, void *triggers);
 
 extern void NuGScnUpdate(struct nugscn_s *scene, float time);
 extern void NuGScnRndr3(struct nugscn_s *scene);
@@ -101,12 +94,6 @@ extern void NuGScnRndr3(struct nugscn_s *scene);
 extern void instNuTriggerSysDestroy(NuTriggerSys *sys);
 extern void instNuTriggerEnable(NuTriggerSys *sys);
 extern void instNuTriggerDisable(NuTriggerSys *sys);
-
-extern void instNuGCutSceneDestroy(NuGCutScene *scene);
-extern void instNuGCutSceneTranslate(NuGCutScene *scene, struct nuvec_s *offset);
-extern void instNuGCutSceneRotateY(NuGCutScene *scene, int angle);
-extern void instNuGCutSceneEnable(NuGCutScene *scene);
-extern void instNuGCutSceneDisable(NuGCutScene *scene);
 
 extern void LoadCutsceneData(NuFPar *parser, char *dir, NuSceneData *scene, NuSceneCutscene *cutscene,
                              char **heap, char **heapend);
@@ -333,7 +320,7 @@ void NuSceneInstanceSetRate(NuSceneInstance *inst, float rate) {
 }
 
 
-NuGCutScene *SceneInstanceFindCutsceneInst(NuSceneInstance *inst, char *name) {
+struct instNUGCUTSCENE_s *SceneInstanceFindCutsceneInst(NuSceneInstance *inst, char *name) {
     int i;
 
     for (i = 0; i < inst->data->ninstances; i++) {
