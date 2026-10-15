@@ -2241,7 +2241,7 @@ int main(int argc, char** argv) {
                                     effect_cursor = flamepos;
                                     do {
                                         effects_remaining--;
-                                        NuLightAddHazePoly(0.6f, 1.2f, *effect_cursor++);
+                                        NuLightAddHazePoly(*effect_cursor++, 0.6f, 1.2f);
                                     } while (effects_remaining != 0);
                                 }
                                 effect_offset += effect_count;
