@@ -27,8 +27,9 @@
 #include "numath/numathtypes.h"
 #include "nu3d/nugscn.h"
 #include "gamelib/gcutscn.h"
-
-typedef struct NuTriggerSys NuTriggerSys;
+#include "gamelib/sceneman.h"
+#include "gamelib/terrain.h"
+#include "gamelib/trigger.h"
 
 typedef struct NuFPar {
     int handle;
@@ -38,43 +39,6 @@ typedef struct NuFPar {
     int line_num;
 } NuFPar;
 
-typedef struct NuSceneCutscene {
-    char *name;                     /* 0x00 */
-    struct NUGCUTSCENE_s *def;      /* 0x04 */
-    int ninstances;                 /* 0x08 */
-    void *instances;                /* 0x0C */
-} NuSceneCutscene;
-
-typedef struct NuSceneScript {
-    struct NuSceneScript *next;     /* 0x00 */
-    char *name;                     /* 0x04 */
-    void *commands;                 /* 0x08 */
-} NuSceneScript;
-
-typedef struct NuSceneData {
-    char *name;                     /* 0x00 */
-    struct nugscn_s *gscene;        /* 0x04 */
-    short *terrain;                 /* 0x08 */
-    void *specialterrain;           /* 0x0C */
-    void *triggers;                 /* 0x10 */
-    int ncutscenes;                 /* 0x14 */
-    NuSceneCutscene *cutscenes;     /* 0x18 */
-    int ninstances;                 /* 0x1C */
-    NuSceneScript *scripts;         /* 0x20 */
-} NuSceneData;
-
-typedef struct NuSceneInstance {
-    struct NuSceneInstance *next;   /* 0x00 */
-    struct NuSceneInstance *prev;   /* 0x04 */
-    int reserved;                   /* 0x08 */
-    NuSceneData *data;              /* 0x0C */
-    struct nugscn_s *gscene;        /* 0x10 */
-    NuTriggerSys *triggers;         /* 0x14 */
-    float rate;                     /* 0x18 */
-    int flags;                      /* 0x1C */
-    struct instNUGCUTSCENE_s **cutscenes; /* 0x20 */
-} NuSceneInstance;
-
 #define NUSCENEINST_DISABLED 0x2
 
 extern NuFPar *NuFParCreate(char *name);
@@ -83,22 +47,10 @@ extern int NuFParGetLine(NuFPar *parser);
 extern int NuFParGetWord(NuFPar *parser);
 extern int NuFParGetInt(NuFPar *parser);
 
-extern short *terraininit(int levelnum, char **heap, char *heapend, int opt, char *name,
-                          struct nugscn_s *gscene, int gsid);
 extern void *CreateSpecialTerrainData(int levelnum, struct nugscn_s *gscene, char **heap, char **heapend);
-extern void *NuTriggerSysLoad(char *name, char **heap, char **heapend);
 
 extern void NuGScnUpdate(struct nugscn_s *scene, float time);
 extern void NuGScnRndr3(struct nugscn_s *scene);
-
-extern void instNuTriggerSysDestroy(NuTriggerSys *sys);
-extern void instNuTriggerEnable(NuTriggerSys *sys);
-extern void instNuTriggerDisable(NuTriggerSys *sys);
-
-extern void LoadCutsceneData(NuFPar *parser, char *dir, NuSceneData *scene, NuSceneCutscene *cutscene,
-                             char **heap, char **heapend);
-extern NuSceneScript *LoadCutsceneScript(NuFPar *parser, NuSceneData *scene, char **heap,
-                                         char **heapend);
 
 extern char D_0061A090[];
 extern char D_0061A0A0[];
@@ -130,18 +82,18 @@ extern char D_0062F820[];
 #define err_too_many_cutscenes D_0061A1C0
 #define err_cutscene_count D_0061A210
 
-extern NuSceneInstance *D_0062F808;
+extern struct NuSceneInstance *D_0062F808;
 extern struct numtx_s *D_0062F80C;
 #define sceneinst_list D_0062F808
 #define player_mtx D_0062F80C
 
 
-NuSceneData *NuSceneDataLoad(char *dir, char **heap, char **heapend) {
+struct NuSceneData *NuSceneDataLoad(char *dir, char **heap, char **heapend) {
     char path[256];
-    NuSceneData *result;
-    NuSceneScript *lastscript;
-    NuSceneScript *script;
-    NuSceneData *scene;
+    struct NuSceneData *result;
+    struct NuSceneScript *lastscript;
+    struct NuSceneScript *script;
+    struct NuSceneData *scene;
     NuFPar *parser;
     char *word;
     char *namebuf;
@@ -152,10 +104,10 @@ NuSceneData *NuSceneDataLoad(char *dir, char **heap, char **heapend) {
     lastscript = 0;
     parser = NuFParCreate(path);
     if (parser) {
-        scene = (NuSceneData *)(((unsigned int)*heap + 15) & ~15);
-        *heap = (char *)scene + sizeof(NuSceneData);
+        scene = (struct NuSceneData *)(((unsigned int)*heap + 15) & ~15);
+        *heap = (char *)scene + sizeof(struct NuSceneData);
         result = scene;
-        memset(scene, 0, sizeof(NuSceneData));
+        memset(scene, 0, sizeof(struct NuSceneData));
         while (NuFParGetLine(parser)) {
             NuFParGetWord(parser);
             word = parser->word;
@@ -172,7 +124,7 @@ NuSceneData *NuSceneDataLoad(char *dir, char **heap, char **heapend) {
                     scene->gscene = NuGScnRead(heap, *heapend, path);
                     if (scene->gscene) {
                         sprintf(path, terfile_fmt, dir, word);
-                        scene->terrain = terraininit(0, heap, *heapend, 0, path, scene->gscene, 0);
+                        scene->terrain = terraininit(0, (short **)heap, (short *)*heapend, 0, path, scene->gscene, 0);
                         if (scene->terrain) {
                             scene->specialterrain = CreateSpecialTerrainData(0, scene->gscene, heap, heapend);
                         }
@@ -189,9 +141,9 @@ NuSceneData *NuSceneDataLoad(char *dir, char **heap, char **heapend) {
                 scene->ncutscenes = NuFParGetInt(parser);
                 if (scene->ncutscenes) {
                     *heap = (char *)(((unsigned int)*heap + 15) & ~15);
-                    scene->cutscenes = (NuSceneCutscene *)*heap;
-                    *heap += scene->ncutscenes * sizeof(NuSceneCutscene);
-                    memset(scene->cutscenes, 0, scene->ncutscenes * sizeof(NuSceneCutscene));
+                    scene->cutscenes = (struct NuSceneCutscene *)*heap;
+                    *heap += scene->ncutscenes * sizeof(struct NuSceneCutscene);
+                    memset(scene->cutscenes, 0, scene->ncutscenes * sizeof(struct NuSceneCutscene));
                     cutscene = 0;
                 }
             } else if (strcasecmp(word, kw_cutscene) == 0) {
@@ -233,8 +185,8 @@ void NuSceneManagerSysInit(void) {
 
 
 void NuSceneManagerSysUpdate(void) {
-    NuSceneInstance *inst;
-    NuSceneInstance *next;
+    struct NuSceneInstance *inst;
+    struct NuSceneInstance *next;
 
     for (inst = sceneinst_list; inst; inst = next) {
         next = inst->next;
@@ -245,7 +197,7 @@ void NuSceneManagerSysUpdate(void) {
 }
 
 
-void NuSceneInstanceDestroy(NuSceneInstance *inst) {
+void NuSceneInstanceDestroy(struct NuSceneInstance *inst) {
     int i;
 
     if (inst->triggers) {
@@ -267,7 +219,7 @@ void NuSceneInstanceDestroy(NuSceneInstance *inst) {
 }
 
 
-void NuSceneInstanceTranslate(NuSceneInstance *inst, struct nuvec_s *offset) {
+void NuSceneInstanceTranslate(struct NuSceneInstance *inst, struct nuvec_s *offset) {
     int i;
 
     for (i = 0; i < inst->data->ninstances; i++) {
@@ -276,7 +228,7 @@ void NuSceneInstanceTranslate(NuSceneInstance *inst, struct nuvec_s *offset) {
 }
 
 
-void NuSceneInstanceRotateY(NuSceneInstance *inst, int angle) {
+void NuSceneInstanceRotateY(struct NuSceneInstance *inst, int angle) {
     int i;
 
     for (i = 0; i < inst->data->ninstances; i++) {
@@ -285,7 +237,7 @@ void NuSceneInstanceRotateY(NuSceneInstance *inst, int angle) {
 }
 
 
-void NuSceneInstanceEnable(NuSceneInstance *inst) {
+void NuSceneInstanceEnable(struct NuSceneInstance *inst) {
     int i;
 
     if (inst->flags & NUSCENEINST_DISABLED) {
@@ -300,7 +252,7 @@ void NuSceneInstanceEnable(NuSceneInstance *inst) {
 }
 
 
-void NuSceneInstanceDisable(NuSceneInstance *inst) {
+void NuSceneInstanceDisable(struct NuSceneInstance *inst) {
     int i;
 
     if (!(inst->flags & NUSCENEINST_DISABLED)) {
@@ -315,12 +267,12 @@ void NuSceneInstanceDisable(NuSceneInstance *inst) {
 }
 
 
-void NuSceneInstanceSetRate(NuSceneInstance *inst, float rate) {
+void NuSceneInstanceSetRate(struct NuSceneInstance *inst, float rate) {
     inst->rate = rate;
 }
 
 
-struct instNUGCUTSCENE_s *SceneInstanceFindCutsceneInst(NuSceneInstance *inst, char *name) {
+struct instNUGCUTSCENE_s *SceneInstanceFindCutsceneInst(struct NuSceneInstance *inst, char *name) {
     int i;
 
     for (i = 0; i < inst->data->ninstances; i++) {
@@ -333,8 +285,8 @@ struct instNUGCUTSCENE_s *SceneInstanceFindCutsceneInst(NuSceneInstance *inst, c
 
 
 void NuSceneManagerSysRender(void) {
-    NuSceneInstance *inst;
-    NuSceneInstance *next;
+    struct NuSceneInstance *inst;
+    struct NuSceneInstance *next;
 
     for (inst = sceneinst_list; inst; inst = next) {
         next = inst->next;

@@ -52,6 +52,7 @@
 #include "numath/numtx.h"
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
+#include "gamelib/terrain.h"
 
 #include "creature.h"
 
@@ -115,9 +116,6 @@ extern f32 jonwidth;
 extern f32 jonwidth2;
 extern s32 FIZZLEVOL;
 extern struct nuvec_s v000;
-f32 NewShadow(struct nuvec_s *pos, f32 y);
-f32 NewShadowMaskPlat(struct nuvec_s *pos, f32 y, s32 extramask);
-s32 NewRayCast(struct nuvec_s *pos, struct nuvec_s *ray, f32 size);
 extern f32 GRAVITY;
 extern f32 D_005F28F8[];
 #define terminal_fall_speed D_005F28F8[0]
@@ -224,10 +222,6 @@ extern struct nuvec_s plr_conveyor_mom;
 extern u16 temp_roof_xrot;
 extern u16 temp_roof_zrot;
 
-s32 ShadowInfo(void);
-s32 EShadowInfo(void);
-s32 ShadowRoofInfo(void);
-void ShadowDir(struct nuvec_s *dir);
 s32 RotDiff(u16 a, u16 b);
 u16 SeekRot(u16 a, u16 target, s32 rate);
 void GetALONG(struct nuvec_s *pos, struct RPos_s *rpos, s32 iRAIL, s32 iALONG, s32 dir);
@@ -3096,7 +3090,7 @@ f32 GameObjectRadius(struct obj_s *obj) {
     }
     if ((obj->attack & 2) != 0) {
         if ((obj->character == 1) &&
-            (*(short *)((int)&obj->parent[8].startpos.y + 2) != 0)) {
+            (((struct creature_s *)obj->parent)->slide != 0)) {
             return r * 3.0f;
         } else {
             return r + r;

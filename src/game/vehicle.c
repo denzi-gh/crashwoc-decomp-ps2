@@ -237,6 +237,7 @@
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
 #include "nu3d/nugscn.h"
+#include "gamelib/terrain.h"
 
 #include "creature.h"
 
@@ -392,7 +393,7 @@ extern void InitWeatherBoss_a(void);
 extern void ProcessWeatherBoss_a(struct weatherboss_s *wb);
 extern void DrawWeatherBoss_a(struct weatherboss_s *wb);
 extern struct jeeprock_s *AddRockVel(struct nuvec_s *pos, struct nuvec_s *vel, f32 radius, s32 owner);
-extern char *best_cRPos;
+extern struct RPos_s *best_cRPos;
 
 /* The earth boss is an atlasphere, like PlayerAtlas (far). */
 extern struct NEWBUGGY EarthBoss;
@@ -454,7 +455,6 @@ extern struct vehmask_s VehicleMask[2];
 struct hovablimp_s {
     s32 active;                /* 0x00 */
     struct MYDRAW draw;        /* 0x04 */
-    char pad_draw[0xE4 - 0x04 - sizeof(struct MYDRAW)];
     struct nuvec_s pos;        /* 0xE4 */
     struct nuvec_s startpos;   /* 0xF0 */
     struct nuvec_s vel;        /* 0xFC */
@@ -690,9 +690,9 @@ void VehicleSetup(void)
     JeepInControl = 0;
 }
 
-void SetWeatherStartPos(void *x)
+void SetWeatherStartPos(struct creature_s *c)
 {
-    D_006B75B0 = *(struct nuvec_s *)((char *)x + 0x6C);
+    D_006B75B0 = c->obj.pos;
     PlayerGlider.Position = D_006B75B0;
 }
 
@@ -827,8 +827,7 @@ inline s32 PickGliderTarget(struct nuvec_s **pos, struct nuvec_s **vel, s32 *typ
 void GliderWeatherBossRailStuff(struct creature_s *c)
 {
     if (best_cRPos != 0) {
-        *(struct nuvec_s *)((char *)c + 0x60) =
-            *(struct nuvec_s *)(best_cRPos + 0x18);
+        c->obj.RPos.pos = best_cRPos->pos;
     }
 }
 
@@ -845,9 +844,6 @@ s32 GetCurrentFarmObjectives(void)
     return count;
 }
 
-
-extern f32 NewShadowMaskPlat(struct nuvec_s *pos, f32 size, s32 extramask);
-extern s32 ShadowInfo(void);
 
 s32 FindSurfaceType(struct nuvec_s *pos)
 {
@@ -1417,7 +1413,6 @@ struct cammtx_s {
 extern struct cammtx_s GameCam;
 
 extern f32 DotProduct(struct nuvec_s *a, struct nuvec_s *b);
-extern s32 NewRayCast(struct nuvec_s *pos, struct nuvec_s *dir, f32 size);
 extern void InitBattleShip(struct nuvec_s *pos, f32 angle, s32 index);
 
 /* Whether `target` is still worth a lock-on: more than 10 units ahead of the
@@ -1677,10 +1672,10 @@ void KillAtlasphere(struct NEWBUGGY *b)
 
     if (c != 0) {
         b->dead = 1;
-        *((s8 *)c + 0x17E) = 0;
+        c->obj.invincible = 0;
         b->ball_vel = v000;
         o = b->owner;
-        if (*((s8 *)o + 0x149) == 0) {
+        if (o->obj.dead == 0) {
             KillGameObject(&o->obj, 0xB);
         }
     }

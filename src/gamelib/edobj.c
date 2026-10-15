@@ -113,6 +113,7 @@
 #include "nu3d/nugobj.h"
 #include "nu3d/nugscn.h"
 #include "nu3d/nuanim.h"
+#include "gamelib/terrain.h"
 
 struct camera_s {
     struct numtx_s mtx;
@@ -466,11 +467,6 @@ extern void edobjDetermineNearestWaypoint(float range);
 extern void edobjDetermineNearestParticle(float range);
 extern void edobjDetermineNearestSound(float range);
 extern void NuAnimCurveDestroy(struct nuanimcurve_s *curve);
-extern int NewPlatInst(struct numtx_s *mtx, int instance);
-extern void UpdatePlatinst(int platinst, struct numtx_s *mtx);
-extern void PlatInstRotate(int platinst, int rotate);
-extern void PlatInstBounce(int platinst, float player_grav, float tension, float damping);
-extern int DeletePlatinst(int id);
 extern int NuFileSize(char *name);
 extern void edobjObjectReset(void);
 extern int edobjFileSaveObjects(char *filename);
@@ -495,7 +491,6 @@ extern void eduiMenuRender(void *menu);
 extern int NuRndrGScnObj(struct nugobj_s *gobj, struct numtx_s *mtx);
 extern unsigned char object_switches[];
 extern struct numtx_s numtx_identity;
-extern int PlatImpactInfo(struct nuvec_s *norm, int *info0, int *info1);
 extern void AddVariableShotDebrisEffectMtx2(int effect, struct nuvec_s *pos, int n,
                                             struct numtx_s *m1, struct numtx_s *m2);
 extern int LookupDebrisEffect(char *name);

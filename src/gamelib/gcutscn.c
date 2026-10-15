@@ -87,6 +87,7 @@
 #include "numath/nuvec.h"
 #include "nu3d/nuanim.h"
 #include "gamelib/gcutscn.h"
+#include "gamelib/trigger.h"
 
 #include "creature.h"
 
@@ -123,17 +124,6 @@ extern int D_0062F7D4;
 #define NUGCUTRIGID_VISIBLE  0x1
 #define NUGCUTRIGID_ANIMATED 0x2
 #define NUGCUTRIGID_FOUND    0x4
-
-typedef struct NuGCutTriggerTarget {
-    char pad[2];                  /* 0x00 */
-    unsigned char flags;          /* 0x02 */
-    char pad3;                    /* 0x03 */
-} NuGCutTriggerTarget;
-
-struct NuGCutTriggerList {
-    char pad[0xC];                /* 0x00 */
-    NuGCutTriggerTarget *targets; /* 0x0C */
-};
 
 #define NUGCUTCAM_TARGETED 0x2
 
@@ -215,7 +205,7 @@ int instNuGCutSceneCharGetStartMtx(struct instNUGCUTSCENE_s *scene, char *name, 
     return 0;
 }
 
-void NuGCutSceneFixUp(struct NUGCUTSCENE_s *def, void *gscene, void *triggers) {
+void NuGCutSceneFixUp(struct NUGCUTSCENE_s *def, void *gscene, struct NUTRIGGERSYS_s *triggers) {
     if (def) {
         if (def->rigiddef) {
             NuGCutRigidSysFixUp(def, gscene);
@@ -992,25 +982,11 @@ void NuGCutRigidSysFixUp(struct NUGCUTSCENE_s *def, void *scene) {
     }
 }
 
-/* The scene's trigger definitions (full layout in gamelib/trigger.c). */
-typedef struct NuTriggerDef {
-    char *name;                   /* 0x00 */
-    char pad04[0x34 - 0x04];      /* 0x04 */
-} NuTriggerDef; /* 0x34 */
-
-typedef struct NuTriggerDefHdr {
-    int version;                  /* 0x00 */
-    int reloc;                    /* 0x04 */
-    int count;                    /* 0x08 */
-    NuTriggerDef *defs;           /* 0x0C */
-} NuTriggerDefHdr;
-
 extern char D_00619E90[];               /* error message */
 #define notrigger_msg D_00619E90
 
 /* Point each cutscene trigger at the scene trigger with the same name. */
-void NuGCutTriggerSysFixUp(struct NUGCUTSCENE_s *def, void *triggers) {
-    NuTriggerDefHdr *triggersys = triggers;
+void NuGCutTriggerSysFixUp(struct NUGCUTSCENE_s *def, struct NUTRIGGERSYS_s *triggersys) {
     struct NUGCUTTRIGGERSYS_s *triggerdef;
     int i;
     int j;
@@ -1019,9 +995,9 @@ void NuGCutTriggerSysFixUp(struct NUGCUTSCENE_s *def, void *triggers) {
     for (i = 0; i < triggerdef->count; i++) {
         struct NUGCUTTRIGGER_s *trigger = &triggerdef->triggers[i];
 
-        for (j = 0; j < triggersys->count; j++) {
+        for (j = 0; j < triggersys->ntriggers; j++) {
             trigger->target = -1;
-            if (strcasecmp(trigger->name, triggersys->defs[j].name) == 0) {
+            if (strcasecmp(trigger->name, triggersys->triggers[j].triggername) == 0) {
                 trigger->target = j;
                 break;
             }
@@ -1423,7 +1399,7 @@ void NuGCutTriggerSysFixPtrs(struct NUGCUTSCENE_s *def, int base) {
 }
 
 
-struct instNUGCUTTRIGGERSYS_s *instNuCGutTriggerSysCreate(struct NUGCUTSCENE_s *def, struct NuGCutTriggerList *list, char **heap) {
+struct instNUGCUTTRIGGERSYS_s *instNuCGutTriggerSysCreate(struct NUGCUTSCENE_s *def, struct instNUTRIGGERSYS_s *list, char **heap) {
     struct instNUGCUTTRIGGERSYS_s *sys;
     int count = def->triggerdef->count;
 
@@ -1507,7 +1483,7 @@ struct instNUGCUTCHARSYS_s *instNuCGutCharSysCreate(struct NUGCUTSCENE_s *def, c
     return charsys;
 }
 
-struct instNUGCUTSCENE_s *instNuGCutSceneCreate(struct NUGCUTSCENE_s *def, void *gscene, struct NuGCutTriggerList *triggers,
+struct instNUGCUTSCENE_s *instNuGCutSceneCreate(struct NUGCUTSCENE_s *def, void *gscene, struct instNUTRIGGERSYS_s *triggers,
                                    char *name, char **heap) {
     struct instNUGCUTSCENE_s *scene;
 
@@ -1558,9 +1534,9 @@ void instNuGCutTriggerSysUpdate(struct instNUGCUTSCENE_s *scene, float time) {
 
         if (trigger->anim && StateAnimEvaluate(trigger->anim, &sys->triggers[i].state, &state, time)) {
             if (state) {
-                sys->list->targets[trigger->target].flags |= 0x1;
+                sys->list->itriggers[trigger->target].enableflags |= 0x1;
             } else {
-                sys->list->targets[trigger->target].flags &= ~0x1;
+                sys->list->itriggers[trigger->target].enableflags &= ~0x1;
             }
         }
     }

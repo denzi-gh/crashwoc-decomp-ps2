@@ -11,6 +11,7 @@
 #include "numath/nuvec.h"
 #include "nu3d/nugscn.h"
 #include "nu3d/nuanim.h"
+#include "gamelib/terrain.h"
 
 #include "creature.h"
 
@@ -310,7 +311,6 @@ extern f32 check_duration;
 
 void edobjResetAnimsToZero(void);
 void OldTopBot(struct obj_s *obj);
-f32 NewShadowPlat(struct nuvec_s *pos, f32 y);
 void GetSurfaceInfo(struct obj_s *obj, s32 mode, f32 y);
 void ResetAtlas(struct creature_s *c);
 void SetWeatherStartPos(struct creature_s *c);
@@ -1413,8 +1413,6 @@ void NuPs2PadSetMotors(struct pad_s *pad, s32 small, s32 big);
 void ToggleVehicle(struct creature_s *c);
 void ResetTubs(void);
 u16 SeekRot(u16 a, u16 target, s32 rate);
-f32 NewShadowMaskPlat(struct nuvec_s *pos, f32 y, s32 layer);
-f32 NewShadowMaskPlatRot(struct nuvec_s *pos, f32 y, s32 layer);
 void ObjectRotation(struct obj_s *obj, s32 mode, s32 vehicle);
 s32 AddAward(s32 hub, s32 level, s32 bits);
 void AddGameDebris(s32 type, struct nuvec_s *pos);
@@ -1424,9 +1422,6 @@ f32 NuFsqrt(f32 x);
 void GameRayCast(struct nuvec_s *pos, struct nuvec_s *dir, f32 dist,
                  struct nuvec_s *hit);
 void MoveLoopXZ(struct obj_s *obj, u16 *hdg);
-void NewTerrainScaleY(struct nuvec_s *pos, struct nuvec_s *mom, u8 *chrs,
-                      s32 index, f32 adjust, f32 radius, f32 ratio);
-s32 PlatformCrush(void);
 s32 GetDieAnim(struct obj_s *obj, s32 anim);
 s32 KillPlayer(struct obj_s *obj, s32 anim);
 void BonusTransporter(struct creature_s *c);

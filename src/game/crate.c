@@ -70,6 +70,7 @@
 #include "numath/nufloat.h"
 #include "numath/numtx.h"
 #include "numath/nuvec.h"
+#include "gamelib/terrain.h"
 
 #include "creature.h"
 
@@ -1964,7 +1965,7 @@ void AddQuad3DrotXYZ(struct nuvec_s *pos, struct nuvec_s *shape,
     screen[3].y = v4.y;
     screen[3].z = v4.z;
 
-    rndrstream_3d = (struct nurndrstream_s *)((u8 *)mat + 0x124);
+    rndrstream_3d = &mat->stream;
     NuRndrStreamLink(rndrstream_3d);
     rndrstream_3d->cur.b = vpDmaTag_Cnt(rndrstream_3d->cur.b);
     RS3D_PUSH_W(0x10000000);
@@ -2348,16 +2349,7 @@ extern struct tersurface_s TerSurface[];
 
 extern void GetALONG(struct nuvec_s *pos, s32 a, s32 b, s32 c, s32 d);
 extern s32 AheadOfCheckpoint(s32 iRAIL, s32 iALONG, f32 fALONG);
-extern f32 NewShadowMaskPlat(struct nuvec_s *pos, f32 y0, s32 flag);
 extern void FindAnglesZX(struct nuvec_s *n);
-extern s32 ShadowInfo(void);
-extern s32 EShadowInfo(void);
-extern void NewScanInit(void);
-extern s32 NewScanHandel(struct nuvec_s *pos, struct nuvec_s *size, s32 a,
-                         s32 b, f32 t);
-extern s32 NewRayCastSetHandel(struct nuvec_s *vpos, struct nuvec_s *vvel,
-                               f32 size, f32 timeadj, f32 impactadj,
-                               s32 handel);
 extern void ResetKabooms(void);
 
 /* Global frame counter (size 0x18, .frame at 0x0); sized >0x8 so GameTimer is
@@ -2790,7 +2782,7 @@ void ResetCrates(void) {
     s32 gemahead;
     s32 surf;
     s32 esh;
-    s32 handel;
+    short *handel;
     s32 mode;
     s32 lowest;
     s32 dy;

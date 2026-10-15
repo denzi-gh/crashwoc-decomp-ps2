@@ -1834,7 +1834,7 @@ int NuRndrTri3dClip(void *verts, int num, void *mtx, struct numtl_s *mtl) {
     struct numtl_s *m;
 
     m = mtl ? mtl : numtl_defaultmtl3d;
-    return NuRndrStreamTri3dClip(verts, num, mtx, (char *)m + 0x124);
+    return NuRndrStreamTri3dClip(verts, num, mtx, &m->stream);
 }
 
 
@@ -1842,7 +1842,7 @@ int NuRndrTriStrip3dClip(void *verts, int num, void *mtx, struct numtl_s *mtl) {
     struct numtl_s *m;
 
     m = mtl ? mtl : numtl_defaultmtl3d;
-    return NuRndrStreamTriStrip3dClip(verts, num, mtx, (char *)m + 0x124);
+    return NuRndrStreamTriStrip3dClip(verts, num, mtx, &m->stream);
 }
 
 

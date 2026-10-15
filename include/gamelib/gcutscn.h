@@ -5,7 +5,8 @@
 #include "nu3d/nugscn.h"
 
 struct nuanimdata2_s;
-struct NuGCutTriggerList;
+struct NUTRIGGERSYS_s;
+struct instNUTRIGGERSYS_s;
 struct instNUGCUTSCENE_s;
 
 typedef void (*NuGCutSceneEndFn)(struct instNUGCUTSCENE_s *scene);
@@ -140,7 +141,7 @@ struct instNUGCUTTRIGGER_s {
 }; /* 0x04 */
 
 struct instNUGCUTTRIGGERSYS_s {
-    struct NuGCutTriggerList *list;     /* 0x00 */
+    struct instNUTRIGGERSYS_s *list;    /* 0x00 */
     struct instNUGCUTTRIGGER_s *triggers; /* 0x04 */
 }; /* 0x08 */
 
@@ -260,7 +261,7 @@ void NuSetCutSceneFindCharactersFn(NuCutSceneFindCharactersFn fn);
 void NuSetCutSceneCharacterCreateDataFn(NuCutSceneCharacterCreateDataFn fn);
 void NuSetCutSceneRigidCollisionCheckFn(NuCutSceneRigidCollisionCheckFn fn);
 int instNuGCutSceneCharGetStartMtx(struct instNUGCUTSCENE_s *scene, char *name, struct numtx_s *mtx);
-void NuGCutSceneFixUp(struct NUGCUTSCENE_s *def, void *gscene, void *triggers);
+void NuGCutSceneFixUp(struct NUGCUTSCENE_s *def, void *gscene, struct NUTRIGGERSYS_s *triggers);
 struct instNUGCUTSCENE_s *instNuGCutSceneFind(const char *name);
 void instNuGCutSceneDestroy(struct instNUGCUTSCENE_s *scene);
 int instNuGCutSceneIsFinished(struct instNUGCUTSCENE_s *scene);
@@ -291,7 +292,7 @@ void NuGCutRigidSysFixPtrs(struct NUGCUTSCENE_s *def, int base);
 void NuGCutLocatorSysFixPtrs(struct NUGCUTSCENE_s *def, int base);
 void NuGCutLocatorSysFixUp(struct NUGCUTLOCATORSYS_s *def);
 void NuGCutRigidSysFixUp(struct NUGCUTSCENE_s *def, void *scene);
-void NuGCutTriggerSysFixUp(struct NUGCUTSCENE_s *def, void *triggers);
+void NuGCutTriggerSysFixUp(struct NUGCUTSCENE_s *def, struct NUTRIGGERSYS_s *triggersys);
 void NuGCutCharSysFixPtrs(struct NUGCUTSCENE_s *def, int base);
 void instNuGCutRigidSysReset(struct instNUGCUTRIGIDSYS_s *sys, struct NUGCUTRIGIDSYS_s *def);
 void instNuGCutRigidSysStart(struct instNUGCUTRIGIDSYS_s *sys, struct NUGCUTRIGIDSYS_s *def);
@@ -303,10 +304,10 @@ void NuGCutCharAnimProcess(struct NUGCUTCHAR_s *desc, float time, struct numtx_s
 void instNuGCutRigidSysEnd(struct instNUGCUTSCENE_s *scene, float time);
 void instNuGCutCharSysEnd(struct instNUGCUTSCENE_s *scene, float time);
 void NuGCutTriggerSysFixPtrs(struct NUGCUTSCENE_s *def, int base);
-struct instNUGCUTTRIGGERSYS_s *instNuCGutTriggerSysCreate(struct NUGCUTSCENE_s *def, struct NuGCutTriggerList *list, char **heap);
+struct instNUGCUTTRIGGERSYS_s *instNuCGutTriggerSysCreate(struct NUGCUTSCENE_s *def, struct instNUTRIGGERSYS_s *list, char **heap);
 struct instNUGCUTRIGIDSYS_s *instNuCGutRigidSysCreate(struct NUGCUTSCENE_s *def, struct nugscn_s *gscene, char **heap);
 struct instNUGCUTCHARSYS_s *instNuCGutCharSysCreate(struct NUGCUTSCENE_s *def, char **heap);
-struct instNUGCUTSCENE_s *instNuGCutSceneCreate(struct NUGCUTSCENE_s *def, void *gscene, struct NuGCutTriggerList *triggers, char *name, char **heap);
+struct instNUGCUTSCENE_s *instNuGCutSceneCreate(struct NUGCUTSCENE_s *def, void *gscene, struct instNUTRIGGERSYS_s *triggers, char *name, char **heap);
 void instNuGCutTriggerSysUpdate(struct instNUGCUTSCENE_s *scene, float time);
 void instNuGCutTriggerSysStart(struct instNUGCUTSCENE_s *scene);
 void instNuGCutSceneRender(struct instNUGCUTSCENE_s *scene);

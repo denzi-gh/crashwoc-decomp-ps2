@@ -19,6 +19,7 @@
 #include "nu_libc.h"
 
 #include "numath/nuvec.h"
+#include "gamelib/terrain.h"
 
 #include "creature.h"
 
@@ -94,7 +95,6 @@ extern void NuFntPrintEx(s32 x, s32 y, s32 colour, char *fmt, ...);
 extern u64 fptodp(f32 value);
 extern char *strupr(char *s);
 extern void eduiMenuProcess(void *menu, struct pad_s *pad);
-extern f32 NewShadowMask(struct nuvec_s *pos, s32 flag, f32 y);
 extern void *InCrate(f32 x, f32 z, f32 ytop, f32 ybot, f32 radius);
 
 
@@ -154,7 +154,7 @@ s32 edwmpProc(struct pad_s *pad)
     } else {
         v = edwmp_cam_pos;
     }
-    mask = NewShadowMask(&v, -1, 0.0f);
+    mask = NewShadowMask(&v, 0.0f, -1);
     if (mask != D_0062E338) {
         D_00633340 = v.y - mask;
     } else {

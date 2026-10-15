@@ -60,6 +60,7 @@
 #include "nu3d/nuvport.h"
 #include "nu3d/nucamera.h"
 #include "nu3d/nuanim.h"
+#include "gamelib/terrain.h"
 
 /* GameCam: the world camera matrix lives at 0x00. */
 struct gamecam_s {
@@ -275,10 +276,6 @@ extern void NuWaterInit(struct nugscn_s *scene);
 extern void NuBridgeInit(void);
 extern void NuWindInit(void);
 extern s32 saveloadLoadIcon(char *name, void *buf);
-extern void noterraininit(void);
-extern void TerrainSetCur(void *buf);
-extern short *terraininit(s32 level, char **pptr, void *end, s32 a, char *name,
-                        struct nugscn_s *scene, s32 b);
 extern void edppDestroyAllParticles(void);
 extern void edppDestroyAllEffects(void);
 extern s32 NuFileSize(char *name);
@@ -296,8 +293,6 @@ extern void edgraInitAllClumps(void);
 extern void LoadVehicleStuff(void);
 extern s32 LoadCutMovie(s32 movie);
 extern void StartCutMovie(void);
-extern void TerrainPlatformOldUpdate(void);
-extern void TerrainPlatformNewUpdate(void);
 extern void NuGScnUpdate(struct nugscn_s *scene, float t);
 extern void edobjUpdateObjects(float t);
 extern void edanimUpdateObjects(float t);
@@ -425,7 +420,7 @@ void InitWorld(void)
         NuStrCpy(lt, D_0061B0B0);
         NuEnableVBlank();
         TerrainSetCur(superbuffer_ptr);
-        terraininit(Level, &superbuffer_ptr, superbuffer_end, 0, lfn,
+        terraininit(Level, (short **)&superbuffer_ptr, superbuffer_end, 0, lfn,
                     world_scene[0], 0);
         superbuffer_ptr = (void *)(((u32)superbuffer_ptr + 0xF) & 0xFFFFFFF0);
     }

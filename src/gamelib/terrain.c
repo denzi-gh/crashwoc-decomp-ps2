@@ -113,6 +113,7 @@
 #include "numath/nuvec.h"
 #include "nu3d/nucamera.h"
 #include "nu3d/nugscn.h"
+#include "gamelib/terrain.h"
 
 #include "creature.h"
 
@@ -366,30 +367,9 @@ extern s32 PadRecPtr(void);
 extern void *NuScratchAlloc32(s32 size);
 extern void NuScratchRelease(void);
 extern void ScanTerrain(s32 a0, s32 a1);
-extern void ScanTerrainHandel(s32 extramask, short *Handel);
-extern void ScanTerrainPlatform(s32 terrno, s32 extramask, s32 platscan);
 extern u64 fptodp(f32 value);
 extern s32 dpcmp(u64 a, u64 b);
 extern u64 dpsub(u64 a, u64 b);
-extern s32 PlatformChecks(s32 itterationcnt, struct nuvec_s *vvel);
-extern s32 HitTerrain(void);
-extern void StorePlatImpact(void);
-extern s32 TerrainPlatformEmbedded(struct nuvec_s *vvel);
-extern void TerrainImpactNorm(void);
-extern void TerrainImpact(struct nuvec_s *vpos, struct nuvec_s *vvel, u8 *flags);
-extern short InsidePolLines(f32 x, f32 y, f32 z,
-                            f32 dx0, f32 dy0, f32 dz0,
-                            f32 dx1, f32 dy1, f32 dz1,
-                            struct nuvec_s *norm);
-extern s32 CheckCylinder(s32 p0, s32 p1, s32 *flags, s32 type);
-extern s32 HitWallSpline(void);
-extern void NewScan(struct nuvec_s *pos, s32 extramask, s32 platscan);
-extern void NewScanRot(struct nuvec_s *pos, s32 extramask);
-extern short *NewScanHandelFull(struct nuvec_s *vpos, struct nuvec_s *vvel, s32 platscan,
-                                s32 extramask, f32 size);
-extern short *NewScanHandelSubset(short *handel, struct nuvec_s *vpos, struct nuvec_s *vvel,
-                                  s32 extramask, f32 size);
-extern void TerrDrawPlat(tertype *ter, short terrno);
 extern void NuVec4MtxTransformVU0(struct nuvec4_s *dst, struct nuvec4_s *src,
                                   struct numtx_s *m);
 extern void NuVec4MtxInvTransformVU0(struct nuvec4_s *dst, struct nuvec4_s *src,
@@ -2188,9 +2168,9 @@ float NewCast(struct nuvec_s *pos, float ytol) {
     ecastnum = -1;
     CurData = (short *)TerI->hitdata;
     while (*(short *)CurData > 0) {
-        tx = pos->x - CurTerr->terr[*(short *)((s32)CurData + 2)].Location.x;
-        tz = pos->z - CurTerr->terr[*(short *)((s32)CurData + 2)].Location.z;
-        objnum = *(short *)((s32)CurData + 2);
+        tx = pos->x - CurTerr->terr[CurData[1]].Location.x;
+        tz = pos->z - CurTerr->terr[CurData[1]].Location.z;
+        objnum = CurData[1];
         curter = (tertype **)(CurData + 2);
         lp = *(short *)CurData;
         for (; lp > 0; lp--, curter++) {

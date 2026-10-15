@@ -83,6 +83,7 @@
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
 #include "nu3d/nugscn.h"
+#include "gamelib/terrain.h"
 
 #include "creature.h"
 
@@ -132,8 +133,6 @@ extern f32 NuFsqrt(f32 x);
 extern f32 NuTrigTable[];
 extern void SeekHalfLife(f32 *dest, f32 target, f32 halflife, f32 dt);
 extern f32 fsign(f32 x);
-extern f32 NewShadowMaskPlat(struct nuvec_s *pos, f32 y0, s32 flag);
-extern s32 ShadowInfo(void);
 
 struct spline_s {
     s16 len;                        /* 0x0 */
@@ -336,7 +335,6 @@ extern struct JEEPSTRUCT PlayerJeep;
 
 extern struct SIMWHEEL GenericTrail[];
 extern void ProcessJeepTrail(struct SIMWHEEL *Wheel, s32 TrailIndx);
-extern f32 NewShadowMask(struct nuvec_s *pos, f32 size, s32 extramask);
 
 struct jeeptrail_s {
     struct nuvec_s pos1;            /* 0x00 */
@@ -432,9 +430,6 @@ extern void *superbuffer_ptr;
 extern void *superbuffer_end;
 extern struct nugscn_s *world_scene[];
 extern void LoadScreen(char *name);
-extern void TerrainSetCur(void *buf);
-extern short *terraininit(s32 level, void **pptr, void *end, s32 a, char *name,
-                        struct nugscn_s *scene, s32 b);
 extern char D_0061FAC0[];
 #define LoadingAiPathsText D_0061FAC0
 extern s32 BuggyDataMax[];
@@ -497,11 +492,7 @@ struct pad_s {
 extern s32 ProcessTimer(f32 *Timer);
 extern struct nuvec_s *SetNuVecPntr(f32 x, f32 y, f32 z);
 extern struct nuvec_s SetNuVec(f32 x, f32 y, f32 z);
-extern s32 NewRayCast(struct nuvec_s *pos, struct nuvec_s *dir, f32 size);
 extern void AddGameDebris(s32 type, struct nuvec_s *pos);
-extern s32 NewRayCastSetHandel(struct nuvec_s *vpos, struct nuvec_s *vvel,
-                               f32 size, f32 timeadj, f32 impactadj,
-                               short *Handel);
 extern void DriveJeep(struct JEEPSTRUCT *Jeep, struct pad_s *Pad);
 extern void ProcessJeepMovement(struct JEEPSTRUCT *Jeep, f32 DeltaTime);
 extern struct nuvec_s TerrainVehicleSoft(struct VEHICLE *Vehicle,
@@ -2044,7 +2035,7 @@ void LoadWesternArenaData(void) {
 
     LoadScreen(LoadingAiPathsText);
     TerrainSetCur(superbuffer_ptr);
-    terraininit(Level, &superbuffer_ptr, superbuffer_end, 0, LevelFileName,
+    terraininit(Level, (short **)&superbuffer_ptr, superbuffer_end, 0, LevelFileName,
                 world_scene[0], 0);
     superbuffer_ptr = (void *)(((u32)superbuffer_ptr + 0xF) & 0xFFFFFFF0);
     for (i = 0; i < 4; i++) {
@@ -2801,14 +2792,11 @@ void JonnySteam(struct fireboss_s *fb) {
 
 
 void JonnyBossSmashEffect(struct fireboss_s *fb) {
-    u8 *p;
     s32 i;
 
     DrawCross(&fb->Pos, 1.0f, 0xFF00);
-    p = (u8 *)fb + 0xB0;
     for (i = 0; i < 10; i++) {
-        DrawCross((struct nuvec_s *)p, 1.0f, 0xFF);
-        p += 0x40;
+        DrawCross((struct nuvec_s *)&fb->Locator[i + 2]._30, 1.0f, 0xFF);
     }
 }
 

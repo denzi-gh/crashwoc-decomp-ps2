@@ -29,6 +29,7 @@
 #include "numath/numtx.h"
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
+#include "gamelib/terrain.h"
 
 #include "creature.h"
 
@@ -111,12 +112,6 @@ extern f32 D_0062E778;   /* minimum ShadNorm.y for debris to come to rest */
 extern void RBodyMove(struct deb3_s *deb, f32 dt);
 extern void RBodyImpact(struct deb3_s *deb, struct nuvec_s *pnt,
                         struct nuvec_s *nrm);
-extern void CubeImpact(struct numtx_s *mat, struct numtx_s *nmat,
-                       struct nuvec_s *norm, f32 size,
-                       struct nuvec_s *impact);
-extern void FullReflect(struct nuvec_s *n, struct nuvec_s *l,
-                        struct nuvec_s *r);
-extern s32 NewRayCast(struct nuvec_s *pos, struct nuvec_s *dir, f32 size);
 
 struct gdeb_s {
     int i;                /* 0x0 */
@@ -264,7 +259,6 @@ extern void AddVariableShotDebrisEffect(s32 type, struct nuvec_s *pos,
 extern struct deb3_s *AddDeb3Ang(struct nuvec_s *pos, s32 db, s32 emit,
                                  struct nuangvec_s *angle, s32 rotx, s32 roty);
 extern f32 NuFsqrt(f32 x);
-extern f32 NewShadow(struct nuvec_s *pos, f32 y);
 extern void NuBridgeOn(s32 on);
 extern void FireBossWaterFire(s32 on);
 extern s32 StartHGobjAnim(struct nuhspecial_s *sp);

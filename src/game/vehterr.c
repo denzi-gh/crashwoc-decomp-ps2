@@ -17,6 +17,7 @@
 
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
+#include "gamelib/terrain.h"
 
 #include "creature.h"
 
@@ -55,14 +56,9 @@ extern f32 NuFsqrt(f32 x);
 extern struct nuvec_s GenerateJeepWheelPoint(s32 WheelId);
 extern void NewGenerateJeepMatrix(struct numtx_s *Mat, short YAng, short SurfaceX, short SurfaceZ,
                                   short TiltX, short TiltZ, struct nuvec_s *Pos);
-extern void NewScanInit(void);
-extern s16 *NewScanHandel(struct nuvec_s *pos, struct nuvec_s *size, s32 a, s32 b, f32 t);
 extern void SeekHalfLife(f32 *dest, f32 target, f32 halflife, f32 dt);
 extern void SeekHalfLifeNUVEC(struct nuvec_s *src, struct nuvec_s *target, f32 halflife, f32 dt);
 extern f32 frand(void);
-
-extern s32 NewRayCastSetHandel(struct nuvec_s *vpos, struct nuvec_s *vvel, f32 size,
-                               f32 timeadj, f32 impactadj, s16 *handel);
 
 extern struct nuvec_s NullNuVec;
 extern struct nuvec_s ShadNorm;         /* 0x002ea9d0 */

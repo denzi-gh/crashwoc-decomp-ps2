@@ -41,6 +41,7 @@
 #include "nu3d/nulight.h"
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
+#include "gamelib/terrain.h"
 
 #include "creature.h"
 
@@ -1206,7 +1207,6 @@ s32 HitWumpa(struct obj_s *obj, s32 destroy);
 void GetTopBot(struct creature_s *c);
 void NewTopBot(struct obj_s *obj);
 void OldTopBot(struct obj_s *obj);
-f32 NewShadowMaskPlat(struct nuvec_s *pos, f32 y, s32 layer);
 void GetSurfaceInfo(struct obj_s *obj, s32 mode, f32 y);
 void ObjectRotation(struct obj_s *obj, s32 mode, s32 vehicle);
 s32 RotDiff(u16 a, u16 b);

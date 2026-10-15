@@ -93,6 +93,7 @@
 #include "nu3d/nugobj.h"
 #include "nu3d/nugscn.h"
 #include "nu3d/nuanim.h"
+#include "gamelib/terrain.h"
 
 struct debtypedef_s {
     char name[0x10];
@@ -428,7 +429,6 @@ extern void eduiMenuDestroy(void *menu);
 extern void eduiMenuDetach(void *menu);
 extern void eduiCreateMessageMenu(void *menu, char *text, int flag);
 extern struct nuvec_s *edmainQueryLocVec(void);
-extern void PlatInstBounce(int instance, float player_grav, float tension, float damping);
 extern int saveloadCheckCardPresent(void);
 extern int saveloadCheckCardType(void);
 extern int saveloadCheckCardFormatted(void);
@@ -541,7 +541,6 @@ extern void eduiItemSliderSetFmt(void *item, char *fmt);
 extern void eduiItemSliderSetGranularity(void *item, float granularity);
 extern int edanimLookupInstanceIndex(int special);
 extern int edanimLookupSpecial(char *name);
-extern int FindPlatInst(int instance);
 extern void edanimcbParticleTypeMenu(struct eduimenu_s *menu);
 extern void edanimcbLocalParticleMenu(struct eduimenu_s *menu);
 extern void edanimcbSoundTypeMenu(struct eduimenu_s *menu);

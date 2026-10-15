@@ -19,6 +19,7 @@
 #include "numath/numtx.h"
 #include "numath/nuvec.h"
 #include "nu3d/nugscn.h"
+#include "gamelib/terrain.h"
 
 #include "creature.h"
 
@@ -201,7 +202,6 @@ extern s32 qrand(void);
 extern s32 StartHGobjAnim(struct nuhspecial_s *obj);
 extern void PointAlongSpline(struct nugspline_s *spl, f32 ratio, struct nuvec_s *dst,
                              u16 *angle, u16 *tilt);
-extern f32 NewShadowMask(struct nuvec_s *pos, f32 size, s32 extramask);
 extern void FindAnglesZX(struct nuvec_s *n);
 extern void ResetLights(struct Nearest_Light_s *lights);
 extern void JudderGameCamera(struct cammtx_s *cam, f32 time, struct nuvec_s *pos);
@@ -216,7 +216,6 @@ extern void SetLights(struct nucolour3_s *col0, struct nuvec_s *dir0,
                       struct nucolour3_s *col2, struct nuvec_s *dir2, struct nuvec_s *amb);
 extern void SetLevelLights(void);
 extern void PauseGameAudio(s32 pause);
-extern f32 NewShadowMaskPlat(struct nuvec_s *pos, f32 size, s32 extramask);
 extern u16 SeekRot(u16 a, u16 target, s32 rate);
 extern s32 HitCreatures(struct obj_s *obj, s32 destroy, s32 type);
 extern s32 HitCrates(struct obj_s *obj, s32 destroy);
