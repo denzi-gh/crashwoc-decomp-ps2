@@ -1625,7 +1625,7 @@ extern int qseed;
 extern struct rail_s Rail[8];
 extern struct nulight_s* main_light __asm__("D_0062FAE8");
 extern struct gtimer_s CutTimer;
-extern int PadData[];
+extern struct nupadrec_s PadData;
 extern int foot_u[];
 extern int foot_v[];
 extern int tempanim_waitaudio;
@@ -1872,11 +1872,11 @@ int main(int argc, char** argv) {
         }
 
         if (pad_record != 0) {
-            InitPadPlayRecord(PadRecordPath, 1, 30000, PadData);
+            InitPadPlayRecord(PadRecordPath, 1, 30000, &PadData);
         } else if (pad_play != 0) {
-            InitPadPlayRecord(PadRecordPath, 2, 30000, PadData);
+            InitPadPlayRecord(PadRecordPath, 2, 30000, &PadData);
         } else {
-            InitPadPlayRecord(PadRecordPath, 0, 30000, PadData);
+            InitPadPlayRecord(PadRecordPath, 0, 30000, &PadData);
         }
         ResetBonus();
         ResetDeath();
