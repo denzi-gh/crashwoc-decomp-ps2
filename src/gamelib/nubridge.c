@@ -24,6 +24,7 @@
 #include "nu3d/nustream.h"
 #include "nu3d/nucamera.h"
 #include "nu3d/nugscn.h"
+#include "gamelib/terrain.h"
 
 #define BRIDGE_MAX 8
 #define BRIDGE_MAX_SECTIONS 24
@@ -99,9 +100,6 @@ extern char D_0061A590[];
 
 extern float NuFsqrt(float x);
 extern void NuVec4MtxTransformVU0(struct nuvec4_s *dst, struct nuvec4_s *src, struct numtx_s *m);
-extern int NewPlatInst(struct numtx_s *mtx, int instance);
-extern void PlatInstRotate(int platinst, int rotate);
-extern int PlatInstGetHit(int platinst);
 extern int NuRndrGScnObj(void *gobj, struct numtx_s *m);
 extern void NuRndrStreamLink(struct nurndrstream_s *rs);
 extern u8 *vpDmaTag_Cnt(u8 *cur);

@@ -372,10 +372,10 @@ void GameSfx(s32 sfx, struct nuvec_s *pos) {
     }
     if (PLAYERCOUNT != 0 && gamesfx_edbits == 0) {
         if (info->buzz != 0) {
-            NewBuzz((struct rumble_s *)((char *)player + 0xCA4), info->buzz);
+            NewBuzz(&player->rumble, info->buzz);
         }
         if (info->rumble != 0) {
-            NewRumble((struct rumble_s *)((char *)player + 0xCA4), info->rumble);
+            NewRumble(&player->rumble, info->rumble);
         }
     }
     info->wait = info->delay;
@@ -431,10 +431,10 @@ void GameSfxLoop(s32 sfx, struct nuvec_s *pos) {
     }
     if (PLAYERCOUNT != 0 && gamesfx_edbits == 0) {
         if (info->buzz != 0) {
-            NewBuzz((struct rumble_s *)((char *)player + 0xCA4), info->buzz);
+            NewBuzz(&player->rumble, info->buzz);
         }
         if (info->rumble != 0) {
-            NewRumble((struct rumble_s *)((char *)player + 0xCA4), info->rumble);
+            NewRumble(&player->rumble, info->rumble);
         }
     }
     info->wait = info->delay;

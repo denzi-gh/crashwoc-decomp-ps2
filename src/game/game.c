@@ -141,6 +141,7 @@
 #include "numath/numtx.h"
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
+#include "gamelib/terrain.h"
 
 #define NULL 0
 
@@ -2983,7 +2984,7 @@ extern void NewBuzz(void *p, s32 n);
 
 inline void TransporterGo(void) {
     GameSfx(0x82, &player->obj.pos);
-    NewBuzz((char *)player + 0xCA4, 5);
+    NewBuzz(player->obj.rumble, 5);
 }
 
 s32 StartHGobjAnim(struct nuhspecial_s *obj) {
@@ -3213,8 +3214,6 @@ s32 AheadOfCheckpoint(s32 iRAIL, s32 iALONG, float fALONG) {
     }
     return 0;
 }
-
-extern s32 NewRayCast(struct nuvec_s *pos, struct nuvec_s *ray, float f);
 
 /* gnu89 plain inline: standalone AND inlined into AddFlyingWumpa. */
 inline void WumpaHitTerrain(struct wumpa_s *wmp) {
@@ -5198,7 +5197,6 @@ extern struct nuvec_s tumble_oldpos;
 extern struct nuvec_s tumble_newpos;
 extern float tumble_cycleduration;
 extern float D_0062D29C;
-extern float NewShadowMaskPlat(struct nuvec_s *pos, float y, s32 layer);
 extern float ModelAnimDuration(u32 character, u32 action, float start, float end);
 
 void HubStart(struct tobj_s *obj, s32 hub, s32 level, struct nuvec_s *pos) {
@@ -5837,7 +5835,6 @@ extern char D_0061D830[]; /* "vehicle_cam_%.2i" */
 extern char D_0061D848[]; /* "vehicle_look_%.2i" */
 extern void GetALONG(struct nuvec_s *pos, struct rpos_s *rpos, s32 iRAIL, s32 iALONG,
                      s32 dir);
-extern float NewShadowMask(struct nuvec_s *pos, float y, s32 flag);
 extern void FindAnglesZX(struct nuvec_s *norm);
 
 void InitVehicleToggles(void) {
@@ -5997,7 +5994,6 @@ extern struct vtog_s *pVTog;
 extern s32 vtog_blend;
 extern u16 vtog_angle;
 extern float D_0062D2FC;
-extern float NewShadow(struct nuvec_s *pos, float y);
 extern s32 DrawCharacterModel(struct cmodel_s *model, struct animpkt_s *anim,
                               struct numtx_s *mC, struct numtx_s *mS, s32 render,
                               struct numtx_s *mR, struct numtx_s *loc_mtx,
@@ -6321,7 +6317,6 @@ struct crategroup_s {
 
 extern struct cratecube_s *temp_pCrate;
 extern struct crategroup_s *temp_pGroup;
-extern s32 ShadowInfo(void);
 
 void AddTempWumpa(struct cratecube_s *crate, s32 n, float x, float y, float z) {
     struct wumpa_s *wumpa;

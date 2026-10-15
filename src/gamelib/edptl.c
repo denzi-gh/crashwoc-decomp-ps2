@@ -181,6 +181,7 @@
 #include "numath/nuvec.h"
 #include "nu3d/numtl.h"
 #include "nu3d/nugobj.h"
+#include "gamelib/terrain.h"
 
 struct edptlitem_s {
     char pad00[0xC];
@@ -712,7 +713,6 @@ extern void edcamMove(struct pad_s *pad);
 extern void edcamSetPos(struct nuvec_s *pos);
 extern void edcamGetPosAng(struct nuvec_s *pos, float *ax, float *ay);
 extern void edcamGetPosAngSnap(struct nuvec_s *pos, float *ax, float *ay);
-extern void SphereDraw(struct nuvec_s *pos, float radius, float scale);
 extern void *edpp_boxmtl;
 extern void NuRndrLine3d(struct nuvtx_tc1_s *line, void *mtl, void *mtx);
 extern void NuRndrRect2di(int x, int y, int w, int h, int colour, void *mtl);

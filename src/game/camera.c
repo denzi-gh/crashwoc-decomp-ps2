@@ -31,6 +31,7 @@
 #include "nu3d/nugobj.h"
 #include "nu3d/nugscn.h"
 #include "nu3d/nucamera.h"
+#include "gamelib/terrain.h"
 
 #include "creature.h"
 
@@ -830,7 +831,6 @@ extern u16 TurnRot(u16 a, u16 b, s32 rate);
 extern u16 SeekRot(u16 a, u16 dist, s32 rate);
 extern void PointAlongSpline(struct nugspline_s *spl, f32 ratio,
                              struct nuvec_s *pos, void *a3, void *a4);
-extern f32 NewShadowMask(struct nuvec_s *pos, f32 y, s32 flag);
 
 inline f32 LookUpDownRail(struct obj_s *obj, u16 angle, s32 mode) {
     s32 dyrot;

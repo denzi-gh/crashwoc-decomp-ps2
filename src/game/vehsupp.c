@@ -54,6 +54,7 @@
 #include "nu3d/nuhgobj.h"
 #include "numath/numtx.h"
 #include "numath/nuvec.h"
+#include "gamelib/terrain.h"
 
 #include "creature.h"
 
@@ -299,14 +300,12 @@ s32 ProcessTimer(f32 *Timer) {
     return 0;
 }
 
-extern void SphereDraw(struct nuvec_s *pos, f32 radius);
-
 void DrawSphere(struct nuvec_s *pos, f32 radius, f32 factor) {
     struct nuvec_s v;
     if (ChrisInTheHouse) {
         v = *pos;
         v.y -= radius * factor;
-        SphereDraw(&v, radius);
+        SphereDraw(&v, radius, factor);
     }
 }
 

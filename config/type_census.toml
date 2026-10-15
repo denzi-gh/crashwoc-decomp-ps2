@@ -4,13 +4,13 @@
 schema = 1
 
 [metrics]
-struct_redefinitions = 180
-typedef_redefinitions = 17
+struct_redefinitions = 178
+typedef_redefinitions = 14
 long_types = 0
 varargs_hacks = 0
-offset_casts = 20
-sizeof_pads = 1
+offset_casts = 0
+sizeof_pads = 0
 libc_prototypes = 0
 extern_conflicts = 62
-prototype_conflicts = 225
+prototype_conflicts = 218
 misplaced_headers = 1

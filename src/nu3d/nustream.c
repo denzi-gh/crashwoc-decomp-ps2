@@ -1211,7 +1211,7 @@ void *NuRndrStreamAddZBState(void *stream, int index)
     if (zbstate_set) {
         zbstate_pkt.zmask = zmask_table[index];
         NuMemCopy128(stream, &zbstate_pkt, 3);
-        stream = (char *)stream + 0x30;
+        stream = (u128 *)stream + 3;
     }
     return stream;
 }

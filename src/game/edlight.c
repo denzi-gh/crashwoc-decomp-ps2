@@ -1225,7 +1225,7 @@ void edlightEnter(void)
         struct nuvec_s *pos;
 
         if (PLAYERCOUNT != 0)
-            pos = (struct nuvec_s *)((u8 *)player + 0x6C);
+            pos = &player->obj.pos;
         else
             pos = &v000;
         edcamSetPosAng(pos, 0, 0);

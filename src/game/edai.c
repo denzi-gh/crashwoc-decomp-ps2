@@ -28,6 +28,7 @@
 #include "numath/numtx.h"
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
+#include "gamelib/terrain.h"
 
 #include "creature.h"
 
@@ -71,7 +72,6 @@ extern void edcamSet(void);
 extern void edcamSetPosAng(struct nuvec_s *pos, s32 a, s32 b);
 extern void DrawCameraTarget(struct nuvec_s *pos);
 extern void NuFntScale(s32 x, s32 y);
-extern f32 NewShadowMask(struct nuvec_s *pos, s32 flag, f32 y);
 extern void ResetAI(void);
 extern void ResetTimeTrial(void);
 extern void ResetCheckpoint(s32 a, s32 b, s32 c, f32 d);
@@ -643,7 +643,7 @@ s32 edaiProc(struct pad_s *pad)
     }
     edaiHIGHLIGHT();
     if (D_00631C3C != 0) {
-        D_0063334C = NewShadowMask(&edai_cam_pos, -1, 0.0f);
+        D_0063334C = NewShadowMask(&edai_cam_pos, 0.0f, -1);
         D_00633350 = EShadY;
         D_00633354 = ShadRoofY;
     } else {
