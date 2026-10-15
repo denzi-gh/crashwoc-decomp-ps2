@@ -9,6 +9,7 @@
 
 #include "nu_libc.h"
 #include "nu_types.h"
+#include "game/visidat.h"
 
 #include "nucore/nuerror.h"
 #include "numath/numathtypes.h"
@@ -17,14 +18,6 @@
 #include "nu3d/nugobj.h"
 #include "nu3d/nugscn.h"
 #include "nucore/nucoretypes.h"
-
-struct visidata_s {
-    struct nugscn_s *sc;
-    u64 ***vspline;
-    int binfosize;
-    int curspline;
-    int curknot;
-};
 
 struct visbndassoc_s {
     int visspline;

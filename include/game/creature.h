@@ -313,6 +313,7 @@ struct creature_s {
 
 extern struct creature_s Character[9];
 extern struct creature_s *player;
+extern struct creature_s OppTubCreature;
 extern struct CharacterData CData[191];
 extern struct CharacterModel CModel[48];
 extern signed char CRemap[191];

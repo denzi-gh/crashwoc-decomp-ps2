@@ -656,6 +656,7 @@ void DrawWorldToPanelWumpa(void) {
 
 extern struct cratecube_s Crate[];
 extern s32 CRATECOUNT;
+extern int crate_wumpa;
 extern s32 crates_destroyed;
 extern s32 bonus_crates_destroyed;
 extern s32 old_bonus_crates;
@@ -665,7 +666,6 @@ extern s32 bonus_finish_frame;
 extern f32 bonus_crates_wait;
 extern f32 D_0062E640;              /* 1/50 wait decrement (.sdata) */
 extern f32 D_0062E644;              /* -1/50 wait floor (.sdata) */
-extern u16 crate_wumpa;
 extern struct panelcount_s plr_crates;
 extern struct panelcount_s plr_wumpas;
 extern struct panelcount_s plr_lives;
