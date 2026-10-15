@@ -41,6 +41,7 @@
 #include "nu3d/nuhgobj.h"
 #include "nu3d/nugscn.h"
 #include "nu3d/nuscene.h"
+#include "nucore/nucoretypes.h"
 
 /* A gobj as NuGHGWrite stores it: nugobj_s up to origin. */
 struct nughggobj_s {
@@ -963,7 +964,7 @@ extern char D_00615520[];
 #define msg_ghg_reading D_00615510
 #define msg_ghg_read_size D_00615520
 
-struct NUHGOBJ_s *NuGHGRead(char **buffer, char *file) {
+struct NUHGOBJ_s *NuGHGRead(union variptr_u *buffer, char *file) {
     struct nughgheader_s *header;
     struct NUHGOBJ_s *hobj;
     struct NUHLAYERDATA_s *layer;
@@ -976,16 +977,16 @@ struct NUHGOBJ_s *NuGHGRead(char **buffer, char *file) {
     struct numtl_s *mtl;
     int *texoffsets;
     void *prog;
-    char *ptr[1];
+    union variptr_u ptr;
     int base;
     int i;
     int j;
 
     hobj = 0;
-    ptr[0] = (char *)(((unsigned int)*buffer + 0xF) & ~0xF);
-    base = (int)ptr[0];
-    if (NuFileLoadBuffer(file, ptr[0], 0x7FFFFFFF) > 0) {
-        header = (struct nughgheader_s *)ptr[0];
+    ptr.intaddr = (buffer->intaddr + 0xF) & ~0xF;
+    base = ptr.intaddr;
+    if (NuFileLoadBuffer(file, ptr.voidptr, 0x7FFFFFFF) > 0) {
+        header = ptr.voidptr;
         if (header->version < nughg_version) {
             NuErrorProlog(nuhgobj_file, 0x61D)(msg_ghg_file_old, header->version, nughg_version);
         }
@@ -993,8 +994,8 @@ struct NUHGOBJ_s *NuGHGRead(char **buffer, char *file) {
             NuErrorProlog(nuhgobj_file, 0x61F)(msg_ghg_loader_old, header->version, nughg_version);
         }
         NuDebugMsgProlog(nuhgobj_file, 0x622)(msg_ghg_reading, file);
-        hobj = (struct NUHGOBJ_s *)(((unsigned int)ptr[0] + ((struct nughgheader_s *)ptr[0])->size + 0xF) & ~0xF);
-        ptr[0] = (char *)&hobj[1];
+        hobj = (struct NUHGOBJ_s *)((ptr.intaddr + ((struct nughgheader_s *)ptr.voidptr)->size + 0xF) & ~0xF);
+        ptr.voidptr = &hobj[1];
         memset(hobj, 0, sizeof(struct NUHGOBJ_s));
         hobj->type = 1;
         if (header->tids) {
@@ -1111,8 +1112,8 @@ struct NUHGOBJ_s *NuGHGRead(char **buffer, char *file) {
                 anim->scriptname = NU_OFFSET_PTR(anim->scriptname, base);
                 anim->ntaname = NU_OFFSET_PTR(anim->ntaname, base);
                 prog = NuTexAnimProgFind(anim->scriptname);
-                ptr[0] = (char *)(((unsigned int)ptr[0] + 0xF) & ~0xF);
-                anim->env = NuTexAnimEnvCreate(ptr, anim->mtl, anim->tids, prog);
+                ptr.intaddr = (ptr.intaddr + 0xF) & ~0xF;
+                anim->env = NuTexAnimEnvCreate(&ptr, anim->mtl, anim->tids, prog);
             }
             for (j = 0; j < hobj->numtexanims - 1; j++) {
                 hobj->texanims[j].succ = &hobj->texanims[j] + 1;
@@ -1140,9 +1141,9 @@ struct NUHGOBJ_s *NuGHGRead(char **buffer, char *file) {
                 }
             }
         }
-        ptr[0] = (char *)(((unsigned int)ptr[0] + 0xF) & ~0xF);
-        NuDebugMsgProlog(nuhgobj_file, 0x70C)(msg_ghg_read_size, file, ptr[0] - *buffer);
-        *buffer = ptr[0];
+        ptr.intaddr = (ptr.intaddr + 0xF) & ~0xF;
+        NuDebugMsgProlog(nuhgobj_file, 0x70C)(msg_ghg_read_size, file, ptr.u8 - buffer->u8);
+        *buffer = ptr;
     }
     return hobj;
 }

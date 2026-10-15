@@ -19,6 +19,7 @@
 #include "nu3d/nugobj.h"
 #include "nu3d/nugscn.h"
 #include "gamelib/terrain.h"
+#include "nucore/nucoretypes.h"
 
 typedef struct SpecTerrShape {
     u32 type;
@@ -68,8 +69,8 @@ extern s32 D_0062F768;
 #define specterr_draw_index D_0062F768
 
 
-SpecTerrData *CreateSpecialTerrainData(s32 level, struct nugscn_s *scene, char **buffer,
-                                       char *end) {
+SpecTerrData *CreateSpecialTerrainData(s32 level, struct nugscn_s *scene, union variptr_u *buffer,
+                                       union variptr_u *end) {
     SpecTerrData *data;
     SpecTerrObject *obj;
     SpecTerrShape *shape;
@@ -82,13 +83,13 @@ SpecTerrData *CreateSpecialTerrainData(s32 level, struct nugscn_s *scene, char *
     if (scene && scene->numinstance) {
         p = CrashDataPtr();
         if (p) {
-            data = (SpecTerrData *)*buffer;
-            *buffer += sizeof(SpecTerrData);
+            data = buffer->voidptr;
+            buffer->u8 += sizeof(SpecTerrData);
             memset(data, 0, sizeof(SpecTerrData));
             data->crashdata = (s32 *)p;
             data->scene = scene;
-            data->objects = (SpecTerrObject **)*buffer;
-            *buffer += scene->numinstance * sizeof(SpecTerrObject *);
+            data->objects = buffer->voidptr;
+            buffer->u8 += scene->numinstance * sizeof(SpecTerrObject *);
             memset(data->objects, 0, scene->numinstance * sizeof(SpecTerrObject *));
             count = *(s32 *)p;
             p += sizeof(s32);

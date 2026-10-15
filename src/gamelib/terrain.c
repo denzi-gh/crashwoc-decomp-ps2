@@ -115,8 +115,6 @@
 #include "nu3d/nugscn.h"
 #include "gamelib/terrain.h"
 
-#include "creature.h"
-
 /* Terrain collision info structures (offsets verified against retail asm). */
 typedef struct {
     float minx;

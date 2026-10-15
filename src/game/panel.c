@@ -33,8 +33,7 @@
 #include "numath/numtx.h"
 #include "numath/nutrig.h"
 #include "game/gametypes.h"
-
-#include "creature.h"
+#include "game/creature.h"
 
 struct pdebinfo_s {
     s32 i_objtab;
@@ -89,8 +88,6 @@ extern s32 new_mode, new_level;
 extern u8 D_00591FDE[];
 extern float PANEL3DMULX, PANEL3DMULY;
 extern s32 temp_character;
-extern s8 CRemap[];
-extern struct CharacterModel CModel[];
 extern struct anim_s TempAnim;
 extern struct game_s Game;
 extern char tbuf[];
@@ -109,9 +106,6 @@ extern struct gtimer_s GameTimer;
 
 extern s32 NuRndrGScnObj(void *, struct numtx_s *);
 extern void GameSfx(s32, s32);
-extern void EvalModelAnim(struct CharacterModel *, struct anim_s *,
-                          struct numtx_s *, struct numtx_s *, float ***,
-                          struct numtx_s *);
 extern s32 NuHGobjRndrMtxDwa(struct NUHGOBJ_s *, struct numtx_s *, s32,
                              short *, struct numtx_s *, float **);
 extern void Text3D(char *txt, float x, float y, float z, float scalex, float scaley,
@@ -418,12 +412,12 @@ s32 DrawPanel3DCharacter(s32 character, float x, float y, float z,
     m._30 = x * PANEL3DMULX;
     m._31 = y * PANEL3DMULY;
     if (((u32)action < 0x76) && (model->anmdata[action] != 0)) {
-        NuHGobjEvalAnim(model->hobj, model->anmdata[action], anim_time, 0, 0,
+        NuHGobjEvalAnim(model->obj, model->anmdata[action], anim_time, 0, 0,
                         tmtx);
     } else {
-        NuHGobjEval(model->hobj, 0, 0, tmtx);
+        NuHGobjEval(model->obj, 0, 0, tmtx);
     }
-    return NuHGobjRndrMtx(model->hobj, &m, 1, 0, tmtx);
+    return NuHGobjRndrMtx(model->obj, &m, 1, 0, tmtx);
 }
 
 
@@ -706,11 +700,11 @@ extern s32 mask_crates;
 extern s32 newmask_advise;
 extern f32 WUMPAOBJSX;
 extern f32 PANELSY;
-extern struct mask_s vNEWMASK;
+extern struct nuvec_s vNEWMASK;
 extern u8 Cursor[];
 
 extern void AddPanelDebris(f32 x, f32 y, s32 type, f32 scale, s32 count);
-extern void NewMask(struct mask_s *mask, struct mask_s *src);
+extern void NewMask(struct mask_s *mask, struct nuvec_s *pos);
 extern void NewMenu(void *cursor, s32 a, s32 b, s32 c);
 
 void UpdatePlayerStats(struct creature_s *plr) {
@@ -1064,7 +1058,7 @@ s32 DrawPanel3DTempCharacter(u16 xrot, u16 yrot, u16 zrot, s32 rot, float x,
     m._30 = x * PANEL3DMULX;
     m._31 = y * PANEL3DMULY;
     EvalModelAnim(model, &TempAnim, &m, tmtx, &dwa, 0);
-    return NuHGobjRndrMtxDwa(model->hobj, &m, 1, 0, tmtx, dwa);
+    return NuHGobjRndrMtxDwa(model->obj, &m, 1, 0, tmtx, dwa);
 }
 
 void MaxVP(void) {

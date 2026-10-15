@@ -53,6 +53,7 @@
 #include "numath/nurand.h"
 #include "nu3d/numtl.h"
 #include "nu3d/nutexanm.h"
+#include "nucore/nucoretypes.h"
 
 typedef struct NuFPar {
     int handle;
@@ -435,7 +436,7 @@ inline void NuTexAnimProgInit(struct nutexanimprog_s *prog)
 }
 
 
-struct nutexanimprog_s *NuTexAnimProgReadScript(char **buff, char *name)
+struct nutexanimprog_s *NuTexAnimProgReadScript(union variptr_u *buff, char *name)
 {
     struct nutexanimprog_s *mem;
     struct nutexanimprog_s *prog;
@@ -445,7 +446,7 @@ struct nutexanimprog_s *NuTexAnimProgReadScript(char **buff, char *name)
     short *end;
 
     if (buff) {
-        mem = (struct nutexanimprog_s *)*buff;
+        mem = buff->voidptr;
         mem = (struct nutexanimprog_s *)(((int)mem + 3) & 0xFFFFFFFC);
     } else {
         mem = NuMemAllocFn(0x400, nutexanm_srcfile, 0x2FC);
@@ -470,7 +471,7 @@ struct nutexanimprog_s *NuTexAnimProgReadScript(char **buff, char *name)
         end = &mem->code[mem->num_codes];
         mem = (struct nutexanimprog_s *)end;
         if (buff) {
-            *buff = (char *)end;
+            buff->voidptr = end;
         }
         NuFParDestroy(parser);
         NuTexAnimProgAssembleEnd(prog);
@@ -753,14 +754,14 @@ void NuTexAnimProgDestroy(struct nutexanimprog_s *prog)
 }
 
 
-struct nutexanimprog_s *NuTexAnimProgCreate(char **buff, int code_size, char *name)
+struct nutexanimprog_s *NuTexAnimProgCreate(union variptr_u *buff, int code_size, char *name)
 {
     struct nutexanimprog_s *prog;
 
     if (buff) {
-        prog = (struct nutexanimprog_s *)*buff;
-        *buff += sizeof(struct nutexanimprog_s);
-        *buff += code_size;
+        prog = buff->voidptr;
+        buff->u8 += sizeof(struct nutexanimprog_s);
+        buff->u8 += code_size;
     } else {
         prog = NuMemAllocFn(sizeof(struct nutexanimprog_s) + code_size, nutexanm_srcfile, 0xDD);
     }
@@ -789,7 +790,7 @@ void NuTexAnimProgWrite(char *name, struct nutexanimprog_s *prog)
 }
 
 
-struct nutexanimprog_s *NuTexAnimProgRead(char **buff, char *name)
+struct nutexanimprog_s *NuTexAnimProgRead(union variptr_u *buff, char *name)
 {
     struct nutexanimprog_s *prog;
     int fh;
@@ -800,8 +801,8 @@ struct nutexanimprog_s *NuTexAnimProgRead(char **buff, char *name)
     if (fh) {
         size = NuFileOpenSize(fh);
         if (buff) {
-            prog = (struct nutexanimprog_s *)(((int)*buff + 3) & 0xFFFFFFFC);
-            *buff = (char *)prog + size;
+            prog = (struct nutexanimprog_s *)((buff->intaddr + 3) & 0xFFFFFFFC);
+            buff->voidptr = (char *)prog + size;
         } else {
             prog = NuMemAllocFn(size, nutexanm_srcfile, 0x117);
         }
@@ -845,13 +846,13 @@ inline void NuTexAnimEnvReset(struct nutexanimenv_s *env)
 }
 
 
-inline struct nutexanimenv_s *NuTexAnimEnvCreate(char **buff, struct numtl_s *mtl, short *tids, struct nutexanimprog_s *prog)
+inline struct nutexanimenv_s *NuTexAnimEnvCreate(union variptr_u *buff, struct numtl_s *mtl, short *tids, struct nutexanimprog_s *prog)
 {
     struct nutexanimenv_s *env;
 
     if (buff) {
-        env = (struct nutexanimenv_s *)(((int)*buff + 3) & 0xFFFFFFFC);
-        *buff = (char *)env + sizeof(struct nutexanimenv_s);
+        env = (struct nutexanimenv_s *)((buff->intaddr + 3) & 0xFFFFFFFC);
+        buff->voidptr = (char *)env + sizeof(struct nutexanimenv_s);
     } else {
         env = NuMemAllocFn(sizeof(struct nutexanimenv_s), nutexanm_srcfile, 0x17D);
     }
@@ -926,14 +927,14 @@ void NuTexAnimDestroy(struct nutexanim_s *anim)
 }
 
 
-struct nutexanim_s *NuTexAnimCreate(char **buff, struct nutexanimprog_s *prog, struct numtl_s *mtl, short *tids, int num_tids)
+struct nutexanim_s *NuTexAnimCreate(union variptr_u *buff, struct nutexanimprog_s *prog, struct numtl_s *mtl, short *tids, int num_tids)
 {
     struct nutexanim_s *anim;
 
     if (buff) {
-        anim = (struct nutexanim_s *)(((int)*buff + 3) & 0xFFFFFFFC);
-        *buff = (char *)anim + sizeof(struct nutexanim_s);
-        *buff += num_tids * sizeof(short);
+        anim = (struct nutexanim_s *)((buff->intaddr + 3) & 0xFFFFFFFC);
+        buff->voidptr = (char *)anim + sizeof(struct nutexanim_s);
+        buff->u8 += num_tids * sizeof(short);
     } else {
         anim = NuMemAllocFn(sizeof(struct nutexanim_s) + num_tids * sizeof(short), nutexanm_srcfile, 0x4CC);
     }

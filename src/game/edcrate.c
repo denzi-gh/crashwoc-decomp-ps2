@@ -48,8 +48,7 @@
 #include "nu3d/nugobj.h"
 #include "game/gametypes.h"
 #include "gamelib/terrain.h"
-
-#include "creature.h"
+#include "game/creature.h"
 
 struct eduiitem_s {
     u8 pad00[0x0C];

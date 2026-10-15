@@ -31,8 +31,7 @@
 #include "numath/nuvec.h"
 #include "game/gametypes.h"
 #include "gamelib/terrain.h"
-
-#include "creature.h"
+#include "game/creature.h"
 
 typedef struct
 {
@@ -155,13 +154,6 @@ struct firedrop_s {
     s32 type;             /* 0x10 */
 }; /* 0x14 */
 
-struct chase_s {
-    u8 unk_0x00[0x24];        /* 0x0000 */
-    struct nuvec_s pos;       /* 0x0024 */
-    u8 unk_0x30[0x7510];      /* 0x0030 */
-    signed char mode;         /* 0x7540 */
-};
-
 struct pad_s {
     u8 unk_0x000[0x55C];  /* 0x000 */
     u32 paddata;          /* 0x55C */
@@ -169,7 +161,7 @@ struct pad_s {
 
 extern struct ldata_s *LDATA;
 extern struct objtab_s ObjTab[201];
-extern struct chase_s Chase;
+extern struct chase_s Chase[3];
 extern struct pad_s *Pad[];
 extern struct nugscn_s *world_scene[32];
 extern struct nugspline_s *pVIS;
@@ -226,8 +218,6 @@ extern void NuBridgeOn(s32 on);
 extern void FireBossWaterFire(s32 on);
 extern s32 StartHGobjAnim(struct nuhspecial_s *sp);
 extern void DebrisEmitterOrientation(s32 key, s32 a, s32 hdg);
-extern void NewRumble(struct rumble_s *rumble, s32 power);
-extern void NewBuzz(struct rumble_s *rumble, s32 frames);
 extern void PlayRandSFX(void);
 
 #define JONMASK(v, a) JonMaskFPS((v), (a))
@@ -1137,16 +1127,16 @@ void LaunchObjects(void) {
         }
     }
 
-    if (Level == 0xE && Chase.mode == 2) {
-        vec.x = Chase.pos.x;
-        vec.y = Chase.pos.y + 0.2f;
-        vec.z = Chase.pos.z - 2.5f;
+    if (Level == 0xE && Chase[0].status == 2) {
+        vec.x = Chase[0].pos[0].x;
+        vec.y = Chase[0].pos[0].y + 0.2f;
+        vec.z = Chase[0].pos[0].z - 2.5f;
         AddVariableShotDebrisEffect(GDeb[100].i, &vec, 2, 0, 0);
-        vec.y = Chase.pos.y + 0.6f;
+        vec.y = Chase[0].pos[0].y + 0.6f;
         AddVariableShotDebrisEffect(GDeb[101].i, &vec, 1, 0, 0);
-        vec.y = Chase.pos.y + 3.0f;
+        vec.y = Chase[0].pos[0].y + 3.0f;
         AddVariableShotDebrisEffect(GDeb[103].i, &vec, 2, -0x218, 0);
-        vec.y = Chase.pos.y + 3.6f;
+        vec.y = Chase[0].pos[0].y + 3.6f;
         AddVariableShotDebrisEffect(GDeb[102].i, &vec, 4, -0x600, 0);
     }
 

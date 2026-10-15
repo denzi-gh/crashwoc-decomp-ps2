@@ -21,8 +21,7 @@
 #include "numath/numtx.h"
 #include "numath/nutrig.h"
 #include "nu3d/nucamera.h"
-
-#include "creature.h"
+#include "game/creature.h"
 
 extern f32 glass_mix;
 extern f32 glass_col_mix;

@@ -43,8 +43,7 @@
 #include "numath/nuvec.h"
 #include "game/gametypes.h"
 #include "gamelib/terrain.h"
-
-#include "creature.h"
+#include "game/creature.h"
 
 /* AI path positions (D_005CA154 == AITab[0].pos): stride 0x80 per AI entry,
  * AIType[ai_type].label nuvec sub-points each. */
@@ -81,7 +80,7 @@ extern struct aipath_s D_005CA154[];   /* saved AI path positions */
 extern char tbuf[];                    /* 0x00592090 */
 extern char LevelFileName[];           /* 0x0058b098 */
 extern char D_00631B88[];              /* sprintf format for the .ai filename */
-extern u8 Chase[];                     /* 0x005f3ed0 (scratch load buffer) */
+extern struct chase_s Chase[3];        /* 0x005f3ed0 (scratch load buffer) */
 
 void *NuFileOpen(char *name, s32 mode);            /* 0x001002d8 */
 s32 NuFileLoadBuffer(char *name, void *buf, s32 max); /* 0x00100a88 */
@@ -171,8 +170,6 @@ void AddFiniteShotDebrisEffect(s32 *key, s32 effect, struct nuvec_s *pos, s32 n)
 void DebrisEmitterOrientation(s32 key, s32 a, s32 hdg);
 
 void GameSfx(s32 id, struct nuvec_s *pos);
-void NewRumble(struct rumble_s *rumble, s32 power);
-void NewBuzz(struct rumble_s *rumble, s32 frames);
 
 void InitAI(void)
 {
@@ -2557,7 +2554,7 @@ rotdone:
                 v2.y = v3.y - c->momLOCATOR[0][i].y;
                 if (c->obj.attack != 0) {
                     if (plr->spin != 0
-                        && plr->spin_frame < plr->spin_frames - plr->OnFootMoveInfo->SPINRESETFRAMES) {
+                        && plr->spin_frame < plr->spin_frames - plr->minfo->SPINRESETFRAMES) {
                         if (v2.y + d - 0.012f <= plr->obj.oldobjbot) {
                             plr->obj.mom.y = 0.0f;
                             plr->obj.boing |= 1;

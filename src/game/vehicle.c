@@ -239,8 +239,7 @@
 #include "nu3d/nugscn.h"
 #include "game/gametypes.h"
 #include "gamelib/terrain.h"
-
-#include "creature.h"
+#include "game/creature.h"
 
 extern s32 Level;
 extern struct numtx_s mTEMP;
@@ -350,7 +349,7 @@ void DrawAtlas(struct creature_s *c)
     NuMtxTranslate(&m, &b->ball_pos);
     idx = D_0056238B[0];
     if (idx != -1) {
-        NuHGobjRndr(CModel[idx].hobj, &m, 1, 0);
+        NuHGobjRndr(CModel[idx].obj, &m, 1, 0);
     }
 }
 
@@ -398,16 +397,6 @@ extern struct RPos_s *best_cRPos;
 
 /* The earth boss is an atlasphere, like PlayerAtlas (far). */
 extern struct NEWBUGGY EarthBoss;
-
-struct MYDRAW {
-    struct anim_s anim;            /* 0x00 */
-    struct CharacterModel *model;  /* 0x1C */
-    s32 index;                     /* 0x20 */
-    s32 numjoints;                 /* 0x24 */
-    void *jointlist;               /* 0x28 */
-    s32 field2C;                   /* 0x2C */
-    struct Nearest_Light_s lights; /* 0x30 */
-};
 
 /* WeatherBoss state block (far). */
 struct weatherboss_s {
@@ -927,8 +916,8 @@ inline void ProcessBazookaToken(void)
     f32 t;
 
     if (BazookaIconOn) {
-        t = WeatherBoss.draw.anim.anim_time /
-            WeatherBoss.draw.model->anmdata[WeatherBoss.draw.anim.action]->time;
+        t = WeatherBoss.draw.Anim.anim_time /
+            WeatherBoss.draw.Model->anmdata[WeatherBoss.draw.Anim.action]->time;
         NuVecScale(&pos, &BazookaTokenPos, 1.0f - t);
         NuVecScaleAccum(&pos, &PlayerGlider.Position, t);
         pos.y += t * 0.75f;
@@ -1681,12 +1670,11 @@ void InitTrail(void)
 }
 
 extern struct nuquat_s SetNuQuat(f32 x, f32 y, f32 z, f32 w);
-extern CharacterData CData[];
 
 void InitAtlas(struct NEWBUGGY *Atlas, struct nuvec_s *Pos, f32 Radius, s32 Type)
 {
     struct creature_s *cre;
-    CharacterData *cdata;
+    struct CharacterData *cdata;
 
     cre = Atlas->owner;
     memset(Atlas, 0, sizeof(struct NEWBUGGY));
@@ -3355,7 +3343,7 @@ extern void edppRegisterPointerToGameCharLocation(struct nuvec_s *loc);
 
 inline void InitGlider(struct glider_s *Glider, struct nuvec_s *StartPos, f32 StartAng)
 {
-    CharacterData *cdata;
+    struct CharacterData *cdata;
     struct creature_s *cre;
     s32 i;
 

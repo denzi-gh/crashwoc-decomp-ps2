@@ -39,6 +39,7 @@
 #include "nu3d/nutex.h"
 #include "nucore/nuerror.h"
 #include "numath/numathtypes.h"
+#include "nucore/nucoretypes.h"
 
 struct numtlfile_s {
     struct numtl_s *next;
@@ -632,7 +633,7 @@ int NuMtlGetSysBuffSize(int count) {
 }
 
 
-void NuMtlInitEx(void **buff, int count) {
+void NuMtlInitEx(union variptr_u *buff, int count) {
     struct numtl_s *pool;
     int i;
 
@@ -645,12 +646,12 @@ void NuMtlInitEx(void **buff, int count) {
     mtl_pool = 0;
     NuMtlCreateDefault();
     NuMtlReadEventSetHandler(0);
-    pool = (struct numtl_s *)(((u32)*buff + 0xF) & 0xFFFFFFF0);
+    pool = (struct numtl_s *)((buff->intaddr + 0xF) & 0xFFFFFFF0);
     mtl_pool_count = count;
     mtl_pool_last = 0;
-    *buff = pool;
+    buff->voidptr = pool;
     mtl_pool = pool;
-    *buff = pool + count;
+    buff->voidptr = pool + count;
     memset(pool, 0, count * sizeof(struct numtl_s));
     for (i = 0; i < mtl_pool_count; i++) {
         mtl_pool[i].flags |= NUMTL_POOLED;

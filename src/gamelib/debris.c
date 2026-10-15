@@ -74,8 +74,6 @@
 #include "nu3d/numtl.h"
 #include "nu3d/nutex.h"
 
-#include "creature.h"
-
 struct debinfo_s;
 struct debpart_s;
 

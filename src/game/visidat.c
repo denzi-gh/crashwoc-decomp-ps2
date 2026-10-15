@@ -16,6 +16,7 @@
 #include "nu3d/numtl.h"
 #include "nu3d/nugobj.h"
 #include "nu3d/nugscn.h"
+#include "nucore/nucoretypes.h"
 
 struct visidata_s {
     struct nugscn_s *sc;
@@ -35,12 +36,6 @@ struct visbndassoc_s {
 struct visnames_s {
     u32 count;
     char names[4];
-};
-
-union variptr_u {
-    void *voidptr;
-    u32 intaddr;
-    u64 *u64ptr;
 };
 
 extern void *NuFileLoad(char *name);
@@ -305,9 +300,9 @@ struct visidata_s *visiLoadData(char *fname, struct nugscn_s *sc, union variptr_
                         deltatot |= binfo[m];
                     }
                     if (deltatot != 0) {
-                        vd->vspline[o][n] = buff->u64ptr;
+                        vd->vspline[o][n] = buff->u64;
                         for (m = 0; m < binfosize; m++) {
-                            *buff->u64ptr++ = binfo_data[n * binfosize + m];
+                            *buff->u64++ = binfo_data[n * binfosize + m];
                         }
                     }
                 }

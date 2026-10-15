@@ -75,6 +75,7 @@
 #include "numath/numtx.h"
 #include "numath/nuvec.h"
 #include "nu3d/nuanim.h"
+#include "nucore/nucoretypes.h"
 
 struct nutexanimenv_s {
     void *prog;                     /* 0x00 */
@@ -1826,11 +1827,6 @@ void ReadNuIFFTexAnimSet(int fh, struct nugscn_s *gsc, short *tids)
 
 extern int D_00633090;
 #define texanim_ix D_00633090
-
-union variptr_u {
-    void *voidptr;
-    char *charptr;
-};
 
 /* Near-match (stays asm): register allocation of the texanim fields and the
    order gscn_bufferlimit is loaded in the inlined GScnBufferAlloc differ. */

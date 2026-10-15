@@ -18,8 +18,6 @@
 
 #include "numath/nuquat.h"
 
-#include "creature.h"
-
 double acos(double x);
 float NuFsqrt(float x);
 

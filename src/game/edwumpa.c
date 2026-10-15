@@ -21,8 +21,7 @@
 #include "numath/nuvec.h"
 #include "game/gametypes.h"
 #include "gamelib/terrain.h"
-
-#include "creature.h"
+#include "game/creature.h"
 
 struct pad_s {
     u8 unk_0x000[0x564];

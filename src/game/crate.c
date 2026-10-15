@@ -72,8 +72,7 @@
 #include "numath/nuvec.h"
 #include "game/gametypes.h"
 #include "gamelib/terrain.h"
-
-#include "creature.h"
+#include "game/creature.h"
 
 struct nulsthdr_s;
 struct nulnkhdr_s;
@@ -218,8 +217,6 @@ extern u64 dpsub(u64 a, u64 b);
 extern u64 dpmul(u64 a, u64 b);
 extern f32 dptofp(u64 x);
 
-extern s8 CRemap[];
-extern struct CharacterModel CModel[];
 extern f32 D_0062D714;
 extern s32 qrand(void);
 extern f32 uvs[];
@@ -450,7 +447,7 @@ extern struct nuvec_s vTEMP;
 extern char tbuf[];
 extern char LevelFileName[];
 extern char D_00631250[];
-extern u8 Chase[];
+extern struct chase_s Chase[3];
 extern s32 NuFileLoadBuffer(char *name, void *buf, s32 max);
 extern s32 NuMemFileOpen(void *buf, s32 size, s32 mode);
 extern s32 NuFileReadInt(s32 h);
@@ -1634,14 +1631,7 @@ struct crate_s *FindOverlap(struct crate_s *crate) {
     return FindLocalCrate(&crate->pos);
 }
 
-struct cRPos_s {
-    s8 iRAIL;                /* 0x00 */
-    u8 pad_01;
-    s16 iALONG;              /* 0x02 */
-    u8 pad_04[4];
-    f32 fALONG;              /* 0x08 */
-};
-extern struct cRPos_s *best_cRPos;
+extern struct RPos_s *best_cRPos;
 extern s32 cp_goto;
 extern struct nuvec_s cpGOTO;
 
@@ -3237,24 +3227,24 @@ void DrawCrates(void) {
                         dwa = 0;
                     }
                     if (model->anmdata[crate->action] != 0) {
-                        NuHGobjEvalAnim(model->hobj,
+                        NuHGobjEvalAnim(model->obj,
                                         model->anmdata[crate->action],
                                         crate->anim_time, 0, 0, tmtx);
                     } else {
-                        NuHGobjEval(model->hobj, 0, 0, tmtx);
+                        NuHGobjEval(model->obj, 0, 0, tmtx);
                     }
                 } else {
-                    NuHGobjEval(model->hobj, 0, 0, tmtx);
+                    NuHGobjEval(model->obj, 0, 0, tmtx);
                     dwa = 0;
                 }
-                NuHGobjRndrMtxDwa(model->hobj, pmtx, 1, 0, tmtx, dwa);
+                NuHGobjRndrMtxDwa(model->obj, pmtx, 1, 0, tmtx, dwa);
                 if ((crate->flags & 0x200) != 0) {
                     mtx2 = *pmtx;
                     mtx2._01 = -mtx2._01;
                     mtx2._11 = -mtx2._11;
                     mtx2._21 = -mtx2._21;
                     mtx2._31 = crate->shadow - (mtx2._31 - crate->shadow);
-                    NuHGobjRndrMtxDwa(model->hobj, &mtx2, 1, 0, tmtx, dwa);
+                    NuHGobjRndrMtxDwa(model->obj, &mtx2, 1, 0, tmtx, dwa);
                 }
             } else {
                 special = crate_list[type].obj.special;

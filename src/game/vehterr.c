@@ -20,8 +20,6 @@
 #include "game/gametypes.h"
 #include "gamelib/terrain.h"
 
-#include "creature.h"
-
 extern struct nuvec_s CrossProduct(struct nuvec_s *a, struct nuvec_s *b);
 extern f32 DotProduct(struct nuvec_s *a, struct nuvec_s *b);
 extern f32 NuFsqrt(f32 x);

@@ -30,8 +30,7 @@
 #include "numath/nuvec.h"
 #include "game/gametypes.h"
 #include "gamelib/terrain.h"
-
-#include "creature.h"
+#include "game/creature.h"
 
 struct pad_s {
     u8 unk_0x000[0x55C];
@@ -136,7 +135,6 @@ extern struct eduiitem_s *edui_last_item;
 extern void edcamSetPos(struct nuvec_s *pos);
 
 extern struct gtimer_s GlobalTimer;
-extern CharacterData CData[];
 extern struct numtx_s mTEMP;
 extern s32 D_005CD1D0[8];
 
@@ -412,7 +410,7 @@ void edaiDRAW(void)
                                  : 0x8000);
                 NuMtxTranslate(&mTEMP, pos);
                 if (CRemap[character] != -1) {
-                    NuHGobjRndr(CModel[CRemap[character]].hobj, &mTEMP, 1, 0);
+                    NuHGobjRndr(CModel[CRemap[character]].obj, &mTEMP, 1, 0);
                 }
             }
             DrawAxes(pos, ang, D_005CD1D0[j], 0.125f);
@@ -449,7 +447,7 @@ void edaiDRAW(void)
                                     edai_cam_pos.z - pos->z) + 0x8000);
         NuMtxTranslate(&mTEMP, pos);
         if (CRemap[character] != -1) {
-            NuHGobjRndr(CModel[CRemap[character]].hobj, &mTEMP, 1, 0);
+            NuHGobjRndr(CModel[CRemap[character]].obj, &mTEMP, 1, 0);
         }
     }
     if (D_00631C3C != 0) {

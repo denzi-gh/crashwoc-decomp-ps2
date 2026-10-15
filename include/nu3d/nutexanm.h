@@ -3,6 +3,7 @@
 
 struct numtl_s;
 struct nutexanimenv_s;
+union variptr_u;
 
 /* Texture animation: cycles a material through a list of texture ids. */
 struct nutexanim_s {
@@ -30,25 +31,25 @@ void pftaBtex(struct NuFPar *parser);
 void pftaGosub(struct NuFPar *parser);
 void pftaUntiltex(struct NuFPar *parser);
 void NuTexAnimProgInit(struct nutexanimprog_s *prog);
-struct nutexanimprog_s *NuTexAnimProgReadScript(char **buff, char *name);
+struct nutexanimprog_s *NuTexAnimProgReadScript(union variptr_u *buff, char *name);
 int NuTexAnimCondition(int condition, int value, int ref);
 void NuTexAnimEnvProc(struct nutexanimenv_s *env);
 void NuTexAnimProgSysInit(void);
 void NuTexAnimProgRelease(void);
 struct nutexanimprog_s *NuTexAnimProgFind(char *name);
 void NuTexAnimProgDestroy(struct nutexanimprog_s *prog);
-struct nutexanimprog_s *NuTexAnimProgCreate(char **buff, int code_size, char *name);
+struct nutexanimprog_s *NuTexAnimProgCreate(union variptr_u *buff, int code_size, char *name);
 void NuTexAnimProgWrite(char *name, struct nutexanimprog_s *prog);
-struct nutexanimprog_s *NuTexAnimProgRead(char **buff, char *name);
+struct nutexanimprog_s *NuTexAnimProgRead(union variptr_u *buff, char *name);
 void NuTexAnimEnvDestroy(struct nutexanimenv_s *env);
 void NuTexAnimEnvReset(struct nutexanimenv_s *env);
-struct nutexanimenv_s *NuTexAnimEnvCreate(char **buff, struct numtl_s *mtl, short *tids, struct nutexanimprog_s *prog);
+struct nutexanimenv_s *NuTexAnimEnvCreate(union variptr_u *buff, struct numtl_s *mtl, short *tids, struct nutexanimprog_s *prog);
 void NuTexAnimRestart(void);
 void NuTexAnimSetSignals(unsigned int signals);
 void NuTexAnimProcessList(struct nutexanim_s *anim);
 struct nutexanim_s *NuTexAnimFind(struct nutexanim_s *anim, char *name);
 void NuTexAnimDestroy(struct nutexanim_s *anim);
-struct nutexanim_s *NuTexAnimCreate(char **buff, struct nutexanimprog_s *prog, struct numtl_s *mtl, short *tids, int num_tids);
+struct nutexanim_s *NuTexAnimCreate(union variptr_u *buff, struct nutexanimprog_s *prog, struct numtl_s *mtl, short *tids, int num_tids);
 void NuTexAnimAddList(struct nutexanim_s *anim);
 void NuTexAnimRemoveList(struct nutexanim_s *anim);
 void NuTexAnimProcess(void);

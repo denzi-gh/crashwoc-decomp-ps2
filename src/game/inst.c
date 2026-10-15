@@ -16,10 +16,7 @@
 
 #include "nu3d/nuscene.h"
 #include "nu3d/nuanim.h"
-
-union variptr_u {
-    void *voidptr;
-};
+#include "nucore/nucoretypes.h"
 
 struct nulsthdr_s;
 struct nulnkhdr_s;
@@ -121,7 +118,7 @@ struct nuanimdata_s *InstAnimDataLoad(char *name) {
 
     lst = (struct animdatainst_s *)NuLstAlloc(animdatainst_pool);
     if (lst != 0) {
-        adat = NuAnimDataLoadBuff(name, (void **)&superbuffer_ptr, (void **)&superbuffer_end);
+        adat = NuAnimDataLoadBuff(name, &superbuffer_ptr, &superbuffer_end);
         lst->ad = adat;
         if (adat != 0) {
             strcpy(lst->name, name);

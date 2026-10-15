@@ -7,6 +7,7 @@
 struct numtl_s;
 struct nugobj_s;
 struct nutexanim_s;
+union variptr_u;
 
 struct NUPOINTOFINTEREST_s {
     struct numtx_s offset;              /* 0x00 */
@@ -117,6 +118,6 @@ struct NUHGOBJ_s *NuHGobjReadForCutScene(int fh, struct NUHGOBJ_s *shared);
 void ReadNuIFFCollideData(int fh, struct NUHGOBJ_s *hobj);
 void ReadNuIFFHGobj(int fh, struct NUHGOBJ_s *hobj);
 char *NuGHGWriteGobj(char *base, char *ptr, struct NUHGOBJ_s *hobj, struct nugobj_s *gobj, int *offset);
-struct NUHGOBJ_s *NuGHGRead(char **buffer, char *file);
+struct NUHGOBJ_s *NuGHGRead(union variptr_u *buffer, char *file);
 
 #endif /* NU3D_NUHGOBJ_H */

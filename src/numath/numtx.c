@@ -57,8 +57,6 @@
 #include "numath/numtx.h"
 #include "numath/nuvec.h"
 
-#include "creature.h"
-
 extern float NuTrigTable[];
 extern struct numtx_s D_002938A0;
 #define mtx_scratch D_002938A0

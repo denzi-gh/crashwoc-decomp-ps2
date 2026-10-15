@@ -70,14 +70,7 @@
 #include "nu_stdarg.h"
 
 #include "nucore/nuerror.h"
-
-enum nufilemode_e {
-	NUFILE_READ = 0,
-	NUFILE_WRITE = 1,
-	NUFILE_APPEND = 2,
-	NUFILE_READ_NOWAIT = 3,
-	NUFILE_MODE_CNT = 4
-};
+#include "nucore/nufile.h"
 
 struct numemfile_s {
     char* start;              /* 0x00 */

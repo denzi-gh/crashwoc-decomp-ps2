@@ -27,20 +27,14 @@
 
 #include "nu_libc.h"
 
+#include "nucore/nufile.h"
+
 #define EDFILE_BUFFER_SIZE 0x1000
 
 enum edfile_media_e {
     EDFILE_MEDIA_NONE = 0,
     EDFILE_MEDIA_HOST = 1,
     EDFILE_MEDIA_MEMCARD = 2
-};
-
-enum nufilemode_e {
-    NUFILE_READ = 0,
-    NUFILE_WRITE = 1,
-    NUFILE_APPEND = 2,
-    NUFILE_READ_NOWAIT = 3,
-    NUFILE_MODE_CNT = 4
 };
 
 extern int NuFileOpen(char *file, enum nufilemode_e mode);

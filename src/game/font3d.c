@@ -16,8 +16,7 @@
 #include "nu3d/numtl.h"
 #include "nu3d/nugscn.h"
 #include "game/gametypes.h"
-
-#include "creature.h"
+#include "game/creature.h"
 
 extern struct font3dobj_s Font3DObjTab[];
 extern f32 D_0062E350;

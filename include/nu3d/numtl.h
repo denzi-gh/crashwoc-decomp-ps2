@@ -57,6 +57,7 @@ struct numtluv_s {
 }; /* 0x34 */
 
 struct nuwaterfx_s;
+union variptr_u;
 
 struct numtl_s {
     u8 pad000[0x120];                       /* 0x000 GS state, not decoded */
@@ -143,7 +144,7 @@ struct numtl_s *NuMtlRead(int fh);
 int NuMtlValid(struct numtl_s *mtl);
 void NuMtlInit(void);
 int NuMtlGetSysBuffSize(int count);
-void NuMtlInitEx(void **buff, int count);
+void NuMtlInitEx(union variptr_u *buff, int count);
 void NuMtlClose(void);
 void NuMtlRelease(void);
 void NuMtlDestroy(struct numtl_s *mtl);

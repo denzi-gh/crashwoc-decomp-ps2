@@ -33,8 +33,7 @@
 #include "nu3d/nucamera.h"
 #include "game/gametypes.h"
 #include "gamelib/terrain.h"
-
-#include "creature.h"
+#include "game/creature.h"
 
 #define NULL ((void *)0)
 
@@ -683,7 +682,6 @@ extern struct gtimer_s GameTimer;
 extern struct gtimer_s GlobalTimer;
 extern struct nupad_s *Pad[];
 extern struct cammtx_s GameCam[];
-extern CharacterData CData[];
 extern struct anim_s TempAnim;
 extern struct numtx_s cutscenecammtx;
 

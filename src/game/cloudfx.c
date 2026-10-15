@@ -20,8 +20,7 @@
 #include "nu3d/nustream.h"
 #include "numath/nurand.h"
 #include "numath/nuvec.h"
-
-#include "creature.h"
+#include "nucore/nucoretypes.h"
 
 extern s32 cloudreset;
 extern void *ttmtl;
@@ -145,7 +144,7 @@ extern f32 D_00632914;
 extern s32 ttmtlcnt;
 extern struct cloud_s ttptls[];        /* [8][count] trail particles, stride 6 */
 extern struct nuvec_s ttoff[];
-extern s32 superbuffer_ptr;
+extern union variptr_u superbuffer_ptr;
 extern u8 D_00625298[];
 
 extern struct nuvec_s ttvel[];
@@ -305,7 +304,7 @@ void cloudRender(void *m, struct nuvec_s *off, f32 size, f32 rng, s32 density,
     rndrstream_free = vpDmaTag_Next(rs->cur.b);
 }
 
-void TimeTunnelInit(void *buffer, void *buffend) {
+void TimeTunnelInit(union variptr_u *buffer, union variptr_u *buffend) {
     struct nuvec_s v;
     struct nuvec_s *p;
     struct cloud_s *tp;
@@ -342,11 +341,11 @@ void TimeTunnelInit(void *buffer, void *buffend) {
         p->z = 0.0f;
         p++;
     } while (p < ttoff + 5);
-    superbuffer_ptr = (superbuffer_ptr + 0x7F) & ~0x7F;
+    superbuffer_ptr.intaddr = (superbuffer_ptr.intaddr + 0x7F) & ~0x7F;
     ttmtl = 0;
     tttex = 0;
     TextureCreateEx(D_00625298, &ttmtl, &tttex, &superbuffer_ptr, buffer, buffer, buffend);
-    superbuffer_ptr = (superbuffer_ptr + 0x7F) & ~0x7F;
+    superbuffer_ptr.intaddr = (superbuffer_ptr.intaddr + 0x7F) & ~0x7F;
     mtl = (struct cloudmtl_s *)ttmtl;
     if (mtl != 0) {
         mtl->attrib =
@@ -433,7 +432,7 @@ void TimeTunnelRender(void) {
 }
 
 
-void InitClouds(void *buffer, void *buffend) {
+void InitClouds(union variptr_u *buffer, union variptr_u *buffend) {
     s32 n;
 
     cloudInit(buffer, buffend);

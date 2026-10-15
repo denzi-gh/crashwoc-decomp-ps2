@@ -143,70 +143,10 @@
 #include "numath/nuvec.h"
 #include "game/gametypes.h"
 #include "gamelib/terrain.h"
+#include "game/creature.h"
 
 #define NULL 0
 
-
-struct pdir_s {
-    s32 index;                 /* 0x0 */
-    struct nuvec_s direction;  /* 0x4 */
-    struct nucolour3_s colour; /* 0x10 */
-    float distance;            /* 0x1C */
-};
-
-struct nearlight_s {
-    s32 ambindex;            /* 0x0 */
-    struct nuvec_s ambcol;   /* 0x4 */
-    float ambientdist;       /* 0x10 */
-    s32 curloopindex;        /* 0x14 */
-    struct pdir_s dir[3];    /* 0x18 */
-    struct pdir_s *pDir1st;  /* 0x78 */
-    struct pdir_s *pDir2nd;  /* 0x7C */
-    struct pdir_s *pDir3rd;  /* 0x80 */
-    s32 glbambindex;         /* 0x84 */
-    s32 negativeindex;       /* 0x88 */
-    float negativedist;      /* 0x8C */
-    struct pdir_s glbdirectional; /* 0x90 */
-};
-
-struct animpkt_s {
-    float time; /* 0x0 */
-    char pad_4[0xC - 0x4];
-    u16 action;    /* 0xC */
-    u16 oldaction; /* 0xE */
-    u16 newaction; /* 0x10 */
-    char pad_12[0x1B - 0x12];
-    u8 flags; /* 0x1B */
-};
-
-/* offsets verified in NewMask; `active` is signed (retail tests it with
- * lh + slti, not lhu + sltiu). */
-struct mask_s {
-    struct numtx_s mM;          /* 0x0 */
-    struct numtx_s mS;          /* 0x40 */
-    struct nuvec_s pos;         /* 0x80 */
-    struct nuvec_s newpos;      /* 0x8C */
-    struct nearlight_s lights;  /* 0x98 */
-    struct animpkt_s anim;      /* 0x148 */
-    float scale;                /* 0x164 */
-    float shadow;               /* 0x168 */
-    short character;            /* 0x16C */
-    short active;               /* 0x16E */
-    short sfx;                  /* 0x170 */
-    char pad_172[2];
-    u16 xrot;                   /* 0x174 */
-    u16 yrot;                   /* 0x176 */
-    u16 angle;                  /* 0x178 */
-    u16 surface_xrot;           /* 0x17A */
-    u16 surface_zrot;           /* 0x17C */
-    u16 wibble_ang[3];          /* 0x17E */
-    float idle_time;            /* 0x184 */
-    float idle_duration;        /* 0x188 */
-    signed char idle_mode;      /* 0x18C */
-    signed char reflect;        /* 0x18D */
-    u8 offset_frame;            /* 0x18E */
-    signed char hold;           /* 0x18F */
-};
 
 struct hdata_s {
     s8 level[6];
@@ -300,93 +240,6 @@ struct nupad_s {
     u32 oldpaddata; /* 0x564 */
 };
 
-struct pmask_s {
-    char pad_163[0x163];
-    u8 flags_163;  /* 0x163 */
-    char pad_164[0x16E - 0x164];
-    short active;  /* 0x16E */
-};
-
-struct moveinfo_s {
-    char pad_0[0x38];
-    short SPINRESETFRAMES; /* 0x38 */
-};
-
-struct panim_s {
-    float time;             /* 0x0 */
-    char pad_4[0xC - 0x4];
-    short action;           /* 0xC */
-    char pad_e[0x12 - 0xE];
-    short blend_src_action; /* 0x12 */
-    short blend_dst_action; /* 0x14 */
-    char pad_16[0x1A - 0x16];
-    signed char blend;      /* 0x1A */
-    char pad_1b;
-};
-
-struct pobj_s {
-    char pad_c[0xC];
-    struct pmask_s *mask; /* 0xC */
-    char pad_10[0x18 - 0x10];
-    struct panim_s anim;  /* 0x18 */
-    short character;      /* 0x34 */
-    short vehicle;        /* 0x36 */
-    char pad_38[0x6C - 0x38];
-    struct nuvec_s pos;   /* 0x6C */
-    char pad_78[0x108 - 0x78];
-    float SCALE;          /* 0x108 */
-    char pad_10c[0x11C - 0x10C];
-    float bot;            /* 0x11C */
-    float top;            /* 0x120 */
-    char pad_124[0x149 - 0x124];
-    signed char dead;     /* 0x149 */
-    char pad_14a[0x153 - 0x14A];
-    signed char finished; /* 0x153 */
-    char pad_154[0x166 - 0x154];
-    u16 target_xrot;      /* 0x166 */
-    u16 target_yrot;      /* 0x168 */
-    char pad_16a[0x16E - 0x16A];
-    u16 hdg;              /* 0x16E */
-    char pad_170[0x230 - 0x170];
-    struct moveinfo_s *OnFootMoveInfo; /* 0x230 */
-    char pad_234[0x274 - 0x234];
-    struct numtx_s mtxLOCATOR[2][16]; /* 0x274 */
-    char pad_a74[0xCA4 - 0xA74];
-    u8 rumble[4]; /* 0xCA4 */
-    char pad_ca8[0xCBB - 0xCA8];
-    signed char spin;     /* 0xCBB */
-    char pad_cbc[0xCCC - 0xCBC];
-    short spin_frames;    /* 0xCCC */
-    short spin_frame;     /* 0xCCE */
-    char pad_cd0[0xCDA - 0xCD0];
-    u8 fire;              /* 0xCDA */
-    char pad_cdb;
-    signed char target;      /* 0xCDC */
-    signed char target_wait; /* 0xCDD */
-    signed char fire_lock;   /* 0xCDE */
-};
-
-struct player_s {
-    struct pobj_s obj;
-};
-
-struct anmdata_s {
-    float time; /* 0x0 (AddMaskFeathers) */
-};
-
-/* stride 0x988; hobj/anmdata/shadow fields verified in DrawMaskFeathers */
-struct cmodel_s {
-    void *hobj;          /* 0x0 */
-    struct anmdata_s *anmdata[0x10]; /* 0x4 */
-    char pad_44[0x79C - 0x44];
-    void *shadow_model; /* 0x79C */
-    char pad_7a0[0x93C - 0x7A0];
-    void *shadow; /* 0x93C */
-    void *shaddata; /* 0x940 */
-    short character; /* 0x944 (also the D_0055FC88 shadow index) */
-    char pad_946[0x988 - 0x946];
-};
-
 extern s32 ForceRestart;
 extern s32 fadeval;
 extern s32 editor_active;
@@ -428,7 +281,6 @@ struct mfeathers_s {
     char pad_8c[0x90 - 0x8C];
 };
 extern struct mfeathers_s MaskFeathers[];
-extern struct player_s *player;
 extern s32 LIFTPLAYER;
 extern s32 ShowPlayerCoordinate;
 extern s32 ExtraMoves;
@@ -452,7 +304,6 @@ extern s32 cortex_gameover_i;
 extern short cortex_gameover_tab[][2];
 extern s8 D_0056233A[];
 extern s32 tempanim_nextaction;
-extern struct cmodel_s CModel[];
 extern u8 D_0058B504[];
 extern s32 gamesfx_channel;
 extern s32 tempanim_waitaudio;
@@ -489,10 +340,10 @@ extern s32 boss_dead;
 /* --- InitLevel support --- */
 
 extern struct objtab_s ObjTab[];
-extern u8 TempAnim[];
-extern u8 TempAnim2[];
-extern u8 TempLights[];
-extern u8 TempLights2[];
+extern struct anim_s TempAnim;
+extern struct anim_s TempAnim2;
+extern struct Nearest_Light_s TempLights;
+extern struct Nearest_Light_s TempLights2;
 extern s32 temp_character;
 extern s32 temp_character_action;
 extern s32 temp_character2;
@@ -526,68 +377,6 @@ extern struct nuvec_s lev_ambpos[];
 extern s32 jcrunch;
 extern s32 gamesfx_effect_volume;
 
-/* transporter object: offsets verified in FinishTransporter / StartTransporter */
-struct tobj_s {
-    struct player_s *parent; /* 0x0 */
-    char pad_4[0x8 - 0x4];
-    struct mask_s *mask; /* 0x8 (LoseMask) */
-    char pad_c[0x10 - 0xC];
-    struct numtx_s *pLOCATOR; /* 0x10 */
-    struct animpkt_s anim; /* 0x14 (ToggleVehicle) */
-    short character; /* 0x30 */
-    short vehicle; /* 0x32 (ToggleVehicle) */
-    u32 flags; /* 0x34 (UpdateKabooms) */
-    char pad_38[0x68 - 0x38];
-    struct nuvec_s pos; /* 0x68 */
-    struct nuvec_s mom;    /* 0x74 */
-    struct nuvec_s oldpos; /* 0x80 */
-    char pad_8c[0xE4 - 0x8C];
-    float RADIUS; /* 0xE4 */
-    struct nuvec_s min; /* 0xE8 */
-    struct nuvec_s max; /* 0xF4 */
-    float old_SCALE; /* 0x100 */
-    float SCALE;     /* 0x104 */
-    float radius; /* 0x108 */
-    float scale;  /* 0x10C */
-    /* objbot/objtop/dead verified in PlayerObjectAnimCollision */
-    float objbot; /* 0x110 */
-    float objtop; /* 0x114 */
-    float bot;    /* 0x118 */
-    float top;    /* 0x11C */
-    char pad_120[0x134 - 0x120];
-    float idle_gametime; /* 0x134 */
-    char pad_138[0x145 - 0x138];
-    signed char dead; /* 0x145 */
-    char pad_146[0x148 - 0x146];
-    short attack; /* 0x148 */
-    u16 kaboom_mask; /* 0x14A (UpdateKabooms) */
-    char pad_14c[0x14F - 0x14C];
-    signed char finished; /* 0x14F (CheckFinish) */
-    char pad_150[0x166 - 0x150];
-    short dyrot; /* 0x166 */
-    char pad_168[0x16A - 0x168];
-    short hdg; /* 0x16A */
-    char pad_16c[0x172 - 0x16C];
-    signed char invincible; /* 0x172 (UpdateKabooms) */
-    char pad_173[0x174 - 0x173];
-    signed char transporting; /* 0x174 */
-    char pad_175[0x17A - 0x175];
-    u8 f17A; /* 0x17A (LoseMask; unsigned -- retail li 0x96, not -0x6A) */
-    char pad_17b[0x185 - 0x17B];
-    u8 f185;     /* 0x185 (ToggleVehicle) */
-    u8 exploded; /* 0x186 (UpdateKabooms) */
-    char pad_187[0x188 - 0x187];
-};
-
-/* creature_s subset for FindClock (full layout in creature.h) */
-struct creatobj_s {
-    signed char used;    /* 0x00 */
-    signed char on;      /* 0x01 */
-    char pad_2[0x4 - 0x2];
-    struct tobj_s obj;   /* 0x04 */
-    char pad_18c[0xCE4 - 0x18C];
-};
-extern struct creatobj_s Character[9]; /* 0x0057EE38 */
 void UpdateDRAINDAMAGE(void);
 s32 UpdateCRUNCHTIME(void);
 void DrawDRAINDAMAGE(void);
@@ -596,7 +385,6 @@ void HubDrawItems(void);
 void GameSfxLoop(s32 sfx, struct nuvec_s *pos);
 
 void InitPositions(void);
-void ResetAnimPacket(void *pkt, s32 action);
 void ResetLights(void *lights);
 void InitCredits(void);
 void InitBugAreas(void);
@@ -618,7 +406,6 @@ void ResetPlayerEvents(void);
 void ResetGates(void);
 void ResetRings(void);
 void ResetAI(void);
-void ResetPlayer(s32 a);
 void ResetBug(void);
 void ResetLevel(void);
 void ResetProjectiles(void);
@@ -680,15 +467,15 @@ void inline InitProbe(void) {
 inline void ResetTempCharacter(s32 character, s32 action) {
     temp_character = character;
     temp_character_action = action;
-    ResetAnimPacket(TempAnim, action);
-    ResetLights(TempLights);
+    ResetAnimPacket(&TempAnim, action);
+    ResetLights(&TempLights);
 }
 
 inline void ResetTempCharacter2(s32 character, s32 action) {
     temp_character2 = character;
     temp_character2_action = action;
-    ResetAnimPacket(TempAnim2, action);
-    ResetLights(TempLights2);
+    ResetAnimPacket(&TempAnim2, action);
+    ResetLights(&TempLights2);
 }
 
 void ResetGame(void) {
@@ -2005,7 +1792,7 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
             NuSoundStopStream(4);
             NewMenu(cursor, -1, -1, -1);
         } else if (player->obj.mask != NULL &&
-                   ((player->obj.mask->flags_163 & 1) != 0 ||
+                   ((player->obj.mask->anim.flags & 1) != 0 ||
                     0x5db < cursor->item_frame || player->obj.mask->active >= 3)) {
             NewMenu(cursor, -1, -1, -1);
         }
@@ -2630,7 +2417,7 @@ void UpdateLevel(void) {
     }
 }
 
-struct creatobj_s *FindClock(void) {
+struct creature_s *FindClock(void) {
     s32 i;
 
     for (i = 1; i < 9; i++) {
@@ -2812,12 +2599,10 @@ inline s32 RotDiff(u16 a, u16 b) {
     return diff;
 }
 
-extern void NewRumble(void *p, s32 power);
-extern void NewBuzz(void *p, s32 n);
 
 inline void TransporterGo(void) {
     GameSfx(0x82, &player->obj.pos);
-    NewBuzz(player->obj.rumble, 5);
+    NewBuzz(&player->rumble, 5);
 }
 
 s32 StartHGobjAnim(struct nuhspecial_s *obj) {
@@ -2928,11 +2713,11 @@ inline void UpdateTimer(void *timer) {
     }
 }
 
-extern void KillItem(struct tobj_s *obj);
+extern void KillItem(struct obj_s *obj);
 
 /* gnu89 plain inline: standalone AND inlined into StartTimeTrial. */
 inline void ClockOff(void) {
-    struct creatobj_s *c;
+    struct creature_s *c;
     s32 i;
 
     for (i = 1; i < 9; i++) {
@@ -2968,7 +2753,7 @@ void MakeTimeF(float time, s32 hours, char *txt) {
 }
 
 
-inline void FinishTransporter(struct tobj_s *cyl, struct tobj_s *obj) {
+inline void FinishTransporter(struct obj_s *cyl, struct obj_s *obj) {
     cyl->oldpos = cyl->pos;
     cyl->mom = v000;
     cyl->dyrot = 0;
@@ -2978,15 +2763,15 @@ inline void FinishTransporter(struct tobj_s *cyl, struct tobj_s *obj) {
 
 /* gnu89 plain inline: standalone AND inlined into ResetDeath (retail has no
  * jal there -- the whole field-init sequence is expanded in place). */
-inline void StartTransporter(struct tobj_s *cyl, struct nuvec_s *pos) {
+inline void StartTransporter(struct obj_s *cyl, struct nuvec_s *pos) {
     cyl->oldpos = *pos;
     cyl->pos = cyl->oldpos;
     cyl->mom = v000;
-    cyl->radius = 0.5f;
     cyl->RADIUS = 0.5f;
-    cyl->scale = 1.0f;
-    cyl->SCALE = 1.0f;
+    cyl->radius = 0.5f;
     cyl->old_SCALE = 1.0f;
+    cyl->SCALE = 1.0f;
+    cyl->scale = 1.0f;
     cyl->top = 0.0f;
     cyl->bot = -1.0f;
     cyl->hdg = 0;
@@ -3287,7 +3072,6 @@ inline float DistanceToLine(struct nuvec_s *pos, struct nuvec_s *p0,
     return d;
 }
 
-extern signed char CRemap[];
 extern float D_0062D710; /* new-mask scale (PAL; GC used 0.8f) */
 
 void NewMask(struct mask_s *mask, struct nuvec_s *pos) {
@@ -3319,7 +3103,7 @@ void NewMask(struct mask_s *mask, struct nuvec_s *pos) {
 extern char D_00630BE8[];
 #define wumpa_file_fmt D_00630BE8
 extern char LevelFileName[];
-extern u8 Chase[];
+extern struct chase_s Chase[3];
 extern s32 NuFileLoadBuffer(char *name, void *buf, s32 max);
 extern s32 NuMemFileOpen(void *buf, s32 size, s32 mode);
 extern s32 NuFileReadInt(s32 fh);
@@ -3432,7 +3216,7 @@ float RatioAlongLine(struct nuvec_s *pos, struct nuvec_s *p0,
     return z / z1;
 }
 
-extern struct tobj_s death_obj;
+extern struct obj_s death_obj;
 extern s32 Death;
 extern s32 death_begun;
 
@@ -3457,8 +3241,8 @@ void ResetDeath(void) {
 }
 
 
-extern struct tobj_s bonus_obj[2];
-extern struct tobj_s gempath_obj;
+extern struct obj_s bonus_obj[2];
+extern struct obj_s gempath_obj;
 extern s32 ChaseActive(void);
 s32 Draw3DObject(s32 object, struct nuvec_s *pos, u16 xrot, u16 yrot, u16 zrot,
                  float scalex, float scaley, float scalez,
@@ -3529,7 +3313,7 @@ void InitSplineTable(void) {
     }
 }
 
-s32 PlayerObjectAnimCollision(struct tobj_s *obj, struct nuspecial_s *special,
+s32 PlayerObjectAnimCollision(struct obj_s *obj, struct nuspecial_s *special,
                               float radius) {
     float r;
     float dx;
@@ -3550,7 +3334,7 @@ s32 PlayerObjectAnimCollision(struct tobj_s *obj, struct nuspecial_s *special,
         if (!(obj->objbot > pos.y + radius) && !(obj->objtop < pos.y - radius)) {
             dx = pos.x - obj->pos.x;
             dz = pos.z - obj->pos.z;
-            r = obj->radius + radius;
+            r = obj->RADIUS + radius;
             if (dx * dx + dz * dz > r * r) {
                 return 0;
             }
@@ -3587,24 +3371,11 @@ void InitPositions(void) {
     }
 }
 
-/* rpos_s: iRAIL (+0x0) / iALONG (+0x2) / fALONG (+0x8) verified in WipeWumpa */
-struct rpos_s {
-    signed char iRAIL; /* 0x0 */
-    char pad_1;
-    short iALONG; /* 0x2 */
-    char pad_4[4];
-    float fALONG; /* 0x8 */
-    float fACROSS; /* 0xC */
-    u16 angle; /* 0x10 */
-    char pad_12[0x14 - 0x12];
-    u8 mode; /* 0x14 */
-};
-
 extern s32 FurtherALONG(s32 iRAIL0, s32 iALONG0, float fALONG0, s32 iRAIL1,
                         s32 iALONG1, float fALONG1);
 extern float D_0062D340; /* wipe-fly speed (FlyWumpa itself uses D_0062D700) */
 
-s32 WipeWumpa(struct rpos_s *rpos) {
+s32 WipeWumpa(struct RPos_s *rpos) {
     s32 i;
     struct wumpa_s *wumpa;
 
@@ -3726,7 +3497,7 @@ extern s32 NuHGobjRndrMtx(void *hobj, void *m, s32 a, void *b,
 extern void ShadRndr(void *a, void *b, float t, float r);
 
 void DrawMaskFeathers(void) {
-    struct cmodel_s *model;
+    struct CharacterModel *model;
     struct mfeathers_s *feathers;
     s32 i;
     float dead;
@@ -3742,12 +3513,12 @@ void DrawMaskFeathers(void) {
             feathers = &MaskFeathers[0];
             for (i = 0; i < 4; i++) {
                 if (feathers->time < feathers->duration) {
-                    NuHGobjEvalAnim(model->hobj, model->anmdata[0xe],
+                    NuHGobjEvalAnim(model->obj, model->anmdata[0xe],
                                     feathers->time, 0, NULL, tmtx);
-                    NuHGobjRndrMtx(model->hobj, feathers, 1, NULL, tmtx);
+                    NuHGobjRndrMtx(model->obj, feathers, 1, NULL, tmtx);
                     /* not in the GC reference: PS2 also renders the shadow */
-                    if (feathers->shadow != dead && model->shadow != NULL) {
-                        ShadRndr(&feathers->mS, model->shadow_model,
+                    if (feathers->shadow != dead && model->shadhdr != NULL) {
+                        ShadRndr(&feathers->mS, model->shaddata[0xe],
                                  feathers->time,
                                  D_0055FC88[model->character].f0);
                     }
@@ -3813,14 +3584,11 @@ void DefaultTimeTrialNames(s32 all) {
 }
 
 extern float DISCOXOFFSET;
-extern void EvalModelAnim(struct cmodel_s *model, void *anm, struct numtx_s *m,
-                          struct numtx_s *tmtx, float ***dwa,
-                          struct numtx_s *loc);
 extern void NuHGobjRndrMtxDwa(void *hobj, struct numtx_s *m, s32 nlayers,
                               short *layer, struct numtx_s *tmtx, float **dwa);
 
 void DrawTempCharacter2(s32 render) {
-    struct cmodel_s *model;
+    struct CharacterModel *model;
     struct numtx_s m;
     struct numtx_s tmtx[0x100];
     struct numtx_s mtxLOCATOR[16];
@@ -3849,9 +3617,9 @@ void DrawTempCharacter2(s32 render) {
                     m._30 = -DISCOXOFFSET;
                 }
             }
-            EvalModelAnim(model, TempAnim2, &m, tmtx, &dwa, mtxLOCATOR);
+            EvalModelAnim(model, &TempAnim2, &m, tmtx, &dwa, mtxLOCATOR);
             if (render != 0) {
-                NuHGobjRndrMtxDwa(model->hobj, &m, nlayers, layer, tmtx, dwa);
+                NuHGobjRndrMtxDwa(model->obj, &m, nlayers, layer, tmtx, dwa);
             }
         }
     }
@@ -4022,7 +3790,7 @@ extern struct nuvec_s D_0061D468;
 extern struct nuvec_s D_0061D478;
 
 void DrawTempCharacter(s32 render) {
-    struct cmodel_s *model;
+    struct CharacterModel *model;
     struct numtx_s m;
     struct numtx_s tmtx[0x100];
     struct numtx_s mtxLOCATOR[16];
@@ -4057,9 +3825,9 @@ void DrawTempCharacter(s32 render) {
             m._30 = -DISCOXOFFSET;
         }
     }
-    EvalModelAnim(model, TempAnim, &m, tmtx, &dwa, mtxLOCATOR);
+    EvalModelAnim(model, &TempAnim, &m, tmtx, &dwa, mtxLOCATOR);
     if (render != 0) {
-        NuHGobjRndrMtxDwa(model->hobj, &m, 1, NULL, tmtx, dwa);
+        NuHGobjRndrMtxDwa(model->obj, &m, 1, NULL, tmtx, dwa);
     }
 }
 
@@ -4140,7 +3908,7 @@ extern s32 GDeb[];
 extern void AddFiniteShotDebrisEffect(s32 *key, s32 i, struct nuvec_s *pos,
                                       s32 n);
 
-s32 HitWumpa(struct tobj_s *obj, s32 destroy) {
+s32 HitWumpa(struct obj_s *obj, s32 destroy) {
     float objtop;
     float objbot;
     float dx;
@@ -4154,7 +3922,7 @@ s32 HitWumpa(struct tobj_s *obj, s32 destroy) {
         objtop = obj->pos.y + obj->top * obj->SCALE;
         objbot = obj->pos.y + obj->bot * obj->SCALE;
         wumpa = Wumpa;
-        r2 = obj->radius + 0.1f;
+        r2 = obj->RADIUS + 0.1f;
         r2 *= r2;
         for (i = 0; i < 0x140; i++, wumpa++) {
             if ((u8)wumpa->active == 1 || (u8)wumpa->active == 2) {
@@ -4420,7 +4188,7 @@ extern s32 gamesfx_pitch;
 extern void AddVariableShotDebrisEffect(s32 type, struct nuvec_s *pos, s32 count,
                                         s32 a, s32 b);
 s32 Draw3DCharacter(struct nuvec_s *pos, u16 xrot, u16 yrot, u16 zrot,
-                    struct cmodel_s *model, float scale, s32 action, float anim_time,
+                    struct CharacterModel *model, float scale, s32 action, float anim_time,
                     s32 rot);
 
 void JonProbe(void) {
@@ -4443,8 +4211,8 @@ void JonProbe(void) {
             probepos.y += 4.5f;
             probeon = 1;
             GameSfx(0x82, &probepos);
-            NewRumble(player->obj.rumble, 0x7F);
-            NewBuzz(player->obj.rumble, 5);
+            NewRumble(&player->rumble, 0x7F);
+            NewBuzz(&player->rumble, 5);
         }
         probetime = 0x5DC;
         probedpos = in_finish_pos;
@@ -4469,8 +4237,8 @@ void JonProbe(void) {
                 probey = 0;
                 probeon = 0;
                 GameSfx(0x82, &probepos);
-                NewRumble(player->obj.rumble, 0x7F);
-                NewBuzz(player->obj.rumble, 5);
+                NewRumble(&player->rumble, 0x7F);
+                NewBuzz(&player->rumble, 5);
             }
         }
         pos = probedpos;
@@ -4739,7 +4507,7 @@ void GameRayCast(struct nuvec_s *src, struct nuvec_s *dir, float d,
     }
 }
 
-void DrawProbeFX(struct tobj_s *obj) {
+void DrawProbeFX(struct obj_s *obj) {
     struct nuvec_s pos;
     struct nuvec_s end;
     struct nuvec_s off;
@@ -4777,12 +4545,10 @@ void DrawProbeFX(struct tobj_s *obj) {
 
 extern float D_0062D274;
 extern float D_0062D278;
-extern void UpdateAnimPacket(struct cmodel_s *m, struct animpkt_s *a, float r,
-                             float b);
 extern s32 NuSoundKeyStatus(s32 ch);
 
 void UpdateTempCharacter(void) {
-    struct cmodel_s *model;
+    struct CharacterModel *model;
     s32 i;
 
     if (temp_character2 != -1) {
@@ -4790,14 +4556,11 @@ void UpdateTempCharacter(void) {
         if (i == -1) {
             return;
         }
-        ((struct animpkt_s *)TempAnim2)->oldaction =
-            ((struct animpkt_s *)TempAnim2)->action;
+        TempAnim2.oldaction = TempAnim2.action;
         /* hoisted: retail computes &CModel[i] before the action checks */
         model = &CModel[i];
-        if (((struct animpkt_s *)TempAnim2)->action < 0x76 &&
-            ((struct animpkt_s *)TempAnim2)->newaction < 0x76) {
-            UpdateAnimPacket(model, (struct animpkt_s *)TempAnim2, D_0062D274,
-                             0.0f);
+        if ((u16)TempAnim2.action < 0x76 && (u16)TempAnim2.newaction < 0x76) {
+            UpdateAnimPacket(model, &TempAnim2, D_0062D274, 0.0f);
         }
     }
     if (temp_character != -1) {
@@ -4805,10 +4568,9 @@ void UpdateTempCharacter(void) {
         if (i == -1) {
             return;
         }
-        ((struct animpkt_s *)TempAnim)->oldaction =
-            ((struct animpkt_s *)TempAnim)->action;
+        TempAnim.oldaction = TempAnim.action;
         if (temp_character == 2 &&
-            ((((struct animpkt_s *)TempAnim)->flags & 1) != 0 ||
+            ((TempAnim.flags & 1) != 0 ||
              (Pad[0] != NULL && (Pad[0]->paddata & 0x800) != 0))) {
             if (Level == 0x26) {
                 Game.lives = 4;
@@ -4828,20 +4590,18 @@ void UpdateTempCharacter(void) {
                     }
                 }
             }
-            if ((((struct animpkt_s *)TempAnim)->flags & 1) != 0) {
-                ((struct animpkt_s *)TempAnim)->flags = 0;
-                ((struct animpkt_s *)TempAnim)->newaction = 0x22;
+            if ((TempAnim.flags & 1) != 0) {
+                TempAnim.flags = 0;
+                TempAnim.newaction = 0x22;
             }
         }
         if (tempanim_waitaudio != 0 && NuSoundKeyStatus(4) == 1) {
-            ((struct animpkt_s *)TempAnim)->newaction = tempanim_nextaction;
+            TempAnim.newaction = tempanim_nextaction;
             tempanim_waitaudio = 0;
         }
         model = &CModel[i];
-        if (((struct animpkt_s *)TempAnim)->action < 0x76 &&
-            ((struct animpkt_s *)TempAnim)->newaction < 0x76) {
-            UpdateAnimPacket(model, (struct animpkt_s *)TempAnim, D_0062D278,
-                             0.0f);
+        if ((u16)TempAnim.action < 0x76 && (u16)TempAnim.newaction < 0x76) {
+            UpdateAnimPacket(model, &TempAnim, D_0062D278, 0.0f);
         }
     }
 }
@@ -4863,12 +4623,12 @@ void UpdateAwards(void) {
             if (award->wait != 0) {
                 if (tumble_character == 0) {
                     NuVecAdd(&award->oldpos0,
-                             (struct nuvec_s *)&player->obj.mtxLOCATOR[0][7]._30,
-                             (struct nuvec_s *)&player->obj.mtxLOCATOR[0][8]._30);
+                             (struct nuvec_s *)&player->mtxLOCATOR[0][7]._30,
+                             (struct nuvec_s *)&player->mtxLOCATOR[0][8]._30);
                     NuVecScale(&award->oldpos0, &award->oldpos0, 0.5f);
                 } else {
                     award->oldpos0 =
-                        *(struct nuvec_s *)&player->obj.mtxLOCATOR[0][3]._30;
+                        *(struct nuvec_s *)&player->mtxLOCATOR[0][3]._30;
                 }
                 award->oldpos1.x = award->oldpos0.x;
                 y = award->oldpos0.y;
@@ -4879,7 +4639,7 @@ void UpdateAwards(void) {
                 }
                 award->oldpos1.y = y;
                 award->oldpos1.z = award->oldpos0.z;
-                if (player->obj.anim.time >= tumble_item_addtime) {
+                if (player->obj.anim.anim_time >= tumble_item_addtime) {
                     award->wait = 0;
                     GameSfx(0x26, NULL);
                     AddGameDebris(0xA1, &award->oldpos1);
@@ -4924,7 +4684,7 @@ void DrawAwards(void) {
             if (award->wait != 0) {
                 pos = award->oldpos0;
                 t = tumble_item_starttime + 1.0f;
-                scale = (player->obj.anim.time - t) / (tumble_item_addtime - t);
+                scale = (player->obj.anim.anim_time - t) / (tumble_item_addtime - t);
                 if (scale > 1.0f) {
                     scale = 1.0f;
                 }
@@ -4992,9 +4752,8 @@ extern struct nuvec_s tumble_oldpos;
 extern struct nuvec_s tumble_newpos;
 extern float tumble_cycleduration;
 extern float D_0062D29C;
-extern float ModelAnimDuration(u32 character, u32 action, float start, float end);
 
-void HubStart(struct tobj_s *obj, s32 hub, s32 level, struct nuvec_s *pos) {
+void HubStart(struct obj_s *obj, s32 hub, s32 level, struct nuvec_s *pos) {
     struct nugspline_s *spl;
     struct nuvec_s *p0;
     struct nuvec_s *p1;
@@ -5076,9 +4835,9 @@ extern u8 hublevelopen[6][6];
 extern float FINISHRADIUSHUB;
 extern struct nuvec_s hubwarp_oldpos;
 extern struct nuvec_s hubwarp_newpos;
-extern void AddWarpDebris(struct tobj_s *obj, struct nuvec_s *pos);
+extern void AddWarpDebris(struct obj_s *obj, struct nuvec_s *pos);
 
-void HubLevelSelect(struct tobj_s *obj, s32 hub) {
+void HubLevelSelect(struct obj_s *obj, s32 hub) {
     struct nuvec_s pos;
     struct nuvec_s d;
     struct nuvec_s *p0;
@@ -5247,7 +5006,7 @@ text:
     }
 }
 
-extern struct rpos_s *best_cRPos;
+extern struct RPos_s *best_cRPos;
 extern float hub_vr_scale;
 extern float hub_vr_newscale;
 extern struct nuvec_s hub_vr_pos;
@@ -5474,15 +5233,7 @@ extern float D_0062D5F0; /* wumpa wait step (PAL; GC 1/60) */
 extern float D_0062D5F4; /* lives wait step (PAL; GC 1/60) */
 extern void AddPanelDebris(float x, float y, s32 i, float scale, s32 n);
 
-/* creature wrapper: obj sits at +0x4, so obj.dead lands at 0x149 */
-struct bcreature_s {
-    char pad_4[4];
-    struct tobj_s obj; /* 0x4 */
-    char pad_18c[0x234 - 0x18C];
-    struct numtx_s mtx; /* 0x234 */
-};
-
-void BonusTiming(struct bcreature_s *plr) {
+void BonusTiming(struct creature_s *plr) {
     s32 dead;
 
     dead = 0;
@@ -5585,16 +5336,15 @@ void MakeMaskMatrix(struct mask_s *mask, struct numtx_s *mM, struct numtx_s *mS,
     }
 }
 
-extern void NewRumble(void *p, s32 n);
 
-void LoseMask(struct tobj_s *plr) {
+void LoseMask(struct obj_s *plr) {
     GameSfx(1, &plr->pos);
     AddMaskFeathers(plr->mask);
     plr->mask->active--;
-    plr->f17A = 0x96;
+    plr->invincible = 0x96;
     plr->mom.x = plr->mom.z = 0.0f;
-    NewBuzz(player->obj.rumble, 0x19);
-    NewRumble(player->obj.rumble, 0x7F);
+    NewBuzz(&player->rumble, 0x19);
+    NewRumble(&player->rumble, 0x7F);
 }
 
 /* vtog_s: stride 0x84 (VTog[i] -> +0x84 in ResetVehicleControl's loop).
@@ -5606,7 +5356,7 @@ struct vtog_s {
     struct nugspline_s *look; /* 0x8 */
     struct numtx_s mtx;       /* 0xC */
     struct nuvec_s pos;      /* 0x4C */
-    struct animpkt_s anim;   /* 0x58 */
+    struct anim_s anim;   /* 0x58 */
     signed char type;  /* 0x74 */
     signed char iRAIL; /* 0x75 */
     short iALONG;      /* 0x76 */
@@ -5619,7 +5369,7 @@ struct vtog_s {
 
 extern struct vtog_s VTog[];
 extern s32 vtog_action;
-extern struct rpos_s TempRPos;
+extern struct RPos_s TempRPos;
 extern struct nuvec_s ShadNorm;
 extern u16 temp_xrot;
 extern u16 temp_zrot;
@@ -5628,7 +5378,7 @@ extern char D_0061D7F8[]; /* "vehicle_trigger_%.2i_in" */
 extern char D_0061D810[]; /* "vehicle_trigger_%.2i_out" */
 extern char D_0061D830[]; /* "vehicle_cam_%.2i" */
 extern char D_0061D848[]; /* "vehicle_look_%.2i" */
-extern void GetALONG(struct nuvec_s *pos, struct rpos_s *rpos, s32 iRAIL, s32 iALONG,
+extern void GetALONG(struct nuvec_s *pos, struct RPos_s *rpos, s32 iRAIL, s32 iALONG,
                      s32 dir);
 extern void FindAnglesZX(struct nuvec_s *norm);
 
@@ -5773,26 +5523,12 @@ end:
     vtog_duration = 0.0f;
 }
 
-/* CData entry, stride 0x34 */
-struct chardata_s {
-    char pad_0[0x14];
-    struct nuvec_s min; /* 0x14 */
-    struct nuvec_s max; /* 0x20 */
-    float scale;        /* 0x2C */
-    float shadow_scale; /* 0x30 */
-};
-
-extern struct chardata_s CData[];
 extern struct numtx_s mTEMP;
 extern struct nuvec_s AshesMechInPos;
 extern struct vtog_s *pVTog;
 extern s32 vtog_blend;
 extern u16 vtog_angle;
 extern float D_0062D2FC;
-extern s32 DrawCharacterModel(struct cmodel_s *model, struct animpkt_s *anim,
-                              struct numtx_s *mC, struct numtx_s *mS, s32 render,
-                              struct numtx_s *mR, struct numtx_s *loc_mtx,
-                              struct nuvec_s *loc_mom, void *obj);
 
 extern struct nuvec_s vtog_oldpos;
 extern struct nuvec_s vtog_newpos;
@@ -5803,12 +5539,11 @@ extern float D_0062D2EC;
 extern float D_0062D2F0;
 extern float D_0062D2F4;
 extern float D_0062D2F8;
-extern void ResetPlayerMoves(struct bcreature_s *c);
 extern void AddMechanicalDebris(struct nuvec_s *pos, s32 vehicle);
 extern void BlendGameCamera(struct cammtx_s *cam, float t);
 extern void JudderGameCamera(struct cammtx_s *cam, struct nuvec_s *pos, float amt);
 
-void ToggleVehicle(struct bcreature_s *c) {
+void ToggleVehicle(struct creature_s *c) {
     struct nuvec_s p0;
     struct nuvec_s p1;
     struct nuvec_s oldpos;
@@ -5947,7 +5682,7 @@ void ToggleVehicle(struct bcreature_s *c) {
                 vtog_newpos.x = pos_START->x;
             }
             vtog_blend = 1;
-            vt->mtx = c->mtx;
+            vt->mtx = c->m;
             if (vt->type == 0) {
                 ResetAnimPacket(&vt->anim, vtog_action);
             } else {
@@ -5963,7 +5698,7 @@ void ToggleVehicle(struct bcreature_s *c) {
                 AddGameDebris(0x11, &c->obj.pos);
                 GameSfx(0x2F, &c->obj.pos);
                 if (Level == 4) {
-                    c->obj.f185 = 0;
+                    c->obj.direction = 0;
                 }
             } else {
                 AddGameDebris(0x10, &c->obj.pos);
@@ -6011,8 +5746,8 @@ void ToggleVehicle(struct bcreature_s *c) {
 
 void DrawNextVehicle(s32 render) {
     struct nuvec_s pos;
-    struct animpkt_s anim;
-    struct cmodel_s *model;
+    struct anim_s anim;
+    struct CharacterModel *model;
     struct vtog_s *vt;
     float y;
     s32 vehicle;
@@ -6169,7 +5904,7 @@ struct wscr_s {
 };
 
 extern struct wscr_s WScr[32];
-extern struct rpos_s gempath_RPos;
+extern struct RPos_s gempath_RPos;
 extern signed char temp_iRAIL;
 extern short temp_iALONG;
 extern float temp_fALONG;
@@ -6315,7 +6050,7 @@ void DrawMask(struct mask_s *mask) {
     struct numtx_s mM;
     struct numtx_s mS;
     float **dwa;
-    struct cmodel_s *model;
+    struct CharacterModel *model;
     s32 i;
 
     if (mask->active != 0) {
@@ -6326,24 +6061,24 @@ void DrawMask(struct mask_s *mask) {
             mS = mask->mS;
             EvalModelAnim(model, &mask->anim, &mM, tmtx, &dwa, 0);
             if (USELIGHTS != 0 && LIGHTMASK != 0) {
-                SetLights(&mask->lights.pDir1st->colour, &mask->lights.pDir1st->direction,
-                          &mask->lights.pDir2nd->colour, &mask->lights.pDir2nd->direction,
-                          &mask->lights.pDir3rd->colour, &mask->lights.pDir3rd->direction,
-                          &mask->lights.ambcol);
+                SetLights(&mask->lights.pDir1st->Colour, &mask->lights.pDir1st->Direction,
+                          &mask->lights.pDir2nd->Colour, &mask->lights.pDir2nd->Direction,
+                          &mask->lights.pDir3rd->Colour, &mask->lights.pDir3rd->Direction,
+                          &mask->lights.AmbCol);
             }
-            NuHGobjRndrMtxDwa(model->hobj, &mM, 1, 0, tmtx, dwa);
+            NuHGobjRndrMtxDwa(model->obj, &mM, 1, 0, tmtx, dwa);
             if (mask->shadow != 2000000.0f) {
                 if (mask->reflect != 0) {
                     mM._01 = -mM._01;
                     mM._11 = -mM._11;
                     mM._21 = -mM._21;
                     mM._31 = mask->shadow - (mM._31 - mask->shadow);
-                    NuHGobjRndrMtxDwa(model->hobj, &mM, 1, 0, tmtx, dwa);
+                    NuHGobjRndrMtxDwa(model->obj, &mM, 1, 0, tmtx, dwa);
                 }
                 if ((LDATA->flags & 0x1000) == 0 && VEHICLECONTROL != 2 &&
                     (VEHICLECONTROL != 1 || player->obj.vehicle != 0x20) &&
-                    model->shadow != 0) {
-                    ShadRndr(&mS, model->shaddata, 1.0f,
+                    model->shadhdr != 0) {
+                    ShadRndr(&mS, model->shaddatarest, 1.0f,
                              CData[model->character].shadow_scale);
                 }
             }
@@ -6455,15 +6190,15 @@ void DrawWumpa(void) {
 
 extern u16 wumpa_a[];
 extern struct numtx_s numtx_identity;
-extern s32 HitCreatures(struct tobj_s *obj, s32 destroy, s32 type);
-extern s32 HitCrates(struct tobj_s *obj, s32 destroy);
-extern s32 HitItems(struct tobj_s *obj);
+extern s32 HitCreatures(struct obj_s *obj, s32 destroy, s32 type);
+extern s32 HitCrates(struct obj_s *obj, s32 destroy);
+extern s32 HitItems(struct obj_s *obj);
 void AddKaboom(s32 type, struct nuvec_s *pos, float t);
 
 void UpdateWumpa(void) {
     u16 la[3];
     struct nuvec_s scale;
-    struct tobj_s hitobj;
+    struct obj_s hitobj;
     struct winfo_s *info;
     struct wumpa_s *wumpa;
     s32 key;
@@ -6526,7 +6261,7 @@ void UpdateWumpa(void) {
                 hitobj.pos = wumpa->pos;
                 size = 1.0f - wumpa->time * 0.5f;
                 hitobj.SCALE = size;
-                hitobj.radius = size * 0.1f;
+                hitobj.RADIUS = size * 0.1f;
                 if (wumpa->destroy == 2) {
                     hitobj.SCALE = size + size;
                 }
@@ -6559,7 +6294,7 @@ void UpdateWumpa(void) {
 
 extern float CrateTopBelow(struct nuvec_s *pos);
 extern float CreatureTopBelow(struct nuvec_s *pos, s32 flags);
-extern void GetLights(struct nuvec_s *pos, struct nearlight_s *lights, s32 glbflag);
+extern void GetLights(struct nuvec_s *pos, struct Nearest_Light_s *lights, s32 glbflag);
 
 inline u16 SeekRot(u16 a, u16 b, s32 shift) {
     s32 diff = b - a;
@@ -6571,7 +6306,7 @@ inline u16 SeekRot(u16 a, u16 b, s32 shift) {
     return a + (diff >> shift);
 }
 
-void UpdateMask(struct mask_s *mask, struct tobj_s *obj) {
+void UpdateMask(struct mask_s *mask, struct obj_s *obj) {
     struct nuvec_s v;
     struct nuvec_s oldpos;
     struct numtx_s *mtx;
@@ -6760,17 +6495,17 @@ void UpdateMask(struct mask_s *mask, struct tobj_s *obj) {
     locked = 0;
     if (obj->parent == player) {
         if (player->obj.character == 0) {
-            if (mask->active > 2 && player->obj.spin != 0 && player->obj.spin_frame > 0 &&
-                player->obj.spin_frame <
-                    player->obj.spin_frames - player->obj.OnFootMoveInfo->SPINRESETFRAMES) {
+            if (mask->active > 2 && player->spin != 0 && player->spin_frame > 0 &&
+                player->spin_frame <
+                    player->spin_frames - player->minfo->SPINRESETFRAMES) {
                 i = 0;
             } else {
                 i = (LBIT & 0x400000040) ? 0 : 3;
-                if (mask->active > 2 && player->obj.spin != 0 &&
-                    (player->obj.spin_frame == 0 ||
-                     player->obj.spin_frame <
-                         player->obj.spin_frames -
-                             (player->obj.OnFootMoveInfo->SPINRESETFRAMES - 1))) {
+                if (mask->active > 2 && player->spin != 0 &&
+                    (player->spin_frame == 0 ||
+                     player->spin_frame <
+                         player->spin_frames -
+                             (player->minfo->SPINRESETFRAMES - 1))) {
                     locked = 1;
                 }
             }
@@ -6778,7 +6513,7 @@ void UpdateMask(struct mask_s *mask, struct tobj_s *obj) {
             i = 2;
         }
         if (i != -1) {
-            mtx = &player->obj.mtxLOCATOR[0][i];
+            mtx = &player->mtxLOCATOR[0][i];
         }
     }
     if (locked) {
@@ -6879,7 +6614,7 @@ extern struct crategroup_s CrateGroup[];
 extern struct cratecube_s Crate[];
 extern s32 CRATEGROUPCOUNT;
 extern float CRATEHOPSPEED;
-extern struct tobj_s *pObj[64];
+extern struct obj_s *pObj[64];
 extern float D_0062D314; /* kaboom time step */
 extern s32 GetCrateType(struct cratecube_s *crate, s32 flags);
 extern s32 NewCrateAnimation(struct cratecube_s *crate, s32 character, s32 action, s32 flag);
@@ -6887,10 +6622,10 @@ extern s32 CrateOff(struct crategroup_s *group, struct cratecube_s *crate, s32 t
 extern void StartExclamationCrateSequence(struct crategroup_s *group, struct cratecube_s *crate);
 extern void DestroyAllNitroCrates(struct crategroup_s *group, struct cratecube_s *crate);
 extern void HopCratesAbove(float speed, struct crategroup_s *group, struct cratecube_s *crate);
-extern s32 KillPlayer(struct tobj_s *obj, s32 anim);
-extern void PickupItem(struct tobj_s *obj);
-extern void FlyGameObject(struct tobj_s *obj, u16 yrot);
-extern s32 KillGameObject(struct tobj_s *obj, s32 anim);
+extern s32 KillPlayer(struct obj_s *obj, s32 anim);
+extern void PickupItem(struct obj_s *obj);
+extern void FlyGameObject(struct obj_s *obj, u16 yrot);
+extern s32 KillGameObject(struct obj_s *obj, s32 anim);
 
 void UpdateKabooms(void) {
     struct nuvec_s pos;
@@ -6899,7 +6634,7 @@ void UpdateKabooms(void) {
     struct kaboom_s *k;
     struct crategroup_s *group;
     struct cratecube_s *crate;
-    struct tobj_s *obj;
+    struct obj_s *obj;
     struct wumpa_s *wumpa;
     float r;
     float r2;
@@ -6972,7 +6707,7 @@ void UpdateKabooms(void) {
         if (k->type != 0x20) {
             for (j = 0; j < 64; j++) {
                 obj = pObj[j];
-                if (obj == NULL || obj->dead != 0 || obj->invincible != 0) {
+                if (obj == NULL || obj->dead != 0 || obj->invisible != 0) {
                     continue;
                 }
                 if ((obj->flags & 1) != 0 && (k->type & 0x18C) != 0) {
@@ -6982,10 +6717,10 @@ void UpdateKabooms(void) {
                     if ((k->type & 0x10) != 0) {
                         continue;
                     }
-                    if (k->type == 4 && (obj->kaboom_mask & 4) == 0) {
+                    if (k->type == 4 && (obj->vulnerable & 4) == 0) {
                         continue;
                     }
-                    if (k->type == 8 && (obj->kaboom_mask & 8) == 0) {
+                    if (k->type == 8 && (obj->vulnerable & 8) == 0) {
                         continue;
                     }
                 }
@@ -7007,7 +6742,7 @@ void UpdateKabooms(void) {
                 } else if ((obj->flags & 0x10) != 0) {
                     PickupItem(obj);
                 } else if ((obj->flags & 0x40004) == 0x40004) {
-                    obj->exploded = 1;
+                    obj->kill_contact = 1;
                 } else {
                     FlyGameObject(obj, NuAtan2D(d.x, d.z));
                     KillGameObject(obj, 1);
@@ -7123,7 +6858,7 @@ extern void PickupCrystal(void);
 extern void PickupBonusGem(s32 mask);
 extern void PickupPower(s32 type);
 
-void CheckFinish(struct tobj_s *obj) {
+void CheckFinish(struct obj_s *obj) {
     struct nuvec_s pos;
     struct nuvec_s nearest;
     float dist;
@@ -7454,12 +7189,12 @@ extern struct nugspline_s *gempath_pCAM;
 extern struct nugspline_s *gempath_pPLAT;
 extern struct rail_s D_005864A0;
 #define gempath_rail D_005864A0
-extern s32 ObjectCylinderCollision(struct tobj_s *obj, struct tobj_s *cyl, s32 flag,
+extern s32 ObjectCylinderCollision(struct obj_s *obj, struct obj_s *cyl, s32 flag,
                                    float scale);
 
-void GemPathTransporter(struct bcreature_s *plr) {
+void GemPathTransporter(struct creature_s *plr) {
     struct nuvec_s pos;
-    struct tobj_s *cyl;
+    struct obj_s *cyl;
     float t;
     s32 state;
     s32 hit;
@@ -7602,9 +7337,9 @@ extern s32 death_lock;
 extern struct nugspline_s *death_pCAM;
 extern struct nugspline_s *death_pPLAT;
 
-void DeathTransporter(struct bcreature_s *plr) {
+void DeathTransporter(struct creature_s *plr) {
     struct nuvec_s pos;
-    struct tobj_s *cyl;
+    struct obj_s *cyl;
     float t;
     s32 state;
     s32 hit;
@@ -7754,10 +7489,10 @@ extern float bonus_panel_wait;
 extern u8 bonus_crate_delay;
 extern void GameMusic(s32 music, s32 i);
 
-void BonusTransporter(struct bcreature_s *plr) {
+void BonusTransporter(struct creature_s *plr) {
     struct nuvec_s pos;
     struct rail_s *rail;
-    struct tobj_s *cyl;
+    struct obj_s *cyl;
     float old;
     float mid;
     s32 move;
@@ -7990,19 +7725,19 @@ extern s32 plr_target_frame;
 extern struct nuvec_s plr_target_sightpos;
 
 void DrawTarget(void) {
-    struct panim_s *anim;
+    struct anim_s *anim;
     struct nuvec_s v;
     s32 i;
 
-    if (player->obj.target == 0) {
+    if (player->target == 0) {
         return;
     }
-    if (player->obj.target_wait != 0) {
+    if (player->target_wait != 0) {
         return;
     }
-    if (player->obj.fire_lock == 0 && player->obj.dead == 0 &&
+    if (player->fire_lock == 0 && player->obj.dead == 0 &&
         player->obj.finished == 0 && boss_dead == 0 &&
-        player->obj.fire == 0 && plr_target_frame > 0) {
+        player->fire == 0 && plr_target_frame > 0) {
         anim = &player->obj.anim;
         if (VEHICLECONTROL != 1 ||
             (player->obj.vehicle != 0x44 && player->obj.vehicle != 0xB2)) {
@@ -8037,7 +7772,7 @@ void DrawTarget(void) {
 extern void NuHGobjEval(void *hobj, s32 n, void *joints, struct numtx_s *mtx);
 
 s32 Draw3DCharacter(struct nuvec_s *pos, u16 xrot, u16 yrot, u16 zrot,
-                    struct cmodel_s *model, float scale, s32 action, float anim_time,
+                    struct CharacterModel *model, float scale, s32 action, float anim_time,
                     s32 rot) {
     struct numtx_s m;
     struct numtx_s mtx[256];
@@ -8102,11 +7837,11 @@ s32 Draw3DCharacter(struct nuvec_s *pos, u16 xrot, u16 yrot, u16 zrot,
         }
         NuMtxTranslate(&m, pos);
         if (action >= 0 && action < 0x76 && model->anmdata[action] != NULL) {
-            NuHGobjEvalAnim(model->hobj, model->anmdata[action], anim_time, 0, NULL, mtx);
+            NuHGobjEvalAnim(model->obj, model->anmdata[action], anim_time, 0, NULL, mtx);
         } else {
-            NuHGobjEval(model->hobj, 0, NULL, mtx);
+            NuHGobjEval(model->obj, 0, NULL, mtx);
         }
-        return NuHGobjRndrMtx(model->hobj, &m, 1, NULL, mtx);
+        return NuHGobjRndrMtx(model->obj, &m, 1, NULL, mtx);
     }
     return 0;
 }

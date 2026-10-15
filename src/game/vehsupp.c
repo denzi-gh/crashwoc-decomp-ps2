@@ -56,8 +56,7 @@
 #include "numath/nuvec.h"
 #include "nu3d/nugscn.h"
 #include "gamelib/terrain.h"
-
-#include "creature.h"
+#include "game/creature.h"
 
 extern s32 Level;
 extern s32 Paused;
@@ -75,26 +74,14 @@ extern void NuRndrLine3dDbg(s32 colour, f32 x0, f32 y0, f32 z0, f32 x1, f32 y1,
 /* Earlier in this TU, still asm. */
 extern f32 ASin360f(f32 x);
 
-struct MYDRAW {
-    struct anim_s Anim;               /* 0x00 */
-    struct CharacterModel *model;     /* 0x1C */
-    s32 index;                        /* 0x20 */
-    s32 numjoints;                    /* 0x24 */
-    void *jointlist;                  /* 0x28 */
-    s32 field2C;                      /* 0x2C */
-    struct Nearest_Light_s lights;    /* 0x30 */
-};
-
 extern s32 ChrisJointOveride;
 extern s32 ChrisNumJoints;
-extern void *ChrisJointList;
+extern struct NUJOINTANIM_s *ChrisJointList;
 
 extern void ResetLights(struct Nearest_Light_s *nl);
 extern void SetNearestLights(struct Nearest_Light_s *l);
 extern void GetLights(struct nuvec_s *pos, struct Nearest_Light_s *lights,
                       s32 mode);
-extern void UpdateAnimPacket(struct CharacterModel *mod, struct anim_s *anim,
-                             f32 dt, f32 xz_distance);
 
 
 s16 GetVolumeI(f32 vol) {
@@ -539,12 +526,12 @@ void GetLocatorMtx(struct CharacterModel *model, struct numtx_s *dest,
     }
 
     NuMtxSetRotationY(&BaseMat, (s32)(angle * D_0062DF40));
-    NuHGobjEval(model->hobj, 0, 0, tmtx);
+    NuHGobjEval(model->obj, 0, 0, tmtx);
 
     d = dest;
     for (i = 0; i <= 15; i++) {
         if (model->pLOCATOR[i] != 0) {
-            NuHGobjPOIMtx(model->hobj, (u8)i, &BaseMat, tmtx, d);
+            NuHGobjPOIMtx(model->obj, (u8)i, &BaseMat, tmtx, d);
         }
         d++;
     }
@@ -557,38 +544,38 @@ void GetLocatorMtxMyDraw(struct MYDRAW *Draw, struct numtx_s *dest,
     s32 i;
     struct numtx_s *d;
 
-    model = Draw->model;
+    model = Draw->Model;
     if (model == 0) {
         return;
     }
 
-    NuHGobjEvalAnim(model->hobj, model->anmdata[Draw->Anim.action],
+    NuHGobjEvalAnim(model->obj, model->anmdata[Draw->Anim.action],
                     Draw->Anim.anim_time, 0, 0, tmtx);
 
     d = dest;
     for (i = 0; i <= 15; i++) {
-        if (Draw->model->pLOCATOR[i] != 0) {
-            NuHGobjPOIMtx(Draw->model->hobj, (u8)i, baseMtx, tmtx, d);
+        if (Draw->Model->pLOCATOR[i] != 0) {
+            NuHGobjPOIMtx(Draw->Model->obj, (u8)i, baseMtx, tmtx, d);
         }
         d++;
     }
 }
 
 s32 MyInitModelNew(struct MYDRAW *Draw, s32 index, s32 action, s32 numjoints,
-                   void *jointlist, s32 arg6) {
+                   void *jointlist, struct nuvec_s *pos) {
     s32 remap = CRemap[index];
 
     if (remap == -1) {
         return 0;
     }
 
-    Draw->model = &CModel[remap];
-    Draw->index = index;
-    Draw->numjoints = numjoints;
-    Draw->jointlist = jointlist;
-    Draw->field2C = arg6;
+    Draw->Model = &CModel[remap];
+    Draw->Character = index;
+    Draw->NumJoints = numjoints;
+    Draw->JointList = jointlist;
+    Draw->Position = pos;
     ResetAnimPacket(&Draw->Anim, action);
-    ResetLights(&Draw->lights);
+    ResetLights(&Draw->Nearest_Light);
     return 1;
 }
 
@@ -596,18 +583,18 @@ s32 MyDrawModelNew(struct MYDRAW *Draw, struct numtx_s *mC,
                    struct numtx_s *loc_mtx) {
     s32 result;
 
-    if (Draw->model == 0) {
+    if (Draw->Model == 0) {
         return 0;
     }
 
-    if (Draw->numjoints != 0) {
+    if (Draw->NumJoints != 0) {
         ChrisJointOveride = 1;
-        ChrisNumJoints = Draw->numjoints;
-        ChrisJointList = Draw->jointlist;
+        ChrisNumJoints = Draw->NumJoints;
+        ChrisJointList = Draw->JointList;
     }
 
-    SetNearestLights(&Draw->lights);
-    result = DrawCharacterModel(Draw->model, &Draw->Anim, mC, 0, 1, 0, loc_mtx,
+    SetNearestLights(&Draw->Nearest_Light);
+    result = DrawCharacterModel(Draw->Model, &Draw->Anim, mC, 0, 1, 0, loc_mtx,
                                 0, 0);
     ChrisJointOveride = 0;
     return result;
@@ -615,8 +602,8 @@ s32 MyDrawModelNew(struct MYDRAW *Draw, struct numtx_s *mC,
 
 void MyAnimateModelNew(struct MYDRAW *Draw, f32 dt) {
     Draw->Anim.oldaction = Draw->Anim.action;
-    UpdateAnimPacket(Draw->model, &Draw->Anim, dt, 0.0f);
-    GetLights((struct nuvec_s *)Draw->field2C, &Draw->lights, 1);
+    UpdateAnimPacket(Draw->Model, &Draw->Anim, dt, 0.0f);
+    GetLights(Draw->Position, &Draw->Nearest_Light, 1);
 }
 
 void MyResetAnimPacket(struct MYDRAW *Draw, s32 Action) {
