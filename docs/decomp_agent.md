@@ -234,8 +234,8 @@ tools/cc.py stages the tree and passes `-I.`. A module header is created when
 something needs it, not as an empty skeleton. A module's `.c` includes its own
 header, and callers include it instead of declaring the functions locally.
 Types are spelled by their struct tag (`struct numtx_s`), not through typedef
-aliases. `creature.h`, `gcutscn.h` and `nugscn.h` in the root are legacy:
-their types move to their proper headers and the files are deleted once empty.
+aliases. `creature.h` and `gcutscn.h` in the root are legacy: their types
+move to their proper headers and the files are deleted once empty.
 
 Four tools gate this work:
 

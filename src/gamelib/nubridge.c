@@ -22,6 +22,8 @@
 #include "numath/nutrig.h"
 #include "nu3d/numtl.h"
 #include "nu3d/nustream.h"
+#include "nu3d/nucamera.h"
+#include "nu3d/nugscn.h"
 
 #define BRIDGE_MAX 8
 #define BRIDGE_MAX_SECTIONS 24
@@ -36,27 +38,6 @@
 
 #define ROPE_SPRING(v, near, here, k) ((v) += fabs((near) - (here)) * ((near) - (here)) * (k) * 0.5 + ((near) - (here)) * (k))
 
-
-struct nuinstance_s {
-    struct numtx_s mtx;
-    int objid;
-    char pad44[0x50 - 0x44];
-};
-
-struct nugscn_s {
-    char pad00[0x14];
-    void **gobjs;
-    int numinstance;
-    struct nuinstance_s *instances;
-};
-
-struct nucamera_s {
-    struct numtx_s mtx;
-    float fov;
-    float aspect;
-    float nearclip;
-    float farclip;
-};
 
 union giftag_u {
     u64 dw[2];

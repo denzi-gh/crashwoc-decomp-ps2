@@ -37,6 +37,8 @@
 
 #include "nu_libc.h"
 
+#include "nu3d/nugscn.h"
+#include "nu3d/nulight.h"
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
 
@@ -160,7 +162,6 @@ extern void *world_scene[32];
 extern char D_0061FFD8[];
 extern char D_0061FFE8[];
 extern char D_0061FFF8[];
-void *NuSpecialFind(void *scene, void *out, char *name);
 
 extern s32 D_00633318;
 extern s32 D_0063331C;
@@ -224,20 +225,6 @@ extern struct nuvec_s punchpos1[4];    /* 0x005c7e08 */
 extern struct nuvec_s punchpos2[4];    /* 0x005c7e38 */
 void AddFiniteShotDebrisEffect(s32 *key, s32 effect, struct nuvec_s *pos, s32 n);
 void DebrisEmitterOrientation(s32 key, s32 a, s32 hdg);
-
-/* gong-bonger locator lookup (FindGongBongerAnim) */
-struct gongnode_s {
-    u8 pad[0x30];            /* 0x00 */
-    struct nuvec_s pos;      /* 0x30 */
-};
-struct gongspecial_s {
-    u8 pad[0x40];            /* 0x00 */
-    struct gongnode_s *node; /* 0x40 */
-};
-struct gongbuf_s {
-    void *anim;              /* 0x00 */
-    struct gongspecial_s *special; /* 0x04 */
-}; /* 0x8 */
 
 void GameSfx(s32 id, struct nuvec_s *pos);
 void NewRumble(struct rumble_s *rumble, s32 power);
@@ -332,9 +319,9 @@ void ResetAI(void)
 }
 
 
-void FindGongBongerAnim(struct nuvec_s *pos, struct gongbuf_s *out)
+void FindGongBongerAnim(struct nuvec_s *pos, struct nuhspecial_s *out)
 {
-    struct gongbuf_s buf[3];
+    struct nuhspecial_s buf[3];
     s32 i;
 
     memset(buf, 0, sizeof(buf));
@@ -344,7 +331,7 @@ void FindGongBongerAnim(struct nuvec_s *pos, struct gongbuf_s *out)
         NuSpecialFind(world_scene[0], &buf[2], D_0061FFF8);
         for (i = 0; i < 3; i++) {
             if (buf[i].special != 0) {
-                struct nuvec_s *np = &buf[i].special->node->pos;
+                struct nuvec_s *np = (struct nuvec_s *)&buf[i].special->instance->mtx._30;
                 f32 dx = np->x - pos->x;
                 f32 dz = np->z - pos->z;
                 if (dx * dx + dz * dz < 25.0f) {
@@ -522,7 +509,7 @@ s32 WaterCrunchFunction_Spladoosh(struct creature_s *c)
 /* ObjTab entry (PS2 stride 0x20); special at +0x4 (see game/crate). */
 struct objtab_s {
     void *scene;                     /* 0x00 */
-    struct gongspecial_s *special;   /* 0x04 */
+    struct nuspecial_s *special;     /* 0x04 */
     u8 pad_08[0x18];                 /* 0x08 */
 }; /* 0x20 */
 extern struct objtab_s ObjTab[];
@@ -618,9 +605,9 @@ s32 UpdateCRUNCHTIME(void)
     }
     for (i = 0; i < 4; i++) {
         if (ObjTab[181 + i].special != 0) {
-            ObjTab[181 + i].special->node->pos = D_005C8A10[i];
+            *(struct nuvec_s *)&ObjTab[181 + i].special->instance->mtx._30 = D_005C8A10[i];
             if (i == n) {
-                ObjTab[181 + i].special->node->pos.y -= 0.125f;
+                ObjTab[181 + i].special->instance->mtx._31 -= 0.125f;
             }
         }
     }
@@ -820,8 +807,6 @@ s32 UpdateCRUNCHTIME(void)
 }
 
 extern s32 Paused;
-void NuLgtArcLaser(s32 type, struct nuvec_s *start, struct nuvec_s *end,
-                   struct nuvec_s *mid, f32 a, f32 b, f32 c, f32 d, u32 col);
 void DrawVehMasks(void);
 
 void DrawCRUNCHTIME(void)
@@ -1321,7 +1306,7 @@ void MoveCreature(struct creature_s *c)
                     c->ai.event[i] = -1;
                 }
                 if (c->obj.character == 0x3F) {
-                    FindGongBongerAnim(pos, (struct gongbuf_s *)&c->ai.obj);
+                    FindGongBongerAnim(pos, &c->ai.obj);
                 }
                 c->ai.locator_kill = -1;
                 c->ai.kill = -1;

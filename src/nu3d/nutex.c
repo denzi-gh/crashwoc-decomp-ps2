@@ -54,11 +54,12 @@
 #include "nu_libc.h"
 #include "nu_types.h"
 
-#include "nucore/nuerror.h"
-#include "numath/numathtypes.h"
 #include "nu3d/numtl.h"
 #include "nu3d/nustream.h"
 #include "nu3d/nutex.h"
+#include "nu3d/nuvport.h"
+#include "nucore/nuerror.h"
+#include "numath/numathtypes.h"
 #include "nups2/ps2txtr.h"
 
 typedef union NuTexNativeHeader {
@@ -250,8 +251,6 @@ extern void *vtCloseDirect(void *cur);
 extern void *gsBeginGifPacket(void *cur, int eop, int nloop, int pre, int prim,
                               int flg, int nreg, ...);
 extern void *gsCloseGifPacket(void *cur);
-extern float NuVpVirtualWidth(float width);
-extern float NuVpVirtualHeight(float height);
 extern void NuRndrRect(struct numtlrect_s *rect);
 
 

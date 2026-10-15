@@ -15,46 +15,7 @@
 #include "numath/nuvec.h"
 #include "nu3d/numtl.h"
 #include "nu3d/nugobj.h"
-
-struct nuspecial_s;
-
-struct nuinstflags_s {
-    u32 visible : 1;
-    u32 onscreen : 1;
-    u32 visitest : 1;
-    u32 isanimated : 1;
-};
-
-struct nuinstance_s {
-    struct numtx_s mtx;
-    int objid;
-    struct nuinstflags_s flags;
-    void *anim;
-    int pad;
-};
-
-struct nugspline_s {
-    short len;
-    short ptsize;
-    char *name;
-    struct nuvec_s *pts;
-};
-
-struct nugscn_s {
-    int *tids;
-    int numtid;
-    struct numtl_s **mtls;
-    int nummtl;
-    int numgobj;
-    struct nugobj_s **gobjs;
-    int numinstance;
-    struct nuinstance_s *instances;
-    int numspecial;
-    struct nuspecial_s *specials;
-    int pad28;
-    int numsplines;
-    struct nugspline_s *splines;
-};
+#include "nu3d/nugscn.h"
 
 struct visidata_s {
     struct nugscn_s *sc;

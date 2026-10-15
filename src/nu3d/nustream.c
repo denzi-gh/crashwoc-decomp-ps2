@@ -54,6 +54,8 @@
 #include "numath/numathtypes.h"
 #include "numath/numtx.h"
 #include "numath/nuvec.h"
+#include "nu3d/nucamera.h"
+#include "nu3d/nuvport.h"
 typedef unsigned int u128 __attribute__((mode(TI)));
 
 struct nucolour4_s {
@@ -111,22 +113,6 @@ struct nulocalmtxpkt_s {
     char pad_0x56[6];
     unsigned int mscal;
     unsigned int flush;
-};
-
-typedef struct {
-    int x;
-    int y;
-    int width;
-    int height;
-} NuViewport;
-
-struct nucamera_s {
-    struct numtx_s mtx;
-    float fov;
-    float aspect;
-    float nearclip;
-    float farclip;
-    char pad_0x50[0x10];
 };
 
 union vifword_u {
@@ -240,8 +226,6 @@ extern float NuTrigTable[];
 
 extern char D_0067A500[];
 #define faceon_dir_pkt D_0067A500
-
-extern NuViewport *NuVpGetCurrentViewport(void);
 
 extern void *vpDmaTag_Cnt(void *packet);
 
@@ -811,7 +795,7 @@ void NuRndrSwapStreamBuffers(void)
 
 void FaceYDirStream(int angle)
 {
-    NuViewport *vp;
+    struct nuviewport_s *vp;
     union vifword_u *pkt;
 
     vp = NuVpGetCurrentViewport();

@@ -22,6 +22,10 @@
  *   0x0024c960 JonMaskFPS
  */
 
+#include "nu3d/nucamera.h"
+#include "nu3d/nugscn.h"
+#include "nu3d/nulight.h"
+#include "nu3d/nunode.h"
 #include "numath/numtx.h"
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
@@ -132,9 +136,6 @@ extern s32 qrand(void);
 extern void Draw3DCharacter(struct nuvec_s *pos, s32 xrot, s32 yrot, s32 z,
                             struct CharacterModel *model, f32 scale, s32 action,
                             f32 anim_time, s32 last);
-extern void NuLgtArcLaser(s32 type, struct nuvec_s *start, struct nuvec_s *end,
-                          struct nuvec_s *mid, f32 a, f32 b, f32 c, f32 d,
-                          u32 col);
 
 struct CortLight_s {
     int unk00;
@@ -177,29 +178,6 @@ struct ldata_s {
     u8 hazea;             /* 0x53 */
     s32 totalsize;        /* 0x54 */
 }; /* 0x58 */
-
-struct nunode_s {
-    u8 unk_0x00[0x30];        /* 0x00 */
-    struct nuvec_s pos;       /* 0x30 */
-};
-
-struct nuspecial_s {
-    struct numtx_s mtx;        /* 0x00 */
-    u8 unk_0x00[0xC];          /* 0x40 */
-    struct nunode_s *node;     /* 0x4c */
-};
-
-struct nugspline_s {
-    s16 len;                  /* 0x0 */
-    s16 ptsize;               /* 0x2 */
-    char *name;               /* 0x4 */
-    char *pts;                /* 0x8 */
-}; /* 0xC */
-
-struct nugscn_s {
-    u8 unk_0x00[0x30];             /* 0x00 */
-    struct nugspline_s *splines;   /* 0x30 */
-};
 
 struct objtab_s {
     struct nuhspecial_s obj;   /* 0x00 */
@@ -287,16 +265,12 @@ extern struct deb3_s *AddDeb3Ang(struct nuvec_s *pos, s32 db, s32 emit,
                                  struct nuangvec_s *angle, s32 rotx, s32 roty);
 extern f32 NuFsqrt(f32 x);
 extern f32 NewShadow(struct nuvec_s *pos, f32 y);
-extern void NuLightAddSpot(struct nuvec_s *pos, u32 colour, s32 mode, f32 size);
 extern void NuBridgeOn(s32 on);
 extern void FireBossWaterFire(s32 on);
-extern s32 NuSpecialFind(struct nugscn_s *scene, struct nuhspecial_s *sp,
-                         char *name);
 extern s32 StartHGobjAnim(struct nuhspecial_s *sp);
 extern void DebrisEmitterOrientation(s32 key, s32 a, s32 hdg);
 extern void NewRumble(struct rumble_s *rumble, s32 power);
 extern void NewBuzz(struct rumble_s *rumble, s32 frames);
-extern s32 NuCameraClipTestPoints(struct nuvec_s *pos, s32 n, struct numtx_s *wm);
 extern void PlayRandSFX(void);
 
 #define JONMASK(v, a) JonMaskFPS((v), (a))
@@ -1082,7 +1056,7 @@ void LaunchObjects(void) {
             vec2.y = vec2.y + dy;
             vec2.z = vec2.z + dz;
             if (FRAME == FRAMES - 1) {
-                NuLightAddSpot(&vec, cortcols[loop], 2, 3.0f);
+                NuLightAddSpot(&vec, 3.0f, cortcols[loop], 2);
             }
             cortlights[loop * 6] =
                 (cortlights[loop * 6] + cortlights[loop * 6 + 3]) & 0xFFFF;
@@ -1155,10 +1129,10 @@ void LaunchObjects(void) {
             }
             if (roofon < 0xDAC) {
                 if (ObjTab[150].obj.special != 0) {
-                    ObjTab[150].obj.special->node->pos.y = floor1 - 100.0f;
+                    ObjTab[150].obj.special->instance->mtx._31 = floor1 - 100.0f;
                 }
                 if (ObjTab[151].obj.special != 0) {
-                    ObjTab[151].obj.special->node->pos.y = roof1;
+                    ObjTab[151].obj.special->instance->mtx._31 = roof1;
                 }
             }
         } else if (flooron != 0) {
@@ -1168,18 +1142,18 @@ void LaunchObjects(void) {
             }
             if (flooron < 0xDAC) {
                 if (ObjTab[150].obj.special != 0) {
-                    ObjTab[150].obj.special->node->pos.y = floor1;
+                    ObjTab[150].obj.special->instance->mtx._31 = floor1;
                 }
                 if (ObjTab[151].obj.special != 0) {
-                    ObjTab[151].obj.special->node->pos.y = roof1 - 100.0f;
+                    ObjTab[151].obj.special->instance->mtx._31 = roof1 - 100.0f;
                 }
             }
         } else {
             if (ObjTab[150].obj.special != 0) {
-                ObjTab[150].obj.special->node->pos.y = floor1 - 100.0f;
+                ObjTab[150].obj.special->instance->mtx._31 = floor1 - 100.0f;
             }
             if (ObjTab[151].obj.special != 0) {
-                ObjTab[151].obj.special->node->pos.y = roof1 - 100.0f;
+                ObjTab[151].obj.special->instance->mtx._31 = roof1 - 100.0f;
             }
             water1 -= 60;
             if (water1 < 0) {
@@ -1386,7 +1360,7 @@ void LaunchObjects(void) {
             vec.y = vec.y + player->mtxLOCATOR[1][2]._21 * -2.0f;
             vec.z = vec.z + player->mtxLOCATOR[1][2]._22 * -2.0f;
             if (FRAME == FRAMES - 1) {
-                NuLightAddSpot(&vec, 0x60000020, 0, 1.5f);
+                NuLightAddSpot(&vec, 1.5f, 0x60000020, 0);
             }
             vec.x = player->mtxLOCATOR[1][3]._30;
             vec.y = player->mtxLOCATOR[1][3]._31;
@@ -1395,7 +1369,7 @@ void LaunchObjects(void) {
             vec.y = vec.y + player->mtxLOCATOR[1][3]._21 * -2.0f;
             vec.z = vec.z + player->mtxLOCATOR[1][3]._22 * -2.0f;
             if (FRAME == FRAMES - 1) {
-                NuLightAddSpot(&vec, 0x60000020, 0, 1.5f);
+                NuLightAddSpot(&vec, 1.5f, 0x60000020, 0);
             }
         }
     }
@@ -1697,7 +1671,6 @@ void LaunchObjects(void) {
 }
 
 void NuRndrAddShadow(struct nuvec_s * pos, float r, int shade, int xrot, int yrot, int zrot);
-int NuSpecialDrawAt(struct nuhspecial_s * sph, struct numtx_s * mtx);
 
 void ProcDeb3(void) {
   int loop;

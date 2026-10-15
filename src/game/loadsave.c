@@ -13,6 +13,8 @@
 #include "nu_libc.h"
 #include "nu_types.h"
 
+#include "nu3d/nugscn.h"
+
 struct hub_s {
     u8 flags;
     u8 crystals;
@@ -89,16 +91,8 @@ struct gametimer_s {
     u8 pad_10[0x8];
 };
 
-struct nugscn_s;
-struct objspecial_s;
-
-struct objinfo_s {
-    struct nugscn_s *scene;
-    struct objspecial_s *special;
-};
-
 struct objtab_s {
-    struct objinfo_s obj;
+    struct nuhspecial_s obj;
     struct nugscn_s **scene;
     signed char visible;
     char font3d_letter;
@@ -170,7 +164,7 @@ extern void AddSpacesIntoText(char *text, s32 flag);
 extern s32 DrawPanel3DObject(s32 object, float x, float y, float z, float scalex,
                              float scaley, float scalez, u16 xrot, u16 yrot,
                              u16 zrot, struct nugscn_s *scn,
-                             struct objspecial_s *obj, s32 rot);
+                             struct nuspecial_s *obj, s32 rot);
 
 
 void UpdateSaveSlots(struct cursor_s *cursor) {

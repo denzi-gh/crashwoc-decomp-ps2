@@ -19,41 +19,19 @@
  *   0x00115190 NuVpGetCurrentViewport
  */
 
-/* Fields accessed by the viewport setters and coordinate helpers. */
-typedef struct NuViewport {
-    int x;
-    int y;
-    int width;
-    int height;
-    float zmin;
-    float zmax;
-    float centre_x;
-    float centre_y;
-    float clip_left;
-    float clip_top;
-    float clip_right;
-    float clip_bottom;
-    float clip_scale_x;
-    float clip_scale_y;
-    float guard_scale_x;
-    float guard_scale_y;
-} NuViewport;
+#include "numath/numathtypes.h"
+#include "nu3d/nuvport.h"
 
-typedef struct NuViewportMatrix {
-    float elements[16];
-} NuViewportMatrix;
-
-extern NuViewport D_0067D480;
-extern NuViewport D_0067D4C0;
-extern NuViewportMatrix D_0067D500;
+extern struct nuviewport_s D_0067D480;
+extern struct nuviewport_s D_0067D4C0;
+extern struct numtx_s D_0067D500;
 extern int D_00633058;
 #define default_viewport D_0067D480
 #define current_viewport D_0067D4C0
 #define viewport_scaling_matrix D_0067D500
 #define viewport_dirty D_00633058
 
-void NuPs2GetViewport(NuViewport *viewport);
-void NuVpSetScalingMtx(void);
+void NuPs2GetViewport(struct nuviewport_s *viewport);
 
 
 void NuVpUpdate(void)
@@ -81,27 +59,27 @@ void NuVpUpdate(void)
 
 void NuVpSetScalingMtx(void)
 {
-    NuViewport *viewport = &current_viewport;
-    NuViewportMatrix *matrix = &viewport_scaling_matrix;
+    struct nuviewport_s *viewport = &current_viewport;
+    struct numtx_s *matrix = &viewport_scaling_matrix;
     float width = (float)viewport->width;
     float height = (float)viewport->height;
 
-    matrix->elements[0] = width * 0.5f;
-    matrix->elements[1] = 0.0f;
-    matrix->elements[2] = 0.0f;
-    matrix->elements[3] = 0.0f;
-    matrix->elements[4] = 0.0f;
-    matrix->elements[5] = -height * 0.5f;
-    matrix->elements[6] = 0.0f;
-    matrix->elements[7] = 0.0f;
-    matrix->elements[8] = 0.0f;
-    matrix->elements[9] = 0.0f;
-    matrix->elements[10] = viewport->zmax - viewport->zmin;
-    matrix->elements[11] = 0.0f;
-    matrix->elements[12] = (float)viewport->x + width * viewport->centre_x;
-    matrix->elements[13] = (float)viewport->y + height * viewport->centre_y;
-    matrix->elements[14] = viewport->zmin;
-    matrix->elements[15] = 1.0f;
+    matrix->_00 = width * 0.5f;
+    matrix->_01 = 0.0f;
+    matrix->_02 = 0.0f;
+    matrix->_03 = 0.0f;
+    matrix->_10 = 0.0f;
+    matrix->_11 = -height * 0.5f;
+    matrix->_12 = 0.0f;
+    matrix->_13 = 0.0f;
+    matrix->_20 = 0.0f;
+    matrix->_21 = 0.0f;
+    matrix->_22 = viewport->zmax - viewport->zmin;
+    matrix->_23 = 0.0f;
+    matrix->_30 = (float)viewport->x + width * viewport->centre_x;
+    matrix->_31 = (float)viewport->y + height * viewport->centre_y;
+    matrix->_32 = viewport->zmin;
+    matrix->_33 = 1.0f;
 }
 
 
@@ -161,7 +139,7 @@ void NuVpSetCentre(float x, float y)
 
 void NuVpSetClipping(float left, float top, float right, float bottom)
 {
-    NuViewport *viewport = &current_viewport;
+    struct nuviewport_s *viewport = &current_viewport;
 
     if (left < 0.0f) {
         viewport->clip_left = 0.0f;
@@ -187,7 +165,7 @@ void NuVpSetClipping(float left, float top, float right, float bottom)
 }
 
 
-void NuVpGetScalingMtx(NuViewportMatrix *matrix)
+void NuVpGetScalingMtx(struct numtx_s *matrix)
 {
     if (matrix) {
         *matrix = viewport_scaling_matrix;
@@ -219,7 +197,7 @@ float NuVpPixelHeight(float height)
 }
 
 
-NuViewport *NuVpGetCurrentViewport(void)
+struct nuviewport_s *NuVpGetCurrentViewport(void)
 {
     return &current_viewport;
 }

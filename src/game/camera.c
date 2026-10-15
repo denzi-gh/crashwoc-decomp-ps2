@@ -29,6 +29,8 @@
 #include "numath/nuvec.h"
 #include "nu3d/numtl.h"
 #include "nu3d/nugobj.h"
+#include "nu3d/nugscn.h"
+#include "nu3d/nucamera.h"
 
 #include "creature.h"
 
@@ -73,8 +75,6 @@ struct cammtx_s {
     u8 unk_0x11B[0x1];
 };                                /* 0x11C */
 
-/* rail_s: stride 0x28. type @0x26 (mirrors src/game/ai.c and bug.c). */
-struct nugspline_s;
 struct rail_s {
     struct nugspline_s *pINPLAT;   /* 0x00 */
     struct nugspline_s *pINCAM;    /* 0x04 */
@@ -120,16 +120,6 @@ extern f32 NuTrigTable[];
 extern s32 RotDiff(u16 a, u16 b);
 extern f32 NuFsqrt(f32 x);
 
-/* nugspline_s: dist@0x0, ptsize@0x2, pts@0x8. */
-struct nugspline_s {
-    s16 dist;          /* 0x0 */
-    s16 ptsize;       /* 0x2 */
-    u8 pad4[0x4];
-    u8 *pts;          /* 0x8 */
-};
-
-
-struct nugscn_s;
 
 extern struct nugscn_s *world_scene[];
 extern char tbuf[];
@@ -151,7 +141,6 @@ extern char D_00630A68[];
 extern char D_00630A60[];
 #define railext_gem D_00630A60
 
-extern struct nugspline_s *NuSplineFind(struct nugscn_s *scene, char *name);
 extern f32 SplineDistance(struct nugspline_s *spl);
 
 
@@ -182,7 +171,7 @@ void InitRails(void) {
             if (rail->pCAM == 0) {
                 continue;
             }
-            camlen = rail->pCAM->dist;
+            camlen = rail->pCAM->len;
             if (camlen < 2) {
                 continue;
             }
@@ -191,7 +180,7 @@ void InitRails(void) {
             if (rail->pLEFT == 0) {
                 continue;
             }
-            leftlen = rail->pLEFT->dist;
+            leftlen = rail->pLEFT->len;
             if (leftlen != camlen) {
                 continue;
             }
@@ -200,7 +189,7 @@ void InitRails(void) {
             if (rail->pRIGHT == 0) {
                 continue;
             }
-            rightlen = rail->pRIGHT->dist;
+            rightlen = rail->pRIGHT->len;
             if (rightlen != leftlen) {
                 continue;
             }
@@ -703,10 +692,10 @@ inline s32 InSplineArea(struct nuvec_s *pos, struct nugspline_s *spl) {
     s32 i;
     s32 j;
 
-    for (i = 1; i < spl->dist; i++) {
+    for (i = 1; i < spl->len; i++) {
         p1 = (struct nuvec_s *)((s32)spl->pts + i * spl->ptsize);
         j = i + 1;
-        if (j == spl->dist) {
+        if (j == spl->len) {
             j = 1;
         }
         p0 = (struct nuvec_s *)((s32)spl->pts + j * spl->ptsize);
@@ -721,10 +710,6 @@ inline s32 InSplineArea(struct nuvec_s *pos, struct nugspline_s *spl) {
 /* ------------------------------------------------------------------ */
 /* MoveGameCamera                                                      */
 /* ------------------------------------------------------------------ */
-
-struct nucam_s {
-    struct numtx_s mtx;       /* 0x00 */
-};
 
 struct spltab_s {
     struct nugspline_s *spl;  /* 0x00 */
@@ -764,7 +749,7 @@ struct nupad_s {
     u64 flags2;               /* 0x568 */
 };
 
-extern struct nucam_s *pNuCam;
+extern struct nucamera_s *pNuCam;
 extern struct spltab_s SplTab[];
 extern struct cursor_s Cursor;
 extern struct gametimer_s GameTimer;
@@ -840,7 +825,7 @@ extern void GliderCam(struct cammtx_s *cam);
 extern void JeepCam(struct cammtx_s *cam);
 extern void JeepCamFollowAng(struct cammtx_s *cam, s32 a1);
 extern void JeepCamIntro(struct cammtx_s *cam);
-extern void NuCameraSet(struct nucam_s *cam);
+extern void NuCameraSet(struct nucamera_s *cam);
 extern u16 TurnRot(u16 a, u16 b, s32 rate);
 extern u16 SeekRot(u16 a, u16 dist, s32 rate);
 extern void PointAlongSpline(struct nugspline_s *spl, f32 ratio,
@@ -1858,7 +1843,7 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
             /* aim between the spline centre and the dist */
             ang = NuAtan2D(dx, dz) & 0xFFFF;
             tmp = v000;
-            n = SplTab[iSPL + 9].spl->dist;
+            n = SplTab[iSPL + 9].spl->len;
             for (i = 0; i < n; i++) {
                 NuVecAdd(&tmp, &tmp,
                          (struct nuvec_s *)(SplTab[iSPL + 9].spl->pts +

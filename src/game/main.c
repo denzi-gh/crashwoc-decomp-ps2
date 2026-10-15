@@ -55,15 +55,10 @@
 #include "numath/numathtypes.h"
 #include "numath/numtx.h"
 #include "numath/nutrig.h"
-
-struct nugscn_s;
-
-/* NuCamera: view matrix at 0x00 (_32 = 0x38 is the atmospheric-pressure Z). */
-struct nucam_s {
-    struct numtx_s mtx;            /* 0x00 */
-    unsigned char unk_0x40[0xC];   /* 0x40 */
-    float farclip;                 /* 0x4C */
-};
+#include "nu3d/nugscn.h"
+#include "nu3d/nulight.h"
+#include "nu3d/nuvport.h"
+#include "nu3d/nucamera.h"
 
 /* GameCam: the world camera matrix lives at 0x00. */
 struct gamecam_s {
@@ -74,7 +69,7 @@ extern s32 Level;
 extern s32 level_part_2;
 extern float AtmosphericPressureHackedZ;
 extern struct nugscn_s *world_scene[32];
-extern struct nucam_s *pNuCam;
+extern struct nucamera_s *pNuCam;
 extern struct gamecam_s *pCam;
 extern struct numtl_s *DebMat[8];
 
@@ -86,7 +81,7 @@ extern s32 SHEIGHT;
 extern s32 D_00633264;              /* fade colour */
 extern struct numtl_s *D_00633260; /* fade material */
 
-extern void NuCameraSet(struct nucam_s *cam);
+extern void NuCameraSet(struct nucamera_s *cam);
 extern void NuGScnRndr3(struct nugscn_s *scene);
 extern void NuBridgeDraw(struct nugscn_s *scene, struct numtl_s *mtl);
 extern void NuWindDraw(struct nugscn_s *scene);
@@ -133,7 +128,7 @@ extern volatile s32 font3d_initialised;
 extern s32 GAMEOBJECTCOUNT;
 extern s32 i_cratetypedata;
 extern s32 PLAYERCOUNT;
-extern void *superbuffer_ptr;
+extern char *superbuffer_ptr;
 extern void *superbuffer_end;
 
 extern char load_txt[];
@@ -182,12 +177,9 @@ extern void InitClouds(void);
 extern void *NuDatOpen(char *name, s32 a, s32 b);
 extern void NuDatSet(void *dat);
 extern void NuDatClose(void *dat);
-extern struct nugscn_s *NuGScnRead(void **pptr, void *end, char *name);
 extern void InitFont3D(struct nugscn_s *scene);
 extern void LoadScreen(char *name);
 extern void LoadCharacterModels(void);
-extern void NuLigthSetPolyHazeMat(struct numtl_s *mtl, struct hazecol_s *a,
-                                  struct hazecol_s *b);
 extern void ClearGameObjects(void);
 extern void ResetCheckpoint(s32 a, s32 b, s32 c, float d);
 extern void InitWorld(void);
@@ -271,7 +263,7 @@ extern char D_0061B2D8[];
 
 extern void NuStrCat(char *dst, char *src);
 extern void NuRndrInitWorld(void);
-extern void *visiLoadData(char *name, struct nugscn_s *scene, void **pptr);
+extern void *visiLoadData(char *name, struct nugscn_s *scene, char **pptr);
 extern void BuildVisiTable(struct nugscn_s *gsc);
 extern void edobjRegisterBaseScene(struct nugscn_s *scene);
 extern void edbitsRegisterBaseScene(struct nugscn_s *scene);
@@ -281,11 +273,10 @@ extern void edbitsRegisterSfx(void *tab, void *sfx, s32 count, s32 total);
 extern void NuWaterInit(struct nugscn_s *scene);
 extern void NuBridgeInit(void);
 extern void NuWindInit(void);
-extern void NuLightFogClear(s32 a);
 extern s32 saveloadLoadIcon(char *name, void *buf);
 extern void noterraininit(void);
 extern void TerrainSetCur(void *buf);
-extern short *terraininit(s32 level, void **pptr, void *end, s32 a, char *name,
+extern short *terraininit(s32 level, char **pptr, void *end, s32 a, char *name,
                         struct nugscn_s *scene, s32 b);
 extern void edppDestroyAllParticles(void);
 extern void edppDestroyAllEffects(void);
@@ -729,7 +720,7 @@ void LoadLevel(void)
 
     haze0 = D_0062FAC8[0];
     haze1 = D_0062FAD0[0];
-    NuLigthSetPolyHazeMat(DebMat[4], &haze0, &haze1);
+    NuLigthSetPolyHazeMat(DebMat[4], (float *)&haze0, (float *)&haze1);
 
     ClearGameObjects();
     ResetCheckpoint(-1, -1, 0, 0.0f);
@@ -1259,20 +1250,8 @@ struct vec3_s {
     float z;
 };
 
-struct nulight_s {
-    s32 type;                    /* 0x00 */
-    s32 on;                      /* 0x04 */
-    struct vec3_s ambient;       /* 0x08 */
-    struct vec3_s diffuse;       /* 0x14 */
-    u8 unk_0x20[0x20];           /* 0x20 */
-    struct numtx_s mtx;          /* 0x40 */
-};
-
 extern struct nulight_s *D_0062FAE8;
 #define level_light D_0062FAE8
-
-extern struct nulight_s *NuLightCreate(void);
-extern void NuLightUpdate(struct nulight_s *light);
 
 void InitLights(void)
 {
@@ -1280,12 +1259,12 @@ void InitLights(void)
     if (level_light != 0) {
         level_light->type = 0;
         level_light->on = 1;
-        level_light->ambient.x = 0.0f;
-        level_light->ambient.y = 0.0f;
-        level_light->ambient.z = 0.0f;
-        level_light->diffuse.x = 0.0f;
-        level_light->diffuse.y = 0.0f;
-        level_light->diffuse.z = 1.0f;
+        level_light->ambient.r = 0.0f;
+        level_light->ambient.g = 0.0f;
+        level_light->ambient.b = 0.0f;
+        level_light->diffuse.r = 0.0f;
+        level_light->diffuse.g = 0.0f;
+        level_light->diffuse.b = 1.0f;
         NuMtxSetRotationX(&level_light->mtx, 0xC000);
         NuLightUpdate(level_light);
     }
@@ -1324,7 +1303,6 @@ struct nutexdesc_s {
     s32 linear;              /* 0x1C */
 }; /* 0x20 */
 
-struct nuviewport_s;
 extern s32 pause_rndr_on;
 extern s32 D_0062FB54;                 /* Paused state of the previous frame */
 extern s32 PS2_REZ_W;
@@ -1335,7 +1313,6 @@ extern s32 NuRndrBeginSceneEx(struct nutex_s *rt, s32 a, s32 b);
 extern void NuRndrEndScene(void);
 extern void NuRndrClear(s32 mode, s32 col, float z);
 extern void NuRndrFlush(s32 flags);
-extern s32 *NuVpGetCurrentViewport(void);
 extern void NuRndrRectUV2di(s32 x, s32 y, s32 w, s32 h, float u0, float v0, float u1, float v1,
                             u32 col, struct numtl_s *mtl);
 
@@ -1379,14 +1356,14 @@ void InitPauseRender(void)
 
 void HandlePauseRender(void)
 {
-    s32 *vp;
+    struct nuviewport_s *vp;
     float u;
     float v;
 
     if (pause_rndr_on != 0 && pause_rt != 0 && NuRndrBeginScene(-1) != 0) {
         vp = NuVpGetCurrentViewport();
         NuRndrClear(5, 0, 1.0f);
-        NuRndrRectUV2di(0, 0, vp[2], vp[3], 0.0f, 0.0f, 1.0f, 1.0f, 0x80808080, pause_rndr_mtl);
+        NuRndrRectUV2di(0, 0, vp->width, vp->height, 0.0f, 0.0f, 1.0f, 1.0f, 0x80808080, pause_rndr_mtl);
         NuRndrEndScene();
     }
     if (Paused != 0 && D_0062FB54 == 0) {
@@ -1576,7 +1553,6 @@ extern void NuRndrSwapScreen(s32 a);
 extern void BGLoadStart(void (*func)(void));
 extern void BGLoadEnd(void);
 extern void BGSuspendMain(void);
-extern void NuVpSetSize(float width, float height);
 extern void NuSoundUpdate(void);
 extern void TimeTunnelRender(void);
 extern void TimeTunnelClose(void);

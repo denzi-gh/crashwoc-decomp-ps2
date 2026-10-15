@@ -82,6 +82,7 @@
 #include "numath/nuquat.h"
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
+#include "nu3d/nugscn.h"
 
 #include "creature.h"
 
@@ -365,18 +366,6 @@ extern struct JEEPBALLOON JeepBalloon[];
 extern void ProcessJeepBalloon(struct JEEPBALLOON *b);
 extern void DrawJeepBalloon(struct JEEPBALLOON *b);
 
-struct nuinstance_s {
-    struct numtx_s matrix;          /* 0x00 */
-    s32 objid;                      /* 0x40 */
-};
-struct nuspecial_s {
-    struct numtx_s mtx;             /* 0x00 */
-    struct nuinstance_s *instance;  /* 0x40 */
-};
-struct nugscn_s {
-    u8 pad[0x14];
-    void **gobjs;                   /* 0x14 */
-};
 struct objtab_s {
     struct nugscn_s *scene;         /* 0x00 */
     struct nuspecial_s *special;    /* 0x04 */

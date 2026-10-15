@@ -236,6 +236,7 @@
 #include "numath/nuquat.h"
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
+#include "nu3d/nugscn.h"
 
 #include "creature.h"
 
@@ -1109,25 +1110,6 @@ void AddRock(struct nuvec_s *pos, f32 radius, s32 owner)
 }
 
 
-struct nuinstance_s {
-    struct numtx_s matrix;     /* 0x00 */
-    s32 objid;                 /* 0x40 */
-};
-
-struct nugscn_s {
-    short *tids;               /* 0x00 */
-    s32 numtid;                /* 0x04 */
-    void *mtls;                /* 0x08 */
-    s32 nummtl;                /* 0x0C */
-    s32 numgobj;               /* 0x10 */
-    void **gobjs;              /* 0x14 */
-};
-
-struct nuspecial_s {
-    struct numtx_s mtx;              /* 0x00 */
-    struct nuinstance_s *instance;   /* 0x40 */
-};
-
 struct objtab_s {
     struct nuhspecial_s obj;         /* 0x00 */
     char pad_08[0x20 - 0x08];
@@ -1907,7 +1889,6 @@ extern s32 JonnyOn;
 extern s32 ebgo;
 extern struct nuvec_s ebpos[3];
 extern f32 ebtime[3];
-extern void NuSpecialDrawAt(struct nuhspecial_s *obj, struct numtx_s *m);
 
 void DrawJonny(void)
 {

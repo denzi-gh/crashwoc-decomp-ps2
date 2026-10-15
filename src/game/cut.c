@@ -34,6 +34,7 @@
 #include "nu_libc.h"
 
 #include "nu3d/nugobj.h"
+#include "nu3d/nugscn.h"
 #include "nu3d/nuhgobj.h"
 #include "nu3d/numtl.h"
 #include "nu3d/nutex.h"
@@ -321,7 +322,6 @@ extern s32 D_006FF800[];
 extern char *superbuffer_end;
 extern void InitSpecular(void);
 extern void InitEnviro(void);
-extern void *NuGScnRead(char **buf, char *end, char *path);
 void CutSceneEndFunction(NuGCutScene *icutscene);
 void CutSceneNextFunction(NuGCutScene *icutscene);
 

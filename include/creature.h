@@ -4,6 +4,7 @@
 #include "nu_types.h"
 
 #include "numath/numathtypes.h"
+#include "nu3d/nugscn.h"
 
 /* PS2 PAL v1.03 (SLES_503.86) layout of the creature/player structures for
  * unit 91 (game/creature, .\creature.c).
@@ -27,11 +28,6 @@ enum nufilemode_e {
 	NUFILE_READ_NOWAIT = 3,
 	NUFILE_MODE_CNT = 4
 };
-
-struct nuhspecial_s {
-    struct nugscn_s *scene;    /* 0x0 */
-    struct nuspecial_s *special; /* 0x4 */
-}; /* 0x8 */
 
 // Size: 0x30, DWARF: 0xAE76
 struct NUELLIPSOID_s

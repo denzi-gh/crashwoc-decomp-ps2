@@ -16,28 +16,8 @@
 #include "numath/numathtypes.h"
 #include "numath/numtx.h"
 #include "nu3d/nugobj.h"
-
-struct nucamera_s {
-    struct numtx_s mtx;
-    float fov;
-    float aspect;
-    float nearclip;
-    float farclip;
-};
-
-struct nuinstance_s {
-    struct numtx_s mtx;
-    int objid;
-};
-
-struct nugscn_s {
-    int *tids;
-    int numtid;
-    void *mtls;
-    int nummtl;
-    int numgobj;
-    struct nugobj_s **gobjs;
-};
+#include "nu3d/nucamera.h"
+#include "nu3d/nugscn.h"
 
 struct nuwindgrp_s {
     struct nuinstance_s *instance;

@@ -37,6 +37,7 @@
 #include "numath/nuvec.h"
 #include "nu3d/numtl.h"
 #include "nu3d/nugobj.h"
+#include "nu3d/nugscn.h"
 
 struct edgraitem_s {
     char pad00[0x0C];
@@ -54,25 +55,6 @@ struct grassclump_s {
     float wind;
     int reactive;
     float height;
-};
-
-struct nuinstance_s {
-    char pad00[0x50];
-};
-
-struct nuspecial_s {
-    char pad00[0x40];
-    struct nuinstance_s *instance;
-    char *name;
-    char pad48[0x50 - 0x48];
-};
-
-struct nugscn_s {
-    char pad00[0x18];
-    int numinstance;
-    struct nuinstance_s *instances;
-    int numspecial;
-    struct nuspecial_s *specials;
 };
 
 struct eduimenu_s {

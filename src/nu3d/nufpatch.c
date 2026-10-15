@@ -44,14 +44,7 @@
 #include "nu3d/numtl.h"
 #include "nu3d/nustream.h"
 #include "nu3d/nutex.h"
-
-struct nucamera_s {
-    struct numtx_s mtx;
-    f32 fov;
-    f32 aspect;
-    f32 nearclip;
-    f32 farclip;
-};
+#include "nu3d/nucamera.h"
 
 struct nuhfvtx_s {
     struct nuvec4_s pnt;
@@ -150,17 +143,12 @@ extern u8 *vpDmaTag_Cnt(u8 *cur);
 extern u8 *vpDmaTag_Close(u8 *cur);
 extern u8 *vpDmaTag_CntEx(u8 *cur, u32 vif0, u32 vif1);
 extern u8 *vpDmaTag_RefEx(u8 *cur, void *addr, u32 vif0, u32 vif1);
-extern struct numtx_s *NuCameraGetVPCSMtx(void);
 extern void NuMtxBilinear(struct nuvec4_s *corner, struct nuvec4_s *quad0, struct nuvec4_s *quad1,
                           struct nuvec4_s *quad2, struct nuvec4_s *quad3);
 extern void NuVec4LerpVU0(struct nuvec4_s *out, struct nuvec4_s *a, struct nuvec4_s *b, f32 *t);
 extern void NuRndrStreamLink(struct nurndrstream_s *rs);
 extern u8 *vpDmaTag_Call(u8 *cur, void *microcode);
 extern u8 *vpDmaTag_Next(u8 *cur, s32 mode);
-extern struct nucamera_s *NuCameraGetCam(void);
-extern struct numtx_s *NuCameraGetViewMtx(void);
-extern struct numtx_s *NuCameraGetScalingMtx(void);
-extern struct numtx_s *NuCameraGetProjectionMtx(void);
 
 extern void NuRndrFPatchHeightField(struct nufpatch_s *patch, void *heightbuf, s32 flags);
 extern void NuFPatchHeightFieldIndexSlow(struct nufpatch_s *src, f32 *heights,

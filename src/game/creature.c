@@ -9,6 +9,7 @@
 #include "numath/numtx.h"
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
+#include "nu3d/nugscn.h"
 
 #include "creature.h"
 
@@ -1338,26 +1339,6 @@ struct tersurface_s {
 struct gdeb_s {
     s32 i;                   /* 0x0 */
     u8 unk_0x04[0xC];        /* 0x4 */
-};
-
-struct nuinstance_s {
-    struct numtx_s matrix;   /* 0x00 */
-    s32 objid;               /* 0x40 */
-};
-
-struct nugscn_s {
-    short *tids;             /* 0x00 */
-    s32 numtid;              /* 0x04 */
-    void *mtls;              /* 0x08 */
-    s32 nummtl;              /* 0x0C */
-    s32 numgobj;             /* 0x10 */
-    void **gobjs;            /* 0x14 */
-};
-
-struct nuspecial_s {
-    struct numtx_s mtx;             /* 0x00 */
-    struct nuinstance_s *instance;  /* 0x40 */
-    char *name;                     /* 0x44 */
 };
 
 /* Level 3D-object table entry (stride 0x20). */

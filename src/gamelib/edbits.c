@@ -22,27 +22,13 @@
 #include "numath/nuvec.h"
 #include "nu3d/numtl.h"
 #include "nu3d/nugobj.h"
-
-struct nuinstance_s;
+#include "nu3d/nugscn.h"
 
 struct edsfx_s {
     char name[16];
     unsigned short pitch;
     unsigned short volume;
     char pad14[0x30 - 0x14];
-};
-
-struct nuspecial_s {
-    char mtx[0x40];
-    struct nuinstance_s *instance;
-    char *name;
-    char pad48[0x50 - 0x48];
-};
-
-struct nugscn_s {
-    char pad00[0x20];
-    int numspecial;
-    struct nuspecial_s *specials;
 };
 
 extern int debris_sfx;

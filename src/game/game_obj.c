@@ -47,6 +47,8 @@
 
 #include "nu_libc.h"
 
+#include "nu3d/nugscn.h"
+#include "nu3d/nulight.h"
 #include "numath/numtx.h"
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
@@ -234,21 +236,6 @@ f32 CrateBottomAbove(struct nuvec_s *pos);
 s32 RayIntersectCuboid(struct nuvec_s *p0, struct nuvec_s *p1, struct nuvec_s *min, struct nuvec_s *max);
 extern f32 temp_ratio;
 
-struct nuinstance_s {
-    struct numtx_s mtx;      /* 0x00 */
-    s32 objid;               /* 0x40 */
-};
-
-struct nuspecial_s {
-    struct numtx_s mtx;            /* 0x00 */
-    struct nuinstance_s *instance; /* 0x40 */
-};
-
-struct nugscn_s {
-    u8 unk_0x00[0x14];       /* 0x00 */
-    void **gobjs;            /* 0x14 */
-};
-
 struct objtab_s {
     struct nugscn_s *scene;      /* 0x00 */
     struct nuspecial_s *special; /* 0x04 */
@@ -281,7 +268,6 @@ void AddExtraLife(struct nuvec_s *pos, s32 pdeb);
 void AddMechanicalDebris(struct nuvec_s *pos, s32 vehicle);
 
 s32 NuRndrGScnObj(void *gobj, struct numtx_s *m);
-void NuLightAddSpot(struct nuvec_s *pos, f32 size, u32 colour, s32 mode);
 void NuRndrAddShadow(struct nuvec_s *pos, s32 alpha, s32 xrot, s32 yrot, s32 zrot, f32 size);
 extern s32 temp_face;
 

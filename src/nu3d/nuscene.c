@@ -39,72 +39,14 @@
 #include "nu3d/nutexanm.h"
 #include "nu3d/nugobj.h"
 #include "nu3d/nunode.h"
+#include "nu3d/nugscn.h"
+#include "nu3d/nuscene.h"
 
 struct nuanimdata_s;
-
-struct nutransformnode_s {
-    struct nunode_s node;           /* 0x00 */
-    struct numtx_s mtx;             /* 0x20 */
-    struct numtx_s wmtx;            /* 0x60 */
-    int flags;                      /* 0xA0 */
-    char padA4[0x04];
-}; /* 0xA8 */
 
 struct nucntrl_s {
     char pad00[0x0C];
 }; /* 0x0C */
-
-struct nusplinedef_s {
-    int len;                        /* 0x00 */
-    struct nuvec_s *pts;            /* 0x04 */
-    char pad08[0x34];
-}; /* 0x3C */
-
-struct nusplinenode_s {
-    struct nunode_s node;           /* 0x00 */
-    int num_splines;                /* 0x20 */
-    struct nusplinedef_s **splines; /* 0x24 */
-    void **spline_data;             /* 0x28 */
-}; /* 0x2C */
-
-struct nuscene_s {
-    int numnodes;                   /* 0x00 */
-    char **names;                   /* 0x04 */
-    struct nunode_s **nodes;        /* 0x08 */
-    char *nametable;                /* 0x0C */
-    int numtids;                    /* 0x10 */
-    short *tids;                    /* 0x14 */
-    int nummtls;                    /* 0x18 */
-    struct numtl_s **mtls;          /* 0x1C */
-    int numgobjs;                   /* 0x20 */
-    struct nugobj_s **gobjs;        /* 0x24 */
-    int numsplines;                 /* 0x28 */
-    struct nusplinedef_s *splines;  /* 0x2C */
-    struct nuvec_s *splinedata;     /* 0x30 */
-    struct nunode_s *root;          /* 0x34 */
-    struct nugscn_s *gscene;        /* 0x38 */
-}; /* 0x3C */
-
-struct nuinstanim_s {
-    struct numtx_s mtx;             /* 0x00 */
-    char pad40[0x20];
-}; /* 0x60 */
-
-struct nuinstance_s {
-    struct numtx_s mtx;             /* 0x00 */
-    int objid;                      /* 0x40 */
-    int flags;                      /* 0x44 */
-    struct nuinstanim_s *anim;      /* 0x48 */
-    int pad4C;
-}; /* 0x50 */
-
-struct nuspecial_s {
-    struct numtx_s mtx;             /* 0x00 */
-    struct nuinstance_s *instance;  /* 0x40 */
-    char *name;                     /* 0x44 */
-    int flags;                      /* 0x48 */
-    int pad4C;
-}; /* 0x50 */
 
 struct nuspecialfile_s {
     struct numtx_s mtx;             /* 0x00 */
@@ -114,41 +56,6 @@ struct nuspecialfile_s {
     int pad4C;
 }; /* 0x50 */
 
-struct nugspline_s {
-    short len;                      /* 0x00 */
-    short ptsize;                   /* 0x02 */
-    char *name;                     /* 0x04 */
-    char *pts;                      /* 0x08 */
-}; /* 0x0C */
-
-struct nugscn_s {
-    int *tids;                      /* 0x00 */
-    int numtids;                    /* 0x04 */
-    struct numtl_s **mtls;          /* 0x08 */
-    int nummtls;                    /* 0x0C */
-    int numgobjs;                   /* 0x10 */
-    struct nugobj_s **gobjs;        /* 0x14 */
-    int numinstances;               /* 0x18 */
-    struct nuinstance_s *instances; /* 0x1C */
-    int numspecials;                /* 0x20 */
-    struct nuspecial_s *specials;   /* 0x24 */
-    int *splinedata;                /* 0x28 */
-    int numsplines;                 /* 0x2C */
-    struct nugspline_s *splines;    /* 0x30 */
-    char *nametable;                /* 0x34 */
-    int numexspecials;              /* 0x38 */
-    struct nuspecial_s *exspecials; /* 0x3C */
-    int exallocix;                  /* 0x40 */
-    struct nuinstanim_s *instanimdata; /* 0x44 */
-    struct nuanimdata_s **animlib;  /* 0x48 */
-    int numinstanceixs;             /* 0x4C */
-    short *instanceixs;             /* 0x50 */
-    char pad54[0x0C];
-    int numtexanims;                /* 0x60 */
-    struct nutexanim_s *texanims;   /* 0x64 */
-    void *texanimbits;              /* 0x68 */
-};
-
 typedef int (*numtlreadevent_fn)(struct numtl_s *mtl);
 
 extern void *NuMemAllocFn(int size, char *file, int line);
@@ -157,40 +64,20 @@ extern int NuFileRead(int fh, void *buf, int size);
 extern int NuFileBeginBlkRead(int fh, int blk);
 extern void NuFileEndBlkRead(int fh);
 extern void NuTexSwizzelBits(struct nutex_s *tex);
-extern int FindSplinePtSize(char *name);
 extern void NuPs2CreateRenderStream(struct nugobj_s *gobj);
 extern void NuPs2CreateFaceOn(struct nugobj_s *gobj);
 extern void NuPs2CreateSkin(struct nugobj_s *gobj);
 void ReadNuIFFGeomVtx(int fh, struct nugeom_s *geom);
-void ReadNuIFFGeomPrim(int fh, struct nugeom_s *geom);
-void ReadNuIFFGeomCntrl(int fh, struct nugeom_s *geom);
-void ReadNuIFFGeomTri(int fh, struct nugeom_s *geom, int type);
-void ReadNuIFFGeomBezTri(int fh, struct nugeom_s *geom);
 static void ReadNuIFFGeomSkin(int fh, struct nugeom_s *geom);
-void ReadNuIFFBlendShape(int fh, struct nugeom_s *geom);
-void ReadNuIFFFaceOnGeom(int fh, struct nufaceongeom_s *fgeom);
 extern int NuFileReadInt(int fh);
 extern unsigned int NuFileReadUnsignedInt(int fh);
 extern char NuFileReadChar(int fh);
 extern float NuFileReadFloat(int fh);
 extern void NuNodeDestroyHierarchy(struct nunode_s *node);
-extern struct nunode_s *NuNodeCreate(void);
-extern struct nunode_s *NuMeshNodeCreate(struct nugobj_s *geometry);
-extern struct nutransformnode_s *NuTransformNodeCreate(struct numtx_s *mtx);
-extern struct nujointnode_s *NuJointNodeCreate(struct numtx_s *mtx);
-extern struct nuskinnode_s *NuSkinNodeCreate(int num_joints);
-extern struct nusplinenode_s *NuSplineNodeCreate(int num_splines);
-extern void NuNodeAddChild(struct nunode_s *parent, struct nunode_s *child);
-extern void NuNodeGraphInit(struct nunode_s *root);
 extern int NuFileOpen(char *name, int mode);
 extern void NuFileClose(int fh);
 extern char *strlwr(char *s);
-void ReadNuIFFScene(int fh, struct nuscene_s *scene);
-char *ReadNuIFFNameTable(int fh, int *size);
 extern struct nuanimdata_s *NuAnimDataRead(int fh);
-extern void ReadNuIFFTexAnimSet(int fh, struct nugscn_s *gscene, short *tids);
-void NuSceneMtlUpdate(struct nuscene_s *scene);
-void ReadNuIFFGeomDef(int fh, struct nuscene_s *scene);
 
 extern int show_strip;
 extern int info_tricount;
@@ -477,7 +364,7 @@ static struct nunode_s *NuNodeRead(int fh, struct nuscene_s *scene) {
         node = NuNodeCreate();
         break;
     case 0x30304D4E:
-        node = NuMeshNodeCreate(scene->gobjs[NuFileReadInt(fh)]);
+        node = &NuMeshNodeCreate(scene->gobjs[NuFileReadInt(fh)])->node;
         break;
     case 0x3030544E:
         NuFileBeginBlkRead(fh, 0x3044544E);
@@ -613,17 +500,17 @@ static inline void ReadNuIFFSplineSet(int fh, struct nuscene_s *scene) {
     NuDebugMsgProlog(nuscene_srcfile, 0x246)(reading_splineset_msg);
     count = NuFileReadInt(fh);
     if (count) {
-        scene->splines = NuMemAllocFn(count * sizeof(struct nusplinedef_s), nuscene_srcfile, 0x24E);
+        scene->splines = NuMemAllocFn(count * sizeof(struct nuspline_s), nuscene_srcfile, 0x24E);
         scene->numsplines = count;
-        NuFileRead(fh, scene->splines, count * sizeof(struct nusplinedef_s));
+        NuFileRead(fh, scene->splines, count * sizeof(struct nuspline_s));
         npts = NuFileReadInt(fh);
         if (npts) {
             scene->splinedata = NuMemAllocFn(npts * sizeof(struct nuvec_s), nuscene_srcfile, 0x255);
             NuFileRead(fh, scene->splinedata, npts * sizeof(struct nuvec_s));
             pts = scene->splinedata;
             for (i = 0; i < count; i++) {
-                scene->splines[i].pts = pts;
-                pts += scene->splines[i].len;
+                scene->splines[i].cvs = pts;
+                pts += scene->splines[i].ncvs;
             }
         }
     }
@@ -696,12 +583,12 @@ void ReadNuIFFSpecialObjects(int fh, struct nugscn_s *gscene) {
     int i;
 
     count = NuFileReadInt(fh);
-    gscene->numspecials = count;
+    gscene->numspecial = count;
     if (count) {
         data = NuMemAllocFn(count * sizeof(struct nuspecialfile_s), nuscene_srcfile, 0x5D8);
-        NuFileRead(fh, data, gscene->numspecials * sizeof(struct nuspecialfile_s));
-        gscene->specials = NuMemAllocFn(gscene->numspecials * sizeof(struct nuspecial_s), nuscene_srcfile, 0x5DC);
-        for (i = 0; i < gscene->numspecials; i++) {
+        NuFileRead(fh, data, gscene->numspecial * sizeof(struct nuspecialfile_s));
+        gscene->specials = NuMemAllocFn(gscene->numspecial * sizeof(struct nuspecial_s), nuscene_srcfile, 0x5DC);
+        for (i = 0; i < gscene->numspecial; i++) {
             gscene->specials[i].instance = &gscene->instances[data[i].instance];
             gscene->specials[i].name = gscene->nametable + data[i].name;
             gscene->specials[i].mtx = data[i].mtx;
@@ -746,11 +633,11 @@ static inline void ReadNuIFFAnimLibrary(int fh, struct nugscn_s *gscene) {
 
     count = NuFileReadChar(fh);
     if (count) {
-        gscene->animlib = NuMemAllocFn(count * sizeof(struct nuanimdata_s *), nuscene_srcfile, 0x26C);
-        memset(gscene->animlib, 0, count * sizeof(struct nuanimdata_s *));
+        gscene->instanimdata = NuMemAllocFn(count * sizeof(struct nuanimdata_s *), nuscene_srcfile, 0x26C);
+        memset(gscene->instanimdata, 0, count * sizeof(struct nuanimdata_s *));
         for (i = 0; i < count; i++) {
             if (NuFileReadChar(fh)) {
-                gscene->animlib[i] = NuAnimDataRead(fh);
+                gscene->instanimdata[i] = NuAnimDataRead(fh);
             }
         }
     }
@@ -786,18 +673,18 @@ void ReadNuIFFGScene(int fh, struct nugscn_s *gscene) {
             for (i = 0; i < scene.numtids; i++) {
                 gscene->tids[i] = scene.tids[i];
             }
-            gscene->numtids = scene.numtids;
+            gscene->numtid = scene.numtids;
             break;
         case 0x3030534D:
             ReadNuIFFMaterialSet(fh, &scene);
             gscene->mtls = scene.mtls;
-            gscene->nummtls = scene.nummtls;
+            gscene->nummtl = scene.nummtls;
             break;
         case 0x30545347:
             ReadNuIFFGobjSet(fh, &scene);
             break;
         case 0x54534E49:
-            gscene->numinstances = ReadNuIFFInstSet(fh, &gscene->instances, &gscene->instanimdata);
+            gscene->numinstance = ReadNuIFFInstSet(fh, &gscene->instances, &gscene->instanimblock);
             break;
         case 0x44494E49:
             ReadNuIFFInstanceIxs(fh, gscene);
@@ -824,7 +711,7 @@ void ReadNuIFFGScene(int fh, struct nugscn_s *gscene) {
         NuMemFreeFn(scene.tids, nuscene_srcfile, 0x615);
     }
     scene.tids = 0;
-    gscene->numgobjs = scene.numgobjs;
+    gscene->numgobj = scene.numgobjs;
     gscene->gobjs = scene.gobjs;
 }
 
@@ -862,15 +749,15 @@ struct nuscene_s *NuSceneLoad(char *filename) {
 void NuGSceneDestroy(struct nugscn_s *gscene) {
     int i;
 
-    for (i = 0; i < gscene->numtids; i++) {
+    for (i = 0; i < gscene->numtid; i++) {
         NuTexDestroy(gscene->tids[i]);
     }
     NuMemFreeFn(gscene->tids, nuscene_srcfile, 0x67E);
-    for (i = 0; i < gscene->nummtls; i++) {
+    for (i = 0; i < gscene->nummtl; i++) {
         NuMtlDestroy(gscene->mtls[i]);
     }
     NuMemFreeFn(gscene->mtls, nuscene_srcfile, 0x683);
-    for (i = 0; i < gscene->numgobjs; i++) {
+    for (i = 0; i < gscene->numgobj; i++) {
         NuGobjDestroy(gscene->gobjs[i]);
     }
     NuMemFreeFn(gscene->gobjs, nuscene_srcfile, 0x688);
@@ -880,11 +767,11 @@ void NuGSceneDestroy(struct nugscn_s *gscene) {
     if (gscene->instances) {
         NuMemFreeFn(gscene->instances, nuscene_srcfile, 0x690);
     }
-    if (gscene->instanimdata) {
-        NuMemFreeFn(gscene->instanimdata, nuscene_srcfile, 0x694);
+    if (gscene->instanimblock) {
+        NuMemFreeFn(gscene->instanimblock, nuscene_srcfile, 0x694);
     }
-    if (gscene->animlib) {
-        NuMemFreeFn(gscene->animlib, nuscene_srcfile, 0x697);
+    if (gscene->instanimdata) {
+        NuMemFreeFn(gscene->instanimdata, nuscene_srcfile, 0x697);
     }
     if (gscene->numsplines) {
         NuMemFreeFn(gscene->splinedata, nuscene_srcfile, 0x69C);
@@ -900,7 +787,7 @@ void NuGSceneDestroy(struct nugscn_s *gscene) {
         NuTexAnimDestroy(&gscene->texanims[i]);
     }
     NuMemFreeFn(gscene->texanims, nuscene_srcfile, 0x6AB);
-    NuMemFreeFn(gscene->texanimbits, nuscene_srcfile, 0x6AC);
+    NuMemFreeFn(gscene->texanim_tids, nuscene_srcfile, 0x6AC);
     NuMemFreeFn(gscene, nuscene_srcfile, 0x6AF);
 }
 

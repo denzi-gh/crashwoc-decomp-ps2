@@ -26,17 +26,9 @@
 #include "nu_types.h"
 
 #include "numath/numathtypes.h"
+#include "nu3d/nucamera.h"
 
 struct pad_s;
-
-typedef struct nucamera_s {
-    struct numtx_s mtx;
-    f32 fov;
-    f32 aspect;
-    f32 nearclip;
-    f32 farclip;
-    char pad_0x50[0x10];
-} NUCAMERA;
 
 typedef struct eduistyle_s {
     u32 colour[4];
@@ -81,7 +73,7 @@ extern s32 D_0062F8D4;
 extern EDUIMENU *D_0062F8D8;
 extern EDUIMENU *D_0062F8DC;
 extern void *D_0062F8E0;
-extern NUCAMERA *D_0062F8E4;
+extern struct nucamera_s *D_0062F8E4;
 extern struct nuvec_s *D_0062F8E8;
 extern s32 D_00633234;
 extern char D_006B3FC0[0x100];
@@ -123,9 +115,7 @@ extern EDUIITEM *eduiItemSliderCreate(void *data, EDUISTYLE *style, s32 group,
                                       EDUICALLBACK change, f32 val, f32 min,
                                       f32 max, char *text);
 extern void edcamSetSpeed(f32 rise, f32 move, f32 fall, f32 zoom);
-extern NUCAMERA *NuCameraCreate(void);
-extern void NuCameraDestroy(NUCAMERA *cam);
-extern void NuCameraSet(NUCAMERA *cam);
+extern void NuCameraSet(struct nucamera_s *cam);
 extern void NuStrCpy(char *dst, char *src);
 extern s32 NuFileOpen(char *name, s32 mode);
 extern void NuFileClose(s32 fh);
