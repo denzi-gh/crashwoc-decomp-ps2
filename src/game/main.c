@@ -1577,6 +1577,10 @@ extern int gamesfx_channel;
 extern int tempanim_nextaction;
 extern struct nucamera_s global_camera;
 extern char D_0062FC50[];
+extern char D_0062FC58[];
+extern char D_0062FC60[];
+#define frmtmr_str D_0062FC58
+#define Candle_str D_0062FC60
 extern int gamecut;
 extern int Hub;
 
@@ -1903,7 +1907,7 @@ int main(int argc, char** argv) {
                 for (FRAME = 0; FRAME < FRAMES; FRAME++) {
                     if (FRAME < FRAMES - 1) {
                         tbslotReset(0, 0xf);
-                        tbslotBeginExFn(0, 0xf, "frmtmr");
+                        tbslotBeginExFn(0, 0xf, frmtmr_str);
                     }
 
                     if (FRAME == 0) {
@@ -2175,7 +2179,7 @@ int main(int argc, char** argv) {
                         }
                         if ((LDATA->flags & 0x10) != 0) {
                             effect_offset = 0;
-                            debris_type = LookupDebrisEffect("Candle");
+                            debris_type = LookupDebrisEffect(Candle_str);
                             effect_count = DebrisFindAllOfType(debris_type, flamepos, 0x20, effect_offset, 1);
                             while (effect_count != 0) {
                                 if (effect_count > 0) {
