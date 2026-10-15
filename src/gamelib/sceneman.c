@@ -30,6 +30,7 @@
 #include "gamelib/sceneman.h"
 #include "gamelib/terrain.h"
 #include "gamelib/trigger.h"
+#include "nucore/nucoretypes.h"
 
 typedef struct NuFPar {
     int handle;
@@ -47,7 +48,8 @@ extern int NuFParGetLine(NuFPar *parser);
 extern int NuFParGetWord(NuFPar *parser);
 extern int NuFParGetInt(NuFPar *parser);
 
-extern void *CreateSpecialTerrainData(int levelnum, struct nugscn_s *gscene, char **heap, char **heapend);
+extern void *CreateSpecialTerrainData(int levelnum, struct nugscn_s *gscene, union variptr_u *heap,
+                                      union variptr_u *heapend);
 
 extern void NuGScnUpdate(struct nugscn_s *scene, float time);
 extern void NuGScnRndr3(struct nugscn_s *scene);
@@ -88,7 +90,7 @@ extern struct numtx_s *D_0062F80C;
 #define player_mtx D_0062F80C
 
 
-struct NuSceneData *NuSceneDataLoad(char *dir, char **heap, char **heapend) {
+struct NuSceneData *NuSceneDataLoad(char *dir, union variptr_u *heap, union variptr_u *heapend) {
     char path[256];
     struct NuSceneData *result;
     struct NuSceneScript *lastscript;
@@ -104,8 +106,8 @@ struct NuSceneData *NuSceneDataLoad(char *dir, char **heap, char **heapend) {
     lastscript = 0;
     parser = NuFParCreate(path);
     if (parser) {
-        scene = (struct NuSceneData *)(((unsigned int)*heap + 15) & ~15);
-        *heap = (char *)scene + sizeof(struct NuSceneData);
+        scene = (struct NuSceneData *)((heap->intaddr + 15) & ~15);
+        heap->voidptr = (char *)scene + sizeof(struct NuSceneData);
         result = scene;
         memset(scene, 0, sizeof(struct NuSceneData));
         while (NuFParGetLine(parser)) {
@@ -113,18 +115,18 @@ struct NuSceneData *NuSceneDataLoad(char *dir, char **heap, char **heapend) {
             word = parser->word;
             if (strcasecmp(word, kw_scene) == 0) {
                 NuFParGetWord(parser);
-                *heap = (char *)(((unsigned int)*heap + 15) & ~15);
-                scene->name = *heap;
-                namebuf = *heap + 1;
-                *heap = namebuf + strlen(word);
+                heap->intaddr = (heap->intaddr + 15) & ~15;
+                scene->name = heap->voidptr;
+                namebuf = heap->charptr + 1;
+                heap->voidptr = namebuf + strlen(word);
                 sprintf(scene->name, word);
                 if (scene->gscene == 0) {
-                    *heap = (char *)(((unsigned int)*heap + 15) & ~15);
+                    heap->intaddr = (heap->intaddr + 15) & ~15;
                     sprintf(path, gscfile_fmt, dir, word);
-                    scene->gscene = NuGScnRead(heap, *heapend, path);
+                    scene->gscene = NuGScnRead(&heap->charptr, heapend->charptr, path);
                     if (scene->gscene) {
                         sprintf(path, terfile_fmt, dir, word);
-                        scene->terrain = terraininit(0, (short **)heap, (short *)*heapend, 0, path, scene->gscene, 0);
+                        scene->terrain = terraininit(0, &heap->s16, heapend->s16, 0, path, scene->gscene, 0);
                         if (scene->terrain) {
                             scene->specialterrain = CreateSpecialTerrainData(0, scene->gscene, heap, heapend);
                         }
@@ -140,9 +142,9 @@ struct NuSceneData *NuSceneDataLoad(char *dir, char **heap, char **heapend) {
                 }
                 scene->ncutscenes = NuFParGetInt(parser);
                 if (scene->ncutscenes) {
-                    *heap = (char *)(((unsigned int)*heap + 15) & ~15);
-                    scene->cutscenes = (struct NuSceneCutscene *)*heap;
-                    *heap += scene->ncutscenes * sizeof(struct NuSceneCutscene);
+                    heap->intaddr = (heap->intaddr + 15) & ~15;
+                    scene->cutscenes = heap->voidptr;
+                    heap->u8 += scene->ncutscenes * sizeof(struct NuSceneCutscene);
                     memset(scene->cutscenes, 0, scene->ncutscenes * sizeof(struct NuSceneCutscene));
                     cutscene = 0;
                 }

@@ -5,6 +5,8 @@
 #include "numath/numathtypes.h"
 #include "nu3d/nugscn.h"
 
+struct CharacterModel;
+struct NUJOINTANIM_s;
 struct creatcmd_s;
 struct creature_s;
 struct pchase_s;
@@ -365,5 +367,211 @@ struct edmenu_s {
     u8 pad28[0x8];                      /* 0x28 */
     s32 arg;                            /* 0x30 */
 }; /* 0x34 */
+
+struct anim_s {
+    float anim_time;                    /* 0x00 */
+    float blend_src_time;               /* 0x04 */
+    float blend_dst_time;               /* 0x08 */
+    short action;                       /* 0x0C */
+    short oldaction;                    /* 0x0E */
+    short newaction;                    /* 0x10 */
+    short blend_src_action;             /* 0x12 */
+    short blend_dst_action;             /* 0x14 */
+    short blend_frame;                  /* 0x16 */
+    short blend_frames;                 /* 0x18 */
+    signed char blend;                  /* 0x1A */
+    u8 flags;                           /* 0x1B */
+}; /* 0x1C */
+
+struct pdir_s {
+    s32 Index;                          /* 0x00 */
+    struct nuvec_s Direction;           /* 0x04 */
+    struct nucolour3_s Colour;          /* 0x10 */
+    float Distance;                     /* 0x1C */
+}; /* 0x20 */
+
+struct Nearest_Light_s {
+    s32 AmbIndex;                       /* 0x00 */
+    struct nuvec_s AmbCol;              /* 0x04 */
+    float ambientdist;                  /* 0x10 */
+    s32 CurLoopIndex;                   /* 0x14 */
+    struct pdir_s dir1;                 /* 0x18 */
+    struct pdir_s dir2;                 /* 0x38 */
+    struct pdir_s dir3;                 /* 0x58 */
+    struct pdir_s *pDir1st;             /* 0x78 */
+    struct pdir_s *pDir2nd;             /* 0x7C */
+    struct pdir_s *pDir3rd;             /* 0x80 */
+    s32 glbambindex;                    /* 0x84 */
+    s32 negativeindex;                  /* 0x88 */
+    float negativedist;                 /* 0x8C */
+    struct pdir_s glbdirectional;       /* 0x90 */
+}; /* 0xB0 */
+
+struct RPos_s {
+    signed char iRAIL;                  /* 0x00 */
+    signed char vertical;               /* 0x01 */
+    short iALONG;                       /* 0x02 */
+    short i1;                           /* 0x04 */
+    short i2;                           /* 0x06 */
+    float fALONG;                       /* 0x08 */
+    float fACROSS;                      /* 0x0C */
+    u16 angle;                          /* 0x10 */
+    u16 cam_angle;                      /* 0x12 */
+    u8 mode;                            /* 0x14 */
+    char pad1;                          /* 0x15 */
+    char pad2;                          /* 0x16 */
+    char pad3;                          /* 0x17 */
+    struct nuvec_s pos;                 /* 0x18 */
+}; /* 0x24 */
+
+struct mask_s {
+    struct numtx_s mM;                  /* 0x000 */
+    struct numtx_s mS;                  /* 0x040 */
+    struct nuvec_s pos;                 /* 0x080 */
+    struct nuvec_s newpos;              /* 0x08C */
+    struct Nearest_Light_s lights;      /* 0x098 */
+    struct anim_s anim;                 /* 0x148 */
+    float scale;                        /* 0x164 */
+    float shadow;                       /* 0x168 */
+    short character;                    /* 0x16C */
+    short active;                       /* 0x16E */
+    short sfx;                          /* 0x170 */
+    char pad1;                          /* 0x172 */
+    char pad2;                          /* 0x173 */
+    u16 xrot;                           /* 0x174 */
+    u16 yrot;                           /* 0x176 */
+    u16 angle;                          /* 0x178 */
+    u16 surface_xrot;                   /* 0x17A */
+    u16 surface_zrot;                   /* 0x17C */
+    u16 wibble_ang[3];                  /* 0x17E */
+    float idle_time;                    /* 0x184 */
+    float idle_duration;                /* 0x188 */
+    signed char idle_mode;              /* 0x18C */
+    signed char reflect;                /* 0x18D */
+    u8 offset_frame;                    /* 0x18E */
+    signed char hold;                   /* 0x18F */
+}; /* 0x190 */
+
+struct chase_s {
+    struct nugspline_s *spl_START;      /* 0x0000 */
+    float time;                         /* 0x0004 */
+    float duration;                     /* 0x0008 */
+    struct nugspline_s *spl_CHASER[6];  /* 0x000C */
+    struct nuvec_s pos[6];              /* 0x0024 */
+    struct RPos_s RPos[6];              /* 0x006C */
+    struct anim_s anim[6];              /* 0x0144 */
+    struct nuhspecial_s obj[6];         /* 0x01EC */
+    short character[6];                 /* 0x021C */
+    short action[6];                    /* 0x0228 */
+    u16 xrot[6];                        /* 0x0234 */
+    u16 yrot[6];                        /* 0x0240 */
+    u16 zrot[6];                        /* 0x024C */
+    struct chaseevent_s event[6][24];   /* 0x0258 */
+    struct nugspline_s *spl_MISC[6][4]; /* 0x7098 */
+    struct Nearest_Light_s lights[6];   /* 0x70F8 */
+    float scale[6];                     /* 0x7518 */
+    u8 misc_phase[6];                   /* 0x7530 */
+    signed char ok[6];                  /* 0x7536 */
+    u8 cuboid;                          /* 0x753C */
+    signed char i;                      /* 0x753D */
+    signed char i_last;                 /* 0x753E */
+    signed char i_next;                 /* 0x753F */
+    signed char status;                 /* 0x7540 */
+    signed char iRAIL;                  /* 0x7541 */
+    short iALONG;                       /* 0x7542 */
+    float fALONG;                       /* 0x7544 */
+}; /* 0x7548 */
+
+struct MYDRAW {
+    struct anim_s Anim;                 /* 0x00 */
+    struct CharacterModel *Model;       /* 0x1C */
+    s32 Character;                      /* 0x20 */
+    s32 NumJoints;                      /* 0x24 */
+    struct NUJOINTANIM_s *JointList;    /* 0x28 */
+    struct nuvec_s *Position;           /* 0x2C */
+    struct Nearest_Light_s Nearest_Light; /* 0x30 */
+}; /* 0xE0 */
+
+/* creature_s.Buggy (creature+0x224) points at the vehicle the creature is
+ * driving, and the pointee's type depends on the vehicle (as in the GC
+ * source, where Buggy is cast to GLIDERSTRUCT / ATLASSTRUCT / JEEPSTRUCT):
+ *   glider (vehicle 0x36/0x81/0x8B)  struct glider_s (GC GLIDERSTRUCT)
+ *   atlasphere (vehicle 0x53)        struct NEWBUGGY (GC ATLASSTRUCT)
+ *   jeep (vehicle 0x63)              struct JEEPSTRUCT (game/jeep.c)
+ * Offsets are PS2-verified in unit game/vehicle; gaps are opaque padding. */
+
+/* The player's glider (PlayerGlider). */
+struct glider_s {
+    struct creature_s *Cre;             /* 0x000 */
+    char pad_04[0x10 - 0x04];
+    s32 Dead;                           /* 0x010 */
+    char pad_14[0x30 - 0x14];
+    struct nuvec_s Position;            /* 0x030 */
+    char pad_3C[0x6C - 0x3C];
+    float RailAngle;                    /* 0x06C */
+    float TiltX;                        /* 0x070  pitch (NuMtxRotateX) */
+    float TiltZ;                        /* 0x074  roll (NuMtxSetRotationZ) */
+    float DestTiltX;                    /* 0x078 */
+    float DestTiltZ;                    /* 0x07C */
+    float AngleY;                       /* 0x080  heading (NuMtxRotateY) */
+    char pad_84[0x98 - 0x84];
+    s32 BarrelRoll;                     /* 0x098 */
+    char pad_9C[0xA4 - 0x9C];
+    s32 TerminalDive;                   /* 0x0A4 */
+    char pad_A8[0xAC - 0xA8];
+    float FireTimer;                    /* 0x0AC */
+    float HitTimer;                     /* 0x0B0 */
+    s32 AutoPilot;                      /* 0x0B4 */
+    char pad_B8[0xBC - 0xB8];
+    s32 HitPoints;                      /* 0x0BC  0..100 */
+    char LocatorList[16];               /* 0x0C0 */
+    float LocatorTime[16];              /* 0x0D0 */
+    s32 InTornado;                      /* 0x110 */
+    char pad_114[0x43C - 0x114];
+    float NextHitSoundTimer;            /* 0x43C */
+}; /* 0x440 */
+
+/* The atlasphere ("ball"): PlayerAtlas and EarthBoss are one each, and every
+ * JeepRock embeds one at +0x30 (JeepRock stride 0x3D4, rock fields resume at
+ * +0x3B4), which fixes the size at 0x384 (InitAtlas clears exactly that much). */
+struct NEWBUGGY {
+    struct creature_s *owner;           /* 0x000  owning creature (KillAtlasphere) */
+    char pad_04[0x08 - 0x04];
+    s32 type;                           /* 0x008  atlasphere type (InitAtlas) */
+    s32 dead;                           /* 0x00C  kill flag (KillAtlasphere) */
+    s32 ball_health;                    /* 0x010  hit points (EarthBoss) */
+    char pad_14[0x24 - 0x14];
+    float inhibitcontroltimer;          /* 0x024  ignores the pad while > 0 */
+    char pad_28[0x2C - 0x28];
+    s32 ball_action;                    /* 0x02C  AI action (EarthBoss) */
+    char pad_30[0x3C - 0x30];
+    s32 ball_beenhit;                   /* 0x03C  hit flag (ShootRoksSkyward) */
+    char pad_40[0x20C - 0x40];
+    struct nuvec_s ball_pos;            /* 0x20C  position (NuMtxTranslate) */
+    struct nuvec_s ball_oldpos;         /* 0x218  last safe position (UnembedRayCastAtlas) */
+    struct nuvec_s ball_lastpos;        /* 0x224 */
+    struct nuvec_s ball_target;         /* 0x230  position the step moves towards */
+    struct nuvec_s ball_vel;            /* 0x23C  velocity (<-> obj->mom) */
+    struct nuvec_s ball_oldvel;         /* 0x248 */
+    struct nuvec_s ball_resolved;       /* 0x254 */
+    struct nuvec_s ball_force;          /* 0x260  gravity tilted by the stick */
+    float ball_radius;                  /* 0x26C  radius (InitAtlas, TryUnembeddPoint*) */
+    float anglex;                       /* 0x270 */
+    float angley;                       /* 0x274  heading */
+    float anglez;                       /* 0x278 */
+    float inputang;                     /* 0x27C  stick direction, camera relative (degrees) */
+    float inputmag;                     /* 0x280  stick deflection 0..1 */
+    struct nuquat_s rotquat;            /* 0x284  render orientation (NuQuatToMtx) */
+    struct nuquat_s rotquat_delta;      /* 0x294  rotation accumulator (NuQuatMul target) */
+    struct nuquat_s framequat[4];       /* 0x2A4  recent orientations */
+    struct nuquat_s lastquat;           /* 0x2E4 */
+    s32 lasthit;                        /* 0x2F4 */
+    s32 axis;                           /* 0x2F8 */
+    struct nuvec_s lastnormal;          /* 0x2FC  last ground normal */
+    char pad_308[0x338 - 0x308];
+    s32 onground;                       /* 0x338  ground contact bits */
+    s32 platformid;                     /* 0x33C  platform rolled on, -1 for none */
+    char pad_340[0x384 - 0x340];
+}; /* 0x384 */
 
 #endif

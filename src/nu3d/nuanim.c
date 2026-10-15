@@ -50,6 +50,7 @@
 #include "nu3d/nunode.h"
 #include "nu3d/nuanim.h"
 #include "nu3d/nuhgobj.h"
+#include "nucore/nucoretypes.h"
 
 
 extern void *NuMemAllocFn(int size, char *file, int line);
@@ -1604,17 +1605,17 @@ struct nuanimdata_s *NuAnimDataLoad(char *file) {
     return data;
 }
 
-struct nuanimdata_s *NuAnimDataLoadBuff(char *file, void **buffer, void **buffend) {
+struct nuanimdata_s *NuAnimDataLoadBuff(char *file, union variptr_u *buffer, union variptr_u *buffend) {
     struct nuanimdatahdr_s *hdr;
     int size;
 
-    *buffer = (void *)(((unsigned int)*buffer + 0xF) & 0xFFFFFFF0);
-    size = NuFileLoadBuffer(file, *buffer, (char *)*buffend - (char *)*buffer);
+    buffer->intaddr = (buffer->intaddr + 0xF) & 0xFFFFFFF0;
+    size = NuFileLoadBuffer(file, buffer->voidptr, buffend->u8 - buffer->u8);
     if (!size) {
         NuErrorProlog(nuanim_srcfile, 0x2F8)(nuanim_load_failed_msg, file);
     }
-    hdr = *buffer;
-    *buffer = (char *)hdr + size;
+    hdr = buffer->voidptr;
+    buffer->voidptr = (char *)hdr + size;
     if (hdr->version != 1) {
         NuErrorProlog(nuanim_srcfile, 0x2FE)(nuanim_new_format_msg, file);
     }
@@ -1832,17 +1833,17 @@ int NuAnimDataFindVersion(char *file) {
 }
 
 
-struct nuanimdata2_s *NuAnimData2LoadBuff(char *file, void **buffer, void **buffend) {
+struct nuanimdata2_s *NuAnimData2LoadBuff(char *file, union variptr_u *buffer, union variptr_u *buffend) {
     struct nuanimdata2hdr_s *hdr;
     int size;
 
-    *buffer = (void *)(((unsigned int)*buffer + 0xF) & 0xFFFFFFF0);
-    size = NuFileLoadBuffer(file, *buffer, (char *)*buffend - (char *)*buffer);
+    buffer->intaddr = (buffer->intaddr + 0xF) & 0xFFFFFFF0;
+    size = NuFileLoadBuffer(file, buffer->voidptr, buffend->u8 - buffer->u8);
     if (!size) {
         NuErrorProlog(nuanim_srcfile, 0x348)(nuanim_load_failed_msg, file);
     }
-    hdr = *buffer;
-    *buffer = (char *)hdr + size;
+    hdr = buffer->voidptr;
+    buffer->voidptr = (char *)hdr + size;
     if (hdr->version != 2) {
         NuErrorProlog(nuanim_srcfile, 0x34E)(nuanim_old_format_msg, file);
     }

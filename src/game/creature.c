@@ -13,8 +13,8 @@
 #include "nu3d/nuanim.h"
 #include "game/gametypes.h"
 #include "gamelib/terrain.h"
-
-#include "creature.h"
+#include "game/creature.h"
+#include "nucore/nucoretypes.h"
 
 /* --- externals ---------------------------------------------------- */
 
@@ -59,7 +59,6 @@ extern struct nuvec_s D_0061D318;     /* TimeTrial restart position (.rodata) */
 extern struct MoveInfo CrashMoveInfo;
 extern struct MoveInfo CocoMoveInfo;
 extern struct MoveInfo DefaultMoveInfo;
-extern CharacterData CData[191];
 extern struct aitab_s AITab[];
 extern struct aitype_s AIType[];
 extern struct game_s Game;
@@ -653,7 +652,7 @@ extern s8 CLetter[191];
 extern s32 gamecut;
 extern struct space_s *SpaceGameCutTab[][2];
 extern struct CharacterModel *bgload_model[2];
-extern char *superbuffer_ptr;
+extern union variptr_u superbuffer_ptr;
 extern char tbuf[];
 extern struct font3dobj_s Font3DObjTab[];
 extern struct MoveInfo MineCartMoveInfo;
@@ -682,7 +681,7 @@ void LoadScreen(char *name);
 void NuStrCpy(char *dst, char *src);
 void NuStrCat(char *dst, char *src);
 void *InstShadDataLoad(char *name);
-struct NUSHADOWDATA_s *ShadFindData(int *hdr, char *name);
+struct shadentry_s *ShadFindData(int *hdr, char *name);
 struct nuanimdata_s *InstAnimDataLoad(char *name);
 
 
@@ -695,7 +694,7 @@ void LoadCharacterModels(void)
     struct space_s *space;
     struct CharacterModel *model;
     struct animlist *anim;
-    CharacterData *cdata;
+    struct CharacterData *cdata;
     void *dat;
     char charsdat_filename[64];
 
@@ -704,7 +703,7 @@ void LoadCharacterModels(void)
         CLetter[i] = 0x3F;
     }
     for (i = 0x2F; i >= 0; i--) {
-        CModel[i].hobj = 0;
+        CModel[i].obj = 0;
     }
 
     if (Level == 0x28) {
@@ -739,8 +738,8 @@ void LoadCharacterModels(void)
             NuStrCpy(tbuf, charsdat_filename);
             NuStrCat(tbuf, cdata->file);
             NuStrCat(tbuf, D_00630990);
-            model->hobj = NuGHGRead(&superbuffer_ptr, tbuf);
-            if (model->hobj != 0) {
+            model->obj = NuGHGRead(&superbuffer_ptr, tbuf);
+            if (model->obj != 0) {
                 NuStrCpy(tbuf, charsdat_filename);
                 if (character == 0xB2) {
                     NuStrCat(tbuf, CData[0x44].file);
@@ -753,7 +752,7 @@ void LoadCharacterModels(void)
                     model->shaddata[anim->action] = ShadFindData(&model->shadhdr, 0);
                 }
                 for (j = 0; j < 0x10; j++) {
-                    model->pLOCATOR[j] = NuHGobjGetPOI(model->hobj, (u8)j);
+                    model->pLOCATOR[j] = NuHGobjGetPOI(model->obj, (u8)j);
                 }
                 if ((character == 0x54) || (character == 0x9F)) {
                     NuStrCpy(charsdat_filename, D_00630980);
@@ -853,17 +852,17 @@ void LoadCharacterModels(void)
 
 void ChangeCharacter(struct creature_s *c, s32 character)
 {
-    CharacterData *cdata;
+    struct CharacterData *cdata;
 
     if (((u32)character < 0xBF) && (CRemap[character] != -1)) {
         c->obj.character = character;
         cdata = &CData[character];
         if ((s16)character == 0) {
-            c->OnFootMoveInfo = &CrashMoveInfo;
+            c->minfo = &CrashMoveInfo;
         } else if ((s16)character == 1) {
-            c->OnFootMoveInfo = &CocoMoveInfo;
+            c->minfo = &CocoMoveInfo;
         } else {
-            c->OnFootMoveInfo = &DefaultMoveInfo;
+            c->minfo = &DefaultMoveInfo;
         }
         c->obj.model = &CModel[CRemap[character]];
         c->obj.radius = c->obj.RADIUS = cdata->radius;
@@ -963,7 +962,7 @@ s32 AddCreature(s32 character, s32 index, s32 i_aitab)
     struct creature_s *c;
     struct creatcmd_s *commands;
     struct nuvec_s startpos;
-    CharacterData *cdata;
+    struct CharacterData *cdata;
 
     if (((u32)index < 9) && ((u32)character < 0xBF) &&
         ((i_aitab == -1) ||
@@ -994,11 +993,11 @@ s32 AddCreature(s32 character, s32 index, s32 i_aitab)
         c->cmdcurr = commands;
         c->obj.character = character;
         if ((s16)character == 0) {
-            c->OnFootMoveInfo = &CrashMoveInfo;
+            c->minfo = &CrashMoveInfo;
         } else if ((s16)character == 1) {
-            c->OnFootMoveInfo = &CocoMoveInfo;
+            c->minfo = &CocoMoveInfo;
         } else {
-            c->OnFootMoveInfo = &DefaultMoveInfo;
+            c->minfo = &DefaultMoveInfo;
         }
         c->obj.radius = c->obj.RADIUS = cdata->radius;
         c->obj.model = &CModel[CRemap[character]];
@@ -1164,7 +1163,7 @@ void UpdateCharacterIdle(struct creature_s *c, s32 character)
         model = &CModel[i];
         if ((c->obj.anim.newaction == 0x22) &&
             ((c->spin == 0) ||
-             (c->spin_frame >= c->spin_frames - c->OnFootMoveInfo->SPINRESETFRAMES))) {
+             (c->spin_frame >= c->spin_frames - c->minfo->SPINRESETFRAMES))) {
             c->obj.idle_gametime += 0.02f;
             /* retail .lit4 slot D_0062D0B4 = 0x3F199999 (0.6 truncated,
              * not the round-to-nearest 0x3F19999A of a plain 0.6f). */
@@ -1462,7 +1461,7 @@ void MovePlayer(struct creature_s *c, struct pad_s *pad)
     } else if (VEHICLECONTROL == 2) {
         minfo = &SwimmingMoveInfo;
     } else {
-        minfo = c->OnFootMoveInfo;
+        minfo = c->minfo;
     }
     if (VEHICLECONTROL == 1 && oldvc != 1) {
         plr_vehicle_time = 0.0f;
@@ -2121,7 +2120,7 @@ void MovePlayer(struct creature_s *c, struct pad_s *pad)
                                c->obj.dangle != 2 &&
                                (c->obj.dangle == 0 || c->spin == 0 ||
                                 c->spin_frame < c->spin_frames -
-                                    c->OnFootMoveInfo->SPINRESETFRAMES) &&
+                                    c->minfo->SPINRESETFRAMES) &&
                                (c->jump == 0 || c->jump_hold == 0) &&
                                (veh != 0x44 ||
                                 (*(u32 *)&c->fire_action & 0xFFFF0000) == 0)) {
@@ -2134,7 +2133,7 @@ void MovePlayer(struct creature_s *c, struct pad_s *pad)
                             ((ExtraMoves != 0 || (Game.powerbits & 4) != 0) &&
                              c->spin != 0 &&
                              c->spin_frame < c->spin_frames -
-                                 c->OnFootMoveInfo->SPINRESETFRAMES) ||
+                                 c->minfo->SPINRESETFRAMES) ||
                             c->target != 0) {
                             rate = 5;
                         } else if (c->crawl != 0 ||
@@ -2156,7 +2155,7 @@ void MovePlayer(struct creature_s *c, struct pad_s *pad)
             if (veh != 0x20) {
                 if (VEHICLECONTROL == 2 && c->spin != 0 &&
                     c->spin_frame < c->spin_frames -
-                        c->OnFootMoveInfo->SPINRESETFRAMES) {
+                        c->minfo->SPINRESETFRAMES) {
                     spd = minfo->SPRINTSPEED;
                 } else if (plr_rebound != 0) {
                     spd = minfo->WALKSPEED;
@@ -2170,7 +2169,7 @@ void MovePlayer(struct creature_s *c, struct pad_s *pad)
                         if (c->obj.pad_speed == 0.0f ||
                             (c->spin != 0 &&
                              c->spin_frame < c->spin_frames -
-                                 c->OnFootMoveInfo->SPINRESETFRAMES) ||
+                                 c->minfo->SPINRESETFRAMES) ||
                             c->obj.dangle == 2) {
                             spd = 0.0f;
                         } else {
@@ -2273,12 +2272,12 @@ void MovePlayer(struct creature_s *c, struct pad_s *pad)
                 }
                 if ((c->spin != 0 &&
                      c->spin_frame < c->spin_frames -
-                         c->OnFootMoveInfo->SPINRESETFRAMES) || c->tap >= 5) {
+                         c->minfo->SPINRESETFRAMES) || c->tap >= 5) {
                     in2.z *= minfo->SPRINTSPEED;
                     in2.y *= minfo->SPRINTSPEED;
                 } else if ((c->spin != 0 &&
                             c->spin_frame >= c->spin_frames -
-                                c->OnFootMoveInfo->SPINRESETFRAMES) ||
+                                c->minfo->SPINRESETFRAMES) ||
                            (u8)(c->tap - 1) < 4) {
                     in2.z *= minfo->RUNSPEED;
                     in2.y *= minfo->RUNSPEED;
@@ -2346,7 +2345,7 @@ void MovePlayer(struct creature_s *c, struct pad_s *pad)
                 } else if ((ExtraMoves != 0 || (Game.powerbits & 4) != 0) &&
                            c->spin != 0 &&
                            c->spin_frame < c->spin_frames -
-                               c->OnFootMoveInfo->SPINRESETFRAMES) {
+                               c->minfo->SPINRESETFRAMES) {
                     in_f_friction = 0.0024f;
                     in_s_friction = 0.0024f;
                 } else if (c->jump != 0) {
@@ -3035,7 +3034,7 @@ void EvalModelAnim(struct CharacterModel *model, struct anim_s *anim,
         && (((u16)anim->blend_dst_action < 0x76)
             && (model->anmdata[anim->blend_dst_action] != 0))) {
         NuHGobjEvalAnimBlend(
-            model->hobj,
+            model->obj,
             model->anmdata[anim->blend_src_action], anim->blend_src_time,
             model->anmdata[anim->blend_dst_action], anim->blend_dst_time,
             (float)anim->blend_frame / (float)anim->blend_frames,
@@ -3045,19 +3044,19 @@ void EvalModelAnim(struct CharacterModel *model, struct anim_s *anim,
     } else if ((anim->blend == 0)
                && ((u16)anim->action < 0x76)
                && (model->anmdata[anim->action] != 0)) {
-        NuHGobjEvalAnim(model->hobj, model->anmdata[anim->action],
+        NuHGobjEvalAnim(model->obj, model->anmdata[anim->action],
                         anim->anim_time, 0, 0, tmtx);
         temp_action = anim->action;
         temp_time = anim->anim_time;
     } else {
-        NuHGobjEval(model->hobj, 0, 0, tmtx);
+        NuHGobjEval(model->obj, 0, 0, tmtx);
         temp_action = -1;
     }
 
     if (mLOCATOR != 0) {
         for (i = 0; i < 0x10; i++) {
             if (model->pLOCATOR[i] != 0) {
-                NuHGobjPOIMtx(model->hobj, (u8)i, m, tmtx, &mLOCATOR[i]);
+                NuHGobjPOIMtx(model->obj, (u8)i, m, tmtx, &mLOCATOR[i]);
             }
         }
     }
@@ -3177,7 +3176,7 @@ s32 DrawCharacterModel(struct CharacterModel *model, struct anim_s *anim,
                 && (((u16)anim->blend_dst_action < 0x76)
                     && (model2->anmdata[anim->blend_dst_action] != 0))) {
                 NuHGobjEvalAnimBlend(
-                    model2->hobj,
+                    model2->obj,
                     model2->anmdata[anim->blend_src_action],
                     anim->blend_src_time,
                     model2->anmdata[anim->blend_dst_action],
@@ -3194,13 +3193,13 @@ s32 DrawCharacterModel(struct CharacterModel *model, struct anim_s *anim,
             || (model2->anmdata[anim->action] == 0)) {
             goto NoModelAnim;
         }
-        NuHGobjEvalAnim(model2->hobj, model2->anmdata[anim->action],
+        NuHGobjEvalAnim(model2->obj, model2->anmdata[anim->action],
                         anim->anim_time, nJ, pJ, tmtx);
         action = anim->action;
         time = anim->anim_time;
     } else {
     NoModelAnim:
-        NuHGobjEval(model2->hobj, nJ, pJ, tmtx);
+        NuHGobjEval(model2->obj, nJ, pJ, tmtx);
         action = -1;
     }
 
@@ -3212,7 +3211,7 @@ AfterEval:
                 oldpos.x = loc_mtx[i]._30;
                 oldpos.y = loc_mtx[i]._31;
                 oldpos.z = loc_mtx[i]._32;
-                NuHGobjPOIMtx(model2->hobj, i, mC, tmtx, &m);
+                NuHGobjPOIMtx(model2->obj, i, mC, tmtx, &m);
                 loc_mtx[i] = m;
                 if (loc_mom != 0) {
                     loc_mom[i].x = loc_mtx[i]._30 - oldpos.x;
@@ -3233,13 +3232,13 @@ AfterEval:
             && (player->obj.dead == 0x12)) {
             nlayers = 1;
         }
-        Drawn = NuHGobjRndrMtxDwa(model->hobj, mC, nlayers, layer, tmtx,
+        Drawn = NuHGobjRndrMtxDwa(model->obj, mC, nlayers, layer, tmtx,
                                  dwa);
         if ((Drawn != 0) && (obj != 0) && (obj->character == 0xb1)) {
             DrawProbeFX(obj);
         }
         if (mR != 0) {
-            NuHGobjRndrMtxDwa(model->hobj, mR, nlayers, layer, tmtx, dwa);
+            NuHGobjRndrMtxDwa(model->obj, mR, nlayers, layer, tmtx, dwa);
         }
         if (mS != 0) {
             if (model->shadhdr != 0) {
@@ -3330,7 +3329,7 @@ inline void StoreLocatorMatrices(struct CharacterModel *model,
                 oldpos.x = mtx[i]._30;
                 oldpos.y = mtx[i]._31;
                 oldpos.z = mtx[i]._32;
-                NuHGobjPOIMtx(model->hobj, i, mC, tmtx, &m);
+                NuHGobjPOIMtx(model->obj, i, mC, tmtx, &m);
                 mtx[i] = m;
                 if (mom != 0) {
                     mom[i].x = mtx[i]._30 - oldpos.x;
@@ -3501,7 +3500,7 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
         if ((vflag != 0) && (VEHICLECONTROL == 2) && (c->obj.dead == 0) &&
             (c->spin != 0) &&
             (c->spin_frame <
-             c->spin_frames - c->OnFootMoveInfo->SPINRESETFRAMES) &&
+             c->spin_frames - c->minfo->SPINRESETFRAMES) &&
             (bVar9 == 0)) {
             if (CRemap[116] != -1) {
                 yrot = c->obj.hdg - 0x8000;
@@ -3514,15 +3513,15 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                 NuMtxTranslate(&mC, &c->obj.pos);
                 model[0] = &CModel[CRemap[116]];
                 if (model[0]->anmdata[0x46] != 0) {
-                    NuHGobjEvalAnim(model[0]->hobj, model[0]->anmdata[0x46],
+                    NuHGobjEvalAnim(model[0]->obj, model[0]->anmdata[0x46],
                                     (model[0]->anmdata[0x46]->time - 1.0f) *
                                     ((f32)c->spin_frame /
-                                     (f32)(c->OnFootMoveInfo->SPINFRAMES +
-                                           c->OnFootMoveInfo->SUPERSPINFRAMES * 3))
+                                     (f32)(c->minfo->SPINFRAMES +
+                                           c->minfo->SUPERSPINFRAMES * 3))
                                     + 1.0f,
                                     0, 0, tmtx);
                 } else {
-                    NuHGobjEval(model[0]->hobj, 0, 0, tmtx);
+                    NuHGobjEval(model[0]->obj, 0, 0, tmtx);
                 }
                 if (glass_draw == 0) {
                     StoreLocatorMatrices(model[0], &mC, tmtx,
@@ -3533,7 +3532,7 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                     goto next;
                 }
                 SetCreatureLights(c);
-                NuHGobjRndrMtx(model[0]->hobj, pm, 1, 0, tmtx);
+                NuHGobjRndrMtx(model[0]->obj, pm, 1, 0, tmtx);
                 if ((c->obj.reflect_y != 2000000.0f) &&
                     (glass_mix == 0.0f) && (glass_draw == 0)) {
                     mR = mC;
@@ -3542,7 +3541,7 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                     mR._21 = -mR._21;
                     mR._31 = c->obj.reflect_y -
                              (mR._31 - c->obj.reflect_y);
-                    NuHGobjRndrMtx(model[0]->hobj, &mR, 1, 0, tmtx);
+                    NuHGobjRndrMtx(model[0]->obj, &mR, 1, 0, tmtx);
                 }
                 if ((shadow != 0) && (c->obj.shadow != 2000000.0f) &&
                     (dx < r2) &&
@@ -3569,7 +3568,7 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
         } else if ((vflag != 0) && (c->obj.character == 0) &&
                    (c->obj.dead == 0) && (c->spin != 0) &&
                    (c->spin_frame <
-                    c->spin_frames - c->OnFootMoveInfo->SPINRESETFRAMES) &&
+                    c->spin_frames - c->minfo->SPINRESETFRAMES) &&
                    (bVar9 == 0) && (VEHICLE == -1) && (c->freeze == 0)) {
             if (render != 0) {
                 SetCreatureLights(c);
@@ -3595,16 +3594,16 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                 }
                 if ((anim_action < 0x76) &&
                     (model[0]->anmdata[anim_action] != 0)) {
-                    NuHGobjEvalAnim(model[0]->hobj,
+                    NuHGobjEvalAnim(model[0]->obj,
                                     model[0]->anmdata[anim_action],
                                     (model[0]->anmdata[anim_action]->time - 1.0f) *
                                     ((f32)c->spin_frame /
-                                     (f32)(c->OnFootMoveInfo->SPINFRAMES +
-                                           c->OnFootMoveInfo->SUPERSPINFRAMES * 3))
+                                     (f32)(c->minfo->SPINFRAMES +
+                                           c->minfo->SUPERSPINFRAMES * 3))
                                     + 1.0f,
                                     0, 0, tmtx);
                 } else {
-                    NuHGobjEval(model[0]->hobj, 0, 0, tmtx);
+                    NuHGobjEval(model[0]->obj, 0, 0, tmtx);
                 }
                 if (glass_draw == 0) {
                     StoreLocatorMatrices(model[0], &mC, tmtx,
@@ -3614,7 +3613,7 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                 if (render == 0) {
                     goto next;
                 }
-                NuHGobjRndrMtx(model[0]->hobj, pm, 1, 0, tmtx);
+                NuHGobjRndrMtx(model[0]->obj, pm, 1, 0, tmtx);
                 if ((c->obj.reflect_y != 2000000.0f) &&
                     (glass_mix == 0.0f) && (glass_draw == 0)) {
                     mR = mC;
@@ -3627,7 +3626,7 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                         y = HUBREFLECTY;
                     }
                     mR._31 = y - (mR._31 - y);
-                    NuHGobjRndrMtx(model[0]->hobj, &mR, 1, 0, tmtx);
+                    NuHGobjRndrMtx(model[0]->obj, &mR, 1, 0, tmtx);
                 }
                 if ((shadow != 0) && (c->obj.shadow != 2000000.0f) &&
                     (dx < r2) &&
@@ -3661,7 +3660,7 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                 NuMtxRotateX(&mC, c->obj.xrot);
                 NuMtxTranslate(&mC, &c->obj.pos);
                 model[1] = &CModel[CRemap[9]];
-                NuHGobjRndr(model[1]->hobj, &mC, 1, 0);
+                NuHGobjRndr(model[1]->obj, &mC, 1, 0);
                 if ((c->obj.reflect_y != 2000000.0f) &&
                     (glass_mix == 0.0f) && (glass_draw == 0)) {
                     mR = mC;
@@ -3670,7 +3669,7 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                     mR._21 = -mR._21;
                     mR._31 = c->obj.reflect_y -
                              (mR._31 - c->obj.reflect_y);
-                    NuHGobjRndr(model[1]->hobj, &mR, 1, 0);
+                    NuHGobjRndr(model[1]->obj, &mR, 1, 0);
                 }
             }
             c->obj.draw_frame = old_frame + 1;
@@ -3721,7 +3720,7 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
             } else {
                 if ((c->spin != 0) &&
                     (c->spin_frame <
-                     c->spin_frames - c->OnFootMoveInfo->SPINRESETFRAMES) &&
+                     c->spin_frames - c->minfo->SPINRESETFRAMES) &&
                     (VEHICLE == 0x3B) && (c->obj.anim.newaction == 0x69) &&
                     (c->obj.model->anmdata[0x69] != 0)) {
                     yrot -= (c->spin_frame << 16) / GyroMoveInfo.SPINFRAMES;
@@ -4016,13 +4015,13 @@ void UpdateAnimPacket(struct CharacterModel *mod, struct anim_s *anim,
                 if (anim->blend_dst_action == 3) {
                     anim->blend_dst_time = ((float)player->crouch_pos *
                         (mod->anmdata[3]->time - 1.0f)) /
-                        (float)player->OnFootMoveInfo->CROUCHINGFRAMES;
+                        (float)player->minfo->CROUCHINGFRAMES;
                 } else if (anim->blend_dst_action == 5) {
                     anim->blend_dst_time =
-                        ((float)(player->OnFootMoveInfo->CROUCHINGFRAMES -
+                        ((float)(player->minfo->CROUCHINGFRAMES -
                                  player->crouch_pos) *
                          (mod->anmdata[5]->time - 1.0f)) /
-                        (float)player->OnFootMoveInfo->CROUCHINGFRAMES;
+                        (float)player->minfo->CROUCHINGFRAMES;
                 }
             }
             anim->blend_frame = 0;
@@ -4160,8 +4159,8 @@ void CloseCreatures(void)
         }
     }
     for (i = 0; i < 48; i++) {
-        if (CModel[i].hobj != 0) {
-            NuHGobjDestroy(CModel[i].hobj);
+        if (CModel[i].obj != 0) {
+            NuHGobjDestroy(CModel[i].obj);
         }
     }
 }

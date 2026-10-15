@@ -46,8 +46,8 @@
 #include "nu3d/nuanim.h"
 #include "game/gametypes.h"
 #include "gamelib/gcutscn.h"
-
-#include "creature.h"
+#include "game/creature.h"
+#include "nucore/nucoretypes.h"
 
 extern struct game_s Game;
 extern s32 gamecut;
@@ -77,7 +77,7 @@ extern struct csccache_s D_006FF880[];
 extern s32 D_0063338C;
 #define cutcharcache D_006FF880            /* loaded character models, by path */
 #define ncutcharcache D_0063338C
-extern char *superbuffer_ptr;
+extern union variptr_u superbuffer_ptr;
 
 extern void NewMenu(void *cursor, s32 a, s32 b, s32 c);
 extern void GameMusic(s32 sfx, s32 i);
@@ -267,7 +267,7 @@ extern s32 D_006FF800[];
 #define cutscncache D_006FF980             /* loaded scenes, by path */
 #define ncutscncache D_00633390
 #define cutdebgroups D_006FF800
-extern char *superbuffer_end;
+extern union variptr_u superbuffer_end;
 extern void InitSpecular(void);
 extern void InitEnviro(void);
 void CutSceneEndFunction(struct instNUGCUTSCENE_s *icutscene);
@@ -324,7 +324,7 @@ s32 LoadCutComponents(struct cutscenedesc_s *csd, struct csc_s *chars) {
         cutdebgroups[ix] = csd[ix].debgroup;
 
         path = csd[ix].gscname;
-        end = superbuffer_end;
+        end = superbuffer_end.charptr;
         for (i = 0; i < ncutscncache; i++) {
             if (strcasecmp(path, cutscncache[i].path) == 0) {
                 scene = cutscncache[i].scene;
@@ -332,7 +332,7 @@ s32 LoadCutComponents(struct cutscenedesc_s *csd, struct csc_s *chars) {
             }
         }
         cutscncache[i].path = path;
-        scene = NuGScnRead(&superbuffer_ptr, end, path);
+        scene = NuGScnRead(&superbuffer_ptr.charptr, end, path);
         cutscncache[i].scene = scene;
         ncutscncache++;
     found:
@@ -368,7 +368,7 @@ s32 LoadCutComponents(struct cutscenedesc_s *csd, struct csc_s *chars) {
  * $v0 where this build picks $v1 for the switch's `1` and for &texanimbuff in
  * every case. No `case 2` (adding one emits a jump table retail lacks). */
 s32 LoadCutMovie(s32 movie) {
-    void *buf;
+    union variptr_u buf;
     void *dat;
     s32 count;
     s32 i;
@@ -392,7 +392,7 @@ s32 LoadCutMovie(s32 movie) {
     case 0:
         dat = NuDatOpen(ats_dat, 0, 0);
         NuDatSet(dat);
-        buf = texanimbuff;
+        buf.voidptr = texanimbuff;
         NuTexAnimProgReadScript(&buf, title_ats);
         NuDatSet(0);
         if (dat != 0) {
@@ -406,7 +406,7 @@ s32 LoadCutMovie(s32 movie) {
     case 1:
         dat = NuDatOpen(ats_dat, 0, 0);
         NuDatSet(dat);
-        buf = texanimbuff;
+        buf.voidptr = texanimbuff;
         NuTexAnimProgReadScript(&buf, ripples_ats);
         NuDatSet(0);
         if (dat != 0) {
@@ -418,7 +418,7 @@ s32 LoadCutMovie(s32 movie) {
     case 4:
         dat = NuDatOpen(ats_dat, 0, 0);
         NuDatSet(dat);
-        buf = texanimbuff;
+        buf.voidptr = texanimbuff;
         NuTexAnimProgReadScript(&buf, elecy2_ats);
         if (movie == 4) {
             NuTexAnimProgReadScript(&buf, ripples_ats);
@@ -698,7 +698,7 @@ void DrawGameCut(void) {
         model = &CModel[CRemap[183]];
         NuMtxSetTranslation(&m, &campos_SPACE);
         EvalModelAnim(model, &CutVortexAnim, &m, tmtx, &dwa, 0);
-        NuHGobjRndrMtxDwa(model->hobj, &m, 1, 0, tmtx, dwa);
+        NuHGobjRndrMtxDwa(model->obj, &m, 1, 0, tmtx, dwa);
     }
     if (GameMode != 1 || gamecut_finished != 0) {
         return;
@@ -741,7 +741,7 @@ void DrawGameCut(void) {
     NuMtxRotateY(&m, yrot);
     NuMtxTranslate(&m, &pos);
     EvalModelAnim(model, &CutAnim, &m, tmtx, &dwa, 0);
-    NuHGobjRndrMtxDwa(model->hobj, &m, 1, 0, tmtx, dwa);
+    NuHGobjRndrMtxDwa(model->obj, &m, 1, 0, tmtx, dwa);
 }
 
 extern s32 Demo;

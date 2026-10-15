@@ -9,6 +9,7 @@ struct instNUGCUTSCENE_s;
 struct NUTRIGGERSYS_s;
 struct instNUTRIGGERSYS_s;
 struct NuFPar;
+union variptr_u;
 
 struct NuSceneCutscene {
     char *name;                         /* 0x00 */
@@ -47,11 +48,12 @@ struct NuSceneInstance {
     struct instNUGCUTSCENE_s **cutscenes; /* 0x20 */
 }; /* 0x24 */
 
-struct NuSceneData *NuSceneDataLoad(char *dir, char **heap, char **heapend);
+struct NuSceneData *NuSceneDataLoad(char *dir, union variptr_u *heap, union variptr_u *heapend);
 int NuSceneInstanceRunScript(struct NuSceneInstance *inst, char *name);
 void LoadCutsceneData(struct NuFPar *parser, char *dir, struct NuSceneData *scene, struct NuSceneCutscene *cutscene,
-                      char **heap, char **heapend);
-struct NuSceneScript *LoadCutsceneScript(struct NuFPar *parser, struct NuSceneData *scene, char **heap, char **heapend);
+                      union variptr_u *heap, union variptr_u *heapend);
+struct NuSceneScript *LoadCutsceneScript(struct NuFPar *parser, struct NuSceneData *scene, union variptr_u *heap,
+                                         union variptr_u *heapend);
 void NuSceneManagerSysInit(void);
 void NuSceneManagerSysUpdate(void);
 void NuSceneInstanceDestroy(struct NuSceneInstance *inst);

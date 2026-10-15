@@ -42,8 +42,7 @@
 #include "numath/nuvec.h"
 #include "nu3d/numtl.h"
 #include "game/gametypes.h"
-
-#include "creature.h"
+#include "game/creature.h"
 
 struct eduistyle_s {
     s32 pen[2];

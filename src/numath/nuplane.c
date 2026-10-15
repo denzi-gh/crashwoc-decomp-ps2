@@ -29,8 +29,6 @@
 #include "numath/nuplane.h"
 #include "numath/nuvec.h"
 
-#include "creature.h"
-
 extern char D_00614020[];
 extern char D_00614048[];
 extern char D_0062EA58[];

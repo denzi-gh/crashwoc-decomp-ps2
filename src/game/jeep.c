@@ -85,8 +85,8 @@
 #include "nu3d/nugscn.h"
 #include "game/gametypes.h"
 #include "gamelib/terrain.h"
-
-#include "creature.h"
+#include "game/creature.h"
+#include "nucore/nucoretypes.h"
 
 extern struct nuvec_s BaseWheelPosition[];
 extern f32 DotProduct(struct nuvec_s *a, struct nuvec_s *b);
@@ -177,16 +177,6 @@ struct POINTANG {
     f32 z;                          /* 0x08 */
     s32 Ang;                        /* 0x0C */
 }; /* 0x10 */
-
-struct MYDRAW {
-    struct anim_s Anim;             /* 0x00 */
-    struct CharacterModel *model;   /* 0x1C */
-    s32 index;                      /* 0x20 */
-    s32 numjoints;                  /* 0x24 */
-    void *jointlist;                /* 0x28 */
-    s32 field2C;                    /* 0x2C */
-    struct Nearest_Light_s lights;  /* 0x30 */
-}; /* 0xE0 */
 
 struct fireboss_s {
     struct numtx_s Locator[16];     /* 0x000 */
@@ -377,8 +367,8 @@ extern void ProcessJeepTrails(void);
 
 extern char LevelFileName[];
 extern struct BUGGYDATA *BuggyData[];
-extern void *superbuffer_ptr;
-extern void *superbuffer_end;
+extern union variptr_u superbuffer_ptr;
+extern union variptr_u superbuffer_end;
 extern struct nugscn_s *world_scene[];
 extern void LoadScreen(char *name);
 extern char D_0061FAC0[];
@@ -1226,7 +1216,7 @@ void SetUpJeepWheelPositions(struct JEEPSTRUCT *Jeep) {
     struct numtx_s Locators[16];
     s32 i;
 
-    GetLocatorMtx(Jeep->ChassisDraw.model, Locators, 180.0f);
+    GetLocatorMtx(Jeep->ChassisDraw.Model, Locators, 180.0f);
     for (i = 0; i < 4; i++) {
         BaseWheelPosition[i] = *(struct nuvec_s *)&Locators[i]._30;
     }
@@ -1295,7 +1285,7 @@ void ResetJeep(struct creature_s *Cre) {
     MyInitModelNew(&PlayerJeep.ChassisDraw, 0x63, 0x1D, 8, PlayerJeep.Joints,
                    &PlayerJeep.Pos);
     joint = PlayerJeep.Joints;
-    for (i = 0; i < PlayerJeep.ChassisDraw.numjoints; i++) {
+    for (i = 0; i < PlayerJeep.ChassisDraw.NumJoints; i++) {
         if (i < 4) {
             joint->mode = 3;
         } else {
@@ -1769,7 +1759,7 @@ inline void InitEnemyJeep(struct enemyjeep_s *Jeep, s32 Character) {
     MyInitModelNew(&Jeep->Draw, Character, 0x1D, 4, Jeep->Joints,
                    &Jeep->Position);
     joint = Jeep->Joints;
-    for (i = 0; i < Jeep->Draw.numjoints; i++) {
+    for (i = 0; i < Jeep->Draw.NumJoints; i++) {
         joint->joint = i;
         joint->mode = 3;
         joint++;
@@ -1935,15 +1925,14 @@ void LoadWesternArenaData(void) {
     s32 i;
 
     LoadScreen(LoadingAiPathsText);
-    TerrainSetCur(superbuffer_ptr);
-    terraininit(Level, (short **)&superbuffer_ptr, superbuffer_end, 0, LevelFileName,
-                world_scene[0], 0);
-    superbuffer_ptr = (void *)(((u32)superbuffer_ptr + 0xF) & 0xFFFFFFF0);
+    TerrainSetCur(superbuffer_ptr.voidptr);
+    terraininit(Level, &superbuffer_ptr.s16, superbuffer_end.s16, 0, LevelFileName, world_scene[0], 0);
+    superbuffer_ptr.intaddr = (superbuffer_ptr.intaddr + 0xF) & 0xFFFFFFF0;
     for (i = 0; i < 4; i++) {
-        BuggyData[i] = superbuffer_ptr;
-        superbuffer_ptr = LoadBuggyData(superbuffer_ptr, i);
+        BuggyData[i] = superbuffer_ptr.voidptr;
+        superbuffer_ptr.u8 = LoadBuggyData(superbuffer_ptr.u8, i);
     }
-    superbuffer_ptr = (void *)(((u32)superbuffer_ptr + 0xF) & 0xFFFFFFF0);
+    superbuffer_ptr.intaddr = (superbuffer_ptr.intaddr + 0xF) & 0xFFFFFFF0;
 }
 
 

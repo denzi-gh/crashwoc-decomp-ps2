@@ -9,8 +9,6 @@
 
 #include "game/gametypes.h"
 
-#include "creature.h"
-
 struct powerdata_s {
     u8 pad_00[4];
     char *name;             /* 0x4 */

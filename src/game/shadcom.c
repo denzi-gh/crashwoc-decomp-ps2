@@ -15,8 +15,7 @@
 #include "nu3d/nustream.h"
 #include "nu3d/nutex.h"
 #include "nu3d/nugobj.h"
-
-#include "creature.h"
+#include "nucore/nucoretypes.h"
 
 struct shadentry_s {
     s16 xframes;                  /* 0x00 */
@@ -145,12 +144,12 @@ void ShadRndr(struct numtx_s *mtx, struct shadentry_s *shad, f32 frame, f32 scal
 }
 
 
-struct shaddata_s *ShadDataLoad(char *file, void **buffer) {
+struct shaddata_s *ShadDataLoad(char *file, union variptr_u *buffer) {
     struct shaddata_s *shad;
     struct shaddata_s *data;
     struct shadentry_s *entry;
     struct numtl_s *mtls;
-    void *local;
+    union variptr_u local;
     s32 external;
     s32 size;
     s32 i;
@@ -163,19 +162,19 @@ struct shaddata_s *ShadDataLoad(char *file, void **buffer) {
         if (buffer == 0) {
             buffer = &local;
             external = 0;
-            local = NuMemAllocFn(size + 0x100, shadcom_file, 0x12B);
+            local.voidptr = NuMemAllocFn(size + 0x100, shadcom_file, 0x12B);
         }
-        *buffer = (void *)(((u32)*buffer + 0xF) & 0xFFFFFFF0);
-        size = NuFileLoadBuffer(file, *buffer, 0x7FFFFFFF);
-        data = *buffer;
-        *buffer = (u8 *)*buffer + size;
+        buffer->intaddr = (buffer->intaddr + 0xF) & 0xFFFFFFF0;
+        size = NuFileLoadBuffer(file, buffer->voidptr, 0x7FFFFFFF);
+        data = buffer->voidptr;
+        buffer->u8 = buffer->u8 + size;
         shad = data;
         data->external = external;
         if (external != 0) {
-            *buffer = (void *)(((u32)*buffer + 0xF) & 0xFFFFFFF0);
-            mtls = *buffer;
+            buffer->intaddr = (buffer->intaddr + 0xF) & 0xFFFFFFF0;
+            mtls = buffer->voidptr;
             memset(mtls, 0, data->count * sizeof(struct numtl_s));
-            *buffer = (u8 *)*buffer + data->count * sizeof(struct numtl_s);
+            buffer->u8 = buffer->u8 + data->count * sizeof(struct numtl_s);
         }
         for (i = 0; i < data->count; i++) {
             ((s32 *)data)[i + 1] += (s32)data;

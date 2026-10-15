@@ -12,7 +12,7 @@ styles the decomp has used:
     
 Needs the toolchain, so on a host run it through the container:
   python tools/dispatch.py python tools/probe_layout.py                  # all headers
-  python tools/dispatch.py python tools/probe_layout.py include/creature.h
+  python tools/dispatch.py python tools/probe_layout.py include/game/creature.h
   python tools/dispatch.py python tools/probe_layout.py --check          # exit 1 on drift
 """
 import argparse

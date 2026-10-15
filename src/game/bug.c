@@ -15,8 +15,7 @@
 #include "numath/nuvec.h"
 #include "nu3d/nugscn.h"
 #include "game/gametypes.h"
-
-#include "creature.h"
+#include "game/creature.h"
 
 extern s32 Level;
 
@@ -89,8 +88,6 @@ extern s32 qrand(void);
 extern f32 NuFsqrt(f32 x);
 extern u16 SeekRot(u16 a, u16 target, s32 rate);
 extern void AddGameDebris(s32 type, struct nuvec_s *pos);
-extern void UpdateAnimPacket(struct CharacterModel *mod, struct anim_s *anim,
-                             f32 dt, f32 xz_distance);
 
 extern f32 D_00632CD8;
 #define mechlight_distance D_00632CD8

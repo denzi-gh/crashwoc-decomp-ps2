@@ -16,8 +16,6 @@
 #include "nu3d/nugobj.h"
 #include "nu3d/nugscn.h"
 
-#include "creature.h"
-
 extern void NuMemFreeFn(void *ptr, char *file, int line);
 
 /* Retail-owned (no Data-from-C yet). */

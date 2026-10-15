@@ -10,8 +10,6 @@
 
 #include "game/gametypes.h"
 
-#include "creature.h"
-
 struct credit_s {
     char *txt;    /* 0x0 */
     short colour; /* 0x4 */

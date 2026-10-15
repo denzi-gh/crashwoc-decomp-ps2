@@ -16,8 +16,6 @@
 
 #include "numath/nutrig.h"
 
-#include "creature.h"
-
 extern f32 NuTrigTable[];
 extern u16 D_00293960[];
 

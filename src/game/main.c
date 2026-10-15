@@ -62,6 +62,8 @@
 #include "nu3d/nuanim.h"
 #include "game/gametypes.h"
 #include "gamelib/terrain.h"
+#include "game/creature.h"
+#include "nucore/nucoretypes.h"
 
 extern s32 Level;
 extern s32 level_part_2;
@@ -96,13 +98,6 @@ struct hazecol_s {
     u8 c[8];
 };
 
-struct character_s {
-    u8 f0;             /* 0x00 */
-    u8 f1;             /* 0x01 */
-    u8 f2;             /* 0x02 */
-    u8 unk_0x03[0xCE1];
-}; /* 0xCE4 */
-
 extern struct ldata_s LData[];
 extern struct ldata_s *LDATA;
 extern u64 LBIT;
@@ -114,8 +109,8 @@ extern volatile s32 font3d_initialised;
 extern s32 GAMEOBJECTCOUNT;
 extern s32 i_cratetypedata;
 extern s32 PLAYERCOUNT;
-extern char *superbuffer_ptr;
-extern void *superbuffer_end;
+extern union variptr_u superbuffer_ptr;
+extern union variptr_u superbuffer_end;
 
 extern char load_txt[];
 extern u8 texanimbuff[];
@@ -123,7 +118,6 @@ extern struct texanimref_s D_004C1300[];
 #define texanimscripts D_004C1300
 extern struct hazecol_s D_0062FAC8[];
 extern struct hazecol_s D_0062FAD0[];
-extern struct character_s Character[];
 extern char D_0062FA48[];
 extern char D_0061B2E8[];
 extern char D_0061B308[];
@@ -165,7 +159,6 @@ extern void NuDatSet(void *dat);
 extern void NuDatClose(void *dat);
 extern void InitFont3D(struct nugscn_s *scene);
 extern void LoadScreen(char *name);
-extern void LoadCharacterModels(void);
 extern void ClearGameObjects(void);
 extern void ResetCheckpoint(s32 a, s32 b, s32 c, float d);
 extern void InitWorld(void);
@@ -175,7 +168,6 @@ extern void LoadLights(void);
 extern void InitAI(void);
 extern void InitChases(void);
 extern void ResetChases(void);
-extern s32 AddCreature(s32 character, s32 index, s32 i_aitab);
 extern s32 MtlReadEventHandler(struct numtl_s *mtl);
 
 extern char LevelFileName[];
@@ -249,7 +241,7 @@ extern char D_0061B2D8[];
 
 extern void NuStrCat(char *dst, char *src);
 extern void NuRndrInitWorld(void);
-extern void *visiLoadData(char *name, struct nugscn_s *scene, char **pptr);
+extern void *visiLoadData(char *name, struct nugscn_s *scene, union variptr_u *pptr);
 extern void BuildVisiTable(struct nugscn_s *gsc);
 extern void edobjRegisterBaseScene(struct nugscn_s *scene);
 extern void edbitsRegisterBaseScene(struct nugscn_s *scene);
@@ -323,7 +315,7 @@ void InitWorld(void)
         NuStrCat(tb, D_0062FA90);
 
         if (Level != 0x27 && Level != 0x29) {
-            world_scene[0] = NuGScnRead(&superbuffer_ptr, superbuffer_end, tb);
+            world_scene[0] = NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, tb);
             NuStrCpy(tb, lfn);
             NuStrCat(tb, D_0062FA98);
             world_vd = visiLoadData(tb, world_scene[0], &superbuffer_ptr);
@@ -338,44 +330,44 @@ void InitWorld(void)
 
         if (Level == 0xE) {
             world_scene[1] =
-                NuGScnRead(&superbuffer_ptr, superbuffer_end, D_0061AF00);
+                NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, D_0061AF00);
         } else if (Level == 0x1F) {
             world_scene[1] =
-                NuGScnRead(&superbuffer_ptr, superbuffer_end, D_0061AF20);
+                NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, D_0061AF20);
         } else if (Level == 0x27 || Level == 0x29) {
             NuDisableVBlank();
             NuStrCpy(lt, D_0061AF40);
             NuEnableVBlank();
             world_scene[0] =
-                NuGScnRead(&superbuffer_ptr, superbuffer_end, D_0061AF58);
+                NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, D_0061AF58);
             NuDisableVBlank();
             NuStrCpy(lt, D_0061AF78);
             NuEnableVBlank();
             world_scene[1] =
-                NuGScnRead(&superbuffer_ptr, superbuffer_end, D_0061AF90);
+                NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, D_0061AF90);
             NuDisableVBlank();
             NuStrCpy(lt, D_0061AFB0);
             NuEnableVBlank();
             world_scene[2] =
-                NuGScnRead(&superbuffer_ptr, superbuffer_end, D_0061AFC8);
+                NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, D_0061AFC8);
             NuDisableVBlank();
             NuStrCpy(lt, D_0061AFE8);
             NuEnableVBlank();
             world_scene[3] =
-                NuGScnRead(&superbuffer_ptr, superbuffer_end, D_0061B000);
+                NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, D_0061B000);
             NuDisableVBlank();
             NuStrCpy(lt, D_0061B020);
             NuEnableVBlank();
             world_scene[4] =
-                NuGScnRead(&superbuffer_ptr, superbuffer_end, D_0061B038);
+                NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, D_0061B038);
         }
 
         if (LBIT & 0x400000) {
             world_scene[2] =
-                NuGScnRead(&superbuffer_ptr, superbuffer_end, D_0061B058);
+                NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, D_0061B058);
         } else if (LBIT & 0x5A031894DULL) {
             world_scene[2] =
-                NuGScnRead(&superbuffer_ptr, superbuffer_end, D_0061B070);
+                NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, D_0061B070);
         }
     }
 
@@ -393,9 +385,8 @@ void InitWorld(void)
         NuDisableVBlank();
         NuStrCpy(lt, D_0061B088);
         NuEnableVBlank();
-        n = saveloadLoadIcon(D_0061B0A0, superbuffer_ptr);
-        superbuffer_ptr =
-            (void *)(((u32)superbuffer_ptr + n + 0xF) & 0xFFFFFFF0);
+        n = saveloadLoadIcon(D_0061B0A0, superbuffer_ptr.voidptr);
+        superbuffer_ptr.intaddr = (superbuffer_ptr.intaddr + n + 0xF) & 0xFFFFFFF0;
     }
 
     noterraininit();
@@ -403,10 +394,10 @@ void InitWorld(void)
         NuDisableVBlank();
         NuStrCpy(lt, D_0061B0B0);
         NuEnableVBlank();
-        TerrainSetCur(superbuffer_ptr);
-        terraininit(Level, (short **)&superbuffer_ptr, superbuffer_end, 0, lfn,
+        TerrainSetCur(superbuffer_ptr.voidptr);
+        terraininit(Level, &superbuffer_ptr.s16, superbuffer_end.s16, 0, lfn,
                     world_scene[0], 0);
-        superbuffer_ptr = (void *)(((u32)superbuffer_ptr + 0xF) & 0xFFFFFFF0);
+        superbuffer_ptr.intaddr = (superbuffer_ptr.intaddr + 0xF) & 0xFFFFFFF0;
     }
 
     WUMPACOUNT = 0;
@@ -415,7 +406,7 @@ void InitWorld(void)
         NuDisableVBlank();
         NuStrCpy(lt, D_0061B0C0);
         NuEnableVBlank();
-        crate_scene = NuGScnRead(&superbuffer_ptr, superbuffer_end, D_0061B0D8);
+        crate_scene = NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, D_0061B0D8);
     }
 
     pause_scene = 0;
@@ -423,7 +414,7 @@ void InitWorld(void)
         NuDisableVBlank();
         NuStrCpy(lt, D_0061B0F0);
         NuEnableVBlank();
-        pause_scene = NuGScnRead(&superbuffer_ptr, superbuffer_end, D_0061B108);
+        pause_scene = NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, D_0061B108);
     }
 
     edppDestroyAllParticles();
@@ -584,13 +575,13 @@ inline void InitTexAnimScripts(void)
 {
     struct texanimref_s *list = texanimscripts;
     void *dat;
-    void *animbuf;
+    union variptr_u animbuf;
     NuErrorFunc dbg;
 
     NuTexAnimProgSysInit();
     dat = NuDatOpen(D_0062FA48, 0, 0);
     NuDatSet(dat);
-    animbuf = texanimbuff;
+    animbuf.voidptr = texanimbuff;
     memset(texanimbuff, 0, 0x8000);
 
     for (; list->script != 0; list++) {
@@ -613,9 +604,9 @@ inline void InitCreatureModels(void)
     s32 i;
 
     for (i = 0; i < 9; i++) {
-        Character[i].f0 = 0;
-        Character[i].f1 = 0;
-        Character[i].f2 = 0;
+        Character[i].used = 0;
+        Character[i].on = 0;
+        Character[i].off_wait = 0;
     }
     GAMEOBJECTCOUNT = 0;
     LoadScreen(D_0061AE88);
@@ -652,7 +643,7 @@ inline void LoadScreen(char *name)
 inline void LoadFont3D(void)
 {
     font3d_initialised = 0;
-    font3d_scene = NuGScnRead(&superbuffer_ptr, superbuffer_end, D_0061AE58);
+    font3d_scene = NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, D_0061AE58);
     InitFont3D(font3d_scene);
 }
 
@@ -687,7 +678,7 @@ void LoadLevel(void)
     wumpa_scene = 0;
     if (LDATA->flags & 0x100) {
         LoadScreen(D_0061B388);
-        wumpa_scene = NuGScnRead(&superbuffer_ptr, superbuffer_end, D_0061B3A0);
+        wumpa_scene = NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, D_0061B3A0);
     }
 
     LoadScreen(D_0061B3B0);
@@ -812,7 +803,7 @@ inline void DrawFade(void)
 }
 
 extern char D_0061B550[];
-extern void *superbuffer_reset_base;
+extern union variptr_u superbuffer_reset_base;
 extern volatile s32 bgload_complete;
 extern void BGLoadScreenInit(s32 a);
 extern void InitLevelSfxTables(void);
@@ -829,7 +820,7 @@ void BGLoadSfxFn(void)
 
     superbuffer_ptr = superbuffer_reset_base;
     font3d_initialised = 0;
-    font3d_scene = NuGScnRead(&superbuffer_ptr, superbuffer_end, D_0061AE58);
+    font3d_scene = NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, D_0061AE58);
     InitFont3D(font3d_scene);
     font3d_initialised = done;
     BGLoadScreenInit(0);
@@ -863,25 +854,7 @@ struct nupad_s {
     u8 stick_y;                  /* 0x57F */
 };
 
-struct mask_s {
-    u8 unk_0x000[0x16E];
-    short active;                /* 0x16E */
-};
-
-struct player_s {
-    s8 used;                     /* 0x000 */
-    u8 unk_0x001[0xC - 0x1];     /* 0x001 */
-    struct mask_s *mask;         /* 0x00C */
-    u8 unk_0x010[0x149 - 0x10];  /* 0x010 */
-    s8 dead;                     /* 0x149 */
-    u8 unk_0x14A[0x153 - 0x14A]; /* 0x14A */
-    s8 finished;                 /* 0x153 */
-    u8 unk_0x154[0xCE1 - 0x154]; /* 0x154 */
-    u8 freeze;                   /* 0xCE1 */
-};
-
 extern struct nupad_s *Pad[];
-extern struct player_s *player;
 extern struct cursor_s Cursor;
 extern struct game_s Game;
 extern struct gtimer_s PauseTimer;
@@ -951,7 +924,7 @@ void DoInput(void)
 
     if (NuPs2ReadPad(pad)) {
         if (pad_record != 0) {
-            if ((pad->buttons & 0x800) || player->dead != 0) {
+            if ((pad->buttons & 0x800) || player->obj.dead != 0) {
                 SavePadRecord(PadRecordPath);
                 pad_record = 0;
             }
@@ -1002,7 +975,7 @@ void DoInput(void)
 
         if (Paused == 0 && Cursor.menu == -1 &&
             !(PLAYERCOUNT != 0 &&
-              (player->finished != 0 ||
+              (player->obj.finished != 0 ||
                (Level == 0x25 && tumble_time < tumble_duration &&
                 last_hub != -1)))) {
             pause_dir = 1;
@@ -1059,7 +1032,7 @@ void DoInput(void)
             return;
         }
         if (PLAYERCOUNT != 0) {
-            if (player->finished != 0) {
+            if (player->obj.finished != 0) {
                 return;
             }
             if (Level == 0x25 && tumble_time < tumble_duration &&
@@ -1084,15 +1057,16 @@ extern char *bgloadanimnames[];
 extern struct NUHGOBJ_s *bgloadchr[2];
 extern struct nuanimdata_s *bgloadanim[2];
 
-extern void TimeTunnelInit(void *buffer, void *buffend);
+extern void TimeTunnelInit(union variptr_u *buffer, union variptr_u *buffend);
 
 void BGLoadScreenInit(s32 loadchars)
 {
-    void **buffend = &superbuffer_end;
-    char *buffer = (char *)superbuffer_end - 0x100000;
+    union variptr_u *buffend = &superbuffer_end;
+    union variptr_u buffer;
     void *dat;
     s32 c;
 
+    buffer.u8 = superbuffer_end.u8 - 0x100000;
     TimeTunnelInit(&buffer, buffend);
     if (loadchars != 0) {
         dat = NuDatOpen(D_0061B4D0, 0, 0);
@@ -1100,12 +1074,12 @@ void BGLoadScreenInit(s32 loadchars)
         c = bgloadlastcharacter;
         if (c >= 0 && c < 2) {
             bgloadchr[c] = NuGHGRead(&buffer, bgloadcharnames[c]);
-            bgloadanim[c] = NuAnimDataLoadBuff(bgloadanimnames[c], (void **)&buffer, buffend);
+            bgloadanim[c] = NuAnimDataLoadBuff(bgloadanimnames[c], &buffer, buffend);
             bgloadlastcharacter = -1;
         }
         if (LDATA->character >= 0 && LDATA->character < 2) {
             bgloadanim[LDATA->character] =
-                NuAnimDataLoadBuff(bgloadanimnames[LDATA->character], (void **)&superbuffer_ptr, buffend);
+                NuAnimDataLoadBuff(bgloadanimnames[LDATA->character], &superbuffer_ptr, buffend);
         }
         NuDatSet(0);
         if (dat != 0) {
@@ -1122,17 +1096,17 @@ extern s32 WeatherBossDead;
 void SetTexAnimSignals(void)
 {
     if (player->used != 0 &&
-        (player->dead == 3 || player->dead == 8 || player->freeze != 0)) {
+        (player->obj.dead == 3 || player->obj.dead == 8 || player->freeze != 0)) {
         texanimbits |= 2;
     } else {
         texanimbits &= 0xFFFFFFFD;
     }
-    if (player->mask != 0 && player->mask->active > 1) {
+    if (player->obj.mask != 0 && player->obj.mask->active > 1) {
         texanimbits |= 4;
     } else {
         texanimbits &= 0xFFFFFFFB;
     }
-    if (player->used != 0 && player->dead != 0 && player->dead != 0x12) {
+    if (player->used != 0 && player->obj.dead != 0 && player->obj.dead != 0x12) {
         texanimbits |= 0x20;
     } else {
         texanimbits &= 0xFFFFFFDF;
@@ -1375,9 +1349,9 @@ void TextureCreate(char *name, struct numtl_s **mtl, s32 *tid)
 
 
 void TextureCreateEx(char *name, struct numtl_s **mtl, s32 *tid, void *extmem, s32 extsize,
-                     s32 *addr, s32 *addrend)
+                     union variptr_u *addr, union variptr_u *addrend)
 {
-    s32 a;
+    union variptr_u a;
 
     if (NuFileSize(name) < 0) {
         *mtl = 0;

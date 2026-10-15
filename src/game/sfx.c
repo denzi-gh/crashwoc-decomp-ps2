@@ -18,8 +18,7 @@
 
 #include "numath/nuvec.h"
 #include "game/gametypes.h"
-
-#include "creature.h"
+#include "game/creature.h"
 
 /* pSFX entry (offsets verified in GameMusic/GameSfxLoop), stride 0x30. */
 struct pSFX {

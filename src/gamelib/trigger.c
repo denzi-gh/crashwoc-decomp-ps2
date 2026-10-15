@@ -31,35 +31,7 @@
 #include "nu3d/nugscn.h"
 #include "gamelib/sceneman.h"
 #include "gamelib/trigger.h"
-
-union variptr_u
-{
-    void *voidptr;
-    signed char *s8;
-    unsigned char *u8;
-    short unsigned int *u16;
-    short int *s16;
-    unsigned int *u32;
-    unsigned int *s32;
-    unsigned long long *u64;
-    float *f32;
-    struct nuvec_s* vec3;
-    void* vec4;
-    void* ivec3;
-    void* ivec4;
-    struct numtx_s* mtx44;
-    void* mtl;
-    void *vutri;
-    void *tristream;
-    unsigned int* viftag;
-    unsigned int intaddr;
-    void* dmatag;
-    void *giftag;
-    void *zbuf;
-    void *test;
-    void *prmode;
-    void *frame;
-};
+#include "nucore/nucoretypes.h"
 
 extern int NuFileLoadBuffer(void *name, void *buf, int size);
 
@@ -82,19 +54,19 @@ extern int D_0062F800;
 #define g_DbgTriggerOff D_0062F800
 
 
-struct NUTRIGGERSYS_s *NuTriggerSysLoad(char *name, char **heap, char **heapend)
+struct NUTRIGGERSYS_s *NuTriggerSysLoad(char *name, union variptr_u *heap, union variptr_u *heapend)
 {
     struct NUTRIGGERSYS_s *blob;
     int size;
     int i;
 
-    *heap = (char *)(((unsigned int)*heap + 0xF) & ~0xFU);
-    size = NuFileLoadBuffer(name, *heap, (int)*heapend - (int)*heap);
+    heap->intaddr = (heap->intaddr + 0xF) & ~0xF;
+    size = NuFileLoadBuffer(name, heap->voidptr, heapend->intaddr - heap->intaddr);
     if (size == 0)
         return 0;
 
-    blob = (struct NUTRIGGERSYS_s *)*heap;
-    *heap = *heap + size;
+    blob = heap->voidptr;
+    heap->u8 = heap->u8 + size;
 
     if (blob->version != 1)
         NuErrorProlog(D_00619EF8, 0x87)(D_00619F20, name, blob->version);

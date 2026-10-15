@@ -13,8 +13,7 @@
 
 #include "numath/numtx.h"
 #include "game/gametypes.h"
-
-#include "creature.h"
+#include "game/creature.h"
 
 extern struct gdeb_s GDeb[170];
 extern s32 NODEBRIS;

@@ -11,8 +11,6 @@
 #include "nu3d/numtl.h"
 #include "nu3d/nutex.h"
 
-#include "creature.h"
-
 extern char D_00619210[];
 #define glutils_file D_00619210
 

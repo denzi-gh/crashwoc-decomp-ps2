@@ -54,8 +54,7 @@
 #include "numath/nuvec.h"
 #include "game/gametypes.h"
 #include "gamelib/terrain.h"
-
-#include "creature.h"
+#include "game/creature.h"
 
 extern struct ldata_s *LDATA;
 
@@ -92,7 +91,6 @@ extern f32 jonglowsize;
 extern s32 temp_cuboid_side;
 extern f32 temp_cuboid_bounce_angle;
 extern s32 VEHICLECONTROL;
-extern CharacterData CData[191];
 extern s32 gamesfx_effect_volume;
 extern f32 NuTrigTable[];
 extern struct nuvec_s v010;
@@ -204,7 +202,6 @@ extern f32 plr_invisibility_time;
 extern s32 Hub;
 
 void BlendGameCamera(struct cammtx_s *cam, f32 time);
-void ResetAnimPacket(struct anim_s *anim, s32 action);
 void AddExtraLife(struct nuvec_s *pos, s32 pdeb);
 void AddMechanicalDebris(struct nuvec_s *pos, s32 vehicle);
 

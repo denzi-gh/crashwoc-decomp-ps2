@@ -56,8 +56,7 @@
 #include "numath/nuvec.h"
 #include "nu3d/nugscn.h"
 #include "game/gametypes.h"
-
-#include "creature.h"
+#include "game/creature.h"
 
 extern s32 FlyingLevelVictoryDance;
 extern struct MoveInfo CrashMoveInfo;
@@ -97,36 +96,6 @@ struct plrevent_s {
     f32 fALONG;                     /* 0x94 */
 };
 
-struct chase_s {
-    struct nugspline_s *spl_START;          /* 0x0000 */
-    f32 time;                               /* 0x0004 */
-    f32 duration;                           /* 0x0008 */
-    struct nugspline_s *spl_CHASER[6];      /* 0x000C */
-    struct nuvec_s pos[6];                  /* 0x0024 */
-    struct RPos_s RPos[6];                  /* 0x006C */
-    struct anim_s anim[6];                  /* 0x0144 */
-    struct nuhspecial_s obj[6];             /* 0x01EC */
-    s16 character[6];                       /* 0x021C */
-    s16 action[6];                          /* 0x0228 */
-    u16 xrot[6];                            /* 0x0234 */
-    u16 yrot[6];                            /* 0x0240 */
-    u16 zrot[6];                            /* 0x024C */
-    struct chaseevent_s event[6][24];       /* 0x0258 */
-    struct nugspline_s *spl_MISC[6][4];     /* 0x7098 */
-    struct Nearest_Light_s lights[6];       /* 0x70F8 */
-    f32 scale[6];                           /* 0x7518 */
-    u8 misc_phase[6];                       /* 0x7530 */
-    s8 ok[6];                               /* 0x7536 */
-    u8 cuboid;                              /* 0x753C */
-    s8 i;                                   /* 0x753D */
-    s8 i_last;                              /* 0x753E */
-    s8 i_next;                              /* 0x753F */
-    s8 status;                              /* 0x7540 */
-    s8 iRAIL;                               /* 0x7541 */
-    s16 iALONG;                             /* 0x7542 */
-    f32 fALONG;                             /* 0x7544 */
-};
-
 extern struct spltab_s SplTab[];
 extern struct tersurface_s TerSurface[];
 extern s32 GameMode;
@@ -142,7 +111,6 @@ extern s32 plr_tocam_wait;
 extern s32 plr_tocam_turn;
 extern struct plrevent_s PlrEvent[8];
 extern struct nugscn_s *world_scene[];
-extern CharacterData CData[];
 extern struct CharacterModel *carpet_model;
 extern s32 carpet_character;
 extern u16 carpet_xrot;
@@ -277,7 +245,7 @@ void AnimateCRASH(struct creature_s *plr) {
     } else if ((plr->land != 0) && (plr->obj.pad_speed == 0.0f)) {
         plr->obj.anim.newaction = 0x30;
     } else if ((plr->crouch_pos > 0) &&
-               (plr->crouch_pos < plr->OnFootMoveInfo->CROUCHINGFRAMES) &&
+               (plr->crouch_pos < plr->minfo->CROUCHINGFRAMES) &&
                (plr->obj.pad_speed == 0.0f)) {
         plr->obj.anim.newaction = (plr->crawl != 0) ? 3 : 5;
     } else if ((plr->crawl != 0) && ((plr->jump == 0) || (plr->obj.ground != 0))) {
@@ -304,7 +272,7 @@ void AnimateCRASH(struct creature_s *plr) {
     } else if ((plr->obj.pad_speed == 0.0f) &&
                !((plr->pad_type == 1) &&
                  (plr->obj.mom.x * plr->obj.mom.x + plr->obj.mom.z * plr->obj.mom.z >=
-                  plr->OnFootMoveInfo->IDLESPEED * plr->OnFootMoveInfo->IDLESPEED))) {
+                  plr->minfo->IDLESPEED * plr->minfo->IDLESPEED))) {
         if (((plr->obj.ground == 1) ||
              ((plr->obj.last_ground == 1) && (plr->allow_jump != 0))) &&
             ((plr->obj.pos.y + plr->obj.bot * plr->obj.SCALE) - plr->obj.shadow > 0.25f)) {
@@ -333,7 +301,7 @@ void AnimateCRASH(struct creature_s *plr) {
     UpdateCharacterIdle(plr, 0);
 
     if ((plr->obj.dead == 0) && (plr->spin != 0) &&
-        (plr->spin_frame < plr->spin_frames - plr->OnFootMoveInfo->SPINRESETFRAMES)) {
+        (plr->spin_frame < plr->spin_frames - plr->minfo->SPINRESETFRAMES)) {
         pos.x = plr->obj.pos.x;
         pos.y = plr->obj.pos.y + (plr->obj.bot + plr->obj.top) * plr->obj.SCALE * 0.5f +
                 (plr->obj.top - plr->obj.bot) * plr->obj.SCALE *
@@ -354,7 +322,7 @@ void AnimateCOCO(struct creature_s *plr) {
         plr->obj.anim.newaction = tumble_action;
     } else if ((plr->spin != 0) &&
                (plr->spin_frame <
-                plr->spin_frames - plr->OnFootMoveInfo->SPINRESETFRAMES)) {
+                plr->spin_frames - plr->minfo->SPINRESETFRAMES)) {
         plr->obj.anim.newaction = 0x46;
     } else if (plr->slam_wait != 0) {
         plr->obj.anim.newaction = 0x1F;
@@ -390,7 +358,7 @@ void AnimateCOCO(struct creature_s *plr) {
     } else if ((plr->obj.pad_speed == 0.0f) &&
                !((plr->pad_type == 1) &&
                  (plr->obj.mom.x * plr->obj.mom.x + plr->obj.mom.z * plr->obj.mom.z >=
-                  plr->OnFootMoveInfo->IDLESPEED * plr->OnFootMoveInfo->IDLESPEED))) {
+                  plr->minfo->IDLESPEED * plr->minfo->IDLESPEED))) {
         plr->obj.anim.newaction = 0x22;
     } else if (plr->sprint != 0) {
         plr->obj.anim.newaction = 0x48;
@@ -437,7 +405,7 @@ void AnimateGYRO(struct creature_s *plr, struct pad_s *pad) {
 
     if ((plr->spin != 0) &&
         (plr->spin_frame <
-         plr->spin_frames - plr->OnFootMoveInfo->SPINRESETFRAMES)) {
+         plr->spin_frames - plr->minfo->SPINRESETFRAMES)) {
         plr->obj.anim.newaction = 0x69;
     } else if (plr->tap != 0) {
         plr->obj.anim.newaction = 0x67;
@@ -473,7 +441,7 @@ void DrawCarpet(void) {
         NuMtxRotateY(&m, carpet_yrot + 0x8000);
         NuMtxTranslate(&m, &carpet_pos);
         EvalModelAnim(carpet_model, &carpet_anim, &m, mtx, &dwa, 0);
-        NuHGobjRndrMtxDwa(carpet_model->hobj, &m, 1, 0, mtx, dwa);
+        NuHGobjRndrMtxDwa(carpet_model->obj, &m, 1, 0, mtx, dwa);
         SetLevelLights();
     }
 }
@@ -487,7 +455,6 @@ extern s32 Draw3DObject(s32 object, struct nuvec_s *pos, u16 xrot, u16 yrot, u16
                         struct nugscn_s *scn, struct nuspecial_s *obj, s32 rot);
 
 extern struct game_s Game;
-extern struct creature_s *player;
 extern s32 TimeTrial;
 extern void PickupBonusGem(s32 mask);
 
@@ -635,7 +602,7 @@ void AnimateMECH(struct creature_s *plr) {
     } else if (plr->obj.pad_speed == 0.0f
                && (plr->pad_type != 1
                    || !(plr->obj.mom.x * plr->obj.mom.x + plr->obj.mom.z * plr->obj.mom.z
-                        >= plr->OnFootMoveInfo->IDLESPEED * plr->OnFootMoveInfo->IDLESPEED))) {
+                        >= plr->minfo->IDLESPEED * plr->minfo->IDLESPEED))) {
         plr->obj.anim.newaction = 0x62;
     } else if (plr->obj.pad_speed == minfo->WALKSPEED) {
         plr->obj.anim.newaction = 0x71;
@@ -694,7 +661,7 @@ void AnimateSWIMMING(struct creature_s *plr) {
         plr->obj.anim.newaction = plr->obj.die_action;
     } else if ((plr->spin != 0) &&
                (plr->spin_frame <
-                plr->spin_frames - plr->OnFootMoveInfo->SPINRESETFRAMES)) {
+                plr->spin_frames - plr->minfo->SPINRESETFRAMES)) {
         plr->obj.anim.newaction = 0x46;
     } else if (plr->obj.pad_speed > 0.0f) {
         plr->obj.anim.newaction = 0x4C;
@@ -993,9 +960,6 @@ inline void ResetTub(struct tubinfo_s *tub, struct creature_s *c) {
 extern struct tubinfo_s PlrTub;
 extern struct tubinfo_s OppTub;
 extern struct creature_s OppTubCreature;
-extern s8 CRemap[];
-extern struct CharacterModel CModel[];
-extern void ResetAnimPacket(struct anim_s *anim, s32 action);
 extern void ResetLights(struct Nearest_Light_s *lights);
 extern s32 opptub_action;
 extern s32 opptub_wait;
@@ -1003,7 +967,7 @@ extern s32 opptub_wait;
 /* Puts the player and the rival tub at the start, the rival halfway
    between the two start splines. */
 void ResetTubs(void) {
-    CharacterData *cdata;
+    struct CharacterData *cdata;
     struct nuvec_s *p0;
     struct nuvec_s *p1;
     struct creature_s *c;

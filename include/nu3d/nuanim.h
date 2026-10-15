@@ -121,6 +121,7 @@ struct NUJOINTANIM_s {
 
 struct NUJOINTDATA_s;
 struct nujointnode_s;
+union variptr_u;
 
 void NuAnimDataWrite(int fh, struct nuanimdata_s *data);
 struct nuanimdata_s *NuAnimDataRead(int fh);
@@ -139,7 +140,7 @@ void NuAnimCurve2SetApplyToJointBasic(union nuanimcurve2_u *curves, signed char 
 void NuAnimCurveSetApplyToMatrix(struct nuanimcurveset_s *curveset, struct nuanimtime_s *atime, struct numtx_s *m);
 void NuAnimCurve2SetApplyToMatrix(union nuanimcurve2_u *curves, signed char *curveflags, signed char curvesetflags, struct nuanimtime_s *atime, struct numtx_s *m);
 struct nuanimdata_s *NuAnimDataLoad(char *file);
-struct nuanimdata_s *NuAnimDataLoadBuff(char *file, void **buffer, void **buffend);
+struct nuanimdata_s *NuAnimDataLoadBuff(char *file, union variptr_u *buffer, union variptr_u *buffend);
 void NuAnimDataDestroy(struct nuanimdata_s *data);
 void NuAnimDataCalcTime(struct nuanimdata_s *data, float time, struct nuanimtime_s *atime);
 struct nuanimdata_s *NuAnimDataCreate(int nchunks);
@@ -149,7 +150,7 @@ struct nuanimcurve_s *NuAnimCurveCreate(int numkeys);
 void NuAnimCurveSetWrite(int fh, struct nuanimcurveset_s *curveset);
 struct nuanimcurve_s *NuAnimCurveRead(int fh);
 int NuAnimDataFindVersion(char *file);
-struct nuanimdata2_s *NuAnimData2LoadBuff(char *file, void **buffer, void **buffend);
+struct nuanimdata2_s *NuAnimData2LoadBuff(char *file, union variptr_u *buffer, union variptr_u *buffend);
 void NuAnimData2CalcTime(struct nuanimdata2_s *data, float time, struct nuanimtime_s *atime);
 struct nuanimdatachunk_s *NuAnimDataChunkCreate(int numnodes);
 void NuAnimDataChunkDestroy(struct nuanimdatachunk_s *chunk);

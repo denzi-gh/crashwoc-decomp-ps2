@@ -13,8 +13,6 @@
 #include "numath/nuvec.h"
 #include "nu3d/numtl.h"
 
-#include "creature.h"
-
 struct nulsthdr_s;
 struct nulnkhdr_s;
 

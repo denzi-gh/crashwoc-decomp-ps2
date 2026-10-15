@@ -81,7 +81,7 @@ struct instNUTRIGGERSYS_s {
     int is_disabled : 1;                /* 0x14 */
 }; /* 0x18 */
 
-struct NUTRIGGERSYS_s *NuTriggerSysLoad(char *name, char **heap, char **heapend);
+struct NUTRIGGERSYS_s *NuTriggerSysLoad(char *name, union variptr_u *heap, union variptr_u *heapend);
 int CheckParentedTriggerWithPos(struct NUTRIGGER_s *trigger, struct numtx_s *mtx, struct nuvec_s *pos, float r);
 int CheckUnparentedTriggerWithPos(struct NUTRIGGER_s *trigger, struct nuvec_s *pos, float r);
 void NuTriggerSysUpdate(struct nuvec_s *pos, f32 radius);

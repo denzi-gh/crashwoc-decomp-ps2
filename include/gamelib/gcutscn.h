@@ -8,6 +8,7 @@ struct nuanimdata2_s;
 struct NUTRIGGERSYS_s;
 struct instNUTRIGGERSYS_s;
 struct instNUGCUTSCENE_s;
+union variptr_u;
 
 typedef void (*NuGCutSceneEndFn)(struct instNUGCUTSCENE_s *scene);
 
@@ -246,7 +247,7 @@ typedef void (*NuCutSceneCharacterRenderFn)(struct instNUGCUTSCENE_s *scene, str
 typedef void (*NuCutSceneCharacterReleaseFn)(struct instNUGCUTCHAR_s *character);
 typedef void (*NuCutSceneFindCharactersFn)(struct NUGCUTSCENE_s *def);
 typedef void (*NuCutSceneCharacterCreateDataFn)(struct NUGCUTCHAR_s *desc,
-                                                struct instNUGCUTCHAR_s *character, char **heap);
+                                                struct instNUGCUTCHAR_s *character, union variptr_u *heap);
 typedef void (*NuCutSceneRigidCollisionCheckFn)(struct instNUGCUTRIGID_s *rigid, struct numtx_s *mtx);
 
 struct nuanimtime_s;
@@ -267,7 +268,7 @@ void instNuGCutSceneDestroy(struct instNUGCUTSCENE_s *scene);
 int instNuGCutSceneIsFinished(struct instNUGCUTSCENE_s *scene);
 void instNuGCutSceneUpdate(struct instNUGCUTSCENE_s *scene, int paused);
 void instNuGCutSceneReset(struct instNUGCUTSCENE_s *scene);
-void instNuGCutSceneCreateCamTgtArray(struct instNUGCUTSCENE_s *scene, int count, char **heap);
+void instNuGCutSceneCreateCamTgtArray(struct instNUGCUTSCENE_s *scene, int count, union variptr_u *heap);
 int instNuGCutSceneAddCamTgt(struct instNUGCUTSCENE_s *scene, struct nuvec_s *object, char camid, float frame, float nframes);
 void instNuGCutSceneSetPos(struct instNUGCUTSCENE_s *scene, struct nuvec4_s *pos);
 void instNuGCutSceneTranslate(struct instNUGCUTSCENE_s *scene, struct nuvec_s *offset);
@@ -283,9 +284,9 @@ void instNuGCutDebrisLocatorUpdate(struct NUGCUTLOCATORSYS_s *def, struct instNU
 void instNuGCutLocatorSysUpdate(struct instNUGCUTSCENE_s *scene, float time);
 void NuGCutCamsSysFixPtrs(struct NUGCUTSCENE_s *def, int base);
 void instNuGCutSceneCalculateCentre(struct instNUGCUTSCENE_s *scene, struct numtx_s *mtx);
-struct instNUGCUTCAMSYS_s *instNuCGutCamSysCreate(struct NUGCUTCAMSYS_s *def, char **heap);
+struct instNUGCUTCAMSYS_s *instNuCGutCamSysCreate(struct NUGCUTCAMSYS_s *def, union variptr_u *heap);
 void instNuGCutCamSysStart(struct instNUGCUTCAMSYS_s *camsys, struct NUGCUTCAMSYS_s *def);
-struct instNUGCUTLOCATORSYS_s *NuCGutLocatorSysCreateInst(struct NUGCUTLOCATORSYS_s *def, char **heap);
+struct instNUGCUTLOCATORSYS_s *NuCGutLocatorSysCreateInst(struct NUGCUTLOCATORSYS_s *def, union variptr_u *heap);
 void instNuGCutLocatorSysEnd(struct instNUGCUTLOCATORSYS_s *sys, struct NUGCUTLOCATORSYS_s *def, float time);
 void instNuGCutLocatorSysStart(struct instNUGCUTLOCATORSYS_s *sys, struct NUGCUTLOCATORSYS_s *def);
 void NuGCutRigidSysFixPtrs(struct NUGCUTSCENE_s *def, int base);
@@ -304,10 +305,10 @@ void NuGCutCharAnimProcess(struct NUGCUTCHAR_s *desc, float time, struct numtx_s
 void instNuGCutRigidSysEnd(struct instNUGCUTSCENE_s *scene, float time);
 void instNuGCutCharSysEnd(struct instNUGCUTSCENE_s *scene, float time);
 void NuGCutTriggerSysFixPtrs(struct NUGCUTSCENE_s *def, int base);
-struct instNUGCUTTRIGGERSYS_s *instNuCGutTriggerSysCreate(struct NUGCUTSCENE_s *def, struct instNUTRIGGERSYS_s *list, char **heap);
-struct instNUGCUTRIGIDSYS_s *instNuCGutRigidSysCreate(struct NUGCUTSCENE_s *def, struct nugscn_s *gscene, char **heap);
-struct instNUGCUTCHARSYS_s *instNuCGutCharSysCreate(struct NUGCUTSCENE_s *def, char **heap);
-struct instNUGCUTSCENE_s *instNuGCutSceneCreate(struct NUGCUTSCENE_s *def, void *gscene, struct instNUTRIGGERSYS_s *triggers, char *name, char **heap);
+struct instNUGCUTTRIGGERSYS_s *instNuCGutTriggerSysCreate(struct NUGCUTSCENE_s *def, struct instNUTRIGGERSYS_s *list, union variptr_u *heap);
+struct instNUGCUTRIGIDSYS_s *instNuCGutRigidSysCreate(struct NUGCUTSCENE_s *def, struct nugscn_s *gscene, union variptr_u *heap);
+struct instNUGCUTCHARSYS_s *instNuCGutCharSysCreate(struct NUGCUTSCENE_s *def, union variptr_u *heap);
+struct instNUGCUTSCENE_s *instNuGCutSceneCreate(struct NUGCUTSCENE_s *def, void *gscene, struct instNUTRIGGERSYS_s *triggers, char *name, union variptr_u *heap);
 void instNuGCutTriggerSysUpdate(struct instNUGCUTSCENE_s *scene, float time);
 void instNuGCutTriggerSysStart(struct instNUGCUTSCENE_s *scene);
 void instNuGCutSceneRender(struct instNUGCUTSCENE_s *scene);
@@ -315,7 +316,7 @@ int StateAnimEvaluate(struct NUSTATEANIM_s *anim, unsigned char *key, unsigned c
 struct NUSTATEANIM_s *StateAnimFixPtrs(struct NUSTATEANIM_s *anim, int base);
 void instNuGCutCharSysRender(struct instNUGCUTSCENE_s *scene, float time);
 void instNuGCutCamSysUpdate(struct instNUGCUTSCENE_s *scene, float time);
-struct NUGCUTSCENE_s *NuGCutSceneLoad(char *name, char **heap, char **heapend);
+struct NUGCUTSCENE_s *NuGCutSceneLoad(char *name, union variptr_u *heap, union variptr_u *heapend);
 void instNuGCutSceneStart(struct instNUGCUTSCENE_s *scene);
 void instNuGCutSceneEnd(struct instNUGCUTSCENE_s *scene);
 int NuGCutLocatorIsVisble(struct NUGCUTLOCATOR_s *data, float time, struct nuanimtime_s *atime, float *value);

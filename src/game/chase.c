@@ -21,38 +21,7 @@
 #include "nu3d/nugscn.h"
 #include "game/gametypes.h"
 #include "gamelib/terrain.h"
-
-#include "creature.h"
-
-struct chase_s {
-    struct nugspline_s *spl_START;          /* 0x0000 */
-    f32 time;                               /* 0x0004 */
-    f32 duration;                           /* 0x0008 */
-    struct nugspline_s *spl_CHASER[6];      /* 0x000C */
-    struct nuvec_s pos[6];                  /* 0x0024 */
-    struct RPos_s RPos[6];                  /* 0x006C */
-    struct anim_s anim[6];                  /* 0x0144 */
-    struct nuhspecial_s obj[6];             /* 0x01EC */
-    s16 character[6];                       /* 0x021C */
-    s16 action[6];                          /* 0x0228 */
-    u16 xrot[6];                            /* 0x0234 */
-    u16 yrot[6];                            /* 0x0240 */
-    u16 zrot[6];                            /* 0x024C */
-    struct chaseevent_s event[6][24];       /* 0x0258 */
-    struct nugspline_s *spl_MISC[6][4];     /* 0x7098 */
-    struct Nearest_Light_s lights[6];       /* 0x70F8 */
-    f32 scale[6];                           /* 0x7518 */
-    u8 misc_phase[6];                       /* 0x7530 */
-    s8 ok[6];                               /* 0x7536 */
-    u8 cuboid;                              /* 0x753C */
-    s8 i;                                   /* 0x753D */
-    s8 i_last;                              /* 0x753E */
-    s8 i_next;                              /* 0x753F */
-    s8 status;                              /* 0x7540 */
-    s8 iRAIL;                               /* 0x7541 */
-    s16 iALONG;                             /* 0x7542 */
-    f32 fALONG;                             /* 0x7544 */
-};                                          /* 0x7548 */
+#include "game/creature.h"
 
 struct pchase_s {
     s8 i;                 /* 0x00 */
@@ -138,7 +107,6 @@ extern s32 USELIGHTS;
 extern s32 LIGHTCHASECHARACTERS;
 extern s32 temp_action;
 extern f32 temp_time;
-extern CharacterData CData[];
 extern struct cammtx_s GameCam;
 extern u16 temp_xrot;
 extern u16 temp_zrot;
@@ -561,7 +529,7 @@ void UpdateChase(struct chase_s *chase, struct obj_s *obj) {
     struct RPos_s best_RPos;
     struct nuvec_s *p0;
     struct nuvec_s *p1;
-    CharacterData *cdata;
+    struct CharacterData *cdata;
     struct CharacterModel *model;
     s32 holding;
     s32 kill;
@@ -896,7 +864,7 @@ void DrawChases(s32 render) {
                                   &chase->lights[j].pDir3rd->Colour, &chase->lights[j].pDir3rd->Direction,
                                   &chase->lights[j].AmbCol);
                     }
-                    NuHGobjRndrMtxDwa(model->hobj, &m, 1, 0, tmtx, dwa);
+                    NuHGobjRndrMtxDwa(model->obj, &m, 1, 0, tmtx, dwa);
                 }
             }
         }

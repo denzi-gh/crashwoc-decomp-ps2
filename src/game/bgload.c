@@ -9,9 +9,9 @@
  *   0x0025b800 VBlankFn
  */
 
-#include "nucore/nuerror.h"
+#include "nu_types.h"
 
-#include "creature.h"
+#include "nucore/nuerror.h"
 
 /* Sony EE kernel parameter blocks (offsets verified against the retail
  * stores in BGLoadInit / BGLoadStart). */

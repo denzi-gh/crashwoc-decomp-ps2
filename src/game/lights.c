@@ -29,8 +29,7 @@
 #include "nu3d/nustream.h"
 #include "numath/nuvec.h"
 #include "game/gametypes.h"
-
-#include "creature.h"
+#include "game/creature.h"
 
 extern s32 USELIGHTS;
 extern s32 LIGHTCREATURES;
@@ -87,39 +86,8 @@ struct objlights_s {
     struct nuvec_s AmbCol;      /* 0x48 */
 };                              /* 0x54 */
 
-struct chase_s {
-    struct nugspline_s *spl_START;          /* 0x0000 */
-    f32 time;                               /* 0x0004 */
-    f32 duration;                           /* 0x0008 */
-    struct nugspline_s *spl_CHASER[6];      /* 0x000C */
-    struct nuvec_s pos[6];                  /* 0x0024 */
-    struct RPos_s RPos[6];                  /* 0x006C */
-    struct anim_s anim[6];                  /* 0x0144 */
-    struct nuhspecial_s obj[6];             /* 0x01EC */
-    s16 character[6];                       /* 0x021C */
-    s16 action[6];                          /* 0x0228 */
-    u16 xrot[6];                            /* 0x0234 */
-    u16 yrot[6];                            /* 0x0240 */
-    u16 zrot[6];                            /* 0x024C */
-    struct chaseevent_s event[6][24];       /* 0x0258 */
-    struct nugspline_s *spl_MISC[6][4];     /* 0x7098 */
-    struct Nearest_Light_s lights[6];       /* 0x70F8 */
-    f32 scale[6];                           /* 0x7518 */
-    u8 misc_phase[6];                       /* 0x7530 */
-    s8 ok[6];                               /* 0x7536 */
-    u8 cuboid;                              /* 0x753C */
-    s8 i;                                   /* 0x753D */
-    s8 i_last;                              /* 0x753E */
-    s8 i_next;                              /* 0x753F */
-    s8 status;                              /* 0x7540 */
-    s8 iRAIL;                               /* 0x7541 */
-    s16 iALONG;                             /* 0x7542 */
-    f32 fALONG;                             /* 0x7544 */
-};                                          /* 0x7548 */
-
 extern struct tubinfo_s OppTub;
 extern struct chase_s Chase[3];
-extern CharacterData CData[191];
 extern s32 Level;
 
 extern struct gtimer_s GameTimer;
