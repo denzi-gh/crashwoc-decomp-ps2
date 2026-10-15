@@ -870,7 +870,7 @@ extern s32 Demo;
 extern float tumble_time;
 extern float tumble_duration;
 
-extern void NewMenu(struct cursor *cursor, s32 menu, s32 y, s32 level);
+extern void NewMenu(struct cursor_s *cursor, s32 menu, s32 y, s32 level);
 extern void ResetTimer(struct gtimer_s *t);
 extern void PauseGameAudio(s32 a);
 extern void GameSfx(s32 id, s32 a);
@@ -1546,6 +1546,13 @@ s32 BGLoadCutMovie(s32 movie)
     return bg_cutloadrv;
 }
 
+struct visidata_s {
+    struct nugscn_s *sc;
+    u64 ***vspline;
+    int binfosize;
+    int curspline;
+    int curknot;
+};
 
 extern union variptr_u superbuffer_base;
 extern struct nuvec_s ldir[1];
@@ -1628,21 +1635,22 @@ extern int tempanim_nextaction;
 extern struct nucamera_s global_camera;
 extern char D_0062FC50[];
 extern int gamecut;
+extern int Hub;
 
 extern struct nupad_s* NuPs2OpenPad(int port, int slot);
 extern struct nulight_s* NuLightCreate();
 extern void* NuMemAllocFn(int size, char* file, int line);
 extern void DrawCreatures(struct creature_s * c, int count, int render, int shadow);
-extern void NuLgtSetArcMat(float, float, float, float, struct numtl_s*);
+extern void NuLgtSetArcMat(void *material, float u0, float v0, float u1, float v1);
 extern void ResetVehicleControl(int iRAIL, int iALONG, float fALONG);
 extern void ResetTempCharacter(int character, int action);
-extern void NuLightAddHazePoly(float sizey, float sizex, struct nuvec_s* pos);
+extern void NuLightAddHazePoly(struct nuvec_s *pos, float size, float rot);
 extern void InitCutScenes();
 extern void NuWaterSpeed(float);
-extern void NuLightFog(float, float, unsigned int, int, unsigned int);
+extern void NuLightFog(float near, float far, int colour, int blur, int haze_colour);
 extern void NuMtlAnimate(float);
 extern int edmainProcess(float a1, struct nupad_s* pad);
-extern void CalculateGamePercentage(struct Game_s_PS2*);
+extern void CalculateGamePercentage(struct game_s*);
 extern struct nucamera_s* NuCameraCreate(void);
 extern void DrawPanel();
 extern void ProcessCreatures();
@@ -1652,7 +1660,7 @@ extern void DrawParallax();
 extern void GetSpaceCut(int, int);
 extern void DoGlass(int);
 extern void NuWaterRender(struct nugscn_s*);
-extern void MoveGameCamera(struct cammtx_s*, struct obj_s_PS2*);
+extern void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj);
 extern void NuPs2VideoScreenDump(char * name, int lace, float gamma, int idx);
 extern void Debris(int);
 extern void ProcessVehicleLevel(struct nupad_s*);
@@ -1661,8 +1669,8 @@ extern int DebrisCollisionCheck(struct nuvec_s *centre, float radius);
 extern void DebrisRegisterCutoffCameraVec(struct nuvec_s *cutoff);
 extern int HubFromLevel(int level);
 extern void ResetGameCameras(struct cammtx_s *cameras, int count);
-extern void ProcMenu(struct cursor *cursor, struct nupad_s *pad);
-extern void visiSetSplineKnot(struct visidata_s* vd, int spix, int knotix);
+extern void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad);
+extern void visiSetSplineKnot(struct visidata_s *vd, int spix, int knotix);
 extern int DebrisFindAllOfType(int typeid, struct nuvec_s** stack, int stacksize, int offset, int activeonly);
 extern int LookupDebrisEffect(char* name);
 
@@ -1697,7 +1705,7 @@ int main(int argc, char** argv) {
     superbuffer_base.voidptr = NuMemAllocFn(0x1200000, ".\\main.c", 0x579);
     superbuffer_end.intaddr = (superbuffer_base.intaddr + 0x1200000);
     superbuffer_reset_base.voidptr = superbuffer_base.voidptr;
-    if (superbuffer_base.voidptr == NULL) {
+    if (superbuffer_base.voidptr == 0) {
         NuErrorProlog(".\\main.c", 0x57c)("unable to allocate super buffer");
     }
     DefaultGame();
@@ -1840,7 +1848,7 @@ int main(int argc, char** argv) {
             ResetTempCharacter(2,0x22);
             tempanim_nextaction = 0x73;
             gamesfx_channel = 4;
-            GameSfx(0xc6,NULL);
+            GameSfx(0xc6,0);
             cortex_gameover_i = -1;
             tempanim_waitaudio = 1;
         } else if (Level == 0x25) {
@@ -1888,7 +1896,7 @@ int main(int argc, char** argv) {
         NuEnableVBlank();
         do {
             NuSoundUpdate();
-            if (((Cursor.menu != 0x11) && (game_music != LDATA->music[0])) && ((GameMode != 1 || (gamecut != NULL)))) {
+            if (((Cursor.menu != 0x11) && (game_music != LDATA->music[0])) && ((GameMode != 1 || (gamecut != 0)))) {
                 GameMusic(LDATA->music[0], 0);
             }
             InitCrateExplosions();
@@ -1918,10 +1926,10 @@ int main(int argc, char** argv) {
             pause_dir = 0;
             Paused = 0;
             ResetPanelDebris();
-            if (Pad[0] != NULL) {
+            if (Pad[0] != 0) {
                 NuPs2PadSetMotors(Pad[0], 0, 0);
             }
-            if (Pad[1] != NULL) {
+            if (Pad[1] != 0) {
                 NuPs2PadSetMotors(Pad[1], 0, 0);
             }
             ResetGameSfx();
@@ -1993,7 +2001,7 @@ int main(int argc, char** argv) {
                         if ((LDATA->flags & 8) != 0) {
                             TerrainPlatformOldUpdate();
                         }
-                        NuGScnUpdate(1.0f, world_scene[0]);
+                        NuGScnUpdate(world_scene[0], 1.0f);
                         edobjUpdateObjects(1.0f);
                         edanimUpdateObjects(1.0f);
                         NuBridgeUpdate(&Character[0].obj.pos.x);
@@ -2009,15 +2017,15 @@ int main(int argc, char** argv) {
                         LightEverythingInEditor();
                     } else {
                         if (Paused != 0) {
-                            if (Pad[0] != NULL) {
+                            if (Pad[0] != 0) {
                                 NuPs2PadSetMotors(Pad[0], pausebuzz != 0, 0);
                             }
-                            if (Pad[1] != NULL) {
+                            if (Pad[1] != 0) {
                                 NuPs2PadSetMotors(Pad[1], 0, 0);
                             }
                             pNuCam->mtx = GameCam.m;
                             NuCameraSet(pNuCam);
-                            if ((Pad[0] != NULL) && ((Pad[0]->oldpaddata & 0xa0) != 0)) {
+                            if ((Pad[0] != 0) && ((Pad[0]->oldpaddata & 0xa0) != 0)) {
                                 pausestats_frame = (pausestats_frame + 150) - (pausestats_frame % 150);
                                 GameSfx(0x36, 0);
                             }
@@ -2036,7 +2044,7 @@ int main(int argc, char** argv) {
                                 TerrainPlatformOldUpdate();
                             }
                             if (world_scene[0] != 0) {
-                                NuGScnUpdate(1.0f, world_scene[0]);
+                                NuGScnUpdate(world_scene[0], 1.0f);
                             }
                             edobjUpdateObjects(1.0f);
                             edanimUpdateObjects(1.0f);
@@ -2209,7 +2217,7 @@ int main(int argc, char** argv) {
                         if ((LDATA->flags & 4) != 0) {
                             tbslotBeginFn(app_tbset, 10);
                             if (world_vd != 0) {
-                                if (pVIS != NULL) {
+                                if (pVIS != 0) {
                                     visiSetSplineKnot(world_vd, pVIS - world_scene[0]->splines, iVIS);
                                 }
                             } else {
@@ -2253,7 +2261,7 @@ int main(int argc, char** argv) {
                             DrawWumpa();
                             tbslotEndFn(app_tbset, 0xe);
                             if ((LDATA->flags & 1) != 0) {
-                                if (plr->used != 0 && plr->obj.mask != NULL &&
+                                if (plr->used != 0 && plr->obj.mask != 0 &&
                                     plr->obj.mask->active != 0 && (LDATA->flags & 0xe00) == 0 &&
                                     (VEHICLECONTROL != 1 || (LBIT & 0x1005042000UL) == 0)) {
                                     DrawMask(plr->obj.mask);
@@ -2423,7 +2431,7 @@ int main(int argc, char** argv) {
             }
             pause_dir = 0;
             Paused = 0;
-            if ((plr_died != 0) && (best_cRPos != NULL) && (Rail[best_cRPos->iRAIL].type == '\0')) {
+            if ((plr_died != 0) && (best_cRPos != 0) && (Rail[best_cRPos->iRAIL].type == '\0')) {
                 LostLife = 1;
             }
 
@@ -2458,10 +2466,10 @@ int main(int argc, char** argv) {
         pause_src_mtl = 0;
         pause_rndr_mtl = 0;
         pause_rt = 0;
-        if (Pad[0] != NULL) {
+        if (Pad[0] != 0) {
             NuPs2PadSetMotors(Pad[0], 0, 0);
         }
-        if (Pad[1] != NULL) {
+        if (Pad[1] != 0) {
             NuPs2PadSetMotors(Pad[1], 0, 0);
         }
         ReleaseVisiTable();
