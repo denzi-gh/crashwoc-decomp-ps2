@@ -28,6 +28,7 @@
 #include "numath/numtx.h"
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
+#include "game/gametypes.h"
 #include "gamelib/terrain.h"
 
 #include "creature.h"
@@ -46,7 +47,6 @@ extern s32 D_00631C40;
 extern s32 D_00631C44;
 extern s32 D_00631C48;
 extern void *edai_options_menu;
-struct edmenu_s;
 extern struct edmenu_s *edai_selecttype_menu;
 extern struct nuvec_s edai_cam_pos;
 extern u8 LevelAIType[];
@@ -86,11 +86,6 @@ extern s32 LEVELAICOUNT;
 extern s32 D_00631C4C;
 extern s32 D_00631C50;
 
-struct aitype_s {
-    s16 character;           /* 0x0 */
-    s16 count;               /* 0x2 */
-    u8 unk_0x04[0x18];
-};                           /* 0x1C */
 extern struct aitype_s AIType[];
 
 extern s32 PANELOFF;
@@ -102,9 +97,6 @@ extern u8 D_00620390[];
 extern u8 D_006203A0[];
 extern u8 D_006203B0[];
 
-struct ldata_s {
-    char *name;              /* 0x00 */
-};
 extern struct ldata_s *LDATA;
 
 extern s32 VEHICLECONTROL;
@@ -120,12 +112,6 @@ extern void NuFntSetPen(s32 col);
 extern void NuFntPrintEx(s32 x, s32 y, s32 flag, const char *fmt, ...);
 extern char *strupr(char *s);
 
-struct aitab_s {
-    u8 ai_type;              /* 0x00 */
-    u8 unk_0x01[0x13];
-    struct nuvec_s pos[8];   /* 0x14 */
-    struct nuvec_s origin;   /* 0x74 */
-};                           /* 0x80 */
 extern struct aitab_s AITab[];
 extern f32 NuTrigTable[];
 extern void *app_fnt;
@@ -141,14 +127,6 @@ extern u8 D_00620418[];
 extern u8 D_00631C78[];
 extern u8 D_005C9520[][0x1C];
 
-struct edmenu_s {
-    u8 unk_0x00[0x8];
-    void *sel_item;          /* 0x08 */
-    u8 unk_0x0C[0x4];
-    s32 x;                   /* 0x10 */
-    s32 y;                   /* 0x14 */
-};
-
 struct eduiitem_s {
     u8 unk_0x00[0x10];
     u8 field_0x10;
@@ -157,11 +135,7 @@ extern struct eduiitem_s *edui_last_item;
 
 extern void edcamSetPos(struct nuvec_s *pos);
 
-struct gametimer_s {
-    u32 frame;               /* 0x00 */
-    u8 unk_0x04[0x14];
-};
-extern struct gametimer_s GlobalTimer;
+extern struct gtimer_s GlobalTimer;
 extern CharacterData CData[];
 extern struct numtx_s mTEMP;
 extern s32 D_005CD1D0[8];
@@ -204,7 +178,7 @@ void edaiHIGHLIGHT(void)
     D_00631C4C = -1;
     for (i = 0; i < LEVELAICOUNT; i++) {
         struct aitype_s *t = &AIType[AITab[i].ai_type];
-        s32 n = t->count;
+        s32 n = t->points;
         for (j = 0; j < n; j++) {
             struct nuvec_s d;
             f32 distsq;
@@ -336,7 +310,7 @@ void edaiDrawInfo(void)
     }
     NuFntScale(8, 12);
     NuFntSetPen(-1);
-    strcpy(tbuf, LDATA->name);
+    strcpy(tbuf, LDATA->path);
     strupr(tbuf);
     NuFntPrintEx(0x400, 0x100, 0, (char *)D_00631C58, tbuf);
     NuFntPrintEx(0x400, 0x200, 0, (char *)D_00620378, LEVELAICOUNT, 0x60);
@@ -347,7 +321,7 @@ void edaiDrawInfo(void)
     if (D_00631C40 >= 0) {
         struct aitype_s *t = &AIType[D_00631C44];
         NuFntPrintEx(0x400, 0x400, 0, (char *)D_006203A0, D_00631C48 + 1,
-                     t->count);
+                     t->points);
     }
     NuFntPrintEx(0x400, 0xD00, 0, (char *)D_006203B0, edai_cam_pos.x,
                  edai_cam_pos.y, edai_cam_pos.z);
@@ -424,7 +398,7 @@ void edaiDRAW(void)
     ang = ((GlobalTimer.frame % 200) << 16) / 200;
     for (i = 0; i < LEVELAICOUNT; i++) {
         type = &AIType[AITab[i].ai_type];
-        count = type->count;
+        count = type->points;
         for (j = 0; j < count; j++) {
             pos = &AITab[i].pos[j];
             if (j == 0) {
@@ -538,7 +512,7 @@ void edaiDoInput(struct pad_s *pad)
         AITab[LEVELAICOUNT].pos[D_00631C48] = edai_cam_pos;
         AdjustPosY(&AITab[LEVELAICOUNT].pos[D_00631C48]);
         type = &AIType[D_00631C44];
-        if (++D_00631C48 == type->count) {
+        if (++D_00631C48 == type->points) {
             AITab[LEVELAICOUNT].ai_type = D_00631C44;
             LEVELAICOUNT++;
             ResetAI();

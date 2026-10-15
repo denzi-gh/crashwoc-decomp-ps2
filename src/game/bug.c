@@ -13,6 +13,8 @@
 #include "nu3d/nulight.h"
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
+#include "nu3d/nugscn.h"
+#include "game/gametypes.h"
 
 #include "creature.h"
 
@@ -31,13 +33,6 @@ typedef struct {
     f32 out_fALONG;   /* 0xC */
 } BUGAREA;            /* 0x10 */
 
-/* Rail[i].type @0x26, stride 0x28 (mirrors src/game/ai.c). */
-struct rail_s {
-    u8 unk_0x00[0x26];
-    s8 type;
-    u8 unk_0x27;
-};
-
 extern struct rail_s Rail[];
 extern BUGAREA BugArea[4];
 
@@ -45,19 +40,6 @@ extern s32 FurtherALONG(s32 iRAIL, s32 iALONG, f32 fALONG, s32 iRAIL2,
                         s32 iALONG2, f32 fALONG2);
 extern s32 FurtherBEHIND(s32 iRAIL, s32 iALONG, f32 fALONG, s32 iRAIL2,
                          s32 iALONG2, f32 fALONG2);
-
-/* spline table: entry stride 0x18, .spl @0x0 (SplTab[70]=0x690, SplTab[67]=0x648).
- * spline .len @0x0, .ptsize @0x2, .pts @0x8 (verified in InitBugAreas). */
-struct spline_s {
-    s16 len;          /* 0x0 */
-    s16 ptsize;       /* 0x2 */
-    u8 pad4[0x4];     /* 0x4 */
-    u8 *pts;          /* 0x8 */
-};
-struct spltab_s {
-    struct spline_s *spl;   /* 0x0 */
-    u8 pad[0x14];
-};
 
 extern struct spltab_s SplTab[];
 extern struct nuvec_s D_006FFA90;
@@ -69,8 +51,8 @@ extern s32 temp_iRAIL;
 extern u16 temp_iALONG;
 extern f32 temp_fALONG;
 
-extern s32 NearestSplinePoint(struct nuvec_s *pos, struct spline_s *spl);
-extern void PointAlongSpline(struct spline_s *spl, f32 ratio,
+extern s32 NearestSplinePoint(struct nuvec_s *pos, struct nugspline_s *spl);
+extern void PointAlongSpline(struct nugspline_s *spl, f32 ratio,
                              struct nuvec_s *out, void *a3, void *a4);
 extern void GetALONG(struct nuvec_s *pos, void *rpos, s32 iRAIL, s32 iALONG,
                      s32 info);
@@ -101,14 +83,7 @@ extern s32 VEHICLECONTROL;
 extern f32 NuTrigTable[];
 extern struct RPos_s *best_cRPos;
 
-/* GameCam: only pos.x/y/z (0xA4/0xA8/0xAC) are touched here. */
-struct gamecam_s {
-    char pad_a4[0xA4];
-    f32 x; /* 0xA4 */
-    f32 y; /* 0xA8 */
-    f32 z; /* 0xAC */
-};
-extern struct gamecam_s GameCam;
+extern struct cammtx_s GameCam;
 
 extern s32 qrand(void);
 extern f32 NuFsqrt(f32 x);
@@ -256,7 +231,7 @@ void UpdateBugLight(struct creature_s *c) {
             bug_pos.x = player->obj.pos.x;
             bug_pos.y = player->obj.pos.y + player->obj.top * player->obj.SCALE;
             bug_pos.z = player->obj.pos.z;
-            ang = NuAtan2D(bug_pos.x - GameCam.x, bug_pos.z - GameCam.z);
+            ang = NuAtan2D(bug_pos.x - GameCam.pos.x, bug_pos.z - GameCam.pos.z);
             bug_pos.x = bug_pos.x + NuTrigTable[ang] * mechlight_distance;
             bug_span = 1.5f;
             bug_pos.z = bug_pos.z + NuTrigTable[(u16)(ang + 0x4000)] * mechlight_distance;
@@ -325,7 +300,7 @@ void UpdateBugLight(struct creature_s *c) {
         bug_pos.x = player->obj.pos.x;
         bug_pos.y = player->obj.pos.y + player->obj.top * player->obj.SCALE;
         bug_pos.z = player->obj.pos.z;
-        ang = NuAtan2D(bug_pos.x - GameCam.x, bug_pos.z - GameCam.z);
+        ang = NuAtan2D(bug_pos.x - GameCam.pos.x, bug_pos.z - GameCam.pos.z);
         bug_pos.x = bug_pos.x + NuTrigTable[ang] * buglight_distance;
         bug_pos.z = bug_pos.z + NuTrigTable[(u16)(ang + 0x4000)] * buglight_distance;
     }

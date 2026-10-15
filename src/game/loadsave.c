@@ -14,98 +14,12 @@
 #include "nu_types.h"
 
 #include "nu3d/nugscn.h"
-
-struct hub_s {
-    u8 flags;
-    u8 crystals;
-    char pad1;
-    char pad2;
-};
-
-struct time_s {
-    char name[4];
-    u32 itime;
-};
-
-struct level_s {
-    u16 flags;
-    char pad1;
-    char pad2;
-    struct time_s time[3];
-};
-
-struct game_s {
-    char name[9];
-    u8 vibration;
-    u8 surround;
-    u8 sfx_volume;
-    u8 music_volume;
-    char screen_x;
-    char screen_y;
-    u8 language;
-    struct hub_s hub[6];
-    struct level_s level[35];
-    u8 lives;
-    u8 wumpas;
-    u8 mask;
-    u8 percent;
-    u8 crystals;
-    u8 relics;
-    u8 crate_gems;
-    u8 bonus_gems;
-    u8 gems;
-    u8 gembits;
-    u8 powerbits;
-    u8 empty;
-    u32 cutbits;
-};
-
-struct remember_s {
-    u8 x;
-    u8 y;
-};
-
-struct cursor_s {
-    struct remember_s remember[48];
-    u32 menu_frame;
-    u32 item_frame;
-    char x;
-    char y;
-    char x_min;
-    char y_min;
-    char x_max;
-    char y_max;
-    char menu;
-    char new_menu;
-    char new_level;
-    u8 wait;
-    u8 wait_frames;
-    char wait_hack;
-    u8 button_lock;
-};
-
-struct gametimer_s {
-    u32 frame;
-    u8 pad_4[0x8];
-    float ftime;
-    u8 pad_10[0x8];
-};
-
-struct objtab_s {
-    struct nuhspecial_s obj;
-    struct nugscn_s **scene;
-    signed char visible;
-    char font3d_letter;
-    char pad_e[0x10 - 0xE];
-    char *name;
-    char pad_14[0x18 - 0x14];
-    u64 levbits;
-};
+#include "game/gametypes.h"
 
 extern struct game_s Game;
 extern struct game_s SaveSlot[2][2];
 extern struct cursor_s Cursor;
-extern struct gametimer_s GlobalTimer;
+extern struct gtimer_s GlobalTimer;
 extern struct objtab_s ObjTab[];
 extern u8 CLetter[];
 extern char *tEMPTY[];

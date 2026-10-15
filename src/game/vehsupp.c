@@ -54,6 +54,7 @@
 #include "nu3d/nuhgobj.h"
 #include "numath/numtx.h"
 #include "numath/nuvec.h"
+#include "nu3d/nugscn.h"
 #include "gamelib/terrain.h"
 
 #include "creature.h"
@@ -694,7 +695,7 @@ f32 ControlledDist(struct nuvec_s *A, struct nuvec_s *B, s32 control) {
 }
 
 struct MYSPLINE {
-    struct spline_s *Spline;   /* 0x00 verified in FindSplineClosestPointAndDist (lw 0(s2)->PointAlongSpline) */
+    struct nugspline_s *Spline; /* 0x00 verified in FindSplineClosestPointAndDist (lw 0(s2)->PointAlongSpline) */
     f32 Cur;                   /* 0x04 verified (swc1/lwc1 0x4) */
     f32 Nex;                   /* 0x08 verified (lwc1/swc1 0x8) */
     f32 Act;                   /* 0x0C */
@@ -704,7 +705,7 @@ struct MYSPLINE {
     f32 LookaheadDist;         /* 0x2C */
 };
 
-extern void PointAlongSpline(struct spline_s *spl, f32 ratio,
+extern void PointAlongSpline(struct nugspline_s *spl, f32 ratio,
                              struct nuvec_s *out, void *a3, void *a4);
 
 static inline f32 SplineControlledDist(struct nuvec_s *A, struct nuvec_s *B,

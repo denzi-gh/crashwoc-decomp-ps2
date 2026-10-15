@@ -19,6 +19,7 @@
 #include "nu_libc.h"
 
 #include "numath/nuvec.h"
+#include "game/gametypes.h"
 #include "gamelib/terrain.h"
 
 #include "creature.h"
@@ -27,12 +28,6 @@ struct pad_s {
     u8 unk_0x000[0x564];
     u32 buttons;            /* 0x564 */
 };
-
-/* Wumpa placement entry: pos at 0x00, stride 0x4C (verified in edwmpADD/DELETE). */
-struct wumpa_s {
-    struct nuvec_s pos;     /* 0x00 */
-    u8 unk_0x0C[0x40];      /* 0x0C */
-};                          /* 0x4C */
 
 extern struct wumpa_s Wumpa[];
 extern s32 WUMPACOUNT;
@@ -140,7 +135,7 @@ s32 edwmpProc(struct pad_s *pad)
     threshold = D_0062E334;
     for (i = 0; i < WUMPACOUNT; i++) {
         f32 d;
-        NuVecSub(&v, &edwmp_cam_pos, &Wumpa[i].pos);
+        NuVecSub(&v, &edwmp_cam_pos, &Wumpa[i].pos0);
         d = v.x * v.x + v.y * v.y + v.z * v.z;
         if (d < threshold) {
             if (edwmp_selected == -1 || d < bestdist) {
@@ -150,7 +145,7 @@ s32 edwmpProc(struct pad_s *pad)
         }
     }
     if (edwmp_selected != -1) {
-        v = Wumpa[edwmp_selected].pos;
+        v = Wumpa[edwmp_selected].pos0;
     } else {
         v = edwmp_cam_pos;
     }
@@ -168,7 +163,7 @@ s32 edwmpProc(struct pad_s *pad)
 
 void edwmpADD(void)
 {
-    Wumpa[WUMPACOUNT++].pos = edwmp_cam_pos;
+    Wumpa[WUMPACOUNT++].pos0 = edwmp_cam_pos;
     ResetWumpa();
 }
 
@@ -179,7 +174,7 @@ void edwmpDELETE(void)
     if (i != -1) {
         WUMPACOUNT--;
         for (; i < WUMPACOUNT; i++) {
-            Wumpa[i].pos = Wumpa[i + 1].pos;
+            Wumpa[i].pos0 = Wumpa[i + 1].pos0;
         }
         ResetWumpa();
         edwmp_selected = -1;

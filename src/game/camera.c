@@ -31,65 +31,12 @@
 #include "nu3d/nugobj.h"
 #include "nu3d/nugscn.h"
 #include "nu3d/nucamera.h"
+#include "game/gametypes.h"
 #include "gamelib/terrain.h"
 
 #include "creature.h"
 
 #define NULL ((void *)0)
-
-/* cammtx_s (game camera): offsets verified in ResetGameCameras/BlendGameCamera
- * and MoveGameCamera. */
-struct cammtx_s {
-    struct numtx_s m;             /* 0x00 */
-    struct numtx_s m0;            /* 0x40 */
-    struct nuvec_s vX;            /* 0x80 */
-    struct nuvec_s vY;            /* 0x8C */
-    struct nuvec_s vZ;            /* 0x98 */
-    struct nuvec_s pos;           /* 0xA4 */
-    struct nuvec_s oldpos;        /* 0xB0 */
-    struct nuvec_s newpos;        /* 0xBC */
-    struct nuvec_s pos2;          /* 0xC8 */
-    struct nuvec_s seek;          /* 0xD4 */
-    f32 distance;                 /* 0xE0 */
-    f32 ahead;                    /* 0xE4 */
-    f32 judder;                   /* 0xE8 */
-    f32 blend_time;               /* 0xEC */
-    f32 blend_duration;           /* 0xF0 */
-    s32 xrot;                     /* 0xF4 */
-    s32 yrot;                     /* 0xF8 */
-    s32 zrot;                     /* 0xFC */
-    u16 old_xrot;                 /* 0x100 */
-    u16 new_xrot;                 /* 0x102 */
-    u16 old_yrot;                 /* 0x104 */
-    u16 new_yrot;                 /* 0x106 */
-    u16 old_zrot;                 /* 0x108 */
-    u16 new_zrot;                 /* 0x10A */
-    u16 hdg_to_player;            /* 0x10C */
-    s16 route;                    /* 0x10E */
-    s16 i0;                       /* 0x110 */
-    s16 i1;                       /* 0x112 */
-    s8 mode;                      /* 0x114 */
-    s8 iRAIL;                     /* 0x115 */
-    s16 iALONG;                   /* 0x116 */
-    u16 angle;                    /* 0x118 */
-    s8 vertical;                  /* 0x11A */
-    u8 unk_0x11B[0x1];
-};                                /* 0x11C */
-
-struct rail_s {
-    struct nugspline_s *pINPLAT;   /* 0x00 */
-    struct nugspline_s *pINCAM;    /* 0x04 */
-    struct nugspline_s *pLEFT;     /* 0x08 */
-    struct nugspline_s *pCAM;      /* 0x0C */
-    struct nugspline_s *pRIGHT;    /* 0x10 */
-    struct nugspline_s *pOUTCAM;   /* 0x14 */
-    struct nugspline_s *pOUTPLAT;  /* 0x18 */
-    f32 in_distance;               /* 0x1C */
-    f32 out_distance;              /* 0x20 */
-    s16 edges;                     /* 0x24 */
-    s8 type;                       /* 0x26 */
-    s8 circuit;                    /* 0x27 */
-};                                 /* 0x28 */
 
 extern struct rail_s Rail[];
 extern struct RPos_s TempRPos;
@@ -712,33 +659,12 @@ inline s32 InSplineArea(struct nuvec_s *pos, struct nugspline_s *spl) {
 /* MoveGameCamera                                                      */
 /* ------------------------------------------------------------------ */
 
-struct spltab_s {
-    struct nugspline_s *spl;  /* 0x00 */
-    u8 pad[0x14];
-};                            /* 0x18 */
-
 /* Vehicle-switch (VTog) camera splines. */
 struct vtogcam_s {
     u8 pad[0x4];
     struct nugspline_s *pCAM;  /* 0x04 */
     struct nugspline_s *pLOOK; /* 0x08 */
 };
-
-struct cursor_s {
-    u8 unk_0x00[0x6E];
-    s8 menu;                  /* 0x6E */
-    s8 new_menu;              /* 0x6F */
-    s8 new_level;             /* 0x70 */
-    u8 wait;                  /* 0x71 */
-    u8 wait_frames;           /* 0x72 */
-};
-
-struct gametimer_s {
-    u32 frame;                /* 0x00 */
-    u8 unk_0x04[0x8];
-    f32 ftime;                /* 0x0C */
-    u8 unk_0x10[0x8];
-};                            /* 0x18 */
 
 /* The u64 member gives the pad 8-byte alignment; that is what lets the
  * merged two-bit button test below load 0x558 as one doubleword. */
@@ -753,8 +679,8 @@ struct nupad_s {
 extern struct nucamera_s *pNuCam;
 extern struct spltab_s SplTab[];
 extern struct cursor_s Cursor;
-extern struct gametimer_s GameTimer;
-extern struct gametimer_s GlobalTimer;
+extern struct gtimer_s GameTimer;
+extern struct gtimer_s GlobalTimer;
 extern struct nupad_s *Pad[];
 extern struct cammtx_s GameCam[];
 extern CharacterData CData[];

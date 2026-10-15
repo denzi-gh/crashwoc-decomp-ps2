@@ -41,42 +41,10 @@
 #include "nu3d/nulight.h"
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
+#include "game/gametypes.h"
 #include "gamelib/terrain.h"
 
 #include "creature.h"
-
-/* AI type entry (AIType): PS2 stride 0x1C; character (+0x0), label (+0x2),
- * name (+0x8) and the reset delay (+0x18) verified in FindAIType / ResetAI;
- * command table pointer (+0x4) verified in AddCreature. */
-struct aitype_s {
-    short character;         /* 0x00 */
-    short label;             /* 0x02 (matched against the type arg; path count) */
-    struct creatcmd_s *cmd;  /* 0x04 */
-    char name[0x10];         /* 0x08 (ASCII label, strcmp target) */
-    f32 delay;               /* 0x18 (initial AITab.delay) */
-}; /* 0x1C */
-
-/* AI table entry (AITab): PS2 stride 0x80; the RPos fields (+0x5/+0x6/+0x8)
- * and origin (+0x74 == pos[8]) verified in ResetAI. */
-struct aitab_s {
-    u8 ai_type;              /* 0x00 */
-    s8 status;               /* 0x01 */
-    u8 unk_0x02[3];          /* 0x02 */
-    s8 iRAIL;                /* 0x05 */
-    s16 iALONG;              /* 0x06 */
-    f32 fALONG;              /* 0x08 */
-    f32 time;                /* 0x0C */
-    f32 delay;               /* 0x10 */
-    struct nuvec_s pos[8];   /* 0x14 */
-    struct nuvec_s origin;   /* 0x74 (== pos[8]) */
-}; /* 0x80 */
-
-/* Rail segment (Rail): PS2 stride 0x28; type byte at +0x26. */
-struct rail_s {
-    u8 unk_0x00[0x26];       /* 0x00 */
-    s8 type;                 /* 0x26 */
-    u8 unk_0x27;             /* 0x27 */
-}; /* 0x28 */
 
 /* AI path positions (D_005CA154 == AITab[0].pos): stride 0x80 per AI entry,
  * AIType[ai_type].label nuvec sub-points each. */
@@ -137,24 +105,6 @@ extern s32 D_0063333C;
 extern s32 SpaceCortex_Defeated;
 extern s32 boss_dead;
 extern s32 Hub;
-struct hub_s {
-    u8 flags;
-    u8 crystals;
-    char pad1;
-    char pad2;
-};
-
-struct game_s {
-    char name[9];
-    u8 vibration;
-    u8 surround;
-    u8 sfx_volume;
-    u8 music_volume;
-    char screen_x;
-    char screen_y;
-    u8 language;
-    struct hub_s hub[6];
-};
 
 extern struct game_s Game;
 extern s32 D_00633314;
@@ -195,7 +145,6 @@ extern f32 DRAINWAWADY;                /* 0x00631b90 */
 extern f32 D_0062E264;                 /* DRAINDAMAGE anim rate */
 u16 SeekRot(u16 a, u16 target, s32 rate);
 
-struct cammtx_s;
 extern struct cammtx_s GameCam;        /* 0x005864c8 */
 extern struct nuvec_s v001;
 extern f32 D_0062E26C;                 /* Spladoosh camera judder time */
@@ -205,12 +154,6 @@ void AddGameDebrisRot(s32 i, struct nuvec_s *pos, s32 n, u16 xrot, u16 yrot);
 void Draw3DCharacter(struct nuvec_s *pos, s32 xrot, s32 yrot, s32 z,
                      struct CharacterModel *model, f32 scale, s32 action,
                      f32 anim_time, s32 last);
-
-struct gdeb_s {
-    s32 i;
-    char *name;
-    u64 levbits;
-};
 
 /* debris emitter (debkeydata): PS2 stride 0x56C; delay at +0x4C2. */
 struct deb_s {
@@ -255,7 +198,7 @@ inline s32 FindAIType(char *name, s32 type)
 
     for (i = 0; i < 107; i++) {
         if (strcmp(name, AIType[i].name) == 0) {
-            if (type == AIType[i].label) {
+            if (type == AIType[i].points) {
                 if (type < 9) {
                     return i;
                 }
@@ -301,12 +244,12 @@ void ResetAI(void)
         ai->delay = AIType[ai->ai_type].delay;
         ai->origin = ai->pos[0];
 
-        if (AIType[ai->ai_type].label >= 2) {
-            for (j = 1; j < AIType[ai->ai_type].label; j++) {
+        if (AIType[ai->ai_type].points >= 2) {
+            for (j = 1; j < AIType[ai->ai_type].points; j++) {
                 NuVecAdd(&ai->origin, &ai->origin, &ai->pos[j]);
             }
             NuVecScale(&ai->origin, &ai->origin,
-                       1.0f / (f32)AIType[ai->ai_type].label);
+                       1.0f / (f32)AIType[ai->ai_type].points);
         }
     }
 
@@ -507,12 +450,6 @@ s32 WaterCrunchFunction_Spladoosh(struct creature_s *c)
     return 1;
 }
 
-/* ObjTab entry (PS2 stride 0x20); special at +0x4 (see game/crate). */
-struct objtab_s {
-    void *scene;                     /* 0x00 */
-    struct nuspecial_s *special;     /* 0x04 */
-    u8 pad_08[0x18];                 /* 0x08 */
-}; /* 0x20 */
 extern struct objtab_s ObjTab[];
 extern u16 D_00633330[3];              /* CRUNCHTIME wobble angles */
 extern struct nuvec_s D_005C8A10[4];   /* CRUNCHTIME stone rest positions */
@@ -605,10 +542,10 @@ s32 UpdateCRUNCHTIME(void)
         }
     }
     for (i = 0; i < 4; i++) {
-        if (ObjTab[181 + i].special != 0) {
-            *(struct nuvec_s *)&ObjTab[181 + i].special->instance->mtx._30 = D_005C8A10[i];
+        if (ObjTab[181 + i].obj.special != 0) {
+            *(struct nuvec_s *)&ObjTab[181 + i].obj.special->instance->mtx._30 = D_005C8A10[i];
             if (i == n) {
-                ObjTab[181 + i].special->instance->mtx._31 -= 0.125f;
+                ObjTab[181 + i].obj.special->instance->mtx._31 -= 0.125f;
             }
         }
     }
@@ -1071,7 +1008,7 @@ void SaveAI(void)
         for (j = 0; j < 16; j++) {
             NuFileWriteChar(file, AIType[type].name[j]);
         }
-        count = AIType[type].label;
+        count = AIType[type].points;
         NuFileWriteInt(file, count);
         for (j = 0; j < count; j++) {
             NuFileWriteFloat(file, AITab[i].pos[j].x);
@@ -1193,12 +1130,6 @@ extern u16 temp_xrot;
 extern u16 temp_zrot;
 extern s32 gamesfx_pitch;
 extern s32 DESTRUCTIBLECRATECOUNT;
-struct panelcount_s {
-    short count;             /* 0x0 */
-    short draw;              /* 0x2 */
-    signed char frame;       /* 0x4 */
-    u8 pad[3];               /* 0x5 */
-}; /* 0x8 */
 extern struct panelcount_s plr_crates;
 s32 HitCreatures(struct obj_s *obj, s32 a, s32 b);
 s32 HitCrates(struct obj_s *obj, s32 destroy);
@@ -1289,7 +1220,7 @@ void MoveCreature(struct creature_s *c)
         OldTopBot(&c->obj);
         pos = AITab[c->i_aitab].pos;
         ai_type = AITab[c->i_aitab].ai_type;
-        points = AIType[ai_type].label;
+        points = AIType[ai_type].points;
         for (;;) {
             if (c->cmdcurr == 0) {
                 c->cmdcurr = c->cmdtable;

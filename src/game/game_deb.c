@@ -12,14 +12,9 @@
  */
 
 #include "numath/numtx.h"
+#include "game/gametypes.h"
 
 #include "creature.h"
-
-struct gdeb_s {
-    s32 i;         /* +0x0  verified in AddGameDebris/InitGameDebris */
-    char *name;    /* +0x4  verified in InitGameDebris (lw 0x4) */
-    u64 levbits;   /* +0x8  verified in InitGameDebris (ld 0x8) */
-};
 
 extern struct gdeb_s GDeb[170];
 extern s32 NODEBRIS;

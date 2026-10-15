@@ -237,6 +237,7 @@
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
 #include "nu3d/nugscn.h"
+#include "game/gametypes.h"
 #include "gamelib/terrain.h"
 
 #include "creature.h"
@@ -383,7 +384,7 @@ extern s32 NumRockPanel;
 extern s32 D_005B7918[];   /* rumble player health % (far) */
 extern s32 D_005B7CA0[];   /* current rumble objectives (far) */
 extern struct nuvec_s D_005B44F8[]; /* weather boss position (far) */
-extern struct spline_s D_005B4548;  /* weather boss spline (far) */
+extern struct nugspline_s D_005B4548; /* weather boss spline (far) */
 extern struct nuvec_s D_006B75B0;   /* weather start pos temp (far) */
 extern struct glider_s PlayerGlider;   /* struct glider_s: creature.h */
 extern struct nuvec_s v000;
@@ -792,7 +793,7 @@ struct nuvec_s *GetWeatherBossPos(void)
     return D_005B44F8;
 }
 
-struct spline_s *GetWeatherBossSpline(void)
+struct nugspline_s *GetWeatherBossSpline(void)
 {
     return &D_005B4548;
 }
@@ -1106,11 +1107,6 @@ void AddRock(struct nuvec_s *pos, f32 radius, s32 owner)
 }
 
 
-struct objtab_s {
-    struct nuhspecial_s obj;         /* 0x00 */
-    char pad_08[0x20 - 0x08];
-};
-
 extern struct objtab_s ObjTab[];
 extern s32 NuRndrGScnObj(void *gobj, struct numtx_s *m);
 
@@ -1402,14 +1398,6 @@ struct battleship_s {
 };
 extern struct battleship_s BattleShipList[6];
 
-/* The game camera (full layout in game/camera.c). */
-struct cammtx_s {
-    struct numtx_s m;          /* 0x00 */
-    char pad_40[0xA4 - 0x40];
-    struct nuvec_s pos;        /* 0xA4 */
-    char pad_B0[0xF8 - 0xB0];
-    s32 yrot;                  /* 0xF8 */
-};
 extern struct cammtx_s GameCam;
 
 extern f32 DotProduct(struct nuvec_s *a, struct nuvec_s *b);
@@ -1726,11 +1714,7 @@ void InitAtlas(struct NEWBUGGY *Atlas, struct nuvec_s *Pos, f32 Radius, s32 Type
     }
 }
 
-struct gametimer_s {
-    u32 frame;                 /* 0x00 */
-    char pad_04[0x18 - 0x04];
-};
-extern struct gametimer_s GameTimer;
+extern struct gtimer_s GameTimer;
 
 /* Turns the pad into the atlasphere's camera-relative steering input. */
 void ControlAtlas(struct NEWBUGGY *Atlas, struct pad_s *Pad, f32 DeltaTime)
@@ -1842,11 +1826,6 @@ extern f32 D_0062DF04;
 extern s32 TryUnembeddPointDirSimple(struct nuvec_s *pos, struct nuvec_s *dir,
                                      s16 *handle, s32 n, f32 x, f32 y);
 
-struct gdeb_s {
-    s32 i;                     /* 0x0 debris effect */
-    char *name;                /* 0x4 */
-    u64 levbits;               /* 0x8 */
-};
 extern struct gdeb_s GDeb[];
 
 extern s32 Paused;
@@ -3596,13 +3575,8 @@ void ProcessWeatherBossTarget(void)
 }
 
 
-struct spltab_s {
-    struct spline_s *spl;      /* 0x00 */
-    char pad_04[0x18 - 0x04];
-};
-
 struct splinepath_s {
-    struct spline_s *spl;      /* 0x00 */
+    struct nugspline_s *spl;   /* 0x00 */
     f32 ratio;                 /* 0x04 */
     f32 oldratio;              /* 0x08 */
     char pad_0C[0x10 - 0x0C];
@@ -3617,7 +3591,7 @@ extern struct splinepath_s WeatherBossIntroSpline;
 extern f32 WBBOSSINTRODIST;
 extern f32 WBIntroTweenTime;
 extern f32 WBIntroTweenTimer;
-extern void PointAlongSpline(struct spline_s *spl, f32 ratio, struct nuvec_s *dst,
+extern void PointAlongSpline(struct nugspline_s *spl, f32 ratio, struct nuvec_s *dst,
                              u16 *angle, u16 *tilt);
 
 void InitWBIntro(void)
@@ -3644,16 +3618,6 @@ void InitWBIntro(void)
 }
 
 
-struct panelcount_s {
-    short count;
-    short draw;
-    signed char frame;
-    u8 pad[3];
-};
-struct game_s {
-    u8 pad_000[0x3FC];
-    u8 lives;
-};
 extern struct panelcount_s plr_lives;
 extern struct game_s Game;
 extern s32 TimeTrial;

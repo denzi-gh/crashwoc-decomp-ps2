@@ -29,6 +29,7 @@
 #include "numath/numtx.h"
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
+#include "game/gametypes.h"
 #include "gamelib/terrain.h"
 
 #include "creature.h"
@@ -113,12 +114,6 @@ extern void RBodyMove(struct deb3_s *deb, f32 dt);
 extern void RBodyImpact(struct deb3_s *deb, struct nuvec_s *pnt,
                         struct nuvec_s *nrm);
 
-struct gdeb_s {
-    int i;                /* 0x0 */
-    char *name;           /* 0x4 */
-    u64 levbits;                    /* 0x8 */
-};
-
 extern struct gdeb_s GDeb[170];
 extern s32 rsfxcount;
 extern s32 *rsfxpt;
@@ -148,43 +143,11 @@ extern int wtimer;
 extern int debpt;
 extern float HotCoals[13];
 
-struct camera_s {
-    struct numtx_s mtx;   /* 0x00 */
-};
-extern struct camera_s global_camera;
+extern struct nucamera_s global_camera;
 
 /* ------------------------------------------------------------------ */
 /* LaunchObjects support                                               */
 /* ------------------------------------------------------------------ */
-
-/* LevelData: fog/haze block verified against LaunchObjects (fognear 0x44,
- * fogfar 0x48, fogr..foga 0x4C..0x4F, hazer..hazea 0x50..0x53). */
-struct ldata_s {
-    u8 unk_0x00[0x44];    /* 0x00 */
-    f32 fognear;          /* 0x44 */
-    f32 fogfar;           /* 0x48 */
-    u8 fogr;              /* 0x4C */
-    u8 fogg;              /* 0x4D */
-    u8 fogb;              /* 0x4E */
-    u8 foga;              /* 0x4F */
-    u8 hazer;             /* 0x50 */
-    u8 hazeg;             /* 0x51 */
-    u8 hazeb;             /* 0x52 */
-    u8 hazea;             /* 0x53 */
-    s32 totalsize;        /* 0x54 */
-}; /* 0x58 */
-
-struct objtab_s {
-    struct nuhspecial_s obj;   /* 0x00 */
-    struct nugscn_s **scene;   /* 0x08 */
-    char visible;              /* 0x0C */
-    char font3d_letter;        /* 0x0D */
-    char pad1;                 /* 0x0E */
-    char pad2;                 /* 0x0F */
-    char *name;                /* 0x10 */
-    char unk[4];               /* 0x14 */
-    u64 levbits;               /* 0x18 */
-}; /* 0x20 */
 
 struct firedrop_s {
     struct nuvec_s pos;   /* 0x00 */

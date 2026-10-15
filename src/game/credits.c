@@ -8,6 +8,8 @@
 
 #include "nu_libc.h"
 
+#include "game/gametypes.h"
+
 #include "creature.h"
 
 struct credit_s {
@@ -16,23 +18,12 @@ struct credit_s {
     short size;   /* 0x6 */
 }; /* 0x8 */
 
-struct game_s {
-    u8 _pad[0xF];
-    u8 language; /* 0xF */
-};
-
-struct gametimer_s {
-    u8 _pad[0xC];
-    float ftime; /* 0xC */
-    u8 _pad2[8];
-}; /* 0x18 */
-
 extern struct credit_s Credit[323];
 extern s32 CREDITCOUNT;
 extern f32 credit_speed;
 extern f32 credit_time;
 extern struct game_s Game;
-extern struct gametimer_s GameTimer;
+extern struct gtimer_s GameTimer;
 extern char tbuf[];
 
 /* .rodata string "SR. MANAGER OF PUBLIC RELATIONS" (retail-owned). */

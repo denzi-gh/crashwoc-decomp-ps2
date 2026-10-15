@@ -83,6 +83,7 @@
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
 #include "nu3d/nugscn.h"
+#include "game/gametypes.h"
 #include "gamelib/terrain.h"
 
 #include "creature.h"
@@ -134,22 +135,12 @@ extern f32 NuTrigTable[];
 extern void SeekHalfLife(f32 *dest, f32 target, f32 halflife, f32 dt);
 extern f32 fsign(f32 x);
 
-struct spline_s {
-    s16 len;                        /* 0x0 */
-    s16 ptsize;                     /* 0x2 */
-    u8 pad4[0x4];                   /* 0x4 */
-    u8 *pts;                        /* 0x8 */
-};
-struct spltab_s {
-    struct spline_s *spl;           /* 0x0 */
-    u8 pad[0x14];
-};
 extern struct spltab_s SplTab[];
-extern void PointAlongSpline(struct spline_s *spl, f32 ratio,
+extern void PointAlongSpline(struct nugspline_s *spl, f32 ratio,
                              struct nuvec_s *out, void *a3, void *a4);
 
 struct SPLINEFOLLOW {
-    struct spline_s *Spline;        /* 0x00 */
+    struct nugspline_s *Spline;     /* 0x00 */
     f32 Cur;                        /* 0x04 */
     f32 Nex;                        /* 0x08 */
     f32 Act;                        /* 0x0C */
@@ -186,36 +177,6 @@ struct POINTANG {
     f32 z;                          /* 0x08 */
     s32 Ang;                        /* 0x0C */
 }; /* 0x10 */
-
-/* Shared vehicle physics state (jeep / atlasphere / ...). */
-struct VEHICLE {
-    struct nuvec_s ActualWheelPosition[4]; /* 0x00 */
-    struct nuvec_s OldWheelPosition[4];    /* 0x30 */
-    s32 BigSpin[4];                        /* 0x60 */
-    struct nuvec_s ActualPosition;         /* 0x70 */
-    struct nuvec_s Resolved;               /* 0x7C */
-    struct nuvec_s Velocity;               /* 0x88 */
-    struct nuvec_s WheelAxis[3];           /* 0x94 */
-    f32 FrontWheelSpeedAdj;                /* 0xB8 */
-    short aTargetAngle;                    /* 0xBC */
-    short aTarSurfRotX;                    /* 0xBE */
-    short aTarSurfRotZ;                    /* 0xC0 */
-    u16 aActualAngle;                      /* 0xC2 */
-    short aActSurfRotX;                    /* 0xC4 */
-    short aActSurfRotZ;                    /* 0xC6 */
-    short ActFrontRotX;                    /* 0xC8 */
-    short ActRearRotX;                     /* 0xCA */
-    short TarFrontRotX;                    /* 0xCC */
-    short TarRearRotX;                     /* 0xCE */
-    s32 AnyOnGroundBits;                   /* 0xD0 */
-    s32 AllOnGroundBits;                   /* 0xD4 */
-    s32 AllTouchingGroundBits;             /* 0xD8 */
-    s32 AnyTouchingGroundBits;             /* 0xDC */
-    struct nuvec_s AirNormal;              /* 0xE0 */
-    struct nuvec_s SurfaceNormal;          /* 0xEC */
-    short *TerrHandle;                     /* 0xF8 */
-    s32 FrontWheelGroundBits;              /* 0xFC */
-}; /* 0x100 */
 
 struct MYDRAW {
     struct anim_s Anim;             /* 0x00 */
@@ -364,11 +325,6 @@ extern struct JEEPBALLOON JeepBalloon[];
 extern void ProcessJeepBalloon(struct JEEPBALLOON *b);
 extern void DrawJeepBalloon(struct JEEPBALLOON *b);
 
-struct objtab_s {
-    struct nugscn_s *scene;         /* 0x00 */
-    struct nuspecial_s *special;    /* 0x04 */
-    u8 pad_08[0x18];
-}; /* 0x20 */
 extern struct objtab_s ObjTab[];
 extern struct numtx_s mTEMP;
 extern struct nuvec_s FIREBOSSSCALE;
@@ -377,11 +333,6 @@ extern struct nuvec_s WallOfFirePosition;
 extern f32 WallOfFireAngleY;
 extern s32 Paused;
 
-struct gdeb_s {
-    s32 i;                          /* 0x00 */
-    char *name;                     /* 0x04 */
-    u64 levbits;                    /* 0x08 */
-}; /* 0x10 */
 extern struct gdeb_s GDeb[];
 extern s32 NuRndrGScnObj(void *gobj, struct numtx_s *m);
 
@@ -412,13 +363,13 @@ extern void InitEnemyJeeps(void);
 extern s32 qrand(void);
 extern s32 D_005BBCC4[];              /* PlayerJeep.Finished (far .data -> absolute) */
 #define PlayerJeepFinished D_005BBCC4
-extern struct spline_s *D_00586394[]; /* Rail[0].pCAM (far .data -> absolute) */
+extern struct nugspline_s *D_00586394[]; /* Rail[0].pCAM (far .data -> absolute) */
 extern f32 WesternCountdown;
 extern s32 SmokeyFinished;
 extern f32 WesternTime;
 extern s32 SmokeyCountDownValue;
-extern struct spline_s *JeepIntroLookSpline;
-extern struct spline_s *JeepIntroCamSpline;
+extern struct nugspline_s *JeepIntroLookSpline;
+extern struct nugspline_s *JeepIntroCamSpline;
 extern s32 SmokeyCam;
 extern s32 SmokeyPosition;
 extern s32 CurrentWesternPosition(void);
@@ -516,58 +467,8 @@ extern s32 HitCrates(struct obj_s *obj, s32 destroy);
 extern s32 WumpaCollisions(struct obj_s *obj);
 extern void AddGameDebrisRot(s32 i, struct nuvec_s *pos, s32 n, u16 xrot,
                              u16 yrot);
-struct cammtx_s {
-    struct numtx_s m;               /* 0x00 */
-    struct numtx_s m0;              /* 0x40 */
-    struct nuvec_s vX;              /* 0x80 */
-    struct nuvec_s vY;              /* 0x8C */
-    struct nuvec_s vZ;              /* 0x98 */
-    struct nuvec_s pos;             /* 0xA4 */
-    struct nuvec_s oldpos;          /* 0xB0 */
-    struct nuvec_s newpos;          /* 0xBC */
-    struct nuvec_s pos2;            /* 0xC8 */
-    struct nuvec_s seek;            /* 0xD4 */
-    f32 distance;                   /* 0xE0 */
-    f32 ahead;                      /* 0xE4 */
-    f32 judder;                     /* 0xE8 */
-    f32 blend_time;                 /* 0xEC */
-    f32 blend_duration;             /* 0xF0 */
-    s32 xrot;                       /* 0xF4 */
-    s32 yrot;                       /* 0xF8 */
-    s32 zrot;                       /* 0xFC */
-    u16 old_xrot;                   /* 0x100 */
-    u16 new_xrot;                   /* 0x102 */
-    u16 old_yrot;                   /* 0x104 */
-    u16 new_yrot;                   /* 0x106 */
-    u16 old_zrot;                   /* 0x108 */
-    u16 new_zrot;                   /* 0x10A */
-    u16 hdg_to_player;              /* 0x10C */
-    s16 route;                      /* 0x10E */
-    s16 i0;                         /* 0x110 */
-    s16 i1;                         /* 0x112 */
-    s8 mode;                        /* 0x114 */
-    s8 iRAIL;                       /* 0x115 */
-    s16 iALONG;                     /* 0x116 */
-    u16 angle;                      /* 0x118 */
-    s8 vertical;                    /* 0x11A */
-    u8 unk_0x11B[0x1];
-}; /* 0x11C */
-struct rail_s {
-    struct spline_s *pINPLAT;       /* 0x00 */
-    struct spline_s *pINCAM;        /* 0x04 */
-    struct spline_s *pLEFT;         /* 0x08 */
-    struct spline_s *pCAM;          /* 0x0C */
-    struct spline_s *pRIGHT;        /* 0x10 */
-    struct spline_s *pOUTCAM;       /* 0x14 */
-    struct spline_s *pOUTPLAT;      /* 0x18 */
-    f32 in_distance;                /* 0x1C */
-    f32 out_distance;               /* 0x20 */
-    s16 edges;                      /* 0x24 */
-    s8 type;                        /* 0x26 */
-    s8 circuit;                     /* 0x27 */
-}; /* 0x28 */
 extern struct rail_s Rail[];
-extern struct spline_s *pVIS;
+extern struct nugspline_s *pVIS;
 extern s32 iVIS;
 extern struct nuvec_s JeepvPos;
 extern struct nuvec_s JeepvObj;
@@ -2198,11 +2099,11 @@ void DrawJeepBalloon(struct JEEPBALLOON *Balloon) {
     NuMtxRotateY(&mTEMP, Balloon->AngY);
     NuMtxTranslate(&mTEMP, &Balloon->Pos);
     Balloon->Seen = 0;
-    if (ObjTab[89].special != 0) {
-        struct nuspecial_s *special = ObjTab[89].special;
+    if (ObjTab[89].obj.special != 0) {
+        struct nuspecial_s *special = ObjTab[89].obj.special;
 
         Balloon->Seen = NuRndrGScnObj(
-            ObjTab[89].scene->gobjs[special->instance->objid], &mTEMP);
+            ObjTab[89].obj.scene->gobjs[special->instance->objid], &mTEMP);
     }
 }
 

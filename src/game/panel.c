@@ -32,16 +32,9 @@
 #include "nu3d/nuvport.h"
 #include "numath/numtx.h"
 #include "numath/nutrig.h"
+#include "game/gametypes.h"
 
 #include "creature.h"
-
-struct objtab_s {
-    struct nugscn_s *scene;
-    struct nuspecial_s *special;
-    u8 _pad08[5];
-    u8 font3d_letter;
-    u8 _pad0e[18];
-};
 
 struct pdebinfo_s {
     s32 i_objtab;
@@ -66,21 +59,6 @@ struct pdeb_s {
     u8 _pad[2];
 };
 
-struct font3dtab_s {
-    u8 _pad[8];
-    struct nuspecial_s *special;
-    u8 _pad2[4];
-};
-
-struct panel_item_s {
-    s16 target;
-    s16 value;
-    s8 timer;
-    s8 delay;
-    u8 sfx_delay;
-    u8 _pad;
-};
-
 struct screen_wumpa_s {
     float x;
     float y;
@@ -93,58 +71,6 @@ struct screen_wumpa_s {
     u8 _pad1d[3];
 };
 
-struct hub_s {
-    u8 flags;
-    u8 crystals;
-    char pad1;
-    char pad2;
-};
-
-struct time_s {
-    char name[4];
-    u32 itime;
-};
-
-struct level_s {
-    u16 flags;
-    char pad1;
-    char pad2;
-    struct time_s time[3];
-};
-
-struct game_s {
-    char name[9];
-    u8 vibration;
-    u8 surround;
-    u8 sfx_volume;
-    u8 music_volume;
-    char screen_x;
-    char screen_y;
-    u8 language;
-    struct hub_s hub[6];
-    struct level_s level[35];
-};
-
-struct gametimer_s {
-    u32 frame;
-    u8 _pad04[0x14];
-};
-
-struct ldata_s {
-    char *path;
-    u8 *clist;
-    void *pChase;
-    u32 time[3];
-    short music[2];
-    void *pSFX;
-    short nSFX;
-    char pad1;
-    char hub;
-    u16 flags;
-    short character;
-    u8 _pad28[0x2C];
-};
-
 extern struct objtab_s ObjTab[201];
 extern struct pdeb_s PDeb[32];
 extern struct font3dtab_s Font3DTab[];
@@ -154,14 +80,8 @@ extern signed char Font3DRemap[];
  * plr_wumpas is recognised as small-data (size 8 <= -G8) and addressed
  * $gp-relative; an incomplete forward decl would force a larger address load
  * and desync UpdatePlayerStats by 16 bytes. */
-struct panelcount_s {
-    short count;
-    short draw;
-    signed char frame;
-    u8 pad[3];
-};
 extern struct panelcount_s plr_wumpas;
-extern struct panel_item_s plr_bonus_wumpas;
+extern struct panelcount_s plr_bonus_wumpas;
 extern s32 MAXVPSIZEX, MAXVPSIZEY;
 extern s32 MINVPSIZEX, MINVPSIZEY;
 extern s32 screendump, save_paused, Paused, editor_active;
@@ -185,7 +105,7 @@ extern struct screen_wumpa_s WScr[32];
 extern u16 PANELWUMPAYROT;
 extern f32 NuTrigTable[];
 extern float FONT3D_JSCALEX;
-extern struct gametimer_s GameTimer;
+extern struct gtimer_s GameTimer;
 
 extern s32 NuRndrGScnObj(void *, struct numtx_s *);
 extern void GameSfx(s32, s32);
@@ -218,7 +138,7 @@ inline s32 DrawPanel3DObject(s32 object, float x, float y, float z, float scalex
         if (o != -1) {
             e = &ObjTab[o];
             DrawPanel3DObject(o, x, y, z, scalex, scaley, scalez, 0, 0, 0,
-                              e->scene, e->special, 0);
+                              e->obj.scene, e->obj.special, 0);
         }
         s.x = scalex;
         s.y = scaley;
@@ -268,51 +188,51 @@ inline s32 NextLetter(char *text, struct nuspecial_s **obj) {
     }
     c = Font3DRemap[*text];
     if ((c != -1) && (obj != 0)) {
-        obj[0] = Font3DTab[c].special;
+        obj[0] = Font3DTab[c].obj.special;
     }
     return 1;
 }
 
 
-void UpdatePanelItem(struct panel_item_s *item, s32 reset, s32 snap_allowed) {
-    if (item->timer == 25) {
-        if (item->delay != 0) {
-            item->delay--;
+void UpdatePanelItem(struct panelcount_s *item, s32 reset, s32 snap_allowed) {
+    if (item->frame == 25) {
+        if (item->wait != 0) {
+            item->wait--;
         }
         if (reset != 0) {
-            item->delay = 50;
+            item->wait = 50;
         }
-        if (item->sfx_delay != 0) {
-            item->sfx_delay--;
-        } else if (item->value < item->target) {
-            item->value++;
-            if ((item == (struct panel_item_s *)&plr_wumpas) || (item == &plr_bonus_wumpas)) {
+        if (item->delay != 0) {
+            item->delay--;
+        } else if (item->draw < item->count) {
+            item->draw++;
+            if ((item == (struct panelcount_s *)&plr_wumpas) || (item == &plr_bonus_wumpas)) {
                 GameSfx(0x19, 0);
-                item->sfx_delay = 5;
+                item->delay = 5;
             }
-            item->delay = 50;
-        } else if (item->target < item->value) {
-            item->value = item->target;
-            item->delay = 50;
+            item->wait = 50;
+        } else if (item->count < item->draw) {
+            item->draw = item->count;
+            item->wait = 50;
         }
-        if ((item->value == item->target) && (item->delay == 0)) {
-            item->timer--;
+        if ((item->draw == item->count) && (item->wait == 0)) {
+            item->frame--;
         }
     } else if ((reset != 0) ||
-               ((snap_allowed != 0) && (item->value != item->target) &&
+               ((snap_allowed != 0) && (item->draw != item->count) &&
                 (new_mode == -1) && (new_level == new_mode))) {
-        if (item->timer < 25) {
-            item->timer += 2;
-            if (item->timer > 25) {
-                item->timer = 25;
+        if (item->frame < 25) {
+            item->frame += 2;
+            if (item->frame > 25) {
+                item->frame = 25;
             }
         }
     } else {
-        if (item->value != item->target) {
-            item->value = item->target;
+        if (item->draw != item->count) {
+            item->draw = item->count;
         }
-        if (item->timer > 0) {
-            item->timer--;
+        if (item->frame > 0) {
+            item->frame--;
         }
     }
 }
@@ -347,7 +267,7 @@ void DrawTimeTrialTimes(s32 level, float x, float y) {
     if (Level == 0x25) {
         DrawPanel3DObject(0x81, x, y - 0.03f, 1.01f, 0.15f, 0.13f,
                           (i != -1) ? 0.11f : 0.08f, 0xC000, 0, 0,
-                          ObjTab[129].scene, ObjTab[129].special, 0);
+                          ObjTab[129].obj.scene, ObjTab[129].obj.special, 0);
     }
 
     dy = -0.125f;
@@ -464,7 +384,7 @@ s32 DrawPanel3DCharacter(s32 character, float x, float y, float z,
     if (id != -1) {
         tab = &ObjTab[id];
         DrawPanel3DObject(id, x, y, z, scalex, scaley, scalez, 0, 0, 0,
-                          tab->scene, tab->special, 0);
+                          tab->obj.scene, tab->obj.special, 0);
     }
     s.x = scalex;
     s.y = scaley;
@@ -506,11 +426,6 @@ s32 DrawPanel3DCharacter(s32 character, float x, float y, float z,
     return NuHGobjRndrMtx(model->hobj, &m, 1, 0, tmtx);
 }
 
-
-struct cammtx_s {
-    u8 _pad[0xF8];
-    s32 yrot;
-};
 
 extern struct cammtx_s GameCam[];
 extern struct nugscn_s *font3d_scene;
@@ -749,7 +664,7 @@ void DrawWorldToPanelWumpa(void) {
             ys = y + (WScr[i].target_y - y) * f;
             DrawPanel3DObject(0, xs, ys, 1.0f, size, size, size,
                               WScr[i].spin ? 0 : 0xE800, PANELWUMPAYROT, 0,
-                              ObjTab[0].scene, ObjTab[0].special, 1);
+                              ObjTab[0].obj.scene, ObjTab[0].obj.special, 1);
         }
     }
 }
@@ -904,7 +819,7 @@ void AddPanelDebris(f32 x, f32 y, s32 type, f32 scale, s32 count) {
             if ((i_objtab == 0x11) && (LDATA->character == 1)) {
                 i_objtab = 0x12;
             }
-            if ((i_objtab < 0xC9) && ((ObjTab + i_objtab)->special != 0)) {
+            if ((i_objtab < 0xC9) && ((ObjTab + i_objtab)->obj.special != 0)) {
                 deb->type = type;
                 deb->xrot = 0;
                 deb->yrot = 0;
@@ -1090,8 +1005,8 @@ void DrawPanelDebris(void) {
             DrawPanel3DObject(deb->i_objtab, deb->pos.x, deb->pos.y, 1.0f,
                               deb->scale, deb->scale, deb->scale, deb->xrot,
                               deb->yrot, deb->zrot,
-                              tab->scene,
-                              tab->special, 1);
+                              tab->obj.scene,
+                              tab->obj.special, 1);
         }
     }
 }

@@ -141,6 +141,7 @@
 #include "numath/numtx.h"
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
+#include "game/gametypes.h"
 #include "gamelib/terrain.h"
 
 #define NULL 0
@@ -207,109 +208,12 @@ struct mask_s {
     signed char hold;           /* 0x18F */
 };
 
-struct hub_s {
-    u8 flags;
-    u8 crystals;
-    char pad1;
-    char pad2;
-};
-
-struct time_s {
-    char name[4];
-    u32 itime;
-};
-
-struct level_s {
-    u16 flags;
-    char pad1;
-    char pad2;
-    struct time_s time[3];
-};
-
-struct game_s {
-    char name[9];
-    u8 vibration;
-    u8 surround;
-    u8 sfx_volume;
-    u8 music_volume;
-    char screen_x;
-    char screen_y;
-    u8 language;
-    struct hub_s hub[6];
-    struct level_s level[35];
-    u8 lives;
-    u8 wumpas;
-    u8 mask;
-    u8 percent;
-    u8 crystals;
-    u8 relics;
-    u8 crate_gems;
-    u8 bonus_gems;
-    u8 gems;
-    u8 gembits;
-    u8 powerbits;
-    u8 empty;
-    u32 cutbits; /* 0x408, struct ends at 0x40C */
-};
-
-struct ldata_s {
-    char *path;
-    u8 *clist;
-    void *pChase;
-    u32 time[3];
-    short music[2];
-    void *pSFX;
-    short nSFX;
-    char pad1;
-    char hub;
-    u16 flags;
-    short character;
-    short vehicle;
-    u16 farclip;
-    struct nuvec_s vSTART;
-    struct nuvec_s vBONUS;
-    float fognear;
-    float fogfar;
-    u8 fogr;
-    u8 fogg;
-    u8 fogb;
-    u8 foga;
-    u8 hazer;
-    u8 hazeg;
-    u8 hazeb;
-    u8 hazea;
-};
-
 struct hdata_s {
     s8 level[6];
     s8 i_spl[2];
     u8 barrier;
     u8 i_gdeb;
     short sfx;
-};
-
-struct remember_s {
-    u8 x;
-    u8 y;
-};
-
-struct cursor_s {
-    struct remember_s remember[48];
-    u32 menu_frame;  /* 0x60 */
-    u32 item_frame;  /* 0x64 */
-    char x;          /* 0x68 */
-    char y;          /* 0x69 */
-    char x_min;      /* 0x6A */
-    char y_min;      /* 0x6B */
-    char x_max;      /* 0x6C */
-    char y_max;      /* 0x6D */
-    char menu;       /* 0x6E */
-    char new_menu;   /* 0x6F */
-    char new_level;  /* 0x70 */
-    u8 wait;         /* 0x71 */
-    u8 wait_frames;  /* 0x72 */
-    char wait_hack;  /* 0x73 */
-    u8 button_lock;  /* 0x74 */
 };
 
 extern struct game_s Game;
@@ -466,15 +370,6 @@ struct player_s {
     struct pobj_s obj;
 };
 
-struct plr_lives_s {
-    short count;          /* 0x0 */
-    short draw;           /* 0x2 */
-    signed char timer;    /* 0x4 */
-    signed char delay;    /* 0x5 */
-    u8 sfx_delay;         /* 0x6 */
-    char pad_7;
-};
-
 struct anmdata_s {
     float time; /* 0x0 (AddMaskFeathers) */
 };
@@ -518,18 +413,7 @@ extern s32 LANGUAGEOPTION;
 extern u8 D_0058B117[];
 extern float NuTrigTable[];
 extern float nusound_fade_start;
-struct gamecam_s {
-    char pad_0[0x80];
-    struct nuvec_s vX; /* 0x80 */
-    struct nuvec_s vY; /* 0x8C */
-    struct nuvec_s vZ; /* 0x98 */
-    struct nuvec_s pos; /* 0xA4 */
-    char pad_b0[0xF8 - 0xB0];
-    u16 yrot; /* 0xF8 */
-    char pad_fa[0x114 - 0xFA];
-    signed char mode; /* 0x114 */
-};
-extern struct gamecam_s GameCam;
+extern struct cammtx_s GameCam;
 extern s32 gamesfx_volume;
 extern s32 LostLife;
 extern s32 bonus_restart;
@@ -588,7 +472,7 @@ extern s32 saveload_cardchanged;
 extern struct game_s SaveSlot[];
 extern struct game_s *game;
 extern s32 memcard_loadresult_delay;
-extern struct plr_lives_s plr_lives;
+extern struct panelcount_s plr_lives;
 extern short D_0063203A;
 extern s32 memcard_formatme;
 extern s32 memcard_formatting;
@@ -603,19 +487,6 @@ extern s32 memcard_formatfailed;
 extern s32 boss_dead;
 
 /* --- InitLevel support --- */
-
-/* entry stride 0x20; scene/visible/font3d_letter/name/levbits verified in
- * InitObjectTable */
-struct objtab_s {
-    struct nuhspecial_s obj; /* 0x0 (scene +0x0, special +0x4) */
-    struct nugscn_s **scene; /* 0x8 */
-    signed char visible;     /* 0xC */
-    char font3d_letter;      /* 0xD */
-    char pad_e[0x10 - 0xE];
-    char *name; /* 0x10 */
-    char pad_14[0x18 - 0x14];
-    u64 levbits; /* 0x18 */
-};
 
 extern struct objtab_s ObjTab[];
 extern u8 TempAnim[];
@@ -640,9 +511,9 @@ extern s32 GemPath;
 extern s32 gempath_begun;
 extern s32 gempath_open;
 extern u16 plr_items;
-extern struct plr_lives_s plr_crystal;
-extern struct plr_lives_s plr_crategem;
-extern struct plr_lives_s plr_bonusgem;
+extern struct panelcount_s plr_crystal;
+extern struct panelcount_s plr_crategem;
+extern struct panelcount_s plr_bonusgem;
 extern s32 hubleveltext_level;
 extern float hubleveltext_pos;
 extern s32 HubLevelText;
@@ -2770,35 +2641,6 @@ struct creatobj_s *FindClock(void) {
     return NULL;
 }
 
-struct wumpa_s {
-    struct nuvec_s pos0;      /* 0x0 */
-    struct nuvec_s pos1;      /* 0xC */
-    struct nuvec_s pos;       /* 0x18 */
-    struct nuvec_s mom;       /* 0x24 */
-    float shadow;             /* 0x30 */
-    u16 surface_xrot;         /* 0x34 */
-    u16 surface_zrot;         /* 0x36 */
-    float time;               /* 0x38 */
-    float duration;           /* 0x3C */
-    signed char active;       /* 0x40 */
-    signed char iRAIL;        /* 0x41 */
-    short iALONG;             /* 0x42 */
-    float fALONG;             /* 0x44 */
-    signed char destroy;      /* 0x48 */
-    signed char fired;        /* 0x49 */
-    signed char in_range;     /* 0x4A */
-    signed char surface_type; /* 0x4B */
-};
-
-struct winfo_s {
-    struct numtx_s m; /* 0x0 */
-    float scale;      /* 0x40 */
-    float dy;         /* 0x44 */
-    u16 angle;        /* 0x48 */
-    short field_4A;   /* 0x4A */
-    char pad_4c[0x50 - 0x4C];
-};
-
 extern struct wumpa_s Wumpa[320];
 extern struct winfo_s WInfo[8];
 extern s32 WUMPACOUNT;
@@ -2820,7 +2662,7 @@ void InitWumpa(void) {
     }
     for (i = 0; i < 8; i++) {
         WInfo[i].angle = 0;
-        WInfo[i].field_4A = 0x7AE;
+        WInfo[i].spin = 0x7AE;
         WInfo[i].scale = 0.75f;
     }
     ResetWumpa();
@@ -2892,15 +2734,6 @@ void DrawLevel(void) {
 }
 
 extern void ResetVehicleLevel(s32 a);
-
-struct gtimer_s {
-    s32 frame;   /* 0x0 */
-    s32 itime;   /* 0x4 */
-    /* unsigned: UpdateTimer's wrap test is `sltiu`, not `slti`. */
-    u32 isec;    /* 0x8 */
-    float ftime; /* 0xC */
-    float fsec;  /* 0x10 */
-};
 
 /* gnu89 plain inline: emits the standalone AND inlines into ResetTimeTrial,
  * which is how retail has it (no jal there). */
@@ -3159,22 +2992,6 @@ inline void StartTransporter(struct tobj_s *cyl, struct nuvec_s *pos) {
     cyl->hdg = 0;
 }
 
-/* Rail entry stride 0x28; type (+0x26) verified in AheadOfCheckpoint,
- * spline (+0x0) in ResetDeath (D_00586478 == &Rail[6]) */
-struct rail_s {
-    struct nugspline_s *pINPLAT; /* 0x0 */
-    struct nugspline_s *pINCAM;   /* 0x4 */
-    struct nugspline_s *pLEFT;    /* 0x8 */
-    struct nugspline_s *pCAM;     /* 0xC */
-    struct nugspline_s *pRIGHT;   /* 0x10 */
-    struct nugspline_s *pOUTCAM;  /* 0x14 */
-    struct nugspline_s *pOUTPLAT; /* 0x18 */
-    float in_distance;            /* 0x1C */
-    float out_distance;           /* 0x20 */
-    short edges;                  /* 0x24 */
-    signed char type;             /* 0x26 */
-    signed char circuit;          /* 0x27 */
-};
 extern struct rail_s Rail[];
 extern s32 cp_iRAIL;
 extern s32 cp_iALONG;
@@ -3555,13 +3372,7 @@ void SaveWumpa(void) {
     }
 }
 
-struct gcam_s {
-    struct numtx_s m;   /* 0x0 */
-    char pad_40[0xA4 - 0x40];
-    struct nuvec_s pos; /* 0xA4 */
-};
-
-extern struct gcam_s *pCam;
+extern struct cammtx_s *pCam;
 extern float D_0062D6D0; /* parallax farclip scale (GC 0.1f) */
 extern s32 NuRndrGScnObj(void *gobj, struct numtx_s *m);
 extern void NuRndrClear(s32 mode, s32 col, float z);
@@ -3686,15 +3497,6 @@ void DrawTransporters(void) {
     }
 }
 
-/* SplTab entry stride 0x18; fields verified in InitSplineTable */
-struct spltab_s {
-    struct nugspline_s *spl; /* 0x0 */
-    char *name;              /* 0x4 */
-    short min;               /* 0x8 */
-    short max;               /* 0xA */
-    char pad_c[0x10 - 0xC];
-    u64 levbits; /* 0x10 */
-};
 extern struct spltab_s SplTab[0x49];
 /* array-form: a bare pointer scalar goes gp-rel under -G8 and overflows
  * GPREL16 (world_scene is far from $gp); retail uses absolute %hi/%lo. */
@@ -3884,13 +3686,6 @@ void ResetCheckpoint(s32 iRAIL, s32 iALONG, float fALONG, struct nuvec_s *pos) {
     cp_iRAIL = -1;
 }
 
-/* Font3DObjTab entry stride 0xC; i (+0x0) / flags (+0x2) verified in
- * InitObjectTable */
-struct font3dobj_s {
-    short i;  /* 0x0 */
-    u8 flags; /* 0x2 */
-    char pad_3[0xC - 0x3];
-};
 extern struct font3dobj_s Font3DObjTab[0x1a];
 
 void InitObjectTable(void) {
@@ -4402,12 +4197,12 @@ extern u32 finish_frame;
 extern s32 pausestats_frame;
 extern float start_time;
 extern struct nupad_s *Pad[];
-extern struct plr_lives_s plr_wumpas;
+extern struct panelcount_s plr_wumpas;
 extern s32 force_panel_wumpa_update;
 extern s32 force_panel_crate_update;
 extern s32 force_panel_lives_update;
 extern s32 force_panel_items_update;
-extern struct plr_lives_s plr_crates;
+extern struct panelcount_s plr_crates;
 extern float check_time;
 extern float check_duration;
 extern float point_time;
@@ -4419,7 +4214,7 @@ extern u16 PANELCRATEYROT;
 extern u16 panel_head_xrot;
 extern u16 panel_head_yrot;
 extern s32 tt_flash;
-extern void UpdatePanelItem(struct plr_lives_s *item, s32 reset, s32 snap_allowed);
+extern void UpdatePanelItem(struct panelcount_s *item, s32 reset, s32 snap_allowed);
 extern void Update3DFontObjects(void);
 extern void GameAudioUpdate(void);
 
@@ -5670,7 +5465,7 @@ extern u8 bonus_life_delay;
 extern s32 bonus_lives;
 extern float bonus_wumpa_wait;
 extern float bonus_lives_wait;
-extern struct plr_lives_s plr_bonus_wumpas;
+extern struct panelcount_s plr_bonus_wumpas;
 extern float BONUSWUMPAOBJSX;
 extern float BONUSLIVESOBJSX;
 extern float BONUSPANELSY;
@@ -6010,8 +5805,8 @@ extern float D_0062D2F4;
 extern float D_0062D2F8;
 extern void ResetPlayerMoves(struct bcreature_s *c);
 extern void AddMechanicalDebris(struct nuvec_s *pos, s32 vehicle);
-extern void BlendGameCamera(struct gamecam_s *cam, float t);
-extern void JudderGameCamera(struct gamecam_s *cam, struct nuvec_s *pos, float amt);
+extern void BlendGameCamera(struct cammtx_s *cam, float t);
+extern void JudderGameCamera(struct cammtx_s *cam, struct nuvec_s *pos, float amt);
 
 void ToggleVehicle(struct bcreature_s *c) {
     struct nuvec_s p0;
@@ -6276,7 +6071,7 @@ void DrawNextVehicle(s32 render) {
     }
 }
 
-extern void JudderGameCamera(struct gamecam_s *cam, struct nuvec_s *pos, float amt);
+extern void JudderGameCamera(struct cammtx_s *cam, struct nuvec_s *pos, float amt);
 
 /* Only the fields AddKaboom reads are known (lhu 0x5A / lhu 0x14). */
 /* CrateCube subset, stride 0x90 */
@@ -6559,12 +6354,6 @@ void DrawMask(struct mask_s *mask) {
     }
 }
 
-struct tersurface_s {
-    float friction; /* 0x0 */
-    short field_4;  /* 0x4 */
-    u16 flags;      /* 0x6 */
-};
-
 extern struct tersurface_s TerSurface[];
 extern void NuRndrAddShadow(struct nuvec_s *pos, float size, s32 alpha, s32 xrot,
                             s32 yrot, s32 zrot);
@@ -6690,7 +6479,7 @@ void UpdateWumpa(void) {
     la[2] = wumpa_a[2] += 0x400;
     info = WInfo;
     for (i = 0; i < 8; i++) {
-        info->angle -= info->field_4A;
+        info->angle -= info->spin;
         info->dy = NuTrigTable[la[0]] * 0.05f;
         rx = (s32)(NuTrigTable[la[1]] * 2048.0f);
         rz = (s32)(NuTrigTable[la[2]] * 2048.0f);
@@ -7310,19 +7099,6 @@ void DrawKabooms(void) {
     }
 }
 
-/* race opponent state (OppTub/PlrTub) */
-struct tubinfo_s {
-    void *c;            /* 0x0 */
-    s8 track;           /* 0x4 */
-    s8 count;           /* 0x5 */
-    u8 wait;            /* 0x6 */
-    s8 laps;            /* 0x7 */
-    float time;         /* 0x8 */
-    float duration;     /* 0xC */
-    float lap_position; /* 0x10 */
-    s8 place;           /* 0x14 */
-};
-
 extern struct tubinfo_s PlrTub;
 extern struct nuvec_s finish_newpos;
 extern struct nuvec_s finish_oldpos;
@@ -7621,14 +7397,7 @@ void CheckFinish(struct tobj_s *obj) {
     new_level = 0x25;
 }
 
-/* Font3DTab entry, stride 0x10 */
-struct font3d_s {
-    char pad_0[0x8];
-    struct nuspecial_s *special; /* 0x8 */
-    char pad_c[0x10 - 0xC];
-};
-
-extern struct font3d_s Font3DTab[];
+extern struct font3dtab_s Font3DTab[];
 extern s8 Font3DRemap[];
 extern struct nugscn_s *font3d_scene;
 extern struct nuvec_s D_0061D8E8; /* crate count icon scale {1.5, 1.5, 1.5} */
@@ -7669,7 +7438,7 @@ void Draw3DCrateCount(struct nuvec_s *pos, u16 angle) {
         c = &tbuf[i];
         if (Font3DRemap[*c] != -1) {
             Draw3DObject(-1, &v, 0, ang, 0, CRATECOUNT3DSCALE, CRATECOUNT3DSCALE,
-                         CRATECOUNT3DSCALE, font3d_scene, Font3DTab[Font3DRemap[*c]].special,
+                         CRATECOUNT3DSCALE, font3d_scene, Font3DTab[Font3DRemap[*c]].obj.special,
                          0);
         }
         v.x += dx;
@@ -8028,8 +7797,8 @@ void BonusTransporter(struct bcreature_s *plr) {
             } else if (bonus_duration < 5.0f) {
                 bonus_duration = 5.0f;
             }
-            plr_bonus_wumpas.sfx_delay = 0;
             plr_bonus_wumpas.delay = 0;
+            plr_bonus_wumpas.wait = 0;
             plr_bonus_wumpas.draw = 0;
             plr_bonus_wumpas.count = 0;
             bonus_lives = 0;
@@ -8093,7 +7862,7 @@ void BonusTransporter(struct bcreature_s *plr) {
         } else {
             ObjectCylinderCollision(&plr->obj, &bonus_obj[0], 0, 1.0f);
         }
-        plr_bonus_wumpas.timer = 0x19;
+        plr_bonus_wumpas.frame = 0x19;
         UpdatePanelItem(&plr_bonus_wumpas, 0x19, 0);
         if (Bonus == 3 && plr_bonus_wumpas.count != 0) {
             GameSfx(0x2C, NULL);

@@ -181,6 +181,7 @@
 #include "numath/nuvec.h"
 #include "nu3d/numtl.h"
 #include "nu3d/nugobj.h"
+#include "nu3d/nucamera.h"
 #include "gamelib/terrain.h"
 
 struct edptlitem_s {
@@ -358,10 +359,6 @@ struct edptlgradmenu_s {
 struct edptlfont_s {
     unsigned int colour;
     char pad04[0xC];
-};
-
-struct camera_s {
-    struct numtx_s mtx;
 };
 
 struct debrender_s {
@@ -543,7 +540,7 @@ extern int edpp_refroty;
 extern int edpp_first_time_this_level;
 extern void *gencodetab[];
 extern void *gensorttab[];
-extern struct camera_s global_camera;
+extern struct nucamera_s global_camera;
 extern void *app_fnt;
 extern struct edptlitem_s *edui_last_item;
 

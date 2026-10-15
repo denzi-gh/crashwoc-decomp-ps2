@@ -54,6 +54,8 @@
 #include "numath/numtx.h"
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
+#include "nu3d/nugscn.h"
+#include "game/gametypes.h"
 
 #include "creature.h"
 
@@ -85,40 +87,8 @@ struct pad_s {
 };
 extern struct pad_s *Pad[];
 
-struct tubinfo_s {
-    struct creature_s *c;   /* 0x00 */
-    s8 track;               /* 0x04 */
-    s8 count;               /* 0x05 */
-    u8 wait;                /* 0x06 */
-    s8 laps;                /* 0x07 */
-    f32 time;               /* 0x08 */
-    f32 duration;           /* 0x0C */
-    f32 lap_position;       /* 0x10 */
-    s8 place;               /* 0x14 */
-    u8 finished;            /* 0x15 */
-    u8 finishframes;        /* 0x16 */
-    u8 stall;               /* 0x17 */
-    u16 old_xrot;           /* 0x18 */
-    u16 old_yrot;           /* 0x1A */
-    u16 old_zrot;           /* 0x1C */
-    u8 boost;               /* 0x1E */
-    s8 spark;               /* 0x1F */
-};
-
-struct spline_s {
-    s16 len;                /* 0x0 */
-    s16 ptsize;             /* 0x2 */
-    char *name;             /* 0x4 */
-    u8 *pts;                /* 0x8 */
-};
-
-struct spltab_s {
-    struct spline_s *spl;   /* 0x00 */
-    u8 pad[0x14];           /* 0x04 */
-};
-
 struct plrevent_s {
-    struct spline_s *spl;           /* 0x00 */
+    struct nugspline_s *spl;        /* 0x00 */
     struct nuhspecial_s obj[16];    /* 0x04 */
     struct nuvec_s pos;             /* 0x84 */
     s8 triggered;                   /* 0x90 */
@@ -127,16 +97,11 @@ struct plrevent_s {
     f32 fALONG;                     /* 0x94 */
 };
 
-struct chaseevent_s {
-    struct spline_s *spl;           /* 0x00 */
-    struct nuhspecial_s obj[24];    /* 0x04 */
-};
-
 struct chase_s {
-    struct spline_s *spl_START;             /* 0x0000 */
+    struct nugspline_s *spl_START;          /* 0x0000 */
     f32 time;                               /* 0x0004 */
     f32 duration;                           /* 0x0008 */
-    struct spline_s *spl_CHASER[6];         /* 0x000C */
+    struct nugspline_s *spl_CHASER[6];      /* 0x000C */
     struct nuvec_s pos[6];                  /* 0x0024 */
     struct RPos_s RPos[6];                  /* 0x006C */
     struct anim_s anim[6];                  /* 0x0144 */
@@ -147,7 +112,7 @@ struct chase_s {
     u16 yrot[6];                            /* 0x0240 */
     u16 zrot[6];                            /* 0x024C */
     struct chaseevent_s event[6][24];       /* 0x0258 */
-    struct spline_s *spl_MISC[6][4];        /* 0x7098 */
+    struct nugspline_s *spl_MISC[6][4];     /* 0x7098 */
     struct Nearest_Light_s lights[6];       /* 0x70F8 */
     f32 scale[6];                           /* 0x7518 */
     u8 misc_phase[6];                       /* 0x7530 */
@@ -160,47 +125,6 @@ struct chase_s {
     s8 iRAIL;                               /* 0x7541 */
     s16 iALONG;                             /* 0x7542 */
     f32 fALONG;                             /* 0x7544 */
-};
-
-struct tersurface_s {
-    f32 friction;           /* 0x0 */
-    s16 pad;                /* 0x4 */
-    u16 flags;              /* 0x6 */
-};
-
-struct objtab_s {
-    struct nuhspecial_s obj; /* 0x00 */
-    u8 pad[0x18];            /* 0x08 */
-};
-
-struct gtimer_s {
-    s32 frame;   /* 0x0 */
-    s32 itime;   /* 0x4 */
-    /* unsigned: UpdateTimer's wrap test is `sltiu`, not `slti`. */
-    u32 isec;    /* 0x8 */
-    float ftime; /* 0xC */
-    float fsec;  /* 0x10 */
-};
-
-struct cammtx_s {
-    struct numtx_s m;       /* 0x00 */
-    struct numtx_s m0;      /* 0x40 */
-    struct nuvec_s vX;      /* 0x80 */
-    struct nuvec_s vY;      /* 0x8C */
-    struct nuvec_s vZ;      /* 0x98 */
-    struct nuvec_s pos;     /* 0xA4 */
-    struct nuvec_s oldpos;  /* 0xB0 */
-    struct nuvec_s newpos;  /* 0xBC */
-    struct nuvec_s pos2;    /* 0xC8 */
-    struct nuvec_s seek;    /* 0xD4 */
-    f32 distance;           /* 0xE0 */
-    f32 ahead;              /* 0xE4 */
-    f32 judder;             /* 0xE8 */
-    f32 blend_time;         /* 0xEC */
-    f32 blend_duration;     /* 0xF0 */
-    s32 xrot;               /* 0xF4 */
-    s32 yrot;               /* 0xF8 */
-    s32 zrot;               /* 0xFC */
 };
 
 extern struct spltab_s SplTab[];
@@ -562,51 +486,6 @@ extern s32 Draw3DObject(s32 object, struct nuvec_s *pos, u16 xrot, u16 yrot, u16
                         f32 scalex, f32 scaley, f32 scalez,
                         struct nugscn_s *scn, struct nuspecial_s *obj, s32 rot);
 
-struct hub_s {
-    u8 flags;
-    u8 crystals;
-    char pad1;
-    char pad2;
-};
-
-struct time_s {
-    char name[4];
-    u32 itime;
-};
-
-struct level_s {
-    u16 flags;
-    char pad1;
-    char pad2;
-    struct time_s time[3];
-};
-
-struct game_s {
-    char name[9];
-    u8 vibration;
-    u8 surround;
-    u8 sfx_volume;
-    u8 music_volume;
-    char screen_x;
-    char screen_y;
-    u8 language;
-    struct hub_s hub[6];
-    struct level_s level[35];
-    u8 lives;
-    u8 wumpas;
-    u8 mask;
-    u8 percent;
-    u8 crystals;
-    u8 relics;
-    u8 crate_gems;
-    u8 bonus_gems;
-    u8 gems;
-    u8 gembits;
-    u8 powerbits;
-    u8 empty;
-    u32 cutbits; /* 0x408, struct ends at 0x40C */
-};
-
 extern struct game_s Game;
 extern struct creature_s *player;
 extern s32 TimeTrial;
@@ -616,7 +495,7 @@ extern void PickupBonusGem(s32 mask);
  * game.c layout: retail hoists &Game.level[5] (Game+0x8C) and reads flags at
  * +0x28. Not promoted yet. */
 void CheckGates(struct obj_s *obj) {
-    struct spline_s *spl;
+    struct nugspline_s *spl;
     struct nuvec_s *p0;
     struct nuvec_s *p1;
     s32 i;
@@ -686,7 +565,7 @@ void ResetRings(void) {
 }
 
 void DrawRings(void) {
-    struct spline_s *spl;
+    struct nugspline_s *spl;
     struct nuvec_s *pos;
     s32 obj;
     s32 i;
@@ -982,7 +861,7 @@ void AnimateMOSQUITO(struct creature_s *plr) {
 }
 
 void ResetGates(void) {
-    struct spline_s *spl = SplTab[28].spl;
+    struct nugspline_s *spl = SplTab[28].spl;
     struct nuvec_s *first;
     struct nuvec_s *second;
     struct nuvec_s pos;

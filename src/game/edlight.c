@@ -41,6 +41,7 @@
 
 #include "numath/nuvec.h"
 #include "nu3d/numtl.h"
+#include "game/gametypes.h"
 
 #include "creature.h"
 
@@ -73,17 +74,6 @@ struct slider_s {
     f32 val;               /* 0x4C */
 };
 
-/* Editor menu control. */
-struct edmenu_s {
-    u8 pad00[0x10];
-    s32 x;                 /* 0x10 */
-    s32 y;                 /* 0x14 */
-    u8 pad18[0xC];
-    void (*cb)(struct edmenu_s *menu, s32 arg);  /* 0x24 */
-    u8 pad28[0x8];
-    s32 arg;                                      /* 0x30 */
-};
-
 struct edpad_s {
     u8 pad000[0x55C];
     u32 held;              /* 0x55C */
@@ -105,10 +95,6 @@ extern struct edmenu_s *edlight_glb_menu;
 extern struct eduistyle_s D_00625170;
 extern void *app_fnt;
 extern struct nuvec_s last_radius;
-
-struct ldata_s {
-    char *filepath;
-};
 
 extern struct ldata_s *LDATA;
 extern s32 PANELOFF;
@@ -351,7 +337,7 @@ void edlightDrawInfo(void)
         return;
     NuFntScale(8, 0xC);
     NuFntSetPen(-1);
-    strcpy(tbuf, LDATA->filepath);
+    strcpy(tbuf, LDATA->path);
     strupr(tbuf);
     NuFntPrintEx(0x400, 0x100, 0, D_006326B0, tbuf);
     NuFntPrintEx(0x400, 0x200, 0, D_00624F30, LIGHTCOUNT, 0x100);

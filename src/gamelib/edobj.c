@@ -113,11 +113,8 @@
 #include "nu3d/nugobj.h"
 #include "nu3d/nugscn.h"
 #include "nu3d/nuanim.h"
+#include "nu3d/nucamera.h"
 #include "gamelib/terrain.h"
-
-struct camera_s {
-    struct numtx_s mtx;
-};
 
 struct pad_s {
     char pad000[0x55C];
@@ -250,7 +247,7 @@ extern int edobj_cam_ax;
 extern int edobj_cam_ay;
 extern int edobj_emitrotz;
 extern int edobj_emitroty;
-extern struct camera_s global_camera;
+extern struct nucamera_s global_camera;
 extern struct debtypedef_s *debtab[];
 extern float D_0062CF04;
 extern float D_0062CF24;
