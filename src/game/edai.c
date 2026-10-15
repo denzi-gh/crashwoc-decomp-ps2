@@ -31,13 +31,8 @@
 #include "game/gametypes.h"
 #include "gamelib/terrain.h"
 #include "game/creature.h"
-
-struct pad_s {
-    u8 unk_0x000[0x55C];
-    u32 paddata;            /* 0x55C */
-    u8 unk_0x560[0x4];
-    u32 buttons;            /* 0x564 */
-};
+#include "nups2/ps2ctl.h"
+#include "edtools/edui.h"
 
 extern void *edai_active_menu;
 extern s32 D_00631C3C;
@@ -46,7 +41,7 @@ extern s32 D_00631C40;
 extern s32 D_00631C44;
 extern s32 D_00631C48;
 extern void *edai_options_menu;
-extern struct edmenu_s *edai_selecttype_menu;
+extern struct eduimenu_s *edai_selecttype_menu;
 extern struct nuvec_s edai_cam_pos;
 extern u8 LevelAIType[];
 extern u8 D_006203F8[];
@@ -63,10 +58,8 @@ extern f32 D_00633350;
 extern f32 D_00633354;
 
 extern void eduiMenuDestroy(void *menu);
-extern void eduiMenuRender(void *menu);
-extern void eduiMenuProcess(void *menu, struct pad_s *pad);
-extern s32 SaveAI(s32 arg);
-extern void *eduiCreateMessageMenu(s32 arg, void *msg, s32 mode);
+extern void eduiMenuProcess(void *menu, struct nupad_s *pad);
+extern void SaveAI(void);
 extern void edcamSet(void);
 extern void edcamSetPosAng(struct nuvec_s *pos, s32 a, s32 b);
 extern void DrawCameraTarget(struct nuvec_s *pos);
@@ -102,7 +95,7 @@ extern s32 VEHICLECONTROL;
 extern struct nuvec_s *pos_START;
 extern f32 edai_cam_ax;
 extern f32 edai_cam_ay;
-extern void edcamMove(struct pad_s *pad);
+extern void edcamMove(struct nupad_s *pad);
 extern void edcamGetPosAng(struct nuvec_s *pos, f32 *ax, f32 *ay);
 extern void AdjustPosY(struct nuvec_s *pos);
 
@@ -126,11 +119,6 @@ extern u8 D_00620418[];
 extern u8 D_00631C78[];
 extern u8 D_005C9520[][0x1C];
 
-struct eduiitem_s {
-    u8 unk_0x00[0x10];
-    u8 field_0x10;
-};
-extern struct eduiitem_s *edui_last_item;
 
 extern void edcamSetPos(struct nuvec_s *pos);
 
@@ -155,17 +143,17 @@ extern s32 eduiMenuAttach(void *menu, void *child);
 
 /* callbacks referenced by edaiInit / edaicbSelectType */
 void edaiCbCancelOptMenu(void);
-void edaicbSelectType(struct edmenu_s *parent);
-void edaicbSaveAIData(s32 arg);
+void edaicbSelectType(struct eduimenu_s *parent);
+void edaicbSaveAIData(struct eduimenu_s *menu);
 void edaicbTerrainToggle(s32 a0, u8 *item);
-void edaicbSetType(s32 a0, u8 *item);
+void edaicbSetType(struct eduimenu_s *menu, struct eduiitem_s *item);
 void edaiCbCancelSelectType(void);
 
 /* forward decls for same-unit callees */
 void edaiDRAW(void);
 void edaiDrawInfo(void);
 void edaiHIGHLIGHT(void);
-void edaiDoInput(struct pad_s *pad);
+void edaiDoInput(struct nupad_s *pad);
 
 void edaiHIGHLIGHT(void)
 {
@@ -272,7 +260,7 @@ void edaiJUMP(void)
     }
 }
 
-void edaicbSelectType(struct edmenu_s *parent)
+void edaicbSelectType(struct eduimenu_s *parent)
 {
     struct edai_itemdef_s buf;
     s32 i;
@@ -292,7 +280,7 @@ void edaicbSelectType(struct edmenu_s *parent)
                                                 edaicbSetType,
                                                 D_005C9520[LevelAIType[i]]));
             if (sel == 1) {
-                edai_selecttype_menu->sel_item = edui_last_item;
+                edai_selecttype_menu->current = edui_last_item;
             }
         }
         eduiMenuAttach(parent, edai_selecttype_menu);
@@ -485,11 +473,11 @@ void edaiInit(void)
         eduiMenuAddItem(edai_options_menu,
                         eduiItemToggleCreate(1, &buf, 0, 1, edaicbTerrainToggle,
                                              D_00620418));
-        edui_last_item->field_0x10 = D_00631C3C;
+        edui_last_item->on = D_00631C3C;
     }
 }
 
-void edaiDoInput(struct pad_s *pad)
+void edaiDoInput(struct nupad_s *pad)
 {
     s32 i;
     struct aitype_s *type;
@@ -503,10 +491,10 @@ void edaiDoInput(struct pad_s *pad)
             edcamSetPos(&edai_cam_pos);
         }
     }
-    if (pad->buttons & 0x80) {
+    if (pad->paddata_db & 0x80) {
         edai_active_menu = edai_options_menu;
     }
-    if ((pad->buttons & 0x40) && LEVELAICOUNT != 0x60 && D_00631C40 >= 0) {
+    if ((pad->paddata_db & 0x40) && LEVELAICOUNT != 0x60 && D_00631C40 >= 0) {
         AITab[LEVELAICOUNT].pos[D_00631C48] = edai_cam_pos;
         AdjustPosY(&AITab[LEVELAICOUNT].pos[D_00631C48]);
         type = &AIType[D_00631C44];
@@ -517,7 +505,7 @@ void edaiDoInput(struct pad_s *pad)
             D_00631C48 = 0;
         }
     }
-    if (pad->buttons & 0x10) {
+    if (pad->paddata_db & 0x10) {
         if (D_00631C4C != -1) {
             LEVELAICOUNT--;
             if (D_00631C4C < LEVELAICOUNT) {
@@ -546,18 +534,18 @@ void edaiCbCancelSelectType(void)
     edai_selecttype_menu = 0;
 }
 
-void edaicbSetType(s32 a0, u8 *item)
+void edaicbSetType(struct eduimenu_s *menu, struct eduiitem_s *item)
 {
-    s32 t = *(s32 *)(item + 0xC);
+    s32 t = item->value;
     D_00631C48 = 0;
     D_00631C40 = t;
     D_00631C44 = LevelAIType[t];
 }
 
-void edaicbSaveAIData(s32 arg)
+void edaicbSaveAIData(struct eduimenu_s *menu)
 {
-    SaveAI(arg);
-    eduiCreateMessageMenu(arg, D_006203F8, 1);
+    SaveAI();
+    eduiCreateMessageMenu(menu, D_006203F8, 1);
 }
 
 void edaicbTerrainToggle(s32 a0, u8 *item)
@@ -603,7 +591,7 @@ void edaiEnter(void)
     D_00631C48 = 0;
 }
 
-s32 edaiProc(struct pad_s *pad)
+s32 edaiProc(struct nupad_s *pad)
 {
     if (screendump) {
         return 0;
@@ -624,7 +612,7 @@ s32 edaiProc(struct pad_s *pad)
         D_00633354 = D_0062E34C;
     }
     edaiDoInput(pad);
-    if (pad->buttons & 0x800) {
+    if (pad->paddata_db & 0x800) {
         ResetAI();
         return 1;
     }

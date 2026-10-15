@@ -240,18 +240,10 @@
 #include "game/gametypes.h"
 #include "gamelib/terrain.h"
 #include "game/creature.h"
+#include "nups2/ps2ctl.h"
 
 extern s32 Level;
 extern struct numtx_s mTEMP;
-
-/* The game pad (creature.h forward-declares the tag). */
-struct pad_s {
-    char pad_000[0x55C];
-    u32 paddata;               /* 0x55C held buttons */
-    char pad_560[0x57E - 0x560];
-    u8 l_alg_x;                /* 0x57E left stick */
-    u8 l_alg_y;                /* 0x57F */
-};
 
 /* paddata d-pad bits (libpad SCE_PADLup/right/down/left). */
 #define PAD_UP    0x1000
@@ -1000,7 +992,7 @@ extern f32 AtmosphericPressureHackedZ;
 extern struct nuvec_s WBIntroGliderPos;
 extern s32 WBIntroOn;
 
-void ProcessWeatherBossLevel(struct pad_s *pad)
+void ProcessWeatherBossLevel(struct nupad_s *pad)
 {
     ProcessWBIntro();
     if (WBIntroOn == 0) {
@@ -1387,7 +1379,7 @@ struct battleship_s {
 };
 extern struct battleship_s BattleShipList[6];
 
-extern struct cammtx_s GameCam;
+extern struct cammtx_s GameCam[];
 
 extern f32 DotProduct(struct nuvec_s *a, struct nuvec_s *b);
 extern void InitBattleShip(struct nuvec_s *pos, f32 angle, s32 index);
@@ -1408,8 +1400,8 @@ s32 StillLockedOnTarget(struct nuvec_s *target)
 
     if (FlyingLevelExtro == 0) {
         fwd = SetNuVecPntr(0.0f, 0.0f, 1.0f);
-        NuVecMtxRotate(&view, fwd, &GameCam.m);
-        NuVecSub(&rel, target, &GameCam.pos);
+        NuVecMtxRotate(&view, fwd, &GameCam[0].m);
+        NuVecSub(&rel, target, &GameCam[0].pos);
         dist = NuVecMag(&rel);
         if (10.0f < dist) {
             NuVecScale(&rel, &rel, 1.0f / dist);
@@ -1591,12 +1583,12 @@ void DrawGliderTarget(void)
     struct nuvec_s dir;
     s32 obj = 0x72;
 
-    NuVecSub(&dir, &GliderTargetPos, &GameCam.pos);
+    NuVecSub(&dir, &GliderTargetPos, &GameCam[0].pos);
     NuVecScale(&centre, &dir, 5.0f / NuVecMag(&dir));
-    NuVecAdd(&centre, &centre, (struct nuvec_s *)&GameCam.m._30);
+    NuVecAdd(&centre, &centre, (struct nuvec_s *)&GameCam[0].m._30);
     /* (ObjTab + obj), not ObjTab[obj]: the index form changes codegen. */
     if ((ObjTab + obj)->obj.special != 0) {
-        mTEMP = GameCam.m;
+        mTEMP = GameCam[0].m;
         NuMtxPreScale(&mTEMP, SetNuVecPntr(0.2f, 0.2f, 0.0f));
         *(struct nuvec_s *)&mTEMP._30 = centre;
         NuRndrGScnObj((ObjTab + obj)->obj.scene->gobjs[(ObjTab + obj)->obj.special->instance->objid],
@@ -1705,15 +1697,15 @@ void InitAtlas(struct NEWBUGGY *Atlas, struct nuvec_s *Pos, f32 Radius, s32 Type
 extern struct gtimer_s GameTimer;
 
 /* Turns the pad into the atlasphere's camera-relative steering input. */
-void ControlAtlas(struct NEWBUGGY *Atlas, struct pad_s *Pad, f32 DeltaTime)
+void ControlAtlas(struct NEWBUGGY *Atlas, struct nupad_s *Pad, f32 DeltaTime)
 {
     struct nuvec_s ctrl;
     f32 anx;
     f32 anz;
     f32 scale;
 
-    anx = (f32)(Pad->l_alg_x - 0x7F);
-    anz = (f32)(Pad->l_alg_y - 0x7F);
+    anx = (f32)(Pad->rdata.l_alg_x - 0x7F);
+    anz = (f32)(Pad->rdata.l_alg_y - 0x7F);
     if (Pad->paddata & PAD_DOWN) {
         anz = 127.0f;
     }
@@ -1747,7 +1739,7 @@ void ControlAtlas(struct NEWBUGGY *Atlas, struct pad_s *Pad, f32 DeltaTime)
     }
     Atlas->inputmag = NuVecMag(&ctrl);
     if (Atlas->inputmag >= 40.0f) {
-        Atlas->inputang = ((GameCam.yrot + NuAtan2D(ctrl.x, ctrl.z)) & 0xFFFF) / 182.04445f;
+        Atlas->inputang = ((GameCam[0].yrot + NuAtan2D(ctrl.x, ctrl.z)) & 0xFFFF) / 182.04445f;
         Atlas->inputmag = ((Atlas->inputmag - 40.0f) * 1.02f) / 88.0f;
         if (Atlas->inputmag > 1.0f) {
             Atlas->inputmag = 1.0f;
@@ -3060,8 +3052,8 @@ void DrawVehMasks(void)
             continue;
         }
         if (Level == 0x17) {
-            NuMtxSetRotationY(&mTEMP, NuAtan2D(GameCam.pos.x - mask->pos.x,
-                                               GameCam.pos.z - mask->pos.z) + 0x8000);
+            NuMtxSetRotationY(&mTEMP, NuAtan2D(GameCam[0].pos.x - mask->pos.x,
+                                               GameCam[0].pos.z - mask->pos.z) + 0x8000);
         } else {
             NuMtxSetRotationY(&mTEMP, (s32)(mask->drawangy * 182.04445f));
         }
@@ -3315,11 +3307,11 @@ s32 GetMaxLevelObjectives(void)
 }
 
 
-extern void MoveGlider(struct creature_s *c, struct pad_s *pad);
-extern void MoveAtlas(struct creature_s *c, struct pad_s *pad);
-extern void MovePlayerJeep(struct creature_s *c, struct pad_s *pad);
+extern void MoveGlider(struct creature_s *c, struct nupad_s *pad);
+extern void MoveAtlas(struct creature_s *c, struct nupad_s *pad);
+extern void MovePlayerJeep(struct creature_s *c, struct nupad_s *pad);
 
-void MoveVehicle(struct creature_s *c, struct pad_s *pad)
+void MoveVehicle(struct creature_s *c, struct nupad_s *pad)
 {
     switch (c->obj.vehicle) {
     case 0x81:
@@ -3458,10 +3450,10 @@ void WeatherResearchReset(void)
     Level_TargetTime = 0.7f;
     InitGlider(&PlayerGlider, &start, WRStartAng);
     GliderCamHighTimer = 0.0f;
-    GameCam.m._30 = start.x + 0.0f;
-    GameCam.m._31 = start.y + 2.0f;
-    GameCam.m._32 = start.z + 5.0f;
-    ResetGameCameras(&GameCam, 1);
+    GameCam[0].m._30 = start.x + 0.0f;
+    GameCam[0].m._31 = start.y + 2.0f;
+    GameCam[0].m._32 = start.z + 5.0f;
+    ResetGameCameras(&GameCam[0], 1);
     InitGliderBullets();
     InitBigGuns();
     InitGliderBombs();
@@ -3485,10 +3477,10 @@ void SpaceArenaReset(s32 PlayerDead)
     Level_GliderCeiling = 35.0f;
     InitGlider(&PlayerGlider, &CrashteroidsStart, CrashteroidsStartAngle);
     GliderCamHighTimer = 0.0f;
-    GameCam.m._30 = CrashteroidsStart.x + 0.0f;
-    GameCam.m._31 = CrashteroidsStart.y + 2.0f;
-    GameCam.m._32 = CrashteroidsStart.z + 5.0f;
-    ResetGameCameras(&GameCam, 1);
+    GameCam[0].m._30 = CrashteroidsStart.x + 0.0f;
+    GameCam[0].m._31 = CrashteroidsStart.y + 2.0f;
+    GameCam[0].m._32 = CrashteroidsStart.z + 5.0f;
+    ResetGameCameras(&GameCam[0], 1);
     InitZoffaUFOs();
     InitSpaceStations();
     InitAsteroids();
@@ -3522,11 +3514,11 @@ void FireFlyReset(s32 PlayerDead)
     FlyingLevelVictoryDanceTimer = FIREFLYVICDANCETIME;
     FireFlyIntroOldAction = -1;
     InitGlider(&PlayerGlider, &FireFlyStart, FireFlyStartAngle);
-    GameCam.m._30 = FireFlyStart.x + 0.0f;
-    GameCam.m._31 = FireFlyStart.y + 2.0f;
-    GameCam.m._32 = FireFlyStart.z + 5.0f;
+    GameCam[0].m._30 = FireFlyStart.x + 0.0f;
+    GameCam[0].m._31 = FireFlyStart.y + 2.0f;
+    GameCam[0].m._32 = FireFlyStart.z + 5.0f;
     GliderCamHighTimer = 0.0f;
-    ResetGameCameras(&GameCam, 1);
+    ResetGameCameras(&GameCam[0], 1);
     InitZoffaUFOs();
     InitGunBoats();
     InitBattleShips();
@@ -3858,7 +3850,7 @@ static inline void ZoffaUFORespawn(void)
     }
 }
 
-void ProcessFireFlyLevel(struct pad_s *pad)
+void ProcessFireFlyLevel(struct nupad_s *pad)
 {
     TeleportManager();
     MoveZoffaUFOs();
@@ -3876,7 +3868,7 @@ extern s32 FarmFrame;
 extern void FarmReset(s32 playerdead);
 extern void MovePlane(struct plane_s *plane);
 
-void ProcessFarmLevel(struct pad_s *pad)
+void ProcessFarmLevel(struct nupad_s *pad)
 {
     FarmFrame++;
     if (GliderCamHighTimer > 0.0f) {
@@ -3903,7 +3895,7 @@ void ProcessFarmLevel(struct pad_s *pad)
 extern s32 CRASHTEROIDSAMBIENTVOL;
 extern s32 ActiveAsteroidListNum;
 
-void ProcessSpaceArenaLevel(struct pad_s *pad)
+void ProcessSpaceArenaLevel(struct nupad_s *pad)
 {
     if (CRASHTEROIDSAMBIENTVOL != 0) {
         MyGameSfxLoop(0xDA, 0, CRASHTEROIDSAMBIENTVOL);
@@ -3920,7 +3912,7 @@ void ProcessSpaceArenaLevel(struct pad_s *pad)
     CheckForPotentialMidAirCollisions();
 }
 
-void ProcessWeatherResearchLevel(struct pad_s *pad)
+void ProcessWeatherResearchLevel(struct nupad_s *pad)
 {
     ProcessGliderBullets();
     ProcessGliderBombs();

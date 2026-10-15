@@ -8,7 +8,7 @@ struct NUGCUTSCENE_s;
 struct instNUGCUTSCENE_s;
 struct NUTRIGGERSYS_s;
 struct instNUTRIGGERSYS_s;
-struct NuFPar;
+struct nufpar_s;
 union variptr_u;
 
 struct NuSceneCutscene {
@@ -50,9 +50,9 @@ struct NuSceneInstance {
 
 struct NuSceneData *NuSceneDataLoad(char *dir, union variptr_u *heap, union variptr_u *heapend);
 int NuSceneInstanceRunScript(struct NuSceneInstance *inst, char *name);
-void LoadCutsceneData(struct NuFPar *parser, char *dir, struct NuSceneData *scene, struct NuSceneCutscene *cutscene,
+void LoadCutsceneData(struct nufpar_s *parser, char *dir, struct NuSceneData *scene, struct NuSceneCutscene *cutscene,
                       union variptr_u *heap, union variptr_u *heapend);
-struct NuSceneScript *LoadCutsceneScript(struct NuFPar *parser, struct NuSceneData *scene, union variptr_u *heap,
+struct NuSceneScript *LoadCutsceneScript(struct nufpar_s *parser, struct NuSceneData *scene, union variptr_u *heap,
                                          union variptr_u *heapend);
 void NuSceneManagerSysInit(void);
 void NuSceneManagerSysUpdate(void);

@@ -10,11 +10,7 @@
 
 #include "nu_types.h"
 
-typedef struct DmaTag {
-    u32 ctrl;
-    u32 addr;
-    u32 vifcode[2];
-} DmaTag;
+#include "nups2/nups2types.h"
 
 typedef union PartLane {
     f32 f;
@@ -27,9 +23,9 @@ typedef struct PartEffectVert {
 } PartEffectVert;
 
 typedef struct PartEffectList {
-    DmaTag tag;
+    struct DmaTag tag;
     u32 params[4];
-    DmaTag datatag;
+    struct DmaTag datatag;
     int corners[4][2];
     u32 pad[4];
     PartEffectVert verts[64];
@@ -109,7 +105,7 @@ PartEffectList *CreateDmaPartEffectList(PartEffectList *list, int *size) {
 }
 
 
-DmaTag *CreateDmaParticleSet(DmaTag *set, int *size) {
+struct DmaTag *CreateDmaParticleSet(struct DmaTag *set, int *size) {
     GifHeader gif;
     u32 *p;
     PartSetVert *v;
@@ -136,8 +132,8 @@ DmaTag *CreateDmaParticleSet(DmaTag *set, int *size) {
 }
 
 
-void LinkDmaParticalSets(DmaTag **sets, int count) {
-    DmaTag *tag;
+void LinkDmaParticalSets(struct DmaTag **sets, int count) {
+    struct DmaTag *tag;
     int i;
 
     tag = sets[count - 1];

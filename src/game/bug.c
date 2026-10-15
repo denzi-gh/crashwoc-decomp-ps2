@@ -82,7 +82,7 @@ extern s32 VEHICLECONTROL;
 extern f32 NuTrigTable[];
 extern struct RPos_s *best_cRPos;
 
-extern struct cammtx_s GameCam;
+extern struct cammtx_s GameCam[];
 
 extern s32 qrand(void);
 extern f32 NuFsqrt(f32 x);
@@ -228,7 +228,7 @@ void UpdateBugLight(struct creature_s *c) {
             bug_pos.x = player->obj.pos.x;
             bug_pos.y = player->obj.pos.y + player->obj.top * player->obj.SCALE;
             bug_pos.z = player->obj.pos.z;
-            ang = NuAtan2D(bug_pos.x - GameCam.pos.x, bug_pos.z - GameCam.pos.z);
+            ang = NuAtan2D(bug_pos.x - GameCam[0].pos.x, bug_pos.z - GameCam[0].pos.z);
             bug_pos.x = bug_pos.x + NuTrigTable[ang] * mechlight_distance;
             bug_span = 1.5f;
             bug_pos.z = bug_pos.z + NuTrigTable[(u16)(ang + 0x4000)] * mechlight_distance;
@@ -297,7 +297,7 @@ void UpdateBugLight(struct creature_s *c) {
         bug_pos.x = player->obj.pos.x;
         bug_pos.y = player->obj.pos.y + player->obj.top * player->obj.SCALE;
         bug_pos.z = player->obj.pos.z;
-        ang = NuAtan2D(bug_pos.x - GameCam.pos.x, bug_pos.z - GameCam.pos.z);
+        ang = NuAtan2D(bug_pos.x - GameCam[0].pos.x, bug_pos.z - GameCam[0].pos.z);
         bug_pos.x = bug_pos.x + NuTrigTable[ang] * buglight_distance;
         bug_pos.z = bug_pos.z + NuTrigTable[(u16)(ang + 0x4000)] * buglight_distance;
     }

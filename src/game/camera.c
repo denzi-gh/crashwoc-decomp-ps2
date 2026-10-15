@@ -34,6 +34,7 @@
 #include "game/gametypes.h"
 #include "gamelib/terrain.h"
 #include "game/creature.h"
+#include "nups2/ps2ctl.h"
 
 #define NULL ((void *)0)
 
@@ -658,23 +659,6 @@ inline s32 InSplineArea(struct nuvec_s *pos, struct nugspline_s *spl) {
 /* MoveGameCamera                                                      */
 /* ------------------------------------------------------------------ */
 
-/* Vehicle-switch (VTog) camera splines. */
-struct vtogcam_s {
-    u8 pad[0x4];
-    struct nugspline_s *pCAM;  /* 0x04 */
-    struct nugspline_s *pLOOK; /* 0x08 */
-};
-
-/* The u64 member gives the pad 8-byte alignment; that is what lets the
- * merged two-bit button test below load 0x558 as one doubleword. */
-struct nupad_s {
-    u8 unk_0x00[0x55C];
-    u32 paddata;              /* 0x55C */
-    u32 buttons;              /* 0x560 */
-    u32 oldpaddata;           /* 0x564 */
-    u64 flags2;               /* 0x568 */
-};
-
 extern struct nucamera_s *pNuCam;
 extern struct spltab_s SplTab[];
 extern struct cursor_s Cursor;
@@ -705,7 +689,7 @@ extern u16 best_railangle;
 extern f32 vtog_time;
 extern f32 vtog_duration;
 extern s32 vtog_blend;
-extern struct vtogcam_s *pVTog;
+extern struct vtog_s *pVTog;
 
 extern struct nugspline_s *bonus_pCAM;
 extern f32 bonus_time;

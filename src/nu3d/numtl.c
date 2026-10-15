@@ -40,6 +40,7 @@
 #include "nucore/nuerror.h"
 #include "numath/numathtypes.h"
 #include "nucore/nucoretypes.h"
+#include "nups2/nups2types.h"
 
 struct numtlfile_s {
     struct numtl_s *next;
@@ -78,20 +79,6 @@ struct numtlfile_s {
     float du;
     float dv;
 };
-
-typedef struct GsZbufReg {
-    u64 zbp : 9;
-    u64 pad09 : 15;
-    u64 psm : 4;
-    u64 pad1c : 4;
-    u64 zmsk : 1;
-    u64 pad21 : 31;
-} GsZbufReg;
-
-typedef struct GsZbufPair {
-    GsZbufReg zbuf;
-    u64 addr;
-} GsZbufPair;
 
 
 #define NUMTL_VALID 0x01
@@ -159,7 +146,7 @@ extern struct numtl_s *D_0062EBDC;
 extern char D_006144E8[];
 #define msg_alloc_failed D_006144E8
 
-extern GsZbufPair D_002EA1A0;
+extern struct NuPs2GsReg D_002EA1A0;
 #define NuPs2ZBufReg0 D_002EA1A0
 
 extern char D_0062EBD0[];

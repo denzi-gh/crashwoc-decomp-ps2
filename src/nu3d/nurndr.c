@@ -134,7 +134,7 @@
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
 #include "nups2/ps2txtr.h"
-typedef unsigned int u128 __attribute__((mode(TI)));
+#include "nups2/nups2types.h"
 
 typedef struct GsFrameReg {
     u64 fbp : 9;
@@ -146,31 +146,11 @@ typedef struct GsFrameReg {
     u64 fbmsk : 32;
 } GsFrameReg;
 
-typedef struct GifTag {
-    u64 nloop : 15;
-    u64 eop : 1;
-    u64 pad16 : 30;
-    u64 pre : 1;
-    u64 prim : 11;
-    u64 flg : 2;
-    u64 nreg : 4;
-    u64 regs;
-} GifTag;
-
 typedef union GifTagQuad {
-    GifTag tag;
+    struct GifTag tag;
     u64 dword[2];
     u32 word[4];
 } GifTagQuad;
-
-typedef struct GsZbufReg {
-    u64 zbp : 9;
-    u64 pad09 : 15;
-    u64 psm : 4;
-    u64 pad1c : 4;
-    u64 zmsk : 1;
-    u64 pad21 : 31;
-} GsZbufReg;
 
 typedef struct GsTestReg {
     u64 ate : 1;
@@ -183,11 +163,6 @@ typedef struct GsTestReg {
     u64 ztst : 2;
     u64 pad13 : 45;
 } GsTestReg;
-
-typedef struct GsZbufPair {
-    GsZbufReg zbuf;
-    u64 addr;
-} GsZbufPair;
 
 extern struct numtl_s *D_00633078;
 #define GlobalMtl D_00633078
@@ -382,7 +357,7 @@ struct FxSprite2 {
 
 extern void NuPs2GetCurrentBackBuffer(GsFrameReg *reg);
 extern void NuPs2GetCurrentFrontBuffer(GsFrameReg *reg);
-extern void NuPs2GetCurrentZBuffer(GsZbufReg *reg);
+extern void NuPs2GetCurrentZBuffer(struct GsZbufReg *reg);
 extern u32 *NuPs2CopyCurrentBackBuffer(u32 *packet);
 extern u32 *NuPs2CopyCurrentFrontBuffer(u32 *packet);
 extern int nurndr_pixel_p2w;
@@ -401,7 +376,7 @@ extern struct numtl_s *nurndr_forced_mtl;
 extern struct numtl_s **nurndr_forced_mtl_table;
 extern void NuRndrOTInsertTriBatch(struct numtx_s *mtx, int clip, struct numtl_s *mtl, void *tris, int count);
 extern u32 *vpDmaTag_Call(u32 *packet, void *addr);
-extern GsZbufPair D_002EA1A0;
+extern struct NuPs2GsReg D_002EA1A0;
 #define NuPs2ZBufReg0 D_002EA1A0
 extern u32 *vpDmaTag_Cnt(u32 *packet);
 
@@ -451,7 +426,7 @@ void NuRndrSetZBuffer(struct nurndrstream_s *stream, int zbuffer) {
 
 void NuRndrSetRTarget(struct nurndrstream_s *stream, int target) {
     GsFrameReg frame;
-    GsZbufReg zbuf;
+    struct GsZbufReg zbuf;
 
     if (target <= 0) {
         stream->cur.w = vpDmaTag_CntEx(stream->cur.w, 0x13000000, 0x50000000);

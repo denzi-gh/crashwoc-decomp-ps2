@@ -12,18 +12,16 @@
  */
 
 #include "nu_libc.h"
+#include "nu_types.h"
 
 #include "nu3d/nutex.h"
-
-typedef unsigned char u_char;
-typedef unsigned int u_int;
 
 extern void *NuMemAllocFn(int size, char *file, int line);
 extern void NuMemFreeFn(void *ptr, char *file, int line);
 
-extern u_int D_002E98B0[256];
+extern u32 D_002E98B0[256];
 #define block4_lut D_002E98B0
-extern u_int D_002E9CB0[128];
+extern u32 D_002E9CB0[128];
 #define block8_lut D_002E9CB0
 extern int D_002E9EB0[32];
 #define page4_block_table D_002E9EB0
@@ -36,13 +34,13 @@ extern int D_002EA030[32];
 extern char D_00616130[];
 #define bitconv_srcfile D_00616130
 
-int BlockConv4to32(u_char *in, u_char *out)
+int BlockConv4to32(u8 *in, u8 *out)
 {
-    u_int i, j, k;
-    u_int index;
-    u_int pos, shift0, shift1, offset;
-    u_char lo, hi;
-    u_char *src;
+    u32 i, j, k;
+    u32 index;
+    u32 pos, shift0, shift1, offset;
+    u8 lo, hi;
+    u8 *src;
     int n;
 
     n = 0;
@@ -67,16 +65,16 @@ int BlockConv4to32(u_char *in, u_char *out)
     return 0;
 }
 
-int PageConv4to32(int width, int height, u_char *in, u_char *out)
+int PageConv4to32(int width, int height, u8 *in, u8 *out)
 {
     int *block_x;
     int *block_y;
-    u_char in_block[256];
-    u_char out_block[256];
-    u_char *src;
-    u_char *dst;
-    u_char *out_src;
-    u_char *out_dst;
+    u8 in_block[256];
+    u8 out_block[256];
+    u8 *src;
+    u8 *dst;
+    u8 *out_src;
+    u8 *out_dst;
     int nblocks_w, nblocks_h;
     int in_line, in_size;
     int out_line, out_size;
@@ -126,10 +124,10 @@ int PageConv4to32(int width, int height, u_char *in, u_char *out)
     return 0;
 }
 
-inline int BlockConv8to32(u_char *in, u_char *out)
+inline int BlockConv8to32(u8 *in, u8 *out)
 {
-    u_int i, j, k;
-    u_int index;
+    u32 i, j, k;
+    u32 index;
     int n;
 
     n = 0;
@@ -145,16 +143,16 @@ inline int BlockConv8to32(u_char *in, u_char *out)
     return 0;
 }
 
-int PageConv8to32(int width, int height, u_char *in, u_char *out)
+int PageConv8to32(int width, int height, u8 *in, u8 *out)
 {
     int *block_x;
     int *block_y;
-    u_char in_block[256];
-    u_char out_block[256];
-    u_char *src;
-    u_char *dst;
-    u_char *out_src;
-    u_char *out_dst;
+    u8 in_block[256];
+    u8 out_block[256];
+    u8 *src;
+    u8 *dst;
+    u8 *out_src;
+    u8 *out_dst;
     int nblocks_w, nblocks_h;
     int in_line, in_size;
     int out_line, out_size;
@@ -204,12 +202,12 @@ int PageConv8to32(int width, int height, u_char *in, u_char *out)
     return 0;
 }
 
-int Conv4to32(int width, int height, u_char *in, u_char *out)
+int Conv4to32(int width, int height, u8 *in, u8 *out)
 {
-    u_char in_page[0x2000];
-    u_char out_page[0x2000];
-    u_char *page;
-    u_char *image;
+    u8 in_page[0x2000];
+    u8 out_page[0x2000];
+    u8 *page;
+    u8 *image;
     int npages_w, npages_h;
     int in_line, out_line;
     int in_rows, out_rows;
@@ -271,12 +269,12 @@ int Conv4to32(int width, int height, u_char *in, u_char *out)
     return 0;
 }
 
-int Conv8to32(int width, int height, u_char *in, u_char *out)
+int Conv8to32(int width, int height, u8 *in, u8 *out)
 {
-    u_char in_page[0x2000];
-    u_char out_page[0x2000];
-    u_char *page;
-    u_char *image;
+    u8 in_page[0x2000];
+    u8 out_page[0x2000];
+    u8 *page;
+    u8 *image;
     int npages_w, npages_h;
     int in_line, out_line;
     int in_rows, out_rows;
@@ -345,8 +343,8 @@ void NuTexSwizzelBits(struct nutex_s *tex)
     int width, height;
     int size;
     int i;
-    u_char *bits;
-    u_char *swizzled;
+    u8 *bits;
+    u8 *swizzled;
 
     if (tex->mmcnt < 2) {
         maxlevel = tex->mmcnt ? tex->mmcnt - 1 : 0;

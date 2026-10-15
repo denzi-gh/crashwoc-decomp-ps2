@@ -115,41 +115,9 @@
 #include "nu3d/nuanim.h"
 #include "nu3d/nucamera.h"
 #include "gamelib/terrain.h"
-
-struct pad_s {
-    char pad000[0x55C];
-    unsigned int paddata;
-    char pad560[0x564 - 0x560];
-    unsigned int buttons;
-    char pad568[0x580 - 0x568];
-    unsigned char rotleft;
-    unsigned char rotright;
-    unsigned char rotup;
-    unsigned char rotdown;
-};
-
-struct eduimenu_s {
-    void *head;
-    void *tail;
-    void *current;
-    void *cursor;
-    int x;
-    int y;
-    int w;
-    int h;
-};
-
-struct eduistyle_s {
-    unsigned int colour[4];
-};
-
-struct edobjitem_s {
-    char pad00[0x0C];
-    int value;
-    unsigned char toggle;
-    char pad11[0x4C - 0x11];
-    float fvalue;
-};
+#include "nups2/ps2ctl.h"
+#include "gamelib/debris.h"
+#include "edtools/edui.h"
 
 struct edobject_s {
     int instance;
@@ -187,14 +155,6 @@ struct edobject_s {
     float bouncy_player_grav;
     float bouncy_tension;
     float bouncy_damping;
-};
-
-struct debtypedef_s {
-    char name[0x10];
-    char pad10[0x20 - 0x10];
-    signed char gensort;
-    char pad21[0x50 - 0x21];
-    struct nuvec_s varstart;
 };
 
 struct edobjinstance_s {
@@ -248,7 +208,6 @@ extern int edobj_cam_ay;
 extern int edobj_emitrotz;
 extern int edobj_emitroty;
 extern struct nucamera_s global_camera;
-extern struct debtypedef_s *debtab[];
 extern float D_0062CF04;
 extern float D_0062CF24;
 extern float D_0062CF28;
@@ -452,13 +411,13 @@ extern void eduiMenuDetach(void *menu);
 extern void edobjObjectDestroy(int instance);
 extern void edobjConvertPathToAnim(int instance);
 extern void edcamSetPos(struct nuvec_s *pos);
-extern void edcamMove(struct pad_s *pad);
+extern void edcamMove(struct nupad_s *pad);
 extern void edcamGetPosAng(struct nuvec_s *pos, int *ax, int *ay);
 extern struct nuvec_s *edmainQueryLocVec(void);
 extern float NuFsqrt(float x);
 extern char *edbitsGetSoundName(int id);
-extern void eduiMenuProcess(void *menu, struct pad_s *pad);
-extern void edobjDoInput(struct pad_s *pad);
+extern void eduiMenuProcess(void *menu, struct nupad_s *pad);
+extern void edobjDoInput(struct nupad_s *pad);
 extern void edobjDetermineNearestObject(float range);
 extern void edobjDetermineNearestWaypoint(float range);
 extern void edobjDetermineNearestParticle(float range);
@@ -468,7 +427,6 @@ extern int NuFileSize(char *name);
 extern void edobjObjectReset(void);
 extern int edobjFileSaveObjects(char *filename);
 extern int edobjFileLoadObjects(char *filename);
-extern void eduiCreateMessageMenu(void *menu, char *msg, int flag);
 extern void edcamSet(void);
 extern void edobjDrawCursor(void);
 extern void edbitsDrawCube(float x, float y, float z, float sizex, float sizey, float sizez,
@@ -484,7 +442,6 @@ extern void NuFntPrintEx(int x, int y, int flags, char *fmt, ...);
 extern int NuRndrLine3d(struct nuvtx_tc1_s *line, void *mtl, struct numtx_s *mtx);
 extern void NuRndrRect2di(int x, int y, int w, int h, int colour, void *mtl);
 extern void NuRndrLine2di(int x0, int y0, int x1, int y1, int colour, void *mtl);
-extern void eduiMenuRender(void *menu);
 extern int NuRndrGScnObj(struct nugobj_s *gobj, struct numtx_s *mtx);
 extern unsigned char object_switches[];
 extern struct numtx_s numtx_identity;
@@ -516,42 +473,40 @@ extern void *eduiItemSliderCreate(int value, struct eduistyle_s *style, int grou
 extern void *eduiItemSliderCreateInt(int value, struct eduistyle_s *style, int group,
                                      void *change, int min, int max, int val, char *text);
 extern void eduiItemSliderSetFmt(void *item, char *fmt);
-extern void eduiItemSliderSetGranularity(void *item, float granularity);
-extern struct edobjitem_s *edui_last_item;
 extern void edobjcbCancelInstanceMenu(void);
-extern void edobjcbSetInstanceType(void *menu, struct edobjitem_s *item);
+extern void edobjcbSetInstanceType(void *menu, struct eduiitem_s *item);
 extern void edobjcbSwitchTypeMenu(struct eduimenu_s *menu);
-extern void edobjcbSetSwitchType(void *menu, struct edobjitem_s *item);
+extern void edobjcbSetSwitchType(void *menu, struct eduiitem_s *item);
 extern void edobjcbCancelSwitchTypeMenu(void);
 extern void edobjcbCancelSwitchMenu(void);
-extern void edobjcbSetSwitchId(void *menu, struct edobjitem_s *item);
-extern void edobjcbSetSwitchDelay(void *menu, struct edobjitem_s *item);
-extern void edobjcbSetSwitchVar(void *menu, struct edobjitem_s *item);
+extern void edobjcbSetSwitchId(void *menu, struct eduiitem_s *item);
+extern void edobjcbSetSwitchDelay(void *menu, struct eduiitem_s *item);
+extern void edobjcbSetSwitchVar(void *menu, struct eduiitem_s *item);
 extern void edobjcbCancelAnimPropertiesMenu(void);
-extern void edobjcbChangeAnimSpeed(void *menu, struct edobjitem_s *item);
-extern void edobjcbChangeAnimPause(void *menu, struct edobjitem_s *item);
-extern void edobjcbChangeAnimStartOffset(void *menu, struct edobjitem_s *item);
-extern void edobjcbOscillateToggle(void *menu, struct edobjitem_s *item);
+extern void edobjcbChangeAnimSpeed(void *menu, struct eduiitem_s *item);
+extern void edobjcbChangeAnimPause(void *menu, struct eduiitem_s *item);
+extern void edobjcbChangeAnimStartOffset(void *menu, struct eduiitem_s *item);
+extern void edobjcbOscillateToggle(void *menu, struct eduiitem_s *item);
 extern void edobjcbCancelWayPropertiesMenu(void);
-extern void edobjcbChangeWaypointSpeed(void *menu, struct edobjitem_s *item);
-extern void edobjcbChangeWaypointXRot(void *menu, struct edobjitem_s *item);
-extern void edobjcbChangeWaypointYRot(void *menu, struct edobjitem_s *item);
-extern void edobjcbChangeWaypointZRot(void *menu, struct edobjitem_s *item);
-extern void edobjcbChangeWaypointTime(void *menu, struct edobjitem_s *item);
+extern void edobjcbChangeWaypointSpeed(void *menu, struct eduiitem_s *item);
+extern void edobjcbChangeWaypointXRot(void *menu, struct eduiitem_s *item);
+extern void edobjcbChangeWaypointYRot(void *menu, struct eduiitem_s *item);
+extern void edobjcbChangeWaypointZRot(void *menu, struct eduiitem_s *item);
+extern void edobjcbChangeWaypointTime(void *menu, struct eduiitem_s *item);
 extern void edobjcbCancelLocalSoundMenu(void);
 extern void edobjcbLocalSoundTypeMenu(struct eduimenu_s *menu);
-extern void edobjcbToggleSoundType(void *menu, struct edobjitem_s *item);
-extern void edobjcbSetSoundTiming(void *menu, struct edobjitem_s *item);
+extern void edobjcbToggleSoundType(void *menu, struct eduiitem_s *item);
+extern void edobjcbSetSoundTiming(void *menu, struct eduiitem_s *item);
 extern void edobjcbCancelParticleTypeMenu(void);
-extern void edobjcbSetParticleType(void *menu, struct edobjitem_s *item);
+extern void edobjcbSetParticleType(void *menu, struct eduiitem_s *item);
 extern void edobjcbCancelLocalParticleMenu(void);
 extern void edobjcbLocalParticleTypeMenu(struct eduimenu_s *menu);
-extern void edobjcbSetParticleRate(void *menu, struct edobjitem_s *item);
-extern void edobjcbToggleParticleSwitch(void *menu, struct edobjitem_s *item);
+extern void edobjcbSetParticleRate(void *menu, struct eduiitem_s *item);
+extern void edobjcbToggleParticleSwitch(void *menu, struct eduiitem_s *item);
 extern void edobjcbCancelBouncyMenu(void);
-extern void edobjcbSetBouncyPlayerGrav(void *menu, struct edobjitem_s *item);
-extern void edobjcbSetBouncyTension(void *menu, struct edobjitem_s *item);
-extern void edobjcbSetBouncyDamping(void *menu, struct edobjitem_s *item);
+extern void edobjcbSetBouncyPlayerGrav(void *menu, struct eduiitem_s *item);
+extern void edobjcbSetBouncyTension(void *menu, struct eduiitem_s *item);
+extern void edobjcbSetBouncyDamping(void *menu, struct eduiitem_s *item);
 extern void EdFileSetMedia(int media);
 extern int EdFileOpen(char *name, int mode);
 extern int EdFileClose(void);
@@ -569,13 +524,13 @@ extern void edobjcbParticleMenu(struct eduimenu_s *menu);
 extern void edobjcbSoundMenu(struct eduimenu_s *menu);
 extern void edobjcbFileSaveObjects(void *menu);
 extern void edobjcbFileLoadObjects(void *menu);
-extern void edobjcbResetAnims(void *menu, struct edobjitem_s *item);
-extern void edobjcbSnapYToggle(void *menu, struct edobjitem_s *item);
-extern void edobjcbSnapXZToggle(void *menu, struct edobjitem_s *item);
+extern void edobjcbResetAnims(void *menu, struct eduiitem_s *item);
+extern void edobjcbSnapYToggle(void *menu, struct eduiitem_s *item);
+extern void edobjcbSnapXZToggle(void *menu, struct eduiitem_s *item);
 extern int edSfxAllCount;
-extern void edobjcbSetLocalSoundType(void *menu, struct edobjitem_s *item);
-extern void edobjcbSetLocalParticleType(void *menu, struct edobjitem_s *item);
-extern void edobjcbSetSoundType(void *menu, struct edobjitem_s *item);
+extern void edobjcbSetLocalSoundType(void *menu, struct eduiitem_s *item);
+extern void edobjcbSetLocalParticleType(void *menu, struct eduiitem_s *item);
+extern void edobjcbSetSoundType(void *menu, struct eduiitem_s *item);
 extern void edobjcbCancelLocalSoundTypeMenu(void);
 extern void edobjcbCancelLocalParticleTypeMenu(void);
 extern void edobjcbCancelSoundTypeMenu(void);
@@ -1430,7 +1385,7 @@ void edobjParticleCreate(struct nuvec_s *pos)
         ObjectPath[edobj_nearest].particle_rotz[slot] = edobj_emitrotz;
         ObjectPath[edobj_nearest].particle_roty[slot] = edobj_emitroty;
         ObjectPath[edobj_nearest].particle_type[slot] = edobj_particle_type;
-        strcpy(ObjectPath[edobj_nearest].particle_name[slot], debtab[edobj_particle_type]->name);
+        strcpy(ObjectPath[edobj_nearest].particle_name[slot], debtab[edobj_particle_type]->id);
         ObjectPath[edobj_nearest].particle_rate[slot] = 1;
         ObjectPath[edobj_nearest].particle_switch[slot] = 0;
         ObjectPath[edobj_nearest].num_particles++;
@@ -1619,7 +1574,7 @@ inline void edobjObjectPlace(int obj, struct nuvec_s *pos)
 }
 
 
-void edobjDoInput(struct pad_s *pad)
+void edobjDoInput(struct nupad_s *pad)
 {
     struct nuvec_s pos;
     int obj;
@@ -1628,7 +1583,7 @@ void edobjDoInput(struct pad_s *pad)
         edcamMove(pad);
     }
     if (pad->paddata & 0x100) {
-        if (!edobj_copy_mode && !edobj_particle_mode && !edobj_sound_mode && (pad->buttons & 0x40)) {
+        if (!edobj_copy_mode && !edobj_particle_mode && !edobj_sound_mode && (pad->paddata_db & 0x40)) {
             if (edobj_waypoint_mode) {
                 edobj_waypoint_mode = 0;
             } else if (edobj_nearest != -1) {
@@ -1636,14 +1591,14 @@ void edobjDoInput(struct pad_s *pad)
                 edobj_waypoint_mode = 1;
             }
         }
-        if (!edobj_waypoint_mode && !edobj_particle_mode && !edobj_sound_mode && (pad->buttons & 0x20)) {
+        if (!edobj_waypoint_mode && !edobj_particle_mode && !edobj_sound_mode && (pad->paddata_db & 0x20)) {
             if (edobj_copy_mode) {
                 edobj_copy_mode = 0;
             } else if (edobj_nearest != -1) {
                 edobj_copy_mode = 1;
             }
         }
-        if (!edobj_waypoint_mode && !edobj_copy_mode && !edobj_sound_mode && (pad->buttons & 0x80)) {
+        if (!edobj_waypoint_mode && !edobj_copy_mode && !edobj_sound_mode && (pad->paddata_db & 0x80)) {
             if (edobj_particle_mode) {
                 edobj_particle_mode = 0;
             } else if (edobj_nearest != -1) {
@@ -1651,7 +1606,7 @@ void edobjDoInput(struct pad_s *pad)
                 edobj_particle_mode = 1;
             }
         }
-        if (!edobj_waypoint_mode && !edobj_copy_mode && !edobj_particle_mode && (pad->buttons & 0x10)) {
+        if (!edobj_waypoint_mode && !edobj_copy_mode && !edobj_particle_mode && (pad->paddata_db & 0x10)) {
             if (edobj_sound_mode) {
                 edobj_sound_mode = 0;
             } else if (edobj_nearest != -1) {
@@ -1661,13 +1616,13 @@ void edobjDoInput(struct pad_s *pad)
         }
         if (edobj_waypoint_mode) {
             if (edobj_nearest_waypoint != -1) {
-                if (pad->buttons & 8) {
+                if (pad->paddata_db & 8) {
                     edobj_nearest_waypoint++;
                     if (edobj_nearest_waypoint == ObjectPath[edobj_nearest].num_waypoints) {
                         edobj_nearest_waypoint = 0;
                     }
                 }
-                if (pad->buttons & 2) {
+                if (pad->paddata_db & 2) {
                     edobj_nearest_waypoint--;
                     if (edobj_nearest_waypoint == -1) {
                         edobj_nearest_waypoint = ObjectPath[edobj_nearest].num_waypoints - 1;
@@ -1682,13 +1637,13 @@ void edobjDoInput(struct pad_s *pad)
         } else if (!edobj_copy_mode) {
             if (edobj_particle_mode) {
                 if (edobj_nearest_particle != -1) {
-                    if (pad->buttons & 8) {
+                    if (pad->paddata_db & 8) {
                         edobj_nearest_particle++;
                         if (edobj_nearest_particle == ObjectPath[edobj_nearest].num_particles) {
                             edobj_nearest_particle = 0;
                         }
                     }
-                    if (pad->buttons & 2) {
+                    if (pad->paddata_db & 2) {
                         edobj_nearest_particle--;
                         if (edobj_nearest_particle == -1) {
                             edobj_nearest_particle = ObjectPath[edobj_nearest].num_particles - 1;
@@ -1708,13 +1663,13 @@ void edobjDoInput(struct pad_s *pad)
                 }
             } else if (edobj_sound_mode) {
                 if (edobj_nearest_sound != -1) {
-                    if (pad->buttons & 8) {
+                    if (pad->paddata_db & 8) {
                         edobj_nearest_sound++;
                         if (edobj_nearest_sound == ObjectPath[edobj_nearest].num_sounds) {
                             edobj_nearest_sound = 0;
                         }
                     }
-                    if (pad->buttons & 2) {
+                    if (pad->paddata_db & 2) {
                         edobj_nearest_sound--;
                         if (edobj_nearest_sound == -1) {
                             edobj_nearest_sound = ObjectPath[edobj_nearest].num_sounds - 1;
@@ -1731,7 +1686,7 @@ void edobjDoInput(struct pad_s *pad)
                 }
             } else {
                 if (edobj_nearest != -1) {
-                    if (pad->buttons & 8) {
+                    if (pad->paddata_db & 8) {
                         obj = edobj_nearest;
                         do {
                             obj++;
@@ -1741,7 +1696,7 @@ void edobjDoInput(struct pad_s *pad)
                         } while (ObjectPath[obj].instance == -1);
                         edobj_nearest = obj;
                     }
-                    if (pad->buttons & 2) {
+                    if (pad->paddata_db & 2) {
                         do {
                             edobj_nearest--;
                             if (edobj_nearest == -1) {
@@ -1770,10 +1725,10 @@ void edobjDoInput(struct pad_s *pad)
                         + (int)(((edobj_cam_pos.z - edobj_snap_vec.z) + 0.25) * 2.0) * 0.5f;
     }
     if (!(pad->paddata & 0x100)) {
-        if (pad->buttons & 0x80) {
+        if (pad->paddata_db & 0x80) {
             edobj_active_menu = edobj_options_menu;
         }
-        if (pad->buttons & 0x40) {
+        if (pad->paddata_db & 0x40) {
             if (edobj_waypoint_mode) {
                 edobjWaypointCreate(&edobj_cam_pos);
             } else if (edobj_copy_mode) {
@@ -1805,7 +1760,7 @@ void edobjDoInput(struct pad_s *pad)
                 }
             }
         }
-        if (pad->buttons & 0x10) {
+        if (pad->paddata_db & 0x10) {
             if (edobj_waypoint_mode) {
                 if (edobj_nearest_waypoint != -1) {
                     edobjWaypointDestroy(edobj_nearest_waypoint);
@@ -1831,13 +1786,13 @@ void edobjDoInput(struct pad_s *pad)
         }
     }
     if (edobj_particle_mode) {
-        edobj_emitroty += pad->rotleft;
-        edobj_emitroty -= pad->rotright;
-        edobj_emitrotz += pad->rotup;
+        edobj_emitroty += pad->rdata.l_algpad_r;
+        edobj_emitroty -= pad->rdata.l_algpad_l;
+        edobj_emitrotz += pad->rdata.l_algpad_u;
         if (edobj_emitrotz > 0) {
             edobj_emitrotz = 0;
         }
-        edobj_emitrotz -= pad->rotdown;
+        edobj_emitrotz -= pad->rdata.l_algpad_d;
         if (edobj_emitrotz < -0x8000) {
             edobj_emitrotz = -0x8000;
         }
@@ -1944,7 +1899,7 @@ void edobjDrawCursor(void)
         if (edobj_particle_type == -1) {
             NuFntPrintEx(0x1810, 0xCD0, 0, info_type_none);
         } else {
-            NuFntPrintEx(0x1810, 0xCD0, 0, info_type_fmt, debtab[edobj_particle_type]->name);
+            NuFntPrintEx(0x1810, 0xCD0, 0, info_type_fmt, debtab[edobj_particle_type]->id);
         }
     } else if (edobj_sound_mode) {
         NuFntPrintEx(0x17C0, 0xB90, 0, info_locked_fmt,
@@ -2298,7 +2253,7 @@ static inline void edobjAddSwitchTypeItem(struct eduistyle_s *style, int type, c
     eduiMenuAddItem(edobj_switchtype_menu,
                     eduiItemCheckCreate(type, style, ObjectPath[edobj_nearest].switch_type == type,
                                         1, edobjcbSetSwitchType, text));
-    if (edui_last_item->toggle) {
+    if (edui_last_item->on) {
         edobj_switchtype_menu->current = edui_last_item;
     }
 }
@@ -2519,7 +2474,7 @@ void edobjcbParticleTypeMenu(struct eduimenu_s *menu)
                 }
                 eduiMenuAddItem(edobj_particletype_menu,
                                 eduiItemCheckCreate(i, &style, selected, 1,
-                                                    edobjcbSetParticleType, debtab[i]->name));
+                                                    edobjcbSetParticleType, debtab[i]->id));
                 if (selected == 1) {
                     edobj_particletype_menu->current = edui_last_item;
                 }
@@ -2692,7 +2647,7 @@ void edobjRenderSoundEmitters(int obj)
 
 void edobjRenderParticleEmitters(int obj)
 {
-    struct debtypedef_s *type;
+    struct debinfo_s *type;
     int colour;
     int i;
 
@@ -2705,7 +2660,7 @@ void edobjRenderParticleEmitters(int obj)
                         ObjectPath[obj].waypoints[0].x + ObjectPath[obj].particle_pos[i].x,
                         ObjectPath[obj].waypoints[0].y + ObjectPath[obj].particle_pos[i].y,
                         ObjectPath[obj].waypoints[0].z + ObjectPath[obj].particle_pos[i].z,
-                        type->varstart.x, type->varstart.y, type->varstart.z, edobj_emitrotz,
+                        type->variable_start.x, type->variable_start.y, type->variable_start.z, edobj_emitrotz,
                         edobj_emitroty, 0, 0, 0xFF008000, edobj_mtl_zoff);
                 }
                 colour = 0xFF00FF00;
@@ -2839,7 +2794,7 @@ void edobjObjectDestroyAll(void)
 }
 
 
-void edobjcbResetAnims(void *menu, struct edobjitem_s *item)
+void edobjcbResetAnims(void *menu, struct eduiitem_s *item)
 {
     edobjResetAnimsToZero();
 }
@@ -2898,46 +2853,46 @@ void edobjcbFileLoadObjects(void *menu)
 }
 
 
-void edobjcbChangeAnimSpeed(void *menu, struct edobjitem_s *item)
+void edobjcbChangeAnimSpeed(void *menu, struct eduiitem_s *item)
 {
     if (edobj_nearest != -1) {
-        ObjectPath[edobj_nearest].anim_speed = item->fvalue;
+        ObjectPath[edobj_nearest].anim_speed = item->u.slider.val;
         edobjConvertPathToAnim(edobj_nearest);
     }
 }
 
 
-void edobjcbChangeAnimPause(void *menu, struct edobjitem_s *item)
+void edobjcbChangeAnimPause(void *menu, struct eduiitem_s *item)
 {
     if (edobj_nearest != -1) {
-        ObjectPath[edobj_nearest].anim_pause = item->fvalue;
+        ObjectPath[edobj_nearest].anim_pause = item->u.slider.val;
         edobjConvertPathToAnim(edobj_nearest);
     }
 }
 
 
-void edobjcbChangeAnimStartOffset(void *menu, struct edobjitem_s *item)
+void edobjcbChangeAnimStartOffset(void *menu, struct eduiitem_s *item)
 {
     if (edobj_nearest != -1) {
-        ObjectPath[edobj_nearest].anim_start_offset = item->fvalue;
+        ObjectPath[edobj_nearest].anim_start_offset = item->u.slider.val;
     }
 }
 
 
-void edobjcbOscillateToggle(void *menu, struct edobjitem_s *item)
+void edobjcbOscillateToggle(void *menu, struct eduiitem_s *item)
 {
     if (edobj_nearest != -1) {
-        ObjectPath[edobj_nearest].oscillate = item->toggle;
+        ObjectPath[edobj_nearest].oscillate = item->on;
         edobjConvertPathToAnim(edobj_nearest);
     }
 }
 
 
-void edobjcbSnapYToggle(void *menu, struct edobjitem_s *item)
+void edobjcbSnapYToggle(void *menu, struct eduiitem_s *item)
 {
     int on;
 
-    on = item->toggle;
+    on = item->on;
     edobj_snap_y = on;
     if (on) {
         edobj_snap_vec = edobj_cam_pos;
@@ -2947,11 +2902,11 @@ void edobjcbSnapYToggle(void *menu, struct edobjitem_s *item)
 }
 
 
-void edobjcbSnapXZToggle(void *menu, struct edobjitem_s *item)
+void edobjcbSnapXZToggle(void *menu, struct eduiitem_s *item)
 {
     int on;
 
-    on = item->toggle;
+    on = item->on;
     edobj_snap_xz = on;
     if (on) {
         edobj_snap_vec = edobj_cam_pos;
@@ -2961,69 +2916,69 @@ void edobjcbSnapXZToggle(void *menu, struct edobjitem_s *item)
 }
 
 
-void edobjcbToggleParticleSwitch(void *menu, struct edobjitem_s *item)
+void edobjcbToggleParticleSwitch(void *menu, struct eduiitem_s *item)
 {
     if (edobj_nearest != -1) {
-        ObjectPath[edobj_nearest].particle_switch[edobj_nearest_particle] = item->toggle;
+        ObjectPath[edobj_nearest].particle_switch[edobj_nearest_particle] = item->on;
     }
 }
 
 
-void edobjcbChangeWaypointSpeed(void *menu, struct edobjitem_s *item)
+void edobjcbChangeWaypointSpeed(void *menu, struct eduiitem_s *item)
 {
     if (edobj_waypoint_mode) {
         if (edobj_nearest_waypoint != -1) {
-            ObjectPath[edobj_nearest].waypoint_speed[edobj_nearest_waypoint] = item->fvalue;
+            ObjectPath[edobj_nearest].waypoint_speed[edobj_nearest_waypoint] = item->u.slider.val;
             edobjConvertPathToAnim(edobj_nearest);
         }
     }
 }
 
 
-void edobjcbChangeWaypointXRot(void *menu, struct edobjitem_s *item)
+void edobjcbChangeWaypointXRot(void *menu, struct eduiitem_s *item)
 {
     if (edobj_waypoint_mode) {
         if (edobj_nearest_waypoint != -1) {
             ObjectPath[edobj_nearest].waypoint_rot[edobj_nearest_waypoint].x =
-                item->fvalue * D_0062CF24;
+                item->u.slider.val * D_0062CF24;
             edobjConvertPathToAnim(edobj_nearest);
         }
     }
 }
 
 
-void edobjcbChangeWaypointYRot(void *menu, struct edobjitem_s *item)
+void edobjcbChangeWaypointYRot(void *menu, struct eduiitem_s *item)
 {
     if (edobj_waypoint_mode) {
         if (edobj_nearest_waypoint != -1) {
             ObjectPath[edobj_nearest].waypoint_rot[edobj_nearest_waypoint].y =
-                item->fvalue * D_0062CF28;
+                item->u.slider.val * D_0062CF28;
             edobjConvertPathToAnim(edobj_nearest);
         }
     }
 }
 
 
-void edobjcbChangeWaypointZRot(void *menu, struct edobjitem_s *item)
+void edobjcbChangeWaypointZRot(void *menu, struct eduiitem_s *item)
 {
     if (edobj_waypoint_mode) {
         if (edobj_nearest_waypoint != -1) {
             ObjectPath[edobj_nearest].waypoint_rot[edobj_nearest_waypoint].z =
-                item->fvalue * D_0062CF2C;
+                item->u.slider.val * D_0062CF2C;
             edobjConvertPathToAnim(edobj_nearest);
         }
     }
 }
 
 
-void edobjcbChangeWaypointTime(void *menu, struct edobjitem_s *item)
+void edobjcbChangeWaypointTime(void *menu, struct eduiitem_s *item)
 {
     int time;
     int old;
 
     if (edobj_waypoint_mode) {
         if (edobj_nearest_waypoint != -1) {
-            time = item->fvalue;
+            time = item->u.slider.val;
             old = ObjectPath[edobj_nearest].waypoint_time[edobj_nearest_waypoint];
             ObjectPath[edobj_nearest].waypoint_time[edobj_nearest_waypoint] = time;
             ObjectPath[edobj_nearest].total_time += time - old;
@@ -3033,7 +2988,7 @@ void edobjcbChangeWaypointTime(void *menu, struct edobjitem_s *item)
 }
 
 
-void edobjcbSetInstanceType(void *menu, struct edobjitem_s *item)
+void edobjcbSetInstanceType(void *menu, struct eduiitem_s *item)
 {
     eduiMenuDetach(menu);
     eduiMenuDestroy(menu);
@@ -3043,7 +2998,7 @@ void edobjcbSetInstanceType(void *menu, struct edobjitem_s *item)
 }
 
 
-void edobjcbSetSwitchType(void *menu, struct edobjitem_s *item)
+void edobjcbSetSwitchType(void *menu, struct eduiitem_s *item)
 {
     eduiMenuDetach(menu);
     eduiMenuDestroy(menu);
@@ -3052,26 +3007,26 @@ void edobjcbSetSwitchType(void *menu, struct edobjitem_s *item)
 }
 
 
-void edobjcbSetSwitchId(void *menu, struct edobjitem_s *item)
+void edobjcbSetSwitchId(void *menu, struct eduiitem_s *item)
 {
     if (edobj_nearest != -1) {
-        ObjectPath[edobj_nearest].switch_id = item->fvalue;
+        ObjectPath[edobj_nearest].switch_id = item->u.slider.val;
     }
 }
 
 
-void edobjcbSetSwitchDelay(void *menu, struct edobjitem_s *item)
+void edobjcbSetSwitchDelay(void *menu, struct eduiitem_s *item)
 {
     if (edobj_nearest != -1) {
-        ObjectPath[edobj_nearest].switch_delay = item->fvalue;
+        ObjectPath[edobj_nearest].switch_delay = item->u.slider.val;
     }
 }
 
 
-void edobjcbSetSwitchVar(void *menu, struct edobjitem_s *item)
+void edobjcbSetSwitchVar(void *menu, struct eduiitem_s *item)
 {
     if (edobj_nearest != -1) {
-        ObjectPath[edobj_nearest].switch_var = item->fvalue;
+        ObjectPath[edobj_nearest].switch_var = item->u.slider.val;
     }
 }
 
@@ -3111,39 +3066,39 @@ void edobjcbCancelWayPropertiesMenu(void)
 }
 
 
-void edobjcbSetBouncyPlayerGrav(void *menu, struct edobjitem_s *item)
+void edobjcbSetBouncyPlayerGrav(void *menu, struct eduiitem_s *item)
 {
     if (edobj_nearest != -1) {
-        ObjectPath[edobj_nearest].bouncy_player_grav = item->fvalue;
+        ObjectPath[edobj_nearest].bouncy_player_grav = item->u.slider.val;
         edobjConvertPathToAnim(edobj_nearest);
     }
 }
 
 
-void edobjcbSetBouncyTension(void *menu, struct edobjitem_s *item)
+void edobjcbSetBouncyTension(void *menu, struct eduiitem_s *item)
 {
     if (edobj_nearest != -1) {
-        ObjectPath[edobj_nearest].bouncy_tension = item->fvalue;
+        ObjectPath[edobj_nearest].bouncy_tension = item->u.slider.val;
         edobjConvertPathToAnim(edobj_nearest);
     }
 }
 
 
-void edobjcbSetBouncyDamping(void *menu, struct edobjitem_s *item)
+void edobjcbSetBouncyDamping(void *menu, struct eduiitem_s *item)
 {
     if (edobj_nearest != -1) {
-        ObjectPath[edobj_nearest].bouncy_damping = item->fvalue;
+        ObjectPath[edobj_nearest].bouncy_damping = item->u.slider.val;
         edobjConvertPathToAnim(edobj_nearest);
     }
 }
 
 
-void edobjcbToggleSoundType(void *menu, struct edobjitem_s *item)
+void edobjcbToggleSoundType(void *menu, struct eduiitem_s *item)
 {
     eduiMenuDetach(menu);
     eduiMenuDestroy(menu);
     edobj_soundtype_menu = 0;
-    if (item->toggle == 0) {
+    if (item->on == 0) {
         ObjectPath[edobj_nearest].sound_type[edobj_nearest_sound] = 0;
         ObjectPath[edobj_nearest].sound_timing[edobj_nearest_sound] = 1.0f;
     } else {
@@ -3153,13 +3108,13 @@ void edobjcbToggleSoundType(void *menu, struct edobjitem_s *item)
 }
 
 
-void edobjcbSetSoundTiming(void *menu, struct edobjitem_s *item)
+void edobjcbSetSoundTiming(void *menu, struct eduiitem_s *item)
 {
-    ObjectPath[edobj_nearest].sound_timing[edobj_nearest_sound] = item->fvalue;
+    ObjectPath[edobj_nearest].sound_timing[edobj_nearest_sound] = item->u.slider.val;
 }
 
 
-void edobjcbSetParticleType(void *menu, struct edobjitem_s *item)
+void edobjcbSetParticleType(void *menu, struct eduiitem_s *item)
 {
     eduiMenuDetach(menu);
     eduiMenuDestroy(menu);
@@ -3172,9 +3127,9 @@ void edobjcbSetParticleType(void *menu, struct edobjitem_s *item)
 }
 
 
-void edobjcbSetParticleRate(void *menu, struct edobjitem_s *item)
+void edobjcbSetParticleRate(void *menu, struct eduiitem_s *item)
 {
-    ObjectPath[edobj_nearest].particle_rate[edobj_nearest_particle] = item->fvalue;
+    ObjectPath[edobj_nearest].particle_rate[edobj_nearest_particle] = item->u.slider.val;
 }
 
 
@@ -3241,7 +3196,7 @@ void edobjcbLocalParticleTypeMenu(struct eduimenu_s *menu)
                 }
                 eduiMenuAddItem(edobj_localparticletype_menu,
                                 eduiItemCheckCreate(i, &style, selected, 1,
-                                                    edobjcbSetLocalParticleType, debtab[i]->name));
+                                                    edobjcbSetLocalParticleType, debtab[i]->id));
                 if (selected == 1) {
                     edobj_localparticletype_menu->current = edui_last_item;
                 }
@@ -3338,7 +3293,7 @@ void edobjEnter(void)
 }
 
 
-int edobjProc(struct pad_s *pad)
+int edobjProc(struct nupad_s *pad)
 {
     edobj_blink_timer += 5;
     if (edobj_active_menu != 0) {
@@ -3355,7 +3310,7 @@ int edobjProc(struct pad_s *pad)
     } else if (!edobj_copy_mode) {
         edobjDetermineNearestObject(1.0f);
     }
-    if (pad->buttons & 0x800) {
+    if (pad->paddata_db & 0x800) {
         edobj_waypoint_mode = 0;
         edobj_copy_mode = 0;
         edobj_particle_mode = 0;
@@ -3366,7 +3321,7 @@ int edobjProc(struct pad_s *pad)
 }
 
 
-void edobjcbSetLocalSoundType(void *menu, struct edobjitem_s *item)
+void edobjcbSetLocalSoundType(void *menu, struct eduiitem_s *item)
 {
     eduiMenuDetach(menu);
     eduiMenuDestroy(menu);
@@ -3378,14 +3333,14 @@ void edobjcbSetLocalSoundType(void *menu, struct edobjitem_s *item)
 }
 
 
-void edobjcbSetLocalParticleType(void *menu, struct edobjitem_s *item)
+void edobjcbSetLocalParticleType(void *menu, struct eduiitem_s *item)
 {
     eduiMenuDetach(menu);
     eduiMenuDestroy(menu);
     edobj_localparticletype_menu = 0;
     ObjectPath[edobj_nearest].particle_type[edobj_nearest_particle] = item->value;
     strcpy(ObjectPath[edobj_nearest].particle_name[edobj_nearest_particle],
-           debtab[item->value]->name);
+           debtab[item->value]->id);
     edobj_particle_type = item->value;
 }
 
@@ -3450,7 +3405,7 @@ void edobjcbCancelSoundMenu(void)
 }
 
 
-void edobjcbSetSoundType(void *menu, struct edobjitem_s *item)
+void edobjcbSetSoundType(void *menu, struct eduiitem_s *item)
 {
     eduiMenuDetach(menu);
     eduiMenuDestroy(menu);

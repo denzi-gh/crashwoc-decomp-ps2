@@ -31,22 +31,9 @@
 #include "gamelib/terrain.h"
 #include "gamelib/trigger.h"
 #include "nucore/nucoretypes.h"
-
-typedef struct NuFPar {
-    int handle;
-    char buffer[0x1000];
-    char line[0x101];
-    char word[0x101];
-    int line_num;
-} NuFPar;
+#include "nucore/nufpar.h"
 
 #define NUSCENEINST_DISABLED 0x2
-
-extern NuFPar *NuFParCreate(char *name);
-extern void NuFParDestroy(NuFPar *parser);
-extern int NuFParGetLine(NuFPar *parser);
-extern int NuFParGetWord(NuFPar *parser);
-extern int NuFParGetInt(NuFPar *parser);
 
 extern void *CreateSpecialTerrainData(int levelnum, struct nugscn_s *gscene, union variptr_u *heap,
                                       union variptr_u *heapend);
@@ -96,7 +83,7 @@ struct NuSceneData *NuSceneDataLoad(char *dir, union variptr_u *heap, union vari
     struct NuSceneScript *lastscript;
     struct NuSceneScript *script;
     struct NuSceneData *scene;
-    NuFPar *parser;
+    struct nufpar_s *parser;
     char *word;
     char *namebuf;
     int cutscene;
@@ -112,7 +99,7 @@ struct NuSceneData *NuSceneDataLoad(char *dir, union variptr_u *heap, union vari
         memset(scene, 0, sizeof(struct NuSceneData));
         while (NuFParGetLine(parser)) {
             NuFParGetWord(parser);
-            word = parser->word;
+            word = parser->wbuff;
             if (strcasecmp(word, kw_scene) == 0) {
                 NuFParGetWord(parser);
                 heap->intaddr = (heap->intaddr + 15) & ~15;

@@ -27,12 +27,8 @@
 
 #include "numath/numathtypes.h"
 #include "nu3d/nucamera.h"
-
-struct pad_s;
-
-typedef struct eduistyle_s {
-    u32 colour[4];
-} EDUISTYLE;
+#include "nups2/ps2ctl.h"
+#include "edtools/edui.h"
 
 typedef struct edmainreg_s {
     struct edmainreg_s *next;
@@ -44,40 +40,24 @@ typedef struct edmainreg_s {
     char pad_0x18[0xC];
     void (*readblock)(s32 fh);
     s32 blockid;
-    s32 (*process)(struct pad_s *pad, f32 dt);
+    s32 (*process)(struct nupad_s *pad, f32 dt);
     void (*render)(void);
 } EDMAINREG;
 
-typedef struct eduiitem_s {
-    char pad_0x00[0xC];
-    void *data;
-    char pad_0x10[0x8];
-    s32 x;
-    s32 y;
-    char pad_0x20[0x2C];
-    f32 slider_val;
-} EDUIITEM;
-
-typedef struct eduimenu_s {
-    char pad_0x00[0x10];
-    s32 x;
-    s32 y;
-} EDUIMENU;
-
-typedef void (*EDUICALLBACK)(EDUIMENU *menu, EDUIITEM *item);
+typedef void (*EDUICALLBACK)(struct eduimenu_s *menu, struct eduiitem_s *item);
 
 extern s32 D_0062F8C8;
 extern EDMAINREG *D_0062F8CC;
 extern EDMAINREG *D_0062F8D0;
 extern s32 D_0062F8D4;
-extern EDUIMENU *D_0062F8D8;
-extern EDUIMENU *D_0062F8DC;
+extern struct eduimenu_s *D_0062F8D8;
+extern struct eduimenu_s *D_0062F8DC;
 extern void *D_0062F8E0;
 extern struct nucamera_s *D_0062F8E4;
 extern struct nuvec_s *D_0062F8E8;
 extern s32 D_00633234;
 extern char D_006B3FC0[0x100];
-extern EDUISTYLE D_0061A710;
+extern struct eduistyle_s D_0061A710;
 extern char D_0061A750[];
 extern char D_0061A760[];
 extern char D_0061A770[];
@@ -98,20 +78,18 @@ extern char D_0061A790[];
 #define edmain_itemstyle   D_0061A710
 
 extern void edmainClose(void);
-extern void eduiInit(void);
-extern void eduiMenuProcess(EDUIMENU *menu, struct pad_s *pad);
-extern void eduiMenuRender(EDUIMENU *menu);
-extern s32 eduiMenuAttach(EDUIMENU *menu, EDUIMENU *child);
-extern void eduiMenuDetach(EDUIMENU *menu);
-extern void eduiMenuDestroy(EDUIMENU *menu);
-extern EDUIMENU *eduiMenuCreate(s32 x, s32 y, s32 w, s32 h, void *font,
+extern void eduiMenuProcess(struct eduimenu_s *menu, struct nupad_s *pad);
+extern s32 eduiMenuAttach(struct eduimenu_s *menu, struct eduimenu_s *child);
+extern void eduiMenuDetach(struct eduimenu_s *menu);
+extern void eduiMenuDestroy(struct eduimenu_s *menu);
+extern struct eduimenu_s *eduiMenuCreate(s32 x, s32 y, s32 w, s32 h, void *font,
                                 EDUICALLBACK cancel, char *title);
-extern EDUIITEM *eduiMenuAddItem(EDUIMENU *menu, EDUIITEM *item);
-extern void eduiMenuFitWidth(EDUIMENU *menu, s32 margin);
-extern void eduiMenuHighlight(EDUIMENU *menu, EDUIITEM *item);
-extern EDUIITEM *eduiItemSelCreate(void *data, EDUISTYLE *style, s32 on,
+extern struct eduiitem_s *eduiMenuAddItem(struct eduimenu_s *menu, struct eduiitem_s *item);
+extern void eduiMenuFitWidth(struct eduimenu_s *menu, s32 margin);
+extern void eduiMenuHighlight(struct eduimenu_s *menu, struct eduiitem_s *item);
+extern struct eduiitem_s *eduiItemSelCreate(void *data, struct eduistyle_s *style, s32 on,
                                    s32 group, EDUICALLBACK select, char *text);
-extern EDUIITEM *eduiItemSliderCreate(void *data, EDUISTYLE *style, s32 group,
+extern struct eduiitem_s *eduiItemSliderCreate(void *data, struct eduistyle_s *style, s32 group,
                                       EDUICALLBACK change, f32 val, f32 min,
                                       f32 max, char *text);
 extern void edcamSetSpeed(f32 rise, f32 move, f32 fall, f32 zoom);
@@ -122,21 +100,21 @@ extern void NuFileClose(s32 fh);
 extern s32 NuFileBeginBlkRead(s32 fh, s32 blockid);
 extern void NuFileEndBlkRead(s32 fh);
 
-void edmainMainMenuProc(struct pad_s *pad);
+void edmainMainMenuProc(struct nupad_s *pad);
 void edmainMainMenuRender(void);
 void edmainReadLevelFile(void);
-void cbMMRegSel(EDUIMENU *menu, EDUIITEM *item);
-void cbMMCancel(EDUIMENU *menu, EDUIITEM *item);
-void cbMMEditorConfig(EDUIMENU *menu, EDUIITEM *item);
-void cbMMReturnToApp(EDUIMENU *menu, EDUIITEM *item);
-void cbmcfgCancel(EDUIMENU *menu, EDUIITEM *item);
-void cbmcfgCameraSpeed(EDUIMENU *menu, EDUIITEM *item);
+void cbMMRegSel(struct eduimenu_s *menu, struct eduiitem_s *item);
+void cbMMCancel(struct eduimenu_s *menu, struct eduiitem_s *item);
+void cbMMEditorConfig(struct eduimenu_s *menu, struct eduiitem_s *item);
+void cbMMReturnToApp(struct eduimenu_s *menu, struct eduiitem_s *item);
+void cbmcfgCancel(struct eduimenu_s *menu, struct eduiitem_s *item);
+void cbmcfgCameraSpeed(struct eduimenu_s *menu, struct eduiitem_s *item);
 
 
 void edmainCreateMainMenu(void) {
-    EDUISTYLE style;
+    struct eduistyle_s style;
     EDMAINREG *reg;
-    EDUIITEM *item;
+    struct eduiitem_s *item;
 
     style = edmain_itemstyle;
     edmain_cfgmenu = eduiMenuCreate(0xDC, 0x32, 0xB4, 0x190, edmain_font,
@@ -187,7 +165,7 @@ s32 edmainRegister(EDMAINREG *reg) {
 }
 
 
-s32 edmainProcess(struct pad_s *pad, f32 dt) {
+s32 edmainProcess(struct nupad_s *pad, f32 dt) {
     edmain_return = 0;
     if (edmain_active && edmain_current) {
         if (!edmain_current->process || edmain_current->process(pad, dt)) {
@@ -278,7 +256,7 @@ struct nuvec_s *edmainQueryLocVec(void) {
 }
 
 
-void edmainMainMenuProc(struct pad_s *pad) {
+void edmainMainMenuProc(struct nupad_s *pad) {
     if (edmain_mainmenu) {
         eduiMenuProcess(edmain_mainmenu, pad);
     }
@@ -319,7 +297,7 @@ void edmainReadLevelFile(void) {
 }
 
 
-void cbMMRegSel(EDUIMENU *menu, EDUIITEM *item) {
+void cbMMRegSel(struct eduimenu_s *menu, struct eduiitem_s *item) {
     EDMAINREG *reg;
 
     reg = item->data;
@@ -331,32 +309,32 @@ void cbMMRegSel(EDUIMENU *menu, EDUIITEM *item) {
 }
 
 
-void cbMMCancel(EDUIMENU *menu, EDUIITEM *item) {
+void cbMMCancel(struct eduimenu_s *menu, struct eduiitem_s *item) {
 }
 
 
-void cbMMEditorConfig(EDUIMENU *menu, EDUIITEM *item) {
+void cbMMEditorConfig(struct eduimenu_s *menu, struct eduiitem_s *item) {
     edmain_cfgmenu->x = item->x + 10;
     edmain_cfgmenu->y = item->y + 10;
     eduiMenuAttach(menu, edmain_cfgmenu);
 }
 
 
-void cbMMReturnToApp(EDUIMENU *menu, EDUIITEM *item) {
+void cbMMReturnToApp(struct eduimenu_s *menu, struct eduiitem_s *item) {
     edmain_return = 1;
 }
 
 
-void cbmcfgCancel(EDUIMENU *menu, EDUIITEM *item) {
+void cbmcfgCancel(struct eduimenu_s *menu, struct eduiitem_s *item) {
     eduiMenuDetach(menu);
 }
 
 
-void cbmcfgCameraSpeed(EDUIMENU *menu, EDUIITEM *item) {
+void cbmcfgCameraSpeed(struct eduimenu_s *menu, struct eduiitem_s *item) {
     f32 scale;
     f32 speed;
 
-    scale = 512.0f / item->slider_val;
+    scale = 512.0f / item->u.slider.val;
     speed = 0.2f / scale;
     edcamSetSpeed(speed, speed, speed, 1.0f / scale);
 }

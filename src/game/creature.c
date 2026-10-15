@@ -15,18 +15,9 @@
 #include "gamelib/terrain.h"
 #include "game/creature.h"
 #include "nucore/nucoretypes.h"
+#include "nups2/ps2ctl.h"
 
 /* --- externals ---------------------------------------------------- */
-
-struct pad_s {
-    u8 unk_0x000[0x55C];     /* 0x000 (opaque) */
-    unsigned int paddata;    /* 0x55C (held buttons) */
-    u8 unk_0x560[4];         /* 0x560 */
-    unsigned int buttons;    /* 0x564 (debounced buttons) */
-    u8 unk_0x568[0x16];      /* 0x568 */
-    u8 l_alg_x;              /* 0x57E */
-    u8 l_alg_y;              /* 0x57F */
-};
 
 extern float IDLEWAIT;
 extern float SAFEY;
@@ -65,8 +56,8 @@ extern struct game_s Game;
 extern struct mask_s Mask;
 extern struct ldata_s *LDATA;
 extern struct ldata_s LData[];
-extern struct cammtx_s GameCam;
-extern struct pad_s *Pad[];
+extern struct cammtx_s GameCam[];
+extern struct nupad_s *Pad[];
 extern struct panelcount_s plr_lives;
 extern struct panelcount_s plr_wumpas;
 extern struct panelcount_s plr_bonus_wumpas;
@@ -1081,7 +1072,7 @@ s32 NewCharacterIdle(struct creature_s *c, struct CharacterModel *model)
                         ((i == 0x25) || (i == 0x26) || (i == 0x27))) {
                         ok = 0;
                     } else if ((i == 0x27) &&
-                               (abs(RotDiff(GameCam.hdg_to_player,
+                               (abs(RotDiff(GameCam[0].hdg_to_player,
                                             c->obj.hdg)) < 0x6000)) {
                         ok = 0;
                     } else if ((i == 0x29) &&
@@ -1287,7 +1278,6 @@ extern s32 loadsave_frame;
 extern struct nuvec_s loadsavepos;
 extern f32 NuTrigTable[];
 
-void NuPs2PadSetMotors(struct pad_s *pad, s32 small, s32 big);
 void ToggleVehicle(struct creature_s *c);
 void ResetTubs(void);
 u16 SeekRot(u16 a, u16 target, s32 rate);
@@ -1295,7 +1285,7 @@ void ObjectRotation(struct obj_s *obj, s32 mode, s32 vehicle);
 s32 AddAward(s32 hub, s32 level, s32 bits);
 void AddGameDebris(s32 type, struct nuvec_s *pos);
 f32 CrateTopBelow(struct nuvec_s *pos);
-void MoveVehicle(struct creature_s *c, struct pad_s *pad);
+void MoveVehicle(struct creature_s *c, struct nupad_s *pad);
 f32 NuFsqrt(f32 x);
 void GameRayCast(struct nuvec_s *pos, struct nuvec_s *dir, f32 dist,
                  struct nuvec_s *hit);
@@ -1320,18 +1310,18 @@ void AddMaskFeathers(struct mask_s *mask);
 s32 WumpaCollisions(struct obj_s *obj);
 void BonusTiming(struct creature_s *c);
 void NewMenu(struct cursor_s *cursor, s32 menu, s32 mode, s32 item);
-void MoveSUBMARINE(struct creature_s *c, struct pad_s *pad);
-void MoveSCOOTER(struct creature_s *c, struct pad_s *pad);
-void MoveSNOWBOARD(struct creature_s *c, struct pad_s *pad);
-void MoveMECH(struct creature_s *c, struct pad_s *pad);
-void MoveFIREENGINE(struct creature_s *c, struct pad_s *pad);
-void MoveGYRO(struct creature_s *c, struct pad_s *pad);
-void MoveMINECART(struct creature_s *c, struct pad_s *pad);
-void MoveMINETUB(struct creature_s *c, struct pad_s *pad);
-void MoveOFFROADER(struct creature_s *c, struct pad_s *pad);
-void MoveCOCO(struct creature_s *c, struct pad_s *pad);
-void MoveSWIMMING(struct creature_s *c, struct pad_s *pad);
-void MoveCRASH(struct creature_s *c, struct pad_s *pad);
+void MoveSUBMARINE(struct creature_s *c, struct nupad_s *pad);
+void MoveSCOOTER(struct creature_s *c, struct nupad_s *pad);
+void MoveSNOWBOARD(struct creature_s *c, struct nupad_s *pad);
+void MoveMECH(struct creature_s *c, struct nupad_s *pad);
+void MoveFIREENGINE(struct creature_s *c, struct nupad_s *pad);
+void MoveGYRO(struct creature_s *c, struct nupad_s *pad);
+void MoveMINECART(struct creature_s *c, struct nupad_s *pad);
+void MoveMINETUB(struct creature_s *c, struct nupad_s *pad);
+void MoveOFFROADER(struct creature_s *c, struct nupad_s *pad);
+void MoveCOCO(struct creature_s *c, struct nupad_s *pad);
+void MoveSWIMMING(struct creature_s *c, struct nupad_s *pad);
+void MoveCRASH(struct creature_s *c, struct nupad_s *pad);
 void AnimateDIVE(struct creature_s *c, f32 t);
 void AnimateATLASPHERE(struct creature_s *c);
 void AnimateSUBMARINE(struct creature_s *c);
@@ -1339,7 +1329,7 @@ void AnimateSCOOTER(struct creature_s *c);
 void AnimateSNOWBOARD(struct creature_s *c);
 void AnimateGLIDER(struct creature_s *c);
 void AnimateDROPSHIP(struct creature_s *c);
-void AnimateGYRO(struct creature_s *c, struct pad_s *pad);
+void AnimateGYRO(struct creature_s *c, struct nupad_s *pad);
 void AnimateMECH(struct creature_s *c);
 void AnimateFIREENGINE(struct creature_s *c);
 void AnimateJEEP(struct creature_s *c);
@@ -1383,7 +1373,7 @@ inline void NewBuzz(struct rumble_s *rumble, s32 frames)
 }
 
 
-void MovePlayer(struct creature_s *c, struct pad_s *pad)
+void MovePlayer(struct creature_s *c, struct nupad_s *pad)
 {
     u16 gotlist[9] = {0x8, 0x7, 0x10, 0x20, 0x40, 0x80, 0x100, 0x200, 0x400};
     struct nuvec_s in;
@@ -1689,8 +1679,8 @@ void MovePlayer(struct creature_s *c, struct pad_s *pad)
                     c->pad_type = 1;
                 }
             } else {
-                fz = -((f32)pad->l_alg_y - 127.5f);
-                fx = (f32)pad->l_alg_x - 127.5f;
+                fz = -((f32)pad->rdata.l_alg_y - 127.5f);
+                fx = (f32)pad->rdata.l_alg_x - 127.5f;
                 if (fx * fx + fz * fz < 1806.25f) {
                     double d;
                     d = fx;
@@ -1907,7 +1897,7 @@ void MovePlayer(struct creature_s *c, struct pad_s *pad)
                     t = 0.333f;
                     b0 = v000;
                 }
-                if ((pad->buttons & 0x60) != 0) {
+                if ((pad->paddata_db & 0x60) != 0) {
                     NewRumble(&player->rumble, 0x9F);
                 } else if ((pad->paddata & 0x60) != 0 && qrand() < 0x4000) {
                     s32 r = qrand();
@@ -1960,7 +1950,7 @@ void MovePlayer(struct creature_s *c, struct pad_s *pad)
             }
         } else {
             if (c->target == 0) {
-                NuVecRotateY(&in, &in, GameCam.yrot);
+                NuVecRotateY(&in, &in, GameCam[0].yrot);
             }
             c->fire_lock = 0;
             hold = c->obj.hdg;
@@ -2112,8 +2102,8 @@ void MovePlayer(struct creature_s *c, struct pad_s *pad)
                                c->obj.ground == 0) {
                         c->obj.hdg -= 0xCCC;
                     } else if (Cursor.menu == 0x21) {
-                        u16 t = NuAtan2D(GameCam.pos.x - c->obj.pos.x,
-                                         GameCam.pos.z - c->obj.pos.z);
+                        u16 t = NuAtan2D(GameCam[0].pos.x - c->obj.pos.x,
+                                         GameCam[0].pos.z - c->obj.pos.z);
                         c->obj.thdg = t;
                         c->obj.hdg = SeekRot(c->obj.hdg, t, 3);
                     } else if (c->slam_wait == 0 && c->obj.pad_speed > 0.0f &&
@@ -2859,7 +2849,7 @@ post_move:
     if (Cursor.menu == -1 && Level == 0x25) {
         if (c->obj.ground != 0 && c->obj.idle_gametime > 0.0f &&
             NuVecDistSqr(&c->obj.pos, &loadsavepos, 0) < 1.0f) {
-            if (pad != 0 && (pad->buttons & 0x40) != 0) {
+            if (pad != 0 && (pad->paddata_db & 0x40) != 0) {
                 loadsave_frame = 0x32;
             } else {
                 loadsave_frame++;
@@ -2939,9 +2929,9 @@ void ProcessCreatures(void)
             i = cRPosCOUNT;
             ComplexRailPosition(&c->obj.pos, c->obj.RPos.iRAIL,
                                 c->obj.RPos.iALONG, &c->obj.RPos, 1);
-            if ((cRPosCOUNT != i) && (GameCam.mode != -1) &&
+            if ((cRPosCOUNT != i) && (GameCam[0].mode != -1) &&
                 (c->obj.transporting == 0)) {
-                BlendGameCamera(&GameCam, 0.5f);
+                BlendGameCamera(&GameCam[0], 0.5f);
             }
         }
         if ((c->obj.mask != 0) && (c->obj.mask->active != 0) &&
@@ -2976,10 +2966,10 @@ void ProcessCreatures(void)
          * R1-family button (Pad[0]->buttons & 0x100). Not present on GC. */
         if (Level == 0x11) {
             if ((TimeTrial != 0) && (c->obj.dead == 0) && (Pad[0] != 0) &&
-                ((Pad[0]->buttons & 0x100) != 0)) {
+                ((Pad[0]->paddata_db & 0x100) != 0)) {
                 c->obj.pos = D_0061D318;
                 c->obj.mom = v000;
-                GameCam.mode = -1;
+                GameCam[0].mode = -1;
             }
         }
     }
@@ -3704,8 +3694,8 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
             }
             if (o != -1) {
                 Draw3DObject(o, &c->obj.pos, 0,
-                             NuAtan2D(c->obj.pos.x - GameCam.pos.x,
-                                      c->obj.pos.z - GameCam.pos.z),
+                             NuAtan2D(c->obj.pos.x - GameCam[0].pos.x,
+                                      c->obj.pos.z - GameCam[0].pos.z),
                              0, 1.0f, 1.0f, 1.0f,
                              ObjTab[o].obj.scene, ObjTab[o].obj.special, 0);
             }
@@ -3716,7 +3706,7 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
             if ((c->obj.dead == 3) || (c->obj.dead == 8)) {
                 yrot += 0x8000;
             } else if (c->freeze != 0) {
-                yrot = GameCam.hdg_to_player;
+                yrot = GameCam[0].hdg_to_player;
             } else {
                 if ((c->spin != 0) &&
                     (c->spin_frame <

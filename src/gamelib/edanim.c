@@ -94,49 +94,9 @@
 #include "nu3d/nugscn.h"
 #include "nu3d/nuanim.h"
 #include "gamelib/terrain.h"
-
-struct debtypedef_s {
-    char name[0x10];
-    char pad10[0x20 - 0x10];
-    signed char gensort;
-    char pad21[0x50 - 0x21];
-    struct nuvec_s varstart;
-};
-
-struct edanimitem_s {
-    char pad00[0x0C];
-    int value;
-    unsigned char toggle;
-    char pad11[0x4C - 0x11];
-    float fvalue;
-};
-
-struct eduimenu_s {
-    struct edanimitem_s *head;
-    struct edanimitem_s *tail;
-    struct edanimitem_s *current;
-    struct edanimitem_s *cursor;
-    int x;
-    int y;
-    int w;
-    int h;
-};
-
-struct eduistyle_s {
-    unsigned int colour[4];
-};
-
-struct pad_s {
-    char pad000[0x55C];
-    unsigned int paddata;
-    char pad560[0x564 - 0x560];
-    unsigned int buttons;
-    char pad568[0x580 - 0x568];
-    unsigned char right_pressure;
-    unsigned char left_pressure;
-    unsigned char up_pressure;
-    unsigned char down_pressure;
-};
+#include "nups2/ps2ctl.h"
+#include "gamelib/debris.h"
+#include "edtools/edui.h"
 
 struct edanimparam_s {
     int id;
@@ -199,7 +159,6 @@ extern struct numtl_s *edanim_mtl;
 extern struct numtl_s *edanim_mtl_zoff;
 extern struct eduimenu_s *edanim_soundtype_menu;
 extern int edSfxAllCount;
-extern struct debtypedef_s *debtab[];
 
 extern void *app_fnt;
 extern struct eduistyle_s D_00619328;
@@ -427,7 +386,6 @@ extern char D_006197A8[];
 
 extern void eduiMenuDestroy(void *menu);
 extern void eduiMenuDetach(void *menu);
-extern void eduiCreateMessageMenu(void *menu, char *text, int flag);
 extern struct nuvec_s *edmainQueryLocVec(void);
 extern int saveloadCheckCardPresent(void);
 extern int saveloadCheckCardType(void);
@@ -463,56 +421,54 @@ extern void NuRndrLine2di(int x0, int y0, int x1, int y1, int colour, void *mtl)
 extern void NuFntSet(void *fnt);
 extern void NuFntSetPen(int colour);
 extern void NuFntPrintEx(int x, int y, int flags, char *fmt, ...);
-extern void edcamMove(struct pad_s *pad);
+extern void edcamMove(struct nupad_s *pad);
 extern void edcamSetPos(struct nuvec_s *pos);
 extern void edcamGetPosAng(struct nuvec_s *pos, int *ax, int *ay);
 extern void edanimParticleCreate(struct nuvec_s *wpos);
 extern void edanimSoundCreate(struct nuvec_s *wpos);
 extern int edanimParamCreate(int special);
 extern void NuFntScale(int x, int y);
-extern void eduiMenuRender(void *menu);
-extern void eduiMenuProcess(void *menu, struct pad_s *pad);
+extern void eduiMenuProcess(void *menu, struct nupad_s *pad);
 extern int edanimFileSave(char *filename);
 extern int edanimFileLoad(char *filename);
 extern int NuFileSize(char *name);
 extern struct eduimenu_s *eduiMenuCreate(int x, int y, int w, int h, void *font,
                                          void *cancel, char *title);
-extern struct edanimitem_s *eduiItemSelCreate(int value, struct eduistyle_s *style, int on,
+extern struct eduiitem_s *eduiItemSelCreate(int value, struct eduistyle_s *style, int on,
                                               int group, void *select, char *text);
-extern struct edanimitem_s *eduiMenuAddItem(struct eduimenu_s *menu, struct edanimitem_s *item);
+extern struct eduiitem_s *eduiMenuAddItem(struct eduimenu_s *menu, struct eduiitem_s *item);
 extern int eduiMenuAttach(void *menu, struct eduimenu_s *child);
-extern struct edanimitem_s *eduiItemCheckCreate(int value, struct eduistyle_s *style, int on,
+extern struct eduiitem_s *eduiItemCheckCreate(int value, struct eduistyle_s *style, int on,
                                                 int group, void *select, char *text);
-extern struct edanimitem_s *eduiItemSliderCreate(int value, struct eduistyle_s *style, int group,
+extern struct eduiitem_s *eduiItemSliderCreate(int value, struct eduistyle_s *style, int group,
                                                  void *change, float min, float max, float val,
                                                  char *text);
-extern struct edanimitem_s *eduiItemSliderCreateInt(int value, struct eduistyle_s *style,
+extern struct eduiitem_s *eduiItemSliderCreateInt(int value, struct eduistyle_s *style,
                                                     int group, void *change, int min, int max,
                                                     int val, char *text);
-extern struct edanimitem_s *edui_last_item;
-extern void edanimcbSetSwitchType(void *menu, struct edanimitem_s *item);
-extern void edanimcbSetSwitchId(void *menu, struct edanimitem_s *item);
-extern void edanimcbSetSwitchDelay(void *menu, struct edanimitem_s *item);
-extern void edanimcbSetSwitchVar(void *menu, struct edanimitem_s *item);
+extern void edanimcbSetSwitchType(void *menu, struct eduiitem_s *item);
+extern void edanimcbSetSwitchId(void *menu, struct eduiitem_s *item);
+extern void edanimcbSetSwitchDelay(void *menu, struct eduiitem_s *item);
+extern void edanimcbSetSwitchVar(void *menu, struct eduiitem_s *item);
 extern void edanimcbCancelSwitchTypeMenu(void);
 extern void edanimcbCancelSwitchMenu(void);
-extern struct edanimitem_s *eduiItemToggleCreate(int value, struct eduistyle_s *style, int on,
+extern struct eduiitem_s *eduiItemToggleCreate(int value, struct eduistyle_s *style, int on,
                                                  int group, void *toggle, char *text);
-extern void edanimcbSetBouncyPlayerGrav(void *menu, struct edanimitem_s *item);
-extern void edanimcbSetBouncyTension(void *menu, struct edanimitem_s *item);
-extern void edanimcbSetBouncyDamping(void *menu, struct edanimitem_s *item);
+extern void edanimcbSetBouncyPlayerGrav(void *menu, struct eduiitem_s *item);
+extern void edanimcbSetBouncyTension(void *menu, struct eduiitem_s *item);
+extern void edanimcbSetBouncyDamping(void *menu, struct eduiitem_s *item);
 extern void edanimcbCancelBouncyMenu(void);
-extern void edanimcbSetParticleType(void *menu, struct edanimitem_s *item);
+extern void edanimcbSetParticleType(void *menu, struct eduiitem_s *item);
 extern void edanimcbCancelParticleTypeMenu(void);
 extern void edanimcbLocalParticleTypeMenu(struct eduimenu_s *menu);
-extern void edanimcbSetParticleRate(void *menu, struct edanimitem_s *item);
-extern void edanimcbToggleParticleSwitch(void *menu, struct edanimitem_s *item);
+extern void edanimcbSetParticleRate(void *menu, struct eduiitem_s *item);
+extern void edanimcbToggleParticleSwitch(void *menu, struct eduiitem_s *item);
 extern void edanimcbCancelLocalParticleMenu(void);
-extern void edanimcbSetLocalParticleType(void *menu, struct edanimitem_s *item);
+extern void edanimcbSetLocalParticleType(void *menu, struct eduiitem_s *item);
 extern void edanimcbCancelLocalParticleTypeMenu(void);
-extern void edanimcbSetLocalSoundType(void *menu, struct edanimitem_s *item);
+extern void edanimcbSetLocalSoundType(void *menu, struct eduiitem_s *item);
 extern void edanimcbCancelLocalSoundTypeMenu(void);
-extern void edanimcbSetSoundType(void *menu, struct edanimitem_s *item);
+extern void edanimcbSetSoundType(void *menu, struct eduiitem_s *item);
 extern void edanimcbCancelSoundTypeMenu(void);
 extern void edanimcbCancelOptMenu(void);
 extern void edanimcbParticleMenu(struct eduimenu_s *menu);
@@ -528,17 +484,16 @@ extern void edanimcbMCTBCardType(void *menu);
 extern void edanimcbMCTBCardCheckFormat(void *menu);
 extern void edanimcbMCTBCardFreeSpace(void *menu);
 extern void edanimcbMCTBCardSlotsUsed(void *menu);
-extern void edanimcbMCTBCardSaveSlot(void *menu, struct edanimitem_s *item);
-extern void edanimcbMCTBCardLoadSlot(void *menu, struct edanimitem_s *item);
-extern void edanimcbMCTBCardDeleteSlot(void *menu, struct edanimitem_s *item);
+extern void edanimcbMCTBCardSaveSlot(void *menu, struct eduiitem_s *item);
+extern void edanimcbMCTBCardLoadSlot(void *menu, struct eduiitem_s *item);
+extern void edanimcbMCTBCardDeleteSlot(void *menu, struct eduiitem_s *item);
 extern void edanimcbMCTBCardUnFormat(void *menu);
 extern void edanimcbMCTBCardFormat(void *menu);
 extern void edanimcbLocalSoundTypeMenu(struct eduimenu_s *menu);
-extern void edanimcbToggleSoundType(void *menu, struct edanimitem_s *item);
-extern void edanimcbSetSoundTiming(void *menu, struct edanimitem_s *item);
+extern void edanimcbToggleSoundType(void *menu, struct eduiitem_s *item);
+extern void edanimcbSetSoundTiming(void *menu, struct eduiitem_s *item);
 extern void edanimcbCancelLocalSoundMenu(void);
 extern void eduiItemSliderSetFmt(void *item, char *fmt);
-extern void eduiItemSliderSetGranularity(void *item, float granularity);
 extern int edanimLookupInstanceIndex(int special);
 extern int edanimLookupSpecial(char *name);
 extern void edanimcbParticleTypeMenu(struct eduimenu_s *menu);
@@ -557,7 +512,7 @@ extern void edanimSoundDestroy(int param, int slot);
 extern void edanimDrawCursor(void);
 extern void edanimRenderParticleEmitters(int param);
 extern void edanimRenderSoundEmitters(int param);
-extern void edanimDoInput(struct pad_s *pad);
+extern void edanimDoInput(struct nupad_s *pad);
 extern void edanimDetermineNearestAnim(float range);
 extern void edanimDetermineNearestParticle(float range);
 extern void edanimDetermineNearestSound(float range);
@@ -950,7 +905,7 @@ void edanimParticleCreate(struct nuvec_s *wpos)
         AnimParams[edanim_nearest_param_id].particle_roty[slot] = edanim_emitroty;
         AnimParams[edanim_nearest_param_id].particle_type[slot] = edanim_particle_type;
         strcpy(AnimParams[edanim_nearest_param_id].particle_name[slot],
-               debtab[edanim_particle_type]->name);
+               debtab[edanim_particle_type]->id);
         AnimParams[edanim_nearest_param_id].particle_rate[slot] = 1;
         AnimParams[edanim_nearest_param_id].particle_switch[slot] = 0;
         AnimParams[edanim_nearest_param_id].particle_count++;
@@ -999,7 +954,7 @@ inline void edanimParticlePlace(int slot, struct nuvec_s *wpos)
 }
 
 
-void edanimDoInput(struct pad_s *pad)
+void edanimDoInput(struct nupad_s *pad)
 {
     struct nuvec_s pos;
     int i;
@@ -1008,7 +963,7 @@ void edanimDoInput(struct pad_s *pad)
         edcamMove(pad);
     }
     if (pad->paddata & 0x100) {
-        if (!edanim_sound_mode && (pad->buttons & 0x80)) {
+        if (!edanim_sound_mode && (pad->paddata_db & 0x80)) {
             if (edanim_particle_mode) {
                 edanim_particle_mode = 0;
             } else if (edanim_nearest != -1 && edanim_nearest_param_id != -1) {
@@ -1016,7 +971,7 @@ void edanimDoInput(struct pad_s *pad)
                 edanim_particle_mode = 1;
             }
         }
-        if (!edanim_particle_mode && (pad->buttons & 0x10)) {
+        if (!edanim_particle_mode && (pad->paddata_db & 0x10)) {
             if (edanim_sound_mode) {
                 edanim_sound_mode = 0;
             } else if (edanim_nearest != -1 && edanim_nearest_param_id != -1) {
@@ -1026,14 +981,14 @@ void edanimDoInput(struct pad_s *pad)
         }
         if (edanim_particle_mode) {
             if (edanim_nearest_particle != -1) {
-                if (pad->buttons & 0x8) {
+                if (pad->paddata_db & 0x8) {
                     edanim_nearest_particle++;
                     if (edanim_nearest_particle
                         == AnimParams[edanim_nearest_param_id].particle_count) {
                         edanim_nearest_particle = 0;
                     }
                 }
-                if (pad->buttons & 0x2) {
+                if (pad->paddata_db & 0x2) {
                     edanim_nearest_particle--;
                     if (edanim_nearest_particle == -1) {
                         edanim_nearest_particle =
@@ -1056,13 +1011,13 @@ void edanimDoInput(struct pad_s *pad)
             }
         } else if (edanim_sound_mode) {
             if (edanim_nearest_sound != -1) {
-                if (pad->buttons & 0x8) {
+                if (pad->paddata_db & 0x8) {
                     edanim_nearest_sound++;
                     if (edanim_nearest_sound == AnimParams[edanim_nearest_param_id].sound_count) {
                         edanim_nearest_sound = 0;
                     }
                 }
-                if (pad->buttons & 0x2) {
+                if (pad->paddata_db & 0x2) {
                     edanim_nearest_sound--;
                     if (edanim_nearest_sound == -1) {
                         edanim_nearest_sound = AnimParams[edanim_nearest_param_id].sound_count - 1;
@@ -1080,13 +1035,13 @@ void edanimDoInput(struct pad_s *pad)
             }
         } else {
             if (edanim_nearest != -1) {
-                if (pad->buttons & 0x8) {
+                if (pad->paddata_db & 0x8) {
                     edanim_nearest++;
                     if (edanim_nearest == edanim_base_scene->numspecial) {
                         edanim_nearest = 0;
                     }
                 }
-                if (pad->buttons & 0x2) {
+                if (pad->paddata_db & 0x2) {
                     edanim_nearest--;
                     if (edanim_nearest == -1) {
                         edanim_nearest = edanim_base_scene->numspecial - 1;
@@ -1109,10 +1064,10 @@ void edanimDoInput(struct pad_s *pad)
     }
     edcamGetPosAng(&edanim_cam_pos, &edanim_cam_ax, &edanim_cam_ay);
     if (!(pad->paddata & 0x100)) {
-        if (pad->buttons & 0x80) {
+        if (pad->paddata_db & 0x80) {
             edanim_active_menu = edanim_options_menu;
         }
-        if (pad->buttons & 0x40) {
+        if (pad->paddata_db & 0x40) {
             if (edanim_particle_mode) {
                 edanimParticleCreate(&edanim_cam_pos);
             } else if (edanim_sound_mode) {
@@ -1132,7 +1087,7 @@ void edanimDoInput(struct pad_s *pad)
                 }
             }
         }
-        if (pad->buttons & 0x10) {
+        if (pad->paddata_db & 0x10) {
             if (edanim_particle_mode) {
                 if (edanim_nearest_particle != -1) {
                     edanimParticleDestroy(edanim_nearest_param_id, edanim_nearest_particle);
@@ -1153,13 +1108,13 @@ void edanimDoInput(struct pad_s *pad)
         }
     }
     if (edanim_particle_mode) {
-        edanim_emitroty += pad->right_pressure;
-        edanim_emitroty -= pad->left_pressure;
-        edanim_emitrotz += pad->up_pressure;
+        edanim_emitroty += pad->rdata.l_algpad_r;
+        edanim_emitroty -= pad->rdata.l_algpad_l;
+        edanim_emitrotz += pad->rdata.l_algpad_u;
         if (edanim_emitrotz > 0) {
             edanim_emitrotz = 0;
         }
-        edanim_emitrotz -= pad->down_pressure;
+        edanim_emitrotz -= pad->rdata.l_algpad_d;
         if (edanim_emitrotz < -0x8000) {
             edanim_emitrotz = -0x8000;
         }
@@ -1408,7 +1363,7 @@ void edanimDrawCursor(void)
                 NuFntPrintEx(0x1810, 0xCD0, 0, cursor_text_no_type);
             } else {
                 NuFntPrintEx(0x1810, 0xCD0, 0, cursor_text_type,
-                             debtab[edanim_particle_type]->name);
+                             debtab[edanim_particle_type]->id);
             }
         } else if (edanim_sound_mode) {
             NuFntPrintEx(0x1810, 0xC30, 0, cursor_text_sounds,
@@ -1433,7 +1388,7 @@ static inline void edanimAddSwitchTypeItem(struct eduistyle_s *style, int type, 
                     eduiItemCheckCreate(type, style,
                                         AnimParams[edanim_nearest_param_id].switch_type == type,
                                         1, edanimcbSetSwitchType, text));
-    if (edui_last_item->toggle) {
+    if (edui_last_item->on) {
         edanim_switchtype_menu->current = edui_last_item;
     }
 }
@@ -1551,7 +1506,7 @@ void edanimcbParticleTypeMenu(struct eduimenu_s *menu)
                 }
                 eduiMenuAddItem(edanim_particletype_menu,
                                 eduiItemCheckCreate(i, &style, selected, 1,
-                                                    edanimcbSetParticleType, debtab[i]->name));
+                                                    edanimcbSetParticleType, debtab[i]->id));
                 if (selected == 1) {
                     edanim_particletype_menu->current = edui_last_item;
                 }
@@ -1756,7 +1711,7 @@ void edanimInit(void)
 void edanimRenderParticleEmitters(int param)
 {
     struct nuvec_s *origin;
-    struct debtypedef_s *type;
+    struct debinfo_s *type;
     int colour;
     int i;
 
@@ -1769,7 +1724,7 @@ void edanimRenderParticleEmitters(int param)
                     edbitsDrawCube(origin->x + AnimParams[param].particle_pos[i].x,
                                    origin->y + AnimParams[param].particle_pos[i].y,
                                    origin->z + AnimParams[param].particle_pos[i].z,
-                                   type->varstart.x, type->varstart.y, type->varstart.z,
+                                   type->variable_start.x, type->variable_start.y, type->variable_start.z,
                                    edanim_emitrotz, edanim_emitroty, 0, 0, 0xFF008000,
                                    edanim_mtl_zoff);
                 }
@@ -1901,7 +1856,7 @@ float edanimPlayerAnimDistance(int param)
 }
 
 
-void edanimcbSetSwitchType(void *menu, struct edanimitem_s *item)
+void edanimcbSetSwitchType(void *menu, struct eduiitem_s *item)
 {
     eduiMenuDetach(menu);
     eduiMenuDestroy(menu);
@@ -1910,26 +1865,26 @@ void edanimcbSetSwitchType(void *menu, struct edanimitem_s *item)
 }
 
 
-void edanimcbSetSwitchId(void *menu, struct edanimitem_s *item)
+void edanimcbSetSwitchId(void *menu, struct eduiitem_s *item)
 {
     if (edanim_nearest != -1 && edanim_nearest_param_id != -1) {
-        AnimParams[edanim_nearest_param_id].switch_id = item->fvalue;
+        AnimParams[edanim_nearest_param_id].switch_id = item->u.slider.val;
     }
 }
 
 
-void edanimcbSetSwitchDelay(void *menu, struct edanimitem_s *item)
+void edanimcbSetSwitchDelay(void *menu, struct eduiitem_s *item)
 {
     if (edanim_nearest != -1 && edanim_nearest_param_id != -1) {
-        AnimParams[edanim_nearest_param_id].switch_delay = item->fvalue;
+        AnimParams[edanim_nearest_param_id].switch_delay = item->u.slider.val;
     }
 }
 
 
-void edanimcbSetSwitchVar(void *menu, struct edanimitem_s *item)
+void edanimcbSetSwitchVar(void *menu, struct eduiitem_s *item)
 {
     if (edanim_nearest != -1 && edanim_nearest_param_id != -1) {
-        AnimParams[edanim_nearest_param_id].switch_var = item->fvalue;
+        AnimParams[edanim_nearest_param_id].switch_var = item->u.slider.val;
     }
 }
 
@@ -1948,13 +1903,13 @@ void edanimcbCancelSwitchMenu(void)
 }
 
 
-void edanimcbSetBouncyPlayerGrav(void *menu, struct edanimitem_s *item)
+void edanimcbSetBouncyPlayerGrav(void *menu, struct eduiitem_s *item)
 {
     int id;
 
     if (edanim_nearest != -1) {
         id = edanim_nearest_param_id;
-        AnimParams[id].bouncy_player_grav = item->fvalue;
+        AnimParams[id].bouncy_player_grav = item->u.slider.val;
         if (AnimParams[id].bouncy_instance != -1) {
             PlatInstBounce(AnimParams[id].bouncy_instance,
                            AnimParams[id].bouncy_player_grav,
@@ -1965,13 +1920,13 @@ void edanimcbSetBouncyPlayerGrav(void *menu, struct edanimitem_s *item)
 }
 
 
-void edanimcbSetBouncyTension(void *menu, struct edanimitem_s *item)
+void edanimcbSetBouncyTension(void *menu, struct eduiitem_s *item)
 {
     int id;
 
     if (edanim_nearest != -1) {
         id = edanim_nearest_param_id;
-        AnimParams[id].bouncy_tension = item->fvalue;
+        AnimParams[id].bouncy_tension = item->u.slider.val;
         if (AnimParams[id].bouncy_instance != -1) {
             PlatInstBounce(AnimParams[id].bouncy_instance,
                            AnimParams[id].bouncy_player_grav,
@@ -1982,13 +1937,13 @@ void edanimcbSetBouncyTension(void *menu, struct edanimitem_s *item)
 }
 
 
-void edanimcbSetBouncyDamping(void *menu, struct edanimitem_s *item)
+void edanimcbSetBouncyDamping(void *menu, struct eduiitem_s *item)
 {
     int id;
 
     if (edanim_nearest != -1) {
         id = edanim_nearest_param_id;
-        AnimParams[id].bouncy_damping = item->fvalue;
+        AnimParams[id].bouncy_damping = item->u.slider.val;
         if (AnimParams[id].bouncy_instance != -1) {
             PlatInstBounce(AnimParams[id].bouncy_instance,
                            AnimParams[id].bouncy_player_grav,
@@ -2006,12 +1961,12 @@ void edanimcbCancelBouncyMenu(void)
 }
 
 
-void edanimcbToggleSoundType(void *menu, struct edanimitem_s *item)
+void edanimcbToggleSoundType(void *menu, struct eduiitem_s *item)
 {
     eduiMenuDetach(menu);
     eduiMenuDestroy(menu);
     edanim_soundtype_menu = 0;
-    if (item->toggle == 0) {
+    if (item->on == 0) {
         AnimParams[edanim_nearest_param_id].sound_switch[edanim_nearest_sound] = 0;
         AnimParams[edanim_nearest_param_id].sound_timing[edanim_nearest_sound] = 1.0f;
     } else {
@@ -2021,22 +1976,22 @@ void edanimcbToggleSoundType(void *menu, struct edanimitem_s *item)
 }
 
 
-void edanimcbSetSoundTiming(void *menu, struct edanimitem_s *item)
+void edanimcbSetSoundTiming(void *menu, struct eduiitem_s *item)
 {
-    AnimParams[edanim_nearest_param_id].sound_timing[edanim_nearest_sound] = item->fvalue;
+    AnimParams[edanim_nearest_param_id].sound_timing[edanim_nearest_sound] = item->u.slider.val;
 }
 
 
-void edanimcbToggleParticleSwitch(void *menu, struct edanimitem_s *item)
+void edanimcbToggleParticleSwitch(void *menu, struct eduiitem_s *item)
 {
     if (edanim_nearest_param_id != -1 && edanim_nearest_particle != -1) {
         AnimParams[edanim_nearest_param_id].particle_switch[edanim_nearest_particle] =
-            item->toggle;
+            item->on;
     }
 }
 
 
-void edanimcbSetParticleType(void *menu, struct edanimitem_s *item)
+void edanimcbSetParticleType(void *menu, struct eduiitem_s *item)
 {
     eduiMenuDetach(menu);
     eduiMenuDestroy(menu);
@@ -2049,10 +2004,10 @@ void edanimcbSetParticleType(void *menu, struct edanimitem_s *item)
 }
 
 
-void edanimcbSetParticleRate(void *menu, struct edanimitem_s *item)
+void edanimcbSetParticleRate(void *menu, struct eduiitem_s *item)
 {
     AnimParams[edanim_nearest_param_id].particle_rate[edanim_nearest_particle] =
-        item->fvalue;
+        item->u.slider.val;
 }
 
 
@@ -2083,7 +2038,7 @@ void edanimcbLocalParticleTypeMenu(struct eduimenu_s *menu)
                 }
                 eduiMenuAddItem(edanim_localparticletype_menu,
                                 eduiItemCheckCreate(i, &style, selected, 1,
-                                                    edanimcbSetLocalParticleType, debtab[i]->name));
+                                                    edanimcbSetLocalParticleType, debtab[i]->id));
                 if (selected == 1) {
                     edanim_localparticletype_menu->current = edui_last_item;
                 }
@@ -2294,7 +2249,7 @@ void edanimcbMCTBCardSlotsUsed(void *menu)
 }
 
 
-void edanimcbMCTBCardSaveSlot(void *menu, struct edanimitem_s *item)
+void edanimcbMCTBCardSaveSlot(void *menu, struct eduiitem_s *item)
 {
     char text[32];
 
@@ -2307,7 +2262,7 @@ void edanimcbMCTBCardSaveSlot(void *menu, struct edanimitem_s *item)
 }
 
 
-void edanimcbMCTBCardLoadSlot(void *menu, struct edanimitem_s *item)
+void edanimcbMCTBCardLoadSlot(void *menu, struct eduiitem_s *item)
 {
     char text[32];
 
@@ -2319,7 +2274,7 @@ void edanimcbMCTBCardLoadSlot(void *menu, struct edanimitem_s *item)
 }
 
 
-void edanimcbMCTBCardDeleteSlot(void *menu, struct edanimitem_s *item)
+void edanimcbMCTBCardDeleteSlot(void *menu, struct eduiitem_s *item)
 {
     if (saveloadDeleteSlot(item->value)) {
         eduiCreateMessageMenu(menu, mctb_text_deleted, 1);
@@ -2373,7 +2328,7 @@ void edanimEnter(void)
 }
 
 
-int edanimProc(struct pad_s *pad)
+int edanimProc(struct nupad_s *pad)
 {
     if (edanim_active_menu != 0) {
         eduiMenuProcess(edanim_active_menu, pad);
@@ -2387,7 +2342,7 @@ int edanimProc(struct pad_s *pad)
     } else {
         edanimDetermineNearestAnim(1.0f);
     }
-    if (pad->buttons & 0x800) {
+    if (pad->paddata_db & 0x800) {
         edanim_particle_mode = 0;
         return 1;
     }
@@ -2395,7 +2350,7 @@ int edanimProc(struct pad_s *pad)
 }
 
 
-void edanimcbSetLocalSoundType(void *menu, struct edanimitem_s *item)
+void edanimcbSetLocalSoundType(void *menu, struct eduiitem_s *item)
 {
     eduiMenuDetach(menu);
     eduiMenuDestroy(menu);
@@ -2407,14 +2362,14 @@ void edanimcbSetLocalSoundType(void *menu, struct edanimitem_s *item)
 }
 
 
-void edanimcbSetLocalParticleType(void *menu, struct edanimitem_s *item)
+void edanimcbSetLocalParticleType(void *menu, struct eduiitem_s *item)
 {
     eduiMenuDetach(menu);
     eduiMenuDestroy(menu);
     edanim_localparticletype_menu = 0;
     AnimParams[edanim_nearest_param_id].particle_type[edanim_nearest_particle] = item->value;
     strcpy(AnimParams[edanim_nearest_param_id].particle_name[edanim_nearest_particle],
-           debtab[edanim_nearest_particle]->name);
+           debtab[edanim_nearest_particle]->id);
     edanim_particle_type = item->value;
 }
 
@@ -2479,7 +2434,7 @@ void edanimcbCancelSoundMenu(void)
 }
 
 
-void edanimcbSetSoundType(void *menu, struct edanimitem_s *item)
+void edanimcbSetSoundType(void *menu, struct eduiitem_s *item)
 {
     eduiMenuDetach(menu);
     eduiMenuDestroy(menu);

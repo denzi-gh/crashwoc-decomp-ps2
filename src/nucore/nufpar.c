@@ -21,35 +21,7 @@
 
 #include "nu_libc.h"
 
-typedef struct NuFPar NuFPar;
-
-typedef struct NuFParCommand {
-    char *name;
-    void (*handler)(NuFPar *parser);
-} NuFParCommand;
-
-struct NuFPar {
-    int handle;
-    char buffer[0x1000];
-    char line[0x101];
-    char word[0x103];
-    int line_number;
-    int word_offset;
-    int position;
-    int buffer_start;
-    int buffer_end;
-    NuFParCommand *commands[8];
-    int command_index;
-    int size;
-};
-
-typedef struct NuFParPos {
-    int line_number;
-    int word_offset;
-    int position;
-    int buffer_start;
-    int buffer_end;
-} NuFParPos;
+#include "nucore/nufpar.h"
 
 /* The target names this word as _fbss + 0x8. */
 extern int D_00633008;
@@ -66,47 +38,47 @@ extern void *NuMemAllocFn(int size, char *file, int line);
 extern void NuMemFreeFn(void *ptr, char *file, int line);
 
 
-inline char NuGetChar(NuFPar *parser)
+inline char NuGetChar(struct nufpar_s *parser)
 {
     int start;
     int count;
     int read;
     char c;
 
-    start = parser->buffer_end;
+    start = parser->buffend;
     if (start < 0) {
         start = 0;
     }
-    if (parser->position > parser->buffer_end) {
-        if (parser->buffer_end + 1 >= parser->size) {
+    if (parser->cpos > parser->buffend) {
+        if (parser->buffend + 1 >= parser->size) {
             return 0;
         }
         count = parser->size - start;
         if (count > 0x1000) {
             count = 0x1000;
         }
-        read = NuFileRead(parser->handle, parser->buffer, count);
-        parser->buffer_start = parser->buffer_end + 1;
-        parser->buffer_end += read;
+        read = NuFileRead(parser->fh, parser->fbuff, count);
+        parser->buffstart = parser->buffend + 1;
+        parser->buffend += read;
         if (read == 0) {
             return 0;
         }
     }
-    c = parser->buffer[parser->position - parser->buffer_start];
-    parser->position++;
+    c = parser->fbuff[parser->cpos - parser->buffstart];
+    parser->cpos++;
     return c;
 }
 
 
-int NuFParGetLine(NuFPar *parser)
+int NuFParGetLine(struct nufpar_s *parser)
 {
     int length;
     int done;
     char c;
 
     length = 0;
-    parser->word_offset = 0;
-    parser->line_number++;
+    parser->line_pos = 0;
+    parser->line_num++;
     for (;;) {
         c = NuGetChar(parser);
         switch (c) {
@@ -114,11 +86,11 @@ int NuFParGetLine(NuFPar *parser)
             NuGetChar(parser);
         case '\n':
             if (length == 0) {
-                parser->line_number++;
+                parser->line_num++;
                 break;
             }
         case 0:
-            parser->line[length] = 0;
+            parser->lbuff[length] = 0;
             return length;
         case ';':
             if (length == 0) {
@@ -135,12 +107,12 @@ int NuFParGetLine(NuFPar *parser)
                     }
                 } while (!done);
                 length = 0;
-                parser->word_offset = 0;
-                parser->line_number++;
+                parser->line_pos = 0;
+                parser->line_num++;
                 break;
             }
         default:
-            parser->line[length & 0xFF] = c;
+            parser->lbuff[length & 0xFF] = c;
             length++;
             break;
         }
@@ -148,7 +120,7 @@ int NuFParGetLine(NuFPar *parser)
 }
 
 
-inline int NuFParGetWord(NuFPar *parser)
+inline int NuFParGetWord(struct nufpar_s *parser)
 {
     int length;
     int quoted;
@@ -156,16 +128,16 @@ inline int NuFParGetWord(NuFPar *parser)
 
     length = 0;
     quoted = 0;
-    nufpar_word_start = parser->word_offset;
-    while (parser->line[parser->word_offset & 0xFF] != 0) {
-        c = parser->line[parser->word_offset];
+    nufpar_word_start = parser->line_pos;
+    while (parser->lbuff[parser->line_pos & 0xFF] != 0) {
+        c = parser->lbuff[parser->line_pos];
         switch (c) {
         case ' ':
         case '\t':
         case ',':
             if (!quoted) {
                 if (length != 0) {
-                    parser->word[length & 0xFF] = 0;
+                    parser->wbuff[length & 0xFF] = 0;
                     return length;
                 }
                 break;
@@ -174,67 +146,67 @@ inline int NuFParGetWord(NuFPar *parser)
             if (c == '"') {
                 quoted = 1 - quoted;
             } else {
-                parser->word[length & 0xFF] = c;
+                parser->wbuff[length & 0xFF] = c;
                 length++;
             }
             break;
         }
-        parser->word_offset++;
+        parser->line_pos++;
     }
-    parser->word[length & 0xFF] = 0;
+    parser->wbuff[length & 0xFF] = 0;
     return length;
 }
 
 
-int NuFParGetInt(NuFPar *parser)
+int NuFParGetInt(struct nufpar_s *parser)
 {
     NuFParGetWord(parser);
-    if (parser->word[0] != 0) {
-        return atoi(parser->word);
+    if (parser->wbuff[0] != 0) {
+        return atoi(parser->wbuff);
     }
     return 0;
 }
 
 
-float NuFParGetFloat(NuFPar *parser)
+float NuFParGetFloat(struct nufpar_s *parser)
 {
     NuFParGetWord(parser);
-    if (parser->word[0] != 0) {
-        return atof(parser->word);
+    if (parser->wbuff[0] != 0) {
+        return atof(parser->wbuff);
     }
     return 0.0f;
 }
 
 
-void NuFParGetPos(NuFPar *parser, NuFParPos *pos)
+void NuFParGetPos(struct nufpar_s *parser, struct nufparpos_s *pos)
 {
-    pos->line_number = parser->line_number;
-    pos->word_offset = parser->word_offset;
-    pos->position = parser->position;
-    pos->buffer_start = parser->buffer_start;
-    pos->buffer_end = parser->buffer_end;
+    pos->line_num = parser->line_num;
+    pos->line_pos = parser->line_pos;
+    pos->cpos = parser->cpos;
+    pos->buffstart = parser->buffstart;
+    pos->buffend = parser->buffend;
 }
 
 
-void NuFParSetPos(NuFPar *parser, NuFParPos *pos)
+void NuFParSetPos(struct nufpar_s *parser, struct nufparpos_s *pos)
 {
-    parser->position = pos->position;
-    parser->word_offset = pos->word_offset;
-    if (parser->position < parser->buffer_start ||
-        parser->position > parser->buffer_end) {
-        parser->buffer_end = parser->position - 1;
+    parser->cpos = pos->cpos;
+    parser->line_pos = pos->line_pos;
+    if (parser->cpos < parser->buffstart ||
+        parser->cpos > parser->buffend) {
+        parser->buffend = parser->cpos - 1;
     }
 }
 
 
-int NuFParPushCom(NuFPar *parser, NuFParCommand *command)
+int NuFParPushCom(struct nufpar_s *parser, struct nufpcomjmp_s *command)
 {
     int result;
 
-    if (parser->command_index < 7) {
-        parser->command_index++;
-        parser->commands[parser->command_index] = command;
-        result = parser->command_index;
+    if (parser->compos < 7) {
+        parser->compos++;
+        parser->comstack[parser->compos] = command;
+        result = parser->compos;
     } else {
         result = -1;
     }
@@ -242,23 +214,23 @@ int NuFParPushCom(NuFPar *parser, NuFParCommand *command)
 }
 
 
-void NuFParPopCom(NuFPar *parser)
+void NuFParPopCom(struct nufpar_s *parser)
 {
-    if (parser->command_index >= 0) {
-        parser->command_index--;
+    if (parser->compos >= 0) {
+        parser->compos--;
     }
 }
 
 
-int NuFParInterpretWord(NuFPar *parser)
+int NuFParInterpretWord(struct nufpar_s *parser)
 {
     int i;
 
-    if (parser->command_index >= 0) {
-        for (i = 0; parser->commands[parser->command_index][i].name != 0; i++) {
-            if (strcasecmp(parser->commands[parser->command_index][i].name,
-                           parser->word) == 0) {
-                parser->commands[parser->command_index][i].handler(parser);
+    if (parser->compos >= 0) {
+        for (i = 0; parser->comstack[parser->compos][i].fname != 0; i++) {
+            if (strcasecmp(parser->comstack[parser->compos][i].fname,
+                           parser->wbuff) == 0) {
+                parser->comstack[parser->compos][i].func(parser);
                 return 1;
             }
         }
@@ -267,49 +239,49 @@ int NuFParInterpretWord(NuFPar *parser)
 }
 
 
-void NuFParUnGetWord(NuFPar *parser)
+void NuFParUnGetWord(struct nufpar_s *parser)
 {
-    parser->word_offset = nufpar_word_start;
+    parser->line_pos = nufpar_word_start;
 }
 
 
-inline void NuFParClose(NuFPar *parser)
+inline void NuFParClose(struct nufpar_s *parser)
 {
     NuMemFreeFn(parser, nufpar_srcfile, 0x130);
 }
 
 
-inline NuFPar *NuFParOpen(int handle)
+inline struct nufpar_s *NuFParOpen(int handle)
 {
-    NuFPar *parser;
+    struct nufpar_s *parser;
 
-    parser = NuMemAllocFn(sizeof(NuFPar), nufpar_srcfile, 0x13E);
+    parser = NuMemAllocFn(sizeof(struct nufpar_s), nufpar_srcfile, 0x13E);
     if (parser) {
-        memset(parser, 0, sizeof(NuFPar));
-        parser->handle = handle;
-        parser->buffer_end = -1;
-        parser->line_number = -1;
-        parser->command_index = -1;
+        memset(parser, 0, sizeof(struct nufpar_s));
+        parser->fh = handle;
+        parser->buffend = -1;
+        parser->line_num = -1;
+        parser->compos = -1;
         parser->size = NuFileOpenSize(handle);
     }
     return parser;
 }
 
 
-void NuFParDestroy(NuFPar *parser)
+void NuFParDestroy(struct nufpar_s *parser)
 {
     int handle;
 
-    handle = parser->handle;
+    handle = parser->fh;
     NuFParClose(parser);
     NuFileClose(handle);
 }
 
 
-NuFPar *NuFParCreate(char *name)
+struct nufpar_s *NuFParCreate(char *name)
 {
     int handle;
-    NuFPar *parser;
+    struct nufpar_s *parser;
 
     handle = NuFileOpen(name, 0);
     if (handle) {

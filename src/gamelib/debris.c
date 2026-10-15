@@ -73,168 +73,13 @@
 #include "numath/nuvec.h"
 #include "nu3d/numtl.h"
 #include "nu3d/nutex.h"
-
-struct debinfo_s;
-struct debpart_s;
-
-struct debemit_s {
-    struct nuvec_s mom;
-    f32 time;
-};
-struct debchunk_s;
-
-struct deb_s {
-    struct debchunk_s *chunks[256];
-    struct numtx_s rotmtx;
-    struct numtx_s emitrotmtx;
-    s16 chunkcount;
-    s16 debtype;
-    s16 on;
-    s16 limit;
-    s16 ctrlcount;
-    s16 index;
-    s16 reqchunkcount;
-    s16 reqcount;
-    struct nuvec_s emitpos;
-    struct nuvec_s emitoffset;
-    struct debpart_s *(*gensort)();
-    void (*gencode)(struct deb_s *deb, struct debinfo_s *info, struct debpart_s *part);
-    struct deb_s *next;
-    u8 pad_4B4[4];
-    s16 rotory;
-    s16 rotorz;
-    s32 instances;
-    s16 oncount;
-    s16 delay;
-    struct debemit_s emits[8];
-    s16 emitflag;
-    s16 emitting;
-    s32 trigger;
-    s32 trigger_param;
-    f32 trigger_value;
-    s16 reflect_a;
-    s16 reflect_b;
-    f32 reflect_x;
-    f32 reflect_y;
-    s16 soundtimer[4];
-    s16 groupid;
-    u8 pad_56A[2];
-};
+#include "gamelib/debris.h"
 
 struct debpart_s {
     struct nuvec_s pos;
     f32 time;
     struct nuvec_s mom;
     f32 rate;
-};
-
-struct debsound_s {
-    s32 id;
-    s32 type;
-    s16 delay;
-    u8 pad_0A[2];
-};
-
-struct debkey_s {
-    f32 time;
-    f32 value;
-};
-
-struct debcolkey_s {
-    f32 time;
-    f32 r;
-    f32 g;
-    f32 b;
-};
-
-struct debdma_s;
-
-union debchannel_u {
-    f32 coord;
-    u8 colour;
-    u32 bits;
-};
-
-struct debinfo_s {
-    char name[0x10];
-    u8 pad_10[2];
-    s16 emitrate;
-    s16 partcount;
-    s16 startoffset;
-    s16 ival_on;
-    s16 ival_on_ran;
-    s16 ival_off;
-    s16 ival_off_ran;
-    s8 gensort;
-    s8 gencode;
-    s8 mtlindex;
-    u8 pad_23[5];
-    f32 mindist;
-    f32 maxdist;
-    f32 cutoff;
-    f32 mom_ybias;
-    struct nuvec_s variable_emit;
-    struct nuvec_s variable_scale;
-    struct nuvec_s pos_offset;
-    struct nuvec_s pos_offset_scale;
-    struct nuvec_s pos_range;
-    struct nuvec_s pos_base;
-    struct nuvec_s mom_range;
-    struct nuvec_s mom_base;
-    f32 gtime;
-    f32 etime;
-    s16 frames;
-    s8 columns;
-    s8 rows;
-    union debchannel_u frame;
-    f32 wobble_xfreq;
-    f32 wobble_xamp;
-    f32 wobble_yfreq;
-    f32 wobble_yamp;
-    struct debcolkey_s colkeys[8];
-    struct debkey_s alphakeys[8];
-    u8 pad_178[8];
-    struct debkey_s widthkeys[8];
-    struct debkey_s heightkeys[8];
-    u8 pad_200[8];
-    struct debkey_s rotkeys[8];
-    u8 pad_248[0x80];
-    f32 u0;
-    f32 v0;
-    f32 u1;
-    f32 v1;
-    struct debdma_s *dmatype;
-    struct debkey_s radiuskeys[8];
-    s8 emitcount;
-    u8 pad_31D[3];
-    s32 key;
-    struct debsound_s sounds[4];
-};
-
-struct debtri_s {
-    union debchannel_u v0x;
-    union debchannel_u v0y;
-    union debchannel_u v1x;
-    union debchannel_u v1y;
-    f32 v2x;
-    f32 v2y;
-    u8 pad_18[8];
-};
-
-struct debdma_s {
-    u8 pad_00[0x14];
-    f32 gtime;
-    u8 pad_18[0x18];
-    s32 u0;
-    s32 v0;
-    s32 u1;
-    s32 v1;
-    s32 u2;
-    s32 v2;
-    s32 u3;
-    s32 v3;
-    u8 pad_50[0x10];
-    struct debtri_s tri[64];
 };
 
 struct debchunk_s {
@@ -246,7 +91,7 @@ struct chunkctrl_s {
     struct debchunk_s *chunk;
     s32 life;
     s32 state;
-    struct deb_s *deb;
+    struct debkeydatatype_s *deb;
     struct chunkctrl_s *next;
     s32 partindex;
     f32 bouncetime;
@@ -258,29 +103,18 @@ struct chunkctrl_s {
     f32 reflect_y;
 };
 
-struct debrender_s {
-    struct debchunk_s *chunk;
-    struct debinfo_s *info;
-    struct deb_s *deb;
-    struct numtx_s mtx;
-    struct nuvec_s pos;
-};
-
-extern struct deb_s debkeydata[];
 extern struct numtl_s *DebMat[8];
 extern s32 debris_emitter_stack_index;
 extern s32 D_0062F29C;
 #define debris_draw_on D_0062F29C
 extern struct debpart_s *(*gensorttab[])();
-extern void (*gencodetab[])(struct deb_s *deb, struct debinfo_s *info, struct debpart_s *part);
-extern struct debinfo_s *debtab[128];
+extern void (*gencodetab[])(struct debkeydatatype_s *deb, struct debinfo_s *info, struct debpart_s *part);
 extern struct numtx_s numtx_identity;
 extern f32 NuTrigTable[];
 extern s32 globalframes;
-extern struct deb_s *debris_emitter_stack[];
+extern struct debkeydatatype_s *debris_emitter_stack[];
 extern s16 freedebkeys[];
 extern s32 freedebkeyptr;
-extern struct debrender_s ParticleChunkRenderStack[256];
 extern struct debchunk_s *freedebchunks[];
 extern s32 freedebchkptr;
 extern struct chunkctrl_s *freechunkcontrols[];
@@ -304,15 +138,15 @@ extern f32 D_0062CEA4;
 #define deb_randtime_scale D_0062CEA4
 
 void SetupDebris(void);
-struct debpart_s *GenDebIndex(struct deb_s *deb, struct debinfo_s *info);
+struct debpart_s *GenDebIndex(struct debkeydatatype_s *deb, struct debinfo_s *info);
 void DebFree(s32 *key);
 void DebFreeInstantly(s32 *key);
-struct deb_s **FindDebrisEffectStack(struct deb_s *node);
-void RemoveDebrisEffectFromStack(struct deb_s *node, struct deb_s **list);
-void DebReAlloc2(struct deb_s *deb);
-void DebReAlloc(struct deb_s *deb, s32 count);
-void DebFreeWithoutKey(struct deb_s *deb);
-void DebrisDoSounds(struct deb_s *deb, s32 type);
+struct debkeydatatype_s **FindDebrisEffectStack(struct debkeydatatype_s *node);
+void RemoveDebrisEffectFromStack(struct debkeydatatype_s *node, struct debkeydatatype_s **list);
+void DebReAlloc2(struct debkeydatatype_s *deb);
+void DebReAlloc(struct debkeydatatype_s *deb, s32 count);
+void DebFreeWithoutKey(struct debkeydatatype_s *deb);
+void DebrisDoSounds(struct debkeydatatype_s *deb, s32 type);
 void AddDebrisEffect(s32 *key, s32 type, f32 x, f32 y, f32 z);
 f32 NuFsqrt(f32 x);
 void edbitsSoundPlay(struct nuvec_s *pos, s32 id);
@@ -321,7 +155,7 @@ void AddChunkControlToStack(struct chunkctrl_s *node, struct chunkctrl_s **list)
 void RemoveChunkControlFromStack(struct chunkctrl_s *node, struct chunkctrl_s **list);
 f32 CameraEmitterDistance(struct nuvec_s *pos);
 s32 DebAlloc(void);
-void AddDebrisEffectToStack(struct deb_s *node, struct deb_s **list);
+void AddDebrisEffectToStack(struct debkeydatatype_s *node, struct debkeydatatype_s **list);
 void DebrisStartOffset(s32 key, s32 offset);
 void NuRndrParticleGroup(struct debchunk_s *chunk, struct debdma_s *dma, struct numtl_s *mtl, struct numtx_s *mtx, s32 flags, f32 time);
 void DebrisEmitterOrientationMtx(s32 key, struct numtx_s *mtx);
@@ -346,44 +180,44 @@ void GenericDebinfoDmaTypeUpdate(struct debinfo_s *info) {
     f32 b;
     f32 alpha;
 
-    if (info->dmatype == 0) {
-        info->dmatype = DmaDebTypes[freeDmaDebType++];
+    if (info->DmaDebTypePointer == 0) {
+        info->DmaDebTypePointer = DmaDebTypes[freeDmaDebType++];
     }
-    info->dmatype->gtime = info->gtime;
-    info->dmatype->u0 = info->dmatype->u2 = info->u0 * 16.0f;
-    info->dmatype->u1 = info->dmatype->u3 = info->u1 * 16.0f;
-    info->dmatype->v0 = info->dmatype->v1 = info->v0 * 16.0f;
-    info->dmatype->v2 = info->dmatype->v3 = info->v1 * 16.0f;
+    info->DmaDebTypePointer->grav = info->grav;
+    info->DmaDebTypePointer->u0 = info->DmaDebTypePointer->u2 = info->u1 * 16.0f;
+    info->DmaDebTypePointer->u1 = info->DmaDebTypePointer->u3 = info->u2 * 16.0f;
+    info->DmaDebTypePointer->v0 = info->DmaDebTypePointer->v1 = info->v1 * 16.0f;
+    info->DmaDebTypePointer->v2 = info->DmaDebTypePointer->v3 = info->v2 * 16.0f;
     for (i = 0; i < 64; i++) {
         t = (f32)i * 0.015625f;
 
         j = 0;
-        while (j < 7 && !(info->widthkeys[j].time <= t && t <= info->widthkeys[j + 1].time)) {
+        while (j < 7 && !(info->wslot[j].t <= t && t <= info->wslot[j + 1].t)) {
             j++;
         }
-        dt = t - info->widthkeys[j].time;
-        range = info->widthkeys[j + 1].time - info->widthkeys[j].time;
-        width = info->widthkeys[j].value + dt / range * (info->widthkeys[j + 1].value - info->widthkeys[j].value);
+        dt = t - info->wslot[j].t;
+        range = info->wslot[j + 1].t - info->wslot[j].t;
+        width = info->wslot[j].value + dt / range * (info->wslot[j + 1].value - info->wslot[j].value);
 
         j = 0;
-        while (j < 7 && !(info->heightkeys[j].time <= t && t <= info->heightkeys[j + 1].time)) {
+        while (j < 7 && !(info->hslot[j].t <= t && t <= info->hslot[j + 1].t)) {
             j++;
         }
-        dt = t - info->heightkeys[j].time;
-        range = info->heightkeys[j + 1].time - info->heightkeys[j].time;
-        height = info->heightkeys[j].value + dt / range * (info->heightkeys[j + 1].value - info->heightkeys[j].value);
+        dt = t - info->hslot[j].t;
+        range = info->hslot[j + 1].t - info->hslot[j].t;
+        height = info->hslot[j].value + dt / range * (info->hslot[j + 1].value - info->hslot[j].value);
 
         j = 0;
-        while (j < 7 && !(info->rotkeys[j].time <= t && t <= info->rotkeys[j + 1].time)) {
+        while (j < 7 && !(info->rotslot[j].t <= t && t <= info->rotslot[j + 1].t)) {
             j++;
         }
-        dt = t - info->rotkeys[j].time;
-        range = info->rotkeys[j + 1].time - info->rotkeys[j].time;
-        angle = info->rotkeys[j].value + dt / range * (info->rotkeys[j + 1].value - info->rotkeys[j].value);
+        dt = t - info->rotslot[j].t;
+        range = info->rotslot[j + 1].t - info->rotslot[j].t;
+        angle = info->rotslot[j].value + dt / range * (info->rotslot[j + 1].value - info->rotslot[j].value);
 
-        tri = &info->dmatype->tri[i];
-        wobx = info->wobble_xamp * NuTrigTable[(u16)(s32)(info->wobble_xfreq * t * 65536.0f)];
-        woby = info->wobble_yamp * NuTrigTable[(u16)(s32)(info->wobble_yfreq * t * 65536.0f)];
+        tri = &info->DmaDebTypePointer->tri[i];
+        wobx = info->jibxamp * NuTrigTable[(u16)(s32)(info->jibxfreq * t * 65536.0f)];
+        woby = info->jibyamp * NuTrigTable[(u16)(s32)(info->jibyfreq * t * 65536.0f)];
         tri->v0x.coord = (-(width * 0.5f) * NuTrigTable[(u16)(s32)(angle + 16384.0f)]
                           - height * 0.5f * NuTrigTable[(u16)(s32)angle] + wobx) * 640.0f * 0.00390625f;
         tri->v0y.coord = width * 0.5f * NuTrigTable[(u16)(s32)angle]
@@ -396,22 +230,22 @@ void GenericDebinfoDmaTypeUpdate(struct debinfo_s *info) {
         tri->v1y.coord = height * NuTrigTable[(u16)(s32)(angle + 16384.0f)];
 
         j = 0;
-        while (j < 7 && !(info->colkeys[j].time <= t && t <= info->colkeys[j + 1].time)) {
+        while (j < 7 && !(info->colslot[j].t <= t && t <= info->colslot[j + 1].t)) {
             j++;
         }
-        dt = t - info->colkeys[j].time;
-        range = info->colkeys[j + 1].time - info->colkeys[j].time;
-        r = info->colkeys[j].r + dt / range * (info->colkeys[j + 1].r - info->colkeys[j].r);
-        g = info->colkeys[j].g + dt / range * (info->colkeys[j + 1].g - info->colkeys[j].g);
-        b = info->colkeys[j].b + dt / range * (info->colkeys[j + 1].b - info->colkeys[j].b);
+        dt = t - info->colslot[j].t;
+        range = info->colslot[j + 1].t - info->colslot[j].t;
+        r = info->colslot[j].r + dt / range * (info->colslot[j + 1].r - info->colslot[j].r);
+        g = info->colslot[j].g + dt / range * (info->colslot[j + 1].g - info->colslot[j].g);
+        b = info->colslot[j].b + dt / range * (info->colslot[j + 1].b - info->colslot[j].b);
 
         j = 0;
-        while (j < 7 && !(info->alphakeys[j].time <= t && t <= info->alphakeys[j + 1].time)) {
+        while (j < 7 && !(info->alpslot[j].t <= t && t <= info->alpslot[j + 1].t)) {
             j++;
         }
-        dt = t - info->alphakeys[j].time;
-        range = info->alphakeys[j + 1].time - info->alphakeys[j].time;
-        alpha = info->alphakeys[j].value + dt / range * (info->alphakeys[j + 1].value - info->alphakeys[j].value);
+        dt = t - info->alpslot[j].t;
+        range = info->alpslot[j + 1].t - info->alpslot[j].t;
+        alpha = info->alpslot[j].value + dt / range * (info->alpslot[j + 1].value - info->alpslot[j].value);
 
         tri->v0x.bits = (tri->v0x.bits & 0xFFFFFF00) + ((s32)r & 0xFF);
         tri->v0y.bits = (tri->v0y.bits & 0xFFFFFF00) + ((s32)g & 0xFF);
@@ -421,28 +255,28 @@ void GenericDebinfoDmaTypeUpdate(struct debinfo_s *info) {
 }
 
 
-struct debpart_s *GenDebIndex(struct deb_s *deb, struct debinfo_s *info) {
+struct debpart_s *GenDebIndex(struct debkeydatatype_s *deb, struct debinfo_s *info) {
     struct nuvec_s v;
     struct debpart_s *part;
 
-    if (deb->index >= deb->limit) {
-        deb->index = 0;
+    if (deb->pointer >= deb->debcount) {
+        deb->pointer = 0;
     }
-    part = deb->chunks[deb->index / 32]->parts;
-    part += (s16)(deb->index % 32);
-    deb->index++;
+    part = deb->chunks[deb->pointer / 32]->parts;
+    part += (s16)(deb->pointer % 32);
+    deb->pointer++;
     part->time = globaltime;
     part->rate = 64.0f / info->etime;
-    v.x = (f32)rand() * info->pos_offset_scale.x - info->pos_offset.x;
-    v.y = (f32)rand() * info->pos_offset_scale.y - info->pos_offset.y;
-    v.z = (f32)rand() * info->pos_offset_scale.z - info->pos_offset.z;
+    v.x = (f32)rand() * info->variable_start_ranscale.x - info->variable_start.x;
+    v.y = (f32)rand() * info->variable_start_ranscale.y - info->variable_start.y;
+    v.z = (f32)rand() * info->variable_start_ranscale.z - info->variable_start.z;
     NuVecMtxTransform(&v, &v, &deb->emitrotmtx);
     part->pos.x = v.x;
     part->pos.y = v.y;
     part->pos.z = v.z;
-    v.x = (f32)rand() * info->variable_scale.x - info->variable_emit.x;
-    v.y = (f32)rand() * info->variable_scale.y - info->variable_emit.y + info->mom_ybias;
-    v.z = (f32)rand() * info->variable_scale.z - info->variable_emit.z;
+    v.x = (f32)rand() * info->variable_emit_ranscale.x - info->variable_emit.x;
+    v.y = (f32)rand() * info->variable_emit_ranscale.y - info->variable_emit.y + info->emitmag;
+    v.z = (f32)rand() * info->variable_emit_ranscale.z - info->variable_emit.z;
     NuVecMtxTransform(&v, &v, &deb->emitrotmtx);
     part->mom.x = v.x;
     part->mom.y = v.y;
@@ -453,32 +287,32 @@ struct debpart_s *GenDebIndex(struct deb_s *deb, struct debinfo_s *info) {
     part->pos.x += deb->emitoffset.x;
     part->pos.y += deb->emitoffset.y;
     part->pos.z += deb->emitoffset.z;
-    if (info->dmatype == 0) {
+    if (info->DmaDebTypePointer == 0) {
         GenericDebinfoDmaTypeUpdate(info);
     }
     return part;
 }
 
 
-struct debpart_s *GenDebIndexRadial(struct deb_s *deb, struct debinfo_s *info) {
+struct debpart_s *GenDebIndexRadial(struct debkeydatatype_s *deb, struct debinfo_s *info) {
     struct nuvec_s v;
     struct debpart_s *part;
     s32 roty;
     s32 rotz;
     f32 zero;
 
-    if (deb->index >= deb->limit) {
-        deb->index = 0;
+    if (deb->pointer >= deb->debcount) {
+        deb->pointer = 0;
     }
-    part = deb->chunks[deb->index / 32]->parts;
-    part += (s16)(deb->index % 32);
-    deb->index++;
+    part = deb->chunks[deb->pointer / 32]->parts;
+    part += (s16)(deb->pointer % 32);
+    deb->pointer++;
     part->time = globaltime;
     part->rate = 64.0f / info->etime;
     zero = 0.0f;
-    roty = (f32)rand() * info->variable_scale.y - info->variable_emit.y + info->pos_offset.y;
-    rotz = (f32)rand() * info->variable_scale.z - info->variable_emit.z + info->pos_offset.z;
-    v.y = info->pos_offset.x;
+    roty = (f32)rand() * info->variable_emit_ranscale.y - info->variable_emit.y + info->variable_start.y;
+    rotz = (f32)rand() * info->variable_emit_ranscale.z - info->variable_emit.z + info->variable_start.z;
+    v.y = info->variable_start.x;
     v.z = zero;
     v.x = zero;
     NuVecRotateZ(&v, &v, rotz);
@@ -487,7 +321,7 @@ struct debpart_s *GenDebIndexRadial(struct deb_s *deb, struct debinfo_s *info) {
     part->pos.x = v.x;
     part->pos.y = v.y;
     part->pos.z = v.z;
-    v.y = (f32)rand() * info->variable_scale.x - info->variable_emit.x + info->mom_ybias;
+    v.y = (f32)rand() * info->variable_emit_ranscale.x - info->variable_emit.x + info->emitmag;
     v.z = zero;
     v.x = zero;
     NuVecRotateZ(&v, &v, rotz);
@@ -502,41 +336,41 @@ struct debpart_s *GenDebIndexRadial(struct deb_s *deb, struct debinfo_s *info) {
     part->pos.x += deb->emitoffset.x;
     part->pos.y += deb->emitoffset.y;
     part->pos.z += deb->emitoffset.z;
-    if (info->dmatype == 0) {
+    if (info->DmaDebTypePointer == 0) {
         GenericDebinfoDmaTypeUpdate(info);
     }
     return part;
 }
 
 
-struct debpart_s *GenDebIndexRadialRotor(struct deb_s *deb, struct debinfo_s *info) {
+struct debpart_s *GenDebIndexRadialRotor(struct debkeydatatype_s *deb, struct debinfo_s *info) {
     struct nuvec_s v;
     struct debpart_s *part;
     s32 roty;
     s32 rotz;
     f32 zero;
 
-    if (deb->index >= deb->limit) {
-        deb->index = 0;
+    if (deb->pointer >= deb->debcount) {
+        deb->pointer = 0;
     }
-    part = deb->chunks[deb->index / 32]->parts;
-    part += (s16)(deb->index % 32);
-    deb->index++;
+    part = deb->chunks[deb->pointer / 32]->parts;
+    part += (s16)(deb->pointer % 32);
+    deb->pointer++;
     part->time = globaltime;
     part->rate = 64.0f / info->etime;
     zero = 0.0f;
     v.z = zero;
-    rotz = deb->rotorz + info->pos_offset.z;
-    roty = deb->rotory + info->pos_offset.y;
+    rotz = deb->rotorz + info->variable_start.z;
+    roty = deb->rotory + info->variable_start.y;
     v.x = zero;
-    v.y = info->pos_offset.x;
+    v.y = info->variable_start.x;
     NuVecRotateZ(&v, &v, rotz);
     NuVecRotateY(&v, &v, roty);
     NuVecMtxTransform(&v, &v, &deb->emitrotmtx);
     part->pos.x = v.x;
     part->pos.y = v.y;
     part->pos.z = v.z;
-    v.y = (f32)rand() * info->variable_scale.x - info->variable_emit.x + info->mom_ybias;
+    v.y = (f32)rand() * info->variable_emit_ranscale.x - info->variable_emit.x + info->emitmag;
     v.z = zero;
     v.x = zero;
     NuVecRotateZ(&v, &v, rotz);
@@ -551,7 +385,7 @@ struct debpart_s *GenDebIndexRadialRotor(struct deb_s *deb, struct debinfo_s *in
     part->pos.x += deb->emitoffset.x;
     part->pos.y += deb->emitoffset.y;
     part->pos.z += deb->emitoffset.z;
-    if (info->dmatype == 0) {
+    if (info->DmaDebTypePointer == 0) {
         GenericDebinfoDmaTypeUpdate(info);
     }
     if (info->variable_emit.y == zero) {
@@ -568,19 +402,19 @@ struct debpart_s *GenDebIndexRadialRotor(struct deb_s *deb, struct debinfo_s *in
 }
 
 
-struct debpart_s *GenDebIndexSpheroid(struct deb_s *deb, struct debinfo_s *info) {
+struct debpart_s *GenDebIndexSpheroid(struct debkeydatatype_s *deb, struct debinfo_s *info) {
     struct nuvec_s v;
     struct numtx_s scale;
     struct debpart_s *part;
     s32 roty;
     s32 rotz;
 
-    if (deb->index >= deb->limit) {
-        deb->index = 0;
+    if (deb->pointer >= deb->debcount) {
+        deb->pointer = 0;
     }
-    part = deb->chunks[deb->index / 32]->parts;
-    part += (s16)(deb->index % 32);
-    deb->index++;
+    part = deb->chunks[deb->pointer / 32]->parts;
+    part += (s16)(deb->pointer % 32);
+    deb->pointer++;
     part->time = globaltime;
     part->rate = 64.0f / info->etime;
     v.y = rand() * 4.656612873077393e-10;
@@ -590,17 +424,17 @@ struct debpart_s *GenDebIndexSpheroid(struct deb_s *deb, struct debinfo_s *info)
     NuVecRotateZ(&v, &v, rotz);
     NuVecRotateY(&v, &v, roty);
     NuMtxSetIdentity(&scale);
-    scale._00 = info->pos_offset.x;
-    scale._11 = info->pos_offset.y;
-    scale._22 = info->pos_offset.z;
+    scale._00 = info->variable_start.x;
+    scale._11 = info->variable_start.y;
+    scale._22 = info->variable_start.z;
     NuVecMtxTransform(&v, &v, &scale);
     NuVecMtxTransform(&v, &v, &deb->emitrotmtx);
     part->pos.x = v.x;
     part->pos.y = v.y;
     part->pos.z = v.z;
-    v.x = (f32)rand() * info->variable_scale.x - info->variable_emit.x;
-    v.y = (f32)rand() * info->variable_scale.y - info->variable_emit.y + info->mom_ybias;
-    v.z = (f32)rand() * info->variable_scale.z - info->variable_emit.z;
+    v.x = (f32)rand() * info->variable_emit_ranscale.x - info->variable_emit.x;
+    v.y = (f32)rand() * info->variable_emit_ranscale.y - info->variable_emit.y + info->emitmag;
+    v.z = (f32)rand() * info->variable_emit_ranscale.z - info->variable_emit.z;
     NuVecMtxTransform(&v, &v, &deb->emitrotmtx);
     part->mom.x = v.x;
     part->mom.y = v.y;
@@ -611,7 +445,7 @@ struct debpart_s *GenDebIndexSpheroid(struct deb_s *deb, struct debinfo_s *info)
     part->pos.x += deb->emitoffset.x;
     part->pos.y += deb->emitoffset.y;
     part->pos.z += deb->emitoffset.z;
-    if (info->dmatype == 0) {
+    if (info->DmaDebTypePointer == 0) {
         GenericDebinfoDmaTypeUpdate(info);
     }
     return part;
@@ -646,47 +480,47 @@ inline s32 SolveQuadratic(f32 a, f32 b, f32 c, f32 *x1, f32 *x2) {
 }
 
 
-struct debpart_s *GenDebIndexBounceY(struct deb_s *deb, struct debinfo_s *info) {
+struct debpart_s *GenDebIndexBounceY(struct debkeydatatype_s *deb, struct debinfo_s *info) {
     struct nuvec_s v;
     struct debchunk_s *chunk;
     struct debpart_s *part;
     f32 root1;
     f32 root2;
 
-    if (deb->index >= deb->limit) {
-        deb->index = 0;
+    if (deb->pointer >= deb->debcount) {
+        deb->pointer = 0;
     }
-    chunk = deb->chunks[deb->index / 32];
-    part = &chunk->parts[(s16)(deb->index % 32)];
+    chunk = deb->chunks[deb->pointer / 32];
+    part = &chunk->parts[(s16)(deb->pointer % 32)];
     part->time = globaltime;
     part->rate = 64.0f / info->etime;
-    v.x = (f32)rand() * info->pos_offset_scale.x - info->pos_offset.x;
-    v.y = (f32)rand() * info->pos_offset_scale.y - info->pos_offset.y;
-    v.z = (f32)rand() * info->pos_offset_scale.z - info->pos_offset.z;
+    v.x = (f32)rand() * info->variable_start_ranscale.x - info->variable_start.x;
+    v.y = (f32)rand() * info->variable_start_ranscale.y - info->variable_start.y;
+    v.z = (f32)rand() * info->variable_start_ranscale.z - info->variable_start.z;
     NuVecMtxTransform(&v, &v, &deb->emitrotmtx);
     part->pos.x = v.x;
     part->pos.y = v.y;
     part->pos.z = v.z;
-    v.x = (f32)rand() * info->variable_scale.x - info->variable_emit.x;
-    v.y = (f32)rand() * info->variable_scale.y - info->variable_emit.y + info->mom_ybias;
-    v.z = (f32)rand() * info->variable_scale.z - info->variable_emit.z;
+    v.x = (f32)rand() * info->variable_emit_ranscale.x - info->variable_emit.x;
+    v.y = (f32)rand() * info->variable_emit_ranscale.y - info->variable_emit.y + info->emitmag;
+    v.z = (f32)rand() * info->variable_emit_ranscale.z - info->variable_emit.z;
     NuVecMtxTransform(&v, &v, &deb->emitrotmtx);
     part->mom.x = v.x;
     part->mom.y = v.y;
     part->mom.z = v.z;
-    if (SolveQuadratic(info->gtime, part->mom.y, part->pos.y - deb->reflect_x, &root1, &root2)
+    if (SolveQuadratic(info->grav, part->mom.y, part->pos.y - deb->refoff, &root1, &root2)
         && (root1 > root2 ? root1 : root2) > 0.0f && (root1 > root2 ? root1 : root2) < info->etime
         && freechunkcontrolsptr < 409) {
         freechunkcontrols[freechunkcontrolsptr]->chunk = chunk;
         freechunkcontrols[freechunkcontrolsptr]->life = (root1 > root2 ? root1 : root2) * 60.0f;
         freechunkcontrols[freechunkcontrolsptr]->state = 5;
         freechunkcontrols[freechunkcontrolsptr]->deb = 0;
-        freechunkcontrols[freechunkcontrolsptr]->debtype = deb->debtype;
+        freechunkcontrols[freechunkcontrolsptr]->debtype = deb->type;
         freechunkcontrols[freechunkcontrolsptr]->reflect_a = 0;
         freechunkcontrols[freechunkcontrolsptr]->bounced = 0;
-        freechunkcontrols[freechunkcontrolsptr]->reflect_x = deb->reflect_x;
-        freechunkcontrols[freechunkcontrolsptr]->reflect_y = deb->reflect_y;
-        freechunkcontrols[freechunkcontrolsptr]->partindex = (s16)(deb->index % 32);
+        freechunkcontrols[freechunkcontrolsptr]->reflect_x = deb->refoff;
+        freechunkcontrols[freechunkcontrolsptr]->reflect_y = deb->refbounce;
+        freechunkcontrols[freechunkcontrolsptr]->partindex = (s16)(deb->pointer % 32);
         freechunkcontrols[freechunkcontrolsptr]->bouncetime = root1 > root2 ? root1 : root2;
         AddChunkControlToStack(freechunkcontrols[freechunkcontrolsptr],
                                &debris_chunk_control_stack[debris_chunk_control_stack_index]);
@@ -695,18 +529,18 @@ struct debpart_s *GenDebIndexBounceY(struct deb_s *deb, struct debinfo_s *info) 
     if (deb->gencode != 0) {
         deb->gencode(deb, info, part);
     }
-    deb->index++;
+    deb->pointer++;
     part->pos.x += deb->emitoffset.x;
     part->pos.y += deb->emitoffset.y;
     part->pos.z += deb->emitoffset.z;
-    if (info->dmatype == 0) {
+    if (info->DmaDebTypePointer == 0) {
         GenericDebinfoDmaTypeUpdate(info);
     }
     return part;
 }
 
 
-struct debpart_s *GenDebIndexBounceXZ(struct deb_s *deb, struct debinfo_s *info) {
+struct debpart_s *GenDebIndexBounceXZ(struct debkeydatatype_s *deb, struct debinfo_s *info) {
     struct nuvec_s v;
     struct nuvec_s normal = {1.0f, 0.0f, 0.0f};
     struct nuvec_s plane;
@@ -719,29 +553,29 @@ struct debpart_s *GenDebIndexBounceXZ(struct deb_s *deb, struct debinfo_s *info)
     f32 enddist;
     f32 t;
 
-    if (deb->index >= deb->limit) {
-        deb->index = 0;
+    if (deb->pointer >= deb->debcount) {
+        deb->pointer = 0;
     }
-    chunk = deb->chunks[deb->index / 32];
-    part = &chunk->parts[(s16)(deb->index % 32)];
+    chunk = deb->chunks[deb->pointer / 32];
+    part = &chunk->parts[(s16)(deb->pointer % 32)];
     part->time = globaltime;
     part->rate = 64.0f / info->etime;
-    v.x = (f32)rand() * info->pos_offset_scale.x - info->pos_offset.x;
-    v.y = (f32)rand() * info->pos_offset_scale.y - info->pos_offset.y;
-    v.z = (f32)rand() * info->pos_offset_scale.z - info->pos_offset.z;
+    v.x = (f32)rand() * info->variable_start_ranscale.x - info->variable_start.x;
+    v.y = (f32)rand() * info->variable_start_ranscale.y - info->variable_start.y;
+    v.z = (f32)rand() * info->variable_start_ranscale.z - info->variable_start.z;
     NuVecMtxTransform(&v, &v, &deb->emitrotmtx);
     part->pos.x = v.x;
     part->pos.y = v.y;
     part->pos.z = v.z;
-    v.x = (f32)rand() * info->variable_scale.x - info->variable_emit.x;
-    v.y = (f32)rand() * info->variable_scale.y - info->variable_emit.y + info->mom_ybias;
-    v.z = (f32)rand() * info->variable_scale.z - info->variable_emit.z;
+    v.x = (f32)rand() * info->variable_emit_ranscale.x - info->variable_emit.x;
+    v.y = (f32)rand() * info->variable_emit_ranscale.y - info->variable_emit.y + info->emitmag;
+    v.z = (f32)rand() * info->variable_emit_ranscale.z - info->variable_emit.z;
     NuVecMtxTransform(&v, &v, &deb->emitrotmtx);
     part->mom.x = v.x;
     part->mom.y = v.y;
     part->mom.z = v.z;
-    NuVecRotateY(&normal, &normal, deb->reflect_b);
-    NuVecScale(&plane, &normal, deb->reflect_x);
+    NuVecRotateY(&normal, &normal, deb->refroty);
+    NuVecScale(&plane, &normal, deb->refoff);
     end.x = part->pos.x + info->etime * part->mom.x;
     end.y = 0.0f;
     end.z = part->pos.z + info->etime * part->mom.z;
@@ -756,12 +590,12 @@ struct debpart_s *GenDebIndexBounceXZ(struct deb_s *deb, struct debinfo_s *info)
             freechunkcontrols[freechunkcontrolsptr]->life = t * 60.0f;
             freechunkcontrols[freechunkcontrolsptr]->state = 6;
             freechunkcontrols[freechunkcontrolsptr]->deb = 0;
-            freechunkcontrols[freechunkcontrolsptr]->debtype = deb->debtype;
-            freechunkcontrols[freechunkcontrolsptr]->reflect_a = deb->reflect_b;
+            freechunkcontrols[freechunkcontrolsptr]->debtype = deb->type;
+            freechunkcontrols[freechunkcontrolsptr]->reflect_a = deb->refroty;
             freechunkcontrols[freechunkcontrolsptr]->bounced = 0;
-            freechunkcontrols[freechunkcontrolsptr]->reflect_x = deb->reflect_x;
-            freechunkcontrols[freechunkcontrolsptr]->reflect_y = deb->reflect_y;
-            freechunkcontrols[freechunkcontrolsptr]->partindex = (s16)(deb->index % 32);
+            freechunkcontrols[freechunkcontrolsptr]->reflect_x = deb->refoff;
+            freechunkcontrols[freechunkcontrolsptr]->reflect_y = deb->refbounce;
+            freechunkcontrols[freechunkcontrolsptr]->partindex = (s16)(deb->pointer % 32);
             freechunkcontrols[freechunkcontrolsptr]->bouncetime = t;
             AddChunkControlToStack(freechunkcontrols[freechunkcontrolsptr],
                                    &debris_chunk_control_stack[debris_chunk_control_stack_index]);
@@ -771,26 +605,26 @@ struct debpart_s *GenDebIndexBounceXZ(struct deb_s *deb, struct debinfo_s *info)
     if (deb->gencode != 0) {
         deb->gencode(deb, info, part);
     }
-    deb->index++;
+    deb->pointer++;
     part->pos.x += deb->emitoffset.x;
     part->pos.y += deb->emitoffset.y;
     part->pos.z += deb->emitoffset.z;
-    if (info->dmatype == 0) {
+    if (info->DmaDebTypePointer == 0) {
         GenericDebinfoDmaTypeUpdate(info);
     }
     return part;
 }
 
 
-struct debpart_s *GenDebIndexPos(struct deb_s *deb, struct debinfo_s *info) {
+struct debpart_s *GenDebIndexPos(struct debkeydatatype_s *deb, struct debinfo_s *info) {
     struct debpart_s *part;
 
-    if (deb->index >= deb->limit) {
-        deb->index = 0;
+    if (deb->pointer >= deb->debcount) {
+        deb->pointer = 0;
     }
-    part = deb->chunks[deb->index / 32]->parts;
-    part += (s16)(deb->index % 32);
-    deb->index++;
+    part = deb->chunks[deb->pointer / 32]->parts;
+    part += (s16)(deb->pointer % 32);
+    deb->pointer++;
     part->time = globaltime;
     part->rate = 64.0f / info->etime;
     part->pos.x = (f32)rand() * info->pos_range.x + info->pos_base.x;
@@ -802,22 +636,22 @@ struct debpart_s *GenDebIndexPos(struct deb_s *deb, struct debinfo_s *info) {
     if (deb->gencode != 0) {
         deb->gencode(deb, info, part);
     }
-    if (info->dmatype == 0) {
+    if (info->DmaDebTypePointer == 0) {
         GenericDebinfoDmaTypeUpdate(info);
     }
     return part;
 }
 
 
-struct debpart_s *GenDebIndexPosRandTime(struct deb_s *deb, struct debinfo_s *info) {
+struct debpart_s *GenDebIndexPosRandTime(struct debkeydatatype_s *deb, struct debinfo_s *info) {
     struct debpart_s *part;
 
-    if (deb->index >= deb->limit) {
-        deb->index = 0;
+    if (deb->pointer >= deb->debcount) {
+        deb->pointer = 0;
     }
-    part = deb->chunks[deb->index / 32]->parts;
-    part += (s16)(deb->index % 32);
-    deb->index++;
+    part = deb->chunks[deb->pointer / 32]->parts;
+    part += (s16)(deb->pointer % 32);
+    deb->pointer++;
     part->time = globaltime;
     part->rate = 64.0f / (info->etime + info->etime * rand() / deb_randtime_scale);
     part->pos.x = (f32)rand() * info->pos_range.x + info->pos_base.x;
@@ -829,23 +663,23 @@ struct debpart_s *GenDebIndexPosRandTime(struct deb_s *deb, struct debinfo_s *in
     if (deb->gencode != 0) {
         deb->gencode(deb, info, part);
     }
-    if (info->dmatype == 0) {
+    if (info->DmaDebTypePointer == 0) {
         GenericDebinfoDmaTypeUpdate(info);
     }
     return part;
 }
 
 
-struct debpart_s *GenDebIndexWaterFall(struct deb_s *deb, struct debinfo_s *info) {
+struct debpart_s *GenDebIndexWaterFall(struct debkeydatatype_s *deb, struct debinfo_s *info) {
     struct debpart_s *part;
     f32 spread;
 
-    if (deb->index >= deb->limit) {
-        deb->index = 0;
+    if (deb->pointer >= deb->debcount) {
+        deb->pointer = 0;
     }
-    part = deb->chunks[deb->index / 32]->parts;
-    part += (s16)(deb->index % 32);
-    deb->index++;
+    part = deb->chunks[deb->pointer / 32]->parts;
+    part += (s16)(deb->pointer % 32);
+    deb->pointer++;
     part->time = globaltime;
     part->rate = 64.0f / info->etime;
     spread = rand() * 0.6 * 4.656612873077393e-10 - 0.3;
@@ -859,25 +693,25 @@ struct debpart_s *GenDebIndexWaterFall(struct deb_s *deb, struct debinfo_s *info
     if (deb->gencode != 0) {
         deb->gencode(deb, info, part);
     }
-    if (info->dmatype == 0) {
+    if (info->DmaDebTypePointer == 0) {
         GenericDebinfoDmaTypeUpdate(info);
     }
     return part;
 }
 
 
-struct debpart_s *GenDebIndexWaterFallSplash(struct deb_s *deb, struct debinfo_s *info) {
+struct debpart_s *GenDebIndexWaterFallSplash(struct debkeydatatype_s *deb, struct debinfo_s *info) {
     struct debpart_s *part;
     f32 spread;
     f32 angle;
     f32 speed;
 
-    if (deb->index >= deb->limit) {
-        deb->index = 0;
+    if (deb->pointer >= deb->debcount) {
+        deb->pointer = 0;
     }
-    part = deb->chunks[deb->index / 32]->parts;
-    part += (s16)(deb->index % 32);
-    deb->index++;
+    part = deb->chunks[deb->pointer / 32]->parts;
+    part += (s16)(deb->pointer % 32);
+    deb->pointer++;
     part->time = globaltime;
     part->rate = 64.0f / info->etime;
     spread = rand() * 0.2 * 4.656612873077393e-10 + 0.7f;
@@ -890,7 +724,7 @@ struct debpart_s *GenDebIndexWaterFallSplash(struct deb_s *deb, struct debinfo_s
     if (deb->gencode != 0) {
         deb->gencode(deb, info, part);
     }
-    if (info->dmatype == 0) {
+    if (info->DmaDebTypePointer == 0) {
         GenericDebinfoDmaTypeUpdate(info);
     }
     return part;
@@ -957,7 +791,7 @@ void SplashEffect(struct debdma_s *dma) {
     struct debtri_s *tri;
     s32 i;
 
-    dma->gtime = -0.6f;
+    dma->grav = -0.6f;
     dma->u0 = 0xC00;
     dma->v0 = 0x400;
     dma->u1 = 0xDF0;
@@ -996,7 +830,7 @@ void SplashBodyEffect(struct debdma_s *dma) {
     s32 i;
     s32 size;
 
-    dma->gtime = 0.0f;
+    dma->grav = 0.0f;
     dma->u0 = 0;
     dma->v0 = 0;
     dma->u1 = 0x3F0;
@@ -1024,56 +858,56 @@ void SplashBodyEffect(struct debdma_s *dma) {
 }
 
 
-void DebReAlloc2(struct deb_s *deb) {
+void DebReAlloc2(struct debkeydatatype_s *deb) {
     s32 diff;
     s32 i;
     s32 j;
 
-    diff = deb->reqchunkcount - deb->chunkcount;
+    diff = deb->reqcount - deb->count;
     if (diff > 0) {
         if (diff + freedebchkptr > 256) {
             return;
         }
         for (i = 0; i < diff; i++) {
-            deb->chunks[i + deb->chunkcount] = freedebchunks[i + freedebchkptr];
+            deb->chunks[i + deb->count] = freedebchunks[i + freedebchkptr];
             for (j = 0; j < 32; j++) {
-                deb->chunks[i + deb->chunkcount]->parts[j].time = 0.0f;
-                deb->chunks[i + deb->chunkcount]->parts[j].rate = 32768.0f;
+                deb->chunks[i + deb->count]->parts[j].time = 0.0f;
+                deb->chunks[i + deb->count]->parts[j].rate = 32768.0f;
             }
         }
-        if (deb->chunkcount == 0) {
+        if (deb->count == 0) {
             for (i = 0; i < 256; i++) {
                 if (ParticleChunkRenderStack[i].chunk == 0) {
                     ParticleChunkRenderStack[i].chunk = deb->chunks[0];
-                    ParticleChunkRenderStack[i].info = debtab[deb->debtype];
-                    ParticleChunkRenderStack[i].deb = deb;
+                    ParticleChunkRenderStack[i].debinfo = debtab[deb->type];
+                    ParticleChunkRenderStack[i].debdata = deb;
                     break;
                 }
             }
         }
-        deb->chunkcount = deb->reqchunkcount;
-        deb->limit = deb->reqcount;
+        deb->count = deb->reqcount;
+        deb->debcount = deb->reqdebcount;
         freedebchkptr += diff;
-        LinkDmaParticalSets(deb->chunks, deb->chunkcount);
+        LinkDmaParticalSets(deb->chunks, deb->count);
         return;
     }
     if (freechunkcontrolsptr - diff > 512) {
         return;
     }
     for (i = diff; i < 0; i++) {
-        freechunkcontrols[freechunkcontrolsptr]->chunk = deb->chunks[i + deb->chunkcount];
-        freechunkcontrols[freechunkcontrolsptr]->life = debtab[deb->debtype]->etime * 60.0f;
+        freechunkcontrols[freechunkcontrolsptr]->chunk = deb->chunks[i + deb->count];
+        freechunkcontrols[freechunkcontrolsptr]->life = debtab[deb->type]->etime * 60.0f;
         freechunkcontrols[freechunkcontrolsptr]->state = 0;
         AddChunkControlToStack(freechunkcontrols[freechunkcontrolsptr],
                                &debris_chunk_control_stack[debris_chunk_control_stack_index]);
         freechunkcontrolsptr++;
     }
-    if (deb->reqcount == 0) {
+    if (deb->reqdebcount == 0) {
         for (i = 0; i < 256; i++) {
             if (ParticleChunkRenderStack[i].chunk == deb->chunks[0]) {
-                ParticleChunkRenderStack[i].info = debtab[deb->debtype];
-                ParticleChunkRenderStack[i].deb = 0;
-                ParticleChunkRenderStack[i].mtx = deb->rotmtx;
+                ParticleChunkRenderStack[i].debinfo = debtab[deb->type];
+                ParticleChunkRenderStack[i].debdata = 0;
+                ParticleChunkRenderStack[i].rotmtx = deb->rotmtx;
                 ParticleChunkRenderStack[i].pos.x = deb->emitpos.x;
                 ParticleChunkRenderStack[i].pos.y = deb->emitpos.y;
                 ParticleChunkRenderStack[i].pos.z = deb->emitpos.z;
@@ -1081,13 +915,13 @@ void DebReAlloc2(struct deb_s *deb) {
             }
         }
     } else {
-        LinkDmaParticalSets(&deb->chunks[diff + deb->chunkcount], -diff);
+        LinkDmaParticalSets(&deb->chunks[diff + deb->count], -diff);
         for (i = 0; i < 256; i++) {
             if (ParticleChunkRenderStack[i].chunk == 0) {
-                ParticleChunkRenderStack[i].chunk = deb->chunks[diff + deb->chunkcount];
-                ParticleChunkRenderStack[i].info = debtab[deb->debtype];
-                ParticleChunkRenderStack[i].deb = 0;
-                ParticleChunkRenderStack[i].mtx = deb->rotmtx;
+                ParticleChunkRenderStack[i].chunk = deb->chunks[diff + deb->count];
+                ParticleChunkRenderStack[i].debinfo = debtab[deb->type];
+                ParticleChunkRenderStack[i].debdata = 0;
+                ParticleChunkRenderStack[i].rotmtx = deb->rotmtx;
                 ParticleChunkRenderStack[i].pos.x = deb->emitpos.x;
                 ParticleChunkRenderStack[i].pos.y = deb->emitpos.y;
                 ParticleChunkRenderStack[i].pos.z = deb->emitpos.z;
@@ -1095,12 +929,12 @@ void DebReAlloc2(struct deb_s *deb) {
             }
         }
     }
-    deb->limit = deb->reqcount;
-    deb->chunkcount = deb->reqchunkcount;
-    if (deb->limit == 0) {
+    deb->debcount = deb->reqdebcount;
+    deb->count = deb->reqcount;
+    if (deb->debcount == 0) {
         deb->chunks[0] = 0;
     } else {
-        LinkDmaParticalSets(deb->chunks, deb->chunkcount);
+        LinkDmaParticalSets(deb->chunks, deb->count);
     }
 }
 
@@ -1145,17 +979,17 @@ void DebFree(s32 *key) {
     struct chunkctrl_s **list;
     struct chunkctrl_s *cur;
     struct chunkctrl_s *node;
-    struct deb_s **stack;
+    struct debkeydatatype_s **stack;
     s32 i;
 
     if (*key != -1) {
-        if (freechunkcontrolsptr + debkeydata[*key].chunkcount > 512) {
+        if (freechunkcontrolsptr + debkeydata[*key].count > 512) {
             DebFreeInstantly(key);
             return;
         }
-        for (i = 0; i < debkeydata[*key].chunkcount; i++) {
+        for (i = 0; i < debkeydata[*key].count; i++) {
             freechunkcontrols[freechunkcontrolsptr]->chunk = debkeydata[*key].chunks[i];
-            freechunkcontrols[freechunkcontrolsptr]->life = debtab[debkeydata[*key].debtype]->etime * 60.0f;
+            freechunkcontrols[freechunkcontrolsptr]->life = debtab[debkeydata[*key].type]->etime * 60.0f;
             freechunkcontrols[freechunkcontrolsptr]->state = 0;
             freechunkcontrols[freechunkcontrolsptr]->deb = &debkeydata[*key];
             list = &debris_chunk_control_stack[debris_chunk_control_stack_index];
@@ -1172,8 +1006,8 @@ void DebFree(s32 *key) {
         }
         for (i = 0; i < 256; i++) {
             if (ParticleChunkRenderStack[i].chunk == debkeydata[*key].chunks[0]) {
-                ParticleChunkRenderStack[i].deb = 0;
-                ParticleChunkRenderStack[i].mtx = debkeydata[*key].rotmtx;
+                ParticleChunkRenderStack[i].debdata = 0;
+                ParticleChunkRenderStack[i].rotmtx = debkeydata[*key].rotmtx;
                 ParticleChunkRenderStack[i].pos.x = debkeydata[*key].emitpos.x;
                 ParticleChunkRenderStack[i].pos.y = debkeydata[*key].emitpos.y;
                 ParticleChunkRenderStack[i].pos.z = debkeydata[*key].emitpos.z;
@@ -1182,7 +1016,7 @@ void DebFree(s32 *key) {
         }
         stack = FindDebrisEffectStack(&debkeydata[*key]);
         RemoveDebrisEffectFromStack(&debkeydata[*key], stack);
-        debkeydata[*key].debtype = 0;
+        debkeydata[*key].type = 0;
         freedebkeyptr--;
         freedebkeys[freedebkeyptr] = *key;
         *key = -1;
@@ -1191,24 +1025,24 @@ void DebFree(s32 *key) {
 
 
 void DebFreeInstantly(s32 *key) {
-    struct deb_s **stack;
+    struct debkeydatatype_s **stack;
     s32 i;
     s32 j;
 
     if (*key != -1) {
-        freedebchkptr -= debkeydata[*key].chunkcount;
-        for (i = 0; i < debkeydata[*key].chunkcount; i++) {
+        freedebchkptr -= debkeydata[*key].count;
+        for (i = 0; i < debkeydata[*key].count; i++) {
             freedebchunks[i + freedebchkptr] = debkeydata[*key].chunks[i];
             for (j = 0; j < 256; j++) {
                 if (ParticleChunkRenderStack[j].chunk == debkeydata[*key].chunks[i]) {
                     ParticleChunkRenderStack[j].chunk = 0;
-                    ParticleChunkRenderStack[j].info = 0;
+                    ParticleChunkRenderStack[j].debinfo = 0;
                 }
             }
         }
         stack = FindDebrisEffectStack(&debkeydata[*key]);
         RemoveDebrisEffectFromStack(&debkeydata[*key], stack);
-        debkeydata[*key].debtype = 0;
+        debkeydata[*key].type = 0;
         freedebkeyptr--;
         freedebkeys[freedebkeyptr] = *key;
         *key = -1;
@@ -1222,7 +1056,7 @@ void DebrisStartOffset(s32 key, s32 offset) {
     s32 loopfrac;
 
     if (key != -1) {
-        type = debtab[debkeydata[key].debtype];
+        type = debtab[debkeydata[key].type];
         if (type->ival_on_ran != 0 || type->ival_off_ran != 0) {
             debkeydata[key].delay = 0;
         } else {
@@ -1247,7 +1081,7 @@ void DebrisStartOffset(s32 key, s32 offset) {
 void AddVariableShotDebrisEffectMtx2(s32 type, struct nuvec_s *pos, s32 count, struct numtx_s *emitmtx,
                                      struct numtx_s *mtx) {
     struct debinfo_s *info;
-    struct deb_s *deb;
+    struct debkeydatatype_s *deb;
     struct chunkctrl_s *ctrl;
     struct chunkctrl_s *found;
     f32 dist;
@@ -1266,63 +1100,63 @@ void AddVariableShotDebrisEffectMtx2(s32 type, struct nuvec_s *pos, s32 count, s
     }
     info = debtab[type];
     dist = CameraEmitterDistance(pos);
-    if (dist < info->mindist || info->maxdist <= dist) {
+    if (dist < info->cuton || info->cutoff <= dist) {
         return;
     }
-    if (info->key == -1) {
+    if (info->variable_key == -1) {
         if (freedebkeyptr >= 256) {
             return;
         }
-        info->key = freedebkeys[freedebkeyptr++];
-        deb = &debkeydata[info->key];
-        deb->chunkcount = 0;
-        deb->limit = 0;
-        deb->index = 0;
-        deb->gensort = gensorttab[info->gensort];
+        info->variable_key = freedebkeys[freedebkeyptr++];
+        deb = &debkeydata[info->variable_key];
+        deb->count = 0;
+        deb->debcount = 0;
+        deb->pointer = 0;
+        deb->genptr = gensorttab[info->gensort];
         deb->gencode = gencodetab[info->gencode];
         deb->rotmtx = *mtx;
         deb->rotmtx._30 = 0.0f;
         deb->rotmtx._31 = 0.0f;
         deb->rotmtx._32 = 0.0f;
-        newkey = info->key;
+        newkey = info->variable_key;
         if (newkey != -1) {
             debkeydata[newkey].emitpos.x = 0.0f;
             debkeydata[newkey].emitpos.y = 0.0f;
             debkeydata[newkey].emitpos.z = 0.0f;
         }
     } else {
-        deb = &debkeydata[info->key];
+        deb = &debkeydata[info->variable_key];
     }
-    if (deb->index + count > deb->chunkcount * 32) {
-        if (deb->chunkcount < 0) {
-            deb->chunkcount = 0;
+    if (deb->pointer + count > deb->count * 32) {
+        if (deb->count < 0) {
+            deb->count = 0;
         }
-        chunkcount = (deb->index + count + 31) / 32;
-        newchunks = chunkcount - deb->chunkcount;
+        chunkcount = (deb->pointer + count + 31) / 32;
+        newchunks = chunkcount - deb->count;
         if (freedebchkptr + newchunks >= 256) {
             return;
         }
         for (i = 0; i < newchunks; i++) {
-            deb->chunks[deb->chunkcount++] = freedebchunks[freedebchkptr++];
+            deb->chunks[deb->count++] = freedebchunks[freedebchkptr++];
         }
-        deb->chunkcount = chunkcount;
+        deb->count = chunkcount;
         LinkDmaParticalSets(deb->chunks, chunkcount);
         if (chunkcount == newchunks) {
             for (i = 0; i < 256; i++) {
                 if (ParticleChunkRenderStack[i].chunk == 0) {
                     ParticleChunkRenderStack[i].chunk = deb->chunks[0];
-                    ParticleChunkRenderStack[i].info = info;
-                    ParticleChunkRenderStack[i].deb = deb;
+                    ParticleChunkRenderStack[i].debinfo = info;
+                    ParticleChunkRenderStack[i].debdata = deb;
                     break;
                 }
             }
         }
     }
-    deb->limit += count;
+    deb->debcount += count;
     deb->emitoffset.x = pos->x;
     deb->emitoffset.y = pos->y;
     deb->emitoffset.z = pos->z;
-    key = info->key;
+    key = info->variable_key;
     if (key != -1) {
         debkeydata[key].emitrotmtx = *emitmtx;
         debkeydata[key].emitrotmtx._30 = 0.0f;
@@ -1330,10 +1164,10 @@ void AddVariableShotDebrisEffectMtx2(s32 type, struct nuvec_s *pos, s32 count, s
         debkeydata[key].emitrotmtx._32 = 0.0f;
     }
     for (i = 0; i < count; i++) {
-        deb->gensort(deb, info);
+        deb->genptr(deb, info);
     }
-    if (deb->ctrlcount < deb->chunkcount) {
-        i = deb->ctrlcount;
+    if (deb->disposed < deb->count) {
+        i = deb->disposed;
         do {
             if (freechunkcontrolsptr < 512) {
                 freechunkcontrols[freechunkcontrolsptr]->chunk = deb->chunks[i];
@@ -1343,15 +1177,15 @@ void AddVariableShotDebrisEffectMtx2(s32 type, struct nuvec_s *pos, s32 count, s
                 AddChunkControlToStack(freechunkcontrols[freechunkcontrolsptr],
                                        &debris_chunk_control_stack[debris_chunk_control_stack_index]);
                 freechunkcontrolsptr++;
-                deb->ctrlcount++;
+                deb->disposed++;
             }
             i++;
-        } while (i < deb->chunkcount);
+        } while (i < deb->count);
     }
-    if (deb->ctrlcount == deb->chunkcount) {
+    if (deb->disposed == deb->count) {
         for (j = 0; j < 32; j++) {
             for (ctrl = debris_chunk_control_stack[j]; ctrl != 0; ctrl = ctrl->next) {
-                if (ctrl->chunk == deb->chunks[deb->ctrlcount - 1]) {
+                if (ctrl->chunk == deb->chunks[deb->disposed - 1]) {
                     found = ctrl;
                     stack = j;
                     break;
@@ -1374,25 +1208,25 @@ void AddVariableShotDebrisEffectMtx2(s32 type, struct nuvec_s *pos, s32 count, s
 
 inline s32 DebAlloc(void) {
     s32 key;
-    struct deb_s *deb;
+    struct debkeydatatype_s *deb;
 
     if (freedebkeyptr >= 256) {
         return -1;
     }
     key = freedebkeys[freedebkeyptr++];
     deb = &debkeydata[key];
-    deb->chunkcount = 0;
-    deb->limit = 0;
-    deb->reqchunkcount = 0;
+    deb->count = 0;
+    deb->debcount = 0;
     deb->reqcount = 0;
+    deb->reqdebcount = 0;
     deb->chunks[0] = 0;
     return key;
 }
 
 
-inline void AddDebrisEffectToStack(struct deb_s *node, struct deb_s **list) {
-    struct deb_s **link;
-    struct deb_s *cur;
+inline void AddDebrisEffectToStack(struct debkeydatatype_s *node, struct debkeydatatype_s **list) {
+    struct debkeydatatype_s **link;
+    struct debkeydatatype_s *cur;
 
     if (node->next != 0) {
         node->next = 0;
@@ -1423,19 +1257,19 @@ void AddDebrisEffect(s32 *key, s32 type, f32 x, f32 y, f32 z) {
         }
     }
     info = debtab[type];
-    debkeydata[*key].debtype = type;
-    debkeydata[*key].on = 1;
-    DebrisStartOffset(*key, info->startoffset);
+    debkeydata[*key].type = type;
+    debkeydata[*key].active = 1;
+    DebrisStartOffset(*key, info->ival_offset);
     debkeydata[*key].oncount = debtab[type]->ival_on
                              + (s32)(rand() * debtab[type]->ival_on_ran * 4.656612873077393e-10);
-    debkeydata[*key].gensort = gensorttab[info->gensort];
+    debkeydata[*key].genptr = gensorttab[info->gensort];
     debkeydata[*key].gencode = gencodetab[info->gencode];
     debkeydata[*key].rotory = 0;
     debkeydata[*key].rotorz = 0;
-    debkeydata[*key].emitflag = 0;
-    debkeydata[*key].emitting = 1;
-    for (i = 0; i < debtab[type]->emitcount; i++) {
-        debkeydata[*key].emits[i].time = -1.0f;
+    debkeydata[*key].sphere_next = 0;
+    debkeydata[*key].sphere_next_emit = 1;
+    for (i = 0; i < debtab[type]->numspheres; i++) {
+        debkeydata[*key].spheres[i].t = -1.0f;
     }
     debkeydata[*key].emitoffset.x = 0.0f;
     debkeydata[*key].emitoffset.y = 0.0f;
@@ -1460,10 +1294,10 @@ void AddDebrisEffect(s32 *key, s32 type, f32 x, f32 y, f32 z) {
     }
     k = *key;
     if (k != -1) {
-        debkeydata[k].reflect_a = 0;
-        debkeydata[k].reflect_b = 0;
-        debkeydata[k].reflect_x = 0.0f;
-        debkeydata[k].reflect_y = 0.9f;
+        debkeydata[k].refrotz = 0;
+        debkeydata[k].refroty = 0;
+        debkeydata[k].refoff = 0.0f;
+        debkeydata[k].refbounce = 0.9f;
     }
     AddDebrisEffectToStack(&debkeydata[*key], &debris_emitter_stack[debris_emitter_stack_index]);
 }
@@ -1483,40 +1317,40 @@ void DebrisDraw(void) {
         if (ParticleChunkRenderStack[i].chunk == 0) {
             continue;
         }
-        info = ParticleChunkRenderStack[i].info;
-        if (info->dmatype == 0) {
+        info = ParticleChunkRenderStack[i].debinfo;
+        if (info->DmaDebTypePointer == 0) {
             continue;
         }
         visible = 1;
-        if (ParticleChunkRenderStack[i].deb != 0) {
-            if (info->cutoff > 0.0f
-                && CameraEmitterDistance(&ParticleChunkRenderStack[i].deb->emitpos) > info->cutoff) {
+        if (ParticleChunkRenderStack[i].debdata != 0) {
+            if (info->drawcutoff > 0.0f
+                && CameraEmitterDistance(&ParticleChunkRenderStack[i].debdata->emitpos) > info->drawcutoff) {
                 visible = 0;
             }
-            mtx = ParticleChunkRenderStack[i].deb->rotmtx;
-            pos.x = ParticleChunkRenderStack[i].deb->emitpos.x;
-            pos.y = ParticleChunkRenderStack[i].deb->emitpos.y;
-            pos.z = ParticleChunkRenderStack[i].deb->emitpos.z;
+            mtx = ParticleChunkRenderStack[i].debdata->rotmtx;
+            pos.x = ParticleChunkRenderStack[i].debdata->emitpos.x;
+            pos.y = ParticleChunkRenderStack[i].debdata->emitpos.y;
+            pos.z = ParticleChunkRenderStack[i].debdata->emitpos.z;
         } else {
-            if (info->cutoff > 0.0f && CameraEmitterDistance(&ParticleChunkRenderStack[i].pos) > info->cutoff) {
+            if (info->drawcutoff > 0.0f && CameraEmitterDistance(&ParticleChunkRenderStack[i].pos) > info->drawcutoff) {
                 visible = 0;
             }
-            mtx = ParticleChunkRenderStack[i].mtx;
+            mtx = ParticleChunkRenderStack[i].rotmtx;
             pos.x = ParticleChunkRenderStack[i].pos.x;
             pos.y = ParticleChunkRenderStack[i].pos.y;
             pos.z = ParticleChunkRenderStack[i].pos.z;
         }
         if (visible) {
             NuMtxTranslate(&mtx, &pos);
-            NuRndrParticleGroup(ParticleChunkRenderStack[i].chunk, ParticleChunkRenderStack[i].info->dmatype,
-                                DebMat[ParticleChunkRenderStack[i].info->mtlindex], &mtx, 0, globaltime);
+            NuRndrParticleGroup(ParticleChunkRenderStack[i].chunk, ParticleChunkRenderStack[i].debinfo->DmaDebTypePointer,
+                                DebMat[ParticleChunkRenderStack[i].debinfo->mat], &mtx, 0, globaltime);
         }
     }
 }
 
 
-inline void RemoveDebrisEffectFromStack(struct deb_s *node, struct deb_s **list) {
-    struct deb_s *cur;
+inline void RemoveDebrisEffectFromStack(struct debkeydatatype_s *node, struct debkeydatatype_s **list) {
+    struct debkeydatatype_s *cur;
 
     if (*list != 0) {
         if (*list == node) {
@@ -1539,18 +1373,18 @@ inline void RemoveDebrisEffectFromStack(struct deb_s *node, struct deb_s **list)
 }
 
 
-inline void DebReAlloc(struct deb_s *deb, s32 count) {
-    deb->reqcount = count;
-    deb->reqchunkcount = (count + 31) / 32;
-    if (deb->reqchunkcount == deb->chunkcount) {
-        deb->limit = count;
+inline void DebReAlloc(struct debkeydatatype_s *deb, s32 count) {
+    deb->reqdebcount = count;
+    deb->reqcount = (count + 31) / 32;
+    if (deb->reqcount == deb->count) {
+        deb->debcount = count;
     } else {
         DebReAlloc2(deb);
     }
 }
 
 
-inline void DebFreeWithoutKey(struct deb_s *deb) {
+inline void DebFreeWithoutKey(struct debkeydatatype_s *deb) {
     s32 i;
     s32 key;
 
@@ -1564,19 +1398,19 @@ inline void DebFreeWithoutKey(struct deb_s *deb) {
 }
 
 
-inline void DebrisDoSounds(struct deb_s *deb, s32 type) {
+inline void DebrisDoSounds(struct debkeydatatype_s *deb, s32 type) {
     struct debinfo_s *info;
     s32 i;
 
-    info = debtab[deb->debtype];
+    info = debtab[deb->type];
     for (i = 0; i < 4; i++) {
-        if (info->sounds[i].id != -1 && info->sounds[i].type == type && deb->soundtimer[i] <= 0) {
+        if (info->sounds[i].id != -1 && info->sounds[i].type == type && deb->sound_next[i] <= 0) {
             debris_sfx = 1;
             edbitsSoundPlay(&deb->emitpos, info->sounds[i].id);
             if (type == 1 || type == 2) {
-                deb->soundtimer[i] = 9999;
+                deb->sound_next[i] = 9999;
             } else {
-                deb->soundtimer[i] = info->sounds[i].delay;
+                deb->sound_next[i] = info->sounds[i].delay;
             }
         }
     }
@@ -1586,10 +1420,10 @@ inline void DebrisDoSounds(struct deb_s *deb, s32 type) {
 void Debris(s32 paused) {
     struct debinfo_s *info;
     union {
-        struct deb_s *deb;
+        struct debkeydatatype_s *deb;
         struct chunkctrl_s *ctrl;
     } cur;
-    struct deb_s *nextdeb;
+    struct debkeydatatype_s *nextdeb;
     struct chunkctrl_s *nextctrl;
     struct debpart_s *part;
     f32 dist;
@@ -1608,69 +1442,69 @@ void Debris(s32 paused) {
     cur.deb = debris_emitter_stack[debris_emitter_stack_index];
     while (cur.deb != 0) {
         nextdeb = cur.deb->next;
-        info = debtab[cur.deb->debtype];
-        switch (cur.deb->trigger) {
+        info = debtab[cur.deb->type];
+        switch (cur.deb->trigger_type) {
         case 0:
             break;
         case 1:
-            if (cur.deb->trigger_param != -1) {
-                cur.deb->on = object_switches[cur.deb->trigger_param];
+            if (cur.deb->trigger_id != -1) {
+                cur.deb->active = object_switches[cur.deb->trigger_id];
             }
             break;
         }
-        if (cur.deb->on != 0) {
+        if (cur.deb->active != 0) {
             DebrisDoSounds(cur.deb, 1);
             DebrisDoSounds(cur.deb, 2);
             DebrisDoSounds(cur.deb, 4);
         }
-        if (info->emitcount != 0) {
-            for (i = 0; i < info->emitcount; i++) {
-                if (cur.deb->emits[i].time != -1.0f) {
-                    cur.deb->emits[i].time += 1.0 / 60.0;
-                    if (cur.deb->emits[i].time > info->etime) {
-                        cur.deb->emits[i].time = -1.0f;
+        if (info->numspheres != 0) {
+            for (i = 0; i < info->numspheres; i++) {
+                if (cur.deb->spheres[i].t != -1.0f) {
+                    cur.deb->spheres[i].t += 1.0 / 60.0;
+                    if (cur.deb->spheres[i].t > info->etime) {
+                        cur.deb->spheres[i].t = -1.0f;
                     }
                 }
             }
-            cur.deb->emitting--;
-            if (cur.deb->delay == 0 && cur.deb->on != 0 && cur.deb->emitting <= 0) {
+            cur.deb->sphere_next_emit--;
+            if (cur.deb->delay == 0 && cur.deb->active != 0 && cur.deb->sphere_next_emit <= 0) {
                 struct nuvec_s v;
 
-                cur.deb->emits[cur.deb->emitflag].time = 0.0f;
+                cur.deb->spheres[cur.deb->sphere_next].t = 0.0f;
                 v.x = 0.0f;
-                v.y = info->mom_ybias;
+                v.y = info->emitmag;
                 v.z = 0.0f;
                 NuVecMtxTransform(&v, &v, &cur.deb->emitrotmtx);
-                cur.deb->emits[cur.deb->emitflag].mom = v;
-                cur.deb->emitflag++;
-                if (cur.deb->emitflag >= info->emitcount) {
-                    cur.deb->emitflag = 0;
+                cur.deb->spheres[cur.deb->sphere_next].emit = v;
+                cur.deb->sphere_next++;
+                if (cur.deb->sphere_next >= info->numspheres) {
+                    cur.deb->sphere_next = 0;
                 }
-                cur.deb->emitting = info->etime * 60.0f / info->emitcount;
+                cur.deb->sphere_next_emit = info->etime * 60.0f / info->numspheres;
             }
         }
-        if (cur.deb->reqcount != cur.deb->limit) {
+        if (cur.deb->reqdebcount != cur.deb->debcount) {
             DebReAlloc2(cur.deb);
         }
         if (cur.deb->delay == 0) {
             dist = CameraEmitterDistance(&cur.deb->emitpos);
-            if (cur.deb->on != 0 && info->mindist <= dist && dist <= info->maxdist
-                && (debris_render_group == 0 || cur.deb->groupid == 0 || cur.deb->groupid == debris_render_group)) {
-                if (cur.deb->reqchunkcount == 0) {
-                    DebReAlloc(cur.deb, info->partcount);
+            if (cur.deb->active != 0 && info->cuton <= dist && dist <= info->cutoff
+                && (debris_render_group == 0 || cur.deb->group_id == 0 || cur.deb->group_id == debris_render_group)) {
+                if (cur.deb->reqcount == 0) {
+                    DebReAlloc(cur.deb, info->debnum);
                 }
-                if (cur.deb->chunkcount > 0) {
-                    if (info->emitrate > 0) {
-                        for (j = 0; j < info->emitrate; j++) {
-                            cur.deb->gensort(cur.deb, info);
+                if (cur.deb->count > 0) {
+                    if (info->generate > 0) {
+                        for (j = 0; j < info->generate; j++) {
+                            cur.deb->genptr(cur.deb, info);
                             DebrisDoSounds(cur.deb, 3);
                         }
-                    } else if (info->emitrate < 0 && globalframes % abs(info->emitrate) == 0) {
-                        cur.deb->gensort(cur.deb, info);
+                    } else if (info->generate < 0 && globalframes % abs(info->generate) == 0) {
+                        cur.deb->genptr(cur.deb, info);
                         DebrisDoSounds(cur.deb, 3);
                     }
                 }
-            } else if (cur.deb->reqchunkcount != 0) {
+            } else if (cur.deb->reqcount != 0) {
                 DebReAlloc(cur.deb, 0);
             }
             cur.deb->delay = 1;
@@ -1681,9 +1515,9 @@ void Debris(s32 paused) {
                 for (i = 0; i < 4; i++) {
                     if (info->sounds[i].id != -1) {
                         if (info->sounds[i].type == 1) {
-                            cur.deb->soundtimer[i] = cur.deb->delay;
+                            cur.deb->sound_next[i] = cur.deb->delay;
                         } else if (info->sounds[i].type == 2) {
-                            cur.deb->soundtimer[i] = cur.deb->delay + cur.deb->oncount - 1;
+                            cur.deb->sound_next[i] = cur.deb->delay + cur.deb->oncount - 1;
                         }
                     }
                 }
@@ -1693,23 +1527,23 @@ void Debris(s32 paused) {
                 }
             }
         }
-        if (info->emitcount != 0) {
+        if (info->numspheres != 0) {
             RemoveDebrisEffectFromStack(cur.deb, &debris_emitter_stack[debris_emitter_stack_index]);
             AddDebrisEffectToStack(cur.deb, &debris_emitter_stack[(debris_emitter_stack_index + 1) & 31]);
             cur.deb->delay--;
             for (i = 0; i < 4; i++) {
-                cur.deb->soundtimer[i]--;
+                cur.deb->sound_next[i]--;
             }
         } else if (cur.deb->delay >= 32) {
             cur.deb->delay -= 32;
             for (i = 0; i < 4; i++) {
-                cur.deb->soundtimer[i] -= 32;
+                cur.deb->sound_next[i] -= 32;
             }
         } else {
             RemoveDebrisEffectFromStack(cur.deb, &debris_emitter_stack[debris_emitter_stack_index]);
             AddDebrisEffectToStack(cur.deb, &debris_emitter_stack[(debris_emitter_stack_index + cur.deb->delay) & 31]);
             for (i = 0; i < 4; i++) {
-                cur.deb->soundtimer[i] -= cur.deb->delay;
+                cur.deb->sound_next[i] -= cur.deb->delay;
             }
             cur.deb->delay = 0;
         }
@@ -1727,12 +1561,12 @@ void Debris(s32 paused) {
                 info = debtab[cur.ctrl->debtype];
                 part = &cur.ctrl->chunk->parts[cur.ctrl->partindex];
                 keep = 0;
-                vel = cur.ctrl->bouncetime * info->gtime * 2.0f;
+                vel = cur.ctrl->bouncetime * info->grav * 2.0f;
                 oldmom = part->mom.y;
                 oldmove = oldmom * cur.ctrl->bouncetime;
                 part->mom.y = -cur.ctrl->reflect_y * (part->mom.y + vel) - vel;
                 part->pos.y -= part->mom.y * cur.ctrl->bouncetime - oldmove;
-                if (SolveQuadratic(info->gtime, part->mom.y, part->pos.y - cur.ctrl->reflect_x, &root1, &root2)
+                if (SolveQuadratic(info->grav, part->mom.y, part->pos.y - cur.ctrl->reflect_x, &root1, &root2)
                     && (root1 > root2 ? root1 : root2) < info->etime) {
                     cur.ctrl->life = ((root1 > root2 ? root1 : root2) - cur.ctrl->bouncetime) * 60.0f;
                     cur.ctrl->bouncetime = root1 > root2 ? root1 : root2;
@@ -1800,8 +1634,8 @@ void Debris(s32 paused) {
                 for (slot = 0; slot < 256; slot++) {
                     if (ParticleChunkRenderStack[slot].chunk == cur.ctrl->chunk) {
                         ParticleChunkRenderStack[slot].chunk = 0;
-                        ParticleChunkRenderStack[slot].info = 0;
-                        ParticleChunkRenderStack[slot].deb = 0;
+                        ParticleChunkRenderStack[slot].debinfo = 0;
+                        ParticleChunkRenderStack[slot].debdata = 0;
                         break;
                     }
                 }
@@ -1812,27 +1646,27 @@ void Debris(s32 paused) {
                 cur.ctrl->state = 3;
             } else if (cur.ctrl->state == 1) {
                 slot = 0;
-                for (i = 0; i < cur.ctrl->deb->chunkcount; i++) {
+                for (i = 0; i < cur.ctrl->deb->count; i++) {
                     if (cur.ctrl->deb->chunks[i] == cur.ctrl->chunk) {
                         slot = i;
                         break;
                     }
                 }
-                for (i = slot; i < cur.ctrl->deb->chunkcount - 1; i++) {
+                for (i = slot; i < cur.ctrl->deb->count - 1; i++) {
                     cur.ctrl->deb->chunks[i] = cur.ctrl->deb->chunks[i + 1];
                 }
-                cur.ctrl->deb->chunks[cur.ctrl->deb->chunkcount - 1] = 0;
-                cur.ctrl->deb->chunkcount--;
-                cur.ctrl->deb->ctrlcount--;
-                if (cur.ctrl->deb->chunkcount > 0) {
-                    cur.ctrl->deb->index -= 32;
-                    cur.ctrl->deb->limit -= 32;
+                cur.ctrl->deb->chunks[cur.ctrl->deb->count - 1] = 0;
+                cur.ctrl->deb->count--;
+                cur.ctrl->deb->disposed--;
+                if (cur.ctrl->deb->count > 0) {
+                    cur.ctrl->deb->pointer -= 32;
+                    cur.ctrl->deb->debcount -= 32;
                 } else {
-                    cur.ctrl->deb->index = 0;
-                    cur.ctrl->deb->limit = 0;
+                    cur.ctrl->deb->pointer = 0;
+                    cur.ctrl->deb->debcount = 0;
                 }
-                if (cur.ctrl->deb->chunkcount > 0) {
-                    LinkDmaParticalSets(cur.ctrl->deb->chunks, cur.ctrl->deb->chunkcount);
+                if (cur.ctrl->deb->count > 0) {
+                    LinkDmaParticalSets(cur.ctrl->deb->chunks, cur.ctrl->deb->count);
                 } else {
                     cur.ctrl->deb->chunks[0] = 0;
                 }
@@ -1840,9 +1674,9 @@ void Debris(s32 paused) {
                     for (i = 0; i < 256; i++) {
                         if (ParticleChunkRenderStack[i].chunk == cur.ctrl->chunk) {
                             ParticleChunkRenderStack[i].chunk = cur.ctrl->deb->chunks[0];
-                            if (cur.ctrl->deb->chunkcount == 0) {
-                                ParticleChunkRenderStack[i].info = 0;
-                                ParticleChunkRenderStack[i].deb = 0;
+                            if (cur.ctrl->deb->count == 0) {
+                                ParticleChunkRenderStack[i].debinfo = 0;
+                                ParticleChunkRenderStack[i].debdata = 0;
                             }
                             break;
                         }
@@ -1879,31 +1713,31 @@ s32 DebrisCollisionCheck(struct nuvec_s *pos, f32 radius) {
 
     size = 0.0f;
     for (i = 0; i < 256; i++) {
-        if (debkeydata[i].debtype == 0 || debkeydata[i].debtype == -1) {
+        if (debkeydata[i].type == 0 || debkeydata[i].type == -1) {
             continue;
         }
-        info = debtab[debkeydata[i].debtype];
-        if (info->emitcount == 0) {
+        info = debtab[debkeydata[i].type];
+        if (info->numspheres == 0) {
             continue;
         }
-        for (j = 0; j < info->emitcount; j++) {
-            t = debkeydata[i].emits[j].time;
+        for (j = 0; j < info->numspheres; j++) {
+            t = debkeydata[i].spheres[j].t;
             if (t != -1.0f) {
-                v.x = debkeydata[i].emits[j].mom.x * t;
-                v.y = debkeydata[i].emits[j].mom.y * t;
-                v.z = debkeydata[i].emits[j].mom.z * t;
-                v.y += info->gtime * (t * t);
+                v.x = debkeydata[i].spheres[j].emit.x * t;
+                v.y = debkeydata[i].spheres[j].emit.y * t;
+                v.z = debkeydata[i].spheres[j].emit.z * t;
+                v.y += info->grav * (t * t);
                 v.x += debkeydata[i].emitpos.x;
                 v.y += debkeydata[i].emitpos.y;
                 v.z += debkeydata[i].emitpos.z;
                 nt = t / info->etime;
                 k = 0;
-                while (k < 7 && !(info->radiuskeys[k].time <= nt && nt <= info->radiuskeys[k + 1].time)) {
+                while (k < 7 && !(info->sphereslot[k].t <= nt && nt <= info->sphereslot[k + 1].t)) {
                     k++;
                 }
-                size = info->radiuskeys[k].value
-                     + (nt - info->radiuskeys[k].time) / (info->radiuskeys[k + 1].time - info->radiuskeys[k].time)
-                       * (info->radiuskeys[k + 1].value - info->radiuskeys[k].value);
+                size = info->sphereslot[k].value
+                     + (nt - info->sphereslot[k].t) / (info->sphereslot[k + 1].t - info->sphereslot[k].t)
+                       * (info->sphereslot[k + 1].value - info->sphereslot[k].value);
             }
             if (NuVecDistSqr(pos, &v, 0) < (radius + size) * (radius + size)) {
                 return i;
@@ -1917,30 +1751,30 @@ s32 DebrisCollisionCheck(struct nuvec_s *pos, f32 radius) {
 void AddDebEff(s32 key, s32 param, s32 count) {
     s32 i;
 
-    if (debkeydata[key].on != 0) {
+    if (debkeydata[key].active != 0) {
         for (i = 0; i < count; i++) {
-            debkeydata[key].gensort(&debkeydata[key], debtab[debkeydata[key].debtype], param);
+            debkeydata[key].genptr(&debkeydata[key], debtab[debkeydata[key].type], param);
         }
     }
 }
 
 
 void DebrisOff(s32 *key) {
-    struct deb_s *deb;
+    struct debkeydatatype_s *deb;
 
     if (*key != -1) {
         deb = &debkeydata[*key];
-        deb->on = 0;
+        deb->active = 0;
     }
 }
 
 
 void DebrisOn(s32 *key) {
-    struct deb_s *deb;
+    struct debkeydatatype_s *deb;
 
     if (*key != -1) {
         deb = &debkeydata[*key];
-        deb->on = 1;
+        deb->active = 1;
     }
 }
 
@@ -2027,29 +1861,29 @@ void DebrisEmiterPos(s32 key, f32 x, f32 y, f32 z) {
 
 void DebrisReflectionOrientation(s32 key, s16 a, s16 b, f32 x, f32 y) {
     if (key != -1) {
-        debkeydata[key].reflect_a = a;
-        debkeydata[key].reflect_b = b;
-        debkeydata[key].reflect_x = x;
-        debkeydata[key].reflect_y = y;
+        debkeydata[key].refrotz = a;
+        debkeydata[key].refroty = b;
+        debkeydata[key].refoff = x;
+        debkeydata[key].refbounce = y;
     }
 }
 
 
 void DebrisSetTrigger(s32 key, s32 trigger, s32 param, f32 value) {
     if (key != -1) {
-        debkeydata[key].trigger = trigger;
-        debkeydata[key].trigger_param = param;
-        debkeydata[key].trigger_value = value;
+        debkeydata[key].trigger_type = trigger;
+        debkeydata[key].trigger_id = param;
+        debkeydata[key].trigger_var = value;
     }
 }
 
 
 void DebrisSetGroupID(s32 key, s16 groupid) {
-    struct deb_s *deb;
+    struct debkeydatatype_s *deb;
 
     if (key != -1) {
         deb = &debkeydata[key];
-        deb->groupid = groupid;
+        deb->group_id = groupid;
     }
 }
 
@@ -2068,7 +1902,7 @@ s32 LookupDebrisEffect(char *name) {
     s32 i;
 
     for (i = 1; i < 128; i++) {
-        if (debtab[i] != 0 && strcmp(debtab[i]->name, name) == 0) {
+        if (debtab[i] != 0 && strcmp(debtab[i]->id, name) == 0) {
             return i;
         }
     }
@@ -2095,8 +1929,8 @@ s32 DebrisFindAllOfType(s32 type, struct nuvec_s **list, s32 max, s32 skip, s32 
 
     found = 0;
     for (i = 0; i < 256; i++) {
-        if (debkeydata[i].debtype == type
-            && (!activeonly || debkeydata[i].chunkcount != 0)) {
+        if (debkeydata[i].type == type
+            && (!activeonly || debkeydata[i].count != 0)) {
             if (found - skip >= 0 && found - skip < max) {
                 list[found - skip] = &debkeydata[i].emitpos;
             }
@@ -2110,9 +1944,9 @@ s32 DebrisFindAllOfType(s32 type, struct nuvec_s **list, s32 max, s32 skip, s32 
 }
 
 
-struct deb_s **FindDebrisEffectStack(struct deb_s *node) {
-    struct deb_s **list;
-    struct deb_s *cur;
+struct debkeydatatype_s **FindDebrisEffectStack(struct debkeydatatype_s *node) {
+    struct debkeydatatype_s **list;
+    struct debkeydatatype_s *cur;
     s32 i;
 
     for (i = 0; i < 32; i++) {
@@ -2131,43 +1965,43 @@ struct deb_s **FindDebrisEffectStack(struct deb_s *node) {
 }
 
 
-struct debpart_s *GenDebIndexSort(struct deb_s *deb, struct debinfo_s *info) {
+struct debpart_s *GenDebIndexSort(struct debkeydatatype_s *deb, struct debinfo_s *info) {
     return GenDebIndex(deb, info);
 }
 
 
-void GenDebMomAdjFromPos(struct deb_s *deb, struct debinfo_s *info, struct debpart_s *part) {
+void GenDebMomAdjFromPos(struct debkeydatatype_s *deb, struct debinfo_s *info, struct debpart_s *part) {
     part->mom.x = part->pos.x * 2.0;
     part->mom.z = part->pos.z * 2.0;
 }
 
 
-void GenDebMomAdjFromPosAll(struct deb_s *deb, struct debinfo_s *info, struct debpart_s *part) {
+void GenDebMomAdjFromPosAll(struct debkeydatatype_s *deb, struct debinfo_s *info, struct debpart_s *part) {
     part->mom.x = part->pos.x * deb_mom_scale;
     part->mom.y = part->pos.y * deb_mom_scale;
     part->mom.z = part->pos.z * deb_mom_scale;
 }
 
 
-void GenDebMomAdjFromPosRev(struct deb_s *deb, struct debinfo_s *info, struct debpart_s *part) {
+void GenDebMomAdjFromPosRev(struct debkeydatatype_s *deb, struct debinfo_s *info, struct debpart_s *part) {
     part->mom.x = -part->pos.x;
     part->mom.z = -part->pos.z;
 }
 
 
-void GenDebMomAdjFromSplash(struct deb_s *deb, struct debinfo_s *info, struct debpart_s *part) {
+void GenDebMomAdjFromSplash(struct debkeydatatype_s *deb, struct debinfo_s *info, struct debpart_s *part) {
     part->mom.x = part->pos.x * 4.0f;
     part->mom.z = part->pos.z * 4.0f;
 }
 
 
-void GenDebMomAdjFromAshRock(struct deb_s *deb, struct debinfo_s *info, struct debpart_s *part) {
+void GenDebMomAdjFromAshRock(struct debkeydatatype_s *deb, struct debinfo_s *info, struct debpart_s *part) {
     part->mom.x = part->pos.x * 16.0f;
     part->mom.z = part->pos.z * 16.0f;
 }
 
 
-void GenDebMomAdjFromPosRevTree(struct deb_s *deb, struct debinfo_s *info, struct debpart_s *part) {
+void GenDebMomAdjFromPosRevTree(struct debkeydatatype_s *deb, struct debinfo_s *info, struct debpart_s *part) {
     part->mom.x += part->pos.x * deb_tree_pull;
     part->mom.z += part->pos.z * deb_tree_pull;
     part->pos.y = part->pos.y - sqrt(part->pos.x * part->pos.x + part->pos.z * part->pos.z) * 0.4f;

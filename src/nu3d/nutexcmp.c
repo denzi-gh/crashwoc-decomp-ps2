@@ -10,11 +10,9 @@
 
 
 #include "nu_libc.h"
+#include "nu_types.h"
 
 #include "nu3d/nutex.h"
-
-typedef unsigned char u_char;
-typedef unsigned int u_int;
 
 extern void *NuMemAllocFn(int size, char *file, int line);
 
@@ -24,7 +22,7 @@ extern char D_006160E0[];
 #define underflow_msg D_006160E0
 
 
-int Blend16Pixels(u_int *pixels, int *lo, int *hi)
+int Blend16Pixels(u32 *pixels, int *lo, int *hi)
 {
     float weights[16] = {
         1.0f, 1.0f, 1.0f, 1.0f,
@@ -89,18 +87,18 @@ int Blend16Pixels(u_int *pixels, int *lo, int *hi)
 
 void NuTexCreateLowResColourMap(struct nutex_s *src, struct nutex_s *dst)
 {
-    u_int block[16];
+    u32 block[16];
     int lo, hi;
-    u_char *srcbits;
-    u_char *dstbits;
-    u_char *texel;
+    u8 *srcbits;
+    u8 *dstbits;
+    u8 *texel;
     int width, height;
     int lowwidth, lowheight;
     int x, y, i, j;
     int sx, sy;
     int col, row;
     int index;
-    u_int colour;
+    u32 colour;
 
     width = src->width;
     height = src->height;
@@ -142,11 +140,11 @@ void NuTexCreateLowResColourMap(struct nutex_s *src, struct nutex_s *dst)
 }
 
 
-int BilinearExpand(u_int *pixels, float u, float v)
+int BilinearExpand(u32 *pixels, float u, float v)
 {
     int channels[4][4];
     float result[4];
-    u_char *bytes;
+    u8 *bytes;
     float fu, fv;
     int i, c;
 
@@ -172,7 +170,7 @@ int BilinearExpand(u_int *pixels, float u, float v)
     }
     fu = u * 0.25f;
     fv = v * 0.25f;
-    bytes = (u_char *)pixels;
+    bytes = (u8 *)pixels;
     for (c = 0; c < 3; c++) {
         result[c] = (1.0f - fu) * (1.0f - fv) * bytes[c] + fu * (1.0f - fv) * bytes[c + 4]
                   + (1.0f - fu) * fv * bytes[c + 8] + fu * fv * bytes[c + 12];
@@ -183,25 +181,25 @@ int BilinearExpand(u_int *pixels, float u, float v)
 
 void NuTexCreateLuminanceMultiplyMap(struct nutex_s *colourmap, struct nutex_s *tex, struct nutex_s *dst, int twobit)
 {
-    u_int block[16];
+    u32 block[16];
     int ncolours;
     int mapheight;
-    u_char *texbits;
-    u_char *mapbits;
-    u_char *dstbits;
-    u_char *texel;
-    u_int *pal;
+    u8 *texbits;
+    u8 *mapbits;
+    u8 *dstbits;
+    u8 *texel;
+    u32 *pal;
     int width, height;
     int mapwidth;
     int nentries;
     int x, y, i, j, k;
     int cx, cy, mx, my;
-    u_int colour;
-    u_int r, g, b;
+    u32 colour;
+    u32 r, g, b;
     int lum, alpha, level, index;
     int diff, nextdiff;
     int byte;
-    u_char nibble;
+    u8 nibble;
 
     ncolours = 16;
     texbits = tex->bits;

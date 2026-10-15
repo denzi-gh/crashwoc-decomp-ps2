@@ -57,6 +57,7 @@
 #include "nu3d/nugscn.h"
 #include "game/gametypes.h"
 #include "game/creature.h"
+#include "nups2/ps2ctl.h"
 
 extern s32 FlyingLevelVictoryDance;
 extern struct MoveInfo CrashMoveInfo;
@@ -75,16 +76,7 @@ u64 fptodp(f32 value);
 s32 dpcmp(u64 a, u64 b);
 u64 dpsub(u64 a, u64 b);
 
-struct pad_s {
-    u8 unk_0x000[0x55C];     /* 0x000 (opaque) */
-    unsigned int paddata;    /* 0x55C (held buttons) */
-    u8 unk_0x560[4];         /* 0x560 */
-    unsigned int buttons;    /* 0x564 (debounced buttons) */
-    u8 unk_0x568[0x16];      /* 0x568 */
-    u8 l_alg_x;              /* 0x57E */
-    u8 l_alg_y;              /* 0x57F */
-};
-extern struct pad_s *Pad[];
+extern struct nupad_s *Pad[];
 
 struct plrevent_s {
     struct nugspline_s *spl;        /* 0x00 */
@@ -120,7 +112,7 @@ extern struct anim_s carpet_anim;
 extern struct Nearest_Light_s carpet_lights;
 extern struct objtab_s ObjTab[];
 extern struct gtimer_s GameTimer;
-extern struct cammtx_s GameCam;
+extern struct cammtx_s GameCam[];
 extern s32 GATECOUNT;
 extern s32 plr_gates;
 extern u64 gate_bits;
@@ -400,7 +392,7 @@ void AnimateFIREENGINE(struct creature_s *plr) {
     UpdateCharacterIdle(plr, 0);
 }
 
-void AnimateGYRO(struct creature_s *plr, struct pad_s *pad) {
+void AnimateGYRO(struct creature_s *plr, struct nupad_s *pad) {
     s32 held = pad->paddata & 0x60;
 
     if ((plr->spin != 0) &&
@@ -880,7 +872,7 @@ void CheckPlayerEvents(struct obj_s *obj) {
                         }
                     }
                     if (started != 0) {
-                        JudderGameCamera(&GameCam, 0.5f, 0);
+                        JudderGameCamera(&GameCam[0], 0.5f, 0);
                         GameSfx(0x3B, 0);
                     }
                 }
@@ -931,7 +923,7 @@ void DrawPanel3DArrow(void) {
 
     if (ObjTab[0x6C].obj.special != 0) {
         xrot = arrow_xrot;
-        yrot = RotDiff(GameCam.yrot, arrow_yrot);
+        yrot = RotDiff(GameCam[0].yrot, arrow_yrot);
         DrawPanel3DObject(0x6C, 0.0f, 0.5f, 1.0f, 0.125f, 0.125f, 0.125f, xrot,
                           yrot, 0, ObjTab[0x6C].obj.scene,
                           ObjTab[0x6C].obj.special, 0);
