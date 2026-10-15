@@ -1649,7 +1649,7 @@ extern void InitCutScenes();
 extern void NuWaterSpeed(float);
 extern void NuLightFog(float near, float far, int colour, int blur, int haze_colour);
 extern void NuMtlAnimate(float);
-extern int edmainProcess(float a1, struct nupad_s* pad);
+extern s32 edmainProcess(struct nupad_s *pad, f32 dt);
 extern void CalculateGamePercentage(struct game_s*);
 extern struct nucamera_s* NuCameraCreate(void);
 extern void DrawPanel();
@@ -1671,7 +1671,7 @@ extern int HubFromLevel(int level);
 extern void ResetGameCameras(struct cammtx_s *cameras, int count);
 extern void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad);
 extern void visiSetSplineKnot(struct visidata_s *vd, int spix, int knotix);
-extern int DebrisFindAllOfType(int typeid, struct nuvec_s** stack, int stacksize, int offset, int activeonly);
+extern s32 DebrisFindAllOfType(s32 type, struct nuvec_s **list, s32 max, s32 skip, s32 activeonly);
 extern int LookupDebrisEffect(char* name);
 
 int main(int argc, char** argv) {
@@ -1839,7 +1839,7 @@ int main(int argc, char** argv) {
         NuSoundKillAllAudio();
         NuDebugMsgProlog(".\\main.c", 0x1220)("Leaving BGLOAD");
         InitPauseRender();
-        NuLgtSetArcMat(0.5019531f, 0.74804688f, 0.56054688f, 0.99804688f, DebMat[5]);
+        NuLgtSetArcMat(DebMat[5],0.5019531f, 0.74804688f, 0.56054688f, 0.99804688f);
         Reset3DFontObjects();
         InitPlayerEvents();
         if (Level == 0x28) {
@@ -1994,7 +1994,7 @@ int main(int argc, char** argv) {
                     NuSoundUpdate();
 
                     if (editor_active != 0) {
-                        if (edmainProcess(0.016666668f, Pad[0]) == 1) {
+                        if (edmainProcess(Pad[0], 0.016666668f) == 1) {
                             editor_active = 0;
                             Pad[0]->oldpaddata = Pad[0]->paddata = 0;
                         }
