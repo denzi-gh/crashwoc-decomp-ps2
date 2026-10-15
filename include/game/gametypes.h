@@ -432,18 +432,6 @@ struct VEHICLE {
     s32 FrontWheelGroundBits;           /* 0xFC */
 }; /* 0x100 */
 
-struct edmenu_s {
-    u8 pad00[0x8];                      /* 0x00 */
-    void *sel_item;                     /* 0x08 */
-    u8 pad0C[0x4];                      /* 0x0C */
-    s32 x;                              /* 0x10 */
-    s32 y;                              /* 0x14 */
-    u8 pad18[0xC];                      /* 0x18 */
-    void (*cb)(struct edmenu_s *menu, s32 arg); /* 0x24 */
-    u8 pad28[0x8];                      /* 0x28 */
-    s32 arg;                            /* 0x30 */
-}; /* 0x34 */
-
 struct anim_s {
     float anim_time;                    /* 0x00 */
     float blend_src_time;               /* 0x04 */

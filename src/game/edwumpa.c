@@ -23,6 +23,7 @@
 #include "gamelib/terrain.h"
 #include "game/creature.h"
 #include "nups2/ps2ctl.h"
+#include "edtools/edui.h"
 
 extern struct wumpa_s Wumpa[];
 extern s32 WUMPACOUNT;
@@ -59,8 +60,6 @@ struct edwmp_itemdef_s {
 extern struct edwmp_itemdef_s D_00620348;
 
 extern void eduiMenuDestroy(void *menu);
-extern void eduiMenuRender(void *menu);
-extern void eduiCreateMessageMenu(void *menu, char *text, s32 flag);
 extern void ResetWumpa(void);
 extern void SaveWumpa(void);
 extern void ResetTimeTrial(void);

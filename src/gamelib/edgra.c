@@ -39,14 +39,7 @@
 #include "nu3d/nugobj.h"
 #include "nu3d/nugscn.h"
 #include "nups2/ps2ctl.h"
-
-struct edgraitem_s {
-    char pad00[0x0C];
-    int value;
-    unsigned char toggle;
-    char pad11[0x4C - 0x11];
-    float fvalue;
-};
+#include "edtools/edui.h"
 
 struct grassclump_s {
     int type;
@@ -56,21 +49,6 @@ struct grassclump_s {
     float wind;
     int reactive;
     float height;
-};
-
-struct eduimenu_s {
-    void *head;
-    void *tail;
-    void *current;
-    void *cursor;
-    int x;
-    int y;
-    int w;
-    int h;
-};
-
-struct eduistyle_s {
-    unsigned int colour[4];
 };
 
 extern struct grassclump_s GrassClumps[64];
@@ -94,7 +72,6 @@ extern float edgra_cam_ay;
 extern void *app_fnt;
 extern struct numtl_s *edgra_mtl;
 extern struct numtl_s *edgra_mtl_zoff;
-extern void *edui_last_item;
 
 extern char D_0061A678[];
 extern char D_0062F888[];
@@ -148,7 +125,6 @@ extern char D_0062F880[];
 #define edgra_options_menu_title D_0062F890
 
 extern void eduiMenuDestroy(void *menu);
-extern void eduiMenuRender(struct eduimenu_s *menu);
 extern void *eduiItemSelCreate(int value, struct eduistyle_s *style, int on, int group, void *cb,
                                char *label);
 extern void NuFntScale(int x, int y);
@@ -172,7 +148,6 @@ extern void NuFntPrintEx(int x, int y, int flags, char *fmt, ...);
 extern void edcamSetPos(struct nuvec_s *pos);
 extern void edcamGetPosAng(struct nuvec_s *pos, float *ax, float *ay);
 extern void eduiMenuProcess(void *menu, struct nupad_s *pad);
-extern void eduiCreateMessageMenu(void *menu, char *text, int flag);
 extern int NuFileSize(char *name);
 extern int edbitsLookupInstance(char *name);
 extern void EdFileSetMedia(int media);
@@ -194,10 +169,10 @@ extern void *eduiItemToggleCreate(int value, struct eduistyle_s *style, int on, 
                                   void *cb, char *label);
 extern void *eduiItemSliderCreate(void *data, struct eduistyle_s *style, int group, void *cb,
                                   float min, float max, float value, char *label);
-extern void edgracbSetInstanceType(void *menu, struct edgraitem_s *item);
-extern void edgracbSetClumpWind(void *menu, struct edgraitem_s *item);
-extern void edgracbSetClumpHeight(void *menu, struct edgraitem_s *item);
-extern void edgracbToggleClumpReactive(void *menu, struct edgraitem_s *item);
+extern void edgracbSetInstanceType(void *menu, struct eduiitem_s *item);
+extern void edgracbSetClumpWind(void *menu, struct eduiitem_s *item);
+extern void edgracbSetClumpHeight(void *menu, struct eduiitem_s *item);
+extern void edgracbToggleClumpReactive(void *menu, struct eduiitem_s *item);
 extern void edgracbCancelInstanceMenu(void);
 extern void edgracbCancelClumpPropertiesMenu(void);
 extern void edgracbCancelOptMenu(void);
@@ -682,7 +657,7 @@ void edgraInit(void)
 }
 
 
-void edgracbSetInstanceType(void *menu, struct edgraitem_s *item)
+void edgracbSetInstanceType(void *menu, struct eduiitem_s *item)
 {
     eduiMenuDetach(menu);
     eduiMenuDestroy(menu);
@@ -692,28 +667,28 @@ void edgracbSetInstanceType(void *menu, struct edgraitem_s *item)
 }
 
 
-void edgracbSetClumpWind(void *menu, struct edgraitem_s *item)
+void edgracbSetClumpWind(void *menu, struct eduiitem_s *item)
 {
     if (edgra_nearest != -1) {
-        GrassClumps[edgra_nearest].wind = item->fvalue;
+        GrassClumps[edgra_nearest].wind = item->u.slider.val;
     }
     edgraInitAllClumps();
 }
 
 
-void edgracbSetClumpHeight(void *menu, struct edgraitem_s *item)
+void edgracbSetClumpHeight(void *menu, struct eduiitem_s *item)
 {
     if (edgra_nearest != -1) {
-        GrassClumps[edgra_nearest].height = item->fvalue;
+        GrassClumps[edgra_nearest].height = item->u.slider.val;
     }
     edgraInitAllClumps();
 }
 
 
-void edgracbToggleClumpReactive(void *menu, struct edgraitem_s *item)
+void edgracbToggleClumpReactive(void *menu, struct eduiitem_s *item)
 {
     if (edgra_nearest != -1) {
-        GrassClumps[edgra_nearest].reactive = item->toggle;
+        GrassClumps[edgra_nearest].reactive = item->on;
     }
 }
 

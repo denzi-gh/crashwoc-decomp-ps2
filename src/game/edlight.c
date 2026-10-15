@@ -44,29 +44,13 @@
 #include "game/gametypes.h"
 #include "game/creature.h"
 #include "nups2/ps2ctl.h"
-
-struct eduistyle_s {
-    s32 pen[2];
-    u32 colour[2];
-};
-
-/* Editor slider control; value at 0x4C. */
-struct slider_s {
-    u8 pad00[0x4C];
-    f32 val;               /* 0x4C */
-};
-
-/* Editor selection item. */
-struct edsel_s {
-    u8 pad00[0xC];
-    s32 newtype;           /* 0x0C */
-};
+#include "edtools/edui.h"
 
 extern s32 edlight_used;
 extern s32 screendump;
-extern struct edmenu_s *edlight_options_menu;
-extern struct edmenu_s *edlight_double_menu;
-extern struct edmenu_s *edlight_glb_menu;
+extern struct eduimenu_s *edlight_options_menu;
+extern struct eduimenu_s *edlight_double_menu;
+extern struct eduimenu_s *edlight_glb_menu;
 extern struct eduistyle_s D_00625170;
 extern void *app_fnt;
 extern struct nuvec_s last_radius;
@@ -109,9 +93,9 @@ extern s32 edlight_glb_dir_light;
 extern s32 edlight_glb_amb_light;
 extern s32 glb_dir_error_flag;
 extern s32 glb_amb_error_flag;
-extern struct slider_s *edlight_r_slider;
-extern struct slider_s *edlight_g_slider;
-extern struct slider_s *edlight_b_slider;
+extern struct eduiitem_s *edlight_r_slider;
+extern struct eduiitem_s *edlight_g_slider;
+extern struct eduiitem_s *edlight_b_slider;
 
 #define edlight_default_type D_0063268C
 #define edlight_menu_style D_00625170
@@ -193,11 +177,11 @@ extern u8 D_00632694[2];
 extern struct nuvec_s edlight_old_cam_pos;
 extern s32 radius_has_changed;
 
-extern void eduiMenuDetach(struct edmenu_s *menu);
-extern struct edmenu_s *eduiMenuCreate(s32 x, s32 y, s32 w, s32 h, void *font,
+extern void eduiMenuDetach(struct eduimenu_s *menu);
+extern struct eduimenu_s *eduiMenuCreate(s32 x, s32 y, s32 w, s32 h, void *font,
                                        void *cancelcb, char *title);
-extern void eduiMenuAttach(struct edmenu_s *menu, struct edmenu_s *child);
-extern void *eduiMenuAddItem(struct edmenu_s *menu, void *item);
+extern void eduiMenuAttach(struct eduimenu_s *menu, struct eduimenu_s *child);
+extern void *eduiMenuAddItem(struct eduimenu_s *menu, void *item);
 extern void *eduiItemSelCreate(s32 value, struct eduistyle_s *style, s32 on, s32 group,
                                void *cb, char *text);
 extern void *eduiItemCheckCreate(s32 value, struct eduistyle_s *style, s32 checked,
@@ -210,21 +194,19 @@ extern void edlightDoInput(struct nupad_s *pad);
 extern void edcamGetPosAng(struct nuvec_s *pos, s32 *ax, s32 *ay);
 extern void edcamSetPos(struct nuvec_s *pos);
 extern void edcamMove(struct nupad_s *pad);
-extern void eduiItemSliderSetVal(struct slider_s *item, f32 val);
-extern void edlightcb_r_sliderval(void *menu, struct slider_s *slider);
-extern void edlightcb_g_sliderval(void *menu, struct slider_s *slider);
-extern void edlightcb_b_sliderval(void *menu, struct slider_s *slider);
+extern void edlightcb_r_sliderval(void *menu, struct eduiitem_s *slider);
+extern void edlightcb_g_sliderval(void *menu, struct eduiitem_s *slider);
+extern void edlightcb_b_sliderval(void *menu, struct eduiitem_s *slider);
 extern void edlightcbSaveLightData(void *menu);
 extern void edlightCbCancelOptMenu(void);
-extern void cbSelGlbType(struct edmenu_s *menu, struct edsel_s *sel);
-extern void cbSelDoubleType(struct edmenu_s *menu, struct edsel_s *sel);
+extern void cbSelGlbType(struct eduimenu_s *menu, struct eduiitem_s *sel);
+extern void cbSelDoubleType(struct eduimenu_s *menu, struct eduiitem_s *sel);
 extern void cbCancelDoubleMenu(void);
 extern void cbCancelGlbMenu(void);
-extern void cbGlbMenu(struct edmenu_s *menu, struct edsel_s *sel);
-extern void cbDoubleMenu(struct edmenu_s *menu, struct edsel_s *sel);
+extern void cbGlbMenu(struct eduimenu_s *menu, struct eduiitem_s *sel);
+extern void cbDoubleMenu(struct eduimenu_s *menu, struct eduiitem_s *sel);
 
-extern void eduiMenuDestroy(struct edmenu_s *menu);
-extern void eduiCreateMessageMenu(void *menu, char *msg, s32 flag);
+extern void eduiMenuDestroy(struct eduimenu_s *menu);
 extern void SaveLights(void);
 extern char *strupr(char *s);
 extern void NuFntSetPen(s32 colour);
@@ -237,7 +219,6 @@ extern void edlightDrawRadius(struct nuvec_s *pos, u8 r, u8 g, u8 b, f32 radius)
 extern void edcamSet(void);
 extern void DrawCameraTarget(struct nuvec_s *pos);
 extern void NuFntScale(s32 x, s32 y);
-extern void eduiMenuRender(void *menu);
 extern void NuRndrLine3dDbg(s32 colour, f32 x0, f32 y0, f32 z0, f32 x1, f32 y1,
                             f32 z1);
 extern void edcamSetPosAng(struct nuvec_s *pos, s32 a, s32 b);
@@ -1092,7 +1073,7 @@ void edlightDrawLights(void)
     }
 }
 
-void edlightcb_r_sliderval(void *menu, struct slider_s *slider)
+void edlightcb_r_sliderval(void *menu, struct eduiitem_s *slider)
 {
     struct lights_s *l;
     s32 idx = edlight_cur_light;
@@ -1104,7 +1085,7 @@ void edlightcb_r_sliderval(void *menu, struct slider_s *slider)
         return;
     edlight_r_slider = slider;
     {
-        s32 value = slider->val;
+        s32 value = slider->u.slider.val;
 
         edlight_default_r = value;
         l->r = value;
@@ -1113,7 +1094,7 @@ void edlightcb_r_sliderval(void *menu, struct slider_s *slider)
         edlightMakeNUCOLOUR3(l->r, l->g, l->b, &l->colour);
 }
 
-void edlightcb_g_sliderval(void *menu, struct slider_s *slider)
+void edlightcb_g_sliderval(void *menu, struct eduiitem_s *slider)
 {
     struct lights_s *l;
     s32 idx = edlight_cur_light;
@@ -1125,7 +1106,7 @@ void edlightcb_g_sliderval(void *menu, struct slider_s *slider)
         return;
     edlight_g_slider = slider;
     {
-        s32 value = slider->val;
+        s32 value = slider->u.slider.val;
 
         edlight_default_g = value;
         l->g = value;
@@ -1134,7 +1115,7 @@ void edlightcb_g_sliderval(void *menu, struct slider_s *slider)
         edlightMakeNUCOLOUR3(l->r, l->g, l->b, &l->colour);
 }
 
-void edlightcb_b_sliderval(void *menu, struct slider_s *slider)
+void edlightcb_b_sliderval(void *menu, struct eduiitem_s *slider)
 {
     struct lights_s *l;
     s32 idx = edlight_cur_light;
@@ -1146,7 +1127,7 @@ void edlightcb_b_sliderval(void *menu, struct slider_s *slider)
         return;
     edlight_b_slider = slider;
     {
-        s32 value = slider->val;
+        s32 value = slider->u.slider.val;
 
         edlight_default_b = value;
         l->b = value;
@@ -1209,18 +1190,18 @@ void edlightDrawLightBlock(void)
                   mtl);
 }
 
-void cbSelGlbType(struct edmenu_s *menu, struct edsel_s *sel)
+void cbSelGlbType(struct eduimenu_s *menu, struct eduiitem_s *sel)
 {
     s32 idx = edlight_cur_light;
-    s32 arg = 0;
+    struct eduimenu_s *arg = 0;
     struct lights_s *l;
-    void (*fn)(struct edmenu_s *menu, s32 arg);
+    void (*fn)(struct eduimenu_s *menu, struct eduimenu_s *parent);
 
     if (idx == -1)
         return;
     l = &Lights[idx];
     if (l->type == 1 || l->type == 2) {
-        if (sel->newtype != l->globalflag) {
+        if (sel->value != l->globalflag) {
             if (l->globalflag == 4) {
                 edlight_glb_dir_light = -1;
                 l->globalflag = 5;
@@ -1232,7 +1213,7 @@ void cbSelGlbType(struct edmenu_s *menu, struct edsel_s *sel)
             }
         }
     } else if (l->type == 0) {
-        if (sel->newtype != l->globalflag) {
+        if (sel->value != l->globalflag) {
             if (l->globalflag == 4) {
                 edlight_glb_amb_light = -1;
                 l->globalflag = 5;
@@ -1244,16 +1225,16 @@ void cbSelGlbType(struct edmenu_s *menu, struct edsel_s *sel)
             }
         }
     }
-    if (menu->arg != 0) {
-        arg = menu->arg;
+    if (menu->parent != 0) {
+        arg = menu->parent;
         eduiMenuDetach(menu);
     }
-    fn = menu->cb;
+    fn = menu->cancel;
     if (fn)
         fn(menu, arg);
 }
 
-void cbDoubleMenu(struct edmenu_s *menu, struct edsel_s *sel)
+void cbDoubleMenu(struct eduimenu_s *menu, struct eduiitem_s *sel)
 {
     struct eduistyle_s style = edlight_menu_style;
 
@@ -1272,7 +1253,7 @@ void cbDoubleMenu(struct edmenu_s *menu, struct edsel_s *sel)
     edlight_double_menu->y = menu->y + 40;
 }
 
-void cbGlbMenu(struct edmenu_s *menu, struct edsel_s *sel)
+void cbGlbMenu(struct eduimenu_s *menu, struct eduiitem_s *sel)
 {
     struct eduistyle_s style = edlight_menu_style;
 
@@ -1291,22 +1272,22 @@ void cbGlbMenu(struct edmenu_s *menu, struct edsel_s *sel)
     edlight_glb_menu->y = menu->y + 40;
 }
 
-void cbSelDoubleType(struct edmenu_s *menu, struct edsel_s *sel)
+void cbSelDoubleType(struct eduimenu_s *menu, struct eduiitem_s *sel)
 {
     s32 idx = edlight_cur_light;
-    s32 arg = 0;
-    void (*fn)(struct edmenu_s *menu, s32 arg);
+    struct eduimenu_s *arg = 0;
+    void (*fn)(struct eduimenu_s *menu, struct eduimenu_s *parent);
 
     if (idx != -1) {
         struct lights_s *l = &Lights[idx];
-        if (sel->newtype != l->brightness)
-            l->brightness = sel->newtype;
+        if (sel->value != l->brightness)
+            l->brightness = sel->value;
     }
-    if (menu->arg != 0) {
-        arg = menu->arg;
+    if (menu->parent != 0) {
+        arg = menu->parent;
         eduiMenuDetach(menu);
     }
-    fn = menu->cb;
+    fn = menu->cancel;
     if (fn)
         fn(menu, arg);
 }
