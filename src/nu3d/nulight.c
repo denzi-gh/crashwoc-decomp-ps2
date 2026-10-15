@@ -36,16 +36,7 @@
 #include "numath/numathtypes.h"
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
-
-typedef struct nulight_s {
-    char unknown_00[0x14];
-    struct nuvec_s diffuse;         /* 0x14 */
-    char unknown_20[0x20];
-    struct numtx_s mtx;             /* 0x40 */
-    char unknown_80[0x8];
-    int index;
-    int used;
-} nulight_s;
+#include "nu3d/nulight.h"
 
 typedef struct nulgtspot_s {
     struct nuvec_s pos;
@@ -79,10 +70,10 @@ typedef struct nulgtpolyhaze_s {
 } nulgtpolyhaze_s;
 
 extern int NuRndrFogClear;
-extern nulight_s D_006AD100[];
+extern struct nulight_s D_006AD100[];
 extern struct nuvec_s D_006AD580[];
-extern struct nuvec_s D_006AD5A8[];
-extern nulight_s *D_006AD5D0[];
+extern struct nucolour3_s D_006AD5A8[];
+extern struct nulight_s *D_006AD5D0[];
 extern float NuRndrFogNear;
 extern float NuRndrFogFar;
 extern int NuRndrFogCol;
@@ -140,7 +131,7 @@ void NuLightInit(void) {
     void *packet;
 
     for (i = 0; i < 3; i++) {
-        nulight_colours[i].x = nulight_colours[i].y = nulight_colours[i].z = 0.0f;
+        nulight_colours[i].r = nulight_colours[i].g = nulight_colours[i].b = 0.0f;
         nulight_current[i] = 0;
         nulight_stamps[i] = 0;
     }
@@ -274,7 +265,7 @@ void NuLightClose(void) {
 }
 
 
-nulight_s *NuLightCreate(void) {
+struct nulight_s *NuLightCreate(void) {
     int i;
 
     for (i = 0; i < 8; i++) {
@@ -289,9 +280,9 @@ nulight_s *NuLightCreate(void) {
 
 /* Puts the light in one of the three directional slots: its own slot when
    slot 0 already holds it, otherwise the least recently used one. */
-void NuLightUpdate(nulight_s *light) {
+void NuLightUpdate(struct nulight_s *light) {
     struct nuvec_s dir;
-    nulight_s *l;
+    struct nulight_s *l;
     int oldest;
     int best;
     int i;
@@ -325,20 +316,20 @@ void NuLightUpdate(nulight_s *light) {
                                &nulight_dirs[2], &nulight_colours[2]);
 }
 
-void NuLightDestroy(nulight_s *light) {
+void NuLightDestroy(struct nulight_s *light) {
     int i;
 
     light->used = 0;
     for (i = 0; i < 3; i++) {
         if (nulight_current[i] == light) {
             nulight_current[i] = 0;
-            nulight_colours[i].x = nulight_colours[i].y = nulight_colours[i].z = 0.0f;
+            nulight_colours[i].r = nulight_colours[i].g = nulight_colours[i].b = 0.0f;
         }
     }
 }
 
 
-nulight_s *NuLightGetLight(int index) {
+struct nulight_s *NuLightGetLight(int index) {
     return &nulights[index];
 }
 
@@ -356,7 +347,7 @@ void NuLigthSetPolyHazeMat(void *mtl, float *u, float *v) {
 }
 
 
-void NuLightAddSpot(struct nuvec_s *pos, int colour, int mode, float size) {
+void NuLightAddSpot(struct nuvec_s *pos, float size, int colour, int mode) {
     if (NuLightSpotCnt < 8) {
         NuLightSpots[NuLightSpotCnt].pos = *pos;
         NuLightSpots[NuLightSpotCnt].size = size;
@@ -370,8 +361,8 @@ void NuLightAddSpot(struct nuvec_s *pos, int colour, int mode, float size) {
 }
 
 
-void NuLightAddSpotXSpanFade(struct nuvec_s *pos, int colour, int mode, int xspan,
-                             int fade, float size, float brightness) {
+void NuLightAddSpotXSpanFade(struct nuvec_s *pos, float size, float brightness, int colour,
+                             int mode, int xspan, int fade) {
     if (xspan < 0x80 && NuLightSpotCnt < 8) {
         NuLightSpots[NuLightSpotCnt].pos = *pos;
         NuLightSpots[NuLightSpotCnt].size = size;

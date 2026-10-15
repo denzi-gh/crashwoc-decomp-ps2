@@ -49,43 +49,10 @@
 #include "numath/numtx.h"
 #include "nu3d/nunode.h"
 
-typedef struct numeshnode_s {
-    struct nunode_s node;
-    void *geometry;
-    char pad_24[4];
-    int flags;
-} NuMeshNode;
-
-typedef struct nutransformnode_s {
-    struct nunode_s node;
-    struct numtx_s mtx;
-    struct numtx_s wmtx;
-    int flags;
-    char pad_a4[4];
-} NuTransformNode;
-
-typedef struct nusplinenode_s {
-    struct nunode_s node;
-    int num_splines;
-    void **splines;
-    void **spline_data;
-} NuSplineNode;
-
-
-typedef void (*NuNodeDataFunc)(void *data);
-typedef void (*NuNodeIterFunc)(struct nunode_s *node, void *data);
-
 extern void *NuMemAllocFn(int size, char *file, int line);
 extern void *NuMemReAllocFn(void *ptr, int size, char *file, int line);
 extern void NuMemFreeFn(void *ptr, char *file, int line);
 extern void NuMtxMulVU0(struct numtx_s *dst, struct numtx_s *a, struct numtx_s *b);
-
-void NuMeshNodeDestroy(struct nunode_s *node);
-void NuTransformNodeDestroy(struct nunode_s *node);
-void NuJointNodeDestroy(struct nunode_s *node);
-void NuSkinNodeDestroy(struct nuskinnode_s *skin);
-void NuSplineNodeDestroy(NuSplineNode *spline);
-void NuNodeUpdateXfms(struct nunode_s *node, struct numtx_s *parent_mtx);
 
 extern char D_006141E0[];
 #define nunode_file D_006141E0
@@ -165,7 +132,7 @@ inline void NuNodeDestroy(struct nunode_s *node)
         NuSkinNodeDestroy((struct nuskinnode_s *)node);
         break;
     case NUNODETYPE_SPLINE:
-        NuSplineNodeDestroy((NuSplineNode *)node);
+        NuSplineNodeDestroy((struct nusplinenode_s *)node);
         break;
     default:
         NuErrorProlog(nunode_file, 0x109)(bad_node_type_msg);
@@ -176,11 +143,11 @@ inline void NuNodeDestroy(struct nunode_s *node)
 
 inline void NuNodeDestroyHierarchy(struct nunode_s *node)
 {
-    NuTransformNode *xform;
+    struct nutransformnode_s *xform;
     struct nunode_s *child;
     struct nunode_s *cur;
 
-    xform = (NuTransformNode *)node;
+    xform = (struct nutransformnode_s *)node;
     child = node->child;
     if (node->type != NUNODETYPE_TRANSFORM || !(xform->flags & 2)) {
         while (child != 0) {
@@ -214,11 +181,11 @@ inline struct nunode_s *NuNodeFindByID(struct nunode_s *node, int id)
 
 static inline void resolveReferenceNodes(struct nunode_s *root, struct nunode_s *node)
 {
-    NuTransformNode *xform;
+    struct nutransformnode_s *xform;
     struct nunode_s *child;
     struct nunode_s *cur;
 
-    xform = (NuTransformNode *)node;
+    xform = (struct nutransformnode_s *)node;
     if (node->type == NUNODETYPE_TRANSFORM && (xform->flags & 2)) {
         node->child = NuNodeFindByID(root, (int)node->data);
         return;
@@ -485,7 +452,7 @@ int NuNodeNumSubNodes(struct nunode_s *node)
 void NuNodeUpdateXfms(struct nunode_s *node, struct numtx_s *parent_mtx)
 {
     struct numtx_s mtx;
-    NuTransformNode *xform;
+    struct nutransformnode_s *xform;
     struct nujointnode_s *joint;
     struct nunode_s *child;
 
@@ -496,7 +463,7 @@ void NuNodeUpdateXfms(struct nunode_s *node, struct numtx_s *parent_mtx)
     }
     switch (node->type) {
     case NUNODETYPE_TRANSFORM:
-        xform = (NuTransformNode *)node;
+        xform = (struct nutransformnode_s *)node;
         NuMtxMulVU0(&mtx, &xform->mtx, &mtx);
         xform->wmtx = mtx;
         break;
@@ -512,12 +479,12 @@ void NuNodeUpdateXfms(struct nunode_s *node, struct numtx_s *parent_mtx)
 }
 
 
-NuMeshNode *NuMeshNodeCreate(void *geometry)
+struct numeshnode_s *NuMeshNodeCreate(void *geometry)
 {
-    NuMeshNode *mesh;
+    struct numeshnode_s *mesh;
 
-    mesh = NuMemAllocFn(sizeof(NuMeshNode), nunode_file, 0x35A);
-    memset(mesh, 0, sizeof(NuMeshNode));
+    mesh = NuMemAllocFn(sizeof(struct numeshnode_s), nunode_file, 0x35A);
+    memset(mesh, 0, sizeof(struct numeshnode_s));
     mesh->node.type = NUNODETYPE_MESH;
     mesh->node.id = next_node_id++;
     mesh->geometry = geometry;
@@ -538,12 +505,12 @@ void NuMeshNodeDestroy(struct nunode_s *node)
 }
 
 
-NuTransformNode *NuTransformNodeCreate(struct numtx_s *mtx)
+struct nutransformnode_s *NuTransformNodeCreate(struct numtx_s *mtx)
 {
-    NuTransformNode *xform;
+    struct nutransformnode_s *xform;
 
-    xform = NuMemAllocFn(sizeof(NuTransformNode), nunode_file, 0x2D6);
-    memset(xform, 0, sizeof(NuTransformNode));
+    xform = NuMemAllocFn(sizeof(struct nutransformnode_s), nunode_file, 0x2D6);
+    memset(xform, 0, sizeof(struct nutransformnode_s));
     xform->node.type = NUNODETYPE_TRANSFORM;
     xform->node.id = next_node_id++;
     xform->node.num_children = 0;
@@ -633,12 +600,12 @@ void NuSkinNodeDestroy(struct nuskinnode_s *skin)
 }
 
 
-NuSplineNode *NuSplineNodeCreate(int num_splines)
+struct nusplinenode_s *NuSplineNodeCreate(int num_splines)
 {
-    NuSplineNode *spline;
+    struct nusplinenode_s *spline;
 
-    spline = NuMemAllocFn(sizeof(NuSplineNode), nunode_file, 0x389);
-    memset(spline, 0, sizeof(NuSplineNode));
+    spline = NuMemAllocFn(sizeof(struct nusplinenode_s), nunode_file, 0x389);
+    memset(spline, 0, sizeof(struct nusplinenode_s));
     spline->node.type = NUNODETYPE_SPLINE;
     spline->node.id = next_node_id++;
     spline->node.num_children = 0;
@@ -654,7 +621,7 @@ NuSplineNode *NuSplineNodeCreate(int num_splines)
 }
 
 
-void NuSplineNodeDestroy(NuSplineNode *spline)
+void NuSplineNodeDestroy(struct nusplinenode_s *spline)
 {
     if (spline->splines != 0) {
         NuMemFreeFn(spline->splines, nunode_file, 0x3A1);

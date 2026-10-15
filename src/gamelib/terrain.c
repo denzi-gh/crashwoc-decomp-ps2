@@ -111,6 +111,8 @@
 #include "nucore/nuerror.h"
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
+#include "nu3d/nucamera.h"
+#include "nu3d/nugscn.h"
 
 #include "creature.h"
 
@@ -287,39 +289,6 @@ typedef struct {
     u16 val;
     struct nuvec_s spl[4096];
 } WallSplineType;
-
-struct nuinstanim_s {
-    struct numtx_s mtx;
-};
-
-struct nuinstance_s {
-    struct numtx_s mtx;                   /* 0x00 */
-    s32 objid;                            /* 0x40 */
-    struct {
-        u32 visible : 1;
-    } flags;                              /* 0x44 */
-    struct nuinstanim_s *anim;            /* 0x48 */
-    s32 pad;                              /* 0x4C */
-}; /* 0x50 */
-
-struct nugscn_s {
-    s32 *tids;                            /* 0x00 */
-    s32 numtid;                           /* 0x04 */
-    struct numtl_s **mtls;                /* 0x08 */
-    s32 nummtl;                           /* 0x0C */
-    s32 numgobj;                          /* 0x10 */
-    struct nugobj_s **gobjs;              /* 0x14 */
-    s32 numinstance;                      /* 0x18 */
-    struct nuinstance_s *instances;       /* 0x1C */
-};
-
-struct nucamera_s {
-    struct numtx_s mtx;
-    f32 fov;
-    f32 aspect;
-    f32 nearclip;
-    f32 farclip;
-};
 
 extern TerTempInfoType *TerI;
 extern TerrShapeType *TerrShape;

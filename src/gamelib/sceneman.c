@@ -25,8 +25,8 @@
 
 #include "nucore/nuerror.h"
 #include "numath/numathtypes.h"
+#include "nu3d/nugscn.h"
 
-typedef struct NuGScn NuGScn;
 typedef struct NuTriggerSys NuTriggerSys;
 typedef struct NuGCutSceneDef NuGCutSceneDef;
 
@@ -59,7 +59,7 @@ typedef struct NuSceneScript {
 
 typedef struct NuSceneData {
     char *name;                     /* 0x00 */
-    NuGScn *gscene;                 /* 0x04 */
+    struct nugscn_s *gscene;        /* 0x04 */
     short *terrain;                 /* 0x08 */
     void *specialterrain;           /* 0x0C */
     void *triggers;                 /* 0x10 */
@@ -74,7 +74,7 @@ typedef struct NuSceneInstance {
     struct NuSceneInstance *prev;   /* 0x04 */
     int reserved;                   /* 0x08 */
     NuSceneData *data;              /* 0x0C */
-    NuGScn *gscene;                 /* 0x10 */
+    struct nugscn_s *gscene;        /* 0x10 */
     NuTriggerSys *triggers;         /* 0x14 */
     float rate;                     /* 0x18 */
     int flags;                      /* 0x1C */
@@ -89,15 +89,14 @@ extern int NuFParGetLine(NuFPar *parser);
 extern int NuFParGetWord(NuFPar *parser);
 extern int NuFParGetInt(NuFPar *parser);
 
-extern NuGScn *NuGScnRead(char **heap, char *heapend, char *name);
 extern short *terraininit(int levelnum, char **heap, char *heapend, int opt, char *name,
-                          NuGScn *gscene, int gsid);
-extern void *CreateSpecialTerrainData(int levelnum, NuGScn *gscene, char **heap, char **heapend);
+                          struct nugscn_s *gscene, int gsid);
+extern void *CreateSpecialTerrainData(int levelnum, struct nugscn_s *gscene, char **heap, char **heapend);
 extern void *NuTriggerSysLoad(char *name, char **heap, char **heapend);
-extern void NuGCutSceneFixUp(NuGCutSceneDef *def, NuGScn *gscene, void *triggers);
+extern void NuGCutSceneFixUp(NuGCutSceneDef *def, struct nugscn_s *gscene, void *triggers);
 
-extern void NuGScnUpdate(NuGScn *scene, float time);
-extern void NuGScnRndr3(NuGScn *scene);
+extern void NuGScnUpdate(struct nugscn_s *scene, float time);
+extern void NuGScnRndr3(struct nugscn_s *scene);
 
 extern void instNuTriggerSysDestroy(NuTriggerSys *sys);
 extern void instNuTriggerEnable(NuTriggerSys *sys);

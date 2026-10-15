@@ -28,6 +28,7 @@
 #include "numath/numtx.h"
 #include "numath/nuvec.h"
 #include "nu3d/nugobj.h"
+#include "nu3d/nugscn.h"
 
 struct numtx2_s
 {
@@ -236,75 +237,10 @@ struct NUTRIGGER_s {
     struct NUTRIGGERPRIM_s * prims;
 };
 
-struct nuinstflags_s {
-    int visible : 1;
-    int onscreen : 1;
-    int visitest : 1;
-    int isanimated : 1;
-};
-
 struct instNUTRIGGER_s {
     short hitpoints;
     unsigned char enableflags;
     char flags;
-};
-
-struct nuinstanim_s {
-    struct numtx2_s mtx;
-    float tfactor;
-    float tfirst;
-    float tinterval;
-    float ltime;
-    unsigned int playing : 1;
-    unsigned int backwards : 1;
-    unsigned int waiting : 1;
-    unsigned int repeating : 1;
-    unsigned int oscillate : 1;
-    int ipad[2];
-    unsigned char anim_ix;
-    char pad[3];
-};
-
-struct nuinstance_s {
-    struct numtx2_s mtx;
-    int objid;
-    struct nuinstflags_s flags;
-    struct nuinstanim_s * anim;
-    short room_group;
-    char special_flag;
-    char pad[1];
-};
-
-struct nugscn_s
-{
-	short* tids;
-	int numtid;
-	void** mtls;
-	int nummtl;
-	int numgobj;
-	void** gobjs;
-	int numinstance;
-	struct nuinstance_s* instances;
-	int numspecial;
-	void* specials;
-	void* splinedata;
-	int numsplines;
-	void* splines;
-	char* nametable;
-	int numexspecials;
-	void* exspecials;
-	int exallocix;
-	void* instanimblock;
-	void** instanimdata;
-	int numinstanceixs;
-	short* instanceixs;
-	short crossfade;
-	short crossfaderate;
-	int crossfadefirst;
-	int numtexanims;
-	void* texanims;
-	short* texanim_tids;
-	short* instancelightix;
 };
 
 struct NUTRIGGERSYS_s {
@@ -1106,9 +1042,9 @@ int WeaponCheckTriggers(struct nuvec_s* pos, float r, int hitpoints) {
                                 continue;
                             }
                             if (instance->anim != 0) {
-                                check = CheckParentedTriggerWithPos(trigger, &instance->anim->mtx, pos, r);
+                                check = CheckParentedTriggerWithPos(trigger, (struct numtx2_s *)&instance->anim->mtx, pos, r);
                             } else {
-                                check = CheckParentedTriggerWithPos(trigger, &instance->mtx, pos, r);
+                                check = CheckParentedTriggerWithPos(trigger, (struct numtx2_s *)&instance->mtx, pos, r);
                             }
                         } else {
                             check = CheckUnparentedTriggerWithPos(trigger, pos, r);

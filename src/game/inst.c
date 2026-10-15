@@ -14,13 +14,14 @@
 
 #include "nu_libc.h"
 
+#include "nu3d/nuscene.h"
+
 union variptr_u {
     void *voidptr;
 };
 
 struct nulsthdr_s;
 struct nulnkhdr_s;
-struct nuscene_s;
 struct nuanimdata_s;
 struct shaddata_s;
 
@@ -58,8 +59,6 @@ extern void NuLstDestroy(struct nulsthdr_s *hdr);
 extern struct nulnkhdr_s *NuLstGetNext(struct nulsthdr_s *hdr, struct nulnkhdr_s *lnk);
 extern struct nulnkhdr_s *NuLstAlloc(struct nulsthdr_s *hdr);
 extern void NuLstFree(struct nulnkhdr_s *lnk);
-extern struct nuscene_s *NuSceneLoad(char *name);
-extern void NuSceneDestroy(struct nuscene_s *scene);
 extern struct nuanimdata_s *NuAnimDataLoadBuff(char *name, union variptr_u *buff, union variptr_u *endbuff);
 extern struct shaddata_s *ShadDataLoad(char *name, union variptr_u *buff, union variptr_u endbuff);
 extern int NuFileSize(char *name);

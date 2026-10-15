@@ -14,6 +14,7 @@
 #include "nu_libc.h"
 
 #include "nu3d/numtl.h"
+#include "nu3d/nugscn.h"
 
 #include "creature.h"
 
@@ -37,30 +38,18 @@ extern s32 qrand(void);
 
 /* --- Font3D scene / material types (offsets verified from InitFont3D) --- */
 
-struct nugscn_s {
-    u8 pad_08[0x8];
-    struct numtl_s **mtls;  /* +0x8  verified in InitFont3D (lw 0x8) */
-    s32 nummtl;             /* +0xC  verified in InitFont3D (lw 0xC)  */
-};
-
-/* NuSpecialFind out-parameter (obj): scene@0, special@4. */
-struct objinfo_s {
-    void *scene;            /* 0x0 */
-    void *special;          /* 0x4 */
-};
-
 /* Font3DTab entry: ascii@0, obj{scene@4,special@8}, name@0xC; stride 0x10.
  * All offsets verified in InitFont3D. */
 struct font3dtab_s {
     s32 ascii;              /* 0x0 */
-    struct objinfo_s obj;   /* 0x4 scene, 0x8 special */
+    struct nuhspecial_s obj; /* 0x4 scene, 0x8 special */
     char *name;             /* 0xC */
 };                          /* 0x10 */
 
 /* Font3DAccentTab entry: obj{scene@0,special@4}, name@8; stride 0xC.
  * Offsets verified in InitFont3D. */
 struct font3djchar_s {
-    struct objinfo_s obj;   /* 0x0 scene, 0x4 special */
+    struct nuhspecial_s obj; /* 0x0 scene, 0x4 special */
     char *name;             /* 0x8 */
 };                          /* 0xC */
 
@@ -69,9 +58,6 @@ extern struct font3djchar_s Font3DAccentTab[];
 extern signed char Font3DRemap[];
 extern struct numtl_s *Font3DMtlTab[5][2];
 extern s32 font3d_initialised;
-
-extern void *NuSpecialFind(struct nugscn_s *scn, struct objinfo_s *obj,
-                           char *name);
 
 /* --- Text3D externs --- */
 

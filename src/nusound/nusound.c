@@ -67,6 +67,7 @@
 
 #include "nu_libc.h"
 
+#include "nu3d/nucamera.h"
 #include "nucore/nuerror.h"
 #include "numath/numathtypes.h"
 #include "numath/nuvec4.h"
@@ -116,7 +117,6 @@ extern int sceSifCallRpc(sceSifClientData *client, unsigned int function,
 extern int sceSifCheckStatRpc(sceSifRpcData *rpcd);
 extern int sceGsSyncV(int mode);
 extern float NuFsqrt(float x);
-extern struct numtx_s *NuCameraGetVPCMtx(void);
 
 int NuSoundApply3d(struct nuvec_s *pos, int *left, int *right);
 

@@ -133,6 +133,9 @@
 #include "nu_libc.h"
 #include "nu_types.h"
 
+#include "nu3d/nucamera.h"
+#include "nu3d/nugscn.h"
+#include "nu3d/nulight.h"
 #include "numath/nufloat.h"
 #include "numath/numathtypes.h"
 #include "numath/numtx.h"
@@ -392,11 +395,6 @@ struct nupad_s {
     u32 oldpaddata; /* 0x564 */
 };
 
-struct nucam_s {
-    char pad_4c[0x4C];
-    float farclip; /* 0x4C */
-};
-
 struct pmask_s {
     char pad_163[0x163];
     u8 flags_163;  /* 0x163 */
@@ -552,7 +550,7 @@ extern s32 ExtraMoves;
 extern s32 Hub;
 extern s32 logos_played;
 extern struct ldata_s *LDATA;
-extern struct nucam_s *pNuCam;
+extern struct nucamera_s *pNuCam;
 extern s32 saveload_cardtype;
 extern s32 saveload_cardformatted;
 extern s32 saveload_freespace;
@@ -605,47 +603,10 @@ extern s32 boss_dead;
 
 /* --- InitLevel support --- */
 
-/* hgobj anim packet: mtx (+0x0) verified in PlayerObjectAnimCollision,
- * ltime (+0x4C) / playing (+0x50) in ResetHGobjAnim / StartHGobjAnim. */
-struct hganim_s {
-    struct numtx_s mtx; /* 0x0 */
-    char pad_40[0x4C - 0x40];
-    float ltime; /* 0x4C */
-    /* signed: retail clears bit 0 with `addiu -2; and`, which gcc only emits
-     * for a signed constant (u32 forces a 2-word lui+ori). */
-    s32 playing; /* 0x50 */
-};
-
-struct nuinstance_s {
-    struct numtx_s mtx; /* 0x0 (verified in PlayerObjectAnimCollision) */
-    s32 objid;          /* 0x40 (verified in DrawParallax) */
-    struct {
-        u32 visible : 1;
-        u32 rest : 31;
-    } flags;               /* 0x44 */
-    struct hganim_s *anim; /* 0x48 */
-};
-
-/* scene: gobjs (+0x14) verified in DrawParallax */
-struct nugscn_s {
-    char pad_14[0x14];
-    void **gobjs; /* 0x14 */
-};
-
-struct objspecial_s {
-    char pad_40[0x40];
-    struct nuinstance_s *instance; /* 0x40 */
-};
-
-struct objinfo_s {
-    struct nugscn_s *scene;       /* 0x0 (verified in DrawParallax) */
-    struct objspecial_s *special; /* 0x4 */
-};
-
 /* entry stride 0x20; scene/visible/font3d_letter/name/levbits verified in
  * InitObjectTable */
 struct objtab_s {
-    struct objinfo_s obj;    /* 0x0 (scene +0x0, special +0x4) */
+    struct nuhspecial_s obj; /* 0x0 (scene +0x0, special +0x4) */
     struct nugscn_s **scene; /* 0x8 */
     signed char visible;     /* 0xC */
     char font3d_letter;      /* 0xD */
@@ -765,7 +726,6 @@ void GameSfxLoop(s32 sfx, struct nuvec_s *pos);
 void InitPositions(void);
 void ResetAnimPacket(void *pkt, s32 action);
 void ResetLights(void *lights);
-void NuLightFogClear(s32 mode);
 void InitCredits(void);
 void InitBugAreas(void);
 s32 *NuBridgeCreate(struct nuinstance_s **instance, struct nuinstance_s *ipost,
@@ -2189,7 +2149,7 @@ extern char *tCANCEL[];
 extern s32 DrawPanel3DObject(s32 object, float x, float y, float z, float scalex,
                              float scaley, float scalez, u16 xrot, u16 yrot,
                              u16 zrot, struct nugscn_s *scn,
-                             struct objspecial_s *obj, s32 rot);
+                             struct nuspecial_s *obj, s32 rot);
 
 void DrawNameInputTable(struct cursor_s *cursor, float x0, float y0) {
     float size;
@@ -3026,32 +2986,32 @@ inline void TransporterGo(void) {
     NewBuzz((char *)player + 0xCA4, 5);
 }
 
-s32 StartHGobjAnim(struct objinfo_s *obj) {
+s32 StartHGobjAnim(struct nuhspecial_s *obj) {
     if (obj->special != NULL && obj->special->instance != NULL &&
         obj->special->instance->anim != NULL) {
-        obj->special->instance->anim->playing |= 1;
+        obj->special->instance->anim->flagword |= 1;
         return 1;
     }
     return 0;
 }
 
-s32 StopHGobjAnim(struct objinfo_s *obj) {
+s32 StopHGobjAnim(struct nuhspecial_s *obj) {
     struct nuinstance_s *instance;
 
     if (obj->special != NULL) {
         instance = obj->special->instance;
         if (instance != NULL && instance->anim != NULL) {
-            instance->anim->playing &= ~1;
+            instance->anim->flagword &= ~1;
             return 1;
         }
     }
     return 0;
 }
 
-s32 ResetHGobjAnim(struct objinfo_s *obj) {
+s32 ResetHGobjAnim(struct nuhspecial_s *obj) {
     if (obj->special != NULL && obj->special->instance != NULL &&
         obj->special->instance->anim != NULL) {
-        obj->special->instance->anim->playing &= ~1;
+        obj->special->instance->anim->flagword &= ~1;
         obj->special->instance->anim->ltime = 1.0f;
         return 1;
     }
@@ -3312,15 +3272,6 @@ void ResetGemPath(void) {
         ObjTab[101].obj.special->instance->flags.visible = gempath_open ^ 1;
     }
 }
-
-/* nugspline_s: len (+0x0) / ptsize (+0x2) / pts (+0x8) verified in
- * SplineDistance / NearestSplinePoint / SplinePointAngle */
-struct nugspline_s {
-    short len;    /* 0x0 */
-    short ptsize; /* 0x2 */
-    char pad_4[4];
-    char *pts; /* 0x8 */
-};
 
 s32 NearestSplinePoint(struct nuvec_s *pos, struct nugspline_s *spl) {
     s32 index;
@@ -3701,7 +3652,7 @@ extern struct tobj_s gempath_obj;
 extern s32 ChaseActive(void);
 s32 Draw3DObject(s32 object, struct nuvec_s *pos, u16 xrot, u16 yrot, u16 zrot,
                  float scalex, float scaley, float scalez,
-                 struct nugscn_s *scn, struct objspecial_s *obj, s32 rot);
+                 struct nugscn_s *scn, struct nuspecial_s *obj, s32 rot);
 
 void DrawTransporters(void) {
     s32 i;
@@ -3749,7 +3700,6 @@ extern struct spltab_s SplTab[0x49];
 /* array-form: a bare pointer scalar goes gp-rel under -G8 and overflows
  * GPREL16 (world_scene is far from $gp); retail uses absolute %hi/%lo. */
 extern struct nugscn_s *world_scene[];
-extern struct nugspline_s *NuSplineFind(struct nugscn_s *scn, char *name);
 
 void InitSplineTable(void) {
     s32 i;
@@ -3778,7 +3728,7 @@ void InitSplineTable(void) {
     }
 }
 
-s32 PlayerObjectAnimCollision(struct tobj_s *obj, struct objspecial_s *special,
+s32 PlayerObjectAnimCollision(struct tobj_s *obj, struct nuspecial_s *special,
                               float radius) {
     float r;
     float dx;
@@ -3943,8 +3893,6 @@ struct font3dobj_s {
     char pad_3[0xC - 0x3];
 };
 extern struct font3dobj_s Font3DObjTab[0x1a];
-extern s32 NuSpecialFind(struct nugscn_s *scn, struct objinfo_s *obj,
-                         char *name);
 
 void InitObjectTable(void) {
     s32 i;
@@ -4238,8 +4186,6 @@ extern struct nuvec_s TTScrPos;
 extern float TEXTZMUL;
 extern float tt_sx;
 extern float tt_sy;
-extern void NuCameraTransformScreenClip(struct nuvec_s *dst, struct nuvec_s *src,
-                                        s32 n, s32 flag);
 
 void StartTimeTrial(struct nuvec_s *pos, s32 clock) {
     TimeTrial = 1;
@@ -4677,9 +4623,6 @@ extern struct nuvec_s probedpos;
 extern struct nuvec_s probespk;
 extern struct nuvec_s probepos2;
 extern s32 gamesfx_pitch;
-extern void NuLgtArcLaser(s32 type, struct nuvec_s *start, struct nuvec_s *end,
-                          struct nuvec_s *mid, float a, float b, float c, float d,
-                          u32 col);
 extern void AddVariableShotDebrisEffect(s32 type, struct nuvec_s *pos, s32 count,
                                         s32 a, s32 b);
 s32 Draw3DCharacter(struct nuvec_s *pos, u16 xrot, u16 yrot, u16 zrot,
@@ -5169,7 +5112,7 @@ void UpdateAwards(void) {
 extern float tumble_item_starttime;
 s32 Draw3DObject(s32 object, struct nuvec_s *pos, u16 xrot, u16 yrot, u16 zrot,
                  float scalex, float scaley, float scalez,
-                 struct nugscn_s *scn, struct objspecial_s *obj, s32 rot);
+                 struct nugscn_s *scn, struct nuspecial_s *obj, s32 rot);
 
 void DrawAwards(void) {
     struct award_s *award;
@@ -5594,7 +5537,7 @@ void HubMoveVR(void) {
 
 
 void HubDrawItems(void) {
-    struct objspecial_s *special;
+    struct nuspecial_s *special;
     struct nugspline_s *spl;
     struct nuvec_s *p0;
     struct nuvec_s *p1;
@@ -7686,7 +7629,7 @@ void CheckFinish(struct tobj_s *obj) {
 /* Font3DTab entry, stride 0x10 */
 struct font3d_s {
     char pad_0[0x8];
-    struct objspecial_s *special; /* 0x8 */
+    struct nuspecial_s *special; /* 0x8 */
     char pad_c[0x10 - 0xC];
 };
 
@@ -8224,7 +8167,7 @@ void BonusTransporter(struct bcreature_s *plr) {
  * the render always runs. */
 inline s32 Draw3DObject(s32 object, struct nuvec_s *pos, u16 xrot, u16 yrot,
                         u16 zrot, float scalex, float scaley, float scalez,
-                        struct nugscn_s *scn, struct objspecial_s *obj, s32 rot) {
+                        struct nugscn_s *scn, struct nuspecial_s *obj, s32 rot) {
     struct numtx_s m;
     struct nuvec_s s;
     s32 o;

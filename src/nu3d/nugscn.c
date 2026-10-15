@@ -63,70 +63,17 @@
 
 #include "nu_libc.h"
 
+#include "nu3d/nugobj.h"
+#include "nu3d/nugscn.h"
 #include "nu3d/numtl.h"
+#include "nu3d/nunode.h"
+#include "nu3d/nuscene.h"
 #include "nu3d/nutex.h"
 #include "nu3d/nutexanm.h"
 #include "nucore/nuerror.h"
 #include "numath/numathtypes.h"
 #include "numath/numtx.h"
 #include "numath/nuvec.h"
-#include "nu3d/nugobj.h"
-
-struct nuinstance_s {
-    struct numtx_s matrix;          /* 0x00 */
-    int objid;                      /* 0x40 */
-    char pad44[0x0C];
-}; /* 0x50 */
-
-struct nuspecial_s {
-    struct numtx_s mtx;             /* 0x00 */
-    struct nuinstance_s *instance;  /* 0x40 */
-    char *name;                     /* 0x44 */
-    int flags;                      /* 0x48: bit 0 = ext (own matrix) */
-    int pad;                        /* 0x4C */
-}; /* 0x50 */
-
-struct nugspline_s {
-    short len;                      /* 0x00 */
-    short ptsize;                   /* 0x02 */
-    char *name;                     /* 0x04 */
-    struct nuvec_s *pts;            /* 0x08 */
-}; /* 0x0C */
-
-struct nugscn_s {
-    int *tids;                      /* 0x00 */
-    int numtid;                     /* 0x04 */
-    struct numtl_s **mtls;          /* 0x08 */
-    int nummtl;                     /* 0x0C */
-    int numgobj;                    /* 0x10 */
-    struct nugobj_s **gobjs;        /* 0x14 */
-    int numinstance;                /* 0x18 */
-    struct nuinstance_s *instances; /* 0x1C */
-    int numspecial;                 /* 0x20 */
-    struct nuspecial_s *specials;   /* 0x24 */
-    char pad28[0x04];
-    int numsplines;                 /* 0x2C */
-    struct nugspline_s *splines;    /* 0x30 */
-    char *nametable;                /* 0x34 */
-    int numexspecials;              /* 0x38 */
-    struct nuspecial_s *exspecials; /* 0x3C */
-    int exallocix;                  /* 0x40 */
-    char pad44[0x04];
-    struct nuanimdata_s **animlib;  /* 0x48 */
-    char pad4C[0x08];
-    short crossfade;                /* 0x54 */
-    short crossfaderate;            /* 0x56 */
-    int crossfadegobj;              /* 0x58 */
-    int crossfadefirst;             /* 0x5C */
-    int numtexanims;                /* 0x60 */
-    struct nutexanim_s *texanims;   /* 0x64 */
-    short *texanim_tids;            /* 0x68 */
-}; /* 0x6C */
-
-struct nuhspecial_s {
-    struct nugscn_s *scene;         /* 0x00 */
-    struct nuspecial_s *special;    /* 0x04 */
-};
 
 struct nuanimcurve_s {
     unsigned int mask;              /* 0x00 */
@@ -180,9 +127,7 @@ extern int NuFileWrite(int fh, void *buf, int size);
 extern int NuFileWriteInt(int fh, int value);
 extern void NuFileWriteFloat(int fh, float value);
 extern struct nunode_s *NuNodeRead(int fh, int depth);
-extern void NuNodeGraphInit(struct nunode_s *root);
 extern void CvtNodes(struct nunode_s *node, int depth);
-extern void MakeFaceOnDma(int fh, struct nufaceongeom_s *geom, int mtlid);
 
 extern char *NuStrIStr(char *str, char *sub);
 
@@ -328,8 +273,6 @@ void CalcDimsAddFaceOn(struct nufaceongeom_s *geom)
 extern int NuFileSeek(int fh, int offset, int origin);
 extern void NuCvtGeoBeginColourRef(char *buffer);
 extern char *NuCvtGeoEndColourRef(void);
-extern void CvtNuIFFGeom(int fh, int write);
-extern void CvtNuIFFFaceOnGeom(int fh);
 
 extern int nugscn_generate_colourref;
 extern int info_tricount;
@@ -534,9 +477,6 @@ extern int *D_006330F4;
 extern char D_00614E80[];
 #define cvt_streamcount D_006330F4
 #define unknown_prim_msg D_00614E80
-
-extern void CvtNuIFFGeomTri(int fh, int mtlid, int write);
-extern void CvtNuIFFGeomTriStrip(int fh, int mtlid, int write);
 
 void CvtNuIFFGeomPrim(int fh, int mtlid, int write)
 {
@@ -780,10 +720,10 @@ void ReadAnimationLibrary(int fh)
 
     count = NuFileReadInt(fh);
     NuFileReadInt(fh);
-    loading_scene->animlib = NuMemFileAddr(fh);
+    loading_scene->instanimdata = NuMemFileAddr(fh);
     for (i = 0; i < count; i++) {
-        RELOCATE(loading_scene->animlib[i]);
-        anim = loading_scene->animlib[i];
+        RELOCATE(loading_scene->instanimdata[i]);
+        anim = loading_scene->instanimdata[i];
         if (anim != 0) {
             RELOCATE(anim->chunks);
             for (j = 0; j < anim->nchunks; j++) {
@@ -890,7 +830,7 @@ void NuGScnTranslate(struct nugscn_s *scene, struct nuvec_s *offset)
     while (i != 0) {
         i--;
         instance--;
-        NuMtxTranslate(&instance->matrix, offset);
+        NuMtxTranslate(&instance->mtx, offset);
     }
 }
 
@@ -999,7 +939,7 @@ void NuSpecialGetPos(struct nuhspecial_s *sph, struct nuvec_s *pos)
 
     mtx = &sph->special->mtx;
     if ((sph->special->flags & 1) == 0) {
-        mtx = &sph->special->instance->matrix;
+        mtx = &sph->special->instance->mtx;
     }
     pos->x = mtx->_30;
     pos->y = mtx->_31;
@@ -1013,7 +953,7 @@ void NuSpecialGetMtx(struct nuhspecial_s *sph, struct numtx_s *mtx)
 
     src = &sph->special->mtx;
     if ((sph->special->flags & 1) == 0) {
-        src = &sph->special->instance->matrix;
+        src = &sph->special->instance->mtx;
     }
     *mtx = *src;
 }
@@ -1077,8 +1017,9 @@ void NuSplineGetRandomPoint(struct nugspline_s *spline, struct nuvec_s *pt)
 
     ix = rand() % spline->len;
     next = (ix + 1) % spline->len;
-    p0 = &spline->pts[spline->ptsize * ix];
-    p1 = &spline->pts[spline->ptsize * next];
+    /* Retail scales the index by the point size twice. */
+    p0 = &((struct nuvec_s *)spline->pts)[spline->ptsize * ix];
+    p1 = &((struct nuvec_s *)spline->pts)[spline->ptsize * next];
     NuVecLerp(pt, p0, p1, (float)(rand() & 0x7FFF) * (1.0f / 32768.0f));
 }
 
@@ -1295,10 +1236,6 @@ void CvtNuIFFNodeHierarchy(int fh)
 }
 
 
-extern void ReadNuIFFGeomVtx(int fh);
-extern void CvtNuIFFGeomPrim(int fh, int mtlid, int write);
-extern void ReadNuIFFGeomSkin(int fh);
-
 void CvtNuIFFGeom(int fh, int write)
 {
     int pos;
@@ -1499,8 +1436,6 @@ void CvtNuIFFAnimationLibrary(int fh)
     NuFileTidyAddress();
 }
 
-
-extern void CvtNuIFFNodeHierarchy(int fh);
 
 extern char *nametable_base;
 extern char *nametable_free;

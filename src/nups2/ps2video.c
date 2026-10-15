@@ -77,6 +77,7 @@
 #include "nu_types.h"
 
 #include "nucore/nuerror.h"
+#include "nu3d/nuvport.h"
 
 /* GIF A+D pair: a GS register value followed by its register address. */
 typedef struct NuPs2GsReg {
@@ -115,25 +116,6 @@ typedef struct TbSet {
 typedef struct sceDmaChan {
     unsigned int chcr;
 } sceDmaChan;
-
-typedef struct NuViewport {
-    int x;
-    int y;
-    int width;
-    int height;
-    float zmin;
-    float zmax;
-    float centre_x;
-    float centre_y;
-    float clip_left;
-    float clip_top;
-    float clip_right;
-    float clip_bottom;
-    float clip_scale_x;
-    float clip_scale_y;
-    float guard_scale_x;
-    float guard_scale_y;
-} NuViewport;
 
 typedef struct NuVBlankHandler {
     struct NuVBlankHandler *next;
@@ -913,9 +895,9 @@ void NuPs2DisableAutoScreenSwap(void)
 }
 
 
-void NuPs2GetViewport(NuViewport *vp)
+void NuPs2GetViewport(struct nuviewport_s *vp)
 {
-    memset(vp, 0, sizeof(NuViewport));
+    memset(vp, 0, sizeof(struct nuviewport_s));
     vp->zmin = 8388607.0f;
     vp->x = (PS2_VCNTR_X - PS2_REZ_W / 2) * 16;
     vp->y = (PS2_VCNTR_Y - PS2_REZ_H / 2) * 16;

@@ -39,6 +39,8 @@
 #include "numath/nuvec.h"
 #include "nu3d/nugobj.h"
 #include "nu3d/nuhgobj.h"
+#include "nu3d/nugscn.h"
+#include "nu3d/nuscene.h"
 
 /* A gobj as NuGHGWrite stores it: nugobj_s up to origin. */
 struct nughggobj_s {
@@ -563,7 +565,6 @@ struct NUHGOBJ_s *NuHGobjLoad(char *file) {
 extern int NuFileReadInt(int fh);
 extern char NuFileReadChar(int fh);
 extern float NuFileReadFloat(int fh);
-extern struct nugobj_s *ReadNuIFFGeom(int fh, struct numtl_s **mtls);
 extern char D_00615310[];
 extern char D_00615330[];
 extern char D_00615358[];
@@ -760,32 +761,7 @@ void ReadNuIFFCollideData(int fh, struct NUHGOBJ_s *hobj) {
 }
 
 
-/* Only the members the hierarchical-object reader fills in. */
-struct nuscene_s {
-    char pad00[0x10];
-    int numtids;                    /* 0x10 */
-    short *tids;                    /* 0x14 */
-    int nummtls;                    /* 0x18 */
-    struct numtl_s **mtls;          /* 0x1C */
-    char pad20[0x3C - 0x20];
-}; /* 0x3C */
-
-struct nugscn_s {
-    char pad00[0x08];
-    struct numtl_s **mtls;          /* 0x08 */
-    int nummtl;                     /* 0x0C */
-    char pad10[0x34 - 0x10];
-    char *nametable;                /* 0x34 */
-    char pad38[0x60 - 0x38];
-    int numtexanims;                /* 0x60 */
-    void *texanims;                 /* 0x64 */
-    short *texanim_tids;            /* 0x68 */
-}; /* 0x6C */
-
-extern char *ReadNuIFFNameTable(int fh, int *size);
-extern void ReadNuIFFTextureSet(int fh, struct nuscene_s *scene);
 extern void ReadNuIFFMaterialSet(int fh, struct nuscene_s *scene);
-extern void ReadNuIFFTexAnimSet(int fh, struct nugscn_s *gscene, short *tids);
 extern void ReadNuIFFUnknown(int fh, int blk);
 
 void ReadNuIFFHGobj(int fh, struct NUHGOBJ_s *hobj) {

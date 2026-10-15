@@ -62,11 +62,14 @@
 
 #include "nu_libc.h"
 
+#include "nu3d/nucamera.h"
+#include "nu3d/nugscn.h"
+#include "nu3d/numtl.h"
+#include "nu3d/nustream.h"
+#include "nu3d/nuvport.h"
 #include "numath/nufloat.h"
 #include "numath/numtx.h"
 #include "numath/nuvec.h"
-#include "nu3d/numtl.h"
-#include "nu3d/nustream.h"
 
 #include "creature.h"
 
@@ -235,8 +238,6 @@ struct gamecam_s {
 extern struct gamecam_s GameCam;
 extern f32 D_0062D7B4;                   /* 0.1f (gp-rel) */
 extern u64 D_0061EFB8[];                  /* extra-life scale, double const (abs) */
-extern void NuCameraTransformScreenClip(struct nuvec_s *out, struct nuvec_s *in,
-                                        s32 a, void *b);
 extern void AddPanelDebris(f32 x, f32 y, s32 obj, f32 z, s32 flag);
 extern u64 fptodp(f32 x);
 extern s32 dpcmp(u64 a, u64 b);
@@ -263,9 +264,6 @@ extern f32 D_0062D79C;
 extern struct nurndrstream_s *rndrstream_3d;
 extern u8 *rndrstream_free;
 
-extern s32 NuCameraClipTestPoints(struct nuvec_s *pos, s32 n, struct numtx_s *wm);
-extern struct numtx_s *NuCameraGetVPCSMtx(void);
-extern void *NuVpGetCurrentViewport(void);
 extern void NuVec4MtxTransformVU0(struct nuvec4_s *dst, struct nuvec4_s *src,
                                   struct numtx_s *m);
 extern void NuVec4ScaleXYZVU0(struct nuvec4_s *dst, struct nuvec4_s *src,
@@ -278,29 +276,9 @@ extern u8 *vpDmaTag_Next(u8 *cur, s32 mode);
 
 extern void AddQuad3DrotXYZ(struct nuvec_s *pos, struct nuvec_s *shape,
                             struct numtl_s *mat, s32 *rot, f32 *uv, u32 col);
-struct nuinstance_s {
-    struct numtx_s matrix;   /* 0x00 */
-    s32 objid;               /* 0x40 */
-};
-
-struct nuspecial_s {
-    struct numtx_s mtx;            /* 0x00 */
-    struct nuinstance_s *instance; /* 0x40 */
-    char *name;                    /* 0x44 */
-};
-
-struct nugscn_s {
-    short *tids;  /* 0x00 */
-    s32 numtid;   /* 0x04 */
-    void *mtls;   /* 0x08 */
-    s32 nummtl;   /* 0x0C */
-    s32 numgobj;  /* 0x10 */
-    void **gobjs; /* 0x14 */
-};
 
 extern struct nugscn_s *crate_scene;
 extern struct crateeditor_s crate_list[];
-extern s32 NuSpecialFind(void *scene, struct nuhspecial_s *sp, char *name);
 extern struct crate_s MarkerCrate;
 extern struct crate_s LockCrate;
 extern struct crate_s HighlightCrate;

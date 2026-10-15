@@ -111,25 +111,10 @@
 #include "numath/nuvec.h"
 #include "nu3d/numtl.h"
 #include "nu3d/nugobj.h"
+#include "nu3d/nugscn.h"
 
 struct camera_s {
     struct numtx_s mtx;
-};
-
-struct nuinstanim_s {
-    struct numtx_s mtx;
-    float tfactor;
-    float tfirst;
-    float tinterval;
-    float ltime;
-    unsigned int playing : 1;
-    unsigned int backwards : 1;
-    unsigned int waiting : 1;
-    unsigned int repeating : 1;
-    unsigned int oscillate : 1;
-    int ipad[2];
-    unsigned char anim_ix;
-    char pad5d[3];
 };
 
 struct nuanimkey_s {
@@ -184,28 +169,6 @@ struct pad_s {
     unsigned char rotright;
     unsigned char rotup;
     unsigned char rotdown;
-};
-
-struct nuinstance_s {
-    struct numtx_s mtx;
-    int objid;
-    char pad44[0x50 - 0x44];
-};
-
-struct nuspecial_s {
-    char pad00[0x40];
-    struct nuinstance_s *instance;
-    char *name;
-    char pad48[0x50 - 0x48];
-};
-
-struct nugscn_s {
-    char pad00[0x14];
-    struct nugobj_s **gobjs;
-    int numinstance;
-    struct nuinstance_s *instances;
-    int numspecial;
-    struct nuspecial_s *specials;
 };
 
 struct eduimenu_s {
@@ -267,13 +230,6 @@ struct edobject_s {
     float bouncy_player_grav;
     float bouncy_tension;
     float bouncy_damping;
-};
-
-struct nuinstflags_s {
-    int visible : 1;
-    int onscreen : 1;
-    int visitest : 1;
-    int isanimated : 1;
 };
 
 struct debtypedef_s {

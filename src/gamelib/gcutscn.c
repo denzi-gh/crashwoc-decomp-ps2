@@ -75,6 +75,9 @@
 
 #include "nu_libc.h"
 
+#include "nu3d/nucamera.h"
+#include "nu3d/nugobj.h"
+#include "nu3d/nugscn.h"
 #include "nucore/nuerror.h"
 #include "numath/nufloat.h"
 #include "numath/numathtypes.h"
@@ -82,34 +85,9 @@
 #include "numath/nuquat.h"
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
-#include "nu3d/nugobj.h"
 
 #include "creature.h"
 #include "gcutscn.h"
-
-typedef struct NuInstance {
-    struct numtx_s matrix;        /* 0x00 */
-    int objid;                    /* 0x40 */
-    int flags;                    /* 0x44 */
-} NuInstance;
-
-typedef struct NuSpecial {
-    struct numtx_s mtx;           /* 0x00 */
-    NuInstance *instance;         /* 0x40 */
-    char *name;                   /* 0x44 */
-    int flags;                    /* 0x48 */
-    int pad4C;                    /* 0x4C */
-} NuSpecial;                      /* 0x50 */
-
-typedef struct NuGScn {
-    char pad[0x24];               /* 0x00 */
-    NuSpecial *specials;          /* 0x24 */
-} NuGScn;
-
-typedef struct NuHSpecial {
-    NuGScn *scene;                /* 0x00 */
-    NuSpecial *special;           /* 0x04 */
-} NuHSpecial;
 
 #define NUINSTANCE_VISIBLE 0x1
 
@@ -177,7 +155,7 @@ struct NuGCutLocatorType {
 #define NUGCUTLOCATOR_NOFN   0xFFFF
 
 struct NuGCutRigid {
-    NuHSpecial obj;               /* 0x00 */
+    struct nuhspecial_s obj;      /* 0x00 */
     unsigned char state;          /* 0x08 */
     char pad[3];                  /* 0x09 */
 };
@@ -185,7 +163,7 @@ struct NuGCutRigid {
 typedef struct NuGCutRigidData {
     struct numtx_s mtx;           /* 0x00 */
     char *name;                   /* 0x40 */
-    NuHSpecial obj;               /* 0x44 */
+    struct nuhspecial_s obj;      /* 0x44 */
     NuAnimData2 *anim;            /* 0x4C */
     StateAnim *stateanim;         /* 0x50 */
     NuGCutLocatorData *locators;  /* 0x54 index on disk until fixed up */
@@ -488,8 +466,6 @@ extern int D_0062F7C8;
 #define cutscene_rndr_cameras D_0062F7C8
 
 extern struct numtx_s numtx_identity;
-extern float NuCameraDistSqr(struct nuvec_s *pos);
-extern int NuCameraClipTestExtents(struct nuvec_s *min, struct nuvec_s *max, struct numtx_s *mtx);
 void instNuGCutCamSysUpdate(NuGCutScene *scene, float time);
 void instNuGCutTriggerSysUpdate(NuGCutScene *scene, float time);
 void instNuGCutRigidSysUpdate(NuGCutScene *scene, float time);
@@ -1148,8 +1124,6 @@ void NuGCutLocatorSysFixUp(NuGCutLocatorDef *def) {
     }
 }
 
-extern int NuSpecialFind(void *scene, NuHSpecial *special, char *name);
-
 extern char D_00619DF8[];               /* debug message */
 #define norigid_msg D_00619DF8
 
@@ -1264,11 +1238,11 @@ void instNuGCutRigidSysReset(NuGCutRigidSys *sys, NuGCutRigidDef *def) {
             continue;
         }
         if (data->flags & NUGCUTRIGID_VISIBLE) {
-            rigid->obj.special->instance->flags |= NUINSTANCE_VISIBLE;
+            rigid->obj.special->instance->flagword |= NUINSTANCE_VISIBLE;
         } else {
-            rigid->obj.special->instance->flags &= ~NUINSTANCE_VISIBLE;
+            rigid->obj.special->instance->flagword &= ~NUINSTANCE_VISIBLE;
         }
-        rigid->obj.special->instance->matrix = data->mtx;
+        rigid->obj.special->instance->mtx = data->mtx;
     }
 }
 
@@ -1336,7 +1310,6 @@ void NuGCutRigidCalcMtx(NuGCutRigidData *rigid, float time, struct numtx_s *mtx)
         *mtx = rigid->mtx;
     }
 }
-extern int NuSpecialDrawAt(NuHSpecial *special, struct numtx_s *mtx);
 
 void instNuGCutRigidSysUpdate(NuGCutScene *scene, float time) {
     NuGCutSceneDef *def;
@@ -1363,18 +1336,18 @@ void instNuGCutRigidSysUpdate(NuGCutScene *scene, float time) {
         }
         if (data->stateanim && StateAnimEvaluate(data->stateanim, &rigid->state, (unsigned char *)&state, time)) {
             if (state) {
-                rigid->obj.special->instance->flags |= NUINSTANCE_VISIBLE;
+                rigid->obj.special->instance->flagword |= NUINSTANCE_VISIBLE;
             } else {
-                rigid->obj.special->instance->flags &= ~NUINSTANCE_VISIBLE;
+                rigid->obj.special->instance->flagword &= ~NUINSTANCE_VISIBLE;
             }
         }
-        if (rigid->obj.special->instance->flags & NUINSTANCE_VISIBLE) {
+        if (rigid->obj.special->instance->flagword & NUINSTANCE_VISIBLE) {
             NuGCutRigidCalcMtx(data, time, &mtx);
             if (scene->flags & NUGCUTSCENE_MATRIXSET) {
                 NuMtxMul(&mtx, &mtx, &scene->mtx);
             }
-            rigid->obj.special->instance->matrix = mtx;
-            if ((rigid->obj.special->instance->flags & NUINSTANCE_VISIBLE) && data->first_locator != 0xFF) {
+            rigid->obj.special->instance->mtx = mtx;
+            if ((rigid->obj.special->instance->flagword & NUINSTANCE_VISIBLE) && data->first_locator != 0xFF) {
                 NuGCutLocatorDef *locatordef = def->locatordef;
                 NuGCutLocatorSys *locatorsys = scene->locatorsys;
 
@@ -1414,12 +1387,12 @@ void instNuGCutRigidSysRender(NuGCutScene *scene, float time) {
         }
         if (data->stateanim && StateAnimEvaluate(data->stateanim, &rigid->state, (unsigned char *)&state, time)) {
             if (state) {
-                rigid->obj.special->instance->flags |= NUINSTANCE_VISIBLE;
+                rigid->obj.special->instance->flagword |= NUINSTANCE_VISIBLE;
             } else {
-                rigid->obj.special->instance->flags &= ~NUINSTANCE_VISIBLE;
+                rigid->obj.special->instance->flagword &= ~NUINSTANCE_VISIBLE;
             }
         }
-        if (rigid->obj.special->instance->flags & NUINSTANCE_VISIBLE) {
+        if (rigid->obj.special->instance->flagword & NUINSTANCE_VISIBLE) {
             NuGCutRigidCalcMtx(data, time, &mtx);
             if (scene->flags & NUGCUTSCENE_MATRIXSET) {
                 NuMtxMul(&mtx, &mtx, &scene->mtx);
@@ -1553,14 +1526,14 @@ void instNuGCutRigidSysEnd(NuGCutScene *scene, float time) {
         if (!(data->flags & 0x2)) {
             if (data->stateanim && StateAnimEvaluate(data->stateanim, &rigid->state, (unsigned char *)&state, time)) {
                 if (state) {
-                    rigid->obj.special->instance->flags |= NUINSTANCE_VISIBLE;
+                    rigid->obj.special->instance->flagword |= NUINSTANCE_VISIBLE;
                 } else {
-                    rigid->obj.special->instance->flags &= ~NUINSTANCE_VISIBLE;
+                    rigid->obj.special->instance->flagword &= ~NUINSTANCE_VISIBLE;
                 }
             }
             /* The end matrix is computed but never applied (retail does the
              * same). */
-            if (rigid->obj.special->instance->flags & NUINSTANCE_VISIBLE) {
+            if (rigid->obj.special->instance->flagword & NUINSTANCE_VISIBLE) {
                 NuGCutRigidCalcMtx(data, time, &mtx);
                 if (scene->flags & NUGCUTSCENE_MATRIXSET) {
                     NuMtxMul(&mtx, &mtx, &scene->mtx);
@@ -1630,7 +1603,7 @@ NuGCutTriggerSys *instNuCGutTriggerSysCreate(NuGCutSceneDef *def, NuGCutTriggerL
 extern char D_00619E38[];
 #define nospecial_msg D_00619E38
 
-NuGCutRigidSys *instNuCGutRigidSysCreate(NuGCutSceneDef *def, NuGScn *gscene, char **heap) {
+NuGCutRigidSys *instNuCGutRigidSysCreate(NuGCutSceneDef *def, struct nugscn_s *gscene, char **heap) {
     NuGCutRigidDef *rigiddef = def->rigiddef;
     NuGCutRigidSys *sys = 0;
     int i;

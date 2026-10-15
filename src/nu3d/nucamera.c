@@ -50,35 +50,8 @@
 #include "numath/numtx.h"
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
-
-typedef struct NuCamera {
-    struct numtx_s mtx;
-    float fov;
-    float aspect;
-    float nearclip;
-    float farclip;
-    float portalnearclip;
-    struct nuvec_s scale;
-} NuCamera;
-
-typedef struct NuViewport {
-    int x;
-    int y;
-    int width;
-    int height;
-    float zmin;
-    float zmax;
-    float centre_x;
-    float centre_y;
-    float clip_left;
-    float clip_top;
-    float clip_right;
-    float clip_bottom;
-    float clip_scale_x;
-    float clip_scale_y;
-    float guard_scale_x;
-    float guard_scale_y;
-} NuViewport;
+#include "nu3d/nucamera.h"
+#include "nu3d/nuvport.h"
 
 typedef struct NuCameraReflect {
     int type;
@@ -90,7 +63,7 @@ struct NuColour4;
 
 /* The state-buffer stride is 0x2b4; the camera occupies its first 0x60 bytes. */
 typedef struct NuCameraState {
-    NuCamera camera;
+    struct nucamera_s camera;
     struct numtx_s view;
     struct numtx_s projection;
     struct numtx_s scaling;
@@ -108,7 +81,7 @@ typedef struct NuCameraState {
 } NuCameraState;
 
 
-extern NuCamera global_camera;
+extern struct nucamera_s global_camera;
 
 extern struct nuvec_s D_002D3EB0;
 #define camera_axes D_002D3EB0
@@ -184,10 +157,7 @@ extern int NuVecClipTestPointVU0(struct nuvec_s *pos, struct numtx_s *clipmtx);
 extern void *NuMemAllocFn(int size, char *file, int line);
 extern void NuCameraInitClipTestVU0(struct numtx_s *vpc, struct numtx_s *scissor);
 extern int NuCameraClipTestExtentsVU0(struct nuvec_s *min, struct nuvec_s *max);
-extern NuViewport *NuVpGetCurrentViewport(void);
 extern void NuMtxMulVU0(struct numtx_s *dst, struct numtx_s *a, struct numtx_s *b);
-extern void NuVpUpdate(void);
-extern void NuVpGetScalingMtx(struct numtx_s *m);
 extern void NuMtxInvVU0(struct numtx_s *dst, struct numtx_s *src);
 extern void NuMtxScaleVU0(struct numtx_s *m, struct nuvec_s *scale);
 extern void NuVec4MtxTransformHVU0(struct nuvec4_s *dst, struct nuvec4_s *src, struct numtx_s *m);
@@ -220,8 +190,8 @@ void NuCameraSetProjectionMtx(struct numtx_s *m, float fov, float aspect, float 
 }
 
 
-inline void NuCameraSetVPortClipMtx(struct numtx_s *dst, struct numtx_s *view, NuCamera *cam, int keep) {
-    NuViewport *vp;
+inline void NuCameraSetVPortClipMtx(struct numtx_s *dst, struct numtx_s *view, struct nucamera_s *cam, int keep) {
+    struct nuviewport_s *vp;
     float farclip;
     float nearclip;
     float cot;
@@ -248,8 +218,8 @@ inline void NuCameraSetVPortClipMtx(struct numtx_s *dst, struct numtx_s *view, N
 }
 
 
-inline void NuCameraSetScissorClipMtx(struct numtx_s *dst, struct numtx_s *view, NuCamera *cam, int keep) {
-    NuViewport *vp;
+inline void NuCameraSetScissorClipMtx(struct numtx_s *dst, struct numtx_s *view, struct nucamera_s *cam, int keep) {
+    struct nuviewport_s *vp;
     float farclip;
     float nearclip;
     float cot;
@@ -276,7 +246,7 @@ inline void NuCameraSetScissorClipMtx(struct numtx_s *dst, struct numtx_s *view,
 }
 
 
-void NuCameraSetEx(NuCamera *cam, int keep) {
+void NuCameraSetEx(struct nucamera_s *cam, int keep) {
     struct numtx_s caminv;
     struct numtx_s reflectinv;
     struct numtx_s flip;
@@ -384,8 +354,8 @@ void NuCameraRestoreState(int handle) {
 }
 
 
-NuCamera *NuCameraCreate(void) {
-    NuCamera *cam = NuMemAllocFn(sizeof(NuCamera), nucamera_file, 0x3A);
+struct nucamera_s *NuCameraCreate(void) {
+    struct nucamera_s *cam = NuMemAllocFn(sizeof(struct nucamera_s), nucamera_file, 0x3A);
 
     NuMtxSetIdentity(&cam->mtx);
     cam->nearclip = 0.15f;
@@ -400,15 +370,15 @@ NuCamera *NuCameraCreate(void) {
 }
 
 
-void NuCameraDestroy(NuCamera *cam) {
+void NuCameraDestroy(struct nucamera_s *cam) {
     if (cam) {
         NuMemFreeFn(cam, nucamera_file, 0x4A);
     }
 }
 
 
-inline void NuCameraSet(NuCamera *cam) {
-    while (cam == (NuCamera *)1) {
+inline void NuCameraSet(struct nucamera_s *cam) {
+    while (cam == (struct nucamera_s *)1) {
     }
     NuCameraSetEx(cam, 0);
 }
@@ -419,7 +389,7 @@ void NuCameraClearStateBuffer(void) {
 }
 
 
-void NuCameraSetReflect(NuCamera *cam, NuCameraReflect *reflect) {
+void NuCameraSetReflect(struct nucamera_s *cam, struct NuCameraReflect *reflect) {
     camera_reflection = *reflect;
     NuCameraSet(cam);
     *reflect = camera_reflection;
@@ -436,7 +406,7 @@ void NuCameraGetAxes(struct nuvec_s *axes) {
 }
 
 
-NuCamera *NuCameraGetCam(void) {
+struct nucamera_s *NuCameraGetCam(void) {
     return &global_camera;
 }
 
@@ -571,7 +541,7 @@ void NuCameraTransformScreenVU0(struct nuvec4_s *dst, struct nuvec4_s *src, int 
     }
 }
 
-int NuCameraClipTestExtents(struct nuvec_s *min, struct nuvec_s *max) {
+int NuCameraClipTestExtents(struct nuvec_s *min, struct nuvec_s *max, struct numtx_s *wm) {
     int result;
 
     NuCameraInitClipTestVU0(&vpc_mtx, &scissor_clip_mtx);
@@ -656,7 +626,7 @@ int NuCameraClipTestPointScissor(struct nuvec_s *pos) {
 }
 
 
-void NuCameraGet(NuCamera *cam) {
+void NuCameraGet(struct nucamera_s *cam) {
     *cam = global_camera;
 }
 

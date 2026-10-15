@@ -5,6 +5,7 @@
 #include "numath/numathtypes.h"
 
 struct nugobj_s;
+struct nuspline_s;
 
 enum nunodetype_e {
     NUNODETYPE_NODE,
@@ -25,6 +26,21 @@ struct nunode_s {
     struct nunode_s *next;              /* 0x18 */
     void *data;                         /* 0x1C */
 }; /* 0x20 */
+
+struct numeshnode_s {
+    struct nunode_s node;               /* 0x00 */
+    struct nugobj_s *geometry;          /* 0x20 */
+    char pad24[0x04];                   /* 0x24 */
+    int flags;                          /* 0x28 */
+}; /* 0x2C */
+
+struct nutransformnode_s {
+    struct nunode_s node;               /* 0x00 */
+    struct numtx_s mtx;                 /* 0x20 */
+    struct numtx_s wmtx;                /* 0x60 */
+    int flags;                          /* 0xA0 */
+    char padA4[0x04];                   /* 0xA4 */
+}; /* 0xA8 */
 
 struct nujointnode_s {
     struct nunode_s node;               /* 0x000 */
@@ -48,5 +64,43 @@ struct nuskinnode_s {
     };
     struct numtx_s *joint_mtxs;         /* 0x30 */
 }; /* 0x34 */
+
+struct nusplinenode_s {
+    struct nunode_s node;               /* 0x00 */
+    int num_splines;                    /* 0x20 */
+    struct nuspline_s **splines;        /* 0x24 */
+    void **spline_data;                 /* 0x28 */
+}; /* 0x2C */
+
+typedef void (*NuNodeDataFunc)(void *data);
+typedef void (*NuNodeIterFunc)(struct nunode_s *node, void *data);
+
+void NuNodeDestroyChildren(struct nunode_s *node);
+void NuNodeGraphInit(struct nunode_s *root);
+int NuMtxEqual(struct numtx_s *a, struct numtx_s *b);
+struct nunode_s *NuNodeCreate(void);
+void NuNodeSetName(struct nunode_s *node, char *name);
+void NuNodePreAddChild(struct nunode_s *parent, struct nunode_s *child);
+void NuNodeAddChild(struct nunode_s *parent, struct nunode_s *child);
+void NuNodeRemoveChild(struct nunode_s *parent, struct nunode_s *child);
+int NuNodeNumChildren(struct nunode_s *node);
+struct nunode_s *NuNodeFindByName(struct nunode_s *node, char *name);
+void NuNodeIterator(struct nunode_s *node, void *context, enum nunodetype_e type, NuNodeIterFunc func, void *data);
+void NuNodeDestroyHierarchyData(struct nunode_s *node, NuNodeDataFunc destroy);
+int NuNodeNumBranchNodesOfType(struct nunode_s *node, enum nunodetype_e type);
+int NuNodeNumSubNodes(struct nunode_s *node);
+void NuNodeUpdateXfms(struct nunode_s *node, struct numtx_s *parent_mtx);
+struct numeshnode_s *NuMeshNodeCreate(void *geometry);
+void NuMeshNodeDestroy(struct nunode_s *node);
+struct nutransformnode_s *NuTransformNodeCreate(struct numtx_s *mtx);
+void NuTransformNodeDestroy(struct nunode_s *node);
+struct nujointnode_s *NuJointNodeCreate(struct numtx_s *mtx);
+void NuJointNodeDestroy(struct nunode_s *node);
+struct nuskinnode_s *NuSkinNodeCreate(int num_joints);
+void NuSkinNodeDestroy(struct nuskinnode_s *skin);
+struct nusplinenode_s *NuSplineNodeCreate(int num_splines);
+void NuSplineNodeDestroy(struct nusplinenode_s *spline);
+void NuNodeKeepNames(int keep);
+void NuMeshNodeSetGeometry(struct numeshnode_s *node, void *geometry);
 
 #endif /* NU3D_NUNODE_H */

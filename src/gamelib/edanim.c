@@ -91,6 +91,7 @@
 #include "numath/nuvec.h"
 #include "nu3d/numtl.h"
 #include "nu3d/nugobj.h"
+#include "nu3d/nugscn.h"
 
 struct debtypedef_s {
     char name[0x10];
@@ -100,48 +101,8 @@ struct debtypedef_s {
     struct nuvec_s varstart;
 };
 
-struct nuinstanim_s {
-    struct numtx_s mtx;
-    float tfactor;
-    float tfirst;
-    float tinterval;
-    float ltime;
-    unsigned int playing : 1;
-    unsigned int backwards : 1;
-    unsigned int waiting : 1;
-    unsigned int repeating : 1;
-    unsigned int oscillate : 1;
-    int ipad[2];
-    unsigned char anim_ix;
-};
-
 struct nuanimdata_s {
     float time;
-};
-
-struct nuinstance_s {
-    struct numtx_s mtx;
-    int objid;
-    int flags;
-    struct nuinstanim_s *anim;
-    char pad4c[0x50 - 0x4C];
-};
-
-struct nuspecial_s {
-    struct numtx_s mtx;
-    struct nuinstance_s *instance;
-    char *name;
-    char pad48[0x50 - 0x48];
-};
-
-struct nugscn_s {
-    char pad00[0x18];
-    int numinstance;
-    struct nuinstance_s *instances;
-    int numspecial;
-    struct nuspecial_s *specials;
-    char pad28[0x48 - 0x28];
-    struct nuanimdata_s **instanimdata;
 };
 
 struct edanimitem_s {

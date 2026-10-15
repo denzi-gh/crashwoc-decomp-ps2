@@ -18,42 +18,9 @@
 
 #include "numath/numtx.h"
 #include "numath/nuvec.h"
+#include "nu3d/nugscn.h"
 
 #include "creature.h"
-
-struct nugspline_s {
-    s16 len;          /* 0x0 */
-    s16 ptsize;       /* 0x2 */
-    char *name;       /* 0x4 */
-    u8 *pts;          /* 0x8 */
-};                    /* 0xC */
-
-struct nugscn_s {
-    short *tids;                   /* 0x00 */
-    s32 numtid;                    /* 0x04 */
-    void *mtls;                    /* 0x08 */
-    s32 nummtl;                    /* 0x0C */
-    s32 numgobj;                   /* 0x10 */
-    void **gobjs;                  /* 0x14 */
-    u8 unk_0x18[0x14];
-    s32 numsplines;                /* 0x2C */
-    struct nugspline_s *splines;   /* 0x30 */
-};
-
-struct nuinstance_s {
-    struct numtx_s mtx;     /* 0x00 */
-    s32 objid;              /* 0x40 */
-    struct {
-        u32 visible : 1;
-        u32 rest : 31;
-    } flags;                /* 0x44 */
-};
-
-struct nuspecial_s {
-    struct numtx_s mtx;                 /* 0x00 */
-    struct nuinstance_s *instance;      /* 0x40 */
-    char *name;                         /* 0x44 */
-};
 
 struct rail_s {
     struct nugspline_s *pINPLAT;   /* 0x00 */
@@ -226,8 +193,6 @@ extern s32 FurtherALONG(s32 iRAIL0, s32 iALONG0, f32 fALONG0, s32 iRAIL1,
                         s32 iALONG1, f32 fALONG1);
 extern f32 NuFsqrt(f32 x);
 extern void NuStrCat(char *dst, char *src);
-extern struct nugspline_s *NuSplineFind(struct nugscn_s *scene, char *name);
-extern s32 NuSpecialFind(struct nugscn_s *scene, struct nuhspecial_s *special, char *name);
 extern s32 FurtherBEHIND(s32 iRAIL0, s32 iALONG0, f32 fALONG0, s32 iRAIL1,
                          s32 iALONG1, f32 fALONG1);
 extern s32 AheadOfCheckpoint(s32 iRAIL, s32 iALONG, f32 fALONG);

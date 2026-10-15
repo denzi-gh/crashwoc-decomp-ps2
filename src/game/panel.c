@@ -28,33 +28,12 @@
 
 #include "nu_libc.h"
 
+#include "nu3d/nugscn.h"
+#include "nu3d/nuvport.h"
 #include "numath/numtx.h"
 #include "numath/nutrig.h"
 
 #include "creature.h"
-
-struct nuinstance_s {
-    struct numtx_s matrix;
-    s32 objid;
-    /* remaining fields unused here */
-};
-
-struct nugscn_s {
-    short *tids;
-    s32 numtid;
-    void *mtls;
-    s32 nummtl;
-    s32 numgobj;
-    void **gobjs;
-    /* remaining fields unused here */
-};
-
-struct nuspecial_s {
-    struct numtx_s mtx;
-    struct nuinstance_s *instance;
-    char *name;
-    /* remaining fields unused here */
-};
 
 struct objtab_s {
     struct nugscn_s *scene;
@@ -209,7 +188,6 @@ extern float FONT3D_JSCALEX;
 extern struct gametimer_s GameTimer;
 
 extern s32 NuRndrGScnObj(void *, struct numtx_s *);
-extern void NuVpSetSize(float, float);
 extern void GameSfx(s32, s32);
 extern void EvalModelAnim(struct CharacterModel *, struct anim_s *,
                           struct numtx_s *, struct numtx_s *, float ***,

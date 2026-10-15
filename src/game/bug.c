@@ -10,6 +10,7 @@
  *   0x0025fa88 DrawBug
  */
 
+#include "nu3d/nulight.h"
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
 
@@ -134,8 +135,6 @@ extern u16 D_006333A0[4];
 
 /* PS2 signatures derived from these call sites (EABI: int and float args use
  * independent register files a0.. / f12..). */
-extern void NuLightAddSpotXSpanFade(struct nuvec_s *pos, f32 scale, f32 fade,
-                                    u32 color, s32 a4, s32 alpha, s32 a6);
 extern void Draw3DCharacter(struct nuvec_s *pos, s32 xrot, s32 yrot, s32 z,
                             struct CharacterModel *model, f32 scale, s32 action,
                             f32 anim_time, s32 last);

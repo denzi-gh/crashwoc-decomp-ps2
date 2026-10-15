@@ -17,24 +17,7 @@
 #include "numath/numtx.h"
 #include "numath/nuvec.h"
 #include "nu3d/nugobj.h"
-
-struct nuinstanim_s {
-    struct numtx_s mtx;
-};
-
-struct nuinstance_s {
-    struct numtx_s mtx;
-    s32 objid;
-    u32 flags;
-    struct nuinstanim_s *anim;
-    s32 pad;
-};
-
-struct nugscn_s {
-    char header[0x18];
-    s32 numinstance;
-    struct nuinstance_s *instances;
-};
+#include "nu3d/nugscn.h"
 
 typedef struct SpecTerrShape {
     u32 type;
@@ -514,7 +497,7 @@ s32 SpecialTerrainCollideCheck(struct nuvec_s *pos, SpecTerrData *data, struct n
         for (i = 0; i < count; i++) {
             obj = (SpecTerrObject *)p;
             inst = &data->scene->instances[obj->instance];
-            if ((inst->flags & 5) == 5) {
+            if ((inst->flagword & 5) == 5) {
                 if (inst->anim) {
                     hit = SpecialTerrainInstanceCollideCheck(pos, radius, obj, &inst->anim->mtx,
                                                              normal, hitid);

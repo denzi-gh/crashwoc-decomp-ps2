@@ -26,6 +26,8 @@
 #include "nu3d/nustream.h"
 #include "nu3d/nutex.h"
 #include "nu3d/nugobj.h"
+#include "nu3d/nucamera.h"
+#include "nu3d/nugscn.h"
 
 struct nuwaterfx_s {
     u8 pad00[0x8];
@@ -37,24 +39,6 @@ struct nuwaterfx_s {
     float height;
 };
 
-typedef struct NuCamera {
-    struct numtx_s mtx;
-} NuCamera;
-
-typedef struct NuInstance {
-    struct numtx_s mtx;
-    int objid;
-    int flags;
-    u8 pad48[0x8];
-} NuInstance;
-
-typedef struct NuGScn {
-    u8 pad00[0x14];
-    struct nugobj_s **gobjs;
-    int numinstance;
-    NuInstance *instances;
-} NuGScn;
-
 typedef struct WaterTable {
     struct nuvec4_s wave[32];
     float fx1;
@@ -65,13 +49,13 @@ extern int NuRndrBeginScene(int target);
 extern void NuRndrEndScene(void);
 extern void NuRndrRectUV2di(int x, int y, int w, int h, float u0, float v0, float u1, float v1,
                             u32 colour, struct numtl_s *mtl);
-extern void NuRndrGobj(struct nugobj_s *gobj, NuInstance *inst);
+extern void NuRndrGobj(struct nugobj_s *gobj, struct nuinstance_s *inst);
 extern void NuRndrStreamLink(struct nurndrstream_s *stream);
 extern u32 *vpDmaTag_Cnt(u32 *cur);
 extern u32 *vpDmaTag_Close(u32 *cur);
 extern u32 *vpDmaTag_Next(u32 *cur, int mode);
 
-extern NuCamera global_camera;
+extern struct nucamera_s global_camera;
 extern float NuTrigTable[];
 extern u32 *rndrstream_free;
 extern int PS2_REZ_W;
@@ -129,7 +113,7 @@ extern struct numtl_s *D_006B1EB0[8];
 extern int D_006B1ED0[8];
 #define watermtl_table D_006B1ED0
 
-extern NuInstance *D_006B1EF0[256];
+extern struct nuinstance_s *D_006B1EF0[256];
 #define waterinst D_006B1EF0
 
 extern WaterTable D_006B22F0[8];
@@ -152,7 +136,7 @@ static inline int isWaterGobj(struct nugobj_s *gobj) {
 }
 
 
-void initWater(NuGScn *scene) {
+void initWater(struct nugscn_s *scene) {
     int i;
     int count;
 
@@ -168,7 +152,7 @@ void initWater(NuGScn *scene) {
     for (i = 0; i < scene->numinstance; i++) {
         if (isWaterGobj(scene->gobjs[scene->instances[i].objid])) {
             waterinst[count++] = &scene->instances[i];
-            scene->instances[i].flags &= ~1;
+            scene->instances[i].flagword &= ~1;
         }
     }
 }
@@ -356,7 +340,7 @@ void fixMaterials(void) {
 }
 
 
-void NuWaterInit(NuGScn *scene) {
+void NuWaterInit(struct nugscn_s *scene) {
     struct nutex_s spec;
     struct numtl_s *mtl;
 
@@ -482,9 +466,9 @@ void animateWater(float scale, float time) {
 }
 
 
-void NuWaterRender(NuGScn *scene) {
+void NuWaterRender(struct nugscn_s *scene) {
     int i;
-    NuInstance *inst;
+    struct nuinstance_s *inst;
 
     if (scene == 0 || nwaterinst == 0) {
         return;
@@ -505,7 +489,7 @@ void NuWaterRender(NuGScn *scene) {
         }
         for (i = 0; i < nwaterinst; i++) {
             inst = waterinst[i];
-            if (inst->flags & 4) {
+            if (inst->flagword & 4) {
                 NuRndrGobj(scene->gobjs[inst->objid], inst);
             }
         }
@@ -552,7 +536,7 @@ void NuWaterSpeed(float speed) {
 }
 
 
-void NuWaterLoad(NuGScn *scene) {
+void NuWaterLoad(struct nugscn_s *scene) {
     nwaterinst = 0;
     if (scene) {
         initWater(scene);

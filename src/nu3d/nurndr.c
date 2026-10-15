@@ -121,16 +121,19 @@
 #include "nu_libc.h"
 #include "nu_types.h"
 
+#include "nu3d/nucamera.h"
+#include "nu3d/nugobj.h"
+#include "nu3d/nugscn.h"
 #include "nu3d/numtl.h"
 #include "nu3d/nustream.h"
 #include "nu3d/nutex.h"
+#include "nu3d/nuvport.h"
 #include "nucore/nuerror.h"
 #include "numath/numathtypes.h"
 #include "numath/numtx.h"
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
 #include "nups2/ps2txtr.h"
-#include "nu3d/nugobj.h"
 typedef unsigned int u128 __attribute__((mode(TI)));
 
 typedef struct GsFrameReg {
@@ -186,11 +189,6 @@ typedef struct GsZbufPair {
     u64 addr;
 } GsZbufPair;
 
-typedef struct {
-    struct numtx_s mtx;
-    float fov;
-} NuCamera;
-
 extern struct numtl_s *D_00633078;
 #define GlobalMtl D_00633078
 
@@ -243,7 +241,7 @@ extern void NuRndrShadow(int mode);
 extern void NuRndrWater(void);
 extern int txupload_on;
 
-extern NuCamera global_camera;
+extern struct nucamera_s global_camera;
 extern float NuFsqrt(float x);
 
 typedef struct nurndrwaterrip_s {
@@ -296,9 +294,8 @@ extern u32 curlightcol;
 extern int NRFanData;
 extern int NuRndrShadowLightFan(void);
 
-extern int NuRndrShadMasks[];
+extern struct nugspline_s *NuRndrShadMasks[];
 extern unsigned char D_0062ECA8[];
-extern int NuSplineFindAllSub(void *spline, void *buf, int *masks, int maxcount);
 
 extern unsigned int D_00689A80[];
 extern u32 *vpDmaTag_RetEx(void *buf, u32 a1, u32 a2);
@@ -357,7 +354,6 @@ typedef struct nurndrshadpol_s {
 } nurndrshadpol_s;
 
 extern nurndrshadpol_s NuRndrShadPolDat[];
-extern int NuCameraClipTestPoints(struct nuvec_s *pos, int count, struct numtx_s *wm);
 
 
 
@@ -403,14 +399,11 @@ extern char D_006147C8[];
 #define err_fgeom_no_mtl D_006147C8
 extern struct numtl_s *nurndr_forced_mtl;
 extern struct numtl_s **nurndr_forced_mtl_table;
-extern int NuCameraClipTestExtents(struct nuvec_s *min, struct nuvec_s *max, struct numtx_s *wm);
 extern void NuRndrOTInsertTriBatch(struct numtx_s *mtx, int clip, struct numtl_s *mtl, void *tris, int count);
 extern u32 *vpDmaTag_Call(u32 *packet, void *addr);
 extern GsZbufPair D_002EA1A0;
 #define NuPs2ZBufReg0 D_002EA1A0
 extern u32 *vpDmaTag_Cnt(u32 *packet);
-extern float NuVpPixelWidth(float width);
-extern float NuVpPixelHeight(float height);
 
 struct nuvtx2d_s {
     float x, y, z;
