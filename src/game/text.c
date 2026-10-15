@@ -7,12 +7,9 @@
  *   0x00240c48 JStrLen
  */
 
-#include "creature.h"
+#include "game/gametypes.h"
 
-struct game_s {
-    u8 pad_00[0xF];
-    u8 language;            /* 0xF */
-};
+#include "creature.h"
 
 struct powerdata_s {
     u8 pad_00[4];

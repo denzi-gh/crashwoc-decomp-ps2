@@ -15,19 +15,11 @@
 
 #include "nu3d/numtl.h"
 #include "nu3d/nugscn.h"
+#include "game/gametypes.h"
 
 #include "creature.h"
 
-/* Font3DObjTab entry (objtemp_s): i@0, flags@2, action@3, anim_time@4. */
-typedef struct {
-    short i;          /* 0x0 */
-    u8 flags;         /* 0x2 */
-    s8 action;        /* 0x3 */
-    float anim_time;  /* 0x4 */
-    float scale;      /* 0x8 */
-} objtemp_s;          /* 0xC */
-
-extern objtemp_s Font3DObjTab[];
+extern struct font3dobj_s Font3DObjTab[];
 extern f32 D_0062E350;
 extern f32 D_0062E354;                  /* animation frames per game frame */
 #define anim_step D_0062E354
@@ -37,14 +29,6 @@ extern char D_005CD808[];   /* j_bc */
 extern s32 qrand(void);
 
 /* --- Font3D scene / material types (offsets verified from InitFont3D) --- */
-
-/* Font3DTab entry: ascii@0, obj{scene@4,special@8}, name@0xC; stride 0x10.
- * All offsets verified in InitFont3D. */
-struct font3dtab_s {
-    s32 ascii;              /* 0x0 */
-    struct nuhspecial_s obj; /* 0x4 scene, 0x8 special */
-    char *name;             /* 0xC */
-};                          /* 0x10 */
 
 /* Font3DAccentTab entry: obj{scene@0,special@4}, name@8; stride 0xC.
  * Offsets verified in InitFont3D. */
@@ -60,18 +44,6 @@ extern struct numtl_s *Font3DMtlTab[5][2];
 extern s32 font3d_initialised;
 
 /* --- Text3D externs --- */
-
-/* ObjTab entry: scene@0, special@4; stride 0x20 (sll 5 in Text3D). */
-struct objtab_s {
-    void *scene;            /* 0x0 */
-    void *special;          /* 0x4 */
-    u8 pad_08[0x18];
-};                          /* 0x20 */
-
-struct game_s {
-    u8 pad_00[0xF];
-    u8 language;            /* 0xF */
-};
 
 extern struct objtab_s ObjTab[201];
 extern struct game_s Game;
@@ -277,7 +249,7 @@ s32 RemapAccentedCharacter(char *c) {
 }
 
 void Reset3DFontObjects(void) {
-    objtemp_s *tab;
+    struct font3dobj_s *tab;
     struct CharacterModel *model;
     s32 j;
     s32 i;
@@ -319,7 +291,7 @@ void Reset3DFontObjects(void) {
     } while (0)
 
 void Update3DFontObjects(void) {
-    objtemp_s *tab;
+    struct font3dobj_s *tab;
     struct CharacterModel *model;
     struct nuanimdata_s *ad;
     struct animlist *al;
@@ -380,7 +352,7 @@ void Text3D(char *txt, f32 x, f32 y, f32 z, f32 scalex, f32 scaley, f32 scalez,
     f32 x0;
     f32 y0;
     f32 xpulse;
-    objtemp_s *obj;
+    struct font3dobj_s *obj;
     s32 idx;
     s32 accent;
     char c;
@@ -502,11 +474,11 @@ void Text3D(char *txt, f32 x, f32 y, f32 z, f32 scalex, f32 scaley, f32 scalez,
                 obj = &Font3DObjTab[c - 'a'];
                 if (obj->i != -1) {
                     if ((obj->flags & 2) != 0) {
-                        if (ObjTab[obj->i].special != 0) {
+                        if (ObjTab[obj->i].obj.special != 0) {
                             DrawPanel3DObject(obj->i, x, y, z,
                                 obj->scale * scalex, obj->scale * scaley,
                                 obj->scale * scalez, 0, 0, 0,
-                                ObjTab[obj->i].scene, ObjTab[obj->i].special, 1);
+                                ObjTab[obj->i].obj.scene, ObjTab[obj->i].obj.special, 1);
                             goto advance;
                         }
                     } else if ((obj->flags & 1) != 0) {

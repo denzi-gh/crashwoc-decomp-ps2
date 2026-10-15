@@ -52,17 +52,10 @@
 #include "numath/numtx.h"
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
+#include "game/gametypes.h"
 #include "gamelib/terrain.h"
 
 #include "creature.h"
-
-/* Level data record; only flags at +0x24 is touched here. */
-struct ldata_s {
-    u8 unk_0x00[0x24];       /* 0x00 (opaque) */
-    unsigned short flags;    /* 0x24 */
-    u8 unk_0x26[0x4];        /* 0x26 */
-    unsigned short farclip;  /* 0x2A */
-};
 
 extern struct ldata_s *LDATA;
 
@@ -135,18 +128,10 @@ f32 NuFsqrt(f32 x);
 s32 GetDieAnim(struct obj_s *obj, s32 anim);
 void ObjectToAtlas(struct obj_s *obj, struct creature_s *player);
 
-struct plr_lives_s {
-    short count;   /* 0x0 */
-    short draw;    /* 0x2 */
-    u8 frame;      /* 0x4 */
-    u8 unk_0x5[2]; /* 0x5 */
-    u8 type;       /* 0x7 */
-};
-
 extern u16 plr_items;
-extern struct plr_lives_s plr_crystal;
-extern struct plr_lives_s plr_crategem;
-extern struct plr_lives_s plr_bonusgem;
+extern struct panelcount_s plr_crystal;
+extern struct panelcount_s plr_crategem;
+extern struct panelcount_s plr_bonusgem;
 extern f32 D_0062D904;
 extern f32 D_0062D908;
 extern f32 D_0062D90C;
@@ -169,27 +154,6 @@ void ClockOff(void);
 void StartTimeTrial(struct nuvec_s *pos, s32 clock);
 void NewMenu(void *cursor, s32 menu, s32 mode, s32 item);
 
-struct wumpa_s {
-    struct nuvec_s pos0;  /* 0x00 */
-    struct nuvec_s pos1;  /* 0x0C */
-    struct nuvec_s pos;   /* 0x18 */
-    u8 unk_0x24[0x1C];    /* 0x24 */
-    s8 state;             /* 0x40 */
-    u8 unk_0x41[0xB];     /* 0x41 */
-};                        /* 0x4C */
-
-struct winfo_s {
-    u8 unk_0x00[0x44];    /* 0x00 */
-    f32 height;           /* 0x44 */
-    u8 unk_0x48[0x8];     /* 0x48 */
-};                        /* 0x50 */
-
-struct gdeb_s {
-    s32 i;                /* 0x0 */
-    char *name;           /* 0x4 */
-    u64 levbits;          /* 0x8 */
-};                        /* 0x10 */
-
 extern s32 TimeTrial;
 extern struct wumpa_s Wumpa[320];
 extern struct winfo_s WInfo[8];
@@ -202,12 +166,6 @@ void AddFiniteShotDebrisEffect(s32 *key, s32 effect, struct nuvec_s *pos, s32 n)
 extern f32 in_speed;
 extern f32 in_s_friction;
 extern f32 in_f_friction;
-
-struct tersurface_s {
-    f32 friction;         /* 0x0 */
-    s16 unk_0x04;         /* 0x4 */
-    u16 flags;            /* 0x6 */
-};                        /* 0x8 */
 
 extern struct tersurface_s TerSurface[];
 extern struct tersurface_s TerLayer[];
@@ -230,33 +188,22 @@ f32 CrateBottomAbove(struct nuvec_s *pos);
 s32 RayIntersectCuboid(struct nuvec_s *p0, struct nuvec_s *p1, struct nuvec_s *min, struct nuvec_s *max);
 extern f32 temp_ratio;
 
-struct objtab_s {
-    struct nugscn_s *scene;      /* 0x00 */
-    struct nuspecial_s *special; /* 0x04 */
-    u8 unk_0x08[0x18];           /* 0x08 */
-};                               /* 0x20 */
-
-struct gamecam_s {
-    u8 unk_0x00[0xA4];       /* 0x00 */
-    struct nuvec_s pos;      /* 0xA4 */
-};
-
 extern struct objtab_s ObjTab[];
-extern struct gamecam_s *pCam;
+extern struct cammtx_s *pCam;
 extern struct nuvec_s jonglowpos;
 extern s32 D_00588824[];
 extern s32 Paused;
 extern s32 FRAME;
 extern s32 FRAMES;
-extern struct gamecam_s GameCam[];
-void JudderGameCamera(struct gamecam_s *cam, f32 time, struct nuvec_s *pos);
+extern struct cammtx_s GameCam[];
+void JudderGameCamera(struct cammtx_s *cam, f32 time, struct nuvec_s *pos);
 extern s32 InvincibilityCHEAT;
 extern s32 bonus_crates_destroyed;
 extern s32 old_bonus_crates;
 extern f32 plr_invisibility_time;
 extern s32 Hub;
 
-void BlendGameCamera(struct gamecam_s *cam, f32 time);
+void BlendGameCamera(struct cammtx_s *cam, f32 time);
 void ResetAnimPacket(struct anim_s *anim, s32 action);
 void AddExtraLife(struct nuvec_s *pos, s32 pdeb);
 void AddMechanicalDebris(struct nuvec_s *pos, s32 vehicle);
@@ -1070,11 +1017,11 @@ s32 WumpaCollisions(struct obj_s *obj) {
         reach = reach * reach;
         w = Wumpa;
         for (i = 0; i < 320; i++, w++) {
-            if (w->state != 2) {
+            if (w->active != 2) {
                 continue;
             }
             info = &WInfo[i & 7];
-            y = w->pos.y + info->height;
+            y = w->pos.y + info->dy;
             if (!(obj->pos.y + obj->bot * obj->SCALE < y + 0.1f)) {
                 continue;
             }
@@ -1092,7 +1039,7 @@ s32 WumpaCollisions(struct obj_s *obj) {
                 AddScreenWumpa(w->pos.x, y, w->pos.z, 1);
                 key = -1;
                 AddFiniteShotDebrisEffect(&key, GDeb[130].i, &w->pos, 1);
-                w->state = 0;
+                w->active = 0;
                 GameSfx(0x2C, &obj->pos);
             }
             return 0;
@@ -1431,7 +1378,7 @@ void PickupItem(struct obj_s *obj) {
                 mask = (obj->character == 0x7D) ? 0x80 : 0x4;
             }
             plr_items |= mask;
-            plr_bonusgem.type = mask;
+            plr_bonusgem.item = mask;
             plr_bonusgem.count = 1;
             plr_bonusgem.frame = 0x19;
             GameSfx(0x26, 0);
@@ -2767,7 +2714,7 @@ void DrawProjectiles(void) {
         }
         if (p->object != -1) {
             ot = &ObjTab[p->object];
-            if (ot->special != 0) {
+            if (ot->obj.special != 0) {
                 if (p->object == 1) {
                     jonglow = (jonglow + 0x600) & 0xFFFF;
                     size = NuTrigTable[jonglow] / 6.0f + 1.5f;
@@ -2778,7 +2725,7 @@ void DrawProjectiles(void) {
                     jonglowpos = p->obj.pos;
                     glow = 1;
                 } else {
-                    NuRndrGScnObj(ot->scene->gobjs[ot->special->instance->objid], &m);
+                    NuRndrGScnObj(ot->obj.scene->gobjs[ot->obj.special->instance->objid], &m);
                 }
             }
         }
@@ -2954,7 +2901,7 @@ void PickupCrateGem(void) {
 
 void PickupBonusGem(s32 mask) {
     plr_items |= mask;
-    plr_bonusgem.type = mask;
+    plr_bonusgem.item = mask;
     plr_bonusgem.count = 1;
     plr_bonusgem.frame = 0x19;
     GameSfx(0x26, 0);
@@ -3102,7 +3049,7 @@ f32 GameObjectRadius(struct obj_s *obj) {
 
 
 void PickupRelic(s32 relic) {
-    plr_crystal.type = relic;
+    plr_crystal.item = relic;
     plr_crystal.count = 1;
     plr_crystal.frame = 0x19;
     GameSfx(0x26, 0);

@@ -17,38 +17,10 @@
 
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
+#include "game/gametypes.h"
 #include "gamelib/terrain.h"
 
 #include "creature.h"
-
-struct VEHICLE {
-    struct nuvec_s ActualWheelPosition[4];
-    struct nuvec_s OldWheelPosition[4];
-    s32 BigSpin[4];
-    struct nuvec_s ActualPosition;
-    struct nuvec_s Resolved;
-    struct nuvec_s Velocity;
-    struct nuvec_s WheelAxis[3];
-    f32 FrontWheelSpeedAdj;
-    short aTargetAngle;
-    short aTarSurfRotX;
-    short aTarSurfRotZ;
-    short aActualAngle;
-    short aActSurfRotX;
-    short aActSurfRotZ;
-    short ActFrontRotX;
-    short ActRearRotX;
-    short TarFrontRotX;
-    short TarRearRotX;
-    s32 AnyOnGroundBits;
-    s32 AllOnGroundBits;
-    s32 AllTouchingGroundBits;
-    s32 AnyTouchingGroundBits;
-    struct nuvec_s AirNormal;
-    struct nuvec_s SurfaceNormal;
-    s16 *TerrHandle;
-    s32 FrontWheelGroundBits;
-};
 
 extern struct nuvec_s CrossProduct(struct nuvec_s *a, struct nuvec_s *b);
 extern f32 DotProduct(struct nuvec_s *a, struct nuvec_s *b);

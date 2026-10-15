@@ -44,54 +44,10 @@
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
 #include "nu3d/nuanim.h"
+#include "game/gametypes.h"
 #include "gamelib/gcutscn.h"
 
 #include "creature.h"
-
-struct hub_s {
-    u8 flags;
-    u8 crystals;
-    char pad1;
-    char pad2;
-};
-
-struct time_s {
-    char name[4];
-    u32 itime;
-};
-
-struct level_s {
-    u16 flags;
-    char pad1;
-    char pad2;
-    struct time_s time[3];
-};
-
-struct game_s {
-    char name[9];
-    u8 vibration;
-    u8 surround;
-    u8 sfx_volume;
-    u8 music_volume;
-    char screen_x;
-    char screen_y;
-    u8 language;
-    struct hub_s hub[6];
-    struct level_s level[35];
-    u8 lives;
-    u8 wumpas;
-    u8 mask;
-    u8 percent;
-    u8 crystals;
-    u8 relics;
-    u8 crate_gems;
-    u8 bonus_gems;
-    u8 gems;
-    u8 gembits;
-    u8 powerbits;
-    u8 empty;
-    u32 cutbits; /* 0x408, struct ends at 0x40C */
-};
 
 extern struct game_s Game;
 extern s32 gamecut;
@@ -583,14 +539,6 @@ extern f32 HUBHOLOSCALE;
 extern f32 SPACEMASKADJUSTY;
 extern f32 FRONTENDCORTEXADJUSTY;
 
-struct gtimer_s {
-    s32 frame;   /* 0x0 */
-    s32 itime;   /* 0x4 */
-    /* unsigned: UpdateTimer's wrap test is `sltiu`, not `slti`. */
-    u32 isec;    /* 0x8 */
-    float ftime; /* 0xC */
-    float fsec;  /* 0x10 */
-};
 struct nupad_s {
     u8 unk_0x000[0x564];
     u32 oldpaddata;       /* 0x564 */

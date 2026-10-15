@@ -19,29 +19,10 @@
 #include "numath/numtx.h"
 #include "numath/nuvec.h"
 #include "nu3d/nugscn.h"
+#include "game/gametypes.h"
 #include "gamelib/terrain.h"
 
 #include "creature.h"
-
-struct rail_s {
-    struct nugspline_s *pINPLAT;   /* 0x00 */
-    struct nugspline_s *pINCAM;    /* 0x04 */
-    struct nugspline_s *pLEFT;     /* 0x08 */
-    struct nugspline_s *pCAM;      /* 0x0C */
-    struct nugspline_s *pRIGHT;    /* 0x10 */
-    struct nugspline_s *pOUTCAM;   /* 0x14 */
-    struct nugspline_s *pOUTPLAT;  /* 0x18 */
-    f32 in_distance;               /* 0x1C */
-    f32 out_distance;              /* 0x20 */
-    s16 edges;                     /* 0x24 */
-    s8 type;                       /* 0x26 */
-    s8 circuit;                    /* 0x27 */
-};                                 /* 0x28 */
-
-struct chaseevent_s {
-    struct nugspline_s *spl;
-    struct nuhspecial_s obj[24];
-};
 
 struct chase_s {
     struct nugspline_s *spl_START;          /* 0x0000 */
@@ -83,30 +64,6 @@ struct pchase_s {
     f32 scale[6];         /* 0x1C */
     f32 duration;         /* 0x34 */
 };                        /* 0x38 */
-
-struct ldata_s {
-    char *path;                 /* 0x00 */
-    u8 *clist;                  /* 0x04 */
-    struct pchase_s *pChase;    /* 0x08 */
-    u32 time[3];                /* 0x0C */
-    s16 music[2];               /* 0x18 */
-    void *pSFX;                 /* 0x1C */
-    s16 nSFX;                   /* 0x20 */
-    char pad1;                  /* 0x22 */
-    char hub;                   /* 0x23 */
-    u16 flags;                  /* 0x24 */
-};
-
-struct gdeb_s {
-    s32 i;                      /* 0x00 */
-    char *name;                 /* 0x04 */
-    u64 levbits;                /* 0x08 */
-};                              /* 0x10 */
-
-struct objtab_s {
-    struct nuhspecial_s obj;    /* 0x00 */
-    u8 pad[24];                 /* 0x08 */
-};                              /* 0x20 */
 
 extern struct chase_s Chase[3];
 extern struct ldata_s *LDATA;

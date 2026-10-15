@@ -20,12 +20,9 @@
 #include "nu3d/nutex.h"
 #include "numath/numtx.h"
 #include "numath/nutrig.h"
+#include "nu3d/nucamera.h"
 
 #include "creature.h"
-
-struct camera_s {
-    struct numtx_s mtx;
-};
 
 extern f32 glass_mix;
 extern f32 glass_col_mix;
@@ -47,7 +44,7 @@ extern f32 plr_invisibility_time;
 extern s32 Level;
 extern s32 PS2_REZ_W;
 extern s32 PS2_REZ_H;
-extern struct camera_s global_camera;
+extern struct nucamera_s global_camera;
 extern struct numtl_s *nurndr_forced_mtl;
 
 extern s32 D_00631E84;

@@ -46,6 +46,7 @@
 #include "numath/nuvec.h"
 #include "nu3d/numtl.h"
 #include "nu3d/nugobj.h"
+#include "game/gametypes.h"
 #include "gamelib/terrain.h"
 
 #include "creature.h"
@@ -82,28 +83,6 @@ struct edpad_s {
     u8 pad568[0x18];
     u8 rotleft;                /* 0x580 */
     u8 rotright;               /* 0x581 */
-};
-
-struct crate_s {
-    s32 id;                    /* 0x00 */
-    s8 type[4];                /* 0x04 */
-    struct nuvec_s pos;        /* 0x08 */
-    struct crate_s *linked;    /* 0x14 */
-    struct crate_s *trigger;   /* 0x18 */
-    u16 orientation;           /* 0x1C */
-    s16 offx;                  /* 0x1E */
-    s16 offy;                  /* 0x20 */
-    s16 offz;                  /* 0x22 */
-    s16 ccindex;               /* 0x24 */
-    s8 draw;                   /* 0x26 */
-    s8 cpad1;                  /* 0x27 */
-};
-
-struct crateeditor_s {
-    u8 pad00[0x08];
-    s32 id;                    /* 0x08 */
-    char *name;                /* 0x0C */
-    s32 character;             /* 0x10 */
 };
 
 struct edcrtgroup_s {

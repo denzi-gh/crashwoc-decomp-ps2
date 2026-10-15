@@ -60,19 +60,15 @@
 #include "nu3d/nuvport.h"
 #include "nu3d/nucamera.h"
 #include "nu3d/nuanim.h"
+#include "game/gametypes.h"
 #include "gamelib/terrain.h"
-
-/* GameCam: the world camera matrix lives at 0x00. */
-struct gamecam_s {
-    struct numtx_s m;
-};
 
 extern s32 Level;
 extern s32 level_part_2;
 extern float AtmosphericPressureHackedZ;
 extern struct nugscn_s *world_scene[32];
 extern struct nucamera_s *pNuCam;
-extern struct gamecam_s *pCam;
+extern struct cammtx_s *pCam;
 extern struct numtl_s *DebMat[8];
 
 extern s32 fadeval;
@@ -90,18 +86,6 @@ extern void NuWindDraw(struct nugscn_s *scene);
 extern void edobjRenderObjects(struct nugscn_s *scene);
 extern void NuRndrRect2di(s32 x, s32 y, s32 w, s32 h, s32 colour,
                           struct numtl_s *mtl);
-
-struct ldata_s {
-    char *name;               /* 0x00 */
-    u8 unk_0x04[0x18];        /* 0x04 */
-    void *sfx;                /* 0x1C */
-    u8 unk_0x20[0x4];         /* 0x20 */
-    u16 flags;                /* 0x24 */
-    short character;          /* 0x26 */
-    u8 unk_0x28[0x2];         /* 0x28 */
-    u16 farclip;              /* 0x2A */
-    u8 unk_0x2C[0x54 - 0x2C]; /* 0x2C */
-}; /* 0x54 */
 
 struct texanimref_s {
     void *script;    /* 0x00 */
@@ -322,7 +306,7 @@ void InitWorld(void)
     char buf[0x800];
 
     NuStrCpy(lfn, D_0062FA80);
-    NuStrCat(lfn, LDATA->name);
+    NuStrCat(lfn, LDATA->path);
     NuStrCpy(PadRecordPath, lfn);
     NuStrCat(PadRecordPath, D_0062FA88);
 
@@ -399,7 +383,7 @@ void InitWorld(void)
     edbitsRegisterBaseScene(world_scene[0]);
     NuBridgeRegisterBaseScene(world_scene[0]);
     edanimRegisterBaseScene(world_scene[0]);
-    edbitsRegisterSfx(SfxTabGLOBAL, LDATA->sfx, 0xC5, SFXCOUNT_ALL);
+    edbitsRegisterSfx(SfxTabGLOBAL, LDATA->pSFX, 0xC5, SFXCOUNT_ALL);
     NuWaterInit(world_scene[0]);
     NuBridgeInit();
     NuWindInit();
@@ -896,28 +880,11 @@ struct player_s {
     u8 freeze;                   /* 0xCE1 */
 };
 
-struct cursor_s {
-    u8 unk_0x00[0x6E];
-    s8 menu;                     /* 0x6E */
-    u8 unk_0x6F[1];
-}; /* 0x70 */
-
-struct game_s {
-    u8 unk_0x00[0xD];
-    s8 f_0x0D;                   /* 0x0D */
-    s8 f_0x0E;                   /* 0x0E */
-    u8 language;                 /* 0x0F */
-}; /* 0x10 */
-
-struct timer_s {
-    u8 unk_0x00[0x10];
-};
-
 extern struct nupad_s *Pad[];
 extern struct player_s *player;
 extern struct cursor_s Cursor;
 extern struct game_s Game;
-extern struct timer_s PauseTimer;
+extern struct gtimer_s PauseTimer;
 extern char PadRecordPath[];
 
 extern s32 pad_record;
@@ -941,7 +908,7 @@ extern float tumble_duration;
 extern s32 NuPs2ReadPad(struct nupad_s *pad);
 extern void SavePadRecord(char *path);
 extern void NewMenu(struct cursor_s *cur, s32 a, s32 b, s32 c);
-extern void ResetTimer(struct timer_s *t);
+extern void ResetTimer(struct gtimer_s *t);
 extern void PauseGameAudio(s32 a);
 extern void GameSfx(s32 id, s32 a);
 extern void NuPs2VideoSetPos(s32 x, s32 y);
@@ -1048,7 +1015,7 @@ void DoInput(void)
         } else if (Paused == 25) {
             pause_dir = 2;
             pausebuzz = 0;
-            NuPs2VideoSetPos(Game.f_0x0D << 2, Game.f_0x0E << 1);
+            NuPs2VideoSetPos(Game.screen_x << 2, Game.screen_y << 1);
             GameSfx(0x3C, 0);
         }
     } else {
@@ -1540,7 +1507,7 @@ extern struct numtx_s numtx_identity;
 extern struct vec3_s bgload_campos;
 extern char *tLOADING[];
 extern s32 mg_frame;
-extern struct timer_s GameTimer;
+extern struct gtimer_s GameTimer;
 
 extern void NuRndrSwapScreen(s32 a);
 extern void BGLoadStart(void (*func)(void));
@@ -1550,7 +1517,7 @@ extern void NuSoundUpdate(void);
 extern void TimeTunnelRender(void);
 extern void TimeTunnelClose(void);
 extern void DrawGameMessage(char *text, s32 frame, float y);
-extern void UpdateTimer(struct timer_s *timer);
+extern void UpdateTimer(struct gtimer_s *timer);
 
 s32 BGLoadCutMovie(s32 movie)
 {

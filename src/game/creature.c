@@ -11,89 +11,12 @@
 #include "numath/nuvec.h"
 #include "nu3d/nugscn.h"
 #include "nu3d/nuanim.h"
+#include "game/gametypes.h"
 #include "gamelib/terrain.h"
 
 #include "creature.h"
 
 /* --- externals ---------------------------------------------------- */
-
-/* AI table entry (AITab): PS2 stride 0x80; only ai_type (+0x0) and the
- * start positions (+0x14) are used here -- the rest is opaque. */
-struct aitab_s {
-    u8 ai_type;              /* 0x00 */
-    s8 status;               /* 0x01 */
-    u8 unk_0x02[0x0A];       /* 0x02 (unverified) */
-    f32 time;                /* 0x0C */
-    f32 delay;               /* 0x10 */
-    struct nuvec_s pos[8];   /* 0x14 */
-    struct nuvec_s origin;   /* 0x74 (== pos[8]) */
-}; /* 0x80 */
-
-/* AI type entry (AIType): PS2 stride 0x1C; character (+0x0) and the
- * command table pointer (+0x4) verified in AddCreature. */
-struct aitype_s {
-    short character;         /* 0x00 */
-    short unk_0x02;          /* 0x02 */
-    struct creatcmd_s *cmd;  /* 0x04 */
-    u8 unk_0x08[0x14];       /* 0x08 (unverified) */
-}; /* 0x1C */
-
-/* Panel counter (plr_lives 0x632038, plr_wumpas 0x632028,
- * plr_crates 0x632030): count +0x0, draw +0x2, frame +0x4. */
-struct panelcount_s {
-    short count;
-    short draw;
-    signed char frame;
-    u8 pad[3];
-};
-
-/* Per-level record inside Game (stride 0x1C, flags at +0x0). */
-struct gamelevel_s {
-    u16 flags;               /* 0x00 */
-    u8 unk_0x02[0x1A];       /* 0x02 */
-}; /* 0x1C */
-
-/* Only the fields creature.c touches are typed; sizes unverified. */
-struct game_s {
-    u8 unk_0x000[0x9];       /* 0x000 (opaque) */
-    u8 vibration;            /* 0x009 */
-    u8 unk_0x00A[0x1E];      /* 0x00A */
-    struct gamelevel_s level[35]; /* 0x028 */
-    u8 lives;                /* 0x3FC */
-    u8 wumpas;               /* 0x3FD */
-    u8 mask;                 /* 0x3FE */
-    u8 unk_0x3FF[7];         /* 0x3FF */
-    u8 powerbits;            /* 0x406 */
-};
-
-struct ldata_s {
-    u8 unk_0x00[0x04];       /* 0x00 (opaque) */
-    u8 *clist;               /* 0x04 (character-id load list) */
-    u8 unk_0x08[0x1C];       /* 0x08 (opaque) */
-    unsigned short flags;    /* 0x24 */
-    u8 unk_0x26[2];          /* 0x26 */
-    unsigned short vehicle;  /* 0x28 */
-    unsigned short farclip;  /* 0x2A */
-    u8 unk_0x2C[0xC];        /* 0x2C */
-    struct nuvec_s vBONUS;   /* 0x38 (bonus-round restart position) */
-};
-
-struct leveldata_s {
-    u8 unk_0x00[0x23];       /* 0x00 (opaque) */
-    signed char hub;         /* 0x23 */
-    u8 unk_0x24[0x30];       /* 0x24 (opaque) */
-}; /* 0x54 */
-
-struct gamecam_s {
-    u8 unk_0x000[0xA4];      /* 0x000 (opaque) */
-    struct nuvec_s pos;      /* 0x0A4 */
-    u8 unk_0x0B0[0x48];      /* 0x0B0 (opaque) */
-    s32 yrot;                /* 0x0F8 */
-    u8 unk_0x0FC[0x10];      /* 0x0FC (opaque) */
-    unsigned short hdg_to_player; /* 0x10C */
-    u8 unk_0x10E[6];         /* 0x10E */
-    signed char mode;        /* 0x114 */
-};
 
 struct pad_s {
     u8 unk_0x000[0x55C];     /* 0x000 (opaque) */
@@ -142,8 +65,8 @@ extern struct aitype_s AIType[];
 extern struct game_s Game;
 extern struct mask_s Mask;
 extern struct ldata_s *LDATA;
-extern struct leveldata_s LData[];
-extern struct gamecam_s GameCam;
+extern struct ldata_s LData[];
+extern struct cammtx_s GameCam;
 extern struct pad_s *Pad[];
 extern struct panelcount_s plr_lives;
 extern struct panelcount_s plr_wumpas;
@@ -193,7 +116,7 @@ void HubStart(struct obj_s *obj, s32 hub, s32 level, struct nuvec_s *pos);
 void MoveCreature(struct creature_s *c);
 void ComplexRailPosition(struct nuvec_s *pos, s32 iRAIL, s32 iALONG,
                          struct RPos_s *rpos, s32 mode);
-void BlendGameCamera(struct gamecam_s *cam, float t);
+void BlendGameCamera(struct cammtx_s *cam, float t);
 void UpdateMask(struct mask_s *mask, struct obj_s *obj);
 void HubSelect(struct creature_s *c);
 void HubLevelSelect(struct obj_s *obj, s32 hub);
@@ -205,13 +128,6 @@ void CheckRings(struct obj_s *obj, s32 *ring);
 void tbslotBeginFn(void *tbset, s32 slot);
 void tbslotEndFn(void *tbset, s32 slot);
 
-/* Global frame counter (size 0x18, GameTimer .. PauseTimer); only
- * .frame (0x0, u32) is touched here. Sized >0x8 so it is not gp-relative. */
-struct gametimer_s {
-    u32 frame;               /* 0x00 */
-    u8 unk_0x04[0x14];       /* 0x04 */
-}; /* 0x18 */
-
 extern s32 jeep_draw;
 extern s32 glass_draw;
 extern s32 plr_render;
@@ -219,7 +135,7 @@ extern s32 Paused;
 extern s32 ChrisJointOveride;
 extern s32 ChrisNumJoints;
 extern struct NUJOINTANIM_s *ChrisJointList;
-extern struct gametimer_s GameTimer;
+extern struct gtimer_s GameTimer;
 
 float **NuHGobjEvalDwaBlend(s32 nlayers, short *layer,
                             struct nuanimdata_s *src, float src_time,
@@ -733,15 +649,6 @@ struct space_s {
     struct animlist anim[5];  /* 0x08 */
 }; /* 0x80 */
 
-/* 3D-font glyph table entry (stride 0xC); only the id and flag byte are used. */
-struct font3dobj_s {
-    short id;                 /* 0x00 */
-    u8 flags;                 /* 0x02 */
-    signed char action;
-    f32 anim_time;
-    f32 scale;
-}; /* 0x0C */
-
 extern s8 CLetter[191];
 extern s32 gamecut;
 extern struct space_s *SpaceGameCutTab[][2];
@@ -919,7 +826,7 @@ void LoadCharacterModels(void)
             }
             for (j = 0; j < 0x1A; j++) {
                 if ((Font3DObjTab[j].flags & 1) &&
-                    (Font3DObjTab[j].id == character)) {
+                    (Font3DObjTab[j].i == character)) {
                     CLetter[character] = j + 0x61;
                     break;
                 }
@@ -1308,34 +1215,6 @@ StartIdle:
 
 
 /* --- MovePlayer externals ------------------------------------------ */
-
-/* Menu cursor (0x591F70); only menu (+0x6E) and wait (+0x71) are typed. */
-struct cursor_s {
-    u8 unk_0x00[0x6E];       /* 0x00 (opaque) */
-    s8 menu;                 /* 0x6E */
-    u8 unk_0x6F[2];          /* 0x6F */
-    u8 wait;                 /* 0x71 */
-};
-
-/* Terrain surface table entry (stride 8): friction +0, flags +6. */
-struct tersurface_s {
-    f32 friction;            /* 0x0 */
-    short unk_0x04;          /* 0x4 */
-    unsigned short flags;    /* 0x6 */
-};
-
-/* Debris table entry (stride 0x10); only the effect id (+0) is used. */
-struct gdeb_s {
-    s32 i;                   /* 0x0 */
-    u8 unk_0x04[0xC];        /* 0x4 */
-};
-
-/* Level 3D-object table entry (stride 0x20). */
-struct objtab_s {
-    struct nugscn_s *scene;      /* 0x00 */
-    struct nuspecial_s *special; /* 0x04 */
-    u8 pad[24];                  /* 0x08 */
-}; /* 0x20 */
 
 extern struct MoveInfo ScooterMoveInfo;
 extern struct MoveInfo SnowBoardMoveInfo;
@@ -2577,9 +2456,9 @@ void MovePlayer(struct creature_s *c, struct pad_s *pad)
                     NewTopBot(&c->obj);
                     if (Level == 1) {
                         if (PlayerObjectAnimCollision(&c->obj,
-                                ObjTab[58].special, 0.4f) != 0 ||
+                                ObjTab[58].obj.special, 0.4f) != 0 ||
                             PlayerObjectAnimCollision(&c->obj,
-                                ObjTab[59].special, 0.4f) != 0) {
+                                ObjTab[59].obj.special, 0.4f) != 0) {
                             KillPlayer(&c->obj, 3);
                         }
                     }
@@ -3411,7 +3290,7 @@ extern f32 vtog_duration;
 extern unsigned short temp_surface_xrot;
 extern unsigned short temp_surface_yrot;
 extern unsigned short temp_surface_zrot;
-extern struct gamecam_s *pCam;
+extern struct cammtx_s *pCam;
 extern struct numtx_s mTEMP;
 extern f32 NuTrigTable[];
 extern struct MoveInfo GyroMoveInfo;
@@ -3829,7 +3708,7 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                              NuAtan2D(c->obj.pos.x - GameCam.pos.x,
                                       c->obj.pos.z - GameCam.pos.z),
                              0, 1.0f, 1.0f, 1.0f,
-                             ObjTab[o].scene, ObjTab[o].special, 0);
+                             ObjTab[o].obj.scene, ObjTab[o].obj.special, 0);
             }
         }
 
@@ -4078,9 +3957,9 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
 
         if ((render != 0) && (c->obj.character == 0x76) &&
             (((LDATA->flags & 0x200) != 0) || (Level == 0x1D)) &&
-            (ObjTab[66].special != 0)) {
+            (ObjTab[66].obj.special != 0)) {
             NuRndrGScnObj(
-                ObjTab[66].scene->gobjs[ObjTab[66].special->instance->objid],
+                ObjTab[66].obj.scene->gobjs[ObjTab[66].obj.special->instance->objid],
                 &mC);
         }
         c->obj.draw_frame = old_frame + 1;

@@ -17,6 +17,7 @@
  */
 
 #include "numath/nuvec.h"
+#include "game/gametypes.h"
 
 #include "creature.h"
 
@@ -61,13 +62,6 @@ extern u8 D_00632950[];    /* NuSoundSetGlobalDat argument */
 extern struct pSFX *CurSfxTabLocal;
 extern s32 SFXCOUNT_ALL;
 
-struct game_s {
-    u8 unk_0x00[0xB];
-    u8 sfx_volume;        /* 0x0B */
-    u8 music_volume;      /* 0x0C */
-    u8 unk_0x0D[3];
-};                        /* 0x10 */
-
 extern struct game_s Game;
 extern s32 game_music;
 extern s32 gamesfx_volume;
@@ -93,28 +87,6 @@ extern void NuSoundPlay3dLoopSfx(struct nuvec_s *pos, s32 sfx, s32 volL, s32 vol
 extern void InitLocalSfx(struct pSFX *sfxTab, s32 totalCount);
 extern void NuSoundKillAllAudio(void);
 
-/* LData entry (pSFX @0x1C, nSFX @0x20, size 0x54). */
-struct ldata_s {
-    char *path;
-    u8 *clist;
-    void *pChase;
-    u32 time[3];
-    short music[2];
-    void *pSFX;         /* 0x1C */
-    short nSFX;         /* 0x20 */
-    char pad1;
-    char hub;
-    u16 flags;
-    short character;
-    short vehicle;
-    u16 farclip;
-    struct nuvec_s vSTART;
-    struct nuvec_s vBONUS;
-    float fognear;
-    float fogfar;
-    u8 fogr, fogg, fogb, foga;
-    u8 hazer, hazeg, hazeb, hazea;
-};
 extern struct ldata_s LData[];
 
 /* Level SFX tables (retail-owned data). */

@@ -28,6 +28,7 @@
 
 #include "nu3d/nustream.h"
 #include "numath/nuvec.h"
+#include "game/gametypes.h"
 
 #include "creature.h"
 
@@ -86,31 +87,6 @@ struct objlights_s {
     struct nuvec_s AmbCol;      /* 0x48 */
 };                              /* 0x54 */
 
-struct tubinfo_s {
-    struct creature_s *c;
-    s8 track;
-    s8 count;
-    u8 wait;
-    s8 laps;
-    f32 time;
-    f32 duration;
-    f32 lap_position;
-    s8 place;
-    u8 finished;
-    u8 finishframes;
-    u8 stall;
-    u16 old_xrot;
-    u16 old_yrot;
-    u16 old_zrot;
-    u8 boost;
-    s8 spark;
-};
-
-struct chaseevent_s {
-    struct nugspline_s *spl;
-    struct nuhspecial_s obj[24];
-};
-
 struct chase_s {
     struct nugspline_s *spl_START;          /* 0x0000 */
     f32 time;                               /* 0x0004 */
@@ -145,14 +121,6 @@ extern struct tubinfo_s OppTub;
 extern struct chase_s Chase[3];
 extern CharacterData CData[191];
 extern s32 Level;
-
-struct gtimer_s {
-    u32 frame;
-    u32 itime;
-    u32 isec;
-    f32 ftime;
-    f32 fsec;
-};
 
 extern struct gtimer_s GameTimer;
 extern s32 GameMode;

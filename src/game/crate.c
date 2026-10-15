@@ -70,6 +70,7 @@
 #include "numath/nufloat.h"
 #include "numath/numtx.h"
 #include "numath/nuvec.h"
+#include "game/gametypes.h"
 #include "gamelib/terrain.h"
 
 #include "creature.h"
@@ -83,21 +84,6 @@ extern struct nulnkhdr_s *NuLstAlloc(struct nulsthdr_s *hdr);
 extern void NuLstFree(struct nulnkhdr_s *lnk);
 extern struct nulsthdr_s *NuLstCreate(int num, int size);
 extern void NuLstDestroy(struct nulsthdr_s *hdr);
-
-struct crate_s {
-    s32 id;                  /* 0x00 */
-    s8 type[4];              /* 0x04 */
-    struct nuvec_s pos;      /* 0x08 */
-    struct crate_s *linked;  /* 0x14 */
-    struct crate_s *trigger; /* 0x18 */
-    u16 orientation;         /* 0x1C */
-    s16 offx;                /* 0x1E */
-    s16 offy;                /* 0x20 */
-    s16 offz;                /* 0x22 */
-    s16 ccindex;             /* 0x24 */
-    s8 draw;                 /* 0x26 */
-    s8 cpad1;                /* 0x27 */
-};
 
 struct CrateCube {
     struct crate_s *model;   /* 0x00 */
@@ -220,23 +206,9 @@ extern f32 CRATEBALLOONOFFSET;
 extern s32 TimeTrial;
 struct crate_s *NextCrate(struct crate_s *a);
 
-/* Per-level descriptor (same layout as game/creature.c's copy). */
-struct ldata_s {
-    u8 unk_0x00[0x24];       /* 0x00 (opaque) */
-    u16 flags;               /* 0x24 */
-    s16 crate_swap;          /* 0x26 */
-    u16 vehicle;             /* 0x28 */
-    u16 farclip;             /* 0x2A */
-};
 extern struct ldata_s *LDATA;
 
-struct gamecam_s {
-    u8 pad_00[0x80];
-    struct nuvec_s vX;       /* 0x80 */
-    u8 pad_8C[0x18];         /* 0x8C */
-    struct nuvec_s pos;      /* 0xA4 */
-};
-extern struct gamecam_s GameCam;
+extern struct cammtx_s GameCam;
 extern f32 D_0062D7B4;                   /* 0.1f (gp-rel) */
 extern u64 D_0061EFB8[];                  /* extra-life scale, double const (abs) */
 extern void AddPanelDebris(f32 x, f32 y, s32 obj, f32 z, s32 flag);
@@ -246,12 +218,6 @@ extern u64 dpsub(u64 a, u64 b);
 extern u64 dpmul(u64 a, u64 b);
 extern f32 dptofp(u64 x);
 
-struct crateeditor_s {
-    struct nuhspecial_s obj; /* 0x00 (0x8 bytes) */
-    u8 pad_08[4];
-    char *name;              /* 0x0C */
-    s32 character;           /* 0x10 */
-};
 extern s8 CRemap[];
 extern struct CharacterModel CModel[];
 extern f32 D_0062D714;
@@ -344,7 +310,7 @@ sel58:
 flags1:
     if (flags & 1) {
         if (type == 2) {
-            type = (LDATA->crate_swap == 1) ? 0x19 : type;
+            type = (LDATA->character == 1) ? 0x19 : type;
         }
     } else {
         type = ((u32)(type - 0x16) > 2) ? type : 9;
@@ -423,7 +389,7 @@ extern s32 NewCrateAnimation(struct CrateCube *crate, s32 character,
                              s32 action, s32 flag);
 extern s32 CrateOff(struct CrateCubeGroup *group, struct CrateCube *crate,
                     s32 a, s32 b);
-extern void JudderGameCamera(struct gamecam_s *cam, f32 time, void *pos);
+extern void JudderGameCamera(struct cammtx_s *cam, f32 time, void *pos);
 
 void DestroyAllNitroCrates(struct CrateCubeGroup *group,
                            struct CrateCube *crate) {
@@ -1083,10 +1049,6 @@ struct CrateCube *InCrate(f32 x, f32 z, f32 ytop, f32 ybot, f32 radius) {
     return temp_pCrate;
 }
 
-struct game_s {
-    u8 pad_000[0x3FC];
-    u8 lives;                /* 0x3FC */
-};
 extern struct game_s Game;
 extern struct nuvec_s vNEWMASK;
 extern s32 mask_crates;
@@ -2331,20 +2293,8 @@ extern struct RPos_s gempath_RPos;
 extern struct nuvec_s ShadNorm;
 extern f32 EShadY;
 
-/* Rail entry stride 0x28; type (+0x26) verified in AheadOfCheckpoint. */
-struct rail_s {
-    void *spline;            /* 0x00 */
-    u8 pad_04[0x26 - 0x04];  /* 0x04 */
-    s8 type;                 /* 0x26 */
-    u8 pad_27[1];            /* 0x27 */
-}; /* 0x28 */
 extern struct rail_s Rail[];
 
-struct tersurface_s {
-    f32 friction;            /* 0x0 */
-    s16 unk_0x04;            /* 0x4 */
-    u16 flags;               /* 0x6 */
-}; /* 0x8 */
 extern struct tersurface_s TerSurface[];
 
 extern void GetALONG(struct nuvec_s *pos, s32 a, s32 b, s32 c, s32 d);
@@ -2352,13 +2302,7 @@ extern s32 AheadOfCheckpoint(s32 iRAIL, s32 iALONG, f32 fALONG);
 extern void FindAnglesZX(struct nuvec_s *n);
 extern void ResetKabooms(void);
 
-/* Global frame counter (size 0x18, .frame at 0x0); sized >0x8 so GameTimer is
- * addressed absolutely (lui/%hi), not gp-relative. */
-struct gametimer_s {
-    u32 frame;               /* 0x00 */
-    u8 unk_0x04[0x14];       /* 0x04 */
-};
-extern struct gametimer_s GameTimer;
+extern struct gtimer_s GameTimer;
 extern f32 tntsfxtime[];
 extern f32 CRATEGRAVITY;
 extern f32 METALCRATEBOUNCESPEED;
@@ -3152,14 +3096,8 @@ extern s32 DRAWCRATESHADOWS;
 extern s32 editor_active;
 extern s32 edcrtDrawType;
 extern u32 GlobalTimer[];
-extern struct gamecam_s *pCam;
+extern struct cammtx_s *pCam;
 
-/* Global object table (scene + placed special per object id), stride 0x20. */
-struct objtab_s {
-    struct nugscn_s *scene;      /* 0x00 */
-    struct nuspecial_s *special; /* 0x04 */
-    u8 pad_08[0x18];             /* 0x08 */
-}; /* 0x20 */
 extern struct objtab_s ObjTab[];
 
 extern f32 **NuHGobjEvalDwa(s32 nlayers, s16 *layer,
@@ -3282,8 +3220,8 @@ void DrawCrates(void) {
             if ((crate->flags & 0x400) != 0) {
                 j = (type == 5) ? 0x43 : 0x41;
                 ot = &ObjTab[j];
-                if (ot->special != 0) {
-                    NuRndrGScnObj(ot->scene->gobjs[ot->special->instance->objid],
+                if (ot->obj.special != 0) {
+                    NuRndrGScnObj(ot->obj.scene->gobjs[ot->obj.special->instance->objid],
                                   pmtx);
                 }
             }
@@ -3340,7 +3278,7 @@ void DrawCrates(void) {
                 ((((crate->shadow != 2000000.0f) &&
                    (crate->shadow < crate->pos.y)) &&
                   (dist2 < shadowrange2)) &&
-                 ((ObjTab[21].special != 0) &&
+                 ((ObjTab[21].obj.special != 0) &&
                   (LowestActiveCrate(group, crate) != 0)))) {
                 NuMtxSetRotationY(&mtx2, group->angle);
                 NuMtxRotateZ(&mtx2, crate->surface_zrot);
@@ -3349,8 +3287,8 @@ void DrawCrates(void) {
                 mtx2._31 = crate->shadow + 0.025f;
                 mtx2._32 = crate->pos.z;
                 NuRndrGScnObj(ObjTab[21]
-                                  .scene->gobjs[ObjTab[21]
-                                                    .special->instance->objid],
+                                  .obj.scene->gobjs[ObjTab[21]
+                                                    .obj.special->instance->objid],
                               &mtx2);
             }
         }
