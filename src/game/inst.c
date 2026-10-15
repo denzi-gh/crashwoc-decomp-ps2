@@ -15,6 +15,7 @@
 #include "nu_libc.h"
 
 #include "nu3d/nuscene.h"
+#include "nu3d/nuanim.h"
 
 union variptr_u {
     void *voidptr;
@@ -22,7 +23,6 @@ union variptr_u {
 
 struct nulsthdr_s;
 struct nulnkhdr_s;
-struct nuanimdata_s;
 struct shaddata_s;
 
 struct sceneinst_s {
@@ -59,7 +59,6 @@ extern void NuLstDestroy(struct nulsthdr_s *hdr);
 extern struct nulnkhdr_s *NuLstGetNext(struct nulsthdr_s *hdr, struct nulnkhdr_s *lnk);
 extern struct nulnkhdr_s *NuLstAlloc(struct nulsthdr_s *hdr);
 extern void NuLstFree(struct nulnkhdr_s *lnk);
-extern struct nuanimdata_s *NuAnimDataLoadBuff(char *name, union variptr_u *buff, union variptr_u *endbuff);
 extern struct shaddata_s *ShadDataLoad(char *name, union variptr_u *buff, union variptr_u endbuff);
 extern int NuFileSize(char *name);
 extern void ShadDataDestroy(struct shaddata_s *shad);
@@ -122,7 +121,7 @@ struct nuanimdata_s *InstAnimDataLoad(char *name) {
 
     lst = (struct animdatainst_s *)NuLstAlloc(animdatainst_pool);
     if (lst != 0) {
-        adat = NuAnimDataLoadBuff(name, &superbuffer_ptr, &superbuffer_end);
+        adat = NuAnimDataLoadBuff(name, (void **)&superbuffer_ptr, (void **)&superbuffer_end);
         lst->ad = adat;
         if (adat != 0) {
             strcpy(lst->name, name);

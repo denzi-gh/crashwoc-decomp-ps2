@@ -48,130 +48,8 @@
 #include "numath/numathtypes.h"
 #include "numath/numtx.h"
 #include "nu3d/nunode.h"
-
-typedef struct nuanimkey_s {
-    float time;
-    float dtime;
-    float c;
-    float d;
-} NuAnimKey;
-
-typedef union nuanimmask_u {
-    unsigned char bytes[4];
-    unsigned int bits;
-} NuAnimMask;
-
-typedef struct nuanimcurve_s {
-    NuAnimMask mask;
-    NuAnimKey *animkeys;
-    unsigned int numkeys;
-    unsigned int flags;
-} NuAnimCurve;
-
-typedef struct nuanimcurveset_s {
-    int flags;
-    float *constants;
-    NuAnimCurve **set;
-    signed char ncurves;
-} NuAnimCurveSet;
-
-typedef struct nuanimdatachunk_s {
-    int numnodes;
-    int num_valid_animcurvesets;
-    NuAnimCurveSet **animcurvesets;
-    NuAnimKey *keys;
-    NuAnimCurve *curves;
-} NuAnimDataChunk;
-
-typedef struct nuanimdata_s {
-    float time;
-    char *node_names;
-    int nchunks;
-    NuAnimDataChunk **chunks;
-} NuAnimData;
-
-typedef struct nuanimdatahdr_s {
-    int version;
-    int address_offset;
-    NuAnimData *data;
-} NuAnimDataHdr;
-
-typedef struct nuanimkey2_s {
-    float time;
-    float dtime;
-    float value;
-    float slope;
-} NuAnimKey2;
-
-typedef struct nuanimstepkey_s {
-    float value;
-    int reserved;
-} NuAnimStepKey;
-
-typedef struct nuanimcurvedata2_s {
-    NuAnimMask *mask;
-    unsigned short *key_ixs;
-    NuAnimKey2 *keys;
-} NuAnimCurveData2;
-
-typedef union nuanimcurve2_u {
-    float constant;
-    NuAnimCurveData2 *curvedata;
-} NuAnimCurve2;
-
-typedef struct nuanimdata2_s {
-    float time;
-    short nnodes;
-    short ncurves;
-    short nchunks;
-    NuAnimCurve2 *curves;
-    signed char *curveflags;
-    char *curvesetflags;
-} NuAnimData2;
-
-typedef struct nuanimdata2hdr_s {
-    int version;
-    int address_offset;
-    NuAnimData2 *data;
-} NuAnimData2Hdr;
-
-typedef struct nuanimtime_s {
-    float time;
-    float time_offset;
-    int chunk;
-    unsigned int time_mask;
-    unsigned int time_byte;
-} NuAnimTime;
-
-typedef struct nujointdata_s {
-    struct numtx_s orient;
-    struct nuvec_s locator_offset;
-    char *name;
-    unsigned char parent_ix;
-    unsigned char flags;
-    char pad[10];
-} NuJointData;
-
-typedef struct nujointanim_s {
-    float rx;
-    float ry;
-    float rz;
-    float tx;
-    float ty;
-    float tz;
-    float sx;
-    float sy;
-    float sz;
-    short max_rx;
-    short max_ry;
-    short max_rz;
-    short min_rx;
-    short min_ry;
-    short min_rz;
-    unsigned char joint_id;
-    signed char flags;
-    char pad[2];
-} NuJointAnim;
+#include "nu3d/nuanim.h"
+#include "nu3d/nuhgobj.h"
 
 
 extern void *NuMemAllocFn(int size, char *file, int line);
@@ -187,10 +65,6 @@ extern int NuFileReadInt(int fh);
 extern int NuFileWriteFloat(int fh, float value);
 extern float NuFileReadFloat(int fh);
 extern char NuFileReadChar(int fh);
-extern NuAnimData *NuAnimDataCreate(int nchunks);
-extern NuAnimDataChunk *NuAnimDataChunkCreate(int numnodes);
-extern NuAnimCurveSet *NuAnimCurveSetCreate(int ncurves);
-extern void NuAnimDataChunkDestroy(NuAnimDataChunk *chunk);
 extern void NuMtxSetRotateXYZVU0(struct numtx_s *m, struct nuangvec_s *a);
 extern void NuMtxMulRVU0(struct numtx_s *dst, struct numtx_s *a, struct numtx_s *b);
 extern void NuMtxPreScaleVU0(struct numtx_s *m, struct nuvec_s *s);
@@ -251,10 +125,10 @@ inline void buildBitCountTable(void) {
 }
 
 
-void NuAnimDataWrite(int fh, NuAnimData *data) {
-    NuAnimDataChunk *chunk;
-    NuAnimCurveSet *curveset;
-    NuAnimCurve *curve;
+void NuAnimDataWrite(int fh, struct nuanimdata_s *data) {
+    struct nuanimdatachunk_s *chunk;
+    struct nuanimcurveset_s *curveset;
+    struct nuanimcurve_s *curve;
     int size;
     int nkeys;
     int ncurves;
@@ -293,7 +167,7 @@ void NuAnimDataWrite(int fh, NuAnimData *data) {
                 for (k = 0; k < NUANIM_SET_CURVES; k++) {
                     curve = chunk->animcurvesets[j]->set[k];
                     if (curve) {
-                        NuFileWrite(fh, curve->animkeys, curve->numkeys * sizeof(NuAnimKey));
+                        NuFileWrite(fh, curve->animkeys, curve->numkeys * sizeof(struct nuanimkey_s));
                     }
                 }
             }
@@ -305,7 +179,7 @@ void NuAnimDataWrite(int fh, NuAnimData *data) {
                 if (curveset) {
                     curve = curveset->set[k];
                     if (curve) {
-                        NuFileWrite(fh, curve, sizeof(NuAnimCurve));
+                        NuFileWrite(fh, curve, sizeof(struct nuanimcurve_s));
                     }
                 }
             }
@@ -325,11 +199,11 @@ void NuAnimDataWrite(int fh, NuAnimData *data) {
 }
 
 
-NuAnimData *NuAnimDataRead(int fh) {
-    NuAnimData *data;
-    NuAnimDataChunk *chunk;
-    NuAnimCurve *curve;
-    NuAnimKey *key;
+struct nuanimdata_s *NuAnimDataRead(int fh) {
+    struct nuanimdata_s *data;
+    struct nuanimdatachunk_s *chunk;
+    struct nuanimcurve_s *curve;
+    struct nuanimkey_s *key;
     char *names;
     float time;
     int size;
@@ -361,16 +235,16 @@ NuAnimData *NuAnimDataRead(int fh) {
         chunk->numnodes = numnodes;
         count = NuFileReadInt(fh);
         if (count) {
-            chunk->keys = NuMemAllocFn(count * sizeof(NuAnimKey), nuanim_srcfile, 0x1A5);
-            NuFileRead(fh, chunk->keys, count * sizeof(NuAnimKey));
+            chunk->keys = NuMemAllocFn(count * sizeof(struct nuanimkey_s), nuanim_srcfile, 0x1A5);
+            NuFileRead(fh, chunk->keys, count * sizeof(struct nuanimkey_s));
         } else {
             chunk->keys = 0;
         }
         key = chunk->keys;
         count = NuFileReadInt(fh);
         if (count) {
-            chunk->curves = NuMemAllocFn(count * sizeof(NuAnimCurve), nuanim_srcfile, 0x1B2);
-            NuFileRead(fh, chunk->curves, count * sizeof(NuAnimCurve));
+            chunk->curves = NuMemAllocFn(count * sizeof(struct nuanimcurve_s), nuanim_srcfile, 0x1B2);
+            NuFileRead(fh, chunk->curves, count * sizeof(struct nuanimcurve_s));
         } else {
             chunk->curves = 0;
         }
@@ -403,10 +277,10 @@ NuAnimData *NuAnimDataRead(int fh) {
 }
 
 
-NuAnimData *NuAnimDataFixPtrs(NuAnimData *data, int base) {
-    NuAnimDataChunk *chunk;
-    NuAnimCurveSet *curveset;
-    NuAnimCurve *curve;
+struct nuanimdata_s *NuAnimDataFixPtrs(struct nuanimdata_s *data, int base) {
+    struct nuanimdatachunk_s *chunk;
+    struct nuanimcurveset_s *curveset;
+    struct nuanimcurve_s *curve;
     int i;
     int j;
     int k;
@@ -453,8 +327,8 @@ NuAnimData *NuAnimDataFixPtrs(NuAnimData *data, int base) {
 }
 
 
-NuAnimData2 *NuAnimData2FixPtrs(NuAnimData2 *data, int base) {
-    NuAnimCurve2 *curve;
+struct nuanimdata2_s *NuAnimData2FixPtrs(struct nuanimdata2_s *data, int base) {
+    union nuanimcurve2_u *curve;
     int i;
     int count;
 
@@ -481,10 +355,10 @@ NuAnimData2 *NuAnimData2FixPtrs(NuAnimData2 *data, int base) {
 }
 
 
-float NuAnimCurveCalcVal2(NuAnimCurve *curve, NuAnimTime *atime) {
+float NuAnimCurveCalcVal2(struct nuanimcurve_s *curve, struct nuanimtime_s *atime) {
     int nkey;
-    NuAnimKey *key;
-    NuAnimKey *next;
+    struct nuanimkey_s *key;
+    struct nuanimkey_s *next;
     float u;
     float dt;
     float a;
@@ -525,12 +399,12 @@ float NuAnimCurveCalcVal2(NuAnimCurve *curve, NuAnimTime *atime) {
 }
 
 
-float NuAnimCurve2CalcVal(NuAnimCurve2 *curve, NuAnimTime *atime, int keytype) {
-    NuAnimCurveData2 *curvedata;
-    NuAnimMask *mask;
-    NuAnimStepKey *stepkeys;
-    NuAnimKey2 *key;
-    NuAnimKey2 *next;
+float NuAnimCurve2CalcVal(union nuanimcurve2_u *curve, struct nuanimtime_s *atime, int keytype) {
+    struct nuanimcurvedata2_s *curvedata;
+    union nuanimmask_u *mask;
+    struct nuanimstepkey_s *stepkeys;
+    struct nuanimkey2_s *key;
+    struct nuanimkey2_s *next;
     int nkey;
     int ix;
     int bit;
@@ -587,7 +461,7 @@ float NuAnimCurve2CalcVal(NuAnimCurve2 *curve, NuAnimTime *atime, int keytype) {
         NuErrorProlog(nuanim_srcfile, 0x50C)(nuanim_keytype_small_msg);
         break;
     case NUANIMKEYTYPE_STEP:
-        stepkeys = (NuAnimStepKey *)curvedata->keys;
+        stepkeys = (struct nuanimstepkey_s *)curvedata->keys;
         return stepkeys[ix + nkey - 1].value;
     case NUANIMKEYTYPE_BOOLEAN:
         NuErrorProlog(nuanim_srcfile, 0x517)(nuanim_keytype_boolean_msg);
@@ -597,14 +471,14 @@ float NuAnimCurve2CalcVal(NuAnimCurve2 *curve, NuAnimTime *atime, int keytype) {
 }
 
 
-void NuAnimCurveSetApplyToJoint(NuAnimDataChunk *chunk, NuAnimTime *atime, int node, struct nujointnode_s *joint) {
+void NuAnimCurveSetApplyToJoint(struct nuanimdatachunk_s *chunk, struct nuanimtime_s *atime, int node, struct nujointnode_s *joint) {
     struct nuvec_s t;
     struct nuvec_s r;
     struct nuvec_s p;
     struct nuangvec_s ang;
     struct nuvec_s s;
     struct numtx_s *m;
-    NuAnimCurveSet *curveset;
+    struct nuanimcurveset_s *curveset;
     struct nujointnode_s *parent;
 
     m = &joint->mtx;
@@ -698,8 +572,8 @@ void NuAnimCurveSetApplyToJoint(NuAnimDataChunk *chunk, NuAnimTime *atime, int n
 }
 
 
-void NuAnimCurveSetApplyBlendToJoint(NuAnimDataChunk *chunk1, NuAnimTime *atime1, NuAnimDataChunk *chunk2,
-                                     NuAnimTime *atime2, float blend, int node, struct nujointnode_s *joint) {
+void NuAnimCurveSetApplyBlendToJoint(struct nuanimdatachunk_s *chunk1, struct nuanimtime_s *atime1, struct nuanimdatachunk_s *chunk2,
+                                     struct nuanimtime_s *atime2, float blend, int node, struct nujointnode_s *joint) {
     struct nuvec_s lo;
     struct nuangvec_s rf;
     float r[3];
@@ -711,8 +585,8 @@ void NuAnimCurveSetApplyBlendToJoint(NuAnimDataChunk *chunk1, NuAnimTime *atime1
     float omblend;
     int i;
     struct numtx_s *m;
-    NuAnimCurveSet *curveset1;
-    NuAnimCurveSet *curveset2;
+    struct nuanimcurveset_s *curveset1;
+    struct nuanimcurveset_s *curveset2;
     struct nujointnode_s *parent;
 
     m = &joint->mtx;
@@ -811,9 +685,9 @@ void NuAnimCurveSetApplyBlendToJoint(NuAnimDataChunk *chunk1, NuAnimTime *atime1
 }
 
 
-void NuAnimCurveSetApplyBlendToJoint2(NuAnimCurveSet *curveset1, NuAnimTime *atime1, NuAnimCurveSet *curveset2,
-                                      NuAnimTime *atime2, float blend, NuJointData *joint, struct nuvec_s *scale,
-                                      struct nuvec_s *parentscale, struct numtx_s *m, NuJointAnim *offset) {
+void NuAnimCurveSetApplyBlendToJoint2(struct nuanimcurveset_s *curveset1, struct nuanimtime_s *atime1, struct nuanimcurveset_s *curveset2,
+                                      struct nuanimtime_s *atime2, float blend, struct NUJOINTDATA_s *joint, struct nuvec_s *scale,
+                                      struct nuvec_s *parentscale, struct numtx_s *m, struct NUJOINTANIM_s *offset) {
     struct nuvec_s lo;
     struct nuangvec_s rf;
     float r[3];
@@ -978,10 +852,10 @@ void NuAnimCurveSetApplyBlendToJoint2(NuAnimCurveSet *curveset1, NuAnimTime *ati
 }
 
 
-void NuAnimCurve2SetApplyBlendToJoint2(NuAnimCurve2 *curves1, signed char *curveflags1, signed char curvesetflags1,
-                                       NuAnimTime *atime1, NuAnimCurve2 *curves2, signed char *curveflags2,
-                                       signed char curvesetflags2, NuAnimTime *atime2, float blend, NuJointData *joint,
-                                       struct nuvec_s *scale, struct nuvec_s *parentscale, struct numtx_s *m, NuJointAnim *offset) {
+void NuAnimCurve2SetApplyBlendToJoint2(union nuanimcurve2_u *curves1, signed char *curveflags1, signed char curvesetflags1,
+                                       struct nuanimtime_s *atime1, union nuanimcurve2_u *curves2, signed char *curveflags2,
+                                       signed char curvesetflags2, struct nuanimtime_s *atime2, float blend, struct NUJOINTDATA_s *joint,
+                                       struct nuvec_s *scale, struct nuvec_s *parentscale, struct numtx_s *m, struct NUJOINTANIM_s *offset) {
     struct nuvec_s lo;
     struct nuangvec_s rf;
     float r[3];
@@ -1122,8 +996,8 @@ void NuAnimCurve2SetApplyBlendToJoint2(NuAnimCurve2 *curves1, signed char *curve
 }
 
 
-void NuAnimCurveSetApplyToJoint2(NuAnimCurveSet *curveset, NuAnimTime *atime, NuJointData *joint, struct nuvec_s *scale,
-                                 struct nuvec_s *parentscale, struct numtx_s *m, NuJointAnim *offset) {
+void NuAnimCurveSetApplyToJoint2(struct nuanimcurveset_s *curveset, struct nuanimtime_s *atime, struct NUJOINTDATA_s *joint, struct nuvec_s *scale,
+                                 struct nuvec_s *parentscale, struct numtx_s *m, struct NUJOINTANIM_s *offset) {
     signed char procflags;
     struct nuvec_s t;
     struct nuvec_s r;
@@ -1286,9 +1160,9 @@ void NuAnimCurveSetApplyToJoint2(NuAnimCurveSet *curveset, NuAnimTime *atime, Nu
 }
 
 
-void NuAnimCurve2SetApplyToJoint(NuAnimCurve2 *curves, signed char *curveflags, signed char curvesetflags,
-                                 NuAnimTime *atime, NuJointData *joint, struct nuvec_s *scale, struct nuvec_s *parentscale,
-                                 struct numtx_s *m, NuJointAnim *offset) {
+void NuAnimCurve2SetApplyToJoint(union nuanimcurve2_u *curves, signed char *curveflags, signed char curvesetflags,
+                                 struct nuanimtime_s *atime, struct NUJOINTDATA_s *joint, struct nuvec_s *scale, struct nuvec_s *parentscale,
+                                 struct numtx_s *m, struct NUJOINTANIM_s *offset) {
     signed char procflags;
     struct nuvec_s t;
     struct nuvec_s r;
@@ -1415,8 +1289,8 @@ void NuAnimCurve2SetApplyToJoint(NuAnimCurve2 *curves, signed char *curveflags, 
 }
 
 
-void NuAnimCurveSetApplyToJointBasic(NuAnimCurveSet *curveset, NuAnimTime *atime, NuJointData *joint,
-                                     struct nuvec_s *scale, struct nuvec_s *parentscale, struct numtx_s *m, NuJointAnim *offset) {
+void NuAnimCurveSetApplyToJointBasic(struct nuanimcurveset_s *curveset, struct nuanimtime_s *atime, struct NUJOINTDATA_s *joint,
+                                     struct nuvec_s *scale, struct nuvec_s *parentscale, struct numtx_s *m, struct NUJOINTANIM_s *offset) {
     signed char procflags;
     struct nuvec_s r;
     struct nuangvec_s rf;
@@ -1508,9 +1382,9 @@ void NuAnimCurveSetApplyToJointBasic(NuAnimCurveSet *curveset, NuAnimTime *atime
 }
 
 
-void NuAnimCurve2SetApplyToJointBasic(NuAnimCurve2 *curves, signed char *curveflags, signed char curvesetflags,
-                                      NuAnimTime *atime, NuJointData *joint, struct nuvec_s *scale, struct nuvec_s *parentscale,
-                                      struct numtx_s *m, NuJointAnim *offset) {
+void NuAnimCurve2SetApplyToJointBasic(union nuanimcurve2_u *curves, signed char *curveflags, signed char curvesetflags,
+                                      struct nuanimtime_s *atime, struct NUJOINTDATA_s *joint, struct nuvec_s *scale, struct nuvec_s *parentscale,
+                                      struct numtx_s *m, struct NUJOINTANIM_s *offset) {
     signed char procflags;
     struct nuvec_s r;
     struct nuangvec_s rf;
@@ -1590,7 +1464,7 @@ void NuAnimCurve2SetApplyToJointBasic(NuAnimCurve2 *curves, signed char *curvefl
 }
 
 
-void NuAnimCurveSetApplyToMatrix(NuAnimCurveSet *curveset, NuAnimTime *atime, struct numtx_s *m) {
+void NuAnimCurveSetApplyToMatrix(struct nuanimcurveset_s *curveset, struct nuanimtime_s *atime, struct numtx_s *m) {
     struct nuvec_s t;
     struct nuvec_s r;
     struct nuangvec_s ang;
@@ -1662,8 +1536,8 @@ void NuAnimCurveSetApplyToMatrix(NuAnimCurveSet *curveset, NuAnimTime *atime, st
 }
 
 
-void NuAnimCurve2SetApplyToMatrix(NuAnimCurve2 *curves, signed char *curveflags, signed char curvesetflags,
-                                  NuAnimTime *atime, struct numtx_s *m) {
+void NuAnimCurve2SetApplyToMatrix(union nuanimcurve2_u *curves, signed char *curveflags, signed char curvesetflags,
+                                  struct nuanimtime_s *atime, struct numtx_s *m) {
     struct nuvec_s t;
     struct nuvec_s r;
     struct nuangvec_s ang;
@@ -1705,8 +1579,8 @@ extern char D_00614AA0[];
 #define nuanim_load_deprecated_msg D_00614A80
 #define nuanim_memfile_failed_msg D_00614AA0
 
-NuAnimData *NuAnimDataLoad(char *file) {
-    NuAnimData *data;
+struct nuanimdata_s *NuAnimDataLoad(char *file) {
+    struct nuanimdata_s *data;
     void *buf;
     int size;
     int fh;
@@ -1730,8 +1604,8 @@ NuAnimData *NuAnimDataLoad(char *file) {
     return data;
 }
 
-NuAnimData *NuAnimDataLoadBuff(char *file, void **buffer, void **buffend) {
-    NuAnimDataHdr *hdr;
+struct nuanimdata_s *NuAnimDataLoadBuff(char *file, void **buffer, void **buffend) {
+    struct nuanimdatahdr_s *hdr;
     int size;
 
     *buffer = (void *)(((unsigned int)*buffer + 0xF) & 0xFFFFFFF0);
@@ -1750,7 +1624,7 @@ NuAnimData *NuAnimDataLoadBuff(char *file, void **buffer, void **buffend) {
 }
 
 
-void NuAnimDataDestroy(NuAnimData *data) {
+void NuAnimDataDestroy(struct nuanimdata_s *data) {
     int i;
 
     for (i = 0; i < data->nchunks; i++) {
@@ -1763,7 +1637,7 @@ void NuAnimDataDestroy(NuAnimData *data) {
 }
 
 
-void NuAnimDataCalcTime(NuAnimData *data, float time, NuAnimTime *atime) {
+void NuAnimDataCalcTime(struct nuanimdata_s *data, float time, struct nuanimtime_s *atime) {
     int key;
 
     if (time >= data->time) {
@@ -1791,20 +1665,20 @@ void NuAnimDataCalcTime(NuAnimData *data, float time, NuAnimTime *atime) {
 }
 
 
-NuAnimData *NuAnimDataCreate(int nchunks) {
-    NuAnimData *data;
+struct nuanimdata_s *NuAnimDataCreate(int nchunks) {
+    struct nuanimdata_s *data;
     int size;
 
-    size = nchunks * sizeof(NuAnimDataChunk *) + sizeof(NuAnimData);
+    size = nchunks * sizeof(struct nuanimdatachunk_s *) + sizeof(struct nuanimdata_s);
     data = NuMemAllocFn(size, nuanim_srcfile, 0x291);
     memset(data, 0, size);
     data->nchunks = nchunks;
-    data->chunks = (NuAnimDataChunk **)(data + 1);
+    data->chunks = (struct nuanimdatachunk_s **)(data + 1);
     return data;
 }
 
 
-inline void NuAnimCurveDestroy(NuAnimCurve *curve) {
+inline void NuAnimCurveDestroy(struct nuanimcurve_s *curve) {
     if (curve->animkeys) {
         NuMemFreeFn(curve->animkeys, nuanim_srcfile, 0x479);
     }
@@ -1812,7 +1686,7 @@ inline void NuAnimCurveDestroy(NuAnimCurve *curve) {
 }
 
 
-inline void NuAnimKeyWrite(int fh, NuAnimKey *key) {
+inline void NuAnimKeyWrite(int fh, struct nuanimkey_s *key) {
     if (key) {
         NuFileWriteFloat(fh, key->time);
         NuFileWriteFloat(fh, key->dtime);
@@ -1822,7 +1696,7 @@ inline void NuAnimKeyWrite(int fh, NuAnimKey *key) {
 }
 
 
-inline int NuAnimKeyRead(int fh, NuAnimKey *key) {
+inline int NuAnimKeyRead(int fh, struct nuanimkey_s *key) {
     key->time = NuFileReadFloat(fh);
     key->dtime = NuFileReadFloat(fh);
     key->c = NuFileReadFloat(fh);
@@ -1831,15 +1705,15 @@ inline int NuAnimKeyRead(int fh, NuAnimKey *key) {
 }
 
 
-NuAnimCurveSet *NuAnimCurveSetCreate(int ncurves) {
-    NuAnimCurveSet *curveset;
+struct nuanimcurveset_s *NuAnimCurveSetCreate(int ncurves) {
+    struct nuanimcurveset_s *curveset;
     int size;
 
     curveset = 0;
     if (ncurves) {
-        size = ncurves * sizeof(NuAnimCurve *);
-        curveset = NuMemAllocFn(sizeof(NuAnimCurveSet), nuanim_srcfile, 0x556);
-        memset(curveset, 0, sizeof(NuAnimCurveSet));
+        size = ncurves * sizeof(struct nuanimcurve_s *);
+        curveset = NuMemAllocFn(sizeof(struct nuanimcurveset_s), nuanim_srcfile, 0x556);
+        memset(curveset, 0, sizeof(struct nuanimcurveset_s));
         curveset->ncurves = ncurves;
         curveset->set = NuMemAllocFn(size, nuanim_srcfile, 0x55D);
         memset(curveset->set, 0, size);
@@ -1850,8 +1724,8 @@ NuAnimCurveSet *NuAnimCurveSetCreate(int ncurves) {
 }
 
 
-void NuAnimCurveSetDestroy(NuAnimCurveSet *curveset, int destroy_curves) {
-    NuAnimCurve *curve;
+void NuAnimCurveSetDestroy(struct nuanimcurveset_s *curveset, int destroy_curves) {
+    struct nuanimcurve_s *curve;
     int i;
 
     if (curveset) {
@@ -1874,16 +1748,16 @@ void NuAnimCurveSetDestroy(NuAnimCurveSet *curveset, int destroy_curves) {
 }
 
 
-NuAnimCurve *NuAnimCurveCreate(int numkeys) {
-    NuAnimCurve *curve;
+struct nuanimcurve_s *NuAnimCurveCreate(int numkeys) {
+    struct nuanimcurve_s *curve;
     int size;
 
     if (numkeys <= 0) {
         NuErrorProlog(nuanim_srcfile, 0x469)(nuanim_assert_msg);
     }
-    curve = NuMemAllocFn(sizeof(NuAnimCurve), nuanim_srcfile, 0x46B);
-    size = numkeys * sizeof(NuAnimKey);
-    memset(curve, 0, sizeof(NuAnimCurve));
+    curve = NuMemAllocFn(sizeof(struct nuanimcurve_s), nuanim_srcfile, 0x46B);
+    size = numkeys * sizeof(struct nuanimkey_s);
+    memset(curve, 0, sizeof(struct nuanimcurve_s));
     curve->numkeys = numkeys;
     curve->animkeys = NuMemAllocFn(size, nuanim_srcfile, 0x46F);
     memset(curve->animkeys, 0, size);
@@ -1891,7 +1765,7 @@ NuAnimCurve *NuAnimCurveCreate(int numkeys) {
 }
 
 
-inline void NuAnimCurveWrite(int fh, NuAnimCurve *curve) {
+inline void NuAnimCurveWrite(int fh, struct nuanimcurve_s *curve) {
     unsigned int i;
 
     if (curve) {
@@ -1908,7 +1782,7 @@ inline void NuAnimCurveWrite(int fh, NuAnimCurve *curve) {
 }
 
 
-void NuAnimCurveSetWrite(int fh, NuAnimCurveSet *curveset) {
+void NuAnimCurveSetWrite(int fh, struct nuanimcurveset_s *curveset) {
     int i;
 
     if (curveset) {
@@ -1926,8 +1800,8 @@ void NuAnimCurveSetWrite(int fh, NuAnimCurveSet *curveset) {
 }
 
 
-NuAnimCurve *NuAnimCurveRead(int fh) {
-    NuAnimCurve *curve;
+struct nuanimcurve_s *NuAnimCurveRead(int fh) {
+    struct nuanimcurve_s *curve;
     unsigned int i;
 
     curve = 0;
@@ -1944,7 +1818,7 @@ NuAnimCurve *NuAnimCurveRead(int fh) {
 
 
 int NuAnimDataFindVersion(char *file) {
-    NuAnimDataHdr hdr;
+    struct nuanimdatahdr_s hdr;
     int fh;
 
     memset(&hdr, 0, sizeof(hdr));
@@ -1958,8 +1832,8 @@ int NuAnimDataFindVersion(char *file) {
 }
 
 
-NuAnimData2 *NuAnimData2LoadBuff(char *file, void **buffer, void **buffend) {
-    NuAnimData2Hdr *hdr;
+struct nuanimdata2_s *NuAnimData2LoadBuff(char *file, void **buffer, void **buffend) {
+    struct nuanimdata2hdr_s *hdr;
     int size;
 
     *buffer = (void *)(((unsigned int)*buffer + 0xF) & 0xFFFFFFF0);
@@ -1978,7 +1852,7 @@ NuAnimData2 *NuAnimData2LoadBuff(char *file, void **buffer, void **buffend) {
 }
 
 
-void NuAnimData2CalcTime(NuAnimData2 *data, float time, NuAnimTime *atime) {
+void NuAnimData2CalcTime(struct nuanimdata2_s *data, float time, struct nuanimtime_s *atime) {
     int key;
 
     if (time >= data->time) {
@@ -2006,16 +1880,16 @@ void NuAnimData2CalcTime(NuAnimData2 *data, float time, NuAnimTime *atime) {
 }
 
 
-NuAnimDataChunk *NuAnimDataChunkCreate(int numnodes) {
-    NuAnimDataChunk *chunk;
+struct nuanimdatachunk_s *NuAnimDataChunkCreate(int numnodes) {
+    struct nuanimdatachunk_s *chunk;
     int size;
 
     if (numnodes <= 0) {
         NuErrorProlog(nuanim_srcfile, 0x27C)(nuanim_assert_msg);
     }
-    chunk = NuMemAllocFn(sizeof(NuAnimDataChunk), nuanim_srcfile, 0x27D);
-    size = numnodes * sizeof(NuAnimCurveSet *);
-    memset(chunk, 0, sizeof(NuAnimDataChunk));
+    chunk = NuMemAllocFn(sizeof(struct nuanimdatachunk_s), nuanim_srcfile, 0x27D);
+    size = numnodes * sizeof(struct nuanimcurveset_s *);
+    memset(chunk, 0, sizeof(struct nuanimdatachunk_s));
     chunk->numnodes = numnodes;
     chunk->animcurvesets = NuMemAllocFn(size, nuanim_srcfile, 0x281);
     memset(chunk->animcurvesets, 0, size);
@@ -2023,8 +1897,8 @@ NuAnimDataChunk *NuAnimDataChunkCreate(int numnodes) {
 }
 
 
-void NuAnimDataChunkDestroy(NuAnimDataChunk *chunk) {
-    NuAnimCurveSet *curveset;
+void NuAnimDataChunkDestroy(struct nuanimdatachunk_s *chunk) {
+    struct nuanimcurveset_s *curveset;
     int destroy_curves;
     int i;
 
@@ -2048,9 +1922,9 @@ void NuAnimDataChunkDestroy(NuAnimDataChunk *chunk) {
 }
 
 
-inline void NuAnimCurveScale(NuAnimCurve *curve, float scale, float offset) {
+inline void NuAnimCurveScale(struct nuanimcurve_s *curve, float scale, float offset) {
     unsigned int i;
-    NuAnimKey *key;
+    struct nuanimkey_s *key;
 
     for (i = 0; i < curve->numkeys; i++) {
         key = &curve->animkeys[i];

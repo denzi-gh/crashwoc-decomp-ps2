@@ -74,36 +74,7 @@
 #include "numath/numathtypes.h"
 #include "numath/numtx.h"
 #include "numath/nuvec.h"
-
-struct nuanimcurve_s {
-    unsigned int mask;              /* 0x00 */
-    void *animkeys;                 /* 0x04 */
-    unsigned int numkeys;           /* 0x08 */
-    unsigned int flags;             /* 0x0C */
-};
-
-struct nuanimcurveset_s {
-    int flags;                      /* 0x00 */
-    float *constants;               /* 0x04 */
-    struct nuanimcurve_s **set;     /* 0x08 */
-    signed char ncurves;            /* 0x0C */
-    signed char pad0D;
-    signed char pad0E;
-    signed char pad0F;
-};
-
-struct nuanimdatachunk_s {
-    int numnodes;                   /* 0x00 */
-    int num_valid_animcurvesets;    /* 0x04 */
-    struct nuanimcurveset_s **animcurvesets; /* 0x08 */
-};
-
-struct nuanimdata_s {
-    float time;                     /* 0x00 */
-    char *node_names;               /* 0x04 */
-    int nchunks;                    /* 0x08 */
-    struct nuanimdatachunk_s **chunks; /* 0x0C */
-};
+#include "nu3d/nuanim.h"
 
 struct nutexanimenv_s {
     void *prog;                     /* 0x00 */
@@ -1315,8 +1286,6 @@ extern void NuFileWriteAddress(int fh, void *id);
 extern void NuFileSetAddress(int fh, void *id);
 extern int NuFileAlign(int fh, int mask);
 extern void NuFileWriteChar(int fh, char value);
-extern struct nuanimdata_s *NuAnimDataRead(int fh);
-extern void NuAnimDataDestroy(struct nuanimdata_s *anim);
 
 void CvtNuIFFAnimationLibrary(int fh)
 {
@@ -1392,9 +1361,9 @@ void CvtNuIFFAnimationLibrary(int fh)
                     NuFileWriteAddress(cvt_fh, curveset->constants);
                     NuFileWriteAddress(cvt_fh, curveset->set);
                     NuFileWriteChar(cvt_fh, curveset->ncurves);
-                    NuFileWriteChar(cvt_fh, curveset->pad0D);
-                    NuFileWriteChar(cvt_fh, curveset->pad0E);
-                    NuFileWriteChar(cvt_fh, curveset->pad0F);
+                    NuFileWriteChar(cvt_fh, curveset->pad[0]);
+                    NuFileWriteChar(cvt_fh, curveset->pad[1]);
+                    NuFileWriteChar(cvt_fh, curveset->pad[2]);
                     NuFileSetAddress(cvt_fh, curveset->set);
                     for (m = 0; m < curveset->ncurves; m++) {
                         NuFileWriteAddress(cvt_fh, curveset->set[m]);
@@ -1404,7 +1373,7 @@ void CvtNuIFFAnimationLibrary(int fh)
                         curve = curveset->set[m];
                         if (curve) {
                             NuFileSetAddress(cvt_fh, curve);
-                            NuFileWriteInt(cvt_fh, curve->mask);
+                            NuFileWriteInt(cvt_fh, curve->mask.bits);
                             NuFileWriteAddress(cvt_fh, curve->animkeys);
                             NuFileWriteInt(cvt_fh, curve->numkeys);
                             NuFileWriteInt(cvt_fh, curve->flags);

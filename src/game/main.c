@@ -59,6 +59,7 @@
 #include "nu3d/nulight.h"
 #include "nu3d/nuvport.h"
 #include "nu3d/nucamera.h"
+#include "nu3d/nuanim.h"
 
 /* GameCam: the world camera matrix lives at 0x00. */
 struct gamecam_s {
@@ -1114,8 +1115,6 @@ void DoInput(void)
 }
 
 
-struct nuanimdata_s;
-
 extern char D_0061B4D0[];
 extern s32 bgloadlastcharacter;
 extern char *bgloadcharnames[];
@@ -1124,7 +1123,6 @@ extern struct NUHGOBJ_s *bgloadchr[2];
 extern struct nuanimdata_s *bgloadanim[2];
 
 extern void TimeTunnelInit(void *buffer, void *buffend);
-extern struct nuanimdata_s *NuAnimDataLoadBuff(char *name, void *buffer, void *buffend);
 
 void BGLoadScreenInit(s32 loadchars)
 {
@@ -1140,12 +1138,12 @@ void BGLoadScreenInit(s32 loadchars)
         c = bgloadlastcharacter;
         if (c >= 0 && c < 2) {
             bgloadchr[c] = NuGHGRead(&buffer, bgloadcharnames[c]);
-            bgloadanim[c] = NuAnimDataLoadBuff(bgloadanimnames[c], &buffer, buffend);
+            bgloadanim[c] = NuAnimDataLoadBuff(bgloadanimnames[c], (void **)&buffer, buffend);
             bgloadlastcharacter = -1;
         }
         if (LDATA->character >= 0 && LDATA->character < 2) {
             bgloadanim[LDATA->character] =
-                NuAnimDataLoadBuff(bgloadanimnames[LDATA->character], &superbuffer_ptr, buffend);
+                NuAnimDataLoadBuff(bgloadanimnames[LDATA->character], (void **)&superbuffer_ptr, buffend);
         }
         NuDatSet(0);
         if (dat != 0) {
