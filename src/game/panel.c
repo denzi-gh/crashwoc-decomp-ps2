@@ -58,18 +58,6 @@ struct pdeb_s {
     u8 _pad[2];
 };
 
-struct screen_wumpa_s {
-    float x;
-    float y;
-    float _pad8;
-    float timer;
-    float target_x;
-    float target_y;
-    float scale;
-    s8 spin;
-    u8 _pad1d[3];
-};
-
 extern struct objtab_s ObjTab[201];
 extern struct pdeb_s PDeb[32];
 extern struct font3dtab_s Font3DTab[];
@@ -98,7 +86,7 @@ extern char D_00631F68[];
 #define tOUTOF D_00631F60
 #define tINTFORMAT D_00631F68
 extern float font3d_xleft, font3d_ytop, font3d_xright, font3d_ybottom;
-extern struct screen_wumpa_s WScr[32];
+extern struct wscr_s WScr[32];
 extern u16 PANELWUMPAYROT;
 extern f32 NuTrigTable[];
 extern float FONT3D_JSCALEX;
@@ -649,15 +637,15 @@ void DrawWorldToPanelWumpa(void) {
 
     for (i = 0; i < 32; i++) {
         if (WScr[i].timer > 0.0f) {
-            x = WScr[i].x;
-            y = WScr[i].y;
+            x = WScr[i].pos.x;
+            y = WScr[i].pos.y;
             f = (0.25f - WScr[i].timer) * 4.0f;
             size = WScr[i].scale +
-                   ((WScr[i].spin != 0 ? 0.125f : 0.2f) - WScr[i].scale) * f;
-            xs = x + (WScr[i].target_x - x) * f;
-            ys = y + (WScr[i].target_y - y) * f;
+                   ((WScr[i].bonus != 0 ? 0.125f : 0.2f) - WScr[i].scale) * f;
+            xs = x + (WScr[i].xs - x) * f;
+            ys = y + (WScr[i].ys - y) * f;
             DrawPanel3DObject(0, xs, ys, 1.0f, size, size, size,
-                              WScr[i].spin ? 0 : 0xE800, PANELWUMPAYROT, 0,
+                              WScr[i].bonus ? 0 : 0xE800, PANELWUMPAYROT, 0,
                               ObjTab[0].obj.scene, ObjTab[0].obj.special, 1);
         }
     }
@@ -666,21 +654,7 @@ void DrawWorldToPanelWumpa(void) {
 
 /* --- UpdatePlayerStats externs ------------------------------------- */
 
-/* A crate cube (stride 0x90); only the fields UpdatePlayerStats reads are
- * typed. */
-typedef struct {
-    u8 _pad00[0x30];
-    s8 on;             /* 0x30 */
-    u8 _pad31[0x07];
-    u16 flags;         /* 0x38 */
-    u8 _pad3a[0x04];
-    s8 newtype;        /* 0x3E */
-    u8 _pad3f[0x02];
-    s8 metal_count;    /* 0x41 */
-    u8 _pad42[0x4E];
-} CrateCube;           /* 0x90 */
-
-extern CrateCube Crate[];
+extern struct cratecube_s Crate[];
 extern s32 CRATECOUNT;
 extern s32 crates_destroyed;
 extern s32 bonus_crates_destroyed;
@@ -701,14 +675,14 @@ extern s32 newmask_advise;
 extern f32 WUMPAOBJSX;
 extern f32 PANELSY;
 extern struct nuvec_s vNEWMASK;
-extern u8 Cursor[];
+extern struct cursor_s Cursor;
 
 extern void AddPanelDebris(f32 x, f32 y, s32 type, f32 scale, s32 count);
 extern void NewMask(struct mask_s *mask, struct nuvec_s *pos);
 extern void NewMenu(void *cursor, s32 a, s32 b, s32 c);
 
 void UpdatePlayerStats(struct creature_s *plr) {
-    CrateCube *crate;
+    struct cratecube_s *crate;
     s32 i;
     s32 dead;
     s32 x;
@@ -781,7 +755,7 @@ void UpdatePlayerStats(struct creature_s *plr) {
             NewMask(plr->obj.mask, &vNEWMASK);
             if (newmask_advise != 0) {
                 if (plr->obj.mask->active < 3) {
-                    NewMenu(Cursor, 0x21, -1, -1);
+                    NewMenu(&Cursor, 0x21, -1, -1);
                     ResetAnimPacket(&plr->obj.mask->anim, 0x22);
                     player->obj.mom.x = 0;
                     player->obj.mom.z = 0;

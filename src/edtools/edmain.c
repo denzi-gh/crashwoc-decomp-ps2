@@ -27,8 +27,7 @@
 
 #include "numath/numathtypes.h"
 #include "nu3d/nucamera.h"
-
-struct pad_s;
+#include "nups2/ps2ctl.h"
 
 typedef struct eduistyle_s {
     u32 colour[4];
@@ -44,7 +43,7 @@ typedef struct edmainreg_s {
     char pad_0x18[0xC];
     void (*readblock)(s32 fh);
     s32 blockid;
-    s32 (*process)(struct pad_s *pad, f32 dt);
+    s32 (*process)(struct nupad_s *pad, f32 dt);
     void (*render)(void);
 } EDMAINREG;
 
@@ -99,7 +98,7 @@ extern char D_0061A790[];
 
 extern void edmainClose(void);
 extern void eduiInit(void);
-extern void eduiMenuProcess(EDUIMENU *menu, struct pad_s *pad);
+extern void eduiMenuProcess(EDUIMENU *menu, struct nupad_s *pad);
 extern void eduiMenuRender(EDUIMENU *menu);
 extern s32 eduiMenuAttach(EDUIMENU *menu, EDUIMENU *child);
 extern void eduiMenuDetach(EDUIMENU *menu);
@@ -122,7 +121,7 @@ extern void NuFileClose(s32 fh);
 extern s32 NuFileBeginBlkRead(s32 fh, s32 blockid);
 extern void NuFileEndBlkRead(s32 fh);
 
-void edmainMainMenuProc(struct pad_s *pad);
+void edmainMainMenuProc(struct nupad_s *pad);
 void edmainMainMenuRender(void);
 void edmainReadLevelFile(void);
 void cbMMRegSel(EDUIMENU *menu, EDUIITEM *item);
@@ -187,7 +186,7 @@ s32 edmainRegister(EDMAINREG *reg) {
 }
 
 
-s32 edmainProcess(struct pad_s *pad, f32 dt) {
+s32 edmainProcess(struct nupad_s *pad, f32 dt) {
     edmain_return = 0;
     if (edmain_active && edmain_current) {
         if (!edmain_current->process || edmain_current->process(pad, dt)) {
@@ -278,7 +277,7 @@ struct nuvec_s *edmainQueryLocVec(void) {
 }
 
 
-void edmainMainMenuProc(struct pad_s *pad) {
+void edmainMainMenuProc(struct nupad_s *pad) {
     if (edmain_mainmenu) {
         eduiMenuProcess(edmain_mainmenu, pad);
     }

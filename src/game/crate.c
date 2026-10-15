@@ -84,71 +84,8 @@ extern void NuLstFree(struct nulnkhdr_s *lnk);
 extern struct nulsthdr_s *NuLstCreate(int num, int size);
 extern void NuLstDestroy(struct nulsthdr_s *hdr);
 
-struct CrateCube {
-    struct crate_s *model;   /* 0x00 */
-    struct nuvec_s pos0;     /* 0x04 */
-    struct nuvec_s pos;      /* 0x10 */
-    f32 oldy;                /* 0x1C */
-    f32 shadow;              /* 0x20 */
-    f32 mom;                 /* 0x24 */
-    f32 timer;               /* 0x28 */
-    f32 duration;            /* 0x2C */
-    s8 on;                   /* 0x30 */
-    s8 iRAIL;                /* 0x31 */
-    s16 iALONG;              /* 0x32 */
-    f32 fALONG;              /* 0x34 */
-    u16 flags;               /* 0x38 */
-    s8 type1;                /* 0x3A */
-    s8 type2;                /* 0x3B */
-    s8 type3;                /* 0x3C */
-    s8 type4;                /* 0x3D */
-    s8 newtype;              /* 0x3E */
-    s8 subtype;              /* 0x3F */
-    s8 i;                    /* 0x40 */
-    s8 metal_count;          /* 0x41 */
-    s8 appeared;             /* 0x42 */
-    s8 in_range;             /* 0x43 */
-    s16 dx;                  /* 0x44 */
-    s16 dy;                  /* 0x46 */
-    s16 dz;                  /* 0x48 */
-    s16 iU;                  /* 0x4A */
-    s16 iD;                  /* 0x4C */
-    s16 iN;                  /* 0x4E */
-    s16 iS;                  /* 0x50 */
-    s16 iE;                  /* 0x52 */
-    s16 iW;                  /* 0x54 */
-    s16 trigger;             /* 0x56 */
-    s8 counter;              /* 0x58 */
-    s8 anim_cycle;           /* 0x59 */
-    s16 index;               /* 0x5A */
-    f32 anim_time;           /* 0x5C */
-    f32 anim_duration;       /* 0x60 */
-    f32 anim_speed;          /* 0x64 */
-    u16 xrot0;               /* 0x68 */
-    u16 zrot0;               /* 0x6A */
-    u16 xrot;                /* 0x6C */
-    u16 zrot;                /* 0x6E */
-    u16 surface_xrot;        /* 0x70 */
-    u16 surface_zrot;        /* 0x72 */
-    s16 character;           /* 0x74 */
-    s16 action;              /* 0x76 */
-    struct nuvec_s colbox[2];/* 0x78 */
-};
-
-struct CrateCubeGroup {
-    struct nuvec_s origin;   /* 0x00 */
-    f32 radius;              /* 0x0C */
-    s16 iCrate;              /* 0x10 */
-    s16 nCrates;             /* 0x12 */
-    u16 angle;               /* 0x14 */
-    s8 pad1;                 /* 0x16 */
-    s8 pad2;                 /* 0x17 */
-    struct nuvec_s minclip;  /* 0x18 */
-    struct nuvec_s maxclip;  /* 0x24 */
-};
-
 struct CRATETYPEDATA {
-    struct CrateCube *crate; /* 0x00 */
+    struct cratecube_s *crate; /* 0x00 */
     s8 type1;                /* 0x04 */
     s8 type2;                /* 0x05 */
     s8 type3;                /* 0x06 */
@@ -177,7 +114,7 @@ extern s32 CRATECOUNT;
 extern s32 CRATEGROUPCOUNT;
 extern s32 iBOXEXP;
 extern struct BoxExpType BoxExpList[];
-extern struct CrateCube Crate[];
+extern struct cratecube_s Crate[];
 extern struct CRATETYPEDATA CrateTypeData[];
 extern s32 i_cratetypedata;
 extern s32 Level;
@@ -187,17 +124,17 @@ extern f32 glass_mix;
 extern s32 glass_col_mix;
 extern s32 glass_enabled;
 extern s32 glass_col_enabled;
-extern s32 GetCrateType(struct CrateCube *crt, s32 flags);
-extern struct CrateCubeGroup *temp_pGroup;
-extern struct CrateCube *temp_pCrate;
+extern s32 GetCrateType(struct cratecube_s *crt, s32 flags);
+extern struct crategroup_s *temp_pGroup;
+extern struct cratecube_s *temp_pCrate;
 extern void AddKaboom(s32 type, struct nuvec_s *pos, f32 radius);
 extern void GameSfx(s32 id, struct nuvec_s *pos);
 extern s32 level_part_2;
 extern s32 temp_crate_type;
-extern struct CrateCube *InCrate(f32 x, f32 z, f32 top, f32 bot, f32 radius);
-extern void BreakCrate(struct CrateCubeGroup *group, struct CrateCube *crate,
+extern struct cratecube_s *InCrate(f32 x, f32 z, f32 top, f32 bot, f32 radius);
+extern void BreakCrate(struct crategroup_s *group, struct cratecube_s *crate,
                        s32 type, s32 attack);
-extern struct CrateCubeGroup CrateGroup[];
+extern struct crategroup_s CrateGroup[];
 extern s32 FurtherALONG(s32 iRAIL, s32 iALONG, f32 fALONG, s32 iRAIL2,
                         s32 iALONG2, f32 fALONG2);
 extern f32 CRATEBALLOONRADIUS;
@@ -207,7 +144,7 @@ struct crate_s *NextCrate(struct crate_s *a);
 
 extern struct ldata_s *LDATA;
 
-extern struct cammtx_s GameCam;
+extern struct cammtx_s GameCam[];
 extern f32 D_0062D7B4;                   /* 0.1f (gp-rel) */
 extern u64 D_0061EFB8[];                  /* extra-life scale, double const (abs) */
 extern void AddPanelDebris(f32 x, f32 y, s32 obj, f32 z, s32 flag);
@@ -263,7 +200,7 @@ extern u8 current_selected_crate;
  * and beql/bnel choice and its basic-block ordering differ from retail SN
  * ee-gcc 2.95.2 (candidate asm hash frozen across ternary re-spellings).
  * 58.3% (140/240). Same class as the prior LIKELY_EQUIVALENT session. */
-s32 GetCrateType(struct CrateCube *crt, s32 flags) {
+s32 GetCrateType(struct cratecube_s *crt, s32 flags) {
     s32 type;
     s32 nt;
 
@@ -327,9 +264,9 @@ void AddExtraLife(struct nuvec_s *pos, s32 pdeb) {
     u64 d;
 
     NuCameraTransformScreenClip(&scr, pos, 1, 0);
-    cV[0].x = pos->x + GameCam.vX.x * D_0062D7B4;
-    cV[0].y = pos->y + GameCam.vX.y * D_0062D7B4;
-    cV[0].z = pos->z + GameCam.vX.z * D_0062D7B4;
+    cV[0].x = pos->x + GameCam[0].vX.x * D_0062D7B4;
+    cV[0].y = pos->y + GameCam[0].vX.y * D_0062D7B4;
+    cV[0].z = pos->z + GameCam[0].vX.z * D_0062D7B4;
     NuCameraTransformScreenClip(&cV[1], &cV[0], 1, 0);
     d = fptodp(scr.x - cV[1].x);
     if (dpcmp(d, 0) < 0) {
@@ -340,9 +277,9 @@ void AddExtraLife(struct nuvec_s *pos, s32 pdeb) {
 
 /* Faithful near-match (state=asm): same +0.5f column-search assembler wall as
  * CrateOnTop/HopCratesAbove (gcc .p2align 3 inner-loop padding vs retail SN-as). */
-s32 CrateAbove(struct obj_s *obj, struct CrateCubeGroup *group,
-               struct CrateCube *crate) {
-    struct CrateCube *crate2;
+s32 CrateAbove(struct obj_s *obj, struct crategroup_s *group,
+               struct cratecube_s *crate) {
+    struct cratecube_s *crate2;
     s32 i;
 
     crate2 = &Crate[group->iCrate];
@@ -361,9 +298,9 @@ s32 CrateAbove(struct obj_s *obj, struct CrateCubeGroup *group,
 }
 
 /* Faithful near-match (state=asm): same +0.5f column-search assembler wall. */
-s32 CrateBelow(struct obj_s *obj, struct CrateCubeGroup *group,
-               struct CrateCube *crate) {
-    struct CrateCube *crate2;
+s32 CrateBelow(struct obj_s *obj, struct crategroup_s *group,
+               struct cratecube_s *crate) {
+    struct cratecube_s *crate2;
     s32 i;
 
     crate2 = &Crate[group->iCrate];
@@ -382,16 +319,16 @@ s32 CrateBelow(struct obj_s *obj, struct CrateCubeGroup *group,
 
 extern s32 FurtherBEHIND(s32 iRAIL, s32 iALONG, f32 fALONG, s32 iRAIL2,
                          s32 iALONG2, f32 fALONG2);
-extern s32 NewCrateAnimation(struct CrateCube *crate, s32 character,
+extern s32 NewCrateAnimation(struct cratecube_s *crate, s32 character,
                              s32 action, s32 flag);
-extern s32 CrateOff(struct CrateCubeGroup *group, struct CrateCube *crate,
+extern s32 CrateOff(struct crategroup_s *group, struct cratecube_s *crate,
                     s32 a, s32 b);
 extern void JudderGameCamera(struct cammtx_s *cam, f32 time, void *pos);
 
-void DestroyAllNitroCrates(struct CrateCubeGroup *group,
-                           struct CrateCube *crate) {
-    struct CrateCubeGroup *group2;
-    struct CrateCube *crate2;
+void DestroyAllNitroCrates(struct crategroup_s *group,
+                           struct cratecube_s *crate) {
+    struct crategroup_s *group2;
+    struct cratecube_s *crate2;
     struct nuvec_s pos;
     s32 i;
     s32 j;
@@ -413,13 +350,13 @@ void DestroyAllNitroCrates(struct CrateCubeGroup *group,
     AddKaboom(0x20, &pos, 0.0f);
     crate->newtype = 0xf;
     crate->metal_count = 1;
-    JudderGameCamera(&GameCam, 0.5f, 0);
+    JudderGameCamera(&GameCam[0], 0.5f, 0);
     GameSfx(0x33, &crate->pos);
 }
 
 void OpenPreviousCheckpoints(s32 iRAIL, s32 iALONG, f32 fALONG) {
-    struct CrateCubeGroup *group;
-    struct CrateCube *crate;
+    struct crategroup_s *group;
+    struct cratecube_s *crate;
     s32 i;
     s32 j;
 
@@ -469,8 +406,8 @@ extern void HeightSortCrateData(void);
 void ConvertCrateData(void) {
     struct crate_s *cr;
     struct crate_s *cr2;
-    struct CrateCube *cc;
-    struct CrateCubeGroup *crg;
+    struct cratecube_s *cc;
+    struct crategroup_s *crg;
     s32 i;
     s32 j;
     s32 k;
@@ -611,8 +548,8 @@ void ReadInCrateData(void) {
     s32 i;
     s32 j;
     struct crate_s *new_crate;
-    struct CrateCubeGroup *crg;
-    struct CrateCube *cc;
+    struct crategroup_s *crg;
+    struct cratecube_s *cc;
     struct crate_s *first_crate;
     struct nuvec_s tvec;
     struct crate_s *cr;
@@ -695,8 +632,8 @@ void HeightSortCrateData(void) {
     s32 j;
     s32 l;
     s32 k;
-    struct CrateCube tcr;
-    struct CrateCubeGroup *crg;
+    struct cratecube_s tcr;
+    struct crategroup_s *crg;
 
     for (i = 0; i < CRATEGROUPCOUNT; i++) {
         crg = &CrateGroup[i];
@@ -861,8 +798,8 @@ s32 CrateRayCast(struct nuvec_s *p0, struct nuvec_s *p1) {
     s32 face;
     s32 type;
     f32 ratio;
-    struct CrateCubeGroup *group;
-    struct CrateCube *crate;
+    struct crategroup_s *group;
+    struct cratecube_s *crate;
 
     ratio = 1.0f;
     vMIN.x = (p0->x < p1->x) ? p0->x : p1->x;
@@ -911,16 +848,16 @@ s32 CrateRayCast(struct nuvec_s *p0, struct nuvec_s *p1) {
     return 0;
 }
 
-extern void StartExclamationCrateSequence(struct CrateCubeGroup *group,
-                                          struct CrateCube *crate);
-extern void HopCratesAbove(f32 speed, struct CrateCubeGroup *group,
-                           struct CrateCube *crate);
+extern void StartExclamationCrateSequence(struct crategroup_s *group,
+                                          struct cratecube_s *crate);
+extern void HopCratesAbove(f32 speed, struct crategroup_s *group,
+                           struct cratecube_s *crate);
 extern f32 CRATEHOPSPEED;
 extern s32 KillPlayer(struct obj_s *obj, s32 anim);
 
 /* Faithful reconstruction (state=asm): PS2 inlines StartExclamation (0xE) and
  * DestroyAllNitroCrates (0x11) like AttackCrate; kept as calls. */
-void BreakCrate(struct CrateCubeGroup *group, struct CrateCube *crate, s32 type,
+void BreakCrate(struct crategroup_s *group, struct cratecube_s *crate, s32 type,
                 s32 attack) {
     if (type == 0x13 && (attack & 0x200) == 0) {
         if (crate->action == -1) {
@@ -948,8 +885,8 @@ extern s32 GetDieAnim(struct obj_s *obj, s32 x);
 /* Faithful reconstruction (state=asm): PS2 INLINES StartExclamationCrateSequence
  * (type 0xE) and DestroyAllNitroCrates (type 0x11); the GC reference calls them.
  * Kept as calls -> codegen diverges at those two sites (jal vs inlined body). */
-s32 AttackCrate(struct obj_s *obj, struct CrateCubeGroup *group,
-                struct CrateCube *crate) {
+s32 AttackCrate(struct obj_s *obj, struct crategroup_s *group,
+                struct cratecube_s *crate) {
     s32 type;
 
     type = GetCrateType(crate, 0);
@@ -982,9 +919,9 @@ s32 AttackCrate(struct obj_s *obj, struct CrateCubeGroup *group,
 /* Faithful near-match (state=asm), 92.4%: logic/offsets exact (long column
  * search, no .p2align wall). Residual is a consistent +1 FP-register shift in
  * the dx/dz clip-check math (temp+-radius compares) -- an allocation tie. */
-struct CrateCube *InCrate(f32 x, f32 z, f32 ytop, f32 ybot, f32 radius) {
-    struct CrateCubeGroup *group;
-    struct CrateCube *crate;
+struct cratecube_s *InCrate(f32 x, f32 z, f32 ytop, f32 ybot, f32 radius) {
+    struct crategroup_s *group;
+    struct cratecube_s *crate;
     s32 i;
     s32 j;
     s32 type;
@@ -1055,7 +992,7 @@ extern s32 last_questionmark_extralife;
 extern void ResetCheckpoint(s32 iRAIL, s32 iALONG, struct nuvec_s *pos,
                             f32 fALONG);
 extern void AddGameDebris(s32 type, struct nuvec_s *pos);
-extern void AddTempWumpa(struct CrateCube *crate, s32 n, f32 x, f32 y, f32 z);
+extern void AddTempWumpa(struct cratecube_s *crate, s32 n, f32 x, f32 y, f32 z);
 extern void AddCrateExplosion(struct nuvec_s *pos, s32 type, s32 ang,
                               struct nuvec_s *colbox);
 extern s32 VEHICLECONTROL;
@@ -1077,13 +1014,13 @@ extern void AddScreenWumpa(f32 x, f32 y, f32 z, s32 n);
  * the goto) because an init before the loop would live across the GetCrateType
  * calls and burn a seventh callee-saved register. Two deltas remain -- see the
  * recorded blocker. */
-s32 CrateOff(struct CrateCubeGroup *group, struct CrateCube *crate, s32 how,
+s32 CrateOff(struct crategroup_s *group, struct cratecube_s *crate, s32 how,
              s32 silent) {
     struct nuvec_s pos;
     struct nuvec_s screen;
     struct nuvec_s v[2];
     struct CRATETYPEDATA *data;
-    struct CrateCube *crate2;
+    struct cratecube_s *crate2;
     s32 type;
     s32 sfx;
     s32 n;
@@ -1113,9 +1050,9 @@ s32 CrateOff(struct CrateCubeGroup *group, struct CrateCube *crate, s32 how,
         if ((how & 3) == 0 && player->obj.dead == 0 && silent == 0) {
             n = (crate->flags & 0x40) ? 3 : 2;
             NuCameraTransformScreenClip(&screen, &pos, 1, 0);
-            v[0].x = pos.x + GameCam.vX.x * 0.1f;
-            v[0].y = pos.y + GameCam.vX.y * 0.1f;
-            v[0].z = pos.z + GameCam.vX.z * 0.1f;
+            v[0].x = pos.x + GameCam[0].vX.x * 0.1f;
+            v[0].y = pos.y + GameCam[0].vX.y * 0.1f;
+            v[0].z = pos.z + GameCam[0].vX.z * 0.1f;
             NuCameraTransformScreenClip(&v[1], &v[0], 1, 0);
             d = screen.x - v[1].x;
             if (d < 0.0) {
@@ -1220,9 +1157,9 @@ s32 CrateOff(struct CrateCubeGroup *group, struct CrateCube *crate, s32 how,
                 Game.lives < 10 && (crate->flags & 0x40) == 0 &&
                 qrand() < 0x4000 - ((Game.lives << 14) / 10)) {
                 NuCameraTransformScreenClip(&screen, &pos, 1, 0);
-                v[0].x = pos.x + GameCam.vX.x * 0.1f;
-                v[0].y = pos.y + GameCam.vX.y * 0.1f;
-                v[0].z = pos.z + GameCam.vX.z * 0.1f;
+                v[0].x = pos.x + GameCam[0].vX.x * 0.1f;
+                v[0].y = pos.y + GameCam[0].vX.y * 0.1f;
+                v[0].z = pos.z + GameCam[0].vX.z * 0.1f;
                 NuCameraTransformScreenClip(&v[1], &v[0], 1, 0);
                 d = screen.x - v[1].x;
                 if (d < 0.0) {
@@ -1286,11 +1223,11 @@ extern s32 temp_crate_bounce;
  * `crate->timer` is re-read rather than cached in a local: the lone `mov.s` is
  * GCSE PRE, not a C variable. `bounce = 1` sits at the end of the type==6 arm
  * (not in each branch) so cross-jumping folds it into the shared tail. */
-s32 CrateBounceReaction(struct CrateCubeGroup *group, struct CrateCube *crate,
+s32 CrateBounceReaction(struct crategroup_s *group, struct cratecube_s *crate,
                         s32 type, s32 attack) {
     struct nuvec_s pos;
-    struct CrateCubeGroup *group2;
-    struct CrateCube *crate2;
+    struct crategroup_s *group2;
+    struct cratecube_s *crate2;
     s32 i;
     s32 j;
     s32 sfx;
@@ -1369,7 +1306,7 @@ s32 CrateBounceReaction(struct CrateCubeGroup *group, struct CrateCube *crate,
         AddKaboom(0x20, &pos, 0.0f);
         crate->newtype = 0xf;
         crate->metal_count = 1;
-        JudderGameCamera(&GameCam, 0.5f, 0);
+        JudderGameCamera(&GameCam[0], 0.5f, 0);
         GameSfx(0x33, &crate->pos);
     } else if (type == 0x13) {
         NewCrateAnimation(crate, 0x13, 0x58, 0);
@@ -1640,8 +1577,8 @@ extern struct nuvec_s cpGOTO;
  * FurtherALONG/FurtherBEHIND). Blocked on control-flow: the && chain compiles
  * to a different branch layout than retail's goto-nested direction dispatch. */
 s32 GotoCheckpoint(struct nuvec_s *pos, s32 direction) {
-    struct CrateCubeGroup *group;
-    struct CrateCube *crate;
+    struct crategroup_s *group;
+    struct cratecube_s *crate;
     s32 i;
     s32 j;
     s32 iRAIL;
@@ -1695,8 +1632,8 @@ s32 GotoCheckpoint(struct nuvec_s *pos, s32 direction) {
  * prologue f20/f21 ordering and the LICM placement of the f21 (D_0062D7A4)
  * load relative to the nCrates guard -- scheduling ties, not source-steerable. */
 f32 CrateTopBelow(struct nuvec_s *pos) {
-    struct CrateCubeGroup *group;
-    struct CrateCube *crate;
+    struct crategroup_s *group;
+    struct cratecube_s *crate;
     s32 i;
     s32 j;
     f32 top;
@@ -1740,8 +1677,8 @@ f32 CrateTopBelow(struct nuvec_s *pos) {
 }
 
 f32 CrateBottomAbove(struct nuvec_s *pos) {
-    struct CrateCubeGroup *group;
-    struct CrateCube *crate;
+    struct crategroup_s *group;
+    struct cratecube_s *crate;
     s32 i;
     s32 j;
     s32 type;
@@ -1784,10 +1721,10 @@ f32 CrateBottomAbove(struct nuvec_s *pos) {
     return y;
 }
 
-void CrateSafety(struct CrateCubeGroup *group, struct CrateCube *crate,
+void CrateSafety(struct crategroup_s *group, struct cratecube_s *crate,
                  struct obj_s *obj) {
-    struct CrateCube *crate2;
-    struct CrateCube *crate3;
+    struct cratecube_s *crate2;
+    struct cratecube_s *crate3;
     f32 size;
     s32 i;
 
@@ -1998,7 +1935,7 @@ void DrawCrateExplosions(void) {
     }
 }
 
-s32 NewCrateAnimation(struct CrateCube *crate, s32 type, s32 action,
+s32 NewCrateAnimation(struct cratecube_s *crate, s32 type, s32 action,
                       s32 random) {
     struct CharacterModel *model;
     s32 i;
@@ -2152,9 +2089,9 @@ void DrawCrate(struct crate_s *crate) {
     }
 }
 
-struct CrateCube *HitCrateBalloons(struct nuvec_s *pos, f32 radius) {
-    struct CrateCubeGroup *group;
-    struct CrateCube *crate;
+struct cratecube_s *HitCrateBalloons(struct nuvec_s *pos, f32 radius) {
+    struct crategroup_s *group;
+    struct cratecube_s *crate;
     f32 r2;
     s32 iVar1;
     s32 iVar3;
@@ -2192,8 +2129,8 @@ struct CrateCube *HitCrateBalloons(struct nuvec_s *pos, f32 radius) {
 
 s32 WipeCrates(s32 iRAIL0, s32 iALONG0, f32 fALONG0, s32 iRAIL1, s32 iALONG1,
                f32 fALONG1, s32 destroy) {
-    struct CrateCubeGroup *group;
-    struct CrateCube *crate;
+    struct crategroup_s *group;
+    struct cratecube_s *crate;
     s32 i;
     s32 j;
     s32 type;
@@ -2235,8 +2172,8 @@ s32 HitCrates(struct obj_s *obj, s32 destroy) {
     }
 }
 
-void StartExclamationCrateSequence(struct CrateCubeGroup *group,
-                                   struct CrateCube *crate) {
+void StartExclamationCrateSequence(struct crategroup_s *group,
+                                   struct cratecube_s *crate) {
     struct nuvec_s pos;
 
     pos.x = crate->pos.x;
@@ -2250,8 +2187,8 @@ void StartExclamationCrateSequence(struct CrateCubeGroup *group,
     GameSfx(0x35, &temp_pCrate->pos);
 }
 
-s32 LowestCrate(struct CrateCubeGroup *group, struct CrateCube *crate) {
-    struct CrateCube *crate2;
+s32 LowestCrate(struct crategroup_s *group, struct cratecube_s *crate) {
+    struct cratecube_s *crate2;
     s32 i;
     s32 dx;
     s32 dz;
@@ -2304,12 +2241,12 @@ extern s32 gamesfx_effect_volume;
 extern void AddGliderHitPoints(s32 x);
 
 void UpdateCrates(void) {
-    struct CrateCubeGroup *group;
-    struct CrateCube *crate;
-    struct CrateCube *crate2;
-    struct CrateCube *crate3;
-    struct CrateCube *hc;
-    struct CrateCubeGroup *g2;
+    struct crategroup_s *group;
+    struct cratecube_s *crate;
+    struct cratecube_s *crate2;
+    struct cratecube_s *crate3;
+    struct cratecube_s *hc;
+    struct crategroup_s *g2;
     struct nuvec_s v;
     struct nuvec_s pos;
     s32 i;
@@ -2415,7 +2352,7 @@ void UpdateCrates(void) {
                     AddKaboom(0x20, &pos, 0.0f);
                     crate->newtype = 0xF;
                     crate->metal_count = 1;
-                    JudderGameCamera(&GameCam, 0.5f, 0);
+                    JudderGameCamera(&GameCam[0], 0.5f, 0);
                     GameSfx(0x33, &crate->pos);
                 SetActionDone:
                     crate->action = -1;
@@ -2702,10 +2639,10 @@ void ResetCrates(void) {
     struct nuvec_s dir;
     struct nuvec_s v = {0.25f, 0.0f, 0.25f};
     s32 eshady;
-    struct CrateCubeGroup *group;
-    struct CrateCube *crate;
-    struct CrateCube *crate2;
-    struct CrateCube *below;
+    struct crategroup_s *group;
+    struct cratecube_s *crate;
+    struct cratecube_s *crate2;
+    struct cratecube_s *below;
     f32 d;
     s32 i;
     s32 j;
@@ -3085,7 +3022,7 @@ void ResetCrates(void) {
 extern s32 DRAWCRATESHADOWS;
 extern s32 editor_active;
 extern s32 edcrtDrawType;
-extern u32 GlobalTimer[];
+extern struct gtimer_s GlobalTimer;
 extern struct cammtx_s *pCam;
 
 extern struct objtab_s ObjTab[];
@@ -3100,16 +3037,16 @@ extern void NuHGobjEval(struct NUHGOBJ_s *hobj, s32 nJ, void *pJ,
 extern s32 NuHGobjRndrMtxDwa(struct NUHGOBJ_s *hobj, struct numtx_s *mC,
                              s32 nlayers, s16 *layer, struct numtx_s *tmtx,
                              f32 **dwa);
-extern s32 LowestActiveCrate(struct CrateCubeGroup *group,
-                             struct CrateCube *crate);
+extern s32 LowestActiveCrate(struct crategroup_s *group,
+                             struct cratecube_s *crate);
 
 void DrawCrates(void) {
     struct nuvec_s v;
     struct numtx_s mtx;
     struct numtx_s mtx2;
     struct numtx_s tmtx[256];
-    struct CrateCubeGroup *group;
-    struct CrateCube *crate;
+    struct crategroup_s *group;
+    struct cratecube_s *crate;
     struct CharacterModel *model;
     struct nuspecial_s *special;
     struct numtx_s *pmtx;
@@ -3172,7 +3109,7 @@ void DrawCrates(void) {
                     break;
                 }
                 if (type == -1) {
-                    type = ((GlobalTimer[0] % 10) > 4) ? type : 0;
+                    type = ((GlobalTimer.frame % 10) > 4) ? type : 0;
                 }
             } else {
                 type = GetCrateType(crate, 1);
@@ -3285,8 +3222,8 @@ void DrawCrates(void) {
     }
 }
 
-s32 LowestActiveCrate(struct CrateCubeGroup *group, struct CrateCube *crate) {
-    struct CrateCube *crate2;
+s32 LowestActiveCrate(struct crategroup_s *group, struct cratecube_s *crate) {
+    struct cratecube_s *crate2;
     s32 i;
     s32 dx;
     s32 dz;
@@ -3303,9 +3240,9 @@ s32 LowestActiveCrate(struct CrateCubeGroup *group, struct CrateCube *crate) {
     return 1;
 }
 
-s32 CrateInTheWay(struct obj_s *obj, struct CrateCubeGroup *group,
-                  struct CrateCube *crate, s32 dx, s32 dz, char *hit) {
-    struct CrateCube *crate2;
+s32 CrateInTheWay(struct obj_s *obj, struct crategroup_s *group,
+                  struct cratecube_s *crate, s32 dx, s32 dz, char *hit) {
+    struct cratecube_s *crate2;
     s32 i;
 
     crate2 = &Crate[group->iCrate];
@@ -3322,9 +3259,9 @@ s32 CrateInTheWay(struct obj_s *obj, struct CrateCubeGroup *group,
  * `+ 0.5f` FP-equality inner loop assembles one instruction over the extent
  * (decompals-as loop .p2align / FP-hazard nop). Same class as the documented
  * .org-backwards wall; kept for reference. */
-s32 CrateOnTop(struct CrateCubeGroup *group, struct CrateCube *crate) {
+s32 CrateOnTop(struct crategroup_s *group, struct cratecube_s *crate) {
     s32 i;
-    struct CrateCube *crate2;
+    struct cratecube_s *crate2;
 
     crate2 = &Crate[group->iCrate];
     for (i = 0; i < group->nCrates; i++, crate2++) {
@@ -3340,9 +3277,9 @@ s32 CrateOnTop(struct CrateCubeGroup *group, struct CrateCube *crate) {
 
 /* Faithful near-match (state=asm): same `+ 0.5f` inner-loop assembler wall as
  * CrateOnTop; structure (outer goto restart, column match) is exact. */
-void HopCratesAbove(f32 speed, struct CrateCubeGroup *group,
-                    struct CrateCube *crate) {
-    struct CrateCube *crate2;
+void HopCratesAbove(f32 speed, struct crategroup_s *group,
+                    struct cratecube_s *crate) {
+    struct cratecube_s *crate2;
     s32 i;
 
 Loop:
@@ -3358,7 +3295,7 @@ Loop:
     }
 }
 
-void ResetCrateType2(struct CrateCube *crt) {
+void ResetCrateType2(struct cratecube_s *crt) {
     crt->type2 = crt->type1;
     if (crt->model == 0) {
         return;
@@ -3408,7 +3345,7 @@ s32 RayIntersectCylinder(struct nuvec_s *p0, struct nuvec_s *p1, f32 x, f32 z,
     return 0;
 }
 
-void SaveCrateTypeData(struct CrateCube *crate) {
+void SaveCrateTypeData(struct cratecube_s *crate) {
     struct CRATETYPEDATA *data;
 
     if (i_cratetypedata > 0x1f) {
@@ -3439,8 +3376,8 @@ void RestoreCrateTypeData(void) {
 }
 
 void ResetAllCrateTypes(s32 type) {
-    struct CrateCubeGroup *group;
-    struct CrateCube *crate;
+    struct crategroup_s *group;
+    struct cratecube_s *crate;
     s32 i;
     s32 j;
 
@@ -3469,9 +3406,9 @@ void ResetAllCrateTypes(s32 type) {
     }
 }
 
-struct CrateCube *CrateInSlot(struct CrateCubeGroup *group, s32 x, s32 y,
+struct cratecube_s *CrateInSlot(struct crategroup_s *group, s32 x, s32 y,
                               s32 z) {
-    struct CrateCube *crate;
+    struct cratecube_s *crate;
     s32 i;
 
     crate = &Crate[group->iCrate];
@@ -3491,7 +3428,7 @@ void ResetInvisibility(void) {
     glass_col_enabled = 0;
 }
 
-void ResetCrate(struct CrateCube *crt) {
+void ResetCrate(struct cratecube_s *crt) {
     crt->oldy = crt->pos0.y;
     crt->pos.y = crt->pos0.y;
     crt->mom = 0.0f;

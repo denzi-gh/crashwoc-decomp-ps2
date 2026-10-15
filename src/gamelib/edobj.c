@@ -115,18 +115,8 @@
 #include "nu3d/nuanim.h"
 #include "nu3d/nucamera.h"
 #include "gamelib/terrain.h"
-
-struct pad_s {
-    char pad000[0x55C];
-    unsigned int paddata;
-    char pad560[0x564 - 0x560];
-    unsigned int buttons;
-    char pad568[0x580 - 0x568];
-    unsigned char rotleft;
-    unsigned char rotright;
-    unsigned char rotup;
-    unsigned char rotdown;
-};
+#include "nups2/ps2ctl.h"
+#include "gamelib/debris.h"
 
 struct eduimenu_s {
     void *head;
@@ -189,14 +179,6 @@ struct edobject_s {
     float bouncy_damping;
 };
 
-struct debtypedef_s {
-    char name[0x10];
-    char pad10[0x20 - 0x10];
-    signed char gensort;
-    char pad21[0x50 - 0x21];
-    struct nuvec_s varstart;
-};
-
 struct edobjinstance_s {
     struct numtx_s mtx;
     int id;
@@ -248,7 +230,6 @@ extern int edobj_cam_ay;
 extern int edobj_emitrotz;
 extern int edobj_emitroty;
 extern struct nucamera_s global_camera;
-extern struct debtypedef_s *debtab[];
 extern float D_0062CF04;
 extern float D_0062CF24;
 extern float D_0062CF28;
@@ -452,13 +433,13 @@ extern void eduiMenuDetach(void *menu);
 extern void edobjObjectDestroy(int instance);
 extern void edobjConvertPathToAnim(int instance);
 extern void edcamSetPos(struct nuvec_s *pos);
-extern void edcamMove(struct pad_s *pad);
+extern void edcamMove(struct nupad_s *pad);
 extern void edcamGetPosAng(struct nuvec_s *pos, int *ax, int *ay);
 extern struct nuvec_s *edmainQueryLocVec(void);
 extern float NuFsqrt(float x);
 extern char *edbitsGetSoundName(int id);
-extern void eduiMenuProcess(void *menu, struct pad_s *pad);
-extern void edobjDoInput(struct pad_s *pad);
+extern void eduiMenuProcess(void *menu, struct nupad_s *pad);
+extern void edobjDoInput(struct nupad_s *pad);
 extern void edobjDetermineNearestObject(float range);
 extern void edobjDetermineNearestWaypoint(float range);
 extern void edobjDetermineNearestParticle(float range);
@@ -1430,7 +1411,7 @@ void edobjParticleCreate(struct nuvec_s *pos)
         ObjectPath[edobj_nearest].particle_rotz[slot] = edobj_emitrotz;
         ObjectPath[edobj_nearest].particle_roty[slot] = edobj_emitroty;
         ObjectPath[edobj_nearest].particle_type[slot] = edobj_particle_type;
-        strcpy(ObjectPath[edobj_nearest].particle_name[slot], debtab[edobj_particle_type]->name);
+        strcpy(ObjectPath[edobj_nearest].particle_name[slot], debtab[edobj_particle_type]->id);
         ObjectPath[edobj_nearest].particle_rate[slot] = 1;
         ObjectPath[edobj_nearest].particle_switch[slot] = 0;
         ObjectPath[edobj_nearest].num_particles++;
@@ -1619,7 +1600,7 @@ inline void edobjObjectPlace(int obj, struct nuvec_s *pos)
 }
 
 
-void edobjDoInput(struct pad_s *pad)
+void edobjDoInput(struct nupad_s *pad)
 {
     struct nuvec_s pos;
     int obj;
@@ -1628,7 +1609,7 @@ void edobjDoInput(struct pad_s *pad)
         edcamMove(pad);
     }
     if (pad->paddata & 0x100) {
-        if (!edobj_copy_mode && !edobj_particle_mode && !edobj_sound_mode && (pad->buttons & 0x40)) {
+        if (!edobj_copy_mode && !edobj_particle_mode && !edobj_sound_mode && (pad->paddata_db & 0x40)) {
             if (edobj_waypoint_mode) {
                 edobj_waypoint_mode = 0;
             } else if (edobj_nearest != -1) {
@@ -1636,14 +1617,14 @@ void edobjDoInput(struct pad_s *pad)
                 edobj_waypoint_mode = 1;
             }
         }
-        if (!edobj_waypoint_mode && !edobj_particle_mode && !edobj_sound_mode && (pad->buttons & 0x20)) {
+        if (!edobj_waypoint_mode && !edobj_particle_mode && !edobj_sound_mode && (pad->paddata_db & 0x20)) {
             if (edobj_copy_mode) {
                 edobj_copy_mode = 0;
             } else if (edobj_nearest != -1) {
                 edobj_copy_mode = 1;
             }
         }
-        if (!edobj_waypoint_mode && !edobj_copy_mode && !edobj_sound_mode && (pad->buttons & 0x80)) {
+        if (!edobj_waypoint_mode && !edobj_copy_mode && !edobj_sound_mode && (pad->paddata_db & 0x80)) {
             if (edobj_particle_mode) {
                 edobj_particle_mode = 0;
             } else if (edobj_nearest != -1) {
@@ -1651,7 +1632,7 @@ void edobjDoInput(struct pad_s *pad)
                 edobj_particle_mode = 1;
             }
         }
-        if (!edobj_waypoint_mode && !edobj_copy_mode && !edobj_particle_mode && (pad->buttons & 0x10)) {
+        if (!edobj_waypoint_mode && !edobj_copy_mode && !edobj_particle_mode && (pad->paddata_db & 0x10)) {
             if (edobj_sound_mode) {
                 edobj_sound_mode = 0;
             } else if (edobj_nearest != -1) {
@@ -1661,13 +1642,13 @@ void edobjDoInput(struct pad_s *pad)
         }
         if (edobj_waypoint_mode) {
             if (edobj_nearest_waypoint != -1) {
-                if (pad->buttons & 8) {
+                if (pad->paddata_db & 8) {
                     edobj_nearest_waypoint++;
                     if (edobj_nearest_waypoint == ObjectPath[edobj_nearest].num_waypoints) {
                         edobj_nearest_waypoint = 0;
                     }
                 }
-                if (pad->buttons & 2) {
+                if (pad->paddata_db & 2) {
                     edobj_nearest_waypoint--;
                     if (edobj_nearest_waypoint == -1) {
                         edobj_nearest_waypoint = ObjectPath[edobj_nearest].num_waypoints - 1;
@@ -1682,13 +1663,13 @@ void edobjDoInput(struct pad_s *pad)
         } else if (!edobj_copy_mode) {
             if (edobj_particle_mode) {
                 if (edobj_nearest_particle != -1) {
-                    if (pad->buttons & 8) {
+                    if (pad->paddata_db & 8) {
                         edobj_nearest_particle++;
                         if (edobj_nearest_particle == ObjectPath[edobj_nearest].num_particles) {
                             edobj_nearest_particle = 0;
                         }
                     }
-                    if (pad->buttons & 2) {
+                    if (pad->paddata_db & 2) {
                         edobj_nearest_particle--;
                         if (edobj_nearest_particle == -1) {
                             edobj_nearest_particle = ObjectPath[edobj_nearest].num_particles - 1;
@@ -1708,13 +1689,13 @@ void edobjDoInput(struct pad_s *pad)
                 }
             } else if (edobj_sound_mode) {
                 if (edobj_nearest_sound != -1) {
-                    if (pad->buttons & 8) {
+                    if (pad->paddata_db & 8) {
                         edobj_nearest_sound++;
                         if (edobj_nearest_sound == ObjectPath[edobj_nearest].num_sounds) {
                             edobj_nearest_sound = 0;
                         }
                     }
-                    if (pad->buttons & 2) {
+                    if (pad->paddata_db & 2) {
                         edobj_nearest_sound--;
                         if (edobj_nearest_sound == -1) {
                             edobj_nearest_sound = ObjectPath[edobj_nearest].num_sounds - 1;
@@ -1731,7 +1712,7 @@ void edobjDoInput(struct pad_s *pad)
                 }
             } else {
                 if (edobj_nearest != -1) {
-                    if (pad->buttons & 8) {
+                    if (pad->paddata_db & 8) {
                         obj = edobj_nearest;
                         do {
                             obj++;
@@ -1741,7 +1722,7 @@ void edobjDoInput(struct pad_s *pad)
                         } while (ObjectPath[obj].instance == -1);
                         edobj_nearest = obj;
                     }
-                    if (pad->buttons & 2) {
+                    if (pad->paddata_db & 2) {
                         do {
                             edobj_nearest--;
                             if (edobj_nearest == -1) {
@@ -1770,10 +1751,10 @@ void edobjDoInput(struct pad_s *pad)
                         + (int)(((edobj_cam_pos.z - edobj_snap_vec.z) + 0.25) * 2.0) * 0.5f;
     }
     if (!(pad->paddata & 0x100)) {
-        if (pad->buttons & 0x80) {
+        if (pad->paddata_db & 0x80) {
             edobj_active_menu = edobj_options_menu;
         }
-        if (pad->buttons & 0x40) {
+        if (pad->paddata_db & 0x40) {
             if (edobj_waypoint_mode) {
                 edobjWaypointCreate(&edobj_cam_pos);
             } else if (edobj_copy_mode) {
@@ -1805,7 +1786,7 @@ void edobjDoInput(struct pad_s *pad)
                 }
             }
         }
-        if (pad->buttons & 0x10) {
+        if (pad->paddata_db & 0x10) {
             if (edobj_waypoint_mode) {
                 if (edobj_nearest_waypoint != -1) {
                     edobjWaypointDestroy(edobj_nearest_waypoint);
@@ -1831,13 +1812,13 @@ void edobjDoInput(struct pad_s *pad)
         }
     }
     if (edobj_particle_mode) {
-        edobj_emitroty += pad->rotleft;
-        edobj_emitroty -= pad->rotright;
-        edobj_emitrotz += pad->rotup;
+        edobj_emitroty += pad->rdata.l_algpad_r;
+        edobj_emitroty -= pad->rdata.l_algpad_l;
+        edobj_emitrotz += pad->rdata.l_algpad_u;
         if (edobj_emitrotz > 0) {
             edobj_emitrotz = 0;
         }
-        edobj_emitrotz -= pad->rotdown;
+        edobj_emitrotz -= pad->rdata.l_algpad_d;
         if (edobj_emitrotz < -0x8000) {
             edobj_emitrotz = -0x8000;
         }
@@ -1944,7 +1925,7 @@ void edobjDrawCursor(void)
         if (edobj_particle_type == -1) {
             NuFntPrintEx(0x1810, 0xCD0, 0, info_type_none);
         } else {
-            NuFntPrintEx(0x1810, 0xCD0, 0, info_type_fmt, debtab[edobj_particle_type]->name);
+            NuFntPrintEx(0x1810, 0xCD0, 0, info_type_fmt, debtab[edobj_particle_type]->id);
         }
     } else if (edobj_sound_mode) {
         NuFntPrintEx(0x17C0, 0xB90, 0, info_locked_fmt,
@@ -2519,7 +2500,7 @@ void edobjcbParticleTypeMenu(struct eduimenu_s *menu)
                 }
                 eduiMenuAddItem(edobj_particletype_menu,
                                 eduiItemCheckCreate(i, &style, selected, 1,
-                                                    edobjcbSetParticleType, debtab[i]->name));
+                                                    edobjcbSetParticleType, debtab[i]->id));
                 if (selected == 1) {
                     edobj_particletype_menu->current = edui_last_item;
                 }
@@ -2692,7 +2673,7 @@ void edobjRenderSoundEmitters(int obj)
 
 void edobjRenderParticleEmitters(int obj)
 {
-    struct debtypedef_s *type;
+    struct debinfo_s *type;
     int colour;
     int i;
 
@@ -2705,7 +2686,7 @@ void edobjRenderParticleEmitters(int obj)
                         ObjectPath[obj].waypoints[0].x + ObjectPath[obj].particle_pos[i].x,
                         ObjectPath[obj].waypoints[0].y + ObjectPath[obj].particle_pos[i].y,
                         ObjectPath[obj].waypoints[0].z + ObjectPath[obj].particle_pos[i].z,
-                        type->varstart.x, type->varstart.y, type->varstart.z, edobj_emitrotz,
+                        type->variable_start.x, type->variable_start.y, type->variable_start.z, edobj_emitrotz,
                         edobj_emitroty, 0, 0, 0xFF008000, edobj_mtl_zoff);
                 }
                 colour = 0xFF00FF00;
@@ -3241,7 +3222,7 @@ void edobjcbLocalParticleTypeMenu(struct eduimenu_s *menu)
                 }
                 eduiMenuAddItem(edobj_localparticletype_menu,
                                 eduiItemCheckCreate(i, &style, selected, 1,
-                                                    edobjcbSetLocalParticleType, debtab[i]->name));
+                                                    edobjcbSetLocalParticleType, debtab[i]->id));
                 if (selected == 1) {
                     edobj_localparticletype_menu->current = edui_last_item;
                 }
@@ -3338,7 +3319,7 @@ void edobjEnter(void)
 }
 
 
-int edobjProc(struct pad_s *pad)
+int edobjProc(struct nupad_s *pad)
 {
     edobj_blink_timer += 5;
     if (edobj_active_menu != 0) {
@@ -3355,7 +3336,7 @@ int edobjProc(struct pad_s *pad)
     } else if (!edobj_copy_mode) {
         edobjDetermineNearestObject(1.0f);
     }
-    if (pad->buttons & 0x800) {
+    if (pad->paddata_db & 0x800) {
         edobj_waypoint_mode = 0;
         edobj_copy_mode = 0;
         edobj_particle_mode = 0;
@@ -3385,7 +3366,7 @@ void edobjcbSetLocalParticleType(void *menu, struct edobjitem_s *item)
     edobj_localparticletype_menu = 0;
     ObjectPath[edobj_nearest].particle_type[edobj_nearest_particle] = item->value;
     strcpy(ObjectPath[edobj_nearest].particle_name[edobj_nearest_particle],
-           debtab[item->value]->name);
+           debtab[item->value]->id);
     edobj_particle_type = item->value;
 }
 

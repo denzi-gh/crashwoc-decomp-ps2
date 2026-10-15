@@ -49,6 +49,8 @@
 #include "game/gametypes.h"
 #include "gamelib/terrain.h"
 #include "game/creature.h"
+#include "nups2/nups2types.h"
+#include "nups2/ps2ctl.h"
 
 struct eduiitem_s {
     u8 pad00[0x0C];
@@ -72,54 +74,6 @@ struct eduimenu_s {
 
 struct edcrtstyle_s {
     u8 b[16];
-};
-
-struct edpad_s {
-    u8 pad000[0x55C];
-    u32 paddata;               /* 0x55C */
-    u8 pad560[0x04];
-    u32 buttons;               /* 0x564 */
-    u8 pad568[0x18];
-    u8 rotleft;                /* 0x580 */
-    u8 rotright;               /* 0x581 */
-};
-
-struct edcrtgroup_s {
-    struct nuvec_s origin;     /* 0x00 */
-    f32 radius;                /* 0x0C */
-    s16 iCrate;                /* 0x10 */
-    s16 nCrates;               /* 0x12 */
-    s16 angle;                 /* 0x14 */
-    u8 pad16[0x30 - 0x16];
-};
-
-struct edcrtcube_s {
-    u8 pad00[0x04];
-    struct nuvec_s pos0;       /* 0x04 */
-    u8 pad10[0x20 - 0x10];
-    f32 shadow;                /* 0x20 */
-    u8 pad24[0x3A - 0x24];
-    s8 type1;                  /* 0x3A */
-    s8 type2;                  /* 0x3B */
-    s8 type3;                  /* 0x3C */
-    s8 type4;                  /* 0x3D */
-    u8 pad3E[0x44 - 0x3E];
-    s16 dx;                    /* 0x44 */
-    s16 dy;                    /* 0x46 */
-    s16 dz;                    /* 0x48 */
-    s16 iU;                    /* 0x4A */
-    s16 iD;                    /* 0x4C */
-    s16 iN;                    /* 0x4E */
-    s16 iS;                    /* 0x50 */
-    s16 iE;                    /* 0x52 */
-    s16 iW;                    /* 0x54 */
-    s16 trigger;               /* 0x56 */
-    u8 pad58[0x90 - 0x58];
-};
-
-struct mcdirent_s {
-    u8 pad00[0x20];
-    char name[32];             /* 0x20 */
 };
 
 extern struct eduimenu_s *edcrt_active_menu;
@@ -205,8 +159,8 @@ extern struct crate_s *lock_crate;
 extern struct crate_s *marker_crate;
 extern struct crate_s *flash_crate;
 extern struct crateeditor_s crate_list[];
-extern struct edcrtgroup_s CrateGroup[];
-extern struct edcrtcube_s Crate[];
+extern struct crategroup_s CrateGroup[];
+extern struct cratecube_s Crate[];
 extern s32 CRATEGROUPCOUNT;
 extern s32 CRATECOUNT;
 
@@ -237,7 +191,7 @@ extern void *eduiItemCheckCreate(u32 value, void *style, s32 checked, s32 group,
                                  void *cb, char *label);
 extern void *eduiItemTextPickCreate(s32 data, void *style, void *cb, char *label);
 
-extern void edcamMove(struct edpad_s *pad);
+extern void edcamMove(struct nupad_s *pad);
 extern void edcamSet(void);
 extern void edcamSetPos(struct nuvec_s *pos);
 extern void edcamSetPosAng(struct nuvec_s *pos, s32 ax, s32 ay);
@@ -307,7 +261,7 @@ void edcrtcbMemCardMenu(struct eduimenu_s *menu);
 void edcrtcbSpecificTypeMenu(struct eduimenu_s *menu, struct eduiitem_s *item);
 void edcrtcbCrateTypesMenu(struct eduimenu_s *menu);
 void edcrtcbDisplayTypeMenu(struct eduimenu_s *menu);
-void edcrtDoInput(struct edpad_s *pad);
+void edcrtDoInput(struct nupad_s *pad);
 void edcrtDrawInfo(void);
 void edcrtcbMemCardLoadCratesMenu(struct eduimenu_s *menu);
 void edcrtcbChangeFileNameMenu(struct eduimenu_s *menu);
@@ -843,7 +797,7 @@ void edcrtInit(void)
                                       "Mem Card..."));
 }
 
-void edcrtDoInput(struct edpad_s *pad)
+void edcrtDoInput(struct nupad_s *pad)
 {
     struct crate_s *added;
     struct crate_s *crate;
@@ -859,15 +813,15 @@ void edcrtDoInput(struct edpad_s *pad)
         }
     }
     if (locked_crate == 0) {
-        marker_crate->orientation += pad->rotright;
-        marker_crate->orientation -= pad->rotleft;
-        flash_crate->orientation += pad->rotright;
-        flash_crate->orientation -= pad->rotleft;
+        marker_crate->orientation += pad->rdata.l_algpad_l;
+        marker_crate->orientation -= pad->rdata.l_algpad_r;
+        flash_crate->orientation += pad->rdata.l_algpad_l;
+        flash_crate->orientation -= pad->rdata.l_algpad_r;
     }
-    if (pad->buttons & 0x80)
+    if (pad->paddata_db & 0x80)
         edcrt_active_menu = edcrt_options_menu;
     if (pad->paddata & 0x100) {
-        if (pad->buttons & 0x20) {
+        if (pad->paddata_db & 0x20) {
             if (triggerorigin_crate != 0) {
                 triggerorigin_crate = 0;
                 triggerdest_crate = 0;
@@ -878,7 +832,7 @@ void edcrtDoInput(struct edpad_s *pad)
             }
         }
     } else {
-        if (pad->buttons & 0x40) {
+        if (pad->paddata_db & 0x40) {
             if (triggerorigin_crate != 0) {
                 if (highlighted_crate != 0) {
                     triggerorigin_crate->trigger = highlighted_crate;
@@ -910,7 +864,7 @@ void edcrtDoInput(struct edpad_s *pad)
                 ResetCrates();
             }
         }
-        if ((pad->buttons & 0x10) && highlighted_crate != 0) {
+        if ((pad->paddata_db & 0x10) && highlighted_crate != 0) {
             for (crate = NextCrate(0); crate != 0; crate = NextCrate(crate)) {
                 if (crate->trigger == highlighted_crate)
                     crate->trigger = 0;
@@ -953,7 +907,7 @@ void edcrtDoInput(struct edpad_s *pad)
             ConvertCrateData();
             ResetCrates();
         }
-        if (pad->buttons & 0x20) {
+        if (pad->paddata_db & 0x20) {
             if (triggerorigin_crate != 0) {
                 triggerorigin_crate = 0;
                 triggerdest_crate = 0;
@@ -972,14 +926,14 @@ void edcrtDoInput(struct edpad_s *pad)
             }
         }
     }
-    if (pad->buttons & 0x1000) {
+    if (pad->paddata_db & 0x1000) {
         if (edcrt_currentselcrate == 20)
             edcrt_currentselcrate = 0;
         else
             edcrt_currentselcrate++;
         flash_crate->type[0] = edcrt_currentselcrate;
     }
-    if (pad->buttons & 0x4000) {
+    if (pad->paddata_db & 0x4000) {
         if (edcrt_currentselcrate == 0)
             edcrt_currentselcrate = 20;
         else
@@ -1200,7 +1154,7 @@ void edcrtEnter(void)
     }
 }
 
-s32 edcrtProc(struct edpad_s *pad)
+s32 edcrtProc(struct nupad_s *pad)
 {
     if (screendump)
         return 0;
@@ -1211,7 +1165,7 @@ s32 edcrtProc(struct edpad_s *pad)
     }
     edcrtDoInput(pad);
     {
-        s32 f = pad->buttons & 0x800;
+        s32 f = pad->paddata_db & 0x800;
         return f != 0;
     }
 }

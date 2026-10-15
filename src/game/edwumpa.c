@@ -22,11 +22,7 @@
 #include "game/gametypes.h"
 #include "gamelib/terrain.h"
 #include "game/creature.h"
-
-struct pad_s {
-    u8 unk_0x000[0x564];
-    u32 buttons;            /* 0x564 */
-};
+#include "nups2/ps2ctl.h"
 
 extern struct wumpa_s Wumpa[];
 extern s32 WUMPACOUNT;
@@ -88,13 +84,13 @@ extern void NuFntSetPen(s32 colour);
 extern void NuFntPrintEx(s32 x, s32 y, s32 colour, char *fmt, ...);
 extern u64 fptodp(f32 value);
 extern char *strupr(char *s);
-extern void eduiMenuProcess(void *menu, struct pad_s *pad);
+extern void eduiMenuProcess(void *menu, struct nupad_s *pad);
 extern void *InCrate(f32 x, f32 z, f32 ytop, f32 ybot, f32 radius);
 
 
 void edwmpDRAW(void);
 void edwmpDrawInfo(void);
-void edwmpDoInput(struct pad_s *pad);
+void edwmpDoInput(struct nupad_s *pad);
 void edwmpCbCancelOptMenu(void);
 void edwmpcbSaveWumpaData(void *menu);
 
@@ -114,7 +110,7 @@ void edwmpDrawInfo(void)
                  fptodp(edwmp_cam_pos.y), fptodp(edwmp_cam_pos.z));
 }
 
-s32 edwmpProc(struct pad_s *pad)
+s32 edwmpProc(struct nupad_s *pad)
 {
     struct nuvec_s v;
     s32 i;
@@ -157,7 +153,7 @@ s32 edwmpProc(struct pad_s *pad)
     D_00633344 = InCrate(edwmp_cam_pos.x, edwmp_cam_pos.z, edwmp_cam_pos.y,
                          edwmp_cam_pos.y, 0.0f) != 0;
     edwmpDoInput(pad);
-    return (pad->buttons & 0x800) != 0;
+    return (pad->paddata_db & 0x800) != 0;
 }
 
 void edwmpADD(void)

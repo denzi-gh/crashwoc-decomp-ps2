@@ -107,7 +107,7 @@ extern s32 USELIGHTS;
 extern s32 LIGHTCHASECHARACTERS;
 extern s32 temp_action;
 extern f32 temp_time;
-extern struct cammtx_s GameCam;
+extern struct cammtx_s GameCam[];
 extern u16 temp_xrot;
 extern u16 temp_zrot;
 extern struct nuvec_s ShadNorm;
@@ -484,7 +484,7 @@ start_anim:
 
     chase->time = 0.0f;
     chase->status = 2;
-    JudderGameCamera(&GameCam, 0.5f, 0);
+    JudderGameCamera(&GameCam[0], 0.5f, 0);
     GameSfx(0x3B, 0);
     NewBuzz(&player->rumble, 0x19);
 }
@@ -570,7 +570,7 @@ void UpdateChase(struct chase_s *chase, struct obj_s *obj) {
                 chase->status = 3;
                 PauseGameAudio(0);
                 GameSfx(0x3B, 0);
-                JudderGameCamera(&GameCam, 0.5f, 0);
+                JudderGameCamera(&GameCam[0], 0.5f, 0);
             }
         }
     }
@@ -661,7 +661,7 @@ void UpdateChase(struct chase_s *chase, struct obj_s *obj) {
                 if (sfx != -1) {
                     GameSfx(sfx, &chase->pos[j]);
                 }
-                JudderGameCamera(&GameCam, 0.3f, 0);
+                JudderGameCamera(&GameCam[0], 0.3f, 0);
             }
 
             for (k = 0; k < 4; k++) {
@@ -779,7 +779,7 @@ void UpdateChase(struct chase_s *chase, struct obj_s *obj) {
         if (qrand() < 0x800) {
             j = qrand() / 256;
             NewRumble(&player->rumble, j);
-            JudderGameCamera(&GameCam, (f32)j / 255.0f * 0.3f, 0);
+            JudderGameCamera(&GameCam[0], (f32)j / 255.0f * 0.3f, 0);
         }
     }
 

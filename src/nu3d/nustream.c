@@ -56,7 +56,6 @@
 #include "numath/nuvec.h"
 #include "nu3d/nucamera.h"
 #include "nu3d/nuvport.h"
-typedef unsigned int u128 __attribute__((mode(TI)));
 
 struct nucolour4_s {
     struct nucolour3_s rgb;

@@ -21,6 +21,7 @@
 #include "numath/numathtypes.h"
 #include "numath/numtx.h"
 #include "numath/nuvec.h"
+#include "nups2/ps2ctl.h"
 
 struct edcam_s {
     struct nuvec_s pos;
@@ -48,24 +49,8 @@ struct edcam_s {
     int adjust_zoom : 1;
 };
 
-struct nupad_s {
-    unsigned char pad000[0x568];
-    unsigned long long flags2;
-    unsigned char pad570[0x57C - 0x570];
-    unsigned char r_dx;
-    unsigned char r_dy;
-    unsigned char l_dx;
-    unsigned char l_dy;
-    unsigned char pad580[0x588 - 0x580];
-    unsigned char l1;
-    unsigned char r1;
-    unsigned char l2;
-    unsigned char r2;
-};
-
 extern struct edcam_s *D_0062F99C;
 
-extern int NuPs2ApplyDeadZone(int value, int deadzone);
 
 extern void edmainSetCamera(struct numtx_s *m);
 
@@ -78,30 +63,30 @@ void edcamMove(struct nupad_s *pad)
     struct nuvec_s move;
     int ax;
 
-    if (pad->flags2 & 4) {
+    if (pad->valid) {
         if (edcam->adjust_zoom) {
-            edcam->dist += pad->r1 * edcam->zoom_speed;
-            edcam->dist -= pad->r2 * edcam->zoom_speed;
+            edcam->dist += pad->rdata.r1_alg * edcam->zoom_speed;
+            edcam->dist -= pad->rdata.r2_alg * edcam->zoom_speed;
             edcam->dist = (edcam->dist > -edcam->zoom_min) ? -edcam->zoom_min : edcam->dist;
         }
         if (edcam->adjust_pitch) {
-            ax = edcam->ax - NuPs2ApplyDeadZone(pad->r_dy, 0x20) * edcam->pitch_speed;
+            ax = edcam->ax - NuPs2ApplyDeadZone(pad->rdata.r_alg_y, 0x20) * edcam->pitch_speed;
             edcam->ax = (ax > 0x4000) ? 0x4000 : ax;
         }
         if (edcam->adjust_yaw) {
             edcam->ax = (edcam->ax < -0x4000) ? -0x4000 : edcam->ax;
-            edcam->ay -= NuPs2ApplyDeadZone(pad->r_dx, 0x20) * edcam->yaw_speed;
+            edcam->ay -= NuPs2ApplyDeadZone(pad->rdata.r_alg_x, 0x20) * edcam->yaw_speed;
         }
         move.x = move.y = move.z = 0.0f;
         if (edcam->adjust_y) {
-            move.y = pad->l1 * edcam->rise_speed;
-            move.y -= pad->l2 * edcam->fall_speed;
+            move.y = pad->rdata.l1_alg * edcam->rise_speed;
+            move.y -= pad->rdata.l2_alg * edcam->fall_speed;
         }
         if (edcam->adjust_z) {
-            move.z = -(float)NuPs2ApplyDeadZone(pad->l_dy, 0x20) * edcam->move_speed;
+            move.z = -(float)NuPs2ApplyDeadZone(pad->rdata.l_alg_y, 0x20) * edcam->move_speed;
         }
         if (edcam->adjust_x) {
-            move.x = NuPs2ApplyDeadZone(pad->l_dx, 0x20) * edcam->move_speed;
+            move.x = NuPs2ApplyDeadZone(pad->rdata.l_alg_x, 0x20) * edcam->move_speed;
         }
         NuVecRotateY(&move, &move, edcam->ay);
         NuVecAdd(&edcam->pos, &edcam->pos, &move);

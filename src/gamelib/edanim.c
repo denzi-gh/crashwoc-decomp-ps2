@@ -94,14 +94,8 @@
 #include "nu3d/nugscn.h"
 #include "nu3d/nuanim.h"
 #include "gamelib/terrain.h"
-
-struct debtypedef_s {
-    char name[0x10];
-    char pad10[0x20 - 0x10];
-    signed char gensort;
-    char pad21[0x50 - 0x21];
-    struct nuvec_s varstart;
-};
+#include "nups2/ps2ctl.h"
+#include "gamelib/debris.h"
 
 struct edanimitem_s {
     char pad00[0x0C];
@@ -124,18 +118,6 @@ struct eduimenu_s {
 
 struct eduistyle_s {
     unsigned int colour[4];
-};
-
-struct pad_s {
-    char pad000[0x55C];
-    unsigned int paddata;
-    char pad560[0x564 - 0x560];
-    unsigned int buttons;
-    char pad568[0x580 - 0x568];
-    unsigned char right_pressure;
-    unsigned char left_pressure;
-    unsigned char up_pressure;
-    unsigned char down_pressure;
 };
 
 struct edanimparam_s {
@@ -199,7 +181,6 @@ extern struct numtl_s *edanim_mtl;
 extern struct numtl_s *edanim_mtl_zoff;
 extern struct eduimenu_s *edanim_soundtype_menu;
 extern int edSfxAllCount;
-extern struct debtypedef_s *debtab[];
 
 extern void *app_fnt;
 extern struct eduistyle_s D_00619328;
@@ -463,7 +444,7 @@ extern void NuRndrLine2di(int x0, int y0, int x1, int y1, int colour, void *mtl)
 extern void NuFntSet(void *fnt);
 extern void NuFntSetPen(int colour);
 extern void NuFntPrintEx(int x, int y, int flags, char *fmt, ...);
-extern void edcamMove(struct pad_s *pad);
+extern void edcamMove(struct nupad_s *pad);
 extern void edcamSetPos(struct nuvec_s *pos);
 extern void edcamGetPosAng(struct nuvec_s *pos, int *ax, int *ay);
 extern void edanimParticleCreate(struct nuvec_s *wpos);
@@ -471,7 +452,7 @@ extern void edanimSoundCreate(struct nuvec_s *wpos);
 extern int edanimParamCreate(int special);
 extern void NuFntScale(int x, int y);
 extern void eduiMenuRender(void *menu);
-extern void eduiMenuProcess(void *menu, struct pad_s *pad);
+extern void eduiMenuProcess(void *menu, struct nupad_s *pad);
 extern int edanimFileSave(char *filename);
 extern int edanimFileLoad(char *filename);
 extern int NuFileSize(char *name);
@@ -557,7 +538,7 @@ extern void edanimSoundDestroy(int param, int slot);
 extern void edanimDrawCursor(void);
 extern void edanimRenderParticleEmitters(int param);
 extern void edanimRenderSoundEmitters(int param);
-extern void edanimDoInput(struct pad_s *pad);
+extern void edanimDoInput(struct nupad_s *pad);
 extern void edanimDetermineNearestAnim(float range);
 extern void edanimDetermineNearestParticle(float range);
 extern void edanimDetermineNearestSound(float range);
@@ -950,7 +931,7 @@ void edanimParticleCreate(struct nuvec_s *wpos)
         AnimParams[edanim_nearest_param_id].particle_roty[slot] = edanim_emitroty;
         AnimParams[edanim_nearest_param_id].particle_type[slot] = edanim_particle_type;
         strcpy(AnimParams[edanim_nearest_param_id].particle_name[slot],
-               debtab[edanim_particle_type]->name);
+               debtab[edanim_particle_type]->id);
         AnimParams[edanim_nearest_param_id].particle_rate[slot] = 1;
         AnimParams[edanim_nearest_param_id].particle_switch[slot] = 0;
         AnimParams[edanim_nearest_param_id].particle_count++;
@@ -999,7 +980,7 @@ inline void edanimParticlePlace(int slot, struct nuvec_s *wpos)
 }
 
 
-void edanimDoInput(struct pad_s *pad)
+void edanimDoInput(struct nupad_s *pad)
 {
     struct nuvec_s pos;
     int i;
@@ -1008,7 +989,7 @@ void edanimDoInput(struct pad_s *pad)
         edcamMove(pad);
     }
     if (pad->paddata & 0x100) {
-        if (!edanim_sound_mode && (pad->buttons & 0x80)) {
+        if (!edanim_sound_mode && (pad->paddata_db & 0x80)) {
             if (edanim_particle_mode) {
                 edanim_particle_mode = 0;
             } else if (edanim_nearest != -1 && edanim_nearest_param_id != -1) {
@@ -1016,7 +997,7 @@ void edanimDoInput(struct pad_s *pad)
                 edanim_particle_mode = 1;
             }
         }
-        if (!edanim_particle_mode && (pad->buttons & 0x10)) {
+        if (!edanim_particle_mode && (pad->paddata_db & 0x10)) {
             if (edanim_sound_mode) {
                 edanim_sound_mode = 0;
             } else if (edanim_nearest != -1 && edanim_nearest_param_id != -1) {
@@ -1026,14 +1007,14 @@ void edanimDoInput(struct pad_s *pad)
         }
         if (edanim_particle_mode) {
             if (edanim_nearest_particle != -1) {
-                if (pad->buttons & 0x8) {
+                if (pad->paddata_db & 0x8) {
                     edanim_nearest_particle++;
                     if (edanim_nearest_particle
                         == AnimParams[edanim_nearest_param_id].particle_count) {
                         edanim_nearest_particle = 0;
                     }
                 }
-                if (pad->buttons & 0x2) {
+                if (pad->paddata_db & 0x2) {
                     edanim_nearest_particle--;
                     if (edanim_nearest_particle == -1) {
                         edanim_nearest_particle =
@@ -1056,13 +1037,13 @@ void edanimDoInput(struct pad_s *pad)
             }
         } else if (edanim_sound_mode) {
             if (edanim_nearest_sound != -1) {
-                if (pad->buttons & 0x8) {
+                if (pad->paddata_db & 0x8) {
                     edanim_nearest_sound++;
                     if (edanim_nearest_sound == AnimParams[edanim_nearest_param_id].sound_count) {
                         edanim_nearest_sound = 0;
                     }
                 }
-                if (pad->buttons & 0x2) {
+                if (pad->paddata_db & 0x2) {
                     edanim_nearest_sound--;
                     if (edanim_nearest_sound == -1) {
                         edanim_nearest_sound = AnimParams[edanim_nearest_param_id].sound_count - 1;
@@ -1080,13 +1061,13 @@ void edanimDoInput(struct pad_s *pad)
             }
         } else {
             if (edanim_nearest != -1) {
-                if (pad->buttons & 0x8) {
+                if (pad->paddata_db & 0x8) {
                     edanim_nearest++;
                     if (edanim_nearest == edanim_base_scene->numspecial) {
                         edanim_nearest = 0;
                     }
                 }
-                if (pad->buttons & 0x2) {
+                if (pad->paddata_db & 0x2) {
                     edanim_nearest--;
                     if (edanim_nearest == -1) {
                         edanim_nearest = edanim_base_scene->numspecial - 1;
@@ -1109,10 +1090,10 @@ void edanimDoInput(struct pad_s *pad)
     }
     edcamGetPosAng(&edanim_cam_pos, &edanim_cam_ax, &edanim_cam_ay);
     if (!(pad->paddata & 0x100)) {
-        if (pad->buttons & 0x80) {
+        if (pad->paddata_db & 0x80) {
             edanim_active_menu = edanim_options_menu;
         }
-        if (pad->buttons & 0x40) {
+        if (pad->paddata_db & 0x40) {
             if (edanim_particle_mode) {
                 edanimParticleCreate(&edanim_cam_pos);
             } else if (edanim_sound_mode) {
@@ -1132,7 +1113,7 @@ void edanimDoInput(struct pad_s *pad)
                 }
             }
         }
-        if (pad->buttons & 0x10) {
+        if (pad->paddata_db & 0x10) {
             if (edanim_particle_mode) {
                 if (edanim_nearest_particle != -1) {
                     edanimParticleDestroy(edanim_nearest_param_id, edanim_nearest_particle);
@@ -1153,13 +1134,13 @@ void edanimDoInput(struct pad_s *pad)
         }
     }
     if (edanim_particle_mode) {
-        edanim_emitroty += pad->right_pressure;
-        edanim_emitroty -= pad->left_pressure;
-        edanim_emitrotz += pad->up_pressure;
+        edanim_emitroty += pad->rdata.l_algpad_r;
+        edanim_emitroty -= pad->rdata.l_algpad_l;
+        edanim_emitrotz += pad->rdata.l_algpad_u;
         if (edanim_emitrotz > 0) {
             edanim_emitrotz = 0;
         }
-        edanim_emitrotz -= pad->down_pressure;
+        edanim_emitrotz -= pad->rdata.l_algpad_d;
         if (edanim_emitrotz < -0x8000) {
             edanim_emitrotz = -0x8000;
         }
@@ -1408,7 +1389,7 @@ void edanimDrawCursor(void)
                 NuFntPrintEx(0x1810, 0xCD0, 0, cursor_text_no_type);
             } else {
                 NuFntPrintEx(0x1810, 0xCD0, 0, cursor_text_type,
-                             debtab[edanim_particle_type]->name);
+                             debtab[edanim_particle_type]->id);
             }
         } else if (edanim_sound_mode) {
             NuFntPrintEx(0x1810, 0xC30, 0, cursor_text_sounds,
@@ -1551,7 +1532,7 @@ void edanimcbParticleTypeMenu(struct eduimenu_s *menu)
                 }
                 eduiMenuAddItem(edanim_particletype_menu,
                                 eduiItemCheckCreate(i, &style, selected, 1,
-                                                    edanimcbSetParticleType, debtab[i]->name));
+                                                    edanimcbSetParticleType, debtab[i]->id));
                 if (selected == 1) {
                     edanim_particletype_menu->current = edui_last_item;
                 }
@@ -1756,7 +1737,7 @@ void edanimInit(void)
 void edanimRenderParticleEmitters(int param)
 {
     struct nuvec_s *origin;
-    struct debtypedef_s *type;
+    struct debinfo_s *type;
     int colour;
     int i;
 
@@ -1769,7 +1750,7 @@ void edanimRenderParticleEmitters(int param)
                     edbitsDrawCube(origin->x + AnimParams[param].particle_pos[i].x,
                                    origin->y + AnimParams[param].particle_pos[i].y,
                                    origin->z + AnimParams[param].particle_pos[i].z,
-                                   type->varstart.x, type->varstart.y, type->varstart.z,
+                                   type->variable_start.x, type->variable_start.y, type->variable_start.z,
                                    edanim_emitrotz, edanim_emitroty, 0, 0, 0xFF008000,
                                    edanim_mtl_zoff);
                 }
@@ -2083,7 +2064,7 @@ void edanimcbLocalParticleTypeMenu(struct eduimenu_s *menu)
                 }
                 eduiMenuAddItem(edanim_localparticletype_menu,
                                 eduiItemCheckCreate(i, &style, selected, 1,
-                                                    edanimcbSetLocalParticleType, debtab[i]->name));
+                                                    edanimcbSetLocalParticleType, debtab[i]->id));
                 if (selected == 1) {
                     edanim_localparticletype_menu->current = edui_last_item;
                 }
@@ -2373,7 +2354,7 @@ void edanimEnter(void)
 }
 
 
-int edanimProc(struct pad_s *pad)
+int edanimProc(struct nupad_s *pad)
 {
     if (edanim_active_menu != 0) {
         eduiMenuProcess(edanim_active_menu, pad);
@@ -2387,7 +2368,7 @@ int edanimProc(struct pad_s *pad)
     } else {
         edanimDetermineNearestAnim(1.0f);
     }
-    if (pad->buttons & 0x800) {
+    if (pad->paddata_db & 0x800) {
         edanim_particle_mode = 0;
         return 1;
     }
@@ -2414,7 +2395,7 @@ void edanimcbSetLocalParticleType(void *menu, struct edanimitem_s *item)
     edanim_localparticletype_menu = 0;
     AnimParams[edanim_nearest_param_id].particle_type[edanim_nearest_particle] = item->value;
     strcpy(AnimParams[edanim_nearest_param_id].particle_name[edanim_nearest_particle],
-           debtab[edanim_nearest_particle]->name);
+           debtab[edanim_nearest_particle]->id);
     edanim_particle_type = item->value;
 }
 

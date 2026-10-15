@@ -114,6 +114,7 @@
 #include "nu3d/nucamera.h"
 #include "nu3d/nugscn.h"
 #include "gamelib/terrain.h"
+#include "nups2/ps2ctl.h"
 
 /* Terrain collision info structures (offsets verified against retail asm). */
 typedef struct {
@@ -361,7 +362,6 @@ extern struct numtx_s tertempmat;
 extern struct nuvec4_s tertempvec4;
 
 extern f32 NuFsqrt(f32 x);
-extern s32 PadRecPtr(void);
 extern void *NuScratchAlloc32(s32 size);
 extern void NuScratchRelease(void);
 extern void ScanTerrain(s32 a0, s32 a1);

@@ -9,7 +9,7 @@
 
 struct NUHGOBJ_s;
 struct NUPOINTOFINTEREST_s;
-struct pad_s;
+struct nupad_s;
 struct shaddata_s;
 struct shadentry_s;
 
@@ -325,7 +325,7 @@ void PlayerStartPos(struct creature_s *c, struct nuvec_s *pos);
 s32 AddCreature(s32 character, s32 index, s32 i_aitab);
 s32 NewCharacterIdle(struct creature_s *c, struct CharacterModel *model);
 void UpdateCharacterIdle(struct creature_s *c, s32 character);
-void MovePlayer(struct creature_s *c, struct pad_s *pad);
+void MovePlayer(struct creature_s *c, struct nupad_s *pad);
 void ProcessCreatures(void);
 void EvalModelAnim(struct CharacterModel *model, struct anim_s *anim, struct numtx_s *m, struct numtx_s *tmtx, float ***dwa, struct numtx_s *mLOCATOR);
 s32 DrawCharacterModel(struct CharacterModel *model, struct anim_s *anim, struct numtx_s *mC, struct numtx_s *mS, s32 render, struct numtx_s *mR, struct numtx_s *loc_mtx, struct nuvec_s *loc_mom, struct obj_s *obj);

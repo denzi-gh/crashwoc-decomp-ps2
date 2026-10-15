@@ -50,33 +50,6 @@ extern char D_00632778[];
 
 #define lgt_file_fmt D_00632778
 
-struct glowlight_s {
-    struct nucolour3_s HighColour;
-    struct nucolour3_s LowColour;
-    struct nucolour3_s CurColour;
-    struct nucolour3_s ColDiff;
-    u16 Step;
-    u16 CurAngle;
-};
-
-struct lights_s {
-    s32 type;                       /* 0x00 */
-    struct nuvec_s pos;             /* 0x04 */
-    struct nuvec_s radius_pos;      /* 0x10 */
-    f32 radius;                     /* 0x1C */
-    u8 r;                           /* 0x20 */
-    u8 g;                           /* 0x21 */
-    u8 b;                           /* 0x22 */
-    u8 glow;                        /* 0x23 */
-    struct nucolour3_s colour;      /* 0x24 */
-    struct nuvec_s direction;       /* 0x30 */
-    u8 globalflag;                  /* 0x3C */
-    u8 blendtype;                   /* 0x3D */
-    u8 brightness;                  /* 0x3E */
-    struct glowlight_s *glowlight;  /* 0x40 */
-    u8 pad2;                        /* 0x44 */
-};                                  /* 0x48 */
-
 extern struct lights_s Lights[];
 
 /* Object light block filled by InitObjectLights (dir[3], col[3], AmbCol). */

@@ -31,13 +31,7 @@
 #include "game/gametypes.h"
 #include "gamelib/terrain.h"
 #include "game/creature.h"
-
-struct pad_s {
-    u8 unk_0x000[0x55C];
-    u32 paddata;            /* 0x55C */
-    u8 unk_0x560[0x4];
-    u32 buttons;            /* 0x564 */
-};
+#include "nups2/ps2ctl.h"
 
 extern void *edai_active_menu;
 extern s32 D_00631C3C;
@@ -64,7 +58,7 @@ extern f32 D_00633354;
 
 extern void eduiMenuDestroy(void *menu);
 extern void eduiMenuRender(void *menu);
-extern void eduiMenuProcess(void *menu, struct pad_s *pad);
+extern void eduiMenuProcess(void *menu, struct nupad_s *pad);
 extern s32 SaveAI(s32 arg);
 extern void *eduiCreateMessageMenu(s32 arg, void *msg, s32 mode);
 extern void edcamSet(void);
@@ -102,7 +96,7 @@ extern s32 VEHICLECONTROL;
 extern struct nuvec_s *pos_START;
 extern f32 edai_cam_ax;
 extern f32 edai_cam_ay;
-extern void edcamMove(struct pad_s *pad);
+extern void edcamMove(struct nupad_s *pad);
 extern void edcamGetPosAng(struct nuvec_s *pos, f32 *ax, f32 *ay);
 extern void AdjustPosY(struct nuvec_s *pos);
 
@@ -165,7 +159,7 @@ void edaiCbCancelSelectType(void);
 void edaiDRAW(void);
 void edaiDrawInfo(void);
 void edaiHIGHLIGHT(void);
-void edaiDoInput(struct pad_s *pad);
+void edaiDoInput(struct nupad_s *pad);
 
 void edaiHIGHLIGHT(void)
 {
@@ -489,7 +483,7 @@ void edaiInit(void)
     }
 }
 
-void edaiDoInput(struct pad_s *pad)
+void edaiDoInput(struct nupad_s *pad)
 {
     s32 i;
     struct aitype_s *type;
@@ -503,10 +497,10 @@ void edaiDoInput(struct pad_s *pad)
             edcamSetPos(&edai_cam_pos);
         }
     }
-    if (pad->buttons & 0x80) {
+    if (pad->paddata_db & 0x80) {
         edai_active_menu = edai_options_menu;
     }
-    if ((pad->buttons & 0x40) && LEVELAICOUNT != 0x60 && D_00631C40 >= 0) {
+    if ((pad->paddata_db & 0x40) && LEVELAICOUNT != 0x60 && D_00631C40 >= 0) {
         AITab[LEVELAICOUNT].pos[D_00631C48] = edai_cam_pos;
         AdjustPosY(&AITab[LEVELAICOUNT].pos[D_00631C48]);
         type = &AIType[D_00631C44];
@@ -517,7 +511,7 @@ void edaiDoInput(struct pad_s *pad)
             D_00631C48 = 0;
         }
     }
-    if (pad->buttons & 0x10) {
+    if (pad->paddata_db & 0x10) {
         if (D_00631C4C != -1) {
             LEVELAICOUNT--;
             if (D_00631C4C < LEVELAICOUNT) {
@@ -603,7 +597,7 @@ void edaiEnter(void)
     D_00631C48 = 0;
 }
 
-s32 edaiProc(struct pad_s *pad)
+s32 edaiProc(struct nupad_s *pad)
 {
     if (screendump) {
         return 0;
@@ -624,7 +618,7 @@ s32 edaiProc(struct pad_s *pad)
         D_00633354 = D_0062E34C;
     }
     edaiDoInput(pad);
-    if (pad->buttons & 0x800) {
+    if (pad->paddata_db & 0x800) {
         ResetAI();
         return 1;
     }

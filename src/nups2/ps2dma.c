@@ -45,27 +45,9 @@
 #include "nu_types.h"
 
 #include "nucore/nuerror.h"
+#include "nups2/nups2types.h"
 
-typedef struct DmaTag {
-    u16 qwc;
-    u8 pad;
-    u8 id;
-    u32 addr;
-    u32 vifcode[2];
-} __attribute__((aligned(16))) DmaTag;
-
-typedef struct GifTag {
-    u64 nloop : 15;
-    u64 eop : 1;
-    u64 pad16 : 30;
-    u64 pre : 1;
-    u64 prim : 11;
-    u64 flg : 2;
-    u64 nreg : 4;
-    u64 regs;
-} GifTag;
-
-typedef DmaTag *(*TagWalkFunc)(DmaTag *tag, void *user);
+typedef struct DmaTag *(*TagWalkFunc)(struct DmaTag *tag, void *user);
 
 #define VIF0_CHCR       (*(volatile int *)0x10008000)
 #define VIF0_QWC        (*(volatile int *)0x10008020)
@@ -155,26 +137,26 @@ typedef DmaTag *(*TagWalkFunc)(DmaTag *tag, void *user);
 #define GS_LABEL        0x62
 #define GS_NOP          0x7F
 
-extern DmaTag D_002EA550;
-extern DmaTag D_002EA560;
-extern DmaTag D_002EA570;
-extern DmaTag D_002EA580;
+extern struct DmaTag D_002EA550;
+extern struct DmaTag D_002EA560;
+extern struct DmaTag D_002EA570;
+extern struct DmaTag D_002EA580;
 extern u32 *D_0062F0E0;
-extern DmaTag *vpdmatag_curr;
+extern struct DmaTag *vpdmatag_curr;
 extern u32 *D_00633200;
-extern GifTag *D_00633208;
+extern struct GifTag *D_00633208;
 extern int D_0062F0D8;
 extern int D_0062F0DC;
 extern char D_00616E00[];
 extern char D_00617850[];
 extern int gs_dma_status;
 extern int vu1_dma_status;
-extern DmaTag *vu1_last_write;
-extern DmaTag *vu1_prev_write;
-extern DmaTag *gs_last_write;
-extern DmaTag *gs_prev_write;
-extern DmaTag *gs_termaddr;
-extern DmaTag *termaddr;
+extern struct DmaTag *vu1_last_write;
+extern struct DmaTag *vu1_prev_write;
+extern struct DmaTag *gs_last_write;
+extern struct DmaTag *gs_prev_write;
+extern struct DmaTag *gs_termaddr;
+extern struct DmaTag *termaddr;
 extern int cycle_steal;
 extern int D_0062F0E8;
 extern char D_006175F0[];
@@ -220,8 +202,8 @@ extern char D_00616DA0[], D_00616DB0[], D_00616DC0[], D_00616DD0[], D_00616DE0[]
 extern char D_00616DF0[];
 
 extern void NuStrCat(char *dst, char *src);
-extern void TagWalk(DmaTag *tag, TagWalkFunc walker);
-extern DmaTag *VifTagWalk(DmaTag *tag, void *user);
+extern void TagWalk(struct DmaTag *tag, TagWalkFunc walker);
+extern struct DmaTag *VifTagWalk(struct DmaTag *tag, void *user);
 int VU0_DmaGetStatus(void);
 int VU1_DmaGetStatus(void);
 
@@ -483,7 +465,7 @@ u64 *DirectDecode(u64 *packet, char *prefix, int qwc)
 {
     char indent[256] = "    ";
     char prim[256];
-    GifTag *gif;
+    struct GifTag *gif;
     u64 regs;
     char *eop;
     int nloop;
@@ -495,7 +477,7 @@ u64 *DirectDecode(u64 *packet, char *prefix, int qwc)
 
     NuStrCat(indent, prefix);
     while (qwc != 0) {
-        gif = (GifTag *)packet;
+        gif = (struct GifTag *)packet;
         switch ((int)gif->flg) {
         case 0:
             nloop = gif->nloop;
@@ -812,11 +794,11 @@ u32 *VTDecode(u32 *code, char *indent)
 }
 
 
-void TagWalk(DmaTag *tag, TagWalkFunc walker)
+void TagWalk(struct DmaTag *tag, TagWalkFunc walker)
 {
-    DmaTag *history[32];
+    struct DmaTag *history[32];
     char indent[256];
-    DmaTag *ret_stack[2];
+    struct DmaTag *ret_stack[2];
     int quiet_stack[2];
     int history_pos;
     int indent_len;
@@ -893,7 +875,7 @@ void TagWalk(DmaTag *tag, TagWalkFunc walker)
             ret_stack[depth] = tag + tag->qwc + 1;
             depth++;
         case 2:
-            tag = (DmaTag *)tag->addr;
+            tag = (struct DmaTag *)tag->addr;
             break;
         case 6:
             if (depth <= 0) {
@@ -931,26 +913,26 @@ u32 *gsBeginGifPacket(u32 *packet, int nloop, int eop, int pre, int prim,
     tag[0] = (nloop & 0x7FFF) | ((u64)(eop & 1) << 15)
         | ((u64)(pre & 1) << 46) | ((u64)(prim & 0x7FF) << 47)
         | ((u64)(flg & 3) << 58) | ((u64)nreg << 60);
-    giftag_curr = (GifTag *)tag;
+    giftag_curr = (struct GifTag *)tag;
     return packet + 4;
 }
 
 
 u32 *gsCloseGifPacket(u32 *packet)
 {
-    GifTag *tag = giftag_curr;
+    struct GifTag *tag = giftag_curr;
 
     switch (tag->flg) {
     case 0:
-        tag->nloop = (((u32)packet - (u32)tag - sizeof(GifTag)) >> 4)
+        tag->nloop = (((u32)packet - (u32)tag - sizeof(struct GifTag)) >> 4)
             / tag->nreg;
         break;
     case 1:
-        tag->nloop = (((u32)packet - (u32)tag - sizeof(GifTag)) >> 3)
+        tag->nloop = (((u32)packet - (u32)tag - sizeof(struct GifTag)) >> 3)
             / tag->nreg;
         break;
     case 2:
-        tag->nloop = ((u32)packet - (u32)tag - sizeof(GifTag)) >> 4;
+        tag->nloop = ((u32)packet - (u32)tag - sizeof(struct GifTag)) >> 4;
         break;
     }
     return packet;
@@ -1008,7 +990,7 @@ void NuScratchRelease(void)
 }
 
 
-DmaTag *vpDmaTag_Set(DmaTag *tag, u32 qwc, u32 id, u32 addr)
+struct DmaTag *vpDmaTag_Set(struct DmaTag *tag, u32 qwc, u32 id, u32 addr)
 {
     tag->qwc = qwc;
     tag->id = id << 4;
@@ -1020,7 +1002,7 @@ DmaTag *vpDmaTag_Set(DmaTag *tag, u32 qwc, u32 id, u32 addr)
 }
 
 
-DmaTag *vpDmaTag_Cnt(DmaTag *tag)
+struct DmaTag *vpDmaTag_Cnt(struct DmaTag *tag)
 {
     vpdmatag_curr = tag;
     *tag = dmatag_cnt;
@@ -1028,7 +1010,7 @@ DmaTag *vpDmaTag_Cnt(DmaTag *tag)
 }
 
 
-DmaTag *vpDmaTag_End(DmaTag *tag)
+struct DmaTag *vpDmaTag_End(struct DmaTag *tag)
 {
     vpdmatag_curr = tag;
     *tag = dmatag_end;
@@ -1036,7 +1018,7 @@ DmaTag *vpDmaTag_End(DmaTag *tag)
 }
 
 
-DmaTag *vpDmaTag_EndEx(DmaTag *tag, u32 vifcode0, u32 vifcode1)
+struct DmaTag *vpDmaTag_EndEx(struct DmaTag *tag, u32 vifcode0, u32 vifcode1)
 {
     vpdmatag_curr = tag;
     dmatag_end_ex.vifcode[0] = vifcode0;
@@ -1046,7 +1028,7 @@ DmaTag *vpDmaTag_EndEx(DmaTag *tag, u32 vifcode0, u32 vifcode1)
 }
 
 
-DmaTag *vpDmaTag_Ref(DmaTag *tag, u32 addr)
+struct DmaTag *vpDmaTag_Ref(struct DmaTag *tag, u32 addr)
 {
     vpdmatag_curr = tag;
     dmatag_ref.addr = addr;
@@ -1055,7 +1037,7 @@ DmaTag *vpDmaTag_Ref(DmaTag *tag, u32 addr)
 }
 
 
-void VU0_DmaWrite(DmaTag *tag)
+void VU0_DmaWrite(struct DmaTag *tag)
 {
     while (VU0_DmaGetStatus()) {
     }
@@ -1087,7 +1069,7 @@ int GS_DmaGetStatus(void)
 }
 
 
-void GS_DmaWrite(DmaTag *tag)
+void GS_DmaWrite(struct DmaTag *tag)
 {
     while (GS_DmaGetStatus()) {
     }
@@ -1107,7 +1089,7 @@ void GS_DmaWrite(DmaTag *tag)
 }
 
 
-void VU1_DmaWrite(DmaTag *tag)
+void VU1_DmaWrite(struct DmaTag *tag)
 {
     while (VU1_DmaGetStatus()) {
     }
@@ -1127,7 +1109,7 @@ void VU1_DmaWrite(DmaTag *tag)
 }
 
 
-void VU1_DmaWriteN(DmaTag *tag, int qwc)
+void VU1_DmaWriteN(struct DmaTag *tag, int qwc)
 {
     while (VU1_DmaGetStatus()) {
     }
@@ -1139,7 +1121,7 @@ void VU1_DmaWriteN(DmaTag *tag, int qwc)
 }
 
 
-void VU1_DmaRead(DmaTag *tag, int wait)
+void VU1_DmaRead(struct DmaTag *tag, int wait)
 {
     if (wait) {
         while (VU1_DmaGetStatus()) {
@@ -1238,13 +1220,13 @@ u32 *vtCloseDirect(u32 *packet)
 }
 
 
-DmaTag *VifTagDummy(DmaTag *tag, void *user)
+struct DmaTag *VifTagDummy(struct DmaTag *tag, void *user)
 {
     return tag;
 }
 
 
-DmaTag *VifTagWalk(DmaTag *tag, void *user)
+struct DmaTag *VifTagWalk(struct DmaTag *tag, void *user)
 {
     u32 *code;
     u32 *end;
@@ -1262,7 +1244,7 @@ DmaTag *VifTagWalk(DmaTag *tag, void *user)
     while (code < end) {
         code = VTDecode(code, user);
         if (vif_walk_abort) {
-            return (DmaTag *)code;
+            return (struct DmaTag *)code;
         }
     }
     if (code != end) {
@@ -1270,15 +1252,15 @@ DmaTag *VifTagWalk(DmaTag *tag, void *user)
         for (;;) {
         }
     }
-    return (DmaTag *)code;
+    return (struct DmaTag *)code;
 }
 
 
-u64 CrcChain(DmaTag *tag, int uncached)
+u64 CrcChain(struct DmaTag *tag, int uncached)
 {
-    DmaTag *stack[4];
+    struct DmaTag *stack[4];
     u64 *data;
-    DmaTag *next;
+    struct DmaTag *next;
     u64 crc;
     int depth;
     int qwc;
@@ -1287,7 +1269,7 @@ u64 CrcChain(DmaTag *tag, int uncached)
     depth = 0;
     crc = 0;
     if (uncached) {
-        tag = (DmaTag *)((u32)tag | 0x20000000);
+        tag = (struct DmaTag *)((u32)tag | 0x20000000);
     }
     while (tag) {
         crc += ((u64 *)tag)[0];
@@ -1299,14 +1281,14 @@ u64 CrcChain(DmaTag *tag, int uncached)
         case 5:
             stack[depth++] = tag + 1;
             data = (u64 *)(tag + 1);
-            next = (DmaTag *)tag->addr;
+            next = (struct DmaTag *)tag->addr;
             break;
         case 6:
             data = (u64 *)(tag + 1);
             next = stack[--depth];
             break;
         case 2:
-            next = (DmaTag *)tag->addr;
+            next = (struct DmaTag *)tag->addr;
             data = (u64 *)(tag + 1);
             break;
         case 0:

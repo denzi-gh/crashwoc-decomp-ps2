@@ -2,7 +2,7 @@
 #define NU3D_NUTEXANM_H
 
 struct numtl_s;
-struct nutexanimenv_s;
+struct nutexanimprog_s;
 union variptr_u;
 
 /* Texture animation: cycles a material through a list of texture ids. */
@@ -18,18 +18,35 @@ struct nutexanim_s {
     char *scriptname;                 /* 0x1C */
 }; /* 0x20 */
 
-struct NuFPar;
-struct nutexanimprog_s;
+/* Execution state of one texture animation program. */
+struct nutexanimenv_s {
+    struct nutexanimprog_s *prog;     /* 0x00 */
+    int pc;                           /* 0x04 */
+    int rep_count[16];                /* 0x08 */
+    int rep_start[16];                /* 0x48 */
+    int rep_ix;                       /* 0x88 */
+    int ra[16];                       /* 0x8C */
+    int ra_ix;                        /* 0xCC */
+    int pause;                        /* 0xD0 */
+    int pause_r;                      /* 0xD4 */
+    int pause_cnt;                    /* 0xD8 */
+    struct numtl_s *mtl;              /* 0xDC */
+    short *tids;                      /* 0xE0 */
+    int tex_ix;                       /* 0xE4 */
+    unsigned int dynalloc : 1;        /* 0xE8 */
+}; /* 0xEC */
+
+struct nufpar_s;
 
 void NuTexAnimProgAssembleEnd(struct nutexanimprog_s *prog);
 int NuTexAnimLabelIndex(char *name);
 int NuTexAnimXDefIndex(char *name);
-void pftaXDef(struct NuFPar *parser);
-void pftaGoto(struct NuFPar *parser);
-void pftaXRef(struct NuFPar *parser);
-void pftaBtex(struct NuFPar *parser);
-void pftaGosub(struct NuFPar *parser);
-void pftaUntiltex(struct NuFPar *parser);
+void pftaXDef(struct nufpar_s *parser);
+void pftaGoto(struct nufpar_s *parser);
+void pftaXRef(struct nufpar_s *parser);
+void pftaBtex(struct nufpar_s *parser);
+void pftaGosub(struct nufpar_s *parser);
+void pftaUntiltex(struct nufpar_s *parser);
 void NuTexAnimProgInit(struct nutexanimprog_s *prog);
 struct nutexanimprog_s *NuTexAnimProgReadScript(union variptr_u *buff, char *name);
 int NuTexAnimCondition(int condition, int value, int ref);
@@ -53,18 +70,18 @@ struct nutexanim_s *NuTexAnimCreate(union variptr_u *buff, struct nutexanimprog_
 void NuTexAnimAddList(struct nutexanim_s *anim);
 void NuTexAnimRemoveList(struct nutexanim_s *anim);
 void NuTexAnimProcess(void);
-void pftaTex(struct NuFPar *parser);
-void pftaTexAdj(struct NuFPar *parser);
-void pftaWait(struct NuFPar *parser);
-void pftaRate(struct NuFPar *parser);
-void pftaOn(struct NuFPar *parser);
-void pftaOff(struct NuFPar *parser);
-void pftaLabel(struct NuFPar *parser);
-void pftaRet(struct NuFPar *parser);
-void pftaRepeat(struct NuFPar *parser);
-void pftaRepend(struct NuFPar *parser);
-void pftaEnd(struct NuFPar *parser);
-void pftaScriptname(struct NuFPar *parser);
+void pftaTex(struct nufpar_s *parser);
+void pftaTexAdj(struct nufpar_s *parser);
+void pftaWait(struct nufpar_s *parser);
+void pftaRate(struct nufpar_s *parser);
+void pftaOn(struct nufpar_s *parser);
+void pftaOff(struct nufpar_s *parser);
+void pftaLabel(struct nufpar_s *parser);
+void pftaRet(struct nufpar_s *parser);
+void pftaRepeat(struct nufpar_s *parser);
+void pftaRepend(struct nufpar_s *parser);
+void pftaEnd(struct nufpar_s *parser);
+void pftaScriptname(struct nufpar_s *parser);
 void NuTexAnimResetList(struct nutexanim_s *anim);
 
 #endif /* NU3D_NUTEXANM_H */

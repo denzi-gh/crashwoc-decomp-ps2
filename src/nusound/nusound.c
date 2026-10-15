@@ -71,6 +71,7 @@
 #include "nucore/nuerror.h"
 #include "numath/numathtypes.h"
 #include "numath/nuvec4.h"
+#include "nusound/nusound.h"
 
 typedef struct sceSifRpcData {
     void *paddr;
@@ -99,13 +100,6 @@ typedef struct NuSoundLoopInfo {
     short right;
 } NuSoundLoopInfo;
 
-typedef struct SFXINFO {
-    char filename[0x20];
-    int pitch;
-    int loop_info;
-    int id;
-} SFXINFO;
-
 extern void NuFileGetCurrentPath(char *path);
 extern void sceSifInitRpc(unsigned int mode);
 extern int sceSifBindRpc(sceSifClientData *client, unsigned int request,
@@ -121,7 +115,7 @@ extern float NuFsqrt(float x);
 int NuSoundApply3d(struct nuvec_s *pos, int *left, int *right);
 
 void SOUND_CopyIOPBuffer(void);
-int init_adpcm(SFXINFO *sfx_info);
+int init_adpcm(struct nusound_filename_info_s *sfx_info);
 void TransferAllSpotFX(int first);
 void SOUND_StoreLocalStart(void);
 void SetIOPCommand(short command, short count);
@@ -153,7 +147,7 @@ extern float nusound_fade_end;
 extern int nusound_dpl_enabled;
 extern int NoSoundPlease;
 extern sceSifClientData D_006B4100;
-extern SFXINFO D_006B4128[];
+extern struct nusound_filename_info_s D_006B4128[];
 extern volatile unsigned char SOUND_SPUKeyStatus[];
 extern NuSoundLoopInfo NuSndLoopInfo[];
 extern struct nuvec_s *NuSoundListenPos;
@@ -412,12 +406,12 @@ static inline void check_and_start_stereo(int stream, int left_channel,
 }
 
 
-static inline void transfer_sample_infos(SFXINFO *info)
+static inline void transfer_sample_infos(struct nusound_filename_info_s *info)
 {
     int batch;
 
     batch = 12;
-    while (info->filename[0] != 0) {
+    while (info->Filename[0] != 0) {
         if (batch == 0) {
             FlushIOPCommand(0);
             batch = 12;
@@ -425,7 +419,7 @@ static inline void transfer_sample_infos(SFXINFO *info)
         batch--;
         if (sound_sample_count < 300) {
             sound_sample_info[sound_sample_count] = *info;
-            SetIOPCommandEx(0x1A, sizeof(SFXINFO), info);
+            SetIOPCommandEx(0x1A, sizeof(struct nusound_filename_info_s), info);
             info++;
             sound_sample_count++;
         } else {
@@ -494,7 +488,7 @@ void SOUND_CancelCheckStereo(void)
 }
 
 
-int init_adpcm(SFXINFO *sfx_info)
+int init_adpcm(struct nusound_filename_info_s *sfx_info)
 {
     int i;
 
@@ -568,7 +562,7 @@ void SOUND_InitAdpcmLocal(void)
 }
 
 
-void NuSoundInit(SFXINFO *sfx_info)
+void NuSoundInit(struct nusound_filename_info_s *sfx_info)
 {
     int i;
 
@@ -717,13 +711,13 @@ void NuSoundPlay(int sfx, int left, int right, int pitch)
         if (right <= -0x4000) {
             right = -0x3FFF;
         }
-        if (sound_sample_info[sfx].id >= 0x1000) {
+        if (sound_sample_info[sfx].ID >= 0x1000) {
             SChan = find_free_channel(SChan);
-            play_sfx(sound_sample_info[sfx].id, SChan, left, right, pitch,
+            play_sfx(sound_sample_info[sfx].ID, SChan, left, right, pitch,
                      Attack, Release);
             SChan = (SChan - 6 + 1) % 0x12 + 6;
         } else {
-            play_stream(sound_sample_info[sfx].id, 0x80, 0, left, right, pitch,
+            play_stream(sound_sample_info[sfx].ID, 0x80, 0, left, right, pitch,
                         2, Attack, Release);
         }
     }
@@ -747,7 +741,7 @@ void NuSoundPlayChan(int sfx, int left, int right, int pitch, int channel)
         if (right <= -0x4000) {
             right = -0x3FFF;
         }
-        sample = sound_sample_info[sfx].id;
+        sample = sound_sample_info[sfx].ID;
         if (sample >= 0x1000) {
             play_sfx(sample, channel, left, right, pitch, Attack, Release);
         } else {
@@ -762,13 +756,13 @@ void NuSoundPlay3d(struct nuvec_s *pos, int sfx, int left, int right, int pitch)
 {
     if (nusound_irx_loaded) {
         if (NuSoundApply3d(pos, &left, &right)) {
-            if (sound_sample_info[sfx].id >= 0x1000) {
+            if (sound_sample_info[sfx].ID >= 0x1000) {
                 SChan = find_free_channel(SChan);
-                play_sfx(sound_sample_info[sfx].id, SChan, left, right, pitch,
+                play_sfx(sound_sample_info[sfx].ID, SChan, left, right, pitch,
                          Attack, Release);
                 SChan = (SChan - 6 + 1) % 0x12 + 6;
             } else {
-                play_stream(sound_sample_info[sfx].id, 0x80, 0, left, right,
+                play_stream(sound_sample_info[sfx].ID, 0x80, 0, left, right,
                             pitch, 2, Attack, Release);
             }
         }
@@ -783,7 +777,7 @@ void NuSoundPlay3dChan(struct nuvec_s *pos, int sfx, int left, int right, int pi
 
     if (nusound_irx_loaded) {
         if (NuSoundApply3d(pos, &left, &right)) {
-            sample = sound_sample_info[sfx].id;
+            sample = sound_sample_info[sfx].ID;
             if (sample >= 0x1000) {
                 play_sfx(sample, channel, left, right, pitch, Attack, Release);
             } else {
@@ -798,8 +792,8 @@ void NuSoundPlay3dChan(struct nuvec_s *pos, int sfx, int left, int right, int pi
 void NuSoundPlayStereo(int sfx_left, int sfx_right, int left, int right,
                        int pitch)
 {
-    if (sound_sample_info[sfx_left].id < 0x1000
-        && sound_sample_info[sfx_right].id < 0x1000) {
+    if (sound_sample_info[sfx_left].ID < 0x1000
+        && sound_sample_info[sfx_right].ID < 0x1000) {
         printf(stereo_message);
         if (left >= 0x4000) {
             left = 0x3FFF;
@@ -814,9 +808,9 @@ void NuSoundPlayStereo(int sfx_left, int sfx_right, int left, int right,
             right = -0x3FFF;
         }
         NuSndSteroPitch = pitch;
-        play_stream(sound_sample_info[sfx_left].id, 0, 0, left, 0, 0, 2,
+        play_stream(sound_sample_info[sfx_left].ID, 0, 0, left, 0, 0, 2,
                     Attack, Release);
-        play_stream(sound_sample_info[sfx_right].id, 1, 1, 0, right, 0, 2,
+        play_stream(sound_sample_info[sfx_right].ID, 1, 1, 0, right, 0, 2,
                     Attack, Release);
         check_and_start_stereo(0, 1, pitch);
     }
@@ -826,8 +820,8 @@ void NuSoundPlayStereo(int sfx_left, int sfx_right, int left, int right,
 void NuSoundPlayStereo2(int sfx_left, int sfx_right, int left, int right,
                         int pitch)
 {
-    if (sound_sample_info[sfx_left].id < 0x1000
-        && sound_sample_info[sfx_right].id < 0x1000) {
+    if (sound_sample_info[sfx_left].ID < 0x1000
+        && sound_sample_info[sfx_right].ID < 0x1000) {
         printf(stereo2_message);
         if (left >= 0x4000) {
             left = 0x3FFF;
@@ -841,9 +835,9 @@ void NuSoundPlayStereo2(int sfx_left, int sfx_right, int left, int right,
         if (right <= -0x4000) {
             right = -0x3FFF;
         }
-        play_stream(sound_sample_info[sfx_left].id, 2, 2, left, 0, 0, 2,
+        play_stream(sound_sample_info[sfx_left].ID, 2, 2, left, 0, 0, 2,
                     Attack, Release);
-        play_stream(sound_sample_info[sfx_right].id, 3, 3, 0, right, 0, 2,
+        play_stream(sound_sample_info[sfx_right].ID, 3, 3, 0, right, 0, 2,
                     Attack, Release);
         check_and_start_stereo(2, 3, pitch);
     }
@@ -860,12 +854,12 @@ void NuSoundPlay3dLoopSfx(struct nuvec_s *pos, int sfx, int left, int right, int
         base_left = left;
         base_right = right;
         if (NuSoundApply3d(pos, &left, &right)) {
-            if (sound_sample_info[sfx].id >= 0x1000) {
+            if (sound_sample_info[sfx].ID >= 0x1000) {
                 info = find_loop_info(pos);
                 if (info) {
                     if (info->playing == 0) {
                         info->playing = 1;
-                        play_sfx(sound_sample_info[sfx].id, info->channel, left,
+                        play_sfx(sound_sample_info[sfx].ID, info->channel, left,
                                  right, pitch, Attack, Release);
                     } else {
                         set_channel_volume(info->channel, left, right);
@@ -955,7 +949,7 @@ int NuSoundStopStream(int stream)
 }
 
 
-void NuSoundLocalSet(SFXINFO *sfx_info, int unused, int first)
+void NuSoundLocalSet(struct nusound_filename_info_s *sfx_info, int unused, int first)
 {
     SOUND_RestoreLocalStart();
     sound_sample_count = first;
@@ -1223,7 +1217,7 @@ void SOUND_InitSPU(void)
 }
 
 
-void SOUND_AddSamples(SFXINFO *sfx_info)
+void SOUND_AddSamples(struct nusound_filename_info_s *sfx_info)
 {
     transfer_sample_infos(sfx_info);
     FlushIOPCommand(0);

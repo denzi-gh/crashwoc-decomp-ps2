@@ -19,6 +19,7 @@
 #include "numath/nuvec.h"
 #include "game/gametypes.h"
 #include "game/creature.h"
+#include "nusound/nusound.h"
 
 /* pSFX entry (offsets verified in GameMusic/GameSfxLoop), stride 0x30. */
 struct pSFX {
@@ -38,21 +39,13 @@ struct pSFX {
     struct nuvec_s Pos;   /* 0x24 */
 };                    /* 0x30 */
 
-/* NuSound filename record, stride 0x2C (verified in InitGlobalSfx). */
-typedef struct {
-    char Filename[0x20];
-    s32 Pitch;        /* 0x20 */
-    s32 LoopInfo;     /* 0x24 */
-    s32 ID;           /* 0x28 */
-} SFXINFO;
-
 extern struct pSFX SfxTabGLOBAL[];
-extern SFXINFO SfxInfo[];
+extern struct nusound_filename_info_s SfxInfo[];
 
 extern void NuStrCpy(char *dst, const char *src);
 extern void NuStrCat(char *dst, const char *src);
 extern void NuSoundSetGlobalDat(void *dat);
-extern void NuSoundInit(SFXINFO *info);
+extern void NuSoundInit(struct nusound_filename_info_s *info);
 
 extern char D_00632938[];  /* "SFX\" prefix */
 extern char D_00632940[];  /* filename suffix */
@@ -69,7 +62,7 @@ extern s32 gamesfx_pitch;
 extern s32 gamesfx_channel;
 extern s32 gamesfx_edbits;
 extern s32 PLAYERCOUNT;
-extern char GameCam[];
+extern struct cammtx_s GameCam[];
 
 extern void NuSoundPlay3d(struct nuvec_s *pos, s32 sfx, s32 volL, s32 volR,
                           s32 pitch);
@@ -184,9 +177,9 @@ void InitLevelSfxTables(void) {
 
 void InitGlobalSfx(void) {
     struct pSFX *src;
-    SFXINFO *base;
+    struct nusound_filename_info_s *base;
     struct pSFX *end;
-    SFXINFO *dst;
+    struct nusound_filename_info_s *dst;
 
     src = SfxTabGLOBAL;
     base = SfxInfo;
@@ -287,7 +280,7 @@ void GameSfx(s32 sfx, struct nuvec_s *pos) {
     s32 proximity;
     s32 type;
 
-    camPos = *(struct nuvec_s *)(GameCam + 0x30);
+    camPos = *(struct nuvec_s *)&GameCam[0].m._30;
     proximity = 0;
     if (sfx < 0) {
         goto cleanup;

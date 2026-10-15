@@ -78,12 +78,7 @@
 
 #include "nucore/nuerror.h"
 #include "nu3d/nuvport.h"
-
-/* GIF A+D pair: a GS register value followed by its register address. */
-typedef struct NuPs2GsReg {
-    u64 data;
-    u64 addr;
-} NuPs2GsReg;
+#include "nups2/nups2types.h"
 
 typedef struct GsDisplay {
     u64 dx : 12;
@@ -172,8 +167,8 @@ extern int scePadInit(int mode);
 extern int sceSifInitIopHeap(void);
 extern int sceSdRemoteInit(void);
 extern int sceGsSyncV(int mode);
-extern void sceGsSetHalfOffset(NuPs2GsReg *draw, short centre_x, short centre_y, short half_offset);
-extern void sceGsSetHalfOffset2(NuPs2GsReg *draw, short centre_x, short centre_y, short half_offset);
+extern void sceGsSetHalfOffset(struct NuPs2GsReg *draw, short centre_x, short centre_y, short half_offset);
+extern void sceGsSetHalfOffset2(struct NuPs2GsReg *draw, short centre_x, short centre_y, short half_offset);
 extern int sceGsSwapDBuffDc(GsDispEnv *db, int id);
 extern int FlushCache(int operation);
 extern int iFlushCache(int operation);
@@ -207,10 +202,10 @@ extern int D_0062F0A0;
 extern int gs_dma_status;
 extern int vu1_dma_status;
 extern int nutex_use_path3;
-extern NuPs2GsReg D_002EA190;
-extern NuPs2GsReg D_002EA1A0;
-extern NuPs2GsReg D_002EA300;
-extern NuPs2GsReg D_002EA310;
+extern struct NuPs2GsReg D_002EA190;
+extern struct NuPs2GsReg D_002EA1A0;
+extern struct NuPs2GsReg D_002EA300;
+extern struct NuPs2GsReg D_002EA310;
 extern char D_006164E0[];
 extern int D_0062F06C;
 extern int D_0062F074;
@@ -241,8 +236,8 @@ extern int ps2video_novsync;
 extern unsigned int ps2_video_size;
 extern int nuvideo_progressive_scan;
 extern int nurndr_half_offset;
-extern NuPs2GsReg D_002EA210;
-extern NuPs2GsReg D_002EA380;
+extern struct NuPs2GsReg D_002EA210;
+extern struct NuPs2GsReg D_002EA380;
 
 #define NuPs2FrameCount D_006331C4
 #define NuPs2SwapTime   D_0062F03C
@@ -1090,33 +1085,33 @@ void ps2videoGetFreeMem(int *pages, int *bytes)
 void *NuPs2CopyCurrentBackBuffer(void *buf)
 {
     if (NuPs2FrameCount & 1) {
-        memcpy(buf, &NuPs2FrameReg0, sizeof(NuPs2GsReg));
+        memcpy(buf, &NuPs2FrameReg0, sizeof(struct NuPs2GsReg));
     } else {
-        memcpy(buf, &NuPs2FrameReg1, sizeof(NuPs2GsReg));
+        memcpy(buf, &NuPs2FrameReg1, sizeof(struct NuPs2GsReg));
     }
-    return (char *)buf + sizeof(NuPs2GsReg);
+    return (char *)buf + sizeof(struct NuPs2GsReg);
 }
 
 
 void *NuPs2CopyCurrentFrontBuffer(void *buf)
 {
     if (NuPs2FrameCount & 1) {
-        memcpy(buf, &NuPs2FrameReg1, sizeof(NuPs2GsReg));
+        memcpy(buf, &NuPs2FrameReg1, sizeof(struct NuPs2GsReg));
     } else {
-        memcpy(buf, &NuPs2FrameReg0, sizeof(NuPs2GsReg));
+        memcpy(buf, &NuPs2FrameReg0, sizeof(struct NuPs2GsReg));
     }
-    return (char *)buf + sizeof(NuPs2GsReg);
+    return (char *)buf + sizeof(struct NuPs2GsReg);
 }
 
 
 void *NuPs2CopyCurrentZBuffer(void *buf)
 {
     if (NuPs2FrameCount & 1) {
-        memcpy(buf, &NuPs2ZBufReg0, sizeof(NuPs2GsReg));
+        memcpy(buf, &NuPs2ZBufReg0, sizeof(struct NuPs2GsReg));
     } else {
-        memcpy(buf, &NuPs2ZBufReg1, sizeof(NuPs2GsReg));
+        memcpy(buf, &NuPs2ZBufReg1, sizeof(struct NuPs2GsReg));
     }
-    return (char *)buf + sizeof(NuPs2GsReg);
+    return (char *)buf + sizeof(struct NuPs2GsReg);
 }
 
 

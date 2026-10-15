@@ -266,6 +266,19 @@ struct winfo_s {
     char pad4;                          /* 0x4F */
 }; /* 0x50 */
 
+/* A wumpa flying to the on-screen counter. */
+struct wscr_s {
+    struct nuvec_s pos;                 /* 0x00 */
+    float timer;                        /* 0x0C */
+    float xs;                           /* 0x10 */
+    float ys;                           /* 0x14 */
+    float scale;                        /* 0x18 */
+    signed char bonus;                  /* 0x1C */
+    char pad1;                          /* 0x1D */
+    char pad2;                          /* 0x1E */
+    char pad3;                          /* 0x1F */
+}; /* 0x20 */
+
 struct tubinfo_s {
     struct creature_s *c;               /* 0x00 */
     signed char track;                  /* 0x04 */
@@ -327,6 +340,69 @@ struct crateeditor_s {
     s32 character;                      /* 0x10 */
 }; /* 0x14 */
 
+struct cratecube_s {
+    struct crate_s *model;              /* 0x00 */
+    struct nuvec_s pos0;                /* 0x04 */
+    struct nuvec_s pos;                 /* 0x10 */
+    float oldy;                         /* 0x1C */
+    float shadow;                       /* 0x20 */
+    float mom;                          /* 0x24 */
+    float timer;                        /* 0x28 */
+    float duration;                     /* 0x2C */
+    signed char on;                     /* 0x30 */
+    signed char iRAIL;                  /* 0x31 */
+    short iALONG;                       /* 0x32 */
+    float fALONG;                       /* 0x34 */
+    u16 flags;                          /* 0x38 */
+    signed char type1;                  /* 0x3A */
+    signed char type2;                  /* 0x3B */
+    signed char type3;                  /* 0x3C */
+    signed char type4;                  /* 0x3D */
+    signed char newtype;                /* 0x3E */
+    signed char subtype;                /* 0x3F */
+    signed char i;                      /* 0x40 */
+    signed char metal_count;            /* 0x41 */
+    signed char appeared;               /* 0x42 */
+    signed char in_range;               /* 0x43 */
+    short dx;                           /* 0x44 */
+    short dy;                           /* 0x46 */
+    short dz;                           /* 0x48 */
+    short iU;                           /* 0x4A */
+    short iD;                           /* 0x4C */
+    short iN;                           /* 0x4E */
+    short iS;                           /* 0x50 */
+    short iE;                           /* 0x52 */
+    short iW;                           /* 0x54 */
+    short trigger;                      /* 0x56 */
+    signed char counter;                /* 0x58 */
+    signed char anim_cycle;             /* 0x59 */
+    short index;                        /* 0x5A */
+    float anim_time;                    /* 0x5C */
+    float anim_duration;                /* 0x60 */
+    float anim_speed;                   /* 0x64 */
+    u16 xrot0;                          /* 0x68 */
+    u16 zrot0;                          /* 0x6A */
+    u16 xrot;                           /* 0x6C */
+    u16 zrot;                           /* 0x6E */
+    u16 surface_xrot;                   /* 0x70 */
+    u16 surface_zrot;                   /* 0x72 */
+    short character;                    /* 0x74 */
+    short action;                       /* 0x76 */
+    struct nuvec_s colbox[2];           /* 0x78 */
+}; /* 0x90 */
+
+struct crategroup_s {
+    struct nuvec_s origin;              /* 0x00 */
+    float radius;                       /* 0x0C */
+    short iCrate;                       /* 0x10 */
+    short nCrates;                      /* 0x12 */
+    u16 angle;                          /* 0x14 */
+    signed char pad1;                   /* 0x16 */
+    signed char pad2;                   /* 0x17 */
+    struct nuvec_s minclip;             /* 0x18 */
+    struct nuvec_s maxclip;             /* 0x24 */
+}; /* 0x30 */
+
 struct VEHICLE {
     struct nuvec_s ActualWheelPosition[4]; /* 0x00 */
     struct nuvec_s OldWheelPosition[4]; /* 0x30 */
@@ -383,12 +459,59 @@ struct anim_s {
     u8 flags;                           /* 0x1B */
 }; /* 0x1C */
 
+/* Vehicle toggle point: switches the player into/out of a vehicle. */
+struct vtog_s {
+    struct nugspline_s *pTRIGGER;       /* 0x00 */
+    struct nugspline_s *pCAM;           /* 0x04 */
+    struct nugspline_s *pLOOK;          /* 0x08 */
+    struct numtx_s m;                   /* 0x0C */
+    struct nuvec_s pos;                 /* 0x4C */
+    struct anim_s anim;                 /* 0x58 */
+    signed char type;                   /* 0x74 */
+    signed char iRAIL;                  /* 0x75 */
+    short iALONG;                       /* 0x76 */
+    float fALONG;                       /* 0x78 */
+    u16 xrot;                           /* 0x7C */
+    u16 yrot;                           /* 0x7E */
+    u16 zrot;                           /* 0x80 */
+    char pad1;                          /* 0x82 */
+    char pad2;                          /* 0x83 */
+}; /* 0x84 */
+
 struct pdir_s {
     s32 Index;                          /* 0x00 */
     struct nuvec_s Direction;           /* 0x04 */
     struct nucolour3_s Colour;          /* 0x10 */
     float Distance;                     /* 0x1C */
 }; /* 0x20 */
+
+struct glowlight_s {
+    struct nucolour3_s HighColour;      /* 0x00 */
+    struct nucolour3_s LowColour;       /* 0x0C */
+    struct nucolour3_s CurColour;       /* 0x18 */
+    struct nucolour3_s ColDiff;         /* 0x24 */
+    u16 Step;                           /* 0x30 */
+    u16 CurAngle;                       /* 0x32 */
+}; /* 0x34 */
+
+/* One placed level light (Lights[]). */
+struct lights_s {
+    s32 type;                           /* 0x00 */
+    struct nuvec_s pos;                 /* 0x04 */
+    struct nuvec_s radius_pos;          /* 0x10 */
+    float radius;                       /* 0x1C */
+    u8 r;                               /* 0x20 */
+    u8 g;                               /* 0x21 */
+    u8 b;                               /* 0x22 */
+    u8 glow;                            /* 0x23 */
+    struct nucolour3_s colour;          /* 0x24 */
+    struct nuvec_s direction;           /* 0x30 */
+    u8 globalflag;                      /* 0x3C */
+    u8 blendtype;                       /* 0x3D */
+    u8 brightness;                      /* 0x3E */
+    struct glowlight_s *glowlight;      /* 0x40 */
+    u8 pad2;                            /* 0x44 */
+}; /* 0x48 */
 
 struct Nearest_Light_s {
     s32 AmbIndex;                       /* 0x00 */

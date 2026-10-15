@@ -87,6 +87,7 @@
 #include "gamelib/terrain.h"
 #include "game/creature.h"
 #include "nucore/nucoretypes.h"
+#include "nups2/ps2ctl.h"
 
 extern struct nuvec_s BaseWheelPosition[];
 extern f32 DotProduct(struct nuvec_s *a, struct nuvec_s *b);
@@ -423,18 +424,11 @@ extern s32 KillPlayer(struct obj_s *obj, s32 type);
 
 
 
-struct pad_s {
-    u8 unk_0x000[0x55C];            /* 0x000 (opaque) */
-    unsigned int buttons;           /* 0x55C (held buttons) */
-    u8 unk_0x560[0x1E];             /* 0x560 */
-    u8 l_alg_x;                     /* 0x57E */
-};
-
 extern s32 ProcessTimer(f32 *Timer);
 extern struct nuvec_s *SetNuVecPntr(f32 x, f32 y, f32 z);
 extern struct nuvec_s SetNuVec(f32 x, f32 y, f32 z);
 extern void AddGameDebris(s32 type, struct nuvec_s *pos);
-extern void DriveJeep(struct JEEPSTRUCT *Jeep, struct pad_s *Pad);
+extern void DriveJeep(struct JEEPSTRUCT *Jeep, struct nupad_s *Pad);
 extern void ProcessJeepMovement(struct JEEPSTRUCT *Jeep, f32 DeltaTime);
 extern struct nuvec_s TerrainVehicleSoft(struct VEHICLE *Vehicle,
                                          struct nuvec_s *Vel);
@@ -684,7 +678,7 @@ void TiltJeep(struct JEEPSTRUCT *Jeep, f32 DeltaTime) {
 }
 
 
-void MovePlayerJeep(struct creature_s *Cre, struct pad_s *Pad) {
+void MovePlayerJeep(struct creature_s *Cre, struct nupad_s *Pad) {
     struct JEEPSTRUCT *Jeep = &PlayerJeep;
     struct nuvec_s FirePos;
     struct nuvec_s FireVel;
@@ -697,7 +691,7 @@ void MovePlayerJeep(struct creature_s *Cre, struct pad_s *Pad) {
     Cre->Buggy = (struct NEWBUGGY *)Jeep;
     PlayerJeep.Cre = Cre;
     if (JamesInTheHouse != 0) {
-        s32 press = Pad->buttons & 0x20;
+        s32 press = Pad->paddata & 0x20;
         if (press != 0 && D_006332B0 == 0) {
             CurrentDebugJeep++;
             if (CurrentDebugJeep > 4) {
@@ -719,7 +713,7 @@ void MovePlayerJeep(struct creature_s *Cre, struct pad_s *Pad) {
     Jeep->aOldFrontWheelAng = Jeep->aFrontWheelAng;
     Jeep->MySpeed = 13.0f;
     if (ProcessTimer(&Jeep->FireTimer) != 0 && Jeep->CantMove == 0 &&
-        (Pad->buttons & 0x40) != 0) {
+        (Pad->paddata & 0x40) != 0) {
         FirePos = Jeep->Move.ActualPosition;
         FirePos.y += 0.5f;
         NuVecMtxRotate(&FireVel, SetNuVecPntr(0.0f, 5.0f, -10.0f),
@@ -908,7 +902,7 @@ void MovePlayerJeep(struct creature_s *Cre, struct pad_s *Pad) {
 }
 
 
-void DriveJeep(struct JEEPSTRUCT *Jeep, struct pad_s *Pad) {
+void DriveJeep(struct JEEPSTRUCT *Jeep, struct nupad_s *Pad) {
     short aRailAng = 0;
     f32 Steer;
     f32 Speed2;
@@ -940,8 +934,8 @@ void DriveJeep(struct JEEPSTRUCT *Jeep, struct pad_s *Pad) {
                     Jeep->aBaseMoveAng = best_cRPos->angle;
                 }
             }
-            Steer = Pad->l_alg_x - 0x7F;
-            if (Pad->buttons & 0x40) {
+            Steer = Pad->rdata.l_alg_x - 0x7F;
+            if (Pad->paddata & 0x40) {
                 Jeep->InputSpeed = 1.0f;
             } else {
                 Jeep->InputSpeed = 0.0f;

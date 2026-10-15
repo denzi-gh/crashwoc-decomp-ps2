@@ -64,6 +64,7 @@
 #include "gamelib/terrain.h"
 #include "game/creature.h"
 #include "nucore/nucoretypes.h"
+#include "nups2/ps2ctl.h"
 
 extern s32 Level;
 extern s32 level_part_2;
@@ -845,15 +846,6 @@ void SetLevel(void)
     AIVISRANGE = 25.0f;
 }
 
-struct nupad_s {
-    u8 unk_0x00[0x564];
-    u32 buttons;                 /* 0x564 */
-    u64 flags2;                  /* 0x568 */
-    u8 unk_0x570[0x57E - 0x570]; /* 0x570 */
-    u8 stick_x;                  /* 0x57E */
-    u8 stick_y;                  /* 0x57F */
-};
-
 extern struct nupad_s *Pad[];
 extern struct cursor_s Cursor;
 extern struct game_s Game;
@@ -878,8 +870,6 @@ extern s32 Demo;
 extern float tumble_time;
 extern float tumble_duration;
 
-extern s32 NuPs2ReadPad(struct nupad_s *pad);
-extern void SavePadRecord(char *path);
 extern void NewMenu(struct cursor_s *cur, s32 a, s32 b, s32 c);
 extern void ResetTimer(struct gtimer_s *t);
 extern void PauseGameAudio(s32 a);
@@ -924,7 +914,7 @@ void DoInput(void)
 
     if (NuPs2ReadPad(pad)) {
         if (pad_record != 0) {
-            if ((pad->buttons & 0x800) || player->obj.dead != 0) {
+            if ((pad->paddata_db & 0x800) || player->obj.dead != 0) {
                 SavePadRecord(PadRecordPath);
                 pad_record = 0;
             }
@@ -932,13 +922,13 @@ void DoInput(void)
         stick_bits = 0;
         {
             float lim = 85.0f;
-            float f = (float)pad->stick_x - 127.5f;
+            float f = (float)pad->rdata.l_alg_x - 127.5f;
             if (f < -lim) {
                 stick_bits = 0x8000;
             } else if (f > lim) {
                 stick_bits = 0x2000;
             }
-            f = (float)pad->stick_y - 127.5f;
+            f = (float)pad->rdata.l_alg_y - 127.5f;
             if (f < -lim) {
                 stick_bits |= 0x1000;
             } else if (f > lim) {
@@ -948,7 +938,7 @@ void DoInput(void)
         stick_bits_db = stick_bits & (stick_bits ^ stick_oldbits);
         stick_oldbits = stick_bits;
 
-        if (!(pad->buttons & 0x800)) {
+        if (!(pad->paddata_db & 0x800)) {
             return;
         }
         if (!(LDATA->flags & 1)) {
@@ -998,7 +988,7 @@ void DoInput(void)
         if (Pad[0] == 0) {
             return;
         }
-        if (Pad[0]->flags2 & 4) {
+        if (Pad[0]->valid) {
             return;
         }
         if (Demo != 0) {
@@ -1160,7 +1150,6 @@ void ResumeGame(void)
 }
 
 
-extern void NuPs2PadSetMotors(struct nupad_s *pad, s32 a, s32 b);
 
 void PauseRumble(void)
 {

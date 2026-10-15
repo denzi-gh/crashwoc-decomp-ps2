@@ -137,8 +137,8 @@ extern f32 D_0062D90C;
 void AddPanelDebris(f32 x, f32 y, s32 obj, f32 z, s32 flag);
 
 extern s32 new_power;
-extern u8 Game[];
-extern u8 Cursor[];
+extern struct game_s Game;
+extern struct cursor_s Cursor;
 extern s32 Level;
 extern u16 temp_xrot;
 extern u16 temp_zrot;
@@ -1412,8 +1412,8 @@ void PickupItem(struct obj_s *obj) {
                 new_power = 5;
                 break;
             }
-            Game[0x406] |= 1 << new_power;
-            NewMenu(Cursor, 0x1F, -1, -1);
+            Game.powerbits |= 1 << new_power;
+            NewMenu(&Cursor, 0x1F, -1, -1);
             GameSfx(0x26, 0);
             if (Level != 0x15 && Level != 0x18) {
                 player->obj.mom.x = 0.0f;
@@ -1849,7 +1849,7 @@ s32 KillGameObject(struct obj_s *obj, s32 anim) {
         ResetAnimPacket(&obj->anim, obj->die_action);
     }
     if (obj->flags & 0x20) {
-        boss_dead = (Game[Hub * 4 + 0x10] & 4) ? 2 : 1;
+        boss_dead = (Game.hub[Hub].flags & 4) ? 2 : 1;
     }
     if (obj->character == 0x46) {
         AddExtraLife(&pos, 2);
@@ -2926,8 +2926,8 @@ void PickupPower(s32 type) {
         new_power = 5;
         break;
     }
-    Game[0x406] |= 1 << new_power;
-    NewMenu(Cursor, 0x1F, -1, -1);
+    Game.powerbits |= 1 << new_power;
+    NewMenu(&Cursor, 0x1F, -1, -1);
     GameSfx(0x26, 0);
     if (Level != 0x15 && Level != 0x18) {
         player->obj.mom.x = 0.0f;

@@ -27,7 +27,6 @@
 #include "nu3d/nutex.h"
 #include "nucore/nuerror.h"
 #include "nups2/ps2txtr.h"
-typedef unsigned int u128 __attribute__((mode(TI)));
 
 typedef union QuantColour {
     u32 value;

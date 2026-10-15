@@ -77,10 +77,6 @@
 #include "nu3d/nuanim.h"
 #include "nucore/nucoretypes.h"
 
-struct nutexanimenv_s {
-    void *prog;                     /* 0x00 */
-};
-
 struct nusplinecfg_s {
     char *name;                     /* 0x00 */
     int ptsize;                     /* 0x04 */

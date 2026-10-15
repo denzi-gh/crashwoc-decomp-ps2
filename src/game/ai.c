@@ -44,6 +44,7 @@
 #include "game/gametypes.h"
 #include "gamelib/terrain.h"
 #include "game/creature.h"
+#include "gamelib/debris.h"
 
 /* AI path positions (D_005CA154 == AITab[0].pos): stride 0x80 per AI entry,
  * AIType[ai_type].label nuvec sub-points each. */
@@ -144,7 +145,7 @@ extern f32 DRAINWAWADY;                /* 0x00631b90 */
 extern f32 D_0062E264;                 /* DRAINDAMAGE anim rate */
 u16 SeekRot(u16 a, u16 target, s32 rate);
 
-extern struct cammtx_s GameCam;        /* 0x005864c8 */
+extern struct cammtx_s GameCam[];        /* 0x005864c8 */
 extern struct nuvec_s v001;
 extern f32 D_0062E26C;                 /* Spladoosh camera judder time */
 extern f32 D_0062E270;                 /* Spladoosh debris spread scale */
@@ -154,16 +155,7 @@ void Draw3DCharacter(struct nuvec_s *pos, s32 xrot, s32 yrot, s32 z,
                      struct CharacterModel *model, f32 scale, s32 action,
                      f32 anim_time, s32 last);
 
-/* debris emitter (debkeydata): PS2 stride 0x56C; delay at +0x4C2. */
-struct deb_s {
-    u8 pad0[0x4C0];          /* 0x000 */
-    s16 oncount;             /* 0x4C0 */
-    s16 delay;               /* 0x4C2 */
-    u8 pad1[0xA8];           /* 0x4C4 */
-}; /* 0x56C */
-
 extern struct gdeb_s GDeb[170];        /* 0x0060dd00 */
-extern struct deb_s debkeydata[];      /* 0x00320eb0 */
 extern struct nuvec_s punchpos1[4];    /* 0x005c7e08 */
 extern struct nuvec_s punchpos2[4];    /* 0x005c7e38 */
 void AddFiniteShotDebrisEffect(s32 *key, s32 effect, struct nuvec_s *pos, s32 n);
@@ -286,7 +278,7 @@ void FindGongBongerAnim(struct nuvec_s *pos, struct nuhspecial_s *out)
 
 s32 WaterCrunchFunction_Punch1(struct creature_s *c)
 {
-    struct deb_s *deb;
+    struct debkeydatatype_s *deb;
     s32 key;
     s32 i;
 
@@ -304,7 +296,7 @@ s32 WaterCrunchFunction_Punch1(struct creature_s *c)
 
 s32 WaterCrunchFunction_Punch2(struct creature_s *c)
 {
-    struct deb_s *deb;
+    struct debkeydatatype_s *deb;
     s32 key;
     s32 i;
 
@@ -422,7 +414,7 @@ s32 WaterCrunchFunction_Spladoosh(struct creature_s *c)
     s32 r;
 
     GameSfx(0x47, &c->obj.pos);
-    JudderGameCamera(&GameCam, D_0062E26C, 0);
+    JudderGameCamera(&GameCam[0], D_0062E26C, 0);
     NewRumble(&player->rumble, 0x7F);
     NewBuzz(&player->rumble, 0xA);
     for (i = 0; i < 0x40; i++) {
@@ -1799,7 +1791,7 @@ void MoveCreature(struct creature_s *c)
                 }
                 break;
             case 0x6C:
-                JudderGameCamera(&GameCam, 0.3f, 0);
+                JudderGameCamera(&GameCam[0], 0.3f, 0);
                 break;
             case 0x71:
                 if (KillPlayer(&plr->obj, GetDieAnim(&plr->obj, c->cmdcurr->i)) == 0) {

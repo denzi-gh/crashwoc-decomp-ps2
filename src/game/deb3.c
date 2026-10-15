@@ -32,6 +32,7 @@
 #include "game/gametypes.h"
 #include "gamelib/terrain.h"
 #include "game/creature.h"
+#include "nups2/ps2ctl.h"
 
 typedef struct
 {
@@ -154,15 +155,10 @@ struct firedrop_s {
     s32 type;             /* 0x10 */
 }; /* 0x14 */
 
-struct pad_s {
-    u8 unk_0x000[0x55C];  /* 0x000 */
-    u32 paddata;          /* 0x55C */
-};
-
 extern struct ldata_s *LDATA;
 extern struct objtab_s ObjTab[201];
 extern struct chase_s Chase[3];
-extern struct pad_s *Pad[];
+extern struct nupad_s *Pad[];
 extern struct nugscn_s *world_scene[32];
 extern struct nugspline_s *pVIS;
 extern s32 iVIS;

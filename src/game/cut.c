@@ -48,6 +48,7 @@
 #include "gamelib/gcutscn.h"
 #include "game/creature.h"
 #include "nucore/nucoretypes.h"
+#include "nups2/ps2ctl.h"
 
 extern struct game_s Game;
 extern s32 gamecut;
@@ -57,7 +58,7 @@ extern struct nuvec_s cutdir[];
 extern s32 cutmovie;
 extern s32 cut_on;
 extern s32 logos_played;
-extern char Cursor[];
+extern struct cursor_s Cursor;
 extern s32 D_00633388;
 #define cutworldix D_00633388
 
@@ -539,10 +540,6 @@ extern f32 HUBHOLOSCALE;
 extern f32 SPACEMASKADJUSTY;
 extern f32 FRONTENDCORTEXADJUSTY;
 
-struct nupad_s {
-    u8 unk_0x000[0x564];
-    u32 oldpaddata;       /* 0x564 */
-};
 extern struct gtimer_s CutTimer;
 extern struct nupad_s *Pad[];
 extern struct nuvec_s v000;
@@ -627,7 +624,7 @@ void UpdateGameCut(void) {
                 UpdateAnimPacket(model, &CutAnim, dt, 0.0f);
             }
             UpdateTimer(&CutTimer);
-            if (fadeval == 0 && Pad[0] != 0 && (Pad[0]->oldpaddata & 0x800)) {
+            if (fadeval == 0 && Pad[0] != 0 && (Pad[0]->paddata_db & 0x800)) {
                 if (Level == 0x28) {
                     new_level = gamecut_newlevel;
                 } else {
@@ -872,7 +869,7 @@ void locatorfn_fadeout(struct instNUGCUTSCENE_s *icutscene, struct NUGCUTLOCATOR
 
 void CutSceneEndFunction(struct instNUGCUTSCENE_s *icutscene) {
     if (cutmovie == 0) {
-        NewMenu(Cursor, 0, 0, -1);
+        NewMenu(&Cursor, 0, 0, -1);
         if (logos_played == 0) {
             GameMusic(0xaa, 0);
         }
@@ -908,7 +905,7 @@ void CutSceneNextFunction(struct instNUGCUTSCENE_s *icutscene) {
 
 void CutSceneNextLogoFunction(struct instNUGCUTSCENE_s *icutscene) {
     cutworldix++;
-    NewMenu(Cursor, 0, 0, -1);
+    NewMenu(&Cursor, 0, 0, -1);
     if (logos_played == 0) {
         GameMusic(0xaa, 0);
     }

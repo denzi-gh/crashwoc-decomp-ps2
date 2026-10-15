@@ -38,6 +38,7 @@
 #include "nu3d/numtl.h"
 #include "nu3d/nugobj.h"
 #include "nu3d/nugscn.h"
+#include "nups2/ps2ctl.h"
 
 struct edgraitem_s {
     char pad00[0x0C];
@@ -70,18 +71,6 @@ struct eduimenu_s {
 
 struct eduistyle_s {
     unsigned int colour[4];
-};
-
-struct pad_s {
-    char pad000[0x55C];
-    unsigned int paddata;
-    char pad560[0x564 - 0x560];
-    unsigned int buttons;
-    char pad568[0x580 - 0x568];
-    unsigned char right_pressure;
-    unsigned char left_pressure;
-    unsigned char up_pressure;
-    unsigned char down_pressure;
 };
 
 extern struct grassclump_s GrassClumps[64];
@@ -182,7 +171,7 @@ extern void NuFntSetPen(int colour);
 extern void NuFntPrintEx(int x, int y, int flags, char *fmt, ...);
 extern void edcamSetPos(struct nuvec_s *pos);
 extern void edcamGetPosAng(struct nuvec_s *pos, float *ax, float *ay);
-extern void eduiMenuProcess(void *menu, struct pad_s *pad);
+extern void eduiMenuProcess(void *menu, struct nupad_s *pad);
 extern void eduiCreateMessageMenu(void *menu, char *text, int flag);
 extern int NuFileSize(char *name);
 extern int edbitsLookupInstance(char *name);
@@ -394,7 +383,7 @@ inline void edgraClumpDestroy(int clump)
 }
 
 
-void edgraDoInput(struct pad_s *pad)
+void edgraDoInput(struct nupad_s *pad)
 {
     int i;
 
@@ -403,7 +392,7 @@ void edgraDoInput(struct pad_s *pad)
     }
     if (pad->paddata & 0x100) {
         if (edgra_nearest != -1) {
-            if (pad->buttons & 0x8) {
+            if (pad->paddata_db & 0x8) {
                 i = edgra_nearest;
                 do {
                     i++;
@@ -413,7 +402,7 @@ void edgraDoInput(struct pad_s *pad)
                 } while (GrassClumps[i].size == 0);
                 edgra_nearest = i;
             }
-            if (pad->buttons & 0x2) {
+            if (pad->paddata_db & 0x2) {
                 do {
                     edgra_nearest--;
                     if (edgra_nearest == -1) {
@@ -432,34 +421,34 @@ void edgraDoInput(struct pad_s *pad)
     }
     edcamGetPosAng(&edgra_cam_pos, &edgra_cam_ax, &edgra_cam_ay);
     if (!(pad->paddata & 0x100)) {
-        if (pad->buttons & 0x80) {
+        if (pad->paddata_db & 0x80) {
             edgra_active_menu = edgra_options_menu;
         }
-        if ((pad->buttons & 0x40) && edgra_instance_type != -1) {
+        if ((pad->paddata_db & 0x40) && edgra_instance_type != -1) {
             edgraClumpCreate(&edgra_cam_pos);
         }
         if ((pad->paddata & 0x20) && edgra_nearest != -1) {
             edgraClumpPlace(edgra_nearest, &edgra_cam_pos);
         }
-        if (pad->buttons & 0x10) {
+        if (pad->paddata_db & 0x10) {
             if (edgra_nearest != -1) {
                 edgraClumpDestroy(edgra_nearest);
             }
             edgra_nearest = -1;
         }
     }
-    edgra_radius += pad->up_pressure / 5000.0f;
-    edgra_radius -= pad->down_pressure / 5000.0f;
+    edgra_radius += pad->rdata.l_algpad_u / 5000.0f;
+    edgra_radius -= pad->rdata.l_algpad_d / 5000.0f;
     if (edgra_radius < 0.1f) {
         edgra_radius = 0.1f;
     }
     if (edgra_radius > 10.0f) {
         edgra_radius = 10.0f;
     }
-    if (pad->left_pressure == 0xFF || (pad->buttons & 0x8000)) {
+    if (pad->rdata.l_algpad_l == 0xFF || (pad->paddata_db & 0x8000)) {
         edgra_clump_size--;
     }
-    if (pad->right_pressure == 0xFF || (pad->buttons & 0x2000)) {
+    if (pad->rdata.l_algpad_r == 0xFF || (pad->paddata_db & 0x2000)) {
         edgra_clump_size++;
     }
     if (edgra_clump_size < 1) {
@@ -763,7 +752,7 @@ void edgraEnter(void)
 }
 
 
-int edgraProc(struct pad_s *pad)
+int edgraProc(struct nupad_s *pad)
 {
     if (edgra_active_menu != 0) {
         eduiMenuProcess(edgra_active_menu, pad);
@@ -771,7 +760,7 @@ int edgraProc(struct pad_s *pad)
     }
     edgraDoInput(pad);
     edgraDetermineNearestClump(1.0f);
-    if (pad->buttons & 0x800) {
+    if (pad->paddata_db & 0x800) {
         return 1;
     }
     return 0;
