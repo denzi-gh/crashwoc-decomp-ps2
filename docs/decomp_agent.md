@@ -217,16 +217,18 @@ Data-from-C verification supports that unit/range.
 
 ### Types and shared headers
 
-Types are moving from per-unit copies into shared headers in `include/`, with
-layouts that also hold on a 64-bit host. If a header in `include/` already
-defines a struct, include it instead of copying the struct into the unit.
+Every type shared by more than one unit is defined once in `include/`, with a
+layout that also holds on a 64-bit host; the type census keeps duplicate
+structs and typedefs at 0, so a copied definition fails `validate.yml`. If a
+header in `include/` already defines a struct, include it instead of copying
+the struct into the unit. A type that only one unit uses may stay in that unit.
 
 Layout of `include/` (the engine's own module structure):
 
 | Path | Holds |
 |---|---|
-| `include/nu_types.h`, `nu_stdarg.h`, `nu_libc.h` (later `nu_port.h`) | platform layer only: fixed-width types (`u8`..`s64`, `f32`, `nuintptr`), varargs, libc, port seams |
-| `include/<lib>/<lib>types.h` | structs shared by several modules of one library (`nu3d/nu3dtypes.h`) |
+| `include/nu_types.h`, `nu_stdarg.h`, `nu_libc.h` (later `nu_port.h`) | platform layer only: fixed-width types (`u8`..`s64`, `u128`, `f32`, `nuintptr`), varargs, libc, port seams |
+| `include/<lib>/<lib>types.h` | structs shared by several modules of one library (`game/gametypes.h`) |
 | `include/<lib>/<module>.h` | one per `src/<lib>/<module>.c`: that module's structs, `extern` globals and prototypes |
 
 Include them by path (`#include "nu3d/nugscn.h"`, `#include "nu_types.h"`);
@@ -283,6 +285,10 @@ Rules for type refactors:
    every includer); the readable alias stays in the `.c` file.
 7. `long` is 8 bytes under both compilers (pointers are 4): replace it with
    `s64`/`u64`, never `int`.
+8. Keep prototypes of `inline` functions out of module headers: GCC 2.95 emits
+   the out-of-line copies of `inline` functions in first-declaration order, so
+   a header prototype reorders the unit's code. Their callers keep a local
+   declaration.
 
 ## CLI quick reference
 
