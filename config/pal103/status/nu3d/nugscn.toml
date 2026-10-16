@@ -77,11 +77,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:00147dd0:NuNodeRead"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:00148128:CvtNodes"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:00148528:ReadTextureSet"
@@ -89,7 +89,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:001486a0:ReadMaterialSet"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:00148928:NuGScnDuplicate"
@@ -101,7 +101,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0044:00149690:ReadTexAnimSet"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:00149918:ReadNuIFFTexAnimSet"
@@ -113,7 +113,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:00149d50:ReadSplineSet"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:0014a060:DbgBlkType"
@@ -121,27 +121,27 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:0014a258:NuGScnLoadFix"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:0014a958:NuGScnUpdate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:0014aca8:NuGScnRndr3"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:0014af00:NuGScnRndr2"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:0014b428:NuGScnRndr"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:0014b670:NuSpecialSetAttr"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:0014baf0:NuGScnSetTmpWkspc"
@@ -233,7 +233,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:0014c6d8:CvtNuIFFNodeHierarchy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:0014c768:FindSplinePtSize"

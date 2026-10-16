@@ -274,6 +274,71 @@ extern float D_00560D44[]; /* ball vertical lift offset (far from $gp) */
 extern float D_0062DE9C;   /* ball momentum -> velocity divisor */
 extern float D_0062DEA0;   /* ball 'boing' vertical momentum */
 
+/* Full view of the player glider: struct glider_s (game/gametypes.h) only
+ * names the members other units touch; the flight model needs the rest. */
+struct gliderflight_s {
+    struct creature_s *Cre;             /* 0x000 */
+    struct nuvec_s vel;                 /* 0x004 */
+    s32 Dead;                           /* 0x010 */
+    s32 CocoDead;                       /* 0x014 */
+    f32 CocoDeadTimer;                  /* 0x018 */
+    f32 CocoDeathSpinX;                 /* 0x01C */
+    f32 CocoDeathSpinZ;                 /* 0x020 */
+    f32 NextEngRum;                     /* 0x024 */
+    f32 FixVelTimer;                    /* 0x028 */
+    f32 ImmuneAsteroidsTimer;           /* 0x02C */
+    struct nuvec_s Position;            /* 0x030 */
+    struct nuvec_s OldPosition;         /* 0x03C */
+    struct nuvec_s Velocity;            /* 0x048 */
+    struct nuvec_s Resolved;            /* 0x054 */
+    struct nuvec_s RailPoint;           /* 0x060 */
+    f32 RailAngle;                      /* 0x06C */
+    f32 TiltX;                          /* 0x070 */
+    f32 TiltZ;                          /* 0x074 */
+    f32 DestTiltX;                      /* 0x078 */
+    f32 DestTiltZ;                      /* 0x07C */
+    f32 AngleY;                         /* 0x080 */
+    f32 CamAngleY;                      /* 0x084 */
+    f32 CamTiltX;                       /* 0x088 */
+    f32 CamTornRecoverTimer;            /* 0x08C */
+    f32 InputX;                         /* 0x090 */
+    f32 InputZ;                         /* 0x094 */
+    s32 BarrelRoll;                     /* 0x098 */
+    f32 BarrelDelta;                    /* 0x09C */
+    f32 BarrelSpeedX;                   /* 0x0A0 */
+    s32 TerminalDive;                   /* 0x0A4 */
+    s32 TerminalDir;                    /* 0x0A8 */
+    f32 FireTimer;                      /* 0x0AC */
+    f32 HitTimer;                       /* 0x0B0 */
+    s32 AutoPilot;                      /* 0x0B4 */
+    s32 ForceTurn;                      /* 0x0B8 */
+    s32 HitPoints;                      /* 0x0BC */
+    char LocatorList[16];               /* 0x0C0 */
+    f32 LocatorTime[16];                /* 0x0D0 */
+    s32 InTornado;                      /* 0x110 */
+    s32 LastInTornado;                  /* 0x114 */
+    f32 InTornadoTime;                  /* 0x118 */
+    f32 TornadoSpin;                    /* 0x11C */
+    f32 InTornadoScale;                 /* 0x120 */
+    struct nuvec_s ApparentPosition;    /* 0x124 */
+    struct nuvec_s ApparentVelocity;    /* 0x130 */
+    struct nuvec_s PositionStack[30];   /* 0x13C */
+    struct nuvec_s VelocityStack[30];   /* 0x2A4 */
+    s32 StackIndx;                      /* 0x40C */
+    f32 Speed;                          /* 0x410 */
+    f32 TargetSpeed;                    /* 0x414 */
+    f32 NotInFrontTimer;                /* 0x418 */
+    f32 PullUpTimer;                    /* 0x41C */
+    f32 OverideTiltZ;                   /* 0x420 */
+    f32 TargetTimer;                    /* 0x424 */
+    struct nuvec_s *MovingTargetPoint;  /* 0x428 */
+    struct nuvec_s *MovingTargetVel;    /* 0x42C */
+    s32 TargetOn;                       /* 0x430 */
+    f32 TargetedTime;                   /* 0x434 */
+    s32 TargetMoving;                   /* 0x438 */
+    f32 NextHitSoundTimer;              /* 0x43C */
+}; /* 0x440 */
+
 void NuHGobjRndr(struct NUHGOBJ_s *hobj, struct numtx_s *m, s32 nlayers,
                  short *layer);
 
@@ -377,7 +442,7 @@ extern s32 D_005B7CA0[];   /* current rumble objectives (far) */
 extern struct nuvec_s D_005B44F8[]; /* weather boss position (far) */
 extern struct nugspline_s D_005B4548; /* weather boss spline (far) */
 extern struct nuvec_s D_006B75B0;   /* weather start pos temp (far) */
-extern struct glider_s PlayerGlider;   /* struct glider_s: creature.h */
+extern struct gliderflight_s PlayerGlider;
 extern struct nuvec_s v000;
 
 extern void ProcessFireFlyIntro(void);
@@ -764,7 +829,7 @@ void SetNewMaskStuff(s32 index, struct nuvec_s *centre, struct nuvec_s *offset,
     mask->tiltx[0] = tiltx;
 }
 
-void ProcessCrashteroidsIntro(void)
+inline void ProcessCrashteroidsIntro(void)
 {
     ProcessFireFlyIntro();
 }
@@ -813,7 +878,7 @@ void GliderWeatherBossRailStuff(struct creature_s *c)
     }
 }
 
-s32 GetCurrentFarmObjectives(void)
+inline s32 GetCurrentFarmObjectives(void)
 {
     s32 count = 0;
     s32 i;
@@ -952,7 +1017,7 @@ s32 WeatherBossNextAction(void)
     return 0;
 }
 
-s32 GetCurrentWeatherBossObjectives(void)
+inline s32 GetCurrentWeatherBossObjectives(void)
 {
     s32 total;
     s32 i;
@@ -1562,7 +1627,7 @@ extern struct NEWBUGGY PlayerAtlas;   /* far */
 extern void ProcessAtlasAtlasCollisions_a(struct NEWBUGGY *a, struct NEWBUGGY *b);
 extern void KillGameObject(struct obj_s *obj, s32 type);
 
-s32 GetCurrentFireFlyObjectives(void)
+inline s32 GetCurrentFireFlyObjectives(void)
 {
     s32 count = 0;
     s32 i;
@@ -1606,7 +1671,7 @@ void DrawWeatherResearchLevelExtra(void)
     DrawTorpedoTarget();
 }
 
-s32 GetCurrentWeatherResearchObjectives(void)
+inline s32 GetCurrentWeatherResearchObjectives(void)
 {
     s32 count = 0;
     s32 i;
@@ -1621,7 +1686,7 @@ s32 GetCurrentWeatherResearchObjectives(void)
     return count;
 }
 
-s32 GetCurrentSpaceArenaObjectives(void)
+inline s32 GetCurrentSpaceArenaObjectives(void)
 {
     s32 count = 0;
     s32 i;
@@ -2284,8 +2349,7 @@ static inline struct zoffa_s *FindFreeZoffa(void)
     return 0;
 }
 
-/* Near-match (stays asm): retail places the inlined FindFreeZoffa hit block
-   and the model-id switch arms differently, so this overflows its extent. */
+
 struct zoffa_s *InitZoffa(struct zoffa_s *ufo, struct zoffastart_s *start)
 {
     s32 index;
@@ -2293,42 +2357,42 @@ struct zoffa_s *InitZoffa(struct zoffa_s *ufo, struct zoffastart_s *start)
 
     if (ufo == 0) {
         ufo = FindFreeZoffa();
-        if (ufo == 0) {
+    }
+    if (ufo != 0) {
+        index = ufo - EnemyZoffa;
+        memset(ufo, 0, sizeof(struct zoffa_s));
+        ufo->pos.x = start->x;
+        ufo->pos.y = start->y;
+        ufo->pos.z = start->z;
+        ufo->yaw = start->angle;
+        ufo->destyaw = start->angle;
+        ufo->newaltitudetarget = -100.0f;
+        ufo->respawntimer = 10.0f;
+        ufo->active = 1;
+        ufo->hitpoints = 2;
+        if (Level == 0xD) {
+            switch (index) {
+            case 0: id = 0x5B; break;
+            case 1: id = 0x5E; break;
+            case 2: id = 0x5D; break;
+            default: id = 0x5C; break;
+            }
+        } else if (Level == 0x12) {
+            id = 0x5F;
+        } else {
+            switch (index) {
+            case 0: id = 0x82; break;
+            case 1: id = 0x83; break;
+            case 2: id = 0x84; break;
+            default: id = 0x85; break;
+            }
+        }
+        if (MyInitModelNew(&ufo->draw, id, 0x1D, 0, 0, &ufo->pos) == 0) {
             return 0;
         }
+        return ufo;
     }
-    index = ufo - EnemyZoffa;
-    memset(ufo, 0, sizeof(struct zoffa_s));
-    ufo->pos.x = start->x;
-    ufo->pos.y = start->y;
-    ufo->pos.z = start->z;
-    ufo->yaw = start->angle;
-    ufo->active = 1;
-    ufo->destyaw = start->angle;
-    ufo->newaltitudetarget = -100.0f;
-    ufo->hitpoints = 2;
-    ufo->respawntimer = 10.0f;
-    if (Level == 0xD) {
-        switch (index) {
-        case 0: id = 0x5B; break;
-        case 1: id = 0x5E; break;
-        case 2: id = 0x5D; break;
-        default: id = 0x5C; break;
-        }
-    } else if (Level == 0x12) {
-        id = 0x5F;
-    } else {
-        switch (index) {
-        case 0: id = 0x82; break;
-        case 1: id = 0x83; break;
-        case 2: id = 0x84; break;
-        default: id = 0x85; break;
-        }
-    }
-    if (MyInitModelNew(&ufo->draw, id, 0x1D, 0, 0, &ufo->pos) == 0) {
-        return 0;
-    }
-    return ufo;
+    return 0;
 }
 
 extern s32 SHEIGHT;
@@ -3186,7 +3250,7 @@ extern f32 EarthBossDeathTimer;
 extern s32 ChrisBigBossDead;
 extern void InitEarthBoss(void);
 
-void EarthBossReset(void)
+void EarthBossReset(s32 playerdead)
 {
     EarthBossJustEntered = 0;
     EarthBossDeathEffect = 0;
@@ -3333,14 +3397,14 @@ void MoveVehicle(struct creature_s *c, struct nupad_s *pad)
 extern f32 FireFlyIntroTween;
 extern void edppRegisterPointerToGameCharLocation(struct nuvec_s *loc);
 
-inline void InitGlider(struct glider_s *Glider, struct nuvec_s *StartPos, f32 StartAng)
+inline void InitGlider(struct gliderflight_s *Glider, struct nuvec_s *StartPos, f32 StartAng)
 {
     struct CharacterData *cdata;
     struct creature_s *cre;
     s32 i;
 
     WBIntroOn = 0;
-    memset(Glider, 0, sizeof(struct glider_s));
+    memset(Glider, 0, sizeof(struct gliderflight_s));
     Glider->Cre = player;
     if (StartPos != 0) {
         Glider->Position = *StartPos;
@@ -3433,7 +3497,7 @@ extern f32 CrashteroidsStartAngle;
 extern void ResetGameCameras(struct cammtx_s *cam, s32 n);
 extern void InitBigGuns(void);
 
-void WeatherResearchReset(void)
+void WeatherResearchReset(s32 playerdead)
 {
     struct nuvec_s start;
 
@@ -3609,7 +3673,7 @@ extern s32 new_level;
 extern s32 D_0063329C;
 #define glider_restart_timer D_0063329C
 
-inline void ExplodeGlider(struct glider_s *glider)
+inline void ExplodeGlider(struct gliderflight_s *glider)
 {
     NewBuzz(&player->rumble, BEENHITBIGBUZZTIME);
     NewRumble(&player->rumble, BEENHITBIGRUMTIME);
@@ -3637,11 +3701,90 @@ inline void ExplodeGlider(struct glider_s *glider)
 }
 
 
-void DeadGliderWB(struct glider_s *glider)
+void DeadGliderWB(struct gliderflight_s *glider)
 {
     if (glider->Dead == 0) {
         ExplodeGlider(glider);
     }
+}
+
+
+void DeadGliderCoco(struct gliderflight_s *glider)
+{
+    if (glider->CocoDead == 0) {
+        glider->CocoDead = 1;
+        glider->CocoDeadTimer = 3.0f;
+        glider->Velocity.x = frand() - 0.5f;
+        glider->Velocity.y = frand() - 0.5f;
+        glider->Velocity.z = frand() - 0.5f;
+        glider->CocoDeathSpinX = (frand() - 0.5f) * 360.0f;
+        glider->CocoDeathSpinZ = (frand() - 0.5f) * 360.0f;
+        NuVecNorm(&glider->Velocity, &glider->Velocity);
+        NuVecScale(&glider->Velocity, &glider->Velocity, 2.0f);
+        AddGameDebris(0x18, &glider->Position);
+    }
+    glider->HitPoints = 0;
+    NuVecScaleAccum(&glider->Position, &glider->Velocity, 0.02f);
+    glider->TiltX += glider->CocoDeathSpinX * 0.02f;
+    glider->TiltZ += glider->CocoDeathSpinZ * 0.02f;
+    if (ProcessTimer(&glider->CocoDeadTimer)) {
+        glider->CocoDeadTimer = 1000000.0f;
+        ExplodeGlider(glider);
+    }
+}
+
+
+extern f32 WBTILTZSCALE;
+extern f32 WBTILTXSCALE;
+extern f32 WBBARRELSPEED;
+extern f32 WBBARRELSEEKSPEEDZERO;
+extern f32 WBBARRELSEEKSPEEDNONZERO;
+
+void ProcessGliderMovementWB(struct gliderflight_s *glider)
+{
+    f32 dest;
+    struct nuvec_s roll;
+
+    if (WBIntroOn != 0) {
+        glider->Position = WBIntroGliderPos;
+        glider->Position.z = 0.0f;
+        return;
+    }
+    if (glider->BarrelRoll == 0) {
+        glider->Velocity.z = -Level_GliderSpeed;
+        glider->Velocity.x = glider->TiltZ * WBTILTZSCALE;
+        glider->Velocity.y = glider->TiltX * WBTILTXSCALE;
+    }
+    NuVecScaleAccum(&glider->Position, &glider->Velocity, 0.02f);
+    if (glider->Position.x > WBLIMX) {
+        glider->Position.x = WBLIMX;
+    }
+    if (glider->Position.x < -WBLIMX) {
+        glider->Position.x = -WBLIMX;
+    }
+    if (glider->Position.y > WBMAXY) {
+        glider->Position.y = WBMAXY;
+    }
+    if (glider->Position.y < WBMINY) {
+        glider->Position.y = WBMINY;
+    }
+    if (glider->BarrelRoll > 1) {
+        dest = -WBBARRELSPEED;
+    } else if (glider->BarrelRoll < -1) {
+        dest = WBBARRELSPEED;
+    } else {
+        dest = 0.0f;
+    }
+    if (dest == 0.0f) {
+        SeekHalfLife(&glider->BarrelSpeedX, dest, WBBARRELSEEKSPEEDZERO, 0.02f);
+    } else {
+        SeekHalfLife(&glider->BarrelSpeedX, dest, WBBARRELSEEKSPEEDNONZERO, 0.02f);
+    }
+    roll = SetNuVec(glider->BarrelSpeedX, 0.0f, 0.0f);
+    NuVecRotateY(&roll, &roll, (s32)(glider->AngleY * 182.04445f));
+    glider->Position.x += roll.x * 0.02f;
+    glider->Position.y += roll.y * 0.02f;
+    glider->Position.z += roll.z * 0.02f;
 }
 
 
@@ -3866,7 +4009,57 @@ void ProcessFireFlyLevel(struct nupad_s *pad)
 
 extern s32 FarmFrame;
 extern void FarmReset(s32 playerdead);
-extern void MovePlane(struct plane_s *plane);
+
+extern f32 Level_GliderCurrentCeiling;
+extern struct nuvec_s ZepplinGliderOffset;
+extern void GameSfx(s32 id, struct nuvec_s *pos);
+
+void MovePlane(struct plane_s *plane)
+{
+    s32 action;
+    s32 grabglider;
+
+    grabglider = 0;
+    if (plane->active != 0) {
+        action = plane->actionstatus;
+        switch (action) {
+        case 0:
+            grabglider = 1;
+            Level_GliderCurrentCeiling = 36.0f;
+            if (ProcessTimer(&plane->actiontimer) != 0) {
+                plane->actionstatus = 1;
+            }
+            break;
+        case 1:
+            plane->actiontimer = 1.0f;
+            plane->actionstatus = 2;
+            PlayerGlider.ForceTurn = action;
+            GameSfx(0x82, &player->obj.pos);
+            NewRumble(&player->rumble, 0x7F);
+            NewBuzz(&player->rumble, 5);
+            break;
+        case 2:
+            if (ProcessTimer(&plane->actiontimer) != 0) {
+                plane->actionstatus = 3;
+            }
+            break;
+        case 3:
+            plane->active = 0;
+            break;
+        }
+        NuVecScaleAccum(&plane->pos, &plane->vel, 0.02f);
+        PlayerGlider.AutoPilot = grabglider;
+        if (grabglider != 0) {
+            NuVecAdd(&PlayerGlider.Position, &plane->pos, &ZepplinGliderOffset);
+            D_006B75A0 = PlayerGlider.Position;
+            PlayerGlider.TiltX = 0.0f;
+            PlayerGlider.TiltZ = 0.0f;
+            PlayerGlider.Velocity = plane->vel;
+        }
+        MyAnimateModelNew(&plane->draw, 0.59999996f);
+    }
+}
+
 
 void ProcessFarmLevel(struct nupad_s *pad)
 {
@@ -3912,9 +4105,853 @@ void ProcessSpaceArenaLevel(struct nupad_s *pad)
     CheckForPotentialMidAirCollisions();
 }
 
-void ProcessWeatherResearchLevel(struct nupad_s *pad)
+inline void ProcessWeatherResearchLevel(struct nupad_s *pad)
 {
     ProcessGliderBullets();
     ProcessGliderBombs();
     ProcessBigGuns();
+}
+
+
+extern void ProcessWesternArenaLevel(struct nupad_s *pad);
+extern void ProcessEarthBossLevel(struct nupad_s *pad);
+extern void ProcessFireBossLevel(struct nupad_s *pad);
+extern s32 GetCurrentLevelObjectives(void);
+extern f32 FlyingLevelCompleteTimer;
+
+void ProcessVehicleLevel(struct nupad_s *pad)
+{
+    switch (Level) {
+    case 0xD:
+        ProcessFarmLevel(pad);
+        break;
+    case 0x12:
+        ProcessFireFlyLevel(pad);
+        break;
+    case 0x24:
+        ProcessWeatherResearchLevel(pad);
+        break;
+    case 0x18:
+        ProcessWeatherBossLevel(pad);
+        break;
+    case 0x1A:
+        ProcessSpaceArenaLevel(pad);
+        break;
+    case 0x3:
+        ProcessWesternArenaLevel(pad);
+        break;
+    case 0x15:
+        ProcessEarthBossLevel(pad);
+        break;
+    case 0x16:
+        ProcessFireBossLevel(pad);
+        break;
+    }
+    switch (Level) {
+    case 0x18:
+    case 0xD:
+    case 0x12:
+    case 0x1A:
+    case 0x24:
+        if (GetCurrentLevelObjectives() == 0) {
+            VehicleLevelImmune = 1;
+            FlyingLevelExtro = 1;
+            ProcessTimer(&FlyingLevelCompleteTimer);
+        }
+        break;
+    }
+}
+
+
+extern s32 GetCurrentFireBossObjectives(void);
+
+s32 GetCurrentLevelObjectives(void)
+{
+    switch (Level) {
+    case 0xD:
+        return GetCurrentFarmObjectives();
+    case 0x12:
+        return GetCurrentFireFlyObjectives();
+    case 0x1A:
+        return GetCurrentSpaceArenaObjectives();
+    case 0x18:
+        return GetCurrentWeatherBossObjectives();
+    case 0x24:
+        return GetCurrentWeatherResearchObjectives();
+    case 0x16:
+        return GetCurrentFireBossObjectives();
+    case 0x15:
+        return GetCurrentRumbleObjectives();
+    default:
+        return 0;
+    }
+}
+
+
+struct earthbossstate_s {
+    struct creature_s *owner;           /* 0x00 */
+    s32 whacko;                         /* 0x04 */
+    s32 type;                           /* 0x08 */
+    s32 dead;                           /* 0x0C */
+    s32 hitpoints;                      /* 0x10 */
+    s32 desthitpoints;                  /* 0x14 */
+    s32 hitpointcounter;                /* 0x18 */
+    s32 drawcrunch;                     /* 0x1C */
+    s32 drawshell;                      /* 0x20 */
+    f32 inhibitcontroltimer;            /* 0x24 */
+    s32 numattacks;                     /* 0x28 */
+    s32 action;                         /* 0x2C */
+    s32 lastaction;                     /* 0x30 */
+    f32 actiontimer;                    /* 0x34 */
+};
+
+extern f32 HitMag;
+extern s32 AtlasHitsLost;
+extern s32 D_005B7C94[];
+#define earthboss_whacko D_005B7C94
+extern char D_006316E0[]; /* "Enter" */
+extern char D_006316E8[]; /* "Form A" */
+extern char D_006316F0[]; /* "Form B" */
+extern char D_006316F8[]; /* "Stand" */
+extern char D_00631700[]; /* "Roll" */
+extern char D_0061F798[]; /* "WaitRoll" */
+extern char D_00631708[]; /* "Slow" */
+extern char D_0061F7A8[]; /* "Been Hit" */
+extern char D_0061F7B8[]; /* "Wait Camera" */
+extern char D_0061F7C8[]; /* "Wait Big Jump" */
+extern char D_0061F7D8[]; /* "Big Jump" */
+extern char D_00631710[]; /* "Whacko" */
+extern char D_00631718[]; /* "" */
+extern char D_0061F7E8[]; /* "Action %s" */
+extern char D_0061F7F8[]; /* "Timer %1.3f" */
+extern char D_0061F808[]; /* "HitMag %1.3f" */
+extern char D_0061F818[]; /* "Damage %d" */
+extern char D_0061F828[]; /* "Jonny On" */
+
+void PrintEarthBossAction(struct earthbossstate_s *boss)
+{
+    char *name;
+
+    NuFntSet(app_fnt);
+    NuFntSetPen(0x7F7F7F7F);
+    NuFntScale(0x10, 0x10);
+    switch (boss->action) {
+    case 0:
+        name = D_006316E0;
+        break;
+    case 1:
+        name = D_006316E8;
+        break;
+    case 2:
+        name = D_006316F0;
+        break;
+    case 3:
+        name = D_006316F8;
+        break;
+    case 4:
+        name = D_00631700;
+        break;
+    case 5:
+        name = D_0061F798;
+        break;
+    case 6:
+        name = D_00631708;
+        break;
+    case 7:
+        name = D_0061F7A8;
+        break;
+    case 8:
+        name = D_0061F7B8;
+        break;
+    case 9:
+        name = D_0061F7C8;
+        break;
+    case 10:
+        name = D_0061F7D8;
+        break;
+    case 11:
+        name = D_00631710;
+        break;
+    default:
+        name = D_00631718;
+        break;
+    }
+    NuFntPrintEx(0x80, SHEIGHT * 2, 0, D_0061F7E8, name);
+    NuFntPrintEx(0x80, SHEIGHT * 5 / 2, 0, D_0061F7F8, boss->actiontimer);
+    NuFntPrintEx(0x80, SHEIGHT * 3, 0, D_0061F808, HitMag);
+    NuFntPrintEx(0x80, SHEIGHT * 7 / 2, 0, D_0061F818, AtlasHitsLost);
+    if (earthboss_whacko[0] != 0) {
+        NuFntPrintEx(0x80, SHEIGHT * 4, 0, D_00631710);
+    }
+    if (JonnyOn != 0) {
+        NuFntPrintEx(0x80, SHEIGHT * 9 / 2, 0, D_0061F828);
+    }
+}
+
+
+extern struct nuvec_s GliderIntroCamPos;
+extern struct nuvec_s GliderIntroInterest;
+extern void WeatherBossReset(s32 playerdead);
+extern void WesternArenaReset(s32 playerdead);
+extern void FireBossReset(s32 playerdead);
+
+void ResetVehicleLevel(s32 playerdead)
+{
+    FlyingLevelCompleteTimer = 1.5f;
+    FireFlyIntroOldAction = -1;
+    VehicleLevelImmune = 0;
+    FlyingLevelExtro = 0;
+    FlyingLevelVictoryDance = 0;
+    FlyingLevelVictoryDanceTimer = 0;
+    FireFlyIntroAction = 0;
+    FireFlyIntroTween = 0.0f;
+    FireFlyIntroOn = 0;
+    GliderIntroInterest = v000;
+    GliderIntroCamPos = v000;
+    switch (Level) {
+    case 0xD:
+        FarmReset(playerdead);
+        break;
+    case 0x12:
+        FireFlyReset(playerdead);
+        break;
+    case 0x24:
+        WeatherResearchReset(playerdead);
+        break;
+    case 0x1A:
+        SpaceArenaReset(playerdead);
+        break;
+    case 0x18:
+        WeatherBossReset(playerdead);
+        break;
+    case 0x3:
+        WesternArenaReset(playerdead);
+        break;
+    case 0x16:
+        FireBossReset(playerdead);
+        break;
+    case 0x15:
+        EarthBossReset(playerdead);
+        break;
+    }
+    if (Level == 0x12) {
+        ProcessFireFlyIntro();
+    }
+    if (Level == 0x1A) {
+        ProcessCrashteroidsIntro();
+    }
+}
+
+
+extern struct nuvec_s SpaceFirePosA;
+extern struct nuvec_s SpaceFirePosB;
+extern f32 TornFireY;
+extern struct nuvec_s WeatherBossFirePoint;
+extern f32 WBBULLETSPEED;
+extern f32 WBBULLETFIRERATE;
+extern f32 TorpedoTime;
+extern f32 TARGETBLEEPTIME;
+extern s32 TORPTARGFAILBLEEPTIME;
+extern s32 TORPTARGBLEEPTIME;
+extern s32 TORPTARGAQUIREBLEEPTIME;
+extern s32 D_00633274;
+#define LastFireButton D_00633274
+extern f32 D_00633278;
+#define FireBleepTimer D_00633278
+extern struct nuvec_s D_0061F300;
+#define bullet_scale D_0061F300
+extern void NuVecMtxRotateVU0(struct nuvec_s *dst, struct nuvec_s *src, struct numtx_s *mtx);
+
+void GliderFire(struct gliderflight_s *glider, struct nupad_s *pad)
+{
+    s32 firebutton;
+    struct numtx_s mat;
+    struct nuvec_s spacetargetdir;
+    struct nuvec_s torntargetdir;
+    struct nuvec_s spacevel;
+    struct nuvec_s spacepos;
+    struct nuvec_s tornfiredir;
+    struct nuvec_s tornscale;
+    struct nuvec_s tornpos;
+    struct nuvec_s tornrot[2];
+    struct nuvec_s wbveldir;
+    struct nuvec_s wbscale;
+    struct nuvec_s wbfirept;
+    struct nuvec_s wbpos;
+    struct nuvec_s wbrot[2];
+    struct nuvec_s bombpos;
+
+    firebutton = pad->paddata & 0x40;
+
+    switch (Level) {
+    case 0x1A:
+        NuMtxSetRotationZ(&mat, (s32)(glider->TiltZ * 182.04445f));
+        NuMtxRotateX(&mat, (s32)((glider->TiltX * 2.0f - 10.0f) * 182.04445f));
+        NuMtxRotateY(&mat, (s32)(glider->AngleY * 182.04445f));
+        NuVecMtxRotateVU0(&spacetargetdir, SetNuVecPntr(0.0f, -3.5f, -133.33333f), &mat);
+        NuVecMtxRotateVU0(&GliderTargetPos, SetNuVecPntr(0.0f, -0.1f, 0.0f), &mat);
+        NuVecAdd(&GliderTargetPos, &GliderTargetPos, &glider->Position);
+        NuVecScaleAccum(&GliderTargetPos, &spacetargetdir, 0.74f);
+        break;
+    case 0xD:
+        NuMtxSetRotationZ(&mat, (s32)(glider->TiltZ * 182.04445f));
+        NuMtxRotateX(&mat, (s32)(glider->TiltX * 182.04445f));
+        NuMtxRotateY(&mat, (s32)(glider->AngleY * 182.04445f));
+        GliderTargetPos = *(struct nuvec_s *)&glider->Cre->mtxLOCATOR[1][0]._30;
+        NuVecMtxRotateVU0(&torntargetdir, SetNuVecPntr(0.0f, -8.5f, -50.0f), &mat);
+        NuVecScaleAccum(&GliderTargetPos, &torntargetdir, 1.5f);
+        break;
+    case 0x18:
+    default:
+        NuMtxSetRotationZ(&mat, (s32)(glider->TiltZ * 182.04445f));
+        NuMtxRotateX(&mat, (s32)((glider->TiltX + 0.0f) * 182.04445f));
+        NuMtxRotateY(&mat, (s32)(glider->AngleY * 182.04445f));
+        break;
+    }
+
+    if (glider->TerminalDive != 0) {
+        goto end;
+    }
+    ProcessTimer(&glider->FireTimer);
+    if (FlyingLevelExtro != 0) {
+        goto end;
+    }
+    if (WBIntroOn != 0) {
+        goto end;
+    }
+    if (FlyingLevelCompleteTimer == 0.0f) {
+        goto end;
+    }
+    if (glider->AutoPilot != 0) {
+        goto end;
+    }
+    if (glider->FireTimer != 0.0f) {
+        goto end;
+    }
+    if (!(pad->paddata & 0x40) && Level != 0x12 && Level != 0x24) {
+        goto end;
+    }
+
+    switch (Level) {
+    case 0x1A:
+        NuVecMtxRotateVU0(&spacevel, SetNuVecPntr(-SpaceFirePosA.x / 0.75f, 0.0f, -120.0f), &mat);
+        NuVecMtxRotateVU0(&spacepos, &SpaceFirePosA, &mat);
+        NuVecAdd(&spacepos, &spacepos, &glider->Position);
+        NuVecScaleAccum(&spacepos, &spacevel, -0.01f);
+        AddGliderBullet(&mat, &spacepos, &spacevel, 0);
+        NuVecMtxRotateVU0(&spacevel, SetNuVecPntr(-SpaceFirePosB.x / 0.75f, 0.0f, -120.0f), &mat);
+        NuVecMtxRotateVU0(&spacepos, &SpaceFirePosB, &mat);
+        NuVecAdd(&spacepos, &spacepos, &glider->Position);
+        NuVecScaleAccum(&spacepos, &spacevel, -0.01f);
+        AddGliderBullet(&mat, &spacepos, &spacevel, 0);
+        glider->FireTimer = 0.12f;
+        MyGameSfx(0xCF, &spacepos, 0x1FFF);
+        NewBuzz(&player->rumble, 3);
+        break;
+    case 0xD:
+        tornscale = bullet_scale;
+        NuVecMtxRotate(&tornrot[0], SetNuVecPntr(0.0f, 1.0f, 0.0f), &mat);
+        NuVecMtxRotate(&tornrot[1], SetNuVecPntr(1.0f, 0.0f, 0.0f), &mat);
+        tornfiredir = SetNuVec(0.0f, TornFireY, -50.0f);
+        NuVecMtxRotateVU0(&tornfiredir, &tornfiredir, &mat);
+        NuMtxScale(&mat, &tornscale);
+        tornpos = *(struct nuvec_s *)&glider->Cre->mtxLOCATOR[1][0]._30;
+        NuVecScaleAccum(&tornpos, &tornrot[0], (frand() - 0.5f) * 0.5f);
+        NuVecScaleAccum(&tornpos, &tornrot[1], (frand() - 0.5f) * 0.5f);
+        if (AddGliderBullet(&mat, &tornpos, &tornfiredir, 0) == 0) {
+            goto end;
+        }
+        glider->FireTimer = 0.12f;
+        GameSfx(0x8B, &tornpos);
+        NewBuzz(&player->rumble, 3);
+        break;
+    case 0x18:
+        wbscale = bullet_scale;
+        wbfirept = WeatherBossFirePoint;
+        NuVecMtxRotate(&wbrot[0], SetNuVecPntr(0.0f, 1.0f, 0.0f), &mat);
+        NuVecMtxRotate(&wbrot[1], SetNuVecPntr(1.0f, 0.0f, 0.0f), &mat);
+        wbpos = *(struct nuvec_s *)&glider->Cre->mtxLOCATOR[1][0]._30;
+        NuVecScaleAccum(&wbpos, &wbrot[0], (frand() - 0.5f) * 0.5f);
+        NuVecScaleAccum(&wbpos, &wbrot[1], (frand() - 0.5f) * 0.5f);
+        wbfirept.z -= (wbpos.z - WeatherBossFirePoint.z) / (WBBULLETSPEED - Level_GliderSpeed)
+                      * Level_GliderSpeed;
+        NuVecSub(&wbveldir, &wbfirept, &wbpos);
+        NuVecNorm(&wbveldir, &wbveldir);
+        NuVecScale(&wbveldir, &wbveldir, WBBULLETSPEED);
+        NuMtxScale(&mat, &wbscale);
+        if (AddGliderBullet(&mat, &wbpos, &wbveldir, 0) == 0) {
+            goto end;
+        }
+        glider->FireTimer = WBBULLETFIRERATE * 0.02f;
+        GameSfx(0x55, (struct nuvec_s *)&glider->Cre->mtxLOCATOR[1][0]._30);
+        NewBuzz(&player->rumble, 3);
+        break;
+    case 0x12:
+    case 0x24:
+        if (glider->TargetOn == 0) {
+            glider->TargetTimer = 0.0f;
+            glider->TargetedTime = 0.0f;
+        } else {
+            glider->TargetedTime += 0.02f;
+        }
+        if (glider->TargetOn != 0) {
+            if (StillLockedOnTarget(glider->MovingTargetPoint) == 0) {
+                MyGameSfx(0x4F, 0, 0x3FFF);
+                NewBuzz(&player->rumble, TORPTARGFAILBLEEPTIME);
+                glider->TargetOn = 0;
+            }
+        }
+        if (ProcessTimer(&glider->TargetTimer) != 0) {
+            if (glider->TargetOn != 0) {
+                if (firebutton == 0) {
+                    glider->TargetOn = 0;
+                    if (Level == 0x24) {
+                        NuMtxTranslate(&mat, &glider->Position);
+                        NuVecMtxTransform(&bombpos, SetNuVecPntr(-2.0f, 0.0f, 0.0f), &mat);
+                        AddGliderBomb(&bombpos, &glider->Velocity, glider->AngleY, 0,
+                                      glider->MovingTargetPoint, glider->MovingTargetVel,
+                                      glider->TargetMoving);
+                        NuVecMtxTransform(&bombpos, SetNuVecPntr(2.0f, 0.0f, 0.0f), &mat);
+                        AddGliderBomb(&bombpos, &glider->Velocity, glider->AngleY, 0,
+                                      glider->MovingTargetPoint, glider->MovingTargetVel,
+                                      glider->TargetMoving);
+                        glider->FireTimer = TorpedoTime;
+                        NewBuzz(&player->rumble, 6);
+                        NewRumble(&player->rumble, 0xB4);
+                    } else {
+                        if (AddGliderBomb((struct nuvec_s *)&glider->Cre->mtxLOCATOR[1][0]._30,
+                                          &glider->Velocity, glider->AngleY, 0,
+                                          glider->MovingTargetPoint, glider->MovingTargetVel,
+                                          glider->TargetMoving) == 0) {
+                            goto end;
+                        }
+                        glider->FireTimer = TorpedoTime;
+                        MyGameSfx(0xCE, &glider->Position, 0x3FFF);
+                        NewBuzz(&player->rumble, 6);
+                        NewRumble(&player->rumble, 0xB4);
+                    }
+                } else if (ProcessTimer(&FireBleepTimer) != 0) {
+                    FireBleepTimer = TARGETBLEEPTIME;
+                    if (Level == 0x12) {
+                        MyGameSfx(0xD2, 0, 0x1800);
+                        NewBuzz(&player->rumble, TORPTARGBLEEPTIME);
+                    }
+                }
+            } else if (firebutton != 0
+                       && PickGliderTarget(&glider->MovingTargetPoint, &glider->MovingTargetVel,
+                                           &glider->TargetMoving) != 0) {
+                if (Level == 0x12) {
+                    MyGameSfx(0xD2, 0, 0x1800);
+                }
+                NewBuzz(&player->rumble, TORPTARGAQUIREBLEEPTIME);
+                glider->TargetOn = 1;
+                glider->TargetTimer = Level_TargetTime;
+            }
+        } else {
+            if (firebutton == 0) {
+                MyGameSfx(0x4F, 0, 0x3FFF);
+                glider->TargetOn = 0;
+            }
+            FireBleepTimer = TARGETBLEEPTIME;
+        }
+        break;
+    }
+
+end:
+    LastFireButton = firebutton;
+}
+
+
+extern f32 WBIntroDestTiltX;
+extern f32 WBIntroDestTiltZ;
+extern f32 CRASHTEROIDSSeekTiltXTimeZero;
+extern f32 CRASHTEROIDSSeekTiltXTimeNonZero;
+extern f32 TORNSeekTiltXTimeZero;
+extern f32 TORNSeekTiltXTimeNonZero;
+extern f32 SeekTiltZOveride;
+extern f32 SeekTiltZZero;
+extern f32 SeekTiltZNonZero;
+extern f32 fsign(f32 x);
+
+void ControlGlider(struct gliderflight_s *glider, struct nupad_s *pad)
+{
+    f32 anx;
+    f32 anz;
+    f32 relx;
+    f32 relz;
+    f32 radius;
+    struct nuvec_s ctrl;
+    struct nuvec_s input;
+    f32 mag;
+    f32 oldtiltz;
+    f32 angle;
+    f32 tilt;
+    f32 delta;
+    f32 mintiltx;
+    f32 maxtiltx;
+    f32 mindest;
+    f32 maxdest;
+    double absval;
+    s32 turn;
+    s32 ang;
+    struct nuvec_s *pos;
+
+    pos = &glider->Position;
+    relz = 0.0f;
+    relx = relz;
+    radius = relz;
+
+    if (Level != 0x18) {
+        ProcessTimer(&glider->PullUpTimer);
+        relx = glider->Position.x - Level_GliderCentreX;
+        relz = pos->z - Level_GliderCentreZ;
+        radius = NuFsqrt(relx * relx + relz * relz);
+        if (Level != 0x12 && glider->InTornadoTime == 0.0f && glider->AutoPilot == 0
+            && radius < Level_GliderRadius && glider->TerminalDive == 0
+            && glider->ForceTurn == 0 && FlyingLevelExtro == 0) {
+            if ((pad->paddata & 0x2) && (u32)glider->BarrelRoll < 2) {
+                glider->BarrelRoll = 3;
+                GameSfx(0x5C, pos);
+            } else if ((pad->paddata & 0x1) && (u32)(glider->BarrelRoll + 1) < 2) {
+                glider->BarrelRoll = -3;
+                GameSfx(0x5C, &glider->Position);
+            }
+        }
+    }
+
+    anx = (f32)(pad->rdata.l_alg_x - 0x7F);
+    anz = (f32)(pad->rdata.l_alg_y - 0x7F);
+    if (pad->paddata & PAD_DOWN) {
+        anz = 127.0f;
+    }
+    if (pad->paddata & PAD_UP) {
+        anz = -127.0f;
+    }
+    if (pad->paddata & PAD_RIGHT) {
+        anx = 127.0f;
+    }
+    if (pad->paddata & PAD_LEFT) {
+        anx = -127.0f;
+    }
+    if (FlyingLevelExtro != 0 || glider->AutoPilot != 0 || glider->InTornadoTime > 0.0f
+        || (Level == 0x18 && WBIntroOn != 0)) {
+        anz = 0.0f;
+        anx = anz;
+    }
+    ctrl.x = anx;
+    ctrl.y = 0.0f;
+    ctrl.z = -anz;
+    mag = NuVecMag(&ctrl);
+    if (mag >= 32.0f) {
+        ang = NuAtan2D(ctrl.x, ctrl.z) & 0xFFFF;
+        tilt = (mag - 32.0f) * 1.02f / 96.0f;
+        absval = tilt;
+        if (absval < 0.0) {
+            absval = -absval;
+        }
+        if (absval >= 1.0) {
+            input.z = fsign(tilt);
+        } else {
+            input.z = tilt;
+        }
+        input.x = input.y = 0.0f;
+        NuVecRotateY(&input, &input, ang);
+        glider->InputX = input.x;
+        glider->InputZ = input.z;
+    } else {
+        glider->InputX = 0.0f;
+        glider->InputZ = 0.0f;
+    }
+
+    if (glider->TerminalDive != 0) {
+        if (glider->TerminalDir == 0) {
+            glider->TerminalDir = ((s32)(frand() * 16.0) & 2) - 1;
+        }
+        glider->InputZ = 0.8f;
+        glider->InputX = (f32)glider->TerminalDir * 0.5f;
+    }
+
+    if (Level == 0x18 && WBIntroOn != 0) {
+        glider->DestTiltX = WBIntroDestTiltX;
+    } else {
+        glider->DestTiltX = -glider->InputZ * 40.0f;
+    }
+
+    if (glider->TerminalDive == 0 && WBIntroOn == 0) {
+        mintiltx = -100.0f;
+        maxtiltx = 100.0f;
+        if (glider->PullUpTimer != 0.0f) {
+            mintiltx = glider->PullUpTimer * 40.0f;
+        }
+        if (glider->Position.y < Level_GliderFloor + 1.3f) {
+            mintiltx = (Level_GliderFloor + 1.3f - glider->Position.y) * 10.0f;
+        }
+        if (glider->Position.y > Level_GliderCurrentCeiling - 1.3f) {
+            maxtiltx = (glider->Position.y - (Level_GliderCurrentCeiling - 1.3f)) * -10.0f;
+        } else {
+            Level_GliderCurrentCeiling = Level_GliderCeiling;
+        }
+        if (glider->DestTiltX > maxtiltx) {
+            glider->DestTiltX = maxtiltx;
+        }
+        if (glider->DestTiltX < mintiltx) {
+            glider->DestTiltX = mintiltx;
+        }
+    }
+
+    if (Level == 0x1A) {
+        if (glider->DestTiltX == 0.0f) {
+            SeekAngHalfLife360f(&glider->TiltX, glider->DestTiltX, CRASHTEROIDSSeekTiltXTimeZero, 0.02f);
+        } else {
+            SeekAngHalfLife360f(&glider->TiltX, glider->DestTiltX, CRASHTEROIDSSeekTiltXTimeNonZero, 0.02f);
+        }
+    } else if (Level == 0xD) {
+        if (glider->DestTiltX == 0.0f) {
+            SeekAngHalfLife360f(&glider->TiltX, glider->DestTiltX, TORNSeekTiltXTimeZero, 0.02f);
+        } else {
+            SeekAngHalfLife360f(&glider->TiltX, glider->DestTiltX, TORNSeekTiltXTimeNonZero, 0.02f);
+        }
+    } else {
+        SeekAngHalfLife360f(&glider->TiltX, glider->DestTiltX, 0.2f, 0.02f);
+    }
+
+    if (glider->BarrelRoll != 0) {
+        oldtiltz = Rationalise360f(glider->TiltZ);
+        if (glider->BarrelRoll == 2 && glider->TiltZ > -45.0f) {
+            glider->BarrelRoll = 1;
+        }
+        if (glider->BarrelRoll == -2 && glider->TiltZ < 45.0f) {
+            glider->BarrelRoll = -1;
+        }
+        if ((u32)(glider->BarrelRoll + 1) > 2 || glider->TiltZ > 30.0f || glider->TiltZ < -30.0f) {
+            SeekHalfLife(&glider->BarrelDelta, 7.2f, 0.05f, 0.02f);
+        } else if (glider->TiltZ > 1.0f || glider->TiltZ < -1.0f) {
+            absval = glider->TiltZ * 20.0f * 0.02f * 0.5f;
+            if (absval < 0.0) {
+                absval = -absval;
+            }
+            glider->BarrelDelta = absval;
+        } else {
+            glider->BarrelDelta = 1.0f;
+        }
+        if (glider->BarrelRoll > 0) {
+            angle = Rationalise360f(oldtiltz + glider->BarrelDelta);
+            glider->TiltZ = angle;
+            if (oldtiltz >= 0.0f && angle < 0.0f) {
+                glider->BarrelRoll = 2;
+            }
+        } else {
+            angle = Rationalise360f(oldtiltz - glider->BarrelDelta);
+            glider->TiltZ = angle;
+            if (oldtiltz <= 0.0f && angle > 0.0f) {
+                glider->BarrelRoll = -2;
+            }
+        }
+        if ((glider->BarrelRoll == 1 && oldtiltz < 0.0f && glider->TiltZ >= 0.0f)
+            || (glider->BarrelRoll == -1 && oldtiltz > 0.0f && glider->TiltZ <= 0.0f)) {
+            glider->BarrelRoll = 0;
+            glider->TiltZ = 0.0f;
+        }
+        if (glider->BarrelRoll != 0) {
+            return;
+        }
+    }
+
+    turn = 0;
+    if (glider->OverideTiltZ == 0.0f) {
+        glider->DestTiltZ = glider->InputX * 60.0f;
+    }
+    if (Level == 0x18 && WBIntroOn != 0) {
+        glider->DestTiltZ = WBIntroDestTiltZ;
+    }
+    if (Level == 0x18) {
+        delta = Rationalise360f(glider->RailAngle - glider->AngleY);
+        absval = glider->Position.x;
+        if (absval < 0.0) {
+            absval = -absval;
+        }
+        if (absval > 10.0) {
+            if (glider->Position.x > 10.0f && delta > 0.0f) {
+                turn = 1;
+            } else if (glider->Position.x < -10.0f && delta < 0.0f) {
+                turn = 1;
+            }
+        }
+    } else if (radius > Level_GliderRadius || glider->ForceTurn != 0) {
+        turn = 1;
+        angle = (f32)NuAtan2D(relx, relz) / 182.04445f;
+        delta = Rationalise360f(angle - glider->AngleY);
+    } else {
+        delta = 0.0f;
+    }
+
+    if (turn != 0) {
+        mindest = -1000.0f;
+        maxdest = 1000.0f;
+        absval = delta;
+        if (absval < 0.0) {
+            absval = -absval;
+        }
+        if (absval < 2.0) {
+            glider->ForceTurn = 0;
+        }
+        if (delta > 90.0f) {
+            mindest = 60.0f;
+        } else if (delta > 0.0f) {
+            mindest = delta / 1.5f;
+        } else if (delta < -90.0f) {
+            maxdest = -60.0f;
+        } else {
+            maxdest = delta / 1.5f;
+        }
+        if (glider->DestTiltZ > maxdest) {
+            glider->DestTiltZ = maxdest;
+        }
+        if (glider->DestTiltZ < mindest) {
+            glider->DestTiltZ = mindest;
+        }
+    }
+
+    if (glider->OverideTiltZ != 0.0f) {
+        SeekAngHalfLife360f(&glider->TiltZ, glider->DestTiltZ, SeekTiltZOveride, 0.02f);
+    } else if (glider->DestTiltZ == 0.0f) {
+        SeekAngHalfLife360f(&glider->TiltZ, glider->DestTiltZ, SeekTiltZZero, 0.02f);
+    } else {
+        SeekAngHalfLife360f(&glider->TiltZ, glider->DestTiltZ, SeekTiltZNonZero, 0.02f);
+    }
+}
+
+
+extern s32 BEENHITTORNBUZZTIME;
+extern s32 BEENHITTORNRUMTIME;
+extern f32 FIXVELFADETIME;
+extern f32 WBFRICX;
+extern f32 WBFRICY;
+
+void ProcessGliderMovement(struct gliderflight_s *glider, f32 dt)
+{
+    struct numtx_s in;
+    struct numtx_s out;
+    struct nuvec_s resolved;
+    struct nuvec_s temp;
+    struct nuvec_s keepvel;
+    struct nuvec_s target;
+    f32 scale;
+    f32 dest;
+
+    ProcessTimer(&glider->InTornadoTime);
+
+    if (glider->InTornado != 0 && glider->LastInTornado == 0) {
+        f32 spin;
+
+        spin = frand() * 360.0f;
+        keepvel.x = 0.0f;
+        keepvel.y = frand() * 25.0f - 12.5f;
+        keepvel.z = frand() * 15.0f + 45.0f;
+        temp = keepvel;
+        if (Level != 0x1A) {
+            NuVecRotateY(&temp, &temp, (s32)(spin * 182.04445f));
+            NuVecScale(&temp, &temp, glider->InTornadoScale);
+            glider->Velocity = temp;
+        }
+        glider->TornadoSpin = (frand() * 1200.0f - 600.0f) * glider->InTornadoScale;
+        GameSfx(0x5C, 0);
+        if (Level != 0x1A && InvincibilityCHEAT == 0 && VehicleLevelImmune == 0) {
+            if (glider->InTornadoTime <= 0.0f) {
+                glider->HitPoints -= glider->InTornadoScale * 12.5f;
+            }
+            if (glider->HitPoints < 0) {
+                glider->HitPoints = 0;
+            }
+        }
+        NewBuzz(&player->rumble, BEENHITTORNBUZZTIME);
+        NewRumble(&player->rumble, BEENHITTORNRUMTIME);
+        glider->InTornadoTime = 2.0f;
+        glider->CamTornRecoverTimer = 1.0f;
+    }
+
+    if (glider->InTornadoTime != 0.0f) {
+        glider->AngleY += glider->TornadoSpin * 0.02f * glider->InTornadoTime;
+    } else if (glider->BarrelRoll == 0) {
+        if (Level == 0x18) {
+            glider->AngleY = 0.0f;
+        } else {
+            glider->AngleY += glider->TiltZ * 2.0f * dt;
+        }
+    }
+
+    if (Level == 0x1A) {
+        NuMtxSetRotationY(&in, (s32)(-glider->AngleY * 182.04445f));
+        NuMtxRotateX(&in, (s32)(-glider->TiltX * 2.0f * 182.04445f));
+        NuMtxRotateZ(&in, (s32)(-glider->TiltZ * 182.04445f));
+        NuMtxSetRotationZ(&out, (s32)(glider->TiltZ * 182.04445f));
+        NuMtxRotateX(&out, (s32)(glider->TiltX * 2.0f * 182.04445f));
+        NuMtxRotateY(&out, (s32)(glider->AngleY * 182.04445f));
+    } else {
+        NuMtxSetRotationY(&in, (s32)(-glider->AngleY * 182.04445f));
+        NuMtxRotateX(&in, (s32)(-glider->TiltX * 182.04445f));
+        NuMtxRotateZ(&in, (s32)(-glider->TiltZ * 182.04445f));
+        NuMtxSetRotationZ(&out, (s32)(glider->TiltZ * 182.04445f));
+        NuMtxRotateX(&out, (s32)(glider->TiltX * 182.04445f));
+        NuMtxRotateY(&out, (s32)(glider->AngleY * 182.04445f));
+    }
+
+    ProcessTimer(&glider->FixVelTimer);
+    keepvel = glider->Velocity;
+    if (glider->FixVelTimer > FIXVELFADETIME) {
+        scale = 1.0f;
+    } else {
+        scale = glider->FixVelTimer / FIXVELFADETIME;
+    }
+    NuVecMtxRotate(&resolved, &glider->Velocity, &in);
+    {
+        f32 pitchscale;
+
+        pitchscale = 1.0f - glider->TiltX * 0.01f;
+        if (glider->BarrelRoll != 0) {
+            glider->TargetSpeed = -Level_GliderSpeed * 0.125f;
+        } else {
+            glider->TargetSpeed = -Level_GliderSpeed;
+        }
+        SeekHalfLife(&glider->Speed, glider->TargetSpeed, 1.0f, 0.02f);
+        target.z = glider->Speed * pitchscale;
+        target.x = 0.0f;
+        target.y = 0.0f;
+    }
+    if (Level == 0x18) {
+        SeekHalfLife(&resolved.x, target.x, 0.2f, dt);
+        SeekHalfLife(&resolved.y, target.y, 0.1f, dt);
+        SeekHalfLife(&resolved.z, target.z, 0.5f, dt);
+    } else {
+        SeekHalfLife(&resolved.x, target.x, WBFRICX, dt);
+        SeekHalfLife(&resolved.y, target.y, WBFRICY, dt);
+        SeekHalfLife(&resolved.z, target.z, 0.5f, dt);
+    }
+    NuVecMtxRotate(&glider->Velocity, &resolved, &out);
+    NuVecScale(&glider->Velocity, &glider->Velocity, 1.0f - scale);
+    NuVecScaleAccum(&glider->Velocity, &keepvel, scale);
+
+    if (glider->AutoPilot == 0) {
+        glider->Position.x += glider->Velocity.x * dt;
+        glider->Position.y += glider->Velocity.y * dt;
+        glider->Position.z += glider->Velocity.z * dt;
+    }
+
+    if (glider->BarrelRoll > 1) {
+        dest = -10.0f;
+    } else if (glider->BarrelRoll < -1) {
+        dest = 10.0f;
+    } else {
+        dest = 0.0f;
+    }
+    if (dest == 0.0f) {
+        SeekHalfLife(&glider->BarrelSpeedX, dest, 0.5f, dt);
+    } else {
+        SeekHalfLife(&glider->BarrelSpeedX, dest, 0.3f, dt);
+    }
+    target = SetNuVec(glider->BarrelSpeedX, 0.0f, 0.0f);
+    NuVecRotateY(&target, &target, (s32)(glider->AngleY * 182.04445f));
+    glider->Position.x += target.x * dt;
+    glider->Position.y += target.y * dt;
+    glider->Position.z += target.z * dt;
 }

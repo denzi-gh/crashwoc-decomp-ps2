@@ -25,7 +25,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0042:00135948:NuLightFxSetup"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0042:00135cb8:NuLightProcessSpot"
@@ -45,11 +45,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0042:0013f268:NuLigthSetModeMask"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0042:0013f408:NuLgtArcLaserDraw"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0042:0013ff70:NuLightClose"

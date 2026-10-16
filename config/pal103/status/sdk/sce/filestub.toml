@@ -25,7 +25,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027c420:_sceFs_Rcv_Intr"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027c7e0:_sceFsSemInit"
@@ -41,11 +41,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027c870:sceFsInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027ca10:_fs_version"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027caa0:sceFsReset"
@@ -53,23 +53,23 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027cad8:sceOpen"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027cd60:sceClose"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027cee0:sceLseek"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027d118:sceRead"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027d388:sceWrite"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027d648:sceIoctl"
@@ -77,11 +77,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0256:0027d998:sceIoctl2"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027db70:_sceCallCode"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027dd18:sceRemove"
@@ -109,7 +109,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027e2b8:sceDopen"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027e358:sceDclose"

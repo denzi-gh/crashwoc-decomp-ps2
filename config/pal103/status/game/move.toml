@@ -13,7 +13,7 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0117:00250588:InitPlayerEvents"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:002507d0:CheckPlayerEvents"
@@ -25,7 +25,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:00250a98:MoveCRASH"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:00251c98:AnimateCRASH"
@@ -33,11 +33,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:00252248:MoveSWIMMING"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:00252478:MoveCOCO"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:00252d18:AnimateCOCO"
@@ -45,11 +45,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:00252fb0:MoveSCOOTER"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:00253278:MoveSNOWBOARD"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:00253590:AnimateSNOWBOARD"
@@ -57,11 +57,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:00253720:MoveOFFROADER"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:00253cd8:MoveMECH"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:00254338:AnimateMECH"
@@ -69,7 +69,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:002544d0:MoveFIREENGINE"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:002547c0:AnimateFIREENGINE"
@@ -77,7 +77,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:002548a8:MoveGYRO"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:002552f8:AnimateGYRO"
@@ -89,7 +89,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:002554e0:MoveSUBMARINE"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:002556c8:MoveMINECART"
@@ -101,7 +101,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:00255ec8:MoveTub"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:00256a18:MoveMINETUB"

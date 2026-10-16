@@ -205,7 +205,6 @@ extern struct RPos_s *best_cRPos;
 extern s32 plr_rebound;
 extern f32 ATLASCAMHEIGHT;
 extern struct panelcount_s plr_crates;
-extern f32 D_0062D070;      /* "no shadow" sentinel 2000000.0f (.sdata) */
 extern s32 force_panel_items_update;
 extern s32 force_panel_wumpa_update;
 extern s32 force_panel_crate_update;
@@ -289,17 +288,17 @@ void ResetPlayer(s32 set)
             c->freeze = 0;
             c->obj.transporting = 0;
             ResetAnimPacket(&c->obj.anim, 0x22);
-            c->obj.frame = 0;
             c->obj.attack = 0;
             c->obj.dyrot = 0;
             c->obj.boing = 0;
             c->obj.dangle = 0;
             c->obj.old_ground = 3;
             c->obj.submerged = 0;
+            c->obj.frame = 0;
+            c->obj.ground = 3;
             c->obj.SCALE = 1.0f;
             c->obj.scale = 1.0f;
             c->obj.RADIUS = c->obj.radius;
-            c->obj.ground = 3;
 
             GetTopBot(c);
             NewTopBot(&c->obj);
@@ -312,7 +311,7 @@ void ResetPlayer(s32 set)
                 if (cp_iRAIL != -1) {
                     c->obj.pos.y -= c->obj.bot * c->obj.SCALE;
                 }
-            } else if ((Level != 0x1D) && (y != D_0062D070)) {
+            } else if ((Level != 0x1D) && (y != 2000000.0f)) {
                 c->obj.pos.y = y - c->obj.bot * c->obj.SCALE;
             }
             c->obj.oldpos = c->obj.pos;
@@ -325,7 +324,7 @@ void ResetPlayer(s32 set)
             } else if (Level == 0x19) {
                 c->obj.hdg = 0x4000;
             } else if (best_cRPos != 0) {
-                c->obj.thdg = c->obj.hdg = best_cRPos->angle;
+                c->obj.hdg = c->obj.thdg = best_cRPos->angle;
             }
             switch (c->obj.vehicle) {
             case 0x53:
@@ -361,16 +360,11 @@ void ResetPlayer(s32 set)
         }
     }
     if ((Demo == 0) && (GameMode != 1)) {
-        force_panel_items_update = 0x32;
-        force_panel_wumpa_update = 0x32;
-        force_panel_crate_update = 0x32;
-        force_panel_lives_update = 0x32;
+        force_panel_items_update = force_panel_lives_update =
+            force_panel_crate_update = force_panel_wumpa_update = 0x32;
     }
     boss_dead = 0;
-    point_time = 0.0f;
-    check_duration = 0.0f;
-    check_time = 0.0f;
-    point_duration = 0.0f;
+    point_time = point_duration = check_time = check_duration = 0.0f;
 }
 
 
@@ -386,6 +380,8 @@ void ManageCreatures(void)
     s32 old_index;
     s32 index;
     struct aitab_s *pAI;
+    struct aitab_s *ai;
+    struct creature_s *c;
 
     if ((Level == 0x25) || ((LDATA->flags & 0x202) != 0)) {
         d = (f32)LDATA->farclip;
@@ -440,31 +436,29 @@ void ManageCreatures(void)
     free_slot = -1;
     for (i = 1; i < 9; i++) {
         if (Character[i].used != 0) {
-            if (Character[i].on == 0) {
-                if (Character[i].off_wait != 0) {
-                    Character[i].off_wait = Character[i].off_wait - 1;
-                    if (Character[i].off_wait == 0) {
-                        RemoveGameObject(&Character[i].obj);
-                        Character[i].used = 0;
-                    }
+            if ((Character[i].on == 0) && (Character[i].off_wait != 0)) {
+                Character[i].off_wait = Character[i].off_wait - 1;
+                if (Character[i].off_wait == 0) {
+                    RemoveGameObject(&Character[i].obj);
+                    Character[i].used = 0;
                 }
-            } else if (Character[i].obj.dead != 0) {
-                Character[i].obj.die_time += 0.02f;
-                if (Character[i].obj.die_time >=
-                    Character[i].obj.die_duration) {
-                    Character[i].obj.die_time = Character[i].obj.die_duration;
-                    Character[i].on = 0;
-                    Character[i].off_wait = 2;
-                    if ((Character[i].i_aitab != -1) &&
-                        (AITab[Character[i].i_aitab].delay <= 0.0f)) {
-                        AITab[Character[i].i_aitab].status = 0;
+            } else if (Character[i].on != 0) {
+                if (Character[i].obj.dead != 0) {
+                    Character[i].obj.die_time += 0.02f;
+                    if (Character[i].obj.die_time >=
+                        Character[i].obj.die_duration) {
+                        Character[i].obj.die_time = Character[i].obj.die_duration;
+                        Character[i].on = 0;
+                        Character[i].off_wait = 2;
+                        if ((Character[i].i_aitab != -1) &&
+                            (AITab[Character[i].i_aitab].delay <= 0.0f)) {
+                            AITab[Character[i].i_aitab].status = 0;
+                        }
                     }
-                }
-            } else {
-                if ((NuVecDistSqr(&AITab[Character[i].i_aitab].origin,
-                                  &player->obj.pos, 0) > range2) ||
-                    ((level_part_2 != 0) &&
-                     (AITab[Character[i].i_aitab].ai_type != 0x4F))) {
+                } else if ((NuVecDistSqr(&AITab[Character[i].i_aitab].origin,
+                                         &player->obj.pos, 0) > range2) ||
+                           ((level_part_2 != 0) &&
+                            (AITab[Character[i].i_aitab].ai_type != 0x4F))) {
                     Character[i].on = 0;
                     Character[i].off_wait = 2;
                     if (Character[i].obj.character == 0x76) {
@@ -505,7 +499,8 @@ void ManageCreatures(void)
             }
         }
         for (j = 1; j < 9; j++) {
-            if ((Character[j].used != 0) && (Character[j].i_aitab == i) &&
+            c = &Character[j];
+            if ((c->used != 0) && (c->i_aitab == i) &&
                 (!(pAI->delay > 0.0f) || (pAI->time != 0.0f))) {
                 goto next;
             }
@@ -516,12 +511,12 @@ void ManageCreatures(void)
             switch (pAI->ai_type) {
             case 0x4C:
             case 0x4D:
-                if (((Game.level[Level].flags & 8) == 0) &&
-                    ((plr_items & 1) == 0) &&
-                    ((LDATA->flags & 0x200) == 0)) {
-                    goto add;
+                if ((Game.level[Level].flags & 8) ||
+                    (plr_items & 1) ||
+                    (LDATA->flags & 0x200)) {
+                    break;
                 }
-                break;
+                goto add;
             case 0x4E:
             case 0x4F:
                 if ((Demo == 0) &&
@@ -532,12 +527,13 @@ void ManageCreatures(void)
                 break;
             case 0x50:
             case 0x51:
-                if (((Game.level[Level].flags & 0x10) == 0) &&
-                    ((plr_items & 2) == 0) && (TimeTrial == 0) &&
-                    ((LDATA->flags & 0x200) == 0)) {
-                    goto add;
+                if ((Game.level[Level].flags & 0x10) ||
+                    (plr_items & 2) ||
+                    (TimeTrial != 0) ||
+                    (LDATA->flags & 0x200)) {
+                    break;
                 }
-                break;
+                goto add;
             case 0x52:
             case 0x53:
                 if (((Game.level[Level].flags & 0x20) == 0) &&
@@ -547,45 +543,50 @@ void ManageCreatures(void)
                 }
                 break;
             case 0x54:
-                if (((Game.level[Level].flags & 0x40) == 0) &&
-                    ((plr_items & 8) == 0) && (TimeTrial == 0) &&
-                    ((LDATA->flags & 0x200) == 0)) {
-                    goto add;
+                if ((Game.level[Level].flags & 0x40) ||
+                    (plr_items & 8) ||
+                    (TimeTrial != 0) ||
+                    (LDATA->flags & 0x200)) {
+                    break;
                 }
-                break;
+                goto add;
             case 0x55:
-                if (((Game.level[Level].flags & 0x80) == 0) &&
-                    ((plr_items & 0x20) == 0) && (TimeTrial == 0) &&
-                    ((LDATA->flags & 0x200) == 0)) {
-                    goto add;
+                if ((Game.level[Level].flags & 0x80) ||
+                    (plr_items & 0x20) ||
+                    (TimeTrial != 0) ||
+                    (LDATA->flags & 0x200)) {
+                    break;
                 }
-                break;
+                goto add;
             case 0x56:
-                if (((Game.level[Level].flags & 0x100) == 0) &&
-                    ((plr_items & 0x10) == 0) && (TimeTrial == 0) &&
-                    ((LDATA->flags & 0x200) == 0)) {
-                    goto add;
+                if ((Game.level[Level].flags & 0x100) ||
+                    (plr_items & 0x10) ||
+                    (TimeTrial != 0) ||
+                    (LDATA->flags & 0x200)) {
+                    break;
                 }
-                break;
+                goto add;
             case 0x57:
-                if (((Game.level[Level].flags & 0x200) == 0) &&
-                    ((plr_items & 0x40) == 0) && (TimeTrial == 0) &&
-                    ((LDATA->flags & 0x200) == 0)) {
-                    goto add;
+                if ((Game.level[Level].flags & 0x200) ||
+                    (plr_items & 0x40) ||
+                    (TimeTrial != 0) ||
+                    (LDATA->flags & 0x200)) {
+                    break;
                 }
-                break;
+                goto add;
             case 0x58:
-                if (((Game.level[Level].flags & 0x400) == 0) &&
-                    ((plr_items & 0x80) == 0) && (TimeTrial == 0) &&
-                    ((LDATA->flags & 0x200) == 0)) {
-                    goto add;
+                if ((Game.level[Level].flags & 0x400) ||
+                    (plr_items & 0x80) ||
+                    (TimeTrial != 0) ||
+                    (LDATA->flags & 0x200)) {
+                    break;
                 }
-                break;
+                goto add;
             case 0x5A:
-                if ((Game.powerbits & 0x20) == 0) {
-                    goto add;
+                if ((Game.powerbits & 0x20) != 0) {
+                    break;
                 }
-                break;
+                goto add;
             case 0x59:
             case 0x5B:
             case 0x5C:
@@ -609,6 +610,7 @@ void ManageCreatures(void)
     }
 
     if ((index != -1) && (index != old_index)) {
+        ai = &AITab[index];
         if (!(AITab[index].delay > 0.0f) || !(AITab[index].time > 0.0f)) {
             if (Character[c_slot].used != 0) {
                 Character[c_slot].on = 0;
@@ -618,7 +620,7 @@ void ManageCreatures(void)
                 }
             } else if (NuVecDistSqr(&AITab[index].origin,
                                     &player->obj.pos, 0) < range2) {
-                i = AIType[AITab[index].ai_type].character;
+                i = AIType[ai->ai_type].character;
                 NuDebugMsgProlog(".\\creature.c", 0x135C)(
                     "ManageCreatures - new character = %s", CData[i].name);
                 AddCreature(i, c_slot, index);
@@ -697,10 +699,9 @@ void LoadCharacterModels(void)
         CModel[i].obj = 0;
     }
 
+    space = 0;
     if (Level == 0x28) {
         space = SpaceGameCutTab[gamecut][0];
-    } else {
-        space = 0;
     }
 
     dat = NuDatOpen(D_0061D270, 0, 0);
@@ -709,17 +710,18 @@ void LoadCharacterModels(void)
     if (LDATA->clist != 0) {
         cmodel_index = 0;
         model = CModel;
-        for (i = 0; ; i++) {
-            if (space != 0) {
-                character = ((s32 *)space)[i << 5];
-            } else {
-                character = LDATA->clist[i];
-            }
-            if ((character != 0xFF) && (cmodel_index < 0x30)) break;
+        i = 0;
+    next_character:
+        if (space != 0) {
+            character = space[i].character;
+        } else {
+            character = LDATA->clist[i];
+        }
+        if ((character != 0xFF) && (cmodel_index < 0x30)) {
             sprintf(tbuf, D_0061D280, CData[character].name);
             LoadScreen(tbuf);
-            memset(model, 0, 0x988);
-            if (character < 2) {
+            memset(model, 0, sizeof(struct CharacterModel));
+            if ((u32)character < 2) {
                 bgload_model[character] = model;
             }
             cdata = &CData[character];
@@ -740,10 +742,10 @@ void LoadCharacterModels(void)
                 NuStrCat(tbuf, D_00630998);
                 model->shadhdr = InstShadDataLoad(tbuf);
                 if (model->shadhdr != 0) {
-                    model->shaddata[anim->action] = ShadFindData(&model->shadhdr, 0);
+                    model->shaddatarest = ShadFindData((int *)model->shadhdr, 0);
                 }
                 for (j = 0; j < 0x10; j++) {
-                    model->pLOCATOR[j] = NuHGobjGetPOI(model->obj, (u8)j);
+                    model->pLOCATOR[j] = NuHGobjGetPOI(model->obj, j);
                 }
                 if ((character == 0x54) || (character == 0x9F)) {
                     NuStrCpy(charsdat_filename, D_00630980);
@@ -751,15 +753,15 @@ void LoadCharacterModels(void)
                     NuStrCat(charsdat_filename, D_00630988);
                 }
                 if (Level == 0x28) {
-                    anim = (struct animlist *)((char *)space + (i << 7) + 8);
+                    anim = space[i].anim;
                 } else {
                     anim = cdata->anim;
                     if (character == 0) {
-                        if ((LBIT & 0x1001002000U) && (Level != 0x1E)) {
+                        if ((LBIT & 0x1001002000) && (Level != 0x1E)) {
                             anim = D_0055C100;
                         } else if (LBIT & 0x40000) {
                             anim = D_0055C178;
-                        } else if (LBIT & 0x100210801U) {
+                        } else if (LBIT & 0x100210801) {
                             anim = D_0055C1C0;
                         } else if (Level == 0x1D) {
                             anim = D_0055C2C8;
@@ -777,33 +779,29 @@ void LoadCharacterModels(void)
                 while ((anim != 0) && (anim->file != 0) &&
                        (anim->action >= 0) && (anim->action < 0x76)) {
                     if (anim->levbits & LBIT) {
-                        if (anim->flags & 2) {
-                            if (model->anmdata[anim->action] == 0) {
-                                NuStrCpy(tbuf, charsdat_filename);
-                                NuStrCat(tbuf, anim->file);
-                                NuStrCat(tbuf, D_006309A0);
-                                model->anmdata[anim->action] =
-                                    InstAnimDataLoad(tbuf);
-                                if (model->anmdata[anim->action] != 0) {
-                                    model->animlist[anim->action] = anim;
-                                    if (model->shadhdr != 0) {
-                                        model->shaddata[anim->action] =
-                                            ShadFindData((int *)model->shadhdr,
-                                                         anim->file);
-                                    }
+                        if ((anim->flags & 2) &&
+                            (model->anmdata[anim->action] == 0)) {
+                            NuStrCpy(tbuf, charsdat_filename);
+                            NuStrCat(tbuf, anim->file);
+                            NuStrCat(tbuf, D_006309A0);
+                            model->anmdata[anim->action] = InstAnimDataLoad(tbuf);
+                            if (model->anmdata[anim->action] != 0) {
+                                model->animlist[anim->action] = anim;
+                                if (model->shadhdr != 0) {
+                                    model->shaddata[anim->action] =
+                                        ShadFindData((int *)model->shadhdr,
+                                                     anim->file);
                                 }
                             }
                         }
-                        if (anim->flags & 4) {
-                            if (model->fanmdata[anim->action] == 0) {
-                                NuStrCpy(tbuf, charsdat_filename);
-                                NuStrCat(tbuf, anim->file);
-                                NuStrCat(tbuf, D_006309A8);
-                                model->fanmdata[anim->action] =
-                                    InstAnimDataLoad(tbuf);
-                                if (model->fanmdata[anim->action] != 0) {
-                                    model->fanimlist[anim->action] = anim;
-                                }
+                        if ((anim->flags & 4) &&
+                            (model->fanmdata[anim->action] == 0)) {
+                            NuStrCpy(tbuf, charsdat_filename);
+                            NuStrCat(tbuf, anim->file);
+                            NuStrCat(tbuf, D_006309A8);
+                            model->fanmdata[anim->action] = InstAnimDataLoad(tbuf);
+                            if (model->fanmdata[anim->action] != 0) {
+                                model->fanimlist[anim->action] = anim;
                             }
                         }
                     }
@@ -818,9 +816,11 @@ void LoadCharacterModels(void)
                 if ((Font3DObjTab[j].flags & 1) &&
                     (Font3DObjTab[j].i == character)) {
                     CLetter[character] = j + 0x61;
-                    break;
+                    j = 0x1A;
                 }
             }
+            i++;
+            goto next_character;
         }
     }
     NuDatSet(0);
@@ -919,8 +919,7 @@ void PlayerStartPos(struct creature_s *c, struct nuvec_s *pos)
             *pos = cutpos_CRASH;
             c->obj.hdg = cutang_CRASH;
             tumble_action = -1;
-            tumble_duration = 0.0f;
-            tumble_time = 0.0f;
+            tumble_time = tumble_duration = 0.0f;
             last_level = -1;
             last_hub = -1;
             return;
@@ -936,8 +935,7 @@ void PlayerStartPos(struct creature_s *c, struct nuvec_s *pos)
         if (Level == 0x25) {
             c->obj.hdg = 0x8000;
             tumble_action = -1;
-            tumble_duration = 0.0f;
-            tumble_time = 0.0f;
+            tumble_time = tumble_duration = 0.0f;
             last_level = -1;
             last_hub = -1;
         }
@@ -955,91 +953,90 @@ s32 AddCreature(s32 character, s32 index, s32 i_aitab)
     struct nuvec_s startpos;
     struct CharacterData *cdata;
 
-    if (((u32)index < 9) && ((u32)character < 0xBF) &&
-        ((i_aitab == -1) ||
-         (character == AIType[AITab[i_aitab].ai_type].character)) &&
-        (CRemap[character] != -1)) {
-        c = &Character[index];
-        if (c->used != 0) {
-            return 0;
-        }
-        memset(c, 0, 0xCE4);
-        if (AddGameObject(&c->obj, c) == 0) {
-            return 0;
-        }
-        c->obj.pLOCATOR = &c->mtxLOCATOR[0][0];
-        c->used = 1;
-        c->on = 1;
-        c->off_wait = 2;
-        cdata = &CData[character];
-        if (i_aitab == -1) {
-            commands = 0;
-            PlayerStartPos(c, &startpos);
-        } else {
-            commands = AIType[AITab[i_aitab].ai_type].cmd;
-            startpos = AITab[i_aitab].pos[commands->i];
-        }
-        c->i_aitab = i_aitab;
-        c->cmdtable = commands;
-        c->cmdcurr = commands;
-        c->obj.character = character;
-        if ((s16)character == 0) {
-            c->minfo = &CrashMoveInfo;
-        } else if ((s16)character == 1) {
-            c->minfo = &CocoMoveInfo;
-        } else {
-            c->minfo = &DefaultMoveInfo;
-        }
-        c->obj.radius = c->obj.RADIUS = cdata->radius;
-        c->obj.model = &CModel[CRemap[character]];
-        c->obj.min = cdata->min;
-        c->obj.max = cdata->max;
-        c->obj.bot = c->obj.min.y;
-        c->obj.top = c->obj.max.y;
-        c->obj.startpos = startpos;
-        c->obj.oldpos = c->obj.startpos;
-        c->obj.pos = c->obj.oldpos;
-        c->obj.flags = 2;
-        if ((Adventure != 0) && (c == player)) {
-            c->obj.vehicle = LDATA->vehicle;
-            c->obj.flags = 3;
-            plr_lives.count = Game.lives;
-            plr_wumpas.count = Game.wumpas;
-            c->obj.mask = &Mask;
-            c->pad_type = 1;
-            plr_lives.draw = Game.lives;
-            plr_wumpas.draw = Game.wumpas;
-        } else {
-            c->obj.vehicle = -1;
-            c->obj.flags = c->obj.flags | 4;
-            c->pad_type = 0;
-            c->obj.mask = 0;
-        }
-        c->obj.die_duration = 0.5f;
-        c->ai.oldpos = c->obj.pos;
-        c->obj.anim.action = 0x22;
-        if (c->obj.model != 0) {
-            if (c->obj.model->anmdata[0x22] == 0) {
-                if (c->obj.model->anmdata[0] != 0) {
-                    i = 0;
-                } else {
-                    for (i = 1; i < 0x76; i++) {
-                        if (c->obj.model->anmdata[i] != 0) {
-                            break;
-                        }
-                    }
-                }
-                if (i < 0x76) {
-                    c->obj.anim.action = i;
-                }
+    if ((u32)index >= 9) {
+        return 0;
+    }
+    if ((u32)character >= 0xBF) {
+        return 0;
+    }
+    if ((i_aitab != -1) &&
+        (character != AIType[AITab[i_aitab].ai_type].character)) {
+        return 0;
+    }
+    if (CRemap[character] == -1) {
+        return 0;
+    }
+    c = &Character[index];
+    if (c->used != 0) {
+        return 0;
+    }
+    memset(c, 0, 0xCE4);
+    if (AddGameObject(&c->obj, c) == 0) {
+        return 0;
+    }
+    c->obj.pLOCATOR = &c->mtxLOCATOR[0][0];
+    c->used = 1;
+    c->on = 1;
+    c->off_wait = 2;
+    cdata = &CData[character];
+    if (i_aitab == -1) {
+        commands = 0;
+        PlayerStartPos(c, &startpos);
+    } else {
+        commands = AIType[AITab[i_aitab].ai_type].cmd;
+        startpos = AITab[i_aitab].pos[commands->i];
+    }
+    c->i_aitab = i_aitab;
+    c->cmdcurr = commands;
+    c->cmdtable = commands;
+    c->obj.character = character;
+    if ((s16)character == 0) {
+        c->minfo = &CrashMoveInfo;
+    } else if ((s16)character == 1) {
+        c->minfo = &CocoMoveInfo;
+    } else {
+        c->minfo = &DefaultMoveInfo;
+    }
+    c->obj.radius = c->obj.RADIUS = cdata->radius;
+    c->obj.model = &CModel[CRemap[character]];
+    c->obj.min = cdata->min;
+    c->obj.max = cdata->max;
+    c->obj.bot = c->obj.min.y;
+    c->obj.top = c->obj.max.y;
+    c->obj.startpos = startpos;
+    c->obj.oldpos = c->obj.startpos;
+    c->obj.pos = c->obj.oldpos;
+    c->obj.flags = 2;
+    if ((Adventure != 0) && (c == player)) {
+        c->obj.vehicle = LDATA->vehicle;
+        c->obj.flags = 3;
+        plr_lives.count = plr_lives.draw = Game.lives;
+        plr_wumpas.count = plr_wumpas.draw = Game.wumpas;
+        c->obj.mask = &Mask;
+        c->pad_type = 1;
+    } else {
+        c->obj.vehicle = -1;
+        c->obj.flags = c->obj.flags | 4;
+        c->pad_type = 0;
+        c->obj.mask = 0;
+    }
+    c->obj.die_duration = 0.5f;
+    c->ai.oldpos = c->obj.pos;
+    c->obj.anim.action = 0x22;
+    if (c->obj.model != 0) {
+        if (c->obj.model->anmdata[0x22] == 0) {
+            i = 0;
+            while ((i < 0x76) && (c->obj.model->anmdata[i] == 0)) {
+                i++;
+            }
+            if (i < 0x76) {
+                c->obj.anim.action = i;
             }
         }
-        c->obj.anim.oldaction = c->obj.anim.action;
-        c->obj.anim.newaction = c->obj.anim.action;
-        ResetLights(&c->lights);
-        return 1;
     }
-    return 0;
+    c->obj.anim.oldaction = c->obj.anim.newaction = c->obj.anim.action;
+    ResetLights(&c->lights);
+    return 1;
 }
 
 
@@ -2890,8 +2887,8 @@ void ProcessCreatures(void)
             MoveCreature(c);
             if ((USELIGHTS != 0) && (LIGHTCREATURES != 0)) {
                 pos.x = c->obj.pos.x;
-                pos.y = (c->obj.bot + c->obj.top) * c->obj.SCALE * 0.5f
-                        + c->obj.pos.y;
+                pos.y = c->obj.pos.y +
+                        (c->obj.bot + c->obj.top) * c->obj.SCALE * 0.5f;
                 pos.z = c->obj.pos.z;
                 GetLights(&pos, &c->lights, 1);
             }
@@ -2901,8 +2898,8 @@ void ProcessCreatures(void)
             } else {
                 c->obj.scale = c->ai.scale;
             }
-            c->hit_type = 0;
             c->obj.SCALE = c->obj.scale * CData[c->obj.character].scale;
+            c->hit_type = 0;
             c->obj.RADIUS = c->obj.radius * c->obj.SCALE;
         }
     }
@@ -2920,13 +2917,13 @@ void ProcessCreatures(void)
         MovePlayer(c, Pad[0]);
         if ((USELIGHTS != 0) && (LIGHTCREATURES != 0)) {
             pos.x = c->obj.pos.x;
-            pos.y = (c->obj.bot + c->obj.top) * c->obj.SCALE * 0.5f
-                    + c->obj.pos.y;
+            pos.y = c->obj.pos.y +
+                    (c->obj.bot + c->obj.top) * c->obj.SCALE * 0.5f;
             pos.z = c->obj.pos.z;
             GetLights(&pos, &c->lights, 1);
         }
+        i = cRPosCOUNT;
         if (level_part_2 == 0) {
-            i = cRPosCOUNT;
             ComplexRailPosition(&c->obj.pos, c->obj.RPos.iRAIL,
                                 c->obj.RPos.iALONG, &c->obj.RPos, 1);
             if ((cRPosCOUNT != i) && (GameCam[0].mode != -1) &&

@@ -25,11 +25,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0050:00155e68:GenModData"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0050:00156168:EndSkinPacket"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0050:00156350:FindStripNext"
@@ -37,7 +37,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0050:00156520:AddStripTri"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0050:00156768:GenStrips"
@@ -49,15 +49,15 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0050:00156fa8:SortPrimdefs"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0050:00157700:SetVtxSkinData"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0050:00157920:NuPs2CreateSkinNorm"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0050:00158108:NuPs2CreateSkinSmoothOld"
@@ -65,7 +65,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0050:00158900:NuPs2CreateSkinSmooth"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0050:00158cb8:NuPs2CreateSkin"

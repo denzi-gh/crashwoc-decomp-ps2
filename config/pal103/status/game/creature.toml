@@ -13,7 +13,7 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0091:001cbce8:ResetPlayer"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0091:001cc218:ManageCreatures"
@@ -29,11 +29,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0091:001cd9a8:PlayerStartPos"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0091:001cdae8:AddCreature"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0091:001cdea8:NewCharacterIdle"

@@ -21,19 +21,19 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0080:001b1790:NuSceneInstanceRunScript"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0080:001b1940:LoadCutSceneInstanceData"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0080:001b1ca8:LoadCutsceneData"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0080:001b1f60:LoadCutsceneScript"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0080:001b2448:NuSceneManagerSysInit"

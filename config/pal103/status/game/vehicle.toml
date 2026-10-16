@@ -13,7 +13,7 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0098:00201a38:StillLockedOnTarget"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00201b70:DrawGlider"
@@ -21,7 +21,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:00201d88:GliderFire"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00202818:DrawWeatherBossTarget"
@@ -33,11 +33,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:00202dc0:ControlGlider"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00203860:ProcessGliderMovement"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00203f00:GliderSmoke"
@@ -45,11 +45,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:002041c8:DeadGliderCoco"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:002043b8:ProcessGliderMovementWB"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00204588:MoveGlider"
@@ -57,7 +57,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:00205268:InitZoffa"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00205440:DrawZoffaUFOs"
@@ -149,7 +149,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:00209c38:MovePlane"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00209dd0:FarmReset"
@@ -333,7 +333,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:00214de8:ProcessVehicleLevel"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00214f40:DrawExtraCreatures"
@@ -341,7 +341,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:00215140:GetCurrentLevelObjectives"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:002152f8:ControlAtlas"
@@ -393,7 +393,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:00217890:PrintEarthBossAction"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00217ab8:ProcessEarthBossActions"
@@ -493,7 +493,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021c048:ResetVehicleLevel"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021c1b0:DrawVehicleTrail"
