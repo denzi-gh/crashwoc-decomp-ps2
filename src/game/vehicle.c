@@ -506,12 +506,15 @@ struct hovablimp_s {
     struct nuvec_s startpos;   /* 0xF0 */
     struct nuvec_s vel;        /* 0xFC */
     f32 angy;                  /* 0x108 */
-    char pad_10C[0x110 - 0x10C];
+    s32 thrust;                /* 0x10C */
     f32 thrustoff;             /* 0x110 */
-    char pad_114[0x11C - 0x114];
+    s32 terminaldive;          /* 0x114 */
+    s32 explode;               /* 0x118 */
     s32 hitpoints;             /* 0x11C */
-    char pad_120[0x134 - 0x120];
-};
+    f32 staystilltimer;        /* 0x120 */
+    f32 movetimer;             /* 0x124 */
+    struct nuvec_s targetvel;  /* 0x128 */
+}; /* 0x134 */
 extern struct hovablimp_s HovaBlimp[6];
 
 /* Tornado under each blimp, stride 0x110, 6 entries. */
@@ -1597,17 +1600,19 @@ inline void DrawBigGuns(void)
 /* SpaceStationList: stride 0xD0, 3 entries. */
 struct spacestation_s {
     struct numtx_s mtx;
-    s32 field40;               /* 0x40 */
-    struct nuvec_s pos;
-    char pad_50[0x60 - 0x50];
+    s32 active;                /* 0x40 */
+    struct nuvec_s pos;        /* 0x44 */
+    struct nuvec_s vel;        /* 0x50 */
+    f32 angle;                 /* 0x5C */
     s32 seen;                  /* 0x60 */
-    char pad_64[0x6C - 0x64];
+    s32 hitpoints;             /* 0x64 */
+    s32 explode;               /* 0x68 */
     f32 satelliteangle;        /* 0x6C */
-    char pad_70[0x7C - 0x70];
+    struct satellite_s *satellites[3]; /* 0x70 */
     struct numtx_s shieldmtx;  /* 0x7C */
     s32 shielddraw;            /* 0xBC frames left to show the shield */
     s32 shieldgreen;           /* 0xC0 */
-    char pad_C4[0xD0 - 0xC4];
+    struct nuvec_s appcentre;  /* 0xC4 */
 };
 extern struct spacestation_s SpaceStationList[3];
 
@@ -1692,7 +1697,7 @@ inline s32 GetCurrentSpaceArenaObjectives(void)
     s32 i;
 
     for (i = 0; i < 3; i++) {
-        if (SpaceStationList[i].field40 != 0) {
+        if (SpaceStationList[i].active != 0) {
             count++;
         }
     }
@@ -2282,6 +2287,110 @@ void DrawSpaceStation(struct spacestation_s *station)
     }
 }
 
+extern struct numtx_s *GliderBulletReflectMtx;
+extern s32 HITSHIELDVOL;
+extern s32 HITSHIELDVOLA;
+extern s32 SPACESTATIONEXPLODEVOL;
+extern f32 SHIELDSCALEY;
+extern f32 SPACEMINSPEEDIN;
+extern f32 SPACETORNADOSCALE;
+extern f32 FIXVELBUMPAMOUNT;
+extern f32 FIXVELTIME;
+
+void ProcessSpaceStation(struct spacestation_s *station)
+{
+    struct numtx_s reflect;
+    struct nuvec_s delta;
+    struct nuvec_s rotated;
+    struct nuvec_s hitpos;
+    struct nuvec_s unscaled;
+    struct nuvec_s offset;
+    f32 dist;
+    f32 dot;
+    f32 speed;
+    f32 mag;
+    f32 angy;
+    f32 angx;
+    s32 shielded;
+    s32 i;
+
+    shielded = 0;
+    for (i = 0; i < 3; i++) {
+        if (station->satellites[i] != 0 && station->satellites[i]->active != 0) {
+            shielded = 1;
+        }
+    }
+    GliderBulletReflectMtx = 0;
+    if (CollideGliderBullets(&station->appcentre, 11.0f, 1, 1.0f, 0, shielded) != 0) {
+        station->shieldgreen = 1;
+    }
+    if (CollideGliderBullets(&station->appcentre, 11.0f, 0, 1.0f, 0, shielded) != 0) {
+        station->shieldgreen = 0;
+        if (shielded == 0) {
+            AddScreenWumpa(station->pos.x, station->pos.y, station->pos.z, 1);
+            station->hitpoints--;
+            if (station->hitpoints > 0) {
+                MyGameSfx(0xD5, &station->pos, 0x3FFF);
+            }
+        } else {
+            MyGameSfx(0xD7, &station->pos, HITSHIELDVOLA);
+            ClockOff();
+        }
+    }
+    NuVecSub(&delta, &PlayerGlider.Position, &station->appcentre);
+    unscaled = delta;
+    delta.y /= SHIELDSCALEY;
+    dist = NuVecMag(&delta);
+    if (dist < 12.0f) {
+        dot = DotProduct(&PlayerGlider.Velocity, &delta);
+        if (dot < 0.0f) {
+            mag = NuVecMag(&PlayerGlider.Velocity);
+            speed = (mag < SPACEMINSPEEDIN) ? SPACEMINSPEEDIN : mag;
+            NuVecScaleAccum(&PlayerGlider.Velocity, &delta, -dot / (dist * dist));
+            NuVecNorm(&PlayerGlider.Velocity, &PlayerGlider.Velocity);
+            NuVecScale(&PlayerGlider.Velocity, &PlayerGlider.Velocity, speed);
+            NuVecScaleAccum(&PlayerGlider.Velocity, &delta, FIXVELBUMPAMOUNT / dist);
+            PlayerGlider.FixVelTimer = FIXVELTIME;
+            PlayerGlider.InTornado = 1;
+            PlayerGlider.InTornadoScale = SPACETORNADOSCALE;
+            if (Level == 0x1A) {
+                MyGameSfx(0xD9, &PlayerGlider.Position, 0x7FFF);
+            }
+        }
+        NuVecScale(&delta, &delta, 12.0f / dist);
+        offset = delta;
+        offset.y *= SHIELDSCALEY;
+        NuVecAdd(&PlayerGlider.Position, &station->appcentre, &offset);
+        angy = NuAtan2D(delta.x * -100.0f, delta.z * -100.0f);
+        NuVecRotateY(&rotated, &delta, -angy);
+        angx = NuAtan2D(rotated.y * 100.0f, rotated.z * -100.0f);
+        NuMtxSetRotationX(&reflect, angx);
+        NuMtxRotateY(&reflect, angy);
+        NuMtxScale(&reflect, SetNuVecPntr(1.0f, SHIELDSCALEY, 1.0f));
+        GliderBulletReflectMtx = &reflect;
+        NuVecScale(&offset, &offset, 11.0f / 12.0f);
+        NuVecAdd(&hitpos, &station->appcentre, &offset);
+        AddGameDebris(0x1A, &hitpos);
+        MyGameSfx(0xD7, 0, HITSHIELDVOL);
+        station->shieldgreen = 0;
+    }
+    station->satelliteangle += 0.59999996f;
+    if (station->hitpoints <= 0 || station->explode != 0) {
+        station->active = 0;
+        AddGameDebris(0x47, &station->pos);
+        MyGameSfx(0xD8, &station->pos, SPACESTATIONEXPLODEVOL);
+    }
+    if (GliderBulletReflectMtx != 0) {
+        mTEMP = *GliderBulletReflectMtx;
+        NuMtxPreScale(&mTEMP, SetNuVecPntr(11.0f, 11.0f, 11.0f));
+        NuMtxPreRotateX(&mTEMP, -0x4000);
+        NuMtxPreRotateY(&mTEMP, rand());
+        *(struct nuvec_s *)&mTEMP._30 = station->pos;
+        station->shieldmtx = mTEMP;
+        station->shielddraw = 2;
+    }
+}
+
 void DrawVehicleTrail(void)
 {
     if (Level == 0) {
@@ -2302,23 +2411,46 @@ struct zoffa_s {
     s32 active;                /* 0x0E0 */
     f32 respawntimer;          /* 0x0E4 */
     struct nuvec_s pos;        /* 0x0E8 */
-    char pad_0F4[0x10C - 0xF4];
+    struct nuvec_s vel;        /* 0x0F4 */
+    struct nuvec_s resolved;   /* 0x100 */
     f32 pitch;                 /* 0x10C */
     f32 roll;                  /* 0x110 */
-    char pad_114[0x11C - 0x114];
+    f32 destpitch;             /* 0x114 */
+    f32 destroll;              /* 0x118 */
     f32 destyaw;               /* 0x11C */
     f32 yaw;                   /* 0x120 */
-    char pad_124[0x128 - 0x124];
+    s32 nofiresound;           /* 0x124 */
     f32 temp[6];               /* 0x128 */
-    char pad_140[0x14C - 0x140];
+    f32 visibletimer;          /* 0x140 */
+    f32 newdirectiontimer;     /* 0x144 */
+    f32 newaltitudetimer;      /* 0x148 */
     f32 newaltitudetarget;     /* 0x14C */
-    char pad_150[0x158 - 0x150];
+    s32 terminaldive;          /* 0x150 */
+    s32 explode;               /* 0x154 */
     s32 hitpoints;             /* 0x158 */
-    char pad_15C[0x168 - 0x15C];
+    s32 fireframe;             /* 0x15C */
+    s32 firenow;               /* 0x160 */
+    f32 firetimer;             /* 0x164 */
     s32 seen;                  /* 0x168 */
-    char pad_16C[0x170 - 0x16C];
-    struct numtx_s locators[17];
-};
+    s32 smoketimer;            /* 0x16C */
+    struct numtx_s locators[16];   /* 0x170 */
+    s32 smokecounter;          /* 0x570 */
+    f32 aggressiontimer;       /* 0x574 */
+    s32 playercloseandvisible; /* 0x578 */
+    f32 notseentimer;          /* 0x57C */
+    f32 aggressionpoints;      /* 0x580 */
+    s32 teleport;              /* 0x584 */
+    f32 noteleporttimer;       /* 0x588 */
+    f32 speed;                 /* 0x58C */
+    s32 infront;               /* 0x590 */
+    s32 facingtarget;          /* 0x594 */
+    f32 dist;                  /* 0x598 */
+    s32 fireside;              /* 0x59C */
+    f32 notinfronttimer;       /* 0x5A0 */
+    f32 lockedontimer;         /* 0x5A4 */
+    f32 keepsamevelocitytimer; /* 0x5A8 */
+    f32 firebursttimer;        /* 0x5AC */
+}; /* 0x5B0 */
 
 inline void DrawZoffa(struct zoffa_s *ufo)
 {
@@ -2451,6 +2583,85 @@ s32 SafeFromCollisions(struct nuvec_s *pos)
     return 1;
 }
 
+extern struct zoffastart_s D_005A6C30[16];
+#define ZoffaStartPoints D_005A6C30
+extern void DrawCross(struct nuvec_s *pos, s32 colour, f32 size);
+
+struct zoffastart_s *FindZoffaRestartPoint(void)
+{
+    struct nuvec_s rel;
+    struct nuvec_s view;
+    s32 i;
+    s32 safe;
+
+    i = (s32)(frand() * 16.0f);
+    while (i > 16) {
+        i -= 4;
+    }
+    while (i < 0) {
+        i += 16;
+    }
+    NuVecSub(&rel, (struct nuvec_s *)&ZoffaStartPoints[i], (struct nuvec_s *)&GameCam[0].m._30);
+    if (NuVecMag(&rel) < 10.0f) {
+        safe = 0;
+    } else {
+        struct nuvec_s fwd = {0.0f, 0.0f, -1.0f};
+
+        NuVecMtxRotate(&fwd, &fwd, &GameCam[0].m);
+        if (NuVecDot(&rel, &view) < 0.0f) {
+            safe = 0;
+        } else {
+            safe = SafeFromCollisions((struct nuvec_s *)&ZoffaStartPoints[i]);
+        }
+    }
+    if (safe) {
+        DrawCross((struct nuvec_s *)&ZoffaStartPoints[i], 0xFFFFFF, 3.0f);
+    } else {
+        DrawCross((struct nuvec_s *)&ZoffaStartPoints[i], 0xFF0000, 3.0f);
+    }
+    if (safe) {
+        return &ZoffaStartPoints[i];
+    }
+    return 0;
+}
+
+extern void AddGameDebrisRot(s32 i, struct nuvec_s *pos, s32 n, u16 xrot, u16 yrot);
+
+void ZoffaSmoke(struct zoffa_s *ufo)
+{
+    struct nuvec_s pos;
+
+    NuMtxSetRotationZ(&mTEMP, ufo->roll * 182.0444489f);
+    NuMtxRotateX(&mTEMP, -ufo->pitch * 182.0444489f);
+    NuMtxRotateY(&mTEMP, (ufo->yaw + 180.0f) * 182.0444489f);
+    NuMtxTranslate(&mTEMP, &ufo->pos);
+    if (ufo->terminaldive != 0) {
+        if (ufo->smokecounter != 0) {
+            NuVecMtxTransform(&pos, SetNuVecPntr(-1.0f, 0.2f, 1.0f), &mTEMP);
+            AddGameDebrisRot(0x1D, &pos, 1, 0, 0);
+            NuVecMtxTransform(&pos, SetNuVecPntr(0.0f, -0.8f, 1.0f), &mTEMP);
+            AddGameDebrisRot(0x1D, &pos, 1, 0, 0);
+            ufo->smokecounter = 0;
+        } else {
+            NuVecMtxTransform(&pos, SetNuVecPntr(1.0f, 0.2f, 1.0f), &mTEMP);
+            AddGameDebrisRot(0x1D, &pos, 1, 0, 0);
+            NuVecMtxTransform(&pos, SetNuVecPntr(0.0f, 1.2f, 1.0f), &mTEMP);
+            AddGameDebrisRot(0x1D, &pos, 1, 0, 0);
+            ufo->smokecounter = 1;
+        }
+        NuVecMtxTransform(&pos, SetNuVecPntr(0.0f, 0.2f, 1.0f), &mTEMP);
+        AddGameDebrisRot(0x45, &pos, 1, 0, 0);
+    } else if (ufo->hitpoints < 2) {
+        ufo->smoketimer--;
+        if (ufo->smoketimer < 1 && Level != 0x1A) {
+            NuVecMtxTransform(&pos, SetNuVecPntr(0.0f, 0.2f, 1.0f), &mTEMP);
+            DrawCross(&pos, 0xFFFFFF, 2.0f);
+            AddGameDebrisRot(0x1D, &pos, 1, 0, 0);
+            ufo->smoketimer = ufo->hitpoints;
+        }
+    }
+}
+
 inline struct hovablimp_s *FindFreeHova(void)
 {
     s32 i;
@@ -2463,8 +2674,6 @@ inline struct hovablimp_s *FindFreeHova(void)
     return 0;
 }
 
-/* Near-match (stays asm): retail loads the 0.1f thrust constant into $f1,
-   ee-gcc picks $f0. */
 void InitHova(struct nuvec_s *pos, f32 angle)
 {
     struct hovablimp_s *hova;
@@ -2483,10 +2692,10 @@ void InitHova(struct nuvec_s *pos, f32 angle)
     vel = SetNuVec(0.0f, (frand() - 0.5) * 5.0, 0.5f);
     index = hova - HovaBlimp;
     hova->vel = vel;
-    hova->thrustoff = 0.1f;
     hova->angy = angle;
     tornado = &TornadoList[index];
     hova->hitpoints = 10;
+    hova->thrustoff = 0.1f;
     tornado->active = 1;
     tornado->pos = hova->pos;
     tornado->pos.y = 27.0f;
@@ -2497,29 +2706,183 @@ void InitHova(struct nuvec_s *pos, f32 angle)
     MyInitModelNew(&hova->draw, 0x43, 0x46, 0, 0, &hova->pos);
 }
 
+extern f32 torndist;
+extern s32 jonemit;
+extern f32 jtemp1;
+extern void AddDebrisEffect(s32 *key, s32 type, f32 x, f32 y, f32 z);
+
+static inline void DrawHovaBlimp(struct hovablimp_s *hova)
+{
+    struct nuvec_s scale = {6.0f, 6.0f, 6.0f};
+
+    NuMtxSetScale(&mTEMP, &scale);
+    NuMtxRotateY(&mTEMP, (hova->angy + 180.0f) * 182.0444489f);
+    NuMtxTranslate(&mTEMP, &hova->pos);
+    MyDrawModelNew(&hova->draw, &mTEMP, 0);
+}
+
+void DrawAllHovaBlimps(void)
+{
+    struct nuvec_s pos;
+    f32 dx;
+    f32 dz;
+    f32 dist;
+    s32 i;
+
+    torndist = 99999.0f;
+    for (i = 0; i < 6; i++) {
+        if (HovaBlimp[i].active != 0) {
+            DrawHovaBlimp(&HovaBlimp[i]);
+        }
+    }
+    jonemit += 60;
+    if (jonemit >= 150) {
+        jonemit = 0;
+    }
+    for (i = 0; i < 6; i++) {
+        if (TornadoList[i].active != 0) {
+            if (jonemit == 0 && Paused == 0) {
+                pos = TornadoList[i].pos;
+                pos.y -= 20.0f;
+                AddVariableShotDebrisEffect(GDeb[0x2D].i, &pos, 1, 0, 0);
+                pos.y -= 3.0f;
+                AddVariableShotDebrisEffect(GDeb[0x2E].i, &pos, 1, 0, 0);
+            }
+            pos = TornadoList[i].pos;
+            dx = player->obj.pos.x - pos.x;
+            dz = player->obj.pos.z - pos.z;
+            dist = dx * dx + dz * dz;
+            if (dist < torndist) {
+                torndist = dist;
+            }
+            if (jontorn[i * 2] == -1) {
+                AddDebrisEffect(&jontorn[i * 2], GDeb[0x6A].i, pos.x, pos.y + jtemp1, pos.z);
+            }
+            if (jontorn[i * 2 + 1] == -1) {
+                AddDebrisEffect(&jontorn[i * 2 + 1], GDeb[0x6B].i, pos.x, pos.y + jtemp1, pos.z);
+            }
+        } else {
+            if (jontorn[i * 2] != -1) {
+                DebFree(&jontorn[i * 2]);
+                jontorn[i * 2] = -1;
+            }
+            if (jontorn[i * 2 + 1] != -1) {
+                DebFree(&jontorn[i * 2 + 1]);
+                jontorn[i * 2 + 1] = -1;
+            }
+        }
+    }
+}
+
+extern f32 Level_GliderRadius;
+extern f32 HovaRad;
+extern void SeekHalfLifeNUVEC(struct nuvec_s *cur, struct nuvec_s *target, f32 halflife, f32 dt);
+extern f32 HovaY;
+extern void AddDeb3(struct nuvec_s *pos, s32 effect, s32 n, struct nuangvec_s *rot);
+
+void ProcessHovaBlimp(struct hovablimp_s *hova)
+{
+    struct nuvec_s newpos;
+    struct nuvec_s rel;
+    struct nuvec_s oldrel;
+    f32 maxdist2;
+    f32 dist;
+    f32 olddist;
+    s32 i;
+
+    hova->draw.Anim.oldaction = hova->draw.Anim.action;
+    MyAnimateModelNew(&hova->draw, 0.59999996f);
+    SeekHalfLifeNUVEC(&hova->vel, &hova->targetvel, 1.0f, 0.02f);
+    newpos = hova->pos;
+    maxdist2 = (Level_GliderRadius - 15.0f) * (Level_GliderRadius - 15.0f);
+    NuVecScaleAccum(&newpos, &hova->vel, 0.02f);
+    dist = newpos.x * newpos.x + newpos.z * newpos.z;
+    olddist = hova->pos.x * hova->pos.x + hova->pos.z * hova->pos.z;
+    if (dist > maxdist2 && dist >= olddist) {
+        hova->movetimer = 0.0f;
+    } else {
+        for (i = 0; i < 6; i++) {
+            if (HovaBlimp[i].active != 0) {
+                NuVecSub(&rel, &newpos, &HovaBlimp[i].pos);
+                NuVecSub(&oldrel, &hova->pos, &HovaBlimp[i].pos);
+                dist = rel.x * rel.x + rel.z * rel.z;
+                olddist = oldrel.x * oldrel.x + oldrel.z * oldrel.z;
+                if (dist < 20.0f && dist < olddist) {
+                    hova->movetimer = 0.0f;
+                    break;
+                }
+            }
+        }
+    }
+    hova->pos = newpos;
+    if (hova->thrust != 0) {
+        if (hova->pos.y > hova->startpos.y + hova->thrustoff) {
+            hova->thrust = 0;
+        }
+    } else if (hova->pos.y < hova->startpos.y) {
+        hova->thrust = 1;
+        hova->thrustoff = frand() * 0.5f;
+    }
+    if (hova->thrust != 0) {
+        hova->vel.y += 0.06f;
+    } else {
+        hova->vel.y -= 0.12f;
+    }
+    if (hova->vel.y > 1.0f) {
+        hova->vel.y = 1.0f;
+    }
+    if (hova->vel.y < -2.0f) {
+        hova->vel.y = -2.0f;
+    }
+    if (hova->vel.y < 0.0f) {
+        hova->angy += hova->vel.y * 5.0f;
+    }
+    hova->pos.y += hova->vel.y * 0.02f;
+    CollideGliderBullets(&hova->pos, HovaRad, 1, 1.0f / HovaY, 1, 1);
+    if (CollideGliderBullets(&hova->pos, HovaRad, 0, 1.0f / HovaY, 1, 0) != 0) {
+        hova->hitpoints--;
+        if (hova->hitpoints <= 0) {
+            hova->explode = 1;
+        }
+        MyGameSfx(0x8C, &hova->pos, 0x3FFF);
+        AddScreenWumpa(hova->pos.x, hova->pos.y, hova->pos.z, 1);
+        MyGameSfx(0x8C, &hova->pos, 0x3FFF);
+        ClockOff();
+    }
+    if (hova->explode != 0) {
+        MyGameSfx(0x5F, &hova->pos, 0x3FFF);
+        AddGameDebris(0x17, &hova->pos);
+        AddDeb3(&hova->pos, 6, 4, 0);
+        AddDeb3(&hova->pos, 7, 4, 0);
+        AddDeb3(&hova->pos, 8, 4, 0);
+        hova->active = 0;
+    }
+}
+
 extern s32 SatelliteCharacterId;
 
-struct satellite_s *InitSatellite(struct spacestation_s *station, f32 angle)
+inline struct satellite_s *InitSatellite(struct spacestation_s *station, f32 angle)
 {
     struct satellite_s *sat = &SatelliteList[SatelliteCharacterId++];
 
-    if (sat->active == 0) {
-        memset(sat, 0, sizeof(struct satellite_s));
-        if (MyInitModelNew(&sat->draw, 0x8D, 0x1B, 0, 0, &sat->pos) != 0) {
-            sat->station = station;
-            sat->pos = station->pos;
-            sat->active = 1;
-            sat->angle = angle;
-            sat->hits = 16;
-            sat->tilt[0] = 0.0f;
-            sat->tilt[1] = 0.0f;
-            sat->tiltdest[0] = 0.0f;
-            sat->tiltdest[1] = 0.0f;
-            sat->vel = v000;
-            return sat;
-        }
+    if (sat->active != 0) {
+        return 0;
     }
-    return 0;
+    memset(sat, 0, sizeof(struct satellite_s));
+    if (MyInitModelNew(&sat->draw, 0x8D, 0x1B, 0, 0, &sat->pos) == 0) {
+        return 0;
+    }
+    sat->station = station;
+    sat->pos = station->pos;
+    sat->angle = angle;
+    sat->tilt[0] = 0.0f;
+    sat->tilt[1] = 0.0f;
+    sat->tiltdest[0] = 0.0f;
+    sat->tiltdest[1] = 0.0f;
+    sat->active = 1;
+    sat->hits = 16;
+    sat->vel = v000;
+    return sat;
 }
 
 inline void ProcessSatellites(void)
@@ -2539,7 +2902,7 @@ inline void ProcessSpaceStations(void)
 
     PlayerGlider.InTornado = 0;
     for (i = 0; i < 3; i++) {
-        if (SpaceStationList[i].field40 != 0) {
+        if (SpaceStationList[i].active != 0) {
             ProcessSpaceStation(&SpaceStationList[i]);
         }
     }
@@ -2550,7 +2913,7 @@ inline void DrawSpaceStations(void)
     s32 i;
 
     for (i = 0; i < 3; i++) {
-        if (SpaceStationList[i].field40 != 0) {
+        if (SpaceStationList[i].active != 0) {
             DrawSpaceStation(&SpaceStationList[i]);
         }
     }
@@ -2560,8 +2923,8 @@ inline void DrawSpaceStations(void)
 struct gliderbullet_s {
     struct numtx_s mtx;        /* 0x00 */
     struct nuvec_s vel;        /* 0x40 */
-    u16 life;                  /* 0x4C */
-    u16 lastlife;              /* 0x4E */
+    s16 life;                  /* 0x4C */
+    s16 lastlife;              /* 0x4E */
 };
 extern struct gliderbullet_s *FreeGliderBulletList[];
 extern struct gliderbullet_s *UsedGliderBulletList[];
@@ -2596,7 +2959,35 @@ inline struct gliderbullet_s *GrabGliderBullet(s32 enemy)
     return 0;
 }
 
-extern void InitSpaceStation(struct nuvec_s *pos, f32 xrot, f32 yrot, f32 zrot, s32 type);
+extern struct nuvec_s SPACETRAN;
+
+void InitSpaceStation(struct nuvec_s *pos, f32 angle, f32 tiltx, f32 tiltz, s32 index)
+{
+    struct spacestation_s *station;
+    s32 i;
+
+    station = &SpaceStationList[index];
+    if (index > 2 || station->active != 0) {
+        return;
+    }
+    memset(station, 0, sizeof(struct spacestation_s));
+    station->pos = *pos;
+    station->active = 1;
+    station->angle = angle;
+    station->hitpoints = 40;
+    station->vel = v000;
+    station->satelliteangle = (f32)index * 40.0f;
+    NuMtxSetScale(&mTEMP, SetNuVecPntr(1.0f, 1.0f, 1.0f));
+    NuMtxRotateX(&mTEMP, tiltx * 182.0444489f);
+    NuMtxRotateZ(&mTEMP, tiltz * 182.0444489f);
+    NuMtxRotateY(&mTEMP, station->angle * 182.0444489f);
+    NuMtxTranslate(&mTEMP, &station->pos);
+    station->mtx = mTEMP;
+    NuVecMtxTransform(&station->appcentre, &SPACETRAN, &station->mtx);
+    for (i = 0; i < 3; i++) {
+        station->satellites[i] = InitSatellite(station, (f32)i * 120.0f);
+    }
+}
 
 void InitSpaceStations(void)
 {
@@ -2642,7 +3033,7 @@ s32 AddGliderBullet(struct numtx_s *m, struct nuvec_s *pos, struct nuvec_s *vel,
     return 0;
 }
 
-void FreeGliderBullet(s32 index, s32 enemy)
+inline void FreeGliderBullet(s32 index, s32 enemy)
 {
     if (enemy) {
         BulletEnemyNumFrees++;
@@ -2654,6 +3045,253 @@ void FreeGliderBullet(s32 index, s32 enemy)
         BulletNumFrees++;
         FreeGliderBulletList[FreeGliderBulletNum++] = UsedGliderBulletList[index];
         UsedGliderBulletList[index] = UsedGliderBulletList[--UsedGliderBulletNum];
+    }
+}
+
+extern struct nuvec_s GliderBulletReflectPos;
+extern s32 qrand(void);
+extern f32 NuFsqrt(f32 x);
+
+s32 CollideGliderBullets(struct nuvec_s *pos, f32 radius, s32 enemy, f32 yscale, s32 debris,
+                         s32 reflect)
+{
+    s32 n;
+    struct gliderbullet_s **list;
+    s32 effect;
+    s32 hit;
+    struct nuvec_s delta;
+    struct nuvec_s rel;
+    struct nuvec_s scale;
+    struct gliderbullet_s *bullet;
+    struct nuvec_s *bulletpos;
+    f32 radsq;
+    f32 yradius;
+    f32 vv;
+    f32 b;
+    f32 root;
+    f32 dot;
+    s32 count;
+    s32 angy;
+    s32 angx;
+    s32 i;
+
+    radsq = radius * radius;
+    yradius = radius / yscale;
+    hit = 0;
+    if (enemy) {
+        list = UsedEnemyGliderBulletList;
+        count = UsedEnemyGliderBulletNum;
+        if (Level == 0x1A || Level == 0x12) {
+            effect = 0x1A;
+        } else if (Level == 0x12) {
+            effect = 0x1B;
+        } else {
+            effect = 0x19;
+        }
+    } else {
+        list = UsedGliderBulletList;
+        count = UsedGliderBulletNum;
+        effect = 0x1A;
+    }
+    i = 0;
+    for (n = 0; n < count; n++) {
+        bullet = list[i++];
+        if (bullet->life >= bullet->lastlife) {
+            continue;
+        }
+        delta.x = bullet->mtx._30 - pos->x;
+        if (delta.x > radius || delta.x < -radius) {
+            continue;
+        }
+        delta.y = bullet->mtx._31 - pos->y;
+        if (delta.y > yradius || delta.y < -yradius) {
+            continue;
+        }
+        delta.z = bullet->mtx._32 - pos->z;
+        if (delta.z > radius || delta.z < -radius) {
+            continue;
+        }
+        delta.y *= yscale;
+        if (!(delta.x * delta.x + delta.y * delta.y + delta.z * delta.z <= radsq)) {
+            continue;
+        }
+        bulletpos = (struct nuvec_s *)&bullet->mtx._30;
+        hit = 1;
+        if (reflect) {
+            vv = DotProduct(&bullet->vel, &bullet->vel);
+            b = DotProduct(&bullet->vel, &delta);
+            b = b + b;
+            root = NuFsqrt(b * b - vv * 4.0f * (DotProduct(&delta, &delta) - radsq));
+            NuVecScaleAccum(&delta, &bullet->vel, -(b + fabs(root)) / (vv + vv));
+            NuVecAdd(bulletpos, &delta, pos);
+            dot = DotProduct(&bullet->vel, &delta);
+            if (dot < 0.0f) {
+                NuVecScaleAccum(&bullet->vel, &delta, dot * -2.0f / NuVecMagSqr(&delta));
+                GliderBulletReflectPos = *bulletpos;
+                angy = (s16)NuAtan2D(delta.x * -100.0f, delta.z * -100.0f);
+                NuVecRotateY(&rel, &delta, -angy);
+                angx = (s16)NuAtan2D(rel.y * 100.0f, rel.z * -100.0f);
+                rel = *bulletpos;
+                NuMtxSetRotationX(&bullet->mtx, angx);
+                NuMtxRotateY(&bullet->mtx, angy);
+                scale.x = 1.0f;
+                scale.y = 1.0f / yscale;
+                scale.z = 1.0f;
+                NuMtxScale(&bullet->mtx, &scale);
+                NuMtxTranslate(&bullet->mtx, &rel);
+                GliderBulletReflectMtx = &bullet->mtx;
+                if (Level == 0x1A) {
+                    if (enemy) {
+                        AddGameDebris(0x48, bulletpos);
+                    } else {
+                        AddGameDebris(0x49, bulletpos);
+                    }
+                } else {
+                    AddGameDebris(effect, bulletpos);
+                }
+            }
+        } else {
+            AddGameDebris(effect, bulletpos);
+            i--;
+            FreeGliderBullet(i, enemy);
+            if (debris) {
+                AddDeb3(pos, qrand() % 3 + 3, 3, 0);
+            }
+        }
+    }
+    return hit;
+}
+
+extern struct cratecube_s *temp_pCrate;
+extern s32 temp_crate_type;
+extern f32 CRATEBALLOONOFFSET;
+extern f32 CRATEBALLOONRADIUS;
+extern s32 HitCrates(struct obj_s *obj, s32 destroy);
+extern struct cratecube_s *HitCrateBalloons(struct nuvec_s *pos, f32 radius);
+extern s32 HitItems(struct obj_s *obj);
+extern struct creature_s *FindClock(void);
+extern void StartTimeTrial(struct nuvec_s *pos, s32 clock);
+
+void GliderBulletsHitThings(struct gliderflight_s *glider)
+{
+    struct obj_s obj;
+    struct nuvec_s clockpos;
+    struct gliderbullet_s **used;
+    struct gliderbullet_s *bullet;
+    struct creature_s *clock;
+    f32 radius;
+    s32 count;
+    s32 n;
+    s32 i;
+
+    obj.bot = -0.3f;
+    obj.SCALE = 1.0f;
+    obj.top = 0.3f;
+    obj.RADIUS = 0.3f;
+    obj.attack = 0;
+    obj.pLOCATOR = 0;
+    used = UsedGliderBulletList;
+    i = 0;
+    count = UsedGliderBulletNum;
+    for (n = 0; n < count; n++) {
+        bullet = used[i++];
+        obj.pos.x = bullet->mtx._30;
+        obj.pos.y = bullet->mtx._31;
+        obj.pos.z = bullet->mtx._32;
+        if (HitCrates(&obj, 1)) {
+            AddGameDebris(0x1A, &obj.pos);
+            i--;
+            AddScreenWumpa(temp_pCrate->pos.x, temp_pCrate->pos.y + 0.25f, temp_pCrate->pos.z, 1);
+            FreeGliderBullet(i, 0);
+            if (temp_crate_type == 5) {
+                glider->HitPoints += 50;
+                if (glider->HitPoints > 100) {
+                    glider->HitPoints = 100;
+                }
+            }
+        } else if (HitCrateBalloons(&obj.pos, obj.RADIUS)) {
+            AddGameDebris(0x1A, &obj.pos);
+            i--;
+            AddScreenWumpa(temp_pCrate->pos.x, temp_pCrate->pos.y + CRATEBALLOONOFFSET, temp_pCrate->pos.z, 1);
+            FreeGliderBullet(i, 0);
+            temp_pCrate->flags = (temp_pCrate->flags | 0x400) ^ 0x400;
+        } else if (HitItems(&obj)) {
+            AddGameDebris(0x1A, &obj.pos);
+            i--;
+            FreeGliderBullet(i, 0);
+        } else {
+            clock = FindClock();
+            if (clock != 0) {
+                clockpos.x = clock->obj.pos.x;
+                clockpos.y = clock->obj.pos.y + CRATEBALLOONOFFSET;
+                clockpos.z = clock->obj.pos.z;
+                radius = obj.RADIUS + CRATEBALLOONRADIUS;
+                if (NuVecDistSqr(&obj.pos, &clockpos, 0) < radius * radius) {
+                    AddGameDebris(0x1A, &obj.pos);
+                    i--;
+                    FreeGliderBullet(i, 0);
+                    StartTimeTrial(&clock->obj.pos, 1);
+                }
+            }
+        }
+    }
+}
+
+void GliderBombsHitThings(struct gliderflight_s *glider)
+{
+    struct obj_s obj;
+    struct nuvec_s clockpos;
+    struct gliderbomb_s *bombs;
+    struct gliderbomb_s *bomb;
+    struct creature_s *clock;
+    f32 radius;
+    s32 i;
+
+    obj.bot = -0.3f;
+    obj.SCALE = 1.0f;
+    obj.top = 0.3f;
+    obj.RADIUS = 0.3f;
+    obj.attack = 0;
+    obj.pLOCATOR = 0;
+    bombs = GliderBombs;
+    for (i = 0; i < 10; i++) {
+        bomb = &bombs[i];
+        if (bomb->life == 0) {
+            continue;
+        }
+        obj.pos = bomb->pos;
+        if (HitCrates(&obj, 1)) {
+            AddGameDebris(0x1A, &obj.pos);
+            AddScreenWumpa(temp_pCrate->pos.x, temp_pCrate->pos.y + 0.25f, temp_pCrate->pos.z, 1);
+            bomb->life = 0;
+            if (temp_crate_type == 5) {
+                glider->HitPoints += 50;
+                if (glider->HitPoints > 100) {
+                    glider->HitPoints = 100;
+                }
+            }
+        } else if (HitCrateBalloons(&obj.pos, obj.RADIUS)) {
+            AddGameDebris(0x1A, &obj.pos);
+            AddScreenWumpa(temp_pCrate->pos.x, temp_pCrate->pos.y + CRATEBALLOONOFFSET, temp_pCrate->pos.z, 1);
+            bomb->life = 0;
+            temp_pCrate->flags = (temp_pCrate->flags | 0x400) ^ 0x400;
+        } else if (HitItems(&obj)) {
+            AddGameDebris(0x1A, &obj.pos);
+            bomb->life = 0;
+        } else {
+            clock = FindClock();
+            if (clock != 0) {
+                clockpos.x = clock->obj.pos.x;
+                clockpos.y = clock->obj.pos.y + CRATEBALLOONOFFSET;
+                clockpos.z = clock->obj.pos.z;
+                radius = obj.RADIUS + CRATEBALLOONRADIUS;
+                if (NuVecDistSqr(&obj.pos, &clockpos, 0) < radius * radius) {
+                    AddGameDebris(0x1A, &obj.pos);
+                    bomb->life = 0;
+                    StartTimeTrial(&clock->obj.pos, 1);
+                }
+            }
+        }
     }
 }
 
@@ -2712,7 +3350,6 @@ struct asteroid_s *FindFreeAsteroid(s32 passes)
     return 0;
 }
 
-extern f32 Level_GliderRadius;
 extern f32 Level_GliderFloor;
 extern f32 Level_GliderCeiling;
 
@@ -2761,7 +3398,6 @@ inline void InitAsteroids(void)
 
 extern s32 AsteroidDebug;
 extern void ProcessAsteroid(struct asteroid_s *asteroid);
-extern void DrawCross(struct nuvec_s *pos, s32 colour, f32 size);
 
 inline void ProcessAsteroids(void)
 {
@@ -2991,7 +3627,6 @@ void ProcessLighteningHail(void)
 }
 
 extern f32 BOLTHOMESEEKTIME;
-extern void SeekHalfLifeNUVEC(struct nuvec_s *cur, struct nuvec_s *target, f32 halflife, f32 dt);
 
 void ProcessWBBolts(void)
 {
@@ -3458,8 +4093,6 @@ static inline void InitGliderBombs(void)
     memset(EnemyGliderBombs, 0, sizeof(EnemyGliderBombs));
 }
 
-extern struct zoffastart_s D_005A6C30[4];
-#define ZoffaStartPoints D_005A6C30
 extern s32 D_006332A0;
 extern s32 D_006332A4;
 extern s32 D_006332A8;
@@ -3672,6 +4305,80 @@ extern s32 new_mode;
 extern s32 new_level;
 extern s32 D_0063329C;
 #define glider_restart_timer D_0063329C
+
+static inline s8 GrabAnotherLocator(char *list, struct NUPOINTOFINTEREST_s **locators)
+{
+    s32 tries;
+    s32 loc;
+    s32 j;
+
+    loc = (s32)(frand() * 16.0f);
+    for (tries = 0; tries < 16; tries++, loc++) {
+        if (loc > 15) {
+            loc -= 16;
+        }
+        if (locators[loc] != 0) {
+            for (j = 0; j < 16; j++) {
+                if (list[j] == 0x7F || list[j] == loc) {
+                    break;
+                }
+            }
+            if (j == 16 || list[j] == 0x7F) {
+                return loc;
+            }
+        }
+    }
+    return 0x7F;
+}
+
+void GliderSmoke(struct gliderflight_s *glider)
+{
+    struct CharacterModel *model;
+    f32 time;
+    f32 val;
+    f32 thisval;
+    f32 maxtime;
+    s32 i;
+
+    val = 0.0f;
+    i = D_0056236E[0];
+    if (i == -1) {
+        return;
+    }
+    model = &CModel[i];
+    i = 0;
+    if (glider->TerminalDive != 0) {
+        glider->HitTimer = Level_DeadTime;
+    }
+    time = glider->HitTimer;
+    maxtime = Level_DeadTime - 3.0f;
+    while (time > 0.0f && val <= maxtime) {
+        thisval = time;
+        if (time > 3.0f) {
+            thisval = 3.0f;
+        }
+        if (glider->LocatorList[i] == 0x7F) {
+            glider->LocatorList[i] = GrabAnotherLocator(glider->LocatorList, model->pLOCATOR);
+            if ((s8)glider->LocatorList[i] == 0x7F) {
+                goto next;
+            }
+        }
+        glider->LocatorTime[i] += thisval;
+        if (glider->LocatorTime[i] >= 3.0f) {
+            glider->LocatorTime[i] -= 3.0f;
+            AddGameDebrisRot(0x1D, (struct nuvec_s *)&glider->Cre->mtxLOCATOR[1][glider->LocatorList[i]]._30,
+                             1, 0x4000, 0);
+        }
+next:
+        time -= 0.5f;
+        val += 0.5f;
+        i++;
+    }
+    for (; i < 16; i++) {
+        glider->LocatorTime[i] = 0.0f;
+        glider->LocatorList[i] = 0x7F;
+    }
+}
 
 inline void ExplodeGlider(struct gliderflight_s *glider)
 {
