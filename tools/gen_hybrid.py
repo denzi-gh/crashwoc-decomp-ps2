@@ -1101,13 +1101,24 @@ def _splice_unit(prologue, seg_by_name, functions, unit_dir, link_set,
     return out_lines
 
 
-def _assemble_unit(out_o, out_lines):
+def profile_g_flag(profile, version="pal103"):
+    """The `-G<n>` of a compiler profile: the assembler must use the same
+    small-data threshold the compiler did, or a `.extern SYM, n` / macro load
+    is addressed differently from the compiler's own assumption."""
+    flags = [f for f in cc.profile_spec(profile, version)["flags"]
+             if re.fullmatch(r"-G\d+", f)]
+    if len(flags) != 1:
+        raise HybridError(f"profile {profile!r} must name exactly one -G flag")
+    return flags[0]
+
+
+def _assemble_unit(out_o, out_lines, g_flag="-G8"):
     """Write the spliced .s next to out_o, assemble it, and reject data."""
     out_o = Path(out_o)
     unit_s = out_o.with_suffix(".s")
     unit_s.parent.mkdir(parents=True, exist_ok=True)
     unit_s.write_text("\n".join(out_lines) + "\n")
-    _assemble_hybrid(unit_s, out_o)
+    _assemble_hybrid(unit_s, out_o, g_flag)
     _check_no_data_sections(out_o)
     return unit_s
 
@@ -1121,7 +1132,8 @@ def build_hybrid(manifest_path, out_o, link_set="matching", version="pal103"):
                              link_set, version, report_base=False,
                              unit_end=_unit_end(unit_dir), local_data=local_data,
                              profile=data.get("profile", "default"))
-    return _assemble_unit(out_o, out_lines)
+    return _assemble_unit(out_o, out_lines,
+                          profile_g_flag(data.get("profile", "default"), version))
 
 
 def build_report_object(manifest_path, out_o, version="pal103"):
@@ -1148,7 +1160,8 @@ def build_report_object(manifest_path, out_o, version="pal103"):
                              link_set, version, report_base=True,
                              unit_end=_unit_end(unit_dir), local_data=local_data,
                              profile=data.get("profile", "default"))
-    return _assemble_unit(out_o, out_lines)
+    return _assemble_unit(out_o, out_lines,
+                          profile_g_flag(data.get("profile", "default"), version))
 
 
 def _duplicate_static_labels(functions, version):
@@ -1207,7 +1220,7 @@ def _check_no_data_sections(out_o):
             f"contribute .text")
 
 
-def _assemble_hybrid(hybrid_s, out_o):
+def _assemble_hybrid(hybrid_s, out_o, g_flag="-G8"):
     """Assemble the spliced .s with the decompals binutils `as`.
 
     Sony's own `as` (the original plan) cannot assemble the retail slices:
@@ -1218,7 +1231,8 @@ def _assemble_hybrid(hybrid_s, out_o):
     `as` assembles both the slices (it already produces the byte-verified
     expected objects from the same text) and ee-gcc's compiler output
     (`.extern SYM, n` + macro forms resolve to R_MIPS_GPREL16 under -G8,
-    probed) without padding. Internal alignment directives still emit their
+    probed) without padding. `g_flag` is the unit profile's own `-G`
+    (profile_g_flag). Internal alignment directives still emit their
     required padding, but section-end rounding must be disabled: a retail TU
     can end on a four-byte boundary even when C uses eight-byte alignment
     internally (nucore/nustring). The canonical extents already own all tail
@@ -1232,7 +1246,7 @@ def _assemble_hybrid(hybrid_s, out_o):
     out_o = Path(out_o)
     out_o.parent.mkdir(parents=True, exist_ok=True)
     proc = subprocess.run(
-        [as_bin, "-EL", "-march=r5900", "-G8", "-no-pad-sections",
+        [as_bin, "-EL", "-march=r5900", g_flag, "-no-pad-sections",
          "-o", str(out_o), str(hybrid_s)],
         capture_output=True, text=True)
     if proc.returncode != 0:

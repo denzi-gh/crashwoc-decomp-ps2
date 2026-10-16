@@ -395,7 +395,12 @@ The game/engine TUs provably cannot match under the Sony 2.9 build (its `sq`/`lq
 callee saves and lack of R5900 short-loop padding), so `default` is the SN ProDG
 **EE GCC 2.95.2-EE** compiler; the Sony **EE GCC 2.9-ee-991111-01** stays as `sce`
 for the runtime. Every unit compiles with `default` unless its status manifest
-names a profile, and both flag sets are `-O2 -G8 -fomit-frame-pointer`. Modern
+names a profile. `default` compiles with `-O2 -G8 -fomit-frame-pointer`, `sce`
+with `-O2 -G0 -fomit-frame-pointer`: the retail SDK half uses no small-data
+section (its 4-byte initialised globals sit in `.data`, its `$LC` constants in
+`.rodata`), and only `-G0` reproduces libm's data bytes
+([tools/probe_data_emission.py](../tools/probe_data_emission.py)); gen_hybrid
+assembles every unit with its profile's `-G`. Modern
 compilers are used only for analysis and tooling, never for matching results.
 
 Every tool is pinned in [toolchain.lock.json](../toolchain.lock.json):
