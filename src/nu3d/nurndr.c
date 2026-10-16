@@ -121,8 +121,10 @@
 #include "nu_libc.h"
 #include "nu_types.h"
 
+#include "nu3d/nuanim.h"
 #include "nu3d/nucamera.h"
 #include "nu3d/nugobj.h"
+#include "nu3d/nuhgobj.h"
 #include "nu3d/nugscn.h"
 #include "nu3d/numtl.h"
 #include "nu3d/nustream.h"
@@ -187,8 +189,17 @@ extern char D_00614770[];
 #define nurndr_file D_00614770
 extern char D_00614790[];
 
-extern int NuHGobjRndrMtxDwa(void *hobj, struct numtx_s *mtx, int nlayers, short *layer, struct numtx_s *dwa, int blend);
-extern void NuHGobjEval(void *hobj, int njoints, void *joints, struct numtx_s *mtx);
+extern int NuHGobjRndrMtxDwa(struct NUHGOBJ_s *hobj, struct numtx_s *wm, int nlayers, short *layer,
+                             struct numtx_s *mtx_array, float **dwa);
+extern int D_0062EC78;
+#define hgobj_enabled D_0062EC78
+extern void NuMtxMulArrayVU0(struct numtx_s *dst, struct numtx_s *a, struct numtx_s *b, int count);
+extern struct numtx_s D_00681A40[];
+#define hgobj_anim_mtx D_00681A40
+extern void NuHGobjEval(struct NUHGOBJ_s *hobj, int njanims, struct NUJOINTANIM_s *janim, struct numtx_s *mtx_array);
+extern void NuMtxSetRotateXYZVU0(struct numtx_s *m, struct nuangvec_s *a);
+extern void NuMtxMulVU0(struct numtx_s *dst, struct numtx_s *a, struct numtx_s *b);
+extern u32 *NuRndrCreateBlendShapeDeformerWeightsArray(u32 count);
 extern struct numtx_s D_0067DA40[];
 #define hgobj_joint_mtx D_0067DA40
 extern int NuRndrStreamTri3dClip(struct nuvtx_tc1_s *verts, int count, struct numtx_s *mtx,
@@ -406,6 +417,18 @@ struct nurndrscreenvtx_s {
 extern struct nurndrscreenvtx_s watertab[33][21];
 extern struct nurndrscreenvtx_s Hazetab[33][21];
 extern int shadstorecnt;
+
+struct nurndrshadstore_s {
+    struct numtx_s mtx;
+    struct nushadowdata_s shadow;
+};
+
+extern struct nurndrshadstore_s shadstore[256];
+extern int testcntp;
+extern int testdone;
+extern int testdone2;
+extern struct numtl_s *NuLightAddMat2;
+extern void NuCameraSet(struct nucamera_s *cam);
 extern unsigned char D_002D3F50[];
 #define quad_adc_flags D_002D3F50
 extern unsigned char D_002D4008[];
@@ -2307,6 +2330,840 @@ u32 *NuRndrCylMakeData(void) {
     *((float *)packet)++ = 0.0f;
     vpDmaTag_Close(packet);
     return base;
+}
+
+
+void NuRndrShadowStack(struct nuvec_s *light) {
+    struct nurndrshadstore_s *store;
+    struct nushadowmesh_s *mesh;
+    int i;
+
+    NuVpSetSize(4096.0f, PS2_REZ_H << 4);
+    NuCameraSet(&global_camera);
+    testcntp = 0;
+    NuRndrStreamLink(rndrstream_fx);
+    NuRndrStreamSetMisc(rndrstream_fx);
+    NuRndrStreamAddMtl(rndrstream_fx, NuLightAddMat2);
+    rndrstream_fx->cur.w = vpDmaTag_CntEx(rndrstream_fx->cur.w, 0x11000000, 0x50000000) - 1;
+    rndrstream_fx->cur.w = vtBeginDirect(rndrstream_fx->cur.w, 0);
+    rndrstream_fx->cur.w = gsBeginGifPacket(rndrstream_fx->cur.w, 0, 1, 0, 0, 0, 1, 0xE);
+    *((u64 *)rndrstream_fx->cur.w)++ = 0;
+    *((u64 *)rndrstream_fx->cur.w)++ = 0x46;
+    rndrstream_fx->cur.w = gsCloseGifPacket(rndrstream_fx->cur.w);
+    rndrstream_fx->cur.w = vtCloseDirect(rndrstream_fx->cur.w);
+    rndrstream_fx->cur.w = vpDmaTag_Close(rndrstream_fx->cur.w);
+    NuRndrSetLocalMtx(&numtx_identity, 2);
+    NuRndrStreamSetViewMtxScissorClip(rndrstream_fx);
+    NuRndrStreamSetLocalMtx(rndrstream_fx);
+    NuRndrStreamFxMPG(1);
+    testdone2 = 0;
+    testdone = 0;
+    for (i = 0; i < shadstorecnt; i++) {
+        store = &shadstore[i];
+        if (store->shadow.numcylinders != 0) {
+            NuRndrShadowCylinderCap(&store->mtx, store->shadow.cylinders, store->shadow.numcylinders, light);
+        }
+        if (store->shadow.numellipsoids != 0) {
+            NuRndrShadowEllipse(&store->mtx, store->shadow.ellipsoids, store->shadow.numellipsoids, light);
+        }
+        mesh = store->shadow.meshes;
+        if (mesh != 0) {
+            NuRndrShadowPols(&store->mtx, (struct nurndrshadface_s *)mesh->first,
+                             (struct nurndrshadface_s *)mesh->second, light);
+        }
+    }
+    NuRndrStreamFxMPG(0);
+    rndrstream_free = vpDmaTag_Next(rndrstream_fx->cur.w, 0);
+    NuVpSetSize(PS2_REZ_W << 4, PS2_REZ_H << 4);
+    NuCameraSet(&global_camera);
+    shadstorecnt = 0;
+}
+
+
+int NuHGobjRndrMtxDwa(struct NUHGOBJ_s *hobj, struct numtx_s *wm, int nlayers, short *layer,
+                      struct numtx_s *mtx_array, float **dwa) {
+    struct numtx_s mtx;
+    struct nushadowdata_s *shadow;
+    float *weights;
+    int vis;
+    int rv;
+    int ix;
+    int i;
+    int j;
+
+    rv = 0;
+    if (hgobj_enabled == 0) {
+        return 1;
+    }
+    vis = NuCameraClipTestExtents(&hobj->bbox_min, &hobj->bbox_max, wm);
+    if (vis == 0) {
+        return 0;
+    }
+    if (hobj->shadow != 0 && (u8)hobj->pad81[0] == 0) {
+        for (shadow = hobj->shadow; shadow->last != 0xff; shadow++) {
+            if (shadstorecnt < 256) {
+                NuMtxMulVU0(&mtx, &mtx_array[shadow->last], wm);
+                shadstore[shadstorecnt].mtx = mtx;
+                shadstore[shadstorecnt].shadow.ellipsoids = shadow->ellipsoids;
+                shadstore[shadstorecnt].shadow.cylinders = shadow->cylinders;
+                if (shadow->nummeshes != 0) {
+                    shadstore[shadstorecnt].shadow.meshes = shadow->meshes;
+                } else {
+                    shadstore[shadstorecnt].shadow.meshes = 0;
+                }
+                shadstore[shadstorecnt].shadow.numellipsoids = shadow->numellipsoids;
+                shadstore[shadstorecnt].shadow.numcylinders = shadow->numcylinders;
+                shadstore[shadstorecnt].shadow.nummeshes = shadow->nummeshes;
+                shadstorecnt++;
+            }
+        }
+    }
+    for (i = 0; i < nlayers; i++) {
+        if (layer != 0) {
+            ix = layer[i];
+            if (ix < 0) {
+                continue;
+            }
+            if (ix >= hobj->num_layers) {
+                continue;
+            }
+        } else {
+            nlayers = 1;
+            ix = 0;
+        }
+        if (dwa != 0) {
+            weights = dwa[ix];
+        } else {
+            weights = 0;
+        }
+        if (hobj->layers[ix].gobjs != 0) {
+            for (j = 0; j < hobj->num_joints; j++) {
+                if (hobj->layers[ix].gobjs[j] != 0) {
+                    NuMtxMulVU0(&mtx, &mtx_array[j], wm);
+                    rv |= NuRndrGobj(hobj->layers[ix].gobjs[j], &mtx);
+                }
+            }
+        }
+        if (hobj->layers[ix].blend_gobjs != 0) {
+            for (j = 0; j < hobj->num_joints; j++) {
+                if (hobj->layers[ix].blend_gobjs[j] != 0) {
+                    NuMtxMulVU0(&mtx, &mtx_array[j], wm);
+                    rv |= NuRndrGobj(hobj->layers[ix].blend_gobjs[j], &mtx);
+                }
+            }
+        }
+        if (hobj->layers[ix].skin_object != 0 || hobj->layers[ix].blend_skin_object != 0) {
+            skin_mtx_buffer = NuRndrStreamAlloc(hobj->num_joints * 4);
+            NuMtxMulArrayVU0((struct numtx_s *)skin_mtx_buffer, hobj->INV_WT, mtx_array, hobj->num_joints);
+            if (hobj->layers[ix].skin_object != 0) {
+                rv |= NuRndrGobjSkin(hobj->layers[ix].skin_object, wm, hobj->num_joints, mtx_array, (u32 *)weights,
+                                     vis);
+            }
+            if (hobj->layers[ix].blend_skin_object != 0) {
+                rv |= NuRndrGobjSkin(hobj->layers[ix].blend_skin_object, wm, hobj->num_joints, mtx_array,
+                                     (u32 *)weights, vis);
+            }
+        }
+    }
+    return rv;
+}
+
+
+void NuHGobjEval(struct NUHGOBJ_s *hobj, int njanims, struct NUJOINTANIM_s *janim, struct numtx_s *mtx_array) {
+    struct nuvec_s scale[256];
+    struct NUJOINTANIM_s *janim_array[256];
+    struct nuangvec_s rot;
+    struct numtx_s local;
+    struct numtx_s offsetmtx;
+    struct NUJOINTANIM_s *offset;
+    struct numtx_s *m;
+    struct numtx_s *wt;
+    u8 i;
+    u8 joint_ix;
+
+    memset(janim_array, 0, sizeof(janim_array));
+    scale[255].x = 1.0f;
+    scale[255].y = 1.0f;
+    scale[255].z = 1.0f;
+    if (njanims != 0) {
+        for (i = 0; i < njanims; i++) {
+            if (janim[i].joint_id < hobj->num_joint_ixs) {
+                joint_ix = hobj->joint_ixs[janim[i].joint_id];
+                if (joint_ix != 0xff) {
+                    janim_array[joint_ix] = &janim[i];
+                }
+            }
+        }
+    }
+
+    for (i = 0; i < hobj->num_joints; i++) {
+        wt = &mtx_array[i];
+        if (njanims != 0) {
+            offset = janim_array[i];
+        } else {
+            offset = 0;
+        }
+        if (offset != 0) {
+            m = &local;
+            local = hobj->T[i];
+            rot.x = (int)(offset->rx * 10430.378f);
+            rot.y = (int)(offset->ry * 10430.378f);
+            rot.z = (int)(offset->rz * 10430.378f);
+            NuMtxSetRotateXYZVU0(&offsetmtx, &rot);
+            NuMtxTranslate(&offsetmtx, (struct nuvec_s *)&offset->tx);
+            NuMtxMulVU0(m, &offsetmtx, m);
+        } else {
+            m = &hobj->T[i];
+        }
+        if ((u8)hobj->joints[i].parent_ix == 0xff) {
+            *wt = *m;
+        } else {
+            NuMtxMulVU0(wt, m, &mtx_array[(u8)hobj->joints[i].parent_ix]);
+        }
+    }
+}
+
+
+void NuHGobjEvalAnim(struct NUHGOBJ_s *hobj, struct nuanimdata_s *animdata, float time, int njanims,
+                     struct NUJOINTANIM_s *janim, struct numtx_s *mtx_array) {
+    struct numtx_s local;
+    struct nuvec_s scale[256];
+    struct nuanimtime_s atime;
+    struct nuanimdatachunk_s *chunk;
+    struct NUJOINTANIM_s *janim_array[256];
+    struct nuanimcurveset_s *curveset;
+    struct NUJOINTANIM_s *offset;
+    struct numtx_s *m;
+    struct numtx_s *wt;
+    u8 i;
+    u8 joint_ix;
+
+    memset(janim_array, 0, sizeof(janim_array));
+    scale[255].x = 1.0f;
+    scale[255].y = 1.0f;
+    scale[255].z = 1.0f;
+    NuAnimDataCalcTime(animdata, time, &atime);
+    chunk = animdata->chunks[atime.chunk];
+    if (njanims != 0) {
+        for (i = 0; i < njanims; i++) {
+            if (janim[i].joint_id < hobj->num_joint_ixs) {
+                joint_ix = hobj->joint_ixs[janim[i].joint_id];
+                if (joint_ix != 0xff) {
+                    janim_array[joint_ix] = &janim[i];
+                }
+            }
+        }
+    }
+
+    for (i = 0; i < hobj->num_joints; i++) {
+        wt = &mtx_array[i];
+        if (njanims != 0) {
+            offset = janim_array[i];
+        } else {
+            offset = 0;
+        }
+        curveset = chunk->animcurvesets[i];
+        if (curveset != 0) {
+            if ((curveset->flags & 0x1a) != 0 || (hobj->joints[i].flags & 8) != 0) {
+                NuAnimCurveSetApplyToJoint2(curveset, &atime, &hobj->joints[i], &scale[i],
+                                            &scale[(u8)hobj->joints[i].parent_ix], &local, offset);
+            } else {
+                NuAnimCurveSetApplyToJointBasic(curveset, &atime, &hobj->joints[i], &scale[i],
+                                                &scale[(u8)hobj->joints[i].parent_ix], &local, offset);
+            }
+            m = &local;
+        } else {
+            m = &hobj->T[i];
+        }
+        if ((u8)hobj->joints[i].parent_ix == 0xff) {
+            *wt = *m;
+        } else {
+            NuMtxMulVU0(wt, m, &mtx_array[(u8)hobj->joints[i].parent_ix]);
+        }
+    }
+}
+
+
+void NuHGobjEvalAnim2(struct NUHGOBJ_s *hobj, struct nuanimdata2_s *animdata, float time, int njanims,
+                      struct NUJOINTANIM_s *janim, struct numtx_s *mtx_array) {
+    struct numtx_s local;
+    struct nuvec_s scale[256];
+    struct nuanimtime_s atime;
+    struct NUJOINTANIM_s *janim_array[256];
+    union nuanimcurve2_u *curves;
+    signed char *curveflags;
+    int curvesetflags;
+    struct NUJOINTANIM_s *offset;
+    struct numtx_s *m;
+    struct nuvec_s *jscale;
+    struct numtx_s *wt;
+    u8 i;
+    u8 joint_ix;
+
+    memset(janim_array, 0, sizeof(janim_array));
+    scale[255].x = 1.0f;
+    scale[255].y = 1.0f;
+    scale[255].z = 1.0f;
+    NuAnimData2CalcTime(animdata, time, &atime);
+    if (njanims != 0) {
+        for (i = 0; i < njanims; i++) {
+            if (janim[i].joint_id < hobj->num_joint_ixs) {
+                joint_ix = hobj->joint_ixs[janim[i].joint_id];
+                if (joint_ix != 0xff) {
+                    janim_array[joint_ix] = &janim[i];
+                }
+            }
+        }
+    }
+
+    for (i = 0; i < hobj->num_joints; i++) {
+        wt = &mtx_array[i];
+        if (njanims != 0) {
+            offset = janim_array[i];
+        } else {
+            offset = 0;
+        }
+        curvesetflags = animdata->curvesetflags[i];
+        curves = &animdata->curves[animdata->ncurves * i];
+        curveflags = &animdata->curveflags[animdata->ncurves * i];
+        if ((curvesetflags & 0x1a) != 0 || (hobj->joints[i].flags & 8) != 0) {
+            NuAnimCurve2SetApplyToJoint(curves, curveflags, curvesetflags, &atime, &hobj->joints[i], &scale[i],
+                                        &scale[(u8)hobj->joints[i].parent_ix], &local, offset);
+        } else {
+            NuAnimCurve2SetApplyToJointBasic(curves, curveflags, curvesetflags, &atime, &hobj->joints[i], &scale[i],
+                                             &scale[(u8)hobj->joints[i].parent_ix], &local, offset);
+        }
+        m = &local;
+        if ((u8)hobj->joints[i].parent_ix == 0xff) {
+            if ((curvesetflags & 0x40) != 0) {
+                jscale = &scale[i];
+                jscale->x = 1.0f;
+                jscale->y = 1.0f;
+                jscale->z = 1.0f;
+            }
+            *wt = *m;
+        } else {
+            NuMtxMulVU0(wt, m, &mtx_array[(u8)hobj->joints[i].parent_ix]);
+        }
+    }
+}
+
+
+int NuHGobjRndrAnim(struct NUHGOBJ_s *hobj, struct numtx_s *wm, int layer, struct nuanimdata_s *animdata, float time,
+                    struct nuanimdata_s *faceanim, float facetime) {
+    struct numtx_s local;
+    struct numtx_s mtx;
+    struct nuvec_s scale[256];
+    struct nuanimtime_s atime;
+    struct nuanimtime_s faceatime;
+    struct nuanimdatachunk_s *chunk;
+    struct nuanimcurveset_s *curveset;
+    struct nuanimcurveset_s *faceset;
+    struct numtx_s *m;
+    struct numtx_s *wt;
+    float *weights;
+    int ncurves;
+    int vis;
+    int rv;
+    int i;
+
+    vis = NuCameraClipTestExtents(&hobj->bbox_min, &hobj->bbox_max, wm);
+    weights = 0;
+    if (vis == 0) {
+        return 0;
+    }
+    scale[255].x = 1.0f;
+    scale[255].y = 1.0f;
+    scale[255].z = 1.0f;
+    if (animdata != 0) {
+        NuAnimDataCalcTime(animdata, time, &atime);
+        chunk = animdata->chunks[atime.chunk];
+        for (i = 0; i < hobj->num_joints; i++) {
+            wt = &hgobj_anim_mtx[i];
+            curveset = chunk->animcurvesets[i];
+            if (curveset != 0) {
+                if ((curveset->flags & 0x1a) != 0 || (hobj->joints[i].flags & 8) != 0) {
+                    NuAnimCurveSetApplyToJoint2(curveset, &atime, &hobj->joints[i], &scale[i],
+                                                &scale[(u8)hobj->joints[i].parent_ix], &local, 0);
+                } else {
+                    NuAnimCurveSetApplyToJointBasic(curveset, &atime, &hobj->joints[i], &scale[i],
+                                                    &scale[(u8)hobj->joints[i].parent_ix], &local, 0);
+                }
+                m = &local;
+            } else {
+                m = &hobj->T[i];
+            }
+            if ((u8)hobj->joints[i].parent_ix == 0xff) {
+                *wt = *m;
+            } else {
+                NuMtxMulVU0(wt, m, &hgobj_anim_mtx[(u8)hobj->joints[i].parent_ix]);
+            }
+        }
+    } else {
+        for (i = 0; i < hobj->num_joints; i++) {
+            wt = &hgobj_anim_mtx[i];
+            m = &hobj->T[i];
+            if ((u8)hobj->joints[i].parent_ix == 0xff) {
+                NuMtxMul(wt, m, wm);
+            } else {
+                NuMtxMul(wt, m, &hgobj_anim_mtx[(u8)hobj->joints[i].parent_ix]);
+            }
+        }
+    }
+    if (faceanim != 0) {
+        NuAnimDataCalcTime(faceanim, facetime, &faceatime);
+        weights = (float *)NuRndrCreateBlendShapeDeformerWeightsArray(
+            faceanim->chunks[faceatime.chunk]->animcurvesets[layer]->ncurves);
+        if (weights != 0) {
+            ncurves = faceanim->chunks[faceatime.chunk]->animcurvesets[layer]->ncurves;
+            for (i = 0; i < ncurves; i++) {
+                faceset = faceanim->chunks[faceatime.chunk]->animcurvesets[layer];
+                if (faceset->set[i] != 0) {
+                    weights[i + 6] = NuAnimCurveCalcVal2(faceset->set[i], &faceatime);
+                } else {
+                    weights[i + 6] = faceset->constants[i];
+                }
+            }
+        }
+    }
+    rv = 0;
+    if (hobj->layers[layer].gobjs != 0) {
+        for (i = 0; i < hobj->num_joints; i++) {
+            if (hobj->layers[layer].gobjs[i] != 0) {
+                NuMtxMulVU0(&mtx, &hgobj_anim_mtx[i], wm);
+                rv |= NuRndrGobj(hobj->layers[layer].gobjs[i], &mtx);
+            }
+        }
+    }
+    if (hobj->layers[layer].blend_gobjs != 0) {
+        for (i = 0; i < hobj->num_joints; i++) {
+            if (hobj->layers[layer].blend_gobjs[i] != 0) {
+                NuMtxMulVU0(&mtx, &hgobj_anim_mtx[i], wm);
+                rv |= NuRndrGobj(hobj->layers[layer].blend_gobjs[i], &mtx);
+            }
+        }
+    }
+    if (hobj->layers[layer].skin_object != 0 || hobj->layers[layer].blend_skin_object != 0) {
+        skin_mtx_buffer = NuRndrStreamAlloc(hobj->num_joints * 4);
+        NuMtxMulArrayVU0((struct numtx_s *)skin_mtx_buffer, hobj->INV_WT, hgobj_anim_mtx, hobj->num_joints);
+        if (hobj->layers[layer].skin_object != 0) {
+            rv |= NuRndrGobjSkin(hobj->layers[layer].skin_object, wm, hobj->num_joints, hgobj_anim_mtx, 0, vis);
+        }
+        if (hobj->layers[layer].blend_skin_object != 0) {
+            rv |= NuRndrGobjSkin(hobj->layers[layer].blend_skin_object, wm, hobj->num_joints, hgobj_anim_mtx,
+                                 (u32 *)weights, vis);
+        }
+    }
+    return rv;
+}
+
+
+float **NuHGobjEvalDwa(int nlayers, short *layer, struct nuanimdata_s *animdata, float time) {
+    struct nuanimtime_s atime;
+    struct nuanimcurveset_s *curveset;
+    float **dwa;
+    float *weights;
+    u32 qwc;
+    int ncurves;
+    int ix;
+    int i;
+    int j;
+
+    dwa = 0;
+    if (animdata != 0 && nlayers != 0) {
+        NuAnimDataCalcTime(animdata, time, &atime);
+        if (layer == 0) {
+            nlayers = 1;
+        }
+        qwc = (u32)(nlayers + 3) >> 2;
+        dwa = NuRndrStreamAlloc(qwc);
+        memset(dwa, 0, qwc);
+        if (dwa != 0) {
+            for (i = 0; i < nlayers; i++) {
+                if (layer != 0) {
+                    ix = layer[i];
+                    if (ix < 0) {
+                        continue;
+                    }
+                    if (ix >= animdata->chunks[atime.chunk]->numnodes) {
+                        dwa[i] = (float *)NuRndrCreateBlendShapeDeformerWeightsArray(0);
+                        continue;
+                    }
+                } else {
+                    ix = 0;
+                }
+                if (animdata->chunks[atime.chunk]->animcurvesets[ix] != 0) {
+                    ncurves = animdata->chunks[atime.chunk]->animcurvesets[ix]->ncurves;
+                    weights = (float *)NuRndrCreateBlendShapeDeformerWeightsArray(ncurves);
+                    dwa[i] = weights;
+                    if (weights != 0) {
+                        for (j = 0; j < ncurves; j++) {
+                            curveset = animdata->chunks[atime.chunk]->animcurvesets[ix];
+                            if (curveset->set[j] != 0) {
+                                weights[j + 6] = NuAnimCurveCalcVal2(curveset->set[j], &atime);
+                            } else {
+                                weights[j + 6] = curveset->constants[j];
+                            }
+                        }
+                    }
+                } else {
+                    dwa[i] = (float *)NuRndrCreateBlendShapeDeformerWeightsArray(0);
+                }
+            }
+        }
+    }
+    return dwa;
+}
+
+
+float **NuHGobjEvalDwa2(int nlayers, short *layer, struct nuanimdata2_s *animdata, float time) {
+    struct nuanimtime_s atime;
+    union nuanimcurve2_u *curves;
+    signed char *curveflags;
+    float **dwa;
+    float *weights;
+    u32 qwc;
+    int ncurves;
+    int ix;
+    int i;
+    int j;
+
+    dwa = 0;
+    if (animdata != 0 && nlayers != 0) {
+        NuAnimData2CalcTime(animdata, time, &atime);
+        if (layer == 0) {
+            nlayers = 1;
+        }
+        qwc = (u32)(nlayers + 3) >> 2;
+        dwa = NuRndrStreamAlloc(qwc);
+        memset(dwa, 0, qwc);
+        if (dwa != 0) {
+            for (i = 0; i < nlayers; i++) {
+                if (layer != 0) {
+                    ix = layer[i];
+                    if (ix < 0) {
+                        continue;
+                    }
+                    if (ix >= animdata->nnodes) {
+                        dwa[i] = (float *)NuRndrCreateBlendShapeDeformerWeightsArray(0);
+                        continue;
+                    }
+                } else {
+                    ix = 0;
+                }
+                ncurves = animdata->ncurves;
+                weights = (float *)NuRndrCreateBlendShapeDeformerWeightsArray(ncurves);
+                dwa[i] = weights;
+                curveflags = &animdata->curveflags[animdata->ncurves * ix];
+                curves = &animdata->curves[animdata->ncurves * ix];
+                if (weights != 0) {
+                    for (j = 0; j < ncurves; j++) {
+                        weights[j + 6] = NuAnimCurve2CalcVal(&curves[j], &atime, curveflags[j]);
+                    }
+                }
+            }
+        }
+    }
+    return dwa;
+}
+
+
+float **NuHGobjEvalDwaBlend(int nlayers, short *layer, struct nuanimdata_s *animdata1, float time1,
+                            struct nuanimdata_s *animdata2, float time2, float blend) {
+    struct nuanimtime_s atime1;
+    struct nuanimtime_s atime2;
+    struct nuanimdatachunk_s *chunk;
+    struct nuanimcurveset_s *curveset;
+    float **dwa;
+    float *weights;
+    float value1;
+    float value2;
+    u32 qwc;
+    int ncurves1;
+    int ncurves2;
+    int ncurves;
+    int ix;
+    int i;
+    int j;
+
+    dwa = 0;
+    if ((animdata1 != 0 || animdata2 != 0) && nlayers != 0) {
+        if (animdata1 != 0) {
+            NuAnimDataCalcTime(animdata1, time1, &atime1);
+        }
+        if (animdata2 != 0) {
+            NuAnimDataCalcTime(animdata2, time2, &atime2);
+        }
+        if (layer == 0) {
+            nlayers = 1;
+        }
+        qwc = (u32)(nlayers + 3) >> 2;
+        dwa = NuRndrStreamAlloc(qwc);
+        memset(dwa, 0, qwc);
+        if (dwa != 0) {
+            for (i = 0; i < nlayers; i++) {
+                if (layer != 0) {
+                    ix = layer[i];
+                    if (ix < 0) {
+                        continue;
+                    }
+                } else {
+                    ix = 0;
+                }
+                ncurves1 = 0;
+                if (animdata1 != 0) {
+                    chunk = animdata1->chunks[atime1.chunk];
+                    if (ix < chunk->numnodes && chunk->animcurvesets[ix] != 0) {
+                        ncurves1 = chunk->animcurvesets[ix]->ncurves;
+                    }
+                }
+                ncurves2 = 0;
+                if (animdata2 != 0) {
+                    chunk = animdata2->chunks[atime2.chunk];
+                    if (ix < chunk->numnodes && chunk->animcurvesets[ix] != 0) {
+                        ncurves2 = chunk->animcurvesets[ix]->ncurves;
+                    }
+                }
+                ncurves = ncurves2 < ncurves1 ? ncurves1 : ncurves2;
+                weights = (float *)NuRndrCreateBlendShapeDeformerWeightsArray(ncurves);
+                dwa[i] = weights;
+                if (weights != 0) {
+                    for (j = 0; j < ncurves; j++) {
+                        if (j < ncurves1) {
+                            curveset = animdata1->chunks[atime1.chunk]->animcurvesets[ix];
+                            if (curveset->set[j] != 0) {
+                                value1 = NuAnimCurveCalcVal2(curveset->set[j], &atime1);
+                            } else {
+                                value1 = curveset->constants[j];
+                            }
+                        } else {
+                            value1 = 0.0f;
+                        }
+                        if (j < ncurves2) {
+                            curveset = animdata2->chunks[atime2.chunk]->animcurvesets[ix];
+                            if (curveset->set[j] != 0) {
+                                value2 = NuAnimCurveCalcVal2(curveset->set[j], &atime2);
+                            } else {
+                                value2 = curveset->constants[j];
+                            }
+                        } else {
+                            value2 = 0.0f;
+                        }
+                        weights[j + 6] = value2 * blend + value1 * (1.0f - blend);
+                    }
+                }
+            }
+        }
+    }
+    return dwa;
+}
+
+
+float **NuHGobjEvalDwaBlend2(int nlayers, short *layer, struct nuanimdata2_s *animdata1, float time1,
+                             struct nuanimdata2_s *animdata2, float time2, float blend) {
+    struct nuanimtime_s atime1;
+    struct nuanimtime_s atime2;
+    union nuanimcurve2_u *curves1;
+    union nuanimcurve2_u *curves2;
+    signed char *curveflags1;
+    signed char *curveflags2;
+    float **dwa;
+    float *weights;
+    float value1;
+    float value2;
+    u32 qwc;
+    int ncurves1;
+    int ncurves2;
+    int ncurves;
+    int ix;
+    int i;
+    int j;
+
+    dwa = 0;
+    if ((animdata1 != 0 || animdata2 != 0) && nlayers != 0) {
+        if (animdata1 != 0) {
+            NuAnimData2CalcTime(animdata1, time1, &atime1);
+        }
+        if (animdata2 != 0) {
+            NuAnimData2CalcTime(animdata2, time2, &atime2);
+        }
+        if (layer == 0) {
+            nlayers = 1;
+        }
+        qwc = (u32)(nlayers + 3) >> 2;
+        dwa = NuRndrStreamAlloc(qwc);
+        memset(dwa, 0, qwc);
+        if (dwa != 0) {
+            for (i = 0; i < nlayers; i++) {
+                if (layer != 0) {
+                    ix = layer[i];
+                    if (ix < 0) {
+                        continue;
+                    }
+                } else {
+                    ix = 0;
+                }
+                ncurves1 = 0;
+                if (animdata1 != 0 && ix < animdata1->nnodes) {
+                    ncurves1 = animdata1->ncurves;
+                    curveflags1 = &animdata1->curveflags[ncurves1 * ix];
+                    curves1 = &animdata1->curves[ncurves1 * ix];
+                }
+                ncurves2 = 0;
+                if (animdata2 != 0 && ix < animdata2->nnodes) {
+                    ncurves2 = animdata2->ncurves;
+                    curveflags2 = &animdata2->curveflags[ncurves2 * ix];
+                    curves2 = &animdata2->curves[ncurves2 * ix];
+                }
+                ncurves = ncurves2 < ncurves1 ? ncurves1 : ncurves2;
+                weights = (float *)NuRndrCreateBlendShapeDeformerWeightsArray(ncurves);
+                dwa[i] = weights;
+                if (weights != 0) {
+                    for (j = 0; j < ncurves; j++) {
+                        if (j < ncurves1) {
+                            value1 = NuAnimCurve2CalcVal(&curves1[j], &atime1, curveflags1[j]);
+                        } else {
+                            value1 = 0.0f;
+                        }
+                        if (j < ncurves2) {
+                            value2 = NuAnimCurve2CalcVal(&curves2[j], &atime2, curveflags2[j]);
+                        } else {
+                            value2 = 0.0f;
+                        }
+                        weights[j + 6] = value2 * blend + value1 * (1.0f - blend);
+                    }
+                }
+            }
+        }
+    }
+    return dwa;
+}
+
+
+void NuHGobjEvalAnimBlend(struct NUHGOBJ_s *hobj, struct nuanimdata_s *animdata1, float time1,
+                          struct nuanimdata_s *animdata2, float time2, float blend, int njanims,
+                          struct NUJOINTANIM_s *janim, struct numtx_s *mtx_array) {
+    struct numtx_s local;
+    struct nuvec_s scale[256];
+    struct nuanimtime_s atime1;
+    struct nuanimtime_s atime2;
+    struct NUJOINTANIM_s *janim_array[256];
+    struct nuanimdatachunk_s *chunk1;
+    struct nuanimdatachunk_s *chunk2;
+    struct NUJOINTANIM_s *offset;
+    struct numtx_s *m;
+    struct numtx_s *wt;
+    u8 i;
+    u8 joint_ix;
+
+    memset(janim_array, 0, sizeof(janim_array));
+    scale[255].x = 1.0f;
+    scale[255].y = 1.0f;
+    scale[255].z = 1.0f;
+    NuAnimDataCalcTime(animdata1, time1, &atime1);
+    chunk1 = animdata1->chunks[atime1.chunk];
+    NuAnimDataCalcTime(animdata2, time2, &atime2);
+    chunk2 = animdata2->chunks[atime2.chunk];
+    if (njanims != 0) {
+        for (i = 0; i < njanims; i++) {
+            if (janim[i].joint_id < hobj->num_joint_ixs) {
+                joint_ix = hobj->joint_ixs[janim[i].joint_id];
+                if (joint_ix != 0xff) {
+                    janim_array[joint_ix] = &janim[i];
+                }
+            }
+        }
+    }
+
+    for (i = 0; i < hobj->num_joints; i++) {
+        wt = &mtx_array[i];
+        if (njanims != 0) {
+            offset = janim_array[i];
+        } else {
+            offset = 0;
+        }
+        if (chunk1->animcurvesets[i] != 0 && chunk2->animcurvesets[i] != 0) {
+            NuAnimCurveSetApplyBlendToJoint2(chunk1->animcurvesets[i], &atime1, chunk2->animcurvesets[i], &atime2,
+                                             blend, &hobj->joints[i], &scale[i],
+                                             &scale[(u8)hobj->joints[i].parent_ix], &local, offset);
+            m = &local;
+        } else {
+            m = &hobj->T[i];
+        }
+        if ((u8)hobj->joints[i].parent_ix == 0xff) {
+            *wt = *m;
+        } else {
+            NuMtxMulVU0(wt, m, &mtx_array[(u8)hobj->joints[i].parent_ix]);
+        }
+    }
+}
+
+
+void NuHGobjEvalAnimBlend2(struct NUHGOBJ_s *hobj, struct nuanimdata2_s *animdata1, float time1,
+                           struct nuanimdata2_s *animdata2, float time2, float blend, int njanims,
+                           struct NUJOINTANIM_s *janim, struct numtx_s *mtx_array) {
+    struct numtx_s local;
+    struct nuvec_s scale[512];
+    struct nuanimtime_s atime1;
+    struct nuanimtime_s atime2;
+    struct NUJOINTANIM_s *janim_array[256];
+    int curvesetflags1;
+    int curvesetflags2;
+    struct NUJOINTANIM_s *offset;
+    struct nuvec_s *jscale;
+    struct numtx_s *m;
+    struct numtx_s *wt;
+    u8 i;
+    u8 joint_ix;
+
+    memset(janim_array, 0, sizeof(janim_array));
+    scale[255].x = 1.0f;
+    scale[255].y = 1.0f;
+    scale[255].z = 1.0f;
+    scale[511].x = 1.0f;
+    scale[511].y = 1.0f;
+    scale[511].z = 1.0f;
+    NuAnimData2CalcTime(animdata1, time1, &atime1);
+    NuAnimData2CalcTime(animdata2, time2, &atime2);
+    if (njanims != 0) {
+        for (i = 0; i < njanims; i++) {
+            if (janim[i].joint_id < hobj->num_joint_ixs) {
+                joint_ix = hobj->joint_ixs[janim[i].joint_id];
+                if (joint_ix != 0xff) {
+                    janim_array[joint_ix] = &janim[i];
+                }
+            }
+        }
+    }
+
+    for (i = 0; i < hobj->num_joints; i++) {
+        wt = &mtx_array[i];
+        if (njanims != 0) {
+            offset = janim_array[i];
+        } else {
+            offset = 0;
+        }
+        m = &local;
+        curvesetflags1 = animdata1->curvesetflags[i];
+        curvesetflags2 = animdata2->curvesetflags[i];
+        NuAnimCurve2SetApplyBlendToJoint2(&animdata1->curves[animdata1->ncurves * i],
+                                          &animdata1->curveflags[animdata1->ncurves * i], curvesetflags1, &atime1,
+                                          &animdata2->curves[animdata2->ncurves * i],
+                                          &animdata2->curveflags[animdata2->ncurves * i], curvesetflags2, &atime2,
+                                          blend, &hobj->joints[i], &scale[i],
+                                          &scale[(u8)hobj->joints[i].parent_ix], m, offset);
+        if ((u8)hobj->joints[i].parent_ix == 0xff) {
+            if ((curvesetflags1 & 0x40) != 0) {
+                jscale = &scale[i];
+                jscale->x = 1.0f;
+                jscale->y = 1.0f;
+                jscale->z = 1.0f;
+            }
+            *wt = *m;
+        } else {
+            NuMtxMulVU0(wt, m, &mtx_array[(u8)hobj->joints[i].parent_ix]);
+        }
+    }
 }
 
 
