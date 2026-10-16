@@ -41,7 +41,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0108:0023b450:DrawPanel"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0108:0023f7a0:UpdatePlayerStats"
