@@ -157,8 +157,8 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027f498:sceSymlink"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027f678:sceReadlink"
-state = "asm"
+state = "matching"
