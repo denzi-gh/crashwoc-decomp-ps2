@@ -12,6 +12,7 @@
 
 #include "numath/nuvec.h"
 #include "nu3d/numtl.h"
+#include "nu3d/nurndr.h"
 
 struct nulsthdr_s;
 struct nulnkhdr_s;
@@ -36,17 +37,6 @@ struct particle_s {
     s16 handle;
     s16 pad36;
     struct particletype_s *type;
-};
-
-struct faceon_s {
-    struct nuvec_s pos;
-    f32 w;
-    f32 tc[4];
-    f32 width;
-    f32 height;
-    f32 sinang;
-    f32 cosang;
-    s32 colour[4];
 };
 
 extern struct nulnkhdr_s *NuLstGetNext(struct nulsthdr_s *hdr, struct nulnkhdr_s *lnk);
