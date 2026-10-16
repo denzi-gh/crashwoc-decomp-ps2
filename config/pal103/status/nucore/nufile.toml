@@ -13,31 +13,31 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0001:001000c8:NuFileSifLoadModule"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:001002d8:NuFileOpen"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:001005a8:NuFileSeek"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00100720:NuFileSize"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00100938:NuFileLoad"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00100a88:NuFileLoadBuffer"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00100d08:NuFileRead"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00100fc0:NuFileWriteStringV"
@@ -45,7 +45,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00101038:NuFileBeginBlkRead"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:001012e8:NuFileEndBlkRead"
@@ -53,11 +53,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00101468:NuFileBeginBlkWrite"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00101648:NuFileEndBlkWrite"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00101860:NuFileWriteAddress"
@@ -69,11 +69,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00101b68:NuFileAlign"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00101cb0:NuDatFileLoadBuffer"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00102148:NuDatFileOpen"
