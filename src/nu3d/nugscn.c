@@ -62,6 +62,7 @@
  */
 
 #include "nu_libc.h"
+#include "nu_stdarg.h"
 
 #include "nu3d/nugobj.h"
 #include "nu3d/nugscn.h"
@@ -94,8 +95,8 @@ extern void NuFileEndBlkWrite(int fh);
 extern int NuFileWrite(int fh, void *buf, int size);
 extern int NuFileWriteInt(int fh, int value);
 extern void NuFileWriteFloat(int fh, float value);
-extern struct nunode_s *NuNodeRead(int fh, int depth);
-extern void CvtNodes(struct nunode_s *node, int depth);
+extern struct nunode_s *NuNodeRead(int fh, struct nunode_s *parent);
+extern void CvtNodes(struct nunode_s *node, struct nunode_s *parent);
 
 extern char *NuStrIStr(char *str, char *sub);
 
@@ -124,14 +125,14 @@ extern struct nugscn_s *NuGScnLoadFix(void);
 struct nugscnload_s {
     int size;                       /* 0x00 */
     char *filebuffer;               /* 0x04 */
-    char **buffer;                  /* 0x08 */
+    union variptr_u *buffer;        /* 0x08 */
     char *bufferend;                /* 0x0C */
     char *filename;                 /* 0x10 */
 };
 
 extern char *D_00633098;
 extern char **D_0063309C;
-extern char *D_006330A0;
+extern union variptr_u D_006330A0;
 extern char *D_006330A8;
 extern char *D_006330C0;
 extern struct nugscnload_s D_006ADD00;
@@ -192,7 +193,7 @@ extern char D_00614E08[];
 extern struct nuvec_s nugscn_gobj_min;
 extern struct nuvec_s nugscn_gobj_max;
 
-extern void *D_006330B0;
+extern union variptr_u D_006330B0;
 extern int D_006330B8;
 extern struct nusplinecfg_s *D_0062EE58;
 #define temp_workspace D_006330B0
@@ -718,7 +719,7 @@ void ReadAnimationLibrary(int fh)
 
 void NuGScnSetTmpWkspc(void *workspace, int size)
 {
-    temp_workspace = workspace;
+    temp_workspace.voidptr = workspace;
     temp_workspace_size = size;
 }
 
@@ -755,13 +756,13 @@ inline int NuGScnLoad(char **buffer, char *bufend, char *filename)
     gscn_bufferstart = *buffer;
     gscn_buffer = buffer;
     gscn_bufferend = bufend;
-    if (temp_workspace != 0) {
-        gscn_bufferlimit = (char *)temp_workspace_size;
+    if (temp_workspace.voidptr != 0) {
+        gscn_bufferlimit.charptr = (char *)temp_workspace_size;
     } else {
-        gscn_bufferlimit = bufend;
+        gscn_bufferlimit.charptr = bufend;
     }
     aligned = (char *)(((int)*gscn_buffer + 0x7F) & ~0x7F);
-    if (aligned < gscn_bufferlimit) {
+    if (aligned < gscn_bufferlimit.charptr) {
         filebuf = aligned;
         *gscn_buffer = aligned;
     } else {
@@ -772,7 +773,7 @@ inline int NuGScnLoad(char **buffer, char *bufend, char *filename)
     size = NuFileLoadBuffer(filename, filebuf, bufend - *buffer);
     gscn_load.size = size;
     gscn_load.filebuffer = filebuf;
-    gscn_load.buffer = buffer;
+    gscn_load.buffer = (union variptr_u *)buffer;
     gscn_load.bufferend = bufend;
     gscn_load.filename = filename;
     return size;
@@ -1413,7 +1414,7 @@ extern int D_006330F8;
 extern char **D_006330FC;
 extern char *D_00633100;
 extern char *D_00633108;
-extern char *D_00633110;
+extern union variptr_u D_00633110;
 extern char D_00614DD0[];
 extern char D_00614DE8[];
 #define cvt_specials D_006330EC
@@ -1443,7 +1444,7 @@ void CvtNuIFFScene(int fh)
     cvt_numspecials = 0;
     cvt_instances = NuMemAllocFn(4000 * sizeof(struct nuinstance_s), nugscn_srcfile, 0x7D7);
     cvt_specials = NuMemAllocFn(4000 * sizeof(struct nuspecial_s), nugscn_srcfile, 0x7D8);
-    cvt_splineend = cvt_splinebuff = NuMemAllocFn(0x80000, nugscn_srcfile, 0x7D9);
+    cvt_splineend.voidptr = cvt_splinebuff = NuMemAllocFn(0x80000, nugscn_srcfile, 0x7D9);
     splcnt = 0;
     while ((blk = NuFileBeginBlkRead(fh, 0)) != 0) {
         switch (blk) {
@@ -1520,8 +1521,8 @@ void CvtNuIFFScene(int fh)
     if (splcnt) {
         NuFileBeginBlkWrite(cvt_fh, 0x30545353, 0);
         NuFileWriteInt(cvt_fh, splcnt);
-        NuFileWriteInt(cvt_fh, cvt_splineend - cvt_splinebuff);
-        NuFileWrite(cvt_fh, cvt_splinebuff, cvt_splineend - cvt_splinebuff);
+        NuFileWriteInt(cvt_fh, cvt_splineend.charptr - cvt_splinebuff);
+        NuFileWrite(cvt_fh, cvt_splinebuff, cvt_splineend.charptr - cvt_splinebuff);
         NuFileEndBlkWrite(cvt_fh);
     }
     if (cvt_splinebuff) {
@@ -1556,7 +1557,7 @@ void CvtNuIFFGScene(int fh)
     cvt_numspecials = 0;
     cvt_instances = NuMemAllocFn(4000 * sizeof(struct nuinstance_s), nugscn_srcfile, 0x805);
     cvt_specials = NuMemAllocFn(4000 * sizeof(struct nuspecial_s), nugscn_srcfile, 0x806);
-    cvt_splineend = cvt_splinebuff = NuMemAllocFn(0x80000, nugscn_srcfile, 0x807);
+    cvt_splineend.voidptr = cvt_splinebuff = NuMemAllocFn(0x80000, nugscn_srcfile, 0x807);
     splcnt = 0;
     while ((blk = NuFileBeginBlkRead(fh, 0)) != 0) {
         switch (blk) {
@@ -1733,25 +1734,195 @@ int NuGScnConvertScene(char *outfile, char *infile)
     return 1;
 }
 
+
+extern unsigned int NuFileReadUnsignedInt(int fh);
+extern char D_00614FF8[];
+#define unknown_node_msg D_00614FF8
+
+struct nunode_s *NuNodeRead(int fh, struct nunode_s *parent)
+{
+    struct nunode_s *node;
+    struct nutransformnode_s *tnode;
+    struct nujointnode_s *joint;
+    struct nuskinnode_s *skin;
+    struct nusplinenode_s *spline;
+    struct numtx_s mtx;
+    int *joints;
+    int nameix;
+    int nsplines;
+    int nchildren;
+    int i;
+    int j;
+
+    switch (NuFileBeginBlkRead(fh, 0)) {
+    case 0x30304E4E:
+        node = NuNodeCreate();
+        break;
+    case 0x30304D4E:
+        node = &NuMeshNodeCreate((void *)NuFileReadInt(fh))->node;
+        break;
+    case 0x3030544E:
+        NuFileBeginBlkRead(fh, 0x3044544E);
+        NuFileRead(fh, &mtx, sizeof(struct numtx_s));
+        tnode = NuTransformNodeCreate(&mtx);
+        tnode->flags = NuFileReadInt(fh);
+        if (tnode->node.type == NUNODETYPE_TRANSFORM && (tnode->flags & 2)) {
+            tnode->node.data = (void *)NuFileReadInt(fh);
+        }
+        NuFileEndBlkRead(fh);
+        node = &tnode->node;
+        break;
+    case 0x304B534E:
+        NuFileBeginBlkRead(fh, 0x3044534E);
+        NuFileReadInt(fh);
+        skin = NuSkinNodeCreate(NuFileReadInt(fh));
+        joints = skin->joint_ids;
+        for (i = 0; i < skin->num_joints; i++) {
+            *joints++ = NuFileReadInt(fh);
+        }
+        NuFileEndBlkRead(fh);
+        skin->geometry = 0;
+        node = &skin->node;
+        break;
+    case 0x30304A4E:
+        NuFileBeginBlkRead(fh, 0x30444A4E);
+        NuFileRead(fh, &mtx, sizeof(struct numtx_s));
+        joint = NuJointNodeCreate(&mtx);
+        NuFileRead(fh, &joint->orient, sizeof(struct numtx_s));
+        NuFileRead(fh, &joint->flags, sizeof(char));
+        NuFileRead(fh, &joint->pivot, sizeof(struct nuvec_s));
+        NuFileEndBlkRead(fh);
+        node = &joint->node;
+        break;
+    case 0x3030534E:
+        NuFileBeginBlkRead(fh, 0x3044534E);
+        nsplines = NuFileReadInt(fh);
+        spline = NuSplineNodeCreate(nsplines);
+        node = &spline->node;
+        for (j = 0; j < nsplines; j++) {
+            spline->splines[j] = (struct nuspline_s *)NuFileReadInt(fh);
+        }
+        NuFileEndBlkRead(fh);
+        break;
+    default:
+        NuErrorProlog(nugscn_srcfile, 0x980)(unknown_node_msg);
+        break;
+    }
+    NuFileBeginBlkRead(fh, 0x30444E4E);
+    node->id = NuFileReadUnsignedInt(fh);
+    nameix = NuFileReadInt(fh);
+    if (nameix == 0) {
+        node->name = 0;
+    } else {
+        node->name = cvt_names[nameix - 1];
+    }
+    NuFileEndBlkRead(fh);
+    NuFileEndBlkRead(fh);
+    NuFileBeginBlkRead(fh, 0x30434E4E);
+    nchildren = NuFileReadInt(fh);
+    NuFileEndBlkRead(fh);
+    for (j = 0; j < nchildren; j++) {
+        NuNodeAddChild(node, NuNodeRead(fh, node));
+    }
+    return node;
+}
+
+
+extern char D_00615018[];
+extern char D_00615030[];
+#define animated_xform_msg D_00615018
+#define spline_overflow_msg D_00615030
+
+void CvtNodes(struct nunode_s *node, struct nunode_s *parent)
+{
+    struct numtx_s mtx;
+    struct nuvec_s pt;
+    struct nunode_s *p;
+    struct nusplinenode_s *splnode;
+    struct nucvtspline_s *spl;
+    int i;
+
+    for (; node != 0; node = node->next) {
+        if (node->type == NUNODETYPE_MESH) {
+            NuMtxSetIdentity(&mtx);
+            for (p = parent; p != 0; p = p->parent) {
+                if (p->type == NUNODETYPE_TRANSFORM) {
+                    if (((struct nutransformnode_s *)p)->flags & 2) {
+                        NuDebugMsgProlog(nugscn_srcfile, 0x9AF)(animated_xform_msg);
+                    }
+                    NuMtxMul(&mtx, &((struct nutransformnode_s *)p)->mtx, &mtx);
+                }
+            }
+            memset(&cvt_instances[cvt_numinstances], 0, sizeof(struct nuinstance_s));
+            cvt_instances[cvt_numinstances].mtx = mtx;
+            cvt_instances[cvt_numinstances].objid = (int)((struct numeshnode_s *)node)->geometry;
+            cvt_instances[cvt_numinstances].flags.visible = 1;
+            if (node->name != 0) {
+                cvt_specials[cvt_numspecials].instance = (struct nuinstance_s *)cvt_numinstances;
+                cvt_specials[cvt_numspecials].name = (char *)(nametable_free - nametable_base);
+                strcpy(nametable_free, node->name);
+                nametable_free += strlen(node->name) + 1;
+                cvt_numspecials++;
+            }
+            cvt_numinstances++;
+        }
+        if (node->type == NUNODETYPE_SPLINE) {
+            NuMtxSetIdentity(&mtx);
+            for (p = parent; p != 0; p = p->parent) {
+                if (p->type == NUNODETYPE_TRANSFORM) {
+                    if (((struct nutransformnode_s *)p)->flags & 2) {
+                        NuDebugMsgProlog(nugscn_srcfile, 0x9DB)(animated_xform_msg);
+                    }
+                    NuMtxMul(&mtx, &((struct nutransformnode_s *)p)->mtx, &mtx);
+                }
+            }
+            splnode = (struct nusplinenode_s *)node;
+            if (node->name != 0 && splnode->num_splines != 0) {
+                spl = &cvt_splines[(int)splnode->splines[0]];
+                *((int *)cvt_splineend.voidptr)++ = spl->ncvs;
+                *((int *)cvt_splineend.voidptr)++ = nametable_free - nametable_base;
+                for (i = 0; i < spl->ncvs; i++) {
+                    pt.x = spl->cvs[i].x;
+                    pt.y = spl->cvs[i].y;
+                    pt.z = spl->cvs[i].z;
+                    NuVecMtxTransform(&pt, &pt, &mtx);
+                    *((struct nuvec_s *)cvt_splineend.voidptr)++ = pt;
+                }
+                strcpy(nametable_free, node->name);
+                nametable_free += strlen(node->name) + 1;
+                splcnt++;
+            }
+            cvt_numinstances++;
+            if ((unsigned int)(cvt_splineend.charptr - cvt_splinebuff) > 0x80000) {
+                NuErrorProlog(nugscn_srcfile, 0xA06)(spline_overflow_msg);
+            }
+        }
+        if (node->child != 0) {
+            CvtNodes(node->child, node);
+        }
+    }
+}
+
 extern char D_00615060[];
 #define texset_msg D_00615060
 extern int NuFileSeek(int fh, int offset, int origin);
 extern int NuMemFileSeek(int fh, int offset, int origin);
 
 /* Carves `size` bytes, aligned to `align`, off the scene load buffer. */
-static inline void *GScnBufferAlloc(int size, int align)
+static inline union variptr_u GScnBufferAlloc(int size, int align)
 {
-    char *aligned;
+    union variptr_u buf;
     char *end;
 
-    aligned = (char *)(((int)*gscn_buffer + align - 1) & ~(align - 1));
-    end = aligned + size;
-    if (end < gscn_bufferlimit) {
+    buf.charptr = (char *)(((int)*gscn_buffer + align - 1) & ~(align - 1));
+    end = buf.charptr + size;
+    if (end < gscn_bufferlimit.charptr) {
         *gscn_buffer = end;
-        return aligned;
+        return buf;
     }
     NuErrorProlog(nugscn_srcfile, 0x184)(bufferalloc_failed_msg);
-    return 0;
+    buf.voidptr = 0;
+    return buf;
 }
 
 void ReadTextureSet(int fh)
@@ -1765,7 +1936,7 @@ void ReadTextureSet(int fh)
     NuDebugMsgProlog(nugscn_srcfile, 0xA90)(texset_msg);
     ntex = NuFileReadInt(fh);
     NuFileReadInt(fh);
-    loading_scene->tids = GScnBufferAlloc(ntex * sizeof(int), 4);
+    loading_scene->tids = GScnBufferAlloc(ntex * sizeof(int), 4).voidptr;
     memset(loading_scene->tids, 0, ntex * sizeof(int));
     loading_scene->numtid = ntex;
     for (i = 0; i < ntex; i++) {
@@ -1780,6 +1951,241 @@ void ReadTextureSet(int fh)
         data = NuMemFileAddr(fh);
         NuMemFileSeek(fh, size, 1);
         loading_scene->tids[i] = NuTexCreateNative(data);
+    }
+}
+
+extern void NuDisableVBlank(void);
+extern void NuEnableVBlank(void);
+extern NuMtlReadEventFunc NuMtlReadEvent;
+extern int nugscn_mtlupdate_enabled;
+extern int in_protected_bit;
+extern char D_00615088[];
+extern char D_006150A8[];
+#define mtlset_read_msg D_00615088
+#define mtlset_count_msg D_006150A8
+
+void ReadMaterialSet(int fh)
+{
+    struct numtl_s *mtl;
+    struct numtl_s *next;
+    unsigned int ix;
+    int nmtls;
+    int i;
+
+    NuDebugMsgProlog(nugscn_srcfile, 0xADC)(mtlset_read_msg);
+    nmtls = NuFileReadInt(fh);
+    NuFileReadInt(fh);
+    loading_scene->mtls = GScnBufferAlloc(nmtls * sizeof(struct numtl_s *), 4).voidptr;
+    loading_scene->nummtl = nmtls;
+    for (i = 0; i < nmtls; i++) {
+        loading_scene->mtls[i] = NuMemFileAddr(fh);
+        NuMemFileSeek(fh, sizeof(struct numtl_s), 1);
+        if (loading_scene->mtls[i]->tid == -1) {
+            loading_scene->mtls[i]->tid = 0;
+        } else {
+            loading_scene->mtls[i]->tid = loading_scene->tids[loading_scene->mtls[i]->tid];
+        }
+        if ((int)loading_scene->mtls[i]->display_next == -1) {
+            loading_scene->mtls[i]->display_next = 0;
+        }
+        next = loading_scene->mtls[i]->display_next;
+        if (nugscn_mtlupdate_enabled) {
+            NuDisableVBlank();
+            in_protected_bit = 1;
+            NuMtlAdd(loading_scene->mtls[i]);
+            loading_scene->mtls[i]->display_next = next;
+            if (!NuMtlReadEvent(loading_scene->mtls[i])) {
+                NuMtlUpdate(loading_scene->mtls[i]);
+            }
+            in_protected_bit = 0;
+            NuEnableVBlank();
+        }
+    }
+    for (i = 0; i < nmtls; i++) {
+        mtl = loading_scene->mtls[i];
+        ix = (unsigned int)mtl->display_next;
+        if (ix == 0xFFFFFFFF) {
+            mtl->display_next = 0;
+        } else if (ix >= 1 && ix <= 0xFFFF) {
+            mtl->display_next = loading_scene->mtls[ix - 1];
+        }
+    }
+    NuDebugMsgProlog(nugscn_srcfile, 0xB1A)(mtlset_count_msg, nmtls);
+}
+
+
+struct nucvttriblock_s {
+    unsigned int tag;               /* 0x00 */
+    void *data;                     /* 0x04 */
+    char pad08[0x10 - 0x08];
+    u128 qw[9];                     /* 0x10 */
+}; /* 0xA0 */
+
+struct nucvttribatch_s {
+    int count;                      /* 0x00 */
+    int pad04[3];
+    struct nucvttriblock_s blocks[1]; /* 0x10 */
+};
+
+extern void NuCvtGeoFixup(struct nucolourblend_s *ref, int offset);
+extern char D_006150C8[];
+extern char D_006150E0[];
+extern char D_006150F0[];
+extern char D_00615118[];
+#define objset_msg D_006150C8
+#define geom_size_msg D_006150E0
+#define dma_align_msg D_006150F0
+#define unknown_gobj_msg D_00615118
+
+#define DIST2(dx, dy, dz) ((dx) * (dx) + (dy) * (dy) + (dz) * (dz))
+#define KEEP_MAX(dst, val) ((dst) = ((val) < (dst)) ? (dst) : (val))
+
+void ReadObjSet(int fh)
+{
+    struct nuvec_s origin;
+    struct nugobj_s *gobj;
+    struct nugeom_s *geom;
+    struct nufaceongeom_s *fgeom;
+    int ngobjs;
+    int nsub;
+    int colourref;
+    int tricount;
+    int count;
+    int skip;
+    int size;
+    int i;
+    int j;
+    int k;
+    int m;
+
+    memset(&origin, 0, sizeof(struct nuvec_s));
+    NuDebugMsgProlog(nugscn_srcfile, 0xB5C)(objset_msg);
+    ngobjs = NuFileReadInt(fh);
+    colourref = NuFileReadInt(fh);
+    loading_scene->gobjs = GScnBufferAlloc(ngobjs * sizeof(struct nugobj_s *), 4).voidptr;
+    memset(loading_scene->gobjs, 0, ngobjs * sizeof(struct nugobj_s *));
+    loading_scene->numgobj = ngobjs;
+    for (i = 0; i < ngobjs; i++) {
+        nsub = NuFileReadInt(fh);
+        NuFileReadInt(fh);
+        NuFileReadInt(fh);
+        NuFileReadInt(fh);
+        gobj = GScnBufferAlloc(nsub * sizeof(struct nugobj_s), 4).voidptr;
+        loading_scene->gobjs[i] = gobj;
+        memset(gobj, 0, nsub * sizeof(struct nugobj_s));
+        gobj->ngobjs = nsub;
+        for (j = 0; j < nsub; j++) {
+            switch (gobj->type = NuFileReadInt(fh)) {
+            case 0:
+                count = NuFileReadInt(fh);
+                NuFileRead(fh, &gobj->origin, sizeof(struct nuvec_s));
+                geom = GScnBufferAlloc(count * sizeof(struct nugeom_s), 4).voidptr;
+                memset(geom, 0, count * sizeof(struct nugeom_s));
+                tricount = NuFileReadInt(fh);
+                NuFileReadInt(fh);
+                NuFileReadInt(fh);
+                gobj->geom = geom;
+                memset(geom, 0, count * sizeof(struct nugeom_s));
+                for (k = 0; k < count; k++, geom++) {
+                    if (k != count - 1) {
+                        geom->next = geom + 1;
+                    }
+                    NuFileReadInt(fh);
+                    skip = NuFileReadInt(fh);
+                    geom->mtl = loading_scene->mtls[NuFileReadInt(fh)];
+                    NuMemFileSeek(fh, skip, 1);
+                    size = NuFileReadInt(fh);
+                    if (size & 0xF) {
+                        NuErrorProlog(nugscn_srcfile, 0xB95)(geom_size_msg);
+                    }
+                    if (geom->mtl->attrib2.punch == 1) {
+                        geom->otbatch = NuMemFileAddr(fh);
+                        for (m = 0; m < ((struct nucvttribatch_s *)geom->otbatch)->count; m++) {
+                            ((struct nucvttribatch_s *)geom->otbatch)->blocks[m].data = ((struct nucvttribatch_s *)geom->otbatch)->blocks[m].qw;
+                        }
+                    } else {
+                        struct nudmatag_s *tag;
+                        unsigned int base;
+
+                        geom->dmastream = NuMemFileAddr(fh);
+                        if ((int)geom->dmastream & 0x7F) {
+                            NuDebugMsgProlog(nugscn_srcfile, 0xBA0)(dma_align_msg);
+                        }
+                        tag = geom->dmastream;
+                        base = (unsigned int)tag;
+                        while (tag->id == 0x20) {
+                            tag->addr += base;
+                            tag = (struct nudmatag_s *)tag->addr;
+                        }
+                    }
+                    NuMemFileSeek(fh, size, 1);
+                }
+                gobj->tricount = tricount;
+                break;
+            case 1:
+                count = NuFileReadInt(fh);
+                NuFileReadInt(fh);
+                NuFileReadInt(fh);
+                gobj->origin = origin;
+                fgeom = GScnBufferAlloc(count * sizeof(struct nufaceongeom_s), 4).voidptr;
+                memset(fgeom, 0, count * sizeof(struct nufaceongeom_s));
+                gobj->faceon_geom = fgeom;
+                for (k = 0; k < count; k++, fgeom++) {
+                    if (k != count - 1) {
+                        fgeom->next = fgeom + 1;
+                    }
+                    fgeom->mtl = loading_scene->mtls[NuFileReadInt(fh)];
+                    fgeom->faceon_type = NuFileReadInt(fh);
+                    fgeom->faceon_radius = NuFileReadFloat(fh);
+                    size = NuFileReadInt(fh);
+                    fgeom->dmastream = NuMemFileAddr(fh);
+                    NuMemFileSeek(fh, size, 1);
+                }
+                break;
+            default:
+                NuErrorProlog(nugscn_srcfile, 0xBD2)(unknown_gobj_msg);
+                break;
+            }
+            NuFileRead(fh, &gobj->min, sizeof(struct nuvec_s));
+            NuFileRead(fh, &gobj->max, sizeof(struct nuvec_s));
+            NuFileReadInt(fh);
+            NuFileReadInt(fh);
+            gobj->cntr.x = (gobj->min.x + gobj->max.x) * 0.5f;
+            gobj->cntr.y = (gobj->min.y + gobj->max.y) * 0.5f;
+            gobj->cntr.z = (gobj->min.z + gobj->max.z) * 0.5f;
+            gobj->r2 = DIST2(gobj->min.x, gobj->min.y, gobj->min.z);
+            KEEP_MAX(gobj->r2, DIST2(gobj->max.x, gobj->min.y, gobj->min.z));
+            KEEP_MAX(gobj->r2, DIST2(gobj->min.x, gobj->max.y, gobj->min.z));
+            KEEP_MAX(gobj->r2, DIST2(gobj->max.x, gobj->max.y, gobj->min.z));
+            KEEP_MAX(gobj->r2, DIST2(gobj->min.x, gobj->min.y, gobj->max.z));
+            KEEP_MAX(gobj->r2, DIST2(gobj->max.x, gobj->min.y, gobj->max.z));
+            KEEP_MAX(gobj->r2, DIST2(gobj->min.x, gobj->max.y, gobj->max.z));
+            KEEP_MAX(gobj->r2, DIST2(gobj->max.x, gobj->max.y, gobj->max.z));
+            gobj->r = sqrt(gobj->r);
+            gobj->cntr_r2 = DIST2(gobj->min.x - gobj->cntr.x, gobj->min.y - gobj->cntr.y, gobj->min.z - gobj->cntr.z);
+            KEEP_MAX(gobj->cntr_r2, DIST2(gobj->max.x - gobj->cntr.x, gobj->min.y - gobj->cntr.y, gobj->min.z - gobj->cntr.z));
+            KEEP_MAX(gobj->cntr_r2, DIST2(gobj->min.x - gobj->cntr.x, gobj->max.y - gobj->cntr.y, gobj->min.z - gobj->cntr.z));
+            KEEP_MAX(gobj->cntr_r2, DIST2(gobj->max.x - gobj->cntr.x, gobj->max.y - gobj->cntr.y, gobj->min.z - gobj->cntr.z));
+            KEEP_MAX(gobj->cntr_r2, DIST2(gobj->min.x - gobj->cntr.x, gobj->min.y - gobj->cntr.y, gobj->max.z - gobj->cntr.z));
+            KEEP_MAX(gobj->cntr_r2, DIST2(gobj->max.x - gobj->cntr.x, gobj->min.y - gobj->cntr.y, gobj->max.z - gobj->cntr.z));
+            KEEP_MAX(gobj->cntr_r2, DIST2(gobj->min.x - gobj->cntr.x, gobj->max.y - gobj->cntr.y, gobj->max.z - gobj->cntr.z));
+            KEEP_MAX(gobj->cntr_r2, DIST2(gobj->max.x - gobj->cntr.x, gobj->max.y - gobj->cntr.y, gobj->max.z - gobj->cntr.z));
+            gobj->cntr_r = sqrt(gobj->cntr_r2);
+            gobj++;
+        }
+        loading_scene->gobjs[i]->blend = 0;
+        loading_scene->gobjs[i]->faceon_blend = 0;
+        if (colourref == 1) {
+            loading_scene->gobjs[i]->tricount = NuFileReadInt(fh);
+            NuFileReadInt(fh);
+            NuFileReadInt(fh);
+            NuFileReadInt(fh);
+            if (loading_scene->gobjs[i]->tricount != 0) {
+                loading_scene->gobjs[i]->blend = NuMemFileAddr(fh);
+                NuMemFileSeek(fh, loading_scene->gobjs[i]->tricount, 1);
+                NuCvtGeoFixup(loading_scene->gobjs[i]->blend, (int)gscn_filebuffer);
+            }
+        }
     }
 }
 
@@ -1824,14 +2230,13 @@ void ReadNuIFFTexAnimSet(int fh, struct nugscn_s *gsc, short *tids)
 extern int D_00633090;
 #define texanim_ix D_00633090
 
-/* Near-match (stays asm): register allocation of the texanim fields and the
-   order gscn_bufferlimit is loaded in the inlined GScnBufferAlloc differ. */
 void ReadTexAnimSet(int fh)
 {
     struct nutexanim_s *tex;
     short *tidtab;
     char *start;
     union variptr_u buff;
+    char *scriptname;
     void *prog;
     int j;
 
@@ -1852,9 +2257,10 @@ void ReadTexAnimSet(int fh)
             tex->tids[j] = loading_scene->tids[tex->tids[j]];
         }
         tex->ntaname = loading_scene->nametable + (int)tex->ntaname;
+        scriptname = loading_scene->nametable + (int)tex->scriptname;
         tex->mtl = loading_scene->mtls[(int)tex->mtl];
         tex->dynalloc = 0;
-        prog = NuTexAnimProgFind(loading_scene->nametable + (int)tex->scriptname);
+        prog = NuTexAnimProgFind(scriptname);
         start = buff.charptr = (char *)(((int)*gscn_buffer + 0xF) & ~0xF);
         tex->env = NuTexAnimEnvCreate(&buff, tex->mtl, tex->tids, prog);
         GScnBufferAlloc(buff.charptr - start, 0x10);
@@ -1865,6 +2271,81 @@ void ReadTexAnimSet(int fh)
         loading_scene->texanims[texanim_ix + 1].prev = &loading_scene->texanims[texanim_ix];
     }
     NuTexAnimAddList(loading_scene->texanims);
+}
+
+
+inline int FindSplinePtSize(char *name)
+{
+    struct nusplinecfg_s *cfg;
+
+    cfg = spline_cfg;
+    if (cfg != 0) {
+        while (cfg->name != 0) {
+            if (strstr(name, cfg->name) != 0) {
+                return cfg->ptsize;
+            }
+            cfg++;
+        }
+    }
+    return 12;
+}
+
+
+extern char D_00614D20[];
+#define tempalloc_failed_msg D_00614D20
+
+static inline union variptr_u GScnTempAlloc(int size)
+{
+    union variptr_u buf;
+
+    if (temp_workspace.voidptr != 0) {
+        if (temp_workspace.charptr + size + 4 < gscn_bufferlimit.charptr) {
+            gscn_bufferlimit.charptr = (char *)(((int)gscn_bufferlimit.charptr - size) & ~3);
+            buf.charptr = gscn_bufferlimit.charptr;
+            return buf;
+        }
+    } else if (*gscn_buffer + size + 4 < gscn_bufferlimit.charptr) {
+        gscn_bufferlimit.charptr = (char *)(((int)gscn_bufferlimit.charptr - size) & ~3);
+        buf.charptr = gscn_bufferlimit.charptr;
+        return buf;
+    }
+    NuErrorProlog(nugscn_srcfile, 0x16F)(tempalloc_failed_msg);
+    buf.voidptr = 0;
+    return buf;
+}
+
+void ReadSplineSet(int fh)
+{
+    char *data;
+    char *pts;
+    int size;
+    int i;
+    int j;
+
+    loading_scene->numsplines = NuFileReadInt(fh);
+    size = NuFileReadInt(fh);
+    loading_scene->splines = GScnBufferAlloc(loading_scene->numsplines * sizeof(struct nugspline_s), 4).voidptr;
+    data = GScnTempAlloc(size).charptr;
+    NuFileRead(fh, data, size);
+    for (i = 0; i < loading_scene->numsplines; i++) {
+        loading_scene->splines[i].len = *(unsigned short *)data;
+        data += sizeof(int);
+        loading_scene->splines[i].name = (char *)(*(int *)data + (int)loading_scene->nametable);
+        data += sizeof(int);
+        loading_scene->splines[i].ptsize = FindSplinePtSize(loading_scene->splines[i].name);
+        loading_scene->splines[i].pts = GScnBufferAlloc(loading_scene->splines[i].ptsize * loading_scene->splines[i].len, 4).voidptr;
+        pts = loading_scene->splines[i].pts;
+        for (j = 0; j < loading_scene->splines[i].len; j++) {
+            *(struct nuvec_s *)pts = *(struct nuvec_s *)data;
+            data += sizeof(struct nuvec_s);
+            pts += loading_scene->splines[i].ptsize;
+        }
+    }
+    if (temp_workspace.voidptr != 0) {
+        gscn_bufferlimit.charptr = (char *)temp_workspace_size;
+    } else {
+        gscn_bufferlimit.charptr = gscn_bufferend;
+    }
 }
 
 extern unsigned int timeUserRead(void);
@@ -1953,18 +2434,562 @@ void DbgBlkType(int blk)
     NuDebugMsgProlog(nugscn_srcfile, 0xEE0)(blktype_msg, tod, name);
 }
 
-int FindSplinePtSize(char *name)
-{
-    struct nusplinecfg_s *cfg;
 
-    cfg = spline_cfg;
-    if (cfg != 0) {
-        while (cfg->name != 0) {
-            if (strstr(name, cfg->name) != 0) {
-                return cfg->ptsize;
+extern void timeUserReset(void);
+extern int NuMemFileOpen(void *buf, int size, int mode);
+extern void NuMemFileClose(int fh);
+extern void NuRndrSplineSearch(void *scene);
+extern char D_006151B8[];
+extern char D_006151D8[];
+extern char D_00615208[];
+#define scene_alloc_msg D_006151B8
+#define scene_old_msg D_006151D8
+#define loader_old_msg D_00615208
+
+struct nugscn_s *NuGScnLoadFix(void)
+{
+    struct nuspecial_s *special;
+    struct nuspecial_s *src;
+    char *data;
+    char *filename;
+    union variptr_u *buffer;
+    int size;
+    int fh;
+    int version;
+    int blk;
+    int count;
+    int i;
+    int j;
+    int k;
+    int m;
+    struct nuinstanim_s *anim;
+
+    loading_scene = 0;
+    timeUserReset();
+    size = gscn_load.size;
+    buffer = gscn_load.buffer;
+    filename = gscn_load.filename;
+    if (size > 0) {
+        data = GScnBufferAlloc(size, 0x10).charptr;
+        if (data == 0) {
+            NuErrorProlog(nugscn_srcfile, 0xF00)(scene_alloc_msg, filename);
+        }
+        loading_scene = GScnBufferAlloc(sizeof(struct nugscn_s), 4).voidptr;
+        if (loading_scene != 0) {
+            memset(loading_scene, 0, sizeof(struct nugscn_s));
+            fh = NuMemFileOpen(data, size, 0);
+            if (fh != 0) {
+                NuFileBeginBlkRead(fh, 0x3032554E);
+                version = NuFileReadInt(fh);
+                NuFileReadInt(fh);
+                if (version < nugscn_version) {
+                    NuErrorProlog(nugscn_srcfile, 0xF0C)(scene_old_msg, filename);
+                }
+                if (version > nugscn_version) {
+                    NuErrorProlog(nugscn_srcfile, 0xF0F)(loader_old_msg);
+                }
+                while ((blk = NuFileBeginBlkRead(fh, 0)) != 0) {
+                    DbgBlkType(blk);
+                    switch (blk) {
+                    case 0x32545354:
+                    case 0x30545354:
+                        ReadTextureSet(fh);
+                        break;
+                    case 0x3230534D:
+                    case 0x3030534D:
+                        ReadMaterialSet(fh);
+                        break;
+                    case 0x304A424F:
+                        ReadObjSet(fh);
+                        break;
+                    case 0x54534E49:
+                        loading_scene->numinstance = NuFileReadInt(fh);
+                        NuFileReadInt(fh);
+                        loading_scene->instances = NuMemFileAddr(fh);
+                        NuMemFileSeek(fh, loading_scene->numinstance * sizeof(struct nuinstance_s), 1);
+                        for (i = 0; i < loading_scene->numinstance; i++) {
+                            loading_scene->instances[i].flags.visitest = 1;
+                        }
+                        break;
+                    case 0x4C42544E:
+                        count = NuFileReadInt(fh);
+                        loading_scene->nametable = NuMemFileAddr(fh);
+                        NuMemFileSeek(fh, count, 1);
+                        for (j = 0; j < count; j++) {
+                            loading_scene->nametable[j] = (loading_scene->nametable[j] >= 'A' && loading_scene->nametable[j] <= 'Z') ? loading_scene->nametable[j] + 0x20 : loading_scene->nametable[j];
+                        }
+                        break;
+                    case 0x43455053:
+                        loading_scene->numspecial = NuFileReadInt(fh);
+                        NuFileReadInt(fh);
+                        loading_scene->specials = NuMemFileAddr(fh);
+                        src = NuMemFileAddr(fh);
+                        NuMemFileSeek(fh, loading_scene->numspecial * sizeof(struct nuspecial_s), 1);
+                        special = loading_scene->specials;
+                        for (k = 0; k < loading_scene->numspecial; k++, src++, special++) {
+                            special->mtx = loading_scene->instances[(int)src->instance].mtx;
+                            special->instance = &loading_scene->instances[(int)src->instance];
+                            special->name = loading_scene->nametable + (int)src->name;
+                            special->flags &= ~1;
+                        }
+                        break;
+                    case 0x30545353:
+                        ReadSplineSet(fh);
+                        break;
+                    case 0x4C424149:
+                        NuFileReadInt(fh);
+                        NuFileReadInt(fh);
+                        loading_scene->instanimblock = NuMemFileAddr(fh);
+                        anim = loading_scene->instanimblock;
+                        if (loading_scene->instanimblock != 0) {
+                            for (m = 0; m < loading_scene->numinstance; m++) {
+                                if (loading_scene->instances[m].anim != 0) {
+                                    loading_scene->instances[m].anim = anim++;
+                                    loading_scene->instances[m].anim->mtx = loading_scene->instances[m].mtx;
+                                }
+                            }
+                        }
+                        break;
+                    case 0x42494C41:
+                        ReadAnimationLibrary(fh);
+                        break;
+                    case 0x44494E49:
+                        loading_scene->numinstanceixs = NuFileReadInt(fh);
+                        NuFileReadInt(fh);
+                        loading_scene->instanceixs = NuMemFileAddr(fh);
+                        break;
+                    case 0x30534154:
+                        ReadTexAnimSet(fh);
+                        break;
+                    }
+                    NuFileEndBlkRead(fh);
+                }
+                NuFileEndBlkRead(fh);
+                NuMemFileClose(fh);
             }
-            cfg++;
+            buffer->intaddr = (buffer->intaddr + 0xF) & ~0xF;
+            NuRndrSplineSearch(loading_scene);
         }
     }
-    return 12;
+    return loading_scene;
+}
+
+
+extern int gscn_dbg;
+
+void NuGScnUpdate(struct nugscn_s *scene, float dt)
+{
+    struct nuanimtime_s atime;
+    struct numtx_s mtx;
+    struct nuinstance_s *inst;
+    struct nuinstanim_s *anim;
+    struct nuanimdata_s *animdata;
+    float time;
+    int i;
+
+    i = scene->numinstance;
+    inst = &scene->instances[i];
+    while (i != 0) {
+        inst--;
+        i--;
+        if (gscn_dbg != 0 && gscn_dbg != i) {
+            continue;
+        }
+        if (!(inst->flags.visible & inst->flags.visitest)) {
+            continue;
+        }
+        anim = inst->anim;
+        if (anim == 0 || scene->instanimdata == 0) {
+            continue;
+        }
+        animdata = scene->instanimdata[anim->anim_ix];
+        if (animdata == 0) {
+            continue;
+        }
+        if (anim->playing) {
+            anim->ltime += dt * anim->tfactor;
+            if (anim->waiting) {
+                if (anim->tfirst <= anim->ltime) {
+                    anim->waiting = 0;
+                    anim->ltime -= anim->tfirst - 1.0f;
+                }
+            }
+            if (!anim->waiting) {
+                if (animdata->time + anim->tinterval <= anim->ltime) {
+                    if (anim->repeating) {
+                        while (animdata->time + anim->tinterval <= anim->ltime) {
+                            if (anim->oscillate) {
+                                anim->backwards = !anim->backwards;
+                            }
+                            anim->ltime = anim->ltime + 1.0f - (animdata->time + anim->tinterval);
+                        }
+                        time = anim->ltime;
+                    } else {
+                        anim->playing = 0;
+                        time = anim->ltime = animdata->time;
+                    }
+                } else {
+                    time = (animdata->time < anim->ltime) ? animdata->time : anim->ltime;
+                }
+                if (anim->backwards) {
+                    time = animdata->time + 1.0f - time;
+                }
+            }
+        } else {
+            time = anim->ltime;
+        }
+        NuAnimDataCalcTime(animdata, time, &atime);
+        NuAnimCurveSetApplyToMatrix(animdata->chunks[atime.chunk]->animcurvesets[0], &atime, &mtx);
+        anim->mtx = mtx;
+        NuMtxTranslate(&anim->mtx, (struct nuvec_s *)&inst->mtx._30);
+    }
+}
+
+
+extern int gscn_showsplines;
+extern void NuRndrLine3d(struct nuvtx_tc1_s *line, struct numtl_s *mtl, struct numtx_s *mtx);
+
+void NuGScnRndr3(struct nugscn_s *scene)
+{
+    struct nuvtx_tc1_s line[2];
+    struct nuinstance_s *inst;
+    struct nuspecial_s *special;
+    struct nugspline_s *spline;
+    char *pts;
+    int i;
+    int j;
+
+    i = scene->numinstance;
+    inst = &scene->instances[i];
+    while (i != 0) {
+        inst--;
+        i--;
+        if (gscn_dbg != 0 && gscn_dbg != i) {
+            continue;
+        }
+        if (inst->flags.visible & inst->flags.visitest) {
+            if (inst->anim != 0) {
+                inst->flags.onscreen = NuRndrGScnObj(scene->gobjs[inst->objid], &inst->anim->mtx);
+            } else {
+                inst->flags.onscreen = NuRndrGScnObj(scene->gobjs[inst->objid], &inst->mtx);
+            }
+        }
+    }
+    i = scene->numexspecials;
+    while (i != 0) {
+        i--;
+        special = &scene->exspecials[i];
+        if (special->flags & 1) {
+            if (special->flags & 2) {
+                special->flags = (special->flags & ~4) | ((NuRndrGScnObj(scene->gobjs[special->instance->objid], &special->mtx) & 1) << 2);
+            }
+        }
+    }
+    if (gscn_showsplines != 0) {
+        i = scene->numsplines;
+        while (i != 0) {
+            i--;
+            spline = &scene->splines[i];
+            pts = spline->pts;
+            line[0].pnt = *(struct nuvec_s *)pts;
+            line[0].diffuse = -1;
+            line[1].diffuse = -1;
+            for (j = 1; j < spline->len; j++) {
+                pts += spline->ptsize;
+                line[1].pnt = *(struct nuvec_s *)pts;
+                NuRndrLine3d(line, 0, 0);
+                line[0] = line[1];
+            }
+        }
+    }
+}
+
+
+void NuGScnRndr2(struct nugscn_s *scene, float dt)
+{
+    struct nuvtx_tc1_s line[2];
+    struct nuanimtime_s atime;
+    struct numtx_s mtx;
+    struct nuinstance_s *inst;
+    struct nuspecial_s *special;
+    struct nugspline_s *spline;
+    struct nuinstanim_s *anim;
+    struct nuanimdata_s *animdata;
+    float time;
+    char *pts;
+    int i;
+    int j;
+
+    i = scene->numinstance;
+    inst = &scene->instances[i];
+    while (i != 0) {
+        inst--;
+        i--;
+        if (gscn_dbg != 0 && gscn_dbg != i) {
+            continue;
+        }
+        if (inst->flags.visible & inst->flags.visitest) {
+            anim = inst->anim;
+            if (anim != 0) {
+                if (scene->instanimdata != 0) {
+                    animdata = scene->instanimdata[anim->anim_ix];
+                    if (animdata != 0) {
+                        if (anim->playing) {
+                            anim->ltime += dt * anim->tfactor;
+                            if (anim->waiting) {
+                                if (anim->tfirst <= anim->ltime) {
+                                    anim->waiting = 0;
+                                    anim->ltime -= anim->tfirst - 1.0f;
+                                }
+                            }
+                            if (!anim->waiting) {
+                                if (animdata->time + anim->tinterval <= anim->ltime) {
+                                    if (anim->repeating) {
+                                        while (animdata->time + anim->tinterval <= anim->ltime) {
+                                            if (anim->oscillate) {
+                                                anim->backwards = !anim->backwards;
+                                            }
+                                            anim->ltime = anim->ltime + 1.0f - (animdata->time + anim->tinterval);
+                                        }
+                                        time = anim->ltime;
+                                    } else {
+                                        anim->playing = 0;
+                                        time = anim->ltime = animdata->time;
+                                    }
+                                } else {
+                                    time = (animdata->time < anim->ltime) ? animdata->time : anim->ltime;
+                                }
+                                if (anim->backwards) {
+                                    time = animdata->time + 1.0f - time;
+                                }
+                            }
+                        } else {
+                            time = anim->ltime;
+                        }
+                        NuAnimDataCalcTime(animdata, time, &atime);
+                        NuAnimCurveSetApplyToMatrix(animdata->chunks[atime.chunk]->animcurvesets[0], &atime, &mtx);
+                        anim->mtx = mtx;
+                        NuMtxTranslate(&anim->mtx, (struct nuvec_s *)&inst->mtx._30);
+                    }
+                }
+                NuRndrGScnObj(scene->gobjs[inst->objid], &anim->mtx);
+            } else {
+                inst->flags.onscreen = NuRndrGScnObj(scene->gobjs[inst->objid], &inst->mtx);
+            }
+        }
+    }
+    i = scene->numexspecials;
+    while (i != 0) {
+        i--;
+        special = &scene->exspecials[i];
+        if (special->flags & 1) {
+            if (special->flags & 2) {
+                special->flags = (special->flags & ~4) | ((NuRndrGScnObj(scene->gobjs[special->instance->objid], &special->mtx) & 1) << 2);
+            }
+        }
+    }
+    if (gscn_showsplines != 0) {
+        i = scene->numsplines;
+        while (i != 0) {
+            i--;
+            spline = &scene->splines[i];
+            pts = spline->pts;
+            line[0].pnt = *(struct nuvec_s *)pts;
+            line[0].diffuse = -1;
+            line[1].diffuse = -1;
+            for (j = 1; j < spline->len; j++) {
+                pts += spline->ptsize;
+                line[1].pnt = *(struct nuvec_s *)pts;
+                NuRndrLine3d(line, 0, 0);
+                line[0] = line[1];
+            }
+        }
+    }
+}
+
+
+void NuGScnRndr(struct nugscn_s *scene)
+{
+    struct nuvtx_tc1_s line[2];
+    struct nuinstance_s *inst;
+    struct nuspecial_s *special;
+    struct nugspline_s *spline;
+    char *pts;
+    int i;
+    int j;
+
+    i = scene->numinstance;
+    inst = &scene->instances[i];
+    while (i != 0) {
+        inst--;
+        i--;
+        if (gscn_dbg != 0 && gscn_dbg != i) {
+            continue;
+        }
+        if (inst->flags.visible & inst->flags.visitest) {
+            inst->flags.onscreen = NuRndrGScnObj(scene->gobjs[inst->objid], &inst->mtx);
+        }
+    }
+    i = scene->numexspecials;
+    while (i != 0) {
+        i--;
+        special = &scene->exspecials[i];
+        if (special->flags & 1) {
+            if (special->flags & 2) {
+                special->flags = (special->flags & ~4) | ((NuRndrGScnObj(scene->gobjs[special->instance->objid], &special->mtx) & 1) << 2);
+            }
+        }
+    }
+    if (gscn_showsplines != 0) {
+        i = scene->numsplines;
+        while (i != 0) {
+            i--;
+            spline = &scene->splines[i];
+            pts = spline->pts;
+            line[0].pnt = *(struct nuvec_s *)pts;
+            line[0].diffuse = -1;
+            line[1].diffuse = -1;
+            for (j = 1; j < spline->len; j++) {
+                pts += spline->ptsize;
+                line[1].pnt = *(struct nuvec_s *)pts;
+                NuRndrLine3d(line, 0, 0);
+                line[0] = line[1];
+            }
+        }
+    }
+}
+
+
+void NuSpecialSetAttr(struct nuhspecial_s *sph, int attr, ...)
+{
+    struct nuvec_s pos;
+    struct numtx_s *mtx;
+    struct nuspecial_s *special;
+    struct numtx_s *src;
+    struct nuvec_s *vec;
+    va_list ap;
+    int done;
+
+    done = 0;
+    va_start(ap, attr);
+    special = sph->special;
+    if (special->flags & 1) {
+        mtx = &special->mtx;
+    } else {
+        mtx = &special->instance->mtx;
+    }
+    while (!done) {
+        switch (attr) {
+        case 0:
+            if (special->flags & 1) {
+                special->flags = (special->flags & ~2) | ((va_arg(ap, int) & 1) << 1);
+            } else {
+                special->instance->flags.visible = va_arg(ap, int);
+            }
+            break;
+        case 1:
+            *mtx = special->mtx;
+            break;
+        case 2:
+            src = va_arg(ap, struct numtx_s *);
+            *mtx = *src;
+            break;
+        case 3:
+            NuMtxMul(mtx, va_arg(ap, struct numtx_s *), &special->instance->mtx);
+            break;
+        case 4:
+            NuMtxMul(mtx, &special->instance->mtx, va_arg(ap, struct numtx_s *));
+            break;
+        case 5:
+            mtx->_30 = special->mtx._30;
+            mtx->_31 = special->mtx._31;
+            mtx->_32 = special->mtx._32;
+            break;
+        case 6:
+            vec = va_arg(ap, struct nuvec_s *);
+            mtx->_30 = vec->x;
+            mtx->_31 = vec->y;
+            mtx->_32 = vec->z;
+            break;
+        case 7:
+            NuMtxTranslate(mtx, va_arg(ap, struct nuvec_s *));
+            break;
+        case 8:
+            mtx->_30 = 0.0f;
+            mtx->_31 = 0.0f;
+            mtx->_32 = 0.0f;
+            NuMtxPreTranslate(mtx, va_arg(ap, struct nuvec_s *));
+            break;
+        case 9:
+            NuMtxPreTranslate(mtx, va_arg(ap, struct nuvec_s *));
+            break;
+        case 10:
+            mtx->_00 = special->mtx._00;
+            mtx->_01 = special->mtx._01;
+            mtx->_02 = special->mtx._02;
+            mtx->_10 = special->mtx._10;
+            mtx->_11 = special->mtx._11;
+            mtx->_12 = special->mtx._12;
+            mtx->_20 = special->mtx._20;
+            mtx->_21 = special->mtx._21;
+            mtx->_22 = special->mtx._22;
+            break;
+        case 11:
+            pos.x = mtx->_30;
+            pos.y = mtx->_31;
+            pos.z = mtx->_32;
+            NuMtxSetRotationX(mtx, va_arg(ap, int));
+            pos.x = mtx->_30;
+            pos.y = mtx->_31;
+            pos.z = mtx->_32;
+            break;
+        case 12:
+            pos.x = mtx->_30;
+            pos.y = mtx->_31;
+            pos.z = mtx->_32;
+            NuMtxSetRotationY(mtx, va_arg(ap, int));
+            pos.x = mtx->_30;
+            pos.y = mtx->_31;
+            pos.z = mtx->_32;
+            break;
+        case 13:
+            pos.x = mtx->_30;
+            pos.y = mtx->_31;
+            pos.z = mtx->_32;
+            NuMtxSetRotationZ(mtx, va_arg(ap, int));
+            pos.x = mtx->_30;
+            pos.y = mtx->_31;
+            pos.z = mtx->_32;
+            break;
+        case 14:
+            NuMtxRotateX(mtx, va_arg(ap, int));
+            break;
+        case 15:
+            NuMtxRotateY(mtx, va_arg(ap, int));
+            break;
+        case 16:
+            NuMtxRotateZ(mtx, va_arg(ap, int));
+            break;
+        case 17:
+            NuMtxPreRotateX(mtx, va_arg(ap, int));
+            break;
+        case 18:
+            NuMtxPreRotateY(mtx, va_arg(ap, int));
+            break;
+        case 19:
+            NuMtxPreRotateZ(mtx, va_arg(ap, int));
+            break;
+        case 20:
+            NuMtxSetScale(mtx, va_arg(ap, struct nuvec_s *));
+            break;
+        case 21:
+            NuMtxScale(mtx, va_arg(ap, struct nuvec_s *));
+            break;
+        case 22:
+        default:
+            done = 1;
+            break;
+        }
+        attr = va_arg(ap, int);
+    }
 }
