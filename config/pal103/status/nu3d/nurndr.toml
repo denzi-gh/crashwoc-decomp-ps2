@@ -49,7 +49,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00120e60:NuRndrFxCode"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00121220:NuRndrGobjSkin"
@@ -57,11 +57,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0040:00121498:NuRndrShadowInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00121628:NuRndrStreamQuad3dClip"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00121988:NuRndrOTInit"
@@ -69,19 +69,19 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00121a98:NuRndrOTInsertTriBatch"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00121ee0:NuRndrOTFlush"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00122068:NuRndrStreamTriStrip3dClip"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00122458:NuRndrStreamTri3dClip"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00122850:NuRndrCylCapMakeData"
@@ -93,19 +93,19 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00122da8:NuRndrShadowCylinderCap"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00123210:NuRndrShadowEllipse"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00123660:NuRndrShadowPols"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:001241b8:NuRndrShadowCylinderCap2"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00124f40:NuRndrShadowStack"
