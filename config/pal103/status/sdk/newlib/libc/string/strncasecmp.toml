@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0213"
 source = "src/sdk/newlib/libc/string/strncasecmp.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0213:00271d70:strncasecmp"

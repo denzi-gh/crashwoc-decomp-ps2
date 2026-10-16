@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0155"
 source = "src/sdk/newlib/libm/math/w_acos.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0155:00268888:acos"

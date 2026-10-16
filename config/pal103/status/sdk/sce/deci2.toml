@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0262"
 source = "src/sdk/sce/deci2.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0262:00280c20:sceDeci2Open"

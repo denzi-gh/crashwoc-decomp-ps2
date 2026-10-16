@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0146"
 source = "src/sdk/sce/devvif0.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0146:00263e90:sceDevVif0Reset"

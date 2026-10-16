@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0233"
 source = "src/sdk/newlib/libc/stdlib/mbtowc_r.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0233:002771b8:_mbtowc_r"

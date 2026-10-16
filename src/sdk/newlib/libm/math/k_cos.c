@@ -19,13 +19,14 @@ typedef union {
 #define GET_HIGH_WORD(i, d) do { ieee_double_shape_type gh_u; gh_u.value = (d); (i) = gh_u.parts.msw; } while (0)
 #define INSERT_WORDS(d, ix0, ix1) do { ieee_double_shape_type iw_u; iw_u.parts.msw = (ix0); iw_u.parts.lsw = (ix1); (d) = iw_u.value; } while (0)
 
-#define one 1.00000000000000000000e+00
-#define C1 4.16666666666666019037e-02
-#define C2 (-1.38888888888741095749e-03)
-#define C3 2.48015872894767294178e-05
-#define C4 (-2.75573143513906633035e-07)
-#define C5 2.08757232129817482790e-09
-#define C6 (-1.13596475577881948265e-11)
+static const double
+one = 1.00000000000000000000e+00,
+C1 = 4.16666666666666019037e-02,
+C2 = -1.38888888888741095749e-03,
+C3 = 2.48015872894767294178e-05,
+C4 = -2.75573143513906633035e-07,
+C5 = 2.08757232129817482790e-09,
+C6 = -1.13596475577881948265e-11;
 
 double __kernel_cos(double x, double y)
 {

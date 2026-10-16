@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0217"
 source = "src/sdk/newlib/libc/string/strstr.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0217:00272218:strstr"

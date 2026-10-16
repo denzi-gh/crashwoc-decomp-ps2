@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0202"
 source = "src/sdk/newlib/libc/stdlib/rand.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0202:00271090:srand"

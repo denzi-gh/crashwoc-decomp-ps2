@@ -21,8 +21,8 @@ typedef union {
 #define GET_HIGH_WORD(i, d) do { ieee_double_shape_type gh_u; gh_u.value = (d); (i) = gh_u.parts.msw; } while (0)
 #define SET_HIGH_WORD(d, v) do { ieee_double_shape_type sh_u; sh_u.value = (d); sh_u.parts.msw = (v); (d) = sh_u.value; } while (0)
 
-extern const double D_0062BBF8[];
-#define TWO52 D_0062BBF8
+static const double
+TWO52[2] = { 4503599627370496.0, -4503599627370496.0 };
 
 double rint(double x)
 {

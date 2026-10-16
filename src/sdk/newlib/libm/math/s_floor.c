@@ -19,7 +19,8 @@ typedef union {
 #define EXTRACT_WORDS(ix0, ix1, d) do { ieee_double_shape_type ew_u; ew_u.value = (d); (ix0) = ew_u.parts.msw; (ix1) = ew_u.parts.lsw; } while (0)
 #define INSERT_WORDS(d, ix0, ix1) do { ieee_double_shape_type iw_u; iw_u.parts.msw = (ix0); iw_u.parts.lsw = (ix1); (d) = iw_u.value; } while (0)
 
-#define huge 1.0e300
+static const double
+huge = 1.0e300;
 
 double floor(double x)
 {

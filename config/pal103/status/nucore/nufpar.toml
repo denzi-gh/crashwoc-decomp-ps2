@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0002"
 source = "src/nucore/nufpar.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0002:00103978:NuFParGetLine"

@@ -15,8 +15,8 @@ typedef struct SemaParam {
     unsigned int option;
 } SemaParam;
 
-extern int __sce_sema_id[];
-extern int __sce_eh_sema_id[];
+int __sce_sema_id = 0;
+int __sce_eh_sema_id = 0;
 
 extern int CreateSema(SemaParam *param);
 extern void InitAlarm(void);
@@ -31,8 +31,8 @@ void supplement_crt0(void)
     sema.initCount = 1;
     eh_sema.maxCount = 1;
     eh_sema.initCount = 1;
-    __sce_sema_id[0] = CreateSema(&sema);
-    __sce_eh_sema_id[0] = CreateSema(&eh_sema);
+    __sce_sema_id = CreateSema(&sema);
+    __sce_eh_sema_id = CreateSema(&eh_sema);
 }
 
 

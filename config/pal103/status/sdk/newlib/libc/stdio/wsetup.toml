@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0223"
 source = "src/sdk/newlib/libc/stdio/wsetup.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0223:00274e20:__swsetup"

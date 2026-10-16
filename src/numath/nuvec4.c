@@ -19,6 +19,13 @@
 #include "numath/numathtypes.h"
 #include "numath/nuvec4.h"
 
+const struct nuvec4_s nuvec4_zero = { 0.0f, 0.0f, 0.0f, 0.0f };
+const struct nuvec4_s nuvec4_one = { 1.0f, 1.0f, 1.0f, 1.0f };
+const struct nuvec4_s nuvec4_x = { 1.0f, 0.0f, 0.0f, 0.0f };
+const struct nuvec4_s nuvec4_y = { 0.0f, 1.0f, 0.0f, 0.0f };
+const struct nuvec4_s nuvec4_z = { 0.0f, 0.0f, 1.0f, 0.0f };
+const struct nuvec4_s nuvec4_w = { 0.0f, 0.0f, 0.0f, 1.0f };
+
 void NuVec4Add(struct nuvec4_s *dst, struct nuvec4_s *a,
                struct nuvec4_s *b)
 {

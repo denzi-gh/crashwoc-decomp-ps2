@@ -19,23 +19,28 @@
 extern void *NuMemAllocFn(int size, char *file, int line);
 extern void NuMemFreeFn(void *ptr, char *file, int line);
 
-extern u32 D_002E98B0[256];
-#define block4_lut D_002E98B0
-extern u32 D_002E9CB0[128];
-#define block8_lut D_002E9CB0
-extern int D_002E9EB0[32];
-#define page4_block_table D_002E9EB0
-extern int D_002E9F30[32];
-#define page4_block32_table D_002E9F30
-extern int D_002E9FB0[32];
-#define page8_block_table D_002E9FB0
-extern int D_002EA030[32];
-#define page8_block32_table D_002EA030
 extern char D_00616130[];
 #define bitconv_srcfile D_00616130
 
 int BlockConv4to32(u8 *in, u8 *out)
 {
+    static u32 lut[256] = {
+        0, 68, 8, 76, 16, 84, 24, 92, 1, 69, 9, 77, 17, 85, 25, 93, 2, 70, 10, 78,
+        18, 86, 26, 94, 3, 71, 11, 79, 19, 87, 27, 95, 4, 64, 12, 72, 20, 80, 28,
+        88, 5, 65, 13, 73, 21, 81, 29, 89, 6, 66, 14, 74, 22, 82, 30, 90, 7, 67,
+        15, 75, 23, 83, 31, 91, 32, 100, 40, 108, 48, 116, 56, 124, 33, 101, 41,
+        109, 49, 117, 57, 125, 34, 102, 42, 110, 50, 118, 58, 126, 35, 103, 43,
+        111, 51, 119, 59, 127, 36, 96, 44, 104, 52, 112, 60, 120, 37, 97, 45, 105,
+        53, 113, 61, 121, 38, 98, 46, 106, 54, 114, 62, 122, 39, 99, 47, 107, 55,
+        115, 63, 123, 4, 64, 12, 72, 20, 80, 28, 88, 5, 65, 13, 73, 21, 81, 29, 89,
+        6, 66, 14, 74, 22, 82, 30, 90, 7, 67, 15, 75, 23, 83, 31, 91, 0, 68, 8, 76,
+        16, 84, 24, 92, 1, 69, 9, 77, 17, 85, 25, 93, 2, 70, 10, 78, 18, 86, 26,
+        94, 3, 71, 11, 79, 19, 87, 27, 95, 36, 96, 44, 104, 52, 112, 60, 120, 37,
+        97, 45, 105, 53, 113, 61, 121, 38, 98, 46, 106, 54, 114, 62, 122, 39, 99,
+        47, 107, 55, 115, 63, 123, 32, 100, 40, 108, 48, 116, 56, 124, 33, 101, 41,
+        109, 49, 117, 57, 125, 34, 102, 42, 110, 50, 118, 58, 126, 35, 103, 43,
+        111, 51, 119, 59, 127
+    };
     u32 i, j, k;
     u32 index;
     u32 pos, shift0, shift1, offset;
@@ -49,11 +54,11 @@ int BlockConv4to32(u8 *in, u8 *out)
         index = (i & 1) * 128;
         for (j = 0; j < 16; j++) {
             for (k = 0; k < 4; k++) {
-                pos = block4_lut[index++];
+                pos = lut[index++];
                 shift0 = (pos & 1) * 4;
                 offset = pos >> 1;
                 lo = (src[offset] & (0x0F << shift0)) >> shift0;
-                pos = block4_lut[index++];
+                pos = lut[index++];
                 shift1 = (pos & 1) * 4;
                 offset = pos >> 1;
                 hi = (src[offset] & (0x0F << shift1)) >> shift1;
@@ -67,6 +72,14 @@ int BlockConv4to32(u8 *in, u8 *out)
 
 int PageConv4to32(int width, int height, u8 *in, u8 *out)
 {
+    static int block_table4[32] = {
+        0, 2, 8, 10, 1, 3, 9, 11, 4, 6, 12, 14, 5, 7, 13, 15, 16, 18, 24, 26, 17,
+        19, 25, 27, 20, 22, 28, 30, 21, 23, 29, 31
+    };
+    static int block_table32[32] = {
+        0, 1, 4, 5, 16, 17, 20, 21, 2, 3, 6, 7, 18, 19, 22, 23, 8, 9, 12, 13, 24,
+        25, 28, 29, 10, 11, 14, 15, 26, 27, 30, 31
+    };
     int *block_x;
     int *block_y;
     u8 in_block[256];
@@ -86,7 +99,7 @@ int PageConv4to32(int width, int height, u8 *in, u8 *out)
     n = 0;
     for (i = 0; i < 4; i++) {
         for (j = 0; j < 8; j++) {
-            id = page4_block32_table[n++];
+            id = block_table32[n++];
             block_x[id] = j;
             block_y[id] = i;
         }
@@ -100,7 +113,7 @@ int PageConv4to32(int width, int height, u8 *in, u8 *out)
     out_line = 256;
     for (i = 0; i < nblocks_h; i++) {
         for (j = 0; j < nblocks_w; j++) {
-            block = page4_block_table[i * nblocks_w + j];
+            block = block_table4[i * nblocks_w + j];
             src = in + i * in_size + j * 16;
             dst = in_block;
             for (k = 0; k < 16; k++) {
@@ -126,6 +139,15 @@ int PageConv4to32(int width, int height, u8 *in, u8 *out)
 
 inline int BlockConv8to32(u8 *in, u8 *out)
 {
+    static u32 lut[128] = {
+        0, 36, 8, 44, 1, 37, 9, 45, 2, 38, 10, 46, 3, 39, 11, 47, 4, 32, 12, 40, 5,
+        33, 13, 41, 6, 34, 14, 42, 7, 35, 15, 43, 16, 52, 24, 60, 17, 53, 25, 61,
+        18, 54, 26, 62, 19, 55, 27, 63, 20, 48, 28, 56, 21, 49, 29, 57, 22, 50, 30,
+        58, 23, 51, 31, 59, 4, 32, 12, 40, 5, 33, 13, 41, 6, 34, 14, 42, 7, 35, 15,
+        43, 0, 36, 8, 44, 1, 37, 9, 45, 2, 38, 10, 46, 3, 39, 11, 47, 20, 48, 28,
+        56, 21, 49, 29, 57, 22, 50, 30, 58, 23, 51, 31, 59, 16, 52, 24, 60, 17, 53,
+        25, 61, 18, 54, 26, 62, 19, 55, 27, 63
+    };
     u32 i, j, k;
     u32 index;
     int n;
@@ -135,7 +157,7 @@ inline int BlockConv8to32(u8 *in, u8 *out)
         index = (i & 1) * 64;
         for (j = 0; j < 16; j++) {
             for (k = 0; k < 4; k++) {
-                out[n++] = in[block8_lut[index++]];
+                out[n++] = in[lut[index++]];
             }
         }
         in += 64;
@@ -145,6 +167,14 @@ inline int BlockConv8to32(u8 *in, u8 *out)
 
 int PageConv8to32(int width, int height, u8 *in, u8 *out)
 {
+    static int block_table8[32] = {
+        0, 1, 4, 5, 16, 17, 20, 21, 2, 3, 6, 7, 18, 19, 22, 23, 8, 9, 12, 13, 24,
+        25, 28, 29, 10, 11, 14, 15, 26, 27, 30, 31
+    };
+    static int block_table32[32] = {
+        0, 1, 4, 5, 16, 17, 20, 21, 2, 3, 6, 7, 18, 19, 22, 23, 8, 9, 12, 13, 24,
+        25, 28, 29, 10, 11, 14, 15, 26, 27, 30, 31
+    };
     int *block_x;
     int *block_y;
     u8 in_block[256];
@@ -164,7 +194,7 @@ int PageConv8to32(int width, int height, u8 *in, u8 *out)
     n = 0;
     for (i = 0; i < 4; i++) {
         for (j = 0; j < 8; j++) {
-            id = page8_block32_table[n++];
+            id = block_table32[n++];
             block_x[id] = j;
             block_y[id] = i;
         }
@@ -178,7 +208,7 @@ int PageConv8to32(int width, int height, u8 *in, u8 *out)
     out_line = 256;
     for (i = 0; i < nblocks_h; i++) {
         for (j = 0; j < nblocks_w; j++) {
-            block = page8_block_table[i * nblocks_w + j];
+            block = block_table8[i * nblocks_w + j];
             src = in + i * in_size + j * 16;
             dst = in_block;
             for (k = 0; k < 16; k++) {

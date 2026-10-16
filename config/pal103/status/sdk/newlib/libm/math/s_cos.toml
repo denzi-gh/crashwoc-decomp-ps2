@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0151"
 source = "src/sdk/newlib/libm/math/s_cos.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0151:00268420:cos"

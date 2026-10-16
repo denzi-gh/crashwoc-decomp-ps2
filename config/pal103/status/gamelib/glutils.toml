@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0072"
 source = "src/gamelib/glutils.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0072:001a0ba0:CreateAlphaBlendTexture256_32"

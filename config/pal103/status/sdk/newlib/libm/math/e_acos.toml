@@ -14,3 +14,59 @@ complete = false
 [[function]]
 id = "pal103:unit-0160:002690f0:__ieee754_acos"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0160:0062b2d8:one"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0160:0062b2e0:pi"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0160:0062b2e8:pio2_hi"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0160:0062b2f0:pio2_lo"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0160:0062b2f8:pS0"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0160:0062b300:pS1"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0160:0062b308:pS2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0160:0062b310:pS3"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0160:0062b318:pS4"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0160:0062b320:pS5"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0160:0062b328:qS1"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0160:0062b330:qS2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0160:0062b338:qS3"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0160:0062b340:qS4"
+state = "matching"
