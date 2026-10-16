@@ -87,6 +87,7 @@ jobs:
       - name: Committed registries are exactly reproducible
         run: |
           python tools/extract_mdebug.py --check
+          python tools/extract_data_symbols.py --check
           python tools/extract_data_map.py --check
           python tools/status.py --check
 

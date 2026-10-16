@@ -40,6 +40,7 @@ python tools/check_types.py --check                # type census ratchet (docs/d
 # Registry / target gates (native, need orig/)
 python tools/verify_target.py                      # hash + ELF structure vs committed registry
 python tools/extract_mdebug.py --check             # committed registries == fresh extraction
+python tools/extract_data_symbols.py --check       # data registry == fresh extraction
 python tools/extract_data_map.py --check           # data map == fresh extraction
 python configure.py                                # splat disassembly into asm/, then regenerates build.ninja + objdiff.json
 python configure.py --check                        # split twice, prove deterministic
@@ -69,7 +70,7 @@ Headers live in `include/` (layout and rules: docs/decomp_agent.md, "Types and s
 
 The pipeline is a chain of byte-gated reconstruction steps; each later stage assumes the earlier gates hold:
 
-1. **Registries** (`config/pal103/`) - extracted deterministically from the retail ELF's `.mdebug` debug section: `units.toml` (267 TUs), `functions.toml` (3,751 procedures with addresses/frames), `symbol_addrs.txt`, `data_map.toml` (exact tiling of data sections into per-unit ranges), `sections.json`, `version.json`. All are `--check`-gated: committed files must equal a fresh extraction.
+1. **Registries** (`config/pal103/`) - extracted deterministically from the retail ELF's `.mdebug` debug section: `units.toml` (267 TUs), `functions.toml` (3,751 procedures with addresses/frames), `symbol_addrs.txt`, `data_symbols.toml` (3,750 named data symbols with `.symtab` sizes and STABS types), `data_map.toml` (exact tiling of data sections into per-unit ranges, from symbol sizes and code cross-references), `sections.json`, `version.json`. All are `--check`-gated: committed files must equal a fresh extraction.
 2. **Disassembly** - splat (pinned 0.41.0, `splat.yaml`) splits the ELF into `asm/` using the registries. Nothing splat emits is committed.
 3. **Reconstruction** - `build_baseline.py` (incbin sections at `linker.ld` addresses), `assemble_text.py` (monolithic `.text` reassembled), `split_text.py` (247 per-TU objects). Each proves the loaded `PT_LOAD` image reproduces the packaged SHA-256 `c92a5987…0fe438`.
 4. **Matching C** - `src/<unit>.c` mirrors the objdiff unit name (e.g. `src/nucore/nulist.c` for unit `nucore/nulist`), with a status manifest at `config/pal103/status/<unit>.toml` marking each function `asm`/`equivalent`/`matching`. `tools/gen_hybrid.py` builds hybrid objects: compile the unit with `ee-gcc -S`, splice retail assembly slices for every non-`matching` function (address order), normalize (`_sonyize`) and assemble with the **decompals `as`** (not Sony's). Sources stay clean C - no INCLUDE_ASM annotations.
