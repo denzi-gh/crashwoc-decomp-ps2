@@ -273,7 +273,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00212b08:ProcessFireFlyIntro"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00213110:ProcessFireFlyLevel"
@@ -305,7 +305,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00214030:UnleashLighteningHail"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00214220:DrawWBBolts"
@@ -317,7 +317,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00214588:WeatherBossReset"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00214980:DrawWeatherBossLevelExtra"
@@ -329,7 +329,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00214c68:ProcessWBIntro"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00214de8:ProcessVehicleLevel"
@@ -337,7 +337,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00214f40:DrawExtraCreatures"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00215140:GetCurrentLevelObjectives"
@@ -353,7 +353,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00215750:AdjustAtlasRotations"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:002159f0:ProcessPlatformsAtlas"
@@ -365,11 +365,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:00216598:CheckAtlasGround"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00216848:ResetAtlas"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00216ba8:ProcessAtlas"
@@ -377,19 +377,19 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:00216f48:MoveAtlas"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:002171a8:InitEarthBoss"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00217420:JonnyParticles"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00217680:DrawEarthBoss"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00217890:PrintEarthBossAction"
@@ -397,7 +397,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00217ab8:ProcessEarthBossActions"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00218d00:ProcessRumblePanel"
@@ -405,7 +405,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:002190e8:RumbleHeadUpDisplay"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:002195a8:ProcessEarthBossVortex"
@@ -433,7 +433,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:0021a940:AddRockVel"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021adc0:ShootRoksSkyward"
@@ -449,7 +449,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021b088:ProcessJeepRock"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021b410:ProcessJeepRocks"
@@ -461,11 +461,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021b718:RumbleCam"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021ba08:ProcessVehMasks"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021bc88:DrawVehMasks"
@@ -565,15 +565,15 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021c7d8:GetBattleShipBestTarget"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021c938:GetGunBoatBestTarget"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021caa0:GetZoffaBestTarget"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021cc00:PickGliderTarget"

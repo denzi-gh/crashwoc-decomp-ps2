@@ -628,13 +628,15 @@ struct jeeprock_s {
     s32 seen;                  /* 0x01C */
     char pad_020[0x024 - 0x020];
     s32 explode;               /* 0x024 set when something hits the rock */
-    char pad_028[0x030 - 0x028];
+    char pad_028[0x02C - 0x028];
+    f32 life;                  /* 0x02C */
     struct NEWBUGGY atlas;     /* 0x030 the rock rolls as an atlasphere */
     s32 held;                  /* 0x3B4 */
     s32 owner;                 /* 0x3B8 */
-    f32 size;                  /* 0x3BC */
+    f32 flametimer;            /* 0x3BC */
     struct nuvec_s scale;      /* 0x3C0 */
-    char pad_3CC[0x3D4 - 0x3CC];
+    s32 fireblob;              /* 0x3CC */
+    s32 smashme;               /* 0x3D0 */
 };
 extern struct jeeprock_s JeepRock[];
 
@@ -661,7 +663,7 @@ void ShootRoksSkyward(void)
             JeepRock[i].atlas.ball_vel = SetNuVec(0.0f, 13.0f, 0.0f);
             JeepRock[i].owner = 20;
             JeepRock[i].atlas.ball_beenhit = 0;
-            JeepRock[i].size = 10.0f;
+            JeepRock[i].flametimer = 10.0f;
         }
     }
 }
@@ -701,7 +703,7 @@ s32 GetRumbleCrunchRoks(void)
     }
     count = 0;
     for (i = 0; i < 6; i++) {
-        if (JeepRock[i].exists != 0 && JeepRock[i].size > 0.0f &&
+        if (JeepRock[i].exists != 0 && JeepRock[i].flametimer > 0.0f &&
             JeepRock[i].owner == -1) {
             count++;
         }
@@ -720,7 +722,7 @@ s32 GetRumblePlayerRoks(void)
     }
     count = 0;
     for (i = 0; i < 6; i++) {
-        if (JeepRock[i].exists != 0 && JeepRock[i].size > 0.0f &&
+        if (JeepRock[i].exists != 0 && JeepRock[i].flametimer > 0.0f &&
             JeepRock[i].owner == 1) {
             count++;
         }
@@ -928,7 +930,7 @@ s32 FindSurfaceType(struct nuvec_s *pos)
     return -1;
 }
 
-void InitWeatherBoss(void)
+inline void InitWeatherBoss(void)
 {
     InitWeatherBoss_a();
 }
@@ -980,7 +982,7 @@ extern void DrawAllHovaBlimps(void);
 extern void DrawGliderBullets(void);
 extern void DrawGliderTarget(void);
 
-void DrawFarmLevelExtra(void)
+inline void DrawFarmLevelExtra(void)
 {
     DrawZoffaUFOs();
     DrawPlane(&PlayerPlane);
@@ -1491,7 +1493,7 @@ extern f32 RumbleCamTweenDest;
 extern f32 RumbleCamTweenInterest;
 extern f32 RUMZOOM;
 
-void UpdateRumbleCamTween(void)
+inline void UpdateRumbleCamTween(void)
 {
     if (RumbleCamTweenDest > RumbleCamTween) {
         RumbleCamTween += 0.02f;
@@ -1514,7 +1516,7 @@ void UpdateRumbleCamTween(void)
 }
 
 /* Replace a rock with two smaller ones flying apart. */
-void SmashRockIntoTwo(struct jeeprock_s *rock)
+inline void SmashRockIntoTwo(struct jeeprock_s *rock)
 {
     struct nuvec_s vel;
     struct nuvec_s pos;
@@ -1948,6 +1950,91 @@ extern void SeekAngHalfLife360f(f32 *dest, f32 target, f32 halflife, f32 dt);
 extern struct gdeb_s GDeb[];
 extern void AddVariableShotDebrisEffect(s32 effect, struct nuvec_s *pos, s32 n,
                                         short xrot, short yrot);
+extern void ProcessAtlas(struct NEWBUGGY *atlas);
+extern s32 ROCKSMASHVOL;
+
+
+void ProcessJeepRock(struct jeeprock_s *rock)
+{
+    struct jeeprock_s *other;
+    s32 effect;
+
+    if (Level == 0x15 && rock->owner != 1 && rock->owner != 20) {
+        if (ProcessTimer(&rock->flametimer) != 0) {
+            rock->owner = 0;
+        }
+    }
+    if (rock->held != 0) {
+        rock->held = 0;
+        return;
+    }
+    if (rock->seen == 0 && rock->life < 4.0f) {
+        rock->exists = 0;
+    }
+    if (rock->atlas.ball_beenhit > 2 && rock->owner != 20) {
+        other = &JeepRock[rock->atlas.ball_beenhit - 3];
+        if (other->owner != 0) {
+            if (rock->owner + other->owner == 0) {
+                other->owner = 0;
+                rock->owner = 0;
+                rock->flametimer = other->flametimer = 0.0f;
+            } else if (other->owner == -1) {
+                rock->owner = other->owner;
+                rock->flametimer = other->flametimer = 7.0f;
+            }
+            other->atlas.ball_beenhit = 0;
+        }
+        rock->atlas.ball_beenhit = 0;
+    }
+    if (Level == 0x15) {
+        rock->life = 10.0f;
+    }
+    if (ProcessTimer(&rock->life) != 0) {
+        rock->explode = 1;
+    } else if (rock->fireblob != 2) {
+        if (rock->owner != 20) {
+            ProcessAtlas(&rock->atlas);
+            rock->pos = rock->atlas.ball_pos;
+            if (rock->atlas.embedded != 0 && Level != 0x15) {
+                rock->explode = 1;
+            }
+            if (rock->smashme != 0 && (rock->atlas.onground & 3)) {
+                SmashRockIntoTwo(rock);
+            }
+            if (rock->fireblob == 1 && (rock->atlas.onground & 3)) {
+                rock->fireblob = 2;
+            }
+        } else {
+            NuVecScaleAccum(&rock->atlas.ball_pos, &rock->atlas.ball_vel, 0.02f);
+            rock->pos = rock->atlas.ball_pos;
+        }
+    }
+    effect = GDeb[0x3D].i;
+    if (Level == 0x15) {
+        switch (rock->owner) {
+        case 1:
+            effect = GDeb[0x3E].i;
+            break;
+        case 20:
+            effect = GDeb[0x40].i;
+            break;
+        case -1:
+            break;
+        default:
+            effect = GDeb[0x3F].i;
+            break;
+        }
+    }
+    if (effect != -1) {
+        AddVariableShotDebrisEffect(effect, &rock->pos, 1, 0, 0);
+    }
+    if (rock->explode != 0) {
+        MyGameSfx(0x56, &rock->pos, rock->atlas.ball_radius * ROCKSMASHVOL);
+        AddGameDebris(0x42, &rock->pos);
+        rock->exists = 0;
+    }
+}
+
 extern void MyResetAnimPacket(struct MYDRAW *draw, s32 action);
 extern s32 BATTLESHIPAVOLUME;
 extern s32 BATTLESHIPBVOLUME;
@@ -2243,6 +2330,68 @@ f32 GetBigGunBestTarget(f32 bestdot, struct nuvec_s **pos, struct nuvec_s **vel,
     return bestdot;
 }
 
+
+f32 GetBattleShipBestTarget(f32 bestdot, struct nuvec_s **pos, struct nuvec_s **vel, s32 *type)
+{
+    struct nuvec_s camdir;
+    struct nuvec_s rel;
+    s32 i;
+    f32 dot;
+    f32 mag;
+
+    NuVecMtxRotate(&camdir, SetNuVecPntr(0.0f, 0.0f, 1.0f), &GameCam[0].m);
+    for (i = 0; i < 6; i++) {
+        if (BattleShipList[i].active != 0) {
+            if (BattleShipList[i].hitpoints > 0) {
+                NuVecSub(&rel, &BattleShipList[i].pos, &GameCam[0].pos);
+                mag = NuVecMag(&rel);
+                if (10.0f < mag) {
+                    NuVecScale(&rel, &rel, 1.0f / mag);
+                    dot = DotProduct(&camdir, &rel);
+                    if (bestdot < dot) {
+                        *pos = &BattleShipList[i].pos;
+                        bestdot = dot;
+                        *vel = &v000;
+                        *type = 0;
+                    }
+                }
+            }
+        }
+    }
+    return bestdot;
+}
+
+
+f32 GetGunBoatBestTarget(f32 bestdot, struct nuvec_s **pos, struct nuvec_s **vel, s32 *type)
+{
+    struct nuvec_s camdir;
+    struct nuvec_s rel;
+    s32 i;
+    f32 dot;
+    f32 mag;
+
+    NuVecMtxRotate(&camdir, SetNuVecPntr(0.0f, 0.0f, 1.0f), &GameCam[0].m);
+    for (i = 0; i < 4; i++) {
+        if (GunBoatList[i].active != 0) {
+            if (GunBoatList[i].action != 2) {
+                NuVecSub(&rel, &GunBoatList[i].pos, &GameCam[0].pos);
+                mag = NuVecMag(&rel);
+                if (10.0f < mag) {
+                    NuVecScale(&rel, &rel, 1.0f / mag);
+                    dot = DotProduct(&camdir, &rel);
+                    if (bestdot < dot) {
+                        *pos = &GunBoatList[i].pos;
+                        bestdot = dot;
+                        *vel = &v000;
+                        *type = 0;
+                    }
+                }
+            }
+        }
+    }
+    return bestdot;
+}
+
 extern void DrawCross(struct nuvec_s *pos, s32 colour, f32 size);
 extern s32 BigGunDraw;
 extern s32 TimeTrial;
@@ -2530,8 +2679,7 @@ extern struct spacestation_s SpaceStationList[3];
 
 /* trail array: stride 0x20, 128 entries. */
 struct trail_s {
-    f32 field0;                /* 0x00 */
-    char pad_04[0x18 - 0x04];
+    struct nuvec_s pos[2];     /* 0x00 */
     s32 alpha;                 /* 0x18 */
     s32 basealpha;             /* 0x1C */
 };
@@ -2801,7 +2949,7 @@ void DrawTorpedoTarget(void)
     }
 }
 
-void DrawWeatherResearchLevelExtra(void)
+inline void DrawWeatherResearchLevelExtra(void)
 {
     DrawGliderBullets();
     DrawBigGuns();
@@ -2858,7 +3006,7 @@ void InitTrail(void)
     s32 i;
 
     for (i = 127; i >= 0; i--) {
-        trail[i].field0 = D_0062DF00;
+        trail[i].pos[0].x = D_0062DF00;
     }
     trailpt = 0;
     trailair = 0;
@@ -2866,15 +3014,15 @@ void InitTrail(void)
 
 extern struct nuquat_s SetNuQuat(f32 x, f32 y, f32 z, f32 w);
 
-void InitAtlas(struct NEWBUGGY *Atlas, struct nuvec_s *Pos, f32 Radius, s32 Type)
+inline void InitAtlas(struct NEWBUGGY *Atlas, struct nuvec_s *Pos, f32 Radius, s32 Type)
 {
     struct creature_s *cre;
     struct CharacterData *cdata;
 
     cre = Atlas->owner;
     memset(Atlas, 0, sizeof(struct NEWBUGGY));
-    Atlas->type = Type;
     Atlas->owner = cre;
+    Atlas->type = Type;
     Atlas->ball_pos = *Pos;
     Atlas->ball_oldpos = Atlas->ball_pos;
     Atlas->ball_radius = Radius;
@@ -2895,6 +3043,76 @@ void InitAtlas(struct NEWBUGGY *Atlas, struct nuvec_s *Pos, f32 Radius, s32 Type
         Atlas->owner->obj.top = cdata->max.y;
         Atlas->owner->obj.vehicle = 0x53;
     }
+}
+
+extern s32 AtlasEmbeddedFrame;
+extern f32 AtlasWhackValue;
+extern f32 AtlasWhackTimer;
+extern s32 ResetAtlasCamera;
+extern f32 RumbleCamVal;
+extern struct nuvec_s D_0061F770;
+#define atlas_chris_start D_0061F770
+
+
+void ResetAtlas(struct creature_s *c)
+{
+    struct NEWBUGGY *atlas;
+    struct nuvec_s pos;
+
+    atlas = c->Buggy;
+    if (atlas == 0) {
+        c->Buggy = &PlayerAtlas;
+        atlas = &PlayerAtlas;
+        memset(&PlayerAtlas, 0, sizeof(struct NEWBUGGY));
+        PlayerAtlas.owner = c;
+    }
+    AtlasFrame = -1;
+    AtlasEmbeddedFrame = 0;
+    pos.x = c->obj.pos.x;
+    pos.y = c->obj.pos.y + 1.0f;
+    pos.z = c->obj.pos.z;
+    AtlasWhackValue = 0.0f;
+    AtlasWhackTimer = 0.0f;
+    if (Level == 0x10 && ChrisInTheHouse != 0) {
+        pos = atlas_chris_start;
+    }
+    if (Level == 0 && ChrisInTheHouse != 0) {
+        pos = SetNuVec(27.88f, -16.0f, 23.17f);
+    }
+    if (Level == 0xB && ChrisInTheHouse != 0) {
+        pos = SetNuVec(38.66f, -3.0f, -59.15f);
+    }
+    if (Level == 0x20 && ChrisInTheHouse != 0) {
+        pos = SetNuVec(105.25f, -14.47f, 36.82f);
+    }
+    if (Level == 0x15) {
+        pos = SetNuVec(0.0f, -2.83736f, 0.0f);
+    }
+    ResetAtlasCamera = 1;
+    RumbleCamTween = 1.0f;
+    RumbleCamTweenDest = 1.0f;
+    RumbleCamVal = 0.0f;
+    InitAtlas(atlas, &pos, 0.65f, 1);
+    atlas->ball_health = 100;
+    atlas->desthitpoints = 100;
+}
+
+extern struct nuvec_s D_0061F780;
+#define earthboss_start D_0061F780
+
+
+void InitEarthBoss(void)
+{
+    struct nuvec_s start;
+
+    start = earthboss_start;
+    InitAtlas(&EarthBoss, &start, 1.0f, 2);
+    EarthBoss.ball_health = 3;
+    MyInitModelNew(&EarthBoss.shell, 0xAD, 0x1F, 0, 0, &EarthBoss.ball_pos);
+    MyInitModelNew(&EarthBoss.crunch, 0x7F, 0x22, 0, 0, &EarthBoss.ball_pos);
+    ShootRockSound = 0;
+    EarthBoss.lastaction = -1;
+    EarthBoss.ball_action = 0;
 }
 
 extern struct gtimer_s GameTimer;
@@ -3003,8 +3221,121 @@ void ProcessMovementAtlas(struct NEWBUGGY *Atlas, f32 DeltaTime)
     Atlas->ball_vel.z += Atlas->ball_force.z * DeltaTime;
 }
 
+
+void AdjustAtlasRotations(struct NEWBUGGY *Atlas, struct nuvec_s *Velocity, struct nuvec_s *Normal, f32 DeltaTime)
+{
+    struct nuvec_s vel;
+    struct numtx_s mtx;
+    struct numtx_s inv;
+    struct nuquat_s quat;
+    f32 yaw;
+    f32 pitch;
+    f32 roll;
+    f32 spin;
+    s32 yawang;
+    s32 pitchang;
+
+    vel = *Velocity;
+    if (fabs(Normal->x) < 0.01f && fabs(Normal->z) < 0.01f) {
+        yaw = 0.0f;
+    } else {
+        yaw = -(s32)(u16)NuAtan2D(Normal->x, Normal->z) / 182.04445f;
+    }
+    pitch = -(s32)(u16)NuAtan2D(NuFsqrt(Normal->x * Normal->x + Normal->z * Normal->z), Normal->y) / 182.04445f;
+    NuVecScaleAccum(&vel, Normal, -DotProduct(&vel, Normal));
+    yawang = yaw * 182.04445f;
+    NuVecRotateY(&vel, &vel, yawang);
+    pitchang = pitch * 182.04445f;
+    NuVecRotateX(&vel, &vel, pitchang);
+    spin = NuVecMag(&vel) * 180.0f;
+    spin /= DeltaTime * 3.1415927f;
+    roll = (u16)NuAtan2D(vel.x, vel.z) / 182.04445f;
+    NuMtxSetRotationY(&mtx, yawang);
+    NuMtxRotateX(&mtx, pitchang);
+    NuMtxRotateY(&mtx, (s32)(-roll * 182.04445f));
+    NuMtxInv(&inv, &mtx);
+    NuMtxRotateX(&mtx, (s32)(spin * 182.04445f));
+    NuMtxMul(&mtx, &mtx, &inv);
+    NuMtxToQuat(&mtx, &quat);
+    NuQuatMul(&Atlas->rotquat_delta, &quat, &Atlas->rotquat_delta);
+}
+
+extern s32 DavesGay;
+extern s16 GetVolumeI(f32 vol);
+
+
+extern void CheckAtlasGround(struct NEWBUGGY *atlas);
+
+
+extern void ProcessPlatformsAtlas(struct NEWBUGGY *atlas, f32 dt);
+extern void TerrainAtlas(struct NEWBUGGY *atlas, f32 dt);
+
+
+void ProcessAtlas(struct NEWBUGGY *atlas)
+{
+    if (AtlasFrame >= 0x1FE) {
+        DavesGay++;
+    }
+    atlas->onground <<= 1;
+    atlas->rotquat_delta = SetNuQuat(0.0f, 0.0f, 0.0f, 1.0f);
+    atlas->ball_lastpos = atlas->ball_pos;
+    ProcessTimer(&atlas->boosttimer);
+    ProcessMovementAtlas(atlas, 0.02f);
+    NewScanInit();
+    atlas->terrhandle = NewScanHandel(&atlas->ball_pos, &atlas->ball_vel, 1, 0, atlas->ball_radius + 0.25f);
+    if (Level != 0x15) {
+        ProcessPlatformsAtlas(atlas, 0.02f);
+    }
+    TerrainAtlas(atlas, 0.02f);
+    if (atlas->type == 1) {
+        CheckAtlasGround(atlas);
+    } else if (Level == 0x16 && (atlas->onground & 3)) {
+        MyGameSfxLoop(0x41, &atlas->ball_pos,
+                      GetVolumeI(NuVecDist(&atlas->ball_lastpos, &atlas->ball_pos, 0) * atlas->ball_radius * 10.0f));
+    }
+    if (atlas->onground & 3) {
+        NuQuatMul(&atlas->rotquat, &atlas->rotquat_delta, &atlas->rotquat);
+        NuQuatNormalise(&atlas->rotquat, &atlas->rotquat);
+        atlas->framequat[3] = atlas->framequat[2];
+        atlas->framequat[2] = atlas->framequat[1];
+        atlas->framequat[1] = atlas->framequat[0];
+        atlas->framequat[0] = atlas->rotquat_delta;
+    } else {
+        NuQuatMul(&atlas->rotquat, &atlas->framequat[0], &atlas->rotquat);
+        NuQuatNormalise(&atlas->rotquat, &atlas->rotquat);
+    }
+    if (Level == 0x15) {
+        struct nuvec_s edge;
+        struct nuvec_s dir;
+        f32 limit;
+        f32 dist;
+        f32 dot;
+
+        limit = 15.3f - atlas->ball_radius;
+        dist = atlas->ball_pos.x * atlas->ball_pos.x + atlas->ball_pos.z * atlas->ball_pos.z;
+        if (limit * limit < dist) {
+            dist = NuFsqrt(dist);
+            dir.x = atlas->ball_pos.x / dist;
+            dir.y = 0.0f;
+            dir.z = atlas->ball_pos.z / dist;
+            edge = dir;
+            dot = DotProduct(&atlas->ball_vel, &edge);
+            atlas->ball_pos.x = edge.x * limit;
+            atlas->ball_pos.z = edge.z * limit;
+            if (dot > 0.0f) {
+                NuVecScaleAccum(&atlas->ball_vel, &edge, -dot);
+            }
+        }
+        if (atlas->ball_pos.y > 7.0f) {
+            atlas->ball_pos.y = 7.0f;
+            atlas->ball_vel.y = 0.0f;
+        }
+    }
+    atlas->lastquat = atlas->rotquat;
+    atlas->ball_oldvel = atlas->ball_vel;
+}
+
 extern struct nuvec_s D_0061F750[]; /* fixed ray direction, far from $gp */
-extern f32 D_0062DF04;
 extern s32 TryUnembeddPointDirSimple(struct nuvec_s *pos, struct nuvec_s *dir,
                                      s16 *handle, s32 n, f32 x, f32 y);
 
@@ -3041,8 +3372,50 @@ extern s32 JonnyOn;
 extern s32 ebgo;
 extern struct nuvec_s ebpos[3];
 extern f32 ebtime[3];
+extern s32 qrand(void);
 
-void DrawJonny(void)
+
+void JonnyParticles(struct nuvec_s *pos)
+{
+    struct nuvec_s spawn;
+    s32 i;
+
+    if (ebgo == 0) {
+        return;
+    }
+    if (ebgo == 1) {
+        ebgo = 2;
+        ebtime[0] = 0.0f;
+        ebpos[0].x = 99999.0f;
+        ebtime[1] = 10.0f;
+        ebtime[2] = 20.0f;
+        ebpos[1].x = 99999.0f;
+        ebpos[2].x = 99999.0f;
+    }
+    for (i = 0; i < 3; i++) {
+        ebtime[i] -= 1.0f;
+        if (ebtime[i] < 0.0f) {
+            if (ebpos[i].x != 99999.0f) {
+                ebpos[i].y += 1.0f;
+                AddGameDebris(0x17, &ebpos[i]);
+            }
+            ebtime[i] = 30.0f;
+            spawn = *pos;
+            spawn.x += (s32)(qrand() - 0x8000) * 0.000061035156f;
+            spawn.z += (s32)(qrand() - 0x8000) * 0.000061035156f;
+            spawn.y += 12.0f;
+            spawn.y = NewShadow(&spawn, 0.0f) + 12.0f;
+            ebpos[i] = spawn;
+        }
+        if (ebpos[i].x != 99999.0f) {
+            ebpos[i].y -= 0.4f;
+            AddVariableShotDebrisEffect(GDeb[64].i, &ebpos[i], 1, 0, 0);
+        }
+    }
+}
+
+
+inline void DrawJonny(void)
 {
     struct numtx_s m;
     s32 i;
@@ -3059,6 +3432,39 @@ void DrawJonny(void)
     }
 }
 
+extern void PrintEarthBossAction(struct NEWBUGGY *boss);
+
+
+void DrawEarthBoss(void)
+{
+    struct NEWBUGGY *boss;
+    struct nuvec_s scale;
+    f32 size;
+
+    boss = &EarthBoss;
+    if (boss->dead != 0) {
+        return;
+    }
+    DrawJonny();
+    if (boss->drawcrunch != 0) {
+        NuMtxSetRotationY(&mTEMP, boss->crunchy * 182.04445f);
+        NuMtxTranslate(&mTEMP, &boss->ball_pos);
+        mTEMP._31 -= boss->ball_radius;
+        MyDrawModelNew(&boss->crunch, &mTEMP, 0);
+    }
+    if (boss->drawshell != 0) {
+        size = boss->ball_radius / 0.65f * 2.56;
+        scale = SetNuVec(size, size, size);
+        NuQuatToMtx(&boss->rotquat, &mTEMP);
+        NuMtxScale(&mTEMP, &scale);
+        NuMtxTranslate(&mTEMP, &boss->ball_pos);
+        MyDrawModelNew(&boss->shell, &mTEMP, 0);
+    }
+    if (ChrisInTheHouse != 0) {
+        PrintEarthBossAction(boss);
+    }
+}
+
 extern struct nuvec_s ShadNorm;
 extern s32 TryUnembeddPointDir(struct nuvec_s *pos, struct nuvec_s *norm, struct nuvec_s *dir,
                                s16 *handle, f32 radius);
@@ -3067,7 +3473,7 @@ extern s32 TryUnembeddPointSafe(struct nuvec_s *pos, struct nuvec_s *safe, s16 *
 
 /* Push the atlasphere out of the terrain along the ground normal, or back to
  * its last safe position if that fails. */
-void UnembedRayCastAtlas(struct NEWBUGGY *b, s16 *handle)
+inline void UnembedRayCastAtlas(struct NEWBUGGY *b, s16 *handle)
 {
     struct nuvec_s up = D_0061F750[0];
 
@@ -3076,12 +3482,269 @@ void UnembedRayCastAtlas(struct NEWBUGGY *b, s16 *handle)
     }
 }
 
-void UnembedRayCastAtlasSimple(struct NEWBUGGY *b, s16 *handle)
+inline s32 UnembedRayCastAtlasSimple(struct NEWBUGGY *b, s16 *handle)
 {
     struct nuvec_s dir = D_0061F750[0];
 
-    TryUnembeddPointDirSimple(&b->ball_pos, &dir, handle, 5, b->ball_radius,
-                              D_0062DF04);
+    return TryUnembeddPointDirSimple(&b->ball_pos, &dir, handle, 5, b->ball_radius, 0.03f);
+}
+
+extern f32 ATLASBOOSTSPEED;
+extern s32 ATLASBOOSTVOL;
+extern f32 ATLASLOOPVOL;
+extern f32 BALLRUMBLESLOPE;
+
+
+extern f32 BALLBUZZSLOPE;
+extern f32 BALLBUZZMIN;
+extern f32 BALLBUZZLIMCOS;
+extern f32 BALLHITVOLDIV;
+extern f32 BALLHITVOLBASE;
+extern struct nuvec_s NullNuVec;
+extern struct nuvec_s *CrossProduct(struct nuvec_s *dest, struct nuvec_s *a, struct nuvec_s *b);
+
+
+void TerrainAtlas(struct NEWBUGGY *atlas, f32 dt)
+{
+    struct nuvec_s history[6];
+    struct nuquat_s spins[6];
+    struct nuvec_s move;
+    struct nuvec_s step;
+    s32 tries;
+    s32 maxtries;
+    s32 left;
+    s32 hit;
+    f32 dot;
+    f32 speed;
+    f32 scale;
+    f32 vol;
+
+    tries = 6;
+    maxtries = 6;
+    if (AtlasFrame >= 500) {
+        tttt++;
+    }
+    step.x = atlas->ball_target.x - atlas->ball_pos.x;
+    step.y = atlas->ball_target.y - atlas->ball_pos.y;
+    step.z = atlas->ball_target.z - atlas->ball_pos.z;
+    do {
+        left = tries - 1;
+        move = step;
+        history[left] = atlas->ball_pos;
+        spins[left] = atlas->rotquat_delta;
+        hit = NewRayCastSetHandel(&atlas->ball_pos, &move, atlas->ball_radius, 0.01f, 0.0f, atlas->terrhandle);
+        if (hit & 0x10) {
+            if (TerrainPlatId() != -1 && ShadNorm.y >= 0.5f) {
+                if (!UnembedRayCastAtlasSimple(atlas, atlas->terrhandle)) {
+                    UnembedRayCastAtlas(atlas, atlas->terrhandle);
+                }
+            } else {
+                UnembedRayCastAtlas(atlas, atlas->terrhandle);
+            }
+            move = step;
+            hit = NewRayCastSetHandel(&atlas->ball_pos, &move, atlas->ball_radius, 0.01f, 0.0f, atlas->terrhandle);
+        }
+        atlas->ball_oldpos = atlas->ball_pos;
+        NuVecSub(&step, &step, &move);
+        NuVecAdd(&atlas->ball_pos, &atlas->ball_pos, &move);
+        AdjustAtlasRotations(atlas, &move, &atlas->lastnormal, atlas->ball_radius);
+        atlas->lasthit = hit;
+        if (hit != 0) {
+            struct nuvec_s norm;
+            struct nuvec_s probe;
+            struct nuvec_s edge;
+            struct nuvec_s slide;
+
+            norm = ShadNorm;
+            atlas->onground |= 1;
+            if (norm.y * atlas->ball_vel.y < -7.0f && atlas->ball_vel.y < 0.0f) {
+                atlas->bigdrop = 1;
+            }
+            dot = DotProduct(&norm, &atlas->ball_vel);
+            NuVecScaleAccum(&atlas->ball_vel, &norm, -dot);
+            if (atlas->type != 2 && dot < -1.0f) {
+                speed = NuVecMag(&atlas->ball_vel);
+                if (fabs(dot) > BALLBUZZLIMCOS * speed) {
+                    scale = atlas->ball_radius / 0.65f;
+                    vol = BALLHITVOLBASE + (1.0f - dot * scale * scale * scale) / BALLHITVOLDIV;
+                    MyGameSfx(0x11, &atlas->ball_pos, GetVolumeI(vol));
+                    if (atlas->type == 1 && vol > BALLBUZZMIN) {
+                        vol = (vol - BALLBUZZMIN) / (1.0f - BALLBUZZMIN);
+                        NewBuzz(&player->rumble, (s32)(BALLBUZZSLOPE * (1.0f - (1.0f - vol) * (1.0f - vol))) + 2);
+                    }
+                }
+            }
+            if (-dot > AtlasWhackValue) {
+                AtlasWhackValue = -dot;
+                AtlasWhackTimer = 1.0f;
+            }
+            dot = DotProduct(&norm, &step);
+            NuVecScaleAccum(&step, &norm, -dot);
+            if (tries != maxtries && dot > -0.99f && NuVecMagSqr(&move) < 1e-11f) {
+                if (DotProduct(&norm, &atlas->lastnormal) >= 0.0f) {
+                    probe = atlas->ball_pos;
+                    NuVecScaleAccum(&probe, &norm, 0.001f);
+                    if (!NewRayCastSetHandel(&probe, &NullNuVec, atlas->ball_radius, 0.0f, 0.0f, atlas->terrhandle)) {
+                        atlas->ball_pos = probe;
+                    } else {
+                        probe = atlas->ball_pos;
+                        NuVecScaleAccum(&probe, &norm, 0.0007f);
+                        NuVecScaleAccum(&probe, &ShadNorm, 0.0007f);
+                        if (!NewRayCastSetHandel(&probe, &NullNuVec, atlas->ball_radius, 0.0f, 0.0f, atlas->terrhandle)) {
+                            atlas->ball_pos = probe;
+                        }
+                    }
+                } else {
+                    CrossProduct(&edge, &norm, &atlas->lastnormal);
+                    NuVecNorm(&edge, &edge);
+                    NuVecScale(&step, &edge, DotProduct(&edge, &step));
+                    NuVecScale(&atlas->ball_vel, &edge, DotProduct(&edge, &atlas->ball_vel));
+                    slide = atlas->ball_pos;
+                    NuVecScaleAccum(&slide, &norm, 0.0007f);
+                    NuVecScaleAccum(&slide, &atlas->lastnormal, 0.0007f);
+                    if (!NewRayCastSetHandel(&slide, &NullNuVec, atlas->ball_radius, 0.0f, 0.0f, atlas->terrhandle)) {
+                        atlas->ball_pos = slide;
+                    }
+                }
+            }
+            atlas->lastnormal = norm;
+        }
+        tries = left;
+    } while (hit != 0 && left != 0);
+    if (left == 0) {
+        tttt++;
+    }
+}
+
+
+void CheckAtlasGround(struct NEWBUGGY *atlas)
+{
+    struct nuvec_s rel;
+    struct nuvec_s up;
+    struct nuvec_s pos;
+    f32 volume;
+    f32 boost;
+    s32 ivolume;
+
+    up = D_0061F750[0];
+    pos = atlas->ball_pos;
+    NuVecScaleAccum(&pos, &up, 0.01f);
+    NuVecScale(&rel, &up, -0.02f);
+    NewRayCastSetHandel(&pos, &rel, atlas->ball_radius, 0.0f, 0.0f, atlas->terrhandle);
+    atlas->platformid = TerrainPlatId();
+    atlas->platformnormal = ShadNorm;
+    atlas->shadowy = NewShadowMask(&atlas->ball_pos, atlas->ball_radius, -1);
+    if (atlas->shadowy == 2000000.0f || (atlas->onground & 1) == 0 ||
+        0.75f <= atlas->ball_pos.y - atlas->shadowy) {
+        atlas->surfacetype = 0;
+    } else {
+        atlas->surfacetype = ShadowInfo();
+    }
+    if (atlas->surfacetype == 3) {
+        KillAtlasphere(atlas);
+    }
+    if (atlas->surfacetype == 0xB) {
+        atlas->boosttimer = 1.5f;
+        boost = NuFsqrt(atlas->ball_vel.x * atlas->ball_vel.x + atlas->ball_vel.z * atlas->ball_vel.z);
+        if (boost != 0.0f) {
+            boost = ATLASBOOSTSPEED / boost;
+            MyGameSfx(0xCB, &atlas->ball_pos, ATLASBOOSTVOL);
+        }
+        if (boost > 1.0f) {
+            atlas->ball_vel.x *= boost;
+            atlas->ball_vel.z *= boost;
+        }
+        if (atlas->boosttimer < 0.5f) {
+            atlas->boosttimer = 0.5f;
+        }
+    }
+    if (atlas->onground & 3) {
+        volume = NuVecDist(&atlas->ball_lastpos, &atlas->ball_pos, 0) * atlas->ball_radius * 10.0f;
+        ivolume = GetVolumeI(volume);
+        ATLASLOOPVOL = volume;
+        MyGameSfxLoop(0x41, &atlas->ball_pos, ivolume);
+        NewRumble(&player->rumble, BALLRUMBLESLOPE * (1.0f - (1.0f - volume) * (1.0f - volume)));
+    }
+}
+
+
+void ProcessPlatformsAtlas(struct NEWBUGGY *atlas, f32 dt)
+{
+    struct nuvec_s dir;
+    struct nuvec_s delta;
+    struct nuvec_s move;
+    struct nuvec_s local;
+    struct nuvec_s moved;
+    struct nuvec_s back;
+    struct nuvec_s probe;
+    struct nuvec_s ray;
+    struct numtx_s *oldmtx;
+    struct numtx_s *curmtx;
+    f32 shift;
+    f32 push;
+    f32 scale;
+    f32 mag;
+    f32 len;
+    s32 onplat;
+
+    onplat = 0;
+    if (AtlasFrame == 0x11E) {
+        tttt++;
+    }
+    if (atlas->platformid != -1) {
+        onplat = 1;
+    } else if (NewRayCastSetHandel(&atlas->ball_pos, &v000, atlas->ball_radius, 0.01f, 0.0f, atlas->terrhandle) & 0x10) {
+        onplat = 2;
+        atlas->platformid = TerrainPlatId();
+        atlas->platformnormal = ShadNorm;
+        if (atlas->platformid == -1) {
+            onplat = 0;
+        }
+    }
+    if (onplat == 0) {
+        return;
+    }
+    TerrainPlatGetMtx(atlas->platformid, &oldmtx, &curmtx);
+    NuVecInvMtxTransform(&local, &atlas->ball_pos, oldmtx);
+    NuVecMtxTransform(&moved, &local, curmtx);
+    NuVecSub(&delta, &moved, &atlas->ball_pos);
+    back = SetNuVec(-delta.x, -delta.y, -delta.z);
+    AdjustAtlasRotations(atlas, &back, &atlas->platformnormal, atlas->ball_radius);
+    shift = DotProduct(&delta, &atlas->platformnormal);
+    mag = NuVecMag(&delta);
+    if (shift > mag * 0.8f) {
+        shift = mag;
+        NuVecNorm(&dir, &delta);
+    } else {
+        dir = atlas->platformnormal;
+    }
+    if (fabs(dir.y) < 0.1f) {
+        dir.y = 0.0f;
+        NuVecNorm(&dir, &dir);
+    }
+    NuVecScale(&move, &dir, shift);
+    NuVecAdd(&atlas->ball_target, &atlas->ball_target, &move);
+    NuVecAdd(&atlas->ball_pos, &atlas->ball_pos, &move);
+    push = NuVecMagSqr(&move);
+    len = NuFsqrt(push);
+    push -= DotProduct(&move, &atlas->ball_vel) * 0.02f * 0.8f;
+    len *= 0.02f;
+    scale = push / len;
+    if (push > 0.0f) {
+        NuVecScaleAccum(&atlas->ball_vel, &move, scale);
+    }
+    if (onplat == 2) {
+        NuVecAdd(&probe, &atlas->ball_pos, &dir);
+        NuVecScale(&ray, &dir, -2.0f);
+        if (NewRayCastPlatForm(&probe, &ray, atlas->platformid, atlas->ball_radius, 0.01f)) {
+            NuVecAdd(&atlas->ball_pos, &probe, &ray);
+        }
+    }
+    if (NewRayCastSetHandel(&atlas->ball_pos, &v000, atlas->ball_radius, 0.01f, 0.0f, atlas->terrhandle) & 0x10) {
+        if (!UnembedRayCastAtlasSimple(atlas, atlas->terrhandle)) {
+            UnembedRayCastAtlas(atlas, atlas->terrhandle);
+        }
+    }
 }
 
 extern struct nuvec_s D_0061F8D0[];     /* vortex centre {0, -3.3, 0} */
@@ -3136,6 +3799,111 @@ void ProcessEarthBossVortex(void)
         CheckAtlasVortex(&PlayerAtlas);
     }
 }
+
+extern f32 BIGIMPACT;
+extern f32 MINROKVOL;
+extern s32 ROKPITCH;
+extern s32 gamesfx_pitch;
+
+
+void ProcessAtlasAtlasCollisions_a(struct NEWBUGGY *a, struct NEWBUGGY *b)
+{
+    struct nuvec_s rel;
+    struct nuvec_s oldrel;
+    struct nuvec_s norm;
+    struct NEWBUGGY *rock;
+    f32 reach;
+    f32 dist;
+    f32 vb;
+    f32 massa;
+    f32 massb;
+    f32 vol;
+    s32 ivol;
+    s32 neutral;
+
+    reach = a->ball_radius + b->ball_radius;
+    reach *= reach;
+    NuVecSub(&rel, &a->ball_pos, &b->ball_pos);
+    dist = NuVecMagSqr(&rel);
+    if (dist < reach) {
+        NuVecSub(&oldrel, &a->ball_lastpos, &b->ball_lastpos);
+        if (dist < NuVecMagSqr(&oldrel)) {
+            NuVecNorm(&norm, &rel);
+            dist = DotProduct(&a->ball_vel, &norm);
+            vb = DotProduct(&b->ball_vel, &norm);
+            massa = a->ball_radius * a->ball_radius * a->ball_radius;
+            massb = b->ball_radius * b->ball_radius * b->ball_radius;
+            reach = (massb * 2.0f * vb + dist * (massa - massb)) / (massa + massb) - dist;
+            dist = (massa * 2.0f * dist - vb * (massa - massb)) / (massa + massb) - vb;
+            NuVecScaleAccum(&a->ball_vel, &norm, reach);
+            NuVecScaleAccum(&b->ball_vel, &norm, dist);
+            a->ball_beenhit = b->type;
+            b->ball_beenhit = a->type;
+            vol = fabs(reach) * a->ball_radius + fabs(dist) * b->ball_radius;
+            BIGIMPACT = vol;
+            vol /= 10.0f;
+            if (vol < MINROKVOL) {
+                vol = MINROKVOL;
+            }
+            if (Level == 0x15) {
+                if (a == &PlayerAtlas || b == &PlayerAtlas) {
+                    if (a == &EarthBoss || b == &EarthBoss) {
+                        ivol = GetVolumeI(vol);
+                        gamesfx_pitch = ROKPITCH;
+                        MyGameSfx(0xD3, &a->ball_pos, ivol);
+                    } else {
+                        neutral = 0;
+                        rock = 0;
+                        if (a->rock != 0) {
+                            rock = a;
+                        } else if (b->rock != 0) {
+                            rock = b;
+                        }
+                        if (rock != 0) {
+                            neutral = JeepRock[rock->rocknum].owner == 0;
+                        }
+                        if (neutral != 0) {
+                            ivol = GetVolumeI(vol);
+                            gamesfx_pitch = ROKPITCH;
+                            MyGameSfx(0xC7, &a->ball_pos, ivol);
+                        } else {
+                            ivol = GetVolumeI(vol);
+                            gamesfx_pitch = ROKPITCH;
+                            MyGameSfx(0xD3, &a->ball_pos, ivol);
+                        }
+                    }
+                } else if (a != &EarthBoss && b != &EarthBoss) {
+                    ivol = GetVolumeI(vol);
+                    gamesfx_pitch = ROKPITCH;
+                    MyGameSfx(0xD3, &a->ball_pos, ivol);
+                } else {
+                    neutral = 0;
+                    rock = 0;
+                    if (a->rock != 0) {
+                        rock = a;
+                    } else if (b->rock != 0) {
+                        rock = b;
+                    }
+                    if (rock != 0) {
+                        neutral = JeepRock[rock->rocknum].owner == 0;
+                    }
+                    if (neutral != 0) {
+                        ivol = GetVolumeI(vol);
+                        gamesfx_pitch = ROKPITCH;
+                        MyGameSfx(0xC7, &a->ball_pos, ivol);
+                    } else {
+                        ivol = GetVolumeI(vol);
+                        gamesfx_pitch = ROKPITCH;
+                        MyGameSfx(0xD3, &a->ball_pos, ivol);
+                    }
+                }
+            } else {
+                MyGameSfx(0x40, &a->ball_pos, GetVolumeI(vol));
+            }
+        }
+    }
+}
+
 
 void ProcessAtlasAtlasCollisions(void)
 {
@@ -3268,7 +4036,7 @@ void ProcessRockRockCollisions(void)
     }
 }
 
-void FadeOutLastTrail(s32 last, s32 count)
+inline void FadeOutLastTrail(s32 last, s32 count)
 {
     f32 step;
     f32 fade;
@@ -3281,7 +4049,7 @@ void FadeOutLastTrail(s32 last, s32 count)
     fade += step;
     for (i = 0; i < count; i++) {
         idx = (last - i) & 0x7F;
-        if (trail[idx].field0 == -10000.0f) {
+        if (trail[idx].pos[0].x == -10000.0f) {
             return;
         }
         base = trail[idx].basealpha;
@@ -3669,6 +4437,35 @@ void DrawZoffaUFOs(void)
             DrawZoffa(&EnemyZoffa[i]);
         }
     }
+}
+
+
+f32 GetZoffaBestTarget(f32 bestdot, struct nuvec_s **pos, struct nuvec_s **vel, s32 *type)
+{
+    struct nuvec_s camdir;
+    struct nuvec_s rel;
+    s32 i;
+    f32 dot;
+    f32 mag;
+
+    NuVecMtxRotate(&camdir, SetNuVecPntr(0.0f, 0.0f, 1.0f), &GameCam[0].m);
+    for (i = 0; i < 4; i++) {
+        if (EnemyZoffa[i].active != 0) {
+            NuVecSub(&rel, &EnemyZoffa[i].pos, &GameCam[0].pos);
+            mag = NuVecMag(&rel);
+            if (10.0f < mag) {
+                NuVecScale(&rel, &rel, 1.0f / mag);
+                dot = DotProduct(&camdir, &rel);
+                if (bestdot < dot) {
+                    *pos = &EnemyZoffa[i].pos;
+                    bestdot = dot;
+                    *vel = &EnemyZoffa[i].vel;
+                    *type = 1;
+                }
+            }
+        }
+    }
+    return bestdot;
 }
 
 /* Whether `a` and `b` are within `radius`, with the y distance scaled. */
@@ -4567,7 +5364,6 @@ inline void FreeGliderBullet(s32 index, s32 enemy)
 }
 
 extern struct nuvec_s GliderBulletReflectPos;
-extern s32 qrand(void);
 extern f32 NuFsqrt(f32 x);
 
 s32 CollideGliderBullets(struct nuvec_s *pos, f32 radius, s32 enemy, f32 yscale, s32 debris,
@@ -5582,7 +6378,7 @@ extern struct numtx_s BoltMtxA;
 extern struct numtx_s BoltMtxB;
 extern struct numtx_s BoltMtxC;
 
-void InitLighteningHail(void)
+inline void InitLighteningHail(void)
 {
     memset(HailList, 0, sizeof(HailList));
     NuMtxSetScale(&BoltMtxC, SetNuVecPntr(0.5f, 1.5f, 0.5f));
@@ -5624,13 +6420,12 @@ extern s32 SkipNum;
 extern f32 Level_GliderSpeed;
 
 /* Fires the 30 hailstones of attack `attnum` in a fan, leaving a gap of
-   SkipNum stones after stone SkipLeft[attnum].
-   Near-match (stays asm): retail hoists the LighteningFallXMin load above
-   the switch and allocates the three step registers differently. */
+   SkipNum stones after stone SkipLeft[attnum]. */
 void UnleashLighteningHail(struct nuvec_s *pos, s32 attnum)
 {
     struct hail_s *hail;
     struct nuvec_s vel;
+    f32 fallxmin;
     f32 upspeed;
     f32 timer;
     f32 fallx;
@@ -5645,6 +6440,7 @@ void UnleashLighteningHail(struct nuvec_s *pos, s32 attnum)
     memset(HailList, 0, sizeof(HailList));
     NuVecScale(&vel, &LighteningHailVel, 0.02f);
     timer = 2.0f;
+    fallxmin = LighteningFallXMin;
     fallx = LighteningFallXMax;
     switch (attnum) {
     case 0:
@@ -5660,8 +6456,8 @@ void UnleashLighteningHail(struct nuvec_s *pos, s32 attnum)
     count = (f32)(SkipNum + 29);
     LighteningHailVel.z = -Level_GliderSpeed;
     timeinc = HAILTIMERANGE / count;
+    fallxinc = (fallxmin - fallx) / count;
     xinc = -vel.x * 2.0f / count;
-    fallxinc = (LighteningFallXMin - LighteningFallXMax) / count;
     hail = HailList;
     for (i = 0; i < 30; i++, hail++) {
         hail->state = 1;
@@ -5672,13 +6468,13 @@ void UnleashLighteningHail(struct nuvec_s *pos, s32 attnum)
         NuVecScale(&hail->vel, &hail->vel, upspeed);
         hail->fallx = fallx;
         if (i != skipleft) {
-            vel.x += xinc;
-            timer += timeinc;
             fallx += fallxinc;
+            timer += timeinc;
+            vel.x += xinc;
         } else {
             vel.x += xinc * SkipNum;
-            timer += timeinc * SkipNum;
             fallx += fallxinc * SkipNum;
+            timer += timeinc * SkipNum;
         }
     }
 }
@@ -5874,6 +6670,288 @@ void DrawWBBolts(void)
     }
 }
 
+extern struct nuvec_s RockPanelData[4];
+extern struct nuvec_s RockPanelDest[4];
+extern s32 RockPanelObj[4];
+extern f32 RockPanelEdge;
+extern f32 RockPanelSpacing;
+extern f32 RockPanelSlideSpeed;
+extern u16 RockPanelRotX[4];
+extern u16 RockPanelRotY[4];
+extern u16 RockPanelRotZ[4];
+extern u16 RockPanelRotIncX[4];
+extern u16 RockPanelRotIncY[4];
+extern u16 RockPanelRotIncZ[4];
+extern f32 RumbleDisplayY;
+extern f32 DISPLAYYSPEED;
+
+
+void ProcessRumblePanel(void)
+{
+    s32 playerroks;
+    s32 crunchroks;
+    s32 freeroks;
+    s32 n;
+    s32 i;
+    s32 axis;
+    f32 start;
+
+    playerroks = GetRumblePlayerRoks();
+    crunchroks = GetRumbleCrunchRoks();
+    freeroks = GetRumbleTotalRoks() - playerroks - crunchroks;
+    n = 0;
+    for (axis = 0; axis < 4; axis++) {
+        RockPanelRotX[axis] += RockPanelRotIncX[axis];
+        RockPanelRotY[axis] += RockPanelRotIncY[axis];
+        RockPanelRotZ[axis] += RockPanelRotIncZ[axis];
+    }
+    if (playerroks > 0) {
+        start = -RockPanelEdge;
+        for (i = 0; i < playerroks; i++) {
+            RockPanelDest[n].x = start + i * RockPanelSpacing;
+            RockPanelDest[n].y = 0.8f;
+            RockPanelDest[n].z = 1.0f;
+            RockPanelObj[n] = 0xA9;
+            n++;
+        }
+    }
+    if (freeroks > 0) {
+        start = (1.0f - freeroks) * RockPanelSpacing * 0.5f;
+        for (i = 0; i < freeroks; i++) {
+            RockPanelDest[n].x = start + i * RockPanelSpacing;
+            RockPanelDest[n].y = 0.8f;
+            RockPanelDest[n].z = 1.0f;
+            RockPanelObj[n] = 0xAA;
+            n++;
+        }
+    }
+    if (crunchroks > 0) {
+        start = RockPanelEdge - crunchroks * RockPanelSpacing;
+        for (i = 0; i < crunchroks; i++) {
+            RockPanelDest[n].x = start + i * RockPanelSpacing;
+            RockPanelDest[n].y = 0.8f;
+            RockPanelDest[n].z = 1.0f;
+            RockPanelObj[n] = 0xAB;
+            n++;
+        }
+    }
+    NumRockPanel = n;
+    for (i = 0; i < NumRockPanel; i++) {
+        SeekHalfLife(&RockPanelData[i].x, RockPanelDest[i].x, RockPanelSlideSpeed, 0.02f);
+        RockPanelData[i].y = RockPanelDest[i].y;
+        RockPanelData[i].z = RockPanelDest[i].z;
+    }
+    if (RumbleDisplayMode == 2) {
+        for (i = 0; i < NumRockPanel; i++) {
+            RockPanelData[i] = RockPanelDest[i];
+        }
+        RumbleDisplayMode = 1;
+        RumbleDisplayY = 1.2f;
+    }
+    if (RumbleDisplayMode == 1) {
+        RumbleDisplayY -= DISPLAYYSPEED * 0.02f;
+        if (RumbleDisplayY < 0.8f) {
+            RumbleDisplayY = 0.8f;
+            RumbleDisplayMode = 0;
+        }
+    }
+    if (RumbleDisplayMode == -1) {
+        RumbleDisplayY += DISPLAYYSPEED * 0.02f;
+        if (RumbleDisplayY > 1.2f) {
+            RumbleDisplayY = 1.2f;
+            RumbleDisplayMode = 0;
+        }
+    }
+}
+
+extern f32 RockPanelScale;
+extern f32 RADARSCALE;
+extern f32 RADARSCALEX;
+extern f32 RADARBASESCALE;
+extern f32 DOTSCALE;
+extern f32 RadarX;
+extern f32 RadarY;
+extern f32 RadarZ;
+extern f32 FindNearestCreature(struct nuvec_s *pos, s32 type, struct nuvec_s *out);
+
+
+void RumbleHeadUpDisplay(void)
+{
+    struct nuvec_s pos;
+    struct nuvec_s nearest;
+    f32 scale;
+    s16 angle;
+    s32 panel;
+    s32 obj;
+    s32 i;
+
+    for (i = 0; i < NumRockPanel; i++) {
+        panel = RockPanelObj[i];
+        DrawPanel3DObject(panel, RockPanelData[i].x, RumbleDisplayY, RockPanelData[i].z,
+                          RockPanelScale, RockPanelScale, RockPanelScale,
+                          RockPanelRotX[i], RockPanelRotY[i], RockPanelRotZ[i],
+                          ObjTab[panel].obj.scene, ObjTab[panel].obj.special, 1);
+    }
+    pos = v000;
+    scale = RADARBASESCALE * RADARSCALE;
+    angle = -GameCam[0].yrot;
+    DrawPanel3DObject(0xA2, pos.x * RADARSCALE + RadarX, pos.z * RADARSCALE + RadarY, RadarZ,
+                      scale, scale, scale, 0, 0, 0, ObjTab[0xA2].obj.scene, ObjTab[0xA2].obj.special, 1);
+    scale = PlayerAtlas.ball_radius * RADARSCALE * DOTSCALE;
+    NuVecRotateY(&pos, &PlayerAtlas.ball_pos, angle);
+    DrawPanel3DObject(0xA5, pos.x * RADARSCALEX + RadarX, pos.z * RADARSCALE + RadarY, RadarZ,
+                      scale, scale, scale, 0, 0, 0, ObjTab[0xA5].obj.scene, ObjTab[0xA5].obj.special, 1);
+    if (EarthBoss.dead == 0) {
+        scale = EarthBoss.ball_radius * RADARSCALE * DOTSCALE;
+        NuVecRotateY(&pos, &EarthBoss.ball_pos, angle);
+        DrawPanel3DObject(0xA3, pos.x * RADARSCALEX + RadarX, pos.z * RADARSCALE + RadarY, RadarZ,
+                          scale, scale, scale, 0, 0, 0, ObjTab[0xA3].obj.scene, ObjTab[0xA3].obj.special, 1);
+    }
+    scale = RADARSCALE * 0.5f * DOTSCALE;
+    for (i = 0; i < 6; i++) {
+        if (JeepRock[i].exists != 0) {
+            NuVecRotateY(&pos, &JeepRock[i].pos, angle);
+            switch (JeepRock[i].owner) {
+            case 1:
+            case 0x14:
+                obj = 0xA6;
+                break;
+            case -1:
+                obj = 0xA4;
+                break;
+            default:
+                obj = 0xA7;
+                break;
+            }
+            DrawPanel3DObject(obj, pos.x * RADARSCALEX + RadarX, pos.z * RADARSCALE + RadarY, RadarZ,
+                              scale, scale, scale, 0, 0, 0, ObjTab[obj].obj.scene, ObjTab[obj].obj.special, 1);
+        }
+    }
+    if (FindNearestCreature(&player->obj.pos, 0xA7, &nearest) < 1000000.0f) {
+        obj = 0xA4;
+        scale = (GameTimer.frame % 25 + 25) * RADARSCALE * DOTSCALE / 50.0f;
+        NuVecRotateY(&nearest, &nearest, angle);
+        DrawPanel3DObject(obj, nearest.x * RADARSCALEX + RadarX, nearest.z * RADARSCALE + RadarY, RadarZ,
+                          scale, scale, scale, 0, 0, 0, ObjTab[obj].obj.scene, ObjTab[obj].obj.special, 1);
+    }
+}
+
+extern s16 RumbleCamY;
+extern struct nuvec_s RumbleCamPos;
+extern struct nuvec_s D_005B7C80;
+extern struct nuvec_s D_005B8008;
+extern f32 D_006317A0;
+#define playeratlas_interest D_005B7C80 /* PlayerAtlas interest point (+0x378) */
+#define earthboss_interest D_005B8008   /* EarthBoss interest point (+0x378) */
+#define rumblecam_angley D_006317A0
+
+
+void RumbleCam(struct cammtx_s *cam)
+{
+    struct nuvec_s delta;
+    struct nuvec_s campos;
+    struct nuvec_s interest;
+    f32 angy;
+    f32 turn;
+    f32 dist;
+    f32 limit;
+
+    NuVecScale(&interest, &earthboss_interest, RumbleCamTween);
+    NuVecScaleAccum(&interest, &playeratlas_interest, 1.0f - RumbleCamTween);
+    interest.y += (1.0f - RumbleCamTweenInterest) * 2.0f;
+    angy = NuAtani(-interest.x * 256.0f, -interest.z * 256.0f) / 182.04445f;
+    if (ResetAtlasCamera != 0) {
+        rumblecam_angley = angy;
+        ResetAtlasCamera = 0;
+    }
+    turn = Rationalise360f(angy - rumblecam_angley);
+    dist = NuFsqrt(interest.x * interest.x + interest.z * interest.z);
+    limit = 3.6f;
+    if (dist < 5.0f) {
+        turn *= (dist / 5.0f) * (dist / 5.0f);
+    }
+    if (turn > limit) {
+        turn = limit;
+    } else if (turn < -limit) {
+        turn = -limit;
+    }
+    rumblecam_angley = Rationalise360f(rumblecam_angley + turn);
+    NuVecRotateY(&campos, SetNuVecPntr(0.0f, 5.0f, 9.9f), (s32)(rumblecam_angley * 182.04445f));
+    interest.y += RumbleCamVal;
+    NuVecScale(&campos, &campos, 1.0f - RumbleCamTweenInterest);
+    NuVecScaleAccum(&campos, &interest, RumbleCamTweenInterest);
+    delta.x = interest.x - campos.x;
+    delta.y = interest.y - campos.y;
+    delta.z = interest.z - campos.z;
+    dist = NuFsqrt(delta.x * delta.x + delta.z * delta.z);
+    cam->xrot = NuAtani(-delta.y * 256.0f, dist * 256.0f);
+    cam->yrot = NuAtani(delta.x * 256.0f, delta.z * 256.0f);
+    NuMtxSetRotationX(&cam->m, cam->xrot);
+    NuMtxRotateY(&cam->m, cam->yrot);
+    NuMtxTranslate(&cam->m, &campos);
+    cam->pos = campos;
+    RumbleCamPos = campos;
+    RumbleCamY = cam->yrot;
+}
+
+
+void ProcessVehMasks(void)
+{
+    struct vehmask_s *mask;
+    struct nuvec_s pos;
+    f32 tween;
+    f32 newmix;
+    f32 oldmix;
+    f32 rad;
+    f32 tiltx;
+    f32 inv;
+    s32 i;
+
+    mask = VehicleMask;
+    for (i = 0; i < 2; i++, mask++) {
+        if (mask->active == 0) {
+            continue;
+        }
+        tween = mask->tween;
+        if (tween > 0.5f) {
+            inv = 1.0f - tween;
+            newmix = 1.0f - (inv + inv) * inv;
+        } else {
+            newmix = (tween + tween) * tween;
+        }
+        oldmix = 1.0f - newmix;
+        rad = mask->rad[0] * oldmix + mask->rad[1] * newmix;
+        tiltx = mask->tiltx[0] * oldmix + mask->tiltx[1] * newmix;
+        NuVecRotateY(&pos, SetNuVecPntr(0.0f, 0.0f, rad), (s32)(mask->ang * 182.04445f));
+        NuVecRotateX(&pos, &pos, (s32)(tiltx * 182.04445f));
+        NuVecScaleAccum(&pos, &mask->offset[0], oldmix);
+        NuVecScaleAccum(&pos, mask->point[0], oldmix);
+        NuVecScaleAccum(&pos, &mask->offset[1], newmix);
+        NuVecScaleAccum(&pos, mask->point[1], newmix);
+        mask->drawscale = mask->scale[0] * oldmix + mask->scale[1] * newmix;
+        mask->pos = pos;
+        mask->ang = Rationalise360f(mask->ang + mask->anginc[0] * oldmix + mask->anginc[0] * newmix);
+        mask->tween -= mask->tweeninc;
+        if (mask->tween <= 0.0f) {
+            if (mask->killatend != 0) {
+                mask->active = 0;
+            }
+            mask->tween = 0.0f;
+        }
+        if (Level == 0x15) {
+            mask->drawangy = RumbleCamY / 182.04445f;
+        } else if (Level == 0x18) {
+            mask->drawangy = 180.0f;
+        } else if (Level == 0x17) {
+            mask->drawangy = NuAtan2D(player->obj.pos.x - mask->pos.x, player->obj.pos.z - mask->pos.z) *
+                             (3.1415927f / 32768.0f);
+        } else {
+            mask->drawangy = 0.0f;
+        }
+        MyAnimateModelNew(&mask->draw, 0.59999996f);
+    }
+}
+
 void DrawVehMasks(void)
 {
     struct vehmask_s *mask;
@@ -5999,7 +7077,7 @@ struct nuvec_s *FireWBBolt(struct nuvec_s *pos, struct nuvec_s *vel, s32 type, f
     return 0;
 }
 
-void InitWBBolts(void)
+inline void InitWBBolts(void)
 {
     memset(BoltList, 0, sizeof(BoltList));
     NuMtxSetScale(&BoltMtxA, SetNuVecPntr(1.5f, 1.5f, 1.5f));
@@ -6073,7 +7151,7 @@ s32 TrailPointInPoly(struct nuvec_s *point, struct nuvec_s *a, struct nuvec_s *b
     return 0;
 }
 
-s32 PointsSame(struct nuvec_s *a, struct nuvec_s *b)
+inline s32 PointsSame(struct nuvec_s *a, struct nuvec_s *b)
 {
     s32 r = 0;
 
@@ -6087,6 +7165,177 @@ s32 PointsSame(struct nuvec_s *a, struct nuvec_s *b)
     return r;
 }
 
+extern s32 IntoTrail;
+extern f32 CurrentIntensity;
+
+
+void SetTrailPos(s32 pt, struct NEWBUGGY *atlas, struct nuvec_s *pos, s32 reset, s32 angle, s32 surface,
+                 f32 width)
+{
+    struct trail_s *cur;
+    struct trail_s *prev;
+    f32 fade;
+    f32 intensity;
+    s32 base;
+    s32 negative;
+    s32 count;
+    s32 tries;
+    s32 j;
+    s32 i;
+
+    fade = 0.0f;
+    for (i = 0; i < 8; i++) {
+        base = trail[(pt + 1 + i) & 0x7F].basealpha;
+        trail[(pt + 1 + i) & 0x7F].alpha = base * fade;
+        fade += 0.125f;
+    }
+    j = pt - 1;
+    prev = &trail[j & 0x7F];
+    negative = angle & 0x8000;
+    count = 128;
+    tries = 4;
+    while (--count != -1 && --tries != -1) {
+        cur = prev;
+        j--;
+        prev = &trail[j & 0x7F];
+        if (cur->pos[0].x != -10000.0f && prev->pos[0].x != -10000.0f &&
+            !TrailPointInPoly(pos, &cur->pos[0], &cur->pos[1], &prev->pos[1], &prev->pos[0])) {
+            if (PointsSame(&cur->pos[0], &prev->pos[0]) || PointsSame(&cur->pos[1], &prev->pos[1])) {
+                tries = 4;
+            }
+        } else {
+            tries = 0;
+        }
+    }
+    trail[pt].pos[0] = pos[0];
+    trail[pt].pos[1] = pos[1];
+    if (reset != 0) {
+        IntoTrail = 0;
+    } else {
+        IntoTrail++;
+        if (IntoTrail > 8) {
+            IntoTrail = 8;
+        }
+    }
+    if (negative != 0) {
+        intensity = IntoTrail * -31.9999f * 0.125f;
+    } else {
+        intensity = IntoTrail * 31.9999f * 0.125f;
+    }
+    if (reset == 0) {
+        if (CurrentIntensity < intensity) {
+            CurrentIntensity += 12.8f;
+            if (intensity < CurrentIntensity) {
+                CurrentIntensity = intensity;
+            }
+        } else if (intensity < CurrentIntensity) {
+            CurrentIntensity -= 12.8f;
+            if (CurrentIntensity < intensity) {
+                CurrentIntensity = intensity;
+            }
+        }
+    } else {
+        CurrentIntensity = intensity;
+    }
+    trail[pt].basealpha = trail[pt].alpha = (s32)CurrentIntensity << 24;
+}
+
+extern s32 AtlasTrailType[2];
+extern f32 TRAILFUDGE;
+
+
+void ProcessAtlasTrail(struct NEWBUGGY *atlas)
+{
+    struct nuvec_s edge[2];
+    s32 surface[2];
+    struct nuvec_s up;
+    struct nuvec_s side;
+    struct nuvec_s step;
+    struct trail_s *last;
+    f32 dx;
+    f32 dz;
+    s32 angle;
+    s32 lastangle;
+    s32 turn;
+    s32 ok;
+    s32 i;
+
+    ok = 0;
+    if (atlas->platformid == -1) {
+        up = D_0061F750[0];
+        NuVecSub(&step, &atlas->ball_pos, &atlas->ball_oldpos);
+        NuVecCross(&side, &step, &up);
+        NuVecNorm(&side, &side);
+        edge[1] = atlas->ball_pos;
+        edge[0] = edge[1];
+        NuVecScaleAccum(&edge[0], &side, 0.25f);
+        NuVecScaleAccum(&edge[1], &side, -0.25f);
+        for (i = 0; i < 2; i++) {
+            ok = 0;
+            edge[i].y = TRAILFUDGE + NewShadowMask(&edge[i], atlas->ball_radius, -1);
+            if (atlas->ball_pos.y - edge[i].y < atlas->ball_radius + 1.0f && edge[i].y != 2000000.0f) {
+                ok = 1;
+            }
+            if (ok == 0) {
+                break;
+            }
+            surface[i] = ShadowInfo();
+        }
+    }
+    if (ok != 0) {
+        if (surface[0] == surface[1]) {
+            if (surface[1] != 0) {
+                atlas->trailsurfacetype = surface[1];
+            } else {
+                ok = 0;
+                atlas->trailsurfacetype = -1;
+            }
+        } else if (atlas->trailsurfacetype != surface[0] && atlas->trailsurfacetype != surface[1]) {
+            ok = 0;
+            atlas->trailsurfacetype = -1;
+        }
+    } else {
+        atlas->trailsurfacetype = -1;
+    }
+    if (ok != 0) {
+        AtlasTrailType[0] = surface[0];
+        AtlasTrailType[1] = surface[1];
+    } else {
+        AtlasTrailType[0] = AtlasTrailType[1] = -1;
+    }
+    if (ok != 0) {
+        if (trailair != 0) {
+            trailpt = (trailpt + 1) & 0x7F;
+            trailair = 0;
+            NuVecSub(&up, &edge[1], &edge[0]);
+            angle = (u16)(NuAtan2D(up.x, up.z) - 0x2000);
+            SetTrailPos(trailpt, atlas, edge, 1, angle, atlas->trailsurfacetype, 1.0f);
+            trailpt = (trailpt + 1) & 0x7F;
+            SetTrailPos(trailpt, atlas, edge, 1, angle, atlas->trailsurfacetype, 1.0f);
+        } else {
+            last = &trail[(trailpt - 1) & 0x7F];
+            dx = (edge[0].x + edge[1].x) * 0.5f - (last->pos[0].x + (last->pos[1].x - last->pos[0].x) * 0.5f);
+            dz = (edge[0].z + edge[1].z) * 0.5f - (last->pos[0].z + (last->pos[1].z - last->pos[0].z) * 0.5f);
+            NuVecSub(&up, &edge[1], &edge[0]);
+            angle = (u16)(NuAtan2D(up.x, up.z) - 0x2000);
+            NuVecSub(&up, &last->pos[1], &last->pos[0]);
+            lastangle = (u16)(NuAtan2D(up.x, up.z) - 0x2000);
+            turn = (u16)(angle - lastangle - 0x8000) - 0x8000;
+            if (dx * dx + dz * dz > 0.040000003f || (turn < 0 ? -turn : turn) >= 0x1556) {
+                trailpt = (trailpt + 1) & 0x7F;
+            }
+            SetTrailPos(trailpt, atlas, edge, 0, angle, atlas->trailsurfacetype, 1.0f);
+        }
+    } else {
+        if (trailair == 0) {
+            FadeOutLastTrail(trailpt, 1);
+            trailpt = (trailpt + 1) & 0x7F;
+        }
+        trailair = 1;
+        trail[trailpt].pos[0].x = -10000.0f;
+    }
+}
+
 u16 FindTrailAng(struct nuvec_s *a, struct nuvec_s *b)
 {
     struct nuvec_s d;
@@ -6095,7 +7344,7 @@ u16 FindTrailAng(struct nuvec_s *a, struct nuvec_s *b)
     return (u16)(NuAtan2D(d.x, d.z) - 0x2000);
 }
 
-struct jeeprock_s *FindJeepRock(void)
+inline struct jeeprock_s *FindJeepRock(void)
 {
     s32 i;
 
@@ -6105,6 +7354,45 @@ struct jeeprock_s *FindJeepRock(void)
         }
     }
     return 0;
+}
+
+
+struct jeeprock_s *AddRockVel(struct nuvec_s *pos, struct nuvec_s *vel, f32 radius, s32 owner)
+{
+    struct nuquat_s spin;
+    struct jeeprock_s *rock;
+
+    rock = FindJeepRock();
+    if (rock == 0) {
+        return 0;
+    }
+    memset(rock, 0, sizeof(struct jeeprock_s));
+    NuMtxSetRotationY(&mTEMP, frand() * 180.0f * 0.02f * 182.04445f);
+    NuMtxRotateX(&mTEMP, frand() * 720.0f * 0.02f * 182.04445f);
+    NuMtxToQuat(&mTEMP, &spin);
+    NuQuatNormalise(&spin, &spin);
+    rock->pos = *pos;
+    switch (owner) {
+    case 1:
+        rock->fireblob = 1;
+        break;
+    case 2:
+        rock->smashme = 1;
+        break;
+    }
+    rock->scale = SetNuVec(radius + radius, radius + radius, radius + radius);
+    rock->exists = 1;
+    rock->vel = *vel;
+    rock->life = 5.5f;
+    InitAtlas(&rock->atlas, &rock->pos, radius, rock + 3 - JeepRock);
+    rock->atlas.ball_vel = *vel;
+    rock->atlas.framequat[0] = spin;
+    rock->atlas.framequat[1] = spin;
+    rock->atlas.framequat[2] = spin;
+    rock->atlas.framequat[3] = spin;
+    rock->atlas.rock = 1;
+    rock->atlas.rocknum = rock - JeepRock;
+    return rock;
 }
 
 void KeepHoldOnRock(struct jeeprock_s *rock, struct nuvec_s *pos,
@@ -6145,6 +7433,62 @@ s32 GetMaxLevelObjectives(void)
 extern void MoveGlider(struct creature_s *c, struct nupad_s *pad);
 extern void MoveAtlas(struct creature_s *c, struct nupad_s *pad);
 extern void MovePlayerJeep(struct creature_s *c, struct nupad_s *pad);
+extern void ProcessAtlasTrail(struct NEWBUGGY *atlas);
+extern s32 LIFTPLAYER;
+extern s32 kj;
+extern u16 SeekRot(u16 a, u16 target, s32 rate);
+extern s32 RotDiff(u16 a, u16 b);
+extern void PlayerCreatureCollisions(struct obj_s *obj);
+extern s32 WumpaCollisions(struct obj_s *obj);
+
+
+void MoveAtlas(struct creature_s *c, struct nupad_s *pad)
+{
+    struct NEWBUGGY *atlas;
+    u16 oldhdg;
+    f32 dx;
+    f32 dz;
+
+    atlas = c->Buggy;
+    if (ProcessTimer(&AtlasWhackTimer) != 0) {
+        AtlasWhackValue = 0.0f;
+    }
+    if (LIFTPLAYER != 0 && (pad->paddata & 0x10)) {
+        atlas->ball_pos.y += 0.1f;
+        atlas->ball_vel.y = 0.0f;
+    }
+    AtlasFrame++;
+    if (AtlasFrame > 0x11D) {
+        kj++;
+    }
+    ControlAtlas(atlas, pad, 0.02f);
+    ProcessAtlas(atlas);
+    c->obj.pos.x = atlas->ball_pos.x;
+    c->obj.pos.y = atlas->ball_pos.y - D_00560D44[0];
+    c->obj.pos.z = atlas->ball_pos.z;
+    c->obj.mom = atlas->ball_vel;
+    dx = c->obj.pos.x - c->obj.oldpos.x;
+    dz = c->obj.pos.z - c->obj.oldpos.z;
+    c->obj.xz_distance = NuFsqrt(dx * dx + dz * dz);
+    oldhdg = c->obj.hdg;
+    if (c->obj.pad_speed > 0.0f || c->obj.xz_distance > 0.01f) {
+        c->obj.thdg = NuAtan2D(dx, dz) + 0x8000;
+    }
+    c->obj.hdg = SeekRot(c->obj.hdg, c->obj.thdg, 4);
+    c->obj.dyrot = RotDiff(oldhdg, c->obj.hdg);
+    PlayerCreatureCollisions(&c->obj);
+    HitItems(&c->obj);
+    if (HitCrates(&c->obj, 1) != 0 && (temp_crate_type == 0x10 || temp_crate_type == 9)) {
+        KillPlayer(&c->obj, 0xB);
+    }
+    WumpaCollisions(&c->obj);
+    c->obj.attack = 0x430;
+    ProcessAtlasTrail(atlas);
+    if (Level == 0x15 && atlas->ball_health > atlas->desthitpoints && GDeb[0x3D].i != -1) {
+        AddVariableShotDebrisEffect(GDeb[0x3D].i, &atlas->ball_pos, 1, 0, 0);
+    }
+    atlas->interestpoint = atlas->ball_pos;
+}
 
 void MoveVehicle(struct creature_s *c, struct nupad_s *pad)
 {
@@ -6387,7 +7731,7 @@ void FireFlyReset(s32 PlayerDead)
 
 extern struct nuvec_s WeatherBossTargetVel;
 
-void InitWeatherBossTarget(void)
+inline void InitWeatherBossTarget(void)
 {
     WeatherBossTargetPos = SetNuVec(0.0f, 0.0f, -15.0f);
     WeatherBossTargetVel = v000;
@@ -6417,7 +7761,7 @@ void ProcessWeatherBossTarget(void)
 struct splinepath_s {
     struct nugspline_s *spl;   /* 0x00 */
     f32 ratio;                 /* 0x04 */
-    f32 oldratio;              /* 0x08 */
+    f32 nextratio;             /* 0x08 */
     char pad_0C[0x10 - 0x0C];
     f32 speed;                 /* 0x10 */
     struct nuvec_s pos;        /* 0x14 */
@@ -6429,6 +7773,60 @@ extern struct splinepath_s WeatherBossIntroSpline;
 extern f32 WBBOSSINTRODIST;
 extern f32 WBIntroTweenTime;
 extern f32 WBIntroTweenTimer;
+extern struct splinepath_s WeatherBossCamSpline;
+extern struct nuvec_s D_0061F560;
+#define wb_start_pos D_0061F560 /* {0.0f, 38.0f, 0.0f} */
+extern void InitWBIntro(void);
+
+
+void WeatherBossReset(s32 playerdead)
+{
+    struct nuvec_s start;
+    struct nuvec_s pos;
+    u16 angle;
+
+    WBIntroTweenTimer = 0.0f;
+    ChrisBigBossDead = 0;
+    WeatherBossSkeletonGlitchTimer = 0.0f;
+    Level_GliderFloor = 18.0f;
+    start = wb_start_pos;
+    WeatherBossSkeletonTimer = 0.0f;
+    WeatherBossDead = 0;
+    AtmosphericPressureHackedZ = 0.0f;
+    LevelResetTimer = 0;
+    Level_GliderSpeed = 0.0f;
+    Level_GliderCeiling = 60.0f;
+    Level_GliderCentreX = 0.0f;
+    Level_GliderCentreZ = 0.0f;
+    Level_GliderCurrentCeiling = 60.0f;
+    Level_GliderRadius = 100000.0f;
+    Level_DeadTime = 8.0f;
+    InitGlider(&PlayerGlider, &start, 0.0f);
+    GliderCamHighTimer = 0.0f;
+    GameCam[0].m._30 = start.x + 0.0f;
+    GameCam[0].m._31 = start.y + 2.0f;
+    GameCam[0].m._32 = start.z + 5.0f;
+    ResetGameCameras(&GameCam[0], 1);
+    WeatherBossCamSpline.spl = SplTab[26].spl;
+    if (WeatherBossCamSpline.spl != 0) {
+        WeatherBossCamSpline.speed = 0.00002f;
+        WeatherBossCamSpline.ratio = 0.0f;
+        WeatherBossCamSpline.nextratio = 0.0f;
+        PointAlongSpline(WeatherBossCamSpline.spl, 0.0f, &pos, &angle, 0);
+        WeatherBossCamSpline.pos = pos;
+        WeatherBossCamSpline.lastpos = pos;
+        InitVehMasks();
+        InitVehMask(0, 0x58);
+        InitVehMask(1, 3);
+        InitWeatherBossTarget();
+        InitGliderBullets();
+        InitWeatherBoss();
+        InitLighteningHail();
+        InitWBBolts();
+        InitWBIntro();
+    }
+}
+
 
 void InitWBIntro(void)
 {
@@ -6440,7 +7838,7 @@ void InitWBIntro(void)
     if (path->spl != 0) {
         path->ratio = 0.0f;
         path->speed = 0.00002f;
-        path->oldratio = 0.0f;
+        path->nextratio = 0.0f;
         PointAlongSpline(path->spl, path->ratio, &WBIntroGliderPos, &angle, 0);
         path->pos = WBIntroGliderPos;
         path->lastpos = WBIntroGliderPos;
@@ -6450,6 +7848,38 @@ void InitWBIntro(void)
         WeatherBossTargetAppearTimer = WeatherBossTargetAppearTime;
         WBIntroTweenTimer = WBIntroTweenTime;
         WBIntroOn = 1;
+    }
+}
+
+extern f32 FindSplineClosestPointAndDist(struct splinepath_s *spline, s32 control, struct nuvec_s *point,
+                                         struct nuvec_s *closest, s32 wrap, s32 biglook);
+extern f32 WBINTROLOOKAHEAD;
+extern f32 WBITILTXSCALE;
+extern f32 WBITILTZSCALE;
+extern f32 WBIntroDestTiltX;
+extern f32 WBIntroDestTiltZ;
+
+
+void ProcessWBIntro(void)
+{
+    struct nuvec_s lookpos;
+    struct nuvec_s target;
+    struct nuvec_s dir;
+
+    if (WBIntroOn != 0) {
+        lookpos = WBIntroGliderPos;
+        lookpos.z -= WBINTROLOOKAHEAD;
+        FindSplineClosestPointAndDist(&WeatherBossIntroSpline, 0x300, &lookpos, &target, 0, 0);
+        NuVecSub(&dir, &target, &WBIntroGliderPos);
+        NuVecScale(&dir, &dir, 96.0 / fabs(dir.z));
+        NuVecScaleAccum(&WBIntroGliderPos, &dir, 0.02f);
+        WBIntroDestTiltZ = dir.x * WBITILTZSCALE;
+        WBIntroDestTiltX = dir.y * WBITILTXSCALE;
+        PlayerGlider.Velocity = dir;
+        if (WeatherBossIntroSpline.nextratio >= 0.99f) {
+            WBIntroOn = 0;
+            WeatherBoss.destdist = 96.0f;
+        }
     }
 }
 
@@ -6848,6 +8278,148 @@ static inline void ZoffaUFORespawn(void)
     }
 }
 
+extern f32 MatchTimer;
+extern f32 MatchMaxDist;
+extern f32 MatchMinDist;
+extern f32 PrePanTime;
+extern f32 PanSeekSpeed;
+extern f32 MinPanSeekSpeed;
+extern f32 FFINTROHEIGHT;
+extern f32 FFINTROCAMYOFF;
+extern struct nuvec_s GliderIntroCamPos;
+extern struct nuvec_s GliderIntroInterest;
+extern struct nuvec_s D_005864F8;
+extern f32 D_00633294;
+extern f32 D_00633298;
+#define gamecam_trans D_005864F8 /* GameCam[0].m._30.._32 */
+#define fireflyintro_timer D_00633294
+#define fireflyintro_camangy D_00633298
+
+
+void ProcessFireFlyIntro(void)
+{
+    struct nuvec_s dir;
+    struct nuvec_s flatdir;
+    struct nuvec_s rel;
+    f32 relang;
+    f32 pan;
+    f32 seek;
+    f32 camdiff;
+    s32 done;
+
+    flatdir = SetNuVec(1.0f, 0.0f, 1.0f);
+    NuVecNorm(&dir, &flatdir);
+    if (Level == 0x12) {
+        MatchTimer = 0.0f;
+        MatchMaxDist = 4.0f;
+        MatchMinDist = 4.0f;
+        PrePanTime = 2.0f;
+        PanSeekSpeed = 2.0f;
+        MinPanSeekSpeed = 0.3f;
+        FFINTROHEIGHT = 2.5f;
+        FFINTROCAMYOFF = 4.0f;
+    } else if (Level == 0x1A) {
+        MatchMaxDist = 3.0f;
+        MatchMinDist = 3.0f;
+        MatchTimer = 0.0f;
+        PrePanTime = 3.5f;
+        PanSeekSpeed = 1.0f;
+        MinPanSeekSpeed = 0.3f;
+        FFINTROHEIGHT = -2.5f;
+        FFINTROCAMYOFF = 1.75f;
+    }
+    if (FireFlyIntroOn != 0) {
+        NuVecScale(&PlayerGlider.Velocity, &flatdir, Level_GliderSpeed);
+        NuVecScaleAccum(&PlayerGlider.Position, &PlayerGlider.Velocity, 0.02f);
+    }
+    GliderIntroInterest = PlayerGlider.Position;
+    if (FireFlyIntroAction != FireFlyIntroOldAction) {
+        switch (FireFlyIntroAction) {
+        case 0:
+            PlayerGlider.AutoPilot = 1;
+            FireFlyIntroOn = 1;
+            GliderIntroCamPos = SetNuVec(40.0f, FFINTROCAMYOFF + 18.0f - FFINTROHEIGHT, 40.0f);
+            gamecam_trans = GliderIntroCamPos;
+            break;
+        case 1:
+            fireflyintro_timer = MatchTimer;
+            break;
+        case 2:
+            fireflyintro_timer = PrePanTime;
+            break;
+        case 3:
+            fireflyintro_camangy = GameCam[0].yrot / 182.04445f + 180.0f;
+            break;
+        case 4:
+            FireFlyIntroOn = 0;
+            PlayerGlider.AutoPilot = 0;
+            break;
+        }
+    }
+    FireFlyIntroOldAction = FireFlyIntroAction;
+    switch (FireFlyIntroAction) {
+    case 0:
+        NuVecSub(&rel, &PlayerGlider.Position, &GliderIntroCamPos);
+        rel.y = 0.0f;
+        pan = NuVecMag(&rel);
+        fireflyintro_camangy = PlayerGlider.AngleY + 180.0f;
+        if (pan < MatchMaxDist) {
+            FireFlyIntroAction = 1;
+        }
+        break;
+    case 1:
+        GliderIntroCamPos.x = PlayerGlider.Position.x;
+        GliderIntroCamPos.z = PlayerGlider.Position.z;
+        NuVecScaleAccum(&GliderIntroCamPos, &dir,
+                        MatchMinDist + (fireflyintro_timer / MatchTimer) * (MatchMaxDist - MatchMinDist));
+        if (ProcessTimer(&fireflyintro_timer) != 0) {
+            FireFlyIntroAction = 3;
+        }
+        break;
+    case 2:
+        GliderIntroCamPos = PlayerGlider.Position;
+        NuVecScaleAccum(&GliderIntroCamPos, &dir, MatchMinDist);
+        if (ProcessTimer(&fireflyintro_timer) != 0) {
+            FireFlyIntroAction = 3;
+        }
+        break;
+    case 3:
+        done = 0;
+        relang = Rationalise360f(PlayerGlider.AngleY - fireflyintro_camangy);
+        pan = fabs(relang);
+        if (pan > 90.0f) {
+            pan = 180.0f - pan;
+        }
+        seek = PanSeekSpeed * pan / 90.0f;
+        if (seek < MinPanSeekSpeed) {
+            seek = MinPanSeekSpeed;
+        }
+        if (fabs(relang) < seek) {
+            done = 1;
+            relang = 0.0f;
+        } else {
+            relang -= seek;
+        }
+        fireflyintro_camangy = Rationalise360f(PlayerGlider.AngleY - relang);
+        if (done != 0) {
+            FireFlyIntroAction = 4;
+        }
+        break;
+    case 4:
+        FireFlyIntroAction = 5;
+        break;
+    }
+    GliderIntroInterest.y += 1.0f;
+    if (FireFlyIntroAction != 0) {
+        GliderIntroCamPos = PlayerGlider.Position;
+        NuVecScale(&rel, &dir, MatchMinDist);
+        NuVecRotateY(&rel, &rel, (s32)((fireflyintro_camangy - FireFlyStartAngle - 180.0f) * 182.04445f));
+        NuVecAdd(&GliderIntroCamPos, &rel, &PlayerGlider.Position);
+        camdiff = Rationalise360f(PlayerGlider.AngleY - fireflyintro_camangy);
+        GliderIntroCamPos.y += FFINTROCAMYOFF - fabs(camdiff) * FFINTROHEIGHT / 180.0;
+    }
+}
+
 void ProcessFireFlyLevel(struct nupad_s *pad)
 {
     TeleportManager();
@@ -6940,10 +8512,6 @@ void ProcessFarmLevel(struct nupad_s *pad)
     ProcessGliderBullets();
 }
 
-struct MYSPLINE;
-extern struct MYSPLINE WeatherBossCamSpline;
-extern f32 FindSplineClosestPointAndDist(struct MYSPLINE *spline, s32 control, struct nuvec_s *point,
-                                         struct nuvec_s *closest, s32 wrap, s32 biglook);
 extern f32 WBCamDist;
 extern f32 D_0063327C;
 extern f32 D_00633280;
@@ -6994,8 +8562,6 @@ void GliderCamWeatherBoss(struct cammtx_s *cam)
 }
 
 
-extern struct nuvec_s GliderIntroCamPos;
-extern struct nuvec_s GliderIntroInterest;
 extern f32 FlyingLevelCompleteTimer;
 extern f32 SeekGliderCamTime;
 extern f32 CameraSeekSpeedAutoPilot;
@@ -7162,7 +8728,138 @@ inline void ProcessWeatherResearchLevel(struct nupad_s *pad)
 
 
 extern void ProcessWesternArenaLevel(struct nupad_s *pad);
-extern void ProcessEarthBossLevel(struct nupad_s *pad);
+extern f32 HitMag;
+extern s32 AtlasHitsLost;
+extern s32 ROKAMBVOL;
+extern s32 r1;
+extern s32 FRAME;
+extern void *app_tbset;
+extern void tbslotBeginFn(void *tbset, s32 slot);
+extern void tbslotEndFn(void *tbset, s32 slot);
+extern void ProcessEarthBossActions(struct NEWBUGGY *boss);
+
+
+void ProcessEarthBossLevel(struct nupad_s *pad)
+{
+    struct jeeprock_s *rock;
+    f32 mag;
+    f32 bump;
+    s32 damage;
+    s32 power;
+    s32 hit;
+
+    MyGameSfxLoop(0xD0, &v000, ROKAMBVOL);
+    if (AtlasFrame > 0x320) {
+        r1++;
+    }
+    if (EarthBoss.dead == 0) {
+        ProcessAtlas(&EarthBoss);
+    }
+    if (FRAME == 0) {
+        tbslotBeginFn(app_tbset, 3);
+    }
+    ProcessJeepRocks();
+    if (FRAME == 0) {
+        tbslotEndFn(app_tbset, 3);
+        if (FRAME == 0) {
+            tbslotBeginFn(app_tbset, 4);
+        }
+    }
+    ProcessRockRockCollisions();
+    ProcessAtlasAtlasCollisions();
+    if (FRAME == 0) {
+        tbslotEndFn(app_tbset, 4);
+    }
+    hit = 0;
+    if (PlayerAtlas.ball_beenhit == 2 &&
+        (EarthBoss.ball_action == 4 || EarthBoss.ball_action == 6 || EarthBoss.ball_action == 5)) {
+        hit = 1;
+    }
+    if (PlayerAtlas.ball_beenhit > 2) {
+        rock = &JeepRock[PlayerAtlas.ball_beenhit - 3];
+        if (rock->owner == -1) {
+            rock->owner = 0;
+            hit = 1;
+            rock->flametimer = 0.0f;
+        } else if (PlayerAtlas.ball_health > PlayerAtlas.desthitpoints) {
+            if (rock->owner == 0) {
+                rock->owner = -1;
+                rock->flametimer = 7.0f;
+            } else {
+                PlayerAtlas.desthitpoints = PlayerAtlas.ball_health;
+                rock->owner = 0;
+                rock->flametimer = 0.0f;
+            }
+        } else {
+            rock->owner = 1;
+            rock->flametimer = 8.0f;
+        }
+    }
+    if (hit != 0) {
+        mag = NuVecDist(&PlayerAtlas.ball_vel, &PlayerAtlas.ball_oldvel, 0);
+        HitMag = mag;
+        if (mag > 20.0f) {
+            mag = 20.0f;
+        }
+        mag = mag * 25.0f / 20.0f;
+        damage = mag;
+        power = mag * 3.0f;
+        NewRumble(&player->rumble, power);
+        NewBuzz(&player->rumble, power = power / 6);
+        if (InvincibilityCHEAT == 0 && VehicleLevelImmune == 0) {
+            PlayerAtlas.desthitpoints = PlayerAtlas.ball_health - damage;
+        }
+        AtlasHitsLost = damage;
+        PlayerAtlas.hitpointcounter = 0;
+        PlayerAtlas.inhibitcontroltimer = mag * 1.5f / 25.0f;
+        if (PlayerAtlas.desthitpoints <= 0) {
+            PlayerAtlas.desthitpoints = 0;
+        }
+    } else if (PlayerAtlas.ball_beenhit != 0) {
+        bump = NuVecDist(&PlayerAtlas.ball_vel, &PlayerAtlas.ball_oldvel, 0);
+        HitMag = bump;
+        if (bump > 20.0f) {
+            bump = 20.0f;
+        }
+        bump = bump * 25.0f / 20.0f;
+        power = bump * 3.0f;
+        NewRumble(&player->rumble, power);
+        NewBuzz(&player->rumble, power = power / 6);
+    }
+    PlayerAtlas.ball_beenhit = 0;
+    if (PlayerAtlas.hitpointcounter != 0) {
+        PlayerAtlas.hitpointcounter--;
+    } else if (PlayerAtlas.desthitpoints < PlayerAtlas.ball_health) {
+        PlayerAtlas.hitpointcounter = 5;
+        PlayerAtlas.ball_health--;
+    }
+    if (PlayerAtlas.ball_health <= 0) {
+        if (PlayerAtlas.owner->obj.dead == 0) {
+            MyGameSfx(0x25, &PlayerGlider.Position, 0x7FFF);
+        }
+        PlayerAtlas.ball_health = 0;
+        if (PlayerAtlas.owner->obj.dead == 0) {
+            KillGameObject(&PlayerAtlas.owner->obj, 0xB);
+        }
+    }
+    if ((PlayerAtlas.ball_pos.x * PlayerAtlas.ball_pos.x + PlayerAtlas.ball_pos.z * PlayerAtlas.ball_pos.z > 225.0f &&
+         PlayerAtlas.ball_pos.y < -1.0f) ||
+        PlayerAtlas.ball_pos.y < -4.0f ||
+        PlayerAtlas.ball_pos.x * PlayerAtlas.ball_pos.x + PlayerAtlas.ball_pos.z * PlayerAtlas.ball_pos.z > 1600.0f) {
+        if (PlayerAtlas.owner != 0) {
+            PlayerAtlas.dead = 1;
+            PlayerAtlas.owner->obj.invincible = 0;
+            PlayerAtlas.ball_vel = v000;
+            if (PlayerAtlas.owner->obj.dead == 0) {
+                KillGameObject(&PlayerAtlas.owner->obj, 0xB);
+            }
+        }
+    }
+    ProcessEarthBossActions(&EarthBoss);
+    ProcessEarthBossVortex();
+    ProcessVehMasks();
+    ProcessRumblePanel();
+}
 extern void ProcessFireBossLevel(struct nupad_s *pad);
 extern s32 GetCurrentLevelObjectives(void);
 
@@ -7209,6 +8906,40 @@ void ProcessVehicleLevel(struct nupad_s *pad)
     }
 }
 
+extern void DrawWesternArenaLevelExtra(void);
+extern void DrawFireBossLevelExtra(void);
+
+
+void DrawExtraCreatures(void)
+{
+    switch (Level) {
+    case 0xD:
+        DrawFarmLevelExtra();
+        break;
+    case 0x12:
+        DrawFireFlyLevelExtra();
+        break;
+    case 0x24:
+        DrawWeatherResearchLevelExtra();
+        break;
+    case 0x18:
+        DrawWeatherBossLevelExtra();
+        break;
+    case 0x1A:
+        DrawSpaceArenaLevelExtra();
+        break;
+    case 0x3:
+        DrawWesternArenaLevelExtra();
+        break;
+    case 0x16:
+        DrawFireBossLevelExtra();
+        break;
+    case 0x15:
+        DrawEarthBossLevelExtra();
+        break;
+    }
+}
+
 
 extern s32 GetCurrentFireBossObjectives(void);
 
@@ -7235,25 +8966,7 @@ s32 GetCurrentLevelObjectives(void)
 }
 
 
-struct earthbossstate_s {
-    struct creature_s *owner;           /* 0x00 */
-    s32 whacko;                         /* 0x04 */
-    s32 type;                           /* 0x08 */
-    s32 dead;                           /* 0x0C */
-    s32 hitpoints;                      /* 0x10 */
-    s32 desthitpoints;                  /* 0x14 */
-    s32 hitpointcounter;                /* 0x18 */
-    s32 drawcrunch;                     /* 0x1C */
-    s32 drawshell;                      /* 0x20 */
-    f32 inhibitcontroltimer;            /* 0x24 */
-    s32 numattacks;                     /* 0x28 */
-    s32 action;                         /* 0x2C */
-    s32 lastaction;                     /* 0x30 */
-    f32 actiontimer;                    /* 0x34 */
-};
 
-extern f32 HitMag;
-extern s32 AtlasHitsLost;
 extern s32 D_005B7C94[];
 #define earthboss_whacko D_005B7C94
 extern char D_006316E0[]; /* "Enter" */
@@ -7275,14 +8988,14 @@ extern char D_0061F808[]; /* "HitMag %1.3f" */
 extern char D_0061F818[]; /* "Damage %d" */
 extern char D_0061F828[]; /* "Jonny On" */
 
-void PrintEarthBossAction(struct earthbossstate_s *boss)
+void PrintEarthBossAction(struct NEWBUGGY *boss)
 {
     char *name;
 
     NuFntSet(app_fnt);
     NuFntSetPen(0x7F7F7F7F);
     NuFntScale(0x10, 0x10);
-    switch (boss->action) {
+    switch (boss->ball_action) {
     case 0:
         name = D_006316E0;
         break;
@@ -7332,6 +9045,360 @@ void PrintEarthBossAction(struct earthbossstate_s *boss)
     }
     if (JonnyOn != 0) {
         NuFntPrintEx(0x80, SHEIGHT * 9 / 2, 0, D_0061F828);
+    }
+}
+
+
+extern f32 BumpSpeed;
+extern f32 BumpAmount;
+extern f32 FORMPITCH;
+extern s32 ROKBPITCH;
+extern s32 BOSSLANDVOL;
+extern f32 ROKDEATHTIME;
+extern s32 BIGLANDVOL;
+extern f32 RumbleCamTweenInterestDest;
+extern struct nuvec_s EarthBossAimLocation;
+extern struct nuvec_s EarthBossAimVelocity;
+extern struct nuvec_s *SetNuVecPntrA(f32 x, f32 y, f32 z);
+
+void ProcessEarthBossActions(struct NEWBUGGY *boss)
+{
+    struct nuvec_s rel;
+    f32 diff;
+
+    if (EarthBossDeathEffect != 0 && ProcessTimer(&EarthBossDeathTimer)) {
+        boss->dead = 1;
+    }
+    if (boss->dead != 0) {
+        if (PlayerAtlas.inhibitcontroltimer == 0.0f) {
+            RumbleCamTweenDest = 0.0f;
+        }
+        UpdateRumbleCamTween();
+        return;
+    }
+    SeekHalfLife(&RumbleCamVal, 0.0f, BumpSpeed, 0.02f);
+    NuVecSub(&rel, &RumbleCamPos, &boss->ball_pos);
+    boss->destcrunchy = NuAtan2D(-rel.x, -rel.z) / 182.04445f;
+    if (GetRumbleTotalRoks() > 0 && GetRumblePlayerRoks() == GetRumbleTotalRoks() && boss->whacko == 0) {
+        boss->whacko = 1;
+        PlayerAtlas.inhibitcontroltimer = 200.0f;
+        ShootRoksSkyward();
+        if (boss->ball_action == 5) {
+            boss->ball_action = 0xB;
+        } else if ((boss->onground & 3) && boss->ball_pos.y < -2.0f) {
+            boss->ball_action = 0xB;
+        } else {
+            boss->ball_action = 6;
+        }
+        boss->rollacctimer = 0.0f;
+        boss->actiontimer = 0.0f;
+    }
+    if (boss->whacko != 0) {
+        PlayerAtlas.ball_vel = v000;
+    }
+    if (boss->ball_action == 4 || boss->ball_action == 6 || boss->ball_action == 5) {
+        if (boss->ball_beenhit >= 3) {
+            struct jeeprock_s *rock = &JeepRock[boss->ball_beenhit - 3];
+
+            if (rock->owner == 1) {
+                rock->owner = 0;
+            } else {
+                rock->owner = -1;
+                rock->flametimer = 7.0f;
+            }
+            boss->ball_beenhit = 0;
+        }
+    }
+    if (boss->ball_action != boss->lastaction) {
+        switch (boss->ball_action) {
+        case 11:
+            boss->actiontimer = 1.0f;
+            break;
+        case 0:
+            PlayerAtlas.inhibitcontroltimer = 20.0f;
+
+            JonnyOn = 0;
+            EarthBossJustEntered = 1;
+            boss->actiontimer = 2.4f;
+            boss->actiontimer2 = 1.0f;
+            boss->cantbehit = 1;
+            boss->drawcrunch = 1;
+
+            boss->rollspeed = 0.0f;
+            boss->rollacctimer = 0.0f;
+            boss->drawshell = 0;
+            RumbleCamTweenDest = 1.0f;
+            MyChangeAnim(&boss->crunch, 0x22);
+            break;
+        case 1:
+            boss->cantbehit = 1;
+            boss->drawcrunch = 1;
+            boss->rollspeed = 0.0f;
+            boss->rollacctimer = 0.0f;
+            boss->drawshell = 0;
+            gamesfx_pitch = FORMPITCH;
+            MyGameSfx(0xD4, &rumble_sfx_pos, 0x7FFF);
+            MyChangeAnim(&boss->crunch, 0x2B);
+            break;
+        case 2:
+            boss->cantbehit = 1;
+            boss->drawcrunch = 1;
+            boss->drawshell = 1;
+            MyResetAnimPacket(&boss->shell, 0x1F);
+            boss->actiontimer = 0.0f;
+            break;
+        case 10:
+            boss->drawcrunch = 0;
+            boss->cantbehit = 1;
+            boss->drawshell = 1;
+
+            break;
+        case 3:
+            RumbleCamTweenDest = 1.0f;
+            boss->drawcrunch = 1;
+            boss->drawshell = 1;
+            boss->rotquat
+ = SetNuQuat(0.0f, 0.0f, 0.0f, 1.0f);
+            MyGameSfx(0x78, &rumble_sfx_pos, 0x7FFF);
+            SetNewMaskStuff(1, &rumble_sfx_pos, SetNuVecPntr(0.0f, 12.5f, 0.0f), 0.0f, -540.0f, 0.0f, 1, 0, 2.0f, 0.0f);
+            SetNewMaskStuff(1, &rumble_sfx_pos, SetNuVecPntr(0.0f, 1.0f, 0.0f), 1.7f, -540.0f, 1.0f, 1, 0, 2.0f, 0.0f);
+            MyChangeAnim(&boss->shell, 0x18);
+            MyChangeAnim(&boss->crunch, 0x35);
+            boss->cantbehit = 0;
+            boss->actiontimer = 4.0f;
+            break;
+        case 4:
+            boss->cantbehit = 1;
+            boss->drawcrunch = 0;
+            boss->drawshell = 1;
+            boss->rollspeed = 10.0f;
+            boss->rollacctimer = 0.5f;
+            boss->actiontimer = 3.0f;
+            EarthBossAimLocation = PlayerAtlas.ball_pos;
+            EarthBossAimVelocity = PlayerAtlas.ball_vel;
+
+            break;
+        case 5:
+            boss->cantbehit = 1;
+            boss->actiontimer = 2.5f;
+            break;
+        case 6:
+            boss->cantbehit = 1;
+            boss->actiontimer = 3.0f;
+            break;
+        case 7:
+            if (--boss->ball_health > 0) {
+                SetNewMaskStuff(1, &rumble_sfx_pos, SetNuVecPntr(0.0f, 12.5f, 0.0f), 3.0f, -540.0f, 0.5f, 1, 1, 2.0f, 0.0f);
+            }
+            boss->actiontimer2 = 0.5f;
+            EarthBossDeathEffect = 0;
+            boss->crunchy = boss->destcrunchy;
+            boss->cantbehit = 1;
+            boss->drawcrunch = 1;
+
+            JonnyOn = 0;
+            MyChangeAnim(&boss->crunch, (boss->ball_health > 0) ? 0x19 : 0xE);
+            boss->actiontimer = 5.0f;
+            break;
+        case 8:
+            boss->actiontimer = 0.5f;
+            break;
+        case 9:
+            boss->ball_vel = SetNuVec(0.0f, 7.0f, 0.0f);
+            boss->onground = 0;
+            boss->whacko = 0;
+            break;
+        }
+    }
+    boss->lastaction = boss->ball_action;
+    if (boss->ball_action != 7 && boss->ball_action != 1 && boss->ball_action != 2) {
+        diff = Rationalise360f(boss->destcrunchy - boss->crunchy);
+        if (diff >= 0.0f) {
+            diff -= 7.2f;
+            if (diff < 0.0f) {
+                diff = 0.0f;
+            }
+        } else {
+            diff += 7.2f;
+            if (diff > 0.0f) {
+                diff = 0.0f;
+            }
+        }
+        boss->crunchy = boss->destcrunchy - diff;
+    }
+    switch (boss->ball_action) {
+    case 8:
+        boss->ball_vel = v000;
+        if (ProcessTimer(&boss->actiontimer)) {
+            boss->ball_action = 9;
+        }
+        break;
+    case 11:
+        boss->ball_vel = v000;
+        if (AllRoksSkyward()) {
+            if (JonnyOn == 0) {
+                gamesfx_pitch = ROKBPITCH;
+                MyGameSfx(0xCE, &rumble_sfx_pos, 0x7FFF);
+            }
+            JonnyOn = 1;
+            ebgo = 0;
+            RumbleCamTweenDest = 1.0f;
+            if (RumbleCamTween == 1.0f && ProcessTimer(&boss->actiontimer)) {
+                boss->ball_action = 3;
+                ebgo = 1;
+            }
+        }
+        break;
+    case 0:
+        if (ProcessTimer(&boss->actiontimer2)) {
+            boss->actiontimer2 = 1000.0f;
+            SetNewMaskStuff(0, &rumble_sfx_pos, SetNuVecPntr(0.0f, 12.5f, 0.0f), 0.0f, 360.0f, 0.0f, 1, 0, 2.0f, 0.0f);
+            SetNewMaskStuff(0, &rumble_sfx_pos, SetNuVecPntr(0.0f, 1.5f, 0.0f), 1.5f, 360.0f, 1.0f, 1, 0, 2.0f, 0.0f);
+        }
+        boss->ball_vel = v000;
+        if (ProcessTimer(&boss->actiontimer)) {
+            boss->ball_action = 1;
+        }
+        break;
+    case 1:
+        boss->ball_vel = v000;
+        boss->ball_action = 2;
+        break;
+    case 2:
+        boss->ball_vel = v000;
+        if (boss->shell.Anim.flags & 1) {
+            SetNewMaskStuff(0, &rumble_sfx_pos, SetNuVecPntr(0.0f, 12.5f, 0.0f), 3.0f, 360.0f, 0.5f, 1, 1, 2.0f, 0.0f);
+            boss->ball_action = 8;
+        }
+        break;
+    case 10:
+        boss->ball_vel = v000;
+        if (RumbleCamTweenDest == RumbleCamTween) {
+            boss->numattacks = 3;
+            boss->ball_action = 4;
+        }
+        break;
+    case 3:
+        boss->ball_vel = v000;
+        if (boss->crunch.Anim.flags & 1) {
+            boss->ball_action = 7;
+        }
+        break;
+    case 4:
+        if (!ProcessTimer(&boss->rollacctimer) && boss->ball_beenhit == 0) {
+            struct nuvec_s aim;
+            f32 speed;
+
+            speed = boss->rollspeed * (0.5f - boss->rollacctimer) * 2.0f;
+            if (speed < 0.1f) {
+                speed = 0.1f;
+            }
+            NuVecSub(&aim, &EarthBossAimLocation, &boss->ball_pos);
+            NuVecScaleAccum(&aim, &EarthBossAimVelocity, NuVecMag(&aim) / speed);
+            NuVecNorm(&aim, &aim);
+            NuVecScale(&boss->ball_vel, &aim, speed);
+            boss->ball_vel.y = -speed / 3.0f;
+        } else if (ProcessTimer(&boss->actiontimer) || boss->ball_beenhit != 0) {
+            boss->ball_action = 6;
+        }
+        break;
+    case 5:
+        if (EarthBossJustEntered != 0) {
+            boss->ball_vel = v000;
+        }
+        if (ProcessTimer(&boss->actiontimer) && (PlayerAtlas.onground & 3)) {
+            boss->ball_action = 4;
+            EarthBossJustEntered = 0;
+        }
+        break;
+    case 6:
+        if ((boss->onground & 3) && (boss->ball_pos.y < -2.0f || boss->numattacks > 0)) {
+            SeekHalfLifeNUVEC(&boss->ball_vel, &v000, 0.2f, 0.02f);
+            if (NuVecMagSqr(&boss->ball_vel) < 0.5f) {
+                if (boss->whacko != 0) {
+                    boss->ball_action = 0xB;
+                } else if (boss->numattacks > 0) {
+                    boss->ball_action = 5;
+                } else {
+                    boss->ball_action = 3;
+                }
+            }
+        }
+        break;
+    case 7:
+        boss->ball_vel = v000;
+        if (boss->ball_health > 0 && ProcessTimer(&boss->actiontimer2)) {
+            boss->actiontimer2 = 1000.0f;
+            SetNewMaskStuff(0, &rumble_sfx_pos, SetNuVecPntr(0.0f, 12.5f, 0.0f), 0.0f, 360.0f, 0.0f, 1, 0, 2.0f, 0.0f);
+            SetNewMaskStuff(0, &rumble_sfx_pos, SetNuVecPntr(0.0f, 1.5f, 0.0f), 1.5f, 360.0f, 1.0f, 1, 0, 2.0f, 0.0f);
+        }
+        if (boss->crunch.Anim.action == 0x19) {
+            f32 time = boss->crunch.Anim.anim_time;
+            f32 last = time - boss->crunch.Model->animlist[0x19]->speed * 0.59999996f;
+
+            if (time >= 52.0f && last < 52.0f) {
+                MyGameSfx(0x54, &rumble_sfx_pos, BOSSLANDVOL);
+            }
+        }
+
+        if (boss->crunch.Anim.flags & 1) {
+            if (boss->ball_health > 0) {
+                boss->ball_action = 1;
+            } else {
+                if (EarthBossDeathEffect == 0) {
+                    struct nuvec_s pos;
+
+                    pos = boss->ball_pos;
+                    pos.y -= boss->ball_radius * 0.75f;
+                    AddGameDebris(0x9A, &pos);
+                    MyGameSfx(0xD5, &boss->ball_pos, 0x7FFF);
+                    EarthBossDeathEffect = 1;
+                    EarthBossDeathTimer = ROKDEATHTIME;
+                    SetNewMaskStuff(1, &rumble_sfx_pos, SetNuVecPntr(0.0f, 12.5f, 0.0f), 3.0f, -540.0f, 0.5f, 1, 1, 2.0f, 0.0f);
+                }
+                ChrisBigBossDead = 1;
+                PlayerAtlas.inhibitcontroltimer = 0.5f;
+                boss->whacko = 0;
+            }
+        }
+        break;
+    case 9:
+        if (boss->onground != 0) {
+            struct nuvec_s pos;
+
+            pos = boss->ball_pos;
+            NuVecScaleAccum(&pos, &boss->lastnormal, -boss->ball_radius);
+            AddGameDebris(0x99, &pos);
+            MyGameSfx(4, &boss->ball_pos, BIGLANDVOL);
+            RumbleCamTweenInterestDest = 0.0f;
+            RumbleCamVal = BumpAmount;
+            RumbleCamTweenDest = 0.25f;
+            RumbleDisplayMode = 2;
+            AddRockVel(SetNuVecPntr(12.0f, 6.0f, 0.0f), SetNuVecPntrA(0.0f, -8.0f, -12.0f), 0.5f, 0);
+            AddRockVel(SetNuVecPntr(-12.0f, 6.0f, 0.0f), SetNuVecPntrA(0.0f, -8.0f, 12.0f), 0.5f, 0);
+            if (boss->ball_health < 3) {
+                AddRockVel(SetNuVecPntr(0.0f, 6.0f, 12.0f), SetNuVecPntrA(-12.0f, -8.0f, 0.0f), 0.5f, 0);
+            }
+            if (boss->ball_health < 2) {
+                AddRockVel(SetNuVecPntr(0.0f, 6.0f, -12.0f), SetNuVecPntrA(12.0f, -8.0f, 0.0f), 0.5f, 0);
+            }
+            boss->numattacks = 3;
+            boss->ball_action = 5;
+            PlayerAtlas.inhibitcontroltimer = 0.0f;
+            PlayerAtlas.ball_vel.y = 4.0f;
+            PlayerAtlas.onground = 0;
+        }
+        break;
+    }
+    boss->ball_beenhit = 0;
+    UpdateRumbleCamTween();
+    if (boss->ball_action != 9) {
+        boss->interestpoint = boss->ball_pos;
+    }
+    MyAnimateModelNew(&boss->shell, 0.59999996f);
+    MyAnimateModelNew(&boss->crunch, 0.59999996f);
+    if (JonnyOn != 0) {
+        JonnyParticles(&rumble_sfx_pos);
     }
 }
 
@@ -7734,8 +9801,6 @@ void ProcessBattleShip(struct battleship_s *ship)
     }
 }
 
-extern f32 WBIntroDestTiltX;
-extern f32 WBIntroDestTiltZ;
 extern f32 CRASHTEROIDSSeekTiltXTimeZero;
 extern f32 CRASHTEROIDSSeekTiltXTimeNonZero;
 extern f32 TORNSeekTiltXTimeZero;
