@@ -364,7 +364,6 @@ extern struct nuvec4_s tertempvec4;
 extern f32 NuFsqrt(f32 x);
 extern void *NuScratchAlloc32(s32 size);
 extern void NuScratchRelease(void);
-extern void ScanTerrain(s32 a0, s32 a1);
 extern u64 fptodp(f32 value);
 extern s32 dpcmp(u64 a, u64 b);
 extern u64 dpsub(u64 a, u64 b);
@@ -6055,3 +6054,671 @@ s32 NewRayCastPlatForm(struct nuvec_s *vpos, struct nuvec_s *vvel, s32 platid, f
     NuScratchRelease();
     return TerI->hittype;
 }
+
+#define TERRAIN_SCAN_SQR(x) ((x) * (x))
+
+void ScanTerrain(s32 platscan, s32 extramask) {
+    s32 a;
+    s32 b;
+    s32 c;
+    s32 HitCnt;
+    tertype** HitData;
+    tertype** MaxData;
+    short* LastWrite;
+    short* ttemp;
+    WallSplineType* WallSpl;
+    float maxx;
+    float maxy;
+    float maxz;
+    float tmaxx;
+    float tmaxy;
+    float tmaxz;
+    float radmov;
+    float minx;
+    float miny;
+    float minz;
+    float tminx;
+    float tminy;
+    float tminz;
+    float tn;
+    TerrainSituType* mbuf2;
+    tertype* ter;
+    short* modp;
+    s32 curscltemp;
+    struct nuvec4_s pnts[4];
+    struct nuvec4_s norm[2];
+
+    curscltemp = 0;
+    ScaleTerrain = ScaleTerrainT1;
+    TerI->hitcnt = 0;
+    LastWrite = (short*)TerI->hitdata;
+    HitData = TerI->hitdata + 1;
+    MaxData = HitData + 0x1fc;
+    HitCnt = 0;
+    platinrange = 0;
+    TerI->plathit = -1;
+    switch (TerI->scanmode) {
+        default:
+            radmov = NuFsqrt(TERRAIN_SCAN_SQR(TerI->curvel.x) + TERRAIN_SCAN_SQR(TerI->curvel.y) + TERRAIN_SCAN_SQR(TerI->curvel.z));
+            radmov += TerI->size + 0.02f;
+            maxx = TerI->curpos.x + radmov;
+            maxy = TerI->curpos.y + (radmov * TerI->yscale);
+            maxz = TerI->curpos.z + radmov;
+            minx = TerI->curpos.x - radmov;
+            miny = TerI->curpos.y - (radmov * TerI->yscale);
+            minz = TerI->curpos.z - radmov;
+            radmov *= radmov;
+        break;
+        case 1:
+            if (TerI->curvel.x > 0.0f) {
+                minx = (TerI->curpos.x - 0.02f) - TerI->size;
+                maxx = TerI->curpos.x + TerI->curvel.x + 0.02f + TerI->size;
+            }
+            else {
+                minx = (((TerI->curpos).x + (TerI->curvel).x) - 0.02f) - TerI->size;
+                maxx = (TerI->curpos).x + 0.02f + TerI->size;
+            }
+
+            if ((TerI->curvel).y > 0.0f) {
+                miny = ((TerI->curpos).y - 0.02f) - TerI->size;
+                maxy = (TerI->curpos).y + (TerI->curvel).y + 0.02f + TerI->size;
+            }
+            else {
+                miny = (((TerI->curpos).y + (TerI->curvel).y) - 0.02f) - TerI->size;
+                maxy = (TerI->curpos).y + 0.02f + TerI->size;
+            }
+
+            if ((TerI->curvel).z > 0.0f) {
+                minz = ((TerI->curpos).z - 0.02f) - TerI->size;
+                maxz = (TerI->curpos).z + (TerI->curvel).z + 0.02f + TerI->size;
+            }
+            else {
+                minz = (((TerI->curpos).z + (TerI->curvel).z) - 0.02f) - TerI->size;
+                maxz = (TerI->curpos).z + 0.02f + TerI->size;
+            }
+
+            radmov = TERRAIN_SCAN_SQR(minx - maxx) + TERRAIN_SCAN_SQR(miny - maxy) + TERRAIN_SCAN_SQR(minz - maxz);
+            radmov += 0.02f;
+        break;
+    }
+
+    for (a = 0; a < CurTerr->terrgroupcnt; a++) {
+        if (
+            (maxx >= CurTerr->terrgroup[a].bounds[0])
+            && (maxz >= CurTerr->terrgroup[a].bounds[1])
+            && (minx <= CurTerr->terrgroup[a].bounds[2])
+            && (minz <= CurTerr->terrgroup[a].bounds[3])
+        ) {
+            ttemp = CurTerr->terrlist + CurTerr->terrgroup[a].start;
+            for (b = 0; b < CurTerr->terrgroup[a].count; b++, ttemp++) {
+                mbuf2 = CurTerr->terr + *ttemp;
+                if (
+                    (maxx >= mbuf2->min.x)
+                    && (maxy >= mbuf2->min.y)
+                    && (maxz >= mbuf2->min.z)
+                    && (minx <= mbuf2->max.x)
+                    && (miny < mbuf2->max.y)
+                    && (minz < mbuf2->max.z)
+                    && (mbuf2->type != -1)
+                ) {
+                    tmaxx = maxx - mbuf2->Location.x;
+                    tmaxy = maxy - mbuf2->Location.y;
+                    tmaxz = maxz - mbuf2->Location.z;
+
+                    tminx = minx - mbuf2->Location.x;
+                    tminy = miny - mbuf2->Location.y;
+                    tminz = minz - mbuf2->Location.z;
+
+                    modp = (short*)mbuf2->model;
+                    while (*modp >= 0) {
+                        c = modp[1];
+                        ter = (tertype *)(modp + 10);
+                        if (
+                            (tmaxx >= *(float*)&modp[2])
+                            && (tminx < *(float*)&modp[4])
+                            ){
+                                if (
+                                    (tmaxz >= *(float*)&modp[6])
+                                    && (tminz < *(float*)&modp[8])
+                                ) {
+                                    for (; c > 0; c--) {
+                                        if (
+                                            (tmaxx >= ter->minx)
+                                            && (tminx < ter->maxx)
+                                            && (tmaxz >= ter->minz)
+                                            && (tminz < ter->maxz)
+                                            && (tmaxy >= ter->miny)
+                                            && (tminy < ter->maxy)
+                                            && (HitData < MaxData)
+                                            && ((ter->info[1] == 0) || ((ter->info[1] & extramask) != 0))
+                                        ) {
+                                            if (TerI->yscale == 1.0f) {
+                                                *HitData = ter;
+                                                HitData++;
+                                                HitCnt++;
+                                            }
+                                            else {
+                                                ScaleTerrain[curscltemp].info[0] = ter->info[0];
+                                                ScaleTerrain[curscltemp].info[1] = ter->info[1];
+                                                ScaleTerrain[curscltemp].info[2] = ter->info[2];
+                                                ScaleTerrain[curscltemp].info[3] = ter->info[3];
+                                                ScaleTerrain[curscltemp].pnts[0].x = ter->pnts[0].x;
+                                                ScaleTerrain[curscltemp].pnts[0].z = ter->pnts[0].z;
+                                                ScaleTerrain[curscltemp].pnts[0].y =
+                                                 (ter->pnts[0].y + mbuf2->Location.y) * TerI->inyscale - mbuf2->Location.y;
+                                                ScaleTerrain[curscltemp].pnts[1].x = ter->pnts[1].x;
+                                                ScaleTerrain[curscltemp].pnts[1].z = ter->pnts[1].z;
+                                                ScaleTerrain[curscltemp].pnts[1].y =
+                                                 (ter->pnts[1].y + mbuf2->Location.y) * TerI->inyscale - mbuf2->Location.y;
+                                                ScaleTerrain[curscltemp].pnts[2].x = ter->pnts[2].x;
+                                                ScaleTerrain[curscltemp].pnts[2].z = ter->pnts[2].z;
+                                                ScaleTerrain[curscltemp].pnts[2].y =
+                                                 (ter->pnts[2].y + mbuf2->Location.y) * TerI->inyscale - mbuf2->Location.y;
+                                                if (65535.0f > ter->norm[1].y) {
+                                                    ScaleTerrain[curscltemp].pnts[3].x = ter->pnts[3].x;
+                                                    ScaleTerrain[curscltemp].pnts[3].z = ter->pnts[3].z;
+                                                    ScaleTerrain[curscltemp].pnts[3].y =
+                                                       (ter->pnts[3].y + mbuf2->Location.y) * TerI->inyscale - mbuf2->Location.y;
+                                                    tn =  1.0f / NuFsqrt(ter->norm[1].x * ter->norm[1].x +
+                                                                   ter->norm[1].y * ter->norm[1].y * TerI->yscalesq +
+                                                                   ter->norm[1].z * ter->norm[1].z);
+                                                    ScaleTerrain[curscltemp].norm[1].x = ter->norm[1].x * tn;
+                                                    ScaleTerrain[curscltemp].norm[1].y = ter->norm[1].y * TerI->yscale * tn;
+                                                    ScaleTerrain[curscltemp].norm[1].z = ter->norm[1].z * tn;
+                                                }
+                                                else {
+                                                    ScaleTerrain[curscltemp].norm[1].y = 65536.0f;
+                                                }
+                                                tn = 1.0f / NuFsqrt(ter->norm[0].x * ter->norm[0].x +
+                                                             ter->norm[0].y * ter->norm[0].y * TerI->yscalesq +
+                                                             ter->norm[0].z * ter->norm[0].z);
+
+                                                ScaleTerrain[curscltemp].norm[0].x = ter->norm[0].x * tn;
+                                                ScaleTerrain[curscltemp].norm[0].y = ter->norm[0].y * TerI->yscale * tn;
+                                                ScaleTerrain[curscltemp].norm[0].z = ter->norm[0].z * tn;
+                                                *HitData = ScaleTerrain + curscltemp;
+                                                HitData++;
+                                                HitCnt++;
+                                                curscltemp++;
+                                            }
+                                        }
+                                        ter++;
+                                    }
+                                modp = (short*)ter;
+                            } else {
+                                modp = (short*)(ter + c);
+                            }
+                        } else {
+                            modp = (short*)(ter + c);
+                        }
+                    }
+                    if (HitCnt != 0) {
+                        LastWrite[0] = HitCnt;
+                        LastWrite[1] = *ttemp;
+                        LastWrite = (short*)HitData;
+                        HitData++;
+                        HitCnt = 0;
+                    }
+                }
+            }
+        }
+    }
+
+    if (curPickInst != 0) {
+        for (a = 0; a < curPickInst; a++) {
+            mbuf2 = &CurTerr->terr[a+2048];
+
+            tmaxx = maxx - mbuf2->Location.x;
+            tmaxy = maxy - mbuf2->Location.y;
+            tmaxz = maxz - mbuf2->Location.z;
+
+            tminx = minx - mbuf2->Location.x;
+            tminy = miny - mbuf2->Location.y;
+            tminz = minz - mbuf2->Location.z;
+
+            if (
+                (tmaxx >= mbuf2->min.x)
+                && (tmaxy >= mbuf2->min.y)
+                && (tmaxz >= mbuf2->min.z)
+                && (tminx <= mbuf2->max.x)
+                && (tminy < mbuf2->max.y)
+                && (tminz < mbuf2->max.z)
+                && (mbuf2->type != -1)
+            ) {
+                modp = (short*)mbuf2->model;
+                while (*modp >= 0) {
+                    c = modp[1];
+                    ter = (tertype *)(modp + 10);
+                    if (
+                        (tmaxx >= *(float*)&modp[2])
+                        && (tminx < *(float*)&modp[4])
+                    ) {
+                        if (
+                            (tmaxz >= *(float*)&modp[6])
+                            && (tminz < *(float*)&modp[8])
+                        ) {
+                            for (; c > 0; c--) {
+                                if (
+                                    (tmaxx >= ter->minx)
+                                    && (tminx < ter->maxx)
+                                    && (tmaxz >= ter->minz)
+                                    && (tminz < ter->maxz)
+                                    && (tmaxy >= ter->miny)
+                                    && (tminy < ter->maxy)
+                                    && (HitData < MaxData)
+                                    && ((ter->info[1] == 0) || ((ter->info[1] & extramask) != 0))
+                                ) {
+                                    if (TerI->yscale == 1.0f) {
+                                        *HitData = ter;
+                                        HitData++;
+                                        HitCnt++;
+                                    }
+                                    else {
+                                        ScaleTerrain[curscltemp].info[0] = ter->info[0];
+                                        ScaleTerrain[curscltemp].info[1] = ter->info[1];
+                                        ScaleTerrain[curscltemp].info[2] = ter->info[2];
+                                        ScaleTerrain[curscltemp].info[3] = ter->info[3];
+                                        ScaleTerrain[curscltemp].pnts[0].x = ter->pnts[0].x;
+                                        ScaleTerrain[curscltemp].pnts[0].z = ter->pnts[0].z;
+                                        ScaleTerrain[curscltemp].pnts[0].y =
+                                         (ter->pnts[0].y + mbuf2->Location.y) * TerI->inyscale - mbuf2->Location.y;
+                                        ScaleTerrain[curscltemp].pnts[1].x = ter->pnts[1].x;
+                                        ScaleTerrain[curscltemp].pnts[1].z = ter->pnts[1].z;
+                                        ScaleTerrain[curscltemp].pnts[1].y =
+                                         (ter->pnts[1].y + mbuf2->Location.y) * TerI->inyscale - mbuf2->Location.y;
+                                        ScaleTerrain[curscltemp].pnts[2].x = ter->pnts[2].x;
+                                        ScaleTerrain[curscltemp].pnts[2].z = ter->pnts[2].z;
+                                        ScaleTerrain[curscltemp].pnts[2].y =
+                                         (ter->pnts[2].y + mbuf2->Location.y) * TerI->inyscale - mbuf2->Location.y;
+                                        if (65535.0f > ter->norm[1].y) {
+                                            ScaleTerrain[curscltemp].pnts[3].x = ter->pnts[3].x;
+                                            ScaleTerrain[curscltemp].pnts[3].z = ter->pnts[3].z;
+                                            ScaleTerrain[curscltemp].pnts[3].y =
+                                               (ter->pnts[3].y + mbuf2->Location.y) * TerI->inyscale - mbuf2->Location.y;
+                                            tn =  1.0f / NuFsqrt(TERRAIN_SCAN_SQR(ter->norm[1].x) + TERRAIN_SCAN_SQR(ter->norm[1].y) * TerI->yscalesq + TERRAIN_SCAN_SQR(ter->norm[1].z));
+                                            ScaleTerrain[curscltemp].norm[1].x = ter->norm[1].x * tn;
+                                            ScaleTerrain[curscltemp].norm[1].y = ter->norm[1].y * TerI->yscale * tn;
+                                            ScaleTerrain[curscltemp].norm[1].z = ter->norm[1].z * tn;
+                                        }
+                                        else {
+                                            ScaleTerrain[curscltemp].norm[1].y = 65536.0f;
+                                        }
+                                        tn = 1.0f / NuFsqrt(TERRAIN_SCAN_SQR(ter->norm[0].x) + TERRAIN_SCAN_SQR(ter->norm[0].y) * TerI->yscalesq + TERRAIN_SCAN_SQR(ter->norm[0].z));
+
+                                        ScaleTerrain[curscltemp].norm[0].x = ter->norm[0].x * tn;
+                                        ScaleTerrain[curscltemp].norm[0].y = ter->norm[0].y * TerI->yscale * tn;
+                                        ScaleTerrain[curscltemp].norm[0].z = ter->norm[0].z * tn;
+                                        *HitData = ScaleTerrain + curscltemp;
+                                        HitData++;
+                                        HitCnt++;
+                                        curscltemp++;
+                                    }
+                                }
+                                ter++;
+                            }
+                            modp = (short*)ter;
+                        }
+                        else {
+                            modp = (short*)(ter + c);
+                        }
+                    }
+                    else {
+                        modp = (short*)(ter + c);
+                    }
+                }
+
+                if (HitCnt != 0) {
+                    LastWrite[0] = HitCnt;
+                    LastWrite[1] = a + 0x800;
+                    LastWrite = (short*)HitData;
+                    HitData++;
+                    HitCnt = 0;
+                }
+            }
+        }
+    }
+
+    TerI->PlatScanStart = LastWrite;
+    a = 0x100;
+    minx -= 0.05f;
+    maxx += 0.05f;
+    miny -= 0.05f;
+    maxy += 0.05f;
+    minz -= 0.05f;
+    maxz += 0.05f;
+    if (platscan != 0) {
+        ttemp = CurTerr->terrlist + CurTerr->terrgroup[a].start;
+        for (b = 0; b < CurTerr->terrgroup[a].count; b++, ttemp++) {
+            mbuf2 = CurTerr->terr + *ttemp;
+            if (CurTerr->platdata[mbuf2->info].curmtx != 0) {
+                if (CurTerr->platdata[mbuf2->info].curmtx->_30 > CurTerr->platdata[mbuf2->info].oldmtx._30) {
+                    tminx = minx - mbuf2->Location.x;
+                    tmaxx = (maxx + (CurTerr->platdata[mbuf2->info].curmtx->_30 -
+                    CurTerr->platdata[mbuf2->info].oldmtx._30) * 1.5f) - mbuf2->Location.x;
+                }
+                else {
+                    tmaxx = maxx - mbuf2->Location.x;
+                    tminx = (minx + (CurTerr->platdata[mbuf2->info].curmtx->_30 -
+                    CurTerr->platdata[mbuf2->info].oldmtx._30) * 1.5f) - mbuf2->Location.x;
+                }
+                if (CurTerr->platdata[mbuf2->info].curmtx->_31 > CurTerr->platdata[mbuf2->info].oldmtx._31) {
+                    tminy = miny - mbuf2->Location.y;
+                    tmaxy = (maxy + (CurTerr->platdata[mbuf2->info].curmtx->_31 -
+                    CurTerr->platdata[mbuf2->info].oldmtx._31) * 1.5f) - mbuf2->Location.y;
+                }
+                else {
+                    tmaxy = maxy - mbuf2->Location.y;
+                    tminy = (miny + (CurTerr->platdata[mbuf2->info].curmtx->_31 -
+                    CurTerr->platdata[mbuf2->info].oldmtx._31) * 1.5f) - mbuf2->Location.y;
+                }
+                if (CurTerr->platdata[mbuf2->info].curmtx->_32 > CurTerr->platdata[mbuf2->info].oldmtx._32) {
+                    tminz = minz - mbuf2->Location.z;
+                    tmaxz = (maxz + (CurTerr->platdata[mbuf2->info].curmtx->_32 -
+                    CurTerr->platdata[mbuf2->info].oldmtx._32) * 1.5f) - mbuf2->Location.z;
+                }
+                else {
+                    tmaxz = maxz - mbuf2->Location.z;
+                    tminz = (minz + (CurTerr->platdata[mbuf2->info].curmtx->_32 -
+                    CurTerr->platdata[mbuf2->info].oldmtx._32) * 1.5f) - mbuf2->Location.z;
+                }
+            }
+            else {
+                tmaxx = maxx - mbuf2->Location.x;
+                tminx = minx - mbuf2->Location.x;
+                tmaxy = maxy - mbuf2->Location.y;
+                tminy = miny - mbuf2->Location.y;
+                tmaxz = maxz - mbuf2->Location.z;
+                tminz = minz - mbuf2->Location.z;
+            }
+
+            if ((s32)CurTerr->platdata[mbuf2->info].status.bit.rotate != 0) {
+                tn = TERRAIN_SCAN_SQR((maxx + minx) * 0.5f - mbuf2->Location.x) +
+                    TERRAIN_SCAN_SQR(((maxy + miny) * 0.5f - mbuf2->Location.y) * TerI->inyscale)  +
+                    TERRAIN_SCAN_SQR((maxz + minz) * 0.5f - mbuf2->Location.z);
+                if ((mbuf2->type != -1) && (tn < mbuf2->radius + radmov)) {
+                    modp = (short *)mbuf2->model;
+                    while (*modp >= 0) {
+                        c = modp[1];
+                        ter = (tertype *)(modp + 10);
+                        for (; c > 0; c--) {
+                            platinrange = 1;
+                            if (
+                                (HitData < MaxData)
+                                && ((ter->info[1] == 0) || ((ter->info[1] & extramask) != 0))
+                            ) {
+                                pnts[0].x = ter->pnts[0].x;
+                                pnts[0].y = ter->pnts[0].y;
+                                pnts[0].z = ter->pnts[0].z;
+                                pnts[0].w = 0.0f;
+                                pnts[1].x = ter->pnts[1].x;
+                                pnts[1].y = ter->pnts[1].y;
+                                pnts[1].z = ter->pnts[1].z;
+                                pnts[1].w = 0.0f;
+                                pnts[2].x = ter->pnts[2].x;
+                                pnts[2].y = ter->pnts[2].y;
+                                pnts[2].z = ter->pnts[2].z;
+                                pnts[2].w = 0.0f;
+                                NuVec4MtxTransformVU0(&pnts[0], &pnts[0], CurTerr->platdata[mbuf2->info].curmtx);
+                                NuVec4MtxTransformVU0(&pnts[1], &pnts[1], CurTerr->platdata[mbuf2->info].curmtx);
+                                NuVec4MtxTransformVU0(&pnts[2], &pnts[2], CurTerr->platdata[mbuf2->info].curmtx);
+                                norm[0].x = ter->norm[0].x;
+                                norm[0].y = ter->norm[0].y;
+                                norm[0].z = ter->norm[0].z;
+                                norm[0].w = 0.0f;
+                                NuVec4MtxTransformVU0(&norm[0], &norm[0], CurTerr->platdata[mbuf2->info].curmtx);
+
+                                if (65535.0f > ter->norm[1].y) {
+                                    pnts[3].x = ter->pnts[3].x;
+                                    pnts[3].y = ter->pnts[3].y;
+                                    pnts[3].z = ter->pnts[3].z;
+                                    pnts[3].w = 0.0f;
+                                    NuVec4MtxTransformVU0(&pnts[3], &pnts[3], CurTerr->platdata[mbuf2->info].curmtx);
+                                    norm[1].x = ter->norm[1].x;
+                                    norm[1].y = ter->norm[1].y;
+                                    norm[1].z = ter->norm[1].z;
+                                    norm[1].w = 0.0f;
+                                    NuVec4MtxTransformVU0(&norm[1], &norm[1], CurTerr->platdata[mbuf2->info].curmtx);
+                                }
+                                else {
+                                    pnts[3] = pnts[2];
+                                }
+
+                                if (
+                                    (
+                                        (pnts[0].x > tminx)
+                                        || (pnts[1].x > tminx)
+                                        || (pnts[2].x > tminx)
+                                        || (pnts[3].x > tminx)
+                                    )
+                                    &&
+                                    (
+                                        (pnts[0].x < tmaxx)
+                                        || (pnts[1].x < tmaxx)
+                                        || (pnts[2].x < tmaxx)
+                                        || (pnts[3].x < tmaxx)
+                                    )
+                                    &&
+                                    (
+                                        (pnts[0].z > tminz)
+                                        || (pnts[1].z > tminz)
+                                        || (pnts[2].z > tminz)
+                                        || (pnts[3].z > tminz)
+                                    )
+                                    &&
+                                    (
+                                        (pnts[0].z < tmaxz)
+                                        || (pnts[1].z < tmaxz)
+                                        || (pnts[2].z < tmaxz)
+                                        || (pnts[3].z < tmaxz)
+                                    )
+                                ) {
+                                    ScaleTerrain[curscltemp].info[0] = ter->info[0];
+                                    ScaleTerrain[curscltemp].info[1] = ter->info[1];
+                                    ScaleTerrain[curscltemp].info[2] = ter->info[2];
+                                    ScaleTerrain[curscltemp].info[3] = ter->info[3];
+                                    ScaleTerrain[curscltemp].pnts[0].x = pnts[0].x;
+                                    ScaleTerrain[curscltemp].pnts[0].z = pnts[0].z;
+                                    ScaleTerrain[curscltemp].pnts[0].y =
+                                     (pnts[0].y + mbuf2->Location.y) * TerI->inyscale - mbuf2->Location.y;
+                                    ScaleTerrain[curscltemp].pnts[1].x = pnts[1].x;
+                                    ScaleTerrain[curscltemp].pnts[1].z = pnts[1].z;
+                                    ScaleTerrain[curscltemp].pnts[1].y =
+                                     (pnts[1].y + mbuf2->Location.y) * TerI->inyscale - mbuf2->Location.y;
+                                    ScaleTerrain[curscltemp].pnts[2].x = pnts[2].x;
+                                    ScaleTerrain[curscltemp].pnts[2].z = pnts[2].z;
+                                    ScaleTerrain[curscltemp].pnts[2].y =
+                                     (pnts[2].y + mbuf2->Location.y) * TerI->inyscale - mbuf2->Location.y;
+                                    if (65535.0f > ter->norm[1].y) {
+                                        ScaleTerrain[curscltemp].pnts[3].x = pnts[3].x;
+                                        ScaleTerrain[curscltemp].pnts[3].z = pnts[3].z;
+                                        ScaleTerrain[curscltemp].pnts[3].y =
+                                           (pnts[3].y + mbuf2->Location.y) * TerI->inyscale - mbuf2->Location.y;
+                                        tn =  1.0f / NuFsqrt(TERRAIN_SCAN_SQR(norm[1].x) + TERRAIN_SCAN_SQR(norm[1].y) * TerI->yscalesq + TERRAIN_SCAN_SQR(norm[1].z));
+                                        ScaleTerrain[curscltemp].norm[1].x = norm[1].x * tn;
+                                        ScaleTerrain[curscltemp].norm[1].y = norm[1].y * TerI->yscale * tn;
+                                        ScaleTerrain[curscltemp].norm[1].z = norm[1].z * tn;
+                                    }
+                                    else {
+                                        ScaleTerrain[curscltemp].norm[1].y = 65536.0f;
+                                    }
+
+                                    tn =  1.0f / NuFsqrt(TERRAIN_SCAN_SQR(norm[0].x) + TERRAIN_SCAN_SQR(norm[0].y) * TerI->yscalesq + TERRAIN_SCAN_SQR(norm[0].z));
+
+                                    ScaleTerrain[curscltemp].norm[0].x = norm[0].x * tn;
+                                    ScaleTerrain[curscltemp].norm[0].y = norm[0].y * TerI->yscale * tn;
+                                    ScaleTerrain[curscltemp].norm[0].z = norm[0].z * tn;
+                                    *HitData = ScaleTerrain + curscltemp;
+                                    HitData++;
+                                    HitCnt++;
+                                    curscltemp++;
+                                }
+                            }
+                            ter++;
+                        }
+                        modp = (short *)ter;
+                    }
+
+                    if (HitCnt != 0) {
+                        LastWrite[0] = HitCnt;
+                        LastWrite[1] = *ttemp;
+                        LastWrite = (short *)HitData;
+                        HitData++;
+                        HitCnt = 0;
+                    }
+                }
+            }
+            else if (
+                (tmaxx >= mbuf2->min.x)
+                && (tmaxy >= mbuf2->min.y)
+                && (tmaxz >= mbuf2->min.z)
+                && (tminx <= mbuf2->max.x)
+                && (tminy < mbuf2->max.y)
+                && (tminz < mbuf2->max.z)
+                && (mbuf2->type != -1)
+            ) {
+                modp = (short *)mbuf2->model;
+                while (*modp >= 0) {
+                    c = modp[1];
+                    ter = (tertype *)(modp + 10);
+                    if (
+                        (tmaxx >= *(float*)&modp[2])
+                        && (tminx < *(float*)&modp[4])
+                    ) {
+                        if (
+                            (tmaxz >= *(float*)&modp[6])
+                            && (tminz < *(float*)&modp[8])
+                        ) {
+                            for (; c > 0; c--) {
+                                if (
+                                    (tmaxx >= ter->minx)
+                                    && (tminx < ter->maxx)
+                                    && (tmaxz >= ter->minz)
+                                    && (tminz < ter->maxz)
+                                    && (tmaxy >= ter->miny)
+                                    && (tminy < ter->maxy)
+                                    && (platinrange = 1,HitData < MaxData)
+                                    && ((ter->info[1] == 0) || ((ter->info[1] & extramask) != 0))
+                                ) {
+                                    if (TerI->yscale == 1.0f) {
+                                        *HitData = ter;
+                                        HitData++;
+                                        HitCnt++;
+                                    }
+                                    else {
+                                        ScaleTerrain[curscltemp].info[0] = ter->info[0];
+                                        ScaleTerrain[curscltemp].info[1] = ter->info[1];
+                                        ScaleTerrain[curscltemp].info[2] = ter->info[2];
+                                        ScaleTerrain[curscltemp].info[3] = ter->info[3];
+                                        ScaleTerrain[curscltemp].pnts[0].x = ter->pnts[0].x;
+                                        ScaleTerrain[curscltemp].pnts[0].z = ter->pnts[0].z;
+                                        ScaleTerrain[curscltemp].pnts[0].y =
+                                         (ter->pnts[0].y + mbuf2->Location.y) * TerI->inyscale - mbuf2->Location.y;
+                                        ScaleTerrain[curscltemp].pnts[1].x = ter->pnts[1].x;
+                                        ScaleTerrain[curscltemp].pnts[1].z = ter->pnts[1].z;
+                                        ScaleTerrain[curscltemp].pnts[1].y =
+                                         (ter->pnts[1].y + mbuf2->Location.y) * TerI->inyscale - mbuf2->Location.y;
+                                        ScaleTerrain[curscltemp].pnts[2].x = ter->pnts[2].x;
+                                        ScaleTerrain[curscltemp].pnts[2].z = ter->pnts[2].z;
+                                        ScaleTerrain[curscltemp].pnts[2].y =
+                                         (ter->pnts[2].y + mbuf2->Location.y) * TerI->inyscale - mbuf2->Location.y;
+                                        if (65535.0f > ter->norm[1].y) {
+                                            ScaleTerrain[curscltemp].pnts[3].x = ter->pnts[3].x;
+                                            ScaleTerrain[curscltemp].pnts[3].z = ter->pnts[3].z;
+                                            ScaleTerrain[curscltemp].pnts[3].y =
+                                               (ter->pnts[3].y + mbuf2->Location.y) * TerI->inyscale - mbuf2->Location.y;
+                                            tn =  1.0f / NuFsqrt(TERRAIN_SCAN_SQR(ter->norm[1].x) + TERRAIN_SCAN_SQR(ter->norm[1].y) * TerI->yscalesq + TERRAIN_SCAN_SQR(ter->norm[1].z));
+                                            ScaleTerrain[curscltemp].norm[1].x = ter->norm[1].x * tn;
+                                            ScaleTerrain[curscltemp].norm[1].y = ter->norm[1].y * TerI->yscale * tn;
+                                            ScaleTerrain[curscltemp].norm[1].z = ter->norm[1].z * tn;
+                                        }
+                                        else {
+                                            ScaleTerrain[curscltemp].norm[1].y = 65536.0f;
+                                        }
+                                        tn = 1.0f / NuFsqrt(TERRAIN_SCAN_SQR(ter->norm[0].x) + TERRAIN_SCAN_SQR(ter->norm[0].y) * TerI->yscalesq + TERRAIN_SCAN_SQR(ter->norm[0].z));
+
+                                        ScaleTerrain[curscltemp].norm[0].x = ter->norm[0].x * tn;
+                                        ScaleTerrain[curscltemp].norm[0].y = ter->norm[0].y * TerI->yscale * tn;
+                                        ScaleTerrain[curscltemp].norm[0].z = ter->norm[0].z * tn;
+                                        *HitData = ScaleTerrain + curscltemp;
+                                        HitData++;
+                                        HitCnt++;
+                                        curscltemp++;
+                                    }
+                                }
+                                ter++;
+                            }
+                            modp = (short *)ter;
+                        }
+                        else {
+                            modp = (short *)(ter + c);
+                        }
+                    }
+                    else {
+                        modp = (short *)(ter + c);
+                    }
+                }
+
+                if (HitCnt != 0) {
+                    LastWrite[0] = HitCnt;
+                    LastWrite[1] = *ttemp;
+                    LastWrite = (short *)HitData;
+                    HitData++;
+                    HitCnt = 0;
+                }
+            }
+        }
+    }
+
+    LastWrite[0] = 0;
+    LastWrite[1] = 0;
+    minx -= 0.02;
+    minz -= 0.02;
+    maxx += 0.02;
+    maxz += 0.02;
+    WallSplCount = 0;
+
+    for (WallSpl = (WallSplineType *)CurTerr->wallinfo; WallSpl != 0; WallSpl = ((WallSplineType **)WallSpl)[-1]) {
+        for (a = 0; a < WallSpl->count; a += 0x10) {
+            if (WallSpl->spl[a].y != 2147483648.0f) {
+                if (
+                    (WallSpl->spl[a + 1].y >= minx)
+                    && (WallSpl->spl[a].y <= maxx)
+                    && (WallSpl->spl[a + 3].y >= minz)
+                    && (WallSpl->spl[a + 2].y <= maxz)
+                ) {
+                    c = a + 0x10;
+                    if (c > WallSpl->count) {
+                        c = WallSpl->count;
+                    }
+                }
+                else {
+                    c = 0;
+                }
+            } else {
+                c = WallSpl->count;
+            }
+
+            for (b = a; b < c; b++) {
+                if (
+                    (
+                        ((WallSpl->spl[b].x >= minx) && (WallSpl->spl[b + 1].x <= maxx))
+                        || ((WallSpl->spl[b + 1].x >= minx) && (WallSpl->spl[b].x <= maxx))
+                    )
+                    &&
+                    (
+                        ((WallSpl->spl[b].z >= minz) && (WallSpl->spl[b + 1].z <= maxz))
+                        || ((WallSpl->spl[b + 1].z >= minz) && (WallSpl->spl[b].z <= maxz))
+                    )
+                    && (WallSplCount < 0x40)
+                ) {
+                    WallSplList[WallSplCount] = WallSpl->spl[b];
+                    WallSplCount++;
+                    WallSplList[WallSplCount] = WallSpl->spl[b + 1];
+                    WallSplCount++;
+                }
+            }
+        }
+    }
+}
+
+#undef TERRAIN_SCAN_SQR

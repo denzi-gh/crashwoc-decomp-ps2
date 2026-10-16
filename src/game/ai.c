@@ -107,31 +107,40 @@ extern s32 boss_dead;
 extern s32 Hub;
 
 extern struct game_s Game;
-extern s32 D_00633314;
+extern u32 D_00633314;
 extern s32 gamesfx_effect_volume;
 extern void *world_scene[32];
 extern char D_0061FFD8[];
 extern char D_0061FFE8[];
 extern char D_0061FFF8[];
 
-extern s32 D_00633318;
-extern s32 D_0063331C;
-extern s32 D_00633320;
-extern s32 D_00633324;
-extern s32 D_00633328;
+extern u32 D_00633318;
+extern u32 D_0063331C;
+extern u32 D_00633320;
+extern u32 D_00633324;
+extern u32 D_00633328;
 extern s32 D_00631B94;
+#define crunch_vulnerable D_00631B94
+#define crunchtime_attack_phase D_00633314
+#define earth_attack_wait D_00633318
+#define water_attack_wait D_0063331C
+#define water_last_chute D_00633320
+#define fire_attack_wait D_00633324
+#define weather_attack_wait D_00633328
 extern s32 jcrunch;
 extern s32 CrunchTime_Intro;
-extern s32 fire_attack_on;
-extern s32 earth_attack_on;
-extern s32 water_attack_on;
-extern s32 weather_attack_on[];        /* 0x005c8xxx (absolute-addressed array) */
-extern u8 D_005C8870[];
+extern u32 fire_attack_on;
+extern u32 earth_attack_on;
+extern u32 water_attack_on;
+extern u32 weather_attack_on[9];       /* 0x005cd150 */
+extern struct nuvec_s D_005C8870;
+#define crunchtime_arena_midpos D_005C8870
 extern struct nuvec_s D_0061FFB0;
 void InitVehMasks(void);
 void InitVehMask(s32 a, s32 b);
-void SetNewMaskStuff(s32 a, void *b, struct nuvec_s *c, s32 d, s32 e,
-                     f32 f, f32 g, f32 h, f32 i, f32 j);
+void SetNewMaskStuff(s32 index, struct nuvec_s *centre, struct nuvec_s *offset,
+                     f32 rad, f32 anginc, f32 tweeninc, s32 fixed,
+                     s32 killatend, f32 scale, f32 tiltx);
 
 extern u16 D_00633304;
 extern u16 D_00633306;
@@ -452,10 +461,12 @@ extern struct nuvec_s D_0061FFC0;
 extern f32 D_00631B98;
 extern f32 D_00631B9C;
 extern f32 D_00631BA0;
-#define CrunchLava (*(struct nuvec_s *)D_005C8870)
+extern f32 D_0062E280;
+#define crunchtime_follow_rate D_0062E280
 void AddProjectile(struct nuvec_s *pos, struct nuvec_s *target, struct nuvec_s *mom, s32 type,
                    u16 hdg, struct obj_s *owner);
-void AddDeb3(struct nuvec_s *pos, s32 effect, s32 n, struct nuangvec_s *rot);
+struct deb3_s *AddDeb3(struct nuvec_s *pos, s32 db, s32 emit,
+                       struct nuangvec_s *angle);
 s32 KillPlayer(struct obj_s *obj, s32 anim);
 void ProcessVehMasks(void);
 
@@ -572,7 +583,7 @@ s32 UpdateCRUNCHTIME(void)
         }
         a = &D_005C8880[D_00633320];
         rot.x = 0;
-        rot.y = NuAtan2D(CrunchLava.x - a->x, CrunchLava.z - a->z);
+        rot.y = NuAtan2D(crunchtime_arena_midpos.x - a->x, crunchtime_arena_midpos.z - a->z);
         rot.z = 0;
         rot2 = rot;
         AddDeb3(a, 0x11, 5, &rot2);
@@ -624,7 +635,7 @@ s32 UpdateCRUNCHTIME(void)
                 AddGameDebrisRot(0x76, &p, 1, 0, 0);
             }
             if (player->obj.pos.y + player->obj.bot * player->obj.SCALE
-                < CrunchLava.y + 1.0f
+                < crunchtime_arena_midpos.y + 1.0f
                 && (player->obj.pos.x - a->x) * (b->z - a->z)
                    + (player->obj.pos.z - a->z) * (a->x - b->x) >= 0.0f
                 && (player->obj.pos.x - b->x) * (d->z - b->z)
@@ -701,9 +712,9 @@ s32 UpdateCRUNCHTIME(void)
         p.x += NuTrigTable[D_00633330[0]] * 0.1f;
         p.y += NuTrigTable[D_00633330[1]] * 0.1f;
         p.z += NuTrigTable[D_00633330[2]] * 0.1f;
-        D_006B7640.x += (p.x - D_006B7640.x) * 0.039960004f;
-        D_006B7640.z += (p.z - D_006B7640.z) * 0.039960004f;
-        D_006B7640.y += (p.y - D_006B7640.y) * 0.039960004f;
+        D_006B7640.x += (p.x - D_006B7640.x) * crunchtime_follow_rate;
+        D_006B7640.z += (p.z - D_006B7640.z) * crunchtime_follow_rate;
+        D_006B7640.y += (p.y - D_006B7640.y) * crunchtime_follow_rate;
     }
 
     old = D_00631B94;
@@ -711,12 +722,12 @@ s32 UpdateCRUNCHTIME(void)
     if (D_00631B94 != old) {
         if (D_00631B94 != 0) {
             p = D_0061FFC0;
-            SetNewMaskStuff(0, &c->obj.pos, &p, 0, 0,
-                            1.0f, -540.0f, 1.0f, 1.0f, 0.0f);
+            SetNewMaskStuff(0, &c->obj.pos, &p, 1.0f, -540.0f, 1.0f,
+                            0, 0, 1.0f, 0.0f);
         } else {
             p = D_0061FFB0;
-            SetNewMaskStuff(0, D_005C8870, &p, 0, 0,
-                            0.0f, -540.0f, 1.0f, 1.0f, 0.0f);
+            SetNewMaskStuff(0, &crunchtime_arena_midpos, &p, 0.0f, -540.0f, 1.0f,
+                            0, 0, 1.0f, 0.0f);
         }
     }
     ProcessVehMasks();
@@ -781,27 +792,27 @@ void ResetCRUNCHTIME(void)
     s32 i;
     struct nuvec_s v;
 
-    fire_attack_on = 0xFFFFFFFF;
     jcrunch = 0;
-    D_00631B94 = 0;
-    D_00633314 = 0;
+    crunch_vulnerable = 0;
+    crunchtime_attack_phase = 0;
     earth_attack_on = 0;
-    D_00633318 = 0;
+    earth_attack_wait = 0;
     water_attack_on = 0;
-    D_0063331C = 0;
-    D_00633320 = 0xFFFFFFFF;
-    D_00633324 = 0;
+    water_attack_wait = 0;
+    water_last_chute = -1;
+    fire_attack_on = -1;
+    fire_attack_wait = 0;
     for (i = 8; i >= 0; i--) {
         weather_attack_on[i] = 0;
     }
-    D_00633328 = 0;
+    weather_attack_wait = 0;
     CrunchTime_Intro = 1;
 
     InitVehMasks();
     InitVehMask(0, 3);
     v = D_0061FFB0;
-    SetNewMaskStuff(0, D_005C8870, &v, 0, 0,
-                    0.0f, -540.0f, 1.0f, 1.0f, 0.0f);
+    SetNewMaskStuff(0, &crunchtime_arena_midpos, &v, 0.0f, -540.0f, 1.0f,
+                    0, 0, 1.0f, 0.0f);
 }
 
 extern s8 crunchtime_phase1tab[8];    /* 0x00631ba8 */
