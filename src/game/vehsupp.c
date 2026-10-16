@@ -654,7 +654,7 @@ struct nuquat_s SetNuQuat(f32 x, f32 y, f32 z, f32 w) {
 
 extern f32 NuFsqrt(f32 x);
 
-f32 ControlledDist(struct nuvec_s *A, struct nuvec_s *B, s32 control) {
+inline f32 ControlledDist(struct nuvec_s *A, struct nuvec_s *B, s32 control) {
     struct nuvec_s diff;
     f32 dist = 0.0f;
     f32 *p;
@@ -664,15 +664,10 @@ f32 ControlledDist(struct nuvec_s *A, struct nuvec_s *B, s32 control) {
     NuVecSub(&diff, A, B);
 
     for (i = 0; i < 3; i++) {
-        f32 v = *p;
-        if (v > 0.0f) {
-            if (control & 1) {
-                dist += v * v;
-            }
-        } else if (v < 0.0f) {
-            if (control & 2) {
-                dist += v * v;
-            }
+        if (*p > 0.0f && (control & 1)) {
+            dist += *p * *p;
+        } else if (*p < 0.0f && (control & 2)) {
+            dist += *p * *p;
         }
         p++;
         control >>= 4;
@@ -695,33 +690,78 @@ struct MYSPLINE {
 extern void PointAlongSpline(struct nugspline_s *spl, f32 ratio,
                              struct nuvec_s *out, void *a3, void *a4);
 
-static inline f32 SplineControlledDist(struct nuvec_s *A, struct nuvec_s *B,
-                                       s32 control) {
-    struct nuvec_s diff;
-    f32 dist = 0.0f;
-    f32 *p;
-    s32 i;
+void FindSplineTargetPoint(struct MYSPLINE *Spline, s32 Control,
+                           struct nuvec_s *Point, struct nuvec_s *TargetPoint,
+                           s32 Wrap, s32 BigLook) {
+    f32 dist_cur, dist_nex;
 
-    p = &diff.x;
-    NuVecSub(&diff, A, B);
+    if (Wrap == 0) {
+        if ((Spline->Inc > 0.0f && Spline->Cur > Spline->Nex) ||
+            (Spline->Inc < 0.0f && Spline->Cur < Spline->Nex)) {
+            f32 cur = Spline->Cur;
+            struct nuvec_s pos;
 
-    for (i = 0; i < 3; i++) {
-        f32 v = *p;
-        if (v > 0.0f) {
-            if (control & 1) {
-                dist += v * v;
-            }
-        } else if (v < 0.0f) {
-            if (control & 2) {
-                dist += v * v;
-            }
+            Spline->Cur = Spline->Nex;
+            Spline->Nex = cur;
+            pos = Spline->CurPos;
+            Spline->CurPos = Spline->NexPos;
+            Spline->NexPos = pos;
         }
-        p++;
-        control >>= 4;
     }
 
-    return NuFsqrt(dist);
+    dist_cur = ControlledDist(&Spline->CurPos, Point, Control);
+    dist_nex = ControlledDist(&Spline->NexPos, Point, Control);
+
+    while (dist_nex < dist_cur ||
+           ((dist_nex < Spline->LookaheadDist ||
+             (Spline->LookaheadDist < dist_cur && BigLook)) &&
+            (Spline->Nex != 1.0f || Wrap))) {
+        Spline->CurPos = Spline->NexPos;
+        dist_cur = dist_nex;
+        Spline->Cur = Spline->Nex;
+        Spline->Nex = Spline->Nex + Spline->Inc;
+
+        if (Spline->Nex > 1.0f) {
+            if (Wrap) {
+                Spline->Nex -= 1.0f;
+            } else {
+                Spline->Nex = 1.0f;
+            }
+        } else if (Spline->Nex < 0.0f) {
+            if (Wrap) {
+                Spline->Nex += 1.0f;
+            } else {
+                Spline->Nex = 0.0f;
+            }
+        }
+
+        PointAlongSpline(Spline->Spline, Spline->Nex, &Spline->NexPos, 0, 0);
+        dist_nex = ControlledDist(&Spline->NexPos, Point, Control);
+    }
+
+    {
+        struct nuvec_s delta;
+        f32 ratio;
+
+        NuVecSub(&delta, &Spline->NexPos, &Spline->CurPos);
+
+        if (dist_nex <= Spline->LookaheadDist || dist_nex <= dist_cur) {
+            ratio = 1.0f;
+        } else if (Spline->LookaheadDist <= dist_cur) {
+            ratio = 0.0f;
+        } else {
+            ratio = (Spline->LookaheadDist - dist_cur) / (dist_nex - dist_cur);
+        }
+
+        Spline->Act = Spline->Cur + ratio * Spline->Inc;
+
+        if (TargetPoint != 0) {
+            *TargetPoint = Spline->CurPos;
+            NuVecScaleAccum(TargetPoint, &delta, ratio);
+        }
+    }
 }
+
 
 f32 FindSplineClosestPointAndDist(struct MYSPLINE *Spline, s32 Control,
                                   struct nuvec_s *Point,
@@ -729,8 +769,8 @@ f32 FindSplineClosestPointAndDist(struct MYSPLINE *Spline, s32 Control,
                                   s32 BigLook) {
     f32 dist_cur, dist_nex;
 
-    dist_cur = SplineControlledDist(&Spline->CurPos, Point, Control);
-    dist_nex = SplineControlledDist(&Spline->NexPos, Point, Control);
+    dist_cur = ControlledDist(&Spline->CurPos, Point, Control);
+    dist_nex = ControlledDist(&Spline->NexPos, Point, Control);
 
     while (1) {
         if (dist_nex < dist_cur || Spline->Cur == Spline->Nex) {
@@ -761,7 +801,7 @@ f32 FindSplineClosestPointAndDist(struct MYSPLINE *Spline, s32 Control,
         }
 
         PointAlongSpline(Spline->Spline, Spline->Nex, &Spline->NexPos, 0, 0);
-        dist_nex = SplineControlledDist(&Spline->NexPos, Point, Control);
+        dist_nex = ControlledDist(&Spline->NexPos, Point, Control);
     }
 
     if (TargetPoint != 0) {

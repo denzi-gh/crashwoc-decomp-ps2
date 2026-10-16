@@ -2465,17 +2465,6 @@ void FlyWumpa(struct wumpa_s *obj) {
     GameSfx(0x2A, &obj->pos);
 }
 
-struct newwumpa_s {
-    struct nuvec_s pos;        /* 0x0 */
-    struct nuvec_s screen;     /* 0xC */
-    float scale;               /* 0x18 */
-    u8 count;                  /* 0x1C */
-    u8 delay;                  /* 0x1D */
-    signed char transformed;   /* 0x1E */
-    signed char bonus;         /* 0x1F */
-    signed char active;        /* 0x20 */
-    char pad_21[0x24 - 0x21];
-};
 extern struct newwumpa_s NewWumpa[];
 extern s32 i_newwumpa;
 extern s32 sw_hack;
