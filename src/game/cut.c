@@ -44,6 +44,7 @@
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
 #include "nu3d/nuanim.h"
+#include "nu3d/nucamera.h"
 #include "game/gametypes.h"
 #include "gamelib/gcutscn.h"
 #include "game/creature.h"
@@ -304,63 +305,66 @@ inline void LoadCutSceneCharacters(struct csc_s *name) {
 /* Load the characters and every scene/cutscene of a movie, sharing models and
  * scenes already loaded, and chain the cutscenes so each plays the next.
  * Returns the number of cutscenes. */
-/* Near-match (state=asm): control flow, frame size (0xB0) and the inlined
- * character cache match retail; the remaining diff is how gcc keeps the two
- * counters (retail: one in $fp plus `ix + 1` spilled at 0($sp)). Tried: for
- * with/without init, while, a single counter, ret/ix declaration order. */
 s32 LoadCutComponents(struct cutscenedesc_s *csd, struct csc_s *chars) {
-    s32 ret = 0;
     s32 ix = 0;
     s32 i;
+    char *scnpath;
     char *path;
     void *scene;
     char *end;
+    char *instname;
+    void *tmp;
+    struct NUGCUTSCENE_s **cutscn;
 
     InitSpecular();
     InitEnviro();
     CutChar = chars;
     LoadCutSceneCharacters(chars);
 
-    for (; csd[ix].gscname != 0; ix++, ret++) {
+    for (; csd[ix].gscname != 0; ix++) {
         cutdebgroups[ix] = csd[ix].debgroup;
 
-        path = csd[ix].gscname;
+        scnpath = csd[ix].gscname;
         end = superbuffer_end.charptr;
         for (i = 0; i < ncutscncache; i++) {
-            if (strcasecmp(path, cutscncache[i].path) == 0) {
+            if (strcasecmp(scnpath, cutscncache[i].path) == 0) {
                 scene = cutscncache[i].scene;
                 goto found;
             }
         }
-        cutscncache[i].path = path;
-        scene = NuGScnRead(&superbuffer_ptr.charptr, end, path);
-        cutscncache[i].scene = scene;
+        cutscncache[i].path = scnpath;
+        tmp = NuGScnRead(&superbuffer_ptr.charptr, end, scnpath);
+        cutscncache[i].scene = tmp;
+        scene = tmp;
         ncutscncache++;
     found:
         world_scene[ix] = scene;
 
         CutScene[ix] = NuGCutSceneLoad(csd[ix].cutname, &superbuffer_ptr, &superbuffer_end);
-        if (CutScene[ix] != 0) {
-            NuGCutSceneFixUp(CutScene[ix], world_scene[ix], 0);
+        cutscn = &CutScene[ix];
+        if (*cutscn != 0) {
+            NuGCutSceneFixUp(*cutscn, world_scene[ix], 0);
             /* The instance is named after the last 16 characters of the path. */
             path = csd[ix].cutname;
-            if (strlen(path) != 0x10) {
+            if (strlen(csd[ix].cutname) != 0x10) {
                 path -= 0x10;
-                path += strlen(csd[ix].cutname);
+                instname = path + strlen(csd[ix].cutname);
+            } else {
+                instname = path;
             }
-            CutInst[ix] = instNuGCutSceneCreate(CutScene[ix], 0, 0, path, &superbuffer_ptr);
+            CutInst[ix] = instNuGCutSceneCreate(*cutscn, 0, 0, instname, &superbuffer_ptr);
             if (CutInst[ix] != 0) {
                 CutInst[ix]->speed = 0.6f;
                 CutAudio[ix] = csd[ix].sfxid;
                 instNuGCutSceneSetEndCallback(CutInst[ix], CutSceneEndFunction);
-                if (ret != 0 && CutInst[ix - 1] != 0) {
+                if (ix != 0 && CutInst[ix - 1] != 0) {
                     CutInst[ix - 1]->chain = CutInst[ix];
                     instNuGCutSceneSetEndCallback(CutInst[ix - 1], CutSceneNextFunction);
                 }
             }
         }
     }
-    return ret;
+    return ix;
 }
 
 /* Reset the cutscene state and load movie `movie`: 0 = logos/title,
@@ -516,6 +520,190 @@ void StartCutMovie(void) {
     }
 }
 
+extern s32 SWIDTH;
+extern s32 SHEIGHT;
+extern f32 DIVPANEL3D;
+extern f32 PANEL3DMULX;
+extern f32 PANEL3DMULY;
+extern s32 next_cut_movie;
+extern s32 mg_frame;
+extern s32 fadehack;
+extern struct nugscn_s *font3d_scene;
+extern struct nucamera_s global_camera;
+extern struct cammtx_s GameCam[];
+extern struct cammtx_s *pCam;
+extern struct gtimer_s GameTimer;
+extern struct nupad_s *Pad[];
+extern char D_006293F0[];
+extern char D_00629410[];
+#define intro_ptl D_006293F0
+#define general_ptl D_00629410
+
+extern void ResetSuperBuffer(void);
+extern void DebrisSetup(void);
+extern void DebrisRegisterCutoffCameraVec(struct nuvec_s *cutoff);
+extern void DebrisSetRenderGroup(s32 group);
+extern void Debris(int);
+extern void ParticleReset(void);
+extern void edppDestroyAllParticles(void);
+extern void edppDestroyAllEffects(void);
+extern int edppLoadEffects(char *filename, signed char list);
+extern int edppMergeEffects(char *filename, signed char list);
+extern void edppRestartAllEffectsInLevel(void);
+extern int NuFileSize(char *name);
+extern void CreateFadeMtl(void);
+extern s32 BGLoadCutMovie(s32 movie);
+extern void ResetTimer(void *timer);
+extern void MaxVP(void);
+extern void DoInput(void);
+extern void UpdateGameSfx(void);
+extern void NuGScnUpdate(struct nugscn_s *scene, float time);
+extern void NuGScnRndr3(struct nugscn_s *scene);
+extern void GameTiming(void);
+extern void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad);
+extern void UpdateFade(void);
+extern void DrawFade(void);
+extern void DrawPanel();
+extern void DebrisDraw();
+extern s32 NuRndrBeginScene(s32 a);
+extern void NuRndrClear(s32 mode, s32 col, float z);
+extern void NuRndrEndScene(void);
+extern int NuRndrSwapScreen(int target);
+extern void NuMtlAnimate(float dt);
+extern void SetCutSceneLights(void);
+
+inline void UpdateCutMovie(void) {
+    if (cutmovie_hold != 0 && CutAudio[cutworldix] != -1 &&
+        NuSoundKeyStatus(4) != 1) {
+        CutInst[cutworldix]->speed = 0.0f;
+    } else {
+        cutmovie_hold = 0;
+        SetCutMovieRate();
+    }
+    NuGCutSceneSysUpdate(Paused);
+}
+
+
+inline void DrawCutMovie(void) {
+    NuGCutSceneSysRender();
+}
+
+
+inline void UpdateCutMovieCamera(struct numtx_s *cam) {
+    if (set_cutscenecammtx != 0) {
+        *cam = cutscenecammtx;
+        set_cutscenecammtx = 0;
+        *pNuCam = *cam;
+        NuCameraSet(pNuCam);
+    }
+}
+
+
+void PlayCutMovie(s32 movie) {
+    s32 quit;
+
+    PANEL3DMULX = (float)SWIDTH / (DIVPANEL3D * ((float)SWIDTH / 640.0f));
+    PANEL3DMULY = (float)SHEIGHT / (DIVPANEL3D * ((float)SHEIGHT / 448.0f));
+    do {
+        next_cut_movie = -1;
+        ResetSuperBuffer();
+        DebrisSetup();
+        DebrisRegisterCutoffCameraVec((struct nuvec_s *)&global_camera.mtx._30);
+        ParticleReset();
+        edppDestroyAllParticles();
+        edppDestroyAllEffects();
+        if (NuFileSize(intro_ptl) > 0) {
+            edppLoadEffects(intro_ptl, 1);
+        }
+        if (NuFileSize(general_ptl) > 0) {
+            edppMergeEffects(general_ptl, 0);
+        }
+        edppRestartAllEffectsInLevel();
+        CreateFadeMtl();
+        texanimbits = 0;
+        font3d_scene = 0;
+        mg_frame = -1;
+        if (BGLoadCutMovie(movie) != 0) {
+            StartCutMovie();
+            quit = 0;
+            ResetTimer(&GameTimer);
+            Paused = 0;
+            MaxVP();
+            cut_on = 1;
+            fadeval = 0xFF;
+            fade_rate = -10;
+            do {
+                DebrisSetRenderGroup(cutdebgroups[cutworldix]);
+                DoInput();
+                UpdateGameSfx();
+                NuSoundUpdate();
+                UpdateCutMovie();
+                if (cut_on != 0) {
+                    UpdateCutMovieCamera(&GameCam[0].m);
+                    Debris(0);
+                    if (world_scene[cutworldix] != 0) {
+                        NuGScnUpdate(world_scene[cutworldix], 1.0f);
+                    }
+                    GameTiming();
+                    if (cutmovie == 0) {
+                        ProcMenu(&Cursor, Pad[0]);
+                    }
+                    UpdateFade();
+                    if (cutmovie != 0 && Pad[0] != 0 && (Pad[0]->paddata_db & 0x800)) {
+                        next_cut_movie = -1;
+                        quit = 1;
+                    }
+                    NuMtlAnimate(0.02f);
+                    NuTexAnimSetSignals(texanimbits);
+                    NuTexAnimProcess();
+                    pCam = GameCam;
+                    if (NuRndrBeginScene(-1) != 0) {
+                        NuRndrClear(3, 0, 1.0f);
+                        if (quit == 0) {
+                            SetCutSceneLights();
+                            DrawCutMovie();
+                            if (world_scene[cutworldix] != 0) {
+                                NuGScnRndr3(world_scene[cutworldix]);
+                            }
+                            DebrisDraw(0);
+                            if (cutmovie == 0) {
+                                DrawPanel();
+                            }
+                            DrawFade();
+                        }
+                        NuRndrEndScene();
+                    }
+                    NuRndrSwapScreen(-1);
+                }
+                if (cutmovie != 0) {
+                    if (cut_on == 0 || quit != 0) {
+                        break;
+                    }
+                } else if (fadeval >= 0xFF && fadehack == 0) {
+                    break;
+                }
+            } while (1);
+        }
+        NuSoundUpdate();
+        NuSoundStopStream(0);
+        NuSoundStopStream(1);
+        NuSoundStopStream(2);
+        NuSoundStopStream(3);
+        NuSoundStopStream(4);
+        NuSoundUpdate();
+        NuSoundFlushLoops();
+        if (NuRndrBeginScene(-1) != 0) {
+            NuRndrClear(3, 0, 1.0f);
+            NuRndrEndScene();
+            NuRndrSwapScreen(-1);
+        }
+        CloseCutMovie(1);
+        movie = cutmovie = next_cut_movie;
+    } while (cutmovie >= 0);
+    DebrisSetRenderGroup(0);
+}
+
+
 void InitGameCut(void) {
     cutang_FRONTEND[0] = (u16)NuAtan2D(cutpos_CRASH.x - cutpos_FRONTEND[0].x,
                                        cutpos_CRASH.z - cutpos_FRONTEND[0].z);
@@ -541,7 +729,6 @@ extern f32 SPACEMASKADJUSTY;
 extern f32 FRONTENDCORTEXADJUSTY;
 
 extern struct gtimer_s CutTimer;
-extern struct nupad_s *Pad[];
 extern struct nuvec_s v000;
 extern s32 gamecut_start;
 extern s32 gamecut_newlevel;
@@ -677,10 +864,6 @@ void UpdateGameCut(void) {
 /* Draw the character of the current hub/space cutscene, plus the vortex in
  * space (Level 0x28). Unlike the GameCube build, the bone matrices live in a
  * stack array here rather than in a global. */
-/* Near-match (state=asm): instruction-for-instruction except register choice
- * inside the Level 0x28 / frontend branches (retail reloads pCutAnim per arm,
- * into $a1/$a0; here gcc loads it once). Tried: statement order in both arms,
- * direct pCutAnim->i indexing, single-expression yrot, local decl order. */
 void DrawGameCut(void) {
     struct numtx_s m;
     struct numtx_s tmtx[256];
@@ -689,7 +872,6 @@ void DrawGameCut(void) {
     float **dwa;
     struct CharacterModel *model;
     u16 yrot;
-    s32 i;
 
     if (Level == 0x28 && CRemap[183] != -1) {
         model = &CModel[CRemap[183]];
@@ -717,20 +899,18 @@ void DrawGameCut(void) {
     NuMtxSetScale(&m, &scale);
 
     if (Level == 0x28) {
-        i = pCutAnim->i;
-        pos = cutpos_SPACE[i];
-        yrot = cutang_SPACE[i];
+        yrot = cutang_SPACE[pCutAnim->i];
         yrot -= 0x8000;
+        pos = cutpos_SPACE[pCutAnim->i];
         if (model->character == 0x55 || model->character == 0x57 ||
             model->character == 0x56 || model->character == 0x58 ||
             model->character == 2) {
             pos.y += SPACEMASKADJUSTY * scale.y;
         }
     } else {
-        i = pCutAnim->i;
-        yrot = cutang_FRONTEND[i];
+        yrot = cutang_FRONTEND[pCutAnim->i];
         yrot -= 0x8000;
-        pos = cutpos_FRONTEND[i];
+        pos = cutpos_FRONTEND[pCutAnim->i];
         if (model->character == 0xB5) {
             pos.y += FRONTENDCORTEXADJUSTY * scale.y;
         }
@@ -832,21 +1012,315 @@ void GetSpaceCut(s32 last, s32 next) {
     }
 }
 
+extern struct nuvec_s cutambcol;
+extern void SetLights(struct nucolour3_s *col0, struct nuvec_s *dir0,
+                      struct nucolour3_s *col1, struct nuvec_s *dir1,
+                      struct nucolour3_s *col2, struct nuvec_s *dir2, struct nuvec_s *amb);
+extern void SetLevelLights(void);
+
+inline void MakeDirLightColour(s32 ix, f32 r, f32 g, f32 b) {
+    cutdircol[ix].r = r;
+    cutdircol[ix].g = g;
+    cutdircol[ix].b = b;
+}
+
+
+inline void MakeLightDirection(s32 ix, f32 x, f32 y, f32 z) {
+    cutdir[ix].x = x;
+    cutdir[ix].y = y;
+    cutdir[ix].z = z;
+    NuVecNorm(&cutdir[ix], &cutdir[ix]);
+}
+
+
+void SetCutSceneLights(void) {
+    switch (cutmovie) {
+    case 0:
+        SetLevelLights();
+        return;
+    case 1:
+        switch (cutworldix) {
+        case 2:
+            cutambcol.x = 0.4f;
+            cutambcol.y = 0.4f;
+            cutambcol.z = 0.4f;
+            MakeDirLightColour(0, 0.4f, 0.8f, 0.4f);
+            MakeDirLightColour(1, 0.4f, 0.8f, 0.4f);
+            MakeDirLightColour(2, 0.0f, 0.0f, 0.0f);
+            MakeLightDirection(0, -0.5f, -1.0f, -0.5f);
+            MakeLightDirection(1, 0.5f, -1.0f, 0.5f);
+            MakeLightDirection(2, 0.0f, 0.0f, 0.0f);
+            SetLights(&cutdircol[0], &cutdir[0], &cutdircol[1], &cutdir[1], &cutdircol[2], &cutdir[2],
+                      &cutambcol);
+            return;
+        case 3:
+            cutambcol.x = 0.75f;
+            cutambcol.y = 0.75f;
+            cutambcol.z = 0.75f;
+            MakeDirLightColour(0, 1.25f, 1.0f, 0.65f);
+            MakeDirLightColour(1, 0.5f, 0.5f, 0.8f);
+            MakeDirLightColour(2, 0.5f, 0.5f, 0.8f);
+            MakeLightDirection(0, -0.5f, 1.0f, -0.5f);
+            MakeLightDirection(1, -0.5f, -1.0f, -0.5f);
+            MakeLightDirection(2, 0.5f, -1.0f, 0.5f);
+            SetLights(&cutdircol[0], &cutdir[0], &cutdircol[1], &cutdir[1], &cutdircol[2], &cutdir[2],
+                      &cutambcol);
+            return;
+        case 4:
+            cutambcol.x = 0.25f;
+            cutambcol.y = 0.25f;
+            cutambcol.z = 0.25f;
+            MakeDirLightColour(0, 1.0f, 0.8f, 0.65f);
+            MakeDirLightColour(1, 0.75f, 0.75f, 0.75f);
+            MakeDirLightColour(2, 1.5f, 1.5f, 1.0f);
+            MakeLightDirection(0, -0.5f, 1.0f, 0.5f);
+            MakeLightDirection(1, 0.5f, 1.0f, -0.5f);
+            MakeLightDirection(2, -1.0f, 0.0f, 0.0f);
+            SetLights(&cutdircol[0], &cutdir[0], &cutdircol[1], &cutdir[1], &cutdircol[2], &cutdir[2],
+                      &cutambcol);
+            return;
+        case 5:
+            cutambcol.x = 0.5f;
+            cutambcol.y = 0.5f;
+            cutambcol.z = 0.5f;
+            MakeDirLightColour(0, 1.0f, 1.0f, 0.5f);
+            MakeDirLightColour(1, 0.35f, 0.35f, 0.6f);
+            MakeDirLightColour(2, 0.35f, 0.35f, 0.5f);
+            MakeLightDirection(0, -0.5f, 1.0f, -0.5f);
+            MakeLightDirection(1, -0.5f, -1.0f, -0.5f);
+            MakeLightDirection(2, -1.0f, 0.0f, 0.0f);
+            SetLights(&cutdircol[0], &cutdir[0], &cutdircol[1], &cutdir[1], &cutdircol[2], &cutdir[2],
+                      &cutambcol);
+            return;
+        case 6:
+            return;
+        case 7:
+            cutambcol.x = 0.75f;
+            cutambcol.y = 0.75f;
+            cutambcol.z = 0.75f;
+            MakeDirLightColour(0, 0.9f, 0.9f, 0.5f);
+            MakeDirLightColour(1, 0.0f, 0.0f, 0.0f);
+            MakeDirLightColour(2, 0.0f, 0.0f, 0.0f);
+            MakeLightDirection(0, -0.5f, 1.0f, -0.5f);
+            MakeLightDirection(1, 0.0f, 0.0f, 0.0f);
+            MakeLightDirection(2, 0.0f, 0.0f, 0.0f);
+            SetLights(&cutdircol[0], &cutdir[0], &cutdircol[1], &cutdir[1], &cutdircol[2], &cutdir[2],
+                      &cutambcol);
+            return;
+        case 8:
+            cutambcol.x = 0.25f;
+            cutambcol.y = 0.25f;
+            cutambcol.z = 0.25f;
+            MakeDirLightColour(0, 1.1f, 1.1f, 0.9f);
+            MakeDirLightColour(1, 1.1f, 1.1f, 0.9f);
+            MakeDirLightColour(2, 0.5f, 0.5f, 0.5f);
+            MakeLightDirection(0, 0.25f, -1.0f, 0.0f);
+            MakeLightDirection(1, -0.5f, 1.0f, 0.0f);
+            MakeLightDirection(2, 0.25f, 1.0f, 0.0f);
+            SetLights(&cutdircol[0], &cutdir[0], &cutdircol[1], &cutdir[1], &cutdircol[2], &cutdir[2],
+                      &cutambcol);
+            return;
+        case 9:
+            cutambcol.x = 0.75f;
+            cutambcol.y = 0.75f;
+            cutambcol.z = 0.75f;
+            MakeDirLightColour(0, 0.8f, 0.8f, 0.5f);
+            MakeDirLightColour(1, 0.0f, 0.25f, 0.0f);
+            MakeDirLightColour(2, 0.0f, 0.0f, 0.0f);
+            MakeLightDirection(0, 0.0f, 0.0f, -0.8f);
+            MakeLightDirection(1, 0.0f, -1.0f, 1.0f);
+            MakeLightDirection(2, 0.0f, 0.0f, 0.0f);
+            SetLights(&cutdircol[0], &cutdir[0], &cutdircol[1], &cutdir[1], &cutdircol[2], &cutdir[2],
+                      &cutambcol);
+            return;
+        case 10:
+            cutambcol.x = 0.5f;
+            cutambcol.y = 0.5f;
+            cutambcol.z = 0.5f;
+            MakeDirLightColour(0, 1.0f, 1.0f, 0.8f);
+            MakeDirLightColour(1, 0.25f, 0.25f, 1.0f);
+            MakeDirLightColour(2, 0.0f, 0.0f, 0.0f);
+            MakeLightDirection(0, -1.0f, 0.75f, -1.0f);
+            MakeLightDirection(1, 1.0f, 0.5f, 1.0f);
+            MakeLightDirection(2, 0.0f, 0.0f, 0.0f);
+            SetLights(&cutdircol[0], &cutdir[0], &cutdircol[1], &cutdir[1], &cutdircol[2], &cutdir[2],
+                      &cutambcol);
+            return;
+        default:
+            SetLevelLights();
+            return;
+        }
+    case 2:
+        switch (cutworldix) {
+        case 0:
+            cutambcol.x = 0.75f;
+            cutambcol.y = 0.75f;
+            cutambcol.z = 0.75f;
+            MakeDirLightColour(0, 1.25f, 1.0f, 0.65f);
+            MakeDirLightColour(1, 0.5f, 0.5f, 0.8f);
+            MakeDirLightColour(2, 0.5f, 0.5f, 0.8f);
+            MakeLightDirection(0, -0.5f, 1.0f, -0.5f);
+            MakeLightDirection(1, -0.5f, -1.0f, -0.5f);
+            MakeLightDirection(2, 0.5f, -1.0f, 0.5f);
+            SetLights(&cutdircol[0], &cutdir[0], &cutdircol[1], &cutdir[1], &cutdircol[2], &cutdir[2],
+                      &cutambcol);
+            return;
+        case 1:
+            cutambcol.x = 0.25f;
+            cutambcol.y = 0.25f;
+            cutambcol.z = 0.25f;
+            MakeDirLightColour(0, 1.0f, 0.8f, 0.65f);
+            MakeDirLightColour(1, 0.75f, 0.75f, 0.75f);
+            MakeDirLightColour(2, 1.5f, 1.5f, 1.0f);
+            MakeLightDirection(0, -0.5f, 1.0f, 0.5f);
+            MakeLightDirection(1, 0.5f, 1.0f, -0.5f);
+            MakeLightDirection(2, -1.0f, 0.0f, 0.0f);
+            SetLights(&cutdircol[0], &cutdir[0], &cutdircol[1], &cutdir[1], &cutdircol[2], &cutdir[2],
+                      &cutambcol);
+            return;
+        case 2:
+            cutambcol.x = 0.5f;
+            cutambcol.y = 0.5f;
+            cutambcol.z = 0.5f;
+            MakeDirLightColour(0, 1.0f, 1.0f, 0.5f);
+            MakeDirLightColour(1, 0.35f, 0.35f, 0.6f);
+            MakeDirLightColour(2, 0.35f, 0.35f, 0.5f);
+            MakeLightDirection(0, -0.5f, 1.0f, -0.5f);
+            MakeLightDirection(1, -0.5f, -1.0f, -0.5f);
+            MakeLightDirection(2, -1.0f, 0.0f, 0.0f);
+            SetLights(&cutdircol[0], &cutdir[0], &cutdircol[1], &cutdir[1], &cutdircol[2], &cutdir[2],
+                      &cutambcol);
+            return;
+        case 3:
+            return;
+        case 4:
+            cutambcol.x = 0.75f;
+            cutambcol.y = 0.75f;
+            cutambcol.z = 0.75f;
+            MakeDirLightColour(0, 0.9f, 0.9f, 0.5f);
+            MakeDirLightColour(1, 0.0f, 0.0f, 0.0f);
+            MakeDirLightColour(2, 0.0f, 0.0f, 0.0f);
+            MakeLightDirection(0, -0.5f, 1.0f, -0.5f);
+            MakeLightDirection(1, 0.0f, 0.0f, 0.0f);
+            MakeLightDirection(2, 0.0f, 0.0f, 0.0f);
+            SetLights(&cutdircol[0], &cutdir[0], &cutdircol[1], &cutdir[1], &cutdircol[2], &cutdir[2],
+                      &cutambcol);
+            return;
+        case 5:
+            cutambcol.x = 0.25f;
+            cutambcol.y = 0.25f;
+            cutambcol.z = 0.25f;
+            MakeDirLightColour(0, 1.1f, 1.1f, 0.9f);
+            MakeDirLightColour(1, 1.1f, 1.1f, 0.9f);
+            MakeDirLightColour(2, 0.5f, 0.5f, 0.5f);
+            MakeLightDirection(0, 0.25f, -1.0f, 0.0f);
+            MakeLightDirection(1, -0.5f, 1.0f, 0.0f);
+            MakeLightDirection(2, 0.25f, 1.0f, 0.0f);
+            SetLights(&cutdircol[0], &cutdir[0], &cutdircol[1], &cutdir[1], &cutdircol[2], &cutdir[2],
+                      &cutambcol);
+            return;
+        case 6:
+            cutambcol.x = 0.75f;
+            cutambcol.y = 0.75f;
+            cutambcol.z = 0.75f;
+            MakeDirLightColour(0, 0.8f, 0.8f, 0.5f);
+            MakeDirLightColour(1, 0.0f, 0.25f, 0.0f);
+            MakeDirLightColour(2, 0.0f, 0.0f, 0.0f);
+            MakeLightDirection(0, 0.0f, 0.0f, -0.8f);
+            MakeLightDirection(1, 0.0f, -1.0f, 1.0f);
+            MakeLightDirection(2, 0.0f, 0.0f, 0.0f);
+            SetLights(&cutdircol[0], &cutdir[0], &cutdircol[1], &cutdir[1], &cutdircol[2], &cutdir[2],
+                      &cutambcol);
+            return;
+        case 7:
+            cutambcol.x = 0.5f;
+            cutambcol.y = 0.5f;
+            cutambcol.z = 0.5f;
+            MakeDirLightColour(0, 1.0f, 1.0f, 0.8f);
+            MakeDirLightColour(1, 0.25f, 0.25f, 1.0f);
+            MakeDirLightColour(2, 0.0f, 0.0f, 0.0f);
+            MakeLightDirection(0, -1.0f, 0.75f, -1.0f);
+            MakeLightDirection(1, 1.0f, 0.5f, 1.0f);
+            MakeLightDirection(2, 0.0f, 0.0f, 0.0f);
+            SetLights(&cutdircol[0], &cutdir[0], &cutdircol[1], &cutdir[1], &cutdircol[2], &cutdir[2],
+                      &cutambcol);
+            return;
+        default:
+            SetLevelLights();
+            return;
+        }
+    case 3:
+        if (cutworldix == 0) {
+            cutambcol.x = 0.5f;
+            cutambcol.y = 0.5f;
+            cutambcol.z = 0.5f;
+            MakeDirLightColour(0, 0.25f, 0.25f, 1.75f);
+            MakeDirLightColour(1, 1.25f, 0.5f, 0.5f);
+            MakeDirLightColour(2, 0.5f, 0.75f, 0.5f);
+            MakeLightDirection(0, -1.0f, -0.5f, -1.0f);
+            MakeLightDirection(1, 1.0f, -0.5f, -1.0f);
+            MakeLightDirection(2, -1.0f, 0.5f, 1.0f);
+            SetLights(&cutdircol[0], &cutdir[0], &cutdircol[1], &cutdir[1], &cutdircol[2], &cutdir[2],
+                      &cutambcol);
+            return;
+        }
+        SetLevelLights();
+        return;
+    case 4:
+        switch (cutworldix) {
+        case 0:
+            cutambcol.x = 0.5f;
+            cutambcol.y = 0.5f;
+            cutambcol.z = 0.5f;
+            MakeDirLightColour(0, 0.25f, 0.25f, 1.75f);
+            MakeDirLightColour(1, 1.25f, 0.5f, 0.5f);
+            MakeDirLightColour(2, 0.5f, 0.75f, 0.5f);
+            MakeLightDirection(0, -1.0f, -0.5f, -1.0f);
+            MakeLightDirection(1, 1.0f, -0.5f, -1.0f);
+            MakeLightDirection(2, -1.0f, 0.5f, 1.0f);
+            SetLights(&cutdircol[0], &cutdir[0], &cutdircol[1], &cutdir[1], &cutdircol[2], &cutdir[2],
+                      &cutambcol);
+            return;
+        case 1:
+            cutambcol.x = 0.5f;
+            cutambcol.y = 0.5f;
+            cutambcol.z = 0.5f;
+            MakeDirLightColour(0, 0.75f, 0.65f, 0.5f);
+            MakeDirLightColour(1, 0.0f, 0.15f, 0.0f);
+            MakeDirLightColour(2, 0.5f, 0.5f, 0.25f);
+            MakeLightDirection(0, 1.0f, -0.25f, 1.0f);
+            MakeLightDirection(1, 0.0f, -1.0f, 0.0f);
+            MakeLightDirection(2, 1.0f, -0.5f, -1.0f);
+            SetLights(&cutdircol[0], &cutdir[0], &cutdircol[1], &cutdir[1], &cutdircol[2], &cutdir[2],
+                      &cutambcol);
+            return;
+        case 2:
+            cutambcol.x = 0.5f;
+            cutambcol.y = 0.5f;
+            cutambcol.z = 0.5f;
+            MakeDirLightColour(0, 1.15f, 1.15f, 1.15f);
+            MakeDirLightColour(1, 1.0f, 1.0f, 1.0f);
+            MakeDirLightColour(2, 1.0f, 1.0f, 1.0f);
+            MakeLightDirection(0, 1.0f, -0.25f, 1.0f);
+            MakeLightDirection(1, 0.0f, -1.0f, 0.0f);
+            MakeLightDirection(2, 1.0f, -0.5f, -1.0f);
+            SetLights(&cutdircol[0], &cutdir[0], &cutdircol[1], &cutdir[1], &cutdircol[2], &cutdir[2],
+                      &cutambcol);
+            return;
+        default:
+            SetLevelLights();
+            return;
+        }
+    }
+    SetLevelLights();
+}
+
+
+
 void InitCutScenes(void) {
     NuGCutSceneSysInit(cutscene_locatorfns);
     NuSetCutSceneFindCharactersFn(AppCutSceneFindCharacters);
     NuSetCutSceneCharacterRenderFn(AppCutSceneCharacterRender);
-}
-
-void UpdateCutMovie(void) {
-    if (cutmovie_hold != 0 && CutAudio[cutworldix] != -1 &&
-        NuSoundKeyStatus(4) != 1) {
-        CutInst[cutworldix]->speed = 0.0f;
-    } else {
-        cutmovie_hold = 0;
-        SetCutMovieRate();
-    }
-    NuGCutSceneSysUpdate(Paused);
 }
 
 
@@ -952,33 +1426,4 @@ static void AppCutSceneFindCharacters(struct NUGCUTSCENE_s *cutscene) {
             cutchar->first_locator = -1;
         }
     }
-}
-
-
-void DrawCutMovie(void) {
-    NuGCutSceneSysRender();
-}
-
-
-void UpdateCutMovieCamera(struct numtx_s *cam) {
-    if (set_cutscenecammtx != 0) {
-        *cam = cutscenecammtx;
-        set_cutscenecammtx = 0;
-        *pNuCam = *cam;
-        NuCameraSet(pNuCam);
-    }
-}
-
-
-void MakeDirLightColour(s32 ix, f32 r, f32 g, f32 b) {
-    cutdircol[ix].r = r;
-    cutdircol[ix].g = g;
-    cutdircol[ix].b = b;
-}
-
-void MakeLightDirection(s32 ix, f32 x, f32 y, f32 z) {
-    cutdir[ix].x = x;
-    cutdir[ix].y = y;
-    cutdir[ix].z = z;
-    NuVecNorm(&cutdir[ix], &cutdir[ix]);
 }
