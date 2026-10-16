@@ -105,11 +105,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:00256a18:MoveMINETUB"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:00257270:AnimateMINETUB"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:00257570:CheckGates"
@@ -121,7 +121,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:00257880:CheckRings"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:00257d70:DrawRings"
@@ -129,7 +129,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:00257e80:AnimateSWIMMING"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0117:00257f88:AnimateSCOOTER"

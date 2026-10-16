@@ -73,10 +73,6 @@ extern f32 SCOOTERJUMPPAUSEFRAME;
 extern f32 FIREENGINERUNNINGJUMPPAUSEFRAME;
 extern f32 FIREENGINESTANDINGJUMPPAUSEFRAME;
 
-u64 fptodp(f32 value);
-s32 dpcmp(u64 a, u64 b);
-u64 dpsub(u64 a, u64 b);
-
 extern struct nupad_s *Pad[];
 
 struct plrevent_s {
@@ -1646,6 +1642,111 @@ void ResetRings(void) {
     }
 }
 
+extern struct rail_s Rail[];
+extern f32 RINGPULL;
+
+inline void UpdateArrow(struct nuvec_s *target, struct nuvec_s *origin) {
+    struct nuvec_s d;
+    u16 xrot;
+    u16 yrot;
+
+    NuVecSub(&d, target, origin);
+    xrot = -NuAtan2D(d.y, NuFsqrt(d.x * d.x + d.z * d.z));
+    yrot = NuAtan2D(d.x, d.z);
+    if (GameTimer.frame != 0) {
+        arrow_xrot = SeekRot(arrow_xrot, xrot, 2);
+        arrow_yrot = SeekRot(arrow_yrot, yrot, 2);
+    } else {
+        arrow_xrot = xrot;
+        arrow_yrot = yrot;
+    }
+}
+
+void CheckRings(struct obj_s *obj, s32 *ring) {
+    struct nuvec_s old;
+    struct nuvec_s cur;
+    struct nuvec_s to_old;
+    struct nuvec_s to_cur;
+    struct nuvec_s axis;
+    struct nuvec_s left;
+    struct nuvec_s right;
+    struct nuvec_s mid;
+    struct nuvec_s *p;
+    struct nuvec_s *p0;
+    struct nuvec_s *p1;
+    struct RPos_s *rpos;
+    s32 is_player;
+    s32 i;
+    f32 len;
+
+    if (RINGCOUNT == 0 || *ring == RINGCOUNT) {
+        return;
+    }
+    is_player = (obj == &player->obj);
+    old.x = obj->oldpos.x;
+    old.y = ((obj->oldpos.y + obj->bot * obj->old_SCALE) +
+             (obj->oldpos.y + obj->top * obj->old_SCALE)) * 0.5f;
+    old.z = obj->oldpos.z;
+    cur.x = obj->pos.x;
+    cur.y = obj->pos.y + (obj->bot + obj->top) * obj->SCALE * 0.5f;
+    cur.z = obj->pos.z;
+    p = (struct nuvec_s *)SplTab[64].spl->pts;
+    for (i = 0; i < RINGCOUNT; i++, p += 2) {
+        len = NuVecDist(p + 1, p, 0);
+        if (NuVecDist(&old, p, 0) <= len && NuVecDist(&cur, p, 0) <= len) {
+            NuVecSub(&axis, p + 1, p);
+            NuVecNorm(&axis, &axis);
+            NuVecSub(&to_old, &old, p);
+            NuVecNorm(&to_old, &to_old);
+            NuVecSub(&to_cur, &cur, p);
+            NuVecNorm(&to_cur, &to_cur);
+            if ((NuVecDot(&axis, &to_old) < 0.0f && NuVecDot(&axis, &to_cur) >= 0.0f) ||
+                (NuVecDot(&axis, &to_old) >= 0.0f && NuVecDot(&axis, &to_cur) < 0.0f)) {
+                NewBuzz(&player->rumble, 5);
+                if (i == *ring) {
+                    GameSfx(0x1E, &obj->pos);
+                    (*ring)++;
+                    if (is_player && *ring < RINGCOUNT) {
+                        ring_pos = p[3];
+                    }
+                } else {
+                    GameSfx(0x4F, &obj->pos);
+                }
+                break;
+            }
+        }
+    }
+    if (is_player && best_cRPos != 0) {
+        rpos = best_cRPos;
+        p0 = (struct nuvec_s *)(Rail[rpos->iRAIL].pLEFT->pts +
+                                rpos->iALONG * Rail[rpos->iRAIL].pLEFT->ptsize);
+        p1 = (struct nuvec_s *)(Rail[rpos->iRAIL].pLEFT->pts +
+                                rpos->i1 * Rail[rpos->iRAIL].pLEFT->ptsize);
+        left.x = (p0->x + p1->x) * 0.5f;
+        left.y = (p0->y + p1->y) * 0.5f;
+        left.z = (p0->z + p1->z) * 0.5f;
+        p0 = (struct nuvec_s *)(Rail[rpos->iRAIL].pRIGHT->pts +
+                                rpos->iALONG * Rail[rpos->iRAIL].pRIGHT->ptsize);
+        p1 = (struct nuvec_s *)(Rail[rpos->iRAIL].pRIGHT->pts +
+                                rpos->i1 * Rail[rpos->iRAIL].pRIGHT->ptsize);
+        right.x = (p0->x + p1->x) * 0.5f;
+        right.y = (p0->y + p1->y) * 0.5f;
+        right.z = (p0->z + p1->z) * 0.5f;
+        mid.x = (left.x + right.x) * 0.5f;
+        mid.y = (left.y + right.y) * 0.5f;
+        mid.z = (left.z + right.z) * 0.5f;
+        if (NuVecDist(&cur, &mid, 0) > 2.5f) {
+            obj->mom.x += (mid.x - cur.x) * RINGPULL;
+            obj->mom.y += (mid.y - cur.y) * RINGPULL;
+            obj->mom.z += (mid.z - cur.z) * RINGPULL;
+        }
+    }
+    if (is_player) {
+        UpdateArrow(&cur, &ring_pos);
+    }
+}
+
+
 void DrawRings(void) {
     struct nugspline_s *spl;
     struct nuvec_s *pos;
@@ -2137,7 +2238,6 @@ void MoveOFFROADER(struct creature_s *plr, struct nupad_s *pad) {
 
 void AnimateSWIMMING(struct creature_s *plr) {
     struct MoveInfo *info = &SwimmingMoveInfo;
-    u64 d;
 
     if ((u32)plr->obj.dead >= 2) {
         plr->obj.anim.newaction = plr->obj.die_action;
@@ -2145,23 +2245,15 @@ void AnimateSWIMMING(struct creature_s *plr) {
                (plr->spin_frame <
                 plr->spin_frames - plr->minfo->SPINRESETFRAMES)) {
         plr->obj.anim.newaction = 0x46;
-    } else if (plr->obj.pad_speed > 0.0f) {
-        plr->obj.anim.newaction = 0x4C;
-    } else if (plr->tap != 0) {
+    } else if ((plr->obj.pad_speed > 0.0f) || (plr->tap != 0) ||
+               (fabs(plr->obj.mom.z) > info->WALKSPEED)) {
         plr->obj.anim.newaction = 0x4C;
     } else {
-        d = fptodp(plr->obj.mom.z);
-        if (dpcmp(d, 0) < 0) {
-            d = dpsub(0, d);
-        }
-        if (dpcmp(d, fptodp(info->WALKSPEED)) > 0) {
-            plr->obj.anim.newaction = 0x4C;
-        } else {
-            plr->obj.anim.newaction = 0x22;
-        }
+        plr->obj.anim.newaction = 0x22;
     }
     UpdateCharacterIdle(plr, 0x73);
 }
+
 
 void AnimateSCOOTER(struct creature_s *plr) {
     if ((u32)plr->obj.dead >= 2) {
@@ -2387,23 +2479,6 @@ void ResetPlayerEvents(void) {
                 }
             }
         }
-    }
-}
-
-void UpdateArrow(struct nuvec_s *target, struct nuvec_s *origin) {
-    struct nuvec_s d;
-    u16 xrot;
-    u16 yrot;
-
-    NuVecSub(&d, target, origin);
-    xrot = -NuAtan2D(d.y, NuFsqrt(d.x * d.x + d.z * d.z));
-    yrot = NuAtan2D(d.x, d.z);
-    if (GameTimer.frame != 0) {
-        arrow_xrot = SeekRot(arrow_xrot, xrot, 2);
-        arrow_yrot = SeekRot(arrow_yrot, yrot, 2);
-    } else {
-        arrow_xrot = xrot;
-        arrow_yrot = yrot;
     }
 }
 
@@ -2716,5 +2791,252 @@ void MoveTub(struct tubinfo_s *tub, s32 LEFT, s32 RIGHT) {
     tub->c->obj.mom = v000;
     if (is_player) {
         VEHICLECONTROL = control;
+    }
+}
+extern struct tracklink_s TubLinkGT[];
+extern struct tracklink_s TubLinkCR[];
+extern s32 plr_tub_tilt;
+extern s32 plr_tub_tilttarget;
+extern s32 plr_tub_tiltlock;
+extern s32 tub_overlap;
+extern struct nuvec_s TempTubPos;
+extern s32 temp_crate_type;
+
+void MoveMINETUB(struct creature_s *plr, struct nupad_s *pad) {
+    struct nuvec_s d;
+    struct nuvec_s pos;
+    struct tubinfo_s *tub[3];
+    struct obj_s obj;
+    struct nugspline_s *spl;
+    struct nuvec_s *p0;
+    struct nuvec_s *p1;
+    s32 LEFT;
+    s32 RIGHT;
+    s32 tilt;
+    s32 sfx;
+    f32 ratio;
+
+    TubLink = (Level == 0x1C) ? TubLinkGT : TubLinkCR;
+    OppTub.c->obj.oldpos = OppTub.c->obj.pos;
+    if (Level == 0x1C && GameTimer.frame < 150) {
+        race_finished = 0;
+    }
+    if (PlrTub.boost != 0) {
+        PlrTub.boost--;
+    }
+    if (Level == 0x1C) {
+        if (GameTimer.frame == 0 || GameTimer.frame == 50 || GameTimer.frame == 100) {
+            sfx = 0x4F;
+        } else {
+            sfx = (GameTimer.frame == 150) ? 0x4C : -1;
+        }
+        if (sfx != -1) {
+            GameSfx(sfx, 0);
+        }
+    }
+    RIGHT = 0;
+    LEFT = 0;
+    if (plr->obj.pad_speed > 0.0f &&
+        (Level != 0x1C || (PlrTub.laps < MAXLAPS && GameTimer.frame >= 150))) {
+        if ((u16)(plr->obj.pad_angle + 0x6AAA) < 0x5555) {
+            LEFT = 1;
+        } else {
+            RIGHT = ((u16)(plr->obj.pad_angle - 0x1556) < 0x5555);
+        }
+    }
+    tilt = plr_tub_tilt;
+    if (plr_tub_tilt < plr_tub_tilttarget) {
+        plr_tub_tilt++;
+    } else if (plr_tub_tilt > plr_tub_tilttarget) {
+        plr_tub_tilt--;
+    }
+    if (plr_tub_tilt == plr_tub_tilttarget) {
+        if (plr_tub_tilt > 0) {
+            if (RIGHT == 0) {
+                plr_tub_tilttarget = 0;
+            }
+        } else if (plr_tub_tilt < 0) {
+            if (LEFT == 0) {
+                plr_tub_tilttarget = 0;
+            }
+        } else {
+            if (plr_tub_tilt != tilt) {
+                NewBuzz(&plr->rumble, 5);
+            }
+            if (LEFT != 0) {
+                plr_tub_tilttarget = -plr_tub_tiltlock;
+            } else if (RIGHT != 0) {
+                plr_tub_tilttarget = plr_tub_tiltlock;
+            }
+        }
+    }
+    RIGHT = 0;
+    LEFT = 0;
+    if (plr_tub_tilt < 0) {
+        LEFT = 1;
+    } else {
+        RIGHT = (plr_tub_tilt > 0);
+    }
+    if (plr_tub_tilttarget < 0) {
+        plr->obj.direction = 3;
+    } else if (plr_tub_tilttarget > 0) {
+        plr->obj.direction = 4;
+    } else {
+        plr->obj.direction = 0;
+    }
+    MoveTub(&PlrTub, LEFT, RIGHT);
+    if (Level == 0x1C) {
+        VEHICLECONTROL = 1;
+        MoveTub(&OppTub, 0, 0);
+        d.x = OppTub.c->obj.pos.x - OppTub.c->obj.oldpos.x;
+        d.z = OppTub.c->obj.pos.z - OppTub.c->obj.oldpos.z;
+        OppTub.c->obj.xz_distance = NuFsqrt(d.x * d.x + d.z * d.z);
+        pos.x = OppTub.c->obj.pos.x;
+        pos.y = OppTub.c->obj.pos.y +
+                (OppTub.c->obj.bot + OppTub.c->obj.top) * OppTub.c->obj.SCALE * 0.5f;
+        pos.z = OppTub.c->obj.pos.z;
+        GetLights(&pos, &OppTub.c->lights, 1);
+        NuVecSub(&d, &OppTub.c->obj.pos, &PlrTub.c->obj.pos);
+        if (d.x * d.x + d.y * d.y + d.z * d.z < 1.0f) {
+            spl = SplTab[63].spl;
+            if (spl != 0) {
+                p0 = (struct nuvec_s *)spl->pts;
+                p1 = (struct nuvec_s *)(spl->pts + spl->ptsize);
+            } else {
+                p1 = 0;
+                p0 = 0;
+            }
+            if (PlrTub.lap_position >= OppTub.lap_position) {
+                tub[0] = &PlrTub;
+                tub[1] = &OppTub;
+            } else {
+                tub[0] = &OppTub;
+                tub[1] = &PlrTub;
+            }
+            if (p0 != 0 && p1 != 0 &&
+                (tub[0]->c->obj.pos.x - p0->x) * (p1->z - p0->z) +
+                (tub[0]->c->obj.pos.z - p0->z) * (p0->x - p1->x) >= 0.0f &&
+                !((tub[1]->c->obj.pos.x - p0->x) * (p1->z - p0->z) +
+                  (tub[1]->c->obj.pos.z - p0->z) * (p0->x - p1->x) >= 0.0f)) {
+                tub[2] = tub[0];
+                tub[0] = tub[1];
+                tub[1] = tub[2];
+            }
+            tub[1]->stall = 1;
+            if (race_finished == 0) {
+                if (tub[0] == &PlrTub) {
+                    tub[0]->boost = (s32)TUBBOOSTFRAMES;
+                    NewRumble(&player->rumble, 0xFF);
+                    NewBuzz(&player->rumble, 0x32);
+                } else {
+                    NewRumble(&player->rumble, 0x7F);
+                    NewBuzz(&player->rumble, 0x19);
+                }
+                if (tub_overlap == 0) {
+                    GameSfx(0x70, &plr->obj.pos);
+                    NewBuzz(&plr->rumble, 10);
+                }
+            }
+            tub_overlap = 1;
+        } else {
+            tub_overlap = 0;
+        }
+        if (race_finished == 0) {
+            if (PlrTub.laps > OppTub.laps ||
+                (PlrTub.laps == OppTub.laps && PlrTub.lap_position >= OppTub.lap_position)) {
+                PlrTub.place = 1;
+                OppTub.place = 2;
+            } else {
+                OppTub.place = 1;
+                PlrTub.place = 2;
+            }
+        }
+    }
+    obj = PlrTub.c->obj;
+    ratio = (f32)plr_tub_tilt / (f32)plr_tub_tiltlock;
+    obj.pos.x += NuTrigTable[(u16)(obj.hdg + 0x4000)] * 0.5f * 2.0f * ratio;
+    obj.pos.y += (f32)abs(plr_tub_tilt) / (f32)plr_tub_tiltlock * 0.25f;
+    obj.pos.z += NuTrigTable[(u16)(obj.hdg - 0x8000)] * 0.5f * 2.0f * ratio;
+    TempTubPos = obj.pos;
+    HitItems(&obj);
+    if (HitCrates(&obj, 1) != 0 && (temp_crate_type == 0x10 || temp_crate_type == 9)) {
+        KillPlayer(&plr->obj, 0xB);
+    }
+    WumpaCollisions(&obj);
+    plr->obj.attack = 0;
+    if (plr->obj.mask != 0 && plr->obj.mask->active >= 3) {
+        plr->obj.attack = 0x80;
+    }
+    plr->obj.attack |= 0x400;
+    if (Level == 4 || GameTimer.frame >= 150) {
+        gamesfx_effect_volume = (s32)(plr->obj.xyz_distance * 32766.0f) / 0.099999994f;
+        if (gamesfx_effect_volume > 0x7FFE) {
+            gamesfx_effect_volume = 0x7FFE;
+        }
+        gamesfx_pitch = (s32)(plr->obj.xyz_distance * 235.0f) / 0.099999994f + 470.0f;
+        GameSfxLoop(0x73, &PlrTub.c->obj.pos);
+    }
+}
+
+
+void AnimateMINETUB(struct creature_s *plr) {
+    struct nuvec_s pos;
+    s32 left;
+    s32 right;
+    s32 left_ang;
+    s32 right_ang;
+
+    if ((u32)plr->obj.dead >= 2) {
+        plr->obj.anim.newaction = plr->obj.die_action;
+    } else if (plr->obj.direction == 3) {
+        plr->obj.anim.newaction = 0x65;
+    } else if (plr->obj.direction == 4) {
+        plr->obj.anim.newaction = 0x67;
+    } else {
+        plr->obj.anim.newaction = 0x68;
+    }
+    UpdateCharacterIdle(plr, 0);
+    if (plr->obj.anim.newaction != plr->obj.die_action) {
+        left = 0x5C;
+        right = 0x5C;
+        left_ang = 0x4000;
+        right_ang = -0x4000;
+        if (plr_tub_tilt < 0) {
+            left_ang = -0x4000;
+            right = 0x5D;
+        } else if (plr_tub_tilt > 0) {
+            left = 0x5C;
+            right = 0x5D;
+            right_ang = 0x4000;
+        } else if (PlrTub.spark != 0) {
+            left = 0x5D;
+            right = 0x5D;
+        }
+        if (Level != 0x1C || race_finished == 0) {
+            pos.x = plr->obj.pos.x + NuTrigTable[(plr->obj.hdg + left_ang) & 0xFFFF] * 0.45f;
+            pos.y = plr->obj.pos.y;
+            pos.z = plr->obj.pos.z + NuTrigTable[(plr->obj.hdg + left_ang + 0x4000) & 0xFFFF] * 0.45f;
+            AddVariableShotDebrisEffect(GDeb[left].i, &pos, 1, 0, (s16)plr->obj.hdg);
+            pos.x = plr->obj.pos.x + NuTrigTable[(plr->obj.hdg + right_ang) & 0xFFFF] * 0.45f;
+            pos.y = plr->obj.pos.y;
+            pos.z = plr->obj.pos.z + NuTrigTable[(plr->obj.hdg + right_ang + 0x4000) & 0xFFFF] * 0.45f;
+            AddVariableShotDebrisEffect(GDeb[right].i, &pos, 1, 0, (s16)plr->obj.hdg);
+        }
+    }
+    if (Level == 0x1C) {
+        if (opptub_wait != 0 && --opptub_wait == 0) {
+            if (opptub_action == 0x62) {
+                opptub_action = (qrand() <= 0x7FFF) ? 0x5F : 0x60;
+                opptub_wait = (s32)(ModelAnimDuration(OppTub.c->obj.character, opptub_action,
+                                                      0.0f, 0.0f) * 50.0f);
+            } else {
+                opptub_action = 0x62;
+                opptub_wait = (qrand() * 50) / 0x10000 + 50;
+            }
+        }
+        OppTub.c->obj.anim.oldaction = OppTub.c->obj.anim.action;
+        OppTub.c->obj.anim.newaction = opptub_action;
+        UpdateAnimPacket(OppTub.c->obj.model, &OppTub.c->obj.anim, 0.59999996f,
+                         OppTub.c->obj.xz_distance);
     }
 }
