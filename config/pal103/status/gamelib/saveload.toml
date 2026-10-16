@@ -25,7 +25,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0077:001aa1c0:saveloadASCallEachFrame"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0077:001aa918:saveloadLoadIcon"
@@ -61,7 +61,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0077:001aabb0:saveloadLoadSlot"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0077:001aacf8:saveloadASFormat"

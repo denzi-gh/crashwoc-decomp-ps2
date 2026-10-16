@@ -272,6 +272,363 @@ s32 saveloadDeleteSlot(s32 slot) {
     return 1;
 }
 
+extern s32 saveload_error;
+extern s32 saveload_cardtype;
+extern s32 saveload_freespace;
+extern s32 saveload_cardformatted;
+extern s32 saveload_cardchanged;
+extern s32 saveload_handle;
+extern s32 D_0062F7AC;
+extern char D_0062F7B0[];
+#define saveload_retries D_0062F7AC
+#define saveload_slotmask D_0062F7B0
+
+void saveloadASCallEachFrame(void) {
+    char path[32];
+    s32 result;
+    s32 done;
+
+    if (saveload_status == 0) {
+        sceMcGetInfo(0, 0, &saveload_cardtype, &saveload_freespace, &saveload_cardformatted);
+        saveload_status = 3;
+        return;
+    }
+    done = sceMcSync(1, 0, &result);
+    if (done == -1) {
+        saveload_retries++;
+        if (saveload_retries >= 5) {
+            saveload_retries = 0;
+            sceMcGetInfo(0, 0, 0, 0, 0);
+            saveload_status = 2;
+        }
+        return;
+    }
+    if (done == 0) {
+        return;
+    }
+    switch (saveload_status) {
+    case 2:
+        if (result == 0) {
+            saveload_error = 0;
+            saveload_status = 1;
+            saveload_cardchanged = 0;
+        } else if (result == -1 || result == -2) {
+            sceMcGetInfo(0, 0, &saveload_cardtype, &saveload_freespace, &saveload_cardformatted);
+            saveload_status = 3;
+            saveload_cardchanged = 1;
+        } else {
+            if (saveload_cardtype != -1) {
+                saveload_cardchanged = 1;
+            } else {
+                saveload_cardchanged = 0;
+            }
+            saveload_cardtype = -1;
+            saveload_freespace = -1;
+            saveload_cardformatted = -1;
+            saveload_status = 1;
+            saveload_error = 0;
+        }
+        break;
+    case 3:
+        if (result == 0) {
+            saveload_error = 0;
+            saveload_status = 1;
+            saveload_cardchanged = 0;
+        } else if (result == -1 || result == -2) {
+            sceMcGetInfo(0, 0, &saveload_cardtype, &saveload_freespace, &saveload_cardformatted);
+            saveload_status = 3;
+            saveload_cardchanged = 1;
+        } else {
+            saveload_cardtype = -1;
+            saveload_freespace = -1;
+            saveload_cardformatted = -1;
+            saveload_status = 1;
+            saveload_cardchanged = 1;
+        }
+        break;
+    case 4:
+        sceMcGetInfo(0, 0, &saveload_cardtype, &saveload_freespace, &saveload_cardformatted);
+        saveload_status = 3;
+        if (result == 0) {
+            saveload_error = 0;
+        } else {
+            saveload_error = 1;
+        }
+        break;
+    case 5:
+        if (result == 0) {
+            sceMcOpen(0, 0, saveload_slotname, SCE_RDONLY);
+            saveload_status = 6;
+        } else {
+            saveload_status = 1;
+            saveload_error = 5;
+        }
+        break;
+    case 6:
+        if (result >= 0) {
+            saveload_handle = result;
+            sceMcRead(result, saveload_data, saveload_datasize);
+            saveload_status = 7;
+        } else {
+            saveload_status = 1;
+            saveload_error = 2;
+        }
+        break;
+    case 7:
+        if (result >= 0) {
+            sceMcClose(saveload_handle);
+            saveload_status = 8;
+        } else {
+            saveload_status = 1;
+            saveload_error = 2;
+        }
+        break;
+    case 8:
+        if (result == 0) {
+            saveload_error = 0;
+            saveload_status = 1;
+        } else {
+            saveload_status = 1;
+            saveload_error = 2;
+        }
+        break;
+    case 9:
+        if (result == -4) {
+            sceMcMkdir(0, 0, saveload_savedir);
+            saveload_status = 14;
+        } else if (result == 0) {
+            sceMcGetDir(0, 0, saveload_gamecode, 0, 0x12, mc_dirtable);
+            saveload_status = 10;
+        } else {
+            saveload_status = 1;
+            saveload_error = 3;
+        }
+        break;
+    case 10:
+        if (result == 1) {
+            sceMcOpen(0, 0, saveload_slotname, 0x200);
+            saveload_status = 11;
+        } else if (result == 0) {
+            sceMcOpen(0, 0, saveload_iconfile, 0x200);
+            saveload_status = 16;
+        } else {
+            saveload_status = 1;
+            saveload_error = 3;
+        }
+        break;
+    case 11:
+        if (result >= 0) {
+            saveload_handle = result;
+            sceMcWrite(result, saveload_data, saveload_datasize);
+            saveload_status = 12;
+        } else {
+            saveload_status = 1;
+            saveload_error = 3;
+        }
+        break;
+    case 12:
+        if (result >= 0) {
+            sceMcClose(saveload_handle);
+            saveload_status = 13;
+        } else {
+            saveload_status = 1;
+            saveload_error = 3;
+        }
+        break;
+    case 13:
+        if (result == 0) {
+            sceMcGetInfo(0, 0, &saveload_cardtype, &saveload_freespace, &saveload_cardformatted);
+            saveload_error = 0;
+            saveload_status = 3;
+        } else {
+            saveload_status = 1;
+            saveload_error = 3;
+        }
+        break;
+    case 14:
+        if (result == 0) {
+            sceMcChdir(0, 0, saveload_savedir, 0);
+            saveload_status = 15;
+        } else {
+            saveload_status = 1;
+            saveload_error = 3;
+        }
+        break;
+    case 15:
+        if (result == 0) {
+            sceMcOpen(0, 0, saveload_iconfile, 0x200);
+            saveload_status = 16;
+        } else {
+            saveload_status = 1;
+            saveload_error = 3;
+        }
+        break;
+    case 16:
+        if (result >= 0) {
+            saveload_handle = result;
+            sceMcWrite(result, iconbuff, iconsize);
+            saveload_status = 17;
+        } else {
+            saveload_status = 1;
+            saveload_error = 3;
+        }
+        break;
+    case 17:
+        if (result >= 0) {
+            sceMcClose(saveload_handle);
+            saveload_status = 18;
+        } else {
+            saveload_status = 1;
+            saveload_error = 3;
+        }
+        break;
+    case 18:
+        if (result == 0) {
+            sceMcOpen(0, 0, saveload_iconsys, 0x200);
+            saveload_status = 19;
+        } else {
+            saveload_status = 1;
+            saveload_error = 3;
+        }
+        break;
+    case 19:
+        if (result >= 0) {
+            saveload_handle = result;
+            sceMcWrite(result, saveload_iconsysdata, 0x3C4);
+            saveload_status = 20;
+        } else {
+            saveload_status = 1;
+            saveload_error = 3;
+        }
+        break;
+    case 20:
+        if (result >= 0) {
+            sceMcClose(saveload_handle);
+            saveload_status = 21;
+        } else {
+            saveload_status = 1;
+            saveload_error = 3;
+        }
+        break;
+    case 21:
+        if (result == 0) {
+            sceMcOpen(0, 0, saveload_gamecode, 0x200);
+            saveload_status = 22;
+        } else {
+            saveload_status = 1;
+            saveload_error = 3;
+        }
+        break;
+    case 22:
+        if (result >= 0) {
+            saveload_handle = result;
+            sceMcWrite(result, &saveload_handle, 4);
+            saveload_status = 23;
+        } else {
+            saveload_status = 1;
+            saveload_error = 3;
+        }
+        break;
+    case 23:
+        if (result >= 0) {
+            sceMcClose(saveload_handle);
+            saveload_status = 24;
+        } else {
+            saveload_status = 1;
+            saveload_error = 3;
+        }
+        break;
+    case 24:
+        if (result >= 0) {
+            sceMcOpen(0, 0, saveload_slotname, 0x200);
+            saveload_status = 11;
+        } else {
+            saveload_status = 1;
+            saveload_error = 3;
+        }
+        break;
+    case 25:
+        if (result == 0) {
+            sceMcDelete(0, 0, saveload_slotname);
+            saveload_status = 26;
+        } else {
+            saveload_status = 1;
+            saveload_error = 4;
+        }
+        break;
+    case 26:
+        if (result == 0) {
+            sprintf(path, saveload_slotmask, saveload_gamecode);
+            sceMcGetDir(0, 0, path, 0, 0x12, mc_dirtable);
+            saveload_status = 27;
+        } else {
+            saveload_status = 1;
+            saveload_error = 4;
+        }
+        break;
+    case 27:
+        if (result > 0) {
+            sceMcGetInfo(0, 0, &saveload_cardtype, &saveload_freespace, &saveload_cardformatted);
+            saveload_error = 0;
+            saveload_status = 3;
+        } else if (result == 0) {
+            sceMcDelete(0, 0, saveload_gamecode);
+            saveload_status = 28;
+        } else {
+            saveload_status = 1;
+            saveload_error = 4;
+        }
+        break;
+    case 28:
+        if (result == 0) {
+            sceMcDelete(0, 0, saveload_iconsys);
+            saveload_status = 29;
+        } else {
+            saveload_status = 1;
+            saveload_error = 4;
+        }
+        break;
+    case 29:
+        if (result == 0) {
+            sceMcDelete(0, 0, saveload_iconfile);
+            saveload_status = 30;
+        } else {
+            saveload_status = 1;
+            saveload_error = 4;
+        }
+        break;
+    case 30:
+        if (result == 0) {
+            sceMcChdir(0, 0, saveload_rootdir, 0);
+            saveload_status = 31;
+        } else {
+            saveload_status = 1;
+            saveload_error = 4;
+        }
+        break;
+    case 31:
+        if (result == 0) {
+            sceMcDelete(0, 0, saveload_gamecode);
+            saveload_status = 32;
+        } else {
+            saveload_status = 1;
+            saveload_error = 4;
+        }
+        break;
+    case 32:
+        if (result == 0) {
+            sceMcGetInfo(0, 0, &saveload_cardtype, &saveload_freespace, &saveload_cardformatted);
+            saveload_error = 0;
+            saveload_status = 3;
+        } else {
+            saveload_status = 1;
+            saveload_error = 4;
+        }
+        break;
+    }
+}
+
+
 s32 saveloadLoadIcon(char *name, void *buf) {
     iconsize = NuFileSize(name);
     iconbuff = buf;
@@ -351,14 +708,9 @@ s32 saveloadCheckSlotsUsed(void) {
 }
 
 
-/* Read slot `slot` of the save into `buf`; returns 1 on success, 0 if the
- * card, the save directory or the slot file is missing or a step fails.
- * Near-match (state=asm): retail picks the final result with movn on `found`
- * where this build uses movz on 0; everything else is exact. */
 s32 saveloadLoadSlot(s32 slot, void *buf, s32 size) {
     char path[32];
     s32 dir;
-    s32 found;
     s32 fd;
 
     if (slot >= 4) {
@@ -371,8 +723,7 @@ s32 saveloadLoadSlot(s32 slot, void *buf, s32 size) {
     sprintf(path, saveload_slotfmt, fname, slot);
     sceMcGetDir(0, 0, path, 0, 0x12, mc_dirtable);
     sceMcSync(0, 0, &mc_result);
-    found = mc_result;
-    if (found != 1) {
+    if (mc_result != 1) {
         return 0;
     }
     sceMcOpen(0, 0, path, SCE_RDONLY);
@@ -391,7 +742,7 @@ s32 saveloadLoadSlot(s32 slot, void *buf, s32 size) {
     if (mc_result < 0) {
         return 0;
     }
-    return found;
+    return 1;
 }
 
 void saveloadASFormat(void) {
