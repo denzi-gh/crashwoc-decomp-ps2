@@ -55,6 +55,8 @@
 #include "numath/numathtypes.h"
 #include "numath/numtx.h"
 #include "numath/nutrig.h"
+#include "numath/nuvec.h"
+#include "numath/nufloat.h"
 #include "nu3d/nugscn.h"
 #include "nu3d/nulight.h"
 #include "nu3d/nuvport.h"
@@ -835,7 +837,7 @@ void MiniGameReset(void)
 }
 
 
-void MiniGame(void)
+void MiniGame(struct nuvec_s *pos)
 {
 }
 
@@ -1420,6 +1422,11 @@ extern struct gtimer_s GameTimer;
 extern void NuRndrSwapScreen(s32 a);
 extern void BGLoadStart(void (*func)(void));
 extern void BGLoadEnd(void);
+extern void BGLoad(void);
+extern void BGLoadSfx(void);
+extern void NuPs2FlushVRam(s32 a, s32 b, s32 c);
+extern void UpdateGameSfx(void);
+extern void NuRndrLine3dDbgFlush(void);
 extern void BGSuspendMain(void);
 extern void NuSoundUpdate(void);
 extern void TimeTunnelRender(void);
@@ -2440,4 +2447,477 @@ int main(int argc, char** argv) {
         Level = new_level;
         number_of_times_played++;
     }
+}
+
+
+extern struct nuvec_s v000;
+extern float NuTrigTable[];
+extern struct nuvec_s nuvec_zero;
+extern struct nuvec_s mg_player_pos;
+extern struct nuvec_s bgload_objpos[2];
+extern struct CharacterModel *bgload_model[2];
+extern float bgload_animtime[2];
+extern s32 mg_player_tilt;
+extern s32 mg_player_spin;
+extern float mg_scoreoff;
+extern float DIVPANEL3D;
+extern float PANEL3DMULX;
+extern float PANEL3DMULY;
+extern float bgload_objstart;
+extern float bgload_objtarg;
+extern float bgload_bumppos;
+extern float bgload_objspd;
+extern u16 bobrate;
+extern float bobscale;
+extern float fallrate;
+extern float maxfallspd;
+extern s32 camtiltrate;
+extern s32 camrotrate;
+extern float camtiltscale;
+extern float camrotscale;
+extern float bump_scale;
+extern s32 bgloadgibberscalecnt;
+extern s32 bgloadgibberscalecntrate;
+extern s32 bgloadgibbercntx;
+extern s32 bgloadgibberratex;
+extern s32 bgloadgibbercnty;
+extern s32 bgloadgibberratey;
+extern s32 gamesfx_effect_volume;
+
+extern s32 D_0062FC40[];
+
+extern void GameSfxLoop(s32 sfx, struct nuvec_s *pos);
+extern void NuHGobjEvalAnim(struct NUHGOBJ_s *hobj, struct nuanimdata_s *data,
+                          float time, s32 nJ, struct NUJOINTANIM_s *pJ,
+                          struct numtx_s *tmtx);
+extern s32 NuHGobjRndrMtxDwa(struct NUHGOBJ_s *hobj, struct numtx_s *m,
+                           s32 nlayers, short *layers, struct numtx_s *tmtx,
+                           float **dwa);
+
+void BGLoad(void)
+{
+    struct numtx_s m[2];
+    struct numtx_s tmtx[256];
+    short layers[5] = {0, 1, 2, 3, 4};
+    float fall_speed[2];
+    struct nucolour3_s ambient = {0.4f, 0.4f, 0.4f};
+    struct nuvec_s light_dir[2];
+    struct nuvec_s down = {0.0f, -1.0f, 0.0f};
+    struct nucolour3_s light_colour[2];
+    s32 light_angle[2];
+    struct nuvec_s bump;
+    s32 phase;
+    s32 done;
+    s32 render_characters;
+    s32 bob_angle;
+    s32 camera_tilt;
+    s32 camera_rotation;
+    s32 bumped;
+    s32 bump_angle;
+    s32 bump_rate;
+    s32 character;
+    s32 old_character;
+    s32 previous_fade;
+    float light_intensity;
+    float score_scale;
+    float anim_step;
+
+    camera_tilt = 0;
+    memset(light_colour, 0, sizeof(light_colour));
+    camera_rotation = 0;
+    memcpy(light_angle, D_0062FC40, sizeof(light_angle));
+    bumped = 0;
+    score_scale = 0.4f;
+    memset(&bump, 0, sizeof(bump));
+    bump_angle = 0;
+    bump_rate = 0;
+    mg_player_pos = v000;
+    mg_player_tilt = 0;
+    mg_player_spin = 0;
+    PANEL3DMULX = (float)SWIDTH / (DIVPANEL3D * ((float)SWIDTH / 640.0f));
+    PANEL3DMULY = (float)SHEIGHT / (DIVPANEL3D * ((float)SHEIGHT / 448.0f));
+    font3d_scene = 0;
+    if (LDATA->flags & 0x40) {
+        LOAD_MESSAGE(D_0061B2E8);
+        CrateMat = CreateAlphaBlendTexture256_32(D_0061B308, 0, 1, 0x100, 0);
+    }
+
+    bgload_model[1] = 0;
+    bgload_animtime[0] = 1.0f;
+    bgload_model[0] = 0;
+    old_character = -1;
+    bgloadchr[1] = 0;
+    bgloadchr[0] = 0;
+    phase = 1;
+    bgloadanim[1] = 0;
+    bgloadanim[0] = 0;
+    bgload_animtime[1] = 1.0f;
+    character = LDATA->character;
+    bgload_objpos[0].y = bgload_objstart;
+    bgload_objpos[1].y = bgload_objstart;
+    mg_frame = -1;
+    mg_scoreoff = 1.0f;
+    MiniGameReset();
+    if (character != last_used_character && last_used_character != -1 &&
+        character != -1) {
+        phase = 0;
+        bgloadlastcharacter = last_used_character;
+        old_character = last_used_character;
+    }
+    if (NuRndrBeginScene(-1) != 0) {
+        NuRndrEndScene();
+        NuRndrSwapScreen(-1);
+    }
+    render_characters = 2;
+    BGLoadStart(BGLoadLevel);
+    anim_step = 0.48f;
+    fadeval = 0xff;
+    fade_rate = -10;
+    fall_speed[0] = 0.0f;
+    bob_angle = 0;
+    done = 0;
+    fall_speed[1] = 0.0f;
+    NuVpSetSize(PS2_REZ_W << 4, PS2_REZ_H << 4);
+    if ((u16)LDATA->character > 1) {
+        render_characters = 0;
+    }
+
+    while (1) {
+        UpdateGameSfx();
+        NuSoundUpdate();
+        if (NuRndrBeginScene(-1) != 0) {
+            NuRndrClear(3, 0, 1.0f);
+            if (render_characters != 0) {
+                light_intensity = NuTrigTable[light_angle[0] & 0xffff];
+                NuVecRotateX(&light_dir[0], &down, light_angle[0]);
+                NuVecRotateY(&light_dir[0], &light_dir[0], 0x2000);
+                light_angle[0] = (light_angle[0] + 0x71c) & 0x7fff;
+                light_colour[0].r = light_intensity;
+                light_intensity = NuTrigTable[light_angle[1] & 0xffff];
+                NuVecRotateX(&light_dir[1], &down, light_angle[1]);
+                NuVecRotateY(&light_dir[1], &light_dir[1], -0x2000);
+                light_angle[1] = (light_angle[1] + 0x71c) & 0x7fff;
+                light_colour[1].b = light_intensity;
+                NuRndrSetDirectionalLights(&light_dir[0], &light_colour[0],
+                    &light_dir[1], &light_colour[1], &light_dir[0],
+                    (struct nucolour3_s *)&nuvec_zero);
+                NuRndrSetAmbientLight(&ambient);
+                pNuCam->mtx = numtx_identity;
+                bgload_campos.y = NuTrigTable[camera_tilt & 0xffff] * camtiltscale;
+                camera_tilt += camtiltrate;
+                bgload_campos.x = NuTrigTable[camera_rotation & 0xffff] * camrotscale;
+                camera_rotation += camrotrate;
+                NuMtxTranslate(&pNuCam->mtx, (struct nuvec_s *)&bgload_campos);
+                NuCameraSet(pNuCam);
+                GameCam[0].vX = *(struct nuvec_s *)&pNuCam->mtx._00;
+
+                if (render_characters != 0 && (u32)character < 2) {
+                    if (bgload_model[character] != 0) {
+                        bgloadchr[character] = bgload_model[character]->obj;
+                    }
+                    switch (phase) {
+                    case 0:
+                        if (bgloadchr[old_character] != 0 &&
+                            bgloadanim[old_character] != 0) {
+                            NuMtxSetTranslation(&m[old_character], &bgload_objpos[old_character]);
+                            MiniGame(0);
+                            NuMtxPreRotateZ(&m[old_character], mg_player_tilt);
+                            NuMtxTranslate(&m[old_character], &mg_player_pos);
+                            bgload_animtime[old_character] += anim_step;
+                            if (bgload_animtime[old_character] > bgloadanim[old_character]->time) {
+                                bgload_animtime[old_character] -= bgloadanim[old_character]->time - 1.0f;
+                            }
+                            if (bgload_objpos[old_character].y > bgload_objtarg) {
+                                bgload_objpos[old_character].y -=
+                                    bgload_objspd < NuFabs(bgload_objpos[old_character].y - bgload_objtarg) * 0.3f
+                                    ? bgload_objspd
+                                    : NuFabs(bgload_objpos[old_character].y - bgload_objtarg) * 0.3f;
+                            }
+                            if (NuFabs(bgload_objpos[old_character].y - bgload_objtarg) < 0.01f) {
+                                phase = 1;
+                            }
+                        }
+                        break;
+                    case 1:
+                        if (bgloadchr[character] != 0 && bgloadanim[character] != 0) {
+                            NuMtxSetTranslation(&m[character], &bgload_objpos[character]);
+                            NuMtxTranslate(&m[character], &bump);
+                            MiniGame(0);
+                            NuMtxPreRotateZ(&m[character], mg_player_tilt);
+                            NuMtxTranslate(&m[character], &mg_player_pos);
+                            bgload_animtime[character] += anim_step;
+                            if (bgload_animtime[character] > bgloadanim[character]->time) {
+                                bgload_animtime[character] -= bgloadanim[character]->time - 1.0f;
+                            }
+                            if (bgload_objpos[character].y > bgload_objtarg) {
+                                bgload_objpos[character].y -=
+                                    bgload_objspd < NuFabs(bgload_objpos[character].y - bgload_objtarg) * 0.3f
+                                    ? bgload_objspd
+                                    : NuFabs(bgload_objpos[character].y - bgload_objtarg) * 0.3f;
+                            }
+                            if (bgload_objpos[character].y < bgload_bumppos &&
+                                bumped == 0 && old_character != -1) {
+                                gamesfx_effect_volume = 0x2aaa;
+                                bumped = 1;
+                                bump_rate = 0x444;
+                                GameSfx(2, 0);
+                            }
+                            if (bump_rate != 0) {
+                                bump_angle += bump_rate;
+                                if (bump_angle > 0x7fff) {
+                                    bump_rate = 0;
+                                }
+                                bump.y = NuTrigTable[bump_angle & 0xffff] * bump_scale;
+                            }
+                            if (NuFabs(bgload_objpos[character].y - bgload_objtarg) < 0.01f) {
+                                bob_angle = 0;
+                                phase = 2;
+                            }
+                        }
+                        /* The departing character is animated during both phases. */
+                        if (old_character != -1 && bgloadchr[old_character] != 0 &&
+                            bgloadanim[old_character] != 0) {
+                            if (bgload_objpos[character].y < bgload_bumppos) {
+                                if (bgload_objpos[old_character].y <= -5.0f) {
+                                    NuHGobjDestroy(bgloadchr[old_character]);
+                                    bgloadchr[old_character] = 0;
+                                    bgloadanim[old_character] = 0;
+                                    goto bgload_render_characters;
+                                }
+                                bgload_objpos[old_character].y -= fall_speed[old_character];
+                                fall_speed[old_character] =
+                                    fall_speed[old_character] + fallrate < maxfallspd
+                                    ? fall_speed[old_character] + fallrate : maxfallspd;
+                            } else {
+                                bgload_objpos[old_character].y = bgload_objtarg +
+                                    NuTrigTable[bob_angle] * bobscale;
+                                bob_angle = (bob_angle + bobrate) & 0xffff;
+                            }
+                            goto bgload_animate_old_character;
+                        }
+                        break;
+                    case 2:
+                        NuMtxSetTranslation(&m[character], &bgload_objpos[character]);
+                        NuMtxPreRotateY(&m[character], mg_player_spin);
+                        NuMtxPreRotateZ(&m[character], mg_player_tilt);
+                        NuMtxTranslate(&m[character], &bump);
+                        MiniGame((struct nuvec_s *)&m[character]._30);
+                        NuMtxTranslate(&m[character], &mg_player_pos);
+                        bgload_objpos[character].y = bgload_objtarg + NuTrigTable[bob_angle] * bobscale;
+                        bob_angle = (bob_angle + bobrate) & 0xffff;
+                        if (bump_rate != 0) {
+                            bump_angle += bump_rate;
+                            if (bump_angle > 0x7fff) {
+                                bump_rate = 0;
+                            }
+                            bump.y = NuTrigTable[bump_angle & 0xffff] * bump_scale;
+                        }
+                        bgload_animtime[character] += anim_step;
+                        if (bgload_animtime[character] > bgloadanim[character]->time) {
+                            bgload_animtime[character] -= bgloadanim[character]->time - 1.0f;
+                        }
+                        if (bgload_complete != 0) {
+                            phase = 3;
+                            fade_rate = 10;
+                        }
+                        if (old_character != -1 && bgloadchr[old_character] != 0 &&
+                            bgloadanim[old_character] != 0) {
+                            if (bgload_objpos[character].y < bgload_bumppos) {
+                                if (bgload_objpos[old_character].y <= -5.0f) {
+                                    NuHGobjDestroy(bgloadchr[old_character]);
+                                    bgloadchr[old_character] = 0;
+                                    bgloadanim[old_character] = 0;
+                                    goto bgload_render_characters;
+                                }
+                                bgload_objpos[old_character].y -= fall_speed[old_character];
+                                fall_speed[old_character] =
+                                    fall_speed[old_character] + fallrate < maxfallspd
+                                    ? fall_speed[old_character] + fallrate : maxfallspd;
+                            } else {
+                                bgload_objpos[old_character].y = bgload_objtarg +
+                                    NuTrigTable[bob_angle] * bobscale;
+                                bob_angle = (bob_angle + bobrate) & 0xffff;
+                            }
+bgload_animate_old_character:
+                            bgload_animtime[old_character] += anim_step;
+                            if (bgload_animtime[old_character] > bgloadanim[old_character]->time) {
+                                bgload_animtime[old_character] -= bgloadanim[old_character]->time - 1.0f;
+                            }
+                            NuMtxSetTranslation(&m[old_character], &bgload_objpos[old_character]);
+                            NuMtxPreRotateZ(&m[old_character], mg_player_tilt);
+                            NuMtxTranslate(&m[old_character], &mg_player_pos);
+                        }
+                        break;
+                    case 3:
+                        NuMtxSetTranslation(&m[character], &bgload_objpos[character]);
+                        NuMtxPreRotateZ(&m[character], mg_player_tilt);
+                        NuMtxTranslate(&m[character], &mg_player_pos);
+                        bgload_objpos[character].y -= fall_speed[character];
+                        fall_speed[character] = fall_speed[character] + fallrate < maxfallspd
+                            ? fall_speed[character] + fallrate : maxfallspd;
+                        if (fadeval == 0xff) {
+                            done = 1;
+                        }
+                        break;
+                    }
+bgload_render_characters:
+                    GameSfxLoop(0x8a, (struct nuvec_s *)&m[character]._30);
+                    if (bgloadchr[character] != 0 && bgloadanim[character] != 0) {
+                        NuHGobjEvalAnim(bgloadchr[character], bgloadanim[character],
+                            bgload_animtime[character], 0, 0, tmtx);
+                        NuHGobjRndrMtxDwa(bgloadchr[character], &m[character], 2, layers, tmtx, 0);
+                    }
+                    if (old_character != -1 && bgloadchr[old_character] != 0 &&
+                        bgloadanim[old_character] != 0) {
+                        NuHGobjEvalAnim(bgloadchr[old_character], bgloadanim[old_character],
+                            bgload_animtime[old_character], 0, 0, tmtx);
+                        NuHGobjRndrMtxDwa(bgloadchr[old_character], &m[old_character], 2, layers, tmtx, 0);
+                    }
+                    MiniGameRender();
+                } else {
+                    done = bgload_complete;
+                }
+                TimeTunnelRender();
+                pNuCam->mtx = numtx_identity;
+                NuCameraSet(pNuCam);
+                if (font3d_scene != 0 && font3d_initialised != 0) {
+                    MiniGameRenderScore();
+                    if (mg_frame < 0) {
+                        mg_frame = 0;
+                    } else {
+                        mg_frame++;
+                    }
+                    DrawGameMessage(tLOADING[Game.language], mg_frame, 0.8f);
+                }
+                NuFabs(NuTrigTable[bgloadgibberscalecnt & 0xffff]);
+                bgloadgibberscalecnt += bgloadgibberscalecntrate;
+                bgloadgibbercntx += bgloadgibberratex;
+                bgloadgibbercnty += bgloadgibberratey;
+                if (font3d_scene != 0 && score_scale > 0.0f) {
+                    score_scale *= 1.08f;
+                }
+            } else {
+                done = bgload_complete;
+            }
+
+            previous_fade = fadeval;
+            if ((LDATA->flags & 0x40) == 0 || CrateMat != 0) {
+                fadeval += fade_rate;
+                if (fadeval > 0xff) {
+                    fadeval = 0xff;
+                } else if (fadeval < 0) {
+                    fadeval = 0;
+                }
+                if (previous_fade < 0xff && fadeval == 0xff) {
+                    fadehack = 1;
+                } else if (fadehack != 0) {
+                    fadehack--;
+                }
+                if (fadeval == 0 || fadeval == 0xff) {
+                    fade_rate = 0;
+                }
+                fadecol = fadeval | (fadeval << 8) | (fadeval << 16) | 0x80000000;
+            } else {
+                fadecol = 0x80ffffff;
+            }
+            if (fadeval != 0) {
+                NuRndrRect2di(0, 0, SWIDTH << 4, SHEIGHT << 3, fadecol, fade_mtl);
+            }
+            UpdateTimer(&GameTimer);
+            NuRndrLine3dDbgFlush();
+            NuRndrEndScene();
+        }
+        BGSuspendMain();
+        NuRndrVu1Draw();
+        NuRndrSwapStreamBuffers();
+        if (done != 0) {
+            break;
+        }
+    }
+    BGLoadEnd();
+    if (NuRndrBeginScene(-1) != 0) {
+        NuRndrEndScene();
+        NuRndrSwapScreen(-1);
+    }
+    if (NuRndrBeginScene(-1) != 0) {
+        NuRndrEndScene();
+        NuRndrSwapScreen(-1);
+    }
+    TimeTunnelClose();
+    fadeval = 0xff;
+}
+
+void BGLoadSfx(void)
+{
+    s32 done;
+
+    fade_mtl = NuMtlCreate(1);
+    fade_mtl->attrib.zmode = 3;
+    fade_mtl->attrib.filter = 1;
+    fade_mtl->attrib.lighting = 2;
+    fade_mtl->attrib.utc = 1;
+    fade_mtl->attrib.vtc = 1;
+    fade_mtl->attrib.colour = 1;
+    fade_mtl->attrib.alpha = 3;
+    NuMtlUpdate(fade_mtl);
+
+    if (NuRndrBeginScene(-1) != 0) {
+        NuRndrEndScene();
+        NuRndrSwapScreen(-1);
+    }
+    NuPs2FlushVRam(0, 0, 0);
+    done = 0;
+    font3d_scene = 0;
+    PANEL3DMULX = (float)SWIDTH / (DIVPANEL3D * ((float)SWIDTH / 640.0f));
+    PANEL3DMULY = (float)SHEIGHT / (DIVPANEL3D * ((float)SHEIGHT / 448.0f));
+    BGLoadStart(BGLoadSfxFn);
+    fade_rate = -10;
+    fadeval = 0xff;
+    mg_frame = -1;
+    NuVpSetSize(PS2_REZ_W << 4, PS2_REZ_H << 4);
+
+    do {
+        if (bgload_complete != 0 && fadeval == 0xff) {
+            done = 1;
+        }
+        pNuCam->mtx = numtx_identity;
+        NuMtxTranslate(&pNuCam->mtx, (struct nuvec_s *)&bgload_campos);
+        NuCameraSet(pNuCam);
+        if (NuRndrBeginScene(-1) != 0) {
+            NuRndrClear(3, 0, 1.0f);
+            UpdateFade();
+            if (font3d_scene != 0 && font3d_initialised != 0) {
+                pNuCam->mtx = numtx_identity;
+                NuCameraSet(pNuCam);
+                if (mg_frame < 0) {
+                    mg_frame = 0;
+                } else {
+                    mg_frame++;
+                }
+                DrawGameMessage(tLOADING[Game.language], mg_frame, 0.0f);
+            }
+            DrawFade();
+            UpdateTimer(&GameTimer);
+            NuRndrEndScene();
+        }
+        BGSuspendMain();
+        NuRndrVu1Draw();
+        NuRndrSwapStreamBuffers();
+        if (bgload_complete == 1) {
+            fade_rate = 10;
+            bgload_complete++;
+        }
+    } while (done == 0);
+
+    BGLoadEnd();
+    if (NuRndrBeginScene(-1) != 0) {
+        NuRndrEndScene();
+        NuRndrSwapScreen(-1);
+    }
+    if (NuRndrBeginScene(-1) != 0) {
+        NuRndrEndScene();
+        NuRndrSwapScreen(-1);
+    }
+    TimeTunnelClose();
+    fadeval = 0xff;
 }
