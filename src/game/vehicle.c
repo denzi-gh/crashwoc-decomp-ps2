@@ -940,7 +940,7 @@ inline void DrawPlane(struct plane_s *plane)
 
 extern struct plane_s PlayerPlane;
 
-void InitPlane(struct nuvec_s *pos, f32 speed, f32 time)
+inline void InitPlane(struct nuvec_s *pos, f32 speed, f32 time)
 {
     memset(&PlayerPlane, 0, sizeof(struct plane_s));
     PlayerPlane.active = 1;
@@ -949,8 +949,8 @@ void InitPlane(struct nuvec_s *pos, f32 speed, f32 time)
     }
     PlayerPlane.pos = *pos;
     PlayerPlane.vel = SetNuVec(0.0f, 0.0f, -speed);
-    PlayerPlane.actiontimer = time;
     PlayerPlane.actionstatus = 0;
+    PlayerPlane.actiontimer = time;
 }
 
 extern void DrawZoffaUFOs(void);
@@ -1169,7 +1169,7 @@ struct gliderbomb_s {
     struct nuvec_s *targetpntr;    /* 0x30 */
     struct nuvec_s *targetvelpntr; /* 0x34 */
     s32 targetmoving;          /* 0x38 */
-    char pad_3C[0x40 - 0x3C];
+    s32 sinking;               /* 0x3C */
     f32 droptimer;             /* 0x40 */
 };
 extern struct gliderbomb_s GliderBombs[10];
@@ -1270,6 +1270,110 @@ void DrawGliderBombs(void)
         count = 30;
     }
 }
+
+extern void SeekHalfLife(f32 *dest, f32 target, f32 halflife, f32 dt);
+extern void SeekHalfLifeNUVEC(struct nuvec_s *cur, struct nuvec_s *target, f32 halflife, f32 dt);
+extern void AddGameDebris(s32 type, struct nuvec_s *pos);
+extern void AddGameDebrisRot(s32 i, struct nuvec_s *pos, s32 n, u16 xrot, u16 yrot);
+extern void MyGameSfxLoopVolPitch(s32 id, struct nuvec_s *pos, s32 vol, s32 pitch);
+extern s32 SINKTORPVOL;
+extern s32 SINKTORPPITCH;
+
+void ProcessGliderBombs(void)
+{
+    struct nuvec_s vel;
+    struct nuvec_s dir;
+    struct nuvec_s rel;
+    struct nuvec_s pos;
+    struct gliderbomb_s *bombs;
+    struct gliderbomb_s *bomb;
+    s32 count;
+    s32 enemy;
+    s32 i;
+    s32 sfx;
+    f32 floor;
+    f32 speed;
+    f32 dist;
+
+    bombs = GliderBombs;
+    count = 10;
+    floor = -30.0f;
+    for (enemy = 0; enemy < 2; enemy++) {
+        for (i = 0; i < count; i++) {
+            bomb = &bombs[i];
+            if (bomb->life == 0) {
+                continue;
+            }
+            bomb->life--;
+            vel = bomb->vel;
+            if (NewRayCast(&bomb->pos, &vel, 0.0f)) {
+                bomb->life = 0;
+                NuVecAdd(&bomb->pos, &bomb->pos, &bomb->vel);
+                AddGameDebris(0x43, &bomb->pos);
+                if (Level == 0x12) {
+                    sfx = (s32)(frand() * 3.0f);
+                    if (sfx >= 3) {
+                        sfx = 0;
+                    }
+                    MyGameSfx(sfx + 0xD7, &bomb->pos, 0x2FFF);
+                }
+                continue;
+            }
+            pos = bomb->pos;
+            AddGameDebrisRot(0x45, &pos, 1, 0, 0);
+            NuVecAdd(&bomb->pos, &bomb->pos, &bomb->vel);
+            if (bomb->pos.y < floor && Level == 0x12) {
+                bomb->pos.y = 0.0f;
+                bomb->life = 0;
+                AddGameDebris(0x35, &bomb->pos);
+                continue;
+            }
+            if (enemy == 0 && bomb->sinking == 0 && bomb->pos.y < 0.0f && Level == 0x12) {
+                bomb->sinking = 1;
+                continue;
+            }
+            if (enemy == 1) {
+                SeekHalfLife(&bomb->vel.x, 0.0f, 3.0f, 0.02f);
+                SeekHalfLife(&bomb->vel.z, 0.0f, 3.0f, 0.02f);
+                bomb->vel.y += bomb->gravity;
+                continue;
+            }
+            if (bomb->targetpntr->y > 100000.0f) {
+                bomb->target = bomb->pos;
+                bomb->target.y = -100.0f;
+                bomb->targetpntr = &bomb->target;
+            }
+            if (ProcessTimer(&bomb->droptimer)) {
+                SeekHalfLife(&bomb->gravity, 0.0f, 0.15f, 0.02f);
+                bomb->vel.y += bomb->gravity;
+                speed = NuVecMag(&bomb->vel);
+                NuVecScale(&dir, &bomb->vel, 1.0f / speed);
+                speed += 0.02f;
+                if (speed > 6.0f) {
+                    speed = 6.0f;
+                }
+                NuVecSub(&rel, bomb->targetpntr, &bomb->pos);
+                dist = NuVecMag(&rel);
+                if (speed != 0.0f) {
+                    NuVecScaleAccum(&rel, bomb->targetvelpntr, dist * 0.02f / speed);
+                }
+                NuVecNorm(&rel, &rel);
+                SeekHalfLifeNUVEC(&dir, &rel, 0.1f, 0.02f);
+                NuVecNorm(&dir, &dir);
+                NuVecScale(&bomb->vel, &dir, speed);
+            } else {
+                bomb->vel.y += bomb->gravity;
+            }
+            if (enemy == 0 && Level == 0x12) {
+                MyGameSfxLoopVolPitch(0xCA, &bomb->pos, SINKTORPVOL, SINKTORPPITCH);
+            }
+        }
+        bombs = EnemyGliderBombs;
+        count = 30;
+        floor = 0.0f;
+    }
+}
+
 
 extern struct nuvec_s GliderBombCollisionPos;
 
@@ -1822,7 +1926,6 @@ void ControlAtlas(struct NEWBUGGY *Atlas, struct nupad_s *Pad, f32 DeltaTime)
 }
 
 extern void ApplyFriction(f32 *val, f32 rate, f32 dt);
-extern void SeekHalfLife(f32 *dest, f32 target, f32 halflife, f32 dt);
 
 /* One physics step: friction, gravity tilted towards the stick, then the
    new target position and velocity. */
@@ -2067,8 +2170,8 @@ s32 LinesIntersectEllipse(struct nuvec_s *Points, s32 NumPoints, struct nuvec_s 
 
 /* Returns 1 if two moving spheres will meet head-on within MaxTime, -1 if
    they meet while travelling the same way, 0 if they miss. */
-s32 PossIntersect(struct nuvec_s *PosA, struct nuvec_s *VelA, struct nuvec_s *PosB,
-                  struct nuvec_s *VelB, f32 Radius, f32 MaxTime)
+inline s32 PossIntersect(struct nuvec_s *PosA, struct nuvec_s *VelA, struct nuvec_s *PosB,
+                         struct nuvec_s *VelB, f32 Radius, f32 MaxTime)
 {
     struct nuvec_s A;
     struct nuvec_s AV;
@@ -2185,7 +2288,6 @@ extern s32 CollideGliderBullets(struct nuvec_s *pos, f32 radius, s32 enemy, f32 
                                 s32 a, s32 b);
 extern void AddScreenWumpa(f32 x, f32 y, f32 z, s32 n);
 extern void ClockOff(void);
-extern void AddGameDebris(s32 type, struct nuvec_s *pos);
 extern void SeekAngHalfLife360f(f32 *dest, f32 target, f32 halflife, f32 dt);
 extern void MyGameSfxLoop(s32 id, struct nuvec_s *pos, s32 vol);
 extern short CRASHTEROIDSSATELLITEVOL;
@@ -2625,7 +2727,6 @@ struct zoffastart_s *FindZoffaRestartPoint(void)
     return 0;
 }
 
-extern void AddGameDebrisRot(s32 i, struct nuvec_s *pos, s32 n, u16 xrot, u16 yrot);
 
 void ZoffaSmoke(struct zoffa_s *ufo)
 {
@@ -2776,7 +2877,6 @@ void DrawAllHovaBlimps(void)
 
 extern f32 Level_GliderRadius;
 extern f32 HovaRad;
-extern void SeekHalfLifeNUVEC(struct nuvec_s *cur, struct nuvec_s *target, f32 halflife, f32 dt);
 extern f32 HovaY;
 extern void AddDeb3(struct nuvec_s *pos, s32 effect, s32 n, struct nuangvec_s *rot);
 
@@ -3295,22 +3395,106 @@ void GliderBombsHitThings(struct gliderflight_s *glider)
     }
 }
 
+void DrawGliderBullets(void)
+{
+    s32 i;
+
+    if (Level == 0x1A) {
+        for (i = 0; i < UsedGliderBulletNum;) {
+            NuRndrGScnObj(ObjTab[0x6F].obj.scene->gobjs[ObjTab[0x6F].obj.special->instance->objid],
+                          &UsedGliderBulletList[i++]->mtx);
+        }
+        for (i = 0; i < UsedEnemyGliderBulletNum;) {
+            NuRndrGScnObj(ObjTab[0x6E].obj.scene->gobjs[ObjTab[0x6E].obj.special->instance->objid],
+                          &UsedEnemyGliderBulletList[i++]->mtx);
+        }
+    } else {
+        for (i = 0; i < UsedGliderBulletNum;) {
+            NuRndrGScnObj(ObjTab[0].obj.scene->gobjs[ObjTab[0].obj.special->instance->objid],
+                          &UsedGliderBulletList[i++]->mtx);
+        }
+        if (Level == 0x24) {
+            for (i = 0; i < UsedEnemyGliderBulletNum;) {
+                NuRndrGScnObj(ObjTab[0xE].obj.scene->gobjs[ObjTab[0xE].obj.special->instance->objid],
+                              &UsedEnemyGliderBulletList[i++]->mtx);
+            }
+        } else {
+            for (i = 0; i < UsedEnemyGliderBulletNum;) {
+                NuRndrGScnObj(ObjTab[0xE].obj.scene->gobjs[ObjTab[0xE].obj.special->instance->objid],
+                              &UsedEnemyGliderBulletList[i++]->mtx);
+            }
+        }
+    }
+}
+
+
+void ProcessGliderBullets(void)
+{
+    struct nuvec_s pos;
+    struct gliderbullet_s **list;
+    struct gliderbullet_s *bullet;
+    s32 count;
+    s32 effect;
+    s32 enemy;
+    s32 n;
+    s32 i;
+    s32 j;
+
+    list = UsedGliderBulletList;
+    count = UsedGliderBulletNum;
+    if (Level == 0x1A) {
+        effect = -1;
+    } else {
+        effect = GDeb[0x2C].i;
+    }
+    for (enemy = 0; enemy < 2; enemy++) {
+        i = 0;
+        for (n = 0; n < count; n++) {
+            bullet = list[i];
+            bullet->mtx._30 += bullet->vel.x;
+            bullet->mtx._31 += bullet->vel.y;
+            bullet->mtx._32 += bullet->vel.z;
+            pos.x = bullet->mtx._30;
+            pos.y = bullet->mtx._31;
+            pos.z = bullet->mtx._32;
+            if (effect != -1 && Paused == 0) {
+                for (j = 0; j < 4; j++) {
+                    AddVariableShotDebrisEffect(effect, &pos, 1, 0, 0);
+                    pos.x -= bullet->vel.x * 0.25f;
+                    pos.y -= bullet->vel.y * 0.25f;
+                    pos.z -= bullet->vel.z * 0.25f;
+                }
+            }
+            if (--bullet->life == 0) {
+                FreeGliderBullet(i, enemy);
+            } else {
+                i++;
+            }
+        }
+        list = UsedEnemyGliderBulletList;
+        effect = -1;
+        count = UsedEnemyGliderBulletNum;
+    }
+}
+
+
 struct asteroid_s {
     s32 active;                /* 0x00 */
     struct nuvec_s pos;        /* 0x04 */
-    char pad_10[0x1C - 0x10];
+    struct nuvec_s vel;        /* 0x10 */
     f32 anglex;                /* 0x1C degrees */
     f32 angley;                /* 0x20 degrees */
-    char pad_24[0x2C - 0x24];
+    f32 spinx;                 /* 0x24 */
+    f32 spiny;                 /* 0x28 */
     struct nuvec_s scale;      /* 0x2C */
     s32 inview;                /* 0x38 */
-    s32 age;                   /* 0x3C */
+    s32 hitpoints;             /* 0x3C */
     char pad_40[0x44 - 0x40];
     s32 stealth;               /* 0x44 drawn shrunk to nothing */
-    char pad_48[0x4C - 0x48];
+    s32 explode;               /* 0x48 */
 };
-extern struct asteroid_s AsteroidList[100];   /* far; InitAsteroid's argument is always 0 */
-extern void InitAsteroid(s32 x);
+extern struct asteroid_s AsteroidList[100];
+extern void InitAsteroid(s32 stealth);
 
 void DrawAsteroid(struct asteroid_s *asteroid)
 {
@@ -3330,7 +3514,7 @@ void DrawAsteroid(struct asteroid_s *asteroid)
     }
 }
 
-struct asteroid_s *FindFreeAsteroid(s32 passes)
+inline struct asteroid_s *FindFreeAsteroid(s32 passes)
 {
     s32 i;
     s32 pass;
@@ -3342,7 +3526,7 @@ struct asteroid_s *FindFreeAsteroid(s32 passes)
     }
     for (pass = 0; pass < passes; pass++) {
         for (i = 0; i < 100; i++) {
-            if (AsteroidList[i].age <= pass && AsteroidList[i].inview == 0) {
+            if (AsteroidList[i].hitpoints <= pass && AsteroidList[i].inview == 0) {
                 return &AsteroidList[i];
             }
         }
@@ -3353,7 +3537,7 @@ struct asteroid_s *FindFreeAsteroid(s32 passes)
 extern f32 Level_GliderFloor;
 extern f32 Level_GliderCeiling;
 
-struct nuvec_s GetRandomGliderLevelEdgePoint(void)
+inline struct nuvec_s GetRandomGliderLevelEdgePoint(void)
 {
     struct nuvec_s point = {0.0f, 0.0f, Level_GliderRadius};
 
@@ -3361,6 +3545,553 @@ struct nuvec_s GetRandomGliderLevelEdgePoint(void)
     point.y = Level_GliderFloor + frand() * (Level_GliderCeiling - Level_GliderFloor);
     return point;
 }
+
+void InitAsteroid(s32 stealth)
+{
+    struct asteroid_s *asteroid;
+
+    asteroid = FindFreeAsteroid(3);
+    if (asteroid == 0 || asteroid->active != 0) {
+        return;
+    }
+    memset(asteroid, 0, sizeof(struct asteroid_s));
+    asteroid->pos = GetRandomGliderLevelEdgePoint();
+    {
+        struct nuvec_s target = GetRandomGliderLevelEdgePoint();
+
+        NuVecSub(&target, &target, &asteroid->pos);
+        NuVecNorm(&target, &target);
+        NuVecScale(&asteroid->vel, &target, 10.0f);
+    }
+    asteroid->anglex = frand() * 360.0f;
+    asteroid->angley = frand() * 360.0f;
+    asteroid->spinx = (frand() - 0.5f) * 72.0f * 0.02f;
+    asteroid->spiny = (frand() - 0.5f) * 72.0f * 0.02f;
+    asteroid->stealth = stealth;
+    asteroid->active = 1;
+    asteroid->hitpoints = 3;
+    asteroid->scale = SetNuVec(2.0f, 2.0f, 2.0f);
+    NuVecScale(&asteroid->vel, &asteroid->vel, 0.02f);
+}
+
+
+extern struct asteroid_s *ActiveAsteroidList[100];
+extern s32 ActiveAsteroidListNum;
+
+void ProcessAsteroid(struct asteroid_s *asteroid)
+{
+    struct nuvec_s pos;
+    struct asteroid_s *piece;
+    s32 outside;
+    s32 i;
+    f32 dot;
+    f32 speed;
+
+    ActiveAsteroidList[ActiveAsteroidListNum++] = asteroid;
+    if (asteroid->inview == 0) {
+        NuVecMagSqr(&asteroid->pos);
+        dot = DotProduct(&asteroid->pos, &asteroid->vel);
+        outside = 0;
+        asteroid->stealth = 0;
+        if (asteroid->pos.x * asteroid->pos.x + asteroid->pos.z * asteroid->pos.z
+                > Level_GliderRadius * Level_GliderRadius
+            || asteroid->pos.y < Level_GliderFloor || asteroid->pos.y > Level_GliderCeiling) {
+            outside = 1;
+        }
+        if (outside && dot >= 0.0f) {
+            asteroid->stealth = 1;
+            NuVecSub(&asteroid->pos, &v000, &asteroid->pos);
+            pos = GetRandomGliderLevelEdgePoint();
+            speed = NuVecMag(&asteroid->vel);
+            NuVecSub(&pos, &pos, &asteroid->pos);
+            NuVecNorm(&pos, &pos);
+            NuVecScale(&asteroid->vel, &pos, speed);
+        }
+    }
+    NuVecAdd(&asteroid->pos, &asteroid->pos, &asteroid->vel);
+    asteroid->anglex = Rationalise360f(asteroid->anglex + asteroid->spinx);
+    asteroid->angley = Rationalise360f(asteroid->angley + asteroid->spiny);
+    pos = asteroid->pos;
+    if (CollideGliderBullets(&asteroid->pos, asteroid->scale.x + asteroid->scale.x, 1, 1.0f, 0, 0)) {
+        asteroid->explode = 1;
+    }
+    if (CollideGliderBullets(&asteroid->pos, asteroid->scale.x + asteroid->scale.x, 0, 1.0f, 0, 0)) {
+        asteroid->explode = 1;
+    }
+    if (asteroid->explode == 0) {
+        return;
+    }
+    if (asteroid->inview != 0) {
+        AddGameDebris(0x18, &asteroid->pos);
+        MyGameSfx(0xCD, &pos, 0x7FFF);
+    }
+    asteroid->explode = 0;
+    if (asteroid->hitpoints != 0) {
+        struct nuvec_s scale;
+        struct nuvec_s dirs[3];
+
+        NuVecScale(&asteroid->scale, &asteroid->scale, 0.5f);
+        NuVecSub(&scale, SetNuVecPntr(2.0f, 2.0f, 2.0f), &asteroid->scale);
+        NuMtxSetScale(&mTEMP, &scale);
+        NuMtxRotateY(&mTEMP, frand() * 360.0f * 182.0444489f);
+        NuMtxRotateX(&mTEMP, frand() * 360.0f * 182.0444489f);
+        dirs[0] = SetNuVec(0.0f, 0.0f, 0.099999994f);
+        dirs[1] = SetNuVec(0.0f, 0.099999994f, 0.0f);
+        dirs[2] = SetNuVec(0.099999994f, 0.0f, 0.0f);
+        for (i = 0; i < 3; i++) {
+            if (i < 2) {
+                piece = FindFreeAsteroid(asteroid->hitpoints - 1);
+                if (piece == 0) {
+                    continue;
+                }
+                *piece = *asteroid;
+            } else {
+                piece = asteroid;
+            }
+            piece->hitpoints--;
+            NuVecMtxRotate(&piece->vel, &dirs[i], &mTEMP);
+            NuVecScaleAccum(&piece->pos, &piece->vel, 25.0f);
+        }
+    }
+    asteroid->active = 0;
+}
+
+
+void CheckForPotentialMidAirCollisions(void)
+{
+    struct asteroid_s *asteroid;
+    s32 hit;
+    s32 i;
+    s32 j;
+
+    if (Level == 0x1A) {
+        for (i = 0; i < 4; i++) {
+            if (EnemyZoffa[i].active == 0 || EnemyZoffa[i].active == 3) {
+                continue;
+            }
+            for (j = 0; j < ActiveAsteroidListNum; j++) {
+                asteroid = ActiveAsteroidList[j];
+                hit = PossIntersect(&EnemyZoffa[i].pos, &EnemyZoffa[i].vel, &asteroid->pos,
+                                    &asteroid->vel, 2.0f, 1.0f);
+                if (hit) {
+                    EnemyZoffa[i].active = 3;
+                    if (i & 1) {
+                        EnemyZoffa[i].destyaw = EnemyZoffa[i].yaw + 90.0f;
+                    } else {
+                        EnemyZoffa[i].destyaw = EnemyZoffa[i].yaw - 90.0f;
+                    }
+                }
+            }
+        }
+    }
+    for (i = 0; i < 4; i++) {
+        if (EnemyZoffa[i].active == 0 || EnemyZoffa[i].active == 3) {
+            continue;
+        }
+        for (j = 0; j < 4; j++) {
+            if (i == j || EnemyZoffa[j].active == 0) {
+                continue;
+            }
+            hit = PossIntersect(&EnemyZoffa[i].pos, &EnemyZoffa[i].vel, &EnemyZoffa[j].pos,
+                                &EnemyZoffa[j].vel, 2.0f, 2.0f);
+            if (hit) {
+                EnemyZoffa[i].active = 3;
+                if (hit == 1 || i < j) {
+                    EnemyZoffa[i].destyaw = EnemyZoffa[i].yaw + 90.0f;
+                } else {
+                    EnemyZoffa[i].destyaw = EnemyZoffa[i].yaw - 90.0f;
+                }
+            }
+        }
+    }
+    for (i = 0; i < 4; i++) {
+        if (EnemyZoffa[i].active == 0 || EnemyZoffa[i].active == 3) {
+            continue;
+        }
+        if (DotProduct(&EnemyZoffa[i].vel, &PlayerGlider.Velocity) >= 0.0f) {
+            hit = PossIntersect(&EnemyZoffa[i].pos, &EnemyZoffa[i].vel, &PlayerGlider.Position,
+                                &PlayerGlider.Velocity, 3.0f, 2.0f);
+            if (hit) {
+                EnemyZoffa[i].active = 3;
+                if (hit == 1 || i < 2) {
+                    EnemyZoffa[i].destyaw = EnemyZoffa[i].yaw + 90.0f;
+                } else {
+                    EnemyZoffa[i].destyaw = EnemyZoffa[i].yaw - 90.0f;
+                }
+            }
+        }
+    }
+    if (Level == 0xD) {
+        for (i = 0; i < 4; i++) {
+            if (EnemyZoffa[i].active == 0 || EnemyZoffa[i].active == 3) {
+                continue;
+            }
+            for (j = 0; j < 6; j++) {
+                if (HovaBlimp[j].active == 0) {
+                    continue;
+                }
+                hit = PossIntersect(&EnemyZoffa[i].pos, &EnemyZoffa[i].vel, &HovaBlimp[j].pos,
+                                    &HovaBlimp[j].vel, 2.0f, 2.0f);
+                if (hit) {
+                    EnemyZoffa[i].active = 3;
+                    if (hit == 1 || i < j) {
+                        EnemyZoffa[i].destyaw = EnemyZoffa[i].yaw + 90.0f;
+                    } else {
+                        EnemyZoffa[i].destyaw = EnemyZoffa[i].yaw - 90.0f;
+                    }
+                }
+            }
+        }
+    }
+    if (Level == 0x1A) {
+        for (i = 0; i < 4; i++) {
+            if (EnemyZoffa[i].active == 0 || EnemyZoffa[i].active == 3) {
+                continue;
+            }
+            for (j = 0; j < 3; j++) {
+                if (SpaceStationList[j].active == 0) {
+                    continue;
+                }
+                hit = PossIntersect(&EnemyZoffa[i].pos, &EnemyZoffa[i].vel, &SpaceStationList[j].pos,
+                                    &SpaceStationList[j].vel, 12.0f, 2.0f);
+                if (hit) {
+                    EnemyZoffa[i].active = 3;
+                    if (hit == 1 || i < j) {
+                        EnemyZoffa[i].destyaw = EnemyZoffa[i].yaw + 90.0f;
+                    } else {
+                        EnemyZoffa[i].destyaw = EnemyZoffa[i].yaw - 90.0f;
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+extern s32 D_006332A0;
+extern s32 D_006332A4;
+extern s32 D_006332A8;
+#define ZoffaCollisionCounter D_006332A0
+#define ZoffaTeleportIndx D_006332A4
+#define CurrentAggressor D_006332A8
+extern s32 InvincibilityCHEAT;
+extern s32 VehicleLevelImmune;
+extern s32 BEENHITBIGBUZZTIME;
+extern s32 BEENHITBIGRUMTIME;
+extern f32 Level_DeadTime;
+extern struct nuvec_s GliderCollPoints[5];
+extern f32 BigRad;
+extern f32 PropRad;
+extern f32 PropY;
+extern f32 PropYOff;
+extern struct nuvec_s D_005A6E70;
+#define ZoffaRayDir D_005A6E70
+
+static inline s32 SphereCollideDiff(struct nuvec_s *a, struct nuvec_s *b, f32 radius, f32 yscale,
+                                    struct nuvec_s *diff)
+{
+    diff->x = a->x - b->x;
+    diff->y = (a->y - b->y) * yscale;
+    diff->z = a->z - b->z;
+    return diff->x * diff->x + diff->y * diff->y + diff->z * diff->z <= radius * radius;
+}
+
+static inline void GetGliderCollPoints(struct nuvec_s *points)
+{
+    struct numtx_s m;
+    s32 i;
+
+    NuMtxSetRotationZ(&m, PlayerGlider.TiltZ * 182.0444489f);
+    NuMtxRotateX(&m, (PlayerGlider.TiltX + 15.0f) * 182.0444489f);
+    NuMtxRotateY(&m, PlayerGlider.AngleY * 182.0444489f);
+    NuMtxTranslate(&m, &PlayerGlider.Position);
+    for (i = 0; i < 5; i++) {
+        NuVecMtxTransform(&points[i], &GliderCollPoints[i], &m);
+    }
+}
+
+void CheckGliderCollisions(void)
+{
+    struct nuvec_s diff;
+    struct nuvec_s diff2;
+    struct nuvec_s diff3;
+    struct nuvec_s diff4;
+    struct nuvec_s diff5;
+    struct asteroid_s *asteroid;
+    struct zoffa_s *ufo;
+    struct satellite_s *sat;
+    struct spacestation_s *station;
+    s32 damage;
+    s32 hits;
+    s32 hit;
+    s32 i;
+    s32 j;
+    f32 dot;
+    f32 speed;
+
+    if (Level == 0x1A) {
+        for (i = 1; i < ActiveAsteroidListNum; i++) {
+            for (j = 0; j < i; j++) {
+                struct asteroid_s *rock = ActiveAsteroidList[i];
+                struct asteroid_s *other = ActiveAsteroidList[j];
+                f32 reach;
+                f32 range;
+
+                reach = (rock->scale.x + other->scale.x) * 2.0f;
+                range = reach * reach;
+                NuVecSub(&diff, &rock->pos, &other->pos);
+                if (NuVecMagSqr(&diff) < range) {
+                    if (rock->scale.x >= other->scale.x) {
+                        other->explode = 1;
+                    }
+                    if (rock->scale.x <= other->scale.x) {
+                        rock->explode = 1;
+                    }
+                }
+            }
+        }
+        for (i = 0; i < 4; i++) {
+            ufo = &EnemyZoffa[i];
+            if (ufo->active == 0) {
+                continue;
+            }
+            for (j = 0; j < ActiveAsteroidListNum; j++) {
+                f32 reach;
+                f32 range;
+
+                asteroid = ActiveAsteroidList[j];
+                reach = asteroid->scale.x * 2.0f + 1.0f;
+                range = reach * reach;
+                NuVecSub(&diff2, &asteroid->pos, &ufo->pos);
+                if (NuVecMagSqr(&diff2) < range) {
+                    asteroid->explode = 1;
+                    ufo->explode = 1;
+                }
+            }
+        }
+        for (i = 0; i < 9; i++) {
+            sat = &SatelliteList[i];
+            if (sat->active == 0) {
+                continue;
+            }
+            for (j = 0; j < ActiveAsteroidListNum; j++) {
+                f32 reach;
+                f32 range;
+
+                asteroid = ActiveAsteroidList[j];
+                reach = asteroid->scale.x * 2.0f + 3.0f;
+                range = reach * reach;
+                NuVecSub(&diff3, &asteroid->pos, &sat->pos);
+                if (NuVecMagSqr(&diff3) < range) {
+                    asteroid->explode = 1;
+                }
+            }
+        }
+        for (i = 0; i < 3; i++) {
+            station = &SpaceStationList[i];
+            if (station->active == 0) {
+                continue;
+            }
+            for (j = 0; j < ActiveAsteroidListNum; j++) {
+                f32 reach;
+                f32 range;
+
+                asteroid = ActiveAsteroidList[j];
+                reach = asteroid->scale.x * 2.0f + 8.0f;
+                range = reach * reach;
+                NuVecSub(&diff4, &asteroid->pos, &station->pos);
+                if (NuVecMagSqr(&diff4) < range) {
+                    asteroid->explode = 1;
+                }
+            }
+        }
+        if (PlayerGlider.ImmuneAsteroidsTimer == 0.0f) {
+            for (j = 0; j < ActiveAsteroidListNum; j++) {
+                struct asteroid_s *rock = ActiveAsteroidList[j];
+
+                if (!SphereCollideDiff(&rock->pos, &PlayerGlider.Position,
+                                       rock->scale.x * 2.0f + 0.5f, 1.0f, &diff5)) {
+                    continue;
+                }
+                rock->explode = 1;
+                hits = rock->hitpoints;
+                damage = (hits * hits + hits) * (hits + 2) / 2;
+                if (damage != 0) {
+                    PlayerGlider.ImmuneAsteroidsTimer = 1.0f;
+                }
+                if (InvincibilityCHEAT == 0 && VehicleLevelImmune == 0) {
+                    PlayerGlider.HitPoints -= damage;
+                }
+                if (Level == 0x1A) {
+                    MyGameSfx(0xD9, &PlayerGlider.Position, 0x7FFF);
+                }
+                if (damage != 0 && FlyingLevelExtro == 0) {
+                    NewBuzz(&player->rumble, (BEENHITBIGBUZZTIME * 25) / damage);
+                    NewRumble(&player->rumble, (BEENHITBIGRUMTIME * 25) / damage);
+                }
+                if (PlayerGlider.HitPoints <= 0) {
+                    PlayerGlider.TerminalDive = 1;
+                    PlayerGlider.HitPoints = 0;
+                    PlayerGlider.HitTimer = Level_DeadTime;
+                }
+            }
+        }
+    }
+    for (i = 0; i < 4; i++) {
+        if (EnemyZoffa[i].active == 0
+            || !SphereCollideDiff(&EnemyZoffa[i].pos, &PlayerGlider.Position, 1.0f, 1.0f, &diff)) {
+            continue;
+        }
+        if (EnemyZoffa[i].terminaldive == 0) {
+            if (Level == 0x1A) {
+                MyGameSfx(0xD9, &PlayerGlider.Position, 0x7FFF);
+            }
+            if (InvincibilityCHEAT == 0 && VehicleLevelImmune == 0) {
+                PlayerGlider.HitPoints -= 25;
+            }
+            if (FlyingLevelExtro == 0) {
+                NewBuzz(&player->rumble, BEENHITBIGBUZZTIME);
+                NewRumble(&player->rumble, BEENHITBIGRUMTIME);
+            }
+            if (PlayerGlider.HitPoints <= 0) {
+                PlayerGlider.TerminalDive = 1;
+                PlayerGlider.HitPoints = 0;
+                PlayerGlider.HitTimer = Level_DeadTime;
+            }
+        }
+        EnemyZoffa[i].explode = 1;
+    }
+    if (Level == 0x1A) {
+        for (i = 0; i < 9; i++) {
+            if (SatelliteList[i].active == 0
+                || !SphereCollideDiff(&SatelliteList[i].pos, &PlayerGlider.Position, 3.5f, 0.333f, &diff)) {
+                continue;
+            }
+            SatelliteList[i].destroyed = 1;
+            if (InvincibilityCHEAT == 0 && VehicleLevelImmune == 0) {
+                PlayerGlider.HitPoints -= 25;
+            }
+            if (Level == 0x1A) {
+                MyGameSfx(0xD9, &PlayerGlider.Position, 0x7FFF);
+            }
+            NewBuzz(&player->rumble, BEENHITBIGBUZZTIME);
+            NewRumble(&player->rumble, BEENHITBIGRUMTIME);
+            if (PlayerGlider.HitPoints <= 0) {
+                PlayerGlider.HitPoints = 0;
+                PlayerGlider.TerminalDive = 1;
+                PlayerGlider.HitTimer = Level_DeadTime;
+            }
+        }
+    } else {
+        struct nuvec_s outline[6];
+        struct nuvec_s *points = outline;
+
+        GetGliderCollPoints(points);
+        points[5] = outline[0];
+        for (i = 0; i < 6; i++) {
+            if (HovaBlimp[i].active == 0
+                || !SphereCollideDiff(&HovaBlimp[i].pos, &PlayerGlider.Position, BigRad, 1.0f, &diff2)) {
+                continue;
+            }
+            if (LinesIntersectEllipse(points, 5, &HovaBlimp[i].pos, HovaRad + 3.0f, HovaY)) {
+                hit = 1;
+            } else {
+                diff = HovaBlimp[i].pos;
+                diff.y += PropYOff;
+                hit = LinesIntersectEllipse(points, 5, &diff, PropRad + 3.0f, PropY) != 0;
+            }
+            if (hit) {
+                NuVecSub(&diff2, &PlayerGlider.Position, &HovaBlimp[i].pos);
+                NuVecNorm(&diff2, &diff2);
+                dot = DotProduct(&diff2, &PlayerGlider.Velocity);
+                if (dot < 0.0f) {
+                    NuVecScaleAccum(&PlayerGlider.Velocity, &diff2, 0.2f - dot);
+                    speed = NuVecMag(&PlayerGlider.Velocity);
+                    if (speed > 14.0f) {
+                        NuVecScale(&PlayerGlider.Velocity, &PlayerGlider.Velocity, 14.0f / speed);
+                    }
+                    if (PlayerGlider.OverideTiltZ == 0.0f) {
+                        if (diff2.z * PlayerGlider.Velocity.x + diff2.y * PlayerGlider.Velocity.z > 0.0f) {
+                            PlayerGlider.DestTiltZ = -60.0f;
+                        } else {
+                            PlayerGlider.DestTiltZ = 60.0f;
+                        }
+                    }
+                    PlayerGlider.OverideTiltZ = 0.5f;
+                    NewRumble(&player->rumble, BEENHITBIGRUMTIME);
+                    NewBuzz(&player->rumble, BEENHITBIGBUZZTIME);
+                }
+            }
+        }
+        PlayerGlider.InTornado = 0;
+        if (PlayerGlider.TerminalDive == 0) {
+            for (i = 0; i < 6; i++) {
+                if (TornadoList[i].active != 0
+                    && SphereCollideDiff(&TornadoList[i].pos, &PlayerGlider.Position,
+                                         TornadoList[i].scale * 5.0f, 1.0f, &diff2)) {
+                    PlayerGlider.InTornadoScale = TornadoList[i].scale;
+                    PlayerGlider.InTornado = 1;
+                }
+            }
+        }
+    }
+    for (i = 0; i < 3; i++) {
+        if (EnemyZoffa[i].active == 0) {
+            continue;
+        }
+        for (j = i + 1; j < 4; j++) {
+            if (EnemyZoffa[j].active == 0
+                || !SphereCollideDiff(&EnemyZoffa[i].pos, &EnemyZoffa[j].pos, 1.0f, 1.0f, &diff2)) {
+                continue;
+            }
+            if (frand() < 0.5f) {
+                EnemyZoffa[i].terminaldive = 2;
+                EnemyZoffa[j].explode = 1;
+            } else {
+                EnemyZoffa[i].explode = 1;
+                EnemyZoffa[j].terminaldive = 2;
+            }
+        }
+    }
+    if (Level == 0x1A) {
+        for (i = 0; i < 4; i++) {
+            if (EnemyZoffa[i].active == 0) {
+                continue;
+            }
+            for (j = 0; j < 9; j++) {
+                if (SatelliteList[j].active != 0
+                    && SphereCollideDiff(&EnemyZoffa[i].pos, &SatelliteList[j].pos, 3.0f, 0.6666667f, &diff2)) {
+                    EnemyZoffa[i].explode = 1;
+                }
+            }
+        }
+    } else if (Level == 0xD) {
+        for (i = 0; i < 4; i++) {
+            if (EnemyZoffa[i].active == 0) {
+                continue;
+            }
+            for (j = 0; j < 6; j++) {
+                if (HovaBlimp[j].active != 0
+                    && SphereCollideDiff(&EnemyZoffa[i].pos, &HovaBlimp[j].pos, HovaRad + 0.5f,
+                                         1.0f / HovaY, &diff2)) {
+                    EnemyZoffa[i].explode = 1;
+                }
+            }
+        }
+    }
+    if (Level == 0xD || Level == 0x12) {
+        if (EnemyZoffa[ZoffaCollisionCounter].active != 0
+            && (NewRayCast(&EnemyZoffa[ZoffaCollisionCounter].pos, &ZoffaRayDir, 0.8f)
+                || EnemyZoffa[ZoffaCollisionCounter].pos.y < 6.0f)) {
+            EnemyZoffa[ZoffaCollisionCounter].explode = 1;
+        }
+        ZoffaCollisionCounter++;
+        if (ZoffaCollisionCounter >= 4) {
+            ZoffaCollisionCounter = 0;
+        }
+    }
+}
+
 
 inline s32 CountAsteroids(void)
 {
@@ -3397,7 +4128,6 @@ inline void InitAsteroids(void)
 
 
 extern s32 AsteroidDebug;
-extern void ProcessAsteroid(struct asteroid_s *asteroid);
 
 inline void ProcessAsteroids(void)
 {
@@ -3545,13 +4275,8 @@ void UnleashLighteningHail(struct nuvec_s *pos, s32 attnum)
 extern f32 HAILHIDDENTIME;
 extern f32 HailFallSpeed;
 extern f32 HAILCOLLRAD;
-extern s32 InvincibilityCHEAT;
-extern s32 VehicleLevelImmune;
-extern s32 BEENHITBIGBUZZTIME;
-extern s32 BEENHITBIGRUMTIME;
 extern f32 GLIDERHITSOUNDFREQUENCY;
 extern s32 GLIDERHITSOUNDOTHERID;
-extern f32 Level_DeadTime;
 
 /* Damages the player's glider by `hits` if it is within sqrt(rad2) of `pos`;
    returns whether it was hit. */
@@ -4044,10 +4769,10 @@ inline void InitGlider(struct gliderflight_s *Glider, struct nuvec_s *StartPos, 
     if (StartPos != 0) {
         Glider->Position = *StartPos;
     }
-    Glider->AngleY = StartAng;
-    Glider->HitPoints = 100;
     Glider->DestTiltX = Glider->TiltX = 0.0f;
     Glider->DestTiltZ = Glider->TiltZ = 0.0f;
+    Glider->AngleY = StartAng;
+    Glider->HitPoints = 100;
     Glider->BarrelRoll = 0;
     Glider->FireTimer = 0.0f;
     Glider->RailAngle = 0.0f;
@@ -4093,12 +4818,6 @@ static inline void InitGliderBombs(void)
     memset(EnemyGliderBombs, 0, sizeof(EnemyGliderBombs));
 }
 
-extern s32 D_006332A0;
-extern s32 D_006332A4;
-extern s32 D_006332A8;
-#define ZoffaCollisionCounter D_006332A0
-#define ZoffaTeleportIndx D_006332A4
-#define CurrentAggressor D_006332A8
 
 static inline void InitZoffaUFOs(void)
 {
@@ -4129,6 +4848,44 @@ extern struct nuvec_s CrashteroidsStart;
 extern f32 CrashteroidsStartAngle;
 extern void ResetGameCameras(struct cammtx_s *cam, s32 n);
 extern void InitBigGuns(void);
+
+extern s32 new_mode;
+extern s32 new_level;
+extern s32 D_0063329C;
+#define glider_restart_timer D_0063329C
+extern struct nuvec_s D_005864F8;
+#define CameraPos D_005864F8
+extern struct nuvec_s FarmCameraStart;
+extern struct nuvec_s FarmZepplinStart;
+extern f32 FarmZepplinSpeed;
+extern f32 FarmZepplinTimer;
+extern void ResetTimeTrial(void);
+
+void FarmReset(s32 playerdead)
+{
+    if (new_mode == -1 && new_level == -1) {
+        Level_GliderCentreX = 0.0f;
+        Level_GliderSpeed = 13.0f;
+        CameraPos = FarmCameraStart;
+        Level_GliderFloor = 16.0f;
+        Level_GliderCeiling = 66.0f;
+        Level_GliderRadius = 177.5f;
+        Level_DeadTime = 8.0f;
+        glider_restart_timer = 0;
+        Level_GliderCentreZ = 0.0f;
+        InitGlider(&PlayerGlider, 0, 0.0f);
+        PlayerGlider.AutoPilot = 1;
+        InitZoffaUFOs();
+        InitGliderBullets();
+        InitialiseHovaBlimps();
+        InitPlane(&FarmZepplinStart, FarmZepplinSpeed, FarmZepplinTimer);
+        GliderCamHighTimer = 1.0f;
+        ResetGameCameras(&GameCam[0], 1);
+        ACTIVEBLIMPCOUNT = 6;
+        ResetTimeTrial();
+    }
+}
+
 
 void WeatherResearchReset(s32 playerdead)
 {
@@ -4301,10 +5058,6 @@ extern s32 TimeTrial;
 extern s32 Adventure;
 extern s32 LivesLost;
 extern s32 GameMode;
-extern s32 new_mode;
-extern s32 new_level;
-extern s32 D_0063329C;
-#define glider_restart_timer D_0063329C
 
 static inline s8 GrabAnotherLocator(char *list, struct NUPOINTOFINTEREST_s **locators)
 {
@@ -4534,7 +5287,7 @@ struct gunboat_s {
 };
 extern struct gunboat_s GunBoatList[];
 
-void InitGunBoat(struct nuvec_s *pos, f32 yaw, s32 character)
+inline void InitGunBoat(struct nuvec_s *pos, f32 yaw, s32 character)
 {
     struct gunboat_s *boat;
     s32 id;
@@ -4569,6 +5322,16 @@ void InitGunBoat(struct nuvec_s *pos, f32 yaw, s32 character)
     }
     boat->active = 1;
 }
+
+void InitGunBoats(void)
+{
+    memset(GunBoatList, 0, sizeof(struct gunboat_s) * 4);
+    InitGunBoat(SetNuVecPntr(-24.0f, 0.0f, 50.0f), 0.0f, 0);
+    InitGunBoat(SetNuVecPntr(36.0f, 0.0f, -15.0f), 0.0f, 1);
+    InitGunBoat(SetNuVecPntr(93.0f, 0.0f, 43.0f), 0.0f, 2);
+    InitGunBoat(SetNuVecPntr(21.0f, 0.0f, 106.0f), 0.0f, 3);
+}
+
 
 inline void DrawGunBoat(struct gunboat_s *boat)
 {
@@ -4792,8 +5555,201 @@ void ProcessFarmLevel(struct nupad_s *pad)
     ProcessGliderBullets();
 }
 
+struct MYSPLINE;
+extern struct MYSPLINE WeatherBossCamSpline;
+extern f32 FindSplineClosestPointAndDist(struct MYSPLINE *spline, s32 control, struct nuvec_s *point,
+                                         struct nuvec_s *closest, s32 wrap, s32 biglook);
+extern f32 WBCamDist;
+extern f32 D_0063327C;
+extern f32 D_00633280;
+#define GliderCamAngleX D_0063327C
+#define GliderCamAngleY D_00633280
+
+void GliderCamWeatherBoss(struct cammtx_s *cam)
+{
+    struct nuvec_s delta;
+    struct nuvec_s campos;
+    struct nuvec_s lookpos;
+    struct nuvec_s target;
+    struct nuvec_s look;
+    struct nuvec_s mid;
+    struct nuvec_s from;
+    struct nuvec_s railpos;
+    f32 dist;
+
+    target = PlayerGlider.Position;
+    target.z += WBCamDist;
+    if (WBIntroOn == 0) {
+        ProcessTimer(&WBIntroTweenTimer);
+    }
+    look = PlayerGlider.Position;
+    from = PlayerGlider.Position;
+    from.z += WBCamDist;
+    FindSplineClosestPointAndDist(&WeatherBossCamSpline, 0x300, &target, &railpos, 0, 0);
+    mid.x = railpos.x + (PlayerGlider.Position.x - railpos.x) * 0.5f;
+    mid.y = railpos.y;
+    mid.z = PlayerGlider.Position.z;
+    NuVecScale(&lookpos, &look, WBIntroTweenTimer / WBIntroTweenTime);
+    NuVecScaleAccum(&lookpos, &mid, 1.0f - WBIntroTweenTimer / WBIntroTweenTime);
+    NuVecScale(&campos, &from, WBIntroTweenTimer / WBIntroTweenTime);
+    NuVecScaleAccum(&campos, &railpos, 1.0f - WBIntroTweenTimer / WBIntroTweenTime);
+    delta.x = lookpos.x - campos.x;
+    delta.y = lookpos.y - campos.y;
+    delta.z = lookpos.z - campos.z;
+    dist = NuFsqrt(delta.x * delta.x + delta.z * delta.z);
+    cam->xrot = NuAtani(-delta.y * 256.0f, dist * 256.0f);
+    cam->yrot = NuAtani(delta.x * 256.0f, delta.z * 256.0f);
+    GliderCamAngleX = cam->xrot / 182.0444489f;
+    GliderCamAngleY = cam->yrot / 182.0444489f;
+    NuMtxSetRotationX(&cam->m, GliderCamAngleX * 182.0444489f);
+    NuMtxRotateY(&cam->m, GliderCamAngleY * 182.0444489f);
+    NuMtxTranslate(&cam->m, &campos);
+    cam->pos = campos;
+    WeatherBossCamMtx = cam->m;
+}
+
+
+extern struct nuvec_s GliderIntroCamPos;
+extern struct nuvec_s GliderIntroInterest;
+extern f32 FlyingLevelCompleteTimer;
+extern f32 SeekGliderCamTime;
+extern f32 CameraSeekSpeedAutoPilot;
+extern f32 FFTWEENTIME;
+extern f32 TORNADOINTERESTY;
+extern struct nuvec_s TORNADOCAMIDEAL;
+extern f32 ExtroTargAng;
+extern f32 ExtroAngOff;
+extern f32 ExtroChangeVal;
+extern f32 ExtroSeekZeroTime;
+extern f32 ExtroStillToEndTime;
+extern struct nuvec_s ExtroIdealPos;
+extern struct nuvec_s ExtroStillVelocity;
+extern struct nuvec_s ExtroStillCamPos;
+extern struct nuvec_s ExtroStillInterest;
+extern struct numtx_s GliderInvMtx;
+extern struct nuvec_s D_006B7580;
+#define GliderCamLastVel D_006B7580
+extern f32 D_00633284;
+extern f32 D_00633288;
+#define GliderCamTiltX D_00633284
+#define GliderCamTurnY D_00633288
+extern void SeekAngLimHalfLife360f(f32 *dest, f32 target, f32 maxspeed, f32 halflife, f32 dt);
+
+void GliderCam(struct cammtx_s *cam)
+{
+    struct nuvec_s delta;
+    struct nuvec_s campos;
+    struct nuvec_s lookpos;
+    struct nuvec_s ideal;
+    struct nuvec_s introlook;
+    struct nuvec_s introcam;
+    struct nuvec_s offset;
+    struct nuvec_s extropos;
+    f32 tilt;
+    f32 seek;
+    f32 tween;
+    f32 untween;
+    f32 dist;
+
+    if (Level == 0x18) {
+        GliderCamWeatherBoss(cam);
+        return;
+    }
+    introlook = GliderIntroInterest;
+    campos.x = cam->m._30;
+    campos.y = cam->m._31;
+    campos.z = cam->m._32;
+    introcam = campos;
+    SeekHalfLifeNUVEC(&introcam, &GliderIntroCamPos, SeekGliderCamTime, 0.02f);
+    if ((Level != 0x12 && Level != 0x1A) || FireFlyIntroOn == 0) {
+        tilt = PlayerGlider.CamTiltX;
+        lookpos = PlayerGlider.Position;
+        lookpos.y += 1.0f;
+        if (Level == 0xD) {
+            lookpos.y += TORNADOINTERESTY;
+            offset = TORNADOCAMIDEAL;
+        } else if (Level == 0x1A) {
+            offset = SetNuVec(0.0f, 0.75f, 3.0f);
+        } else {
+            offset = SetNuVec(0.0f, 3.0f, 4.0f);
+        }
+        NuVecRotateX(&offset, &offset, tilt * 182.0444489f);
+        if (FlyingLevelExtro != 0) {
+            SeekAngLimHalfLife360f(&ExtroAngOff, ExtroTargAng, 120.0f, 0.3f, 0.02f);
+            NuVecScale(&extropos, &offset, 1.0 - fabs(ExtroAngOff) / 180.0);
+            NuVecScaleAccum(&extropos, &ExtroIdealPos, fabs(ExtroAngOff) / 180.0);
+            if (fabs(Rationalise360f(ExtroAngOff - ExtroTargAng)) < ExtroChangeVal) {
+                NuVecScaleAccum(&ExtroStillCamPos, &ExtroStillVelocity, 0.02f);
+                NuVecScaleAccum(&ExtroStillInterest, &ExtroStillVelocity, 0.02f);
+                ideal = ExtroStillCamPos;
+                FlyingLevelVictoryDance = 1;
+                lookpos = ExtroStillInterest;
+                SeekHalfLifeNUVEC(&ExtroStillVelocity, &v000, ExtroSeekZeroTime, 0.02f);
+            } else {
+                NuVecRotateY(&ideal, &extropos, (PlayerGlider.CamAngleY + ExtroAngOff) * 182.0444489f);
+                NuVecAdd(&ideal, &ideal, &lookpos);
+                FlyingLevelCompleteTimer = ExtroStillToEndTime;
+                ExtroStillVelocity = PlayerGlider.Velocity;
+                ExtroStillCamPos = ideal;
+                ExtroStillInterest = lookpos;
+            }
+        } else {
+            NuVecRotateY(&ideal, &offset, PlayerGlider.CamAngleY * 182.0444489f);
+            ExtroAngOff = 0.0f;
+            NuVecAdd(&ideal, &ideal, &lookpos);
+        }
+        campos.x = cam->m._30;
+        campos.y = cam->m._31;
+        campos.z = cam->m._32;
+        if (PlayerGlider.TerminalDive != 0 || PlayerGlider.Dead != 0 || PlayerGlider.CocoDead != 0) {
+            SeekHalfLifeNUVEC(&GliderCamLastVel, SetNuVecPntr(0.0f, 0.0f, 0.0f), 0.5f, 0.02f);
+            NuVecAdd(&campos, &campos, &GliderCamLastVel);
+        } else {
+            if (PlayerGlider.AutoPilot != 0) {
+                seek = CameraSeekSpeedAutoPilot;
+            } else {
+                seek = SeekGliderCamTime;
+            }
+            GliderCamLastVel = campos;
+            SeekHalfLifeNUVEC(&campos, &ideal, seek, 0.02f);
+            if ((Level == 0x12 || Level == 0x1A) && FireFlyIntroTween != 0.0f && FFTWEENTIME != 0.0f) {
+                tween = FireFlyIntroTween / FFTWEENTIME;
+                untween = 1.0f - tween;
+                NuVecScale(&lookpos, &lookpos, untween);
+                NuVecScaleAccum(&lookpos, &introlook, tween);
+                NuVecScale(&campos, &campos, untween);
+                NuVecScaleAccum(&campos, &introcam, tween);
+                ProcessTimer(&FireFlyIntroTween);
+            }
+            if (Level == 0x12 && campos.y >= Level_GliderCeiling - 2.0f) {
+                campos.y = Level_GliderCeiling - 2.0f;
+            }
+            NuVecSub(&GliderCamLastVel, &campos, &GliderCamLastVel);
+        }
+    } else {
+        lookpos = introlook;
+        FireFlyIntroTween = FFTWEENTIME;
+        campos = introcam;
+    }
+    delta.x = lookpos.x - campos.x;
+    delta.y = lookpos.y - campos.y;
+    delta.z = lookpos.z - campos.z;
+    dist = NuFsqrt(delta.x * delta.x + delta.z * delta.z);
+    cam->xrot = NuAtani(-delta.y * 256.0f, dist * 256.0f);
+    cam->yrot = NuAtani(delta.x * 256.0f, delta.z * 256.0f);
+    GliderCamTiltX = cam->xrot / 182.0444489f;
+    GliderCamTurnY = cam->yrot / 182.0444489f;
+    NuMtxSetRotationX(&cam->m, GliderCamTiltX * 182.0444489f);
+    NuMtxRotateY(&cam->m, GliderCamTurnY * 182.0444489f);
+    NuMtxTranslate(&cam->m, &campos);
+    NuMtxRotateY(&GliderInvMtx, -GliderCamTurnY * 182.0444489f);
+    NuMtxSetRotationX(&GliderInvMtx, -GliderCamTiltX * 182.0444489f);
+    NuMtxTranslate(&GliderInvMtx, &campos);
+    cam->pos = campos;
+}
+
+
 extern s32 CRASHTEROIDSAMBIENTVOL;
-extern s32 ActiveAsteroidListNum;
 
 void ProcessSpaceArenaLevel(struct nupad_s *pad)
 {
@@ -4824,7 +5780,6 @@ extern void ProcessWesternArenaLevel(struct nupad_s *pad);
 extern void ProcessEarthBossLevel(struct nupad_s *pad);
 extern void ProcessFireBossLevel(struct nupad_s *pad);
 extern s32 GetCurrentLevelObjectives(void);
-extern f32 FlyingLevelCompleteTimer;
 
 void ProcessVehicleLevel(struct nupad_s *pad)
 {
@@ -4996,8 +5951,6 @@ void PrintEarthBossAction(struct earthbossstate_s *boss)
 }
 
 
-extern struct nuvec_s GliderIntroCamPos;
-extern struct nuvec_s GliderIntroInterest;
 extern void WeatherBossReset(s32 playerdead);
 extern void WesternArenaReset(s32 playerdead);
 extern void FireBossReset(s32 playerdead);
