@@ -233,19 +233,19 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0040:0012ae38:NuRndrFaceOn"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012b270:NuRndrFaceY"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012b610:NuRndrRectUV3di"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012b870:NuRndrRectUVStream"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012bac0:NuRndrWater"
@@ -253,11 +253,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0040:0012cbf8:NuRndrShadow"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012d238:NuRndrShadowLightFan"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012d5b0:NuRndrShadowStencil"
@@ -269,15 +269,15 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0040:0012e200:NuRndrAddFootPrint"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012e560:NuRndrFootPrints"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012e810:NuRndrStreamQuadShad"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012ee58:NuRndrWaterRippleUpdate"

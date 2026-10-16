@@ -37,7 +37,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0116:0024fe88:GameAudioUpdate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0116:00250298:ResetGameSfx"

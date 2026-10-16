@@ -124,6 +124,30 @@ extern struct pSFX D_005EF240[];
 
 extern s32 soundtestcount;
 
+extern struct cursor_s Cursor;
+extern s32 Paused;
+extern s32 GameMode;
+extern s32 new_level;
+extern s32 cutmovie;
+extern f32 musicvol_mul;
+extern u8 temp_music_volume;
+extern u8 temp_surround;
+extern s32 Bonus;
+extern f32 bonus_duration;
+extern f32 bonus_time;
+extern s32 nusound_dpl_enabled;
+extern f32 nusound_fade_end;
+extern s32 Level;
+extern u64 LBIT;
+extern s32 VEHICLECONTROL;
+extern s32 testsfx;
+extern s32 testglobalsfx;
+extern s32 last_testglobalsfx;
+
+extern s32 ChaseActive(void);
+extern int SOUND_SetChannelVolume(unsigned int channel, int left, int right);
+extern void edbitsSetSoundFxVolume(int volume);
+
 
 void InitLevelSfxTables(void) {
     s32 i;
@@ -409,6 +433,108 @@ cleanup:
     gamesfx_volume = -1;
     gamesfx_pitch = -1;
 }
+
+void GameAudioUpdate(void) {
+    s32 testMode;
+    s32 vol;
+    f32 volScale;
+    f32 fadeTarget;
+    double dist;
+
+    if (Cursor.menu == 5) {
+        testMode = (Cursor.y == 2) ? 2 : 1;
+    } else {
+        testMode = 0;
+    }
+
+    if ((Paused == 0 && (player->obj.mask == 0 || player->obj.mask->active < 3) &&
+         GameMode != 1 && new_level == -1 && Cursor.menu != 0x21) ||
+        (Paused != 0 && testMode == 2) || cutmovie == 0) {
+        volScale = 1.0f;
+    } else {
+        volScale = 0.0f;
+    }
+
+    if (musicvol_mul > volScale) {
+        musicvol_mul -= 0.02f;
+        if (musicvol_mul < volScale) {
+            musicvol_mul = volScale;
+        }
+    } else if (musicvol_mul < volScale) {
+        musicvol_mul += 0.02f;
+        if (musicvol_mul > volScale) {
+            musicvol_mul = volScale;
+        }
+    }
+
+    if (game_music != -1) {
+        vol = (testMode != 0) ? temp_music_volume : Game.music_volume;
+        vol = (f32)(vol * 0x1BFF / 100) * musicvol_mul;
+        if (Bonus == 1 || Bonus == 3) {
+            dist = bonus_duration * 0.5f - bonus_time;
+            if (dist < 0.0) {
+                dist = 0.0 - dist;
+            }
+            volScale = dist;
+            if (volScale < 1.0f) {
+                volScale *= (f32)(25 - Paused) / 25.0f;
+                vol = (f32)vol * volScale;
+            }
+        }
+        SOUND_SetChannelVolume(0, vol, 0);
+        SOUND_SetChannelVolume(1, 0, vol);
+    }
+
+    if (Cursor.menu == 5) {
+        nusound_dpl_enabled = temp_surround;
+    } else {
+        nusound_dpl_enabled = Game.surround;
+    }
+
+    fadeTarget = 12.5f;
+    if (ChaseActive() != -1 || Level == 0x17) {
+        fadeTarget = 50.0f;
+    } else if (LBIT & 0x3E00000) {
+        fadeTarget = 25.0f;
+    } else if (Level == 9 || Level == 3) {
+        fadeTarget = 50.0f;
+    } else if (VEHICLECONTROL == 2) {
+        fadeTarget = 25.0f;
+    } else if (VEHICLECONTROL == 1) {
+        s16 vehicle = player->obj.vehicle;
+
+        if (vehicle == 0x53 || vehicle == 0x20) {
+            fadeTarget = 25.0f;
+        } else if (vehicle == 0x36 || vehicle == 0x81 || vehicle == 0x8B || vehicle == 0x99) {
+            fadeTarget = 100.0f;
+        }
+    }
+
+    if (nusound_fade_end > fadeTarget) {
+        nusound_fade_end -= 0.5f;
+        if (nusound_fade_end < fadeTarget) {
+            nusound_fade_end = fadeTarget;
+        }
+    } else if (nusound_fade_end < fadeTarget) {
+        nusound_fade_end += 0.5f;
+        if (nusound_fade_end > fadeTarget) {
+            nusound_fade_end = fadeTarget;
+        }
+    }
+
+    if (testsfx != -1) {
+        GameSfx(testsfx + 0xC7, 0);
+        testsfx = -1;
+    }
+    if (testglobalsfx != -1) {
+        last_testglobalsfx = testglobalsfx;
+        GameSfx(testglobalsfx, 0);
+        testglobalsfx = -1;
+    }
+
+    edbitsSetSoundFxVolume(Game.sfx_volume);
+}
+
 
 void GameMusic(s32 sfx, s32 i) {
     struct pSFX *info;

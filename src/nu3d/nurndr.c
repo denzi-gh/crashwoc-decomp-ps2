@@ -127,6 +127,7 @@
 #include "nu3d/nuhgobj.h"
 #include "nu3d/nugscn.h"
 #include "nu3d/numtl.h"
+#include "nu3d/nurndr.h"
 #include "nu3d/nustream.h"
 #include "nu3d/nutex.h"
 #include "nu3d/nuvport.h"
@@ -180,12 +181,23 @@ extern u32 NuRndrWaterTint;
 extern int NuRndrShadMaskCount;
 
 typedef struct nurndrfoot_s {
-    char unk00[0x32];
-    char active;
-    char unk33[5];
+    struct nuvec_s pnts[4];
+    short brightness;
+    char timer;
+    char gfx;
+    u32 colour;
 } nurndrfoot_s;
 
+extern int D_002D4130[4][2];
+#define faceon_uvindex D_002D4130
+extern void NuVec4ScaleXYZVU0(struct nuvec4_s *dst, struct nuvec4_s *src, float scale);
+extern void NuVecConvertToIntVU0(void *dst, struct nuvec_s *src);
+extern int D_002D4150[4][2];
+#define facey_uvindex D_002D4150
+
 extern nurndrfoot_s NuRndrFootData[];
+extern int NuRndrFootFree;
+extern u32 testfootcol;
 
 extern char D_00614770[];
 #define nurndr_file D_00614770
@@ -254,7 +266,7 @@ extern struct nuvec_s D_00614760;
 #define default_light_dir D_00614760
 
 extern void NuLgtArcLaserDraw(int mode);
-extern void NuRndrShadowStencil(int mode, void *fxdata);
+extern void NuRndrShadowStencil(int paused, struct nuvec_s *pos);
 extern void NuLightFxSetup(void);
 extern void NuLightProcessSpot(int mode);
 extern void NuLightFogDraw(int mode);
@@ -328,6 +340,22 @@ extern struct nuvec_s curlight;
 extern u32 curlightcol;
 extern u32 *NRFanData;
 extern u32 *NuRndrShadowLightFan(void);
+extern int testflipold;
+extern float testmultl;
+extern GsFrameReg cur_rt;
+extern int NuLgtHSurf[18];
+extern struct numtl_s *NuLgtSurf[18];
+extern struct numtl_s *NuLgtGreyNZMat;
+extern struct numtl_s *NuLightAddMat;
+extern struct nuvec_s NuRndrShadBox[2];
+extern int D_00633070;
+#define shadow_wobble_ang D_00633070
+extern int D_0063306C;
+#define shadow_spin_ang D_0063306C
+extern struct nuvec_s lightfan[];
+extern u32 *nurndr_lightfan;
+extern u32 D_006ACF00[];
+#define lightfan_packet D_006ACF00
 
 extern struct nugspline_s *NuRndrShadMasks[];
 extern unsigned char D_0062ECA8[];
@@ -4027,6 +4055,763 @@ int NuRndrTriStripGif(u32 *data, int count, struct numtl_s *mtl) {
 }
 
 
+int NuRndrFaceOn(struct faceon_s *faceon, struct numtl_s *mtl, struct numtx_s *wm) {
+    struct nuvec4_s pnts[4];
+    struct nuvec4_s pos;
+    float ratiox;
+    float ratioy;
+    struct numtx_s *vpcs;
+    struct nuviewport_s *vp;
+    float rw;
+    float zoffset;
+    float wc;
+    float ws;
+    float hs;
+    float hc;
+    int i;
+
+    if (!mtl) {
+        mtl = numtl_defaultmtl3d;
+    }
+    if (NuCameraClipTestPoints(&faceon->pos, 1, wm) == 0) {
+        vpcs = NuCameraGetVPCSMtx();
+        NuCameraGetClippingRatios(&ratiox, &ratioy);
+        vp = NuVpGetCurrentViewport();
+        pos.x = faceon->pos.x;
+        pos.y = faceon->pos.y;
+        pos.z = faceon->pos.z;
+        pos.w = 1.0f;
+        NuVec4MtxTransformVU0(&pos, &pos, vpcs);
+        rw = 1.0f / pos.w;
+        NuVec4ScaleXYZVU0(&pos, &pos, rw);
+        ratiox = (float)vp->width / (pos.w * ratiox * 2.0f);
+        ratioy = (float)vp->height / (pos.w * ratioy * 2.0f);
+        if (faceon->sinang == 0.0f && faceon->cosang == 1.0f) {
+            faceon->width *= ratiox;
+            faceon->height *= ratioy;
+            zoffset = rw * rw * 500000.0f;
+            pnts[0].x = pos.x - faceon->width;
+            pnts[0].y = pos.y - faceon->height;
+            pnts[0].z = pos.z + zoffset;
+            pnts[1].x = pos.x + faceon->width;
+            pnts[1].y = pos.y - faceon->height;
+            pnts[1].z = pos.z + zoffset;
+            pnts[2].x = pos.x - faceon->width;
+            pnts[2].y = pos.y + faceon->height;
+            pnts[2].z = pos.z + zoffset;
+            pnts[3].x = pos.x + faceon->width;
+            pnts[3].y = pos.y + faceon->height;
+            pnts[3].z = pos.z + zoffset;
+        } else {
+            wc = faceon->width * faceon->cosang;
+            ws = faceon->width * faceon->sinang;
+            hc = faceon->height * faceon->cosang;
+            hs = faceon->height * faceon->sinang;
+            pnts[0].x = pos.x + ratiox * (-wc + hs);
+            pnts[0].y = pos.y + ratioy * (ws + hc);
+            pnts[0].z = pos.z;
+            pnts[1].x = pos.x + ratiox * (wc + hs);
+            pnts[1].y = pos.y + ratioy * (-ws + hc);
+            pnts[1].z = pos.z;
+            pnts[2].x = pos.x + ratiox * (-wc - hs);
+            pnts[2].y = pos.y + ratioy * (ws - hc);
+            pnts[2].z = pos.z;
+            pnts[3].x = pos.x + ratiox * (wc - hs);
+            pnts[3].y = pos.y + ratioy * (-ws - hc);
+            pnts[3].z = pos.z;
+        }
+        rndrstream_3d = &mtl->stream;
+        NuRndrStreamLink(rndrstream_3d);
+        NuRndrStreamSetMisc(rndrstream_3d);
+        rndrstream_3d->cur.w = vpDmaTag_CntEx(rndrstream_3d->cur.w, 0x10000000, 0x5000000D);
+        *((u64 *)rndrstream_3d->cur.w)++ = 0x3002400000008004ULL;
+        *((u64 *)rndrstream_3d->cur.w)++ = 0x512;
+        for (i = 0; i < 4; i++) {
+            *rndrstream_3d->cur.f++ = faceon->tc[faceon_uvindex[i][0]];
+            *rndrstream_3d->cur.f++ = faceon->tc[faceon_uvindex[i][1]];
+            *rndrstream_3d->cur.f++ = 1.0f;
+            rndrstream_3d->cur.w++;
+            *rndrstream_3d->cur.w++ = faceon->colour[0];
+            *rndrstream_3d->cur.w++ = faceon->colour[1];
+            *rndrstream_3d->cur.w++ = faceon->colour[2];
+            *rndrstream_3d->cur.w++ = faceon->colour[3];
+            NuVecConvertToIntVU0(rndrstream_3d->cur.w, (struct nuvec_s *)&pnts[i]);
+            rndrstream_3d->cur.w += 3;
+            *rndrstream_3d->cur.w++ = 0;
+        }
+        rndrstream_3d->cur.w = vpDmaTag_Close(rndrstream_3d->cur.w);
+        rndrstream_free = vpDmaTag_Next(rndrstream_3d->cur.w, 0);
+    }
+    return 0;
+}
+
+
+int NuRndrFaceY(struct faceon_s *faceon, struct numtl_s *mtl, struct numtx_s *wm) {
+    struct nuvec4_s pnts[4];
+    struct nuvec_s view;
+    struct numtx_s *pcs;
+    int i;
+
+    if (!mtl) {
+        mtl = numtl_defaultmtl3d;
+    }
+    if (NuCameraClipTestPoints(&faceon->pos, 1, wm) == 0) {
+        NuCameraTransformView(&view, &faceon->pos, 1, wm);
+        pnts[0].x = view.x - faceon->width;
+        pnts[0].y = view.y - faceon->height;
+        pnts[0].z = view.z;
+        pnts[0].w = 1.0f;
+        pnts[1].x = view.x + faceon->width;
+        pnts[1].y = view.y - faceon->height;
+        pnts[1].z = view.z;
+        pnts[1].w = 1.0f;
+        pnts[2].x = view.x - faceon->width;
+        pnts[2].y = view.y + faceon->height;
+        pnts[2].z = view.z;
+        pnts[2].w = 1.0f;
+        pnts[3].x = view.x + faceon->width;
+        pnts[3].y = view.y + faceon->height;
+        pnts[3].z = view.z;
+        pnts[3].w = 1.0f;
+        pcs = NuCameraGetPCSMtx();
+        rndrstream_3d = &mtl->stream;
+        NuRndrStreamLink(rndrstream_3d);
+        NuRndrStreamSetMisc(rndrstream_3d);
+        rndrstream_3d->cur.w = vpDmaTag_Cnt(rndrstream_3d->cur.w);
+        *rndrstream_3d->cur.w++ = 0;
+        *rndrstream_3d->cur.w++ = 0;
+        *rndrstream_3d->cur.w++ = 0x10000000;
+        *rndrstream_3d->cur.w++ = 0x5000000D;
+        *((u64 *)rndrstream_3d->cur.w)++ = 0x3002400000008004ULL;
+        *((u64 *)rndrstream_3d->cur.w)++ = 0x512;
+        for (i = 0; i < 4; i++) {
+            NuVec4MtxTransformH(&pnts[i], &pnts[i], pcs);
+            pnts[i].w = 1.0f / pnts[i].w;
+            *rndrstream_3d->cur.f++ = faceon->tc[facey_uvindex[i][0]] * pnts[i].w;
+            *rndrstream_3d->cur.f++ = faceon->tc[facey_uvindex[i][1]] * pnts[i].w;
+            *rndrstream_3d->cur.f++ = pnts[i].w;
+            rndrstream_3d->cur.w++;
+            *rndrstream_3d->cur.w++ = faceon->colour[0];
+            *rndrstream_3d->cur.w++ = faceon->colour[1];
+            *rndrstream_3d->cur.w++ = faceon->colour[2];
+            *rndrstream_3d->cur.w++ = faceon->colour[3];
+            *rndrstream_3d->cur.w++ = (int)(pnts[i].x * pnts[i].w);
+            *rndrstream_3d->cur.w++ = (int)(pnts[i].y * pnts[i].w);
+            *rndrstream_3d->cur.w++ = (int)(pnts[i].z * pnts[i].w);
+            *rndrstream_3d->cur.w++ = 0;
+        }
+        rndrstream_3d->cur.w = vpDmaTag_Close(rndrstream_3d->cur.w);
+        rndrstream_free = vpDmaTag_Next(rndrstream_3d->cur.w, 0);
+    }
+    return 0;
+}
+
+
+void NuRndrRectUV3di(int x, int y, int width, int height, float u0, float v0, float u1, float v1,
+                     int colour, int z) {
+    x += (PS2_VCNTR_X - (nurndr_pixel_width >> 1)) << 4;
+    y += (PS2_VCNTR_Y - (nurndr_pixel_height >> 1)) << 4;
+
+    rndrstream_3d->cur.w = vpDmaTag_CntEx(rndrstream_3d->cur.w,
+                                      0x10000000, 0x50000000) - 1;
+    rndrstream_3d->cur.w = vtBeginDirect(rndrstream_3d->cur.w, 0);
+    *((u64 *)rndrstream_3d->cur.w)++ = 0x6403400000008001ULL;
+    *((u64 *)rndrstream_3d->cur.w)++ = 0x525210;
+    *((u64 *)rndrstream_3d->cur.w)++ = 6;
+
+    *rndrstream_3d->cur.w++ = colour;
+    *rndrstream_3d->cur.f++ = 1.0f;
+    *rndrstream_3d->cur.f++ = u0;
+    *rndrstream_3d->cur.f++ = v0;
+    *((short *)rndrstream_3d->cur.w)++ = x;
+    *((short *)rndrstream_3d->cur.w)++ = y;
+    *rndrstream_3d->cur.w++ = z;
+
+    *rndrstream_3d->cur.f++ = u1;
+    *rndrstream_3d->cur.f++ = v1;
+    *((short *)rndrstream_3d->cur.w)++ = x + width;
+    *((short *)rndrstream_3d->cur.w)++ = y + height;
+    *rndrstream_3d->cur.w++ = z;
+
+    rndrstream_3d->cur.w = vtCloseDirect(rndrstream_3d->cur.w);
+    rndrstream_3d->cur.w = vpDmaTag_Close(rndrstream_3d->cur.w);
+}
+
+
+void NuRndrRectUVStream(struct nurndrstream_s *stream, int x, int y, int width, int height,
+                        float u0, float v0, float u1, float v1, int colour, int z) {
+    int xoffset = (PS2_VCNTR_X - (nurndr_pixel_width >> 1)) << 4;
+    int yoffset = (PS2_VCNTR_Y - (nurndr_pixel_height >> 1)) << 4;
+
+    x += xoffset;
+    y += yoffset;
+    stream->cur.w = vpDmaTag_CntEx(stream->cur.w, 0x10000000, 0x50000000) - 1;
+    stream->cur.w = vtBeginDirect(stream->cur.w, 0);
+    stream->cur.w = gsBeginGifPacket(stream->cur.w, 0, 1, 1, 6, 0, 5, 1, 2, 5, 2, 5);
+
+    *stream->cur.w++ = colour & 0xff;
+    *stream->cur.w++ = (colour >> 8) & 0xff;
+    *stream->cur.w++ = (colour >> 16) & 0xff;
+    *stream->cur.w++ = (colour >> 24) & 0xff;
+
+    *stream->cur.f++ = u0;
+    *stream->cur.f++ = v0;
+    *stream->cur.f++ = 1.0f;
+    stream->cur.w++;
+    *stream->cur.w++ = x;
+    *stream->cur.w++ = y;
+    *stream->cur.w++ = z;
+    *stream->cur.w++ = 0;
+
+    *stream->cur.f++ = u1;
+    *stream->cur.f++ = v1;
+    *stream->cur.f++ = 1.0f;
+    stream->cur.w++;
+    *stream->cur.w++ = x + width;
+    *stream->cur.w++ = y + height;
+    *stream->cur.w++ = z;
+    *stream->cur.w++ = 0;
+
+    stream->cur.w = gsCloseGifPacket(stream->cur.w);
+    stream->cur.w = vtCloseDirect(stream->cur.w);
+    stream->cur.w = vpDmaTag_Close(stream->cur.w);
+}
+
+
+void NuRndrShadow(int mode) {
+    struct nuvec_s light;
+    struct nurndrstream_s *stream;
+    struct nurndrstream_s *screen;
+    int target;
+    int zbuffer;
+    int x[2];
+    int y0;
+    int y1;
+    int left;
+    int top;
+    int width;
+    int height;
+    float u0;
+    float v0;
+    float u1;
+    float v1;
+    int i;
+
+    light = curlight;
+    if ((testflipold & 4) || shadstorecnt == 0) {
+        return;
+    }
+    stream = rndrstream_system;
+    target = NuLgtHSurf[2];
+    zbuffer = NuLgtHSurf[1];
+    NuRndrStreamLink(stream);
+    NuRndrSetRTarget(stream, target);
+    NuRndrSetZBuffer(stream, zbuffer);
+    rndrstream_free = vpDmaTag_Next(stream->cur.w, 0);
+    NuRndrSetXYOffset((0x800 - (nurndr_pixel_width >> 1)) << 4, (0x800 - (nurndr_pixel_height >> 1)) << 4);
+    NuRndrSetScissor(0, 0, nurndr_pixel_width - 1, nurndr_pixel_height - 1);
+    txupload_on = 0;
+    NuRndrStreamLink(rndrstream_fx);
+    NuRndrStreamSetMisc(rndrstream_fx);
+    NuRndrStreamAddMtl(rndrstream_fx, NuLgtGreyNZMat);
+    for (i = 0; i < 4; i++) {
+        NuRndrRectUVStream(rndrstream_fx, i << 10, 0, 0x3F8, (PS2_REZ_H << 4) - 8,
+                           0.0f, 0.0f, 0.0f, 0.0f, 0x207F7F7F, 1);
+    }
+    rndrstream_free = vpDmaTag_Next(rndrstream_fx->cur.w, 0);
+    light.x *= testmultl;
+    light.y *= testmultl;
+    light.z *= testmultl;
+    NuRndrShadowStack(&light);
+
+    NuRndrStreamLink(rndrstream_fx);
+    NuRndrStreamSetMisc(rndrstream_fx);
+    NuRndrStreamAddMtl(rndrstream_fx, NuLightAddMat);
+    rndrstream_fx->cur.w = vpDmaTag_CntEx(rndrstream_fx->cur.w, 0x11000000, 0x50000000) - 1;
+    rndrstream_fx->cur.w = vtBeginDirect(rndrstream_fx->cur.w, 0);
+    rndrstream_fx->cur.w = gsBeginGifPacket(rndrstream_fx->cur.w, 0, 1, 0, 0, 0, 1, 0xE);
+    *((u64 *)rndrstream_fx->cur.w)++ = cur_rt.fbp | cur_rt.fbw << 16 | cur_rt.psm << 24
+                                     | (u64)0x808080 << 32;
+    *((u64 *)rndrstream_fx->cur.w)++ = 0x4C;
+    *((u64 *)rndrstream_fx->cur.w)++ = 0;
+    *((u64 *)rndrstream_fx->cur.w)++ = 0x1B;
+    *((u64 *)rndrstream_fx->cur.w)++ = 1;
+    *((u64 *)rndrstream_fx->cur.w)++ = 0x46;
+    rndrstream_fx->cur.w = gsCloseGifPacket(rndrstream_fx->cur.w);
+    rndrstream_fx->cur.w = vtCloseDirect(rndrstream_fx->cur.w);
+    rndrstream_fx->cur.w = vpDmaTag_Close(rndrstream_fx->cur.w);
+    for (i = 0; i < 4; i++) {
+        NuRndrRectUVStream(rndrstream_fx, (i << 10) - 8, -8, 0x400, PS2_REZ_H << 4,
+                           0.0f, 0.0f, 0.0f, 0.0f, 0, 0xFFFFFF);
+    }
+    rndrstream_free = vpDmaTag_Next(rndrstream_fx->cur.w, 0);
+    NuRndrStreamFlush();
+
+    screen = rndrstream_system;
+    NuRndrStreamLink(screen);
+    NuRndrSetRTarget(screen, -1);
+    NuRndrSetZBuffer(screen, -2);
+    rndrstream_free = vpDmaTag_Next(screen->cur.w, 0);
+    NuRndrSetXYOffset((0x800 - (nurndr_pixel_width >> 1)) << 4, (0x800 - (nurndr_pixel_height >> 1)) << 4);
+    NuRndrSetScissor(0, 0, nurndr_pixel_width - 1, nurndr_pixel_height - 1);
+    NuRndrStreamLink(rndrstream_3d);
+    NuRndrStreamSetMisc(rndrstream_3d);
+    NuRndrStreamAddMtl(rndrstream_3d, NuLgtSurf[2]);
+    for (i = (int)NuRndrShadBox[0].x >> 10; i < ((int)NuRndrShadBox[1].x + 0x3FF) >> 10; i++) {
+        x[0] = i << 10;
+        x[1] = (i + 1) << 10;
+        if ((float)x[0] < NuRndrShadBox[0].x) {
+            x[0] = NuRndrShadBox[0].x;
+        }
+        if (NuRndrShadBox[1].x < (float)x[1]) {
+            x[1] = NuRndrShadBox[1].x;
+        }
+        y0 = NuRndrShadBox[0].y;
+        y1 = NuRndrShadBox[1].y;
+        left = x[0] - 8;
+        top = y0 - 8;
+        width = x[1] - x[0];
+        height = y1 - y0;
+        u0 = (float)x[0] * 0.0009765625f * 25.6f / NuPower2(PS2_REZ_W);
+        v0 = NuRndrShadBox[0].y / (float)(NuPower2(PS2_REZ_H) << 4);
+        u1 = (float)x[1] * 0.0009765625f * 25.6f / NuPower2(PS2_REZ_W);
+        v1 = NuRndrShadBox[1].y / (float)(NuPower2(PS2_REZ_H) << 4);
+        NuRndrRectUVStream(rndrstream_3d, left, top, width, height, u0, v0, u1, v1, curlightcol, 0);
+    }
+    rndrstream_free = vpDmaTag_Next(rndrstream_3d->cur.w, 0);
+    NuRndrStreamFlush();
+}
+
+
+inline void RotateCyl(struct nuvec_s *v, float xang, float yang) {
+    float sinx;
+    float cosx;
+    float siny;
+    float cosy;
+    float x;
+    float z;
+
+    sinx = NuTrigTable[(int)xang & 0xFFFF];
+    cosx = NuTrigTable[(int)(xang + 16384.0f) & 0xFFFF];
+    siny = NuTrigTable[(int)yang & 0xFFFF];
+    cosy = NuTrigTable[(int)(yang + 16384.0f) & 0xFFFF];
+    x = v->x;
+    z = v->y * sinx + v->z * cosx;
+    v->y = v->y * cosx - v->z * sinx;
+    v->z = z * cosy - x * siny;
+    v->x = z * siny + x * cosy;
+}
+
+
+inline void DeRotateVectorAngles(struct nuvec_s *dir, float *xang, float *yang) {
+    *yang = NuAtan2D(dir->x, dir->z);
+    *xang = NuAtan2D(-dir->y, NuFsqrt(dir->x * dir->x + dir->z * dir->z));
+}
+
+
+u32 *NuRndrShadowLightFan(void) {
+    GifTagQuad strip;
+    GifTagQuad fan;
+    struct nuvec_s angles;
+    u32 *packet;
+    u32 *vertices;
+    int i;
+
+    DeRotateVectorAngles(&curlight, &angles.x, &angles.y);
+    strip.dword[0] = 0x3002400000008000ULL;
+    strip.dword[1] = 0x512;
+    fan.dword[0] = 0x3002C00000008000ULL;
+    fan.dword[1] = 0x512;
+    if (nurndr_lightfan == 0) {
+        packet = vpDmaTag_RetEx(lightfan_packet, 0, 0x6C010056);
+        *packet++ = fan.word[0];
+        *packet++ = fan.word[1];
+        *packet++ = fan.word[2];
+        *packet++ = fan.word[3];
+        strip.tag.nloop = 18;
+        *packet++ = 0x6C0180D2;
+        *packet++ = strip.word[0];
+        *packet++ = strip.word[1];
+        *packet++ = strip.word[2];
+        *packet++ = strip.word[3];
+        *packet++ = 0x6D018002;
+        *((u16 *)packet)++ = 0x36;
+        *((u16 *)packet)++ = 0;
+        *((u16 *)packet)++ = 0;
+        *((u16 *)packet)++ = 0;
+        *packet++ = 0x6C0A80AF;
+        *packet++ = 9;
+        *packet++ = 0;
+        *packet++ = 0;
+        *packet++ = 0;
+    }
+    if (nurndr_lightfan == 0) {
+        vertices = packet;
+    } else {
+        packet = nurndr_lightfan;
+    }
+
+    for (i = 0; i < 8; i++) {
+        lightfan[i].x = NuTrigTable[(i * 0x2000 + 0x4000) & 0xFFFF];
+        lightfan[i].y = -NuTrigTable[(i * 0x2000) & 0xFFFF];
+        lightfan[i].z = 0.0f;
+        RotateCyl(&lightfan[i], angles.x, angles.y);
+        *((float *)packet)++ = lightfan[i].x;
+        *((float *)packet)++ = lightfan[i].y;
+        *((float *)packet)++ = lightfan[i].z;
+        *((float *)packet)++ = 0.0f;
+    }
+    *((float *)packet)++ = lightfan[0].x;
+    *((float *)packet)++ = lightfan[0].y;
+    *((float *)packet)++ = lightfan[0].z;
+    *((float *)packet)++ = 0.0f;
+
+    if (nurndr_lightfan == 0) {
+        vpDmaTag_Close(packet);
+        nurndr_lightfan = vertices;
+    }
+    return lightfan_packet;
+}
+
+
+void NuRndrShadowStencil(int paused, struct nuvec_s *pos) {
+    struct nuvec_s dir;
+    struct nuvec4_s v;
+    struct nuvec_s *pts;
+    struct nuvec_s *maskpts;
+    struct numtx_s *vpcs;
+    float dx;
+    float dz;
+    float dist;
+    float bestdist;
+    float wobble;
+    float scale;
+    int best;
+    int i;
+
+    NuRndrShadBox[1].x = nurndr_pixel_width << 4;
+    NuRndrShadBox[0].x = 0.0f;
+    NuRndrShadBox[0].y = 0.0f;
+    NuRndrShadBox[1].y = nurndr_pixel_height << 4;
+    if (NuRndrShadMaskCount == 0 || shadstorecnt == 0) {
+        return;
+    }
+    best = -1;
+    bestdist = 1000000.0f;
+    for (i = 0; i < NuRndrShadMaskCount; i++) {
+        maskpts = (struct nuvec_s *)NuRndrShadMasks[i]->pts;
+        dx = maskpts->x - pos->x;
+        dz = maskpts->z - pos->z;
+        dist = dx * dx + dz * dz;
+        if (dist < bestdist) {
+            bestdist = dist;
+            pts = maskpts;
+            best = i;
+        }
+    }
+    if (best < 0) {
+        return;
+    }
+    if (bestdist > 400.0f) {
+        shadstorecnt = 0;
+        return;
+    }
+    if (paused == 0) {
+        shadow_wobble_ang += 0xE74;
+        shadow_spin_ang += NuTrigTable[shadow_wobble_ang & 0xFFFF] * 1111.0f + 2111.0f;
+    }
+    dir.x = pts[2].x;
+    dir.z = pts[2].z;
+    for (i = 3; i < NuRndrShadMasks[best]->len; i++) {
+        dir.x += pts[i].x;
+        dir.z += pts[i].z;
+    }
+    dir.x = pts[0].x - dir.x / (float)(NuRndrShadMasks[best]->len - 2);
+    dir.z = pts[0].z - dir.z / (float)(NuRndrShadMasks[best]->len - 2);
+    scale = 2.0f / NuFsqrt(dir.x * dir.x + dir.z * dir.z);
+    dir.x *= scale;
+    dir.z *= scale;
+    wobble = NuTrigTable[(shadow_wobble_ang + 0x4000) & 0xFFFF] * 0.5f + NuTrigTable[shadow_spin_ang & 0xFFFF];
+    dir.x = pos->x - pts[0].x - dir.x - wobble * (pts[0].x - pts[1].x) * 0.15f;
+    dir.z = pos->z - pts[0].z - dir.z - wobble * (pts[0].z - pts[1].z) * 0.15f;
+    scale = 2.0f / NuFsqrt(dir.x * dir.x + dir.z * dir.z);
+    dir.y = -0.2f;
+    dir.x *= scale;
+    dir.z *= scale;
+    vpcs = NuCameraGetVPCSMtx();
+    NuRndrShadBox[1].y = 0.0f;
+    NuRndrShadBox[1].x = 0.0f;
+    NuRndrShadBox[0].x = nurndr_pixel_width << 4;
+    NuRndrShadBox[0].y = nurndr_pixel_height << 4;
+    for (i = 2; i < NuRndrShadMasks[best]->len; i++) {
+        v.x = pts[i].x;
+        v.y = pts[i].y;
+        v.z = pts[i].z;
+        v.w = 1.0f;
+        NuVec4MtxTransformVU0(&v, &v, vpcs);
+        if (v.w > 0.25f) {
+            NuVec4ScaleXYZVU0(&v, &v, 1.0f / v.w);
+            v.x -= 0x8000 - ((nurndr_pixel_width >> 1) << 4);
+            v.y -= 0x8000 - ((nurndr_pixel_height >> 1) << 4);
+            if (v.x < NuRndrShadBox[0].x) {
+                NuRndrShadBox[0].x = v.x;
+            }
+            if (v.x > NuRndrShadBox[1].x) {
+                NuRndrShadBox[1].x = v.x;
+            }
+            if (v.y < NuRndrShadBox[0].y) {
+                NuRndrShadBox[0].y = v.y;
+            }
+            if (v.y > NuRndrShadBox[1].y) {
+                NuRndrShadBox[1].y = v.y;
+            }
+        }
+    }
+    if (NuRndrShadBox[1].x == 0.0f || NuRndrShadBox[0].x == nurndr_pixel_width * 16.0f
+        || NuRndrShadBox[1].y == 0.0f || NuRndrShadBox[0].y == nurndr_pixel_height * 16.0f) {
+        shadstorecnt = 0;
+        return;
+    }
+    curlight = dir;
+    curlightcol = 0x80202020;
+    NRFanData = NuRndrShadowLightFan();
+}
+
+
+inline void NuRndrAnglesZX(struct nuvec_s *dir, struct nuvec_s *angles) {
+    struct nuvec_s rotated;
+
+    angles->x = NuAtan2D(dir->z, dir->y);
+    NuVecRotateX(&rotated, dir, (int)-angles->x);
+    angles->z = -NuAtan2D(rotated.x, rotated.y);
+}
+
+
+void NuRndrAddFootPrint(int rot, float sizex, float sizez, int brightness, struct nuvec_s *pos,
+                        struct nuvec_s *norm, int gfx, u32 colour) {
+    struct nuvec4_s tp[4];
+    struct nuvec_s terrot;
+    struct numtx_s m;
+    int i;
+    int ix;
+
+    tp[0].y = tp[1].y = tp[2].y = tp[3].y = 0.0f;
+    tp[0].w = tp[1].w = tp[2].w = tp[3].w = 0.0f;
+    tp[0].x = NuTrigTable[(rot + 0x4000) & 0xFFFF] * sizex + NuTrigTable[rot & 0xFFFF] * sizez;
+    tp[0].z = -NuTrigTable[rot & 0xFFFF] * sizex + NuTrigTable[(rot + 0x4000) & 0xFFFF] * sizez;
+    tp[1].x = NuTrigTable[(rot + 0x4000) & 0xFFFF] * -sizex + NuTrigTable[rot & 0xFFFF] * sizez;
+    tp[1].z = -NuTrigTable[rot & 0xFFFF] * -sizex + NuTrigTable[(rot + 0x4000) & 0xFFFF] * sizez;
+    tp[2].x = NuTrigTable[(rot + 0x4000) & 0xFFFF] * sizex + NuTrigTable[rot & 0xFFFF] * -sizez;
+    tp[2].z = -NuTrigTable[rot & 0xFFFF] * sizex + NuTrigTable[(rot + 0x4000) & 0xFFFF] * -sizez;
+    tp[3].x = NuTrigTable[(rot + 0x4000) & 0xFFFF] * -sizex + NuTrigTable[rot & 0xFFFF] * -sizez;
+    tp[3].z = -NuTrigTable[rot & 0xFFFF] * -sizex + NuTrigTable[(rot + 0x4000) & 0xFFFF] * -sizez;
+
+    NuRndrAnglesZX(norm, &terrot);
+    NuMtxSetIdentity(&m);
+    NuMtxRotateZ(&m, (int)terrot.z);
+    NuMtxRotateX(&m, (int)terrot.x);
+    NuVec4MtxTransformVU0(&tp[0], &tp[0], &m);
+    NuVec4MtxTransformVU0(&tp[1], &tp[1], &m);
+    NuVec4MtxTransformVU0(&tp[2], &tp[2], &m);
+    NuVec4MtxTransformVU0(&tp[3], &tp[3], &m);
+
+    ix = NuRndrFootFree & 0x3F;
+    NuRndrFootData[ix].pnts[0].x = tp[0].x + pos->x;
+    NuRndrFootData[ix].pnts[0].y = tp[0].y + pos->y;
+    NuRndrFootData[ix].pnts[0].z = tp[0].z + pos->z;
+    NuRndrFootData[ix].pnts[1].x = tp[1].x + pos->x;
+    NuRndrFootData[ix].pnts[1].y = tp[1].y + pos->y;
+    NuRndrFootData[ix].pnts[1].z = tp[1].z + pos->z;
+    NuRndrFootData[ix].pnts[2].x = tp[2].x + pos->x;
+    NuRndrFootData[ix].pnts[2].y = tp[2].y + pos->y;
+    NuRndrFootData[ix].pnts[2].z = tp[2].z + pos->z;
+    NuRndrFootData[ix].pnts[3].x = tp[3].x + pos->x;
+    NuRndrFootData[ix].pnts[3].y = tp[3].y + pos->y;
+    NuRndrFootData[ix].pnts[3].z = tp[3].z + pos->z;
+    NuRndrFootData[ix].gfx = gfx << 2;
+    NuRndrFootData[ix].timer = 16;
+    NuRndrFootData[ix].brightness = brightness;
+    NuRndrFootData[ix].colour = colour;
+    NuRndrFootFree++;
+    for (i = NuRndrFootFree; i < NuRndrFootFree + 8; i++) {
+        ix = i & 0x3F;
+        if (NuRndrFootData[ix].timer > 15) {
+            NuRndrFootData[ix].timer = 15;
+        }
+    }
+}
+
+
+void NuRndrFootPrints(struct numtl_s *mtl, float *u, float *v) {
+    struct nuvtx_tc1_s vtx[2048];
+    struct nuvtx_tc1_s *vp;
+    nurndrfoot_s *foot;
+    int count;
+    int gfx;
+    int colour;
+    int i;
+
+    vp = vtx;
+    count = 0;
+    for (i = 0; i < 64; i++) {
+        foot = &NuRndrFootData[i];
+        if (foot->timer > 0) {
+            if (testfootcol != 0) {
+                foot->colour = testfootcol;
+            }
+            if (foot->timer < 16) {
+                foot->timer--;
+            }
+            count += 4;
+            gfx = foot->gfx;
+            vp[0].pnt = foot->pnts[0];
+            vp[0].tc[0] = u[gfx];
+            vp[0].tc[1] = v[gfx];
+            vp[1].pnt = foot->pnts[1];
+            vp[1].tc[0] = u[gfx + 1];
+            vp[1].tc[1] = v[gfx + 1];
+            vp[2].pnt = foot->pnts[2];
+            vp[2].tc[0] = u[gfx + 2];
+            vp[2].tc[1] = v[gfx + 2];
+            vp[3].pnt = foot->pnts[3];
+            vp[3].tc[0] = u[gfx + 3];
+            vp[3].tc[1] = v[gfx + 3];
+            colour = (((foot->brightness * foot->timer) >> 4) << 24) + foot->colour;
+            vp[3].diffuse = colour;
+            vp[2].diffuse = colour;
+            vp[1].diffuse = colour;
+            vp[0].diffuse = colour;
+            vp += 4;
+        }
+    }
+
+    if (count != 0) {
+        NuRndrStreamLink(rndrstream_fx);
+        NuRndrStreamSetMisc(rndrstream_fx);
+        NuRndrStreamAddMtl(rndrstream_fx, mtl);
+        rndrstream_fx->cur.w = vpDmaTag_CntEx(rndrstream_fx->cur.w, 0x11000000, 0x50000000) - 1;
+        rndrstream_fx->cur.w = vtBeginDirect(rndrstream_fx->cur.w, 0);
+        rndrstream_fx->cur.w = gsBeginGifPacket(rndrstream_fx->cur.w, 0, 1, 0, 0, 0, 1, 0xE);
+        *((u64 *)rndrstream_fx->cur.w)++ = 0x44;
+        *((u64 *)rndrstream_fx->cur.w)++ = 0x42;
+        rndrstream_fx->cur.w = gsCloseGifPacket(rndrstream_fx->cur.w);
+        rndrstream_fx->cur.w = vtCloseDirect(rndrstream_fx->cur.w);
+        rndrstream_fx->cur.w = vpDmaTag_Close(rndrstream_fx->cur.w);
+        NuRndrSetLocalMtx(&numtx_identity, 2);
+        NuRndrStreamSetViewMtxScissorClip(rndrstream_fx);
+        NuRndrStreamSetLocalMtx(rndrstream_fx);
+        NuRndrStreamFxMPG(1);
+        NuRndrStreamQuad3dClip(vtx, count, 0, rndrstream_fx);
+        rndrstream_free = vpDmaTag_Next(rndrstream_fx->cur.w, 0);
+    }
+}
+
+
+int NuRndrStreamQuadShad(struct nurndrstream_s *stream) {
+    GifTagQuad strip;
+    GifTagQuad fan;
+    struct numtx_s m;
+    struct nuvec_s corner[4];
+    struct nuvec_s offset;
+    int n;
+    int start;
+    int i;
+    int count;
+
+    count = NuRndrShadowCnt * 4;
+    strip.dword[0] = 0x3002400000008000ULL;
+    strip.dword[1] = 0x512;
+    fan.dword[0] = 0x3002C00000008000ULL;
+    fan.dword[1] = 0x512;
+    start = 0;
+    stream->cur.w = vpDmaTag_Cnt(stream->cur.w);
+    ((unsigned char *)stream->cur.w)[-14] = 0x12;
+    *stream->cur.w++ = 0x6C010056;
+    *stream->cur.w++ = fan.word[0];
+    *stream->cur.w++ = fan.word[1];
+    *stream->cur.w++ = fan.word[2];
+    *stream->cur.w++ = fan.word[3];
+    while (count) {
+        n = (count > 42) ? 42 : count;
+        n &= 0xFC;
+        strip.tag.nloop = n;
+        *stream->cur.w++ = 0x6C0180D2;
+        *stream->cur.w++ = strip.word[0];
+        *stream->cur.w++ = strip.word[1];
+        *stream->cur.w++ = strip.word[2];
+        *stream->cur.w++ = strip.word[3];
+        *stream->cur.w++ = 0x6D018002;
+        *((u16 *)stream->cur.w)++ = n * 3;
+        *((u16 *)stream->cur.w)++ = 0;
+        *((u16 *)stream->cur.w)++ = 0;
+        *((u16 *)stream->cur.w)++ = 0;
+        *stream->cur.w++ = 0x01000103;
+        *stream->cur.w++ = (n << 16) | 0x6E00C005;
+        for (i = 0; i < n; i += 4) {
+            *stream->cur.w++ = NuRndrShadPolDat[(start + i) >> 2].shade << 24;
+            *stream->cur.w++ = NuRndrShadPolDat[(start + i) >> 2].shade << 24;
+            *stream->cur.w++ = NuRndrShadPolDat[(start + i) >> 2].shade << 24;
+            *stream->cur.w++ = NuRndrShadPolDat[(start + i) >> 2].shade << 24;
+        }
+        *stream->cur.w++ = 0x01000203;
+        *stream->cur.w++ = (n << 17) | 0x6C008003;
+        for (i = 0; i < n; i += 4) {
+            NuMtxSetRotationY(&m, NuRndrShadPolDat[(start + i) >> 2].yrot);
+            NuMtxRotateZ(&m, NuRndrShadPolDat[(start + i) >> 2].zrot);
+            NuMtxRotateX(&m, NuRndrShadPolDat[(start + i) >> 2].xrot);
+            offset.y = 0.0f;
+            offset.x = -NuRndrShadPolDat[(start + i) >> 2].size;
+            offset.z = -NuRndrShadPolDat[(start + i) >> 2].size;
+            NuVecMtxRotate(&corner[0], &offset, &m);
+            offset.z = -NuRndrShadPolDat[(start + i) >> 2].size;
+            offset.x = NuRndrShadPolDat[(start + i) >> 2].size;
+            NuVecMtxRotate(&corner[1], &offset, &m);
+            offset.x = -NuRndrShadPolDat[(start + i) >> 2].size;
+            offset.z = NuRndrShadPolDat[(start + i) >> 2].size;
+            NuVecMtxRotate(&corner[2], &offset, &m);
+            offset.x = NuRndrShadPolDat[(start + i) >> 2].size;
+            offset.z = NuRndrShadPolDat[(start + i) >> 2].size;
+            NuVecMtxRotate(&corner[3], &offset, &m);
+
+            *stream->cur.f++ = corner[0].x + NuRndrShadPolDat[(start + i) >> 2].pos.x;
+            *stream->cur.f++ = corner[0].y + NuRndrShadPolDat[(start + i) >> 2].pos.y;
+            *stream->cur.f++ = corner[0].z + NuRndrShadPolDat[(start + i) >> 2].pos.z;
+            *stream->cur.w++ = 0x8000;
+            *stream->cur.w++ = 0;
+            *stream->cur.w++ = 0;
+            stream->cur.w += 2;
+            *stream->cur.f++ = corner[1].x + NuRndrShadPolDat[(start + i) >> 2].pos.x;
+            *stream->cur.f++ = corner[1].y + NuRndrShadPolDat[(start + i) >> 2].pos.y;
+            *stream->cur.f++ = corner[1].z + NuRndrShadPolDat[(start + i) >> 2].pos.z;
+            *stream->cur.w++ = 0x8000;
+            *stream->cur.w++ = 0x1000;
+            *stream->cur.w++ = 0;
+            stream->cur.w += 2;
+            *stream->cur.f++ = corner[2].x + NuRndrShadPolDat[(start + i) >> 2].pos.x;
+            *stream->cur.f++ = corner[2].y + NuRndrShadPolDat[(start + i) >> 2].pos.y;
+            *stream->cur.f++ = corner[2].z + NuRndrShadPolDat[(start + i) >> 2].pos.z;
+            *stream->cur.w++ = 0;
+            *stream->cur.w++ = 0;
+            *stream->cur.w++ = 0x1000;
+            stream->cur.w += 2;
+            *stream->cur.f++ = corner[3].x + NuRndrShadPolDat[(start + i) >> 2].pos.x;
+            *stream->cur.f++ = corner[3].y + NuRndrShadPolDat[(start + i) >> 2].pos.y;
+            *stream->cur.f++ = corner[3].z + NuRndrShadPolDat[(start + i) >> 2].pos.z;
+            *stream->cur.w++ = 0;
+            *stream->cur.w++ = 0x1000;
+            *stream->cur.w++ = 0x1000;
+            stream->cur.w += 2;
+        }
+        *stream->cur.w++ = 0x01000101;
+        *stream->cur.w++ = 0x14000306;
+        start += n;
+        count -= n;
+    }
+    stream->cur.w = vpDmaTag_Close(stream->cur.w);
+    return 1;
+}
+
+
 void NuRndrWaterRippleUpdate(int frames) {
     float t;
     float fade;
@@ -4472,7 +5257,7 @@ void NuRndrInitWorld(void) {
 
     NuRndrShadMaskCount = 0;
     for (i = 0; i < 64; i++) {
-        NuRndrFootData[i].active = 0;
+        NuRndrFootData[i].timer = 0;
     }
 }
 
@@ -4560,40 +5345,6 @@ void NuRndrOTFlush(void) {
     ot_batch_free = 0x400;
 }
 
-void RotateCyl(struct nuvec_s *v, float xang, float yang) {
-    float sinx;
-    float cosx;
-    float siny;
-    float cosy;
-    float x;
-    float z;
-
-    sinx = NuTrigTable[(int)xang & 0xFFFF];
-    cosx = NuTrigTable[(int)(xang + 16384.0f) & 0xFFFF];
-    siny = NuTrigTable[(int)yang & 0xFFFF];
-    cosy = NuTrigTable[(int)(yang + 16384.0f) & 0xFFFF];
-    x = v->x;
-    z = v->y * sinx + v->z * cosx;
-    v->y = v->y * cosx - v->z * sinx;
-    v->z = z * cosy - x * siny;
-    v->x = z * siny + x * cosy;
-}
-
-
-void DeRotateVectorAngles(struct nuvec_s *dir, float *xang, float *yang) {
-    *yang = NuAtan2D(dir->x, dir->z);
-    *xang = NuAtan2D(-dir->y, NuFsqrt(dir->x * dir->x + dir->z * dir->z));
-}
-
 
 void NuRndrTest(void) {
-}
-
-
-void NuRndrAnglesZX(struct nuvec_s *dir, struct nuvec_s *angles) {
-    struct nuvec_s rotated;
-
-    angles->x = NuAtan2D(dir->z, dir->y);
-    NuVecRotateX(&rotated, dir, (int)-angles->x);
-    angles->z = -NuAtan2D(rotated.x, rotated.y);
 }
