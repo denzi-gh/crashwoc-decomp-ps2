@@ -294,19 +294,11 @@ extern TerTempInfoType *TerI;
 extern TerrShapeType *TerrShape;
 extern f32 NuTrigTable[];
 extern f32 D_0062CDA4; /* 0.2f (gp-relative .sdata constant) */
-extern f32 D_0062CDA8;
-extern f32 D_0062CDAC;
-extern f32 D_0062CDB0;
-extern f32 D_0062CDB4;
-extern f32 D_0062CDBC;
-extern f32 D_0062CDC0;
 extern f32 D_0062CDC4;
 extern f32 D_0062CCC4;
 extern f32 D_0062CCC8;
 extern f32 D_0062CCE0;
 extern f32 D_0062CCE4;
-extern f32 D_0062CD4C;
-extern f32 D_0062CD50;
 extern s32 TerrShapeAdjCnt;
 extern s32 terraincnt;
 extern TerrainSetType *CurTerr;
@@ -364,9 +356,6 @@ extern struct nuvec4_s tertempvec4;
 extern f32 NuFsqrt(f32 x);
 extern void *NuScratchAlloc32(s32 size);
 extern void NuScratchRelease(void);
-extern u64 fptodp(f32 value);
-extern s32 dpcmp(u64 a, u64 b);
-extern u64 dpsub(u64 a, u64 b);
 extern void NuVec4MtxTransformVU0(struct nuvec4_s *dst, struct nuvec4_s *src,
                                   struct numtx_s *m);
 extern void NuVec4MtxInvTransformVU0(struct nuvec4_s *dst, struct nuvec4_s *src,
@@ -2694,15 +2683,19 @@ s32 HitPoly(f32 ps, f32 pe, f32 ps2, f32 pe2, tertype *ter) {
                                 ter->pnts[1].z - ter->pnts[3].z,
                 &ter->norm[1]) != 0) &&
                 (time < TerI->hittime)) {
-                TerI->hittime = time;
                 if (ps2 > 0.0f) {
                     TerI->hittype = 1;
+                    TerI->hittime = time;
+                    TerI->hitnorm.x = ter->norm[1].x;
+                    TerI->hitnorm.y = ter->norm[1].y;
+                    TerI->hitnorm.z = ter->norm[1].z;
                 } else {
                     TerI->hittype = 0x11;
+                    TerI->hittime = time;
+                    TerI->hitnorm.x = ter->norm[1].x;
+                    TerI->hitnorm.y = ter->norm[1].y;
+                    TerI->hitnorm.z = ter->norm[1].z;
                 }
-                TerI->hitnorm.x = ter->norm[1].x;
-                TerI->hitnorm.y = ter->norm[1].y;
-                TerI->hitnorm.z = ter->norm[1].z;
                 hit = 1;
             }
         }
@@ -2958,9 +2951,9 @@ loop1:
     }
 
     if (*CurData < 0) {
-        do {
-            CurData += ((*CurData >= 0) ? *CurData : -(*CurData)) * 2 + 2;
-        } while (*CurData < 0);
+        while (*CurData < 0) {
+            CurData += ((*CurData >= 0) ? *CurData : -*CurData) * 2 + 2;
+        }
         goto loop1;
     }
 
@@ -3264,12 +3257,12 @@ s32 TerrainImpactPlatform(u8 *flags) {
             TerI->curpos.x += TerI->curvel.x * TerI->hittime;
             TerI->curpos.y += TerI->curvel.y * TerI->hittime;
             TerI->curpos.z += TerI->curvel.z * TerI->hittime;
-            if (TerI->uhitnorm.y < D_0062CD4C) {
+            if (TerI->uhitnorm.y < 0.707f) {
                 flags[0] = 0;
             } else {
-                flags[1] = 1;
                 flags[0] = 1;
-                TerI->curpos.y += TerI->hitnorm.y * D_0062CD50;
+                flags[1] = 1;
+                TerI->curpos.y += TerI->hitnorm.y * 0.002f;
             }
             return 0;
         case 0x11:
@@ -4445,7 +4438,7 @@ s32 TerrShapeSideStep(struct nuvec_s *vpos, struct nuvec_s *vvel, u8 *flags) {
         case 0:
             return 1;
         default:
-            if ((TerI->uhitnorm.y > D_0062CDA8) || (TerI->uhitnorm.y < D_0062CDAC)) {
+            if ((TerI->uhitnorm.y > 0.707f) || (TerI->uhitnorm.y < -0.8f)) {
                 return 1;
             }
             doslide = 0;
@@ -4471,10 +4464,10 @@ s32 TerrShapeSideStep(struct nuvec_s *vpos, struct nuvec_s *vvel, u8 *flags) {
     TerI->origvel.z = TerI->curvel.z;
     TerI->curvel.y = 0.0f;
     if (doslide == 1) {
-        TerI->curvel.x = TerI->hitnorm.x * TerrShape->size * D_0062CDB0;
-        TerI->curvel.z = TerI->hitnorm.z * TerrShape->size * D_0062CDB0;
-        TerrShape->offset.x = TerrShape->offset.x + TerI->hitnorm.x * TerrShape->size * D_0062CDB4;
-        TerrShape->offset.z = TerrShape->offset.z + TerI->hitnorm.z * TerrShape->size * D_0062CDB4;
+        TerI->curvel.x = TerI->hitnorm.x * TerrShape->size * 0.15f;
+        TerI->curvel.z = TerI->hitnorm.z * TerrShape->size * 0.15f;
+        TerrShape->offset.x = TerrShape->offset.x + TerI->hitnorm.x * TerrShape->size * 0.05f;
+        TerrShape->offset.z = TerrShape->offset.z + TerI->hitnorm.z * TerrShape->size * 0.05f;
     } else {
         dotp = slide.x * TerI->uhitnorm.x + slide.z * TerI->uhitnorm.z;
         if ((dotp == 0.0f) &&
@@ -4560,33 +4553,32 @@ void CubeImpact(struct numtx_s *mat, struct numtx_s *nmat, struct nuvec_s *norm,
     impact->z = mat->_32 + pnts[bestnum].z * size;
 }
 
-// NGC MATCH (PS2 control flow and layout verified against 0x0017cec8)
+// PS2 PAL: byte-exact over the full 0x580-byte extent at 0x0017cec8.
 void NewTerrainScaleY(struct nuvec_s *vpos, struct nuvec_s *vvel, u8 *flags,
                       s32 terid, f32 stopflag, f32 size, f32 yscale) {
     s32 c;
     s32 cnt;
     s32 normhit;
-    u64 d;
-    u64 zero;
+    TerrainTrackInfoType *track;
 
     if (CurTerr == 0) {
         return;
     }
 
-    TerrPolyObj = -1;
     plathitid = -1;
+    TerrPolyObj = -1;
     TerrPoly = 0;
     PlatCrush = 0;
     terrhitflags = 0;
     for (c = 0; c < 4; c++) {
         if (CurTerr->TrackInfo[c].ptrid == flags) {
-            CurTrackInfo = &CurTerr->TrackInfo[c];
-            goto track_info_done;
+            goto track_found;
         }
     }
-    CurTrackInfo = 0;
+    track = 0;
+track_ready:
+    CurTrackInfo = track;
 
-track_info_done:
     if (PadRecPtr() >= 0x23D) {
         plathitid = -1;
     }
@@ -4609,33 +4601,23 @@ track_info_done:
     TerI->stopflag = stopflag;
     TerI->flags = flags;
     TerI->scanmode = 0;
-    TerI->timeadj = D_0062CDBC;
-    TerI->impactadj = D_0062CDC0;
+    TerI->timeadj = 0.01f;
+    TerI->impactadj = 0.00001f;
     ScanTerrain(1, 0);
 
-    if (flags[1] != 0) {
-        zero = 0;
-        d = fptodp(vvel->x);
-        if (dpcmp(d, zero) < 0) {
-            d = dpsub(zero, d);
-        }
-        if (dpcmp(d, fptodp(stopflag)) < 0) {
-            d = fptodp(vvel->y);
-            if (dpcmp(d, zero) < 0) {
-                d = dpsub(zero, d);
-            }
-            if (dpcmp(d, fptodp(stopflag)) < 0) {
-                d = fptodp(vvel->z);
-                if (dpcmp(d, zero) < 0) {
-                    d = dpsub(zero, d);
-                }
-                if ((dpcmp(d, fptodp(stopflag)) < 0) && (platinrange == 0)) {
-                    goto cleanup;
-                }
-            }
-        }
+    if (!((flags[1] != 0) &&
+          (fabs(vvel->x) < stopflag) &&
+          (fabs(vvel->y) < stopflag) &&
+          (fabs(vvel->z) < stopflag) && (platinrange == 0))) {
+        goto platform_checks;
     }
+    goto cleanup;
 
+track_found:
+    track = &CurTerr->TrackInfo[c];
+    goto track_ready;
+
+platform_checks:
     TerI->curpos.y = TerI->curpos.y * TerI->inyscale;
     TerI->curvel.y = TerI->curvel.y * TerI->inyscale;
     flags[0] = 0;
@@ -4643,13 +4625,7 @@ track_info_done:
     cnt = PlatformChecks(4, vvel);
 
     do {
-        TerI->ay = (s32)NuAtan2D(TerI->curvel.x, TerI->curvel.z);
-        TerI->ax = (s32)NuAtan2D(-TerI->curvel.y,
-                                  NuFsqrt(TerI->curvel.x * TerI->curvel.x +
-                                          TerI->curvel.z * TerI->curvel.z));
-        TerI->len = NuFsqrt(TerI->curvel.x * TerI->curvel.x +
-                             TerI->curvel.y * TerI->curvel.y +
-                             TerI->curvel.z * TerI->curvel.z);
+        DerotateMovementVector();
         HitTerrain();
         StorePlatImpact();
         if ((TerI->hittype > 0x10) && (TerI->hitterrno != -1) &&
@@ -4666,7 +4642,7 @@ track_info_done:
                 ShadNorm = TerI->uhitnorm;
                 if ((TerI->uhitnorm.y > D_0062CDC4) && (TerI->hitterrno >= 0) &&
                     (CurTerr->terr[TerI->hitterrno].type == 1)) {
-                    CurTerr->platdata[TerrShapeAdjCnt * CurTerr->terr[TerI->hitterrno].info].status.all |= 2;
+                    CurTerr->platdata[CurTerr->terr[TerI->hitterrno].info].status.bit.hit = 1;
                 }
             }
             if (TerrShapeAdjCnt != 0) {
@@ -4694,9 +4670,7 @@ track_info_done:
 
 cleanup:
     NuScratchRelease();
-    curSphereter = 0;
-    TerrShapeAdjCnt = 0;
-    curPickInst = 0;
+    TerrFlush();
 }
 
 void RayImpact(struct nuvec_s *vec) {
@@ -5723,7 +5697,7 @@ s32 TerrainTrackBack(struct nuvec_s *pos, struct nuvec_s *vel, struct nuvec_s *d
 }
 
 
-void ScanTerrainPlatform(s32 terrno, s32 extramask, s32 platscan) {
+void ScanTerrainPlatform(s32 msituid, s32 extramask) {
     s32 hitcnt;
     s32 c;
     tertype **hitdata;
@@ -5805,7 +5779,7 @@ void ScanTerrainPlatform(s32 terrno, s32 extramask, s32 platscan) {
     maxy += 0.05f;
     minz -= 0.05f;
     maxz += 0.05f;
-    situ = &CurTerr->terr[terrno];
+    situ = &CurTerr->terr[msituid];
     if (CurTerr->platdata[situ->info].curmtx != 0) {
         if (CurTerr->platdata[situ->info].curmtx->_30 > CurTerr->platdata[situ->info].oldmtx._30) {
             tminx = minx - situ->Location.x;
@@ -5936,7 +5910,7 @@ void ScanTerrainPlatform(s32 terrno, s32 extramask, s32 platscan) {
             }
             if (hitcnt != 0) {
                 lastwrite[0] = hitcnt;
-                lastwrite[1] = terrno;
+                lastwrite[1] = msituid;
                 lastwrite = (short *)hitdata;
             }
         }
@@ -6012,7 +5986,7 @@ void ScanTerrainPlatform(s32 terrno, s32 extramask, s32 platscan) {
         }
         if (hitcnt != 0) {
             lastwrite[0] = hitcnt;
-            lastwrite[1] = terrno;
+            lastwrite[1] = msituid;
             lastwrite = (short *)hitdata;
         }
     }
@@ -6021,6 +5995,7 @@ void ScanTerrainPlatform(s32 terrno, s32 extramask, s32 platscan) {
 }
 
 
+/* PS2 PAL: byte-exact over the full 0x228-byte extent at 0x00181888. */
 s32 NewRayCastPlatForm(struct nuvec_s *vpos, struct nuvec_s *vvel, s32 platid, f32 size,
                        f32 timeadj) {
     if (CurTerr == 0) {
@@ -6043,7 +6018,7 @@ s32 NewRayCastPlatForm(struct nuvec_s *vpos, struct nuvec_s *vvel, s32 platid, f
     TerI->scanmode = 1;
     TerI->timeadj = timeadj;
     TerI->impactadj = 0.0f;
-    ScanTerrainPlatform(CurTerr->platdata[platid].terrno, 0, 1);
+    ScanTerrainPlatform(CurTerr->platdata[platid].terrno, 0);
     DerotateMovementVector();
     HitTerrain();
     if (TerI->hittype != 0) {

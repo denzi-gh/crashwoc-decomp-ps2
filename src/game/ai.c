@@ -473,35 +473,35 @@ void ProcessVehMasks(void);
 
 s32 UpdateCRUNCHTIME(void)
 {
-    struct nuvec_s v[2];
-    struct nuvec_s p;
-    struct nuvec_s ppos;
-    struct nuangvec_s rot2;
-    struct nuangvec_s rot;
-    struct creature_s *c;
+    struct nuvec_s pos[2];
+    struct nuvec_s v;
+    struct nuvec_s plrmid;
+    struct nuangvec_s ang2;
+    struct nuangvec_s ang;
+    struct creature_s *crunch;
     struct creature_s *cortex;
-    struct nuvec_s *a;
-    struct nuvec_s *b;
-    struct nuvec_s *d;
-    struct nuvec_s *e;
+    struct nuvec_s *p0;
+    struct nuvec_s *p1;
+    struct nuvec_s *p2;
+    struct nuvec_s *p3;
     struct nuvec_s *path;
     struct nuvec_s *path2;
-    f32 t;
+    f32 f;
     s32 i;
-    s32 n;
-    s32 fire;
+    s32 j;
+    s32 active;
     s32 kill;
-    s32 five;
+    s32 extra_time;
     s32 old;
-    u16 ang;
+    u16 yrot;
     double dd;
 
     jcrunch = 0;
     FindNearestCreature(&player->obj.pos, 0x7F, 0);
     if (temp_creature_i != -1) {
-        c = &Character[temp_creature_i];
+        crunch = &Character[temp_creature_i];
     } else {
-        c = 0;
+        crunch = 0;
     }
     FindNearestCreature(&player->obj.pos, 2, 0);
     if (temp_creature_i != -1) {
@@ -509,34 +509,36 @@ s32 UpdateCRUNCHTIME(void)
     } else {
         cortex = 0;
     }
-    ppos.x = player->obj.pos.x;
-    ppos.y = player->obj.pos.y
+    plrmid.x = player->obj.pos.x;
+    plrmid.y = player->obj.pos.y
            + (player->obj.bot + player->obj.top) * player->obj.SCALE * 0.5f;
-    ppos.z = player->obj.pos.z;
+    plrmid.z = player->obj.pos.z;
     D_00633330[0] += 0x57C;
     D_00633330[1] += 0x804;
     D_00633330[2] += 0xA20;
     D_00633314 = (cortex != 0) ? 4 - cortex->ai.hits : 0;
-    five = 5;
+    extra_time = 5;
 
-    if (c != 0 && (u32)D_00633314 < 4 && c->ai.i0 > 0 && c->ai.i0 < 5
-        && c->ai.terflags == 0 && c->ai.movflags == 0
-        && (path = D_005CA154[c->i_aitab].pos,
-            NuVecDistSqr(&c->obj.pos, &path[c->ai.i0], 0) < 1.0f)
-        && c->obj.anim.newaction != 0x73 && c->obj.anim.newaction != 0x49
-        && !(c->obj.anim.action == 0x2C && c->obj.anim.anim_time < 15.0f)
-        && !(c->obj.anim.newaction == 0x2C && c->obj.anim.blend != 0)) {
-        jcrunch = c->ai.i0;
+    if (crunch != 0 && (u32)D_00633314 < 4
+        && crunch->ai.i0 > 0 && crunch->ai.i0 < 5
+        && crunch->ai.terflags == 0 && crunch->ai.movflags == 0
+        && (path = D_005CA154[crunch->i_aitab].pos,
+            NuVecDistSqr(&crunch->obj.pos, &path[crunch->ai.i0], 0) < 1.0f)
+        && crunch->obj.anim.newaction != 0x73
+        && crunch->obj.anim.newaction != 0x49
+        && !(crunch->obj.anim.action == 0x2C && crunch->obj.anim.anim_time < 15.0f)
+        && !(crunch->obj.anim.newaction == 0x2C && crunch->obj.anim.blend != 0)) {
+        jcrunch = crunch->ai.i0;
     } else {
         jcrunch = 0;
     }
 
-    n = -1;
-    if (c != 0) {
+    j = -1;
+    if (crunch != 0) {
         for (i = 0; i < 4; i++) {
-            path2 = D_005CA154[c->i_aitab].pos;
-            if (NuVecDistSqr(&c->obj.pos, &path2[i + 1], 0) < 0.5f) {
-                n = i;
+            path2 = D_005CA154[crunch->i_aitab].pos;
+            if (NuVecDistSqr(&crunch->obj.pos, &path2[i + 1], 0) < 0.5f) {
+                j = i;
                 i = 4;
             }
         }
@@ -544,15 +546,15 @@ s32 UpdateCRUNCHTIME(void)
     for (i = 0; i < 4; i++) {
         if (ObjTab[181 + i].obj.special != 0) {
             *(struct nuvec_s *)&ObjTab[181 + i].obj.special->instance->mtx._30 = D_005C8A10[i];
-            if (i == n) {
+            if (i == j) {
                 ObjTab[181 + i].obj.special->instance->mtx._31 -= 0.125f;
             }
         }
     }
 
-    if (c != 0 && c->ai.i0 == 1 && c->obj.anim.newaction == 0x22
+    if (crunch != 0 && crunch->ai.i0 == 1 && crunch->obj.anim.newaction == 0x22
         && (u32)D_00633314 < 4) {
-        earth_attack_on = five;
+        earth_attack_on = extra_time;
     }
     if (earth_attack_on != 0) {
         earth_attack_on--;
@@ -565,9 +567,9 @@ s32 UpdateCRUNCHTIME(void)
         D_00633318 = 0x19;
     }
 
-    if (c != 0 && c->ai.i0 == 2 && c->obj.anim.newaction == 0x22
+    if (crunch != 0 && crunch->ai.i0 == 2 && crunch->obj.anim.newaction == 0x22
         && (u32)D_00633314 < 4) {
-        water_attack_on = five;
+        water_attack_on = extra_time;
     }
     if (water_attack_on != 0) {
         water_attack_on--;
@@ -581,20 +583,21 @@ s32 UpdateCRUNCHTIME(void)
         } else {
             D_00633320 = qrand() / 0x8000;
         }
-        a = &D_005C8880[D_00633320];
-        rot.x = 0;
-        rot.y = NuAtan2D(crunchtime_arena_midpos.x - a->x, crunchtime_arena_midpos.z - a->z);
-        rot.z = 0;
-        rot2 = rot;
-        AddDeb3(a, 0x11, 5, &rot2);
-        GameSfx(0x48, a);
+        p0 = &D_005C8880[D_00633320];
+        ang.x = 0;
+        ang.y = NuAtan2D(crunchtime_arena_midpos.x - p0->x,
+                         crunchtime_arena_midpos.z - p0->z);
+        ang.z = 0;
+        ang2 = ang;
+        AddDeb3(p0, 0x11, 5, &ang2);
+        GameSfx(0x48, p0);
         D_0063331C = 0x3E;
     }
 
-    fire = 0;
-    if (c != 0 && c->ai.i0 == 3 && c->obj.anim.newaction == 0x22
-        && (u32)c->ai.i0 >= (u32)D_00633314) {
-        fire = 1;
+    active = 0;
+    if (crunch != 0 && crunch->ai.i0 == 3 && crunch->obj.anim.newaction == 0x22
+        && (u32)crunch->ai.i0 >= (u32)D_00633314) {
+        active = 1;
     }
     if (D_00633324 != 0) {
         D_00633324--;
@@ -602,85 +605,85 @@ s32 UpdateCRUNCHTIME(void)
             GameSfx(0x4D, 0);
         }
     }
-    if (fire && D_00633324 == 0) {
+    if (active && D_00633324 == 0) {
         do {
-            n = qrand() / 0x4000;
-        } while (n == fire_attack_on);
-        fire_attack_on = n;
+            j = qrand() / 0x4000;
+        } while (j == fire_attack_on);
+        fire_attack_on = j;
         D_00633324 = 100;
         GameSfx(0x85, 0);
     }
     if (D_00633324 != 0) {
-        a = &D_005C88B0[fire_attack_on];
-        b = &D_005C88B0[fire_attack_on + 1];
-        d = &D_005C88FC[fire_attack_on];
-        e = &D_005C88FC[fire_attack_on - 1];
-        t = qrand() * 1.5259022e-05f;
-        v[0].x = a->x + (b->x - a->x) * t;
-        v[0].y = a->y + (b->y - a->y) * t;
-        v[0].z = a->z + (b->z - a->z) * t;
-        v[1].x = e->x + (d->x - e->x) * t;
-        v[1].y = e->y + (d->y - e->y) * t;
-        v[1].z = e->z + (d->z - e->z) * t;
-        t = qrand() * 1.5259022e-05f;
-        p.x = v[1].x + (v[0].x - v[1].x) * t;
-        p.y = v[1].y + (v[0].y - v[1].y) * t;
-        p.z = v[1].z + (v[0].z - v[1].z) * t;
+        p0 = &D_005C88B0[fire_attack_on];
+        p1 = &D_005C88B0[fire_attack_on + 1];
+        p2 = &D_005C88FC[fire_attack_on];
+        p3 = &D_005C88FC[fire_attack_on - 1];
+        f = qrand() * 1.5259022e-05f;
+        pos[0].x = p0->x + (p1->x - p0->x) * f;
+        pos[0].y = p0->y + (p1->y - p0->y) * f;
+        pos[0].z = p0->z + (p1->z - p0->z) * f;
+        pos[1].x = p3->x + (p2->x - p3->x) * f;
+        pos[1].y = p3->y + (p2->y - p3->y) * f;
+        pos[1].z = p3->z + (p2->z - p3->z) * f;
+        f = qrand() * 1.5259022e-05f;
+        v.x = pos[1].x + (pos[0].x - pos[1].x) * f;
+        v.y = pos[1].y + (pos[0].y - pos[1].y) * f;
+        v.z = pos[1].z + (pos[0].z - pos[1].z) * f;
         if ((u32)D_00633324 >= 0x32) {
             for (i = 0; i < 2; i++) {
-                AddGameDebrisRot(0x75, &p, 1, 0, 0);
+                AddGameDebrisRot(0x75, &v, 1, 0, 0);
             }
         } else if (D_00633324 != 0) {
             for (i = 0; i < 4; i++) {
-                AddGameDebrisRot(0x76, &p, 1, 0, 0);
+                AddGameDebrisRot(0x76, &v, 1, 0, 0);
             }
             if (player->obj.pos.y + player->obj.bot * player->obj.SCALE
                 < crunchtime_arena_midpos.y + 1.0f
-                && (player->obj.pos.x - a->x) * (b->z - a->z)
-                   + (player->obj.pos.z - a->z) * (a->x - b->x) >= 0.0f
-                && (player->obj.pos.x - b->x) * (d->z - b->z)
-                   + (player->obj.pos.z - b->z) * (b->x - d->x) >= 0.0f
-                && (player->obj.pos.x - d->x) * (e->z - d->z)
-                   + (player->obj.pos.z - d->z) * (d->x - e->x) >= 0.0f
-                && (player->obj.pos.x - e->x) * (a->z - e->z)
-                   + (player->obj.pos.z - e->z) * (e->x - a->x) >= 0.0f) {
+                && (player->obj.pos.x - p0->x) * (p1->z - p0->z)
+                   + (player->obj.pos.z - p0->z) * (p0->x - p1->x) >= 0.0f
+                && (player->obj.pos.x - p1->x) * (p2->z - p1->z)
+                   + (player->obj.pos.z - p1->z) * (p1->x - p2->x) >= 0.0f
+                && (player->obj.pos.x - p2->x) * (p3->z - p2->z)
+                   + (player->obj.pos.z - p2->z) * (p2->x - p3->x) >= 0.0f
+                && (player->obj.pos.x - p3->x) * (p0->z - p3->z)
+                   + (player->obj.pos.z - p3->z) * (p3->x - p0->x) >= 0.0f) {
                 KillPlayer(&player->obj, 0xD);
             }
         }
     }
 
-    if (c != 0 && c->ai.i0 == 4 && c->obj.anim.newaction == 0x22
+    if (crunch != 0 && crunch->ai.i0 == 4 && crunch->obj.anim.newaction == 0x22
         && (u32)D_00633314 < 4 && D_00633328 == 0) {
         do {
-            n = qrand() / 0x1C72;
-        } while (weather_attack_on[n] != 0);
-        weather_attack_on[n] = 100;
+            j = qrand() / 0x1C72;
+        } while (weather_attack_on[j] != 0);
+        weather_attack_on[j] = 100;
         D_00633328 = 0x21;
-        GameSfx(0x32, &D_005C89A0[n]);
+        GameSfx(0x32, &D_005C89A0[j]);
     }
     kill = 0;
-    for (n = 0; n < 9; n++) {
-        if (weather_attack_on[n] != 0) {
-            weather_attack_on[n]--;
-            if (weather_attack_on[n] == 0x32) {
+    for (j = 0; j < 9; j++) {
+        if (weather_attack_on[j] != 0) {
+            weather_attack_on[j]--;
+            if (weather_attack_on[j] == 0x32) {
                 gamesfx_effect_volume = 0xBFFD;
-                GameSfx(0x4B, &D_005C89A0[n]);
+                GameSfx(0x4B, &D_005C89A0[j]);
             }
-            if (weather_attack_on[n] != 0) {
-                AddGameDebrisRot(0x78, &D_005C8930[n], 1, 0, 0);
-                AddGameDebrisRot(0x78, &D_005C89A0[n], 1, 0, 0);
+            if (weather_attack_on[j] != 0) {
+                AddGameDebrisRot(0x78, &D_005C8930[j], 1, 0, 0);
+                AddGameDebrisRot(0x78, &D_005C89A0[j], 1, 0, 0);
             }
         }
-        if ((u32)(weather_attack_on[n] - 1) < 0x31) {
-            if (NuVecDistSqr(&ppos, &D_005C8930[n], 0) < 0.110889f
-                || NuVecDistSqr(&ppos, &D_005C89A0[n], 0) < 0.110889f) {
+        if ((u32)(weather_attack_on[j] - 1) < 0x31) {
+            if (NuVecDistSqr(&plrmid, &D_005C8930[j], 0) < 0.110889f
+                || NuVecDistSqr(&plrmid, &D_005C89A0[j], 0) < 0.110889f) {
                 kill = 1;
             } else {
-                ang = NuAtan2D(D_005C8930[n].x - D_005C89A0[n].x,
-                               D_005C8930[n].z - D_005C89A0[n].z);
-                NuVecSub(&v[1], &ppos, &D_005C89A0[n]);
-                NuVecRotateY(&v[1], &v[1], -ang);
-                dd = v[1].x;
+                yrot = NuAtan2D(D_005C8930[j].x - D_005C89A0[j].x,
+                                D_005C8930[j].z - D_005C89A0[j].z);
+                NuVecSub(&pos[1], &plrmid, &D_005C89A0[j]);
+                NuVecRotateY(&pos[1], &pos[1], -yrot);
+                dd = pos[1].x;
                 if (dd < 0.0) {
                     dd = 0.0 - dd;
                 }
@@ -698,35 +701,36 @@ s32 UpdateCRUNCHTIME(void)
     }
 
     if (cortex != 0) {
-        p.x = cortex->obj.pos.x - NuTrigTable[cortex->obj.hdg] * D_00631B9C;
-        p.z = cortex->obj.pos.z
+        v.x = cortex->obj.pos.x - NuTrigTable[cortex->obj.hdg] * D_00631B9C;
+        v.z = cortex->obj.pos.z
             - NuTrigTable[(cortex->obj.hdg + 0x4000) & 0xFFFF] * D_00631B9C;
-        p.y = cortex->obj.pos.y + cortex->obj.top * cortex->obj.SCALE + D_00631B98;
+        v.y = cortex->obj.pos.y + cortex->obj.top * cortex->obj.SCALE + D_00631B98;
         if (CrunchTime_Intro != 0
             || (cortex->obj.anim.newaction != 0x1C
                 && cortex->obj.anim.newaction != 0x46
                 && !(cortex->obj.anim.action == 0x49
                      && D_00631BA0 < cortex->obj.anim.anim_time))) {
-            p.y += 2.0f;
+            v.y += 2.0f;
         }
-        p.x += NuTrigTable[D_00633330[0]] * 0.1f;
-        p.y += NuTrigTable[D_00633330[1]] * 0.1f;
-        p.z += NuTrigTable[D_00633330[2]] * 0.1f;
-        D_006B7640.x += (p.x - D_006B7640.x) * crunchtime_follow_rate;
-        D_006B7640.z += (p.z - D_006B7640.z) * crunchtime_follow_rate;
-        D_006B7640.y += (p.y - D_006B7640.y) * crunchtime_follow_rate;
+        f = crunchtime_follow_rate;
+        v.x += NuTrigTable[D_00633330[0]] * 0.1f;
+        v.y += NuTrigTable[D_00633330[1]] * 0.1f;
+        v.z += NuTrigTable[D_00633330[2]] * 0.1f;
+        D_006B7640.x += (v.x - D_006B7640.x) * f;
+        D_006B7640.y += (v.y - D_006B7640.y) * f;
+        D_006B7640.z += (v.z - D_006B7640.z) * f;
     }
 
     old = D_00631B94;
-    D_00631B94 = (c != 0 && c->obj.anim.action == 0x73);
+    D_00631B94 = (crunch != 0 && crunch->obj.anim.action == 0x73);
     if (D_00631B94 != old) {
         if (D_00631B94 != 0) {
-            p = D_0061FFC0;
-            SetNewMaskStuff(0, &c->obj.pos, &p, 1.0f, -540.0f, 1.0f,
+            v = D_0061FFC0;
+            SetNewMaskStuff(0, &crunch->obj.pos, &v, 1.0f, -540.0f, 1.0f,
                             0, 0, 1.0f, 0.0f);
         } else {
-            p = D_0061FFB0;
-            SetNewMaskStuff(0, &crunchtime_arena_midpos, &p, 0.0f, -540.0f, 1.0f,
+            v = D_0061FFB0;
+            SetNewMaskStuff(0, &crunchtime_arena_midpos, &v, 0.0f, -540.0f, 1.0f,
                             0, 0, 1.0f, 0.0f);
         }
     }
