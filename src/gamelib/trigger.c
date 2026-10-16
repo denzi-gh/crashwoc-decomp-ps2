@@ -807,50 +807,59 @@ int CheckUnparentedTriggerWithPos(struct NUTRIGGER_s* trigger, struct nuvec_s* p
     return 0;
 }
 
-int WeaponCheckTriggers(struct nuvec_s* pos, float r, int hitpoints) {
-    struct instNUTRIGGERSYS_s* itriggersys;
+int WeaponCheckTriggers(struct nuvec_s *pos, float r, int hitpoints)
+{
+    struct instNUTRIGGERSYS_s *itriggersys;
     int i;
-    struct NUTRIGGERSYS_s* triggersys;
-    struct nugscn_s* gscene;
-    struct NUTRIGGER_s* trigger;
-    struct instNUTRIGGER_s* itrigger;
-    struct nuinstance_s* instance;
+    struct NUTRIGGERSYS_s *triggersys;
+    struct nugscn_s *gscene;
+    struct NUTRIGGER_s *trigger;
+    struct instNUTRIGGER_s *itrigger;
+    struct nuinstance_s *instance;
     char script[32];
-    int check;
 
-    for(itriggersys = g_NuTriggerSysList; itriggersys != 0; itriggersys = itriggersys->next) {
+    for (itriggersys = g_NuTriggerSysList; itriggersys != 0; itriggersys = itriggersys->next) {
         gscene = itriggersys->scenemanager->gscene;
         triggersys = itriggersys->triggersys;
-        if ((itriggersys->is_disabled & 1) == 0) {
-            for (i = 0; i < triggersys->ntriggers; i++) {
-                trigger = triggersys->triggers + i;
-                itrigger = itriggersys->itriggers + i;
-                //script[i] = trigger->triggername + i * 0xd;
-                if (((itrigger->flags & 1U) == 0) && ((itrigger->enableflags == 0xff) && (trigger->trigger_type > 1))) {
-                    if (trigger->trigger_type == NUTRIGGER_PLAYER_WEAPON_CONTACT) {
-                        if (trigger->instance_ix >= 0) {
-                            instance = gscene->instances + trigger->instance_ix;
-                            if ((instance->flags.visible & 1) == 0) {
-                                continue;
-                            }
-                            if (instance->anim != 0) {
-                                check = CheckParentedTriggerWithPos(trigger, &instance->anim->mtx, pos, r);
-                            } else {
-                                check = CheckParentedTriggerWithPos(trigger, &instance->mtx, pos, r);
-                            }
-                        } else {
-                            check = CheckUnparentedTriggerWithPos(trigger, pos, r);
+        if (itriggersys->is_disabled)
+            continue;
+        for (i = 0; i < triggersys->ntriggers; i++) {
+            trigger = &triggersys->triggers[i];
+            itrigger = &itriggersys->itriggers[i];
+            if ((itrigger->flags & 1) || itrigger->enableflags != 0xFF || trigger->trigger_type < 2)
+                continue;
+            if (trigger->trigger_type != NUTRIGGER_PLAYER_WEAPON_CONTACT)
+                continue;
+            if (trigger->instance_ix >= 0) {
+                instance = &gscene->instances[trigger->instance_ix];
+                if (!instance->flags.visible)
+                    continue;
+                if (instance->anim != 0) {
+                    if (CheckParentedTriggerWithPos(trigger, &instance->anim->mtx, pos, r)) {
+                        itrigger->hitpoints += hitpoints;
+                        if (itrigger->hitpoints >= trigger->hitpoints) {
+                            NuSceneInstanceRunScript(itriggersys->scenemanager, trigger->triggername);
+                            itrigger->flags |= 1;
                         }
-                        if (check != 0) {
-                            itrigger->hitpoints += hitpoints;
-                            if (trigger->hitpoints <= itrigger->hitpoints) {
-                                NuSceneInstanceRunScript(itriggersys->scenemanager, trigger->triggername);
-                                itrigger->flags = itrigger->flags | 1;
-                            }
-                            return 1;
+                        return 1;
+                    }
+                } else {
+                    if (CheckParentedTriggerWithPos(trigger, &instance->mtx, pos, r)) {
+                        itrigger->hitpoints += hitpoints;
+                        if (itrigger->hitpoints >= trigger->hitpoints) {
+                            NuSceneInstanceRunScript(itriggersys->scenemanager, trigger->triggername);
+                            itrigger->flags |= 1;
                         }
+                        return 1;
                     }
                 }
+            } else if (CheckUnparentedTriggerWithPos(trigger, pos, r)) {
+                itrigger->hitpoints += hitpoints;
+                if (itrigger->hitpoints >= trigger->hitpoints) {
+                    NuSceneInstanceRunScript(itriggersys->scenemanager, trigger->triggername);
+                    itrigger->flags |= 1;
+                }
+                return 1;
             }
         }
     }
