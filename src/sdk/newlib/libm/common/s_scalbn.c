@@ -20,10 +20,11 @@ typedef union {
 #define GET_HIGH_WORD(i, d) do { ieee_double_shape_type gh_u; gh_u.value = (d); (i) = gh_u.parts.msw; } while (0)
 #define SET_HIGH_WORD(d, v) do { ieee_double_shape_type sh_u; sh_u.value = (d); sh_u.parts.msw = (v); (d) = sh_u.value; } while (0)
 
-#define two54 1.80143985094819840000e+16
-#define twom54 5.55111512312578270211e-17
-#define huge 1.0e+300
-#define tiny 1.0e-300
+static const double
+two54 = 1.80143985094819840000e+16,
+twom54 = 5.55111512312578270211e-17,
+huge = 1.0e+300,
+tiny = 1.0e-300;
 
 extern double copysign(double x, double y);
 

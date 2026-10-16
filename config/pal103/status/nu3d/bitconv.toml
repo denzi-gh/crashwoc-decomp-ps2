@@ -38,3 +38,27 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0057:00165f58:BlockConv8to32"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0057:002e98b0:lut.69"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0057:002e9cb0:lut.73"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0057:002e9eb0:block_table4.77"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0057:002e9f30:block_table32.78"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0057:002e9fb0:block_table8.82"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0057:002ea030:block_table32.83"
+state = "asm"

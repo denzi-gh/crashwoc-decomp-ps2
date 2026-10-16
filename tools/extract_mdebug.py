@@ -47,22 +47,46 @@ HDRR_FIELDS = (
 FDR_FMT = "<IiiiiiiiiiHHiiiiIii"   # adr..cbLine, 72 bytes
 PDR_FMT = "<Iiiiiiiiihhiii"        # adr..cbLineOffset, 52 bytes
 
-# Symbol type (st) and storage class (sc) codes we care about.
-ST_PROC = 6
-ST_STATIC_PROC = 14
+# Symbol type (st) codes we care about.
+ST_NIL = 0
 ST_GLOBAL = 1
 ST_STATIC = 2
+ST_PROC = 6
+ST_STATIC_PROC = 14
 
-# Storage classes that place a symbol in a data section (MIPS ECOFF).
-SC_DATA_CLASSES = {
-    2,   # scData
-    3,   # scBss
-    13,  # scSData
-    14,  # scSBss
-    15,  # scRData
-    17,  # scCommon   (resolved to a .bss address in a linked image)
-    18,  # scSCommon
+# Storage class (sc) codes (MIPS ECOFF, include/coff/sym.h).
+SC_NIL = 0
+SC_TEXT = 1
+SC_DATA = 2
+SC_BSS = 3
+SC_INFO = 11
+SC_SDATA = 13
+SC_SBSS = 14
+SC_RDATA = 15
+SC_COMMON = 17          # resolved to a .bss address in a linked image
+SC_SCOMMON = 18
+SC_NAMES = {
+    SC_NIL: "scNil", SC_TEXT: "scText", SC_DATA: "scData", SC_BSS: "scBss",
+    4: "scRegister", 5: "scAbs", 6: "scUndefined", SC_INFO: "scInfo",
+    SC_SDATA: "scSData", SC_SBSS: "scSBss", SC_RDATA: "scRData",
+    SC_COMMON: "scCommon", SC_SCOMMON: "scSCommon",
 }
+
+# Storage classes that place a symbol in a data section.
+SC_DATA_CLASSES = {SC_DATA, SC_BSS, SC_SDATA, SC_SBSS, SC_RDATA, SC_COMMON,
+                   SC_SCOMMON}
+
+# GNU as embeds STABS in .mdebug as local symbols whose 20-bit `index` is
+# CODE_MASK + the stab type (gdb's ECOFF_IS_STAB / ECOFF_UNMARK_STAB); a unit
+# with stabs starts with a `@stabs` marker symbol.
+INDEX_NIL = 0xFFFFF
+STAB_CODE_MASK = 0x8F300
+STABS_MARKER = "@stabs"
+N_GSYM = 0x20           # global variable (value 0; address via EXTR)
+N_FUN = 0x24
+N_STSYM = 0x26          # static data
+N_LCSYM = 0x28          # static bss
+N_LSYM = 0x80           # local symbol / type definition
 
 # MIPS $sp / $ra, used to render the frame/return registers legibly.
 REG_NAMES = {29: "sp", 30: "fp", 31: "ra", 0: "zero"}
@@ -118,10 +142,32 @@ class MDebug:
         return self.data[base:end].decode("latin-1")
 
     def local_symbol(self, index):
-        """(iss, value, st, sc) for local symbol `index`."""
+        """(iss, value, st, sc, aux index) for local symbol `index`.
+
+        The SYMR bitfield is st:6 | sc:5 | reserved:1 | index:20; `index` is
+        an aux-table index (INDEX_NIL when unused) or, for an embedded stab,
+        STAB_CODE_MASK + the stab type.
+        """
         iss, value, bits = struct.unpack_from(
             "<iiI", self.data, self.h["cbSymOffset"] + index * SYMR_SIZE)
-        return iss, value, bits & 0x3f, (bits >> 6) & 0x1f
+        return iss, value, bits & 0x3f, (bits >> 6) & 0x1f, bits >> 12
+
+    @staticmethod
+    def is_stab(index):
+        """True when a SYMR `index` field marks an embedded stab."""
+        return (index & 0xFFF00) == STAB_CODE_MASK
+
+    def stabs(self, unit):
+        """Yield (stab type, string, value, sc) per embedded stab of `unit`,
+        in table order (the `@stabs` marker itself excluded)."""
+        for i in range(unit["sym_count"]):
+            iss, value, _st, sc, index = self.local_symbol(unit["sym_first"] + i)
+            if not self.is_stab(index):
+                continue
+            string = self.cstr(self.h["cbSsOffset"] + unit["ss_base"] + iss)                 if iss != -1 else ""
+            if string == STABS_MARKER:
+                continue
+            yield index - STAB_CODE_MASK, string, value & 0xFFFFFFFF, sc
 
     def units(self):
         """Yield one dict per file descriptor, in native table order."""
@@ -154,7 +200,7 @@ class MDebug:
              cbLineOffset) = struct.unpack_from(PDR_FMT, self.data, off)
             name = ""
             if isym != -1:
-                siss, _v, _st, _sc = self.local_symbol(
+                siss, _v, _st, _sc, _ix = self.local_symbol(
                     unit["sym_first"] + isym)
                 name = self.cstr(self.h["cbSsOffset"] + unit["ss_base"] + siss)
             yield {
@@ -195,11 +241,15 @@ class MDebug:
         Walks the unit's local SYMR run for stStatic entries whose storage
         class is a data section; their `value` is the absolute address in the
         linked image. This attributes file-local data (statics) the external
-        table can never see.
+        table can never see. Embedded stabs (an N_STSYM such as `one:S13`
+        repeats a plain static at the same address) are not symbols: see
+        stabs().
         """
         for i in range(unit["sym_count"]):
-            iss, value, st, sc = self.local_symbol(unit["sym_first"] + i)
+            iss, value, st, sc, index = self.local_symbol(unit["sym_first"] + i)
             if st != ST_STATIC or sc not in SC_DATA_CLASSES or iss == -1:
+                continue
+            if self.is_stab(index):
                 continue
             name = self.cstr(self.h["cbSsOffset"] + unit["ss_base"] + iss)
             yield name, value & 0xFFFFFFFF, sc

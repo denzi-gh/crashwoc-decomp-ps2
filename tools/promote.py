@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
-"""Promote a function to `matching` -- the only writer of that state.
+"""Promote a function or data symbol to `matching` -- the only writer of it.
 
     python tools/promote.py NuListGetHead
     python tools/promote.py pal103:unit-0007:00105a50:NuListGetHead
     python tools/promote.py A B C            # one verifier run for all three
     python tools/promote.py --targets-file ready.txt
     python tools/promote.py --init src/nucore/nulist.c
+    python tools/promote.py --init-data src/numath/nuvec4.c
+    python tools/promote.py pal103:unit-0014:00613fb0:nuvec4_zero   # data id
+    python tools/promote.py --complete pal103:unit-0014
 
 A hand-edited `state = "matching"` is never trusted (and the container CI
 re-verifies every claim); this tool makes the honest path the easy path:
@@ -32,7 +35,14 @@ to find the one that does not hold.
 one yet (every function `asm`), deriving the unit from the canonical
 source-path mapping (unit `nucore/nulist` <-> src/nucore/nulist.c). Edit
 nothing by hand afterwards except `equivalent` states, which are a
-reviewed human judgement.
+reviewed human judgement, and data `retail` states (a raw asset kept as
+retail bytes, with a `reason`).
+
+Data symbols (`[[data]]`, ids shaped like function ids) are promoted the same
+way; `--init-data` adds the unit's table (every registry symbol with file
+bytes, `asm`). `--complete <unit id>` sets `complete = true` and runs the
+verifier, which then also proves the unit's data pieces carry no retail bytes
+beyond its `retail` entries and its .lit4 pool; it rolls back on failure.
 
 Needs the toolchain for the verify step: run via
 `python tools/dispatch.py python tools/promote.py ...` from the host.
@@ -76,12 +86,14 @@ def resolve_profile(profile, category, known):
 
 
 def find_entry(version, needle):
-    """(manifest_path, full_id) for a function id or unique name."""
+    """(manifest_path, full_id, state) for a function or data id, or a name
+    unique across both tables of every manifest."""
     status_dir = ROOT / "config" / version / "status"
     hits = []
     for manifest in sorted(status_dir.rglob("*.toml")) \
             if status_dir.is_dir() else []:
-        for entry in tomllib.loads(manifest.read_text()).get("function", []):
+        data = tomllib.loads(manifest.read_text())
+        for entry in data.get("function", []) + data.get("data", []):
             fid = entry["id"]
             if fid == needle or fid.rsplit(":", 1)[1] == needle:
                 hits.append((manifest, fid, entry["state"]))
@@ -177,6 +189,59 @@ def init_manifest(version, source, profile=None):
     return 0
 
 
+def manifest_for(version, needle):
+    """The manifest path for a unit id (version:unit-NNNN) or src/<unit>.c."""
+    status_dir = ROOT / "config" / version / "status"
+    for manifest in sorted(status_dir.rglob("*.toml")):
+        data = tomllib.loads(manifest.read_text())
+        if needle in (data.get("unit"), data.get("source")):
+            return manifest, data
+    raise SystemExit(f"promote: no status manifest for {needle!r}")
+
+
+def data_table_text(version, unit_index, symbols):
+    """`[[data]]` blocks (all `asm`) for the unit's registry symbols."""
+    lines = []
+    for sym in symbols:
+        lines += ["[[data]]",
+                  f'id = "{version}:unit-{unit_index:04d}:{sym["address"]:08x}:'
+                  f'{sym["name"]}"', 'state = "asm"', ""]
+    return "\n".join(lines)
+
+
+def init_data(version, source):
+    """Append an all-asm `[[data]]` table to an existing manifest."""
+    from status import DATA_PROGBITS, load_data_registry
+    manifest, data = manifest_for(version, Path(source).as_posix())
+    if data.get("data"):
+        raise SystemExit(f"promote --init-data: {manifest.relative_to(ROOT).as_posix()} "
+                         f"already has a [[data]] table")
+    unit_index = int(data["unit"].split("unit-")[1])
+    syms = sorted((s for s in load_data_registry(ROOT / "config" / version)
+                   .get(unit_index, {}).values() if s["section"] in DATA_PROGBITS),
+                  key=lambda s: s["address"])
+    if not syms:
+        raise SystemExit(f"promote --init-data: unit {unit_index} has no data "
+                         f"symbols with file bytes")
+    text = read_manifest(manifest)
+    newline = "\r\n" if "\r\n" in text else "\n"
+    body = data_table_text(version, unit_index, syms).replace("\n", newline)
+    text = text.rstrip("\r\n") + newline + newline + body
+    write_manifest(manifest, text)
+    print(f"added {len(syms)} [[data]] entries (asm) to "
+          f"{manifest.relative_to(ROOT).as_posix()}")
+    return 0
+
+
+def set_complete(text):
+    """Manifest text with `complete = true` (exactly once)."""
+    out, n = re.subn(r"^complete = false(\r?)$", r"complete = true\1", text,
+                     flags=re.M)
+    if n != 1:
+        raise SystemExit("promote --complete: no `complete = false` line")
+    return out
+
+
 def read_manifest(path):
     """Manifest text, byte-preserving (see the newline="" note in promote)."""
     with open(path, encoding="utf-8", newline="") as f:
@@ -203,6 +268,12 @@ def main():
     parser.add_argument("--init", metavar="SRC",
                         help="create an all-asm manifest for src/<unit>.c "
                              "instead of promoting")
+    parser.add_argument("--init-data", metavar="SRC",
+                        help="add an all-asm [[data]] table to the manifest "
+                             "of src/<unit>.c")
+    parser.add_argument("--complete", metavar="UNIT", nargs="+",
+                        help="set complete = true for unit ids "
+                             "(version:unit-NNNN) after one full verification")
     parser.add_argument("--profile", default=None,
                         help="compiler profile for the new --init manifest "
                              "(default: derived from the unit category -- "
@@ -215,6 +286,25 @@ def main():
         parser.error("--profile only applies to --init")
     if args.init:
         return init_manifest(args.version, args.init, args.profile)
+    if args.init_data:
+        return init_data(args.version, args.init_data)
+    if args.complete:
+        originals = {}
+        for unit in args.complete:
+            manifest, _data = manifest_for(args.version, unit)
+            originals[manifest] = read_manifest(manifest)
+        for manifest, text in originals.items():
+            write_manifest(manifest, set_complete(text))
+            print(f"complete = true in {manifest.relative_to(ROOT).as_posix()}")
+        print(f"\nverifying {len(originals)} unit(s)...\n", flush=True)
+        if run_verifier(args.version):
+            print(f"\n{len(originals)} unit(s) complete.")
+            return 0
+        for manifest, text in originals.items():
+            write_manifest(manifest, text)
+        print(f"\nVerification FAILED; complete rolled back for all "
+              f"{len(originals)} unit(s).", file=sys.stderr)
+        return 1
 
     targets = list(args.target)
     if args.targets_file:
@@ -223,7 +313,7 @@ def main():
             if line:
                 targets.append(line)
     if not targets:
-        parser.error("a function id/name is required (or --init SRC)")
+        parser.error("a function/data id or name is required (or --init SRC)")
 
     # Resolve every target first: a typo must not leave half the batch flipped.
     pending = []                       # [(manifest, fid, old_state)]

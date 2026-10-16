@@ -65,6 +65,92 @@ proves regeneration reproduces the committed files. Global data addresses in
 [config/pal103/sections.json](../config/pal103/sections.json), so an ECOFF `value`
 that is a size rather than an address can never be emitted as one.
 
+## Data registry and data map
+
+Two more registries describe the data sections. Both are pure functions of the
+ELF (the retail executable is unstripped, so `.symtab` adds what `.mdebug`
+lacks) and both are `--check`-gated like the ones above:
+
+| File                                                                | Entries | Contents                                                     |
+| ------------------------------------------------------------------- | ------: | ------------------------------------------------------------ |
+| [config/pal103/data_symbols.toml](../config/pal103/data_symbols.toml) |   3,750 | one `[[symbol]]` per named data symbol (2,549 globals, 1,201 statics) |
+| [config/pal103/data_map.toml](../config/pal103/data_map.toml)         |     679 | exact tiling of the data sections into per-unit ranges        |
+
+```bash
+python tools/extract_data_symbols.py           # (re)generate the data registry
+python tools/extract_data_symbols.py --check   # verify committed == fresh extraction
+python tools/extract_data_symbols.py --stats   # the census (sizes, STABS types, name clashes)
+python tools/extract_data_map.py --check       # data map == fresh extraction
+```
+
+**`data_symbols.toml`** ([tools/extract_data_symbols.py](../tools/extract_data_symbols.py))
+holds every data global the external table defines and every file-local
+static of a unit's local symbol run: the set the data map attributes. Linker
+symbols (`_gp`, `_fbss`) and COMMON globals (named nowhere in the ELF) are not in
+it. Per symbol:
+
+| Field | Rule |
+|---|---|
+| `key` | `unit-NNNN:<name>`, unique (25 static names repeat across units) |
+| `name`, `unit` | retail name (function statics keep their `.N`); owning unit (EXTR `ifd` / local symbol run) |
+| `scope`, `stem` | `global` · `static` · `function_static` (`<stem>.<N>`; STABS `:V` cross-checks where present) |
+| `address`, `section` | the section comes from the address, never from the storage class (`errno` is scBss in `.sbss`) |
+| `storage` | ECOFF storage class name |
+| `size`, `size_evidence` | `.symtab` `st_size` when > 0 (`symtab`, 3,326 symbols), else a complete STABS type (`stabs`) |
+| `extent` | bytes to the next attributed item (any unit, named or code-referenced) or the section end: an upper bound that includes padding |
+| `pad_zero` | the bytes `[address + size, address + extent)` are all zero |
+| `type`, `stab` | C type rebuilt from STABS, and the raw stab string (130 symbols; only the `sce` units carry STABS) |
+
+TOML has no null: an absent key means unknown, and nothing is guessed. STABS
+live inside `.mdebug` as local symbols whose index field is `0x8F300` + the stab
+type ([tools/declib/stabs.py](../tools/declib/stabs.py) parses the type strings);
+each data stab repeats a plain static at the same address, so
+`MDebug.local_data_symbols()` skips them and `MDebug.stabs()` yields them.
+
+**`data_map.toml`** ([tools/extract_data_map.py](../tools/extract_data_map.py))
+tiles `.data`, `.rodata`, `.lit4`, `.sdata`, `.sbss`, `.bss` and the 0x80-byte orphan
+run exactly. A range is owned by one unit or `unassigned`:
+
+| `evidence` | Meaning |
+|---|---|
+| `mdebug` | the unit's named symbols prove it (its own code references may extend the run) |
+| `xref` | only the unit's code references it (`.rodata` strings/jump tables/pools, the `.lit4` pools) |
+| `gap` | nothing attributes the bytes |
+| `orphan` | the un-sectioned run at `0x00293680` |
+
+A named run ends at `max(address + size)`, so an unsized trailing symbol owns
+nothing past its address and a lone unsized symbol owns nothing. Code
+references come from a pure-Python decoder over `.text`
+([tools/declib/elf.py](../tools/declib/elf.py) `code_refs`): it pairs each `lui rX`
+with the `addiu`/load/store that uses `rX` as its base (the value lives until
+`rX` is written, a call clobbers it after the delay slot, or the next function
+starts; branch states flow to their targets) and takes `$gp`-relative accesses
+exactly. Its pairs are a superset of the ones splat resolves in `asm/text.s`
+(`tests/test_xref_decoder.py` proves it; the extras are pairs splat left
+unresolved, such as testShadowCast's `lui 0x61` / `addiu 0x5FA0`). An unnamed
+`.rodata`/`.lit4` address that exactly one unit's code builds, outside every
+sized named symbol, extends that unit's run to `last reference + access width`
+(`lw`/`lwc1` 4, `ld` 8, `lq` 16, address-only `addiu` 0). An xref that would cross
+another unit's run is dropped; interleaved named runs degrade the whole section
+to `unassigned` (none do today). `.data`/`.sdata` take no xref ranges: code also
+reaches into other units' globals by field offset there. Result: 0x4182AB of
+0x47315C data bytes owned; `.rodata` 0xC32E (48%); `.lit4` is fully tiled by the
+57 per-unit assembler pools (each word is used by exactly one unit).
+
+Each owned range is one expected data object (`tools/gen_data_objects.py`), so a
+map change regroups the objects but never changes the linked bytes: the image
+SHA gate still holds. `gen_hybrid`'s borrow-by-bytes fallback for a
+compiler-private aggregate (`Lit4Mapper._borrow_addr_in_unit`) scans the unit's
+ranges except its `.lit4` pool.
+
+[tools/data_renames.py](../tools/data_renames.py) maps every `D_<vram>` and
+`#define` alias in the C to what the registry knows about it (retail name,
+`name.field` / `name[i]` / `name+0xN` inside a sized symbol, `.lit4` literal,
+string, compiler-private bytes) and collects type candidates for the later
+data work (STABS > the extern types matched code compiles against > GC DWARF
+via `--gc-dwarf PATH` > byte hints). It writes `build/pal103/data_renames.json`
+(game-derived, never committed) and changes nothing in the tree.
+
 ## Disassembly (splat bootstrap)
 
 The target ELF is split into per-section assembly and a linker script by
@@ -260,6 +346,54 @@ The C in `src/` is the committed work product; every generated artifact is
 game-derived and gitignored: object sets in `build/`, expected objects in
 `expected/`, and `objdiff.json`.
 
+### Data from C
+
+A fully matching unit can own its data from C, per symbol. Its manifest
+lists every data registry symbol of the unit with file bytes under `[[data]]`
+(`asm` | `matching` | `retail`; `python tools/promote.py --init-data src/<unit>.c`
+adds the table), and the C defines them under their retail names
+(`docs/decomp_agent.md` holds the policy and the per-unit runbook):
+
+```toml
+[[data]]
+id = "pal103:unit-0014:00613fb0:nuvec4_zero"
+state = "matching"        # asm | matching | retail (retail needs a `reason`)
+```
+
+- **gen_hybrid** splits the compiled assembly by section and maps each data
+  object onto its registry symbol (a function static's compiler number
+  `lut.6` becomes the retail `lut.69`, k-th per stem in address order). With
+  at least one `matching` entry the hybrid gets one input section per owned
+  data range, `<sec>.split_<vram8>` (`.align 0`, every object `.org`'d to its
+  registry address, every other byte a retail `.incbin`), and a sidecar
+  `<object>.data.json` (pieces, retail byte ranges, borrowed slots). C data
+  of an `asm`/`retail` entry is dropped and its references renamed onto the
+  retail symbol (`D_<VRAM>` for statics). Hard errors: C data without a
+  `[[data]]` table, a section other than the registry's
+  (`data_section_mismatch`: `const`, `-G`), `.size` != `.symtab` size,
+  overlaps, `.sdata`/`.sbss`/`.bss`/COMMON data from C.
+- **link_image** takes such a unit's ranges from its hybrid (file-qualified
+  patterns) and leaves its expected data object out - one data provider per
+  unit; every range is `ASSERT`ed at its address.
+- **verify_promoted** links the hybrid with its pieces at their addresses
+  (`declib.verify.link_unit_at`), compares each `matching` entry over
+  `[addr, addr+size)` (size from `.symtab`/STABS; an unsized object's compiled
+  size only with at most 15 zero bytes left to the next item) and its linked
+  symbol address, and reports them under `"data"` in `verify_results.json`.
+- **`complete = true`** (only `promote.py --complete <unit id>...` writes it)
+  needs every function `matching`, every data entry `matching`/`retail`, no
+  retail bytes in the unit's pieces beyond its `retail` entries and its
+  `.lit4` pool, no borrowed compiler-private slot (strings, jump tables,
+  `li.d` pools: a later `data/private`), and no owned `.sbss`/`.bss`.
+
+[tools/dump_data.py](../tools/dump_data.py) prints the C initialiser of a
+registry symbol from the retail bytes (`--probe` takes a struct layout from
+the compiler's own `-g` STABS; `--verify` compiles the float literals and
+compares bits). [tools/probe_data_emission.py](../tools/probe_data_emission.py)
+records how both compilers emit data (section per item and `-G`, order,
+alignment, function-static numbering) and compares nuvec4, e_pow and a
+`.lit4` pool with retail.
+
 ### The objdiff project and the published report
 
 [tools/gen_objdiff.py](../tools/gen_objdiff.py) writes `objdiff.json` so the whole
@@ -309,7 +443,12 @@ The game/engine TUs provably cannot match under the Sony 2.9 build (its `sq`/`lq
 callee saves and lack of R5900 short-loop padding), so `default` is the SN ProDG
 **EE GCC 2.95.2-EE** compiler; the Sony **EE GCC 2.9-ee-991111-01** stays as `sce`
 for the runtime. Every unit compiles with `default` unless its status manifest
-names a profile, and both flag sets are `-O2 -G8 -fomit-frame-pointer`. Modern
+names a profile. `default` compiles with `-O2 -G8 -fomit-frame-pointer`, `sce`
+with `-O2 -G0 -fomit-frame-pointer`: the retail SDK half uses no small-data
+section (its 4-byte initialised globals sit in `.data`, its `$LC` constants in
+`.rodata`), and only `-G0` reproduces libm's data bytes
+([tools/probe_data_emission.py](../tools/probe_data_emission.py)); gen_hybrid
+assembles every unit with its profile's `-G`. Modern
 compilers are used only for analysis and tooling, never for matching results.
 
 Every tool is pinned in [toolchain.lock.json](../toolchain.lock.json):

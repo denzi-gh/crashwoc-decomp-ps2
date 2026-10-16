@@ -173,7 +173,8 @@ def _manifest_info(version):
         for m in sorted(status_dir.rglob("*.toml")):
             data = tomllib.loads(m.read_text())
             has_matching = any(f.get("state", "asm") == "matching"
-                               for f in data.get("function", ()))
+                               for f in data.get("function", ())) or any(
+                d.get("state") == "matching" for d in data.get("data", ()))
             out[data["source"]] = (bool(data.get("complete", False)),
                                    has_matching)
     return out

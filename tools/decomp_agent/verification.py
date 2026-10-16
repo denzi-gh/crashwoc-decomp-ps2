@@ -32,6 +32,16 @@ def verify_candidate(project: DecompProject, target, *, level="function") -> dic
                            code="bad_level", allowed=list(schemas.VERIFY_LEVELS))
     reg = Registry(project)
     res = reg.resolve(target)
+    from . import data as data_mod
+    if level != "image" and data_mod.is_data_target(project, target, res):
+        if not runtime.toolchain_local(project):
+            return runtime.dispatch_cli(project, ["verify", str(target), "--level",
+                                                  level], operation="verify_candidate")
+        if level == "function":
+            out = data_mod.data_diff(project, target)
+            out["operation"] = "verify_candidate"
+            return out
+        return _verify_data_unit(project, target)
     if level != "image":
         if res.status == "ambiguous":
             return schemas.err("verify_candidate", res.detail, code="ambiguous",
@@ -98,9 +108,50 @@ def _verify_via_promoted(project, reg, res, level):
                       all_verified=all(r.get("verified") for r in fns) if fns else None)
 
 
+def _verify_data_unit(project, target):
+    """verify_promoted --skip-image, then the target unit's data results."""
+    from . import data as data_mod
+    sym = data_mod.resolve_data(project, target)[0]
+    subprocess.run([sys.executable, "tools/verify_promoted.py", "--version",
+                    project.version, "--skip-image"], cwd=str(project.root),
+                   capture_output=True, text=True)
+    path = project.root / "build" / project.version / "verify_results.json"
+    data = json.loads(path.read_text()) if path.is_file() else {}
+    prefix = f"{project.version}:unit-{sym['unit']:04d}:"
+    rows = [r for r in data.get("data", []) if r["id"].startswith(prefix)]
+    return schemas.ok("verify_candidate", level="unit", kind="data", data=rows,
+                      all_verified=all(r.get("verified") for r in rows) if rows else None)
+
+
 def promote_matching(project: DecompProject, target, *, precheck=True) -> dict:
     reg = Registry(project)
     res = reg.resolve(target)
+    from . import data as data_mod
+    if data_mod.is_data_target(project, target, res):
+        hits = data_mod.resolve_data(project, target)
+        if len(hits) != 1:
+            return schemas.err("promote_matching", f"{target!r} is ambiguous",
+                               code="ambiguous",
+                               candidates=[data_mod.data_id(project, s) for s in hits])
+        did = data_mod.data_id(project, hits[0])
+        if not runtime.toolchain_local(project):
+            args = ["promote", did] + ([] if precheck else ["--no-precheck"])
+            return runtime.dispatch_cli(project, args, operation="promote_matching",
+                                        timeout=3600)
+        if precheck:
+            pre = data_mod.data_diff(project, did)
+            if not pre.get("exact"):
+                return schemas.err("promote_matching", "the data entry does not "
+                                   "match retail byte for byte; refusing to promote",
+                                   code="not_exact", verification=pre)
+        proc = subprocess.run([sys.executable, "tools/promote.py", did,
+                               "--version", project.version],
+                              cwd=str(project.root), capture_output=True, text=True)
+        return schemas.ok("promote_matching", data_id=did,
+                          promoted=proc.returncode == 0,
+                          rolled_back="rolled back" in (proc.stdout + proc.stderr).lower(),
+                          returncode=proc.returncode,
+                          output=(proc.stdout or proc.stderr).strip()[-2000:])
     if res.status == "ambiguous":
         return schemas.err("promote_matching", res.detail, code="ambiguous",
                            candidates=res.candidates)

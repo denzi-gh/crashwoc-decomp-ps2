@@ -17,8 +17,9 @@ Cheap, reliable signals available without disassembly:
   * profile known      -- the effective compiler profile resolves
   * C translation unit -- the owning TU is a ``.c`` file, not hand-written asm
 
-Anything requiring disassembly (jump tables, ``.lit8``, initialized-local
-``.sdata``) is *not* inferred here; those are surfaced as recorded blockers once
+Nothing that needs the disassembly is inferred here: jump tables, ``.lit4``/
+``.lit8`` constants and initialised local aggregates are handled by gen_hybrid's
+borrowed retail slots, and the genuine limits surface as recorded blockers once
 an experiment proves them, which is the honest source.
 """
 from __future__ import annotations

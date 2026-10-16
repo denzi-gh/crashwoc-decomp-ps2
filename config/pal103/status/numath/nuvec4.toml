@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0014"
 source = "src/numath/nuvec4.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0014:00107718:NuVec4Add"
@@ -49,4 +49,28 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0014:00107a98:NuVec4Lerp"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0014:00613fb0:nuvec4_zero"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0014:00613fc0:nuvec4_one"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0014:00613fd0:nuvec4_x"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0014:00613fe0:nuvec4_y"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0014:00613ff0:nuvec4_z"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0014:00614000:nuvec4_w"
 state = "matching"

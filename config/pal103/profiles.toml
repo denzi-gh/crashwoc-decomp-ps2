@@ -16,6 +16,16 @@
 # re-run green under the new fingerprint. The Sony compiler remains available
 # as profile `sce` for the runtime half of the ELF.
 #
+# 2026-10-16: `sce` switched from -G8 to -G0. The retail SDK half uses no
+# small-data section of its own (no SDK unit has scSData/scSBss symbols,
+# 4-byte initialised globals such as _impure_ptr sit in .data, e_pow's $LC
+# constants sit in .rodata), and tools/probe_data_emission.py shows fdlibm
+# e_pow's statics and $LC reproduce retail .rodata 0x62B530-0x62B650 byte for
+# byte only at -G0. A full rebuild at -G0 left every matching, equivalent and
+# report object unchanged; only plain-compile sdk objects moved toward retail.
+# gen_hybrid assembles with the profile's -G. Open: errno, __CTOR_LIST__ and
+# __DTOR_LIST__ (uninitialised, scBss) sit in retail .sbss.
+#
 # Add a new profile only with evidence (a function that provably needs it).
 
 schema = 1
@@ -26,4 +36,4 @@ flags = ["-O2", "-G8", "-fomit-frame-pointer"]
 
 [profile.sce]
 compiler = "ee-gcc"
-flags = ["-O2", "-G8", "-fomit-frame-pointer"]
+flags = ["-O2", "-G0", "-fomit-frame-pointer"]

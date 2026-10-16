@@ -14,3 +14,31 @@ complete = false
 [[function]]
 id = "pal103:unit-0168:0026c0f0:__kernel_sin"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0168:0062ba38:half"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0168:0062ba40:S1"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0168:0062ba48:S2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0168:0062ba50:S3"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0168:0062ba58:S4"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0168:0062ba60:S5"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0168:0062ba68:S6"
+state = "matching"

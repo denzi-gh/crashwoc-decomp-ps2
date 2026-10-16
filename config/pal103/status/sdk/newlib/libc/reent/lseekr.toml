@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0243"
 source = "src/sdk/newlib/libc/reent/lseekr.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0243:00278788:_lseek_r"

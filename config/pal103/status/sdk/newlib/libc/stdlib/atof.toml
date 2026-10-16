@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0191"
 source = "src/sdk/newlib/libc/stdlib/atof.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0191:00270388:atof"

@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0239"
 source = "src/sdk/newlib/libc/reent/writer.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0239:002785b0:_write_r"

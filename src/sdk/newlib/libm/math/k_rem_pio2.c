@@ -10,15 +10,18 @@ typedef int __int32_t;
 extern double scalbn(double x, int n);
 extern double floor(double x);
 
-extern const int D_0062B9C8[];
-#define init_jk D_0062B9C8
-extern const double D_0062B9D8[];
-#define PIo2 D_0062B9D8
-
-#define zero 0.0
-#define one 1.0
-#define two24 1.67772160000000000000e+07
-#define twon24 5.96046447753906250000e-08
+static const int
+init_jk[] = { 2, 3, 4, 6 };
+static const double
+PIo2[] = {
+    1.570796251296997, 7.549789415861596e-08, 5.390302529957765e-15,
+    3.282003415807913e-22, 1.270655753080676e-29, 1.2293330898111133e-36,
+    2.7337005381646456e-44, 2.1674168387780482e-51,
+},
+zero = 0.0,
+one = 1.0,
+two24 = 1.67772160000000000000e+07,
+twon24 = 5.96046447753906250000e-08;
 
 int __kernel_rem_pio2(double *x, double *y, int e0, int nx, int prec, const __int32_t *ipio2)
 {

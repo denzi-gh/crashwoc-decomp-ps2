@@ -9,8 +9,32 @@ schema = 1
 unit = "pal103:unit-0167"
 source = "src/sdk/newlib/libm/math/k_rem_pio2.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0167:0026b588:__kernel_rem_pio2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0167:0062b9c8:init_jk"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0167:0062b9d8:PIo2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0167:0062ba18:zero"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0167:0062ba20:one"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0167:0062ba28:two24"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0167:0062ba30:twon24"
 state = "matching"

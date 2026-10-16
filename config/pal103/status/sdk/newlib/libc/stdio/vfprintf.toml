@@ -34,3 +34,11 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0221:00274ce8:exponent"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0221:0062c0a0:blanks.12"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0221:0062c0b0:zeroes.13"
+state = "matching"

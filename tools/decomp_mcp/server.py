@@ -34,6 +34,7 @@ if str(_TOOLS) not in sys.path:
     sys.path.insert(0, str(_TOOLS))
 
 from decomp_agent.project import DecompProject, ProjectError, ENV_PROJECT_DIR  # noqa: E402
+from decomp_agent import data as data_mod                                     # noqa: E402
 from decomp_agent import (health, candidates, context as ctx, evidence, diff,   # noqa: E402
                           sessions, blockers, verification, registry as regmod,
                           schemas)
@@ -86,12 +87,15 @@ non-improving attempts or 3 consecutive compile failures, on a repeated \
 candidate hash / oscillation with no new hypothesis, or on a proven \
 architectural blocker; restore the best safe checkpoint before ending.
 
-Data policy: the pipeline is function-first and Data-from-C is not verified yet. \
-Do not define file-scope C globals that emit .data/.sdata/.rodata/.sbss/.bss -- \
-reference retail-owned data with extern D_... symbols instead. Never hand-set \
-state=matching (only promote_matching writes it, after byte verification) and \
-never set equivalent (human review only). Model and reasoning-effort choices are \
-the client's.
+Data policy: C defines a global only in a fully matching unit, for a data \
+registry symbol of that unit, under its retail name and storage (static where \
+retail is static, const for .rodata), in .rodata/.data, listed under [[data]] and \
+verified by promote_matching (list_data_candidates, get_context and compile_diff \
+accept data ids). Everywhere else reference retail data with registered names or \
+extern D_... symbols; compiler-private data, .lit4, .sdata and .sbss/.bss stay \
+retail. Never hand-set state=matching (only promote_matching writes it, after \
+byte verification) and never set equivalent or a data state retail (human review \
+only). Model and reasoning-effort choices are the client's.
 """
 
 
@@ -201,8 +205,17 @@ def build_server(project: DecompProject):
 
     @mcp.tool()
     def resolve_target(target: str) -> dict:
-        """Resolve a canonical id / unit id / name / address; returns ambiguity."""
-        return regmod.Registry(P()).resolve(target).as_dict()
+        """Resolve a canonical function/data id, unit id, name or address;
+        returns ambiguity, never a choice."""
+        return data_mod.resolve_target(P(), target,
+                                       regmod.Registry(P()).resolve(target))
+
+    @mcp.tool()
+    def list_data_candidates(limit: int = 20) -> dict:
+        """[[data]] entries of fully matching units worth defining in C next
+        (.rodata before .data, typed, pointer-free, small first), plus units
+        that need `promote.py --init-data` or only `--complete`."""
+        return data_mod.list_data_candidates(P(), limit=limit)
 
     @mcp.tool()
     def get_context(target: str, detail: bool = False) -> dict:

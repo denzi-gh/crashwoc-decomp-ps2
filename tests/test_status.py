@@ -36,6 +36,56 @@ FUNCTIONS_TOML = textwrap.dedent("""\
     unit = 7
     """)
 
+DATA_SYMBOLS_TOML = textwrap.dedent("""\
+    schema = 1
+
+    [[symbol]]
+    key = 'unit-0007:nulist_table'
+    name = 'nulist_table'
+    unit = 7
+    scope = 'global'
+    address = 0x00613fb0
+    section = '.rodata'
+    storage = 'scRData'
+    size = 16
+    size_evidence = 'symtab'
+    extent = 16
+    pad_zero = true
+
+    [[symbol]]
+    key = 'unit-0007:font.3'
+    name = 'font.3'
+    unit = 7
+    scope = 'function_static'
+    stem = 'font'
+    address = 0x00293700
+    section = '.data'
+    storage = 'scData'
+    extent = 64
+
+    [[symbol]]
+    key = 'unit-0007:count'
+    name = 'count'
+    unit = 7
+    scope = 'static'
+    address = 0x00633000
+    section = '.sbss'
+    storage = 'scBss'
+    extent = 4
+    """)
+
+DATA_TABLE = textwrap.dedent("""\
+
+    [[data]]
+    id = "testv:unit-0007:00293700:font.3"
+    state = "retail"
+    reason = "raw font bitmap"
+
+    [[data]]
+    id = "testv:unit-0007:00613fb0:nulist_table"
+    state = "asm"
+    """)
+
 PROFILES_TOML = textwrap.dedent("""\
     schema = 1
     [profile.default]
@@ -69,6 +119,7 @@ class StatusTree:
         (config / "units.toml").write_text(UNITS_TOML)
         (config / "functions.toml").write_text(FUNCTIONS_TOML)
         (config / "profiles.toml").write_text(PROFILES_TOML)
+        (config / "data_symbols.toml").write_text(DATA_SYMBOLS_TOML)
         self.manifest = config / "status" / "nucore" / "nulist.toml"
         self.manifest.write_text(GOOD_MANIFEST)
         (self.root / "src" / "nucore").mkdir(parents=True)
@@ -173,6 +224,81 @@ class TestStatusValidator(unittest.TestCase):
         coverage = results.get(f"{VERSION}/<coverage>", [])
         self.assertTrue(any("src/nucore/stray.c" in p for p in coverage),
                         results)
+
+
+class TestDataEntries(unittest.TestCase):
+    """The optional [[data]] table (Data-from-C)."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.tree = StatusTree(self._tmp.name)
+        self.tree.manifest.write_text(GOOD_MANIFEST + DATA_TABLE)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def rewrite(self, old, new):
+        self.tree.manifest.write_text(
+            self.tree.manifest.read_text().replace(old, new))
+
+    def assert_rejected(self, fragment):
+        problems = self.tree.problems()
+        self.assertTrue(any(fragment in p for p in problems),
+                        f"no problem mentions {fragment!r}: {problems}")
+
+    def test_good_table_passes_and_counts(self):
+        self.assertEqual(self.tree.problems(), [])
+        _results, counts = status.check_version(VERSION, self.tree.root)
+        self.assertEqual((counts["data_retail"], counts["data_asm"]), (1, 1))
+
+    def test_every_progbits_symbol_must_be_listed(self):
+        text = self.tree.manifest.read_text()
+        self.tree.manifest.write_text(text.split("[[data]]")[0] + "[[data]]"
+                                      + text.split("[[data]]")[1])
+        self.assert_rejected("(nulist_table) not listed")
+
+    def test_rejects_nobits_symbol(self):
+        self.tree.manifest.write_text(self.tree.manifest.read_text() + textwrap.dedent("""
+            [[data]]
+            id = "testv:unit-0007:00633000:count"
+            state = "asm"
+            """))
+        self.assert_rejected(".sbss symbols carry no file bytes")
+
+    def test_rejects_wrong_name_and_address(self):
+        self.rewrite("00613fb0:nulist_table", "00613fb0:nulist_tab")
+        self.assert_rejected("not 'nulist_tab'")
+        self.rewrite("00613fb0:nulist_tab", "00613fb4:nulist_table")
+        self.assert_rejected("no data symbol at 0x00613fb4")
+
+    def test_retail_needs_a_reason(self):
+        self.rewrite('reason = "raw font bitmap"\n', "")
+        self.assert_rejected("needs a `reason`")
+
+    def test_reason_only_for_retail(self):
+        self.rewrite('state = "asm"', 'state = "asm"\nreason = "why"')
+        self.assert_rejected("only for state")
+
+    def test_rejects_bad_state_and_duplicates(self):
+        self.rewrite('state = "asm"', 'state = "equivalent"')
+        self.assert_rejected("bad data state")
+        self.rewrite("00613fb0:nulist_table", "00293700:font.3")
+        self.assert_rejected("duplicate data entry")
+
+    def test_complete_needs_data_done(self):
+        self.rewrite('state = "asm"\n\n[[function]]', 'state = "matching"\n\n[[function]]')
+        self.rewrite('00105a58:NuListGetTail"\nstate = "asm"',
+                     '00105a58:NuListGetTail"\nstate = "matching"')
+        self.rewrite("complete = false", "complete = true")
+        self.assert_rejected("a data entry is still `asm`")
+        self.rewrite('nulist_table"\nstate = "asm"', 'nulist_table"\nstate = "matching"')
+        self.assertEqual(self.tree.problems(), [])
+
+    def test_complete_needs_a_data_table(self):
+        self.tree.manifest.write_text(GOOD_MANIFEST.replace(
+            'state = "asm"', 'state = "matching"').replace(
+            "complete = false", "complete = true"))
+        self.assert_rejected("have no [[data]] entries")
 
 
 if __name__ == "__main__":

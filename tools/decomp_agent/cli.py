@@ -44,7 +44,15 @@ def cmd_candidates(args):
 
 
 def cmd_resolve(args):
-    return reg_mod.Registry(_project(args)).resolve(args.target).as_dict()
+    from . import data as data_mod
+    project = _project(args)
+    res = reg_mod.Registry(project).resolve(args.target)
+    return data_mod.resolve_target(project, args.target, res)
+
+
+def cmd_data_candidates(args):
+    from . import data as data_mod
+    return data_mod.list_data_candidates(_project(args), limit=args.limit)
 
 
 def cmd_context(args):
@@ -147,6 +155,9 @@ def build_parser():
     c.set_defaults(func=cmd_candidates)
 
     r = sub.add_parser("resolve"); r.add_argument("target"); r.set_defaults(func=cmd_resolve)
+    dc = sub.add_parser("data-candidates")
+    dc.add_argument("--limit", type=int, default=20)
+    dc.set_defaults(func=cmd_data_candidates)
 
     ctx = sub.add_parser("context"); ctx.add_argument("target")
     ctx.add_argument("--detail", action="store_true"); ctx.set_defaults(func=cmd_context)

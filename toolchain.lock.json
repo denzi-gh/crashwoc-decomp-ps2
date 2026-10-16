@@ -48,7 +48,7 @@
         "ee-gcc": {
             "role": "matching-compiler-sce",
             "version": "2.9-ee-991111-01",
-            "summary": "Sony/Cygnus EE (Emotion Engine) GCC. Matches the Sony-built runtime half of the ELF (newlib/libgcc/SCE units: sd/ld saves, R5900 short-loop padding). Kept as profile `sce` for when those units are decompiled; the TT game/engine units match under ee-gcc-tt.",
+            "summary": "Sony/Cygnus EE (Emotion Engine) GCC. Matches the Sony-built runtime half of the ELF (newlib/libgcc/SCE units: sd/ld saves, R5900 short-loop padding). Profile `sce` (at -G0, like the retail SDK half); the TT game/engine units match under ee-gcc-tt.",
             "artifact": {
                 "url": "https://github.com/decompme/compilers/releases/download/compilers/ee-gcc2.9-991111-01.tar.xz",
                 "filename": "ee-gcc-2.9-ee-991111-01.tar.gz",

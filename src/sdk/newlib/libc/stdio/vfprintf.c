@@ -120,8 +120,6 @@ struct lconv {
 extern struct _reent *_impure_ptr[];
 extern int __mb_cur_max[];
 
-extern char D_0062C0A0[];
-extern char D_0062C0B0[];
 extern char D_0062C0C0[];
 extern char D_0062C0C8[];
 extern char D_0062C0D0[];
@@ -131,8 +129,6 @@ extern char D_0062C108[];
 extern char D_0062C128[];
 extern char D_0062C130[];
 
-#define blanks D_0062C0A0
-#define zeroes D_0062C0B0
 #define str_inf D_0062C0C0
 #define str_nan D_0062C0C8
 #define xdigits_lower D_0062C0D0
@@ -243,6 +239,12 @@ int _vfprintf_r(struct _reent *data, FILE *fp, const char *fmt0, va_list ap)
     char buf[BUF];
     char ox[2];
     int state = 0;
+    static const char blanks[16] =
+        { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+          ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' };
+    static const char zeroes[16] =
+        { '0', '0', '0', '0', '0', '0', '0', '0',
+          '0', '0', '0', '0', '0', '0', '0', '0' };
 
     if ((!(fp->_flags & __SWR) || fp->_bf._base == 0) && __swsetup(fp)) {
         return EOF;

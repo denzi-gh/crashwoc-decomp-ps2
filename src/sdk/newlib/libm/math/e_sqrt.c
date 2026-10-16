@@ -19,8 +19,9 @@ typedef union {
 #define EXTRACT_WORDS(ix0, ix1, d) do { ieee_double_shape_type ew_u; ew_u.value = (d); (ix0) = ew_u.parts.msw; (ix1) = ew_u.parts.lsw; } while (0)
 #define INSERT_WORDS(d, ix0, ix1) do { ieee_double_shape_type iw_u; iw_u.parts.msw = (ix0); iw_u.parts.lsw = (ix1); (d) = iw_u.value; } while (0)
 
-#define one 1.0
-#define tiny 1.0e-300
+static const double
+one = 1.0,
+tiny = 1.0e-300;
 
 double __ieee754_sqrt(double x)
 {

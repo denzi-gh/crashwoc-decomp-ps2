@@ -14,3 +14,27 @@ complete = false
 [[function]]
 id = "pal103:unit-0161:002696c0:__ieee754_atan2"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0161:0062b468:tiny"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0161:0062b470:zero"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0161:0062b478:pi_o_4"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0161:0062b480:pi_o_2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0161:0062b488:pi"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0161:0062b490:pi_lo"
+state = "matching"

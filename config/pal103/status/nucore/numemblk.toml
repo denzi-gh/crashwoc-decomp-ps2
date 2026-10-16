@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0005"
 source = "src/nucore/numemblk.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0005:001053b0:NuMemBlkCreateHigh"

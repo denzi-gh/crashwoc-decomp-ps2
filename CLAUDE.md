@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A byte-exact matching decompilation of **Crash Bandicoot: The Wrath of Cortex** (PS2), targeting exactly one build: PAL retail v1.03, `SLES_503.86`. The user supplies the game ELF at `orig/pal103/`; it is never committed. The retail ELF was built by TWO toolchains, both locked in `toolchain.lock.json` / `config/pal103/profiles.toml` with flags `-O2 -G8 -fomit-frame-pointer`: the game/engine TUs (profile `default`) match under **SN ProDG EE GCC 2.95.2-EE** (`ee-gcc-tt`, a Win32 binary run under wibo in the container), the Sony runtime half (profile `sce`) under **EE GCC 2.9-ee-991111-01**. Modern compilers are for tooling only, never matching.
+A byte-exact matching decompilation of **Crash Bandicoot: The Wrath of Cortex** (PS2), targeting exactly one build: PAL retail v1.03, `SLES_503.86`. The user supplies the game ELF at `orig/pal103/`; it is never committed. The retail ELF was built by TWO toolchains, both locked in `toolchain.lock.json` / `config/pal103/profiles.toml` with flags `-O2 -G8 -fomit-frame-pointer` (profile `sce`: `-G0`): the game/engine TUs (profile `default`) match under **SN ProDG EE GCC 2.95.2-EE** (`ee-gcc-tt`, a Win32 binary run under wibo in the container), the Sony runtime half (profile `sce`) under **EE GCC 2.9-ee-991111-01**. Modern compilers are for tooling only, never matching.
 
 ## Hard rules
 
@@ -40,6 +40,7 @@ python tools/check_types.py --check                # type census ratchet (docs/d
 # Registry / target gates (native, need orig/)
 python tools/verify_target.py                      # hash + ELF structure vs committed registry
 python tools/extract_mdebug.py --check             # committed registries == fresh extraction
+python tools/extract_data_symbols.py --check       # data registry == fresh extraction
 python tools/extract_data_map.py --check           # data map == fresh extraction
 python configure.py                                # splat disassembly into asm/, then regenerates build.ninja + objdiff.json
 python configure.py --check                        # split twice, prove deterministic
@@ -69,7 +70,7 @@ Headers live in `include/` (layout and rules: docs/decomp_agent.md, "Types and s
 
 The pipeline is a chain of byte-gated reconstruction steps; each later stage assumes the earlier gates hold:
 
-1. **Registries** (`config/pal103/`) - extracted deterministically from the retail ELF's `.mdebug` debug section: `units.toml` (267 TUs), `functions.toml` (3,751 procedures with addresses/frames), `symbol_addrs.txt`, `data_map.toml` (exact tiling of data sections into per-unit ranges), `sections.json`, `version.json`. All are `--check`-gated: committed files must equal a fresh extraction.
+1. **Registries** (`config/pal103/`) - extracted deterministically from the retail ELF's `.mdebug` debug section: `units.toml` (267 TUs), `functions.toml` (3,751 procedures with addresses/frames), `symbol_addrs.txt`, `data_symbols.toml` (3,750 named data symbols with `.symtab` sizes and STABS types), `data_map.toml` (exact tiling of data sections into per-unit ranges, from symbol sizes and code cross-references), `sections.json`, `version.json`. All are `--check`-gated: committed files must equal a fresh extraction.
 2. **Disassembly** - splat (pinned 0.41.0, `splat.yaml`) splits the ELF into `asm/` using the registries. Nothing splat emits is committed.
 3. **Reconstruction** - `build_baseline.py` (incbin sections at `linker.ld` addresses), `assemble_text.py` (monolithic `.text` reassembled), `split_text.py` (247 per-TU objects). Each proves the loaded `PT_LOAD` image reproduces the packaged SHA-256 `c92a5987…0fe438`.
 4. **Matching C** - `src/<unit>.c` mirrors the objdiff unit name (e.g. `src/nucore/nulist.c` for unit `nucore/nulist`), with a status manifest at `config/pal103/status/<unit>.toml` marking each function `asm`/`equivalent`/`matching`. `tools/gen_hybrid.py` builds hybrid objects: compile the unit with `ee-gcc -S`, splice retail assembly slices for every non-`matching` function (address order), normalize (`_sonyize`) and assemble with the **decompals `as`** (not Sony's). Sources stay clean C - no INCLUDE_ASM annotations.
@@ -85,10 +86,13 @@ CI (docs/pipeline.md, "CI" section): `validate.yml` (structure, no game files, e
 - Prefer functions whose TU is a `.c` file. Several runtime routines (`strlen`, `memcpy`, …) are hand-written r5900 assembly in retail and can never match from C.
 - The original assembler accepts only numeric GPR names (`jr $31`, not `jr $ra`); `gen_slices.py` handles the rewrite.
 - Four static functions are duplicated across TUs and disambiguated as `NAME__<vram>`.
-- Data-from-C is not supported yet. For retail-owned globals, use `extern D_...`
-  symbols plus readable aliases; do not add file-scope C definitions that emit
-  `.data`, `.sdata`, `.rodata`, `.sbss`, or `.bss`. The canonical policy lives in
-  `docs/decomp_agent.md`.
+- Data-from-C: C defines a global only in a fully matching unit, for a
+  `data_symbols.toml` symbol of that unit, under its retail name and storage, in
+  `.rodata`/`.data`, listed under `[[data]]` in the manifest and promoted by
+  `tools/promote.py` (`--init-data`, then the data ids; `--complete` for the unit).
+  Everywhere else use `extern D_...` symbols plus readable aliases.
+  Compiler-private data, `.lit4`, `.sdata` and `.sbss`/`.bss` stay retail. The
+  canonical policy and the per-unit runbook live in `docs/decomp_agent.md`.
 
 ## Matching MCP / decomp-agent (Claude Code specifics)
 

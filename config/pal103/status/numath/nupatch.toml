@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0027"
 source = "src/numath/nupatch.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0027:0010e708:NuBezierCubicPatchEvaluatePartials"
