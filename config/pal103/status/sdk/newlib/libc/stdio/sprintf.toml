@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0206"
 source = "src/sdk/newlib/libc/stdio/sprintf.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0206:002716d0:_sprintf_r"

@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0242"
 source = "src/sdk/newlib/libc/reent/fstatr.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0242:00278728:_fstat_r"

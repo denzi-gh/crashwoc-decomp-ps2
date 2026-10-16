@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0189"
 source = "src/sdk/gcc/fp-bit.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0189:0026f748:__pack_f"

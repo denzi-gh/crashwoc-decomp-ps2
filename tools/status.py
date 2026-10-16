@@ -14,7 +14,14 @@ toolchain, so it runs on every pull request:
   * the manifest lists the unit's full function set -- no missing entries,
     no duplicates, no strays -- each with a valid state
     (asm | equivalent | matching)
-  * `complete = true` requires every function to be `matching`
+  * the optional `[[data]]` table (Data-from-C) names data registry symbols
+    (config/<version>/data_symbols.toml) of the unit by id
+    (version:unit-NNNN:vram:name), each with a state asm | matching | retail
+    (`retail` = raw asset kept as retail bytes, set by hand with a `reason`);
+    when present it lists every symbol of the unit in a section with file
+    bytes (.data, .rodata, .sdata) exactly once -- never a .sbss/.bss one
+  * `complete = true` requires every function to be `matching` and every
+    data entry `matching` or `retail` (the byte rules are verify_promoted's)
   * every src/**/*.c has a manifest, so no source file can escape accounting
 
 A `matching` state here is a *claim*; the container-side verifier re-derives
@@ -24,6 +31,7 @@ well-formed and structurally consistent.
 Exit status is 0 only if every manifest (and the src coverage rule) passes.
 """
 import argparse
+import functools
 import re
 import sys
 import tomllib
@@ -34,8 +42,13 @@ sys.path.insert(0, str(ROOT / "tools"))
 from declib.tu import parse_toml_blocks
 
 STATES = ("asm", "equivalent", "matching")
-MANIFEST_KEYS = {"schema", "unit", "source", "profile", "complete", "function"}
+MANIFEST_KEYS = {"schema", "unit", "source", "profile", "complete", "function",
+                 "data"}
 FUNCTION_KEYS = {"id", "state"}
+DATA_STATES = ("asm", "matching", "retail")
+DATA_KEYS = {"id", "state", "reason"}
+# Data sections with file bytes; .sbss/.bss symbols never get [[data]] entries.
+DATA_PROGBITS = (".data", ".rodata", ".sdata")
 ID_RE = re.compile(r"^([a-z0-9]+):unit-(\d{4}):([0-9a-f]{8}):(\S+)$")
 UNIT_RE = re.compile(r"^([a-z0-9]+):unit-(\d{4})$")
 
@@ -57,6 +70,72 @@ def load_registry(config_dir):
     return units, functions
 
 
+def load_data_registry(config_dir):
+    """{unit_index: {address: symbol record}} from data_symbols.toml ({} when
+    the registry is absent)."""
+    path = Path(config_dir) / "data_symbols.toml"
+    if not path.is_file():
+        return {}
+    stat = path.stat()
+    return _data_registry(str(path), stat.st_mtime_ns, stat.st_size)
+
+
+@functools.lru_cache(maxsize=4)
+def _data_registry(path, _mtime, _size):
+    out = {}
+    for sym in tomllib.loads(Path(path).read_text()).get("symbol", []):
+        out.setdefault(sym["unit"], {})[sym["address"]] = sym
+    return out
+
+
+def check_data(entries, version, unit_index, registry):
+    """(problems, {address: state}) for a manifest's `[[data]]` table."""
+    problems, states = [], {}
+    unit_syms = registry.get(unit_index, {}) if unit_index is not None else {}
+    for i, entry in enumerate(entries):
+        unknown = set(entry) - DATA_KEYS
+        if unknown:
+            problems.append(f"data #{i}: unknown keys: {', '.join(sorted(unknown))}")
+        did = entry.get("id", "")
+        m = ID_RE.match(did)
+        if not m:
+            problems.append(f"data #{i}: bad id {did!r}")
+            continue
+        dversion, dunit, daddr, dname = (m.group(1), int(m.group(2)),
+                                         int(m.group(3), 16), m.group(4))
+        if dversion != version or dunit != unit_index:
+            problems.append(f"{did}: id names a different version/unit than "
+                            f"the manifest")
+            continue
+        sym = unit_syms.get(daddr)
+        if sym is None:
+            problems.append(f"{did}: no data symbol at 0x{daddr:08x} in unit "
+                            f"{unit_index} (data_symbols.toml)")
+        elif sym["name"] != dname:
+            problems.append(f"{did}: data_symbols.toml names 0x{daddr:08x} "
+                            f"'{sym['name']}', not '{dname}'")
+        elif sym["section"] not in DATA_PROGBITS:
+            problems.append(f"{did}: {sym['section']} symbols carry no file "
+                            f"bytes and get no [[data]] entry")
+        if daddr in states:
+            problems.append(f"{did}: duplicate data entry")
+        state = entry.get("state")
+        if state not in DATA_STATES:
+            problems.append(f"{did}: bad data state {state!r} "
+                            f"(must be one of {', '.join(DATA_STATES)})")
+        if state == "retail" and not str(entry.get("reason", "")).strip():
+            problems.append(f"{did}: state = \"retail\" needs a `reason`")
+        if state != "retail" and "reason" in entry:
+            problems.append(f"{did}: `reason` is only for state = \"retail\"")
+        states[daddr] = state
+    if entries:
+        expected = {a for a, s in unit_syms.items() if s["section"] in DATA_PROGBITS}
+        for addr in sorted(expected - set(states)):
+            problems.append(f"data symbol 0x{addr:08x} ({unit_syms[addr]['name']}) "
+                            f"not listed")
+    return problems, states
+
+
 def load_profile_names(config_dir):
     data = tomllib.loads((config_dir / "profiles.toml").read_text())
     return set(data.get("profile", {}))
@@ -67,6 +146,7 @@ def check_manifest(path, version, root):
     config_dir = root / "config" / version
     units, functions = load_registry(config_dir)
     profiles = load_profile_names(config_dir)
+    data_registry = load_data_registry(config_dir)
     rel = path.relative_to(root / "config" / version / "status").as_posix()
     problems = []
 
@@ -162,10 +242,23 @@ def check_manifest(path, version, root):
             problems.append(f"listed function 0x{addr:08x} does not belong "
                             f"to unit {unit_index}")
 
+    data_entries = data.get("data", [])
+    data_problems, data_states = check_data(data_entries, version, unit_index,
+                                            data_registry)
+    problems += data_problems
+
     if data.get("complete") not in (True, False, None):
         problems.append(f"complete must be a boolean")
     if data.get("complete") and any(s != "matching" for s in states.values()):
         problems.append("complete = true but not every function is `matching`")
+    if data.get("complete") and any(s not in ("matching", "retail")
+                                    for s in data_states.values()):
+        problems.append("complete = true but a data entry is still `asm`")
+    if data.get("complete") and not data_entries and unit_index is not None \
+            and any(s["section"] in DATA_PROGBITS
+                    for s in data_registry.get(unit_index, {}).values()):
+        problems.append("complete = true but the unit's data symbols have no "
+                        "[[data]] entries (promote.py --init-data)")
 
     return problems
 
@@ -178,6 +271,7 @@ def check_version(version, root):
     status_dir = root / "config" / version / "status"
     results = {}
     counts = {s: 0 for s in STATES}
+    counts.update({f"data_{s}": 0 for s in DATA_STATES})
 
     manifests = sorted(status_dir.rglob("*.toml")) if status_dir.is_dir() else []
     for path in manifests:
@@ -188,6 +282,8 @@ def check_version(version, root):
             data = tomllib.loads(path.read_text())
             for entry in data.get("function", []):
                 counts[entry["state"]] += 1
+            for entry in data.get("data", []):
+                counts[f"data_{entry['state']}"] += 1
 
     # Every C source must be accounted for by a manifest.
     src_dir = root / "src"
@@ -217,9 +313,10 @@ def main():
                       if (p / "units.toml").is_file())
     failed = False
     total = {s: 0 for s in STATES}
+    total.update({f"data_{s}": 0 for s in DATA_STATES})
     for version in versions:
         results, counts = check_version(version, ROOT)
-        for s in STATES:
+        for s in total:
             total[s] += counts[s]
         for label, problems in sorted(results.items()):
             ok = not problems
@@ -231,6 +328,9 @@ def main():
     print(f"\nFunctions with C accepted: "
           f"{total['matching']} matching, {total['equivalent']} equivalent "
           f"(everything else is asm)")
+    if any(total[f"data_{s}"] for s in DATA_STATES):
+        print(f"Data entries: {total['data_matching']} matching, "
+              f"{total['data_retail']} retail, {total['data_asm']} asm")
     if failed:
         print("Status manifests FAILED validation.")
         return 1

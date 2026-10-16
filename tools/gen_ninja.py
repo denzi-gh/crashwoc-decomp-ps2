@@ -31,6 +31,7 @@ works no matter where the repo is mounted. Pure Python; no toolchain needed
 to generate.
 """
 import argparse
+import json
 import sys
 import tomllib
 from pathlib import Path
@@ -83,6 +84,10 @@ def _sources(version):
             data = tomllib.loads(m.read_text())
             states = frozenset(f.get("state", "asm")
                                for f in data.get("function", ()))
+            # A `matching` data entry needs the hybrid (its data pieces) in
+            # both images, like a `matching` function.
+            if any(d.get("state") == "matching" for d in data.get("data", ())):
+                states |= {"matching"}
             manifests[data["source"]] = (
                 m.relative_to(ROOT).as_posix(),
                 data.get("profile", "default"),
@@ -105,6 +110,15 @@ def emit_ninja(version="pal103", out_path=None):
     headers = [h.relative_to(ROOT).as_posix() for h in header_files()]
     profiles = f"config/{version}/profiles.toml"
     fallback_stamp = f"build/{version}/fallback/.stamp"
+    # What a hybrid's data pieces and borrowed slots are cut from.
+    elf_rel = json.loads((ROOT / "config" / version / "version.json")
+                         .read_text())["files"]["elf"]["path"]
+    data_inputs = [f"config/{version}/data_map.toml",
+                   f"config/{version}/data_symbols.toml",
+                   f"config/{version}/symbol_addrs.txt",
+                   f"config/{version}/sections.json", elf_rel]
+    if (ROOT / "build" / "undefined_syms_auto.txt").is_file():
+        data_inputs.append("build/undefined_syms_auto.txt")
 
     L = [_HEADER]
     L += [
@@ -203,7 +217,7 @@ def emit_ninja(version="pal103", out_path=None):
             report_base_o.append(cur)   # nothing decompiled: base is `current`
             continue
         hybrid_implicit = [fallback_stamp, profiles, "tools/gen_hybrid.py",
-                           "tools/cc.py", *headers]
+                           "tools/cc.py", *headers, *data_inputs]
         # matching image: hybrid only where a function is actually `matching`;
         # equivalent image: hybrid where a function is `matching` or `equivalent`.
         for link_set, bucket, needed in (("matching", matching_o, has_matching),

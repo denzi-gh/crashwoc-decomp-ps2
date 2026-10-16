@@ -8,7 +8,7 @@ import re
 import subprocess
 from pathlib import Path
 
-from .toolchain import LD, OBJCOPY, tool_path
+from .toolchain import LD, NM, OBJCOPY, tool_path
 
 _GP = 0x00634970
 # Retail .lit4 base (config/pal103/sections.json). A compiled object's own
@@ -81,6 +81,45 @@ def _run_tool(cmd):
     if proc.returncode != 0:
         raise ToolError(proc.returncode, cmd, proc.stdout, proc.stderr)
     return proc
+
+
+def link_unit_at(obj, base_addr, pieces, defsyms, tmp):
+    """Link a hybrid with data pieces at their true addresses.
+
+    `.text` goes to base_addr and every piece ({name, start}) into its own
+    output section at its address, so relocations from the code into C data
+    resolve (link_text_at would discard the pieces). Returns (text bytes,
+    {piece name: bytes}, {symbol: address} of the linked image).
+    """
+    ld_bin, objcopy_bin = tool_path(LD), tool_path(OBJCOPY)
+    nm_bin = tool_path(NM)
+    o = Path(obj).as_posix()
+    lines = ["SECTIONS {", f"  . = 0x{base_addr:08X};",
+             f"  .text : SUBALIGN(1) {{ {o}(.text) }}",
+             f"  . = 0x{_LIT4:08X};", f"  .lit4 : {{ {o}(.lit4) }}"]
+    for p in sorted(pieces, key=lambda p: p["start"]):
+        lines += [f"  . = 0x{p['start']:08X};",
+                  f"  {p['name']} : SUBALIGN(1) {{ {o}({p['name']}) }}"]
+    lines += [f"  _gp = 0x{_GP:08X};",
+              "  /DISCARD/ : { *(.pdr) *(.reginfo) *(.mdebug*) *(.comment) "
+              "*(.gnu.attributes) *(.MIPS.abiflags) }", "}"]
+    lines += [f"{n} = 0x{a:08X};" for n, a in defsyms.items()]
+    ld = tmp / "link.ld"
+    ld.write_text("\n".join(lines) + "\n")
+    elf_out = tmp / "linked.elf"
+    _run_tool([ld_bin, "-EL", "-T", str(ld), "-o", str(elf_out), str(obj)])
+    out = {}
+    for name in [".text"] + [p["name"] for p in pieces]:
+        bin_out = tmp / f"{name.strip('.')}.bin"
+        _run_tool([objcopy_bin, "-O", "binary", f"--only-section={name}",
+                   str(elf_out), str(bin_out)])
+        out[name] = bin_out.read_bytes()
+    symbols = {}
+    for line in _run_tool([nm_bin, str(elf_out)]).stdout.splitlines():
+        parts = line.split()
+        if len(parts) == 3:
+            symbols[parts[2]] = int(parts[0], 16)
+    return out.pop(".text"), out, symbols
 
 
 def link_text_at(obj, base_addr, defsyms, tmp):

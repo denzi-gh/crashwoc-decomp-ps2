@@ -9,8 +9,16 @@ schema = 1
 unit = "pal103:unit-0162"
 source = "src/sdk/newlib/libm/math/e_fmod.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0162:002699f8:__ieee754_fmod"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0162:0062b518:one"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0162:0062b520:Zero"
 state = "matching"

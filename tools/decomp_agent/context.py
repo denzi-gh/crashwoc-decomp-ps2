@@ -48,6 +48,9 @@ def get_context(project: DecompProject, target, *, detail=False,
                 include_asm=None, include_c=True) -> dict:
     reg = Registry(project)
     res = reg.resolve(target)
+    from . import data as data_mod
+    if data_mod.is_data_target(project, target, res):
+        return data_mod.data_context(project, target)
     if res.status == "ambiguous":
         return schemas.err("get_context", res.detail, code="ambiguous",
                            candidates=res.candidates)
@@ -121,15 +124,17 @@ def get_context(project: DecompProject, target, *, detail=False,
     hypotheses = []
     if owned_data:
         hypotheses.append({
-            "label": "unit owns data ranges; data-from-C is unsupported",
+            "label": "unit owns data ranges; its data stays retail until the "
+                     "unit is fully matching",
             "confidence": "medium",
-            "detail": f"unit owns {len(owned_data)} data range(s); a function "
-                      f"touching them may hit initialized_local_sdata / rodata "
-                      f"blockers",
+            "detail": f"unit owns {len(owned_data)} data range(s); C defines "
+                      f"them only through [[data]] once every function is "
+                      f"matching (docs/decomp_agent.md, per-unit data workflow)",
             "kind": "unit_owns_data",
-            "policy": "data_from_c_unsupported",
-            "guidance": "Use extern D_... retail symbols plus aliases; do not "
-                        "define file-scope C globals."})
+            "policy": "data_from_c_fully_matched_units_only",
+            "guidance": "While matching functions, use extern D_... retail "
+                        "symbols plus aliases; do not define file-scope C "
+                        "globals."})
     if fn.name_is_duplicated:
         hypotheses.append({
             "label": "name duplicated across TUs (disambiguated as NAME__<vram>)",

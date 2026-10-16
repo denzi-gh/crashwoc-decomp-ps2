@@ -9,8 +9,16 @@ schema = 1
 unit = "pal103:unit-0165"
 source = "src/sdk/newlib/libm/math/e_sqrt.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0165:0026b030:__ieee754_sqrt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0165:0062b950:one"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0165:0062b958:tiny"
 state = "matching"

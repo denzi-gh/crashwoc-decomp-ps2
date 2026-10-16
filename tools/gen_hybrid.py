@@ -26,9 +26,20 @@ retail over the whole unit. build_report_object() reuses the same compile and
 normalization to emit objdiff's base object (C functions only, no slices, no
 extent padding) -- a measurement, never linked.
 
+Data-from-C: a unit whose manifest has a `matching` [[data]] entry also
+gets data pieces -- one input section per owned data range
+(`<sec>.split_<vram8>`) holding its `matching` objects compiled from C at
+their registry addresses and every other byte as retail `.incbin`; the image
+link then takes that unit's data from the hybrid instead of the expected
+data object. C data of `asm`/`retail` entries is dropped and its references
+renamed onto the retail symbol. A sidecar `<object>.data.json` records the
+pieces, the retail byte ranges in them and the compiler-private retail slots
+the code borrows (verify_promoted's `complete` rule reads it).
+
 Anything this tool cannot yet represent fails loudly instead of guessing:
-a declared function missing from the C, data sections in the compiler
-output, or unexpected content between functions.
+a declared function missing from the C, C data without a [[data]] table, in
+the wrong section or of the wrong size, uninitialised (.bss/COMMON) C data,
+or unexpected content between functions.
 
 Needs the EE GCC: run in the Containerfile image. All outputs are
 game-derived and land in the gitignored build/ tree.
@@ -75,13 +86,19 @@ def _is_noise(line):
     return not s or s.startswith("#")
 
 
-def parse_s(text):
+def parse_s(text, data_items=None):
     """(prologue_lines, [(name, segment_lines)...]) from `ee-gcc -S` output.
 
     Local initialized aggregates come back separately as {label: bytes};
-    anything unexpected raises.
+    named data objects are appended to `data_items` (a list) when given and
+    rejected otherwise; anything unexpected raises.
     """
-    lines, local_data = _extract_local_data(text.splitlines())
+    lines, local_data, items = _split_sections(text.splitlines())
+    if items:
+        if data_items is None:
+            raise HybridError(f"data section in compiler output not supported "
+                              f"yet: {items[0].name} ({items[0].section})")
+        data_items.extend(items)
     ents = [(i, m.group(1)) for i, l in enumerate(lines)
             if (m := _ENT_RE.match(l))]
     ends = [(i, m.group(1)) for i, l in enumerate(lines)
@@ -389,65 +406,160 @@ def _assemble_data_bytes(block):
     return bytes(buf)
 
 
+# --------------------------------------------------------------------------- #
+# Section-tracking splitter (compiled data)                                   #
+# --------------------------------------------------------------------------- #
+
+# Section switches ee-gcc emits; `.section` names map onto the same set.
+_SECTION_SWITCH_RE = re.compile(
+    r"^\s*(?:\.(text|data|rdata|rodata|sdata|sdata2|sbss|bss)\s*$"
+    r"|\.section\s+\.?([A-Za-z0-9_]+)\b.*$|(\.previous)\s*$)")
+_SECTION_NAMES = {"text": ".text", "data": ".data", "rdata": ".rodata",
+                  "rodata": ".rodata", "sdata": ".sdata", "sdata2": ".sdata",
+                  "sbss": ".sbss", "bss": ".bss"}
+_GLOBL_RE = re.compile(r"^\s*\.globl\s+(\S+)\s*$")
+_TYPE_OBJ_RE = re.compile(r"^\s*\.type\s+(\S+?)\s*,\s*@object\s*$")
+_SIZE_DIR_RE = re.compile(r"^\s*\.size\s+(\S+?)\s*,\s*(\d+)\s*$")
+_COMM_RE = re.compile(r"^\s*\.(comm|lcomm)\s+([^,\s]+)\s*,\s*(\d+)")
+_DATA_LABEL_RE = re.compile(r"^([A-Za-z_.$][\w.$]*):\s*$")
+_ALIGN_ARG_RE = re.compile(r"^\s*\.(?:p2align|align)\s+(\d+)\s*$")
+_WORD_PRIVATE_RE = re.compile(r"^\s*\.word\s+(\$L\w*)\s*$")
+FUNCTION_STATIC_RE = re.compile(r"^(.+)\.(\d+)$")
+
+
+class DataItem:
+    """One labelled object the compiler emitted in a data section."""
+
+    def __init__(self, name, section, align):
+        self.name, self.section, self.align = name, section, align
+        self.lines = []          # its data directives (interior .align kept)
+        self.size = None         # from `.size NAME,N`
+        self.globl = False
+
+    def __repr__(self):
+        return f"DataItem({self.name!r}, {self.section!r})"
+
+
+def _section_switch(line):
+    """The section a switch line selects ('previous' for `.previous`)."""
+    m = _SECTION_SWITCH_RE.match(line)
+    if not m:
+        return None
+    if m.group(3):
+        return "previous"
+    name = m.group(1) or m.group(2)
+    return _SECTION_NAMES.get(name, f".{name}")
+
+
+def _split_sections(lines):
+    """Split compiled assembly by section.
+
+    Returns (text_lines, private, items): the code stream with every data
+    section's content removed, the compiler-private blocks ($LCn strings and
+    aggregates as bytes, $Ln switch tables as _JumpTable markers), and the
+    named data objects as DataItem (`.comm`/`.lcomm` as section 'COMMON').
+    `.globl`, `.align`, `.type` and `.size` attach to the label that follows
+    them; an `.align` followed by more data stays interior to its object."""
+    labels, section, previous = set(), ".text", ".text"
+    for line in lines:
+        new = _section_switch(line)
+        if new is not None:
+            section, previous = (previous, section) if new == "previous" \
+                else (new, section)
+            continue
+        m = _DATA_LABEL_RE.match(line)
+        if m and section != ".text":
+            labels.add(m.group(1))
+
+    text, private_items, items = [], [], []
+    section, previous = ".text", ".text"
+    current, pending_align, globls, sizes = None, None, set(), {}
+    for line in lines:
+        new = _section_switch(line)
+        if new is not None:
+            old = section
+            section, previous = (previous, section) if new == "previous" \
+                else (new, section)
+            if old == ".text" and section == ".text":
+                text.append(line)           # a plain `.text` lead stays
+            current, pending_align = None, None
+            continue
+        if section == ".text":
+            g = _GLOBL_RE.match(line)
+            if g and g.group(1) in labels:
+                globls.add(g.group(1))
+                continue
+            c = _COMM_RE.match(line)
+            if c:
+                item = DataItem(c.group(2), "COMMON", None)
+                item.size = int(c.group(3))
+                items.append(item)
+                continue
+            text.append(line)
+            continue
+        s = line.strip()
+        if not s or s.startswith("#"):
+            continue
+        a = _ALIGN_ARG_RE.match(line)
+        if a:
+            pending_align = int(a.group(1))
+            continue
+        if _TYPE_OBJ_RE.match(line):
+            continue
+        z = _SIZE_DIR_RE.match(line)
+        if z:
+            sizes[z.group(1)] = int(z.group(2))
+            continue
+        g = _GLOBL_RE.match(line)
+        if g:
+            if g.group(1) in labels:
+                globls.add(g.group(1))
+            else:
+                text.append(line)           # a function's lead, not data
+            continue
+        if _ENT_RE.match(line):
+            raise HybridError(f"function inside a data section: {s!r}")
+        m = _DATA_LABEL_RE.match(line)
+        if m:
+            current = DataItem(m.group(1), section, pending_align)
+            pending_align = None
+            (private_items if current.name.startswith("$") else items).append(current)
+            continue
+        if current is None:
+            raise HybridError(
+                "local data block with no private label unsupported")
+        if pending_align is not None:
+            current.lines.append(f"\t.align\t{pending_align}")
+            pending_align = None
+        current.lines.append(line)
+
+    for item in items:
+        item.globl = item.name in globls
+        if item.size is None:
+            item.size = sizes.get(item.name)
+    private = {}
+    for item in private_items:
+        payload = [l for l in item.lines if not _ALIGN_ARG_RE.match(l)]
+        if payload and all(_WORD_LABEL_RE.match(p) for p in payload):
+            private[item.name] = _JumpTable(len(payload))
+        else:
+            private[item.name] = _assemble_data_bytes(item.lines)
+    return text, private, items
+
+
 def _extract_local_data(lines):
     """Pull ee-gcc's private data blocks ($LCn/$Ln in .sdata/.rodata/...) out
     of the compiled stream so the rest parses as pure text.
+
+    A thin view over _split_sections for callers that expect no named data:
+    named objects are left out of both results (parse_s reports them).
 
     Returns (clean_lines, {label: value}) where value is the block's bytes for
     a constant aggregate, or a `_JumpTable(count)` marker for a switch jump
     table (`.word <label>` entries, which are relocations, not bytes). Each
     block must define exactly one private label; the whole-unit byte gates
     verify every remap downstream."""
-    clean, local = [], {}
-    i, n = 0, len(lines)
-    while i < n:
-        if not _ENTER_DATA_RE.match(lines[i]):
-            clean.append(lines[i])
-            i += 1
-            continue
-        j = i + 1
-        block = []
-        while j < n and not _LEAVE_DATA_RE.match(lines[j]):
-            block.append(lines[j])
-            j += 1
-        # Consume the redundant .text that closes the block, if present.
-        if j < n and re.match(r"^\s*\.text\b", lines[j]):
-            j += 1
-        labels = [_LOCAL_LABEL_RE.match(b).group(1)
-                  for b in block if _LOCAL_LABEL_RE.match(b)]
-        if not labels:
-            raise HybridError(
-                "local data block with no private label unsupported")
-        # ee-gcc packs one or more private slots ($LCn/$Ln) between a single
-        # .rdata/.text switch -- e.g. the two format strings of a function that
-        # calls NuDebugMsgProlog twice. Each label names an independent
-        # aggregate that borrows its own retail slot, so partition the block at
-        # every label. A one-label block is the common case and keeps its whole
-        # body (interior .align in a const aggregate is meaningful); when a
-        # block holds several labels the directives between them only align the
-        # next slot, so they are not part of any aggregate's bytes.
-        if len(labels) == 1:
-            segments = [(labels[0], block)]
-        else:
-            segments = []
-            for b in block:
-                m = _LOCAL_LABEL_RE.match(b)
-                if m:
-                    segments.append((m.group(1), []))
-                elif segments and b.strip() and \
-                        b.strip().split(None, 1)[0] not in (".align", ".p2align"):
-                    segments[-1][1].append(b)
-        # A slot whose every payload entry is `.word <symbol>` is a jump table
-        # (relocations); anything else is a constant aggregate we can assemble.
-        for label, seg in segments:
-            payload = [b for b in seg if b.strip()
-                       and not _LOCAL_LABEL_RE.match(b)
-                       and b.strip().split(None, 1)[0] not in (".align", ".p2align")]
-            if payload and all(_WORD_LABEL_RE.match(p) for p in payload):
-                local[label] = _JumpTable(len(payload))
-            else:
-                local[label] = _assemble_data_bytes(seg)
-        i = j
+    clean, local, _items = _split_sections(lines)
     return clean, local
 
 
@@ -1029,11 +1141,245 @@ def _rewrite_local_data(seg, local_data, version, unit_dir, name, addr,
     return out, externs
 
 
-def _compile_and_split(data, out_o, link_set, version):
+# --------------------------------------------------------------------------- #
+# Data-from-C: per-symbol data pieces                                         #
+# --------------------------------------------------------------------------- #
+
+# Data sections whose owned ranges a hybrid with C data provides as pieces
+# (everything with file bytes; .sbss/.bss stay with the NOLOAD placeholders).
+PIECE_SECTIONS = (".data", ".rodata", ".lit4", ".sdata")
+# Sections C may own symbols in for now (.sdata: data/sdata, bss: data/bss).
+C_DATA_SECTIONS = (".data", ".rodata")
+_RETAIL_CACHE = {}
+
+
+def piece_name(section, start):
+    """Input-section name of the hybrid piece for one owned data range."""
+    return f"{section}.split_{start:08x}"
+
+
+def _retail(version):
+    if version not in _RETAIL_CACHE:
+        from declib.target import load_target
+        _RETAIL_CACHE[version] = load_target(version)
+    return _RETAIL_CACHE[version]
+
+
+def _retail_bytes(version, section, lo, hi):
+    elf, spec, _pt = _retail(version)
+    sec = next(s for s in spec["sections"] if s["name"] == section)
+    off = h(sec["offset"]) + lo - h(sec["addr"])
+    return elf[off:off + hi - lo]
+
+
+def unit_data_ranges(version, unit_dir):
+    """The unit's owned data_map ranges that carry file bytes, by address."""
+    dm = tomllib.loads((ROOT / "config" / version / "data_map.toml").read_text())
+    return sorted((r for r in dm["range"] if r["owner"] == unit_dir
+                   and r["section"] in PIECE_SECTIONS), key=lambda r: r["start"])
+
+
+def data_states(data):
+    """{address: state} of a manifest's [[data]] table."""
+    return {int(e["id"].split(":")[2], 16): e["state"]
+            for e in data.get("data", [])}
+
+
+def has_c_data(data):
+    """True when a unit's hybrid carries data pieces (a `matching` entry)."""
+    return "matching" in data_states(data).values()
+
+
+def _plan_data(items, data, version, unit_dir, report):
+    """Map compiled data objects onto the unit's registry symbols.
+
+    Returns (rename, emit): label renames for every compiled data object
+    (a function static's compiler number becomes the retail one; a dropped
+    static's references go to `D_<VRAM>`, the retail address, so they
+    resolve like any retail datum) and the [(DataItem, symbol)] the hybrid
+    emits -- the `matching` entries; everything else is dropped and stays
+    retail bytes. The k-th compiled `stem.N` is the k-th registry function
+    static with that stem in address order."""
+    if not items:
+        if not report:
+            missing = [a for a, s in data_states(data).items() if s == "matching"]
+            if missing:
+                raise HybridError(f"matching data at {', '.join(f'0x{a:08x}' for a in missing)} "
+                                  f"is not defined in {data['source']}")
+        return {}, []
+    if not data.get("data"):
+        raise HybridError(f"data section in compiler output not supported yet: "
+                          f"{items[0].name} ({items[0].section}) -- a unit's C "
+                          f"defines data only with a [[data]] table "
+                          f"(promote.py --init-data)")
+    from status import load_data_registry
+    unit_index = int(unit_dir.split("-")[1])
+    registry = load_data_registry(ROOT / "config" / version).get(unit_index, {})
+    states = data_states(data)
+    by_name = {s["name"]: s for s in registry.values()
+               if s["scope"] != "function_static"}
+    stems = {}
+    for sym in sorted(registry.values(), key=lambda s: s["address"]):
+        if sym["scope"] == "function_static":
+            stems.setdefault(sym["stem"], []).append(sym)
+    seen = {}
+    rename, emit = {}, []
+    for item in items:
+        if item.section in ("COMMON", ".sbss", ".bss"):
+            raise HybridError(f"{item.name}: C defines uninitialised data "
+                              f"({item.section}); .sbss/.bss/COMMON stay retail "
+                              f"until data/bss")
+        m = FUNCTION_STATIC_RE.match(item.name)
+        if m:
+            k = seen.get(m.group(1), 0)
+            seen[m.group(1)] = k + 1
+            candidates = stems.get(m.group(1), [])
+            if k >= len(candidates):
+                raise HybridError(f"{item.name}: unit {unit_dir} has no function "
+                                  f"static #{k + 1} named {m.group(1)}.N")
+            sym = candidates[k]
+        else:
+            sym = by_name.get(item.name)
+            if sym is None:
+                raise HybridError(f"{item.name}: not a data symbol of {unit_dir} "
+                                  f"(config/{version}/data_symbols.toml)")
+        if item.section != sym["section"]:
+            raise HybridError(
+                f"data_section_mismatch: {item.name} compiles into {item.section}, "
+                f"retail {sym['name']} is in {sym['section']} (check const and "
+                f"the profile's -G)")
+        if not report and states.get(sym["address"]) == "matching":
+            if sym["section"] not in C_DATA_SECTIONS:
+                raise HybridError(f"{sym['name']}: {sym['section']} data from C "
+                                  f"is not supported yet (data/sdata)")
+            if item.size is not None and sym.get("size") is not None \
+                    and item.size != sym["size"]:
+                raise HybridError(f"{sym['name']}: .size {item.size} != .symtab "
+                                  f"size {sym['size']}")
+            if item.name != sym["name"]:
+                rename[item.name] = sym["name"]
+            emit.append((item, sym))
+        else:
+            new = sym["name"] if sym["scope"] == "global" else f"D_{sym['address']:08X}"
+            if new != item.name:
+                rename[item.name] = new
+    if not report:
+        defined = {sym["address"] for _i, sym in emit}
+        missing = [a for a, s in states.items() if s == "matching" and a not in defined]
+        if missing:
+            raise HybridError(f"matching data at {', '.join(f'0x{a:08x}' for a in missing)} "
+                              f"is not defined in {data['source']}")
+    return rename, emit
+
+
+def _directive_size(line):
+    """Bytes one data directive emits (a symbolic .word is 4)."""
+    word = line.split()[0]
+    if word in (".word", ".gpword") and not re.match(
+            r"^\s*\.word\s+-?(?:0x[0-9A-Fa-f]+|\d+)(?:\s*,\s*-?(?:0x[0-9A-Fa-f]+|\d+))*\s*(?:#.*)?$",
+            line):
+        return 4 * len(line.split(None, 1)[1].split("#")[0].split(","))
+    return len(_assemble_data_bytes([line]))
+
+
+def _item_body(item, sym, version):
+    """An emitted object's directives. A `.word $LCn` (a pointer to a
+    compiler-private string) takes the retail pointer at that offset, as the
+    `D_<VRAM>` the image link resolves; a mid-object `.align` is refused."""
+    out, offset = [], 0
+    for line in item.lines:
+        if _ALIGN_ARG_RE.match(line):
+            raise HybridError(f"{sym['name']}: .align inside the object is not "
+                              f"supported")
+        m = _WORD_PRIVATE_RE.match(line)
+        if m:
+            addr = sym["address"] + offset
+            word = struct.unpack("<I", _retail_bytes(version, sym["section"],
+                                                     addr, addr + 4))[0]
+            out.append(f"\t.word\tD_{word:08X}")
+            offset += 4
+            continue
+        out.append(line)
+        offset += _directive_size(line)
+    return out
+
+
+def _data_pieces(emit, unit_dir, version, bin_dir):
+    """(lines, pieces, retail) for a hybrid with C data.
+
+    One piece per owned range with file bytes (`<sec>.split_<vram8>`): the
+    emitted objects at their registry addresses (`.org`), everything else as
+    `.incbin` of the retail bytes, which gen_hybrid cuts from the ELF itself.
+    `.align 0` keeps the assembler from padding or moving labels. Returns the
+    piece list [{name, section, start, end, objects}] and the retail byte
+    ranges."""
+    lines, pieces, retail = [], [], []
+    bin_dir.mkdir(parents=True, exist_ok=True)
+    by_range = {}
+    ranges = unit_data_ranges(version, unit_dir)
+    for item, sym in emit:
+        rng = next((r for r in ranges if r["start"] <= sym["address"] < r["end"]
+                    and r["section"] == sym["section"]), None)
+        size = sym.get("size") or item.size
+        if rng is None or size is None or sym["address"] + size > rng["end"]:
+            raise HybridError(f"{sym['name']}: not inside one owned range of "
+                              f"{unit_dir} (data_map.toml)")
+        by_range.setdefault(rng["start"], []).append((sym["address"], size, item, sym))
+    for rng in ranges:
+        start, end, section = rng["start"], rng["end"], rng["section"]
+        name = piece_name(section, start)
+        blob = bin_dir / f"{name}.bin"
+        blob.write_bytes(_retail_bytes(version, section, start, end))
+        flags = "a" if section == ".rodata" else "aw"
+        lines += [f'\t.section\t{name},"{flags}",@progbits', "\t.align\t0"]
+        cursor, objects = start, []
+        for addr, size, item, sym in sorted(by_range.get(start, []),
+                                            key=lambda t: t[0]):
+            if item.align and addr % (1 << item.align):
+                raise HybridError(f"{sym['name']}: .align {item.align} does not "
+                                  f"hold at 0x{addr:08x}")
+            if addr < cursor:
+                raise HybridError(f"{sym['name']}: overlaps the object before it")
+            if addr > cursor:
+                lines.append(f'\t.incbin\t"{blob.as_posix()}",{cursor - start},'
+                             f'{addr - cursor}')
+                retail.append((cursor, addr))
+            lines.append(f"\t.org\t0x{addr - start:X}")
+            if item.globl:
+                lines.append(f"\t.globl\t{sym['name']}")
+            lines += [f"\t.type\t{sym['name']},@object",
+                      f"\t.size\t{sym['name']},{size}", f"{sym['name']}:"]
+            lines += _item_body(item, sym, version)
+            objects.append({"name": sym["name"], "address": addr, "size": size,
+                            "sized_by": "registry" if sym.get("size") else "compiler"})
+            cursor = addr + size
+            lines.append(f"\t.org\t0x{cursor - start:X}")
+        if cursor < end:
+            lines.append(f'\t.incbin\t"{blob.as_posix()}",{cursor - start},'
+                         f'{end - cursor}')
+            retail.append((cursor, end))
+        pieces.append({"name": name, "section": section, "start": start,
+                       "end": end, "objects": objects})
+    return lines, pieces, retail
+
+
+def _relabel_data(lines, rename):
+    """Rewrite whole data-symbol names (`lut.6` never matches inside
+    `lut.60`, `lut` never inside `lut.6`)."""
+    if not rename:
+        return lines
+    pattern = re.compile(r"(?<![\w.$])(" + "|".join(
+        map(re.escape, sorted(rename, key=len, reverse=True))) + r")(?![\w$.])")
+    return [pattern.sub(lambda m: rename[m.group(1)], l) for l in lines]
+
+
+def _compile_and_split(data, out_o, link_set, version, report=False):
     """Compile the unit's C and split it into (prologue, seg_by_name,
-    functions, unit_dir). Shared by the hybrid link and the report base
-    object -- both start from the same compiler output and the same
-    from-C function set."""
+    functions, unit_dir, local_data, emit). Shared by the hybrid link and the
+    report base object -- both start from the same compiler output and the
+    same from-C function set. `emit` lists the C data objects the hybrid
+    owns (none for the report object, whose data references are renamed to
+    the retail names instead)."""
     src = ROOT / data["source"]
     unit_dir = data["unit"].split(":")[1]
     functions = _manifest_functions(data)
@@ -1042,7 +1388,13 @@ def _compile_and_split(data, out_o, link_set, version):
     cs = Path(out_o).with_name(Path(out_o).stem + "_cc.s")
     cc.compile_s(src, cs, profile=data.get("profile", "default"),
                  version=version)
-    prologue, segments, local_data = parse_s(cs.read_text())
+    items = []
+    prologue, segments, local_data = parse_s(cs.read_text(), items)
+    data_rename, emit = _plan_data(items, data, version, unit_dir, report)
+    prologue = _relabel_data(prologue, data_rename)
+    segments = [(name, _relabel_data(seg, data_rename)) for name, seg in segments]
+    for item, _sym in emit:
+        item.lines = _relabel_data(item.lines, data_rename)
     rename = _duplicate_static_labels(functions, version)
     prologue = _relabel(prologue, rename)
     segments = [(name, _relabel(seg, rename)) for name, seg in segments]
@@ -1053,12 +1405,12 @@ def _compile_and_split(data, out_o, link_set, version):
     if missing:
         raise HybridError(f"declared {'/'.join(LINK_SETS[link_set])} but not "
                           f"defined in {data['source']}: {', '.join(missing)}")
-    return prologue, seg_by_name, functions, unit_dir, local_data
+    return prologue, seg_by_name, functions, unit_dir, local_data, emit
 
 
 def _splice_unit(prologue, seg_by_name, functions, unit_dir, link_set,
                  version, report_base, unit_end, local_data=None,
-                 profile="default"):
+                 profile="default", borrowed=None):
     """Ordered .s lines for one unit.
 
     Hybrid: link_set functions from C, padded to their extent; the rest from
@@ -1082,9 +1434,13 @@ def _splice_unit(prologue, seg_by_name, functions, unit_dir, link_set,
             seg, externs = _rewrite_lis(seg_by_name[name], version, unit_dir,
                                         name, addr, mapper_box)
             out_lines += externs   # symbol metadata; hoisted, emits no bytes
+            if borrowed is not None:
+                borrowed += [e.split()[1].rstrip(",") for e in externs]
             seg, externs = _rewrite_local_data(seg, local_data or {}, version,
                                                unit_dir, name, addr, mapper_box)
             out_lines += externs   # .extern for the borrowed retail data slot
+            if borrowed is not None:
+                borrowed += [e.split()[1].rstrip(",") for e in externs]
             body_lines += _sonyize_seg(seg, profile)
             if end is not None and not report_base:
                 # A function's registry extent runs to the next function and
@@ -1101,27 +1457,74 @@ def _splice_unit(prologue, seg_by_name, functions, unit_dir, link_set,
     return out_lines
 
 
-def _assemble_unit(out_o, out_lines):
-    """Write the spliced .s next to out_o, assemble it, and reject data."""
+def profile_g_flag(profile, version="pal103"):
+    """The `-G<n>` of a compiler profile: the assembler must use the same
+    small-data threshold the compiler did, or a `.extern SYM, n` / macro load
+    is addressed differently from the compiler's own assumption."""
+    flags = [f for f in cc.profile_spec(profile, version)["flags"]
+             if re.fullmatch(r"-G\d+", f)]
+    if len(flags) != 1:
+        raise HybridError(f"profile {profile!r} must name exactly one -G flag")
+    return flags[0]
+
+
+def _assemble_unit(out_o, out_lines, g_flag="-G8", allowed=()):
+    """Write the spliced .s next to out_o, assemble it, and reject data
+    outside the `allowed` piece sections."""
     out_o = Path(out_o)
     unit_s = out_o.with_suffix(".s")
     unit_s.parent.mkdir(parents=True, exist_ok=True)
     unit_s.write_text("\n".join(out_lines) + "\n")
-    _assemble_hybrid(unit_s, out_o)
-    _check_no_data_sections(out_o)
+    _assemble_hybrid(unit_s, out_o, g_flag)
+    _check_no_data_sections(out_o, allowed)
     return unit_s
 
 
 def build_hybrid(manifest_path, out_o, link_set="matching", version="pal103"):
     """Assemble one unit's hybrid object; returns the intermediate .s path."""
     data = tomllib.loads(Path(manifest_path).read_text())
-    prologue, seg_by_name, functions, unit_dir, local_data = _compile_and_split(
-        data, out_o, link_set, version)
+    prologue, seg_by_name, functions, unit_dir, local_data, emit = \
+        _compile_and_split(data, out_o, link_set, version)
+    borrowed = []
     out_lines = _splice_unit(prologue, seg_by_name, functions, unit_dir,
                              link_set, version, report_base=False,
                              unit_end=_unit_end(unit_dir), local_data=local_data,
-                             profile=data.get("profile", "default"))
-    return _assemble_unit(out_o, out_lines)
+                             profile=data.get("profile", "default"),
+                             borrowed=borrowed)
+    pieces, retail = [], []
+    if emit:
+        out_o = Path(out_o)
+        lines, pieces, retail = _data_pieces(
+            emit, unit_dir, version, out_o.parent / f"{out_o.stem}_data")
+        out_lines += lines
+    unit_s = _assemble_unit(out_o, out_lines,
+                            profile_g_flag(data.get("profile", "default"), version),
+                            allowed=[p["name"] for p in pieces])
+    _write_data_report(out_o, pieces, retail, borrowed, version)
+    return unit_s
+
+
+def data_report_path(out_o):
+    """The sidecar a hybrid build writes next to its object."""
+    out_o = Path(out_o)
+    return out_o.with_name(out_o.stem + ".data.json")
+
+
+def _write_data_report(out_o, pieces, retail, borrowed, version):
+    from declib.asmtext import AUTO_NAME_RE, load_symbol_addrs
+    symbols = load_symbol_addrs(version)
+    slots = []
+    for sym in dict.fromkeys(borrowed):
+        addr = symbols.get(sym)
+        if addr is None:
+            m = AUTO_NAME_RE.fullmatch(sym)
+            addr = int(m.group(1), 16) if m else None
+        slots.append({"symbol": sym, "address": addr})
+    import json
+    data_report_path(out_o).write_text(json.dumps(
+        {"schema": 1, "pieces": pieces,
+         "retail": [[lo, hi] for lo, hi in retail],
+         "borrowed": slots}, indent=1) + "\n")
 
 
 def build_report_object(manifest_path, out_o, version="pal103"):
@@ -1142,13 +1545,14 @@ def build_report_object(manifest_path, out_o, version="pal103"):
     # defined in C" check in _compile_and_split; the report includes functions
     # by whether the compiler emitted them, not by link_set.
     link_set = "equivalent"
-    prologue, seg_by_name, functions, unit_dir, local_data = _compile_and_split(
-        data, out_o, link_set, version)
+    prologue, seg_by_name, functions, unit_dir, local_data, _emit = \
+        _compile_and_split(data, out_o, link_set, version, report=True)
     out_lines = _splice_unit(prologue, seg_by_name, functions, unit_dir,
                              link_set, version, report_base=True,
                              unit_end=_unit_end(unit_dir), local_data=local_data,
                              profile=data.get("profile", "default"))
-    return _assemble_unit(out_o, out_lines)
+    return _assemble_unit(out_o, out_lines,
+                          profile_g_flag(data.get("profile", "default"), version))
 
 
 def _duplicate_static_labels(functions, version):
@@ -1174,40 +1578,36 @@ _DATA_SECTIONS = {".lit4", ".lit8", ".data", ".sdata", ".rdata", ".rodata",
                   ".sbss", ".bss"}
 
 
-def _check_no_data_sections(out_o):
-    """Fail loudly if the assembled hybrid carries any data section bytes.
+def _check_no_data_sections(out_o, allowed=()):
+    """Fail loudly if the assembled hybrid carries data outside its pieces.
 
-    A hybrid may only contribute .text: the image's data bytes come from the
-    per-range data objects (tools/gen_data_objects.py). A non-empty data
-    section here means a compiled segment slipped data past the rewrites
-    (e.g. an unhandled literal pool) and the link would either fail or,
-    worse, silently place bytes this tool never verified.
+    A hybrid contributes .text and, with C data, only its `allowed` piece
+    sections: every other data byte of the image comes from the per-range
+    data objects (tools/gen_data_objects.py). Any other non-empty data section
+    means a compiled segment slipped data past the rewrites (e.g. an unhandled
+    literal pool) and the link would either fail or, worse, silently place
+    bytes this tool never verified; a COMMON symbol would be invisible to the
+    image SHA, so it is refused too.
     """
-    f = Path(out_o).read_bytes()
-    if f[:4] != b"\x7fELF":
+    from declib.elf import read_elf
+    try:
+        sections, symbols, _rel = read_elf(Path(out_o).read_bytes())
+    except ValueError:
         raise HybridError(f"{out_o}: not an ELF object")
-    shoff = struct.unpack_from("<I", f, 0x20)[0]
-    shentsize = struct.unpack_from("<H", f, 0x2E)[0]
-    shnum = struct.unpack_from("<H", f, 0x30)[0]
-    shstrndx = struct.unpack_from("<H", f, 0x32)[0]
-    def field(i, off):
-        return struct.unpack_from("<I", f, shoff + i * shentsize + off)[0]
-    str_off = field(shstrndx, 0x10)
-    offenders = []
-    for i in range(shnum):
-        name_off = str_off + field(i, 0x0)
-        name = f[name_off:f.index(b"\x00", name_off)].decode()
-        size = field(i, 0x14)
-        if name in _DATA_SECTIONS and size > 0:
-            offenders.append(f"{name} ({size} bytes)")
-    if offenders:
+    allowed = set(allowed)
+    offenders = [f"{s['name']} ({s['size']} bytes)" for s in sections
+                 if s["size"] > 0 and s["name"] not in allowed
+                 and any(s["name"] == d or s["name"].startswith(d + ".")
+                         for d in _DATA_SECTIONS)]
+    common = [s["name"] for s in symbols if s["shndx"] in (0xFFF2, 0xFF03)]
+    if offenders or common:
         raise HybridError(
-            f"{out_o}: hybrid object owns data sections: "
-            f"{', '.join(offenders)} -- compiled segments may only "
-            f"contribute .text")
+            f"{out_o}: hybrid object owns data outside its pieces: "
+            f"{', '.join(offenders + [f'COMMON {c}' for c in common])} -- "
+            f"compiled segments may only contribute .text")
 
 
-def _assemble_hybrid(hybrid_s, out_o):
+def _assemble_hybrid(hybrid_s, out_o, g_flag="-G8"):
     """Assemble the spliced .s with the decompals binutils `as`.
 
     Sony's own `as` (the original plan) cannot assemble the retail slices:
@@ -1218,7 +1618,8 @@ def _assemble_hybrid(hybrid_s, out_o):
     `as` assembles both the slices (it already produces the byte-verified
     expected objects from the same text) and ee-gcc's compiler output
     (`.extern SYM, n` + macro forms resolve to R_MIPS_GPREL16 under -G8,
-    probed) without padding. Internal alignment directives still emit their
+    probed) without padding. `g_flag` is the unit profile's own `-G`
+    (profile_g_flag). Internal alignment directives still emit their
     required padding, but section-end rounding must be disabled: a retail TU
     can end on a four-byte boundary even when C uses eight-byte alignment
     internally (nucore/nustring). The canonical extents already own all tail
@@ -1232,7 +1633,7 @@ def _assemble_hybrid(hybrid_s, out_o):
     out_o = Path(out_o)
     out_o.parent.mkdir(parents=True, exist_ok=True)
     proc = subprocess.run(
-        [as_bin, "-EL", "-march=r5900", "-G8", "-no-pad-sections",
+        [as_bin, "-EL", "-march=r5900", g_flag, "-no-pad-sections",
          "-o", str(out_o), str(hybrid_s)],
         capture_output=True, text=True)
     if proc.returncode != 0:

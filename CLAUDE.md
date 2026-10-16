@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A byte-exact matching decompilation of **Crash Bandicoot: The Wrath of Cortex** (PS2), targeting exactly one build: PAL retail v1.03, `SLES_503.86`. The user supplies the game ELF at `orig/pal103/`; it is never committed. The retail ELF was built by TWO toolchains, both locked in `toolchain.lock.json` / `config/pal103/profiles.toml` with flags `-O2 -G8 -fomit-frame-pointer`: the game/engine TUs (profile `default`) match under **SN ProDG EE GCC 2.95.2-EE** (`ee-gcc-tt`, a Win32 binary run under wibo in the container), the Sony runtime half (profile `sce`) under **EE GCC 2.9-ee-991111-01**. Modern compilers are for tooling only, never matching.
+A byte-exact matching decompilation of **Crash Bandicoot: The Wrath of Cortex** (PS2), targeting exactly one build: PAL retail v1.03, `SLES_503.86`. The user supplies the game ELF at `orig/pal103/`; it is never committed. The retail ELF was built by TWO toolchains, both locked in `toolchain.lock.json` / `config/pal103/profiles.toml` with flags `-O2 -G8 -fomit-frame-pointer` (profile `sce`: `-G0`): the game/engine TUs (profile `default`) match under **SN ProDG EE GCC 2.95.2-EE** (`ee-gcc-tt`, a Win32 binary run under wibo in the container), the Sony runtime half (profile `sce`) under **EE GCC 2.9-ee-991111-01**. Modern compilers are for tooling only, never matching.
 
 ## Hard rules
 
@@ -86,10 +86,13 @@ CI (docs/pipeline.md, "CI" section): `validate.yml` (structure, no game files, e
 - Prefer functions whose TU is a `.c` file. Several runtime routines (`strlen`, `memcpy`, …) are hand-written r5900 assembly in retail and can never match from C.
 - The original assembler accepts only numeric GPR names (`jr $31`, not `jr $ra`); `gen_slices.py` handles the rewrite.
 - Four static functions are duplicated across TUs and disambiguated as `NAME__<vram>`.
-- Data-from-C is not supported yet. For retail-owned globals, use `extern D_...`
-  symbols plus readable aliases; do not add file-scope C definitions that emit
-  `.data`, `.sdata`, `.rodata`, `.sbss`, or `.bss`. The canonical policy lives in
-  `docs/decomp_agent.md`.
+- Data-from-C: C defines a global only in a fully matching unit, for a
+  `data_symbols.toml` symbol of that unit, under its retail name and storage, in
+  `.rodata`/`.data`, listed under `[[data]]` in the manifest and promoted by
+  `tools/promote.py` (`--init-data`, then the data ids; `--complete` for the unit).
+  Everywhere else use `extern D_...` symbols plus readable aliases.
+  Compiler-private data, `.lit4`, `.sdata` and `.sbss`/`.bss` stay retail. The
+  canonical policy and the per-unit runbook live in `docs/decomp_agent.md`.
 
 ## Matching MCP / decomp-agent (Claude Code specifics)
 

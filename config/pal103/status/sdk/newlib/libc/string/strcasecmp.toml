@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0207"
 source = "src/sdk/newlib/libc/string/strcasecmp.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0207:002717a8:strcasecmp"

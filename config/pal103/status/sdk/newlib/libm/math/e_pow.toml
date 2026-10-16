@@ -14,3 +14,123 @@ complete = false
 [[function]]
 id = "pal103:unit-0163:00269de8:__ieee754_pow"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0163:0062b530:bp"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0163:0062b540:dp_h"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0163:0062b550:dp_l"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0163:0062b560:zero"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0163:0062b568:one"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0163:0062b570:two"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0163:0062b578:two53"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0163:0062b580:huge"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0163:0062b588:tiny"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0163:0062b590:L1"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0163:0062b598:L2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0163:0062b5a0:L3"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0163:0062b5a8:L4"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0163:0062b5b0:L5"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0163:0062b5b8:L6"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0163:0062b5c0:P1"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0163:0062b5c8:P2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0163:0062b5d0:P3"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0163:0062b5d8:P4"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0163:0062b5e0:P5"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0163:0062b5e8:lg2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0163:0062b5f0:lg2_h"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0163:0062b5f8:lg2_l"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0163:0062b600:ovt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0163:0062b608:cp"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0163:0062b610:cp_h"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0163:0062b618:cp_l"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0163:0062b620:ivln2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0163:0062b628:ivln2_h"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0163:0062b630:ivln2_l"
+state = "matching"

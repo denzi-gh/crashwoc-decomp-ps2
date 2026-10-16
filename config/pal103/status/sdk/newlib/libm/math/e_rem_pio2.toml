@@ -14,3 +14,51 @@ complete = false
 [[function]]
 id = "pal103:unit-0164:0026ab10:__ieee754_rem_pio2"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0164:0062b700:two_over_pi"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0164:0062b808:npio2_hw"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0164:0062b888:zero"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0164:0062b890:half"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0164:0062b898:two24"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0164:0062b8a0:invpio2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0164:0062b8a8:pio2_1"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0164:0062b8b0:pio2_1t"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0164:0062b8b8:pio2_2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0164:0062b8c0:pio2_2t"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0164:0062b8c8:pio2_3"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0164:0062b8d0:pio2_3t"
+state = "matching"

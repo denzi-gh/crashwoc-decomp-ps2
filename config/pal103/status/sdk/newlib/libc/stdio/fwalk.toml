@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0230"
 source = "src/sdk/newlib/libc/stdio/fwalk.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0230:00276ee0:_fwalk"

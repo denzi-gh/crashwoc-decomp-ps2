@@ -124,6 +124,14 @@ def classify(*, compile_ok, compile_error=None, unresolved=None,
 
 def _hybrid_error_category(msg: str) -> str:
     m = msg.lower()
+    # Data-from-C messages (gen_hybrid._plan_data / _data_pieces).
+    if "data_section_mismatch" in m:
+        return "data_section_mismatch"
+    if "uninitialised data" in m or "common" in m and ".bss" in m:
+        return "bss_common"
+    if "[[data]] table" in m or "not a data symbol" in m \
+            or "matching data at" in m:
+        return "data_entry"
     if "li.d" in m or ".lit8" in m:
         return "unsupported_lit8"
     # Read-only data (`.rdata`/`.rodata`) is most often a switch jump table in

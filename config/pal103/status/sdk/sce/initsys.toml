@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0261"
 source = "src/sdk/sce/initsys.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0261:00280bb0:supplement_crt0"
@@ -17,4 +17,12 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0261:00280bf8:_InitSys"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0261:00613420:__sce_sema_id"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0261:00613424:__sce_eh_sema_id"
 state = "matching"

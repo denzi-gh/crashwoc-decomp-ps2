@@ -11,7 +11,7 @@ schema = 1
 unit = "pal103:unit-0007"
 source = "src/nucore/nulist.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0007:00105850:NuListCheck"

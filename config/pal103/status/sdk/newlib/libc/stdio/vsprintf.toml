@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0222"
 source = "src/sdk/newlib/libc/stdio/vsprintf.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0222:00274dc8:vsprintf"

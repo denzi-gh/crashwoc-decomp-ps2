@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0227"
 source = "src/sdk/newlib/libc/stdio/findfp.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0227:00276420:std"

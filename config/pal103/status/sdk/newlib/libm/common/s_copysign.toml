@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0179"
 source = "src/sdk/newlib/libm/common/s_copysign.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0179:0026cfc0:copysign"

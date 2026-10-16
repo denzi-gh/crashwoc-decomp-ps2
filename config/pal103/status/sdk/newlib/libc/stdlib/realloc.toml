@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0203"
 source = "src/sdk/newlib/libc/stdlib/realloc.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0203:002710d0:realloc"

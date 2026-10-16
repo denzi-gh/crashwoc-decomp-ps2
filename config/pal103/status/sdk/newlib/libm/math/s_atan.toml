@@ -14,3 +14,23 @@ complete = false
 [[function]]
 id = "pal103:unit-0170:0026c740:atan"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0170:0062bb38:atanhi"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0170:0062bb58:atanlo"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0170:0062bb78:aT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0170:0062bbd0:one"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0170:0062bbd8:huge"
+state = "matching"

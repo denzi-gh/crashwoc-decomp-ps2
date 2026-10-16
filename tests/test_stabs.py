@@ -49,6 +49,17 @@ class TestBasicTypes(unittest.TestCase):
         self.assertEqual(typed(t, "one:S13"), ("S", "double", 8))
         self.assertEqual(typed(t, "n:G5"), ("G", "long unsigned int", 8))
 
+    def test_sn_full_width_octal_ranges(self):
+        # SN ee-gcc 2.95 writes signed bounds as two's-complement octal.
+        t = TypeTable()
+        t.add("int:t1=r1;00000000000000000000000000000000020000000000;"
+              "00000000000000000000000000000000017777777777;")
+        t.add("unsigned int:t4=r1;00000000000000000000000000000000000000000000;"
+              "00000000000000000000000000000000037777777777;")
+        for string, size, signed in (("a:G1", 4, True), ("b:G4", 4, False)):
+            _n, _d, ref = t.add(string)
+            self.assertEqual((t.size(ref), t.resolve(ref).signed), (size, signed))
+
     def test_void_is_a_self_reference(self):
         t = table()
         self.assertEqual(typed(t, "p:G20=*19"), ("G", "void *", 4))

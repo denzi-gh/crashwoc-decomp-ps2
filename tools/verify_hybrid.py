@@ -10,7 +10,9 @@ the hybrid object model rests on:
     linked at the unit's retail address must equal the retail bytes across
     the entire unit range -- every function, every C/asm seam. This single
     comparison proves selection, order, alignment, and the splice at once;
-    wrong bytes from a mismarked function fail it precisely.
+    wrong bytes from a mismarked function fail it precisely. A hybrid with
+    C data is linked with its pieces at their addresses, and every piece must
+    equal the retail bytes of its whole owned range.
 
   * The current object carries no fallback bytes. The plain compile of the
     source -- which is what objdiff scores -- must define exactly the
@@ -24,6 +26,7 @@ land in gitignored build/<version>/{matching,current}/.
 Exit status is 0 only if every such unit passes both checks.
 """
 import argparse
+import json
 import sys
 import tempfile
 import tomllib
@@ -32,11 +35,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 from cc import compile_c
-from gen_hybrid import HybridError, build_hybrid
+from gen_hybrid import HybridError, _retail_bytes, build_hybrid, data_report_path
 from declib.asmtext import (load_symbol_addrs, load_text_target, resolve)
 from declib.toolchain import LD, NM, Reporter, tool_path
 from declib.tu import load_tu_runs, parse_toml_blocks
-from declib.verify import defined_functions, link_text_at, undefined_externals
+from declib.verify import (defined_functions, link_text_at, link_unit_at,
+                           undefined_externals)
 
 LABEL_WIDTH = 40
 
@@ -91,8 +95,19 @@ def check_unit(reporter, manifest, version, elf, text_addr, text_off, text_size,
         reporter.result(f"{label} (hybrid bytes)", False,
                         f"unresolved externals: {unresolved[:4]}")
         return
+    pieces = json.loads(data_report_path(hybrid_o).read_text())["pieces"]
     with tempfile.TemporaryDirectory() as tmp:
-        linked = link_text_at(hybrid_o, start, defsyms, Path(tmp))
+        if pieces:
+            linked, linked_pieces, _syms = link_unit_at(hybrid_o, start, pieces,
+                                                        defsyms, Path(tmp))
+        else:
+            linked = link_text_at(hybrid_o, start, defsyms, Path(tmp))
+    for p in pieces:
+        retail = _retail_bytes(version, p["section"], p["start"], p["end"])
+        reporter.result(f"{label} (data piece {p['name']})",
+                        linked_pieces[p["name"]] == retail,
+                        None if linked_pieces[p["name"]] == retail
+                        else "piece differs from the retail range")
     ok = linked == want
     detail = None
     if not ok:

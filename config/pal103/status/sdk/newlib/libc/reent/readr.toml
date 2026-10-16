@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0244"
 source = "src/sdk/newlib/libc/reent/readr.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0244:002787e8:_read_r"
