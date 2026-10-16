@@ -77,6 +77,7 @@
 #include "nu_types.h"
 
 #include "nucore/nuerror.h"
+#include "nu3d/nutex.h"
 #include "nu3d/nuvport.h"
 #include "nups2/nups2types.h"
 
@@ -95,17 +96,20 @@ typedef struct GsDispEnv {
     u64 pmode;
     u64 smode2;
     u64 dispfb;
-    GsDisplay display;
+    union {
+        GsDisplay display;
+        u64 display_reg;
+    };
     u64 bgcolor;
 } GsDispEnv;
 
 typedef struct TbSet {
     int values[16][2];
     int begin[16];
-    char pad0C0[0x40];
+    int peak[16];
     int colour[16];
     int current[16];
-    int extra[16];
+    char *name[16];
 } TbSet;
 
 typedef struct sceDmaChan {
@@ -119,6 +123,21 @@ typedef struct NuVBlankHandler {
     int priority;
 } NuVBlankHandler;
 
+typedef struct sceGsStoreImage {
+    u32 vifcode[4];
+    u64 giftag[2];
+    u64 bitbltbuf;
+    u64 bitbltbufaddr;
+    u64 trxpos;
+    u64 trxposaddr;
+    u64 trxreg;
+    u64 trxregaddr;
+    u64 finish;
+    u64 finishaddr;
+    u64 trxdir;
+    u64 trxdiraddr;
+} sceGsStoreImage;
+
 /* EE timer 1 counter: a free-running 16-bit tick used for screen-swap timing. */
 #define EE_T1_COUNT (*(volatile unsigned int *)0x10000800)
 #define EE_T0_COUNT (*(volatile unsigned int *)0x10000000)
@@ -131,6 +150,17 @@ typedef struct NuVBlankHandler {
 #define D2_TADR     (*(volatile unsigned int *)0x1000A030)
 #define D_ENABLEW   (*(volatile unsigned int *)0x1000F590)
 #define EE_T1_MODE  (*(volatile unsigned int *)0x10000810)
+#define GIF_MODE    (*(volatile unsigned int *)0x10003010)
+
+#define GS_PRIM       0x00
+#define GS_RGBAQ      0x01
+#define GS_XYZF2      0x04
+#define GS_XYOFFSET_1 0x18
+#define GS_PRMODECONT 0x1A
+#define GS_SCISSOR_1  0x40
+#define GS_TEST_1     0x47
+#define GS_FRAME_1    0x4C
+#define GS_A_D        0x0E
 
 extern int sceMcOpen(int port, int slot, const char *name, int mode);
 extern int sceMcRead(int fd, void *buf, int size);
@@ -175,8 +205,23 @@ extern int iFlushCache(int operation);
 extern int ifnVif1(int ca);
 extern int ifnVBlankE(int ca);
 extern int ifnVBlankS(int ca);
+extern int idmacGs(int channel);
+extern int idmacVif1(int channel);
 extern void NuMemFreeFn(void *ptr, char *file, int line);
 extern void *NuMemAllocFn(int size, char *file, int line);
+extern int sceGsSetDefStoreImage(sceGsStoreImage *sp, short sbp, short sbw, short spsm, short x, short y, short w, short h);
+extern int sceGsExecStoreImage(sceGsStoreImage *sp, u128 *dstaddr);
+extern int NuFileOpen(char *name, int mode);
+extern int NuFileWrite(int fh, void *data, int size);
+extern void NuFileClose(int fh);
+extern int NuFileSize(char *name);
+extern struct DmaTag *vpDmaTag_EndEx(struct DmaTag *tag, u32 vifcode0, u32 vifcode1);
+extern void *vpDmaTag_Close(void *packet);
+extern void *gsBeginGifPacket(void *packet, int eop, int nloop, int pre, int prim, int flg, int nreg, ...);
+extern void *gsCloseGifPacket(void *packet);
+extern void GS_DmaWrite(void *p, int mode);
+extern int sceGsResetGraph(short mode, short inter, short omode, short ffmode);
+extern void sceGsSetDefDBuffDc(GsDispEnv *db, short psm, short w, short h, short ztest, short zpsm, short clear);
 
 #define ExitHandler() __asm__ volatile ("sync\n\tei")
 
@@ -236,6 +281,10 @@ extern int ps2video_novsync;
 extern unsigned int ps2_video_size;
 extern int nuvideo_progressive_scan;
 extern int nurndr_half_offset;
+extern int ps2_video_fmt;
+extern int ps2_zb_fmt;
+extern int nuvideo_global_framerate;
+extern int D_002EA118[6];
 extern struct NuPs2GsReg D_002EA210;
 extern struct NuPs2GsReg D_002EA380;
 
@@ -282,6 +331,49 @@ extern struct NuPs2GsReg D_002EA380;
 #define field_parity          D_006331C0
 #define NuPs2Draw2FrameReg0   D_002EA210
 #define NuPs2Draw2FrameReg1   D_002EA380
+#define display_magh          D_002EA118
+
+
+inline void NuPs2FlushVRam(int r, int g, int b)
+{
+    struct DmaTag packet[16];
+    u64 *p;
+
+    p = gsBeginGifPacket(vpDmaTag_EndEx(packet, 0, 0), 0, 1, 0, 0, 0, 1, GS_A_D);
+    *p++ = 1;
+    *p++ = GS_PRMODECONT;
+    *p++ = 0x100000;
+    *p++ = GS_FRAME_1;
+    *p++ = 0;
+    *p++ = GS_XYOFFSET_1;
+    *p++ = ((u64)0x400 << 48) | (0x400 << 16);
+    *p++ = GS_SCISSOR_1;
+    *p++ = 0;
+    *p++ = GS_TEST_1;
+    *p++ = 6;
+    *p++ = GS_PRIM;
+    *p++ = r | ((u64)g << 8) | ((u64)b << 16) | ((u64)0x3F800000 << 32);
+    *p++ = GS_RGBAQ;
+    *p++ = 0;
+    *p++ = GS_XYZF2;
+    *p++ = 0x40004000;
+    *p++ = GS_XYZF2;
+    vpDmaTag_Close(gsCloseGifPacket(p));
+    FlushCache(0);
+    GS_DmaWrite(packet, 1);
+}
+
+
+inline void GenerateGammaTable(float gamma)
+{
+    int i;
+    float scale;
+
+    scale = 255.0 / pow(255.0, gamma);
+    for (i = 0; i < 256; i++) {
+        gamma_table[i] = scale * pow((float)i, gamma);
+    }
+}
 
 
 inline int GetElapsedTime(void)
@@ -329,6 +421,29 @@ static inline TbSet *tbsetAlloc(int *colours)
         }
     }
     return set;
+}
+
+
+static inline void ps2videoAddAllHandlers(void)
+{
+    if (!handlers_installed) {
+        vif1_intc_id = AddIntcHandler(5, ifnVif1, 0);
+        EnableIntc(5);
+        vblank_end_list = 0;
+        vblank_end_intc_id = AddIntcHandler(3, ifnVBlankE, -1);
+        EnableIntc(3);
+        vblank_end_handler = 1;
+        vblank_start_list = 0;
+        sceGsSyncVCallback(ifnVBlankS);
+        vblank_start_intc_id = 0;
+        EnableIntc(2);
+        vblank_start_handler = 1;
+        vif1_dmac_id = AddDmacHandler(1, idmacVif1, 0);
+        EnableDmac(1);
+        gs_dmac_id = AddDmacHandler(2, idmacGs, 0);
+        EnableDmac(2);
+        handlers_installed = 1;
+    }
 }
 
 
@@ -510,6 +625,207 @@ int idmacVif1(int channel)
         return 1;
     }
     return 1;
+}
+
+
+void NuPs2InitVideo(int width, int height, int psm, int zpsm, int format)
+{
+    int interlace;
+    int ffmode;
+
+    ps2_video_fmt = format;
+    ps2_zb_fmt = zpsm;
+    switch (format) {
+    case 0:
+        ps2_video_size = 480;
+        nuvideo_global_framerate = 60;
+        interlace = 0;
+        ffmode = 1;
+        format = 2;
+        nuvideo_progressive_scan = 0;
+        break;
+    case 3:
+        ps2_video_size = 312;
+        nuvideo_global_framerate = 50;
+        interlace = 1;
+        ffmode = 1;
+        nuvideo_progressive_scan = 0;
+        break;
+    default:
+        ps2_video_size = 262;
+        nuvideo_global_framerate = 60;
+        interlace = 1;
+        ffmode = 1;
+        nuvideo_progressive_scan = 0;
+        break;
+    case 4:
+        ps2_video_size = 312;
+        interlace = 1;
+        nuvideo_global_framerate = 50;
+        ffmode = 0;
+        format = 3;
+        height *= 2;
+        nuvideo_progressive_scan = 1;
+        break;
+    case 5:
+        ps2_video_size = 262;
+        interlace = 1;
+        nuvideo_global_framerate = 60;
+        ffmode = 0;
+        format = 2;
+        height *= 2;
+        nuvideo_progressive_scan = 1;
+        break;
+    case 6:
+        ps2_video_size = 312;
+        nuvideo_global_framerate = 50;
+        interlace = 0;
+        ffmode = 1;
+        format = 3;
+        nuvideo_progressive_scan = 0;
+        break;
+    case 7:
+        ps2_video_size = 262;
+        nuvideo_global_framerate = 60;
+        interlace = 0;
+        ffmode = 1;
+        format = 2;
+        nuvideo_progressive_scan = 0;
+        break;
+    }
+    PS2_VCNTR_X = 0x800;
+    PS2_VCNTR_Y = 0x800;
+    PS2_REZ_W = width;
+    PS2_REZ_H = height;
+    sceGsResetGraph(0, interlace, format, ffmode);
+    sceGsSetDefDBuffDc(NuPs2DispEnv, psm, width, height, 3, zpsm, 0);
+    field_parity = !sceGsSyncV(0);
+    NuPs2FrameCount = 0;
+    EE_T0_MODE = 0x9F;
+    ps2videoAddAllHandlers();
+    switch (PS2_REZ_W) {
+    case 256:
+        display_magh[0] = 9;
+        break;
+    case 320:
+        display_magh[0] = 7;
+        break;
+    case 384:
+        display_magh[0] = 6;
+        break;
+    case 512:
+        display_magh[0] = 4;
+        break;
+    case 640:
+        display_magh[0] = 3;
+        break;
+    }
+    NuPs2DisplayX0 = (int)NuPs2DispEnv[0].display_reg & 0xFFF;
+    NuPs2DisplayY0 = (int)(NuPs2DispEnv[0].display_reg >> 12) & 0x7FF;
+    NuPs2DisplayX1 = (int)NuPs2DispEnv[1].display_reg & 0xFFF;
+    NuPs2DisplayY1 = (int)(NuPs2DispEnv[1].display_reg >> 12) & 0x7FF;
+    NuPs2FlushVRam(0, 0, 0);
+    GIF_MODE = 2;
+}
+
+
+static inline void ps2videoDumpRow(int fh, u8 *line, u128 *frame, int y)
+{
+    u8 *src;
+    int x;
+
+    src = (u8 *)(frame + y * PS2_REZ_W / 4);
+    for (x = 0; x < PS2_REZ_W; x++) {
+        src[0] = gamma_table[src[0]];
+        src[1] = gamma_table[src[1]];
+        src[2] = gamma_table[src[2]];
+        line[x * 3] = src[2];
+        line[x * 3 + 1] = src[1];
+        line[x * 3 + 2] = src[0];
+        src += 4;
+    }
+    NuFileWrite(fh, line, PS2_REZ_W * 3);
+}
+
+
+void NuPs2VideoScreenDump(char *name, int lace, float gamma, int idx)
+{
+    BmpFileHeader header;
+    BmpInfoHeader info;
+    u128 *frame[2];
+    sceGsStoreImage image;
+    char filename[256];
+    u8 line[PS2_REZ_W * 3];
+    int fields;
+    int bytes;
+    int fh;
+    int n;
+    int buffer;
+    int y;
+
+    GenerateGammaTable(gamma);
+    if (idx >= 0) {
+        sprintf(filename, "%s%d.bmp", name, idx);
+    } else {
+        sprintf(filename, "%s.bmp", name);
+        n = 0;
+        do {
+            if (NuFileSize(filename) <= 0) {
+                break;
+            }
+            sprintf(filename, "%s%03d.bmp", name, n++);
+        } while (1);
+    }
+    fields = lace + 1;
+    bytes = fields * 3;
+    header.type = 0x4D42;
+    header.size = PS2_REZ_W * PS2_REZ_H * 3 + 0x36;
+    header.reserved1 = 0;
+    header.reserved2 = 0;
+    header.offbits = 0x36;
+    info.size = 0x28;
+    info.width = PS2_REZ_W;
+    info.height = PS2_REZ_H * fields;
+    info.planes = 1;
+    info.bitcount = 24;
+    info.compression = 0;
+    info.imagesize = PS2_REZ_W * PS2_REZ_H * bytes;
+    info.xppm = 1;
+    info.yppm = 1;
+    info.clrused = 0;
+    info.clrimportant = 0;
+    fh = NuFileOpen(filename, 1);
+    NuFileWrite(fh, &header.type, 14);
+    NuFileWrite(fh, &info, 40);
+    frame[0] = NuMemAllocFn(PS2_REZ_W * PS2_REZ_H * 4, ps2video_file, 0x861);
+    frame[1] = NuMemAllocFn(PS2_REZ_W * PS2_REZ_H * 4, ps2video_file, 0x862);
+    while (VU1_DmaGetStatus()) {
+    }
+    sceGsSyncPath(0, 0);
+    buffer = ~(NuPs2FrameCount ^ field_parity) & 1;
+    sceGsSetDefStoreImage(&image, buffer ? 0 : PS2_REZ_W * PS2_REZ_H / 64, PS2_REZ_W / 64, 0,
+                          0, 0, PS2_REZ_W, PS2_REZ_H);
+    FlushCache(0);
+    sceGsExecStoreImage(&image, frame[0]);
+    sceGsSyncPath(0, 0);
+    if (lace) {
+        sceGsSetDefStoreImage(&image, buffer ? PS2_REZ_W * PS2_REZ_H / 64 : 0, PS2_REZ_W / 64, 0,
+                              0, 0, PS2_REZ_W, PS2_REZ_H);
+        FlushCache(0);
+        sceGsExecStoreImage(&image, frame[1]);
+        sceGsSyncPath(0, 0);
+    }
+    y = PS2_REZ_H;
+    do {
+        y--;
+        if (lace) {
+            ps2videoDumpRow(fh, line, frame[1], y);
+        }
+        ps2videoDumpRow(fh, line, frame[0], y);
+    } while (y != 0);
+    NuMemFreeFn(frame[0], ps2video_file, 0x891);
+    NuMemFreeFn(frame[1], ps2video_file, 0x892);
+    NuFileClose(fh);
 }
 
 
@@ -825,16 +1141,16 @@ void tbslotBeginFn(TbSet *set, int slot)
     set = set != 0 ? set : D_0062F034;
     slot &= 0xF;
     set->begin[slot] = EE_T1_COUNT;
-    set->extra[slot] = 0;
+    set->name[slot] = 0;
 }
 
 
-void tbslotBeginExFn(TbSet *set, int slot, int extra)
+void tbslotBeginExFn(TbSet *set, int slot, char *name)
 {
     set = set != 0 ? set : D_0062F034;
     slot &= 0xF;
     set->begin[slot] = EE_T1_COUNT;
-    set->extra[slot] = extra;
+    set->name[slot] = name;
 }
 
 
@@ -863,6 +1179,41 @@ void NuPs2VideoSetPos(int x, int y)
     NuPs2DispEnv[0].display.dy = NuPs2DisplayY0 + y;
     NuPs2DispEnv[1].display.dx = NuPs2DisplayX1 + x;
     NuPs2DispEnv[1].display.dy = NuPs2DisplayY1 + y;
+}
+
+
+void *NuPs2GrabScreen(void *buf, int front, int x, int y, int w, int h)
+{
+    sceGsStoreImage image;
+    u128 *dest;
+    int buffer;
+    int back;
+    short base;
+
+    if (buf) {
+        dest = buf;
+    } else {
+        dest = NuMemAllocFn(w * h * 4, ps2video_file, 0x8A8);
+    }
+    while (VU1_DmaGetStatus()) {
+    }
+    sceGsSyncPath(0, 0);
+    buffer = (NuPs2FrameCount ^ field_parity) & 1;
+    back = 1 - buffer;
+    if (front) {
+        back = buffer;
+    }
+    if (!back) {
+        base = PS2_REZ_W * PS2_REZ_H / 64;
+    } else {
+        base = 0;
+    }
+    sceGsSetDefStoreImage(&image, base, PS2_REZ_W / 64, 0, x, y, w, h);
+    FlushCache(0);
+    sceGsExecStoreImage(&image, dest);
+    sceGsSyncPath(0, 0);
+    FlushCache(0);
+    return dest;
 }
 
 
@@ -1178,24 +1529,7 @@ unsigned int timeUserRead(void)
 
 void NuIntAddAllHandlers(void)
 {
-    if (!handlers_installed) {
-        vif1_intc_id = AddIntcHandler(5, ifnVif1, 0);
-        EnableIntc(5);
-        vblank_end_list = 0;
-        vblank_end_intc_id = AddIntcHandler(3, ifnVBlankE, -1);
-        EnableIntc(3);
-        vblank_end_handler = 1;
-        vblank_start_list = 0;
-        sceGsSyncVCallback(ifnVBlankS);
-        vblank_start_intc_id = 0;
-        EnableIntc(2);
-        vblank_start_handler = 1;
-        vif1_dmac_id = AddDmacHandler(1, idmacVif1, 0);
-        EnableDmac(1);
-        gs_dmac_id = AddDmacHandler(2, idmacGs, 0);
-        EnableDmac(2);
-        handlers_installed = 1;
-    }
+    ps2videoAddAllHandlers();
 }
 
 
@@ -1256,16 +1590,4 @@ int ifnVBlankS(int ca)
     in_vblank_end = 0;
     ExitHandler();
     return 1;
-}
-
-
-void GenerateGammaTable(float gamma)
-{
-    int i;
-    float scale;
-
-    scale = 255.0 / pow(255.0, gamma);
-    for (i = 0; i < 256; i++) {
-        gamma_table[i] = scale * pow((float)i, gamma);
-    }
 }
