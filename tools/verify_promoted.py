@@ -14,10 +14,18 @@ For each status manifest this verifier proves, from scratch:
      object the canonical image links), which carries gen_hybrid's
      per-function .lit4 slot mapping; gen_hybrid guarantees a `matching`
      function's hybrid bytes always come from the C compile.
-  4. A `complete` unit must not own data ranges yet (data-from-C is not
-     supported until the hybrid can splice data sections); fail loudly
-     rather than silently under-verify.
-  5. The image gate: link the full matching image from the hybrids step 3
+  4. Every `matching` data entry ([[data]]) is BYTE-IDENTICAL to retail over
+     [addr, addr+size) -- size from .symtab/STABS, never the extent; an
+     unsized object uses its compiled .size only if at most 15 zero bytes
+     remain to the next item -- and its linked symbol sits at the registry
+     address. Padding and compiler-private bytes are left to the image gate.
+  5. A `complete` unit: every function `matching`, every data entry
+     `matching`/`retail`, no owned .sbss/.bss range (data/bss), and its
+     hybrid carries no retail bytes except its `retail` entries and its .lit4
+     pool, borrows no compiler-private retail slot outside .lit4 (strings,
+     jump tables, pools: data/private), and leaves no owned range to the
+     expected data object.
+  6. The image gate: link the full matching image from the hybrids step 3
      rebuilt (rebuilding any it did not) -- it must reproduce the retail
      loaded-image SHA.
 
@@ -41,14 +49,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 from cc import compile_c, profiles_fingerprint
-from gen_hybrid import HybridError, build_hybrid
+from gen_hybrid import (HybridError, build_hybrid, data_report_path,
+                        data_states, has_c_data)
 from link_image import link_image
 from status import check_version
 from declib.asmtext import load_symbol_addrs, load_text_target, resolve
 from declib.toolchain import LD, NM, Reporter, tool_path
 from declib.tu import parse_toml_blocks
 from declib.verify import (defined_function_offsets, link_text_at,
-                           undefined_externals)
+                           link_unit_at, undefined_externals)
 
 LABEL_WIDTH = 44
 
@@ -69,6 +78,110 @@ def function_sizes(version):
     return out
 
 
+def _registry(version):
+    """{unit: {address: symbol}} from the data registry."""
+    from status import load_data_registry
+    return load_data_registry(ROOT / "config" / version)
+
+
+def _retail_data(elf, version, addr, size):
+    """Retail file bytes of [addr, addr+size) (zeros for NOBITS)."""
+    spec = json.loads((ROOT / "config" / version / "sections.json").read_text())
+    for s in spec["sections"]:
+        lo, sz = int(s["addr"], 0), int(s["size"], 0)
+        if lo <= addr and addr + size <= lo + sz and lo:
+            if int(s["type"], 0) == 8:
+                return bytes(size)
+            off = int(s["offset"], 0) + addr - lo
+            return elf[off:off + size]
+    return None
+
+
+def verify_data(reporter, label, data, unit_index, version, elf, pieces,
+                linked_pieces, symbols, results):
+    """Byte-verify every `matching` data entry of one unit (step 4)."""
+    registry = _registry(version).get(unit_index, {})
+    objects = {o["address"]: o for p in pieces for o in p.get("objects", [])}
+    bad = []
+    for entry in data.get("data", []):
+        if entry["state"] != "matching":
+            continue
+        addr = int(entry["id"].split(":")[2], 16)
+        sym = registry.get(addr, {})
+        obj = objects.get(addr)
+        size = sym.get("size")
+        reason = None
+        if obj is None:
+            reason = "not emitted by the hybrid"
+        elif size is None:
+            # Unsized (an .lcomm-like static): the compiled size, when the
+            # rest of the registry extent is (at most 15 bytes of) zero pad.
+            size = obj["size"]
+            rest = sym.get("extent", size) - size
+            pad = _retail_data(elf, version, addr + size, rest) if rest > 0 else b""
+            if rest < 0 or rest > 15 or (pad and any(pad)):
+                reason = (f"unsized: compiled size {size:#x} leaves {rest:#x} "
+                          f"non-pad bytes of the extent")
+        if reason is None:
+            piece = next(p for p in pieces if p["start"] <= addr < p["end"])
+            blob = linked_pieces[piece["name"]]
+            got = blob[addr - piece["start"]:addr - piece["start"] + size]
+            want = _retail_data(elf, version, addr, size)
+            if got != want:
+                reason = "bytes differ from retail"
+            elif symbols.get(sym.get("name")) != addr:
+                reason = (f"linked at {symbols.get(sym.get('name'), 0):#010x}, "
+                          f"registry {addr:#010x}")
+        ok = reason is None
+        if not ok:
+            bad.append(sym.get("name", entry["id"]))
+        results.append({"id": entry["id"], "kind": "data", "state": "matching",
+                        "verified": ok, "size": size,
+                        **({"reason": reason} if reason else {})})
+    count = sum(1 for e in data.get("data", []) if e["state"] == "matching")
+    reporter.result(f"{label} (matching data, {count} sym)", not bad,
+                    None if not bad else f"diverge: {bad}")
+
+
+def complete_problems(data, unit_index, version, report, ranges):
+    """Why a unit may not be `complete` (step 5); [] when it may."""
+    out = []
+    owner = f"unit-{unit_index:04d}"
+    owned = [r for r in ranges if r["owner"] == owner]
+    nobits = [r for r in owned if r["section"] in (".sbss", ".bss")]
+    if nobits:
+        out.append(f"owns {len(nobits)} .sbss/.bss range(s) (data/bss)")
+    registry = _registry(version).get(unit_index, {})
+    retail_ok = []
+    for entry in data.get("data", []):
+        if entry["state"] == "retail":
+            addr = int(entry["id"].split(":")[2], 16)
+            sym = registry.get(addr, {})
+            retail_ok.append((addr, addr + (sym.get("size") or sym.get("extent", 0))))
+    lit4 = [(r["start"], r["end"]) for r in ranges if r["section"] == ".lit4"]
+    progbits = [r for r in owned if r["section"] not in (".sbss", ".bss", ".lit4")]
+    pieces = {p["start"] for p in (report or {}).get("pieces", [])}
+    left = [r for r in progbits if r["start"] not in pieces]
+    if left:
+        out.append(f"{len(left)} owned data range(s) still come from the "
+                   f"expected object (no C data pieces)")
+    for lo, hi in (report or {}).get("retail", []):
+        cursor = lo
+        for a, b in sorted(retail_ok + lit4):
+            if a <= cursor < b:
+                cursor = b
+        if cursor < hi:
+            out.append(f"retail bytes at 0x{cursor:08x} in its pieces")
+            break
+    private = [s["symbol"] for s in (report or {}).get("borrowed", [])
+               if s["address"] is None
+               or not any(a <= s["address"] < b for a, b in lit4)]
+    if private:
+        out.append(f"borrows compiler-private retail data ({', '.join(private[:3])}; "
+                   f"data/private)")
+    return out
+
+
 def verify_manifest(reporter, manifest, version, elf, text_addr, text_off,
                     sizes, nm_bin, results, built=None):
     """Verify one manifest's claims; add it to `built` once rebuilt."""
@@ -85,7 +198,11 @@ def verify_manifest(reporter, manifest, version, elf, text_addr, text_off,
         declared[name] = entry
     nonasm = {n: e for n, e in declared.items()
               if e["state"] in ("matching", "equivalent")}
-    if not nonasm:
+    c_data = has_c_data(data)
+    if not nonasm and not c_data:
+        if data.get("complete"):
+            reporter.result(f"{label} (complete)", False,
+                            "complete needs every function `matching`")
         return
 
     current_o = ROOT / "build" / version / "current" / rel.with_suffix(".o")
@@ -105,7 +222,7 @@ def verify_manifest(reporter, manifest, version, elf, text_addr, text_off,
         return
 
     matching = {n: e for n, e in nonasm.items() if e["state"] == "matching"}
-    if matching:
+    if matching or c_data:
         # Byte source is the freshly built MATCHING HYBRID, not the plain
         # compile: the hybrid object is what the canonical image links, and
         # it is where gen_hybrid's per-function .lit4 slot mapping lives (a
@@ -129,6 +246,7 @@ def verify_manifest(reporter, manifest, version, elf, text_addr, text_off,
         hybrid_offsets = defined_function_offsets(nm_bin, hybrid_o)
         base_addr = min(unit_sizes[n][0]
                         for n in hybrid_offsets if n in unit_sizes)
+        report = json.loads(data_report_path(hybrid_o).read_text())
         undef = undefined_externals(nm_bin, hybrid_o)
         defsyms, unresolved = resolve(sorted(undef - {"_gp"}),
                                       load_symbol_addrs(version))
@@ -141,7 +259,11 @@ def verify_manifest(reporter, manifest, version, elf, text_addr, text_off,
                                 "reason": "unresolved externals"})
             return
         with tempfile.TemporaryDirectory() as tmp:
-            linked = link_text_at(hybrid_o, base_addr, defsyms, Path(tmp))
+            if report["pieces"]:
+                linked, linked_pieces, symbols = link_unit_at(
+                    hybrid_o, base_addr, report["pieces"], defsyms, Path(tmp))
+            else:
+                linked = link_text_at(hybrid_o, base_addr, defsyms, Path(tmp))
         bad = []
         for name, entry in sorted(matching.items(),
                                   key=lambda kv: unit_sizes[kv[0]][0]):
@@ -154,8 +276,12 @@ def verify_manifest(reporter, manifest, version, elf, text_addr, text_off,
                 bad.append(name)
             results.append({"id": entry["id"], "state": "matching",
                             "verified": ok, "size": size})
-        reporter.result(f"{label} (matching bytes, {len(matching)} fn)",
-                        not bad, None if not bad else f"diverge: {bad}")
+        if matching:
+            reporter.result(f"{label} (matching bytes, {len(matching)} fn)",
+                            not bad, None if not bad else f"diverge: {bad}")
+        if c_data:
+            verify_data(reporter, label, data, unit_index, version, elf,
+                        report["pieces"], linked_pieces, symbols, results)
 
     for name, entry in nonasm.items():
         if entry["state"] == "equivalent":
@@ -164,13 +290,21 @@ def verify_manifest(reporter, manifest, version, elf, text_addr, text_off,
                             "required for equivalent"})
 
     if data.get("complete"):
-        owned = [r for r in tomllib.loads(
+        ranges = tomllib.loads(
             (ROOT / "config" / version / "data_map.toml").read_text())["range"]
-            if r["owner"] == f"unit-{unit_index:04d}"]
-        reporter.result(f"{label} (complete: no owned data yet)", not owned,
-                        None if not owned else
-                        f"unit owns {len(owned)} data ranges; data-from-C "
-                        "verification is not supported yet")
+        report = None
+        hybrid_o = ROOT / "build" / version / "matching" / rel.with_suffix(".o")
+        if data_report_path(hybrid_o).is_file():
+            report = json.loads(data_report_path(hybrid_o).read_text())
+        why = complete_problems(data, unit_index, version, report, ranges)
+        if any(e["state"] != "matching" for e in declared.values()):
+            why.insert(0, "not every function is `matching`")
+        reporter.result(f"{label} (complete)", not why, "; ".join(why) or None)
+
+
+def _is_data(result):
+    """A results row belongs to `data` when its id names a data entry."""
+    return result.get("kind") == "data"
 
 
 def main():
@@ -224,7 +358,7 @@ def main():
                 # no function bodies, so its compiled `.s` is just the file
                 # prologue and build_hybrid would (correctly) refuse to parse it.
                 states = {f["state"] for f in data.get("function", [])}
-                if "matching" not in states:
+                if "matching" not in states and not has_c_data(data):
                     continue
                 if manifest in built:     # already rebuilt by verify_manifest
                     continue
@@ -251,7 +385,8 @@ def main():
         "version": args.version,
         "profiles_fingerprint": profiles_fingerprint(args.version),
         "all_green": not reporter.failed,
-        "functions": results,
+        "functions": [r for r in results if not _is_data(r)],
+        "data": [r for r in results if _is_data(r)],
         "image": image,
     }, indent=2) + "\n")
     print(f"\nwrote {out.relative_to(ROOT).as_posix()}")

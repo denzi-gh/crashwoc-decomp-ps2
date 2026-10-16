@@ -346,6 +346,54 @@ The C in `src/` is the committed work product; every generated artifact is
 game-derived and gitignored: object sets in `build/`, expected objects in
 `expected/`, and `objdiff.json`.
 
+### Data from C
+
+A fully matching unit can own its data from C, per symbol. Its manifest
+lists every data registry symbol of the unit with file bytes under `[[data]]`
+(`asm` | `matching` | `retail`; `python tools/promote.py --init-data src/<unit>.c`
+adds the table), and the C defines them under their retail names
+(`docs/decomp_agent.md` holds the policy and the per-unit runbook):
+
+```toml
+[[data]]
+id = "pal103:unit-0014:00613fb0:nuvec4_zero"
+state = "matching"        # asm | matching | retail (retail needs a `reason`)
+```
+
+- **gen_hybrid** splits the compiled assembly by section and maps each data
+  object onto its registry symbol (a function static's compiler number
+  `lut.6` becomes the retail `lut.69`, k-th per stem in address order). With
+  at least one `matching` entry the hybrid gets one input section per owned
+  data range, `<sec>.split_<vram8>` (`.align 0`, every object `.org`'d to its
+  registry address, every other byte a retail `.incbin`), and a sidecar
+  `<object>.data.json` (pieces, retail byte ranges, borrowed slots). C data
+  of an `asm`/`retail` entry is dropped and its references renamed onto the
+  retail symbol (`D_<VRAM>` for statics). Hard errors: C data without a
+  `[[data]]` table, a section other than the registry's
+  (`data_section_mismatch`: `const`, `-G`), `.size` != `.symtab` size,
+  overlaps, `.sdata`/`.sbss`/`.bss`/COMMON data from C.
+- **link_image** takes such a unit's ranges from its hybrid (file-qualified
+  patterns) and leaves its expected data object out - one data provider per
+  unit; every range is `ASSERT`ed at its address.
+- **verify_promoted** links the hybrid with its pieces at their addresses
+  (`declib.verify.link_unit_at`), compares each `matching` entry over
+  `[addr, addr+size)` (size from `.symtab`/STABS; an unsized object's compiled
+  size only with at most 15 zero bytes left to the next item) and its linked
+  symbol address, and reports them under `"data"` in `verify_results.json`.
+- **`complete = true`** (only `promote.py --complete <unit id>...` writes it)
+  needs every function `matching`, every data entry `matching`/`retail`, no
+  retail bytes in the unit's pieces beyond its `retail` entries and its
+  `.lit4` pool, no borrowed compiler-private slot (strings, jump tables,
+  `li.d` pools: a later `data/private`), and no owned `.sbss`/`.bss`.
+
+[tools/dump_data.py](../tools/dump_data.py) prints the C initialiser of a
+registry symbol from the retail bytes (`--probe` takes a struct layout from
+the compiler's own `-g` STABS; `--verify` compiles the float literals and
+compares bits). [tools/probe_data_emission.py](../tools/probe_data_emission.py)
+records how both compilers emit data (section per item and `-G`, order,
+alignment, function-static numbering) and compares nuvec4, e_pow and a
+`.lit4` pool with retail.
+
 ### The objdiff project and the published report
 
 [tools/gen_objdiff.py](../tools/gen_objdiff.py) writes `objdiff.json` so the whole
