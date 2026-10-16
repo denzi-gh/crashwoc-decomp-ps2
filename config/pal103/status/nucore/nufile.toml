@@ -77,7 +77,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00102148:NuDatFileOpen"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00102370:NuDatClose"
@@ -85,7 +85,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00102478:NuDatOpenEx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:001028f8:NuFileInitEx"
