@@ -170,10 +170,10 @@ class _Recorder:
 
 
 class TestOrchestration(unittest.TestCase):
-    # ResetPlayer is `asm` in the committed creature manifest; report it 100%.
+    # ManageCreatures is `asm` in the committed creature manifest; report it 100%.
     FAKE_REPORT = {"units": [{
         "name": "game/creature", "measures": {},
-        "functions": [{"name": "ResetPlayer",
+        "functions": [{"name": "ManageCreatures",
                        "fuzzy_match_percent": 100.0}]}]}
 
     def setUp(self):
@@ -204,7 +204,7 @@ class TestOrchestration(unittest.TestCase):
         self.assertEqual(decomp.cmd_unit(CREATURE, "pal103", promote=True), 0)
         promote_calls = [c for c in rec.calls if "tools/promote.py" in c]
         self.assertEqual(len(promote_calls), 1)
-        self.assertIn("pal103:unit-0091:001cbce8:ResetPlayer",
+        self.assertIn("pal103:unit-0091:001cc218:ManageCreatures",
                       promote_calls[0])
 
     def test_unit_no_promote_flag_skips_promotion(self):

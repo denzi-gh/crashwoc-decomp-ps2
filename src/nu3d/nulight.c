@@ -30,9 +30,13 @@
  *   0x001404e8 NuLgtRand
  */
 
+#include "nu_libc.h"
 #include "nu_types.h"
 
+#include "nu3d/nucamera.h"
+#include "nu3d/numtl.h"
 #include "nu3d/nustream.h"
+#include "nu3d/nutex.h"
 #include "numath/numathtypes.h"
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
@@ -59,7 +63,10 @@ typedef struct nulgtarclaser_s {
     float wobspeed;
     char type;
     char pad[3];
-    int colour;
+    union {
+        int colour;
+        u8 rgba[4];
+    };
     int seed;
 } nulgtarclaser_s;
 
@@ -105,7 +112,35 @@ extern void *vpDmaTag_RetEx(void *packet, u32 vif0, u32 vif1);
 extern void *vpDmaTag_Close(void *packet);
 extern void *vtBeginDirect(void *packet, u32 irq);
 extern void *vtCloseDirect(void *packet);
+extern void *vpDmaTag_CntEx(void *packet, u32 vif0, u32 vif1);
+extern void *gsBeginGifPacket(void *packet, int eop, int nloop, int pre, int prim, int flg, int nreg, ...);
+extern void *gsCloseGifPacket(void *packet);
+extern struct nurndrstream_s *rndrstream_3d;
+extern struct nurndrstream_s *rndrstream_3d_u;
+extern u32 *rndrstream_free;
+extern u64 cur_rt;
+extern int txupload_on;
+extern int NuLgtHSurf[18];
+extern struct numtl_s *NuLgtSurf[18];
+extern struct numtl_s *NuLightZMat;
+extern void *vpDmaTag_Call(void *packet, void *addr);
+extern u32 *vpDmaTag_Next(void *packet, u32 addr);
+extern void NuRndrStreamLink(struct nurndrstream_s *stream);
+extern int NuRndrBeginSceneEx(int target, int zbuffer, int halfoffset);
+extern void NuRndrEndSceneEx(int flags);
+extern void NuRndrRectUV3di(int x, int y, int width, int height, u32 colour, u32 z,
+                            float u0, float v0, float u1, float v1);
+extern void NuRndrFxCode(int code, void *fx, void *dma, struct numtl_s *mtl);
+extern void *NuScratchAlloc32(u32 size);
+extern void NuScratchRelease(void);
+extern void NuVec4MtxTransformVU0(struct nuvec4_s *dst, struct nuvec4_s *src, struct numtx_s *m);
+extern void NuVec4ScaleXYZVU0(struct nuvec4_s *dst, struct nuvec4_s *src, f32 scale);
+extern void NuVecConvertToIntVU0(void *dst, struct nuvec_s *src);
+extern f32 NuFsqrt(f32 x);
+extern f32 NuTrigTable[];
 
+extern int D_00633080;
+extern int D_00633084;
 extern int D_00633088;
 extern int D_006AD5E0[];
 extern struct nuvec_s D_006AD5F0;
@@ -124,6 +159,8 @@ extern void *NuLgtFxFogClr;
 #define nulgt_packet_buffer D_006AD600
 #define nulight_stamp D_00633088
 #define nulight_stamps D_006AD5E0
+#define fx_ang D_00633080
+#define fx_ang2 D_00633084
 
 
 void NuLightInit(void) {
@@ -261,6 +298,238 @@ void NuLightInit(void) {
 }
 
 
+void NuLigthSetModeMask(int tex, int zpsm, int fbmsk, int zmsk) {
+    int zbp;
+
+    rndrstream_3d->cur.w = (u32 *)vpDmaTag_CntEx(rndrstream_3d->cur.w, 0x11000000, 0x50000000) - 1;
+    rndrstream_3d->cur.w = vtBeginDirect(rndrstream_3d->cur.w, 0);
+    rndrstream_3d->cur.w = gsBeginGifPacket(rndrstream_3d->cur.w, 0, 1, 0, 0, 0, 1, 0xE);
+    zbp = NuTexGetTextAddr(tex);
+    if (zbp) {
+        *((u64 *)rndrstream_3d->cur.w)++ = (zbp >> 5) | (u64)zpsm << 24 | (u64)zmsk << 32;
+        *((u64 *)rndrstream_3d->cur.w)++ = 0x4E;
+    }
+    *((u64 *)rndrstream_3d->cur.w)++ = (int)(cur_rt & 0x1FF)
+                                     | (int)((cur_rt >> 16) & 0x3F) << 16
+                                     | (int)((cur_rt >> 24) & 0x3F) << 24
+                                     | (u64)fbmsk << 32;
+    *((u64 *)rndrstream_3d->cur.w)++ = 0x4C;
+    rndrstream_3d->cur.w = gsCloseGifPacket(rndrstream_3d->cur.w);
+    rndrstream_3d->cur.w = vtCloseDirect(rndrstream_3d->cur.w);
+    rndrstream_3d->cur.w = vpDmaTag_Close(rndrstream_3d->cur.w);
+}
+
+void NuLgtArcLaserDraw(int paused) {
+    struct nuvec4_s *pnts;
+    struct numtx_s *vpcsmtx;
+    struct nuvec_s norm;
+    struct nuvec_s norm2;
+    float uv[2][4];
+    float step;
+    float lp;
+    float next;
+    float scale;
+    float ry;
+    float rx;
+    float u;
+    int id;
+    int seed;
+    int k;
+    u8 rnd;
+    u8 *rgba;
+
+    uv[1][0] = NuLgtArcV0;
+    uv[1][2] = NuLgtArcV1;
+    uv[1][1] = NuLgtArcV0;
+    uv[1][3] = NuLgtArcV1;
+    if (paused) {
+        NuLgtArcLaserCnt = NuLgtArcLaserOldCnt;
+    }
+    if (!NuLgtArcMtl || !NuLgtArcLaserCnt) {
+        NuLgtArcLaserOldCnt = 0;
+        return;
+    }
+    pnts = NuScratchAlloc32(0xC0);
+    vpcsmtx = NuCameraGetVPCSMtx();
+    if (NuRndrBeginSceneEx(-1, -2, 0)) {
+        rndrstream_3d = rndrstream_3d_u;
+        rndrstream_3d->mtl = 0;
+        rndrstream_3d->mtl_tid = 0;
+        NuRndrStreamLink(rndrstream_3d);
+        NuRndrStreamSetMisc(rndrstream_3d);
+        NuRndrStreamAddMtl(rndrstream_3d, NuLgtArcMtl);
+        for (id = 0; id < NuLgtArcLaserCnt; id++) {
+            pnts[4].x = NuLgtArcLaserData[id].start.x;
+            pnts[4].y = NuLgtArcLaserData[id].start.y;
+            pnts[4].z = NuLgtArcLaserData[id].start.z;
+            pnts[4].w = 1.0f;
+            NuVec4MtxTransformVU0(&pnts[4], &pnts[4], vpcsmtx);
+            pnts[5].x = NuLgtArcLaserData[id].end.x;
+            pnts[5].y = NuLgtArcLaserData[id].end.y;
+            pnts[5].z = NuLgtArcLaserData[id].end.z;
+            pnts[5].w = 1.0f;
+            NuVec4MtxTransformVU0(&pnts[5], &pnts[5], vpcsmtx);
+            if (!(0.5f <= pnts[4].w)) {
+                if (!(0.5f <= pnts[5].w)) {
+                    continue;
+                }
+            }
+            if (pnts[4].w < 0.5f) {
+                pnts[6].x = NuLgtArcLaserData[id].end.x + ((NuLgtArcLaserData[id].start.x - NuLgtArcLaserData[id].end.x) * (pnts[5].w - 0.5f)) / (pnts[5].w - pnts[4].w);
+                pnts[6].y = NuLgtArcLaserData[id].end.y + ((NuLgtArcLaserData[id].start.y - NuLgtArcLaserData[id].end.y) * (pnts[5].w - 0.5f)) / (pnts[5].w - pnts[4].w);
+                pnts[6].z = NuLgtArcLaserData[id].end.z + ((NuLgtArcLaserData[id].start.z - NuLgtArcLaserData[id].end.z) * (pnts[5].w - 0.5f)) / (pnts[5].w - pnts[4].w);
+                pnts[6].w = 1.0f;
+            } else {
+                pnts[6].x = NuLgtArcLaserData[id].start.x;
+                pnts[6].y = NuLgtArcLaserData[id].start.y;
+                pnts[6].z = NuLgtArcLaserData[id].start.z;
+                pnts[6].w = 1.0f;
+            }
+            step = sqrt((pnts[6].x - NuLgtArcLaserData[id].end.x) * (pnts[6].x - NuLgtArcLaserData[id].end.x)
+                       + (pnts[6].y - NuLgtArcLaserData[id].end.y) * (pnts[6].y - NuLgtArcLaserData[id].end.y)
+                       + (pnts[6].z - NuLgtArcLaserData[id].end.z) * (pnts[6].z - NuLgtArcLaserData[id].end.z));
+            if (pnts[5].w < 0.5f) {
+                pnts[7].x = NuLgtArcLaserData[id].start.x + ((NuLgtArcLaserData[id].end.x - NuLgtArcLaserData[id].start.x) * (pnts[4].w - 0.5f)) / (pnts[4].w - pnts[5].w);
+                pnts[7].y = NuLgtArcLaserData[id].start.y + ((NuLgtArcLaserData[id].end.y - NuLgtArcLaserData[id].start.y) * (pnts[4].w - 0.5f)) / (pnts[4].w - pnts[5].w);
+                pnts[7].z = NuLgtArcLaserData[id].start.z + ((NuLgtArcLaserData[id].end.z - NuLgtArcLaserData[id].start.z) * (pnts[4].w - 0.5f)) / (pnts[4].w - pnts[5].w);
+                pnts[7].w = 1.0f;
+            } else {
+                pnts[7].x = NuLgtArcLaserData[id].end.x;
+                pnts[7].y = NuLgtArcLaserData[id].end.y;
+                pnts[7].z = NuLgtArcLaserData[id].end.z;
+                pnts[7].w = 1.0f;
+            }
+            NuVec4MtxTransformVU0(&pnts[4], &pnts[6], vpcsmtx);
+            NuVec4ScaleXYZVU0(&pnts[4], &pnts[4], 1.0f / pnts[4].w);
+            NuVec4MtxTransformVU0(&pnts[5], &pnts[7], vpcsmtx);
+            NuVec4ScaleXYZVU0(&pnts[5], &pnts[5], 1.0f / pnts[5].w);
+            norm.x = (pnts[5].y - pnts[4].y) * (640.0f / 224.0f);
+            norm.y = pnts[4].x - pnts[5].x;
+            norm.z = 0.0f;
+            NuVecNorm(&norm, &norm);
+            norm.x = norm.x * (NuLgtArcLaserData[id].sizew * (640.0f * 2000.0f / 224.0f));
+            norm.y = norm.y * (NuLgtArcLaserData[id].sizew * 2000.0f);
+            pnts[7].x = pnts[7].x - pnts[6].x;
+            pnts[7].y = pnts[7].y - pnts[6].y;
+            pnts[7].z = pnts[7].z - pnts[6].z;
+            pnts[7].w = pnts[7].w - pnts[6].w;
+            step = sqrt(pnts[7].x * pnts[7].x + pnts[7].y * pnts[7].y + pnts[7].z * pnts[7].z);
+            if (0.0f < step) {
+                pnts[10].x = NuLgtArcLaserData[id].mid.x;
+                pnts[10].y = NuLgtArcLaserData[id].mid.y;
+                pnts[10].z = NuLgtArcLaserData[id].mid.z;
+                scale = pnts[10].x * pnts[10].x + pnts[10].y * pnts[10].y + pnts[10].z * pnts[10].z;
+                if (scale > 0.0f) {
+                    scale = NuLgtArcLaserData[id].wobspeed / NuFsqrt(scale);
+                }
+                pnts[10].x = pnts[10].x * scale;
+                pnts[10].y = pnts[10].y * scale;
+                pnts[10].z = pnts[10].z * scale;
+                NuLgtSeed = NuLgtArcLaserData[id].seed;
+                step = NuLgtArcLaserData[id].sizel / step;
+                if (step > 1.0f) {
+                    step = 1.0f;
+                }
+                uv[0][2] = NuLgtArcU0;
+                uv[0][3] = NuLgtArcU1;
+                uv[0][0] = NuLgtArcU0;
+                uv[0][1] = NuLgtArcU1;
+                pnts[4].x = pnts[6].x;
+                pnts[4].y = pnts[6].y;
+                pnts[4].z = pnts[6].z;
+                pnts[4].w = 1.0f;
+                NuVec4MtxTransformVU0(&pnts[4], &pnts[4], vpcsmtx);
+                scale = 1.0f / pnts[4].w;
+                NuVec4ScaleXYZVU0(&pnts[4], &pnts[4], scale);
+                norm2.x = norm.x * scale;
+                norm2.y = norm.y * scale;
+                pnts[1].x = pnts[4].x - norm2.x;
+                pnts[1].y = pnts[4].y - norm2.y;
+                pnts[3].x = pnts[4].x + norm2.x;
+                pnts[3].y = pnts[4].y + norm2.y;
+                pnts[1].z = pnts[4].z;
+                pnts[3].z = pnts[4].z;
+                for (lp = 0.0f; lp < 1.0f; lp += step) {
+                    next = lp + step;
+                    if (next >= 1.0f) {
+                        pnts[5].x = pnts[6].x + pnts[7].x;
+                        pnts[5].y = pnts[6].y + pnts[7].y;
+                        pnts[5].z = pnts[6].z + pnts[7].z;
+                        u = NuLgtArcU1 + ((NuLgtArcU0 - NuLgtArcU1) * (1.0f - lp)) / step;
+                        uv[0][2] = u;
+                        uv[0][0] = u;
+                    } else {
+                        pnts[5].x = pnts[6].x + pnts[7].x * next + pnts[10].x * NuTrigTable[(u16)(next * 32768.0f)];
+                        pnts[5].y = pnts[6].y + pnts[7].y * next + pnts[10].y * NuTrigTable[(u16)(next * 32768.0f)];
+                        pnts[5].z = pnts[6].z + pnts[7].z * next + pnts[10].z * NuTrigTable[(u16)(next * 32768.0f)];
+                    }
+                    pnts[5].w = 1.0f;
+                    NuVec4MtxTransformVU0(&pnts[5], &pnts[5], vpcsmtx);
+                    scale = 1.0f / pnts[5].w;
+                    NuVec4ScaleXYZVU0(&pnts[5], &pnts[5], scale);
+                    if (lp < 1.0f - step * 1.5f && NuLgtSeed) {
+                        seed = NuLgtSeed * 0x24CD + 1;
+                        NuLgtSeed = seed & 0xFFFF;
+                        rnd = seed;
+                        ry = rnd - 0x80;
+                        rx = norm.x * ry * NuLgtArcLaserData[id].sizewob * scale;
+                        ry = norm.y * ry * NuLgtArcLaserData[id].sizewob * scale;
+                    } else {
+                        ry = 0.0f;
+                        rx = ry;
+                    }
+                    norm2.x = norm.x * scale;
+                    norm2.y = norm.y * scale;
+                    pnts[0].x = pnts[5].x - norm2.x + rx;
+                    pnts[0].y = pnts[5].y - norm2.y + ry;
+                    pnts[2].x = pnts[5].x + norm2.x + rx;
+                    pnts[2].y = pnts[5].y + norm2.y + ry;
+                    pnts[0].z = pnts[5].z;
+                    pnts[2].z = pnts[5].z;
+                    if ((!(pnts[0].x < 24576.0f) || !(pnts[1].x < 24576.0f))
+                        && (!(pnts[0].x > 40960.0f) || !(pnts[1].x > 40960.0f))
+                        && (!(pnts[0].y < 30208.0f) || !(pnts[1].y < 30208.0f))
+                        && (!(pnts[0].y > 35328.0f) || !(pnts[1].y > 35328.0f))) {
+                        rndrstream_3d->cur.w = vpDmaTag_CntEx(rndrstream_3d->cur.w, 0x10000000, 0x5000000D);
+                        *((u64 *)rndrstream_3d->cur.w)++ = 0x3002400000008004;
+                        *((u64 *)rndrstream_3d->cur.w)++ = 0x512;
+                        rgba = NuLgtArcLaserData[id].rgba;
+                        for (k = 0; k < 4; k++) {
+                            *rndrstream_3d->cur.f++ = uv[0][k];
+                            *rndrstream_3d->cur.f++ = uv[1][k];
+                            *rndrstream_3d->cur.f++ = 1.0f;
+                            *rndrstream_3d->cur.i++ = 0;
+                            *rndrstream_3d->cur.i++ = rgba[0];
+                            *rndrstream_3d->cur.i++ = rgba[1];
+                            *rndrstream_3d->cur.i++ = rgba[2];
+                            *rndrstream_3d->cur.i++ = rgba[3];
+                            NuVecConvertToIntVU0(rndrstream_3d->cur.w, (struct nuvec_s *)&pnts[k]);
+                            rndrstream_3d->cur.b += 0xC;
+                            *rndrstream_3d->cur.i++ = 0;
+                        }
+                        rndrstream_3d->cur.w = vpDmaTag_Close(rndrstream_3d->cur.w);
+                    }
+                    pnts[1].x = pnts[0].x;
+                    pnts[1].y = pnts[0].y;
+                    pnts[3].x = pnts[2].x;
+                    pnts[3].y = pnts[2].y;
+                    pnts[1].z = pnts[0].z;
+                    pnts[3].z = pnts[2].z;
+                }
+            }
+        }
+        rndrstream_free = vpDmaTag_Next(rndrstream_3d->cur.w, 0);
+        NuRndrEndSceneEx(0);
+        NuLgtArcLaserOldCnt = NuLgtArcLaserCnt;
+        NuLgtArcLaserCnt = 0;
+        if (!paused) {
+            NuLgtArcLaserFrame++;
+        }
+    }
+    NuScratchRelease();
+}
+
+
 void NuLightClose(void) {
 }
 
@@ -314,6 +583,72 @@ void NuLightUpdate(struct nulight_s *light) {
     NuRndrSetDirectionalLights(&nulight_dirs[0], &nulight_colours[0],
                                &nulight_dirs[1], &nulight_colours[1],
                                &nulight_dirs[2], &nulight_colours[2]);
+}
+
+
+void NuLightFxSetup(void) {
+    int upload;
+    int i;
+    int height;
+    float u0;
+    float u1;
+
+    NuTexFlushTemp();
+    NuTexAssignTempAddr(NuLgtHSurf[1]);
+    NuTexAssignTempAddr(NuLgtHSurf[4]);
+    NuTexAssignTempAddr(NuLgtHSurf[2]);
+    upload = txupload_on;
+    txupload_on = 0;
+    if (NuRndrBeginSceneEx(NuLgtHSurf[1], -2, 0)) {
+        rndrstream_3d = rndrstream_3d_u;
+        rndrstream_3d->mtl = 0;
+        rndrstream_3d->mtl_tid = 0;
+        NuRndrStreamLink(rndrstream_3d);
+        NuRndrStreamSetMisc(rndrstream_3d);
+        NuRndrStreamAddMtl(rndrstream_3d, NuLightZMat);
+        rndrstream_3d->cur.w = vpDmaTag_Call(rndrstream_3d->cur.w, NuLgtFxSetCall);
+        rndrstream_free = vpDmaTag_Next(rndrstream_3d->cur.w, 0);
+        NuRndrEndSceneEx(0);
+    }
+
+    NuTexCloneTempAddr(NuLgtSurf[3]->tid, NuLgtSurf[1]->tid);
+    NuTexCloneTempAddr(NuLgtSurf[6]->tid, NuLgtSurf[1]->tid);
+    NuTexCloneTempAddr(NuLgtSurf[8]->tid, NuLgtSurf[1]->tid);
+    NuTexCloneTempAddr(NuLgtSurf[13]->tid, NuLgtSurf[1]->tid);
+    NuTexCloneTempAddr(NuLgtSurf[17]->tid, NuLgtSurf[1]->tid);
+    NuTexCloneTempAddr(NuLgtSurf[7]->tid, NuLgtSurf[2]->tid);
+    NuTexCloneTempAddr(NuLgtSurf[11]->tid, NuLgtSurf[2]->tid);
+    NuTexCloneTempAddr(NuLgtSurf[14]->tid, NuLgtSurf[2]->tid);
+    NuTexCloneTempAddr(NuLgtSurf[5]->tid, NuLgtSurf[4]->tid);
+    NuTexCloneTempAddr(NuLgtSurf[9]->tid, NuLgtSurf[4]->tid);
+    NuTexCloneTempAddr(NuLgtSurf[12]->tid, NuLgtSurf[4]->tid);
+    NuTexCloneTempAddr(NuLgtSurf[15]->tid, NuLgtSurf[4]->tid);
+
+    if (NuRndrBeginSceneEx(NuLgtHSurf[8], NuLgtHSurf[8], 0)) {
+        rndrstream_3d = rndrstream_3d_u;
+        rndrstream_3d->mtl = 0;
+        rndrstream_3d->mtl_tid = 0;
+        NuRndrStreamLink(rndrstream_3d);
+        NuRndrStreamSetMisc(rndrstream_3d);
+        NuRndrStreamAddMtl(rndrstream_3d, NuLgtSurf[1]);
+        for (i = 0; i < 4; i++) {
+            u0 = (i * 64.0f + 0.5f) / 1024.0f;
+            u1 = (i * 64.0f + 63.5f) / 1024.0f;
+            height = (PS2_REZ_H << 4) - 8;
+            NuRndrRectUV3di(i * 0x400 + 0x1400, 0, 0x3F8, height, 0x80808080, 0,
+                            u0, 0.0f, u1, (float)PS2_REZ_H / NuPower2(PS2_REZ_H));
+        }
+        rndrstream_free = vpDmaTag_Next(rndrstream_3d->cur.w, 0);
+        NuRndrEndSceneEx(0);
+    }
+
+    if (NuRndrBeginSceneEx(NuLgtHSurf[7], NuLgtHSurf[1], 0)) {
+        NuRndrFxCode(0x304, 0, 0, NuLgtSurf[13]);
+        NuRndrEndSceneEx(0);
+    }
+    txupload_on = upload;
+    fx_ang += 0x6F;
+    fx_ang2 += 0x173;
 }
 
 void NuLightDestroy(struct nulight_s *light) {

@@ -49,7 +49,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00120e60:NuRndrFxCode"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00121220:NuRndrGobjSkin"
@@ -57,11 +57,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0040:00121498:NuRndrShadowInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00121628:NuRndrStreamQuad3dClip"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00121988:NuRndrOTInit"
@@ -69,19 +69,19 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00121a98:NuRndrOTInsertTriBatch"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00121ee0:NuRndrOTFlush"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00122068:NuRndrStreamTriStrip3dClip"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00122458:NuRndrStreamTri3dClip"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00122850:NuRndrCylCapMakeData"
@@ -93,35 +93,35 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00122da8:NuRndrShadowCylinderCap"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00123210:NuRndrShadowEllipse"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00123660:NuRndrShadowPols"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:001241b8:NuRndrShadowCylinderCap2"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00124f40:NuRndrShadowStack"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00125180:NuHGobjRndrMtxDwa"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00125608:NuHGobjEval"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00125918:NuHGobjEvalAnim"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00125c10:NuHGobjEvalAnim2"
@@ -129,15 +129,15 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0040:00125f30:NuHGobjRndrAnim"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00126558:NuHGobjEvalDwa"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00126758:NuHGobjEvalDwa2"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00126900:NuHGobjEvalDwaBlend"
@@ -149,7 +149,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0040:00126ee0:NuHGobjEvalAnimBlend"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:001271e8:NuHGobjEvalAnimBlend2"
@@ -157,7 +157,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0040:00127530:NuHGobjRndrAnimBlend"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:001279b0:NuRndrLine2d"
@@ -169,11 +169,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00127e70:ClipLinePoint"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00128138:NuRndrLine3d"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00128578:NuRndrTri2d"
@@ -185,11 +185,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00128a38:NuRndrTriStrip3d"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00128c48:NuRndrRect2di"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00128f40:NuRndrGradRect2di"
@@ -197,27 +197,27 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:001293c0:NuRndrRectUV2di"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:001296e8:NuRndrLine2di"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00129940:NuRndrLineRect2di"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00129ca0:NuRndrTri2di"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00129f68:NuRndrTriStrip2di"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012a218:NuRndrLineStrip2di"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012a4c8:NuRndrQuad2d"

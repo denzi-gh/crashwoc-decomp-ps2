@@ -25,11 +25,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0258:0027fd08:_sceSifLoadModuleBuffer"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0258:0027ff10:sceSifStopModule"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0258:00280118:sceSifUnloadModule"
@@ -53,7 +53,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0258:00280318:_sceSifLoadModule"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0258:00280540:sceSifLoadModule"
@@ -65,7 +65,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0258:00280580:_sceSifLoadElfPart"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0258:00280688:sceSifLoadElfPart"
@@ -77,8 +77,8 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0258:002806d0:sceSifGetIopAddr"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0258:002807c0:sceSifSetIopAddr"
-state = "asm"
+state = "matching"

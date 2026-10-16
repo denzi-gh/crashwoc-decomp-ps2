@@ -31,9 +31,9 @@ struct nuinstanim_s {
 }; /* 0x60 */
 
 struct nuinstflags_s {
-    u32 visible : 1;
-    u32 onscreen : 1;
-    u32 visitest : 1;
+    int visible : 1;
+    int onscreen : 1;
+    int visitest : 1;
     u32 isanimated : 1;
 }; /* 0x4 */
 
