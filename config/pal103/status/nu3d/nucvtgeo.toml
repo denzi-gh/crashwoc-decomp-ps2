@@ -25,7 +25,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0049:00151020:NuCvtDmaBezTriCFromIdx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0049:00151c40:NuCvtTriStreamCFromIdx"
@@ -37,7 +37,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0049:00152528:NuCvtSizeDmaTriCFromIdx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0049:001526f0:NuCvtDmaTriCFromIdx"
@@ -53,7 +53,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0049:001547d8:NuPs2CreateFaceOn"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0049:00154b40:NuCvtCalcFastPoint"
@@ -85,7 +85,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0049:00155210:NuCvtSizeDmaFaceOn"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0049:001552b8:NuCvtSizeDmaFaceY"
