@@ -54,6 +54,7 @@
 #include "numath/numtx.h"
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
+#include "numath/nufloat.h"
 #include "nu3d/nugscn.h"
 #include "game/gametypes.h"
 #include "game/creature.h"
@@ -103,8 +104,8 @@ extern s32 plr_tocam_wait;
 extern s32 plr_tocam_turn;
 extern struct plrevent_s PlrEvent[8];
 extern struct nugscn_s *world_scene[];
-extern struct CharacterModel *carpet_model;
-extern s32 carpet_character;
+extern struct CharacterModel *carpet_model[2];
+extern s32 carpet_character[2];
 extern u16 carpet_xrot;
 extern u16 carpet_yrot;
 extern struct nuvec_s carpet_pos;
@@ -145,6 +146,103 @@ s32 DrawPanel3DObject(s32 object, f32 x, f32 y, f32 z, f32 scalex, f32 scaley,
                       struct nugscn_s *scn, struct nuspecial_s *obj, s32 rot);
 
 
+extern s32 gamesfx_pitch;
+void GameSfxLoop(s32 sfx, struct nuvec_s *pos);
+void AddProjectile(struct nuvec_s *pos, struct nuvec_s *target, struct nuvec_s *mom, s32 type,
+                   u16 hdg, struct obj_s *owner);
+extern struct game_s Game;
+extern u8 D_00591FDE[];
+#define menu_mode ((s8)D_00591FDE[0])
+extern s32 fadeval;
+extern f32 GRAVITY;
+extern s32 plr_allow_jump;
+void AddGameDebris(s32 type, struct nuvec_s *pos);
+extern s32 gamesfx_effect_volume;
+extern s32 RINGCOUNT;
+extern s32 i_ring;
+extern void ResetLights(struct Nearest_Light_s *lights);
+extern f32 NuTrigTable[];
+extern s32 ExtraMoves;
+extern struct nuvec_s plr_target_pos[2];
+extern struct nuvec_s plr_target_dir;
+extern struct nuvec_s plr_target_firepos;
+extern struct numtx_s plr_target_mtx;
+void AddFlyingWumpa(struct nuvec_s *src, struct nuvec_s *dir, struct nuvec_s *dst, s32 destroy);
+void AddGameDebrisMtx(s32 i, struct nuvec_s *pos, s32 n, struct numtx_s *m);
+void AddKaboom(s32 type, struct nuvec_s *pos, f32 radius);
+extern char tbuf[];
+struct nugspline_s *NuSplineFindPartial(struct nugscn_s *scene, char *name, char *txt);
+
+void InitPlayerEvents(void) {
+    struct plrevent_s *ev;
+    struct nugspline_s *spl;
+    struct nuvec_s *p0;
+    struct nuvec_s *p1;
+    char name[256];
+    char obj_name[32];
+    s32 i;
+    s32 j;
+    char c;
+    s32 len;
+    s32 n;
+    s32 found;
+    s32 ok;
+
+    if (world_scene[0] != 0) {
+        ev = PlrEvent;
+        for (i = 0; i < 8; i++, ev++) {
+            ev->spl = 0;
+            ev->triggered = 0;
+            sprintf(tbuf, "player_trigger_%.2i_", i);
+            len = strlen(tbuf);
+            ev->spl = NuSplineFindPartial(world_scene[0], tbuf, name);
+            if (ev->spl != 0) {
+                if (ev->spl->len != 2) {
+                    ev->spl = 0;
+                }
+                spl = ev->spl;
+                if (spl != 0) {
+                    p0 = (struct nuvec_s *)spl->pts;
+                    p1 = (struct nuvec_s *)(spl->pts + spl->ptsize);
+                    ev->pos.x = (p0->x + p1->x) * 0.5f;
+                    ev->pos.y = (p0->y + p1->y) * 0.5f;
+                    ev->pos.z = (p0->z + p1->z) * 0.5f;
+                    GetALONG(&ev->pos, 0, -1, -1, 1);
+                    ev->iRAIL = temp_iRAIL;
+                    ev->iALONG = temp_iALONG;
+                    ev->fALONG = temp_fALONG;
+                    for (j = 15; j >= 0; j--) {
+                        ev->obj[j].special = 0;
+                    }
+                    found = 0;
+                    n = strlen(name);
+                    j = 0;
+                    for (; len < n; len++) {
+                        c = name[len];
+                        if (c == 'x' || len == n - 1) {
+                            if (len == n - 1) {
+                                obj_name[j++] = c;
+                            }
+                            obj_name[j] = 0;
+                            ok = NuSpecialFind(world_scene[0], &ev->obj[found], obj_name);
+                            j = 0;
+                            if (ok != 0) {
+                                found++;
+                                if (found == 16) {
+                                    break;
+                                }
+                            }
+                        } else {
+                            obj_name[j++] = c;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
 void UpdateChaseRunAnim(struct creature_s *plr) {
     if ((plr->obj.anim.newaction == 0x3A) &&
         ((Chase[0].status == 2) || (Chase[1].status == 2) ||
@@ -178,6 +276,377 @@ void UpdateChaseRunAnim(struct creature_s *plr) {
         }
     }
 }
+
+extern u64 LBIT;
+extern struct nuvec_s loadsavepos;
+
+void MoveCRASH(struct creature_s *plr, struct nupad_s *pad) {
+    struct MoveInfo *minfo = &CrashMoveInfo;
+    s32 jump_pressed;
+    s32 spin_pressed;
+    s32 crouch_pressed;
+    s32 duck_pressed;
+    s32 sprint_pressed;
+    s32 tiptoe_pressed;
+    s32 target_pressed;
+    s32 can_jump;
+    s32 frames;
+    s32 old_target;
+
+    jump_pressed = pad->paddata & 0x40;
+    spin_pressed = pad->paddata & 0x80;
+    sprint_pressed = pad->paddata & 0x2;
+    crouch_pressed = pad->paddata & 0x20;
+    duck_pressed = pad->paddata & 0x8;
+    tiptoe_pressed = pad->paddata & 0x1;
+    target_pressed = (ExtraMoves != 0 || (Game.powerbits & 8) != 0) && Level != 0x25 &&
+                     (LBIT & 0x1E00000) == 0 && (pad->paddata & 0x4) != 0;
+    can_jump = (plr->obj.max.y - plr->obj.min.y) * plr->obj.SCALE < plr->obj.clearance;
+    if (menu_mode == 0x1F || menu_mode == 0x21 || GameTimer.frame < 0x32 || fadeval > 0) {
+        target_pressed = 0;
+        duck_pressed = 0;
+        tiptoe_pressed = 0;
+        crouch_pressed = 0;
+        sprint_pressed = 0;
+        spin_pressed = 0;
+        jump_pressed = 0;
+    }
+    if (plr_tumblehack != 0) {
+        plr_tumblehack--;
+    }
+    if (plr->target != 0 && plr->fire == 0 && plr->fire_lock == 0 && plr->tap == 0 &&
+        (pad->paddata_db & 0x28) != 0) {
+        AddFlyingWumpa(&plr_target_pos[0], &plr_target_dir, &plr_target_pos[1], 1);
+        frames = (s32)(ModelAnimDuration(0, 0x4F, 0.0f, 0.0f) * 50.0f);
+        plr->obj.anim.anim_time = 1.0f;
+        plr->fire = frames;
+        plr->tap = frames + 10;
+        AddGameDebrisMtx(0x51, &plr_target_firepos, 0x20, &plr_target_mtx);
+        AddGameDebrisMtx(0x52, &plr_target_firepos, 0x10, &plr_target_mtx);
+        GameSfx(6, &plr->obj.pos);
+    }
+    if (plr->obj.transporting == 0) {
+        if (plr->obj.dangle != 0) {
+            plr->somersault = 0;
+            plr->ok_slam = 0;
+            if (plr->jump != 0) {
+                plr->jump = 6;
+                plr->jump_frame = plr->jump_frames;
+                plr->jump_type = 4;
+            }
+            if (pad->paddata_db & 0x40) {
+                plr->obj.dangle = 0;
+                plr->obj.mom.y = 0.0f;
+                GameSfx(0x1C, &plr->obj.pos);
+            } else {
+                if (crouch_pressed != 0 || duck_pressed != 0) {
+                    plr->obj.dangle = 2;
+                }
+                plr->obj.pos.y = plr->obj.roof_y - minfo->DANGLEGAP - plr->obj.max.y * plr->obj.SCALE;
+                goto landing;
+            }
+        }
+        if (plr->jump != 0 && plr->jump_frame < plr->jump_frames &&
+            !(plr->slam == 1 || plr->slam == 2)) {
+            f32 jump_frames = minfo->JUMPFRAMES2;
+            f32 height = minfo->JUMPHEIGHT;
+
+            if (plr->jump_type == 3) {
+                plr->obj.mom.y = (height * 1.5f) / jump_frames;
+            } else {
+                plr->obj.mom.y = height / jump_frames;
+            }
+        }
+        if (plr->slam == 2) {
+            plr->obj.mom.y += GRAVITY * 3.0f;
+        } else if (plr->slam == 1 && plr->obj.mom.y > 0.0f) {
+            plr->obj.mom.y += GRAVITY * 2.0f;
+        } else if (plr->obj.mom.y < 0.0f && (ExtraMoves != 0 || (Game.powerbits & 4) != 0) &&
+                   plr->spin != 0 &&
+                   plr->spin_frame < plr->spin_frames - plr->minfo->SPINRESETFRAMES &&
+                   plr->spin >= 3) {
+            if (plr->obj.mom.y > -0.02f) {
+                plr->obj.mom.y = -0.02f;
+            } else if (plr->spin < 8 && (plr->spin & 1) == 0) {
+                plr->obj.mom.y += GRAVITY * 0.2f;
+            }
+        } else if ((plr->obj.ground & 1) == 0) {
+            plr->obj.mom.y += GRAVITY;
+        }
+        if (plr->jump != 0) {
+            if (plr->somersault > 1) {
+                plr->somersault--;
+            }
+            if (plr->jump_frame < plr->jump_frames) {
+                plr->jump_frame++;
+                if (plr->ok_slam != 0 && plr->jump_type != 0 && plr->jump_frame == plr->jump_frames &&
+                    (plr->jump >= 4 || minfo->JUMPFRAMES1 < plr->jump_frame) &&
+                    plr->obj.pad_speed > 0.0f) {
+                    plr->somersault = minfo->SOMERSAULTFRAMES;
+                    gamesfx_effect_volume = 0x2FFF;
+                    GameSfx(0x2F, &plr->obj.pos);
+                }
+            }
+        } else {
+            plr->somersault = 0;
+        }
+        if (jump_pressed != 0 || plr->jump_hack != 0 || plr->obj.boing != 0) {
+            if (plr->jump_hack != 0) {
+                plr->jump_hack = 0;
+            }
+            switch (plr->jump) {
+            case 0:
+                if (plr->obj.ground != 0 && plr->obj.idle_gametime > 0.0f &&
+                    NuVecDistSqr(&plr->obj.pos, &loadsavepos, 0) < 1.0f) {
+                    break;
+                }
+                if ((plr->obj.ground != 0 || plr->allow_jump != 0) && plr->slam_wait == 0 &&
+                    can_jump != 0 && plr->obj.transporting == 0 && plr->target == 0 &&
+                    plr->fire == 0 && plr_rebound == 0 && plr->freeze == 0 &&
+                    (Level != 0x16 || FireBossHoldPlayer == 0)) {
+                    if (plr->crawl != 0 || plr->slide != 0) {
+                        plr->jump_type = 0;
+                        plr->jump_subtype = qrand() / 0x8000;
+                    } else {
+                        plr->jump_type = 1;
+                    }
+                    plr->jump_frames = (plr->jump_type == 0) ? minfo->STARJUMPFRAMES : minfo->JUMPFRAMES0;
+                    plr->jump_frame = 0;
+                    plr->jump = 1;
+                    plr->somersault = 0;
+                    plr->land = 0;
+                    if (plr->jump_type == 0) {
+                        plr->crawl = 0;
+                        plr->slide = 0;
+                        plr->ok_slam = 0;
+                    } else {
+                        plr->ok_slam = 1;
+                    }
+                    plr->obj.ground = 0;
+                    plr->obj.anim.anim_time = 1.0f;
+                    plr->jump_hack = 1;
+                    AddGameDebris(0x10, &plr->obj.pos);
+                    AddGameDebris(0x11, &plr->obj.pos);
+                    GameSfx(0x2F, &plr->obj.pos);
+                }
+                break;
+            case 1:
+                if (plr->jump_type != 0 && plr->jump_frames < minfo->JUMPFRAMES2) {
+                    plr->jump_frames++;
+                } else {
+                    plr->jump = 2;
+                }
+                break;
+            case 2:
+                break;
+            case 3:
+                if ((ExtraMoves != 0 || (Game.powerbits & 2) != 0) && plr->obj.mom.y > -0.099999994f &&
+                    (plr->spin == 0 ||
+                     plr->spin_frame >= plr->spin_frames - plr->minfo->SPINRESETFRAMES)) {
+                    if (plr->obj.pad_speed == 0.0f) {
+                        plr->jump_type = 0;
+                        plr->jump_subtype = qrand() / 0x8000;
+                    } else {
+                        plr->jump_type = 1;
+                    }
+                    plr->jump_frames = minfo->JUMPFRAMES0;
+                    plr->jump_frame = 0;
+                    plr->somersault = 0;
+                    plr->jump = 4;
+                    plr->obj.anim.anim_time = 1.0f;
+                    plr->obj.mom.x = plr->obj.mom.z = 0.0f;
+                    AddGameDebris(0x10, &plr->obj.pos);
+                    AddGameDebris(0x11, &plr->obj.pos);
+                    GameSfx(0x2F, &plr->obj.pos);
+                }
+                break;
+            case 4:
+                if (plr->jump_frames < minfo->JUMPFRAMES2) {
+                    plr->jump_frames++;
+                } else {
+                    plr->jump = 5;
+                }
+                break;
+            }
+        } else if (plr->obj.ground != 0) {
+            plr->jump = 0;
+        } else if (plr->jump == 1 || plr->jump == 2) {
+            plr->jump = 3;
+        } else if (plr->jump == 4) {
+            plr->jump = 5;
+        }
+    }
+landing:
+    if (plr->land != 0) {
+        plr->land--;
+    } else if (plr->obj.ground != 0 && plr->obj.old_ground == 0 && plr->obj.pad_speed == 0.0f &&
+               plr->jump != 1 && plr_allow_jump == 0) {
+        plr->land = minfo->JUMPLANDFRAMES;
+        AddGameDebris(0x10, &plr->obj.pos);
+    }
+    if (plr->spin_wait != 0) {
+        plr->spin_wait--;
+    }
+    if (plr->spin != 0 && plr->spin_frame < plr->spin_frames) {
+        plr->spin_frame++;
+    }
+    if (spin_pressed != 0) {
+        if (plr->spin == 0 && plr->obj.wade == 0 && plr->target == 0 && plr_rebound == 0 &&
+            (Level != 0x16 || FireBossHoldPlayer == 0)) {
+            if ((plr->slam == 0 || plr->slam >= 3) && plr->crawl == 0 && plr->slide == 0 &&
+                plr->freeze == 0) {
+                plr->spin_frame = 0;
+                plr->spin = 1;
+                plr->spin_frames = minfo->SPINFRAMES + minfo->SPINRESETFRAMES;
+                plr->spin_wait = minfo->SUPERSPINWAITFRAMES;
+                GameSfx(0x13, &plr->obj.pos);
+                NewRumble(&plr->rumble, 0x7F);
+            }
+        } else if ((ExtraMoves != 0 || (Game.powerbits & 4) != 0) && plr->spin < 7) {
+            if (plr->spin_wait != 0 && (plr->spin & 1) == 0) {
+                plr->spin++;
+                plr->spin_frames += minfo->SUPERSPINFRAMES;
+                plr->spin_wait = minfo->SUPERSPINWAITFRAMES;
+                GameSfx(0x13, &plr->obj.pos);
+                NewRumble(&plr->rumble, 0x7F);
+            }
+        }
+    } else if (plr->spin_frame == plr->spin_frames) {
+        plr->spin = 0;
+    } else if ((ExtraMoves != 0 || (Game.powerbits & 4) != 0) && (plr->spin & 1) != 0) {
+        plr->spin++;
+    }
+    if (plr->slam_wait != 0) {
+        plr->slam_wait--;
+        if (plr->slam_wait == 0) {
+            plr->slam = 3;
+        }
+    } else if (plr->slam != 0 && plr->slam < 3 && plr->obj.ground != 0 && plr->obj.old_ground == 0) {
+        if (plr->obj.boing != 0) {
+            plr->slam_wait = 0;
+            plr->slam = 3;
+        } else {
+            plr->slam_wait = minfo->SLAMWAITFRAMES;
+            GameSfx(0x11, &plr->obj.pos);
+            if (plr->slam == 2) {
+                AddKaboom(8, &plr->obj.pos, 0.0f);
+            } else {
+                JudderGameCamera(GameCam, 0.2f, 0);
+            }
+            AddGameDebris(0xD, &plr->obj.pos);
+            AddGameDebris(0xE, &plr->obj.pos);
+        }
+    }
+    if (crouch_pressed != 0 || duck_pressed != 0) {
+        if (plr->slam == 0 && plr->ok_slam != 0 && plr->jump > 0 && plr->jump < 4 && plr->spin == 0 &&
+            plr->target == 0 && plr_rebound == 0 && plr->freeze == 0) {
+            if (plr->obj.mom.y > 0.0f) {
+                if (ExtraMoves != 0 || (Game.powerbits & 0x20) != 0) {
+                    f32 height;
+                    f32 jump_frames;
+
+                    plr->slam = 2;
+                    height = minfo->JUMPHEIGHT;
+                    jump_frames = minfo->JUMPFRAMES2;
+                    plr->obj.mom.y = ((plr->jump_type == 3) ? (height * 1.5f) / jump_frames
+                                                            : height / jump_frames) * 4.0f;
+                } else {
+                    f32 height;
+                    f32 jump_frames;
+
+                    plr->slam = 1;
+                    height = minfo->JUMPHEIGHT;
+                    jump_frames = minfo->JUMPFRAMES2;
+                    plr->obj.mom.y = ((plr->jump_type == 3) ? (height * 1.5f) / jump_frames
+                                                            : height / jump_frames) * 2.0f;
+                }
+                plr->slam_frame = 0;
+            }
+        }
+    } else if (plr->obj.ground != 0 && plr->slam_wait == 0) {
+        plr->slam = 0;
+    }
+    if (plr->slam != 0 && plr->slam < 3) {
+        plr->slam_frame++;
+    }
+    plr->tiptoe = (ExtraMoves != 0 || (Game.powerbits & 1) != 0) && tiptoe_pressed != 0 &&
+                  plr->obj.ground != 0 && plr->target == 0 && plr_rebound == 0 &&
+                  (Level != 0x16 || FireBossHoldPlayer == 0);
+    plr->sprint = (ExtraMoves != 0 || (Game.powerbits & 0x10) != 0) && sprint_pressed != 0 &&
+                  (plr->obj.ground != 0 || plr_allow_jump != 0) && plr->target == 0 &&
+                  plr_rebound == 0 && (Level != 0x16 || FireBossHoldPlayer == 0);
+    if ((duck_pressed != 0 || crouch_pressed != 0 || (plr->obj.ground != 0 && can_jump == 0)) &&
+        (Level != 0x16 || FireBossHoldPlayer == 0)) {
+        if (plr->target == 0) {
+            if (plr->crouch_pos < minfo->CROUCHINGFRAMES &&
+                (plr->crouch_pos != 0 || plr->crawl_lock == 0)) {
+                plr->crouch_pos++;
+            }
+            if (plr->slide != 0) {
+                plr->slide--;
+                if (plr->slide == 0) {
+                    plr->crawl = 1;
+                    plr->obj.mom.x = plr->obj.mom.z = 0.0f;
+                }
+            } else if (plr->obj.ground != 0 && plr->crawl_lock == 0) {
+                if (plr->spin == 0 ||
+                    plr->spin_frame >= plr->spin_frames - plr->minfo->SPINRESETFRAMES) {
+                    if (plr->obj.pad_speed > 0.0f && plr->crawl == 0 && plr_rebound == 0 &&
+                        plr->freeze == 0 && (Level != 0x16 || FireBossHoldPlayer == 0)) {
+                        plr->slide = minfo->SLIDEFRAMES;
+                        GameSfx(0x12, &plr->obj.pos);
+                    } else {
+                        plr->crawl = 1;
+                    }
+                }
+            }
+        }
+        plr->crawl_lock = 1;
+    } else {
+        if (plr->crouch_pos > 0) {
+            plr->crouch_pos--;
+        }
+        plr->crawl = 0;
+        if (plr->slide != 0) {
+            plr->slide--;
+            if (plr->slide == 0 &&
+                (plr->obj.ground == 0 || (TerSurface[plr->obj.surface_type].flags & 0x20) == 0)) {
+                plr->obj.mom.x = plr->obj.mom.z = 0.0f;
+            }
+        }
+        if (plr->slide == 0 && plr->crawl == 0 && plr->obj.ground != 0) {
+            plr->crawl_lock = 0;
+        }
+    }
+    old_target = plr->target;
+    if (target_pressed != 0 && plr->obj.ground != 0 && plr->jump == 0 && plr->crouch_pos == 0 &&
+        plr->slam_wait == 0 && plr->crawl == 0 && plr->slide == 0 &&
+        !(plr->spin != 0 && plr->spin_frame < plr->spin_frames - plr->minfo->SPINRESETFRAMES) &&
+        plr->obj.dangle == 0 && plr_rebound == 0 && plr->freeze == 0 &&
+        (Level != 0x16 || FireBossHoldPlayer == 0)) {
+        plr->target = 1;
+    } else {
+        plr->target = 0;
+    }
+    if (plr->target != 0 && old_target == 0) {
+        plr->obj.target_yrot = 0;
+        plr->obj.target_xrot = 0;
+    }
+    plr->obj.attack = 0;
+    if (plr->spin != 0 && plr->spin_frame < plr->spin_frames - plr->minfo->SPINRESETFRAMES) {
+        plr->obj.attack = 2;
+    } else if (plr->slam != 0 && plr->slam < 3 && plr->obj.ground == 0 && plr->slam_wait == 0) {
+        plr->obj.attack |= (ExtraMoves != 0 || (Game.powerbits & 0x20) != 0) ? 8 : 4;
+    } else if (plr->slide != 0) {
+        plr->obj.attack |= 0x10;
+    } else if (plr->obj.ground == 0 && plr->obj.mom.y <= 0.0f) {
+        plr->obj.attack |= 0x20;
+    }
+    if (plr->obj.mask != 0 && plr->obj.mask->active >= 3) {
+        plr->obj.attack |= 0x80;
+    }
+}
+
 
 void AnimateCRASH(struct creature_s *plr) {
     struct MoveInfo *info = &CrashMoveInfo;
@@ -304,6 +773,247 @@ void AnimateCRASH(struct creature_s *plr) {
     }
 }
 
+
+void MoveSWIMMING(struct creature_s *plr, struct nupad_s *pad) {
+    struct MoveInfo *minfo = &SwimmingMoveInfo;
+    s32 spin_pressed;
+
+    spin_pressed = pad->paddata & 0xA8;
+    GameSfxLoop(0x27, &plr->obj.pos);
+    if (plr->tap == 0 && (pad->paddata_db & 0x40) != 0) {
+        plr->tap = 10;
+        gamesfx_pitch = 0x583;
+        GameSfx(0x28, &plr->obj.pos);
+    }
+    if (plr->spin_wait != 0) {
+        plr->spin_wait--;
+    }
+    if (plr->spin != 0 && plr->spin_frame < plr->spin_frames) {
+        plr->spin_frame++;
+    }
+    if (spin_pressed != 0) {
+        if (plr->spin == 0) {
+            plr->spin_frame = 0;
+            plr->spin = 1;
+            plr->spin_frames = minfo->SPINFRAMES + minfo->SPINRESETFRAMES;
+            plr->spin_wait = minfo->SUPERSPINWAITFRAMES;
+            GameSfx(0x28, &plr->obj.pos);
+        } else if ((ExtraMoves != 0 || (Game.powerbits & 4) != 0) && plr->spin < 7) {
+            if (plr->spin_wait != 0 && (plr->spin & 1) == 0) {
+                plr->spin++;
+                plr->spin_frames += minfo->SUPERSPINFRAMES;
+                plr->spin_wait = minfo->SUPERSPINWAITFRAMES;
+                GameSfx(0x28, &plr->obj.pos);
+            }
+        }
+    } else if (plr->spin_frame == plr->spin_frames) {
+        plr->spin = 0;
+    } else if ((ExtraMoves != 0 || (Game.powerbits & 4) != 0) && (plr->spin & 1) != 0) {
+        plr->spin++;
+    }
+    plr->obj.attack = 0;
+    if (plr->spin != 0 &&
+        plr->spin_frame < plr->spin_frames - plr->minfo->SPINRESETFRAMES) {
+        plr->obj.attack = 2;
+    }
+    if (plr->obj.mask != 0 && plr->obj.mask->active >= 3) {
+        plr->obj.attack |= 0x80;
+    }
+}
+
+
+extern f32 SWEEPATTACKSTARTTIME;
+extern f32 SWEEPATTACKENDTIME;
+
+void MoveCOCO(struct creature_s *plr, struct nupad_s *pad) {
+    struct MoveInfo *minfo = &CocoMoveInfo;
+    s32 can_jump;
+    s32 sprint_pressed;
+    s32 jump_pressed;
+    s32 spin_pressed;
+    s32 duck_pressed;
+    s32 crouch_pressed;
+
+    jump_pressed = pad->paddata & 0x40;
+    spin_pressed = pad->paddata & 0x80;
+    crouch_pressed = pad->paddata & 0x20;
+    duck_pressed = pad->paddata & 0x8;
+    sprint_pressed = pad->paddata & 0x2;
+    can_jump = (plr->obj.max.y - plr->obj.min.y) * plr->obj.SCALE < plr->obj.clearance;
+    if (menu_mode == 0x1F || menu_mode == 0x21 || GameTimer.frame < 0x32 || fadeval > 0) {
+        sprint_pressed = 0;
+        duck_pressed = 0;
+        crouch_pressed = 0;
+        spin_pressed = 0;
+        jump_pressed = 0;
+    }
+    if (plr->obj.transporting == 0 && plr->jump != 0 && plr->jump_frame < plr->jump_frames &&
+        !(plr->slam == 1 || plr->slam == 2)) {
+        f32 frames = minfo->JUMPFRAMES2;
+        f32 height = minfo->JUMPHEIGHT;
+
+        if (plr->jump_type == 3) {
+            plr->obj.mom.y = (height * 1.5f) / frames;
+        } else {
+            plr->obj.mom.y = height / frames;
+        }
+    }
+    if (plr->slam == 1) {
+        plr->obj.mom.y += GRAVITY * 2.0f;
+    } else if ((plr->obj.ground & 1) == 0) {
+        plr->obj.mom.y += GRAVITY;
+    }
+    if (plr->jump != 0) {
+        if (plr->somersault > 1) {
+            plr->somersault--;
+        }
+        if (plr->jump_frame < plr->jump_frames) {
+            plr->jump_frame++;
+            if (plr->ok_slam != 0 && plr->jump_type != 0 && plr->jump_frame == plr->jump_frames &&
+                (plr->jump >= 4 || minfo->JUMPFRAMES1 < plr->jump_frame) &&
+                plr->obj.pad_speed > 0.0f) {
+                plr->somersault = minfo->SOMERSAULTFRAMES;
+                gamesfx_effect_volume = 0x2FFF;
+                GameSfx(0x2F, &plr->obj.pos);
+            }
+        }
+    } else {
+        plr->somersault = 0;
+    }
+    if (jump_pressed != 0 || plr->jump_hack != 0 || plr->obj.boing != 0) {
+        if (plr->jump_hack != 0) {
+            plr->jump_hack = 0;
+        }
+        switch (plr->jump) {
+        case 0:
+            if ((plr->obj.ground != 0 || plr->allow_jump != 0) && plr->slam_wait == 0 &&
+                plr->slide == 0 && can_jump != 0 && plr->obj.transporting == 0) {
+                plr->jump_type = (plr->obj.pad_speed == 0.0f) ? 2 : 1;
+                plr->jump_frames = minfo->JUMPFRAMES0;
+                plr->jump_frame = 0;
+                plr->jump = 1;
+                plr->somersault = 0;
+                plr->land = 0;
+                plr->ok_slam = 1;
+                AddGameDebris(0x10, &plr->obj.pos);
+                AddGameDebris(0x11, &plr->obj.pos);
+                plr->jump_hack = 1;
+                plr->obj.ground = 0;
+                plr->obj.anim.anim_time = 1.0f;
+                GameSfx(0x2F, &plr->obj.pos);
+            }
+            break;
+        case 1:
+            if (plr->jump_frames < minfo->JUMPFRAMES2) {
+                plr->jump_frames++;
+            } else {
+                plr->jump = 2;
+            }
+            break;
+        }
+    } else if (plr->obj.ground != 0) {
+        plr->jump = 0;
+    } else if (plr->jump == 1 || plr->jump == 2) {
+        plr->jump = 3;
+    }
+    if (plr->land != 0) {
+        plr->land--;
+    } else if (plr->obj.ground != 0 && plr->obj.old_ground == 0 && plr->obj.pad_speed == 0.0f &&
+               plr->jump != 1 && plr->allow_jump == 0) {
+        plr->land = minfo->JUMPLANDFRAMES;
+    }
+    if (plr->spin_wait != 0) {
+        plr->spin_wait--;
+    }
+    if (plr->spin != 0 && plr->spin_frame < plr->spin_frames) {
+        plr->spin_frame++;
+    }
+    if (spin_pressed != 0) {
+        if (plr->spin == 0 && plr->obj.wade == 0 && (plr->slam == 0 || plr->slam >= 3) &&
+            plr->crawl == 0 && plr->slide == 0) {
+            plr->spin_frame = 0;
+            plr->spin = 1;
+            plr->spin_frames = minfo->SPINFRAMES + minfo->SPINRESETFRAMES;
+            GameSfx(0x1A, &plr->obj.pos);
+            plr->somersault = 0;
+            plr->ok_slam = 0;
+        }
+    } else if (plr->spin_frame == plr->spin_frames) {
+        plr->spin = 0;
+    }
+    if (plr->slam_wait != 0) {
+        plr->slam_wait--;
+        if (plr->slam_wait == 0) {
+            plr->slam = 3;
+        }
+    } else if (plr->slam != 0 && plr->slam < 3 && plr->obj.ground != 0 && plr->obj.old_ground == 0) {
+        if (plr->obj.boing != 0) {
+            plr->slam_wait = 0;
+            plr->slam = 3;
+        } else {
+            plr->slam_wait = minfo->SLAMWAITFRAMES;
+            GameSfx(0x11, &plr->obj.pos);
+            AddKaboom((plr->slam == 2) ? 8 : 4, &plr->obj.pos, 0.0f);
+        }
+    }
+    if (crouch_pressed != 0 || duck_pressed != 0) {
+        if (plr->slam == 0 && plr->ok_slam != 0 && plr->jump > 0 && plr->jump < 4 && plr->spin == 0) {
+            if (plr->obj.mom.y > 0.0f) {
+                f32 height;
+                f32 frames;
+
+                plr->slam = 1;
+                height = minfo->JUMPHEIGHT;
+                frames = minfo->JUMPFRAMES2;
+                plr->obj.mom.y = ((plr->jump_type == 3) ? (height * 1.5f) / frames : height / frames) * 2.0f;
+            }
+            plr->slam_frame = 0;
+        }
+    } else if (plr->obj.ground != 0 && plr->slam_wait == 0) {
+        plr->slam = 0;
+    }
+    if (plr->slam != 0 && plr->slam < 3) {
+        plr->slam_frame++;
+    }
+    plr->sprint = (ExtraMoves != 0 || (Game.powerbits & 0x10) != 0) && sprint_pressed != 0 &&
+                  (plr->obj.ground != 0 || plr_allow_jump != 0) && plr->target == 0;
+    if (duck_pressed != 0 || crouch_pressed != 0) {
+        if (plr->slide != 0) {
+            plr->slide--;
+        } else if (plr->obj.ground != 0 && plr->crawl_lock == 0 &&
+                   (plr->spin == 0 ||
+                    plr->spin_frame >= plr->spin_frames - plr->minfo->SPINRESETFRAMES)) {
+            plr->slide = minfo->SLIDEFRAMES;
+        }
+        plr->crawl_lock = 1;
+    } else {
+        if (plr->slide != 0) {
+            plr->slide--;
+        }
+        if (plr->slide == 0 && plr->obj.ground != 0) {
+            plr->crawl_lock = 0;
+        }
+    }
+    plr->obj.attack = 0;
+    if (plr->spin != 0 && plr->spin_frame < plr->spin_frames - plr->minfo->SPINRESETFRAMES) {
+        plr->obj.attack = 2;
+    } else if (plr->obj.anim.action == 0x43 && plr->obj.anim.anim_time >= SWEEPATTACKSTARTTIME &&
+               plr->obj.anim.anim_time < SWEEPATTACKENDTIME) {
+        if (plr->obj.anim.anim_time - 0.59999996f < SWEEPATTACKSTARTTIME) {
+            GameSfx(0x46, &plr->obj.pos);
+        }
+        plr->obj.attack |= 0x12;
+    } else if (plr->slam != 0 && plr->slam < 3 && plr->obj.ground == 0 && plr->slam_wait == 0) {
+        plr->obj.attack |= 4;
+    } else if (plr->obj.ground == 0 && plr->obj.mom.y <= 0.0f) {
+        plr->obj.attack |= 0x20;
+    }
+    if (plr->obj.mask != 0 && plr->obj.mask->active >= 3) {
+        plr->obj.attack |= 0x80;
+    }
+}
+
+
 void AnimateCOCO(struct creature_s *plr) {
     struct MoveInfo *info = &CocoMoveInfo;
 
@@ -362,6 +1072,159 @@ void AnimateCOCO(struct creature_s *plr) {
     UpdateCharacterIdle(plr, 1);
 }
 
+extern struct MoveInfo ScooterMoveInfo;
+
+void MoveSCOOTER(struct creature_s *plr, struct nupad_s *pad) {
+    struct MoveInfo *minfo = &ScooterMoveInfo;
+    s32 jump_pressed;
+    f32 height;
+    f32 frames;
+
+    jump_pressed = pad->paddata & 0x40;
+    if (plr->obj.ground != 0) {
+        GameSfxLoop(0xD0, &plr->obj.pos);
+    }
+    if (plr->jump != 0 && plr->jump_frame < plr->jump_frames) {
+        frames = minfo->JUMPFRAMES2;
+        height = minfo->JUMPHEIGHT;
+        if (plr->jump_type == 3) {
+            plr->obj.mom.y = (height * 1.5f) / frames;
+        } else {
+            plr->obj.mom.y = height / frames;
+        }
+    }
+    if ((plr->obj.ground & 1) == 0) {
+        plr->obj.mom.y += GRAVITY;
+    }
+    if (plr->jump != 0 && plr->jump_frame < plr->jump_frames) {
+        plr->jump_frame++;
+    }
+    if (jump_pressed != 0 || plr->jump_hack != 0 || plr->obj.boing != 0) {
+        if (plr->jump_hack != 0) {
+            plr->jump_hack = 0;
+        }
+        switch (plr->jump) {
+        case 0:
+            if ((plr->obj.ground != 0 || plr->allow_jump != 0) && plr->land == 0) {
+                plr->jump_type = 1;
+                plr->jump_frames = minfo->JUMPFRAMES0;
+                plr->jump_frame = 0;
+                plr->jump = 1;
+                plr->land = 0;
+                AddGameDebris(0x10, &plr->obj.pos);
+                AddGameDebris(0x11, &plr->obj.pos);
+                plr->jump_hack = 1;
+                plr->obj.ground = 0;
+                plr->obj.anim.anim_time = 1.0f;
+                GameSfx(0xCC, &plr->obj.pos);
+                GameSfx(0x2F, &plr->obj.pos);
+            }
+            break;
+        case 1:
+            if (plr->jump_frames < minfo->JUMPFRAMES2) {
+                plr->jump_frames++;
+            } else {
+                plr->jump = 2;
+            }
+            break;
+        }
+    } else if (plr->obj.ground != 0) {
+        plr->jump = 0;
+    } else if (plr->jump == 1 || plr->jump == 2) {
+        plr->jump = 3;
+    }
+    if (plr->land != 0) {
+        if (plr->obj.anim.flags & 1) {
+            plr->land = 0;
+        }
+    } else if (plr->obj.ground != 0 && plr->obj.old_ground == 0 && plr->jump != 1 &&
+               plr_allow_jump == 0 && plr->obj.anim.action == 0x63) {
+        plr->land = 1;
+        AddGameDebris(0x10, &plr->obj.pos);
+        GameSfx(0xCD, &plr->obj.pos);
+    }
+    plr->obj.attack = 0;
+    if (plr->obj.mask != 0 && plr->obj.mask->active >= 3) {
+        plr->obj.attack = 0x80;
+    }
+    plr->obj.attack |= 0x400;
+}
+
+
+extern struct MoveInfo FireEngineMoveInfo;
+
+void MoveFIREENGINE(struct creature_s *plr, struct nupad_s *pad) {
+    struct MoveInfo *minfo = &FireEngineMoveInfo;
+    s32 jump_pressed;
+    f32 height;
+    f32 frames;
+
+    jump_pressed = pad->paddata & 0x40;
+    if (plr->obj.ground != 0 && plr->jump != 0 && plr->jump_frame == plr->jump_frames &&
+        plr->jump_hold == 0) {
+        GameSfx(0x48, &plr->obj.pos);
+    }
+    if (plr->jump != 0 && plr->jump_frame < plr->jump_frames && plr->jump_hold == 0) {
+        frames = minfo->JUMPFRAMES2;
+        height = minfo->JUMPHEIGHT;
+        if (plr->jump_type == 3) {
+            plr->obj.mom.y = (height * 1.5f) / frames;
+        } else {
+            plr->obj.mom.y = height / frames;
+        }
+    }
+    if ((plr->obj.ground & 1) == 0) {
+        plr->obj.mom.y += GRAVITY;
+    }
+    if (plr->jump != 0 && plr->jump_hold == 0 && plr->jump_frame < plr->jump_frames) {
+        plr->jump_frame++;
+    }
+    if (jump_pressed != 0 || plr->jump_hack != 0 || plr->obj.boing != 0 || plr->jump_hold != 0) {
+        if (plr->jump_hack != 0) {
+            plr->jump_hack = 0;
+        }
+        switch (plr->jump) {
+        case 0:
+            if ((plr->obj.ground != 0 || plr->allow_jump != 0) && plr->target == 0 &&
+                (*(u32 *)&plr->fire_action & 0xFFFF0000) == 0 && plr->obj.transporting == 0) {
+                plr->jump_type = 1;
+                plr->jump_frames = minfo->JUMPFRAMES0;
+                plr->jump_hold = 0;
+                GameSfx(0x2F, &plr->obj.pos);
+                AddGameDebris(0x10, &plr->obj.pos);
+                AddGameDebris(0x11, &plr->obj.pos);
+                plr->jump_frame = 0;
+                plr->jump = 1;
+                plr->jump_hack = 1;
+                plr->land = 0;
+                plr->obj.ground = 0;
+                plr->obj.anim.anim_time = 1.0f;
+                GameSfx(0x32, &plr->obj.pos);
+            }
+            break;
+        case 1:
+            if (plr->jump_frames < minfo->JUMPFRAMES2) {
+                plr->jump_frames++;
+            } else {
+                plr->jump = 2;
+            }
+            break;
+        }
+    } else if (plr->obj.ground != 0) {
+        plr->jump = 0;
+    } else if (plr->jump == 1 || plr->jump == 2) {
+        plr->jump = 3;
+    }
+    plr->obj.attack = 0x400;
+    if (plr->obj.ground == 0 && plr->obj.mom.y <= 0.0f) {
+        plr->obj.attack = 0x420;
+    }
+    if (plr->obj.mask != 0 && plr->obj.mask->active >= 3) {
+        plr->obj.attack |= 0x80;
+    }
+}
+
+
 void AnimateFIREENGINE(struct creature_s *plr) {
     if ((u32)plr->obj.dead >= 2) {
         plr->obj.anim.newaction = plr->obj.die_action;
@@ -391,6 +1254,223 @@ void AnimateFIREENGINE(struct creature_s *plr) {
     }
     UpdateCharacterIdle(plr, 0);
 }
+
+extern struct MoveInfo GyroMoveInfo;
+extern struct nuvec_s gyropos;
+extern u16 D_005E7812[];
+extern u16 D_005E7A82[];
+#define gyro_sfx_volume D_005E7812[0]
+#define gyro_loop_sfx_volume D_005E7A82[0]
+extern f32 CRATEBALLOONOFFSET;
+extern f32 CRATEBALLOONRADIUS;
+extern struct nuvec_s carpet_splpos;
+extern struct nuvec_s carpet_oldpos;
+extern struct nuvec_s carpet_mom;
+extern struct RPos_s carpet_RPos;
+extern s32 carpet_action;
+extern f32 carpet_time;
+extern s32 carpet_place;
+extern s32 carpet_panelpos;
+extern s32 carpet_overlap;
+extern f32 CARPETTIME;
+extern f32 CARPETLOOPTIME;
+extern struct cratecube_s *temp_pCrate;
+struct creature_s *FindClock(void);
+void StartTimeTrial(struct nuvec_s *pos, s32 clock);
+void PointAlongSpline(struct nugspline_s *spl, f32 ratio, struct nuvec_s *out, u16 *yrot, u16 *xrot);
+void GetLights(struct nuvec_s *pos, struct Nearest_Light_s *lights, s32 glbflag);
+s32 FurtherALONG(s32 iRAIL, s32 iALONG, f32 fALONG, s32 iRAIL2, s32 iALONG2, f32 fALONG2);
+struct cratecube_s *HitCrateBalloons(struct nuvec_s *pos, f32 radius);
+void AddScreenWumpa(f32 x, f32 y, f32 z, s32 n);
+
+void MoveGYRO(struct creature_s *plr, struct nupad_s *pad) {
+    struct MoveInfo *minfo = &GyroMoveInfo;
+    struct nuvec_s v;
+    u16 yrot;
+    u16 xrot;
+    struct creature_s *clock;
+    s32 spin_pressed;
+    s32 pitch;
+    s32 sfx;
+    f32 radius;
+    f32 carpet_bot;
+    f32 carpet_top;
+    f32 carpet_mid;
+
+    spin_pressed = pad->paddata & 0x80;
+    gyropos = plr->obj.pos;
+    pitch = (s32)(plr->obj.xyz_distance * 5120.0005f);
+    if (pitch > 0x200) {
+        pitch = 0x400;
+    }
+    gamesfx_pitch = pitch + 0x200;
+    if (Level == 0xF) {
+        gamesfx_effect_volume = (gyro_sfx_volume * 2) / 3;
+    }
+    GameSfxLoop(0x90, &plr->obj.pos);
+    gamesfx_pitch = pitch * 4 + 0x800;
+    if (Level == 0xF) {
+        gamesfx_effect_volume = (gyro_loop_sfx_volume * 2) / 3;
+    }
+    GameSfxLoop(0x9D, &gyropos);
+    if (Level == 0x1D) {
+        if (GameTimer.frame == 0 || GameTimer.frame == 50 || GameTimer.frame == 100) {
+            sfx = 0x4F;
+        } else {
+            sfx = (GameTimer.frame == 150) ? 0x4C : -1;
+        }
+        if (sfx != -1) {
+            GameSfx(sfx, 0);
+        }
+    }
+    if (Level != 0x1D || GameTimer.frame >= 150) {
+        if (Level == 0x1D) {
+            clock = FindClock();
+            if (clock != 0) {
+                v.x = clock->obj.pos.x;
+                v.y = clock->obj.pos.y + CRATEBALLOONOFFSET;
+                v.z = clock->obj.pos.z;
+                radius = CRATEBALLOONRADIUS + plr->obj.RADIUS * 5.0f;
+                if (NuVecDistSqr(&plr->obj.pos, &v, 0) < radius * radius) {
+                    NewBuzz(&player->rumble, 5);
+                    StartTimeTrial(&clock->obj.pos, 1);
+                }
+            }
+        }
+        if (plr->spin_wait != 0) {
+            plr->spin_wait--;
+        }
+        if (plr->spin != 0 && plr->spin_frame < plr->spin_frames) {
+            plr->spin_frame++;
+        }
+        if (spin_pressed != 0) {
+            if (plr->spin == 0) {
+                if ((plr->slam == 0 || plr->slam >= 3) && plr->crawl == 0 && plr->slide == 0) {
+                    plr->spin_frame = 0;
+                    plr->spin = 1;
+                    plr->spin_frames = minfo->SPINFRAMES + minfo->SPINRESETFRAMES;
+                    plr->spin_wait = minfo->SUPERSPINWAITFRAMES;
+                    GameSfx(0x13, &plr->obj.pos);
+                    NewRumble(&plr->rumble, 0x7F);
+                }
+            } else if ((ExtraMoves != 0 || (Game.powerbits & 4) != 0) && plr->spin < 7) {
+                if (plr->spin_wait != 0 && (plr->spin & 1) == 0) {
+                    plr->spin++;
+                    plr->spin_frames += minfo->SUPERSPINFRAMES;
+                    plr->spin_wait = minfo->SUPERSPINWAITFRAMES;
+                    GameSfx(0x13, &plr->obj.pos);
+                    NewRumble(&plr->rumble, 0x7F);
+                }
+            }
+        } else if (plr->spin_frame == plr->spin_frames) {
+            plr->spin = 0;
+        } else if ((ExtraMoves != 0 || (Game.powerbits & 4) != 0) && (plr->spin & 1) != 0) {
+            plr->spin++;
+        }
+        plr->obj.attack = 0x40;
+        if (plr->spin != 0 &&
+            plr->spin_frame < plr->spin_frames - plr->minfo->SPINRESETFRAMES) {
+            plr->obj.attack = 0x42;
+        }
+        if (plr->obj.mask != 0 && plr->obj.mask->active >= 3) {
+            plr->obj.attack |= 0x80;
+        }
+    }
+    carpet_model[0] = 0;
+    carpet_model[1] = 0;
+    if (Level == 0x1D && SplTab[71].spl != 0 && CRemap[carpet_character[0]] != -1) {
+        carpet_model[0] = &CModel[CRemap[carpet_character[0]]];
+        if (GameTimer.frame == 0) {
+            PointAlongSpline(SplTab[71].spl, 0.0f, &carpet_pos, &carpet_yrot, &carpet_xrot);
+            carpet_oldpos = carpet_pos;
+            ResetAnimPacket(&carpet_anim, carpet_action);
+            carpet_RPos.iRAIL = -1;
+            carpet_RPos.iALONG = -1;
+            ResetLights(&carpet_lights);
+            carpet_time = 0.0f;
+            carpet_place = 1;
+            carpet_panelpos = 0;
+            carpet_overlap = 0;
+        }
+        CARPETLOOPTIME = CARPETTIME * 0.94418603f;
+        if (GameTimer.frame >= 150) {
+            carpet_time += 0.02f;
+            if (carpet_time > CARPETTIME) {
+                carpet_time -= CARPETTIME - CARPETLOOPTIME;
+            }
+        }
+        PointAlongSpline(SplTab[71].spl, carpet_time / CARPETTIME, &carpet_splpos, &yrot, &xrot);
+        if (GameTimer.ftime - 3.0f >= CARPETLOOPTIME) {
+            carpet_xrot = SeekRot(carpet_xrot, xrot, 4);
+            carpet_yrot = SeekRot(carpet_yrot, yrot, 4);
+        } else {
+            carpet_xrot = xrot;
+            carpet_yrot = yrot;
+        }
+        carpet_oldpos = carpet_pos;
+        carpet_pos.x += (carpet_splpos.x - carpet_pos.x) * 0.099999994f;
+        carpet_pos.y += (carpet_splpos.y - carpet_pos.y) * 0.099999994f;
+        carpet_pos.z += (carpet_splpos.z - carpet_pos.z) * 0.099999994f;
+        NuVecSub(&carpet_mom, &carpet_pos, &carpet_oldpos);
+        GetALONG(&carpet_pos, &carpet_RPos, carpet_RPos.iRAIL, carpet_RPos.iALONG, 1);
+        carpet_anim.oldaction = carpet_anim.action;
+        carpet_anim.newaction = carpet_action;
+        UpdateAnimPacket(carpet_model[0], &carpet_anim, 0.59999996f, 0.0f);
+        GetLights(&carpet_pos, &carpet_lights, 1);
+        if (GameTimer.frame >= 150 && i_ring < RINGCOUNT &&
+            GameTimer.ftime - 3.0f < CARPETLOOPTIME) {
+            carpet_place = FurtherALONG(carpet_RPos.iRAIL, carpet_RPos.iALONG, carpet_RPos.fALONG,
+                                        player->obj.RPos.iRAIL, player->obj.RPos.iALONG,
+                                        player->obj.RPos.fALONG) ? 1 : 2;
+        }
+        if (i_ring > 0 && carpet_panelpos < 0x19) {
+            carpet_panelpos++;
+        }
+        carpet_bot = carpet_pos.y;
+        carpet_top = carpet_bot + 0.5f;
+        if (NuVecXZDistSqr(&carpet_pos, &plr->obj.pos, 0) < 0.25f && !(plr->obj.pos.y + plr->obj.top * plr->obj.SCALE < carpet_bot) &&
+            !(carpet_top < plr->obj.pos.y + plr->obj.bot * plr->obj.SCALE)) {
+            carpet_mid = (carpet_bot + carpet_top) * 0.5f;
+            yrot = NuAtan2D(plr->obj.pos.x - carpet_pos.x, plr->obj.pos.z - carpet_pos.z);
+            plr->obj.mom.x = carpet_mom.x + NuTrigTable[yrot] * 0.04f;
+            plr->obj.mom.z = carpet_mom.z + NuTrigTable[(yrot + 0x4000) & 0xFFFF] * 0.04f;
+            if (carpet_overlap == 0) {
+                v.x = (plr->obj.pos.x + carpet_pos.x) * 0.5f;
+                v.y = (plr->obj.pos.y + (plr->obj.bot + plr->obj.top) * plr->obj.SCALE * 0.5f +
+                       carpet_mid) * 0.5f;
+                v.z = (plr->obj.pos.z + carpet_pos.z) * 0.5f;
+                AddGameDebris(0x82, &v);
+                NewRumble(&player->rumble, 0xBF);
+                NewBuzz(&player->rumble, 0x10);
+                GameSfx(0x5A, &v);
+            }
+            carpet_overlap = 1;
+        } else {
+            carpet_overlap = 0;
+        }
+        if (HitCrateBalloons(&plr->obj.pos, plr->obj.RADIUS * 5.0f) != 0) {
+            NewBuzz(&player->rumble, 5);
+            AddScreenWumpa(temp_pCrate->pos.x, temp_pCrate->pos.y + CRATEBALLOONOFFSET,
+                           temp_pCrate->pos.z, 1);
+            temp_pCrate->flags = (temp_pCrate->flags | 0x400) ^ 0x400;
+        }
+        v = (struct nuvec_s){-0.5f, 0.0f, -0.75f};
+        NuVecRotateX(&v, &v, -carpet_xrot);
+        NuVecRotateY(&v, &v, carpet_yrot);
+        NuVecAdd(&v, &v, &carpet_pos);
+        if (qrand() < 0x8000) {
+            AddGameDebris(0x9C, &v);
+        }
+        v = (struct nuvec_s){0.5f, 0.0f, -0.75f};
+        NuVecRotateX(&v, &v, -carpet_xrot);
+        NuVecRotateY(&v, &v, carpet_yrot);
+        NuVecAdd(&v, &v, &carpet_pos);
+        if (qrand() < 0x8000) {
+            AddGameDebris(0x9C, &v);
+        }
+    }
+}
+
 
 void AnimateGYRO(struct creature_s *plr, struct nupad_s *pad) {
     s32 held = pad->paddata & 0x60;
@@ -425,28 +1505,71 @@ void DrawCarpet(void) {
     struct nuvec_s scale;
     f32 **dwa;
 
-    if (carpet_model != 0) {
+    if (carpet_model[0] != 0) {
         SetNearestLights(&carpet_lights);
-        scale.x = scale.y = scale.z = CData[carpet_character].scale * 0.5f;
+        scale.x = scale.y = scale.z = CData[carpet_character[0]].scale * 0.5f;
         NuMtxSetScale(&m, &scale);
         NuMtxRotateX(&m, carpet_xrot);
         NuMtxRotateY(&m, carpet_yrot + 0x8000);
         NuMtxTranslate(&m, &carpet_pos);
-        EvalModelAnim(carpet_model, &carpet_anim, &m, mtx, &dwa, 0);
-        NuHGobjRndrMtxDwa(carpet_model->obj, &m, 1, 0, mtx, dwa);
+        EvalModelAnim(carpet_model[0], &carpet_anim, &m, mtx, &dwa, 0);
+        NuHGobjRndrMtxDwa(carpet_model[0]->obj, &m, 1, 0, mtx, dwa);
         SetLevelLights();
     }
 }
 
-extern s32 RINGCOUNT;
-extern s32 i_ring;
+void MoveSUBMARINE(struct creature_s *plr, struct nupad_s *pad) {
+    struct nuvec_s mom;
+    struct nuvec_s pos;
+    s32 tap_button;
+    s32 fire_button;
+    s32 pitch;
+
+    pitch = (s32)(plr->obj.xyz_distance * 5120.0005f);
+    fire_button = pad->paddata_db & 0x80;
+    tap_button = pad->paddata_db & 0x40;
+    if (pitch > 0x200) {
+        pitch = 0x200;
+    }
+    gamesfx_pitch = pitch + 0x200;
+    GameSfxLoop(0x3A, &plr->obj.pos);
+    if (plr->fire == 0 && fire_button != 0 &&
+        (plr->obj.hdg < 0x1555 || plr->obj.hdg > 0x6AAB)) {
+        mom.x = 0.0f;
+        mom.y = 0.0f;
+        mom.z = 0.16f;
+        if (plr->obj.hdg > 0x4000) {
+            mom.z = -mom.z;
+        }
+        pos.x = plr->obj.pos.x;
+        pos.y = plr->obj.pos.y + (plr->obj.bot + plr->obj.top) * plr->obj.SCALE * 0.5f;
+        pos.z = plr->obj.pos.z;
+        AddProjectile(&pos, 0, &mom, 4, (mom.z > 0.0f) ? 0 : 0x8000, &plr->obj);
+        plr->fire = 0x19;
+    } else if (plr->tap == 0 && tap_button != 0) {
+        mom.x = 0.0f;
+        mom.y = plr->obj.mom.y - 0.02f;
+        mom.z = 0.0f;
+        pos.x = plr->obj.pos.x;
+        pos.y = plr->obj.pos.y + plr->obj.bot * plr->obj.SCALE + 0.1f;
+        pos.z = plr->obj.pos.z;
+        AddProjectile(&pos, 0, &mom, 10, qrand(), &plr->obj);
+        plr->tap = 0x32;
+    }
+    plr->obj.attack = 0;
+    if (plr->obj.mask != 0 && plr->obj.mask->active >= 3) {
+        plr->obj.attack = 0x80;
+    }
+    plr->obj.attack |= 0x400;
+}
+
+
 extern u16 ring_xrot[];
 extern u16 ring_yrot[];
 extern s32 Draw3DObject(s32 object, struct nuvec_s *pos, u16 xrot, u16 yrot, u16 zrot,
                         f32 scalex, f32 scaley, f32 scalez,
                         struct nugscn_s *scn, struct nuspecial_s *obj, s32 rot);
 
-extern struct game_s Game;
 extern s32 TimeTrial;
 extern void PickupBonusGem(s32 mask);
 
@@ -555,6 +1678,160 @@ extern struct MoveInfo MechMoveInfo;
 extern f32 MECHSTANDINGJUMPPAUSEFRAME;
 extern f32 MECHRUNNINGJUMPPAUSEFRAME;
 
+
+void MoveMECH(struct creature_s *plr, struct nupad_s *pad) {
+    struct MoveInfo *minfo = &MechMoveInfo;
+    s32 jump_pressed;
+    s32 fire_pressed;
+    s32 old;
+    s32 action;
+    s32 frames;
+    f32 height;
+    f32 jump_frames;
+
+    jump_pressed = pad->paddata & 0x40;
+    fire_pressed = pad->paddata & 0x80;
+    if (menu_mode == 0x1F || menu_mode == 0x21 || GameTimer.frame < 0x32 || fadeval > 0) {
+        fire_pressed = 0;
+        jump_pressed = 0;
+    }
+    if (plr->obj.ground != 0 && plr->jump != 0 && plr->jump_frame == plr->jump_frames &&
+        plr->jump_hold == 0) {
+        GameSfx(0x48, &plr->obj.pos);
+    }
+    if (plr->target == 2 && plr->fire == 0 && plr->fire_lock == 0 && plr->tap == 0) {
+        plr->target = 1;
+        AddFlyingWumpa(&plr_target_pos[0], &plr_target_dir, &plr_target_pos[1], 3);
+        frames = (s32)(ModelAnimDuration(0, plr->fire_action, 0.0f, 0.0f) * 50.0f);
+        plr->obj.anim.anim_time = 1.0f;
+        plr->fire = frames;
+        plr->tap = frames + 5;
+        AddGameDebrisMtx(0x51, &plr_target_firepos, 0x20, &plr_target_mtx);
+        AddGameDebrisMtx(0x52, &plr_target_firepos, 0x10, &plr_target_mtx);
+        GameSfx(6, &plr->obj.pos);
+    }
+    if (plr->jump != 0 && plr->jump_frame < plr->jump_frames && plr->jump_hold == 0) {
+        jump_frames = minfo->JUMPFRAMES2;
+        height = minfo->JUMPHEIGHT;
+        if (plr->jump_type == 3) {
+            plr->obj.mom.y = (height * 1.5f) / jump_frames;
+        } else {
+            plr->obj.mom.y = height / jump_frames;
+        }
+    }
+    if ((plr->obj.ground & 1) == 0) {
+        plr->obj.mom.y += GRAVITY;
+    }
+    if (plr->jump != 0 && plr->jump_hold == 0 && plr->jump_frame < plr->jump_frames) {
+        plr->jump_frame++;
+    }
+    if (jump_pressed != 0 || plr->jump_hack != 0 || plr->obj.boing != 0 || plr->jump_hold != 0) {
+        if (plr->jump_hack != 0) {
+            plr->jump_hack = 0;
+        }
+        switch (plr->jump) {
+        case 0:
+            if ((plr->obj.ground != 0 || plr->allow_jump != 0) && plr->target == 0 &&
+                (*(u32 *)&plr->fire_action & 0xFFFF0000) == 0 && plr->obj.transporting == 0) {
+                if (plr->obj.pad_speed == 0.0f) {
+                    plr->jump_type = 2;
+                    plr->jump_frames = minfo->JUMPFRAMES2;
+                    plr->jump_hold = 1;
+                } else {
+                    plr->jump_type = 1;
+                    plr->jump_frames = minfo->JUMPFRAMES0;
+                    plr->jump_hold = 0;
+                    AddGameDebris(0x10, &plr->obj.pos);
+                    AddGameDebris(0x11, &plr->obj.pos);
+                }
+                GameSfx(0x32, &plr->obj.pos);
+                plr->obj.anim.anim_time = 1.0f;
+                plr->jump_frame = 0;
+                plr->jump = 1;
+                plr->jump_hack = 1;
+                plr->land = 0;
+                plr->obj.ground = 0;
+            }
+            break;
+        case 1:
+            if (plr->jump_hold != 0) {
+                if (plr->obj.anim.anim_time >= 15.0f) {
+                    plr->jump_hold = 0;
+                    AddGameDebris(0x10, &plr->obj.pos);
+                    AddGameDebris(0x11, &plr->obj.pos);
+                    GameSfx(0x32, &plr->obj.pos);
+                    plr->jump_hack = 1;
+                }
+            } else if (plr->jump_frames < minfo->JUMPFRAMES2) {
+                plr->jump_frames++;
+            } else {
+                plr->jump = 2;
+            }
+            break;
+        }
+    } else if (plr->obj.ground != 0) {
+        plr->jump = 0;
+    } else if (plr->jump == 1 || plr->jump == 2) {
+        plr->jump = 3;
+    }
+    if (plr->land != 0) {
+        if ((plr->obj.anim.flags & 1) || plr->obj.pad_speed != 0.0f) {
+            plr->land = 0;
+        }
+    } else if (plr->obj.ground != 0 && plr->obj.old_ground == 0 && plr->obj.pad_speed == 0.0f &&
+               plr->jump != 1 && plr_allow_jump == 0) {
+        if ((plr->obj.anim.action == 0x63 &&
+             plr->obj.anim.anim_time >= MECHRUNNINGJUMPPAUSEFRAME) ||
+            (plr->obj.anim.action == 0x64 &&
+             plr->obj.anim.anim_time >= MECHSTANDINGJUMPPAUSEFRAME)) {
+            plr->land = 1;
+            AddGameDebris(0x10, &plr->obj.pos);
+        }
+    }
+    old = plr->target;
+    if (fire_pressed != 0 && plr->obj.ground != 0 && plr->jump == 0) {
+        plr->target = 1;
+        if (old == 0) {
+            plr->obj.target_yrot = 0;
+            plr->obj.target_xrot = 0;
+            plr->fire_action = 0x5C;
+            plr->tap = 10;
+            GameSfx(0x30, &plr->obj.pos);
+        } else if ((*(u32 *)&plr->fire_action & 0xFFFF0000) == 0) {
+            old = plr->fire_action;
+            if (plr->obj.target_yrot >= 0xE3A) {
+                action = 0x60;
+            } else if (plr->obj.target_yrot < -0xE39) {
+                action = 0x5F;
+            } else {
+                action = (plr->obj.target_xrot > 0x71C) ? 0x5D : 0x5C;
+            }
+            if (action != plr->fire_action) {
+                if (plr->fire_action != 0x5C && action != 0x5C) {
+                    action = 0x5C;
+                }
+                plr->fire_action = action;
+            }
+            if (plr->fire_action != old) {
+                plr->tap = 10;
+            }
+        }
+    } else {
+        plr->target = 0;
+        if (old == 1) {
+            plr->target = 2;
+        }
+    }
+    plr->obj.attack = 0x400;
+    if (plr->obj.ground == 0 && plr->obj.mom.y <= 0.0f) {
+        plr->obj.attack = 0x420;
+    }
+    if (plr->obj.mask != 0 && plr->obj.mask->active >= 3) {
+        plr->obj.attack |= 0x80;
+    }
+}
+
+
 void AnimateMECH(struct creature_s *plr) {
     struct MoveInfo *minfo;
 
@@ -604,6 +1881,90 @@ void AnimateMECH(struct creature_s *plr) {
     UpdateCharacterIdle(plr, 0);
 }
 
+extern struct MoveInfo SnowBoardMoveInfo;
+void ProcessGenericTrail(s32 id, struct nuvec_s *pos, f32 radius, f32 width);
+
+void MoveSNOWBOARD(struct creature_s *plr, struct nupad_s *pad) {
+    struct MoveInfo *minfo = &SnowBoardMoveInfo;
+    s32 jump_pressed;
+    f32 height;
+    f32 frames;
+
+    jump_pressed = pad->paddata & 0x40;
+    if (plr->obj.ground != 0) {
+        gamesfx_pitch = 0x75A;
+        gamesfx_effect_volume = 0x1FFF;
+        GameSfxLoop(0x67, &plr->obj.pos);
+    }
+    if (plr->jump != 0 && plr->jump_frame < plr->jump_frames) {
+        frames = minfo->JUMPFRAMES2;
+        height = minfo->JUMPHEIGHT;
+        if (plr->jump_type == 3) {
+            plr->obj.mom.y = (height * 1.5f) / frames;
+        } else {
+            plr->obj.mom.y = height / frames;
+        }
+    }
+    if ((plr->obj.ground & 1) == 0) {
+        plr->obj.mom.y += GRAVITY;
+    }
+    if (plr->jump != 0 && plr->jump_frame < plr->jump_frames) {
+        plr->jump_frame++;
+    }
+    if (jump_pressed != 0 || plr->jump_hack != 0 || plr->obj.boing != 0) {
+        if (plr->jump_hack != 0) {
+            plr->jump_hack = 0;
+        }
+        switch (plr->jump) {
+        case 0:
+            if (plr->obj.ground != 0 || plr->allow_jump != 0) {
+                plr->jump_type = 1;
+                plr->jump_frames = minfo->JUMPFRAMES0;
+                plr->jump_frame = 0;
+                plr->jump = 1;
+                plr->land = 0;
+                AddGameDebris(0x10, &plr->obj.pos);
+                AddGameDebris(0x11, &plr->obj.pos);
+                plr->jump_hack = 1;
+                plr->obj.ground = 0;
+                plr->obj.anim.anim_time = 1.0f;
+                GameSfx(0x2F, &plr->obj.pos);
+            }
+            break;
+        case 1:
+            if (plr->jump_frames < minfo->JUMPFRAMES2) {
+                plr->jump_frames++;
+            } else {
+                plr->jump = 2;
+            }
+            break;
+        }
+    } else if (plr->obj.ground != 0) {
+        plr->jump = 0;
+    } else if (plr->jump == 1 || plr->jump == 2) {
+        plr->jump = 3;
+    }
+    if (plr->land != 0) {
+        if (plr->obj.anim.flags & 1) {
+            plr->land = 0;
+        }
+    } else if (plr->obj.ground != 0 && plr->obj.old_ground == 0 && plr->jump != 1 &&
+               plr_allow_jump == 0 && plr->obj.anim.action == 0x63) {
+        plr->land = 1;
+        AddGameDebris(0x10, &plr->obj.pos);
+        GameSfx(0x54, &plr->obj.pos);
+    }
+    plr->obj.attack = 0;
+    if (plr->obj.mask != 0 && plr->obj.mask->active >= 3) {
+        plr->obj.attack = 0x80;
+    }
+    plr->obj.attack |= 0x400;
+    plr->obj.pos.y -= 0.05f;
+    ProcessGenericTrail(0, &plr->obj.pos, 0.4f, 0.1f);
+    plr->obj.pos.y += 0.05f;
+}
+
+
 extern f32 SNOWBOARDJUMPPAUSEFRAME;
 
 void AnimateSNOWBOARD(struct creature_s *plr) {
@@ -644,6 +2005,135 @@ void AnimateSNOWBOARD(struct creature_s *plr) {
         AddGameDebrisRot(0x55, (struct nuvec_s *)&plr->mtxLOCATOR[1][3]._30, 3, 0, 0);
     }
 }
+
+extern struct nuvec_s jeeptyrepos;
+extern s32 jonframe1;
+extern s32 i_jkeepsfx;
+extern s16 jeepsfx[4];
+extern s32 SmokeyFinished;
+extern f32 offroader_speedtime;
+extern f32 OFFROADERSPEEDTIME;
+extern struct gdeb_s GDeb[];
+void PlayerHitBuggies(struct creature_s *c);
+s32 ChaseActive(void);
+void AddVariableShotDebrisEffect(s32 type, struct nuvec_s *pos, s32 count, s32 a, s32 b);
+
+void MoveOFFROADER(struct creature_s *plr, struct nupad_s *pad) {
+    struct nuvec_s v;
+    s32 accel;
+    s32 n;
+    s32 k;
+    s32 i;
+
+    accel = pad->paddata & 0x60;
+    jeeptyrepos = plr->obj.pos;
+    n = (s32)(plr->obj.xyz_distance * 2560.0002f);
+    if (n > 0x200) {
+        n = 0x200;
+    }
+    gamesfx_pitch = n + 0x200;
+    GameSfxLoop(0x6A, &plr->obj.pos);
+    if (pad->paddata_db & 0x60) {
+        GameSfx(0x6D, &plr->obj.pos);
+    }
+    if (pad->paddata_db & 0x60) {
+        GameSfx(0x57, &plr->obj.pos);
+    }
+    if ((jonframe1 & 7) == 0 && plr->obj.ground != 0) {
+        v.x = player->obj.mom.x;
+        v.z = player->obj.mom.z;
+        NuVecRotateY(&v, &v, -player->obj.hdg);
+        if (NuFabs(v.x) * 2.0f > NuFabs(v.z) && plr->obj.xz_distance > 0.02f) {
+            GameSfx(0x12, &plr->obj.pos);
+        }
+    }
+    if (plr->obj.ground != 0 && plr->obj.old_ground == 0 &&
+        (qrand() < 0x4000 || plr->obj.mom.y < -0.02f)) {
+        do {
+            n = qrand() / 0x4000;
+        } while (n == i_jkeepsfx);
+        i_jkeepsfx = n;
+        GameSfx(jeepsfx[n], &plr->obj.pos);
+    }
+    if (plr->obj.ground != 0) {
+        gamesfx_effect_volume = (s32)(plr->obj.xyz_distance * 81915.008f);
+        if (gamesfx_effect_volume > 0x3FFF) {
+            gamesfx_effect_volume = 0x3FFF;
+        }
+        GameSfxLoop(0x67, &jeeptyrepos);
+    }
+    if (Level == 3) {
+        PlayerHitBuggies(plr);
+    }
+    if ((Level != 8 || ChaseActive() == -1) && plr->obj.ground != 0 && qrand() < 0x800) {
+        n = (s32)(plr->obj.xz_distance / 0.099999994f * 127.0f);
+        NewRumble(&plr->rumble, (n > 0x7F) ? 0x7F : n);
+    }
+    if (plr->obj.ground != 0 && plr->obj.surface_type == 0xB) {
+        if (plr->fire == 0) {
+            GameSfx(0xC8, &plr->obj.pos);
+            JudderGameCamera(GameCam, 0.3f, 0);
+            gamesfx_effect_volume = 0x5FFE;
+            GameSfx(0x6D, &plr->obj.pos);
+        }
+        plr->fire = 0x32;
+    }
+    if (plr->fire != 0) {
+        NewBuzz(&plr->rumble, 2);
+    }
+    if (GameTimer.frame == 0 || SmokeyFinished != 0 || SmokeyCountDownValue > 0) {
+        offroader_speedtime = 0.0f;
+    } else if (plr->fire != 0) {
+        offroader_speedtime = OFFROADERSPEEDTIME;
+    } else if (accel != 0) {
+        offroader_speedtime += 0.02f;
+        if (offroader_speedtime > OFFROADERSPEEDTIME) {
+            offroader_speedtime = OFFROADERSPEEDTIME;
+        }
+    } else {
+        offroader_speedtime -= 0.04f;
+        if (offroader_speedtime < 0.0f) {
+            offroader_speedtime = 0.0f;
+        }
+    }
+    if ((plr->obj.ground & 1) == 0) {
+        plr->obj.mom.y += GRAVITY;
+    }
+    plr->obj.attack = 0;
+    if (plr->obj.mask != 0 && plr->obj.mask->active >= 3) {
+        plr->obj.attack = 0x80;
+    }
+    plr->obj.attack |= 0x400;
+    if ((plr->obj.ground != 0 || plr->fire != 0) &&
+        (plr->obj.xz_distance > 0.02f || abs(plr->obj.dyrot) > 0x60) &&
+        (plr->sprint != 0 || (jonframe1 & 3) == 0 || accel != 0 || plr->fire != 0 ||
+         abs(plr->obj.dyrot) > 0x60)) {
+        for (i = 0; i < 4; i++) {
+            v = plr->obj.pos;
+            switch (i) {
+            case 0:
+            default:
+                k = 0x1B58;
+                break;
+            case 1:
+                k = -0x1B58;
+                break;
+            case 2:
+                k = 0x6590;
+                break;
+            case 3:
+                k = 0x9A70;
+                break;
+            }
+            v.x += NuTrigTable[(k + plr->obj.hdg) & 0xFFFF] * 0.7f;
+            v.y += 0.1f;
+            v.z += NuTrigTable[(k + plr->obj.hdg + 0x4000) & 0xFFFF] * 0.7f;
+            k = (plr->fire != 0) ? 0x9E : 0x9D;
+            AddVariableShotDebrisEffect(GDeb[k].i, &v, 1, 0, 0);
+        }
+    }
+}
+
 
 void AnimateSWIMMING(struct creature_s *plr) {
     struct MoveInfo *info = &SwimmingMoveInfo;
@@ -952,7 +2442,6 @@ inline void ResetTub(struct tubinfo_s *tub, struct creature_s *c) {
 extern struct tubinfo_s PlrTub;
 extern struct tubinfo_s OppTub;
 extern struct creature_s OppTubCreature;
-extern void ResetLights(struct Nearest_Light_s *lights);
 extern s32 opptub_action;
 extern s32 opptub_wait;
 
@@ -997,4 +2486,235 @@ void ResetTubs(void) {
     opptub_action = 0x62;
     i = qrand() * 50;
     opptub_wait = i / 0x10000 + 50;
+}
+
+
+struct tracklink_s {
+    s8 i_left;     /* 0x0 */
+    s8 i_mid;      /* 0x1 */
+    s8 i_right;    /* 0x2 */
+    u8 start;      /* 0x3 */
+    u8 end;        /* 0x4 */
+    u8 flags;      /* 0x5 */
+}; /* 0x6 */
+
+extern s32 VEHICLECONTROL;
+extern f32 TUBBOOSTFRAMES;
+extern f32 TUBWAIT;
+extern s32 race_finished;
+extern s32 MAXLAPS;
+extern struct tracklink_s *TubLink;
+extern s32 gempath_open;
+extern s32 GemPath;
+extern struct nuvec_s v000;
+f32 SplineDistance(struct nugspline_s *spl);
+
+void MoveTub(struct tubinfo_s *tub, s32 LEFT, s32 RIGHT) {
+    s32 dirs[3];
+    struct nuvec_s p0;
+    struct nuvec_s p1;
+    struct nuvec_s mid;
+    u16 yrot0;
+    u16 xrot0;
+    u16 yrot1;
+    u16 xrot1;
+    struct nugspline_s *spl;
+    struct nugspline_s *spl2;
+    struct nugspline_s *left;
+    struct nuvec_s *a;
+    struct nuvec_s *b;
+    struct creature_s *plr = player;
+    s32 is_player;
+    s32 control;
+    s32 next;
+    s32 n;
+    s32 dir;
+    s32 start;
+    s32 end;
+    u16 yrot;
+    u16 xrot;
+    u16 ang;
+    f32 speed;
+    f32 ratio;
+
+    is_player = (tub == &PlrTub);
+    control = is_player ? VEHICLECONTROL : 1;
+    if (Level != 0x1C || (GameTimer.frame >= 150 && tub->stall == 0 &&
+                          (tub->finished == 0 || tub->finished < tub->finishframes))) {
+        speed = 0.02f;
+        if (Level == 0x1C && tub->finished != 0) {
+            speed = NuTrigTable[((tub->finished << 14) / tub->finishframes + 0x4000) & 0xFFFF] * speed;
+        } else if (Level == 0x1C && GameTimer.frame < 200) {
+            speed = (1.0f - NuTrigTable[(((GameTimer.frame - 150) << 14) / 50 + 0x4000) & 0xFFFF]) *
+                    speed;
+        } else if (is_player) {
+            tub->spark = 0;
+            if (tub->boost != 0) {
+                speed = (NuTrigTable[(s32)((tub->boost << 14) / TUBBOOSTFRAMES) & 0xFFFF] + 1.0f) * speed;
+                tub->spark = 1;
+            } else if (plr->obj.pad_speed > 0.0f) {
+                if ((u16)(plr->obj.pad_angle - 0x2AAB) > 0xAAAA) {
+                    if (qrand() < 0x3000 && (Level != 0x1C || race_finished == 0)) {
+                        NewRumble(&player->rumble, qrand() / 0x156);
+                    }
+                    speed *= 1.2f;
+                } else if ((u16)(plr->obj.pad_angle - 0x5556) < 0x5555) {
+                    if (qrand() < 0x3000 && (Level != 0x1C || race_finished == 0)) {
+                        NewBuzz(&player->rumble, 2);
+                    }
+                    tub->spark = 1;
+                    speed *= 0.8f;
+                }
+            } else if (qrand() < 0x4000 && (Level != 0x1C || race_finished == 0)) {
+                NewRumble(&player->rumble, qrand() / 0x200);
+            }
+        }
+        tub->time += speed;
+    }
+    if (tub->stall != 0) {
+        tub->stall--;
+    }
+    next = -1;
+    if (tub->track != -1) {
+        if (tub->time >= tub->duration) {
+            tub->time = tub->duration;
+            if (tub->laps >= MAXLAPS) {
+                RIGHT = 0;
+                LEFT = 0;
+            } else if (!is_player) {
+                n = 0;
+                if (TubLink[tub->track].i_left != -1) {
+                    dirs[n++] = 3;
+                }
+                if (TubLink[tub->track].i_mid != -1) {
+                    dirs[n++] = 0;
+                }
+                if (TubLink[tub->track].i_right != -1) {
+                    dirs[n++] = 4;
+                }
+                RIGHT = 0;
+                LEFT = 0;
+                if (n != 0) {
+                    dir = dirs[qrand() / (0xFFFF / n + 1)];
+                    if (dir == 3) {
+                        LEFT = 1;
+                    } else {
+                        RIGHT = (dir == 4);
+                    }
+                }
+            }
+            if (is_player && Level == 4 && TubLink[tub->track].i_right == 4 &&
+                (gempath_open == 0 || TimeTrial != 0)) {
+                if (TubLink[tub->track].i_mid != -1) {
+                    next = TubLink[tub->track].i_mid;
+                } else {
+                    control = 0;
+                }
+            } else if (LEFT != 0 && TubLink[tub->track].i_left != -1) {
+                next = TubLink[tub->track].i_left;
+            } else if (RIGHT != 0 && TubLink[tub->track].i_right != -1) {
+                next = TubLink[tub->track].i_right;
+            } else if (TubLink[tub->track].i_mid != -1) {
+                next = TubLink[tub->track].i_mid;
+            } else {
+                control = 0;
+            }
+        }
+    } else {
+        next = is_player ^ 1;
+    }
+    if (next != -1) {
+        tub->track = next;
+        tub->wait = (s32)TUBWAIT;
+        if (tub->count <= 0) {
+            tub->count++;
+        }
+        left = SplTab[tub->track + 0x1D].spl;
+        spl2 = SplTab[tub->track + 0x2D].spl;
+        if (left != 0 && spl2 != 0) {
+            speed = SplineDistance(left);
+            speed += SplineDistance(spl2);
+            tub->time = 0.0f;
+            speed *= 0.5f;
+            speed *= 0.125f;
+            tub->duration = speed;
+            if (is_player && Level == 4 && tub->track == 4) {
+                GemPath = 2;
+            }
+        } else {
+            control = 0;
+        }
+    } else if (tub->wait != 0) {
+        tub->wait--;
+    }
+    if (control == 1) {
+        ratio = tub->time / tub->duration;
+        spl = SplTab[tub->track + 0x1D].spl;
+        spl2 = SplTab[tub->track + 0x2D].spl;
+        PointAlongSpline(spl, ratio, &p0, &yrot0, &xrot0);
+        PointAlongSpline(spl2, ratio, &p1, &yrot1, &xrot1);
+        mid.x = (p0.x + p1.x) * 0.5f;
+        mid.y = (p0.y + p1.y) * 0.5f;
+        mid.z = (p0.z + p1.z) * 0.5f;
+        if (player->obj.vehicle_frame >= 2) {
+            tub->c->obj.pos.x += (mid.x - tub->c->obj.pos.x) * 0.2f;
+            tub->c->obj.pos.y += (mid.y - tub->c->obj.pos.y) * 0.2f;
+            tub->c->obj.pos.z += (mid.z - tub->c->obj.pos.z) * 0.2f;
+        } else {
+            tub->c->obj.pos = mid;
+        }
+        yrot = yrot0 + RotDiff(yrot0, yrot1) / 2;
+        xrot = xrot0 + RotDiff(xrot0, xrot1) / 2;
+        NuVecSub(&p0, &p0, &tub->c->obj.pos);
+        NuVecSub(&p1, &p1, &tub->c->obj.pos);
+        ang = NuAtan2D(p1.x - p0.x, p1.z - p0.z);
+        NuVecRotateY(&p0, &p0, -ang);
+        NuVecRotateY(&p1, &p1, -ang);
+        ang = -NuAtan2D(p1.y - p0.y, p1.z - p0.z);
+        if (tub->count != 0 && tub->wait != 0) {
+            tub->c->obj.xrot = tub->old_xrot + RotDiff(tub->old_xrot, xrot) * (TUBWAIT - tub->wait) / TUBWAIT;
+            tub->c->obj.hdg = tub->old_yrot + RotDiff(tub->old_yrot, yrot) * (TUBWAIT - tub->wait) / TUBWAIT;
+            tub->c->obj.zrot = tub->old_zrot + RotDiff(tub->old_zrot, ang) * (TUBWAIT - tub->wait) / TUBWAIT;
+        } else {
+            tub->c->obj.hdg = yrot;
+            tub->c->obj.xrot = xrot;
+            tub->c->obj.zrot = ang;
+            tub->old_xrot = tub->c->obj.xrot;
+            tub->old_yrot = tub->c->obj.hdg;
+            tub->old_zrot = tub->c->obj.zrot;
+        }
+        spl = SplTab[63].spl;
+        if (spl != 0) {
+            a = (struct nuvec_s *)spl->pts;
+            b = (struct nuvec_s *)(spl->pts + spl->ptsize);
+            if (Level == 0x1C && race_finished == 0) {
+                start = TubLink[tub->track].start;
+                end = TubLink[tub->track].end;
+                if (end < start) {
+                    if ((tub->c->obj.pos.x - a->x) * (b->z - a->z) +
+                        (tub->c->obj.pos.z - a->z) * (a->x - b->x) >= 0.0f) {
+                        end = start + 1;
+                    } else {
+                        start = 0;
+                    }
+                }
+                tub->lap_position = start + (end - start) * ratio;
+            }
+            if (LineCrossed(tub->c->obj.oldpos.x, tub->c->obj.oldpos.z, tub->c->obj.pos.x,
+                            tub->c->obj.pos.z, a->x, a->z, b->x, b->z) != 0) {
+                tub->laps++;
+                if (tub->laps == MAXLAPS) {
+                    race_finished = 1;
+                    tub->finishframes = (tub->place == 1) ? 100 : 50;
+                }
+            }
+            if (tub->laps >= MAXLAPS && tub->finished < tub->finishframes) {
+                tub->finished++;
+            }
+        }
+    }
+    tub->c->obj.mom = v000;
+    if (is_player) {
+        VEHICLECONTROL = control;
+    }
 }
