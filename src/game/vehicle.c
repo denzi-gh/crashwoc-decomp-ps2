@@ -1537,9 +1537,9 @@ void InitRumblePanel(void)
     NumRockPanel = 0;
 }
 
-void AddRock(struct nuvec_s *pos, f32 radius, s32 owner)
+struct jeeprock_s *AddRock(struct nuvec_s *pos, f32 radius, s32 owner)
 {
-    AddRockVel(pos, &v000, radius, owner);
+    return AddRockVel(pos, &v000, radius, owner);
 }
 
 
