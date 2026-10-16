@@ -86,10 +86,13 @@ CI (docs/pipeline.md, "CI" section): `validate.yml` (structure, no game files, e
 - Prefer functions whose TU is a `.c` file. Several runtime routines (`strlen`, `memcpy`, …) are hand-written r5900 assembly in retail and can never match from C.
 - The original assembler accepts only numeric GPR names (`jr $31`, not `jr $ra`); `gen_slices.py` handles the rewrite.
 - Four static functions are duplicated across TUs and disambiguated as `NAME__<vram>`.
-- Data-from-C is not supported yet. For retail-owned globals, use `extern D_...`
-  symbols plus readable aliases; do not add file-scope C definitions that emit
-  `.data`, `.sdata`, `.rodata`, `.sbss`, or `.bss`. The canonical policy lives in
-  `docs/decomp_agent.md`.
+- Data-from-C: C defines a global only in a fully matching unit, for a
+  `data_symbols.toml` symbol of that unit, under its retail name and storage, in
+  `.rodata`/`.data`, listed under `[[data]]` in the manifest and promoted by
+  `tools/promote.py` (`--init-data`, then the data ids; `--complete` for the unit).
+  Everywhere else use `extern D_...` symbols plus readable aliases.
+  Compiler-private data, `.lit4`, `.sdata` and `.sbss`/`.bss` stay retail. The
+  canonical policy and the per-unit runbook live in `docs/decomp_agent.md`.
 
 ## Matching MCP / decomp-agent (Claude Code specifics)
 

@@ -59,9 +59,13 @@ iteration.
 Never record a blocker or end a session `BLOCKED_*` without first retrieving the
 target disassembly for the function (`get_disassembly`). "It didn't match from
 the reference" is not a blocker. A blocker is a *proven* pipeline limit visible
-in the disassembly or the compile output - e.g. the function owns a `.rodata`
-jump table (`compiler_owned_rodata`), or needs a `.lit8` double pool. Record
-those with the specific kind and evidence; keep iterating on everything else.
+in the disassembly or the compile output - e.g. an SN-`as` hazard nop the
+decompals `as` does not reproduce (`assembler_normalization`), or C data
+the pipeline cannot own yet (`bss_common`, `data_section_mismatch`). Jump
+tables, `.lit4`/`.lit8` constants and `li.d` GPR pools are supported (gen_hybrid
+borrows the retail slot; `config/pal103/compiler_knowledge.toml`) and are not
+blockers. Record a blocker with the specific kind and evidence; keep iterating
+on everything else.
 
 ## Canonical identifiers
 
@@ -187,33 +191,79 @@ and no existing byte gate is weakened.
 
 ### Data and global-symbol policy
 
-The current matching pipeline is function-first. It verifies C-generated `.text`
-for functions, but general Data-from-C is not supported yet.
+Retail data is owned per symbol. The data registry
+(`config/pal103/data_symbols.toml`: every named data symbol with its unit,
+section, `.symtab` size and, for the `sce` units, its STABS type) and the data
+map (`config/pal103/data_map.toml`: each unit's owned byte ranges) say what
+belongs to which unit; a unit's status manifest lists its symbols under
+`[[data]]` (`asm` | `matching` | `retail`).
 
-Until Data-from-C verification exists for a specific range:
+C defines a global only when all of this holds:
 
-- Do not define file-scope C globals in `src/**/*.c` if they emit `.data`,
-  `.sdata`, `.rodata`, `.sbss`, or `.bss`.
-- Reference retail-owned data with `extern D_...` symbols taken from the PS2
-  disassembly, `target-asm`, `asm/text.s`, or `config/pal103/symbol_addrs.txt`.
-- Give readable names with aliases, not C definitions:
+- the unit is fully matching (every `[[function]]` is `matching`);
+- it is a registry symbol of that unit, defined under its retail name and
+  storage: `static` where retail is static, `const` for `.rodata`, a function
+  static inside the function that references it;
+- its section is `.rodata` or `.data`;
+- `promote_matching` (tools/promote.py) verified it: its bytes over
+  `[addr, addr+size)` and its linked address equal retail.
+
+Everywhere else - partially matched units, `.sdata`, `.sbss`/`.bss`, COMMON -
+reference retail data with registered names or `extern D_...` symbols taken
+from the PS2 disassembly, `target-asm`, `asm/text.s` or
+`config/pal103/symbol_addrs.txt`, with readable aliases:
 
 ```c
 extern struct nulsthdr_s *D_006309FC;
 #define sceneinst_pool D_006309FC
 ```
-Do not replace that with a definition such as:
 
-```c
-static struct nulsthdr_s *sceneinst_pool;
-```
-If compile_diff reaches 100% but promote_matching fails with .data,
-.sdata, .sbss, .bss, or unhandled content after last function, treat
-that as unintended top-level C data. Remove the C data definition and use a
-retail extern D_... reference instead.
+Compiler-private data (`$LC` strings, jump tables, `li.d` pools) and the
+unit's `.lit4` pool stay borrowed retail slots until `data/private`; `.sdata`
+waits for `data/sdata`, `.sbss`/`.bss` for `data/bss`. A raw binary asset
+(a font bitmap) keeps its retail bytes with `state = "retail"` and a
+`reason`, set by hand like `equivalent`.
 
-Do not mark a unit complete = true while it owns data ranges unless
-Data-from-C verification supports that unit/range.
+If compile_diff reaches 100% but the hybrid build fails with "data section in
+compiler output not supported yet", a file-scope definition slipped into a
+unit without a `[[data]]` table: replace it with the extern form above
+(or, in a fully matching unit, do the data work below).
+
+`complete = true` is written only by `promote.py --complete <unit id>`, after
+the verifier proved: every function and data entry is done, the unit's data
+pieces carry no retail bytes beyond its `retail` entries and its `.lit4` pool,
+it borrows no compiler-private retail slot, and it owns no `.sbss`/`.bss`.
+
+### Per-unit data workflow
+
+Preconditions: every `[[function]]` of the unit is `matching`; the unit is in
+no open `decomp/*` PR or running batch, and no NuWorld `NW_HOST` PR touches it.
+
+0. Branch off an up-to-date `main`; `python tools/gen_ninja.py`; on the base,
+   `python tools/check_codegen.py --build --snapshot` (wait for it).
+1. `list_data_candidates` / `get_context <data id>`;
+   `python tools/promote.py --init-data src/<unit>.c` adds the `[[data]]` table.
+2. Types, in this order: STABS (the registry `type`) -> the shared headers and
+   the extern types the matched C compiles against -> GC DWARF names (only when
+   the size equals `.symtab`) -> otherwise stop (`missing_type_layout`).
+3. Initialisers: `python tools/dump_data.py <data id> [--type '<C type>']`
+   (`--probe` for a struct type, `--verify` to check float literals).
+4. Replace the `extern D_` + `#define` alias with the definition under the
+   retail name, in address order, `static` where retail is static, function
+   statics inside the function the code references them from, `const` for
+   `.rodata`; rename the alias's use sites inside the unit. Other units keep
+   their `extern`. Raw binary assets get `state = "retail"` + `reason` by hand.
+5. `compile_diff <data id>` until exact.
+6. `python tools/promote.py <data ids>` (run it in the background; it is long).
+7. If the unit qualifies, `python tools/promote.py --complete pal103:unit-NNNN`.
+8. `python tools/check_codegen.py --build --compare`: only this unit's objects
+   differ (data pieces; `.text` identical), 0 elsewhere; `ninja check`,
+   `status.py --check`, `check_types.py --check` (update the census if the
+   extern counts moved), unit tests, CRLF byte check.
+
+Order by section: `.rodata`, then `.data`. Never in this workflow:
+compiler-private data in partially matched units (it stays borrowed) and the
+`.lit4` pool (until `data/private`).
 
 ### Types and shared headers
 
