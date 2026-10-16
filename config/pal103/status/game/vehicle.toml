@@ -141,11 +141,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00209750:DrawGliderBullets"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00209990:ProcessGliderBullets"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00209c38:MovePlane"
@@ -153,7 +153,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00209dd0:FarmReset"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0020a118:ProcessFarmLevel"
@@ -161,15 +161,15 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0020a2f8:GliderCamWeatherBoss"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0020a658:GliderCam"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0020ae70:InitAsteroid"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0020b198:DrawAsteroid"
@@ -181,7 +181,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:0020b8a0:CheckForPotentialMidAirCollisions"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0020c498:SafeFromCollisions"
@@ -209,7 +209,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0020ded8:InitGunBoats"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0020e1d8:ProcessGunBoat"

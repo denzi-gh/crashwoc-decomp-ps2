@@ -157,7 +157,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0040:00127530:NuHGobjRndrAnimBlend"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:001279b0:NuRndrLine2d"
@@ -169,11 +169,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00127e70:ClipLinePoint"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00128138:NuRndrLine3d"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00128578:NuRndrTri2d"
@@ -185,11 +185,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00128a38:NuRndrTriStrip3d"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00128c48:NuRndrRect2di"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00128f40:NuRndrGradRect2di"
@@ -197,27 +197,27 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:001293c0:NuRndrRectUV2di"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:001296e8:NuRndrLine2di"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00129940:NuRndrLineRect2di"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00129ca0:NuRndrTri2di"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00129f68:NuRndrTriStrip2di"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012a218:NuRndrLineStrip2di"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012a4c8:NuRndrQuad2d"
