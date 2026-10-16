@@ -992,7 +992,7 @@ extern s32 bgloadlastcharacter;
 extern char *bgloadcharnames[];
 extern char *bgloadanimnames[];
 extern struct NUHGOBJ_s *bgloadchr[2];
-extern struct nuanimdata_s *bgloadanim[2];
+extern volatile struct nuanimdata_s *bgloadanim[2];
 
 extern void TimeTunnelInit(union variptr_u *buffer, union variptr_u *buffend);
 
@@ -2498,6 +2498,7 @@ extern s32 NuHGobjRndrMtxDwa(struct NUHGOBJ_s *hobj, struct numtx_s *m,
                            s32 nlayers, short *layers, struct numtx_s *tmtx,
                            float **dwa);
 
+
 void BGLoad(void)
 {
     struct numtx_s m[2];
@@ -2576,7 +2577,8 @@ void BGLoad(void)
     anim_step = 0.48f;
     fadeval = 0xff;
     fade_rate = -10;
-    fall_speed[0] = fall_speed[1] = 0.0f;
+    fall_speed[0] = 0.0f;
+    fall_speed[1] = 0.0f;
     bob_angle = 0;
     done = 0;
     NuVpSetSize(PS2_REZ_W << 4, PS2_REZ_H << 4);
@@ -2762,7 +2764,7 @@ void BGLoad(void)
                         fall_speed[character] = fall_speed[character] + fallrate < maxfallspd
                             ? fall_speed[character] + fallrate : maxfallspd;
                         if (fadeval == 0xff) {
-                            done = 1;
+                            done = phase != 0;
                         }
                         break;
                     }
@@ -2806,10 +2808,10 @@ bgload_render_characters:
                 done = bgload_complete;
             }
 
-            previous_fade = fadeval;
             if ((LDATA->flags & 0x40) != 0 && CrateMat == 0) {
                 fadecol = 0x80ffffff;
             } else {
+                previous_fade = fadeval;
                 fadeval += fade_rate;
                 if (fadeval > 0xff) {
                     fadeval = 0xff;

@@ -82,10 +82,11 @@ s32 NewRayCastSet(struct nuvec_s *vpos, struct nuvec_s *vvel, f32 size, f32 time
 s32 NewRayCastSetMask(struct nuvec_s *vpos, struct nuvec_s *vvel, f32 size, f32 timeadj, f32 impactadj, s32 platscan, s32 extramask);
 short *NewScanHandelFull(struct nuvec_s *vpos, struct nuvec_s *vvel, s32 platscan, s32 extramask, f32 size);
 short *NewScanHandelSubset(short *handel, struct nuvec_s *vpos, struct nuvec_s *vvel, s32 extramask, f32 size);
+void ScanTerrain(s32 platscan, s32 extramask);
 void ScanTerrainHandel(s32 extramask, short *Handel);
 s32 NewRayCastSetHandel(struct nuvec_s *vpos, struct nuvec_s *vvel, f32 size, f32 timeadj, f32 impactadj, short *handel);
 s32 TerrainTrackBack(struct nuvec_s *pos, struct nuvec_s *vel, struct nuvec_s *dest, f32 size, f32 timeadj);
-void ScanTerrainPlatform(s32 terrno, s32 extramask, s32 platscan);
+void ScanTerrainPlatform(s32 msituid, s32 extramask);
 s32 NewRayCastPlatForm(struct nuvec_s *vpos, struct nuvec_s *vvel, s32 platid, f32 size, f32 timeadj);
 
 #endif
