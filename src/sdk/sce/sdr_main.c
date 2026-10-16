@@ -8,10 +8,114 @@
  *   0x0026d148 sceSdRemote
  */
 
+#define SD_RPC_SERVER 0x80000701
+#define SD_BIND_WAIT 10000
+
+#define SD_SPU2_PROC_BATCH 0x8130
+#define SD_SPU2_PROC_BATCH_EX 0x8140
+#define SD_SET_TRANS_INTR_HANDLER 0x8160
+#define SD_SET_SPU2_INTR_HANDLER 0x8170
+
+#define SIF_RPCM_NOWAIT 1
+
+typedef char *va_list;
+#define va_start(ap, last) ((ap) = (va_list)__builtin_next_arg(last) - (__builtin_args_info(2) < 8 ? (8 - __builtin_args_info(2)) * 8 : 0))
+#define va_arg(ap, type) (*(type *)(((ap) += 8) - 8))
+#define va_end(ap)
+
 typedef int (*sceSdSpu2IntrHandler)(int core, void *common);
+typedef int (*sceSdTransIntrHandler)(int channel, void *common);
+
+typedef struct sceSifClientData {
+    unsigned char rpc_data[16];
+    unsigned int command;
+    void *buff;
+    void *cbuff;
+    void (*end_func)(void *);
+    void *end_param;
+    void *server;
+} sceSifClientData;
+
+typedef struct sceSifDmaData {
+    unsigned int data;
+    unsigned int addr;
+    unsigned int size;
+    unsigned int mode;
+} sceSifDmaData;
 
 extern sceSdSpu2IntrHandler D_00612418[];
+extern sceSdTransIntrHandler _sce_sdr_transIntr0Hdr;
+extern sceSdTransIntrHandler _sce_sdr_transIntr1Hdr;
+extern sceSdSpu2IntrHandler _sce_sdr_spu2IntrHdr;
+extern void *_sce_sdr_transIntr0Arg;
+extern void *_sce_sdr_transIntr1Arg;
+extern void *_sce_sdr_spu2IntrArg;
+extern sceSifDmaData D_00701740;
+extern int D_00701880[];
+extern sceSifClientData D_007018C0;
+
 #define sd_callback (D_00612418[0])
+#define sd_dma D_00701740
+#define sd_sbuff D_00701880
+#define sd_client D_007018C0
+
+extern int printf(const char *fmt, ...);
+extern void FlushCache(int mode);
+extern void sceSifInitRpc(unsigned int mode);
+extern int sceSifBindRpc(sceSifClientData *client, unsigned int request,
+                         unsigned int mode);
+extern int sceSifCallRpc(sceSifClientData *client, unsigned int fno,
+                         unsigned int mode, void *send, int ssize,
+                         void *receive, int rsize, void (*end_func)(void *),
+                         void *end_param);
+extern unsigned int sceSifSetDma(sceSifDmaData *sdd, int len);
+extern int sceSifDmaStat(unsigned int id);
+
+
+int sceSdRemoteInit(void)
+{
+    int wait;
+
+    sceSifInitRpc(0);
+    while (1) {
+        if (sceSifBindRpc(&sd_client, SD_RPC_SERVER, 0) < 0) {
+            printf("sceSdRemoteInit() RPC bind error!\n");
+            return -1;
+        }
+        wait = SD_BIND_WAIT;
+        while (wait--) {
+        }
+        if (sd_client.server != 0) {
+            break;
+        }
+    }
+    FlushCache(0);
+    return 0;
+}
+
+
+int sceSdTransToIOP(void *buff, unsigned int sendAddr, unsigned int size, unsigned int isBlock)
+{
+    unsigned int did;
+
+    if (isBlock == 0) {
+        return -1;
+    }
+    sd_dma.data = (unsigned int)buff;
+    sd_dma.addr = sendAddr;
+    sd_dma.size = size;
+    sd_dma.mode = 0;
+    did = sceSifSetDma(&sd_dma, 1);
+    if (did == 0) {
+        return -1;
+    }
+    if (isBlock == 1) {
+        while (sceSifDmaStat(did) >= 0) {
+        }
+    }
+    return 0;
+}
+
 
 /* Install the SPU2 interrupt callback; returns the previous one. */
 sceSdSpu2IntrHandler sceSdCallBack(sceSdSpu2IntrHandler func)
@@ -21,4 +125,60 @@ sceSdSpu2IntrHandler sceSdCallBack(sceSdSpu2IntrHandler func)
     old = sd_callback;
     sd_callback = func;
     return old;
+}
+
+
+int sceSdRemote(int arg, ...)
+{
+    va_list ap;
+    unsigned int command;
+    unsigned int mode;
+    sceSdSpu2IntrHandler func;
+    int i;
+    int ret;
+    int reply[4];
+
+    func = 0;
+    sd_sbuff[0] = (int)sd_sbuff;
+    va_start(ap, arg);
+    command = va_arg(ap, unsigned int);
+    for (i = 1; i < 7; i++) {
+        sd_sbuff[i] = va_arg(ap, int);
+    }
+    va_end(ap);
+
+    mode = 0;
+    if (arg == 0) {
+        mode = SIF_RPCM_NOWAIT;
+        func = sd_callback;
+    }
+
+    if (command == SD_SET_TRANS_INTR_HANDLER) {
+        if (sd_sbuff[1] == 0) {
+            _sce_sdr_transIntr0Hdr = (sceSdTransIntrHandler)sd_sbuff[2];
+            _sce_sdr_transIntr0Arg = (void *)sd_sbuff[3];
+        } else {
+            _sce_sdr_transIntr1Hdr = (sceSdTransIntrHandler)sd_sbuff[2];
+            _sce_sdr_transIntr1Arg = (void *)sd_sbuff[3];
+        }
+    } else if (command == SD_SET_SPU2_INTR_HANDLER) {
+        _sce_sdr_spu2IntrHdr = (sceSdSpu2IntrHandler)sd_sbuff[1];
+        _sce_sdr_spu2IntrArg = (void *)sd_sbuff[2];
+    }
+
+    if (command == SD_SPU2_PROC_BATCH) {
+        sceSifCallRpc(&sd_client, sd_sbuff[1] | SD_SPU2_PROC_BATCH, mode,
+                      (void *)sd_sbuff[2], 64, 0, 0,
+                      (void (*)(void *))func, (void *)sd_sbuff[0]);
+        ret = sd_sbuff[0];
+    } else if (command == SD_SPU2_PROC_BATCH_EX) {
+        sceSifCallRpc(&sd_client, sd_sbuff[1] | SD_SPU2_PROC_BATCH_EX, mode,
+                      sd_sbuff, 64, (void *)sd_sbuff[2], 64,
+                      (void (*)(void *))func, (void *)sd_sbuff[2]);
+    } else {
+        sceSifCallRpc(&sd_client, command, mode, sd_sbuff, 64, sd_sbuff, 16,
+                      (void (*)(void *))func, sd_sbuff);
+        ret = sd_sbuff[0];
+    }
+    return ret;
 }

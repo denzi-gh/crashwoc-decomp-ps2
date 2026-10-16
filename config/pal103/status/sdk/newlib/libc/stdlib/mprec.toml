@@ -41,7 +41,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0236:00277890:_multiply"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0236:00277ac0:_pow5mult"
@@ -49,7 +49,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0236:00277bc0:_lshift"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0236:00277d38:__mcmp"
@@ -57,7 +57,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0236:00277da0:__mdiff"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0236:00277f30:_ulp"
@@ -65,11 +65,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0236:00277fc8:_b2d"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0236:00278148:_d2b"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0236:002782c8:_ratio"

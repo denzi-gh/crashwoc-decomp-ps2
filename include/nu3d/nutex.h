@@ -41,6 +41,29 @@ struct nutexslot_s {
     u8 pad0D0[0x10];                  /* 0xD0 */
 }; /* 0xE0 */
 
+typedef struct BmpFileHeader {
+    u16 pad;                          /* 0x00 */
+    u16 type;                         /* 0x02 */
+    int size;                         /* 0x04 */
+    u16 reserved1;                    /* 0x08 */
+    u16 reserved2;                    /* 0x0A */
+    int offbits;                      /* 0x0C */
+} BmpFileHeader; /* 0x10 */
+
+typedef struct BmpInfoHeader {
+    int size;                         /* 0x00 */
+    u32 width;                        /* 0x04 */
+    u32 height;                       /* 0x08 */
+    u16 planes;                       /* 0x0C */
+    u16 bitcount;                     /* 0x0E */
+    int compression;                  /* 0x10 */
+    int imagesize;                    /* 0x14 */
+    int xppm;                         /* 0x18 */
+    int yppm;                         /* 0x1C */
+    int clrused;                      /* 0x20 */
+    int clrimportant;                 /* 0x24 */
+} BmpInfoHeader; /* 0x28 */
+
 struct numtl_s;
 struct nurndrstream_s;
 union variptr_u;

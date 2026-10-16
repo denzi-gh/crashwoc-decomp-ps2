@@ -37,7 +37,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0060:00169870:NuPs2VideoScreenDump"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0060:00169e90:NuPs2ScreenSwap"
@@ -153,7 +153,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0060:0016a988:NuPs2GrabScreen"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0060:0016aae0:NuPs2EnableAutoScreenSwap"
@@ -277,7 +277,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0060:0016b518:NuPs2FlushVRam"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0060:0016b690:GenerateGammaTable"

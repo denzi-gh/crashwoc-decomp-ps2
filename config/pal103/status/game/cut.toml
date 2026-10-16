@@ -17,7 +17,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0121:0025ba88:LoadCutComponents"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0121:0025bd98:LoadCutMovie"
@@ -37,7 +37,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0121:0025c368:PlayCutMovie"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0121:0025c8c0:InitGameCut"
@@ -49,7 +49,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0121:0025ce20:DrawGameCut"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0121:0025d0d0:GetSpaceCut"
@@ -57,7 +57,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0121:0025d4e0:SetCutSceneLights"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0121:0025e598:InitCutScenes"

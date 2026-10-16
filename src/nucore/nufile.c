@@ -118,8 +118,8 @@ struct nudathdr_s {
     int fh;                       /* 0x20 */
     short intalloc;               /* 0x24 */
     short openmode;               /* 0x26 */
-    int start_lsn;                /* 0x28 */
-}; /* 0x2c */
+    int data[0];                  /* 0x28 */
+}; /* 0x28 */
 
 struct filebuff_s {
     struct fileinfo_s * info;    /* 0x00 */
@@ -830,42 +830,6 @@ extern char *NuStrStr(char *text, char *pattern);
 extern int NuStrLen(char *text);
 
 
-int NuDatFileFindTree(struct nudathdr_s *ndh, char *fname)
-{
-    char path[256];
-    char *name;
-    char *sep;
-    int node;
-
-    NuStrCpy(path, fname);
-    name = path;
-    node = 1;
-    sep = NuStrStr(path, path_sep);
-    if (sep != 0) {
-        *sep = 0;
-    }
-    do {
-        if (strcasecmp(ndh->filetree[node].txt, name) == 0) {
-            if (sep == 0) {
-                if (ndh->filetree[node].childix > 0) {
-                    return -1;
-                }
-                return -ndh->filetree[node].childix;
-            }
-            name = sep + 1;
-            node = ndh->filetree[node].childix;
-            sep = NuStrStr(name, path_sep);
-            if (sep != 0) {
-                *sep = 0;
-            }
-        } else {
-            node = ndh->filetree[node].sibix;
-        }
-    } while (node != 0);
-    return -1;
-}
-
-
 extern char D_006134B0[];
 #define nufile_file             D_006134B0
 
@@ -1146,6 +1110,83 @@ int NuFileSize(char *fname)
 }
 
 
+inline int NuDatFileFindTree(struct nudathdr_s *ndh, char *fname)
+{
+    char path[256];
+    char *name;
+    char *sep;
+    int node;
+
+    NuStrCpy(path, fname);
+    name = path;
+    node = 1;
+    sep = NuStrStr(path, path_sep);
+    if (sep != 0) {
+        *sep = 0;
+    }
+    do {
+        if (strcasecmp(ndh->filetree[node].txt, name) == 0) {
+            if (sep == 0) {
+                if (ndh->filetree[node].childix <= 0) {
+                    return -ndh->filetree[node].childix;
+                }
+                return -1;
+            }
+            name = sep + 1;
+            node = ndh->filetree[node].childix;
+            sep = NuStrStr(name, path_sep);
+            if (sep != 0) {
+                *sep = 0;
+            }
+        } else {
+            node = ndh->filetree[node].sibix;
+        }
+    } while (node != 0);
+    return -1;
+}
+
+
+extern char D_006138E0[];
+#define msg_datfile_seek_retry  D_006138E0
+
+
+int NuDatFileOpen(struct nudathdr_s *ndh, char *fname, enum nufilemode_e mode)
+{
+    int i;
+    int ix;
+    int pos;
+    int fh;
+
+    if (mode != NUFILE_READ || ndh->dfhandle != 0) {
+        return 0;
+    }
+    for (i = 0; i < 20; i++) {
+        if (datfiles[i].used == 0) {
+            ix = NuDatFileFindTree(ndh, fname);
+            if (ix < 0) {
+                break;
+            }
+            datfiles[i].ndh = ndh;
+            datfiles[i].start = ndh->finfo[ix].foffset;
+            datfiles[i].len = ndh->finfo[ix].flen;
+            datfiles[i].uplen = ndh->finfo[ix].uplen;
+            datfiles[i].ppack = ndh->finfo[ix].ppack;
+            do {
+                pos = NuFileSeek(ndh->fh, ndh->finfo[ix].foffset, 0);
+                if (pos < 0) {
+                    NuDebugMsgProlog(nufile_file, 0x685)(msg_datfile_seek_retry);
+                }
+            } while (pos < 0);
+            fh = i + 0x800;
+            datfiles[i].used = 1;
+            ndh->dfhandle = fh;
+            return fh;
+        }
+    }
+    return 0;
+}
+
+
 void* NuMemAllocFn(int size, char * file, int line);
 void NuMemFileClose(int fh);
 
@@ -1381,6 +1422,97 @@ int NuDatFileLoadBuffer(struct nudathdr_s *ndh, char *fname, void *dest, int max
         }
     }
     NuFileClose(fh);
+    return 0;
+}
+
+
+extern char D_00613918[];
+extern char D_00613948[];
+#define msg_datopen_read_retry  D_00613918
+#define msg_datopen_seek_retry  D_00613948
+
+
+struct nudathdr_s *NuDatOpenEx(char *fname, char **mem, int *used, short mode)
+{
+    int saved_buffering;
+    int fh;
+    int hdr[2];
+    int size;
+    struct nudathdr_s *ndh;
+    int *data;
+    int i;
+
+    saved_buffering = nufile_buffering_enabled;
+    fh = NuFileOpen(fname, mode);
+    if (fh != 0) {
+        if (mode == NUFILE_READ_NOWAIT) {
+            while (NuFileStatus(fh) != 0) {
+            }
+        }
+        while (NuFileRead(fh, hdr, sizeof(hdr)) < 0) {
+            NuDebugMsgProlog(nufile_file, 0x702)(msg_datopen_read_retry);
+            while (NuFileSeek(fh, 0, 0) < 0) {
+                NuDebugMsgProlog(nufile_file, 0x704)(msg_datopen_seek_retry);
+            }
+        }
+        if (mode == NUFILE_READ_NOWAIT) {
+            while (NuFileStatus(fh) != 0) {
+            }
+        }
+        while (NuFileSeek(fh, hdr[0], 0) < 0) {
+            NuDebugMsgProlog(nufile_file, 0x70A)(msg_datopen_seek_retry);
+        }
+        if (mode == NUFILE_READ_NOWAIT) {
+            while (NuFileStatus(fh) != 0) {
+            }
+        }
+        size = hdr[1] + sizeof(struct nudathdr_s);
+        if (mem != 0) {
+            ndh = (struct nudathdr_s *)*mem;
+            *mem = (char *)ndh + size;
+            if (used != 0) {
+                *used = size;
+            }
+            ndh->intalloc = 0;
+        } else {
+            ndh = NuMemAllocFn(size, nufile_file, 0x717);
+            ndh->intalloc = 1;
+        }
+        if (ndh != 0) {
+            data = ndh->data;
+            while (NuFileRead(fh, data, hdr[1]) < 0) {
+                NuDebugMsgProlog(nufile_file, 0x71D)(msg_datopen_read_retry);
+                while (NuFileSeek(fh, hdr[0], 0) < 0) {
+                    NuDebugMsgProlog(nufile_file, 0x71F)(msg_datopen_seek_retry);
+                }
+            }
+            if (mode == NUFILE_READ_NOWAIT) {
+                while (NuFileStatus(fh) != 0) {
+                }
+            }
+            ndh->ver = data[0];
+            ndh->nfiles = data[1];
+            data += 2;
+            ndh->finfo = (struct NUDATFINFO_s *)data;
+            data += ndh->nfiles * 4;
+            ndh->treecnt = *data++;
+            ndh->filetree = (struct NUDFNODE_s *)data;
+            data += ndh->treecnt * 2;
+            ndh->leafnamesize = *data++;
+            ndh->leafnames = (char *)data;
+            for (i = 0; i < ndh->treecnt; i++) {
+                ndh->filetree[i].txt += (int)data;
+            }
+            ndh->filetree[0].txt = 0;
+            ndh->fh = fh;
+            ndh->openmode = mode;
+            ndh->dfhandle = 0;
+            nufile_buffering_enabled = saved_buffering;
+            return ndh;
+        }
+        NuFileClose(fh);
+    }
+    nufile_buffering_enabled = saved_buffering;
     return 0;
 }
 

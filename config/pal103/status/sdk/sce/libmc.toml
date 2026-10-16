@@ -105,7 +105,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0150:002680d8:sceMcRename"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0150:00268240:sceMcUnformat"
@@ -113,4 +113,4 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0150:00268308:sceMcGetEntSpace"
-state = "asm"
+state = "matching"

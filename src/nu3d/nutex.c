@@ -109,29 +109,6 @@ typedef struct NuTexNativeMip {
     int pad;
 } NuTexNativeMip;
 
-typedef struct BmpFileHeader {
-    u16 pad;
-    u16 type;
-    int size;
-    u16 reserved1;
-    u16 reserved2;
-    int offbits;
-} BmpFileHeader;
-
-typedef struct BmpInfoHeader {
-    int size;
-    u32 width;
-    u32 height;
-    u16 planes;
-    u16 bitcount;
-    int compression;
-    int imagesize;
-    int xppm;
-    int yppm;
-    int clrused;
-    int clrimportant;
-} BmpInfoHeader;
-
 typedef union BmpColour {
     u32 value;
     struct {

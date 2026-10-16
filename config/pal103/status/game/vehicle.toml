@@ -65,11 +65,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00205548:FindZoffaRestartPoint"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:002056d8:ZoffaSmoke"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00205978:TeleportManager"
@@ -85,7 +85,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:002070d0:InitHova"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:002072f0:InitialiseHovaBlimps"
@@ -93,7 +93,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00207488:ProcessHovaBlimp"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00207858:ProcessAllHovaBlimps"
@@ -101,7 +101,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00207998:DrawAllHovaBlimps"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00207ca8:ProcessSatellite"
@@ -109,7 +109,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00207e60:InitSpaceStation"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:002081a0:InitSpaceStations"
@@ -121,7 +121,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:002084a0:ProcessSpaceStation"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00208a28:AddGliderBullet"
@@ -129,15 +129,15 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00208bf0:CollideGliderBullets"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:002091b0:GliderBulletsHitThings"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00209528:GliderBombsHitThings"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00209750:DrawGliderBullets"

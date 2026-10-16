@@ -17,11 +17,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0104:002353a8:edwmpDRAW"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0104:00235830:edwmpDoInput"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0104:00235d88:edwmpProc"

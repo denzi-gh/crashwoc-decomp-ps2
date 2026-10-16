@@ -1847,562 +1847,562 @@ int main(int argc, char** argv) {
         NuDisableVBlank();
         NuStrCpy(load_txt, D_0062FC50);
         NuEnableVBlank();
+next_game_mode:
+        NuSoundUpdate();
+        if (((Cursor.menu != 0x11) && (game_music != LDATA->music[0])) && ((GameMode != 1 || (gamecut != 0)))) {
+            GameMusic(LDATA->music[0], 0);
+        }
+        InitCrateExplosions();
+        if (Bonus != 4) {
+            ResetBonus();
+        }
+        ResetDeath();
+        ResetCrates();
+        ResetGemPath();
+        ResetWumpa();
+        NuSoundUpdate();
+        ResetChases();
+        ResetPlayerEvents();
+        ResetGates();
+        ResetRings();
+        ResetMaskFeathers();
+        ResetTimeTrial();
+        ResetAI();
+        NuSoundUpdate();
+        InitGameMode();
+        ResetBug();
+        ResetLevel();
+        ResetVehicleControl(player->obj.RPos.iRAIL, player->obj.RPos.iALONG, player->obj.RPos.fALONG);
+        InitDeb3();
+        NuSoundUpdate();
+        ResetProjectiles();
+        pause_dir = 0;
+        Paused = 0;
+        ResetPanelDebris();
+        if (Pad[0] != 0) {
+            NuPs2PadSetMotors(Pad[0], 0, 0);
+        }
+        if (Pad[1] != 0) {
+            NuPs2PadSetMotors(Pad[1], 0, 0);
+        }
+        ResetGameSfx();
+        player_dying = 0;
+        vtog_time = vtog_duration = 0;
+        ResetGameCameras(GameCam, 1);
+        in_finish_range = 0;
+        ResetAwards();
+        NuSoundUpdate();
+        NuRndrSwapStreamBuffers();
+        (void)nuvideo_global_vbcnt;
+        fade_rate = -10;
+        frameout = 0;
+        frameout_count = nuvideo_global_vbcnt;
+        initial_vblank = frameout_count;
         do {
-            NuSoundUpdate();
-            if (((Cursor.menu != 0x11) && (game_music != LDATA->music[0])) && ((GameMode != 1 || (gamecut != 0)))) {
-                GameMusic(LDATA->music[0], 0);
+        } while (initial_vblank == nuvideo_global_vbcnt);
+        frameout_count = nuvideo_global_vbcnt;
+        half = 0.5f;
+        pause_frameout_grace = 0;
+        frameout = 0;
+        while (((new_mode == -1) && (new_level == -1)) || fadeval < 0xff || (fadehack != 0)) {
+            tbslotBeginFn(app_tbset, 0);
+            FRAMES = frameout + 1;
+            if (((FixFrameRate != 0) || (pad_record != 0)) || (pad_play != 0)) {
+                FRAMES = 1;
             }
-            InitCrateExplosions();
-            if (Bonus != 4) {
-                ResetBonus();
-            }
-            ResetDeath();
-            ResetCrates();
-            ResetGemPath();
-            ResetWumpa();
-            NuSoundUpdate();
-            ResetChases();
-            ResetPlayerEvents();
-            ResetGates();
-            ResetRings();
-            ResetMaskFeathers();
-            ResetTimeTrial();
-            ResetAI();
-            NuSoundUpdate();
-            InitGameMode();
-            ResetBug();
-            ResetLevel();
-            ResetVehicleControl(player->obj.RPos.iRAIL, player->obj.RPos.iALONG, player->obj.RPos.fALONG);
-            InitDeb3();
-            NuSoundUpdate();
-            ResetProjectiles();
-            pause_dir = 0;
-            Paused = 0;
-            ResetPanelDebris();
-            if (Pad[0] != 0) {
-                NuPs2PadSetMotors(Pad[0], 0, 0);
-            }
-            if (Pad[1] != 0) {
-                NuPs2PadSetMotors(Pad[1], 0, 0);
-            }
-            ResetGameSfx();
-            player_dying = 0;
-            vtog_time = vtog_duration = 0;
-            ResetGameCameras(GameCam, 1);
-            in_finish_range = 0;
-            ResetAwards();
-            NuSoundUpdate();
-            NuRndrSwapStreamBuffers();
-            (void)nuvideo_global_vbcnt;
-            fade_rate = -10;
-            frameout = 0;
-            frameout_count = nuvideo_global_vbcnt;
-            initial_vblank = frameout_count;
-            do {
-            } while (initial_vblank == nuvideo_global_vbcnt);
-            frameout_count = nuvideo_global_vbcnt;
-            half = 0.5f;
-            pause_frameout_grace = 0;
-            frameout = 0;
-            while (((new_mode == -1) && (new_level == -1)) || fadeval < 0xff || (fadehack != 0)) {
-                tbslotBeginFn(app_tbset, 0);
-                FRAMES = frameout + 1;
-                if (((FixFrameRate != 0) || (pad_record != 0)) || (pad_play != 0)) {
-                    FRAMES = 1;
+            plr = player;
+            for (FRAME = 0; FRAME < FRAMES; FRAME++) {
+                if (FRAME < FRAMES - 1) {
+                    tbslotReset(0, 0xf);
+                    tbslotBeginExFn(0, 0xf, frmtmr_str);
                 }
-                plr = player;
-                for (FRAME = 0; FRAME < FRAMES; FRAME++) {
-                    if (FRAME < FRAMES - 1) {
-                        tbslotReset(0, 0xf);
-                        tbslotBeginExFn(0, 0xf, frmtmr_str);
+
+                if (FRAME == 0) {
+                    tbslotBeginFn(app_tbset, 1);
+                }
+
+                ProcessGlass(Paused);
+                NuRndrShadowOnOff(COMPLEXPLAYERSHADOW);
+
+                if (149U < GameTimer.frame) {
+                    if (((GlobalTimer.frame % 50 == 25) && (fadeval == 0))
+                        && ((NuSoundKeyStatus(0) != 1) || (NuSoundKeyStatus(1) != 1))
+                        && (Bonus != 1 && (Bonus != 3)))
+                    {
+                        GameMusic(game_music, 0);
+                    }
+                }
+
+                if (mg_wumpatot != 0) {
+                    mg_wumpatot--;
+                    plr_wumpas.count = plr_wumpas.count + 1;
+                }
+
+                DoInput();
+                if ((Demo != 0) && ((pad_play != 0) && (NuPs2PadDemoEnd() != 0) || (60.0f <= GameTimer.ftime) || ((Level == 12) && (GameTimer.frame >= 2100U)))) {
+                    new_level = 0x23;
+                }
+
+                UpdateGameSfx();
+                NuSoundUpdate();
+
+                if (editor_active != 0) {
+                    if (edmainProcess(Pad[0], 0.016666668f) == 1) {
+                        editor_active = 0;
+                        Pad[0]->oldpaddata = Pad[0]->paddata = 0;
+                    }
+                    if ((LDATA->flags & 8) != 0) {
+                        TerrainPlatformOldUpdate();
+                    }
+                    NuGScnUpdate(world_scene[0], 1.0f);
+                    edobjUpdateObjects(1.0f);
+                    edanimUpdateObjects(1.0f);
+                    NuBridgeUpdate(&Character[0].obj.pos.x);
+                    NuWindUpdate(&Character[0].obj.pos.x);
+
+                    if (NODEBRIS == 0) {
+                        Debris(0);
                     }
 
-                    if (FRAME == 0) {
-                        tbslotBeginFn(app_tbset, 1);
+                    if ((LDATA->flags & 8) != 0) {
+                        TerrainPlatformNewUpdate();
                     }
-
-                    ProcessGlass(Paused);
-                    NuRndrShadowOnOff(COMPLEXPLAYERSHADOW);
-
-                    if (149U < GameTimer.frame) {
-                        if (((GlobalTimer.frame % 50 == 25) && (fadeval == 0))
-                            && ((NuSoundKeyStatus(0) != 1) || (NuSoundKeyStatus(1) != 1))
-                            && (Bonus != 1 && (Bonus != 3)))
-                        {
-                            GameMusic(game_music, 0);
+                    LightEverythingInEditor();
+                } else {
+                    if (Paused != 0) {
+                        if (Pad[0] != 0) {
+                            NuPs2PadSetMotors(Pad[0], pausebuzz != 0, 0);
                         }
-                    }
-
-                    if (mg_wumpatot != 0) {
-                        mg_wumpatot--;
-                        plr_wumpas.count = plr_wumpas.count + 1;
-                    }
-
-                    DoInput();
-                    if ((Demo != 0) && ((pad_play != 0) && (NuPs2PadDemoEnd() != 0) || (60.0f <= GameTimer.ftime) || ((Level == 12) && (GameTimer.frame >= 2100U)))) {
-                        new_level = 0x23;
-                    }
-
-                    UpdateGameSfx();
-                    NuSoundUpdate();
-
-                    if (editor_active != 0) {
-                        if (edmainProcess(Pad[0], 0.016666668f) == 1) {
-                            editor_active = 0;
-                            Pad[0]->oldpaddata = Pad[0]->paddata = 0;
+                        if (Pad[1] != 0) {
+                            NuPs2PadSetMotors(Pad[1], 0, 0);
                         }
+                        pNuCam->mtx = GameCam[0].m;
+                        NuCameraSet(pNuCam);
+                        if ((Pad[0] != 0) && ((Pad[0]->oldpaddata & 0xa0) != 0)) {
+                            pausestats_frame = (pausestats_frame + 150) - (pausestats_frame % 150U);
+                            GameSfx(0x36, 0);
+                        }
+                    } else {
+                        mask_crates = 0;
+                        crate_wumpa = 0;
+                        RotateDirectionalLight(ldir, -0x2000, ((int)GameTimer.frame % 400U << 0x10) / 400U);
+
+                        for (phase_value = 0; phase_value <= 8; phase_value++) {
+                            Character[phase_value].anim_processed = 0;
+                        }
+
+                        SetLevelLights();
+                        SetTexAnimSignals();
                         if ((LDATA->flags & 8) != 0) {
                             TerrainPlatformOldUpdate();
                         }
-                        NuGScnUpdate(world_scene[0], 1.0f);
+                        if (world_scene[0] != 0) {
+                            NuGScnUpdate(world_scene[0], 1.0f);
+                        }
                         edobjUpdateObjects(1.0f);
                         edanimUpdateObjects(1.0f);
+                        NuRndrWaterRippleUpdate(1);
                         NuBridgeUpdate(&Character[0].obj.pos.x);
                         NuWindUpdate(&Character[0].obj.pos.x);
-
-                        if (NODEBRIS == 0) {
-                            Debris(0);
-                        }
-
                         if ((LDATA->flags & 8) != 0) {
                             TerrainPlatformNewUpdate();
                         }
-                        LightEverythingInEditor();
-                    } else {
-                        if (Paused != 0) {
-                            if (Pad[0] != 0) {
-                                NuPs2PadSetMotors(Pad[0], pausebuzz != 0, 0);
+                        if ((LDATA->flags & 1) != 0) {
+                            if (FRAME == 0) {
+                                tbslotBeginFn(app_tbset, 5);
                             }
-                            if (Pad[1] != 0) {
-                                NuPs2PadSetMotors(Pad[1], 0, 0);
+                            ManageCreatures();
+                            ProcessCreatures();
+                            if (FRAME == 0) {
+                                tbslotEndFn(app_tbset, 5);
                             }
-                            pNuCam->mtx = GameCam[0].m;
-                            NuCameraSet(pNuCam);
-                            if ((Pad[0] != 0) && ((Pad[0]->oldpaddata & 0xa0) != 0)) {
-                                pausestats_frame = (pausestats_frame + 150) - (pausestats_frame % 150);
-                                GameSfx(0x36, 0);
+                        }
+                        if (Cursor.menu == 0x11) {
+                            UpdateCutMovie();
+                        }
+                        if (level_part_2 == 0) {
+                            UpdateLevel();
+                            UpdateKabooms();
+                            UpdateWumpa();
+                            UpdateCrates();
+                            UpdateMaskFeathers();
+                            UpdateCrateExplosions();
+                            UpdateChases();
+                            UpdateProjectiles();
+                            UpdateBugLight(plr);
+                            UpdateGameCut();
+                        }
+                        if (FRAME == 0) {
+                            tbslotBeginFn(app_tbset, 2);
+                        }
+                        ProcessVehicleLevel(Pad[0]);
+                        if (FRAME == 0) {
+                            tbslotEndFn(app_tbset, 2);
+                        }
+                        ProcDeb3();
+
+                        if ((NODEBRIS == 0)) {
+                            Debris(0);
+                            if ((GLASSPLAYER == 0 || !(plr_invisibility_time < 5.0f))) {
+                                pos.x = (player->obj).pos.x;
+                                pos.y = (player->obj).pos.y + ((player->obj).bot + (player->obj).top) * (player->obj).SCALE * half;
+                                pos.z = (player->obj).pos.z;
+                                timing_or_collision_result = DebrisCollisionCheck(&pos, player->obj.RADIUS);
+                                if (timing_or_collision_result != -1) {
+                                    KillPlayer(&player->obj, 0x14);
+                                }
                             }
+                        }
+                        NuMtlAnimate(0.02f);
+                        UpdateTempCharacter();
+                        UpdateAwards();
+                        MoveGameCamera(GameCam, &plr->obj);
+                        if (PLAYERCOUNT != 0) {
+                            NuRndrSetSpecularLight(&((player->lights).pDir1st)->Direction, 0);
                         } else {
-                            mask_crates = 0;
-                            crate_wumpa = 0;
-                            RotateDirectionalLight(ldir, -0x2000, ((int)GameTimer.frame % 400U << 0x10) / 400U);
-
-                            for (phase_value = 0; phase_value <= 8; phase_value++) {
-                                Character[phase_value].anim_processed = 0;
-                            }
-
-                            SetLevelLights();
-                            SetTexAnimSignals();
-                            if ((LDATA->flags & 8) != 0) {
-                                TerrainPlatformOldUpdate();
-                            }
-                            if (world_scene[0] != 0) {
-                                NuGScnUpdate(world_scene[0], 1.0f);
-                            }
-                            edobjUpdateObjects(1.0f);
-                            edanimUpdateObjects(1.0f);
-                            NuRndrWaterRippleUpdate(1);
-                            NuBridgeUpdate(&Character[0].obj.pos.x);
-                            NuWindUpdate(&Character[0].obj.pos.x);
-                            if ((LDATA->flags & 8) != 0) {
-                                TerrainPlatformNewUpdate();
-                            }
-                            if ((LDATA->flags & 1) != 0) {
-                                if (FRAME == 0) {
-                                    tbslotBeginFn(app_tbset, 5);
-                                }
-                                ManageCreatures();
-                                ProcessCreatures();
-                                if (FRAME == 0) {
-                                    tbslotEndFn(app_tbset, 5);
-                                }
-                            }
-                            if (Cursor.menu == 0x11) {
-                                UpdateCutMovie();
-                            }
-                            if (level_part_2 == 0) {
-                                UpdateLevel();
-                                UpdateKabooms();
-                                UpdateWumpa();
-                                UpdateCrates();
-                                UpdateMaskFeathers();
-                                UpdateCrateExplosions();
-                                UpdateChases();
-                                UpdateProjectiles();
-                                UpdateBugLight(plr);
-                                UpdateGameCut();
-                            }
-                            if (FRAME == 0) {
-                                tbslotBeginFn(app_tbset, 2);
-                            }
-                            ProcessVehicleLevel(Pad[0]);
-                            if (FRAME == 0) {
-                                tbslotEndFn(app_tbset, 2);
-                            }
-                            ProcDeb3();
-
-                            if ((NODEBRIS == 0)) {
-                                Debris(0);
-                                if ((GLASSPLAYER == 0 || !(plr_invisibility_time < 5.0f))) {
-                                    pos.x = (player->obj).pos.x;
-                                    pos.y = (player->obj).pos.y + ((player->obj).bot + (player->obj).top) * (player->obj).SCALE * half;
-                                    pos.z = (player->obj).pos.z;
-                                    timing_or_collision_result = DebrisCollisionCheck(&pos, player->obj.RADIUS);
-                                    if (timing_or_collision_result != -1) {
-                                        KillPlayer(&player->obj, 0x14);
-                                    }
-                                }
-                            }
-                            NuMtlAnimate(0.02f);
-                            UpdateTempCharacter();
-                            UpdateAwards();
-                            MoveGameCamera(GameCam, &plr->obj);
-                            if (PLAYERCOUNT != 0) {
-                                NuRndrSetSpecularLight(&((player->lights).pDir1st)->Direction, 0);
-                            } else {
-                                NuRndrSetSpecularLight(ldir, 0);
-                            }
-                            UpdateScreenWumpas();
-                            if (PLAYERCOUNT != 0) {
-                                UpdatePlayerStats(plr);
-                            }
-                            UpdatePanelDebris();
+                            NuRndrSetSpecularLight(ldir, 0);
                         }
-                    }
-                    if ((FRAME == FRAMES - 1) && (pause_rndr_on == 0)) {
-                        AddBugLight(plr);
-                    }
-                    GameTiming();
-                    ProcMenu(&Cursor, Pad[0]);
-                    previous_fade = fadeval;
-                    fadeval += fade_rate;
-                    if (fadeval >= 0x100) {
-                        fadeval = 0xff;
-                    } else if (fadeval < 0) {
-                        fadeval = 0;
-                    }
-
-                    if ((previous_fade < 0xff) && (fadeval == 0xff)) {
-                        fadehack = 1;
-                    } else if (fadehack != 0) {
-                        fadehack--;
-                    }
-
-                    if ((fadeval == 0) || (fadeval == 0xff)) {
-                        fade_rate = 0;
-                    }
-
-                    fadecol = fadeval | fadeval << 8 | fadeval << 0x10 | 0x80000000;
-                    if ((Level == 2) && (VEHICLECONTROL != 1)) {
-                        NuLightFog(4.0f, 16.0f, 0x40000000, BLUR, 0);
-                    } else {
-                        NuLightFog(
-                            LDATA->fognear, LDATA->fogfar,
-                            LDATA->foga << 0x18 | LDATA->fogb << 0x10 | LDATA->fogg << 8 | LDATA->fogr, BLUR,
-                            LDATA->hazea << 0x18 | LDATA->hazeb << 0x10 | LDATA->hazeg << 8 | LDATA->hazer
-                        );
-                    }
-                    if (FRAME == 0) {
-                        tbslotEndFn(app_tbset, 1);
-                    }
-
-                    if (pause_rndr_on == 0) {
-                        if (FRAME == FRAMES - 1) {
-                            tbslotBeginFn(app_tbset, 9);
-                            pCam = GameCam;
-                            if ((scene_started = NuRndrBeginScene(-1)) != 0) {
-                                GameVP();
-                                NuRndrClear(7, 0, 1.0f);
-                                if (level_part_2 == 0) {
-                                    DrawParallax();
-                                }
-                            }
+                        UpdateScreenWumpas();
+                        if (PLAYERCOUNT != 0) {
+                            UpdatePlayerStats(plr);
                         }
-
-                        player_dying = plr->obj.dead == '\x02';
-                        render_frame = FRAME == FRAMES - 1;
-                        if (FRAME == FRAMES - 1) {
-                            tbslotBeginFn(app_tbset, 0xc);
-                        }
-                        if ((LDATA->flags & 1) != 0 && DRAWCREATUREHACK != 0 && cut_on == 0) {
-                            if ((player_dying == 0)
-                                && ((GLASSPLAYER == 0) || !(plr_invisibility_time < 5.0f) || (Level == 0x17)))
-                            {
-                                DrawCreatures(&Character[0], 1, render_frame, 1);
-                            }
-                            if ((level_part_2 == 0) && (DrawCreatures(&Character[1], 8, render_frame, 1), Level == 0x1c)) {
-                                DrawCreatures(&OppTubCreature, 1, render_frame, 0);
-                            }
-                            DrawNextVehicle(render_frame);
-                            if (FRAME == FRAMES - 1) {
-                                DrawExtraCreatures();
-                            }
-                        }
-
-                        if (FRAME == FRAMES - 1) {
-                            tbslotEndFn(app_tbset, 0xc);
-                        }
-
-                        if (cut_on == 0) {
-                            DrawChases(render_frame);
-                            DrawTempCharacter(render_frame);
-                            DrawTempCharacter2(render_frame);
-                        }
-                    }
-                    if (FRAME != FRAMES - 1) {
-                        skipped_frame_ticks = tbslotEndFn(0, 0xf);
+                        UpdatePanelDebris();
                     }
                 }
-
-                if (FRAMES == 1) {
-                    skipped_frame_ticks = 0;
+                if ((FRAME == FRAMES - 1) && (pause_rndr_on == 0)) {
+                    AddBugLight(plr);
+                }
+                GameTiming();
+                ProcMenu(&Cursor, Pad[0]);
+                previous_fade = fadeval;
+                fadeval += fade_rate;
+                if (fadeval >= 0x100) {
+                    fadeval = 0xff;
+                } else if (fadeval < 0) {
+                    fadeval = 0;
                 }
 
-                if (screendump != 0) {
-                    render_paused = save_paused;
+                if ((previous_fade < 0xff) && (fadeval == 0xff)) {
+                    fadehack = 1;
+                } else if (fadehack != 0) {
+                    fadehack--;
+                }
+
+                if ((fadeval == 0) || (fadeval == 0xff)) {
+                    fade_rate = 0;
+                }
+
+                fadecol = fadeval | fadeval << 8 | fadeval << 0x10 | 0x80000000;
+                if ((Level == 2) && (VEHICLECONTROL != 1)) {
+                    NuLightFog(4.0f, 16.0f, 0x40000000, BLUR, 0);
                 } else {
-                    render_paused = Paused;
+                    NuLightFog(
+                        LDATA->fognear, LDATA->fogfar,
+                        LDATA->foga << 0x18 | LDATA->fogb << 0x10 | LDATA->fogg << 8 | LDATA->fogr, BLUR,
+                        LDATA->hazea << 0x18 | LDATA->hazeb << 0x10 | LDATA->hazeg << 8 | LDATA->hazer
+                    );
+                }
+                if (FRAME == 0) {
+                    tbslotEndFn(app_tbset, 1);
                 }
 
                 if (pause_rndr_on == 0) {
-                    if (scene_started != 0) {
-                        NuWaterSpeed((render_paused) ? 0 : 1.2f);
-                        if ((LDATA->flags & 4) != 0) {
-                            tbslotBeginFn(app_tbset, 10);
-                            if (world_vd != 0) {
-                                if (pVIS != 0) {
-                                    visiSetSplineKnot(world_vd, pVIS - world_scene[0]->splines, iVIS);
-                                }
-                            } else {
-                                ApplyVisiTable(world_scene[0], pCam->pos);
-                            }
-                            if (DRAWWORLDHACK != 0) {
-                                DrawWorld();
-                            }
-                            tbslotEndFn(app_tbset, 10);
-                        }
-                        if (cut_on == 0) {
-                            DrawVehicleTrail();
-                        }
-                        if ((LDATA->flags & 0x10) != 0) {
-                            effect_offset = 0;
-                            debris_type = LookupDebrisEffect(Candle_str);
-                            effect_count = DebrisFindAllOfType(debris_type, flamepos, 0x20, effect_offset, 1);
-                            while (effect_count != 0) {
-                                if (effect_count > 0) {
-                                    effects_remaining = effect_count;
-                                    effect_cursor = flamepos;
-                                    do {
-                                        effects_remaining--;
-                                        NuLightAddHazePoly(*effect_cursor++, 0.6f, 1.2f);
-                                    } while (effects_remaining != 0);
-                                }
-                                effect_offset += effect_count;
-                                effect_count = DebrisFindAllOfType(debris_type, flamepos, 0x20, effect_offset, 1);
+                    if (FRAME == FRAMES - 1) {
+                        tbslotBeginFn(app_tbset, 9);
+                        pCam = GameCam;
+                        if ((scene_started = NuRndrBeginScene(-1)) != 0) {
+                            GameVP();
+                            NuRndrClear(7, 0, 1.0f);
+                            if (level_part_2 == 0) {
+                                DrawParallax();
                             }
                         }
-                        if (cut_on == 0) {
-                            DrawDeb3();
-                            DrawProjectiles();
-                        }
-                        if ((level_part_2 == 0) && (cut_on == 0)) {
-                            tbslotBeginFn(app_tbset, 0xd);
-                            DrawCrates();
-                            DrawCrateExplosions();
-                            tbslotEndFn(app_tbset, 0xd);
-                            tbslotBeginFn(app_tbset, 0xe);
-                            DrawWumpa();
-                            tbslotEndFn(app_tbset, 0xe);
-                            if ((LDATA->flags & 1) != 0) {
-                                if (plr->used != 0 && plr->obj.mask != 0 &&
-                                    plr->obj.mask->active != 0 && (LDATA->flags & 0xe00) == 0 &&
-                                    (VEHICLECONTROL != 1 || (LBIT & 0x1005042000UL) == 0)) {
-                                    DrawMask(plr->obj.mask);
-                                }
-                                DrawMaskFeathers();
-                            }
-                            DrawKabooms();
-                            DrawTransporters();
-                            DrawAwards();
-                            DrawBug();
-                            DrawRings();
-                            DrawTarget();
-                            DrawLevel();
-                            DrawGameCut();
-                            if (Level == 0x1d) {
-                                DrawCarpet();
-                            }
-                            NuRndrShadPolys(ShadowMat);
-                            NuRndrWaterRip(DebMat[4]);
-                        }
-                        if (Cursor.menu == 0x11) {
-                            DrawCutMovie();
-                        }
-                        if (cut_on == 0) {
-                            NuRndrFootPrints(DebMat[4], foot_u, foot_v);
-                        }
-                        if (editor_active != 0) {
-                            NuFntScale(0xc, 0xc);
-                            edmainRender();
-                        }
-                        tbslotEndFn(app_tbset, 9);
-                        NuRndrLine3dDbgFlush();
-                        NuRndrEndScene();
-                        tbslotBeginFn(app_tbset, 0xf);
-                        DoGlass(editor_active);
-                        if ((editor_active == 0) && (NuWaterRender(world_scene[0]), editor_active == 0)) {
-                            NuRndrFx((Cursor.menu == 0xA) ? 0 : render_paused, &Character[0].obj.pos);
-                        }
-                        tbslotEndFn(app_tbset, 0xf);
-                        NuRndrBeginScene(-1);
-                        if (((LBIT & 0x200000a1) != 0) && (cut_on == 0)) {
-                            DoClouds(Paused);
-                        }
-                        if (((LDATA->flags & 0x10) != 0) && (NODEBRIS == 0) && (DRAWDEBRISHACK != 0)) {
-                            if (editor_active != 0) {
-                                DebrisDraw(0);
-                            } else {
-                                DebrisDraw(render_paused);
-                            }
-                        }
-                        NuRndrEndSceneEx(0);
                     }
-                    tbslotEndFn(app_tbset, 0);
-                }
 
-                HandlePauseRender();
-                if (NuRndrBeginScene(-1) != 0) {
-                    if ((player_dying != 0) && (PLAYERCOUNT != 0)) {
-                        death_duration = plr->obj.die_duration;
-                        death_progress = plr->obj.die_time * 3.0f;
-                        if (death_duration < death_progress) {
-                            death_progress = death_duration;
+                    player_dying = plr->obj.dead == '\x02';
+                    render_frame = FRAME == FRAMES - 1;
+                    if (FRAME == FRAMES - 1) {
+                        tbslotBeginFn(app_tbset, 0xc);
+                    }
+                    if ((LDATA->flags & 1) != 0 && DRAWCREATUREHACK != 0 && cut_on == 0) {
+                        if ((player_dying == 0)
+                            && ((GLASSPLAYER == 0) || !(plr_invisibility_time < 5.0f) || (Level == 0x17)))
+                        {
+                            DrawCreatures(&Character[0], 1, render_frame, 1);
                         }
-                        phase_value = ((death_progress / death_duration) * 255.0f);
+                        if ((level_part_2 == 0) && (DrawCreatures(&Character[1], 8, render_frame, 1), Level == 0x1c)) {
+                            DrawCreatures(&OppTubCreature, 1, render_frame, 0);
+                        }
+                        DrawNextVehicle(render_frame);
+                        if (FRAME == FRAMES - 1) {
+                            DrawExtraCreatures();
+                        }
+                    }
+
+                    if (FRAME == FRAMES - 1) {
+                        tbslotEndFn(app_tbset, 0xc);
+                    }
+
+                    if (cut_on == 0) {
+                        DrawChases(render_frame);
+                        DrawTempCharacter(render_frame);
+                        DrawTempCharacter2(render_frame);
+                    }
+                }
+                if (FRAME != FRAMES - 1) {
+                    skipped_frame_ticks = tbslotEndFn(0, 0xf);
+                }
+            }
+
+            if (FRAMES == 1) {
+                skipped_frame_ticks = 0;
+            }
+
+            if (screendump != 0) {
+                render_paused = save_paused;
+            } else {
+                render_paused = Paused;
+            }
+
+            if (pause_rndr_on == 0) {
+                if (scene_started != 0) {
+                    NuWaterSpeed((render_paused) ? 0 : 1.2f);
+                    if ((LDATA->flags & 4) != 0) {
+                        tbslotBeginFn(app_tbset, 10);
+                        if (world_vd != 0) {
+                            if (pVIS != 0) {
+                                visiSetSplineKnot(world_vd, pVIS - world_scene[0]->splines, iVIS);
+                            }
+                        } else {
+                            ApplyVisiTable(world_scene[0], pCam->pos);
+                        }
+                        if (DRAWWORLDHACK != 0) {
+                            DrawWorld();
+                        }
+                        tbslotEndFn(app_tbset, 10);
+                    }
+                    if (cut_on == 0) {
+                        DrawVehicleTrail();
+                    }
+                    if ((LDATA->flags & 0x10) != 0) {
+                        effect_offset = 0;
+                        debris_type = LookupDebrisEffect(Candle_str);
+                        effect_count = DebrisFindAllOfType(debris_type, flamepos, 0x20, effect_offset, 1);
+                        while (effect_count != 0) {
+                            if (effect_count > 0) {
+                                effects_remaining = effect_count;
+                                effect_cursor = flamepos;
+                                do {
+                                    effects_remaining--;
+                                    NuLightAddHazePoly(*effect_cursor++, 0.6f, 1.2f);
+                                } while (effects_remaining != 0);
+                            }
+                            effect_offset += effect_count;
+                            effect_count = DebrisFindAllOfType(debris_type, flamepos, 0x20, effect_offset, 1);
+                        }
+                    }
+                    if (cut_on == 0) {
+                        DrawDeb3();
+                        DrawProjectiles();
+                    }
+                    if ((level_part_2 == 0) && (cut_on == 0)) {
+                        tbslotBeginFn(app_tbset, 0xd);
+                        DrawCrates();
+                        DrawCrateExplosions();
+                        tbslotEndFn(app_tbset, 0xd);
+                        tbslotBeginFn(app_tbset, 0xe);
+                        DrawWumpa();
+                        tbslotEndFn(app_tbset, 0xe);
+                        if ((LDATA->flags & 1) != 0) {
+                            if (plr->used != 0 && plr->obj.mask != 0 &&
+                                plr->obj.mask->active != 0 && (LDATA->flags & 0xe00) == 0 &&
+                                (VEHICLECONTROL != 1 || (LBIT & 0x1005042000UL) == 0)) {
+                                DrawMask(plr->obj.mask);
+                            }
+                            DrawMaskFeathers();
+                        }
+                        DrawKabooms();
+                        DrawTransporters();
+                        DrawAwards();
+                        DrawBug();
+                        DrawRings();
+                        DrawTarget();
+                        DrawLevel();
+                        DrawGameCut();
+                        if (Level == 0x1d) {
+                            DrawCarpet();
+                        }
+                        NuRndrShadPolys(ShadowMat);
+                        NuRndrWaterRip(DebMat[4]);
+                    }
+                    if (Cursor.menu == 0x11) {
+                        DrawCutMovie();
+                    }
+                    if (cut_on == 0) {
+                        NuRndrFootPrints(DebMat[4], foot_u, foot_v);
+                    }
+                    if (editor_active != 0) {
+                        NuFntScale(0xc, 0xc);
+                        edmainRender();
+                    }
+                    tbslotEndFn(app_tbset, 9);
+                    NuRndrLine3dDbgFlush();
+                    NuRndrEndScene();
+                    tbslotBeginFn(app_tbset, 0xf);
+                    DoGlass(editor_active);
+                    if ((editor_active == 0) && (NuWaterRender(world_scene[0]), editor_active == 0)) {
+                        NuRndrFx((Cursor.menu == 0xA) ? 0 : render_paused, &Character[0].obj.pos);
+                    }
+                    tbslotEndFn(app_tbset, 0xf);
+                    NuRndrBeginScene(-1);
+                    if (((LBIT & 0x200000a1) != 0) && (cut_on == 0)) {
+                        DoClouds(Paused);
+                    }
+                    if (((LDATA->flags & 0x10) != 0) && (NODEBRIS == 0) && (DRAWDEBRISHACK != 0)) {
+                        if (editor_active != 0) {
+                            DebrisDraw(0);
+                        } else {
+                            DebrisDraw(render_paused);
+                        }
+                    }
+                    NuRndrEndSceneEx(0);
+                }
+                tbslotEndFn(app_tbset, 0);
+            }
+
+            HandlePauseRender();
+            if (NuRndrBeginScene(-1) != 0) {
+                if ((player_dying != 0) && (PLAYERCOUNT != 0)) {
+                    death_duration = plr->obj.die_duration;
+                    death_progress = plr->obj.die_time * 3.0f;
+                    if (death_duration < death_progress) {
+                        death_progress = death_duration;
+                    }
+                    phase_value = ((death_progress / death_duration) * 255.0f);
+                    NuRndrRect2di(
+                        0, 0, SWIDTH << 4, SHEIGHT << 3, phase_value | phase_value << 8 | phase_value << 0x10 | 0x80000000,
+                        fade_mtl
+                    );
+
+                } else {
+                    if (Cursor.menu == '\x1f') {
+                        int panel_y;
+                        int end_y;
+                        panel_y = ((1.0f - (POWERTEXTY + D_0062D06C + 1.0f) * half) * (float)(SHEIGHT << 3));
+                        end_y = ((1.0f - ((POWERTEXTY - 0.75f) + 1.0f) * half) * (float)(SHEIGHT << 3));
                         NuRndrRect2di(
-                            0, 0, SWIDTH << 4, SHEIGHT << 3, phase_value | phase_value << 8 | phase_value << 0x10 | 0x80000000,
+                            0,
+                            panel_y,
+                            SWIDTH << 4,
+                            end_y - panel_y,
+                            0x18ffffff,
                             fade_mtl
                         );
-
-                    } else {
-                        if (Cursor.menu == '\x1f') {
-                            int panel_y;
-                            int end_y;
-                            panel_y = ((1.0f - (POWERTEXTY + D_0062D06C + 1.0f) * half) * (float)(SHEIGHT << 3));
-                            end_y = ((1.0f - ((POWERTEXTY - 0.75f) + 1.0f) * half) * (float)(SHEIGHT << 3));
-                            NuRndrRect2di(
-                                0,
-                                panel_y,
-                                SWIDTH << 4,
-                                end_y - panel_y,
-                                0x18ffffff,
-                                fade_mtl
-                            );
-                        }
                     }
-                    NuRndrClear(6, 0, 1.0f);
-                    if (player_dying != 0) {
-                        DrawCreatures(&Character[0], 1, 1, 0);
-                    }
-                    DrawPanel();
-                    if ((new_mode != -1) || (new_level != -1)) {
-                        fade_rate = 10;
-                    }
-                    if (fadeval != 0) {
-                        NuRndrRect2di(0, 0, SWIDTH << 4, SHEIGHT << 3, fadecol, fade_mtl);
-                    }
-                    NuRndrEndScene();
                 }
-                timing_or_collision_result = (int)frameout_count;
-                frameout_count = nuvideo_global_vbcnt;
-                frame_delta = frameout_count - timing_or_collision_result - 1;
-                if (frame_delta < 0) {
-                    frame_delta = 0;
+                NuRndrClear(6, 0, 1.0f);
+                if (player_dying != 0) {
+                    DrawCreatures(&Character[0], 1, 1, 0);
                 }
-                frameout = frame_delta;
-                if (pause_frameout_grace != 0) {
-                    pause_frameout_grace = pause_frameout_grace - 1;
-                    frameout = 0;
+                DrawPanel();
+                if ((new_mode != -1) || (new_level != -1)) {
+                    fade_rate = 10;
                 }
-                if (pause_rndr_on != 0) {
-                    pause_frameout_grace = 2;
-                }
-                if (frameout != 0) {
-                    frameout_streak++;
-                    if (frameout_streak > 5) {
-                        phase_value = tbslotLastValue(0, 0);
-                        timing_or_collision_result = tbslotLastValue(0, 1);
-                        if ((timing_or_collision_result < 285) && (phase_value - skipped_frame_ticks < 285)) {
-                            frameout = 0;
-                        }
-                        frameout_streak = 6;
-                    }
-                } else {
-                    frameout_streak = 0;
-                }
-                if (frameout > 2) {
-                    frameout = 2;
-                }
-                peak_polygons = peak_poly_count;
-                poly_count = nurndr_tritot_this_frame;
-                if (peak_polygons < poly_count) {
-                    peak_polygons = poly_count;
-                }
-                peak_poly_count = peak_polygons;
-                NuRndrSwapScreen(-1);
-                if (fmvdump_enabled == 0) {
-                    continue;
-                }
-
-                ps2video_ignore_frameout = 1;
-                odevframe_193 = 1 - odevframe_193;
-                ps2video_novsync = 0;
-                if (odevframe_193 == 0) {
-                    frameout = 0;
-                    continue;
-                }
-                NuPs2VideoScreenDump("fmvdump\\frm", 1, gamma_val, dumpidx);
-                dumpidx++;
-
-                if (NuRndrBeginScene(-1) != 0) {
-                    NuRndrEndScene();
-                    NuRndrSwapScreen(-1);
-                }
-
-                if (NuRndrBeginScene(-1) != 0) {
-                    NuRndrEndScene();
-                    NuRndrSwapScreen(-1);
-                }
-
-                if (NuRndrBeginScene(-1) == 0) {
-                    frameout = 0;
-                    continue;
+                if (fadeval != 0) {
+                    NuRndrRect2di(0, 0, SWIDTH << 4, SHEIGHT << 3, fadecol, fade_mtl);
                 }
                 NuRndrEndScene();
-                NuRndrSwapScreen(-1);
+            }
+            timing_or_collision_result = (int)frameout_count;
+            frameout_count = nuvideo_global_vbcnt;
+            frame_delta = frameout_count - timing_or_collision_result - 1;
+            if (frame_delta < 0) {
+                frame_delta = 0;
+            }
+            frameout = frame_delta;
+            if (pause_frameout_grace != 0) {
+                pause_frameout_grace = pause_frameout_grace - 1;
                 frameout = 0;
             }
-            pause_dir = 0;
-            Paused = 0;
-            if ((plr_died != 0) && (best_cRPos != 0) && (Rail[best_cRPos->iRAIL].type == '\0')) {
-                LostLife = 1;
+            if (pause_rndr_on != 0) {
+                pause_frameout_grace = 2;
+            }
+            if (frameout != 0) {
+                frameout_streak++;
+                if (frameout_streak > 5) {
+                    phase_value = tbslotLastValue(0, 0);
+                    timing_or_collision_result = tbslotLastValue(0, 1);
+                    if ((timing_or_collision_result < 285) && (phase_value - skipped_frame_ticks < 285)) {
+                        frameout = 0;
+                    }
+                    frameout_streak = 6;
+                }
+            } else {
+                frameout_streak = 0;
+            }
+            if (frameout > 2) {
+                frameout = 2;
+            }
+            peak_polygons = peak_poly_count;
+            poly_count = nurndr_tritot_this_frame;
+            if (peak_polygons < poly_count) {
+                peak_polygons = poly_count;
+            }
+            peak_poly_count = peak_polygons;
+            NuRndrSwapScreen(-1);
+            if (fmvdump_enabled == 0) {
+                continue;
             }
 
-            plr_died = 0;
-            for (phase_value = 2; phase_value > 0; phase_value--) {
+            ps2video_ignore_frameout = 1;
+            odevframe_193 = 1 - odevframe_193;
+            ps2video_novsync = 0;
+            if (odevframe_193 == 0) {
+                frameout = 0;
+                continue;
+            }
+            NuPs2VideoScreenDump("fmvdump\\frm", 1, gamma_val, dumpidx);
+            dumpidx++;
 
-                if (NuRndrBeginScene(-1) != 0) {
-                    NuRndrEndScene();
-                }
+            if (NuRndrBeginScene(-1) != 0) {
+                NuRndrEndScene();
                 NuRndrSwapScreen(-1);
             }
 
-            if (new_mode == -1)
-                break;
+            if (NuRndrBeginScene(-1) != 0) {
+                NuRndrEndScene();
+                NuRndrSwapScreen(-1);
+            }
+
+            if (NuRndrBeginScene(-1) == 0) {
+                frameout = 0;
+                continue;
+            }
+            NuRndrEndScene();
+            NuRndrSwapScreen(-1);
+            frameout = 0;
+        }
+        pause_dir = 0;
+        Paused = 0;
+        if ((plr_died != 0) && (best_cRPos != 0) && (Rail[best_cRPos->iRAIL].type == '\0')) {
+            LostLife = 1;
+        }
+
+        plr_died = 0;
+        for (phase_value = 2; phase_value > 0; phase_value--) {
+
+            if (NuRndrBeginScene(-1) != 0) {
+                NuRndrEndScene();
+            }
+            NuRndrSwapScreen(-1);
+        }
+
+        if (new_mode != -1) {
             NuSoundStopStream(4);
             NuSoundUpdate();
             GameMode = new_mode;
-        } while (1);
+            goto next_game_mode;
+        }
         PauseGameAudio(1);
         NuSoundFlushLoops();
         NuSoundKillAllAudio();
@@ -2436,7 +2436,11 @@ int main(int argc, char** argv) {
         }
         app_fnt = 0;
         NuFntClose();
-        last_character = PLAYERCOUNT != 0 ? plr->obj.character : -1;
+        if (PLAYERCOUNT != 0) {
+            last_character = plr->obj.character;
+        } else {
+            last_character = -1;
+        }
 
         if (last_character != -1) {
             last_used_character = last_character;
@@ -2568,19 +2572,15 @@ void BGLoad(void)
         NuRndrEndScene();
         NuRndrSwapScreen(-1);
     }
-    render_characters = 2;
     BGLoadStart(BGLoadLevel);
     anim_step = 0.48f;
     fadeval = 0xff;
     fade_rate = -10;
-    fall_speed[0] = 0.0f;
+    fall_speed[0] = fall_speed[1] = 0.0f;
     bob_angle = 0;
     done = 0;
-    fall_speed[1] = 0.0f;
     NuVpSetSize(PS2_REZ_W << 4, PS2_REZ_H << 4);
-    if ((u16)LDATA->character > 1) {
-        render_characters = 0;
-    }
+    render_characters = (u16)LDATA->character > 1 ? 0 : 2;
 
     while (1) {
         UpdateGameSfx();
@@ -2611,7 +2611,7 @@ void BGLoad(void)
                 NuCameraSet(pNuCam);
                 GameCam[0].vX = *(struct nuvec_s *)&pNuCam->mtx._00;
 
-                if (render_characters != 0 && (u32)character < 2) {
+                if (render_characters == 2 && (u32)character < 2) {
                     if (bgload_model[character] != 0) {
                         bgloadchr[character] = bgload_model[character]->obj;
                     }
@@ -2678,22 +2678,29 @@ void BGLoad(void)
                         if (old_character != -1 && bgloadchr[old_character] != 0 &&
                             bgloadanim[old_character] != 0) {
                             if (bgload_objpos[character].y < bgload_bumppos) {
-                                if (bgload_objpos[old_character].y <= -5.0f) {
+                                if (bgload_objpos[old_character].y > -5.0f) {
+                                    bgload_objpos[old_character].y -= fall_speed[old_character];
+                                    fall_speed[old_character] =
+                                        fall_speed[old_character] + fallrate < maxfallspd
+                                        ? fall_speed[old_character] + fallrate : maxfallspd;
+                                } else {
                                     NuHGobjDestroy(bgloadchr[old_character]);
                                     bgloadchr[old_character] = 0;
                                     bgloadanim[old_character] = 0;
                                     goto bgload_render_characters;
                                 }
-                                bgload_objpos[old_character].y -= fall_speed[old_character];
-                                fall_speed[old_character] =
-                                    fall_speed[old_character] + fallrate < maxfallspd
-                                    ? fall_speed[old_character] + fallrate : maxfallspd;
                             } else {
                                 bgload_objpos[old_character].y = bgload_objtarg +
                                     NuTrigTable[bob_angle] * bobscale;
                                 bob_angle = (bob_angle + bobrate) & 0xffff;
                             }
-                            goto bgload_animate_old_character;
+                            bgload_animtime[old_character] += anim_step;
+                            if (bgload_animtime[old_character] > bgloadanim[old_character]->time) {
+                                bgload_animtime[old_character] -= bgloadanim[old_character]->time - 1.0f;
+                            }
+                            NuMtxSetTranslation(&m[old_character], &bgload_objpos[old_character]);
+                            NuMtxPreRotateZ(&m[old_character], mg_player_tilt);
+                            NuMtxTranslate(&m[old_character], &mg_player_pos);
                         }
                         break;
                     case 2:
@@ -2723,7 +2730,7 @@ void BGLoad(void)
                         if (old_character != -1 && bgloadchr[old_character] != 0 &&
                             bgloadanim[old_character] != 0) {
                             if (bgload_objpos[character].y < bgload_bumppos) {
-                                if (bgload_objpos[old_character].y <= -5.0f) {
+                                if (!(bgload_objpos[old_character].y > -5.0f)) {
                                     NuHGobjDestroy(bgloadchr[old_character]);
                                     bgloadchr[old_character] = 0;
                                     bgloadanim[old_character] = 0;
@@ -2738,7 +2745,6 @@ void BGLoad(void)
                                     NuTrigTable[bob_angle] * bobscale;
                                 bob_angle = (bob_angle + bobrate) & 0xffff;
                             }
-bgload_animate_old_character:
                             bgload_animtime[old_character] += anim_step;
                             if (bgload_animtime[old_character] > bgloadanim[old_character]->time) {
                                 bgload_animtime[old_character] -= bgloadanim[old_character]->time - 1.0f;
@@ -2801,7 +2807,9 @@ bgload_render_characters:
             }
 
             previous_fade = fadeval;
-            if ((LDATA->flags & 0x40) == 0 || CrateMat != 0) {
+            if ((LDATA->flags & 0x40) != 0 && CrateMat == 0) {
+                fadecol = 0x80ffffff;
+            } else {
                 fadeval += fade_rate;
                 if (fadeval > 0xff) {
                     fadeval = 0xff;
@@ -2817,8 +2825,6 @@ bgload_render_characters:
                     fade_rate = 0;
                 }
                 fadecol = fadeval | (fadeval << 8) | (fadeval << 16) | 0x80000000;
-            } else {
-                fadecol = 0x80ffffff;
             }
             if (fadeval != 0) {
                 NuRndrRect2di(0, 0, SWIDTH << 4, SHEIGHT << 3, fadecol, fade_mtl);

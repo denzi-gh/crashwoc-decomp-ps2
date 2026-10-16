@@ -89,7 +89,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027dd38:sceMkdir"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027dee8:sceRmdir"
@@ -97,11 +97,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027df08:sceFormat"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027e178:sceAddDrv"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027e298:sceDelDrv"
@@ -113,23 +113,23 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027e358:sceDclose"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027e4c0:sceDread"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027e618:sceGetstat"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027e7b8:sceChstat"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027e9f8:sceRename"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027ebe8:sceChdir"
@@ -137,11 +137,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027ec08:sceSync"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027eda0:sceMount"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027f010:sceUmount"
@@ -149,11 +149,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027f030:sceLseek64"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027f268:sceDevctl"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0256:0027f498:sceSymlink"
