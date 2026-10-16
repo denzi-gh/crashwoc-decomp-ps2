@@ -705,6 +705,39 @@ int sceMcSetFileInfo(int port, int slot, const char *name, const char *info,
 }
 
 
+int sceMcRename(int port, int slot, const char *oldName, const char *newName) {
+    int ret;
+
+    if (PollSema(mc_sema) < 0) {
+        return -200;
+    }
+    if (mc_client.server == 0) {
+        SignalSema(mc_sema);
+        return -100;
+    }
+    if (oldName == 0 || *oldName == 0 || newName == 0) {
+        SignalSema(mc_sema);
+        return -210;
+    }
+    mc_file.port = port;
+    mc_file.slot = slot;
+    mc_file.flags = 0x10;
+    strncpy(mc_file.name, oldName, 0x3FF);
+    mc_file.name[0x3FF] = 0;
+    strncpy((char *)mc_file_info.entryName, newName, 0x20);
+    mc_file_info.entryName[0x1F] = 0;
+    mc_file.info = &mc_file_info;
+    FlushCache(0);
+    ret = sceSifCallRpc(&mc_client, 0xE, 1, &mc_file, 0x414, mc_rdata, 4, 0, 0);
+    if (ret == 0) {
+        mc_last_cmd = 0x13;
+    } else {
+        SignalSema(mc_sema);
+    }
+    return ret;
+}
+
+
 int sceMcUnformat(int port, int slot) {
     int ret;
 
@@ -720,6 +753,34 @@ int sceMcUnformat(int port, int slot) {
     ret = sceSifCallRpc(&mc_client, 0x11, 1, &mc_desc, 0x30, mc_rdata, 4, 0, 0);
     if (ret == 0) {
         mc_last_cmd = 0x11;
+    } else {
+        SignalSema(mc_sema);
+    }
+    return ret;
+}
+
+
+int sceMcGetEntSpace(int port, int slot, const char *path) {
+    int ret;
+
+    if (PollSema(mc_sema) < 0) {
+        return -200;
+    }
+    if (mc_client.server == 0) {
+        SignalSema(mc_sema);
+        return -100;
+    }
+    if (path == 0 || *path == 0) {
+        SignalSema(mc_sema);
+        return -210;
+    }
+    mc_file.port = port;
+    mc_file.slot = slot;
+    strncpy(mc_file.name, path, 0x3FF);
+    mc_file.name[0x3FF] = 0;
+    ret = sceSifCallRpc(&mc_client, 0x12, 1, &mc_file, 0x414, mc_rdata, 4, 0, 0);
+    if (ret == 0) {
+        mc_last_cmd = 0x12;
     } else {
         SignalSema(mc_sema);
     }
