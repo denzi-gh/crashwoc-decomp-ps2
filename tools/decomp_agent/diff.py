@@ -33,6 +33,13 @@ def compile_diff(project: DecompProject, target, *, session_id=None,
                  client=None) -> dict:
     reg = Registry(project)
     res = reg.resolve(target)
+    from . import data as data_mod
+    if data_mod.is_data_target(project, target, res):
+        from . import runtime
+        if not runtime.toolchain_local(project):
+            return runtime.dispatch_cli(project, ["compile-diff", str(target)],
+                                        operation="compile_diff")
+        return data_mod.data_diff(project, target)
     if res.status == "ambiguous":
         return schemas.err("compile_diff", res.detail, code="ambiguous",
                            candidates=res.candidates)

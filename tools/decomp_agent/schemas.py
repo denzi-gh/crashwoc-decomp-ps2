@@ -39,6 +39,10 @@ MISMATCH_CATEGORIES = (
     "unsupported_lit8",
     "assembler_normalization",
     "likely_compiler_drift",
+    # Data-from-C ([[data]] entries)
+    "data_section_mismatch",
+    "bss_common",
+    "data_entry",
     "unknown",
 )
 
@@ -72,6 +76,12 @@ BLOCKER_KINDS = (
     "budget_exhausted",
     "stale_session",
     "source_conflict",
+    # Data-from-C: compiler-private bytes in a partially matched unit stay
+    # borrowed (temporary, until data/private); C data in the wrong section;
+    # uninitialised data (architectural until data/bss).
+    "compiler_private_partial_unit",
+    "data_section_mismatch",
+    "bss_common",
     "unknown",
 )
 
