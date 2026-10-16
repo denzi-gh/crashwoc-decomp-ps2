@@ -77,7 +77,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:00205be8:MoveZoffaUFO"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00206f80:DrawZoffaDebugStuff"
@@ -213,7 +213,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0020e1d8:ProcessGunBoat"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0020e770:InitBigGuns"
@@ -225,11 +225,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0098:0020f810:ProcessBigGun"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0020fe00:CollideWithBattleShip"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0020ff90:InitBattleShip"
@@ -241,19 +241,19 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00210290:ProcessBattleShip"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:002107a0:InitWeatherBoss_a"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00210960:DrawWeatherBoss_a"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00210b28:ProcessWeatherBoss_a"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00211d38:DrawGliderTarget"
@@ -261,11 +261,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00211eb8:DrawTorpedoTarget"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00212618:FireFlyReset"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00212918:DrawFireFlyLevelExtra"
@@ -285,7 +285,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00213598:SpaceArenaReset"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00213880:DrawSpaceArenaLevelExtra"
@@ -717,7 +717,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021e448:InitBigGun"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021e618:DrawBigGun"
@@ -741,7 +741,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021e918:PrintWeatherBossAction"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021ea20:InitWeatherBoss"
