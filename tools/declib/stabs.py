@@ -29,8 +29,9 @@ class Type:
 class Basic(Type):
     kind = "basic"
 
-    def __init__(self, size, is_float=False, is_void=False):
+    def __init__(self, size, is_float=False, is_void=False, signed=False):
         self.size, self.is_float, self.is_void = size, is_float, is_void
+        self.signed = signed
 
 
 class Pointer(Type):
@@ -245,9 +246,16 @@ class TypeTable:
                 except StabsError:
                     base_size = None
             return _Range(lo, hi, Basic(base_size) if base_size else None)
+        if lo > hi >= 0:
+            # SN gcc 2.95 writes signed bounds as full-width octal two's
+            # complement: int is r1;020000000000;017777777777;.
+            size = next((n for n in SIZES if n * 8 >= lo.bit_length()), None)
+            return _Range(lo, hi, Basic(size, signed=True) if size else None)
         bits = (max(hi, -lo - 1).bit_length() + (1 if lo < 0 else 0))
         size = next((n for n in SIZES if n * 8 >= bits), None)
-        return _Range(lo, hi, Basic(size) if size else None)
+        # `char` is printed as r2;0;127; but is signed on the EE.
+        signed = lo < 0 or (lo == 0 and hi == 127)
+        return _Range(lo, hi, Basic(size, signed=signed) if size else None)
 
     # -- queries -----------------------------------------------------------
 
