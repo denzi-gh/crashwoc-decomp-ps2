@@ -96,6 +96,7 @@ python -m unittest discover -s tests -v      # all unit tests
 python tools/status.py --check               # status manifests are well-formed
 python tools/verify_target.py                # orig/ matches the committed registry (needs orig/)
 python tools/extract_mdebug.py --check       # registries == fresh extraction (needs orig/)
+python tools/extract_data_symbols.py --check # data registry == fresh extraction (needs orig/)
 python tools/extract_data_map.py --check     # data map == fresh extraction (needs orig/)
 python configure.py --check                  # disassembly is deterministic (needs orig/ + splat)
 ```

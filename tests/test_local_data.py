@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 from gen_hybrid import (HybridError, _JumpTable, _assemble_data_bytes,
                         _decode_as_string, _extract_local_data, _sonyize,
-                        parse_s)
+                        borrow_scan_ranges, parse_s)
 
 # A switch jump table exactly as ee-gcc -O2 emits it, mid-function, in a
 # .rdata block whose entries are relocations to local code labels.
@@ -210,6 +210,22 @@ class TestParseSReturnsLocalData(unittest.TestCase):
         names = [n for n, _seg in segments]
         self.assertIn("DrawCharacterModel", names)
         self.assertIn("ProcessCreatures", names)
+
+
+class TestBorrowScanRanges(unittest.TestCase):
+    def test_lit4_pools_are_never_scanned(self):
+        # A unit's .lit4 run is its float pool: an aggregate borrow by bytes
+        # must not find a pool word there (decision 4 of the data plan).
+        ranges = [
+            {"section": ".rodata", "start": 0x10, "end": 0x20, "owner": "unit-0054"},
+            {"section": ".lit4", "start": 0x40, "end": 0x60, "owner": "unit-0054"},
+            {"section": ".data", "start": 0x80, "end": 0x90, "owner": "unit-0001"},
+            {"section": ".lit4", "start": 0x60, "end": 0x64, "owner": "unit-0001"},
+        ]
+        self.assertEqual(borrow_scan_ranges(ranges), {
+            "unit-0054": [(0x10, 0x20)],
+            "unit-0001": [(0x80, 0x90)],
+        })
 
 
 if __name__ == "__main__":

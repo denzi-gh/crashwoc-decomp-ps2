@@ -461,6 +461,21 @@ def _double_bits(text):
     return struct.unpack("<Q", struct.pack("<d", float(text)))[0]
 
 
+def borrow_scan_ranges(ranges):
+    """{owner: [(start, end)]} -- the data_map ranges a compiler-private
+    aggregate may be found in by bytes (Lit4Mapper._borrow_addr_in_unit).
+
+    A unit's .lit4 run is its float pool, never an aggregate's home: leaving
+    it out keeps a pool word from making a borrow ambiguous.
+    """
+    out = {}
+    for r in ranges:
+        if r["section"] == ".lit4":
+            continue
+        out.setdefault(r["owner"], []).append((int(r["start"]), int(r["end"])))
+    return out
+
+
 class Lit4Mapper:
     """Map float32 bit patterns to the retail .lit4 slots a function uses."""
 
@@ -491,10 +506,7 @@ class Lit4Mapper:
         # address in its own unit's range that holds the same bytes.
         dm = tomllib.loads(
             (ROOT / "config" / version / "data_map.toml").read_text())
-        self._unit_ranges = {}
-        for r in dm.get("range", []):
-            self._unit_ranges.setdefault(r["owner"], []).append(
-                (int(r["start"]), int(r["end"])))
+        self._unit_ranges = borrow_scan_ranges(dm.get("range", []))
 
     def _address_of(self, sym):
         """Same resolution rule as the image link (declib.asmtext.resolve):

@@ -1,30 +1,36 @@
 #!/usr/bin/env python3
-"""Attribute the data sections to translation units from .mdebug evidence.
+"""Attribute the data sections to translation units from ELF evidence.
 
 Produces config/<version>/data_map.toml: an exact tiling of every allocated
 non-code section (.data, .rodata, .lit4, .sdata, .sbss, .bss) plus the 0x80
 un-sectioned orphan run at 0x00293680, into ranges that are either
 
-  owner = 'unit-NNNN', evidence = 'mdebug'   -- proven ownership
+  owner = 'unit-NNNN', evidence = 'mdebug'   -- named symbols prove it (the
+                                                unit's own code references
+                                                may extend the run)
+  owner = 'unit-NNNN', evidence = 'xref'     -- only the unit's code does
   owner = 'unassigned', evidence = 'gap'     -- bytes nothing attributes
   owner = 'unassigned', evidence = 'orphan'  -- the orphan run
 
-Attribution sources, both read straight from the retail `.mdebug`:
+Attribution sources, all read straight from the retail ELF:
 
-  * external symbols (EXTR): `ifd` names the unit that DEFINES each global;
-    data globals are those whose address lands in a data section and whose
-    storage class is a data class.
-  * per-unit local symbols (SYMR): stStatic entries with a data storage
-    class attribute file-local statics.
+  * named symbols (tools/extract_data_symbols.py): the EXTR `ifd` names the
+    unit that DEFINES each global, a unit's SYMR run its statics; `.symtab`
+    (or STABS) gives the size of most of them.
+  * code cross-references (declib.elf.code_refs over .text): an unnamed
+    .rodata/.lit4 address that exactly one unit's code builds, outside every
+    sized named symbol, is that unit's (strings, jump tables, literal pools).
+    Not used for .data/.sdata, where code also reaches into other units'
+    globals by field offset.
 
-Nothing is guessed. Within a section the attributed symbols must form
-non-interleaved per-unit runs (each unit's data is contiguous, as .text is);
-a section that violates this stays whole-section unassigned and is reported.
-A unit's owned range ends at its LAST symbol's address -- symbol sizes are
-not recorded in .mdebug, so the bytes from the last symbol to the next run
-are an explicit gap, promotable later only by evidence (e.g. the unit's C
-emits data whose bytes match exactly). Consequently a single-symbol run
-proves ownership of no measurable extent yet and stays a gap.
+Nothing is guessed. Within a section the items must form non-interleaved
+per-unit runs (each unit's data is contiguous, as .text is). Two units naming
+one address, or interleaved named runs, leave the whole section unassigned
+(reported); a code reference that would interleave is dropped instead. A run
+ends at max(address + size) over its items (a code reference counts its
+access width: lw/lwc1 4, ld 8, lq 16, an address-only addiu 0), so an
+unsized trailing symbol owns nothing past its address and a run of one
+unsized symbol owns nothing at all: those bytes stay an explicit gap.
 
 The EXTR layout guess (reserved:16 | ifd:16, little-endian) is validated on
 every run: each procedure external's ifd must equal the unit its PDR
@@ -37,17 +43,23 @@ Usage:
 Stdlib only; needs the target ELF (user-supplied, never committed).
 """
 import argparse
+import bisect
 import json
 import sys
+from collections import defaultdict
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
+from declib.elf import code_refs
+from extract_data_symbols import collect
 from extract_mdebug import (MDebug, SC_DATA_CLASSES, ST_GLOBAL, ST_PROC,
                             ST_STATIC_PROC, find_section)
 
 ORPHAN_START = 0x00293680          # un-sectioned loaded MIPS bytes (0x80)
 ORPHAN_END = 0x00293700
+# Sections whose unnamed bytes code cross-references may attribute.
+XREF_SECTIONS = (".rodata", ".lit4")
 
 
 def data_sections(sections_spec):
@@ -106,41 +118,190 @@ def attributed_symbols(md, ifd_max):
     return out
 
 
-def build_ranges(lo, hi, syms):
+def code_units(md):
+    """Sorted [(first vram, unit)] runs of .text from the procedure table."""
+    procs = sorted((f["address"], f["unit"]) for u in md.units()
+                   for f in md.procedures(u))
+    runs = []
+    for addr, unit in procs:
+        if not runs or runs[-1][1] != unit:
+            runs.append((addr, unit))
+    return runs
+
+
+def code_xref(md, elf, sections_spec):
+    """[(address, width, unit, Ref)] for every data reference in .text."""
+    text = next(s for s in sections_spec["sections"] if s["name"] == ".text")
+    addr, off = int(text["addr"], 0), int(text["offset"], 0)
+    size = int(text["size"], 0)
+    starts = [f["address"] for u in md.units() for f in md.procedures(u)]
+    refs = code_refs(elf[off:off + size], addr, starts,
+                     int(sections_spec["gp_value"], 0))
+    runs = code_units(md)
+    firsts = [a for a, _u in runs]
+    out = []
+    for ref in refs:
+        i = bisect.bisect_right(firsts, ref.vram) - 1
+        if i >= 0:
+            out.append((ref.address, ref.width, runs[i][1], ref))
+    return out
+
+
+def xref_items(refs, named, lo, hi):
+    """[(start, end, unit, 'xref')] for unnamed bytes in [lo, hi) that
+    exactly one unit's code references, outside every sized named item.
+
+    `refs` is code_xref(); `named` the section's named items. The end is the
+    widest access at that address (0 for an address-only reference)."""
+    sized = sorted((s, e) for s, e, _u, _ev in named if e > s)
+    sized_starts = [s for s, _e in sized]
+
+    def inside_sized(addr):
+        i = bisect.bisect_right(sized_starts, addr) - 1
+        return i >= 0 and sized[i][0] <= addr < sized[i][1]
+
+    units, width = defaultdict(set), defaultdict(int)
+    for addr, w, unit, _ref in refs:
+        if lo <= addr < hi:
+            units[addr].add(unit)
+            width[addr] = max(width[addr], w)
+    out = []
+    for addr in sorted(units):
+        if len(units[addr]) != 1 or inside_sized(addr):
+            continue
+        (unit,) = units[addr]
+        out.append((addr, min(addr + width[addr], hi), unit, "xref"))
+    return out
+
+
+def _span(item):
+    """The bytes an item occupies for overlap tests (a point counts as 1)."""
+    start, end = item[0], item[1]
+    return start, max(end, start + 1)
+
+
+def drop_conflicting_xref(named, xref):
+    """The xref items that join their unit's run without crossing another
+    unit's items. An item whose run would reach over another unit's named
+    item is dropped; if two units' runs still overlap, both units' xref items
+    are dropped. Named items are never dropped."""
+    hulls = {}
+    for item in named:
+        lo, hi = _span(item)
+        cur = hulls.get(item[2])
+        hulls[item[2]] = (lo, hi) if cur is None else (min(cur[0], lo),
+                                                       max(cur[1], hi))
+    others = sorted(_span(item) + (item[2],) for item in named)
+    kept = []
+    for item in xref:
+        unit = item[2]
+        lo, hi = _span(item)
+        if unit in hulls:
+            lo, hi = min(lo, hulls[unit][0]), max(hi, hulls[unit][1])
+        if any(u != unit and s < hi and lo < e for s, e, u in others):
+            continue
+        kept.append(item)
+    while True:
+        spans = defaultdict(list)
+        for item in named + kept:
+            spans[item[2]].append(_span(item))
+        hull = {u: (min(s for s, _e in v), max(e for _s, e in v))
+                for u, v in spans.items()}
+        contested = set()
+        order = sorted(hull, key=lambda u: hull[u])
+        for a, b in zip(order, order[1:]):
+            if hull[b][0] < hull[a][1]:
+                contested.update((a, b))
+        if not any(item[2] in contested for item in kept):
+            return kept
+        kept = [item for item in kept if item[2] not in contested]
+
+
+def build_ranges(lo, hi, items):
     """Tile [lo, hi) into (start, end, owner, evidence) ranges.
 
-    `syms` is [(addr, unit)] inside the section. Returns None when the
-    section's unit sequence interleaves (or two units claim one address) --
-    the caller degrades it to whole-section unassigned.
+    `items` are (start, end, unit, evidence) inside the section -- named
+    symbols ('mdebug'; end = address + size, or the address when unsized)
+    and code references ('xref') -- or bare (address, unit) pairs, which are
+    unsized named symbols. Returns None when the named items interleave (or
+    two units name one address); the caller degrades the section to
+    whole-section unassigned. Conflicting xref items are dropped first.
     """
-    by_addr = {}
-    for addr, unit in sorted(syms):
-        if by_addr.get(addr, unit) != unit:
-            return None                        # two units claim one address
-        by_addr[addr] = unit
-    ordered = sorted(by_addr.items())
+    items = [it if len(it) == 4 else (it[0], it[0], it[1], "mdebug")
+             for it in items]
+    named = [it for it in items if it[3] == "mdebug"]
+    xref = [it for it in items if it[3] == "xref"]
 
-    runs, seen = [], set()
-    for addr, unit in ordered:
-        if runs and runs[-1][0] == unit:
-            runs[-1][2] = addr
-        else:
+    by_addr = {}
+    for start, _end, unit, _ev in sorted(named):
+        if by_addr.get(start, unit) != unit:
+            return None                        # two units claim one address
+        by_addr[start] = unit
+    seen, prev = set(), None
+    for start in sorted(by_addr):
+        unit = by_addr[start]
+        if unit != prev:
             if unit in seen:
                 return None                    # unit reappears: interleaved
             seen.add(unit)
-            runs.append([unit, addr, addr])
+            prev = unit
+
+    kept = drop_conflicting_xref(named, xref)
+    runs = []                                  # [unit, start, end, evidence]
+    for start, end, unit, evidence in sorted(named + kept,
+                                             key=lambda it: (it[0], it[1])):
+        if runs and runs[-1][0] == unit:
+            run = runs[-1]
+            run[2] = max(run[2], end)
+            if evidence == "mdebug":
+                run[3] = "mdebug"
+        else:
+            if any(r[0] == unit for r in runs):
+                raise ValueError(f"unit-{unit:04d} interleaves at {start:#x}")
+            runs.append([unit, start, end, evidence])
 
     ranges, cursor = [], lo
-    for unit, first, last in runs:
+    for unit, first, last, evidence in runs:
+        if first < cursor:
+            raise ValueError(f"unit-{unit:04d} at {first:#x} overlaps the "
+                             f"previous range ending at {cursor:#x}")
         if first > cursor:
             ranges.append((cursor, first, "unassigned", "gap"))
             cursor = first
-        if last > first:                       # single-symbol runs prove no extent
-            ranges.append((first, last, f"unit-{unit:04d}", "mdebug"))
+        if last > first:                       # an unsized point owns nothing
+            ranges.append((first, last, f"unit-{unit:04d}", evidence))
             cursor = last
+    if cursor > hi:
+        raise ValueError(f"a range overruns the section end {hi:#x}")
     if cursor < hi:
         ranges.append((cursor, hi, "unassigned", "gap"))
     return ranges
+
+
+def section_items(md, elf, sections_spec, records, refs=None):
+    """{section: [(start, end, unit, evidence)]} -- every named symbol
+    (sized where known) plus, in XREF_SECTIONS, the unnamed code-referenced
+    addresses. A section whose named items interleave keeps named items only
+    (it degrades anyway)."""
+    if refs is None:
+        refs = code_xref(md, elf, sections_spec)
+    out = {}
+    for name, lo, hi in data_sections(sections_spec):
+        named = [(r["address"], r["address"] + r.get("size", 0), r["unit"],
+                  "mdebug") for r in records if r["section"] == name]
+        items = list(named)
+        if name in XREF_SECTIONS and build_ranges(lo, hi, named) is not None:
+            items += drop_conflicting_xref(
+                named, xref_items(refs, named, lo, hi))
+        out[name] = items
+    return out
+
+
+def attributed_items(md, elf, sections_spec, records, refs=None):
+    """[(section, start, end, unit, evidence)] over all data sections."""
+    return [(name, *item) for name, items
+            in section_items(md, elf, sections_spec, records, refs).items()
+            for item in items]
 
 
 def build_map(root, version):
@@ -158,11 +319,16 @@ def build_map(root, version):
 
     checked = validate_extr_ifd(md)
     syms = attributed_symbols(md, md.h["ifdMax"])
+    records = collect(md, data, data_sections(sections_spec))
+    if {(r["address"], r["unit"]) for r in records} != syms:
+        raise ValueError("data symbol registry and .mdebug attribution "
+                         "disagree")
+    items = section_items(md, data, sections_spec, records)
 
     lines = [
-        "# Generated by tools/extract_data_map.py from the .mdebug section of",
-        f"# {elf_rel}. Do not edit by hand: regenerate with",
-        "# `python tools/extract_data_map.py`.",
+        "# Generated by tools/extract_data_map.py from the .mdebug, .symtab",
+        f"# and .text sections of {elf_rel}. Do not edit by hand:",
+        "# regenerate with `python tools/extract_data_map.py`.",
         "__SUMMARY__",
         "",
         "schema = 1",
@@ -183,7 +349,7 @@ def build_map(root, version):
     emit("orphan", [(ORPHAN_START, ORPHAN_END, "unassigned", "orphan")])
 
     for name, lo, hi in data_sections(sections_spec):
-        in_section = [(a, u) for a, u in syms if lo <= a < hi]
+        in_section = items[name]
         ranges = build_ranges(lo, hi, in_section)
         degraded = ranges is None
         if degraded:
@@ -201,7 +367,9 @@ def build_map(root, version):
         stats["sections"][name] = {
             "ranges": len(ranges),
             "owned_ranges": sum(1 for r in ranges if r[2] != "unassigned"),
-            "symbols": len(in_section),
+            "xref_ranges": sum(1 for r in ranges if r[3] == "xref"),
+            "symbols": sum(1 for it in in_section if it[3] == "mdebug"),
+            "xref_items": sum(1 for it in in_section if it[3] == "xref"),
             "owned_bytes": owned,
             "total_bytes": hi - lo,
             "interleaved": degraded,
@@ -211,7 +379,7 @@ def build_map(root, version):
     owned = sum(s["owned_bytes"] for s in stats["sections"].values())
     n_ranges = sum(s["ranges"] for s in stats["sections"].values()) + 1
     lines[3] = (f"# {n_ranges} ranges; {owned:#x} of {total:#x} data bytes "
-                f"attributed by mdebug evidence.")
+                f"attributed by symbol and code-reference evidence.")
     return "\n".join(lines).rstrip() + "\n", stats
 
 
@@ -236,8 +404,8 @@ def main():
     for name, s in stats["sections"].items():
         note = "  INTERLEAVED -> whole section unassigned" \
             if s["interleaved"] else ""
-        print(f"  {name:<9} {s['symbols']:>5} syms  "
-              f"{s['owned_ranges']:>4} owned ranges  "
+        print(f"  {name:<9} {s['symbols']:>5} syms  {s['xref_items']:>5} xref  "
+              f"{s['owned_ranges']:>4} owned ranges ({s['xref_ranges']} xref)  "
               f"{s['owned_bytes']:#9x} / {s['total_bytes']:#9x} bytes{note}")
 
     out = args.root / "config" / args.version / "data_map.toml"

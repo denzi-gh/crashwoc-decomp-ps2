@@ -32,82 +32,22 @@ Usage:
 import argparse
 import hashlib
 import json
-import struct
 import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "tools"))
+from declib.elf import SHF_ALLOC, SHT_NOBITS, read_elf  # noqa: E402
+
 SETS = ("current", "matching", "equivalent", "report-current")
 
-SHF_ALLOC = 0x2
-SHT_SYMTAB = 2
-SHT_RELA = 4
-SHT_NOBITS = 8
-SHT_REL = 9
 STT_SECTION = 3
 STT_FILE = 4
 STT_FUNC = 2
 SHN_UNDEF = 0
 SHN_ABS = 0xFFF1
 SHN_COMMON = 0xFFF2
-
-
-def _cstr(blob, offset):
-    end = blob.index(b"\0", offset)
-    return blob[offset:end].decode("latin-1")
-
-
-def read_elf(data):
-    """Parse a little-endian ELF32 relocatable object.
-
-    Returns (sections, symbols, relocations):
-      sections:    [{index, name, type, flags, size, data}]
-      symbols:     [{name, value, size, type, bind, shndx}]
-      relocations: {target section index: [(offset, type, symbol index)]}
-    """
-    if data[:4] != b"\x7fELF" or data[4] != 1 or data[5] != 1:
-        raise ValueError("not a little-endian ELF32 object")
-    e_shoff, = struct.unpack_from("<I", data, 0x20)
-    e_shentsize, e_shnum, e_shstrndx = struct.unpack_from("<HHH", data, 0x2E)
-    raw = []
-    for i in range(e_shnum):
-        raw.append(struct.unpack_from("<IIIIIIIIII", data, e_shoff + i * e_shentsize))
-    shstr_off, shstr_size = raw[e_shstrndx][4], raw[e_shstrndx][5]
-    shstr = data[shstr_off:shstr_off + shstr_size]
-
-    sections = []
-    for i, (name, stype, flags, _addr, off, size, link, info, _al, entsize) in enumerate(raw):
-        sections.append({
-            "index": i, "name": _cstr(shstr, name), "type": stype,
-            "flags": flags, "size": size, "link": link, "info": info,
-            "entsize": entsize,
-            "data": b"" if stype == SHT_NOBITS else data[off:off + size]})
-
-    symbols = []
-    for sec in sections:
-        if sec["type"] != SHT_SYMTAB:
-            continue
-        strtab = sections[sec["link"]]["data"]
-        for j in range(0, len(sec["data"]), 16):
-            name, value, size, info, _other, shndx = struct.unpack_from(
-                "<IIIBBH", sec["data"], j)
-            symbols.append({"name": _cstr(strtab, name), "value": value,
-                            "size": size, "type": info & 0xF,
-                            "bind": info >> 4, "shndx": shndx})
-
-    relocations = {}
-    for sec in sections:
-        if sec["type"] not in (SHT_REL, SHT_RELA):
-            continue
-        step = 8 if sec["type"] == SHT_REL else 12
-        entries = relocations.setdefault(sec["info"], [])
-        for j in range(0, len(sec["data"]), step):
-            r_offset, r_info = struct.unpack_from("<II", sec["data"], j)
-            addend = (struct.unpack_from("<i", sec["data"], j + 8)[0]
-                      if step == 12 else None)
-            entries.append((r_offset, r_info & 0xFF, r_info >> 8, addend))
-    return sections, symbols, relocations
 
 
 def _sha(*parts):
