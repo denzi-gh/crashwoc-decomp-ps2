@@ -29,7 +29,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0149:00265ad8:_Cdvd_cbLoop"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0149:00265b98:sceCdInitEeCB"
@@ -41,7 +41,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0149:00265d10:cmd_sem_init"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0149:00265da8:cdvd_exit"
@@ -93,4 +93,4 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0149:00266ba0:sceCdMmode"
-state = "asm"
+state = "matching"
