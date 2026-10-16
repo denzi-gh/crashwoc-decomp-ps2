@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
-from promote import flip_state
+from promote import data_table_text, flip_state, set_complete
 
 MANIFEST = '''schema = 1
 unit = "pal103:unit-0007"
@@ -47,6 +47,29 @@ class TestFlipState(unittest.TestCase):
     def test_unknown_id_fails(self):
         with self.assertRaises(SystemExit):
             flip_state(MANIFEST, "pal103:unit-0007:deadbeef:Nope", "matching")
+
+
+class TestDataEntries(unittest.TestCase):
+    def test_flip_state_on_a_data_entry(self):
+        text = ('[[data]]\nid = "pal103:unit-0014:00613fb0:nuvec4_zero"\n'
+                'state = "asm"\n')
+        self.assertIn('state = "matching"',
+                      flip_state(text, "pal103:unit-0014:00613fb0:nuvec4_zero",
+                                 "matching"))
+
+    def test_data_table_text(self):
+        text = data_table_text("pal103", 14, [
+            {"address": 0x00613FB0, "name": "nuvec4_zero"},
+            {"address": 0x00613FC0, "name": "nuvec4_one"}])
+        self.assertEqual(text.count("[[data]]"), 2)
+        self.assertIn('id = "pal103:unit-0014:00613fc0:nuvec4_one"\nstate = "asm"',
+                      text)
+
+    def test_set_complete(self):
+        self.assertIn("complete = true\r\n",
+                      set_complete("schema = 1\r\ncomplete = false\r\n"))
+        with self.assertRaises(SystemExit):
+            set_complete("complete = true\n")
 
 
 if __name__ == "__main__":
