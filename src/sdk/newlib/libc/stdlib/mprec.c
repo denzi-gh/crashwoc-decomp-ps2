@@ -64,7 +64,13 @@ union double_union {
 #define Exp_msk1 0x100000
 #define Exp_mask 0x7ff00000
 #define P 53
+#define Bias 1023
+#define Frac_mask 0xfffff
+#define Ebits 11
+#define Exp_1 0x3ff00000
 #define _Kmax 15
+
+#define Storeinc(a, b, c) (((unsigned short *)a)[1] = b, ((unsigned short *)a)[0] = c, a++)
 
 #define Bcopy(x, y) memcpy((char *)&x->_sign, (char *)&y->_sign, y->_wds * sizeof(Long) + 2 * sizeof(int))
 
@@ -84,7 +90,10 @@ extern const double __mprec_tens[];
 #define Bfree _Bfree
 #define multadd _multadd
 #define i2b _i2b
+#define hi0bits _hi0bits
+#define lo0bits _lo0bits
 #define mult _multiply
+#define cmp __mcmp
 #define b2d _b2d
 
 
@@ -272,6 +281,71 @@ Bigint *_i2b(struct _reent *ptr, int i)
 }
 
 
+Bigint *_multiply(struct _reent *ptr, Bigint *a, Bigint *b)
+{
+    Bigint *c;
+    int k, wa, wb, wc;
+    ULong carry, y, z;
+    ULong *x, *xa, *xae, *xb, *xbe, *xc, *xc0;
+    ULong z2;
+
+    if (a->_wds < b->_wds) {
+        c = a;
+        a = b;
+        b = c;
+    }
+    k = a->_k;
+    wa = a->_wds;
+    wb = b->_wds;
+    wc = wa + wb;
+    if (wc > a->_maxwds) {
+        k++;
+    }
+    c = Balloc(ptr, k);
+    for (x = c->_x, xa = x + wc; x < xa; x++) {
+        *x = 0;
+    }
+    xa = a->_x;
+    xae = xa + wa;
+    xb = b->_x;
+    xbe = xb + wb;
+    xc0 = c->_x;
+    for (; xb < xbe; xb++, xc0++) {
+        if ((y = *xb & 0xffff) != 0) {
+            x = xa;
+            xc = xc0;
+            carry = 0;
+            do {
+                z = (*x & 0xffff) * y + (*xc & 0xffff) + carry;
+                carry = z >> 16;
+                z2 = (*x++ >> 16) * y + (*xc >> 16) + carry;
+                carry = z2 >> 16;
+                Storeinc(xc, z2, z);
+            } while (x < xae);
+            *xc = carry;
+        }
+        if ((y = *xb >> 16) != 0) {
+            x = xa;
+            xc = xc0;
+            carry = 0;
+            z2 = *xc;
+            do {
+                z = (*x & 0xffff) * y + (*xc >> 16) + carry;
+                carry = z >> 16;
+                Storeinc(xc, z, z2);
+                z2 = (*x++ >> 16) * y + (*xc & 0xffff) + carry;
+                carry = z2 >> 16;
+            } while (x < xae);
+            *xc = z2;
+        }
+    }
+    for (xc0 = c->_x, xc = xc0 + wc; wc > 0 && !*--xc; --wc) {
+    }
+    c->_wds = wc;
+    return c;
+}
+
+
 Bigint *_pow5mult(struct _reent *ptr, Bigint *b, int k)
 {
     Bigint *b1, *p5, *p51;
@@ -307,6 +381,46 @@ Bigint *_pow5mult(struct _reent *ptr, Bigint *b, int k)
 }
 
 
+Bigint *_lshift(struct _reent *ptr, Bigint *b, int k)
+{
+    int i, k1, n, n1;
+    Bigint *b1;
+    ULong *x, *x1, *xe, z;
+
+    n = k >> 5;
+    k1 = b->_k;
+    n1 = n + b->_wds + 1;
+    for (i = b->_maxwds; n1 > i; i <<= 1) {
+        k1++;
+    }
+    b1 = Balloc(ptr, k1);
+    x1 = b1->_x;
+    for (i = 0; i < n; i++) {
+        *x1++ = 0;
+    }
+    x = b->_x;
+    xe = x + b->_wds;
+    if (k &= 0x1f) {
+        k1 = 32 - k;
+        z = 0;
+        do {
+            *x1++ = *x << k | z;
+            z = *x++ >> k1;
+        } while (x < xe);
+        if ((*x1 = z) != 0) {
+            ++n1;
+        }
+    } else {
+        do {
+            *x1++ = *x++;
+        } while (x < xe);
+    }
+    b1->_wds = n1 - 1;
+    Bfree(ptr, b);
+    return b1;
+}
+
+
 int __mcmp(Bigint *a, Bigint *b)
 {
     ULong *xa, *xa0, *xb, *xb0;
@@ -333,6 +447,61 @@ int __mcmp(Bigint *a, Bigint *b)
 }
 
 
+Bigint *__mdiff(struct _reent *ptr, Bigint *a, Bigint *b)
+{
+    int i, wa, wb;
+    Bigint *c;
+    Long borrow, y;
+    ULong *xa, *xae, *xb, *xbe, *xc;
+    Long z;
+
+    i = cmp(a, b);
+    if (!i) {
+        c = Balloc(ptr, 0);
+        c->_wds = 1;
+        c->_x[0] = 0;
+        return c;
+    }
+    if (i < 0) {
+        c = a;
+        a = b;
+        b = c;
+        i = 1;
+    } else {
+        i = 0;
+    }
+    c = Balloc(ptr, a->_k);
+    c->_sign = i;
+    wa = a->_wds;
+    xa = a->_x;
+    xae = xa + wa;
+    wb = b->_wds;
+    xb = b->_x;
+    xbe = xb + wb;
+    xc = c->_x;
+    borrow = 0;
+    do {
+        y = (*xa & 0xffff) - (*xb & 0xffff) + borrow;
+        borrow = y >> 16;
+        z = (*xa++ >> 16) - (*xb++ >> 16) + borrow;
+        borrow = z >> 16;
+        Storeinc(xc, z, y);
+    } while (xb < xbe);
+    while (xa < xae) {
+        y = (*xa & 0xffff) + borrow;
+        borrow = y >> 16;
+        z = (*xa++ >> 16) + borrow;
+        borrow = z >> 16;
+        Storeinc(xc, z, y);
+    }
+    while (!*--xc) {
+        wa--;
+    }
+    c->_wds = wa;
+    return c;
+}
+
+
 double _ulp(double _x)
 {
     union double_union x, a;
@@ -356,6 +525,78 @@ double _ulp(double _x)
         }
     }
     return a.d;
+}
+
+
+double _b2d(Bigint *a, int *e)
+{
+    ULong *xa, *xa0, w, y, z;
+    int k;
+    union double_union d;
+
+    xa0 = a->_x;
+    xa = xa0 + a->_wds;
+    y = *--xa;
+    k = hi0bits(y);
+    *e = 32 - k;
+    if (k < Ebits) {
+        word0(d) = Exp_1 | y >> (Ebits - k);
+        w = xa > xa0 ? *--xa : 0;
+        word1(d) = y << ((32 - Ebits) + k) | w >> (Ebits - k);
+        goto ret_d;
+    }
+    z = xa > xa0 ? *--xa : 0;
+    if (k -= Ebits) {
+        word0(d) = Exp_1 | y << k | z >> (32 - k);
+        y = xa > xa0 ? *--xa : 0;
+        word1(d) = z << k | y >> (32 - k);
+    } else {
+        word0(d) = Exp_1 | y;
+        word1(d) = z;
+    }
+ret_d:
+    return d.d;
+}
+
+
+Bigint *_d2b(struct _reent *ptr, double _d, int *e, int *bits)
+{
+    union double_union d;
+    Bigint *b;
+    int de, i, k;
+    ULong *x, y, z;
+
+    d.d = _d;
+    b = Balloc(ptr, 1);
+    x = b->_x;
+
+    z = word0(d) & Frac_mask;
+    word0(d) &= 0x7fffffff;
+    if ((de = (int)(word0(d) >> Exp_shift)) != 0) {
+        z |= Exp_msk1;
+    }
+    if ((y = word1(d)) != 0) {
+        if ((k = lo0bits(&y)) != 0) {
+            x[0] = y | z << (32 - k);
+            z >>= k;
+        } else {
+            x[0] = y;
+        }
+        i = b->_wds = (x[1] = z) ? 2 : 1;
+    } else {
+        k = lo0bits(&z);
+        x[0] = z;
+        i = b->_wds = 1;
+        k += 32;
+    }
+    if (de) {
+        *e = de - Bias - (P - 1) + k;
+        *bits = P - k;
+    } else {
+        *e = de - Bias - (P - 1) + 1 + k;
+        *bits = 32 * i - hi0bits(x[i - 1]);
+    }
+    return b;
 }
 
 
