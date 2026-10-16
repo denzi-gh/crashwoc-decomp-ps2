@@ -13,11 +13,11 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0099:0021ffa8:FindSplineTargetPoint"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00220410:FindSplineClosestPointAndDist"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00220710:ASin360f"
@@ -189,4 +189,4 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0099:00221ab0:ControlledDist"
-state = "asm"
+state = "matching"

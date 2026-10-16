@@ -9,12 +9,6 @@
 
 #include "game/gametypes.h"
 
-struct powerdata_s {
-    u8 pad_00[4];
-    char *name;             /* 0x4 */
-    char **text;            /* 0x8 */
-};                          /* 0xC */
-
 extern struct game_s Game;
 extern struct powerdata_s PData[6];
 

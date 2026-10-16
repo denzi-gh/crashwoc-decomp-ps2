@@ -685,4 +685,25 @@ struct NEWBUGGY {
     char pad_340[0x384 - 0x340];
 }; /* 0x384 */
 
+struct newwumpa_s {
+    struct nuvec_s pos;                 /* 0x00 */
+    struct nuvec_s screen;              /* 0x0C */
+    float scale;                        /* 0x18 */
+    u8 count;                           /* 0x1C */
+    u8 delay;                           /* 0x1D */
+    signed char transformed;            /* 0x1E */
+    signed char bonus;                  /* 0x1F */
+    signed char active;                 /* 0x20 */
+    char pad_21[0x24 - 0x21];
+}; /* 0x24 */
+
+struct powerdata_s {
+    u8 character;                       /* 0x00 */
+    u8 font3d_letter;                   /* 0x01 */
+    char pad1;                          /* 0x02 */
+    char pad2;                          /* 0x03 */
+    char *name;                         /* 0x04 */
+    char **text;                        /* 0x08 */
+}; /* 0x0C */
+
 #endif

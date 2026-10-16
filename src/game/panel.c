@@ -21,17 +21,19 @@
  *   0x00240958 ResetPanelDebris
  *   0x00240980 NextLetter
  *
- * DrawPanel3DObject and NextLetter are public inline functions: gcc 2.95
- * expands them into every later caller and defers their out-of-line copies
- * to the end of the unit.
+ * DrawPanel3DObject, NextLetter, DrawPanel3DTempCharacter, MaxVP and GameVP
+ * are public inline functions: gcc 2.95 expands them into every later caller
+ * and defers their out-of-line copies to the end of the unit.
  */
 
 #include "nu_libc.h"
 
+#include "nu3d/nucamera.h"
 #include "nu3d/nugscn.h"
 #include "nu3d/nuvport.h"
 #include "numath/numtx.h"
 #include "numath/nutrig.h"
+#include "nups2/ps2ctl.h"
 #include "game/gametypes.h"
 #include "game/creature.h"
 
@@ -73,7 +75,7 @@ extern s32 MAXVPSIZEX, MAXVPSIZEY;
 extern s32 MINVPSIZEX, MINVPSIZEY;
 extern s32 screendump, save_paused, Paused, editor_active;
 extern s32 new_mode, new_level;
-extern u8 D_00591FDE[];
+extern struct cursor_s Cursor;
 extern float PANEL3DMULX, PANEL3DMULY;
 extern s32 temp_character;
 extern struct anim_s TempAnim;
@@ -150,9 +152,9 @@ inline s32 DrawPanel3DObject(s32 object, float x, float y, float z, float scalex
                 }
                 break;
         }
-        m._32 = z;
         m._30 = x * PANEL3DMULX;
         m._31 = y * PANEL3DMULY;
+        m._32 = z;
         return NuRndrGScnObj(scn->gobjs[obj->instance->objid], &m);
     }
     return 0;
@@ -173,6 +175,88 @@ inline s32 NextLetter(char *text, struct nuspecial_s **obj) {
         obj[0] = Font3DTab[c].obj.special;
     }
     return 1;
+}
+
+
+inline s32 DrawPanel3DTempCharacter(u16 xrot, u16 yrot, u16 zrot, s32 rot, float x,
+                             float y, float z, float scale) {
+    struct numtx_s m;
+    struct numtx_s tmtx[0x100];
+    struct nuvec_s s;
+    float **dwa;
+    struct CharacterModel *model;
+    s32 character;
+    s32 index;
+
+    character = temp_character;
+    if ((character != 0x62) && (character != 0xB8) && (character != 0xB9) &&
+        (character != 0xBA) && (character != 0xBC)) {
+        return 0;
+    }
+    index = CRemap[temp_character];
+    if (index == -1) {
+        return 0;
+    }
+    model = &CModel[index];
+    s.z = scale;
+    s.y = scale;
+    s.x = scale;
+    NuMtxSetScale(&m, &s);
+    switch (rot) {
+        case 0:
+            if (xrot != 0) {
+                NuMtxRotateX(&m, xrot);
+            }
+            if (yrot != 0) {
+                NuMtxRotateY(&m, yrot);
+            }
+            if (zrot != 0) {
+                NuMtxRotateY(&m, zrot);
+            }
+            break;
+        case 1:
+            if (yrot != 0) {
+                NuMtxRotateY(&m, yrot);
+            }
+            if (xrot != 0) {
+                NuMtxRotateX(&m, xrot);
+            }
+            if (zrot != 0) {
+                NuMtxRotateX(&m, zrot);
+            }
+            break;
+    }
+    m._32 = z;
+    m._30 = x * PANEL3DMULX;
+    m._31 = y * PANEL3DMULY;
+    EvalModelAnim(model, &TempAnim, &m, tmtx, &dwa, 0);
+    return NuHGobjRndrMtxDwa(model->obj, &m, 1, 0, tmtx, dwa);
+}
+
+
+inline void MaxVP(void) {
+    NuVpSetSize((float)(MAXVPSIZEX << 4), (float)(MAXVPSIZEY << 3));
+}
+
+
+inline void GameVP(void) {
+    s32 paused;
+    s32 x, y;
+
+    if (screendump != 0) {
+        paused = save_paused;
+    } else {
+        paused = Paused;
+    }
+
+    if ((editor_active != 0) ||
+        ((paused != 0) && ((Cursor.menu < 3) || (Cursor.menu > 8)))) {
+        NuVpSetSize((float)(MAXVPSIZEX << 4), (float)(MAXVPSIZEY << 3));
+    } else {
+        x = (MAXVPSIZEX << 4) + (((MINVPSIZEX << 4) - (MAXVPSIZEX << 4)) * paused) / 0x19;
+        y = (MAXVPSIZEY << 3) + (((MINVPSIZEY << 3) - (MAXVPSIZEY << 3)) * paused) / 0x19;
+        NuVpSetSize((float)x, (float)y);
+    }
 }
 
 
@@ -652,30 +736,1039 @@ void DrawWorldToPanelWumpa(void) {
 }
 
 
+extern struct gtimer_s GlobalTimer;
+extern s32 SWIDTH;
+extern s32 SHEIGHT;
+extern f32 DIVPANEL3D;
+extern s32 PLAYERCOUNT;
+extern s32 PANELOFF;
+extern s32 pause_rndr_on;
+extern s32 cutmovie;
+extern s32 ShowPlayerCoordinate;
+extern struct nucamera_s *pNuCam;
+extern struct cammtx_s *pCam;
+extern struct nuvec_s vTEMP;
+extern struct numtx_s numtx_identity;
+extern struct nupad_s *Pad[];
+extern s32 Demo;
+extern s32 GameMode;
+extern s32 Hub;
+extern float hubleveltext_pos;
+extern s32 hubleveltext_level;
+extern s32 hubleveltext_open;
+extern s32 hubleveltext_i;
+extern s32 InvincibilityCHEAT;
+extern s32 pause_dir;
+extern s32 pausestats_frame;
+extern s32 ExtraMoves;
+extern struct powerdata_s PData[6];
+extern s8 CLetter[191];
+extern s32 sapphire_relics;
+extern s32 gold_relics;
+extern s32 platinum_relics;
+extern u8 bonus_wumpa_delay;
+extern u8 bonus_life_delay;
+extern f32 bonus_wumpa_wait;
+extern f32 bonus_lives_wait;
+extern float bonus_panel_wait;
+extern struct nugscn_s *crate_scene;
+extern struct crateeditor_s crate_list[];
+extern u16 PANELCRATEYROT;
+extern s32 bonus_frame;
+extern s32 DESTRUCTIBLECRATECOUNT;
+extern s32 DESTRUCTIBLEBONUSCRATECOUNT;
+extern struct panelcount_s plr_crystal;
+extern struct panelcount_s plr_crategem;
+extern struct panelcount_s plr_bonusgem;
+extern struct newwumpa_s NewWumpa[];
+extern s32 TimeTrial;
+extern u32 finish_frame;
+extern u32 finish_frames;
+extern s32 newleveltime_slot;
+extern u16 new_lev_flags;
+extern float tt_sx;
+extern float tt_sy;
+extern struct gtimer_s TimeTrialTimer;
+extern float TT_RELICX;
+extern float TT_RELICY;
+extern s32 tt_flash;
+extern u32 timetrial_frame;
+extern struct nuvec_s TTScrPos;
+extern f32 TimeTrialWait;
+extern s32 VEHICLECONTROL;
+extern s32 SmokeyCountDownValue;
+extern s32 SmokeyPosition;
+extern struct tubinfo_s PlrTub;
+extern s32 MAXLAPS;
+extern s32 i_ring;
+extern s32 carpet_panelpos;
+extern s32 carpet_place;
+extern s32 RINGCOUNT;
+extern s32 GATECOUNT;
+extern s32 plr_gates;
+extern s32 in_finish_range;
+
+extern char *tINSERTCONTROLLERINPORT1[6][2];
+extern char *LevelName[44][6];
+extern char *PlaceName[5][6];
+extern char *tRELICSREQUIRED[6];
+extern char *tCRYSTALS[6];
+extern char *tPOWERS[6];
+extern char *tGEMS[6];
+extern char *tRELICS[6];
+extern char *tTIMES[6];
+extern char *tBONUS[6];
+extern char *tDEMO[6];
+extern char *tENTERINGTIMETRIAL[6];
+extern char *tBESTTIME[6];
+extern char *t2NDBESTTIME[6];
+extern char *t3RDBESTTIME[6];
+extern char *tNONEWTIME[6];
+extern char *tGO[6];
+
+extern float PAUSEPANELX;
+extern float PAUSEPANELZ;
+extern float PAUSENAMEY;
+extern float PAUSEINFOY;
+extern float PAUSEPERCENTY;
+extern float PAUSEHMUL;
+extern float PAUSEVMUL;
+extern float WUMPATXTSX;
+extern float CRATEOBJSX;
+extern float CRATETXTSX;
+extern float LIVESTXTSX;
+extern float BONUSWUMPATXTSX;
+extern float BONUSCRATEOBJSX;
+extern float BONUSCRATETXTSX;
+extern float BONUSLIVESTXTSX;
+extern float TT_MESSAGEY;
+extern float TT_TIMESDY;
+extern float TT_SCALE;
+extern float RUMBOSSBARX, RUMBOSSBARY, RUMBOSSBARZ;
+extern float RUMBOSSBARSCALEX, RUMBOSSBARSCALEY;
+extern float ATMBOSSBARX, ATMBOSSBARY, ATMBOSSBARZ;
+extern float ATMBOSSBARSCALEX, ATMBOSSBARSCALEY;
+extern float FIREBOSSBARX, FIREBOSSBARY, FIREBOSSBARZ;
+extern float FIREBOSSBARSCALEX, FIREBOSSBARSCALEY;
+extern u16 PANELCRUNCHXROT;
+extern float PANELCRUNCHX, PANELCRUNCHY, PANELCRUNCHZ, PANELCRUNCHSCALE;
+extern float PANELSINKX, PANELSINKY, PANELSINKZ, PANELSINKSCALE;
+extern float PANELBLIMPX, PANELBLIMPY, PANELBLIMPZ, PANELBLIMPSCALE;
+extern float PANELRINGX, PANELRINGY, PANELRINGSIZE;
+
+extern char D_006207E0[];
+extern char D_006207F8[];
+extern char D_00620810[];
+extern char D_00620820[];
+extern char D_00620830[];
+extern char D_00620840[];
+extern char D_00620850[];
+extern char D_00631FE8[];
+extern char D_00631FF0[];
+extern char D_00631FF8[];
+extern char D_00632000[];
+extern char D_00632008[];
+extern char D_00632010[];
+extern char D_00632018[];
+#define tPOSFORMAT D_006207E0
+#define tINVINCIBLE_SPACED D_006207F8
+#define tINVINCIBLE D_00620810
+#define tGEMSUMFORMAT D_00620820
+#define tTIMEFORMAT_SPACED D_00620830
+#define tNEWSLOT_SPACED D_00620840
+#define tNOSLOT_SPACED D_00620850
+#define tPERCENTFORMAT D_00631FE8
+#define tOUTOFFORMAT D_00631FF0
+#define tTOTALFORMAT D_00631FF8
+#define tTIMEFORMAT D_00632000
+#define tNEWSLOT D_00632008
+#define tNOSLOT D_00632010
+#define tHEALTHFORMAT D_00632018
+
+extern void NuCameraSet(struct nucamera_s *cam);
+extern void NuStrCpy(char *dst, char *src);
+extern void DrawMenu(struct cursor_s *cursor, s32 paused);
+extern char *MakeEditText(char *txt);
+extern void BossBar(f32 x, f32 y, f32 z, f32 xs, f32 ys, s32 health,
+                    s32 maxhealth);
+extern s32 GetGliderHealthPercentage(struct creature_s *c);
+extern s32 GetRumblePlayerHealthPercentage();
+extern void RumbleHeadUpDisplay(void);
+extern void DrawPanel3DArrow(void);
+extern s32 GetCurrentLevelObjectives(void);
+extern s32 GetMaxLevelObjectives(void);
+extern s32 bonus_crates_destroyed;
+extern s32 save_bonus_crates_destroyed;
+extern s32 Bonus;
+extern s32 bonus_finish_frame;
+extern f32 bonus_crates_wait;
+extern struct panelcount_s plr_crates;
+extern struct panelcount_s plr_lives;
+extern f32 WUMPAOBJSX;
+extern f32 PANELSY;
+extern struct ldata_s *LDATA;
+extern f32 BONUSWUMPAOBJSX;
+extern f32 BONUSPANELSY;
+extern f32 LIVESOBJSX;
+extern f32 BONUSLIVESOBJSX;
+extern f32 LIFESCALE;
+extern f32 BONUSLIFESCALE;
+extern u16 panel_head_xrot;
+extern u16 panel_head_yrot;
+extern s32 bonus_lives;
+extern void DrawPanelDebris(void);
+
+void DrawPanel(void) {
+    struct creature_s *plr;
+    s32 paused;
+    s32 i;
+    s32 j;
+    s32 frame;
+    s32 t;
+    u16 yrot;
+    u16 a;
+    short wobble_x;
+    short wobble_y;
+    float f;
+    float xs;
+    float ys;
+    float y;
+    float scale;
+    float size;
+    char txt[32];
+
+    plr = (PLAYERCOUNT != 0) ? player : 0;
+
+    wobble_x = NuTrigTable[(((GlobalTimer.frame % 250) << 16) / 250) & 0xFFFF] *
+               2731.0f + 1820.0f;
+    wobble_y = NuTrigTable[((((GlobalTimer.frame % 200) << 16) / 200) + 0x4000) & 0xFFFF] *
+               2731.0f;
+
+    PANEL3DMULX = (float)SWIDTH / (DIVPANEL3D * ((float)SWIDTH / 640.0f));
+    PANEL3DMULY = (float)SHEIGHT / (DIVPANEL3D * ((float)SHEIGHT / 448.0f));
+
+    if (editor_active != 0) {
+        return;
+    }
+
+    if (screendump != 0) {
+        paused = save_paused;
+    } else {
+        paused = Paused;
+    }
+
+    if ((paused == 0) && ((LDATA->flags & 1) != 0) && (PANELOFF != 0)) {
+        return;
+    }
+
+    yrot = -(((GlobalTimer.frame % 100) << 16) / 100);
+
+    if ((pause_rndr_on == 0) && (cutmovie == -1)) {
+        Draw3DCheckpointLetters();
+    }
+
+    MaxVP();
+
+    if ((ShowPlayerCoordinate != 0) && (plr != 0)) {
+        NuCameraTransformScreenClip(&vTEMP, &plr->obj.pos, 1, 0);
+    }
+
+    pNuCam->mtx = numtx_identity;
+    NuCameraSet(pNuCam);
+
+    if ((Pad[0] != 0) && !Pad[0]->valid && (Demo == 0) && (Cursor.menu != 0) &&
+        (Cursor.menu != 0x20) && (GameMode != 1) && (cutmovie == -1)) {
+        Text3D(tINSERTCONTROLLERINPORT1[Game.language][0], 0.0f, 0.0f, 0.5f, 0.3f,
+               0.3f, 0.3f, 4, 1);
+        Text3D(tINSERTCONTROLLERINPORT1[Game.language][1], 0.0f, 0.0f, 0.5f, 0.3f,
+               0.3f, 0.3f, 1, 1);
+        for (i = 2; i > 0; i--) {
+            DrawPanel3DObject(0x81, 0.0f, 0.0f, 0.75f, 1.0f, 0.125f, 0.09f, 0xC000, 0,
+                              0, ObjTab[0x81].obj.scene, ObjTab[0x81].obj.special, 0);
+        }
+    }
+
+    DrawMenu(&Cursor, paused);
+
+    if ((Cursor.menu == 0x11) || (cutmovie != -1)) {
+        goto exit;
+    }
+
+    if (Level == 0x23) {
+    } else if ((Level == 0x25) && (Hub != -1) && (paused == 0) &&
+               (hubleveltext_pos > 0.0f) && (hubleveltext_level != -1)) {
+        f = (0.333f - hubleveltext_pos) / 0.333f;
+        if (hubleveltext_open != 0) {
+            Text3D(LevelName[hubleveltext_level][Game.language], 0.0f, f * 0.4f + 0.8f,
+                   1.0f, 0.6f, 0.6f, 0.6f, 0, 0);
+        }
+        if ((u32)hubleveltext_i < 5) {
+            if (hubleveltext_open != 0) {
+                if (hubleveltext_i == 2) {
+                    xs = 0.0f;
+                    ys = -0.7f - f * 0.5f;
+                } else {
+                    ys = -0.7f;
+                    if (hubleveltext_i > 2) {
+                        xs = -0.6f - f * 0.8f;
+                    } else {
+                        xs = f * 0.8f + 0.6f;
+                    }
+                }
+                DrawTimeTrialTimes(hubleveltext_level, xs, ys);
+            } else if (Hub == 5) {
+                sprintf(tbuf, tRELICSREQUIRED[Game.language], (hubleveltext_i + 1) * 5);
+                if (Game.language == 0x63) {
+                    AddSpacesIntoText(tbuf, 2);
+                }
+                Text3D(tbuf, 0.0f, f * 0.3f + 0.85f, 1.0f, 0.6f, 0.6f, 0.6f, 0, 3);
+            }
+        }
+    }
+
+    if ((LDATA->flags & 1) == 0) {
+        goto exit;
+    }
+
+    if (plr != 0) {
+        if (ShowPlayerCoordinate != 0) {
+            sprintf(tbuf, tPOSFORMAT, plr->obj.pos.x, plr->obj.pos.y, plr->obj.pos.z);
+            if (Game.language == 0x63) {
+                AddSpacesIntoText(tbuf, 1);
+            }
+            Text3D(tbuf, vTEMP.x, vTEMP.y, 1.0f, 0.4f, 0.5f, 0.5f, 0, 3);
+        }
+        if ((InvincibilityCHEAT != 0) && ((GlobalTimer.frame % 25) < 12)) {
+            Text3D((Game.language == 0x63) ? tINVINCIBLE_SPACED : tINVINCIBLE, 0.0f,
+                   1.0f, 1.0f, 0.4f, 0.4f, 0.4f, 1, 4);
+        }
+    }
+
+    if (paused != 0) {
+        if ((Cursor.menu >= 3) && (Cursor.menu <= 8)) {
+            ys = 0.0f;
+            if (pause_dir != 0) {
+                f = (25 - paused) * (PAUSEVMUL / 25.0f);
+                ys -= f;
+            }
+            DrawPanel3DObject(99, 0.0f, ys, PAUSEPANELZ, 0.1f, 0.1f, f * 0.1f, 0, 0, 0,
+                              ObjTab[99].obj.scene, ObjTab[99].obj.special, 1);
+            xs = 0.0f;
+            if (pause_dir != 0) {
+                f = (25 - paused) * (PAUSEHMUL / 25.0f);
+                xs += f;
+            }
+            DrawPanel3DObject(98, xs, 0.0f, PAUSEPANELZ, 0.1f, 0.1f, f * 0.1f, 0, 0, 0,
+                              ObjTab[98].obj.scene, ObjTab[98].obj.special, 1);
+            if (paused == 25) {
+                Text3D(Game.name, PAUSEPANELX, PAUSENAMEY, 1.0f, 0.6f, 0.6f, 0.6f, 0, 0);
+                sprintf(tbuf, tPERCENTFORMAT, Game.percent);
+                if (Game.language == 0x63) {
+                    AddSpacesIntoText(tbuf, 1);
+                }
+                Text3D(tbuf, PAUSEPANELX, PAUSEPERCENTY - (25 - paused), 1.0f, 1.0f,
+                       1.0f, 1.0f, 0, 0);
+                if (LDATA->hub != -1) {
+                    j = 5;
+                } else {
+                    j = 4;
+                }
+                i = (pausestats_frame % (j * 150U)) / 150U;
+                xs = PAUSEPANELX;
+                ys = PAUSEINFOY;
+                switch (i) {
+                    case 0:
+                        Text3D(tCRYSTALS[Game.language], xs, ys + 0.35f, 1.0f, 0.6f,
+                               0.6f, 0.6f, 0, 0);
+                        BigOutOf(xs - 0.1f, ys - 0.125f, 0.6f, Game.crystals, 25);
+                        DrawPanel3DCharacter(0x75, xs + 0.15f, ys - 0.175f, 1.0f, 0.2f,
+                                             0.2f, 0.2f, 0, yrot, 0, -1, 1.0f, 1);
+                        break;
+                    case 1:
+                        Text3D(tPOWERS[Game.language], xs, ys + 0.35f, 1.0f, 0.6f, 0.6f,
+                               0.6f, 0, 0);
+                        if (Game.language == 0x63) {
+                            tbuf[1] = ' ';
+                            tbuf[2] = 0;
+                        } else {
+                            tbuf[1] = 0;
+                        }
+                        if ((ExtraMoves != 0) || ((Game.powerbits & 1) != 0)) {
+                            tbuf[0] = PData[0].font3d_letter;
+                            Text3D(tbuf, xs - 0.16f, ys + 0.05f, 1.0f, 1.4f, 1.4f, 1.4f,
+                                   0, 0);
+                        }
+                        if ((ExtraMoves != 0) || ((Game.powerbits & 2) != 0)) {
+                            tbuf[0] = PData[1].font3d_letter;
+                            Text3D(tbuf, xs, ys + 0.05f, 1.0f, 1.4f, 1.4f, 1.4f, 0, 0);
+                        }
+                        if ((ExtraMoves != 0) || ((Game.powerbits & 4) != 0)) {
+                            tbuf[0] = PData[2].font3d_letter;
+                            Text3D(tbuf, xs + 0.16f, ys + 0.05f, 1.0f, 1.4f, 1.4f, 1.4f,
+                                   0, 0);
+                        }
+                        if ((ExtraMoves != 0) || ((Game.powerbits & 8) != 0)) {
+                            tbuf[0] = PData[3].font3d_letter;
+                            Text3D(tbuf, xs - 0.16f, ys - 0.2f, 1.0f, 1.4f, 1.4f, 1.4f,
+                                   0, 0);
+                        }
+                        if ((ExtraMoves != 0) || ((Game.powerbits & 0x10) != 0)) {
+                            tbuf[0] = PData[4].font3d_letter;
+                            Text3D(tbuf, xs, ys - 0.2f, 1.0f, 1.4f, 1.4f, 1.4f, 0, 0);
+                        }
+                        if ((ExtraMoves != 0) || ((Game.powerbits & 0x20) != 0)) {
+                            tbuf[0] = PData[5].font3d_letter;
+                            Text3D(tbuf, xs + 0.16f, ys - 0.2f, 1.0f, 1.4f, 1.4f, 1.4f,
+                                   0, 0);
+                        }
+                        break;
+                    case 2:
+                        Text3D(tGEMS[Game.language], xs, ys + 0.35f, 1.0f, 0.6f, 0.6f,
+                               0.6f, 0, 0);
+                        f = 0.0333f;
+                        if ((Game.gembits & 2) != 0) {
+                            f = 0.1f;
+                        }
+                        DrawPanel3DCharacter(0x7A, xs - 0.08f, ys + 0.2f, 1.0f, f,
+                                             f, f, 0, yrot, 0, -1, 1.0f, 1);
+                        f = 0.0333f;
+                        if ((Game.gembits & 4) != 0) {
+                            f = 0.1f;
+                        }
+                        DrawPanel3DCharacter(0x7B, xs + 0.08f, ys + 0.2f, 1.0f, f,
+                                             f, f, 0, yrot, 0, -1, 1.0f, 1);
+                        f = 0.0333f;
+                        if ((Game.gembits & 1) != 0) {
+                            f = 0.1f;
+                        }
+                        DrawPanel3DCharacter(0x79, xs - 0.15f, ys + 0.06f, 1.0f, f,
+                                             f, f, 0, yrot, 0, -1, 1.0f, 1);
+                        f = 0.0333f;
+                        if ((Game.gembits & 0x10) != 0) {
+                            f = 0.1f;
+                        }
+                        DrawPanel3DCharacter(0x7D, xs, ys + 0.06f, 1.0f, f, f,
+                                             f, 0, yrot, 0, -1, 1.0f, 1);
+                        f = 0.0333f;
+                        if ((Game.gembits & 8) != 0) {
+                            f = 0.1f;
+                        }
+                        DrawPanel3DCharacter(0x7C, xs + 0.15f, ys + 0.06f, 1.0f, f,
+                                             f, f, 0, yrot, 0, -1, 1.0f, 1);
+                        sprintf(tbuf, tGEMSUMFORMAT, Game.crate_gems + Game.bonus_gems,
+                                (u8)CLetter[119]);
+                        if (Game.language == 0x63) {
+                            AddSpacesIntoText(tbuf, 1);
+                        }
+                        Text3D(tbuf, xs, 0.0f, 1.0f, 0.6f, 0.6f, 0.6f, 0, 0);
+                        BigOutOf(xs - 0.1f, ys - 0.3f, 0.6f, Game.gems, 46);
+                        DrawPanel3DCharacter(0x78, xs + 0.15f, ys - 0.275f, 1.0f, 0.175f,
+                                             0.175f, 0.175f, 0, yrot, 0, -1, 1.0f, 1);
+                        break;
+                    case 3:
+                        DrawPanel3DObject(3, xs - 0.15f, ys + 0.12f, 1.0f, 0.08f, 0.08f,
+                                          0.08f, 0, 0, 0, ObjTab[3].obj.scene,
+                                          ObjTab[3].obj.special, 1);
+                        sprintf(tbuf, tINTFORMAT, sapphire_relics);
+                        if (Game.language == 0x63) {
+                            AddSpacesIntoText(tbuf, 1);
+                        }
+                        Text3D(tbuf, xs - 0.15f, ys - 0.03f, 1.0f, 0.6f, 0.6f, 0.6f, 0,
+                               0);
+                        DrawPanel3DObject(2, xs, ys + 0.12f, 1.0f, 0.08f, 0.08f, 0.08f,
+                                          0, 0, 0, ObjTab[2].obj.scene,
+                                          ObjTab[2].obj.special, 1);
+                        sprintf(tbuf, tINTFORMAT, gold_relics);
+                        if (Game.language == 0x63) {
+                            AddSpacesIntoText(tbuf, 1);
+                        }
+                        Text3D(tbuf, xs, ys - 0.03f, 1.0f, 0.6f, 0.6f, 0.6f, 0, 0);
+                        DrawPanel3DObject(1, xs + 0.15f, ys + 0.12f, 1.0f, 0.08f, 0.08f,
+                                          0.08f, 0, 0, 0, ObjTab[1].obj.scene,
+                                          ObjTab[1].obj.special, 1);
+                        sprintf(tbuf, tINTFORMAT, platinum_relics);
+                        if (Game.language == 0x63) {
+                            AddSpacesIntoText(tbuf, 1);
+                        }
+                        Text3D(tbuf, xs + 0.15f, ys - 0.03f, 1.0f, 0.6f, 0.6f, 0.6f, 0,
+                               0);
+                        Text3D(tRELICS[Game.language], xs, ys + 0.35f, 1.0f, 0.6f, 0.6f,
+                               0.6f, 0, 0);
+                        BigOutOf(xs - 0.1f, ys - 0.3f, 0.6f, Game.relics, 30);
+                        DrawPanel3DObject(3, xs + 0.15f, ys - 0.325f, 1.0f, 0.125f,
+                                          0.125f, 0.125f, 0, yrot, 0, ObjTab[3].obj.scene,
+                                          ObjTab[3].obj.special, 1);
+                        break;
+                    case 4:
+                        Text3D(tTIMES[Game.language], xs, ys + 0.35f, 1.0f, 0.6f, 0.6f,
+                               0.6f, 0, 0);
+                        DrawTimeTrialTimes(Level, xs, ys - 0.1f);
+                        break;
+                }
+            }
+        }
+        goto exit;
+    }
+
+    if (plr != 0) {
+        i = 0;
+        if ((plr_bonus_wumpas.count != 0) || (bonus_wumpa_delay != 0) ||
+            (bonus_wumpa_wait > 0.0f)) {
+            i = 1;
+        }
+        if (((Bonus == 2) && ((plr->obj.dead == 0) || (i != 0))) ||
+            (((Bonus == 3) || (Bonus == 4)) && (i != 0))) {
+            if (bonus_panel_wait > 0.0f) {
+                f = bonus_panel_wait;
+            } else if (bonus_wumpa_wait > 0.0f) {
+                f = 0.5f - bonus_wumpa_wait;
+            } else {
+                f = 0.0f;
+            }
+            if (f > 0.0f) {
+                ys = BONUSPANELSY + (-1.2f - BONUSPANELSY) * f * 2.0f;
+            } else {
+                ys = BONUSPANELSY;
+            }
+            sprintf(tbuf, tINTFORMAT, plr_bonus_wumpas.draw);
+            if (Game.language == 0x63) {
+                AddSpacesIntoText(tbuf, 1);
+            }
+            Text3D(tbuf, BONUSWUMPATXTSX, ys, 1.0f, 0.6f, 0.6f, 0.6f, 2, 1);
+            DrawPanel3DObject(0, BONUSWUMPAOBJSX, ys, 1.0f, 0.125f, 0.125f, 0.125f, 0,
+                              PANELWUMPAYROT, 0, ObjTab[0].obj.scene,
+                              ObjTab[0].obj.special, 1);
+        }
+
+        i = 0;
+        if ((bonus_finish_frame < save_bonus_crates_destroyed * 5 + 5) ||
+            (bonus_crates_wait > 0.0f)) {
+            i = 1;
+        }
+        if (((Bonus == 2) && ((plr->obj.dead == 0) || (i != 0))) ||
+            (((Bonus == 3) || (Bonus == 4)) && (i != 0))) {
+            if (bonus_panel_wait > 0.0f) {
+                f = bonus_panel_wait;
+            } else if (bonus_crates_wait > 0.0f) {
+                f = 0.5f - bonus_crates_wait;
+            } else {
+                f = 0.0f;
+            }
+            if (f > 0.0f) {
+                ys = BONUSPANELSY + (-1.2f - BONUSPANELSY) * f * 2.0f;
+            } else {
+                ys = BONUSPANELSY;
+            }
+            sprintf(tbuf, tOUTOFFORMAT, bonus_crates_destroyed,
+                    DESTRUCTIBLEBONUSCRATECOUNT);
+            if (Game.language == 0x63) {
+                AddSpacesIntoText(tbuf, 1);
+            }
+            Text3D(tbuf, BONUSCRATETXTSX, ys, 1.0f, 0.6f, 0.6f, 0.6f, 2, 2);
+            DrawPanel3DObject(-1, BONUSCRATEOBJSX, ys, 1.0f, 0.09375f, 0.09375f,
+                              0.09375f, 0, PANELCRATEYROT, 0, crate_scene,
+                              crate_list[5].obj.special, 1);
+        }
+
+        i = 0;
+        if ((bonus_lives != 0) || (bonus_life_delay != 0) || (bonus_lives_wait > 0.0f)) {
+            i = 1;
+        }
+        if (((Bonus == 2) && ((plr->obj.dead == 0) || (i != 0))) ||
+            (((Bonus == 3) || (Bonus == 4)) && (i != 0))) {
+            if (bonus_panel_wait > 0.0f) {
+                f = bonus_panel_wait;
+            } else if (bonus_lives_wait > 0.0f) {
+                f = 0.5f - bonus_lives_wait;
+            } else {
+                f = 0.0f;
+            }
+            if (f > 0.0f) {
+                ys = BONUSPANELSY + (-1.2f - BONUSPANELSY) * f * 2.0f;
+            } else {
+                ys = BONUSPANELSY;
+            }
+            sprintf(tbuf, tINTFORMAT, bonus_lives);
+            if (Game.language == 0x63) {
+                AddSpacesIntoText(tbuf, 1);
+            }
+            Text3D(tbuf, BONUSLIVESTXTSX, ys, 1.0f, 0.6f, 0.6f, 0.6f, 2, 0);
+            i = 0x11;
+            if (LDATA->character == 1) {
+                i = 0x12;
+            }
+            DrawPanel3DObject(i, BONUSLIVESOBJSX, ys, 1.0f, BONUSLIFESCALE,
+                              BONUSLIFESCALE, BONUSLIFESCALE, panel_head_xrot,
+                              panel_head_yrot + 0x2000, 0, ObjTab[i].obj.scene,
+                              ObjTab[i].obj.special, 1);
+        }
+
+        if ((Bonus == 2) && (plr->obj.dead == 0)) {
+            DrawGameMessage(tBONUS[Game.language], bonus_frame, 0.5f);
+        }
+        if (Demo != 0) {
+            DrawGameMessage(tDEMO[Game.language], GameTimer.frame, 0.5f);
+        }
+
+        if (plr != 0) {
+            if (plr_wumpas.frame != 0) {
+                f = PANELSY + (25 - plr_wumpas.frame) * 0.04f * 0.4f;
+                DrawPanel3DObject(0, WUMPAOBJSX, f, 1.0f, 0.2f, 0.2f, 0.2f, 0xE800,
+                                  PANELWUMPAYROT, 0, ObjTab[0].obj.scene,
+                                  ObjTab[0].obj.special, 1);
+                sprintf(tbuf, tINTFORMAT, plr_wumpas.draw);
+                if (Game.language == 0x63) {
+                    AddSpacesIntoText(tbuf, 1);
+                }
+                Text3D(tbuf, WUMPATXTSX, f, 1.0f, 1.2f, 1.2f, 1.2f, 2, 1);
+            }
+            if ((plr_crates.frame != 0) && (LDATA->hub != -1) &&
+                ((LDATA->flags & 2) == 0)) {
+                f = PANELSY + (25 - plr_crates.frame) * 0.04f * 0.4f;
+                DrawPanel3DObject(-1, CRATEOBJSX, f, 1.0f, 0.15f, 0.15f, 0.15f, 0xE800,
+                                  PANELCRATEYROT, 0, crate_scene,
+                                  crate_list[5].obj.special, 1);
+                sprintf(tbuf, tINTFORMAT, plr_crates.draw);
+                if (Game.language == 0x63) {
+                    AddSpacesIntoText(tbuf, 1);
+                }
+                Text3D(tbuf, CRATETXTSX, f, 1.0f, 1.2f, 1.2f, 1.2f, 2, 2);
+                sprintf(tbuf, tTOTALFORMAT, DESTRUCTIBLECRATECOUNT);
+                if (Game.language == 0x63) {
+                    AddSpacesIntoText(tbuf, 1);
+                }
+                Text3D(tbuf, font3d_xright, font3d_ybottom, 1.0f, 0.6f, 0.6f, 0.6f, 6,
+                       2);
+            }
+            if (plr_lives.frame != 0) {
+                f = PANELSY + (25 - plr_lives.frame) * 0.04f * 0.4f;
+                i = 0x11;
+                if (LDATA->character == 1) {
+                    i = 0x12;
+                }
+                DrawPanel3DObject(i, LIVESOBJSX, f, 1.0f, LIFESCALE, LIFESCALE,
+                                  LIFESCALE, panel_head_xrot - 0x1000,
+                                  panel_head_yrot + 0x2000, 0, ObjTab[i].obj.scene,
+                                  ObjTab[i].obj.special, 1);
+                sprintf(tbuf, tINTFORMAT, plr_lives.draw);
+                if (Game.language == 0x63) {
+                    AddSpacesIntoText(tbuf, 1);
+                }
+                Text3D(tbuf, LIVESTXTSX, f, 1.0f, 1.2f, 1.2f, 1.2f, 2, 0);
+            }
+
+            a = ((GameTimer.frame % 100) << 16) / 100;
+
+            if ((plr_crystal.count != 0) && (plr_crystal.frame != 0) &&
+                (LDATA->hub != -1)) {
+                f = -0.7f - (25 - plr_crystal.frame) * 0.04f * 0.6f;
+                DrawPanel3DCharacter(0x75, 0.0f, f, 1.0f, 0.15f, 0.15f, 0.15f, 0, a, 0,
+                                     -1, 0.0f, 1);
+            }
+            if ((plr_crategem.count != 0) && (plr_crategem.frame != 0) &&
+                (LDATA->hub != -1)) {
+                f = -0.7f - (25 - plr_crategem.frame) * 0.04f * 0.6f;
+                DrawPanel3DCharacter(0x77, -0.2f, f, 1.0f, 0.15f, 0.15f, 0.15f, 0, a, 0,
+                                     -1, 0.0f, 1);
+            }
+            if ((plr_bonusgem.count != 0) && (plr_bonusgem.frame != 0) &&
+                (LDATA->hub != -1)) {
+                f = -0.7f - (25 - plr_bonusgem.frame) * 0.04f * 0.6f;
+                if (plr_bonusgem.item == 8) {
+                    i = 0x79;
+                } else if (plr_bonusgem.item == 0x20) {
+                    i = 0x7A;
+                } else if (plr_bonusgem.item == 0x10) {
+                    i = 0x7B;
+                } else if (plr_bonusgem.item == 0x40) {
+                    i = 0x7C;
+                } else {
+                    i = (plr_bonusgem.item == 0x80) ? 0x7D : 0x78;
+                }
+                DrawPanel3DCharacter(i, 0.2f, f, 1.0f, 0.15f, 0.15f, 0.15f, 0, a, 0, -1,
+                                     0.0f, 1);
+            }
+
+            DrawWorldToPanelWumpa();
+
+            for (i = 0; i < 32; i++) {
+                if ((NewWumpa[i].active != 0) && (NewWumpa[i].count != 0)) {
+                    DrawPanel3DObject(0, NewWumpa[i].screen.x, NewWumpa[i].screen.y, 1.0f,
+                                      NewWumpa[i].scale, NewWumpa[i].scale,
+                                      NewWumpa[i].scale,
+                                      (NewWumpa[i].bonus == 0) ? 0xE800 : 0,
+                                      PANELWUMPAYROT, 0, ObjTab[0].obj.scene,
+                                      ObjTab[0].obj.special, 1);
+                }
+            }
+
+            if (TimeTrial != 0) {
+                switch (plr->obj.finished) {
+                    case 1:
+                        frame = finish_frame - (finish_frames - 50);
+                        if (frame < 0) {
+                            frame = 0;
+                        }
+                        if (newleveltime_slot < 3) {
+                            if ((new_lev_flags & 7) != 0) {
+                                ys = 0.35f;
+                            } else {
+                                ys = 0.2f;
+                            }
+                            i = 3;
+                        } else {
+                            i = 4;
+                            ys = 0.1f;
+                        }
+                        xs = 0.0f;
+                        ys -= (i - 1) * TT_TIMESDY * 0.5f;
+                        y = ys + newleveltime_slot * TT_TIMESDY;
+                        scale = 0.9f;
+                        if (frame < 25) {
+                            if ((frame == 0) || ((frame % 10) > 4)) {
+                                xs = tt_sx;
+                                y = tt_sy;
+                                scale = TT_SCALE;
+                            } else {
+                                scale = xs;
+                            }
+                        } else if (frame < 50) {
+                            f = (frame - 25) / 25.0f;
+                            xs = tt_sx + (xs - tt_sx) * f;
+                            y = tt_sy + (y - tt_sy) * f;
+                            scale = TT_SCALE + (scale - TT_SCALE) * f;
+                        }
+                        if (((newleveltime_slot == 3) || (frame < 50)) && (scale > 0.0f)) {
+                            MakeTimeI(TimeTrialTimer.itime, 0, txt);
+                            if (Game.language == 0x63) {
+                                if (finish_frame < finish_frames - 50) {
+                                    sprintf(tbuf, tTIMEFORMAT_SPACED, (u8)CLetter[118],
+                                            txt);
+                                } else {
+                                    sprintf(tbuf, (newleveltime_slot < 3) ? tNEWSLOT_SPACED
+                                                                          : tNOSLOT_SPACED,
+                                            txt);
+                                }
+                            } else if (finish_frame < finish_frames - 50) {
+                                sprintf(tbuf, tTIMEFORMAT, (u8)CLetter[118], txt);
+                            } else {
+                                sprintf(tbuf, (newleveltime_slot < 3) ? tNEWSLOT : tNOSLOT,
+                                        txt);
+                            }
+                            Text3D(tbuf, xs, y, 1.0f, scale, scale, scale, 0, 4);
+                        }
+                        for (i = 0; i < 3; i++) {
+                            if (frame < 50) {
+                                return;
+                            }
+                            MakeLevelTimeString(&Game.level[Level].time[i], tbuf);
+                            if (i == newleveltime_slot) {
+                                Text3D(MakeEditText(tbuf), xs, y, 1.0f, scale, scale,
+                                       scale, 0, 4);
+                            } else {
+                                Text3D(tbuf, 0.0f, ys, 1.0f, 0.8f, 0.8f, 0.8f, 0, 0);
+                            }
+                            if (i == newleveltime_slot) {
+                                if ((new_lev_flags & 4) != 0) {
+                                    j = 1;
+                                } else if ((new_lev_flags & 2) != 0) {
+                                    j = 2;
+                                } else {
+                                    j = ((new_lev_flags & 1) != 0) ? 3 : -1;
+                                }
+                                if (j != -1) {
+                                    DrawPanel3DObject(j, TT_RELICX, TT_RELICY, 1.0f, 0.125f,
+                                                      0.125f, 0.125f, 0, 0, 0,
+                                                      ObjTab[j].obj.scene,
+                                                      ObjTab[j].obj.special, 1);
+                                }
+                            }
+                            ys += TT_TIMESDY;
+                        }
+                        if ((tt_flash != 0) && (frame >= 50) &&
+                            ((Cursor.menu != 0xE) ||
+                             ((newleveltime_slot == 3) && (Cursor.menu_frame < 250)))) {
+                            switch (newleveltime_slot) {
+                                case 0:
+                                    NuStrCpy(tbuf, tBESTTIME[Game.language]);
+                                    break;
+                                case 1:
+                                    NuStrCpy(tbuf, t2NDBESTTIME[Game.language]);
+                                    break;
+                                case 2:
+                                    NuStrCpy(tbuf, t3RDBESTTIME[Game.language]);
+                                    break;
+                                default:
+                                    NuStrCpy(tbuf, tNONEWTIME[Game.language]);
+                                    break;
+                            }
+                            Text3D(tbuf, 0.0f, TT_MESSAGEY, 1.0f, 0.8f, 0.8f, 0.8f, 0, 3);
+                        }
+                        break;
+                    case 0:
+                        if ((timetrial_frame - 50 < 150) && ((timetrial_frame % 50) < 40)) {
+                            Text3D(tENTERINGTIMETRIAL[Game.language], 0.0f, 0.0f, 1.0f,
+                                   0.6f, 0.6f, 0.6f, 0, 4);
+                        }
+                        t = TimeTrialTimer.itime;
+                        if ((s32)TimeTrialTimer.itime > 0x2BF1D) {
+                            t = 0x2BF1D;
+                        }
+                        MakeTimeI(t, 0, txt);
+                        sprintf(tbuf, (Game.language == 0x63) ? tTIMEFORMAT_SPACED : tTIMEFORMAT,
+                                (u8)CLetter[118], txt);
+                        xs = tt_sx;
+                        ys = tt_sy;
+                        if (timetrial_frame < 37) {
+                            if ((timetrial_frame % 12) < 6) {
+                                scale = 0.5f;
+                                xs = TTScrPos.x;
+                                ys = TTScrPos.y;
+                            } else {
+                                scale = 0.0f;
+                            }
+                        } else if (timetrial_frame < 50) {
+                            f = (timetrial_frame - 37) / 12.0f;
+                            xs += (TTScrPos.x - xs) * (1.0f - f);
+                            ys += (TTScrPos.y - ys) * (1.0f - f);
+                            scale = f * 0.5f + 0.5f;
+                        } else {
+                            scale = 1.0f;
+                        }
+                        if (scale > 0.0f) {
+                            Text3D(tbuf, xs, ys, 1.0f, TT_SCALE * scale, TT_SCALE * scale,
+                                   TT_SCALE * scale, 0, (TimeTrialWait > 0.0f) ? 3 : 0);
+                        }
+                        break;
+                }
+            }
+
+            if (((LDATA->flags & 0x200) != 0) && (VEHICLECONTROL == 1) &&
+                (plr->obj.finished == 0)) {
+                i = 0x11;
+                if (LDATA->character == 1) {
+                    i = 0x12;
+                }
+                DrawPanel3DObject(i, -0.8f, -0.8f, 1.0f, 0.3f, 0.3f, 0.3f, wobble_x,
+                                  wobble_y + 0xE000, 0, ObjTab[i].obj.scene,
+                                  ObjTab[i].obj.special, 1);
+                sprintf(tbuf, tHEALTHFORMAT, GetGliderHealthPercentage(plr));
+                if (tbuf[0] == '0') {
+                    if (tbuf[1] == '0') {
+                        tbuf[0] = tbuf[1] = ' ';
+                    } else {
+                        tbuf[0] = ' ';
+                    }
+                }
+                if (Game.language == 0x63) {
+                    AddSpacesIntoText(tbuf, 1);
+                }
+                Text3D(tbuf, -0.7f, -0.85f, 1.0f, 0.8f, 0.8f, 0.8f, 2, 0);
+                if (Level == 0x18) {
+                    BossBar(ATMBOSSBARX, ATMBOSSBARY, ATMBOSSBARZ, ATMBOSSBARSCALEX,
+                            ATMBOSSBARSCALEY, GetCurrentLevelObjectives(),
+                            GetMaxLevelObjectives());
+                } else {
+                    i = GetCurrentLevelObjectives();
+                    j = GetMaxLevelObjectives();
+                    sprintf(tbuf, tOUTOFFORMAT, j - i, j);
+                    if (Game.language == 0x63) {
+                        AddSpacesIntoText(tbuf, 1);
+                    }
+                    Text3D(tbuf, 0.7f, -0.85f, 1.0f, 0.8f, 0.8f, 0.8f, 8, 0);
+                }
+                if (Level == 0x12) {
+                    DrawPanel3DTempCharacter(panel_head_xrot,
+                                             panel_head_yrot +
+                                                 ((GameTimer.frame % 100) << 16) / 100,
+                                             0, 0, PANELSINKX, PANELSINKY, PANELSINKZ,
+                                             PANELSINKSCALE);
+                } else if (Level == 0x18) {
+                    DrawPanel3DTempCharacter(wobble_x + (s16)PANELCRUNCHXROT, wobble_y + 0x2000,
+                                             0, 0, PANELCRUNCHX, PANELCRUNCHY,
+                                             PANELCRUNCHZ, PANELCRUNCHSCALE);
+                } else {
+                    DrawPanel3DTempCharacter(panel_head_xrot,
+                                             panel_head_yrot +
+                                                 ((GameTimer.frame % 100) << 16) / 100,
+                                             0, 0, PANELBLIMPX, PANELBLIMPY, PANELBLIMPZ,
+                                             PANELBLIMPSCALE);
+                }
+            } else if ((Level == 0x15) && (plr->obj.finished == 0)) {
+                DrawPanel3DObject(0x11, -0.8f, -0.8f, 1.0f, 0.3f, 0.3f, 0.3f, wobble_x,
+                                  wobble_y + 0xE000, 0, ObjTab[0x11].obj.scene,
+                                  ObjTab[0x11].obj.special, 1);
+                sprintf(tbuf, tHEALTHFORMAT, GetRumblePlayerHealthPercentage(plr));
+                if (tbuf[0] == '0') {
+                    if (tbuf[1] == '0') {
+                        tbuf[0] = tbuf[1] = ' ';
+                    } else {
+                        tbuf[0] = ' ';
+                    }
+                }
+                if (Game.language == 0x63) {
+                    AddSpacesIntoText(tbuf, 1);
+                }
+                Text3D(tbuf, -0.7f, -0.85f, 1.0f, 0.8f, 0.8f, 0.8f, 2, 0);
+                RumbleHeadUpDisplay();
+                BossBar(RUMBOSSBARX, RUMBOSSBARY, RUMBOSSBARZ, RUMBOSSBARSCALEX,
+                        RUMBOSSBARSCALEY, GetCurrentLevelObjectives(),
+                        GetMaxLevelObjectives());
+                DrawPanel3DTempCharacter(wobble_x + (s16)PANELCRUNCHXROT, wobble_y + 0x2000, 0, 0,
+                                         PANELCRUNCHX, PANELCRUNCHY, PANELCRUNCHZ,
+                                         PANELCRUNCHSCALE);
+            } else if ((Level == 0x16) && (plr->obj.finished == 0)) {
+                BossBar(FIREBOSSBARX, FIREBOSSBARY, FIREBOSSBARZ, FIREBOSSBARSCALEX,
+                        FIREBOSSBARSCALEY, GetCurrentLevelObjectives(),
+                        GetMaxLevelObjectives());
+                DrawPanel3DTempCharacter(wobble_x + (s16)PANELCRUNCHXROT, -wobble_y + 0x2000, 0, 0,
+                                         PANELCRUNCHX, PANELCRUNCHY, PANELCRUNCHZ,
+                                         PANELCRUNCHSCALE);
+            } else if ((Level == 3) && (plr->obj.finished == 0)) {
+                if (SmokeyCountDownValue > 0) {
+                    tbuf[0] = (char)SmokeyCountDownValue + '0';
+                    if (Game.language == 0x63) {
+                        tbuf[1] = ' ';
+                        tbuf[2] = 0;
+                    } else {
+                        tbuf[1] = 0;
+                    }
+                    Text3D(tbuf, 0.0f, 0.0f, 1.0f, 1.5f, 1.5f, 1.5f, 0, 0);
+                } else if (SmokeyCountDownValue == -1) {
+                    size = 2.5f;
+                    if (Game.language == 4) {
+                        size = 2.25f;
+                    }
+                    Text3D(tGO[Game.language], 0.0f, 0.0f, 1.0f, size, size, size, 0, 4);
+                }
+                if (in_finish_range != 0) {
+                    goto debris;
+                }
+                i = 0x11;
+                if (LDATA->character == 1) {
+                    i = 0x12;
+                }
+                DrawPanel3DObject(i, -0.8f, -0.8f, 1.0f, 0.3f, 0.3f, 0.3f,
+                                  panel_head_xrot, panel_head_yrot + 0xE000, 0,
+                                  ObjTab[i].obj.scene, ObjTab[i].obj.special, 1);
+                Text3D(PlaceName[SmokeyPosition - 1][Game.language], -0.7f, -0.85f, 1.0f,
+                       0.8f, 0.8f, 0.8f, 2, (SmokeyPosition == 1) ? 4 : 0);
+            } else if (Level == 0x1C) {
+                if (GameTimer.frame < 150) {
+                    tbuf[0] = '3' - GameTimer.frame / 50;
+                    if (Game.language == 0x63) {
+                        tbuf[1] = ' ';
+                        tbuf[2] = 0;
+                    } else {
+                        tbuf[1] = 0;
+                    }
+                    i = 0;
+                    f = 1.5f;
+                } else if (GameTimer.frame < 200) {
+                    NuStrCpy(tbuf, tGO[Game.language]);
+                    f = 2.5f;
+                    if (Game.language == 4) {
+                        f = 2.25f;
+                    }
+                    i = 4;
+                } else {
+                    tbuf[0] = 0;
+                }
+                if (tbuf[0] != 0) {
+                    Text3D(tbuf, 0.0f, 0.0f, 1.0f, f, f, f, 0, i);
+                }
+                if (in_finish_range != 0) {
+                    goto debris;
+                }
+                DrawPanel3DObject(0x11, -0.8f, -0.8f, 1.0f, 0.3f, 0.3f, 0.3f,
+                                  panel_head_xrot, panel_head_yrot + 0xE000, 0,
+                                  ObjTab[0x11].obj.scene, ObjTab[0x11].obj.special, 1);
+                Text3D(PlaceName[PlrTub.place - 1][Game.language], -0.7f, -0.85f, 1.0f,
+                       0.8f, 0.8f, 0.8f, 2, (PlrTub.place == 1) ? 4 : 0);
+                i = (PlrTub.laps + 1 > MAXLAPS) ? MAXLAPS : PlrTub.laps + 1;
+                sprintf(tbuf, tOUTOFFORMAT, i, MAXLAPS);
+                if (Game.language == 0x63) {
+                    AddSpacesIntoText(tbuf, 1);
+                }
+                Text3D(tbuf, 0.7f, -0.85f, 1.0f, 0.8f, 0.8f, 0.8f, 8, (i > 0) ? 4 : 0);
+            } else if (Level == 0x1D) {
+                if (GameTimer.frame < 150) {
+                    f = 1.5f;
+                    tbuf[0] = '3' - GameTimer.frame / 50;
+                    tbuf[1] = 0;
+                    i = 0;
+                } else if (GameTimer.frame < 200) {
+                    NuStrCpy(tbuf, tGO[Game.language]);
+                    f = 2.5f;
+                    if (Game.language == 4) {
+                        f = 2.25f;
+                    }
+                    i = 4;
+                } else {
+                    tbuf[0] = 0;
+                }
+                if (tbuf[0] != 0) {
+                    Text3D(tbuf, 0.0f, 0.0f, 1.0f, f, f, f, 0, i);
+                }
+                if (in_finish_range != 0) {
+                    goto debris;
+                }
+                if (i_ring > 0) {
+                    f = (25 - carpet_panelpos) / 25.0f * 0.4f;
+                    DrawPanel3DObject(0x11, -0.8f, -0.8f - f, 1.0f, 0.3f, 0.3f, 0.3f,
+                                      panel_head_xrot, panel_head_yrot + 0xE000, 0,
+                                      ObjTab[0x11].obj.scene, ObjTab[0x11].obj.special, 1);
+                    Text3D((carpet_place == 1) ? PlaceName[1][Game.language]
+                                               : PlaceName[0][Game.language],
+                           -0.7f, -0.85f - f, 1.0f, 0.8f, 0.8f, 0.8f, 2,
+                           (carpet_place != 1) ? 4 : 0);
+                }
+                sprintf(tbuf, tOUTOFFORMAT, i_ring, RINGCOUNT);
+                if (Game.language == 0x63) {
+                    AddSpacesIntoText(tbuf, 1);
+                }
+                Text3D(tbuf, 0.7f, -0.85f, 1.0f, 0.8f, 0.8f, 0.8f, 8, (i_ring > 0) ? 4 : 0);
+                DrawPanel3DObject(0x68, PANELRINGX, PANELRINGY, 1.0f, PANELRINGSIZE,
+                                  PANELRINGSIZE, PANELRINGSIZE, 0, 0, 0,
+                                  ObjTab[0x68].obj.scene, ObjTab[0x68].obj.special, 1);
+                if (ObjTab[0x6C].obj.special != 0) {
+                    DrawPanel3DArrow();
+                }
+            }
+
+            if ((in_finish_range == 0) && (TimeTrial == 0) && (GATECOUNT != 0) &&
+                (plr_gates != 0)) {
+                sprintf(tbuf, tOUTOFFORMAT, plr_gates, GATECOUNT);
+                if (Game.language == 0x63) {
+                    AddSpacesIntoText(tbuf, 1);
+                }
+                Text3D(tbuf, -0.9f, -0.85f, 1.0f, 0.8f, 0.8f, 0.8f, 2, 4);
+            }
+        }
+    }
+debris:
+    DrawPanelDebris();
+exit:
+    pNuCam->mtx = pCam->m;
+    NuCameraSet(pNuCam);
+    GameVP();
+}
+
+
 /* --- UpdatePlayerStats externs ------------------------------------- */
 
 extern struct cratecube_s Crate[];
 extern s32 CRATECOUNT;
 extern int crate_wumpa;
 extern s32 crates_destroyed;
-extern s32 bonus_crates_destroyed;
 extern s32 old_bonus_crates;
-extern s32 save_bonus_crates_destroyed;
-extern s32 Bonus;
-extern s32 bonus_finish_frame;
-extern f32 bonus_crates_wait;
 extern f32 D_0062E640;              /* 1/50 wait decrement (.sdata) */
 extern f32 D_0062E644;              /* -1/50 wait floor (.sdata) */
-extern struct panelcount_s plr_crates;
 extern struct panelcount_s plr_wumpas;
-extern struct panelcount_s plr_lives;
 extern s32 force_panel_lives_update;
 extern s32 mask_crates;
 extern s32 newmask_advise;
-extern f32 WUMPAOBJSX;
-extern f32 PANELSY;
 extern struct nuvec_s vNEWMASK;
-extern struct cursor_s Cursor;
 
 extern void AddPanelDebris(f32 x, f32 y, s32 type, f32 scale, s32 count);
 extern void NewMask(struct mask_s *mask, struct nuvec_s *pos);
@@ -768,7 +1861,6 @@ void UpdatePlayerStats(struct creature_s *plr) {
 }
 
 extern struct pdebinfo_s PDebInfo[];
-extern struct ldata_s *LDATA;
 extern s32 i_pdeb;
 extern s32 qrand(void);
 
@@ -838,17 +1930,8 @@ void AddPanelDebris(f32 x, f32 y, s32 type, f32 scale, s32 count) {
 }
 
 
-extern f32 BONUSWUMPAOBJSX;
-extern f32 BONUSPANELSY;
 extern f32 NEWLIFEOBJSX;
-extern f32 LIVESOBJSX;
 extern f32 NEWBONUSLIFEOBJSX;
-extern f32 BONUSLIVESOBJSX;
-extern f32 LIFESCALE;
-extern f32 BONUSLIFESCALE;
-extern u16 panel_head_xrot;
-extern u16 panel_head_yrot;
-extern s32 bonus_lives;
 
 void UpdatePanelDebris(void) {
     struct pdeb_s *deb;
@@ -979,85 +2062,6 @@ void DrawPanelDebris(void) {
     }
 }
 
-
-s32 DrawPanel3DTempCharacter(u16 xrot, u16 yrot, u16 zrot, s32 rot, float x,
-                             float y, float z, float scale) {
-    struct numtx_s m;
-    struct numtx_s tmtx[0x100];
-    struct nuvec_s s;
-    float **dwa;
-    struct CharacterModel *model;
-    s32 character;
-    s32 index;
-
-    character = temp_character;
-    if ((character != 0x62) && (character != 0xB8) && (character != 0xB9) &&
-        (character != 0xBA) && (character != 0xBC)) {
-        return 0;
-    }
-    index = CRemap[character];
-    if (index == -1) {
-        return 0;
-    }
-    model = &CModel[index];
-    s.z = scale;
-    s.y = scale;
-    s.x = scale;
-    NuMtxSetScale(&m, &s);
-    switch (rot) {
-        case 0:
-            if (xrot != 0) {
-                NuMtxRotateX(&m, xrot);
-            }
-            if (yrot != 0) {
-                NuMtxRotateY(&m, yrot);
-            }
-            if (zrot != 0) {
-                NuMtxRotateY(&m, zrot);
-            }
-            break;
-        case 1:
-            if (yrot != 0) {
-                NuMtxRotateY(&m, yrot);
-            }
-            if (xrot != 0) {
-                NuMtxRotateX(&m, xrot);
-            }
-            if (zrot != 0) {
-                NuMtxRotateX(&m, zrot);
-            }
-            break;
-    }
-    m._32 = z;
-    m._30 = x * PANEL3DMULX;
-    m._31 = y * PANEL3DMULY;
-    EvalModelAnim(model, &TempAnim, &m, tmtx, &dwa, 0);
-    return NuHGobjRndrMtxDwa(model->obj, &m, 1, 0, tmtx, dwa);
-}
-
-void MaxVP(void) {
-    NuVpSetSize((float)(MAXVPSIZEX << 4), (float)(MAXVPSIZEY << 3));
-}
-
-void GameVP(void) {
-    s32 paused;
-    s32 x, y;
-
-    if (screendump != 0) {
-        paused = save_paused;
-    } else {
-        paused = Paused;
-    }
-
-    if ((editor_active != 0) ||
-        ((paused != 0) && ((u32)(D_00591FDE[0] - 3) >= 6))) {
-        NuVpSetSize((float)(MAXVPSIZEX << 4), (float)(MAXVPSIZEY << 3));
-    } else {
-        x = (MAXVPSIZEX << 4) + (((MINVPSIZEX << 4) - (MAXVPSIZEX << 4)) * paused) / 0x19;
-        y = (MAXVPSIZEY << 3) + (((MINVPSIZEY << 3) - (MAXVPSIZEY << 3)) * paused) / 0x19;
-        NuVpSetSize((float)x, (float)y);
-    }
-}
 
 void ResetPanelDebris(void) {
     struct pdeb_s *deb;

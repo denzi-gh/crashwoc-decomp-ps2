@@ -524,6 +524,31 @@ s32 NuFntPrintLen(char *fmt, ...)
 }
 
 
+s32 NuFntPrintEx(s32 x, s32 y, s32 align, char *fmt, ...)
+{
+    va_list args;
+    s32 len;
+
+    va_start(args, fmt);
+    len = NuFntPrintLenV(fmt, args);
+    switch (align) {
+    case 0:
+        font_x = x + ((PS2_VCNTR_X - (PS2_REZ_W >> 1)) << 4);
+        font_y = y - NuFntBase + ((PS2_VCNTR_Y - (PS2_REZ_H >> 1)) << 4);
+        break;
+    case 1:
+        font_x = x - len + ((PS2_VCNTR_X - (PS2_REZ_W >> 1)) << 4);
+        font_y = y - NuFntBase + ((PS2_VCNTR_Y - (PS2_REZ_H >> 1)) << 4);
+        break;
+    case 2:
+        font_x = x - (len >> 1) + ((PS2_VCNTR_X - (PS2_REZ_W >> 1)) << 4);
+        font_y = y - NuFntBase + ((PS2_VCNTR_Y - (PS2_REZ_H >> 1)) << 4);
+        break;
+    }
+    return NuFntPrintV(fmt, args);
+}
+
+
 inline void NuFntSet(struct nufont_s *font)
 {
     if (font == 0) {

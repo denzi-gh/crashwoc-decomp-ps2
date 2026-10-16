@@ -31,6 +31,7 @@
 #include "nu_types.h"
 
 #include "numath/numathtypes.h"
+#include "numath/nufloat.h"
 #include "nu3d/numtl.h"
 #include "nu3d/nugobj.h"
 #include "nups2/nups2types.h"
@@ -91,6 +92,11 @@ struct nucvtstreamtri_s {
     struct nucvtstreamvtx_s vtx[3];
 };
 
+struct nucvtpktinfo_s {
+    int offset;
+    int count;
+};
+
 typedef union NuFloatBits {
     float f;
     int i;
@@ -111,7 +117,12 @@ extern int NuCvtUvOn;
 extern float NuCvtMaxSpan;
 extern NuFloatBits NuCvtPntSpan[3];
 extern struct nuvec_s NuCvtPntMid;
-extern void *info_pktdata;
+extern struct nucvtpktinfo_s *info_pktdata;
+extern u8 *info_pktbuff;
+extern int info_pktcnt;
+extern int nugscn_generate_packetinfo;
+extern int info_stripcount;
+extern int info_tristripcount;
 extern struct nudmatag_s *nucvtgeo_lasttag;
 extern int nugscn_generate_colourref;
 extern int info_tricount;
@@ -126,6 +137,11 @@ extern char D_00615558[];
 extern char D_00615568[];
 extern char D_00615668[];
 extern char D_00615678[];
+extern char D_00615590[];
+extern char D_006155A8[];
+extern char D_006155D8[];
+extern char D_00615608[];
+extern char D_00615638[];
 
 #define colourref_on D_0062EEDC
 #define colourref_offset D_0062EEE0
@@ -136,6 +152,11 @@ extern char D_00615678[];
 #define dma_size_msg D_00615568
 #define faceon_alpha_msg D_00615668
 #define faceon_type_msg D_00615678
+#define pkt_count_msg D_00615590
+#define u_high_msg D_006155A8
+#define v_high_msg D_006155D8
+#define u_low_msg D_00615608
+#define v_low_msg D_00615638
 
 #define NUMTL_ALPHA_BLEND 2
 #define ALPHA_REG_TOP_MASK 0xFF00000000000000ULL
@@ -545,6 +566,7 @@ unsigned int NuCvtSizeDmaBezTriCFromIdx(void *dma, int count) {
 
 
 #define NUCVT_MIN(a, b) ((a) < (b) ? (a) : (b))
+#define NUCVT_MAX(a, b) ((a) > (b) ? (a) : (b))
 
 #define PUT_BEZ_POS(v) \
     *(float *)p = (v).pnt.x; \
@@ -1168,6 +1190,384 @@ u8 *NuCvtDmaTriCFromIdx(u8 **dma, struct nuvtx_tc1_s *vtx, short *idx, int nidx,
         p += 4;
         idx += batch;
         nidx = left;
+    }
+    *dma = vpDmaTag_Close(p);
+    return start;
+}
+
+
+u8 *NuCvtDmaTriStripCFromIdx(u8 **dma, struct nuvtx_tc1_s *vtx, short *idx, int nidx, struct numtl_s *mtl) {
+    union nucvtgiftag_u strip;
+    union nucvtgiftag_u fan;
+    union nucvtcolour_u lit;
+    union nucvtcolour_u colour;
+    NuFloatBits packed[3];
+    u8 *start;
+    u8 *p;
+    float minu;
+    float minv;
+    float maxu;
+    float maxv;
+    float du;
+    float dv;
+    int used;
+    int k;
+    int fast;
+    int left;
+    int cont;
+    int chunk;
+    int shift;
+    int batch;
+    int run;
+    int adc;
+    int n;
+    int i;
+    int j;
+    float tu;
+    float tv;
+
+    fast = 0;
+    if (NuCvtPntEna && mtl->attrib.lighting == NUMTL_ALPHA_BLEND) {
+        fast = mtl->fxid == 0;
+    }
+    shift = mtl->tid != -1;
+    strip.dw[0] = 0x3002400000008000LL;
+    strip.dw[1] = 0x512;
+    fan.dw[0] = 0x3002C00000008000LL;
+    fan.dw[1] = 0x512;
+    start = *dma;
+    nucvtgeo_lasttag = (struct nudmatag_s *)start;
+    p = vpDmaTag_Cnt(start);
+    p[-14] = 5;
+    if (NuCvtPntOn) {
+        *(u32 *)p = 0x30000000;
+        p += 4;
+        *(u32 *)p = NuCvtPntSpan[0].i;
+        p += 4;
+        *(u32 *)p = NuCvtPntSpan[1].i;
+        p += 4;
+        *(u32 *)p = NuCvtPntSpan[2].i;
+        p += 4;
+        *(u32 *)p = 0;
+        p += 4;
+    }
+    left = 0;
+    cont = 0;
+    *(u32 *)p = 0x6C010056;
+    p += 4;
+    *(u32 *)p = fan.w[0];
+    p += 4;
+    *(u32 *)p = fan.w[1];
+    p += 4;
+    *(u32 *)p = fan.w[2];
+    p += 4;
+    *(u32 *)p = fan.w[3];
+    p += 4;
+    while (nidx) {
+        if (left == 0) {
+            run = *idx;
+            if (run > 42) {
+                nidx--;
+                idx++;
+                left = run;
+                cont = 0;
+            } else {
+                batch = 0;
+                n = nidx;
+                used = 0;
+                if (n > 0) {
+                    do {
+                        batch += run;
+                        used += run + 1;
+                        n -= run + 1;
+                        if (n <= 0) {
+                            break;
+                        }
+                        run = idx[used];
+                    } while (batch + run < 43);
+                }
+            }
+        }
+        if (left) {
+            batch = left > 40 ? 40 : left;
+            chunk = batch;
+            if (cont) {
+                batch += 2;
+                nidx += 2;
+                idx -= 2;
+            }
+            used = batch;
+        }
+        if (batch < 2) {
+            NuErrorProlog(nucvtgeo_srcfile, 0x7C1)(pkt_count_msg);
+        }
+        if (batch > 42) {
+            NuErrorProlog(nucvtgeo_srcfile, 0x7C3)(pkt_count_msg);
+        }
+        strip.dw[0] = 0x3002400000000000LL | (batch | 0x8000);
+        strip.dw[1] = 0x512;
+        *(u32 *)p = 0x6C0180D2;
+        p += 4;
+        *(u32 *)p = strip.w[0];
+        p += 4;
+        *(u32 *)p = strip.w[1];
+        p += 4;
+        *(u32 *)p = strip.w[2];
+        p += 4;
+        *(u32 *)p = strip.w[3];
+        p += 4;
+        if (NuCvtPntOn) {
+            *(u32 *)p = 0x6C018002;
+            p += 4;
+            *(u32 *)p = batch * 3;
+            p += 4;
+            *(float *)p = NuCvtPntSpan[0].f - NuCvtPntMid.x;
+            p += 4;
+            *(float *)p = NuCvtPntSpan[1].f - NuCvtPntMid.y;
+            p += 4;
+            *(float *)p = NuCvtPntSpan[2].f - NuCvtPntMid.z;
+            p += 4;
+        } else {
+            *(u32 *)p = 0x6D018002;
+            p += 4;
+            *(u16 *)p = batch * 3;
+            p += 2;
+            *(u16 *)p = 0;
+            p += 2;
+            *(u16 *)p = 0;
+            p += 2;
+            *(u16 *)p = 0;
+            p += 2;
+        }
+        *(u32 *)p = 0x01000103;
+        p += 4;
+        if (NuCvtPntOn) {
+            *(u32 *)p = 0x05000001;
+            p += 4;
+            *(u32 *)p = (batch << 16) | 0x6D008003;
+            p += 4;
+        } else {
+            *(u32 *)p = (batch << 16) | 0x6C008003;
+            p += 4;
+        }
+        run = 0;
+        adc = 2;
+        if (nugscn_generate_packetinfo) {
+            info_pktdata[info_pktcnt].offset = p - info_pktbuff;
+            info_pktdata[info_pktcnt].count = batch;
+        }
+        info_pktcnt++;
+        k = 0;
+        for (i = 0; i < batch; i++) {
+            if (run == 0 && left == 0) {
+                run = idx[k];
+                adc = 2;
+                k++;
+            }
+            if (!NuCvtPntOn) {
+                *(float *)p = vtx[idx[k]].pnt.x;
+                p += 4;
+                *(float *)p = vtx[idx[k]].pnt.y;
+                p += 4;
+                *(float *)p = vtx[idx[k]].pnt.z;
+                p += 4;
+                *(float *)p = vtx[idx[k]].nrm.x;
+            } else {
+                packed[0].f = NuCvtPntSpan[0].f + (vtx[idx[k]].pnt.x - NuCvtPntMid.x);
+                packed[1].f = NuCvtPntSpan[1].f + (vtx[idx[k]].pnt.y - NuCvtPntMid.y);
+                packed[2].f = NuCvtPntSpan[2].f + (vtx[idx[k]].pnt.z - NuCvtPntMid.z);
+                *(u16 *)p = packed[0].i - NuCvtPntSpan[0].i;
+                p += 2;
+                *(u16 *)p = packed[1].i - NuCvtPntSpan[1].i;
+                p += 2;
+                *(u16 *)p = packed[2].i - NuCvtPntSpan[2].i;
+                p += 2;
+                *(u16 *)p = vtx[idx[k]].nrm.x;
+            }
+            if (adc) {
+                *(u16 *)p = 0x8001;
+            } else {
+                *(u16 *)p = 0;
+            }
+            if (adc) {
+                adc--;
+                if (adc == 0) {
+                    info_stripcount++;
+                }
+            } else {
+                info_tristripcount++;
+            }
+            if (!NuCvtPntOn) {
+                p += 4;
+            } else {
+                p += 2;
+            }
+            k++;
+            run--;
+        }
+        if (NuCvtPntOn) {
+            *(u32 *)p = 0x05000000;
+            p += 4;
+        }
+        if (left) {
+            cont = 1;
+        }
+        if (NuCvtUvOn) {
+            *(u32 *)p = 0x05000001;
+            p += 4;
+        }
+        if (fast) {
+            *(u32 *)p = (batch << 16) | 0x65008004;
+            p += 4;
+        } else {
+            *(u32 *)p = (batch << 16) | 0x6D008004;
+            p += 4;
+        }
+        minu = minv = 0.0f;
+        run = 0;
+        k = 0;
+        if (left) {
+            minu = vtx[idx[0]].tc[0];
+            minv = vtx[idx[0]].tc[1];
+            maxu = minu;
+            maxv = minv;
+            for (j = 1; j < batch; j++) {
+                tu = vtx[idx[j]].tc[0];
+                minu = NUCVT_MIN(tu, minu);
+                tv = vtx[idx[j]].tc[1];
+                minv = NUCVT_MIN(tv, minv);
+                maxu = NUCVT_MAX(tu, maxu);
+                maxv = NUCVT_MAX(tv, maxv);
+            }
+            minu = floor(minu);
+            minv = floor(minv);
+            if (NuFabs(minu - maxu) > 8.0f || minu < -8.0f) {
+                minu += 8.0f;
+            }
+            if (NuFabs(minv - maxv) > 8.0f || minv < -8.0f) {
+                minv += 8.0f;
+            }
+        }
+        for (i = 0; i < batch; i++) {
+            if (run == 0 && left == 0) {
+                run = idx[k];
+                k++;
+                minu = vtx[idx[k]].tc[0];
+                minv = vtx[idx[k]].tc[1];
+                maxu = minu;
+                maxv = minv;
+                for (j = 1; j < run; j++) {
+                    tu = vtx[idx[k + j]].tc[0];
+                    minu = NUCVT_MIN(tu, minu);
+                    tv = vtx[idx[k + j]].tc[1];
+                    minv = NUCVT_MIN(tv, minv);
+                    maxu = NUCVT_MAX(tu, maxu);
+                    maxv = NUCVT_MAX(tv, maxv);
+                }
+                minu = floor(minu);
+                minv = floor(minv);
+                if (NuFabs(minu - maxu) > 8.0f || minu < -8.0f) {
+                    minu += 8.0f;
+                }
+                if (NuFabs(minv - maxv) > 8.0f || minv < -8.0f) {
+                    minv += 8.0f;
+                }
+            }
+            du = vtx[idx[k]].tc[0] - minu;
+            dv = vtx[idx[k]].tc[1] - minv;
+            if (du > 15.0f) {
+                NuDebugMsgProlog(nucvtgeo_srcfile, 0x88F)(u_high_msg, du, left, minu);
+            }
+            if (dv > 15.0f) {
+                NuDebugMsgProlog(nucvtgeo_srcfile, 0x891)(v_high_msg, dv, left, minv);
+            }
+            if (du < -16.0f) {
+                NuDebugMsgProlog(nucvtgeo_srcfile, 0x893)(u_low_msg, du, left, minu);
+            }
+            if (dv < -16.0f) {
+                NuDebugMsgProlog(nucvtgeo_srcfile, 0x895)(v_low_msg, dv, left, minv);
+            }
+            *(short *)p = du * 4096.0f;
+            p += 2;
+            *(short *)p = dv * 4096.0f;
+            p += 2;
+            if (!fast) {
+                *(short *)p = vtx[idx[k]].nrm.y * 4096.0f;
+                p += 2;
+                *(short *)p = vtx[idx[k]].nrm.z * 4096.0f;
+                p += 2;
+            }
+            k++;
+            run--;
+        }
+        if (NuCvtUvOn) {
+            *(u32 *)p = 0x05000000;
+            p += 4;
+        }
+        *(u32 *)p = (batch << 16) | 0x6E00C005;
+        p += 4;
+        k = 0;
+        run = 0;
+        if (show_strip) {
+            for (i = 0; i < batch; i++) {
+                *(u32 *)p = 0x800000FF;
+                p += 4;
+            }
+        } else {
+            switch (mtl->attrib.colour) {
+            case 0:
+                if (mtl->attrib.lighting == NUMTL_ALPHA_BLEND) {
+                    for (i = 0; i < batch; i++) {
+                        *p++ = ((int)(mtl->diffuse.r * 255.0f) & 0xFF) >> shift;
+                        *p++ = ((int)(mtl->diffuse.g * 255.0f) & 0xFF) >> shift;
+                        *p++ = ((int)(mtl->diffuse.b * 255.0f) & 0xFF) >> shift;
+                        *p++ = mtl->alpha * 127.0f;
+                    }
+                } else {
+                    for (i = 0; i < batch; i++) {
+                        *p++ = 0;
+                        *p++ = 0;
+                        *p++ = 0;
+                        *p++ = mtl->alpha * 127.0f;
+                    }
+                }
+                break;
+            case 1:
+                NuCvtGeoAddColourRef((unsigned int)p);
+                for (i = 0; i < batch; i++) {
+                    if (run == 0 && left == 0) {
+                        run = idx[k];
+                        k++;
+                    }
+                    *p++ = vtx[idx[k]].rgba.r >> shift;
+                    *p++ = vtx[idx[k]].rgba.g >> shift;
+                    *p++ = vtx[idx[k]].rgba.b >> shift;
+                    *p++ = ((vtx[idx[k]].diffuse >> 24) & 0xFF) >> 1;
+                    colour.w = vtx[idx[k]].diffuse;
+                    lit.c.b = colour.c.b * 0.3f;
+                    lit.c.g = colour.c.g * 0.3f;
+                    lit.c.r = colour.c.r * 1.0f;
+                    lit.c.a = colour.c.a;
+                    if (colourref_on) {
+                        colourref_cur->pair[colourref_cur->count].colour = HALVE_COLOUR(colour, shift);
+                        colourref_cur->pair[colourref_cur->count].lit = HALVE_COLOUR(lit, shift);
+                        colourref_cur->count++;
+                    }
+                    k++;
+                    run--;
+                }
+                break;
+            }
+        }
+        *(u32 *)p = 0x01000101;
+        p += 4;
+        *(u32 *)p = 0x14000300;
+        p += 4;
+        idx += used;
+        nidx -= used;
+        if (left) {
+            left -= chunk;
+        }
     }
     *dma = vpDmaTag_Close(p);
     return start;
