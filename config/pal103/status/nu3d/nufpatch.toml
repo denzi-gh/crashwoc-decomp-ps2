@@ -29,7 +29,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0054:0015bca8:NuRndrFPatchInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0054:0015caa8:NuRndrFPatchCameraUpdate"
@@ -65,23 +65,23 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0054:0015eef8:NuFPatchUpdateLight"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0054:0015f0e0:NuFPatchGenerateWorld"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0054:001606d0:NuFPatchShadowCast"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0054:00160a20:yy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0054:00160bc0:NuFPatchMakeHeightFieldBuffer"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0054:00162258:NuFPatchHeightFieldIndexFast"
@@ -113,7 +113,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0054:00162750:NuFPatchLightTexture"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0054:00162968:NuFPatchSetTidsN"

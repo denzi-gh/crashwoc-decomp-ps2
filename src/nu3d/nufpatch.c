@@ -49,8 +49,7 @@
 struct nuhfvtx_s {
     struct nuvec4_s pnt;
     struct nuvec4_s nrm;
-    u8 pad20[0xC];
-    f32 light;
+    struct nuvec4_s col;
 };
 
 struct fpatchstat_s {
@@ -131,6 +130,18 @@ extern struct numtx_s D_002E9680;
 
 extern f32 D_0062EFDC;
 #define fpatch_half D_0062EFDC
+
+extern f32 D_006331A8;
+#define fpatch_height_base D_006331A8
+
+extern struct nuvec4_s D_002E96C0[12];
+#define submtx2 D_002E96C0
+
+extern s32 D_002E9780[16][4];
+#define stitchtable D_002E9780
+
+extern u32 D_002E9880[3][4];
+#define heightTable D_002E9880
 
 extern u8 *rndrstream_free;
 extern s32 fast_index;
@@ -357,6 +368,163 @@ void NuRndrFPatchBegin(struct nuvec_s *lightdir, f32 scale, f32 bias)
     fpatch_stats[0].total = 0.0f;
     fpatch_stats[2].total = 0.0f;
     fpatch_stats[1].total = 0.0f;
+}
+
+
+void NuRndrFPatchInit(u32 levels, s32 detail, f32 lodscale, f32 heightscale, f32 lodrange,
+                      f32 heightmax, f32 heightmin, f32 nearclip_override)
+{
+    struct numtx_s frustum;
+    struct numtx_s inv_clip;
+    struct numtx_s vpc;
+    f32 nearclip;
+    f32 farclip;
+    f32 one;
+    f32 falloff;
+    f32 dist;
+    f32 base;
+    s32 i;
+    u32 j;
+
+    fpatch_height_base = heightmin;
+    initCamera(&frustum, &inv_clip, &vpc, &nearclip, &farclip);
+    if (nearclip_override != 0.0f) {
+        nearclip = nearclip_override;
+    }
+    one = 1.0f;
+    for (i = 0; i < FPATCH_STREAMS; i++) {
+        NuRndrStreamLink(fpatch_stream[i]);
+        fpatch_stream[i]->cur.b = vpDmaTag_RefEx(fpatch_stream[i]->cur.b, water_wave_src, 0x10000000,
+                                                 0x6C000300);
+        *(u16 *)(fpatch_stream[i]->cur.b - 0x10) = 0x100;
+        fpatch_stream[i]->cur.b = vpDmaTag_Cnt(fpatch_stream[i]->cur.b);
+        *fpatch_stream[i]->cur.w++ = 0x10000000;
+        *fpatch_stream[i]->cur.w++ = 0x6C840200;
+        for (j = 0; j < 0x84; j++) {
+            *fpatch_stream[i]->cur.w++ = 0x80;
+            *fpatch_stream[i]->cur.w++ = 0x80;
+            *fpatch_stream[i]->cur.w++ = 0x80;
+            *fpatch_stream[i]->cur.w++ = 0x80;
+        }
+        *fpatch_stream[i]->cur.w++ = 0x10000000;
+        *fpatch_stream[i]->cur.w++ = 0x6C4202BE;
+        for (j = 0; j < levels; j++) {
+            heightscale *= 0.5f;
+        }
+        dist = 0.125f;
+        *fpatch_stream[i]->cur.f++ = one;
+        *fpatch_stream[i]->cur.f++ = dist;
+        *fpatch_stream[i]->cur.f++ = heightscale * 1.732f;
+        *fpatch_stream[i]->cur.w++ = 0;
+        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x3002C0000000000AULL;
+        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x512;
+        *((struct nuvec4_s *)fpatch_stream[i]->cur.b)++ = submtx2[0];
+        *((struct nuvec4_s *)fpatch_stream[i]->cur.b)++ = submtx2[1];
+        *((struct nuvec4_s *)fpatch_stream[i]->cur.b)++ = submtx2[2];
+        *((struct nuvec4_s *)fpatch_stream[i]->cur.b)++ = submtx2[3];
+        *((struct nuvec4_s *)fpatch_stream[i]->cur.b)++ = submtx2[4];
+        *((struct nuvec4_s *)fpatch_stream[i]->cur.b)++ = submtx2[5];
+        *((struct nuvec4_s *)fpatch_stream[i]->cur.b)++ = submtx2[6];
+        *((struct nuvec4_s *)fpatch_stream[i]->cur.b)++ = submtx2[7];
+        *((struct nuvec4_s *)fpatch_stream[i]->cur.b)++ = submtx2[8];
+        *((struct nuvec4_s *)fpatch_stream[i]->cur.b)++ = submtx2[9];
+        *((struct nuvec4_s *)fpatch_stream[i]->cur.b)++ = submtx2[10];
+        *((struct nuvec4_s *)fpatch_stream[i]->cur.b)++ = submtx2[11];
+        *((struct numtx_s *)fpatch_stream[i]->cur.b)++ = vpc;
+        for (j = 0; j < 16; j++) {
+            *fpatch_stream[i]->cur.i++ = stitchtable[j][0] + 4;
+            *fpatch_stream[i]->cur.i++ = stitchtable[j][1] + 4;
+            *fpatch_stream[i]->cur.i++ = stitchtable[j][2] + 4;
+            *fpatch_stream[i]->cur.i++ = stitchtable[j][3] + 4;
+        }
+        *((struct numtx_s *)fpatch_stream[i]->cur.b)++ = frustum;
+        *((struct numtx_s *)fpatch_stream[i]->cur.b)++ = inv_clip;
+        *fpatch_stream[i]->cur.f++ = nearclip;
+        *fpatch_stream[i]->cur.f++ = farclip;
+        *fpatch_stream[i]->cur.f++ = lodscale;
+        *fpatch_stream[i]->cur.f++ = lodscale;
+        lodscale += lodscale;
+        *fpatch_stream[i]->cur.f++ = one;
+        *fpatch_stream[i]->cur.f++ = one;
+        *fpatch_stream[i]->cur.f++ = one;
+        *fpatch_stream[i]->cur.f++ = one;
+        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x3002C0000000800AULL;
+        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x512;
+        falloff = 0.47f;
+        dist = 0.25f;
+        if (water_table_ready) {
+            dist = 0.375f;
+        }
+        for (j = 0; j < levels; j++) {
+            lodscale *= 0.5f;
+            falloff *= 0.47f;
+            dist += dist;
+        }
+        base = dist;
+        for (j = 0; j < 16; j++) {
+            *fpatch_stream[i]->cur.f++ = lodscale;
+            *fpatch_stream[i]->cur.f++ = -1.0f / (lodscale * lodrange);
+            *fpatch_stream[i]->cur.f++ = falloff;
+            if (j < 3 && detail) {
+                *fpatch_stream[i]->cur.f++ = base * 4.0f;
+            } else {
+                *fpatch_stream[i]->cur.f++ = dist;
+            }
+            lodscale *= 0.5f;
+            falloff *= 0.47f;
+            dist += dist;
+        }
+        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x0002C00000008000ULL;
+        *((u64 *)fpatch_stream[i]->cur.b)++ = 0;
+        if (heightmin == 0.0f && heightmax == 0.0f) {
+            heightmin = 10000.0f;
+            heightmax = 9999.0f;
+        }
+        *fpatch_stream[i]->cur.f++ = heightmin;
+        *fpatch_stream[i]->cur.f++ = 128.0f / (heightmax - heightmin);
+        *fpatch_stream[i]->cur.w++ = 0;
+        *fpatch_stream[i]->cur.w++ = 0;
+        for (j = 0; j < 3; j++) {
+            *fpatch_stream[i]->cur.w++ = heightTable[j][0];
+            *fpatch_stream[i]->cur.w++ = heightTable[j][1];
+            *fpatch_stream[i]->cur.w++ = heightTable[j][2];
+            *fpatch_stream[i]->cur.w++ = heightTable[j][3];
+        }
+        *fpatch_stream[i]->cur.w++ = 0x10000000;
+        *fpatch_stream[i]->cur.w++ = 0x6C030200;
+        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x1000000000000001ULL;
+        *((u64 *)fpatch_stream[i]->cur.b)++ = 0xE;
+        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x58;
+        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x1B;
+        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x3002C0000000000AULL;
+        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x512;
+        *fpatch_stream[i]->cur.w++ = 0x10000000;
+        *fpatch_stream[i]->cur.w++ = 0x6C030221;
+        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x1000000000000001ULL;
+        *((u64 *)fpatch_stream[i]->cur.b)++ = 0xE;
+        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x258;
+        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x1B;
+        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x3002C0000000800AULL;
+        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x512;
+        *fpatch_stream[i]->cur.w++ = 0x10000000;
+        *fpatch_stream[i]->cur.w++ = 0x6C030242;
+        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x1000000000000001ULL;
+        *((u64 *)fpatch_stream[i]->cur.b)++ = 0xE;
+        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x58;
+        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x1B;
+        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x3002C0000000000AULL;
+        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x512;
+        *fpatch_stream[i]->cur.w++ = 0x10000000;
+        *fpatch_stream[i]->cur.w++ = 0x6C030263;
+        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x1000000000000001ULL;
+        *((u64 *)fpatch_stream[i]->cur.b)++ = 0xE;
+        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x258;
+        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x1B;
+        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x3002C0000000800AULL;
+        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x512;
+        fpatch_stream[i]->cur.b = vpDmaTag_Close(fpatch_stream[i]->cur.b);
+        rndrstream_free = vpDmaTag_Next(fpatch_stream[i]->cur.b, 0);
+    }
 }
 
 
@@ -717,6 +885,430 @@ void NuFPatchTesselateSphereRec(s32 depth, struct nufpatch_s *patch, f32 radius,
 }
 
 
+void NuFPatchUpdateLight(struct nuvec_s *lightdir, f32 scale, f32 bias)
+{
+    struct nuvec_s dir;
+    struct nutexslot_s *entry;
+    struct nups2tex_s *ps2tex;
+    u8 *texel;
+    s32 x;
+    s32 y;
+    f32 dot;
+    f32 light;
+    u8 shade;
+    f32 range;
+
+    range = 4.0f;
+    NuTexGetPointers(fpatch_lighttid, &entry, &ps2tex);
+    texel = ps2tex->mipdata[0] + 0x70;
+    for (y = 0; y < 32; y++) {
+        for (x = 0; x < 32; x++) {
+            dir.x = -(x * 8.0f / 31.0f - range);
+            dir.y = -(y * 8.0f / 31.0f - range);
+            dir.z = 1.0f;
+            NuVecNorm(&dir, &dir);
+            dot = NuVecDot(&dir, lightdir);
+            if (dot < 0.0f) {
+                dot = 0.0f;
+            }
+            light = dot * scale + bias;
+            if (light > 255.0) {
+                light = 255.0f;
+            }
+            if (light < 0.0) {
+                light = 0.0f;
+            }
+            shade = light;
+            *texel++ = shade;
+            *texel++ = shade;
+            *texel++ = shade;
+            *texel++ = shade;
+        }
+    }
+}
+
+
+inline void NuFPatchTesselateSphere(s32 depth, struct nufpatch_s *patch, f32 radius,
+                                    struct nufpatch_s **out)
+{
+    NuFPatchTesselateSphereRec(depth, patch, radius, 1.0f, out);
+}
+
+
+struct nufpatch_s *NuFPatchGenerateWorld(s32 depth, s32 *count, s32 radius)
+{
+    struct numtx_s uv = {0};
+    struct numtx_s front_pnt = {
+        -0.57735f, -0.57735f, 0.57735f, 1.0f,
+        0.57735f, -0.57735f, 0.57735f, 1.0f,
+        -0.57735f, 0.57735f, 0.57735f, 1.0f,
+        0.57735f, 0.57735f, 0.57735f, 1.0f
+    };
+    struct numtx_s back_pnt = {
+        -0.57735f, -0.57735f, -0.57735f, 1.0f,
+        0.57735f, -0.57735f, -0.57735f, 1.0f,
+        -0.57735f, 0.57735f, -0.57735f, 1.0f,
+        0.57735f, 0.57735f, -0.57735f, 1.0f
+    };
+    struct numtx_s right_pnt = {
+        0.57735f, -0.57735f, -0.57735f, 1.0f,
+        0.57735f, 0.57735f, -0.57735f, 1.0f,
+        0.57735f, -0.57735f, 0.57735f, 1.0f,
+        0.57735f, 0.57735f, 0.57735f, 1.0f
+    };
+    struct numtx_s left_pnt = {
+        -0.57735f, -0.57735f, -0.57735f, 1.0f,
+        -0.57735f, 0.57735f, -0.57735f, 1.0f,
+        -0.57735f, -0.57735f, 0.57735f, 1.0f,
+        -0.57735f, 0.57735f, 0.57735f, 1.0f
+    };
+    struct numtx_s top_pnt = {
+        -0.57735f, 0.57735f, -0.57735f, 1.0f,
+        0.57735f, 0.57735f, -0.57735f, 1.0f,
+        -0.57735f, 0.57735f, 0.57735f, 1.0f,
+        0.57735f, 0.57735f, 0.57735f, 1.0f
+    };
+    struct numtx_s bottom_pnt = {
+        -0.57735f, -0.57735f, -0.57735f, 1.0f,
+        0.57735f, -0.57735f, -0.57735f, 1.0f,
+        -0.57735f, -0.57735f, 0.57735f, 1.0f,
+        0.57735f, -0.57735f, 0.57735f, 1.0f
+    };
+    struct numtx_s front_nrm = {
+        -0.57735f, -0.57735f, 0.57735f, 0.0f,
+        0.57735f, -0.57735f, 0.57735f, 0.0f,
+        -0.57735f, 0.57735f, 0.57735f, 0.0f,
+        0.57735f, 0.57735f, 0.57735f, 0.0f
+    };
+    struct numtx_s back_nrm = {
+        -0.57735f, -0.57735f, -0.57735f, 0.0f,
+        0.57735f, -0.57735f, -0.57735f, 0.0f,
+        -0.57735f, 0.57735f, -0.57735f, 0.0f,
+        0.57735f, 0.57735f, -0.57735f, 0.0f
+    };
+    struct numtx_s right_nrm = {
+        0.57735f, -0.57735f, -0.57735f, 0.0f,
+        0.57735f, 0.57735f, -0.57735f, 0.0f,
+        0.57735f, -0.57735f, 0.57735f, 0.0f,
+        0.57735f, 0.57735f, 0.57735f, 0.0f
+    };
+    struct numtx_s left_nrm = {
+        -0.57735f, -0.57735f, -0.57735f, 0.0f,
+        -0.57735f, 0.57735f, -0.57735f, 0.0f,
+        -0.57735f, -0.57735f, 0.57735f, 0.0f,
+        -0.57735f, 0.57735f, 0.57735f, 0.0f
+    };
+    struct numtx_s top_nrm = {
+        -0.57735f, 0.57735f, -0.57735f, 0.0f,
+        0.57735f, 0.57735f, -0.57735f, 0.0f,
+        -0.57735f, 0.57735f, 0.57735f, 0.0f,
+        0.57735f, 0.57735f, 0.57735f, 0.0f
+    };
+    struct numtx_s bottom_nrm = {
+        -0.57735f, -0.57735f, -0.57735f, 0.0f,
+        0.57735f, -0.57735f, -0.57735f, 0.0f,
+        -0.57735f, -0.57735f, 0.57735f, 0.0f,
+        0.57735f, -0.57735f, 0.57735f, 0.0f
+    };
+    f32 light[6][4] = {
+        {0.053098477f, 0.19876964f, 0.20987545f, 0.3389355f},
+        {0.6198752f, 0.7198163f, 0.48765674f, 0.55558765f},
+        {0.7198163f, 0.55558765f, 0.19876964f, 0.3389355f},
+        {0.6198752f, 0.48765674f, 0.053098477f, 0.20987545f},
+        {0.48765674f, 0.55558765f, 0.20987545f, 0.3389355f},
+        {0.6198752f, 0.7198163f, 0.053098477f, 0.19876964f}
+    };
+    struct numtx_s col = {
+        0.0f, 0.0f, 1.0f, 0.0f,
+        1.0f, 0.0f, 1.0f, 0.0f,
+        0.0f, 1.0f, 1.0f, 0.0f,
+        1.0f, 1.0f, 1.0f, 0.0f
+    };
+    struct nufpatch_s patch;
+    struct nufpatch_s *out;
+    struct nufpatch_s *patches;
+    s32 i;
+
+    if (depth == 1) {
+        *count = 1;
+    } else {
+        *count = 4;
+        for (i = 1; i < depth - 1; i++) {
+            *count *= 4;
+        }
+    }
+    *count *= 6;
+    patches = NuMemAllocFn(*count * sizeof(struct nufpatch_s), fpatch_file, 0x734);
+    out = patches;
+    col._03 = light[0][0];
+    col._13 = light[0][1];
+    col._23 = light[0][2];
+    col._33 = light[0][3];
+    *(struct numtx_s *)patch.pnt = front_pnt;
+    *(struct numtx_s *)patch.nrm = front_nrm;
+    patch.col = col;
+    patch.uv = uv;
+    NuFPatchTesselateSphere(depth, &patch, radius, &out);
+    col._03 = light[1][0];
+    col._13 = light[1][1];
+    col._23 = light[1][2];
+    col._33 = light[1][3];
+    *(struct numtx_s *)patch.pnt = back_pnt;
+    *(struct numtx_s *)patch.nrm = back_nrm;
+    patch.col = col;
+    patch.uv = uv;
+    NuFPatchTesselateSphere(depth, &patch, radius, &out);
+    col._03 = light[2][0];
+    col._13 = light[2][1];
+    col._23 = light[2][2];
+    col._33 = light[2][3];
+    *(struct numtx_s *)patch.pnt = right_pnt;
+    *(struct numtx_s *)patch.nrm = right_nrm;
+    patch.col = col;
+    patch.uv = uv;
+    NuFPatchTesselateSphere(depth, &patch, radius, &out);
+    col._03 = light[3][0];
+    col._13 = light[3][1];
+    col._23 = light[3][2];
+    col._33 = light[3][3];
+    *(struct numtx_s *)patch.pnt = left_pnt;
+    *(struct numtx_s *)patch.nrm = left_nrm;
+    patch.col = col;
+    patch.uv = uv;
+    NuFPatchTesselateSphere(depth, &patch, radius, &out);
+    col._03 = light[4][0];
+    col._13 = light[4][1];
+    col._23 = light[4][2];
+    col._33 = light[4][3];
+    *(struct numtx_s *)patch.pnt = top_pnt;
+    *(struct numtx_s *)patch.nrm = top_nrm;
+    patch.col = col;
+    patch.uv = uv;
+    NuFPatchTesselateSphere(depth, &patch, radius, &out);
+    col._03 = light[5][0];
+    col._13 = light[5][1];
+    col._23 = light[5][2];
+    col._33 = light[5][3];
+    *(struct numtx_s *)patch.pnt = bottom_pnt;
+    *(struct numtx_s *)patch.nrm = bottom_nrm;
+    patch.col = col;
+    patch.uv = uv;
+    NuFPatchTesselateSphere(depth, &patch, radius, &out);
+    return patches;
+}
+
+
+static inline void fpatchOffsetCorner(struct nuvec_s *out, struct nuvec_s *nrm, struct nuvec_s *pnt)
+{
+    NuVecScale(out, nrm, 1.0f);
+    NuVecAdd(out, out, pnt);
+}
+
+
+f32 NuFPatchShadowCast(struct nufpatch_s *patch, struct nuvec_s *lightpos)
+{
+    struct nuvec_s pos;
+    struct nuvec_s normal;
+    struct nuvec_s twist;
+    struct nuvec_s error;
+    struct nuvec_s corner0;
+    struct nuvec_s corner1;
+    struct nuvec_s corner2;
+    struct nuvec_s corner3;
+    struct nuvec_s du;
+    struct nuvec_s dv;
+    struct nuvec_s top;
+    struct nuvec_s bottom;
+    struct nuvec_s unitnormal;
+    struct nuvec_s tolight;
+    struct nuvec_s *pnt0;
+    struct nuvec_s *pnt1;
+    struct nuvec_s *pnt2;
+    struct nuvec_s *pnt3;
+    struct nuvec_s *nrm0;
+    struct nuvec_s *nrm1;
+    struct nuvec_s *nrm2;
+    struct nuvec_s *nrm3;
+    f32 u;
+    f32 v;
+    struct nuvec_s *corner0p;
+    struct nuvec_s *corner1p;
+    struct nuvec_s *corner2p;
+    struct nuvec_s *corner3p;
+    f32 rate;
+    f32 one;
+    s32 i;
+
+    u = 0.5f;
+    v = 0.5f;
+    rate = 0.9f;
+    pnt0 = (struct nuvec_s *)&patch->pnt[0];
+    pnt1 = (struct nuvec_s *)&patch->pnt[1];
+    pnt2 = (struct nuvec_s *)&patch->pnt[2];
+    pnt3 = (struct nuvec_s *)&patch->pnt[3];
+    nrm0 = (struct nuvec_s *)&patch->nrm[0];
+    nrm1 = (struct nuvec_s *)&patch->nrm[1];
+    nrm2 = (struct nuvec_s *)&patch->nrm[2];
+    nrm3 = (struct nuvec_s *)&patch->nrm[3];
+    one = 1.0f;
+    for (i = 0; i < 10; i++) {
+        NuVecLerp(&top, pnt0, pnt1, one - u);
+        NuVecLerp(&bottom, pnt2, pnt3, one - u);
+        NuVecLerp(&pos, &top, &bottom, one - v);
+        NuVecLerp(&top, nrm0, nrm1, one - u);
+        NuVecLerp(&bottom, nrm2, nrm3, one - u);
+        NuVecLerp(&normal, &top, &bottom, one - v);
+        NuVecNorm(&unitnormal, &normal);
+        NuVecSub(&tolight, lightpos, &pos);
+        NuVecNorm(&tolight, &tolight);
+        NuVecSub(&error, &tolight, &unitnormal);
+        corner0p = &corner0;
+        corner1p = &corner1;
+        corner2p = &corner2;
+        corner3p = &corner3;
+        fpatchOffsetCorner(corner0p, nrm0, pnt0);
+        fpatchOffsetCorner(corner1p, nrm1, pnt1);
+        fpatchOffsetCorner(corner2p, nrm2, pnt2);
+        fpatchOffsetCorner(corner3p, nrm3, pnt3);
+        NuVecSub(&twist, corner3p, corner2p);
+        NuVecSub(&twist, &twist, corner1p);
+        NuVecAdd(&twist, &twist, corner0p);
+        NuVecScale(&du, &twist, v);
+        NuVecAdd(&du, &du, corner2p);
+        NuVecSub(&du, &du, corner0p);
+        NuVecScale(&dv, &twist, u);
+        NuVecAdd(&dv, &dv, corner1p);
+        NuVecSub(&dv, &dv, corner0p);
+        u += rate * NuVecDot(&error, &du);
+        v += rate * NuVecDot(&error, &dv);
+    }
+    return 0.0f;
+}
+
+
+static inline void fpatchLerpQuad(struct nuvec4_s *mid, struct nuvec4_s *a, struct nuvec4_s *b,
+                                  struct nuvec4_s *c, struct nuvec4_s *d)
+{
+    struct nuvec4_s cd;
+
+    NuVec4LerpVU0(mid, a, b, &fpatch_half);
+    NuVec4LerpVU0(&cd, c, d, &fpatch_half);
+    NuVec4LerpVU0(mid, &cd, mid, &fpatch_half);
+}
+
+
+void yy(s32 a, s32 b, s32 c, s32 d, s32 mid)
+{
+    fpatchLerpQuad(&hf_vtx[mid].pnt, &hf_vtx[a].pnt, &hf_vtx[b].pnt, &hf_vtx[c].pnt,
+                   &hf_vtx[d].pnt);
+    fpatchLerpQuad(&hf_vtx[mid].nrm, &hf_vtx[a].nrm, &hf_vtx[b].nrm, &hf_vtx[c].nrm,
+                   &hf_vtx[d].nrm);
+    fpatchLerpQuad(&hf_vtx[mid].col, &hf_vtx[a].col, &hf_vtx[b].col, &hf_vtx[c].col,
+                   &hf_vtx[d].col);
+}
+
+
+static inline void fpatchLerpEdge(s32 a, s32 b, s32 mid)
+{
+    NuVec4LerpVU0(&hf_vtx[mid].pnt, &hf_vtx[a].pnt, &hf_vtx[b].pnt, &fpatch_half);
+    NuVec4LerpVU0(&hf_vtx[mid].nrm, &hf_vtx[a].nrm, &hf_vtx[b].nrm, &fpatch_half);
+    NuVec4LerpVU0(&hf_vtx[mid].col, &hf_vtx[a].col, &hf_vtx[b].col, &fpatch_half);
+}
+
+void NuFPatchMakeHeightFieldBuffer(struct nufpatch_s *patch)
+{
+    hf_vtx[0].pnt = patch->pnt[0];
+    hf_vtx[8].pnt = patch->pnt[1];
+    hf_vtx[72].pnt = patch->pnt[2];
+    hf_vtx[80].pnt = patch->pnt[3];
+    hf_vtx[0].nrm = patch->nrm[0];
+    hf_vtx[8].nrm = patch->nrm[1];
+    hf_vtx[72].nrm = patch->nrm[2];
+    hf_vtx[80].nrm = patch->nrm[3];
+    hf_vtx[0].col = *(struct nuvec4_s *)&patch->col._00;
+    hf_vtx[8].col = *(struct nuvec4_s *)&patch->col._10;
+    hf_vtx[72].col = *(struct nuvec4_s *)&patch->col._20;
+    hf_vtx[80].col = *(struct nuvec4_s *)&patch->col._30;
+    fpatchLerpEdge(0, 8, 4);
+    fpatchLerpEdge(72, 80, 76);
+    fpatchLerpEdge(0, 72, 36);
+    fpatchLerpEdge(8, 80, 44);
+    yy(0, 8, 72, 80, 40);
+    fpatchLerpEdge(0, 4, 2);
+    fpatchLerpEdge(36, 40, 38);
+    fpatchLerpEdge(0, 36, 18);
+    fpatchLerpEdge(4, 40, 22);
+    yy(0, 4, 36, 40, 20);
+    fpatchLerpEdge(4, 8, 6);
+    fpatchLerpEdge(40, 44, 42);
+    fpatchLerpEdge(8, 44, 26);
+    yy(4, 8, 40, 44, 24);
+    fpatchLerpEdge(72, 76, 74);
+    fpatchLerpEdge(36, 72, 54);
+    fpatchLerpEdge(40, 76, 58);
+    yy(36, 40, 72, 76, 56);
+    fpatchLerpEdge(76, 80, 78);
+    fpatchLerpEdge(44, 80, 62);
+    yy(40, 44, 76, 80, 60);
+    yy(0, 2, 18, 20, 10);
+    fpatchLerpEdge(0, 2, 1);
+    fpatchLerpEdge(18, 20, 19);
+    fpatchLerpEdge(0, 18, 9);
+    fpatchLerpEdge(2, 20, 11);
+    yy(2, 4, 20, 22, 12);
+    fpatchLerpEdge(2, 4, 3);
+    fpatchLerpEdge(20, 22, 21);
+    fpatchLerpEdge(4, 22, 13);
+    yy(18, 20, 36, 38, 28);
+    fpatchLerpEdge(36, 38, 37);
+    fpatchLerpEdge(18, 36, 27);
+    fpatchLerpEdge(20, 38, 29);
+    yy(20, 22, 38, 40, 30);
+    fpatchLerpEdge(38, 40, 39);
+    fpatchLerpEdge(22, 40, 31);
+    yy(4, 6, 22, 24, 14);
+    fpatchLerpEdge(4, 6, 5);
+    fpatchLerpEdge(22, 24, 23);
+    fpatchLerpEdge(6, 24, 15);
+    yy(6, 8, 24, 26, 16);
+    fpatchLerpEdge(6, 8, 7);
+    fpatchLerpEdge(24, 26, 25);
+    fpatchLerpEdge(8, 26, 17);
+    yy(22, 24, 40, 42, 32);
+    fpatchLerpEdge(40, 42, 41);
+    fpatchLerpEdge(24, 42, 33);
+    yy(24, 26, 42, 44, 34);
+    fpatchLerpEdge(42, 44, 43);
+    fpatchLerpEdge(26, 44, 35);
+    yy(36, 38, 54, 56, 46);
+    fpatchLerpEdge(54, 56, 55);
+    fpatchLerpEdge(36, 54, 45);
+    fpatchLerpEdge(38, 56, 47);
+    yy(38, 40, 56, 58, 48);
+    fpatchLerpEdge(56, 58, 57);
+    fpatchLerpEdge(40, 58, 49);
+    yy(54, 56, 72, 74, 64);
+    fpatchLerpEdge(72, 74, 73);
+    fpatchLerpEdge(54, 72, 63);
+    fpatchLerpEdge(56, 74, 65);
+    yy(56, 58, 74, 76, 66);
+    fpatchLerpEdge(74, 76, 75);
+    fpatchLerpEdge(58, 76, 67);
+    yy(40, 42, 58, 60, 50);
+    fpatchLerpEdge(58, 60, 59);
+    fpatchLerpEdge(42, 60, 51);
+    yy(42, 44, 60, 62, 52);
+    fpatchLerpEdge(60, 62, 61);
+    fpatchLerpEdge(44, 62, 53);
+    yy(58, 60, 76, 78, 68);
+    fpatchLerpEdge(76, 78, 77);
+    fpatchLerpEdge(60, 78, 69);
+    yy(60, 62, 78, 80, 70);
+    fpatchLerpEdge(78, 80, 79);
+    fpatchLerpEdge(62, 80, 71);
+}
+
+
 void NuFPatchHeightFieldIndexFast(struct nufpatch_s *src, f32 *heights, s32 index,
                                   struct nufpatch_s *dst)
 {
@@ -736,10 +1328,10 @@ void NuFPatchHeightFieldIndexFast(struct nufpatch_s *src, f32 *heights, s32 inde
     dst->nrm[1] = hf_vtx[vtx + 1].nrm;
     dst->nrm[2] = hf_vtx[vtx + 9].nrm;
     dst->nrm[3] = hf_vtx[vtx + 10].nrm;
-    dst->col._03 = hf_vtx[vtx].light;
-    dst->col._13 = hf_vtx[vtx + 1].light;
-    dst->col._23 = hf_vtx[vtx + 9].light;
-    dst->col._33 = hf_vtx[vtx + 10].light;
+    dst->col._03 = hf_vtx[vtx].col.w;
+    dst->col._13 = hf_vtx[vtx + 1].col.w;
+    dst->col._23 = hf_vtx[vtx + 9].col.w;
+    dst->col._33 = hf_vtx[vtx + 10].col.w;
     dst->uv._01 = heights[vtx];
     dst->uv._03 = heights[vtx + 1];
     dst->uv._00 = heights[vtx + 81];
@@ -812,10 +1404,47 @@ void NuFPatchAnimateWaterTable(f32 time)
 }
 
 
-void NuFPatchTesselateSphere(s32 depth, struct nufpatch_s *patch, f32 radius,
-                             struct nufpatch_s **out)
+void NuFPatchLightTexture(struct nutex_s *tex, s32 size, struct nuvec_s *lightdir, f32 range,
+                          f32 scale, f32 bias)
 {
-    NuFPatchTesselateSphereRec(depth, patch, radius, 1.0f, out);
+    struct nuvec_s dir;
+    u8 *texel;
+    s32 x;
+    s32 y;
+    f32 dot;
+    f32 light;
+    u8 shade;
+
+    tex->type = 3;
+    tex->width = size;
+    tex->height = size;
+    tex->mmcnt = 0;
+    tex->bits = NuMemAllocFn(size * size * 4, fpatch_file, 0x6D3);
+    texel = tex->bits;
+    for (y = 0; y < size; y++) {
+        for (x = 0; x < size; x++) {
+            dir.x = -(((range + range) * x) / (size - 1) - range);
+            dir.y = -(((range + range) * y) / (size - 1) - range);
+            dir.z = 1.0f;
+            NuVecNorm(&dir, &dir);
+            dot = NuVecDot(&dir, lightdir);
+            if (dot < 0.0f) {
+                dot = 0.0f;
+            }
+            light = dot * scale + bias;
+            if (light > 255.0) {
+                light = 255.0f;
+            }
+            if (light < 0.0) {
+                light = 0.0f;
+            }
+            shade = light;
+            *texel++ = shade;
+            *texel++ = shade;
+            *texel++ = shade;
+            *texel++ = shade;
+        }
+    }
 }
 
 
