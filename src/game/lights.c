@@ -182,7 +182,7 @@ void LoadLights(void) {
     AMBIENTCOUNT = 0;
     DIRECTCOUNT = 0;
     POINTCOUNT = 0;
-    for (i = 0; i < 0x100; i++) {
+    for (i = 0xFF; i >= 0; i--) {
         Lights[i].type = -1;
     }
     sprintf(tbuf, lgt_file_fmt, LevelFileName);
@@ -194,7 +194,7 @@ void LoadLights(void) {
         DIRECTCOUNT = NuFileReadInt(fh);
         POINTCOUNT = NuFileReadInt(fh);
         if (LIGHTCOUNT > 0x100) {
-            LIGHTCOUNT = 0x100;
+            LIGHTCOUNT = i;
         }
         i = 0;
         if (LIGHTCOUNT > 0) {
