@@ -22,6 +22,7 @@
 #include "numath/nuvec.h"
 #include "nu3d/numtl.h"
 #include "nu3d/nugobj.h"
+#include "nu3d/nurndr.h"
 #include "nu3d/nugscn.h"
 
 struct edsfx_s {
@@ -51,7 +52,6 @@ extern float NuTrigTable[];
 extern void GameSfx(int sfx, struct nuvec_s *pos);
 extern void NuSoundPlay3d(struct nuvec_s *pos, int sfx, int volL, int volR, int pitch);
 extern void NuStrCpy(char *dst, char *src);
-extern int NuRndrLine3d(struct nuvtx_tc1_s *line, struct numtl_s *mtl, struct numtx_s *mtx);
 
 
 void edbitsSoundPlay(struct nuvec_s *pos, int sfx) {

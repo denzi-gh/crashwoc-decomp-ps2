@@ -181,6 +181,7 @@
 #include "numath/nuvec.h"
 #include "nu3d/numtl.h"
 #include "nu3d/nugobj.h"
+#include "nu3d/nurndr.h"
 #include "nu3d/nucamera.h"
 #include "gamelib/terrain.h"
 #include "nups2/nups2types.h"
@@ -532,7 +533,6 @@ extern void edcamSetPos(struct nuvec_s *pos);
 extern void edcamGetPosAng(struct nuvec_s *pos, float *ax, float *ay);
 extern void edcamGetPosAngSnap(struct nuvec_s *pos, float *ax, float *ay);
 extern void *edpp_boxmtl;
-extern void NuRndrLine3d(struct nuvtx_tc1_s *line, void *mtl, void *mtx);
 extern void NuRndrRect2di(int x, int y, int w, int h, int colour, void *mtl);
 extern void NuRndrLine2di(int x0, int y0, int x1, int y1, int colour, void *mtl);
 extern void NuFntSet(void *fnt);

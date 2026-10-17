@@ -111,6 +111,7 @@
 #include "numath/nuvec.h"
 #include "nu3d/numtl.h"
 #include "nu3d/nugobj.h"
+#include "nu3d/nurndr.h"
 #include "nu3d/nugscn.h"
 #include "nu3d/nuanim.h"
 #include "nu3d/nucamera.h"
@@ -439,7 +440,6 @@ extern void NuFntScale(int x, int y);
 extern void NuFntSet(void *font);
 extern void NuFntSetPen(int colour);
 extern void NuFntPrintEx(int x, int y, int flags, char *fmt, ...);
-extern int NuRndrLine3d(struct nuvtx_tc1_s *line, void *mtl, struct numtx_s *mtx);
 extern void NuRndrRect2di(int x, int y, int w, int h, int colour, void *mtl);
 extern void NuRndrLine2di(int x0, int y0, int x1, int y1, int colour, void *mtl);
 extern int NuRndrGScnObj(struct nugobj_s *gobj, struct numtx_s *mtx);

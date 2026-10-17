@@ -1032,9 +1032,10 @@ void SaveAI(void)
 inline f32 FindNearestCreature(struct nuvec_s *pos, s32 type, struct nuvec_s *out)
 {
     struct creature_s *c;
+    f32 d;
+    f32 best;
     s32 i;
     s32 nearest;
-    f32 best;
 
     nearest = -1;
     best = 1000000.0f;
@@ -1050,7 +1051,7 @@ inline f32 FindNearestCreature(struct nuvec_s *pos, s32 type, struct nuvec_s *ou
             continue;
         }
         if (pos != &c->obj.pos) {
-            f32 d = NuVecDistSqr(pos, &c->obj.pos, 0);
+            d = NuVecDistSqr(pos, &c->obj.pos, 0);
             if (d < best) {
                 best = d;
                 nearest = i;
@@ -1083,7 +1084,7 @@ loop:
     goto loop;
 }
 
-inline s32 PlayerLateralInRange(struct nuvec_s *line, struct nuvec_s *a, struct nuvec_s *b, f32 p0, f32 p1)
+inline s32 PlayerLateralInRange(f32 p0, struct nuvec_s *line, struct nuvec_s *a, struct nuvec_s *b, f32 p1)
 {
     f32 ratio;
     f32 dx;
@@ -1106,7 +1107,7 @@ inline s32 PlayerLateralInRange(struct nuvec_s *line, struct nuvec_s *a, struct 
 }
 
 
-inline s32 PlayerLateralOutOfRange(struct nuvec_s *line, struct nuvec_s *a, struct nuvec_s *b, f32 p0, f32 p1)
+inline s32 PlayerLateralOutOfRange(f32 p0, struct nuvec_s *line, struct nuvec_s *a, struct nuvec_s *b, f32 p1)
 {
     f32 ratio;
     f32 dx;
@@ -1179,7 +1180,7 @@ void MoveCreature(struct creature_s *c)
     struct nuvec_s v2;
     struct nuvec_s v3;
     struct nuvec_s mid;
-    s32 oldhdg;
+    u16 oldhdg;
     u16 touchmask;
     s32 ptype;
     s32 ptarget;
@@ -1193,15 +1194,17 @@ void MoveCreature(struct creature_s *c)
     struct nuvec_s *p;
     struct nuvec_s *q;
     s32 hit;
-    s32 result;
     s32 i;
     s32 j;
     s32 n;
-    s32 back;
     u16 ang;
     f32 t;
     f32 fa;
     f32 fb;
+    f32 dx;
+    f32 dz;
+    f32 dy;
+    f32 fy;
 
     plr = player;
     GetTopBot(player);
@@ -1225,10 +1228,10 @@ void MoveCreature(struct creature_s *c)
         pos = AITab[c->i_aitab].pos;
         ai_type = AITab[c->i_aitab].ai_type;
         points = AIType[ai_type].points;
-        for (;;) {
-            if (c->cmdcurr == 0) {
-                c->cmdcurr = c->cmdtable;
-            }
+        if (c->cmdcurr == 0) {
+            c->cmdcurr = c->cmdtable;
+        }
+        BranchLoop: {
             ok = 1;
             switch (c->cmdcurr->cmd) {
             default:
@@ -1444,33 +1447,33 @@ void MoveCreature(struct creature_s *c)
             case 0x76:
             case 0x77:
                 if (c->obj.dead != 0 || plr->obj.dead != 0) {
-                    for (i = 0; i < 2; i++) {
-                        c->ai.event[i] = -1;
+                    for (j = 0; j < 2; j++) {
+                        c->ai.event[j] = -1;
                     }
                 } else {
                     if (c->cmdcurr->cmd == 0x76 || c->cmdcurr->cmd == 0x77) {
-                        j = c->cmdcurr->cmd - 0x76;
-                        c->ai.event[j] = 0x14;
-                        c->ai.event_function[j] = (void *)c->cmdcurr->i;
+                        i = c->cmdcurr->cmd - 0x76;
+                        c->ai.event[i] = 0x14;
+                        c->ai.event_function[i] = (void *)c->cmdcurr->i;
                     } else {
-                        j = c->cmdcurr->cmd - 0x74;
-                        c->ai.event[j] = c->cmdcurr->i;
-                        switch (c->ai.event[j]) {
+                        i = c->cmdcurr->cmd - 0x74;
+                        c->ai.event[i] = c->cmdcurr->i;
+                        switch (c->ai.event[i]) {
                         case 0 ... 7:
                         case 10 ... 13:
-                            c->ai.event_distance[j] = c->cmdcurr->f;
+                            c->ai.event_distance[i] = c->cmdcurr->f;
                             break;
                         }
                     }
-                    c->ai.event_branch[j] = -1;
-                    c->ai.event_flags[j] = 0;
-                    c->ai.event_occured[j] = 0;
+                    c->ai.event_branch[i] = -1;
+                    c->ai.event_flags[i] = 0;
+                    c->ai.event_occured[i] = 0;
                 }
                 break;
             case 0x78:
             case 0x79:
-                j = c->cmdcurr->cmd - 0x78;
-                c->ai.event_branch[j] = FindAILabel(c->cmdtable, c->cmdcurr->i);
+                i = c->cmdcurr->cmd - 0x78;
+                c->ai.event_branch[i] = FindAILabel(c->cmdtable, c->cmdcurr->i);
                 break;
             case 0x7A:
             case 0x7B:
@@ -1479,13 +1482,10 @@ void MoveCreature(struct creature_s *c)
                 c->ai.event_index[c->cmdcurr->cmd - 0x7A] = c->cmdcurr->i;
                 break;
             case 0x4B:
-                c->ai.oldangle = c->cmdcurr->i;
-                c->ai.angle = c->cmdcurr->i;
+                c->ai.angle = c->ai.oldangle = c->cmdcurr->i;
                 break;
             case 0x4C:
-                i = qrand();
-                c->ai.oldangle = i;
-                c->ai.angle = i;
+                c->ai.angle = c->ai.oldangle = qrand();
                 break;
             case 0x53:
                 c->ai.radius = c->cmdcurr->f;
@@ -1555,22 +1555,19 @@ void MoveCreature(struct creature_s *c)
                 c->ai.count = c->cmdcurr->i;
                 break;
             case 0x17:
-                n = c->cmdcurr->i;
-                if (n < 0) {
-                    n = -n;
-                }
-                if (n > 0) {
-                    c->ai.count = qrand() / (0xFFFF / (n + 1) + 1);
+                i = abs(c->cmdcurr->i);
+                if (i > 0) {
+                    c->ai.count = qrand() / (0xFFFF / (i + 1) + 1);
                 } else {
                     c->ai.count = 0;
                 }
                 break;
             case 0x18:
-                n = c->ai.count + c->cmdcurr->i;
-                if (n < 0) {
-                    n = 0;
+                i = c->ai.count + c->cmdcurr->i;
+                if (i < 0) {
+                    i = 0;
                 }
-                c->ai.count = n;
+                c->ai.count = i;
                 break;
             case 0x19:
                 c->ai.count++;
@@ -1584,22 +1581,19 @@ void MoveCreature(struct creature_s *c)
                 c->ai.hits = c->cmdcurr->i;
                 break;
             case 0x1C:
-                n = c->cmdcurr->i;
-                if (n < 0) {
-                    n = -n;
-                }
-                if (n > 0) {
-                    c->ai.hits = qrand() / (0xFFFF / (n + 1) + 1);
+                i = abs(c->cmdcurr->i);
+                if (i > 0) {
+                    c->ai.hits = qrand() / (0xFFFF / (i + 1) + 1);
                 } else {
                     c->ai.hits = 0;
                 }
                 break;
             case 0x1D:
-                n = c->ai.hits + c->cmdcurr->i;
-                if (n < 0) {
-                    n = 0;
+                i = c->ai.hits + c->cmdcurr->i;
+                if (i < 0) {
+                    i = 0;
                 }
-                c->ai.hits = n;
+                c->ai.hits = i;
                 break;
             case 0x1E:
                 c->ai.hits++;
@@ -1664,9 +1658,9 @@ void MoveCreature(struct creature_s *c)
                 }
                 break;
             case 0x89:
-                n = c->obj.character;
+                i = c->obj.character;
                 ChangeCharacter(c, player->obj.character);
-                ChangeCharacter(player, n);
+                ChangeCharacter(player, i);
                 break;
             case 0x87:
                 ChangeCharacter(c, c->cmdcurr->i);
@@ -1737,11 +1731,11 @@ void MoveCreature(struct creature_s *c)
                 break;
             }
             case 0x3F:
-                if (c->obj.model->anmdata[c->obj.anim.newaction] == 0) {
-                    c->ai.duration = 1.0f;
-                } else {
+                if (c->obj.model->anmdata[c->obj.anim.newaction] != 0) {
                     c->ai.duration = (c->cmdcurr->f - 1.0f)
                         / (c->obj.model->animlist[c->obj.anim.newaction]->speed * 30.0f);
+                } else {
+                    c->ai.duration = 1.0f;
                 }
                 break;
             case 0x41:
@@ -1755,17 +1749,14 @@ void MoveCreature(struct creature_s *c)
                 break;
             case 0x44:
                 if (c->ai.rotspeed != 0) {
-                    n = RotDiff(c->ai.old_yrot, NuAtan2D(c->ai.newpos.x - c->obj.pos.x,
-                                                         c->ai.newpos.z - c->obj.pos.z));
-                    if ((c->ai.rotflags & 0x200) && n < 0) {
-                        n += 0x10000;
-                    } else if ((c->ai.rotflags & 0x400) && n > 0) {
-                        n -= 0x10000;
+                    i = NuAtan2D(c->ai.newpos.x - c->obj.pos.x, c->ai.newpos.z - c->obj.pos.z);
+                    i = RotDiff(c->ai.old_yrot, i);
+                    if ((c->ai.rotflags & 0x200) && i < 0) {
+                        i += 0x10000;
+                    } else if ((c->ai.rotflags & 0x400) && i > 0) {
+                        i -= 0x10000;
                     }
-                    if (n < 0) {
-                        n = -n;
-                    }
-                    c->ai.duration = (f32)n / (f32)(c->ai.rotspeed * 50);
+                    c->ai.duration = (f32)abs(i) / (f32)(c->ai.rotspeed * 50);
                 } else {
                     c->ai.duration = 1.0f;
                 }
@@ -1830,88 +1821,113 @@ void MoveCreature(struct creature_s *c)
             case 0x82:
             case 0x83:
             case 0x84:
-                result = 0;
+                hit = 0;
                 if (c->cmdcurr->cmd == 0x7E) {
                     switch (c->cmdcurr->i) {
                     case 0:
                         if (NuVecDist(&plr->obj.pos, &c->obj.pos, 0) < c->cmdcurr->f) {
-                            result = 1;
+                            hit = 1;
                         }
                         break;
                     case 1:
-                        if (c->cmdcurr->f < NuVecDist(&plr->obj.pos, &c->obj.pos, 0)) {
-                            result = 1;
+                        if (NuVecDist(&plr->obj.pos, &c->obj.pos, 0) > c->cmdcurr->f) {
+                            hit = 1;
                         }
                         break;
                     case 2:
                         if (NuVecXZDist(&plr->obj.pos, &c->obj.pos, 0) < c->cmdcurr->f) {
-                            result = 1;
+                            hit = 1;
                         }
                         break;
                     case 3:
-                        if (c->cmdcurr->f < NuVecXZDist(&plr->obj.pos, &c->obj.pos, 0)) {
-                            result = 1;
+                        if (NuVecXZDist(&plr->obj.pos, &c->obj.pos, 0) > c->cmdcurr->f) {
+                            hit = 1;
                         }
                         break;
                     case 4:
-                        result = PlayerLateralInRange(&plr->obj.pos, &pos[c->ai.i0], &pos[c->ai.i1],
-                                                      c->ai.lateral, c->cmdcurr->f);
+                        hit = PlayerLateralInRange(c->ai.lateral, &plr->obj.pos, &pos[c->ai.i0], &pos[c->ai.i1], c->cmdcurr->f);
                         break;
                     case 5:
-                        result = PlayerLateralOutOfRange(&plr->obj.pos, &pos[c->ai.i0],
-                                                         &pos[c->ai.i1], c->ai.lateral,
-                                                         c->cmdcurr->f);
+                        hit = PlayerLateralOutOfRange(c->ai.lateral, &plr->obj.pos, &pos[c->ai.i0], &pos[c->ai.i1], c->cmdcurr->f);
                         break;
                     case 6:
-                        result = (plr->obj.dead != 0);
+                        if (plr->obj.dead != 0) {
+                            hit = 1;
+                        }
                         break;
                     case 7:
-                        result = (plr_crates.count >= DESTRUCTIBLECRATECOUNT);
+                        if (plr_crates.count >= DESTRUCTIBLECRATECOUNT) {
+                            hit = 1;
+                        }
                         break;
                     case 8:
-                        result = (c->ai.i0 == (s32)c->cmdcurr->f);
+                        if (c->ai.i0 == (s32)c->cmdcurr->f) {
+                            hit = 1;
+                        }
                         break;
                     case 9:
-                        result = (c->ai.i1 == (s32)c->cmdcurr->f);
+                        if (c->ai.i1 == (s32)c->cmdcurr->f) {
+                            hit = 1;
+                        }
                         break;
                     case 10:
-                        result = (c->ai.i0 == points - 1);
+                        if (c->ai.i0 == points - 1) {
+                            hit = 1;
+                        }
                         break;
                     case 11:
-                        result = (c->ai.i1 == points - 1);
+                        if (c->ai.i1 == points - 1) {
+                            hit = 1;
+                        }
                         break;
                     case 12:
                     case 13:
-                        result = (c->ai.i0 == 0);
+                        if (c->ai.i0 == 0) {
+                            hit = 1;
+                        }
                         break;
                     case 14:
-                        result = ((c->obj.touch & touchmask) != 0);
+                        if ((c->obj.touch & touchmask) != 0) {
+                            hit = 1;
+                        }
                         break;
                     }
                 } else if (c->cmdcurr->cmd == 0x7F) {
-                    result = (c->obj.anim.newaction == c->cmdcurr->i);
+                    if (c->obj.anim.newaction == c->cmdcurr->i) {
+                        hit = 1;
+                    }
                 } else if (c->cmdcurr->cmd == 0x80) {
-                    result = (c->ai.i0 == c->cmdcurr->i);
+                    if (c->ai.i0 == c->cmdcurr->i) {
+                        hit = 1;
+                    }
                 } else if (c->cmdcurr->cmd == 0x81) {
-                    result = (c->ai.count == c->cmdcurr->i);
+                    if (c->ai.count == c->cmdcurr->i) {
+                        hit = 1;
+                    }
                 } else if (c->cmdcurr->cmd == 0x82) {
-                    result = (c->ai.hits == c->cmdcurr->i);
+                    if (c->ai.hits == c->cmdcurr->i) {
+                        hit = 1;
+                    }
                 } else if (c->cmdcurr->cmd == 0x83) {
                     if (c->cmdcurr->i != 0) {
-                        result = (*(s32 *)c->cmdcurr->i == (s32)c->cmdcurr->f);
+                        if (*(s32 *)c->cmdcurr->i == (s32)c->cmdcurr->f) {
+                            hit = 1;
+                        }
                     }
                 } else if (c->cmdcurr->cmd == 0x84) {
-                    result = (player->obj.character == c->cmdcurr->i);
+                    if (player->obj.character == c->cmdcurr->i) {
+                        hit = 1;
+                    }
                 }
                 c->cmdcurr++;
                 switch (c->cmdcurr->cmd) {
                 case 0x8D:
-                    if (result) {
+                    if (hit) {
                         c->cmdcurr = &c->cmdtable[FindAILabel(c->cmdtable, c->cmdcurr->i)];
                     }
                     break;
                 case 0x8E:
-                    if (!result) {
+                    if (!hit) {
                         c->cmdcurr = &c->cmdtable[FindAILabel(c->cmdtable, c->cmdcurr->i)];
                     }
                     break;
@@ -1926,16 +1942,16 @@ void MoveCreature(struct creature_s *c)
                 break;
             case 0x6B:
                 v = v000;
-                n = 0;
+                j = 0;
                 for (i = 0; i < 16; i++) {
                     if ((c->cmdcurr->i >> i) & 1) {
                         NuVecAdd(&v, &v, (struct nuvec_s *)&c->mtxLOCATOR[0][i]._30);
-                        n++;
+                        j++;
                     }
                 }
-                if (n != 0) {
-                    if (n > 1) {
-                        NuVecScale(&v, &v, 1.0f / n);
+                if (j != 0) {
+                    if (j > 1) {
+                        NuVecScale(&v, &v, 1.0f / j);
                     }
                     AddProjectile(&v, (ptarget != -1) ? &pos[ptarget] : 0,
                                   &c->momLOCATOR[0][i], ptype, c->obj.hdg, &c->obj);
@@ -1976,7 +1992,7 @@ void MoveCreature(struct creature_s *c)
                 c->ai.oldpos = c->obj.pos;
                 c->ai.old_yrot = c->obj.hdg;
                 c->ai.oldangle = c->ai.angle;
-                continue;
+                goto BranchLoop;
             }
             i = 0;
 label8c:
@@ -1986,7 +2002,7 @@ label8c:
                 goto label8c;
             }
             if (i != 0) {
-                continue;
+                goto BranchLoop;
             }
 
             evhit = 0;
@@ -2003,9 +2019,10 @@ label8c:
                 }
                 evhit = 1;
             }
-            t = 0.0f;
             if (0.0f < c->ai.duration) {
                 t = c->ai.time / c->ai.duration;
+            } else {
+                t = 0.0f;
             }
 
             c->ai.wobble_ang += c->ai.wobble_speed;
@@ -2020,25 +2037,25 @@ label8c:
                 v.z = -v2.x + c->obj.pos.z;
                 if ((player->obj.pos.x - c->obj.pos.x) * (v.z - c->obj.pos.z)
                     + (player->obj.pos.z - c->obj.pos.z) * (c->obj.pos.x - v.x) >= 0.0f) {
-                    back = 0;
+                    i = 0;
                     n = c->ai.i0 + 1;
                     if (n == points) {
                         n = 0;
                     }
                 } else {
                     n = c->ai.i0;
-                    back = 1;
+                    i = 1;
                 }
                 q = &pos[n];
                 {
-                f32 dx = q->x - c->obj.pos.x;
-                f32 dz = q->z - c->obj.pos.z;
-                fa = dx * dx + dz * dz;
+                dx = q->x - c->obj.pos.x;
+                dz = q->z - c->obj.pos.z;
+                fy = dx * dx + dz * dz;
                 ang = NuAtan2D(dx, dz);
                 fb = c->ai.speed * 0.02f;
-                if (fa <= fb * fb) {
+                if (fy <= fb * fb) {
                     c->obj.pos = *q;
-                    if (!back) {
+                    if (!i) {
                         c->ai.i0 = n;
                     } else {
                         c->ai.i0--;
@@ -2063,15 +2080,14 @@ label8c:
                     + NuTrigTable[(c->ai.angle + 0x4000) & 0xFFFF] * c->ai.radius;
             } else if (c->ai.movflags & 1) {
                 if (c->ai.movflags & 0x30) {
-                    f32 k;
                     if (c->ai.movflags & 0x10) {
-                        k = 1.0f - NuTrigTable[(s32)(t * 16384.0f) & 0xFFFF];
+                        fa = 1.0f - NuTrigTable[(s32)(t * 16384.0f) & 0xFFFF];
                     } else {
-                        k = NuTrigTable[(s32)(t * 16384.0f + 16384.0f) & 0xFFFF];
+                        fa = NuTrigTable[(s32)(t * 16384.0f + 16384.0f) & 0xFFFF];
                     }
-                    c->obj.pos.x = c->ai.newpos.x + (c->ai.oldpos.x - c->ai.newpos.x) * k;
-                    c->obj.pos.y = c->ai.newpos.y + (c->ai.oldpos.y - c->ai.newpos.y) * k;
-                    c->obj.pos.z = c->ai.newpos.z + (c->ai.oldpos.z - c->ai.newpos.z) * k;
+                    c->obj.pos.x = c->ai.newpos.x + (c->ai.oldpos.x - c->ai.newpos.x) * fa;
+                    c->obj.pos.y = c->ai.newpos.y + (c->ai.oldpos.y - c->ai.newpos.y) * fa;
+                    c->obj.pos.z = c->ai.newpos.z + (c->ai.oldpos.z - c->ai.newpos.z) * fa;
                 } else {
                     c->obj.pos.x = c->ai.oldpos.x + (c->ai.newpos.x - c->ai.oldpos.x) * t;
                     c->obj.pos.y = c->ai.oldpos.y + (c->ai.newpos.y - c->ai.oldpos.y) * t;
@@ -2081,9 +2097,9 @@ label8c:
                     }
                 }
             } else if (c->ai.movflags & 4) {
-                f32 dx = pos[c->ai.i1].x - pos[c->ai.i0].x;
-                f32 dz = pos[c->ai.i1].z - pos[c->ai.i0].z;
                 double dd;
+                dx = pos[c->ai.i1].x - pos[c->ai.i0].x;
+                dz = pos[c->ai.i1].z - pos[c->ai.i0].z;
                 fb = (c->ai.speed * 0.02f) / NuFsqrt(dx * dx + dz * dz);
                 fa = RatioAlongLine(&plr->obj.pos, &pos[c->ai.i0], &pos[c->ai.i1]);
                 dd = c->ai.lateral - fa;
@@ -2109,9 +2125,9 @@ label8c:
                 f32 own;
                 double dd;
                 if (hi < lo) {
-                    f32 tmp = hi;
+                    fb = hi;
                     hi = lo;
-                    lo = tmp;
+                    lo = fb;
                 }
                 target = plr->obj.pos.y + (plr->obj.bot + plr->obj.top) * plr->obj.SCALE * 0.5f;
                 own = c->obj.pos.y + (c->obj.bot + c->obj.top) * c->obj.SCALE * 0.5f;
@@ -2120,13 +2136,13 @@ label8c:
                 } else if (hi < target) {
                     target = hi;
                 }
-                fa = target - own;
-                dd = fa;
+                dy = target - own;
+                dd = dy;
                 if (dd < 0.0) {
                     dd = 0.0 - dd;
                 }
                 if (dd > 0.2f) {
-                    if (fa < 0.0f) {
+                    if (dy < 0.0f) {
                         c->obj.anim.newaction = 0x16;
                     } else {
                         c->obj.anim.newaction = 0x58;
@@ -2138,7 +2154,7 @@ label8c:
                     && c->obj.model->anmdata[c->obj.anim.newaction] == 0) {
                     c->obj.anim.newaction = 0x22;
                 }
-                c->obj.pos.y += fa * 0.02f;
+                c->obj.pos.y += dy * 0.02f;
             } else if (c->ai.movflags & 0x400) {
                 oldhdg = c->obj.hdg;
                 c->ai.angle += c->ai.rotspeed;
@@ -2179,47 +2195,46 @@ label8c:
                 if (c->ai.rotflags & 0x80) {
                     fa = fb * (1.0f - NuTrigTable[(s32)(t * 16384.0f) & 0xFFFF]);
                     if (c->ai.rotflags & 0x400) {
-                        c->obj.hdg = c->ai.old_yrot + (s32)(fa - fb);
+                        c->obj.hdg = c->ai.old_yrot + (s32)(-fb + fa);
                     } else {
                         c->obj.hdg = c->ai.old_yrot + (s32)(fb - fa);
                     }
                 } else if (c->ai.rotflags & 0x100) {
                     fa = fb * NuTrigTable[(s32)(t * 16384.0f + 16384.0f) & 0xFFFF];
                     if (c->ai.rotflags & 0x400) {
-                        c->obj.hdg = c->ai.old_yrot + (s32)(fa - fb);
+                        c->obj.hdg = c->ai.old_yrot + (s32)(-fb + fa);
                     } else {
                         c->obj.hdg = c->ai.old_yrot + (s32)(fb - fa);
                     }
                 } else {
-                    n = (s32)(fb * t);
+                    i = (s32)(fb * t);
                     if (c->ai.rotflags & 0x400) {
-                        c->obj.hdg = c->ai.old_yrot - n;
+                        c->obj.hdg = c->ai.old_yrot - i;
                     } else {
-                        c->obj.hdg = c->ai.old_yrot + n;
+                        c->obj.hdg = c->ai.old_yrot + i;
                     }
                 }
             } else if (c->ai.rotflags & 2) {
-                n = RotDiff(c->ai.old_yrot,
-                            NuAtan2D(c->ai.newpos.x - c->ai.oldpos.x, c->ai.newpos.z - c->ai.oldpos.z)
-                                + c->ai.rotadjust);
-                if ((c->ai.rotflags & 0x200) && n < 0) {
-                    n += 0x10000;
-                } else if ((c->ai.rotflags & 0x400) && n > 0) {
-                    n -= 0x10000;
+                i = NuAtan2D(c->ai.newpos.x - c->ai.oldpos.x, c->ai.newpos.z - c->ai.oldpos.z);
+                i = RotDiff(c->ai.old_yrot, i + c->ai.rotadjust);
+                if ((c->ai.rotflags & 0x200) && i < 0) {
+                    i += 0x10000;
+                } else if ((c->ai.rotflags & 0x400) && i > 0) {
+                    i -= 0x10000;
                 }
                 {
-                fb = n;
+                fb = i;
                 if (c->ai.rotflags & 0x80) {
                     fa = fb * (1.0f - NuTrigTable[(s32)(t * 16384.0f) & 0xFFFF]);
                     if (c->ai.rotflags & 0x400) {
-                        c->obj.hdg = c->ai.old_yrot + (s32)(fa - fb);
+                        c->obj.hdg = c->ai.old_yrot + (s32)(-fb + fa);
                     } else {
                         c->obj.hdg = c->ai.old_yrot + (s32)(fb - fa);
                     }
                 } else if (c->ai.rotflags & 0x100) {
                     fa = fb * NuTrigTable[(s32)(t * 16384.0f + 16384.0f) & 0xFFFF];
                     if (c->ai.rotflags & 0x400) {
-                        c->obj.hdg = c->ai.old_yrot + (s32)(fa - fb);
+                        c->obj.hdg = c->ai.old_yrot + (s32)(-fb + fa);
                     } else {
                         c->obj.hdg = c->ai.old_yrot + (s32)(fb - fa);
                     }
@@ -2249,13 +2264,16 @@ label8c:
             } else if (c->ai.rotflags & 0x20) {
                 if (0.0f < c->obj.xz_distance) {
                     ang = NuAtan2D(c->obj.mom.x, c->obj.mom.z) + c->ai.rotadjust;
-                    n = RotDiff(c->obj.hdg, ang);
-                    if (((n < 0) ? -n : n) <= c->ai.rotspeed) {
+                    i = RotDiff(c->obj.hdg, ang);
+                    j = c->ai.rotspeed;
+                    if (abs(i) > j) {
+                        if (i > 0) {
+                            c->obj.hdg += j;
+                        } else if (i < 0) {
+                            c->obj.hdg -= j;
+                        }
+                    } else {
                         c->obj.hdg = ang;
-                    } else if (n > 0) {
-                        c->obj.hdg += c->ai.rotspeed;
-                    } else if (n < 0) {
-                        c->obj.hdg -= c->ai.rotspeed;
                     }
                 }
             } else if (c->ai.rotflags & 0x40) {
@@ -2306,12 +2324,13 @@ rotdone:
                     c->obj.shadow = NewShadowMaskPlat(&c->obj.pos, 0.0f, -1);
                     GetSurfaceInfo(&c->obj, 1, c->obj.shadow);
                     if (c->obj.shadow != 2000000.0f) {
-                        f32 k = t;
                         if (c->ai.terflags & 0x40) {
-                            k = 1.0f - t;
+                            fb = 1.0f - t;
+                        } else {
+                            fb = t;
                         }
                         c->obj.ground = 0;
-                        c->obj.pos.y = (c->obj.shadow - c->obj.bot * c->obj.SCALE) + c->ai.height * k;
+                        c->obj.pos.y = (c->obj.shadow - c->obj.bot * c->obj.SCALE) + c->ai.height * fb;
                     }
                 } else {
                     c->obj.shadow = NewShadowMaskPlat(&c->obj.pos, 0.0f, -1);
@@ -2345,13 +2364,8 @@ rotdone:
                         break;
                     case 1:
                         if (plr->obj.dead == 0) {
-                            f32 y;
                             v2.x = c->obj.pos.x;
-                            y = c->obj.shadow;
-                            if (y == 2000000.0f) {
-                                y = c->obj.pos.y;
-                            }
-                            v2.y = y;
+                            v2.y = (c->obj.shadow == 2000000.0f) ? c->obj.pos.y : c->obj.shadow;
                             v2.z = c->obj.pos.z;
                             v3.x = plr->obj.pos.x;
                             v3.y = plr->obj.objbot;
@@ -2365,15 +2379,13 @@ rotdone:
                         break;
                     case 2:
                         if (plr->obj.dead == 0
-                            && PlayerLateralInRange(&plr->obj.pos, &pos[c->ai.i0], &pos[c->ai.i1],
-                                                    c->ai.lateral, c->ai.event_distance[i])) {
+                            && PlayerLateralInRange(c->ai.lateral, &plr->obj.pos, &pos[c->ai.i0], &pos[c->ai.i1], c->ai.event_distance[i])) {
                             hit = i;
                         }
                         break;
                     case 3:
                         if (plr->obj.dead == 0
-                            && PlayerLateralOutOfRange(&plr->obj.pos, &pos[c->ai.i0], &pos[c->ai.i1],
-                                                       c->ai.lateral, c->ai.event_distance[i])) {
+                            && PlayerLateralOutOfRange(c->ai.lateral, &plr->obj.pos, &pos[c->ai.i0], &pos[c->ai.i1], c->ai.event_distance[i])) {
                             hit = i;
                         }
                         break;
@@ -2397,26 +2409,26 @@ rotdone:
                             v2.z = plr->obj.pos.z;
                             v3 = pos[c->ai.event_index[i]];
                             NuVecSub(&v, &v3, &v2);
-                            if (c->ai.event_distance[i] * c->ai.event_distance[i]
-                                < v.x * v.x + v.y * v.y + v.z * v.z) {
+                            if (v.x * v.x + v.y * v.y + v.z * v.z
+                                > c->ai.event_distance[i] * c->ai.event_distance[i]) {
                                 hit = i;
                             }
                         }
                         break;
                     case 4:
                         if (plr->obj.dead == 0) {
-                            f32 k = plr->obj.pos.x - pos[c->ai.event_index[i]].x;
-                            f32 d = plr->obj.pos.z - pos[c->ai.event_index[i]].z;
-                            if (k * k + d * d < c->ai.event_distance[i] * c->ai.event_distance[i]) {
+                            dx = plr->obj.pos.x - pos[c->ai.event_index[i]].x;
+                            dz = plr->obj.pos.z - pos[c->ai.event_index[i]].z;
+                            if (dx * dx + dz * dz < c->ai.event_distance[i] * c->ai.event_distance[i]) {
                                 hit = i;
                             }
                         }
                         break;
                     case 6:
                         if (plr->obj.dead == 0) {
-                            f32 k = plr->obj.pos.x - pos[c->ai.event_index[i]].x;
-                            f32 d = plr->obj.pos.z - pos[c->ai.event_index[i]].z;
-                            if (c->ai.event_distance[i] * c->ai.event_distance[i] < k * k + d * d) {
+                            dx = plr->obj.pos.x - pos[c->ai.event_index[i]].x;
+                            dz = plr->obj.pos.z - pos[c->ai.event_index[i]].z;
+                            if (c->ai.event_distance[i] * c->ai.event_distance[i] < dx * dx + dz * dz) {
                                 hit = i;
                             }
                         }
@@ -2440,7 +2452,7 @@ rotdone:
                         break;
                     case 11:
                         if (plr->obj.dead == 0
-                            && c->ai.event_distance[i] < NuVecDist(&plr->obj.pos, &c->obj.pos, 0)) {
+                            && NuVecDist(&plr->obj.pos, &c->obj.pos, 0) > c->ai.event_distance[i]) {
                             hit = i;
                         }
                         break;
@@ -2452,7 +2464,7 @@ rotdone:
                         break;
                     case 13:
                         if (plr->obj.dead == 0
-                            && c->ai.event_distance[i] < NuVecXZDist(&plr->obj.pos, &c->obj.pos, 0)) {
+                            && NuVecXZDist(&plr->obj.pos, &c->obj.pos, 0) > c->ai.event_distance[i]) {
                             hit = i;
                         }
                         break;
@@ -2496,7 +2508,7 @@ rotdone:
                 }
             }
             if (branch == -2) {
-                break;
+                goto Skip;
             }
             c->ai.time = 0.0f;
             c->ai.oldpos = c->obj.pos;
@@ -2506,25 +2518,27 @@ rotdone:
             } else {
                 c->cmdcurr = &c->cmdtable[branch];
             }
+            goto BranchLoop;
         }
+    Skip:
 
         if ((u32)(c->cmdcurr->cmd - 0x8F) < 2) {
             if (c->obj.dead != 0) {
                 break;
             }
             if (c->cmdcurr->i == 0) {
-                n = 1;
+                i = 1;
                 if (c->obj.touch & 6) {
-                    n = 4;
+                    i = 4;
                 }
             } else {
-                n = c->cmdcurr->i;
+                i = c->cmdcurr->i;
             }
-            if (n == 1) {
+            if (i == 1) {
                 FlyGameObject(&c->obj, NuAtan2D(c->obj.pos.x - plr->obj.pos.x,
                                                 c->obj.pos.z - plr->obj.pos.z));
             }
-            KillGameObject(&c->obj, n);
+            KillGameObject(&c->obj, i);
         }
         if (c->obj.dead != 0) {
             break;
@@ -2539,8 +2553,6 @@ rotdone:
                 }
                 {
                 f32 d = c->ai.attack_locator_radius * c->obj.SCALE;
-                f32 k;
-                f32 lo;
                 f32 hi;
                 v3.y = c->mtxLOCATOR[0][i]._31;
                 if (v3.y + d < plr->obj.objbot) {
@@ -2551,10 +2563,10 @@ rotdone:
                 }
                 v3.x = c->mtxLOCATOR[0][i]._30;
                 v3.z = c->mtxLOCATOR[0][i]._32;
-                k = v3.x - plr->obj.pos.x;
-                lo = v3.z - plr->obj.pos.z;
+                dx = v3.x - plr->obj.pos.x;
+                dz = v3.z - plr->obj.pos.z;
                 hi = plr->obj.RADIUS + d;
-                fb = k * k + lo * lo;
+                fb = dx * dx + dz * dz;
                 if (hi * hi < fb) {
                     continue;
                 }
@@ -2570,7 +2582,7 @@ rotdone:
                         } else if (plr->obj.oldobjtop <= v2.y - d + 0.012f) {
                             plr->obj.mom.y = 0.0f;
                         } else {
-                            ang = NuAtan2D(k, lo);
+                            ang = NuAtan2D(dx, dz);
                             plr->obj.mom.x = -NuTrigTable[ang] * 0.12f;
                             plr->obj.mom.z = -NuTrigTable[(ang + 0x4000) & 0xFFFF] * 0.12f;
                         }
@@ -2618,20 +2630,20 @@ rotdone:
         if (ai_type == 0x35 && 0.00666f < c->obj.xyz_distance) {
             switch (Level) {
             case 6:
-                n = 0xCA;
+                i = 0xCA;
                 break;
             case 0x22:
-                n = 0xC9;
+                i = 0xC9;
                 break;
             case 2:
-                n = 0xCB;
+                i = 0xCB;
                 break;
             default:
-                n = -1;
+                i = -1;
                 break;
             }
-            if (n != -1) {
-                GameSfxLoop(n, &c->obj.pos);
+            if (i != -1) {
+                GameSfxLoop(i, &c->obj.pos);
             }
         }
         break;

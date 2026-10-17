@@ -91,6 +91,7 @@
 #include "numath/nuvec.h"
 #include "nu3d/numtl.h"
 #include "nu3d/nugobj.h"
+#include "nu3d/nurndr.h"
 #include "nu3d/nugscn.h"
 #include "nu3d/nuanim.h"
 #include "gamelib/terrain.h"
@@ -413,7 +414,6 @@ extern void edbitsDrawCube(float x, float y, float z, float sizex, float sizey, 
                            int rotx, int roty, int rotz, int flags, int colour, void *mtl);
 extern void edbitsDrawDiagonalCross(float x, float y, float z, float size, int colour, void *mtl);
 extern void edcamSet(void);
-extern int NuRndrLine3d(struct nuvtx_tc1_s *line, void *mtl, void *mtx);
 extern void NuRndrRect2di(int x, int y, int w, int h, int colour, void *mtl);
 extern void NuRndrLine2di(int x0, int y0, int x1, int y1, int colour, void *mtl);
 extern void NuFntSet(void *fnt);

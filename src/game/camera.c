@@ -29,6 +29,7 @@
 #include "numath/nuvec.h"
 #include "nu3d/numtl.h"
 #include "nu3d/nugobj.h"
+#include "nu3d/nurndr.h"
 #include "nu3d/nugscn.h"
 #include "nu3d/nucamera.h"
 #include "game/gametypes.h"
@@ -1853,8 +1854,6 @@ Finish:
 extern struct numtl_s *D_00633268;
 #define camtarget_mtl D_00633268
 
-extern void NuRndrLine3d(struct nuvtx_tc1_s *line, struct numtl_s *mtl,
-                         struct numtx_s *mtx);
 extern void NuRndrLine3dDbg(u32 colour, f32 x0, f32 y0, f32 z0, f32 x1,
                             f32 y1, f32 z1);
 
