@@ -647,17 +647,26 @@ struct glider_s {
  * +0x3B4), which fixes the size at 0x384 (InitAtlas clears exactly that much). */
 struct NEWBUGGY {
     struct creature_s *owner;           /* 0x000  owning creature (KillAtlasphere) */
-    char pad_04[0x08 - 0x04];
+    s32 whacko;                         /* 0x004 */
     s32 type;                           /* 0x008  atlasphere type (InitAtlas) */
     s32 dead;                           /* 0x00C  kill flag (KillAtlasphere) */
     s32 ball_health;                    /* 0x010  hit points (EarthBoss) */
-    char pad_14[0x24 - 0x14];
+    s32 desthitpoints;                  /* 0x014 */
+    s32 hitpointcounter;                /* 0x018 */
+    s32 drawcrunch;                     /* 0x01C */
+    s32 drawshell;                      /* 0x020 */
     float inhibitcontroltimer;          /* 0x024  ignores the pad while > 0 */
-    char pad_28[0x2C - 0x28];
+    s32 numattacks;                     /* 0x028 */
     s32 ball_action;                    /* 0x02C  AI action (EarthBoss) */
-    char pad_30[0x3C - 0x30];
+    s32 lastaction;                     /* 0x030 */
+    float actiontimer;                  /* 0x034 */
+    float actiontimer2;                 /* 0x038 */
     s32 ball_beenhit;                   /* 0x03C  hit flag (ShootRoksSkyward) */
-    char pad_40[0x20C - 0x40];
+    s32 cantbehit;                      /* 0x040 */
+    float rollspeed;                    /* 0x044 */
+    float rollacctimer;                 /* 0x048 */
+    struct MYDRAW shell;                /* 0x04C */
+    struct MYDRAW crunch;               /* 0x12C */
     struct nuvec_s ball_pos;            /* 0x20C  position (NuMtxTranslate) */
     struct nuvec_s ball_oldpos;         /* 0x218  last safe position (UnembedRayCastAtlas) */
     struct nuvec_s ball_lastpos;        /* 0x224 */
@@ -679,10 +688,23 @@ struct NEWBUGGY {
     s32 lasthit;                        /* 0x2F4 */
     s32 axis;                           /* 0x2F8 */
     struct nuvec_s lastnormal;          /* 0x2FC  last ground normal */
-    char pad_308[0x338 - 0x308];
+    struct nuvec_s storelastnormal;     /* 0x308 */
+    char pad_314[0x338 - 0x314];
     s32 onground;                       /* 0x338  ground contact bits */
     s32 platformid;                     /* 0x33C  platform rolled on, -1 for none */
-    char pad_340[0x384 - 0x340];
+    struct nuvec_s platformnormal;      /* 0x340 */
+    float shadowy;                      /* 0x34C */
+    s32 surfacetype;                    /* 0x350 */
+    s32 trailsurfacetype;               /* 0x354 */
+    s32 bigdrop;                        /* 0x358 */
+    s32 embedded;                       /* 0x35C */
+    s32 rock;                           /* 0x360 */
+    s32 rocknum;                        /* 0x364 */
+    float crunchy;                      /* 0x368 */
+    float destcrunchy;                  /* 0x36C */
+    s16 *terrhandle;                    /* 0x370 */
+    float boosttimer;                   /* 0x374 */
+    struct nuvec_s interestpoint;       /* 0x378 */
 }; /* 0x384 */
 
 struct newwumpa_s {

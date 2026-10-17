@@ -285,7 +285,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012ef88:NuRndrStreamQuadWRip"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012f640:NuHGobjRndr"
@@ -345,7 +345,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012fab8:NuRndrParticleGroup"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012fc68:NuRndrStarfield"
