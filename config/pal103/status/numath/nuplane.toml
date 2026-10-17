@@ -13,7 +13,7 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0019:0010be70:NuPlnPlnIntersect"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0019:0010c2d0:NuPlnEqn"
@@ -41,7 +41,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0019:0010c768:NuPtInPoly"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0019:0010c920:NuPtInPolyXY"

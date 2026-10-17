@@ -35,27 +35,27 @@ extern void Text3D(char *txt, float x, float y, float z, float scalex,
 void DrawCredits(void) {
     struct credit_s *credit;
     float xscale;
-    float size;
-    float y;
+    float ypos;
+    float widthscale;
     s32 i;
 
     credit = Credit;
-    size = GameTimer.ftime * credit_speed + (-1.0f);
+    ypos = GameTimer.ftime * credit_speed + (-1.0f);
     for (i = 0; i < CREDITCOUNT; i++, credit++) {
         xscale = credit->size / 100.0f;
-        if ((credit->txt != 0) && (size > -1.5f) && (size < 1.7f)) {
+        if ((credit->txt != 0) && (ypos > -1.5f) && (ypos < 1.7f)) {
             NuStrCpy(tbuf, credit->txt);
-            y = 1.0f;
+            widthscale = 1.0f;
             if (strcmp(tbuf, D_0062A608) == 0) {
-                y = 0.95f;
+                widthscale = 0.95f;
             }
             if (Game.language == 0x63) {
                 AddSpacesIntoText(tbuf, 1);
             }
-            Text3D(tbuf, 0.0f, size, 1.0f, xscale * y, xscale, xscale + xscale,
-                   1, credit->colour);
+            Text3D(tbuf, 0.0f, ypos, 1.0f, xscale * widthscale, xscale,
+                   xscale + xscale, 1, credit->colour);
         }
-        size = size - ((xscale * 0.1f) + (xscale * 0.1f));
+        ypos = ypos - ((xscale * 0.1f) + (xscale * 0.1f));
     }
 }
 

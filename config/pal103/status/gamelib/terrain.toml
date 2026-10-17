@@ -77,7 +77,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00173d80:NewScanRot"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00174e60:NewCast"
@@ -113,7 +113,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00177a38:ScanTerrain"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:001796c0:TerrainImpactNorm"
@@ -161,7 +161,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:0017cec8:NewTerrainScaleY"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:0017d448:RayImpact"
@@ -193,7 +193,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:0017e230:NewScanHandelFull"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:0017f288:NewScanHandelSubset"
@@ -217,7 +217,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00181888:NewRayCastPlatForm"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00181ab0:TerrShowCamTerr"

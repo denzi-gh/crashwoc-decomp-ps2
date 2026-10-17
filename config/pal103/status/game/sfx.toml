@@ -13,11 +13,11 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0116:0024f318:InitLevelSfxTables"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0116:0024f680:InitGlobalSfx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0116:0024f778:InitLocalSfx"

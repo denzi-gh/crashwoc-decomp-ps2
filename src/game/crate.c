@@ -140,7 +140,11 @@ extern s32 FurtherALONG(s32 iRAIL, s32 iALONG, f32 fALONG, s32 iRAIL2,
 extern f32 CRATEBALLOONRADIUS;
 extern f32 CRATEBALLOONOFFSET;
 extern s32 TimeTrial;
-struct crate_s *NextCrate(struct crate_s *a);
+
+inline struct crate_s *NextCrate(struct crate_s *a) {
+    return (struct crate_s *)NuLstGetNext(crates, (struct nulnkhdr_s *)a);
+}
+
 
 extern struct ldata_s *LDATA;
 
@@ -195,88 +199,87 @@ extern struct crate_s *highlighted_crate;
 extern u8 current_selected_crate;
 
 
-/* Faithful near-match (state=asm): structure/offsets re-derived from retail.
- * Blocked on non-source-steerable codegen ties -- gcc's movz/movn direction
- * and beql/bnel choice and its basic-block ordering differ from retail SN
- * ee-gcc 2.95.2 (candidate asm hash frozen across ternary re-spellings).
- * 58.3% (140/240). Same class as the prior LIKELY_EQUIVALENT session. */
 s32 GetCrateType(struct cratecube_s *crt, s32 flags) {
     s32 type;
-    s32 nt;
 
-    type = (TimeTrial == 0) ? crt->type1 : crt->type2;
-
+    type = (TimeTrial != 0) ? crt->type2 : crt->type1;
     if (type == 0) {
-        nt = (s8)crt->newtype;
-        type = (nt != -1) ? nt : 0;
+        type = (crt->newtype != -1) ? crt->newtype : 0;
     }
-
-    if (flags & 2) {
-        if (type == 8) {
-            if ((s8)crt->newtype == -1) {
-                goto flags1;
-            }
-            goto sel34;
+    if ((flags & 2) && type == 8) {
+        if (crt->newtype != -1) {
+            goto changed;
         }
-    }
-    if ((s8)crt->newtype == -1) {
-        goto sel58;
-    }
-sel34:
-    if (TimeTrial != 0) {
-        type = (s8)crt->newtype;
-    } else {
-        type = crt->subtype;
-        if (crt->subtype == -1) {
-            type = (s8)crt->newtype;
+    } else if (crt->newtype != -1) {
+    changed:
+        if (TimeTrial == 0 && crt->subtype != -1) {
+            type = crt->subtype;
+        } else {
+            type = crt->newtype;
         }
-    }
-    goto flags1;
-sel58:
-    if (TimeTrial != 0) {
-        if (type != 9) {
-            goto flags1;
-        }
-    }
-    if (crt->subtype != -1) {
+    } else if ((TimeTrial == 0 || type == 9) && crt->subtype != -1) {
         type = crt->subtype;
     }
-flags1:
-    if (flags & 1) {
-        if (type == 2) {
-            type = (LDATA->character == 1) ? 0x19 : type;
+    if (!(flags & 1)) {
+        if (type >= 0x16 && type <= 0x18) {
+            type = 9;
         }
-    } else {
-        type = ((u32)(type - 0x16) > 2) ? type : 9;
+    } else if (type == 2 && LDATA->character == 1) {
+        type = 0x19;
     }
     return type;
 }
 
-/* Faithful near-match (state=asm): call structure exact (2x
- * NuCameraTransformScreenClip, soft-double fabs via fptodp/dpcmp/dpsub, scale
- * by the D_0061EFB8 double, AddPanelDebris). Blocked on whole-fn regalloc:
- * retail keeps the u64 0 in a callee-saved reg (s1) across the dp calls
- * (frame 112 / mask s0,s1,s2); gcc here folds it to $zero (frame 96 / s0,s1).
- * Not source-steerable (hash frozen across an explicit-zero-local variant). */
-void AddExtraLife(struct nuvec_s *pos, s32 pdeb) {
+inline void AddExtraLife(struct nuvec_s *pos, s32 pdeb) {
     struct nuvec_s scr;
     struct nuvec_s cV[2];
-    u64 d;
+    double scale;
 
     NuCameraTransformScreenClip(&scr, pos, 1, 0);
-    cV[0].x = pos->x + GameCam[0].vX.x * D_0062D7B4;
-    cV[0].y = pos->y + GameCam[0].vX.y * D_0062D7B4;
-    cV[0].z = pos->z + GameCam[0].vX.z * D_0062D7B4;
+    cV[0].x = pos->x + GameCam[0].vX.x * 0.1f;
+    cV[0].y = pos->y + GameCam[0].vX.y * 0.1f;
+    cV[0].z = pos->z + GameCam[0].vX.z * 0.1f;
     NuCameraTransformScreenClip(&cV[1], &cV[0], 1, 0);
-    d = fptodp(scr.x - cV[1].x);
-    if (dpcmp(d, 0) < 0) {
-        d = dpsub(0, d);
+    scale = scr.x - cV[1].x;
+    if (scale < 0.0) {
+        scale = 0.0 - scale;
     }
-    AddPanelDebris(scr.x, scr.y, pdeb, dptofp(dpmul(d, D_0061EFB8[0])), 1);
+    AddPanelDebris(scr.x, scr.y, pdeb, scale * 3.6363637f, 1);
 }
 
-/* Faithful near-match (state=asm): same +0.5f column-search assembler wall as
- * CrateOnTop/HopCratesAbove (gcc .p2align 3 inner-loop padding vs retail SN-as). */
+
+inline s32 CrateOnTop(struct crategroup_s *group, struct cratecube_s *crate) {
+    s32 i;
+    struct cratecube_s *crate2;
+
+    crate2 = &Crate[group->iCrate];
+    for (i = 0; i < group->nCrates; i++, crate2++) {
+        if ((((crate2 != crate) && (crate2->on != 0)) &&
+             (GetCrateType(crate2, 0) != 0)) &&
+            (((crate2->dx == crate->dx && (crate2->dz == crate->dz)) &&
+              (crate2->pos.y == crate->pos.y + 0.5f)))) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+
+inline void SaveCrateTypeData(struct cratecube_s *crate) {
+    struct CRATETYPEDATA *data;
+
+    if (i_cratetypedata > 0x1f) {
+        return;
+    }
+    data = &CrateTypeData[i_cratetypedata];
+    data->crate = crate;
+    data->type1 = crate->type1;
+    data->type2 = crate->type2;
+    data->type3 = crate->type3;
+    data->type4 = crate->type4;
+    i_cratetypedata++;
+}
+
 s32 CrateAbove(struct obj_s *obj, struct crategroup_s *group,
                struct cratecube_s *crate) {
     struct cratecube_s *crate2;
@@ -297,7 +300,6 @@ s32 CrateAbove(struct obj_s *obj, struct crategroup_s *group,
     return 0;
 }
 
-/* Faithful near-match (state=asm): same +0.5f column-search assembler wall. */
 s32 CrateBelow(struct obj_s *obj, struct crategroup_s *group,
                struct cratecube_s *crate) {
     struct cratecube_s *crate2;
@@ -325,8 +327,43 @@ extern s32 CrateOff(struct crategroup_s *group, struct cratecube_s *crate,
                     s32 a, s32 b);
 extern void JudderGameCamera(struct cammtx_s *cam, f32 time, void *pos);
 
-void DestroyAllNitroCrates(struct crategroup_s *group,
+inline void StartExclamationCrateSequence(struct crategroup_s *group,
+                                          struct cratecube_s *crate) {
+    struct nuvec_s pos;
+
+    pos.x = crate->pos.x;
+    pos.y = crate->pos.y + 0.25f;
+    pos.z = crate->pos.z;
+    temp_pGroup = group;
+    temp_pCrate = crate;
+    AddKaboom(0x20, &pos, 0.0f);
+    crate->newtype = 0xf;
+    crate->metal_count = 1;
+    GameSfx(0x35, &temp_pCrate->pos);
+}
+
+
+inline void HopCratesAbove(f32 speed, struct crategroup_s *group,
                            struct cratecube_s *crate) {
+    struct cratecube_s *crate2;
+    s32 i;
+
+Loop:
+    crate2 = &Crate[group->iCrate];
+    for (i = 0; i < group->nCrates; i++, crate2++) {
+        if (((crate2->on != 0) && (crate2->dx == crate->dx) &&
+             (crate2->dz == crate->dz)) &&
+            (crate2->pos.y == crate->pos.y + 0.5f)) {
+            crate2->mom = speed;
+            crate = crate2;
+            goto Loop;
+        }
+    }
+}
+
+
+inline void DestroyAllNitroCrates(struct crategroup_s *group,
+                                  struct cratecube_s *crate) {
     struct crategroup_s *group2;
     struct cratecube_s *crate2;
     struct nuvec_s pos;
@@ -399,10 +436,6 @@ extern void NuFileClose(s32 h);
  * retail materializes 4 for slt, cascading the loop preheader. Not steerable. */
 extern void HeightSortCrateData(void);
 
-/* Faithful reconstruction (state=asm), ~4%: logic/offsets correct (reverses
- * ReadInCrateData; rebuild groups, neighbor detection iU/iD/iN/iS/iE/iW, trigger
- * convert). Codegen-divergent -- retail uses a `*pGroupCount++` pointer idiom and
- * a different loop/store layout; needs dedicated reconstruction. */
 void ConvertCrateData(void) {
     struct crate_s *cr;
     struct crate_s *cr2;
@@ -416,8 +449,8 @@ void ConvertCrateData(void) {
     s32 ddy;
     s32 ddz;
 
-    CRATECOUNT = 0;
     CRATEGROUPCOUNT = 0;
+    CRATECOUNT = 0;
     cr2 = NextCrate(0);
     if (cr2 != 0) {
         do {
@@ -501,10 +534,9 @@ void ConvertCrateData(void) {
         for (j = crg->iCrate; j < crg->iCrate + crg->nCrates; j++) {
             for (k = crg->iCrate; k < crg->iCrate + crg->nCrates; k++) {
                 if (j != k) {
-                    cc = &Crate[k];
-                    ddx = cc->dx - Crate[j].dx;
-                    ddy = cc->dy - Crate[j].dy;
-                    ddz = cc->dz - Crate[j].dz;
+                    ddx = Crate[k].dx - Crate[j].dx;
+                    ddy = Crate[k].dy - Crate[j].dy;
+                    ddz = Crate[k].dz - Crate[j].dz;
                     if (ddx == 1 && ddy == 0 && ddz == 0) {
                         Crate[j].iE = k;
                     }
@@ -541,9 +573,6 @@ void ConvertCrateData(void) {
     HeightSortCrateData();
 }
 
-/* Faithful near-match (state=asm), 77.8%: main body exact (crate_s build,
- * clip min/max, offx/y/z, cc->model). Residual is the goto trigger-linking tail
- * loop's control-flow layout vs retail. */
 void ReadInCrateData(void) {
     s32 i;
     s32 j;
@@ -613,14 +642,12 @@ void ReadInCrateData(void) {
     }
     for (cr2 = NextCrate(0); cr2 != 0; cr2 = NextCrate(cr2)) {
         if (Crate[cr2->ccindex].trigger != -1) {
-            new_crate = 0;
-        LAB_1:
-            new_crate = NextCrate(new_crate);
-            if (new_crate != 0) {
-                if (new_crate->ccindex != Crate[cr2->ccindex].trigger) {
-                    goto LAB_1;
+            for (new_crate = NextCrate(0); new_crate != 0;
+                 new_crate = NextCrate(new_crate)) {
+                if (new_crate->ccindex == Crate[cr2->ccindex].trigger) {
+                    cr2->trigger = new_crate;
+                    break;
                 }
-                cr2->trigger = new_crate;
             }
         }
     }
@@ -662,13 +689,15 @@ s32 ReadCrateData(void) {
     s32 i;
     s32 j;
     s32 version;
+    s32 maxversion;
 
+    maxversion = 4;
     CRATECOUNT = 0;
     sprintf(tbuf, D_00631250, LevelFileName);
     handle = NuMemFileOpen(Chase, NuFileLoadBuffer(tbuf, Chase, 0x7fffffff), 0);
     if (handle != 0) {
         version = NuFileReadInt(handle);
-        if (4 < version) {
+        if (version > maxversion) {
             NuFileClose(handle);
             return 0;
         }
@@ -722,62 +751,82 @@ s32 ReadCrateData(void) {
     return 0;
 }
 
-/* Faithful reconstruction (state=asm), 56%: logic exact (x-face then z-face
- * ray/cuboid slab test, face 8/4/2/1). Residual is FP register allocation
- * (f0/f1, f8/f9 shifts) and the vTEMP=v struct-copy codegen. */
 s32 RayIntersectCuboid(struct nuvec_s *p0, struct nuvec_s *p1,
                        struct nuvec_s *min, struct nuvec_s *max) {
-    f32 new_ratio;
+    struct nuvec_s v;
+    f32 ratio;
     f32 dx;
     f32 dy;
     f32 dz;
     s32 face;
-    struct nuvec_s v;
 
     dx = p1->x - p0->x;
     dy = p1->y - p0->y;
     dz = p1->z - p0->z;
-    if (p0->x <= min->x && p1->x >= min->x) {
-        new_ratio = (min->x - p0->x) / dx;
+    if (p0->x <= min->x && min->x <= p1->x) {
+        ratio = (min->x - p0->x) / dx;
         face = 8;
         v.x = min->x;
     } else if (p0->x >= max->x && p1->x <= max->x) {
-        new_ratio = (max->x - p0->x) / dx;
+        ratio = (max->x - p0->x) / dx;
         face = 4;
         v.x = max->x;
     } else {
         face = 0;
     }
     if (face != 0) {
-        v.z = dz * new_ratio + p0->z;
-        if (v.z >= min->z && v.z <= max->z) {
-            v.y = dy * new_ratio + p0->y;
-            if (v.y >= min->y && v.y <= max->y) {
-                temp_ratio = new_ratio;
+        v.z = p0->z + dz * ratio;
+        if (min->z <= v.z && v.z <= max->z) {
+            v.y = p0->y + dy * ratio;
+            if (min->y <= v.y && v.y <= max->y) {
                 temp_face = face;
+                temp_ratio = ratio;
                 vTEMP = v;
                 return 1;
             }
         }
     }
-    if (p0->z <= min->z && p1->z >= min->z) {
-        new_ratio = (min->z - p0->z) / dz;
+    if (p0->z <= min->z && min->z <= p1->z) {
+        ratio = (min->z - p0->z) / dz;
         face = 2;
         v.z = min->z;
     } else if (p0->z >= max->z && p1->z <= max->z) {
-        new_ratio = (max->z - p0->z) / dz;
+        ratio = (max->z - p0->z) / dz;
         face = 1;
         v.z = max->z;
     } else {
         face = 0;
     }
     if (face != 0) {
-        v.x = dx * new_ratio + p0->x;
-        if (v.x >= min->x && v.x <= max->x) {
-            v.y = dy * new_ratio + p0->y;
-            if (v.y >= min->y && v.y <= max->y) {
-                temp_ratio = new_ratio;
+        v.x = p0->x + dx * ratio;
+        if (min->x <= v.x && v.x <= max->x) {
+            v.y = p0->y + dy * ratio;
+            if (min->y <= v.y && v.y <= max->y) {
                 temp_face = face;
+                temp_ratio = ratio;
+                vTEMP = v;
+                return 1;
+            }
+        }
+    }
+    if (p0->y <= min->y && min->y <= p1->y) {
+        ratio = (min->y - p0->y) / dy;
+        face = 0x20;
+        v.y = min->y;
+    } else if (p0->y >= max->y && p1->y <= max->y) {
+        ratio = (max->y - p0->y) / dy;
+        face = 0x10;
+        v.y = max->y;
+    } else {
+        face = 0;
+    }
+    if (face != 0) {
+        v.x = p0->x + dx * ratio;
+        if (min->x <= v.x && v.x <= max->x) {
+            v.z = p0->z + dz * ratio;
+            if (min->z <= v.z && v.z <= max->z) {
+                temp_face = face;
+                temp_ratio = ratio;
                 vTEMP = v;
                 return 1;
             }
@@ -848,15 +897,9 @@ s32 CrateRayCast(struct nuvec_s *p0, struct nuvec_s *p1) {
     return 0;
 }
 
-extern void StartExclamationCrateSequence(struct crategroup_s *group,
-                                          struct cratecube_s *crate);
-extern void HopCratesAbove(f32 speed, struct crategroup_s *group,
-                           struct cratecube_s *crate);
 extern f32 CRATEHOPSPEED;
 extern s32 KillPlayer(struct obj_s *obj, s32 anim);
 
-/* Faithful reconstruction (state=asm): PS2 inlines StartExclamation (0xE) and
- * DestroyAllNitroCrates (0x11) like AttackCrate; kept as calls. */
 void BreakCrate(struct crategroup_s *group, struct cratecube_s *crate, s32 type,
                 s32 attack) {
     if (type == 0x13 && (attack & 0x200) == 0) {
@@ -882,9 +925,6 @@ void BreakCrate(struct crategroup_s *group, struct cratecube_s *crate, s32 type,
 }
 extern s32 GetDieAnim(struct obj_s *obj, s32 x);
 
-/* Faithful reconstruction (state=asm): PS2 INLINES StartExclamationCrateSequence
- * (type 0xE) and DestroyAllNitroCrates (type 0x11); the GC reference calls them.
- * Kept as calls -> codegen diverges at those two sites (jal vs inlined body). */
 s32 AttackCrate(struct obj_s *obj, struct crategroup_s *group,
                 struct cratecube_s *crate) {
     s32 type;
@@ -916,9 +956,6 @@ s32 AttackCrate(struct obj_s *obj, struct crategroup_s *group,
     return 0;
 }
 
-/* Faithful near-match (state=asm), 92.4%: logic/offsets exact (long column
- * search, no .p2align wall). Residual is a consistent +1 FP-register shift in
- * the dx/dz clip-check math (temp+-radius compares) -- an allocation tie. */
 struct cratecube_s *InCrate(f32 x, f32 z, f32 ytop, f32 ybot, f32 radius) {
     struct crategroup_s *group;
     struct cratecube_s *crate;
@@ -932,7 +969,6 @@ struct cratecube_s *InCrate(f32 x, f32 z, f32 ytop, f32 ybot, f32 radius) {
     f32 dx;
     f32 dy;
     f32 dz;
-    f32 temp;
 
     ymid = (ytop + ybot) * 0.5f;
     temp_pGroup = 0;
@@ -951,20 +987,15 @@ struct cratecube_s *InCrate(f32 x, f32 z, f32 ytop, f32 ybot, f32 radius) {
                 if (crate->on != 0) {
                     type = GetCrateType(crate, 0);
                     if (!(type == -1 || type == 0)) {
-                        temp = (s32)crate->dx * 0.5f;
-                        if (!(vNew.x < temp - radius) &&
-                            !(vNew.x > temp + 0.5f + radius)) {
-                            temp = (s32)crate->dz * 0.5f;
-                            if (!(vNew.z < temp - radius) &&
-                                !(vNew.z > temp + 0.5f + radius)) {
+                        if (!(vNew.x < crate->dx * 0.5f - radius) &&
+                            !(vNew.x > crate->dx * 0.5f + 0.5f + radius)) {
+                            if (!(vNew.z < crate->dz * 0.5f - radius) &&
+                                !(vNew.z > crate->dz * 0.5f + 0.5f + radius)) {
                                 if (!(ytop < crate->pos.y) &&
                                     !(ybot > crate->pos.y + 0.5f)) {
-                                    dy = crate->pos.y + 0.25f;
-                                    dx = crate->pos.x;
-                                    dz = crate->pos.z;
-                                    dx -= x;
-                                    dy -= ymid;
-                                    dz -= z;
+                                    dx = crate->pos.x - x;
+                                    dy = crate->pos.y + 0.25f - ymid;
+                                    dz = crate->pos.z - z;
                                     d = dx * dx + dy * dy + dz * dz;
                                     if (temp_pCrate == 0 || d < dbest) {
                                         dbest = d;
@@ -998,36 +1029,12 @@ extern void AddCrateExplosion(struct nuvec_s *pos, s32 type, s32 ang,
 extern s32 VEHICLECONTROL;
 extern void AddScreenWumpa(f32 x, f32 y, f32 z, s32 n);
 
-/* Breaks one crate: type dispatch through a jump table over 2..0x14, then the
- * shared GameSfx tail. The panel-debris scale is genuinely `double` in the
- * source -- SN ee-gcc lowers plain doubles to fptodp/dpcmp/dpsub/dpmul itself,
- * so `if (d < 0.0) d = 0.0 - d;` is the abs, not a call.
- *
- * Faithful near-match (state=asm), 507 vs 506 words. Frame 0xC0, reg_mask
- * 0x803f0000 and the jump table are retail's, and the case bodies are emitted
- * in retail's order (2, 7, 3, 0x10, 9, 0xC, 0xB, 0xA, 0x14, 6/8, default) --
- * gcc lays case bodies out in source order, so the `case` order here is the
- * retail source order, not numeric. Levers: `(type == 0xD || type == 0xE)` is
- * parenthesised so fold turns the pair into retail's `(unsigned)(t-13) < 2`
- * range test; the `ictd` temp stops gcc reloading i_cratetypedata after the
- * aliasing stores; and `found` is assigned only on the two loop exits (hence
- * the goto) because an init before the loop would live across the GetCrateType
- * calls and burn a seventh callee-saved register. Two deltas remain -- see the
- * recorded blocker. */
 s32 CrateOff(struct crategroup_s *group, struct cratecube_s *crate, s32 how,
              s32 silent) {
     struct nuvec_s pos;
-    struct nuvec_s screen;
-    struct nuvec_s v[2];
-    struct CRATETYPEDATA *data;
-    struct cratecube_s *crate2;
     s32 type;
     s32 sfx;
     s32 n;
-    s32 i;
-    s32 found;
-    s32 ictd;
-    double d;
 
     type = GetCrateType(crate, 0);
     if (type == -1 || (type == 0xD || type == 0xE) || type == 0 ||
@@ -1049,55 +1056,19 @@ s32 CrateOff(struct crategroup_s *group, struct cratecube_s *crate, s32 how,
     case 2:
         if ((how & 3) == 0 && player->obj.dead == 0 && silent == 0) {
             n = (crate->flags & 0x40) ? 3 : 2;
-            NuCameraTransformScreenClip(&screen, &pos, 1, 0);
-            v[0].x = pos.x + GameCam[0].vX.x * 0.1f;
-            v[0].y = pos.y + GameCam[0].vX.y * 0.1f;
-            v[0].z = pos.z + GameCam[0].vX.z * 0.1f;
-            NuCameraTransformScreenClip(&v[1], &v[0], 1, 0);
-            d = screen.x - v[1].x;
-            if (d < 0.0) {
-                d = 0.0 - d;
-            }
-            AddPanelDebris(screen.x, screen.y, n, d * 3.6363637f, 1);
+            AddExtraLife(&pos, n);
             if (TimeTrial == 0 && (crate->flags & 0x40) == 0) {
                 if (crate->type1 == 8 && crate->i > 0) {
-                    ictd = i_cratetypedata;
-                    if (ictd <= 0x1f) {
-                        data = &CrateTypeData[ictd];
-                        data->crate = crate;
-                        data->type1 = crate->type1;
-                        data->type2 = crate->type2;
-                        data->type3 = crate->type3;
-                        data->type4 = crate->type4;
-                        i_cratetypedata = ictd + 1;
-                    }
+                    SaveCrateTypeData(crate);
                     if (crate->i == 1) {
                         crate->type3 = crate->type4;
                     }
                     crate->type4 = -1;
                 } else if (crate->type1 == 2) {
-                    ictd = i_cratetypedata;
-                    if (ictd <= 0x1f) {
-                        data = &CrateTypeData[ictd];
-                        data->crate = crate;
-                        data->type1 = crate->type1;
-                        data->type2 = crate->type2;
-                        data->type3 = crate->type3;
-                        data->type4 = crate->type4;
-                        i_cratetypedata = ictd + 1;
-                    }
+                    SaveCrateTypeData(crate);
                     crate->type1 = 5;
                 } else if (crate->type1 == 0 && crate->type3 == 2) {
-                    ictd = i_cratetypedata;
-                    if (ictd <= 0x1f) {
-                        data = &CrateTypeData[ictd];
-                        data->crate = crate;
-                        data->type1 = crate->type1;
-                        data->type2 = crate->type2;
-                        data->type3 = crate->type3;
-                        data->type4 = crate->type4;
-                        i_cratetypedata = ictd + 1;
-                    }
+                    SaveCrateTypeData(crate);
                     crate->type3 = 5;
                 }
             }
@@ -1117,14 +1088,16 @@ s32 CrateOff(struct crategroup_s *group, struct cratecube_s *crate, s32 how,
         }
         break;
     case 0x10:
-        sfx = 0x3B;
         AddKaboom(2, &pos, 0.0f);
-        AddGameDebris(6, &pos);
+        n = 6;
+        sfx = 0x3B;
+        AddGameDebris(n, &pos);
         break;
     case 9:
-        sfx = 0x3B;
         AddKaboom(1, &pos, 0.0f);
-        AddGameDebris(5, &pos);
+        n = 5;
+        sfx = 0x3B;
+        AddGameDebris(n, &pos);
         break;
     case 0xC:
         if (silent == 0) {
@@ -1156,34 +1129,13 @@ s32 CrateOff(struct crategroup_s *group, struct cratecube_s *crate, s32 how,
             if (type == 5 && last_questionmark_extralife == 0 &&
                 Game.lives < 10 && (crate->flags & 0x40) == 0 &&
                 qrand() < 0x4000 - ((Game.lives << 14) / 10)) {
-                NuCameraTransformScreenClip(&screen, &pos, 1, 0);
-                v[0].x = pos.x + GameCam[0].vX.x * 0.1f;
-                v[0].y = pos.y + GameCam[0].vX.y * 0.1f;
-                v[0].z = pos.z + GameCam[0].vX.z * 0.1f;
-                NuCameraTransformScreenClip(&v[1], &v[0], 1, 0);
-                d = screen.x - v[1].x;
-                if (d < 0.0) {
-                    d = 0.0 - d;
-                }
-                AddPanelDebris(screen.x, screen.y, 2, d * 3.6363637f, 1);
+                AddExtraLife(&pos, 2);
                 last_questionmark_extralife = 1;
             } else {
                 if (last_questionmark_extralife != 0) {
                     last_questionmark_extralife--;
                 }
-                crate2 = &Crate[group->iCrate];
-                for (i = 0; i < group->nCrates; i++, crate2++) {
-                    if (crate2 != crate && crate2->on != 0 &&
-                        GetCrateType(crate2, 0) != 0 &&
-                        crate2->dx == crate->dx && crate2->dz == crate->dz &&
-                        crate2->pos.y == crate->pos.y + 0.5f) {
-                        found = 1;
-                        goto searched;
-                    }
-                }
-                found = 0;
-            searched:
-                if (found != 0) {
+                if (CrateOnTop(group, crate) != 0) {
                     AddScreenWumpa(pos.x, pos.y, pos.z, 1);
                 } else {
                     if (type == 0x13) {
@@ -1356,30 +1308,12 @@ done:
     return ret;
 }
 
-/* Fires the box-explosion at slot iBOXEXP: 4 side faces x 6 shards, each yawed
- * a quarter turn further, then a final 6 shards pitched up (ang[0] = 0x4000).
- * The -0.12f/0.035f/-0.1f factors are `li.s` constants that SN's `as` pools
- * into .lit4 as D_0062D788/78C/790/794 (0.035f twice -- it does not dedup).
- *
- * Faithful near-match (state=asm), 1064/1072 bytes exact: frame, reg_mask and
- * every $s0-$s7 / $f20-$f23 role are retail's. The 2-word residual is the
- * phase-2 preheader, where retail emits [li $s1,-1][li $s2,5] and we emit them
- * swapped: LICM inserts hoisted invariants *after* the front-end's loop-counter
- * init and the scheduler breaks ties on RTL order, so the compiler-generated
- * division constant can never precede `j = 5`. The same ordering in the phase-1
- * outer loop *is* steerable -- that is why `a = i * 0x4000;` is a statement of
- * its own: a real statement before the inner loop lands ahead of its init.
- * `face` is spelled BoxExpList[iBOXEXP].BoxPol rather than box->BoxPol so gcc
- * folds +0x1C into the base (retail's `addiu $t1,$v0,0x1C`), and the trig index
- * is masked with & 0xFFFF rather than a (u16) cast, which would narrow the load
- * to `lhu`. */
 void AddCrateExplosion(struct nuvec_s *pos, s32 type, s32 ang,
                        struct nuvec_s *colbox) {
     struct BoxExpType *box;
     struct BoxPol_s *face;
     s32 i;
     s32 j;
-    s32 a;
     f32 rndang;
 
     box = &BoxExpList[iBOXEXP];
@@ -1389,11 +1323,10 @@ void AddCrateExplosion(struct nuvec_s *pos, s32 type, s32 ang,
     box->colbox[0] = colbox[0];
     box->colbox[1] = colbox[1];
     for (i = 0; i < 4; i++) {
-        a = i * 0x4000;
-        for (j = 5; j >= 0; j--, face++) {
+        for (j = 0; j < 6; j++, face++) {
             face->rndfade = qrand() / 4096;
             face->ang[0] = 0;
-            face->ang[1] = ang + a;
+            face->ang[1] = ang + i * 0x4000;
             face->ang[2] = 0;
             face->angmom[0] = qrand() / 64;
             face->angmom[1] = qrand() / 64;
@@ -1414,7 +1347,7 @@ void AddCrateExplosion(struct nuvec_s *pos, s32 type, s32 ang,
                           0.25f * -0.12f;
         }
     }
-    for (j = 5; j >= 0; j--, face++) {
+    for (j = 0; j < 6; j++, face++) {
         face->rndfade = qrand() / 4096;
         face->ang[0] = 0x4000;
         face->ang[1] = ang;
@@ -1437,10 +1370,6 @@ void AddCrateExplosion(struct nuvec_s *pos, s32 type, s32 ang,
     }
 }
 
-/* Faithful reconstruction (state=asm), ~9%: physics logic/offsets exact
- * (ang/angmom int @0x00/0x0C, pos/mom float @0x18/0x24, colbox[2]@0x4, 5 bounce
- * checks, angmom reflect). Codegen-divergent: retail precomputes pointers and
- * schedules the FP integrator differently. */
 void UpdateCrateExplosions(void) {
     struct BoxExpType *box;
     struct BoxPol_s *face;
@@ -1454,13 +1383,13 @@ void UpdateCrateExplosions(void) {
         if (box->time != 0) {
             box->time--;
             if (box->time != 0) {
-                face = box->BoxPol;
+                face = BoxExpList[i].BoxPol;
                 for (j = 0; j < 5; j++) {
                     for (k = 5; k >= 0; k--, face++) {
                         bounce = 0;
                         face->pos.x += face->mom.x;
                         face->pos.y += face->mom.y;
-                        face->mom.y -= D_0062D798;
+                        face->mom.y -= 0.004f;
                         face->pos.z += face->mom.z;
                         face->ang[0] += face->angmom[0];
                         face->ang[1] += face->angmom[1];
@@ -1469,31 +1398,31 @@ void UpdateCrateExplosions(void) {
                             face->mom.x < 0.0f) {
                             face->pos.x = box->colbox[0].x;
                             bounce = 1;
-                            face->mom.x = -face->mom.x * D_0062D79C;
+                            face->mom.x = -face->mom.x * 0.8f;
                         }
                         if (face->pos.y < box->colbox[0].y &&
                             face->mom.y < 0.0f) {
                             face->pos.y = box->colbox[0].y;
                             bounce = 1;
-                            face->mom.y = -face->mom.y * D_0062D79C;
+                            face->mom.y = -face->mom.y * 0.8f;
                         }
                         if (face->pos.z < box->colbox[0].z &&
                             face->mom.z < 0.0f) {
                             face->pos.z = box->colbox[0].z;
                             bounce = 1;
-                            face->mom.z = -face->mom.z * D_0062D79C;
+                            face->mom.z = -face->mom.z * 0.8f;
                         }
                         if (face->pos.x > box->colbox[1].x &&
-                            0.0f < face->mom.x) {
+                            face->mom.x > 0.0f) {
                             face->pos.x = box->colbox[1].x;
                             bounce = 1;
-                            face->mom.x = -face->mom.x * D_0062D79C;
+                            face->mom.x = -face->mom.x * 0.8f;
                         }
                         if (face->pos.z > box->colbox[1].z &&
-                            0.0f < face->mom.z) {
+                            face->mom.z > 0.0f) {
                             face->pos.z = box->colbox[1].z;
                             bounce = 1;
-                            face->mom.z = -face->mom.z * D_0062D79C;
+                            face->mom.z = -face->mom.z * 0.8f;
                         }
                         if (bounce) {
                             face->angmom[0] = -face->angmom[0];
@@ -1572,10 +1501,6 @@ extern struct RPos_s *best_cRPos;
 extern s32 cp_goto;
 extern struct nuvec_s cpGOTO;
 
-/* Faithful reconstruction (state=asm), ~11%: logic/offsets correct (best_cRPos
- * iRAIL@0/iALONG@2/fALONG@8, cpGOTO x@0/y@4/z@8, direction-dependent
- * FurtherALONG/FurtherBEHIND). Blocked on control-flow: the && chain compiles
- * to a different branch layout than retail's goto-nested direction dispatch. */
 s32 GotoCheckpoint(struct nuvec_s *pos, s32 direction) {
     struct crategroup_s *group;
     struct cratecube_s *crate;
@@ -1586,7 +1511,10 @@ s32 GotoCheckpoint(struct nuvec_s *pos, s32 direction) {
     f32 fALONG;
 
     cp_goto = -1;
-    if (best_cRPos == 0 || (u32)direction > 1) {
+    if (best_cRPos == 0) {
+        return 0;
+    }
+    if ((u32)direction > 1) {
         return 0;
     }
     group = CrateGroup;
@@ -1594,30 +1522,28 @@ s32 GotoCheckpoint(struct nuvec_s *pos, s32 direction) {
     for (i = 0; i < CRATEGROUPCOUNT; i++, group++) {
         crate = &Crate[group->iCrate];
         for (j = 0; j < group->nCrates; j++, crate++) {
-            if (((crate->type1 == 7) &&
-                 (NuVecDist(pos, &crate->pos0, 0) > 5.0f)) &&
-                (((direction == 0 &&
-                   FurtherALONG(crate->iRAIL, crate->iALONG, crate->fALONG,
+            if (crate->type1 == 7 && NuVecDist(pos, &crate->pos0, 0) > 5.0f &&
+                ((direction == 0 &&
+                  FurtherALONG(crate->iRAIL, crate->iALONG, crate->fALONG,
+                               best_cRPos->iRAIL, best_cRPos->iALONG,
+                               best_cRPos->fALONG) != 0) ||
+                 (direction == 1 &&
+                  FurtherBEHIND(crate->iRAIL, crate->iALONG, crate->fALONG,
                                 best_cRPos->iRAIL, best_cRPos->iALONG,
-                                best_cRPos->fALONG) != 0) ||
-                  (direction == 1 &&
-                   FurtherBEHIND(crate->iRAIL, crate->iALONG, crate->fALONG,
-                                 best_cRPos->iRAIL, best_cRPos->iALONG,
-                                 best_cRPos->fALONG) != 0)))) {
-                if ((iRAIL == -1) ||
-                    ((direction == 0 &&
-                      FurtherBEHIND(crate->iRAIL, crate->iALONG, crate->fALONG,
-                                    iRAIL, iALONG, fALONG) != 0) ||
-                     (direction == 1 &&
-                      FurtherALONG(crate->iRAIL, crate->iALONG, crate->fALONG,
-                                   iRAIL, iALONG, fALONG) != 0))) {
-                    cpGOTO.x = crate->pos.x;
-                    cpGOTO.y = crate->pos0.y + 0.5f + 1.0f;
-                    cpGOTO.z = crate->pos.z;
-                    iRAIL = crate->iRAIL;
-                    iALONG = crate->iALONG;
-                    fALONG = crate->fALONG;
-                }
+                                best_cRPos->fALONG) != 0)) &&
+                (iRAIL == -1 ||
+                 (direction == 0 &&
+                  FurtherBEHIND(crate->iRAIL, crate->iALONG, crate->fALONG,
+                                iRAIL, iALONG, fALONG) != 0) ||
+                 (direction == 1 &&
+                  FurtherALONG(crate->iRAIL, crate->iALONG, crate->fALONG,
+                               iRAIL, iALONG, fALONG) != 0))) {
+                cpGOTO.x = crate->pos.x;
+                cpGOTO.y = crate->pos0.y + 0.5f + 1.0f;
+                cpGOTO.z = crate->pos.z;
+                iRAIL = crate->iRAIL;
+                iALONG = crate->iALONG;
+                fALONG = crate->fALONG;
             }
         }
     }
@@ -1628,9 +1554,6 @@ s32 GotoCheckpoint(struct nuvec_s *pos, s32 direction) {
     return 0;
 }
 
-/* Faithful near-match (state=asm), 94.4%: logic/offsets exact. Residual is
- * prologue f20/f21 ordering and the LICM placement of the f21 (D_0062D7A4)
- * load relative to the nCrates guard -- scheduling ties, not source-steerable. */
 f32 CrateTopBelow(struct nuvec_s *pos) {
     struct crategroup_s *group;
     struct cratecube_s *crate;
@@ -1640,17 +1563,15 @@ f32 CrateTopBelow(struct nuvec_s *pos) {
     f32 y;
     struct nuvec_s vNew;
 
-    y = D_0062D7A0;
+    y = 2000000.0f;
     group = CrateGroup;
     for (i = 0; i < CRATEGROUPCOUNT; i++, group++) {
         if (((!(pos->x < group->minclip.x) && !(pos->x > group->maxclip.x)) &&
              !(pos->z < group->minclip.z)) && !(pos->z > group->maxclip.z)) {
-            f32 nc;
             vNew.x = pos->x - group->origin.x;
             vNew.z = pos->z - group->origin.z;
             NuVecRotateY(&vNew, &vNew, -(s32)group->angle);
             crate = &Crate[group->iCrate];
-            nc = D_0062D7A4;
             for (j = 0; j < group->nCrates; j++, crate++) {
                 if (crate->on != 0) {
                     if ((u32)(GetCrateType(crate, 0) + 1) > 1) {
@@ -1664,7 +1585,7 @@ f32 CrateTopBelow(struct nuvec_s *pos) {
                                 vNew.z > crate->dz * 0.5f + 0.5f) {
                                 continue;
                             }
-                            if (y == nc || y < top) {
+                            if (y == 2000000.0f || y < top) {
                                 y = top;
                             }
                         }
@@ -1729,7 +1650,7 @@ void CrateSafety(struct crategroup_s *group, struct cratecube_s *crate,
     s32 i;
 
     size = (obj->top - obj->bot) * obj->SCALE;
-    if ((obj->bot + obj->top) * obj->SCALE * 0.5f + obj->pos.y <
+    if (obj->pos.y + (obj->bot + obj->top) * obj->SCALE * 0.5f <
         crate->pos.y + 0.25f) {
         crate2 = &Crate[group->iCrate];
         crate3 = crate;
@@ -1745,7 +1666,7 @@ void CrateSafety(struct crategroup_s *group, struct cratecube_s *crate,
             }
         }
         obj->pos.y = crate3->pos.y - obj->top * obj->SCALE;
-        if ((crate3->shadow != D_0062D7B0) &&
+        if ((crate3->shadow != 2000000.0f) &&
             (crate3->pos.y - crate3->shadow > size)) {
             goto SetBot;
         }
@@ -1879,14 +1800,8 @@ void AddQuad3DrotXYZ(struct nuvec_s *pos, struct nuvec_s *shape,
     rndrstream_free = vpDmaTag_Next(rndrstream_3d->cur.b, 0);
 }
 
-/* Faithful reconstruction from PS2 asm (state=asm), codegen-divergent (~3%):
- * logic/struct offsets exact -- BoxPol@0x1C stride 0x34 walked across the
- * lpo x lp2 nesting, col switch (movn per lpo==4), col2 = col|(fade<<28) or
- * col|0x80000000. Retail hoists the 0x606060 default color to the prologue and
- * spills it (sp+8) with a specific stack layout gcc here does not reproduce. */
 void DrawCrateExplosions(void) {
     struct BoxPol_s *BoxFace;
-    f32 *uv;
     s32 lp;
     s32 lpo;
     s32 lp2;
@@ -1899,36 +1814,34 @@ void DrawCrateExplosions(void) {
             for (lpo = 0; lpo < 5; lpo++) {
                 switch (BoxExpList[lp].type) {
                 case 0x10:
-                    col = (lpo == 4) ? 0x10C020 : 0x108020;
+                    col = (lpo != 4) ? 0x108020 : 0x10C020;
                     break;
                 case 9:
-                    col = (lpo == 4) ? 0x80 : 0x40;
+                    col = (lpo != 4) ? 0x40 : 0x80;
                     break;
                 case 10:
                 case 11:
                 case 12:
-                    col = (lpo == 4) ? 0xFF90 : 0xE880;
+                    col = (lpo != 4) ? 0xE880 : 0xFF90;
                     break;
                 default:
-                    col = (lpo == 4) ? 0x808080 : 0x606060;
+                    col = (lpo != 4) ? 0x606060 : 0x808080;
                     break;
                 }
-                uv = uvs;
-                for (lp2 = 5; lp2 >= 0; lp2--) {
+                for (lp2 = 0; lp2 < 6; lp2++) {
                     fade = BoxExpList[lp].time - BoxFace->rndfade;
                     if (fade < 7) {
                         if (fade > 0) {
                             AddQuad3DrotXYZ(&BoxFace->pos, D_00592DE8, CrateMat,
-                                            BoxFace->ang, uv,
+                                            BoxFace->ang, &uvs[lp2 * 8],
                                             col | (fade << 28));
                         }
                     } else {
                         AddQuad3DrotXYZ(&BoxFace->pos, D_00592DE8, CrateMat,
-                                        BoxFace->ang, uv,
-                                        col - 0x80000000);
+                                        BoxFace->ang, &uvs[lp2 * 8],
+                                        col + 0x80000000);
                     }
                     BoxFace++;
-                    uv += 8;
                 }
             }
         }
@@ -1974,9 +1887,8 @@ s32 NewCrateAnimation(struct cratecube_s *crate, s32 type, s32 action,
     if (i != 0) {
         crate->anim_time = 1.0f;
         if (random != 0) {
-            crate->anim_time = crate->anim_time +
-                               (s32)qrand() * D_0062D714 *
-                                   (crate->anim_duration - 1.0f);
+            crate->anim_time +=
+                qrand() * 1.525902189e-05f * (crate->anim_duration - 1.0f);
             if (crate->anim_duration <= crate->anim_time) {
                 crate->anim_time = 1.0f;
             }
@@ -2023,10 +1935,6 @@ void InitCrateExplosions(void) {
     for (i = 0; i < 0x10; i++) {
         BoxExpList[i].time = 0;
     }
-}
-
-struct crate_s *NextCrate(struct crate_s *a) {
-    return (struct crate_s *)NuLstGetNext(crates, (struct nulnkhdr_s *)a);
 }
 
 void ResetAllCrates(void) {
@@ -2172,22 +2080,7 @@ s32 HitCrates(struct obj_s *obj, s32 destroy) {
     }
 }
 
-void StartExclamationCrateSequence(struct crategroup_s *group,
-                                   struct cratecube_s *crate) {
-    struct nuvec_s pos;
-
-    pos.x = crate->pos.x;
-    pos.y = crate->pos.y + 0.25f;
-    pos.z = crate->pos.z;
-    temp_pGroup = group;
-    temp_pCrate = crate;
-    AddKaboom(0x20, &pos, 0.0f);
-    crate->newtype = 0xf;
-    crate->metal_count = 1;
-    GameSfx(0x35, &temp_pCrate->pos);
-}
-
-s32 LowestCrate(struct crategroup_s *group, struct cratecube_s *crate) {
+inline s32 LowestCrate(struct crategroup_s *group, struct cratecube_s *crate) {
     struct cratecube_s *crate2;
     s32 i;
     s32 dx;
@@ -2632,56 +2525,106 @@ void UpdateCrates(void) {
     }
 }
 
+inline void ResetCrateType2(struct cratecube_s *crt) {
+    crt->type2 = crt->type1;
+    if (crt->model == 0) {
+        return;
+    }
+    crt->model->type[1] = crt->type1;
+}
+
+
+inline struct cratecube_s *CrateInSlot(struct crategroup_s *group, s32 x, s32 y,
+                              s32 z) {
+    struct cratecube_s *crate;
+    s32 i;
+
+    crate = &Crate[group->iCrate];
+    for (i = 0; i < group->nCrates; i++, crate++) {
+        if (((crate->dx == x) && (crate->dy == y)) && (crate->dz == z)) {
+            return crate;
+        }
+    }
+    return 0;
+}
+
+
+inline void ResetInvisibility(void) {
+    plr_invisibility_time = 5.0f;
+    glass_mix = (Level != 0x17) ? 0.0f : WATERBOSSGLASSMIX;
+    glass_col_mix = 0;
+    glass_enabled = 0;
+    glass_col_enabled = 0;
+}
+
+
+inline void ResetCrate(struct cratecube_s *crt) {
+    crt->oldy = crt->pos0.y;
+    crt->pos.y = crt->pos0.y;
+    crt->mom = 0.0f;
+    crt->newtype = -1;
+    crt->subtype = -1;
+    if (((crt->type1 == 6) || (crt->type2 == 6)) ||
+        ((crt->type1 == 0 && (crt->type3 == 6)))) {
+        crt->counter = 0xa;
+    } else {
+        crt->counter = 0;
+    }
+    crt->metal_count = 0;
+    crt->action = -1;
+    crt->appeared = 0;
+}
+
+
 void ResetCrates(void) {
-    struct nuvec_s p;
-    struct nuvec_s off;
+    struct nuvec_s pos;
+    struct nuvec_s v;
     struct nuvec_s norm;
     struct nuvec_s dir;
-    struct nuvec_s v = {0.25f, 0.0f, 0.25f};
-    s32 eshady;
+    struct nuvec_s vrot = {0.25f, 0.0f, 0.25f};
     struct crategroup_s *group;
     struct cratecube_s *crate;
     struct cratecube_s *crate2;
     struct cratecube_s *below;
-    f32 d;
     s32 i;
     s32 j;
     s32 k;
-    u16 bits;
-    s32 einfo;
-    s32 icrate;
-    s32 gemahead;
+    s32 x;
+    s32 y;
+    s32 z;
+    s32 eshady;
     s32 surf;
     s32 esh;
-    short *handel;
     s32 mode;
-    s32 lowest;
-    s32 dy;
+    s32 lower;
+    s32 index;
+    s32 gempath_reset;
+    u16 bits;
+    f32 dy;
+    short *handel;
 
-    icrate = 0;
-    gemahead = 0;
     DESTRUCTIBLECRATECOUNT = 0;
     DESTRUCTIBLEBONUSCRATECOUNT = 0;
-    if (Rail[7].type == 3) {
-        gemahead = AheadOfCheckpoint(gempath_RPos.iRAIL, gempath_RPos.iALONG,
-                                     gempath_RPos.fALONG) != 0;
+    index = 0;
+    gempath_reset = 0;
+    if (Rail[7].type == 3 &&
+        AheadOfCheckpoint(gempath_RPos.iRAIL, gempath_RPos.iALONG,
+                          gempath_RPos.fALONG) != 0) {
+        gempath_reset = 1;
     }
     group = CrateGroup;
     for (i = 0; i < CRATEGROUPCOUNT; i++, group++) {
-        NuVecRotateY(&off, &v, group->angle);
+        NuVecRotateY(&v, &vrot, group->angle);
         crate = &Crate[group->iCrate];
         for (j = 0; j < group->nCrates; j++, crate++) {
             if (crate->type2 == -1) {
-                crate->type2 = crate->type1;
-                if (crate->model != 0) {
-                    crate->model->type[1] = crate->type1;
-                }
+                ResetCrateType2(crate);
             }
-            crate->index = icrate;
-            icrate++;
-            crate->pos.x = crate->pos0.x + off.x;
-            crate->pos.z = crate->pos0.z + off.z;
+            crate->index = index;
+            crate->pos.x = crate->pos0.x + v.x;
+            index++;
             bits = 0;
+            crate->pos.z = crate->pos0.z + v.z;
             GetALONG(&crate->pos0, 0, -1, -1, 1);
             crate->iRAIL = temp_iRAIL;
             crate->iALONG = temp_iALONG;
@@ -2692,18 +2635,17 @@ void ResetCrates(void) {
                     bits = 0x40;
                 } else if (Rail[crate->iRAIL].type == 2) {
                     bits = 0x80;
-                } else {
-                    bits = (Rail[crate->iRAIL].type == 3) ? 0x100 : 0;
+                } else if (Rail[crate->iRAIL].type == 3) {
+                    bits = 0x100;
                 }
             }
             if (crate->type1 == 8) {
                 crate->i = 0;
                 crate->duration = 1.0f;
             }
-            if (((LDATA->flags & 0x200) != 0) || (Level == 0x1D)) {
-                if (Level != 0x1E) {
-                    bits |= 0xC00;
-                }
+            if (((LDATA->flags & 0x200) != 0 || Level == 0x1D) &&
+                Level != 0x1E) {
+                bits |= 0xC00;
             }
             switch (crate->type1) {
             case 1:
@@ -2715,26 +2657,27 @@ void ResetCrates(void) {
             case 7:
             case 8:
             case 9:
-            case 14:
-            case 16:
-            case 17:
-            case 18:
-            case 19:
-            case 20:
-                if ((crate->iRAIL != -1) || ((bits & 0x400) != 0)) {
+            case 0x10:
+            case 0x11:
+            case 0x12:
+            case 0x13:
+            case 0x14:
+            case 0xE:
+                if (crate->iRAIL == -1) {
+                    if (bits & 0x400) {
+                        bits |= 0x10;
+                    }
+                } else {
                     bits |= 0x10;
                 }
                 break;
             case 0:
-                if ((crate->iRAIL != -1) || ((bits & 0x400) != 0)) {
+                if (crate->iRAIL != -1 || (bits & 0x400)) {
                     if (crate->type3 != -1) {
-                        if (crate->type3 != 0) {
-                            if ((crate->type3 != 13) && (crate->type3 != 15)) {
-                                if ((crate->trigger != -1) &&
-                                    (Crate[crate->trigger].type1 == 14)) {
-                                    bits |= 0x10;
-                                }
-                            }
+                        if (crate->type3 != 0 && crate->type3 != 0xD &&
+                            crate->type3 != 0xF && crate->trigger != -1 &&
+                            Crate[crate->trigger].type1 == 0xE) {
+                            bits |= 0x10;
                         }
                     }
                 }
@@ -2750,143 +2693,104 @@ void ResetCrates(void) {
                 if (Bonus != 4) {
                     goto reset;
                 }
-                goto noreset;
             } else if ((bits & 0x100) != 0) {
-                if (gemahead != 0) {
+                if (gempath_reset != 0) {
                     goto reset;
                 }
-                goto noreset;
-            } else {
-                if (((cp_iRAIL != -1) && (cp_iALONG != -1)) &&
-                    ((crate->type1 == 7) && (TimeTrial == 0))) {
-                    goto noreset;
-                }
-                if (bonus_restart != 0) {
-                    goto noreset;
-                }
+            } else if ((cp_iRAIL == -1 || cp_iALONG == -1 ||
+                        crate->type1 != 7 || TimeTrial != 0) &&
+                       bonus_restart == 0) {
                 if (AheadOfCheckpoint(crate->iRAIL, crate->iALONG,
-                                      crate->fALONG) == 0) {
-                    goto noreset;
+                                      crate->fALONG) != 0) {
+                reset:
+                    crate->on = 1;
+                    ResetCrate(crate);
                 }
             }
-        reset:
-            crate->on = 1;
-            crate->pos.y = crate->pos0.y;
-            crate->subtype = -1;
-            crate->oldy = crate->pos0.y;
-            crate->mom = 0.0f;
-            crate->newtype = -1;
-            if (((crate->type1 == 6) || (crate->type2 == 6)) ||
-                ((crate->type1 == 0) && (crate->type3 == 6))) {
-                crate->counter = 10;
-            } else {
-                crate->counter = 0;
-            }
-            crate->metal_count = 0;
-            crate->action = -1;
-            crate->appeared = 0;
-        noreset:
             if (crate->type1 == 3) {
                 NewCrateAnimation(crate, 3, 0x22, 1);
             }
-            p.x = crate->pos.x;
-            p.y = crate->pos0.y;
-            p.z = crate->pos.z;
-            crate->shadow = NewShadowMaskPlat(&p, 0.0f, -1);
-            if (Level == 0x12) {
-                if (crate->shadow < 0.0f) {
-                    crate->shadow = 0.0f;
-                }
+            pos.x = crate->pos.x;
+            pos.y = crate->pos0.y;
+            pos.z = crate->pos.z;
+            crate->shadow = NewShadowMaskPlat(&pos, 0.0f, -1);
+            if (Level == 0x12 && crate->shadow < 0.0f) {
+                crate->shadow = 0.0f;
             }
             if (crate->shadow != 2000000.0f) {
                 norm = ShadNorm;
                 FindAnglesZX(&norm);
-                crate->surface_zrot = temp_zrot;
                 crate->surface_xrot = temp_xrot;
+                crate->surface_zrot = temp_zrot;
                 surf = ShadowInfo();
                 if ((TerSurface[surf].flags & 1) == 0) {
                     bits |= 0x2000;
                 }
-                eshady = (s32)EShadY;
-                if ((f32)eshady == 2000000.0f) {
-                    esh = -1;
-                } else {
-                    esh = 0;
-                    einfo = EShadowInfo();
-                    if ((u32)einfo < 0xB) {
-                        esh = einfo;
+                eshady = EShadY;
+                if (eshady != 2000000.0f) {
+                    esh = EShadowInfo();
+                    if (esh < 0 || esh > 10) {
+                        esh = 0;
                     }
+                } else {
+                    esh = -1;
                 }
                 NewScanInit();
                 crate->colbox[0].y = crate->shadow;
                 crate->colbox[1].y = crate->shadow + 4.0f;
-                dir.x = p.x - 1.5f;
-                dir.z = p.z - 1.5f;
-                norm.y = 0.0f;
+                dir.x = pos.x - 1.5f;
                 dir.y = crate->shadow + 0.2f;
-                norm.z = 3.0f;
+                dir.z = pos.z - 1.5f;
                 norm.x = 3.0f;
+                norm.y = 0.0f;
+                norm.z = 3.0f;
                 handel = NewScanHandel(&dir, &norm, 1, 0, 0.0f);
+                pos.y = crate->shadow + 0.2f;
                 dir.x = -1.5f;
                 dir.y = 0.0f;
                 dir.z = 0.0f;
-                p.y = crate->shadow + 0.2f;
-                NewRayCastSetHandel(&p, &dir, 0.0f, 0.0f, 0.0f, handel);
-                crate->colbox[0].x = dir.x + p.x;
-                dir.z = -1.5f;
+                NewRayCastSetHandel(&pos, &dir, 0.0f, 0.0f, 0.0f, handel);
+                crate->colbox[0].x = dir.x + pos.x;
                 dir.x = 0.0f;
                 dir.y = 0.0f;
-                NewRayCastSetHandel(&p, &dir, 0.0f, 0.0f, 0.0f, handel);
-                crate->colbox[0].z = dir.z + p.z;
+                dir.z = -1.5f;
+                NewRayCastSetHandel(&pos, &dir, 0.0f, 0.0f, 0.0f, handel);
+                crate->colbox[0].z = dir.z + pos.z;
                 dir.x = 1.5f;
                 dir.y = 0.0f;
                 dir.z = 0.0f;
-                NewRayCastSetHandel(&p, &dir, 0.0f, 0.0f, 0.0f, handel);
-                crate->colbox[1].x = dir.x + p.x;
-                dir.z = 1.5f;
+                NewRayCastSetHandel(&pos, &dir, 0.0f, 0.0f, 0.0f, handel);
+                crate->colbox[1].x = dir.x + pos.x;
                 dir.x = 0.0f;
                 dir.y = 0.0f;
-                NewRayCastSetHandel(&p, &dir, 0.0f, 0.0f, 0.0f, handel);
-                crate->colbox[1].z = dir.z + p.z;
+                dir.z = 1.5f;
+                NewRayCastSetHandel(&pos, &dir, 0.0f, 0.0f, 0.0f, handel);
+                crate->colbox[1].z = dir.z + pos.z;
             } else {
                 crate->surface_xrot = 0;
-                surf = 0;
                 crate->surface_zrot = 0;
+                surf = 0;
                 esh = -1;
             }
             if ((TerSurface[surf].flags & 4) != 0) {
                 bits |= 0x200;
             }
-            lowest = 1;
-            crate2 = &Crate[group->iCrate];
-            for (k = 0; k < group->nCrates; k++, crate2++) {
-                if (((crate2 != crate) && (crate2->dx == crate->dx)) &&
-                    ((crate2->dz == crate->dz) &&
-                     (crate2->pos0.y < crate->pos0.y))) {
-                    lowest = 0;
-                    break;
-                }
-            }
-            if (lowest != 0) {
-                if (crate->shadow == 2000000.0f) {
-                    bits |= 0x1000;
-                } else if ((crate->pos.y - crate->shadow) > 2.0f) {
-                    bits |= 0x1000;
-                } else if ((TerSurface[surf].flags & 1) != 0) {
-                    bits |= 0x1000;
-                } else if ((esh != -1) && ((f32)eshady < crate->pos.y)) {
-                    bits |= 0x1000;
-                }
+            if (LowestCrate(group, crate) != 0 &&
+                (crate->shadow == 2000000.0f ||
+                 crate->pos.y - crate->shadow > 2.0f ||
+                 (TerSurface[surf].flags & 1) != 0 ||
+                 (esh != -1 && crate->pos.y > eshady))) {
+                bits |= 0x1000;
             }
             crate->flags = bits;
             if (crate->shadow != 2000000.0f) {
-                d = crate->pos0.y - crate->shadow;
-                if (d < -0.1f) {
+                dy = crate->pos0.y - crate->shadow;
+                if (dy < -0.1f) {
                     crate->flags = bits | 4;
-                } else if (d < 0.1f) {
+                } else if (dy < 0.1f) {
                     crate->flags = bits | 2;
-                    if (((crate->type1 == 16) || (crate->type1 == 3)) ||
-                        ((crate->type2 == 16) || (crate->type2 == 3))) {
+                    if (crate->type1 == 0x10 || crate->type1 == 3 ||
+                        crate->type2 == 0x10 || crate->type2 == 3) {
                         crate->flags |= 1;
                     }
                 }
@@ -2896,114 +2800,70 @@ void ResetCrates(void) {
         for (j = 0; j < group->nCrates; j++, crate++) {
             if ((crate->flags & 6) == 0) {
                 below = 0;
-                dy = crate->dy;
-                for (;;) {
-                    dy--;
-                    crate2 = &Crate[group->iCrate];
-                    for (k = 0; k < group->nCrates; k++, crate2++) {
-                        if (((crate2->dx == crate->dx) && (crate2->dy == dy)) &&
-                            (crate2->dz == crate->dz)) {
-                            goto founddown;
-                        }
-                    }
-                    crate2 = 0;
-                founddown:
-                    if (crate2 == 0) {
-                        break;
-                    }
+                x = crate->dx;
+                y = crate->dy;
+                z = crate->dz;
+                crate2 = 0;
+            down:
+                y--;
+                crate2 = CrateInSlot(group, x, y, z);
+                if (crate2 != 0) {
                     below = crate2;
+                    goto down;
                 }
-                if ((below != 0) && ((below->flags & 6) != 0)) {
+                if (below != 0 && (below->flags & 6) != 0) {
                     crate->flags |= 1;
                 }
             }
-            if ((crate->type1 == 7) && (crate->shadow != 2000000.0f)) {
-                goto surfrot;
+            if (crate->type1 == 7 && crate->shadow != 2000000.0f) {
+                crate->xrot0 = crate->surface_xrot;
+                crate->zrot0 = crate->surface_zrot;
+            } else if ((crate->flags & 4) != 0 &&
+                       CrateInSlot(group, crate->dx, crate->dy + 1,
+                                   crate->dz) == 0) {
+                crate->xrot0 = (qrand() - 0x8000) / 16;
+                crate->zrot0 = (qrand() - 0x8000) / 16;
+            } else if ((crate->flags & 2) != 0 &&
+                       CrateInSlot(group, crate->dx, crate->dy + 1,
+                                   crate->dz) == 0) {
+                crate->xrot0 = crate->surface_xrot;
+                crate->zrot0 = crate->surface_zrot;
+            } else {
+                crate->xrot0 = 0;
+                crate->zrot0 = 0;
             }
-            if ((crate->flags & 4) != 0) {
-                crate2 = &Crate[group->iCrate];
-                for (k = 0; k < group->nCrates; k++, crate2++) {
-                    if (((crate2->dx == crate->dx) &&
-                         (crate2->dy == crate->dy + 1)) &&
-                        (crate2->dz == crate->dz)) {
-                        goto foundup1;
-                    }
-                }
-                crate2 = 0;
-            foundup1:
-                if (crate2 == 0) {
-                    crate->xrot0 = (qrand() - 0x8000) / 16;
-                    crate->zrot0 = (qrand() - 0x8000) / 16;
-                    goto rotdone;
-                }
-            }
-            if ((crate->flags & 2) != 0) {
-                crate2 = &Crate[group->iCrate];
-                for (k = 0; k < group->nCrates; k++, crate2++) {
-                    if (((crate2->dx == crate->dx) &&
-                         (crate2->dy == crate->dy + 1)) &&
-                        (crate2->dz == crate->dz)) {
-                        goto foundup2;
-                    }
-                }
-                crate2 = 0;
-            foundup2:
-                if (crate2 == 0) {
-                    goto surfrot;
-                }
-            }
-            crate->xrot0 = 0;
-            crate->zrot0 = 0;
-            goto rotdone;
-        surfrot:
-            crate->xrot0 = crate->surface_xrot;
-            crate->zrot0 = crate->surface_zrot;
-        rotdone:
             crate->xrot = crate->xrot0;
             crate->zrot = crate->zrot0;
             if (crate->type1 == 6) {
                 mode = 1;
             } else if (crate->type2 == 6) {
                 mode = 2;
-            } else if (crate->type1 != 0) {
-                mode = 0;
+            } else if (crate->type1 == 0 && crate->type3 == 6) {
+                mode = 3;
             } else {
-                mode = (crate->type3 == 6) ? 3 : 0;
+                mode = 0;
             }
             if (mode != 0) {
                 crate2 = &Crate[group->iCrate];
                 for (k = 0; k < group->nCrates; k++, crate2++) {
-                    if (((crate2 != crate) && (crate2->dx == crate->dx)) &&
-                        (crate2->dz == crate->dz)) {
-                        if (mode == 1) {
-                            if ((crate2->type1 == 6) ||
-                                ((crate2->dy < crate->dy) &&
-                                 ((crate2->type1 == 4) ||
-                                  (crate2->type1 == 13)))) {
-                                crate->flags |= 0x20;
-                                break;
-                            }
-                        }
-                        if (mode == 2) {
-                            if ((crate2->type2 == 6) ||
-                                ((crate2->dy < crate->dy) &&
-                                 ((crate2->type2 == 4) ||
-                                  (crate2->type2 == 13)))) {
-                                crate->flags |= 0x20;
-                                break;
-                            }
-                        }
-                        if (mode == 3) {
-                            if (((crate2->type1 == 0) &&
-                                 (crate2->trigger == crate->trigger)) &&
-                                ((crate2->type3 == 6) ||
-                                 ((crate2->dy < crate->dy) &&
-                                  ((crate2->type3 == 4) ||
-                                   (crate2->type3 == 13))))) {
-                                crate->flags |= 0x20;
-                                break;
-                            }
-                        }
+                    lower = (crate2->dy < crate->dy) ? 1 : 0;
+                    if (crate2 != crate && crate2->dx == crate->dx &&
+                        crate2->dz == crate->dz &&
+                        ((mode == 1 &&
+                          (crate2->type1 == 6 ||
+                           (lower && (crate2->type1 == 4 ||
+                                      crate2->type1 == 0xD)))) ||
+                         (mode == 2 &&
+                          (crate2->type2 == 6 ||
+                           (lower && (crate2->type2 == 4 ||
+                                      crate2->type2 == 0xD)))) ||
+                         (mode == 3 && crate2->type1 == 0 &&
+                          crate2->trigger == crate->trigger &&
+                          (crate2->type3 == 6 ||
+                           (lower && (crate2->type3 == 4 ||
+                                      crate2->type3 == 0xD)))))) {
+                        crate->flags |= 0x20;
+                        break;
                     }
                 }
                 crate->counter = crate->counter / 2;
@@ -3012,11 +2872,7 @@ void ResetCrates(void) {
     }
     ResetKabooms();
     UpdateCrates();
-    plr_invisibility_time = 5.0f;
-    glass_mix = (Level == 0x17) ? WATERBOSSGLASSMIX : 0.0f;
-    glass_col_mix = 0;
-    glass_enabled = 0;
-    glass_col_enabled = 0;
+    ResetInvisibility();
 }
 
 extern s32 DRAWCRATESHADOWS;
@@ -3255,54 +3111,6 @@ s32 CrateInTheWay(struct obj_s *obj, struct crategroup_s *group,
     return 0;
 }
 
-/* Faithful near-match (state=asm): structure/offsets exact vs retail, but the
- * `+ 0.5f` FP-equality inner loop assembles one instruction over the extent
- * (decompals-as loop .p2align / FP-hazard nop). Same class as the documented
- * .org-backwards wall; kept for reference. */
-s32 CrateOnTop(struct crategroup_s *group, struct cratecube_s *crate) {
-    s32 i;
-    struct cratecube_s *crate2;
-
-    crate2 = &Crate[group->iCrate];
-    for (i = 0; i < group->nCrates; i++, crate2++) {
-        if ((((crate2 != crate) && (crate2->on != 0)) &&
-             (GetCrateType(crate2, 0) != 0)) &&
-            (((crate2->dx == crate->dx && (crate2->dz == crate->dz)) &&
-              (crate2->pos.y == crate->pos.y + 0.5f)))) {
-            return 1;
-        }
-    }
-    return 0;
-}
-
-/* Faithful near-match (state=asm): same `+ 0.5f` inner-loop assembler wall as
- * CrateOnTop; structure (outer goto restart, column match) is exact. */
-void HopCratesAbove(f32 speed, struct crategroup_s *group,
-                    struct cratecube_s *crate) {
-    struct cratecube_s *crate2;
-    s32 i;
-
-Loop:
-    crate2 = &Crate[group->iCrate];
-    for (i = 0; i < group->nCrates; i++, crate2++) {
-        if (((crate2->on != 0) && (crate2->dx == crate->dx) &&
-             (crate2->dz == crate->dz)) &&
-            (crate->pos.y + 0.5f == crate2->pos.y)) {
-            crate2->mom = speed;
-            crate = crate2;
-            goto Loop;
-        }
-    }
-}
-
-void ResetCrateType2(struct cratecube_s *crt) {
-    crt->type2 = crt->type1;
-    if (crt->model == 0) {
-        return;
-    }
-    crt->model->type[1] = crt->type1;
-}
-
 /* Cap test for an upright cylinder: face 0x20 is the cap the ray crosses on
  * the way up, 0x10 the one it crosses on the way down. */
 s32 RayIntersectCylinder(struct nuvec_s *p0, struct nuvec_s *p1, f32 x, f32 z,
@@ -3343,21 +3151,6 @@ s32 RayIntersectCylinder(struct nuvec_s *p0, struct nuvec_s *p1, f32 x, f32 z,
         }
     }
     return 0;
-}
-
-void SaveCrateTypeData(struct cratecube_s *crate) {
-    struct CRATETYPEDATA *data;
-
-    if (i_cratetypedata > 0x1f) {
-        return;
-    }
-    data = &CrateTypeData[i_cratetypedata];
-    data->crate = crate;
-    data->type1 = crate->type1;
-    data->type2 = crate->type2;
-    data->type3 = crate->type3;
-    data->type4 = crate->type4;
-    i_cratetypedata++;
 }
 
 void RestoreCrateTypeData(void) {
@@ -3404,43 +3197,4 @@ void ResetAllCrateTypes(s32 type) {
             }
         }
     }
-}
-
-struct cratecube_s *CrateInSlot(struct crategroup_s *group, s32 x, s32 y,
-                              s32 z) {
-    struct cratecube_s *crate;
-    s32 i;
-
-    crate = &Crate[group->iCrate];
-    for (i = 0; i < group->nCrates; i++, crate++) {
-        if (((crate->dx == x) && (crate->dy == y)) && (crate->dz == z)) {
-            return crate;
-        }
-    }
-    return 0;
-}
-
-void ResetInvisibility(void) {
-    plr_invisibility_time = 5.0f;
-    glass_mix = (Level != 0x17) ? 0.0f : WATERBOSSGLASSMIX;
-    glass_col_mix = 0;
-    glass_enabled = 0;
-    glass_col_enabled = 0;
-}
-
-void ResetCrate(struct cratecube_s *crt) {
-    crt->oldy = crt->pos0.y;
-    crt->pos.y = crt->pos0.y;
-    crt->mom = 0.0f;
-    crt->newtype = -1;
-    crt->subtype = -1;
-    if (((crt->type1 == 6) || (crt->type2 == 6)) ||
-        ((crt->type1 == 0 && (crt->type3 == 6)))) {
-        crt->counter = 0xa;
-    } else {
-        crt->counter = 0;
-    }
-    crt->metal_count = 0;
-    crt->action = -1;
-    crt->appeared = 0;
 }

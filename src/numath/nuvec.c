@@ -52,12 +52,13 @@ f32 NuFsqrt(f32 x);
 extern f32 NuTrigTable[];
 
 void NuVecRotateAxis(struct nuvec_s *dst, struct nuvec_s *src, void *unused,
-                     struct nuvec_s *rot) {
+                     struct nuvec_s *rot)
+{
     f32 cx = NuTrigTable[(int)(rot->x + 16384.0f) & 0xffff];
-    f32 sx = NuTrigTable[(int)rot->x & 0xffff];
     f32 cy = NuTrigTable[(int)(rot->y + 16384.0f) & 0xffff];
-    f32 sy = NuTrigTable[(int)rot->y & 0xffff];
     f32 cz = NuTrigTable[(int)(rot->z + 16384.0f) & 0xffff];
+    f32 sx = NuTrigTable[(int)rot->x & 0xffff];
+    f32 sy = NuTrigTable[(int)rot->y & 0xffff];
     f32 sz = NuTrigTable[(int)rot->z & 0xffff];
     f32 x = src->x * (cy * cz) +
             src->y * (sx * sy * cz - cx * sz) +
@@ -65,8 +66,8 @@ void NuVecRotateAxis(struct nuvec_s *dst, struct nuvec_s *src, void *unused,
     f32 y = src->x * (cy * sz) +
             src->y * (sx * sy * sz + cx * cz) +
             src->z * (cx * sy * sz - sx * cz);
+    f32 z = src->z * cx * cy + src->y * sx * cy - src->x * sy;
 
-    f32 z = src->y * (sx * cy) + src->z * (cx * cy) - src->x * sy;
     dst->x = x;
     dst->y = y;
     dst->z = z;
@@ -198,9 +199,9 @@ void NuVecInvMtxTransform(struct nuvec_s *dst, struct nuvec_s *src,
     f32 y = src->y - mtx->_31;
     f32 z = src->z - mtx->_32;
 
-    dst->x = x * mtx->_00 + y * mtx->_01 + z * mtx->_02;
-    dst->y = x * mtx->_10 + y * mtx->_11 + z * mtx->_12;
-    dst->z = x * mtx->_20 + y * mtx->_21 + z * mtx->_22;
+    dst->x = mtx->_00 * x + mtx->_01 * y + mtx->_02 * z;
+    dst->y = mtx->_10 * x + mtx->_11 * y + mtx->_12 * z;
+    dst->z = mtx->_20 * x + mtx->_21 * y + mtx->_22 * z;
 }
 
 void NuVecInvMtxRotateValX(struct nuvec_s *v, struct numtx_s *mtx)
@@ -419,23 +420,17 @@ f32 NuVecDistSqr(struct nuvec_s *a, struct nuvec_s *b,
                  struct nuvec_s *diff)
 {
     struct nuvec_s local;
-    f32 first;
-    f32 last;
 
-    if (diff == 0) {
-        local.x = a->x - b->x;
-        local.y = a->y - b->y;
-        local.z = a->z - b->z;
-        first = local.x * local.x + local.y * local.y;
-        last = local.z * local.z;
-    } else {
+    if (diff != 0) {
         diff->x = a->x - b->x;
         diff->y = a->y - b->y;
         diff->z = a->z - b->z;
-        first = diff->x * diff->x + diff->y * diff->y;
-        last = diff->z * diff->z;
+        return diff->x * diff->x + diff->y * diff->y + diff->z * diff->z;
     }
-    return first + last;
+    local.x = a->x - b->x;
+    local.y = a->y - b->y;
+    local.z = a->z - b->z;
+    return local.x * local.x + local.y * local.y + local.z * local.z;
 }
 
 f32 NuVecXZDist(struct nuvec_s *a, struct nuvec_s *b,struct nuvec_s *diff)
@@ -464,26 +459,20 @@ f32 NuVecXZDist(struct nuvec_s *a, struct nuvec_s *b,struct nuvec_s *diff)
     return NuFsqrt(temp);
 }
 
-f32 NuVecXZDistSqr(struct nuvec_s *a, struct nuvec_s *b, struct nuvec_s *diff) {
+f32 NuVecXZDistSqr(struct nuvec_s *a, struct nuvec_s *b, struct nuvec_s *diff)
+{
     struct nuvec_s local;
-    f32 first;
-    f32 last;
 
-    if (diff == 0) {
-		local.x = a->x - b->x;
-		local.y = 0.0f;
-		local.z = a->z - b->z;
-        diff = &local;
-        first = diff->x * diff->x + diff->y;
-        last = diff->z * diff->z;
-    } else {       
+    if (diff != 0) {
         diff->x = a->x - b->x;
         diff->y = 0.0f;
         diff->z = a->z - b->z;
-        first = diff->x * diff->x + diff->y;
-        last = diff->z * diff->z;
+        return diff->x * diff->x + diff->y + diff->z * diff->z;
     }
-    return first + last;
+    local.x = a->x - b->x;
+    local.y = 0.0f;
+    local.z = a->z - b->z;
+    return local.x * local.x + local.y + local.z * local.z;
 }
 
 void NuLineLineIntersect(struct nuvec_s *p0, struct nuvec_s *d0,

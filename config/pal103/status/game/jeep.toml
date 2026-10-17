@@ -25,11 +25,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:00223f90:MovePlayerJeep"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:00224990:DriveJeep"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:00224fc0:ProcessJeepMovement"
@@ -73,7 +73,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:002277a0:DrawEnemyJeep"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:00227c38:PlayerHitBuggies"

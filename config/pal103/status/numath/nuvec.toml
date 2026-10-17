@@ -13,7 +13,7 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0013:001066f0:NuVecRotateAxis"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:00106848:NuVecMtxTransform"
@@ -53,7 +53,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:00106bd8:NuVecInvMtxTransform"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:00106c70:NuVecInvMtxTranslate"
@@ -145,7 +145,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:001073a8:NuVecDistSqr"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:00107440:NuVecXZDist"
@@ -153,7 +153,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:001074d0:NuVecXZDistSqr"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:00107550:NuVecLerp"

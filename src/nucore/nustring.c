@@ -9,6 +9,8 @@
  *   0x00105b98 NuStrIStr
  */
 
+#define UPPERCASE(c) (((c) >= 'a' && (c) <= 'z') ? (c) - 32 : (c))
+
 void NuStrCat(char *destination, char *source)
 {
     while (*destination) {
@@ -66,16 +68,7 @@ char *NuStrIStr(char *text, char *pattern)
         char *cursor = text;
 
         while (*match && *cursor) {
-            int cursor_character = *cursor;
-            int pattern_character = *match;
-
-            if ((unsigned char)(cursor_character - 'a') <= 25) {
-                cursor_character -= 32;
-            }
-            if ((unsigned int)((unsigned char)pattern_character - 'a') <= 25) {
-                pattern_character -= 32;
-            }
-            if (cursor_character != pattern_character) {
+            if (UPPERCASE(*cursor) != UPPERCASE(*match)) {
                 break;
             }
             match++;

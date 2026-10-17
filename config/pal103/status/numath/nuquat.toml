@@ -13,7 +13,7 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0018:0010b460:NuMtxToQuat"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0018:0010b700:NuQuatSlerp"
@@ -21,7 +21,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0018:0010b9f0:NuQuatToMtx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0018:0010bac8:NuQuatAdd"
