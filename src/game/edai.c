@@ -128,8 +128,8 @@ extern s32 D_005CD1D0[8];
 
 extern void NuHGobjRndr(struct NUHGOBJ_s *hobj, struct numtx_s *m, s32 nlayers,
                         s16 *layer);
-extern void NuRndrLine3dDbg(s32 colour, f32 x0, f32 y0, f32 z0, f32 x1, f32 y1,
-                            f32 z1);
+extern void NuRndrLine3dDbg(f32 x0, f32 y0, f32 z0, f32 x1, f32 y1, f32 z1,
+                            u32 colour);
 extern void *eduiMenuCreate(s32 x, s32 y, s32 w, s32 h, void *font,
                             void *cancelcb, void *arg);
 extern void *eduiItemSelCreate(s32 a0, void *tmpl, s32 a2, s32 a3, void *cb,
@@ -327,30 +327,30 @@ void DrawCube(struct nuvec_s *pos, s32 ang, f32 len)
         rx[i] = bx[i] * c + bz[i] * s;
         rz[i] = -(bx[i] * s) + bz[i] * c;
     }
-    NuRndrLine3dDbg(0x7FFF7F, pos->x + rx[0], pos->y - len, pos->z + rz[0],
-                    pos->x + rx[1], pos->y - len, pos->z + rz[1]);
-    NuRndrLine3dDbg(0x7FFF7F, pos->x + rx[1], pos->y - len, pos->z + rz[1],
-                    pos->x + rx[2], pos->y - len, pos->z + rz[2]);
-    NuRndrLine3dDbg(0x7FFF7F, pos->x + rx[2], pos->y - len, pos->z + rz[2],
-                    pos->x + rx[3], pos->y - len, pos->z + rz[3]);
-    NuRndrLine3dDbg(0x7FFF7F, pos->x + rx[3], pos->y - len, pos->z + rz[3],
-                    pos->x + rx[0], pos->y - len, pos->z + rz[0]);
-    NuRndrLine3dDbg(0x7FFF7F, pos->x + rx[0], pos->y - len, pos->z + rz[0],
-                    pos->x + rx[0], pos->y + len, pos->z + rz[0]);
-    NuRndrLine3dDbg(0x7FFF7F, pos->x + rx[1], pos->y - len, pos->z + rz[1],
-                    pos->x + rx[1], pos->y + len, pos->z + rz[1]);
-    NuRndrLine3dDbg(0x7FFF7F, pos->x + rx[2], pos->y - len, pos->z + rz[2],
-                    pos->x + rx[2], pos->y + len, pos->z + rz[2]);
-    NuRndrLine3dDbg(0x7FFF7F, pos->x + rx[3], pos->y - len, pos->z + rz[3],
-                    pos->x + rx[3], pos->y + len, pos->z + rz[3]);
-    NuRndrLine3dDbg(0x7FFF7F, pos->x + rx[0], pos->y + len, pos->z + rz[0],
-                    pos->x + rx[1], pos->y + len, pos->z + rz[1]);
-    NuRndrLine3dDbg(0x7FFF7F, pos->x + rx[1], pos->y + len, pos->z + rz[1],
-                    pos->x + rx[2], pos->y + len, pos->z + rz[2]);
-    NuRndrLine3dDbg(0x7FFF7F, pos->x + rx[2], pos->y + len, pos->z + rz[2],
-                    pos->x + rx[3], pos->y + len, pos->z + rz[3]);
-    NuRndrLine3dDbg(0x7FFF7F, pos->x + rx[3], pos->y + len, pos->z + rz[3],
-                    pos->x + rx[0], pos->y + len, pos->z + rz[0]);
+    NuRndrLine3dDbg(pos->x + rx[0], pos->y - len, pos->z + rz[0],
+                    pos->x + rx[1], pos->y - len, pos->z + rz[1], 0x7FFF7F);
+    NuRndrLine3dDbg(pos->x + rx[1], pos->y - len, pos->z + rz[1],
+                    pos->x + rx[2], pos->y - len, pos->z + rz[2], 0x7FFF7F);
+    NuRndrLine3dDbg(pos->x + rx[2], pos->y - len, pos->z + rz[2],
+                    pos->x + rx[3], pos->y - len, pos->z + rz[3], 0x7FFF7F);
+    NuRndrLine3dDbg(pos->x + rx[3], pos->y - len, pos->z + rz[3],
+                    pos->x + rx[0], pos->y - len, pos->z + rz[0], 0x7FFF7F);
+    NuRndrLine3dDbg(pos->x + rx[0], pos->y - len, pos->z + rz[0],
+                    pos->x + rx[0], pos->y + len, pos->z + rz[0], 0x7FFF7F);
+    NuRndrLine3dDbg(pos->x + rx[1], pos->y - len, pos->z + rz[1],
+                    pos->x + rx[1], pos->y + len, pos->z + rz[1], 0x7FFF7F);
+    NuRndrLine3dDbg(pos->x + rx[2], pos->y - len, pos->z + rz[2],
+                    pos->x + rx[2], pos->y + len, pos->z + rz[2], 0x7FFF7F);
+    NuRndrLine3dDbg(pos->x + rx[3], pos->y - len, pos->z + rz[3],
+                    pos->x + rx[3], pos->y + len, pos->z + rz[3], 0x7FFF7F);
+    NuRndrLine3dDbg(pos->x + rx[0], pos->y + len, pos->z + rz[0],
+                    pos->x + rx[1], pos->y + len, pos->z + rz[1], 0x7FFF7F);
+    NuRndrLine3dDbg(pos->x + rx[1], pos->y + len, pos->z + rz[1],
+                    pos->x + rx[2], pos->y + len, pos->z + rz[2], 0x7FFF7F);
+    NuRndrLine3dDbg(pos->x + rx[2], pos->y + len, pos->z + rz[2],
+                    pos->x + rx[3], pos->y + len, pos->z + rz[3], 0x7FFF7F);
+    NuRndrLine3dDbg(pos->x + rx[3], pos->y + len, pos->z + rz[3],
+                    pos->x + rx[0], pos->y + len, pos->z + rz[0], 0x7FFF7F);
 }
 
 inline void DrawAxes(struct nuvec_s *pos, s32 ang, s32 col, f32 len)
@@ -358,14 +358,14 @@ inline void DrawAxes(struct nuvec_s *pos, s32 ang, s32 col, f32 len)
     f32 s;
     f32 c;
 
-    NuRndrLine3dDbg(col, pos->x, pos->y - len, pos->z, pos->x, pos->y + len,
-                    pos->z);
+    NuRndrLine3dDbg(pos->x, pos->y - len, pos->z, pos->x, pos->y + len,
+                    pos->z, col);
     s = NuTrigTable[ang & 0xFFFF] * len;
     c = NuTrigTable[(ang + 0x4000) & 0xFFFF] * len;
-    NuRndrLine3dDbg(col, pos->x - s, pos->y, pos->z - c, pos->x + s, pos->y,
-                    pos->z + c);
-    NuRndrLine3dDbg(col, pos->x + c, pos->y, pos->z - s, pos->x - c, pos->y,
-                    pos->z + s);
+    NuRndrLine3dDbg(pos->x - s, pos->y, pos->z - c, pos->x + s, pos->y,
+                    pos->z + c, col);
+    NuRndrLine3dDbg(pos->x + c, pos->y, pos->z - s, pos->x - c, pos->y,
+                    pos->z + s, col);
 }
 
 
@@ -403,10 +403,10 @@ void edaiDRAW(void)
             }
             DrawAxes(pos, ang, D_005CD1D0[j], 0.125f);
             if (count > 1) {
-                next = pos + 1;
                 if (j < count - 1) {
-                    NuRndrLine3dDbg(D_005CD1D0[j], pos->x, pos->y, pos->z,
-                                    next->x, next->y, next->z);
+                    next = pos + 1;
+                    NuRndrLine3dDbg(pos->x, pos->y, pos->z,
+                                    next->x, next->y, next->z, D_005CD1D0[j]);
                 }
             }
         }
@@ -416,8 +416,8 @@ void edaiDRAW(void)
             pos = &AITab[i].pos[j];
             DrawAxes(pos, ang, D_005CD1D0[j], 0.125f);
         }
-        NuRndrLine3dDbg(D_005CD1D0[j - 1], pos->x, pos->y, pos->z,
-                        edai_cam_pos.x, edai_cam_pos.y, edai_cam_pos.z);
+        NuRndrLine3dDbg(pos->x, pos->y, pos->z,
+                        edai_cam_pos.x, edai_cam_pos.y, edai_cam_pos.z, D_005CD1D0[j - 1]);
         pos = AITab[i].pos;
     } else {
         pos = &edai_cam_pos;

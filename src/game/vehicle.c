@@ -3322,8 +3322,8 @@ void ProcessAtlas(struct NEWBUGGY *atlas)
 }
 
 extern struct nuvec_s D_0061F750[]; /* fixed ray direction, far from $gp */
-extern s32 TryUnembeddPointDirSimple(struct nuvec_s *pos, struct nuvec_s *dir,
-                                     s16 *handle, s32 n, f32 x, f32 y);
+extern s32 TryUnembeddPointDirSimple(struct nuvec_s *Point, struct nuvec_s *Dir, f32 Radius,
+                                     s16 *TerrHandle, f32 Scale, s32 MaxDepth);
 
 extern s32 Paused;
 extern s32 FlyingLevelVictoryDance;
@@ -3453,7 +3453,7 @@ void DrawEarthBoss(void)
 
 extern struct nuvec_s ShadNorm;
 extern s32 TryUnembeddPointDir(struct nuvec_s *pos, struct nuvec_s *norm, struct nuvec_s *dir,
-                               s16 *handle, f32 radius);
+                               f32 radius, s16 *handle);
 extern s32 TryUnembeddPointSafe(struct nuvec_s *pos, struct nuvec_s *safe, s16 *handle,
                                 f32 radius);
 
@@ -3463,7 +3463,7 @@ inline void UnembedRayCastAtlas(struct NEWBUGGY *b, s16 *handle)
 {
     struct nuvec_s up = D_0061F750[0];
 
-    if (!TryUnembeddPointDir(&b->ball_pos, &ShadNorm, &up, handle, b->ball_radius)) {
+    if (!TryUnembeddPointDir(&b->ball_pos, &ShadNorm, &up, b->ball_radius, handle)) {
         TryUnembeddPointSafe(&b->ball_pos, &b->ball_oldpos, handle, b->ball_radius);
     }
 }
@@ -3472,7 +3472,7 @@ inline s32 UnembedRayCastAtlasSimple(struct NEWBUGGY *b, s16 *handle)
 {
     struct nuvec_s dir = D_0061F750[0];
 
-    return TryUnembeddPointDirSimple(&b->ball_pos, &dir, handle, 5, b->ball_radius, 0.03f);
+    return TryUnembeddPointDirSimple(&b->ball_pos, &dir, b->ball_radius, handle, 0.03f, 5);
 }
 
 extern f32 ATLASBOOSTSPEED;

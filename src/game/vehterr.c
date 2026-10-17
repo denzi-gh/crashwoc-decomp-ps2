@@ -48,7 +48,7 @@ extern struct nuvec_s D_005B9430;
 #define JeepAxisZ D_005B9430
 
 s32 TryUnembeddPointDir(struct nuvec_s *pos, struct nuvec_s *dir1,
-                        struct nuvec_s *dir2, s16 *handle, f32 radius)
+                        struct nuvec_s *dir2, f32 radius, s16 *handle)
 {
     struct nuvec_s test;
     struct nuvec_s avg;
@@ -112,46 +112,45 @@ s32 TryUnembeddPointDir(struct nuvec_s *pos, struct nuvec_s *dir1,
 }
 
 
-inline s32 TryUnembeddPointDirSimple(struct nuvec_s *pos, struct nuvec_s *dir, s16 *handle,
-                              s32 passes, f32 radius, f32 step)
+inline s32 TryUnembeddPointDirSimple(struct nuvec_s *Point, struct nuvec_s *Dir, f32 Radius,
+                                     s16 *TerrHandle, f32 Scale, s32 MaxDepth)
 {
-    struct nuvec_s test;
-    s32 pass;
+    struct nuvec_s Test;
     s32 i;
-    s32 steps;
-    f32 base;
-    f32 dist;
-    f32 best;
-    f32 last;
+    f32 Multiplier;
+    f32 Base;
+    s32 NumSteps;
+    s32 Depth;
+    f32 LastSafe;
+    f32 LastNotSafe;
 
-    base = 0.0f;
-    steps = 5;
-    best = 0.0f;
-    last = 0.0f;
-    pass = 0;
-    while (pass++ < passes) {
-        for (i = 1; i <= steps; i++) {
-            dist = base + step * i;
-            test = *pos;
-            NuVecScaleAccum(&test, dir, dist);
-            if (NewRayCastSetHandel(&test, &NullNuVec, radius, 0.01f, 0.0f, handle) != 0) {
-                last = dist;
+    Base = 0.0f;
+    NumSteps = 5;
+    LastSafe = 0.0f;
+    LastNotSafe = 0.0f;
+    Depth = 0;
+    while (Depth++ < MaxDepth) {
+        for (i = 1; i <= NumSteps; i++) {
+            Multiplier = Base + Scale * i;
+            Test = *Point;
+            NuVecScaleAccum(&Test, Dir, Multiplier);
+            if (NewRayCastSetHandel(&Test, &NullNuVec, Radius, 0.01f, 0.0f, TerrHandle) != 0) {
+                LastNotSafe = Multiplier;
             } else {
-                best = dist;
+                LastSafe = Multiplier;
                 break;
             }
         }
-        base = last;
-        steps = 2;
-        step *= 0.5f;
+        Base = LastNotSafe;
+        NumSteps = 2;
+        Scale *= 0.5f;
     }
-    if (best != 0.0f) {
-        NuVecScaleAccum(pos, dir, best);
+    if (LastSafe != 0.0f) {
+        NuVecScaleAccum(Point, Dir, LastSafe);
         return 1;
     }
     return 0;
 }
-
 
 inline s32 TryUnembeddPointSafe(struct nuvec_s *pos, struct nuvec_s *target, s16 *handle, f32 radius)
 {
@@ -338,7 +337,7 @@ s32 MyCast(struct nuvec_s *pos, struct nuvec_s *target, struct nuvec_s *normals,
         temp = rel;
         res = NewRayCastSetHandel(pos, &temp, radius, 0.01f, 0.0f, handle);
         if (res & 0x10) {
-            TryUnembeddPointDir(pos, &ShadNorm, &WorldAxis[1], handle, 0.23669f);
+            TryUnembeddPointDir(pos, &ShadNorm, &WorldAxis[1], 0.23669f, handle);
             temp = rel;
             res = NewRayCastSetHandel(pos, &temp, radius, 0.01f, 0.0f, handle);
         }
@@ -476,7 +475,7 @@ void FindSurfaceNormalAndUnembedd(struct VEHICLE *Vehicle, f32 dt)
                                          0.0f, Vehicle->TerrHandle);
             if (hit[i] & 0x10) {
                 if (!TryUnembeddPointDir(&Vehicle->ActualWheelPosition[i], &ShadNorm, &WorldAxis[1],
-                                         Vehicle->TerrHandle, 0.23669f)) {
+                                         0.23669f, Vehicle->TerrHandle)) {
                     TryUnembeddPointSafe(&Vehicle->ActualWheelPosition[i],
                                          &Vehicle->OldWheelPosition[i], Vehicle->TerrHandle, 0.23669f);
                 }
@@ -507,7 +506,8 @@ void FindSurfaceNormalAndUnembedd(struct VEHICLE *Vehicle, f32 dt)
     }
 
     Vehicle->AnyTouchingGroundBits <<= 1;
-    Vehicle->AllTouchingGroundBits = (Vehicle->AllTouchingGroundBits << 1) | 1;
+    Vehicle->AllTouchingGroundBits <<= 1;
+    Vehicle->AllTouchingGroundBits |= 1;
     for (i = 0; i < 4; i++) {
         if (hit[i] != 0 && (NuVecMag(&ray[i]) <= 0.01f || (hit[i] & 0x10))) {
             Vehicle->AnyTouchingGroundBits |= 1;
@@ -551,6 +551,7 @@ struct nuvec_s TerrainVehicleSoft(struct VEHICLE *Vehicle, struct nuvec_s *Vel)
     struct nuvec_s NewOffset;
     struct nuvec_s Shift;
     struct nuvec_s *p;
+    struct nuvec_s *Point;
     s32 oldAngle;
     s32 i;
     s32 j;
@@ -572,10 +573,11 @@ struct nuvec_s TerrainVehicleSoft(struct VEHICLE *Vehicle, struct nuvec_s *Vel)
     NewGenerateJeepMatrix(&OldMtx, Vehicle->aActualAngle, Vehicle->aTarSurfRotX,
                           Vehicle->aTarSurfRotZ, 0, 0, 0);
     Centre = GenerateJeepWheelPoint(4);
+    Point = Wheel;
     for (i = 0; i < 4; i++) {
         Offset = GenerateJeepWheelPoint(i);
         Wheel[i] = Offset;
-        NuVecMtxRotate(&Wheel[i], &Wheel[i], &TargetMtx);
+        NuVecMtxRotate(&Point[i], &Point[i], &TargetMtx);
         Wheel[i].x += Vehicle->ActualPosition.x + Vel->x;
         Wheel[i].y += Vehicle->ActualPosition.y + Vel->y;
         Wheel[i].z += Vehicle->ActualPosition.z + Vel->z;

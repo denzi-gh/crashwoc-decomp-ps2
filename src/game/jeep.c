@@ -606,6 +606,7 @@ void SpinWheelsJeep(struct JEEPSTRUCT *Jeep, f32 DeltaTime) {
 
 
 void GenerateJeepTargets(struct JEEPSTRUCT *Jeep, f32 DeltaTime) {
+    f32 AngMomScale = 4369.067f;
     f32 ModifiedSin;
     f32 Temp;
     f32 MomScale;
@@ -616,19 +617,19 @@ void GenerateJeepTargets(struct JEEPSTRUCT *Jeep, f32 DeltaTime) {
     MomScale = (Jeep->MySpeed * 4.0f - Jeep->Move.Resolved.z) /
                (Jeep->MySpeed * 8.0f);
     Temp = MomScale * DeltaAng;
-    DeltaAng = Temp;
+    TempI = Temp;
+    DeltaAng = TempI;
     ModifiedSin = NuTrigTable[(u16)DeltaAng];
     if (DeltaAng > 0x4000) {
         ModifiedSin = 1.0f;
     } else if (DeltaAng < -0x4000) {
         ModifiedSin = -1.0f;
     }
+    Jeep->aChassisAngMom = Jeep->aChassisAngMom + (s32)(ModifiedSin * AngMomScale);
     Jeep->TurnSin = ModifiedSin;
-    TempI = ModifiedSin * 4369.066895f;
-    Jeep->aChassisAngMom += TempI;
     Temp = Jeep->aChassisAngMom;
-    Jeep->aChassisTargetAngleY =
-        Temp * DeltaTime + (short)Jeep->aChassisAngleY;
+    TempI = Temp * DeltaTime + (short)Jeep->aChassisAngleY;
+    Jeep->aChassisTargetAngleY = TempI;
     if (abs(Jeep->aChassisAngMom) < 0x1C73 && abs(DeltaAng) < 0x38F) {
         SeekHalfLife(&Temp, 0.0f, 0.05f, DeltaTime);
     } else {

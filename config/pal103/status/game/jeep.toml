@@ -17,7 +17,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:00223c68:GenerateJeepTargets"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0101:00223de8:TiltJeep"
