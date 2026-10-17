@@ -301,7 +301,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:00194998:edppProc"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:001949f8:edppHighlightNearest"
