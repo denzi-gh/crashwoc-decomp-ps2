@@ -251,19 +251,9 @@ extern struct numtx_s mTEMP;
 #define PAD_DOWN  0x4000
 #define PAD_LEFT  0x8000
 
-/* gp-relative angle scale constants used to convert the glider's float roll/
- * pitch/yaw into struct numtx_s integer rotation units. */
-extern float D_0062D91C;
-extern float D_0062D920;
-extern float D_0062D924;
 extern struct nuvec_s D_006B75A0;   /* fixed glider translation (level 0xD) */
 
-/* per-level glider model indices into CModel (-1 == none).  These live far
- * from $gp (retail uses %hi/%lo absolute loads); declare as incomplete arrays
- * so the compiler does not treat them as gp-relative small data. */
 extern s8 D_0056236E[];
-extern s8 D_005623B9[];
-extern s8 D_005623C3[];
 
 extern s32 AtlasFrame;
 extern s32 tttt;
@@ -271,8 +261,6 @@ extern s8 D_0056238B[];   /* per-level atlasphere model index (far from $gp) */
 
 extern s32 temp_xzmomset;
 extern float D_00560D44[]; /* ball vertical lift offset (far from $gp) */
-extern float D_0062DE9C;   /* ball momentum -> velocity divisor */
-extern float D_0062DEA0;   /* ball 'boing' vertical momentum */
 
 /* Full view of the player glider: struct glider_s (game/gametypes.h) only
  * names the members other units touch; the flight model needs the rest. */
@@ -346,49 +334,51 @@ struct nuvec_s *SetNuVecPntr(f32 x, f32 y, f32 z);
 f32 frand(void);
 s32 ProcessTimer(f32 *timer);
 
-/* Faithful full-C near-match (state=asm): structure/frame/reg-mask exact, but
- * ee-gcc rematerializes %hi(mTEMP) in each of the Level==0x1A/else blocks and
- * fills the `bne` delay slot with a speculative scale load, where retail shares
- * one `lui $s1,%hi(mTEMP)` in that delay slot (+4 bytes). See the recorded
- * no_progress blocker. */
 void DrawGlider(struct creature_s *c)
 {
     struct glider_s *g;
     float lift;
-    float scale;
-    s8 idx;
+    s32 model;
 
     g = (struct glider_s *)c->Buggy;
-    lift = ((Level != 0xD) && (Level != 0x1A)) ? 15.0f : 0.0f;
+    if (Level == 0xD) {
+        lift = 0.0f;
+    } else if (Level == 0x1A) {
+        lift = 0.0f;
+    } else {
+        lift = 15.0f;
+    }
 
     if (g->AutoPilot && (Level == 0xD)) {
-        NuMtxSetRotationX(&mTEMP, lift * D_0062D91C);
+        NuMtxSetRotationX(&mTEMP, lift * 182.04445f);
         NuMtxRotateY(&mTEMP, 0);
         NuMtxTranslate(&mTEMP, &D_006B75A0);
     } else if (Level == 0x1A) {
-        scale = D_0062D920;
-        NuMtxSetRotationZ(&mTEMP, g->TiltZ * scale);
-        NuMtxRotateX(&mTEMP, (g->TiltX + g->TiltX) * scale);
-        NuMtxRotateY(&mTEMP, g->AngleY * scale);
+        NuMtxSetRotationZ(&mTEMP, g->TiltZ * 182.04445f);
+        NuMtxRotateX(&mTEMP, (g->TiltX + g->TiltX) * 182.04445f);
+        NuMtxRotateY(&mTEMP, g->AngleY * 182.04445f);
         NuMtxTranslate(&mTEMP, &g->Position);
     } else {
-        scale = D_0062D924;
-        NuMtxSetRotationZ(&mTEMP, g->TiltZ * scale);
-        NuMtxRotateX(&mTEMP, (g->TiltX + lift) * scale);
-        NuMtxRotateY(&mTEMP, g->AngleY * scale);
+        NuMtxSetRotationZ(&mTEMP, g->TiltZ * 182.04445f);
+        NuMtxRotateX(&mTEMP, (g->TiltX + lift) * 182.04445f);
+        NuMtxRotateY(&mTEMP, g->AngleY * 182.04445f);
         NuMtxTranslate(&mTEMP, &g->Position);
     }
 
-    if (Level == 0x12) {
-        idx = D_005623C3[0];
-    } else if (Level == 0x1A) {
-        idx = D_005623B9[0];
-    } else {
-        idx = D_0056236E[0];
+    switch (Level) {
+    case 0x1A:
+        model = CRemap[0x81];
+        break;
+    case 0x12:
+        model = CRemap[0x8B];
+        break;
+    default:
+        model = CRemap[0x36];
+        break;
     }
-    if (idx != -1) {
-        DrawCharacterModel(&CModel[idx], &c->obj.anim, &mTEMP, 0, 1, 0,
-                           &c->mtxLOCATOR[1][0], &c->momLOCATOR[1][0], &c->obj);
+    if (model != -1) {
+        DrawCharacterModel(&CModel[model], &c->obj.anim, &mTEMP, 0, 1, 0,
+                           c->mtxLOCATOR[1], c->momLOCATOR[1], &c->obj);
     }
 }
 
@@ -410,23 +400,19 @@ void DrawAtlas(struct creature_s *c)
     }
 }
 
-/* Seeds the atlasphere (struct NEWBUGGY) transform from a character's object:
- * ball_pos <- obj->pos (+ vertical lift), ball_vel <- obj->mom / divisor.
- * Faithful near-match (state=asm): first half byte-exact; the mom/divisor FP
- * load order and the `boing` beql delay-slot differ (scheduling). */
 void ObjectToAtlas(struct obj_s *obj, struct creature_s *c)
 {
     struct NEWBUGGY *b = c->Buggy;
 
     b->ball_pos.x = obj->pos.x;
-    b->ball_pos.y = obj->pos.y + D_00560D44[0];
+    b->ball_pos.y = obj->pos.y + CData[0x53].radius;
     b->ball_pos.z = obj->pos.z;
     if (temp_xzmomset != 0) {
-        b->ball_vel.x = obj->mom.x / D_0062DE9C;
-        b->ball_vel.z = obj->mom.z / D_0062DE9C;
+        b->ball_vel.x = obj->mom.x / 0.02f;
+        b->ball_vel.z = obj->mom.z / 0.02f;
     }
     if (obj->boing != 0) {
-        obj->mom.y = D_0062DEA0;
+        obj->mom.y = 3.3333335f;
     }
     b->ball_vel.y = obj->mom.y;
 }
@@ -4594,6 +4580,57 @@ extern u16 OIDZOFPITCH;
 extern s16 CRASHTEROIDSZOFFAVOL;
 extern void GameSfx(s32 id, struct nuvec_s *pos);
 extern void NuVecMtxRotateVU0(struct nuvec_s *dst, struct nuvec_s *src, struct numtx_s *mtx);
+extern struct nuvec_s TeleportPos[4];
+extern struct nuvec_s TeleportVel[4];
+
+void TeleportManager(void)
+{
+    struct nuvec_s point;
+    struct zoffastart_s start;
+    s32 i;
+    s32 j;
+    s32 index;
+
+    for (i = 0; i < 4; i++) {
+        if (EnemyZoffa[i].active != 0 && EnemyZoffa[i].teleport != 0) {
+            for (j = 0; j < 2; j++) {
+                index = (j + ZoffaTeleportIndx) & 3;
+                NuVecMtxTransform(&point, &TeleportPos[index], &GameCam[0].m);
+                if (point.y < Level_GliderFloor) {
+                    point.y = Level_GliderFloor;
+                }
+                if (SafeFromCollisions(&point) != 0) {
+                    start.x = point.x;
+                    start.y = point.y;
+                    start.z = point.z;
+                    switch (index) {
+                    case 0:
+                        start.angle = PlayerGlider.AngleY - 135.0f;
+                        break;
+                    case 1:
+                        start.angle = PlayerGlider.AngleY + 135.0f;
+                        break;
+                    case 2:
+                        start.angle = PlayerGlider.AngleY - 90.0f;
+                        break;
+                    case 3:
+                        start.angle = PlayerGlider.AngleY + 90.0f;
+                        break;
+                    }
+                    InitZoffa(&EnemyZoffa[i], &start);
+                    EnemyZoffa[i].noteleporttimer = 3.0f;
+                    EnemyZoffa[i].keepsamevelocitytimer = 0.8f;
+                    EnemyZoffa[i].speed = 14.0f;
+                    NuVecMtxRotate(&EnemyZoffa[i].vel, &TeleportVel[(j + ZoffaTeleportIndx) & 3],
+                                   &GameCam[0].m);
+                    ZoffaTeleportIndx = (ZoffaTeleportIndx + 1) & 3;
+                    break;
+                }
+            }
+        }
+    }
+}
+
 
 void MoveZoffaUFO(struct zoffa_s *ufo)
 {
@@ -7744,7 +7781,7 @@ extern f32 WBTARGLIMX;
 extern f32 WBTARGLIMY;
 extern f32 WBLIMX;
 
-void ProcessWeatherBossTarget(void)
+inline void ProcessWeatherBossTarget(void)
 {
     f32 range = WBMAXY - WBMINY;
     f32 mid = (WBMAXY + WBMINY) * 0.5f;
@@ -9809,6 +9846,67 @@ extern f32 SeekTiltZOveride;
 extern f32 SeekTiltZZero;
 extern f32 SeekTiltZNonZero;
 extern f32 fsign(f32 x);
+extern struct nuvec_s WeatherBossFirePoint;
+
+void ControlGliderWeatherBoss(struct gliderflight_s *glider, struct nupad_s *pad)
+{
+    f32 oldtiltz;
+    f32 tilt;
+    struct nuvec_s *campos;
+    struct nuvec_s *bosspos;
+    struct nuvec_s offset;
+
+    if (glider->TerminalDive == 0 && WBIntroOn == 0 && FlyingLevelExtro == 0) {
+        if ((pad->paddata & 0x2) && (u32)glider->BarrelRoll < 2 && glider->Position.x > -WBLIMX) {
+            glider->BarrelRoll = 3;
+            GameSfx(0x5C, &glider->Position);
+        } else if ((pad->paddata & 0x1) && (u32)(glider->BarrelRoll + 1) < 2
+                   && glider->Position.x < WBLIMX) {
+            glider->BarrelRoll = -3;
+            GameSfx(0x5C, &glider->Position);
+        }
+    }
+    if (glider->BarrelRoll != 0) {
+        oldtiltz = Rationalise360f(glider->TiltZ);
+        if (glider->BarrelRoll == 2 && glider->TiltZ > -45.0f) {
+            glider->BarrelRoll = 1;
+        }
+        if (glider->BarrelRoll == -2 && glider->TiltZ < 45.0f) {
+            glider->BarrelRoll = -1;
+        }
+        if ((u32)(glider->BarrelRoll + 1) > 2 || glider->TiltZ > 30.0f || glider->TiltZ < -30.0f) {
+            SeekHalfLife(&glider->BarrelDelta, 7.2f, 0.05f, 0.02f);
+        } else if (glider->TiltZ > 1.0f || glider->TiltZ < -1.0f) {
+            glider->BarrelDelta = (f32)fabs(glider->TiltZ * 20.0f * 0.02f * 0.5f);
+        } else {
+            glider->BarrelDelta = 1.0f;
+        }
+        if (glider->BarrelRoll > 0) {
+            tilt = Rationalise360f(oldtiltz + glider->BarrelDelta);
+            glider->TiltZ = tilt;
+            if (oldtiltz >= 0.0f && tilt < 0.0f) {
+                glider->BarrelRoll = 2;
+            }
+        } else {
+            tilt = Rationalise360f(oldtiltz - glider->BarrelDelta);
+            glider->TiltZ = tilt;
+            if (oldtiltz <= 0.0f && tilt > 0.0f) {
+                glider->BarrelRoll = -2;
+            }
+        }
+        if ((glider->BarrelRoll == 1 && oldtiltz < 0.0f && glider->TiltZ >= 0.0f)
+            || (glider->BarrelRoll == -1 && oldtiltz > 0.0f && glider->TiltZ <= 0.0f)) {
+            glider->BarrelRoll = 0;
+            glider->TiltZ = 0.0f;
+        }
+    }
+    ProcessWeatherBossTarget();
+    campos = (struct nuvec_s *)&WeatherBossCamMtx._30;
+    bosspos = GetWeatherBossPos();
+    NuVecScale(&offset, &WeatherBossTargetPos, (bosspos->z - campos->z) / WeatherBossTargetPos.z);
+    NuVecAdd(&WeatherBossFirePoint, &offset, campos);
+}
+
 
 void ControlGlider(struct gliderflight_s *glider, struct nupad_s *pad)
 {
