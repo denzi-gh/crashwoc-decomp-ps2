@@ -188,6 +188,8 @@ typedef struct nurndrfoot_s {
     u32 colour;
 } nurndrfoot_s;
 
+extern int D_002D4110[4][2];
+#define oldfaceon_uvindex D_002D4110
 extern int D_002D4130[4][2];
 #define faceon_uvindex D_002D4130
 extern void NuVec4ScaleXYZVU0(struct nuvec4_s *dst, struct nuvec4_s *src, float scale);
@@ -440,15 +442,6 @@ extern u32 *D_00633074;
 extern char D_00614820[];
 #define err_skin_no_mtl D_00614820
 
-struct nurndrscreenvtx_s {
-    short x;
-    short y;
-    short u;
-    short v;
-};
-
-extern struct nurndrscreenvtx_s watertab[33][21];
-extern struct nurndrscreenvtx_s Hazetab[33][21];
 extern int shadstorecnt;
 
 struct nurndrshadstore_s {
@@ -466,20 +459,6 @@ extern unsigned char D_002D3F50[];
 #define quad_adc_flags D_002D3F50
 extern unsigned char D_002D4008[];
 #define tri_adc_flags D_002D4008
-
-/* Eight entries per channel; names of the sprite parameters remain unknown. */
-struct FxSprite2 {
-    float parameter_00;
-    int parameter_04;
-    int count;
-    float parameter_0c;
-    float parameter_10;
-    float parameter_14;
-    float parameter_18;
-    int parameter_1c[8];
-    int colour[8];
-    float channel[24][8];
-};
 
 extern void NuPs2GetCurrentBackBuffer(GsFrameReg *reg);
 extern void NuPs2GetCurrentFrontBuffer(GsFrameReg *reg);
@@ -506,16 +485,6 @@ extern u32 *vpDmaTag_Call(u32 *packet, void *addr);
 extern struct NuPs2GsReg D_002EA1A0;
 #define NuPs2ZBufReg0 D_002EA1A0
 extern u32 *vpDmaTag_Cnt(u32 *packet);
-
-struct nuvtx2d_s {
-    float x, y, z;
-    float rhw;
-    union {
-        int colour;
-        unsigned char rgba[4];
-    };
-    float u, v;
-};
 
 void NuRndrSetZBuffer(struct nurndrstream_s *stream, int zbuffer) {
     GsFrameReg frame;
@@ -4052,6 +4021,94 @@ int NuRndrTriStripGif(u32 *data, int count, struct numtl_s *mtl) {
     rndrstream_2d->cur.w = vpDmaTag_Close(rndrstream_2d->cur.w);
     rndrstream_free = vpDmaTag_Next(rndrstream_2d->cur.w, 0);
     return 1;
+}
+
+
+int NuRndrOldFaceOn(struct faceon_s *faceon, struct numtl_s *mtl, struct numtx_s *wm) {
+    struct nuvec4_s pnts[4];
+    struct nuvec_s pos;
+    struct numtx_s *pcs;
+    float wc;
+    float ws;
+    float hc;
+    float hs;
+    int i;
+
+    if (!mtl) {
+        mtl = numtl_defaultmtl3d;
+    }
+    if (NuCameraClipTestPoints(&faceon->pos, 1, wm) == 0) {
+        NuCameraTransformView(&pos, &faceon->pos, 1, wm);
+        if (faceon->sinang == 0.0f && faceon->cosang == 1.0f) {
+            pnts[0].x = pos.x - faceon->width;
+            pnts[0].y = pos.y - faceon->height;
+            pnts[0].z = pos.z;
+            pnts[0].w = 1.0f;
+            pnts[1].x = pos.x + faceon->width;
+            pnts[1].y = pos.y - faceon->height;
+            pnts[1].z = pos.z;
+            pnts[1].w = 1.0f;
+            pnts[2].x = pos.x - faceon->width;
+            pnts[2].y = pos.y + faceon->height;
+            pnts[2].z = pos.z;
+            pnts[2].w = 1.0f;
+            pnts[3].x = pos.x + faceon->width;
+            pnts[3].y = pos.y + faceon->height;
+            pnts[3].z = pos.z;
+            pnts[3].w = 1.0f;
+        } else {
+            wc = faceon->width * faceon->cosang;
+            ws = faceon->width * faceon->sinang;
+            hc = faceon->height * faceon->cosang;
+            hs = faceon->height * faceon->sinang;
+            pnts[0].x = pos.x - wc + hs;
+            pnts[0].y = pos.y + ws + hc;
+            pnts[0].z = pos.z;
+            pnts[0].w = 1.0f;
+            pnts[1].x = pos.x + wc + hs;
+            pnts[1].y = pos.y - ws + hc;
+            pnts[1].z = pos.z;
+            pnts[1].w = 1.0f;
+            pnts[2].x = pos.x - wc - hs;
+            pnts[2].y = pos.y + ws - hc;
+            pnts[2].z = pos.z;
+            pnts[2].w = 1.0f;
+            pnts[3].x = pos.x + wc - hs;
+            pnts[3].y = pos.y - ws - hc;
+            pnts[3].z = pos.z;
+            pnts[3].w = 1.0f;
+        }
+        pcs = NuCameraGetPCSMtx();
+        rndrstream_3d = &mtl->stream;
+        NuRndrStreamLink(rndrstream_3d);
+        NuRndrStreamSetMisc(rndrstream_3d);
+        rndrstream_3d->cur.w = vpDmaTag_Cnt(rndrstream_3d->cur.w);
+        *rndrstream_3d->cur.w++ = 0;
+        *rndrstream_3d->cur.w++ = 0;
+        *rndrstream_3d->cur.w++ = 0x10000000;
+        *rndrstream_3d->cur.w++ = 0x5000000D;
+        *((u64 *)rndrstream_3d->cur.w)++ = 0x3002400000008004ULL;
+        *((u64 *)rndrstream_3d->cur.w)++ = 0x512;
+        for (i = 0; i < 4; i++) {
+            NuVec4MtxTransformH(&pnts[i], &pnts[i], pcs);
+            pnts[i].w = 1.0f / pnts[i].w;
+            *rndrstream_3d->cur.f++ = faceon->tc[oldfaceon_uvindex[i][0]] * pnts[i].w;
+            *rndrstream_3d->cur.f++ = faceon->tc[oldfaceon_uvindex[i][1]] * pnts[i].w;
+            *rndrstream_3d->cur.f++ = pnts[i].w;
+            rndrstream_3d->cur.w++;
+            *rndrstream_3d->cur.w++ = faceon->colour[0];
+            *rndrstream_3d->cur.w++ = faceon->colour[1];
+            *rndrstream_3d->cur.w++ = faceon->colour[2];
+            *rndrstream_3d->cur.w++ = faceon->colour[3];
+            *rndrstream_3d->cur.i++ = pnts[i].x * pnts[i].w;
+            *rndrstream_3d->cur.i++ = pnts[i].y * pnts[i].w;
+            *rndrstream_3d->cur.i++ = pnts[i].z * pnts[i].w;
+            *rndrstream_3d->cur.w++ = 0;
+        }
+        rndrstream_3d->cur.w = vpDmaTag_Close(rndrstream_3d->cur.w);
+        rndrstream_free = vpDmaTag_Next(rndrstream_3d->cur.w, 0);
+    }
+    return 0;
 }
 
 
