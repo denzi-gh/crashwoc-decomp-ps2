@@ -17,7 +17,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f1308:NewCrateAnimation"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f1488:DrawCrates"
@@ -29,7 +29,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f1e00:ReadInCrateData"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f21a8:HeightSortCrateData"
@@ -37,19 +37,19 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f2548:ConvertCrateData"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f2aa8:ReadCrateData"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f2dc8:GetCrateType"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f2eb8:AttackCrate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f3178:CrateOff"
@@ -65,7 +65,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0095:001f4ee0:ResetCrates"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f5bf0:AddQuad3DrotXYZ"
@@ -73,19 +73,19 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0095:001f5fe8:AddCrateExplosion"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f6418:UpdateCrateExplosions"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f6678:DrawCrateExplosions"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f6870:CrateTopBelow"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f6aa8:CrateBottomAbove"
@@ -93,11 +93,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f6ce0:InCrate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f6fc0:BreakCrate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f7310:HitCrateBalloons"
@@ -105,7 +105,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f7490:RayIntersectCuboid"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f77a0:CrateRayCast"
@@ -113,11 +113,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f7aa0:CrateSafety"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f7cc8:GotoCheckpoint"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f7f20:InitCrateExplosions"
@@ -165,15 +165,15 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f85d8:HopCratesAbove"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f8670:CrateAbove"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f8790:CrateBelow"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f88b0:LowestCrate"
@@ -189,11 +189,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f8a40:CrateOnTop"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f8b28:AddExtraLife"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0095:001f8c38:HitCrates"
