@@ -348,105 +348,105 @@ s32 MyCast(struct nuvec_s *pos, struct nuvec_s *target, struct nuvec_s *normals,
         pos->z = pos->z + temp.z;
 
         if (res != 0) {
-        snorm = ShadNorm;
+            snorm = ShadNorm;
 
-        flip = snorm.x * lastnorm.x + snorm.y * lastnorm.y + snorm.z * lastnorm.z < 0.0f;
-        wall = snorm.x * normals[1].x + snorm.y * normals[1].y + snorm.z * normals[1].z < 0.5f;
+            flip = snorm.x * lastnorm.x + snorm.y * lastnorm.y + snorm.z * lastnorm.z < 0.0f;
+            wall = snorm.x * normals[1].x + snorm.y * normals[1].y + snorm.z * normals[1].z < 0.5f;
 
-        if (wall == 0) {
-            dd = snorm.x * normals[0].x + snorm.y * normals[0].y +
-                 snorm.z * normals[0].z;
-            if (dd < 0.0) {
-                dd = -dd;
+            if (wall == 0) {
+                dd = snorm.x * normals[0].x + snorm.y * normals[0].y +
+                     snorm.z * normals[0].z;
+                if (dd < 0.0) {
+                    dd = -dd;
+                }
+                wall = dd > 0.707f;
             }
-            wall = dd > 0.707f;
-        }
 
-        if (wall != 0) {
-            cross = CrossProduct(&normals[1], &snorm);
-            cross = CrossProduct(&cross, &snorm);
-            dot = DotProduct(&cross, &rel);
-            if (DotProduct(&cross, &normals[1]) * dot <= 0.0f) {
-                wall = 0;
+            if (wall != 0) {
+                cross = CrossProduct(&normals[1], &snorm);
+                cross = CrossProduct(&cross, &snorm);
+                dot = DotProduct(&cross, &rel);
+                if (DotProduct(&cross, &normals[1]) * dot <= 0.0f) {
+                    wall = 0;
+                }
             }
-        }
 
-        down = DotProduct(&snorm, &WorldAxis[1]) < -0.5f;
-        wall = wall | down;
+            down = DotProduct(&snorm, &WorldAxis[1]) < -0.5f;
+            wall = wall | down;
 
-        if (wall != 0 && flip == 0) {
-            lastnorm = normals[1];
-        }
-
-        if ((flip | wall | down) == 0 || (wall != 0 && flags == 0)) {
-            NuVecScale(&refl, &snorm, 0.005f);
-            NuVecSub(&rel, &rel, &temp);
-            if (wall != 0 && flags == 0) {
-                retval = 1;
-                NuVecScale(&rel, &rel, 0.1f);
+            if (wall != 0 && flip == 0) {
+                lastnorm = normals[1];
             }
-            d = rel.x * snorm.x + rel.y * snorm.y + rel.z * snorm.z - 0.005f;
-            rel.x = rel.x - snorm.x * d;
-            rel.y = rel.y - snorm.y * d;
-            rel.z = rel.z - snorm.z * d;
-        } else {
-            cross.x = snorm.y * lastnorm.z - snorm.z * lastnorm.y;
-            cross.y = snorm.z * lastnorm.x - snorm.x * lastnorm.z;
-            cross.z = snorm.x * lastnorm.y - snorm.y * lastnorm.x;
 
-            magcross = NuFsqrt(cross.x * cross.x + cross.y * cross.y + cross.z * cross.z);
-            magrel = NuFsqrt(rel.x * rel.x + rel.y * rel.y + rel.z * rel.z);
-            dp = (cross.x * rel.x + cross.y * rel.y + cross.z * rel.z) / (magcross * magrel);
+            if ((flip | wall | down) == 0 || (wall != 0 && flags == 0)) {
+                NuVecScale(&refl, &snorm, 0.005f);
+                NuVecSub(&rel, &rel, &temp);
+                if (wall != 0 && flags == 0) {
+                    retval = 1;
+                    NuVecScale(&rel, &rel, 0.1f);
+                }
+                d = rel.x * snorm.x + rel.y * snorm.y + rel.z * snorm.z - 0.005f;
+                rel.x = rel.x - snorm.x * d;
+                rel.y = rel.y - snorm.y * d;
+                rel.z = rel.z - snorm.z * d;
+            } else {
+                cross.x = snorm.y * lastnorm.z - snorm.z * lastnorm.y;
+                cross.y = snorm.z * lastnorm.x - snorm.x * lastnorm.z;
+                cross.z = snorm.x * lastnorm.y - snorm.y * lastnorm.x;
 
-            if (flags != 0) {
-                if (dp >= 0.5f) {
-                    t = 1.0f;
-                } else if (dp <= -0.5f) {
-                    t = -1.0f;
+                magcross = NuFsqrt(cross.x * cross.x + cross.y * cross.y + cross.z * cross.z);
+                magrel = NuFsqrt(rel.x * rel.x + rel.y * rel.y + rel.z * rel.z);
+                dp = (cross.x * rel.x + cross.y * rel.y + cross.z * rel.z) / (magcross * magrel);
+
+                if (flags != 0) {
+                    if (dp >= 0.5f) {
+                        t = 1.0f;
+                    } else if (dp <= -0.5f) {
+                        t = -1.0f;
+                    } else {
+                        t = dp;
+                    }
                 } else {
                     t = dp;
                 }
-            } else {
-                t = dp;
-            }
 
-            t = t * magrel / magcross;
-            rel.x = cross.x * t;
-            rel.y = cross.y * t;
-            rel.z = cross.z * t;
+                t = t * magrel / magcross;
+                rel.x = cross.x * t;
+                rel.y = cross.y * t;
+                rel.z = cross.z * t;
 
-            if (flip != 0) {
-                refl.x = (snorm.x + lastnorm.x) * 0.005f;
-                refl.y = (snorm.y + lastnorm.y) * 0.005f;
-                refl.z = (snorm.z + lastnorm.z) * 0.005f;
-                rel.x = rel.x + refl.x;
-                rel.y = rel.y + refl.y;
-                rel.z = rel.z + refl.z;
-            } else {
-                cr = CrossProduct(&cross, &normals[1]);
-                if (DotProduct(&cr, &snorm) > 0.0f) {
-                    t = 1.0f / magcross;
+                if (flip != 0) {
+                    refl.x = (snorm.x + lastnorm.x) * 0.005f;
+                    refl.y = (snorm.y + lastnorm.y) * 0.005f;
+                    refl.z = (snorm.z + lastnorm.z) * 0.005f;
+                    rel.x = rel.x + refl.x;
+                    rel.y = rel.y + refl.y;
+                    rel.z = rel.z + refl.z;
                 } else {
-                    t = -1.0f / magcross;
+                    cr = CrossProduct(&cross, &normals[1]);
+                    if (DotProduct(&cr, &snorm) > 0.0f) {
+                        t = 1.0f / magcross;
+                    } else {
+                        t = -1.0f / magcross;
+                    }
+                    cr.x = (cr.x * t - (normals[1].x + normals[1].x)) * 0.005f;
+                    cr.y = (cr.y * t - (normals[1].y + normals[1].y)) * 0.005f;
+                    cr.z = (cr.z * t - (normals[1].z + normals[1].z)) * 0.005f;
+                    refl = cr;
+                    rel.x = rel.x + cr.x;
+                    rel.y = rel.y + cr.y;
+                    rel.z = rel.z + cr.z;
                 }
-                cr.x = (cr.x * t - (normals[1].x + normals[1].x)) * 0.005f;
-                cr.y = (cr.y * t - (normals[1].y + normals[1].y)) * 0.005f;
-                cr.z = (cr.z * t - (normals[1].z + normals[1].z)) * 0.005f;
-                refl = cr;
-                rel.x = rel.x + cr.x;
-                rel.y = rel.y + cr.y;
-                rel.z = rel.z + cr.z;
             }
-        }
 
-        NewRayCastSetHandel(pos, &refl, radius, 0.01f, 0.0f, handle);
-        i++;
+            NewRayCastSetHandel(pos, &refl, radius, 0.01f, 0.0f, handle);
+            i++;
 
-        pos->x = pos->x + refl.x;
-        pos->y = pos->y + refl.y;
-        pos->z = pos->z + refl.z;
+            pos->x = pos->x + refl.x;
+            pos->y = pos->y + refl.y;
+            pos->z = pos->z + refl.z;
 
-        lastnorm = snorm;
+            lastnorm = snorm;
         } else {
             i = count;
         }
@@ -454,6 +454,7 @@ s32 MyCast(struct nuvec_s *pos, struct nuvec_s *target, struct nuvec_s *normals,
 
     return retval;
 }
+
 
 void FindSurfaceNormalAndUnembedd(struct VEHICLE *Vehicle, f32 dt)
 {

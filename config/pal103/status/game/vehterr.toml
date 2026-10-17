@@ -21,7 +21,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0100:00222198:MyCast"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0100:00222918:FindSurfaceNormalAndUnembedd"
