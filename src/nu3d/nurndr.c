@@ -4857,6 +4857,124 @@ void NuRndrShadowStencil(int paused, struct nuvec_s *pos) {
 }
 
 
+struct nurndrtrail_s {
+    struct nuvec_s pos1;
+    struct nuvec_s pos2;
+    int intensity;
+    int RealIntensity;
+};
+
+void NuRndrTrail(int trailpt, struct nurndrtrail_s *trail, int trailcount) {
+    struct nuvtx_tc1_s vtx[2048];
+    int loop;
+    int cnt;
+    int start;
+    int lastcol;
+    int col;
+    int last;
+    int begin;
+    int pt;
+
+    cnt = 0;
+    last = -1;
+    start = trailpt + (1 - trailcount);
+    for (loop = trailpt; loop > trailpt + (1 - trailcount); loop--) {
+        pt = loop & (trailcount - 1);
+        if (trail[pt].pos1.x != -10000.0f) {
+            if (last != -1) {
+                int next = (loop - 1) & (trailcount - 1);
+                int next2 = (loop - 2) & (trailcount - 1);
+                int intensity = trail[pt].intensity;
+                int alpha = intensity >> 24;
+
+                lastcol = col;
+                if (trail[next].pos1.x == -10000.0f || loop - 1 <= start) {
+                    col = 0;
+                } else if (trail[next2].pos1.x == -10000.0f || begin) {
+                    col = (alpha / 2) << 24;
+                } else {
+                    col = intensity;
+                }
+                begin = 0;
+                vtx[cnt].pnt = trail[last].pos1;
+                vtx[cnt + 1].pnt = trail[pt].pos1;
+                vtx[cnt + 2].pnt.x = (trail[last].pos2.x - trail[last].pos1.x) * 0.25f + trail[last].pos1.x;
+                vtx[cnt + 2].pnt.y = (trail[last].pos2.y - trail[last].pos1.y) * 0.25f + trail[last].pos1.y;
+                vtx[cnt + 2].pnt.z = (trail[last].pos2.z - trail[last].pos1.z) * 0.25f + trail[last].pos1.z;
+                vtx[cnt + 3].pnt.x = (trail[pt].pos2.x - trail[pt].pos1.x) * 0.25f + trail[pt].pos1.x;
+                vtx[cnt + 3].pnt.y = (trail[pt].pos2.y - trail[pt].pos1.y) * 0.25f + trail[pt].pos1.y;
+                vtx[cnt + 3].pnt.z = (trail[pt].pos2.z - trail[pt].pos1.z) * 0.25f + trail[pt].pos1.z;
+                if (lastcol < 0) {
+                    vtx[cnt].diffuse = -lastcol;
+                    vtx[cnt + 2].diffuse = 0;
+                } else {
+                    vtx[cnt].diffuse = lastcol + 0xFFFFFF;
+                    vtx[cnt + 2].diffuse = 0xFFFFFF;
+                }
+                if (col < 0) {
+                    vtx[cnt + 1].diffuse = -col;
+                    vtx[cnt + 3].diffuse = 0;
+                } else {
+                    vtx[cnt + 1].diffuse = col + 0xFFFFFF;
+                    vtx[cnt + 3].diffuse = 0xFFFFFF;
+                }
+                cnt += 4;
+                vtx[cnt].pnt = trail[last].pos2;
+                vtx[cnt + 1].pnt = trail[pt].pos2;
+                vtx[cnt + 2].pnt.x = (trail[last].pos1.x - trail[last].pos2.x) * 0.25f + trail[last].pos2.x;
+                vtx[cnt + 2].pnt.y = (trail[last].pos1.y - trail[last].pos2.y) * 0.25f + trail[last].pos2.y;
+                vtx[cnt + 2].pnt.z = (trail[last].pos1.z - trail[last].pos2.z) * 0.25f + trail[last].pos2.z;
+                vtx[cnt + 3].pnt.x = (trail[pt].pos1.x - trail[pt].pos2.x) * 0.25f + trail[pt].pos2.x;
+                vtx[cnt + 3].pnt.y = (trail[pt].pos1.y - trail[pt].pos2.y) * 0.25f + trail[pt].pos2.y;
+                vtx[cnt + 3].pnt.z = (trail[pt].pos1.z - trail[pt].pos2.z) * 0.25f + trail[pt].pos2.z;
+                if (lastcol < 0) {
+                    vtx[cnt].diffuse = 0xFFFFF - lastcol;
+                    vtx[cnt + 2].diffuse = 0xFFFFFF;
+                } else {
+                    vtx[cnt].diffuse = lastcol;
+                    vtx[cnt + 2].diffuse = 0;
+                }
+                if (col < 0) {
+                    vtx[cnt + 1].diffuse = 0xFFFFFF - col;
+                    vtx[cnt + 3].diffuse = 0xFFFFFF;
+                } else {
+                    vtx[cnt + 1].diffuse = col;
+                    vtx[cnt + 3].diffuse = 0;
+                }
+                cnt += 4;
+                last = pt;
+            } else {
+                last = pt;
+                col = 0;
+                begin = 1;
+            }
+        } else {
+            last = -1;
+        }
+    }
+
+    if (cnt != 0) {
+        NuRndrStreamLink(rndrstream_fx);
+        NuRndrStreamSetMisc(rndrstream_fx);
+        NuRndrStreamAddMtl(rndrstream_fx, NuLightAddMat);
+        rndrstream_fx->cur.w = vpDmaTag_CntEx(rndrstream_fx->cur.w, 0x11000000, 0x50000000) - 1;
+        rndrstream_fx->cur.w = vtBeginDirect(rndrstream_fx->cur.w, 0);
+        rndrstream_fx->cur.w = gsBeginGifPacket(rndrstream_fx->cur.w, 0, 1, 0, 0, 0, 1, 0xE);
+        *((u64 *)rndrstream_fx->cur.w)++ = 0x44;
+        *((u64 *)rndrstream_fx->cur.w)++ = 0x42;
+        rndrstream_fx->cur.w = gsCloseGifPacket(rndrstream_fx->cur.w);
+        rndrstream_fx->cur.w = vtCloseDirect(rndrstream_fx->cur.w);
+        rndrstream_fx->cur.w = vpDmaTag_Close(rndrstream_fx->cur.w);
+        NuRndrSetLocalMtx(&numtx_identity, 2);
+        NuRndrStreamSetViewMtxScissorClip(rndrstream_fx);
+        NuRndrStreamSetLocalMtx(rndrstream_fx);
+        NuRndrStreamFxMPG(1);
+        NuRndrStreamQuad3dClip(vtx, cnt, 0, rndrstream_fx);
+        rndrstream_free = vpDmaTag_Next(rndrstream_fx->cur.w, 0);
+    }
+}
+
+
 inline void NuRndrAnglesZX(struct nuvec_s *dir, struct nuvec_s *angles) {
     struct nuvec_s rotated;
 
