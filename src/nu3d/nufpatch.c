@@ -652,6 +652,169 @@ void NuFPatchHeightFieldIndexSlow(struct nufpatch_s *src, f32 *heights, s32 inde
 }
 
 
+void NuFPatchHeightFieldIndex(struct nufpatch_s *src, f32 *heights, s32 index,
+                              struct nufpatch_s *dst)
+{
+    struct nufpatch_s patch;
+    struct nuvec4_s pnt[4];
+    struct nuvec4_s pnt01;
+    struct nuvec4_s pnt02;
+    struct nuvec4_s pntmid;
+    struct nuvec4_s pnt13;
+    struct nuvec4_s pnt23;
+    struct nuvec4_s nrm[4];
+    struct nuvec4_s nrm01;
+    struct nuvec4_s nrm02;
+    struct nuvec4_s nrmmid;
+    struct nuvec4_s nrm13;
+    struct nuvec4_s nrm23;
+    f32 w0;
+    f32 w1;
+    f32 w2;
+    f32 w3;
+    f32 w01;
+    f32 w02;
+    f32 w13;
+    f32 w23;
+    f32 wmid;
+    s32 x;
+    s32 y;
+    u32 xbit;
+    u32 ybit;
+    s32 i;
+    f32 *row;
+
+    patch = *src;
+    pnt[0] = src->pnt[0];
+    pnt[1] = src->pnt[1];
+    pnt[2] = src->pnt[2];
+    pnt[3] = src->pnt[3];
+    nrm[0] = src->nrm[0];
+    nrm[1] = src->nrm[1];
+    nrm[2] = src->nrm[2];
+    nrm[3] = src->nrm[3];
+    w0 = src->col._03;
+    row = &src->col._10;
+    w1 = row[3];
+    row = &src->col._20;
+    w2 = row[3];
+    row = &src->col._30;
+    w3 = row[3];
+    x = 0;
+    y = 0;
+    for (i = 0; i < 3; i++) {
+        x <<= 1;
+        y <<= 1;
+        NuVec4LerpVU0(&pnt01, &pnt[0], &pnt[1], &fpatch_half);
+        NuVec4LerpVU0(&pnt02, &pnt[0], &pnt[2], &fpatch_half);
+        NuVec4LerpVU0(&pnt13, &pnt[1], &pnt[3], &fpatch_half);
+        NuVec4LerpVU0(&pnt23, &pnt[2], &pnt[3], &fpatch_half);
+        NuVec4LerpVU0(&pntmid, &pnt01, &pnt23, &fpatch_half);
+        NuVec4LerpVU0(&nrm01, &nrm[0], &nrm[1], &fpatch_half);
+        NuVec4LerpVU0(&nrm02, &nrm[0], &nrm[2], &fpatch_half);
+        NuVec4LerpVU0(&nrm13, &nrm[1], &nrm[3], &fpatch_half);
+        NuVec4LerpVU0(&nrm23, &nrm[2], &nrm[3], &fpatch_half);
+        NuVec4LerpVU0(&nrmmid, &nrm01, &nrm23, &fpatch_half);
+        w01 = (w0 + w1) * 0.5f;
+        w23 = (w2 + w3) * 0.5f;
+        w02 = (w0 + w2) * 0.5f;
+        w13 = (w1 + w3) * 0.5f;
+        wmid = (w01 + w23) * 0.5f;
+        if ((index >> (2 - i)) & 1) {
+            xbit = 1;
+        } else {
+            xbit = 0;
+        }
+        if ((index >> (5 - i)) & 1) {
+            ybit = 1;
+        } else {
+            ybit = 0;
+        }
+        x |= xbit;
+        y |= ybit;
+        switch (ybit * 2 + xbit) {
+        case 0:
+            pnt[1] = pnt01;
+            pnt[2] = pnt02;
+            pnt[3] = pntmid;
+            nrm[1] = nrm01;
+            nrm[2] = nrm02;
+            nrm[3] = nrmmid;
+            w1 = w01;
+            w2 = w02;
+            w3 = wmid;
+            break;
+        case 1:
+            pnt[0] = pnt01;
+            pnt[2] = pntmid;
+            pnt[3] = pnt13;
+            nrm[0] = nrm01;
+            nrm[2] = nrmmid;
+            nrm[3] = nrm13;
+            w0 = w01;
+            w2 = wmid;
+            w3 = w13;
+            break;
+        case 2:
+            pnt[0] = pnt02;
+            pnt[1] = pntmid;
+            pnt[3] = pnt23;
+            nrm[0] = nrm02;
+            nrm[1] = nrmmid;
+            nrm[3] = nrm23;
+            w0 = w02;
+            w1 = wmid;
+            w3 = w23;
+            break;
+        case 3:
+            pnt[0] = pntmid;
+            pnt[1] = pnt13;
+            pnt[2] = pnt23;
+            nrm[0] = nrmmid;
+            nrm[1] = nrm13;
+            nrm[2] = nrm23;
+            w0 = wmid;
+            w1 = w13;
+            w2 = w23;
+            break;
+        }
+    }
+    patch.pnt[0] = pnt[0];
+    patch.pnt[1] = pnt[1];
+    patch.pnt[2] = pnt[2];
+    patch.pnt[3] = pnt[3];
+    patch.nrm[0] = nrm[0];
+    patch.nrm[1] = nrm[1];
+    patch.nrm[2] = nrm[2];
+    patch.nrm[3] = nrm[3];
+    patch.col._03 = w0;
+    row = &patch.col._10;
+    row[3] = w1;
+    row = &patch.col._20;
+    row[3] = w2;
+    row = &patch.col._30;
+    row[3] = w3;
+    x += y * 9;
+    patch.uv._01 = heights[x];
+    patch.uv._03 = heights[x + 1];
+    patch.uv._00 = heights[x + 81];
+    patch.uv._02 = heights[x + 82];
+    patch.uv._10 = 0.0f;
+    patch.uv._11 = heights[x + 162];
+    patch.uv._12 = 0.0f;
+    patch.uv._13 = heights[x + 163];
+    patch.uv._20 = 0.0f;
+    patch.uv._21 = heights[x + 171];
+    patch.uv._22 = 0.0f;
+    patch.uv._23 = heights[x + 172];
+    patch.uv._31 = heights[x + 9];
+    patch.uv._33 = heights[x + 10];
+    patch.uv._30 = heights[x + 90];
+    patch.uv._32 = heights[x + 91];
+    *dst = patch;
+}
+
+
 void NuMtxBilinear(struct nuvec4_s *corner, struct nuvec4_s *quad0, struct nuvec4_s *quad1,
                    struct nuvec4_s *quad2, struct nuvec4_s *quad3)
 {
