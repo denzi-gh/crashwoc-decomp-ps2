@@ -4556,10 +4556,8 @@ void CubeImpact(struct numtx_s *mat, struct numtx_s *nmat, struct nuvec_s *norm,
 // PS2 PAL: byte-exact over the full 0x580-byte extent at 0x0017cec8.
 void NewTerrainScaleY(struct nuvec_s *vpos, struct nuvec_s *vvel, u8 *flags,
                       s32 terid, f32 stopflag, f32 size, f32 yscale) {
-    s32 c;
     s32 cnt;
     s32 normhit;
-    TerrainTrackInfoType *track;
 
     if (CurTerr == 0) {
         return;
@@ -4570,14 +4568,7 @@ void NewTerrainScaleY(struct nuvec_s *vpos, struct nuvec_s *vvel, u8 *flags,
     TerrPoly = 0;
     PlatCrush = 0;
     terrhitflags = 0;
-    for (c = 0; c < 4; c++) {
-        if (CurTerr->TrackInfo[c].ptrid == flags) {
-            goto track_found;
-        }
-    }
-    track = 0;
-track_ready:
-    CurTrackInfo = track;
+    CurTrackInfo = ScanTerrId(flags);
 
     if (PadRecPtr() >= 0x23D) {
         plathitid = -1;
@@ -4605,19 +4596,13 @@ track_ready:
     TerI->impactadj = 0.00001f;
     ScanTerrain(1, 0);
 
-    if (!((flags[1] != 0) &&
-          (fabs(vvel->x) < stopflag) &&
-          (fabs(vvel->y) < stopflag) &&
-          (fabs(vvel->z) < stopflag) && (platinrange == 0))) {
-        goto platform_checks;
+    if ((flags[1] != 0) && (DABS(vvel->x) < stopflag) && (DABS(vvel->y) < stopflag) &&
+        (DABS(vvel->z) < stopflag) && (platinrange == 0)) {
+        NuScratchRelease();
+        TerrFlush();
+        return;
     }
-    goto cleanup;
 
-track_found:
-    track = &CurTerr->TrackInfo[c];
-    goto track_ready;
-
-platform_checks:
     TerI->curpos.y = TerI->curpos.y * TerI->inyscale;
     TerI->curvel.y = TerI->curvel.y * TerI->inyscale;
     flags[0] = 0;
@@ -4668,7 +4653,6 @@ platform_checks:
         vpos->z = TerI->origpos.z;
     }
 
-cleanup:
     NuScratchRelease();
     TerrFlush();
 }
