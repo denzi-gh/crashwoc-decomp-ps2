@@ -1560,6 +1560,115 @@ void MoveSUBMARINE(struct creature_s *plr, struct nupad_s *pad) {
 }
 
 
+extern struct MoveInfo MineCartMoveInfo;
+extern f32 FASTMINECARTMUL;
+extern f32 SLOWMINECARTMUL;
+extern f32 plr_vehicle_speedmul;
+extern f32 plr_vehicle_time;
+extern f32 VEHICLETIME;
+extern s32 VEHICLECONTROL;
+extern struct nuvec_s v000;
+extern s32 temp_crate_type;
+extern s32 cart_sfx;
+
+void MoveMINECART(struct creature_s *plr, struct nupad_s *pad) {
+    struct obj_s obj;
+    u16 yrot;
+    u16 xrot;
+    struct MoveInfo *minfo = &MineCartMoveInfo;
+    s32 boost_held;
+    s32 jump_held;
+    s32 sfx;
+    f32 t;
+    double bounce;
+
+    boost_held = pad->paddata_db & 0x40;
+    jump_held = pad->paddata & 0x80;
+    GameSfxLoop(0xCE, &plr->obj.pos);
+    if (boost_held != 0 && plr->jump == 0) {
+        plr_vehicle_speedmul += FASTMINECARTMUL * 0.02f;
+        if (plr_vehicle_speedmul > 4.0f) {
+            plr_vehicle_speedmul = 4.0f;
+        }
+    } else {
+        plr_vehicle_speedmul -= SLOWMINECARTMUL * 0.02f;
+        if (plr_vehicle_speedmul < 1.0f) {
+            plr_vehicle_speedmul = 1.0f;
+        }
+    }
+    plr_vehicle_time += plr_vehicle_speedmul * 0.02f;
+    if (plr_vehicle_time >= VEHICLETIME) {
+        VEHICLECONTROL = 0;
+        plr_vehicle_time = VEHICLETIME;
+    }
+    PointAlongSpline(SplTab[24].spl, plr_vehicle_time / VEHICLETIME, &plr->obj.pos, &yrot, &xrot);
+    plr->obj.hdg = yrot;
+    plr->obj.xrot = xrot;
+    plr->obj.zrot = 0;
+    plr->obj.mom = v000;
+    if (plr->jump != 0 && plr->jump_frame < plr->jump_frames) {
+        plr->jump_frame++;
+    }
+    if (jump_held != 0) {
+        if (plr->jump == 0) {
+            plr->jump_frame = 0;
+            plr->jump_frames = minfo->JUMPFRAMES0;
+            plr->land = 0;
+            plr->jump = 1;
+            GameSfx(0x2F, &plr->obj.pos);
+        }
+    } else if (plr->jump_frame == plr->jump_frames) {
+        plr->jump = 0;
+    }
+    if (plr->obj.draw_frame != 0) {
+        obj = plr->obj;
+        obj.pos.x = plr->obj.pos.x + NuTrigTable[plr->obj.hdg] * 0.25f;
+        obj.pos.z = plr->obj.pos.z + NuTrigTable[(plr->obj.hdg + 0x4000) & 0xFFFF] * 0.25f;
+        obj.bot = 0.0f;
+        obj.top = 0.75f;
+        HitItems(&obj);
+        if (HitCrates(&obj, 1) != 0 && (temp_crate_type == 0x10 || temp_crate_type == 9)) {
+            KillPlayer(&plr->obj, 0xB);
+        }
+        WumpaCollisions(&obj);
+        obj.top = 1.25f;
+        if (plr->jump != 0 && plr->jump_frame < plr->jump_frames) {
+            t = (f32)plr->jump_frame / (f32)plr->jump_frames;
+            bounce = 0.5f - t;
+            if (bounce < 0.0) {
+                bounce = 0.0 - bounce;
+            }
+            obj.top += (f32)((0.5 - bounce) * 2.0) * 0.75f;
+        }
+        obj.pos.x = plr->obj.pos.x - NuTrigTable[plr->obj.hdg] * 0.25f;
+        obj.pos.z = plr->obj.pos.z - NuTrigTable[(plr->obj.hdg + 0x4000) & 0xFFFF] * 0.25f;
+        HitItems(&obj);
+        if (HitCrates(&obj, 1) != 0 && (temp_crate_type == 0x10 || temp_crate_type == 9)) {
+            KillPlayer(&plr->obj, 0xB);
+        }
+        WumpaCollisions(&obj);
+    }
+    plr->obj.attack = 0;
+    if (plr->obj.mask != 0 && plr->obj.mask->active >= 3) {
+        plr->obj.attack = 0x80;
+    }
+    plr->obj.attack |= 0x400;
+    gamesfx_pitch = (s32)(plr->obj.xyz_distance * 235.0f) / 0.099999994f + 470.0f;
+    GameSfxLoop(0xCE, &plr->obj.pos);
+    if (plr->obj.anim.action == 0x68 && plr->obj.model != 0 && plr->obj.model->anmdata[0x68] != 0) {
+        t = plr->obj.model->animlist[0x68]->speed * 0.59999996f * plr->obj.xz_distance * 10.0f;
+        if ((plr->obj.anim.anim_time >= 14.0f && plr->obj.anim.anim_time - t < 14.0f) ||
+            (plr->obj.anim.anim_time >= 2.0f && plr->obj.anim.anim_time - t < 2.0f)) {
+            do {
+                sfx = qrand() / 0x4000;
+            } while (sfx == cart_sfx);
+            cart_sfx = sfx;
+            GameSfx(sfx + 0xCA, &plr->obj.pos);
+        }
+    }
+}
+
+
 extern u16 ring_xrot[];
 extern u16 ring_yrot[];
 extern s32 Draw3DObject(s32 object, struct nuvec_s *pos, u16 xrot, u16 yrot, u16 zrot,
@@ -2573,7 +2682,6 @@ struct tracklink_s {
     u8 flags;      /* 0x5 */
 }; /* 0x6 */
 
-extern s32 VEHICLECONTROL;
 extern f32 TUBBOOSTFRAMES;
 extern f32 TUBWAIT;
 extern s32 race_finished;
@@ -2581,7 +2689,6 @@ extern s32 MAXLAPS;
 extern struct tracklink_s *TubLink;
 extern s32 gempath_open;
 extern s32 GemPath;
-extern struct nuvec_s v000;
 f32 SplineDistance(struct nugspline_s *spl);
 
 void MoveTub(struct tubinfo_s *tub, s32 LEFT, s32 RIGHT) {
@@ -2800,7 +2907,6 @@ extern s32 plr_tub_tilttarget;
 extern s32 plr_tub_tiltlock;
 extern s32 tub_overlap;
 extern struct nuvec_s TempTubPos;
-extern s32 temp_crate_type;
 
 void MoveMINETUB(struct creature_s *plr, struct nupad_s *pad) {
     struct nuvec_s d;
