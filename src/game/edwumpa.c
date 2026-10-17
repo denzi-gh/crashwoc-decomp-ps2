@@ -50,8 +50,6 @@ extern char D_00620310[];
 extern f32 D_00633340;
 extern s32 D_00633344;
 #define edwmp_cam_in_crate D_00633344
-extern f32 D_0062E334;
-extern f32 D_0062E338;
 extern s32 D_00631BF8;
 extern s32 screendump;
 
@@ -315,8 +313,7 @@ s32 edwmpProc(struct nupad_s *pad)
     struct nuvec_s v;
     s32 i;
     f32 bestdist;
-    f32 threshold;
-    f32 mask;
+    f32 shadow = 0.0f;
 
     if (screendump) {
         return 0;
@@ -327,15 +324,14 @@ s32 edwmpProc(struct nupad_s *pad)
         return 0;
     }
     edwmp_selected = -1;
-    threshold = D_0062E334;
     for (i = 0; i < WUMPACOUNT; i++) {
-        f32 d;
+        f32 distsq;
         NuVecSub(&v, &edwmp_cam_pos, &Wumpa[i].pos0);
-        d = v.x * v.x + v.y * v.y + v.z * v.z;
-        if (d < threshold) {
-            if (edwmp_selected == -1 || d < bestdist) {
+        distsq = v.x * v.x + v.y * v.y + v.z * v.z;
+        if (distsq < 0.09f) {
+            if (edwmp_selected == -1 || distsq < bestdist) {
                 edwmp_selected = i;
-                bestdist = d;
+                bestdist = distsq;
             }
         }
     }
@@ -344,17 +340,21 @@ s32 edwmpProc(struct nupad_s *pad)
     } else {
         v = edwmp_cam_pos;
     }
-    mask = NewShadowMask(&v, 0.0f, -1);
-    if (mask != D_0062E338) {
-        D_00633340 = v.y - mask;
+    shadow = NewShadowMask(&v, shadow, -1);
+    if (shadow != 2000000.0f) {
+        D_00633340 = v.y - shadow;
     } else {
         D_00633340 = 0.0f;
     }
     edwmp_cam_in_crate = InCrate(edwmp_cam_pos.x, edwmp_cam_pos.z, edwmp_cam_pos.y,
-                         edwmp_cam_pos.y, 0.0f) != 0;
+                                 edwmp_cam_pos.y, 0.0f) != 0;
     edwmpDoInput(pad);
-    return (pad->paddata_db & 0x800) != 0;
+    if (pad->paddata_db & 0x800) {
+        return 1;
+    }
+    return 0;
 }
+
 
 void edwmpADD(void)
 {
