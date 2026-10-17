@@ -97,7 +97,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:001765c8:HitPoly"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00176b48:HitWallSpline"
@@ -105,7 +105,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00177330:HitTerrain"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00177780:HitTerrPoly"
@@ -125,7 +125,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:00179f50:TerrainImpactPlatform"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:0017a180:TerrainPlatformMoveCheck"
@@ -153,7 +153,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:0017c7d8:TerrShapeSideStep"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0068:0017cbe8:CubeImpact"

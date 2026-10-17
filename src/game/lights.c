@@ -177,16 +177,19 @@ void LoadLights(void) {
     void *handle;
     s32 i;
     s32 filesize;
+    s32 count;
+    s32 brightness;
 
     LIGHTCOUNT = 0;
     AMBIENTCOUNT = 0;
     DIRECTCOUNT = 0;
     POINTCOUNT = 0;
-    for (i = 0; i < 0x100; i++) {
+    for (i = 0xFF; i >= 0; i--) {
         Lights[i].type = -1;
     }
     sprintf(tbuf, lgt_file_fmt, LevelFileName);
     filesize = NuFileLoadBuffer(tbuf, Chase, 0x7FFFFFFF);
+    i = 0x100;
     handle = NuMemFileOpen(Chase, filesize, 0);
     if (handle != 0) {
         LIGHTCOUNT = NuFileReadInt(handle);
@@ -194,30 +197,39 @@ void LoadLights(void) {
         DIRECTCOUNT = NuFileReadInt(handle);
         POINTCOUNT = NuFileReadInt(handle);
         if (LIGHTCOUNT > 0x100) {
-            LIGHTCOUNT = 0x100;
+            LIGHTCOUNT = i;
         }
-        for (i = 0; i < LIGHTCOUNT;) {
-            Lights[i].type = NuFileReadInt(handle);
-            Lights[i].pos.x = NuFileReadFloat(handle);
-            Lights[i].pos.y = NuFileReadFloat(handle);
-            Lights[i].pos.z = NuFileReadFloat(handle);
-            Lights[i].radius_pos.x = NuFileReadFloat(handle);
-            Lights[i].radius_pos.y = NuFileReadFloat(handle);
-            Lights[i].radius_pos.z = NuFileReadFloat(handle);
-            Lights[i].radius = NuFileReadFloat(handle);
-            Lights[i].r = NuFileReadChar(handle);
-            Lights[i].g = NuFileReadChar(handle);
-            Lights[i].b = NuFileReadChar(handle);
-            Lights[i].colour.r = NuFileReadFloat(handle);
-            Lights[i].colour.g = NuFileReadFloat(handle);
-            Lights[i].colour.b = NuFileReadFloat(handle);
-            if (Lights[i].type == 1 || Lights[i].type == 2) {
-                Lights[i].direction.x = NuFileReadFloat(handle);
-                Lights[i].direction.y = NuFileReadFloat(handle);
-                Lights[i].direction.z = NuFileReadFloat(handle);
-            }
-            Lights[i].globalflag = NuFileReadInt(handle);
-            Lights[i++].brightness = NuFileReadInt(handle);
+        i = 0;
+        if (LIGHTCOUNT > 0) {
+            do {
+                Lights[i].type = NuFileReadInt(handle);
+                Lights[i].pos.x = NuFileReadFloat(handle);
+                Lights[i].pos.y = NuFileReadFloat(handle);
+                Lights[i].pos.z = NuFileReadFloat(handle);
+                Lights[i].radius_pos.x = NuFileReadFloat(handle);
+                Lights[i].radius_pos.y = NuFileReadFloat(handle);
+                Lights[i].radius_pos.z = NuFileReadFloat(handle);
+                Lights[i].radius = NuFileReadFloat(handle);
+                Lights[i].r = NuFileReadChar(handle);
+                Lights[i].g = NuFileReadChar(handle);
+                Lights[i].b = NuFileReadChar(handle);
+                Lights[i].colour.r = NuFileReadFloat(handle);
+                Lights[i].colour.g = NuFileReadFloat(handle);
+                Lights[i].colour.b = NuFileReadFloat(handle);
+                if (Lights[i].type == 1 || Lights[i].type == 2) {
+                    Lights[i].direction.x = NuFileReadFloat(handle);
+                    Lights[i].direction.y = NuFileReadFloat(handle);
+                    /* Preserve the legacy compiler's loop strength reduction. */
+                    i++;
+                    i--;
+                    (Lights + i)->direction.z = NuFileReadFloat(handle);
+                }
+                Lights[i].globalflag = NuFileReadInt(handle);
+                brightness = NuFileReadInt(handle);
+                count = LIGHTCOUNT;
+                Lights[i].brightness = brightness;
+                i++;
+            } while (i < count);
         }
         NuFileClose(handle);
     }
