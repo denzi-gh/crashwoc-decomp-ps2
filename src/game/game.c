@@ -422,6 +422,227 @@ void CalculateGamePercentage(struct game_s *game);
 void GetMenuInfo(struct cursor_s *cur);
 void CleanLetters(char *txt);
 
+extern struct nuvec_s hubmidpos[2];
+extern struct spltab_s SplTab[0x49];
+extern struct gdeb_s GDeb[];
+extern u8 hublevelopen[6][6];
+extern s32 gamesfx_pitch;
+extern s32 plr_rebound;
+extern s32 jonframe1;
+extern void AddVariableShotDebrisEffect(s32 type, struct nuvec_s *pos, s32 count,
+                                        s32 a, s32 b);
+extern void AddGameDebris(s32 i, struct nuvec_s *pos);
+s32 qrand(void);
+void NewCut(s32 i);
+
+void HubSelect(struct creature_s *c) {
+    struct nuvec_s pos;
+    struct nuvec_s *p0;
+    struct nuvec_s *p1;
+    struct nugspline_s *spl;
+    struct nugspline_s *spline;
+    struct MoveInfo *minfo;
+    float dist;
+    float dist1;
+    float oldx;
+    float oldz;
+    float newx;
+    float newz;
+    s32 old_side;
+    s32 new_side;
+    s32 open;
+    s32 index;
+    s32 i;
+    s32 j;
+    u8 flags;
+    u16 yrot;
+
+    p0 = &hubmidpos[0];
+    dist = NuVecDist(&c->obj.pos, p0, NULL);
+    p1 = &hubmidpos[1];
+    dist1 = NuVecDist(&c->obj.pos, p1, NULL);
+    if (dist1 < dist) {
+        dist = dist1;
+        p0 = p1;
+    }
+    if (dist < 6.0f) {
+        if (dist < 3.0f) {
+            gamesfx_effect_volume = 0x3FFF;
+        } else {
+            gamesfx_effect_volume = 0x3FFF - (s32)((dist - 3.0f) * 16383.0f / 3.0f);
+        }
+        gamesfx_effect_volume *= 2;
+        GameSfxLoop(0x10F, p0);
+    }
+    for (i = 0; i < 6; i++) {
+        if (HData[i].sfx == -1) {
+            continue;
+        }
+        j = HData[i].i_spl[0];
+        if (j == -1) {
+            continue;
+        }
+        spl = SplTab[j].spl;
+        if (spl == NULL) {
+            continue;
+        }
+        p0 = (struct nuvec_s *)(spl->pts + spl->ptsize * 12);
+        dist = NuVecDist(&c->obj.pos, p0, NULL);
+        if (dist < 6.0f) {
+            if (dist < 3.0f) {
+                gamesfx_effect_volume = 0x3FFF;
+            } else {
+                gamesfx_effect_volume = 0x3FFF - (s32)((dist - 3.0f) * 16383.0f / 3.0f);
+            }
+            gamesfx_effect_volume *= 2;
+            GameSfxLoop(HData[i].sfx, p0);
+            if (i == 3 && qrand() < 0x100) {
+                gamesfx_pitch = 0x3AD - qrand() * 0x139 / 0x10000;
+                GameSfx(0x114, p0);
+            }
+        }
+    }
+    if (new_mode != -1 || new_level != -1) {
+        return;
+    }
+    if (plr_rebound != 0 && c->obj.ground != 0) {
+        plr_rebound = 0;
+        c->obj.mom.x = c->obj.mom.z = 0.0f;
+    }
+    oldx = c->obj.oldpos.x;
+    oldz = c->obj.oldpos.z;
+    newx = c->obj.pos.x;
+    newz = c->obj.pos.z;
+    for (i = 0; i < 6; i++) {
+        flags = Game.hub[i].flags;
+        for (j = 0; j < 6; j++) {
+            hublevelopen[i][j] = 0;
+            if (flags & 1) {
+                open = 1;
+                if (i == 5) {
+                    if (j == 5 || Game.relics < (j + 1) * 5) {
+                        open = 0;
+                    }
+                } else {
+                    s32 bits = flags & 6;
+
+                    if ((j < 5 && bits == 2) || (j == 5 && bits == 0)) {
+                        open = 0;
+                    }
+                }
+                if (open == 0) {
+                    if ((jonframe1 & 3) == 0 && (i != 5 || j != 5)) {
+                        index = HData[i].i_spl[0];
+                        if (index != -1) {
+                            spline = SplTab[index].spl;
+                            if (spline != NULL) {
+                                p0 = (struct nuvec_s *)(spline->pts + (j * 2 + 2) * spline->ptsize);
+                                pos.x = p0->x;
+                                pos.z = p0->z;
+                                if (i > 3) {
+                                    pos.y = p0->y + 0.65f;
+                                } else {
+                                    pos.y = p0->y + 0.25f;
+                                }
+                                AddVariableShotDebrisEffect(GDeb[HData[i].i_gdeb].i, &pos, 1, 0, 0);
+                            }
+                        }
+                    }
+                } else {
+                    hublevelopen[i][j] = 1;
+                }
+            }
+        }
+        j = HData[i].i_spl[0];
+        if (j == -1) {
+            continue;
+        }
+        spl = SplTab[j].spl;
+        if (spl == NULL) {
+            continue;
+        }
+        p0 = (struct nuvec_s *)spl->pts;
+        p1 = (struct nuvec_s *)(spl->pts + spl->ptsize);
+        old_side = (oldx - p0->x) * (p1->z - p0->z) + (oldz - p0->z) * (p0->x - p1->x) >= 0.0f;
+        new_side = (newx - p0->x) * (p1->z - p0->z) + (newz - p0->z) * (p0->x - p1->x) >= 0.0f;
+        if (old_side && !new_side &&
+            (newx - oldx) * (p0->z - oldz) + (newz - oldz) * (oldx - p0->x) >= 0.0f &&
+            (newx - p1->x) * (oldz - p1->z) + (newz - p1->z) * (p1->x - oldx) >= 0.0f) {
+            if (Game.hub[i].flags & 1) {
+                Hub = i;
+                return;
+            }
+            c->obj.pos.x = c->obj.oldpos.x;
+            c->obj.pos.z = c->obj.oldpos.z;
+            yrot = NuAtan2D(p1->x - p0->x, p1->z - p0->z) + 0x4000;
+            if (c->spin && c->spin_frame < c->spin_frames - c->minfo->SPINRESETFRAMES) {
+                c->obj.mom.x = NuTrigTable[yrot] * 0.06f;
+                c->obj.mom.z = NuTrigTable[(u16)(yrot + 0x4000)] * 0.06f;
+                return;
+            }
+            minfo = c->minfo;
+            c->obj.mom.x = NuTrigTable[yrot] * minfo->WALKSPEED;
+            c->obj.mom.z = NuTrigTable[(u16)(yrot + 0x4000)] * minfo->WALKSPEED;
+            c->obj.thdg = yrot;
+            c->crawl_lock = 1;
+            c->slam = 0;
+            c->crawl = 0;
+            c->crouch_pos = 0;
+            c->somersault = 0;
+            c->land = 0;
+            c->slide = 0;
+            c->obj.mom.y =
+                minfo->JUMPHEIGHT * (c->jump_type == 3 ? 1.5f : 1.0f) / minfo->JUMPFRAMES2;
+            c->jump = 6;
+            c->jump_frame = c->jump_frames;
+            c->jump_type = 4;
+            plr_rebound = 1;
+            if (c->obj.model->anmdata[0x19] != NULL) {
+                ResetAnimPacket(&c->obj.anim, 0x19);
+                c->obj.anim.anim_time = c->obj.model->anmdata[0x19]->time;
+            }
+            NewBuzz(&c->rumble, 10);
+            gamesfx_effect_volume = 0x7FFE;
+            GameSfx(0x4B, &c->obj.pos);
+            pos.x = c->obj.pos.x - NuTrigTable[yrot] * c->obj.RADIUS;
+            pos.y = c->obj.pos.y + (c->obj.bot + c->obj.top) * c->obj.SCALE * 0.5f;
+            pos.z = c->obj.pos.z - NuTrigTable[(u16)(yrot + 0x4000)] * c->obj.RADIUS;
+            AddGameDebris(0x82, &pos);
+            return;
+        } else if (!old_side && new_side &&
+                   (newx - oldx) * (p1->z - oldz) + (newz - oldz) * (oldx - p1->x) >= 0.0f &&
+                   (newx - p0->x) * (oldz - p0->z) + (newz - p0->z) * (p0->x - oldx) >= 0.0f) {
+            if (Game.hub[Hub].flags & 4) {
+                index = -1;
+                switch (Hub) {
+                case 0:
+                    if (!(Game.cutbits & 0x40)) {
+                        index = 6;
+                    }
+                    break;
+                case 1:
+                    if (!(Game.cutbits & 0x800)) {
+                        index = 0xB;
+                    }
+                    break;
+                case 2:
+                    if (!(Game.cutbits & 0x10000)) {
+                        index = 0x10;
+                    }
+                    break;
+                }
+                if (index != -1) {
+                    NewCut(index);
+                    new_mode = 1;
+                }
+            }
+            Hub = -1;
+            return;
+        }
+    }
+}
+
+
 /* This is the RNG function*/
 inline s32 qrand(void) {
     qseed = qseed * 0x24CD + 1;
@@ -3264,7 +3485,6 @@ void DrawTransporters(void) {
     }
 }
 
-extern struct spltab_s SplTab[0x49];
 /* array-form: a bare pointer scalar goes gp-rel under -G8 and overflows
  * GPREL16 (world_scene is far from $gp); retail uses absolute %hi/%lo. */
 extern struct nugscn_s *world_scene[];
@@ -3887,7 +4107,6 @@ s32 AddAward(s32 hub, s32 level, u16 got) {
     return 1;
 }
 
-extern struct gdeb_s GDeb[];
 extern void AddFiniteShotDebrisEffect(s32 *key, s32 i, struct nuvec_s *pos,
                                       s32 n);
 
@@ -4167,9 +4386,6 @@ extern struct nuvec_s probepos;
 extern struct nuvec_s probedpos;
 extern struct nuvec_s probespk;
 extern struct nuvec_s probepos2;
-extern s32 gamesfx_pitch;
-extern void AddVariableShotDebrisEffect(s32 type, struct nuvec_s *pos, s32 count,
-                                        s32 a, s32 b);
 s32 Draw3DCharacter(struct nuvec_s *pos, u16 xrot, u16 yrot, u16 zrot,
                     struct CharacterModel *model, float scale, s32 action, float anim_time,
                     s32 rot);
@@ -4591,7 +4807,6 @@ void UpdateTempCharacter(void) {
 
 extern s32 tumble_character;
 extern float tumble_item_addtime;
-extern void AddGameDebris(s32 i, struct nuvec_s *pos);
 
 void UpdateAwards(void) {
     struct award_s *award;
@@ -4814,7 +5029,6 @@ extern s32 hubleveltext_i;
 extern s32 hubleveltext_open;
 extern s32 hub_vr_image;
 extern u32 finish_frames;
-extern u8 hublevelopen[6][6];
 extern float FINISHRADIUSHUB;
 extern struct nuvec_s hubwarp_oldpos;
 extern struct nuvec_s hubwarp_newpos;
