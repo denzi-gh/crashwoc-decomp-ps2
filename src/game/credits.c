@@ -26,15 +26,11 @@ extern char tbuf[];
 
 /* .rodata string "SR. MANAGER OF PUBLIC RELATIONS" (retail-owned). */
 extern char D_0062A608[];
-/* .sdata float constants (retail-owned, addressed $gp-relative). */
-extern float D_0062E96C; /* upper size cutoff (1.7f) */
-extern float D_0062E970; /* y factor for the SR. MANAGER credit */
-extern float D_0062E974; /* per-credit scroll step (0.1f) */
 
 extern void NuStrCpy(char *dst, char *src);
 extern void AddSpacesIntoText(char *text, s32 flag);
-extern void Text3D(char *text, s32 a, s32 colour, float x, float y, float z,
-                   float sx, float sy, float sz);
+extern void Text3D(char *txt, float x, float y, float z, float scalex,
+                   float scaley, float scalez, s32 align, s32 colour);
 
 void DrawCredits(void) {
     struct credit_s *credit;
@@ -47,19 +43,19 @@ void DrawCredits(void) {
     size = GameTimer.ftime * credit_speed + (-1.0f);
     for (i = 0; i < CREDITCOUNT; i++, credit++) {
         xscale = credit->size / 100.0f;
-        if ((credit->txt != 0) && (size > -1.5f) && (size < D_0062E96C)) {
+        if ((credit->txt != 0) && (size > -1.5f) && (size < 1.7f)) {
             NuStrCpy(tbuf, credit->txt);
             y = 1.0f;
             if (strcmp(tbuf, D_0062A608) == 0) {
-                y = D_0062E970;
+                y = 0.95f;
             }
             if (Game.language == 0x63) {
                 AddSpacesIntoText(tbuf, 1);
             }
-            Text3D(tbuf, 1, credit->colour, 0.0f, size, 1.0f, xscale * y,
-                   xscale, xscale + xscale);
+            Text3D(tbuf, 0.0f, size, 1.0f, xscale * y, xscale, xscale + xscale,
+                   1, credit->colour);
         }
-        size = size - ((xscale * D_0062E974) + (xscale * D_0062E974));
+        size = size - ((xscale * 0.1f) + (xscale * 0.1f));
     }
 }
 

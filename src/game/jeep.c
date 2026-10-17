@@ -606,26 +606,30 @@ void SpinWheelsJeep(struct JEEPSTRUCT *Jeep, f32 DeltaTime) {
 
 
 void GenerateJeepTargets(struct JEEPSTRUCT *Jeep, f32 DeltaTime) {
+    f32 ModifiedSin;
     f32 Temp;
-    short aDelta;
-    f32 TurnSin;
+    f32 MomScale;
+    short DeltaAng;
+    s32 TempI;
 
-    aDelta = Jeep->aInputAng - Jeep->aChassisAngleY;
-    Temp = (Jeep->MySpeed * 4.0f - Jeep->Move.Resolved.z) /
-           (Jeep->MySpeed * 8.0f) * aDelta;
-    aDelta = Temp;
-    TurnSin = NuTrigTable[(u16)aDelta];
-    if (aDelta > 0x4000) {
-        TurnSin = 1.0f;
-    } else if (aDelta < -0x4000) {
-        TurnSin = -1.0f;
+    DeltaAng = Jeep->aInputAng - Jeep->aChassisAngleY;
+    MomScale = (Jeep->MySpeed * 4.0f - Jeep->Move.Resolved.z) /
+               (Jeep->MySpeed * 8.0f);
+    Temp = MomScale * DeltaAng;
+    DeltaAng = Temp;
+    ModifiedSin = NuTrigTable[(u16)DeltaAng];
+    if (DeltaAng > 0x4000) {
+        ModifiedSin = 1.0f;
+    } else if (DeltaAng < -0x4000) {
+        ModifiedSin = -1.0f;
     }
-    Jeep->TurnSin = TurnSin;
-    Jeep->aChassisAngMom += (s32)(TurnSin * 4369.066895f);
+    Jeep->TurnSin = ModifiedSin;
+    TempI = ModifiedSin * 4369.066895f;
+    Jeep->aChassisAngMom += TempI;
     Temp = Jeep->aChassisAngMom;
     Jeep->aChassisTargetAngleY =
         Temp * DeltaTime + (short)Jeep->aChassisAngleY;
-    if (abs(Jeep->aChassisAngMom) < 0x1C73 && abs(aDelta) < 0x38F) {
+    if (abs(Jeep->aChassisAngMom) < 0x1C73 && abs(DeltaAng) < 0x38F) {
         SeekHalfLife(&Temp, 0.0f, 0.05f, DeltaTime);
     } else {
         SeekHalfLife(&Temp, 0.0f, 0.25f, DeltaTime);
@@ -904,10 +908,11 @@ void DriveJeep(struct JEEPSTRUCT *Jeep, struct nupad_s *Pad) {
     short aRailAng = 0;
     f32 Steer;
     f32 Speed2;
-    f32 OldWheelSpin;
-    short aDelta;
+    f32 LastWheelSpin;
+    short DeltaAng;
     struct nuvec_s *Vel;
     struct nuvec_s Move;
+    f32 DeltaTime = 0.01999999955f;
 
     if (Level == 0x16 && FireBossHealth <= 0) {
         Jeep->Finished = 1;
@@ -970,14 +975,17 @@ void DriveJeep(struct JEEPSTRUCT *Jeep, struct nupad_s *Pad) {
             } else {
                 Jeep->aInputAng = Jeep->aChassisAngleY;
             }
-            aDelta = Jeep->aInputAng - Jeep->aBaseMoveAng;
-            if (aDelta > 0x4000 || aDelta < -0x4000) {
-                Jeep->aInputAng = Jeep->aChassisAngleY;
-                Jeep->InputSpeed = 0.0f;
-            } else if (aDelta > 0x2000) {
-                Jeep->aInputAng = Jeep->aBaseMoveAng + 0x2000;
-            } else if (aDelta < -0x2000) {
-                Jeep->aInputAng = Jeep->aBaseMoveAng - 0x2000;
+            {
+                short aDiff = Jeep->aInputAng - Jeep->aBaseMoveAng;
+
+                if (aDiff > 0x4000 || aDiff < -0x4000) {
+                    Jeep->aInputAng = Jeep->aChassisAngleY;
+                    Jeep->InputSpeed = 0.0f;
+                } else if (aDiff > 0x2000) {
+                    Jeep->aInputAng = Jeep->aBaseMoveAng + 0x2000;
+                } else if (aDiff < -0x2000) {
+                    Jeep->aInputAng = Jeep->aBaseMoveAng - 0x2000;
+                }
             }
         }
     }
@@ -1000,32 +1008,34 @@ void DriveJeep(struct JEEPSTRUCT *Jeep, struct nupad_s *Pad) {
     }
     Vel = &Jeep->Move.Velocity;
     Speed2 = Vel->x * Vel->x + Vel->z * Vel->z;
-    aDelta = Jeep->aInputAng - Jeep->aChassisAngleY;
-    Jeep->aDeltaAng = aDelta;
-    OldWheelSpin = Jeep->WheelSpin;
-    if ((Jeep->WheelSpin != 0 && aDelta >= 0xE3A) || aDelta >= 0x471D) {
+    DeltaAng = Jeep->aInputAng - Jeep->aChassisAngleY;
+    Jeep->aDeltaAng = DeltaAng;
+    LastWheelSpin = Jeep->WheelSpin;
+    if ((Jeep->WheelSpin != 0 && DeltaAng >= 0xE3A) || DeltaAng >= 0x471D) {
         Jeep->WheelSpin = 1;
-    } else if (Speed2 < 4.0f && aDelta > 0x2000) {
+    } else if (Speed2 < 4.0f && DeltaAng > 0x2000) {
         Jeep->WheelSpin = 1;
     } else {
         Jeep->WheelSpin = 0;
     }
     if (Jeep->WheelSpin != 0) {
-        Jeep->aLastDeltaAng = aDelta;
-    } else if (OldWheelSpin != 0.0f) {
-        Jeep->aLastDeltaAngA = aDelta;
+        Jeep->aLastDeltaAng = DeltaAng;
+    } else if (LastWheelSpin != 0.0f) {
+        Jeep->aLastDeltaAngA = DeltaAng;
     }
     Jeep->Accelerator = Jeep->InputSpeed;
     if (Jeep->WheelSpin != 0 && Jeep->InputSpeed < 0.5f) {
         Jeep->Accelerator = 0.5f;
     }
-    GenerateJeepTargets(Jeep, 0.01999999955f);
-    Jeep->aAngleY = Jeep->aChassisTargetAngleY + ((short)Jeep->aFrontWheelAng >> 3);
-    ProcessJeepMovement(Jeep, 0.01999999955f);
+    GenerateJeepTargets(Jeep, DeltaTime);
+    Jeep->aAngleY =
+        Jeep->aChassisTargetAngleY + ((short)Jeep->aFrontWheelAng >> 3);
+    ProcessJeepMovement(Jeep, DeltaTime);
     Jeep->Move.aTargetAngle = Jeep->aChassisTargetAngleY;
     JeepBaseAng = Jeep->aBaseMoveAng;
+    Vel = &Jeep->Move.Velocity;
     if (Jeep->Quick != 0) {
-        NuVecScaleAccum(&Jeep->Move.ActualPosition, Vel, 0.01999999955f);
+        NuVecScaleAccum(&Jeep->Move.ActualPosition, Vel, DeltaTime);
         Jeep->Move.aActSurfRotX = 0;
         Jeep->Move.aActualAngle = Jeep->aChassisTargetAngleY;
         Jeep->aChassisAngleY = Jeep->aChassisTargetAngleY;
@@ -1033,24 +1043,27 @@ void DriveJeep(struct JEEPSTRUCT *Jeep, struct nupad_s *Pad) {
         Jeep->Move.aActSurfRotZ = 0;
         Jeep->aSurfRotZ = 0;
     } else {
-        NuVecScale(&Move, Vel, 0.01999999955f);
+        NuVecScale(&Move, Vel, DeltaTime);
         CheckAgainstRocks(&Jeep->Move.ActualPosition, &Move);
         TerrainVehicleSoft(&Jeep->Move, &Move);
         Jeep->aChassisAngleY = Jeep->Move.aActualAngle;
         Jeep->aSurfRotX = Jeep->Move.aActSurfRotX;
         Jeep->aSurfRotZ = Jeep->Move.aActSurfRotZ;
-        TiltJeep(Jeep, 0.01999999955f);
-        FindSurfaceNormalAndUnembedd(&Jeep->Move, 0.01999999955f);
+        TiltJeep(Jeep, DeltaTime);
+        FindSurfaceNormalAndUnembedd(&Jeep->Move, DeltaTime);
     }
     Jeep->Pos = Jeep->Move.ActualPosition;
-    aDelta = Jeep->aInputAng - Jeep->aChassisAngleY;
-    if (aDelta >= 0x2000) {
-        aDelta = 0x2000;
-    } else if (aDelta <= -0x2000) {
-        aDelta = -0x2000;
+    {
+        short WheelAngTarget = Jeep->aInputAng - Jeep->aChassisAngleY;
+
+        if (WheelAngTarget >= 0x2000) {
+            WheelAngTarget = 0x2000;
+        } else if (WheelAngTarget <= -0x2000) {
+            WheelAngTarget = -0x2000;
+        }
+        SeekAngHalfLife(&Jeep->aFrontWheelAng, WheelAngTarget, 0.1f, DeltaTime);
     }
-    SeekAngHalfLife(&Jeep->aFrontWheelAng, aDelta, 0.1f, 0.01999999955f);
-    SpinWheelsJeep(Jeep, 0.01999999955f);
+    SpinWheelsJeep(Jeep, DeltaTime);
     Jeep->aMovementAng = Jeep->aChassisAngleY;
     Jeep->aAngleY = Jeep->aChassisAngleY + Jeep->aFrontWheelAng;
     FindTerrainType(Jeep);
@@ -1808,7 +1821,7 @@ void DrawEnemyJeep(struct enemyjeep_s *Jeep) {
         f32 TempAf;
         s32 Temp;
         short aWheel;
-        short aDiff;
+        u16 aDiff;
         short aDelta;
         short aRot;
         u16 aSteer;
@@ -1835,9 +1848,10 @@ void DrawEnemyJeep(struct enemyjeep_s *Jeep) {
                 NuMtxScale(&mTEMP, &Scale);
             }
             NuMtxTranslate(&mTEMP, &Pos);
-            aDiff = BuggyData[Indx][ElementB].aWheelAng -
-                    (Temp = BuggyData[Indx][ElementA].aWheelAng);
-            TempAf = aDiff;
+            aDiff = BuggyData[Indx][ElementB].aWheelAng;
+            Temp = BuggyData[Indx][ElementA].aWheelAng;
+            aDiff -= Temp;
+            TempAf = (short)aDiff;
             TempAf *= Tween;
             aDelta = TempAf;
             aWheel = aDelta + Temp;
