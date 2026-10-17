@@ -26,12 +26,18 @@ struct nuquat_perm_s {
 };
 
 extern struct nuquat_perm_s D_00614010;
+#define next_axis D_00614010
 
 void NuMtxToQuat(struct numtx_s *m, struct nuquat_s *q)
 {
+    struct nuquat_perm_s next = next_axis;
+    float result[4];
+    float *mf = (float *)m;
     float trace = m->_00 + m->_11 + m->_22;
     float s;
-    struct nuquat_perm_s next = D_00614010;
+    int i;
+    int j;
+    int k;
 
     if (trace > 0.0) {
         s = NuFsqrt(trace + 1.0f);
@@ -41,32 +47,27 @@ void NuMtxToQuat(struct numtx_s *m, struct nuquat_s *q)
         q->y = (m->_20 - m->_02) * s;
         q->z = (m->_01 - m->_10) * s;
     } else {
-        struct nuquat_s result;
-        float *mf = (float *)m;
-        float *qf = (float *)&result;
-        int i = 0;
-        int j;
-        int k;
-
+        i = 0;
         if (m->_11 > m->_00) {
             i = 1;
         }
-        if (mf[i * 5] < m->_22) {
+        if (m->_22 > mf[i * 4 + i]) {
             i = 2;
         }
-
         j = next.v[i];
         k = next.v[j];
-        s = NuFsqrt(1.0f + mf[i * 5] - (mf[j * 5] + mf[k * 5]));
-        qf[i] = s * 0.5f;
+        s = NuFsqrt(mf[i * 4 + i] - (mf[j * 4 + j] + mf[k * 4 + k]) + 1.0f);
+        result[i] = s * 0.5f;
         if (s != 0.0f) {
             s = 0.5f / s;
         }
-
-        result.w = (mf[j * 4 + k] - mf[k * 4 + j]) * s;
-        qf[j] = (mf[i * 4 + k] + mf[j * 4 + i]) * s;
-        qf[k] = (mf[i * 4 + j] + mf[k * 4 + i]) * s;
-        *q = result;
+        result[3] = (mf[j * 4 + k] - mf[k * 4 + j]) * s;
+        result[j] = (mf[i * 4 + j] + mf[j * 4 + i]) * s;
+        result[k] = (mf[i * 4 + k] + mf[k * 4 + i]) * s;
+        q->x = result[0];
+        q->y = result[1];
+        q->z = result[2];
+        q->w = result[3];
     }
 }
 
@@ -116,12 +117,12 @@ void NuQuatToMtx(struct nuquat_s *q, struct numtx_s *m)
     float xx = q->x * q->x;
     float yy = q->y * q->y;
     float zz = q->z * q->z;
-    float xy = q->x * q->y;
-    float xz = q->x * q->z;
-    float xw = q->x * q->w;
-    float yz = q->y * q->z;
-    float yw = q->y * q->w;
-    float zw = q->z * q->w;
+    float xy = q->x * q->y * 2.0f;
+    float xz = q->x * q->z * 2.0f;
+    float xw = q->x * q->w * 2.0f;
+    float yz = q->y * q->z * 2.0f;
+    float yw = q->y * q->w * 2.0f;
+    float zw = q->z * q->w * 2.0f;
 
     m->_33 = 1.0f;
     m->_30 = 0.0f;
@@ -131,20 +132,13 @@ void NuQuatToMtx(struct nuquat_s *q, struct numtx_s *m)
     m->_13 = 0.0f;
     m->_23 = 0.0f;
 
-    xy += xy;
-    xz += xz;
-    xw += xw;
-    yz += yz;
-    yw += yw;
-    zw += zw;
-
     m->_00 = ww + xx - yy - zz;
     m->_10 = xy - zw;
     m->_20 = xz + yw;
-    m->_02 = xz - yw;
+    m->_01 = xy + zw;
     m->_11 = ww - xx + yy - zz;
     m->_21 = yz - xw;
-    m->_01 = xy + zw;
+    m->_02 = xz - yw;
     m->_12 = yz + xw;
     m->_22 = ww - xx - yy + zz;
 }
