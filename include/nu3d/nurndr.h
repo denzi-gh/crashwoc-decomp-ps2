@@ -3,6 +3,12 @@
 
 #include "numath/numathtypes.h"
 
+struct nuvtx_tc1_s;
+struct numtl_s;
+
+int NuRndrLine3d(struct nuvtx_tc1_s *vtx, struct numtl_s *mtl,
+                 struct numtx_s *wm);
+
 struct faceon_s {
     struct nuvec_s pos;                 /* 0x00 */
     float w;                            /* 0x0C */

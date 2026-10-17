@@ -416,8 +416,9 @@ void edaiDRAW(void)
             pos = &AITab[i].pos[j];
             DrawAxes(pos, ang, D_005CD1D0[j], 0.125f);
         }
+        next = &edai_cam_pos;
         NuRndrLine3dDbg(pos->x, pos->y, pos->z,
-                        edai_cam_pos.x, edai_cam_pos.y, edai_cam_pos.z, D_005CD1D0[j - 1]);
+                        next->x, next->y, next->z, D_005CD1D0[j - 1]);
         pos = AITab[i].pos;
     } else {
         pos = &edai_cam_pos;

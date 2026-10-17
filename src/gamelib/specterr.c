@@ -17,6 +17,7 @@
 #include "numath/numtx.h"
 #include "numath/nuvec.h"
 #include "nu3d/nugobj.h"
+#include "nu3d/nurndr.h"
 #include "nu3d/nugscn.h"
 #include "gamelib/terrain.h"
 #include "nucore/nucoretypes.h"
@@ -57,7 +58,6 @@ typedef struct SpecTerrData {
     SpecTerrObject **objects;
 } SpecTerrData;
 
-extern void NuRndrLine3d(struct nuvtx_tc1_s *line, void *mtl, void *mtx);
 
 extern char D_00619AA0[];
 extern char D_00619AC8[];

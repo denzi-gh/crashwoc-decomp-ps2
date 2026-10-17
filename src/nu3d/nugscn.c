@@ -65,6 +65,7 @@
 #include "nu_stdarg.h"
 
 #include "nu3d/nugobj.h"
+#include "nu3d/nurndr.h"
 #include "nu3d/nugscn.h"
 #include "nu3d/numtl.h"
 #include "nu3d/nunode.h"
@@ -2647,7 +2648,6 @@ void NuGScnUpdate(struct nugscn_s *scene, float dt)
 
 
 extern int gscn_showsplines;
-extern void NuRndrLine3d(struct nuvtx_tc1_s *line, struct numtl_s *mtl, struct numtx_s *mtx);
 
 void NuGScnRndr3(struct nugscn_s *scene)
 {

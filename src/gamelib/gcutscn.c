@@ -77,6 +77,7 @@
 
 #include "nu3d/nucamera.h"
 #include "nu3d/nugobj.h"
+#include "nu3d/nurndr.h"
 #include "nu3d/nugscn.h"
 #include "nucore/nuerror.h"
 #include "numath/nufloat.h"
@@ -514,7 +515,6 @@ inline int NuGCutLocatorIsVisble(struct NUGCUTLOCATOR_s *data, float time, struc
 extern int D_0062F7D8;
 #define cutscene_rndr_emitters D_0062F7D8
 
-extern void NuRndrLine3d(struct nuvtx_tc1_s *line, void *mtl, struct numtx_s *mtx);
 
 void DebugRndrEmitter(struct nuvec_s *pos, short rotz, short roty) {
     struct nuvec_s tip = { 0.0f, 2.0f, 0.0f };
