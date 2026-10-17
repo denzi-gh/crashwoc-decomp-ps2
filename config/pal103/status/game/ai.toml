@@ -89,7 +89,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0103:00234dd8:ResetCRUNCHTIME"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0103:00234eb0:SpaceCrunchFunction_NewCount"
