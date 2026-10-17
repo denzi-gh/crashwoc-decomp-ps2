@@ -187,7 +187,11 @@ def check_manifest(path, version, root):
             problems.append(f"unit {unit_index} not in units.toml")
         elif source:
             retail_base = re.split(r"[\\/]", units[unit_index])[-1]
-            if retail_base != Path(source).name:
+            # Units sharing a retail name (16 graphdev.c, ...) carry their
+            # index like their objdiff unit name: graphdev_127.c.
+            stem, dot, ext = retail_base.rpartition(".")
+            indexed = f"{stem}_{unit_index:03d}{dot}{ext}"
+            if Path(source).name not in (retail_base, indexed):
                 problems.append(
                     f"unit {unit_index} is '{retail_base}' in units.toml but "
                     f"source is '{Path(source).name}'")
