@@ -410,3 +410,215 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0068:00182ca0:OffPlat"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0068:002ea9d0:ShadNorm"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0068:002ea9e0:EShadNorm"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0068:002ea9f0:ShadRoofNorm"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0068:002eaa00:EShadRoofNorm"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0068:002eaa10:SphereData"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0068:002eab10:tertempmat"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0068:002eab50:tertempvec4"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0068:002eab60:TerrPolyInfo"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0068:002eabc8:ScaleTerrainT1"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0068:002f73c8:ScaleTerrainT2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0068:00303bc8:WallSplList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0068:003041c8:PlatImpactNorm"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0068:003041d8:PlatImpactTer"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0068:00304240:TempScanStack"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0068:0062f1f0:TerrPlatDis"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0068:0062f200:EShadY"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0068:0062f204:terrhitflags"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0068:0062f208:ShadRoofY"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0068:0062f20c:EShadRoofY"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0068:0062f210:CurTerr"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0068:0062f214:PickupTerr"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0068:0062f218:curSphereter"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0068:0062f21c:curPickInst"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0068:0062f220:CurTrackInfo"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0068:0062f224:TerI"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0068:0062f228:TerrPoly"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0068:0062f22c:TerrPolyObj"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0068:0062f230:ShadPoly"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0068:0062f234:EShadPoly"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0068:0062f238:ShadRoofPoly"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0068:0062f23c:EShadRoofPoly"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0068:0062f240:WallSplCount"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0068:0062f244:ScaleTerrain"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0068:0062f248:TerrShape"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0068:0062f24c:TerrShapeAdjCnt"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0068:0062f250:PlatImpactId"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0068:0062f254:PlatCrush"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0068:0062f258:plathitid"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0068:0062f25c:castnum"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0068:0062f25e:ecastnum"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0068:0062f260:castroofnum"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0068:0062f262:ecastroofnum"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0068:0062f264:shadhit"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0068:0062f266:eshadhit"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0068:0062f268:shadroofhit"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0068:0062f26a:eshadroofhit"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0068:0062f26c:terraincnt"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0068:0062f270:situtotal"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0068:0062f274:platinrange"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0068:0062f278:crashdata"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0068:0062f27c:terlistptr"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0068:0062f280:TempStackPtr"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0068:0062f284:testlock"
+state = "asm"

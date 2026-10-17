@@ -286,3 +286,55 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0078:001af030:instNuGCutCharSysRender"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0078:004a9050:cutscenecammtx"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0078:0062f7c8:do_cameras"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0078:0062f7cc:do_rigids"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0078:0062f7d0:do_chars"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0078:0062f7d4:do_locator"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0078:0062f7d8:do_debug_rndr"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0078:0062f7dc:set_cutscenecammtx"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0078:0062f7e0:NuCutSceneCharacterRender"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0078:0062f7e4:NuCutSceneCharacterRelease"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0078:0062f7e8:NuCutSceneFindCharacters"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0078:0062f7ec:NuCutSceneCharacterCreateData"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0078:0062f7f0:NuCutSceneRigidCollisionCheck"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0078:0062f7f4:locatorfns"
+state = "asm"

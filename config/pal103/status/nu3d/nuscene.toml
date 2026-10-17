@@ -114,3 +114,15 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0037:0011a878:ReadNuIFFFaceOnGeom"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0037:0062eb94:mipmaplevel"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0037:0062eb98:spectid"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0037:0062eb9c:specmtl"
+state = "asm"

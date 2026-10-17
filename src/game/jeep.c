@@ -97,7 +97,6 @@ extern f32 JeepCamTween;
 extern f32 JeepRailCamTween;
 extern f32 JeepRailCamTween2;
 extern s32 ResetJeepCamera;
-extern struct nuvec_s WesternPlayerStart;
 extern void NewInitTrail(void);
 extern f32 ASin360f(f32 x);
 extern s32 MyDrawModelNew(struct MYDRAW *Draw, struct numtx_s *mC,
@@ -106,12 +105,10 @@ extern void GetLocatorMtx(struct CharacterModel *model, struct numtx_s *dest,
                           f32 angle);
 
 struct fireboss_s;
-extern struct fireboss_s FireBoss;
 
 extern s32 DrawFireBoss(struct fireboss_s *fb);
 extern void AddVariableShotDebrisEffect(s32 effect, struct nuvec_s *pos, s32 n,
                                         s32 xrot, s32 yrot);
-extern s32 TrailActive[];
 extern char D_006319D8[];
 #define ActionIntroText D_006319D8
 extern char D_006319E0[];
@@ -150,7 +147,6 @@ struct SPLINEFOLLOW {
     struct nuvec_s NexPos;          /* 0x20 */
     f32 LookaheadDist;              /* 0x2C */
 }; /* 0x30 */
-extern struct SPLINEFOLLOW JeepFollowSpline;
 
 extern void FindSplineTargetPoint(struct SPLINEFOLLOW *Spline, s32 Control,
                                   struct nuvec_s *Point,
@@ -285,7 +281,6 @@ struct JEEPSTRUCT {
 }; /* 0x988 */
 extern struct JEEPSTRUCT PlayerJeep;
 
-extern struct SIMWHEEL GenericTrail[];
 extern void ProcessJeepTrail(struct SIMWHEEL *Wheel, s32 TrailIndx);
 
 struct jeeptrail_s {
@@ -294,12 +289,7 @@ struct jeeptrail_s {
     s32 intensity;                  /* 0x18 */
     s32 RealIntensity;              /* 0x1C */
 };
-extern struct jeeptrail_s JeepTrail[][0x20];
-extern s32 TrailPntr[];
-extern s32 TrailAir[];
 extern void NuRndrTrail(s32 pntr, struct jeeptrail_s *trail, s32 count);
-extern s32 NewIntoTrail[];
-extern f32 NewCurrentIntensity[];
 
 struct JEEPBALLOON {
     struct nuvec_s Pos;             /* 0x00 */
@@ -312,15 +302,12 @@ struct JEEPBALLOON {
     s16 AngY;                       /* 0x2C */
     s16 unk;                        /* 0x2E */
 };
-extern struct JEEPBALLOON JeepBalloon[];
 extern void ProcessJeepBalloon(struct JEEPBALLOON *b);
 extern void DrawJeepBalloon(struct JEEPBALLOON *b);
 
 extern struct objtab_s ObjTab[];
 extern struct numtx_s mTEMP;
-extern struct nuvec_s FIREBOSSSCALE;
 extern s32 WallOfFireOn;
-extern struct nuvec_s WallOfFirePosition;
 extern f32 WallOfFireAngleY;
 extern s32 Paused;
 
@@ -342,7 +329,6 @@ struct enemyjeep_s {
     s8 TrailOn;                     /* 0x73E */
     s8 Pad;                         /* 0x73F */
 };
-extern struct enemyjeep_s EnemyJeep[];
 extern void DrawEnemyJeep(struct enemyjeep_s *j);
 extern void ProcessEnemyJeep(struct enemyjeep_s *j);
 extern void MyAnimateModelNew(void *draw, f32 dt);
@@ -367,14 +353,12 @@ extern s32 CurrentWesternPosition(void);
 extern void ProcessJeepTrails(void);
 
 extern char LevelFileName[];
-extern struct BUGGYDATA *BuggyData[];
 extern union variptr_u superbuffer_ptr;
 extern union variptr_u superbuffer_end;
 extern struct nugscn_s *world_scene[];
 extern void LoadScreen(char *name);
 extern char D_0061FAC0[];
 #define LoadingAiPathsText D_0061FAC0
-extern s32 BuggyDataMax[];
 
 struct BUGGYDATA {
     struct nuquat_s Quat;           /* 0x00 */
@@ -454,8 +438,6 @@ extern void AddGameDebrisRot(s32 i, struct nuvec_s *pos, s32 n, u16 xrot,
 extern struct rail_s Rail[];
 extern struct nugspline_s *pVIS;
 extern s32 iVIS;
-extern struct nuvec_s JeepvPos;
-extern struct nuvec_s JeepvObj;
 extern struct nuvec_s D_006B75E0;
 #define JeepCamVel D_006B75E0
 extern struct nuvec_s D_006B75F0;
@@ -477,8 +459,6 @@ extern f32 D_006332C4;
 extern f32 D_006332C8;
 #define JeepCamDropYaw D_006332C8
 extern s32 JeepCamSnapShot;
-extern struct nuvec_s JeepCamPosTween;
-extern struct nuvec_s JeepCamPos2;
 extern struct nuvec_s v000;
 extern void SeekHalfLifeNUVEC(struct nuvec_s *src, struct nuvec_s *target,
                               f32 halflife, f32 dt);
@@ -495,7 +475,6 @@ extern s32 cRPosCOUNT;
 extern f32 JCDist;
 extern s32 ChrisInTheHouse;
 extern s32 HighCam;
-extern struct nuvec_s FireBossPosition;
 
 extern s32 JeepFrame;
 extern s32 JeepInControl;
@@ -506,12 +485,32 @@ extern s32 D_006332B0;              /* debug-jeep button edge latch */
 extern s32 temp_crate_type;
 extern s32 Level;
 extern f32 DropAdj;
-extern struct nuvec_s ExhaustPos[2];
-extern struct POINTANG WesternRestartPoints[];
+struct nuvec_s WesternEnemyStarts[4] = {
+    { -0.9f, 0.0f, 0.0f },
+    { 1.8f, 0.0f, 0.0f },
+    { 0.9f, 0.0f, -1.5f },
+    { -1.8f, 0.0f, -1.5f },
+};
+struct nuvec_s WesternPlayerStart = { -0.45f, 0.0f, -3.0f };
+struct POINTANG WesternRestartPoints[11] = {
+    { 1.22f, -0.5f, 145.26f, -3289 },
+    { -25.66f, -0.5f, 189.08f, -2860 },
+    { -26.71f, -0.15f, 268.25f, 10157 },
+    { -8.07f, 0.0f, 291.44f, 1716 },
+    { -42.61f, 0.0f, 408.52f, -5589 },
+    { -73.24f, -0.5f, 486.65f, 12168 },
+    { -2.03f, 0.0f, 519.73f, -1197 },
+    { -7.46f, 0.0f, 559.07f, 1257 },
+    { -27.59f, 0.0f, 671.38f, 9698 },
+    { -9.8f, 0.0f, 691.61f, 1000 },
+    { 0.0f, 0.0f, 1000000.0f, 0 },
+};
+struct nuvec_s ExhaustPos[2] = {
+    { 0.055f, 0.38f, 0.6f },
+    { -0.055f, 0.38f, 0.6f },
+};
 extern struct nuvec_s IdealCamPos;
 extern struct nuvec_s IdealObjPos;
-extern f32 D_005B9548[4];           /* MinHeight[4] (retail-owned .data) */
-#define MinHeight D_005B9548
 extern s32 SHEIGHT;
 extern void NuFntScale(s32 x, s32 y);
 extern void NuFntPrintEx(s32 x, s32 y, s32 colour, char *fmt, ...);
@@ -528,7 +527,6 @@ extern char D_0061FAA0[];
 extern void GameSfx(s32 id, struct nuvec_s *pos);
 extern s32 D_006332CC;
 #define LastWesternPosition D_006332CC
-extern struct nuvec_s RelTemp;
 extern s32 WallOfFireAttatched;
 extern char D_0061FB60[];
 #define BossActionFmt D_0061FB60
@@ -684,6 +682,7 @@ void TiltJeep(struct JEEPSTRUCT *Jeep, f32 DeltaTime) {
 
 
 void MovePlayerJeep(struct creature_s *Cre, struct nupad_s *Pad) {
+    static f32 MinHeight[4] = { -0.085f, -0.085f, -0.07f, -0.07f };
     struct JEEPSTRUCT *Jeep = &PlayerJeep;
     struct nuvec_s FirePos;
     struct nuvec_s FireVel;
@@ -904,6 +903,52 @@ void MovePlayerJeep(struct creature_s *Cre, struct nupad_s *Pad) {
     }
 }
 
+struct nuvec_s CamVec = { 2.0f, 0.3f, -2.0f };
+struct nuvec_s FIREBOSSSCALE = { 1.0f, 1.0f, 1.0f };
+f32 ThrowVal[10] = { 0.22f, 0.5f };
+s32 ThrowList[9] = { 0x3B, 0x1B, 0x3B, 0x1B, 0x1B, 0x3B, 0x1B, 0x1B, 0x1B };
+f32 InMechZ[4] = { 18.5f, -17.0f, -17.0f, -17.0f };
+f32 OutMechZ[4] = { 47.0f, 47.0f, 47.0f, 47.0f };
+struct nuvec_s InMechPos[4] = {
+    { 0.0f, 0.0f, 17.0f },
+    { 0.0f, 0.0f, -19.0f },
+    { 0.0f, 0.0f, -19.0f },
+    { 0.0f, 0.0f, -19.0f },
+};
+struct nuvec_s OutMechPos[4] = {
+    { 0.0f, 0.0f, 50.0f },
+    { 0.0f, 0.0f, 50.0f },
+    { 0.0f, 0.0f, 50.0f },
+    { 0.0f, 0.0f, 50.0f },
+};
+f32 EndChase[4] = { 0.68f, 0.45f, 0.45f, 0.45f };
+struct nuvec_s AshesMechInPos = { 0.0f, 0.0f, 0.0f };
+struct nuvec_s AshesMechOutPos = { 0.0f, 0.0f, 0.0f };
+struct nuvec_s JeepvObj = { 0.0f, 0.0f, 0.0f };
+struct nuvec_s JeepvPos = { 0.0f, 0.0f, 0.0f };
+struct nuvec_s IdealCamPos = { 0.0f, 0.0f, 0.0f };
+struct nuvec_s IdealObjPos = { 0.0f, 0.0f, 0.0f };
+struct SPLINEFOLLOW JeepFollowSpline = { 0 };
+struct nuvec_s JeepCamPos2 = { 0.0f, 0.0f, 0.0f };
+struct nuvec_s JeepCamPosTween = { 0.0f, 0.0f, 0.0f };
+struct nuvec_s FireBossPosition = { 0.0f, 0.0f, 0.0f };
+struct BUGGYDATA *BuggyData[4] = { 0 };
+s32 BuggyDataMax[4] = { 0 };
+struct enemyjeep_s EnemyJeep[4] = { 0 };
+struct nuvec_s BaseWheelPosition[6] = { 0 };
+struct JEEPSTRUCT PlayerJeep = { 0 };
+struct jeeptrail_s JeepTrail[20][0x20] = { 0 };
+s32 TrailPntr[20] = { 0 };
+s32 TrailAir[20] = { 0 };
+s32 TrailPos[20] = { 0 };
+f32 NewCurrentIntensity[20] = { 0 };
+s32 NewIntoTrail[20] = { 0 };
+s32 TrailActive[20] = { 0 };
+struct nuvec_s WallOfFirePosition = { 0.0f, 0.0f, 0.0f };
+struct nuvec_s RelTemp = { 0.0f, 0.0f, 0.0f };
+struct fireboss_s FireBoss = { 0 };
+struct JEEPBALLOON JeepBalloon[6] = { 0 };
+struct SIMWHEEL GenericTrail[1] = { 0 };
 
 void DriveJeep(struct JEEPSTRUCT *Jeep, struct nupad_s *Pad) {
     short aRailAng = 0;
@@ -2736,15 +2781,7 @@ extern s32 KillGameObject(struct obj_s *obj, s32 anim);
 extern void AddMaskFeathers(struct mask_s *mask);
 extern void JudderGameCamera(struct cammtx_s *cam, f32 time,
                              struct nuvec_s *pos);
-extern struct nuvec_s InMechPos[];
-extern struct nuvec_s OutMechPos[];
-extern f32 InMechZ[];
-extern f32 OutMechZ[];
-extern f32 EndChase[];
-extern struct nuvec_s AshesMechInPos;
-extern struct nuvec_s AshesMechOutPos;
 extern f32 AshesMechInZ;
-extern s32 ThrowList[];
 extern f32 FIREBOSSTURNTOMECH;
 extern f32 FIREBOSSTURNFROMMECH;
 extern f32 FIREBOSSENDCHASE;

@@ -61,9 +61,6 @@
 #include "nups2/ps2ctl.h"
 
 extern s32 FlyingLevelVictoryDance;
-extern struct MoveInfo CrashMoveInfo;
-extern struct MoveInfo SwimmingMoveInfo;
-extern struct MoveInfo CocoMoveInfo;
 extern s32 Level;
 extern s32 SmokeyCountDownValue;
 extern struct RPos_s *best_cRPos;
@@ -85,6 +82,432 @@ struct plrevent_s {
     f32 fALONG;                     /* 0x94 */
 };
 
+struct tracklink_s {
+    s8 i_left;     /* 0x0 */
+    s8 i_mid;      /* 0x1 */
+    s8 i_right;    /* 0x2 */
+    u8 start;      /* 0x3 */
+    u8 end;        /* 0x4 */
+    u8 flags;      /* 0x5 */
+}; /* 0x6 */
+
+struct MoveInfo CrashMoveInfo = {
+    0.0075f /* IDLESPEED */,
+    0.015f /* TIPTOESPEED */,
+    0.03f /* WALKSPEED */,
+    0.072f /* RUNSPEED */,
+    0.096f /* SPRINTSPEED */,
+    0.096f /* SLIDESPEED */,
+    0.012f /* CRAWLSPEED */,
+    0.015599999f /* DANGLESPEED */,
+    0.0139999995f /* WADESPEED */,
+    1.1f /* JUMPHEIGHT */,
+    0.22f /* DANGLEGAP */,
+    5 /* JUMPFRAMES0 */,
+    10 /* JUMPFRAMES1 */,
+    15 /* JUMPFRAMES2 */,
+    20 /* STARJUMPFRAMES */,
+    50 /* SOMERSAULTFRAMES */,
+    16 /* SPINFRAMES */,
+    12 /* SPINRESETFRAMES */,
+    33 /* SUPERSPINFRAMES */,
+    16 /* SUPERSPINWAITFRAMES */,
+    50 /* SLAMWAITFRAMES */,
+    25 /* SLIDEFRAMES */,
+    25 /* CROUCHINGFRAMES */,
+    50 /* JUMPLANDFRAMES */,
+    -1 /* spad */
+};
+
+struct MoveInfo SwimmingMoveInfo = {
+    0.0075f /* IDLESPEED */,
+    0.015f /* TIPTOESPEED */,
+    0.024999999f /* WALKSPEED */,
+    0.049999997f /* RUNSPEED */,
+    0.099999994f /* SPRINTSPEED */,
+    0.096f /* SLIDESPEED */,
+    0.012f /* CRAWLSPEED */,
+    0.03f /* DANGLESPEED */,
+    0.0139999995f /* WADESPEED */,
+    1.1f /* JUMPHEIGHT */,
+    0.2f /* DANGLEGAP */,
+    5 /* JUMPFRAMES0 */,
+    10 /* JUMPFRAMES1 */,
+    15 /* JUMPFRAMES2 */,
+    20 /* STARJUMPFRAMES */,
+    50 /* SOMERSAULTFRAMES */,
+    16 /* SPINFRAMES */,
+    12 /* SPINRESETFRAMES */,
+    33 /* SUPERSPINFRAMES */,
+    16 /* SUPERSPINWAITFRAMES */,
+    50 /* SLAMWAITFRAMES */,
+    25 /* SLIDEFRAMES */,
+    25 /* CROUCHINGFRAMES */,
+    50 /* JUMPLANDFRAMES */,
+    -1 /* spad */
+};
+
+struct MoveInfo CocoMoveInfo = {
+    0.0075f /* IDLESPEED */,
+    0.012f /* TIPTOESPEED */,
+    0.024f /* WALKSPEED */,
+    0.06f /* RUNSPEED */,
+    0.089999996f /* SPRINTSPEED */,
+    0.096f /* SLIDESPEED */,
+    0.012f /* CRAWLSPEED */,
+    0.015599999f /* DANGLESPEED */,
+    0.0139999995f /* WADESPEED */,
+    1.1f /* JUMPHEIGHT */,
+    0.2f /* DANGLEGAP */,
+    5 /* JUMPFRAMES0 */,
+    10 /* JUMPFRAMES1 */,
+    15 /* JUMPFRAMES2 */,
+    20 /* STARJUMPFRAMES */,
+    16 /* SOMERSAULTFRAMES */,
+    16 /* SPINFRAMES */,
+    10 /* SPINRESETFRAMES */,
+    33 /* SUPERSPINFRAMES */,
+    16 /* SUPERSPINWAITFRAMES */,
+    50 /* SLAMWAITFRAMES */,
+    25 /* SLIDEFRAMES */,
+    25 /* CROUCHINGFRAMES */,
+    50 /* JUMPLANDFRAMES */,
+    -1 /* spad */
+};
+
+struct MoveInfo ScooterMoveInfo = {
+    0.004f /* IDLESPEED */,
+    0.01f /* TIPTOESPEED */,
+    0.03f /* WALKSPEED */,
+    0.07f /* RUNSPEED */,
+    0.099999994f /* SPRINTSPEED */,
+    0.08f /* SLIDESPEED */,
+    0.012f /* CRAWLSPEED */,
+    0.03f /* DANGLESPEED */,
+    0.0139999995f /* WADESPEED */,
+    1.1f /* JUMPHEIGHT */,
+    0.2f /* DANGLEGAP */,
+    5 /* JUMPFRAMES0 */,
+    10 /* JUMPFRAMES1 */,
+    15 /* JUMPFRAMES2 */,
+    20 /* STARJUMPFRAMES */,
+    16 /* SOMERSAULTFRAMES */,
+    16 /* SPINFRAMES */,
+    10 /* SPINRESETFRAMES */,
+    33 /* SUPERSPINFRAMES */,
+    16 /* SUPERSPINWAITFRAMES */,
+    50 /* SLAMWAITFRAMES */,
+    25 /* SLIDEFRAMES */,
+    25 /* CROUCHINGFRAMES */,
+    50 /* JUMPLANDFRAMES */,
+    -1 /* spad */
+};
+
+struct MoveInfo SnowBoardMoveInfo = {
+    0.004f /* IDLESPEED */,
+    0.01f /* TIPTOESPEED */,
+    0.03f /* WALKSPEED */,
+    0.08f /* RUNSPEED */,
+    0.12f /* SPRINTSPEED */,
+    0.08f /* SLIDESPEED */,
+    0.012f /* CRAWLSPEED */,
+    0.03f /* DANGLESPEED */,
+    0.0139999995f /* WADESPEED */,
+    1.1f /* JUMPHEIGHT */,
+    0.2f /* DANGLEGAP */,
+    5 /* JUMPFRAMES0 */,
+    10 /* JUMPFRAMES1 */,
+    15 /* JUMPFRAMES2 */,
+    20 /* STARJUMPFRAMES */,
+    16 /* SOMERSAULTFRAMES */,
+    16 /* SPINFRAMES */,
+    10 /* SPINRESETFRAMES */,
+    33 /* SUPERSPINFRAMES */,
+    16 /* SUPERSPINWAITFRAMES */,
+    50 /* SLAMWAITFRAMES */,
+    25 /* SLIDEFRAMES */,
+    25 /* CROUCHINGFRAMES */,
+    50 /* JUMPLANDFRAMES */,
+    -1 /* spad */
+};
+
+struct MoveInfo OffRoaderMoveInfo = {
+    0.004f /* IDLESPEED */,
+    0.01f /* TIPTOESPEED */,
+    0.03f /* WALKSPEED */,
+    0.12f /* RUNSPEED */,
+    0.17999999f /* SPRINTSPEED */,
+    0.08f /* SLIDESPEED */,
+    0.012f /* CRAWLSPEED */,
+    0.03f /* DANGLESPEED */,
+    0.0139999995f /* WADESPEED */,
+    1.1f /* JUMPHEIGHT */,
+    0.2f /* DANGLEGAP */,
+    5 /* JUMPFRAMES0 */,
+    10 /* JUMPFRAMES1 */,
+    15 /* JUMPFRAMES2 */,
+    20 /* STARJUMPFRAMES */,
+    16 /* SOMERSAULTFRAMES */,
+    16 /* SPINFRAMES */,
+    10 /* SPINRESETFRAMES */,
+    33 /* SUPERSPINFRAMES */,
+    16 /* SUPERSPINWAITFRAMES */,
+    50 /* SLAMWAITFRAMES */,
+    25 /* SLIDEFRAMES */,
+    25 /* CROUCHINGFRAMES */,
+    50 /* JUMPLANDFRAMES */,
+    -1 /* spad */
+};
+
+struct MoveInfo MechMoveInfo = {
+    0.004f /* IDLESPEED */,
+    0.01f /* TIPTOESPEED */,
+    0.018f /* WALKSPEED */,
+    0.08f /* RUNSPEED */,
+    0.12f /* SPRINTSPEED */,
+    0.08f /* SLIDESPEED */,
+    0.012f /* CRAWLSPEED */,
+    0.03f /* DANGLESPEED */,
+    0.0139999995f /* WADESPEED */,
+    1.3f /* JUMPHEIGHT */,
+    0.2f /* DANGLEGAP */,
+    5 /* JUMPFRAMES0 */,
+    10 /* JUMPFRAMES1 */,
+    20 /* JUMPFRAMES2 */,
+    20 /* STARJUMPFRAMES */,
+    16 /* SOMERSAULTFRAMES */,
+    16 /* SPINFRAMES */,
+    10 /* SPINRESETFRAMES */,
+    33 /* SUPERSPINFRAMES */,
+    16 /* SUPERSPINWAITFRAMES */,
+    50 /* SLAMWAITFRAMES */,
+    25 /* SLIDEFRAMES */,
+    25 /* CROUCHINGFRAMES */,
+    50 /* JUMPLANDFRAMES */,
+    -1 /* spad */
+};
+
+struct MoveInfo FireEngineMoveInfo = {
+    0.004f /* IDLESPEED */,
+    0.01f /* TIPTOESPEED */,
+    0.018f /* WALKSPEED */,
+    0.099999994f /* RUNSPEED */,
+    0.08f /* SPRINTSPEED */,
+    0.08f /* SLIDESPEED */,
+    0.012f /* CRAWLSPEED */,
+    0.03f /* DANGLESPEED */,
+    0.0139999995f /* WADESPEED */,
+    1.3f /* JUMPHEIGHT */,
+    0.2f /* DANGLEGAP */,
+    5 /* JUMPFRAMES0 */,
+    10 /* JUMPFRAMES1 */,
+    20 /* JUMPFRAMES2 */,
+    20 /* STARJUMPFRAMES */,
+    16 /* SOMERSAULTFRAMES */,
+    16 /* SPINFRAMES */,
+    10 /* SPINRESETFRAMES */,
+    33 /* SUPERSPINFRAMES */,
+    16 /* SUPERSPINWAITFRAMES */,
+    50 /* SLAMWAITFRAMES */,
+    25 /* SLIDEFRAMES */,
+    25 /* CROUCHINGFRAMES */,
+    50 /* JUMPLANDFRAMES */,
+    -1 /* spad */
+};
+
+struct MoveInfo GyroMoveInfo = {
+    0.0075f /* IDLESPEED */,
+    0.015f /* TIPTOESPEED */,
+    0.06f /* WALKSPEED */,
+    0.089999996f /* RUNSPEED */,
+    0.12f /* SPRINTSPEED */,
+    0.096f /* SLIDESPEED */,
+    0.012f /* CRAWLSPEED */,
+    0.03f /* DANGLESPEED */,
+    0.0139999995f /* WADESPEED */,
+    1.1f /* JUMPHEIGHT */,
+    0.2f /* DANGLEGAP */,
+    5 /* JUMPFRAMES0 */,
+    10 /* JUMPFRAMES1 */,
+    15 /* JUMPFRAMES2 */,
+    20 /* STARJUMPFRAMES */,
+    50 /* SOMERSAULTFRAMES */,
+    16 /* SPINFRAMES */,
+    12 /* SPINRESETFRAMES */,
+    33 /* SUPERSPINFRAMES */,
+    16 /* SUPERSPINWAITFRAMES */,
+    50 /* SLAMWAITFRAMES */,
+    25 /* SLIDEFRAMES */,
+    25 /* CROUCHINGFRAMES */,
+    50 /* JUMPLANDFRAMES */,
+    -1 /* spad */
+};
+
+struct MoveInfo SubmarineMoveInfo = {
+    0.0075f /* IDLESPEED */,
+    0.015f /* TIPTOESPEED */,
+    0.024999999f /* WALKSPEED */,
+    0.06f /* RUNSPEED */,
+    0.08f /* SPRINTSPEED */,
+    0.096f /* SLIDESPEED */,
+    0.012f /* CRAWLSPEED */,
+    0.03f /* DANGLESPEED */,
+    0.0139999995f /* WADESPEED */,
+    1.1f /* JUMPHEIGHT */,
+    0.2f /* DANGLEGAP */,
+    5 /* JUMPFRAMES0 */,
+    10 /* JUMPFRAMES1 */,
+    15 /* JUMPFRAMES2 */,
+    20 /* STARJUMPFRAMES */,
+    50 /* SOMERSAULTFRAMES */,
+    16 /* SPINFRAMES */,
+    12 /* SPINRESETFRAMES */,
+    33 /* SUPERSPINFRAMES */,
+    16 /* SUPERSPINWAITFRAMES */,
+    50 /* SLAMWAITFRAMES */,
+    25 /* SLIDEFRAMES */,
+    25 /* CROUCHINGFRAMES */,
+    50 /* JUMPLANDFRAMES */,
+    -1 /* spad */
+};
+
+struct MoveInfo MineCartMoveInfo = {
+    0.004f /* IDLESPEED */,
+    0.01f /* TIPTOESPEED */,
+    0.03f /* WALKSPEED */,
+    0.08f /* RUNSPEED */,
+    0.12f /* SPRINTSPEED */,
+    0.08f /* SLIDESPEED */,
+    0.012f /* CRAWLSPEED */,
+    0.03f /* DANGLESPEED */,
+    0.0139999995f /* WADESPEED */,
+    1.1f /* JUMPHEIGHT */,
+    0.2f /* DANGLEGAP */,
+    5 /* JUMPFRAMES0 */,
+    10 /* JUMPFRAMES1 */,
+    15 /* JUMPFRAMES2 */,
+    20 /* STARJUMPFRAMES */,
+    16 /* SOMERSAULTFRAMES */,
+    16 /* SPINFRAMES */,
+    10 /* SPINRESETFRAMES */,
+    33 /* SUPERSPINFRAMES */,
+    16 /* SUPERSPINWAITFRAMES */,
+    50 /* SLAMWAITFRAMES */,
+    25 /* SLIDEFRAMES */,
+    25 /* CROUCHINGFRAMES */,
+    50 /* JUMPLANDFRAMES */,
+    -1 /* spad */
+};
+
+struct MoveInfo MineTubMoveInfo = {
+    0.004f /* IDLESPEED */,
+    0.01f /* TIPTOESPEED */,
+    0.03f /* WALKSPEED */,
+    0.08f /* RUNSPEED */,
+    0.12f /* SPRINTSPEED */,
+    0.08f /* SLIDESPEED */,
+    0.012f /* CRAWLSPEED */,
+    0.03f /* DANGLESPEED */,
+    0.0139999995f /* WADESPEED */,
+    1.1f /* JUMPHEIGHT */,
+    0.2f /* DANGLEGAP */,
+    5 /* JUMPFRAMES0 */,
+    10 /* JUMPFRAMES1 */,
+    15 /* JUMPFRAMES2 */,
+    20 /* STARJUMPFRAMES */,
+    16 /* SOMERSAULTFRAMES */,
+    16 /* SPINFRAMES */,
+    10 /* SPINRESETFRAMES */,
+    33 /* SUPERSPINFRAMES */,
+    16 /* SUPERSPINWAITFRAMES */,
+    50 /* SLAMWAITFRAMES */,
+    25 /* SLIDEFRAMES */,
+    25 /* CROUCHINGFRAMES */,
+    50 /* JUMPLANDFRAMES */,
+    -1 /* spad */
+};
+
+struct tracklink_s TubLinkCR[9] = {
+    /* i_left, i_mid, i_right, start, end, flags */
+    { 1, 2, -1, 0, 0, 0 },
+    { -1, 3, -1, 0, 0, 0 },
+    { -1, 3, -1, 0, 0, 0 },
+    { -1, 5, 4, 0, 0, 0 },
+    { -1, -1, -1, 0, 0, 0 },
+    { -1, 6, 7, 0, 0, 0 },
+    { -1, 8, -1, 0, 0, 0 },
+    { -1, 8, -1, 0, 0, 0 },
+    { -1, -1, -1, 0, 0, 0 },
+};
+
+struct tracklink_s TubLinkGT[16] = {
+    /* i_left, i_mid, i_right, start, end, flags */
+    { -1, 2, -1, 18, 19, 0 },
+    { -1, 2, -1, 18, 19, 0 },
+    { 3, 4, -1, 19, 1, 0 },
+    { -1, 7, -1, 1, 6, 0 },
+    { -1, 6, 5, 1, 4, 0 },
+    { -1, 8, -1, 4, 13, 0 },
+    { -1, 7, -1, 4, 6, 0 },
+    { -1, 8, -1, 6, 13, 0 },
+    { 9, 10, -1, 13, 14, 0 },
+    { -1, 11, -1, 14, 15, 0 },
+    { -1, 11, -1, 14, 15, 0 },
+    { -1, 13, 12, 15, 16, 0 },
+    { 14, 15, -1, 16, 17, 0 },
+    { 14, 15, -1, 16, 17, 0 },
+    { -1, 0, -1, 17, 18, 0 },
+    { -1, 0, -1, 17, 18, 0 },
+};
+
+struct nuvec_s CircuitOriginGT = { -15.0f, 0.0f, -22.0f };
+
+struct MoveInfo DefaultMoveInfo = {
+    0.008f /* IDLESPEED */,
+    0.0139999995f /* TIPTOESPEED */,
+    0.03f /* WALKSPEED */,
+    0.07f /* RUNSPEED */,
+    0.089999996f /* SPRINTSPEED */,
+    0.089999996f /* SLIDESPEED */,
+    0.01f /* CRAWLSPEED */,
+    0.03f /* DANGLESPEED */,
+    0.0139999995f /* WADESPEED */,
+    1.1f /* JUMPHEIGHT */,
+    0.2f /* DANGLEGAP */,
+    5 /* JUMPFRAMES0 */,
+    10 /* JUMPFRAMES1 */,
+    15 /* JUMPFRAMES2 */,
+    20 /* STARJUMPFRAMES */,
+    50 /* SOMERSAULTFRAMES */,
+    16 /* SPINFRAMES */,
+    12 /* SPINRESETFRAMES */,
+    33 /* SUPERSPINFRAMES */,
+    16 /* SUPERSPINWAITFRAMES */,
+    50 /* SLAMWAITFRAMES */,
+    25 /* SLIDEFRAMES */,
+    25 /* CROUCHINGFRAMES */,
+    25 /* JUMPLANDFRAMES */,
+    -1 /* spad */
+};
+
+struct tubinfo_s PlrTub = { 0 };
+struct tubinfo_s OppTub = { 0 };
+struct creature_s OppTubCreature = { 0 };
+struct plrevent_s PlrEvent[8] = { 0 };
+struct nuvec_s ring_pos = { 0.0f, 0.0f, 0.0f };
+struct nuvec_s jeeptyrepos = { 0.0f, 0.0f, 0.0f };
+struct nuvec_s carpet_splpos = { 0.0f, 0.0f, 0.0f };
+struct nuvec_s carpet_pos = { 0.0f, 0.0f, 0.0f };
+struct nuvec_s carpet_oldpos = { 0.0f, 0.0f, 0.0f };
+struct nuvec_s carpet_mom = { 0.0f, 0.0f, 0.0f };
+struct anim_s carpet_anim = { 0 };
+struct RPos_s carpet_RPos = { 0 };
+struct Nearest_Light_s carpet_lights = { 0 };
+struct nuvec_s gyropos = { 0.0f, 0.0f, 0.0f };
+struct nuvec_s TempTubPos = { 0.0f, 0.0f, 0.0f };
+u16 ring_xrot[48] = { 0 };
+u16 ring_yrot[48] = { 0 };
+
 extern struct spltab_s SplTab[];
 extern struct tersurface_s TerSurface[];
 extern s32 GameMode;
@@ -98,15 +521,11 @@ extern f32 FALLONCRATEBREAKSPEED;
 extern struct chase_s Chase[3];
 extern s32 plr_tocam_wait;
 extern s32 plr_tocam_turn;
-extern struct plrevent_s PlrEvent[8];
 extern struct nugscn_s *world_scene[];
 extern struct CharacterModel *carpet_model[2];
 extern s32 carpet_character[2];
 extern u16 carpet_xrot;
 extern u16 carpet_yrot;
-extern struct nuvec_s carpet_pos;
-extern struct anim_s carpet_anim;
-extern struct Nearest_Light_s carpet_lights;
 extern struct objtab_s ObjTab[];
 extern struct gtimer_s GameTimer;
 extern struct cammtx_s GameCam[];
@@ -1068,7 +1487,6 @@ void AnimateCOCO(struct creature_s *plr) {
     UpdateCharacterIdle(plr, 1);
 }
 
-extern struct MoveInfo ScooterMoveInfo;
 
 void MoveSCOOTER(struct creature_s *plr, struct nupad_s *pad) {
     struct MoveInfo *minfo = &ScooterMoveInfo;
@@ -1147,7 +1565,6 @@ void MoveSCOOTER(struct creature_s *plr, struct nupad_s *pad) {
 }
 
 
-extern struct MoveInfo FireEngineMoveInfo;
 
 void MoveFIREENGINE(struct creature_s *plr, struct nupad_s *pad) {
     struct MoveInfo *minfo = &FireEngineMoveInfo;
@@ -1251,18 +1668,12 @@ void AnimateFIREENGINE(struct creature_s *plr) {
     UpdateCharacterIdle(plr, 0);
 }
 
-extern struct MoveInfo GyroMoveInfo;
-extern struct nuvec_s gyropos;
 extern u16 D_005E7812[];
 extern u16 D_005E7A82[];
 #define gyro_sfx_volume D_005E7812[0]
 #define gyro_loop_sfx_volume D_005E7A82[0]
 extern f32 CRATEBALLOONOFFSET;
 extern f32 CRATEBALLOONRADIUS;
-extern struct nuvec_s carpet_splpos;
-extern struct nuvec_s carpet_oldpos;
-extern struct nuvec_s carpet_mom;
-extern struct RPos_s carpet_RPos;
 extern s32 carpet_action;
 extern f32 carpet_time;
 extern s32 carpet_place;
@@ -1560,7 +1971,6 @@ void MoveSUBMARINE(struct creature_s *plr, struct nupad_s *pad) {
 }
 
 
-extern struct MoveInfo MineCartMoveInfo;
 extern f32 FASTMINECARTMUL;
 extern f32 SLOWMINECARTMUL;
 extern f32 plr_vehicle_speedmul;
@@ -1669,8 +2079,6 @@ void MoveMINECART(struct creature_s *plr, struct nupad_s *pad) {
 }
 
 
-extern u16 ring_xrot[];
-extern u16 ring_yrot[];
 extern s32 Draw3DObject(s32 object, struct nuvec_s *pos, u16 xrot, u16 yrot, u16 zrot,
                         f32 scalex, f32 scaley, f32 scalez,
                         struct nugscn_s *scn, struct nuspecial_s *obj, s32 rot);
@@ -1722,7 +2130,6 @@ void CheckGates(struct obj_s *obj) {
     }
 }
 
-extern struct nuvec_s ring_pos;
 
 void ResetRings(void) {
     struct nuvec_s *pos;
@@ -1884,7 +2291,6 @@ void DrawRings(void) {
     }
 }
 
-extern struct MoveInfo MechMoveInfo;
 extern f32 MECHSTANDINGJUMPPAUSEFRAME;
 extern f32 MECHRUNNINGJUMPPAUSEFRAME;
 
@@ -2091,7 +2497,6 @@ void AnimateMECH(struct creature_s *plr) {
     UpdateCharacterIdle(plr, 0);
 }
 
-extern struct MoveInfo SnowBoardMoveInfo;
 void ProcessGenericTrail(s32 id, struct nuvec_s *pos, f32 radius, f32 width);
 
 void MoveSNOWBOARD(struct creature_s *plr, struct nupad_s *pad) {
@@ -2216,7 +2621,6 @@ void AnimateSNOWBOARD(struct creature_s *plr) {
     }
 }
 
-extern struct nuvec_s jeeptyrepos;
 extern s32 jonframe1;
 extern s32 i_jkeepsfx;
 extern s16 jeepsfx[4];
@@ -2623,9 +3027,6 @@ inline void ResetTub(struct tubinfo_s *tub, struct creature_s *c) {
     tub->boost = 0;
 }
 
-extern struct tubinfo_s PlrTub;
-extern struct tubinfo_s OppTub;
-extern struct creature_s OppTubCreature;
 extern s32 opptub_action;
 extern s32 opptub_wait;
 
@@ -2673,14 +3074,6 @@ void ResetTubs(void) {
 }
 
 
-struct tracklink_s {
-    s8 i_left;     /* 0x0 */
-    s8 i_mid;      /* 0x1 */
-    s8 i_right;    /* 0x2 */
-    u8 start;      /* 0x3 */
-    u8 end;        /* 0x4 */
-    u8 flags;      /* 0x5 */
-}; /* 0x6 */
 
 extern f32 TUBBOOSTFRAMES;
 extern f32 TUBWAIT;
@@ -2900,13 +3293,10 @@ void MoveTub(struct tubinfo_s *tub, s32 LEFT, s32 RIGHT) {
         VEHICLECONTROL = control;
     }
 }
-extern struct tracklink_s TubLinkGT[];
-extern struct tracklink_s TubLinkCR[];
 extern s32 plr_tub_tilt;
 extern s32 plr_tub_tilttarget;
 extern s32 plr_tub_tiltlock;
 extern s32 tub_overlap;
-extern struct nuvec_s TempTubPos;
 
 void MoveMINETUB(struct creature_s *plr, struct nupad_s *pad) {
     struct nuvec_s d;

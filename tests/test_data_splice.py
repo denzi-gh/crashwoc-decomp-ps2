@@ -12,8 +12,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 from gen_hybrid import (DataItem, HybridError, _JumpTable,  # noqa: E402
-                        _directive_size, _plan_data, _relabel_data,
-                        _split_sections, has_c_data, parse_s, piece_name)
+                        _directive_size, _is_align_pad, _plan_data,
+                        _relabel_data, _split_sections, has_c_data, parse_s, piece_name)
 from verify_promoted import complete_problems  # noqa: E402
 
 PROBE = """\
@@ -240,6 +240,14 @@ class TestHelpers(unittest.TestCase):
 
     def test_piece_name(self):
         self.assertEqual(piece_name(".rodata", 0x00613FB0), ".rodata.split_00613fb0")
+
+    def test_align_pad(self):
+        # nuvec_zero (12 bytes at ...850) then `.align 3` nuvec_one at ...860.
+        self.assertTrue(_is_align_pad(bytes(4), 0x29385C, 0x293860, 3))
+        self.assertFalse(_is_align_pad(b"\0\0\0\1", 0x29385C, 0x293860, 3))
+        self.assertFalse(_is_align_pad(bytes(4), 0x29385C, 0x293860, 2))
+        self.assertFalse(_is_align_pad(bytes(12), 0x293854, 0x293860, 3))
+        self.assertFalse(_is_align_pad(bytes(4), 0x29385C, 0x293860, 0))
 
 
 RANGES = [

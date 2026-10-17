@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0204"
 source = "src/sdk/newlib/libc/stdlib/mallocr_204.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0204:00271100:_realloc_r"

@@ -26,3 +26,11 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0097:00201a00:ReleaseVisiTable"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0097:005a6bd8:xpnt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0097:00631310:hide"
+state = "asm"

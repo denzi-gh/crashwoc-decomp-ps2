@@ -330,3 +330,143 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0073:001a6b40:edanimcbCancelSoundTypeMenu"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0073:0049c660:edanimdesc"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0073:0049c698:AnimParams"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0073:004a7a98:edanim_cam_pos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0073:0062f658:edanim_active_menu"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0073:0062f65c:edanim_options_menu"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0073:0062f660:edanim_particle_menu"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0073:0062f664:edanim_particletype_menu"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0073:0062f668:edanim_localparticletype_menu"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0073:0062f66c:edanim_localparticle_menu"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0073:0062f670:edanim_switch_menu"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0073:0062f674:edanim_switchtype_menu"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0073:0062f678:edanim_sound_menu"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0073:0062f67c:edanim_soundtype_menu"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0073:0062f680:edanim_localsoundtype_menu"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0073:0062f684:edanim_localsound_menu"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0073:0062f688:edanim_bouncy_menu"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0073:0062f68c:edanim_mctb_menu"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0073:0062f690:edanim_base_scene"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0073:0062f694:edanim_emitrotz"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0073:0062f698:edanim_emitroty"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0073:0062f69c:localframecount.72"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0073:0062f6f0:edanim_mtl"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0073:0062f6f4:edanim_mtl_zoff"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0073:0062f6f8:edanim_cam_dist"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0073:0062f6fc:edanim_cam_ax"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0073:0062f700:edanim_cam_ay"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0073:0062f704:edanim_nearest"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0073:0062f708:edanim_nearest_param_id"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0073:0062f70c:edanim_nearest_particle"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0073:0062f710:edanim_nearest_sound"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0073:0062f714:edanim_next_param"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0073:0062f718:edanim_particle_mode"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0073:0062f71c:edanim_particle_type"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0073:0062f720:edanim_sound_mode"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0073:0062f724:edanim_sound_type"
+state = "asm"

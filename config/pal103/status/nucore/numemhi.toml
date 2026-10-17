@@ -22,3 +22,7 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0006:001057b8:NuFreeHigh"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0006:0062ea28:freep"
+state = "asm"

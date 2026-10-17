@@ -254,3 +254,143 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0087:001c5428:NuSoundFindLoopInfo"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0087:004bff00:SOUND_SPUKeyStatus"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0087:004bff30:SOUND_STREAM_SPU_CHAN"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0087:004bff40:SOUND_STREAM_ID"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0087:004bff50:SOUND_STREAM_SPU_ADDR"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0087:004bff60:SOUND_STREAM_PLAY_HALF"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0087:004bff70:SOUND_STREAM_ENV"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0087:004bff80:NuSndLoopInfo"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0087:004c0000:senddata"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0087:004c0800:IOPCommandData"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0087:004c1000:sbuff2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0087:0062f9a0:nusound_fade_start"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0087:0062f9a4:nusound_fade_end"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0087:0062f9a8:nusound_dpl_enabled"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0087:0062f9ac:IOP_Cnt"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0087:0062f9b0:SOUND_STEREO_READY_FLAG"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0087:0062f9b4:SOUND_CD_STATUS"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0087:0062f9b8:SOUND_SPU_ADDR"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0087:0062f9bc:SOUND_STREAM_CD_ACCESS"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0087:0062f9c0:SOUND_IOP_REQUEST_LOAD"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0087:0062f9c4:SOUND_STREAM_STATUS"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0087:0062f9c8:SOUND_SFX_TRANSFER_STATUS"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0087:0062f9cc:SOUND_SFX_TRANSFER_END"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0087:0062f9d0:SOUND_SHUTOFF_STATUS"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0087:0062f9d4:fileinfo_cnt"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0087:0062f9d8:SSample"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0087:0062f9dc:VolL"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0087:0062f9e0:VolR"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0087:0062f9e4:SStat"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0087:0062f9e8:Pitch"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0087:0062f9ec:Pitch22khz"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0087:0062f9f0:SChan"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0087:0062f9f4:Attack"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0087:0062f9f8:Release"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0087:0062f9fc:NuSoundListenPos"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0087:0062fa00:NuSndSteroPitch"
+state = "asm"

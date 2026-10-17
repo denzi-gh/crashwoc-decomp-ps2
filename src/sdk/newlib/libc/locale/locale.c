@@ -43,14 +43,21 @@ struct lconv {
 extern struct _reent *_impure_ptr[];
 #define _REENT (_impure_ptr[0])
 
-extern struct lconv D_0062C408;
-#define lconv D_0062C408
-
 extern int strcmp(const char *s1, const char *s2);
+
+int __mb_cur_max = 1;
+
+static const struct lconv lconv = {
+    ".", "", "", "", "", "", "", "", "", "",
+    127, 127, 127, 127, 127, 127, 127, 127
+};
 
 
 char *_setlocale_r(struct _reent *p, int category, const char *locale)
 {
+    static char lc_ctype[8] = "C";
+    static char last_lc_ctype[8] = "C";
+
     if (locale) {
         if (strcmp(locale, "C") && strcmp(locale, "")) {
             return 0;

@@ -58,3 +58,11 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0086:001c2288:edcamGetPosPointer"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0086:004bfe78:gp_cam"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0086:0062f99c:ed_cam"
+state = "asm"

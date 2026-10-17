@@ -54,7 +54,7 @@ typedef struct ClipPoint {
 typedef int (*ClipTestFn)(void);
 typedef float (*ClipIntersectFn)(ClipPoint *curr, ClipPoint *prev);
 
-extern ClipPoint pnts[2][8];
+ClipPoint pnts[2][8] = {0};
 extern int npnts[2];
 extern int inbuffer;
 extern int clipflags;

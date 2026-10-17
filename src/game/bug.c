@@ -33,7 +33,7 @@ typedef struct {
 } BUGAREA;            /* 0x10 */
 
 extern struct rail_s Rail[];
-extern BUGAREA BugArea[4];
+BUGAREA BugArea[4] = { 0 };
 
 extern s32 FurtherALONG(s32 iRAIL, s32 iALONG, f32 fALONG, s32 iRAIL2,
                         s32 iALONG2, f32 fALONG2);
@@ -71,7 +71,7 @@ extern u16 D_006333B4;
 #define bug_xrot D_006333B4
 extern u16 D_006333B6;
 #define bug_yrot D_006333B6
-extern struct anim_s BugAnim;
+struct anim_s BugAnim = { 0 };
 extern s32 FRAME;
 extern s32 FRAMES;
 

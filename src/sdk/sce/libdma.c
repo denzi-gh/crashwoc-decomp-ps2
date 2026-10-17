@@ -98,19 +98,36 @@ typedef struct {
 #define DMA_CHAN_COUNT   10
 #define DMA_SYNC_TIMEOUT 0x1000000
 
-extern sceDmaChan *dch[];
-extern int sceDmaDebugMode[];
-extern int D_006108B0[];
-extern u_char D_006108D8[];
-extern u_char D_006108E8[];
-extern u_char D_006108F8[];
-extern sceDmaEnv sceDmaCurrentEnv;
+/* channel register blocks */
+#define D0_CHCR 0x10008000 /* VIF0 */
+#define D1_CHCR 0x10009000 /* VIF1 */
+#define D2_CHCR 0x1000a000 /* GIF */
+#define D3_CHCR 0x1000b000 /* fromIPU */
+#define D4_CHCR 0x1000b400 /* toIPU */
+#define D5_CHCR 0x1000c000 /* SIF0 */
+#define D6_CHCR 0x1000c400 /* SIF1 */
+#define D7_CHCR 0x1000c800 /* SIF2 */
+#define D8_CHCR 0x1000d000 /* fromSPR */
+#define D9_CHCR 0x1000d400 /* toSPR */
 
-#define dma_debug_mode sceDmaDebugMode[0]
-#define chan_resettable D_006108B0
-#define sts_select D_006108D8
-#define std_select D_006108E8
-#define mfd_select D_006108F8
+sceDmaChan *dch[DMA_CHAN_COUNT] = {
+    (sceDmaChan *)D0_CHCR, (sceDmaChan *)D1_CHCR, (sceDmaChan *)D2_CHCR,
+    (sceDmaChan *)D3_CHCR, (sceDmaChan *)D4_CHCR, (sceDmaChan *)D5_CHCR,
+    (sceDmaChan *)D6_CHCR, (sceDmaChan *)D7_CHCR, (sceDmaChan *)D8_CHCR,
+    (sceDmaChan *)D9_CHCR
+};
+int sceDmaDebugMode = 0;
+static char __ps2_libinfo__[16] = "PsIIlibdma  2300";
+
+/* channels sceDmaReset clears */
+static int isclr[DMA_CHAN_COUNT] = { 1, 1, 1, 1, 1, 0, 0, 0, 1, 1 };
+
+/* sceDmaEnv sts/std/mfd channel number -> D_CTRL field value */
+static u_char ststbl[DMA_CHAN_COUNT] = { 0, 0, 0, 3, 0, 1, 0, 0, 2, 0 };
+static u_char stdtbl[DMA_CHAN_COUNT] = { 0, 1, 2, 0, 0, 0, 3, 0, 0, 0 };
+static u_char mfdtbl[DMA_CHAN_COUNT] = { 0, 2, 3, 0, 0, 0, 0, 0, 0, 0 };
+
+sceDmaEnv sceDmaCurrentEnv = { 0 };
 
 extern int printf(const char *fmt, ...);
 
@@ -143,7 +160,7 @@ int sceDmaReset(int mode)
     int i;
 
     for (i = 0; i < DMA_CHAN_COUNT; i++) {
-        if (chan_resettable[i]) {
+        if (isclr[i]) {
             sceDmaChan *d = dch[i];
 
             d->sadr = 0;
@@ -167,9 +184,9 @@ int sceDmaReset(int mode)
 
 int sceDmaDebug(int mode)
 {
-    int old = dma_debug_mode;
+    int old = sceDmaDebugMode;
 
-    dma_debug_mode = mode;
+    sceDmaDebugMode = mode;
     return old;
 }
 
@@ -194,9 +211,9 @@ int sceDmaPutEnv(sceDmaEnv *env)
     if (env->rcycle >= 7) {
         return -4;
     }
-    ctrl = (ctrl & ~DMA_CTRL_STS_M) | (sts_select[env->sts] << 4);
-    ctrl = (ctrl & ~DMA_CTRL_STD_M) | (std_select[env->std] << 6);
-    ctrl = (ctrl & ~DMA_CTRL_MFD_M) | (mfd_select[env->mfd] << 2);
+    ctrl = (ctrl & ~DMA_CTRL_STS_M) | (ststbl[env->sts] << 4);
+    ctrl = (ctrl & ~DMA_CTRL_STD_M) | (stdtbl[env->std] << 6);
+    ctrl = (ctrl & ~DMA_CTRL_MFD_M) | (mfdtbl[env->mfd] << 2);
     if (env->rcycle) {
         ctrl |= DMA_CTRL_RELE;
         ctrl = (ctrl & ~DMA_CTRL_RCYC_M) | ((env->rcycle - 1) << 8);

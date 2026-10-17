@@ -78,3 +78,71 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0077:001aae20:saveloadASDelete"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0077:004a8c28:mciconsys"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0077:004a8ff0:fname"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0077:004a9010:dname"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0077:004a9030:saveload_slotname"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0077:0062f770:iconsize"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0077:0062f774:iconbuff"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0077:0062f778:saveload_status"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0077:0062f77c:saveload_error"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0077:0062f780:saveload_cardtype"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0077:0062f784:saveload_freespace"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0077:0062f788:saveload_cardformatted"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0077:0062f78c:saveload_cardchanged"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0077:0062f7ac:freqcount.105"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0077:0062f7b8:saveload_slotid"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0077:0062f7bc:saveload_data"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0077:0062f7c0:saveload_datasize"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0077:0062f7c4:saveload_handle"
+state = "asm"

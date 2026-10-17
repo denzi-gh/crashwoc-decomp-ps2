@@ -42,3 +42,11 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0253:0027abc0:scePrintf"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0253:0061336c:count"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0253:00613370:_putchar"
+state = "matching"

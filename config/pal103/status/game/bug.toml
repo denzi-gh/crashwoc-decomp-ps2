@@ -34,3 +34,31 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0122:0025fa88:DrawBug"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0122:0060dca0:BugArea"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0122:0060dce0:BugAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0122:00632cd4:BUGFADETIME"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0122:00632cd8:mechlight_distance"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0122:00632cdc:mechlight_radius"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0122:00632ce0:buglight_distance"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0122:00632ce4:buglight_radius"
+state = "asm"

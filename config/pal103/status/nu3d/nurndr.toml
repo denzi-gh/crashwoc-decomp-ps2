@@ -229,7 +229,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012a9c0:NuRndrOldFaceOn"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012ae38:NuRndrFaceOn"

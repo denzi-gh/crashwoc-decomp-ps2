@@ -52,6 +52,7 @@
 #include "nups2/nups2types.h"
 #include "nups2/ps2ctl.h"
 #include "edtools/edui.h"
+#include "edtools/edmain.h"
 
 struct edcrtstyle_s {
     u8 b[16];
@@ -73,10 +74,8 @@ extern s32 edcrtDrawType;
 extern s32 edcrt_currentselcrate;
 extern s32 edcrt_used;
 extern struct numtl_s *edcrt_mtl_zoff;
-extern struct nuvec_s edcrt_cam_pos;
 extern f32 edcrt_cam_ax;
 extern f32 edcrt_cam_ay;
-extern struct mcdirent_s edcrt_mcdir[];
 
 extern s32 D_00631AD8;
 extern s32 D_00631ADC;
@@ -85,7 +84,6 @@ extern s32 D_006332EC;
 extern s32 D_006332F0;
 extern s32 D_006332F4;
 extern s32 D_006332F8;
-extern char D_005C1800[];
 extern struct edcrtstyle_s D_0061FCE0;
 extern char D_00631AF0[];
 extern char D_00631AF8[];
@@ -111,7 +109,6 @@ extern char D_00631B70[];
 #define edcrt_mcfree D_006332F0
 #define edcrt_mcformat D_006332F4
 #define edcrt_mcresult D_006332F8
-#define edcrt_filename D_005C1800
 #define edcrt_menu_style D_0061FCE0
 #define edcrt_filefmt D_00631AF0
 #define edcrt_mcfilter D_00631AF8
@@ -262,6 +259,20 @@ void edcrtcbMemCardDeleteCrates(struct eduimenu_s *menu, struct eduiitem_s *item
 void edcrtcbMemCardCancelDeleteEffectsMenu(void);
 void edcrtcbResetCrates(struct eduimenu_s *menu, struct eduiitem_s *item);
 void edcrtcbCancelResetCratesMenu(void);
+void edcrtInit(void);
+void edcrtClose(void);
+void edcrtEnter(void);
+s32 edcrtProc(struct nupad_s *pad);
+void edcrtRender(void);
+
+static char edcrt_mcfilename[32] = "Save1";
+struct edmainreg_s edcrtdesc = {
+    0, 0, "Crate Editor", edcrtInit, edcrtClose, edcrtEnter, {0}, 0,
+    EDMAIN_BLOCKID('c', 'r', 'a', 't'), edcrtProc, edcrtRender
+};
+struct nuvec_s edcrt_cam_pos = { 0.0f, 0.0f, 0.0f };
+/* sceMcGetDir needs a 64-byte aligned table */
+struct mcdirent_s edcrt_mcdir[10] __attribute__((aligned(64))) = { { { 0 } } };
 
 void edcrtDrawSpecialCrates(void)
 {
@@ -448,7 +459,7 @@ void edcrtcbMemCardSaveCrates(struct eduimenu_s *menu)
         eduiCreateMessageMenu(menu, "Too many Crate Saves", 0);
         return;
     }
-    sprintf(name, edcrt_filefmt, edcrt_filename);
+    sprintf(name, edcrt_filefmt, edcrt_mcfilename);
     sceMcOpen(0, 0, name, 0x200);
     sceMcSync(0, 0, &edcrt_mcresult);
     fd = edcrt_mcresult;
@@ -982,7 +993,7 @@ void edcrtcbChangeFileNameMenu(struct eduimenu_s *menu)
     eduiMenuAddItem(edcrt_filename_menu,
                     eduiItemTextPickCreate(0, &style, edcrtcbChangeFileName,
                                            "File Name"));
-    strcpy(edui_last_item->u.textpick.text, edcrt_filename);
+    strcpy(edui_last_item->u.textpick.text, edcrt_mcfilename);
     eduiMenuAttach(menu, edcrt_filename_menu);
     edcrt_filename_menu->x = menu->x + 10;
     edcrt_filename_menu->y = menu->y + 40;
@@ -1169,7 +1180,7 @@ void edcrtcbMemCardCancelLoadEffectsMenu(void)
 
 void edcrtcbChangeFileName(void *menu, struct eduiitem_s *item)
 {
-    strcpy(edcrt_filename, item->u.textpick.text);
+    strcpy(edcrt_mcfilename, item->u.textpick.text);
 }
 
 void edcrtcbCancelChangeFileNameMenu(void)

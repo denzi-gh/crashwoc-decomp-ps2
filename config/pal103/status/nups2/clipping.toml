@@ -82,3 +82,19 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0067:0016fdb0:IntersectBottom"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0067:002ea5c8:pnts"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0067:0062f1e0:npnts"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0067:0062f1e8:inbuffer"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0067:0062f1ec:clipflags"
+state = "asm"

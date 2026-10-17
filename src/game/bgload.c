@@ -12,6 +12,7 @@
 #include "nu_types.h"
 
 #include "nucore/nuerror.h"
+#include "nups2/ps2video.h"
 
 /* Sony EE kernel parameter blocks (offsets verified against the retail
  * stores in BGLoadInit / BGLoadStart). */
@@ -25,6 +26,9 @@ struct ThreadParam {
     s32 currentPriority;  /* 0x18 */
     u32 attr;             /* 0x1C */
     u32 option;           /* 0x20 */
+    s32 waitType;         /* 0x24 */
+    s32 waitId;           /* 0x28 */
+    s32 wakeupCount;      /* 0x2C */
 };
 
 struct SemaParam {
@@ -49,7 +53,6 @@ extern s32 PollSema(s32 sema_id);
 extern s32 WaitSema(s32 sema_id);
 extern s32 iSignalSema(s32 sema_id);
 
-extern void NuIntAddVBlankS(void *handler);
 extern void NuPs2ScreenSwap(s32 mode);
 
 /* Retail-owned data (data-from-C unsupported -> extern). */
@@ -57,14 +60,17 @@ extern volatile s32 bgload_complete; /* written by the load thread */
 extern s32 loadthread_id;
 extern s32 D_00633380;              /* main thread id */
 extern s32 D_00633384;              /* vblank semaphore id */
-extern struct ThreadParam th_param;
-extern struct SemaParam sem_param;
-extern u8 D_0060AF00[];             /* vblank handler record */
 extern u8 D_006B7680[];             /* load thread stack (0x48000) */
 extern char D_00628798[];           /* __FILE__ */
 extern char D_006287A8[];           /* thread-started message */
 extern char D_006287C8[];           /* thread-ended message */
 extern int _gp;
+
+void VBlankFn(void);
+
+static struct NuVBlankHandler vblank_handler = { 0, 0, VBlankFn, 0 };
+struct ThreadParam th_param = { 0 };
+struct SemaParam sem_param = { 0 };
 
 void BGSuspendMain(void) {
     if (loadthread_id != 0) {
@@ -89,7 +95,7 @@ void BGLoadInit(void) {
     sem_param.init_count = 0;
     sem_param.option = 0;
     D_00633384 = CreateSema(&sem_param);
-    NuIntAddVBlankS(D_0060AF00);
+    NuIntAddVBlankS(&vblank_handler);
 }
 
 void BGLoadStart(void (*func)(void *)) {

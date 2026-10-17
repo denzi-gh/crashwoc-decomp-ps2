@@ -178,3 +178,27 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0053:0015b330:NuTexAnimResetList"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0053:002e9100:nutexanimcomtab"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0053:002e9198:nta_labels"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0053:002e9298:ntalsysbuff"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0053:0062ef30:sys_progs"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0053:0062ef34:ntal_first"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0053:0062ef38:ntal_free"
+state = "asm"

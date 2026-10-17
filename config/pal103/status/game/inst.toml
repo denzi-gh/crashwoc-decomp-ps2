@@ -42,3 +42,15 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0092:001d5f38:InstInit"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0092:006309fc:sceneinst_pool"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0092:00630a00:animdatainst_pool"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0092:00630a04:shaddatainst_pool"
+state = "asm"

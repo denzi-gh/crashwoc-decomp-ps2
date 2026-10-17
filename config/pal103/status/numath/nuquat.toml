@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0018"
 source = "src/numath/nuquat.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0018:0010b460:NuMtxToQuat"

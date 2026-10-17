@@ -54,3 +54,11 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0063:0016e838:DeadZoneValue"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0063:0062f1d8:PadRecInfo"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0063:0062f1dc:PadDemoEnd"
+state = "asm"

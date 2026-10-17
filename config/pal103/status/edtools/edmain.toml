@@ -86,3 +86,39 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0084:001b7eb8:cbmcfgCameraSpeed"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0084:0062f8c8:ed_init"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0084:0062f8cc:ed_list"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0084:0062f8d0:ed_curr"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0084:0062f8d4:ed_module_active"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0084:0062f8d8:ed_main_menu"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0084:0062f8dc:ed_cfg_menu"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0084:0062f8e0:ed_fnt"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0084:0062f8e4:edmaincam"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0084:0062f8e8:ed_loc"
+state = "asm"

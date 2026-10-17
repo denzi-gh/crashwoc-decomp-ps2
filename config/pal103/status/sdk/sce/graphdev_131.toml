@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0131"
 source = "src/sdk/sce/graphdev_131.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0131:00261bb0:sceGsSyncVCallback"

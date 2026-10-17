@@ -30,3 +30,23 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0120:0025b800:VBlankFn"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0120:0060af00:vblank_handler"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0120:0060af10:th_param"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0120:0060af40:sem_param"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0120:00632b90:bgload_complete"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0120:00632b94:loadthread_id"
+state = "asm"

@@ -158,3 +158,11 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0036:00117de8:NuNodeResolveSkinNodes"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0036:0062eb88:global_id"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0036:0062eb8c:g_nunode_keep_names"
+state = "asm"
