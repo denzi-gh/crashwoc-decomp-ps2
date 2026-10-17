@@ -70,3 +70,15 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0079:001b0f70:NuTriggerPull"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0079:0062f7f8:do_bbox.105"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0079:0062f7fc:do_prims.106"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0079:0062f800:do_nothing.107"
+state = "asm"

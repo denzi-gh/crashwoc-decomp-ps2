@@ -48,6 +48,12 @@
 #include "numath/numtx.h"
 #include "numath/nuvec.h"
 
+struct nuvec_s nuvec_zero = { 0.0f, 0.0f, 0.0f };
+struct nuvec_s nuvec_one = { 1.0f, 1.0f, 1.0f };
+struct nuvec_s nuvec_x = { 1.0f, 0.0f, 0.0f };
+struct nuvec_s nuvec_y = { 0.0f, 1.0f, 0.0f };
+struct nuvec_s nuvec_z = { 0.0f, 0.0f, 1.0f };
+
 f32 NuFsqrt(f32 x);
 extern f32 NuTrigTable[];
 

@@ -39,6 +39,48 @@ extern s32 sceMcOpen(s32 port, s32 slot, const char *name, s32 mode);
 extern s32 sceMcRead(s32 fd, void *buf, s32 size);
 extern s32 sceMcClose(s32 fd);
 
+/* The memory card icon.sys header (the SDK's sceMcIconSys). */
+struct mciconsys_s {
+    u8 Head[4];                         /* 0x000 */
+    u16 Reserv1;                        /* 0x004 */
+    u16 OffsLF;                         /* 0x006 */
+    u32 Reserv2;                        /* 0x008 */
+    u32 TransRate;                      /* 0x00C */
+    s32 BgColor[4][4];                  /* 0x010 */
+    f32 LightDir[3][4];                 /* 0x050 */
+    f32 LightColor[3][4];               /* 0x080 */
+    f32 Ambient[4];                     /* 0x0B0 */
+    u8 TitleName[68];                   /* 0x0C0 */
+    u8 FnameView[64];                   /* 0x104 */
+    u8 FnameCopy[64];                   /* 0x144 */
+    u8 FnameDel[64];                    /* 0x184 */
+    u8 Reserve3[512];                   /* 0x1C4 */
+}; /* 0x3C4 */
+
+static struct mciconsys_s mciconsys = {
+    "PS2D",
+    0,
+    30,                                 /* line break after "Crash Bandicoot" */
+    0,
+    64,
+    { { 64, 64, 0, 0 }, { 64, 64, 0, 0 }, { 64, 0, 0, 0 }, { 64, 0, 0, 0 } },
+    { { 1.0f, 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 1.0f, 0.0f } },
+    { { 0.0f, 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f, 0.0f } },
+    { 0.5f, 0.5f, 0.5f, 0.0f },
+    /* "Crash Bandicoot" "Wrath of Cortex", full-width Shift-JIS */
+    "\202\142\202\222\202\201\202\223\202\210\201\100\202\141\202\201"
+    "\202\216\202\204\202\211\202\203\202\217\202\217\202\224"
+    "\202\166\202\222\202\201\202\224\202\210\201\100\202\217\202\206"
+    "\201\100\202\142\202\217\202\222\202\224\202\205\202\230",
+    "crash.ico",
+    "crash.ico",
+    "crash.ico",
+};
+
+char fname[32] = { 0 };
+char dname[32] = { 0 };
+char saveload_slotname[32] = { 0 };
+
 s32 saveloadGetDirectory(void);
 
 extern s32 D_0062F770;
@@ -47,7 +89,6 @@ extern s32 saveload_status;
 extern s32 saveload_slotid;
 extern void *saveload_data;
 extern s32 saveload_datasize;
-extern char saveload_slotname[];
 
 extern s32 D_0063321C;
 extern s32 D_00633220;
@@ -69,12 +110,10 @@ extern char D_00619BC0[];
 
 #define SCE_RDONLY 1
 
-extern char fname[];
 extern char D_006B3B40[];               /* sceMcGetDir entry table */
 #define mc_dirtable D_006B3B40
 
 
-extern char dname[];
 extern char D_0062F790[];
 extern char D_0062F798[];
 extern char D_0062F7A0[];
@@ -140,9 +179,7 @@ extern char D_00619BA0[];
 
 extern s32 sceMcMkdir(s32 port, s32 slot, const char *name);
 extern s32 sceMcWrite(s32 fd, const void *buf, s32 size);
-extern char D_004A8C28[];               /* icon.sys image */
 extern char D_00619B90[];
-#define saveload_iconsysdata D_004A8C28
 #define saveload_iconsrc D_00619B90
 
 /* Writes `size` bytes of `buf` to save `slot`, creating the save directory
@@ -187,7 +224,7 @@ s32 saveloadSaveSlot(s32 slot, void *buf, s32 size) {
         sceMcOpen(0, 0, saveload_iconsys, 0x200);
         sceMcSync(0, 0, &mc_result);
         fd = mc_result;
-        sceMcWrite(fd, saveload_iconsysdata, 0x3C4);
+        sceMcWrite(fd, &mciconsys, 0x3C4);
         sceMcSync(0, 0, &mc_result);
         sceMcClose(fd);
         sceMcSync(0, 0, &mc_result);
@@ -494,7 +531,7 @@ void saveloadASCallEachFrame(void) {
     case 19:
         if (result >= 0) {
             saveload_handle = result;
-            sceMcWrite(result, saveload_iconsysdata, 0x3C4);
+            sceMcWrite(result, &mciconsys, 0x3C4);
             saveload_status = 20;
         } else {
             saveload_status = 1;

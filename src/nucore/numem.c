@@ -48,6 +48,9 @@ typedef struct NuExternalMemory {
     unsigned int end;
 } NuExternalMemory;
 
+static char blk_hdr[13] = "MEMBLKHEADER";
+static char blk_end[13] = "MEMBLKTAIL01";
+
 extern NuMemHeader *D_0062EA04;
 extern int D_0062EA08;
 extern NuDiscardable *D_0062EA0C;
@@ -56,8 +59,6 @@ extern NuExternalMemory *D_0062EA14;
 extern int highallocaddr;
 extern int D_0062EA1C;
 extern NuExternalMemory D_00633018;
-extern NuMemGuard D_00293830;
-extern NuMemGuard D_00293840;
 extern char D_00613A10[];
 extern char D_00613A30[];
 extern char D_00613A58[];
@@ -79,8 +80,6 @@ extern char D_00613C80[];
 #define current_external D_0062EA14
 #define memory_high_water D_0062EA1C
 #define external_memory D_00633018
-#define memblock_header_id D_00293830
-#define memblock_tail_id D_00293840
 #define numem_file D_00613A10
 #define msg_alloc_failed D_00613A30
 #define msg_alloc_over_32mb D_00613A58
@@ -220,8 +219,8 @@ void *NuMemAllocFn(int size, char *file, int line)
         memset(block, 0, strlen(file) + size + sizeof(NuMemHeader) + sizeof(NuMemGuard) + 1);
         memory_allocated += size;
         block->size = size;
-        block->guard = memblock_header_id;
-        memcpy(data + size, &memblock_tail_id, sizeof(NuMemGuard));
+        block->guard = *(NuMemGuard *)blk_hdr;
+        memcpy(data + size, blk_end, sizeof(NuMemGuard));
         strcpy(data + size + sizeof(NuMemGuard), file);
         block->line = line;
         block->id = memblock_count++;
@@ -301,7 +300,7 @@ void *NuMemReAllocFn(void *old, int size, char *file, int line)
         data = block->data;
         memory_allocated = memory_allocated - block->size + size;
         block->size = size;
-        memcpy(data + size, &memblock_tail_id, sizeof(NuMemGuard));
+        memcpy(data + size, blk_end, sizeof(NuMemGuard));
         strcpy(data + size + sizeof(NuMemGuard), file);
         block->line = line;
         block->next = memblock_list;
@@ -341,10 +340,10 @@ void NuMemFreeFn(void *ptr, char *file, int line)
         return;
     }
     block = (NuMemHeader *)ptr - 1;
-    if (memcmp((char *)ptr + block->size, &memblock_tail_id, sizeof(NuMemGuard))) {
+    if (memcmp((char *)ptr + block->size, blk_end, sizeof(NuMemGuard))) {
         NuDebugMsgProlog(numem_file, 0x1D2)(msg_tail_overwritten, file, line);
     }
-    if (memcmp(&block->guard, &memblock_header_id, sizeof(NuMemGuard))) {
+    if (memcmp(&block->guard, blk_hdr, sizeof(NuMemGuard))) {
         NuDebugMsgProlog(numem_file, 0x1D6)(msg_header_overwritten, file, line);
     }
     if (block->next == 0 && block->prev == 0) {
@@ -375,7 +374,7 @@ void *NuMemValidateFn(void)
         tail = block->data;
         tail += block->size;
         name = tail + sizeof(NuMemGuard);
-        if (memcmp(tail, &memblock_tail_id, sizeof(NuMemGuard))) {
+        if (memcmp(tail, blk_end, sizeof(NuMemGuard))) {
             NuDebugMsgProlog(numem_file, 0x1FF)(msg_validate_tail, tail, name, block->line);
         }
         return tail;

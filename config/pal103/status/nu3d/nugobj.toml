@@ -102,3 +102,19 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0035:00116558:NuPrimStride"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0035:0062eb60:sysinit"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0035:0062eb64:sysgobj"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0035:0062eb68:hasHWTnL"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0035:0062eb7c:geomid"
+state = "asm"

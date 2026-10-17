@@ -97,12 +97,9 @@ typedef struct NuTexAnimList {
 } NuTexAnimList;
 
 
-extern int nta_labels[64];
-extern NuTexAnimList ntalsysbuff[64];
 extern NuTexAnimList *ntal_first;
 extern NuTexAnimList *ntal_free;
 
-extern struct nufpcomjmp_s D_002E9100[];
 extern struct nutexanimprog_s *D_0062EF30;
 extern int D_00633188;
 extern int D_0063318C;
@@ -123,7 +120,6 @@ extern char D_00615B18[];
 extern char D_006AE528[64][21];
 extern char D_006AEA68[256][21];
 
-#define nta_commands D_002E9100
 #define ntap_first D_0062EF30
 #define nta_numlabels D_00633188
 #define nta_numxdefs D_0063318C
@@ -154,6 +150,30 @@ extern void NuFileClose(int fh);
 extern void NuDisableVBlank(void);
 extern void NuEnableVBlank(void);
 extern void NuStrCpy(char *dst, char *src);
+
+static struct nufpcomjmp_s nutexanimcomtab[] = {
+    { "tex", pftaTex },
+    { "texadj", pftaTexAdj },
+    { "wait", pftaWait },
+    { "rate", pftaRate },
+    { "on", pftaOn },
+    { "off", pftaOff },
+    { "label", pftaLabel },
+    { "goto", pftaGoto },
+    { "btex", pftaBtex },
+    { "gosub", pftaGosub },
+    { "ret", pftaRet },
+    { "repeat", pftaRepeat },
+    { "repend", pftaRepend },
+    { "untiltex", pftaUntiltex },
+    { "end", pftaEnd },
+    { "scriptname", pftaScriptname },
+    { "xdef", pftaXDef },
+    { "xref", pftaXRef },
+    { 0, 0 }
+};
+int nta_labels[64] = { 0 };
+NuTexAnimList ntalsysbuff[64] = { { 0 } };
 
 
 void NuTexAnimProgAssembleEnd(struct nutexanimprog_s *prog)
@@ -420,7 +440,7 @@ struct nutexanimprog_s *NuTexAnimProgReadScript(union variptr_u *buff, char *nam
     nta_numlabels = 0;
     parser = NuFParCreate(name);
     if (parser) {
-        NuFParPushCom(parser, nta_commands);
+        NuFParPushCom(parser, nutexanimcomtab);
         prog = mem;
         NuTexAnimProgInit(prog);
         nta_prog = mem;

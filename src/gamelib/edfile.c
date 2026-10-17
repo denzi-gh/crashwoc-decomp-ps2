@@ -47,7 +47,7 @@ extern int sceMcOpen(int port, int slot, const char *name, int mode);
 extern int sceMcClose(int fd);
 extern int sceMcSync(int mode, int *cmd, int *result);
 
-extern char edfile_buffer[EDFILE_BUFFER_SIZE];
+char edfile_buffer[EDFILE_BUFFER_SIZE] = {0};
 extern int edfile_handle;
 extern int edfile_write_flag;
 extern int edfile_mcresult;

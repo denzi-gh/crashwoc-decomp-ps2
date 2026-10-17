@@ -61,7 +61,19 @@ struct pdeb_s {
 };
 
 extern struct objtab_s ObjTab[201];
-extern struct pdeb_s PDeb[32];
+
+struct pdebinfo_s PDebInfo[7] = {
+    { 0, 0.25f, 0.0f },
+    { 0, 2.0f, -0.0024f },
+    { 17, 1.5f, 0.0f },
+    { 17, 1.5f, 0.0f },
+    { 17, 1.5f, 0.0f },
+    { 17, 1.5f, 0.0f },
+    { 132, 1.0f, -0.00024000001f },
+};
+
+struct pdeb_s PDeb[32] = { 0 };
+
 extern struct font3dtab_s Font3DTab[];
 extern signed char Font3DRemap[];
 /* Panel counter (count +0x0, draw +0x2, frame +0x4).  The complete type must
@@ -1860,7 +1872,6 @@ void UpdatePlayerStats(struct creature_s *plr) {
     }
 }
 
-extern struct pdebinfo_s PDebInfo[];
 extern s32 i_pdeb;
 extern s32 qrand(void);
 

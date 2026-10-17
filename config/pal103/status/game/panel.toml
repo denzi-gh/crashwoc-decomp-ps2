@@ -82,3 +82,379 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0108:00240980:NextLetter"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0108:005cd938:PDebInfo"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0108:005cd990:PDeb"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0108:00631ea8:PANELCRUNCHXROT"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631eac:PANELCRUNCHX"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631eb0:PANELCRUNCHY"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631eb4:PANELCRUNCHZ"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631eb8:PANELCRUNCHSCALE"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631ebc:PANELSINKX"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631ec0:PANELSINKY"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631ec4:PANELSINKZ"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631ec8:PANELSINKSCALE"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631ecc:PANELBLIMPX"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631ed0:PANELBLIMPY"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631ed4:PANELBLIMPZ"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631ed8:PANELBLIMPSCALE"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631edc:PANELCANVASX"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631ee0:PANELCANVASY"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631ee4:PANELCANVASZ"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631ee8:PANELCANVASSCALE"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631eec:WUMPAOBJSX"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631ef0:WUMPATXTSX"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631ef4:CRATEOBJSX"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631ef8:CRATETXTSX"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631efc:LIVESOBJSX"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631f00:LIVESTXTSX"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631f04:PANELSY"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631f08:BONUSWUMPAOBJSX"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631f0c:BONUSWUMPATXTSX"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631f10:BONUSCRATEOBJSX"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631f14:BONUSCRATETXTSX"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631f18:BONUSLIVESOBJSX"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631f1c:BONUSLIVESTXTSX"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631f20:BONUSPANELSY"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631f24:PANELWUMPAYROT"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631f26:PANELCRATEYROT"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631f28:NEWLIFEOBJSX"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631f2c:NEWBONUSLIFEOBJSX"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631f30:LIFESCALE"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631f34:BONUSLIFESCALE"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631f38:force_panel_wumpa_update"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631f3c:force_panel_crate_update"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631f40:force_panel_lives_update"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631f44:force_panel_items_update"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631f48:DIVPANEL3D"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631f4c:CHECKPOINT3DSCALE"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631f50:CHECKPOINT3DSEPERATION"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631f54:CHECKPOINT3DHEIGHT"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631f70:test_font3d"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631f78:PAUSEPANELZ"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631f7c:PAUSEPANELX"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631f80:PAUSENAMEY"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631f84:PAUSEINFOY"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631f88:PAUSEPERCENTY"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631f8c:PAUSEHMUL"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631f90:PAUSEVMUL"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631f94:TT_MESSAGEY"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631f98:TT_TIMESDY"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631f9c:TT_INPUTY"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631fa0:RUMBOSSBARX"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631fa4:RUMBOSSBARY"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631fa8:RUMBOSSBARZ"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631fac:RUMBOSSBARSCALEX"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631fb0:RUMBOSSBARSCALEY"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631fb4:ATMBOSSBARX"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631fb8:ATMBOSSBARY"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631fbc:ATMBOSSBARZ"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631fc0:ATMBOSSBARSCALEX"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631fc4:ATMBOSSBARSCALEY"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631fc8:FIREBOSSBARX"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631fcc:FIREBOSSBARY"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631fd0:FIREBOSSBARZ"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631fd4:FIREBOSSBARSCALEX"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631fd8:FIREBOSSBARSCALEY"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631fdc:PANELRINGX"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631fe0:PANELRINGY"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00631fe4:PANELRINGSIZE"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00632020:i_pdeb"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00632024:bonus_frame"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00632028:plr_wumpas"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00632030:plr_crates"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00632038:plr_lives"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00632040:plr_crystal"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00632048:plr_crategem"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00632050:plr_bonusgem"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00632058:plr_bonus_wumpas"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00632060:PANEL3DMULX"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00632064:PANEL3DMULY"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00632068:panel_head_xrot"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:0063206a:panel_head_yrot"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:0063206c:MAXVPSIZEX"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00632070:MAXVPSIZEY"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00632074:MINVPSIZEX"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:00632078:MINVPSIZEY"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0108:0063207c:old_bonus_crates"
+state = "asm"

@@ -45,6 +45,7 @@
 #include "game/creature.h"
 #include "nups2/ps2ctl.h"
 #include "edtools/edui.h"
+#include "edtools/edmain.h"
 
 extern s32 edlight_used;
 extern s32 screendump;
@@ -53,7 +54,6 @@ extern struct eduimenu_s *edlight_double_menu;
 extern struct eduimenu_s *edlight_glb_menu;
 extern struct eduistyle_s D_00625170;
 extern void *app_fnt;
-extern struct nuvec_s last_radius;
 
 extern struct ldata_s *LDATA;
 extern s32 PANELOFF;
@@ -78,7 +78,6 @@ extern f32 westx, westy, westz;
 
 extern struct lights_s Lights[];
 extern struct nuvec_s v000;
-extern struct nuvec_s edlight_cam_pos;
 extern struct numtl_s *mtl;
 extern void *edlight_active_menu;
 
@@ -174,7 +173,6 @@ extern u8 D_00632691;
 extern u8 D_00632692;
 extern u8 D_00632693;
 extern u8 D_00632694[2];
-extern struct nuvec_s edlight_old_cam_pos;
 extern s32 radius_has_changed;
 
 extern void eduiMenuDetach(struct eduimenu_s *menu);
@@ -231,6 +229,20 @@ extern void RestoreCrateTypeData(void);
 extern void ResetCrates(void);
 extern void ResetWumpa(void);
 extern void ResetAI(void);
+
+void edlightInit(void);
+void edlightClose(void);
+void edlightEnter(void);
+s32 edlightProc(struct nupad_s *pad);
+void edlightRender(void);
+
+struct edmainreg_s edlightdesc = {
+    0, 0, "Light Editor", edlightInit, edlightClose, edlightEnter, {0}, 0,
+    EDMAIN_BLOCKID('l', 'g', 'h', 't'), edlightProc, edlightRender
+};
+struct nuvec_s edlight_cam_pos = { 0.0f, 0.0f, 0.0f };
+struct nuvec_s edlight_old_cam_pos = { 0.0f, 0.0f, 0.0f };
+struct nuvec_s last_radius = { 0.0f, 0.0f, 0.0f };
 
 inline void edlightMakeNUCOLOUR3(s32 r, s32 g, s32 b, struct nucolour3_s *col)
 {

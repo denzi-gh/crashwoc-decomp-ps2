@@ -112,9 +112,6 @@ typedef struct {
 #define PHYS_ADDR(p) ((u_int)(p) & 0x0FFFFFFF)
 #define SPR_DMA_FLAG 0x80000000
 
-extern u_long128 D_00610860;
-#define vif1_mskpath3_off D_00610860
-
 u_long GsGetIMR(void);
 u_long GsPutIMR(u_long imr);
 int printf(const char *format, ...);
@@ -122,6 +119,7 @@ int printf(const char *format, ...);
 
 int sceGsExecStoreImage(sceGsStoreImage *sp, u_long128 *dstaddr)
 {
+    static u_int init_mp3[4] __attribute__((aligned(16))) = { 0x06000000, 0, 0, 0 };
     int w, h, rrh;
     int bytes, pixels;
     int fifoqwc, dmaqwc, rest, drain;
@@ -256,7 +254,7 @@ int sceGsExecStoreImage(sceGsStoreImage *sp, u_long128 *dstaddr)
     while (!(GS_CSR & GS_CSR_FINISH)) {
         if (count++ > TIMEOUT) {
             printf("sceGsExecStoreImage: GS does not terminate\r\n");
-            VIF1_FIFO = vif1_mskpath3_off;
+            VIF1_FIFO = *(u_long128 *)init_mp3;
             return -1;
         }
     }
@@ -331,7 +329,7 @@ int sceGsExecStoreImage(sceGsStoreImage *sp, u_long128 *dstaddr)
     VIF1_STAT = 0;
     GS_BUSDIR = 0;
     GsPutIMR(oldimr);
-    mskpath3 = vif1_mskpath3_off;
+    mskpath3 = *(u_long128 *)init_mp3;
     GS_CSR = GS_CSR_FINISH;
     VIF1_FIFO = mskpath3;
     return 0;

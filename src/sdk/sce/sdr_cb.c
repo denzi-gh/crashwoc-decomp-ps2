@@ -66,28 +66,20 @@ enum {
     SDR_CB_SPU2_INTR = 13
 };
 
-extern sceSdUserCB _sce_sdr_gDMA0CB[];
-extern sceSdUserCB _sce_sdr_gDMA1CB[];
-extern sceSdUserCB _sce_sdr_gIRQCB[];
-extern sceSdTransIntrHandler _sce_sdr_transIntr0Hdr[];
-extern sceSdTransIntrHandler _sce_sdr_transIntr1Hdr[];
-extern sceSdSpu2IntrHandler _sce_sdr_spu2IntrHdr[];
-extern void *_sce_sdr_transIntr0Arg[];
-extern void *_sce_sdr_transIntr1Arg[];
-extern void *_sce_sdr_spu2IntrArg[];
+sceSdUserCB _sce_sdr_gDMA0CB = 0;
+sceSdUserCB _sce_sdr_gDMA1CB = 0;
+sceSdUserCB _sce_sdr_gIRQCB = 0;
+sceSdTransIntrHandler _sce_sdr_transIntr0Hdr = 0;
+sceSdTransIntrHandler _sce_sdr_transIntr1Hdr = 0;
+sceSdSpu2IntrHandler _sce_sdr_spu2IntrHdr = 0;
+void *_sce_sdr_transIntr0Arg = 0;
+void *_sce_sdr_transIntr1Arg = 0;
+void *_sce_sdr_spu2IntrArg = 0;
+
 extern char D_00701900[];
 extern char D_00702A00[];
 extern char _gp[];
 
-#define gDMA0CB        _sce_sdr_gDMA0CB[0]
-#define gDMA1CB        _sce_sdr_gDMA1CB[0]
-#define gIRQCB         _sce_sdr_gIRQCB[0]
-#define transIntr0Hdr  _sce_sdr_transIntr0Hdr[0]
-#define transIntr1Hdr  _sce_sdr_transIntr1Hdr[0]
-#define spu2IntrHdr    _sce_sdr_spu2IntrHdr[0]
-#define transIntr0Arg  _sce_sdr_transIntr0Arg[0]
-#define transIntr1Arg  _sce_sdr_transIntr1Arg[0]
-#define spu2IntrArg    _sce_sdr_spu2IntrArg[0]
 #define cbThreadStack  D_00701900
 #define cbRpcBuffer    D_00702A00
 
@@ -111,15 +103,15 @@ int sceSdRemoteCallbackInit(int priority)
 {
     ThreadParam param;
 
-    gDMA0CB = 0;
-    gDMA1CB = 0;
-    gIRQCB = 0;
-    transIntr0Hdr = 0;
-    transIntr1Hdr = 0;
-    spu2IntrHdr = 0;
-    transIntr0Arg = 0;
-    transIntr1Arg = 0;
-    spu2IntrArg = 0;
+    _sce_sdr_gDMA0CB = 0;
+    _sce_sdr_gDMA1CB = 0;
+    _sce_sdr_gIRQCB = 0;
+    _sce_sdr_transIntr0Hdr = 0;
+    _sce_sdr_transIntr1Hdr = 0;
+    _sce_sdr_spu2IntrHdr = 0;
+    _sce_sdr_transIntr0Arg = 0;
+    _sce_sdr_transIntr1Arg = 0;
+    _sce_sdr_spu2IntrArg = 0;
     sceSdRemote(1, 0xE620);
     param.entry = _sdrCBThread;
     param.stack = cbThreadStack;
@@ -153,33 +145,33 @@ static void *_sdrCB(unsigned int fno, void *data, int size)
 
     switch (request[0]) {
     case SDR_CB_DMA0:
-        if (gDMA0CB) {
-            gDMA0CB();
+        if (_sce_sdr_gDMA0CB) {
+            _sce_sdr_gDMA0CB();
         }
         break;
     case SDR_CB_DMA1:
-        if (gDMA1CB) {
-            gDMA1CB();
+        if (_sce_sdr_gDMA1CB) {
+            _sce_sdr_gDMA1CB();
         }
         break;
     case SDR_CB_IRQ:
-        if (gIRQCB) {
-            gIRQCB();
+        if (_sce_sdr_gIRQCB) {
+            _sce_sdr_gIRQCB();
         }
         break;
     case SDR_CB_TRANS_INTR0:
-        if (transIntr0Hdr) {
-            transIntr0Hdr(0, transIntr0Arg);
+        if (_sce_sdr_transIntr0Hdr) {
+            _sce_sdr_transIntr0Hdr(0, _sce_sdr_transIntr0Arg);
         }
         break;
     case SDR_CB_TRANS_INTR1:
-        if (transIntr1Hdr) {
-            transIntr1Hdr(1, transIntr1Arg);
+        if (_sce_sdr_transIntr1Hdr) {
+            _sce_sdr_transIntr1Hdr(1, _sce_sdr_transIntr1Arg);
         }
         break;
     case SDR_CB_SPU2_INTR:
-        if (spu2IntrHdr) {
-            spu2IntrHdr(request[1], spu2IntrArg);
+        if (_sce_sdr_spu2IntrHdr) {
+            _sce_sdr_spu2IntrHdr(request[1], _sce_sdr_spu2IntrArg);
         }
         break;
     }

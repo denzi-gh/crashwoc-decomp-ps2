@@ -35,7 +35,6 @@ extern f32 MAXGLASSMIX;
 extern struct numtl_s *glass_mtl;
 extern struct numtl_s *glass_spec_mtl;
 extern struct numtl_s *glass_copy_mtl;
-extern struct nucolour3_s glass_col;
 extern s32 glass_draw;
 extern s32 glass_phase;
 extern s32 GLASSPLAYER;
@@ -58,6 +57,11 @@ extern f32 D_00633360;
 #define glass_vscale D_00633360
 extern u8 D_00291A40[];
 #define glass_fxcode D_00291A40
+
+struct nucolour3_s glass_col[2] = {
+    { 1.0f, 1.0f, 1.0f },
+    { 0.5f, 0.5f, 0.5f },
+};
 
 extern char D_00620728[];
 #define spectxt_path D_00620728
@@ -225,7 +229,7 @@ void ProcessGlass(s32 paused)
         glass_mtl->attrib.alpha = 0;
     }
     glass_spec_mtl->alpha = glass_mix;
-    glass_mtl->diffuse = glass_col;
+    glass_mtl->diffuse = glass_col[0];
     NuMtlUpdateEx(glass_spec_mtl, 0);
     NuMtlUpdateEx(glass_mtl, 2);
     glass_mtl->stream.mpgtag = glass_fxcode;

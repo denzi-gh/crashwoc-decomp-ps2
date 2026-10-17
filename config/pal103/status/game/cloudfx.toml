@@ -50,3 +50,147 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0115:0024f2e0:CloudFxInit"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0115:005d9980:grscale"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0115:005d9990:grvel"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0115:005d99a0:ttvel"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0115:005d99e0:ttgmul"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0115:005d99f8:tt_colours"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0115:005d9a38:tt_density"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0115:005d9a48:ttdenrate"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0115:005d9a58:ttcvel"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0115:005d9a70:ttccol"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0115:005d9a88:tt_cdensity"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0115:005d9a90:ttcdenrate"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0115:005d9b00:clouds"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0115:005dfb00:groff"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0115:005dfb78:grphase"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0115:005dfbf0:grphaserate"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0115:005dfc80:ttptls"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0115:005e5c80:ttoff"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0115:005e5cc0:ttcoff"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0115:006328e8:CLOUDSIZE"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0115:006328ec:MAXCLOUDS"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0115:006328f0:CLOUDRNG"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0115:006328f4:cloudmtl"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0115:006328f8:cloudreset"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0115:006328fc:clouds_rs"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0115:00632900:cloud_density"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0115:00632904:disable_clouds"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0115:00632908:TTSIZE"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0115:0063290c:TTMAX"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0115:00632910:TTRNG"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0115:00632914:TTSPREAD"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0115:00632918:ttmtl"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0115:0063291c:TTCSIZE"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0115:00632920:cloudtex"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0115:00632924:cloud_drawn"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0115:00632928:tttex"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0115:0063292c:ttmtlcnt"
+state = "asm"

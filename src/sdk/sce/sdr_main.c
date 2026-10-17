@@ -43,7 +43,6 @@ typedef struct sceSifDmaData {
     unsigned int mode;
 } sceSifDmaData;
 
-extern sceSdSpu2IntrHandler D_00612418[];
 extern sceSdTransIntrHandler _sce_sdr_transIntr0Hdr;
 extern sceSdTransIntrHandler _sce_sdr_transIntr1Hdr;
 extern sceSdSpu2IntrHandler _sce_sdr_spu2IntrHdr;
@@ -54,7 +53,6 @@ extern sceSifDmaData D_00701740;
 extern int D_00701880[];
 extern sceSifClientData D_007018C0;
 
-#define sd_callback (D_00612418[0])
 #define sd_dma D_00701740
 #define sd_sbuff D_00701880
 #define sd_client D_007018C0
@@ -70,6 +68,9 @@ extern int sceSifCallRpc(sceSifClientData *client, unsigned int fno,
                          void *end_param);
 extern unsigned int sceSifSetDma(sceSifDmaData *sdd, int len);
 extern int sceSifDmaStat(unsigned int id);
+
+static char __ps2_libinfo__[16] = "PsIIlibsdr  2300";
+static sceSdSpu2IntrHandler sceSd_gEnd_func = 0;
 
 
 int sceSdRemoteInit(void)
@@ -122,8 +123,8 @@ sceSdSpu2IntrHandler sceSdCallBack(sceSdSpu2IntrHandler func)
 {
     sceSdSpu2IntrHandler old;
 
-    old = sd_callback;
-    sd_callback = func;
+    old = sceSd_gEnd_func;
+    sceSd_gEnd_func = func;
     return old;
 }
 
@@ -150,7 +151,7 @@ int sceSdRemote(int arg, ...)
     mode = 0;
     if (arg == 0) {
         mode = SIF_RPCM_NOWAIT;
-        func = sd_callback;
+        func = sceSd_gEnd_func;
     }
 
     if (command == SD_SET_TRANS_INTR_HANDLER) {

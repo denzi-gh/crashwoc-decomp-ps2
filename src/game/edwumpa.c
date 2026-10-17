@@ -24,12 +24,12 @@
 #include "game/creature.h"
 #include "nups2/ps2ctl.h"
 #include "edtools/edui.h"
+#include "edtools/edmain.h"
 
 extern struct wumpa_s Wumpa[];
 extern s32 WUMPACOUNT;
 extern s32 PLAYERCOUNT;
 extern s32 edwmp_used;
-extern struct nuvec_s edwmp_cam_pos;
 extern struct nuvec_s v000;
 extern void *edwmp_active_menu;
 extern void *edwmp_options_menu;
@@ -110,6 +110,18 @@ void edwmpDrawInfo(void);
 void edwmpDoInput(struct nupad_s *pad);
 void edwmpCbCancelOptMenu(void);
 void edwmpcbSaveWumpaData(void *menu);
+void edwmpInit(void);
+void edwmpClose(void);
+void edwmpEnter(void);
+s32 edwmpProc(struct nupad_s *pad);
+void edwmpRender(void);
+
+struct edmainreg_s edwmpdesc = {
+    0, 0, "Wumpa Editor", edwmpInit, edwmpClose, edwmpEnter, {0}, 0,
+    EDMAIN_BLOCKID('w', 'u', 'm', 'p'), edwmpProc, edwmpRender
+};
+struct nuvec_s edwmp_cam_pos = { 0.0f, 0.0f, 0.0f };
+struct nuvec_s wmp_pos = { 0.0f, 0.0f, 0.0f };
 
 void edwmpDrawInfo(void)
 {

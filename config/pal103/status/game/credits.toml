@@ -18,3 +18,19 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0124:00260ff8:InitCredits"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0124:0060fd20:Credit"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0124:00632fb0:credit_speed"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0124:00632fb4:CREDITCOUNT"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0124:00632fb8:credit_time"
+state = "asm"

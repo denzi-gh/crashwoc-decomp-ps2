@@ -78,3 +78,35 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0143:00263510:sceDmaRestart"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0143:00610870:dch"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0143:00610898:sceDmaDebugMode"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0143:006108a0:__ps2_libinfo__"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0143:006108b0:isclr"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0143:006108d8:ststbl"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0143:006108e8:stdtbl"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0143:006108f8:mfdtbl"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0143:00610908:sceDmaCurrentEnv"
+state = "matching"

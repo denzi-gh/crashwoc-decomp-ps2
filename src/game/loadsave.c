@@ -17,7 +17,7 @@
 #include "game/gametypes.h"
 
 extern struct game_s Game;
-extern struct game_s SaveSlot[2][2];
+struct game_s SaveSlot[2][2] = {0};
 extern struct cursor_s Cursor;
 extern struct gtimer_s GlobalTimer;
 extern struct objtab_s ObjTab[];

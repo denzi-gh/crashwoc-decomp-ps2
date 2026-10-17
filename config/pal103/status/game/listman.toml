@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0090"
 source = "src/game/listman.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0090:001cba08:NuLstCreate"

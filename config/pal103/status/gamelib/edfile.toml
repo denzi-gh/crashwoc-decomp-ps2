@@ -90,3 +90,31 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0075:001a87d8:EdFileFlushBuffer"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0075:004a7c28:edfile_buffer"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0075:0062f748:edfile_media"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0075:0062f74c:edfile_handle"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0075:0062f750:edfile_write_flag"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0075:0062f754:edfile_mcresult"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0075:0062f758:edfile_lock"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0075:0062f760:edfile_buffer_pointer"
+state = "asm"

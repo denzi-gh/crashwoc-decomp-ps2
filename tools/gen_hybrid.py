@@ -1304,6 +1304,16 @@ def _item_body(item, sym, version):
     return out
 
 
+def _is_align_pad(gap, cursor, addr, align):
+    """True when the bytes between two C objects are exactly the zero padding
+    the compiler's `.align <align>` before the second one emits: the second
+    object sits on the first such boundary at or after the end of the first."""
+    if not align or any(gap):
+        return False
+    unit = 1 << align
+    return addr == (cursor + unit - 1) // unit * unit
+
+
 def _data_pieces(emit, unit_dir, version, bin_dir):
     """(lines, pieces, retail) for a hybrid with C data.
 
@@ -1329,7 +1339,8 @@ def _data_pieces(emit, unit_dir, version, bin_dir):
         start, end, section = rng["start"], rng["end"], rng["section"]
         name = piece_name(section, start)
         blob = bin_dir / f"{name}.bin"
-        blob.write_bytes(_retail_bytes(version, section, start, end))
+        raw = _retail_bytes(version, section, start, end)
+        blob.write_bytes(raw)
         flags = "a" if section == ".rodata" else "aw"
         lines += [f'\t.section\t{name},"{flags}",@progbits', "\t.align\t0"]
         cursor, objects = start, []
@@ -1340,7 +1351,11 @@ def _data_pieces(emit, unit_dir, version, bin_dir):
                                   f"hold at 0x{addr:08x}")
             if addr < cursor:
                 raise HybridError(f"{sym['name']}: overlaps the object before it")
-            if addr > cursor:
+            if addr > cursor and _is_align_pad(raw[cursor - start:addr - start],
+                                                 cursor, addr, item.align):
+                # The compiler's own `.align` padding before this object.
+                lines.append(f"\t.space\t{addr - cursor}")
+            elif addr > cursor:
                 lines.append(f'\t.incbin\t"{blob.as_posix()}",{cursor - start},'
                              f'{addr - cursor}')
                 retail.append((cursor, addr))

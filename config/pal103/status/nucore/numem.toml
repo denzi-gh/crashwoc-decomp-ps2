@@ -66,3 +66,39 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0004:00105390:NuMemFree"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0004:00293830:blk_hdr"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0004:00293840:blk_end"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0004:0062ea04:alloc_list"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0004:0062ea08:totalloc"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0004:0062ea0c:discardbuff"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0004:0062ea10:alloccnt"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0004:0062ea14:memexternal"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0004:0062ea18:highallocaddr"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0004:0062ea1c:peakallocaddr"
+state = "asm"

@@ -11,17 +11,18 @@
 typedef void (*func_ptr)(void);
 
 extern func_ptr __CTOR_LIST__[];
-extern func_ptr *D_00612440;
+extern func_ptr __DTOR_LIST__[];
 extern int D_00702A40;
 
-#define dtor_cursor D_00612440
 #define initialized D_00702A40
 
 
 void __do_global_dtors(void) {
-    while (*dtor_cursor) {
-        dtor_cursor++;
-        (*(dtor_cursor - 1))();
+    static func_ptr *p = __DTOR_LIST__ + 1;
+
+    while (*p) {
+        p++;
+        (*(p - 1))();
     }
 }
 

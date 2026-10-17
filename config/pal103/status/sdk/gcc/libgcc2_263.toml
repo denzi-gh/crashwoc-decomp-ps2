@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0263"
 source = "src/sdk/gcc/libgcc2_263.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0263:00280e00:__fixdfdi"

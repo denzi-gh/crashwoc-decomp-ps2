@@ -54,3 +54,67 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0107:00239cb8:DrawGlassCreatures"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0107:005cd920:glass_col"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0107:00631e68:glass_mix"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0107:00631e6c:glass_col_mix"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0107:00631e70:glass_col_mix_speed"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0107:00631e74:glass_mix_speed"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0107:00631e78:glass_strength"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0107:00631e7c:glass_enabled"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0107:00631e80:glass_col_enabled"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0107:00631e84:spectid"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0107:00631e88:envtid"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0107:00631e8c:WATERBOSSGLASSMIX"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0107:00631e90:ANGELGLASSMIX"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0107:00631e94:MAXGLASSMIX"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0107:00631e98:glass_mtl"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0107:00631e9c:glass_spec_mtl"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0107:00631ea0:glass_copy_mtl"
+state = "asm"

@@ -80,11 +80,9 @@ extern void *_calloc_r(struct _reent *ptr, unsigned int nmemb, unsigned int size
 Bigint *_multiply(struct _reent *ptr, Bigint *a, Bigint *b);
 double _b2d(Bigint *a, int *e);
 
-extern const int D_0062C450[];
-extern const double __mprec_tens[];
-
-#define p05 D_0062C450
 #define tens __mprec_tens
+#define bigtens __mprec_bigtens
+#define tinytens __mprec_tinytens
 
 #define Balloc _Balloc
 #define Bfree _Bfree
@@ -350,6 +348,7 @@ Bigint *_pow5mult(struct _reent *ptr, Bigint *b, int k)
 {
     Bigint *b1, *p5, *p51;
     int i;
+    static const int p05[3] = { 5, 25, 125 };
 
     if ((i = k & 3) != 0) {
         b = multadd(ptr, b, p05[i - 1], 0);
@@ -617,6 +616,14 @@ double _ratio(Bigint *a, Bigint *b)
     return da.d / db.d;
 }
 
+const double tens[] = {
+    1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9,
+    1e10, 1e11, 1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19,
+    1e20, 1e21, 1e22, 1e23, 1e24
+};
+
+const double bigtens[] = { 1e16, 1e32, 1e64, 1e128, 1e256 };
+const double tinytens[] = { 1e-16, 1e-32, 1e-64, 1e-128, 1e-256 };
 
 double _mprec_log10(int dig)
 {

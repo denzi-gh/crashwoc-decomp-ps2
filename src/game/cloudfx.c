@@ -51,16 +51,10 @@ extern u8 D_00625278[];
 extern u8 D_00625298[];
 #define tt_texname D_00625298
 
-extern struct cloud_s clouds[];
 extern f32 MAXCLOUDS;
 extern f32 CLOUDRNG;
 extern f32 CLOUDSIZE;
 extern f32 cloud_density;
-extern struct nuvec_s groff[];
-extern struct nuivec_s grphase[];
-extern struct nuivec_s grphaserate[];
-extern struct nuvec_s grscale;
-extern struct nuvec_s grvel;
 
 extern s32 D_00632904;
 #define clouds_off D_00632904
@@ -84,18 +78,47 @@ extern f32 D_00632914;
 extern f32 D_0063291C;
 #define ttcsize D_0063291C
 extern s32 ttmtlcnt;
-extern struct cloud_s ttptls[];        /* [8][count] trail particles, stride 6 */
-extern struct nuvec_s ttoff[];
-extern struct nuvec_s ttvel[];
-extern s32 ttgmul[];
-extern struct nuvec_s tt_colours[];
-extern u16 tt_density[];
-extern u16 ttdenrate[];
-extern struct nuvec_s ttcoff[];
-extern struct nuvec_s ttcvel[];
-extern struct nuvec_s ttccol[];
-extern u16 tt_cdensity[];
-extern u16 ttcdenrate[];
+
+/* Cloud layer drift: per-axis wobble amplitude and constant velocity. */
+struct nuvec_s grscale = { 0.002f, 0.002f, 0.002f };
+struct nuvec_s grvel = { 0.0f, 0.005f, 0.0f };
+
+/* Time tunnel: five particle rings and two colour layers. */
+struct nuvec_s ttvel[5] = {
+    { 0.0f, -0.02f, 0.0f },
+    { 0.0f, -0.03f, 0.0f },
+    { 0.0f, -0.01f, 0.0f },
+    { 0.0f, -0.02f, 0.0f },
+    { 0.0f, -0.05f, 0.0f },
+};
+s32 ttgmul[5] = { 8, 8, 4, 2, 8 };
+struct nuvec_s tt_colours[5] = {
+    { 1.0f, 0.0f, 1.0f },
+    { 1.0f, 0.0f, 0.0f },
+    { 0.0f, 0.5f, 0.0f },
+    { 0.5f, 0.0f, 0.5f },
+    { 0.0f, 0.0f, 1.0f },
+};
+u16 tt_density[5] = { 0x0000, 0x4000, 0x8000, 0x1000, 0xBC40 };
+u16 ttdenrate[5] = { 182, 2000, 546, 182, 400 };
+struct nuvec_s ttcvel[2] = {
+    { 0.0f, -0.01f, 0.0f },
+    { 0.0f, -0.012f, 0.0f },
+};
+struct nuvec_s ttccol[2] = {
+    { 0.5f, 0.0f, 0.0f },
+    { 0.0f, 0.0f, 0.5f },
+};
+u16 tt_cdensity[] = { 0x0000, 0x4000 };
+u16 ttcdenrate[] = { 182, 320 };
+
+struct cloud_s clouds[4096] = { 0 };
+struct nuvec_s groff[10] = { 0 };
+struct nuivec_s grphase[10] = { 0 };
+struct nuivec_s grphaserate[10] = { 0 };
+struct cloud_s ttptls[4096] = { 0 };   /* [8][count] trail particles, stride 6 */
+struct nuvec_s ttoff[5] = { 0 };
+struct nuvec_s ttcoff[5] = { 0 };
 
 extern void cloudInit();
 extern void TextureCreate(void *desc, void *mtl, void *tex);

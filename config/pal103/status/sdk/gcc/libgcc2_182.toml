@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0182"
 source = "src/sdk/gcc/libgcc2_182.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0182:0026d520:__do_global_dtors"
@@ -21,4 +21,8 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0182:0026d628:__main"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0182:00612440:p.3"
 state = "matching"

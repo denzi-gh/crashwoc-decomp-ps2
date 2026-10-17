@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0236"
 source = "src/sdk/newlib/libc/stdlib/mprec.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0236:002773d8:_Balloc"
@@ -77,4 +77,20 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0236:00278388:_mprec_log10"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0236:0062c450:p05.27"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0236:0062c460:__mprec_tens"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0236:0062c528:__mprec_bigtens"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0236:0062c550:__mprec_tinytens"
 state = "matching"

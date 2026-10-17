@@ -122,9 +122,6 @@ void SetIOPCommand(short command, short count);
 void SetIOPCommandEx(short command, short size, void *data);
 int FlushIOPCommand(int mode);
 
-extern short IOPCommandData[];
-extern unsigned short senddata[];
-extern volatile int sbuff2[];
 extern int IOP_Cnt;
 extern int nusound_irx_loaded;
 extern char D_0061AA20[];
@@ -148,15 +145,8 @@ extern int nusound_dpl_enabled;
 extern int NoSoundPlease;
 extern sceSifClientData D_006B4100;
 extern struct nusound_filename_info_s D_006B4128[];
-extern volatile unsigned char SOUND_SPUKeyStatus[];
-extern NuSoundLoopInfo NuSndLoopInfo[];
 extern struct nuvec_s *NuSoundListenPos;
 extern int NuSndSteroPitch;
-extern int SOUND_STREAM_SPU_CHAN[];
-extern int SOUND_STREAM_ID[];
-extern int SOUND_STREAM_SPU_ADDR[];
-extern int SOUND_STREAM_PLAY_HALF[];
-extern int SOUND_STREAM_ENV[];
 extern int SOUND_STREAM_CD_ACCESS;
 extern int SOUND_STREAM_STATUS;
 extern int SOUND_CD_STATUS;
@@ -188,6 +178,18 @@ extern int Release;
 #define sound_sample_info D_006B4128
 
 #define SOUND_RPC_ID 0x12345
+
+volatile unsigned char SOUND_SPUKeyStatus[48] = { 0 };
+int SOUND_STREAM_SPU_CHAN[4] = { 0 };
+int SOUND_STREAM_ID[4] = { 0 };
+int SOUND_STREAM_SPU_ADDR[4] = { 0 };
+int SOUND_STREAM_PLAY_HALF[4] = { 0 };
+int SOUND_STREAM_ENV[4] = { 0 };
+NuSoundLoopInfo NuSndLoopInfo[8] = { { 0 } };
+/* SIF RPC send/receive buffers: DMA needs 64-byte alignment */
+unsigned short senddata[1024] __attribute__((aligned(64))) = { 0 };
+short IOPCommandData[1024] = { 0 };
+volatile int sbuff2[128] __attribute__((aligned(64))) = { 0 };
 
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define MAX(a, b) ((a) > (b) ? (a) : (b))

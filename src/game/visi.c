@@ -26,6 +26,8 @@ extern char *D_00633270;
 #define vscnt D_0063326C
 #define vsdata D_00633270
 
+struct nuvec_s xpnt = { -100000.0f, -100000.0f, -100000.0f };
+
 /* One visibility zone: the instances to show while inside spline sp. */
 struct visidat_s {
     struct nugspline_s *sp;

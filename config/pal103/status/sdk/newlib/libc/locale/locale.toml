@@ -26,3 +26,19 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0231:00277040:localeconv"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0231:00612b90:__mb_cur_max"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0231:00612b98:lc_ctype.3"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0231:00612ba0:last_lc_ctype.4"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0231:0062c408:lconv"
+state = "matching"

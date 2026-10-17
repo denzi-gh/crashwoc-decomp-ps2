@@ -41,13 +41,11 @@ typedef struct IopLoadArg {
     char path[IH_PATH_MAX];
 } IopLoadArg;
 
-extern int D_00613414[];
 extern sceSifClientData D_00706500;
 extern int D_00706540[];
 extern IopHeapArg D_00706580;
 extern IopLoadArg D_007065C0;
 
-#define ih_init    D_00613414
 #define ih_client  D_00706500
 #define ih_result  D_00706540
 #define ih_arg     D_00706580
@@ -61,6 +59,8 @@ extern int sceSifCallRpc(sceSifClientData *client, unsigned int fno,
                          void *end_param);
 extern int sceSifFreeSysMemory(void *addr);
 
+static int _bind = -1;
+
 
 int sceSifInitIopHeap(void) {
     int wait;
@@ -70,7 +70,7 @@ int sceSifInitIopHeap(void) {
             return -1;
         }
         if (ih_client.server != 0) {
-            ih_init[0] = 0;
+            _bind = 0;
             break;
         }
         wait = 0x100000;
@@ -82,7 +82,7 @@ int sceSifInitIopHeap(void) {
 
 
 void *sceSifAllocIopHeap(unsigned int size) {
-    if (ih_init[0] < 0) {
+    if (_bind < 0) {
         return 0;
     }
     ih_arg.p.size = size;
@@ -94,7 +94,7 @@ void *sceSifAllocIopHeap(unsigned int size) {
 
 
 void *sceSifAllocSysMemory(int type, unsigned int size, void *addr) {
-    if (ih_init[0] < 0) {
+    if (_bind < 0) {
         return 0;
     }
     ih_arg.p.size = size;
@@ -108,7 +108,7 @@ void *sceSifAllocSysMemory(int type, unsigned int size, void *addr) {
 
 
 int sceSifFreeSysMemory(void *addr) {
-    if (ih_init[0] < 0) {
+    if (_bind < 0) {
         return 0;
     }
     ih_arg.p.addr = addr;
@@ -127,7 +127,7 @@ int sceSifFreeIopHeap(void *addr) {
 int sceSifLoadIopHeap(const char *path, void *addr) {
     int len;
 
-    if (ih_init[0] < 0) {
+    if (_bind < 0) {
         return 0;
     }
     for (len = 0; len < IH_PATH_MAX; len++) {

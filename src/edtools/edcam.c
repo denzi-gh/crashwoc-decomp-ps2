@@ -30,7 +30,8 @@ struct edcam_s {
     float dist;
     struct nuvec_s snap_origin;
     struct nuvec_s snap_grid;
-    char pad30[0x38 - 0x30];
+    int snap_grid_ax;
+    int snap_grid_ay;
     struct nuvec_s snap_pos;
     int snap_ax;
     int snap_ay;
@@ -47,6 +48,16 @@ struct edcam_s {
     int adjust_pitch : 1;
     int adjust_yaw : 1;
     int adjust_zoom : 1;
+};
+
+static struct edcam_s gp_cam = {
+    { 0.0f, 0.0f, 0.0f }, 0, 0, -2.0f,          /* pos, ax, ay, dist */
+    { 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f }, /* snap_origin, snap_grid */
+    1, 1,                                       /* snap_grid_ax, snap_grid_ay */
+    { 0.0f, 0.0f, 0.0f }, 0, 0,                 /* snap_pos, snap_ax, snap_ay */
+    0.0015625f, 0.0015625f, 0.0015625f,         /* rise, move, fall speed */
+    2, 2, 0.0078125f, 0.5f,                     /* pitch, yaw, zoom speed, zoom_min */
+    1, 1, 1, 1, 1, 1                            /* adjust x, y, z, pitch, yaw, zoom */
 };
 
 extern struct edcam_s *D_0062F99C;

@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0196"
 source = "src/sdk/newlib/libc/stdlib/mallocr_196.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0196:00270418:malloc_extend_top"
@@ -17,4 +17,32 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0196:00270670:_malloc_r"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0196:00612738:__malloc_av_"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0196:00612b40:__malloc_trim_threshold"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0196:00612b48:__malloc_top_pad"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0196:00612b50:__malloc_sbrk_base"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0196:00612b58:__malloc_max_sbrked_mem"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0196:00612b60:__malloc_max_total_mem"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0196:00612b68:__malloc_current_mallinfo"
 state = "matching"

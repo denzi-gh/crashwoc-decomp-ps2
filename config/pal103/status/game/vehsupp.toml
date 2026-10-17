@@ -190,3 +190,19 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0099:00221ab0:ControlledDist"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0099:005b93d8:NullNuVec"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0099:0063192c:ChrisJointOveride"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0099:00631930:ChrisNumJoints"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0099:00631934:ChrisJointList"
+state = "asm"

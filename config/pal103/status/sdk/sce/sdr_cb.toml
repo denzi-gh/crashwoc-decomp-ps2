@@ -22,3 +22,39 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0181:0026d440:_sdrCB"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0181:0061241c:_sce_sdr_gDMA0CB"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0181:00612420:_sce_sdr_gDMA1CB"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0181:00612424:_sce_sdr_gIRQCB"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0181:00612428:_sce_sdr_transIntr0Hdr"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0181:0061242c:_sce_sdr_transIntr1Hdr"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0181:00612430:_sce_sdr_spu2IntrHdr"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0181:00612434:_sce_sdr_transIntr0Arg"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0181:00612438:_sce_sdr_transIntr1Arg"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0181:0061243c:_sce_sdr_spu2IntrArg"
+state = "matching"
