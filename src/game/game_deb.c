@@ -497,12 +497,9 @@ void AddWarpDebris(struct obj_s *obj, struct nuvec_s *pos) {
 }
 
 /*
- * Faithful near-match (state=asm): retail inlines AddGameDebris(0x8E,pos) at
- * case 0x20 -- reproduced by the `inline` on AddGameDebris above (gnu89: emits
- * standalone AND inlines), so the frame (0x60) and reg_mask (0x800f0000) match.
- * Residual is a register-allocation difference: retail keeps %hi(jeepbits) in
- * s1 and rematerialises &jeepbits after the inlined body. 288-byte extent
- * exact so the hybrid splice is unaffected.
+ * Retail inlines AddGameDebris(0x8E, pos) at case 0x20 (the `inline` on
+ * AddGameDebris above). The PS2 build re-assigns pt = jeepbits after it,
+ * which the GameCube version does not.
  */
 void AddMechanicalDebris(struct nuvec_s *pos, s32 vehicle) {
     s32 i;
@@ -524,6 +521,7 @@ void AddMechanicalDebris(struct nuvec_s *pos, s32 vehicle) {
         break;
     case 0x20:
         AddGameDebris(0x8E, pos);
+        pt = jeepbits;
         i = 6;
         break;
     }
