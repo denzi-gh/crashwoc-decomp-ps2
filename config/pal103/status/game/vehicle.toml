@@ -17,7 +17,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00201b70:DrawGlider"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00201d88:GliderFire"
@@ -73,7 +73,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00205978:TeleportManager"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00205be8:MoveZoffaUFO"
@@ -529,7 +529,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021c3b8:ObjectToAtlas"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021c428:BossBar"

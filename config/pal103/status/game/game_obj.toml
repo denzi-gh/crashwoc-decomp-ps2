@@ -25,7 +25,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:001f9bc0:PlayerCreatureCollisions"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:001fa998:GetTopBot"

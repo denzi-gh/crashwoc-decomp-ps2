@@ -213,6 +213,7 @@ int VU1_DmaGetStatus(void);
 #define dmatag_end_ex   D_002EA580
 #define nuscratch_ptr   D_0062F0E0
 #define giftag_curr     D_00633208
+#define vt_direct_curr  D_00633200
 #define gs_dma_walk     D_0062F0D8
 #define vu1_dma_walk    D_0062F0DC
 #define ps2dma_file     D_00616E00
@@ -1205,7 +1206,7 @@ int GS_DmaGetWriteStatus(void)
 
 u32 *vtBeginDirect(u32 *packet, u32 irq)
 {
-    D_00633200 = packet;
+    vt_direct_curr = packet;
     *packet = (irq << 31) | 0x50000000;
     return packet + 1;
 }
@@ -1213,9 +1214,9 @@ u32 *vtBeginDirect(u32 *packet, u32 irq)
 
 u32 *vtCloseDirect(u32 *packet)
 {
-    u32 *direct = D_00633200;
+    u32 *last = packet - 1;
 
-    *direct |= (((u32)(packet - 1) - (u32)direct) >> 4) & 0xFFFF;
+    *vt_direct_curr |= (((u32)last - (u32)vt_direct_curr) >> 4) & 0xFFFF;
     return packet;
 }
 

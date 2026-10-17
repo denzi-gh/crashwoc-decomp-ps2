@@ -11,6 +11,6 @@ varargs_hacks = 0
 offset_casts = 0
 sizeof_pads = 0
 libc_prototypes = 0
-extern_conflicts = 21
+extern_conflicts = 20
 prototype_conflicts = 185
 misplaced_headers = 0

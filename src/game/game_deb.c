@@ -496,11 +496,7 @@ void AddWarpDebris(struct obj_s *obj, struct nuvec_s *pos) {
     AddFiniteShotDebrisEffect(&key, GDeb[77].i, &v, 1);
 }
 
-/*
- * Retail inlines AddGameDebris(0x8E, pos) at case 0x20 (the `inline` on
- * AddGameDebris above). The PS2 build re-assigns pt = jeepbits after it,
- * which the GameCube version does not.
- */
+
 void AddMechanicalDebris(struct nuvec_s *pos, s32 vehicle) {
     s32 i;
     s32 *pt;
@@ -510,8 +506,8 @@ void AddMechanicalDebris(struct nuvec_s *pos, s32 vehicle) {
     switch (vehicle) {
     case 0x44:
     case 0xB2:
-        i = 1;
         pt = mechbits;
+        i = 1;
         break;
     case 0x53:
         pt = atlasbits;
@@ -526,7 +522,7 @@ void AddMechanicalDebris(struct nuvec_s *pos, s32 vehicle) {
         break;
     }
     while (*pt != -1) {
-        AddDeb3(pos, pt[0], i, 0);
+        AddDeb3(pos, *pt, i, 0);
         pt++;
     }
 }

@@ -42,38 +42,31 @@ extern void NuMemFreeFn(void *ptr, char *file, int line);
 extern char D_0061B600[];  /* "..\nu2crash.ps2\...\listman.c" filename string */
 
 
-/*
- * Faithful near-match (state=asm): structure, offsets, control flow and the
- * 192-byte extent are exact, but ee-gcc colours elsize->s1 / elcnt->s0 here
- * where retail has elsize->s0 / elcnt->s1. The swap survived operand-order and
- * explicit-stride rewrites (35% / 39% / 14%); it is a register-allocation wall,
- * not a structural gap. Kept in tree per the WIP-near-match convention.
- */
 struct nulsthdr_s *NuLstCreate(int elcnt, int elsize) {
     struct nulsthdr_s *list;
     struct nulnkhdr_s *curr;
-    struct nulnkhdr_s *start;
+    struct nulnkhdr_s *next;
     int n;
 
-    list = (struct nulsthdr_s *)NuMemAllocFn((elsize + 0x10) * elcnt + 0x10,
+    list = (struct nulsthdr_s *)NuMemAllocFn(elcnt * (elsize + 0x10) + 0x10,
                                              D_0061B600, 0x24);
     if (list != 0) {
-        curr = (struct nulnkhdr_s *)(list + 1);
-        list->free = curr;
+        list->free = (struct nulnkhdr_s *)(list + 1);
         list->head = 0;
-        list->elcnt = (short)elcnt;
-        list->elsize = (short)elsize;
-        start = (struct nulnkhdr_s *)((char *)curr + elsize + 0x10);
+        list->elcnt = elcnt;
+        list->elsize = elsize;
+        curr = list->free;
+        next = (struct nulnkhdr_s *)((char *)curr + elsize + 0x10);
         for (n = 1; n < elcnt; n++) {
-            curr->succ = start;
-            curr->id = (short)(n - 1);
+            curr->succ = next;
+            curr->id = n - 1;
             curr->owner = list;
-            curr = start;
-            start = (struct nulnkhdr_s *)((char *)start + (elsize + 0x10));
+            curr = next;
+            next = (struct nulnkhdr_s *)((char *)next + (elsize + 0x10));
         }
-        curr->owner = list;
-        curr->id = (short)(n - 1);
         curr->succ = 0;
+        curr->id = n - 1;
+        curr->owner = list;
     }
     return list;
 }

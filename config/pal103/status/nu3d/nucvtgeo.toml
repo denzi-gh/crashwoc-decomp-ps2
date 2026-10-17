@@ -45,7 +45,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0049:00153320:NuCvtSizeDmaTriStripCFromIdx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0049:00153738:NuCvtDmaTriStripCFromIdx"

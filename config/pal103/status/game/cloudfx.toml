@@ -17,7 +17,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0115:0024ddf0:cloudRender"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0115:0024e2e0:InitClouds"
@@ -29,7 +29,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0115:0024e848:TimeTunnelInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0115:0024eb00:TimeTunnelRender"

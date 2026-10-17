@@ -13,15 +13,15 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0016:0010aa30:NuAtani"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0016:0010ac70:NuAtanf"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0016:0010af40:NuAtan2D"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0016:0010b1f0:NuTrigInit"

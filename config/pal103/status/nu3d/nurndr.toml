@@ -265,7 +265,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0040:0012db68:NuRndrTrail"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012e200:NuRndrAddFootPrint"

@@ -145,7 +145,7 @@ extern short rndrstream_scissor_id;
 
 extern short rndrstream_xyoffset_id;
 
-extern char *rndrstream_free;
+extern char *rndrstream_free[1];
 
 extern int D_0062EA74;
 #define rndrstream_buffer_index D_0062EA74
@@ -409,19 +409,19 @@ void NuRndrInitStreams(void)
     }
     switch (rndrstream_buffer_index) {
     case 0:
-        rndrstream_free = stream_outbuf0 + stream_outbuf_offset;
+        rndrstream_free[0] = stream_outbuf0 + stream_outbuf_offset;
         break;
     case 1:
-        rndrstream_free = stream_outbuf1 + stream_outbuf_offset;
+        rndrstream_free[0] = stream_outbuf1 + stream_outbuf_offset;
         break;
     case 2:
         break;
     }
-    if ((unsigned int)rndrstream_free & 0xF) {
-        rndrstream_free = (char *)(((unsigned int)rndrstream_free + 0xF) & ~0xF);
+    if ((unsigned int)rndrstream_free[0] & 0xF) {
+        rndrstream_free[0] = (char *)(((unsigned int)rndrstream_free[0] + 0xF) & ~0xF);
     }
     rndrstream_start = 0;
-    frame_base = rndrstream_free;
+    frame_base = rndrstream_free[0];
     rndrstream_end[0] = 0;
     txtrstream_start[0] = 0;
     txtrstream_end[0] = 0;
@@ -436,7 +436,7 @@ void NuRndrInitStreams(void)
     sys->cur.b = gsCloseGifPacket(sys->cur.b);
     sys->cur.b = vtCloseDirect(sys->cur.b);
     vpDmaTag_Close(sys->cur.b);
-    rndrstream_free = vpDmaTag_Next(sys->cur.b, 0);
+    rndrstream_free[0] = vpDmaTag_Next(sys->cur.b, 0);
     NuMtxSetIdentity(&zfix_mtx);
 }
 
@@ -516,7 +516,7 @@ void NuRndrStreamFlush(void)
     int n;
 
     mpg = 0;
-    if ((u8 *)rndrstream_free > frame_base + stream_outbuf_size) {
+    if ((u8 *)rndrstream_free[0] > frame_base + stream_outbuf_size) {
         NuErrorProlog(nustream_file, 0x324)(stream_overflow_msg);
     }
     for (i = 0; i < rndrstream_count; i++) {
@@ -976,35 +976,28 @@ void NuRndrStreamResetStream(struct nurndrstream_s *stream, int flag)
 void NuRndrStreamResetStreams(int flag)
 {
     struct nurndrstream_s *s;
-    int n;
     int i;
 
-    n = rndrstream_count;
-    if (n > 0) {
-        s = rndrstream_pool;
-        i = n;
-        do {
-            s->mtl = 0;
-            s->start = 0;
-            s->cur.b = 0;
-            s->txtr_start = 0;
-            if (flag) {
-                s->txtr_end = 0;
-                s->local_mtx_id = -2;
-                s->view_mtx_id = -2;
-                s->scissor_id = -2;
-                s->xyoffset_id = -2;
-                s->light_addr = 0;
-                s->mtl_tid = 0;
-                s->zbuf = gs_top;
-            }
-            s++;
-            i--;
-        } while (i != 0);
+    for (i = 0; i < rndrstream_count; i++) {
+        s = &rndrstream_pool[i];
+        s->mtl = 0;
+        s->start = 0;
+        s->cur.b = 0;
+        s->txtr_start = 0;
+        s->txtr_end = 0;
+        if (flag) {
+            s->local_mtx_id = -2;
+            s->view_mtx_id = -2;
+            s->scissor_id = -2;
+            s->xyoffset_id = -2;
+            s->light_addr = 0;
+            s->mtl_tid = 0;
+            s->zbuf = gs_top;
+        }
     }
     rndrstream_rt_light_addr[0] = 0;
     rndrstream_spec_addr = 0;
-    rndrstream_fx_microcode = D_00289020;
+    rndrstream_fx_microcode = fx_microcode_default;
     rndrstream_fx_mtx_addr[0] = 0;
 }
 
@@ -1044,8 +1037,8 @@ void *NuRndrStreamAlloc(int qwords)
 {
     char *mem;
 
-    mem = rndrstream_free;
-    rndrstream_free = mem + qwords * 16;
+    mem = rndrstream_free[0];
+    rndrstream_free[0] = mem + qwords * 16;
     return mem;
 }
 
@@ -1166,9 +1159,9 @@ void *NuRndrStreamPrependMPG(struct nurndrstream_s *stream, void *tag)
     if (cur == 0 || cur == tag) {
         return tag;
     }
-    old_free = rndrstream_free;
-    rndrstream_free = vpDmaTag_Call(rndrstream_free, cur);
-    rndrstream_free = vpDmaTag_Next(rndrstream_free, stream->start);
+    old_free = rndrstream_free[0];
+    rndrstream_free[0] = vpDmaTag_Call(rndrstream_free[0], cur);
+    rndrstream_free[0] = vpDmaTag_Next(rndrstream_free[0], stream->start);
     stream->start = old_free;
     return stream->mpgtag;
 }

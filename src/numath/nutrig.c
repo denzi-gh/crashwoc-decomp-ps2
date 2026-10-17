@@ -18,43 +18,55 @@
 
 extern f32 NuTrigTable[];
 extern u16 D_00293960[];
+#define ang D_00293960
 
 static inline u16 xy(s32 x, s32 y)
 {
-    u16 result;
+    u64 wide_x = x;
+    u64 wide_y = y;
 
-    if ((u32)y < (u32)x) {
-        result = D_00293960[(u64)(y * 0x200) / x];
-        result = 0x4000 - result;
-    } else {
-        result = D_00293960[(u64)(x * 0x200) / y];
+    if (wide_y < wide_x) {
+        return 0x4000 - ang[(wide_y << 9) / wide_x];
     }
-
-    return result;
+    return ang[(wide_x << 9) / wide_y];
 }
+
 
 s32 NuAtani(s32 x, s32 y)
 {
-    s32 result = x;
-
-    if (result == 0) {
-        result = y < 0 ? 0x8000 : 0;
-    } else if (y == 0) {
-        result = result < 0 ? 0xc000 : 0x4000;
-    } else if (result < 0) {
-        if (y < 0) {
-            result = xy(-result, -y) + 0x8000;
-        } else {
-            result = -xy(-result, y);
-        }
-    } else if (y < 0) {
-        result = 0x8000 - xy(result, -y);
-    } else {
-        result = xy(result, y);
+    if (x == 0) {
+        return y < 0 ? 0x8000 : 0;
+    }
+    if (y == 0) {
+        return x < 0 ? 0xc000 : 0x4000;
     }
 
-    return result;
+    if (x < 0) {
+        if (y < 0) {
+            return xy(-x, -y) + 0x8000;
+        }
+        return -xy(-x, y);
+    }
+
+    if (y < 0) {
+        return 0x8000 - xy(x, -y);
+    }
+
+    return xy(x, y);
 }
+
+
+static inline f32 xyf(s32 x, s32 y)
+{
+    u64 wide_x = x;
+    u64 wide_y = y;
+
+    if (wide_y < wide_x) {
+        return (0x4000 - ang[(wide_y << 9) / wide_x]) * 0.0000958738f;
+    }
+    return ang[(wide_x << 9) / wide_y] * 0.0000958738f;
+}
+
 
 f32 NuAtanf(s32 x, s32 y)
 {
@@ -67,64 +79,27 @@ f32 NuAtanf(s32 x, s32 y)
 
     if (x < 0) {
         if (y < 0) {
-            s32 ax = -x;
-            s32 ay = -y;
-            u16 angle;
-
-            if ((u32)ay < (u32)ax) {
-                angle = 0x4000 - D_00293960[(u64)(ay * 0x200) / ax];
-            } else {
-                angle = D_00293960[(u64)(ax * 0x200) / ay];
-            }
-            return angle * 0.0000958738f + 3.1415927f;
-        } else {
-            s32 ax = -x;
-            u16 angle;
-
-            if ((u32)y < (u32)ax) {
-                angle = 0x4000 - D_00293960[(u64)(y * 0x200) / ax];
-            } else {
-                angle = D_00293960[(u64)(ax * 0x200) / y];
-            }
-            return -(angle * 0.0000958738f);
+            return xyf(-x, -y) + 3.1415927f;
         }
+        return -xyf(-x, y);
     }
 
     if (y < 0) {
-        s32 ay = -y;
-        u16 angle;
-
-        if ((u32)ay < (u32)x) {
-            angle = 0x4000 - D_00293960[(u64)(ay * 0x200) / x];
-        } else {
-            angle = D_00293960[(u64)(x * 0x200) / ay];
-        }
-        return 3.1415927f - angle * 0.0000958738f;
-    } else {
-        u16 angle;
-
-        if ((u32)y < (u32)x) {
-            angle = 0x4000 - D_00293960[(u64)(y * 0x200) / x];
-        } else {
-            angle = D_00293960[(u64)(x * 0x200) / y];
-        }
-        return angle * 0.0000958738f;
+        return 3.1415927f - xyf(x, -y);
     }
+
+    return xyf(x, y);
 }
+
 
 static inline u16 fxyd(f32 x, f32 y)
 {
-    u16 result;
-
-    if (x > y) {
-        result = D_00293960[(s32)((y * 512.0f) / x)];
-        result = 0x4000 - result;
-    } else {
-        result = D_00293960[(s32)((x * 512.0f) / y)];
+    if (y < x) {
+        return 0x4000 - ang[(s32)((y * 512.0f) / x)];
     }
-
-    return result;
+    return ang[(s32)((x * 512.0f) / y)];
 }
+
 
 s32 NuAtan2D(f32 x, f32 y)
 {
@@ -148,6 +123,7 @@ s32 NuAtan2D(f32 x, f32 y)
 
     return fxyd(x, y);
 }
+
 
 void NuTrigInit(void)
 {

@@ -271,14 +271,11 @@ void DrawSphere(struct nuvec_s *pos, f32 radius, f32 factor) {
     }
 }
 
-extern f32 D_0062DF34;
-
 void DrawDeformedCross(struct nuvec_s *center, struct nuvec_s *size, s32 colour,
                        f32 angle) {
     s32 i;
 
     if (ChrisInTheHouse) {
-        s32 a = (s32)(angle * D_0062DF34);
         struct nuvec_s p[3] = {
             {size->x, 0.0f, 0.0f},
             {0.0f, size->y, 0.0f},
@@ -286,7 +283,7 @@ void DrawDeformedCross(struct nuvec_s *center, struct nuvec_s *size, s32 colour,
         };
 
         for (i = 0; i < 3; i++) {
-            NuVecRotateY(&p[i], &p[i], a);
+            NuVecRotateY(&p[i], &p[i], (s32)(angle * 182.0444489f));
             NuRndrLine3dDbg(colour, center->x - p[i].x, center->y - p[i].y,
                             center->z - p[i].z, center->x + p[i].x,
                             center->y + p[i].y, center->z + p[i].z);

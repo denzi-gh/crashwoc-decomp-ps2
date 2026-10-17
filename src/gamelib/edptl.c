@@ -319,12 +319,13 @@ extern struct eduiitem_s *D_0062F350;
 extern signed char D_0062F358;
 extern char D_00484DE0[];
 extern int D_0062F318;
+#define edptl_count D_0062F318
 
 extern void NuStrCpy(char *dst, char *src);
 extern void DebFreeInstantly(int *key);
 extern void AddDebrisEffect(int *key, int type, float x, float y, float z);
 extern void edppDoInput(struct nupad_s *pad);
-extern void eduiMenuProcess(void *menu, struct nupad_s *pad);
+extern int eduiMenuProcess(struct eduimenu_s *menu, float dt, struct nupad_s *pad);
 extern void UpdateTotalPtls(struct debinfo_s *dt);
 extern void edbitsDrawCube(float x, float y, float z, float sizex, float sizey, float sizez,
                            int rotx, int roty, int rotz, int flags, int colour, void *mtl);
@@ -4120,17 +4121,17 @@ int edppRead(void *file) {
 }
 
 
-int edppProc(struct nupad_s *pad) {
-    unsigned int mask;
-
-    D_0062F318 += 5;
+int edppProc(float dt, struct nupad_s *pad) {
+    edptl_count += 5;
     if (edpp_active_menu != 0) {
-        eduiMenuProcess(edpp_active_menu, pad);
+        eduiMenuProcess(edpp_active_menu, dt, pad);
         return 0;
     }
     edppDoInput(pad);
-    mask = 0x800;
-    return (pad->paddata_db & mask) != 0;
+    if (pad->paddata_db & 0x800) {
+        return 1;
+    }
+    return 0;
 }
 
 

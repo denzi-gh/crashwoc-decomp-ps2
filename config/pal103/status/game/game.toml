@@ -33,7 +33,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001dbf68:UpdateAwards"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001dc150:DrawAwards"
@@ -45,7 +45,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001dc7c8:HubSelect"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001dd108:HubLevelSelect"
