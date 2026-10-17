@@ -25,7 +25,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0100:00222918:FindSurfaceNormalAndUnembedd"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0100:00222f80:TerrainVehicleSoft"
@@ -33,7 +33,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0100:00223608:TryUnembeddPointDirSimple"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0100:002237a8:TryUnembeddPointSafe"
