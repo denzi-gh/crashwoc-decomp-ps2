@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0109"
 source = "src/game/text.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0109:002409e8:NewLanguage"
@@ -21,4 +21,416 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0109:00240c48:JStrLen"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ce190:LanguageName"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ce1a8:tHIRAGANA"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ce1c0:tKATAKANA"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ce1d8:tABC"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ce1f0:HubName"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ce280:LevelName"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ce6a0:PlaceName"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ce718:PlaceName3"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ce790:tNEWGAME"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ce7a8:tDEMO"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ce7c0:tBONUS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ce7d8:tCHECK"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ce7f0:tPOINT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ce808:tENTERINGTIMETRIAL"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ce820:tRESUME"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ce838:tOPTIONS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ce850:tQUIT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ce868:tWARPROOM"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ce880:tRESTARTTRIAL"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ce898:tRESTARTRACE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ce8b0:tBESTTIME"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ce8c8:t2NDBESTTIME"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ce8e0:t3RDBESTTIME"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ce8f8:tNONEWTIME"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ce910:tCONTINUE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ce928:tGAMEOVER"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ce940:tYES"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ce958:tNO"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ce970:tON"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ce988:tOFF"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ce9a0:tGO"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ce9b8:tDONE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ce9d0:tCANCEL"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ce9e8:tEXIT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cea00:tVIBRATION"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cea18:tSOUND"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cea30:tSOUNDOPTIONS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cea48:tSURROUND"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cea60:tSFXVOLUME"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cea78:tMUSICVOLUME"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cea90:tSTERO"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ceaa8:tMONO"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ceac0:tLANGUAGE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cead8:tRELICSREQUIRED"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ceaf0:tCRYSTALS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ceb08:tGEMS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ceb20:tRELICS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ceb38:tTIMES"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ceb50:tPOWERS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ceb68:tSUPERBELLYFLOP"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ceb80:tSUPERBELLYFLOPTEXT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cec28:tDEATHTORNADOSPIN"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cec40:tDEATHTORNADOSPINTEXT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cece8:tDOUBLEJUMP"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ced00:tDOUBLEJUMPTEXT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005ceda8:tFRUITBAZOOKA"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cedc0:tFRUITBAZOOKATEXT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cee68:tSPEEDSHOES"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cee80:tSPEEDSHOESTEXT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cef28:tSNEAKSHOES"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cef40:tSNEAKSHOESTEXT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cefe8:tPRESSxTOCONTINUE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf000:tSELECTALEVELANDPRESSxTOPLAY"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf018:tPRESSSTARTBUTTON"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf030:tPRESSANYBUTTON"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf048:tADJUSTSCREEN"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf060:tHORIZONTAL"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf078:tVERTICAL"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf090:tINSERTCONTROLLERINPORT1"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf0c0:tCHECKINGMEMORYCARD"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf0f0:tEMPTY"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf108:tLOAD"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf120:tSAVE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf138:tDELETE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf150:tLOADGAME"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf168:tSAVEGAME"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf180:tDELETEGAME"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf198:tPLEASEINSERTMEMORYCARDSLOT1"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf1e0:tNODATAAVAILABLE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf1f8:tFORMAT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf210:tOVERWRITE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf228:tCONFIRMLOAD"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf240:tCONFIRMSAVE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf258:tCONFIRMDELETE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf270:tCONFIRMFORMAT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf288:tCONFIRMOVERWRITE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf2b8:tLOADING"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf2d0:tSAVING"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf2e8:tDELETING"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf300:tFORMATTING"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf318:tGAMELOADED"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf330:tGAMESAVED"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf348:tGAMEDELETED"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf360:tFAILEDTOLOAD"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf378:tFAILEDTOSAVE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf390:tFAILEDTODELETE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf3a8:tFAILEDTOFORMAT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf3c0:tMEMORYCARDISNOTFORMATTED"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf408:tNOTENOUGHSPACEONMEMORYCARD"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf450:tGAMEREQUIRESiKB"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf468:tFORMATTINGCOMPLETE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf480:tDONOTREMOVEMEMORYCARD"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0109:005cf4c8:tYOUNEEDAMEMORYCARD"
 state = "matching"

@@ -32,15 +32,15 @@ typedef char *va_list;
 
 extern int kputs(const char *str);
 
-extern int D_0061336C[];
-extern void (*D_00613370[])(int c);
 extern char D_00703640[DECI2_BUF_SIZE];
 
-#define deci2_len  D_0061336C[0]
-#define kputc_func D_00613370[0]
 #define deci2_buf  D_00703640
 
+void serialPutchar(int c);
 void kprintf(const char *fmt, ...);
+
+static int count = 0;
+static void (*_putchar)(int c) = serialPutchar;
 
 
 int kputchar(int c)
@@ -54,18 +54,18 @@ int kputchar(int c)
 
 void deci2Putchar(int c)
 {
-    if (deci2_len >= DECI2_BUF_SIZE - 2) {
-        deci2_len = 0;
+    if (count >= DECI2_BUF_SIZE - 2) {
+        count = 0;
         deci2_buf[DECI2_BUF_SIZE - 1] = 0;
         kputs(deci2_buf);
     }
     if (c == '\n') {
-        deci2_buf[deci2_len] = c;
-        deci2_buf[deci2_len + 1] = 0;
-        deci2_len = 0;
+        deci2_buf[count] = c;
+        deci2_buf[count + 1] = 0;
+        count = 0;
         kputs(deci2_buf);
     } else {
-        deci2_buf[deci2_len++] = c;
+        deci2_buf[count++] = c;
     }
 }
 
@@ -120,7 +120,7 @@ void printfloat(double d)
     exp = 0;
     if (d < 0.0) {
         d = 0.0 - d;
-        kputc_func('-');
+        _putchar('-');
     }
     if (d < 0.1) {
         while (d < 0.1) {
@@ -211,7 +211,7 @@ void _printf(const char *fmt, va_list ap)
                     p = pad;
                 }
                 while (*p) {
-                    kputc_func(*p++);
+                    _putchar(*p++);
                 }
                 break;
             case 'x':
@@ -241,7 +241,7 @@ void _printf(const char *fmt, va_list ap)
                     p = pad;
                 }
                 while (*p) {
-                    kputc_func(*p++);
+                    _putchar(*p++);
                 }
                 break;
             case 'd':
@@ -259,7 +259,7 @@ void _printf(const char *fmt, va_list ap)
                 } else {
                     if (n < 0) {
                         n = -n;
-                        kputc_func('-');
+                        _putchar('-');
                     }
                     while (n) {
                         *--p = n % 10 + '0';
@@ -270,7 +270,7 @@ void _printf(const char *fmt, va_list ap)
                     p = pad;
                 }
                 while (*p) {
-                    kputc_func(*p++);
+                    _putchar(*p++);
                 }
                 break;
             case 'u':
@@ -295,14 +295,14 @@ void _printf(const char *fmt, va_list ap)
                     p = pad;
                 }
                 while (*p) {
-                    kputc_func(*p++);
+                    _putchar(*p++);
                 }
                 break;
             case 'e':
             case 'f':
                 f = va_arg(ap, float);
                 if (f == 0.0f) {
-                    kputc_func('0');
+                    _putchar('0');
                 } else {
                     printfloat(f);
                 }
@@ -310,25 +310,25 @@ void _printf(const char *fmt, va_list ap)
             case 's':
                 s = va_arg(ap, char *);
                 if (*s == 0) {
-                    kputc_func('(');
-                    kputc_func('n');
-                    kputc_func('u');
-                    kputc_func('l');
-                    kputc_func('l');
-                    kputc_func(')');
+                    _putchar('(');
+                    _putchar('n');
+                    _putchar('u');
+                    _putchar('l');
+                    _putchar('l');
+                    _putchar(')');
                 } else {
                     for (p = s; *p; p++) {
-                        kputc_func(*p);
+                        _putchar(*p);
                     }
                 }
                 break;
             case 'c':
                 n = va_arg(ap, char);
-                kputc_func(n);
+                _putchar(n);
                 break;
             }
         } else {
-            kputc_func(*fmt);
+            _putchar(*fmt);
         }
         fmt++;
     }
@@ -350,10 +350,10 @@ void scePrintf(const char *fmt, ...)
     va_list ap;
     void (*saved)(int c);
 
-    saved = kputc_func;
-    kputc_func = deci2Putchar;
+    saved = _putchar;
+    _putchar = deci2Putchar;
     va_start(ap, fmt);
     _printf(fmt, ap);
     va_end(ap);
-    kputc_func = saved;
+    _putchar = saved;
 }

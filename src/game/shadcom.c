@@ -42,8 +42,6 @@ extern u32 shadcol;
 extern struct numtl_s *numtl_defaultmtl3d;
 extern u8 *rndrstream_free;
 
-extern u32 *D_005D98C0[4];
-#define shadpals D_005D98C0
 extern struct nuvtx_tc1_s D_005D98D0[4];
 #define shadvtx D_005D98D0
 extern s32 D_006B7650[4];
@@ -60,6 +58,32 @@ extern s32 NuRndrStreamTriStrip3dClip(struct nuvtx_tc1_s *vtx, s32 num, struct n
                                       struct nurndrstream_s *rs);
 extern u8 *vpDmaTag_CntEx(u8 *cur, s32 qwc, u32 tag);
 extern u8 *vpDmaTag_Next(u8 *cur, s32 mode);
+
+static u32 pal0[16] = {
+    0x00000000, 0x20FFFFFF, 0x00000000, 0x20FFFFFF,
+    0x00000000, 0x20FFFFFF, 0x00000000, 0x20FFFFFF,
+    0x00000000, 0x20FFFFFF, 0x00000000, 0x20FFFFFF,
+    0x00000000, 0x20FFFFFF, 0x00000000, 0x20FFFFFF,
+};
+static u32 pal1[16] = {
+    0x00000000, 0x00000000, 0x20FFFFFF, 0x20FFFFFF,
+    0x00000000, 0x00000000, 0x20FFFFFF, 0x20FFFFFF,
+    0x00000000, 0x00000000, 0x20FFFFFF, 0x20FFFFFF,
+    0x00000000, 0x00000000, 0x20FFFFFF, 0x20FFFFFF,
+};
+static u32 pal2[16] = {
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x20FFFFFF, 0x20FFFFFF, 0x20FFFFFF, 0x20FFFFFF,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x20FFFFFF, 0x20FFFFFF, 0x20FFFFFF, 0x20FFFFFF,
+};
+static u32 pal3[16] = {
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x20FFFFFF, 0x20FFFFFF, 0x20FFFFFF, 0x20FFFFFF,
+    0x20FFFFFF, 0x20FFFFFF, 0x20FFFFFF, 0x20FFFFFF,
+};
+static u32 *pals[4] = { pal0, pal1, pal2, pal3 };
 
 
 void ShadRndr(struct numtx_s *mtx, struct shadentry_s *shad, f32 frame, f32 scale) {
@@ -244,7 +268,7 @@ void ShadComInit(void) {
 
     for (i = 0; i < 4; i++) {
         tex.width = 1;
-        tex.pal = shadpals[i];
+        tex.pal = pals[i];
         tex.height = 1;
         tex.bits = 0;
         tex.type = 4;

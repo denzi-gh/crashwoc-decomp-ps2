@@ -38,3 +38,23 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0003:00104790:NuAssertMsg"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0003:0062e9d8:errmsg_to_file"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0003:0062e9dc:allow_printf"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0003:0062e9e0:initialised.69"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0003:0062e9f4:err_msg_quiet.88"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0003:0062e9f8:dbg_msg_cnt.89"
+state = "asm"

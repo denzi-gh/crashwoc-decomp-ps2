@@ -118,3 +118,63 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0038:0011c4b0:NuMtlDisplayMtl"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0038:0062eba0:initialised"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0038:0062eba4:smlist"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0038:0062eba8:mtl_store"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0038:0062ebac:mtl_allocix"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0038:0062ebb0:mtl_allocmax"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0038:0062ebb4:numtl_lighting_disabled"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0038:0062ebb8:numtl_force_colour"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0038:0062ebbc:numtl_force_mtlsize"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0038:0062ebc0:numtl_force_lit"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0038:0062ebc4:numtl_force_mipmap"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0038:0062ebc8:NuMtlReadEvent"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0038:0062ebd8:sinetime.75"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0038:0062ebdc:sm.127"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0038:0062ebe0:numtl_defaultmtl2d"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0038:0062ebe4:numtl_defaultmtl3d"
+state = "asm"

@@ -14,3 +14,7 @@ complete = false
 [[function]]
 id = "pal103:unit-0130:00261520:sceGsExecStoreImage"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0130:00610860:init_mp3.3"
+state = "matching"

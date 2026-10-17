@@ -114,3 +114,79 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0083:001b7770:edgracbFileLoad"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0083:004bf510:edgradesc"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0083:004bf548:edgra_cam_pos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0083:004bf558:GrassClumps"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0083:0062f860:edgra_active_menu"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0083:0062f864:edgra_options_menu"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0083:0062f868:edgra_instance_menu"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0083:0062f86c:edgra_clumpproperties_menu"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0083:0062f898:edgra_mtl"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0083:0062f89c:edgra_mtl_zoff"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0083:0062f8a0:edgra_cam_dist"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0083:0062f8a4:edgra_cam_ax"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0083:0062f8a8:edgra_cam_ay"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0083:0062f8ac:edgra_radius"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0083:0062f8b0:edgra_nearest"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0083:0062f8b4:edgra_instance_type"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0083:0062f8b8:edgra_next_clump"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0083:0062f8bc:edgra_units_used"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0083:0062f8c0:edgra_clumps_used"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0083:0062f8c4:edgra_clump_size"
+state = "asm"

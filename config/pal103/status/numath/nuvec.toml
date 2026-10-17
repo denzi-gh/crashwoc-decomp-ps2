@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0013"
 source = "src/numath/nuvec.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0013:001066f0:NuVecRotateAxis"
@@ -161,4 +161,24 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0013:001075a8:NuLineLineIntersect"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0013:00293850:nuvec_zero"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0013:00293860:nuvec_one"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0013:00293870:nuvec_x"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0013:00293880:nuvec_y"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0013:00293890:nuvec_z"
 state = "matching"

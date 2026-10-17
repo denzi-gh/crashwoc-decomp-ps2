@@ -1642,7 +1642,7 @@ extern char D_00619CD8[];               /* error message */
 extern int NuFileLoadBuffer(char *name, void *buf, int size);
 
 
-extern struct numtx_s cutscenecammtx;
+struct numtx_s cutscenecammtx = {0};
 extern int set_cutscenecammtx;
 extern char D_00619D18[];
 #define badcamera_msg D_00619D18

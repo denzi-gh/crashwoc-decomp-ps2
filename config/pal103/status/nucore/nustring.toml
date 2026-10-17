@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0008"
 source = "src/nucore/nustring.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0008:00105a90:NuStrCat"

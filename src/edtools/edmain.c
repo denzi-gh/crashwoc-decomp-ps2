@@ -29,26 +29,13 @@
 #include "nu3d/nucamera.h"
 #include "nups2/ps2ctl.h"
 #include "edtools/edui.h"
-
-typedef struct edmainreg_s {
-    struct edmainreg_s *next;
-    struct edmainreg_s *prev;
-    char *name;
-    void (*init)(void);
-    void (*close)(void);
-    void (*select)(void);
-    char pad_0x18[0xC];
-    void (*readblock)(s32 fh);
-    s32 blockid;
-    s32 (*process)(struct nupad_s *pad, f32 dt);
-    void (*render)(void);
-} EDMAINREG;
+#include "edtools/edmain.h"
 
 typedef void (*EDUICALLBACK)(struct eduimenu_s *menu, struct eduiitem_s *item);
 
 extern s32 D_0062F8C8;
-extern EDMAINREG *D_0062F8CC;
-extern EDMAINREG *D_0062F8D0;
+extern struct edmainreg_s *D_0062F8CC;
+extern struct edmainreg_s *D_0062F8D0;
 extern s32 D_0062F8D4;
 extern struct eduimenu_s *D_0062F8D8;
 extern struct eduimenu_s *D_0062F8DC;
@@ -113,7 +100,7 @@ void cbmcfgCameraSpeed(struct eduimenu_s *menu, struct eduiitem_s *item);
 
 void edmainCreateMainMenu(void) {
     struct eduistyle_s style;
-    EDMAINREG *reg;
+    struct edmainreg_s *reg;
     struct eduiitem_s *item;
 
     style = edmain_itemstyle;
@@ -151,7 +138,7 @@ void edmainSetReturn(s32 value) {
 }
 
 
-s32 edmainRegister(EDMAINREG *reg) {
+s32 edmainRegister(struct edmainreg_s *reg) {
     if (edmain_initialised) {
         edmainClose();
     }
@@ -201,7 +188,7 @@ void edmainSetCamera(struct numtx_s *mtx) {
 
 
 void edmainInit(void *font, char *levelfile) {
-    EDMAINREG *reg;
+    struct edmainreg_s *reg;
 
     if (edmain_initialised) {
         edmainClose();
@@ -273,7 +260,7 @@ void edmainMainMenuRender(void) {
 void edmainReadLevelFile(void) {
     s32 fh;
     s32 blockid;
-    EDMAINREG *reg;
+    struct edmainreg_s *reg;
 
     if (edmain_levelfile[0]) {
         fh = NuFileOpen(edmain_levelfile, 0);
@@ -298,7 +285,7 @@ void edmainReadLevelFile(void) {
 
 
 void cbMMRegSel(struct eduimenu_s *menu, struct eduiitem_s *item) {
-    EDMAINREG *reg;
+    struct edmainreg_s *reg;
 
     reg = item->data;
     edmain_active = 1;

@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0132"
 source = "src/sdk/sce/graphdev_132.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0132:00261c50:sceGsSetHalfOffset"

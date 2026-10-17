@@ -290,6 +290,21 @@ typedef struct {
     struct nuvec_s spl[4096];
 } WallSplineType;
 
+struct nuvec_s ShadNorm = { 0.0f, 0.0f, 0.0f };
+struct nuvec_s EShadNorm = { 0.0f, 0.0f, 0.0f };
+struct nuvec_s ShadRoofNorm = { 0.0f, 0.0f, 0.0f };
+struct nuvec_s EShadRoofNorm = { 0.0f, 0.0f, 0.0f };
+SphereType SphereData[16] = {0};
+struct numtx_s tertempmat = {0};
+struct nuvec4_s tertempvec4 = { 0.0f, 0.0f, 0.0f, 0.0f };
+tertype TerrPolyInfo = {0};
+tertype ScaleTerrainT1[512] = {0};
+tertype ScaleTerrainT2[512] = {0};
+struct nuvec_s WallSplList[128] = {0};
+struct nuvec_s PlatImpactNorm = { 0.0f, 0.0f, 0.0f };
+tertype PlatImpactTer = {0};
+s32 TempScanStack[2048] = {0};
+
 extern TerTempInfoType *TerI;
 extern TerrShapeType *TerrShape;
 extern f32 NuTrigTable[];
@@ -307,16 +322,11 @@ extern s32 situtotal;
 extern s32 terlistptr;
 extern TerrainTrackInfoType *CurTrackInfo;
 extern tertype *TerrPoly;
-extern tertype TerrPolyInfo;
 extern s32 TerrPolyObj;
 extern s32 plathitid;
 extern s32 PlatCrush;
 extern s32 terrhitflags;
 extern s32 platinrange;
-extern struct nuvec_s ShadNorm;
-extern struct nuvec_s EShadNorm;
-extern struct nuvec_s ShadRoofNorm;
-extern struct nuvec_s EShadRoofNorm;
 extern f32 EShadY;
 extern f32 ShadRoofY;
 extern f32 EShadRoofY;
@@ -334,13 +344,9 @@ extern short eshadroofhit;
 extern s32 testlock;
 extern s32 curSphereter;
 extern s32 curPickInst;
-extern SphereType SphereData[];
 extern void *crashdata;
 extern tertype *ShadPoly;
 extern tertype *ScaleTerrain;
-extern tertype ScaleTerrainT1[];
-extern tertype ScaleTerrainT2[];
-extern s32 TempScanStack[];
 extern void *TempStackPtr;
 extern tertype *D_0034E7E0[];
 #define ScanHitLimit D_0034E7E0
@@ -348,10 +354,6 @@ extern tertype *D_0034E970[];
 #define ScanHitLimitEnd D_0034E970
 extern s32 TerrPlatDis;
 extern s32 PlatImpactId;
-extern struct nuvec_s PlatImpactNorm;
-extern tertype PlatImpactTer;
-extern struct numtx_s tertempmat;
-extern struct nuvec4_s tertempvec4;
 
 extern f32 NuFsqrt(f32 x);
 extern void *NuScratchAlloc32(s32 size);
@@ -361,7 +363,6 @@ extern void NuVec4MtxTransformVU0(struct nuvec4_s *dst, struct nuvec4_s *src,
 extern void NuVec4MtxInvTransformVU0(struct nuvec4_s *dst, struct nuvec4_s *src,
                                      struct numtx_s *m);
 extern void NuRndrLine3dDbg(f32 x0, f32 y0, f32 z0, f32 x1, f32 y1, f32 z1, u32 colour);
-extern struct nuvec_s WallSplList[128];
 extern s32 WallSplCount;
 extern struct nucamera_s global_camera;
 extern s32 NuFileLoadBuffer(char *name, void *buf, s32 max);

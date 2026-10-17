@@ -80,6 +80,7 @@
 #include "nu3d/nutex.h"
 #include "nu3d/nuvport.h"
 #include "nups2/nups2types.h"
+#include "nups2/ps2video.h"
 
 typedef struct GsDisplay {
     u64 dx : 12;
@@ -115,13 +116,6 @@ typedef struct TbSet {
 typedef struct sceDmaChan {
     unsigned int chcr;
 } sceDmaChan;
-
-typedef struct NuVBlankHandler {
-    struct NuVBlankHandler *next;
-    struct NuVBlankHandler *prev;
-    void (*fn)(void);
-    int priority;
-} NuVBlankHandler;
 
 typedef struct sceGsStoreImage {
     u32 vifcode[4];
@@ -257,8 +251,8 @@ extern int D_0062F074;
 extern int D_0062F078;
 extern int D_0062F080;
 extern int D_0062F058;
-extern NuVBlankHandler *D_0062F070;
-extern NuVBlankHandler *D_0062F07C;
+extern struct NuVBlankHandler *D_0062F070;
+extern struct NuVBlankHandler *D_0062F07C;
 extern int D_006331CC;
 extern volatile int nuvideo_global_vbcnt;
 extern int D_002EA0D0[16];
@@ -1274,10 +1268,10 @@ void NuDisableVBlankE(void)
 }
 
 
-void NuIntAddVBlankE(NuVBlankHandler *handler)
+void NuIntAddVBlankE(struct NuVBlankHandler *handler)
 {
-    NuVBlankHandler *prev;
-    NuVBlankHandler *cur;
+    struct NuVBlankHandler *prev;
+    struct NuVBlankHandler *cur;
 
     DisableIntc(3);
     prev = 0;
@@ -1305,7 +1299,7 @@ void NuIntAddVBlankE(NuVBlankHandler *handler)
 }
 
 
-void NuIntRemVBlankE(NuVBlankHandler *handler)
+void NuIntRemVBlankE(struct NuVBlankHandler *handler)
 {
     DisableIntc(3);
     if (handler->prev) {
@@ -1341,10 +1335,10 @@ void NuDisableVBlankS(void)
 }
 
 
-void NuIntAddVBlankS(NuVBlankHandler *handler)
+void NuIntAddVBlankS(struct NuVBlankHandler *handler)
 {
-    NuVBlankHandler *prev;
-    NuVBlankHandler *cur;
+    struct NuVBlankHandler *prev;
+    struct NuVBlankHandler *cur;
 
     DisableIntc(2);
     prev = 0;
@@ -1372,7 +1366,7 @@ void NuIntAddVBlankS(NuVBlankHandler *handler)
 }
 
 
-void NuIntRemVBlankS(NuVBlankHandler *handler)
+void NuIntRemVBlankS(struct NuVBlankHandler *handler)
 {
     DisableIntc(2);
     if (handler->prev) {
@@ -1563,7 +1557,7 @@ int ifnVif1(int ca)
 
 int ifnVBlankE(int ca)
 {
-    NuVBlankHandler *handler;
+    struct NuVBlankHandler *handler;
 
     in_vblank_end = 1;
     if (auto_screen_swap) {
@@ -1580,7 +1574,7 @@ int ifnVBlankE(int ca)
 
 int ifnVBlankS(int ca)
 {
-    NuVBlankHandler *handler;
+    struct NuVBlankHandler *handler;
 
     in_vblank_end = 1;
     nuvideo_global_vbcnt++;

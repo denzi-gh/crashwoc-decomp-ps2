@@ -97,6 +97,7 @@
 #include "nups2/ps2ctl.h"
 #include "gamelib/debris.h"
 #include "edtools/edui.h"
+#include "edtools/edmain.h"
 
 struct edanimparam_s {
     int id;
@@ -125,9 +126,6 @@ struct edanimparam_s {
     float bouncy_damping;
 };
 
-extern struct edanimparam_s AnimParams[];
-
-extern struct nuvec_s edanim_cam_pos;
 extern struct nugscn_s *edanim_base_scene;
 extern void *edanim_active_menu;
 extern struct eduimenu_s *edanim_bouncy_menu;
@@ -517,6 +515,18 @@ extern void edanimDetermineNearestAnim(float range);
 extern void edanimDetermineNearestParticle(float range);
 extern void edanimDetermineNearestSound(float range);
 
+void edanimInit(void);
+void edanimClose(void);
+void edanimEnter(void);
+int edanimProc(struct nupad_s *pad);
+void edanimRender(void);
+
+struct edmainreg_s edanimdesc = {
+    0, 0, "Anim Editor", edanimInit, edanimClose, edanimEnter, {0}, 0,
+    EDMAIN_BLOCKID('a', 'n', 'i', 'm'), edanimProc, edanimRender
+};
+struct edanimparam_s AnimParams[64] = { { 0 } };
+struct nuvec_s edanim_cam_pos = { 0.0f, 0.0f, 0.0f };
 
 static inline float edanimParamDistance(int param)
 {

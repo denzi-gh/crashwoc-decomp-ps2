@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0016"
 source = "src/numath/nutrig.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0016:0010aa30:NuAtani"
@@ -41,4 +41,12 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0016:0010b318:NuPower2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0016:00293960:ang"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0016:00293d68:NuTrigTable"
 state = "matching"

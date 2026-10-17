@@ -30,3 +30,31 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0113:0024d020:ShadComInit"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0113:005d97c0:pal0"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0113:005d9800:pal1"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0113:005d9840:pal2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0113:005d9880:pal3"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0113:005d98c0:pals"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0113:005d98d0:vtx.72"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0113:006328e4:shadcol"
+state = "asm"

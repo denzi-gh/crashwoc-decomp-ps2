@@ -38,3 +38,31 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0123:00260d50:AddMechanicalDebris"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0123:0060dd00:GDeb"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0123:0060e7a0:ADeb"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0123:0060fca0:mechbits"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0123:0060fcc0:atlasbits"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0123:0060fce0:helibits"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0123:0060fd00:jeepbits"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0123:00632f50:ttty"
+state = "asm"

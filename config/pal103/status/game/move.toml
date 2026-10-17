@@ -190,3 +190,347 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0117:002586d0:ResetTub"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0117:005f2660:CrashMoveInfo"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0117:005f26a8:SwimmingMoveInfo"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0117:005f26f0:CocoMoveInfo"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0117:005f2738:ScooterMoveInfo"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0117:005f2780:SnowBoardMoveInfo"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0117:005f27c8:OffRoaderMoveInfo"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0117:005f2810:MechMoveInfo"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0117:005f2858:FireEngineMoveInfo"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0117:005f28a0:GyroMoveInfo"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0117:005f28e8:SubmarineMoveInfo"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0117:005f2930:MineCartMoveInfo"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0117:005f2978:MineTubMoveInfo"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0117:005f29c0:TubLinkCR"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0117:005f29f8:TubLinkGT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0117:005f2a58:CircuitOriginGT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0117:005f2a68:DefaultMoveInfo"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0117:005f2ab0:PlrTub"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0117:005f2ad0:OppTub"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0117:005f2af0:OppTubCreature"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0117:005f37d8:PlrEvent"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0117:005f3c98:ring_pos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0117:005f3ca8:jeeptyrepos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0117:005f3cb8:carpet_splpos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0117:005f3cc8:carpet_pos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0117:005f3cd8:carpet_oldpos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0117:005f3ce8:carpet_mom"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0117:005f3cf8:carpet_anim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0117:005f3d18:carpet_RPos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0117:005f3d40:carpet_lights"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0117:005f3df0:gyropos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0117:005f3e00:TempTubPos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0117:005f3e10:ring_xrot"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0117:005f3e70:ring_yrot"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0117:00632990:GRAVITY"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:00632994:TERMINALVELOCITY"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:00632998:MAXLAPS"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:0063299c:SWEEPATTACKSTARTTIME"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:006329a0:SWEEPATTACKENDTIME"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:006329a4:SCOOTERJUMPPAUSEFRAME"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:006329a8:SNOWBOARDJUMPPAUSEFRAME"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:006329ac:OFFROADERSPEEDTIME"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:006329b0:jeepsfx"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:006329b8:i_jkeepsfx"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:006329bc:MECHRUNNINGJUMPPAUSEFRAME"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:006329c0:MECHSTANDINGJUMPPAUSEFRAME"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:006329c4:FIREENGINERUNNINGJUMPPAUSEFRAME"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:006329c8:FIREENGINESTANDINGJUMPPAUSEFRAME"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:006329cc:CARPETTIME"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:006329d0:carpet_character"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:006329d8:carpet_place"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:006329e0:carpet_model"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:006329e8:carpet_action"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:006329ec:carpet_overlap"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:006329f0:FASTMINECARTMUL"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:006329f4:SLOWMINECARTMUL"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:006329f8:cart_sfx"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:006329fc:TUBWAIT"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:00632a00:TUBBOOSTFRAMES"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:00632a04:plr_tub_tilt"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:00632a08:plr_tub_tilttarget"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:00632a0c:plr_tub_tiltlock"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:00632a10:tub_overlap"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:00632a14:plr_gates"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:00632a18:GATECOUNT"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:00632a20:gate_bits"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:00632a28:i_ring"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:00632a2c:RINGCOUNT"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:00632a30:RINGPULL"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:00632a34:VEHICLETIME"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:00632a38:plr_vehicle_time"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:00632a3c:plr_vehicle_speedmul"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:00632a40:plr_tocam_wait"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:00632a44:plr_tocam_turn"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:00632a48:plr_tumblehack"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:00632a4c:offroader_speedtime"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:00632a50:CARPETLOOPTIME"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:00632a54:carpet_yrot"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:00632a56:carpet_xrot"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:00632a58:carpet_time"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:00632a5c:carpet_panelpos"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:00632a60:TubLink"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:00632a64:race_finished"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:00632a68:opptub_action"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:00632a6c:opptub_wait"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:00632a70:arrow_xrot"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0117:00632a72:arrow_yrot"
+state = "asm"

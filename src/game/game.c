@@ -3763,7 +3763,7 @@ void MakeTimeI(s32 time, s32 hours, char *txt) {
     }
 }
 
-extern char *PlaceName3[3][6]; /* [place][language]; row stride 0x18 */
+extern char *PlaceName3[5][6]; /* [place][language]; row stride 0x18 */
 
 void DefaultTimeTrialNames(s32 all) {
     char *txt;

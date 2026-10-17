@@ -26,3 +26,11 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0180:0026d148:sceSdRemote"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0180:00612408:__ps2_libinfo__"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0180:00612418:sceSd_gEnd_func"
+state = "matching"

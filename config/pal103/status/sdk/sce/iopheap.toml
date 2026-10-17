@@ -34,3 +34,7 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0257:0027fa50:sceSifLoadIopHeap"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0257:00613414:_bind"
+state = "matching"

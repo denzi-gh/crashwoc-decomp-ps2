@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0134"
 source = "src/sdk/sce/graphdev_134.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0134:00261d60:sceGsSetDefDBuffDc"

@@ -40,6 +40,7 @@
 #include "nu3d/nugscn.h"
 #include "nups2/ps2ctl.h"
 #include "edtools/edui.h"
+#include "edtools/edmain.h"
 
 struct grassclump_s {
     int type;
@@ -51,7 +52,6 @@ struct grassclump_s {
     float height;
 };
 
-extern struct grassclump_s GrassClumps[64];
 extern struct eduimenu_s *edgra_active_menu;
 extern struct eduimenu_s *edgra_options_menu;
 extern struct eduimenu_s *edgra_instance_menu;
@@ -66,7 +66,6 @@ extern int edgra_clumps_used;
 extern char edbits_what_game;
 extern char edbits_level_filename[];
 extern struct nugscn_s *edbits_base_scene;
-extern struct nuvec_s edgra_cam_pos;
 extern float edgra_cam_ax;
 extern float edgra_cam_ay;
 extern void *app_fnt;
@@ -178,6 +177,19 @@ extern void edgracbCancelClumpPropertiesMenu(void);
 extern void edgracbCancelOptMenu(void);
 extern void edgracbFileSave(void *menu);
 extern void edgracbFileLoad(void *menu);
+
+void edgraInit(void);
+void edgraClose(void);
+void edgraEnter(void);
+int edgraProc(struct nupad_s *pad);
+void edgraRender(void);
+
+struct edmainreg_s edgradesc = {
+    0, 0, "Grass Editor", edgraInit, edgraClose, edgraEnter, {0}, 0,
+    EDMAIN_BLOCKID('g', 'r', 'a', 's'), edgraProc, edgraRender
+};
+struct nuvec_s edgra_cam_pos = { 0.0f, 0.0f, 0.0f };
+struct grassclump_s GrassClumps[64] = { { 0 } };
 
 
 void edgraInitAllClumps(void)
