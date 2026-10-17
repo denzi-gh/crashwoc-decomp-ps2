@@ -416,71 +416,70 @@ void MoveRailPosition(struct nuvec_s *dst, struct RPos_s *rpos, f32 distance,
                       s32 direction) {
     struct rail_s *rail;
     struct RPos_s RPos;
+    struct nuvec_s *p0;
     struct nuvec_s *p1;
     struct nuvec_s *p;
-    f32 f;
-    f32 d;
+    f32 edgedist;
+    f32 ratio;
     s32 i0;
     s32 i1;
 
-    d = distance;
     temp_rail_end = 0;
     TempRPos = RPos = *rpos;
-    if ((RPos.iRAIL == -1) || ((s32)RPos.iALONG == -1)) {
+    if ((RPos.iRAIL == -1) || (RPos.iALONG == -1)) {
         return;
     }
     *dst = RPos.pos;
     rail = &Rail[RPos.iRAIL];
 Loop:
-    i1 = RPos.iALONG;
-    i0 = i1 + 1;
-    if ((i0 == rail->edges) && (rail->circuit != 0)) {
-        i0 = 0;
+    i0 = RPos.iALONG;
+    i1 = i0 + 1;
+    if ((i1 == rail->edges) && (rail->circuit != 0)) {
+        i1 = 0;
     }
-    p1 = (struct nuvec_s *)(rail->pCAM->pts + (i1 * rail->pCAM->ptsize));
-    p = (struct nuvec_s *)(rail->pCAM->pts + (i0 * rail->pCAM->ptsize));
+    p0 = (struct nuvec_s *)(rail->pCAM->pts + i0 * rail->pCAM->ptsize);
+    p1 = (struct nuvec_s *)(rail->pCAM->pts + i1 * rail->pCAM->ptsize);
+    p = p0;
     if (direction == 0) {
-        p1 = p;
+        p = p1;
     }
-    f = NuVecDist(dst, p1, 0);
-    if (d > f) {
-        d = (d - f);
-        *dst = *p1;
+    edgedist = NuVecDist(dst, p, 0);
+    if (distance > edgedist) {
+        distance -= edgedist;
+        *dst = *p;
         if (direction == 0) {
             if (rail->circuit != 0) {
                 RPos.iALONG++;
                 if (RPos.iALONG == rail->edges) {
-                    RPos.iALONG = direction;
+                    RPos.iALONG = 0;
                 }
                 goto Loop;
-            } else {
-                if (RPos.iALONG < rail->edges) {
-                    RPos.iALONG++;
-                    goto Loop;
-                }
-                temp_rail_end = 1;
-                goto end;
             }
-        }
-        if (rail->circuit != 0) {
-            RPos.iALONG--;
-            if (RPos.iALONG == -1) {
-                RPos.iALONG = rail->edges;
+            if (RPos.iALONG < rail->edges) {
+                RPos.iALONG++;
+                goto Loop;
+            }
+            temp_rail_end = 1;
+        } else {
+            if (rail->circuit != 0) {
                 RPos.iALONG--;
+                if (RPos.iALONG == -1) {
+                    RPos.iALONG = rail->edges - 1;
+                }
+                goto Loop;
             }
-            goto Loop;
+            if (RPos.iALONG > 0) {
+                RPos.iALONG--;
+                goto Loop;
+            }
+            temp_rail_end = 2;
         }
-        if (RPos.iALONG > 0) {
-            RPos.iALONG--;
-            goto Loop;
-        }
-        temp_rail_end = 2;
     } else {
-        dst->x = (p1->x - dst->x) * (d / f) + dst->x;
-        dst->y = (p1->y - dst->y) * (d / f) + dst->y;
-        dst->z = (p1->z - dst->z) * (d / f) + dst->z;
+        ratio = distance / edgedist;
+        dst->x += (p->x - dst->x) * ratio;
+        dst->y += (p->y - dst->y) * ratio;
+        dst->z += (p->z - dst->z) * ratio;
     }
-end:
     TempRPos = RPos;
 }
 
