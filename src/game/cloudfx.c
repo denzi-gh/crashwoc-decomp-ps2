@@ -18,15 +18,17 @@
 
 #include "nu3d/numtl.h"
 #include "nu3d/nustream.h"
+#include "nu3d/nutex.h"
 #include "numath/nurand.h"
 #include "numath/nuvec.h"
 #include "nucore/nucoretypes.h"
 
-extern s32 cloudreset;
-extern void *ttmtl;
-extern void *tttex;
-extern void *clouds_rs;
-extern u8 D_00293090[];
+/* PS2 compact cloud particle (s16 x/y/z), stride 6. */
+struct cloud_s {
+    s16 x;
+    s16 y;
+    s16 z;
+};
 
 struct nuivec_s {
     s32 x;
@@ -34,51 +36,78 @@ struct nuivec_s {
     s32 z;
 };
 
-extern struct nuvec_s groff[];
-extern struct nuivec_s grphase[];
-extern struct nuivec_s grphaserate[];
-
-extern void cloudInit();
-
-/* ---- cloudInit support ---- */
-
-/* PS2 compact cloud vertex table (s16 x/y/z), stride 6.
- * offset 0x0/0x2/0x4 verified in cloudInit stores. */
-struct cloud_s {
-    s16 x;
-    s16 y;
-    s16 z;
-};
-
-/* Cloud material.  Offsets verified in cloudInit:
- *   attrib   (+0x168)  ld/sd 64-bit render-attrib word
- *   fxdata   (+0x13C)  sw D_00293090
- *   field1A8 (+0x1A8)  sw 0x7D00 */
-struct cloudmtl_s {
-    char pad_000[0x13C];
-    void *fxdata;              /* +0x13C */
-    char pad_140[0x168 - 0x140];
-    u64 attrib;               /* +0x168 */
-    char pad_170[0x1A8 - 0x170];
-    s32 field_1A8;            /* +0x1A8 */
-};
-
-/* Cloud texture.  bits (+0x10) verified in cloudInit free path. */
-struct cloudtex_s {
-    char pad_00[0x10];
-    void *bits;               /* +0x10 */
-};
+extern s32 cloudreset;
+extern struct nurndrstream_s *clouds_rs;
+extern struct numtl_s *cloudmtl;
+extern struct nutex_s *cloudtex;
+extern struct numtl_s *ttmtl;
+extern struct nutex_s *tttex;
+extern u8 D_00293090[];
+#define cloud_mpg D_00293090
+extern u8 D_00625260[];
+#define cloud_texname D_00625260
+extern u8 D_00625278[];
+#define cloudfx_file D_00625278
+extern u8 D_00625298[];
+#define tt_texname D_00625298
 
 extern struct cloud_s clouds[];
 extern f32 MAXCLOUDS;
 extern f32 CLOUDRNG;
-extern struct cloudmtl_s *cloudmtl;
-extern struct cloudtex_s *cloudtex;
-extern u8 D_00625260[];
-extern u8 D_00625278[];
+extern f32 CLOUDSIZE;
+extern f32 cloud_density;
+extern struct nuvec_s groff[];
+extern struct nuivec_s grphase[];
+extern struct nuivec_s grphaserate[];
+extern struct nuvec_s grscale;
+extern struct nuvec_s grvel;
 
+extern s32 D_00632904;
+#define clouds_off D_00632904
+extern struct nuvec_s D_00625288;
+#define cloud_colour D_00625288
+extern struct nuvec_s D_002D3EF0;
+#define camera_trans D_002D3EF0
+extern f32 NuTrigTable[];
+extern s32 PS2_REZ_H;
+extern u8 *rndrstream_free;
+extern union variptr_u superbuffer_ptr;
+
+extern s32 D_0063290C;
+#define ttcount D_0063290C
+extern f32 D_00632908;
+#define ttsize D_00632908
+extern f32 D_00632910;
+#define ttrange D_00632910
+extern f32 D_00632914;
+#define ttspan D_00632914
+extern f32 D_0063291C;
+#define ttcsize D_0063291C
+extern s32 ttmtlcnt;
+extern struct cloud_s ttptls[];        /* [8][count] trail particles, stride 6 */
+extern struct nuvec_s ttoff[];
+extern struct nuvec_s ttvel[];
+extern s32 ttgmul[];
+extern struct nuvec_s tt_colours[];
+extern u16 tt_density[];
+extern u16 ttdenrate[];
+extern struct nuvec_s ttcoff[];
+extern struct nuvec_s ttcvel[];
+extern struct nuvec_s ttccol[];
+extern u16 tt_cdensity[];
+extern u16 ttcdenrate[];
+
+extern void cloudInit();
 extern void TextureCreate(void *desc, void *mtl, void *tex);
+extern void TextureCreateEx(void *desc, void *mtl, void *tex, void *sbptr,
+                            void *buf, void *buf2, void *buffend);
 extern void NuMemFreeFn(void *ptr, void *src, s32 id);
+extern void NuRndrStreamLink(struct nurndrstream_s *rs);
+extern u8 *vpDmaTag_CntEx(u8 *cur, s32 qwc, u32 tag);
+extern u8 *vpDmaTag_Close(u8 *cur);
+extern u8 *vpDmaTag_RefEx(u8 *cur, u32 addr, s32 qwc, u32 tag);
+extern u8 *vpDmaTag_Next(u8 *cur, s32 mode);
+
 
 void cloudInit() {
     s32 i;
@@ -92,82 +121,128 @@ void cloudInit() {
         r = NuRandFloat();
         clouds[i].z = (s16)(((r * CLOUDRNG + r * CLOUDRNG) - CLOUDRNG) * 16.0f);
     }
-    TextureCreate(D_00625260, &cloudmtl, &cloudtex);
+    TextureCreate(cloud_texname, &cloudmtl, &cloudtex);
     if (cloudmtl != 0) {
-        cloudmtl->attrib =
-            (((cloudmtl->attrib & 0xFFFFFFF0FFFFFFFFULL) | 0x0000000200000000ULL) &
-             0xFFFF3FFFFFFFFFFFULL) | 0x0000400000000000ULL;
-        cloudmtl->field_1A8 = 0x7D00;
+        cloudmtl->attrib.alpha = 2;
+        cloudmtl->attrib.zmode = 1;
+        cloudmtl->alpha_sort = 0x7D00;
         NuMtlUpdateEx(cloudmtl, 1);
-        cloudmtl->fxdata = D_00293090;
+        cloudmtl->stream.mpgtag = cloud_mpg;
     }
     if (cloudtex != 0) {
         if (cloudtex->bits != 0) {
-            NuMemFreeFn(cloudtex->bits, D_00625278, 0x6C);
+            NuMemFreeFn(cloudtex->bits, cloudfx_file, 0x6C);
         }
-        NuMemFreeFn(cloudtex, D_00625278, 0x6D);
+        NuMemFreeFn(cloudtex, cloudfx_file, 0x6D);
     }
 }
 
-/* ---- DoClouds support ---- */
 
-extern s32 D_00632904;                 /* cloud disable flag (gp-rel) */
-extern struct nuvec_s D_00625288;      /* cloud render colour */
-extern struct nuvec_s grscale;
-extern struct nuvec_s grvel;
-extern f32 NuTrigTable[];
-extern f32 cloud_density;
-extern f32 CLOUDSIZE;
-extern u8 D_002D3EF0[];                 /* cloud render matrix */
+void cloudRender(struct nuvec_s *pos, struct nuvec_s *off, f32 size, f32 rng, s32 density,
+                 s32 maxc, struct cloud_s *cl, struct numtl_s *mtl, struct nuvec_s *col) {
+    union {
+        u64 dw[2];
+        u32 w[4];
+    } gif;
+    struct nuvec_s scroll;
+    struct nurndrstream_s *rs;
+    f32 wrap;
+    f32 x;
+    f32 y;
+    f32 z;
+    s32 n;
 
-void cloudRender(void *m, struct nuvec_s *off, f32 size, f32 rng, s32 density,
-                 s32 maxc, struct cloud_s *cl, struct cloudmtl_s *mtl,
-                 struct nuvec_s *col);
+    rs = clouds_rs;
+    NuRndrStreamLink(rs);
+    NuRndrStreamSetMisc(rs);
+    NuRndrStreamAddMtl(rs, mtl);
+    NuRndrStreamSetViewMtx(rs);
+    rs->cur.b = vpDmaTag_CntEx(rs->cur.b, 0, 0x6C068002);
+    *rs->cur.f++ = pos->x;
+    *rs->cur.f++ = pos->y;
+    *rs->cur.f++ = pos->z;
+    *rs->cur.f++ = rng;
+    NuVecScale(&scroll, off, rng);
+    wrap = rng + rng;
+    x = pos->x + scroll.x;
+    *rs->cur.f++ = x - wrap * (s32)(x / wrap);
+    y = pos->y + scroll.y;
+    *rs->cur.f++ = y - wrap * (s32)(y / wrap);
+    z = pos->z + scroll.z;
+    *rs->cur.f++ = z - wrap * (s32)(z / wrap);
+    *rs->cur.i++ = 0;
+    *rs->cur.f++ = size;
+    *rs->cur.f++ = size * 0.5f;
+    *rs->cur.f++ = density;
+    *rs->cur.i++ = 0;
+    *rs->cur.i++ = 0;
+    *rs->cur.i++ = 0;
+    *rs->cur.i++ = 0;
+    *rs->cur.i++ = 0;
+    *rs->cur.f++ = col->x;
+    *rs->cur.f++ = col->y;
+    *rs->cur.f++ = col->z;
+    *rs->cur.i++ = 0;
+    *rs->cur.f++ = (2048.0f + 320.0f) * 16.0f;
+    *rs->cur.f++ = ((PS2_REZ_H >> 1) + 2048.0f) * 16.0f;
+    *rs->cur.f++ = (2048.0f - 320.0f) * 16.0f;
+    *rs->cur.f++ = (2048.0f - (PS2_REZ_H >> 1)) * 16.0f;
+    *rs->cur.w++ = 0x14000300;
+    *rs->cur.w++ = 0x17000000;
+    rs->cur.b = vpDmaTag_Close(rs->cur.b);
+    gif.dw[0] = 0x5003400000008000ULL;
+    gif.dw[1] = 0x52521;
+    while (maxc > 0) {
+        n = (maxc > 0x20) ? 0x20 : maxc;
+        maxc -= 0x20;
+        rs->cur.b = vpDmaTag_CntEx(rs->cur.b, 0, 0x6D018002);
+        *((u16 *)rs->cur.b)++ = n;
+        *((u16 *)rs->cur.b)++ = 0;
+        *((u16 *)rs->cur.b)++ = 0;
+        *((u16 *)rs->cur.b)++ = 0;
+        *rs->cur.w++ = 0x6C0180D2;
+        *rs->cur.w++ = gif.w[0];
+        *rs->cur.w++ = gif.w[1];
+        *rs->cur.w++ = gif.w[2];
+        *rs->cur.w++ = gif.w[3];
+        *rs->cur.w++ = 0;
+        *rs->cur.w++ = 0;
+        *rs->cur.w++ = 0;
+        rs->cur.b = vpDmaTag_Close(rs->cur.b);
+        rs->cur.b = vpDmaTag_RefEx(rs->cur.b, (u32)cl, 0, (n << 16) | 0x69008003);
+        cl += n;
+        ((u16 *)rs->cur.b)[-8] = (n * 6) >> 4;
+        rs->cur.b = vpDmaTag_CntEx(rs->cur.b, 0, 0x17000000);
+    }
+    rs->cur.b = vpDmaTag_CntEx(rs->cur.b, 0, 0x10000000);
+    rndrstream_free = vpDmaTag_Next(rs->cur.b, 0);
+}
 
-/* ---- cloudRender support ---- */
 
-extern s32 PS2_REZ_H;
-extern u8 *rndrstream_free;
+void InitClouds(union variptr_u *buffer, union variptr_u *buffend) {
+    s32 n;
 
-extern void NuRndrStreamLink(struct nurndrstream_s *rs);
-extern u8 *vpDmaTag_CntEx(u8 *cur, s32 qwc, u32 tag);
-extern u8 *vpDmaTag_Close(u8 *cur);
-extern u8 *vpDmaTag_RefEx(u8 *cur, u32 addr, s32 a2, u32 tag);
-extern u8 *vpDmaTag_Next(u8 *cur);
+    cloudInit(buffer, buffend);
+    for (n = 0; n < 10; n++) {
+        groff[n].x = NuRandFloat();
+        groff[n].y = NuRandFloat();
+        groff[n].z = NuRandFloat();
+        grphase[n].x = rand() << 1;
+        grphase[n].y = rand() << 1;
+        grphase[n].z = rand() << 1;
+        grphaserate[n].x = (rand() & 0xff) + 0x80;
+        grphaserate[n].y = (rand() & 0xff) + 0x80;
+        grphaserate[n].z = (rand() & 0xff) + 0x80;
+    }
+}
 
-/* ---- TimeTunnelInit support ---- */
-
-extern s32 D_0063290C;                 /* tunnel particle count */
-extern f32 D_00632908;
-extern f32 D_00632910;
-extern f32 D_00632914;
-extern s32 ttmtlcnt;
-extern struct cloud_s ttptls[];        /* [8][count] trail particles, stride 6 */
-extern struct nuvec_s ttoff[];
-extern union variptr_u superbuffer_ptr;
-extern u8 D_00625298[];
-
-extern struct nuvec_s ttvel[];
-extern s32 ttgmul[];
-extern struct nuvec_s tt_colours[];
-extern u16 tt_density[];
-extern u16 ttdenrate[];
-extern struct nuvec_s ttcoff[];
-extern struct nuvec_s ttcvel[];
-extern struct nuvec_s ttccol[];
-extern u16 tt_cdensity[];
-extern u16 ttcdenrate[];
-extern f32 D_0063291C;
-
-extern void TextureCreateEx(void *desc, void *mtl, void *tex, void *sbptr,
-                            void *buf, void *buf2, void *buffend);
 
 void DoClouds(s32 paused) {
     struct nuvec_s col;
     s32 i;
 
-    col = D_00625288;
-    if (D_00632904 != 0) {
+    col = cloud_colour;
+    if (clouds_off != 0) {
         return;
     }
     if (cloudreset != 0) {
@@ -201,161 +276,52 @@ void DoClouds(s32 paused) {
         while (groff[i].z < -1.0f) {
             groff[i].z = groff[i].z + 2.0f;
         }
-        cloudRender(D_002D3EF0, &groff[i], CLOUDSIZE, CLOUDRNG, (s32)cloud_density,
+        cloudRender(&camera_trans, &groff[i], CLOUDSIZE, CLOUDRNG, (s32)cloud_density,
                     (s32)MAXCLOUDS, clouds, cloudmtl, &col);
     }
 }
 
-void cloudRender(void *m, struct nuvec_s *off, f32 size, f32 rng, s32 density,
-                 s32 maxc, struct cloud_s *cl, struct cloudmtl_s *mtl,
-                 struct nuvec_s *col) {
-    struct nuvec_s scaled;
-    u64 gt[2];
-    struct nurndrstream_s *rs;
-    struct nuvec_s *target;
-    struct cloud_s *clptr;
-    u8 *p;
-    u8 *q;
-    u8 *r2;
-    f32 twoRng;
-    f32 cx, cy, cz;
-    s32 n;
-    s32 nb;
-
-    target = (struct nuvec_s *)m;
-    rs = clouds_rs;
-    NuRndrStreamLink(rs);
-    NuRndrStreamSetMisc(rs);
-    NuRndrStreamAddMtl(rs, mtl);
-    NuRndrStreamSetViewMtx(rs);
-
-    p = vpDmaTag_CntEx(rs->cur.b, 0, 0x6C068002);
-    rs->cur.b = p;
-    ((f32 *)p)[0] = target->x;  rs->cur.b = p + 0x4;
-    ((f32 *)p)[1] = target->y;  rs->cur.b = p + 0x8;
-    ((f32 *)p)[2] = target->z;  rs->cur.b = p + 0xC;
-    ((f32 *)p)[3] = rng;        rs->cur.b = p + 0x10;
-    NuVecScale(&scaled, off, rng);
-
-    twoRng = rng + rng;
-    p = rs->cur.b;
-    cx = target->x + scaled.x;
-    cx = cx - twoRng * (f32)(s32)(cx / twoRng);
-    ((f32 *)p)[0] = cx;         rs->cur.b = p + 0x4;
-    cy = target->y + scaled.y;
-    cy = cy - twoRng * (f32)(s32)(cy / twoRng);
-    ((f32 *)p)[1] = cy;         rs->cur.b = p + 0x8;
-    cz = target->z + scaled.z;
-    cz = cz - twoRng * (f32)(s32)(cz / twoRng);
-    ((f32 *)p)[2] = cz;         rs->cur.b = p + 0xC;
-    ((s32 *)p)[3] = 0;          rs->cur.b = p + 0x10;
-    ((f32 *)p)[4] = size;       rs->cur.b = p + 0x14;
-    ((f32 *)p)[5] = size * 0.5f; rs->cur.b = p + 0x18;
-    ((f32 *)p)[6] = (f32)density; rs->cur.b = p + 0x1C;
-    ((s32 *)p)[7] = 0;          rs->cur.b = p + 0x20;
-    ((s32 *)p)[8] = 0;          rs->cur.b = p + 0x24;
-    ((s32 *)p)[9] = 0;          rs->cur.b = p + 0x28;
-    ((s32 *)p)[10] = 0;         rs->cur.b = p + 0x2C;
-    ((s32 *)p)[11] = 0;         rs->cur.b = p + 0x30;
-    ((f32 *)p)[12] = col->x;    rs->cur.b = p + 0x34;
-    ((f32 *)p)[13] = col->y;    rs->cur.b = p + 0x38;
-    ((f32 *)p)[14] = col->z;    rs->cur.b = p + 0x3C;
-    ((s32 *)p)[15] = 0;         rs->cur.b = p + 0x40;
-    ((f32 *)p)[16] = 38912.0f;  rs->cur.b = p + 0x44;
-    ((f32 *)p)[17] = ((f32)(PS2_REZ_H >> 1) + 2048.0f) * 16.0f; rs->cur.b = p + 0x48;
-    ((f32 *)p)[18] = 27648.0f;  rs->cur.b = p + 0x4C;
-    ((f32 *)p)[19] = (2048.0f - (f32)(PS2_REZ_H >> 1)) * 16.0f; rs->cur.b = p + 0x50;
-    ((s32 *)p)[20] = 0x14000300; rs->cur.b = p + 0x54;
-    ((s32 *)p)[21] = 0x17000000; rs->cur.b = p + 0x58;
-    rs->cur.b = vpDmaTag_Close(rs->cur.b);
-
-    gt[0] = 0x5003400000008000ULL;
-    gt[1] = 0x0000000000052521ULL;
-    clptr = cl;
-    while (maxc > 0) {
-        n = 0x20;
-        if (maxc < 0x21) {
-            n = maxc;
-        }
-        maxc -= 0x20;
-        q = vpDmaTag_CntEx(rs->cur.b, 0, 0x6D018002);
-        rs->cur.b = q;
-        ((u16 *)q)[0] = (u16)n;     rs->cur.b = q + 0x2;
-        ((u16 *)q)[1] = 0;          rs->cur.b = q + 0x4;
-        ((u16 *)q)[2] = 0;          rs->cur.b = q + 0x6;
-        ((u16 *)q)[3] = 0;          rs->cur.b = q + 0x8;
-        ((u32 *)q)[2] = 0x6C0180D2; rs->cur.b = q + 0xC;
-        ((u32 *)q)[3] = ((u32 *)gt)[0]; rs->cur.b = q + 0x10;
-        ((u32 *)q)[4] = ((u32 *)gt)[1]; rs->cur.b = q + 0x14;
-        ((u32 *)q)[5] = ((u32 *)gt)[2]; rs->cur.b = q + 0x18;
-        ((u32 *)q)[6] = ((u32 *)gt)[3]; rs->cur.b = q + 0x1C;
-        ((u32 *)q)[7] = 0;          rs->cur.b = q + 0x20;
-        ((u32 *)q)[8] = 0;          rs->cur.b = q + 0x24;
-        ((u32 *)q)[9] = 0;          rs->cur.b = q + 0x28;
-        rs->cur.b = vpDmaTag_Close(rs->cur.b);
-        r2 = vpDmaTag_RefEx(rs->cur.b, (u32)clptr, 0, (n << 16) | 0x69008003);
-        rs->cur.b = r2;
-        nb = n * 6;
-        clptr = (struct cloud_s *)((u8 *)clptr + nb);
-        *(u16 *)(r2 - 0x10) = (u16)(nb >> 4);
-        rs->cur.b = vpDmaTag_CntEx(rs->cur.b, 0, 0x17000000);
-    }
-    rs->cur.b = vpDmaTag_CntEx(rs->cur.b, 0, 0x10000000);
-    rndrstream_free = vpDmaTag_Next(rs->cur.b);
-}
 
 void TimeTunnelInit(union variptr_u *buffer, union variptr_u *buffend) {
     struct nuvec_s v;
-    struct nuvec_s *p;
-    struct cloud_s *tp;
-    s32 i, j, k;
+    s32 i, j;
     f32 r;
-    struct cloudmtl_s *mtl;
 
     ttmtlcnt = 0;
-    tp = ttptls;
-    for (i = 0; i < D_0063290C; i++, tp++) {
+    for (i = 0; i < ttcount; i++) {
         v.x = 0.0f;
         r = NuRandFloat();
-        v.y = ((r * D_00632910 + r * D_00632910) - D_00632910) * 16.0f;
+        v.y = ((r * ttrange + r * ttrange) - ttrange) * 16.0f;
         r = NuRandFloat();
-        v.z = ((r * 0.75f + 0.25f) * D_00632910) * 16.0f;
+        v.z = ((r * 0.75f + 0.25f) * ttrange) * 16.0f;
         NuVecRotateY(&v, &v, rand() << 1);
-        tp->x = (s16)v.x;
-        tp->y = (s16)v.y;
-        tp->z = (s16)v.z;
-        j = 0;
-        do {
-            f32 ratio = D_00632908 / D_00632914;
-            k = j + 1;
-            ttptls[k * D_0063290C + i] = ttptls[j * D_0063290C + i];
-            ttptls[k * D_0063290C + i].y =
-                (s16)((f32)ttptls[k * D_0063290C + i].y - ratio);
-            j = k;
-        } while (j < 7);
+        ttptls[i].x = (s16)v.x;
+        ttptls[i].y = (s16)v.y;
+        ttptls[i].z = (s16)v.z;
+        for (j = 0; j < 7; j++) {
+            f32 ratio = ttsize / ttspan;
+            ttptls[(j + 1) * ttcount + i] = ttptls[j * ttcount + i];
+            ttptls[(j + 1) * ttcount + i].y -= ratio;
+        }
     }
-    p = ttoff;
-    do {
-        p->x = 0.0f;
-        p->y = NuRandFloat();
-        p->z = 0.0f;
-        p++;
-    } while (p < ttoff + 5);
+    for (i = 0; i < 5; i++) {
+        ttoff[i].x = ttoff[i].z = 0.0f;
+        ttoff[i].y = NuRandFloat();
+    }
     superbuffer_ptr.intaddr = (superbuffer_ptr.intaddr + 0x7F) & ~0x7F;
     ttmtl = 0;
     tttex = 0;
-    TextureCreateEx(D_00625298, &ttmtl, &tttex, &superbuffer_ptr, buffer, buffer, buffend);
+    TextureCreateEx(tt_texname, &ttmtl, &tttex, &superbuffer_ptr, buffer, buffer, buffend);
     superbuffer_ptr.intaddr = (superbuffer_ptr.intaddr + 0x7F) & ~0x7F;
-    mtl = (struct cloudmtl_s *)ttmtl;
-    if (mtl != 0) {
-        mtl->attrib =
-            (((mtl->attrib & 0xFFFFFFF0FFFFFFFFULL) | 0x0000000200000000ULL) &
-             0xFFFF3FFFFFFFFFFFULL) | 0x0000400000000000ULL;
-        mtl->field_1A8 = 0x7FFF;
-        NuMtlUpdateEx(mtl, 1);
-        mtl->fxdata = D_00293090;
+    if (ttmtl != 0) {
+        ttmtl->attrib.alpha = 2;
+        ttmtl->attrib.zmode = 1;
+        ttmtl->alpha_sort = 0x7FFF;
+        NuMtlUpdateEx(ttmtl, 1);
+        ttmtl->stream.mpgtag = cloud_mpg;
     }
 }
+
 
 void TimeTunnelRender(void) {
     struct nuvec_s col;
@@ -363,8 +329,8 @@ void TimeTunnelRender(void) {
     s32 j;
     f32 density;
 
-    col = D_00625288;
-    if (D_00632904 != 0 || ttmtl == 0) {
+    col = cloud_colour;
+    if (clouds_off != 0 || ttmtl == 0) {
         return;
     }
     if (++ttmtlcnt < 4) {
@@ -394,11 +360,11 @@ void TimeTunnelRender(void) {
         }
         density = NuTrigTable[tt_density[i]] * 16.0f + 48.0f;
         tt_density[i] += ttdenrate[i];
-        cloudRender(D_002D3EF0, &ttoff[i], D_00632908 * 0.5f, D_00632910, (s32)density,
-                    D_0063290C, ttptls, ttmtl, &col);
+        cloudRender(&camera_trans, &ttoff[i], ttsize * 0.5f, ttrange, (s32)density,
+                    ttcount, ttptls, ttmtl, &col);
         for (j = 0; j < ttgmul[i]; j++) {
-            cloudRender(D_002D3EF0, &ttoff[i], D_00632908 / ((f32)j * 0.1f + 1.0f),
-                        D_00632910, (s32)density, D_0063290C, &ttptls[D_0063290C * j], ttmtl,
+            cloudRender(&camera_trans, &ttoff[i], ttsize / ((f32)j * 0.1f + 1.0f),
+                        ttrange, (s32)density, ttcount, &ttptls[ttcount * j], ttmtl,
                         &tt_colours[i]);
         }
     }
@@ -426,28 +392,11 @@ void TimeTunnelRender(void) {
         }
         density = NuTrigTable[tt_cdensity[i]] * 16.0f + 32.0f;
         tt_cdensity[i] += ttcdenrate[i];
-        cloudRender(D_002D3EF0, &ttcoff[i], D_0063291C, D_00632910, (s32)density,
-                    D_0063290C, ttptls, ttmtl, &ttccol[i]);
+        cloudRender(&camera_trans, &ttcoff[i], ttcsize, ttrange, (s32)density,
+                    ttcount, ttptls, ttmtl, &ttccol[i]);
     }
 }
 
-
-void InitClouds(union variptr_u *buffer, union variptr_u *buffend) {
-    s32 n;
-
-    cloudInit(buffer, buffend);
-    for (n = 0; n < 10; n++) {
-        groff[n].x = NuRandFloat();
-        groff[n].y = NuRandFloat();
-        groff[n].z = NuRandFloat();
-        grphase[n].x = rand() << 1;
-        grphase[n].y = rand() << 1;
-        grphase[n].z = rand() << 1;
-        grphaserate[n].x = (rand() & 0xff) + 0x80;
-        grphaserate[n].y = (rand() & 0xff) + 0x80;
-        grphaserate[n].z = (rand() & 0xff) + 0x80;
-    }
-}
 
 void cloudProcess(void) {
     if (cloudreset != 0) {
@@ -456,8 +405,10 @@ void cloudProcess(void) {
     }
 }
 
+
 void CloseClouds(void) {
 }
+
 
 void TimeTunnelClose(void) {
     if (ttmtl != 0) {
@@ -467,8 +418,9 @@ void TimeTunnelClose(void) {
     tttex = 0;
 }
 
+
 void CloudFxInit(void) {
     if (clouds_rs == 0) {
-        clouds_rs = NuRndrStreamAllocStream((void *)0x10000000, D_00293090, 0x3C);
+        clouds_rs = NuRndrStreamAllocStream(0x10000000, cloud_mpg, 0x3C);
     }
 }
