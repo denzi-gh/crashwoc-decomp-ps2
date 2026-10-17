@@ -13,7 +13,7 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0090:001cba08:NuLstCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0090:001cbac8:NuLstDestroy"
