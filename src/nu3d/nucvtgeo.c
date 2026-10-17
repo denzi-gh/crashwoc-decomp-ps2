@@ -120,6 +120,7 @@ extern struct nuvec_s NuCvtPntMid;
 extern struct nucvtpktinfo_s *info_pktdata;
 extern u8 *info_pktbuff;
 extern int info_pktcnt;
+extern int info_pktsizecnt;
 extern int nugscn_generate_packetinfo;
 extern int info_stripcount;
 extern int info_tristripcount;
@@ -142,6 +143,7 @@ extern char D_006155A8[];
 extern char D_006155D8[];
 extern char D_00615608[];
 extern char D_00615638[];
+extern char D_00615690[];
 
 #define colourref_on D_0062EEDC
 #define colourref_offset D_0062EEE0
@@ -157,8 +159,11 @@ extern char D_00615638[];
 #define v_high_msg D_006155D8
 #define u_low_msg D_00615608
 #define v_low_msg D_00615638
+#define prim_type_msg D_00615690
 
 #define NUMTL_ALPHA_BLEND 2
+#define NUPRIM_TRILIST 5
+#define NUPRIM_TRISTRIP 6
 #define ALPHA_REG_TOP_MASK 0xFF00000000000000ULL
 #define FLOAT_EXP_MASK 0x7F800000
 #define SPAN_EXP_BIAS 0x04008000
@@ -1196,6 +1201,185 @@ u8 *NuCvtDmaTriCFromIdx(u8 **dma, struct nuvtx_tc1_s *vtx, short *idx, int nidx,
 }
 
 
+unsigned int NuCvtSizeDmaTriStripCFromIdx(short *idx, int nidx, struct numtl_s *mtl, int *qwc) {
+    unsigned int size;
+    int dmasize;
+    int words;
+    int fast;
+    int left;
+    int cont;
+    int chunk;
+    int batch;
+    int used;
+    int run;
+    int n;
+    int k;
+    int i;
+
+    fast = 0;
+    if (NuCvtPntEna && mtl->attrib.lighting == NUMTL_ALPHA_BLEND) {
+        fast = mtl->fxid == 0;
+    }
+    dmasize = nidx * 9 + 4;
+    dmasize = (((nidx + 41) / 42) * 21 + dmasize) * 4;
+    words = 8;
+    if (dmasize > 0xFFFFF) {
+        NuErrorProlog(nucvtgeo_srcfile, 0x64C)(dma_size_msg, dmasize, nidx);
+    }
+    size = 0x24;
+    if (NuCvtPntOn) {
+        size += 4;
+        size += 0x10;
+    }
+    left = 0;
+    cont = 0;
+    while (nidx) {
+        if (left == 0) {
+            run = *idx;
+            if (run > 42) {
+                nidx--;
+                idx++;
+                left = run;
+                cont = 0;
+            } else {
+                batch = 0;
+                n = nidx;
+                used = 0;
+                if (n > 0) {
+                    do {
+                        batch += run;
+                        used += run + 1;
+                        n -= run + 1;
+                        if (n <= 0) {
+                            break;
+                        }
+                        run = idx[used];
+                    } while (batch + run < 43);
+                }
+            }
+        }
+        if (left) {
+            batch = left > 40 ? 40 : left;
+            chunk = batch;
+            if (cont) {
+                batch += 2;
+                nidx += 2;
+                idx -= 2;
+            }
+            used = batch;
+        }
+        if (batch < 2) {
+            NuErrorProlog(nucvtgeo_srcfile, 0x693)(pkt_count_msg);
+        }
+        if (batch > 42) {
+            NuErrorProlog(nucvtgeo_srcfile, 0x695)(pkt_count_msg);
+        }
+        size += 4;
+        size += 4;
+        size += 4;
+        size += 4;
+        size += 4;
+        if (NuCvtPntOn) {
+            size += 4;
+        }
+        size += 4;
+        if (!NuCvtPntOn) {
+            size += 4;
+            size += 4;
+            size += 4;
+            size += 4;
+        } else {
+            size += 4;
+            size += 4;
+        }
+        info_pktsizecnt++;
+        size += 8;
+        run = 0;
+        k = 0;
+        for (i = 0; i < batch; i++) {
+            if (run == 0 && left == 0) {
+                run = idx[k];
+                k++;
+            }
+            if (!NuCvtPntOn) {
+                size += 0x10;
+            } else {
+                size += 8;
+            }
+            k++;
+            run--;
+        }
+        if (NuCvtPntOn) {
+            size += 4;
+        }
+        if (left) {
+            cont = 1;
+        }
+        if (NuCvtUvOn) {
+            size += 4;
+        }
+        size += 4;
+        run = 0;
+        k = 0;
+        for (i = 0; i < batch; i++) {
+            if (run == 0 && left == 0) {
+                run = idx[k];
+                k++;
+            }
+            size += 4;
+            if (!fast) {
+                size += 2;
+                size += 2;
+            }
+            k++;
+            run--;
+        }
+        if (NuCvtUvOn) {
+            size += 4;
+        }
+        size += 4;
+        k = 0;
+        run = 0;
+        switch (mtl->attrib.colour) {
+        case 0:
+            if (mtl->attrib.lighting == NUMTL_ALPHA_BLEND) {
+                for (i = 0; i < batch; i++) {
+                    size += 4;
+                }
+            } else {
+                for (i = 0; i < batch; i++) {
+                    size += 4;
+                }
+            }
+            break;
+        case 1:
+            words += 8 + batch * 8;
+            for (i = 0; i < batch; i++) {
+                if (run == 0 && left == 0) {
+                    run = idx[k];
+                    k++;
+                }
+                size += 4;
+                k++;
+                run--;
+            }
+            break;
+        }
+        size += 8;
+        nidx -= used;
+        idx += used;
+        if (left) {
+            left -= chunk;
+        }
+    }
+    size = (size + 15) & 0xFFFFFFF0;
+    if (qwc) {
+        *qwc = words;
+    }
+    return size;
+}
+
+
 u8 *NuCvtDmaTriStripCFromIdx(u8 **dma, struct nuvtx_tc1_s *vtx, short *idx, int nidx, struct numtl_s *mtl) {
     union nucvtgiftag_u strip;
     union nucvtgiftag_u fan;
@@ -1677,6 +1861,152 @@ void NuCvtCalcFastPoint(struct nuvec_s *a, struct nuvec_s *b, struct numtl_s *mt
     NuCvtPntMid.x = (b->x + a->x) * 0.5f;
     NuCvtPntMid.y = (b->y + a->y) * 0.5f;
     NuCvtPntMid.z = (b->z + a->z) * 0.5f;
+}
+
+
+void NuPs2CreateRenderStream(struct nugobj_s *gobj) {
+    struct nugeom_s *geom;
+    struct nuprim_s *prim;
+    NuColourRef *colourref;
+    u8 *buffer;
+    u8 *dma;
+    short *idx;
+    short *strip;
+    unsigned int size;
+    int words;
+    int totalwords;
+    int build;
+    int left;
+    int n;
+    int next;
+    int dmasize;
+    int len;
+
+    build = 0;
+    totalwords = 0;
+    size = 0;
+    geom = gobj->geom;
+    info_pktsizecnt = 0;
+    info_pktcnt = 0;
+    NuCvtCalcFastPoint(&gobj->min, &gobj->max, 0);
+    for (; geom; geom = geom->next) {
+        if (!geom->skins && !geom->vtxskininfo) {
+            build = 1;
+        }
+        if (NuCvtPntEna) {
+            NuCvtCalcFastPoint(&gobj->min, &gobj->max, geom->mtl);
+        }
+        prim = geom->prim;
+        if (prim) {
+            switch (prim->type) {
+            case NUPRIM_TRILIST:
+                idx = prim->vid;
+                for (left = prim->cnt; left > 0;) {
+                    n = left > 6000 ? 6000 : left;
+                    left -= 6000;
+                    size += NuCvtSizeDmaTriCFromIdx(idx, n, geom->mtl, &words);
+                    idx += n;
+                    totalwords += words;
+                }
+                break;
+            case NUPRIM_TRISTRIP:
+                idx = prim->vid;
+                for (left = prim->cnt; left > 0;) {
+                    int limit = 6000;
+
+                    len = 0;
+                    strip = idx;
+                    while (len < left) {
+                        next = len + (*strip + 1);
+                        strip += *strip + 1;
+                        if (next > limit) {
+                            break;
+                        }
+                        len = next;
+                    }
+                    n = len;
+                    left -= n;
+                    size += NuCvtSizeDmaTriStripCFromIdx(idx, n, geom->mtl, &words);
+                    idx += n;
+                    totalwords += words;
+                }
+                break;
+            default:
+                NuErrorProlog(nucvtgeo_srcfile, 0xA11)(prim_type_msg);
+                break;
+            }
+        }
+        size += 0x10;
+    }
+    if (build) {
+        buffer = NuMemAllocFn(size + totalwords, nucvtgeo_srcfile, 0xA22);
+        dma = buffer;
+        if (nugscn_generate_packetinfo) {
+            info_pktdata = NuMemAllocFn(info_pktsizecnt * 8, nucvtgeo_srcfile, 0xA26);
+            info_pktbuff = buffer;
+        }
+        info_pktsizecnt = 0;
+        if (nugscn_generate_colourref) {
+            colourref = (NuColourRef *)(buffer + size);
+            gobj->blend = colourref;
+            NuCvtGeoBeginColourRef(colourref);
+        }
+        for (geom = gobj->geom; geom; geom = geom->next) {
+            if (geom->skins || geom->vtxskininfo) {
+                continue;
+            }
+            geom->dmastream = dma;
+            info_pktbuff = dma;
+            prim = geom->prim;
+            if (prim) {
+                switch (prim->type) {
+                case NUPRIM_TRILIST:
+                    idx = prim->vid;
+                    for (left = prim->cnt; left > 0;) {
+                        n = left > 6000 ? 6000 : left;
+                        left -= 6000;
+                        dmasize = NuCvtSizeDmaTriCFromIdx(idx, n, geom->mtl, 0);
+                        memset(dma, 0, dmasize);
+                        NuCvtDmaTriCFromIdx(&dma, geom->vtxptr, idx, n, geom->mtl);
+                        idx += n;
+                    }
+                    break;
+                case NUPRIM_TRISTRIP:
+                    idx = prim->vid;
+                    for (left = prim->cnt; left > 0;) {
+                        int limit = 6000;
+
+                        len = 0;
+                        strip = idx;
+                        while (len < left) {
+                            next = len + (*strip + 1);
+                            strip += *strip + 1;
+                            if (next > limit) {
+                                break;
+                            }
+                            len = next;
+                        }
+                        n = len;
+                        left -= n;
+                        dmasize = NuCvtSizeDmaTriStripCFromIdx(idx, n, geom->mtl, 0);
+                        memset(dma, 0, dmasize);
+                        NuCvtDmaTriStripCFromIdx(&dma, geom->vtxptr, idx, n, geom->mtl);
+                        idx += n;
+                    }
+                    break;
+                default:
+                    NuErrorProlog(nucvtgeo_srcfile, 0xA67)(prim_type_msg);
+                    break;
+                }
+            }
+            dma = vpDmaTag_Ret(dma);
+            geom->dmasize = dma - (u8 *)geom->dmastream;
+        }
+        if (nugscn_generate_colourref) {
+            gobj->tricount = (u8 *)NuCvtGeoEndColourRef() - (u8 *)colourref;
+        }
+        NuCvtPntOn = 0;
+    }
 }
 
 
