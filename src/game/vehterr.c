@@ -47,8 +47,6 @@ extern struct nuvec_s D_005B9430;
 #define JeepAxisY D_005B9420
 #define JeepAxisZ D_005B9430
 
-#define D_0061FA58 (*(const double *)0x0061FA58)
-
 s32 TryUnembeddPointDir(struct nuvec_s *pos, struct nuvec_s *dir1,
                         struct nuvec_s *dir2, s16 *handle, f32 radius)
 {
@@ -361,7 +359,7 @@ s32 MyCast(struct nuvec_s *pos, struct nuvec_s *target, struct nuvec_s *normals,
             if (dd < 0.0) {
                 dd = -dd;
             }
-            wall = dd > D_0061FA58;
+            wall = dd > 0.707f;
         }
 
         if (wall != 0) {

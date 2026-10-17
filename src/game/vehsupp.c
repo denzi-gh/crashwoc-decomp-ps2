@@ -136,16 +136,14 @@ void ApplyFriction(f32 *val, f32 rate, f32 dt) {
     }
 }
 
-/* Retail .rodata doubles (far from gp): 360.0 and 180.0, loaded via ld. */
-extern double D_0061FA38[]; /* 360.0 */
-extern double D_0061FA40[]; /* 180.0 */
+f32 Rationalise360f(f32 Ang) {
+    f32 Temp;
 
-f32 Rationalise360f(f32 a) {
-    a = (f32)(fmod(a + 180.0f, D_0061FA38[0]) - D_0061FA40[0]);
-    if (a < -180.0f) {
-        a += 360.0f;
+    Temp = (f32)(fmod(Ang + 180.0f, 360.0) - 180.0);
+    if (Temp < -180.0f) {
+        Temp += 360.0f;
     }
-    return a;
+    return Temp;
 }
 
 f32 ASin360f(f32 val) {
@@ -193,7 +191,7 @@ f32 ASin360f(f32 val) {
     return sign * lo_f / 182.0444489f;
 }
 
-s16 ASin(f32 val) {
+inline s16 ASin(f32 val) {
     s32 positive;
     s32 lo, mid, step;
 
@@ -226,31 +224,7 @@ s16 ASin(f32 val) {
 }
 
 s16 ACos(f32 val) {
-    s32 positive;
-    s32 lo, mid, step;
-    s32 idx;
-
-    positive = (val >= 0.0f);
-    if (!positive) {
-        val = -val;
-    }
-
-    if (val >= 1.0f) {
-        idx = positive ? 0x4000 : -0x4000;
-    } else {
-        lo = 0;
-        step = 0x2000;
-        while (step != 0) {
-            mid = lo + step;
-            if (NuTrigTable[mid] < val) {
-                lo = mid;
-            }
-            step >>= 1;
-        }
-        idx = positive ? lo : -lo;
-    }
-
-    return 0x4000 - idx;
+    return 0x4000 - ASin(val);
 }
 
 extern s32 SHEIGHT;
@@ -455,29 +429,24 @@ void SeekAngHalfLife(u16 *dest, s16 target, f32 halflife, f32 dt) {
     *dest = (u16)(s32)rate;
 }
 
-/* Retail .rodata doubles (far from gp): 360.0 and 180.0, loaded via ld. */
-extern double D_0061FA48[]; /* 360.0 */
-extern double D_0061FA50[]; /* 180.0 */
+s32 LimitAng360f(f32 *Ang, f32 Min, f32 Max) {
+    f32 Temp;
+    s32 Ret;
 
-s32 LimitAng360f(f32 *dest, f32 min, f32 max) {
-    f32 a;
-    s32 result = 0;
-
-    a = (f32)(fmod(*dest + 180.0f, D_0061FA48[0]) - D_0061FA50[0]);
-    if (a < -180.0f) {
-        a += 360.0f;
+    Ret = 0;
+    Temp = (f32)(fmod(*Ang + 180.0f, 360.0) - 180.0);
+    if (Temp < -180.0f) {
+        Temp += 360.0f;
     }
-
-    if (a < min) {
-        a = min;
-    } else if (a > max) {
-        a = max;
+    if (Temp < Min) {
+        Temp = Min;
+    } else if (Temp > Max) {
+        Temp = Max;
     } else {
-        result = 1;
+        Ret = 1;
     }
-
-    *dest = a;
-    return result;
+    *Ang = Temp;
+    return Ret;
 }
 
 f32 Sin360f(f32 a) {
