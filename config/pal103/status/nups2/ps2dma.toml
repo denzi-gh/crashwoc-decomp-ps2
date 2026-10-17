@@ -137,7 +137,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016d4d0:vtCloseDirect"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016d4f8:VifTagDummy"
