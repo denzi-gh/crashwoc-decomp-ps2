@@ -105,6 +105,7 @@ extern sceSifClientData _sceCd_cd_ncmd;
 extern sceSifClientData _sceCd_cd_scmd;
 
 extern int D_00610994[];
+extern int D_00610998[];
 extern int D_0061099C[];
 extern volatile int D_006109A0[];
 extern int D_006109A4[];
@@ -135,8 +136,12 @@ extern char D_0062B0A8[];
 extern char D_0062B0C0[];
 extern char D_0062B0D0[];
 extern char D_0062B0E0[];
+extern char D_0062B0F8[];
+extern char D_0062B120[];
 extern char D_0062B138[];
 extern char D_0062B148[];
+extern char D_0062B158[];
+extern char D_0062B180[];
 extern char D_0062B198[];
 extern char D_0062B1B8[];
 extern char D_0062B1C8[];
@@ -150,6 +155,7 @@ extern char D_0062B1F8[];
 #define cbfunc_num      (sceCdCbfunc_num[0])
 #define cbfunc_number   (sceCdCbfunc_number[0])
 #define cb_thread_id    (D_00610994[0])
+#define scmd_sema_keep  (D_00610998[0])
 #define ncmd_sema_keep  (D_0061099C[0])
 #define cb_sema         (D_006109A0[0])
 #define init_seq        (D_006109A4[0])
@@ -180,8 +186,12 @@ extern char D_0062B1F8[];
 #define sf_found_msg    D_0062B0C0
 #define sf_size_msg     D_0062B0D0
 #define sf_lsn_msg      D_0062B0E0
+#define ncmd_fail_msg   D_0062B0F8
+#define ncmd_bind_err_msg D_0062B120
 #define ncmd_wait_msg   D_0062B138
 #define scmd_wait_msg   D_0062B148
+#define scmd_fail_msg   D_0062B158
+#define scmd_bind_err_msg D_0062B180
 #define init_bind_err_msg D_0062B198
 #define exit_msg        D_0062B1B8
 #define dr_msg          D_0062B1C8
@@ -477,6 +487,48 @@ int sceCdSearchFile(sceCdlFILE *file, const char *name)
 }
 
 
+int _sceCd_ncmd_prechk(int cmd)
+{
+    int wait;
+
+    cmd_sem_init();
+    if (ncmd_semid != PollSema(ncmd_semid)) {
+        if (cd_debug > 0) {
+            scePrintf(ncmd_fail_msg, cmd, ncmd_sema_keep);
+        }
+        return 0;
+    }
+    ncmd_sema_keep = cmd;
+    ReferThreadStatus(init_th_id, &init_th_param);
+    if (sceCdSync(1)) {
+        SignalSema(ncmd_semid);
+        return 0;
+    }
+    sceSifInitRpc(0);
+    if (ncmd_bind < 0) {
+        while (1) {
+            if (sceSifBindRpc(&_sceCd_cd_ncmd, 0x80000595, 0) < 0) {
+                if (cd_debug > 0) {
+                    scePrintf(ncmd_bind_err_msg);
+                }
+                wait = 0x100000;
+                while (wait--) {
+                }
+                continue;
+            }
+            if (_sceCd_cd_ncmd.serve != 0) {
+                ncmd_bind = 0;
+                break;
+            }
+            wait = 0x100000;
+            while (wait--) {
+            }
+        }
+    }
+    return 1;
+}
+
+
 int sceCdNcmdDiskReady(void)
 {
     int ready;
@@ -524,6 +576,48 @@ int sceCdSyncS(int mode)
         return 0;
     }
     return sceSifCheckStatRpc(&_sceCd_cd_scmd);
+}
+
+
+int _sceCd_scmd_prechk(int cmd)
+{
+    int wait;
+
+    cmd_sem_init();
+    if (scmd_semid != PollSema(scmd_semid)) {
+        if (cd_debug > 0) {
+            scePrintf(scmd_fail_msg, cmd, scmd_sema_keep);
+        }
+        return 0;
+    }
+    scmd_sema_keep = cmd;
+    ReferThreadStatus(init_th_id, &init_th_param);
+    if (sceCdSyncS(1)) {
+        SignalSema(scmd_semid);
+        return 0;
+    }
+    sceSifInitRpc(0);
+    if (scmd_bind < 0) {
+        while (1) {
+            if (sceSifBindRpc(&_sceCd_cd_scmd, 0x80000593, 0) < 0) {
+                if (cd_debug > 0) {
+                    scePrintf(scmd_bind_err_msg);
+                }
+                wait = 0x100000;
+                while (wait--) {
+                }
+                continue;
+            }
+            if (_sceCd_cd_scmd.serve != 0) {
+                scmd_bind = 0;
+                break;
+            }
+            wait = 0x100000;
+            while (wait--) {
+            }
+        }
+    }
+    return 1;
 }
 
 
