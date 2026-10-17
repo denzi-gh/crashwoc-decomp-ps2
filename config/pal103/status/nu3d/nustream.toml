@@ -105,7 +105,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:001119e8:NuRndrStreamResetStreams"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00111a68:NuRndrVu1Draw"
@@ -149,7 +149,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00111eb0:NuRndrStreamPrependMPG"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00111f18:NuRndrStreamClearZBState"
