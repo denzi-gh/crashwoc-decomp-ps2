@@ -222,7 +222,7 @@ extern void NuLightAddSpot(struct nuvec_s *pos, float size, unsigned int colour,
 extern struct numtx_s numtx_identity;
 
 
-inline void RBodySetSphereClass(s32 classid, f32 r, f32 mass, f32 kr,
+static inline void RBodySetSphereClass(s32 classid, f32 r, f32 mass, f32 kr,
                                        f32 kf)
 {
     struct rbclass_s *rbc;
