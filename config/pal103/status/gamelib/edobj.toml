@@ -89,7 +89,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019c968:edobjFileLoadObjects"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:0019d430:edobjcbInstanceMenu"
@@ -373,7 +373,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:001a06c8:edobjProc"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0071:001a07c0:edobjcbSetLocalSoundType"

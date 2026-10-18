@@ -22,7 +22,7 @@ void NuLightUpdate(struct nulight_s *light);
 void NuLightDestroy(struct nulight_s *light);
 struct nulight_s *NuLightGetLight(int index);
 void NuLigthSetPolyHazeMat(void *mtl, float *u, float *v);
-void NuLightAddSpot(struct nuvec_s *pos, float size, int colour, int mode);
+void NuLightAddSpot(struct nuvec_s *pos, float size, unsigned int colour, int mode);
 void NuLightAddSpotXSpanFade(struct nuvec_s *pos, float size, float brightness, int colour, int mode, int xspan, int fade);
 void NuLightFog(float near, float far, int colour, int blur, int haze_colour);
 void NuLightFogClear(int clear);

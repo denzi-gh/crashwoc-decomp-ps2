@@ -1666,12 +1666,19 @@ f32 NuFPatchLightPoint(struct nuvec_s *normal, f32 scale, f32 bias, f32 dx, f32 
     return light;
 }
 
+/* Near-match (state=asm), 124/168 bytes: only the store order differs.
+ * Retail stores nrm[2].x, the four 1.0f pnt fields, nrm[3].y/z, then the rest
+ * in x,y,z order; sched1 here always issues the last store of each constant
+ * first (reg-death weight), so the pnt stores land after nrm[3].y/z. */
 void testShadowCast(void)
 {
     struct nufpatch_s patch;
 
     memset(&patch, 0, sizeof(patch));
-    patch.pnt[3].y = patch.pnt[3].x = patch.pnt[2].y = patch.pnt[1].x = 1.0f;
+    patch.pnt[1].x = 1.0f;
+    patch.pnt[2].y = 1.0f;
+    patch.pnt[3].x = 1.0f;
+    patch.pnt[3].y = 1.0f;
     patch.nrm[0].x = -0.099f;
     patch.nrm[0].z = 0.99f;
     patch.nrm[0].y = -0.099f;

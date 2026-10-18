@@ -1076,6 +1076,9 @@ done:
 }
 
 
+/* state=asm: retail keeps x * 16 and (f32)(w * 16) inside the gradient loop
+ * (only height >> 1, y + (height >> 1) and &edui_mtl are hoisted); every loop
+ * form tried here hoists them or nothing at all. */
 s32 eduicbRenderGradPick(struct eduimenu_s *menu, struct eduiitem_s *item, s32 x, s32 y, s32 w,
                          s32 highlight) {
     s32 height;
@@ -1086,7 +1089,7 @@ s32 eduicbRenderGradPick(struct eduimenu_s *menu, struct eduiitem_s *item, s32 x
     u32 colour;
     u32 colours[4];
 
-    height = (NuFntHeight + (NuFntHeight >> 2)) >> 3;
+    height = (NuFntHeight + (NuFntHeight >> 2)) >> 2;
     item->x = x;
     item->y = y;
     texty = ((height * 4 - NuFntHeight) >> 1) + NuFntBase;
