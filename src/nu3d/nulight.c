@@ -682,7 +682,7 @@ void NuLigthSetPolyHazeMat(void *mtl, float *u, float *v) {
 }
 
 
-void NuLightAddSpot(struct nuvec_s *pos, float size, int colour, int mode) {
+void NuLightAddSpot(struct nuvec_s *pos, float size, unsigned int colour, int mode) {
     if (NuLightSpotCnt < 8) {
         NuLightSpots[NuLightSpotCnt].pos = *pos;
         NuLightSpots[NuLightSpotCnt].size = size;
