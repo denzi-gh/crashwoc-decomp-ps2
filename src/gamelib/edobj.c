@@ -417,7 +417,7 @@ extern void edcamGetPosAng(struct nuvec_s *pos, int *ax, int *ay);
 extern struct nuvec_s *edmainQueryLocVec(void);
 extern float NuFsqrt(float x);
 extern char *edbitsGetSoundName(int id);
-extern void eduiMenuProcess(void *menu, struct nupad_s *pad);
+extern s32 eduiMenuProcess(struct eduimenu_s *menu, f32 dt, struct nupad_s *pad);
 extern void edobjDoInput(struct nupad_s *pad);
 extern void edobjDetermineNearestObject(float range);
 extern void edobjDetermineNearestWaypoint(float range);
@@ -3293,11 +3293,11 @@ void edobjEnter(void)
 }
 
 
-int edobjProc(struct nupad_s *pad)
+int edobjProc(float dt, struct nupad_s *pad)
 {
     edobj_blink_timer += 5;
     if (edobj_active_menu != 0) {
-        eduiMenuProcess(edobj_active_menu, pad);
+        eduiMenuProcess(edobj_active_menu, dt, pad);
         return 0;
     }
     edobjDoInput(pad);

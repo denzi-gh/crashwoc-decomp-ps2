@@ -644,8 +644,8 @@ void NuFilePatchAddress(int fh)
     int fd;
     int offset;
 
-    fd = fh - 1;
     for (i = 0; i < addr_ref_cnt; i++) {
+        fd = fh - 1;
         for (j = 0; j < addr_def_cnt; j++) {
             if (addr_refs[i].id == addr_defs[j].id) {
                 offset = addr_defs[j].pos - addr_refs[i].pos;

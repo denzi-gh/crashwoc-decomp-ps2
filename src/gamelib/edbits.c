@@ -211,8 +211,6 @@ char *edbitsGetSoundName(int sfx) {
 void edbitsDrawCircleXY(struct nuvec_s *centre, float radius, int colour, struct numtl_s *mtl) {
     struct nuvtx_tc1_s line[2];
     int i;
-    int angle;
-    float *trig;
 
     line[1].pnt.x = centre->x;
     line[1].pnt.y = centre->y;
@@ -224,11 +222,8 @@ void edbitsDrawCircleXY(struct nuvec_s *centre, float radius, int colour, struct
         line[1].pnt.x = centre->x;
         line[1].pnt.y = centre->y;
         line[1].pnt.z = centre->z;
-        angle = (i << 16) / 10;
-        trig = &NuTrigTable[angle & 0xFFFF];
-        line[1].pnt.x += *trig * radius;
-        trig = &NuTrigTable[(angle + 0x4000) & 0xFFFF];
-        line[1].pnt.z += *trig * radius;
+        line[1].pnt.x += NuTrigTable[((i << 16) / 10) & 0xFFFF] * radius;
+        line[1].pnt.z += NuTrigTable[(((i << 16) / 10) + 0x4000) & 0xFFFF] * radius;
         NuRndrLine3d(line, mtl, 0);
     }
 }
