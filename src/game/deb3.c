@@ -1249,11 +1249,11 @@ void LaunchObjects(void) {
     }
 
     if (Level == 0xA) {
-        dx = global_camera.mtx._30 - 0.46f;
-        dz = global_camera.mtx._32 - 77.3f;
+        dx = global_camera.mtx._30 - -0.46f;
+        dz = global_camera.mtx._32 - -77.3f;
         dy = dx * dx + dz * dz;
-        dx = global_camera.mtx._30 - 75.24f;
-        dz = global_camera.mtx._32 - 249.74f;
+        dx = global_camera.mtx._30 - -75.24f;
+        dz = global_camera.mtx._32 - -249.74f;
         temp = dx * dx + dz * dz;
         if (dy < temp) {
             temp = dy;
