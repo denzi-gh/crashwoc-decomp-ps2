@@ -313,7 +313,7 @@ void InitRandSFX(void) {
     rsfxpt = 0;
 }
 
-static inline s32 JonMaskFPS(s32 val, s32 add) {
+inline s32 JonMaskFPS(s32 val, s32 add) {
     return add * 0x3c + val <= 0x320000 ? val + add * 0x3c
                                         : (add * 0x3c + val) - 0x320000;
 }
