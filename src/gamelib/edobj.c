@@ -1989,53 +1989,55 @@ int edobjFileSaveObjects(char *filename)
 
 inline void edobjResetAnimsToZero(void)
 {
-    struct edobjinstance_s *oi;
-    struct nuinstanim_s *anim;
     int i;
+    struct edobjinstance_s *instance;
 
-    oi = ObjectInstance;
     for (i = 0; i < 64; i++) {
+        instance = &ObjectInstance[i];
         ObjectPath[i].particle_type[0] = -1;
-        if (oi[i].id != -1 && (anim = oi[i].anim) != 0) {
-            anim->tfirst = 0.0f;
-            anim->waiting = 1;
-            anim->ltime = ObjectPath[i].anim_start_offset;
-            anim->backwards = 0;
-            anim->playing = 0;
+        if (instance->id != -1) {
+            struct nuinstanim_s *instanim = instance->anim;
+            if (instanim != 0) {
+                instanim->tfirst = 0.0f;
+                instanim->waiting = 1;
+                instanim->ltime = ObjectPath[i].anim_start_offset;
+                instanim->backwards = 0;
+                instanim->playing = 0;
+            }
         }
     }
 }
 
 
-int edobjFileLoadObjects(char *filename)
+int edobjFileLoadObjects(char *file)
 {
-    char name[32];
-    struct nuvec_s pos;
-    char skipname[16];
-    int current_version;
-    int version;
-    int count;
-    int skip;
     int i;
     int j;
+    int version;
+    int numobjects;
+    char tname[20];
+    int maxversion;
+    int dummyreads;
+    struct nuvec_s dummyvec;
+    char dummyname[16];
 
-    current_version = 13;
+    maxversion = 13;
     EdFileSetMedia(1);
-    if (EdFileOpen(filename, 0) == 0) {
+    if (EdFileOpen(file, 0) == 0) {
         return 0;
     }
     version = EdFileReadInt();
-    if (version > current_version) {
+    if (version > maxversion) {
         EdFileClose();
         return 0;
     }
-    count = EdFileReadInt();
-    for (i = 0; i < count; i++) {
+    numobjects = EdFileReadInt();
+    for (i = 0; i < numobjects; i++) {
         if (version == 1) {
             ObjectPath[i].instance = EdFileReadInt();
         } else {
-            EdFileRead(name, 20);
-            ObjectPath[i].instance = edobjLookupInstance(name);
+            EdFileRead(tname, 20);
+            ObjectPath[i].instance = edobjLookupInstance(tname);
         }
         if (ObjectPath[i].instance != -1) {
             ObjectInstance[i].id =
@@ -2078,9 +2080,9 @@ int edobjFileLoadObjects(char *filename)
             ObjectPath[i].switch_delay = 0.0f;
         }
         if (version >= 9) {
-            skip = 0;
+            dummyreads = 0;
             if (ObjectPath[i].num_particles > 8) {
-                skip = 8 - ObjectPath[i].num_particles;
+                dummyreads = 8 - ObjectPath[i].num_particles;
                 ObjectPath[i].num_particles = 8;
             }
             for (j = 0; j < ObjectPath[i].num_particles; j++) {
@@ -2097,11 +2099,11 @@ int edobjFileLoadObjects(char *filename)
                     ObjectPath[i].particle_roty[j] = 0;
                 }
             }
-            for (j = 0; j < skip; j++) {
-                EdFileRead(skipname, 16);
+            for (j = 0; j < dummyreads; j++) {
+                EdFileRead(dummyname, 16);
                 EdFileReadInt();
                 EdFileReadInt();
-                EdFileRead(&pos, 12);
+                EdFileRead(&dummyvec, 12);
                 if (version >= 13) {
                     EdFileReadShort();
                     EdFileReadShort();
@@ -2121,9 +2123,9 @@ int edobjFileLoadObjects(char *filename)
         } else {
             ObjectPath[i].anim_start_offset = 0;
         }
-        skip = 0;
+        dummyreads = 0;
         if (ObjectPath[i].num_waypoints > 8) {
-            skip = 8 - ObjectPath[i].num_waypoints;
+            dummyreads = 8 - ObjectPath[i].num_waypoints;
             ObjectPath[i].num_waypoints = 8;
         }
         ObjectPath[i].total_time = 0;
@@ -2144,20 +2146,20 @@ int edobjFileLoadObjects(char *filename)
             }
             ObjectPath[i].total_time += ObjectPath[i].waypoint_time[j];
         }
-        for (j = 0; j < skip; j++) {
-            EdFileRead(&pos, 12);
+        for (j = 0; j < dummyreads; j++) {
+            EdFileRead(&dummyvec, 12);
             EdFileReadFloat();
             if (version >= 3) {
-                EdFileRead(&pos, 12);
+                EdFileRead(&dummyvec, 12);
             }
             if (version >= 4) {
                 EdFileReadInt();
             }
         }
         ObjectPath[i].prev_time = 0.99f;
-        skip = 0;
+        dummyreads = 0;
         if (ObjectPath[i].num_sounds > 8) {
-            skip = 8 - ObjectPath[i].num_sounds;
+            dummyreads = 8 - ObjectPath[i].num_sounds;
             ObjectPath[i].num_sounds = 8;
         }
         if (version >= 11) {
@@ -2168,11 +2170,11 @@ int edobjFileLoadObjects(char *filename)
                 ObjectPath[i].sound_timing[j] = EdFileReadFloat();
                 EdFileRead(&ObjectPath[i].sound_pos[j], 12);
             }
-            for (j = 0; j < skip; j++) {
-                EdFileRead(skipname, 16);
+            for (j = 0; j < dummyreads; j++) {
+                EdFileRead(dummyname, 16);
                 EdFileReadInt();
                 EdFileReadFloat();
-                EdFileRead(&pos, 12);
+                EdFileRead(&dummyvec, 12);
             }
         } else if (version == 10) {
             for (j = 0; j < ObjectPath[i].num_sounds; j++) {
@@ -2181,10 +2183,10 @@ int edobjFileLoadObjects(char *filename)
                 ObjectPath[i].sound_timing[j] = EdFileReadFloat();
                 EdFileRead(&ObjectPath[i].sound_pos[j], 12);
             }
-            for (j = 0; j < skip; j++) {
+            for (j = 0; j < dummyreads; j++) {
                 EdFileReadFloat();
                 EdFileReadFloat();
-                EdFileRead(&pos, 12);
+                EdFileRead(&dummyvec, 12);
             }
         }
         if (version >= 12) {
@@ -2198,13 +2200,13 @@ int edobjFileLoadObjects(char *filename)
         }
     }
     EdFileClose();
-    for (i = 0; i < count; i++) {
+    for (i = 0; i < numobjects; i++) {
         if (ObjectPath[i].instance != -1) {
             edobjConvertPathToAnim(i);
         }
     }
     edobjResetAnimsToZero();
-    edobj_next_instance = count;
+    edobj_next_instance = numobjects;
     edobj_nearest = -1;
     edobj_waypoint_mode = 0;
     edobj_copy_mode = 0;

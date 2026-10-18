@@ -201,7 +201,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00103338:NuFilePatchAddress"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0001:00103430:NuMemFileOpen"

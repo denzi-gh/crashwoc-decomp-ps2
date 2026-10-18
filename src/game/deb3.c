@@ -836,22 +836,22 @@ void JonExtraDraw(void)
 }
 
 void LaunchObjects(void) {
-    struct nuvec_s vec;
-    struct nuvec_s vec2;
-    struct nuhspecial_s obj;
-    s32 key;
     f32 *pt;
     f32 temp;
     f32 dx;
     f32 dy;
     f32 dz;
     s32 loop;
+    s32 key;
     s32 count;
-    s32 r;
     s32 g;
+    s32 r;
     s32 b;
     s32 hazea;
     s32 ang;
+    struct nuvec_s vec;
+    struct nuvec_s vec2;
+    struct nuhspecial_s obj;
 
     jonframe1++;
 
@@ -944,11 +944,7 @@ void LaunchObjects(void) {
                               + 0x40;
             }
         }
-        count = water2 / 100;
-        if (count < 0) {
-            count = -count;
-        }
-        LDATA->foga = count;
+        LDATA->foga = abs(water2 / 100);
         dmask = jcrunch;
         if (cmask == jcrunch && cmask != 0) {
             maskoff += 0x5A00;
@@ -969,14 +965,14 @@ void LaunchObjects(void) {
 
     if (Level == 0x21) {
         if ((jonframe1 & 1) == 0) {
-            vec.x = global_camera.mtx._30;
             vec.y = global_camera.mtx._31;
+            vec.x = global_camera.mtx._30;
             vec.z = global_camera.mtx._32;
             vec2.x = player->obj.pos.x - vec.x;
             vec2.z = player->obj.pos.z - vec.z;
             ang = NuAtan2D(vec2.x, vec2.z);
-            vec.z = vec.z + NuTrigTable[(u16)(ang + 0x4000)] * 5.0f;
             vec.x = vec.x + NuTrigTable[(u16)ang] * 5.0f;
+            vec.z = vec.z + NuTrigTable[(u16)(ang + 0x4000)] * 5.0f;
             AddVariableShotDebrisEffect(GDeb[115].i, &vec, 1, 0, 0);
         }
         for (loop = 0; loop < 7; loop++) {
@@ -989,10 +985,10 @@ void LaunchObjects(void) {
             vec.x = vec.x + NuTrigTable[(u16)ang] * 10.0f;
             vec.z = vec.z + NuTrigTable[(u16)(ang + 0x4000)] * 10.0f;
             dx = NuTrigTable[(u16)cortlights[loop * 6]];
-            dy = NuTrigTable[(u16)(cortlights[loop * 6 + 1] + 0x4000)];
-            dz = NuTrigTable[(u16)(cortlights[loop * 6 + 2] + 0x4000)];
-            vec.y = vec.y + dy * 3.5f;
+            dy = NuTrigTable[(cortlights[loop * 6 + 1] + 0x4000) & 0xFFFF];
+            dz = NuTrigTable[(cortlights[loop * 6 + 2] + 0x4000) & 0xFFFF];
             vec.x = vec.x + dx * 3.5f;
+            vec.y = vec.y + dy * 3.5f;
             vec.z = vec.z + dz * 3.5f;
             vec2 = player->obj.pos;
             vec2.x = vec2.x + dx;
@@ -1017,8 +1013,8 @@ void LaunchObjects(void) {
         vec2.x = player->obj.pos.x - vec.x;
         vec2.z = player->obj.pos.z - vec.z;
         ang = NuAtan2D(vec2.x, vec2.z);
-        vec.z = vec.z + NuTrigTable[(u16)(ang + 0x4000)] * 5.0f;
         vec.x = vec.x + NuTrigTable[(u16)ang] * 5.0f;
+        vec.z = vec.z + NuTrigTable[(u16)(ang + 0x4000)] * 5.0f;
         AddVariableShotDebrisEffect(GDeb[115].i, &vec, 1, 0, 0);
     }
 
@@ -1030,8 +1026,8 @@ void LaunchObjects(void) {
             vec2.x = player->obj.pos.x - vec.x;
             vec2.z = player->obj.pos.z - vec.z;
             ang = NuAtan2D(vec2.x, vec2.z);
-            vec.z = vec.z + NuTrigTable[(u16)(ang + 0x4000)] * 5.0f;
             vec.x = vec.x + NuTrigTable[(u16)ang] * 5.0f;
+            vec.z = vec.z + NuTrigTable[(u16)(ang + 0x4000)] * 5.0f;
             AddVariableShotDebrisEffect(GDeb[115].i, &vec, 1, 0, 0);
         }
         if (flooron != 0 || roofon != 0) {
@@ -1125,8 +1121,8 @@ void LaunchObjects(void) {
 
     if (Level == 0xE && Chase[0].status == 2) {
         vec.x = Chase[0].pos[0].x;
-        vec.y = Chase[0].pos[0].y + 0.2f;
         vec.z = Chase[0].pos[0].z - 2.5f;
+        vec.y = Chase[0].pos[0].y + 0.2f;
         AddVariableShotDebrisEffect(GDeb[100].i, &vec, 2, 0, 0);
         vec.y = Chase[0].pos[0].y + 0.6f;
         AddVariableShotDebrisEffect(GDeb[101].i, &vec, 1, 0, 0);
@@ -1137,8 +1133,8 @@ void LaunchObjects(void) {
     }
 
     if (Level == 0x13) {
-        dz = global_camera.mtx._32 - D_00632868.x;
         dx = global_camera.mtx._30 - D_00632868.x;
+        dz = global_camera.mtx._32 - D_00632868.x;
         temp = 50.0f - NuFsqrt(dx * dx + dz * dz) * 0.125f;
         if (temp < 0.0f) {
             temp = 0.0f;
@@ -1190,8 +1186,8 @@ void LaunchObjects(void) {
             LDATA->fogr = 0x40;
             LDATA->fogg = 0x10;
             LDATA->fogb = 0;
-            LDATA->fognear = 1.0f;
             LDATA->fogfar = 9.0f;
+            LDATA->fognear = 1.0f;
             if (key > 0x1900) {
                 key = 0x1900;
             }
@@ -1247,8 +1243,8 @@ void LaunchObjects(void) {
     }
 
     if (Level == 0xA) {
-        dz = global_camera.mtx._32 - -77.3f;
         dx = global_camera.mtx._30 - -0.46f;
+        dz = global_camera.mtx._32 - -77.3f;
         dy = dx * dx + dz * dz;
         dx = global_camera.mtx._30 - -75.24f;
         dz = global_camera.mtx._32 - -249.74f;
@@ -1266,16 +1262,16 @@ void LaunchObjects(void) {
             LDATA->fogb = 0x10;
             LDATA->foga = 0x40;
             LDATA->hazea = 0;
-            LDATA->fognear = 14.0f;
             LDATA->fogfar = 45.0f;
+            LDATA->fognear = 14.0f;
         } else {
             LDATA->fogr = 0x50;
             LDATA->fogg = 0xF;
             LDATA->fogb = 0;
             LDATA->foga = 0x40;
             LDATA->hazea = 0x80;
-            LDATA->fognear = temp;
             LDATA->fogfar = temp + 5.0f;
+            LDATA->fognear = temp;
         }
     }
 
@@ -1330,14 +1326,14 @@ void LaunchObjects(void) {
     }
 
     if ((Level == 0xB || Level == 0xC) && (jonframe1 & 1) == 0) {
-        vec.x = global_camera.mtx._30;
         vec.y = global_camera.mtx._31;
+        vec.x = global_camera.mtx._30;
         vec.z = global_camera.mtx._32;
         vec2.x = player->obj.pos.x - vec.x;
         vec2.z = player->obj.pos.z - vec.z;
         ang = NuAtan2D(vec2.x, vec2.z);
-        vec.z = vec.z + NuTrigTable[(u16)(ang + 0x4000)] * 5.0f;
         vec.x = vec.x + NuTrigTable[(u16)ang] * 5.0f;
+        vec.z = vec.z + NuTrigTable[(u16)(ang + 0x4000)] * 5.0f;
         AddVariableShotDebrisEffect(GDeb[98].i, &vec, 1, 0, 0);
     }
 
@@ -1360,23 +1356,23 @@ void LaunchObjects(void) {
         if (temp < 30.0f) {
             if (temp < 10.0f) {
                 key = 1;
-                r = (s32)(10.0f - temp + 1.0f);
-                if (r >= 6) {
-                    r = 5;
+                g = (s32)(10.0f - temp + 1.0f);
+                if (g >= 6) {
+                    g = 5;
                 }
             } else {
                 key = (s32)(temp / 10.0f);
-                r = 1;
+                g = 1;
             }
         } else {
-            r = 1;
+            g = 1;
             key = 3;
         }
-        if (jonframe1 % key == 0 || r != 1) {
-            for (loop = r; loop > 0; loop--) {
+        if (jonframe1 % key == 0 || g != 1) {
+            for (loop = g; loop > 0; loop--) {
                 vec.x = global_camera.mtx._30;
-                vec.y = global_camera.mtx._31;
                 vec.z = global_camera.mtx._32;
+                vec.y = global_camera.mtx._31;
                 vec2.x = player->obj.pos.x - vec.x;
                 vec2.z = player->obj.pos.z - vec.z;
                 ang = NuAtan2D(vec2.x, vec2.z);
@@ -1415,8 +1411,8 @@ void LaunchObjects(void) {
                 LDATA->fogg = 0x7F;
                 LDATA->fogb = 0x7F;
                 LDATA->foga = 0x4C;
-                LDATA->fogfar = 3.0f;
                 LDATA->fognear = 1.0f;
+                LDATA->fogfar = 3.0f;
             } else {
                 LDATA->fogr -= 8;
                 if ((s8)LDATA->fogr < 0) {
@@ -1453,19 +1449,19 @@ void LaunchObjects(void) {
         vec2.x = player->obj.pos.x - vec.x;
         vec2.z = player->obj.pos.z - vec.z;
         ang = NuAtan2D(vec2.x, vec2.z);
-        vec.z = vec.z + NuTrigTable[(u16)(ang + 0x4000)] * 5.0f;
         vec.x = vec.x + NuTrigTable[(u16)ang] * 5.0f;
+        vec.z = vec.z + NuTrigTable[(u16)(ang + 0x4000)] * 5.0f;
         AddVariableShotDebrisEffect(GDeb[95].i, &vec, 0x10, -0x8000, 0);
         if (Level == 0x17 || (Level == 8 && VEHICLECONTROL != 0)) {
-            g = 1;
-            temp = 8192.0f;
             r = 1;
+            temp = 8192.0f;
+            g = 1;
         } else {
+            r = 0;
             temp = 4096.0f;
-            g = 0;
-            r = 4;
+            g = 4;
         }
-        for (loop = r; loop != 0; loop--) {
+        for (loop = g; loop != 0; loop--) {
             vec.x = player->obj.pos.x + (f32)(qrand() - 0x8000) / temp;
             vec.y = player->obj.pos.y + 10.0f;
             vec.z = player->obj.pos.z + (f32)(qrand() - 0x8000) / temp;
@@ -1474,8 +1470,8 @@ void LaunchObjects(void) {
                 key = -1;
                 vec.y = vec.y - 0.2f;
                 AddFiniteShotDebrisEffect(&key, GDeb[96].i, &vec, 1);
-                if (g == 0) {
-                    g = 1;
+                if (r == 0) {
+                    r = 1;
                     vec.y = vec.y + 0.35f;
                     AddVariableShotDebrisEffect(GDeb[97].i, &vec, 1, 0, 0);
                 }
@@ -1588,8 +1584,8 @@ void LaunchObjects(void) {
                 if (firedrop[loop].time != 0.0f) {
                     firedrop[loop].time = firedrop[loop].time - 60.0f;
                     if (firedrop[loop].time <= 0.0f) {
-                        firedrop[loop].time = 0.0f;
                         key = -1;
+                        firedrop[loop].time = 0.0f;
                         AddFiniteShotDebrisEffect(&key,
                                                   GDeb[firedrop[loop].type].i,
                                                   &firedrop[loop].pos, 1);

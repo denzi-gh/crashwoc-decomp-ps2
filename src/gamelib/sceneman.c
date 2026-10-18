@@ -193,6 +193,9 @@ struct NuSceneCommand {
 };
 
 
+/* Near-match (state=asm), 1056/1064 bytes: retail passes memset `move $a0,$s1`;
+ * here CSE rewrites `scene` to the spilled `result` and the heap store sits
+ * between the spill store and the reload, so reload_cse keeps `lw $a0,0x100`. */
 struct NuSceneData *NuSceneDataLoad(char *dir, union variptr_u *heap, union variptr_u *heapend) {
     char path[256];
     struct NuSceneData *result;
