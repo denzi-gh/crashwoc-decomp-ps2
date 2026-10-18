@@ -37,6 +37,7 @@
 #include "numath/nuvec.h"
 #include "nu3d/numtl.h"
 #include "nu3d/nugobj.h"
+#include "nu3d/nurndr.h"
 #include "nu3d/nugscn.h"
 #include "nups2/ps2ctl.h"
 #include "edtools/edui.h"
@@ -137,7 +138,6 @@ extern void NuWindCreate(struct nuinstance_s *instance, struct nuvec4_s *points,
 extern int edqrand(void);
 extern float NuFsqrt(float x);
 extern float NuTrigTable[];
-extern void NuRndrLine3d(struct nuvtx_tc1_s *line, void *mtl, void *mtx);
 extern void NuRndrRect2di(int x, int y, int w, int h, int colour, void *mtl);
 extern void NuRndrLine2di(int x0, int y0, int x1, int y1, int colour, void *mtl);
 extern void edbitsDrawCircleXY(struct nuvec_s *pos, float radius, unsigned int colour, void *mtl);

@@ -111,6 +111,7 @@
 #include "numath/nuvec.h"
 #include "nu3d/numtl.h"
 #include "nu3d/nugobj.h"
+#include "nu3d/nurndr.h"
 #include "nu3d/nugscn.h"
 #include "nu3d/nuanim.h"
 #include "nu3d/nucamera.h"
@@ -416,7 +417,7 @@ extern void edcamGetPosAng(struct nuvec_s *pos, int *ax, int *ay);
 extern struct nuvec_s *edmainQueryLocVec(void);
 extern float NuFsqrt(float x);
 extern char *edbitsGetSoundName(int id);
-extern void eduiMenuProcess(void *menu, struct nupad_s *pad);
+extern s32 eduiMenuProcess(struct eduimenu_s *menu, f32 dt, struct nupad_s *pad);
 extern void edobjDoInput(struct nupad_s *pad);
 extern void edobjDetermineNearestObject(float range);
 extern void edobjDetermineNearestWaypoint(float range);
@@ -439,7 +440,6 @@ extern void NuFntScale(int x, int y);
 extern void NuFntSet(void *font);
 extern void NuFntSetPen(int colour);
 extern void NuFntPrintEx(int x, int y, int flags, char *fmt, ...);
-extern int NuRndrLine3d(struct nuvtx_tc1_s *line, void *mtl, struct numtx_s *mtx);
 extern void NuRndrRect2di(int x, int y, int w, int h, int colour, void *mtl);
 extern void NuRndrLine2di(int x0, int y0, int x1, int y1, int colour, void *mtl);
 extern int NuRndrGScnObj(struct nugobj_s *gobj, struct numtx_s *mtx);
@@ -3293,11 +3293,11 @@ void edobjEnter(void)
 }
 
 
-int edobjProc(struct nupad_s *pad)
+int edobjProc(float dt, struct nupad_s *pad)
 {
     edobj_blink_timer += 5;
     if (edobj_active_menu != 0) {
-        eduiMenuProcess(edobj_active_menu, pad);
+        eduiMenuProcess(edobj_active_menu, dt, pad);
         return 0;
     }
     edobjDoInput(pad);

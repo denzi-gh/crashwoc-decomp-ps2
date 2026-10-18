@@ -46,6 +46,7 @@
 #include "numath/nuvec.h"
 #include "nu3d/numtl.h"
 #include "nu3d/nugobj.h"
+#include "nu3d/nurndr.h"
 #include "game/gametypes.h"
 #include "gamelib/terrain.h"
 #include "game/creature.h"
@@ -194,8 +195,6 @@ extern void ResetWumpa(void);
 extern void ResetAI(void);
 extern void DrawCameraTarget(struct nuvec_s *pos);
 
-extern void NuRndrLine3d(struct nuvtx_tc1_s *line, struct numtl_s *mtl,
-                         struct numtx_s *mtx);
 extern void NuFntScale(s32 x, s32 y);
 extern void NuFntSetPen(s32 colour);
 extern void NuFntPrintEx(s32 x, s32 y, s32 colour, char *fmt, ...);

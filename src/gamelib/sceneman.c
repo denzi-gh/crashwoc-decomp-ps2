@@ -204,8 +204,8 @@ struct NuSceneData *NuSceneDataLoad(char *dir, union variptr_u *heap, union vari
     char *namebuf;
     int cutscene;
 
-    result = 0;
     sprintf(path, scenecfg_fmt, dir);
+    result = 0;
     lastscript = 0;
     parser = NuFParCreate(path);
     if (parser) {

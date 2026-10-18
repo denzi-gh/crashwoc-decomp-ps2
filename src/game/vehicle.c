@@ -241,6 +241,7 @@
 #include "gamelib/terrain.h"
 #include "game/creature.h"
 #include "nups2/ps2ctl.h"
+#include "nucore/nuerror.h"
 
 extern s32 Level;
 extern struct numtx_s mTEMP;
@@ -8030,7 +8031,7 @@ inline void ExplodeGlider(struct gliderflight_s *glider)
 }
 
 
-void DeadGliderWB(struct gliderflight_s *glider)
+inline void DeadGliderWB(struct gliderflight_s *glider)
 {
     if (glider->Dead == 0) {
         ExplodeGlider(glider);
@@ -8114,6 +8115,300 @@ void ProcessGliderMovementWB(struct gliderflight_s *glider)
     glider->Position.x += roll.x * 0.02f;
     glider->Position.y += roll.y * 0.02f;
     glider->Position.z += roll.z * 0.02f;
+}
+
+extern char D_0061F370[];   /* ".\\vehicle.c" */
+extern char D_0061F380[];   /* "Init Glider Called" */
+extern s32 BEENHITBUZZTIME;
+extern s32 GliderRumble;
+extern s32 GLIDENGINEVOL;
+extern s32 GLIDENGPITCH;
+extern f32 GLIDENGPITCHSLOPE;
+extern f32 GLIDENGRUMBLESLOPE;
+extern s32 SINKENGINEVOL;
+extern s32 MOSENGPITCH;
+extern f32 MOSENGPITCHSLOPE;
+extern f32 MOSENGRUMBLESLOPE;
+extern s32 CRASHTEROIDSENGINEVOL;
+extern s32 OIDENGPITCH;
+extern f32 OIDENGPITCHSLOPE;
+extern f32 OIDENGRUMBLESLOPE;
+extern s32 GLIDRUMVOL;
+extern f32 GLIDRUMTIM;
+extern struct nuvec_s ExhaustPosA;
+extern struct nuvec_s ExhaustPosB;
+extern void AddExtraLife(struct nuvec_s *pos, s32 pdeb);
+extern void ControlGlider(struct gliderflight_s *glider, struct nupad_s *pad);
+extern void ControlGliderWeatherBoss(struct gliderflight_s *glider, struct nupad_s *pad);
+extern void ProcessGliderMovement(struct gliderflight_s *glider, f32 dt);
+extern void GliderFire(struct gliderflight_s *glider, struct nupad_s *pad);
+
+void MoveGlider(struct creature_s *Cre, struct nupad_s *Pad)
+{
+    struct gliderflight_s *Glider;
+    struct creature_s *c;
+    struct nuvec_s v;
+    f32 r;
+    f32 TiltVal;
+    double absval;
+    short Rumble;
+
+    Glider = (struct gliderflight_s *)Cre->Buggy;
+    if (Glider == 0) {
+        NuDebugMsgProlog(D_0061F370, 0xFB1)(D_0061F380);
+        Glider = &PlayerGlider;
+        Cre->Buggy = (struct NEWBUGGY *)Glider;
+        PlayerGlider.Cre = Cre;
+        return;
+    }
+    ProcessTimer(&Glider->NextHitSoundTimer);
+    ProcessTimer(&Glider->ImmuneAsteroidsTimer);
+    Glider->OldPosition = Glider->Position;
+    if (Glider->TerminalDive != 0) {
+        Glider->HitPoints = 0;
+    }
+    if (Glider->HitPoints <= 0) {
+        if (Level == 0x1A) {
+            DeadGliderCoco(Glider);
+            return;
+        }
+        if (Level == 0x18) {
+            Glider->HitTimer = Level_DeadTime;
+            GliderSmoke(Glider);
+            DeadGliderWB(Glider);
+            return;
+        }
+    }
+    if (Glider->Dead != 0) {
+        Glider->HitTimer = Level_DeadTime;
+        GliderSmoke(Glider);
+        Glider->Dead--;
+        if (Glider->Dead > 0) {
+            return;
+        }
+        Glider->Dead = 0x32;
+        AddGameDebris(0x18, &Glider->Position);
+        return;
+    }
+    ProcessTimer(&Glider->HitTimer);
+    ControlGlider(Glider, Pad);
+    if (Level == 0x18) {
+        ProcessGliderMovementWB(Glider);
+    } else {
+        ProcessGliderMovement(Glider, 0.02f);
+    }
+    if (Level == 0x18) {
+        ControlGliderWeatherBoss(Glider, Pad);
+    }
+    if (CollideGliderBullets(&Glider->Position, 0.8f, 1, 1.0f, 0, 0) != 0) {
+        Glider->HitTimer += 0.5f;
+        if (InvincibilityCHEAT == 0 && VehicleLevelImmune == 0) {
+            Glider->HitPoints--;
+        }
+        if (Glider->HitPoints < 0) {
+            Glider->HitPoints = 0;
+        }
+        NewBuzz(&player->rumble, BEENHITBUZZTIME);
+        if (Glider->NextHitSoundTimer == 0.0f) {
+            if (Level == 0x1A) {
+                MyGameSfx(0xD9, &Glider->Position, 0x7FFF);
+            } else {
+                MyGameSfx(0x5A, &Glider->Position, 0x7FFF);
+            }
+            Glider->NextHitSoundTimer = GLIDERHITSOUNDFREQUENCY;
+        } else {
+            MyGameSfx(GLIDERHITSOUNDOTHERID, &Glider->Position, 0x4FFF);
+        }
+    }
+    GliderBulletsHitThings(Glider);
+    if (Level == 0x12 || Level == 0x24) {
+        GliderBombsHitThings(Glider);
+    }
+    if (Glider->HitPoints <= 0) {
+        Glider->HitPoints = 0;
+        Glider->TerminalDive = 1;
+        Glider->HitTimer = Level_DeadTime;
+    }
+    if (Level != 0x18 && Glider->Dead == 0 && new_mode == -1 && new_level == -1
+        && GameTimer.frame > 0x32) {
+        s32 Explode;
+
+        Explode = (Glider->Position.y < 6.0f && Level == 0xD);
+        Explode |= (Glider->Position.y < 0.0f && Level == 0x12);
+        if (!Explode) {
+            if (Level == 0x12 && Glider->TerminalDive == 0) {
+                struct nuvec_s Start;
+                struct nuvec_s Rel = {0.0f, -11.0f, 0.0f};
+
+                Start = Glider->Position;
+                Start.y += 10.0f;
+                if (NewRayCastMask(&Start, &Rel, 0.0f, 0xFF) != 0) {
+                    struct nuvec_s Temp;
+
+                    NuVecAdd(&Temp, &Start, &Rel);
+                    if (Temp.y > Glider->Position.y) {
+                        Glider->Position = Temp;
+                    }
+                    Glider->PullUpTimer = 0.5f;
+                }
+            } else {
+                struct nuvec_s Move;
+
+                NuVecSub(&Move, &Glider->Position, &Glider->OldPosition);
+                if (NewRayCast(&Glider->OldPosition, &Move, 0.0f) != 0) {
+                    Explode = 1;
+                }
+            }
+            if (!Explode && Level == 0x12 && CollideWithBattleShips(&PlayerGlider.Position, 1.0f) != 0) {
+                Explode = 1;
+            }
+        }
+        if (Explode) {
+            ExplodeGlider(Glider);
+        }
+    }
+    GliderSmoke(Glider);
+    Cre->obj.pos = Glider->Position;
+    if (HitCrates(&Cre->obj, 1) != 0) {
+        if (temp_crate_type == 5) {
+            if (Level == 0x12 && qrand() < 0xC000) {
+                Glider->HitPoints += 0x32;
+                if (Glider->HitPoints > 100) {
+                    Glider->HitPoints = 100;
+                }
+            } else {
+                AddExtraLife(&temp_pCrate->pos, 2);
+            }
+        }
+    } else if (HitCrateBalloons(&Cre->obj.pos, Cre->obj.RADIUS) != 0) {
+        AddGameDebris(0x1A, &Cre->obj.pos);
+        AddScreenWumpa(temp_pCrate->pos.x, temp_pCrate->pos.y + CRATEBALLOONOFFSET, temp_pCrate->pos.z, 1);
+        temp_pCrate->flags = (temp_pCrate->flags | 0x400) ^ 0x400;
+    } else if (HitItems(&Cre->obj) != 0) {
+        AddGameDebris(0x1A, &Cre->obj.pos);
+    } else {
+        c = FindClock();
+        if (c != 0) {
+            v.x = c->obj.pos.x;
+            v.y = c->obj.pos.y + CRATEBALLOONOFFSET;
+            v.z = c->obj.pos.z;
+            r = Cre->obj.RADIUS + CRATEBALLOONRADIUS;
+            if (NuVecDistSqr(&Cre->obj.pos, &v, 0) < r * r) {
+                AddGameDebris(0x1A, &Cre->obj.pos);
+                StartTimeTrial(&c->obj.pos, 1);
+            }
+        }
+    }
+    Glider->LastInTornado = Glider->InTornado;
+    Glider->ApparentPosition = Glider->PositionStack[Glider->StackIndx];
+    Glider->ApparentVelocity = Glider->VelocityStack[Glider->StackIndx];
+    Glider->PositionStack[Glider->StackIndx] = Glider->Position;
+    Glider->VelocityStack[Glider->StackIndx] = Glider->Velocity;
+    NuVecScaleAccum(&Glider->PositionStack[Glider->StackIndx], &Glider->Velocity, 0.59999996f);
+    Glider->StackIndx++;
+    if (Glider->StackIndx > 0x1D) {
+        Glider->StackIndx = 0;
+    }
+    ProcessTimer(&Glider->OverideTiltZ);
+    GliderFire(Glider, Pad);
+    if (Level == 0x12) {
+        s32 indx;
+        struct nuvec_s Temp;
+
+        indx = 0x86;
+        NuMtxSetRotationZ(&mTEMP, (s32)(Glider->TiltZ * 182.04445f));
+        NuMtxRotateX(&mTEMP, (s32)((Glider->TiltX + 15.0f) * 182.04445f));
+        NuMtxRotateY(&mTEMP, (s32)(Glider->AngleY * 182.04445f));
+        NuMtxTranslate(&mTEMP, &Glider->Position);
+        if (Glider->HitPoints == 0) {
+            indx = 0x84;
+        }
+        NuVecMtxTransform(&Temp, &ExhaustPosA, &mTEMP);
+        AddVariableShotDebrisEffect(GDeb[indx].i, &Temp, 1, 0, 0);
+        NuVecMtxTransform(&Temp, &ExhaustPosB, &mTEMP);
+        AddVariableShotDebrisEffect(GDeb[indx].i, &Temp, 1, 0, 0);
+    }
+    if (Glider->InTornadoTime == 0.0) {
+        if (ProcessTimer(&Glider->CamTornRecoverTimer) != 0) {
+            Glider->CamAngleY = Glider->AngleY;
+            Glider->CamTiltX = Glider->TiltX;
+        } else {
+            Glider->CamAngleY += (1.0f - Glider->CamTornRecoverTimer)
+                * Rationalise360f(Glider->AngleY - Glider->CamAngleY);
+            Glider->CamTiltX += (1.0f - Glider->CamTornRecoverTimer)
+                * Rationalise360f(Glider->TiltX - Glider->CamTiltX);
+        }
+    }
+    if (Level == 0x12) {
+        ProcessFireFlyIntro();
+    }
+    if (Level == 0x1A) {
+        ProcessCrashteroidsIntro();
+    }
+    absval = Glider->TiltZ * 0.5f;
+    if (absval < 0.0) {
+        absval = -absval;
+    }
+    TiltVal = absval;
+    if (Glider->DestTiltX > 0.0f) {
+        TiltVal += Glider->DestTiltX * 0.5f;
+    } else {
+        TiltVal -= Glider->DestTiltX;
+    }
+    GliderRumble = 0;
+    switch (Level) {
+    case 0x1A:
+        MyGameSfxLoopVolPitch(0xCE, &Glider->Position, (short)CRASHTEROIDSENGINEVOL,
+                              (short)(OIDENGPITCH + (s32)(OIDENGPITCHSLOPE * Glider->TiltX)));
+        Rumble = OIDENGRUMBLESLOPE * TiltVal;
+        if (Rumble > 0xFF) {
+            Rumble = 0xFF;
+        }
+        if (Rumble < 0) {
+            Rumble = 0;
+        }
+        GliderRumble = Rumble;
+        break;
+    case 0x12:
+        MyGameSfxLoopVolPitch(0xCA, &Glider->Position, (short)SINKENGINEVOL,
+                              (short)(MOSENGPITCH + (s32)(MOSENGPITCHSLOPE * Glider->TiltX)));
+        Rumble = MOSENGRUMBLESLOPE * 1.25f * TiltVal;
+        if (Rumble > 0xFF) {
+            Rumble = 0xFF;
+        }
+        if (Rumble < 0) {
+            Rumble = 0;
+        }
+        GliderRumble = Rumble;
+        break;
+    case 0xD:
+    case 0x18:
+    case 0x24:
+        MyGameSfxLoopVolPitch(0x5B, &Glider->Position,
+                              (Level == 0xD) ? (short)(GLIDENGINEVOL * 2) : (short)GLIDENGINEVOL,
+                              (short)(GLIDENGPITCH + (s32)(GLIDENGPITCHSLOPE * Glider->TiltX)));
+        Rumble = GLIDENGRUMBLESLOPE * TiltVal;
+        if (Rumble > 0xFF) {
+            Rumble = 0xFF;
+        }
+        if (Rumble < 0) {
+            Rumble = 0;
+        }
+        GliderRumble = Rumble;
+        break;
+    }
+    NewRumble(&player->rumble, GliderRumble);
+    if (ProcessTimer(&Glider->NextEngRum) != 0) {
+        frand();
+        GliderRumble = GLIDRUMVOL;
+        NewRumble(&player->rumble, GLIDRUMVOL);
+        Glider->NextEngRum = GLIDRUMTIM;
+    }
+    if (Level == 0x1A && PlayerGlider.InTornadoTime == 0.0f) {
+        AddVariableShotDebrisEffect(GDeb[0x9F].i, (struct nuvec_s *)&Glider->Cre->mtxLOCATOR[1][0]._30, 1, 0, 0);
+        AddVariableShotDebrisEffect(GDeb[0x9F].i, (struct nuvec_s *)&Glider->Cre->mtxLOCATOR[1][1]._30, 1, 0, 0);
+        AddVariableShotDebrisEffect(GDeb[0x9F].i, (struct nuvec_s *)&Glider->Cre->mtxLOCATOR[1][2]._30, 1, 0, 0);
+    }
 }
 
 

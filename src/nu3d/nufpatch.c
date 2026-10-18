@@ -1665,3 +1665,28 @@ f32 NuFPatchLightPoint(struct nuvec_s *normal, f32 scale, f32 bias, f32 dx, f32 
     }
     return light;
 }
+
+void testShadowCast(void)
+{
+    struct nufpatch_s patch;
+
+    memset(&patch, 0, sizeof(patch));
+    patch.pnt[3].y = patch.pnt[3].x = patch.pnt[2].y = patch.pnt[1].x = 1.0f;
+    patch.nrm[0].x = -0.099f;
+    patch.nrm[0].z = 0.99f;
+    patch.nrm[0].y = -0.099f;
+    patch.nrm[1].x = 0.099f;
+    patch.nrm[1].z = 0.99f;
+    patch.nrm[1].y = -0.099f;
+    patch.nrm[2].x = -0.099f;
+    patch.nrm[2].z = 0.99f;
+    patch.nrm[2].y = 0.099f;
+    patch.nrm[3].x = 0.099f;
+    patch.nrm[3].z = 0.99f;
+    patch.nrm[3].y = 0.099f;
+    {
+        struct nuvec_s lightpos = {0.1f, 0.1f, 1.0f};
+
+        NuFPatchShadowCast(&patch, &lightpos);
+    }
+}

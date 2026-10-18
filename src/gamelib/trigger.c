@@ -28,6 +28,7 @@
 #include "numath/numtx.h"
 #include "numath/nuvec.h"
 #include "nu3d/nugobj.h"
+#include "nu3d/nurndr.h"
 #include "nu3d/nugscn.h"
 #include "gamelib/sceneman.h"
 #include "gamelib/trigger.h"
@@ -39,7 +40,6 @@ extern char D_00619EF8[];
 extern char D_00619F20[];
 extern char D_00619F60[];
 
-void NuRndrLine3d(struct nuvtx_tc1_s *line, void *arg1, struct numtx_s *mtx);
 
 extern struct instNUTRIGGERSYS_s *D_00633230;
 #define g_NuTriggerSysList D_00633230
