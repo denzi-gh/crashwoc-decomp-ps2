@@ -76,12 +76,10 @@ void *_sce_sdr_transIntr0Arg = 0;
 void *_sce_sdr_transIntr1Arg = 0;
 void *_sce_sdr_spu2IntrArg = 0;
 
-extern char D_00701900[];
-extern char D_00702A00[];
-extern char _gp[];
+static char stack[256];
+static char gEECBData[64] __attribute__((aligned(64)));
 
-#define cbThreadStack  D_00701900
-#define cbRpcBuffer    D_00702A00
+extern char _gp[];
 
 #define SDR_CB_RPC_ID 0x80000704
 
@@ -101,6 +99,7 @@ static void *_sdrCB(unsigned int fno, void *data, int size);
 
 int sceSdRemoteCallbackInit(int priority)
 {
+    static char stack[0x1000];
     ThreadParam param;
 
     _sce_sdr_gDMA0CB = 0;
@@ -114,7 +113,7 @@ int sceSdRemoteCallbackInit(int priority)
     _sce_sdr_spu2IntrArg = 0;
     sceSdRemote(1, 0xE620);
     param.entry = _sdrCBThread;
-    param.stack = cbThreadStack;
+    param.stack = stack;
     param.stackSize = 0x1000;
     param.initPriority = priority;
     param.gpReg = _gp;
@@ -134,7 +133,7 @@ static void _sdrCBThread(void *arg)
 
     sceSifInitRpc(0);
     sceSifSetRpcQueue(&queue, GetThreadId());
-    sceSifRegisterRpc(&serve, SDR_CB_RPC_ID, _sdrCB, cbRpcBuffer, 0, 0, &queue);
+    sceSifRegisterRpc(&serve, SDR_CB_RPC_ID, _sdrCB, gEECBData, 0, 0, &queue);
     sceSifRpcLoop(&queue);
 }
 

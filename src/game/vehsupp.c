@@ -67,8 +67,6 @@ extern void GameSfx(s32 Id, struct nuvec_s *Pos);
 extern void GameSfxLoop(s32 Id, struct nuvec_s *Pos);
 extern f32 NuTrigTable[];
 extern s32 ChrisInTheHouse;
-extern struct nuvec_s D_006B75C0[];
-extern struct nuvec_s D_006B75D0[];
 
 struct nuvec_s NullNuVec = { 0.0f, 0.0f, 0.0f };
 
@@ -597,17 +595,21 @@ struct nuvec_s SetNuVec(f32 x, f32 y, f32 z) {
 }
 
 struct nuvec_s *SetNuVecPntr(f32 x, f32 y, f32 z) {
-    D_006B75C0[0].x = x;
-    D_006B75C0[0].y = y;
-    D_006B75C0[0].z = z;
-    return &D_006B75C0[0];
+    static struct nuvec_s Ret;
+
+    Ret.x = x;
+    Ret.y = y;
+    Ret.z = z;
+    return &Ret;
 }
 
 struct nuvec_s *SetNuVecPntrA(f32 x, f32 y, f32 z) {
-    D_006B75D0[0].x = x;
-    D_006B75D0[0].y = y;
-    D_006B75D0[0].z = z;
-    return &D_006B75D0[0];
+    static struct nuvec_s RetA;
+
+    RetA.x = x;
+    RetA.y = y;
+    RetA.z = z;
+    return &RetA;
 }
 
 struct nuquat_s SetNuQuat(f32 x, f32 y, f32 z, f32 w) {

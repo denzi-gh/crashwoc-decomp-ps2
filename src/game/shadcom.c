@@ -41,8 +41,7 @@ struct shaddata_s {
 extern struct numtl_s *numtl_defaultmtl3d;
 extern u8 *rndrstream_free;
 
-extern s32 D_006B7650[4];
-#define shadtids D_006B7650
+static s32 palids[4];
 
 extern s32 NuFileSize(char *name);
 extern s32 NuFileLoadBuffer(char *name, void *buf, s32 max);
@@ -154,7 +153,7 @@ void ShadRndr(struct numtx_s *mtx, struct shadentry_s *shad, f32 frame, f32 scal
         mtl = shad->mtl;
     }
     rs = &mtl->stream;
-    tid = shadtids[pal];
+    tid = palids[pal];
     if (tid != 0) {
         NuRndrStreamLink(rs);
         rs->mtl = 0;
@@ -276,6 +275,6 @@ void ShadComInit(void) {
         tex.bits = 0;
         tex.type = 4;
         tex.mmcnt = 0;
-        shadtids[i] = NuTexCreate(&tex);
+        palids[i] = NuTexCreate(&tex);
     }
 }

@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0122"
 source = "src/game/bug.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0122:0025ee00:InitBugAreas"
@@ -62,3 +62,57 @@ state = "matching"
 [[data]]
 id = "pal103:unit-0122:00632ce4:buglight_radius"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0122:00633398:mechlight_fade"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0122:0063339c:buglight_fade"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0122:006333a0:buglight_ang"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0122:006333a8:bug_radius"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0122:006333ac:bug_scale"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0122:006333b0:bug_fade"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0122:006333b4:bug_xrot"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0122:006333b6:bug_yrot"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0122:006333b8:bug_splratio"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0122:006ffa80:bug_pos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0122:006ffa90:bug_splpos"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x006ffa90
+end = 0x006ffa9c
+
+[[claim]]
+section = ".sbss"
+start = 0x006333b8
+end = 0x006333bc

@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0034"
 source = "src/nu3d/nuvport.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0034:00114bd0:NuVpUpdate"
@@ -70,3 +70,29 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0034:00115190:NuVpGetCurrentViewport"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0034:00633058:vport_inval"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0034:0067d480:vpDevice"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0034:0067d4c0:vpCurrent"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0034:0067d500:smtx"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x0067d500
+end = 0x0067d540
+
+[[claim]]
+section = ".sbss"
+start = 0x00633058
+end = 0x0063305c

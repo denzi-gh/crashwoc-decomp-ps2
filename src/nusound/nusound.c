@@ -150,12 +150,10 @@ int Release = 0x10;
 struct nuvec_s *NuSoundListenPos = 0;
 int NuSndSteroPitch = 0;
 extern int NoSoundPlease;
-extern sceSifClientData D_006B4100;
-extern struct nusound_filename_info_s D_006B4128[];
+static sceSifClientData nusound_client_data;
+static struct nusound_filename_info_s ADPCM_FileNames[300];
 
 #define camera_position D_002D3EF0
-#define sound_rpc_client D_006B4100
-#define sound_sample_info D_006B4128
 
 #define SOUND_RPC_ID 0x12345
 
@@ -176,7 +174,7 @@ volatile int sbuff2[128] __attribute__((aligned(64))) = { 0 };
 
 static inline int sound_rpc_transfer(int function, void *data, int mode)
 {
-    sceSifCallRpc(&sound_rpc_client, function, mode, data, 0x800,
+    sceSifCallRpc(&nusound_client_data, function, mode, data, 0x800,
                   (void *)sbuff2, 0x200, 0, 0);
     return sbuff2[0];
 }
@@ -188,7 +186,7 @@ static inline void bind_sound_rpc(void)
 
     sceSifInitRpc(0);
     while (1) {
-        if (sceSifBindRpc(&sound_rpc_client, SOUND_RPC_ID, 0) < 0) {
+        if (sceSifBindRpc(&nusound_client_data, SOUND_RPC_ID, 0) < 0) {
             printf("error: sceSifBindRpc \n");
             while (1) {
             }
@@ -196,7 +194,7 @@ static inline void bind_sound_rpc(void)
         delay = 10000;
         while (delay--) {
         }
-        if (sound_rpc_client.serve != 0) {
+        if (nusound_client_data.serve != 0) {
             break;
         }
     }
@@ -215,7 +213,7 @@ static inline void transfer_sample_infos(struct nusound_filename_info_s *info)
         }
         batch--;
         if (fileinfo_cnt < 300) {
-            sound_sample_info[fileinfo_cnt] = *info;
+            ADPCM_FileNames[fileinfo_cnt] = *info;
             SetIOPCommandEx(0x1A, sizeof(struct nusound_filename_info_s), info);
             info++;
             fileinfo_cnt++;
@@ -250,7 +248,7 @@ static inline int flush_iop_commands(int mode)
     int count;
 
     SOUND_CopyIOPBuffer();
-    if (sceSifCheckStatRpc(&sound_rpc_client.rpcd) != 0) {
+    if (sceSifCheckStatRpc(&nusound_client_data.rpcd) != 0) {
         return -1;
     }
     if (senddata[0] == 0) {
@@ -695,13 +693,13 @@ void NuSoundPlay(int sfx, int left, int right, int pitch)
         if (right <= -0x4000) {
             right = -0x3FFF;
         }
-        if (sound_sample_info[sfx].ID >= 0x1000) {
+        if (ADPCM_FileNames[sfx].ID >= 0x1000) {
             SChan = find_free_channel(SChan);
-            play_sfx(sound_sample_info[sfx].ID, SChan, left, right, pitch,
+            play_sfx(ADPCM_FileNames[sfx].ID, SChan, left, right, pitch,
                      Attack, Release);
             SChan = (SChan - 6 + 1) % 0x12 + 6;
         } else {
-            play_stream(sound_sample_info[sfx].ID, 0x80, 0, left, right, pitch,
+            play_stream(ADPCM_FileNames[sfx].ID, 0x80, 0, left, right, pitch,
                         2, Attack, Release);
         }
     }
@@ -725,7 +723,7 @@ void NuSoundPlayChan(int sfx, int left, int right, int pitch, int channel)
         if (right <= -0x4000) {
             right = -0x3FFF;
         }
-        sample = sound_sample_info[sfx].ID;
+        sample = ADPCM_FileNames[sfx].ID;
         if (sample >= 0x1000) {
             play_sfx(sample, channel, left, right, pitch, Attack, Release);
         } else {
@@ -740,13 +738,13 @@ void NuSoundPlay3d(struct nuvec_s *pos, int sfx, int left, int right, int pitch)
 {
     if (nusound_irx_loaded) {
         if (NuSoundApply3d(pos, &left, &right)) {
-            if (sound_sample_info[sfx].ID >= 0x1000) {
+            if (ADPCM_FileNames[sfx].ID >= 0x1000) {
                 SChan = find_free_channel(SChan);
-                play_sfx(sound_sample_info[sfx].ID, SChan, left, right, pitch,
+                play_sfx(ADPCM_FileNames[sfx].ID, SChan, left, right, pitch,
                          Attack, Release);
                 SChan = (SChan - 6 + 1) % 0x12 + 6;
             } else {
-                play_stream(sound_sample_info[sfx].ID, 0x80, 0, left, right,
+                play_stream(ADPCM_FileNames[sfx].ID, 0x80, 0, left, right,
                             pitch, 2, Attack, Release);
             }
         }
@@ -761,7 +759,7 @@ void NuSoundPlay3dChan(struct nuvec_s *pos, int sfx, int left, int right, int pi
 
     if (nusound_irx_loaded) {
         if (NuSoundApply3d(pos, &left, &right)) {
-            sample = sound_sample_info[sfx].ID;
+            sample = ADPCM_FileNames[sfx].ID;
             if (sample >= 0x1000) {
                 play_sfx(sample, channel, left, right, pitch, Attack, Release);
             } else {
@@ -776,8 +774,8 @@ void NuSoundPlay3dChan(struct nuvec_s *pos, int sfx, int left, int right, int pi
 void NuSoundPlayStereo(int sfx_left, int sfx_right, int left, int right,
                        int pitch)
 {
-    if (sound_sample_info[sfx_left].ID < 0x1000
-        && sound_sample_info[sfx_right].ID < 0x1000) {
+    if (ADPCM_FileNames[sfx_left].ID < 0x1000
+        && ADPCM_FileNames[sfx_right].ID < 0x1000) {
         printf("****** Playing Stereo ******\n");
         if (left >= 0x4000) {
             left = 0x3FFF;
@@ -792,9 +790,9 @@ void NuSoundPlayStereo(int sfx_left, int sfx_right, int left, int right,
             right = -0x3FFF;
         }
         NuSndSteroPitch = pitch;
-        play_stream(sound_sample_info[sfx_left].ID, 0, 0, left, 0, 0, 2,
+        play_stream(ADPCM_FileNames[sfx_left].ID, 0, 0, left, 0, 0, 2,
                     Attack, Release);
-        play_stream(sound_sample_info[sfx_right].ID, 1, 1, 0, right, 0, 2,
+        play_stream(ADPCM_FileNames[sfx_right].ID, 1, 1, 0, right, 0, 2,
                     Attack, Release);
         check_and_start_stereo(0, 1, pitch);
     }
@@ -804,8 +802,8 @@ void NuSoundPlayStereo(int sfx_left, int sfx_right, int left, int right,
 void NuSoundPlayStereo2(int sfx_left, int sfx_right, int left, int right,
                         int pitch)
 {
-    if (sound_sample_info[sfx_left].ID < 0x1000
-        && sound_sample_info[sfx_right].ID < 0x1000) {
+    if (ADPCM_FileNames[sfx_left].ID < 0x1000
+        && ADPCM_FileNames[sfx_right].ID < 0x1000) {
         printf("****** Playing Stereo 2 ******\n");
         if (left >= 0x4000) {
             left = 0x3FFF;
@@ -819,9 +817,9 @@ void NuSoundPlayStereo2(int sfx_left, int sfx_right, int left, int right,
         if (right <= -0x4000) {
             right = -0x3FFF;
         }
-        play_stream(sound_sample_info[sfx_left].ID, 2, 2, left, 0, 0, 2,
+        play_stream(ADPCM_FileNames[sfx_left].ID, 2, 2, left, 0, 0, 2,
                     Attack, Release);
-        play_stream(sound_sample_info[sfx_right].ID, 3, 3, 0, right, 0, 2,
+        play_stream(ADPCM_FileNames[sfx_right].ID, 3, 3, 0, right, 0, 2,
                     Attack, Release);
         check_and_start_stereo(2, 3, pitch);
     }
@@ -838,12 +836,12 @@ void NuSoundPlay3dLoopSfx(struct nuvec_s *pos, int sfx, int left, int right, int
         base_left = left;
         base_right = right;
         if (NuSoundApply3d(pos, &left, &right)) {
-            if (sound_sample_info[sfx].ID >= 0x1000) {
+            if (ADPCM_FileNames[sfx].ID >= 0x1000) {
                 info = find_loop_info(pos);
                 if (info) {
                     if (info->playing == 0) {
                         info->playing = 1;
-                        play_sfx(sound_sample_info[sfx].ID, info->channel, left,
+                        play_sfx(ADPCM_FileNames[sfx].ID, info->channel, left,
                                  right, pitch, Attack, Release);
                     } else {
                         set_channel_volume(info->channel, left, right);
@@ -1009,7 +1007,7 @@ int FlushIOPCommand(int mode)
     int count;
 
     SOUND_CopyIOPBuffer();
-    if (sceSifCheckStatRpc(&sound_rpc_client.rpcd) != 0) {
+    if (sceSifCheckStatRpc(&nusound_client_data.rpcd) != 0) {
         return -1;
     }
     if (senddata[0] == 0) {

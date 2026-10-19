@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0181"
 source = "src/sdk/sce/sdr_cb.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0181:0026d300:sceSdRemoteCallbackInit"
@@ -58,3 +58,25 @@ state = "matching"
 [[data]]
 id = "pal103:unit-0181:0061243c:_sce_sdr_spu2IntrArg"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0181:00701900:stack.3"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0181:00702900:stack"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0181:00702a00:gEECBData"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x00702a00
+end = 0x00702a40
+
+[[claim]]
+section = ".rodata"
+start = 0x0062bc90
+end = 0x0062bcc4

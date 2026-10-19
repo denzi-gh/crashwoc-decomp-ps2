@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0099"
 source = "src/game/vehsupp.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0099:0021ffa8:FindSplineTargetPoint"
@@ -206,3 +206,16 @@ state = "matching"
 [[data]]
 id = "pal103:unit-0099:00631934:ChrisJointList"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0099:006b75c0:Ret.84"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0099:006b75d0:RetA.88"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x006b75d0
+end = 0x006b75dc

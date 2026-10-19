@@ -45,9 +45,7 @@ typedef struct {
     const char *str;
 } Deci2PutsParam;
 
-extern unsigned char D_00706968[];
-
-#define deci2_work D_00706968
+static unsigned char userarea[36];
 
 extern int Deci2Call(int func, void *param);
 
@@ -58,7 +56,7 @@ int sceDeci2Open(unsigned short protocol, void *opt, Deci2Handler handler) {
     param.protocol = protocol;
     param.opt = opt;
     param.handler = handler;
-    param.work = (void *)((unsigned int)deci2_work | UNCACHED_SEGMENT);
+    param.work = (void *)((unsigned int)userarea | UNCACHED_SEGMENT);
     return Deci2Call(1, &param);
 }
 

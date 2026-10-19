@@ -58,8 +58,7 @@ static NuExternalMemory *memexternal = 0;
 int highallocaddr = 0;
 static int peakallocaddr = 0;
 
-extern NuExternalMemory D_00633018;
-#define external_memory D_00633018
+static NuExternalMemory memext;
 
 
 void *NuMemAlloc(int size)
@@ -428,7 +427,7 @@ void NuMemSetExternal(void *buffer, int *end)
     NuExternalMemory *memory;
 
     if (buffer) {
-        memory = &external_memory;
+        memory = &memext;
         memory->cursor = buffer;
         memexternal = memory;
         if (end) {

@@ -78,7 +78,7 @@ BLOCKER_KINDS = (
     "source_conflict",
     # Data-from-C: compiler-private bytes in a partially matched unit stay
     # borrowed (temporary, until the unit is complete); C data in the wrong section;
-    # uninitialised data (architectural until data/bss).
+    # uninitialised data outside a complete unit.
     "compiler_private_partial_unit",
     "data_section_mismatch",
     "bss_common",

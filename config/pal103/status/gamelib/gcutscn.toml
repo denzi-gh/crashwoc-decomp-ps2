@@ -339,7 +339,16 @@ state = "matching"
 id = "pal103:unit-0078:0062f7f4:locatorfns"
 state = "matching"
 
+[[data]]
+id = "pal103:unit-0078:0063322c:active_cutscene_instances"
+state = "matching"
+
 [[claim]]
 section = ".rodata"
 start = 0x00619ed0
 end = 0x00619ef4
+
+[[claim]]
+section = ".sbss"
+start = 0x0063322c
+end = 0x00633230

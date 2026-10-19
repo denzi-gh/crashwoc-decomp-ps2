@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0180"
 source = "src/sdk/sce/sdr_main.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0180:0026d008:sceSdRemoteInit"
@@ -34,3 +34,29 @@ state = "matching"
 [[data]]
 id = "pal103:unit-0180:00612418:sceSd_gEnd_func"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0180:00701740:transData.6"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0180:00701750:stack"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0180:00701880:sbuff"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0180:007018c0:sceSd_gCd"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x007018c0
+end = 0x007018e8
+
+[[claim]]
+section = ".rodata"
+start = 0x0062bc38
+end = 0x0062bc5b

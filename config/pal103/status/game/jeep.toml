@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0101"
 source = "src/game/jeep.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0101:00223ae0:SpinWheelsJeep"
@@ -758,3 +758,94 @@ state = "matching"
 [[data]]
 id = "pal103:unit-0101:00631aa8:WallOfFireHurtTimer"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0101:006332b0:LastChangePad.93"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0101:006332b4:JCamAngY.134"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0101:006332b6:JCamAngX.135"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0101:006332b8:JCamMag.136"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0101:006332bc:AngVelY.138"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0101:006332c0:VelSet.139"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0101:006332c4:BackJeepCamX.142"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0101:006332c8:BackJeepCamY.143"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0101:006332cc:FinalPosition.198"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0101:006332d0:LastBossAct.241"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0101:006332d4:DontDropRocks.243"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0101:006332d8:JustFromIntro.244"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0101:006332dc:LastVehicleControl.245"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0101:006332e0:WaterCurrentAngleY.297"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0101:006332e4:JeepCamX"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0101:006332e8:JeepCamY"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0101:006b75e0:Vel.137"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0101:006b75f0:TweenTargPos.140"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0101:006b7600:BackCamPos.141"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x006b7600
+end = 0x006b760c
+
+[[claim]]
+section = ".rodata"
+start = 0x0061fc70
+end = 0x0061fc88
+
+[[claim]]
+section = ".sbss"
+start = 0x006332e8
+end = 0x006332ec

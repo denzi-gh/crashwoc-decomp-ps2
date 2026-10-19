@@ -12,9 +12,6 @@ typedef void (*func_ptr)(void);
 
 extern func_ptr __CTOR_LIST__[];
 extern func_ptr __DTOR_LIST__[];
-extern int D_00702A40;
-
-#define initialized D_00702A40
 
 
 void __do_global_dtors(void) {
@@ -44,6 +41,8 @@ void __do_global_ctors(void) {
 
 
 void __main(void) {
+    static int initialized;
+
     if (!initialized) {
         initialized = 1;
         __do_global_ctors();

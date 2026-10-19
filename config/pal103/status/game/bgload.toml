@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0120"
 source = "src/game/bgload.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0120:0025b668:BGSuspendMain"
@@ -50,3 +50,25 @@ state = "matching"
 [[data]]
 id = "pal103:unit-0120:00632b94:loadthread_id"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0120:00633380:thread_id"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0120:00633384:sem_id"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0120:006b7680:loadstackmem"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x006287c8
+end = 0x006287e9
+
+[[claim]]
+section = ".sbss"
+start = 0x00633384
+end = 0x00633388

@@ -83,7 +83,16 @@ state = "matching"
 id = "pal103:unit-0079:0062f800:do_nothing.107"
 state = "matching"
 
+[[data]]
+id = "pal103:unit-0079:00633230:active_triggersys_instances"
+state = "matching"
+
 [[claim]]
 section = ".rodata"
 start = 0x00619f60
 end = 0x00619f69
+
+[[claim]]
+section = ".sbss"
+start = 0x00633230
+end = 0x00633234

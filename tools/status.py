@@ -17,9 +17,9 @@ toolchain, so it runs on every pull request:
   * the optional `[[data]]` table (Data-from-C) names data registry symbols
     (config/<version>/data_symbols.toml) of the unit by id
     (version:unit-NNNN:vram:name), each with a state asm | matching | retail
-    (`retail` = raw asset kept as retail bytes, set by hand with a `reason`);
-    when present it lists every symbol of the unit in a section with file
-    bytes (.data, .rodata, .sdata) exactly once -- never a .sbss/.bss one
+    (`retail` = raw asset kept as retail bytes, set by hand with a `reason`,
+    only in a section with file bytes: .data, .rodata, .sdata); when present
+    it lists every symbol of the unit exactly once, .sbss/.bss ones included
   * `complete = true` requires every function to be `matching` and every
     data entry `matching` or `retail` (the byte rules are verify_promoted's)
   * the optional `[[claim]]` table (section/start/end, written by
@@ -51,8 +51,10 @@ FUNCTION_KEYS = {"id", "state"}
 DATA_STATES = ("asm", "matching", "retail")
 DATA_KEYS = {"id", "state", "reason"}
 CLAIM_KEYS = {"section", "start", "end"}
-# Data sections with file bytes; .sbss/.bss symbols never get [[data]] entries.
+# Data sections with file bytes (a `retail` entry keeps those); .sbss/.bss
+# symbols have only addresses.
 DATA_PROGBITS = (".data", ".rodata", ".sdata")
+DATA_NOBITS = (".sbss", ".bss")
 ID_RE = re.compile(r"^([a-z0-9]+):unit-(\d{4}):([0-9a-f]{8}):(\S+)$")
 UNIT_RE = re.compile(r"^([a-z0-9]+):unit-(\d{4})$")
 
@@ -118,9 +120,9 @@ def check_data(entries, version, unit_index, registry):
         elif sym["name"] != dname:
             problems.append(f"{did}: data_symbols.toml names 0x{daddr:08x} "
                             f"'{sym['name']}', not '{dname}'")
-        elif sym["section"] not in DATA_PROGBITS:
+        elif entry.get("state") == "retail" and sym["section"] not in DATA_PROGBITS:
             problems.append(f"{did}: {sym['section']} symbols carry no file "
-                            f"bytes and get no [[data]] entry")
+                            f"bytes to keep as `retail`")
         if daddr in states:
             problems.append(f"{did}: duplicate data entry")
         state = entry.get("state")
@@ -133,8 +135,7 @@ def check_data(entries, version, unit_index, registry):
             problems.append(f"{did}: `reason` is only for state = \"retail\"")
         states[daddr] = state
     if entries:
-        expected = {a for a, s in unit_syms.items() if s["section"] in DATA_PROGBITS}
-        for addr in sorted(expected - set(states)):
+        for addr in sorted(set(unit_syms) - set(states)):
             problems.append(f"data symbol 0x{addr:08x} ({unit_syms[addr]['name']}) "
                             f"not listed")
     return problems, states
@@ -170,9 +171,10 @@ def check_claims(claims, complete, gaps):
         if unknown:
             problems.append(f"claim #{i}: unknown keys: {', '.join(sorted(unknown))}")
         section, start, end = claim.get("section"), claim.get("start"), claim.get("end")
-        if section not in DATA_PROGBITS:
+        if section not in DATA_PROGBITS + DATA_NOBITS:
             problems.append(f"claim #{i}: section must be one of "
-                            f"{', '.join(DATA_PROGBITS)}, got {section!r}")
+                            f"{', '.join(DATA_PROGBITS + DATA_NOBITS)}, got "
+                            f"{section!r}")
             continue
         if not isinstance(start, int) or not isinstance(end, int) or start >= end:
             problems.append(f"claim #{i}: start/end must be integers with "
@@ -314,8 +316,7 @@ def check_manifest(path, version, root):
                                     for s in data_states.values()):
         problems.append("complete = true but a data entry is still `asm`")
     if data.get("complete") and not data_entries and unit_index is not None \
-            and any(s["section"] in DATA_PROGBITS
-                    for s in data_registry.get(unit_index, {}).values()):
+            and data_registry.get(unit_index):
         problems.append("complete = true but the unit's data symbols have no "
                         "[[data]] entries (promote.py --init-data)")
     claim_problems, _gaps = check_claims(data.get("claim", []),

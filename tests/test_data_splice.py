@@ -105,13 +105,15 @@ class TestSplitSections(unittest.TestCase):
             ("s_const16", ".rodata", 3, 16, False),
             ("g_strtab", ".data", 3, 8, True),
             ("lut.6", ".data", 3, 16, False),
-            ("g_common", "COMMON", None, 4, False),
-            ("s_bss", ".sbss", None, None, False),
+            ("g_common", "COMMON", 2, 4, False),
+            ("s_bss", ".sbss", 2, 4, False),
         ])
         self.assertEqual(self.items[2].lines, ["\t.word\t9", "\t.word\t10",
                                                "\t.word\t11", "\t.word\t12"])
-        # An .align after the label is interior to the object.
-        self.assertEqual(self.items[6].lines, ["\t.align\t2", "\t.space\t4"])
+        # An uninitialised static is label, .align, .space: the assembler
+        # moves the label to the boundary, so the .align is the object's.
+        self.assertEqual(self.items[6].lines, ["\t.space\t4"])
+        self.assertEqual(self.items[5].lines, ["\t.space\t4"])
 
     def test_private_blocks(self):
         self.assertEqual(self.private, {"$LC1": b"a longer string literal\0",

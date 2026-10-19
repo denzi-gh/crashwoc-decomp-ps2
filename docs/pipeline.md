@@ -86,8 +86,7 @@ python tools/extract_data_map.py --check       # data map == fresh extraction
 **`data_symbols.toml`** ([tools/extract_data_symbols.py](../tools/extract_data_symbols.py))
 holds every data global the external table defines and every file-local
 static of a unit's local symbol run: the set the data map attributes. Linker
-symbols (`_gp`, `_fbss`) and COMMON globals (named nowhere in the ELF) are not in
-it. Per symbol:
+symbols (`_gp`, `_fbss`) are not in it. Per symbol:
 
 | Field | Rule |
 |---|---|
@@ -119,7 +118,11 @@ run exactly. A range is owned by one unit or `unassigned`:
 | `orphan` | the un-sectioned run at `0x00293680` |
 
 A named run ends at `max(address + size)`, so an unsized trailing symbol owns
-nothing past its address and a lone unsized symbol owns nothing. Code
+nothing past its address and a lone unsized symbol owns nothing. In
+`.sbss`/`.bss` every gap starts at such a symbol (the last uninitialised
+static of a unit, which only that unit's code references): retail has no
+unnamed COMMON globals there, only newlib's `errno`, which the registry
+names. Code
 references come from a pure-Python decoder over `.text`
 ([tools/declib/elf.py](../tools/declib/elf.py) `code_refs`): it pairs each `lui rX`
 with the `addiu`/load/store that uses `rX` as its base (the value lives until
@@ -368,11 +371,12 @@ state = "matching"        # asm | matching | retail (retail needs a `reason`)
   registry address, every other byte a retail `.incbin`), and a sidecar
   `<object>.data.json` (pieces, retail byte ranges, borrowed slots). C data
   of an `asm`/`retail` entry is dropped and its references renamed onto the
-  retail symbol (`D_<VRAM>` for statics; a dropped `.sdata` object gets an
-  `.extern NAME, size`, so its loads stay gp-relative). Hard errors: C data
-  without a `[[data]]` table, a section other than the registry's
-  (`data_section_mismatch`: `const`, `-G`), `.size` != `.symtab` size,
-  overlaps, `.sbss`/`.bss`/COMMON data from C.
+  retail symbol (`D_<VRAM>` for statics; a dropped `.sdata`/`.sbss`/`.bss`
+  object gets an `.extern NAME, size`, so its loads stay gp-relative or not).
+  `.sbss`/`.bss` objects are always dropped here; only whole-unit mode places
+  them. Hard errors: C data without a `[[data]]` table, a section other than
+  the registry's (`data_section_mismatch`: `const`, `-G`), `.size` !=
+  `.symtab` size, overlaps.
 - **link_image** takes such a unit's ranges from its hybrid (file-qualified
   patterns) and leaves its expected data object out - one data provider per
   unit; every range is `ASSERT`ed at its address. A gap range a `complete`
@@ -391,11 +395,14 @@ state = "matching"        # asm | matching | retail (retail needs a `reason`)
   the retail references, and emitted from C; gap bytes it emits past the
   unit's ranges are the manifest's `[[claim]]`s (written by `--complete`,
   validated by `status.py`); `--complete` also promotes the `asm` entries
-  only that layout can place (an unsized symbol past the unit's ranges). It
-  needs every function `matching`, every data
-  entry `matching`/`retail`, no retail bytes in the unit's ranges beyond its
-  `retail` entries, no borrowed slot, every linked piece equal to retail, and
-  no owned `.sbss`/`.bss`.
+  only that layout can place (its `.sbss`/`.bss` objects, an unsized symbol
+  past the unit's ranges). The `.sbss`/`.bss` objects become NOBITS pieces
+  (`.space` around the labels); the image link places a complete unit's
+  pieces in its `.sbss`/`.bss` ranges and reserves every other range. It
+  needs every function `matching`, every data entry `matching`/`retail`,
+  every owned range supplied by its pieces, no retail bytes in them beyond
+  its `retail` entries, no borrowed slot, and every linked piece with file
+  bytes equal to retail (a `.sbss`/`.bss` object is checked by address).
 
 [tools/dump_data.py](../tools/dump_data.py) prints the C initialiser of a
 registry symbol from the retail bytes (`--probe` takes a struct layout from

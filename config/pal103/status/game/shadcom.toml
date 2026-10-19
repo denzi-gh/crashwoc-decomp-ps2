@@ -59,6 +59,15 @@ state = "matching"
 id = "pal103:unit-0113:006328e4:shadcol"
 state = "matching"
 
+[[data]]
+id = "pal103:unit-0113:006b7650:palids"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x006b7650
+end = 0x006b7660
+
 [[claim]]
 section = ".data"
 start = 0x005d98d0
