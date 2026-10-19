@@ -78,3 +78,11 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0080:001b2868:NuSceneManagerSetPtrToPlayerMtx"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0080:0062f808:sceneinstances"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0080:0062f80c:player_mtx"
+state = "asm"

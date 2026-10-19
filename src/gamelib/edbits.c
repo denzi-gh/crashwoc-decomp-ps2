@@ -41,7 +41,8 @@ extern struct edsfx_s *edSfxLevelTab;
 extern int edSfxAllCount;
 extern int edSfxGlobalCount;
 extern struct nugscn_s *edbits_base_scene;
-extern char edbits_level_filename[];
+char edbits_level_filename[256] = { 0 };
+unsigned char object_switches[128] = { 0 };
 
 extern int gamesfx_effect_volume;
 extern int gamesfx_pitch;

@@ -151,12 +151,8 @@ extern struct filebuff_s D_00639B08[4];
 extern struct numemfile_s D_00639548[20];
 extern struct fileinfo_s D_00639908[16];
 extern struct nublk_s D_00633548[];
-extern char* D_00293720[4];
 extern struct nudathdr_s* D_0062E998;
 extern int D_0062E99C;
-extern char D_00293730[256];
-extern int D_00293700[4];
-extern int D_00293710[4];
 extern int D_0062E9A0;
 extern int D_0062E980;
 extern int nufile_buffering_enabled;
@@ -167,15 +163,18 @@ extern char* iop_img_name;
 #define file_buff               D_00639B08
 #define memfiles                D_00639548
 #define file_info               D_00639908
-#define filesys_root            D_00293720
 #define curr_dat                D_0062E998
 #define nufile_deviceid         D_0062E99C
-#define working_dir             D_00293730
-#define fmode                   D_00293700
-#define forig                   D_00293710
 #define file_time_count         D_0062E9A0
 #define blk_stack               D_00633548
 #define blk_level               D_0062E980
+
+/* sceOpen flags per NUFILE mode: RDONLY, WRONLY|CREAT|TRUNC, RDWR|APPEND, RDONLY|NOWAIT */
+static int fmode[4] = { 1, 0x602, 0x103, 0x8001 };
+/* sceLseek origins: SEEK_SET, SEEK_CUR, SEEK_END */
+static int forig[3] = { 0, 1, 2 };
+static char *filesys_root[4] = { "host0:", "cdrom0:\\", "host0:", "cdrom0:\\" };
+static char working_dir[256] = { 0 };
 
 int sceWrite(int fd, void *addr, int size);
 int sceLseek(int fd, int offset, int how);
