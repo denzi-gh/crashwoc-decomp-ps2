@@ -89,7 +89,7 @@ int WeaponCheckTriggers(struct nuvec_s *pos, float r, int hitpoints);
 void DebugRenderTriggers(void);
 void NuTriggerSysInit(void);
 void NuTriggerSysRender(void);
-struct instNUTRIGGERSYS_s *instNuTriggerSysCreate(struct NUTRIGGERSYS_s *triggersys, struct NuSceneInstance *scenemanager, union variptr_u *buff);
+struct instNUTRIGGERSYS_s *instNuTriggerSysCreate(struct NUTRIGGERSYS_s *triggersys, struct NuSceneInstance *scenemanager, union variptr_u *buff, union variptr_u *buffend);
 void instNuTriggerSysDestroy(struct instNUTRIGGERSYS_s *itriggersys);
 void instNuTriggerSetFlag(struct instNUTRIGGERSYS_s *itriggersys, char *name, int index, int set);
 void instNuTriggerReset(struct instNUTRIGGERSYS_s *itriggersys, char *name);

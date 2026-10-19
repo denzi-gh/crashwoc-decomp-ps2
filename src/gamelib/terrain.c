@@ -5981,8 +5981,8 @@ void ScanTerrainPlatform(s32 msituid, s32 extramask) {
 
 
 /* PS2 PAL: byte-exact over the full 0x228-byte extent at 0x00181888. */
-s32 NewRayCastPlatForm(struct nuvec_s *vpos, struct nuvec_s *vvel, s32 platid, f32 size,
-                       f32 timeadj) {
+s32 NewRayCastPlatForm(struct nuvec_s *vpos, struct nuvec_s *vvel, f32 size, f32 timeadj,
+                       s32 platid) {
     if (CurTerr == 0) {
         return 0;
     }

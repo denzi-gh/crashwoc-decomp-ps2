@@ -112,7 +112,7 @@ void NuTexAssignTempAddr(int tex);
 int NuTexGetReqSize(int tex, int level);
 void NuTexCloneTempAddr(int dst, int src);
 void NuTexPalChange(int tex);
-void NuTexPalChangeStreamTemp(int tex);
+void NuTexPalChangeStreamTemp(int tex, u32 *pal);
 u64 NuTexGetTex0(int tex);
 u8 *NuTexSetPal(u8 *stream, int tex, int paltex, char context);
 void *NuTexSetZBuffer(void *stream, int tex);

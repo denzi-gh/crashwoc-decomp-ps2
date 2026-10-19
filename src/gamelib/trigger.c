@@ -572,7 +572,7 @@ void NuTriggerSysRender(void)
 
 
 struct instNUTRIGGERSYS_s *instNuTriggerSysCreate(struct NUTRIGGERSYS_s *triggersys, struct NuSceneInstance *scenemanager,
-                                                  union variptr_u *buff) {
+                                                  union variptr_u *buff, union variptr_u *buffend) {
     struct instNUTRIGGERSYS_s *itriggersys = 0;
     int i;
 

@@ -3723,7 +3723,7 @@ void ProcessPlatformsAtlas(struct NEWBUGGY *atlas, f32 dt)
     if (onplat == 2) {
         NuVecAdd(&probe, &atlas->ball_pos, &dir);
         NuVecScale(&ray, &dir, -2.0f);
-        if (NewRayCastPlatForm(&probe, &ray, atlas->platformid, atlas->ball_radius, 0.01f)) {
+        if (NewRayCastPlatForm(&probe, &ray, atlas->ball_radius, 0.01f, atlas->platformid)) {
             NuVecAdd(&atlas->ball_pos, &probe, &ray);
         }
     }
