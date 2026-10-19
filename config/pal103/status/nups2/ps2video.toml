@@ -13,7 +13,7 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0060:001687c0:tbRender"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0060:00168c80:NuPs2Init"
