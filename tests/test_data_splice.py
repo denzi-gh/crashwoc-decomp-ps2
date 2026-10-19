@@ -13,7 +13,8 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 from gen_hybrid import (DataItem, HybridError, _JumpTable,  # noqa: E402
                         _directive_size, _is_align_pad, _plan_data,
-                        _relabel_data, _split_sections, has_c_data, parse_s, piece_name)
+                        _relabel_data, _relabel_items, _small_data_externs,
+                        _split_sections, has_c_data, parse_s, piece_name)
 
 PROBE = """\
 \t.file\t1 "probe.c"
@@ -223,6 +224,20 @@ class TestPlanData(unittest.TestCase):
         self.assertTrue(has_c_data(manifest(["asm", "matching"])))
         self.assertFalse(has_c_data(manifest(["asm", "retail"])))
 
+    def test_sdata_from_c(self):
+        # nurand: two 8-byte .sdata statics; an emitted one keeps its name,
+        # a dropped one is addressed as its retail address.
+        items = items_for(["global_rand", "fseed"], section=".sdata", size=8)
+        data = {"source": "src/numath/nurand.c", "data": [
+            {"id": "pal103:unit-0026:0062ea60:global_rand", "state": "matching"},
+            {"id": "pal103:unit-0026:0062ea68:fseed", "state": "asm"}]}
+        rename, emit = _plan_data(items, data, "pal103", "unit-0026", False)
+        self.assertEqual([s["name"] for _i, s in emit], ["global_rand"])
+        self.assertEqual(rename, {"fseed": "D_0062EA68"})
+        # Only the size keeps the dropped object's loads gp-relative.
+        self.assertEqual(_small_data_externs(items, emit, rename),
+                         ["\t.extern\tD_0062EA68, 8"])
+
 
 class TestHelpers(unittest.TestCase):
     def test_relabel_data_whole_names(self):
@@ -230,6 +245,14 @@ class TestHelpers(unittest.TestCase):
         self.assertEqual(_relabel_data(lines, {"lut.6": "lut.69", "lut": "D_1"}),
                          ["\tlui\t$2,%hi(lut.69)", "\tlw\t$3,%lo(lut.60)($2)",
                           "\tla\t$4,D_1"])
+
+    def test_relabel_items_leaves_string_text(self):
+        # nu3d/nuscene: NuNodeRead is a duplicated static (NuNodeRead__<vram>)
+        lines = ['\t.ascii\t"NuNodeRead: Unknown node type.\\000"',
+                 "\t.word\tNuNodeRead"]
+        self.assertEqual(_relabel_items(lines, {}, {"NuNodeRead":
+                                                    "NuNodeRead__00118900"}),
+                         [lines[0], "\t.word\tNuNodeRead__00118900"])
 
     def test_directive_sizes(self):
         self.assertEqual(_directive_size("\t.word\t1,2,3"), 12)

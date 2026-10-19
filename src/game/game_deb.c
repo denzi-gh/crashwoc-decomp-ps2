@@ -483,6 +483,7 @@ s32 mechbits[7] = { 21, 22, 23, 21, 22, 23, -1 };
 s32 atlasbits[7] = { 18, 19, 20, 18, 19, 20, -1 };
 s32 helibits[7] = { 24, 25, 26, 24, 25, 26, -1 };
 s32 jeepbits[8] = { 11, 11, 12, 13, 11, 12, 13, -1 };
+s32 ttty = 0;
 
 
 inline void AddGameDebris(s32 i, struct nuvec_s *pos) {

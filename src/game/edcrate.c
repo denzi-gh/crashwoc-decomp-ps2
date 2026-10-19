@@ -55,78 +55,24 @@
 #include "edtools/edui.h"
 #include "edtools/edmain.h"
 
-struct edcrtstyle_s {
-    u8 b[16];
-};
-
-extern struct eduimenu_s *edcrt_active_menu;
-extern struct eduimenu_s *edcrt_options_menu;
-extern struct eduimenu_s *edcrt_memcard_menu;
-extern struct eduimenu_s *edcrt_filename_menu;
-extern struct eduimenu_s *edcrt_loadeffects_menu;
-extern struct eduimenu_s *edcrt_deleteeffects_menu;
-extern struct eduimenu_s *edcrt_cratetypes_menu;
-extern struct eduimenu_s *edcrt_specifictype_menu;
-extern struct eduimenu_s *edcrt_resetcrates_menu;
-extern struct eduimenu_s *edcrt_displaytype_menu;
 extern void *app_fnt;
 
-extern s32 edcrtDrawType;
-extern s32 edcrt_currentselcrate;
 extern s32 edcrt_used;
 extern struct numtl_s *edcrt_mtl_zoff;
 extern f32 edcrt_cam_ax;
 extern f32 edcrt_cam_ay;
+extern struct nuvec_s edcrt_cam_pos;
+extern struct mcdirent_s edcrt_mcdir[10];
 
-extern s32 D_00631AD8;
-extern s32 D_00631ADC;
-extern s32 D_00631AE0;
 extern s32 D_006332EC;
 extern s32 D_006332F0;
 extern s32 D_006332F4;
 extern s32 D_006332F8;
-extern struct edcrtstyle_s D_0061FCE0;
-extern char D_00631AF0[];
-extern char D_00631AF8[];
-extern char D_00631B00[];
-extern char D_00631B08[];
-extern char D_00631B10[];
-extern char D_00631B18[];
-extern char D_00631B20[];
-extern char D_00631B28[];
-extern char D_00631B30[];
-extern char D_00631B38[];
-extern char D_00631B40[];
-extern char D_00631B50[];
-extern char D_00631B58[];
-extern char D_00631B60[];
-extern char D_00631B68[];
-extern char D_00631B70[];
 
-#define edcrt_flashtimer D_00631AD8
-#define edcrt_terrain D_00631ADC
-#define edcrt_showtriggers D_00631AE0
 #define edcrt_mctype D_006332EC
 #define edcrt_mcfree D_006332F0
 #define edcrt_mcformat D_006332F4
 #define edcrt_mcresult D_006332F8
-#define edcrt_menu_style D_0061FCE0
-#define edcrt_filefmt D_00631AF0
-#define edcrt_mcfilter D_00631AF8
-#define edcrt_mcroot D_00631B00
-#define edcrt_mcwildcard D_00631B08
-#define edcrt_str_typefmt D_00631B10
-#define edcrt_str_null D_00631B18
-#define edcrt_str_type1 D_00631B20
-#define edcrt_str_type2 D_00631B28
-#define edcrt_str_type3 D_00631B30
-#define edcrt_str_type4 D_00631B38
-#define edcrt_str_options D_00631B40
-#define edcrt_info_level D_00631B50
-#define edcrt_str_set D_00631B58
-#define edcrt_str_unset D_00631B60
-#define edcrt_str_locked D_00631B68
-#define edcrt_str_free D_00631B70
 
 extern struct crate_s *highlighted_crate;
 extern struct crate_s *highlight_crate;
@@ -237,41 +183,54 @@ void edcrtcbCrateTypesMenu(struct eduimenu_s *menu);
 void edcrtcbDisplayTypeMenu(struct eduimenu_s *menu);
 void edcrtDoInput(struct nupad_s *pad);
 void edcrtDrawInfo(void);
-void edcrtcbMemCardLoadCratesMenu(struct eduimenu_s *menu);
-void edcrtcbChangeFileNameMenu(struct eduimenu_s *menu);
-void edcrtcbMemCardDeleteCratesMenu(struct eduimenu_s *menu);
-void edcrtcbCancelMemCardMenu(void);
-void edcrtCbSaveCrateData(void *menu);
-void edcrtcbSetCrateType(struct eduimenu_s *menu, struct eduiitem_s *item);
-void edcrtcbCancelSpecificTypeMenu(void);
-void edcrtcbCancelCrateTypesMenu(void);
-void edcrtcbResetCratesMenu(struct eduimenu_s *menu);
-void edcrtcbDisplayType(struct eduimenu_s *menu, struct eduiitem_s *item);
-void edcrtcbCancelDisplayTypeMenu(void);
-void edcrtcbTerrainToggle(void *menu, struct eduiitem_s *item);
-void edcrtcbShowTriggersToggle(void *menu, struct eduiitem_s *item);
-void edcrtCbCancelOptMenu(void);
-void edcrtcbMemCardCancelLoadEffectsMenu(void);
-void edcrtcbChangeFileName(void *menu, struct eduiitem_s *item);
-void edcrtcbCancelChangeFileNameMenu(void);
-void edcrtcbMemCardDeleteCrates(struct eduimenu_s *menu, struct eduiitem_s *item);
-void edcrtcbMemCardCancelDeleteEffectsMenu(void);
-void edcrtcbResetCrates(struct eduimenu_s *menu, struct eduiitem_s *item);
-void edcrtcbCancelResetCratesMenu(void);
+/* The callbacks below are inline: GCC 2.95 then emits their code at the end
+ * of the unit (in this declaration order, after edcrtDrawInfo, as retail has
+ * it) but their literals where they are defined, which is where retail keeps
+ * them. */
+static void edcrtcbMemCardLoadCratesMenu(struct eduimenu_s *menu);
+static void edcrtcbChangeFileNameMenu(struct eduimenu_s *menu);
+static void edcrtcbMemCardDeleteCratesMenu(struct eduimenu_s *menu);
+static void edcrtcbCancelMemCardMenu(void);
+static void edcrtCbSaveCrateData(void *menu);
+static void edcrtcbSetCrateType(struct eduimenu_s *menu, struct eduiitem_s *item);
+static void edcrtcbCancelSpecificTypeMenu(void);
+static void edcrtcbCancelCrateTypesMenu(void);
+static void edcrtcbResetCratesMenu(struct eduimenu_s *menu);
+static void edcrtcbDisplayType(struct eduimenu_s *menu, struct eduiitem_s *item);
+static void edcrtcbCancelDisplayTypeMenu(void);
+static void edcrtcbTerrainToggle(void *menu, struct eduiitem_s *item);
+static void edcrtcbShowTriggersToggle(void *menu, struct eduiitem_s *item);
+static void edcrtCbCancelOptMenu(void);
+static void edcrtClose(void);
+static void edcrtEnter(void);
+static s32 edcrtProc(struct nupad_s *pad);
+static void edcrtRender(void);
+static void edcrtcbMemCardCancelLoadEffectsMenu(void);
+static void edcrtcbChangeFileName(void *menu, struct eduiitem_s *item);
+static void edcrtcbCancelChangeFileNameMenu(void);
+static void edcrtcbMemCardDeleteCrates(struct eduimenu_s *menu, struct eduiitem_s *item);
+static void edcrtcbMemCardCancelDeleteEffectsMenu(void);
+static void edcrtcbResetCrates(struct eduimenu_s *menu, struct eduiitem_s *item);
+static void edcrtcbCancelResetCratesMenu(void);
 void edcrtInit(void);
-void edcrtClose(void);
-void edcrtEnter(void);
-s32 edcrtProc(struct nupad_s *pad);
-void edcrtRender(void);
 
 static char edcrt_mcfilename[32] = "Save1";
-struct edmainreg_s edcrtdesc = {
-    0, 0, "Crate Editor", edcrtInit, edcrtClose, edcrtEnter, {0}, 0,
-    EDMAIN_BLOCKID('c', 'r', 'a', 't'), edcrtProc, edcrtRender
-};
-struct nuvec_s edcrt_cam_pos = { 0.0f, 0.0f, 0.0f };
-/* sceMcGetDir needs a 64-byte aligned table */
-struct mcdirent_s edcrt_mcdir[10] __attribute__((aligned(64))) = { { { 0 } } };
+
+struct eduimenu_s *edcrt_active_menu = 0;
+struct eduimenu_s *edcrt_options_menu = 0;
+struct eduimenu_s *edcrt_memcard_menu = 0;
+struct eduimenu_s *edcrt_filename_menu = 0;
+struct eduimenu_s *edcrt_loadeffects_menu = 0;
+struct eduimenu_s *edcrt_deleteeffects_menu = 0;
+struct eduimenu_s *edcrt_cratetypes_menu = 0;
+struct eduimenu_s *edcrt_specifictype_menu = 0;
+struct eduimenu_s *edcrt_resetcrates_menu = 0;
+struct eduimenu_s *edcrt_displaytype_menu = 0;
+static s32 edcrt_count = 0;
+static s32 edcrt_terrainlock = 1;
+static s32 edcrt_showalltriggers = 0;
+s32 edcrtDrawType = 0;
+s32 edcrt_currentselcrate = 0;
 
 void edcrtDrawSpecialCrates(void)
 {
@@ -279,12 +238,12 @@ void edcrtDrawSpecialCrates(void)
 
     if (locked_crate != 0)
         DrawCrate(lock_crate);
-    if (triggerorigin_crate != 0 && edcrt_flashtimer % 150 < 75) {
+    if (triggerorigin_crate != 0 && edcrt_count % 150 < 75) {
         lock_crate->pos = triggerorigin_crate->pos;
         lock_crate->orientation = triggerorigin_crate->orientation;
         DrawCrate(lock_crate);
     }
-    if (triggerdest_crate != 0 && edcrt_flashtimer % 150 >= 75) {
+    if (triggerdest_crate != 0 && edcrt_count % 150 >= 75) {
         lock_crate->pos = triggerdest_crate->pos;
         lock_crate->orientation = triggerdest_crate->orientation;
         DrawCrate(lock_crate);
@@ -302,7 +261,7 @@ void edcrtDrawSpecialCrates(void)
         line[1].diffuse = 0xFF0000FF;
         NuRndrLine3d(line, edcrt_mtl_zoff, 0);
     }
-    if (edcrt_showtriggers) {
+    if (edcrt_showalltriggers) {
         for (crate = NextCrate(0); crate != 0; crate = NextCrate(crate)) {
             if (crate->trigger != 0 && crate != triggerorigin_crate) {
                 struct nuvtx_tc1_s line[2];
@@ -326,7 +285,7 @@ void edcrtDrawSpecialCrates(void)
     } else {
         DrawCrate(marker_crate);
         if (FindOverlap(marker_crate) == 0 && triggerorigin_crate == 0 &&
-            edcrt_flashtimer % 150 < 75)
+            edcrt_count % 150 < 75)
             DrawCrate(flash_crate);
     }
 }
@@ -373,7 +332,7 @@ void edcrtDrawBoxyThing(struct nuvec_s *pos)
         flash_crate->pos.y = snap.y;
         flash_crate->pos.z = snap.z;
     } else {
-        if (edcrt_terrain) {
+        if (edcrt_terrainlock) {
             shadow = NewShadowMask(pos, 0.0f, -1);
             if (shadow == 2000000.0f)
                 shadow = pos->y - 0.25;
@@ -407,7 +366,7 @@ void WriteCrateData(void)
     s32 i;
     s32 j;
 
-    sprintf(tbuf, edcrt_filefmt, LevelFileName);
+    sprintf(tbuf, "%s.crt", LevelFileName);
     handle = NuFileOpen(tbuf, 1);
     if (handle == 0)
         return;
@@ -452,13 +411,13 @@ void edcrtcbMemCardSaveCrates(struct eduimenu_s *menu)
     s32 i;
     s32 j;
 
-    sceMcGetDir(0, 0, edcrt_mcfilter, 0, 10, edcrt_mcdir);
+    sceMcGetDir(0, 0, "*.crt", 0, 10, edcrt_mcdir);
     sceMcSync(0, 0, &edcrt_mcresult);
     if (edcrt_mcresult >= 8) {
         eduiCreateMessageMenu(menu, "Too many Crate Saves", 0);
         return;
     }
-    sprintf(name, edcrt_filefmt, edcrt_mcfilename);
+    sprintf(name, "%s.crt", edcrt_mcfilename);
     sceMcOpen(0, 0, name, 0x200);
     sceMcSync(0, 0, &edcrt_mcresult);
     fd = edcrt_mcresult;
@@ -598,11 +557,96 @@ void edcrtcbMemCardLoadCrates(struct eduimenu_s *menu, struct eduiitem_s *item)
     eduiCreateMessageMenu(menu, "Loaded OK", 1);
 }
 
+static inline void edcrtcbMemCardLoadCratesMenu(struct eduimenu_s *menu)
+{
+    struct eduistyle_s style = { { 0x80000000, 0x80FF0000 }, { 0x80808080, 0x80404040 } };
+    s32 i;
+
+    sceMcGetDir(0, 0, "*.crt", 0, 10, edcrt_mcdir);
+    sceMcSync(0, 0, &edcrt_mcresult);
+    if (edcrt_mcresult <= 0)
+        return;
+    edcrt_loadeffects_menu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt,
+                                            edcrtcbMemCardCancelLoadEffectsMenu,
+                                            "Load Crates");
+    if (edcrt_loadeffects_menu == 0)
+        return;
+    for (i = 0; i < edcrt_mcresult; i++) {
+        eduiMenuAddItem(edcrt_loadeffects_menu,
+                        eduiItemSelCreate(i, &style, 0, 0, edcrtcbMemCardLoadCrates,
+                                          edcrt_mcdir[i].name));
+    }
+    eduiMenuAttach(menu, edcrt_loadeffects_menu);
+    edcrt_loadeffects_menu->x = menu->x + 10;
+    edcrt_loadeffects_menu->y = menu->y + 40;
+}
+
+static inline void edcrtcbChangeFileNameMenu(struct eduimenu_s *menu)
+{
+    struct eduistyle_s style = { { 0x80000000, 0x80FF0000 }, { 0x80808080, 0x80404040 } };
+
+    edcrt_filename_menu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt,
+                                         edcrtcbCancelChangeFileNameMenu,
+                                         "File Name");
+    if (edcrt_filename_menu == 0)
+        return;
+    eduiMenuAddItem(edcrt_filename_menu,
+                    eduiItemTextPickCreate(0, &style, edcrtcbChangeFileName,
+                                           "File Name"));
+    strcpy(edui_last_item->u.textpick.text, edcrt_mcfilename);
+    eduiMenuAttach(menu, edcrt_filename_menu);
+    edcrt_filename_menu->x = menu->x + 10;
+    edcrt_filename_menu->y = menu->y + 40;
+}
+
+static inline void edcrtcbMemCardDeleteCrates(struct eduimenu_s *menu, struct eduiitem_s *item)
+{
+    struct eduimenu_s *parent = 0;
+    void (*cancel)(struct eduimenu_s *menu, struct eduimenu_s *parent);
+
+    sceMcDelete(0, 0, edcrt_mcdir[item->value].name);
+    sceMcSync(0, 0, &edcrt_mcresult);
+    if (menu->parent != 0) {
+        parent = menu->parent;
+        eduiMenuDetach(menu);
+    }
+    cancel = menu->cancel;
+    if (cancel)
+        cancel(menu, parent);
+    if (edcrt_mcresult < 0)
+        eduiCreateMessageMenu(parent, "File Delete Error", 0);
+    else
+        eduiCreateMessageMenu(parent, "File Delete OK", 1);
+}
+
+static inline void edcrtcbMemCardDeleteCratesMenu(struct eduimenu_s *menu)
+{
+    struct eduistyle_s style = { { 0x80000000, 0x80FF0000 }, { 0x80808080, 0x80404040 } };
+    s32 i;
+
+    sceMcGetDir(0, 0, "*.crt", 0, 10, edcrt_mcdir);
+    sceMcSync(0, 0, &edcrt_mcresult);
+    if (edcrt_mcresult <= 0)
+        return;
+    edcrt_deleteeffects_menu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt,
+                                              edcrtcbMemCardCancelDeleteEffectsMenu,
+                                              "Delete Save");
+    if (edcrt_deleteeffects_menu == 0)
+        return;
+    for (i = 0; i < edcrt_mcresult; i++) {
+        eduiMenuAddItem(edcrt_deleteeffects_menu,
+                        eduiItemSelCreate(i, &style, 0, 0, edcrtcbMemCardDeleteCrates,
+                                          edcrt_mcdir[i].name));
+    }
+    eduiMenuAttach(menu, edcrt_deleteeffects_menu);
+    edcrt_deleteeffects_menu->x = menu->x + 10;
+    edcrt_deleteeffects_menu->y = menu->y + 40;
+}
+
 void edcrtcbMemCardMenu(struct eduimenu_s *menu)
 {
-    struct edcrtstyle_s style;
+    struct eduistyle_s style = { { 0x80000000, 0x80FF0000 }, { 0x80808080, 0x80404040 } };
 
-    style = edcrt_menu_style;
     sceMcGetInfo(0, 0, &edcrt_mctype, &edcrt_mcfree, &edcrt_mcformat);
     sceMcSync(0, 0, &edcrt_mcresult);
     if (edcrt_mcformat == 0) {
@@ -611,7 +655,7 @@ void edcrtcbMemCardMenu(struct eduimenu_s *menu)
         sceMcGetInfo(0, 0, &edcrt_mctype, &edcrt_mcfree, &edcrt_mcformat);
         sceMcSync(0, 0, &edcrt_mcresult);
     }
-    sceMcChdir(0, 0, edcrt_mcroot, 0);
+    sceMcChdir(0, 0, "/", 0);
     sceMcSync(0, 0, &edcrt_mcresult);
     sceMcGetDir(0, 0, "CrateData", 0, 10, edcrt_mcdir);
     sceMcSync(0, 0, &edcrt_mcresult);
@@ -621,7 +665,7 @@ void edcrtcbMemCardMenu(struct eduimenu_s *menu)
     }
     sceMcChdir(0, 0, "/CrateData", 0);
     sceMcSync(0, 0, &edcrt_mcresult);
-    sceMcGetDir(0, 0, edcrt_mcwildcard, 0, 10, edcrt_mcdir);
+    sceMcGetDir(0, 0, "*", 0, 10, edcrt_mcdir);
     sceMcSync(0, 0, &edcrt_mcresult);
     edcrt_memcard_menu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt,
                                         edcrtcbCancelMemCardMenu, "Memory Card");
@@ -646,12 +690,11 @@ void edcrtcbMemCardMenu(struct eduimenu_s *menu)
 
 void edcrtcbSpecificTypeMenu(struct eduimenu_s *menu, struct eduiitem_s *item)
 {
-    struct edcrtstyle_s style;
+    struct eduistyle_s style = { { 0x80000000, 0x80FF0000 }, { 0x80808080, 0x80404040 } };
     char title[32];
     s32 i;
 
-    style = edcrt_menu_style;
-    sprintf(title, edcrt_str_typefmt, item->value);
+    sprintf(title, "Type %d", item->value);
     edcrt_specifictype_menu = eduiMenuCreate(0x46, 0x46, 0xFA, 0xFA, app_fnt,
                                              edcrtcbCancelSpecificTypeMenu, title);
     if (edcrt_specifictype_menu == 0)
@@ -659,7 +702,7 @@ void edcrtcbSpecificTypeMenu(struct eduimenu_s *menu, struct eduiitem_s *item)
     eduiMenuAddItem(edcrt_specifictype_menu,
                     eduiItemCheckCreate(-1, &style,
                                         highlighted_crate->type[item->value - 1] == -1,
-                                        0, edcrtcbSetCrateType, edcrt_str_null));
+                                        0, edcrtcbSetCrateType, "NULL"));
     for (i = 0; i < 20; i++) {
         eduiMenuAddItem(edcrt_specifictype_menu,
                         eduiItemCheckCreate(i, &style,
@@ -676,9 +719,8 @@ void edcrtcbSpecificTypeMenu(struct eduimenu_s *menu, struct eduiitem_s *item)
 
 void edcrtcbCrateTypesMenu(struct eduimenu_s *menu)
 {
-    struct edcrtstyle_s style;
+    struct eduistyle_s style = { { 0x80000000, 0x80FF0000 }, { 0x80808080, 0x80404040 } };
 
-    style = edcrt_menu_style;
     if (highlighted_crate == 0)
         return;
     edcrt_cratetypes_menu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt,
@@ -703,11 +745,33 @@ void edcrtcbCrateTypesMenu(struct eduimenu_s *menu)
     edcrt_cratetypes_menu->y = menu->y + 40;
 }
 
+static inline void edcrtcbResetCratesMenu(struct eduimenu_s *menu)
+{
+    struct eduistyle_s style = { { 0x80000000, 0x80FF0000 }, { 0x80808080, 0x80404040 } };
+
+    edcrt_resetcrates_menu = eduiMenuCreate(0x46, 0x46, 0xFA, 0xFA, app_fnt,
+                                            edcrtcbCancelResetCratesMenu,
+                                            "Reset Crates");
+    if (edcrt_resetcrates_menu == 0)
+        return;
+    eduiMenuAddItem(edcrt_resetcrates_menu,
+                    eduiItemSelCreate(2, &style, 0, 0, edcrtcbResetCrates,
+                                      "Set Type 2 all to Type 1"));
+    eduiMenuAddItem(edcrt_resetcrates_menu,
+                    eduiItemSelCreate(3, &style, 0, 0, edcrtcbResetCrates,
+                                      "Set Type 3 all to NULL"));
+    eduiMenuAddItem(edcrt_resetcrates_menu,
+                    eduiItemSelCreate(4, &style, 0, 0, edcrtcbResetCrates,
+                                      "Set Type 4 all to NULL"));
+    eduiMenuAttach(menu, edcrt_resetcrates_menu);
+    edcrt_resetcrates_menu->x = menu->x + 10;
+    edcrt_resetcrates_menu->y = menu->y + 40;
+}
+
 void edcrtcbDisplayTypeMenu(struct eduimenu_s *menu)
 {
-    struct edcrtstyle_s style;
+    struct eduistyle_s style = { { 0x80000000, 0x80FF0000 }, { 0x80808080, 0x80404040 } };
 
-    style = edcrt_menu_style;
     edcrt_displaytype_menu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt,
                                             edcrtcbCancelDisplayTypeMenu,
                                             "Display Type");
@@ -715,25 +779,25 @@ void edcrtcbDisplayTypeMenu(struct eduimenu_s *menu)
         return;
     eduiMenuAddItem(edcrt_displaytype_menu,
                     eduiItemCheckCreate(0, &style, edcrtDrawType == 0, 0,
-                                        edcrtcbDisplayType, edcrt_str_type1));
+                                        edcrtcbDisplayType, "Type 1"));
     if (edcrtDrawType == 0) {
         edcrt_displaytype_menu->current = edui_last_item;
     }
     eduiMenuAddItem(edcrt_displaytype_menu,
                     eduiItemCheckCreate(1, &style, edcrtDrawType == 1, 0,
-                                        edcrtcbDisplayType, edcrt_str_type2));
+                                        edcrtcbDisplayType, "Type 2"));
     if (edcrtDrawType == 1) {
         edcrt_displaytype_menu->current = edui_last_item;
     }
     eduiMenuAddItem(edcrt_displaytype_menu,
                     eduiItemCheckCreate(2, &style, edcrtDrawType == 2, 0,
-                                        edcrtcbDisplayType, edcrt_str_type3));
+                                        edcrtcbDisplayType, "Type 3"));
     if (edcrtDrawType == 2) {
         edcrt_displaytype_menu->current = edui_last_item;
     }
     eduiMenuAddItem(edcrt_displaytype_menu,
                     eduiItemCheckCreate(3, &style, edcrtDrawType == 3, 0,
-                                        edcrtcbDisplayType, edcrt_str_type4));
+                                        edcrtcbDisplayType, "Type 4"));
     if (edcrtDrawType == 3) {
         edcrt_displaytype_menu->current = edui_last_item;
     }
@@ -744,10 +808,9 @@ void edcrtcbDisplayTypeMenu(struct eduimenu_s *menu)
 
 void edcrtInit(void)
 {
-    struct edcrtstyle_s style;
+    struct eduistyle_s style = { { 0x80000000, 0x80FF0000 }, { 0x80808080, 0x80404040 } };
     struct numtl_s *mtl;
 
-    style = edcrt_menu_style;
     mtl = NuMtlCreate(1);
     edcrt_mtl_zoff = mtl;
     mtl->attrib.cull = 2;
@@ -759,7 +822,7 @@ void edcrtInit(void)
     mtl->attrib.alpha = 0;
     NuMtlUpdate(mtl);
     edcrt_options_menu = eduiMenuCreate(0x46, 0x46, 0xB4, 0x12C, app_fnt,
-                                        edcrtCbCancelOptMenu, edcrt_str_options);
+                                        edcrtCbCancelOptMenu, "Options");
     if (edcrt_options_menu == 0)
         return;
     eduiMenuAddItem(edcrt_options_menu,
@@ -775,15 +838,17 @@ void edcrtInit(void)
                     eduiItemSelCreate(1, &style, 0, 0, edcrtcbDisplayTypeMenu,
                                       "Display Type..."));
     eduiMenuAddItem(edcrt_options_menu,
-                    eduiItemToggleCreate(0, &style, edcrt_terrain, 1,
+                    eduiItemToggleCreate(0, &style, edcrt_terrainlock, 1,
                                          edcrtcbTerrainToggle, "Terrain Lock"));
     eduiMenuAddItem(edcrt_options_menu,
-                    eduiItemToggleCreate(0, &style, edcrt_showtriggers, 2,
+                    eduiItemToggleCreate(0, &style, edcrt_showalltriggers, 2,
                                          edcrtcbShowTriggersToggle, "Show Triggers"));
     eduiMenuAddItem(edcrt_options_menu,
                     eduiItemSelCreate(1, &style, 0, 0, edcrtcbMemCardMenu,
                                       "Mem Card..."));
 }
+
+s32 edcrt_used = 0;
 
 void edcrtDoInput(struct nupad_s *pad)
 {
@@ -938,98 +1003,34 @@ void edcrtDrawInfo(void)
     NuFntSetPen(-1);
     strcpy(tbuf, LDATA[0]);
     strupr(tbuf);
-    NuFntPrintEx(0x400, 0x100, 0, edcrt_info_level, tbuf);
+    NuFntPrintEx(0x400, 0x100, 0, "%s.CRT", tbuf);
     NuFntPrintEx(0x400, 0x200, 0, "CRATEGROUPCOUNT:   %i/%i", CRATEGROUPCOUNT,
                  0x80);
     NuFntPrintEx(0x400, 0x300, 0, "CRATECOUNT:   %i/%i", CRATECOUNT, 0x100);
     NuFntPrintEx(0x400, 0x400, 0, "DISPLAYED:   TYPE %i", edcrtDrawType + 1);
     if (triggerorigin_crate) {
         NuFntPrintEx(0x400, 0x500, 0, "CURSOR:   LINK MODE   %s",
-                     triggerdest_crate ? edcrt_str_set : edcrt_str_unset);
+                     triggerdest_crate ? "SET" : "UNSET");
     } else {
         NuFntPrintEx(0x400, 0x500, 0, "CURSOR:   %s",
-                     locked_crate ? edcrt_str_locked : edcrt_str_free);
+                     locked_crate ? "LOCKED" : "FREE");
     }
     NuFntPrintEx(0x400, 0xD00, 0, "CURSOR:   X: %.2f   Y: %.2f   Z: %.2f",
                  edcrt_cam_pos.x, edcrt_cam_pos.y, edcrt_cam_pos.z);
 }
 
-void edcrtcbMemCardLoadCratesMenu(struct eduimenu_s *menu)
-{
-    struct edcrtstyle_s style;
-    s32 i;
+struct numtl_s *edcrt_mtl_zoff = 0;
+f32 edcrt_cam_dist = 0.0f;
+f32 edcrt_cam_ax = 0.0f;
+f32 edcrt_cam_ay = 0.0f;
 
-    style = edcrt_menu_style;
-    sceMcGetDir(0, 0, edcrt_mcfilter, 0, 10, edcrt_mcdir);
-    sceMcSync(0, 0, &edcrt_mcresult);
-    if (edcrt_mcresult <= 0)
-        return;
-    edcrt_loadeffects_menu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt,
-                                            edcrtcbMemCardCancelLoadEffectsMenu,
-                                            "Load Crates");
-    if (edcrt_loadeffects_menu == 0)
-        return;
-    for (i = 0; i < edcrt_mcresult; i++) {
-        eduiMenuAddItem(edcrt_loadeffects_menu,
-                        eduiItemSelCreate(i, &style, 0, 0, edcrtcbMemCardLoadCrates,
-                                          edcrt_mcdir[i].name));
-    }
-    eduiMenuAttach(menu, edcrt_loadeffects_menu);
-    edcrt_loadeffects_menu->x = menu->x + 10;
-    edcrt_loadeffects_menu->y = menu->y + 40;
-}
-
-void edcrtcbChangeFileNameMenu(struct eduimenu_s *menu)
-{
-    struct edcrtstyle_s style;
-
-    style = edcrt_menu_style;
-    edcrt_filename_menu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt,
-                                         edcrtcbCancelChangeFileNameMenu,
-                                         "File Name");
-    if (edcrt_filename_menu == 0)
-        return;
-    eduiMenuAddItem(edcrt_filename_menu,
-                    eduiItemTextPickCreate(0, &style, edcrtcbChangeFileName,
-                                           "File Name"));
-    strcpy(edui_last_item->u.textpick.text, edcrt_mcfilename);
-    eduiMenuAttach(menu, edcrt_filename_menu);
-    edcrt_filename_menu->x = menu->x + 10;
-    edcrt_filename_menu->y = menu->y + 40;
-}
-
-void edcrtcbMemCardDeleteCratesMenu(struct eduimenu_s *menu)
-{
-    struct edcrtstyle_s style;
-    s32 i;
-
-    style = edcrt_menu_style;
-    sceMcGetDir(0, 0, edcrt_mcfilter, 0, 10, edcrt_mcdir);
-    sceMcSync(0, 0, &edcrt_mcresult);
-    if (edcrt_mcresult <= 0)
-        return;
-    edcrt_deleteeffects_menu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt,
-                                              edcrtcbMemCardCancelDeleteEffectsMenu,
-                                              "Delete Save");
-    if (edcrt_deleteeffects_menu == 0)
-        return;
-    for (i = 0; i < edcrt_mcresult; i++) {
-        eduiMenuAddItem(edcrt_deleteeffects_menu,
-                        eduiItemSelCreate(i, &style, 0, 0, edcrtcbMemCardDeleteCrates,
-                                          edcrt_mcdir[i].name));
-    }
-    eduiMenuAttach(menu, edcrt_deleteeffects_menu);
-    edcrt_deleteeffects_menu->x = menu->x + 10;
-    edcrt_deleteeffects_menu->y = menu->y + 40;
-}
-
-void edcrtcbCancelMemCardMenu(void)
+static inline void edcrtcbCancelMemCardMenu(void)
 {
     eduiMenuDestroy(edcrt_memcard_menu);
     edcrt_memcard_menu = 0;
 }
 
-void edcrtCbSaveCrateData(void *menu)
+static inline void edcrtCbSaveCrateData(void *menu)
 {
     ConvertCrateData();
     WriteCrateData();
@@ -1037,7 +1038,7 @@ void edcrtCbSaveCrateData(void *menu)
     eduiCreateMessageMenu(menu, "Saved OK", 1);
 }
 
-void edcrtcbSetCrateType(struct eduimenu_s *menu, struct eduiitem_s *item)
+static inline void edcrtcbSetCrateType(struct eduimenu_s *menu, struct eduiitem_s *item)
 {
     highlighted_crate->type[menu->parent->current->value - 1] = item->value;
     ConvertCrateData();
@@ -1047,43 +1048,19 @@ void edcrtcbSetCrateType(struct eduimenu_s *menu, struct eduiitem_s *item)
     edcrt_specifictype_menu = 0;
 }
 
-void edcrtcbCancelSpecificTypeMenu(void)
+static inline void edcrtcbCancelSpecificTypeMenu(void)
 {
     eduiMenuDestroy(edcrt_specifictype_menu);
     edcrt_specifictype_menu = 0;
 }
 
-void edcrtcbCancelCrateTypesMenu(void)
+static inline void edcrtcbCancelCrateTypesMenu(void)
 {
     eduiMenuDestroy(edcrt_cratetypes_menu);
     edcrt_cratetypes_menu = 0;
 }
 
-void edcrtcbResetCratesMenu(struct eduimenu_s *menu)
-{
-    struct edcrtstyle_s style;
-
-    style = edcrt_menu_style;
-    edcrt_resetcrates_menu = eduiMenuCreate(0x46, 0x46, 0xFA, 0xFA, app_fnt,
-                                            edcrtcbCancelResetCratesMenu,
-                                            "Reset Crates");
-    if (edcrt_resetcrates_menu == 0)
-        return;
-    eduiMenuAddItem(edcrt_resetcrates_menu,
-                    eduiItemSelCreate(2, &style, 0, 0, edcrtcbResetCrates,
-                                      "Set Type 2 all to Type 1"));
-    eduiMenuAddItem(edcrt_resetcrates_menu,
-                    eduiItemSelCreate(3, &style, 0, 0, edcrtcbResetCrates,
-                                      "Set Type 3 all to NULL"));
-    eduiMenuAddItem(edcrt_resetcrates_menu,
-                    eduiItemSelCreate(4, &style, 0, 0, edcrtcbResetCrates,
-                                      "Set Type 4 all to NULL"));
-    eduiMenuAttach(menu, edcrt_resetcrates_menu);
-    edcrt_resetcrates_menu->x = menu->x + 10;
-    edcrt_resetcrates_menu->y = menu->y + 40;
-}
-
-void edcrtcbDisplayType(struct eduimenu_s *menu, struct eduiitem_s *item)
+static inline void edcrtcbDisplayType(struct eduimenu_s *menu, struct eduiitem_s *item)
 {
     edcrtDrawType = item->value;
     eduiMenuDetach(menu);
@@ -1091,33 +1068,33 @@ void edcrtcbDisplayType(struct eduimenu_s *menu, struct eduiitem_s *item)
     edcrt_specifictype_menu = 0;
 }
 
-void edcrtcbCancelDisplayTypeMenu(void)
+static inline void edcrtcbCancelDisplayTypeMenu(void)
 {
     eduiMenuDestroy(edcrt_displaytype_menu);
     edcrt_displaytype_menu = 0;
 }
 
-void edcrtcbTerrainToggle(void *menu, struct eduiitem_s *item)
+static inline void edcrtcbTerrainToggle(void *menu, struct eduiitem_s *item)
 {
-    edcrt_terrain = item->on;
+    edcrt_terrainlock = item->on;
 }
 
-void edcrtcbShowTriggersToggle(void *menu, struct eduiitem_s *item)
+static inline void edcrtcbShowTriggersToggle(void *menu, struct eduiitem_s *item)
 {
-    edcrt_showtriggers = item->on;
+    edcrt_showalltriggers = item->on;
 }
 
-void edcrtCbCancelOptMenu(void)
+static inline void edcrtCbCancelOptMenu(void)
 {
     edcrt_active_menu = 0;
 }
 
-void edcrtClose(void)
+static inline void edcrtClose(void)
 {
     eduiMenuDestroy(edcrt_options_menu);
 }
 
-void edcrtEnter(void)
+static inline void edcrtEnter(void)
 {
     ResetTimeTrial();
     ResetCheckpoint(-1, -1, 0, 0.0f);
@@ -1142,11 +1119,11 @@ void edcrtEnter(void)
     }
 }
 
-s32 edcrtProc(struct nupad_s *pad)
+static inline s32 edcrtProc(struct nupad_s *pad)
 {
     if (screendump)
         return 0;
-    edcrt_flashtimer += 6;
+    edcrt_count += 6;
     if (edcrt_active_menu) {
         eduiMenuProcess(edcrt_active_menu, pad);
         return 0;
@@ -1158,7 +1135,7 @@ s32 edcrtProc(struct nupad_s *pad)
     }
 }
 
-void edcrtRender(void)
+static inline void edcrtRender(void)
 {
     edcrtDrawInfo();
     edcamSet();
@@ -1171,50 +1148,30 @@ void edcrtRender(void)
     }
 }
 
-void edcrtcbMemCardCancelLoadEffectsMenu(void)
+static inline void edcrtcbMemCardCancelLoadEffectsMenu(void)
 {
     eduiMenuDestroy(edcrt_loadeffects_menu);
     edcrt_loadeffects_menu = 0;
 }
 
-void edcrtcbChangeFileName(void *menu, struct eduiitem_s *item)
+static inline void edcrtcbChangeFileName(void *menu, struct eduiitem_s *item)
 {
     strcpy(edcrt_mcfilename, item->u.textpick.text);
 }
 
-void edcrtcbCancelChangeFileNameMenu(void)
+static inline void edcrtcbCancelChangeFileNameMenu(void)
 {
     eduiMenuDestroy(edcrt_filename_menu);
     edcrt_filename_menu = 0;
 }
 
-void edcrtcbMemCardDeleteCrates(struct eduimenu_s *menu, struct eduiitem_s *item)
-{
-    struct eduimenu_s *parent = 0;
-    void (*cancel)(struct eduimenu_s *menu, struct eduimenu_s *parent);
-
-    sceMcDelete(0, 0, edcrt_mcdir[item->value].name);
-    sceMcSync(0, 0, &edcrt_mcresult);
-    if (menu->parent != 0) {
-        parent = menu->parent;
-        eduiMenuDetach(menu);
-    }
-    cancel = menu->cancel;
-    if (cancel)
-        cancel(menu, parent);
-    if (edcrt_mcresult < 0)
-        eduiCreateMessageMenu(parent, "File Delete Error", 0);
-    else
-        eduiCreateMessageMenu(parent, "File Delete OK", 1);
-}
-
-void edcrtcbMemCardCancelDeleteEffectsMenu(void)
+static inline void edcrtcbMemCardCancelDeleteEffectsMenu(void)
 {
     eduiMenuDestroy(edcrt_deleteeffects_menu);
     edcrt_deleteeffects_menu = 0;
 }
 
-void edcrtcbResetCrates(struct eduimenu_s *menu, struct eduiitem_s *item)
+static inline void edcrtcbResetCrates(struct eduimenu_s *menu, struct eduiitem_s *item)
 {
     s32 saved;
 
@@ -1229,8 +1186,16 @@ void edcrtcbResetCrates(struct eduimenu_s *menu, struct eduiitem_s *item)
     edcrt_specifictype_menu = 0;
 }
 
-void edcrtcbCancelResetCratesMenu(void)
+static inline void edcrtcbCancelResetCratesMenu(void)
 {
     eduiMenuDestroy(edcrt_resetcrates_menu);
     edcrt_resetcrates_menu = 0;
 }
+
+struct edmainreg_s edcrtdesc = {
+    0, 0, "Crate Editor", edcrtInit, edcrtClose, edcrtEnter, {0}, 0,
+    EDMAIN_BLOCKID('c', 'r', 'a', 't'), edcrtProc, edcrtRender
+};
+struct nuvec_s edcrt_cam_pos = { 0.0f, 0.0f, 0.0f };
+/* sceMcGetDir needs a 64-byte aligned table */
+struct mcdirent_s edcrt_mcdir[10] __attribute__((aligned(64))) = { { { 0 } } };

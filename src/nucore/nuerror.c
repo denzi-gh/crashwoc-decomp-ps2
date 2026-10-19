@@ -12,23 +12,29 @@ extern int NuFileWrite(void *handle, void *buf, int len);
 extern void NuDisableVBlankE(void);
 extern void NuEnableVBlankE(void);
 
-extern int D_0062E9DC;      /* echo messages to the console (TTY) */
-extern int D_0062E9E0;      /* log file has been created this run */
-extern char D_0062E9E8[];   /* log file name */
-extern char D_0062E9F0[];   /* trailer printed after an error */
-extern int D_0062E9F4;      /* re-entrancy guard for NuDebugMsgFunction */
-extern int D_0062E9F8;      /* debug message counter */
-extern char D_0062EA00[];   /* debug message line terminator */
-extern int errmsg_to_file;  /* write debug messages to the log file */
-
-extern char D_00613998[];   /* error header format */
-extern char D_006139B0[];   /* warning header format */
-extern char D_006139C8[];   /* debug message header format */
-extern char D_006139E8[];   /* assert message format */
+int errmsg_to_file = 0;         /* write debug messages to the log file */
+static int allow_printf = 1;    /* echo messages to the console (TTY) */
 
 extern char *D_0063300C;    /* full path of the reporting source file */
 extern char *D_00633010;    /* basename of the reporting source file */
 extern int D_00633014;      /* line number in the reporting source file */
+
+
+/* Creates the log file once per run. */
+static inline void NuErrorLogInit(void)
+{
+    static int initialised = 0;
+
+    if (initialised == 0) {
+        void *handle;
+
+        initialised = 1;
+        handle = NuFileOpen("nu2.err", 1);
+        if (handle) {
+            NuFileClose(handle);
+        }
+    }
+}
 
 
 void NuErrorFunction(const char *fmt, ...)
@@ -37,23 +43,15 @@ void NuErrorFunction(const char *fmt, ...)
     char hdr[0x100];
     va_list args;
 
-    if (D_0062E9E0 == 0) {
-        void *handle;
-
-        D_0062E9E0 = 1;
-        handle = NuFileOpen(D_0062E9E8, 1);
-        if (handle) {
-            NuFileClose(handle);
-        }
-    }
-    sprintf(hdr, D_00613998, D_00633010, D_00633014);
+    NuErrorLogInit();
+    sprintf(hdr, "NuError - %s(%d) : ", D_00633010, D_00633014);
     va_start(args, fmt);
     vsprintf(buf, fmt, args);
     va_end(args);
-    if (D_0062E9DC) {
+    if (allow_printf) {
         printf(hdr);
         printf(buf);
-        printf(D_0062E9F0);
+        printf("\n");
     }
     for (;;) {
     }
@@ -66,57 +64,44 @@ void NuWarningFunction(const char *fmt, ...)
     char hdr[0x100];
     va_list args;
 
-    if (D_0062E9E0 == 0) {
-        void *handle;
-
-        D_0062E9E0 = 1;
-        handle = NuFileOpen(D_0062E9E8, 1);
-        if (handle) {
-            NuFileClose(handle);
-        }
-    }
-    sprintf(hdr, D_006139B0, D_00633010, D_00633014);
+    NuErrorLogInit();
+    sprintf(hdr, "NuWarning - %s(%d) : ", D_00633010, D_00633014);
     va_start(args, fmt);
     vsprintf(buf, fmt, args);
     va_end(args);
-    if (D_0062E9DC) {
+    if (allow_printf) {
         printf(hdr);
         printf(buf);
-        printf(D_0062E9F0);
+        printf("\n");
     }
 }
 
 
 void NuDebugMsgFunction(const char *fmt, ...)
 {
+    static int err_msg_quiet = 0;
+    static int dbg_msg_cnt = 0;
     char buf[0x400];
     char msg[0x400];
     va_list args;
 
-    if (D_0062E9F4 == 0) {
+    if (err_msg_quiet == 0) {
         NuDisableVBlankE();
-        if (D_0062E9E0 == 0) {
-            void *handle;
-
-            D_0062E9E0 = 1;
-            handle = NuFileOpen(D_0062E9E8, 1);
-            if (handle) {
-                NuFileClose(handle);
-            }
-        }
-        sprintf(msg, D_006139C8, ++D_0062E9F8, D_00633010, D_00633014);
+        NuErrorLogInit();
+        sprintf(msg, "%05d NuDebugMsg - %s(%d) : ", ++dbg_msg_cnt, D_00633010,
+                D_00633014);
         va_start(args, fmt);
         vsprintf(buf, fmt, args);
         va_end(args);
         strcat(msg, buf);
-        strcat(msg, D_0062EA00);
+        strcat(msg, "\r\n");
         if (errmsg_to_file) {
             void *handle;
 
-            D_0062E9F4 = 1;
-            handle = NuFileOpen(D_0062E9E8, 2);
+            err_msg_quiet = 1;
+            handle = NuFileOpen("nu2.err", 2);
             if (handle == 0) {
-                handle = NuFileOpen(D_0062E9E8, 1);
+                handle = NuFileOpen("nu2.err", 1);
             } else {
                 NuFileSeek(handle, 0, 2);
             }
@@ -124,8 +109,8 @@ void NuDebugMsgFunction(const char *fmt, ...)
                 NuFileWrite(handle, msg, strlen(msg));
                 NuFileClose(handle);
             }
-            D_0062E9F4 = 0;
-        } else if (D_0062E9DC) {
+            err_msg_quiet = 0;
+        } else if (allow_printf) {
             printf(msg);
         }
         NuEnableVBlankE();
@@ -177,5 +162,5 @@ NuErrorFunc NuDebugMsgProlog(const char *file, int line)
 
 void NuAssertMsg(const char *msg, const char *file, int line)
 {
-    printf(D_006139E8, msg, file, line);
+    printf("NuAssert - %s(%d) : assert(%s) failed!", msg, file, line);
 }

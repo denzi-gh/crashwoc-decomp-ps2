@@ -43,7 +43,7 @@ way the retail assemblers did -- is laid out per section in retail function
 order, anchored where the retail references put it, and emitted into the
 pieces together with the named objects. Bytes that land in a data-map gap
 are the unit's `[[claim]]`s (promote.py --complete writes them; the image
-link then takes that gap range from this hybrid).
+link then takes each claimed span from this hybrid).
 
 Anything this tool cannot yet represent fails loudly instead of guessing:
 a declared function missing from the C, C data without a [[data]] table, in
@@ -54,6 +54,7 @@ Needs the EE GCC: run in the Containerfile image. All outputs are
 game-derived and land in the gitignored build/ tree.
 """
 import argparse
+import bisect
 import re
 import struct
 import subprocess
@@ -622,6 +623,7 @@ class Lit4Mapper:
         self._hi8 = self._lo8 + (h(lit8["size"]) if lit8 else 0)
         self._symbols = load_symbol_addrs(version)
         self._auto_re = AUTO_NAME_RE
+        self._version, self._objects = version, None
         # Initialized-data sections a hybrid may borrow a slot from by symbol
         # (never .sbss/.bss: those hold no file bytes to match against).
         self._data_ranges = [
@@ -659,6 +661,17 @@ class Lit4Mapper:
     def _in_init_data(self, addr, size):
         return any(lo <= addr and addr + size <= hi
                    for lo, hi in self._data_ranges)
+
+    def _in_named_object(self, addr):
+        """True when a sized data registry symbol covers addr."""
+        if self._objects is None:
+            from status import load_data_registry
+            self._objects = sorted(
+                (s["address"], s["address"] + s["size"])
+                for syms in load_data_registry(ROOT / "config" / self._version).values()
+                for s in syms.values() if s.get("size"))
+        i = bisect.bisect_right(self._objects, (addr, float("inf"))) - 1
+        return i >= 0 and self._objects[i][0] <= addr < self._objects[i][1]
 
     def _scan_addr(self, want, unit_dir, align):
         """Addresses in unit_dir's data ranges, at `align`, whose bytes ==
@@ -710,6 +723,14 @@ class Lit4Mapper:
                 continue
             if self._bytes_at(addr, len(want)) == want:
                 named.add(sym)
+        if len(named) > 1:
+            # A short aggregate (`""`, a zero word) also starts named objects
+            # (or fields of them) the slice touches; the compiler-private
+            # slot is the one address no registry object covers.
+            private = {s for s in named if not self._in_named_object(
+                self._address_of(s))}
+            if len(private) == 1:
+                named = private
         if len(named) == 1:
             return next(iter(named))
         if len(named) > 1:
@@ -1251,8 +1272,8 @@ def _rewrite_local_data(seg, local_data, version, unit_dir, name, addr,
 # Data sections whose owned ranges a hybrid with C data provides as pieces
 # (everything with file bytes; .sbss/.bss stay with the NOLOAD placeholders).
 PIECE_SECTIONS = (".data", ".rodata", ".lit4", ".sdata")
-# Sections C may own symbols in for now (.sdata: data/sdata, bss: data/bss).
-C_DATA_SECTIONS = (".data", ".rodata")
+# Sections C may own symbols in for now (.sbss/.bss: data/bss).
+C_DATA_SECTIONS = (".data", ".rodata", ".sdata")
 _RETAIL_CACHE = {}
 
 
@@ -1365,7 +1386,7 @@ def _plan_data(items, data, version, unit_dir, report):
         if not report and states.get(sym["address"]) == "matching":
             if sym["section"] not in C_DATA_SECTIONS:
                 raise HybridError(f"{sym['name']}: {sym['section']} data from C "
-                                  f"is not supported yet (data/sdata)")
+                                  f"is not supported yet (data/bss)")
             if item.size is not None and sym.get("size") is not None \
                     and item.size != sym["size"]:
                 raise HybridError(f"{sym['name']}: .size {item.size} != .symtab "
@@ -1384,6 +1405,22 @@ def _plan_data(items, data, version, unit_dir, report):
             raise HybridError(f"matching data at {', '.join(f'0x{a:08x}' for a in missing)} "
                               f"is not defined in {data['source']}")
     return rename, emit
+
+
+def _small_data_externs(items, emit, rename):
+    """`.extern NAME, size` for each compiled .sdata object the hybrid drops.
+
+    Its references then name an undefined symbol, and only the size keeps the
+    assembler addressing it gp-relative, as it did the defined object."""
+    kept = {id(item) for item, _sym in emit}
+    out = []
+    for item in items:
+        if item.section != ".sdata" or id(item) in kept:
+            continue
+        if item.size is None:
+            raise HybridError(f"{item.name}: small-data object without .size")
+        out.append(f"\t.extern\t{rename.get(item.name, item.name)}, {item.size}")
+    return out
 
 
 def _directive_size(line):
@@ -1490,6 +1527,17 @@ def _data_pieces(emit, unit_dir, version, bin_dir):
         pieces.append({"name": name, "section": section, "start": start,
                        "end": end, "objects": objects})
     return lines, pieces, retail
+
+
+_STRING_DIRECTIVE_RE = re.compile(r"^\s*\.(?:ascii|asciz|asciiz|string)\b")
+
+
+def _relabel_items(lines, rename, dups):
+    """Both relabels over a data object's directives; the text of a string
+    directive is never a symbol ("NuNodeRead: ..." keeps its name)."""
+    out = _relabel(_relabel_data(lines, rename), dups)
+    return [old if _STRING_DIRECTIVE_RE.match(old) else new
+            for old, new in zip(lines, out)]
 
 
 def _relabel_data(lines, rename):
@@ -1653,7 +1701,9 @@ def _attach_ranks(lines, stream, functions):
     An object travels with the function it is emitted for (the next `.end`
     after it, so a function's strings, jump tables and pools move with it
     when the C defines functions out of address order); a named object above
-    the first function stays first, anything after the last one goes last."""
+    the first function stays first, and so do the strings of initialisers
+    emitted before such an object; anything after the last function goes
+    last."""
     rank = {name: i for i, (_a, name, _s) in enumerate(functions)}
     ends, first_ent = [], None
     for i, line in enumerate(lines):
@@ -1666,11 +1716,16 @@ def _attach_ranks(lines, stream, functions):
                 raise HybridError(f"{m.group(1)}: compiled but not a function "
                                   f"of the unit (whole-unit layout)")
             ends.append((i, rank[m.group(1)]))
+    head = [item for item in stream
+            if first_ent is not None and item.line < first_ent]
+    last_named = max((item.line for item in head
+                      if not item.name.startswith("$")), default=-1)
     out = {}
-    for item in stream:
-        if first_ent is not None and item.line < first_ent \
-                and not item.name.startswith("$"):
+    for item in head:
+        if not item.name.startswith("$") or item.line < last_named:
             out[id(item)] = -1
+    for item in stream:
+        if id(item) in out:
             continue
         out[id(item)] = next((r for i, r in ends if i > item.line),
                              len(functions))
@@ -1786,21 +1841,20 @@ def _emit_atoms(atoms, lo, hi, labels):
 
 
 def _whole_unit_pieces(layout, unit_dir, version, bin_dir, ranges=None):
-    """(lines, pieces, retail, foreign, claims) for a whole-unit hybrid.
+    """(lines, pieces, retail, claims) for a whole-unit hybrid.
 
-    One piece per data-map range the unit owns or its layout reaches into:
-    the C bytes where its sections lie, retail `.incbin` elsewhere. Retail
-    bytes in an owned range are `retail` (they keep the unit from being
-    complete); in a gap range they are `foreign` filler, and the gap bytes
-    the unit does emit are its claims. Reaching into another unit's range
-    fails."""
+    One piece per data-map range the unit owns: the C bytes where its
+    sections lie, retail `.incbin` elsewhere (`retail`: those bytes keep the
+    unit from being complete). Bytes its layout emits in a gap range are a
+    claim, with a piece of exactly that span (the image link fills the rest
+    of the gap). Reaching into another unit's range fails."""
     if ranges is None:
         ranges = tomllib.loads((ROOT / "config" / version / "data_map.toml")
                                .read_text())["range"]
     spans = {sec: (base, base + max((p.offset + p.size for p in placed),
                                     default=0))
              for sec, (base, placed) in layout.items()}
-    lines, pieces, retail, foreign, claims = [], [], [], [], []
+    lines, pieces, retail, claims = [], [], [], []
     bin_dir.mkdir(parents=True, exist_ok=True)
     for r in sorted(ranges, key=lambda r: r["start"]):
         sec = r["section"]
@@ -1817,12 +1871,13 @@ def _whole_unit_pieces(layout, unit_dir, version, bin_dir, ranges=None):
                                   f"{r['owner']}'s range 0x{start:08x}-"
                                   f"0x{end:08x}")
             claims.append((sec, lo, hi))
+            start, end = lo, hi
         name = piece_name(sec, start)
         blob = bin_dir / f"{name}.bin"
         blob.write_bytes(_retail_bytes(version, sec, start, end))
         flags = "a" if sec == ".rodata" else "aw"
         lines += [f'\t.section\t{name},"{flags}",@progbits', "\t.align\t0"]
-        filler = retail if r["owner"] == unit_dir else foreign
+        filler = retail
         objects = []
         if lo < hi:
             base, placed = layout[sec]
@@ -1860,7 +1915,7 @@ def _whole_unit_pieces(layout, unit_dir, version, bin_dir, ranges=None):
                    for p in pieces):
             raise HybridError(f"{unit_dir}: its {sec} data at 0x{base:08x} is "
                               f"in no data-map range")
-    return lines, pieces, retail, foreign, sorted(claims)
+    return lines, pieces, retail, sorted(claims)
 
 
 def _build_whole_unit(data, out_o, link_set, version, plan=False):
@@ -1897,7 +1952,7 @@ def _build_whole_unit(data, out_o, link_set, version, plan=False):
     for item, sym in _registry_map(items, version, unit_dir):
         if sym["section"] not in C_DATA_SECTIONS:
             raise HybridError(f"{sym['name']}: {sym['section']} data from C "
-                              f"is not supported yet (data/sdata)")
+                              f"is not supported yet (data/bss)")
         if states.get(sym["address"]) not in ("matching", "retail"):
             raise HybridError(f"{sym['name']}: [[data]] entry is not done")
         item_syms[id(item)] = sym
@@ -1905,7 +1960,7 @@ def _build_whole_unit(data, out_o, link_set, version, plan=False):
             rename[item.name] = sym["name"]
     dups = _duplicate_static_labels(functions, version)
     for item in stream:
-        item.lines = _relabel(_relabel_data(item.lines, rename), dups)
+        item.lines = _relabel_items(item.lines, rename, dups)
     for lbl, addr in _data_pointer_anchors(stream, item_syms, version).items():
         if labels.setdefault(lbl, addr) != addr:
             raise HybridError(f"{lbl}: the code borrows 0x{labels[lbl]:08x}, "
@@ -1921,7 +1976,7 @@ def _build_whole_unit(data, out_o, link_set, version, plan=False):
                                      base + p.offset + p.size)
                 p.atoms = [a for a in p.atoms if a[0] < p.offset] \
                     + [(p.offset, blob)]
-    piece_lines, pieces, retail, foreign, claims = _whole_unit_pieces(
+    piece_lines, pieces, retail, claims = _whole_unit_pieces(
         layout, unit_dir, version, out_o.parent / f"{out_o.stem}_data")
     if plan:
         return claims
@@ -1949,8 +2004,7 @@ def _build_whole_unit(data, out_o, link_set, version, plan=False):
     unit_s = _assemble_unit(out_o, out_lines + piece_lines,
                             profile_g_flag(profile, version),
                             allowed=[p["name"] for p in pieces])
-    _write_data_report(out_o, pieces, retail, [], version, foreign=foreign,
-                       claims=claims)
+    _write_data_report(out_o, pieces, retail, [], version, claims=claims)
     return unit_s
 
 
@@ -1981,10 +2035,11 @@ def _compile_and_split(data, out_o, link_set, version, report=False):
     items = []
     prologue, segments, local_data = parse_s(cs.read_text(), items)
     data_rename, emit = _plan_data(items, data, version, unit_dir, report)
-    prologue = _relabel_data(prologue, data_rename)
+    prologue = _relabel_data(prologue, data_rename) \
+        + _small_data_externs(items, emit, data_rename)
     segments = [(name, _relabel_data(seg, data_rename)) for name, seg in segments]
     for item, _sym in emit:
-        item.lines = _relabel_data(item.lines, data_rename)
+        item.lines = _relabel_items(item.lines, data_rename, {})
     rename = _duplicate_static_labels(functions, version)
     prologue = _relabel(prologue, rename)
     segments = [(name, _relabel(seg, rename)) for name, seg in segments]
@@ -2102,20 +2157,16 @@ def data_report_path(out_o):
     return out_o.with_name(out_o.stem + ".data.json")
 
 
-def _write_data_report(out_o, pieces, retail, borrowed, version, foreign=None,
-                       claims=None):
+def _write_data_report(out_o, pieces, retail, borrowed, version, claims=None):
     """The sidecar: pieces, retail byte ranges in owned ranges, borrowed
-    compiler-private slots; a whole-unit hybrid adds its claims and the
-    retail filler of the gap ranges it supplies (`foreign`)."""
+    compiler-private slots; a whole-unit hybrid adds its claims."""
     slots = [{"symbol": sym, "address": _symbol_address(sym, version)}
              for sym in dict.fromkeys(borrowed)]
     report = {"schema": 1, "pieces": pieces,
               "retail": [[lo, hi] for lo, hi in retail],
               "borrowed": slots}
     if claims is not None:
-        report.update(whole_unit=True,
-                      claims=[list(c) for c in claims],
-                      foreign=[[lo, hi] for lo, hi in foreign or []])
+        report.update(whole_unit=True, claims=[list(c) for c in claims])
     import json
     data_report_path(out_o).write_text(json.dumps(report, indent=1) + "\n")
 

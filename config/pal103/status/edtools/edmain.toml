@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0084"
 source = "src/edtools/edmain.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0084:001b7840:edmainCreateMainMenu"
@@ -89,36 +89,46 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0084:0062f8c8:ed_init"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0084:0062f8cc:ed_list"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0084:0062f8d0:ed_curr"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0084:0062f8d4:ed_module_active"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0084:0062f8d8:ed_main_menu"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0084:0062f8dc:ed_cfg_menu"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0084:0062f8e0:ed_fnt"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0084:0062f8e4:edmaincam"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0084:0062f8e8:ed_loc"
-state = "asm"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x0061a790
+end = 0x0061a79e
+
+[[claim]]
+section = ".sdata"
+start = 0x0062f8ec
+end = 0x0062f8f5

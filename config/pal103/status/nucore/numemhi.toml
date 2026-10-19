@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0006"
 source = "src/nucore/numemhi.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0006:00105688:NuAllocHighInit"
@@ -25,4 +25,9 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0006:0062ea28:freep"
-state = "asm"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x00613d18
+end = 0x00613d4b

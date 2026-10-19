@@ -46,7 +46,10 @@ and pools from C, gen_hybrid), writes the `[[claim]]` table of the gap bytes
 that layout emits, and runs the verifier, which then also proves the unit's
 pieces carry no retail bytes beyond its `retail` entries and equal retail;
 it rolls back on failure. On a unit that is already complete it refreshes
-the claims.
+the claims. It also promotes the unit's `asm` entries that lie outside every
+range the unit owns (an unsized trailing symbol in a data-map gap): only the
+whole-unit layout can place those, so promoting such an id directly is
+refused.
 
 Needs the toolchain for the verify step: run via
 `python tools/dispatch.py python tools/promote.py ...` from the host.
@@ -237,6 +240,19 @@ def init_data(version, source):
     return 0
 
 
+def whole_unit_only(version, data):
+    """The unit's `asm` [[data]] ids only its whole-unit layout can place.
+
+    Each lies outside every range the unit owns (an unsized trailing symbol
+    in a data-map gap: its size is the compiled one, and the layout claims
+    those gap bytes), so `--complete` promotes it with the unit."""
+    from gen_hybrid import unit_data_ranges
+    ranges = unit_data_ranges(version, data["unit"].split(":")[1])
+    return [e["id"] for e in data.get("data", []) if e["state"] == "asm"
+            and not any(r["start"] <= int(e["id"].split(":")[2], 16) < r["end"]
+                        for r in ranges)]
+
+
 def set_complete(text):
     """Manifest text with `complete = true` (exactly once)."""
     if re.search(r"^complete = true\r?$", text, flags=re.M):
@@ -322,7 +338,11 @@ def main():
             originals[manifest] = read_manifest(manifest)
         try:
             for manifest, text in originals.items():
-                write_manifest(manifest, set_complete(text))
+                text = set_complete(text)
+                for did in whole_unit_only(args.version, tomllib.loads(text)):
+                    text = flip_state(text, did, "matching")
+                    print(f"{did}: asm -> matching (whole-unit layout)")
+                write_manifest(manifest, text)
                 claims = plan_claims(manifest, args.version)
                 write_manifest(manifest, write_claims(read_manifest(manifest),
                                                       claims))
@@ -361,6 +381,10 @@ def main():
         if state == "matching":
             print(f"{fid} is already `matching` in {rel}; nothing to do.")
             continue
+        if fid in whole_unit_only(args.version, tomllib.loads(manifest.read_text())):
+            raise SystemExit(f"promote: {fid} lies outside the ranges its unit "
+                             f"owns; only the whole-unit layout places it: "
+                             f"promote.py --complete {fid.rsplit(':', 2)[0]}")
         pending.append((manifest, fid, state))
     if not pending:
         return 0

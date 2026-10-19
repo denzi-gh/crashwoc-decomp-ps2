@@ -41,20 +41,20 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0003:0062e9d8:errmsg_to_file"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0003:0062e9dc:allow_printf"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0003:0062e9e0:initialised.69"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0003:0062e9f4:err_msg_quiet.88"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0003:0062e9f8:dbg_msg_cnt.89"
-state = "asm"
+state = "matching"

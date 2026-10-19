@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0086"
 source = "src/edtools/edcam.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0086:001c1cf8:edcamMove"
@@ -65,4 +65,4 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0086:0062f99c:ed_cam"
-state = "asm"
+state = "matching"

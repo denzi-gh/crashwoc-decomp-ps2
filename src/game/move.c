@@ -64,11 +64,7 @@ extern s32 FlyingLevelVictoryDance;
 extern s32 Level;
 extern s32 SmokeyCountDownValue;
 extern struct RPos_s *best_cRPos;
-extern f32 D_0062E844;
 extern s32 FireBossHoldPlayer;
-extern f32 SCOOTERJUMPPAUSEFRAME;
-extern f32 FIREENGINERUNNINGJUMPPAUSEFRAME;
-extern f32 FIREENGINESTANDINGJUMPPAUSEFRAME;
 
 extern struct nupad_s *Pad[];
 
@@ -507,6 +503,59 @@ struct nuvec_s gyropos = { 0.0f, 0.0f, 0.0f };
 struct nuvec_s TempTubPos = { 0.0f, 0.0f, 0.0f };
 u16 ring_xrot[48] = { 0 };
 u16 ring_yrot[48] = { 0 };
+f32 GRAVITY = -0.0072000003f;
+f32 TERMINALVELOCITY = 0.24f;
+s32 MAXLAPS = 3;
+f32 SWEEPATTACKSTARTTIME = 15.0f;
+f32 SWEEPATTACKENDTIME = 25.0f;
+f32 SCOOTERJUMPPAUSEFRAME = 12.0f;
+f32 SNOWBOARDJUMPPAUSEFRAME = 22.0f;
+f32 OFFROADERSPEEDTIME = 2.0f;
+s16 jeepsfx[4] = { 87, 102, 108, 107 };
+s32 i_jkeepsfx = -1;
+f32 MECHRUNNINGJUMPPAUSEFRAME = 31.0f;
+f32 MECHSTANDINGJUMPPAUSEFRAME = 43.0f;
+f32 FIREENGINERUNNINGJUMPPAUSEFRAME = 31.0f;
+f32 FIREENGINESTANDINGJUMPPAUSEFRAME = 43.0f;
+f32 CARPETTIME = 90.0f;
+s32 carpet_character[2] = { 14, -1 };
+s32 carpet_place = 1;
+struct CharacterModel *carpet_model[2] = { 0 };
+s32 carpet_action = 29;
+s32 carpet_overlap = 0;
+f32 FASTMINECARTMUL = 20.0f;
+f32 SLOWMINECARTMUL = 1.0f;
+s32 cart_sfx = -1;
+f32 TUBWAIT = 12.0f;
+f32 TUBBOOSTFRAMES = 50.0f;
+s32 plr_tub_tilt = 0;
+s32 plr_tub_tilttarget = 0;
+s32 plr_tub_tiltlock = 10;
+s32 tub_overlap = 0;
+s32 plr_gates = 0;
+s32 GATECOUNT = 0;
+u64 gate_bits = 0;
+s32 i_ring = 0;
+s32 RINGCOUNT = 0;
+f32 RINGPULL = 0.001f;
+f32 VEHICLETIME = 0.0f;
+f32 plr_vehicle_time = 0.0f;
+f32 plr_vehicle_speedmul = 0.0f;
+s32 plr_tocam_wait = 0;
+s32 plr_tocam_turn = 0;
+s32 plr_tumblehack = 0;
+f32 offroader_speedtime = 0.0f;
+f32 CARPETLOOPTIME = 0.0f;
+u16 carpet_yrot = 0;
+u16 carpet_xrot = 0;
+f32 carpet_time = 0.0f;
+s32 carpet_panelpos = 0;
+struct tracklink_s *TubLink = 0;
+s32 race_finished = 0;
+s32 opptub_action = 0;
+s32 opptub_wait = 0;
+u16 arrow_xrot = 0;
+u16 arrow_yrot = 0;
 
 extern struct spltab_s SplTab[];
 extern struct tersurface_s TerSurface[];
@@ -515,23 +564,13 @@ extern s32 last_hub;
 extern s32 tumble_action;
 extern f32 tumble_time;
 extern f32 tumble_duration;
-extern s32 plr_tumblehack;
 extern s32 plr_rebound;
 extern f32 FALLONCRATEBREAKSPEED;
 extern struct chase_s Chase[3];
-extern s32 plr_tocam_wait;
-extern s32 plr_tocam_turn;
 extern struct nugscn_s *world_scene[];
-extern struct CharacterModel *carpet_model[2];
-extern s32 carpet_character[2];
-extern u16 carpet_xrot;
-extern u16 carpet_yrot;
 extern struct objtab_s ObjTab[];
 extern struct gtimer_s GameTimer;
 extern struct cammtx_s GameCam[];
-extern s32 GATECOUNT;
-extern s32 plr_gates;
-extern u64 gate_bits;
 extern s32 bonusgem_ok;
 extern s32 LineCrossed(f32 xold, f32 zold, f32 xnew, f32 znew,
                        f32 x0, f32 z0, f32 x1, f32 z1);
@@ -541,8 +580,6 @@ extern void GameSfx(s32 sfx, struct nuvec_s *pos);
 extern s32 temp_iRAIL;
 extern s32 temp_iALONG;
 extern f32 temp_fALONG;
-extern u16 arrow_xrot;
-extern u16 arrow_yrot;
 
 s32 RotDiff(u16 a, u16 b);
 void AddGameDebrisRot(s32 i, struct nuvec_s *pos, s32 n, u16 xrot, u16 yrot);
@@ -569,12 +606,9 @@ extern struct game_s Game;
 extern u8 D_00591FDE[];
 #define menu_mode ((s8)D_00591FDE[0])
 extern s32 fadeval;
-extern f32 GRAVITY;
 extern s32 plr_allow_jump;
 void AddGameDebris(s32 type, struct nuvec_s *pos);
 extern s32 gamesfx_effect_volume;
-extern s32 RINGCOUNT;
-extern s32 i_ring;
 extern void ResetLights(struct Nearest_Light_s *lights);
 extern f32 NuTrigTable[];
 extern s32 ExtraMoves;
@@ -1237,9 +1271,6 @@ void MoveSWIMMING(struct creature_s *plr, struct nupad_s *pad) {
 }
 
 
-extern f32 SWEEPATTACKSTARTTIME;
-extern f32 SWEEPATTACKENDTIME;
-
 void MoveCOCO(struct creature_s *plr, struct nupad_s *pad) {
     struct MoveInfo *minfo = &CocoMoveInfo;
     s32 can_jump;
@@ -1674,13 +1705,6 @@ extern u16 D_005E7A82[];
 #define gyro_loop_sfx_volume D_005E7A82[0]
 extern f32 CRATEBALLOONOFFSET;
 extern f32 CRATEBALLOONRADIUS;
-extern s32 carpet_action;
-extern f32 carpet_time;
-extern s32 carpet_place;
-extern s32 carpet_panelpos;
-extern s32 carpet_overlap;
-extern f32 CARPETTIME;
-extern f32 CARPETLOOPTIME;
 extern struct cratecube_s *temp_pCrate;
 struct creature_s *FindClock(void);
 void StartTimeTrial(struct nuvec_s *pos, s32 clock);
@@ -1971,15 +1995,9 @@ void MoveSUBMARINE(struct creature_s *plr, struct nupad_s *pad) {
 }
 
 
-extern f32 FASTMINECARTMUL;
-extern f32 SLOWMINECARTMUL;
-extern f32 plr_vehicle_speedmul;
-extern f32 plr_vehicle_time;
-extern f32 VEHICLETIME;
 extern s32 VEHICLECONTROL;
 extern struct nuvec_s v000;
 extern s32 temp_crate_type;
-extern s32 cart_sfx;
 
 void MoveMINECART(struct creature_s *plr, struct nupad_s *pad) {
     struct obj_s obj;
@@ -2159,7 +2177,6 @@ void ResetRings(void) {
 }
 
 extern struct rail_s Rail[];
-extern f32 RINGPULL;
 
 inline void UpdateArrow(struct nuvec_s *target, struct nuvec_s *origin) {
     struct nuvec_s d;
@@ -2290,9 +2307,6 @@ void DrawRings(void) {
         }
     }
 }
-
-extern f32 MECHSTANDINGJUMPPAUSEFRAME;
-extern f32 MECHRUNNINGJUMPPAUSEFRAME;
 
 
 void MoveMECH(struct creature_s *plr, struct nupad_s *pad) {
@@ -2580,8 +2594,6 @@ void MoveSNOWBOARD(struct creature_s *plr, struct nupad_s *pad) {
 }
 
 
-extern f32 SNOWBOARDJUMPPAUSEFRAME;
-
 void AnimateSNOWBOARD(struct creature_s *plr) {
     s32 d;
 
@@ -2622,11 +2634,7 @@ void AnimateSNOWBOARD(struct creature_s *plr) {
 }
 
 extern s32 jonframe1;
-extern s32 i_jkeepsfx;
-extern s16 jeepsfx[4];
 extern s32 SmokeyFinished;
-extern f32 offroader_speedtime;
-extern f32 OFFROADERSPEEDTIME;
 extern struct gdeb_s GDeb[];
 void PlayerHitBuggies(struct creature_s *c);
 s32 ChaseActive(void);
@@ -2801,7 +2809,7 @@ void AnimateOFFROADER(struct creature_s *plr) {
         if ((Level == 3) &&
             ((Pad[0] == 0) || ((Pad[0]->paddata & 0x60) == 0) ||
              (SmokeyCountDownValue > 0)) &&
-            (plr->obj.xz_distance < D_0062E844)) {
+            (plr->obj.xz_distance < 0.02f)) {
             plr->obj.anim.newaction = 0x62;
         } else if (d >= 0x801) {
             plr->obj.anim.newaction = 0x67;
@@ -3027,9 +3035,6 @@ inline void ResetTub(struct tubinfo_s *tub, struct creature_s *c) {
     tub->boost = 0;
 }
 
-extern s32 opptub_action;
-extern s32 opptub_wait;
-
 /* Puts the player and the rival tub at the start, the rival halfway
    between the two start splines. */
 void ResetTubs(void) {
@@ -3075,11 +3080,6 @@ void ResetTubs(void) {
 
 
 
-extern f32 TUBBOOSTFRAMES;
-extern f32 TUBWAIT;
-extern s32 race_finished;
-extern s32 MAXLAPS;
-extern struct tracklink_s *TubLink;
 extern s32 gempath_open;
 extern s32 GemPath;
 f32 SplineDistance(struct nugspline_s *spl);
@@ -3293,10 +3293,6 @@ void MoveTub(struct tubinfo_s *tub, s32 LEFT, s32 RIGHT) {
         VEHICLECONTROL = control;
     }
 }
-extern s32 plr_tub_tilt;
-extern s32 plr_tub_tilttarget;
-extern s32 plr_tub_tiltlock;
-extern s32 tub_overlap;
 
 void MoveMINETUB(struct creature_s *plr, struct nupad_s *pad) {
     struct nuvec_s d;

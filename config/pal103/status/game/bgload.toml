@@ -45,8 +45,8 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0120:00632b90:bgload_complete"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0120:00632b94:loadthread_id"
-state = "asm"
+state = "matching"

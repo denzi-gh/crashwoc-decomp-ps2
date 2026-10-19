@@ -368,18 +368,21 @@ state = "matching"        # asm | matching | retail (retail needs a `reason`)
   registry address, every other byte a retail `.incbin`), and a sidecar
   `<object>.data.json` (pieces, retail byte ranges, borrowed slots). C data
   of an `asm`/`retail` entry is dropped and its references renamed onto the
-  retail symbol (`D_<VRAM>` for statics). Hard errors: C data without a
-  `[[data]]` table, a section other than the registry's
+  retail symbol (`D_<VRAM>` for statics; a dropped `.sdata` object gets an
+  `.extern NAME, size`, so its loads stay gp-relative). Hard errors: C data
+  without a `[[data]]` table, a section other than the registry's
   (`data_section_mismatch`: `const`, `-G`), `.size` != `.symtab` size,
-  overlaps, `.sdata`/`.sbss`/`.bss`/COMMON data from C.
+  overlaps, `.sbss`/`.bss`/COMMON data from C.
 - **link_image** takes such a unit's ranges from its hybrid (file-qualified
   patterns) and leaves its expected data object out - one data provider per
   unit; every range is `ASSERT`ed at its address. A gap range a `complete`
-  unit `[[claim]]`s bytes in comes from that unit's hybrid too.
+  unit `[[claim]]`s bytes in comes from the claimants' hybrids (one
+  piece per claimed span, retail bytes for the rest of the gap).
 - **verify_promoted** links the hybrid with its pieces at their addresses
   (`declib.verify.link_unit_at`), compares each `matching` entry over
   `[addr, addr+size)` (size from `.symtab`/STABS; an unsized object's compiled
-  size only with at most 15 zero bytes left to the next item) and its linked
+  size only with at most 15 zero bytes left to the next item, or exactly the
+  zero pad that aligns it, up to 128) and its linked
   symbol address, and reports them under `"data"` in `verify_results.json`.
 - **`complete = true`** (only `promote.py --complete <unit id>...` writes it)
   switches the unit's hybrid to whole-unit mode: its compiler-private data
@@ -387,7 +390,9 @@ state = "matching"        # asm | matching | retail (retail needs a `reason`)
   pool) is laid out in retail order the way the assembler did, anchored by
   the retail references, and emitted from C; gap bytes it emits past the
   unit's ranges are the manifest's `[[claim]]`s (written by `--complete`,
-  validated by `status.py`). It needs every function `matching`, every data
+  validated by `status.py`); `--complete` also promotes the `asm` entries
+  only that layout can place (an unsized symbol past the unit's ranges). It
+  needs every function `matching`, every data
   entry `matching`/`retail`, no retail bytes in the unit's ranges beyond its
   `retail` entries, no borrowed slot, every linked piece equal to retail, and
   no owned `.sbss`/`.bss`.

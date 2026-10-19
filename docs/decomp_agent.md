@@ -204,11 +204,13 @@ C defines a global only when all of this holds:
 - it is a registry symbol of that unit, defined under its retail name and
   storage: `static` where retail is static, `const` for `.rodata`, a function
   static inside the function that references it;
-- its section is `.rodata` or `.data`;
+- its section is `.rodata`, `.data` or `.sdata` (under `-G8` every object of
+  at most 8 bytes is small data, addressed gp-relative; a zero object needs an
+  explicit `= 0`, or it becomes COMMON);
 - `promote_matching` (tools/promote.py) verified it: its bytes over
   `[addr, addr+size)` and its linked address equal retail.
 
-Everywhere else - partially matched units, `.sdata`, `.sbss`/`.bss`, COMMON -
+Everywhere else - partially matched units, `.sbss`/`.bss`, COMMON -
 reference retail data with registered names or `extern D_...` symbols taken
 from the PS2 disassembly, `target-asm`, `asm/text.s` or
 `config/pal103/symbol_addrs.txt`, with readable aliases:
@@ -221,9 +223,11 @@ extern struct nulsthdr_s *D_006309FC;
 Compiler-private data (`$LC` strings and aggregates, jump tables, `li.d`
 pools) and the unit's `.lit4` pool are borrowed retail slots until the unit
 is `complete`; then its hybrid runs in whole-unit mode and emits them from C
-(below). `.sdata` symbols wait for `data/sdata`, `.sbss`/`.bss` for
-`data/bss`. A raw binary asset (a font bitmap) keeps its retail bytes with
-`state = "retail"` and a `reason`, set by hand like `equivalent`.
+(below). `.sbss`/`.bss` statics wait for `data/bss`. A raw binary asset (a
+font bitmap) keeps its retail bytes with `state = "retail"` and a `reason`,
+set by hand like `equivalent`. An `.sdata` symbol the C still reaches
+through `extern` keeps its retail address and its gp-relative loads (the
+hybrid declares it `.extern NAME, size`).
 
 If compile_diff reaches 100% but the hybrid build fails with "data section in
 compiler output not supported yet", a file-scope definition slipped into a
@@ -244,12 +248,21 @@ built inline, nothing merged - and anchors each section where the code's and
 the data pointers' retail references put it. Bytes it emits past the unit's
 own ranges (a jump table or strings after its last code reference) lie in
 data-map gaps; `promote.py --complete` records them as `[[claim]]`
-(`section`, `start`, `end`), and the image link takes such a gap range from
-the claimant's hybrid (C bytes where claimed, retail elsewhere). Re-run
-`--complete` after a C change moves them. Typical C work to get there:
-string literals instead of `extern char D_...[]`, float literals instead of
-`extern f32 D_...` `.lit4` slots, functions in retail order where they emit
-data.
+(`section`, `start`, `end`), and the image link takes each claimed span from
+its claimant's hybrid (several units may claim spans of one gap; the
+unclaimed bytes stay retail). Re-run
+`--complete` after a C change moves them. An unsized symbol past the unit's
+own ranges (a trailing function static in a gap, bitconv `block_table32.83`)
+can only be placed by that layout: `promote.py --complete` promotes its
+`asm` entry together with the unit. Typical C work to get there: string
+literals instead of `extern char D_...[]`, float literals instead of
+`extern f32 D_...` `.lit4` slots, definitions placed before the function
+retail emits them with (a function static goes out when its function is
+parsed, an `inline` function's statics and literals where it is defined or
+first inlined; a non-`static` `inline` function's own code goes to the end of
+the unit, which is how retail ends up with functions whose data sits far
+from their code), and the literals of dead statements kept when retail has
+them (GCC 2.95 emits a string constant even for unreachable code).
 
 ### Per-unit data workflow
 
@@ -278,7 +291,7 @@ no open `decomp/*` PR or running batch, and no NuWorld `NW_HOST` PR touches it.
    `status.py --check`, `check_types.py --check` (update the census if the
    extern counts moved), unit tests, CRLF byte check.
 
-Order by section: `.rodata`, then `.data`. Never in this workflow:
+Order by section: `.rodata`, `.data`, `.sdata`. Never in this workflow:
 compiler-private data and the `.lit4` pool in partially matched units (they
 stay borrowed until `--complete`).
 

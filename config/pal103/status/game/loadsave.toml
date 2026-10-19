@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0119"
 source = "src/game/loadsave.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0119:0025ad80:UpdateSaveSlots"
@@ -41,100 +41,100 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0119:00632b18:loadsave_frame"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0119:00632b1c:memcard_in"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0119:00632b20:memcard_formatted"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0119:00632b24:memcard_gamesavailable"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0119:00632b28:memcard_loadattempted"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0119:00632b2c:memcard_loadcompleted"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0119:00632b30:memcard_loadfailed"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0119:00632b34:memcard_saveneeded"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0119:00632b38:memcard_savestarted"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0119:00632b3c:memcard_savefailed"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0119:00632b40:memcard_deleteneeded"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0119:00632b44:memcard_deletestarted"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0119:00632b48:memcard_deletefailed"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0119:00632b4c:memcard_formatme"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0119:00632b50:memcard_formatting"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0119:00632b54:memcard_formatfailed"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0119:00632b58:memcard_loadmessage_delay"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0119:00632b5c:memcard_savemessage_delay"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0119:00632b60:memcard_formatmessage_delay"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0119:00632b64:memcard_loadresult_delay"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0119:00632b68:memcard_saveresult_delay"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0119:00632b6c:SLOTPANELSX"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0119:00632b70:SLOTPANELSZ"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0119:00632b88:SLOTPANELDX"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0119:00632b8c:SLOTPANELDY"
-state = "asm"
+state = "matching"

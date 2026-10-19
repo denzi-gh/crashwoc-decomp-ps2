@@ -19,14 +19,13 @@
 extern void NuMemFreeFn(void *ptr, char *file, int line);
 
 /* Retail-owned (no Data-from-C yet). */
-extern char D_0061F2E8[];                /* source file name */
 extern int D_0063326C;
 extern char *D_00633270;
-#define visi_srcfile D_0061F2E8
 #define vscnt D_0063326C
 #define vsdata D_00633270
 
 struct nuvec_s xpnt = { -100000.0f, -100000.0f, -100000.0f };
+int hide = -1;
 
 /* One visibility zone: the instances to show while inside spline sp. */
 struct visidat_s {
@@ -124,7 +123,6 @@ void ApplyVisiTable(struct nugscn_s *sc, struct nuvec_s *pos)
     }
 }
 
-extern char D_00631318[];               /* "vis" */
 extern void *NuMemAllocFn(int size, char *file, int line);
 
 /* Builds a visidat_s for every spline whose name contains "vis", listing the
@@ -137,7 +135,7 @@ void BuildVisiTable(struct nugscn_s *gsc)
 
     vscnt = 0;
     for (n = 0, ocnt = 0; n < gsc->numsplines; n++) {
-        if (strstr(gsc->splines[n].name, D_00631318) != 0) {
+        if (strstr(gsc->splines[n].name, "vis") != 0) {
             vscnt++;
             ocnt += VSAddObjs(0, gsc, &gsc->splines[n]);
         }
@@ -147,12 +145,12 @@ void BuildVisiTable(struct nugscn_s *gsc)
     if (ocnt != 0) {
         vsdata = NuMemAllocFn(vscnt * sizeof(struct visidat_s)
                               + ocnt * sizeof(struct nuinstance_s *),
-                              visi_srcfile, 0xAA);
+                              ".\\visi.c", 0xAA);
         if (vsdata != 0) {
             vd = (struct visidat_s *)vsdata;
             vscnt = 0;
             for (n = 0; n < gsc->numsplines; n++) {
-                if (strstr(gsc->splines[n].name, D_00631318) != 0) {
+                if (strstr(gsc->splines[n].name, "vis") != 0) {
                     visidat[vscnt] = vd;
                     vscnt++;
                     ocnt = VSAddObjs(vd->i, gsc, &gsc->splines[n]);
@@ -168,7 +166,7 @@ void BuildVisiTable(struct nugscn_s *gsc)
 
 void ReleaseVisiTable(void) {
     if (vsdata != 0) {
-        NuMemFreeFn(vsdata, visi_srcfile, 0xC0);
+        NuMemFreeFn(vsdata, ".\\visi.c", 0xC0);
     }
     vscnt = 0;
     vsdata = 0;

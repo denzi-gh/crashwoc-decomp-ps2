@@ -24,41 +24,35 @@ extern struct objtab_s ObjTab[];
 extern u8 CLetter[];
 extern char *tEMPTY[];
 extern char tbuf[];
-extern char D_00632B78[];
-extern char D_00632B80[];
-#define percent_format D_00632B78
-#define count_format D_00632B80
-
-extern float SLOTPANELSX;
-extern float SLOTPANELSZ;
-extern float SLOTPANELDX;
-extern float SLOTPANELDY;
 
 extern s32 saveload_status;
 extern s32 saveload_error;
 extern s32 saveload_cardtype;
 extern s32 saveload_cardformatted;
 
-extern s32 memcard_in;
-extern s32 memcard_formatted;
-extern s32 memcard_gamesavailable;
-extern s32 memcard_loadattempted;
-extern s32 memcard_loadcompleted;
-extern s32 memcard_loadfailed;
-extern s32 memcard_saveneeded;
-extern s32 memcard_savestarted;
-extern s32 memcard_savefailed;
-extern s32 memcard_deleteneeded;
-extern s32 memcard_deletestarted;
-extern s32 memcard_deletefailed;
-extern s32 memcard_formatme;
-extern s32 memcard_formatting;
-extern s32 memcard_formatfailed;
-extern s32 memcard_loadmessage_delay;
-extern s32 memcard_savemessage_delay;
-extern s32 memcard_saveresult_delay;
-extern s32 memcard_formatmessage_delay;
-extern s32 memcard_loadresult_delay;
+s32 loadsave_frame = 0;
+s32 memcard_in = 0;
+s32 memcard_formatted = 0;
+s32 memcard_gamesavailable = 0;
+s32 memcard_loadattempted = 0;
+s32 memcard_loadcompleted = 0;
+s32 memcard_loadfailed = 0;
+s32 memcard_saveneeded = 0;
+s32 memcard_savestarted = 0;
+s32 memcard_savefailed = 0;
+s32 memcard_deleteneeded = 0;
+s32 memcard_deletestarted = 0;
+s32 memcard_deletefailed = 0;
+s32 memcard_formatme = 0;
+s32 memcard_formatting = 0;
+s32 memcard_formatfailed = 0;
+s32 memcard_loadmessage_delay = 0;
+s32 memcard_savemessage_delay = 0;
+s32 memcard_formatmessage_delay = 0;
+s32 memcard_loadresult_delay = 0;
+s32 memcard_saveresult_delay = 0;
+float SLOTPANELSX = 0.12f;
+float SLOTPANELSZ = 0.08f;
 
 extern void saveloadASCallEachFrame(void);
 extern void saveloadASFormat(void);
@@ -190,22 +184,22 @@ void DrawGameSlot(struct game_s *game, s32 colour, float x, float y) {
     if (game->empty == 0) {
         Text3D(game->name, x, y + 0.15f, 1.0f, 0.6f, 0.6f, 0.6f, 0, colour);
         CalculateGamePercentage(game);
-        sprintf(tbuf, percent_format, game->percent);
+        sprintf(tbuf, "%i%%", game->percent);
         if (Game.language == 'c') {
             AddSpacesIntoText(tbuf, 1);
         }
         Text3D(tbuf, x - 0.15f, y, 1.0f, 0.6f, 0.6f, 0.6f, 0, 0);
-        sprintf(tbuf, count_format, game->crystals, CLetter[0x75]);
+        sprintf(tbuf, "%i%c", game->crystals, CLetter[0x75]);
         if (Game.language == 'c') {
             AddSpacesIntoText(tbuf, 1);
         }
         Text3D(tbuf, x + 0.15f, y, 1.0f, 0.6f, 0.6f, 0.6f, 0, 0);
-        sprintf(tbuf, count_format, game->gems, CLetter[0x77]);
+        sprintf(tbuf, "%i%c", game->gems, CLetter[0x77]);
         if (Game.language == 'c') {
             AddSpacesIntoText(tbuf, 1);
         }
         Text3D(tbuf, x - 0.125f, y - 0.15f, 1.0f, 0.6f, 0.6f, 0.6f, 0, 0);
-        sprintf(tbuf, count_format, game->relics, ObjTab[3].font3d_letter);
+        sprintf(tbuf, "%i%c", game->relics, ObjTab[3].font3d_letter);
         if (Game.language == 'c') {
             AddSpacesIntoText(tbuf, 1);
         }
@@ -254,6 +248,8 @@ void SaveGameSlots(void) {
     saveloadSaveSlot(0, SaveSlot, 0x1030);
 }
 
+float SLOTPANELDX = 0.7f;
+float SLOTPANELDY = 0.65f;
 
 void DrawGameSlots(void) {
     float dx;

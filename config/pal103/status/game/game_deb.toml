@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0123"
 source = "src/game/game_deb.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0123:0025fb08:AddAnimDebris"
@@ -65,4 +65,19 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0123:00632f50:ttty"
-state = "asm"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x00629570
+end = 0x00629b10
+
+[[claim]]
+section = ".rodata"
+start = 0x00629b50
+end = 0x00629b8c
+
+[[claim]]
+section = ".sdata"
+start = 0x00632ce8
+end = 0x00632f50

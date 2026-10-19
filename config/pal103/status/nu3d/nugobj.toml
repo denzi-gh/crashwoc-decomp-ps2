@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0035"
 source = "src/nu3d/nugobj.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0035:001151a0:NuGobjDestroy"
@@ -105,16 +105,26 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0035:0062eb60:sysinit"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0035:0062eb64:sysgobj"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0035:0062eb68:hasHWTnL"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0035:0062eb7c:geomid"
-state = "asm"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x006141b8
+end = 0x006141d9
+
+[[claim]]
+section = ".sdata"
+start = 0x0062eb80
+end = 0x0062eb87

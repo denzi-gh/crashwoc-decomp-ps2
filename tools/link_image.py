@@ -21,9 +21,11 @@ half of the image is retail-byte-exact by construction. A unit with C data
 its hybrid object provides all of its ranges as pieces
 (`<sec>.split_<vram8>`, selected file-qualified) and its expected data
 object is left out -- one data provider per unit. A `complete` unit also
-supplies every gap range its manifest `[[claim]]`s bytes in (its C strings,
-jump tables and pools that sit past its owned ranges), so that gap's
-expected object is left out too. Every range is ASSERTed at its address.
+supplies the spans of gap ranges its manifest `[[claim]]`s (its C strings,
+jump tables and pools that sit past its owned ranges; several units may
+claim spans of one gap); such a gap's expected object is left out, and its
+unclaimed bytes come from a retail incbin. Every range is ASSERTed at its
+address.
 Only `.vutext` still rides as a whole-section incbin (VU microcode, no
 attribution yet).
 
@@ -125,9 +127,10 @@ def manifest_units(version, link_set, with_data=None, claims=None):
 
 
 def claimed_ranges(map_ranges, claims, objects):
-    """{(section, gap start): object} -- the gap ranges a unit's hybrid
-    supplies whole because it claims bytes in them; a gap two units claim
-    fails loudly (status.py refuses it too)."""
+    """{(section, gap start): [(start, end, object)]} -- the claimed spans of
+    each gap range, by address, each supplied by its claimant's hybrid (the
+    piece of exactly that span); overlapping claims fail loudly (status.py
+    refuses them too)."""
     out = {}
     for unit, unit_claims in sorted(claims.items()):
         for section, start, end in unit_claims:
@@ -137,11 +140,30 @@ def claimed_ranges(map_ranges, claims, objects):
             if gap is None:
                 raise ValueError(f"unit {unit}: claim {section} 0x{start:08x}-"
                                  f"0x{end:08x} is not inside one data-map gap")
-            key = (section, gap["start"])
-            if out.setdefault(key, objects[unit]) != objects[unit]:
-                raise ValueError(f"{section} gap 0x{gap['start']:08x} is "
-                                 f"claimed by two units")
+            out.setdefault((section, gap["start"]), []).append(
+                (start, end, objects[unit]))
+    for (section, _gap), spans in out.items():
+        spans.sort(key=lambda s: s[0])
+        for (_s, e, _o), (s, _e, _o2) in zip(spans, spans[1:]):
+            if s < e:
+                raise ValueError(f"{section} claims overlap at 0x{s:08x}")
     return out
+
+
+def gap_holes(map_ranges, claimed):
+    """[(section, start, end)] -- the unclaimed bytes of the claimed gaps,
+    which the link fills with retail bytes (`.split.gapfill_<vram8>`)."""
+    holes = []
+    for r in map_ranges:
+        spans = claimed.get((r["section"], r["start"]))
+        if not spans:
+            continue
+        cursor = r["start"]
+        for start, end, _obj in spans + [(r["end"], r["end"], None)]:
+            if start > cursor:
+                holes.append((r["section"], cursor, start))
+            cursor = end
+    return holes
 
 
 def select_text_objects(version, link_set, with_data=None, claims=None):
@@ -168,11 +190,11 @@ def build_script(text_addr, text_objs, vutext_vaddr, map_ranges, nobits,
     """Link script: .text from TU objects, data sections from map ranges.
 
     `providers` maps a range owner (`unit-NNNN`) to the hybrid object that
-    supplies its pieces, `claimed` a gap range ((section, start)) to the
-    hybrid that claims bytes in it; every other range comes from its
-    expected object. Each range is ASSERTed at its address (inside an output
-    section `.` is section-relative, hence ABSOLUTE), and each section's end
-    too."""
+    supplies its pieces, `claimed` a gap range ((section, start)) to its
+    claimed spans (claimed_ranges), whose holes come from the gap-fill object
+    (gap_holes); every other range comes from its expected object. Each range
+    is ASSERTed at its address (inside an output section `.` is
+    section-relative, hence ABSOLUTE), and each section's end too."""
     providers = providers or {}
     claimed = claimed or {}
     L = ["SECTIONS", "{", f"    . = 0x{text_addr:08X};",
@@ -193,10 +215,19 @@ def build_script(text_addr, text_objs, vutext_vaddr, map_ranges, nobits,
         for r in rs:
             L.append(f"        ASSERT(ABSOLUTE(.) == 0x{r['start']:08X}, "
                      f"\"{sec} range 0x{r['start']:08X} misplaced\");")
-            obj = providers.get(r["owner"]) \
-                or claimed.get((r["section"], r["start"]))
+            obj = providers.get(r["owner"])
+            spans = claimed.get((r["section"], r["start"]))
             if obj is not None:
                 L.append(f"        {obj.as_posix()}({piece_name(sec, r['start'])})")
+            elif spans:
+                cursor = r["start"]
+                for start, end, cobj in spans:
+                    if start > cursor:
+                        L.append(f"        *(.split.gapfill_{cursor:08x})")
+                    L.append(f"        {cobj.as_posix()}({piece_name(sec, start)})")
+                    cursor = end
+                if cursor < r["end"]:
+                    L.append(f"        *(.split.gapfill_{cursor:08x})")
             else:
                 L.append(f"        *(.split.{section_label(r)})")
         L.append(f"        ASSERT(ABSOLUTE(.) == 0x{rs[-1]['end']:08X}, "
@@ -273,15 +304,23 @@ def link_image(reporter, version, link_set):
     out_dir = ROOT / "build" / version / "image"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # .vutext still rides as one incbin (VU microcode, unattributed).
+    # .vutext still rides as one incbin (VU microcode, unattributed), and so
+    # do the retail bytes of claimed gaps that no claim covers.
     vutext_bin = out_dir / "vutext.bin"
     vutext_bin.write_bytes(
         elf[vutext["offset"]:vutext["offset"] + vutext["size"]])
+    incbins = ('\t.section .split.vutext, "a", @progbits\n'
+               f'\t.incbin "{vutext_bin.as_posix()}"\n')
+    delta = h(pt_load["vaddr"]) - h(pt_load["offset"])
+    for section, start, end in gap_holes(map_ranges, claimed):
+        hole_bin = out_dir / f"gapfill_{start:08x}.bin"
+        hole_bin.write_bytes(elf[start - delta:end - delta])
+        flags = "a" if section == ".rodata" else "aw"
+        incbins += (f'\t.section .split.gapfill_{start:08x}, "{flags}", @progbits\n'
+                    f'\t.incbin "{hole_bin.as_posix()}"\n')
     (out_dir / "vutext.s").write_text(
         "/* Generated by tools/link_image.py -- do not edit, do not commit "
-        "(game-derived). */\n"
-        '\t.section .split.vutext, "a", @progbits\n'
-        f'\t.incbin "{vutext_bin.as_posix()}"\n')
+        "(game-derived). */\n" + incbins)
 
     defined, undefined = set(), set()
     try:

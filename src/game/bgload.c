@@ -56,14 +56,9 @@ extern s32 iSignalSema(s32 sema_id);
 extern void NuPs2ScreenSwap(s32 mode);
 
 /* Retail-owned data (data-from-C unsupported -> extern). */
-extern volatile s32 bgload_complete; /* written by the load thread */
-extern s32 loadthread_id;
 extern s32 D_00633380;              /* main thread id */
 extern s32 D_00633384;              /* vblank semaphore id */
 extern u8 D_006B7680[];             /* load thread stack (0x48000) */
-extern char D_00628798[];           /* __FILE__ */
-extern char D_006287A8[];           /* thread-started message */
-extern char D_006287C8[];           /* thread-ended message */
 extern int _gp;
 
 void VBlankFn(void);
@@ -71,6 +66,8 @@ void VBlankFn(void);
 static struct NuVBlankHandler vblank_handler = { 0, 0, VBlankFn, 0 };
 struct ThreadParam th_param = { 0 };
 struct SemaParam sem_param = { 0 };
+volatile s32 bgload_complete = 0; /* written by the load thread */
+s32 loadthread_id = 0;
 
 void BGSuspendMain(void) {
     if (loadthread_id != 0) {
@@ -108,7 +105,7 @@ void BGLoadStart(void (*func)(void *)) {
     bgload_complete = 0;
     loadthread_id = CreateThread(&th_param);
     StartThread(loadthread_id, 0);
-    NuDebugMsgProlog(D_00628798, 0x7C)(D_006287A8);
+    NuDebugMsgProlog(".\\bgload.c", 0x7C)("Background Load Thread Created");
 }
 
 void BGLoadEnd(void) {
@@ -118,7 +115,7 @@ void BGLoadEnd(void) {
     loadthread_id = 0;
     TerminateThread(id);
     DeleteThread(id);
-    NuDebugMsgProlog(D_00628798, 0x89)(D_006287C8);
+    NuDebugMsgProlog(".\\bgload.c", 0x89)("Background Load Thread Destroyed");
 }
 
 void VBlankFn(void) {

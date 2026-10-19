@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0017"
 source = "src/numath/nufloat.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0017:0010b348:NuFabs"
@@ -41,4 +41,4 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0017:0062ea50:fetol"
-state = "asm"
+state = "matching"

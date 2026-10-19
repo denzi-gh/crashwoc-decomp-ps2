@@ -77,9 +77,9 @@ extern void NuRndrLine3dDbg(s32 colour, f32 x0, f32 y0, f32 z0, f32 x1, f32 y1,
 /* Earlier in this TU, still asm. */
 extern f32 ASin360f(f32 x);
 
-extern s32 ChrisJointOveride;
-extern s32 ChrisNumJoints;
-extern struct NUJOINTANIM_s *ChrisJointList;
+s32 ChrisJointOveride = 0;
+s32 ChrisNumJoints = 0;
+struct NUJOINTANIM_s *ChrisJointList = 0;
 
 extern void ResetLights(struct Nearest_Light_s *nl);
 extern void SetNearestLights(struct Nearest_Light_s *l);
@@ -137,6 +137,15 @@ void ApplyFriction(f32 *val, f32 rate, f32 dt) {
         }
         *val = v + f;
     }
+}
+
+extern s32 SHEIGHT;
+extern u64 fptodp(f32 value);
+extern void NuFntPrintEx(s32 x, s32 y, s32 colour, char *fmt, ...);
+
+inline void PrintVec(s32 line, struct nuvec_s *v) {
+    NuFntPrintEx(100, SHEIGHT * line / 2, 0, "Vec    %1.3f %1.3f %1.3f",
+                 fptodp(v->x), fptodp(v->y), fptodp(v->z));
 }
 
 f32 Rationalise360f(f32 Ang) {
@@ -228,16 +237,6 @@ inline s16 ASin(f32 val) {
 
 s16 ACos(f32 val) {
     return 0x4000 - ASin(val);
-}
-
-extern s32 SHEIGHT;
-extern u64 fptodp(f32 value);
-extern char D_0061FA18[];
-extern void NuFntPrintEx(s32 x, s32 y, s32 colour, char *fmt, ...);
-
-void PrintVec(s32 line, struct nuvec_s *v) {
-    NuFntPrintEx(100, SHEIGHT * line / 2, 0, D_0061FA18, fptodp(v->x),
-                 fptodp(v->y), fptodp(v->z));
 }
 
 f32 DotProduct(struct nuvec_s *A, struct nuvec_s *B) {
@@ -476,7 +475,6 @@ f32 fsign(f32 x) {
     return -1.0f;
 }
 
-extern f32 D_0062DF40;
 extern void NuHGobjEval(struct NUHGOBJ_s *hobj, s32 nJ, struct NUJOINTANIM_s *pJ,
                         struct numtx_s *tmtx);
 extern void NuHGobjEvalAnim(struct NUHGOBJ_s *hobj, struct nuanimdata_s *data,
@@ -494,7 +492,7 @@ void GetLocatorMtx(struct CharacterModel *model, struct numtx_s *dest,
         return;
     }
 
-    NuMtxSetRotationY(&BaseMat, (s32)(angle * D_0062DF40));
+    NuMtxSetRotationY(&BaseMat, (s32)(angle * 182.0444489f));
     NuHGobjEval(model->obj, 0, 0, tmtx);
 
     d = dest;

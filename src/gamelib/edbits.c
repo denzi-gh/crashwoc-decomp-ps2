@@ -33,14 +33,14 @@ struct edsfx_s {
 };
 
 extern int debris_sfx;
-extern int edqseed;
-extern int edbitsSfxVol;
-extern signed char edbits_what_game;
-extern struct edsfx_s *edSfxGlobalTab;
-extern struct edsfx_s *edSfxLevelTab;
-extern int edSfxAllCount;
-extern int edSfxGlobalCount;
-extern struct nugscn_s *edbits_base_scene;
+int edqseed = 0x3039;
+int edbitsSfxVol = 100;
+signed char edbits_what_game = 0;
+struct edsfx_s *edSfxGlobalTab = 0;
+struct edsfx_s *edSfxLevelTab = 0;
+int edSfxAllCount = 0;
+int edSfxGlobalCount = 0;
+struct nugscn_s *edbits_base_scene = 0;
 char edbits_level_filename[256] = { 0 };
 unsigned char object_switches[128] = { 0 };
 

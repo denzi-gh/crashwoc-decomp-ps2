@@ -36,30 +36,8 @@ struct nuivec_s {
     s32 z;
 };
 
-extern s32 cloudreset;
-extern struct nurndrstream_s *clouds_rs;
-extern struct numtl_s *cloudmtl;
-extern struct nutex_s *cloudtex;
-extern struct numtl_s *ttmtl;
-extern struct nutex_s *tttex;
 extern u8 D_00293090[];
 #define cloud_mpg D_00293090
-extern u8 D_00625260[];
-#define cloud_texname D_00625260
-extern u8 D_00625278[];
-#define cloudfx_file D_00625278
-extern u8 D_00625298[];
-#define tt_texname D_00625298
-
-extern f32 MAXCLOUDS;
-extern f32 CLOUDRNG;
-extern f32 CLOUDSIZE;
-extern f32 cloud_density;
-
-extern s32 D_00632904;
-#define clouds_off D_00632904
-extern struct nuvec_s D_00625288;
-#define cloud_colour D_00625288
 extern struct nuvec_s D_002D3EF0;
 #define camera_trans D_002D3EF0
 extern f32 NuTrigTable[];
@@ -67,17 +45,24 @@ extern s32 PS2_REZ_H;
 extern u8 *rndrstream_free;
 extern union variptr_u superbuffer_ptr;
 
-extern s32 D_0063290C;
-#define ttcount D_0063290C
-extern f32 D_00632908;
-#define ttsize D_00632908
-extern f32 D_00632910;
-#define ttrange D_00632910
-extern f32 D_00632914;
-#define ttspan D_00632914
-extern f32 D_0063291C;
-#define ttcsize D_0063291C
-extern s32 ttmtlcnt;
+f32 CLOUDSIZE = 512.0f;
+f32 MAXCLOUDS = 512.0f;
+f32 CLOUDRNG = 15.0f;
+struct numtl_s *cloudmtl = 0;
+s32 cloudreset = 0;
+struct nurndrstream_s *clouds_rs = 0;
+f32 cloud_density = 64.0f;
+static s32 disable_clouds = 0;
+static f32 TTSIZE = 1024.0f;
+static s32 TTMAX = 256;
+static f32 TTRNG = 15.0f;
+static f32 TTSPREAD = 768.0f;
+struct numtl_s *ttmtl = 0;
+static f32 TTCSIZE = 32768.0f;
+struct nutex_s *cloudtex = 0;
+s32 cloud_drawn = 0;
+struct nutex_s *tttex = 0;
+s32 ttmtlcnt = 0;
 
 /* Cloud layer drift: per-axis wobble amplitude and constant velocity. */
 struct nuvec_s grscale = { 0.002f, 0.002f, 0.002f };
@@ -112,11 +97,12 @@ struct nuvec_s ttccol[2] = {
 u16 tt_cdensity[] = { 0x0000, 0x4000 };
 u16 ttcdenrate[] = { 182, 320 };
 
-struct cloud_s clouds[4096] = { 0 };
+struct cloud_s clouds[4096] __attribute__((aligned(128))) = { 0 };
 struct nuvec_s groff[10] = { 0 };
 struct nuivec_s grphase[10] = { 0 };
 struct nuivec_s grphaserate[10] = { 0 };
-struct cloud_s ttptls[4096] = { 0 };   /* [8][count] trail particles, stride 6 */
+/* [8][count] trail particles, stride 6 */
+struct cloud_s ttptls[4096] __attribute__((aligned(128))) = { 0 };
 struct nuvec_s ttoff[5] = { 0 };
 struct nuvec_s ttcoff[5] = { 0 };
 
@@ -144,7 +130,7 @@ void cloudInit() {
         r = NuRandFloat();
         clouds[i].z = (s16)(((r * CLOUDRNG + r * CLOUDRNG) - CLOUDRNG) * 16.0f);
     }
-    TextureCreate(cloud_texname, &cloudmtl, &cloudtex);
+    TextureCreate("stuff\\cloudslo.bmp", &cloudmtl, &cloudtex);
     if (cloudmtl != 0) {
         cloudmtl->attrib.alpha = 2;
         cloudmtl->attrib.zmode = 1;
@@ -154,9 +140,9 @@ void cloudInit() {
     }
     if (cloudtex != 0) {
         if (cloudtex->bits != 0) {
-            NuMemFreeFn(cloudtex->bits, cloudfx_file, 0x6C);
+            NuMemFreeFn(cloudtex->bits, ".\\cloudfx.c", 0x6C);
         }
-        NuMemFreeFn(cloudtex, cloudfx_file, 0x6D);
+        NuMemFreeFn(cloudtex, ".\\cloudfx.c", 0x6D);
     }
 }
 
@@ -261,11 +247,10 @@ void InitClouds(union variptr_u *buffer, union variptr_u *buffend) {
 
 
 void DoClouds(s32 paused) {
-    struct nuvec_s col;
+    struct nuvec_s col = { 1.0f, 1.0f, 1.0f };
     s32 i;
 
-    col = cloud_colour;
-    if (clouds_off != 0) {
+    if (disable_clouds != 0) {
         return;
     }
     if (cloudreset != 0) {
@@ -311,20 +296,20 @@ void TimeTunnelInit(union variptr_u *buffer, union variptr_u *buffend) {
     f32 r;
 
     ttmtlcnt = 0;
-    for (i = 0; i < ttcount; i++) {
+    for (i = 0; i < TTMAX; i++) {
         v.x = 0.0f;
         r = NuRandFloat();
-        v.y = ((r * ttrange + r * ttrange) - ttrange) * 16.0f;
+        v.y = ((r * TTRNG + r * TTRNG) - TTRNG) * 16.0f;
         r = NuRandFloat();
-        v.z = ((r * 0.75f + 0.25f) * ttrange) * 16.0f;
+        v.z = ((r * 0.75f + 0.25f) * TTRNG) * 16.0f;
         NuVecRotateY(&v, &v, rand() << 1);
         ttptls[i].x = (s16)v.x;
         ttptls[i].y = (s16)v.y;
         ttptls[i].z = (s16)v.z;
         for (j = 0; j < 7; j++) {
-            f32 ratio = ttsize / ttspan;
-            ttptls[(j + 1) * ttcount + i] = ttptls[j * ttcount + i];
-            ttptls[(j + 1) * ttcount + i].y -= ratio;
+            f32 ratio = TTSIZE / TTSPREAD;
+            ttptls[(j + 1) * TTMAX + i] = ttptls[j * TTMAX + i];
+            ttptls[(j + 1) * TTMAX + i].y -= ratio;
         }
     }
     for (i = 0; i < 5; i++) {
@@ -334,7 +319,8 @@ void TimeTunnelInit(union variptr_u *buffer, union variptr_u *buffend) {
     superbuffer_ptr.intaddr = (superbuffer_ptr.intaddr + 0x7F) & ~0x7F;
     ttmtl = 0;
     tttex = 0;
-    TextureCreateEx(tt_texname, &ttmtl, &tttex, &superbuffer_ptr, buffer, buffer, buffend);
+    TextureCreateEx("stuff\\ttunnel.bmp", &ttmtl, &tttex, &superbuffer_ptr, buffer, buffer,
+                    buffend);
     superbuffer_ptr.intaddr = (superbuffer_ptr.intaddr + 0x7F) & ~0x7F;
     if (ttmtl != 0) {
         ttmtl->attrib.alpha = 2;
@@ -347,13 +333,12 @@ void TimeTunnelInit(union variptr_u *buffer, union variptr_u *buffend) {
 
 
 void TimeTunnelRender(void) {
-    struct nuvec_s col;
+    struct nuvec_s col = { 1.0f, 1.0f, 1.0f };
     s32 i;
     s32 j;
     f32 density;
 
-    col = cloud_colour;
-    if (clouds_off != 0 || ttmtl == 0) {
+    if (disable_clouds != 0 || ttmtl == 0) {
         return;
     }
     if (++ttmtlcnt < 4) {
@@ -383,11 +368,11 @@ void TimeTunnelRender(void) {
         }
         density = NuTrigTable[tt_density[i]] * 16.0f + 48.0f;
         tt_density[i] += ttdenrate[i];
-        cloudRender(&camera_trans, &ttoff[i], ttsize * 0.5f, ttrange, (s32)density,
-                    ttcount, ttptls, ttmtl, &col);
+        cloudRender(&camera_trans, &ttoff[i], TTSIZE * 0.5f, TTRNG, (s32)density,
+                    TTMAX, ttptls, ttmtl, &col);
         for (j = 0; j < ttgmul[i]; j++) {
-            cloudRender(&camera_trans, &ttoff[i], ttsize / ((f32)j * 0.1f + 1.0f),
-                        ttrange, (s32)density, ttcount, &ttptls[ttcount * j], ttmtl,
+            cloudRender(&camera_trans, &ttoff[i], TTSIZE / ((f32)j * 0.1f + 1.0f),
+                        TTRNG, (s32)density, TTMAX, &ttptls[TTMAX * j], ttmtl,
                         &tt_colours[i]);
         }
     }
@@ -415,8 +400,8 @@ void TimeTunnelRender(void) {
         }
         density = NuTrigTable[tt_cdensity[i]] * 16.0f + 32.0f;
         tt_cdensity[i] += ttcdenrate[i];
-        cloudRender(&camera_trans, &ttcoff[i], ttcsize, ttrange, (s32)density,
-                    ttcount, ttptls, ttmtl, &ttccol[i]);
+        cloudRender(&camera_trans, &ttcoff[i], TTCSIZE, TTRNG, (s32)density,
+                    TTMAX, ttptls, ttmtl, &ttccol[i]);
     }
 }
 

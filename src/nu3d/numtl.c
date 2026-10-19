@@ -110,56 +110,10 @@ extern void NuFntSet(void *font);
 extern void NuFntScale(int x, int y);
 extern void NuFntPrintEx(int x, int y, int colour, const char *fmt, ...);
 
-extern NuMtlReadEventFunc NuMtlReadEvent;
 extern void *system_font;
-
-extern char D_00614470[];
-#define numtl_file D_00614470
-
-extern char D_00614508[];
-#define msg_release_free D_00614508
-
-extern char D_00614540[];
-#define msg_update_all_dangerous D_00614540
-
-extern char D_00614568[];
-#define fmt_display_mtl D_00614568
-
-extern int D_0062EBA0;
-#define mtl_initialised D_0062EBA0
-
-extern struct numtl_s *D_0062EBA4;
-#define mtl_list D_0062EBA4
-
-extern struct numtl_s *D_0062EBA8;
-#define mtl_pool D_0062EBA8
-
-extern int D_0062EBAC;
-#define mtl_pool_last D_0062EBAC
-
-extern int D_0062EBB0;
-#define mtl_pool_count D_0062EBB0
-
-extern struct numtl_s *D_0062EBDC;
-#define mtl_iter D_0062EBDC
-
-extern char D_006144E8[];
-#define msg_alloc_failed D_006144E8
 
 extern struct NuPs2GsReg D_002EA1A0;
 #define NuPs2ZBufReg0 D_002EA1A0
-
-extern char D_0062EBD0[];
-#define msg_assert D_0062EBD0
-
-extern float D_0062EBD8;
-#define mtl_anim_time D_0062EBD8
-
-extern int numtl_lighting_disabled;
-extern int numtl_force_colour;
-extern int numtl_force_lit;
-extern int numtl_force_mtlsize;
-extern int numtl_force_mipmap;
 
 extern char D_00282980[];
 #define rndr3d_microcode D_00282980
@@ -181,6 +135,18 @@ extern void *rndrstream_free;
 
 extern struct numtl_s *numtl_defaultmtl2d;
 extern struct numtl_s *numtl_defaultmtl3d;
+
+static int initialised = 0;
+static struct numtl_s *smlist = 0;
+static struct numtl_s *mtl_store = 0;
+static int mtl_allocix = 0;
+static int mtl_allocmax = 0;
+int numtl_lighting_disabled = 0;
+int numtl_force_colour = 0;
+int numtl_force_mtlsize = 0;
+int numtl_force_lit = 0;
+int numtl_force_mipmap = 0;
+NuMtlReadEventFunc NuMtlReadEvent = NuMtlReadEventDefault;
 
 
 int CreateStateBlock(struct numtl_s *mtl, int keep) {
@@ -291,7 +257,7 @@ int CreateStateBlock(struct numtl_s *mtl, int keep) {
     *p++ = 0;
     vpDmaTag_Close(p);
     if ((u32)p - (u32)mtl >= 0x120) {
-        NuErrorProlog(numtl_file, 0x1E3)(msg_assert);
+        NuErrorProlog("..\\nu2crash.ps2\\nu3d\\numtl.c", 0x1E3)("assert");
     }
     return 1;
 }
@@ -301,9 +267,10 @@ void NuMtlAnimate(float dt) {
     struct numtl_s *mtl;
     float u;
     float v;
+    static float sinetime = 0.0f;
 
-    mtl_anim_time += dt;
-    for (mtl = mtl_list; mtl; mtl = mtl->next) {
+    sinetime += dt;
+    for (mtl = smlist; mtl; mtl = mtl->next) {
         switch (mtl->uanmode) {
         case 0:
             break;
@@ -320,12 +287,12 @@ void NuMtlAnimate(float dt) {
             mtl->effect.uv->row_u = u * 4096.0f;
             break;
         case 3:
-            u = NuTrigTable[(int)(mtl_anim_time * mtl->du * 65536.0f) & 0xFFFF] * mtl->su;
+            u = NuTrigTable[(int)(sinetime * mtl->du * 65536.0f) & 0xFFFF] * mtl->su;
             mtl->effect.uv->u = u;
             mtl->effect.uv->row_u = u * 4096.0f;
             break;
         case 4:
-            u = NuTrigTable[((int)(mtl_anim_time * mtl->du * 65536.0f) + 0x4000) & 0xFFFF] * mtl->su;
+            u = NuTrigTable[((int)(sinetime * mtl->du * 65536.0f) + 0x4000) & 0xFFFF] * mtl->su;
             mtl->effect.uv->u = u;
             mtl->effect.uv->row_u = u * 4096.0f;
             break;
@@ -346,12 +313,12 @@ void NuMtlAnimate(float dt) {
             mtl->effect.uv->row_v = v * 4096.0f;
             break;
         case 3:
-            v = NuTrigTable[(int)(mtl_anim_time * mtl->dv * 65536.0f) & 0xFFFF] * mtl->sv;
+            v = NuTrigTable[(int)(sinetime * mtl->dv * 65536.0f) & 0xFFFF] * mtl->sv;
             mtl->effect.uv->v = v;
             mtl->effect.uv->row_v = v * 4096.0f;
             break;
         case 4:
-            v = NuTrigTable[((int)(mtl_anim_time * mtl->dv * 65536.0f) + 0x4000) & 0xFFFF] * mtl->sv;
+            v = NuTrigTable[((int)(sinetime * mtl->dv * 65536.0f) + 0x4000) & 0xFFFF] * mtl->sv;
             mtl->effect.uv->v = v;
             mtl->effect.uv->row_v = v * 4096.0f;
             break;
@@ -378,7 +345,7 @@ void NuMtlBuildRenderList(void) {
     void *mpgtag;
 
     rs = rndrstream_mtl_sort;
-    mtl = mtl_list;
+    mtl = smlist;
     mpgtag = 0;
     accomodated_tid = 0;
     tid = 0;
@@ -456,27 +423,27 @@ struct numtl_s *NuMtlAlloc(void) {
     int i;
 
     mtl = 0;
-    if (mtl_pool_count) {
-        i = mtl_pool_last + 1;
-        if (i >= mtl_pool_count) {
+    if (mtl_allocmax) {
+        i = mtl_allocix + 1;
+        if (i >= mtl_allocmax) {
             i = 0;
         }
-        while (i != mtl_pool_last) {
-            if (!(mtl_pool[i].flags & NUMTL_VALID)) {
-                mtl = &mtl_pool[i];
+        while (i != mtl_allocix) {
+            if (!(mtl_store[i].flags & NUMTL_VALID)) {
+                mtl = &mtl_store[i];
                 memset(mtl, 0, sizeof(struct numtl_s));
                 mtl->flags |= NUMTL_VALID;
                 mtl->flags |= NUMTL_POOLED;
-                mtl_pool_last = i;
+                mtl_allocix = i;
                 break;
             }
             i++;
-            if (i >= mtl_pool_count) {
+            if (i >= mtl_allocmax) {
                 i = 0;
             }
         }
     } else {
-        mtl = NuMemAllocFn(sizeof(struct numtl_s), numtl_file, 0x398);
+        mtl = NuMemAllocFn(sizeof(struct numtl_s), "..\\nu2crash.ps2\\nu3d\\numtl.c", 0x398);
         memset(mtl, 0, sizeof(struct numtl_s));
         mtl->flags |= NUMTL_VALID;
         mtl->flags |= NUMTL_ALLOCATED;
@@ -493,7 +460,7 @@ struct numtl_s *NuMtlCreate(int count) {
     for (i = 0; i < count; i++) {
         mtl = NuMtlAlloc();
         if (!mtl) {
-            NuErrorProlog(numtl_file, 0x3AF)(msg_alloc_failed);
+            NuErrorProlog("..\\nu2crash.ps2\\nu3d\\numtl.c", 0x3AF)("Unable to allocate material");
         }
         mtl->attrib.filter = 1;
         mtl->attrib.atst = 5;
@@ -603,13 +570,13 @@ int NuMtlValid(struct numtl_s *mtl) {
 
 
 void NuMtlInit(void) {
-    if (mtl_initialised) {
+    if (initialised) {
         NuMtlClose();
     }
-    mtl_list = 0;
-    mtl_initialised = 1;
-    mtl_pool_count = 0;
-    mtl_pool = 0;
+    smlist = 0;
+    initialised = 1;
+    mtl_allocmax = 0;
+    mtl_store = 0;
     NuMtlCreateDefault();
     NuMtlReadEventSetHandler(0);
 }
@@ -624,24 +591,24 @@ void NuMtlInitEx(union variptr_u *buff, int count) {
     struct numtl_s *pool;
     int i;
 
-    if (mtl_initialised) {
+    if (initialised) {
         NuMtlClose();
     }
-    mtl_list = 0;
-    mtl_initialised = 1;
-    mtl_pool_count = 0;
-    mtl_pool = 0;
+    smlist = 0;
+    initialised = 1;
+    mtl_allocmax = 0;
+    mtl_store = 0;
     NuMtlCreateDefault();
     NuMtlReadEventSetHandler(0);
     pool = (struct numtl_s *)((buff->intaddr + 0xF) & 0xFFFFFFF0);
-    mtl_pool_count = count;
-    mtl_pool_last = 0;
+    mtl_allocmax = count;
+    mtl_allocix = 0;
     buff->voidptr = pool;
-    mtl_pool = pool;
+    mtl_store = pool;
     buff->voidptr = pool + count;
     memset(pool, 0, count * sizeof(struct numtl_s));
-    for (i = 0; i < mtl_pool_count; i++) {
-        mtl_pool[i].flags |= NUMTL_POOLED;
+    for (i = 0; i < mtl_allocmax; i++) {
+        mtl_store[i].flags |= NUMTL_POOLED;
     }
     NuMtlCreateDefault();
 }
@@ -652,13 +619,13 @@ void NuMtlClose(void) {
     struct numtl_s *next;
     int i;
 
-    if (mtl_initialised) {
-        mtl = mtl_list;
-        if (mtl_pool) {
-            for (i = 0; i < mtl_pool_count; i++) {
-                mtl_pool[i].flags &= ~NUMTL_VALID;
+    if (initialised) {
+        mtl = smlist;
+        if (mtl_store) {
+            for (i = 0; i < mtl_allocmax; i++) {
+                mtl_store[i].flags &= ~NUMTL_VALID;
             }
-            mtl_list = 0;
+            smlist = 0;
         } else {
             for (; mtl; mtl = next) {
                 next = mtl->next;
@@ -666,7 +633,7 @@ void NuMtlClose(void) {
             }
         }
         NuMtlCreateDefault();
-        mtl_initialised = 0;
+        initialised = 0;
     }
 }
 
@@ -676,12 +643,12 @@ void NuMtlRelease(void) {
     struct numtl_s *next;
     int i;
 
-    mtl = mtl_list;
-    if (mtl_pool) {
-        for (i = 0; i < mtl_pool_count; i++) {
-            mtl_pool[i].flags &= ~NUMTL_VALID;
+    mtl = smlist;
+    if (mtl_store) {
+        for (i = 0; i < mtl_allocmax; i++) {
+            mtl_store[i].flags &= ~NUMTL_VALID;
         }
-        mtl_list = 0;
+        smlist = 0;
     } else {
         for (; mtl; mtl = next) {
             next = mtl->next;
@@ -699,13 +666,14 @@ void NuMtlDestroy(struct numtl_s *mtl) {
     NuMtlRemove(mtl);
     if (mtl->flags & NUMTL_POOLED) {
         if (!(mtl->flags & NUMTL_VALID)) {
-            NuDebugMsgProlog(numtl_file, 0x3EC)(msg_release_free);
+            NuDebugMsgProlog("..\\nu2crash.ps2\\nu3d\\numtl.c", 0x3EC)(
+                "Attempted to release a material that is already free");
         }
         mtl->flags &= ~NUMTL_VALID;
     } else {
         mtl->flags &= ~NUMTL_VALID;
         if (mtl->flags & NUMTL_ALLOCATED) {
-            NuMemFreeFn(mtl, numtl_file, 0x3F2);
+            NuMemFreeFn(mtl, "..\\nu2crash.ps2\\nu3d\\numtl.c", 0x3F2);
         }
     }
 }
@@ -746,7 +714,7 @@ inline void NuMtlInsert(struct numtl_s *mtl) {
     int key;
 
     prev = 0;
-    cur = mtl_list;
+    cur = smlist;
     NuDisableVBlank();
     key = (mtl->alpha_sort << 16) + (mtl->tid >= 0 ? mtl->tid : 0);
     mtl->next = 0;
@@ -760,8 +728,8 @@ inline void NuMtlInsert(struct numtl_s *mtl) {
         mtl->next = prev->next;
         prev->next = mtl;
     } else {
-        mtl->next = mtl_list;
-        mtl_list = mtl;
+        mtl->next = smlist;
+        smlist = mtl;
     }
     if (mtl->next) {
         mtl->next->prev = mtl;
@@ -785,17 +753,18 @@ void NuMtlAdd(struct numtl_s *mtl) {
 
 struct numtl_s *NuMtlIterate(int restart) {
     struct numtl_s *mtl;
+    static struct numtl_s *sm = 0;
 
     if (restart) {
-        mtl = mtl_list;
+        mtl = smlist;
         if (mtl) {
-            mtl_iter = mtl->next;
+            sm = mtl->next;
         }
         return mtl;
     }
-    mtl = mtl_iter;
+    mtl = sm;
     if (mtl) {
-        mtl_iter = mtl->next;
+        sm = mtl->next;
     }
     return mtl;
 }
@@ -806,7 +775,7 @@ inline void NuMtlRemove(struct numtl_s *mtl) {
     if (mtl->prev) {
         mtl->prev->next = mtl->next;
     } else {
-        mtl_list = mtl->next;
+        smlist = mtl->next;
     }
     if (mtl->next) {
         mtl->next->prev = mtl->prev;
@@ -898,6 +867,10 @@ void NuMtlUpdateEx(struct numtl_s *mtl, int flags) {
 }
 
 
+struct numtl_s *numtl_defaultmtl2d = 0;
+struct numtl_s *numtl_defaultmtl3d = 0;
+
+
 int NuMtlReadEventDefault(struct numtl_s *mtl) {
     return 0;
 }
@@ -908,8 +881,8 @@ void NuMtlUpdateAll(void) {
     struct numtl_s *mtl;
     struct numtl_s *next;
 
-    mtl = mtl_list;
-    NuErrorProlog(numtl_file, 0x5A8)(msg_update_all_dangerous);
+    mtl = smlist;
+    NuErrorProlog("..\\nu2crash.ps2\\nu3d\\numtl.c", 0x5A8)("Potentially dangerous - do not use");
     while (VU1_DmaGetStatus()) {
     }
     for (; mtl; mtl = next) {
@@ -924,7 +897,7 @@ int NuMtlDisplayMtl(int index) {
     struct numtl_s *mtl;
     int i;
 
-    mtl = mtl_list;
+    mtl = smlist;
     for (i = index; i; i--) {
         if (!mtl) {
             return 0;
@@ -940,7 +913,7 @@ int NuMtlDisplayMtl(int index) {
     if (system_font) {
         NuFntSet(system_font);
         NuFntScale(32, 32);
-        NuFntPrintEx(480, 320, 0, fmt_display_mtl, index, mtl);
+        NuFntPrintEx(480, 320, 0, "MTL ID %03d MTL ADDR %08x", index, mtl);
     }
     return 1;
 }

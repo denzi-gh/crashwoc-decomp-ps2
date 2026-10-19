@@ -159,9 +159,7 @@ def list_data_candidates(project, *, limit=20) -> dict:
             if _entry_state(data, did) != "asm":
                 continue
             pending = True
-            reasons, excluded = [], None
-            if s["section"] == ".sdata":
-                excluded = ".sdata data from C needs data/sdata"
+            reasons = []
             typ = s.get("type") or ""
             if typ:
                 reasons.append(f"STABS type {typ}")
@@ -170,8 +168,8 @@ def list_data_candidates(project, *, limit=20) -> dict:
             rows.append({
                 "id": did, "unit": data["unit"], "source": data["source"],
                 "section": s["section"], "size": s.get("size"), "type": typ or None,
-                "reasons": reasons, "excluded": excluded,
-                "_key": (excluded is not None, s["section"] != ".rodata",
+                "reasons": reasons, "excluded": None,
+                "_key": (s["section"] != ".rodata",
                          not typ, "*" in typ, s.get("size") or 1 << 30,
                          s["address"])})
         if not pending and completable:

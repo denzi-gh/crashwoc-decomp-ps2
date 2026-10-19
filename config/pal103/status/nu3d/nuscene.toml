@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0037"
 source = "src/nu3d/nuscene.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0037:00117f18:ReadNuIFFTextureSet"
@@ -117,12 +117,17 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0037:0062eb94:mipmaplevel"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0037:0062eb98:spectid"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0037:0062eb9c:specmtl"
-state = "asm"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x00614448
+end = 0x00614466

@@ -151,30 +151,21 @@ extern struct filebuff_s D_00639B08[4];
 extern struct numemfile_s D_00639548[20];
 extern struct fileinfo_s D_00639908[16];
 extern struct nublk_s D_00633548[];
-extern struct nudathdr_s* D_0062E998;
-extern int D_0062E99C;
-extern int D_0062E9A0;
-extern int D_0062E980;
-extern int nufile_buffering_enabled;
-extern int nufile_try_packed;
-extern char* iop_img_name;
 
 #define datfiles                D_006396D8
 #define file_buff               D_00639B08
 #define memfiles                D_00639548
 #define file_info               D_00639908
-#define curr_dat                D_0062E998
-#define nufile_deviceid         D_0062E99C
-#define file_time_count         D_0062E9A0
 #define blk_stack               D_00633548
-#define blk_level               D_0062E980
+
+static int blkcnt = 1;
+static int wblkcnt = 1;
+static int iff_padsize = 16;
 
 /* sceOpen flags per NUFILE mode: RDONLY, WRONLY|CREAT|TRUNC, RDWR|APPEND, RDONLY|NOWAIT */
 static int fmode[4] = { 1, 0x602, 0x103, 0x8001 };
 /* sceLseek origins: SEEK_SET, SEEK_CUR, SEEK_END */
 static int forig[3] = { 0, 1, 2 };
-static char *filesys_root[4] = { "host0:", "cdrom0:\\", "host0:", "cdrom0:\\" };
-static char working_dir[256] = { 0 };
 
 int sceWrite(int fd, void *addr, int size);
 int sceLseek(int fd, int offset, int how);
@@ -276,7 +267,7 @@ void NuFileWriteString(int fh, char* s)
 
 int NuFileGetBlkSize(void)
 {
-    return blk_stack[blk_level].size;
+    return blk_stack[blkcnt].size;
 }
 
 
@@ -365,28 +356,108 @@ int NuFileExtractExt(char *dest, char *path)
 }
 
 
-extern char D_006134B0[];
-#define nufile_file D_006134B0
-
 struct nufileaddr_s {
     int id;                   /* 0x00 */
     int pos;                  /* 0x04 */
 }; /* 0x08 */
 
-extern struct nufileaddr_s *D_0062E9CC;
-extern struct nufileaddr_s *D_0062E9D0;
-extern int D_0062E9C8;
 extern int D_00633000;
 extern int D_00633004;
 extern void NuMemFreeFn(void *ptr, char *file, int line);
 void* NuMemAllocFn(int size, char * file, int line);
 int NuFileSeek(int fh, int offset, int origin);
 
-#define addr_refs               D_0062E9CC
-#define addr_defs               D_0062E9D0
-#define addr_max                D_0062E9C8
 #define addr_ref_cnt            D_00633000
 #define addr_def_cnt            D_00633004
+
+
+extern void NuStrCpy(char * s1, char * s2);
+extern void NuStrCat (char * s1, char * s2);
+extern int sceSifLoadModule(const char* name, int arg_size, const char* args);
+
+/* Defined after the first functions: retail .sdata has the "host0:" literal
+   between iff_padsize and curr_dat. */
+static char *filesys_root[4] = { "host0:", "cdrom0:\\", "host0:", "cdrom0:\\" };
+static char working_dir[256] = { 0 };
+static struct nudathdr_s *curr_dat = 0;
+static int nufile_deviceid = 0;
+static int file_time_count = 0;
+char *iop_img_name = "cdrom0:\\SYS\\IOPRP23.IMG;1";
+int nufile_buffering_enabled = 0;
+int nufile_try_packed = 1;
+
+
+int NuFileSifLoadModule(char *file, int args, char *argp)
+{
+    char path[256];
+    unsigned char *p;
+    int i;
+    int rv;
+
+    NuStrCpy(path, filesys_root[nufile_deviceid]);
+    NuStrCat(path, working_dir);
+    NuStrCat(path, file);
+    if (nufile_deviceid == 1 || nufile_deviceid == 3) {
+        p = (unsigned char *)path;
+        for (i = strlen(filesys_root[nufile_deviceid]); p[i] != 0; i++) {
+            if (p[i] >= 'a' && p[i] <= 'z') {
+                p[i] = p[i] - 'a' + 'A';
+            }
+        }
+        strcat(path, ";1");
+    }
+    rv = sceSifLoadModule(path, args, argp);
+    if (rv < 0) {
+        NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x1BE)("Unable to load SIF module \"%s\"", path);
+        switch (-rv) {
+        case 0x10000:
+            NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x1C2)("Binding the IOP module failed");
+            break;
+        case 0x10004:
+            NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x1C6)("The IOP module version does not match");
+            break;
+        case 0x10001:
+            NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x1CA)("RPC to the IOP mailed");
+            break;
+        default:
+            NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x1CE)("Unknown error code %d", rv);
+            break;
+        }
+    } else {
+        NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x1D3)("Successfully loaded IRX Module: %s", path);
+    }
+    return rv;
+}
+
+
+void NuMemFileClose(int fh);
+int NuDatFileFindTree(struct nudathdr_s * ndh, char * fname);
+int NuDatFilePos(int fh);
+int sceClose(int fd);
+
+
+/* Inline: retail carries a copy of it in every function that closes a file. */
+inline void NuFileClose(int fh)
+{
+    struct fileinfo_s *info;
+    struct filebuff_s *buff;
+
+    NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x24D)("closing file (%d)", fh);
+    if (fh >= 0x400) {
+        NuMemFileClose(fh);
+        return;
+    }
+    fh--;
+    while (sceClose(fh) < 0) {
+        NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x254)("NuFileClose - close failed, retrying");
+    }
+    info = &file_info[fh];
+    buff = info->buff;
+    if (buff != 0) {
+        buff->info = 0;
+    }
+    memset(info, 0, sizeof(*info));
+}
 
 
 int NuDatFilePos(int fh);
@@ -400,9 +471,6 @@ inline int NuMemFilePos(int fh)
     fh -= 0x400;
     return (int)memfiles[fh].curr - (int)memfiles[fh].start;
 }
-
-extern char D_00613690[];
-#define msg_pos_seek_failed     D_00613690
 
 
 inline int NuFilePos(int fh)
@@ -419,9 +487,42 @@ inline int NuFilePos(int fh)
         return info->read_pos;
     }
     while ((pos = sceLseek(fh, 0, 1)) < 0) {
-        NuDebugMsgProlog(nufile_file, 0x30C)(msg_pos_seek_failed, pos);
+        NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x30C)("NuFilePos - seek failed %d - retrying", pos);
     }
     return pos;
+}
+
+
+int NuFileOpen(char *file, enum nufilemode_e mode);
+
+
+int NuFileSize(char *fname)
+{
+    int saved_buffering;
+    int ix;
+    int fh;
+    int size;
+
+    saved_buffering = nufile_buffering_enabled;
+    nufile_buffering_enabled = 0;
+    if (curr_dat != 0) {
+        ix = NuDatFileFindTree(curr_dat, fname);
+        if (ix != 0) {
+            return curr_dat->finfo[ix].uplen;
+        }
+    }
+    size = -1;
+    if (fname != 0 && *fname != 0) {
+        fh = NuFileOpen(fname, NUFILE_READ);
+        if (fh != 0) {
+            while (NuFileSeek(fh, 0, 2) < 0) {
+            }
+            size = NuFilePos(fh);
+            NuFileClose(fh);
+        }
+    }
+    nufile_buffering_enabled = saved_buffering;
+    return size;
 }
 
 
@@ -447,16 +548,8 @@ int NuFileAlign(int fh, int mask)
 }
 
 
-extern char D_00613728[];
-#define msg_blk_mismatch        D_00613728
-extern char D_00613758[];
-#define msg_blk_overrun         D_00613758
 extern struct nublk_s D_00636548[];
-extern int D_0062E984;
-extern char D_00613788[];
 #define wblk_stack              D_00636548
-#define wblk_level              D_0062E984
-#define msg_blk_write_begin     D_00613788
 
 
 int NuFileBeginBlkRead(int fh, int id)
@@ -464,11 +557,11 @@ int NuFileBeginBlkRead(int fh, int id)
     int level;
     int pos;
 
-    level = blk_level++;
+    level = blkcnt++;
     pos = NuFilePos(fh);
     if (level >= 2) {
         if (pos >= blk_stack[level - 1].start + blk_stack[level - 1].size) {
-            blk_level--;
+            blkcnt--;
             return 0;
         }
     }
@@ -478,7 +571,7 @@ int NuFileBeginBlkRead(int fh, int id)
         blk_stack[level].size = -blk_stack[level].size;
     }
     if (id != 0 && id != blk_stack[level].id) {
-        NuErrorProlog(nufile_file, 0x483)(msg_blk_mismatch);
+        NuErrorProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x483)("NuFileBeginBlkRead : Block header mismatch!");
     }
     return blk_stack[level].id;
 }
@@ -490,11 +583,11 @@ void NuFileEndBlkRead(int fh)
     int level;
     int pos;
 
-    level = --blk_level;
+    level = --blkcnt;
     pos = NuFilePos(fh);
     if (pos != blk_stack[level].start + blk_stack[level].size) {
         if (blk_stack[level].start + blk_stack[level].size < pos) {
-            NuDebugMsgProlog(nufile_file, 0x4A0)(msg_blk_overrun);
+            NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x4A0)("NuFileendBlockRead : read past end of block");
         }
         NuFileSeek(fh, blk_stack[level].start + blk_stack[level].size, 0);
     }
@@ -505,7 +598,7 @@ void NuFileBeginBlkWrite(int fh, int id, int flags)
 {
     int level;
 
-    level = wblk_level++;
+    level = wblkcnt++;
     wblk_stack[level].start = NuFilePos(fh);
     wblk_stack[level].id = id;
     if (flags == 1) {
@@ -515,16 +608,10 @@ void NuFileBeginBlkWrite(int fh, int id, int flags)
     }
     NuFileWriteInt(fh, id);
     NuFileWriteInt(fh, id);
-    NuDebugMsgProlog(nufile_file, 0x4BB)(msg_blk_write_begin,
+    NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x4BB)("NuFileBeginBlkWrite : writing block... (id %c%c%c%c)",
         wblk_stack[level].tag[0], wblk_stack[level].tag[1],
         wblk_stack[level].tag[2], wblk_stack[level].tag[3]);
 }
-
-
-extern int D_0062E988;
-extern char D_006137C0[];
-#define wblk_align              D_0062E988
-#define msg_blk_write_end       D_006137C0
 
 
 void NuFileEndBlkWrite(int fh)
@@ -536,11 +623,11 @@ void NuFileEndBlkWrite(int fh)
     int fill;
 
     pad = 0;
-    level = --wblk_level;
+    level = --wblkcnt;
     pos = NuFilePos(fh);
     size = pos - wblk_stack[level].start;
-    fill = wblk_align - size % wblk_align;
-    if (fill != wblk_align) {
+    fill = iff_padsize - size % iff_padsize;
+    if (fill != iff_padsize) {
         size += fill;
         pos += fill;
         sceWrite(fh - 1, &pad, fill);
@@ -551,35 +638,33 @@ void NuFileEndBlkWrite(int fh)
     NuFileSeek(fh, wblk_stack[level].start + 4, 0);
     sceWrite(fh - 1, &size, 4);
     NuFileSeek(fh, pos, 0);
-    NuDebugMsgProlog(nufile_file, 0x4DB)(msg_blk_write_end,
+    NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x4DB)("NuFileEndBlkWrite : ...close block (id %c%c%c%c, size %d)",
         wblk_stack[level].tag[0], wblk_stack[level].tag[1],
         wblk_stack[level].tag[2], wblk_stack[level].tag[3]);
 }
 
 
-extern char D_00613800[];
-#define msg_too_many_addr_refs  D_00613800
-extern int D_0062E9D4;
-#define addr_placeholder        D_0062E9D4
+static int MAX_FILE_ADDRESS = 0;
+static struct nufileaddr_s *addr_ref = 0;
+static struct nufileaddr_s *addr_pos = 0;
 
 /* Writes a placeholder dword for address `id`, remembering where it went so
    it can be patched once the address is known. */
 void NuFileWriteAddress(int fh, int id)
 {
+    static int pad = 0;
+
     if (id) {
-        if (addr_ref_cnt >= addr_max) {
-            NuErrorProlog(nufile_file, 0x585)(msg_too_many_addr_refs);
+        if (addr_ref_cnt >= MAX_FILE_ADDRESS) {
+            NuErrorProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x585)("NuFileWriteAddress:- Need to expand MAX_FILE_ADDRESS");
         }
-        addr_refs[addr_ref_cnt].id = id;
-        addr_refs[addr_ref_cnt].pos = NuFilePos(fh);
+        addr_ref[addr_ref_cnt].id = id;
+        addr_ref[addr_ref_cnt].pos = NuFilePos(fh);
         addr_ref_cnt++;
     }
-    sceWrite(fh - 1, &addr_placeholder, 4);
+    sceWrite(fh - 1, &pad, 4);
 }
 
-
-extern char D_00613838[];
-#define msg_too_many_addr_defs  D_00613838
 
 /* Records the current file position as the definition of address `id`. */
 void NuFileSetAddress(int fh, int id)
@@ -588,34 +673,34 @@ void NuFileSetAddress(int fh, int id)
 
     if (id) {
         for (i = 0; i < addr_def_cnt; i++) {
-            if (addr_defs[i].id == id) {
+            if (addr_pos[i].id == id) {
                 break;
             }
         }
-        if (i >= addr_max) {
-            NuErrorProlog(nufile_file, 0x59A)(msg_too_many_addr_defs);
+        if (i >= MAX_FILE_ADDRESS) {
+            NuErrorProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x59A)("NuFileSetAddress:- Need to expand MAX_FILE_ADDRESS");
         }
         if (i == addr_def_cnt) {
             addr_def_cnt = i + 1;
         }
-        addr_defs[i].id = id;
-        addr_defs[i].pos = NuFilePos(fh);
+        addr_pos[i].id = id;
+        addr_pos[i].pos = NuFilePos(fh);
     }
 }
 
 
 void NuFileInitAddress(int max)
 {
-    if (max != addr_max) {
-        if (addr_refs != 0) {
-            NuMemFreeFn(addr_refs, nufile_file, 0x564);
+    if (max != MAX_FILE_ADDRESS) {
+        if (addr_ref != 0) {
+            NuMemFreeFn(addr_ref, "..\\nu2crash.ps2\\nucore\\nufile.c", 0x564);
         }
-        if (addr_defs != 0) {
-            NuMemFreeFn(addr_defs, nufile_file, 0x565);
+        if (addr_pos != 0) {
+            NuMemFreeFn(addr_pos, "..\\nu2crash.ps2\\nucore\\nufile.c", 0x565);
         }
-        addr_max = max;
-        addr_refs = NuMemAllocFn(max * sizeof(struct nufileaddr_s), nufile_file, 0x569);
-        addr_defs = NuMemAllocFn(addr_max * sizeof(struct nufileaddr_s), nufile_file, 0x56A);
+        MAX_FILE_ADDRESS = max;
+        addr_ref = NuMemAllocFn(max * sizeof(struct nufileaddr_s), "..\\nu2crash.ps2\\nucore\\nufile.c", 0x569);
+        addr_pos = NuMemAllocFn(MAX_FILE_ADDRESS * sizeof(struct nufileaddr_s), "..\\nu2crash.ps2\\nucore\\nufile.c", 0x56A);
     }
     addr_ref_cnt = 0;
     addr_def_cnt = 0;
@@ -624,15 +709,15 @@ void NuFileInitAddress(int max)
 
 void NuFileTidyAddress(void)
 {
-    if (addr_refs != 0) {
-        NuMemFreeFn(addr_refs, nufile_file, 0x574);
-        addr_refs = 0;
+    if (addr_ref != 0) {
+        NuMemFreeFn(addr_ref, "..\\nu2crash.ps2\\nucore\\nufile.c", 0x574);
+        addr_ref = 0;
     }
-    if (addr_defs != 0) {
-        NuMemFreeFn(addr_defs, nufile_file, 0x579);
-        addr_defs = 0;
+    if (addr_pos != 0) {
+        NuMemFreeFn(addr_pos, "..\\nu2crash.ps2\\nucore\\nufile.c", 0x579);
+        addr_pos = 0;
     }
-    addr_max = 0;
+    MAX_FILE_ADDRESS = 0;
 }
 
 
@@ -646,9 +731,9 @@ void NuFilePatchAddress(int fh)
     for (i = 0; i < addr_ref_cnt; i++) {
         fd = fh - 1;
         for (j = 0; j < addr_def_cnt; j++) {
-            if (addr_refs[i].id == addr_defs[j].id) {
-                offset = addr_defs[j].pos - addr_refs[i].pos;
-                NuFileSeek(fh, addr_refs[i].pos, 0);
+            if (addr_ref[i].id == addr_pos[j].id) {
+                offset = addr_pos[j].pos - addr_ref[i].pos;
+                NuFileSeek(fh, addr_ref[i].pos, 0);
                 sceWrite(fd, &offset, sizeof(offset));
             }
         }
@@ -822,15 +907,9 @@ void NuDatSet(struct nudathdr_s* ndh)
 }
 
 
-extern char D_0062E9B8[];
-#define path_sep                D_0062E9B8
 extern void NuStrCpy(char * s1, char * s2);
 extern char *NuStrStr(char *text, char *pattern);
 extern int NuStrLen(char *text);
-
-
-extern char D_006134B0[];
-#define nufile_file             D_006134B0
 
 
 int NuDatFileOpen(struct nudathdr_s* ndh, char* fname, enum nufilemode_e mode);
@@ -839,79 +918,42 @@ int NuFileStatus(int fh);
 int sceOpen(char * name, int flag, ...);
 
 
-extern void NuStrCpy(char * s1, char * s2);
-extern void NuStrCat (char * s1, char * s2);
-extern int sceSifLoadModule(const char* name, int arg_size, const char* args);
-
-extern char D_0062E9B0[];
-extern char D_006134D0[];
-extern char D_006134F0[];
-extern char D_00613510[];
-extern char D_00613538[];
-extern char D_00613550[];
-extern char D_00613568[];
-#define cd_version_suffix       D_0062E9B0
-#define msg_sif_load_failed     D_006134D0
-#define msg_sif_bind_failed     D_006134F0
-#define msg_sif_version         D_00613510
-#define msg_sif_rpc_failed      D_00613538
-#define msg_sif_unknown_error   D_00613550
-#define msg_sif_loaded          D_00613568
-
-
-int NuFileSifLoadModule(char *file, int args, char *argp)
+/* After NuFileSize (which calls it out of line) and right before NuFileOpen:
+   retail .sdata has its "\\" literal between ";1" and "assert". */
+inline int NuDatFileFindTree(struct nudathdr_s *ndh, char *fname)
 {
     char path[256];
-    unsigned char *p;
-    int i;
-    int rv;
+    char *name;
+    char *sep;
+    int node;
 
-    NuStrCpy(path, filesys_root[nufile_deviceid]);
-    NuStrCat(path, working_dir);
-    NuStrCat(path, file);
-    if (nufile_deviceid == 1 || nufile_deviceid == 3) {
-        p = (unsigned char *)path;
-        for (i = strlen(filesys_root[nufile_deviceid]); p[i] != 0; i++) {
-            if (p[i] >= 'a' && p[i] <= 'z') {
-                p[i] = p[i] - 'a' + 'A';
+    NuStrCpy(path, fname);
+    name = path;
+    node = 1;
+    sep = NuStrStr(path, "\\");
+    if (sep != 0) {
+        *sep = 0;
+    }
+    do {
+        if (strcasecmp(ndh->filetree[node].txt, name) == 0) {
+            if (sep == 0) {
+                if (ndh->filetree[node].childix <= 0) {
+                    return -ndh->filetree[node].childix;
+                }
+                return -1;
             }
+            name = sep + 1;
+            node = ndh->filetree[node].childix;
+            sep = NuStrStr(name, "\\");
+            if (sep != 0) {
+                *sep = 0;
+            }
+        } else {
+            node = ndh->filetree[node].sibix;
         }
-        strcat(path, cd_version_suffix);
-    }
-    rv = sceSifLoadModule(path, args, argp);
-    if (rv < 0) {
-        NuDebugMsgProlog(nufile_file, 0x1BE)(msg_sif_load_failed, path);
-        switch (-rv) {
-        case 0x10000:
-            NuDebugMsgProlog(nufile_file, 0x1C2)(msg_sif_bind_failed);
-            break;
-        case 0x10004:
-            NuDebugMsgProlog(nufile_file, 0x1C6)(msg_sif_version);
-            break;
-        case 0x10001:
-            NuDebugMsgProlog(nufile_file, 0x1CA)(msg_sif_rpc_failed);
-            break;
-        default:
-            NuDebugMsgProlog(nufile_file, 0x1CE)(msg_sif_unknown_error, rv);
-            break;
-        }
-    } else {
-        NuDebugMsgProlog(nufile_file, 0x1D3)(msg_sif_loaded, path);
-    }
-    return rv;
+    } while (node != 0);
+    return -1;
 }
-
-
-extern char D_00613590[];
-extern char D_006135D0[];
-extern char D_006135E8[];
-extern char D_00613618[];
-extern char D_0062E9C0[];
-#define msg_open_failed         D_00613590
-#define msg_open_ok             D_006135D0
-#define msg_size_seek_failed    D_006135E8
-#define msg_size_seek_restore   D_00613618
-#define msg_assert              D_0062E9C0
 
 
 int NuFileOpen(char *file, enum nufilemode_e mode)
@@ -939,24 +981,24 @@ int NuFileOpen(char *file, enum nufilemode_e mode)
         }
     }
     if (nufile_deviceid == 1 || nufile_deviceid == 3) {
-        strcat(path, cd_version_suffix);
+        strcat(path, ";1");
     }
     if (mode >= NUFILE_MODE_CNT) {
-        NuErrorProlog(nufile_file, 0x21A)(msg_assert);
+        NuErrorProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x21A)("assert");
     }
     fd = sceOpen(path, fmode[mode]);
     if (fd < 0) {
-        NuDebugMsgProlog(nufile_file, 0x21E)(msg_open_failed, path);
+        NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x21E)("!!!!!!!!!!!!!!!!!!! opening file %s failed!!!!!!!!!!!!!!!!!!!!1", path);
         return 0;
     }
-    NuDebugMsgProlog(nufile_file, 0x221)(msg_open_ok, path, fd + 1);
+    NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x221)("opening file %s ok!(%d)", path, fd + 1);
     memset(&file_info[fd], 0, sizeof(struct fileinfo_s));
     file_info[fd].handle = fd;
     if (mode != NUFILE_WRITE) {
         do {
             len = NuFileSeek(fd + 1, 0, 2);
             if (len < 0) {
-                NuDebugMsgProlog(nufile_file, 0x22B)(msg_size_seek_failed);
+                NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x22B)("NuFileOpen - size seek failed - retrying");
             }
         } while (len < 0);
         file_info[fd].file_length = len;
@@ -967,7 +1009,7 @@ int NuFileOpen(char *file, enum nufilemode_e mode)
         do {
             len = NuFileSeek(fd + 1, 0, 0);
             if (len < 0) {
-                NuDebugMsgProlog(nufile_file, 0x236)(msg_size_seek_restore);
+                NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x236)("NuFileOpen - size seek restore failed - retrying");
             }
         } while (len < 0);
         if (mode == NUFILE_READ_NOWAIT) {
@@ -1033,41 +1075,6 @@ int NuFileSeek(int fh, int offset, int origin)
 }
 
 
-void NuMemFileClose(int fh);
-int NuDatFileFindTree(struct nudathdr_s * ndh, char * fname);
-int NuDatFilePos(int fh);
-int sceClose(int fd);
-
-extern char D_00613650[];
-extern char D_00613668[];
-#define msg_closing_file        D_00613650
-#define msg_close_failed        D_00613668
-
-
-/* Inline: retail carries a copy of it in every function that closes a file. */
-inline void NuFileClose(int fh)
-{
-    struct fileinfo_s *info;
-    struct filebuff_s *buff;
-
-    NuDebugMsgProlog(nufile_file, 0x24D)(msg_closing_file, fh);
-    if (fh >= 0x400) {
-        NuMemFileClose(fh);
-        return;
-    }
-    fh--;
-    while (sceClose(fh) < 0) {
-        NuDebugMsgProlog(nufile_file, 0x254)(msg_close_failed);
-    }
-    info = &file_info[fh];
-    buff = info->buff;
-    if (buff != 0) {
-        buff->info = 0;
-    }
-    memset(info, 0, sizeof(*info));
-}
-
-
 void NuDatClose(struct nudathdr_s *ndh)
 {
     NuFileClose(ndh->fh);
@@ -1075,78 +1082,9 @@ void NuDatClose(struct nudathdr_s *ndh)
         datfiles[ndh->dfhandle - 0x800].used = 0;
     }
     if (ndh->intalloc) {
-        NuMemFreeFn(ndh, nufile_file, 0x6AD);
+        NuMemFreeFn(ndh, "..\\nu2crash.ps2\\nucore\\nufile.c", 0x6AD);
     }
 }
-
-int NuFileSize(char *fname)
-{
-    int saved_buffering;
-    int ix;
-    int fh;
-    int size;
-
-    saved_buffering = nufile_buffering_enabled;
-    nufile_buffering_enabled = 0;
-    if (curr_dat != 0) {
-        ix = NuDatFileFindTree(curr_dat, fname);
-        if (ix != 0) {
-            return curr_dat->finfo[ix].uplen;
-        }
-    }
-    size = -1;
-    if (fname != 0 && *fname != 0) {
-        fh = NuFileOpen(fname, NUFILE_READ);
-        if (fh != 0) {
-            while (NuFileSeek(fh, 0, 2) < 0) {
-            }
-            size = NuFilePos(fh);
-            NuFileClose(fh);
-        }
-    }
-    nufile_buffering_enabled = saved_buffering;
-    return size;
-}
-
-
-inline int NuDatFileFindTree(struct nudathdr_s *ndh, char *fname)
-{
-    char path[256];
-    char *name;
-    char *sep;
-    int node;
-
-    NuStrCpy(path, fname);
-    name = path;
-    node = 1;
-    sep = NuStrStr(path, path_sep);
-    if (sep != 0) {
-        *sep = 0;
-    }
-    do {
-        if (strcasecmp(ndh->filetree[node].txt, name) == 0) {
-            if (sep == 0) {
-                if (ndh->filetree[node].childix <= 0) {
-                    return -ndh->filetree[node].childix;
-                }
-                return -1;
-            }
-            name = sep + 1;
-            node = ndh->filetree[node].childix;
-            sep = NuStrStr(name, path_sep);
-            if (sep != 0) {
-                *sep = 0;
-            }
-        } else {
-            node = ndh->filetree[node].sibix;
-        }
-    } while (node != 0);
-    return -1;
-}
-
-
-extern char D_006138E0[];
-#define msg_datfile_seek_retry  D_006138E0
 
 
 int NuDatFileOpen(struct nudathdr_s *ndh, char *fname, enum nufilemode_e mode)
@@ -1173,7 +1111,7 @@ int NuDatFileOpen(struct nudathdr_s *ndh, char *fname, enum nufilemode_e mode)
             do {
                 pos = NuFileSeek(ndh->fh, ndh->finfo[ix].foffset, 0);
                 if (pos < 0) {
-                    NuDebugMsgProlog(nufile_file, 0x685)(msg_datfile_seek_retry);
+                    NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x685)("NuDatFileOpen - recoverable seek error - retrying");
                 }
             } while (pos < 0);
             fh = i + 0x800;
@@ -1213,7 +1151,7 @@ void *NuFileLoad(char *fname)
     if (fh != 0) {
         size = NuFileOpenSize(fh);
         if (size > 0) {
-            data = NuMemAllocFn(size, nufile_file, 0x364);
+            data = NuMemAllocFn(size, "..\\nu2crash.ps2\\nucore\\nufile.c", 0x364);
             if (data != 0) {
                 NuFileRead(fh, data, size);
             }
@@ -1227,11 +1165,6 @@ void *NuFileLoad(char *fname)
 
 extern int NuPPLoadBuffer(int fh, void * mem, int buffsize);
 extern int NuDatFileLoadBuffer(struct nudathdr_s* ndh, char * fname, void * mem, int buffsize);
-
-extern char D_006136B8[];
-extern char D_006136F0[];
-#define msg_load_read_failed    D_006136B8
-#define msg_load_seek_failed    D_006136F0
 
 
 int NuFileLoadBuffer(char *filename, void *mem, int buffsize)
@@ -1254,9 +1187,9 @@ int NuFileLoadBuffer(char *filename, void *mem, int buffsize)
             size = NuFileOpenSize(fh);
             if (size <= buffsize && size != 0) {
                 while (NuFileRead(fh, mem, size) < 0) {
-                    NuDebugMsgProlog(nufile_file, 0x397)(msg_load_read_failed);
+                    NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x397)("NuFileLoadBuffer - recoverable read failure - retrying");
                     while (NuFileSeek(fh, 0, 0) < 0) {
-                        NuDebugMsgProlog(nufile_file, 0x399)(msg_load_seek_failed);
+                        NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x399)("NuFileLoadBuffer - recoverable seek failure - retrying");
                     }
                 }
                 NuFileClose(fh);
@@ -1306,7 +1239,7 @@ int NuFileRead(int fh, void *data, int size)
             if (info->buff_length != 0) {
                 sceLseek(info->handle, -info->buff_length, 1);
                 if (sceRead(info->handle, buff->data, info->buff_length) != info->buff_length) {
-                    NuErrorProlog(nufile_file, 0x28C)(msg_assert);
+                    NuErrorProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x28C)("assert");
                 }
             }
         }
@@ -1352,18 +1285,13 @@ inline int NuFileStatus(int fh)
 
     if (fh < 0x400) {
         if (sceIoctl(fh - 1, 1, &status) != 0) {
-            NuErrorProlog(nufile_file, 0x269)(msg_assert);
+            NuErrorProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x269)("assert");
         }
         return status;
     }
     return 0;
 }
 
-
-extern char D_00613870[];
-extern char D_006138A8[];
-#define msg_dat_read_failed     D_00613870
-#define msg_dat_seek_failed     D_006138A8
 
 void NuPPUnpack(unsigned char *src, unsigned char *out);
 
@@ -1390,9 +1318,9 @@ int NuDatFileLoadBuffer(struct nudathdr_s *ndh, char *fname, void *dest, int max
         packed -= packed_len;
         if (maxsize >= size + 0x100 && size != 0) {
             while (NuDatFileRead(fh, packed, packed_len) < 0) {
-                NuDebugMsgProlog(nufile_file, 0x5E1)(msg_dat_read_failed);
+                NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x5E1)("NuDatFileLoadBuffer - recoverable read error, retrying");
                 while (NuDatFileSeek(fh, 0, 0) < 0) {
-                    NuDebugMsgProlog(nufile_file, 0x5E4)(msg_dat_seek_failed);
+                    NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x5E4)("NuDatFileLoadBuffer - recoverable seek error, retrying");
                 }
             }
             if (ndh->openmode == NUFILE_READ_NOWAIT) {
@@ -1407,9 +1335,9 @@ int NuDatFileLoadBuffer(struct nudathdr_s *ndh, char *fname, void *dest, int max
         size = datfiles[fh - 0x800].len;
         if (maxsize >= size && size != 0) {
             while (NuDatFileRead(fh, dest, size) < 0) {
-                NuDebugMsgProlog(nufile_file, 0x5F2)(msg_dat_read_failed);
+                NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x5F2)("NuDatFileLoadBuffer - recoverable read error, retrying");
                 while (NuDatFileSeek(fh, 0, 0) < 0) {
-                    NuDebugMsgProlog(nufile_file, 0x5F5)(msg_dat_seek_failed);
+                    NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x5F5)("NuDatFileLoadBuffer - recoverable seek error, retrying");
                 }
             }
             if (ndh->openmode == NUFILE_READ_NOWAIT) {
@@ -1423,12 +1351,6 @@ int NuDatFileLoadBuffer(struct nudathdr_s *ndh, char *fname, void *dest, int max
     NuFileClose(fh);
     return 0;
 }
-
-
-extern char D_00613918[];
-extern char D_00613948[];
-#define msg_datopen_read_retry  D_00613918
-#define msg_datopen_seek_retry  D_00613948
 
 
 struct nudathdr_s *NuDatOpenEx(char *fname, char **mem, int *used, short mode)
@@ -1449,9 +1371,9 @@ struct nudathdr_s *NuDatOpenEx(char *fname, char **mem, int *used, short mode)
             }
         }
         while (NuFileRead(fh, hdr, sizeof(hdr)) < 0) {
-            NuDebugMsgProlog(nufile_file, 0x702)(msg_datopen_read_retry);
+            NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x702)("NuDatOpenEx - recoverable read error, retrying");
             while (NuFileSeek(fh, 0, 0) < 0) {
-                NuDebugMsgProlog(nufile_file, 0x704)(msg_datopen_seek_retry);
+                NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x704)("NuDatOpenEx - recoverable seek error, retrying");
             }
         }
         if (mode == NUFILE_READ_NOWAIT) {
@@ -1459,7 +1381,7 @@ struct nudathdr_s *NuDatOpenEx(char *fname, char **mem, int *used, short mode)
             }
         }
         while (NuFileSeek(fh, hdr[0], 0) < 0) {
-            NuDebugMsgProlog(nufile_file, 0x70A)(msg_datopen_seek_retry);
+            NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x70A)("NuDatOpenEx - recoverable seek error, retrying");
         }
         if (mode == NUFILE_READ_NOWAIT) {
             while (NuFileStatus(fh) != 0) {
@@ -1474,15 +1396,15 @@ struct nudathdr_s *NuDatOpenEx(char *fname, char **mem, int *used, short mode)
             }
             ndh->intalloc = 0;
         } else {
-            ndh = NuMemAllocFn(size, nufile_file, 0x717);
+            ndh = NuMemAllocFn(size, "..\\nu2crash.ps2\\nucore\\nufile.c", 0x717);
             ndh->intalloc = 1;
         }
         if (ndh != 0) {
             data = ndh->data;
             while (NuFileRead(fh, data, hdr[1]) < 0) {
-                NuDebugMsgProlog(nufile_file, 0x71D)(msg_datopen_read_retry);
+                NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x71D)("NuDatOpenEx - recoverable read error, retrying");
                 while (NuFileSeek(fh, hdr[0], 0) < 0) {
-                    NuDebugMsgProlog(nufile_file, 0x71F)(msg_datopen_seek_retry);
+                    NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x71F)("NuDatOpenEx - recoverable seek error, retrying");
                 }
             }
             if (mode == NUFILE_READ_NOWAIT) {
@@ -1606,14 +1528,11 @@ void NuFileGetCurrentPath(char *path)
 }
 
 
-extern char D_0062E9B8[];
-
-
 void NuFileSetCurrentDirectory(char *dir)
 {
     char *suffix;
 
-    suffix = D_0062E9B8;
+    suffix = "\\";
     if (dir[0] != 0) {
         strcpy(working_dir, dir);
         NuStrCat(working_dir, suffix);

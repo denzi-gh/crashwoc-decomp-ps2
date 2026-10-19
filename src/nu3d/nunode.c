@@ -54,23 +54,8 @@ extern void *NuMemReAllocFn(void *ptr, int size, char *file, int line);
 extern void NuMemFreeFn(void *ptr, char *file, int line);
 extern void NuMtxMulVU0(struct numtx_s *dst, struct numtx_s *a, struct numtx_s *b);
 
-extern char D_006141E0[];
-#define nunode_file D_006141E0
-
-extern char D_00614200[];
-#define bad_node_type_msg D_00614200
-
-extern char D_00614248[];
-#define bad_parent_type_msg D_00614248
-
-extern char D_0062EB90[];
-#define empty_name D_0062EB90
-
-extern int D_0062EB88;
-#define next_node_id D_0062EB88
-
-extern int D_0062EB8C;
-#define keep_names D_0062EB8C
+static int global_id = 0;
+static int g_nunode_keep_names = 1;
 
 
 inline char *NuNodeStrCpy(char *src)
@@ -78,11 +63,11 @@ inline char *NuNodeStrCpy(char *src)
     char *dst;
 
     if (src != 0) {
-        dst = NuMemAllocFn(strlen(src) + 1, nunode_file, 0x60);
+        dst = NuMemAllocFn(strlen(src) + 1, "..\\nu2crash.ps2\\nu3d\\nunode.c", 0x60);
         strcpy(dst, src);
     } else {
-        dst = NuMemAllocFn(1, nunode_file, 0x65);
-        *dst = empty_name[0];
+        dst = NuMemAllocFn(1, "..\\nu2crash.ps2\\nu3d\\nunode.c", 0x65);
+        strcpy(dst, "");
     }
     return dst;
 }
@@ -104,7 +89,7 @@ inline char *NuNodeStrCat(char **str, char *append)
 
     len = strlen(*str);
     len += strlen(append);
-    *str = NuMemReAllocFn(*str, len + 1, nunode_file, 0x91);
+    *str = NuMemReAllocFn(*str, len + 1, "..\\nu2crash.ps2\\nu3d\\nunode.c", 0x91);
     strcat(*str, append);
     return *str;
 }
@@ -112,12 +97,12 @@ inline char *NuNodeStrCat(char **str, char *append)
 
 inline void NuNodeDestroy(struct nunode_s *node)
 {
-    if (!keep_names && node->name != 0) {
-        NuMemFreeFn(node->name, nunode_file, 0xCB);
+    if (!g_nunode_keep_names && node->name != 0) {
+        NuMemFreeFn(node->name, "..\\nu2crash.ps2\\nu3d\\nunode.c", 0xCB);
     }
     switch (node->type) {
     case NUNODETYPE_NODE:
-        NuMemFreeFn(node, nunode_file, 0xF7);
+        NuMemFreeFn(node, "..\\nu2crash.ps2\\nu3d\\nunode.c", 0xF7);
         break;
     case NUNODETYPE_MESH:
         NuMeshNodeDestroy(node);
@@ -135,7 +120,8 @@ inline void NuNodeDestroy(struct nunode_s *node)
         NuSplineNodeDestroy((struct nusplinenode_s *)node);
         break;
     default:
-        NuErrorProlog(nunode_file, 0x109)(bad_node_type_msg);
+        NuErrorProlog("..\\nu2crash.ps2\\nu3d\\nunode.c", 0x109)(
+            "NuNodeDestroy: Unknown node type.\n");
         break;
     }
 }
@@ -239,6 +225,38 @@ void NuNodeDestroyChildren(struct nunode_s *node)
 }
 
 
+/* inline only defers the output; defined here, its message is emitted between
+   NuNodeDestroyChildren's and NuNodeDestroy's jump tables as retail has it */
+inline void NuNodeAddChild(struct nunode_s *parent, struct nunode_s *child)
+{
+    struct nunode_s *last;
+
+    if (parent != 0 && child != 0) {
+        switch (parent->type) {
+        default:
+            NuErrorProlog("..\\nu2crash.ps2\\nu3d\\nunode.c", 0x211)(
+                "NuNodeAddChild: Only works on transform, joint or null nodes.");
+            break;
+        case NUNODETYPE_NODE:
+        case NUNODETYPE_TRANSFORM:
+        case NUNODETYPE_JOINT:
+            child->parent = parent;
+            if (parent->child != 0) {
+                last = parent->child;
+                while (last->next != 0) {
+                    last = last->next;
+                }
+                last->next = child;
+            } else {
+                parent->child = child;
+            }
+            parent->num_children++;
+            break;
+        }
+    }
+}
+
+
 void NuNodeGraphInit(struct nunode_s *root)
 {
     struct numtx_s mtx;
@@ -271,10 +289,10 @@ struct nunode_s *NuNodeCreate(void)
 {
     struct nunode_s *node;
 
-    node = NuMemAllocFn(sizeof(struct nunode_s), nunode_file, 0xDC);
+    node = NuMemAllocFn(sizeof(struct nunode_s), "..\\nu2crash.ps2\\nu3d\\nunode.c", 0xDC);
     memset(node, 0, sizeof(struct nunode_s));
     node->type = NUNODETYPE_NODE;
-    node->id = next_node_id++;
+    node->id = global_id++;
     node->num_children = 0;
     node->child = 0;
     node->next = 0;
@@ -288,7 +306,7 @@ struct nunode_s *NuNodeCreate(void)
 void NuNodeSetName(struct nunode_s *node, char *name)
 {
     if (node->name != 0) {
-        NuMemFreeFn(node->name, nunode_file, 0x119);
+        NuMemFreeFn(node->name, "..\\nu2crash.ps2\\nu3d\\nunode.c", 0x119);
     }
     node->name = NuNodeStrCpy(name);
 }
@@ -301,7 +319,8 @@ void NuNodePreAddChild(struct nunode_s *parent, struct nunode_s *child)
     if (parent != 0 && child != 0) {
         switch (parent->type) {
         default:
-            NuErrorProlog(nunode_file, 0x23F)(bad_parent_type_msg);
+            NuErrorProlog("..\\nu2crash.ps2\\nu3d\\nunode.c", 0x23F)(
+                "NuNodeAddChild: Only works on transform, joint or null nodes.");
             break;
         case NUNODETYPE_NODE:
         case NUNODETYPE_TRANSFORM:
@@ -310,35 +329,6 @@ void NuNodePreAddChild(struct nunode_s *parent, struct nunode_s *child)
             first = parent->child;
             parent->child = child;
             child->next = first;
-            parent->num_children++;
-            break;
-        }
-    }
-}
-
-
-void NuNodeAddChild(struct nunode_s *parent, struct nunode_s *child)
-{
-    struct nunode_s *last;
-
-    if (parent != 0 && child != 0) {
-        switch (parent->type) {
-        default:
-            NuErrorProlog(nunode_file, 0x211)(bad_parent_type_msg);
-            break;
-        case NUNODETYPE_NODE:
-        case NUNODETYPE_TRANSFORM:
-        case NUNODETYPE_JOINT:
-            child->parent = parent;
-            if (parent->child != 0) {
-                last = parent->child;
-                while (last->next != 0) {
-                    last = last->next;
-                }
-                last->next = child;
-            } else {
-                parent->child = child;
-            }
             parent->num_children++;
             break;
         }
@@ -483,10 +473,10 @@ struct numeshnode_s *NuMeshNodeCreate(void *geometry)
 {
     struct numeshnode_s *mesh;
 
-    mesh = NuMemAllocFn(sizeof(struct numeshnode_s), nunode_file, 0x35A);
+    mesh = NuMemAllocFn(sizeof(struct numeshnode_s), "..\\nu2crash.ps2\\nu3d\\nunode.c", 0x35A);
     memset(mesh, 0, sizeof(struct numeshnode_s));
     mesh->node.type = NUNODETYPE_MESH;
-    mesh->node.id = next_node_id++;
+    mesh->node.id = global_id++;
     mesh->geometry = geometry;
     mesh->node.num_children = 0;
     mesh->node.child = 0;
@@ -501,7 +491,7 @@ struct numeshnode_s *NuMeshNodeCreate(void *geometry)
 
 void NuMeshNodeDestroy(struct nunode_s *node)
 {
-    NuMemFreeFn(node, nunode_file, 0x377);
+    NuMemFreeFn(node, "..\\nu2crash.ps2\\nu3d\\nunode.c", 0x377);
 }
 
 
@@ -509,10 +499,10 @@ struct nutransformnode_s *NuTransformNodeCreate(struct numtx_s *mtx)
 {
     struct nutransformnode_s *xform;
 
-    xform = NuMemAllocFn(sizeof(struct nutransformnode_s), nunode_file, 0x2D6);
+    xform = NuMemAllocFn(sizeof(struct nutransformnode_s), "..\\nu2crash.ps2\\nu3d\\nunode.c", 0x2D6);
     memset(xform, 0, sizeof(struct nutransformnode_s));
     xform->node.type = NUNODETYPE_TRANSFORM;
-    xform->node.id = next_node_id++;
+    xform->node.id = global_id++;
     xform->node.num_children = 0;
     xform->node.child = 0;
     xform->node.next = 0;
@@ -528,7 +518,7 @@ struct nutransformnode_s *NuTransformNodeCreate(struct numtx_s *mtx)
 
 void NuTransformNodeDestroy(struct nunode_s *node)
 {
-    NuMemFreeFn(node, nunode_file, 0x2EB);
+    NuMemFreeFn(node, "..\\nu2crash.ps2\\nu3d\\nunode.c", 0x2EB);
 }
 
 
@@ -536,10 +526,10 @@ struct nujointnode_s *NuJointNodeCreate(struct numtx_s *mtx)
 {
     struct nujointnode_s *joint;
 
-    joint = NuMemAllocFn(sizeof(struct nujointnode_s), nunode_file, 0x2FC);
+    joint = NuMemAllocFn(sizeof(struct nujointnode_s), "..\\nu2crash.ps2\\nu3d\\nunode.c", 0x2FC);
     memset(joint, 0, sizeof(struct nujointnode_s));
     joint->node.type = NUNODETYPE_JOINT;
-    joint->node.id = next_node_id++;
+    joint->node.id = global_id++;
     joint->node.num_children = 0;
     joint->node.child = 0;
     joint->node.next = 0;
@@ -562,7 +552,7 @@ struct nujointnode_s *NuJointNodeCreate(struct numtx_s *mtx)
 
 void NuJointNodeDestroy(struct nunode_s *node)
 {
-    NuMemFreeFn(node, nunode_file, 0x31A);
+    NuMemFreeFn(node, "..\\nu2crash.ps2\\nu3d\\nunode.c", 0x31A);
 }
 
 
@@ -570,10 +560,10 @@ struct nuskinnode_s *NuSkinNodeCreate(int num_joints)
 {
     struct nuskinnode_s *skin;
 
-    skin = NuMemAllocFn(sizeof(struct nuskinnode_s), nunode_file, 0x32A);
+    skin = NuMemAllocFn(sizeof(struct nuskinnode_s), "..\\nu2crash.ps2\\nu3d\\nunode.c", 0x32A);
     memset(skin, 0, sizeof(struct nuskinnode_s));
     skin->node.type = NUNODETYPE_SKIN;
-    skin->node.id = next_node_id++;
+    skin->node.id = global_id++;
     skin->node.num_children = 0;
     skin->node.child = 0;
     skin->node.next = 0;
@@ -583,8 +573,8 @@ struct nuskinnode_s *NuSkinNodeCreate(int num_joints)
     skin->geometry = 0;
     skin->num_joints = num_joints;
     if (num_joints != 0) {
-        skin->joints = NuMemAllocFn(num_joints * sizeof(int), nunode_file, 0x333);
-        skin->joint_mtxs = NuMemAllocFn(num_joints * sizeof(struct numtx_s), nunode_file, 0x334);
+        skin->joints = NuMemAllocFn(num_joints * sizeof(int), "..\\nu2crash.ps2\\nu3d\\nunode.c", 0x333);
+        skin->joint_mtxs = NuMemAllocFn(num_joints * sizeof(struct numtx_s), "..\\nu2crash.ps2\\nu3d\\nunode.c", 0x334);
     }
     return skin;
 }
@@ -593,10 +583,10 @@ struct nuskinnode_s *NuSkinNodeCreate(int num_joints)
 void NuSkinNodeDestroy(struct nuskinnode_s *skin)
 {
     if (skin->num_joints != 0) {
-        NuMemFreeFn(skin->joints, nunode_file, 0x346);
-        NuMemFreeFn(skin->joint_mtxs, nunode_file, 0x347);
+        NuMemFreeFn(skin->joints, "..\\nu2crash.ps2\\nu3d\\nunode.c", 0x346);
+        NuMemFreeFn(skin->joint_mtxs, "..\\nu2crash.ps2\\nu3d\\nunode.c", 0x347);
     }
-    NuMemFreeFn(skin, nunode_file, 0x349);
+    NuMemFreeFn(skin, "..\\nu2crash.ps2\\nu3d\\nunode.c", 0x349);
 }
 
 
@@ -604,10 +594,10 @@ struct nusplinenode_s *NuSplineNodeCreate(int num_splines)
 {
     struct nusplinenode_s *spline;
 
-    spline = NuMemAllocFn(sizeof(struct nusplinenode_s), nunode_file, 0x389);
+    spline = NuMemAllocFn(sizeof(struct nusplinenode_s), "..\\nu2crash.ps2\\nu3d\\nunode.c", 0x389);
     memset(spline, 0, sizeof(struct nusplinenode_s));
     spline->node.type = NUNODETYPE_SPLINE;
-    spline->node.id = next_node_id++;
+    spline->node.id = global_id++;
     spline->node.num_children = 0;
     spline->node.child = 0;
     spline->node.next = 0;
@@ -615,8 +605,8 @@ struct nusplinenode_s *NuSplineNodeCreate(int num_splines)
     spline->node.name = 0;
     spline->node.data = 0;
     spline->num_splines = num_splines;
-    spline->splines = NuMemAllocFn(num_splines * sizeof(void *), nunode_file, 0x38E);
-    spline->spline_data = NuMemAllocFn(num_splines * sizeof(void *), nunode_file, 0x38F);
+    spline->splines = NuMemAllocFn(num_splines * sizeof(void *), "..\\nu2crash.ps2\\nu3d\\nunode.c", 0x38E);
+    spline->spline_data = NuMemAllocFn(num_splines * sizeof(void *), "..\\nu2crash.ps2\\nu3d\\nunode.c", 0x38F);
     return spline;
 }
 
@@ -624,18 +614,18 @@ struct nusplinenode_s *NuSplineNodeCreate(int num_splines)
 void NuSplineNodeDestroy(struct nusplinenode_s *spline)
 {
     if (spline->splines != 0) {
-        NuMemFreeFn(spline->splines, nunode_file, 0x3A1);
+        NuMemFreeFn(spline->splines, "..\\nu2crash.ps2\\nu3d\\nunode.c", 0x3A1);
     }
     if (spline->spline_data != 0) {
-        NuMemFreeFn(spline->spline_data, nunode_file, 0x3A3);
+        NuMemFreeFn(spline->spline_data, "..\\nu2crash.ps2\\nu3d\\nunode.c", 0x3A3);
     }
-    NuMemFreeFn(spline, nunode_file, 0x3A4);
+    NuMemFreeFn(spline, "..\\nu2crash.ps2\\nu3d\\nunode.c", 0x3A4);
 }
 
 
 void NuNodeKeepNames(int keep)
 {
-    keep_names = keep;
+    g_nunode_keep_names = keep;
 }
 
 

@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0124"
 source = "src/game/credits.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0124:00260e70:DrawCredits"
@@ -25,12 +25,27 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0124:00632fb0:credit_speed"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0124:00632fb4:CREDITCOUNT"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0124:00632fb8:credit_time"
-state = "asm"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x00629b90
+end = 0x0062a608
+
+[[claim]]
+section = ".rodata"
+start = 0x0062a608
+end = 0x0062ac7d
+
+[[claim]]
+section = ".sdata"
+start = 0x00632f58
+end = 0x00632fb0

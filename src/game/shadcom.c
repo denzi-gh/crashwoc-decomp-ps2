@@ -38,16 +38,11 @@ struct shaddata_s {
     union shadslot_u table[1];    /* 0x04: entries[count], then names[count] */
 };
 
-extern u32 shadcol;
 extern struct numtl_s *numtl_defaultmtl3d;
 extern u8 *rndrstream_free;
 
-extern struct nuvtx_tc1_s D_005D98D0[4];
-#define shadvtx D_005D98D0
 extern s32 D_006B7650[4];
 #define shadtids D_006B7650
-extern char D_006251F8[];
-#define shadcom_file D_006251F8
 
 extern s32 NuFileSize(char *name);
 extern s32 NuFileLoadBuffer(char *name, void *buf, s32 max);
@@ -58,6 +53,8 @@ extern s32 NuRndrStreamTriStrip3dClip(struct nuvtx_tc1_s *vtx, s32 num, struct n
                                       struct nurndrstream_s *rs);
 extern u8 *vpDmaTag_CntEx(u8 *cur, s32 qwc, u32 tag);
 extern u8 *vpDmaTag_Next(u8 *cur, s32 mode);
+
+u32 shadcol = 0x7FFFFFFF;
 
 static u32 pal0[16] = {
     0x00000000, 0x20FFFFFF, 0x00000000, 0x20FFFFFF,
@@ -99,6 +96,12 @@ void ShadRndr(struct numtx_s *mtx, struct shadentry_s *shad, f32 frame, f32 scal
     f32 du;
     f32 dv;
     u32 colour;
+    static struct nuvtx_tc1_s vtx[4] = {
+        { { -1.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, { 0x7FFFFFFF }, { 0.0f, 0.0f } },
+        { { 1.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, { 0x7FFFFFFF }, { 1.0f, 0.0f } },
+        { { -1.0f, 0.0f, -1.0f }, { 0.0f, 0.0f, 0.0f }, { 0x7FFFFFFF }, { 0.0f, 1.0f } },
+        { { 1.0f, 0.0f, -1.0f }, { 0.0f, 0.0f, 0.0f }, { 0x7FFFFFFF }, { 1.0f, 1.0f } },
+    };
 
     if (shad == 0 || shad->mtl == 0) {
         return;
@@ -118,18 +121,18 @@ void ShadRndr(struct numtx_s *mtx, struct shadentry_s *shad, f32 frame, f32 scal
     col = n % shad->xframes;
     row = n / shad->xframes;
     colour = shadcol;
-    shadvtx[3].diffuse = colour;
-    shadvtx[2].diffuse = colour;
-    shadvtx[1].diffuse = colour;
-    shadvtx[0].diffuse = colour;
-    shadvtx[0].tc[0] = col * du;
-    shadvtx[0].tc[1] = row * dv;
-    shadvtx[1].tc[0] = (col + 1) * du;
-    shadvtx[1].tc[1] = row * dv;
-    shadvtx[2].tc[0] = col * du;
-    shadvtx[2].tc[1] = (row + 1) * dv;
-    shadvtx[3].tc[0] = (col + 1) * du;
-    shadvtx[3].tc[1] = (row + 1) * dv;
+    vtx[3].diffuse = colour;
+    vtx[2].diffuse = colour;
+    vtx[1].diffuse = colour;
+    vtx[0].diffuse = colour;
+    vtx[0].tc[0] = col * du;
+    vtx[0].tc[1] = row * dv;
+    vtx[1].tc[0] = (col + 1) * du;
+    vtx[1].tc[1] = row * dv;
+    vtx[2].tc[0] = col * du;
+    vtx[2].tc[1] = (row + 1) * dv;
+    vtx[3].tc[0] = (col + 1) * du;
+    vtx[3].tc[1] = (row + 1) * dv;
     m._00 = mtx->_00 * scale;
     m._01 = mtx->_01 * scale;
     m._02 = mtx->_02 * scale;
@@ -161,7 +164,7 @@ void ShadRndr(struct numtx_s *mtx, struct shadentry_s *shad, f32 frame, f32 scal
         rs->cur.b = NuTexSetPal(rs->cur.b, mtl->tid, tid, 0);
         rndrstream_free = vpDmaTag_Next(rs->cur.b, 0);
     }
-    NuRndrStreamTriStrip3dClip(shadvtx, 4, &m, rs);
+    NuRndrStreamTriStrip3dClip(vtx, 4, &m, rs);
     NuRndrStreamLink(rs);
     rs->cur.b = vpDmaTag_CntEx(rs->cur.b, 0, 0x13000000);
     rndrstream_free = vpDmaTag_Next(rs->cur.b, 0);
@@ -186,7 +189,7 @@ struct shaddata_s *ShadDataLoad(char *file, union variptr_u *buffer) {
         if (buffer == 0) {
             buffer = &local;
             external = 0;
-            local.voidptr = NuMemAllocFn(size + 0x100, shadcom_file, 0x12B);
+            local.voidptr = NuMemAllocFn(size + 0x100, ".\\shadcom.c", 0x12B);
         }
         buffer->intaddr = (buffer->intaddr + 0xF) & 0xFFFFFFF0;
         size = NuFileLoadBuffer(file, buffer->voidptr, 0x7FFFFFFF);
@@ -240,7 +243,7 @@ void ShadDataDestroy(struct shaddata_s *data) {
         NuMtlDestroy(data->table[i].entry->mtl);
     }
     if (data->external == 0) {
-        NuMemFreeFn(data, shadcom_file, 0x102);
+        NuMemFreeFn(data, ".\\shadcom.c", 0x102);
     }
 }
 

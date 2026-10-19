@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0080"
 source = "src/gamelib/sceneman.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0080:001b0fe8:NuSceneDataLoad"
@@ -81,8 +81,18 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0080:0062f808:sceneinstances"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0080:0062f80c:player_mtx"
-state = "asm"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x0061a580
+end = 0x0061a58e
+
+[[claim]]
+section = ".sdata"
+start = 0x0062f810
+end = 0x0062f83b
