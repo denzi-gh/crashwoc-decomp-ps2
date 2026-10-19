@@ -1,7 +1,7 @@
 """Unit tests for Data-from-C in gen_hybrid and the `complete` rule.
 
 The assembly below is the shape both EE compilers emit for data (from
-tools/probe_data_emission.py). The registry tests use the committed
+tools/probe_data_emission.py); the `complete` rule is in test_whole_unit.py. The registry tests use the committed
 config/pal103/data_symbols.toml (numath/nuvec4, e_pow); nothing here needs
 game files or the toolchain.
 """
@@ -14,7 +14,6 @@ sys.path.insert(0, str(ROOT / "tools"))
 from gen_hybrid import (DataItem, HybridError, _JumpTable,  # noqa: E402
                         _directive_size, _is_align_pad, _plan_data,
                         _relabel_data, _split_sections, has_c_data, parse_s, piece_name)
-from verify_promoted import complete_problems  # noqa: E402
 
 PROBE = """\
 \t.file\t1 "probe.c"
@@ -248,46 +247,6 @@ class TestHelpers(unittest.TestCase):
         self.assertFalse(_is_align_pad(bytes(4), 0x29385C, 0x293860, 2))
         self.assertFalse(_is_align_pad(bytes(12), 0x293854, 0x293860, 3))
         self.assertFalse(_is_align_pad(bytes(4), 0x29385C, 0x293860, 0))
-
-
-RANGES = [
-    {"section": ".rodata", "start": 0x100, "end": 0x160, "owner": "unit-0014"},
-    {"section": ".lit4", "start": 0x200, "end": 0x210, "owner": "unit-0014"},
-    {"section": ".lit4", "start": 0x210, "end": 0x220, "owner": "unit-0099"},
-]
-
-
-class TestCompleteRule(unittest.TestCase):
-    def report(self, retail=(), borrowed=()):
-        return {"pieces": [{"name": ".rodata.split_00000100", "start": 0x100,
-                            "end": 0x160}],
-                "retail": [list(r) for r in retail],
-                "borrowed": [{"symbol": f"D_{a:08X}", "address": a}
-                             for a in borrowed]}
-
-    def test_clean_unit(self):
-        self.assertEqual(complete_problems({}, 14, "pal103", self.report(
-            borrowed=[0x204]), RANGES), [])
-
-    def test_retail_bytes_left_in_a_piece(self):
-        why = complete_problems({}, 14, "pal103", self.report(
-            retail=[(0x140, 0x160)]), RANGES)
-        self.assertTrue(any("retail bytes" in w for w in why), why)
-
-    def test_private_borrow_outside_lit4(self):
-        why = complete_problems({}, 14, "pal103", self.report(
-            borrowed=[0x150]), RANGES)
-        self.assertTrue(any("data/private" in w for w in why), why)
-
-    def test_range_without_a_piece(self):
-        why = complete_problems({}, 14, "pal103", None, RANGES)
-        self.assertTrue(any("expected object" in w for w in why), why)
-
-    def test_bss_ownership(self):
-        ranges = RANGES + [{"section": ".bss", "start": 0x900, "end": 0x910,
-                            "owner": "unit-0014"}]
-        why = complete_problems({}, 14, "pal103", self.report(), ranges)
-        self.assertTrue(any("data/bss" in w for w in why), why)
 
 
 if __name__ == "__main__":

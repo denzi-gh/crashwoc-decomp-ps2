@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0161"
 source = "src/sdk/newlib/libm/math/e_atan2.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0161:002696c0:__ieee754_atan2"

@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0225"
 source = "src/sdk/newlib/libc/stdlib/dtoa.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0225:00274f30:quorem"
@@ -18,3 +18,8 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0225:00275148:_dtoa_r"
 state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x0062c3f0
+end = 0x0062c408

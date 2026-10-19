@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0164"
 source = "src/sdk/newlib/libm/math/e_rem_pio2.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0164:0026ab10:__ieee754_rem_pio2"

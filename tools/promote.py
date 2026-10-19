@@ -40,9 +40,13 @@ retail bytes, with a `reason`).
 
 Data symbols (`[[data]]`, ids shaped like function ids) are promoted the same
 way; `--init-data` adds the unit's table (every registry symbol with file
-bytes, `asm`). `--complete <unit id>` sets `complete = true` and runs the
-verifier, which then also proves the unit's data pieces carry no retail bytes
-beyond its `retail` entries and its .lit4 pool; it rolls back on failure.
+bytes, `asm`). `--complete <unit id>` sets `complete = true`, which switches
+the unit's hybrid to whole-unit mode (its compiler-private data, jump tables
+and pools from C, gen_hybrid), writes the `[[claim]]` table of the gap bytes
+that layout emits, and runs the verifier, which then also proves the unit's
+pieces carry no retail bytes beyond its `retail` entries and equal retail;
+it rolls back on failure. On a unit that is already complete it refreshes
+the claims.
 
 Needs the toolchain for the verify step: run via
 `python tools/dispatch.py python tools/promote.py ...` from the host.
@@ -235,11 +239,32 @@ def init_data(version, source):
 
 def set_complete(text):
     """Manifest text with `complete = true` (exactly once)."""
+    if re.search(r"^complete = true\r?$", text, flags=re.M):
+        return text
     out, n = re.subn(r"^complete = false(\r?)$", r"complete = true\1", text,
                      flags=re.M)
     if n != 1:
         raise SystemExit("promote --complete: no `complete = false` line")
     return out
+
+
+_CLAIM_BLOCK_RE = re.compile(
+    r"(?:\r?\n)*\[\[claim\]\]\r?\nsection = \"[^\"]*\"\r?\n"
+    r"start = 0x[0-9a-f]+\r?\nend = 0x[0-9a-f]+(?:\r?\n)?")
+
+
+def write_claims(text, claims):
+    """Manifest text with its `[[claim]]` table replaced by `claims`
+    ([(section, start, end)]), appended at the end."""
+    from gen_hybrid import claim_text
+    newline = "\r\n" if "\r\n" in text else "\n"
+    body = _CLAIM_BLOCK_RE.sub("", text).rstrip("\r\n") + newline
+    if "[[claim]]" in body:
+        raise SystemExit("promote --complete: a [[claim]] block is not in "
+                         "the form promote.py writes")
+    if claims:
+        body += newline + claim_text(claims).replace("\n", newline)
+    return body
 
 
 def read_manifest(path):
@@ -273,7 +298,8 @@ def main():
                              "of src/<unit>.c")
     parser.add_argument("--complete", metavar="UNIT", nargs="+",
                         help="set complete = true for unit ids "
-                             "(version:unit-NNNN) after one full verification")
+                             "(version:unit-NNNN) and write their [[claim]] "
+                             "tables, after one full verification")
     parser.add_argument("--profile", default=None,
                         help="compiler profile for the new --init manifest "
                              "(default: derived from the unit category -- "
@@ -289,13 +315,25 @@ def main():
     if args.init_data:
         return init_data(args.version, args.init_data)
     if args.complete:
+        from gen_hybrid import HybridError, plan_claims
         originals = {}
         for unit in args.complete:
             manifest, _data = manifest_for(args.version, unit)
             originals[manifest] = read_manifest(manifest)
-        for manifest, text in originals.items():
-            write_manifest(manifest, set_complete(text))
-            print(f"complete = true in {manifest.relative_to(ROOT).as_posix()}")
+        try:
+            for manifest, text in originals.items():
+                write_manifest(manifest, set_complete(text))
+                claims = plan_claims(manifest, args.version)
+                write_manifest(manifest, write_claims(read_manifest(manifest),
+                                                      claims))
+                print(f"complete = true in {manifest.relative_to(ROOT).as_posix()}"
+                      f" ({len(claims)} claim(s))")
+        except HybridError as exc:
+            for manifest, text in originals.items():
+                write_manifest(manifest, text)
+            print(f"\nwhole-unit layout FAILED, nothing changed: {exc}",
+                  file=sys.stderr)
+            return 1
         print(f"\nverifying {len(originals)} unit(s)...\n", flush=True)
         if run_verifier(args.version):
             print(f"\n{len(originals)} unit(s) complete.")

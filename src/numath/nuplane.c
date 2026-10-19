@@ -29,10 +29,6 @@
 #include "numath/nuplane.h"
 #include "numath/nuvec.h"
 
-extern char D_00614020[];
-extern char D_00614048[];
-extern char D_0062EA58[];
-
 s32 NuPlnPlnIntersect(struct nuplane_s *p0, struct nuplane_s *p1,
                       struct nuvec_s *point, struct nuvec_s *direction)
 {
@@ -87,7 +83,8 @@ s32 NuPlnPlnIntersect(struct nuplane_s *p0, struct nuplane_s *p1,
 
     if (p0->a * point->x + p0->b * point->y + p0->c * point->z + p0->d > 0.0001 ||
         p1->a * point->x + p1->b * point->y + p1->c * point->z + p1->d > 0.0001) {
-        NuErrorProlog(D_00614020, 0x187)(D_00614048);
+        NuErrorProlog("..\\nu2crash.ps2\\numath\\nuplane.c", 0x187)(
+            "Plane intersection test suspect.");
     }
     return 0;
 }
@@ -160,7 +157,7 @@ s32 NuPointRelToBoundingBox(struct nuvec_s *point, struct nuvec_s *upper,
     s32 result = 0;
 
     if (point == 0 || upper == 0 || lower == 0) {
-        NuErrorProlog(D_00614020, 0x1b3)(D_0062EA58);
+        NuErrorProlog("..\\nu2crash.ps2\\numath\\nuplane.c", 0x1b3)("assert");
     }
     if (point->x >= upper->x) {
         result = 1;

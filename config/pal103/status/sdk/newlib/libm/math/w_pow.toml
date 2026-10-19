@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0158"
 source = "src/sdk/newlib/libm/math/w_pow.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0158:00268bb0:pow"

@@ -28,9 +28,6 @@ typedef enum {
 extern const _LIB_VERSION_TYPE __fdlib_version[];
 #define _LIB_VERSION (__fdlib_version[0])
 
-extern char D_0062B298[];
-#define fmod_name D_0062B298
-
 extern double __ieee754_fmod(double x, double y);
 extern int isnan(double x);
 extern int matherr(struct exception *e);
@@ -49,7 +46,7 @@ double fmod(double x, double y)
     }
     if (y == 0.0) {
         exc.type = DOMAIN;
-        exc.name = fmod_name;
+        exc.name = "fmod";
         exc.operand1 = x;
         exc.operand2 = y;
         exc.err = 0;
