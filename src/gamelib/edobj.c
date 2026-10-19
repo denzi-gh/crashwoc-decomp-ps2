@@ -119,6 +119,7 @@
 #include "nups2/ps2ctl.h"
 #include "gamelib/debris.h"
 #include "edtools/edui.h"
+#include "edtools/edmain.h"
 
 struct edobject_s {
     int instance;
@@ -166,10 +167,23 @@ struct edobjinstance_s {
     char pad4c[0x50 - 0x4C];
 };
 
-extern struct edobject_s ObjectPath[];
-extern struct edobjinstance_s ObjectInstance[];
-extern struct nuanimdata_s *ObjectAnim[];
-extern struct nuinstanim_s ObjectInstAnim[];
+void edobjInit(void);
+void edobjClose(void);
+void edobjEnter(void);
+int edobjProc(float dt, struct nupad_s *pad);
+void edobjRender(void);
+
+struct edmainreg_s edobjdesc = {
+    0, 0, "Object Editor", edobjInit, edobjClose, edobjEnter, {0}, 0,
+    EDMAIN_BLOCKID('o', 'b', 'j', 't'), edobjProc, edobjRender
+};
+struct nuanimdata_s *ObjectAnim[64] = { 0 };
+struct edobjinstance_s ObjectInstance[64] = { { { 0 } } };
+struct nuinstanim_s ObjectInstAnim[64] = { { { 0 } } };
+struct edobject_s ObjectPath[64] = { { 0 } };
+struct numtx_s edobj_cursor_matrix = { 0 };
+struct nuvec_s edobj_cam_pos = { 0.0f, 0.0f, 0.0f };
+struct nuvec_s edobj_snap_vec = { 0.0f, 0.0f, 0.0f };
 
 extern struct nugscn_s *edobj_base_scene;
 extern void *edobj_active_menu;
@@ -202,8 +216,6 @@ extern struct eduimenu_s *edobj_sound_menu;
 extern struct eduimenu_s *edobj_soundtype_menu;
 extern int edobj_nearest_waypoint;
 extern int edobj_instance_type;
-extern struct nuvec_s edobj_snap_vec;
-extern struct nuvec_s edobj_cam_pos;
 extern int edobj_cam_ax;
 extern int edobj_cam_ay;
 extern int edobj_emitrotz;
@@ -228,7 +240,6 @@ extern signed char edbits_what_game;
 extern char edbits_level_filename[];
 extern struct numtl_s *edobj_mtl;
 extern struct numtl_s *edobj_mtl_zoff;
-extern struct numtx_s edobj_cursor_matrix;
 extern char D_00618D80[];
 extern char D_00618D90[];
 extern char D_00618DA0[];

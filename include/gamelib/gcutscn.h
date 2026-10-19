@@ -210,7 +210,7 @@ struct instNUGCUTSCENE_s {
     struct numtx_s mtx;                 /* 0x18 valid if NUGCUTSCENE_MATRIXSET */
     struct NUGCUTSCENE_s *def;          /* 0x58 */
     struct nuvec_s centre;              /* 0x5C */
-    char pad68[4];                      /* 0x68 */
+    float maxvisidist_sq;               /* 0x68 */
     int flags;                          /* 0x6C NUGCUTSCENE_* */
     float time;                         /* 0x70 current frame */
     float speed;                        /* 0x74 frames per update */
@@ -226,7 +226,10 @@ struct instNUGCUTSCENE_s {
 #define NUGCUTSCENE_STARTED   0x001
 #define NUGCUTSCENE_RUNNING   0x002
 #define NUGCUTSCENE_LOOP      0x004 /* instNuGCutSceneUpdate: restart at the end */
+#define NUGCUTSCENE_AUTOSTART 0x008
 #define NUGCUTSCENE_MATRIXSET 0x010
+#define NUGCUTSCENE_CLIPBOUNDS 0x020
+#define NUGCUTSCENE_CLIPDIST  0x040
 #define NUGCUTSCENE_VISIBLE   0x080
 #define NUGCUTSCENE_DISABLED  0x100
 #define NUGCUTSCENE_UPDATED   0x200
@@ -269,7 +272,7 @@ int instNuGCutSceneIsFinished(struct instNUGCUTSCENE_s *scene);
 void instNuGCutSceneUpdate(struct instNUGCUTSCENE_s *scene, int paused);
 void instNuGCutSceneReset(struct instNUGCUTSCENE_s *scene);
 void instNuGCutSceneCreateCamTgtArray(struct instNUGCUTSCENE_s *scene, int count, union variptr_u *heap);
-int instNuGCutSceneAddCamTgt(struct instNUGCUTSCENE_s *scene, struct nuvec_s *object, char camid, float frame, float nframes);
+int instNuGCutSceneAddCamTgt(struct instNUGCUTSCENE_s *scene, struct nuvec_s *object, float frame, float nframes, char camid);
 void instNuGCutSceneSetPos(struct instNUGCUTSCENE_s *scene, struct nuvec4_s *pos);
 void instNuGCutSceneTranslate(struct instNUGCUTSCENE_s *scene, struct nuvec_s *offset);
 void instNuGCutSceneRotateY(struct instNUGCUTSCENE_s *scene, int angle);

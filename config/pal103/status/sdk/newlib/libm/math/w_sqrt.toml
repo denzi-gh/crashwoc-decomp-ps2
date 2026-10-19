@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0159"
 source = "src/sdk/newlib/libm/math/w_sqrt.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0159:00268fe0:sqrt"

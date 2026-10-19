@@ -22,6 +22,9 @@ toolchain, so it runs on every pull request:
     bytes (.data, .rodata, .sdata) exactly once -- never a .sbss/.bss one
   * `complete = true` requires every function to be `matching` and every
     data entry `matching` or `retail` (the byte rules are verify_promoted's)
+  * the optional `[[claim]]` table (section/start/end, written by
+    promote.py --complete) only on a complete unit: each claim inside one
+    unassigned data-map gap, no overlaps, no gap claimed by two units
   * every src/**/*.c has a manifest, so no source file can escape accounting
 
 A `matching` state here is a *claim*; the container-side verifier re-derives
@@ -43,10 +46,11 @@ from declib.tu import parse_toml_blocks
 
 STATES = ("asm", "equivalent", "matching")
 MANIFEST_KEYS = {"schema", "unit", "source", "profile", "complete", "function",
-                 "data"}
+                 "data", "claim"}
 FUNCTION_KEYS = {"id", "state"}
 DATA_STATES = ("asm", "matching", "retail")
 DATA_KEYS = {"id", "state", "reason"}
+CLAIM_KEYS = {"section", "start", "end"}
 # Data sections with file bytes; .sbss/.bss symbols never get [[data]] entries.
 DATA_PROGBITS = (".data", ".rodata", ".sdata")
 ID_RE = re.compile(r"^([a-z0-9]+):unit-(\d{4}):([0-9a-f]{8}):(\S+)$")
@@ -134,6 +138,57 @@ def check_data(entries, version, unit_index, registry):
             problems.append(f"data symbol 0x{addr:08x} ({unit_syms[addr]['name']}) "
                             f"not listed")
     return problems, states
+
+
+def load_data_gaps(config_dir):
+    """[(section, start, end)] of the data map's unassigned gap ranges ([]
+    when the map is absent)."""
+    path = Path(config_dir) / "data_map.toml"
+    if not path.is_file():
+        return []
+    stat = path.stat()
+    return _data_gaps(str(path), stat.st_mtime_ns, stat.st_size)
+
+
+@functools.lru_cache(maxsize=4)
+def _data_gaps(path, _mtime, _size):
+    return [(r["section"], r["start"], r["end"])
+            for r in tomllib.loads(Path(path).read_text()).get("range", [])
+            if r["owner"] == "unassigned"]
+
+
+def check_claims(claims, complete, gaps):
+    """(problems, {(section, gap start)}) for a manifest's `[[claim]]` table:
+    the gap bytes a complete unit's whole-unit hybrid emits (written by
+    promote.py --complete). Each claim lies inside one data-map gap; claims
+    never overlap."""
+    problems, used, seen = [], set(), []
+    if claims and not complete:
+        problems.append("[[claim]] needs complete = true")
+    for i, claim in enumerate(claims):
+        unknown = set(claim) - CLAIM_KEYS
+        if unknown:
+            problems.append(f"claim #{i}: unknown keys: {', '.join(sorted(unknown))}")
+        section, start, end = claim.get("section"), claim.get("start"), claim.get("end")
+        if section not in DATA_PROGBITS:
+            problems.append(f"claim #{i}: section must be one of "
+                            f"{', '.join(DATA_PROGBITS)}, got {section!r}")
+            continue
+        if not isinstance(start, int) or not isinstance(end, int) or start >= end:
+            problems.append(f"claim #{i}: start/end must be integers with "
+                            f"start < end")
+            continue
+        gap = next((g for g in gaps if g[0] == section
+                    and g[1] <= start and end <= g[2]), None)
+        if gap is None:
+            problems.append(f"claim #{i}: {section} 0x{start:08x}-0x{end:08x} "
+                            f"is not inside one data-map gap")
+            continue
+        if any(s == section and start < e and b < end for s, b, e in seen):
+            problems.append(f"claim #{i}: overlaps another claim")
+        seen.append((section, start, end))
+        used.add((section, gap[1]))
+    return problems, used
 
 
 def load_profile_names(config_dir):
@@ -263,6 +318,10 @@ def check_manifest(path, version, root):
                     for s in data_registry.get(unit_index, {}).values()):
         problems.append("complete = true but the unit's data symbols have no "
                         "[[data]] entries (promote.py --init-data)")
+    claim_problems, _gaps = check_claims(data.get("claim", []),
+                                         data.get("complete"),
+                                         load_data_gaps(config_dir))
+    problems += claim_problems
 
     return problems
 
@@ -278,6 +337,8 @@ def check_version(version, root):
     counts.update({f"data_{s}": 0 for s in DATA_STATES})
 
     manifests = sorted(status_dir.rglob("*.toml")) if status_dir.is_dir() else []
+    gaps = load_data_gaps(root / "config" / version)
+    claimed = {}
     for path in manifests:
         rel = path.relative_to(status_dir).as_posix()
         problems = check_manifest(path, version, root)
@@ -288,6 +349,13 @@ def check_version(version, root):
                 counts[entry["state"]] += 1
             for entry in data.get("data", []):
                 counts[f"data_{entry['state']}"] += 1
+            # A claimed gap range is supplied whole by its claimant's hybrid.
+            _p, used = check_claims(data.get("claim", []), True, gaps)
+            for key in used:
+                other = claimed.setdefault(key, rel)
+                if other != rel:
+                    problems.append(f"{key[0]} gap 0x{key[1]:08x} is also "
+                                    f"claimed by {other}")
 
     # Every C source must be accounted for by a manifest.
     src_dir = root / "src"

@@ -75,6 +75,16 @@ confidence = "proven"
 evidence = ["tools/gen_hybrid.py::_rewrite_lis", "tools/gen_hybrid.py::Lit4Mapper.map_for_slice8", "tests/test_fp_pool.py"]
 
 [[quirk]]
+id = "default.assembler-pool-order"
+profiles = ["default", "sce"]
+category = "literal_pool"
+signature = "a unit's .lit4 run and the 8-byte `li.d $gpr` literals in its .rodata"
+effect = "both retail assemblers give every pool-bound li.s its own .lit4 slot and every `li.d $gpr` that is not built inline (each 32-bit half needs a zero 16-bit half to be built inline) its own 8-aligned .rodata literal, appended in assembly order between the compiler's own .rdata objects; nothing is merged, and the data follows retail function order (kprintf: $LC strings, 0.1, 0.1, 1e6, then the jump table)"
+handling = "partially matched units borrow the retail slots (_rewrite_lis); complete units emit the pools from C in whole-unit mode (tools/gen_hybrid.py::_Pool, _whole_unit_layout)"
+confidence = "proven"
+evidence = ["tools/gen_hybrid.py::_whole_unit_layout", "tests/test_whole_unit.py"]
+
+[[quirk]]
 id = "default.jump-table-rodata"
 profiles = ["default", "sce"]
 category = "jump_table_rodata"

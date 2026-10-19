@@ -120,24 +120,6 @@ struct lconv {
 extern struct _reent *_impure_ptr[];
 extern int __mb_cur_max[];
 
-extern char D_0062C0C0[];
-extern char D_0062C0C8[];
-extern char D_0062C0D0[];
-extern char D_0062C0E8[];
-extern char D_0062C0F0[];
-extern char D_0062C108[];
-extern char D_0062C128[];
-extern char D_0062C130[];
-
-#define str_inf D_0062C0C0
-#define str_nan D_0062C0C8
-#define xdigits_lower D_0062C0D0
-#define str_null D_0062C0E8
-#define xdigits_upper D_0062C0F0
-#define str_bad_base D_0062C108
-#define str_zero D_0062C128
-#define str_point D_0062C130
-
 #define MB_CUR_MAX (__mb_cur_max[0])
 
 extern int __sfvwrite(FILE *fp, struct __suio *uio);
@@ -384,12 +366,12 @@ reswitch:
                 if (_double < 0) {
                     sign = '-';
                 }
-                cp = str_inf;
+                cp = "Inf";
                 size = 3;
                 break;
             }
             if (isnan(_double)) {
-                cp = str_nan;
+                cp = "NaN";
                 size = 3;
                 break;
             }
@@ -448,13 +430,13 @@ reswitch:
         case 'p':
             _uquad = (unsigned long)va_arg(ap, void *);
             base = HEX;
-            xdigs = xdigits_lower;
+            xdigs = "0123456789abcdef";
             flags |= HEXPREFIX;
             ch = 'x';
             goto nosign;
         case 's':
             if ((cp = va_arg(ap, char *)) == 0) {
-                cp = str_null;
+                cp = "(null)";
             }
             if (prec >= 0) {
                 char *p = memchr(cp, 0, prec);
@@ -479,10 +461,10 @@ reswitch:
             base = DEC;
             goto nosign;
         case 'X':
-            xdigs = xdigits_upper;
+            xdigs = "0123456789ABCDEF";
             goto hex;
         case 'x':
-            xdigs = xdigits_lower;
+            xdigs = "0123456789abcdef";
 hex:
             _uquad = UARG();
             base = HEX;
@@ -521,7 +503,7 @@ number:
                     } while (_uquad);
                     break;
                 default:
-                    cp = str_bad_base;
+                    cp = "bug in vfprintf: bad base";
                     size = strlen(cp);
                     goto skipsize;
                 }
@@ -570,13 +552,13 @@ skipsize:
         } else {
             if (ch >= 'f') {
                 if (_double == 0) {
-                    PRINT(str_zero, 1);
+                    PRINT("0", 1);
                     if (expt < ndig || (flags & ALT) != 0) {
                         PRINT(decimal_point, 1);
                         PAD(ndig - 1, zeroes);
                     }
                 } else if (expt <= 0) {
-                    PRINT(str_zero, 1);
+                    PRINT("0", 1);
                     PRINT(decimal_point, 1);
                     PAD(-expt, zeroes);
                     PRINT(cp, ndig);
@@ -584,12 +566,12 @@ skipsize:
                     PRINT(cp, ndig);
                     PAD(expt - ndig, zeroes);
                     if (flags & ALT) {
-                        PRINT(str_point, 1);
+                        PRINT(".", 1);
                     }
                 } else {
                     PRINT(cp, expt);
                     cp += expt;
-                    PRINT(str_point, 1);
+                    PRINT(".", 1);
                     PRINT(cp, ndig - expt);
                 }
             } else {

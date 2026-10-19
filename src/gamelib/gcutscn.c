@@ -291,10 +291,6 @@ inline void instNuGCutSceneEnd(struct instNUGCUTSCENE_s *scene) {
 }
 
 
-#define NUGCUTSCENE_AUTOSTART 0x008
-#define NUGCUTSCENE_CLIPBOUNDS 0x020
-#define NUGCUTSCENE_CLIPDIST  0x040
-
 extern int D_0062F7C8;
 #define cutscene_rndr_cameras D_0062F7C8
 
@@ -308,7 +304,7 @@ static inline void instNuGCutSceneClipTest(struct instNUGCUTSCENE_s *scene) {
         return;
     }
     if (scene->flags & NUGCUTSCENE_CLIPDIST) {
-        if (NuCameraDistSqr(&scene->centre) > *(float *)scene->pad68) {
+        if (NuCameraDistSqr(&scene->centre) > scene->maxvisidist_sq) {
             scene->flags &= ~NUGCUTSCENE_VISIBLE;
             return;
         }
@@ -422,7 +418,7 @@ void instNuGCutSceneCreateCamTgtArray(struct instNUGCUTSCENE_s *scene, int count
 }
 
 
-int instNuGCutSceneAddCamTgt(struct instNUGCUTSCENE_s *scene, struct nuvec_s *object, char camid, float frame, float nframes) {
+int instNuGCutSceneAddCamTgt(struct instNUGCUTSCENE_s *scene, struct nuvec_s *object, float frame, float nframes, char camid) {
     struct instNUGCUTCAMSYS_s *camsys = scene->camsys;
 
     if (camsys && camsys->count < camsys->max) {

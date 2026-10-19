@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0019"
 source = "src/numath/nuplane.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0019:0010be70:NuPlnPlnIntersect"
@@ -86,3 +86,8 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0019:0010d288:NuClipZPlane"
 state = "matching"
+
+[[claim]]
+section = ".sdata"
+start = 0x0062ea58
+end = 0x0062ea5f

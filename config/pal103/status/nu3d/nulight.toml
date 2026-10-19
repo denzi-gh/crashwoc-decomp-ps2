@@ -33,11 +33,11 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0042:00139788:NuLightHaze"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0042:0013af40:NuLightPolyHaze"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0042:0013cbe8:NuLightFogDraw"

@@ -36,6 +36,15 @@ renamed onto the retail symbol. A sidecar `<object>.data.json` records the
 pieces, the retail byte ranges in them and the compiler-private retail slots
 the code borrows (verify_promoted's `complete` rule reads it).
 
+Whole-unit mode (data/private): a `complete` unit's hybrid borrows nothing.
+Its compiler-private data -- `$LC` strings and aggregates, jump tables, the
+`li.d $gpr` pool and the .lit4 pool, which gen_hybrid allocates itself the
+way the retail assemblers did -- is laid out per section in retail function
+order, anchored where the retail references put it, and emitted into the
+pieces together with the named objects. Bytes that land in a data-map gap
+are the unit's `[[claim]]`s (promote.py --complete writes them; the image
+link then takes that gap range from this hybrid).
+
 Anything this tool cannot yet represent fails loudly instead of guessing:
 a declared function missing from the C, C data without a [[data]] table, in
 the wrong section or of the wrong size, uninitialised (.bss/COMMON) C data,
@@ -86,14 +95,15 @@ def _is_noise(line):
     return not s or s.startswith("#")
 
 
-def parse_s(text, data_items=None):
+def parse_s(text, data_items=None, stream=None):
     """(prologue_lines, [(name, segment_lines)...]) from `ee-gcc -S` output.
 
     Local initialized aggregates come back separately as {label: bytes};
     named data objects are appended to `data_items` (a list) when given and
-    rejected otherwise; anything unexpected raises.
+    rejected otherwise; anything unexpected raises. `stream` collects every
+    data object in assembly order (_split_sections).
     """
-    lines, local_data, items = _split_sections(text.splitlines())
+    lines, local_data, items = _split_sections(text.splitlines(), stream)
     if items:
         if data_items is None:
             raise HybridError(f"data section in compiler output not supported "
@@ -430,11 +440,12 @@ FUNCTION_STATIC_RE = re.compile(r"^(.+)\.(\d+)$")
 class DataItem:
     """One labelled object the compiler emitted in a data section."""
 
-    def __init__(self, name, section, align):
+    def __init__(self, name, section, align, line=None):
         self.name, self.section, self.align = name, section, align
         self.lines = []          # its data directives (interior .align kept)
         self.size = None         # from `.size NAME,N`
         self.globl = False
+        self.line = line         # index of its label in the compiled .s
 
     def __repr__(self):
         return f"DataItem({self.name!r}, {self.section!r})"
@@ -451,7 +462,7 @@ def _section_switch(line):
     return _SECTION_NAMES.get(name, f".{name}")
 
 
-def _split_sections(lines):
+def _split_sections(lines, stream=None):
     """Split compiled assembly by section.
 
     Returns (text_lines, private, items): the code stream with every data
@@ -459,7 +470,9 @@ def _split_sections(lines):
     aggregates as bytes, $Ln switch tables as _JumpTable markers), and the
     named data objects as DataItem (`.comm`/`.lcomm` as section 'COMMON').
     `.globl`, `.align`, `.type` and `.size` attach to the label that follows
-    them; an `.align` followed by more data stays interior to its object."""
+    them; an `.align` followed by more data stays interior to its object.
+    `stream` (a list) receives every labelled object, private and named, in
+    assembly order with its line index (the whole-unit layout)."""
     labels, section, previous = set(), ".text", ".text"
     for line in lines:
         new = _section_switch(line)
@@ -474,7 +487,7 @@ def _split_sections(lines):
     text, private_items, items = [], [], []
     section, previous = ".text", ".text"
     current, pending_align, globls, sizes = None, None, set(), {}
-    for line in lines:
+    for index, line in enumerate(lines):
         new = _section_switch(line)
         if new is not None:
             old = section
@@ -521,9 +534,11 @@ def _split_sections(lines):
             raise HybridError(f"function inside a data section: {s!r}")
         m = _DATA_LABEL_RE.match(line)
         if m:
-            current = DataItem(m.group(1), section, pending_align)
+            current = DataItem(m.group(1), section, pending_align, index)
             pending_align = None
             (private_items if current.name.startswith("$") else items).append(current)
+            if stream is not None:
+                stream.append(current)
             continue
         if current is None:
             raise HybridError(
@@ -950,7 +965,51 @@ def _slice_lines(version, unit_dir, name, addr):
             ".set reorder", ".set at"]
 
 
-def _rewrite_lis(seg, version, unit_dir, name, addr, mapper_box):
+def pooled_gpr8(bits):
+    """Does the assembler pool a `li.d $gpr` image instead of building it?
+
+    Inline only when each 32-bit half has a zero 16-bit half (lui/ori plus
+    shifts, as GNU as decides); everything else is an 8-byte `.rodata`
+    literal (kprintf: 0.1 and 1e6 pooled, 1.0 and 10.0 inline)."""
+    def simple(word):
+        return (word >> 16) == 0 or (word & 0xFFFF) == 0
+    return not (simple(bits >> 32) and simple(bits & 0xFFFFFFFF))
+
+
+class _Pool:
+    """The literal pools a whole-unit hybrid emits itself, in assembly order:
+    one `.lit4` slot per pool-bound li.s and one 8-byte `.rodata` literal per
+    pooled `li.d $gpr`, never merged (retail: every .lit4 word is used once).
+
+    `entries` keeps, per function, the kind of every pool decision in line
+    order ("lit4", "gpr8", or "dli" for an inline li.d) with its label, so it
+    can be paired with the retail slots the normal borrow pass finds."""
+
+    def __init__(self):
+        self.function = None
+        self.entries = {}
+        self.count = 0
+
+    def add(self, kind):
+        label = f"$Lpool{self.count}"
+        self.count += 1
+        self.entries.setdefault(self.function, []).append((kind, label))
+        return label
+
+    def inline(self):
+        self.entries.setdefault(self.function, []).append(("dli", None))
+
+
+def _pool_block(section, align, label, value):
+    """Data lines for one pool literal, spliced in right after its load."""
+    return [f"\t{section}", f"\t.align\t{align}", f"{label}:",
+            *(f"\t.word\t0x{w:08X}" for w in
+              struct.unpack(f"<{len(value) // 4}I", value)),
+            "\t.previous"]
+
+
+def _rewrite_lis(seg, version, unit_dir, name, addr, mapper_box, pool=None,
+                 trace=None):
     """Rewrite pool-bound `li.s`/`li.d` lines in one compiled segment.
 
     ee-gcc defers float/double materialization to the assembler: a constant
@@ -965,6 +1024,12 @@ def _rewrite_lis(seg, version, unit_dir, name, addr, mapper_box):
     are consumed positionally in slice-appearance order; the whole-unit byte
     gates verify the assignment, and any constant that cannot be mapped
     unambiguously fails loudly.
+
+    With a `pool` (whole-unit mode, over the whole compiled file) nothing is
+    borrowed: each pool-bound constant gets its own `_Pool` label and a data
+    block right after the load, so the assembler order of the pools is the
+    file's. `trace` (a list) records the retail slot every borrowed load got,
+    as (kind, symbol) in line order -- the anchors a whole-unit layout needs.
     """
     if not any("li.s" in l or "li.d" in l for l in seg):
         return seg, []
@@ -1004,6 +1069,9 @@ def _rewrite_lis(seg, version, unit_dir, name, addr, mapper_box):
         mr = _SET_REORDER_RE.match(line)
         if mr:
             reorder = mr.group(1) is None
+        me = _ENT_RE.match(line)
+        if me and pool is not None:
+            pool.function = me.group(1)
         ms, md = _LIS_RE.match(line), _LID_RE.match(line)
         if ms:
             reg, const, size, load, low = ms.group(1), ms.group(2), 4, "lwc1", \
@@ -1025,6 +1093,21 @@ def _rewrite_lis(seg, version, unit_dir, name, addr, mapper_box):
                     except ValueError:
                         raise HybridError(
                             f"{name}: unparseable {op} constant {const!r}")
+                    if pool is not None and op == "li.d":
+                        if pooled_gpr8(bits):
+                            label = pool.add("gpr8")
+                            emit_unswappable([
+                                "\t.set\tnoat",
+                                f"\tlui\t$at,%hi({label})",
+                                f"\tld\t{reg},%lo({label})($at)",
+                                "\t.set\tat",
+                            ])
+                            out.extend(_pool_block(".rdata", 3, label,
+                                                   struct.pack("<Q", bits)))
+                            continue
+                        pool.inline()
+                        emit_unswappable([f"\tdli\t{reg},0x{bits:016X}"])
+                        continue
                     # Costly images are pooled by Sony's `as` into unit-owned
                     # data instead of built inline; borrow retail's slot when
                     # the function's own slice addresses one holding exactly
@@ -1034,6 +1117,8 @@ def _rewrite_lis(seg, version, unit_dir, name, addr, mapper_box):
                     if k < len(slots):
                         sym = slots[k]
                         used[("gpr8", bits)] = k + 1
+                        if trace is not None:
+                            trace.append(("gpr8", sym))
                         # Explicit %hi/%lo, not the `ld $reg,SYM` macro: under
                         # -G8 an 8-byte `.extern` is a small symbol and the
                         # macro would collapse to a single gp-relative load.
@@ -1052,6 +1137,8 @@ def _rewrite_lis(seg, version, unit_dir, name, addr, mapper_box):
                     # bit pattern, zero-extended. The byte gate is the backstop
                     # if decompals `as` ever expands `dli` unlike retail's SN as.
                     if op == "li.d":
+                        if trace is not None:
+                            trace.append(("dli", None))
                         emit_unswappable([f"\tdli\t{reg},0x{bits:016X}"])
                     else:
                         out.append(f"\tdli\t{reg},0x{bits:08X}")
@@ -1068,6 +1155,15 @@ def _rewrite_lis(seg, version, unit_dir, name, addr, mapper_box):
         if bits & low == 0:            # low half zero -> inline lui+mtc1
             out.append(line)
             continue
+        if pool is not None:
+            if size != 4:
+                raise HybridError(f"{name}: li.d into an FPR (.lit8) is not "
+                                  f"supported in whole-unit mode")
+            label = pool.add("lit4")
+            out.append(f"\tlwc1\t{reg},%gp_rel({label})($28)")
+            out.extend(_pool_block(".section\t.lit4", 2, label,
+                                   struct.pack("<I", bits)))
+            continue
         slots = slots_for(size, bits)
         k = used.get((size, bits), 0)
         if k >= len(slots):
@@ -1077,20 +1173,24 @@ def _rewrite_lis(seg, version, unit_dir, name, addr, mapper_box):
                 f"retail function's gp references")
         sym = slots[k]
         used[(size, bits)] = k + 1
+        if trace is not None:
+            trace.append(("lit4" if size == 4 else "lit8", sym))
         out.append(f"\t{load}\t{reg},{sym}")
         externs.append(f"\t.extern\t{sym}, {size}")
     return out, externs
 
 
 def _rewrite_local_data(seg, local_data, version, unit_dir, name, addr,
-                        mapper_box):
+                        mapper_box, trace=None):
     """Rewrite references to a compiler-private initialized aggregate ($LCn)
     or switch jump table ($Ln) onto the retail slot it borrows.
 
     A constant aggregate borrows the owned-data slot holding the same bytes; a
     `_JumpTable` borrows the retail jtbl_/jpt_ slot the slice addresses. Returns
     (lines, extern_directives); segments that touch no captured local label
-    pass through untouched, so this is free for the common case."""
+    pass through untouched, so this is free for the common case. `trace` (a
+    dict) collects every {label: retail symbol} decision; a label two
+    functions map onto different slots fails loudly."""
     if not local_data:
         return seg, []
     # Match a private label only on word boundaries, exactly as the rewrite
@@ -1133,6 +1233,9 @@ def _rewrite_local_data(seg, local_data, version, unit_dir, name, addr,
             sym = mapper_box[0].map_owned_data(slice_text, val, name, unit_dir)
             externs.append(f"\t.extern\t{sym}, {len(val)}")
         rename[lbl] = sym
+        if trace is not None and trace.setdefault(lbl, sym) != sym:
+            raise HybridError(f"{name}: {lbl} borrows {sym}, another function "
+                              f"borrows {trace[lbl]}")
     out = []
     for line in seg:
         for lbl, sym in rename.items():
@@ -1190,40 +1293,22 @@ def has_c_data(data):
     return "matching" in data_states(data).values()
 
 
-def _plan_data(items, data, version, unit_dir, report):
-    """Map compiled data objects onto the unit's registry symbols.
+def _registry_map(items, version, unit_dir):
+    """[(item, registry symbol)] for the compiled named data objects.
 
-    Returns (rename, emit): label renames for every compiled data object
-    (a function static's compiler number becomes the retail one; a dropped
-    static's references go to `D_<VRAM>`, the retail address, so they
-    resolve like any retail datum) and the [(DataItem, symbol)] the hybrid
-    emits -- the `matching` entries; everything else is dropped and stays
-    retail bytes. The k-th compiled `stem.N` is the k-th registry function
-    static with that stem in address order."""
-    if not items:
-        if not report:
-            missing = [a for a, s in data_states(data).items() if s == "matching"]
-            if missing:
-                raise HybridError(f"matching data at {', '.join(f'0x{a:08x}' for a in missing)} "
-                                  f"is not defined in {data['source']}")
-        return {}, []
-    if not data.get("data"):
-        raise HybridError(f"data section in compiler output not supported yet: "
-                          f"{items[0].name} ({items[0].section}) -- a unit's C "
-                          f"defines data only with a [[data]] table "
-                          f"(promote.py --init-data)")
+    The k-th compiled `stem.N` is the k-th registry function static with
+    that stem in address order; every object must be a registry symbol of the
+    unit, in the registry's section."""
     from status import load_data_registry
     unit_index = int(unit_dir.split("-")[1])
     registry = load_data_registry(ROOT / "config" / version).get(unit_index, {})
-    states = data_states(data)
     by_name = {s["name"]: s for s in registry.values()
                if s["scope"] != "function_static"}
     stems = {}
     for sym in sorted(registry.values(), key=lambda s: s["address"]):
         if sym["scope"] == "function_static":
             stems.setdefault(sym["stem"], []).append(sym)
-    seen = {}
-    rename, emit = {}, []
+    seen, out = {}, []
     for item in items:
         if item.section in ("COMMON", ".sbss", ".bss"):
             raise HybridError(f"{item.name}: C defines uninitialised data "
@@ -1248,6 +1333,35 @@ def _plan_data(items, data, version, unit_dir, report):
                 f"data_section_mismatch: {item.name} compiles into {item.section}, "
                 f"retail {sym['name']} is in {sym['section']} (check const and "
                 f"the profile's -G)")
+        out.append((item, sym))
+    return out
+
+
+def _plan_data(items, data, version, unit_dir, report):
+    """Map compiled data objects onto the unit's registry symbols.
+
+    Returns (rename, emit): label renames for every compiled data object
+    (a function static's compiler number becomes the retail one; a dropped
+    static's references go to `D_<VRAM>`, the retail address, so they
+    resolve like any retail datum) and the [(DataItem, symbol)] the hybrid
+    emits -- the `matching` entries; everything else is dropped and stays
+    retail bytes. The k-th compiled `stem.N` is the k-th registry function
+    static with that stem in address order."""
+    if not items:
+        if not report:
+            missing = [a for a, s in data_states(data).items() if s == "matching"]
+            if missing:
+                raise HybridError(f"matching data at {', '.join(f'0x{a:08x}' for a in missing)} "
+                                  f"is not defined in {data['source']}")
+        return {}, []
+    if not data.get("data"):
+        raise HybridError(f"data section in compiler output not supported yet: "
+                          f"{items[0].name} ({items[0].section}) -- a unit's C "
+                          f"defines data only with a [[data]] table "
+                          f"(promote.py --init-data)")
+    states = data_states(data)
+    rename, emit = {}, []
+    for item, sym in _registry_map(items, version, unit_dir):
         if not report and states.get(sym["address"]) == "matching":
             if sym["section"] not in C_DATA_SECTIONS:
                 raise HybridError(f"{sym['name']}: {sym['section']} data from C "
@@ -1388,6 +1502,467 @@ def _relabel_data(lines, rename):
     return [pattern.sub(lambda m: rename[m.group(1)], l) for l in lines]
 
 
+# --------------------------------------------------------------------------- #
+# Whole-unit mode (data/private)                                              #
+# --------------------------------------------------------------------------- #
+
+def whole_unit(data):
+    """True when the hybrid supplies every data byte of the unit from C.
+
+    That is every `complete` unit. Its compiler-private data ($LC strings and
+    aggregates, jump tables, the `li.d` GPR pool and the .lit4 pool) is laid
+    out the way the assembler did and emitted into the unit's pieces instead
+    of borrowing retail slots; bytes it emits outside its owned ranges sit in
+    adjacent data-map gaps and are its `[[claim]]`s."""
+    return bool(data.get("complete"))
+
+
+def provides_data(data):
+    """True when the unit's hybrid is its data provider in the image link."""
+    return has_c_data(data) or whole_unit(data)
+
+
+def manifest_claims(data):
+    """[(section, start, end)] of a manifest's `[[claim]]` table."""
+    return sorted((c["section"], c["start"], c["end"])
+                  for c in data.get("claim", []))
+
+
+def claim_text(claims):
+    """`[[claim]]` blocks for [(section, start, end)] (promote.py writes them)."""
+    lines = []
+    for section, start, end in claims:
+        lines += ["[[claim]]", f'section = "{section}"',
+                  f"start = 0x{start:08x}", f"end = 0x{end:08x}", ""]
+    return "\n".join(lines)
+
+
+_NUMBER_RE = re.compile(r"^-?(?:0x[0-9A-Fa-f]+|\d+)$")
+# The MIPS assembler aligns these to their size unless `.align 0` is in
+# effect, dragging a label defined right before them along.
+_NATURAL_ALIGN = {".half": 1, ".hword": 1, ".short": 1, ".word": 2,
+                  ".gpword": 2, ".long": 2, ".float": 2, ".dword": 3,
+                  ".quad": 3, ".double": 3}
+
+
+def _first_directive(item):
+    for line in item.lines:
+        s = line.strip()
+        if s and not _ALIGN_ARG_RE.match(line):
+            return s.split()[0]
+    return None
+
+
+def _item_atoms(item, offset):
+    """(atoms, size) of a compiled data object placed at section offset
+    `offset`. An atom is (offset, bytes) or (offset, ("word", expression)) --
+    a symbolic `.word` stays a relocation. Interior `.align` and the natural
+    alignment of `.half`/`.word`/`.dword` pad relative to the section, as the
+    assembler does."""
+    atoms, cur = [], offset
+
+    def pad_to(log):
+        nonlocal cur
+        pad = -cur % (1 << log)
+        if pad:
+            atoms.append((cur, bytes(pad)))
+            cur += pad
+
+    for line in item.lines:
+        a = _ALIGN_ARG_RE.match(line)
+        if a:
+            pad_to(int(a.group(1)))
+            continue
+        raw = line.strip()
+        if not raw or raw.startswith("#"):
+            continue
+        word = raw.split()[0]
+        if word in _NATURAL_ALIGN:
+            pad_to(_NATURAL_ALIGN[word])
+        if word in (".word", ".gpword", ".long"):
+            args = [x.strip() for x in raw.split(None, 1)[1].split("#", 1)[0]
+                    .split(",") if x.strip()]
+            for arg in args:
+                if _NUMBER_RE.match(arg):
+                    atoms.append((cur, (int(arg, 0) & 0xFFFFFFFF)
+                                  .to_bytes(4, "little")))
+                else:
+                    atoms.append((cur, ("word", arg)))
+                cur += 4
+            continue
+        try:
+            blob = _assemble_data_bytes([line])
+        except ValueError:
+            raise HybridError(f"{item.name}: unsupported data directive "
+                              f"{raw!r} (only .word may name a symbol)")
+        if blob:
+            atoms.append((cur, blob))
+            cur += len(blob)
+    return atoms, cur - offset
+
+
+def _symbol_address(sym, version):
+    """Retail address of a symbol name, as the image link resolves it."""
+    from declib.asmtext import AUTO_NAME_RE, load_symbol_addrs
+    addr = load_symbol_addrs(version).get(sym)
+    if addr is None:
+        m = AUTO_NAME_RE.fullmatch(sym)
+        addr = int(m.group(1), 16) if m else None
+    return addr
+
+
+def _retail_anchors(compiled, functions, unit_dir, version):
+    """Where retail keeps the compiler-private objects the code references.
+
+    Runs the normal borrow pass over every function -- the retail slot each
+    pool load and each private label borrows from the function's own slice --
+    without emitting anything. Returns ({label: address}, {function:
+    [(kind, address)]}) with the pool decisions in line order."""
+    _prologue, segments, local_data = parse_s(compiled, [])
+    seg_by_name = dict(segments)
+    box, labels, pools = [None], {}, {}
+    for addr, name, _state in functions:
+        seg = seg_by_name.get(name)
+        if seg is None:
+            continue
+        trace = []
+        _rewrite_lis(seg, version, unit_dir, name, addr, box, trace=trace)
+        _rewrite_local_data(seg, local_data, version, unit_dir, name, addr,
+                            box, trace=labels)
+        pools[name] = [(kind, sym and _symbol_address(sym, version))
+                       for kind, sym in trace]
+    return ({lbl: _symbol_address(sym, version) for lbl, sym in labels.items()},
+            pools)
+
+
+class _Placed:
+    """One data object of a whole-unit layout at its section offset."""
+
+    def __init__(self, item, sym, offset, atoms, size):
+        self.item, self.sym, self.offset = item, sym, offset
+        self.atoms, self.size = atoms, size
+
+    @property
+    def label(self):
+        return self.sym["name"] if self.sym else self.item.name
+
+
+def _attach_ranks(lines, stream, functions):
+    """{id(item): rank}: the retail position of each data object.
+
+    An object travels with the function it is emitted for (the next `.end`
+    after it, so a function's strings, jump tables and pools move with it
+    when the C defines functions out of address order); a named object above
+    the first function stays first, anything after the last one goes last."""
+    rank = {name: i for i, (_a, name, _s) in enumerate(functions)}
+    ends, first_ent = [], None
+    for i, line in enumerate(lines):
+        m = _ENT_RE.match(line)
+        if m and first_ent is None:
+            first_ent = i
+        m = _END_RE.match(line)
+        if m:
+            if m.group(1) not in rank:
+                raise HybridError(f"{m.group(1)}: compiled but not a function "
+                                  f"of the unit (whole-unit layout)")
+            ends.append((i, rank[m.group(1)]))
+    out = {}
+    for item in stream:
+        if first_ent is not None and item.line < first_ent \
+                and not item.name.startswith("$"):
+            out[id(item)] = -1
+            continue
+        out[id(item)] = next((r for i, r in ends if i > item.line),
+                             len(functions))
+    return out
+
+
+def _whole_unit_layout(lines, stream, functions, item_syms, anchors, unit_dir):
+    """{section: (base, [_Placed])}: the unit's data objects in retail order,
+    aligned as the assembler aligns them, each section anchored at the one
+    base address every known object agrees on."""
+    ranks = _attach_ranks(lines, stream, functions)
+    ordered = sorted(stream, key=lambda it: (ranks[id(it)], it.line))
+    by_sec, cursors = {}, {}
+    for item in ordered:
+        sym = item_syms.get(id(item))
+        align = item.align
+        if align is None:
+            align = _NATURAL_ALIGN.get(_first_directive(item), 0)
+        cur = cursors.get(item.section, 0)
+        off = cur + (-cur % (1 << align))
+        atoms, size = _item_atoms(item, off)
+        if off > cur:
+            atoms.insert(0, (cur, bytes(off - cur)))
+        if sym is not None and sym.get("size") is not None and size != sym["size"]:
+            raise HybridError(f"{sym['name']}: compiles to {size} bytes, .symtab "
+                              f"size {sym['size']}")
+        by_sec.setdefault(item.section, []).append(
+            _Placed(item, sym, off, atoms, size))
+        cursors[item.section] = off + size
+
+    out = {}
+    for sec, placed in by_sec.items():
+        bases = {}
+        for p in placed:
+            addr = p.sym["address"] if p.sym else anchors.get(p.item.name)
+            if addr is not None:
+                bases.setdefault(addr - p.offset, []).append((p, addr))
+        if not bases:
+            raise HybridError(f"{unit_dir}: nothing anchors its {sec} data "
+                              f"({placed[0].label}...): no registry symbol and "
+                              f"no retail reference to it")
+        base = max(bases, key=lambda b: len(bases[b]))
+        if len(bases) > 1:
+            bad_p, bad_addr = next(v[0] for b, v in bases.items() if b != base)
+            raise HybridError(
+                f"{unit_dir}: {sec} layout disagrees with retail: "
+                f"{bad_p.label} lands at 0x{base + bad_p.offset:08x}, retail has "
+                f"it at 0x{bad_addr:08x} (C order or definitions differ)")
+        out[sec] = (base, placed)
+    return out
+
+
+def _data_pointer_anchors(stream, item_syms, version):
+    """{private label: address} from retail pointer words: a `.word $LCn` in
+    a registry object points where the retail word at that offset points."""
+    out = {}
+    for item in stream:
+        sym = item_syms.get(id(item))
+        if sym is None:
+            continue
+        atoms, _size = _item_atoms(item, 0)
+        for off, atom in atoms:
+            if isinstance(atom, tuple) and atom[1].startswith("$"):
+                addr = sym["address"] + off
+                word = struct.unpack("<I", _retail_bytes(
+                    version, sym["section"], addr, addr + 4))[0]
+                if out.setdefault(atom[1], word) != word:
+                    raise HybridError(f"{atom[1]}: retail pointers to it "
+                                      f"disagree (0x{out[atom[1]]:08x}, "
+                                      f"0x{word:08x})")
+    return out
+
+
+def _emit_atoms(atoms, lo, hi, labels):
+    """Assembly for the atoms of [lo, hi) (absolute addresses), with the
+    label lines due at each address emitted first. The atoms must tile the
+    window without a hole."""
+    out, expect = [], lo
+    for addr, atom in atoms:
+        n = 4 if isinstance(atom, tuple) else len(atom)
+        a, b = max(addr, lo), min(addr + n, hi)
+        if a >= b:
+            continue
+        if a != expect:
+            raise HybridError(f"whole-unit layout leaves 0x{expect:08x}-"
+                              f"0x{a:08x} empty")
+        expect = b
+        for line in labels.pop(a, []):
+            out.append(line)
+        if isinstance(atom, tuple):
+            if (a, b) != (addr, addr + 4):
+                raise HybridError(f"relocated word {atom[1]} at 0x{addr:08x} "
+                                  f"straddles a data-map range boundary")
+            out.append(f"\t.word\t{atom[1]}")
+            continue
+        chunk = atom[a - addr:b - addr]
+        # Labels inside a byte run (an object starting mid-atom) split it.
+        cuts = sorted(x for x in labels if a < x < b)
+        start = a
+        for x in cuts + [b]:
+            part = chunk[start - a:x - a]
+            for i in range(0, len(part), 16):
+                out.append("\t.byte\t" + ",".join(f"0x{c:02x}" for c in part[i:i + 16]))
+            if x < b:
+                out.extend(labels.pop(x))
+            start = x
+    if expect != hi or labels:
+        raise HybridError(f"whole-unit layout ends at 0x{expect:08x}, not "
+                          f"0x{hi:08x}" if expect != hi else
+                          f"labels {sorted(l for v in labels.values() for l in v)[:3]} "
+                          f"fall on no data")
+    return out
+
+
+def _whole_unit_pieces(layout, unit_dir, version, bin_dir, ranges=None):
+    """(lines, pieces, retail, foreign, claims) for a whole-unit hybrid.
+
+    One piece per data-map range the unit owns or its layout reaches into:
+    the C bytes where its sections lie, retail `.incbin` elsewhere. Retail
+    bytes in an owned range are `retail` (they keep the unit from being
+    complete); in a gap range they are `foreign` filler, and the gap bytes
+    the unit does emit are its claims. Reaching into another unit's range
+    fails."""
+    if ranges is None:
+        ranges = tomllib.loads((ROOT / "config" / version / "data_map.toml")
+                               .read_text())["range"]
+    spans = {sec: (base, base + max((p.offset + p.size for p in placed),
+                                    default=0))
+             for sec, (base, placed) in layout.items()}
+    lines, pieces, retail, foreign, claims = [], [], [], [], []
+    bin_dir.mkdir(parents=True, exist_ok=True)
+    for r in sorted(ranges, key=lambda r: r["start"]):
+        sec = r["section"]
+        if sec not in PIECE_SECTIONS:
+            continue
+        start, end = r["start"], r["end"]
+        span = spans.get(sec)
+        lo, hi = (max(span[0], start), min(span[1], end)) if span else (0, 0)
+        if r["owner"] != unit_dir:
+            if lo >= hi:
+                continue
+            if r["owner"] != "unassigned":
+                raise HybridError(f"{unit_dir}: its {sec} data reaches into "
+                                  f"{r['owner']}'s range 0x{start:08x}-"
+                                  f"0x{end:08x}")
+            claims.append((sec, lo, hi))
+        name = piece_name(sec, start)
+        blob = bin_dir / f"{name}.bin"
+        blob.write_bytes(_retail_bytes(version, sec, start, end))
+        flags = "a" if sec == ".rodata" else "aw"
+        lines += [f'\t.section\t{name},"{flags}",@progbits', "\t.align\t0"]
+        filler = retail if r["owner"] == unit_dir else foreign
+        objects = []
+        if lo < hi:
+            base, placed = layout[sec]
+            atoms, labels = [], {}
+            for p in placed:
+                atoms += [(base + off, atom) for off, atom in p.atoms]
+                addr = base + p.offset
+                if not lo <= addr < hi:
+                    continue
+                if p.sym:
+                    head = ([f"\t.globl\t{p.label}"] if p.item.globl else []) + [
+                        f"\t.type\t{p.label},@object", f"\t.size\t{p.label},{p.size}"]
+                    objects.append({"name": p.label, "address": addr,
+                                    "size": p.size, "sized_by": "registry"
+                                    if p.sym.get("size") else "compiler"})
+                else:
+                    head = []
+                labels.setdefault(addr, []).extend(head + [f"{p.label}:"])
+            if lo > start:
+                lines.append(f'\t.incbin\t"{blob.as_posix()}",0,{lo - start}')
+                filler.append((start, lo))
+            lines.append(f"\t.org\t0x{lo - start:X}")
+            lines += _emit_atoms(atoms, lo, hi, labels)
+            lines.append(f"\t.org\t0x{hi - start:X}")
+        else:
+            hi = start
+        if hi < end:
+            lines.append(f'\t.incbin\t"{blob.as_posix()}",{hi - start},'
+                         f'{end - hi}')
+            filler.append((hi, end))
+        pieces.append({"name": name, "section": sec, "start": start,
+                       "end": end, "objects": objects})
+    for sec, (base, placed) in layout.items():
+        if not any(p["section"] == sec and p["start"] <= base < p["end"]
+                   for p in pieces):
+            raise HybridError(f"{unit_dir}: its {sec} data at 0x{base:08x} is "
+                              f"in no data-map range")
+    return lines, pieces, retail, foreign, sorted(claims)
+
+
+def _build_whole_unit(data, out_o, link_set, version, plan=False):
+    """Hybrid object of a whole-unit (complete) unit; with `plan`, only the
+    claims its layout needs."""
+    unit_dir = data["unit"].split(":")[1]
+    profile = data.get("profile", "default")
+    functions = _manifest_functions(data)
+    out_o = Path(out_o)
+    out_o.parent.mkdir(parents=True, exist_ok=True)
+    cs = out_o.with_name(out_o.stem + "_cc.s")
+    cc.compile_s(ROOT / data["source"], cs, profile=profile, version=version)
+    compiled = cs.read_text()
+    labels, retail_pools = _retail_anchors(compiled, functions, unit_dir,
+                                           version)
+    pool = _Pool()
+    lines, _externs = _rewrite_lis(compiled.splitlines(), version, unit_dir,
+                                   data["source"], None, [None], pool=pool)
+    items, stream = [], []
+    prologue, segments, _private = parse_s("\n".join(lines), items, stream)
+    for _addr, name, _state in functions:
+        mine = [kind for kind, _l in pool.entries.get(name, [])]
+        theirs = [kind for kind, _a in retail_pools.get(name, [])]
+        if mine != theirs:
+            raise HybridError(f"{name}: assembler pool decisions {mine} differ "
+                              f"from retail's {theirs}")
+        for (_k, label), (_k2, addr) in zip(pool.entries.get(name, []),
+                                           retail_pools.get(name, [])):
+            if label:
+                labels[label] = addr
+
+    states = data_states(data)
+    item_syms, rename = {}, {}
+    for item, sym in _registry_map(items, version, unit_dir):
+        if sym["section"] not in C_DATA_SECTIONS:
+            raise HybridError(f"{sym['name']}: {sym['section']} data from C "
+                              f"is not supported yet (data/sdata)")
+        if states.get(sym["address"]) not in ("matching", "retail"):
+            raise HybridError(f"{sym['name']}: [[data]] entry is not done")
+        item_syms[id(item)] = sym
+        if item.name != sym["name"]:
+            rename[item.name] = sym["name"]
+    dups = _duplicate_static_labels(functions, version)
+    for item in stream:
+        item.lines = _relabel(_relabel_data(item.lines, rename), dups)
+    for lbl, addr in _data_pointer_anchors(stream, item_syms, version).items():
+        if labels.setdefault(lbl, addr) != addr:
+            raise HybridError(f"{lbl}: the code borrows 0x{labels[lbl]:08x}, "
+                              f"retail data points at 0x{addr:08x}")
+    layout = _whole_unit_layout(lines, stream, functions, item_syms, labels,
+                                unit_dir)
+    for base, placed in layout.values():
+        for p in placed:
+            if p.sym and states.get(p.sym["address"]) == "retail":
+                # A raw asset keeps its retail bytes (the alignment pad
+                # before it stays the compiler's).
+                blob = _retail_bytes(version, p.sym["section"], base + p.offset,
+                                     base + p.offset + p.size)
+                p.atoms = [a for a in p.atoms if a[0] < p.offset] \
+                    + [(p.offset, blob)]
+    piece_lines, pieces, retail, foreign, claims = _whole_unit_pieces(
+        layout, unit_dir, version, out_o.parent / f"{out_o.stem}_data")
+    if plan:
+        return claims
+    if claims != manifest_claims(data):
+        shown = ", ".join(f"{s} 0x{a:08x}-0x{b:08x}" for s, a, b in claims)
+        raise HybridError(f"{unit_dir}: its layout claims [{shown or 'nothing'}] "
+                          f"but the manifest's [[claim]] table differs (run "
+                          f"promote.py --complete {data['unit']})")
+
+    prologue = _relabel(_relabel_data(prologue, rename), dups)
+    seg_by_name = {name: _relabel(_relabel_data(seg, rename), dups)
+                   for name, seg in segments}
+    missing = sorted(n for _a, n, _s in functions if n not in seg_by_name)
+    if missing:
+        raise HybridError(f"declared matching but not defined in "
+                          f"{data['source']}: {', '.join(missing)}")
+    borrowed = []
+    out_lines = _splice_unit(prologue, seg_by_name, functions, unit_dir,
+                             link_set, version, report_base=False,
+                             unit_end=_unit_end(unit_dir), local_data={},
+                             profile=profile, borrowed=borrowed)
+    if borrowed:
+        raise HybridError(f"{unit_dir}: whole-unit code still borrows "
+                          f"{borrowed[:3]}")
+    unit_s = _assemble_unit(out_o, out_lines + piece_lines,
+                            profile_g_flag(profile, version),
+                            allowed=[p["name"] for p in pieces])
+    _write_data_report(out_o, pieces, retail, [], version, foreign=foreign,
+                       claims=claims)
+    return unit_s
+
+
+def plan_claims(manifest_path, version="pal103"):
+    """The [(section, start, end)] gap bytes a unit's whole-unit layout emits
+    (promote.py --complete writes them as the manifest's [[claim]] table)."""
+    data = tomllib.loads(Path(manifest_path).read_text())
+    rel = Path(data["source"]).relative_to("src").with_suffix(".o")
+    return _build_whole_unit(data, ROOT / "build" / version / "matching" / rel,
+                             "matching", version, plan=True)
+
+
 def _compile_and_split(data, out_o, link_set, version, report=False):
     """Compile the unit's C and split it into (prologue, seg_by_name,
     functions, unit_dir, local_data, emit). Shared by the hybrid link and the
@@ -1498,6 +2073,8 @@ def _assemble_unit(out_o, out_lines, g_flag="-G8", allowed=()):
 def build_hybrid(manifest_path, out_o, link_set="matching", version="pal103"):
     """Assemble one unit's hybrid object; returns the intermediate .s path."""
     data = tomllib.loads(Path(manifest_path).read_text())
+    if whole_unit(data):
+        return _build_whole_unit(data, out_o, link_set, version)
     prologue, seg_by_name, functions, unit_dir, local_data, emit = \
         _compile_and_split(data, out_o, link_set, version)
     borrowed = []
@@ -1525,21 +2102,22 @@ def data_report_path(out_o):
     return out_o.with_name(out_o.stem + ".data.json")
 
 
-def _write_data_report(out_o, pieces, retail, borrowed, version):
-    from declib.asmtext import AUTO_NAME_RE, load_symbol_addrs
-    symbols = load_symbol_addrs(version)
-    slots = []
-    for sym in dict.fromkeys(borrowed):
-        addr = symbols.get(sym)
-        if addr is None:
-            m = AUTO_NAME_RE.fullmatch(sym)
-            addr = int(m.group(1), 16) if m else None
-        slots.append({"symbol": sym, "address": addr})
+def _write_data_report(out_o, pieces, retail, borrowed, version, foreign=None,
+                       claims=None):
+    """The sidecar: pieces, retail byte ranges in owned ranges, borrowed
+    compiler-private slots; a whole-unit hybrid adds its claims and the
+    retail filler of the gap ranges it supplies (`foreign`)."""
+    slots = [{"symbol": sym, "address": _symbol_address(sym, version)}
+             for sym in dict.fromkeys(borrowed)]
+    report = {"schema": 1, "pieces": pieces,
+              "retail": [[lo, hi] for lo, hi in retail],
+              "borrowed": slots}
+    if claims is not None:
+        report.update(whole_unit=True,
+                      claims=[list(c) for c in claims],
+                      foreign=[[lo, hi] for lo, hi in foreign or []])
     import json
-    data_report_path(out_o).write_text(json.dumps(
-        {"schema": 1, "pieces": pieces,
-         "retail": [[lo, hi] for lo, hi in retail],
-         "borrowed": slots}, indent=1) + "\n")
+    data_report_path(out_o).write_text(json.dumps(report, indent=1) + "\n")
 
 
 def build_report_object(manifest_path, out_o, version="pal103"):

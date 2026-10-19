@@ -77,6 +77,7 @@
 #include "nu_types.h"
 
 #include "nucore/nuerror.h"
+#include "nu3d/nurndr.h"
 #include "nu3d/nutex.h"
 #include "nu3d/nuvport.h"
 #include "nups2/nups2types.h"
@@ -216,6 +217,9 @@ extern void *gsCloseGifPacket(void *packet);
 extern void GS_DmaWrite(void *p, int mode);
 extern int sceGsResetGraph(short mode, short inter, short omode, short ffmode);
 extern void sceGsSetDefDBuffDc(GsDispEnv *db, short psm, short w, short h, short ztest, short zpsm, short clear);
+extern void NuFntSet(void *font);
+extern void NuFntPrintEx(int x, int y, int flags, char *fmt, ...);
+extern int NuRndrQuad2d(struct nuvtx2d_s *vtx, struct numtl_s *mtl);
 
 #define ExitHandler() __asm__ volatile ("sync\n\tei")
 
@@ -281,6 +285,10 @@ extern int nuvideo_global_framerate;
 extern int D_002EA118[6];
 extern struct NuPs2GsReg D_002EA210;
 extern struct NuPs2GsReg D_002EA380;
+extern void *system_font;
+extern int NuFntHeight;
+extern int NuFntBase;
+extern int tb_peak_reset;
 
 #define NuPs2FrameCount D_006331C4
 #define NuPs2SwapTime   D_0062F03C
@@ -398,6 +406,18 @@ static inline int tbslotEnd(TbSet *set, int slot)
 }
 
 
+static inline void tbslotFlip(TbSet *set, int slot)
+{
+    int current;
+
+    set = set != 0 ? set : tb_main_set;
+    slot &= 0xF;
+    current = set->current[slot] ^ 1;
+    set->current[slot] = current;
+    set->values[slot][current ? 0 : 1] = 0;
+}
+
+
 static inline TbSet *tbsetAlloc(int *colours)
 {
     TbSet *set;
@@ -438,6 +458,84 @@ static inline void ps2videoAddAllHandlers(void)
         EnableDmac(2);
         handlers_installed = 1;
     }
+}
+
+
+void tbRender(TbSet *set)
+{
+    struct nuvtx2d_s vtx[4];
+    float scale;
+    float top;
+    float screen_h;
+    int reset;
+    int value;
+    int x;
+    int y;
+    int i;
+
+    reset = 1;
+    if (set == 0) {
+        set = tb_main_set;
+        reset = 0;
+    }
+    if (system_font) {
+        NuFntSet(system_font);
+    }
+    scale = 1.0f / PS2_REZ_H;
+    top = 0.05f;
+    for (i = 0; i < 16; i++) {
+        if (set->values[i][set->current[i]] != 0) {
+            if (set->peak[i] < set->values[i][set->current[i]]) {
+                set->peak[i] = set->values[i][set->current[i]];
+            }
+            vtx[0].x = (i + 1) * 0.025f * 3.0f;
+            vtx[0].y = top;
+            vtx[0].z = 0.0f;
+            vtx[0].rhw = 1.0f;
+            vtx[0].colour = set->colour[i];
+            vtx[1] = vtx[2] = vtx[3] = vtx[0];
+            vtx[3].x = vtx[1].x = vtx[1].x + 0.025f;
+            vtx[3].y = vtx[2].y = vtx[2].y + set->values[i][set->current[i]] * scale;
+            NuRndrQuad2d(vtx, 0);
+            screen_h = PS2_REZ_H;
+            if (system_font) {
+                x = (int)(PS2_REZ_W * 0.025f) * (i + 1) * 3;
+                x += PS2_REZ_W * 0.025f * 0.5f;
+                value = set->values[i][set->current[i]];
+                if (value != 0) {
+                    y = (int)(screen_h * 0.05f) * 16;
+                    y += NuFntHeight * 4;
+                    y -= NuFntHeight;
+                    NuFntPrintEx(x * 16, y, 2, "%d", value % 10);
+                    y -= NuFntHeight;
+                    value /= 10;
+                    NuFntPrintEx(x * 16, y, 2, "%d", value % 10);
+                    y -= NuFntHeight;
+                    value /= 10;
+                    NuFntPrintEx(x * 16, y, 2, "%d", value % 10);
+                }
+                if (set->peak[i] != 0) {
+                    x = (int)(PS2_REZ_W * 0.025f) * (i + 1) * 3;
+                    x += PS2_REZ_W * 0.025f * 0.5f;
+                    y = PS2_REZ_H * 16 - NuFntHeight * 2;
+                    NuFntPrintEx(x * 16, y + NuFntBase, 2, "%d", set->peak[i]);
+                }
+                if (set->name[i] != 0) {
+                    x = (int)(PS2_REZ_W * 0.025f) * (i + 1) * 3;
+                    x += PS2_REZ_W * 0.025f * 0.5f;
+                    y = PS2_REZ_H * 16 - NuFntHeight;
+                    NuFntPrintEx(x * 16, y + NuFntBase, 2, set->name[i]);
+                }
+            }
+        }
+        if (reset) {
+            tbslotFlip(set, i);
+        }
+        if (tb_peak_reset) {
+            set->peak[i] = 0;
+        }
+    }
+    tb_peak_reset = 0;
 }
 
 

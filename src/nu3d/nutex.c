@@ -1313,11 +1313,9 @@ void NuTexPalChange(int tex) {
 }
 
 
-void NuTexPalChangeStreamTemp(int tex) {
+void NuTexPalChangeStreamTemp(int tex, u32 *pal) {
     if (tex > 0) {
-        /* Retail bug: called without the palette argument, which the
-         * callee reads from $a1. */
-        ((void (*)(struct nups2tex_s *))NuPs2ChangeTexPalStreamTemp)(&TexList[tex - 1].ps2tex);
+        NuPs2ChangeTexPalStreamTemp(&TexList[tex - 1].ps2tex, pal);
     }
 }
 
