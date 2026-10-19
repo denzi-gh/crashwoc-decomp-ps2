@@ -650,7 +650,7 @@ void CvtNuIFFGeomTriStrip(int fh, int mtlid, int write)
 }
 
 
-struct nugscn_s *NuGScnDuplicate(struct nugscn_s *scene, char **buffer)
+struct nugscn_s *NuGScnDuplicate(struct nugscn_s *scene, char **buffer, char **bufend)
 {
     struct nugscn_s *dup;
     int i;

@@ -110,7 +110,7 @@ void CvtNuIFFGeomPrim(int fh, int mtlid, int write);
 void MakeFaceOnDma(int fh, struct nufaceongeom_s *geom, int mtlid);
 void CvtNuIFFGeomTri(int fh, int mtlid, int write);
 void CvtNuIFFGeomTriStrip(int fh, int mtlid, int write);
-struct nugscn_s *NuGScnDuplicate(struct nugscn_s *scene, char **buffer);
+struct nugscn_s *NuGScnDuplicate(struct nugscn_s *scene, char **buffer, char **bufend);
 void ReadAnimationLibrary(int fh);
 void NuGScnSetTmpWkspc(void *workspace, int size);
 void NuGScnSetCfg(struct nusplinecfg_s *cfg);
