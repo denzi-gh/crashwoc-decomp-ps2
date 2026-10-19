@@ -58,3 +58,43 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0074:001a74f8:edbitsRegisterBaseScene"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0074:004a7aa8:edbits_level_filename"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0074:004a7ba8:object_switches"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0074:0062f728:edqseed"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0074:0062f72c:edbitsSfxVol"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0074:0062f730:edbits_what_game"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0074:0062f734:edSfxGlobalTab"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0074:0062f738:edSfxLevelTab"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0074:0062f73c:edSfxAllCount"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0074:0062f740:edSfxGlobalCount"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0074:0062f744:edbits_base_scene"
+state = "asm"

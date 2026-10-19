@@ -410,3 +410,195 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0071:001a0b78:edobjcbCancelSoundTypeMenu"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0071:00489dc0:edobjdesc"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0071:00489df8:ObjectAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0071:00489f00:ObjectInstance"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0071:0048b300:ObjectInstAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0071:0048cb00:ObjectPath"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0071:0049c600:edobj_cursor_matrix"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0071:0049c640:edobj_cam_pos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0071:0049c650:edobj_snap_vec"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0071:0062f538:edobj_active_menu"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f53c:edobj_options_menu"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f540:edobj_instance_menu"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f544:edobj_animprop_menu"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f548:edobj_wayprop_menu"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f54c:edobj_switch_menu"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f550:edobj_switchtype_menu"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f554:edobj_particle_menu"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f558:edobj_localparticle_menu"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f55c:edobj_localparticletype_menu"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f560:edobj_particletype_menu"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f564:edobj_sound_menu"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f568:edobj_localsound_menu"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f56c:edobj_localsoundtype_menu"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f570:edobj_soundtype_menu"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f574:edobj_bouncy_menu"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f578:edobj_base_scene"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f57c:edobj_count"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f580:edobj_emitrotz"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f584:edobj_emitroty"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f588:localframecount.75"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f608:edobj_mtl"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f60c:edobj_mtl_zoff"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f610:edobj_cam_dist"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f614:edobj_cam_ax"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f618:edobj_cam_ay"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f61c:edobj_instance_type"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f620:edobj_next_instance"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f624:edobj_nearest"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f628:edobj_nearest_waypoint"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f62c:edobj_nearest_particle"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f630:edobj_nearest_sound"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f634:edobj_waypoint_mode"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f638:edobj_copy_mode"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f63c:edobj_particle_mode"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f640:edobj_sound_mode"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f644:edobj_particle_type"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f648:edobj_sound_type"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f64c:edobj_snap_xz"
+state = "asm"
+
+[[data]]
+id = "pal103:unit-0071:0062f650:edobj_snap_y"
+state = "asm"
