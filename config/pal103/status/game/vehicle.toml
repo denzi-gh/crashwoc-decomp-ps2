@@ -357,7 +357,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:002159f0:ProcessPlatformsAtlas"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00215df0:TerrainAtlas"
