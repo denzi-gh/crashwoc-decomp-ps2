@@ -218,11 +218,12 @@ extern struct nulsthdr_s *D_006309FC;
 #define sceneinst_pool D_006309FC
 ```
 
-Compiler-private data (`$LC` strings, jump tables, `li.d` pools) and the
-unit's `.lit4` pool stay borrowed retail slots until `data/private`; `.sdata`
-waits for `data/sdata`, `.sbss`/`.bss` for `data/bss`. A raw binary asset
-(a font bitmap) keeps its retail bytes with `state = "retail"` and a
-`reason`, set by hand like `equivalent`.
+Compiler-private data (`$LC` strings and aggregates, jump tables, `li.d`
+pools) and the unit's `.lit4` pool are borrowed retail slots until the unit
+is `complete`; then its hybrid runs in whole-unit mode and emits them from C
+(below). `.sdata` symbols wait for `data/sdata`, `.sbss`/`.bss` for
+`data/bss`. A raw binary asset (a font bitmap) keeps its retail bytes with
+`state = "retail"` and a `reason`, set by hand like `equivalent`.
 
 If compile_diff reaches 100% but the hybrid build fails with "data section in
 compiler output not supported yet", a file-scope definition slipped into a
@@ -230,9 +231,25 @@ unit without a `[[data]]` table: replace it with the extern form above
 (or, in a fully matching unit, do the data work below).
 
 `complete = true` is written only by `promote.py --complete <unit id>`, after
-the verifier proved: every function and data entry is done, the unit's data
-pieces carry no retail bytes beyond its `retail` entries and its `.lit4` pool,
-it borrows no compiler-private retail slot, and it owns no `.sbss`/`.bss`.
+the verifier proved: every function and data entry is done, the unit owns no
+`.sbss`/`.bss`, and its whole-unit hybrid carries no retail bytes in the
+unit's ranges beyond its `retail` entries, borrows nothing, and links every
+piece equal to retail.
+
+Whole-unit mode (every `complete` unit): gen_hybrid lays the unit's data out
+the way the assembler did - each data section in retail function order (an
+object travels with the function it is emitted for), one `.lit4` slot per
+pool-bound `li.s`, one 8-byte `.rodata` literal per `li.d $gpr` that is not
+built inline, nothing merged - and anchors each section where the code's and
+the data pointers' retail references put it. Bytes it emits past the unit's
+own ranges (a jump table or strings after its last code reference) lie in
+data-map gaps; `promote.py --complete` records them as `[[claim]]`
+(`section`, `start`, `end`), and the image link takes such a gap range from
+the claimant's hybrid (C bytes where claimed, retail elsewhere). Re-run
+`--complete` after a C change moves them. Typical C work to get there:
+string literals instead of `extern char D_...[]`, float literals instead of
+`extern f32 D_...` `.lit4` slots, functions in retail order where they emit
+data.
 
 ### Per-unit data workflow
 
@@ -262,8 +279,8 @@ no open `decomp/*` PR or running batch, and no NuWorld `NW_HOST` PR touches it.
    extern counts moved), unit tests, CRLF byte check.
 
 Order by section: `.rodata`, then `.data`. Never in this workflow:
-compiler-private data in partially matched units (it stays borrowed) and the
-`.lit4` pool (until `data/private`).
+compiler-private data and the `.lit4` pool in partially matched units (they
+stay borrowed until `--complete`).
 
 ### Types and shared headers
 

@@ -82,14 +82,6 @@ extern Bigint *_d2b(struct _reent *ptr, double d, int *e, int *bits);
 extern const double __mprec_tens[];
 extern const double __mprec_bigtens[];
 
-extern char D_0062C3B0[];
-extern char D_0062C3C0[];
-extern char D_0062C3C8[];
-
-#define str_infinity D_0062C3B0
-#define str_nan D_0062C3C0
-#define str_zero D_0062C3C8
-
 #define Balloc _Balloc
 #define Bfree _Bfree
 #define multadd _multadd
@@ -205,7 +197,7 @@ char *_dtoa_r(struct _reent *ptr, double _d, int mode, int ndigits, int *decpt,
 
     if ((word0(d) & Exp_mask) == Exp_mask) {
         *decpt = 9999;
-        s = !word1(d) && !(word0(d) & 0xfffff) ? str_infinity : str_nan;
+        s = !word1(d) && !(word0(d) & 0xfffff) ? "Infinity" : "NaN";
         if (rve) {
             *rve = s[3] ? s + 8 : s + 3;
         }
@@ -213,7 +205,7 @@ char *_dtoa_r(struct _reent *ptr, double _d, int mode, int ndigits, int *decpt,
     }
     if (!d.d) {
         *decpt = 1;
-        s = str_zero;
+        s = "0";
         if (rve) {
             *rve = s + 1;
         }

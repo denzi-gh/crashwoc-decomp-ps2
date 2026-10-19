@@ -28,9 +28,6 @@ typedef enum {
 extern const _LIB_VERSION_TYPE __fdlib_version[];
 #define _LIB_VERSION (__fdlib_version[0])
 
-extern char D_0062B2C8[];
-#define sqrt_name D_0062B2C8
-
 extern double __ieee754_sqrt(double x);
 extern int isnan(double x);
 extern int matherr(struct exception *e);
@@ -49,7 +46,7 @@ double sqrt(double x)
     }
     if (x < 0.0) {
         exc.type = DOMAIN;
-        exc.name = sqrt_name;
+        exc.name = "sqrt";
         exc.err = 0;
         exc.operand1 = exc.operand2 = x;
         if (_LIB_VERSION == _SVID_) {

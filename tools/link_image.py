@@ -17,11 +17,15 @@ tools/gen_data_objects.py builds from config/<version>/data_map.toml (one
 object per owning unit, one per unassigned gap, the 0x80 orphan included);
 the link script places every range back at its exact address, so the data
 half of the image is retail-byte-exact by construction. A unit with C data
-(a `matching` [[data]] entry) is the one exception: its hybrid object
-provides all of its ranges as pieces (`<sec>.split_<vram8>`, selected
-file-qualified) and its expected data object is left out -- one data
-provider per unit. Every range is ASSERTed at its address. Only `.vutext`
-still rides as a whole-section incbin (VU microcode, no attribution yet).
+(a `matching` [[data]] entry, or a `complete` unit) is the one exception:
+its hybrid object provides all of its ranges as pieces
+(`<sec>.split_<vram8>`, selected file-qualified) and its expected data
+object is left out -- one data provider per unit. A `complete` unit also
+supplies every gap range its manifest `[[claim]]`s bytes in (its C strings,
+jump tables and pools that sit past its owned ranges), so that gap's
+expected object is left out too. Every range is ASSERTed at its address.
+Only `.vutext` still rides as a whole-section incbin (VU microcode, no
+attribution yet).
 
 Two sets, two gates:
 
@@ -56,7 +60,7 @@ from declib.target import derive_tiling, load_target, parse_linker_script
 from declib.tu import load_tu_runs, load_units
 from gen_data_objects import (NOBITS_SECTIONS, load_map, object_groups,
                               section_label)
-from gen_hybrid import has_c_data, piece_name
+from gen_hybrid import manifest_claims, piece_name, provides_data
 from gen_expected_s import unit_stem
 from split_text import nm_defined_undefined
 
@@ -91,13 +95,14 @@ def tool_error(exc, default):
     return shown + (f" | (+{more} more lines)" if more > 0 else "")
 
 
-def manifest_units(version, link_set, with_data=None):
+def manifest_units(version, link_set, with_data=None, claims=None):
     """{unit_index: object rel path} for units that build a hybrid in this set.
 
     Only units with a function in a state this set links from C, or a
     `matching` data entry, get a hybrid; the rest (e.g. all-`asm` skeletons)
-    fall through to the expected object. Units whose hybrid carries data
-    pieces are added to the `with_data` set when one is passed.
+    fall through to the expected object. Units whose hybrid provides their
+    data (pieces) are added to the `with_data` set, and their `[[claim]]`s to
+    the `claims` dict ({unit_index: [(section, start, end)]}), when passed.
     """
     wanted = _HYBRID_STATES[link_set]
     out = {}
@@ -107,23 +112,45 @@ def manifest_units(version, link_set, with_data=None):
             data = tomllib.loads(m.read_text())
             states = {f.get("state", "asm")
                       for f in data.get("function", ())}
-            c_data = has_c_data(data)
+            c_data = provides_data(data)
             if not states & wanted and not c_data:
                 continue
             idx = int(data["unit"].split("unit-")[1])
             out[idx] = Path(data["source"]).relative_to("src").with_suffix(".o")
             if c_data and with_data is not None:
                 with_data.add(idx)
+            if c_data and claims is not None and data.get("claim"):
+                claims[idx] = manifest_claims(data)
     return out
 
 
-def select_text_objects(version, link_set, with_data=None):
+def claimed_ranges(map_ranges, claims, objects):
+    """{(section, gap start): object} -- the gap ranges a unit's hybrid
+    supplies whole because it claims bytes in them; a gap two units claim
+    fails loudly (status.py refuses it too)."""
+    out = {}
+    for unit, unit_claims in sorted(claims.items()):
+        for section, start, end in unit_claims:
+            gap = next((r for r in map_ranges if r["section"] == section
+                        and r["owner"] == "unassigned"
+                        and r["start"] <= start and end <= r["end"]), None)
+            if gap is None:
+                raise ValueError(f"unit {unit}: claim {section} 0x{start:08x}-"
+                                 f"0x{end:08x} is not inside one data-map gap")
+            key = (section, gap["start"])
+            if out.setdefault(key, objects[unit]) != objects[unit]:
+                raise ValueError(f"{section} gap 0x{gap['start']:08x} is "
+                                 f"claimed by two units")
+    return out
+
+
+def select_text_objects(version, link_set, with_data=None, claims=None):
     """[(unit_index, object_path)] in retail address order.
 
     Hybrid object where the unit builds one for this link set, expected object
     otherwise.
     """
-    hybrids = manifest_units(version, link_set, with_data)
+    hybrids = manifest_units(version, link_set, with_data, claims)
     names = load_units()
     objs = []
     for unit, _addr in load_tu_runs():
@@ -137,14 +164,17 @@ def select_text_objects(version, link_set, with_data=None):
 
 
 def build_script(text_addr, text_objs, vutext_vaddr, map_ranges, nobits,
-                 defsyms, providers=None):
+                 defsyms, providers=None, claimed=None):
     """Link script: .text from TU objects, data sections from map ranges.
 
     `providers` maps a range owner (`unit-NNNN`) to the hybrid object that
-    supplies its pieces; every other range comes from its expected object.
-    Each range is ASSERTed at its address (inside an output section `.` is
-    section-relative, hence ABSOLUTE), and each section's end too."""
+    supplies its pieces, `claimed` a gap range ((section, start)) to the
+    hybrid that claims bytes in it; every other range comes from its
+    expected object. Each range is ASSERTed at its address (inside an output
+    section `.` is section-relative, hence ABSOLUTE), and each section's end
+    too."""
     providers = providers or {}
+    claimed = claimed or {}
     L = ["SECTIONS", "{", f"    . = 0x{text_addr:08X};",
          "    .text : SUBALIGN(1)", "    {"]
     L += [f"        {p.as_posix()}(.text)" for p in text_objs]
@@ -163,7 +193,8 @@ def build_script(text_addr, text_objs, vutext_vaddr, map_ranges, nobits,
         for r in rs:
             L.append(f"        ASSERT(ABSOLUTE(.) == 0x{r['start']:08X}, "
                      f"\"{sec} range 0x{r['start']:08X} misplaced\");")
-            obj = providers.get(r["owner"])
+            obj = providers.get(r["owner"]) \
+                or claimed.get((r["section"], r["start"]))
             if obj is not None:
                 L.append(f"        {obj.as_posix()}({piece_name(sec, r['start'])})")
             else:
@@ -205,17 +236,24 @@ def link_image(reporter, version, link_set):
     vutext = next(o for o in tiling if o["name"] == "vutext")
     _addrs, nobits = parse_linker_script((ROOT / "linker.ld").read_text())
 
-    with_data = set()
-    text_objs = select_text_objects(version, link_set, with_data)
+    with_data, claims = set(), {}
+    text_objs = select_text_objects(version, link_set, with_data, claims)
     hybrid_count = sum(1 for _u, p in text_objs
                        if p.is_relative_to(ROOT / "build"))
     map_ranges = [r for r in load_map(version)
                   if r["section"] not in NOBITS_SECTIONS]
     providers = {f"unit-{u:04d}": p for u, p in text_objs if u in with_data}
+    try:
+        claimed = claimed_ranges(map_ranges, claims, dict(text_objs))
+    except ValueError as exc:
+        reporter.result("Claimed gap ranges", False, str(exc))
+        return None, None
+    claimed_stems = {f"unassigned/{section_label(r)}" for r in map_ranges
+                     if (r["section"], r["start"]) in claimed}
     data_dir = ROOT / "expected" / version / "data"
     data_objs = [data_dir / f"{stem}.o"
                  for stem, _e in object_groups(map_ranges)
-                 if stem not in providers]
+                 if stem not in providers and stem not in claimed_stems]
 
     missing = [p.relative_to(ROOT).as_posix()
                for p in [p for _u, p in text_objs] + data_objs
@@ -270,7 +308,7 @@ def link_image(reporter, version, link_set):
 
     script = build_script(text_addr, [p for _u, p in text_objs],
                           vutext["vaddr"], map_ranges, nobits, defsyms,
-                          providers)
+                          providers, claimed)
     ld_script = out_dir / f"{link_set}.ld"
     ld_script.write_text(script)
     elf_out = out_dir / f"{link_set}.elf"

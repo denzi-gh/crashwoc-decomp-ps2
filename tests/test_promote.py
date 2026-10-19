@@ -69,7 +69,7 @@ class TestDataEntries(unittest.TestCase):
         self.assertIn("complete = true\r\n",
                       set_complete("schema = 1\r\ncomplete = false\r\n"))
         with self.assertRaises(SystemExit):
-            set_complete("complete = true\n")
+            set_complete("schema = 1\n")
 
 
 if __name__ == "__main__":

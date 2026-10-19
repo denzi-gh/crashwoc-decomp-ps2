@@ -434,3 +434,13 @@ state = "matching"
 [[data]]
 id = "pal103:unit-0109:005cf4c8:tYOUNEEDAMEMORYCARD"
 state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x006208a0
+end = 0x00624f2f
+
+[[claim]]
+section = ".sdata"
+start = 0x00632080
+end = 0x0063266f

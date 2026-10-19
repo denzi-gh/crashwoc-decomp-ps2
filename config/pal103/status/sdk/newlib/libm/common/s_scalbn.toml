@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0178"
 source = "src/sdk/newlib/libm/common/s_scalbn.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0178:0026ce08:scalbn"

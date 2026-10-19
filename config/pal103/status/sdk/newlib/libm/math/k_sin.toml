@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0168"
 source = "src/sdk/newlib/libm/math/k_sin.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0168:0026c0f0:__kernel_sin"

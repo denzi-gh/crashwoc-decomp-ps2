@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0143"
 source = "src/sdk/sce/libdma.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0143:00262a58:memclr"
@@ -110,3 +110,8 @@ state = "matching"
 [[data]]
 id = "pal103:unit-0143:00610908:sceDmaCurrentEnv"
 state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x0062aeb8
+end = 0x0062aece

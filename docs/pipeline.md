@@ -374,17 +374,23 @@ state = "matching"        # asm | matching | retail (retail needs a `reason`)
   overlaps, `.sdata`/`.sbss`/`.bss`/COMMON data from C.
 - **link_image** takes such a unit's ranges from its hybrid (file-qualified
   patterns) and leaves its expected data object out - one data provider per
-  unit; every range is `ASSERT`ed at its address.
+  unit; every range is `ASSERT`ed at its address. A gap range a `complete`
+  unit `[[claim]]`s bytes in comes from that unit's hybrid too.
 - **verify_promoted** links the hybrid with its pieces at their addresses
   (`declib.verify.link_unit_at`), compares each `matching` entry over
   `[addr, addr+size)` (size from `.symtab`/STABS; an unsized object's compiled
   size only with at most 15 zero bytes left to the next item) and its linked
   symbol address, and reports them under `"data"` in `verify_results.json`.
 - **`complete = true`** (only `promote.py --complete <unit id>...` writes it)
-  needs every function `matching`, every data entry `matching`/`retail`, no
-  retail bytes in the unit's pieces beyond its `retail` entries and its
-  `.lit4` pool, no borrowed compiler-private slot (strings, jump tables,
-  `li.d` pools: a later `data/private`), and no owned `.sbss`/`.bss`.
+  switches the unit's hybrid to whole-unit mode: its compiler-private data
+  (`$LC` strings and aggregates, jump tables, the `li.d` GPR pool, the `.lit4`
+  pool) is laid out in retail order the way the assembler did, anchored by
+  the retail references, and emitted from C; gap bytes it emits past the
+  unit's ranges are the manifest's `[[claim]]`s (written by `--complete`,
+  validated by `status.py`). It needs every function `matching`, every data
+  entry `matching`/`retail`, no retail bytes in the unit's ranges beyond its
+  `retail` entries, no borrowed slot, every linked piece equal to retail, and
+  no owned `.sbss`/`.bss`.
 
 [tools/dump_data.py](../tools/dump_data.py) prints the C initialiser of a
 registry symbol from the retail bytes (`--probe` takes a struct layout from

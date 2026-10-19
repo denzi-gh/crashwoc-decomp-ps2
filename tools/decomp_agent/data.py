@@ -137,8 +137,14 @@ def list_data_candidates(project, *, limit=20) -> dict:
             continue
         unit = int(data["unit"].split("unit-")[1])
         unit_syms = [s for s in by_unit.get(unit, []) if s["section"] in PROGBITS]
+        # `--complete` (whole-unit mode) can take any unit whose functions
+        # and data entries are done and that owns no .sbss/.bss; its
+        # verification decides whether the C emits all of the unit's data.
+        completable = not data.get("complete") and not any(
+            r["section"] in (".sbss", ".bss")
+            for r in owned.get(f"unit-{unit:04d}", []))
         if not unit_syms:
-            if not data.get("complete") and not owned.get(f"unit-{unit:04d}"):
+            if completable:
                 complete_only.append(data["unit"])
             continue
         if not data.get("data"):
@@ -147,10 +153,12 @@ def list_data_candidates(project, *, limit=20) -> dict:
                                 "command": f"python tools/promote.py --init-data "
                                            f"{data['source']}"})
             continue
+        pending = False
         for s in unit_syms:
             did = data_id(project, s)
             if _entry_state(data, did) != "asm":
                 continue
+            pending = True
             reasons, excluded = [], None
             if s["section"] == ".sdata":
                 excluded = ".sdata data from C needs data/sdata"
@@ -166,6 +174,8 @@ def list_data_candidates(project, *, limit=20) -> dict:
                 "_key": (excluded is not None, s["section"] != ".rodata",
                          not typ, "*" in typ, s.get("size") or 1 << 30,
                          s["address"])})
+        if not pending and completable:
+            complete_only.append(data["unit"])
     rows.sort(key=lambda r: r["_key"])
     for r in rows:
         del r["_key"]

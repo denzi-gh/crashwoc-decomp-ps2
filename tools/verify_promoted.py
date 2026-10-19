@@ -21,10 +21,11 @@ For each status manifest this verifier proves, from scratch:
      address. Padding and compiler-private bytes are left to the image gate.
   5. A `complete` unit: every function `matching`, every data entry
      `matching`/`retail`, no owned .sbss/.bss range (data/bss), and its
-     hybrid carries no retail bytes except its `retail` entries and its .lit4
-     pool, borrows no compiler-private retail slot outside .lit4 (strings,
-     jump tables, pools: data/private), and leaves no owned range to the
-     expected data object.
+     whole-unit hybrid (gen_hybrid: compiler-private data, jump tables,
+     pools and the .lit4 pool from C) carries no retail bytes in its owned
+     ranges except its `retail` entries, borrows no retail slot, leaves no
+     owned range to the expected data object, and every piece it links --
+     owned ranges and the gap ranges it `[[claim]]`s -- equals retail.
   6. The image gate: link the full matching image from the hybrids step 3
      rebuilt (rebuilding any it did not) -- it must reproduce the retail
      loaded-image SHA.
@@ -50,7 +51,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 from cc import compile_c, profiles_fingerprint
 from gen_hybrid import (HybridError, build_hybrid, data_report_path,
-                        data_states, has_c_data)
+                        has_c_data, provides_data)
 from link_image import link_image
 from status import check_version
 from declib.asmtext import load_symbol_addrs, load_text_target, resolve
@@ -151,6 +152,9 @@ def complete_problems(data, unit_index, version, report, ranges):
     nobits = [r for r in owned if r["section"] in (".sbss", ".bss")]
     if nobits:
         out.append(f"owns {len(nobits)} .sbss/.bss range(s) (data/bss)")
+    if not (report or {}).get("whole_unit"):
+        out.append("its hybrid was not built in whole-unit mode")
+        return out
     registry = _registry(version).get(unit_index, {})
     retail_ok = []
     for entry in data.get("data", []):
@@ -158,27 +162,24 @@ def complete_problems(data, unit_index, version, report, ranges):
             addr = int(entry["id"].split(":")[2], 16)
             sym = registry.get(addr, {})
             retail_ok.append((addr, addr + (sym.get("size") or sym.get("extent", 0))))
-    lit4 = [(r["start"], r["end"]) for r in ranges if r["section"] == ".lit4"]
-    progbits = [r for r in owned if r["section"] not in (".sbss", ".bss", ".lit4")]
-    pieces = {p["start"] for p in (report or {}).get("pieces", [])}
+    progbits = [r for r in owned if r["section"] not in (".sbss", ".bss")]
+    pieces = {p["start"] for p in report.get("pieces", [])}
     left = [r for r in progbits if r["start"] not in pieces]
     if left:
         out.append(f"{len(left)} owned data range(s) still come from the "
                    f"expected object (no C data pieces)")
-    for lo, hi in (report or {}).get("retail", []):
+    for lo, hi in report.get("retail", []):
         cursor = lo
-        for a, b in sorted(retail_ok + lit4):
+        for a, b in sorted(retail_ok):
             if a <= cursor < b:
                 cursor = b
         if cursor < hi:
-            out.append(f"retail bytes at 0x{cursor:08x} in its pieces")
+            out.append(f"retail bytes at 0x{cursor:08x} in its pieces (the C "
+                       f"does not emit them)")
             break
-    private = [s["symbol"] for s in (report or {}).get("borrowed", [])
-               if s["address"] is None
-               or not any(a <= s["address"] < b for a, b in lit4)]
-    if private:
-        out.append(f"borrows compiler-private retail data ({', '.join(private[:3])}; "
-                   f"data/private)")
+    borrowed = [s["symbol"] for s in report.get("borrowed", [])]
+    if borrowed:
+        out.append(f"borrows retail data ({', '.join(borrowed[:3])})")
     return out
 
 
@@ -198,7 +199,7 @@ def verify_manifest(reporter, manifest, version, elf, text_addr, text_off,
         declared[name] = entry
     nonasm = {n: e for n, e in declared.items()
               if e["state"] in ("matching", "equivalent")}
-    c_data = has_c_data(data)
+    c_data = provides_data(data)
     if not nonasm and not c_data:
         if data.get("complete"):
             reporter.result(f"{label} (complete)", False,
@@ -279,9 +280,17 @@ def verify_manifest(reporter, manifest, version, elf, text_addr, text_off,
         if matching:
             reporter.result(f"{label} (matching bytes, {len(matching)} fn)",
                             not bad, None if not bad else f"diverge: {bad}")
-        if c_data:
+        if has_c_data(data):
             verify_data(reporter, label, data, unit_index, version, elf,
                         report["pieces"], linked_pieces, symbols, results)
+        if report.get("whole_unit") and report["pieces"]:
+            # Every byte a whole-unit hybrid links, its gap claims included.
+            off = [p["name"] for p in report["pieces"]
+                   if linked_pieces[p["name"]] != _retail_data(
+                       elf, version, p["start"], p["end"] - p["start"])]
+            reporter.result(f"{label} (unit data, {len(report['pieces'])} "
+                            f"pieces)", not off,
+                            None if not off else f"diverge: {off[:4]}")
 
     for name, entry in nonasm.items():
         if entry["state"] == "equivalent":
@@ -358,7 +367,7 @@ def main():
                 # no function bodies, so its compiled `.s` is just the file
                 # prologue and build_hybrid would (correctly) refuse to parse it.
                 states = {f["state"] for f in data.get("function", [])}
-                if "matching" not in states and not has_c_data(data):
+                if "matching" not in states and not provides_data(data):
                     continue
                 if manifest in built:     # already rebuilt by verify_manifest
                     continue

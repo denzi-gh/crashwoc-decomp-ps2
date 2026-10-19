@@ -41,9 +41,6 @@ union __dmath {
 extern const union __dmath __infinity[];
 #define HUGE_VAL (__infinity[0].d)
 
-extern char D_0062B2A8[];
-#define pow_name D_0062B2A8
-
 extern double __ieee754_pow(double x, double y);
 extern int isnan(double x);
 extern int finite(double x);
@@ -65,7 +62,7 @@ double pow(double x, double y)
     if (isnan(x)) {
         if (y == 0.0) {
             exc.type = DOMAIN;
-            exc.name = pow_name;
+            exc.name = "pow";
             exc.err = 0;
             exc.operand1 = x;
             exc.operand2 = y;
@@ -86,7 +83,7 @@ double pow(double x, double y)
     if (x == 0.0) {
         if (y == 0.0) {
             exc.type = DOMAIN;
-            exc.name = pow_name;
+            exc.name = "pow";
             exc.err = 0;
             exc.operand1 = x;
             exc.operand2 = y;
@@ -103,7 +100,7 @@ double pow(double x, double y)
         }
         if (finite(y) && y < 0.0) {
             exc.type = DOMAIN;
-            exc.name = pow_name;
+            exc.name = "pow";
             exc.err = 0;
             exc.operand1 = x;
             exc.operand2 = y;
@@ -128,7 +125,7 @@ double pow(double x, double y)
         if (finite(x) && finite(y)) {
             if (isnan(z)) {
                 exc.type = DOMAIN;
-                exc.name = pow_name;
+                exc.name = "pow";
                 exc.err = 0;
                 exc.operand1 = x;
                 exc.operand2 = y;
@@ -148,7 +145,7 @@ double pow(double x, double y)
                 return exc.retval;
             } else {
                 exc.type = OVERFLOW;
-                exc.name = pow_name;
+                exc.name = "pow";
                 exc.err = 0;
                 exc.operand1 = x;
                 exc.operand2 = y;
@@ -179,7 +176,7 @@ double pow(double x, double y)
     }
     if (z == 0.0 && finite(x) && finite(y)) {
         exc.type = UNDERFLOW;
-        exc.name = pow_name;
+        exc.name = "pow";
         exc.err = 0;
         exc.operand1 = x;
         exc.operand2 = y;
