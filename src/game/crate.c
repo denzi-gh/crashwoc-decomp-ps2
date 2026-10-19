@@ -180,7 +180,7 @@ extern u8 *vpDmaTag_Close(u8 *cur);
 extern u8 *vpDmaTag_Next(u8 *cur, s32 mode);
 
 extern void AddQuad3DrotXYZ(struct nuvec_s *pos, struct nuvec_s *shape,
-                            struct numtl_s *mat, s32 *rot, f32 *uv, u32 col);
+                            struct numtl_s *mtl, s32 *a, f32 *uvs, u32 colour);
 
 extern struct nugscn_s *crate_scene;
 extern struct crateeditor_s crate_list[];
@@ -1089,15 +1089,13 @@ s32 CrateOff(struct crategroup_s *group, struct cratecube_s *crate, s32 how,
         break;
     case 0x10:
         AddKaboom(2, &pos, 0.0f);
-        n = 6;
+        AddGameDebris(6, &pos);
         sfx = 0x3B;
-        AddGameDebris(n, &pos);
         break;
     case 9:
         AddKaboom(1, &pos, 0.0f);
-        n = 5;
+        AddGameDebris(5, &pos);
         sfx = 0x3B;
-        AddGameDebris(n, &pos);
         break;
     case 0xC:
         if (silent == 0) {
@@ -1691,47 +1689,20 @@ SetBot:
     obj->mom.y = 0.0f;
 }
 
-/* Every push re-reads the global cursor, so these stay macros over
- * `rndrstream_3d` rather than taking a local stream pointer. */
-#define RS3D_PUSH_F(v)  do { *(f32 *)rndrstream_3d->cur.b = (v);  \
-                             rndrstream_3d->cur.b += 4; } while (0)
-#define RS3D_PUSH_W(v)  do { *(u32 *)rndrstream_3d->cur.b = (v);  \
-                             rndrstream_3d->cur.b += 4; } while (0)
-#define RS3D_PUSH_D(v)  do { *(u64 *)rndrstream_3d->cur.b = (v);  \
-                             rndrstream_3d->cur.b += 8; } while (0)
-
-/* Faithful reconstruction (state=asm): compiles to exactly 254 instructions =
- * the 1016-byte retail extent, frame 0x140 and reg_mask 0xc0ff0000 both exact.
- * Three codegen deltas remain -- retail spills `a` and keeps `mat` in $s7 (gcc
- * here does the reverse), retail holds 1.0f in two FP regs ($f21 copied from
- * $f20) where gcc rematerializes it in the loop, and retail's stream pushes
- * group as [load][data store][cursor store] while gcc pairs each cursor store
- * with the *next* push's data store. See the MCP blocker for the probes. */
 void AddQuad3DrotXYZ(struct nuvec_s *pos, struct nuvec_s *shape,
-                     struct numtl_s *mat, s32 *rot, f32 *uv, u32 col) {
+                     struct numtl_s *mtl, s32 *a, f32 *uvs, u32 colour) {
     struct nuvec_s screen[4];
     struct nuvec4_s v4;
     struct numtx_s m;
     struct numtx_s *vpcs;
-    u32 r;
-    u32 g;
-    u32 b;
-    u32 a;
     s32 i;
 
     if (NuCameraClipTestPoints(pos, 1, 0)) {
         return;
     }
-    /* Only r and a are masked here: g and b keep their unmasked shift and are
-     * narrowed at the push, which is where retail's two loop-body `andi`s
-     * come from (the shifts themselves are loop-invariant and hoisted). */
-    r = col & 0xFF;
-    g = col >> 8;
-    b = col >> 16;
-    a = col >> 24;
     vpcs = NuCameraGetVPCSMtx();
     NuVpGetCurrentViewport();
-    NuMtxSetRotateXYZ(&m, rot);
+    NuMtxSetRotateXYZ(&m, a);
     NuMtxTranslate(&m, pos);
     NuMtxMulH(&m, &m, vpcs);
 
@@ -1775,26 +1746,26 @@ void AddQuad3DrotXYZ(struct nuvec_s *pos, struct nuvec_s *shape,
     screen[3].y = v4.y;
     screen[3].z = v4.z;
 
-    rndrstream_3d = &mat->stream;
+    rndrstream_3d = &mtl->stream;
     NuRndrStreamLink(rndrstream_3d);
     rndrstream_3d->cur.b = vpDmaTag_Cnt(rndrstream_3d->cur.b);
-    RS3D_PUSH_W(0x10000000);
-    RS3D_PUSH_W(0x5000000D);
-    RS3D_PUSH_D(0x3002400000008004ULL);
-    RS3D_PUSH_D(0x512);
+    *rndrstream_3d->cur.w++ = 0x10000000;
+    *rndrstream_3d->cur.w++ = 0x5000000D;
+    /* GNU cast-as-lvalue: the cursor union has no 64-bit member. */
+    *((u64 *)rndrstream_3d->cur.w)++ = 0x3002400000008004ULL;
+    *((u64 *)rndrstream_3d->cur.w)++ = 0x512;
     for (i = 0; i < 4; i++) {
-        RS3D_PUSH_F(uv[0]);
-        RS3D_PUSH_F(uv[1]);
-        uv += 2;
-        RS3D_PUSH_F(1.0f);
-        rndrstream_3d->cur.b += 4;
-        RS3D_PUSH_W(r);
-        RS3D_PUSH_W(g & 0xFF);
-        RS3D_PUSH_W(b & 0xFF);
-        RS3D_PUSH_W(a);
+        *rndrstream_3d->cur.f++ = uvs[i * 2];
+        *rndrstream_3d->cur.f++ = uvs[i * 2 + 1];
+        *rndrstream_3d->cur.f++ = 1.0f;
+        rndrstream_3d->cur.w++;
+        *rndrstream_3d->cur.w++ = colour & 0xFF;
+        *rndrstream_3d->cur.w++ = (colour >> 8) & 0xFF;
+        *rndrstream_3d->cur.w++ = (colour >> 16) & 0xFF;
+        *rndrstream_3d->cur.w++ = colour >> 24;
         NuVecConvertToIntVU0(rndrstream_3d->cur.b, &screen[i]);
         rndrstream_3d->cur.b += 0xC;
-        RS3D_PUSH_W(0);
+        *rndrstream_3d->cur.w++ = 0;
     }
     rndrstream_3d->cur.b = vpDmaTag_Close(rndrstream_3d->cur.b);
     rndrstream_free = vpDmaTag_Next(rndrstream_3d->cur.b, 0);
