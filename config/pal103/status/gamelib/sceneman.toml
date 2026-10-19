@@ -13,11 +13,11 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0080:001b0fe8:NuSceneDataLoad"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0080:001b1410:NuSceneInstanceCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0080:001b1790:NuSceneInstanceRunScript"

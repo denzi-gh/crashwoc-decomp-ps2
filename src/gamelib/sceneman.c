@@ -81,6 +81,7 @@ extern char D_0061A580[];
 extern char D_0062F810[];
 extern char D_0062F818[];
 extern char D_0062F820[];
+extern char D_0062F828[];
 extern char D_0062F830[];
 extern char D_0062F838[];
 
@@ -125,6 +126,7 @@ extern char D_0062F838[];
 #define kw_scenefinished D_0061A570
 #define kw_setvisibility D_0061A580
 #define kw_on D_0062F838
+#define kw_player D_0062F828
 
 extern struct NuSceneInstance *D_0062F808;
 extern struct numtx_s *D_0062F80C;
@@ -193,9 +195,6 @@ struct NuSceneCommand {
 };
 
 
-/* Near-match (state=asm), 1056/1064 bytes: retail passes memset `move $a0,$s1`;
- * here CSE rewrites `scene` to the spilled `result` and the heap store sits
- * between the spill store and the reload, so reload_cse keeps `lw $a0,0x100`. */
 struct NuSceneData *NuSceneDataLoad(char *dir, union variptr_u *heap, union variptr_u *heapend) {
     char path[256];
     struct NuSceneData *result;
@@ -212,9 +211,10 @@ struct NuSceneData *NuSceneDataLoad(char *dir, union variptr_u *heap, union vari
     lastscript = 0;
     parser = NuFParCreate(path);
     if (parser) {
-        scene = (struct NuSceneData *)((heap->intaddr + 15) & ~15);
-        heap->voidptr = (char *)scene + sizeof(struct NuSceneData);
+        heap->intaddr = (heap->intaddr + 15) & ~15;
+        scene = heap->voidptr;
         result = scene;
+        heap->u8 += sizeof(struct NuSceneData);
         memset(scene, 0, sizeof(struct NuSceneData));
         while (NuFParGetLine(parser)) {
             NuFParGetWord(parser);
@@ -281,6 +281,81 @@ struct NuSceneData *NuSceneDataLoad(char *dir, union variptr_u *heap, union vari
         }
         for (cutscene = 0; cutscene < scene->ncutscenes; cutscene++) {
             NuGCutSceneFixUp(scene->cutscenes[cutscene].def, scene->gscene, scene->triggers);
+        }
+    }
+    return result;
+}
+
+
+struct NuSceneInstance *NuSceneInstanceCreate(struct NuSceneData *data, int duplicate, union variptr_u *heap,
+                                              union variptr_u *heapend) {
+    struct NuSceneInstance *result;
+    struct NuSceneInstance *inst;
+    struct NuSceneCutscene *cutscene;
+    struct NuSceneCutsceneInst *cinst;
+    int i;
+    int j;
+    int k;
+    int t;
+
+    result = 0;
+    if (data) {
+        heap->intaddr = (heap->intaddr + 15) & ~15;
+        inst = heap->voidptr;
+        result = inst;
+        heap->u8 += sizeof(struct NuSceneInstance);
+        memset(inst, 0, sizeof(struct NuSceneInstance));
+        result->prev = 0;
+        result->next = sceneinst_list;
+        if (sceneinst_list) {
+            sceneinst_list->prev = result;
+        }
+        sceneinst_list = result;
+        result->data = data;
+        if (duplicate) {
+            result->gscene = NuGScnDuplicate(data->gscene, &heap->charptr, &heapend->charptr);
+        } else {
+            result->gscene = data->gscene;
+        }
+        inst->triggers = instNuTriggerSysCreate(data->triggers, inst, heap, heapend);
+        inst->rate = 1.0f;
+        k = 0;
+        if (data->ninstances) {
+            heap->intaddr = (heap->intaddr + 15) & ~15;
+            inst->cutscenes = heap->voidptr;
+            heap->u8 += data->ninstances * sizeof(struct instNUGCUTSCENE_s *);
+            for (i = 0; i < data->ncutscenes; i++) {
+                cutscene = &data->cutscenes[i];
+                for (j = 0; j < cutscene->ninstances; j++) {
+                    cinst = (struct NuSceneCutsceneInst *)cutscene->instances + j;
+                    inst->cutscenes[k] = instNuGCutSceneCreate(cutscene->def, inst->gscene, inst->triggers,
+                                                               cinst->name, heap);
+                    if (cinst->position) {
+                        instNuGCutSceneSetMtx(inst->cutscenes[k], &cinst->mtx);
+                    }
+                    inst->cutscenes[k]->maxvisidist_sq = cinst->maxvisidist_sq;
+                    inst->cutscenes[k]->speed = cinst->speed;
+                    inst->cutscenes[k]->flags =
+                        (inst->cutscenes[k]->flags & ~NUGCUTSCENE_LOOP) | ((cinst->looping & 1) << 2);
+                    inst->cutscenes[k]->flags =
+                        (inst->cutscenes[k]->flags & ~NUGCUTSCENE_AUTOSTART) | ((cinst->autostart & 1) << 3);
+                    inst->cutscenes[k]->flags =
+                        (inst->cutscenes[k]->flags & ~NUGCUTSCENE_CLIPBOUNDS) | ((cinst->clipbbox & 1) << 5);
+                    inst->cutscenes[k]->flags =
+                        (inst->cutscenes[k]->flags & ~NUGCUTSCENE_CLIPDIST) | ((cinst->maxvisidist & 1) << 6);
+                    if (cinst->ncamtgts) {
+                        instNuGCutSceneCreateCamTgtArray(inst->cutscenes[k], cinst->ncamtgts, heap);
+                        for (t = 0; t < cinst->ncamtgts; t++) {
+                            if (strcasecmp(cinst->camtgts[t].name, kw_player) == 0) {
+                                instNuGCutSceneAddCamTgt(inst->cutscenes[k], (struct nuvec_s *)&player_mtx->_30,
+                                                         cinst->camtgts[t].frame, cinst->camtgts[t].nframes,
+                                                         cinst->camtgts[t].camid);
+                            }
+                        }
+                    }
+                    k++;
+                }
+            }
         }
     }
     return result;
