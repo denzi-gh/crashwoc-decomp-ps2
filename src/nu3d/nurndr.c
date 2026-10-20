@@ -988,20 +988,6 @@ int NuRndrGobj(struct nugobj_s *gobj, struct numtx_s *wm) {
     return clip;
 }
 
-
-struct FxSprite {
-    float parameter_00;
-    int parameter_04;
-    int count;
-    float parameter_0c;
-    float parameter_10;
-    float parameter_14;
-    float parameter_18;
-    int parameter_1c[16];
-    int colour[16];
-    float channel[12][16];
-};
-
 u32 *NuRndrFxSpriteSet(u32 code, struct FxSprite *fx) {
     u32 tag[8];
     u32 *base;

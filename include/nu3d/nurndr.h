@@ -40,6 +40,20 @@ struct nurndrscreenvtx_s {
     short v;                            /* 0x06 */
 }; /* 0x08 */
 
+/* Sixteen entries per channel; names of the sprite parameters remain unknown. */
+struct FxSprite {
+    float parameter_00;                 /* 0x00 */
+    int parameter_04;                   /* 0x04 */
+    int count;                          /* 0x08 */
+    float parameter_0c;                 /* 0x0C */
+    float parameter_10;                 /* 0x10 */
+    float parameter_14;                 /* 0x14 */
+    float parameter_18;                 /* 0x18 */
+    int parameter_1c[16];               /* 0x1C */
+    int colour[16];                     /* 0x5C */
+    float channel[12][16];              /* 0x9C */
+}; /* 0x39C */
+
 /* Eight entries per channel; names of the sprite parameters remain unknown. */
 struct FxSprite2 {
     float parameter_00;                 /* 0x00 */
