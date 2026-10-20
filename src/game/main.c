@@ -693,27 +693,18 @@ void DrawWorld(void)
     }
 }
 
-union fadereg {
-    u64 raw;
-    struct numtlattrib_s b;
-};
-
 void CreateFadeMtl(void)
 {
     struct numtl_s *m = NuMtlCreate(1);
-    union fadereg u;
-
-    u.raw = m->attrib_reg;
-    u.b.zmode = 3;
-    u.b.filter = 1;
-    u.b.lighting = 2;
-    u.b.utc = 1;
-    u.b.vtc = 1;
-    u.b.colour = 1;
-    u.b.alpha = 3;
 
     D_00633260 = m;
-    m->attrib_reg = u.raw;
+    D_00633260->attrib.zmode = 3;
+    D_00633260->attrib.filter = 1;
+    D_00633260->attrib.lighting = 2;
+    D_00633260->attrib.utc = 1;
+    D_00633260->attrib.vtc = 1;
+    D_00633260->attrib.colour = 1;
+    D_00633260->attrib.alpha = 3;
     NuMtlUpdate(m);
 }
 
@@ -1205,7 +1196,7 @@ void InitPauseRender(void)
     pause_rndr_mtl->attrib.lighting = 2;
     pause_rndr_mtl->attrib.colour = 1;
     pause_rndr_mtl->attrib.alpha = 0;
-    pause_rndr_mtl->alpha_sort = 0x7FFF;
+    pause_rndr_mtl->sort_pri = 0x7FFF;
     NuMtlUpdate(pause_rndr_mtl);
 
     pause_src_mtl = NuMtlCreate(1);
@@ -1218,7 +1209,7 @@ void InitPauseRender(void)
     pause_src_mtl->attrib.lighting = 2;
     pause_src_mtl->attrib.colour = 1;
     pause_src_mtl->attrib.alpha = 0;
-    pause_src_mtl->alpha_sort = 0x7FFE;
+    pause_src_mtl->sort_pri = 0x7FFE;
     NuMtlUpdate(pause_src_mtl);
 
     pause_rndr_on = 0;

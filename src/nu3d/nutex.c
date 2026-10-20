@@ -972,7 +972,7 @@ u64 *NuTexWriteMaterialSettings(u64 *dst, struct numtl_s *mtl) {
         k = mtl->K;
         l = mtl->L;
     }
-    filter = (int)(mtl->attrib_reg >> 36) & 3;
+    filter = mtl->attrib.filter;
     if (mtl->tid > 0) {
         ps2tex = &TexList[mtl->tid - 1].ps2tex;
         if (filter == 2) {
@@ -987,13 +987,13 @@ u64 *NuTexWriteMaterialSettings(u64 *dst, struct numtl_s *mtl) {
     *dst++ = 0x3F;
     *dst++ = (u64)(maxlevel >= 0 ? maxlevel : 0) << 2 | (u64)nutex_mag_filter[filter] << 5
            | (u64)nutex_min_filter[filter] << 6 | (u64)l << 19 | (u64)k << 32;
-    if (mtl->ctxt) {
+    if (mtl->context) {
         *dst++ = 0x15;
     } else {
         *dst++ = 0x14;
     }
-    *dst++ = nutex_wrap_mode[(int)(mtl->attrib_reg >> 40) & 3] | (u64)nutex_wrap_mode[(int)(mtl->attrib_reg >> 42) & 3] << 2;
-    if (mtl->ctxt) {
+    *dst++ = nutex_wrap_mode[mtl->attrib.utc] | (u64)nutex_wrap_mode[mtl->attrib.vtc] << 2;
+    if (mtl->context) {
         *dst++ = 9;
     } else {
         *dst++ = 8;

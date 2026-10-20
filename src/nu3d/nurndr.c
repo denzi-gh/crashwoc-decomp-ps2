@@ -812,7 +812,7 @@ int NuRndrGScnObj(struct nugobj_s *gobj, struct numtx_s *wm) {
                 }
                 do {
                     if (mtl != lastmtl) {
-                        rndrstream_3d = &mtl->stream;
+                        rndrstream_3d = &mtl->rs;
                         lastmtl = mtl;
                         if (stream != rndrstream_3d) {
                             if (stream) {
@@ -838,7 +838,7 @@ int NuRndrGScnObj(struct nugobj_s *gobj, struct numtx_s *wm) {
                         }
                         NuRndrStreamLink(rndrstream_3d);
                     }
-                    mtl = mtl->display_next;
+                    mtl = mtl->next;
                 } while (mtl);
                 } while ((geom = geom->next));
             }
@@ -848,7 +848,7 @@ int NuRndrGScnObj(struct nugobj_s *gobj, struct numtx_s *wm) {
                     NuDebugMsgProlog(nurndr_file, 0x666)(err_fgeom_no_mtl);
                 }
                 if (mtl != lastmtl) {
-                    rndrstream_3d = &mtl->stream;
+                    rndrstream_3d = &mtl->rs;
                     lastmtl = mtl;
                     if (stream != rndrstream_3d) {
                         if (stream) {
@@ -934,7 +934,7 @@ int NuRndrGobj(struct nugobj_s *gobj, struct numtx_s *wm) {
                 }
                 do {
                     if (mtl != lastmtl) {
-                        rndrstream_3d = &mtl->stream;
+                        rndrstream_3d = &mtl->rs;
                         lastmtl = mtl;
                         if (stream != rndrstream_3d) {
                             if (stream) {
@@ -949,7 +949,7 @@ int NuRndrGobj(struct nugobj_s *gobj, struct numtx_s *wm) {
                     }
                     rndrstream_3d->cur.w = vpDmaTag_Call(rndrstream_3d->cur.w, geom->dmastream);
                     ((unsigned char *)rndrstream_3d->cur.w)[-14] = 4;
-                    mtl = mtl->display_next;
+                    mtl = mtl->next;
                 } while (mtl);
             }
             for (fgeom = gobj->faceon_geom; fgeom; fgeom = fgeom->next) {
@@ -958,7 +958,7 @@ int NuRndrGobj(struct nugobj_s *gobj, struct numtx_s *wm) {
                 }
                 faceonmtl = fgeom->mtl;
                 if (faceonmtl != lastmtl) {
-                    rndrstream_3d = &faceonmtl->stream;
+                    rndrstream_3d = &faceonmtl->rs;
                     lastmtl = faceonmtl;
                     if (stream != rndrstream_3d) {
                         if (stream) {
@@ -988,15 +988,15 @@ int NuRndrGobj(struct nugobj_s *gobj, struct numtx_s *wm) {
     return clip;
 }
 
-u32 *NuRndrFxSpriteSet(u32 code, struct FxSprite *fx) {
+u32 *NuRndrFxSpriteSet(u32 code, struct FxSpriteSet *fx) {
     u32 tag[8];
     u32 *base;
     u32 *packet;
     int i;
 
-    base = NuRndrStreamAlloc(fx->count * 5 + 8);
+    base = NuRndrStreamAlloc(fx->tablecount * 5 + 8);
     packet = vpDmaTag_RetEx(base, 0x13000000,
-        ((fx->count * 5 + 4) << 16) | 0x6c008000);
+        ((fx->tablecount * 5 + 4) << 16) | 0x6c008000);
     *(unsigned long long *)tag = 0x1003400000008001ULL;
     *packet++ = tag[0];
     *packet++ = tag[1];
@@ -1007,36 +1007,36 @@ u32 *NuRndrFxSpriteSet(u32 code, struct FxSprite *fx) {
     *packet++ = tag[1];
     *packet++ = 0x5252;
     *packet++ = 0;
-    *(float *)packet++ = fx->parameter_00;
+    *(float *)packet++ = fx->zval;
     *packet++ = 0;
-    *packet++ = fx->parameter_04;
-    *packet++ = fx->count;
-    *(float *)packet++ = fx->parameter_14;
-    *(float *)packet++ = fx->parameter_18;
-    *(float *)packet++ = fx->parameter_0c;
-    *(float *)packet++ = fx->parameter_10;
+    *packet++ = fx->oiterations;
+    *packet++ = fx->tablecount;
+    *(float *)packet++ = fx->oustep;
+    *(float *)packet++ = fx->ovstep;
+    *(float *)packet++ = fx->oxstep;
+    *(float *)packet++ = fx->oystep;
 
-    for (i = 0; i < fx->count; i++) {
+    for (i = 0; i < fx->tablecount; i++) {
         *packet++ = 0;
         *packet++ = 0;
         *packet++ = 0;
-        *packet++ = fx->parameter_1c[i];
-        *packet++ = fx->colour[i];
-        *packet++ = fx->colour[i] >> 8;
-        *packet++ = (short)(fx->colour[i] >> 16);
-        *packet++ = (signed char)(fx->colour[i] >> 24);
-        *(float *)packet++ = fx->channel[2][i];
-        *(float *)packet++ = fx->channel[3][i];
-        *(float *)packet++ = fx->channel[0][i];
-        *(float *)packet++ = fx->channel[1][i];
-        *(float *)packet++ = fx->channel[6][i];
-        *(float *)packet++ = fx->channel[7][i];
-        *(float *)packet++ = fx->channel[4][i];
-        *(float *)packet++ = fx->channel[5][i];
-        *(float *)packet++ = fx->channel[10][i];
-        *(float *)packet++ = fx->channel[11][i];
-        *(float *)packet++ = fx->channel[8][i];
-        *(float *)packet++ = fx->channel[9][i];
+        *packet++ = fx->iterations[i];
+        *packet++ = fx->rgba[i];
+        *packet++ = fx->rgba[i] >> 8;
+        *packet++ = (short)(fx->rgba[i] >> 16);
+        *packet++ = (signed char)(fx->rgba[i] >> 24);
+        *(float *)packet++ = fx->ustart[i];
+        *(float *)packet++ = fx->vstart[i];
+        *(float *)packet++ = fx->xstart[i];
+        *(float *)packet++ = fx->ystart[i];
+        *(float *)packet++ = fx->uw[i];
+        *(float *)packet++ = fx->vh[i];
+        *(float *)packet++ = fx->xw[i];
+        *(float *)packet++ = fx->yh[i];
+        *(float *)packet++ = fx->ustep[i];
+        *(float *)packet++ = fx->vstep[i];
+        *(float *)packet++ = fx->xstep[i];
+        *(float *)packet++ = fx->ystep[i];
     }
 
     *packet++ = code | 0x14000000;
@@ -1048,16 +1048,16 @@ u32 *NuRndrFxSpriteSet(u32 code, struct FxSprite *fx) {
 }
 
 
-u32 *NuRndrFxSprite2Set(u32 code, struct FxSprite2 *fx) {
+u32 *NuRndrFxSprite2Set(u32 code, struct FxSprite2Set *fx) {
     /* The target reserves two quadwords for its GIF tag scratch. */
     u32 tag[8];
     u32 *base;
     u32 *packet;
     int i;
 
-    base = NuRndrStreamAlloc(fx->count * 8 + 8);
+    base = NuRndrStreamAlloc(fx->tablecount * 8 + 8);
     packet = vpDmaTag_RetEx(base, 0x13000000,
-        ((fx->count * 8 + 4) << 16) | 0x6c008000);
+        ((fx->tablecount * 8 + 4) << 16) | 0x6c008000);
     *(unsigned long long *)tag = 0x1003400000008001ULL;
     *packet++ = tag[0];
     *packet++ = tag[1];
@@ -1068,48 +1068,48 @@ u32 *NuRndrFxSprite2Set(u32 code, struct FxSprite2 *fx) {
     *packet++ = tag[1];
     *packet++ = 0x5252;
     *packet++ = 0;
-    *packet++ = (u32)fx->parameter_00;
+    *packet++ = (u32)fx->zval;
     *packet++ = 0;
-    *packet++ = fx->parameter_04;
-    *packet++ = fx->count;
-    *(float *)packet++ = fx->parameter_14;
-    *(float *)packet++ = fx->parameter_18;
-    *(float *)packet++ = fx->parameter_0c;
-    *(float *)packet++ = fx->parameter_10;
+    *packet++ = fx->oiterations;
+    *packet++ = fx->tablecount;
+    *(float *)packet++ = fx->oustep;
+    *(float *)packet++ = fx->ovstep;
+    *(float *)packet++ = fx->oxstep;
+    *(float *)packet++ = fx->oystep;
 
-    for (i = 0; i < fx->count; i++) {
+    for (i = 0; i < fx->tablecount; i++) {
         *packet++ = 0;
         *packet++ = 0;
         *packet++ = 0;
-        *packet++ = fx->parameter_1c[i];
-        *packet++ = fx->colour[i];
-        *packet++ = fx->colour[i] >> 8;
-        *packet++ = (short)(fx->colour[i] >> 16);
-        *packet++ = (signed char)(fx->colour[i] >> 24);
-        *(float *)packet++ = fx->channel[2][i];
-        *(float *)packet++ = fx->channel[3][i];
-        *(float *)packet++ = fx->channel[0][i];
-        *(float *)packet++ = fx->channel[1][i];
-        *(float *)packet++ = fx->channel[6][i];
-        *(float *)packet++ = fx->channel[7][i];
-        *(float *)packet++ = fx->channel[4][i];
-        *(float *)packet++ = fx->channel[5][i];
-        *(float *)packet++ = fx->channel[10][i];
-        *(float *)packet++ = fx->channel[11][i];
-        *(float *)packet++ = fx->channel[8][i];
-        *(float *)packet++ = fx->channel[9][i];
-        *(float *)packet++ = fx->channel[14][i];
-        *(float *)packet++ = fx->channel[15][i];
-        *(float *)packet++ = fx->channel[12][i];
-        *(float *)packet++ = fx->channel[13][i];
-        *(float *)packet++ = fx->channel[18][i];
-        *(float *)packet++ = fx->channel[19][i];
-        *(float *)packet++ = fx->channel[16][i];
-        *(float *)packet++ = fx->channel[17][i];
-        *(float *)packet++ = fx->channel[22][i];
-        *(float *)packet++ = fx->channel[23][i];
-        *(float *)packet++ = fx->channel[20][i];
-        *(float *)packet++ = fx->channel[21][i];
+        *packet++ = fx->iterations[i];
+        *packet++ = fx->rgba[i];
+        *packet++ = fx->rgba[i] >> 8;
+        *packet++ = (short)(fx->rgba[i] >> 16);
+        *packet++ = (signed char)(fx->rgba[i] >> 24);
+        *(float *)packet++ = fx->ustart[i];
+        *(float *)packet++ = fx->vstart[i];
+        *(float *)packet++ = fx->xstart[i];
+        *(float *)packet++ = fx->ystart[i];
+        *(float *)packet++ = fx->uw[i];
+        *(float *)packet++ = fx->vh[i];
+        *(float *)packet++ = fx->xw[i];
+        *(float *)packet++ = fx->yh[i];
+        *(float *)packet++ = fx->ustep[i];
+        *(float *)packet++ = fx->vstep[i];
+        *(float *)packet++ = fx->xstep[i];
+        *(float *)packet++ = fx->ystep[i];
+        *(float *)packet++ = fx->ustart2[i];
+        *(float *)packet++ = fx->vstart2[i];
+        *(float *)packet++ = fx->xstart2[i];
+        *(float *)packet++ = fx->ystart2[i];
+        *(float *)packet++ = fx->uw2[i];
+        *(float *)packet++ = fx->vh2[i];
+        *(float *)packet++ = fx->xw2[i];
+        *(float *)packet++ = fx->yh2[i];
+        *(float *)packet++ = fx->ustep2[i];
+        *(float *)packet++ = fx->vstep2[i];
+        *(float *)packet++ = fx->xstep2[i];
+        *(float *)packet++ = fx->ystep2[i];
     }
 
     *packet++ = code | 0x14000000;
@@ -1240,7 +1240,7 @@ int NuRndrGobjSkin(struct nugobj_s *gobj, struct numtx_s *wm, int njoints, struc
             }
             do {
                 if (mtl != lastmtl) {
-                    rndrstream_3d = &mtl->stream;
+                    rndrstream_3d = &mtl->rs;
                     lastmtl = mtl;
                     if (stream != rndrstream_3d) {
                         if (stream) {
@@ -1277,7 +1277,7 @@ int NuRndrGobjSkin(struct nugobj_s *gobj, struct numtx_s *wm, int njoints, struc
                         break;
                     }
                 }
-                mtl = mtl->display_next;
+                mtl = mtl->next;
             } while (mtl);
         }
         rndrstream_free = vpDmaTag_Next(rndrstream_3d->cur.w, 0);
@@ -4061,7 +4061,7 @@ int NuRndrOldFaceOn(struct faceon_s *faceon, struct numtl_s *mtl, struct numtx_s
             pnts[3].w = 1.0f;
         }
         pcs = NuCameraGetPCSMtx();
-        rndrstream_3d = &mtl->stream;
+        rndrstream_3d = &mtl->rs;
         NuRndrStreamLink(rndrstream_3d);
         NuRndrStreamSetMisc(rndrstream_3d);
         rndrstream_3d->cur.w = vpDmaTag_Cnt(rndrstream_3d->cur.w);
@@ -4159,7 +4159,7 @@ int NuRndrFaceOn(struct faceon_s *faceon, struct numtl_s *mtl, struct numtx_s *w
             pnts[3].y = pos.y + ratioy * (-ws - hc);
             pnts[3].z = pos.z;
         }
-        rndrstream_3d = &mtl->stream;
+        rndrstream_3d = &mtl->rs;
         NuRndrStreamLink(rndrstream_3d);
         NuRndrStreamSetMisc(rndrstream_3d);
         rndrstream_3d->cur.w = vpDmaTag_CntEx(rndrstream_3d->cur.w, 0x10000000, 0x5000000D);
@@ -4213,7 +4213,7 @@ int NuRndrFaceY(struct faceon_s *faceon, struct numtl_s *mtl, struct numtx_s *wm
         pnts[3].z = view.z;
         pnts[3].w = 1.0f;
         pcs = NuCameraGetPCSMtx();
-        rndrstream_3d = &mtl->stream;
+        rndrstream_3d = &mtl->rs;
         NuRndrStreamLink(rndrstream_3d);
         NuRndrStreamSetMisc(rndrstream_3d);
         rndrstream_3d->cur.w = vpDmaTag_Cnt(rndrstream_3d->cur.w);
@@ -5659,7 +5659,7 @@ int NuRndrTri3dClip(void *verts, int num, void *mtx, struct numtl_s *mtl) {
     struct numtl_s *m;
 
     m = mtl ? mtl : numtl_defaultmtl3d;
-    return NuRndrStreamTri3dClip(verts, num, mtx, &m->stream);
+    return NuRndrStreamTri3dClip(verts, num, mtx, &m->rs);
 }
 
 
@@ -5667,7 +5667,7 @@ int NuRndrTriStrip3dClip(void *verts, int num, void *mtx, struct numtl_s *mtl) {
     struct numtl_s *m;
 
     m = mtl ? mtl : numtl_defaultmtl3d;
-    return NuRndrStreamTriStrip3dClip(verts, num, mtx, &m->stream);
+    return NuRndrStreamTriStrip3dClip(verts, num, mtx, &m->rs);
 }
 
 
@@ -5894,8 +5894,8 @@ void NuRndrOTFlush(void) {
             if (item->mtl != mtl) {
                 mtl = item->mtl;
                 NuRndrStreamAddMtl(stream, mtl);
-                if (mtl->stream.mpgtag != mpgtag) {
-                    mpgtag = mtl->stream.mpgtag;
+                if (mtl->rs.mpgtag != mpgtag) {
+                    mpgtag = mtl->rs.mpgtag;
                     stream->cur.w = vpDmaTag_Call(stream->cur.w, mpgtag);
                 }
             }

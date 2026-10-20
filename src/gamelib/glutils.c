@@ -50,10 +50,10 @@ struct numtl_s *CreateAlphaBlendTexture256_32(char *file, s32 blend, s32 alphamo
     mtl->attrib.zmode = zmode;
     mtl->attrib.alpha = alphamode;
     if (blend != 0) {
-        mtl->attrib2.uvmode = 1;
+        mtl->attrib.uvmode = 1;
     }
     mtl->tid = NuTexCreate(&tex);
-    mtl->alpha_sort = alpha_sort;
+    mtl->sort_pri = alpha_sort;
     NuMtlUpdate(mtl);
     return mtl;
 }
@@ -90,10 +90,10 @@ struct numtl_s *CreateAlphaBlendTexture64(char *file, s32 blend, s32 alphamode, 
     mtl->attrib.zmode = 1;
     mtl->attrib.alpha = alphamode;
     if (blend != 0) {
-        mtl->attrib2.uvmode = 1;
+        mtl->attrib.uvmode = 1;
     }
     mtl->tid = NuTexCreate(&tex);
-    mtl->alpha_sort = alpha_sort;
+    mtl->sort_pri = alpha_sort;
     NuMtlUpdate(mtl);
     return mtl;
 }
@@ -155,10 +155,10 @@ struct numtl_s *CreateAlphaBlendTexturewh_32(char *file, s32 blend, s32 alphamod
     mtl->attrib.zmode = zmode;
     mtl->attrib.alpha = alphamode;
     if (blend != 0) {
-        mtl->attrib2.uvmode = 1;
+        mtl->attrib.uvmode = 1;
     }
     mtl->tid = NuTexCreate(&tex);
-    mtl->alpha_sort = alpha_sort;
+    mtl->sort_pri = alpha_sort;
     NuMtlUpdate(mtl);
     return mtl;
 }

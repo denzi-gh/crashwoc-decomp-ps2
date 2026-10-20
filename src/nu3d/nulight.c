@@ -221,9 +221,9 @@ void NuLightMatInit(void) {
     NuLgtSurf[1]->attrib.vtc = 1;
     NuLgtSurf[1]->alpha = 0.999f;
     NuLgtSurf[1]->attrib.alpha = 0;
-    NuLgtSurf[1]->attrib2.afail = 1;
+    NuLgtSurf[1]->attrib.afail = 1;
     NuLgtSurf[1]->tid = NuLgtHSurf[1];
-    NuLgtSurf[1]->alpha_sort = 0x80;
+    NuLgtSurf[1]->sort_pri = 0x80;
     NuMtlUpdate(NuLgtSurf[1]);
 
     tex.width = PS2_REZ_W;
@@ -243,9 +243,9 @@ void NuLightMatInit(void) {
     NuLgtSurf[2]->attrib.vtc = 1;
     NuLgtSurf[2]->alpha = 0.999f;
     NuLgtSurf[2]->attrib.alpha = 3;
-    NuLgtSurf[2]->attrib2.afail = 1;
+    NuLgtSurf[2]->attrib.afail = 1;
     NuLgtSurf[2]->tid = NuLgtHSurf[2];
-    NuLgtSurf[2]->alpha_sort = 0x80;
+    NuLgtSurf[2]->sort_pri = 0x80;
     NuMtlUpdate(NuLgtSurf[2]);
 
     tex.type = 0x11;
@@ -265,9 +265,9 @@ void NuLightMatInit(void) {
     NuLgtSurf[3]->attrib.vtc = 1;
     NuLgtSurf[3]->alpha = 0.999f;
     NuLgtSurf[3]->attrib.alpha = 0;
-    NuLgtSurf[3]->attrib2.afail = 1;
+    NuLgtSurf[3]->attrib.afail = 1;
     NuLgtSurf[3]->tid = NuLgtHSurf[3];
-    NuLgtSurf[3]->alpha_sort = 0x80;
+    NuLgtSurf[3]->sort_pri = 0x80;
     NuMtlUpdate(NuLgtSurf[3]);
 
     tex.type = 0xE;
@@ -287,9 +287,9 @@ void NuLightMatInit(void) {
     NuLgtSurf[4]->attrib.vtc = 1;
     NuLgtSurf[4]->alpha = 0.999f;
     NuLgtSurf[4]->attrib.alpha = 0;
-    NuLgtSurf[4]->attrib2.afail = 1;
+    NuLgtSurf[4]->attrib.afail = 1;
     NuLgtSurf[4]->tid = NuLgtHSurf[4];
-    NuLgtSurf[4]->alpha_sort = 0x80;
+    NuLgtSurf[4]->sort_pri = 0x80;
     NuMtlUpdate(NuLgtSurf[4]);
 
     tex.type = 0xF;
@@ -309,9 +309,9 @@ void NuLightMatInit(void) {
     NuLgtSurf[5]->attrib.vtc = 1;
     NuLgtSurf[5]->alpha = 0.999f;
     NuLgtSurf[5]->attrib.alpha = 0;
-    NuLgtSurf[5]->attrib2.afail = 1;
+    NuLgtSurf[5]->attrib.afail = 1;
     NuLgtSurf[5]->tid = NuLgtHSurf[5];
-    NuLgtSurf[5]->alpha_sort = 0x80;
+    NuLgtSurf[5]->sort_pri = 0x80;
     NuMtlUpdate(NuLgtSurf[5]);
 
     tex.type = 0xA;
@@ -331,9 +331,9 @@ void NuLightMatInit(void) {
     NuLgtSurf[6]->attrib.vtc = 1;
     NuLgtSurf[6]->alpha = 0.999f;
     NuLgtSurf[6]->attrib.alpha = 2;
-    NuLgtSurf[6]->attrib2.afail = 1;
+    NuLgtSurf[6]->attrib.afail = 1;
     NuLgtSurf[6]->tid = NuLgtHSurf[6];
-    NuLgtSurf[6]->alpha_sort = 0x80;
+    NuLgtSurf[6]->sort_pri = 0x80;
     NuMtlUpdate(NuLgtSurf[6]);
     for (lp = 0; lp < 256; lp++) {
         pal[lp] = lp + (lp << 8) + (lp << 16) + (lp << 24);
@@ -357,9 +357,9 @@ void NuLightMatInit(void) {
     NuLgtSurf[16]->attrib.vtc = 1;
     NuLgtSurf[16]->alpha = 0.999f;
     NuLgtSurf[16]->attrib.alpha = 2;
-    NuLgtSurf[16]->attrib2.afail = 1;
+    NuLgtSurf[16]->attrib.afail = 1;
     NuLgtSurf[16]->tid = NuLgtHSurf[16];
-    NuLgtSurf[16]->alpha_sort = 0x80;
+    NuLgtSurf[16]->sort_pri = 0x80;
     NuMtlUpdate(NuLgtSurf[16]);
     for (lp = 0; lp < 256; lp++) {
         pal[lp] = lp + (lp << 8) + (lp << 16) + (lp << 24);
@@ -383,9 +383,9 @@ void NuLightMatInit(void) {
     NuLgtSurf[7]->attrib.vtc = 1;
     NuLgtSurf[7]->alpha = 0.999f;
     NuLgtSurf[7]->attrib.alpha = 0;
-    NuLgtSurf[7]->attrib2.afail = 1;
+    NuLgtSurf[7]->attrib.afail = 1;
     NuLgtSurf[7]->tid = NuLgtHSurf[7];
-    NuLgtSurf[7]->alpha_sort = 0x80;
+    NuLgtSurf[7]->sort_pri = 0x80;
     NuMtlUpdate(NuLgtSurf[7]);
 
     tex.width = PS2_REZ_W;
@@ -405,9 +405,9 @@ void NuLightMatInit(void) {
     NuLgtSurf[8]->attrib.vtc = 1;
     NuLgtSurf[8]->alpha = 0.999f;
     NuLgtSurf[8]->attrib.alpha = 2;
-    NuLgtSurf[8]->attrib2.afail = 1;
+    NuLgtSurf[8]->attrib.afail = 1;
     NuLgtSurf[8]->tid = NuLgtHSurf[8];
-    NuLgtSurf[8]->alpha_sort = 0x80;
+    NuLgtSurf[8]->sort_pri = 0x80;
     NuMtlUpdate(NuLgtSurf[8]);
 
     tex.type = 0xF;
@@ -427,9 +427,9 @@ void NuLightMatInit(void) {
     NuLgtSurf[17]->attrib.vtc = 1;
     NuLgtSurf[17]->alpha = 0.999f;
     NuLgtSurf[17]->attrib.alpha = 2;
-    NuLgtSurf[17]->attrib2.afail = 1;
+    NuLgtSurf[17]->attrib.afail = 1;
     NuLgtSurf[17]->tid = NuLgtHSurf[17];
-    NuLgtSurf[17]->alpha_sort = 0x80;
+    NuLgtSurf[17]->sort_pri = 0x80;
     NuMtlUpdate(NuLgtSurf[17]);
 
     tex.width = PS2_REZ_W;
@@ -449,9 +449,9 @@ void NuLightMatInit(void) {
     NuLgtSurf[9]->attrib.vtc = 1;
     NuLgtSurf[9]->alpha = 0.999f;
     NuLgtSurf[9]->attrib.alpha = 2;
-    NuLgtSurf[9]->attrib2.afail = 1;
+    NuLgtSurf[9]->attrib.afail = 1;
     NuLgtSurf[9]->tid = NuLgtHSurf[9];
-    NuLgtSurf[9]->alpha_sort = 0x80;
+    NuLgtSurf[9]->sort_pri = 0x80;
     NuMtlUpdate(NuLgtSurf[9]);
 
     NuLgtSurf[10] = NuMtlCreate(1);
@@ -464,7 +464,7 @@ void NuLightMatInit(void) {
     NuLgtSurf[10]->attrib.utc = 1;
     NuLgtSurf[10]->attrib.vtc = 1;
     NuLgtSurf[10]->attrib.alpha = 0;
-    NuLgtSurf[10]->attrib2.afail = 1;
+    NuLgtSurf[10]->attrib.afail = 1;
     NuMtlUpdate(NuLgtSurf[10]);
 
     tex.type = 0xE;
@@ -484,9 +484,9 @@ void NuLightMatInit(void) {
     NuLgtSurf[11]->attrib.vtc = 1;
     NuLgtSurf[11]->alpha = 0.999f;
     NuLgtSurf[11]->attrib.alpha = 0;
-    NuLgtSurf[11]->attrib2.afail = 1;
+    NuLgtSurf[11]->attrib.afail = 1;
     NuLgtSurf[11]->tid = NuLgtHSurf[11];
-    NuLgtSurf[11]->alpha_sort = 0x80;
+    NuLgtSurf[11]->sort_pri = 0x80;
     NuMtlUpdate(NuLgtSurf[11]);
 
     tex.height = PS2_REZ_H << 2;
@@ -506,9 +506,9 @@ void NuLightMatInit(void) {
     NuLgtSurf[13]->attrib.vtc = 1;
     NuLgtSurf[13]->alpha = 0.999f;
     NuLgtSurf[13]->attrib.alpha = 2;
-    NuLgtSurf[13]->attrib2.afail = 1;
+    NuLgtSurf[13]->attrib.afail = 1;
     NuLgtSurf[13]->tid = NuLgtHSurf[13];
-    NuLgtSurf[13]->alpha_sort = 0x80;
+    NuLgtSurf[13]->sort_pri = 0x80;
     NuMtlUpdate(NuLgtSurf[13]);
     for (lp = 0; lp < 256; lp++) {
         pal[lp] = lp + (lp << 8) + (lp << 16) + (lp << 24);
@@ -517,7 +517,7 @@ void NuLightMatInit(void) {
 
     zmat = NuMtlCreate(1);
     NuLightZMat = zmat;
-    zmat->attrib2.afail = 1;
+    zmat->attrib.afail = 1;
     zmat->tid = -2;
     zmat->attrib.cull = 2;
     zmat->attrib.zmode = 3;
@@ -527,7 +527,7 @@ void NuLightMatInit(void) {
     zmat->attrib.utc = 1;
     zmat->attrib.vtc = 1;
     zmat->attrib.alpha = 0;
-    zmat->alpha_sort = 0x80;
+    zmat->sort_pri = 0x80;
     zmat->diffuse.r = 1.0f;
     zmat->diffuse.g = 1.0f;
     zmat->diffuse.b = 1.0f;
@@ -553,9 +553,9 @@ void NuLightMatInit(void) {
     NuLgtSurf[14]->attrib.vtc = 1;
     NuLgtSurf[14]->alpha = 0.999f;
     NuLgtSurf[14]->attrib.alpha = 2;
-    NuLgtSurf[14]->attrib2.afail = 1;
+    NuLgtSurf[14]->attrib.afail = 1;
     NuLgtSurf[14]->tid = NuLgtHSurf[14];
-    NuLgtSurf[14]->alpha_sort = 0x80;
+    NuLgtSurf[14]->sort_pri = 0x80;
     NuMtlUpdate(NuLgtSurf[14]);
     for (lp = 0; lp < 256; lp++) {
         pal[lp] = lp + (lp << 8) + (lp << 16) + (0x80 << 24);
@@ -579,9 +579,9 @@ void NuLightMatInit(void) {
     NuLgtSurf[12]->attrib.vtc = 1;
     NuLgtSurf[12]->alpha = 0.999f;
     NuLgtSurf[12]->attrib.alpha = 1;
-    NuLgtSurf[12]->attrib2.afail = 1;
+    NuLgtSurf[12]->attrib.afail = 1;
     NuLgtSurf[12]->tid = NuLgtHSurf[12];
-    NuLgtSurf[12]->alpha_sort = 0x80;
+    NuLgtSurf[12]->sort_pri = 0x80;
     NuMtlUpdate(NuLgtSurf[12]);
 
     tex.type = 0xE;
@@ -601,9 +601,9 @@ void NuLightMatInit(void) {
     NuLgtSurf[15]->attrib.vtc = 1;
     NuLgtSurf[15]->alpha = 0.999f;
     NuLgtSurf[15]->attrib.alpha = 0;
-    NuLgtSurf[15]->attrib2.afail = 1;
+    NuLgtSurf[15]->attrib.afail = 1;
     NuLgtSurf[15]->tid = NuLgtHSurf[15];
-    NuLgtSurf[15]->alpha_sort = 0x80;
+    NuLgtSurf[15]->sort_pri = 0x80;
     NuMtlUpdate(NuLgtSurf[15]);
     for (lp = 0; lp < 256; lp++) {
         pal[lp] = lp + (lp << 8) + (lp << 16) + (lp << 24);
@@ -626,9 +626,9 @@ void NuLightMatInit(void) {
     NuLgtFogMat[1]->attrib.vtc = 1;
     NuLgtFogMat[1]->alpha = 0.999f;
     NuLgtFogMat[1]->attrib.alpha = 0;
-    NuLgtFogMat[1]->attrib2.afail = 1;
+    NuLgtFogMat[1]->attrib.afail = 1;
     NuLgtFogMat[1]->tid = NuLgtHFogMat[1];
-    NuLgtFogMat[1]->alpha_sort = 0x80;
+    NuLgtFogMat[1]->sort_pri = 0x80;
     NuMtlUpdate(NuLgtFogMat[1]);
 
     tex.height = PS2_REZ_H << 2;
@@ -648,9 +648,9 @@ void NuLightMatInit(void) {
     NuLgtFogMat[0]->attrib.vtc = 1;
     NuLgtFogMat[0]->alpha = 0.999f;
     NuLgtFogMat[0]->attrib.alpha = 2;
-    NuLgtFogMat[0]->attrib2.afail = 1;
+    NuLgtFogMat[0]->attrib.afail = 1;
     NuLgtFogMat[0]->tid = NuLgtHFogMat[0];
-    NuLgtFogMat[0]->alpha_sort = 0x80;
+    NuLgtFogMat[0]->sort_pri = 0x80;
     NuMtlUpdate(NuLgtFogMat[0]);
 
     tex.height = PS2_REZ_H << 2;
@@ -670,9 +670,9 @@ void NuLightMatInit(void) {
     NuLgtFogMat[2]->attrib.vtc = 1;
     NuLgtFogMat[2]->alpha = 0.999f;
     NuLgtFogMat[2]->attrib.alpha = 2;
-    NuLgtFogMat[2]->attrib2.afail = 1;
+    NuLgtFogMat[2]->attrib.afail = 1;
     NuLgtFogMat[2]->tid = NuLgtHFogMat[2];
-    NuLgtFogMat[2]->alpha_sort = 0x80;
+    NuLgtFogMat[2]->sort_pri = 0x80;
     NuMtlUpdate(NuLgtFogMat[2]);
 
     for (lp = 0; lp < 8; lp++) {
@@ -693,9 +693,9 @@ void NuLightMatInit(void) {
         NuLgtLightMat[lp]->attrib.vtc = 1;
         NuLgtLightMat[lp]->alpha = 0.999f;
         NuLgtLightMat[lp]->attrib.alpha = 2;
-        NuLgtLightMat[lp]->attrib2.afail = 1;
+        NuLgtLightMat[lp]->attrib.afail = 1;
         NuLgtLightMat[lp]->tid = NuLgtHLightMat[lp];
-        NuLgtLightMat[lp]->alpha_sort = 0x80;
+        NuLgtLightMat[lp]->sort_pri = 0x80;
         NuMtlUpdate(NuLgtLightMat[lp]);
     }
     for (lp = 8; lp < 16; lp++) {
@@ -716,9 +716,9 @@ void NuLightMatInit(void) {
         NuLgtLightMat[lp]->attrib.vtc = 1;
         NuLgtLightMat[lp]->alpha = 0.999f;
         NuLgtLightMat[lp]->attrib.alpha = 0;
-        NuLgtLightMat[lp]->attrib2.afail = 1;
+        NuLgtLightMat[lp]->attrib.afail = 1;
         NuLgtLightMat[lp]->tid = NuLgtHLightMat[lp];
-        NuLgtLightMat[lp]->alpha_sort = 0x80;
+        NuLgtLightMat[lp]->sort_pri = 0x80;
         NuMtlUpdate(NuLgtLightMat[lp]);
     }
     for (lp = 16; lp < 24; lp++) {
@@ -739,15 +739,15 @@ void NuLightMatInit(void) {
         NuLgtLightMat[lp]->attrib.vtc = 1;
         NuLgtLightMat[lp]->alpha = 0.999f;
         NuLgtLightMat[lp]->attrib.alpha = 2;
-        NuLgtLightMat[lp]->attrib2.afail = 1;
+        NuLgtLightMat[lp]->attrib.afail = 1;
         NuLgtLightMat[lp]->tid = NuLgtHLightMat[lp];
-        NuLgtLightMat[lp]->alpha_sort = 0x80;
+        NuLgtLightMat[lp]->sort_pri = 0x80;
         NuMtlUpdate(NuLgtLightMat[lp]);
     }
 
     greymat = NuMtlCreate(1);
     NuLgtGreyMat = greymat;
-    greymat->attrib2.afail = 1;
+    greymat->attrib.afail = 1;
     greymat->attrib.zmode = 1;
     greymat->attrib.filter = 0;
     greymat->attrib.lighting = 2;
@@ -761,7 +761,7 @@ void NuLightMatInit(void) {
 
     greynzmat = NuMtlCreate(1);
     NuLgtGreyNZMat = greynzmat;
-    greynzmat->attrib2.afail = 1;
+    greynzmat->attrib.afail = 1;
     greynzmat->attrib.zmode = 3;
     greynzmat->attrib.filter = 0;
     greynzmat->attrib.lighting = 2;
@@ -775,7 +775,7 @@ void NuLightMatInit(void) {
 
     zbufmat = NuMtlCreate(1);
     NuLightZBufMat = zbufmat;
-    zbufmat->attrib2.afail = 1;
+    zbufmat->attrib.afail = 1;
     zbufmat->tid = -2;
     zbufmat->attrib.cull = 2;
     zbufmat->attrib.zmode = 3;
@@ -787,12 +787,12 @@ void NuLightMatInit(void) {
     zbufmat->attrib.alpha = 0;
     zbufmat->diffuse.b = 1.0f;
     zbufmat->alpha = 0.999f;
-    zbufmat->alpha_sort = 0x80;
+    zbufmat->sort_pri = 0x80;
     NuMtlUpdate(zbufmat);
 
     addmat = NuMtlCreate(1);
     NuLightAddMat = addmat;
-    addmat->attrib2.afail = 1;
+    addmat->attrib.afail = 1;
     addmat->attrib.cull = 2;
     addmat->attrib.zmode = 1;
     addmat->attrib.alpha = 2;
@@ -803,21 +803,21 @@ void NuLightMatInit(void) {
     addmat->diffuse.g = 1.0f;
     addmat->diffuse.b = 1.0f;
     addmat->alpha = 0.999f;
-    addmat->alpha_sort = 0x100;
+    addmat->sort_pri = 0x100;
     addmat->tid = 0;
     NuMtlUpdate(addmat);
 
     addmat2 = NuMtlCreate(1);
     NuLightAddMat2 = addmat2;
-    addmat2->attrib2.afail = 1;
-    addmat2->attrib2.gouraud = 0;
+    addmat2->attrib.afail = 1;
+    addmat2->attrib.shade = 0;
     addmat2->attrib.cull = 2;
     addmat2->attrib.zmode = 1;
     addmat2->attrib.alpha = 2;
     addmat2->attrib.utc = 1;
     addmat2->attrib.vtc = 1;
     addmat2->attrib.lighting = 2;
-    addmat2->alpha_sort = 0x100;
+    addmat2->sort_pri = 0x100;
     addmat2->diffuse.r = 1.0f;
     addmat2->diffuse.g = 1.0f;
     addmat2->diffuse.b = 1.0f;
@@ -827,7 +827,7 @@ void NuLightMatInit(void) {
 
     backbuff = NuMtlCreate(1);
     NuLgtBackBuff = backbuff;
-    backbuff->attrib2.afail = 1;
+    backbuff->attrib.afail = 1;
     backbuff->attrib.cull = 2;
     backbuff->attrib.zmode = 3;
     backbuff->attrib.filter = 1;
@@ -839,7 +839,7 @@ void NuLightMatInit(void) {
     backbuff->diffuse.b = 1.0f;
     backbuff->alpha = 0.999f;
     backbuff->tid = -1;
-    backbuff->alpha_sort = 0x80;
+    backbuff->sort_pri = 0x80;
     NuMtlUpdate(backbuff);
 
     backalphabuff = NuMtlCreate(1);
@@ -854,16 +854,52 @@ void NuLightMatInit(void) {
     backalphabuff->diffuse.g = 1.0f;
     backalphabuff->diffuse.b = 1.0f;
     backalphabuff->alpha = 0.999f;
-    backalphabuff->attrib2.afail = 1;
+    backalphabuff->attrib.afail = 1;
     backalphabuff->tid = -1;
-    backalphabuff->alpha_sort = 0x80;
+    backalphabuff->sort_pri = 0x80;
     NuMtlUpdate(backalphabuff);
+}
+
+
+inline void *NuLightSprDmaOpen(int count) {
+    void *start = NuLgtBuff;
+
+    NuLgtBuff = (u32 *)vpDmaTag_RetEx(start, 0x10000000, 0x50000000) - 1;
+    NuLgtBuff = vtBeginDirect(NuLgtBuff, 0);
+    *((u64 *)NuLgtBuff)++ = (u64)(count | 0x8000) | ((u64)0x64034000 << 32);
+    *((u64 *)NuLgtBuff)++ = 0x525210;
+    return start;
+}
+
+
+inline void NuLightSprDmaClose(void) {
+    NuLgtBuff = vtCloseDirect(NuLgtBuff);
+    NuLgtBuff = vpDmaTag_Close(NuLgtBuff);
+}
+
+
+inline void NuLightSprMake(int x, int y, int width, int height, int colour, int z,
+                           float u0, float v0, float u1, float v1) {
+    x += (PS2_VCNTR_X - (PS2_REZ_W >> 1)) << 4;
+    y += (PS2_VCNTR_Y - (PS2_REZ_H >> 1)) << 4;
+    *((u64 *)NuLgtBuff)++ = 6;
+    *((int *)NuLgtBuff)++ = colour;
+    *((float *)NuLgtBuff)++ = 1.0f;
+    *((float *)NuLgtBuff)++ = u0;
+    *((float *)NuLgtBuff)++ = v0;
+    *((short *)NuLgtBuff)++ = x;
+    *((short *)NuLgtBuff)++ = y;
+    *((int *)NuLgtBuff)++ = z;
+    *((float *)NuLgtBuff)++ = u1;
+    *((float *)NuLgtBuff)++ = v1;
+    *((short *)NuLgtBuff)++ = x + width;
+    *((short *)NuLgtBuff)++ = y + height;
+    *((int *)NuLgtBuff)++ = z;
 }
 
 
 void NuLightInit(void) {
     int i;
-    void *packet;
 
     for (i = 0; i < 3; i++) {
         nulight_colours[i].r = nulight_colours[i].g = nulight_colours[i].b = 0.0f;
@@ -885,114 +921,29 @@ void NuLightInit(void) {
     NuLgtArcLaserCnt = 0;
     NuLgtArcLaserOldCnt = 0;
     NuLightHazePolymtl = 0;
-    packet = nulgt_packet_buffer;
-    NuLgtBuff = packet;
-    NuLgtBuff = (u32 *)vpDmaTag_RetEx(packet, 0x10000000, 0x50000000) - 1;
-    NuLgtBuff = vtBeginDirect(NuLgtBuff, 0);
-    *((u64 *)NuLgtBuff)++ = (u64)(10 | 0x8000) | ((u64)0x64034000 << 32);
-    *((u64 *)NuLgtBuff)++ = 0x525210;
-    NuLgtFxSetCall = packet;
+    NuLgtBuff = nulgt_packet_buffer;
+    NuLgtFxSetCall = NuLightSprDmaOpen(10);
     for (i = 0; i < 10; i++) {
-        int x0 = i * 409.6f;
-        int x1 = (i + 1) * 409.6f;
-        float u0 = (i * 64.0f + 0.5f) / 1024.0f;
-        float u1 = (i * 64.0f + 63.5f) / 1024.0f;
-        int height = PS2_REZ_H;
-        int x = x0 - 8;
-        int width = x1 - x0;
-        int colour = 0x80808080;
-        float v1 = (float)PS2_REZ_H / NuPower2(PS2_REZ_H);
-        int y;
-
-        height = (height << 4) - 8;
-        x += (PS2_VCNTR_X - (PS2_REZ_W >> 1)) << 4;
-        y = (PS2_VCNTR_Y - (PS2_REZ_H >> 1)) << 4;
-        *((u64 *)NuLgtBuff)++ = 6;
-        *((int *)NuLgtBuff)++ = colour;
-        *((float *)NuLgtBuff)++ = 1.0f;
-        *((float *)NuLgtBuff)++ = u0;
-        *((float *)NuLgtBuff)++ = 0.0f;
-        *((short *)NuLgtBuff)++ = x;
-        *((short *)NuLgtBuff)++ = y;
-        *((int *)NuLgtBuff)++ = 0;
-        *((float *)NuLgtBuff)++ = u1;
-        *((float *)NuLgtBuff)++ = v1;
-        *((short *)NuLgtBuff)++ = x + width;
-        *((short *)NuLgtBuff)++ = y + height;
-        *((int *)NuLgtBuff)++ = 0;
+        NuLightSprMake((int)(i * 409.6f) - 8, 0, (int)((i + 1) * 409.6f) - (int)(i * 409.6f),
+                       PS2_REZ_H * 16 - 8, 0x80808080, 0,
+                       (i * 64.0f + 0.5f) / 1024.0f, 0.0f, (i * 64.0f + 63.5f) / 1024.0f,
+                       (float)PS2_REZ_H / NuPower2(PS2_REZ_H));
     }
-    NuLgtBuff = vtCloseDirect(NuLgtBuff);
-    NuLgtBuff = vpDmaTag_Close(NuLgtBuff);
+    NuLightSprDmaClose();
 
-    packet = NuLgtBuff;
-    NuLgtBuff = (u32 *)vpDmaTag_RetEx(packet, 0x10000000, 0x50000000) - 1;
-    NuLgtBuff = vtBeginDirect(NuLgtBuff, 0);
-    *((u64 *)NuLgtBuff)++ = (u64)(4 | 0x8000) | ((u64)0x64034000 << 32);
-    *((u64 *)NuLgtBuff)++ = 0x525210;
-    NuLgtFxFogCop = packet;
+    NuLgtFxFogCop = NuLightSprDmaOpen(4);
     for (i = 0; i < 4; i++) {
-        float u0 = i * 64.0f / 1024.0f;
-        float u1 = (i * 64.0f + 64.0f) / 1024.0f;
-        int left = i * 0x400 + 0x17FC;
-        int y = -4;
-        int height = PS2_REZ_H;
-        int colour = 0x808080;
-        int z = 0x1FFFFFF;
-        int x;
-        float v1 = (float)PS2_REZ_H / NuPower2(PS2_REZ_H);
-
-        height = height << 4;
-        x = left + ((PS2_VCNTR_X - (PS2_REZ_W >> 1)) << 4);
-        y += (PS2_VCNTR_Y - (PS2_REZ_H >> 1)) << 4;
-        *((u64 *)NuLgtBuff)++ = 6;
-        *((int *)NuLgtBuff)++ = colour;
-        *((float *)NuLgtBuff)++ = 1.0f;
-        *((float *)NuLgtBuff)++ = u0;
-        *((float *)NuLgtBuff)++ = 0.0f;
-        *((short *)NuLgtBuff)++ = x;
-        *((short *)NuLgtBuff)++ = y;
-        *((int *)NuLgtBuff)++ = z;
-        *((float *)NuLgtBuff)++ = u1;
-        *((float *)NuLgtBuff)++ = v1;
-        *((short *)NuLgtBuff)++ = x + 0x400;
-        *((short *)NuLgtBuff)++ = y + height;
-        *((int *)NuLgtBuff)++ = z;
+        NuLightSprMake(i * 0x400 + 0x17FC, -4, 0x400, PS2_REZ_H * 16, 0x808080, 0x1FFFFFF,
+                       i * 64.0f / 1024.0f, 0.0f, (i * 64.0f + 64.0f) / 1024.0f,
+                       (float)PS2_REZ_H / NuPower2(PS2_REZ_H));
     }
-    NuLgtBuff = vtCloseDirect(NuLgtBuff);
-    NuLgtBuff = vpDmaTag_Close(NuLgtBuff);
+    NuLightSprDmaClose();
 
-    packet = NuLgtBuff;
-    NuLgtBuff = (u32 *)vpDmaTag_RetEx(packet, 0x10000000, 0x50000000) - 1;
-    NuLgtBuff = vtBeginDirect(NuLgtBuff, 0);
-    *((u64 *)NuLgtBuff)++ = (u64)(4 | 0x8000) | ((u64)0x64034000 << 32);
-    *((u64 *)NuLgtBuff)++ = 0x525210;
-    NuLgtFxFogClr = packet;
+    NuLgtFxFogClr = NuLightSprDmaOpen(4);
     for (i = 0; i < 4; i++) {
-        int left = i * 0x400 + 0x17FC;
-        int y = -4;
-        int height = PS2_REZ_H << 4;
-        int colour = 0;
-        int z = -1;
-        int x;
-
-        x = left + ((PS2_VCNTR_X - (PS2_REZ_W >> 1)) << 4);
-        y += (PS2_VCNTR_Y - (PS2_REZ_H >> 1)) << 4;
-        *((u64 *)NuLgtBuff)++ = 6;
-        *((int *)NuLgtBuff)++ = colour;
-        *((float *)NuLgtBuff)++ = 1.0f;
-        *((float *)NuLgtBuff)++ = 0.0f;
-        *((float *)NuLgtBuff)++ = 0.0f;
-        *((short *)NuLgtBuff)++ = x;
-        *((short *)NuLgtBuff)++ = y;
-        *((int *)NuLgtBuff)++ = z;
-        *((float *)NuLgtBuff)++ = 0.0f;
-        *((float *)NuLgtBuff)++ = 0.0f;
-        *((short *)NuLgtBuff)++ = x + 0x400;
-        *((short *)NuLgtBuff)++ = y + height;
-        *((int *)NuLgtBuff)++ = z;
+        NuLightSprMake(i * 0x400 + 0x17FC, -4, 0x400, PS2_REZ_H * 16, 0, -1, 0.0f, 0.0f, 0.0f, 0.0f);
     }
-    NuLgtBuff = vtCloseDirect(NuLgtBuff);
-    NuLgtBuff = vpDmaTag_Close(NuLgtBuff);
+    NuLightSprDmaClose();
 }
 
 
@@ -1351,8 +1302,8 @@ void NuLightFxSetup(void) {
 
 
 void NuLightProcessSpot(int mode) {
-    struct FxSprite fx;
-    struct FxSprite2 fx2;
+    struct FxSpriteSet fx;
+    struct FxSprite2Set fx2;
     struct nuvec4_s *pnts;
     struct nuvec_s *vecs;
     struct numtx_s *pcs;
@@ -1609,9 +1560,9 @@ void NuLightProcessSpot(int mode) {
                 packet = gsCloseGifPacket(packet);
                 packet = vtCloseDirect(packet);
                 packet = vpDmaTag_Close(packet);
-                fx2.parameter_00 = 33554432.0f;
-                fx2.parameter_04 = 1;
-                fx2.count = 0;
+                fx2.zval = 33554432.0f;
+                fx2.oiterations = 1;
+                fx2.tablecount = 0;
                 for (j = xs / 320; j < (xe + 319) / 320; j++) {
                     if (j == 0) {
                         x0 = (xs / 160) << 5;
@@ -1627,33 +1578,33 @@ void NuLightProcessSpot(int mode) {
                         }
                         x1 = ((xe - 161) / 160) << 5;
                     }
-                    fx2.colour[fx2.count] = 0x80800080;
-                    fx2.parameter_1c[fx2.count] = (((ye + 3) & 0xFFFC) - (ys & 0xFFFC)) / 4;
-                    fx2.channel[0][fx2.count] = (j << 10) + 0x1400 + (x0 << 4);
-                    fx2.channel[1][fx2.count] = (ys & 0xFFFC) << 4;
-                    fx2.channel[2][fx2.count] = ((float)j * 64.0f + (float)x0) / 1024.0f;
-                    fx2.channel[3][fx2.count] = ((float)(ys & 0xFFFC) * 2.0f + 0.5f) / 1024.0f;
-                    fx2.channel[4][fx2.count] = x1 << 4;
-                    fx2.channel[6][fx2.count] = (float)x1 / 1024.0f;
-                    fx2.channel[5][fx2.count] = 24.0f;
-                    fx2.channel[7][fx2.count] = 1.0f / 1024.0f;
-                    fx2.channel[8][fx2.count] = 0.0f;
-                    fx2.channel[9][fx2.count] = 64.0f;
-                    fx2.channel[10][fx2.count] = 0.0f;
-                    fx2.channel[11][fx2.count] = 1.0f / 128.0f;
-                    fx2.channel[12][fx2.count] = (j << 10) + 0x1400 + (x0 << 4);
-                    fx2.channel[13][fx2.count] = ((ys & 0xFFFC) << 4) + 32;
-                    fx2.channel[14][fx2.count] = ((float)j * 64.0f + (float)x0) / 1024.0f;
-                    fx2.channel[15][fx2.count] = ((float)(ys & 0xFFFC) * 2.0f + 6.5f) / 1024.0f;
-                    fx2.channel[16][fx2.count] = x1 << 4;
-                    fx2.channel[18][fx2.count] = (float)x1 / 1024.0f;
-                    fx2.channel[17][fx2.count] = 24.0f;
-                    fx2.channel[19][fx2.count] = 1.0f / 1024.0f;
-                    fx2.channel[20][fx2.count] = 0.0f;
-                    fx2.channel[21][fx2.count] = 64.0f;
-                    fx2.channel[22][fx2.count] = 0.0f;
-                    fx2.channel[23][fx2.count] = 1.0f / 128.0f;
-                    fx2.count++;
+                    fx2.rgba[fx2.tablecount] = 0x80800080;
+                    fx2.iterations[fx2.tablecount] = (((ye + 3) & 0xFFFC) - (ys & 0xFFFC)) / 4;
+                    fx2.xstart[fx2.tablecount] = (j << 10) + 0x1400 + (x0 << 4);
+                    fx2.ystart[fx2.tablecount] = (ys & 0xFFFC) << 4;
+                    fx2.ustart[fx2.tablecount] = ((float)j * 64.0f + (float)x0) / 1024.0f;
+                    fx2.vstart[fx2.tablecount] = ((float)(ys & 0xFFFC) * 2.0f + 0.5f) / 1024.0f;
+                    fx2.xw[fx2.tablecount] = x1 << 4;
+                    fx2.uw[fx2.tablecount] = (float)x1 / 1024.0f;
+                    fx2.yh[fx2.tablecount] = 24.0f;
+                    fx2.vh[fx2.tablecount] = 1.0f / 1024.0f;
+                    fx2.xstep[fx2.tablecount] = 0.0f;
+                    fx2.ystep[fx2.tablecount] = 64.0f;
+                    fx2.ustep[fx2.tablecount] = 0.0f;
+                    fx2.vstep[fx2.tablecount] = 1.0f / 128.0f;
+                    fx2.xstart2[fx2.tablecount] = (j << 10) + 0x1400 + (x0 << 4);
+                    fx2.ystart2[fx2.tablecount] = ((ys & 0xFFFC) << 4) + 32;
+                    fx2.ustart2[fx2.tablecount] = ((float)j * 64.0f + (float)x0) / 1024.0f;
+                    fx2.vstart2[fx2.tablecount] = ((float)(ys & 0xFFFC) * 2.0f + 6.5f) / 1024.0f;
+                    fx2.xw2[fx2.tablecount] = x1 << 4;
+                    fx2.uw2[fx2.tablecount] = (float)x1 / 1024.0f;
+                    fx2.yh2[fx2.tablecount] = 24.0f;
+                    fx2.vh2[fx2.tablecount] = 1.0f / 1024.0f;
+                    fx2.xstep2[fx2.tablecount] = 0.0f;
+                    fx2.ystep2[fx2.tablecount] = 64.0f;
+                    fx2.ustep2[fx2.tablecount] = 0.0f;
+                    fx2.vstep2[fx2.tablecount] = 1.0f / 128.0f;
+                    fx2.tablecount++;
                 }
                 NuRndrFxCode(0x308, &fx2, dma, NuLgtLightMat[spot]);
             }
@@ -1670,9 +1621,9 @@ void NuLightProcessSpot(int mode) {
             packet = gsCloseGifPacket(packet);
             packet = vtCloseDirect(packet);
             packet = vpDmaTag_Close(packet);
-            fx2.parameter_00 = 33554432.0f;
-            fx2.parameter_04 = 1;
-            fx2.count = 0;
+            fx2.zval = 33554432.0f;
+            fx2.oiterations = 1;
+            fx2.tablecount = 0;
             for (j = xs / 320; j < (xe + 319) / 320; j++) {
                 if (j == 0) {
                     x0 = (xs / 160) << 5;
@@ -1688,33 +1639,33 @@ void NuLightProcessSpot(int mode) {
                     }
                     x1 = ((xe - 161) / 160) << 5;
                 }
-                fx2.colour[fx2.count] = (0x80 >> (shift - 8)) + 0x80000000;
-                fx2.parameter_1c[fx2.count] = (((ye + 3) & 0xFFFC) - (ys & 0xFFFC)) / 4;
-                fx2.channel[0][fx2.count] = (j << 10) + 0x1400 + (x0 << 4);
-                fx2.channel[1][fx2.count] = (ys & 0xFFFC) << 4;
-                fx2.channel[2][fx2.count] = ((float)j * 64.0f + (float)x0) / 1024.0f;
-                fx2.channel[3][fx2.count] = ((float)(ys & 0xFFFC) * 2.0f + 4.5f) / 1024.0f;
-                fx2.channel[4][fx2.count] = x1 << 4;
-                fx2.channel[6][fx2.count] = (float)x1 / 1024.0f;
-                fx2.channel[5][fx2.count] = 24.0f;
-                fx2.channel[7][fx2.count] = 1.0f / 1024.0f;
-                fx2.channel[8][fx2.count] = 0.0f;
-                fx2.channel[9][fx2.count] = 64.0f;
-                fx2.channel[10][fx2.count] = 0.0f;
-                fx2.channel[11][fx2.count] = 1.0f / 128.0f;
-                fx2.channel[12][fx2.count] = (j << 10) + 0x1400 + (x0 << 4);
-                fx2.channel[13][fx2.count] = ((ys & 0xFFFC) << 4) + 32;
-                fx2.channel[14][fx2.count] = ((float)j * 64.0f + (float)x0) / 1024.0f;
-                fx2.channel[15][fx2.count] = ((float)(ys & 0xFFFC) * 2.0f + 2.5f) / 1024.0f;
-                fx2.channel[16][fx2.count] = x1 << 4;
-                fx2.channel[18][fx2.count] = (float)x1 / 1024.0f;
-                fx2.channel[17][fx2.count] = 24.0f;
-                fx2.channel[19][fx2.count] = 1.0f / 1024.0f;
-                fx2.channel[20][fx2.count] = 0.0f;
-                fx2.channel[21][fx2.count] = 64.0f;
-                fx2.channel[22][fx2.count] = 0.0f;
-                fx2.channel[23][fx2.count] = 1.0f / 128.0f;
-                fx2.count++;
+                fx2.rgba[fx2.tablecount] = (0x80 >> (shift - 8)) + 0x80000000;
+                fx2.iterations[fx2.tablecount] = (((ye + 3) & 0xFFFC) - (ys & 0xFFFC)) / 4;
+                fx2.xstart[fx2.tablecount] = (j << 10) + 0x1400 + (x0 << 4);
+                fx2.ystart[fx2.tablecount] = (ys & 0xFFFC) << 4;
+                fx2.ustart[fx2.tablecount] = ((float)j * 64.0f + (float)x0) / 1024.0f;
+                fx2.vstart[fx2.tablecount] = ((float)(ys & 0xFFFC) * 2.0f + 4.5f) / 1024.0f;
+                fx2.xw[fx2.tablecount] = x1 << 4;
+                fx2.uw[fx2.tablecount] = (float)x1 / 1024.0f;
+                fx2.yh[fx2.tablecount] = 24.0f;
+                fx2.vh[fx2.tablecount] = 1.0f / 1024.0f;
+                fx2.xstep[fx2.tablecount] = 0.0f;
+                fx2.ystep[fx2.tablecount] = 64.0f;
+                fx2.ustep[fx2.tablecount] = 0.0f;
+                fx2.vstep[fx2.tablecount] = 1.0f / 128.0f;
+                fx2.xstart2[fx2.tablecount] = (j << 10) + 0x1400 + (x0 << 4);
+                fx2.ystart2[fx2.tablecount] = ((ys & 0xFFFC) << 4) + 32;
+                fx2.ustart2[fx2.tablecount] = ((float)j * 64.0f + (float)x0) / 1024.0f;
+                fx2.vstart2[fx2.tablecount] = ((float)(ys & 0xFFFC) * 2.0f + 2.5f) / 1024.0f;
+                fx2.xw2[fx2.tablecount] = x1 << 4;
+                fx2.uw2[fx2.tablecount] = (float)x1 / 1024.0f;
+                fx2.yh2[fx2.tablecount] = 24.0f;
+                fx2.vh2[fx2.tablecount] = 1.0f / 1024.0f;
+                fx2.xstep2[fx2.tablecount] = 0.0f;
+                fx2.ystep2[fx2.tablecount] = 64.0f;
+                fx2.ustep2[fx2.tablecount] = 0.0f;
+                fx2.vstep2[fx2.tablecount] = 1.0f / 128.0f;
+                fx2.tablecount++;
             }
             NuRndrFxCode(0x308, &fx2, dma, NuLgtSurf[14]);
             if (shift >= 9) {
@@ -1729,9 +1680,9 @@ void NuLightProcessSpot(int mode) {
                 packet = gsCloseGifPacket(packet);
                 packet = vtCloseDirect(packet);
                 packet = vpDmaTag_Close(packet);
-                fx2.parameter_00 = 33554432.0f;
-                fx2.parameter_04 = 1;
-                fx2.count = 0;
+                fx2.zval = 33554432.0f;
+                fx2.oiterations = 1;
+                fx2.tablecount = 0;
                 for (j = xs / 320; j < (xe + 319) / 320; j++) {
                     if (j == 0) {
                         x0 = (xs / 160) << 5;
@@ -1747,33 +1698,33 @@ void NuLightProcessSpot(int mode) {
                         }
                         x1 = ((xe - 161) / 160) << 5;
                     }
-                    fx2.colour[fx2.count] = 0x80800000;
-                    fx2.parameter_1c[fx2.count] = (((ye + 3) & 0xFFFC) - (ys & 0xFFFC)) / 4;
-                    fx2.channel[0][fx2.count] = (j << 10) + 0x1400 + (x0 << 4);
-                    fx2.channel[1][fx2.count] = (ys & 0xFFFC) << 4;
-                    fx2.channel[2][fx2.count] = ((float)j * 64.0f + (float)x0 + 128.0f) / 1024.0f;
-                    fx2.channel[3][fx2.count] = ((float)(ys & 0xFFFC) * 2.0f + 0.5f) / 1024.0f;
-                    fx2.channel[4][fx2.count] = x1 << 4;
-                    fx2.channel[6][fx2.count] = (float)x1 / 1024.0f;
-                    fx2.channel[5][fx2.count] = 24.0f;
-                    fx2.channel[7][fx2.count] = 1.0f / 1024.0f;
-                    fx2.channel[8][fx2.count] = 0.0f;
-                    fx2.channel[9][fx2.count] = 64.0f;
-                    fx2.channel[10][fx2.count] = 0.0f;
-                    fx2.channel[11][fx2.count] = 1.0f / 128.0f;
-                    fx2.channel[12][fx2.count] = (j << 10) + 0x1400 + (x0 << 4);
-                    fx2.channel[13][fx2.count] = ((ys & 0xFFFC) << 4) + 32;
-                    fx2.channel[14][fx2.count] = ((float)j * 64.0f + (float)x0 + 128.0f) / 1024.0f;
-                    fx2.channel[15][fx2.count] = ((float)(ys & 0xFFFC) * 2.0f + 6.5f) / 1024.0f;
-                    fx2.channel[16][fx2.count] = x1 << 4;
-                    fx2.channel[18][fx2.count] = (float)x1 / 1024.0f;
-                    fx2.channel[17][fx2.count] = 24.0f;
-                    fx2.channel[19][fx2.count] = 1.0f / 1024.0f;
-                    fx2.channel[20][fx2.count] = 0.0f;
-                    fx2.channel[21][fx2.count] = 64.0f;
-                    fx2.channel[22][fx2.count] = 0.0f;
-                    fx2.channel[23][fx2.count] = 1.0f / 128.0f;
-                    fx2.count++;
+                    fx2.rgba[fx2.tablecount] = 0x80800000;
+                    fx2.iterations[fx2.tablecount] = (((ye + 3) & 0xFFFC) - (ys & 0xFFFC)) / 4;
+                    fx2.xstart[fx2.tablecount] = (j << 10) + 0x1400 + (x0 << 4);
+                    fx2.ystart[fx2.tablecount] = (ys & 0xFFFC) << 4;
+                    fx2.ustart[fx2.tablecount] = ((float)j * 64.0f + (float)x0 + 128.0f) / 1024.0f;
+                    fx2.vstart[fx2.tablecount] = ((float)(ys & 0xFFFC) * 2.0f + 0.5f) / 1024.0f;
+                    fx2.xw[fx2.tablecount] = x1 << 4;
+                    fx2.uw[fx2.tablecount] = (float)x1 / 1024.0f;
+                    fx2.yh[fx2.tablecount] = 24.0f;
+                    fx2.vh[fx2.tablecount] = 1.0f / 1024.0f;
+                    fx2.xstep[fx2.tablecount] = 0.0f;
+                    fx2.ystep[fx2.tablecount] = 64.0f;
+                    fx2.ustep[fx2.tablecount] = 0.0f;
+                    fx2.vstep[fx2.tablecount] = 1.0f / 128.0f;
+                    fx2.xstart2[fx2.tablecount] = (j << 10) + 0x1400 + (x0 << 4);
+                    fx2.ystart2[fx2.tablecount] = ((ys & 0xFFFC) << 4) + 32;
+                    fx2.ustart2[fx2.tablecount] = ((float)j * 64.0f + (float)x0 + 128.0f) / 1024.0f;
+                    fx2.vstart2[fx2.tablecount] = ((float)(ys & 0xFFFC) * 2.0f + 6.5f) / 1024.0f;
+                    fx2.xw2[fx2.tablecount] = x1 << 4;
+                    fx2.uw2[fx2.tablecount] = (float)x1 / 1024.0f;
+                    fx2.yh2[fx2.tablecount] = 24.0f;
+                    fx2.vh2[fx2.tablecount] = 1.0f / 1024.0f;
+                    fx2.xstep2[fx2.tablecount] = 0.0f;
+                    fx2.ystep2[fx2.tablecount] = 64.0f;
+                    fx2.ustep2[fx2.tablecount] = 0.0f;
+                    fx2.vstep2[fx2.tablecount] = 1.0f / 128.0f;
+                    fx2.tablecount++;
                 }
                 NuRndrFxCode(0x308, &fx2, dma, NuLgtLightMat[spot + 16]);
             }
@@ -1790,9 +1741,9 @@ void NuLightProcessSpot(int mode) {
             packet = gsCloseGifPacket(packet);
             packet = vtCloseDirect(packet);
             packet = vpDmaTag_Close(packet);
-            fx2.parameter_00 = 33554432.0f;
-            fx2.parameter_04 = 1;
-            fx2.count = 0;
+            fx2.zval = 33554432.0f;
+            fx2.oiterations = 1;
+            fx2.tablecount = 0;
             for (j = xs / 320; j < (xe + 319) / 320; j++) {
                 if (j == 0) {
                     x0 = (xs / 160) << 5;
@@ -1808,33 +1759,33 @@ void NuLightProcessSpot(int mode) {
                     }
                     x1 = ((xe - 161) / 160) << 5;
                 }
-                fx2.colour[fx2.count] = (0x800000 >> (shift - 8)) + 0x80000000;
-                fx2.parameter_1c[fx2.count] = (((ye + 3) & 0xFFFC) - (ys & 0xFFFC)) / 4;
-                fx2.channel[0][fx2.count] = (j << 10) + 0x1400 + (x0 << 4);
-                fx2.channel[1][fx2.count] = (ys & 0xFFFC) << 4;
-                fx2.channel[2][fx2.count] = ((float)j * 64.0f + (float)x0 + 128.0f) / 1024.0f;
-                fx2.channel[3][fx2.count] = ((float)(ys & 0xFFFC) * 2.0f + 4.5f) / 1024.0f;
-                fx2.channel[4][fx2.count] = x1 << 4;
-                fx2.channel[6][fx2.count] = (float)x1 / 1024.0f;
-                fx2.channel[5][fx2.count] = 24.0f;
-                fx2.channel[7][fx2.count] = 1.0f / 1024.0f;
-                fx2.channel[8][fx2.count] = 0.0f;
-                fx2.channel[9][fx2.count] = 64.0f;
-                fx2.channel[10][fx2.count] = 0.0f;
-                fx2.channel[11][fx2.count] = 1.0f / 128.0f;
-                fx2.channel[12][fx2.count] = (j << 10) + 0x1400 + (x0 << 4);
-                fx2.channel[13][fx2.count] = ((ys & 0xFFFC) << 4) + 32;
-                fx2.channel[14][fx2.count] = ((float)j * 64.0f + (float)x0 + 128.0f) / 1024.0f;
-                fx2.channel[15][fx2.count] = ((float)(ys & 0xFFFC) * 2.0f + 2.5f) / 1024.0f;
-                fx2.channel[16][fx2.count] = x1 << 4;
-                fx2.channel[18][fx2.count] = (float)x1 / 1024.0f;
-                fx2.channel[17][fx2.count] = 24.0f;
-                fx2.channel[19][fx2.count] = 1.0f / 1024.0f;
-                fx2.channel[20][fx2.count] = 0.0f;
-                fx2.channel[21][fx2.count] = 64.0f;
-                fx2.channel[22][fx2.count] = 0.0f;
-                fx2.channel[23][fx2.count] = 1.0f / 128.0f;
-                fx2.count++;
+                fx2.rgba[fx2.tablecount] = (0x800000 >> (shift - 8)) + 0x80000000;
+                fx2.iterations[fx2.tablecount] = (((ye + 3) & 0xFFFC) - (ys & 0xFFFC)) / 4;
+                fx2.xstart[fx2.tablecount] = (j << 10) + 0x1400 + (x0 << 4);
+                fx2.ystart[fx2.tablecount] = (ys & 0xFFFC) << 4;
+                fx2.ustart[fx2.tablecount] = ((float)j * 64.0f + (float)x0 + 128.0f) / 1024.0f;
+                fx2.vstart[fx2.tablecount] = ((float)(ys & 0xFFFC) * 2.0f + 4.5f) / 1024.0f;
+                fx2.xw[fx2.tablecount] = x1 << 4;
+                fx2.uw[fx2.tablecount] = (float)x1 / 1024.0f;
+                fx2.yh[fx2.tablecount] = 24.0f;
+                fx2.vh[fx2.tablecount] = 1.0f / 1024.0f;
+                fx2.xstep[fx2.tablecount] = 0.0f;
+                fx2.ystep[fx2.tablecount] = 64.0f;
+                fx2.ustep[fx2.tablecount] = 0.0f;
+                fx2.vstep[fx2.tablecount] = 1.0f / 128.0f;
+                fx2.xstart2[fx2.tablecount] = (j << 10) + 0x1400 + (x0 << 4);
+                fx2.ystart2[fx2.tablecount] = ((ys & 0xFFFC) << 4) + 32;
+                fx2.ustart2[fx2.tablecount] = ((float)j * 64.0f + (float)x0 + 128.0f) / 1024.0f;
+                fx2.vstart2[fx2.tablecount] = ((float)(ys & 0xFFFC) * 2.0f + 2.5f) / 1024.0f;
+                fx2.xw2[fx2.tablecount] = x1 << 4;
+                fx2.uw2[fx2.tablecount] = (float)x1 / 1024.0f;
+                fx2.yh2[fx2.tablecount] = 24.0f;
+                fx2.vh2[fx2.tablecount] = 1.0f / 1024.0f;
+                fx2.xstep2[fx2.tablecount] = 0.0f;
+                fx2.ystep2[fx2.tablecount] = 64.0f;
+                fx2.ustep2[fx2.tablecount] = 0.0f;
+                fx2.vstep2[fx2.tablecount] = 1.0f / 128.0f;
+                fx2.tablecount++;
             }
             NuRndrFxCode(0x308, &fx2, dma, NuLgtSurf[14]);
             dma = NuRndrStreamAlloc(8);
@@ -1846,63 +1797,63 @@ void NuLightProcessSpot(int mode) {
             packet = gsCloseGifPacket(packet);
             packet = vtCloseDirect(packet);
             packet = vpDmaTag_Close(packet);
-            fx.parameter_00 = 33554432.0f;
-            fx.parameter_04 = 1;
-            fx.count = 0;
+            fx.zval = 33554432.0f;
+            fx.oiterations = 1;
+            fx.tablecount = 0;
             if ((ys & 0x1E) || (ys & 0xFFE0) == (ye & 0xFFE0)) {
-                fx.colour[fx.count] = 0x80808080;
+                fx.rgba[fx.tablecount] = 0x80808080;
                 if ((ys & 0xFFE0) == (ye & 0xFFE0)) {
-                    fx.parameter_1c[fx.count] = (ye - ys + 1) / 2;
+                    fx.iterations[fx.tablecount] = (ye - ys + 1) / 2;
                 } else {
-                    fx.parameter_1c[fx.count] = (32 - (ys & 0x1E)) / 2;
+                    fx.iterations[fx.tablecount] = (32 - (ys & 0x1E)) / 2;
                 }
-                fx.channel[0][fx.count] = xs << 4;
-                fx.channel[1][fx.count] = (ys & 0xFFFE) << 4;
-                fx.channel[2][fx.count] = (float)xs * 256.0f / 655360.0f;
-                fx.channel[3][fx.count] = ((float)(ys / 32) * 128.0f + 64.5f + (float)((ys & 0x1E) << 1)) / 1024.0f;
-                fx.channel[4][fx.count] = (xe - xs) << 4;
-                fx.channel[5][fx.count] = 24.0f;
-                fx.channel[6][fx.count] = (float)(xe - xs) * 256.0f / 655360.0f;
-                fx.channel[7][fx.count] = 1.0f / 1024.0f;
-                fx.channel[8][fx.count] = 0.0f;
-                fx.channel[9][fx.count] = 32.0f;
-                fx.channel[10][fx.count] = 0.0f;
-                fx.channel[11][fx.count] = 1.0f / 256.0f;
-                fx.count++;
+                fx.xstart[fx.tablecount] = xs << 4;
+                fx.ystart[fx.tablecount] = (ys & 0xFFFE) << 4;
+                fx.ustart[fx.tablecount] = (float)xs * 256.0f / 655360.0f;
+                fx.vstart[fx.tablecount] = ((float)(ys / 32) * 128.0f + 64.5f + (float)((ys & 0x1E) << 1)) / 1024.0f;
+                fx.xw[fx.tablecount] = (xe - xs) << 4;
+                fx.yh[fx.tablecount] = 24.0f;
+                fx.uw[fx.tablecount] = (float)(xe - xs) * 256.0f / 655360.0f;
+                fx.vh[fx.tablecount] = 1.0f / 1024.0f;
+                fx.xstep[fx.tablecount] = 0.0f;
+                fx.ystep[fx.tablecount] = 32.0f;
+                fx.ustep[fx.tablecount] = 0.0f;
+                fx.vstep[fx.tablecount] = 1.0f / 256.0f;
+                fx.tablecount++;
             }
             for (j = (ys + 30) / 32; j < (ye + 1) / 32; j++) {
-                fx.colour[fx.count] = 0x80808080;
-                fx.parameter_1c[fx.count] = 16;
-                fx.channel[0][fx.count] = xs << 4;
-                fx.channel[1][fx.count] = j << 9;
-                fx.channel[2][fx.count] = (float)xs * 256.0f / 655360.0f;
-                fx.channel[3][fx.count] = ((float)j * 128.0f + 64.5f) / 1024.0f;
-                fx.channel[4][fx.count] = (xe - xs) << 4;
-                fx.channel[5][fx.count] = 24.0f;
-                fx.channel[6][fx.count] = (float)(xe - xs) * 256.0f / 655360.0f;
-                fx.channel[7][fx.count] = 1.0f / 1024.0f;
-                fx.channel[8][fx.count] = 0.0f;
-                fx.channel[9][fx.count] = 32.0f;
-                fx.channel[10][fx.count] = 0.0f;
-                fx.channel[11][fx.count] = 1.0f / 256.0f;
-                fx.count++;
+                fx.rgba[fx.tablecount] = 0x80808080;
+                fx.iterations[fx.tablecount] = 16;
+                fx.xstart[fx.tablecount] = xs << 4;
+                fx.ystart[fx.tablecount] = j << 9;
+                fx.ustart[fx.tablecount] = (float)xs * 256.0f / 655360.0f;
+                fx.vstart[fx.tablecount] = ((float)j * 128.0f + 64.5f) / 1024.0f;
+                fx.xw[fx.tablecount] = (xe - xs) << 4;
+                fx.yh[fx.tablecount] = 24.0f;
+                fx.uw[fx.tablecount] = (float)(xe - xs) * 256.0f / 655360.0f;
+                fx.vh[fx.tablecount] = 1.0f / 1024.0f;
+                fx.xstep[fx.tablecount] = 0.0f;
+                fx.ystep[fx.tablecount] = 32.0f;
+                fx.ustep[fx.tablecount] = 0.0f;
+                fx.vstep[fx.tablecount] = 1.0f / 256.0f;
+                fx.tablecount++;
             }
             if (((ye + 1) & 0x1E) && (ys & 0xFFE0) != (ye & 0xFFE0)) {
-                fx.colour[fx.count] = 0x80808080;
-                fx.parameter_1c[fx.count] = (ye & 0x1E) / 2;
-                fx.channel[0][fx.count] = xs << 4;
-                fx.channel[1][fx.count] = (ye & 0xFFE0) << 4;
-                fx.channel[2][fx.count] = (float)xs * 256.0f / 655360.0f;
-                fx.channel[3][fx.count] = ((float)(ye / 32) * 128.0f + 64.5f) / 1024.0f;
-                fx.channel[4][fx.count] = (xe - xs) << 4;
-                fx.channel[5][fx.count] = 24.0f;
-                fx.channel[6][fx.count] = (float)(xe - xs) * 256.0f / 655360.0f;
-                fx.channel[7][fx.count] = 1.0f / 1024.0f;
-                fx.channel[8][fx.count] = 0.0f;
-                fx.channel[9][fx.count] = 32.0f;
-                fx.channel[10][fx.count] = 0.0f;
-                fx.channel[11][fx.count] = 1.0f / 256.0f;
-                fx.count++;
+                fx.rgba[fx.tablecount] = 0x80808080;
+                fx.iterations[fx.tablecount] = (ye & 0x1E) / 2;
+                fx.xstart[fx.tablecount] = xs << 4;
+                fx.ystart[fx.tablecount] = (ye & 0xFFE0) << 4;
+                fx.ustart[fx.tablecount] = (float)xs * 256.0f / 655360.0f;
+                fx.vstart[fx.tablecount] = ((float)(ye / 32) * 128.0f + 64.5f) / 1024.0f;
+                fx.xw[fx.tablecount] = (xe - xs) << 4;
+                fx.yh[fx.tablecount] = 24.0f;
+                fx.uw[fx.tablecount] = (float)(xe - xs) * 256.0f / 655360.0f;
+                fx.vh[fx.tablecount] = 1.0f / 1024.0f;
+                fx.xstep[fx.tablecount] = 0.0f;
+                fx.ystep[fx.tablecount] = 32.0f;
+                fx.ustep[fx.tablecount] = 0.0f;
+                fx.vstep[fx.tablecount] = 1.0f / 256.0f;
+                fx.tablecount++;
             }
             NuRndrFxCode(0x306, &fx, dma, NuLgtLightMat[spot + 8]);
             NuRndrEndSceneEx(0);
@@ -2874,8 +2825,8 @@ void NuLightPolyHaze(int paused) {
 
 
 void NuLightFogDraw(int paused) {
-    struct FxSprite fx;
-    struct FxSprite2 fx2;
+    struct FxSpriteSet fx;
+    struct FxSprite2Set fx2;
     struct nuvec4_s *pnts;
     u32 *clut;
     u32 *dma;
@@ -3031,9 +2982,9 @@ void NuLightFogDraw(int paused) {
             packet = gsCloseGifPacket(packet);
             packet = vtCloseDirect(packet);
             vpDmaTag_Close(packet);
-            fx2.parameter_00 = 33554432.0f;
-            fx2.parameter_04 = 1;
-            fx2.count = 0;
+            fx2.zval = 33554432.0f;
+            fx2.oiterations = 1;
+            fx2.tablecount = 0;
             for (j = xs / 320; j < (xe + 319) / 320; j++) {
                 if (j == 0) {
                     x0 = (xs / 160) << 5;
@@ -3049,33 +3000,33 @@ void NuLightFogDraw(int paused) {
                     }
                     x1 = ((xe - 161) / 160) << 5;
                 }
-                fx2.colour[fx2.count] = 0x80800080;
-                fx2.parameter_1c[fx2.count] = (((ye + 3) & 0xFFFC) - (ys & 0xFFFC)) / 4;
-                fx2.channel[0][fx2.count] = (j << 10) + 0x1400 + (x0 << 4);
-                fx2.channel[1][fx2.count] = (ys & 0xFFFC) << 4;
-                fx2.channel[2][fx2.count] = ((float)j * 64.0f + (float)x0) / 1024.0f;
-                fx2.channel[3][fx2.count] = ((float)(ys & 0xFFFC) * 2.0f + 0.5f) / 1024.0f;
-                fx2.channel[4][fx2.count] = x1 << 4;
-                fx2.channel[6][fx2.count] = (float)x1 / 1024.0f;
-                fx2.channel[5][fx2.count] = 24.0f;
-                fx2.channel[7][fx2.count] = 1.0f / 1024.0f;
-                fx2.channel[8][fx2.count] = 0.0f;
-                fx2.channel[9][fx2.count] = 64.0f;
-                fx2.channel[10][fx2.count] = 0.0f;
-                fx2.channel[11][fx2.count] = 1.0f / 128.0f;
-                fx2.channel[12][fx2.count] = (j << 10) + 0x1400 + (x0 << 4);
-                fx2.channel[13][fx2.count] = ((ys & 0xFFFC) << 4) + 32;
-                fx2.channel[14][fx2.count] = ((float)j * 64.0f + (float)x0) / 1024.0f;
-                fx2.channel[15][fx2.count] = ((float)(ys & 0xFFFC) * 2.0f + 6.5f) / 1024.0f;
-                fx2.channel[16][fx2.count] = x1 << 4;
-                fx2.channel[18][fx2.count] = (float)x1 / 1024.0f;
-                fx2.channel[17][fx2.count] = 24.0f;
-                fx2.channel[19][fx2.count] = 1.0f / 1024.0f;
-                fx2.channel[20][fx2.count] = 0.0f;
-                fx2.channel[21][fx2.count] = 64.0f;
-                fx2.channel[22][fx2.count] = 0.0f;
-                fx2.channel[23][fx2.count] = 1.0f / 128.0f;
-                fx2.count++;
+                fx2.rgba[fx2.tablecount] = 0x80800080;
+                fx2.iterations[fx2.tablecount] = (((ye + 3) & 0xFFFC) - (ys & 0xFFFC)) / 4;
+                fx2.xstart[fx2.tablecount] = (j << 10) + 0x1400 + (x0 << 4);
+                fx2.ystart[fx2.tablecount] = (ys & 0xFFFC) << 4;
+                fx2.ustart[fx2.tablecount] = ((float)j * 64.0f + (float)x0) / 1024.0f;
+                fx2.vstart[fx2.tablecount] = ((float)(ys & 0xFFFC) * 2.0f + 0.5f) / 1024.0f;
+                fx2.xw[fx2.tablecount] = x1 << 4;
+                fx2.uw[fx2.tablecount] = (float)x1 / 1024.0f;
+                fx2.yh[fx2.tablecount] = 24.0f;
+                fx2.vh[fx2.tablecount] = 1.0f / 1024.0f;
+                fx2.xstep[fx2.tablecount] = 0.0f;
+                fx2.ystep[fx2.tablecount] = 64.0f;
+                fx2.ustep[fx2.tablecount] = 0.0f;
+                fx2.vstep[fx2.tablecount] = 1.0f / 128.0f;
+                fx2.xstart2[fx2.tablecount] = (j << 10) + 0x1400 + (x0 << 4);
+                fx2.ystart2[fx2.tablecount] = ((ys & 0xFFFC) << 4) + 32;
+                fx2.ustart2[fx2.tablecount] = ((float)j * 64.0f + (float)x0) / 1024.0f;
+                fx2.vstart2[fx2.tablecount] = ((float)(ys & 0xFFFC) * 2.0f + 6.5f) / 1024.0f;
+                fx2.xw2[fx2.tablecount] = x1 << 4;
+                fx2.uw2[fx2.tablecount] = (float)x1 / 1024.0f;
+                fx2.yh2[fx2.tablecount] = 24.0f;
+                fx2.vh2[fx2.tablecount] = 1.0f / 1024.0f;
+                fx2.xstep2[fx2.tablecount] = 0.0f;
+                fx2.ystep2[fx2.tablecount] = 64.0f;
+                fx2.ustep2[fx2.tablecount] = 0.0f;
+                fx2.vstep2[fx2.tablecount] = 1.0f / 128.0f;
+                fx2.tablecount++;
             }
             NuRndrFxCode(0x308, &fx2, dma, NuLgtFogMat[0]);
         }
@@ -3092,9 +3043,9 @@ void NuLightFogDraw(int paused) {
         packet = gsCloseGifPacket(packet);
         packet = vtCloseDirect(packet);
         vpDmaTag_Close(packet);
-        fx2.parameter_00 = 33554432.0f;
-        fx2.parameter_04 = 1;
-        fx2.count = 0;
+        fx2.zval = 33554432.0f;
+        fx2.oiterations = 1;
+        fx2.tablecount = 0;
         for (j = xs / 320; j < (xe + 319) / 320; j++) {
             if (j == 0) {
                 x0 = (xs / 160) << 5;
@@ -3110,33 +3061,33 @@ void NuLightFogDraw(int paused) {
                 }
                 x1 = ((xe - 161) / 160) << 5;
             }
-            fx2.colour[fx2.count] = (0x80 >> (shift - 8)) + 0x80000000;
-            fx2.parameter_1c[fx2.count] = (((ye + 3) & 0xFFFC) - (ys & 0xFFFC)) / 4;
-            fx2.channel[0][fx2.count] = (j << 10) + 0x1400 + (x0 << 4);
-            fx2.channel[1][fx2.count] = (ys & 0xFFFC) << 4;
-            fx2.channel[2][fx2.count] = ((float)j * 64.0f + (float)x0) / 1024.0f;
-            fx2.channel[3][fx2.count] = ((float)(ys & 0xFFFC) * 2.0f + 4.5f) / 1024.0f;
-            fx2.channel[4][fx2.count] = x1 << 4;
-            fx2.channel[6][fx2.count] = (float)x1 / 1024.0f;
-            fx2.channel[5][fx2.count] = 24.0f;
-            fx2.channel[7][fx2.count] = 1.0f / 1024.0f;
-            fx2.channel[8][fx2.count] = 0.0f;
-            fx2.channel[9][fx2.count] = 64.0f;
-            fx2.channel[10][fx2.count] = 0.0f;
-            fx2.channel[11][fx2.count] = 1.0f / 128.0f;
-            fx2.channel[12][fx2.count] = (j << 10) + 0x1400 + (x0 << 4);
-            fx2.channel[13][fx2.count] = ((ys & 0xFFFC) << 4) + 32;
-            fx2.channel[14][fx2.count] = ((float)j * 64.0f + (float)x0) / 1024.0f;
-            fx2.channel[15][fx2.count] = ((float)(ys & 0xFFFC) * 2.0f + 2.5f) / 1024.0f;
-            fx2.channel[16][fx2.count] = x1 << 4;
-            fx2.channel[18][fx2.count] = (float)x1 / 1024.0f;
-            fx2.channel[17][fx2.count] = 24.0f;
-            fx2.channel[19][fx2.count] = 1.0f / 1024.0f;
-            fx2.channel[20][fx2.count] = 0.0f;
-            fx2.channel[21][fx2.count] = 64.0f;
-            fx2.channel[22][fx2.count] = 0.0f;
-            fx2.channel[23][fx2.count] = 1.0f / 128.0f;
-            fx2.count++;
+            fx2.rgba[fx2.tablecount] = (0x80 >> (shift - 8)) + 0x80000000;
+            fx2.iterations[fx2.tablecount] = (((ye + 3) & 0xFFFC) - (ys & 0xFFFC)) / 4;
+            fx2.xstart[fx2.tablecount] = (j << 10) + 0x1400 + (x0 << 4);
+            fx2.ystart[fx2.tablecount] = (ys & 0xFFFC) << 4;
+            fx2.ustart[fx2.tablecount] = ((float)j * 64.0f + (float)x0) / 1024.0f;
+            fx2.vstart[fx2.tablecount] = ((float)(ys & 0xFFFC) * 2.0f + 4.5f) / 1024.0f;
+            fx2.xw[fx2.tablecount] = x1 << 4;
+            fx2.uw[fx2.tablecount] = (float)x1 / 1024.0f;
+            fx2.yh[fx2.tablecount] = 24.0f;
+            fx2.vh[fx2.tablecount] = 1.0f / 1024.0f;
+            fx2.xstep[fx2.tablecount] = 0.0f;
+            fx2.ystep[fx2.tablecount] = 64.0f;
+            fx2.ustep[fx2.tablecount] = 0.0f;
+            fx2.vstep[fx2.tablecount] = 1.0f / 128.0f;
+            fx2.xstart2[fx2.tablecount] = (j << 10) + 0x1400 + (x0 << 4);
+            fx2.ystart2[fx2.tablecount] = ((ys & 0xFFFC) << 4) + 32;
+            fx2.ustart2[fx2.tablecount] = ((float)j * 64.0f + (float)x0) / 1024.0f;
+            fx2.vstart2[fx2.tablecount] = ((float)(ys & 0xFFFC) * 2.0f + 2.5f) / 1024.0f;
+            fx2.xw2[fx2.tablecount] = x1 << 4;
+            fx2.uw2[fx2.tablecount] = (float)x1 / 1024.0f;
+            fx2.yh2[fx2.tablecount] = 24.0f;
+            fx2.vh2[fx2.tablecount] = 1.0f / 1024.0f;
+            fx2.xstep2[fx2.tablecount] = 0.0f;
+            fx2.ystep2[fx2.tablecount] = 64.0f;
+            fx2.ustep2[fx2.tablecount] = 0.0f;
+            fx2.vstep2[fx2.tablecount] = 1.0f / 128.0f;
+            fx2.tablecount++;
         }
         NuRndrFxCode(0x308, &fx2, dma, NuLgtSurf[14]);
         if (shift >= 9) {
@@ -3151,9 +3102,9 @@ void NuLightFogDraw(int paused) {
             packet = gsCloseGifPacket(packet);
             packet = vtCloseDirect(packet);
             vpDmaTag_Close(packet);
-            fx2.parameter_00 = 33554432.0f;
-            fx2.parameter_04 = 1;
-            fx2.count = 0;
+            fx2.zval = 33554432.0f;
+            fx2.oiterations = 1;
+            fx2.tablecount = 0;
             for (j = xs / 320; j < (xe + 319) / 320; j++) {
                 if (j == 0) {
                     x0 = (xs / 160) << 5;
@@ -3169,33 +3120,33 @@ void NuLightFogDraw(int paused) {
                     }
                     x1 = ((xe - 161) / 160) << 5;
                 }
-                fx2.colour[fx2.count] = 0x80800000;
-                fx2.parameter_1c[fx2.count] = (((ye + 3) & 0xFFFC) - (ys & 0xFFFC)) / 4;
-                fx2.channel[0][fx2.count] = (j << 10) + 0x1400 + (x0 << 4);
-                fx2.channel[1][fx2.count] = (ys & 0xFFFC) << 4;
-                fx2.channel[2][fx2.count] = ((float)j * 64.0f + (float)x0 + 128.0f) / 1024.0f;
-                fx2.channel[3][fx2.count] = ((float)(ys & 0xFFFC) * 2.0f + 0.5f) / 1024.0f;
-                fx2.channel[4][fx2.count] = x1 << 4;
-                fx2.channel[6][fx2.count] = (float)x1 / 1024.0f;
-                fx2.channel[5][fx2.count] = 24.0f;
-                fx2.channel[7][fx2.count] = 1.0f / 1024.0f;
-                fx2.channel[8][fx2.count] = 0.0f;
-                fx2.channel[9][fx2.count] = 64.0f;
-                fx2.channel[10][fx2.count] = 0.0f;
-                fx2.channel[11][fx2.count] = 1.0f / 128.0f;
-                fx2.channel[12][fx2.count] = (j << 10) + 0x1400 + (x0 << 4);
-                fx2.channel[13][fx2.count] = ((ys & 0xFFFC) << 4) + 32;
-                fx2.channel[14][fx2.count] = ((float)j * 64.0f + (float)x0 + 128.0f) / 1024.0f;
-                fx2.channel[15][fx2.count] = ((float)(ys & 0xFFFC) * 2.0f + 6.5f) / 1024.0f;
-                fx2.channel[16][fx2.count] = x1 << 4;
-                fx2.channel[18][fx2.count] = (float)x1 / 1024.0f;
-                fx2.channel[17][fx2.count] = 24.0f;
-                fx2.channel[19][fx2.count] = 1.0f / 1024.0f;
-                fx2.channel[20][fx2.count] = 0.0f;
-                fx2.channel[21][fx2.count] = 64.0f;
-                fx2.channel[22][fx2.count] = 0.0f;
-                fx2.channel[23][fx2.count] = 1.0f / 128.0f;
-                fx2.count++;
+                fx2.rgba[fx2.tablecount] = 0x80800000;
+                fx2.iterations[fx2.tablecount] = (((ye + 3) & 0xFFFC) - (ys & 0xFFFC)) / 4;
+                fx2.xstart[fx2.tablecount] = (j << 10) + 0x1400 + (x0 << 4);
+                fx2.ystart[fx2.tablecount] = (ys & 0xFFFC) << 4;
+                fx2.ustart[fx2.tablecount] = ((float)j * 64.0f + (float)x0 + 128.0f) / 1024.0f;
+                fx2.vstart[fx2.tablecount] = ((float)(ys & 0xFFFC) * 2.0f + 0.5f) / 1024.0f;
+                fx2.xw[fx2.tablecount] = x1 << 4;
+                fx2.uw[fx2.tablecount] = (float)x1 / 1024.0f;
+                fx2.yh[fx2.tablecount] = 24.0f;
+                fx2.vh[fx2.tablecount] = 1.0f / 1024.0f;
+                fx2.xstep[fx2.tablecount] = 0.0f;
+                fx2.ystep[fx2.tablecount] = 64.0f;
+                fx2.ustep[fx2.tablecount] = 0.0f;
+                fx2.vstep[fx2.tablecount] = 1.0f / 128.0f;
+                fx2.xstart2[fx2.tablecount] = (j << 10) + 0x1400 + (x0 << 4);
+                fx2.ystart2[fx2.tablecount] = ((ys & 0xFFFC) << 4) + 32;
+                fx2.ustart2[fx2.tablecount] = ((float)j * 64.0f + (float)x0 + 128.0f) / 1024.0f;
+                fx2.vstart2[fx2.tablecount] = ((float)(ys & 0xFFFC) * 2.0f + 6.5f) / 1024.0f;
+                fx2.xw2[fx2.tablecount] = x1 << 4;
+                fx2.uw2[fx2.tablecount] = (float)x1 / 1024.0f;
+                fx2.yh2[fx2.tablecount] = 24.0f;
+                fx2.vh2[fx2.tablecount] = 1.0f / 1024.0f;
+                fx2.xstep2[fx2.tablecount] = 0.0f;
+                fx2.ystep2[fx2.tablecount] = 64.0f;
+                fx2.ustep2[fx2.tablecount] = 0.0f;
+                fx2.vstep2[fx2.tablecount] = 1.0f / 128.0f;
+                fx2.tablecount++;
             }
             NuRndrFxCode(0x308, &fx2, dma, NuLgtFogMat[2]);
         }
@@ -3212,9 +3163,9 @@ void NuLightFogDraw(int paused) {
         packet = gsCloseGifPacket(packet);
         packet = vtCloseDirect(packet);
         vpDmaTag_Close(packet);
-        fx2.parameter_00 = 33554432.0f;
-        fx2.parameter_04 = 1;
-        fx2.count = 0;
+        fx2.zval = 33554432.0f;
+        fx2.oiterations = 1;
+        fx2.tablecount = 0;
         for (j = xs / 320; j < (xe + 319) / 320; j++) {
             if (j == 0) {
                 x0 = (xs / 160) << 5;
@@ -3230,33 +3181,33 @@ void NuLightFogDraw(int paused) {
                 }
                 x1 = ((xe - 161) / 160) << 5;
             }
-            fx2.colour[fx2.count] = (0x800000 >> (shift - 8)) + 0x80000000;
-            fx2.parameter_1c[fx2.count] = (((ye + 3) & 0xFFFC) - (ys & 0xFFFC)) / 4;
-            fx2.channel[0][fx2.count] = (j << 10) + 0x1400 + (x0 << 4);
-            fx2.channel[1][fx2.count] = (ys & 0xFFFC) << 4;
-            fx2.channel[2][fx2.count] = ((float)j * 64.0f + (float)x0 + 128.0f) / 1024.0f;
-            fx2.channel[3][fx2.count] = ((float)(ys & 0xFFFC) * 2.0f + 4.5f) / 1024.0f;
-            fx2.channel[4][fx2.count] = x1 << 4;
-            fx2.channel[6][fx2.count] = (float)x1 / 1024.0f;
-            fx2.channel[5][fx2.count] = 24.0f;
-            fx2.channel[7][fx2.count] = 1.0f / 1024.0f;
-            fx2.channel[8][fx2.count] = 0.0f;
-            fx2.channel[9][fx2.count] = 64.0f;
-            fx2.channel[10][fx2.count] = 0.0f;
-            fx2.channel[11][fx2.count] = 1.0f / 128.0f;
-            fx2.channel[12][fx2.count] = (j << 10) + 0x1400 + (x0 << 4);
-            fx2.channel[13][fx2.count] = ((ys & 0xFFFC) << 4) + 32;
-            fx2.channel[14][fx2.count] = ((float)j * 64.0f + (float)x0 + 128.0f) / 1024.0f;
-            fx2.channel[15][fx2.count] = ((float)(ys & 0xFFFC) * 2.0f + 2.5f) / 1024.0f;
-            fx2.channel[16][fx2.count] = x1 << 4;
-            fx2.channel[18][fx2.count] = (float)x1 / 1024.0f;
-            fx2.channel[17][fx2.count] = 24.0f;
-            fx2.channel[19][fx2.count] = 1.0f / 1024.0f;
-            fx2.channel[20][fx2.count] = 0.0f;
-            fx2.channel[21][fx2.count] = 64.0f;
-            fx2.channel[22][fx2.count] = 0.0f;
-            fx2.channel[23][fx2.count] = 1.0f / 128.0f;
-            fx2.count++;
+            fx2.rgba[fx2.tablecount] = (0x800000 >> (shift - 8)) + 0x80000000;
+            fx2.iterations[fx2.tablecount] = (((ye + 3) & 0xFFFC) - (ys & 0xFFFC)) / 4;
+            fx2.xstart[fx2.tablecount] = (j << 10) + 0x1400 + (x0 << 4);
+            fx2.ystart[fx2.tablecount] = (ys & 0xFFFC) << 4;
+            fx2.ustart[fx2.tablecount] = ((float)j * 64.0f + (float)x0 + 128.0f) / 1024.0f;
+            fx2.vstart[fx2.tablecount] = ((float)(ys & 0xFFFC) * 2.0f + 4.5f) / 1024.0f;
+            fx2.xw[fx2.tablecount] = x1 << 4;
+            fx2.uw[fx2.tablecount] = (float)x1 / 1024.0f;
+            fx2.yh[fx2.tablecount] = 24.0f;
+            fx2.vh[fx2.tablecount] = 1.0f / 1024.0f;
+            fx2.xstep[fx2.tablecount] = 0.0f;
+            fx2.ystep[fx2.tablecount] = 64.0f;
+            fx2.ustep[fx2.tablecount] = 0.0f;
+            fx2.vstep[fx2.tablecount] = 1.0f / 128.0f;
+            fx2.xstart2[fx2.tablecount] = (j << 10) + 0x1400 + (x0 << 4);
+            fx2.ystart2[fx2.tablecount] = ((ys & 0xFFFC) << 4) + 32;
+            fx2.ustart2[fx2.tablecount] = ((float)j * 64.0f + (float)x0 + 128.0f) / 1024.0f;
+            fx2.vstart2[fx2.tablecount] = ((float)(ys & 0xFFFC) * 2.0f + 2.5f) / 1024.0f;
+            fx2.xw2[fx2.tablecount] = x1 << 4;
+            fx2.uw2[fx2.tablecount] = (float)x1 / 1024.0f;
+            fx2.yh2[fx2.tablecount] = 24.0f;
+            fx2.vh2[fx2.tablecount] = 1.0f / 1024.0f;
+            fx2.xstep2[fx2.tablecount] = 0.0f;
+            fx2.ystep2[fx2.tablecount] = 64.0f;
+            fx2.ustep2[fx2.tablecount] = 0.0f;
+            fx2.vstep2[fx2.tablecount] = 1.0f / 128.0f;
+            fx2.tablecount++;
         }
         NuRndrFxCode(0x308, &fx2, dma, NuLgtSurf[14]);
         dma = NuRndrStreamAlloc(8);
@@ -3268,25 +3219,25 @@ void NuLightFogDraw(int paused) {
         packet = gsCloseGifPacket(packet);
         packet = vtCloseDirect(packet);
         vpDmaTag_Close(packet);
-        fx.parameter_00 = 33554432.0f;
-        fx.parameter_04 = 1;
-        fx.count = 0;
+        fx.zval = 33554432.0f;
+        fx.oiterations = 1;
+        fx.tablecount = 0;
         for (j = (ys + 30) / 32; j < (ye + 1) / 32; j++) {
-            fx.colour[fx.count] = 0x80808080;
-            fx.parameter_1c[fx.count] = 16;
-            fx.channel[0][fx.count] = xs << 4;
-            fx.channel[1][fx.count] = j << 9;
-            fx.channel[2][fx.count] = (float)xs * 256.0f / 655360.0f;
-            fx.channel[3][fx.count] = ((float)j * 128.0f + 64.5f) / 1024.0f;
-            fx.channel[4][fx.count] = (xe - xs) << 4;
-            fx.channel[5][fx.count] = 24.0f;
-            fx.channel[6][fx.count] = (float)(xe - xs) * 256.0f / 655360.0f;
-            fx.channel[7][fx.count] = 1.0f / 1024.0f;
-            fx.channel[8][fx.count] = 0.0f;
-            fx.channel[9][fx.count] = 32.0f;
-            fx.channel[10][fx.count] = 0.0f;
-            fx.channel[11][fx.count] = 1.0f / 256.0f;
-            fx.count++;
+            fx.rgba[fx.tablecount] = 0x80808080;
+            fx.iterations[fx.tablecount] = 16;
+            fx.xstart[fx.tablecount] = xs << 4;
+            fx.ystart[fx.tablecount] = j << 9;
+            fx.ustart[fx.tablecount] = (float)xs * 256.0f / 655360.0f;
+            fx.vstart[fx.tablecount] = ((float)j * 128.0f + 64.5f) / 1024.0f;
+            fx.xw[fx.tablecount] = (xe - xs) << 4;
+            fx.yh[fx.tablecount] = 24.0f;
+            fx.uw[fx.tablecount] = (float)(xe - xs) * 256.0f / 655360.0f;
+            fx.vh[fx.tablecount] = 1.0f / 1024.0f;
+            fx.xstep[fx.tablecount] = 0.0f;
+            fx.ystep[fx.tablecount] = 32.0f;
+            fx.ustep[fx.tablecount] = 0.0f;
+            fx.vstep[fx.tablecount] = 1.0f / 256.0f;
+            fx.tablecount++;
         }
         NuRndrFxCode(0x306, &fx, dma, NuLgtFogMat[1]);
     }
@@ -3559,43 +3510,6 @@ void NuLightAddHazePoly(struct nuvec_s *pos, float size, float rot) {
         NuLgtPolyHazeData[NuLightHazePolyCnt].rot = rot;
         NuLightHazePolyCnt++;
     }
-}
-
-
-void *NuLightSprDmaOpen(int count) {
-    void *start = NuLgtBuff;
-
-    NuLgtBuff = (u32 *)vpDmaTag_RetEx(start, 0x10000000, 0x50000000) - 1;
-    NuLgtBuff = vtBeginDirect(NuLgtBuff, 0);
-    *((u64 *)NuLgtBuff)++ = (u64)(count | 0x8000) | ((u64)0x64034000 << 32);
-    *((u64 *)NuLgtBuff)++ = 0x525210;
-    return start;
-}
-
-
-void NuLightSprDmaClose(void) {
-    NuLgtBuff = vtCloseDirect(NuLgtBuff);
-    NuLgtBuff = vpDmaTag_Close(NuLgtBuff);
-}
-
-
-void NuLightSprMake(int x, int y, int width, int height, int colour, int z,
-                    float u0, float v0, float u1, float v1) {
-    x += (PS2_VCNTR_X - (PS2_REZ_W >> 1)) << 4;
-    y += (PS2_VCNTR_Y - (PS2_REZ_H >> 1)) << 4;
-    *((u64 *)NuLgtBuff)++ = 6;
-    *((int *)NuLgtBuff)++ = colour;
-    *((float *)NuLgtBuff)++ = 1.0f;
-    *((float *)NuLgtBuff)++ = u0;
-    *((float *)NuLgtBuff)++ = v0;
-    *((short *)NuLgtBuff)++ = x;
-    *((short *)NuLgtBuff)++ = y;
-    *((int *)NuLgtBuff)++ = z;
-    *((float *)NuLgtBuff)++ = u1;
-    *((float *)NuLgtBuff)++ = v1;
-    *((short *)NuLgtBuff)++ = x + width;
-    *((short *)NuLgtBuff)++ = y + height;
-    *((int *)NuLgtBuff)++ = z;
 }
 
 
