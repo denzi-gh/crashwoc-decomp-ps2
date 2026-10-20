@@ -193,12 +193,12 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0053:0062ef30:sys_progs"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0053:0062ef34:ntal_first"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0053:0062ef38:ntal_free"
-state = "asm"
+state = "matching"

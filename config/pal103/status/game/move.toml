@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0117"
 source = "src/game/move.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0117:00250588:InitPlayerEvents"
@@ -325,212 +325,217 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:00632990:GRAVITY"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:00632994:TERMINALVELOCITY"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:00632998:MAXLAPS"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:0063299c:SWEEPATTACKSTARTTIME"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:006329a0:SWEEPATTACKENDTIME"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:006329a4:SCOOTERJUMPPAUSEFRAME"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:006329a8:SNOWBOARDJUMPPAUSEFRAME"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:006329ac:OFFROADERSPEEDTIME"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:006329b0:jeepsfx"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:006329b8:i_jkeepsfx"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:006329bc:MECHRUNNINGJUMPPAUSEFRAME"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:006329c0:MECHSTANDINGJUMPPAUSEFRAME"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:006329c4:FIREENGINERUNNINGJUMPPAUSEFRAME"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:006329c8:FIREENGINESTANDINGJUMPPAUSEFRAME"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:006329cc:CARPETTIME"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:006329d0:carpet_character"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:006329d8:carpet_place"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:006329e0:carpet_model"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:006329e8:carpet_action"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:006329ec:carpet_overlap"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:006329f0:FASTMINECARTMUL"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:006329f4:SLOWMINECARTMUL"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:006329f8:cart_sfx"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:006329fc:TUBWAIT"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:00632a00:TUBBOOSTFRAMES"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:00632a04:plr_tub_tilt"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:00632a08:plr_tub_tilttarget"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:00632a0c:plr_tub_tiltlock"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:00632a10:tub_overlap"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:00632a14:plr_gates"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:00632a18:GATECOUNT"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:00632a20:gate_bits"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:00632a28:i_ring"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:00632a2c:RINGCOUNT"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:00632a30:RINGPULL"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:00632a34:VEHICLETIME"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:00632a38:plr_vehicle_time"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:00632a3c:plr_vehicle_speedmul"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:00632a40:plr_tocam_wait"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:00632a44:plr_tocam_turn"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:00632a48:plr_tumblehack"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:00632a4c:offroader_speedtime"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:00632a50:CARPETLOOPTIME"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:00632a54:carpet_yrot"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:00632a56:carpet_xrot"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:00632a58:carpet_time"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:00632a5c:carpet_panelpos"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:00632a60:TubLink"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:00632a64:race_finished"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:00632a68:opptub_action"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:00632a6c:opptub_wait"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:00632a70:arrow_xrot"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0117:00632a72:arrow_yrot"
-state = "asm"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x00628728
+end = 0x00628734

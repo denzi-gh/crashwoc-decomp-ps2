@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0004"
 source = "src/nucore/numem.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0004:001047c8:NuMemAlloc"
@@ -77,28 +77,33 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0004:0062ea04:alloc_list"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0004:0062ea08:totalloc"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0004:0062ea0c:discardbuff"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0004:0062ea10:alloccnt"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0004:0062ea14:memexternal"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0004:0062ea18:highallocaddr"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0004:0062ea1c:peakallocaddr"
-state = "asm"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x00613c80
+end = 0x00613c9a

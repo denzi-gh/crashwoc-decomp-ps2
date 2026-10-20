@@ -59,16 +59,6 @@ typedef struct SpecTerrData {
 } SpecTerrData;
 
 
-extern char D_00619AA0[];
-extern char D_00619AC8[];
-extern char D_00619B20[];
-extern s32 D_0062F764;
-extern s32 D_0062F768;
-
-#define specterr_draw_bounds D_0062F764
-#define specterr_draw_index D_0062F768
-
-
 SpecTerrData *CreateSpecialTerrainData(s32 level, struct nugscn_s *scene, union variptr_u *buffer,
                                        union variptr_u *end) {
     SpecTerrData *data;
@@ -96,7 +86,8 @@ SpecTerrData *CreateSpecialTerrainData(s32 level, struct nugscn_s *scene, union 
             for (i = 0; i < count; i++) {
                 obj = (SpecTerrObject *)p;
                 if (obj->instance >= scene->numinstance) {
-                    NuErrorProlog(D_00619AA0, 0x52)(D_00619AC8);
+                    NuErrorProlog("..\\nu2crash.ps2\\gamelib\\specterr.c", 0x52)(
+                        "CreateSpecialTerrainInstanceArray: invalid instance ix in special terrain object");
                 }
                 data->objects[obj->instance] = obj;
                 p += sizeof(SpecTerrObject);
@@ -105,7 +96,8 @@ SpecTerrData *CreateSpecialTerrainData(s32 level, struct nugscn_s *scene, union 
                     p += sizeof(SpecTerrShape);
                     switch (shape->type) {
                     case 0:
-                        NuErrorProlog(D_00619AA0, 0x61)(D_00619B20, shape->type);
+                        NuErrorProlog("..\\nu2crash.ps2\\gamelib\\specterr.c", 0x61)(
+                            "SpecialTerrainInstanceCollideCheck: bad special terrain type <%d>", shape->type);
                         break;
                     case 1:
                         p += sizeof(SpecTerrSphere);
@@ -170,7 +162,8 @@ s32 SpecialTerrainInstanceCollideCheck(struct nuvec_s *pos, f32 radius, SpecTerr
         shape = next;
         switch (shape->type) {
         case 0:
-            NuErrorProlog(D_00619AA0, 0xA2)(D_00619B20, shape->type);
+            NuErrorProlog("..\\nu2crash.ps2\\gamelib\\specterr.c", 0xA2)(
+                "SpecialTerrainInstanceCollideCheck: bad special terrain type <%d>", shape->type);
             break;
         case 1:
             sphere = (SpecTerrSphere *)(shape + 1);
@@ -269,6 +262,8 @@ s32 SpecialTerrainInstanceCollideCheck(struct nuvec_s *pos, f32 radius, SpecTerr
 
 
 void SpecialTerrainTestRender(SpecTerrData *data) {
+    static s32 do_bbox = 1;
+    static s32 inst_to_rndr = -1;
     struct nuvtx_tc1_s line[2];
     struct nuvec_s centre;
     struct numtx_s invmtx;
@@ -296,12 +291,12 @@ void SpecialTerrainTestRender(SpecTerrData *data) {
     for (i = 0; i < count; i++) {
         obj = (SpecTerrObject *)cur;
         inst = &data->scene->instances[obj->instance];
-        if (specterr_draw_index == i || specterr_draw_index == -1) {
+        if (inst_to_rndr == i || inst_to_rndr == -1) {
             draw = 1;
         } else {
             draw = 0;
         }
-        if (draw && specterr_draw_bounds) {
+        if (draw && do_bbox) {
             line[0].pnt = line[1].pnt = *(struct nuvec_s *)&inst->mtx._30;
             line[0].pnt.x += obj->radius;
             line[0].pnt.y += obj->radius;
@@ -362,7 +357,8 @@ void SpecialTerrainTestRender(SpecTerrData *data) {
             shape = next;
             switch (shape->type) {
             case 0:
-                NuErrorProlog(D_00619AA0, 0x1A7)(D_00619B20, shape->type);
+                NuErrorProlog("..\\nu2crash.ps2\\gamelib\\specterr.c", 0x1A7)(
+                    "SpecialTerrainInstanceCollideCheck: bad special terrain type <%d>", shape->type);
                 break;
             case 1:
                 sphere = (SpecTerrSphere *)(shape + 1);

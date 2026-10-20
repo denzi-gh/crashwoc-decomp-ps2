@@ -29,34 +29,19 @@
 extern struct wumpa_s Wumpa[];
 extern s32 WUMPACOUNT;
 extern s32 PLAYERCOUNT;
-extern s32 edwmp_used;
 extern struct nuvec_s v000;
-extern void *edwmp_active_menu;
-extern void *edwmp_options_menu;
-extern char D_00620338[];
+extern struct nuvec_s edwmp_cam_pos;
 extern s32 D_00633348;
 #define edwmp_selected D_00633348
 
 extern void *app_fnt;
-extern u8 D_00631C18[];
-extern u8 D_00620358[];
 extern s32 PANELOFF;
 extern char tbuf[];
 extern char **LDATA;
-extern char D_00631C10[];
-extern char D_006202E8[];
-extern char D_00620300[];
-extern char D_00620310[];
 extern f32 D_00633340;
 extern s32 D_00633344;
 #define edwmp_cam_in_crate D_00633344
-extern s32 D_00631BF8;
 extern s32 screendump;
-
-struct edwmp_itemdef_s {
-    u8 data[16];
-};
-extern struct edwmp_itemdef_s D_00620348;
 
 extern void eduiMenuDestroy(void *menu);
 extern void ResetWumpa(void);
@@ -86,15 +71,8 @@ extern void eduiMenuProcess(void *menu, struct nupad_s *pad);
 extern void *InCrate(f32 x, f32 z, f32 ytop, f32 ybot, f32 radius);
 extern void NuRndrLine3dDbg(s32 colour, f32 x0, f32 y0, f32 z0, f32 x1, f32 y1,
                             f32 z1);
-extern s32 wmp_start;
-extern f32 cursor_terrain_height_diff;
-extern f32 old_cursor_height;
 extern f32 edwmp_cam_ax;
 extern f32 edwmp_cam_ay;
-extern f32 D_00631BFC;
-#define edwmp_move_step D_00631BFC
-extern s32 D_00631C24;
-#define edwmp_goto_selected D_00631C24
 extern f32 NuTrigTable[];
 extern s32 VEHICLECONTROL;
 extern struct nuvec_s *pos_START;
@@ -108,20 +86,21 @@ extern void edcamSetPos(struct nuvec_s *pos);
 void edwmpDRAW(void);
 void edwmpDrawInfo(void);
 void edwmpDoInput(struct nupad_s *pad);
-void edwmpCbCancelOptMenu(void);
-void edwmpcbSaveWumpaData(void *menu);
 void edwmpInit(void);
 void edwmpClose(void);
 void edwmpEnter(void);
 s32 edwmpProc(struct nupad_s *pad);
 void edwmpRender(void);
+void edwmpcbSaveWumpaData(void *menu);
+void edwmpCbCancelOptMenu(void);
 
-struct edmainreg_s edwmpdesc = {
-    0, 0, "Wumpa Editor", edwmpInit, edwmpClose, edwmpEnter, {0}, 0,
-    EDMAIN_BLOCKID('w', 'u', 'm', 'p'), edwmpProc, edwmpRender
-};
-struct nuvec_s edwmp_cam_pos = { 0.0f, 0.0f, 0.0f };
-struct nuvec_s wmp_pos = { 0.0f, 0.0f, 0.0f };
+void *edwmp_active_menu = 0;
+void *edwmp_options_menu = 0;
+static s32 edwmp_count = 0;
+static f32 edwmp_radius = 0.25f;
+s32 wmp_start = 1;
+f32 cursor_terrain_height_diff = 0.0f;
+f32 old_cursor_height = 0.0f;
 
 void edwmpDrawInfo(void)
 {
@@ -132,11 +111,11 @@ void edwmpDrawInfo(void)
     NuFntSetPen(-1);
     strcpy(tbuf, LDATA[0]);
     strupr(tbuf);
-    NuFntPrintEx(0x400, 0x100, 0, D_00631C10, tbuf);
-    NuFntPrintEx(0x400, 0x200, 0, D_006202E8, WUMPACOUNT, 0x100);
-    NuFntPrintEx(0x400, 0x300, 0, D_00620300, fptodp(D_00633340));
-    NuFntPrintEx(0x400, 0xD00, 0, D_00620310, fptodp(edwmp_cam_pos.x),
-                 fptodp(edwmp_cam_pos.y), fptodp(edwmp_cam_pos.z));
+    NuFntPrintEx(0x400, 0x100, 0, "%s.WMP", tbuf);
+    NuFntPrintEx(0x400, 0x200, 0, "WUMPACOUNT:   %i/%i", WUMPACOUNT, 0x100);
+    NuFntPrintEx(0x400, 0x300, 0, "HEIGHT:   %.2f", fptodp(D_00633340));
+    NuFntPrintEx(0x400, 0xD00, 0, "CURSOR:   X: %.2f   Y: %.2f   Z: %.2f",
+                 fptodp(edwmp_cam_pos.x), fptodp(edwmp_cam_pos.y), fptodp(edwmp_cam_pos.z));
 }
 
 void edwmpDRAW(void)
@@ -209,8 +188,37 @@ void edwmpDRAW(void)
     }
 }
 
+inline void edwmpcbSaveWumpaData(void *menu)
+{
+    ResetWumpa();
+    SaveWumpa();
+    eduiCreateMessageMenu(menu, "Saved OK", 1);
+}
+
+inline void edwmpInit(void)
+{
+    struct eduistyle_s style = { { 0x80000000, 0x80FF0000 }, { 0x80808080, 0x80404040 } };
+
+    edwmp_options_menu = eduiMenuCreate(0x46, 0x46, 0xB4, 0x12C, app_fnt,
+                                        edwmpCbCancelOptMenu, "Options");
+    if (edwmp_options_menu != 0) {
+        eduiMenuAddItem(edwmp_options_menu,
+                        eduiItemSelCreate(1, &style, 0, 0, edwmpcbSaveWumpaData,
+                                          "Save Wumpa Data"));
+    }
+}
+
+struct edmainreg_s edwmpdesc = {
+    0, 0, "Wumpa Editor", edwmpInit, edwmpClose, edwmpEnter, {0}, 0,
+    EDMAIN_BLOCKID('w', 'u', 'm', 'p'), edwmpProc, edwmpRender
+};
+struct nuvec_s edwmp_cam_pos = { 0.0f, 0.0f, 0.0f };
+struct nuvec_s wmp_pos = { 0.0f, 0.0f, 0.0f };
+s32 edwmp_used = 0;
+
 void edwmpDoInput(struct nupad_s *pad)
 {
+    static s32 wumpa_lock_button = 0;
     struct RPos_s rpos;
     f32 shadow = 0.0f;
     u16 angle;
@@ -239,28 +247,28 @@ void edwmpDoInput(struct nupad_s *pad)
     if (pad->paddata_db & 0x80) {
         edwmp_active_menu = edwmp_options_menu;
     }
-    if (edwmp_goto_selected) {
+    if (wumpa_lock_button) {
         if (edwmp_selected != -1) {
             edcamSetPos(&Wumpa[edwmp_selected].pos0);
         }
-        edwmp_goto_selected = 0;
+        wumpa_lock_button = 0;
     } else if (pad->paddata & 0x20) {
         if (pad->paddata_db & 0x20) {
-            edwmp_goto_selected = 1;
+            wumpa_lock_button = 1;
         } else {
             if (pad->paddata_db & 0x1000) {
-                edwmp_cam_pos.y += edwmp_move_step;
+                edwmp_cam_pos.y += edwmp_radius;
                 edcamSetPos(&edwmp_cam_pos);
             }
             if (pad->paddata_db & 0x4000) {
-                edwmp_cam_pos.y -= edwmp_move_step;
+                edwmp_cam_pos.y -= edwmp_radius;
                 edcamSetPos(&edwmp_cam_pos);
             }
         }
     } else {
         if (pad->paddata_db & 0x1000) {
-            edwmp_cam_pos.x += NuTrigTable[angle] * edwmp_move_step;
-            edwmp_cam_pos.z += NuTrigTable[(angle + 0x4000) & 0xFFFF] * edwmp_move_step;
+            edwmp_cam_pos.x += NuTrigTable[angle] * edwmp_radius;
+            edwmp_cam_pos.z += NuTrigTable[(angle + 0x4000) & 0xFFFF] * edwmp_radius;
             shadow = NewShadowMask(&edwmp_cam_pos, 0.0f, -1);
             if (shadow != 2000000.0f) {
                 edwmp_cam_pos.y = shadow + cursor_terrain_height_diff;
@@ -268,8 +276,8 @@ void edwmpDoInput(struct nupad_s *pad)
             edcamSetPos(&edwmp_cam_pos);
         }
         if (pad->paddata_db & 0x2000) {
-            edwmp_cam_pos.x += NuTrigTable[(angle + 0x4000) & 0xFFFF] * edwmp_move_step;
-            edwmp_cam_pos.z -= NuTrigTable[angle] * edwmp_move_step;
+            edwmp_cam_pos.x += NuTrigTable[(angle + 0x4000) & 0xFFFF] * edwmp_radius;
+            edwmp_cam_pos.z -= NuTrigTable[angle] * edwmp_radius;
             shadow = NewShadowMask(&edwmp_cam_pos, 0.0f, -1);
             if (shadow != 2000000.0f) {
                 edwmp_cam_pos.y = shadow + cursor_terrain_height_diff;
@@ -277,8 +285,8 @@ void edwmpDoInput(struct nupad_s *pad)
             edcamSetPos(&edwmp_cam_pos);
         }
         if (pad->paddata_db & 0x4000) {
-            edwmp_cam_pos.x -= NuTrigTable[angle] * edwmp_move_step;
-            edwmp_cam_pos.z -= NuTrigTable[(angle + 0x4000) & 0xFFFF] * edwmp_move_step;
+            edwmp_cam_pos.x -= NuTrigTable[angle] * edwmp_radius;
+            edwmp_cam_pos.z -= NuTrigTable[(angle + 0x4000) & 0xFFFF] * edwmp_radius;
             shadow = NewShadowMask(&edwmp_cam_pos, 0.0f, -1);
             if (shadow != 2000000.0f) {
                 edwmp_cam_pos.y = shadow + cursor_terrain_height_diff;
@@ -286,8 +294,8 @@ void edwmpDoInput(struct nupad_s *pad)
             edcamSetPos(&edwmp_cam_pos);
         }
         if (pad->paddata_db & 0x8000) {
-            edwmp_cam_pos.x -= NuTrigTable[(angle + 0x4000) & 0xFFFF] * edwmp_move_step;
-            edwmp_cam_pos.z += NuTrigTable[angle] * edwmp_move_step;
+            edwmp_cam_pos.x -= NuTrigTable[(angle + 0x4000) & 0xFFFF] * edwmp_radius;
+            edwmp_cam_pos.z += NuTrigTable[angle] * edwmp_radius;
             shadow = NewShadowMask(&edwmp_cam_pos, 0.0f, -1);
             if (shadow != 2000000.0f) {
                 edwmp_cam_pos.y = shadow + cursor_terrain_height_diff;
@@ -320,6 +328,10 @@ void edwmpDoInput(struct nupad_s *pad)
     }
 }
 
+f32 edwmp_cam_dist = 0.0f;
+f32 edwmp_cam_ax = 0.0f;
+f32 edwmp_cam_ay = 0.0f;
+
 s32 edwmpProc(struct nupad_s *pad)
 {
     struct nuvec_s v;
@@ -330,7 +342,7 @@ s32 edwmpProc(struct nupad_s *pad)
     if (screendump) {
         return 0;
     }
-    D_00631BF8 += 6;
+    edwmp_count += 6;
     if (edwmp_active_menu) {
         eduiMenuProcess(edwmp_active_menu, pad);
         return 0;
@@ -388,26 +400,12 @@ void edwmpDELETE(void)
     }
 }
 
-void edwmpInit(void)
-{
-    struct edwmp_itemdef_s buf;
-
-    buf = D_00620348;
-    edwmp_options_menu = eduiMenuCreate(0x46, 0x46, 0xB4, 0x12C, app_fnt,
-                                        edwmpCbCancelOptMenu, D_00631C18);
-    if (edwmp_options_menu != 0) {
-        eduiMenuAddItem(edwmp_options_menu,
-                        eduiItemSelCreate(1, &buf, 0, 0, edwmpcbSaveWumpaData,
-                                          D_00620358));
-    }
-}
-
-void edwmpClose(void)
+inline void edwmpClose(void)
 {
     eduiMenuDestroy(edwmp_options_menu);
 }
 
-void edwmpEnter(void)
+inline void edwmpEnter(void)
 {
     struct nuvec_s *pos;
 
@@ -431,7 +429,7 @@ void edwmpEnter(void)
     }
 }
 
-void edwmpRender(void)
+inline void edwmpRender(void)
 {
     edcamSet();
     DrawCameraTarget(&edwmp_cam_pos);
@@ -443,14 +441,7 @@ void edwmpRender(void)
     }
 }
 
-void edwmpcbSaveWumpaData(void *menu)
-{
-    ResetWumpa();
-    SaveWumpa();
-    eduiCreateMessageMenu(menu, D_00620338, 1);
-}
-
-void edwmpCbCancelOptMenu(void)
+inline void edwmpCbCancelOptMenu(void)
 {
     edwmp_active_menu = 0;
 }

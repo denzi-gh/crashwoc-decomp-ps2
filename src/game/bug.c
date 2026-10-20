@@ -65,8 +65,7 @@ extern f32 D_006333AC;
 #define bug_span D_006333AC
 extern f32 D_006333B0;
 #define bug_fade D_006333B0
-extern f32 D_00632CD4;
-#define BUGFADETIME D_00632CD4
+static f32 BUGFADETIME = 2.0f;
 extern u16 D_006333B4;
 #define bug_xrot D_006333B4
 extern u16 D_006333B6;
@@ -89,14 +88,10 @@ extern f32 NuFsqrt(f32 x);
 extern u16 SeekRot(u16 a, u16 target, s32 rate);
 extern void AddGameDebris(s32 type, struct nuvec_s *pos);
 
-extern f32 D_00632CD8;
-#define mechlight_distance D_00632CD8
-extern f32 D_00632CDC;
-#define mechlight_scale D_00632CDC
-extern f32 D_00632CE0;
-#define buglight_distance D_00632CE0
-extern f32 D_00632CE4;
-#define bug_scale_base D_00632CE4
+static f32 mechlight_distance = 3.0f;
+static f32 mechlight_radius = 5.0f;
+static f32 buglight_distance = 3.0f;
+static f32 buglight_radius = 5.0f;
 
 extern f32 D_00633398;
 #define mechlight_fade D_00633398
@@ -223,7 +218,7 @@ void UpdateBugLight(struct creature_s *c) {
                 mechlight_fade = fade;
             }
         }
-        bug_scale = bug_scale_base + NuTrigTable[buglight_ang[3]] * bug_scale_base * 0.025f;
+        bug_scale = buglight_radius + NuTrigTable[buglight_ang[3]] * buglight_radius * 0.025f;
         if (mechlight_fade > 0.0f) {
             bug_pos.x = player->obj.pos.x;
             bug_pos.y = player->obj.pos.y + player->obj.top * player->obj.SCALE;
@@ -235,7 +230,7 @@ void UpdateBugLight(struct creature_s *c) {
         }
         bug_fade = mechlight_fade;
         rnd = (f32)qrand();
-        d0 = mechlight_scale + (rnd * (1.0f / 65535.0f) - 0.5f) * 0.25f;
+        d0 = mechlight_radius + (rnd * (1.0f / 65535.0f) - 0.5f) * 0.25f;
         bug_scale = bug_scale + (d0 - bug_scale) * 0.02f;
         return;
     }
@@ -304,7 +299,7 @@ void UpdateBugLight(struct creature_s *c) {
     buglight_ang[0] += 0x276;
     buglight_ang[1] += 0x162;
     buglight_ang[2] += 0x414;
-    bug_scale = bug_scale_base + NuTrigTable[buglight_ang[3]] * bug_scale_base * 0.025f;
+    bug_scale = buglight_radius + NuTrigTable[buglight_ang[3]] * buglight_radius * 0.025f;
     bug_pos.x = bug_pos.x + NuTrigTable[buglight_ang[0]] * 0.25f;
     bug_pos.y = bug_pos.y + NuTrigTable[buglight_ang[1]] * 0.25f;
     bug_pos.z = bug_pos.z + NuTrigTable[buglight_ang[2]] * 0.25f;

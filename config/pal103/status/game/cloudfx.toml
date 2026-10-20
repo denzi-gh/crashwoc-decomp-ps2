@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0115"
 source = "src/game/cloudfx.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0115:0024dc30:cloudInit"
@@ -125,72 +125,77 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0115:006328e8:CLOUDSIZE"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0115:006328ec:MAXCLOUDS"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0115:006328f0:CLOUDRNG"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0115:006328f4:cloudmtl"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0115:006328f8:cloudreset"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0115:006328fc:clouds_rs"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0115:00632900:cloud_density"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0115:00632904:disable_clouds"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0115:00632908:TTSIZE"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0115:0063290c:TTMAX"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0115:00632910:TTRNG"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0115:00632914:TTSPREAD"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0115:00632918:ttmtl"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0115:0063291c:TTCSIZE"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0115:00632920:cloudtex"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0115:00632924:cloud_drawn"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0115:00632928:tttex"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0115:0063292c:ttmtlcnt"
-state = "asm"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x00625298
+end = 0x006252aa

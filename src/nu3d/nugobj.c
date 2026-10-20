@@ -59,29 +59,9 @@ extern void *vpDmaTag_Close(void *end);
 extern void NuPs2DestroyRenderStream(struct nugobj_s *gobj);
 extern int NuGobjColourBlendGobj(struct nucolourblend_s *blend, short fade);
 
-extern char D_00614198[];
-extern char D_006141B8[];
-extern char D_0062EB80[];
-extern int D_0062EB60;
-extern struct nugobj_s *D_0062EB64;
-extern int D_0062EB68;
-extern float D_0062EB6C[];
-extern float D_0062EB70[];
-extern float D_0062EB74[];
-extern float D_0062EB78[];
-extern int D_0062EB7C;
-
-#define nugobj_file D_00614198
-#define err_no_vtxptr D_006141B8
-#define err_planes_exist D_0062EB80
-#define sysinit D_0062EB60
-#define sysgobj D_0062EB64
-#define sysgobjcount D_0062EB68
-#define faceon_bound_min D_0062EB6C
-#define faceon_bound_max D_0062EB70
-#define gobj_bound_min D_0062EB74
-#define gobj_bound_max D_0062EB78
-#define sysgeomid D_0062EB7C
+static int sysinit = 0;
+static struct nugobj_s *sysgobj = 0;
+static int hasHWTnL = 0;
 
 
 void NuGobjDestroy(struct nugobj_s *gobj) {
@@ -97,21 +77,21 @@ void NuGobjDestroy(struct nugobj_s *gobj) {
         nextgeom = geom->next;
         if (geom->blendgeom) {
             if (geom->blendgeom->blend_offsets) {
-                NuMemFreeFn(geom->blendgeom->blend_offsets, nugobj_file, 0xBF);
+                NuMemFreeFn(geom->blendgeom->blend_offsets, "..\\nu2crash.ps2\\nu3d\\nugobj.c", 0xBF);
             }
             if (geom->blendgeom->offsets) {
-                NuMemFreeFn(geom->blendgeom->offsets, nugobj_file, 0xC2);
+                NuMemFreeFn(geom->blendgeom->offsets, "..\\nu2crash.ps2\\nu3d\\nugobj.c", 0xC2);
             }
             if (geom->blendgeom->ix) {
-                NuMemFreeFn(geom->blendgeom->ix, nugobj_file, 0xC5);
+                NuMemFreeFn(geom->blendgeom->ix, "..\\nu2crash.ps2\\nu3d\\nugobj.c", 0xC5);
             }
-            NuMemFreeFn(geom->blendgeom, nugobj_file, 0xC7);
+            NuMemFreeFn(geom->blendgeom, "..\\nu2crash.ps2\\nu3d\\nugobj.c", 0xC7);
         }
         NuGeomDestroy(geom);
         geom = nextgeom;
     }
     if (faceon && faceon->dmastream) {
-        NuMemFreeFn(faceon->dmastream, nugobj_file, 0xD1);
+        NuMemFreeFn(faceon->dmastream, "..\\nu2crash.ps2\\nu3d\\nugobj.c", 0xD1);
     }
     while (faceon) {
         nextfaceon = faceon->next;
@@ -126,7 +106,7 @@ void NuGobjDestroy(struct nugobj_s *gobj) {
     } else {
         sysgobj = gobj->sysnext;
     }
-    NuMemFreeFn(gobj, nugobj_file, 0xE1);
+    NuMemFreeFn(gobj, "..\\nu2crash.ps2\\nu3d\\nugobj.c", 0xE1);
 }
 
 
@@ -141,8 +121,8 @@ void NuGobjCalcFaceOnDims(struct nugobj_s *gobj) {
     float hi;
     int i;
 
-    lo = faceon_bound_min[0];
-    hi = faceon_bound_max[0];
+    lo = 3.4028235e38f;
+    hi = -3.4028235e38f;
     gobj->r2 = 0.0f;
     gobj->min.x = lo;
     gobj->min.y = lo;
@@ -241,8 +221,8 @@ void NuGobjCalcDims(struct nugobj_s *gobj) {
         NuGobjCalcFaceOnDims(gobj);
         return;
     }
-    lo = gobj_bound_min[0];
-    hi = gobj_bound_max[0];
+    lo = 3.4028235e38f;
+    hi = -3.4028235e38f;
     gobj->min.x = lo;
     gobj->min.y = lo;
     gobj->min.z = lo;
@@ -254,7 +234,8 @@ void NuGobjCalcDims(struct nugobj_s *gobj) {
         stride = NuVtxStride(geom->vtxtype);
         vtx = geom->vtxptr;
         if (!vtx) {
-            NuErrorProlog(nugobj_file, 0x180)(err_no_vtxptr);
+            NuErrorProlog("..\\nu2crash.ps2\\nu3d\\nugobj.c", 0x180)(
+                "NuGobjCalcDims : Lock VB failed!");
         }
         end = vtx + stride * geom->vtxcnt;
         for (; vtx < end; vtx += stride) {
@@ -292,7 +273,8 @@ void NuGobjCalcDims(struct nugobj_s *gobj) {
         stride = NuVtxStride(geom->vtxtype);
         vtx = geom->vtxptr;
         if (!vtx) {
-            NuErrorProlog(nugobj_file, 0x19B)(err_no_vtxptr);
+            NuErrorProlog("..\\nu2crash.ps2\\nu3d\\nugobj.c", 0x19B)(
+                "NuGobjCalcDims : Lock VB failed!");
         }
         end = vtx + stride * geom->vtxcnt;
         for (; vtx < end; vtx += stride) {
@@ -307,25 +289,28 @@ void NuGobjCalcDims(struct nugobj_s *gobj) {
 }
 
 
+static int geomid = 0;
+
+
 void NuPrimCalcPlanes(struct nuprim_s *prim, struct nugeom_s *geom) {
     struct nuvtx_tc1_s *vtx;
     int i;
     int n;
 
     if (prim->pln) {
-        NuErrorProlog(nugobj_file, 0x25F)(err_planes_exist);
+        NuErrorProlog("..\\nu2crash.ps2\\nu3d\\nugobj.c", 0x25F)("assert");
     }
     n = 0;
     vtx = geom->vtxptr;
     switch (prim->type) {
     case 2:
-        prim->pln = NuMemAllocFn(sizeof(struct nuplane_s) * geom->vtxcnt / 3, nugobj_file, 0x266);
+        prim->pln = NuMemAllocFn(sizeof(struct nuplane_s) * geom->vtxcnt / 3, "..\\nu2crash.ps2\\nu3d\\nugobj.c", 0x266);
         for (i = 0; i < prim->cnt; i += 3) {
             NuPlnEqn(&prim->pln[n++], &vtx[i].pnt, &vtx[i + 1].pnt, &vtx[i + 2].pnt);
         }
         break;
     case 3:
-        prim->pln = NuMemAllocFn(sizeof(struct nuplane_s) * geom->vtxcnt - 2, nugobj_file, 0x26D);
+        prim->pln = NuMemAllocFn(sizeof(struct nuplane_s) * geom->vtxcnt - 2, "..\\nu2crash.ps2\\nu3d\\nugobj.c", 0x26D);
         for (i = 0; i < prim->cnt - 2; i++) {
             if (i & 1) {
                 NuPlnEqn(&prim->pln[n++], &vtx[i].pnt, &vtx[i + 2].pnt, &vtx[i + 1].pnt);
@@ -335,14 +320,14 @@ void NuPrimCalcPlanes(struct nuprim_s *prim, struct nugeom_s *geom) {
         }
         break;
     case 5:
-        prim->pln = NuMemAllocFn(sizeof(struct nuplane_s) * prim->cnt / 3, nugobj_file, 0x279);
+        prim->pln = NuMemAllocFn(sizeof(struct nuplane_s) * prim->cnt / 3, "..\\nu2crash.ps2\\nu3d\\nugobj.c", 0x279);
         for (i = 0; i < prim->cnt; i += 3) {
             NuPlnEqn(&prim->pln[n++], &vtx[prim->vid[i]].pnt, &vtx[prim->vid[i + 1]].pnt,
                      &vtx[prim->vid[i + 2]].pnt);
         }
         break;
     case 6:
-        prim->pln = NuMemAllocFn(sizeof(struct nuplane_s) * prim->cnt - 2, nugobj_file, 0x280);
+        prim->pln = NuMemAllocFn(sizeof(struct nuplane_s) * prim->cnt - 2, "..\\nu2crash.ps2\\nu3d\\nugobj.c", 0x280);
         for (i = 0; i < prim->cnt - 2; i++) {
             if (i & 1) {
                 NuPlnEqn(&prim->pln[n++], &vtx[prim->vid[i]].pnt, &vtx[prim->vid[i + 2]].pnt,
@@ -369,7 +354,7 @@ u32 *NuCreateStarfield(int count, float radius) {
     size = (count + 41) / 42 * 0x2D8 + 0x10;
     gif.dw[0] = 0x2000400000008000LL;
     gif.dw[1] = 0x51;
-    buf = NuMemAllocFn(size, nugobj_file, 0x2C8);
+    buf = NuMemAllocFn(size, "..\\nu2crash.ps2\\nu3d\\nugobj.c", 0x2C8);
     if (buf) {
         p = vpDmaTag_RetEx(buf, 0, 0);
         while (count > 0) {
@@ -414,7 +399,7 @@ void NuGobjInit(void) {
     }
     sysinit = 1;
     sysgobj = 0;
-    sysgobjcount = 0;
+    hasHWTnL = 0;
 }
 
 
@@ -434,7 +419,7 @@ void NuGobjClose(void) {
 struct nugobj_s *NuGobjCreate(void) {
     struct nugobj_s *gobj;
 
-    gobj = NuMemAllocFn(sizeof(struct nugobj_s), nugobj_file, 0x99);
+    gobj = NuMemAllocFn(sizeof(struct nugobj_s), "..\\nu2crash.ps2\\nu3d\\nugobj.c", 0x99);
     memset(gobj, 0, sizeof(struct nugobj_s));
     gobj->sysnext = sysgobj;
     if (sysgobj) {
@@ -503,9 +488,9 @@ int NuGobjApplyCrossFade(struct nugobj_s *gobj, short fade) {
 struct nugeom_s *NuGeomCreate(void) {
     struct nugeom_s *geom;
 
-    geom = NuMemAllocFn(sizeof(struct nugeom_s), nugobj_file, 0x1B9);
+    geom = NuMemAllocFn(sizeof(struct nugeom_s), "..\\nu2crash.ps2\\nu3d\\nugobj.c", 0x1B9);
     memset(geom, 0, sizeof(struct nugeom_s));
-    geom->id = sysgeomid++;
+    geom->id = geomid++;
     return geom;
 }
 
@@ -517,7 +502,7 @@ void NuGeomDestroy(struct nugeom_s *geom) {
 
     prim = geom->prim;
     if (geom->vtxptr) {
-        NuMemFreeFn(geom->vtxptr, nugobj_file, 0x1C8);
+        NuMemFreeFn(geom->vtxptr, "..\\nu2crash.ps2\\nu3d\\nugobj.c", 0x1C8);
     }
     while (prim) {
         nextprim = prim->next;
@@ -527,18 +512,18 @@ void NuGeomDestroy(struct nugeom_s *geom) {
     while (geom->skins) {
         nextskin = geom->skins->next;
         if (geom->skins->mtxid) {
-            NuMemFreeFn(geom->skins->mtxid, nugobj_file, 0x1D4);
+            NuMemFreeFn(geom->skins->mtxid, "..\\nu2crash.ps2\\nu3d\\nugobj.c", 0x1D4);
         }
         if (geom->skins->weights) {
-            NuMemFreeFn(geom->skins->weights, nugobj_file, 0x1D6);
+            NuMemFreeFn(geom->skins->weights, "..\\nu2crash.ps2\\nu3d\\nugobj.c", 0x1D6);
         }
-        NuMemFreeFn(geom->skins, nugobj_file, 0x1D7);
+        NuMemFreeFn(geom->skins, "..\\nu2crash.ps2\\nu3d\\nugobj.c", 0x1D7);
         geom->skins = nextskin;
     }
     if (geom->vtxskininfo) {
-        NuMemFreeFn(geom->vtxskininfo, nugobj_file, 0x1DC);
+        NuMemFreeFn(geom->vtxskininfo, "..\\nu2crash.ps2\\nu3d\\nugobj.c", 0x1DC);
     }
-    NuMemFreeFn(geom, nugobj_file, 0x1DF);
+    NuMemFreeFn(geom, "..\\nu2crash.ps2\\nu3d\\nugobj.c", 0x1DF);
 }
 
 
@@ -546,7 +531,7 @@ struct nufaceongeom_s *NuFaceOnGeomCreate(void) {
     struct nufaceongeom_s *geom;
 
     /* Retail allocates a nugeom_s here (GC does the same). */
-    geom = NuMemAllocFn(sizeof(struct nugeom_s), nugobj_file, 0x1E8);
+    geom = NuMemAllocFn(sizeof(struct nugeom_s), "..\\nu2crash.ps2\\nu3d\\nugobj.c", 0x1E8);
     memset(geom, 0, sizeof(struct nugeom_s));
     return geom;
 }
@@ -554,9 +539,9 @@ struct nufaceongeom_s *NuFaceOnGeomCreate(void) {
 
 void NuFaceOnGeomDestroy(struct nufaceongeom_s *geom) {
     if (geom->faceons) {
-        NuMemFreeFn(geom->faceons, nugobj_file, 0x1F3);
+        NuMemFreeFn(geom->faceons, "..\\nu2crash.ps2\\nu3d\\nugobj.c", 0x1F3);
     }
-    NuMemFreeFn(geom, nugobj_file, 0x1F6);
+    NuMemFreeFn(geom, "..\\nu2crash.ps2\\nu3d\\nugobj.c", 0x1F6);
 }
 
 
@@ -604,15 +589,15 @@ void NuGeomAddSkin(struct nugeom_s *geom, struct nuskin_s *skin) {
 struct nuprim_s *NuPrimCreate(int amount, unsigned int type) {
     struct nuprim_s *prim;
 
-    prim = NuMemAllocFn(sizeof(struct nuprim_s), nugobj_file, 0x239);
+    prim = NuMemAllocFn(sizeof(struct nuprim_s), "..\\nu2crash.ps2\\nu3d\\nugobj.c", 0x239);
     memset(prim, 0, sizeof(struct nuprim_s));
     prim->type = type;
     prim->cnt = amount;
     prim->max = amount;
     if (type == 7) {
-        prim->vid = NuMemAllocFn(amount * 2, nugobj_file, 0x243);
+        prim->vid = NuMemAllocFn(amount * 2, "..\\nu2crash.ps2\\nu3d\\nugobj.c", 0x243);
     } else if (type >= 3) {
-        prim->vid = NuMemAllocFn(amount * 2, nugobj_file, 0x247);
+        prim->vid = NuMemAllocFn(amount * 2, "..\\nu2crash.ps2\\nu3d\\nugobj.c", 0x247);
     }
     return prim;
 }
@@ -621,12 +606,12 @@ struct nuprim_s *NuPrimCreate(int amount, unsigned int type) {
 void NuPrimDestroy(struct nuprim_s *prim) {
     if (prim) {
         if (prim->vid) {
-            NuMemFreeFn(prim->vid, nugobj_file, 0x252);
+            NuMemFreeFn(prim->vid, "..\\nu2crash.ps2\\nu3d\\nugobj.c", 0x252);
         }
         if (prim->pln) {
-            NuMemFreeFn(prim->pln, nugobj_file, 0x253);
+            NuMemFreeFn(prim->pln, "..\\nu2crash.ps2\\nu3d\\nugobj.c", 0x253);
         }
-        NuMemFreeFn(prim, nugobj_file, 0x254);
+        NuMemFreeFn(prim, "..\\nu2crash.ps2\\nu3d\\nugobj.c", 0x254);
     }
 }
 

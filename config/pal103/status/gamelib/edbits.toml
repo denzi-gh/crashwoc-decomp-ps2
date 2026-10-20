@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0074"
 source = "src/gamelib/edbits.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0074:001a6b68:edbitsSoundPlay"
@@ -69,32 +69,37 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0074:0062f728:edqseed"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0074:0062f72c:edbitsSfxVol"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0074:0062f730:edbits_what_game"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0074:0062f734:edSfxGlobalTab"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0074:0062f738:edSfxLevelTab"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0074:0062f73c:edSfxAllCount"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0074:0062f740:edSfxGlobalCount"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0074:0062f744:edbits_base_scene"
-state = "asm"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x00619a70
+end = 0x00619aa0

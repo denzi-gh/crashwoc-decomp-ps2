@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0067"
 source = "src/nups2/clipping.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0067:0016efb0:AddClipPoint"
@@ -89,12 +89,12 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0067:0062f1e0:npnts"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0067:0062f1e8:inbuffer"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0067:0062f1ec:clipflags"
-state = "asm"
+state = "matching"

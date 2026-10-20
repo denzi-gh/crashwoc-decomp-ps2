@@ -20,9 +20,8 @@
 
 #include "nups2/ps2ctl.h"
 
-extern struct nupadrec_s *PadRecInfo;
-extern s32 PadDemoEnd;
-extern char D_00617880[];
+struct nupadrec_s *PadRecInfo = 0;
+s32 PadDemoEnd = 0;
 
 extern void *NuMemAllocFn(s32 size, char *file, s32 line);
 extern void NuMemFreeFn(void *ptr, char *file, s32 line);
@@ -44,7 +43,6 @@ extern s32 scePadSetActAlign(s32 port, s32 slot, u8 *data);
 extern s32 scePadInfoPressMode(s32 port, s32 slot);
 extern s32 scePadEnterPressMode(s32 port, s32 slot);
 
-#define ps2ctl_srcfile D_00617880
 
 
 inline s32 DeadZoneValue(s32 value) {
@@ -293,7 +291,7 @@ s32 NuPs2ReadPad(struct nupad_s *pad) {
 
 void NuPs2ClosePad(struct nupad_s *pad) {
     scePadPortClose(pad->port, pad->slot);
-    NuMemFreeFn(pad, ps2ctl_srcfile, 0x84);
+    NuMemFreeFn(pad, "..\\nu2crash.ps2\\nups2\\ps2ctl.c", 0x84);
 }
 
 
@@ -302,7 +300,7 @@ struct nupad_s *NuPs2OpenPad(s32 port, s32 slot) {
     s32 i;
 
     NuPs2InitIOP();
-    pad = NuMemAllocFn(sizeof(struct nupad_s), ps2ctl_srcfile, 0x9A);
+    pad = NuMemAllocFn(sizeof(struct nupad_s), "..\\nu2crash.ps2\\nups2\\ps2ctl.c", 0x9A);
     if (pad) {
         memset(pad, 0, sizeof(struct nupad_s));
         pad->port = port;
@@ -324,7 +322,7 @@ struct nupad_s *NuPs2OpenPad(s32 port, s32 slot) {
         pad->actalign[1] = 1;
         if (!scePadPortOpen(pad->port, pad->slot,
                             (void *)(((u32)pad->dmabuf + 0x3F) & 0xFFFFFFC0))) {
-            NuMemFreeFn(pad, ps2ctl_srcfile, 0xB8);
+            NuMemFreeFn(pad, "..\\nu2crash.ps2\\nups2\\ps2ctl.c", 0xB8);
             pad = 0;
         }
     }

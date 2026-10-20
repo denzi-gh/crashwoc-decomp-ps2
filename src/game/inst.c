@@ -40,13 +40,9 @@ struct shadinst_s {
     int inst_cnt;
 };
 
-extern struct nulsthdr_s *D_006309fc;
-extern struct nulsthdr_s *D_00630a00;
-extern struct nulsthdr_s *D_00630a04;
-
-#define sceneinst_pool D_006309fc
-#define animdatainst_pool D_00630a00
-#define shaddatainst_pool D_00630a04
+static struct nulsthdr_s *sceneinst_pool = 0;
+static struct nulsthdr_s *animdatainst_pool = 0;
+static struct nulsthdr_s *shaddatainst_pool = 0;
 
 extern union variptr_u superbuffer_ptr;
 extern union variptr_u superbuffer_end;

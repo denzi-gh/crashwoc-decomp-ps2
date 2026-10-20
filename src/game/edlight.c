@@ -49,10 +49,6 @@
 
 extern s32 edlight_used;
 extern s32 screendump;
-extern struct eduimenu_s *edlight_options_menu;
-extern struct eduimenu_s *edlight_double_menu;
-extern struct eduimenu_s *edlight_glb_menu;
-extern struct eduistyle_s D_00625170;
 extern void *app_fnt;
 
 extern struct ldata_s *LDATA;
@@ -67,7 +63,6 @@ extern s32 AMBIENTCOUNT;
 extern s32 DIRECTCOUNT;
 extern s32 POINTCOUNT;
 extern s32 NEGATIVECOUNT;
-extern s32 D_0063268C;
 extern f32 default_radius;
 extern f32 topx, topy, topz;
 extern f32 bottomx, bottomy, bottomz;
@@ -79,7 +74,9 @@ extern f32 westx, westy, westz;
 extern struct lights_s Lights[];
 extern struct nuvec_s v000;
 extern struct numtl_s *mtl;
-extern void *edlight_active_menu;
+extern struct nuvec_s edlight_cam_pos;
+extern struct nuvec_s edlight_old_cam_pos;
+extern struct nuvec_s last_radius;
 
 extern s32 D_00633364;
 extern s32 D_00633368;
@@ -88,92 +85,14 @@ extern s32 D_00633370;
 extern s32 D_00633374;
 extern s32 D_00633378;
 extern s32 D_0063337C;
-extern s32 edlight_glb_dir_light;
-extern s32 edlight_glb_amb_light;
-extern s32 glb_dir_error_flag;
-extern s32 glb_amb_error_flag;
-extern struct eduiitem_s *edlight_r_slider;
-extern struct eduiitem_s *edlight_g_slider;
-extern struct eduiitem_s *edlight_b_slider;
 
-#define edlight_default_type D_0063268C
-#define edlight_menu_style D_00625170
-#define edlight_str_options D_006326E8
-#define edlight_str_save D_006251A8
-#define edlight_str_red D_006326F0
-#define edlight_str_green D_006326F8
-#define edlight_str_blue D_00632700
-#define edlight_str_glbmenu D_006251B8
-#define edlight_str_powermenu D_006251C8
-#define edlight_str_brightness D_00625180
-#define edlight_str_double D_006326C8
-#define edlight_str_single D_006326D0
-#define edlight_str_glblocal D_00625190
-#define edlight_str_global D_006326D8
-#define edlight_str_local D_006326E0
 #define edlight_cam_ax D_00633364
 #define edlight_cam_ay D_00633368
-#define edlight_neg_r D_00632693
-#define edlight_neg_g D_00632694[0]
-#define edlight_neg_b D_00632694[1]
 #define edlight_cur_light D_00633374
 #define edlight_cur_dir D_00633378
 #define edlight_last_light D_0063337C
-#define edlight_default_r D_00632690
-#define edlight_default_g D_00632691
-#define edlight_default_b D_00632692
 #define edlight_add_error D_0063336C
 #define edlight_inside_error D_00633370
-#define edlight_dir_r D_006326B8
-#define edlight_dir_g D_006326BC
-#define edlight_dir_b D_006326C0
-
-extern char D_006326B0[];
-extern s32 D_006326B8;
-extern s32 D_006326BC;
-extern s32 D_006326C0;
-extern char D_00624F30[];
-extern char D_00624F48[];
-extern char D_00624F60[];
-extern char D_00624F78[];
-extern char D_00624FA0[];
-extern char D_00624FC0[];
-extern char D_00624FD8[];
-extern char D_00624FF8[];
-extern char D_00625010[];
-extern char D_00625028[];
-extern char D_00625048[];
-extern char D_00625070[];
-extern char D_00625090[];
-extern char D_006250B0[];
-extern char D_006250C8[];
-extern char D_006250D8[];
-extern char D_006250E8[];
-extern char D_00625100[];
-extern char D_00625120[];
-extern char D_00625140[];
-extern char D_00625160[];
-extern char D_00625180[];
-extern char D_00625190[];
-extern char D_006251A8[];
-extern char D_006251B8[];
-extern char D_006251C8[];
-extern char D_006326C8[];
-extern char D_006326D0[];
-extern char D_006326D8[];
-extern char D_006326E0[];
-extern char D_006326E8[];
-extern char D_006326F0[];
-extern char D_006326F8[];
-extern char D_00632700[];
-extern f32 D_0062E688;
-extern f32 D_0062E690;
-extern u8 D_00632690;
-extern u8 D_00632691;
-extern u8 D_00632692;
-extern u8 D_00632693;
-extern u8 D_00632694[2];
-extern s32 radius_has_changed;
 
 extern void eduiMenuDetach(struct eduimenu_s *menu);
 extern struct eduimenu_s *eduiMenuCreate(s32 x, s32 y, s32 w, s32 h, void *font,
@@ -192,17 +111,28 @@ extern void edlightDoInput(struct nupad_s *pad);
 extern void edcamGetPosAng(struct nuvec_s *pos, s32 *ax, s32 *ay);
 extern void edcamSetPos(struct nuvec_s *pos);
 extern void edcamMove(struct nupad_s *pad);
+extern void cbSelGlbType(struct eduimenu_s *menu, struct eduiitem_s *sel);
+/* The functions below are inline: GCC 2.95 then emits their code at the end
+ * of the unit (in this declaration order, after edlightRender, as retail has
+ * it) but their literals where they are defined, which is where retail keeps
+ * them. */
+extern void edlightHighlightDirection(void);
+extern void edlightDrawLights(void);
 extern void edlightcb_r_sliderval(void *menu, struct eduiitem_s *slider);
 extern void edlightcb_g_sliderval(void *menu, struct eduiitem_s *slider);
 extern void edlightcb_b_sliderval(void *menu, struct eduiitem_s *slider);
 extern void edlightcbSaveLightData(void *menu);
 extern void edlightCbCancelOptMenu(void);
-extern void cbSelGlbType(struct eduimenu_s *menu, struct eduiitem_s *sel);
-extern void cbSelDoubleType(struct eduimenu_s *menu, struct eduiitem_s *sel);
-extern void cbCancelDoubleMenu(void);
-extern void cbCancelGlbMenu(void);
-extern void cbGlbMenu(struct eduimenu_s *menu, struct eduiitem_s *sel);
-extern void cbDoubleMenu(struct eduimenu_s *menu, struct eduiitem_s *sel);
+extern void edlightClose(void);
+extern void edlightEnter(void);
+extern void edlightMakeNUCOLOUR3(s32 r, s32 g, s32 b, struct nucolour3_s *col);
+extern void edlightWarning(char *text);
+extern void edlightDrawLightBlock(void);
+static void cbDoubleMenu(struct eduimenu_s *menu, struct eduiitem_s *sel);
+static void cbGlbMenu(struct eduimenu_s *menu, struct eduiitem_s *sel);
+static void cbSelDoubleType(struct eduimenu_s *menu, struct eduiitem_s *sel);
+static void cbCancelDoubleMenu(void);
+static void cbCancelGlbMenu(void);
 
 extern void eduiMenuDestroy(struct eduimenu_s *menu);
 extern void SaveLights(void);
@@ -231,18 +161,28 @@ extern void ResetWumpa(void);
 extern void ResetAI(void);
 
 void edlightInit(void);
-void edlightClose(void);
-void edlightEnter(void);
 s32 edlightProc(struct nupad_s *pad);
 void edlightRender(void);
 
-struct edmainreg_s edlightdesc = {
-    0, 0, "Light Editor", edlightInit, edlightClose, edlightEnter, {0}, 0,
-    EDMAIN_BLOCKID('l', 'g', 'h', 't'), edlightProc, edlightRender
-};
-struct nuvec_s edlight_cam_pos = { 0.0f, 0.0f, 0.0f };
-struct nuvec_s edlight_old_cam_pos = { 0.0f, 0.0f, 0.0f };
-struct nuvec_s last_radius = { 0.0f, 0.0f, 0.0f };
+void *edlight_active_menu = 0;
+struct eduimenu_s *edlight_options_menu = 0;
+struct eduimenu_s *edlight_double_menu = 0;
+struct eduimenu_s *edlight_glb_menu = 0;
+struct eduiitem_s *edlight_r_slider = 0;
+struct eduiitem_s *edlight_g_slider = 0;
+struct eduiitem_s *edlight_b_slider = 0;
+static s32 edlight_type = 0;
+static u8 Gr = 0xFF;
+static u8 Gg = 0xFF;
+static u8 Gb = 0xFF;
+static u8 Lr = 0xFF;
+static u8 Lg = 0xFF;
+static u8 Lb = 0xFF;
+s32 edlight_glb_amb_light = -1;
+s32 edlight_glb_dir_light = -1;
+s32 glb_amb_error_flag = -1;
+s32 glb_dir_error_flag = -1;
+s32 radius_has_changed = 0;
 
 inline void edlightMakeNUCOLOUR3(s32 r, s32 g, s32 b, struct nucolour3_s *col)
 {
@@ -279,7 +219,7 @@ s32 InsideLight(struct nuvec_s *pos, s32 idx)
                 }
             }
         }
-    } else if (edlight_default_type == 0) {
+    } else if (edlight_type == 0) {
         for (i = 0; i < LIGHTCOUNT; i++) {
             if (Lights[i].globalflag != 4 && Lights[i].type == 0) {
                 if ((f32)fabs(NuVecDist(&Lights[i].pos, pos, 0)) <
@@ -287,7 +227,7 @@ s32 InsideLight(struct nuvec_s *pos, s32 idx)
                     inside = 1;
             }
         }
-    } else if (edlight_default_type == 3) {
+    } else if (edlight_type == 3) {
         for (i = 0; i < LIGHTCOUNT; i++) {
             if (Lights[i].globalflag != 4 && Lights[i].type == 3) {
                 if ((f32)fabs(NuVecDist(&Lights[i].pos, pos, 0)) <
@@ -307,59 +247,59 @@ void edlightDrawInfo(void)
     NuFntSetPen(-1);
     strcpy(tbuf, LDATA->path);
     strupr(tbuf);
-    NuFntPrintEx(0x400, 0x100, 0, D_006326B0, tbuf);
-    NuFntPrintEx(0x400, 0x200, 0, D_00624F30, LIGHTCOUNT, 0x100);
+    NuFntPrintEx(0x400, 0x100, 0, "%s.LGT", tbuf);
+    NuFntPrintEx(0x400, 0x200, 0, "LIGHTCOUNT:   %i/%i", LIGHTCOUNT, 0x100);
     if (edlight_cur_light != -1)
-        NuFntPrintEx(0x400, 0x300, 0, D_00624F48, edlight_cur_light);
+        NuFntPrintEx(0x400, 0x300, 0, "CURRENT LIGHT: %i", edlight_cur_light);
     else
-        NuFntPrintEx(0x400, 0x300, 0, D_00624F60);
-    NuFntPrintEx(0x400, 0xD00, 0, D_00624F78, edlight_cam_pos.x, edlight_cam_pos.y,
-                 edlight_cam_pos.z);
+        NuFntPrintEx(0x400, 0x300, 0, "NO CURRENT LIGHT");
+    NuFntPrintEx(0x400, 0xD00, 0, "CURSOR:   X: %.2f   Y: %.2f   Z: %.2f", edlight_cam_pos.x,
+                 edlight_cam_pos.y, edlight_cam_pos.z);
     if (edlight_cur_light == -1)
-        NuFntPrintEx(0x400, 0x400, 0, D_00624FA0, 0, 0, 0);
+        NuFntPrintEx(0x400, 0x400, 0, "R:   %i   G:   %i    B:    %i", 0, 0, 0);
     else
-        NuFntPrintEx(0x400, 0x400, 0, D_00624FA0, Lights[edlight_cur_light].r,
+        NuFntPrintEx(0x400, 0x400, 0, "R:   %i   G:   %i    B:    %i", Lights[edlight_cur_light].r,
                      Lights[edlight_cur_light].g, Lights[edlight_cur_light].b);
     if (edlight_cur_light == -1) {
-        if (edlight_default_type == 0)
-            NuFntPrintEx(0x400, 0x500, 0, D_00624FC0);
-        else if (edlight_default_type == 1)
-            NuFntPrintEx(0x400, 0x500, 0, D_00624FD8);
-        else if (edlight_default_type == 2)
-            NuFntPrintEx(0x400, 0x500, 0, D_00624FF8);
-        else if (edlight_default_type == 3)
-            NuFntPrintEx(0x400, 0x500, 0, D_00625010);
+        if (edlight_type == 0)
+            NuFntPrintEx(0x400, 0x500, 0, "DEFAULT TYPE: AMBIENT");
+        else if (edlight_type == 1)
+            NuFntPrintEx(0x400, 0x500, 0, "DEFAULT TYPE: DIRECTIONAL");
+        else if (edlight_type == 2)
+            NuFntPrintEx(0x400, 0x500, 0, "DEFAULT TYPE: POINT");
+        else if (edlight_type == 3)
+            NuFntPrintEx(0x400, 0x500, 0, "DEFAULT TYPE: NEGATIVE");
         return;
     }
     if (Lights[edlight_cur_light].type == 0)
-        NuFntPrintEx(0x400, 0x500, 0, D_00625028);
+        NuFntPrintEx(0x400, 0x500, 0, "SELECTED LIGHT TYPE: AMBIENT");
     else if (Lights[edlight_cur_light].type == 1)
-        NuFntPrintEx(0x400, 0x500, 0, D_00625048);
+        NuFntPrintEx(0x400, 0x500, 0, "SELECTED LIGHT TYPE: DIRECTIONAL");
     else if (Lights[edlight_cur_light].type == 2)
-        NuFntPrintEx(0x400, 0x500, 0, D_00625070);
+        NuFntPrintEx(0x400, 0x500, 0, "SELECTED LIGHT TYPE: POINT");
     else if (Lights[edlight_cur_light].type == 3)
-        NuFntPrintEx(0x400, 0x500, 0, D_00625090);
-    NuFntPrintEx(0x400, 0x600, 0, D_006250B0, Lights[edlight_cur_light].radius);
+        NuFntPrintEx(0x400, 0x500, 0, "SELECTED LIGHT TYPE: NEGATIVE");
+    NuFntPrintEx(0x400, 0x600, 0, "CURRENT RADIUS: %.2f", Lights[edlight_cur_light].radius);
     if (Lights[edlight_cur_light].globalflag == 4)
-        NuFntPrintEx(0x400, 0x700, 0, D_006250C8);
+        NuFntPrintEx(0x400, 0x700, 0, "LIGHT IS GLOBAL");
     else
-        NuFntPrintEx(0x400, 0x700, 0, D_006250D8);
+        NuFntPrintEx(0x400, 0x700, 0, "LIGHT IS LOCAL");
     if (edlight_glb_amb_light != -1 && glb_amb_error_flag &&
         edlight_cur_light != edlight_glb_amb_light && Lights[edlight_cur_light].type == 0) {
         NuFntSetPen(0xFF0000FF);
-        NuFntPrintEx(0x400, 0x900, 0, D_006250E8);
+        NuFntPrintEx(0x400, 0x900, 0, "GLOBAL AMBIENT EXISTS");
     }
     if (edlight_glb_dir_light != -1 && glb_dir_error_flag &&
         edlight_cur_light != edlight_glb_dir_light &&
         (Lights[edlight_cur_light].type == 1 || Lights[edlight_cur_light].type == 2)) {
         NuFntSetPen(0xFF0000FF);
-        NuFntPrintEx(0x400, 0x900, 0, D_00625100);
+        NuFntPrintEx(0x400, 0x900, 0, "GLOBAL DIRECTIONAL/POINT EXISTS");
     }
     NuFntSetPen(-1);
     if (Lights[edlight_cur_light].brightness == 6 && Lights[edlight_cur_light].type != 3)
-        NuFntPrintEx(0x400, 0x800, 0, D_00625120);
+        NuFntPrintEx(0x400, 0x800, 0, "LIGHT IS DOUBLE BRIGHTNESS");
     else if (Lights[edlight_cur_light].brightness == 7 && Lights[edlight_cur_light].type != 3)
-        NuFntPrintEx(0x400, 0x800, 0, D_00625140);
+        NuFntPrintEx(0x400, 0x800, 0, "LIGHT IS SINGLE BRIGHTNESS");
 }
 
 void edlightDrawLightAxis(struct lights_s *l)
@@ -422,9 +362,9 @@ void edlightHighlight(void)
     }
     if (edlight_cur_light != -1 && LIGHTCOUNT > 0) {
         edlight_last_light = edlight_cur_light;
-        edlight_default_r = Lights[edlight_cur_light].r;
-        edlight_default_g = Lights[edlight_cur_light].g;
-        edlight_default_b = Lights[edlight_cur_light].b;
+        Gr = Lights[edlight_cur_light].r;
+        Gg = Lights[edlight_cur_light].g;
+        Gb = Lights[edlight_cur_light].b;
     }
 }
 
@@ -545,17 +485,19 @@ void edlightDrawSelection(void)
 
 void edlightDrawDirection(void)
 {
+    static s32 r = 0;
+    static s32 g = 0;
+    static s32 b = 0;
     s32 i;
 
     for (i = 0; i < LIGHTCOUNT; i++) {
         struct nuvec_s pos = Lights[i].pos;
         struct nuvec_s wpos = Lights[i].radius_pos;
 
-        edlight_dir_r = Lights[i].r;
-        edlight_dir_g = Lights[i].g;
-        edlight_dir_b = Lights[i].b;
-        NuRndrLine3dDbg(((edlight_dir_b & 0xFF) << 16) | ((edlight_dir_g & 0xFF) << 8) |
-                            (edlight_dir_r & 0xFF),
+        r = Lights[i].r;
+        g = Lights[i].g;
+        b = Lights[i].b;
+        NuRndrLine3dDbg(((b & 0xFF) << 16) | ((g & 0xFF) << 8) | (r & 0xFF),
                         pos.x, pos.y, pos.z, wpos.x, wpos.y, wpos.z);
         if (Lights[i].type == 2 || Lights[i].type == 0 || Lights[i].type == 3) {
             f32 radius = fabs(NuVecDist(&pos, &wpos, 0));
@@ -603,21 +545,21 @@ void edlightDrawRadius(struct nuvec_s *pos, u8 r, u8 g, u8 b, f32 radius)
 
 void edlightAdd(void)
 {
-    if (edlight_default_type == 0)
+    if (edlight_type == 0)
         AMBIENTCOUNT++;
-    else if (edlight_default_type == 1)
+    else if (edlight_type == 1)
         DIRECTCOUNT++;
-    else if (edlight_default_type == 2)
+    else if (edlight_type == 2)
         POINTCOUNT++;
-    else if (edlight_default_type == 3)
+    else if (edlight_type == 3)
         NEGATIVECOUNT++;
-    Lights[LIGHTCOUNT].type = edlight_default_type;
+    Lights[LIGHTCOUNT].type = edlight_type;
     Lights[LIGHTCOUNT].pos = edlight_cam_pos;
     Lights[LIGHTCOUNT].radius_pos = edlight_cam_pos;
     Lights[LIGHTCOUNT].radius = 0.0f;
-    Lights[LIGHTCOUNT].r = edlight_default_r;
-    Lights[LIGHTCOUNT].g = edlight_default_g;
-    Lights[LIGHTCOUNT].b = edlight_default_b;
+    Lights[LIGHTCOUNT].r = Gr;
+    Lights[LIGHTCOUNT].g = Gg;
+    Lights[LIGHTCOUNT].b = Gb;
     Lights[LIGHTCOUNT].colour.r = 1.0f;
     Lights[LIGHTCOUNT].colour.g = 1.0f;
     Lights[LIGHTCOUNT].colour.b = 1.0f;
@@ -673,9 +615,97 @@ void edlightDelete(void)
     edlight_cur_light = -1;
 }
 
+void cbSelGlbType(struct eduimenu_s *menu, struct eduiitem_s *sel)
+{
+    s32 idx = edlight_cur_light;
+    struct eduimenu_s *arg = 0;
+    struct lights_s *l;
+    void (*fn)(struct eduimenu_s *menu, struct eduimenu_s *parent);
+
+    if (idx == -1)
+        return;
+    l = &Lights[idx];
+    if (l->type == 1 || l->type == 2) {
+        if (sel->value != l->globalflag) {
+            if (l->globalflag == 4) {
+                edlight_glb_dir_light = -1;
+                l->globalflag = 5;
+                glb_dir_error_flag = 0;
+            } else if (edlight_glb_dir_light == -1) {
+                l->globalflag = 4;
+                glb_dir_error_flag = 1;
+                edlight_glb_dir_light = idx;
+            }
+        }
+    } else if (l->type == 0) {
+        if (sel->value != l->globalflag) {
+            if (l->globalflag == 4) {
+                edlight_glb_amb_light = -1;
+                l->globalflag = 5;
+                glb_amb_error_flag = 0;
+            } else if (edlight_glb_amb_light == -1) {
+                l->globalflag = 4;
+                glb_amb_error_flag = 1;
+                edlight_glb_amb_light = idx;
+            }
+        }
+    }
+    if (menu->parent != 0) {
+        arg = menu->parent;
+        eduiMenuDetach(menu);
+    }
+    fn = menu->cancel;
+    if (fn)
+        fn(menu, arg);
+}
+
+inline void edlightcbSaveLightData(void *menu)
+{
+    SaveLights();
+    eduiCreateMessageMenu(menu, "Saved OK", 1);
+}
+
+static inline void cbDoubleMenu(struct eduimenu_s *menu, struct eduiitem_s *sel)
+{
+    struct eduistyle_s style = { { 0x80000000, 0x80FF0000 }, { 0x80808080, 0x80404040 } };
+
+    edlight_double_menu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt, cbCancelDoubleMenu,
+                                         "Brightness");
+    if (edlight_double_menu == 0)
+        return;
+    eduiMenuAddItem(edlight_double_menu,
+                    eduiItemCheckCreate(6, &style, Lights[edlight_cur_light].brightness == 6, 1,
+                                        cbSelDoubleType, "Double"));
+    eduiMenuAddItem(edlight_double_menu,
+                    eduiItemCheckCreate(7, &style, Lights[edlight_cur_light].brightness == 7, 1,
+                                        cbSelDoubleType, "Single"));
+    eduiMenuAttach(menu, edlight_double_menu);
+    edlight_double_menu->x = menu->x + 10;
+    edlight_double_menu->y = menu->y + 40;
+}
+
+static inline void cbGlbMenu(struct eduimenu_s *menu, struct eduiitem_s *sel)
+{
+    struct eduistyle_s style = { { 0x80000000, 0x80FF0000 }, { 0x80808080, 0x80404040 } };
+
+    edlight_glb_menu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt, cbCancelGlbMenu,
+                                      "Global/Local Light");
+    if (edlight_glb_menu == 0)
+        return;
+    eduiMenuAddItem(edlight_glb_menu,
+                    eduiItemCheckCreate(4, &style, Lights[edlight_cur_light].globalflag == 4, 1,
+                                        cbSelGlbType, "Global"));
+    eduiMenuAddItem(edlight_glb_menu,
+                    eduiItemCheckCreate(5, &style, Lights[edlight_cur_light].globalflag == 5, 1,
+                                        cbSelGlbType, "Local"));
+    eduiMenuAttach(menu, edlight_glb_menu);
+    edlight_glb_menu->x = menu->x + 10;
+    edlight_glb_menu->y = menu->y + 40;
+}
+
 void edlightInit(void)
 {
-    struct eduistyle_s style = edlight_menu_style;
+    struct eduistyle_s style = { { 0x80000000, 0x80FF0000 }, { 0x80808080, 0x80404040 } };
     f32 r;
     f32 g;
     f32 b;
@@ -700,39 +730,39 @@ void edlightInit(void)
         g = Lights[edlight_cur_light].g;
         b = Lights[edlight_cur_light].b;
     } else {
-        r = edlight_default_r;
-        g = edlight_default_g;
-        b = edlight_default_b;
+        r = Gr;
+        g = Gg;
+        b = Gb;
     }
     edlight_options_menu = eduiMenuCreate(0x46, 0x46, 0xB4, 0x12C, app_fnt,
-                                          edlightCbCancelOptMenu, edlight_str_options);
+                                          edlightCbCancelOptMenu, "Options");
     if (edlight_options_menu) {
         eduiMenuAddItem(edlight_options_menu,
                         eduiItemSelCreate(1, &style, 0, 0, edlightcbSaveLightData,
-                                          edlight_str_save));
+                                          "Save Light Data"));
         if (edlight_cur_light != -1) {
             eduiMenuAddItem(edlight_options_menu,
                             eduiItemColourSliderCreate(0, &style, 0, edlightcb_r_sliderval,
                                                        0.0f, 255.0f, r, 0xFF, 0, 0,
-                                                       edlight_str_red));
+                                                       "Red"));
             eduiMenuAddItem(edlight_options_menu,
                             eduiItemColourSliderCreate(0, &style, 0, edlightcb_g_sliderval,
                                                        0.0f, 255.0f, g, 0, 0xFF, 0,
-                                                       edlight_str_green));
+                                                       "Green"));
             eduiMenuAddItem(edlight_options_menu,
                             eduiItemColourSliderCreate(0, &style, 0, edlightcb_b_sliderval,
                                                        0.0f, 255.0f, b, 0, 0, 0xFF,
-                                                       edlight_str_blue));
+                                                       "Blue"));
             eduiMenuAddItem(edlight_options_menu,
-                            eduiItemSelCreate(1, &style, 0, 0, cbGlbMenu, edlight_str_glbmenu));
+                            eduiItemSelCreate(1, &style, 0, 0, cbGlbMenu, "Global Options"));
             eduiMenuAddItem(edlight_options_menu,
-                            eduiItemSelCreate(1, &style, 0, 0, cbDoubleMenu, edlight_str_powermenu));
+                            eduiItemSelCreate(1, &style, 0, 0, cbDoubleMenu, "Light Power"));
         }
     }
     if (LIGHTCOUNT == 0) {
-        edlight_default_r = 0xFF;
-        edlight_default_g = 0xFF;
-        edlight_default_b = 0xFF;
+        Gr = 0xFF;
+        Gg = 0xFF;
+        Gb = 0xFF;
     }
     if (LIGHTCOUNT > 0) {
         default_radius = Lights[LIGHTCOUNT].radius;
@@ -749,6 +779,16 @@ void edlightInit(void)
         last_radius.z = 0.0f;
     }
 }
+
+s32 edlight_used = 0;
+struct numtl_s *mtl = 0;
+f32 default_radius = 0.0f;
+f32 topx = 0.0f, topy = 0.0f, topz = 0.0f;
+f32 bottomx = 0.0f, bottomy = 0.0f, bottomz = 0.0f;
+f32 northx = 0.0f, northy = 0.0f, northz = 0.0f;
+f32 eastx = 0.0f, easty = 0.0f, eastz = 0.0f;
+f32 southx = 0.0f, southy = 0.0f, southz = 0.0f;
+f32 westx = 0.0f, westy = 0.0f, westz = 0.0f;
 
 s32 edlightClosestLight(void)
 {
@@ -840,29 +880,29 @@ void edlightDoInput(struct nupad_s *pad)
         else if (edlight_cur_dir != -1)
             sel = edlight_cur_dir;
         if (sel != -1) {
-            if (edlight_default_type == 2) {
-                edlight_default_type = 0;
+            if (edlight_type == 2) {
+                edlight_type = 0;
                 Lights[sel].type = 0;
-            } else if (edlight_default_type == 0) {
-                edlight_default_type = 1;
+            } else if (edlight_type == 0) {
+                edlight_type = 1;
                 Lights[sel].type = 1;
-            } else if (edlight_default_type == 1) {
-                edlight_neg_r = Lights[sel].r;
-                edlight_neg_g = Lights[sel].g;
-                edlight_neg_b = Lights[sel].b;
+            } else if (edlight_type == 1) {
+                Lr = Lights[sel].r;
+                Lg = Lights[sel].g;
+                Lb = Lights[sel].b;
                 Lights[sel].type = 3;
                 Lights[sel].r = 0;
                 Lights[sel].g = 0;
                 Lights[sel].b = 0;
-                edlight_default_type = 3;
+                edlight_type = 3;
             }
         } else {
-            if (edlight_default_type == 2)
-                edlight_default_type = 0;
-            else if (edlight_default_type == 0)
-                edlight_default_type = 1;
-            else if (edlight_default_type == 1)
-                edlight_default_type = 3;
+            if (edlight_type == 2)
+                edlight_type = 0;
+            else if (edlight_type == 0)
+                edlight_type = 1;
+            else if (edlight_type == 1)
+                edlight_type = 3;
         }
     } else if (pad->paddata_db & 0x4000) {
         if (edlight_cur_light != -1)
@@ -870,26 +910,26 @@ void edlightDoInput(struct nupad_s *pad)
         else if (edlight_cur_dir != -1)
             sel = edlight_cur_dir;
         if (sel != -1) {
-            if (edlight_default_type == 3) {
+            if (edlight_type == 3) {
                 Lights[sel].type = 1;
-                Lights[sel].r = edlight_neg_r;
-                Lights[sel].g = edlight_neg_g;
-                Lights[sel].b = edlight_neg_b;
-                edlight_default_type = 1;
-            } else if (edlight_default_type == 1) {
-                edlight_default_type = 0;
+                Lights[sel].r = Lr;
+                Lights[sel].g = Lg;
+                Lights[sel].b = Lb;
+                edlight_type = 1;
+            } else if (edlight_type == 1) {
+                edlight_type = 0;
                 Lights[sel].type = 0;
-            } else if (edlight_default_type == 0) {
-                edlight_default_type = 2;
+            } else if (edlight_type == 0) {
+                edlight_type = 2;
                 Lights[sel].type = 2;
             }
         } else {
-            if (edlight_default_type == 3)
-                edlight_default_type = 1;
-            else if (edlight_default_type == 1)
-                edlight_default_type = 0;
-            else if (edlight_default_type == 0)
-                edlight_default_type = 2;
+            if (edlight_type == 3)
+                edlight_type = 1;
+            else if (edlight_type == 1)
+                edlight_type = 0;
+            else if (edlight_type == 0)
+                edlight_type = 2;
         }
     } else if (pad->paddata_db & 0x2000) {
         if (edlight_cur_light != -1)
@@ -903,9 +943,9 @@ void edlightDoInput(struct nupad_s *pad)
     if (pad->paddata_db & 0x80) {
         if (edlight_cur_light != -1 || LIGHTCOUNT == 0) {
             edlight_active_menu = edlight_options_menu;
-            eduiItemSliderSetVal(edlight_r_slider, edlight_default_r);
-            eduiItemSliderSetVal(edlight_g_slider, edlight_default_g);
-            eduiItemSliderSetVal(edlight_b_slider, edlight_default_b);
+            eduiItemSliderSetVal(edlight_r_slider, Gr);
+            eduiItemSliderSetVal(edlight_g_slider, Gg);
+            eduiItemSliderSetVal(edlight_b_slider, Gb);
         }
     } else if (pad->paddata & 0x20) {
         if (pad->paddata_db & 0x20) {
@@ -970,7 +1010,7 @@ void edlightDoInput(struct nupad_s *pad)
         if (edlight_cur_light == -1 && LIGHTCOUNT != 256 && !edlight_add_error &&
             !edlight_inside_error) {
             edlightAdd();
-            if (edlight_default_type == 3) {
+            if (edlight_type == 3) {
                 Lights[LIGHTCOUNT - 1].r = 0;
                 Lights[LIGHTCOUNT - 1].g = 0;
                 Lights[LIGHTCOUNT - 1].b = 0;
@@ -1060,13 +1100,10 @@ void edlightRender(void)
     edlightDrawBox();
     edlightDrawInfo();
     NuRndrRect2di(0x400, 0xB80, SWIDTH / 16 * 16, SHEIGHT / 16 * 8,
-                  (edlight_default_b << 16) | (edlight_default_g << 8) |
-                      edlight_default_r,
-                  mtl);
+                  (Gb << 16) | (Gg << 8) | Gr, mtl);
     for (i = 0; i < LIGHTCOUNT; i++) {
         edlightDrawLightAxis(&Lights[i]);
-        edlightDrawRadius(&Lights[i].pos, Lights[i].r, Lights[i].g, Lights[i].b,
-                          D_0062E688);
+        edlightDrawRadius(&Lights[i].pos, Lights[i].r, Lights[i].g, Lights[i].b, 0.05f);
     }
     if (edlight_active_menu) {
         NuFntScale(0xC, 0xC);
@@ -1074,18 +1111,17 @@ void edlightRender(void)
     }
 }
 
-void edlightDrawLights(void)
+inline void edlightDrawLights(void)
 {
     s32 i;
 
     for (i = 0; i < LIGHTCOUNT; i++) {
         edlightDrawLightAxis(&Lights[i]);
-        edlightDrawRadius(&Lights[i].pos, Lights[i].r, Lights[i].g, Lights[i].b,
-                          D_0062E690);
+        edlightDrawRadius(&Lights[i].pos, Lights[i].r, Lights[i].g, Lights[i].b, 0.05f);
     }
 }
 
-void edlightcb_r_sliderval(void *menu, struct eduiitem_s *slider)
+inline void edlightcb_r_sliderval(void *menu, struct eduiitem_s *slider)
 {
     struct lights_s *l;
     s32 idx = edlight_cur_light;
@@ -1099,14 +1135,14 @@ void edlightcb_r_sliderval(void *menu, struct eduiitem_s *slider)
     {
         s32 value = slider->u.slider.val;
 
-        edlight_default_r = value;
+        Gr = value;
         l->r = value;
     }
     if (l)
         edlightMakeNUCOLOUR3(l->r, l->g, l->b, &l->colour);
 }
 
-void edlightcb_g_sliderval(void *menu, struct eduiitem_s *slider)
+inline void edlightcb_g_sliderval(void *menu, struct eduiitem_s *slider)
 {
     struct lights_s *l;
     s32 idx = edlight_cur_light;
@@ -1120,14 +1156,14 @@ void edlightcb_g_sliderval(void *menu, struct eduiitem_s *slider)
     {
         s32 value = slider->u.slider.val;
 
-        edlight_default_g = value;
+        Gg = value;
         l->g = value;
     }
     if (l)
         edlightMakeNUCOLOUR3(l->r, l->g, l->b, &l->colour);
 }
 
-void edlightcb_b_sliderval(void *menu, struct eduiitem_s *slider)
+inline void edlightcb_b_sliderval(void *menu, struct eduiitem_s *slider)
 {
     struct lights_s *l;
     s32 idx = edlight_cur_light;
@@ -1141,30 +1177,24 @@ void edlightcb_b_sliderval(void *menu, struct eduiitem_s *slider)
     {
         s32 value = slider->u.slider.val;
 
-        edlight_default_b = value;
+        Gb = value;
         l->b = value;
     }
     if (l)
         edlightMakeNUCOLOUR3(l->r, l->g, l->b, &l->colour);
 }
 
-void edlightcbSaveLightData(void *menu)
-{
-    SaveLights();
-    eduiCreateMessageMenu(menu, D_00625160, 1);
-}
-
-void edlightCbCancelOptMenu(void)
+inline void edlightCbCancelOptMenu(void)
 {
     edlight_active_menu = 0;
 }
 
-void edlightClose(void)
+inline void edlightClose(void)
 {
     eduiMenuDestroy(edlight_options_menu);
 }
 
-void edlightEnter(void)
+inline void edlightEnter(void)
 {
     ResetTimeTrial();
     ResetCheckpoint(-1, -1, 0, 0.0f);
@@ -1187,104 +1217,20 @@ void edlightEnter(void)
     }
 }
 
-void edlightWarning(char *text)
+inline void edlightWarning(char *text)
 {
     NuFntSetPen(0xFF0000FF);
     NuFntPrintEx(1024, 256, 0, text);
     NuFntSetPen(0xFFFFFF);
 }
 
-void edlightDrawLightBlock(void)
+inline void edlightDrawLightBlock(void)
 {
     NuRndrRect2di(0x400, 0xB80, SWIDTH / 16 * 16, SHEIGHT / 16 * 8,
-                  (edlight_default_b << 16) | (edlight_default_g << 8) |
-                      edlight_default_r,
-                  mtl);
+                  (Gb << 16) | (Gg << 8) | Gr, mtl);
 }
 
-void cbSelGlbType(struct eduimenu_s *menu, struct eduiitem_s *sel)
-{
-    s32 idx = edlight_cur_light;
-    struct eduimenu_s *arg = 0;
-    struct lights_s *l;
-    void (*fn)(struct eduimenu_s *menu, struct eduimenu_s *parent);
-
-    if (idx == -1)
-        return;
-    l = &Lights[idx];
-    if (l->type == 1 || l->type == 2) {
-        if (sel->value != l->globalflag) {
-            if (l->globalflag == 4) {
-                edlight_glb_dir_light = -1;
-                l->globalflag = 5;
-                glb_dir_error_flag = 0;
-            } else if (edlight_glb_dir_light == -1) {
-                l->globalflag = 4;
-                glb_dir_error_flag = 1;
-                edlight_glb_dir_light = idx;
-            }
-        }
-    } else if (l->type == 0) {
-        if (sel->value != l->globalflag) {
-            if (l->globalflag == 4) {
-                edlight_glb_amb_light = -1;
-                l->globalflag = 5;
-                glb_amb_error_flag = 0;
-            } else if (edlight_glb_amb_light == -1) {
-                l->globalflag = 4;
-                glb_amb_error_flag = 1;
-                edlight_glb_amb_light = idx;
-            }
-        }
-    }
-    if (menu->parent != 0) {
-        arg = menu->parent;
-        eduiMenuDetach(menu);
-    }
-    fn = menu->cancel;
-    if (fn)
-        fn(menu, arg);
-}
-
-void cbDoubleMenu(struct eduimenu_s *menu, struct eduiitem_s *sel)
-{
-    struct eduistyle_s style = edlight_menu_style;
-
-    edlight_double_menu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt, cbCancelDoubleMenu,
-                                         edlight_str_brightness);
-    if (edlight_double_menu == 0)
-        return;
-    eduiMenuAddItem(edlight_double_menu,
-                    eduiItemCheckCreate(6, &style, Lights[edlight_cur_light].brightness == 6, 1,
-                                        cbSelDoubleType, edlight_str_double));
-    eduiMenuAddItem(edlight_double_menu,
-                    eduiItemCheckCreate(7, &style, Lights[edlight_cur_light].brightness == 7, 1,
-                                        cbSelDoubleType, edlight_str_single));
-    eduiMenuAttach(menu, edlight_double_menu);
-    edlight_double_menu->x = menu->x + 10;
-    edlight_double_menu->y = menu->y + 40;
-}
-
-void cbGlbMenu(struct eduimenu_s *menu, struct eduiitem_s *sel)
-{
-    struct eduistyle_s style = edlight_menu_style;
-
-    edlight_glb_menu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt, cbCancelGlbMenu,
-                                      edlight_str_glblocal);
-    if (edlight_glb_menu == 0)
-        return;
-    eduiMenuAddItem(edlight_glb_menu,
-                    eduiItemCheckCreate(4, &style, Lights[edlight_cur_light].globalflag == 4, 1,
-                                        cbSelGlbType, edlight_str_global));
-    eduiMenuAddItem(edlight_glb_menu,
-                    eduiItemCheckCreate(5, &style, Lights[edlight_cur_light].globalflag == 5, 1,
-                                        cbSelGlbType, edlight_str_local));
-    eduiMenuAttach(menu, edlight_glb_menu);
-    edlight_glb_menu->x = menu->x + 10;
-    edlight_glb_menu->y = menu->y + 40;
-}
-
-void cbSelDoubleType(struct eduimenu_s *menu, struct eduiitem_s *sel)
+static inline void cbSelDoubleType(struct eduimenu_s *menu, struct eduiitem_s *sel)
 {
     s32 idx = edlight_cur_light;
     struct eduimenu_s *arg = 0;
@@ -1304,14 +1250,22 @@ void cbSelDoubleType(struct eduimenu_s *menu, struct eduiitem_s *sel)
         fn(menu, arg);
 }
 
-void cbCancelDoubleMenu(void)
+static inline void cbCancelDoubleMenu(void)
 {
     eduiMenuDestroy(edlight_double_menu);
     edlight_double_menu = 0;
 }
 
-void cbCancelGlbMenu(void)
+static inline void cbCancelGlbMenu(void)
 {
     eduiMenuDestroy(edlight_glb_menu);
     edlight_glb_menu = 0;
 }
+
+struct edmainreg_s edlightdesc = {
+    0, 0, "Light Editor", edlightInit, edlightClose, edlightEnter, {0}, 0,
+    EDMAIN_BLOCKID('l', 'g', 'h', 't'), edlightProc, edlightRender
+};
+struct nuvec_s edlight_cam_pos = { 0.0f, 0.0f, 0.0f };
+struct nuvec_s edlight_old_cam_pos = { 0.0f, 0.0f, 0.0f };
+struct nuvec_s last_radius = { 0.0f, 0.0f, 0.0f };

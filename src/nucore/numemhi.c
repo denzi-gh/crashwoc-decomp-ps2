@@ -15,22 +15,15 @@ typedef struct NuHighBlock {
     int pad[2];
 } NuHighBlock;
 
-extern char D_00613CC8[];
-extern char D_00613CF0[];
-extern char D_00613D18[];
-extern NuHighBlock *D_0062EA28;
-#define numemhi_file D_00613CC8
-#define msg_already_initialised D_00613CF0
-#define msg_zero_request D_00613D18
-#define highfree D_0062EA28
+static NuHighBlock *freep = 0;
 
 
 void NuAllocHighInit(int base, int size)
 {
     NuHighBlock *block;
 
-    if (highfree != 0) {
-        NuErrorProlog(numemhi_file, 0x2F)(msg_already_initialised);
+    if (freep != 0) {
+        NuErrorProlog("..\\nu2crash.ps2\\nucore\\numemhi.c", 0x2F)("NuAllocHighInit : Already initialised\n");
     }
     if (base & 15) {
         size -= 15;
@@ -40,7 +33,7 @@ void NuAllocHighInit(int base, int size)
         size = (size - 15) & 15;
     }
     block = (NuHighBlock *)base;
-    highfree = block;
+    freep = block;
     block->size = size;
     block->next = block;
 }
@@ -53,10 +46,10 @@ void *NuAllocHigh(int size)
     unsigned int units;
 
     if (size <= 0) {
-        NuErrorProlog(numemhi_file, 0x4C)(msg_zero_request);
+        NuErrorProlog("..\\nu2crash.ps2\\nucore\\numemhi.c", 0x4C)("NuAllocHigh : request for 0 bytes of memory denied");
     }
     units = (unsigned int)(size + 15) / 16 + 1;
-    prev = highfree;
+    prev = freep;
     for (block = prev->next; ; prev = block, block = block->next) {
         if (block->size >= units) {
             if (block->size == units) {
@@ -66,10 +59,10 @@ void *NuAllocHigh(int size)
                 block += block->size;
                 block->size = units;
             }
-            highfree = prev;
+            freep = prev;
             return block + 1;
         }
-        if (block == highfree) {
+        if (block == freep) {
             return 0;
         }
     }
@@ -82,7 +75,7 @@ void NuFreeHigh(void *ptr)
     NuHighBlock *p;
 
     block = (NuHighBlock *)ptr - 1;
-    for (p = highfree; !(block > p && block < p->next); p = p->next) {
+    for (p = freep; !(block > p && block < p->next); p = p->next) {
         if (p >= p->next && (block > p || block < p->next)) {
             break;
         }
@@ -99,5 +92,5 @@ void NuFreeHigh(void *ptr)
     } else {
         p->next = block;
     }
-    highfree = p;
+    freep = p;
 }

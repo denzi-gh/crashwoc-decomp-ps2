@@ -74,6 +74,52 @@ struct pdebinfo_s PDebInfo[7] = {
 
 struct pdeb_s PDeb[32] = { 0 };
 
+u16 PANELCRUNCHXROT = 0xF555;
+f32 PANELCRUNCHX = 1.01f;
+f32 PANELCRUNCHY = -1.0f;
+f32 PANELCRUNCHZ = 1.25f;
+f32 PANELCRUNCHSCALE = 0.256f;
+f32 PANELSINKX = 1.0f;
+f32 PANELSINKY = -1.1f;
+f32 PANELSINKZ = 1.25f;
+f32 PANELSINKSCALE = 0.045f;
+f32 PANELBLIMPX = 1.0f;
+f32 PANELBLIMPY = -0.9f;
+f32 PANELBLIMPZ = 1.25f;
+f32 PANELBLIMPSCALE = 0.1f;
+f32 PANELCANVASX = -0.5f;
+f32 PANELCANVASY = -0.7f;
+f32 PANELCANVASZ = 1.0f;
+f32 PANELCANVASSCALE = 0.4f;
+f32 WUMPAOBJSX = -0.8f;
+f32 WUMPATXTSX = -0.7f;
+f32 CRATEOBJSX = -0.29f;
+f32 CRATETXTSX = -0.17f;
+f32 LIVESOBJSX = 0.53f;
+f32 LIVESTXTSX = 0.65f;
+f32 PANELSY = 0.8f;
+f32 BONUSWUMPAOBJSX = -0.8f;
+f32 BONUSWUMPATXTSX = -0.73f;
+f32 BONUSCRATEOBJSX = -0.13f;
+f32 BONUSCRATETXTSX = -0.05f;
+f32 BONUSLIVESOBJSX = 0.7f;
+f32 BONUSLIVESTXTSX = 0.77f;
+f32 BONUSPANELSY = -0.9f;
+u16 PANELWUMPAYROT = 0;
+u16 PANELCRATEYROT = 0;
+f32 NEWLIFEOBJSX = 0.32999998f;
+f32 NEWBONUSLIFEOBJSX = 0.575f;
+f32 LIFESCALE = 0.2f;
+f32 BONUSLIFESCALE = 0.125f;
+s32 force_panel_wumpa_update = 0;
+s32 force_panel_crate_update = 0;
+s32 force_panel_lives_update = 0;
+s32 force_panel_items_update = 0;
+f32 DIVPANEL3D = 1200.0f;
+f32 CHECKPOINT3DSCALE = 0.3f;
+f32 CHECKPOINT3DSEPERATION = 0.55f;
+f32 CHECKPOINT3DHEIGHT = 0.9f;
+
 extern struct font3dtab_s Font3DTab[];
 extern signed char Font3DRemap[];
 /* Panel counter (count +0x0, draw +0x2, frame +0x4).  The complete type must
@@ -93,15 +139,8 @@ extern s32 temp_character;
 extern struct anim_s TempAnim;
 extern struct game_s Game;
 extern char tbuf[];
-extern char D_00631F58[];
-extern char D_00631F60[];
-extern char D_00631F68[];
-#define tOUTOF_SPACED D_00631F58
-#define tOUTOF D_00631F60
-#define tINTFORMAT D_00631F68
 extern float font3d_xleft, font3d_ytop, font3d_xright, font3d_ybottom;
 extern struct wscr_s WScr[32];
-extern u16 PANELWUMPAYROT;
 extern f32 NuTrigTable[];
 extern float FONT3D_JSCALEX;
 extern struct gtimer_s GameTimer;
@@ -385,9 +424,9 @@ void BigOutOf(float x, float y, float scale, s32 value, s32 total) {
     float y1;
 
     if (Game.language == 0x63) {
-        txt = tOUTOF_SPACED;
+        txt = "/ ";
     } else {
-        txt = tOUTOF;
+        txt = "/";
     }
     Text3D(txt, x, y, 1.0f, scale + scale, scale + scale, scale + scale, 0,
            0);
@@ -395,13 +434,13 @@ void BigOutOf(float x, float y, float scale, s32 value, s32 total) {
     y0 = font3d_ytop;
     x1 = font3d_xright;
     y1 = font3d_ybottom;
-    sprintf(tbuf, tINTFORMAT, value);
+    sprintf(tbuf, "%i", value);
     if (Game.language == 0x63) {
         AddSpacesIntoText(tbuf, 1);
     }
     Text3D(tbuf, x + (x0 - x) * 0.5f, y + (y0 - y) * 0.5f, 1.0f, scale, scale,
            scale, 8, 0);
-    sprintf(tbuf, tINTFORMAT, total);
+    sprintf(tbuf, "%i", total);
     if (Game.language == 0x63) {
         AddSpacesIntoText(tbuf, 1);
     }
@@ -521,9 +560,6 @@ extern float point_delay;
 extern float CHECKWAIT;
 extern float POINTWAIT;
 extern float CPLTIME;
-extern float CHECKPOINT3DSCALE;
-extern float CHECKPOINT3DSEPERATION;
-extern float CHECKPOINT3DHEIGHT;
 extern s32 Draw3DObject(s32 object, struct nuvec_s *pos, u16 xrot, u16 yrot,
                         u16 zrot, f32 scalex, f32 scaley, f32 scalez,
                         struct nugscn_s *scn, struct nuspecial_s *obj, s32 rot);
@@ -751,7 +787,6 @@ void DrawWorldToPanelWumpa(void) {
 extern struct gtimer_s GlobalTimer;
 extern s32 SWIDTH;
 extern s32 SHEIGHT;
-extern f32 DIVPANEL3D;
 extern s32 PLAYERCOUNT;
 extern s32 PANELOFF;
 extern s32 pause_rndr_on;
@@ -785,7 +820,6 @@ extern f32 bonus_lives_wait;
 extern float bonus_panel_wait;
 extern struct nugscn_s *crate_scene;
 extern struct crateeditor_s crate_list[];
-extern u16 PANELCRATEYROT;
 extern s32 bonus_frame;
 extern s32 DESTRUCTIBLECRATECOUNT;
 extern s32 DESTRUCTIBLEBONUSCRATECOUNT;
@@ -838,64 +872,41 @@ extern char *t3RDBESTTIME[6];
 extern char *tNONEWTIME[6];
 extern char *tGO[6];
 
-extern float PAUSEPANELX;
-extern float PAUSEPANELZ;
-extern float PAUSENAMEY;
-extern float PAUSEINFOY;
-extern float PAUSEPERCENTY;
-extern float PAUSEHMUL;
-extern float PAUSEVMUL;
-extern float WUMPATXTSX;
-extern float CRATEOBJSX;
-extern float CRATETXTSX;
-extern float LIVESTXTSX;
-extern float BONUSWUMPATXTSX;
-extern float BONUSCRATEOBJSX;
-extern float BONUSCRATETXTSX;
-extern float BONUSLIVESTXTSX;
-extern float TT_MESSAGEY;
-extern float TT_TIMESDY;
 extern float TT_SCALE;
-extern float RUMBOSSBARX, RUMBOSSBARY, RUMBOSSBARZ;
-extern float RUMBOSSBARSCALEX, RUMBOSSBARSCALEY;
-extern float ATMBOSSBARX, ATMBOSSBARY, ATMBOSSBARZ;
-extern float ATMBOSSBARSCALEX, ATMBOSSBARSCALEY;
-extern float FIREBOSSBARX, FIREBOSSBARY, FIREBOSSBARZ;
-extern float FIREBOSSBARSCALEX, FIREBOSSBARSCALEY;
-extern u16 PANELCRUNCHXROT;
-extern float PANELCRUNCHX, PANELCRUNCHY, PANELCRUNCHZ, PANELCRUNCHSCALE;
-extern float PANELSINKX, PANELSINKY, PANELSINKZ, PANELSINKSCALE;
-extern float PANELBLIMPX, PANELBLIMPY, PANELBLIMPZ, PANELBLIMPSCALE;
-extern float PANELRINGX, PANELRINGY, PANELRINGSIZE;
 
-extern char D_006207E0[];
-extern char D_006207F8[];
-extern char D_00620810[];
-extern char D_00620820[];
-extern char D_00620830[];
-extern char D_00620840[];
-extern char D_00620850[];
-extern char D_00631FE8[];
-extern char D_00631FF0[];
-extern char D_00631FF8[];
-extern char D_00632000[];
-extern char D_00632008[];
-extern char D_00632010[];
-extern char D_00632018[];
-#define tPOSFORMAT D_006207E0
-#define tINVINCIBLE_SPACED D_006207F8
-#define tINVINCIBLE D_00620810
-#define tGEMSUMFORMAT D_00620820
-#define tTIMEFORMAT_SPACED D_00620830
-#define tNEWSLOT_SPACED D_00620840
-#define tNOSLOT_SPACED D_00620850
-#define tPERCENTFORMAT D_00631FE8
-#define tOUTOFFORMAT D_00631FF0
-#define tTOTALFORMAT D_00631FF8
-#define tTIMEFORMAT D_00632000
-#define tNEWSLOT D_00632008
-#define tNOSLOT D_00632010
-#define tHEALTHFORMAT D_00632018
+char *test_font3d[2] = {
+    "t?\200\232\216\323\330\231_\245\307\345\266\322\327\342\352-o",
+    "s+>\220\265\340\351\326\355,\341\267\324\336\343\353=<x",
+};
+f32 PAUSEPANELZ = 1.15f;
+f32 PAUSEPANELX = 0.605f;
+f32 PAUSENAMEY = 0.81f;
+f32 PAUSEINFOY = 0.1f;
+f32 PAUSEPERCENTY = -0.77f;
+f32 PAUSEHMUL = 1.0f;
+f32 PAUSEVMUL = 1.25f;
+f32 TT_MESSAGEY = 0.8f;
+f32 TT_TIMESDY = -0.2f;
+f32 TT_INPUTY = -0.6f;
+f32 RUMBOSSBARX = 0.65f;
+f32 RUMBOSSBARY = -0.85f;
+f32 RUMBOSSBARZ = 1.0f;
+f32 RUMBOSSBARSCALEX = -0.1f;
+f32 RUMBOSSBARSCALEY = 0.1f;
+f32 ATMBOSSBARX = 0.65f;
+f32 ATMBOSSBARY = -0.85f;
+f32 ATMBOSSBARZ = 1.0f;
+f32 ATMBOSSBARSCALEX = -0.1f;
+f32 ATMBOSSBARSCALEY = 0.1f;
+f32 FIREBOSSBARX = 0.65f;
+f32 FIREBOSSBARY = -0.85f;
+f32 FIREBOSSBARZ = 1.0f;
+f32 FIREBOSSBARSCALEX = -0.1f;
+f32 FIREBOSSBARSCALEY = 0.1f;
+f32 PANELRINGX = 0.8f;
+f32 PANELRINGY = -0.8f;
+f32 PANELRINGSIZE = 0.05f;
+
 
 extern void NuCameraSet(struct nucamera_s *cam);
 extern void NuStrCpy(char *dst, char *src);
@@ -916,15 +927,7 @@ extern s32 bonus_finish_frame;
 extern f32 bonus_crates_wait;
 extern struct panelcount_s plr_crates;
 extern struct panelcount_s plr_lives;
-extern f32 WUMPAOBJSX;
-extern f32 PANELSY;
 extern struct ldata_s *LDATA;
-extern f32 BONUSWUMPAOBJSX;
-extern f32 BONUSPANELSY;
-extern f32 LIVESOBJSX;
-extern f32 BONUSLIVESOBJSX;
-extern f32 LIFESCALE;
-extern f32 BONUSLIFESCALE;
 extern u16 panel_head_xrot;
 extern u16 panel_head_yrot;
 extern s32 bonus_lives;
@@ -1044,14 +1047,14 @@ void DrawPanel(void) {
 
     if (plr != 0) {
         if (ShowPlayerCoordinate != 0) {
-            sprintf(tbuf, tPOSFORMAT, plr->obj.pos.x, plr->obj.pos.y, plr->obj.pos.z);
+            sprintf(tbuf, "X:%.2f Y:%.2f Z:%.2f", plr->obj.pos.x, plr->obj.pos.y, plr->obj.pos.z);
             if (Game.language == 0x63) {
                 AddSpacesIntoText(tbuf, 1);
             }
             Text3D(tbuf, vTEMP.x, vTEMP.y, 1.0f, 0.4f, 0.5f, 0.5f, 0, 3);
         }
         if ((InvincibilityCHEAT != 0) && ((GlobalTimer.frame % 25) < 12)) {
-            Text3D((Game.language == 0x63) ? tINVINCIBLE_SPACED : tINVINCIBLE, 0.0f,
+            Text3D((Game.language == 0x63) ? "I N V I N C I B L E " : "INVINCIBLE", 0.0f,
                    1.0f, 1.0f, 0.4f, 0.4f, 0.4f, 1, 4);
         }
     }
@@ -1074,7 +1077,7 @@ void DrawPanel(void) {
                               ObjTab[98].obj.scene, ObjTab[98].obj.special, 1);
             if (paused == 25) {
                 Text3D(Game.name, PAUSEPANELX, PAUSENAMEY, 1.0f, 0.6f, 0.6f, 0.6f, 0, 0);
-                sprintf(tbuf, tPERCENTFORMAT, Game.percent);
+                sprintf(tbuf, "%i%%", Game.percent);
                 if (Game.language == 0x63) {
                     AddSpacesIntoText(tbuf, 1);
                 }
@@ -1167,7 +1170,7 @@ void DrawPanel(void) {
                         }
                         DrawPanel3DCharacter(0x7C, xs + 0.15f, ys + 0.06f, 1.0f, f,
                                              f, f, 0, yrot, 0, -1, 1.0f, 1);
-                        sprintf(tbuf, tGEMSUMFORMAT, Game.crate_gems + Game.bonus_gems,
+                        sprintf(tbuf, "+%i %c =", Game.crate_gems + Game.bonus_gems,
                                 (u8)CLetter[119]);
                         if (Game.language == 0x63) {
                             AddSpacesIntoText(tbuf, 1);
@@ -1181,7 +1184,7 @@ void DrawPanel(void) {
                         DrawPanel3DObject(3, xs - 0.15f, ys + 0.12f, 1.0f, 0.08f, 0.08f,
                                           0.08f, 0, 0, 0, ObjTab[3].obj.scene,
                                           ObjTab[3].obj.special, 1);
-                        sprintf(tbuf, tINTFORMAT, sapphire_relics);
+                        sprintf(tbuf, "%i", sapphire_relics);
                         if (Game.language == 0x63) {
                             AddSpacesIntoText(tbuf, 1);
                         }
@@ -1190,7 +1193,7 @@ void DrawPanel(void) {
                         DrawPanel3DObject(2, xs, ys + 0.12f, 1.0f, 0.08f, 0.08f, 0.08f,
                                           0, 0, 0, ObjTab[2].obj.scene,
                                           ObjTab[2].obj.special, 1);
-                        sprintf(tbuf, tINTFORMAT, gold_relics);
+                        sprintf(tbuf, "%i", gold_relics);
                         if (Game.language == 0x63) {
                             AddSpacesIntoText(tbuf, 1);
                         }
@@ -1198,7 +1201,7 @@ void DrawPanel(void) {
                         DrawPanel3DObject(1, xs + 0.15f, ys + 0.12f, 1.0f, 0.08f, 0.08f,
                                           0.08f, 0, 0, 0, ObjTab[1].obj.scene,
                                           ObjTab[1].obj.special, 1);
-                        sprintf(tbuf, tINTFORMAT, platinum_relics);
+                        sprintf(tbuf, "%i", platinum_relics);
                         if (Game.language == 0x63) {
                             AddSpacesIntoText(tbuf, 1);
                         }
@@ -1242,7 +1245,7 @@ void DrawPanel(void) {
             } else {
                 ys = BONUSPANELSY;
             }
-            sprintf(tbuf, tINTFORMAT, plr_bonus_wumpas.draw);
+            sprintf(tbuf, "%i", plr_bonus_wumpas.draw);
             if (Game.language == 0x63) {
                 AddSpacesIntoText(tbuf, 1);
             }
@@ -1271,7 +1274,7 @@ void DrawPanel(void) {
             } else {
                 ys = BONUSPANELSY;
             }
-            sprintf(tbuf, tOUTOFFORMAT, bonus_crates_destroyed,
+            sprintf(tbuf, "%i/%i", bonus_crates_destroyed,
                     DESTRUCTIBLEBONUSCRATECOUNT);
             if (Game.language == 0x63) {
                 AddSpacesIntoText(tbuf, 1);
@@ -1300,7 +1303,7 @@ void DrawPanel(void) {
             } else {
                 ys = BONUSPANELSY;
             }
-            sprintf(tbuf, tINTFORMAT, bonus_lives);
+            sprintf(tbuf, "%i", bonus_lives);
             if (Game.language == 0x63) {
                 AddSpacesIntoText(tbuf, 1);
             }
@@ -1328,7 +1331,7 @@ void DrawPanel(void) {
                 DrawPanel3DObject(0, WUMPAOBJSX, f, 1.0f, 0.2f, 0.2f, 0.2f, 0xE800,
                                   PANELWUMPAYROT, 0, ObjTab[0].obj.scene,
                                   ObjTab[0].obj.special, 1);
-                sprintf(tbuf, tINTFORMAT, plr_wumpas.draw);
+                sprintf(tbuf, "%i", plr_wumpas.draw);
                 if (Game.language == 0x63) {
                     AddSpacesIntoText(tbuf, 1);
                 }
@@ -1340,12 +1343,12 @@ void DrawPanel(void) {
                 DrawPanel3DObject(-1, CRATEOBJSX, f, 1.0f, 0.15f, 0.15f, 0.15f, 0xE800,
                                   PANELCRATEYROT, 0, crate_scene,
                                   crate_list[5].obj.special, 1);
-                sprintf(tbuf, tINTFORMAT, plr_crates.draw);
+                sprintf(tbuf, "%i", plr_crates.draw);
                 if (Game.language == 0x63) {
                     AddSpacesIntoText(tbuf, 1);
                 }
                 Text3D(tbuf, CRATETXTSX, f, 1.0f, 1.2f, 1.2f, 1.2f, 2, 2);
-                sprintf(tbuf, tTOTALFORMAT, DESTRUCTIBLECRATECOUNT);
+                sprintf(tbuf, "/%i", DESTRUCTIBLECRATECOUNT);
                 if (Game.language == 0x63) {
                     AddSpacesIntoText(tbuf, 1);
                 }
@@ -1362,7 +1365,7 @@ void DrawPanel(void) {
                                   LIFESCALE, panel_head_xrot - 0x1000,
                                   panel_head_yrot + 0x2000, 0, ObjTab[i].obj.scene,
                                   ObjTab[i].obj.special, 1);
-                sprintf(tbuf, tINTFORMAT, plr_lives.draw);
+                sprintf(tbuf, "%i", plr_lives.draw);
                 if (Game.language == 0x63) {
                     AddSpacesIntoText(tbuf, 1);
                 }
@@ -1454,17 +1457,17 @@ void DrawPanel(void) {
                             MakeTimeI(TimeTrialTimer.itime, 0, txt);
                             if (Game.language == 0x63) {
                                 if (finish_frame < finish_frames - 50) {
-                                    sprintf(tbuf, tTIMEFORMAT_SPACED, (u8)CLetter[118],
+                                    sprintf(tbuf, "    %c   %s", (u8)CLetter[118],
                                             txt);
                                 } else {
-                                    sprintf(tbuf, (newleveltime_slot < 3) ? tNEWSLOT_SPACED
-                                                                          : tNOSLOT_SPACED,
+                                    sprintf(tbuf, (newleveltime_slot < 3) ? "_ _ _   %s"
+                                                                          : "        %s",
                                             txt);
                                 }
                             } else if (finish_frame < finish_frames - 50) {
-                                sprintf(tbuf, tTIMEFORMAT, (u8)CLetter[118], txt);
+                                sprintf(tbuf, "  %c %s", (u8)CLetter[118], txt);
                             } else {
-                                sprintf(tbuf, (newleveltime_slot < 3) ? tNEWSLOT : tNOSLOT,
+                                sprintf(tbuf, (newleveltime_slot < 3) ? "___ %s" : "    %s",
                                         txt);
                             }
                             Text3D(tbuf, xs, y, 1.0f, scale, scale, scale, 0, 4);
@@ -1527,7 +1530,7 @@ void DrawPanel(void) {
                             t = 0x2BF1D;
                         }
                         MakeTimeI(t, 0, txt);
-                        sprintf(tbuf, (Game.language == 0x63) ? tTIMEFORMAT_SPACED : tTIMEFORMAT,
+                        sprintf(tbuf, (Game.language == 0x63) ? "    %c   %s" : "  %c %s",
                                 (u8)CLetter[118], txt);
                         xs = tt_sx;
                         ys = tt_sy;
@@ -1564,7 +1567,7 @@ void DrawPanel(void) {
                 DrawPanel3DObject(i, -0.8f, -0.8f, 1.0f, 0.3f, 0.3f, 0.3f, wobble_x,
                                   wobble_y + 0xE000, 0, ObjTab[i].obj.scene,
                                   ObjTab[i].obj.special, 1);
-                sprintf(tbuf, tHEALTHFORMAT, GetGliderHealthPercentage(plr));
+                sprintf(tbuf, "%.3i%%", GetGliderHealthPercentage(plr));
                 if (tbuf[0] == '0') {
                     if (tbuf[1] == '0') {
                         tbuf[0] = tbuf[1] = ' ';
@@ -1583,7 +1586,7 @@ void DrawPanel(void) {
                 } else {
                     i = GetCurrentLevelObjectives();
                     j = GetMaxLevelObjectives();
-                    sprintf(tbuf, tOUTOFFORMAT, j - i, j);
+                    sprintf(tbuf, "%i/%i", j - i, j);
                     if (Game.language == 0x63) {
                         AddSpacesIntoText(tbuf, 1);
                     }
@@ -1610,7 +1613,7 @@ void DrawPanel(void) {
                 DrawPanel3DObject(0x11, -0.8f, -0.8f, 1.0f, 0.3f, 0.3f, 0.3f, wobble_x,
                                   wobble_y + 0xE000, 0, ObjTab[0x11].obj.scene,
                                   ObjTab[0x11].obj.special, 1);
-                sprintf(tbuf, tHEALTHFORMAT, GetRumblePlayerHealthPercentage(plr));
+                sprintf(tbuf, "%.3i%%", GetRumblePlayerHealthPercentage(plr));
                 if (tbuf[0] == '0') {
                     if (tbuf[1] == '0') {
                         tbuf[0] = tbuf[1] = ' ';
@@ -1698,7 +1701,7 @@ void DrawPanel(void) {
                 Text3D(PlaceName[PlrTub.place - 1][Game.language], -0.7f, -0.85f, 1.0f,
                        0.8f, 0.8f, 0.8f, 2, (PlrTub.place == 1) ? 4 : 0);
                 i = (PlrTub.laps + 1 > MAXLAPS) ? MAXLAPS : PlrTub.laps + 1;
-                sprintf(tbuf, tOUTOFFORMAT, i, MAXLAPS);
+                sprintf(tbuf, "%i/%i", i, MAXLAPS);
                 if (Game.language == 0x63) {
                     AddSpacesIntoText(tbuf, 1);
                 }
@@ -1735,7 +1738,7 @@ void DrawPanel(void) {
                            -0.7f, -0.85f - f, 1.0f, 0.8f, 0.8f, 0.8f, 2,
                            (carpet_place != 1) ? 4 : 0);
                 }
-                sprintf(tbuf, tOUTOFFORMAT, i_ring, RINGCOUNT);
+                sprintf(tbuf, "%i/%i", i_ring, RINGCOUNT);
                 if (Game.language == 0x63) {
                     AddSpacesIntoText(tbuf, 1);
                 }
@@ -1750,7 +1753,7 @@ void DrawPanel(void) {
 
             if ((in_finish_range == 0) && (TimeTrial == 0) && (GATECOUNT != 0) &&
                 (plr_gates != 0)) {
-                sprintf(tbuf, tOUTOFFORMAT, plr_gates, GATECOUNT);
+                sprintf(tbuf, "%i/%i", plr_gates, GATECOUNT);
                 if (Game.language == 0x63) {
                     AddSpacesIntoText(tbuf, 1);
                 }
@@ -1767,17 +1770,31 @@ exit:
 }
 
 
+s32 i_pdeb = 0;
+s32 bonus_frame = 0;
+struct panelcount_s plr_wumpas = { 0 };
+struct panelcount_s plr_crates = { 0 };
+struct panelcount_s plr_lives = { 0 };
+struct panelcount_s plr_crystal = { 0 };
+struct panelcount_s plr_crategem = { 0 };
+struct panelcount_s plr_bonusgem = { 0 };
+struct panelcount_s plr_bonus_wumpas = { 0 };
+f32 PANEL3DMULX = 0.0f;
+f32 PANEL3DMULY = 0.0f;
+u16 panel_head_xrot = 0;
+u16 panel_head_yrot = 0;
+s32 MAXVPSIZEX = 0;
+s32 MAXVPSIZEY = 0;
+s32 MINVPSIZEX = 0;
+s32 MINVPSIZEY = 0;
+s32 old_bonus_crates = 0;
+
 /* --- UpdatePlayerStats externs ------------------------------------- */
 
 extern struct cratecube_s Crate[];
 extern s32 CRATECOUNT;
 extern int crate_wumpa;
 extern s32 crates_destroyed;
-extern s32 old_bonus_crates;
-extern f32 D_0062E640;              /* 1/50 wait decrement (.sdata) */
-extern f32 D_0062E644;              /* -1/50 wait floor (.sdata) */
-extern struct panelcount_s plr_wumpas;
-extern s32 force_panel_lives_update;
 extern s32 mask_crates;
 extern s32 newmask_advise;
 extern struct nuvec_s vNEWMASK;
@@ -1837,9 +1854,9 @@ void UpdatePlayerStats(struct creature_s *plr) {
         if (bonus_finish_frame == save_bonus_crates_destroyed * 5 + 4) {
             bonus_crates_wait = 0.5f;
         } else if ((bonus_finish_frame >= save_bonus_crates_destroyed * 5 + 5) &&
-                   (bonus_crates_wait -= D_0062E640,
+                   (bonus_crates_wait -= 0.02f,
                     bonus_crates_wait <= 0.0f)) {
-            bonus_crates_wait = D_0062E644;
+            bonus_crates_wait = -0.02f;
         }
     }
 
@@ -1872,7 +1889,6 @@ void UpdatePlayerStats(struct creature_s *plr) {
     }
 }
 
-extern s32 i_pdeb;
 extern s32 qrand(void);
 
 void AddPanelDebris(f32 x, f32 y, s32 type, f32 scale, s32 count) {
@@ -1940,9 +1956,6 @@ void AddPanelDebris(f32 x, f32 y, s32 type, f32 scale, s32 count) {
     } while (i > 0);
 }
 
-
-extern f32 NEWLIFEOBJSX;
-extern f32 NEWBONUSLIFEOBJSX;
 
 void UpdatePanelDebris(void) {
     struct pdeb_s *deb;

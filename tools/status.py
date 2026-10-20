@@ -24,7 +24,7 @@ toolchain, so it runs on every pull request:
     data entry `matching` or `retail` (the byte rules are verify_promoted's)
   * the optional `[[claim]]` table (section/start/end, written by
     promote.py --complete) only on a complete unit: each claim inside one
-    unassigned data-map gap, no overlaps, no gap claimed by two units
+    unassigned data-map gap, no overlaps (claims of different units neither)
   * every src/**/*.c has a manifest, so no source file can escape accounting
 
 A `matching` state here is a *claim*; the container-side verifier re-derives
@@ -337,8 +337,7 @@ def check_version(version, root):
     counts.update({f"data_{s}": 0 for s in DATA_STATES})
 
     manifests = sorted(status_dir.rglob("*.toml")) if status_dir.is_dir() else []
-    gaps = load_data_gaps(root / "config" / version)
-    claimed = {}
+    claimed = []
     for path in manifests:
         rel = path.relative_to(status_dir).as_posix()
         problems = check_manifest(path, version, root)
@@ -349,13 +348,15 @@ def check_version(version, root):
                 counts[entry["state"]] += 1
             for entry in data.get("data", []):
                 counts[f"data_{entry['state']}"] += 1
-            # A claimed gap range is supplied whole by its claimant's hybrid.
-            _p, used = check_claims(data.get("claim", []), True, gaps)
-            for key in used:
-                other = claimed.setdefault(key, rel)
-                if other != rel:
-                    problems.append(f"{key[0]} gap 0x{key[1]:08x} is also "
-                                    f"claimed by {other}")
+            # Each claimed span comes from its claimant's hybrid: claims of
+            # different units never overlap.
+            for c in data.get("claim", []):
+                for section, start, end, other in claimed:
+                    if section == c["section"] and start < c["end"] \
+                            and c["start"] < end:
+                        problems.append(f"{section} claim 0x{c['start']:08x}-"
+                                        f"0x{c['end']:08x} overlaps {other}'s")
+                claimed.append((c["section"], c["start"], c["end"], rel))
 
     # Every C source must be accounted for by a manifest.
     src_dir = root / "src"

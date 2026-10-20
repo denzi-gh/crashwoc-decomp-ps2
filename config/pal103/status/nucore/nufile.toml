@@ -277,52 +277,52 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0001:0062e980:blkcnt"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0001:0062e984:wblkcnt"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0001:0062e988:iff_padsize"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0001:0062e998:curr_dat"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0001:0062e99c:nufile_deviceid"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0001:0062e9a0:file_time_count"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0001:0062e9a4:iop_img_name"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0001:0062e9a8:nufile_buffering_enabled"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0001:0062e9ac:nufile_try_packed"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0001:0062e9c8:MAX_FILE_ADDRESS"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0001:0062e9cc:addr_ref"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0001:0062e9d0:addr_pos"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0001:0062e9d4:pad.213"
-state = "asm"
+state = "matching"

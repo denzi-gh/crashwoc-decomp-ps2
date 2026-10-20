@@ -20,7 +20,7 @@ from gen_hybrid import (HybridError, _Placed, _Pool, _attach_ranks,  # noqa: E40
                         _split_sections, _whole_unit_layout,
                         _whole_unit_pieces, claim_text, manifest_claims,
                         pooled_gpr8, provides_data, whole_unit)
-from link_image import build_script, claimed_ranges  # noqa: E402
+from link_image import build_script, claimed_ranges, gap_holes  # noqa: E402
 from promote import set_complete, write_claims  # noqa: E402
 from status import check_claims  # noqa: E402
 from verify_promoted import complete_problems  # noqa: E402
@@ -100,6 +100,20 @@ class TestPoolRewrite(unittest.TestCase):
         ranks = _attach_ranks(self.lines, stream, FUNCTIONS)
         self.assertEqual({i.name: ranks[id(i)] for i in stream},
                          {"$LC0": 1, "$Lpool0": 1, "$LC1": 0, "$Lpool1": 0})
+
+    def test_initialiser_strings_stay_with_the_objects_above_the_code(self):
+        # game/credits: the Credit table's strings come before credit_speed,
+        # all above the first function; only what follows the last named
+        # object travels with that function.
+        lines = ["\t.data", "Credit:", "\t.word\t$LC0", "\t.sdata", "$LC0:",
+                 '\t.ascii\t"a\\000"', "speed:", "\t.word\t1", "$LC1:",
+                 '\t.ascii\t"b\\000"', "\t.text", "\t.ent\tlate", "late:",
+                 "\t.end\tlate", "\t.ent\tearly", "early:", "\t.end\tearly"]
+        stream = []
+        _split_sections(lines, stream)
+        ranks = _attach_ranks(lines, stream, FUNCTIONS)
+        self.assertEqual({i.name: ranks[id(i)] for i in stream},
+                         {"Credit": -1, "$LC0": -1, "speed": -1, "$LC1": 1})
 
 
 class TestLayout(unittest.TestCase):
@@ -188,17 +202,19 @@ class TestPieces(unittest.TestCase):
     def test_gap_bytes_become_claims(self):
         layout = {".rodata": (0x1000, [self.placed("$LC0", 0, b"x" * 8),
                                        self.placed("$L7", 8, b"y" * 12)])}
-        lines, pieces, retail, foreign, claims = _whole_unit_pieces(
+        lines, pieces, retail, claims = _whole_unit_pieces(
             layout, "unit-0001", "pal103", Path(self.tmp.name), self.RANGES)
-        self.assertEqual([p["start"] for p in pieces], [0x1000, 0x1008])
+        # The gap piece is exactly the claimed span; the image link fills
+        # the rest of the gap.
+        self.assertEqual([(p["start"], p["end"]) for p in pieces],
+                         [(0x1000, 0x1008), (0x1008, 0x1014)])
         self.assertEqual(claims, [(".rodata", 0x1008, 0x1014)])
         self.assertEqual(retail, [])
-        self.assertEqual(foreign, [(0x1014, 0x1020)])
         self.assertIn("$L7:", lines)
 
     def test_owned_bytes_the_c_lacks_are_retail(self):
         layout = {".rodata": (0x1000, [self.placed("$LC0", 0, b"x" * 4)])}
-        _l, _p, retail, _f, claims = _whole_unit_pieces(
+        _l, _p, retail, claims = _whole_unit_pieces(
             layout, "unit-0001", "pal103", Path(self.tmp.name), self.RANGES)
         self.assertEqual((retail, claims), ([(0x1004, 0x1008)], []))
 
@@ -291,18 +307,26 @@ class TestClaimedRanges(unittest.TestCase):
         {"section": ".rodata", "start": 0x108, "end": 0x120, "owner": "unassigned"},
     ]
 
-    def test_claimant_supplies_the_whole_gap(self):
+    def test_claimants_supply_their_spans(self):
+        # game/credits and game/game_deb share one .rodata gap.
         objs = {1: Path("build/a.o"), 2: Path("build/b.o")}
-        claimed = claimed_ranges(self.RANGES, {1: [(".rodata", 0x108, 0x110)]},
+        claimed = claimed_ranges(self.RANGES, {1: [(".rodata", 0x110, 0x118)],
+                                               2: [(".rodata", 0x108, 0x10c)]},
                                  objs)
-        self.assertEqual(claimed, {(".rodata", 0x108): objs[1]})
+        self.assertEqual(claimed, {(".rodata", 0x108): [
+            (0x108, 0x10c, objs[2]), (0x110, 0x118, objs[1])]})
+        self.assertEqual(gap_holes(self.RANGES, claimed),
+                         [(".rodata", 0x10c, 0x110), (".rodata", 0x118, 0x120)])
         script = build_script(0x1000, [], 0x2000, self.RANGES,
                               {"sbss": 0, "bss": 0}, {},
                               {"unit-0001": objs[1]}, claimed)
-        self.assertIn("build/a.o(.rodata.split_00000108)", script)
-        with self.assertRaisesRegex(ValueError, "two units"):
+        self.assertIn("build/b.o(.rodata.split_00000108)\n"
+                      "        *(.split.gapfill_0000010c)\n"
+                      "        build/a.o(.rodata.split_00000110)\n"
+                      "        *(.split.gapfill_00000118)", script)
+        with self.assertRaisesRegex(ValueError, "overlap"):
             claimed_ranges(self.RANGES, {1: [(".rodata", 0x108, 0x110)],
-                                         2: [(".rodata", 0x110, 0x118)]}, objs)
+                                         2: [(".rodata", 0x10c, 0x118)]}, objs)
 
 
 if __name__ == "__main__":

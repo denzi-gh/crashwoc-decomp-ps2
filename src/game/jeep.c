@@ -109,20 +109,6 @@ struct fireboss_s;
 extern s32 DrawFireBoss(struct fireboss_s *fb);
 extern void AddVariableShotDebrisEffect(s32 effect, struct nuvec_s *pos, s32 n,
                                         s32 xrot, s32 yrot);
-extern char D_006319D8[];
-#define ActionIntroText D_006319D8
-extern char D_006319E0[];
-#define ActionTiredText D_006319E0
-extern char D_0061FB40[];
-#define ActionFrontHurlText D_0061FB40
-extern char D_006319E8[];
-#define ActionRunawayText D_006319E8
-extern char D_0061FB50[];
-#define ActionGetAngryText D_0061FB50
-extern char D_006319F0[];
-#define ActionDeadText D_006319F0
-extern char D_006319F8[];
-#define ActionNoneText D_006319F8
 extern void DrawJeepRocks(void);
 extern void DrawVehMasks(void);
 extern void *app_fnt;
@@ -199,8 +185,7 @@ struct fireboss_s {
     s32 BeenHitThisPass;            /* 0x67C */
     f32 BeenHitThisPassTimer;       /* 0x680 */
     void *Rock;                     /* 0x684 */
-    u8 pad_688[0x8];                /* 0x688 */
-}; /* 0x690 */
+} __attribute__((aligned(16))); /* 0x690 */
 extern f32 FIREBOSSSTART;
 
 struct jointctrl_s {
@@ -357,8 +342,6 @@ extern union variptr_u superbuffer_ptr;
 extern union variptr_u superbuffer_end;
 extern struct nugscn_s *world_scene[];
 extern void LoadScreen(char *name);
-extern char D_0061FAC0[];
-#define LoadingAiPathsText D_0061FAC0
 
 struct BUGGYDATA {
     struct nuquat_s Quat;           /* 0x00 */
@@ -472,7 +455,6 @@ extern void MoveRailPosition(struct nuvec_s *dst, struct RPos_s *rpos,
                              f32 distance, s32 direction);
 extern struct RPos_s cRPos[];
 extern s32 cRPosCOUNT;
-extern f32 JCDist;
 extern s32 ChrisInTheHouse;
 extern s32 HighCam;
 
@@ -480,11 +462,14 @@ extern s32 JeepFrame;
 extern s32 JeepInControl;
 extern s32 gggg;
 extern s32 JamesInTheHouse;
-extern s32 CurrentDebugJeep;
 extern s32 D_006332B0;              /* debug-jeep button edge latch */
 extern s32 temp_crate_type;
 extern s32 Level;
-extern f32 DropAdj;
+f32 PYROTILTX = 20.0f;
+f32 AKUAKUTILTX = -37.5f;
+s32 CurrentDebugJeep = -1;
+f32 DropAdj = 2.0f;
+s32 Replay = 0;
 struct nuvec_s WesternEnemyStarts[4] = {
     { -0.9f, 0.0f, 0.0f },
     { 1.8f, 0.0f, 0.0f },
@@ -514,36 +499,10 @@ extern struct nuvec_s IdealObjPos;
 extern s32 SHEIGHT;
 extern void NuFntScale(s32 x, s32 y);
 extern void NuFntPrintEx(s32 x, s32 y, s32 colour, char *fmt, ...);
-extern char D_0061FA70[];
-#define DebugIdFmt D_0061FA70
-extern char D_00631960[];
-#define AngFmt D_00631960
-extern char D_0061FA80[];
-#define ChasAngFmt D_0061FA80
-extern char D_0061FA90[];
-#define AngMomFmt D_0061FA90
-extern char D_0061FAA0[];
-#define JeepFrameFmt D_0061FAA0
 extern void GameSfx(s32 id, struct nuvec_s *pos);
 extern s32 D_006332CC;
 #define LastWesternPosition D_006332CC
 extern s32 WallOfFireAttatched;
-extern char D_0061FB60[];
-#define BossActionFmt D_0061FB60
-extern char D_0061FB88[];
-#define BossPosFmt D_0061FB88
-extern char D_0061FBA8[];
-#define BossRelFmt D_0061FBA8
-extern char D_0061FBD0[];
-#define WallAttachedText D_0061FBD0
-extern char D_0061FBE8[];
-#define WallFreeText D_0061FBE8
-extern char D_0061FBF8[];
-#define HoldPlayerText D_0061FBF8
-extern char D_0061FC08[];
-#define BossFrameFmt D_0061FC08
-extern char D_0061FC28[];
-#define BossCoordFmt D_0061FC28
 
 struct numtx_s *DrawJeep(struct JEEPSTRUCT *Jeep);
 
@@ -1388,18 +1347,18 @@ void DrawJeepDebugStuff(void) {
         NuFntSet(app_fnt);
         NuFntSetPen(0x7F7F7F7F);
         NuFntScale(16, 16);
-        NuFntPrintEx(0x80, SHEIGHT, 0, DebugIdFmt, CurrentDebugJeep);
-        NuFntPrintEx(0x80, SHEIGHT * 3 / 2, 0, AngFmt,
+        NuFntPrintEx(0x80, SHEIGHT, 0, "Debug Id %d", CurrentDebugJeep);
+        NuFntPrintEx(0x80, SHEIGHT * 3 / 2, 0, "Ang %d",
                      (short)PlayerJeep.Move.aActualAngle);
-        NuFntPrintEx(0x80, SHEIGHT * 2, 0, ChasAngFmt,
+        NuFntPrintEx(0x80, SHEIGHT * 2, 0, "Chas Ang %d",
                      (short)PlayerJeep.aChassisAngleY);
-        NuFntPrintEx(0x80, SHEIGHT * 5 / 2, 0, AngMomFmt,
+        NuFntPrintEx(0x80, SHEIGHT * 5 / 2, 0, "Ang Mom %d",
                      PlayerJeep.aChassisAngMom);
     } else {
         NuFntSet(app_fnt);
         NuFntSetPen(0x7F7F7F7F);
         NuFntScale(16, 16);
-        NuFntPrintEx(0x80, SHEIGHT, 0, JeepFrameFmt, JeepFrame);
+        NuFntPrintEx(0x80, SHEIGHT, 0, "JeepFrame %d", JeepFrame);
     }
 }
 
@@ -1640,6 +1599,8 @@ void JeepCamIntro(struct cammtx_s *Cam) {
     }
 }
 
+
+f32 JCDist = 12.0f;
 
 void JeepCam(struct cammtx_s *Cam) {
     struct obj_s *obj = &PlayerJeep.Cre->obj;
@@ -1926,6 +1887,8 @@ void DrawEnemyJeep(struct enemyjeep_s *Jeep) {
 }
 
 
+s32 buggy_contact = 0;
+
 void PlayerHitBuggies(struct creature_s *Cre) {
     struct nuvec_s Pos;
     s32 i;
@@ -1985,7 +1948,7 @@ inline u8 *LoadBuggyData(u8 *Dest, s32 Index) {
 void LoadWesternArenaData(void) {
     s32 i;
 
-    LoadScreen(LoadingAiPathsText);
+    LoadScreen("loading Ai Paths");
     TerrainSetCur(superbuffer_ptr.voidptr);
     terraininit(Level, &superbuffer_ptr.s16, superbuffer_end.s16, 0, LevelFileName, world_scene[0], 0);
     superbuffer_ptr.intaddr = (superbuffer_ptr.intaddr + 0xF) & 0xFFFFFFF0;
@@ -2092,19 +2055,19 @@ void NewSetTrailPos(struct jeeptrail_s *Trail, s32 TrailId, s32 Pntr,
 inline char *FireBossActionName(void) {
     switch (FireBoss.Action) {
     case 0:
-        return ActionIntroText;
-    case 1:
-        return ActionTiredText;
+        return "Intro";
     case 2:
-        return ActionFrontHurlText;
+        return "Tired";
+    case 1:
+        return "FrontHurl";
     case 3:
-        return ActionRunawayText;
+        return "Runaway";
     case 4:
-        return ActionGetAngryText;
+        return "GetAngry";
     case 5:
-        return ActionDeadText;
+        return "Dead";
     default:
-        return ActionNoneText;
+        return "";
     }
 }
 
@@ -2113,28 +2076,29 @@ void DrawFireBossDebugStuff(void) {
     NuFntSet(app_fnt);
     NuFntSetPen(0x7F7F7F7F);
     NuFntScale(16, 16);
-    NuFntPrintEx(0x80, SHEIGHT * 3 / 2, 0, BossActionFmt, FireBossActionName(),
-                 FireBoss.ActionTimer, FireBoss.Speed);
-    NuFntPrintEx(0x80, SHEIGHT * 2, 0, BossPosFmt, FireBoss.MainSpline.Act,
-                 FireBoss.MainSpline.Inc);
-    NuFntPrintEx(0x80, SHEIGHT * 5 / 2, 0, BossRelFmt,
+    NuFntPrintEx(0x80, SHEIGHT * 3 / 2, 0, "Action %s Timer %1.3f  Speed %1.3f",
+                 FireBossActionName(), FireBoss.ActionTimer, FireBoss.Speed);
+    NuFntPrintEx(0x80, SHEIGHT * 2, 0, "Boss Pos %1.3f,  Inc %1.3f",
+                 FireBoss.MainSpline.Act, FireBoss.MainSpline.Inc);
+    NuFntPrintEx(0x80, SHEIGHT * 5 / 2, 0,
+                 "RelZ  %1.3f   **** %1.3f, %1.3f, %1.3f",
                  FireBoss.Pos.z - player->obj.pos.z, RelTemp.x, RelTemp.y,
                  RelTemp.z);
     if (WallOfFireOn != 0) {
         if (WallOfFireAttatched != 0) {
-            NuFntPrintEx(0x80, SHEIGHT * 3, 0, WallAttachedText);
+            NuFntPrintEx(0x80, SHEIGHT * 3, 0, "WallOfFire Attatched");
         } else {
-            NuFntPrintEx(0x80, SHEIGHT * 3, 0, WallFreeText);
+            NuFntPrintEx(0x80, SHEIGHT * 3, 0, "WallOfFire Free");
         }
     }
     if (FireBossHoldPlayer != 0) {
-        NuFntPrintEx(0x80, SHEIGHT * 7 / 2, 0, HoldPlayerText);
+        NuFntPrintEx(0x80, SHEIGHT * 7 / 2, 0, "Hold Player");
     }
-    NuFntPrintEx(0x80, SHEIGHT * 4, 0, BossFrameFmt,
+    NuFntPrintEx(0x80, SHEIGHT * 4, 0, "Frame %1.3f   %d   %1.3f",
                  FireBoss.MainDraw.Anim.anim_time, FireBoss.MainDraw.Anim.action,
                  FireBoss.AngleY);
-    NuFntPrintEx(0x80, SHEIGHT * 7, 0, BossCoordFmt, FireBoss.Pos.x,
-                 FireBoss.Pos.y, FireBoss.Pos.z);
+    NuFntPrintEx(0x80, SHEIGHT * 7, 0, "Pos %1.3f  %1.3f    %1.3f",
+                 FireBoss.Pos.x, FireBoss.Pos.y, FireBoss.Pos.z);
 }
 
 
@@ -2234,6 +2198,51 @@ inline s32 CheckAgainstFireBoss(struct nuvec_s *Pos, struct nuvec_s *Vel, f32 Ra
     return Hit;
 }
 
+
+s32 SMASHRUMPOWER = 200;
+s32 FBSCREAMVOL = 0x1FFFF;
+f32 FIREWATERSOUNDTIME = 1.0f;
+s32 WATERFIRESOUNDVOL = 0xFFF;
+f32 WaterLength = 4.0f;
+f32 WaterWidth = 1.5f;
+short SEEKANGSPEED = 0x100;
+f32 MAXWATERTIME = 1.0f;
+s32 FireBossHoldPlayer = 0;
+s32 SmokeyCam = 0;
+s32 FireBossCam = 0;
+s32 SmokeyFinished = 0;
+s32 SmokeyPosition = 0;
+s32 SmokeyCountDownValue = 0;
+s32 FireBossFinished = 0;
+s32 FireBossWon = 0;
+f32 AshesMechInZ = 0.0f;
+f32 AshesMechOutZ = 0.0f;
+s32 JeepFrame = 0;
+s32 JeepInControl = 0;
+f32 WesternCountdown = 0.0f;
+s32 JeepCamSnapShot = 0;
+short JeepBaseAng = 0;
+f32 JeepCamTween = 0.0f;
+f32 JeepRailCamTween = 0.0f;
+f32 JeepRailCamTween2 = 0.0f;
+s32 HoldFireBoss = 0;
+f32 WaterTimer = 0.0f;
+struct nugspline_s *JeepIntroLookSpline = 0;
+struct nugspline_s *JeepIntroCamSpline = 0;
+s32 HighCam = 0;
+f32 FireBossWaterSoundTimer = 0.0f;
+s32 RaceOn = 0;
+s32 FireBossHealth = 0;
+s32 DebugTest = 0;
+s32 ResetJeepCamera = 0;
+s32 gggg = 0;
+s32 tttt2 = 0;
+s32 WID = 0;
+f32 WesternTime = 0.0f;
+s32 WallOfFireOn = 0;
+s32 WallOfFireAttatched = 0;
+f32 WallOfFireAngleY = 0.0f;
+f32 WallOfFireHurtTimer = 0.0f;
 
 void FireBossWaterFire(s32 WaterOn) {
     struct nuvec_s Start;
@@ -2781,34 +2790,29 @@ extern s32 KillGameObject(struct obj_s *obj, s32 anim);
 extern void AddMaskFeathers(struct mask_s *mask);
 extern void JudderGameCamera(struct cammtx_s *cam, f32 time,
                              struct nuvec_s *pos);
-extern f32 AshesMechInZ;
-extern f32 FIREBOSSTURNTOMECH;
-extern f32 FIREBOSSTURNFROMMECH;
-extern f32 FIREBOSSENDCHASE;
-extern f32 FIREBOSSENDRUNAWAY;
-extern f32 FIREBOSSHOLDINTROTIME;
-extern f32 FIREBOSSHOLDPLAYERTIME;
-extern f32 FIREBOSSRUNAHEADTIMER;
-extern f32 FIREBOSSSCAREDSPEED;
-extern f32 FIREBOSSCHASESPEED;
-extern f32 FIREBOSSWALLFIREDIST;
-extern f32 FIREBOSSTHROWSPEED;
-extern f32 TRANSLATEFIREBOSS;
-extern f32 BOSSBREATHFRAME;
-extern f32 AKUAKUTILTX;
-extern f32 PYROTILTX;
-extern f32 FOOTJUDDERTIME;
-extern s32 FOOTRUMBLEPOWER;
-extern s32 FOOTSTEPVOL;
-extern s32 BREAKVOL;
-extern s32 BOSSANGRYVOL;
-extern s32 BOSSBANGVOL;
-extern s32 BOSSBREATHVOL;
-extern s32 FIREVOL;
-extern f32 WallOfFireHurtTimer;
-/* ProcessFireBoss function statics (retail .sdata/.sbss) */
-extern s32 D_006319D0;
-#define FireIndx D_006319D0
+f32 FIREBOSSTHROWSPEED = 10.0f;
+f32 FIREBOSSCHASESPEED = 3.6f;
+f32 FIREBOSSSCAREDSPEED = 4.65f;
+f32 FIREBOSSENDRUNAWAY = 0.95f;
+f32 FIREBOSSSTART = 0.95f;
+f32 FIREBOSSHOLDPLAYERTIME = 5.5f;
+f32 FIREBOSSHOLDINTROTIME = 3.7f;
+f32 FIREBOSSENDCHASE = 0.68f;
+f32 FIREBOSSTURNTOMECH = 12.0f;
+f32 FIREBOSSTURNFROMMECH = 54.0f;
+f32 FIREBOSSWALLFIREDIST = 0.0f;
+f32 FOOTJUDDERTIME = 0.35f;
+s32 FOOTSTEPVOL = 0x7FFF;
+f32 TRANSLATEFIREBOSS = 0.9342f;
+f32 FIREBOSSRUNAHEADTIMER = 0.5f;
+s32 FOOTRUMBLEPOWER = 0x7F;
+s32 FIREVOL = 0x7FFF;
+s32 BREAKVOL = 0x3FFF;
+s32 BOSSBANGVOL = 0x17FFF;
+s32 BOSSANGRYVOL = 0x17FFF;
+s32 BOSSBREATHVOL = 0x4FFF;
+f32 BOSSBREATHFRAME = 20.0f;
+/* ProcessFireBoss function statics (retail .sbss) */
 extern f32 D_006332D0;
 #define LastBossAct D_006332D0
 extern s32 D_006332D4;
@@ -2819,6 +2823,7 @@ extern s32 D_006332DC;
 #define LastVehicleControl D_006332DC
 
 void ProcessFireBoss(struct fireboss_s *Boss) {
+    static s32 FireIndx = 0;
     struct nuvec_s Target;
     struct nuvec_s DestVel;
 

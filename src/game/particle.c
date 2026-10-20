@@ -49,8 +49,7 @@ extern void NuScratchRelease(void);
 extern void NuRndrFaceOn(struct faceon_s *faceon, struct numtl_s *mtl, s32 flags);
 extern f32 NuTrigTable[];
 
-extern struct nulsthdr_s *D_0062FCF0;
-#define particles D_0062FCF0
+static struct nulsthdr_s *particle_pool = 0;
 
 
 void DrawParticles(void)
@@ -61,9 +60,9 @@ void DrawParticles(void)
     struct particletype_s *type;
 
     faceon = NuScratchAlloc32(sizeof(struct faceon_s));
-    p = (struct particle_s *)NuLstGetNext(particles, 0);
+    p = (struct particle_s *)NuLstGetNext(particle_pool, 0);
     while (p) {
-        next = (struct particle_s *)NuLstGetNext(particles, (struct nulnkhdr_s *)p);
+        next = (struct particle_s *)NuLstGetNext(particle_pool, (struct nulnkhdr_s *)p);
         type = p->type;
         faceon->pos = p->pos;
         faceon->w = 0.0f;
@@ -88,16 +87,16 @@ void DrawParticles(void)
 
 void InitParticles(int num)
 {
-    particles = NuLstCreate(num, sizeof(struct particle_s));
+    particle_pool = NuLstCreate(num, sizeof(struct particle_s));
 }
 
 
 void CloseParticles(void)
 {
-    if (particles) {
-        NuLstDestroy(particles);
+    if (particle_pool) {
+        NuLstDestroy(particle_pool);
     }
-    particles = 0;
+    particle_pool = 0;
 }
 
 
@@ -106,7 +105,7 @@ struct particle_s *AddParticle(struct nuvec_s *pos, struct nuvec_s *vel, struct 
 {
     struct particle_s *p;
 
-    p = (struct particle_s *)NuLstAlloc(particles);
+    p = (struct particle_s *)NuLstAlloc(particle_pool);
     if (p) {
         p->pos = *pos;
         p->vel = *vel;
@@ -128,9 +127,9 @@ s32 DestroyParticlesByHandle(s16 handle)
     s32 count;
 
     count = 0;
-    p = (struct particle_s *)NuLstGetNext(particles, 0);
+    p = (struct particle_s *)NuLstGetNext(particle_pool, 0);
     while (p) {
-        next = (struct particle_s *)NuLstGetNext(particles, (struct nulnkhdr_s *)p);
+        next = (struct particle_s *)NuLstGetNext(particle_pool, (struct nulnkhdr_s *)p);
         if (p->handle == handle) {
             NuLstFree((struct nulnkhdr_s *)p);
             count++;
@@ -146,9 +145,9 @@ void ProcessParticles(void)
     struct particle_s *p;
     struct particle_s *next;
 
-    p = (struct particle_s *)NuLstGetNext(particles, 0);
+    p = (struct particle_s *)NuLstGetNext(particle_pool, 0);
     while (p) {
-        next = (struct particle_s *)NuLstGetNext(particles, (struct nulnkhdr_s *)p);
+        next = (struct particle_s *)NuLstGetNext(particle_pool, (struct nulnkhdr_s *)p);
         NuVecAdd(&p->vel, &p->accel, &p->vel);
         NuVecAdd(&p->pos, &p->vel, &p->pos);
         p->angle += p->angvel;

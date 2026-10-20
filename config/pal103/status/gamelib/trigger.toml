@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0079"
 source = "src/gamelib/trigger.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0079:001af0f8:NuTriggerSysLoad"
@@ -73,12 +73,17 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0079:0062f7f8:do_bbox.105"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0079:0062f7fc:do_prims.106"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0079:0062f800:do_nothing.107"
-state = "asm"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x00619f60
+end = 0x00619f69

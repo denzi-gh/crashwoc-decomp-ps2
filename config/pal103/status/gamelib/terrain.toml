@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0068"
 source = "src/gamelib/terrain.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0068:0016fde8:ReadTerrain"
@@ -469,156 +469,161 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f1f0:TerrPlatDis"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f200:EShadY"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f204:terrhitflags"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f208:ShadRoofY"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f20c:EShadRoofY"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f210:CurTerr"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f214:PickupTerr"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f218:curSphereter"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f21c:curPickInst"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f220:CurTrackInfo"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f224:TerI"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f228:TerrPoly"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f22c:TerrPolyObj"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f230:ShadPoly"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f234:EShadPoly"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f238:ShadRoofPoly"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f23c:EShadRoofPoly"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f240:WallSplCount"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f244:ScaleTerrain"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f248:TerrShape"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f24c:TerrShapeAdjCnt"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f250:PlatImpactId"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f254:PlatCrush"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f258:plathitid"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f25c:castnum"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f25e:ecastnum"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f260:castroofnum"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f262:ecastroofnum"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f264:shadhit"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f266:eshadhit"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f268:shadroofhit"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f26a:eshadroofhit"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f26c:terraincnt"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f270:situtotal"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f274:platinrange"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f278:crashdata"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f27c:terlistptr"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f280:TempStackPtr"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0068:0062f284:testlock"
-state = "asm"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x00617d70
+end = 0x00617dc4

@@ -127,20 +127,24 @@ struct edanimparam_s {
     float bouncy_damping;
 };
 
-extern struct nugscn_s *edanim_base_scene;
-extern void *edanim_active_menu;
-extern struct eduimenu_s *edanim_bouncy_menu;
-extern struct eduimenu_s *edanim_localparticle_menu;
-extern struct eduimenu_s *edanim_localparticletype_menu;
-extern struct eduimenu_s *edanim_localsound_menu;
-extern struct eduimenu_s *edanim_localsoundtype_menu;
-extern struct eduimenu_s *edanim_mctb_menu;
-extern struct eduimenu_s *edanim_options_menu;
-extern struct eduimenu_s *edanim_particle_menu;
-extern struct eduimenu_s *edanim_particletype_menu;
-extern struct eduimenu_s *edanim_sound_menu;
-extern struct eduimenu_s *edanim_switch_menu;
-extern struct eduimenu_s *edanim_switchtype_menu;
+void *edanim_active_menu = 0;
+struct eduimenu_s *edanim_options_menu = 0;
+struct eduimenu_s *edanim_particle_menu = 0;
+struct eduimenu_s *edanim_particletype_menu = 0;
+struct eduimenu_s *edanim_localparticletype_menu = 0;
+struct eduimenu_s *edanim_localparticle_menu = 0;
+struct eduimenu_s *edanim_switch_menu = 0;
+struct eduimenu_s *edanim_switchtype_menu = 0;
+struct eduimenu_s *edanim_sound_menu = 0;
+struct eduimenu_s *edanim_soundtype_menu = 0;
+struct eduimenu_s *edanim_localsoundtype_menu = 0;
+struct eduimenu_s *edanim_localsound_menu = 0;
+struct eduimenu_s *edanim_bouncy_menu = 0;
+struct eduimenu_s *edanim_mctb_menu = 0;
+struct nugscn_s *edanim_base_scene = 0;
+int edanim_emitrotz = 0;
+int edanim_emitroty = 0;
+
 extern int edanim_nearest;
 extern int edanim_nearest_param_id;
 extern int edanim_nearest_particle;
@@ -150,238 +154,19 @@ extern int edanim_particle_mode;
 extern int edanim_particle_type;
 extern int edanim_sound_type;
 extern int edanim_sound_mode;
-extern int edanim_emitrotz;
-extern int edanim_emitroty;
 extern int edanim_cam_ax;
 extern int edanim_cam_ay;
 extern struct numtl_s *edanim_mtl;
 extern struct numtl_s *edanim_mtl_zoff;
-extern struct eduimenu_s *edanim_soundtype_menu;
 extern int edSfxAllCount;
 
 extern void *app_fnt;
-extern struct eduistyle_s D_00619328;
-extern char D_00619520[];
-extern char D_00619538[];
-extern char D_00619550[];
-extern char D_00619570[];
-extern char D_00619580[];
-extern char D_00619598[];
-extern char D_006195B8[];
-extern char D_006195D8[];
-extern char D_006195E8[];
-extern char D_006195F8[];
-extern char D_00619610[];
-extern char D_00619620[];
-extern char D_00619630[];
-extern char D_00619640[];
-
-#define edanim_item_style D_00619328
-#define particle_menu_title D_00619520
-#define particle_menu_text_type D_00619538
-#define particle_menu_text_local D_00619550
-#define soundtype_menu_title D_00619570
-#define localsoundtype_menu_title D_00619580
-#define localsound_menu_title D_00619598
-#define localsound_menu_text_type D_006195B8
-#define localsound_menu_text_repeat D_006195D8
-#define localsound_menu_text_every D_006195E8
-#define localsound_menu_text_trigger D_006195F8
-#define localsound_menu_fmt_trigger D_00619610
-#define sound_menu_title D_00619620
-#define sound_menu_text_type D_00619630
-#define sound_menu_text_local D_00619640
 
 extern unsigned char object_switches[];
 extern struct numtx_s numtx_identity;
-extern int D_0062F69C;
-
-#define edanim_frame_count D_0062F69C
-
-extern char D_00619278[];
-extern char D_00619288[];
-extern char D_006192A0[];
-extern char D_006192B0[];
-extern char D_006192C0[];
-extern char D_006192D0[];
-extern char D_006192E8[];
-extern char D_00619300[];
-extern char D_00619310[];
-extern char D_0062F6A0[];
-
-#define cursor_text_info_box D_00619278
-#define cursor_text_no_special D_00619288
-#define cursor_text_special D_006192A0
-#define cursor_text_no_params D_006192B0
-#define cursor_text_params D_006192C0
-#define cursor_text_particles D_006192D0
-#define cursor_text_no_type D_006192E8
-#define cursor_text_type D_00619300
-#define cursor_text_sounds D_00619310
-#define cursor_text_coord D_0062F6A0
-
-extern char D_00619338[];
-extern char D_0062F6A8[];
-extern char D_0062F6B0[];
-extern char D_00619348[];
-extern char D_00619360[];
-extern char D_00619378[];
-extern char D_00619388[];
-extern char D_006193A0[];
-extern char D_0062F6B8[];
-extern char D_006193B8[];
-extern char D_006193D0[];
-extern char D_006193E8[];
-extern char D_006193F8[];
-extern char D_00619408[];
-extern char D_00619420[];
-extern char D_00619430[];
-extern char D_00619440[];
-extern char D_00619450[];
-extern char D_00619460[];
-
-#define switchtype_menu_title D_00619338
-#define switchtype_text_none D_0062F6A8
-#define switchtype_text_switch D_0062F6B0
-#define switchtype_text_switch_once D_00619348
-#define switchtype_text_switch_cont D_00619360
-#define switchtype_text_proximity D_00619378
-#define switchtype_text_proximity_once D_00619388
-#define switchtype_text_proximity_cont D_006193A0
-#define switchtype_text_terrain D_0062F6B8
-#define switchtype_text_terrain_once D_006193B8
-#define switchtype_text_terrain_cont D_006193D0
-#define switchtype_text_override_noanim D_006193E8
-#define switchtype_text_override_play D_006193F8
-#define switchtype_text_override_playcont D_00619408
-#define switch_menu_title D_00619420
-#define switch_menu_text_type D_00619430
-#define switch_menu_text_id D_00619440
-#define switch_menu_text_delay D_00619450
-#define switch_menu_text_var D_00619460
-
-extern char D_00619470[];
-extern char D_00619480[];
-extern char D_0062F6C0[];
-extern char D_0062F6C8[];
-extern char D_00619490[];
-extern char D_0062F6D0[];
-extern char D_006194A0[];
-extern char D_006194C0[];
-extern char D_006194E0[];
-extern char D_00619500[];
-extern char D_00619510[];
-
-#define bouncy_menu_title D_00619470
-#define bouncy_menu_text_grav D_00619480
-#define bouncy_menu_text_tension D_0062F6C0
-#define bouncy_menu_text_damping D_0062F6C8
-#define particletype_menu_title D_00619490
-#define particletype_text_none D_0062F6D0
-#define soundtype_text_none D_0062F6D0
-#define localparticletype_menu_title D_006194A0
-#define localparticle_menu_title D_006194C0
-#define localparticle_menu_text_type D_006194E0
-#define localparticle_menu_text_rate D_00619500
-#define localparticle_menu_text_moving D_00619510
-
-extern char D_0062F6E0[];
-extern char D_006196B0[];
-extern char D_006196C0[];
-extern char D_006196D0[];
-extern char D_006196E0[];
-extern char D_006196F0[];
-extern char D_00619700[];
 
 extern signed char edbits_what_game;
 extern char edbits_level_filename[];
-extern char D_00619660[];
-extern char D_0062F6D8[];
-extern char D_00619670[];
-extern char D_00619680[];
-extern char D_00619690[];
-extern char D_006196A0[];
-extern char D_00619728[];
-extern char D_00619738[];
-
-#define anim_file_format_game1 D_00619660
-#define anim_file_format_game2 D_0062F6D8
-#define anim_text_saved D_00619670
-#define anim_text_save_failed D_00619680
-#define anim_text_loaded D_00619690
-#define anim_text_load_failed D_006196A0
-#define mctb_text_slot_name D_00619728
-#define mctb_text_save_failed D_00619738
-
-#define mctb_text_present D_0062F6E0
-#define mctb_text_not_present D_006196B0
-#define mctb_text_ps2_card D_006196C0
-#define mctb_text_not_ps2_card D_006196D0
-#define mctb_text_formatted D_006196E0
-#define mctb_text_not_formatted D_006196F0
-#define mctb_text_free_space D_00619700
-
-extern char D_00619710[];
-extern char D_006197B8[];
-extern char D_006197D0[];
-extern char D_006197E8[];
-extern char D_006197F8[];
-extern char D_00619810[];
-extern char D_00619820[];
-extern char D_00619830[];
-extern char D_00619848[];
-extern char D_00619860[];
-extern char D_00619878[];
-extern char D_00619890[];
-extern char D_006198A8[];
-extern char D_006198C0[];
-extern char D_006198D0[];
-extern char D_0062F6E8[];
-extern char D_006198E0[];
-extern char D_006198F8[];
-extern char D_00619910[];
-extern char D_00619920[];
-extern char D_00619938[];
-extern char D_00619948[];
-extern char D_00619958[];
-extern char D_00619748[];
-extern char D_00619758[];
-extern char D_00619768[];
-extern char D_00619778[];
-extern char D_00619788[];
-extern char D_00619798[];
-extern char D_006197A8[];
-
-#define mctb_text_slots_used D_00619710
-#define mctb_menu_title D_006197B8
-#define mctb_menu_text_present D_006197D0
-#define mctb_menu_text_type D_006197E8
-#define mctb_menu_text_format_test D_006197F8
-#define mctb_menu_text_free_space D_00619810
-#define mctb_menu_text_slots_used D_00619820
-#define mctb_menu_text_save0 D_00619830
-#define mctb_menu_text_load0 D_00619848
-#define mctb_menu_text_delete0 D_00619860
-#define mctb_menu_text_save1 D_00619878
-#define mctb_menu_text_load1 D_00619890
-#define mctb_menu_text_delete1 D_006198A8
-#define mctb_menu_text_format D_006198C0
-#define mctb_menu_text_unformat D_006198D0
-#define options_menu_title D_0062F6E8
-#define options_text_particles D_006198E0
-#define options_text_sounds D_006198F8
-#define options_text_bouncy D_00619910
-#define options_text_switch D_00619920
-#define options_text_save D_00619938
-#define options_text_load D_00619948
-#define options_text_mctb D_00619958
-#define mctb_text_load_failed D_00619748
-#define mctb_text_deleted D_00619758
-#define mctb_text_delete_failed D_00619768
-#define mctb_text_unformatted D_00619778
-#define mctb_text_unformat_failed D_00619788
-#define mctb_text_formatted_ok D_00619798
-#define mctb_text_format_failed D_006197A8
 
 extern void eduiMenuDestroy(void *menu);
 extern void eduiMenuDetach(void *menu);
@@ -521,12 +306,8 @@ void edanimEnter(void);
 int edanimProc(struct nupad_s *pad);
 void edanimRender(void);
 
-struct edmainreg_s edanimdesc = {
-    0, 0, "Anim Editor", edanimInit, edanimClose, edanimEnter, {0}, 0,
-    EDMAIN_BLOCKID('a', 'n', 'i', 'm'), edanimProc, edanimRender
-};
-struct edanimparam_s AnimParams[64] = { { 0 } };
-struct nuvec_s edanim_cam_pos = { 0.0f, 0.0f, 0.0f };
+extern struct edanimparam_s AnimParams[64];
+extern struct nuvec_s edanim_cam_pos;
 
 static inline float edanimParamDistance(int param)
 {
@@ -540,6 +321,7 @@ static inline float edanimParamDistance(int param)
 
 void edanimUpdateObjects(float dt)
 {
+    static int localframecount = 0;
     int i;
     int j;
     int k;
@@ -659,7 +441,7 @@ void edanimUpdateObjects(float dt)
                                                         AnimParams[i].particle_rate[k], &tmtx,
                                                         &numtx_identity);
                     } else if (AnimParams[i].particle_rate[k] < 0
-                               && (edanim_frame_count + j)
+                               && (localframecount + j)
                                           % (AnimParams[i].particle_rate[k] >= 0
                                                  ? AnimParams[i].particle_rate[k]
                                                  : -AnimParams[i].particle_rate[k])
@@ -681,8 +463,8 @@ void edanimUpdateObjects(float dt)
             if (AnimParams[i].sound_type[j] != -1) {
                 sid = -1;
                 if (AnimParams[i].sound_switch[j] == 1) {
-                    if ((int)(edanim_frame_count + dt) / (int)AnimParams[i].sound_timing[j]
-                        > edanim_frame_count / (int)AnimParams[i].sound_timing[j]) {
+                    if ((int)(localframecount + dt) / (int)AnimParams[i].sound_timing[j]
+                        > localframecount / (int)AnimParams[i].sound_timing[j]) {
                         sid = AnimParams[i].sound_type[j];
                     }
                 } else if (instanim != 0) {
@@ -726,7 +508,7 @@ void edanimUpdateObjects(float dt)
             }
         }
     }
-    edanim_frame_count += (int)dt;
+    localframecount += (int)dt;
 }
 
 
@@ -1354,41 +1136,41 @@ void edanimDrawCursor(void)
     NuRndrLine2di(0x1710, 0xDC8, 0x24F0, 0xDC8, 0x80000000, edanim_mtl_zoff);
     NuFntSet(app_fnt);
     NuFntSetPen(0x80808080);
-    NuFntPrintEx(0x17C0, 0xA28, 0, cursor_text_info_box);
+    NuFntPrintEx(0x17C0, 0xA28, 0, "Info Box");
     NuFntSetPen(0x80000000);
     if (edanim_nearest == -1) {
-        NuFntPrintEx(0x17C0, 0xAF0, 0, cursor_text_no_special);
+        NuFntPrintEx(0x17C0, 0xAF0, 0, "Curr Spcl: <none>");
     } else {
-        NuFntPrintEx(0x17C0, 0xAF0, 0, cursor_text_special,
+        NuFntPrintEx(0x17C0, 0xAF0, 0, "Curr Spcl: %s",
                      edanim_base_scene->specials[edanim_nearest].name);
     }
     if (edanim_nearest_param_id == -1) {
-        NuFntPrintEx(0x17C0, 0xB90, 0, cursor_text_no_params);
+        NuFntPrintEx(0x17C0, 0xB90, 0, "Params: No");
     } else {
-        NuFntPrintEx(0x17C0, 0xB90, 0, cursor_text_params);
+        NuFntPrintEx(0x17C0, 0xB90, 0, "Params: Yes");
         if (edanim_particle_mode) {
-            NuFntPrintEx(0x1810, 0xC30, 0, cursor_text_particles,
+            NuFntPrintEx(0x1810, 0xC30, 0, "Particles: %d (Max %d)",
                          AnimParams[edanim_nearest_param_id].particle_count, 8);
             if (edanim_particle_type == -1) {
-                NuFntPrintEx(0x1810, 0xCD0, 0, cursor_text_no_type);
+                NuFntPrintEx(0x1810, 0xCD0, 0, "Select Type: <none>");
             } else {
-                NuFntPrintEx(0x1810, 0xCD0, 0, cursor_text_type,
+                NuFntPrintEx(0x1810, 0xCD0, 0, "Select Type: %s",
                              debtab[edanim_particle_type]->id);
             }
         } else if (edanim_sound_mode) {
-            NuFntPrintEx(0x1810, 0xC30, 0, cursor_text_sounds,
+            NuFntPrintEx(0x1810, 0xC30, 0, "Sounds: %d (Max %d)",
                          AnimParams[edanim_nearest_param_id].sound_count, 8);
             if (edanim_sound_type == -1) {
-                NuFntPrintEx(0x1810, 0xCD0, 0, cursor_text_no_type);
+                NuFntPrintEx(0x1810, 0xCD0, 0, "Select Type: <none>");
             } else {
-                NuFntPrintEx(0x1810, 0xCD0, 0, cursor_text_type,
+                NuFntPrintEx(0x1810, 0xCD0, 0, "Select Type: %s",
                              edbitsGetSoundName(edanim_sound_type));
             }
         }
     }
-    NuFntPrintEx(0x17C0, 0xD70, 0, cursor_text_coord, edanim_cam_pos.x);
-    NuFntPrintEx(0x1C20, 0xD70, 0, cursor_text_coord, edanim_cam_pos.y);
-    NuFntPrintEx(0x2080, 0xD70, 0, cursor_text_coord, edanim_cam_pos.z);
+    NuFntPrintEx(0x17C0, 0xD70, 0, "%5.2f", edanim_cam_pos.x);
+    NuFntPrintEx(0x1C20, 0xD70, 0, "%5.2f", edanim_cam_pos.y);
+    NuFntPrintEx(0x2080, 0xD70, 0, "%5.2f", edanim_cam_pos.z);
 }
 
 
@@ -1406,25 +1188,24 @@ static inline void edanimAddSwitchTypeItem(struct eduistyle_s *style, int type, 
 
 void edanimcbSwitchTypeMenu(struct eduimenu_s *menu)
 {
-    struct eduistyle_s style;
+    struct eduistyle_s style = { { 0x80000000, 0x80FF0000 }, { 0x80808080, 0x80404040 } };
 
-    style = edanim_item_style;
     edanim_switchtype_menu = eduiMenuCreate(70, 70, 250, 200, app_fnt,
-                                            edanimcbCancelSwitchTypeMenu, switchtype_menu_title);
+                                            edanimcbCancelSwitchTypeMenu, "Switch Type");
     if (edanim_switchtype_menu != 0) {
-        edanimAddSwitchTypeItem(&style, 0, switchtype_text_none);
-        edanimAddSwitchTypeItem(&style, 1, switchtype_text_switch);
-        edanimAddSwitchTypeItem(&style, 2, switchtype_text_switch_once);
-        edanimAddSwitchTypeItem(&style, 3, switchtype_text_switch_cont);
-        edanimAddSwitchTypeItem(&style, 4, switchtype_text_proximity);
-        edanimAddSwitchTypeItem(&style, 5, switchtype_text_proximity_once);
-        edanimAddSwitchTypeItem(&style, 6, switchtype_text_proximity_cont);
-        edanimAddSwitchTypeItem(&style, 7, switchtype_text_terrain);
-        edanimAddSwitchTypeItem(&style, 8, switchtype_text_terrain_once);
-        edanimAddSwitchTypeItem(&style, 9, switchtype_text_terrain_cont);
-        edanimAddSwitchTypeItem(&style, 10, switchtype_text_override_noanim);
-        edanimAddSwitchTypeItem(&style, 11, switchtype_text_override_play);
-        edanimAddSwitchTypeItem(&style, 12, switchtype_text_override_playcont);
+        edanimAddSwitchTypeItem(&style, 0, "None");
+        edanimAddSwitchTypeItem(&style, 1, "Switch");
+        edanimAddSwitchTypeItem(&style, 2, "Switch One Cycle");
+        edanimAddSwitchTypeItem(&style, 3, "Switch Continuous");
+        edanimAddSwitchTypeItem(&style, 4, "Proximity");
+        edanimAddSwitchTypeItem(&style, 5, "Proximity One Cycle");
+        edanimAddSwitchTypeItem(&style, 6, "Proximity Continuous");
+        edanimAddSwitchTypeItem(&style, 7, "Terrain");
+        edanimAddSwitchTypeItem(&style, 8, "Terrain One Cycle");
+        edanimAddSwitchTypeItem(&style, 9, "Terrain Continuous");
+        edanimAddSwitchTypeItem(&style, 10, "Override NoAnim");
+        edanimAddSwitchTypeItem(&style, 11, "Override Play");
+        edanimAddSwitchTypeItem(&style, 12, "Override PlayCont");
         eduiMenuAttach(menu, edanim_switchtype_menu);
         edanim_switchtype_menu->x = menu->x + 10;
         edanim_switchtype_menu->y = menu->y + 40;
@@ -1434,28 +1215,27 @@ void edanimcbSwitchTypeMenu(struct eduimenu_s *menu)
 
 void edanimcbSwitchMenu(struct eduimenu_s *menu)
 {
-    struct eduistyle_s style;
+    struct eduistyle_s style = { { 0x80000000, 0x80FF0000 }, { 0x80808080, 0x80404040 } };
 
-    style = edanim_item_style;
     if (edanim_nearest != -1 && edanim_nearest_param_id != -1) {
         edanim_switch_menu = eduiMenuCreate(70, 70, 180, 250, app_fnt, edanimcbCancelSwitchMenu,
-                                            switch_menu_title);
+                                            "Switch Menu");
         if (edanim_switch_menu != 0) {
             eduiMenuAddItem(edanim_switch_menu,
                             eduiItemSelCreate(1, &style, 0, 0, edanimcbSwitchTypeMenu,
-                                              switch_menu_text_type));
+                                              "Switch Type..."));
             eduiMenuAddItem(edanim_switch_menu,
                             eduiItemSliderCreateInt(0, &style, 0, edanimcbSetSwitchId, -1, 129,
                                                     AnimParams[edanim_nearest_param_id].switch_id,
-                                                    switch_menu_text_id));
+                                                    "Switch ID"));
             eduiMenuAddItem(edanim_switch_menu,
                             eduiItemSliderCreate(0, &style, 0, edanimcbSetSwitchDelay, 0.0f, 20.0f,
                                                  AnimParams[edanim_nearest_param_id].switch_delay,
-                                                 switch_menu_text_delay));
+                                                 "Switch Delay"));
             eduiMenuAddItem(edanim_switch_menu,
                             eduiItemSliderCreate(0, &style, 0, edanimcbSetSwitchVar, 0.0f, 20.0f,
                                                  AnimParams[edanim_nearest_param_id].switch_var,
-                                                 switch_menu_text_var));
+                                                 "Switch Var"));
             eduiMenuAttach(menu, edanim_switch_menu);
             edanim_switch_menu->x = menu->x + 10;
             edanim_switch_menu->y = menu->y + 40;
@@ -1466,26 +1246,25 @@ void edanimcbSwitchMenu(struct eduimenu_s *menu)
 
 void edanimcbBouncyMenu(struct eduimenu_s *menu)
 {
-    struct eduistyle_s style;
+    struct eduistyle_s style = { { 0x80000000, 0x80FF0000 }, { 0x80808080, 0x80404040 } };
 
-    style = edanim_item_style;
     if (edanim_nearest != -1) {
         edanim_bouncy_menu = eduiMenuCreate(70, 70, 250, 300, app_fnt, edanimcbCancelBouncyMenu,
-                                            bouncy_menu_title);
+                                            "Bounciness");
         if (edanim_bouncy_menu != 0) {
             eduiMenuAddItem(edanim_bouncy_menu,
                             eduiItemSliderCreate(0, &style, 0, edanimcbSetBouncyPlayerGrav, -0.1f,
                                                  0.2f,
                                                  AnimParams[edanim_nearest_param_id].bouncy_player_grav,
-                                                 bouncy_menu_text_grav));
+                                                 "Player Grav"));
             eduiMenuAddItem(edanim_bouncy_menu,
                             eduiItemSliderCreate(0, &style, 0, edanimcbSetBouncyTension, 0.0f, 1.0f,
                                                  AnimParams[edanim_nearest_param_id].bouncy_tension,
-                                                 bouncy_menu_text_tension));
+                                                 "Tension"));
             eduiMenuAddItem(edanim_bouncy_menu,
                             eduiItemSliderCreate(0, &style, 0, edanimcbSetBouncyDamping, 0.0f, 1.0f,
                                                  AnimParams[edanim_nearest_param_id].bouncy_damping,
-                                                 bouncy_menu_text_damping));
+                                                 "Damping"));
             eduiMenuAttach(menu, edanim_bouncy_menu);
             edanim_bouncy_menu->x = menu->x + 10;
             edanim_bouncy_menu->y = menu->y + 40;
@@ -1496,18 +1275,17 @@ void edanimcbBouncyMenu(struct eduimenu_s *menu)
 
 void edanimcbParticleTypeMenu(struct eduimenu_s *menu)
 {
-    struct eduistyle_s style;
+    struct eduistyle_s style = { { 0x80000000, 0x80FF0000 }, { 0x80808080, 0x80404040 } };
     int selected;
     int i;
 
-    style = edanim_item_style;
     edanim_particletype_menu = eduiMenuCreate(70, 70, 250, 250, app_fnt,
                                               edanimcbCancelParticleTypeMenu,
-                                              particletype_menu_title);
+                                              "Particle Type");
     if (edanim_particletype_menu != 0) {
         eduiMenuAddItem(edanim_particletype_menu,
                         eduiItemCheckCreate(0, &style, edanim_particle_type == -1, 0,
-                                            edanimcbSetParticleType, particletype_text_none));
+                                            edanimcbSetParticleType, "NONE"));
         for (i = 1; i < 128; i++) {
             if (debtab[i] != 0) {
                 selected = 0;
@@ -1529,31 +1307,62 @@ void edanimcbParticleTypeMenu(struct eduimenu_s *menu)
 }
 
 
+inline void edanimcbLocalParticleTypeMenu(struct eduimenu_s *menu)
+{
+    struct eduistyle_s style = { { 0x80000000, 0x80FF0000 }, { 0x80808080, 0x80404040 } };
+    int selected;
+    int i;
+
+    edanim_localparticletype_menu = eduiMenuCreate(70, 70, 250, 200, app_fnt,
+                                                   edanimcbCancelLocalParticleTypeMenu,
+                                                   "Highlighted Particle Type");
+    if (edanim_localparticletype_menu != 0) {
+        for (i = 1; i < 128; i++) {
+            if (debtab[i] != 0) {
+                selected = 0;
+                if (AnimParams[edanim_nearest_param_id].particle_type[edanim_nearest_particle]
+                    == i) {
+                    selected = 1;
+                }
+                eduiMenuAddItem(edanim_localparticletype_menu,
+                                eduiItemCheckCreate(i, &style, selected, 1,
+                                                    edanimcbSetLocalParticleType, debtab[i]->id));
+                if (selected == 1) {
+                    edanim_localparticletype_menu->current = edui_last_item;
+                }
+            }
+        }
+        eduiMenuAttach(menu, edanim_localparticletype_menu);
+        edanim_localparticletype_menu->x = menu->x + 10;
+        edanim_localparticletype_menu->y = menu->y + 40;
+    }
+}
+
+
 void edanimcbLocalParticleMenu(struct eduimenu_s *menu)
 {
-    struct eduistyle_s style;
+    struct eduistyle_s style = { { 0x80000000, 0x80FF0000 }, { 0x80808080, 0x80404040 } };
 
-    style = edanim_item_style;
     if (edanim_nearest_particle != -1) {
         edanim_localparticle_menu = eduiMenuCreate(70, 70, 250, 300, app_fnt,
                                                    edanimcbCancelLocalParticleMenu,
-                                                   localparticle_menu_title);
+                                                   "Highlighted Particle Settings");
         if (edanim_localparticle_menu != 0) {
             eduiMenuAddItem(edanim_localparticle_menu,
                             eduiItemSelCreate(1, &style, 0, 0, edanimcbLocalParticleTypeMenu,
-                                              localparticle_menu_text_type));
+                                              "Highlighted Particle Type..."));
             eduiMenuAddItem(
                 edanim_localparticle_menu,
                 eduiItemSliderCreateInt(
                     0, &style, 0, edanimcbSetParticleRate, -10, 20,
                     AnimParams[edanim_nearest_param_id].particle_rate[edanim_nearest_particle],
-                    localparticle_menu_text_rate));
+                    "Particle Rate"));
             eduiMenuAddItem(
                 edanim_localparticle_menu,
                 eduiItemToggleCreate(
                     0, &style,
                     AnimParams[edanim_nearest_param_id].particle_switch[edanim_nearest_particle], 1,
-                    edanimcbToggleParticleSwitch, localparticle_menu_text_moving));
+                    edanimcbToggleParticleSwitch, "Only On Moving"));
             eduiMenuAttach(menu, edanim_localparticle_menu);
             edanim_localparticle_menu->x = menu->x + 10;
             edanim_localparticle_menu->y = menu->y + 40;
@@ -1562,33 +1371,116 @@ void edanimcbLocalParticleMenu(struct eduimenu_s *menu)
 }
 
 
+inline void edanimcbParticleMenu(struct eduimenu_s *menu)
+{
+    struct eduistyle_s style = { { 0x80000000, 0x80FF0000 }, { 0x80808080, 0x80404040 } };
+
+    if (edanim_nearest_param_id != -1) {
+        edanim_particle_menu = eduiMenuCreate(70, 70, 250, 300, app_fnt,
+                                              edanimcbCancelParticleMenu, "Attached Particles");
+        if (edanim_particle_menu != 0) {
+            eduiMenuAddItem(edanim_particle_menu,
+                            eduiItemSelCreate(1, &style, 0, 0, edanimcbParticleTypeMenu,
+                                              "Particle Type..."));
+            if (edanim_nearest_particle != -1) {
+                eduiMenuAddItem(edanim_particle_menu,
+                                eduiItemSelCreate(1, &style, 0, 0, edanimcbLocalParticleMenu,
+                                                  "Highlighted Ptl Settings..."));
+            }
+            eduiMenuAttach(menu, edanim_particle_menu);
+            edanim_particle_menu->x = menu->x + 10;
+            edanim_particle_menu->y = menu->y + 40;
+        }
+    }
+}
+
+
+inline void edanimcbSoundTypeMenu(struct eduimenu_s *menu)
+{
+    struct eduistyle_s style = { { 0x80000000, 0x80FF0000 }, { 0x80808080, 0x80404040 } };
+    int selected;
+    int i;
+
+    edanim_soundtype_menu = eduiMenuCreate(70, 70, 250, 250, app_fnt, edanimcbCancelSoundTypeMenu,
+                                           "Sound Type");
+    if (edanim_soundtype_menu != 0) {
+        eduiMenuAddItem(edanim_soundtype_menu,
+                        eduiItemCheckCreate(99999, &style, edanim_sound_type == -1, 0,
+                                            edanimcbSetSoundType, "NONE"));
+        for (i = 0; i < edSfxAllCount; i++) {
+            selected = 0;
+            if (edanim_sound_type == i) {
+                selected = 1;
+            }
+            eduiMenuAddItem(edanim_soundtype_menu,
+                            eduiItemCheckCreate(i, &style, selected, 1, edanimcbSetSoundType,
+                                                edbitsGetSoundName(i)));
+            if (selected == 1) {
+                edanim_soundtype_menu->current = edui_last_item;
+            }
+        }
+        eduiMenuAttach(menu, edanim_soundtype_menu);
+        edanim_soundtype_menu->x = menu->x + 10;
+        edanim_soundtype_menu->y = menu->y + 40;
+    }
+}
+
+
+inline void edanimcbLocalSoundTypeMenu(struct eduimenu_s *menu)
+{
+    struct eduistyle_s style = { { 0x80000000, 0x80FF0000 }, { 0x80808080, 0x80404040 } };
+    int selected;
+    int i;
+
+    edanim_localsoundtype_menu = eduiMenuCreate(70, 70, 250, 200, app_fnt,
+                                                edanimcbCancelLocalSoundTypeMenu,
+                                                "Highlighted Sound Type");
+    if (edanim_localsoundtype_menu != 0) {
+        for (i = 0; i < edSfxAllCount; i++) {
+            selected = 0;
+            if (AnimParams[edanim_nearest_param_id].sound_type[edanim_nearest_sound] == i) {
+                selected = 1;
+            }
+            eduiMenuAddItem(edanim_localsoundtype_menu,
+                            eduiItemCheckCreate(i, &style, selected, 1, edanimcbSetLocalSoundType,
+                                                edbitsGetSoundName(i)));
+            if (selected == 1) {
+                edanim_localsoundtype_menu->current = edui_last_item;
+            }
+        }
+        eduiMenuAttach(menu, edanim_localsoundtype_menu);
+        edanim_localsoundtype_menu->x = menu->x + 10;
+        edanim_localsoundtype_menu->y = menu->y + 40;
+    }
+}
+
+
 void edanimcbLocalSoundMenu(struct eduimenu_s *menu)
 {
-    struct eduistyle_s style;
+    struct eduistyle_s style = { { 0x80000000, 0x80FF0000 }, { 0x80808080, 0x80404040 } };
     struct nuinstanim_s *anim;
 
-    style = edanim_item_style;
     if (edanim_nearest_sound != -1) {
         edanim_localsound_menu = eduiMenuCreate(70, 70, 250, 300, app_fnt,
                                                 edanimcbCancelLocalSoundMenu,
-                                                localsound_menu_title);
+                                                "Highlighted Sound Settings");
         if (edanim_localsound_menu != 0) {
             eduiMenuAddItem(edanim_localsound_menu,
                             eduiItemSelCreate(1, &style, 0, 0, edanimcbLocalSoundTypeMenu,
-                                              localsound_menu_text_type));
+                                              "Highlighted Sound Type..."));
             eduiMenuAddItem(
                 edanim_localsound_menu,
                 eduiItemToggleCreate(
                     1, &style,
                     AnimParams[edanim_nearest_param_id].sound_switch[edanim_nearest_sound] == 1, 1,
-                    edanimcbToggleSoundType, localsound_menu_text_repeat));
+                    edanimcbToggleSoundType, "Repeating Sound"));
             if (AnimParams[edanim_nearest_param_id].sound_switch[edanim_nearest_sound] == 1) {
                 eduiMenuAddItem(
                     edanim_localsound_menu,
                     eduiItemSliderCreateInt(
                         0, &style, 0, edanimcbSetSoundTiming, 1, 99,
                         AnimParams[edanim_nearest_param_id].sound_timing[edanim_nearest_sound],
-                        localsound_menu_text_every));
+                        "Repeat Every"));
             } else {
                 anim = edanim_base_scene->specials[edanim_nearest].instance->anim;
                 if (anim != 0) {
@@ -1598,8 +1490,8 @@ void edanimcbLocalSoundMenu(struct eduimenu_s *menu)
                             0, &style, 0, edanimcbSetSoundTiming, 1.0f,
                             edanim_base_scene->instanimdata[anim->anim_ix]->time,
                             AnimParams[edanim_nearest_param_id].sound_timing[edanim_nearest_sound],
-                            localsound_menu_text_trigger));
-                    eduiItemSliderSetFmt(edui_last_item, localsound_menu_fmt_trigger);
+                            "Sound Trigger Time"));
+                    eduiItemSliderSetFmt(edui_last_item, "(%1.01f)");
                     eduiItemSliderSetGranularity(edui_last_item, 0.1f);
                 }
             }
@@ -1611,53 +1503,229 @@ void edanimcbLocalSoundMenu(struct eduimenu_s *menu)
 }
 
 
+inline void edanimcbSoundMenu(struct eduimenu_s *menu)
+{
+    struct eduistyle_s style = { { 0x80000000, 0x80FF0000 }, { 0x80808080, 0x80404040 } };
+
+    if (edanim_nearest_param_id != -1) {
+        edanim_sound_menu = eduiMenuCreate(70, 70, 250, 300, app_fnt,
+                                           edanimcbCancelSoundMenu, "Attached Sounds");
+        if (edanim_sound_menu != 0) {
+            eduiMenuAddItem(edanim_sound_menu,
+                            eduiItemSelCreate(1, &style, 0, 0, edanimcbSoundTypeMenu,
+                                              "Sound Type..."));
+            if (edanim_nearest_sound != -1) {
+                eduiMenuAddItem(edanim_sound_menu,
+                                eduiItemSelCreate(1, &style, 0, 0, edanimcbLocalSoundMenu,
+                                                  "Highlighted Snd Settings..."));
+            }
+            eduiMenuAttach(menu, edanim_sound_menu);
+            edanim_sound_menu->x = menu->x + 10;
+            edanim_sound_menu->y = menu->y + 40;
+        }
+    }
+}
+
+
+inline void edanimcbFileSave(void *menu)
+{
+    char filename[256];
+
+    if (edbits_what_game == 1) {
+        sprintf(filename, "%s\\Anims.dat", edbits_level_filename);
+        if (edanimFileSave(filename)) {
+            eduiCreateMessageMenu(menu, "Saved OK", 1);
+        } else {
+            eduiCreateMessageMenu(menu, "File Save Error", 0);
+        }
+    } else if (edbits_what_game == 2) {
+        sprintf(filename, "%s.anm", edbits_level_filename);
+        if (edanimFileSave(filename)) {
+            eduiCreateMessageMenu(menu, "Saved OK", 1);
+        } else {
+            eduiCreateMessageMenu(menu, "File Save Error", 0);
+        }
+    } else {
+        eduiCreateMessageMenu(menu, "File Save Error", 0);
+    }
+}
+
+
+inline void edanimcbFileLoad(void *menu)
+{
+    char filename[256];
+
+    if (edbits_what_game == 1) {
+        sprintf(filename, "%s\\Anims.dat", edbits_level_filename);
+        if (NuFileSize(filename) > 0) {
+            edanimFileLoad(filename);
+        }
+        eduiCreateMessageMenu(menu, "Loaded OK", 1);
+    } else if (edbits_what_game == 2) {
+        sprintf(filename, "%s.anm", edbits_level_filename);
+        if (NuFileSize(filename) > 0) {
+            edanimFileLoad(filename);
+        }
+        eduiCreateMessageMenu(menu, "Loaded OK", 1);
+    } else {
+        eduiCreateMessageMenu(menu, "File Load Error", 0);
+    }
+}
+
+
+inline void edanimcbMCTBCardPresent(void *menu)
+{
+    if (saveloadCheckCardPresent()) {
+        eduiCreateMessageMenu(menu, "Present", 1);
+    } else {
+        eduiCreateMessageMenu(menu, "Not Present", 0);
+    }
+}
+
+
+inline void edanimcbMCTBCardType(void *menu)
+{
+    if (saveloadCheckCardType()) {
+        eduiCreateMessageMenu(menu, "PS2 Card", 1);
+    } else {
+        eduiCreateMessageMenu(menu, "Not a PS2 Card", 0);
+    }
+}
+
+
+inline void edanimcbMCTBCardCheckFormat(void *menu)
+{
+    if (saveloadCheckCardFormatted()) {
+        eduiCreateMessageMenu(menu, "Formatted", 1);
+    } else {
+        eduiCreateMessageMenu(menu, "Not Formatted", 0);
+    }
+}
+
+
+inline void edanimcbMCTBCardFreeSpace(void *menu)
+{
+    char text[32];
+    int space;
+
+    space = saveloadCheckCardFreeSpace(0);
+    sprintf(text, "Space = %05d", space);
+    eduiCreateMessageMenu(menu, text, 1);
+}
+
+
+inline void edanimcbMCTBCardSlotsUsed(void *menu)
+{
+    char text[32];
+    int used;
+
+    used = saveloadCheckSlotsUsed();
+    sprintf(text, "Slots Used = %02d", used);
+    eduiCreateMessageMenu(menu, text, 1);
+}
+
+
+inline void edanimcbMCTBCardSaveSlot(void *menu, struct eduiitem_s *item)
+{
+    char text[32];
+
+    sprintf(text, "This is slot %d", item->value);
+    if (saveloadSaveSlot(item->value, text, 32)) {
+        eduiCreateMessageMenu(menu, "Saved OK", 1);
+    } else {
+        eduiCreateMessageMenu(menu, "Save Error", 0);
+    }
+}
+
+
+inline void edanimcbMCTBCardLoadSlot(void *menu, struct eduiitem_s *item)
+{
+    char text[32];
+
+    if (saveloadLoadSlot(item->value, text, 32)) {
+        eduiCreateMessageMenu(menu, text, 1);
+    } else {
+        eduiCreateMessageMenu(menu, "Load Error", 0);
+    }
+}
+
+
+inline void edanimcbMCTBCardDeleteSlot(void *menu, struct eduiitem_s *item)
+{
+    if (saveloadDeleteSlot(item->value)) {
+        eduiCreateMessageMenu(menu, "Delete OK", 1);
+    } else {
+        eduiCreateMessageMenu(menu, "Delete Error", 0);
+    }
+}
+
+
+inline void edanimcbMCTBCardUnFormat(void *menu)
+{
+    if (saveloadUnFormatCard()) {
+        eduiCreateMessageMenu(menu, "Unformat OK", 1);
+    } else {
+        eduiCreateMessageMenu(menu, "Unformat Fail", 0);
+    }
+}
+
+
+inline void edanimcbMCTBCardFormat(void *menu)
+{
+    if (saveloadFormatCard()) {
+        eduiCreateMessageMenu(menu, "Format OK", 1);
+    } else {
+        eduiCreateMessageMenu(menu, "Format Fail", 0);
+    }
+}
+
+
 void edanimcbMCTBMenu(struct eduimenu_s *menu)
 {
-    struct eduistyle_s style;
+    struct eduistyle_s style = { { 0x80000000, 0x80FF0000 }, { 0x80808080, 0x80404040 } };
 
-    style = edanim_item_style;
     edanim_mctb_menu = eduiMenuCreate(70, 70, 250, 250, app_fnt, edanimcbCancelMCTBMenu,
-                                      mctb_menu_title);
+                                      "Memory Card Test Menu");
     if (edanim_mctb_menu != 0) {
         eduiMenuAddItem(edanim_mctb_menu,
                         eduiItemSelCreate(1, &style, 0, 0, edanimcbMCTBCardPresent,
-                                          mctb_menu_text_present));
+                                          "Card Present Test"));
         eduiMenuAddItem(edanim_mctb_menu,
                         eduiItemSelCreate(1, &style, 0, 0, edanimcbMCTBCardType,
-                                          mctb_menu_text_type));
+                                          "Card Type Test"));
         eduiMenuAddItem(edanim_mctb_menu,
                         eduiItemSelCreate(1, &style, 0, 0, edanimcbMCTBCardCheckFormat,
-                                          mctb_menu_text_format_test));
+                                          "Card Format Test"));
         eduiMenuAddItem(edanim_mctb_menu,
                         eduiItemSelCreate(1, &style, 0, 0, edanimcbMCTBCardFreeSpace,
-                                          mctb_menu_text_free_space));
+                                          "Card Free Space"));
         eduiMenuAddItem(edanim_mctb_menu,
                         eduiItemSelCreate(1, &style, 0, 0, edanimcbMCTBCardSlotsUsed,
-                                          mctb_menu_text_slots_used));
+                                          "Card Slots Used"));
         eduiMenuAddItem(edanim_mctb_menu,
                         eduiItemSelCreate(0, &style, 0, 0, edanimcbMCTBCardSaveSlot,
-                                          mctb_menu_text_save0));
+                                          "Card Save Slot 0"));
         eduiMenuAddItem(edanim_mctb_menu,
                         eduiItemSelCreate(0, &style, 0, 0, edanimcbMCTBCardLoadSlot,
-                                          mctb_menu_text_load0));
+                                          "Card Load Slot 0"));
         eduiMenuAddItem(edanim_mctb_menu,
                         eduiItemSelCreate(0, &style, 0, 0, edanimcbMCTBCardDeleteSlot,
-                                          mctb_menu_text_delete0));
+                                          "Card Delete Slot 0"));
         eduiMenuAddItem(edanim_mctb_menu,
                         eduiItemSelCreate(1, &style, 0, 0, edanimcbMCTBCardSaveSlot,
-                                          mctb_menu_text_save1));
+                                          "Card Save Slot 1"));
         eduiMenuAddItem(edanim_mctb_menu,
                         eduiItemSelCreate(1, &style, 0, 0, edanimcbMCTBCardLoadSlot,
-                                          mctb_menu_text_load1));
+                                          "Card Load Slot 1"));
         eduiMenuAddItem(edanim_mctb_menu,
                         eduiItemSelCreate(1, &style, 0, 0, edanimcbMCTBCardDeleteSlot,
-                                          mctb_menu_text_delete1));
+                                          "Card Delete Slot 1"));
         eduiMenuAddItem(edanim_mctb_menu,
                         eduiItemSelCreate(1, &style, 0, 0, edanimcbMCTBCardFormat,
-                                          mctb_menu_text_format));
+                                          "Format Card"));
         eduiMenuAddItem(edanim_mctb_menu,
                         eduiItemSelCreate(1, &style, 0, 0, edanimcbMCTBCardUnFormat,
-                                          mctb_menu_text_unformat));
+                                          "Unformat Card"));
         eduiMenuAttach(menu, edanim_mctb_menu);
         edanim_mctb_menu->x = menu->x + 10;
         edanim_mctb_menu->y = menu->y + 40;
@@ -1667,10 +1735,9 @@ void edanimcbMCTBMenu(struct eduimenu_s *menu)
 
 void edanimInit(void)
 {
-    struct eduistyle_s style;
+    struct eduistyle_s style = { { 0x80000000, 0x80FF0000 }, { 0x80808080, 0x80404040 } };
     int i;
 
-    style = edanim_item_style;
     for (i = 0; i < 64; i++) {
         AnimParams[i].id = -1;
     }
@@ -1694,28 +1761,50 @@ void edanimInit(void)
     edanim_mtl_zoff->attrib.alpha = 0;
     NuMtlUpdate(edanim_mtl_zoff);
     edanim_options_menu = eduiMenuCreate(70, 70, 220, 300, app_fnt, edanimcbCancelOptMenu,
-                                         options_menu_title);
+                                         "Options");
     if (edanim_options_menu != 0) {
         eduiMenuAddItem(edanim_options_menu,
                         eduiItemSelCreate(1, &style, 0, 0, edanimcbParticleMenu,
-                                          options_text_particles));
+                                          "Attached Particles..."));
         eduiMenuAddItem(edanim_options_menu,
                         eduiItemSelCreate(1, &style, 0, 0, edanimcbSoundMenu,
-                                          options_text_sounds));
+                                          "Attached Sounds..."));
         eduiMenuAddItem(edanim_options_menu,
                         eduiItemSelCreate(1, &style, 0, 0, edanimcbBouncyMenu,
-                                          options_text_bouncy));
+                                          "Bounciness..."));
         eduiMenuAddItem(edanim_options_menu,
                         eduiItemSelCreate(1, &style, 0, 0, edanimcbSwitchMenu,
-                                          options_text_switch));
+                                          "Switch Properties..."));
         eduiMenuAddItem(edanim_options_menu,
-                        eduiItemSelCreate(1, &style, 0, 0, edanimcbFileSave, options_text_save));
+                        eduiItemSelCreate(1, &style, 0, 0, edanimcbFileSave, "Save Params"));
         eduiMenuAddItem(edanim_options_menu,
-                        eduiItemSelCreate(1, &style, 0, 0, edanimcbFileLoad, options_text_load));
+                        eduiItemSelCreate(1, &style, 0, 0, edanimcbFileLoad, "Load Params"));
         eduiMenuAddItem(edanim_options_menu,
-                        eduiItemSelCreate(1, &style, 0, 0, edanimcbMCTBMenu, options_text_mctb));
+                        eduiItemSelCreate(1, &style, 0, 0, edanimcbMCTBMenu, "Memory Card Test Bed..."));
     }
 }
+
+
+struct edmainreg_s edanimdesc = {
+    0, 0, "Anim Editor", edanimInit, edanimClose, edanimEnter, {0}, 0,
+    EDMAIN_BLOCKID('a', 'n', 'i', 'm'), edanimProc, edanimRender
+};
+struct edanimparam_s AnimParams[64] = { { 0 } };
+struct nuvec_s edanim_cam_pos = { 0.0f, 0.0f, 0.0f };
+struct numtl_s *edanim_mtl = 0;
+struct numtl_s *edanim_mtl_zoff = 0;
+float edanim_cam_dist = 0.0f;
+int edanim_cam_ax = 0;
+int edanim_cam_ay = 0;
+int edanim_nearest = 0;
+int edanim_nearest_param_id = 0;
+int edanim_nearest_particle = 0;
+int edanim_nearest_sound = 0;
+int edanim_next_param = 0;
+int edanim_particle_mode = 0;
+int edanim_particle_type = 0;
+int edanim_sound_mode = 0;
+int edanim_sound_type = 0;
 
 
 void edanimRenderParticleEmitters(int param)
@@ -2028,98 +2117,10 @@ void edanimcbCancelParticleTypeMenu(void)
 }
 
 
-void edanimcbLocalParticleTypeMenu(struct eduimenu_s *menu)
-{
-    struct eduistyle_s style;
-    int selected;
-    int i;
-
-    style = edanim_item_style;
-    edanim_localparticletype_menu = eduiMenuCreate(70, 70, 250, 200, app_fnt,
-                                                   edanimcbCancelLocalParticleTypeMenu,
-                                                   localparticletype_menu_title);
-    if (edanim_localparticletype_menu != 0) {
-        for (i = 1; i < 128; i++) {
-            if (debtab[i] != 0) {
-                selected = 0;
-                if (AnimParams[edanim_nearest_param_id].particle_type[edanim_nearest_particle]
-                    == i) {
-                    selected = 1;
-                }
-                eduiMenuAddItem(edanim_localparticletype_menu,
-                                eduiItemCheckCreate(i, &style, selected, 1,
-                                                    edanimcbSetLocalParticleType, debtab[i]->id));
-                if (selected == 1) {
-                    edanim_localparticletype_menu->current = edui_last_item;
-                }
-            }
-        }
-        eduiMenuAttach(menu, edanim_localparticletype_menu);
-        edanim_localparticletype_menu->x = menu->x + 10;
-        edanim_localparticletype_menu->y = menu->y + 40;
-    }
-}
-
-
 void edanimcbCancelLocalParticleMenu(void)
 {
     eduiMenuDestroy(edanim_localparticle_menu);
     edanim_localparticle_menu = 0;
-}
-
-
-void edanimcbParticleMenu(struct eduimenu_s *menu)
-{
-    struct eduistyle_s style;
-
-    style = edanim_item_style;
-    if (edanim_nearest_param_id != -1) {
-        edanim_particle_menu = eduiMenuCreate(70, 70, 250, 300, app_fnt,
-                                              edanimcbCancelParticleMenu, particle_menu_title);
-        if (edanim_particle_menu != 0) {
-            eduiMenuAddItem(edanim_particle_menu,
-                            eduiItemSelCreate(1, &style, 0, 0, edanimcbParticleTypeMenu,
-                                              particle_menu_text_type));
-            if (edanim_nearest_particle != -1) {
-                eduiMenuAddItem(edanim_particle_menu,
-                                eduiItemSelCreate(1, &style, 0, 0, edanimcbLocalParticleMenu,
-                                                  particle_menu_text_local));
-            }
-            eduiMenuAttach(menu, edanim_particle_menu);
-            edanim_particle_menu->x = menu->x + 10;
-            edanim_particle_menu->y = menu->y + 40;
-        }
-    }
-}
-
-
-void edanimcbLocalSoundTypeMenu(struct eduimenu_s *menu)
-{
-    struct eduistyle_s style;
-    int selected;
-    int i;
-
-    style = edanim_item_style;
-    edanim_localsoundtype_menu = eduiMenuCreate(70, 70, 250, 200, app_fnt,
-                                                edanimcbCancelLocalSoundTypeMenu,
-                                                localsoundtype_menu_title);
-    if (edanim_localsoundtype_menu != 0) {
-        for (i = 0; i < edSfxAllCount; i++) {
-            selected = 0;
-            if (AnimParams[edanim_nearest_param_id].sound_type[edanim_nearest_sound] == i) {
-                selected = 1;
-            }
-            eduiMenuAddItem(edanim_localsoundtype_menu,
-                            eduiItemCheckCreate(i, &style, selected, 1, edanimcbSetLocalSoundType,
-                                                edbitsGetSoundName(i)));
-            if (selected == 1) {
-                edanim_localsoundtype_menu->current = edui_last_item;
-            }
-        }
-        eduiMenuAttach(menu, edanim_localsoundtype_menu);
-        edanim_localsoundtype_menu->x = menu->x + 10;
-        edanim_localsoundtype_menu->y = menu->y + 40;
-    }
 }
 
 
@@ -2130,187 +2131,9 @@ void edanimcbCancelLocalSoundMenu(void)
 }
 
 
-void edanimcbSoundMenu(struct eduimenu_s *menu)
-{
-    struct eduistyle_s style;
-
-    style = edanim_item_style;
-    if (edanim_nearest_param_id != -1) {
-        edanim_sound_menu = eduiMenuCreate(70, 70, 250, 300, app_fnt,
-                                           edanimcbCancelSoundMenu, sound_menu_title);
-        if (edanim_sound_menu != 0) {
-            eduiMenuAddItem(edanim_sound_menu,
-                            eduiItemSelCreate(1, &style, 0, 0, edanimcbSoundTypeMenu,
-                                              sound_menu_text_type));
-            if (edanim_nearest_sound != -1) {
-                eduiMenuAddItem(edanim_sound_menu,
-                                eduiItemSelCreate(1, &style, 0, 0, edanimcbLocalSoundMenu,
-                                                  sound_menu_text_local));
-            }
-            eduiMenuAttach(menu, edanim_sound_menu);
-            edanim_sound_menu->x = menu->x + 10;
-            edanim_sound_menu->y = menu->y + 40;
-        }
-    }
-}
-
-
 void edanimcbCancelOptMenu(void)
 {
     edanim_active_menu = 0;
-}
-
-
-void edanimcbFileSave(void *menu)
-{
-    char filename[256];
-
-    if (edbits_what_game == 1) {
-        sprintf(filename, anim_file_format_game1, edbits_level_filename);
-        if (edanimFileSave(filename)) {
-            eduiCreateMessageMenu(menu, anim_text_saved, 1);
-        } else {
-            eduiCreateMessageMenu(menu, anim_text_save_failed, 0);
-        }
-    } else if (edbits_what_game == 2) {
-        sprintf(filename, anim_file_format_game2, edbits_level_filename);
-        if (edanimFileSave(filename)) {
-            eduiCreateMessageMenu(menu, anim_text_saved, 1);
-        } else {
-            eduiCreateMessageMenu(menu, anim_text_save_failed, 0);
-        }
-    } else {
-        eduiCreateMessageMenu(menu, anim_text_save_failed, 0);
-    }
-}
-
-
-void edanimcbFileLoad(void *menu)
-{
-    char filename[256];
-
-    if (edbits_what_game == 1) {
-        sprintf(filename, anim_file_format_game1, edbits_level_filename);
-        if (NuFileSize(filename) > 0) {
-            edanimFileLoad(filename);
-        }
-        eduiCreateMessageMenu(menu, anim_text_loaded, 1);
-    } else if (edbits_what_game == 2) {
-        sprintf(filename, anim_file_format_game2, edbits_level_filename);
-        if (NuFileSize(filename) > 0) {
-            edanimFileLoad(filename);
-        }
-        eduiCreateMessageMenu(menu, anim_text_loaded, 1);
-    } else {
-        eduiCreateMessageMenu(menu, anim_text_load_failed, 0);
-    }
-}
-
-
-void edanimcbMCTBCardPresent(void *menu)
-{
-    if (saveloadCheckCardPresent()) {
-        eduiCreateMessageMenu(menu, mctb_text_present, 1);
-    } else {
-        eduiCreateMessageMenu(menu, mctb_text_not_present, 0);
-    }
-}
-
-
-void edanimcbMCTBCardType(void *menu)
-{
-    if (saveloadCheckCardType()) {
-        eduiCreateMessageMenu(menu, mctb_text_ps2_card, 1);
-    } else {
-        eduiCreateMessageMenu(menu, mctb_text_not_ps2_card, 0);
-    }
-}
-
-
-void edanimcbMCTBCardCheckFormat(void *menu)
-{
-    if (saveloadCheckCardFormatted()) {
-        eduiCreateMessageMenu(menu, mctb_text_formatted, 1);
-    } else {
-        eduiCreateMessageMenu(menu, mctb_text_not_formatted, 0);
-    }
-}
-
-
-void edanimcbMCTBCardFreeSpace(void *menu)
-{
-    char text[32];
-    int space;
-
-    space = saveloadCheckCardFreeSpace(0);
-    sprintf(text, mctb_text_free_space, space);
-    eduiCreateMessageMenu(menu, text, 1);
-}
-
-
-void edanimcbMCTBCardSlotsUsed(void *menu)
-{
-    char text[32];
-    int used;
-
-    used = saveloadCheckSlotsUsed();
-    sprintf(text, mctb_text_slots_used, used);
-    eduiCreateMessageMenu(menu, text, 1);
-}
-
-
-void edanimcbMCTBCardSaveSlot(void *menu, struct eduiitem_s *item)
-{
-    char text[32];
-
-    sprintf(text, mctb_text_slot_name, item->value);
-    if (saveloadSaveSlot(item->value, text, 32)) {
-        eduiCreateMessageMenu(menu, anim_text_saved, 1);
-    } else {
-        eduiCreateMessageMenu(menu, mctb_text_save_failed, 0);
-    }
-}
-
-
-void edanimcbMCTBCardLoadSlot(void *menu, struct eduiitem_s *item)
-{
-    char text[32];
-
-    if (saveloadLoadSlot(item->value, text, 32)) {
-        eduiCreateMessageMenu(menu, text, 1);
-    } else {
-        eduiCreateMessageMenu(menu, mctb_text_load_failed, 0);
-    }
-}
-
-
-void edanimcbMCTBCardDeleteSlot(void *menu, struct eduiitem_s *item)
-{
-    if (saveloadDeleteSlot(item->value)) {
-        eduiCreateMessageMenu(menu, mctb_text_deleted, 1);
-    } else {
-        eduiCreateMessageMenu(menu, mctb_text_delete_failed, 0);
-    }
-}
-
-
-void edanimcbMCTBCardUnFormat(void *menu)
-{
-    if (saveloadUnFormatCard()) {
-        eduiCreateMessageMenu(menu, mctb_text_unformatted, 1);
-    } else {
-        eduiCreateMessageMenu(menu, mctb_text_unformat_failed, 0);
-    }
-}
-
-
-void edanimcbMCTBCardFormat(void *menu)
-{
-    if (saveloadFormatCard()) {
-        eduiCreateMessageMenu(menu, mctb_text_formatted_ok, 1);
-    } else {
-        eduiCreateMessageMenu(menu, mctb_text_format_failed, 0);
-    }
 }
 
 
@@ -2395,38 +2218,6 @@ void edanimcbCancelParticleMenu(void)
 {
     eduiMenuDestroy(edanim_particle_menu);
     edanim_particle_menu = 0;
-}
-
-
-void edanimcbSoundTypeMenu(struct eduimenu_s *menu)
-{
-    struct eduistyle_s style;
-    int selected;
-    int i;
-
-    style = edanim_item_style;
-    edanim_soundtype_menu = eduiMenuCreate(70, 70, 250, 250, app_fnt, edanimcbCancelSoundTypeMenu,
-                                           soundtype_menu_title);
-    if (edanim_soundtype_menu != 0) {
-        eduiMenuAddItem(edanim_soundtype_menu,
-                        eduiItemCheckCreate(99999, &style, edanim_sound_type == -1, 0,
-                                            edanimcbSetSoundType, soundtype_text_none));
-        for (i = 0; i < edSfxAllCount; i++) {
-            selected = 0;
-            if (edanim_sound_type == i) {
-                selected = 1;
-            }
-            eduiMenuAddItem(edanim_soundtype_menu,
-                            eduiItemCheckCreate(i, &style, selected, 1, edanimcbSetSoundType,
-                                                edbitsGetSoundName(i)));
-            if (selected == 1) {
-                edanim_soundtype_menu->current = edui_last_item;
-            }
-        }
-        eduiMenuAttach(menu, edanim_soundtype_menu);
-        edanim_soundtype_menu->x = menu->x + 10;
-        edanim_soundtype_menu->y = menu->y + 40;
-    }
 }
 
 

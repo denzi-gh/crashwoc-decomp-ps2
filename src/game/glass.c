@@ -23,18 +23,21 @@
 #include "nu3d/nucamera.h"
 #include "game/creature.h"
 
-extern f32 glass_mix;
-extern f32 glass_col_mix;
-extern f32 glass_mix_speed;
-extern f32 glass_strength;
-extern s32 glass_enabled;
-extern s32 glass_col_enabled;
-extern f32 WATERBOSSGLASSMIX;
-extern f32 ANGELGLASSMIX;
-extern f32 MAXGLASSMIX;
-extern struct numtl_s *glass_mtl;
-extern struct numtl_s *glass_spec_mtl;
-extern struct numtl_s *glass_copy_mtl;
+f32 glass_mix = 0.0f;
+f32 glass_col_mix = 0.0f;
+f32 glass_col_mix_speed = 0.02f;
+f32 glass_mix_speed = 0.02f;
+f32 glass_strength = 0.0625f;
+s32 glass_enabled = 0;
+s32 glass_col_enabled = 0;
+static s32 spectid = 0;
+static s32 envtid = 0;
+f32 WATERBOSSGLASSMIX = 0.6f;
+f32 ANGELGLASSMIX = 0.5f;
+f32 MAXGLASSMIX = 1.0f;
+struct numtl_s *glass_mtl = 0;
+struct numtl_s *glass_spec_mtl = 0;
+struct numtl_s *glass_copy_mtl = 0;
 extern s32 glass_draw;
 extern s32 glass_phase;
 extern s32 GLASSPLAYER;
@@ -45,10 +48,6 @@ extern s32 PS2_REZ_H;
 extern struct nucamera_s global_camera;
 extern struct numtl_s *nurndr_forced_mtl;
 
-extern s32 D_00631E84;
-#define spec_tid D_00631E84
-extern s32 D_00631E88;
-#define enviro_tid D_00631E88
 extern s32 D_00633358;
 #define glass_tid D_00633358
 extern f32 D_0063335C;
@@ -63,19 +62,6 @@ struct nucolour3_s glass_col[2] = {
     { 0.5f, 0.5f, 0.5f },
 };
 
-extern char D_00620728[];
-#define spectxt_path D_00620728
-extern char D_00620740[];
-#define glass_file D_00620740
-extern char D_00620750[];
-#define envtxt_path D_00620750
-extern char D_00620768[];
-#define initglass1_msg D_00620768
-extern char D_00620778[];
-#define initglass2_msg D_00620778
-extern char D_00620788[];
-#define initglass3_msg D_00620788
-
 extern void LoadScreen(char *name);
 extern void NuMemFreeFn(void *ptr, char *file, s32 line);
 extern s32 NuRndrBeginScene(s32 tid);
@@ -83,6 +69,98 @@ extern void NuRndrEndScene(void);
 extern void NuRndrEndSceneEx(s32 flags);
 extern void NuRndrRectUV2di(s32 x, s32 y, s32 w, s32 h, f32 u0, f32 v0, f32 u1, f32 v1,
                             s32 colour, struct numtl_s *mtl);
+
+
+inline void InitSpecular(void)
+{
+    struct nutex_s *tex;
+
+    spectid = 0;
+    tex = NuTexReadBitmap("stuff\\spectxtf.bmp");
+    if (tex != 0) {
+        spectid = NuTexCreate(tex);
+        if (tex->bits != 0) {
+            NuMemFreeFn(tex->bits, ".\\glass.c", 0x94);
+        }
+        NuMemFreeFn(tex, ".\\glass.c", 0x95);
+    }
+}
+
+
+inline void InitEnviro(void)
+{
+    struct nutex_s *tex;
+
+    envtid = 0;
+    tex = NuTexReadBitmap("stuff\\envtxt.bmp");
+    if (tex != 0) {
+        envtid = NuTexCreate(tex);
+        if (tex->bits != 0) {
+            NuMemFreeFn(tex->bits, ".\\glass.c", 0xA2);
+        }
+        NuMemFreeFn(tex, ".\\glass.c", 0xA3);
+    }
+}
+
+
+inline void SpecularGivenMaterial(struct numtl_s *mtl)
+{
+    struct numtl_s *spec;
+
+    spec = NuMtlCreate(1);
+    spec->tid = spectid;
+    spec->diffuse.r = 1.0f;
+    spec->diffuse.g = 1.0f;
+    spec->diffuse.b = 1.0f;
+    spec->alpha = 1.0f;
+    spec->alpha_sort = 0x7FFF;
+    spec->attrib.utc = 1;
+    spec->attrib.vtc = 1;
+    spec->attrib.lighting = 1;
+    spec->attrib.alpha = 2;
+    spec->attrib.zmode = 1;
+    spec->attrib.fx = 0;
+    NuMtlUpdate(spec);
+    while (mtl->specmtl != 0) {
+        mtl = mtl->specmtl;
+    }
+    mtl->specmtl = spec;
+}
+
+
+inline void EnviroGivenMaterial(struct numtl_s *mtl)
+{
+    struct numtl_s *env;
+
+    env = NuMtlCreate(1);
+    env->tid = envtid;
+    env->diffuse.r = 0.7f;
+    env->diffuse.g = 0.7f;
+    env->diffuse.b = 0.7f;
+    env->alpha = 0.3f;
+    env->alpha_sort = 0x7FF0;
+    env->attrib.utc = 1;
+    env->attrib.vtc = 1;
+    env->attrib.lighting = 2;
+    env->attrib.alpha = 2;
+    env->attrib.zmode = 1;
+    env->attrib.fx = 1;
+    NuMtlUpdate(env);
+    while (mtl->specmtl != 0) {
+        mtl = mtl->specmtl;
+    }
+    mtl->specmtl = env;
+}
+
+
+inline void InitFlickerPal(void)
+{
+}
+
+
+inline void FlickerPalGivenMaterial(struct numtl_s *mtl)
+{
+}
 
 
 void InitGlass(void)
@@ -95,7 +173,7 @@ void InitGlass(void)
     glass_col_enabled = 0;
 
     glass_spec_mtl = NuMtlCreate(1);
-    glass_spec_mtl->tid = spec_tid;
+    glass_spec_mtl->tid = spectid;
     glass_spec_mtl->diffuse.r = 1.0f;
     glass_spec_mtl->attrib.utc = 1;
     glass_spec_mtl->attrib.vtc = 1;
@@ -109,7 +187,7 @@ void InitGlass(void)
     glass_spec_mtl->alpha = 1.0f;
     NuMtlUpdate(glass_spec_mtl);
 
-    LoadScreen(initglass1_msg);
+    LoadScreen("Initglass 1");
     tex.type = 0xF;
     tex.width = PS2_REZ_W;
     tex.height = PS2_REZ_H;
@@ -146,7 +224,7 @@ void InitGlass(void)
     glass_mtl->effect.param[7] = (PS2_REZ_H - 1.0f) / NuPower2(PS2_REZ_H);
     glass_mtl->specmtl = glass_spec_mtl;
 
-    LoadScreen(initglass2_msg);
+    LoadScreen("Initglass 2");
     glass_copy_mtl = NuMtlCreate(1);
     glass_copy_mtl->attrib.cull = 2;
     glass_copy_mtl->attrib.zmode = 3;
@@ -160,7 +238,7 @@ void InitGlass(void)
     glass_copy_mtl->alpha = 0.999f;
     glass_copy_mtl->tid = -1;
     NuMtlUpdate(glass_copy_mtl);
-    LoadScreen(initglass3_msg);
+    LoadScreen("Initglass 3");
 }
 
 
@@ -283,96 +361,4 @@ void DoGlass(s32 editor)
         NuRndrEndScene();
     }
     NuTexUnReserve();
-}
-
-
-void InitSpecular(void)
-{
-    struct nutex_s *tex;
-
-    spec_tid = 0;
-    tex = NuTexReadBitmap(spectxt_path);
-    if (tex != 0) {
-        spec_tid = NuTexCreate(tex);
-        if (tex->bits != 0) {
-            NuMemFreeFn(tex->bits, glass_file, 0x94);
-        }
-        NuMemFreeFn(tex, glass_file, 0x95);
-    }
-}
-
-
-void InitEnviro(void)
-{
-    struct nutex_s *tex;
-
-    enviro_tid = 0;
-    tex = NuTexReadBitmap(envtxt_path);
-    if (tex != 0) {
-        enviro_tid = NuTexCreate(tex);
-        if (tex->bits != 0) {
-            NuMemFreeFn(tex->bits, glass_file, 0xA2);
-        }
-        NuMemFreeFn(tex, glass_file, 0xA3);
-    }
-}
-
-
-void SpecularGivenMaterial(struct numtl_s *mtl)
-{
-    struct numtl_s *spec;
-
-    spec = NuMtlCreate(1);
-    spec->tid = spec_tid;
-    spec->diffuse.r = 1.0f;
-    spec->diffuse.g = 1.0f;
-    spec->diffuse.b = 1.0f;
-    spec->alpha = 1.0f;
-    spec->alpha_sort = 0x7FFF;
-    spec->attrib.utc = 1;
-    spec->attrib.vtc = 1;
-    spec->attrib.lighting = 1;
-    spec->attrib.alpha = 2;
-    spec->attrib.zmode = 1;
-    spec->attrib.fx = 0;
-    NuMtlUpdate(spec);
-    while (mtl->specmtl != 0) {
-        mtl = mtl->specmtl;
-    }
-    mtl->specmtl = spec;
-}
-
-
-void EnviroGivenMaterial(struct numtl_s *mtl)
-{
-    struct numtl_s *env;
-
-    env = NuMtlCreate(1);
-    env->tid = enviro_tid;
-    env->diffuse.r = 0.7f;
-    env->diffuse.g = 0.7f;
-    env->diffuse.b = 0.7f;
-    env->alpha = 0.3f;
-    env->alpha_sort = 0x7FF0;
-    env->attrib.utc = 1;
-    env->attrib.vtc = 1;
-    env->attrib.lighting = 2;
-    env->attrib.alpha = 2;
-    env->attrib.zmode = 1;
-    env->attrib.fx = 1;
-    NuMtlUpdate(env);
-    while (mtl->specmtl != 0) {
-        mtl = mtl->specmtl;
-    }
-    mtl->specmtl = env;
-}
-
-
-void InitFlickerPal(void)
-{
-}
-
-
-void FlickerPalGivenMaterial(struct numtl_s *mtl)
-{
 }

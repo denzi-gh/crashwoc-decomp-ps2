@@ -16,8 +16,9 @@ For each status manifest this verifier proves, from scratch:
      function's hybrid bytes always come from the C compile.
   4. Every `matching` data entry ([[data]]) is BYTE-IDENTICAL to retail over
      [addr, addr+size) -- size from .symtab/STABS, never the extent; an
-     unsized object uses its compiled .size only if at most 15 zero bytes
-     remain to the next item -- and its linked symbol sits at the registry
+     unsized object uses its compiled .size only if at most 15 zero bytes,
+     or exactly the zero pad aligning it (up to 128), remain to the next
+     item -- and its linked symbol sits at the registry
      address. Padding and compiler-private bytes are left to the image gate.
   5. A `complete` unit: every function `matching`, every data entry
      `matching`/`retail`, no owned .sbss/.bss range (data/bss), and its
@@ -116,11 +117,15 @@ def verify_data(reporter, label, data, unit_index, version, elf, pieces,
             reason = "not emitted by the hybrid"
         elif size is None:
             # Unsized (an .lcomm-like static): the compiled size, when the
-            # rest of the registry extent is (at most 15 bytes of) zero pad.
+            # rest of the registry extent is zero pad -- at most 15 bytes,
+            # or exactly what aligns the next item (the next object file's
+            # section alignment, at most 128).
             size = obj["size"]
             rest = sym.get("extent", size) - size
             pad = _retail_data(elf, version, addr + size, rest) if rest > 0 else b""
-            if rest < 0 or rest > 15 or (pad and any(pad)):
+            nxt = addr + sym.get("extent", size)
+            align = min(nxt & -nxt, 128)
+            if rest < 0 or (rest > 15 and rest >= align) or (pad and any(pad)):
                 reason = (f"unsized: compiled size {size:#x} leaves {rest:#x} "
                           f"non-pad bytes of the extent")
         if reason is None:

@@ -173,31 +173,34 @@ void edobjEnter(void);
 int edobjProc(float dt, struct nupad_s *pad);
 void edobjRender(void);
 
-struct edmainreg_s edobjdesc = {
-    0, 0, "Object Editor", edobjInit, edobjClose, edobjEnter, {0}, 0,
-    EDMAIN_BLOCKID('o', 'b', 'j', 't'), edobjProc, edobjRender
-};
-struct nuanimdata_s *ObjectAnim[64] = { 0 };
-struct edobjinstance_s ObjectInstance[64] = { { { 0 } } };
-struct nuinstanim_s ObjectInstAnim[64] = { { { 0 } } };
-struct edobject_s ObjectPath[64] = { { 0 } };
-struct numtx_s edobj_cursor_matrix = { 0 };
-struct nuvec_s edobj_cam_pos = { 0.0f, 0.0f, 0.0f };
-struct nuvec_s edobj_snap_vec = { 0.0f, 0.0f, 0.0f };
+extern struct nuanimdata_s *ObjectAnim[64];
+extern struct edobjinstance_s ObjectInstance[64];
+extern struct nuinstanim_s ObjectInstAnim[64];
+extern struct edobject_s ObjectPath[64];
+extern struct numtx_s edobj_cursor_matrix;
+extern struct nuvec_s edobj_cam_pos;
+extern struct nuvec_s edobj_snap_vec;
 
-extern struct nugscn_s *edobj_base_scene;
-extern void *edobj_active_menu;
-extern struct eduimenu_s *edobj_instance_menu;
-extern struct eduimenu_s *edobj_switchtype_menu;
-extern struct eduimenu_s *edobj_switch_menu;
-extern struct eduimenu_s *edobj_animprop_menu;
-extern struct eduimenu_s *edobj_wayprop_menu;
-extern struct eduimenu_s *edobj_localsound_menu;
-extern struct eduimenu_s *edobj_localsoundtype_menu;
-extern struct eduimenu_s *edobj_particletype_menu;
-extern struct eduimenu_s *edobj_localparticle_menu;
-extern struct eduimenu_s *edobj_bouncy_menu;
-extern struct eduimenu_s *edobj_options_menu;
+void *edobj_active_menu = 0;
+struct eduimenu_s *edobj_options_menu = 0;
+struct eduimenu_s *edobj_instance_menu = 0;
+struct eduimenu_s *edobj_animprop_menu = 0;
+struct eduimenu_s *edobj_wayprop_menu = 0;
+struct eduimenu_s *edobj_switch_menu = 0;
+struct eduimenu_s *edobj_switchtype_menu = 0;
+struct eduimenu_s *edobj_particle_menu = 0;
+struct eduimenu_s *edobj_localparticle_menu = 0;
+struct eduimenu_s *edobj_localparticletype_menu = 0;
+struct eduimenu_s *edobj_particletype_menu = 0;
+struct eduimenu_s *edobj_sound_menu = 0;
+struct eduimenu_s *edobj_localsound_menu = 0;
+struct eduimenu_s *edobj_localsoundtype_menu = 0;
+struct eduimenu_s *edobj_soundtype_menu = 0;
+struct eduimenu_s *edobj_bouncy_menu = 0;
+struct nugscn_s *edobj_base_scene = 0;
+static int edobj_count = 0;
+int edobj_emitrotz = 0;
+int edobj_emitroty = 0;
 extern int edobj_nearest;
 extern int edobj_nearest_sound;
 extern int edobj_waypoint_mode;
@@ -210,212 +213,19 @@ extern int edobj_snap_xz;
 extern int edobj_snap_y;
 extern int edobj_nearest_particle;
 extern int edobj_next_instance;
-extern struct eduimenu_s *edobj_particle_menu;
-extern struct eduimenu_s *edobj_localparticletype_menu;
-extern struct eduimenu_s *edobj_sound_menu;
-extern struct eduimenu_s *edobj_soundtype_menu;
 extern int edobj_nearest_waypoint;
 extern int edobj_instance_type;
 extern int edobj_cam_ax;
 extern int edobj_cam_ay;
-extern int edobj_emitrotz;
-extern int edobj_emitroty;
 extern struct nucamera_s global_camera;
-extern float D_0062CF04;
-extern float D_0062CF24;
-extern float D_0062CF28;
-extern float D_0062CF2C;
-extern int D_0062F57C;
-extern float D_0062F588;
-extern float D_0062F58C[];
-
-#define edobj_blink_timer D_0062F57C
-#define edobj_time D_0062F588
-#define edobj_curve_unused D_0062F58C[0]
 
 #define OBJECT_CURVESET(obj) (ObjectAnim[obj]->chunks[0]->animcurvesets[0])
-#define edobj_default_anim_speed D_0062CF04
 
 extern signed char edbits_what_game;
 extern char edbits_level_filename[];
 extern struct numtl_s *edobj_mtl;
 extern struct numtl_s *edobj_mtl_zoff;
-extern char D_00618D80[];
-extern char D_00618D90[];
-extern char D_00618DA0[];
-extern char D_00618DB0[];
-extern char D_00618DC0[];
-extern char D_0062F598[];
-extern char D_00618C78[];
-extern char D_00618C88[];
-extern char D_00618CA0[];
-extern char D_00618CB0[];
-extern char D_00618CC8[];
-extern char D_00618CD8[];
-extern char D_00618CF0[];
-extern char D_00618D08[];
-extern char D_00618D18[];
-extern char D_00618D30[];
-extern char D_00618D48[];
-extern char D_00618D58[];
-extern char D_00618D70[];
-extern char D_0062F590[];
-extern struct eduistyle_s D_00618DD0;
-extern char D_006190B0[];
-extern char D_006190C8[];
-extern char D_006190E0[];
-extern char D_00619100[];
-extern char D_00619110[];
-extern char D_00619120[];
 extern void *app_fnt;
-
-#define edobj_objects_dat_fmt D_00618D80
-#define edobj_save_ok_msg D_00618D90
-#define edobj_save_fail_msg D_00618DA0
-#define edobj_load_ok_msg D_00618DB0
-#define edobj_load_fail_msg D_00618DC0
-#define edobj_obj_file_fmt D_0062F598
-#define info_box_title D_00618C78
-#define info_inst_none D_00618C88
-#define info_inst_fmt D_00618CA0
-#define info_highlight_none D_00618CB0
-#define info_locked_fmt D_00618CC8
-#define info_waypoints_fmt D_00618CD8
-#define info_hilite_wp_none D_00618CF0
-#define info_hilite_wp_fmt D_00618D08
-#define info_particles_fmt D_00618D18
-#define info_type_none D_00618D30
-#define info_type_fmt D_00618D48
-#define info_sounds_fmt D_00618D58
-#define info_highlight_fmt D_00618D70
-#define info_coord_fmt D_0062F590
-#define edobj_item_style D_00618DD0
-#define particle_menu_title D_006190B0
-#define particle_menu_text_type D_006190C8
-#define particle_menu_text_local D_006190E0
-#define sound_menu_title D_00619100
-#define sound_menu_text_type D_00619110
-#define sound_menu_text_local D_00619120
-
-extern char D_00618DE0[];
-extern char D_0062F5A0[];
-extern char D_00618DF0[];
-extern char D_0062F5A8[];
-extern char D_00618E00[];
-extern char D_00618E18[];
-extern char D_00618E30[];
-extern char D_00618E40[];
-extern char D_00618E58[];
-extern char D_0062F5B0[];
-extern char D_00618E70[];
-extern char D_00618E88[];
-extern char D_00618EA0[];
-extern char D_00618EB0[];
-extern char D_00618EC0[];
-extern char D_00618ED0[];
-extern char D_00618EE0[];
-extern char D_00618EF0[];
-extern char D_00618F00[];
-extern char D_00618F10[];
-extern char D_00618F20[];
-extern char D_00618F30[];
-extern char D_00618F40[];
-extern char D_00618F50[];
-extern char D_0062F5B8[];
-extern char D_0062F5C0[];
-extern char D_0062F5C8[];
-extern char D_0062F5D0[];
-extern char D_00618F78[];
-extern char D_00618F68[];
-extern char D_0062F5F0[];
-extern char D_00619160[];
-extern char D_00619178[];
-extern char D_00619190[];
-extern char D_006191A8[];
-extern char D_006191C0[];
-extern char D_006191D0[];
-extern char D_006191E0[];
-extern char D_006191F0[];
-extern char D_0062F5F8[];
-extern char D_0062F600[];
-extern char D_00618FB0[];
-extern char D_00618FC8[];
-extern char D_00618FE8[];
-extern char D_00618FF8[];
-extern char D_00619008[];
-extern char D_00619020[];
-extern char D_0062F5D8[];
-extern char D_00619050[];
-extern char D_00619070[];
-extern char D_00619090[];
-extern char D_006190A0[];
-extern char D_00619140[];
-extern char D_00619150[];
-extern char D_0062F5E0[];
-extern char D_0062F5E8[];
-extern char D_00618F88[];
-extern char D_00618F98[];
-extern char D_00619030[];
-
-#define instance_menu_title D_00618DE0
-#define menu_text_none D_0062F5A0
-#define switchtype_menu_title D_00618DF0
-#define switchtype_text_switch D_0062F5A8
-#define switchtype_text_switch_once D_00618E00
-#define switchtype_text_switch_cont D_00618E18
-#define switchtype_text_proximity D_00618E30
-#define switchtype_text_proximity_once D_00618E40
-#define switchtype_text_proximity_cont D_00618E58
-#define switchtype_text_terrain D_0062F5B0
-#define switchtype_text_terrain_once D_00618E70
-#define switchtype_text_terrain_cont D_00618E88
-#define switch_menu_title D_00618EA0
-#define switch_menu_text_type D_00618EB0
-#define switch_menu_text_id D_00618EC0
-#define switch_menu_text_delay D_00618ED0
-#define switch_menu_text_var D_00618EE0
-#define animprop_menu_title D_00618EF0
-#define animprop_menu_text_speed D_00618F00
-#define animprop_menu_text_pause D_00618F10
-#define animprop_menu_text_start_offset D_00618F20
-#define animprop_menu_text_switch D_00618F30
-#define animprop_menu_text_oscillate D_00618F40
-#define wayprop_menu_title D_00618F50
-#define wayprop_menu_text_speed D_0062F5B8
-#define wayprop_menu_text_xrot D_0062F5C0
-#define wayprop_menu_text_yrot D_0062F5C8
-#define wayprop_menu_text_zrot D_0062F5D0
-#define wayprop_menu_text_time D_00618F78
-#define slider_fmt_1dp D_00618F68
-#define options_menu_title D_0062F5F0
-#define options_text_animprop D_00619160
-#define options_text_wayprop D_00619178
-#define options_text_particles D_00619190
-#define options_text_sounds D_006191A8
-#define options_text_bouncy D_006191C0
-#define options_text_save D_006191D0
-#define options_text_load D_006191E0
-#define options_text_reset_anims D_006191F0
-#define options_text_snap_y D_0062F5F8
-#define options_text_snap_xz D_0062F600
-#define localsound_menu_title D_00618FB0
-#define localsound_menu_text_type D_00618FC8
-#define localsound_menu_text_repeating D_00618FE8
-#define localsound_menu_text_repeat_every D_00618FF8
-#define localsound_menu_text_trigger_time D_00619008
-#define particletype_menu_title D_00619020
-#define particletype_text_none D_0062F5D8
-#define localparticle_menu_title D_00619050
-#define localparticle_menu_text_type D_00619070
-#define localparticle_menu_text_rate D_00619090
-#define localparticle_menu_text_moving D_006190A0
-#define bouncy_menu_title D_00619140
-#define bouncy_menu_text_grav D_00619150
-#define bouncy_menu_text_tension D_0062F5E0
-#define bouncy_menu_text_damping D_0062F5E8
-#define soundtype_menu_title D_00618F88
-#define localsoundtype_menu_title D_00618F98
-#define localparticletype_menu_title D_00619030
 
 extern void edbitsRegisterLevel(char *filename, int whatgame);
 extern void eduiMenuDestroy(void *menu);
@@ -558,6 +368,7 @@ inline float edobjPlayerObjectDistance(int obj)
 
 void edobjUpdateObjects(float dt)
 {
+    static float localframecount = 0.0f;
     int i;
     struct edobjinstance_s *inst;
     int platinst;
@@ -753,7 +564,7 @@ void edobjUpdateObjects(float dt)
                                                         ObjectPath[i].particle_rate[k],
                                                         &emitmtx, &numtx_identity);
                     } else if (ObjectPath[i].particle_rate[k] < 0) {
-                        if ((int)(edobj_time + j) % abs(ObjectPath[i].particle_rate[k]) == 0) {
+                        if ((int)(localframecount + j) % abs(ObjectPath[i].particle_rate[k]) == 0) {
                             AddVariableShotDebrisEffectMtx2(ObjectPath[i].particle_type[k],
                                                             &pos, 1, &emitmtx,
                                                             &numtx_identity);
@@ -774,7 +585,7 @@ void edobjUpdateObjects(float dt)
                 sound = -1;
                 if (ObjectPath[i].sound_type[j] == 1) {
                     interval = ObjectPath[i].sound_timing[j];
-                    if ((int)edobj_time / interval < (int)(edobj_time + dt) / interval) {
+                    if ((int)localframecount / interval < (int)(localframecount + dt) / interval) {
                         sound = ObjectPath[i].sound_id[j];
                     }
                 } else {
@@ -812,7 +623,7 @@ void edobjUpdateObjects(float dt)
             ObjectPath[i].prev_time = t;
         }
     }
-    edobj_time += dt;
+    localframecount += dt;
 }
 
 
@@ -1047,7 +858,7 @@ void edobjConvertPathToAnim(int obj)
         }
     }
     if (changed) {
-        OBJECT_CURVESET(obj)->constants[0] = edobj_curve_unused;
+        OBJECT_CURVESET(obj)->constants[0] = 3.40282347e+38f;
         if (OBJECT_CURVESET(obj)->set[0] == 0) {
             OBJECT_CURVESET(obj)->set[0] = NuAnimCurveCreate(num);
         }
@@ -1095,7 +906,7 @@ void edobjConvertPathToAnim(int obj)
         }
     }
     if (changed) {
-        OBJECT_CURVESET(obj)->constants[1] = edobj_curve_unused;
+        OBJECT_CURVESET(obj)->constants[1] = 3.40282347e+38f;
         if (OBJECT_CURVESET(obj)->set[1] == 0) {
             OBJECT_CURVESET(obj)->set[1] = NuAnimCurveCreate(num);
         }
@@ -1143,7 +954,7 @@ void edobjConvertPathToAnim(int obj)
         }
     }
     if (changed) {
-        OBJECT_CURVESET(obj)->constants[2] = edobj_curve_unused;
+        OBJECT_CURVESET(obj)->constants[2] = 3.40282347e+38f;
         if (OBJECT_CURVESET(obj)->set[2] == 0) {
             OBJECT_CURVESET(obj)->set[2] = NuAnimCurveCreate(num);
         }
@@ -1193,7 +1004,7 @@ void edobjConvertPathToAnim(int obj)
         }
     }
     if (changed) {
-        OBJECT_CURVESET(obj)->constants[3] = edobj_curve_unused;
+        OBJECT_CURVESET(obj)->constants[3] = 3.40282347e+38f;
         if (OBJECT_CURVESET(obj)->set[3] == 0) {
             OBJECT_CURVESET(obj)->set[3] = NuAnimCurveCreate(num);
         }
@@ -1242,7 +1053,7 @@ void edobjConvertPathToAnim(int obj)
         }
     }
     if (changed) {
-        OBJECT_CURVESET(obj)->constants[4] = edobj_curve_unused;
+        OBJECT_CURVESET(obj)->constants[4] = 3.40282347e+38f;
         if (OBJECT_CURVESET(obj)->set[4] == 0) {
             OBJECT_CURVESET(obj)->set[4] = NuAnimCurveCreate(num);
         }
@@ -1291,7 +1102,7 @@ void edobjConvertPathToAnim(int obj)
         }
     }
     if (changed) {
-        OBJECT_CURVESET(obj)->constants[5] = edobj_curve_unused;
+        OBJECT_CURVESET(obj)->constants[5] = 3.40282347e+38f;
         if (OBJECT_CURVESET(obj)->set[5] == 0) {
             OBJECT_CURVESET(obj)->set[5] = NuAnimCurveCreate(num);
         }
@@ -1487,7 +1298,7 @@ int edobjObjectCreate(struct nuvec_s *pos, int special)
     ObjectPath[obj].total_time = 1;
     ObjectPath[obj].num_particles = 0;
     ObjectPath[obj].num_sounds = 0;
-    ObjectPath[obj].anim_speed = edobj_default_anim_speed;
+    ObjectPath[obj].anim_speed = 0.01f;
     ObjectPath[obj].oscillate = 1;
     ObjectPath[obj].repeating = 1;
     ObjectPath[obj].anim_pause = 0.0f;
@@ -1866,7 +1677,7 @@ void edobjDrawCursor(void)
         } else {
             type = edobj_instance_type;
         }
-        if (type != -1 && edobj_blink_timer % 150 < 75) {
+        if (type != -1 && edobj_count % 150 < 75) {
             NuMtxSetIdentity(&edobj_cursor_matrix);
             edobj_cursor_matrix._30 = edobj_cam_pos.x;
             edobj_cursor_matrix._31 = edobj_cam_pos.y;
@@ -1882,52 +1693,52 @@ void edobjDrawCursor(void)
     NuRndrLine2di(0x1710, 0xDC8, 0x24F0, 0xDC8, 0x80000000, edobj_mtl_zoff);
     NuFntSet(app_fnt);
     NuFntSetPen(0x80808080);
-    NuFntPrintEx(0x17C0, 0xA28, 0, info_box_title);
+    NuFntPrintEx(0x17C0, 0xA28, 0, "Info Box");
     NuFntSetPen(0x80000000);
     if (edobj_instance_type == -1) {
-        NuFntPrintEx(0x17C0, 0xAF0, 0, info_inst_none);
+        NuFntPrintEx(0x17C0, 0xAF0, 0, "Curr Inst: <none>");
     } else {
-        NuFntPrintEx(0x17C0, 0xAF0, 0, info_inst_fmt,
+        NuFntPrintEx(0x17C0, 0xAF0, 0, "Curr Inst: %s",
                      edobj_base_scene->specials[edobj_instance_type].name);
     }
     if (edobj_nearest == -1) {
-        NuFntPrintEx(0x17C0, 0xB90, 0, info_highlight_none);
+        NuFntPrintEx(0x17C0, 0xB90, 0, "Highlight: <none>");
     } else if (edobj_waypoint_mode) {
-        NuFntPrintEx(0x17C0, 0xB90, 0, info_locked_fmt,
+        NuFntPrintEx(0x17C0, 0xB90, 0, "Locked to: %s",
                      edobj_base_scene->specials[ObjectPath[edobj_nearest].instance].name);
-        NuFntPrintEx(0x1810, 0xC30, 0, info_waypoints_fmt, ObjectPath[edobj_nearest].num_waypoints,
+        NuFntPrintEx(0x1810, 0xC30, 0, "Waypoints: %d (Max %d)", ObjectPath[edobj_nearest].num_waypoints,
                      8);
         if (edobj_nearest_waypoint == -1) {
-            NuFntPrintEx(0x1810, 0xCD0, 0, info_hilite_wp_none);
+            NuFntPrintEx(0x1810, 0xCD0, 0, "HiLite WP: <none>");
         } else {
-            NuFntPrintEx(0x1810, 0xCD0, 0, info_hilite_wp_fmt, edobj_nearest_waypoint + 1);
+            NuFntPrintEx(0x1810, 0xCD0, 0, "HiLite WP: %d", edobj_nearest_waypoint + 1);
         }
     } else if (edobj_particle_mode) {
-        NuFntPrintEx(0x17C0, 0xB90, 0, info_locked_fmt,
+        NuFntPrintEx(0x17C0, 0xB90, 0, "Locked to: %s",
                      edobj_base_scene->specials[ObjectPath[edobj_nearest].instance].name);
-        NuFntPrintEx(0x1810, 0xC30, 0, info_particles_fmt, ObjectPath[edobj_nearest].num_particles,
+        NuFntPrintEx(0x1810, 0xC30, 0, "Particles: %d (Max %d)", ObjectPath[edobj_nearest].num_particles,
                      8);
         if (edobj_particle_type == -1) {
-            NuFntPrintEx(0x1810, 0xCD0, 0, info_type_none);
+            NuFntPrintEx(0x1810, 0xCD0, 0, "Select Type: <none>");
         } else {
-            NuFntPrintEx(0x1810, 0xCD0, 0, info_type_fmt, debtab[edobj_particle_type]->id);
+            NuFntPrintEx(0x1810, 0xCD0, 0, "Select Type: %s", debtab[edobj_particle_type]->id);
         }
     } else if (edobj_sound_mode) {
-        NuFntPrintEx(0x17C0, 0xB90, 0, info_locked_fmt,
+        NuFntPrintEx(0x17C0, 0xB90, 0, "Locked to: %s",
                      edobj_base_scene->specials[ObjectPath[edobj_nearest].instance].name);
-        NuFntPrintEx(0x1810, 0xC30, 0, info_sounds_fmt, ObjectPath[edobj_nearest].num_sounds, 8);
+        NuFntPrintEx(0x1810, 0xC30, 0, "Sounds: %d (Max %d)", ObjectPath[edobj_nearest].num_sounds, 8);
         if (edobj_sound_type == -1) {
-            NuFntPrintEx(0x1810, 0xCD0, 0, info_type_none);
+            NuFntPrintEx(0x1810, 0xCD0, 0, "Select Type: <none>");
         } else {
-            NuFntPrintEx(0x1810, 0xCD0, 0, info_type_fmt, edbitsGetSoundName(edobj_sound_type));
+            NuFntPrintEx(0x1810, 0xCD0, 0, "Select Type: %s", edbitsGetSoundName(edobj_sound_type));
         }
     } else {
-        NuFntPrintEx(0x17C0, 0xB90, 0, info_highlight_fmt,
+        NuFntPrintEx(0x17C0, 0xB90, 0, "Highlight: %s",
                      edobj_base_scene->specials[ObjectPath[edobj_nearest].instance].name);
     }
-    NuFntPrintEx(0x17C0, 0xD70, 0, info_coord_fmt, edobj_cam_pos.x);
-    NuFntPrintEx(0x1C20, 0xD70, 0, info_coord_fmt, edobj_cam_pos.y);
-    NuFntPrintEx(0x2080, 0xD70, 0, info_coord_fmt, edobj_cam_pos.z);
+    NuFntPrintEx(0x17C0, 0xD70, 0, "%5.2f", edobj_cam_pos.x);
+    NuFntPrintEx(0x1C20, 0xD70, 0, "%5.2f", edobj_cam_pos.y);
+    NuFntPrintEx(0x2080, 0xD70, 0, "%5.2f", edobj_cam_pos.z);
 }
 
 
@@ -2228,19 +2039,66 @@ int edobjFileLoadObjects(char *file)
 }
 
 
+/* The inline callbacks' strings sit here in retail, their code is deferred to the end. */
+inline void edobjcbFileSaveObjects(void *menu)
+{
+    char filename[256];
+
+    if (edbits_what_game == 1) {
+        sprintf(filename, "%s\\Objects.dat", edbits_level_filename);
+        if (edobjFileSaveObjects(filename)) {
+            eduiCreateMessageMenu(menu, "Saved OK", 1);
+        } else {
+            eduiCreateMessageMenu(menu, "File Save Error", 0);
+        }
+    } else if (edbits_what_game == 2) {
+        sprintf(filename, "%s.obj", edbits_level_filename);
+        if (edobjFileSaveObjects(filename)) {
+            eduiCreateMessageMenu(menu, "Saved OK", 1);
+        } else {
+            eduiCreateMessageMenu(menu, "File Save Error", 0);
+        }
+    } else {
+        eduiCreateMessageMenu(menu, "File Save Error", 0);
+    }
+}
+
+
+inline void edobjcbFileLoadObjects(void *menu)
+{
+    char filename[256];
+
+    edobjObjectReset();
+    if (edbits_what_game == 1) {
+        sprintf(filename, "%s\\Objects.dat", edbits_level_filename);
+        if (NuFileSize(filename) > 0) {
+            edobjFileLoadObjects(filename);
+        }
+        eduiCreateMessageMenu(menu, "Loaded OK", 1);
+    } else if (edbits_what_game == 2) {
+        sprintf(filename, "%s.obj", edbits_level_filename);
+        if (NuFileSize(filename) > 0) {
+            edobjFileLoadObjects(filename);
+        }
+        eduiCreateMessageMenu(menu, "Loaded OK", 1);
+    } else {
+        eduiCreateMessageMenu(menu, "File Load Error", 0);
+    }
+}
+
+
 void edobjcbInstanceMenu(struct eduimenu_s *menu)
 {
-    struct eduistyle_s style;
+    struct eduistyle_s style = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
     int checked;
     int i;
 
-    style = edobj_item_style;
     edobj_instance_menu = eduiMenuCreate(70, 70, 180, 250, app_fnt, edobjcbCancelInstanceMenu,
-                                         instance_menu_title);
+                                         "Instance Select");
     if (edobj_instance_menu != 0) {
         eduiMenuAddItem(edobj_instance_menu,
                         eduiItemCheckCreate(-1, &style, edobj_instance_type == -1, 1,
-                                            edobjcbSetInstanceType, menu_text_none));
+                                            edobjcbSetInstanceType, "None"));
         for (i = 0; i < edobj_base_scene->numspecial; i++) {
             if (edobj_instance_type == i) {
                 checked = 1;
@@ -2274,22 +2132,21 @@ static inline void edobjAddSwitchTypeItem(struct eduistyle_s *style, int type, c
 
 void edobjcbSwitchTypeMenu(struct eduimenu_s *menu)
 {
-    struct eduistyle_s style;
+    struct eduistyle_s style = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
 
-    style = edobj_item_style;
     edobj_switchtype_menu = eduiMenuCreate(70, 70, 250, 200, app_fnt,
-                                           edobjcbCancelSwitchTypeMenu, switchtype_menu_title);
+                                           edobjcbCancelSwitchTypeMenu, "Switch Type");
     if (edobj_switchtype_menu != 0) {
-        edobjAddSwitchTypeItem(&style, 0, menu_text_none);
-        edobjAddSwitchTypeItem(&style, 1, switchtype_text_switch);
-        edobjAddSwitchTypeItem(&style, 2, switchtype_text_switch_once);
-        edobjAddSwitchTypeItem(&style, 3, switchtype_text_switch_cont);
-        edobjAddSwitchTypeItem(&style, 4, switchtype_text_proximity);
-        edobjAddSwitchTypeItem(&style, 5, switchtype_text_proximity_once);
-        edobjAddSwitchTypeItem(&style, 6, switchtype_text_proximity_cont);
-        edobjAddSwitchTypeItem(&style, 7, switchtype_text_terrain);
-        edobjAddSwitchTypeItem(&style, 8, switchtype_text_terrain_once);
-        edobjAddSwitchTypeItem(&style, 9, switchtype_text_terrain_cont);
+        edobjAddSwitchTypeItem(&style, 0, "None");
+        edobjAddSwitchTypeItem(&style, 1, "Switch");
+        edobjAddSwitchTypeItem(&style, 2, "Switch One Cycle");
+        edobjAddSwitchTypeItem(&style, 3, "Switch Continuous");
+        edobjAddSwitchTypeItem(&style, 4, "Proximity");
+        edobjAddSwitchTypeItem(&style, 5, "Proximity One Cycle");
+        edobjAddSwitchTypeItem(&style, 6, "Proximity Continuous");
+        edobjAddSwitchTypeItem(&style, 7, "Terrain");
+        edobjAddSwitchTypeItem(&style, 8, "Terrain One Cycle");
+        edobjAddSwitchTypeItem(&style, 9, "Terrain Continuous");
         eduiMenuAttach(menu, edobj_switchtype_menu);
         edobj_switchtype_menu->x = menu->x + 10;
         edobj_switchtype_menu->y = menu->y + 40;
@@ -2299,28 +2156,27 @@ void edobjcbSwitchTypeMenu(struct eduimenu_s *menu)
 
 void edobjcbSwitchMenu(struct eduimenu_s *menu)
 {
-    struct eduistyle_s style;
+    struct eduistyle_s style = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
 
-    style = edobj_item_style;
     if (edobj_nearest != -1 && ObjectInstance[edobj_nearest].anim != 0) {
         edobj_switch_menu = eduiMenuCreate(70, 70, 180, 250, app_fnt, edobjcbCancelSwitchMenu,
-                                           switch_menu_title);
+                                           "Switch Menu");
         if (edobj_switch_menu != 0) {
             eduiMenuAddItem(edobj_switch_menu,
                             eduiItemSelCreate(1, &style, 0, 0, edobjcbSwitchTypeMenu,
-                                              switch_menu_text_type));
+                                              "Switch Type..."));
             eduiMenuAddItem(edobj_switch_menu,
                             eduiItemSliderCreateInt(0, &style, 0, edobjcbSetSwitchId, -1, 129,
                                                     ObjectPath[edobj_nearest].switch_id,
-                                                    switch_menu_text_id));
+                                                    "Switch ID"));
             eduiMenuAddItem(edobj_switch_menu,
                             eduiItemSliderCreate(0, &style, 0, edobjcbSetSwitchDelay, 0.0f, 20.0f,
                                                  ObjectPath[edobj_nearest].switch_delay,
-                                                 switch_menu_text_delay));
+                                                 "Switch Delay"));
             eduiMenuAddItem(edobj_switch_menu,
                             eduiItemSliderCreate(0, &style, 0, edobjcbSetSwitchVar, 0.0f, 20.0f,
                                                  ObjectPath[edobj_nearest].switch_var,
-                                                 switch_menu_text_var));
+                                                 "Switch Var"));
             eduiMenuAttach(menu, edobj_switch_menu);
             edobj_switch_menu->x = menu->x + 10;
             edobj_switch_menu->y = menu->y + 40;
@@ -2331,32 +2187,31 @@ void edobjcbSwitchMenu(struct eduimenu_s *menu)
 
 void edobjcbAnimPropertiesMenu(struct eduimenu_s *menu)
 {
-    struct eduistyle_s style;
+    struct eduistyle_s style = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
 
-    style = edobj_item_style;
     if (edobj_nearest != -1 && ObjectInstance[edobj_nearest].anim != 0) {
         edobj_animprop_menu = eduiMenuCreate(70, 70, 180, 250, app_fnt,
-                                             edobjcbCancelAnimPropertiesMenu, animprop_menu_title);
+                                             edobjcbCancelAnimPropertiesMenu, "Anim Properties");
         if (edobj_animprop_menu != 0) {
             eduiMenuAddItem(edobj_animprop_menu,
                             eduiItemSliderCreate(0, &style, 0, edobjcbChangeAnimSpeed, 0.0f, 0.1f,
                                                  ObjectPath[edobj_nearest].anim_speed,
-                                                 animprop_menu_text_speed));
+                                                 "Anim Speed"));
             eduiMenuAddItem(edobj_animprop_menu,
                             eduiItemSliderCreate(0, &style, 0, edobjcbChangeAnimPause, 0.0f, 10.0f,
                                                  ObjectPath[edobj_nearest].anim_pause,
-                                                 animprop_menu_text_pause));
+                                                 "Anim Pause"));
             eduiMenuAddItem(edobj_animprop_menu,
                             eduiItemSliderCreateInt(0, &style, 0, edobjcbChangeAnimStartOffset, 0,
                                                     20, ObjectPath[edobj_nearest].anim_start_offset,
-                                                    animprop_menu_text_start_offset));
+                                                    "Start Offset"));
             eduiMenuAddItem(edobj_animprop_menu,
                             eduiItemSelCreate(1, &style, 0, 0, edobjcbSwitchMenu,
-                                              animprop_menu_text_switch));
+                                              "Switch Menu..."));
             eduiMenuAddItem(edobj_animprop_menu,
                             eduiItemToggleCreate(0, &style, ObjectPath[edobj_nearest].oscillate, 1,
                                                  edobjcbOscillateToggle,
-                                                 animprop_menu_text_oscillate));
+                                                 "Oscillate"));
             eduiMenuAttach(menu, edobj_animprop_menu);
             edobj_animprop_menu->x = menu->x + 10;
             edobj_animprop_menu->y = menu->y + 40;
@@ -2367,41 +2222,40 @@ void edobjcbAnimPropertiesMenu(struct eduimenu_s *menu)
 
 void edobjcbWayPropertiesMenu(struct eduimenu_s *menu)
 {
-    struct eduistyle_s style;
+    struct eduistyle_s style = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
 
-    style = edobj_item_style;
     if (edobj_waypoint_mode && edobj_nearest_waypoint != -1) {
         edobj_wayprop_menu = eduiMenuCreate(70, 70, 180, 300, app_fnt,
-                                            edobjcbCancelWayPropertiesMenu, wayprop_menu_title);
+                                            edobjcbCancelWayPropertiesMenu, "Waypoint Properties");
         if (edobj_wayprop_menu != 0) {
             eduiMenuAddItem(
                 edobj_wayprop_menu,
                 eduiItemSliderCreate(0, &style, 0, edobjcbChangeWaypointSpeed, 0.0f, 1.0f,
                                      ObjectPath[edobj_nearest].waypoint_speed[edobj_nearest_waypoint],
-                                     wayprop_menu_text_speed));
+                                     "Speed"));
             eduiMenuAddItem(
                 edobj_wayprop_menu,
                 eduiItemSliderCreate(
                     0, &style, 0, edobjcbChangeWaypointXRot, -1440.0f, 2880.0f,
                     ObjectPath[edobj_nearest].waypoint_rot[edobj_nearest_waypoint].x * 57.295776f,
-                    wayprop_menu_text_xrot));
-            eduiItemSliderSetFmt(edui_last_item, slider_fmt_1dp);
+                    "X Rot"));
+            eduiItemSliderSetFmt(edui_last_item, "(%1.01f)");
             eduiItemSliderSetGranularity(edui_last_item, 0.1f);
             eduiMenuAddItem(
                 edobj_wayprop_menu,
                 eduiItemSliderCreate(
                     0, &style, 0, edobjcbChangeWaypointYRot, -1440.0f, 2880.0f,
                     ObjectPath[edobj_nearest].waypoint_rot[edobj_nearest_waypoint].y * 57.295776f,
-                    wayprop_menu_text_yrot));
-            eduiItemSliderSetFmt(edui_last_item, slider_fmt_1dp);
+                    "Y Rot"));
+            eduiItemSliderSetFmt(edui_last_item, "(%1.01f)");
             eduiItemSliderSetGranularity(edui_last_item, 0.1f);
             eduiMenuAddItem(
                 edobj_wayprop_menu,
                 eduiItemSliderCreate(
                     0, &style, 0, edobjcbChangeWaypointZRot, -1440.0f, 2880.0f,
                     ObjectPath[edobj_nearest].waypoint_rot[edobj_nearest_waypoint].z * 57.295776f,
-                    wayprop_menu_text_zrot));
-            eduiItemSliderSetFmt(edui_last_item, slider_fmt_1dp);
+                    "Z Rot"));
+            eduiItemSliderSetFmt(edui_last_item, "(%1.01f)");
             eduiItemSliderSetGranularity(edui_last_item, 0.1f);
             if (edobj_nearest_waypoint != ObjectPath[edobj_nearest].num_waypoints - 1) {
                 eduiMenuAddItem(
@@ -2411,7 +2265,7 @@ void edobjcbWayPropertiesMenu(struct eduimenu_s *menu)
                         ObjectPath[edobj_nearest].waypoint_time[edobj_nearest_waypoint] -
                             (ObjectPath[edobj_nearest].total_time - 30),
                         ObjectPath[edobj_nearest].waypoint_time[edobj_nearest_waypoint],
-                        wayprop_menu_text_time));
+                        "Time to next WP"));
             }
             eduiMenuAttach(menu, edobj_wayprop_menu);
             edobj_wayprop_menu->x = menu->x + 10;
@@ -2421,31 +2275,90 @@ void edobjcbWayPropertiesMenu(struct eduimenu_s *menu)
 }
 
 
+inline void edobjcbSoundTypeMenu(struct eduimenu_s *menu)
+{
+    struct eduistyle_s style = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
+    int selected;
+    int i;
+
+    edobj_soundtype_menu = eduiMenuCreate(70, 70, 180, 250, app_fnt, edobjcbCancelSoundTypeMenu,
+                                          "Sound Type");
+    if (edobj_soundtype_menu != 0) {
+        eduiMenuAddItem(edobj_soundtype_menu,
+                        eduiItemCheckCreate(99999, &style, edobj_sound_type == -1, 0,
+                                            edobjcbSetSoundType, "NONE"));
+        for (i = 0; i < edSfxAllCount; i++) {
+            selected = 0;
+            if (edobj_sound_type == i) {
+                selected = 1;
+            }
+            eduiMenuAddItem(edobj_soundtype_menu,
+                            eduiItemCheckCreate(i, &style, selected, 1, edobjcbSetSoundType,
+                                                edbitsGetSoundName(i)));
+            if (selected == 1) {
+                edobj_soundtype_menu->current = edui_last_item;
+            }
+        }
+        eduiMenuAttach(menu, edobj_soundtype_menu);
+        edobj_soundtype_menu->x = menu->x + 10;
+        edobj_soundtype_menu->y = menu->y + 40;
+    }
+}
+
+
+inline void edobjcbLocalSoundTypeMenu(struct eduimenu_s *menu)
+{
+    struct eduistyle_s style = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
+    int selected;
+    int i;
+
+    edobj_localsoundtype_menu = eduiMenuCreate(70, 70, 180, 250, app_fnt,
+                                               edobjcbCancelLocalSoundTypeMenu,
+                                               "Highlighted Sound Type");
+    if (edobj_localsoundtype_menu != 0) {
+        for (i = 0; i < edSfxAllCount; i++) {
+            selected = 0;
+            if (ObjectPath[edobj_nearest].sound_id[edobj_nearest_sound] == i) {
+                selected = 1;
+            }
+            eduiMenuAddItem(edobj_localsoundtype_menu,
+                            eduiItemCheckCreate(i, &style, selected, 1, edobjcbSetLocalSoundType,
+                                                edbitsGetSoundName(i)));
+            if (selected == 1) {
+                edobj_localsoundtype_menu->current = edui_last_item;
+            }
+        }
+        eduiMenuAttach(menu, edobj_localsoundtype_menu);
+        edobj_localsoundtype_menu->x = menu->x + 10;
+        edobj_localsoundtype_menu->y = menu->y + 40;
+    }
+}
+
+
 void edobjcbLocalSoundMenu(struct eduimenu_s *menu)
 {
-    struct eduistyle_s style;
+    struct eduistyle_s style = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
 
-    style = edobj_item_style;
     if (edobj_nearest_sound != -1) {
         edobj_localsound_menu = eduiMenuCreate(70, 70, 250, 300, app_fnt,
                                                edobjcbCancelLocalSoundMenu,
-                                               localsound_menu_title);
+                                               "Current Sound Settings");
         if (edobj_localsound_menu != 0) {
             eduiMenuAddItem(edobj_localsound_menu,
                             eduiItemSelCreate(1, &style, 0, 0, edobjcbLocalSoundTypeMenu,
-                                              localsound_menu_text_type));
+                                              "Highlighted Sound Type..."));
             eduiMenuAddItem(
                 edobj_localsound_menu,
                 eduiItemToggleCreate(
                     1, &style, ObjectPath[edobj_nearest].sound_type[edobj_nearest_sound] == 1, 1,
-                    edobjcbToggleSoundType, localsound_menu_text_repeating));
+                    edobjcbToggleSoundType, "Repeating Sound"));
             if (ObjectPath[edobj_nearest].sound_type[edobj_nearest_sound] == 1) {
                 eduiMenuAddItem(
                     edobj_localsound_menu,
                     eduiItemSliderCreateInt(
                         0, &style, 0, edobjcbSetSoundTiming, 1, 99,
                         ObjectPath[edobj_nearest].sound_timing[edobj_nearest_sound],
-                        localsound_menu_text_repeat_every));
+                        "Repeat Every"));
             } else {
                 eduiMenuAddItem(
                     edobj_localsound_menu,
@@ -2453,8 +2366,8 @@ void edobjcbLocalSoundMenu(struct eduimenu_s *menu)
                         0, &style, 0, edobjcbSetSoundTiming, 1.0f,
                         ObjectPath[edobj_nearest].total_time,
                         ObjectPath[edobj_nearest].sound_timing[edobj_nearest_sound],
-                        localsound_menu_text_trigger_time));
-                eduiItemSliderSetFmt(edui_last_item, slider_fmt_1dp);
+                        "Sound Trigger Time"));
+                eduiItemSliderSetFmt(edui_last_item, "(%1.01f)");
                 eduiItemSliderSetGranularity(edui_last_item, 0.1f);
             }
             eduiMenuAttach(menu, edobj_localsound_menu);
@@ -2467,18 +2380,17 @@ void edobjcbLocalSoundMenu(struct eduimenu_s *menu)
 
 void edobjcbParticleTypeMenu(struct eduimenu_s *menu)
 {
-    struct eduistyle_s style;
+    struct eduistyle_s style = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
     int selected;
     int i;
 
-    style = edobj_item_style;
     edobj_particletype_menu = eduiMenuCreate(70, 70, 250, 250, app_fnt,
                                              edobjcbCancelParticleTypeMenu,
-                                             particletype_menu_title);
+                                             "Particle Type");
     if (edobj_particletype_menu != 0) {
         eduiMenuAddItem(edobj_particletype_menu,
                         eduiItemCheckCreate(0, &style, edobj_particle_type == -1, 0,
-                                            edobjcbSetParticleType, particletype_text_none));
+                                            edobjcbSetParticleType, "NONE"));
         for (i = 1; i < 128; i++) {
             if (debtab[i] != 0) {
                 selected = 0;
@@ -2500,30 +2412,60 @@ void edobjcbParticleTypeMenu(struct eduimenu_s *menu)
 }
 
 
+inline void edobjcbLocalParticleTypeMenu(struct eduimenu_s *menu)
+{
+    struct eduistyle_s style = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
+    int selected;
+    int i;
+
+    edobj_localparticletype_menu = eduiMenuCreate(70, 70, 250, 200, app_fnt,
+                                                  edobjcbCancelLocalParticleTypeMenu,
+                                                  "Highlighted Particle Type");
+    if (edobj_localparticletype_menu != 0) {
+        for (i = 1; i < 128; i++) {
+            if (debtab[i] != 0) {
+                selected = 0;
+                if (ObjectPath[edobj_nearest].particle_type[edobj_nearest_particle] == i) {
+                    selected = 1;
+                }
+                eduiMenuAddItem(edobj_localparticletype_menu,
+                                eduiItemCheckCreate(i, &style, selected, 1,
+                                                    edobjcbSetLocalParticleType, debtab[i]->id));
+                if (selected == 1) {
+                    edobj_localparticletype_menu->current = edui_last_item;
+                }
+            }
+        }
+        eduiMenuAttach(menu, edobj_localparticletype_menu);
+        edobj_localparticletype_menu->x = menu->x + 10;
+        edobj_localparticletype_menu->y = menu->y + 40;
+    }
+}
+
+
 void edobjcbLocalParticleMenu(struct eduimenu_s *menu)
 {
-    struct eduistyle_s style;
+    struct eduistyle_s style = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
 
-    style = edobj_item_style;
     if (edobj_nearest_particle != -1) {
         edobj_localparticle_menu = eduiMenuCreate(70, 70, 250, 300, app_fnt,
                                                   edobjcbCancelLocalParticleMenu,
-                                                  localparticle_menu_title);
+                                                  "Highlighted Particle Settings");
         if (edobj_localparticle_menu != 0) {
             eduiMenuAddItem(edobj_localparticle_menu,
                             eduiItemSelCreate(1, &style, 0, 0, edobjcbLocalParticleTypeMenu,
-                                              localparticle_menu_text_type));
+                                              "Highlighted Particle Type..."));
             eduiMenuAddItem(
                 edobj_localparticle_menu,
                 eduiItemSliderCreateInt(
                     0, &style, 0, edobjcbSetParticleRate, -10, 20,
                     ObjectPath[edobj_nearest].particle_rate[edobj_nearest_particle],
-                    localparticle_menu_text_rate));
+                    "Particle Rate"));
             eduiMenuAddItem(
                 edobj_localparticle_menu,
                 eduiItemToggleCreate(
                     0, &style, ObjectPath[edobj_nearest].particle_switch[edobj_nearest_particle],
-                    1, edobjcbToggleParticleSwitch, localparticle_menu_text_moving));
+                    1, edobjcbToggleParticleSwitch, "Only On Moving"));
             eduiMenuAttach(menu, edobj_localparticle_menu);
             edobj_localparticle_menu->x = menu->x + 10;
             edobj_localparticle_menu->y = menu->y + 40;
@@ -2532,27 +2474,74 @@ void edobjcbLocalParticleMenu(struct eduimenu_s *menu)
 }
 
 
+inline void edobjcbParticleMenu(struct eduimenu_s *menu)
+{
+    struct eduistyle_s style = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
+
+    if (edobj_nearest != -1) {
+        edobj_particle_menu = eduiMenuCreate(70, 70, 250, 300, app_fnt,
+                                             edobjcbCancelParticleMenu, "Attached Particles");
+        if (edobj_particle_menu != 0) {
+            eduiMenuAddItem(edobj_particle_menu,
+                            eduiItemSelCreate(1, &style, 0, 0, edobjcbParticleTypeMenu,
+                                              "Particle Type..."));
+            if (edobj_nearest_particle != -1) {
+                eduiMenuAddItem(edobj_particle_menu,
+                                eduiItemSelCreate(1, &style, 0, 0, edobjcbLocalParticleMenu,
+                                                  "Highlighted Ptle Settings..."));
+            }
+            eduiMenuAttach(menu, edobj_particle_menu);
+            edobj_particle_menu->x = menu->x + 10;
+            edobj_particle_menu->y = menu->y + 40;
+        }
+    }
+}
+
+
+inline void edobjcbSoundMenu(struct eduimenu_s *menu)
+{
+    struct eduistyle_s style = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
+
+    if (edobj_nearest != -1) {
+        edobj_sound_menu = eduiMenuCreate(70, 70, 250, 300, app_fnt,
+                                          edobjcbCancelSoundMenu, "Attached Sounds");
+        if (edobj_sound_menu != 0) {
+            eduiMenuAddItem(edobj_sound_menu,
+                            eduiItemSelCreate(1, &style, 0, 0, edobjcbSoundTypeMenu,
+                                              "Sound Type..."));
+            if (edobj_nearest_sound != -1) {
+                eduiMenuAddItem(edobj_sound_menu,
+                                eduiItemSelCreate(1, &style, 0, 0, edobjcbLocalSoundMenu,
+                                                  "Current Sound Settings..."));
+            }
+            eduiMenuAttach(menu, edobj_sound_menu);
+            edobj_sound_menu->x = menu->x + 10;
+            edobj_sound_menu->y = menu->y + 40;
+        }
+    }
+}
+
+
 void edobjcbBouncyMenu(struct eduimenu_s *menu)
 {
-    struct eduistyle_s style;
+    struct eduistyle_s style = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
 
-    style = edobj_item_style;
     if (edobj_nearest != -1) {
         edobj_bouncy_menu = eduiMenuCreate(70, 70, 250, 300, app_fnt, edobjcbCancelBouncyMenu,
-                                           bouncy_menu_title);
+                                           "Bounciness");
         if (edobj_bouncy_menu != 0) {
             eduiMenuAddItem(edobj_bouncy_menu,
                             eduiItemSliderCreate(0, &style, 0, edobjcbSetBouncyPlayerGrav, -0.1f,
                                                  0.2f, ObjectPath[edobj_nearest].bouncy_player_grav,
-                                                 bouncy_menu_text_grav));
+                                                 "Player Grav"));
             eduiMenuAddItem(edobj_bouncy_menu,
                             eduiItemSliderCreate(0, &style, 0, edobjcbSetBouncyTension, 0.0f, 1.0f,
                                                  ObjectPath[edobj_nearest].bouncy_tension,
-                                                 bouncy_menu_text_tension));
+                                                 "Tension"));
             eduiMenuAddItem(edobj_bouncy_menu,
                             eduiItemSliderCreate(0, &style, 0, edobjcbSetBouncyDamping, 0.0f, 1.0f,
                                                  ObjectPath[edobj_nearest].bouncy_damping,
-                                                 bouncy_menu_text_damping));
+                                                 "Damping"));
             eduiMenuAttach(menu, edobj_bouncy_menu);
             edobj_bouncy_menu->x = menu->x + 10;
             edobj_bouncy_menu->y = menu->y + 40;
@@ -2563,13 +2552,12 @@ void edobjcbBouncyMenu(struct eduimenu_s *menu)
 
 void edobjInit(void)
 {
-    struct eduistyle_s style;
+    struct eduistyle_s style = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
     struct edobjinstance_s *oi;
     struct numtl_s *mtl;
     struct numtl_s *zoff;
     int i;
 
-    style = edobj_item_style;
     oi = ObjectInstance;
     for (i = 0; i < 64; i++) {
         ObjectPath[i].instance = -1;
@@ -2599,43 +2587,76 @@ void edobjInit(void)
     edobj_instance_type = -1;
     edobj_waypoint_mode = 0;
     edobj_options_menu = eduiMenuCreate(70, 70, 220, 300, app_fnt, edobjcbCancelOptMenu,
-                                        options_menu_title);
+                                        "Options");
     if (edobj_options_menu != 0) {
         eduiMenuAddItem(edobj_options_menu,
                         eduiItemSelCreate(1, &style, 0, 0, edobjcbInstanceMenu,
-                                          instance_menu_title));
+                                          "Instance Select"));
         eduiMenuAddItem(edobj_options_menu,
                         eduiItemSelCreate(1, &style, 0, 0, edobjcbAnimPropertiesMenu,
-                                          options_text_animprop));
+                                          "Anim Properties..."));
         eduiMenuAddItem(edobj_options_menu,
                         eduiItemSelCreate(1, &style, 0, 0, edobjcbWayPropertiesMenu,
-                                          options_text_wayprop));
+                                          "Waypoint Properties..."));
         eduiMenuAddItem(edobj_options_menu,
                         eduiItemSelCreate(1, &style, 0, 0, edobjcbParticleMenu,
-                                          options_text_particles));
+                                          "Attached Particles..."));
         eduiMenuAddItem(edobj_options_menu,
                         eduiItemSelCreate(1, &style, 0, 0, edobjcbSoundMenu,
-                                          options_text_sounds));
+                                          "Attached Sounds..."));
         eduiMenuAddItem(edobj_options_menu,
                         eduiItemSelCreate(1, &style, 0, 0, edobjcbBouncyMenu,
-                                          options_text_bouncy));
+                                          "Bounciness..."));
         eduiMenuAddItem(edobj_options_menu,
                         eduiItemSelCreate(1, &style, 0, 0, edobjcbFileSaveObjects,
-                                          options_text_save));
+                                          "Save Objects"));
         eduiMenuAddItem(edobj_options_menu,
                         eduiItemSelCreate(1, &style, 0, 0, edobjcbFileLoadObjects,
-                                          options_text_load));
+                                          "Load Objects"));
         eduiMenuAddItem(edobj_options_menu,
                         eduiItemSelCreate(1, &style, 0, 0, edobjcbResetAnims,
-                                          options_text_reset_anims));
+                                          "Reset Anims"));
         eduiMenuAddItem(edobj_options_menu,
                         eduiItemToggleCreate(0, &style, edobj_snap_y, 1, edobjcbSnapYToggle,
-                                             options_text_snap_y));
+                                             "Snap Y"));
         eduiMenuAddItem(edobj_options_menu,
                         eduiItemToggleCreate(0, &style, edobj_snap_xz, 2, edobjcbSnapXZToggle,
-                                             options_text_snap_xz));
+                                             "Snap XZ"));
     }
 }
+
+
+struct edmainreg_s edobjdesc = {
+    0, 0, "Object Editor", edobjInit, edobjClose, edobjEnter, {0}, 0,
+    EDMAIN_BLOCKID('o', 'b', 'j', 't'), edobjProc, edobjRender
+};
+struct nuanimdata_s *ObjectAnim[64] = { 0 };
+/* Retail pads ObjectInstance to a 16-byte boundary. */
+struct edobjinstance_s ObjectInstance[64] __attribute__((aligned(16))) = { { { 0 } } };
+struct nuinstanim_s ObjectInstAnim[64] = { { { 0 } } };
+struct edobject_s ObjectPath[64] = { { 0 } };
+struct numtx_s edobj_cursor_matrix = { 0 };
+struct nuvec_s edobj_cam_pos = { 0.0f, 0.0f, 0.0f };
+struct nuvec_s edobj_snap_vec = { 0.0f, 0.0f, 0.0f };
+struct numtl_s *edobj_mtl = 0;
+struct numtl_s *edobj_mtl_zoff = 0;
+int edobj_cam_dist = 0;
+int edobj_cam_ax = 0;
+int edobj_cam_ay = 0;
+int edobj_instance_type = 0;
+int edobj_next_instance = 0;
+int edobj_nearest = 0;
+int edobj_nearest_waypoint = 0;
+int edobj_nearest_particle = 0;
+int edobj_nearest_sound = 0;
+int edobj_waypoint_mode = 0;
+int edobj_copy_mode = 0;
+int edobj_particle_mode = 0;
+int edobj_sound_mode = 0;
+int edobj_particle_type = 0;
+int edobj_sound_type = 0;
+int edobj_snap_xz = 0;
+int edobj_snap_y = 0;
 
 
 void edobjRenderSoundEmitters(int obj)
@@ -2819,53 +2840,6 @@ void edobjcbCancelOptMenu(void)
 }
 
 
-void edobjcbFileSaveObjects(void *menu)
-{
-    char filename[256];
-
-    if (edbits_what_game == 1) {
-        sprintf(filename, edobj_objects_dat_fmt, edbits_level_filename);
-        if (edobjFileSaveObjects(filename)) {
-            eduiCreateMessageMenu(menu, edobj_save_ok_msg, 1);
-        } else {
-            eduiCreateMessageMenu(menu, edobj_save_fail_msg, 0);
-        }
-    } else if (edbits_what_game == 2) {
-        sprintf(filename, edobj_obj_file_fmt, edbits_level_filename);
-        if (edobjFileSaveObjects(filename)) {
-            eduiCreateMessageMenu(menu, edobj_save_ok_msg, 1);
-        } else {
-            eduiCreateMessageMenu(menu, edobj_save_fail_msg, 0);
-        }
-    } else {
-        eduiCreateMessageMenu(menu, edobj_save_fail_msg, 0);
-    }
-}
-
-
-void edobjcbFileLoadObjects(void *menu)
-{
-    char filename[256];
-
-    edobjObjectReset();
-    if (edbits_what_game == 1) {
-        sprintf(filename, edobj_objects_dat_fmt, edbits_level_filename);
-        if (NuFileSize(filename) > 0) {
-            edobjFileLoadObjects(filename);
-        }
-        eduiCreateMessageMenu(menu, edobj_load_ok_msg, 1);
-    } else if (edbits_what_game == 2) {
-        sprintf(filename, edobj_obj_file_fmt, edbits_level_filename);
-        if (NuFileSize(filename) > 0) {
-            edobjFileLoadObjects(filename);
-        }
-        eduiCreateMessageMenu(menu, edobj_load_ok_msg, 1);
-    } else {
-        eduiCreateMessageMenu(menu, edobj_load_fail_msg, 0);
-    }
-}
-
-
 void edobjcbChangeAnimSpeed(void *menu, struct eduiitem_s *item)
 {
     if (edobj_nearest != -1) {
@@ -2953,7 +2927,7 @@ void edobjcbChangeWaypointXRot(void *menu, struct eduiitem_s *item)
     if (edobj_waypoint_mode) {
         if (edobj_nearest_waypoint != -1) {
             ObjectPath[edobj_nearest].waypoint_rot[edobj_nearest_waypoint].x =
-                item->u.slider.val * D_0062CF24;
+                item->u.slider.val * 0.017453292f;
             edobjConvertPathToAnim(edobj_nearest);
         }
     }
@@ -2965,7 +2939,7 @@ void edobjcbChangeWaypointYRot(void *menu, struct eduiitem_s *item)
     if (edobj_waypoint_mode) {
         if (edobj_nearest_waypoint != -1) {
             ObjectPath[edobj_nearest].waypoint_rot[edobj_nearest_waypoint].y =
-                item->u.slider.val * D_0062CF28;
+                item->u.slider.val * 0.017453292f;
             edobjConvertPathToAnim(edobj_nearest);
         }
     }
@@ -2977,7 +2951,7 @@ void edobjcbChangeWaypointZRot(void *menu, struct eduiitem_s *item)
     if (edobj_waypoint_mode) {
         if (edobj_nearest_waypoint != -1) {
             ObjectPath[edobj_nearest].waypoint_rot[edobj_nearest_waypoint].z =
-                item->u.slider.val * D_0062CF2C;
+                item->u.slider.val * 0.017453292f;
             edobjConvertPathToAnim(edobj_nearest);
         }
     }
@@ -3146,36 +3120,6 @@ void edobjcbSetParticleRate(void *menu, struct eduiitem_s *item)
 }
 
 
-void edobjcbLocalSoundTypeMenu(struct eduimenu_s *menu)
-{
-    struct eduistyle_s style;
-    int selected;
-    int i;
-
-    style = edobj_item_style;
-    edobj_localsoundtype_menu = eduiMenuCreate(70, 70, 180, 250, app_fnt,
-                                               edobjcbCancelLocalSoundTypeMenu,
-                                               localsoundtype_menu_title);
-    if (edobj_localsoundtype_menu != 0) {
-        for (i = 0; i < edSfxAllCount; i++) {
-            selected = 0;
-            if (ObjectPath[edobj_nearest].sound_id[edobj_nearest_sound] == i) {
-                selected = 1;
-            }
-            eduiMenuAddItem(edobj_localsoundtype_menu,
-                            eduiItemCheckCreate(i, &style, selected, 1, edobjcbSetLocalSoundType,
-                                                edbitsGetSoundName(i)));
-            if (selected == 1) {
-                edobj_localsoundtype_menu->current = edui_last_item;
-            }
-        }
-        eduiMenuAttach(menu, edobj_localsoundtype_menu);
-        edobj_localsoundtype_menu->x = menu->x + 10;
-        edobj_localsoundtype_menu->y = menu->y + 40;
-    }
-}
-
-
 void edobjcbCancelLocalSoundMenu(void)
 {
     eduiMenuDestroy(edobj_localsound_menu);
@@ -3190,92 +3134,10 @@ void edobjcbCancelParticleTypeMenu(void)
 }
 
 
-void edobjcbLocalParticleTypeMenu(struct eduimenu_s *menu)
-{
-    struct eduistyle_s style;
-    int selected;
-    int i;
-
-    style = edobj_item_style;
-    edobj_localparticletype_menu = eduiMenuCreate(70, 70, 250, 200, app_fnt,
-                                                  edobjcbCancelLocalParticleTypeMenu,
-                                                  localparticletype_menu_title);
-    if (edobj_localparticletype_menu != 0) {
-        for (i = 1; i < 128; i++) {
-            if (debtab[i] != 0) {
-                selected = 0;
-                if (ObjectPath[edobj_nearest].particle_type[edobj_nearest_particle] == i) {
-                    selected = 1;
-                }
-                eduiMenuAddItem(edobj_localparticletype_menu,
-                                eduiItemCheckCreate(i, &style, selected, 1,
-                                                    edobjcbSetLocalParticleType, debtab[i]->id));
-                if (selected == 1) {
-                    edobj_localparticletype_menu->current = edui_last_item;
-                }
-            }
-        }
-        eduiMenuAttach(menu, edobj_localparticletype_menu);
-        edobj_localparticletype_menu->x = menu->x + 10;
-        edobj_localparticletype_menu->y = menu->y + 40;
-    }
-}
-
-
 void edobjcbCancelLocalParticleMenu(void)
 {
     eduiMenuDestroy(edobj_localparticle_menu);
     edobj_localparticle_menu = 0;
-}
-
-
-void edobjcbParticleMenu(struct eduimenu_s *menu)
-{
-    struct eduistyle_s style;
-
-    style = edobj_item_style;
-    if (edobj_nearest != -1) {
-        edobj_particle_menu = eduiMenuCreate(70, 70, 250, 300, app_fnt,
-                                             edobjcbCancelParticleMenu, particle_menu_title);
-        if (edobj_particle_menu != 0) {
-            eduiMenuAddItem(edobj_particle_menu,
-                            eduiItemSelCreate(1, &style, 0, 0, edobjcbParticleTypeMenu,
-                                              particle_menu_text_type));
-            if (edobj_nearest_particle != -1) {
-                eduiMenuAddItem(edobj_particle_menu,
-                                eduiItemSelCreate(1, &style, 0, 0, edobjcbLocalParticleMenu,
-                                                  particle_menu_text_local));
-            }
-            eduiMenuAttach(menu, edobj_particle_menu);
-            edobj_particle_menu->x = menu->x + 10;
-            edobj_particle_menu->y = menu->y + 40;
-        }
-    }
-}
-
-
-void edobjcbSoundMenu(struct eduimenu_s *menu)
-{
-    struct eduistyle_s style;
-
-    style = edobj_item_style;
-    if (edobj_nearest != -1) {
-        edobj_sound_menu = eduiMenuCreate(70, 70, 250, 300, app_fnt,
-                                          edobjcbCancelSoundMenu, sound_menu_title);
-        if (edobj_sound_menu != 0) {
-            eduiMenuAddItem(edobj_sound_menu,
-                            eduiItemSelCreate(1, &style, 0, 0, edobjcbSoundTypeMenu,
-                                              sound_menu_text_type));
-            if (edobj_nearest_sound != -1) {
-                eduiMenuAddItem(edobj_sound_menu,
-                                eduiItemSelCreate(1, &style, 0, 0, edobjcbLocalSoundMenu,
-                                                  sound_menu_text_local));
-            }
-            eduiMenuAttach(menu, edobj_sound_menu);
-            edobj_sound_menu->x = menu->x + 10;
-            edobj_sound_menu->y = menu->y + 40;
-        }
-    }
 }
 
 
@@ -3308,7 +3170,7 @@ void edobjEnter(void)
 
 int edobjProc(float dt, struct nupad_s *pad)
 {
-    edobj_blink_timer += 5;
+    edobj_count += 5;
     if (edobj_active_menu != 0) {
         eduiMenuProcess(edobj_active_menu, dt, pad);
         return 0;
@@ -3355,38 +3217,6 @@ void edobjcbSetLocalParticleType(void *menu, struct eduiitem_s *item)
     strcpy(ObjectPath[edobj_nearest].particle_name[edobj_nearest_particle],
            debtab[item->value]->id);
     edobj_particle_type = item->value;
-}
-
-
-void edobjcbSoundTypeMenu(struct eduimenu_s *menu)
-{
-    struct eduistyle_s style;
-    int selected;
-    int i;
-
-    style = edobj_item_style;
-    edobj_soundtype_menu = eduiMenuCreate(70, 70, 180, 250, app_fnt, edobjcbCancelSoundTypeMenu,
-                                          soundtype_menu_title);
-    if (edobj_soundtype_menu != 0) {
-        eduiMenuAddItem(edobj_soundtype_menu,
-                        eduiItemCheckCreate(99999, &style, edobj_sound_type == -1, 0,
-                                            edobjcbSetSoundType, particletype_text_none));
-        for (i = 0; i < edSfxAllCount; i++) {
-            selected = 0;
-            if (edobj_sound_type == i) {
-                selected = 1;
-            }
-            eduiMenuAddItem(edobj_soundtype_menu,
-                            eduiItemCheckCreate(i, &style, selected, 1, edobjcbSetSoundType,
-                                                edbitsGetSoundName(i)));
-            if (selected == 1) {
-                edobj_soundtype_menu->current = edui_last_item;
-            }
-        }
-        eduiMenuAttach(menu, edobj_soundtype_menu);
-        edobj_soundtype_menu->x = menu->x + 10;
-        edobj_soundtype_menu->y = menu->y + 40;
-    }
 }
 
 

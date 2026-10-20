@@ -297,100 +297,100 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0087:0062f9a0:nusound_fade_start"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0087:0062f9a4:nusound_fade_end"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0087:0062f9a8:nusound_dpl_enabled"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0087:0062f9ac:IOP_Cnt"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0087:0062f9b0:SOUND_STEREO_READY_FLAG"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0087:0062f9b4:SOUND_CD_STATUS"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0087:0062f9b8:SOUND_SPU_ADDR"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0087:0062f9bc:SOUND_STREAM_CD_ACCESS"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0087:0062f9c0:SOUND_IOP_REQUEST_LOAD"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0087:0062f9c4:SOUND_STREAM_STATUS"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0087:0062f9c8:SOUND_SFX_TRANSFER_STATUS"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0087:0062f9cc:SOUND_SFX_TRANSFER_END"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0087:0062f9d0:SOUND_SHUTOFF_STATUS"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0087:0062f9d4:fileinfo_cnt"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0087:0062f9d8:SSample"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0087:0062f9dc:VolL"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0087:0062f9e0:VolR"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0087:0062f9e4:SStat"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0087:0062f9e8:Pitch"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0087:0062f9ec:Pitch22khz"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0087:0062f9f0:SChan"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0087:0062f9f4:Attack"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0087:0062f9f8:Release"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0087:0062f9fc:NuSoundListenPos"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0087:0062fa00:NuSndSteroPitch"
-state = "asm"
+state = "matching"

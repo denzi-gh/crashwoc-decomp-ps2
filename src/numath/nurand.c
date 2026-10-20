@@ -14,10 +14,8 @@
 
 #include "numath/nurand.h"
 
-extern struct nunrand_s D_0062EA60;
-extern s64 D_0062EA68;
-#define global_rand D_0062EA60
-#define fseed D_0062EA68
+static struct nunrand_s global_rand = {1};
+static s64 fseed = 0;
 
 s64 __divdi3(s64 u, s64 v);
 
