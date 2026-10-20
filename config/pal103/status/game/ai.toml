@@ -53,7 +53,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0103:00230d28:MoveCreature"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0103:00234920:InitAI"

@@ -271,7 +271,9 @@ python tools/split_text.py    # split by TU, assemble each, link the full image
 ```
 
 The `.mdebug` procedure table gives 247 translation units that own `.text` code
-(of 267 total units). Each becomes its own `.s` object; the six non-`.text`
+(of 267 total units); a procedure-less file descriptor right after a unit's
+own and below its first procedure is included code that starts the unit
+(nu2api.i in asmdma.s). Each becomes its own `.s` object; the six non-`.text`
 sections stay as `.incbin`, exactly as the binary baseline carries them. It
 checks, in order:
 

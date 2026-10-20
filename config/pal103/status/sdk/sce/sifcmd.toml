@@ -33,7 +33,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0254:0027ac98:sceSifInitCmd"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0254:0027af18:sceSifExitCmd"

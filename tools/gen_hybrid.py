@@ -57,6 +57,7 @@ game-derived and land in the gitignored build/ tree.
 """
 import argparse
 import bisect
+import itertools
 import re
 import struct
 import subprocess
@@ -192,6 +193,19 @@ _FPR_RE = re.compile(r"\$f(\d+)\b")
 _FPR_READ_ALL = frozenset(("s.s", "swc1", "mfc1", "adda.s", "suba.s",
                            "mula.s", "madda.s", "msuba.s"))
 _FPR_NO_READ = frozenset(("l.s", "lwc1", "mtc1", "li.s"))
+# mfc1 interlock: both assemblers pad a nop when the next instruction reads
+# the mfc1 destination. Across a `.p2align` SN's `as` aligns first, then pads,
+# then binds the label (GliderSmoke 0x00204014, NuLightInit mtc1 0x001351B0);
+# the decompals `as` pads before aligning.
+_MFC1_RE = re.compile(r"^\s*mfc1\s+(\$\w+)\s*,\s*\$f\d+\s*$")
+_GPR_RE = re.compile(
+    r"\$(?:\d+|zero|at|v[01]|a[0-3]|t\d|s[0-8]|k[01]|gp|sp|fp|ra)\b")
+# Ops that read their first GPR operand.
+_GPR_READ_ALL = frozenset((
+    "sb", "sh", "sw", "sd", "sq", "swl", "swr", "sdl", "sdr", "swc1", "sdc1",
+    "sqc2", "mtc1", "dmtc1", "ctc1", "mthi", "mtlo", "mult", "multu", "div",
+    "divu", "dmult", "dmultu", "ddiv", "ddivu", "mult1", "multu1", "div1",
+    "divu1", "madd", "maddu", "jr", "jalr"))
 
 # Unfilled branch delay slots. ee-gcc fills a delay slot itself only inside an
 # explicit `.set noreorder` / `.set nomacro` block; every branch it emits
@@ -919,14 +933,67 @@ def _mtc1_hazard(line, following):
     return any(r // 2 == pair for r in _fpr_reads(following))
 
 
+def _gpr_reads(line):
+    """GPRs one instruction line reads."""
+    m = _MNEMONIC_RE.match(line)
+    if not m:
+        return set()
+    mnemonic = m.group(1)
+    operands = line[m.end():].split("#", 1)[0]
+    regs = _GPR_RE.findall(operands)
+    if mnemonic in _GPR_READ_ALL or _is_branch(line):
+        return set(regs)
+    return set(regs[1:])
+
+
+def _mfc1_hazard(line, following):
+    m = _MFC1_RE.match(line)
+    return bool(m) and m.group(1) in _gpr_reads(following)
+
+
+_SLOT_LABELS = itertools.count()
+
+
+def _filled_slot_lines(seg):
+    """Line indices inside ee-gcc's `.set noreorder` branch blocks (not the
+    branchless ones _rewrite_lis adds)."""
+    lines, block, noreorder = set(), [], False
+    for index, line in enumerate(seg):
+        m = _SET_REORDER_RE.match(line)
+        if m:
+            if noreorder and m.group(1) is None and any(
+                    _is_branch(seg[i]) for i in block):
+                lines.update(block)
+            noreorder, block = m.group(1) is not None, []
+        elif noreorder:
+            block.append(index)
+    return lines
+
+
+def _sce_keeps_slot(history):
+    """Profile `sce`: retail leaves a reorder-mode branch slot empty where the
+    decompals `as` swaps, if the instruction two back was in a noreorder
+    block (old GAS prev_prev_insn_unreordered; _sceCd_ncmd_prechk 0x00266260,
+    sceSifResetIop 0x002808BC) or the previous one is mflo/mfhi (_calloc_r
+    0x00278620). `history`: (mnemonic, in noreorder block), newest last."""
+    if len(history) >= 2 and history[-2][1]:
+        return True
+    return bool(history) and history[-1][0] in ("mflo", "mfhi")
+
+
 def _sonyize_seg(seg, profile="default"):
     """`_sonyize` over one function segment, plus the nops SN's `as` writes and
-    the decompals `as` does not: the mtc1 pair hazard (placed before any label)
-    and, except for profile `sce`, unfilled branch delay slots."""
+    the decompals `as` does not: the mtc1 pair hazard (after any alignment,
+    before any label), the mfc1 interlock across an alignment, and unfilled
+    branch delay slots (for profile `sce` only per _sce_keeps_slot)."""
     out = []
     reorder = True
-    pad_slots = profile != "sce"
+    sce = profile == "sce"
+    pad_slots = not sce
     reorder_before = None
+    nop_after = None
+    history = []
+    filled = _filled_slot_lines(seg) if sce else set()
     for index, line in enumerate(seg):
         if index == reorder_before:
             out.append("\t.set\treorder")
@@ -936,38 +1003,59 @@ def _sonyize_seg(seg, profile="default"):
             reorder = m.group(1) is None
             out.append(line)
             continue
-        if pad_slots and reorder and _is_branch(line):
+        mnemonic = _MNEMONIC_RE.match(line)
+        if reorder and pad_slots and _is_branch(line):
             out.append("\t.set\tnoreorder")
             out.append(_sonyize(line))
             out.append("\tnop")
             out.append("\t.set\treorder")
             continue
+        if reorder and sce and _is_branch(line) and _sce_keeps_slot(history):
+            # A labelled branch is never swapped into; unlike a noreorder nop
+            # this leaves the next branch free to swap.
+            out.append(f"$Lsony{next(_SLOT_LABELS)}:")
+            history.append((mnemonic.group(1), False))
+            out.append(_sonyize(line))
+            continue
+        if mnemonic:
+            history.append((mnemonic.group(1), index in filled))
         out.append(_sonyize(line))
-        if _writes_fpr_via_mtc1(line):
+        if index == nop_after:
+            out.append("\tnop")
+            nop_after = None
+        mfc1 = _MFC1_RE.match(line)
+        if _writes_fpr_via_mtc1(line) or (mfc1 and pad_slots):
             next_index = index + 1
-            aligned = False
+            last_align = None
             while next_index < len(seg) and (
                     _is_noise(seg[next_index])
                     or _LOCAL_LABEL_RE.match(seg[next_index])
                     or _ALIGN_RE.match(seg[next_index])):
-                aligned = aligned or bool(_ALIGN_RE.match(seg[next_index]))
+                if _ALIGN_RE.match(seg[next_index]):
+                    last_align = next_index
                 next_index += 1
-            if next_index < len(seg) and _mtc1_hazard(line, seg[next_index]):
-                out.append("\tnop")
-            elif aligned and reorder and pad_slots and next_index < len(seg):
-                # An alignment directive (a loop head) hides the next
-                # instruction from the decompals `as`, which then pads the
-                # mtc1 with a hazard nop SN's `as` does not write (retail:
-                # DrawZoffaUFOs, li.s $f21 before its loop). Assemble it and
-                # the alignment without reordering so no nop appears. Not for
-                # profile `sce`, whose retail assembler behaves like GNU `as`.
+            if next_index >= len(seg):
+                continue
+            following = seg[next_index]
+            hazard = (_mfc1_hazard(line, following) if mfc1
+                      else _mtc1_hazard(line, following))
+            if last_align is not None and reorder and pad_slots:
+                # The decompals `as` pads before the alignment whether or not
+                # the next instruction reads the register; SN's `as` pads
+                # after it, and only for a real hazard (none at
+                # DrawZoffaUFOs). Not for profile `sce`.
                 out[-1:] = ["\t.set\tnoreorder", out[-1]]
                 reorder_before = next_index
+                if hazard:
+                    nop_after = last_align
+            elif hazard and not mfc1:
+                out.append("\tnop")
     return out
 
 
-def _unit_end(unit_dir):
-    """End address of a unit (= next unit's start), or None for the last."""
+def _unit_end(unit_dir, version="pal103"):
+    """End address of a unit: the next unit's start, or the .text end."""
+    from declib.asmtext import load_text_target
     from declib.tu import load_tu_runs
     runs = load_tu_runs()
     index = int(unit_dir.split("-")[1])
@@ -975,7 +1063,10 @@ def _unit_end(unit_dir):
     if not starts:
         raise HybridError(f"unit {unit_dir} not in the TU runs")
     later = [a for _u, a in runs if a > starts[0]]
-    return min(later) if later else None
+    if later:
+        return min(later)
+    _elf, text_addr, _off, text_size = load_text_target(version)
+    return text_addr + text_size
 
 
 def _manifest_functions(data):

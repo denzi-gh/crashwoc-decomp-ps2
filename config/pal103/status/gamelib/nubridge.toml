@@ -25,7 +25,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0081:001b4c58:NuBridgeDraw"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0081:001b5028:NuBridgeInit"

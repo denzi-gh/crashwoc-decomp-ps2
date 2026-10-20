@@ -25,7 +25,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0149:00265a38:_sceCd_cd_callback"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0149:00265ad8:_Cdvd_cbLoop"
@@ -61,11 +61,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0149:00265f40:sceCdSearchFile"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0149:00266240:_sceCd_ncmd_prechk"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0149:002663b0:sceCdNcmdDiskReady"
@@ -81,7 +81,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0149:00266558:_sceCd_scmd_prechk"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0149:002666c8:sceCdInit"
@@ -89,7 +89,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0149:002669a8:sceCdDiskReady"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0149:00266ba0:sceCdMmode"

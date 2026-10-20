@@ -70,7 +70,7 @@ extern unsigned char D_00703500[0x140];
 
 extern int sceDeci2Open(unsigned short protocol, void *opt, Deci2Handler handler);
 extern int sceDeci2ReqSend(int socket, char dest);
-extern int sceDeci2Poll(int socket);
+extern void sceDeci2Poll(int socket);
 extern int sceDeci2ExRecv(int socket, void *buf, unsigned short len);
 extern int sceDeci2ExSend(int socket, void *buf, unsigned short len);
 extern int DIntr(void);

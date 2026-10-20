@@ -1,11 +1,12 @@
 """gen_hybrid's SN-as normalization rules on synthetic snippets."""
+import re
 import sys
 import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
-from gen_hybrid import _fpr_reads, _sonyize, _sonyize_seg, parse_s
+from gen_hybrid import _fpr_reads, _gpr_reads, _sonyize, _sonyize_seg, parse_s
 
 
 def _insns(seg, profile="default"):
@@ -116,6 +117,89 @@ class TestSceDelaySlot(unittest.TestCase):
     def test_sce_profile_keeps_the_hazard_rule(self):
         got = _insns(["\tmtc1\t$2,$f1", "\ts.s\t$f0,0($4)"], profile="sce")
         self.assertEqual(got, ["mtc1\t$2,$f1", "nop", "s.s\t$f0,0($4)"])
+
+
+class TestMfc1AcrossAlignment(unittest.TestCase):
+
+    def test_reader_after_aligned_loop_head_pads_after_the_alignment(self):
+        # retail GliderSmoke 0x00204014: mfc1 $a1,$f1 / nop / loop head at
+        # 0x0020401C -- aligned first, then the nop, then the label.
+        got = _insns(["\tmfc1\t$5,$f1", "\t.p2align 3", "$L3029:",
+                      "\taddu\t$3,$5,-16"])
+        self.assertEqual(got, [".set\tnoreorder", "mfc1\t$5,$f1",
+                               ".p2align 3", "nop", "$L3029:",
+                               ".set\treorder", "addu\t$3,$5,-16"])
+
+    def test_non_reader_after_aligned_loop_head_gets_no_nop(self):
+        got = _insns(["\tmfc1\t$5,$f1", "\t.p2align 3", "$L1:",
+                      "\taddu\t$3,$4,-16"])
+        self.assertEqual(got, [".set\tnoreorder", "mfc1\t$5,$f1",
+                               ".p2align 3", "$L1:", ".set\treorder",
+                               "addu\t$3,$4,-16"])
+
+    def test_without_alignment_the_assembler_pads_itself(self):
+        seg = ["\tmfc1\t$5,$f1", "$L1:", "\taddu\t$3,$5,-16"]
+        self.assertEqual(_insns(seg), [l.strip() for l in seg])
+
+    def test_sce_profile_is_left_alone(self):
+        seg = ["\tmfc1\t$5,$f1", "\t.p2align 3", "$L1:", "\taddu\t$3,$5,-16"]
+        self.assertEqual(_insns(seg, "sce"), [l.strip() for l in seg])
+
+    def test_store_reads_its_first_operand(self):
+        self.assertEqual(_gpr_reads("\tsw\t$5,0($4)"), {"$5", "$4"})
+        self.assertEqual(_gpr_reads("\tlw\t$5,0($4)"), {"$4"})
+        self.assertEqual(_gpr_reads("\tbne\t$5,$0,$L3"), {"$5", "$0"})
+
+
+_FILLED_JUMP = ["\t.set\tnoreorder", "\t.set\tnomacro", "\tjal\tcmd_sem_init",
+                "\tsd\t$18,32($sp)", "\t.set\tmacro", "\t.set\treorder"]
+
+
+def _labelled(lines, branch):
+    """Is `branch` directly preceded by a slot-keeping label?"""
+    i = lines.index(branch)
+    return i > 0 and re.fullmatch(r"\$Lsony\d+:", lines[i - 1]) is not None
+
+
+class TestSceDelaySlots(unittest.TestCase):
+
+    def test_branch_after_a_filled_jump_slot_keeps_its_slot(self):
+        # retail _sceCd_ncmd_prechk 0x00266260: lw $a0 / jal PollSema / nop
+        got = _insns(_FILLED_JUMP + ["\tlw\t$4,%lo(sem)($16)",
+                                     "\tjal\tPollSema"], "sce")
+        self.assertTrue(_labelled(got, "jal\tPollSema"))
+
+    def test_alignment_and_labels_do_not_reset_the_history(self):
+        # retail _sceCd_cd_callback: `b; ld` block, .p2align, label, lw, jal
+        got = _insns(_FILLED_JUMP + ["\t.p2align 2", "$L7:",
+                                     "\tlw\t$4,%lo(sem)($2)",
+                                     "\tjal\tiSignalSema"], "sce")
+        self.assertTrue(_labelled(got, "jal\tiSignalSema"))
+
+    def test_branch_after_two_reordered_insns_may_swap(self):
+        # retail cdvd_exit: lui / lw / jal SignalSema swaps the lw in
+        seg = _FILLED_JUMP + ["\tlui\t$16,%hi(sem)", "\tlw\t$4,%lo(sem)($16)",
+                              "\tjal\tSignalSema"]
+        self.assertEqual(_insns(seg, "sce"), [l.strip() for l in seg])
+
+    def test_mflo_is_never_swapped_into_a_slot(self):
+        # retail _calloc_r 0x00278620: mflo $a1 / jal _malloc_r / nop
+        got = _insns(["\tmult\t$5,$6", "\tsd\t$31,16($sp)", "\tmflo\t$5",
+                      "\tjal\t_malloc_r"], "sce")
+        self.assertTrue(_labelled(got, "jal\t_malloc_r"))
+
+    def test_branchless_noreorder_block_is_not_a_filled_slot(self):
+        # _rewrite_lis wraps a li.d expansion in noreorder; that is not one
+        # of ee-gcc's filled slots.
+        seg = ["\t.set\tnoreorder", "\tdli\t$5,0x4024000000000000",
+               "\t.set\treorder", "\taddu\t$4,$16,8", "\tjal\tdpmul"]
+        self.assertEqual(_insns(seg, "sce"), [l.strip() for l in seg])
+
+    def test_default_profile_still_pads_every_reorder_branch(self):
+        got = _insns(_FILLED_JUMP + ["\tlw\t$4,%lo(sem)($16)",
+                                     "\tjal\tPollSema"])
+        self.assertEqual(got[-4:], [".set\tnoreorder", "jal\tPollSema", "nop",
+                                    ".set\treorder"])
 
 
 class TestParseFile(unittest.TestCase):

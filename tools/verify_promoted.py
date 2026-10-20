@@ -60,7 +60,7 @@ from link_image import link_image
 from status import check_version
 from declib.asmtext import load_symbol_addrs, load_text_target, resolve
 from declib.toolchain import LD, NM, Reporter, tool_path
-from declib.tu import parse_toml_blocks
+from declib.tu import extent_end, load_tu_runs, parse_toml_blocks
 from declib.verify import (defined_function_offsets, link_text_at,
                            link_unit_at, undefined_externals)
 
@@ -76,10 +76,11 @@ def function_sizes(version):
                 {"n": r"name = '([^']*)'", "a": r"address = (0x[0-9A-Fa-f]+)",
                  "u": r"unit = (\d+)"})]
     rows.sort()
+    runs = load_tu_runs()
     out = {}
     for i, (addr, name, unit) in enumerate(rows):
         end = rows[i + 1][0] if i + 1 < len(rows) else text_addr + text_size
-        out.setdefault(unit, {})[name] = (addr, end - addr)
+        out.setdefault(unit, {})[name] = (addr, extent_end(addr, end, runs) - addr)
     return out
 
 
