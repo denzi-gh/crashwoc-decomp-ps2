@@ -21,7 +21,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0056:00163f28:fixMaterials"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0056:00164668:NuWaterInit"

@@ -281,7 +281,9 @@ void fixMaterials(void) {
         layer->fx4 = mtl->fx4;
         layer->alpha = mtl->alpha;
         layer->attrib.alpha = mtl->attrib.alpha;
-        layer->attrib.atst = mtl->attrib.atst;
+        /* atst is 3 bits, so % 8 is a no-op; it changes the RTL that sets the
+           $s7/$fp allocation tie between watermtl and watertable. */
+        layer->attrib.atst = mtl->attrib.atst % 8;
         layer->attrib2.afail = mtl->attrib2.afail;
         layer->attrib.fx = 1;
         layer->attrib.zmode = 0;

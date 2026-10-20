@@ -179,18 +179,18 @@ extern void NuStrCpy(char *dst, char *src);
 extern void NuStrCat(char *dst, char *src);
 extern void *NuMemAllocFn(s32 size, char *file, s32 line);
 extern void NuMemFreeFn(void *ptr, char *file, s32 line);
-extern void NuRndrLineRect2di(s32 x, s32 y, s32 w, s32 h, u32 colour,
+extern void NuRndrLineRect2di(s32 x, s32 y, s32 w, s32 h, s32 colour,
                               struct numtl_s *mtl);
 extern void NuRndrRect2di(s32 x, s32 y, s32 w, s32 h, s32 colour, struct numtl_s *mtl);
 extern void NuRndrGradRect2di(s32 x, s32 y, s32 w, s32 h, u32 *colours,
                               struct numtl_s *mtl);
-extern void NuRndrTriStrip2di(s32 *pnts, u32 *colours, s32 count, u32 colour,
+extern void NuRndrTriStrip2di(s32 *pnts, u32 *colours, s32 count, s32 colour,
                               struct numtl_s *mtl);
 extern void NuRndrRectUV2di(s32 x, s32 y, s32 w, s32 h, f32 u0, f32 v0, f32 u1,
-                            f32 v1, u32 colour, struct numtl_s *mtl);
-extern void NuRndrLine2di(s32 x0, s32 y0, s32 x1, s32 y1, u32 colour,
+                            f32 v1, s32 colour, struct numtl_s *mtl);
+extern void NuRndrLine2di(s32 x0, s32 y0, s32 x1, s32 y1, s32 colour,
                           struct numtl_s *mtl);
-extern void NuRndrLineStrip2di(s32 *pnts, u32 *colours, s32 count, u32 colour,
+extern void NuRndrLineStrip2di(s32 *pnts, u32 *colours, s32 count, s32 colour,
                                struct numtl_s *mtl);
 extern void NuFntSetPen(s32 pen);
 extern void NuFntSet(void *font);
@@ -841,7 +841,7 @@ s32 eduicbRenderTextPick(struct eduimenu_s *menu, struct eduiitem_s *item, s32 x
                      item->u.textpick.text);
         return height * 5;
     }
-    NuRndrRect2di(x * 16, y * 8, w * 16, height * 16,
+    NuRndrRect2di(x * 16, y * 8, w * 16, (height * 2) << 3,
                   item->style.colour[item->on], edui_mtl[ui_bgmtl]);
     NuFntSetPen(item->style.pen[item->on]);
     NuFntPrintEx((x * 2 + w) * 8, y * 8 + texty, 2, item->text);
@@ -1076,9 +1076,23 @@ done:
 }
 
 
+/* Fills [x + w * lastpos, x + w * pos) left to right from lastcol to col. */
+static inline void eduiRndrGradBar(s32 x, s32 y, s32 w, s32 h, f32 lastpos, f32 pos,
+                                   u32 lastcol, u32 col) {
+    u32 cols[4];
+
+    cols[0] = cols[2] = lastcol;
+    cols[1] = cols[3] = col;
+    NuRndrGradRect2di(x + (s32)(w * lastpos), y, (s32)(w * pos) - (s32)(w * lastpos), h,
+                      cols, edui_mtl[ui_bgmtl]);
+}
+
+
 /* state=asm: retail keeps x * 16 and (f32)(w * 16) inside the gradient loop
- * (only height >> 1, y + (height >> 1) and &edui_mtl are hoisted); every loop
- * form tried here hoists them or nothing at all. */
+ * (only height >> 1, y + (height >> 1) and &edui_mtl are hoisted). Here CSE
+ * replaces the inline's x/w params with the argument temps, whose single use
+ * cannot absorb the shift, so loop.c hoists them; no loop form or
+ * eduiRndrGradBar body tried keeps them in. */
 s32 eduicbRenderGradPick(struct eduimenu_s *menu, struct eduiitem_s *item, s32 x, s32 y, s32 w,
                          s32 highlight) {
     s32 height;
@@ -1087,7 +1101,6 @@ s32 eduicbRenderGradPick(struct eduimenu_s *menu, struct eduiitem_s *item, s32 x
     struct eduigradstage_s *stage;
     f32 pos;
     u32 colour;
-    u32 colours[4];
 
     height = (NuFntHeight + (NuFntHeight >> 2)) >> 2;
     item->x = x;
@@ -1108,13 +1121,8 @@ s32 eduicbRenderGradPick(struct eduimenu_s *menu, struct eduiitem_s *item, s32 x
         pos = stage->pos;
         colour = stage->colour;
         for (stage = stage->next; stage; stage = stage->next) {
-            colours[0] = colours[2] = colour;
-            colours[1] = colours[3] = stage->colour;
-            NuRndrGradRect2di(x * 16 + (s32)(w * 16 * pos),
-                              (y + (height >> 1)) * 8,
-                              (s32)(w * 16 * stage->pos) -
-                                  (s32)(w * 16 * pos),
-                              (height >> 1) * 8, colours, edui_mtl[ui_bgmtl]);
+            eduiRndrGradBar(x * 16, (y + (height >> 1)) * 8, w * 16, (height >> 1) * 8, pos,
+                            stage->pos, colour, stage->colour);
             pos = stage->pos;
             colour = stage->colour;
         }
@@ -1667,18 +1675,6 @@ static inline void eduiRndrHueBand(s32 x, s32 y, s32 w, s32 h, f32 lastpos, f32 
 }
 
 
-/* Fills [x + w * lastpos, x + w * pos) left to right from lastcol to col. */
-static inline void eduiRndrGradBar(s32 x, s32 y, s32 w, s32 h, f32 lastpos, f32 pos,
-                                   u32 lastcol, u32 col) {
-    u32 cols[4];
-
-    cols[0] = cols[2] = lastcol;
-    cols[1] = cols[3] = col;
-    NuRndrGradRect2di(x + (s32)(w * lastpos), y, (s32)(w * pos) - (s32)(w * lastpos), h,
-                      cols, edui_mtl[ui_bgmtl]);
-}
-
-
 s32 eduicbRenderColourPick(struct eduimenu_s *menu, struct eduiitem_s *item, s32 x, s32 y, s32 w,
                            s32 highlight) {
     s32 h;
@@ -1883,13 +1879,14 @@ s32 eduicbRenderTexturePick(struct eduimenu_s *menu, struct eduiitem_s *item, s3
     }
     colours[0] = colours[1] = 0x807F7F7F;
     colours[item->u.texpick.corner] = 0x80FFFFFF;
-    NuRndrRectUV2di(x * 16, y * 8, w * 16, w * 8, left, top, left + uscale,
+    height = w;
+    NuRndrRectUV2di(x * 16, y * 8, w * 16, height * 8, left, top, left + uscale,
                     top + vscale, 0x80808080, item->u.texpick.mtl);
     for (i = 0; i < 2; i++) {
-        NuRndrLine2di(x * 16, (s32)(y + w * sv[i]) * 8, (x + w - 1) * 16,
-                      (s32)(y + w * sv[i]) * 8, colours[i], edui_mtl[0]);
+        NuRndrLine2di(x * 16, (s32)(y + (s32)(f32)height * sv[i]) * 8, (x + w - 1) * 16,
+                      (s32)(y + height * sv[i]) * 8, colours[i], edui_mtl[0]);
         NuRndrLine2di((s32)(x + w * su[i]) * 16, y * 8,
-                      (s32)(x + w * su[i]) * 16, (y + w - 1) * 8, colours[i],
+                      (s32)(x + w * su[i]) * 16, (y + height - 1) * 8, colours[i],
                       edui_mtl[0]);
     }
     height = (NuFntHeight + (NuFntHeight >> 2)) >> 3;

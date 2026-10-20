@@ -173,7 +173,7 @@ struct debrender_s {
     struct nuvec_s pos;                     /* 0x4C */
 }; /* 0x58 */
 
-extern struct debkeydatatype_s debkeydata[];
+extern struct debkeydatatype_s debkeydata[256];
 extern struct debinfo_s *debtab[128];
 extern struct debrender_s ParticleChunkRenderStack[256];
 
