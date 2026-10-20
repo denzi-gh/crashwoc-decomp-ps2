@@ -164,6 +164,24 @@ class TestTuRuns(unittest.TestCase):
         self.assertEqual(runs[65], 0x0016ECA4)
         self.assertEqual(runs[64], 0x0016E890)
 
+    AUTO = ["glabel sceSifWriteBackDCache",
+            "    /* 17C2B8 0027B2B8 C0FF193C */  lui        $t9, 0xFFFF",
+            "endlabel sceSifWriteBackDCache", "",
+            "nonmatching func_0027B364, 0x4", "",
+            "glabel func_0027B364",
+            "    /* 17C364 0027B364 0800E003 */  jr         $ra",
+            "endlabel func_0027B364"]
+
+    def test_unreferenced_auto_function_folds_into_its_owner(self):
+        out = tu.fold_auto_functions(self.AUTO)
+        self.assertEqual([l for l in out if l.strip()], [
+            self.AUTO[0], self.AUTO[1], self.AUTO[7],
+            "endlabel sceSifWriteBackDCache"])
+
+    def test_referenced_auto_function_stays(self):
+        lines = self.AUTO + ["    /* 0 0 0 */  lui $t1, %hi(func_0027B364)"]
+        self.assertEqual(tu.fold_auto_functions(lines), lines)
+
     def test_extent_end_stops_at_the_next_run(self):
         runs = [(64, 0x0016E890), (65, 0x0016ECA4)]
         self.assertEqual(tu.extent_end(0x0016EC48, 0x0016ECE4, runs), 0x0016ECA4)

@@ -33,6 +33,7 @@
 #define LF_UNLOAD       8
 #define LF_SEARCH_NAME  9
 #define LF_SEARCH_ADDR  10
+#define LF_GET_VERSION  0xFF
 
 #define SCE_EBINDMISS    0x10000
 #define SCE_ECALLMISS    0x10001
@@ -109,6 +110,8 @@ extern char D_0062C7E8[];
 #define lf_init         D_00613418
 #define lf_all_sections D_0062C7E8
 
+extern int sceSifBindRpc(sceSifClientData *client, unsigned int request,
+                         unsigned int mode);
 extern int sceSifCallRpc(sceSifClientData *client, unsigned int fno,
                          unsigned int mode, void *send, int ssize,
                          void *receive, int rsize, void (*end_func)(void *),
@@ -118,6 +121,31 @@ extern void *memcpy(void *dest, const void *src, unsigned int n);
 extern void *memset(void *dest, int c, unsigned int n);
 extern char *strncpy(char *dest, const char *src, unsigned int n);
 extern int _lf_bind(void);
+
+
+int _lf_bind(void) {
+    int wait;
+
+    if (lf_init[0] < 0) {
+        while (1) {
+            if (sceSifBindRpc(&lf_client, LF_RPC_SERVER, 0) < 0) {
+                return -1;
+            }
+            if (lf_client.server != 0) {
+                lf_init[0] = 0;
+                if (sceSifCallRpc(&lf_client, LF_GET_VERSION, 0, 0, 0, &lf_arg, 4, 0, 0) < 0) {
+                    return -SCE_ECALLMISS;
+                }
+                memcpy(lf_iop_version, &lf_arg, 4);
+                return 0;
+            }
+            wait = 0x100000;
+            while (wait--) {
+            }
+        }
+    }
+    return 0;
+}
 
 
 int _lf_version(void) {

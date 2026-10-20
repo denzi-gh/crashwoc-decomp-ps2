@@ -29,8 +29,8 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 from declib.asmtext import disambiguate
 from declib.toolchain import Reporter
-from declib.tu import (drop_alignment, load_tu_runs, load_units, prologue_end,
-                       split_body)
+from declib.tu import (drop_alignment, fold_auto_functions, load_tu_runs,
+                       load_units, prologue_end, split_body)
 
 
 def unit_stem(unit, unit_names):
@@ -65,6 +65,7 @@ def generate(version, reporter):
     lines = drop_alignment(mono.splitlines(), reporter)
     if lines is None:
         return False
+    lines = fold_auto_functions(lines)
 
     runs = load_tu_runs()
     body_start = prologue_end(lines)

@@ -48,9 +48,9 @@ sys.path.insert(0, str(ROOT / "tools"))
 from declib.toolchain import AS, LD, NM, OBJCOPY, Reporter, h, tool_path
 from declib.asmtext import disambiguate, load_symbol_addrs, resolve
 from declib.target import derive_tiling, load_target, parse_linker_script
-from declib.tu import (drop_alignment, glabel_addresses, is_lead,  # noqa: F401
-                       load_tu_runs, load_units, parse_toml_blocks,
-                       prologue_end, split_body)
+from declib.tu import (drop_alignment, fold_auto_functions,  # noqa: F401
+                       glabel_addresses, is_lead, load_tu_runs, load_units,
+                       parse_toml_blocks, prologue_end, split_body)
 
 _GP = 0x00634970                  # config/pal103/sections.json; also in linker.ld
 
@@ -243,6 +243,7 @@ def main():
     lines = drop_alignment(mono.splitlines(), reporter)
     if lines is None:
         return _finish(reporter)
+    lines = fold_auto_functions(lines)
 
     runs = load_tu_runs()
     cut_addrs = [addr for _unit, addr in runs[1:]]   # runs[0] heads the file
