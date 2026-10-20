@@ -68,11 +68,23 @@ extern int ChangeThreadPriority(int tid, int priority);
 extern int RotateThreadReadyQueue(int priority);
 extern int WakeupThread(int tid);
 extern int SuspendThread(int tid);
+extern int _iWakeupThread(int tid);
+extern int _iSuspendThread(int tid);
 extern int CreateSema(SemaParam *param);
 extern int DeleteSema(int sema);
 extern int WaitSema(int sema);
 extern int iSignalSema(int sema);
 extern int kprintf(const char *fmt, ...);
+
+
+static inline int iGetThreadId(void)
+{
+    int tid;
+
+    __asm__ volatile ("addiu $3, $0, -47\n\tsyscall\n\tdaddu %0, $2, $0"
+                      : "=r"(tid) : : "$2", "$3");
+    return tid;
+}
 
 
 static void topThread(void *arg)
@@ -134,6 +146,25 @@ int InitThread(void)
 }
 
 
+int iWakeupThread(int tid)
+{
+    int pos;
+
+    if (iGetThreadId() != tid) {
+        return _iWakeupThread(tid);
+    }
+    if (tid < 0 || tid >= 256 || topId == 0) {
+        return -1;
+    }
+    pos = topArg.writePos & 0x1FF;
+    topArg.writePos = pos + 1;
+    topArg.request[pos].mode = TOP_WAKEUP;
+    topArg.request[pos].data = tid;
+    iSignalSema(topSema);
+    return tid;
+}
+
+
 int iRotateThreadReadyQueue(int priority)
 {
     int pos;
@@ -147,4 +178,23 @@ int iRotateThreadReadyQueue(int priority)
     topArg.request[pos].data = priority;
     iSignalSema(topSema);
     return priority;
+}
+
+
+int iSuspendThread(int tid)
+{
+    int pos;
+
+    if (iGetThreadId() != tid) {
+        return _iSuspendThread(tid);
+    }
+    if (tid < 0 || tid >= 256 || topId == 0) {
+        return -1;
+    }
+    pos = topArg.writePos & 0x1FF;
+    topArg.writePos = pos + 1;
+    topArg.request[pos].mode = TOP_SUSPEND;
+    topArg.request[pos].data = tid;
+    iSignalSema(topSema);
+    return tid;
 }

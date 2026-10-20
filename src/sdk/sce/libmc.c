@@ -148,6 +148,7 @@ extern int D_00701700[];
 extern int PollSema(int sema);
 extern int SignalSema(int sema);
 extern int GetThreadId(void);
+extern int iWakeupThread(int tid);
 extern int SetAlarm(unsigned short time, void (*handler)(int, unsigned short, void *), void *arg);
 extern void SleepThread(void);
 extern int sceSifCallRpc(sceSifClientData *client, unsigned int fno,
@@ -450,6 +451,12 @@ int sceMcWrite(int fd, const void *buff, int size) {
         SignalSema(mc_sema);
     }
     return ret;
+}
+
+
+void mcHearAlarm(int id, unsigned short time, void *thread) {
+    iWakeupThread((int)thread);
+    __asm__ volatile ("sync\n\tei");
 }
 
 

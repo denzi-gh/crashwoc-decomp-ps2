@@ -69,8 +69,8 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0254:0027b190:_sceSifCmdIntrHdlr"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0254:0027b2b8:sceSifWriteBackDCache"
-state = "asm"
+state = "matching"

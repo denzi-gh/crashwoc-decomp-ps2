@@ -13,23 +13,23 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0145:00263938:sceVuCheckBusy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0145:00263968:sceVu0MemWriteQ"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0145:002639a8:sceVu0MemReadQ"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0145:002639f0:sceDevVu1Reset"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0145:00263a08:sceDevVu1Pause"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0145:00263a68:sceDevVu1Continue"
@@ -37,27 +37,27 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0145:00263ab8:sceDevVu1PutDBit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0145:00263ae8:sceDevVu1PutTBit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0145:00263b18:sceDevVu1GetDBit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0145:00263b28:sceDevVu1GetTBit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0145:00263b38:sceDevVu1Sync"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0145:00263b80:sceDevVu1Exec"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0145:00263b90:sceDevVu1GetTpc"

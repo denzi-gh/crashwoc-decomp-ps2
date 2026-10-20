@@ -13,11 +13,11 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0249:00279448:_sceSDC"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0249:002794f0:SyncDCache"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0249:00279570:iSyncDCache"
@@ -25,11 +25,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0249:00279588:_sceIDC"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0249:00279630:InvalidDCache"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0249:002796b0:iInvalidDCache"

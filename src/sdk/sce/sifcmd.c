@@ -20,6 +20,8 @@
  *   0x0027b2b8 sceSifWriteBackDCache
  */
 
+#include "nu_types.h"
+
 typedef struct SifCmdHeader {
     unsigned int psize : 8;
     unsigned int dsize : 24;
@@ -94,11 +96,13 @@ extern unsigned int D_007038C0[];
 #define SIF_REG_SUBADDR      2
 #define SIF_REG_SMFLAG       4
 #define SIF_STAT_CMDINIT     0x20000
+#define SIF_CMD_INDEX_MASK   0x7FFFFFFF
 
 extern int DIntr(void);
 extern int EIntr(void);
 extern void FlushCache(int mode);
 extern void sceSifSetDChain(void);
+extern int isceSifSetDChain(void);
 extern int AddDmacHandler(int channel, int (*handler)(int), int next);
 extern int EnableDmac(int channel);
 extern int DisableDmac(int channel);
@@ -301,4 +305,99 @@ unsigned int sceSifSendCmd(int cid, void *packet, int packet_size, void *src,
 unsigned int isceSifSendCmd(int cid, void *packet, int packet_size, void *src,
                             void *dest, int size) {
     return _sceSifSendCmd(cid, 1, packet, packet_size, src, dest, size);
+}
+
+
+int _sceSifCmdIntrHdlr(int channel) {
+    u128 packet[7];
+    SifCmdData *cmd = &sif_cmd_data;
+    volatile SifCmdHeader *header;
+    u128 *src;
+    SifCmdHandler func;
+    int n;
+    int i;
+
+    EIntr();
+    header = cmd->pktbuf;
+    n = header->psize;
+    if (n == 0) {
+        return 0;
+    }
+    n = (n + 15) / 16;
+    header->psize = 0;
+    src = (u128 *)header;
+    for (i = 0; i < n; i++) {
+        packet[i] = *src++;
+    }
+    isceSifSetDChain();
+    header = (volatile SifCmdHeader *)packet;
+    if (header->cid < 0) {
+        n = header->cid & SIF_CMD_INDEX_MASK;
+        if (n < cmd->nr_sys_handlers) {
+            func = cmd->sys_cmd_handlers[n].func;
+            if (func) {
+                func(packet, cmd->sys_cmd_handlers[n].data);
+            }
+        }
+    } else {
+        n = header->cid;
+        if (n < cmd->nr_usr_handlers) {
+            func = cmd->usr_cmd_handlers[n].func;
+            if (func) {
+                func(packet, cmd->usr_cmd_handlers[n].data);
+            }
+        }
+    }
+    __asm__ volatile ("sync\n\tei");
+    return 0;
+}
+
+
+void sceSifWriteBackDCache(void *ptr, int size) {
+    __asm__ volatile (
+        ".set noreorder\n"
+        "    lui     $25, 0xffff\n"
+        "    ori     $25, $25, 0xffc0\n"
+        "    blez    %1, 3f\n"
+        "    addu    $10, %0, %1\n"
+        "    and     $8, %0, $25\n"
+        "    addiu   $10, $10, -1\n"
+        "    and     $9, $10, $25\n"
+        "    subu    $10, $9, $8\n"
+        "    srl     $11, $10, 6\n"
+        "    addiu   $11, $11, 1\n"
+        "    andi    $9, $11, 7\n"
+        "    beqz    $9, 2f\n"
+        "    srl     $10, $11, 3\n"
+        "1:  sync\n"
+        "    cache   0x18, 0($8)\n"
+        "    sync\n"
+        "    addiu   $9, $9, -1\n"
+        "    nop\n"
+        "    bgtz    $9, 1b\n"
+        "    addiu   $8, $8, 64\n"
+        "2:  beqz    $10, 3f\n"
+        "4:  addiu   $10, $10, -1\n"
+        "    sync\n"
+        "    cache   0x18, 0($8)\n"
+        "    sync\n"
+        "    cache   0x18, 64($8)\n"
+        "    sync\n"
+        "    cache   0x18, 128($8)\n"
+        "    sync\n"
+        "    cache   0x18, 192($8)\n"
+        "    sync\n"
+        "    cache   0x18, 256($8)\n"
+        "    sync\n"
+        "    cache   0x18, 320($8)\n"
+        "    sync\n"
+        "    cache   0x18, 384($8)\n"
+        "    sync\n"
+        "    cache   0x18, 448($8)\n"
+        "    sync\n"
+        "    bgtz    $10, 4b\n"
+        "    addiu   $8, $8, 512\n"
+        "3:  jr      $31\n"
+        "    nop"
+        : : "r"(ptr), "r"(size) : "$8", "$9", "$10", "$11", "$25", "memory");
 }

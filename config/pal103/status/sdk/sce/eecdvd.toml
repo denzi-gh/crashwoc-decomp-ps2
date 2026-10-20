@@ -13,7 +13,7 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0149:00265950:CB_DelayTh"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0149:00265978:sceCdDelayThread"

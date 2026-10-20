@@ -22,7 +22,9 @@
 
 
 #define EIO 5
+#define ENOMEM 12
 #define S_IFCHR 0x2000
+#define STATUS_EIE 0x10000
 
 #define INTC_STAT (*(volatile int *)0x1000F000)
 #define INTC_STAT_SAMPLE (*(int *)0x1000F000)
@@ -48,10 +50,13 @@ struct stat {
 };
 
 extern int D_00612BB8[];
+extern char *D_00612BBC[];
 
 #define tty_initialized D_00612BB8
+#define heap_ptr        (D_00612BBC[0])
 
 extern int *__errno(void);
+extern void *EndOfHeap(void);
 extern void Exit(int status);
 extern void SetVSyncFlag(volatile int *flag, volatile long *count);
 extern int sceTtyInit(void);
@@ -126,6 +131,38 @@ int ioctl(int fd, int request, void *arg) {
 
 int lseek(int fd, int offset, int whence) {
     return -1;
+}
+
+
+void *sbrk(int incr) {
+    int intr;
+    int status;
+    char *mp;
+    char *ret;
+
+    __asm__ volatile ("mfc0 %0, $12" : "=r"(intr));
+    intr &= STATUS_EIE;
+    if (intr) {
+        do {
+            __asm__ volatile ("di");
+            __asm__ volatile ("sync.p");
+            __asm__ volatile ("mfc0 %0, $12" : "=r"(status));
+        } while (status & STATUS_EIE);
+    }
+    mp = heap_ptr + incr;
+    if (mp > (char *)EndOfHeap()) {
+        *__errno() = ENOMEM;
+        if (intr) {
+            __asm__ volatile ("ei");
+        }
+        return (void *)-1;
+    }
+    ret = heap_ptr;
+    heap_ptr = mp;
+    if (intr) {
+        __asm__ volatile ("ei");
+    }
+    return ret;
 }
 
 

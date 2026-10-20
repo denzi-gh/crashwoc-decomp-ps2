@@ -13,8 +13,8 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0126:00261078:sceGsResetPath"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0126:00261118:sceGsSyncPath"
-state = "asm"
+state = "matching"

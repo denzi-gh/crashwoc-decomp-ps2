@@ -64,6 +64,45 @@ def load_tu_runs():
     return runs
 
 
+def fold_auto_functions(lines):
+    """Fold an unreferenced splat auto-function that follows a registered
+    function in the same TU into it, so its symbol spans the registry extent
+    (sceSifWriteBackDCache's trailing `jr $ra` at 0x0027B364)."""
+    function_addrs = {int(r["address"], 16) for r in parse_toml_blocks(
+        ROOT / "config" / "pal103" / "functions.toml",
+        {"address": r"address = (0x[0-9A-Fa-f]+)"})}
+    glabels = glabel_addresses(lines)
+    starts = sorted(a for _u, a in load_tu_runs())
+    text = "\n".join(lines)
+    out = list(lines)
+    owner = None
+    for i in sorted(glabels):
+        name = lines[i].split()[1]
+        addr = glabels[i]
+        if addr in function_addrs:
+            owner = (name, addr)
+            continue
+        if (owner is None or not name.startswith("func_")
+                or not asmtext.AUTO_NAME_RE.fullmatch(name)
+                or any(owner[1] < s <= addr for s in starts)):
+            owner = None
+            continue
+        prev = next(j for j in range(i - 1, -1, -1) if lines[j].strip()
+                    and not lines[j].startswith("nonmatching"))
+        if (out[prev] != f"endlabel {owner[0]}"
+                or len(re.findall(rf"\b{name}\b", text)) > 3):
+            owner = None
+            continue
+        out[prev] = None
+        for j in range(prev + 1, i + 1):
+            if lines[j].startswith(("nonmatching", "glabel")):
+                out[j] = None
+        end = next(j for j in range(i, len(lines))
+                   if lines[j] == f"endlabel {name}")
+        out[end] = f"endlabel {owner[0]}"
+    return [l for l in out if l is not None]
+
+
 def extent_end(addr, next_function, runs):
     """End of the function at `addr`: `next_function` or an earlier TU start."""
     later = [a for _u, a in runs if addr < a < next_function]

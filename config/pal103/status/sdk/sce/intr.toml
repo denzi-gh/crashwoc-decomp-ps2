@@ -13,43 +13,43 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0250:002796c8:DisableIntc"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0250:00279730:EnableIntc"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0250:00279798:DisableDmac"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0250:00279800:EnableDmac"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0250:00279868:iEnableIntc"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0250:00279888:iDisableIntc"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0250:002798a8:iEnableDmac"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0250:002798c8:iDisableDmac"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0250:002798e8:setup"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0250:002798f8:Copy"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0250:00279908:kCopy"
@@ -57,7 +57,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0250:00279940:GetEntryAddress"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0250:00279950:InitAlarm"
