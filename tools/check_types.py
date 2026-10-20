@@ -48,7 +48,8 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from check_prototypes import SIGNATURE, SOFT_FLOAT, strip_comments  # noqa: E402
+from check_prototypes import (KEYWORDS, SIGNATURE, SOFT_FLOAT,  # noqa: E402
+                              strip_comments)
 
 BASELINE = REPO / "config" / "type_census.toml"
 EXCLUDE = ("src/sdk/",)
@@ -336,9 +337,7 @@ def census(sources):
 
         for m in SIGNATURE.finditer(text):
             ret, name, params, end = m.groups()
-            if ret.split() and ret.split()[0] in ("if", "while", "for", "switch",
-                                                  "return", "sizeof", "do",
-                                                  "else", "case", "goto"):
+            if ret.split() and ret.split()[0] in KEYWORDS:
                 continue
             if re.match(r"\s*(?:\w+\s+)*static\b", m.group(0)):
                 statics.add(name)

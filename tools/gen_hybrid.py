@@ -200,6 +200,13 @@ _FPR_NO_READ = frozenset(("l.s", "lwc1", "mtc1", "li.s"))
 _MFC1_RE = re.compile(r"^\s*mfc1\s+(\$\w+)\s*,\s*\$f\d+\s*$")
 _GPR_RE = re.compile(
     r"\$(?:\d+|zero|at|v[01]|a[0-3]|t\d|s[0-8]|k[01]|gp|sp|fp|ra)\b")
+# Coprocessor moves: the decompals `as` pads a nop after cfc2/mfc0 before a
+# reader of the destination and after ctc2 before any COP2 op; retail has
+# neither (sceDevVu0CheckBusy 0x00263528, _sceSDC 0x00279464,
+# sceVu0MemWriteQ 0x00263990).
+_COP2_MOVE_RE = re.compile(r"^\s*(cfc2|ctc2|mfc0)(?:\.n?i)?\s+(\$\w+)\s*,")
+_COP2_OP_RE = re.compile(r"^\s+(?:v[a-z][\w.]*|qm[ft]c2|[cl]fc2|ctc2|[ls]qc2)"
+                         r"(?:\.n?i)?\s")
 # Ops that read their first GPR operand.
 _GPR_READ_ALL = frozenset((
     "sb", "sh", "sw", "sd", "sq", "swl", "swr", "sdl", "sdr", "swc1", "sdc1",
@@ -994,7 +1001,10 @@ def _sonyize_seg(seg, profile="default"):
     nop_after = None
     history = []
     filled = _filled_slot_lines(seg) if sce else set()
+    skip = set()
     for index, line in enumerate(seg):
+        if index in skip:
+            continue
         if index == reorder_before:
             out.append("\t.set\treorder")
             reorder_before = None
@@ -1019,6 +1029,31 @@ def _sonyize_seg(seg, profile="default"):
             continue
         if mnemonic:
             history.append((mnemonic.group(1), index in filled))
+        cop2 = _COP2_MOVE_RE.match(line)
+        if cop2 and reorder:
+            next_index = index + 1
+            while next_index < len(seg) and _is_noise(seg[next_index]):
+                next_index += 1
+            following = seg[next_index] if next_index < len(seg) else ""
+            if following and not _is_branch(following) and (
+                    cop2.group(2) in _gpr_reads(following)
+                    if cop2.group(1) != "ctc2"
+                    else _COP2_OP_RE.match(following)):
+                branch = next_index + 1
+                while branch < len(seg) and _is_noise(seg[branch]):
+                    branch += 1
+                if (sce and branch < len(seg) and _is_branch(seg[branch])
+                        and not _MNEMONIC_RE.match(following).group(1)
+                        in ("qmfc2", "cfc2")):
+                    # The retail `sce` assembler swaps the COP2 op into the
+                    # branch slot (sceDevVu0Exec 0x002636D4).
+                    out += ["\t.set\tnoreorder", _sonyize(line),
+                            _sonyize(seg[branch]), _sonyize(following),
+                            "\t.set\treorder"]
+                    skip.update((next_index, branch))
+                    continue
+                out.append("\t.set\tnoreorder")
+                reorder_before = next_index + 1
         out.append(_sonyize(line))
         if index == nop_after:
             out.append("\tnop")
@@ -1050,6 +1085,8 @@ def _sonyize_seg(seg, profile="default"):
                     nop_after = last_align
             elif hazard and not mfc1:
                 out.append("\tnop")
+    if reorder_before is not None:
+        out.append("\t.set\treorder")
     return out
 
 

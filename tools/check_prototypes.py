@@ -52,7 +52,7 @@ SOFT_FLOAT = frozenset((
     "dptoli", "litodp", "fpcmp", "__make_fp", "__make_dp",
 ))
 KEYWORDS = frozenset(("if", "while", "for", "switch", "return", "sizeof",
-                      "do", "else", "case", "goto"))
+                      "do", "else", "case", "goto", "asm", "__asm", "__asm__"))
 FLOAT_TYPES = re.compile(r"\b(f32|float)\b")
 # Doubles are soft-float here (compiler_knowledge.toml: default.soft-double-abi):
 # they travel in a 64-bit GPR, like the 64-bit integers.

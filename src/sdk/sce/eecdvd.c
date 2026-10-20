@@ -233,6 +233,13 @@ int _sceCd_ncmd_prechk(int cmd);
 int _sceCd_scmd_prechk(int cmd);
 
 
+void CB_DelayTh(int id, unsigned short time, void *arg)
+{
+    iSignalSema((int)arg);
+    __asm__ volatile ("sync\n\tei");
+}
+
+
 void sceCdDelayThread(unsigned short hsync)
 {
     SemaParam param;

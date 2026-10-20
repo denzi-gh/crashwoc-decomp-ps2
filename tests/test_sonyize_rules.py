@@ -195,6 +195,39 @@ class TestSceDelaySlots(unittest.TestCase):
                "\t.set\treorder", "\taddu\t$4,$16,8", "\tjal\tdpmul"]
         self.assertEqual(_insns(seg, "sce"), [l.strip() for l in seg])
 
+    def test_cfc2_and_its_reader_are_not_reordered(self):
+        # retail sceDevVu0CheckBusy 0x00263528: cfc2 $v0,$vi29 / andi $v0
+        got = _insns(["\tcfc2 $2, $vi29", "\t#NO_APP", "\tandi\t$2,$2,0xf"],
+                     "sce")
+        self.assertEqual(got, [".set\tnoreorder", "cfc2 $2, $vi29",
+                               "andi\t$2,$2,0xf", ".set\treorder"])
+
+    def test_mfc0_and_its_reader_are_not_reordered(self):
+        # retail _sceSDC 0x00279464: mfc0 $v0,$28 / and $v0,$v0,$a3
+        got = _insns(["\tmfc0 $2, $28", "\tand\t$2,$2,$7", "\taddu\t$2,$2,$6"],
+                     "sce")
+        self.assertEqual(got, [".set\tnoreorder", "mfc0 $2, $28",
+                               "and\t$2,$2,$7", ".set\treorder",
+                               "addu\t$2,$2,$6"])
+
+    def test_cfc2_before_an_independent_insn_is_left_alone(self):
+        seg = ["\tcfc2 $3, $vi29", "\taddu\t$4,$0,1"]
+        self.assertEqual(_insns(seg, "sce"), [l.strip() for l in seg])
+
+    def test_ctc2_before_a_cop2_op_is_not_reordered(self):
+        # retail sceVu0MemWriteQ 0x00263990: ctc2 $a0,$vi1 / vsqi
+        got = _insns(["\tctc2 $4, $vi1", "\tvsqi.xyzw $vf1, ($vi1++)",
+                      "\taddu\t$4,$4,1"], "sce")
+        self.assertEqual(got[:4], [".set\tnoreorder", "ctc2 $4, $vi1",
+                                   "vsqi.xyzw $vf1, ($vi1++)", ".set\treorder"])
+
+    def test_cop2_op_before_a_branch_fills_its_slot(self):
+        # retail sceDevVu0Exec 0x002636CC: ctc2 / jr $ra / vcallmsr
+        got = _insns(["\tctc2 $4, $vi27", "\tvcallmsr $vi27", "\tj\t$31"],
+                     "sce")
+        self.assertEqual(got, [".set\tnoreorder", "ctc2 $4, $vi27",
+                               "jr\t$31", "vcallmsr $vi27", ".set\treorder"])
+
     def test_default_profile_still_pads_every_reorder_branch(self):
         got = _insns(_FILLED_JUMP + ["\tlw\t$4,%lo(sem)($16)",
                                      "\tjal\tPollSema"])

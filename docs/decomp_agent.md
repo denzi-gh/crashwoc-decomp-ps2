@@ -304,6 +304,21 @@ their definitions with the rest and are promoted by `--complete`. Never in
 this workflow: compiler-private data and the `.lit4` pool in partially
 matched units (they stay borrowed until `--complete`).
 
+### Inline assembly
+
+Inline asm only where C cannot express the instruction: COP0 and privileged
+(`mfc0`/`mtc0`, `di`/`ei`, `sync`, `cache`, `syscall`), COP2/VU0 macro mode
+(`cfc2`/`ctc2`, `qmfc2`/`qmtc2`, `lqc2`/`sqc2`, `vcallms`, `v*`), `multu`
+into `hi`/`lo` (libgcc2's `umul_ppmm`), literal delay `nop`s, and `.p2align`
+where retail aligns a loop gcc does not (a goto loop in `DIntr`). That code
+lives in the SDK runtime (`src/sdk/`) and the two engine units that drive the
+VU directly (`src/game/vu.c`, `src/nups2/vu1man.c`). Write the rest of the
+function in C and keep each asm statement to the instructions that need it;
+copy upstream spellings (`longlong.h`) verbatim. A function that retail has
+entirely hand-written (labels in delay slots, no compiler shape) is one asm
+body. Never use inline asm or `register asm` variables to steer scheduling or
+register allocation.
+
 ### Types and shared headers
 
 Every type shared by more than one unit is defined once in `include/`, with a

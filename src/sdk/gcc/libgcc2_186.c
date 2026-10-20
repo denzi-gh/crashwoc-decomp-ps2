@@ -33,11 +33,11 @@ extern const UQItype D_0062BDC8[];
 #define __ll_highpart(t) ((USItype) (t) / __ll_B)
 
 #define umul_ppmm(w1, w0, u, v) \
-    do { \
-        UDItype __prod = (UDItype) (u) * (v); \
-        (w1) = __prod >> SI_TYPE_SIZE; \
-        (w0) = __prod; \
-    } while (0)
+    __asm__ ("multu %2,%3" \
+             : "=l" ((USItype) (w0)), \
+               "=h" ((USItype) (w1)) \
+             : "d" ((USItype) (u)), \
+               "d" ((USItype) (v)))
 
 #define sub_ddmmss(sh, sl, ah, al, bh, bl) \
     do { \

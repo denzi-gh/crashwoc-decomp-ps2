@@ -21,7 +21,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0251:00279bd8:iWakeupThread"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0251:00279c70:iRotateThreadReadyQueue"
@@ -29,4 +29,4 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0251:00279cf0:iSuspendThread"
-state = "asm"
+state = "matching"

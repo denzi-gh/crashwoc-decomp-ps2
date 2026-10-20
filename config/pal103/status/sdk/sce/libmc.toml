@@ -57,7 +57,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0150:002675f8:mcHearAlarm"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0150:00267620:mcDelayThread"
