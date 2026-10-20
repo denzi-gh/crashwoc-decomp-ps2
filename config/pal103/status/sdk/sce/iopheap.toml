@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0257"
 source = "src/sdk/sce/iopheap.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0257:0027f840:sceSifInitIopHeap"
@@ -38,3 +38,24 @@ state = "matching"
 [[data]]
 id = "pal103:unit-0257:00613414:_bind"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0257:00706500:cd"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0257:00706540:rdata"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0257:00706580:sdata"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0257:007065c0:_lih_data"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x007065c0
+end = 0x007066c0

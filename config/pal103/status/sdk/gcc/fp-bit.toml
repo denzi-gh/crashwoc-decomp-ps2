@@ -70,3 +70,12 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0189:002702e8:fptodp"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0189:00702a60:thenan.3"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x00702a60
+end = 0x00702a70

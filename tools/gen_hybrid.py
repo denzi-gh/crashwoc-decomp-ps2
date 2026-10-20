@@ -43,12 +43,14 @@ way the retail assemblers did -- is laid out per section in retail function
 order, anchored where the retail references put it, and emitted into the
 pieces together with the named objects. Bytes that land in a data-map gap
 are the unit's `[[claim]]`s (promote.py --complete writes them; the image
-link then takes each claimed span from this hybrid).
+link then takes each claimed span from this hybrid). Its uninitialised
+objects (.sbss/.bss statics, a COMMON global) become NOBITS pieces the same
+way; outside whole-unit mode they are always dropped.
 
 Anything this tool cannot yet represent fails loudly instead of guessing:
 a declared function missing from the C, C data without a [[data]] table, in
-the wrong section or of the wrong size, uninitialised (.bss/COMMON) C data,
-or unexpected content between functions.
+the wrong section or of the wrong size, or unexpected content between
+functions.
 
 Needs the EE GCC: run in the Containerfile image. All outputs are
 game-derived and land in the gitignored build/ tree.
@@ -431,7 +433,9 @@ _SECTION_NAMES = {"text": ".text", "data": ".data", "rdata": ".rodata",
 _GLOBL_RE = re.compile(r"^\s*\.globl\s+(\S+)\s*$")
 _TYPE_OBJ_RE = re.compile(r"^\s*\.type\s+(\S+?)\s*,\s*@object\s*$")
 _SIZE_DIR_RE = re.compile(r"^\s*\.size\s+(\S+?)\s*,\s*(\d+)\s*$")
-_COMM_RE = re.compile(r"^\s*\.(comm|lcomm)\s+([^,\s]+)\s*,\s*(\d+)")
+_COMM_RE = re.compile(r"^\s*\.(comm|lcomm)\s+([^,\s]+)\s*,\s*(\d+)(?:\s*,\s*(\d+))?")
+# Uninitialised data: no file bytes, only addresses.
+NOBITS_SECTIONS = (".sbss", ".bss")
 _DATA_LABEL_RE = re.compile(r"^([A-Za-z_.$][\w.$]*):\s*$")
 _ALIGN_ARG_RE = re.compile(r"^\s*\.(?:p2align|align)\s+(\d+)\s*$")
 _WORD_PRIVATE_RE = re.compile(r"^\s*\.word\s+(\$L\w*)\s*$")
@@ -505,9 +509,14 @@ def _split_sections(lines, stream=None):
                 continue
             c = _COMM_RE.match(line)
             if c:
-                item = DataItem(c.group(2), "COMMON", None)
+                align = int(c.group(4)) if c.group(4) else 0
+                item = DataItem(c.group(2), "COMMON",
+                                align.bit_length() - 1 if align else None, index)
                 item.size = int(c.group(3))
+                item.lines = [f"\t.space\t{item.size}"]
                 items.append(item)
+                if stream is not None:
+                    stream.append(item)
                 continue
             text.append(line)
             continue
@@ -545,7 +554,13 @@ def _split_sections(lines, stream=None):
             raise HybridError(
                 "local data block with no private label unsupported")
         if pending_align is not None:
-            current.lines.append(f"\t.align\t{pending_align}")
+            if section in NOBITS_SECTIONS and not current.lines \
+                    and current.align is None:
+                # ee-gcc writes an uninitialised static as label, .align,
+                # .space; the assembler moves the label to the boundary.
+                current.align = pending_align
+            else:
+                current.lines.append(f"\t.align\t{pending_align}")
             pending_align = None
         current.lines.append(line)
 
@@ -553,6 +568,8 @@ def _split_sections(lines, stream=None):
         item.globl = item.name in globls
         if item.size is None:
             item.size = sizes.get(item.name)
+        if item.size is None and item.section in NOBITS_SECTIONS:
+            item.size = len(_assemble_data_bytes(item.lines))
     private = {}
     for item in private_items:
         payload = [l for l in item.lines if not _ALIGN_ARG_RE.match(l)]
@@ -1331,10 +1348,6 @@ def _registry_map(items, version, unit_dir):
             stems.setdefault(sym["stem"], []).append(sym)
     seen, out = {}, []
     for item in items:
-        if item.section in ("COMMON", ".sbss", ".bss"):
-            raise HybridError(f"{item.name}: C defines uninitialised data "
-                              f"({item.section}); .sbss/.bss/COMMON stay retail "
-                              f"until data/bss")
         m = FUNCTION_STATIC_RE.match(item.name)
         if m:
             k = seen.get(m.group(1), 0)
@@ -1349,6 +1362,11 @@ def _registry_map(items, version, unit_dir):
             if sym is None:
                 raise HybridError(f"{item.name}: not a data symbol of {unit_dir} "
                                   f"(config/{version}/data_symbols.toml)")
+        if item.section == "COMMON" and sym["section"] in NOBITS_SECTIONS \
+                and sym["scope"] == "global":
+            # An uninitialised global: the linker allocated it, and the
+            # hybrid places it like the unit's other uninitialised data.
+            item.section, item.globl = sym["section"], True
         if item.section != sym["section"]:
             raise HybridError(
                 f"data_section_mismatch: {item.name} compiles into {item.section}, "
@@ -1386,7 +1404,8 @@ def _plan_data(items, data, version, unit_dir, report):
         if not report and states.get(sym["address"]) == "matching":
             if sym["section"] not in C_DATA_SECTIONS:
                 raise HybridError(f"{sym['name']}: {sym['section']} data from C "
-                                  f"is not supported yet (data/bss)")
+                                  f"is placed only by the whole-unit layout "
+                                  f"(promote.py --complete)")
             if item.size is not None and sym.get("size") is not None \
                     and item.size != sym["size"]:
                 raise HybridError(f"{sym['name']}: .size {item.size} != .symtab "
@@ -1408,14 +1427,16 @@ def _plan_data(items, data, version, unit_dir, report):
 
 
 def _small_data_externs(items, emit, rename):
-    """`.extern NAME, size` for each compiled .sdata object the hybrid drops.
+    """`.extern NAME, size` for each compiled .sdata/.sbss/.bss object the
+    hybrid drops.
 
     Its references then name an undefined symbol, and only the size keeps the
-    assembler addressing it gp-relative, as it did the defined object."""
+    assembler addressing it gp-relative (or not), as it did the defined
+    object."""
     kept = {id(item) for item, _sym in emit}
     out = []
     for item in items:
-        if item.section != ".sdata" or id(item) in kept:
+        if item.section not in (".sdata",) + NOBITS_SECTIONS or id(item) in kept:
             continue
         if item.size is None:
             raise HybridError(f"{item.name}: small-data object without .size")
@@ -1840,6 +1861,23 @@ def _emit_atoms(atoms, lo, hi, labels):
     return out
 
 
+def _emit_nobits(start, lo, hi, labels):
+    """Assembly for [start, hi) of a NOBITS piece whose objects lie in
+    [lo, hi): zero fill (`.space`) with the label lines due at each address."""
+    out, cursor = [], start
+    for addr in sorted(labels):
+        if not lo <= addr < hi:
+            raise HybridError(f"label at 0x{addr:08x} outside 0x{lo:08x}-"
+                              f"0x{hi:08x}")
+        if addr > cursor:
+            out.append(f"\t.space\t{addr - cursor}")
+        out.extend(labels[addr])
+        cursor = addr
+    if hi > cursor:
+        out.append(f"\t.space\t{hi - cursor}")
+    return out
+
+
 def _whole_unit_pieces(layout, unit_dir, version, bin_dir, ranges=None):
     """(lines, pieces, retail, claims) for a whole-unit hybrid.
 
@@ -1858,7 +1896,8 @@ def _whole_unit_pieces(layout, unit_dir, version, bin_dir, ranges=None):
     bin_dir.mkdir(parents=True, exist_ok=True)
     for r in sorted(ranges, key=lambda r: r["start"]):
         sec = r["section"]
-        if sec not in PIECE_SECTIONS:
+        nobits = sec in NOBITS_SECTIONS
+        if sec not in PIECE_SECTIONS and not nobits:
             continue
         start, end = r["start"], r["end"]
         span = spans.get(sec)
@@ -1873,11 +1912,16 @@ def _whole_unit_pieces(layout, unit_dir, version, bin_dir, ranges=None):
             claims.append((sec, lo, hi))
             start, end = lo, hi
         name = piece_name(sec, start)
-        blob = bin_dir / f"{name}.bin"
-        blob.write_bytes(_retail_bytes(version, sec, start, end))
-        flags = "a" if sec == ".rodata" else "aw"
-        lines += [f'\t.section\t{name},"{flags}",@progbits', "\t.align\t0"]
-        filler = retail
+        if nobits:
+            # No file bytes: labels at their addresses, zero fill around them.
+            lines += [f'\t.section\t{name},"aw",@nobits', "\t.align\t0"]
+            filler = []
+        else:
+            blob = bin_dir / f"{name}.bin"
+            blob.write_bytes(_retail_bytes(version, sec, start, end))
+            flags = "a" if sec == ".rodata" else "aw"
+            lines += [f'\t.section\t{name},"{flags}",@progbits', "\t.align\t0"]
+            filler = retail
         objects = []
         if lo < hi:
             base, placed = layout[sec]
@@ -1896,18 +1940,24 @@ def _whole_unit_pieces(layout, unit_dir, version, bin_dir, ranges=None):
                 else:
                     head = []
                 labels.setdefault(addr, []).extend(head + [f"{p.label}:"])
-            if lo > start:
-                lines.append(f'\t.incbin\t"{blob.as_posix()}",0,{lo - start}')
-                filler.append((start, lo))
-            lines.append(f"\t.org\t0x{lo - start:X}")
-            lines += _emit_atoms(atoms, lo, hi, labels)
-            lines.append(f"\t.org\t0x{hi - start:X}")
+            if nobits:
+                lines += _emit_nobits(start, lo, hi, labels)
+            else:
+                if lo > start:
+                    lines.append(f'\t.incbin\t"{blob.as_posix()}",0,{lo - start}')
+                    filler.append((start, lo))
+                lines.append(f"\t.org\t0x{lo - start:X}")
+                lines += _emit_atoms(atoms, lo, hi, labels)
+                lines.append(f"\t.org\t0x{hi - start:X}")
         else:
             hi = start
         if hi < end:
-            lines.append(f'\t.incbin\t"{blob.as_posix()}",{hi - start},'
-                         f'{end - hi}')
-            filler.append((hi, end))
+            if nobits:
+                lines.append(f"\t.space\t{end - hi}")
+            else:
+                lines.append(f'\t.incbin\t"{blob.as_posix()}",{hi - start},'
+                             f'{end - hi}')
+                filler.append((hi, end))
         pieces.append({"name": name, "section": sec, "start": start,
                        "end": end, "objects": objects})
     for sec, (base, placed) in layout.items():
@@ -1950,9 +2000,9 @@ def _build_whole_unit(data, out_o, link_set, version, plan=False):
     states = data_states(data)
     item_syms, rename = {}, {}
     for item, sym in _registry_map(items, version, unit_dir):
-        if sym["section"] not in C_DATA_SECTIONS:
+        if sym["section"] not in C_DATA_SECTIONS + NOBITS_SECTIONS:
             raise HybridError(f"{sym['name']}: {sym['section']} data from C "
-                              f"is not supported yet (data/bss)")
+                              f"is not supported")
         if states.get(sym["address"]) not in ("matching", "retail"):
             raise HybridError(f"{sym['name']}: [[data]] entry is not done")
         item_syms[id(item)] = sym

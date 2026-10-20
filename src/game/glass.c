@@ -48,12 +48,9 @@ extern s32 PS2_REZ_H;
 extern struct nucamera_s global_camera;
 extern struct numtl_s *nurndr_forced_mtl;
 
-extern s32 D_00633358;
-#define glass_tid D_00633358
-extern f32 D_0063335C;
-#define glass_uscale D_0063335C
-extern f32 D_00633360;
-#define glass_vscale D_00633360
+static s32 glass_rt;
+static f32 glassu1;
+static f32 glassv1;
 extern u8 D_00291A40[];
 #define glass_fxcode D_00291A40
 
@@ -191,12 +188,12 @@ void InitGlass(void)
     tex.type = 0xF;
     tex.width = PS2_REZ_W;
     tex.height = PS2_REZ_H;
-    glass_tid = NuTexCreate(&tex);
-    glass_uscale = (PS2_REZ_W - 1.0f) / NuPower2(PS2_REZ_W);
-    glass_vscale = (PS2_REZ_H - 1.0f) / NuPower2(PS2_REZ_H);
+    glass_rt = NuTexCreate(&tex);
+    glassu1 = (PS2_REZ_W - 1.0f) / NuPower2(PS2_REZ_W);
+    glassv1 = (PS2_REZ_H - 1.0f) / NuPower2(PS2_REZ_H);
 
     glass_mtl = NuMtlCreate(1);
-    glass_mtl->tid = glass_tid;
+    glass_mtl->tid = glass_rt;
     glass_mtl->attrib.utc = 1;
     glass_mtl->attrib.vtc = 1;
     glass_mtl->attrib.alpha = 0;
@@ -335,10 +332,10 @@ void DoGlass(s32 editor)
     struct numtx_s m;
     struct nuvec_s scale = {0.5f, 0.5f, 0.5f};
 
-    NuTexAssignAddr(glass_tid, NuTexReserve(NuTexGetReqSize(glass_tid, 0)));
-    if (NuRndrBeginScene(glass_tid)) {
+    NuTexAssignAddr(glass_rt, NuTexReserve(NuTexGetReqSize(glass_rt, 0)));
+    if (NuRndrBeginScene(glass_rt)) {
         NuRndrRectUV2di(0, 0, PS2_REZ_W << 4, PS2_REZ_H << 4, 0.0f, 0.0f,
-                        glass_uscale, glass_vscale, 0x80808080, glass_copy_mtl);
+                        glassu1, glassv1, 0x80808080, glass_copy_mtl);
         NuRndrEndSceneEx(0);
     }
     NuMtxInvR(&m, &global_camera.mtx);

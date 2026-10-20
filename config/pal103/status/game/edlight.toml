@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0110"
 source = "src/game/edlight.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0110:00240d28:InsideLight"
@@ -330,3 +330,41 @@ state = "matching"
 [[data]]
 id = "pal103:unit-0110:00632758:westz"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0110:00633364:edlight_cam_ax"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0110:00633368:edlight_cam_ay"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0110:0063336c:edlight_in_crate"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0110:00633370:edlight_in_light"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0110:00633374:edlight_i_light"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0110:00633378:edlight_d_light"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0110:0063337c:edlight_l_light"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x006251c8
+end = 0x006251e5
+
+[[claim]]
+section = ".sbss"
+start = 0x0063337c
+end = 0x00633380

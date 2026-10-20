@@ -23,11 +23,9 @@
 
 #include "nucore/nufpar.h"
 
-/* The target names this word as _fbss + 0x8. */
-extern int D_00633008;
+static int old_line_pos;
 extern char D_00613978[];
 
-#define nufpar_word_start D_00633008
 #define nufpar_srcfile    D_00613978
 
 extern int NuFileOpen(char *name, int mode);
@@ -128,7 +126,7 @@ inline int NuFParGetWord(struct nufpar_s *parser)
 
     length = 0;
     quoted = 0;
-    nufpar_word_start = parser->line_pos;
+    old_line_pos = parser->line_pos;
     while (parser->lbuff[parser->line_pos & 0xFF] != 0) {
         c = parser->lbuff[parser->line_pos];
         switch (c) {
@@ -241,7 +239,7 @@ int NuFParInterpretWord(struct nufpar_s *parser)
 
 void NuFParUnGetWord(struct nufpar_s *parser)
 {
-    parser->line_pos = nufpar_word_start;
+    parser->line_pos = old_line_pos;
 }
 
 

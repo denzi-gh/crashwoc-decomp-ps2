@@ -64,10 +64,14 @@ typedef union {
 #define F_D_BITOFF 30
 #define FRACHIGH 0x80000000
 
-extern fp_number_type D_00702A60;
-#define __thenan_sf D_00702A60
-
 extern double __make_dp(fp_class_type class, unsigned int sign, int exp, unsigned long long frac);
+
+
+static inline fp_number_type *nan(void) {
+    static fp_number_type thenan;
+
+    return &thenan;
+}
 
 
 static inline int isnan(fp_number_type *x) {
@@ -82,11 +86,6 @@ static inline int isinf(fp_number_type *x) {
 
 static inline int iszero(fp_number_type *x) {
     return x->class == CLASS_ZERO;
-}
-
-
-static inline fp_number_type *nan(void) {
-    return &__thenan_sf;
 }
 
 

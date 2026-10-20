@@ -18,11 +18,8 @@
 
 extern void NuMemFreeFn(void *ptr, char *file, int line);
 
-/* Retail-owned (no Data-from-C yet). */
-extern int D_0063326C;
-extern char *D_00633270;
-#define vscnt D_0063326C
-#define vsdata D_00633270
+static int vscnt;
+static char *vsdata;
 
 struct nuvec_s xpnt = { -100000.0f, -100000.0f, -100000.0f };
 int hide = -1;
@@ -34,8 +31,7 @@ struct visidat_s {
     struct nuinstance_s *i[1];
 };
 
-extern struct visidat_s *D_006B74B8[50];
-#define visidat D_006B74B8
+static struct visidat_s *visidat[50];
 
 extern int NuPlnLineVU0(struct nuplane_s *p, struct nuvec_s *a, struct nuvec_s *b, struct nuvec_s *hit);
 

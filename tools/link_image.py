@@ -62,7 +62,7 @@ from declib.target import derive_tiling, load_target, parse_linker_script
 from declib.tu import load_tu_runs, load_units
 from gen_data_objects import (NOBITS_SECTIONS, load_map, object_groups,
                               section_label)
-from gen_hybrid import manifest_claims, piece_name, provides_data
+from gen_hybrid import manifest_claims, piece_name, provides_data, whole_unit
 from gen_expected_s import unit_stem
 from split_text import nm_defined_undefined
 
@@ -97,14 +97,16 @@ def tool_error(exc, default):
     return shown + (f" | (+{more} more lines)" if more > 0 else "")
 
 
-def manifest_units(version, link_set, with_data=None, claims=None):
+def manifest_units(version, link_set, with_data=None, claims=None, whole=None):
     """{unit_index: object rel path} for units that build a hybrid in this set.
 
     Only units with a function in a state this set links from C, or a
     `matching` data entry, get a hybrid; the rest (e.g. all-`asm` skeletons)
     fall through to the expected object. Units whose hybrid provides their
-    data (pieces) are added to the `with_data` set, and their `[[claim]]`s to
-    the `claims` dict ({unit_index: [(section, start, end)]}), when passed.
+    data (pieces) are added to the `with_data` set, `complete` ones (whose
+    hybrid also carries their .sbss/.bss pieces) to `whole`, and their
+    `[[claim]]`s to the `claims` dict ({unit_index: [(section, start,
+    end)]}), when passed.
     """
     wanted = _HYBRID_STATES[link_set]
     out = {}
@@ -121,6 +123,8 @@ def manifest_units(version, link_set, with_data=None, claims=None):
             out[idx] = Path(data["source"]).relative_to("src").with_suffix(".o")
             if c_data and with_data is not None:
                 with_data.add(idx)
+            if whole_unit(data) and whole is not None:
+                whole.add(idx)
             if c_data and claims is not None and data.get("claim"):
                 claims[idx] = manifest_claims(data)
     return out
@@ -166,13 +170,14 @@ def gap_holes(map_ranges, claimed):
     return holes
 
 
-def select_text_objects(version, link_set, with_data=None, claims=None):
+def select_text_objects(version, link_set, with_data=None, claims=None,
+                        whole=None):
     """[(unit_index, object_path)] in retail address order.
 
     Hybrid object where the unit builds one for this link set, expected object
     otherwise.
     """
-    hybrids = manifest_units(version, link_set, with_data, claims)
+    hybrids = manifest_units(version, link_set, with_data, claims, whole)
     names = load_units()
     objs = []
     for unit, _addr in load_tu_runs():
@@ -186,7 +191,8 @@ def select_text_objects(version, link_set, with_data=None, claims=None):
 
 
 def build_script(text_addr, text_objs, vutext_vaddr, map_ranges, nobits,
-                 defsyms, providers=None, claimed=None):
+                 defsyms, providers=None, claimed=None, nobits_ranges=None,
+                 nobits_providers=None):
     """Link script: .text from TU objects, data sections from map ranges.
 
     `providers` maps a range owner (`unit-NNNN`) to the hybrid object that
@@ -194,9 +200,13 @@ def build_script(text_addr, text_objs, vutext_vaddr, map_ranges, nobits,
     claimed spans (claimed_ranges), whose holes come from the gap-fill object
     (gap_holes); every other range comes from its expected object. Each range
     is ASSERTed at its address (inside an output section `.` is
-    section-relative, hence ABSOLUTE), and each section's end too."""
+    section-relative, hence ABSOLUTE), and each section's end too.
+    .sbss/.bss hold no file bytes: a `complete` unit's hybrid
+    (`nobits_providers`) or a claimant supplies its `nobits_ranges` pieces,
+    every other byte is reserved space."""
     providers = providers or {}
     claimed = claimed or {}
+    nobits_providers = nobits_providers or {}
     L = ["SECTIONS", "{", f"    . = 0x{text_addr:08X};",
          "    .text : SUBALIGN(1)", "    {"]
     L += [f"        {p.as_posix()}(.text)" for p in text_objs]
@@ -234,10 +244,37 @@ def build_script(text_addr, text_objs, vutext_vaddr, map_ranges, nobits,
                  f"\"{sec} ends misplaced\");")
         L.append("    }")
 
-    L.append("    . = 0x00633000;")
-    L.append(f"    .sbss (NOLOAD) : {{ . += 0x{nobits['sbss']:06X}; }}")
-    L.append("    . = 0x00633400;")
-    L.append(f"    .bss  (NOLOAD) : {{ . += 0x{nobits['bss']:06X}; }}")
+    for sec, start in ((".sbss", 0x00633000), (".bss", 0x00633400)):
+        size = nobits[sec.lstrip(".")]
+        L.append(f"    . = 0x{start:08X};")
+        rs = sorted((r for r in nobits_ranges or [] if r["section"] == sec),
+                    key=lambda r: r["start"])
+        if not rs:
+            L.append(f"    {sec:<5} (NOLOAD) : {{ . += 0x{size:06X}; }}")
+            continue
+        L.append(f"    {sec} (NOLOAD) : SUBALIGN(1)")
+        L.append("    {")
+        for r in rs:
+            L.append(f"        ASSERT(ABSOLUTE(.) == 0x{r['start']:08X}, "
+                     f"\"{sec} range 0x{r['start']:08X} misplaced\");")
+            obj = nobits_providers.get(r["owner"])
+            spans = claimed.get((sec, r["start"]))
+            if obj is not None:
+                L.append(f"        {obj.as_posix()}({piece_name(sec, r['start'])})")
+            elif spans:
+                cursor = r["start"]
+                for s, e, cobj in spans:
+                    if s > cursor:
+                        L.append(f"        . += 0x{s - cursor:X};")
+                    L.append(f"        {cobj.as_posix()}({piece_name(sec, s)})")
+                    cursor = e
+                if cursor < r["end"]:
+                    L.append(f"        . += 0x{r['end'] - cursor:X};")
+            else:
+                L.append(f"        . += 0x{r['end'] - r['start']:X};")
+        L.append(f"        ASSERT(ABSOLUTE(.) == 0x{start + size:08X}, "
+                 f"\"{sec} ends misplaced\");")
+        L.append("    }")
     L.append(f"    _gp = 0x{_GP:08X};")
     L.append("    /DISCARD/ : { *(.pdr) *(.reginfo) *(.mdebug*) *(.comment) "
              "*(.gnu.attributes) }")
@@ -267,15 +304,17 @@ def link_image(reporter, version, link_set):
     vutext = next(o for o in tiling if o["name"] == "vutext")
     _addrs, nobits = parse_linker_script((ROOT / "linker.ld").read_text())
 
-    with_data, claims = set(), {}
-    text_objs = select_text_objects(version, link_set, with_data, claims)
+    with_data, claims, whole = set(), {}, set()
+    text_objs = select_text_objects(version, link_set, with_data, claims, whole)
     hybrid_count = sum(1 for _u, p in text_objs
                        if p.is_relative_to(ROOT / "build"))
-    map_ranges = [r for r in load_map(version)
-                  if r["section"] not in NOBITS_SECTIONS]
+    all_ranges = load_map(version)
+    map_ranges = [r for r in all_ranges if r["section"] not in NOBITS_SECTIONS]
+    nobits_ranges = [r for r in all_ranges if r["section"] in NOBITS_SECTIONS]
     providers = {f"unit-{u:04d}": p for u, p in text_objs if u in with_data}
+    nobits_providers = {f"unit-{u:04d}": p for u, p in text_objs if u in whole}
     try:
-        claimed = claimed_ranges(map_ranges, claims, dict(text_objs))
+        claimed = claimed_ranges(all_ranges, claims, dict(text_objs))
     except ValueError as exc:
         reporter.result("Claimed gap ranges", False, str(exc))
         return None, None
@@ -347,7 +386,7 @@ def link_image(reporter, version, link_set):
 
     script = build_script(text_addr, [p for _u, p in text_objs],
                           vutext["vaddr"], map_ranges, nobits, defsyms,
-                          providers, claimed)
+                          providers, claimed, nobits_ranges, nobits_providers)
     ld_script = out_dir / f"{link_set}.ld"
     ld_script.write_text(script)
     elf_out = out_dir / f"{link_set}.elf"

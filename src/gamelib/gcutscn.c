@@ -106,8 +106,7 @@ NuCutSceneCharacterCreateDataFn NuCutSceneCharacterCreateData = 0;
 NuCutSceneRigidCollisionCheckFn NuCutSceneRigidCollisionCheck = 0;
 struct NUGCUTLOCFNDATA_s *locatorfns = 0;
 
-extern struct instNUGCUTSCENE_s *D_0063322C;
-#define cutscenelist D_0063322C
+static struct instNUGCUTSCENE_s *active_cutscene_instances;
 
 #define NUANIM_CURVESET_ROTATE 0x1
 #define NUANIM_CURVESET_SCALE  0x8
@@ -178,14 +177,14 @@ void instNuGCutSceneEnd(struct instNUGCUTSCENE_s *scene);
 
 void NuGCutSceneSysInit(struct NUGCUTLOCFNDATA_s *fns) {
     locatorfns = fns;
-    cutscenelist = 0;
+    active_cutscene_instances = 0;
 }
 
 
 void NuGCutSceneSysUpdate(int paused) {
     struct instNUGCUTSCENE_s *scene;
 
-    for (scene = cutscenelist; scene; scene = scene->next) {
+    for (scene = active_cutscene_instances; scene; scene = scene->next) {
         if (!(scene->flags & NUGCUTSCENE_UPDATED)) {
             instNuGCutSceneUpdate(scene, paused);
             scene->flags |= NUGCUTSCENE_UPDATED;
@@ -197,7 +196,7 @@ void NuGCutSceneSysUpdate(int paused) {
 void NuGCutSceneSysRender(void) {
     struct instNUGCUTSCENE_s *scene;
 
-    for (scene = cutscenelist; scene; scene = scene->next) {
+    for (scene = active_cutscene_instances; scene; scene = scene->next) {
         instNuGCutSceneRender(scene);
         scene->flags &= ~NUGCUTSCENE_UPDATED;
     }
@@ -265,7 +264,7 @@ void NuGCutSceneFixUp(struct NUGCUTSCENE_s *def, void *gscene, struct NUTRIGGERS
 struct instNUGCUTSCENE_s *instNuGCutSceneFind(const char *name) {
     struct instNUGCUTSCENE_s *scene;
 
-    for (scene = cutscenelist; scene; scene = scene->next) {
+    for (scene = active_cutscene_instances; scene; scene = scene->next) {
         if (strcasecmp(name, scene->name) == 0) {
             return scene;
         }
@@ -284,7 +283,7 @@ void instNuGCutSceneDestroy(struct instNUGCUTSCENE_s *scene) {
     if (scene->prev) {
         scene->prev->next = scene->next;
     } else {
-        cutscenelist = scene->next;
+        active_cutscene_instances = scene->next;
     }
 }
 
@@ -1512,11 +1511,11 @@ struct instNUGCUTSCENE_s *instNuGCutSceneCreate(struct NUGCUTSCENE_s *def, void 
         scene = (struct instNUGCUTSCENE_s *)(heap->intaddr = ALIGN16(heap->intaddr));
         heap->voidptr = scene + 1;
         memset(scene, 0, sizeof(struct instNUGCUTSCENE_s));
-        scene->next = cutscenelist;
-        if (cutscenelist) {
-            cutscenelist->prev = scene;
+        scene->next = active_cutscene_instances;
+        if (active_cutscene_instances) {
+            active_cutscene_instances->prev = scene;
         }
-        cutscenelist = scene;
+        active_cutscene_instances = scene;
         scene->def = def;
         if (name) {
             sprintf(scene->name, name);

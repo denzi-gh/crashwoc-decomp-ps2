@@ -43,11 +43,8 @@ static void *ed_fnt = 0;
 static struct nucamera_s *edmaincam = 0;
 static struct nuvec_s *ed_loc = 0;
 
-extern s32 D_00633234;
-extern char D_006B3FC0[0x100];
-
-#define edmain_return      D_00633234
-#define edmain_levelfile   D_006B3FC0
+static s32 editor_return;
+static char ed_levelfile[0x100];
 
 extern void edmainClose(void);
 extern void eduiMenuProcess(struct eduimenu_s *menu, struct nupad_s *pad);
@@ -163,7 +160,7 @@ void edmainCreateMainMenu(void) {
 
 
 void edmainSetReturn(s32 value) {
-    edmain_return = value;
+    editor_return = value;
 }
 
 
@@ -182,7 +179,7 @@ s32 edmainRegister(struct edmainreg_s *reg) {
 
 
 s32 edmainProcess(struct nupad_s *pad, f32 dt) {
-    edmain_return = 0;
+    editor_return = 0;
     if (ed_module_active && ed_curr) {
         if (!ed_curr->process || ed_curr->process(pad, dt)) {
             ed_module_active = 0;
@@ -193,7 +190,7 @@ s32 edmainProcess(struct nupad_s *pad, f32 dt) {
         }
         edmainMainMenuProc(pad);
     }
-    return edmain_return;
+    return editor_return;
 }
 
 
@@ -233,9 +230,9 @@ void edmainInit(void *font, char *levelfile) {
     eduiInit();
     edmainCreateMainMenu();
     if (levelfile) {
-        NuStrCpy(edmain_levelfile, levelfile);
+        NuStrCpy(ed_levelfile, levelfile);
     } else {
-        edmain_levelfile[0] = 0;
+        ed_levelfile[0] = 0;
     }
     edmainReadLevelFile();
     ed_init = 1;
@@ -291,8 +288,8 @@ void edmainReadLevelFile(void) {
     s32 blockid;
     struct edmainreg_s *reg;
 
-    if (edmain_levelfile[0]) {
-        fh = NuFileOpen(edmain_levelfile, 0);
+    if (ed_levelfile[0]) {
+        fh = NuFileOpen(ed_levelfile, 0);
         if (fh) {
             NuFileBeginBlkRead(fh, 0x3032554E);
             while ((blockid = NuFileBeginBlkRead(fh, 0)) != 0) {
@@ -337,7 +334,7 @@ void cbMMEditorConfig(struct eduimenu_s *menu, struct eduiitem_s *item) {
 
 
 void cbMMReturnToApp(struct eduimenu_s *menu, struct eduiitem_s *item) {
-    edmain_return = 1;
+    editor_return = 1;
 }
 
 

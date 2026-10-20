@@ -9,8 +9,12 @@ schema = 1
 unit = "pal103:unit-0205"
 source = "src/sdk/newlib/libc/reent/sbrkr.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0205:00271670:_sbrk_r"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0205:006333d0:errno"
 state = "matching"

@@ -50,3 +50,12 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0262:00280dd8:kputs"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0262:00706968:userarea"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x00706968
+end = 0x0070698c

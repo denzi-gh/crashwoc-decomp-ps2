@@ -371,8 +371,6 @@ extern f32 WaterLength;
 extern f32 WaterWidth;
 extern s32 FBSCREAMVOL;
 extern f32 AshesMechOutZ;
-extern short D_006332E0;
-#define WaterCurrentAngleY D_006332E0
 extern void MyGameSfx(s32 id, struct nuvec_s *pos, s32 vol);
 extern s32 FireBossHoldPlayer;
 extern s32 FireBossHealth;
@@ -405,10 +403,8 @@ extern void SeekAngHalfLife(u16 *dest, short target, f32 halflife, f32 dt);
 extern void FindTerrainType(struct JEEPSTRUCT *Jeep);
 extern struct RPos_s *best_cRPos;
 extern short JeepBaseAng;
-extern f32 D_006332E8;
-#define JeepCamYaw D_006332E8
-extern f32 D_006332E4;
-#define JeepCamPitch D_006332E4
+static f32 JeepCamX;
+static f32 JeepCamY;
 extern short D_005865C0[];
 #define FireBossRailAng D_005865C0
 extern s32 RotDiff(u16 a, u16 b);
@@ -421,26 +417,6 @@ extern void AddGameDebrisRot(s32 i, struct nuvec_s *pos, s32 n, u16 xrot,
 extern struct rail_s Rail[];
 extern struct nugspline_s *pVIS;
 extern s32 iVIS;
-extern struct nuvec_s D_006B75E0;
-#define JeepCamVel D_006B75E0
-extern struct nuvec_s D_006B75F0;
-#define JeepCamObjTween D_006B75F0
-extern struct nuvec_s D_006B7600;
-#define JeepCamDropPos D_006B7600
-extern short D_006332B4;
-#define JeepCamAngY D_006332B4
-extern short D_006332B6;
-#define JeepCamAngX D_006332B6
-extern f32 D_006332B8;
-#define JeepCamDist D_006332B8
-extern f32 D_006332BC;
-#define JeepCamYawVel D_006332BC
-extern s32 D_006332C0;
-#define JeepCamVelValid D_006332C0
-extern f32 D_006332C4;
-#define JeepCamDropPitch D_006332C4
-extern f32 D_006332C8;
-#define JeepCamDropYaw D_006332C8
 extern s32 JeepCamSnapShot;
 extern struct nuvec_s v000;
 extern void SeekHalfLifeNUVEC(struct nuvec_s *src, struct nuvec_s *target,
@@ -462,7 +438,6 @@ extern s32 JeepFrame;
 extern s32 JeepInControl;
 extern s32 gggg;
 extern s32 JamesInTheHouse;
-extern s32 D_006332B0;              /* debug-jeep button edge latch */
 extern s32 temp_crate_type;
 extern s32 Level;
 f32 PYROTILTX = 20.0f;
@@ -500,8 +475,6 @@ extern s32 SHEIGHT;
 extern void NuFntScale(s32 x, s32 y);
 extern void NuFntPrintEx(s32 x, s32 y, s32 colour, char *fmt, ...);
 extern void GameSfx(s32 id, struct nuvec_s *pos);
-extern s32 D_006332CC;
-#define LastWesternPosition D_006332CC
 extern s32 WallOfFireAttatched;
 
 struct numtx_s *DrawJeep(struct JEEPSTRUCT *Jeep);
@@ -641,6 +614,7 @@ void TiltJeep(struct JEEPSTRUCT *Jeep, f32 DeltaTime) {
 
 
 void MovePlayerJeep(struct creature_s *Cre, struct nupad_s *Pad) {
+    static s32 LastChangePad;
     static f32 MinHeight[4] = { -0.085f, -0.085f, -0.07f, -0.07f };
     struct JEEPSTRUCT *Jeep = &PlayerJeep;
     struct nuvec_s FirePos;
@@ -655,13 +629,13 @@ void MovePlayerJeep(struct creature_s *Cre, struct nupad_s *Pad) {
     PlayerJeep.Cre = Cre;
     if (JamesInTheHouse != 0) {
         s32 press = Pad->paddata & 0x20;
-        if (press != 0 && D_006332B0 == 0) {
+        if (press != 0 && LastChangePad == 0) {
             CurrentDebugJeep++;
             if (CurrentDebugJeep > 4) {
                 CurrentDebugJeep = -1;
             }
         }
-        D_006332B0 = press;
+        LastChangePad = press;
     }
     ProcessTimer(&Jeep->BoostOnTimer);
     if (ProcessTimer(&Jeep->BoostTimer) != 0) {
@@ -973,7 +947,7 @@ void DriveJeep(struct JEEPSTRUCT *Jeep, struct nupad_s *Pad) {
                         (f32)(aRailAng + 0x8000) - Steer * 5461.0f;
                 } else {
                     Jeep->aInputAng =
-                        JeepCamYaw * 182.0444489f + Steer * 10923.0f;
+                        JeepCamY * 182.0444489f + Steer * 10923.0f;
                 }
             } else if (Level == 0x16 && Jeep->FireBossDir == 0) {
                 Jeep->aInputAng = aRailAng - 0x8000;
@@ -1398,18 +1372,28 @@ inline void DoCamMtx(struct cammtx_s *Cam, struct nuvec_s *Obj,
 
     NuVecSub(&Dir, Obj, Pos);
     Dist = NuFsqrt(Dir.x * Dir.x + Dir.z * Dir.z);
-    JeepCamYaw = NuAtani(Dir.x * 256.0f, Dir.z * 256.0f) / 182.0444489f;
-    JeepCamPitch = NuAtani(-Dir.y * 256.0f, Dist * 256.0f) / 182.0444489f;
-    NuMtxSetRotationX(&Cam->m, JeepCamPitch * 182.0444489f);
-    NuMtxRotateY(&Cam->m, JeepCamYaw * 182.0444489f);
+    JeepCamY = NuAtani(Dir.x * 256.0f, Dir.z * 256.0f) / 182.0444489f;
+    JeepCamX = NuAtani(-Dir.y * 256.0f, Dist * 256.0f) / 182.0444489f;
+    NuMtxSetRotationX(&Cam->m, JeepCamX * 182.0444489f);
+    NuMtxRotateY(&Cam->m, JeepCamY * 182.0444489f);
     NuMtxTranslate(&Cam->m, Pos);
     Cam->pos = *Pos;
-    Cam->xrot = JeepCamPitch * 182.0444489f;
-    Cam->yrot = JeepCamYaw * 182.0444489f;
+    Cam->xrot = JeepCamX * 182.0444489f;
+    Cam->yrot = JeepCamY * 182.0444489f;
 }
 
 
 void JeepCamFollowAng(struct cammtx_s *Cam, s32 Snap) {
+    static short JCamAngY;
+    static short JCamAngX;
+    static f32 JCamMag;
+    static struct nuvec_s Vel;
+    static f32 AngVelY;
+    static s32 VelSet;
+    static struct nuvec_s TweenTargPos;
+    static struct nuvec_s BackCamPos;
+    static f32 BackJeepCamX;
+    static f32 BackJeepCamY;
     struct JEEPSTRUCT *Jeep = &PlayerJeep;
     struct nuvec_s OldPos;
     struct nuvec_s Dir;
@@ -1426,44 +1410,44 @@ void JeepCamFollowAng(struct cammtx_s *Cam, s32 Snap) {
         struct nuvec_s Ahead;
 
         Blend = 1.0f - Jeep->DownHoleTimer * Jeep->DownHoleTimer;
-        if (JeepCamVelValid != 0) {
-            JeepCamVelValid = 0;
-            JeepCamVel.y = 0.0f;
-            JeepCamDropPos = *(struct nuvec_s *)&Cam->m._30;
-            JeepCamDropPitch = JeepCamPitch;
-            JeepCamDropYaw = JeepCamYaw;
+        if (VelSet != 0) {
+            VelSet = 0;
+            Vel.y = 0.0f;
+            BackCamPos = *(struct nuvec_s *)&Cam->m._30;
+            BackJeepCamX = JeepCamX;
+            BackJeepCamY = JeepCamY;
         }
         InvBlend = 1.0f - Blend;
-        NuVecScaleAccum(&JeepCamDropPos, &JeepCamVel, InvBlend);
-        NuMtxSetRotationX(&mTEMP, JeepCamDropPitch * 182.0444489f);
-        NuMtxRotateY(&mTEMP, JeepCamDropYaw * 182.0444489f);
-        NuMtxTranslate(&mTEMP, &JeepCamDropPos);
+        NuVecScaleAccum(&BackCamPos, &Vel, InvBlend);
+        NuMtxSetRotationX(&mTEMP, BackJeepCamX * 182.0444489f);
+        NuMtxRotateY(&mTEMP, BackJeepCamY * 182.0444489f);
+        NuMtxTranslate(&mTEMP, &BackCamPos);
         NuVecMtxTransform(&Ahead, SetNuVecPntr(0.0f, 0.0f, 5.0f), &mTEMP);
-        BlendNUVECs(&Pos, &JeepCamDropPos, &Jeep->RestartCamPos, Blend);
+        BlendNUVECs(&Pos, &BackCamPos, &Jeep->RestartCamPos, Blend);
         BlendNUVECs(&Obj, &Ahead, &Jeep->RestartCamObj, Blend);
         DoCamMtx(Cam, &Obj, &Pos);
     } else if (Jeep->Finished != 0 && Snap == 0) {
-        SeekAngHalfLife360f(&JeepCamYawVel, 0.0f, 0.5f, 0.01999999955f);
-        SeekHalfLifeNUVEC(&JeepCamVel, &v000, 0.5f, 0.01999999955f);
+        SeekAngHalfLife360f(&AngVelY, 0.0f, 0.5f, 0.01999999955f);
+        SeekHalfLifeNUVEC(&Vel, &v000, 0.5f, 0.01999999955f);
         Pos.x = Cam->m._30;
         Pos.y = Cam->m._31;
         Pos.z = Cam->m._32;
-        NuVecAdd(&Pos, &Pos, &JeepCamVel);
+        NuVecAdd(&Pos, &Pos, &Vel);
         if (JeepFollowSpline.Spline != 0) {
             LimitCam(&JeepFollowSpline, &Pos, 5.0f, -1.25f);
         }
-        JeepCamYaw = Rationalise360f(JeepCamYaw + JeepCamYawVel);
-        NuMtxSetRotationX(&Cam->m, JeepCamPitch * 182.0444489f);
-        NuMtxRotateY(&Cam->m, JeepCamYaw * 182.0444489f);
+        JeepCamY = Rationalise360f(JeepCamY + AngVelY);
+        NuMtxSetRotationX(&Cam->m, JeepCamX * 182.0444489f);
+        NuMtxRotateY(&Cam->m, JeepCamY * 182.0444489f);
         NuMtxTranslate(&Cam->m, &Pos);
-        Cam->xrot = JeepCamPitch * 182.0444489f;
-        Cam->yrot = JeepCamYaw * 182.0444489f;
+        Cam->xrot = JeepCamX * 182.0444489f;
+        Cam->yrot = JeepCamY * 182.0444489f;
         Cam->pos = Pos;
     } else {
         if (JeepCamSnapShot != 0 && Snap == 0) {
             JeepCamSnapShot = 0;
             JeepCamPosTween = *(struct nuvec_s *)&Cam->m._30;
-            NuVecMtxTransform(&JeepCamObjTween, SetNuVecPntr(0.0f, 0.0f, 20.0f),
+            NuVecMtxTransform(&TweenTargPos, SetNuVecPntr(0.0f, 0.0f, 20.0f),
                               &Cam->m);
         }
         Obj = Jeep->Move.ActualPosition;
@@ -1474,13 +1458,13 @@ void JeepCamFollowAng(struct cammtx_s *Cam, s32 Snap) {
                 ResetJeepCamera = 0;
             }
             if (Level == 0x16) {
-                JeepCamAngX = aPitch;
-                JeepCamAngY = Jeep->aAngleY;
-                JeepCamDist = 5.0f;
+                JCamAngX = aPitch;
+                JCamAngY = Jeep->aAngleY;
+                JCamMag = 5.0f;
             } else {
-                JeepCamAngX = aPitch;
-                JeepCamAngY = Jeep->aAngleY;
-                JeepCamDist = 5.0f;
+                JCamAngX = aPitch;
+                JCamAngY = Jeep->aAngleY;
+                JCamMag = 5.0f;
             }
         } else {
             Pos.x = Cam->m._30;
@@ -1491,34 +1475,34 @@ void JeepCamFollowAng(struct cammtx_s *Cam, s32 Snap) {
             Dir.y = Obj.y - Pos.y;
             Dir.z = Obj.z - Pos.z;
             Dist = NuFsqrt(Dir.x * Dir.x + Dir.z * Dir.z);
-            JeepCamAngY = NuAtani(Dir.x * 256.0f, Dir.z * 256.0f);
-            JeepCamAngX = NuAtani(-Dir.y * 256.0f, Dist * 256.0f);
-            JeepCamDist = NuVecMag(&Dir);
+            JCamAngY = NuAtani(Dir.x * 256.0f, Dir.z * 256.0f);
+            JCamAngX = NuAtani(-Dir.y * 256.0f, Dist * 256.0f);
+            JCamMag = NuVecMag(&Dir);
             if (Jeep->Finished != 0) {
                 aYaw = 0;
             } else {
                 aYaw = Jeep->aAngleY;
             }
             if (Level == 0x16) {
-                SeekAngHalfLife((u16 *)&JeepCamAngY, aYaw, 0.5f, 0.01999999955f);
-                SeekAngHalfLife((u16 *)&JeepCamAngX, aPitch, 0.009999999776f,
+                SeekAngHalfLife((u16 *)&JCamAngY, aYaw, 0.5f, 0.01999999955f);
+                SeekAngHalfLife((u16 *)&JCamAngX, aPitch, 0.009999999776f,
                                 0.01999999955f);
-                SeekHalfLife(&JeepCamDist, 5.0f, 0.1f, 0.01999999955f);
+                SeekHalfLife(&JCamMag, 5.0f, 0.1f, 0.01999999955f);
             } else {
-                SeekAngHalfLife((u16 *)&JeepCamAngY, aYaw, 1.0f, 0.01999999955f);
-                SeekAngHalfLife((u16 *)&JeepCamAngX, aPitch, 0.009999999776f,
+                SeekAngHalfLife((u16 *)&JCamAngY, aYaw, 1.0f, 0.01999999955f);
+                SeekAngHalfLife((u16 *)&JCamAngX, aPitch, 0.009999999776f,
                                 0.01999999955f);
-                SeekHalfLife(&JeepCamDist, 5.0f, 0.1f, 0.01999999955f);
+                SeekHalfLife(&JCamMag, 5.0f, 0.1f, 0.01999999955f);
             }
         }
-        Pos = SetNuVec(0.0f, 0.0f, -JeepCamDist);
-        NuVecRotateX(&Pos, &Pos, JeepCamAngX);
-        NuVecRotateY(&Pos, &Pos, JeepCamAngY);
+        Pos = SetNuVec(0.0f, 0.0f, -JCamMag);
+        NuVecRotateX(&Pos, &Pos, JCamAngX);
+        NuVecRotateY(&Pos, &Pos, JCamAngY);
         NuVecAdd(&Pos, &Pos, &Obj);
         if (Snap == 0) {
             struct nuvec_s Delta;
 
-            NuVecSub(&Delta, &JeepCamObjTween, &Obj);
+            NuVecSub(&Delta, &TweenTargPos, &Obj);
             NuVecScaleAccum(&Obj, &Delta, JeepCamTween);
             NuVecSub(&Delta, &JeepCamPosTween, &Pos);
             NuVecScaleAccum(&Pos, &Delta, JeepCamTween);
@@ -1531,12 +1515,12 @@ void JeepCamFollowAng(struct cammtx_s *Cam, s32 Snap) {
             IdealObjPos = Obj;
             return;
         }
-        OldYaw = JeepCamYaw;
+        OldYaw = JeepCamY;
         DoCamMtx(Cam, &Obj, &Pos);
-        NuVecSub(&JeepCamVel, &Pos, &OldPos);
-        JeepCamYawVel = Rationalise360f(JeepCamYaw - OldYaw);
-        JeepCamVelValid = 1;
-        JeepCamYaw = JeepCamAngY / 182.0444489f;
+        NuVecSub(&Vel, &Pos, &OldPos);
+        AngVelY = Rationalise360f(JeepCamY - OldYaw);
+        VelSet = 1;
+        JeepCamY = JCamAngY / 182.0444489f;
     }
     JeepRailCamTween2 = 1.0f;
     JeepCamPos2 = Pos;
@@ -1582,14 +1566,14 @@ void JeepCamIntro(struct cammtx_s *Cam) {
     }
     NuVecSub(&Dir, &JeepvObj, &JeepvPos);
     Dist = NuFsqrt(Dir.x * Dir.x + Dir.z * Dir.z);
-    JeepCamYaw = NuAtani(Dir.x * 256.0f, Dir.z * 256.0f) / 182.0444489f;
-    JeepCamPitch = NuAtani(-Dir.y * 256.0f, Dist * 256.0f) / 182.0444489f;
-    NuMtxSetRotationX(&Cam->m, JeepCamPitch * 182.0444489f);
-    NuMtxRotateY(&Cam->m, JeepCamYaw * 182.0444489f);
+    JeepCamY = NuAtani(Dir.x * 256.0f, Dir.z * 256.0f) / 182.0444489f;
+    JeepCamX = NuAtani(-Dir.y * 256.0f, Dist * 256.0f) / 182.0444489f;
+    NuMtxSetRotationX(&Cam->m, JeepCamX * 182.0444489f);
+    NuMtxRotateY(&Cam->m, JeepCamY * 182.0444489f);
     NuMtxTranslate(&Cam->m, &JeepvPos);
     Cam->pos = JeepvPos;
-    Cam->xrot = JeepCamPitch * 182.0444489f;
-    Cam->yrot = JeepCamYaw * 182.0444489f;
+    Cam->xrot = JeepCamX * 182.0444489f;
+    Cam->yrot = JeepCamY * 182.0444489f;
     if (WesternCountdown <= 0.1f) {
         SmokeyCam = 0x14;
     }
@@ -1961,6 +1945,7 @@ void LoadWesternArenaData(void) {
 
 
 s32 CurrentWesternPosition(void) {
+    static s32 FinalPosition;
     s32 Position = 1;
     s32 OldCountDown = SmokeyCountDownValue;
     s32 i;
@@ -1994,9 +1979,9 @@ s32 CurrentWesternPosition(void) {
         }
     }
     if (PlayerJeep.Finished != 0) {
-        return LastWesternPosition;
+        return FinalPosition;
     }
-    LastWesternPosition = Position;
+    FinalPosition = Position;
     return Position;
 }
 
@@ -2245,6 +2230,7 @@ f32 WallOfFireAngleY = 0.0f;
 f32 WallOfFireHurtTimer = 0.0f;
 
 void FireBossWaterFire(s32 WaterOn) {
+    static short WaterCurrentAngleY;
     struct nuvec_s Start;
     struct nuvec_s Dir;
     struct nuvec_s End;
@@ -2812,18 +2798,13 @@ s32 BOSSBANGVOL = 0x17FFF;
 s32 BOSSANGRYVOL = 0x17FFF;
 s32 BOSSBREATHVOL = 0x4FFF;
 f32 BOSSBREATHFRAME = 20.0f;
-/* ProcessFireBoss function statics (retail .sbss) */
-extern f32 D_006332D0;
-#define LastBossAct D_006332D0
-extern s32 D_006332D4;
-#define DontDropRocks D_006332D4
-extern s32 D_006332D8;
-#define JustFromIntro D_006332D8
-extern s32 D_006332DC;
-#define LastVehicleControl D_006332DC
 
 void ProcessFireBoss(struct fireboss_s *Boss) {
+    static f32 LastBossAct;
     static s32 FireIndx = 0;
+    static s32 DontDropRocks;
+    static s32 JustFromIntro;
+    static s32 LastVehicleControl;
     struct nuvec_s Target;
     struct nuvec_s DestVel;
 

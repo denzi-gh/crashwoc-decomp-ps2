@@ -146,17 +146,12 @@ struct nublk_s {
     int start;                /* 0x08 */
 }; /* 0x0c */
 
-extern struct nudatfile_s D_006396D8[20];
-extern struct filebuff_s D_00639B08[4];
-extern struct numemfile_s D_00639548[20];
-extern struct fileinfo_s D_00639908[16];
-extern struct nublk_s D_00633548[];
-
-#define datfiles                D_006396D8
-#define file_buff               D_00639B08
-#define memfiles                D_00639548
-#define file_info               D_00639908
-#define blk_stack               D_00633548
+static struct nublk_s nufile_blkinfo[1024];
+static struct nublk_s nufile_wblkinfo[1024];
+static struct numemfile_s memfiles[20];
+static struct nudatfile_s datfiles[20];
+static struct fileinfo_s file_info[16];
+static struct filebuff_s file_buff[4];
 
 static int blkcnt = 1;
 static int wblkcnt = 1;
@@ -267,7 +262,7 @@ void NuFileWriteString(int fh, char* s)
 
 int NuFileGetBlkSize(void)
 {
-    return blk_stack[blkcnt].size;
+    return nufile_blkinfo[blkcnt].size;
 }
 
 
@@ -361,14 +356,11 @@ struct nufileaddr_s {
     int pos;                  /* 0x04 */
 }; /* 0x08 */
 
-extern int D_00633000;
-extern int D_00633004;
+static int ref_count;
+static int pos_count;
 extern void NuMemFreeFn(void *ptr, char *file, int line);
 void* NuMemAllocFn(int size, char * file, int line);
 int NuFileSeek(int fh, int offset, int origin);
-
-#define addr_ref_cnt            D_00633000
-#define addr_def_cnt            D_00633004
 
 
 extern void NuStrCpy(char * s1, char * s2);
@@ -548,10 +540,6 @@ int NuFileAlign(int fh, int mask)
 }
 
 
-extern struct nublk_s D_00636548[];
-#define wblk_stack              D_00636548
-
-
 int NuFileBeginBlkRead(int fh, int id)
 {
     int level;
@@ -560,20 +548,20 @@ int NuFileBeginBlkRead(int fh, int id)
     level = blkcnt++;
     pos = NuFilePos(fh);
     if (level >= 2) {
-        if (pos >= blk_stack[level - 1].start + blk_stack[level - 1].size) {
+        if (pos >= nufile_blkinfo[level - 1].start + nufile_blkinfo[level - 1].size) {
             blkcnt--;
             return 0;
         }
     }
-    blk_stack[level].start = NuFilePos(fh);
-    NuFileRead(fh, &blk_stack[level], 8);
-    if (blk_stack[level].size < 0) {
-        blk_stack[level].size = -blk_stack[level].size;
+    nufile_blkinfo[level].start = NuFilePos(fh);
+    NuFileRead(fh, &nufile_blkinfo[level], 8);
+    if (nufile_blkinfo[level].size < 0) {
+        nufile_blkinfo[level].size = -nufile_blkinfo[level].size;
     }
-    if (id != 0 && id != blk_stack[level].id) {
+    if (id != 0 && id != nufile_blkinfo[level].id) {
         NuErrorProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x483)("NuFileBeginBlkRead : Block header mismatch!");
     }
-    return blk_stack[level].id;
+    return nufile_blkinfo[level].id;
 }
 
 
@@ -585,11 +573,11 @@ void NuFileEndBlkRead(int fh)
 
     level = --blkcnt;
     pos = NuFilePos(fh);
-    if (pos != blk_stack[level].start + blk_stack[level].size) {
-        if (blk_stack[level].start + blk_stack[level].size < pos) {
+    if (pos != nufile_blkinfo[level].start + nufile_blkinfo[level].size) {
+        if (nufile_blkinfo[level].start + nufile_blkinfo[level].size < pos) {
             NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x4A0)("NuFileendBlockRead : read past end of block");
         }
-        NuFileSeek(fh, blk_stack[level].start + blk_stack[level].size, 0);
+        NuFileSeek(fh, nufile_blkinfo[level].start + nufile_blkinfo[level].size, 0);
     }
 }
 
@@ -599,18 +587,18 @@ void NuFileBeginBlkWrite(int fh, int id, int flags)
     int level;
 
     level = wblkcnt++;
-    wblk_stack[level].start = NuFilePos(fh);
-    wblk_stack[level].id = id;
+    nufile_wblkinfo[level].start = NuFilePos(fh);
+    nufile_wblkinfo[level].id = id;
     if (flags == 1) {
-        wblk_stack[level].size = -1;
+        nufile_wblkinfo[level].size = -1;
     } else {
-        wblk_stack[level].size = 1;
+        nufile_wblkinfo[level].size = 1;
     }
     NuFileWriteInt(fh, id);
     NuFileWriteInt(fh, id);
     NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x4BB)("NuFileBeginBlkWrite : writing block... (id %c%c%c%c)",
-        wblk_stack[level].tag[0], wblk_stack[level].tag[1],
-        wblk_stack[level].tag[2], wblk_stack[level].tag[3]);
+        nufile_wblkinfo[level].tag[0], nufile_wblkinfo[level].tag[1],
+        nufile_wblkinfo[level].tag[2], nufile_wblkinfo[level].tag[3]);
 }
 
 
@@ -625,22 +613,22 @@ void NuFileEndBlkWrite(int fh)
     pad = 0;
     level = --wblkcnt;
     pos = NuFilePos(fh);
-    size = pos - wblk_stack[level].start;
+    size = pos - nufile_wblkinfo[level].start;
     fill = iff_padsize - size % iff_padsize;
     if (fill != iff_padsize) {
         size += fill;
         pos += fill;
         sceWrite(fh - 1, &pad, fill);
     }
-    if (wblk_stack[level].size < 0) {
+    if (nufile_wblkinfo[level].size < 0) {
         size = -size;
     }
-    NuFileSeek(fh, wblk_stack[level].start + 4, 0);
+    NuFileSeek(fh, nufile_wblkinfo[level].start + 4, 0);
     sceWrite(fh - 1, &size, 4);
     NuFileSeek(fh, pos, 0);
     NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x4DB)("NuFileEndBlkWrite : ...close block (id %c%c%c%c, size %d)",
-        wblk_stack[level].tag[0], wblk_stack[level].tag[1],
-        wblk_stack[level].tag[2], wblk_stack[level].tag[3]);
+        nufile_wblkinfo[level].tag[0], nufile_wblkinfo[level].tag[1],
+        nufile_wblkinfo[level].tag[2], nufile_wblkinfo[level].tag[3]);
 }
 
 
@@ -655,12 +643,12 @@ void NuFileWriteAddress(int fh, int id)
     static int pad = 0;
 
     if (id) {
-        if (addr_ref_cnt >= MAX_FILE_ADDRESS) {
+        if (ref_count >= MAX_FILE_ADDRESS) {
             NuErrorProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x585)("NuFileWriteAddress:- Need to expand MAX_FILE_ADDRESS");
         }
-        addr_ref[addr_ref_cnt].id = id;
-        addr_ref[addr_ref_cnt].pos = NuFilePos(fh);
-        addr_ref_cnt++;
+        addr_ref[ref_count].id = id;
+        addr_ref[ref_count].pos = NuFilePos(fh);
+        ref_count++;
     }
     sceWrite(fh - 1, &pad, 4);
 }
@@ -672,7 +660,7 @@ void NuFileSetAddress(int fh, int id)
     int i;
 
     if (id) {
-        for (i = 0; i < addr_def_cnt; i++) {
+        for (i = 0; i < pos_count; i++) {
             if (addr_pos[i].id == id) {
                 break;
             }
@@ -680,8 +668,8 @@ void NuFileSetAddress(int fh, int id)
         if (i >= MAX_FILE_ADDRESS) {
             NuErrorProlog("..\\nu2crash.ps2\\nucore\\nufile.c", 0x59A)("NuFileSetAddress:- Need to expand MAX_FILE_ADDRESS");
         }
-        if (i == addr_def_cnt) {
-            addr_def_cnt = i + 1;
+        if (i == pos_count) {
+            pos_count = i + 1;
         }
         addr_pos[i].id = id;
         addr_pos[i].pos = NuFilePos(fh);
@@ -702,8 +690,8 @@ void NuFileInitAddress(int max)
         addr_ref = NuMemAllocFn(max * sizeof(struct nufileaddr_s), "..\\nu2crash.ps2\\nucore\\nufile.c", 0x569);
         addr_pos = NuMemAllocFn(MAX_FILE_ADDRESS * sizeof(struct nufileaddr_s), "..\\nu2crash.ps2\\nucore\\nufile.c", 0x56A);
     }
-    addr_ref_cnt = 0;
-    addr_def_cnt = 0;
+    ref_count = 0;
+    pos_count = 0;
 }
 
 
@@ -728,9 +716,9 @@ void NuFilePatchAddress(int fh)
     int fd;
     int offset;
 
-    for (i = 0; i < addr_ref_cnt; i++) {
+    for (i = 0; i < ref_count; i++) {
         fd = fh - 1;
-        for (j = 0; j < addr_def_cnt; j++) {
+        for (j = 0; j < pos_count; j++) {
             if (addr_ref[i].id == addr_pos[j].id) {
                 offset = addr_pos[j].pos - addr_ref[i].pos;
                 NuFileSeek(fh, addr_ref[i].pos, 0);

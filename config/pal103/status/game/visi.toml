@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0097"
 source = "src/game/visi.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0097:00201450:ApplyVisiTable"
@@ -34,3 +34,35 @@ state = "matching"
 [[data]]
 id = "pal103:unit-0097:00631310:hide"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0097:0063326c:vscnt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0097:00633270:vsdata"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0097:006b74b8:visidat"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x006b74b8
+end = 0x006b7580
+
+[[claim]]
+section = ".rodata"
+start = 0x0061f2e8
+end = 0x0061f2f1
+
+[[claim]]
+section = ".sbss"
+start = 0x00633270
+end = 0x00633274
+
+[[claim]]
+section = ".sdata"
+start = 0x00631314
+end = 0x0063131c

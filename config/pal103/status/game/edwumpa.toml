@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0104"
 source = "src/game/edwumpa.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0104:00235280:edwmpDrawInfo"
@@ -118,3 +118,25 @@ state = "matching"
 [[data]]
 id = "pal103:unit-0104:00631c30:edwmp_cam_ay"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0104:00633340:edwmp_ter_dy"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0104:00633344:edwmp_in_crate"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0104:00633348:edwmp_i_wumpa"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x00620358
+end = 0x00620375
+
+[[claim]]
+section = ".sbss"
+start = 0x00633348
+end = 0x0063334c

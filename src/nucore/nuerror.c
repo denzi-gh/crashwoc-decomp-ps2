@@ -15,9 +15,9 @@ extern void NuEnableVBlankE(void);
 int errmsg_to_file = 0;         /* write debug messages to the log file */
 static int allow_printf = 1;    /* echo messages to the console (TTY) */
 
-extern char *D_0063300C;    /* full path of the reporting source file */
-extern char *D_00633010;    /* basename of the reporting source file */
-extern int D_00633014;      /* line number in the reporting source file */
+static char *errfilepath;   /* full path of the reporting source file */
+static char *errfile;       /* basename of the reporting source file */
+static int errline;         /* line number in the reporting source file */
 
 
 /* Creates the log file once per run. */
@@ -44,7 +44,7 @@ void NuErrorFunction(const char *fmt, ...)
     va_list args;
 
     NuErrorLogInit();
-    sprintf(hdr, "NuError - %s(%d) : ", D_00633010, D_00633014);
+    sprintf(hdr, "NuError - %s(%d) : ", errfile, errline);
     va_start(args, fmt);
     vsprintf(buf, fmt, args);
     va_end(args);
@@ -65,7 +65,7 @@ void NuWarningFunction(const char *fmt, ...)
     va_list args;
 
     NuErrorLogInit();
-    sprintf(hdr, "NuWarning - %s(%d) : ", D_00633010, D_00633014);
+    sprintf(hdr, "NuWarning - %s(%d) : ", errfile, errline);
     va_start(args, fmt);
     vsprintf(buf, fmt, args);
     va_end(args);
@@ -88,8 +88,8 @@ void NuDebugMsgFunction(const char *fmt, ...)
     if (err_msg_quiet == 0) {
         NuDisableVBlankE();
         NuErrorLogInit();
-        sprintf(msg, "%05d NuDebugMsg - %s(%d) : ", ++dbg_msg_cnt, D_00633010,
-                D_00633014);
+        sprintf(msg, "%05d NuDebugMsg - %s(%d) : ", ++dbg_msg_cnt, errfile,
+                errline);
         va_start(args, fmt);
         vsprintf(buf, fmt, args);
         va_end(args);
@@ -120,13 +120,13 @@ void NuDebugMsgFunction(const char *fmt, ...)
 
 NuErrorFunc NuErrorProlog(const char *file, int line)
 {
-    D_00633014 = line;
-    D_0063300C = (char *)file;
-    D_00633010 = strrchr(file, '\\');
-    if (D_00633010 != 0) {
-        D_00633010 = D_00633010 + 1;
+    errline = line;
+    errfilepath = (char *)file;
+    errfile = strrchr(file, '\\');
+    if (errfile != 0) {
+        errfile = errfile + 1;
     } else {
-        D_00633010 = (char *)file;
+        errfile = (char *)file;
     }
     return NuErrorFunction;
 }
@@ -134,13 +134,13 @@ NuErrorFunc NuErrorProlog(const char *file, int line)
 
 NuErrorFunc NuWarningProlog(const char *file, int line)
 {
-    D_00633014 = line;
-    D_0063300C = (char *)file;
-    D_00633010 = strrchr(file, '\\');
-    if (D_00633010 != 0) {
-        D_00633010 = D_00633010 + 1;
+    errline = line;
+    errfilepath = (char *)file;
+    errfile = strrchr(file, '\\');
+    if (errfile != 0) {
+        errfile = errfile + 1;
     } else {
-        D_00633010 = (char *)file;
+        errfile = (char *)file;
     }
     return NuWarningFunction;
 }
@@ -148,13 +148,13 @@ NuErrorFunc NuWarningProlog(const char *file, int line)
 
 NuErrorFunc NuDebugMsgProlog(const char *file, int line)
 {
-    D_00633014 = line;
-    D_0063300C = (char *)file;
-    D_00633010 = strrchr(file, '\\');
-    if (D_00633010 != 0) {
-        D_00633010 = D_00633010 + 1;
+    errline = line;
+    errfilepath = (char *)file;
+    errfile = strrchr(file, '\\');
+    if (errfile != 0) {
+        errfile = errfile + 1;
     } else {
-        D_00633010 = (char *)file;
+        errfile = (char *)file;
     }
     return NuDebugMsgFunction;
 }

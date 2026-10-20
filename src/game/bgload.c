@@ -55,10 +55,9 @@ extern s32 iSignalSema(s32 sema_id);
 
 extern void NuPs2ScreenSwap(s32 mode);
 
-/* Retail-owned data (data-from-C unsupported -> extern). */
-extern s32 D_00633380;              /* main thread id */
-extern s32 D_00633384;              /* vblank semaphore id */
-extern u8 D_006B7680[];             /* load thread stack (0x48000) */
+static s32 thread_id;
+static s32 sem_id;
+static u8 loadstackmem[0x48000];
 extern int _gp;
 
 void VBlankFn(void);
@@ -73,11 +72,11 @@ void BGSuspendMain(void) {
     if (loadthread_id != 0) {
         ResumeThread(loadthread_id);
     }
-    if (D_00633384 != 0) {
-        while (PollSema(D_00633384) == D_00633384) {
+    if (sem_id != 0) {
+        while (PollSema(sem_id) == sem_id) {
         }
-        if (D_00633384 != 0) {
-            WaitSema(D_00633384);
+        if (sem_id != 0) {
+            WaitSema(sem_id);
         }
     }
 }
@@ -86,17 +85,17 @@ void BGLoadInit(void) {
     s32 id;
 
     id = GetThreadId();
-    D_00633380 = id;
+    thread_id = id;
     ChangeThreadPriority(id, 1);
     sem_param.max_count = 1;
     sem_param.init_count = 0;
     sem_param.option = 0;
-    D_00633384 = CreateSema(&sem_param);
+    sem_id = CreateSema(&sem_param);
     NuIntAddVBlankS(&vblank_handler);
 }
 
 void BGLoadStart(void (*func)(void *)) {
-    th_param.stack = D_006B7680;
+    th_param.stack = loadstackmem;
     th_param.stackSize = 0x48000;
     th_param.initPriority = 2;
     th_param.gpReg = &_gp;
@@ -119,8 +118,8 @@ void BGLoadEnd(void) {
 }
 
 void VBlankFn(void) {
-    if (D_00633384 != 0) {
-        iSignalSema(D_00633384);
+    if (sem_id != 0) {
+        iSignalSema(sem_id);
     }
     if (loadthread_id != 0) {
         iSuspendThread(loadthread_id);

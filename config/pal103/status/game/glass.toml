@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0107"
 source = "src/game/glass.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0107:00238bf8:InitGlass"
@@ -118,3 +118,25 @@ state = "matching"
 [[data]]
 id = "pal103:unit-0107:00631ea0:glass_copy_mtl"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0107:00633358:glass_rt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0107:0063335c:glassu1"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0107:00633360:glassv1"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x00620798
+end = 0x006207a4
+
+[[claim]]
+section = ".sbss"
+start = 0x00633360
+end = 0x00633364

@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0102"
 source = "src/game/edcrate.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0102:0022c430:edcrtDrawSpecialCrates"
@@ -254,3 +254,29 @@ state = "matching"
 [[data]]
 id = "pal103:unit-0102:00631b84:edcrt_cam_ay"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0102:006332ec:edcrt_mctype"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0102:006332f0:edcrt_mcfree"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0102:006332f4:edcrt_mcformat"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0102:006332f8:edcrt_mcresult"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x0061ff68
+end = 0x0061ff9d
+
+[[claim]]
+section = ".sbss"
+start = 0x006332f8
+end = 0x006332fc

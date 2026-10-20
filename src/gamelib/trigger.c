@@ -36,8 +36,7 @@
 
 extern int NuFileLoadBuffer(void *name, void *buf, int size);
 
-extern struct instNUTRIGGERSYS_s *D_00633230;
-#define g_NuTriggerSysList D_00633230
+static struct instNUTRIGGERSYS_s *active_triggersys_instances;
 
 
 struct NUTRIGGERSYS_s *NuTriggerSysLoad(char *name, union variptr_u *heap, union variptr_u *heapend)
@@ -95,7 +94,7 @@ void NuTriggerSysUpdate(struct nuvec_s *pos, f32 radius)
     int active;
     char buf[32];
 
-    for (sys = g_NuTriggerSysList; sys != 0; sys = sys->next) {
+    for (sys = active_triggersys_instances; sys != 0; sys = sys->next) {
         gscene = sys->scenemanager->gscene;
         def = sys->triggersys;
         if (sys->is_disabled)
@@ -173,7 +172,7 @@ void DebugRenderTriggers(void)
     int i;
     int k;
 
-    sys = g_NuTriggerSysList;
+    sys = active_triggersys_instances;
     if (do_nothing)
         return;
 
@@ -552,7 +551,7 @@ void DebugRenderTriggers(void)
 
 void NuTriggerSysInit(void)
 {
-    g_NuTriggerSysList = 0;
+    active_triggersys_instances = 0;
 }
 
 
@@ -577,12 +576,12 @@ struct instNUTRIGGERSYS_s *instNuTriggerSysCreate(struct NUTRIGGERSYS_s *trigger
         memset(itriggersys, 0, 0x18);
 
         itriggersys->prev = 0;
-        itriggersys->next = g_NuTriggerSysList;
+        itriggersys->next = active_triggersys_instances;
 
-        if (g_NuTriggerSysList)
-            g_NuTriggerSysList->prev = itriggersys;
+        if (active_triggersys_instances)
+            active_triggersys_instances->prev = itriggersys;
 
-        g_NuTriggerSysList = itriggersys;
+        active_triggersys_instances = itriggersys;
 
         itriggersys->scenemanager = scenemanager;
         itriggersys->triggersys = triggersys;
@@ -605,7 +604,7 @@ void instNuTriggerSysDestroy(struct instNUTRIGGERSYS_s *sys)
     if (sys->prev)
         sys->prev->next = sys->next;
     else
-        g_NuTriggerSysList = sys->next;
+        active_triggersys_instances = sys->next;
 }
 
 
@@ -808,7 +807,7 @@ int WeaponCheckTriggers(struct nuvec_s *pos, float r, int hitpoints)
     struct nuinstance_s *instance;
     char script[32];
 
-    for (itriggersys = g_NuTriggerSysList; itriggersys != 0; itriggersys = itriggersys->next) {
+    for (itriggersys = active_triggersys_instances; itriggersys != 0; itriggersys = itriggersys->next) {
         gscene = itriggersys->scenemanager->gscene;
         triggersys = itriggersys->triggersys;
         if (itriggersys->is_disabled)

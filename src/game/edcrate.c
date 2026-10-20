@@ -64,15 +64,10 @@ extern f32 edcrt_cam_ay;
 extern struct nuvec_s edcrt_cam_pos;
 extern struct mcdirent_s edcrt_mcdir[10];
 
-extern s32 D_006332EC;
-extern s32 D_006332F0;
-extern s32 D_006332F4;
-extern s32 D_006332F8;
-
-#define edcrt_mctype D_006332EC
-#define edcrt_mcfree D_006332F0
-#define edcrt_mcformat D_006332F4
-#define edcrt_mcresult D_006332F8
+static s32 edcrt_mctype;
+static s32 edcrt_mcfree;
+static s32 edcrt_mcformat;
+static s32 edcrt_mcresult;
 
 extern struct crate_s *highlighted_crate;
 extern struct crate_s *highlight_crate;

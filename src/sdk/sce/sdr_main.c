@@ -49,13 +49,9 @@ extern sceSdSpu2IntrHandler _sce_sdr_spu2IntrHdr;
 extern void *_sce_sdr_transIntr0Arg;
 extern void *_sce_sdr_transIntr1Arg;
 extern void *_sce_sdr_spu2IntrArg;
-extern sceSifDmaData D_00701740;
-extern int D_00701880[];
-extern sceSifClientData D_007018C0;
-
-#define sd_dma D_00701740
-#define sd_sbuff D_00701880
-#define sd_client D_007018C0
+static char stack[256];
+static int sbuff[16] __attribute__((aligned(64)));
+static sceSifClientData sceSd_gCd;
 
 extern int printf(const char *fmt, ...);
 extern void FlushCache(int mode);
@@ -79,14 +75,14 @@ int sceSdRemoteInit(void)
 
     sceSifInitRpc(0);
     while (1) {
-        if (sceSifBindRpc(&sd_client, SD_RPC_SERVER, 0) < 0) {
+        if (sceSifBindRpc(&sceSd_gCd, SD_RPC_SERVER, 0) < 0) {
             printf("sceSdRemoteInit() RPC bind error!\n");
             return -1;
         }
         wait = SD_BIND_WAIT;
         while (wait--) {
         }
-        if (sd_client.server != 0) {
+        if (sceSd_gCd.server != 0) {
             break;
         }
     }
@@ -97,16 +93,17 @@ int sceSdRemoteInit(void)
 
 int sceSdTransToIOP(void *buff, unsigned int sendAddr, unsigned int size, unsigned int isBlock)
 {
+    static sceSifDmaData transData;
     unsigned int did;
 
     if (isBlock == 0) {
         return -1;
     }
-    sd_dma.data = (unsigned int)buff;
-    sd_dma.addr = sendAddr;
-    sd_dma.size = size;
-    sd_dma.mode = 0;
-    did = sceSifSetDma(&sd_dma, 1);
+    transData.data = (unsigned int)buff;
+    transData.addr = sendAddr;
+    transData.size = size;
+    transData.mode = 0;
+    did = sceSifSetDma(&transData, 1);
     if (did == 0) {
         return -1;
     }
@@ -140,11 +137,11 @@ int sceSdRemote(int arg, ...)
     int reply[4];
 
     func = 0;
-    sd_sbuff[0] = (int)sd_sbuff;
+    sbuff[0] = (int)sbuff;
     va_start(ap, arg);
     command = va_arg(ap, unsigned int);
     for (i = 1; i < 7; i++) {
-        sd_sbuff[i] = va_arg(ap, int);
+        sbuff[i] = va_arg(ap, int);
     }
     va_end(ap);
 
@@ -155,31 +152,31 @@ int sceSdRemote(int arg, ...)
     }
 
     if (command == SD_SET_TRANS_INTR_HANDLER) {
-        if (sd_sbuff[1] == 0) {
-            _sce_sdr_transIntr0Hdr = (sceSdTransIntrHandler)sd_sbuff[2];
-            _sce_sdr_transIntr0Arg = (void *)sd_sbuff[3];
+        if (sbuff[1] == 0) {
+            _sce_sdr_transIntr0Hdr = (sceSdTransIntrHandler)sbuff[2];
+            _sce_sdr_transIntr0Arg = (void *)sbuff[3];
         } else {
-            _sce_sdr_transIntr1Hdr = (sceSdTransIntrHandler)sd_sbuff[2];
-            _sce_sdr_transIntr1Arg = (void *)sd_sbuff[3];
+            _sce_sdr_transIntr1Hdr = (sceSdTransIntrHandler)sbuff[2];
+            _sce_sdr_transIntr1Arg = (void *)sbuff[3];
         }
     } else if (command == SD_SET_SPU2_INTR_HANDLER) {
-        _sce_sdr_spu2IntrHdr = (sceSdSpu2IntrHandler)sd_sbuff[1];
-        _sce_sdr_spu2IntrArg = (void *)sd_sbuff[2];
+        _sce_sdr_spu2IntrHdr = (sceSdSpu2IntrHandler)sbuff[1];
+        _sce_sdr_spu2IntrArg = (void *)sbuff[2];
     }
 
     if (command == SD_SPU2_PROC_BATCH) {
-        sceSifCallRpc(&sd_client, sd_sbuff[1] | SD_SPU2_PROC_BATCH, mode,
-                      (void *)sd_sbuff[2], 64, 0, 0,
-                      (void (*)(void *))func, (void *)sd_sbuff[0]);
-        ret = sd_sbuff[0];
+        sceSifCallRpc(&sceSd_gCd, sbuff[1] | SD_SPU2_PROC_BATCH, mode,
+                      (void *)sbuff[2], 64, 0, 0,
+                      (void (*)(void *))func, (void *)sbuff[0]);
+        ret = sbuff[0];
     } else if (command == SD_SPU2_PROC_BATCH_EX) {
-        sceSifCallRpc(&sd_client, sd_sbuff[1] | SD_SPU2_PROC_BATCH_EX, mode,
-                      sd_sbuff, 64, (void *)sd_sbuff[2], 64,
-                      (void (*)(void *))func, (void *)sd_sbuff[2]);
+        sceSifCallRpc(&sceSd_gCd, sbuff[1] | SD_SPU2_PROC_BATCH_EX, mode,
+                      sbuff, 64, (void *)sbuff[2], 64,
+                      (void (*)(void *))func, (void *)sbuff[2]);
     } else {
-        sceSifCallRpc(&sd_client, command, mode, sd_sbuff, 64, sd_sbuff, 16,
-                      (void (*)(void *))func, sd_sbuff);
-        ret = sd_sbuff[0];
+        sceSifCallRpc(&sceSd_gCd, command, mode, sbuff, 64, sbuff, 16,
+                      (void (*)(void *))func, sbuff);
+        ret = sbuff[0];
     }
     return ret;
 }

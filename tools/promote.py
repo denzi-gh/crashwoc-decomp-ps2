@@ -47,9 +47,9 @@ that layout emits, and runs the verifier, which then also proves the unit's
 pieces carry no retail bytes beyond its `retail` entries and equal retail;
 it rolls back on failure. On a unit that is already complete it refreshes
 the claims. It also promotes the unit's `asm` entries that lie outside every
-range the unit owns (an unsized trailing symbol in a data-map gap): only the
-whole-unit layout can place those, so promoting such an id directly is
-refused.
+range of the unit with file bytes (its .sbss/.bss objects, or an unsized
+trailing symbol in a data-map gap): only the whole-unit layout can place
+those, so promoting such an id directly is refused.
 
 Needs the toolchain for the verify step: run via
 `python tools/dispatch.py python tools/promote.py ...` from the host.
@@ -217,23 +217,33 @@ def data_table_text(version, unit_index, symbols):
 
 
 def init_data(version, source):
-    """Append an all-asm `[[data]]` table to an existing manifest."""
-    from status import DATA_PROGBITS, load_data_registry
+    """Add an all-asm `[[data]]` table to an existing manifest, or the
+    entries its table is missing (they must all follow the listed ones)."""
+    from status import load_data_registry
     manifest, data = manifest_for(version, Path(source).as_posix())
-    if data.get("data"):
-        raise SystemExit(f"promote --init-data: {manifest.relative_to(ROOT).as_posix()} "
-                         f"already has a [[data]] table")
+    rel = manifest.relative_to(ROOT).as_posix()
+    have = {int(e["id"].split(":")[2], 16) for e in data.get("data", [])}
     unit_index = int(data["unit"].split("unit-")[1])
     syms = sorted((s for s in load_data_registry(ROOT / "config" / version)
-                   .get(unit_index, {}).values() if s["section"] in DATA_PROGBITS),
+                   .get(unit_index, {}).values() if s["address"] not in have),
                   key=lambda s: s["address"])
     if not syms:
-        raise SystemExit(f"promote --init-data: unit {unit_index} has no data "
-                         f"symbols with file bytes")
+        raise SystemExit(f"promote --init-data: {rel} already lists every data "
+                         f"symbol of unit {unit_index}")
+    if have and syms[0]["address"] < max(have):
+        raise SystemExit(f"promote --init-data: {rel} lacks 0x"
+                         f"{syms[0]['address']:08x}, which sorts inside its "
+                         f"[[data]] table")
     text = read_manifest(manifest)
     newline = "\r\n" if "\r\n" in text else "\n"
     body = data_table_text(version, unit_index, syms).replace("\n", newline)
-    text = text.rstrip("\r\n") + newline + newline + body
+    claims = text.find(f"{newline}[[claim]]")
+    if claims < 0:
+        text = text.rstrip("\r\n") + newline + newline + body
+    else:
+        # Claims stay last (promote.py --complete rewrites them there).
+        text = text[:claims].rstrip("\r\n") + newline + newline + body \
+            + text[claims:]
     write_manifest(manifest, text)
     print(f"added {len(syms)} [[data]] entries (asm) to "
           f"{manifest.relative_to(ROOT).as_posix()}")
@@ -243,9 +253,10 @@ def init_data(version, source):
 def whole_unit_only(version, data):
     """The unit's `asm` [[data]] ids only its whole-unit layout can place.
 
-    Each lies outside every range the unit owns (an unsized trailing symbol
-    in a data-map gap: its size is the compiled one, and the layout claims
-    those gap bytes), so `--complete` promotes it with the unit."""
+    Each lies outside every range of the unit with file bytes: a .sbss/.bss
+    object (the whole-unit hybrid lays them out) or an unsized trailing
+    symbol in a data-map gap (its size is the compiled one, and the layout
+    claims those gap bytes), so `--complete` promotes it with the unit."""
     from gen_hybrid import unit_data_ranges
     ranges = unit_data_ranges(version, data["unit"].split(":")[1])
     return [e["id"] for e in data.get("data", []) if e["state"] == "asm"
@@ -311,7 +322,7 @@ def main():
                              "instead of promoting")
     parser.add_argument("--init-data", metavar="SRC",
                         help="add an all-asm [[data]] table to the manifest "
-                             "of src/<unit>.c")
+                             "of src/<unit>.c (or the entries it is missing)")
     parser.add_argument("--complete", metavar="UNIT", nargs="+",
                         help="set complete = true for unit ids "
                              "(version:unit-NNNN) and write their [[claim]] "

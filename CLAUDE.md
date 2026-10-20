@@ -92,8 +92,8 @@ CI (docs/pipeline.md, "CI" section): `validate.yml` (structure, no game files, e
   `tools/promote.py` (`--init-data`, then the data ids; `--complete` for the unit).
   Everywhere else use `extern D_...` symbols plus readable aliases.
   Compiler-private data and `.lit4` stay borrowed until `--complete` switches
-  the unit to whole-unit mode (all its data from C, gap bytes as `[[claim]]`);
-  `.sbss`/`.bss` stay retail. The
+  the unit to whole-unit mode (all its data from C, `.sbss`/`.bss` objects
+  included, gap bytes as `[[claim]]`). The
   canonical policy and the per-unit runbook live in `docs/decomp_agent.md`.
 
 ## Matching MCP / decomp-agent (Claude Code specifics)

@@ -22,36 +22,32 @@
 #include "numath/numathtypes.h"
 #include "nu3d/nuvport.h"
 
-extern struct nuviewport_s D_0067D480;
-extern struct nuviewport_s D_0067D4C0;
-extern struct numtx_s D_0067D500;
-extern int D_00633058;
-#define default_viewport D_0067D480
-#define current_viewport D_0067D4C0
-#define viewport_scaling_matrix D_0067D500
-#define viewport_dirty D_00633058
+static struct nuviewport_s vpDevice;
+static struct nuviewport_s vpCurrent;
+static struct numtx_s smtx;
+static int vport_inval;
 
 void NuPs2GetViewport(struct nuviewport_s *viewport);
 
 
 void NuVpUpdate(void)
 {
-    if (viewport_dirty) {
-        viewport_dirty = 0;
+    if (vport_inval) {
+        vport_inval = 0;
         NuVpSetScalingMtx();
-        if (current_viewport.clip_left == 0.0f && current_viewport.clip_right == 1.0f) {
-            current_viewport.clip_scale_x = 1.0f;
-            current_viewport.guard_scale_x = (float)current_viewport.width / 57600.0f;
+        if (vpCurrent.clip_left == 0.0f && vpCurrent.clip_right == 1.0f) {
+            vpCurrent.clip_scale_x = 1.0f;
+            vpCurrent.guard_scale_x = (float)vpCurrent.width / 57600.0f;
         } else {
-            current_viewport.clip_scale_x = current_viewport.guard_scale_x =
-                1.0f / (current_viewport.clip_right - current_viewport.clip_left);
+            vpCurrent.clip_scale_x = vpCurrent.guard_scale_x =
+                1.0f / (vpCurrent.clip_right - vpCurrent.clip_left);
         }
-        if (current_viewport.clip_top == 0.0f && current_viewport.clip_bottom == 1.0f) {
-            current_viewport.clip_scale_y = 1.0f;
-            current_viewport.guard_scale_y = (float)current_viewport.height / 57600.0f;
+        if (vpCurrent.clip_top == 0.0f && vpCurrent.clip_bottom == 1.0f) {
+            vpCurrent.clip_scale_y = 1.0f;
+            vpCurrent.guard_scale_y = (float)vpCurrent.height / 57600.0f;
         } else {
-            current_viewport.clip_scale_y = current_viewport.guard_scale_y =
-                1.0f / (current_viewport.clip_bottom - current_viewport.clip_top);
+            vpCurrent.clip_scale_y = vpCurrent.guard_scale_y =
+                1.0f / (vpCurrent.clip_bottom - vpCurrent.clip_top);
         }
     }
 }
@@ -59,8 +55,8 @@ void NuVpUpdate(void)
 
 void NuVpSetScalingMtx(void)
 {
-    struct nuviewport_s *viewport = &current_viewport;
-    struct numtx_s *matrix = &viewport_scaling_matrix;
+    struct nuviewport_s *viewport = &vpCurrent;
+    struct numtx_s *matrix = &smtx;
     float width = (float)viewport->width;
     float height = (float)viewport->height;
 
@@ -85,61 +81,61 @@ void NuVpSetScalingMtx(void)
 
 void NuVpInit(void)
 {
-    NuPs2GetViewport(&default_viewport);
-    default_viewport.centre_x = 0.5f;
-    default_viewport.centre_y = 0.5f;
-    default_viewport.clip_left = 0.0f;
-    default_viewport.clip_top = 0.0f;
-    default_viewport.clip_right = 1.0f;
-    default_viewport.clip_bottom = 1.0f;
-    current_viewport = default_viewport;
-    viewport_dirty = 1;
+    NuPs2GetViewport(&vpDevice);
+    vpDevice.centre_x = 0.5f;
+    vpDevice.centre_y = 0.5f;
+    vpDevice.clip_left = 0.0f;
+    vpDevice.clip_top = 0.0f;
+    vpDevice.clip_right = 1.0f;
+    vpDevice.clip_bottom = 1.0f;
+    vpCurrent = vpDevice;
+    vport_inval = 1;
     NuVpUpdate();
 }
 
 
 void NuVpRestore(void)
 {
-    current_viewport = default_viewport;
-    viewport_dirty = 1;
+    vpCurrent = vpDevice;
+    vport_inval = 1;
 }
 
 
 void NuVpSetPosition(float x, float y)
 {
-    current_viewport.x = (int)x;
-    current_viewport.y = (int)y;
-    viewport_dirty = 1;
+    vpCurrent.x = (int)x;
+    vpCurrent.y = (int)y;
+    vport_inval = 1;
 }
 
 
 void NuVpSetSize(float width, float height)
 {
-    viewport_dirty = 1;
-    current_viewport.width = (int)width;
-    current_viewport.height = (int)height;
+    vport_inval = 1;
+    vpCurrent.width = (int)width;
+    vpCurrent.height = (int)height;
 }
 
 
 void NuVpSetZRange(float zmin, float zmax)
 {
-    viewport_dirty = 1;
-    current_viewport.zmin = zmin;
-    current_viewport.zmax = zmax;
+    vport_inval = 1;
+    vpCurrent.zmin = zmin;
+    vpCurrent.zmax = zmax;
 }
 
 
 void NuVpSetCentre(float x, float y)
 {
-    viewport_dirty = 1;
-    current_viewport.centre_x = x;
-    current_viewport.centre_y = y;
+    vport_inval = 1;
+    vpCurrent.centre_x = x;
+    vpCurrent.centre_y = y;
 }
 
 
 void NuVpSetClipping(float left, float top, float right, float bottom)
 {
-    struct nuviewport_s *viewport = &current_viewport;
+    struct nuviewport_s *viewport = &vpCurrent;
 
     if (left < 0.0f) {
         viewport->clip_left = 0.0f;
@@ -147,57 +143,57 @@ void NuVpSetClipping(float left, float top, float right, float bottom)
         viewport->clip_left = left;
     }
     if (top < 0.0f) {
-        current_viewport.clip_top = 0.0f;
+        vpCurrent.clip_top = 0.0f;
     } else {
-        current_viewport.clip_top = top;
+        vpCurrent.clip_top = top;
     }
     if (right > 1.0f) {
-        current_viewport.clip_right = 1.0f;
+        vpCurrent.clip_right = 1.0f;
     } else {
-        current_viewport.clip_right = right;
+        vpCurrent.clip_right = right;
     }
     if (bottom > 1.0f) {
-        current_viewport.clip_bottom = 1.0f;
+        vpCurrent.clip_bottom = 1.0f;
     } else {
-        current_viewport.clip_bottom = bottom;
+        vpCurrent.clip_bottom = bottom;
     }
-    viewport_dirty = 1;
+    vport_inval = 1;
 }
 
 
 void NuVpGetScalingMtx(struct numtx_s *matrix)
 {
     if (matrix) {
-        *matrix = viewport_scaling_matrix;
+        *matrix = smtx;
     }
 }
 
 
 float NuVpVirtualWidth(float width)
 {
-    return width / (float)current_viewport.width;
+    return width / (float)vpCurrent.width;
 }
 
 
 float NuVpVirtualHeight(float height)
 {
-    return height / (float)current_viewport.height;
+    return height / (float)vpCurrent.height;
 }
 
 
 float NuVpPixelWidth(float width)
 {
-    return width * (float)current_viewport.width + (float)current_viewport.x;
+    return width * (float)vpCurrent.width + (float)vpCurrent.x;
 }
 
 
 float NuVpPixelHeight(float height)
 {
-    return height * (float)current_viewport.height + (float)current_viewport.y;
+    return height * (float)vpCurrent.height + (float)vpCurrent.y;
 }
 
 
 struct nuviewport_s *NuVpGetCurrentViewport(void)
 {
-    return &current_viewport;
+    return &vpCurrent;
 }

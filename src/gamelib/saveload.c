@@ -96,68 +96,62 @@ extern void *saveload_data;
 extern s32 saveload_datasize;
 extern s32 saveload_handle;
 
-extern s32 D_0063321C;
-extern s32 D_00633220;
-extern s32 D_00633224;
-extern s32 D_00633228;
-
-#define mc_type D_0063321C
-#define mc_free D_00633220
-#define mc_format D_00633224
-#define mc_result D_00633228
+static s32 mctype;
+static s32 mcfree;
+static s32 mcformat;
+static s32 mcresult;
 
 #define SCE_RDONLY 1
 
-extern char D_006B3B40[];               /* sceMcGetDir entry table */
-#define mc_dirtable D_006B3B40
+static char mcdir[0x480];               /* sceMcGetDir entry table */
 
 
 s32 saveloadCheckCardPresent(void) {
     s32 nocard;
 
     sceMcGetInfo(0, 0, 0, 0, 0);
-    sceMcSync(0, 0, &mc_result);
+    sceMcSync(0, 0, &mcresult);
     nocard = -10;
-    return mc_result > nocard;
+    return mcresult > nocard;
 }
 
 
-/* Fills mc_dirtable with the save directory listing. Returns 0 when the
+/* Fills mcdir with the save directory listing. Returns 0 when the
    directory does not exist yet, otherwise the entry count or -1 on error. */
 s32 saveloadGetDirectory(void) {
     char path[32];
     s32 present;
 
     sceMcGetInfo(0, 0, 0, 0, 0);
-    sceMcSync(0, 0, &mc_result);
-    present = mc_result > -10;
+    sceMcSync(0, 0, &mcresult);
+    present = mcresult > -10;
     if (!present) {
         return -1;
     }
     sceMcChdir(0, 0, "/", 0);
-    sceMcSync(0, 0, &mc_result);
-    if (mc_result != 0) {
+    sceMcSync(0, 0, &mcresult);
+    if (mcresult != 0) {
         return -1;
     }
     sprintf(fname, "%s", "BESLES-50386");
     sprintf(dname, "/%s", fname);
     sprintf(path, "%s*", fname);
-    sceMcGetDir(0, 0, fname, 0, 0x12, mc_dirtable);
-    sceMcSync(0, 0, &mc_result);
-    if (mc_result == 0) {
+    sceMcGetDir(0, 0, fname, 0, 0x12, mcdir);
+    sceMcSync(0, 0, &mcresult);
+    if (mcresult == 0) {
         return 0;
     }
     sceMcChdir(0, 0, dname, 0);
-    sceMcSync(0, 0, &mc_result);
-    if (mc_result != 0) {
+    sceMcSync(0, 0, &mcresult);
+    if (mcresult != 0) {
         return -1;
     }
-    sceMcGetDir(0, 0, path, 0, 0x12, mc_dirtable);
-    sceMcSync(0, 0, &mc_result);
-    if (mc_result == 0) {
+    sceMcGetDir(0, 0, path, 0, 0x12, mcdir);
+    sceMcSync(0, 0, &mcresult);
+    if (mcresult == 0) {
         return -1;
     }
-    return mc_result;
+    return mcresult;
 }
 
 extern s32 sceMcDelete(s32 port, s32 slot, const char *name);
@@ -182,72 +176,72 @@ s32 saveloadSaveSlot(s32 slot, void *buf, s32 size) {
     }
     if (count == 0) {
         sceMcChdir(0, 0, "/", 0);
-        sceMcSync(0, 0, &mc_result);
-        if (mc_result != 0) {
+        sceMcSync(0, 0, &mcresult);
+        if (mcresult != 0) {
             return 0;
         }
         sceMcMkdir(0, 0, fname);
-        sceMcSync(0, 0, &mc_result);
-        if (mc_result != 0) {
+        sceMcSync(0, 0, &mcresult);
+        if (mcresult != 0) {
             return 0;
         }
         sceMcChdir(0, 0, dname, 0);
-        sceMcSync(0, 0, &mc_result);
-        if (mc_result != 0) {
+        sceMcSync(0, 0, &mcresult);
+        if (mcresult != 0) {
             return 0;
         }
         sceMcOpen(0, 0, fname, 0x200);
-        sceMcSync(0, 0, &mc_result);
-        fd = mc_result;
+        sceMcSync(0, 0, &mcresult);
+        fd = mcresult;
         sceMcWrite(fd, &count, 4);
-        sceMcSync(0, 0, &mc_result);
+        sceMcSync(0, 0, &mcresult);
         sceMcClose(fd);
-        sceMcSync(0, 0, &mc_result);
+        sceMcSync(0, 0, &mcresult);
 
         sceMcOpen(0, 0, "icon.sys", 0x200);
-        sceMcSync(0, 0, &mc_result);
-        fd = mc_result;
+        sceMcSync(0, 0, &mcresult);
+        fd = mcresult;
         sceMcWrite(fd, &mciconsys, 0x3C4);
-        sceMcSync(0, 0, &mc_result);
+        sceMcSync(0, 0, &mcresult);
         sceMcClose(fd);
-        sceMcSync(0, 0, &mc_result);
+        sceMcSync(0, 0, &mcresult);
 
         iconsize = NuFileSize("stuff\\crash.ico");
         icon = NuStreamGetOutputBuffer(0);
         iconsize = NuFileLoadBuffer("stuff\\crash.ico", icon, 0x7FFFFFFF);
         sceMcOpen(0, 0, "crash.ico", 0x200);
-        sceMcSync(0, 0, &mc_result);
-        fd = mc_result;
+        sceMcSync(0, 0, &mcresult);
+        fd = mcresult;
         sceMcWrite(fd, icon, iconsize);
-        sceMcSync(0, 0, &mc_result);
+        sceMcSync(0, 0, &mcresult);
         sceMcClose(fd);
-        sceMcSync(0, 0, &mc_result);
+        sceMcSync(0, 0, &mcresult);
         NuRndrSwapStreamBuffers();
     }
     sprintf(path, "%sslot%02d", fname, slot);
-    sceMcGetDir(0, 0, path, 0, 0x12, mc_dirtable);
-    sceMcSync(0, 0, &mc_result);
-    if (mc_result == 1) {
+    sceMcGetDir(0, 0, path, 0, 0x12, mcdir);
+    sceMcSync(0, 0, &mcresult);
+    if (mcresult == 1) {
         sceMcDelete(0, 0, path);
-        sceMcSync(0, 0, &mc_result);
-        if (mc_result != 0) {
+        sceMcSync(0, 0, &mcresult);
+        if (mcresult != 0) {
             return 0;
         }
     }
     sceMcOpen(0, 0, path, 0x200);
-    sceMcSync(0, 0, &mc_result);
-    fd = mc_result;
+    sceMcSync(0, 0, &mcresult);
+    fd = mcresult;
     if (fd < 0) {
         return 0;
     }
     sceMcWrite(fd, buf, size);
-    sceMcSync(0, 0, &mc_result);
-    if (mc_result < 0) {
+    sceMcSync(0, 0, &mcresult);
+    if (mcresult < 0) {
         return 0;
     }
     sceMcClose(fd);
-    sceMcSync(0, 0, &mc_result);
-    if (mc_result < 0) {
+    sceMcSync(0, 0, &mcresult);
+    if (mcresult < 0) {
         return 0;
     }
     return 1;
@@ -267,27 +261,27 @@ s32 saveloadDeleteSlot(s32 slot) {
         return 0;
     }
     sprintf(path, "%sslot%02d", fname, slot);
-    sceMcGetDir(0, 0, path, 0, 0x12, mc_dirtable);
-    sceMcSync(0, 0, &mc_result);
-    if (mc_result != 1) {
+    sceMcGetDir(0, 0, path, 0, 0x12, mcdir);
+    sceMcSync(0, 0, &mcresult);
+    if (mcresult != 1) {
         return 0;
     }
     sceMcDelete(0, 0, path);
-    sceMcSync(0, 0, &mc_result);
-    if (mc_result < 0) {
+    sceMcSync(0, 0, &mcresult);
+    if (mcresult < 0) {
         return 0;
     }
     if (count == 2) {
         sceMcDelete(0, 0, fname);
-        sceMcSync(0, 0, &mc_result);
+        sceMcSync(0, 0, &mcresult);
         sceMcDelete(0, 0, "icon.sys");
-        sceMcSync(0, 0, &mc_result);
+        sceMcSync(0, 0, &mcresult);
         sceMcDelete(0, 0, "crash.ico");
-        sceMcSync(0, 0, &mc_result);
+        sceMcSync(0, 0, &mcresult);
         sceMcChdir(0, 0, "/", 0);
-        sceMcSync(0, 0, &mc_result);
+        sceMcSync(0, 0, &mcresult);
         sceMcDelete(0, 0, fname);
-        sceMcSync(0, 0, &mc_result);
+        sceMcSync(0, 0, &mcresult);
     }
     return 1;
 }
@@ -407,7 +401,7 @@ void saveloadASCallEachFrame(void) {
             sceMcMkdir(0, 0, "/BESLES-50386");
             saveload_status = 14;
         } else if (result == 0) {
-            sceMcGetDir(0, 0, "BESLES-50386", 0, 0x12, mc_dirtable);
+            sceMcGetDir(0, 0, "BESLES-50386", 0, 0x12, mcdir);
             saveload_status = 10;
         } else {
             saveload_status = 1;
@@ -569,7 +563,7 @@ void saveloadASCallEachFrame(void) {
     case 26:
         if (result == 0) {
             sprintf(path, "%sslot*", "BESLES-50386");
-            sceMcGetDir(0, 0, path, 0, 0x12, mc_dirtable);
+            sceMcGetDir(0, 0, path, 0, 0x12, mcdir);
             saveload_status = 27;
         } else {
             saveload_status = 1;
@@ -653,44 +647,44 @@ s32 saveloadLoadIcon(char *name, void *buf) {
 
 
 s32 saveloadCheckCardType(void) {
-    sceMcGetInfo(0, 0, &mc_type, 0, 0);
-    sceMcSync(0, 0, &mc_result);
-    if (mc_result < -9) {
+    sceMcGetInfo(0, 0, &mctype, 0, 0);
+    sceMcSync(0, 0, &mcresult);
+    if (mcresult < -9) {
         return 0;
     }
-    return mc_type == 2;
+    return mctype == 2;
 }
 
 
 s32 saveloadCheckCardFormatted(void) {
-    sceMcGetInfo(0, 0, &mc_type, 0, &mc_format);
-    sceMcSync(0, 0, &mc_result);
-    if (mc_result < -9) {
+    sceMcGetInfo(0, 0, &mctype, 0, &mcformat);
+    sceMcSync(0, 0, &mcresult);
+    if (mcresult < -9) {
         return 0;
     }
-    if (mc_type != 2) {
+    if (mctype != 2) {
         return 0;
     }
-    return mc_format == 1;
+    return mcformat == 1;
 }
 
 
 s32 saveloadCheckCardFreeSpace(s32 size) {
-    sceMcGetInfo(0, 0, &mc_type, &mc_free, &mc_format);
-    sceMcSync(0, 0, &mc_result);
-    if (mc_result < -9) {
+    sceMcGetInfo(0, 0, &mctype, &mcfree, &mcformat);
+    sceMcSync(0, 0, &mcresult);
+    if (mcresult < -9) {
         return 0;
     }
-    if (mc_type != 2) {
+    if (mctype != 2) {
         return 0;
     }
-    if (mc_format != 1) {
+    if (mcformat != 1) {
         return 0;
     }
     if (size <= 0) {
-        return mc_free;
+        return mcfree;
     }
-    if (mc_free >= size) {
+    if (mcfree >= size) {
         return 1;
     }
     return 0;
@@ -699,15 +693,15 @@ s32 saveloadCheckCardFreeSpace(s32 size) {
 
 s32 saveloadFormatCard(void) {
     sceMcFormat(0, 0);
-    sceMcSync(0, 0, &mc_result);
-    return mc_result == 0;
+    sceMcSync(0, 0, &mcresult);
+    return mcresult == 0;
 }
 
 
 s32 saveloadUnFormatCard(void) {
     sceMcUnformat(0, 0);
-    sceMcSync(0, 0, &mc_result);
-    return mc_result == 0;
+    sceMcSync(0, 0, &mcresult);
+    return mcresult == 0;
 }
 
 
@@ -735,25 +729,25 @@ s32 saveloadLoadSlot(s32 slot, void *buf, s32 size) {
         return 0;
     }
     sprintf(path, "%sslot%02d", fname, slot);
-    sceMcGetDir(0, 0, path, 0, 0x12, mc_dirtable);
-    sceMcSync(0, 0, &mc_result);
-    if (mc_result != 1) {
+    sceMcGetDir(0, 0, path, 0, 0x12, mcdir);
+    sceMcSync(0, 0, &mcresult);
+    if (mcresult != 1) {
         return 0;
     }
     sceMcOpen(0, 0, path, SCE_RDONLY);
-    sceMcSync(0, 0, &mc_result);
-    fd = mc_result;
+    sceMcSync(0, 0, &mcresult);
+    fd = mcresult;
     if (fd < 0) {
         return 0;
     }
     sceMcRead(fd, buf, size);
-    sceMcSync(0, 0, &mc_result);
-    if (mc_result < 0) {
+    sceMcSync(0, 0, &mcresult);
+    if (mcresult < 0) {
         return 0;
     }
     sceMcClose(fd);
-    sceMcSync(0, 0, &mc_result);
-    if (mc_result < 0) {
+    sceMcSync(0, 0, &mcresult);
+    if (mcresult < 0) {
         return 0;
     }
     return 1;

@@ -31,16 +31,14 @@ extern s32 WUMPACOUNT;
 extern s32 PLAYERCOUNT;
 extern struct nuvec_s v000;
 extern struct nuvec_s edwmp_cam_pos;
-extern s32 D_00633348;
-#define edwmp_selected D_00633348
+static f32 edwmp_ter_dy;
+static s32 edwmp_in_crate;
+static s32 edwmp_i_wumpa;
 
 extern void *app_fnt;
 extern s32 PANELOFF;
 extern char tbuf[];
 extern char **LDATA;
-extern f32 D_00633340;
-extern s32 D_00633344;
-#define edwmp_cam_in_crate D_00633344
 extern s32 screendump;
 
 extern void eduiMenuDestroy(void *menu);
@@ -113,7 +111,7 @@ void edwmpDrawInfo(void)
     strupr(tbuf);
     NuFntPrintEx(0x400, 0x100, 0, "%s.WMP", tbuf);
     NuFntPrintEx(0x400, 0x200, 0, "WUMPACOUNT:   %i/%i", WUMPACOUNT, 0x100);
-    NuFntPrintEx(0x400, 0x300, 0, "HEIGHT:   %.2f", fptodp(D_00633340));
+    NuFntPrintEx(0x400, 0x300, 0, "HEIGHT:   %.2f", fptodp(edwmp_ter_dy));
     NuFntPrintEx(0x400, 0xD00, 0, "CURSOR:   X: %.2f   Y: %.2f   Z: %.2f",
                  fptodp(edwmp_cam_pos.x), fptodp(edwmp_cam_pos.y), fptodp(edwmp_cam_pos.z));
 }
@@ -124,8 +122,8 @@ void edwmpDRAW(void)
     struct wumpa_s *wumpa;
     s32 i;
 
-    if (edwmp_selected != -1) {
-        wumpa = &Wumpa[edwmp_selected];
+    if (edwmp_i_wumpa != -1) {
+        wumpa = &Wumpa[edwmp_i_wumpa];
         for (i = 0; i < 6; i++) {
             v[i] = wumpa->pos0;
         }
@@ -148,7 +146,7 @@ void edwmpDRAW(void)
         NuRndrLine3dDbg(0xFF00, v[4].x, v[4].y, v[4].z, v[5].x, v[5].y, v[5].z);
         NuRndrLine3dDbg(0xFF00, v[5].x, v[5].y, v[5].z, v[2].x, v[2].y, v[2].z);
     }
-    if (edwmp_cam_in_crate) {
+    if (edwmp_in_crate) {
         for (i = 0; i < 6; i++) {
             v[i] = edwmp_cam_pos;
         }
@@ -248,8 +246,8 @@ void edwmpDoInput(struct nupad_s *pad)
         edwmp_active_menu = edwmp_options_menu;
     }
     if (wumpa_lock_button) {
-        if (edwmp_selected != -1) {
-            edcamSetPos(&Wumpa[edwmp_selected].pos0);
+        if (edwmp_i_wumpa != -1) {
+            edcamSetPos(&Wumpa[edwmp_i_wumpa].pos0);
         }
         wumpa_lock_button = 0;
     } else if (pad->paddata & 0x20) {
@@ -310,20 +308,20 @@ void edwmpDoInput(struct nupad_s *pad)
             edcamSetPos(&edwmp_cam_pos);
         }
     }
-    if ((pad->paddata_db & 0x40) && edwmp_selected == -1 && WUMPACOUNT != 0x100 &&
-        !edwmp_cam_in_crate) {
+    if ((pad->paddata_db & 0x40) && edwmp_i_wumpa == -1 && WUMPACOUNT != 0x100 &&
+        !edwmp_in_crate) {
         Wumpa[WUMPACOUNT++].pos0 = edwmp_cam_pos;
         ResetWumpa();
     }
     if (pad->paddata_db & 0x10) {
-        i = edwmp_selected;
+        i = edwmp_i_wumpa;
         if (i != -1) {
             WUMPACOUNT--;
             for (; i < WUMPACOUNT; i++) {
                 Wumpa[i].pos0 = Wumpa[i + 1].pos0;
             }
             ResetWumpa();
-            edwmp_selected = -1;
+            edwmp_i_wumpa = -1;
         }
     }
 }
@@ -347,30 +345,30 @@ s32 edwmpProc(struct nupad_s *pad)
         eduiMenuProcess(edwmp_active_menu, pad);
         return 0;
     }
-    edwmp_selected = -1;
+    edwmp_i_wumpa = -1;
     for (i = 0; i < WUMPACOUNT; i++) {
         f32 distsq;
         NuVecSub(&v, &edwmp_cam_pos, &Wumpa[i].pos0);
         distsq = v.x * v.x + v.y * v.y + v.z * v.z;
         if (distsq < 0.09f) {
-            if (edwmp_selected == -1 || distsq < bestdist) {
-                edwmp_selected = i;
+            if (edwmp_i_wumpa == -1 || distsq < bestdist) {
+                edwmp_i_wumpa = i;
                 bestdist = distsq;
             }
         }
     }
-    if (edwmp_selected != -1) {
-        v = Wumpa[edwmp_selected].pos0;
+    if (edwmp_i_wumpa != -1) {
+        v = Wumpa[edwmp_i_wumpa].pos0;
     } else {
         v = edwmp_cam_pos;
     }
     shadow = NewShadowMask(&v, shadow, -1);
     if (shadow != 2000000.0f) {
-        D_00633340 = v.y - shadow;
+        edwmp_ter_dy = v.y - shadow;
     } else {
-        D_00633340 = 0.0f;
+        edwmp_ter_dy = 0.0f;
     }
-    edwmp_cam_in_crate = InCrate(edwmp_cam_pos.x, edwmp_cam_pos.z, edwmp_cam_pos.y,
+    edwmp_in_crate = InCrate(edwmp_cam_pos.x, edwmp_cam_pos.z, edwmp_cam_pos.y,
                                  edwmp_cam_pos.y, 0.0f) != 0;
     edwmpDoInput(pad);
     if (pad->paddata_db & 0x800) {
@@ -388,7 +386,7 @@ void edwmpADD(void)
 
 void edwmpDELETE(void)
 {
-    s32 i = edwmp_selected;
+    s32 i = edwmp_i_wumpa;
 
     if (i != -1) {
         WUMPACOUNT--;
@@ -396,7 +394,7 @@ void edwmpDELETE(void)
             Wumpa[i].pos0 = Wumpa[i + 1].pos0;
         }
         ResetWumpa();
-        edwmp_selected = -1;
+        edwmp_i_wumpa = -1;
     }
 }
 

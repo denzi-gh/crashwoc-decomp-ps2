@@ -123,10 +123,28 @@ state = "matching"
 id = "pal103:unit-0084:0062f8e8:ed_loc"
 state = "matching"
 
+[[data]]
+id = "pal103:unit-0084:00633234:editor_return"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0084:006b3fc0:ed_levelfile"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x006b3fc0
+end = 0x006b40c0
+
 [[claim]]
 section = ".rodata"
 start = 0x0061a790
 end = 0x0061a79e
+
+[[claim]]
+section = ".sbss"
+start = 0x00633234
+end = 0x00633238
 
 [[claim]]
 section = ".sdata"

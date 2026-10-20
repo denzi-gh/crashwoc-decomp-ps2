@@ -103,7 +103,16 @@ state = "matching"
 id = "pal103:unit-0004:0062ea1c:peakallocaddr"
 state = "matching"
 
+[[data]]
+id = "pal103:unit-0004:00633018:memext"
+state = "matching"
+
 [[claim]]
 section = ".rodata"
 start = 0x00613c80
 end = 0x00613c9a
+
+[[claim]]
+section = ".sbss"
+start = 0x00633018
+end = 0x00633020

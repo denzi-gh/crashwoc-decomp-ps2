@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0087"
 source = "src/nusound/nusound.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0087:001c2290:SOUND_CopyIOPBuffer"
@@ -394,3 +394,21 @@ state = "matching"
 [[data]]
 id = "pal103:unit-0087:0062fa00:NuSndSteroPitch"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0087:006b4100:nusound_client_data"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0087:006b4128:ADPCM_FileNames"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x006b4128
+end = 0x006b74b8
+
+[[claim]]
+section = ".rodata"
+start = 0x0061abd0
+end = 0x0061abee
