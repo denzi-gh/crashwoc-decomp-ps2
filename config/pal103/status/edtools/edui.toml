@@ -37,7 +37,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001b8e38:eduicbRenderTextPick"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001b9108:eduiAddGradPickCFG"

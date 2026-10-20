@@ -105,6 +105,7 @@ struct chunkctrl_s {
 
 extern struct numtl_s *DebMat[8];
 extern s32 debris_emitter_stack_index;
+extern char debbuffer[0x100000];
 extern s32 D_0062F29C;
 #define debris_draw_on D_0062F29C
 extern struct debpart_s *(*gensorttab[])();
@@ -112,12 +113,13 @@ extern void (*gencodetab[])(struct debkeydatatype_s *deb, struct debinfo_s *info
 extern struct numtx_s numtx_identity;
 extern f32 NuTrigTable[];
 extern s32 globalframes;
-extern struct debkeydatatype_s *debris_emitter_stack[];
-extern s16 freedebkeys[];
+extern struct debkeydatatype_s *debris_emitter_stack[32];
+extern s16 freedebkeys[256];
 extern s32 freedebkeyptr;
-extern struct debchunk_s *freedebchunks[];
+extern struct debchunk_s *freedebchunks[256];
 extern s32 freedebchkptr;
-extern struct chunkctrl_s *freechunkcontrols[];
+extern struct chunkctrl_s *freechunkcontrols[512];
+extern struct chunkctrl_s debris_chunk_controls[512];
 extern s32 freechunkcontrolsptr;
 extern struct chunkctrl_s *debris_chunk_control_stack[32];
 extern s32 debris_chunk_control_stack_index;
@@ -130,7 +132,7 @@ extern f32 D_0062CEBC;
 extern f32 D_0062CEC0;
 #define deb_tree_rand_scale D_0062CEC0
 extern s32 debris_sfx;
-extern struct debdma_s *DmaDebTypes[];
+extern struct debdma_s *DmaDebTypes[128];
 extern s32 freeDmaDebType;
 extern f32 globaltime;
 extern u8 object_switches[];
@@ -161,6 +163,9 @@ void NuRndrParticleGroup(struct debchunk_s *chunk, struct debdma_s *dma, struct 
 void DebrisEmitterOrientationMtx(s32 key, struct numtx_s *mtx);
 s32 NuFileLoadBuffer(char *name, void *buf, s32 max);
 void LinkDmaParticalSets(struct debchunk_s **sets, s32 count);
+struct numtl_s *CreateAlphaBlendTexture256_32(char *file, s32 blend, s32 alphamode, s32 alpha_sort, s32 zmode);
+struct DmaTag *CreateDmaParticleSet(struct DmaTag *set, s32 *size);
+struct PartEffectList *CreateDmaPartEffectList(struct PartEffectList *list, s32 *size);
 
 
 void GenericDebinfoDmaTypeUpdate(struct debinfo_s *info) {
@@ -854,6 +859,110 @@ void SplashBodyEffect(struct debdma_s *dma) {
         tri->v0y.colour = 0x20;
         tri->v1x.colour = 0x30;
         tri->v1y.colour = (64 - i) * 80 / 64;
+    }
+}
+
+
+inline struct numtl_s *CreateCopyMat(struct numtl_s *src, s32 blend, s32 alphamode, s32 zmode, s32 filter) {
+    struct numtl_s *mtl;
+
+    mtl = NuMtlCreate(1);
+    mtl->diffuse.r = 1.0f;
+    mtl->diffuse.g = 1.0f;
+    mtl->diffuse.b = 1.0f;
+    mtl->alpha = 0.999f;
+    mtl->attrib.cull = 2;
+    mtl->attrib.zmode = zmode;
+    mtl->attrib.filter = filter;
+    mtl->attrib.alpha = alphamode;
+    if (blend != 0) {
+        mtl->attrib2.uvmode = 1;
+        mtl->attrib2.gouraud = 0;
+    }
+    mtl->attrib.utc = 1;
+    mtl->attrib.vtc = 1;
+    mtl->tid = src->tid;
+    mtl->alpha_sort = src->alpha_sort;
+    mtl->attrib2.afail = 1;
+    NuMtlUpdate(mtl);
+    return mtl;
+}
+
+
+void SetupDebris(void) {
+    s32 i;
+    s32 size;
+    s32 chunksize;
+    char *buffer;
+
+    memset(debbuffer, 0, sizeof(debbuffer));
+    memset(freedebchunks, 0, sizeof(freedebchunks));
+    memset(freedebkeys, 0, sizeof(freedebkeys));
+    memset(debkeydata, 0, sizeof(debkeydata));
+    DebMat[0] = CreateAlphaBlendTexture256_32("stuff\\particle.raw", 1, 2, 0x100, 0);
+    DebMat[1] = CreateCopyMat(DebMat[0], 0, 0, 3, 0);
+    DebMat[2] = CreateCopyMat(DebMat[0], 1, 1, 1, 1);
+    DebMat[3] = CreateCopyMat(DebMat[0], 1, 3, 1, 1);
+    DebMat[4] = CreateCopyMat(DebMat[0], 0, 1, 1, 1);
+    DebMat[5] = CreateCopyMat(DebMat[0], 0, 2, 1, 1);
+    DebMat[6] = CreateCopyMat(DebMat[0], 0, 0, 0, 1);
+    for (i = 0; debtab[i] != 0; i++) {
+        if (debtab[i]->rate == 0) {
+            debtab[i]->rate = 1;
+        }
+        debtab[i]->uvanim = (debtab[i]->uw * 60) / debtab[i]->rate;
+        *(s32 *)&debtab[i]->uvanim = (*(s32 *)&debtab[i]->uvanim & 0xFFFFF800)
+                                   + (debtab[i]->uw * (debtab[i]->frames - 1) & 0x3FF);
+        debtab[i]->alpslot[0].value = debtab[i]->alpslot[0].value / debtab[i]->etime;
+        debtab[i]->u1 = debtab[i]->u1 + 524288.0f;
+        debtab[i]->u2 = debtab[i]->u2 + 524288.0f;
+        debtab[i]->v1 = debtab[i]->v1 + 524288.0f;
+        debtab[i]->v2 = debtab[i]->v2 + 524288.0f;
+    }
+    buffer = (char *)(((s32)debbuffer + 15) & ~15U);
+    freeDmaDebType = 0;
+    size = 0x43000;
+    for (i = 0; i < 256; i++) {
+        chunksize = size;
+        freedebchunks[i] = (struct debchunk_s *)CreateDmaParticleSet((struct DmaTag *)buffer, &chunksize);
+        buffer += chunksize;
+        size -= chunksize;
+    }
+    freedebchkptr = 0;
+    for (i = 0; i < 256; i++) {
+        freedebkeys[i] = i;
+    }
+    freedebkeyptr = 0;
+    for (i = 0; i < 256; i++) {
+        debkeydata[i].active = 0;
+        debkeydata[i].pointer = 0;
+        debkeydata[i].rotory = 0;
+        debkeydata[i].rotorz = 0;
+        debkeydata[i].instances = 0;
+        debkeydata[i].type = 0;
+    }
+    for (i = 0; i < 32; i++) {
+        debris_emitter_stack[i] = 0;
+    }
+    debris_emitter_stack_index = 0;
+    for (i = 0; i < 32; i++) {
+        debris_chunk_control_stack[i] = 0;
+    }
+    debris_chunk_control_stack_index = 0;
+    for (i = 0; i < 512; i++) {
+        freechunkcontrols[i] = &debris_chunk_controls[i];
+    }
+    freechunkcontrolsptr = 0;
+    for (i = 0; i < 128; i++) {
+        chunksize = size;
+        DmaDebTypes[i] = (struct debdma_s *)CreateDmaPartEffectList((struct PartEffectList *)buffer, &chunksize);
+        buffer += chunksize;
+        size -= chunksize;
+    }
+    for (i = 0; i < 256; i++) {
+        ParticleChunkRenderStack[i].chunk = 0;
+        ParticleChunkRenderStack[i].debinfo = 0;
+        ParticleChunkRenderStack[i].debdata = 0;
     }
 }
 
@@ -2006,32 +2115,6 @@ void GenDebMomAdjFromPosRevTree(struct debkeydatatype_s *deb, struct debinfo_s *
     part->mom.z += part->pos.z * deb_tree_pull;
     part->pos.y = part->pos.y - sqrt(part->pos.x * part->pos.x + part->pos.z * part->pos.z) * 0.4f;
     part->rate = 64.0f / (info->etime + info->etime * rand() / deb_tree_rand_scale);
-}
-
-
-struct numtl_s *CreateCopyMat(struct numtl_s *src, s32 blend, s32 alphamode, s32 zmode, s32 filter) {
-    struct numtl_s *mtl;
-
-    mtl = NuMtlCreate(1);
-    mtl->diffuse.r = 1.0f;
-    mtl->diffuse.g = 1.0f;
-    mtl->diffuse.b = 1.0f;
-    mtl->alpha = 0.999f;
-    mtl->attrib.cull = 2;
-    mtl->attrib.zmode = zmode;
-    mtl->attrib.filter = filter;
-    mtl->attrib.alpha = alphamode;
-    if (blend != 0) {
-        mtl->attrib2.uvmode = 1;
-        mtl->attrib2.gouraud = 0;
-    }
-    mtl->attrib.utc = 1;
-    mtl->attrib.vtc = 1;
-    mtl->tid = src->tid;
-    mtl->alpha_sort = src->alpha_sort;
-    mtl->attrib2.afail = 1;
-    NuMtlUpdate(mtl);
-    return mtl;
 }
 
 
