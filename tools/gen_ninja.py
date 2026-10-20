@@ -185,7 +185,7 @@ def emit_ninja(version="pal103", out_path=None):
     expected_o = [f"expected/{version}/{s}.o" for s in stems]
     L += _edge("expected_s", expected_s,
                implicit=["asm/text.s", *registries,
-                         "tools/gen_expected_s.py"])
+                         "tools/gen_expected_s.py", "tools/declib/tu.py"])
     L.append("")
     for s_path, o_path in zip(expected_s, expected_o):
         L += _edge("as_expected", [o_path], [s_path],
@@ -194,7 +194,8 @@ def emit_ninja(version="pal103", out_path=None):
 
     # Fallback slices (inputs to every hybrid object).
     L += _edge("fallback_slices", [fallback_stamp],
-               implicit=["asm/text.s", registries[0], "tools/gen_slices.py"])
+               implicit=["asm/text.s", *registries, "tools/gen_slices.py",
+                         "tools/declib/tu.py"])
     L.append("")
 
     # Current and hybrid objects per source file. Which hybrids a unit needs

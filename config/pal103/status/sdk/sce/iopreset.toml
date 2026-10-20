@@ -13,7 +13,7 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0259:002808a0:sceSifResetIop"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0259:002809e0:sceSifIsAliveIop"

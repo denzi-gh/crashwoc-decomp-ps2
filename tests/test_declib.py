@@ -157,5 +157,18 @@ class TestAlignmentAndSplit(unittest.TestCase):
         self.assertEqual(chunks[0] + chunks[1], lines[body_start:])
 
 
+class TestTuRuns(unittest.TestCase):
+    def test_included_code_starts_its_unit(self):
+        # nu2api.i's stubs (0x0016ECA4) open asmdma.s, not ptl.c.
+        runs = dict(tu.load_tu_runs())
+        self.assertEqual(runs[65], 0x0016ECA4)
+        self.assertEqual(runs[64], 0x0016E890)
+
+    def test_extent_end_stops_at_the_next_run(self):
+        runs = [(64, 0x0016E890), (65, 0x0016ECA4)]
+        self.assertEqual(tu.extent_end(0x0016EC48, 0x0016ECE4, runs), 0x0016ECA4)
+        self.assertEqual(tu.extent_end(0x0016E890, 0x0016E8A0, runs), 0x0016E8A0)
+
+
 if __name__ == "__main__":
     unittest.main()

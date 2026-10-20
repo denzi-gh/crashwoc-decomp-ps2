@@ -17,7 +17,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0082:001b5498:NuWindUpdate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0082:001b5c80:NuWindInit"

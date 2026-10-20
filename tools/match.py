@@ -40,8 +40,8 @@ from cc import compile_c, compiler_available
 from declib.toolchain import AS, LD, NM, Reporter, h, tool_path
 from declib.asmtext import disambiguate, load_symbol_addrs, resolve
 from declib.target import load_target
-from declib.tu import (drop_alignment, load_tu_runs, parse_toml_blocks,
-                       prologue_end, split_body)
+from declib.tu import (drop_alignment, extent_end, load_tu_runs,
+                       parse_toml_blocks, prologue_end, split_body)
 from declib.verify import (defined_function_offsets, link_text_at,
                            undefined_externals)
 
@@ -61,10 +61,11 @@ def load_program(version):
                 {"n": r"name = '([^']*)'", "a": r"address = (0x[0-9A-Fa-f]+)",
                  "u": r"unit = (\d+)"})]
     rows.sort(key=lambda r: r[1])
+    runs = load_tu_runs()
     funcs = {}
     for i, (name, addr, unit) in enumerate(rows):
         end = rows[i + 1][1] if i + 1 < len(rows) else text_addr + text_size
-        funcs[name] = (addr, end - addr, unit)
+        funcs[name] = (addr, extent_end(addr, end, runs) - addr, unit)
 
     units = {int(r["i"]): r["n"] for r in parse_toml_blocks(
         ROOT / "config" / version / "units.toml",

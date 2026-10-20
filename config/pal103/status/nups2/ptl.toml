@@ -25,4 +25,4 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0064:0016ec48:PartDebugHeader"
-state = "asm"
+state = "matching"
