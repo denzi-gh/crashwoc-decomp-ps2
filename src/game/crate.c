@@ -2108,16 +2108,10 @@ void UpdateCrates(void) {
     struct crategroup_s *group;
     struct cratecube_s *crate;
     struct cratecube_s *crate2;
-    struct cratecube_s *crate3;
-    struct cratecube_s *hc;
-    struct crategroup_s *g2;
     struct nuvec_s v;
-    struct nuvec_s pos;
     s32 i;
     s32 j;
     s32 k;
-    s32 gi;
-    s32 gj;
     s32 contact;
     s32 hit;
     s32 type;
@@ -2150,348 +2144,260 @@ void UpdateCrates(void) {
                 angle += 0x1000;
             }
             sfx = -1;
-            if (crate->on == 0 && (TimeTrial != 0 || crate->type1 != 7)) {
-                goto SkipContact;
-            }
-            if (crate->action != -1) {
-                if (crate->anim_time < crate->anim_duration) {
-                    crate->anim_time += crate->anim_speed * 0.5999999642f;
-                    if (crate->anim_duration <= crate->anim_time) {
-                        if (crate->anim_cycle != 0) {
-                            crate->anim_time = crate->anim_time -
-                                               (crate->anim_duration - 1.0f);
+            if (crate->on != 0 || (TimeTrial == 0 && crate->type1 == 7)) {
+                if (crate->action != -1) {
+                    if (crate->anim_time < crate->anim_duration) {
+                        crate->anim_time += crate->anim_speed * 0.5999999642f;
+                        if (crate->anim_time >= crate->anim_duration) {
+                            if (crate->anim_cycle != 0) {
+                                crate->anim_time -= crate->anim_duration - 1.0f;
+                            } else {
+                                crate->anim_time = crate->anim_duration;
+                            }
+                        }
+                    } else if (TimeTrial != 0 || crate->type1 != 7) {
+                        if ((TimeTrial == 0 && crate->type1 == 0xE) ||
+                            (TimeTrial != 0 && crate->type2 == 0xE) ||
+                            (TimeTrial == 0 && crate->type1 == 0 &&
+                             crate->type3 == 0xE)) {
+                            StartExclamationCrateSequence(group, crate);
+                        } else if ((TimeTrial == 0 && crate->type1 == 0x11) ||
+                                   (TimeTrial != 0 && crate->type2 == 0x11) ||
+                                   (TimeTrial == 0 && crate->type1 == 0 &&
+                                    crate->type3 == 0x11)) {
+                            DestroyAllNitroCrates(group, crate);
+                        }
+                        crate->action = -1;
+                    }
+                    if (TimeTrial == 0 && crate->type1 == 7 && crate->on == 0) {
+                        continue;
+                    }
+                }
+                crate->oldy = crate->pos.y;
+                type = GetCrateType(crate, 2);
+                switch (type) {
+                case 9:
+                    if (crate->timer != 0.0f) {
+                        crate->timer += 0.02f;
+                        for (k = 0; k < 7; k++) {
+                            if (crate->timer >= tntsfxtime[k] &&
+                                crate->timer - 0.02f < tntsfxtime[k]) {
+                                GameSfx(0x4F, &crate->pos);
+                            }
+                        }
+                        if (crate->timer > 3.0f) {
+                            crate->timer = 3.0f;
+                        }
+                        if (crate->timer == 3.0f) {
+                            CrateOff(group, crate, 0, 0);
+                            HopCratesAbove(CRATEHOPSPEED, group, crate);
+                        } else if (crate->timer < 1.0f) {
+                            crate->subtype = 0x16;
+                        } else if (crate->timer < 2.0f) {
+                            crate->subtype = 0x17;
                         } else {
-                            crate->anim_time = crate->anim_duration;
-                        }
-                    }
-                } else {
-                    if (TimeTrial != 0) {
-                        if (crate->type2 == 0xE) {
-                            goto StartExcl;
-                        }
-                        if (crate->type2 == 0x11) {
-                            goto DestroyNitro;
+                            crate->subtype = 0x18;
                         }
                     } else {
-                        if (crate->type1 == 7) {
-                            goto AfterAction;
-                        }
-                        if (crate->type1 == 0xE ||
-                            (crate->type1 == 0 && crate->type3 == 0xE)) {
-                            goto StartExcl;
-                        }
-                        if (crate->type1 == 0x11 ||
-                            (crate->type1 == 0 && crate->type3 == 0x11)) {
-                            goto DestroyNitro;
-                        }
+                        crate->subtype = 9;
                     }
-                    goto SetActionDone;
-                StartExcl:
-                    pos.x = crate->pos.x;
-                    pos.y = crate->pos.y + 0.25f;
-                    pos.z = crate->pos.z;
-                    temp_pGroup = group;
-                    temp_pCrate = crate;
-                    AddKaboom(0x20, &pos, 0.0f);
-                    crate->newtype = 0xF;
-                    crate->metal_count = 1;
-                    GameSfx(0x35, &temp_pCrate->pos);
-                    goto SetActionDone;
-                DestroyNitro:
-                    g2 = CrateGroup;
-                    for (gi = 0; gi < CRATEGROUPCOUNT; gi++, g2++) {
-                        crate2 = &Crate[g2->iCrate];
-                        for (gj = 0; gj < g2->nCrates; gj++, crate2++) {
-                            if (crate2->on != 0 &&
-                                GetCrateType(crate2, 0) == 0x10) {
-                                CrateOff(g2, crate2, 0, 0);
+                    break;
+                case 8:
+                    old = crate->subtype;
+                    crate->timer += 0.02f;
+                    if (crate->timer >= crate->duration) {
+                        crate->i++;
+                        switch (crate->i) {
+                        case 1:
+                            if (crate->type3 == -1) {
+                                crate->i = 0;
+                            }
+                            break;
+                        case 2:
+                            if (crate->type4 == -1) {
+                                crate->i = 0;
+                            }
+                            break;
+                        default:
+                            crate->i = 0;
+                            break;
+                        }
+                        crate->timer = 0.0f;
+                        if ((crate->flags & 8) != 0) {
+                            crate->duration *= 0.9f;
+                            if (crate->duration < 0.02f) {
+                                crate->newtype = 0xF;
+                                sfx = 0x82;
+                                crate->subtype = -1;
+                                NewBuzz(&player->rumble, 5);
+                            }
+                        } else if (player->used != 0) {
+                            NuVecSub(&v, &crate->pos, &player->obj.pos);
+                            if (v.x * v.x + v.y * v.y + v.z * v.z < 25.0f) {
+                                crate->flags |= 8;
                             }
                         }
                     }
-                    pos.x = crate->pos.x;
-                    pos.y = crate->pos.y + 0.25f;
-                    pos.z = crate->pos.z;
-                    temp_pGroup = group;
-                    temp_pCrate = crate;
-                    AddKaboom(0x20, &pos, 0.0f);
-                    crate->newtype = 0xF;
-                    crate->metal_count = 1;
-                    JudderGameCamera(&GameCam[0], 0.5f, 0);
-                    GameSfx(0x33, &crate->pos);
-                SetActionDone:
-                    crate->action = -1;
-                }
-            AfterAction:
-                if (TimeTrial == 0 && crate->type1 == 7 && crate->on == 0) {
-                    goto EndLoop;
-                }
-            }
-            crate->oldy = crate->pos.y;
-            type = GetCrateType(crate, 2);
-            switch (type) {
-            case 9:
-                if (crate->timer != 0.0f) {
-                    crate->timer += 0.02f;
-                    for (k = 0; k < 7; k++) {
-                        if (crate->timer >= tntsfxtime[k] &&
-                            crate->timer - 0.02f < tntsfxtime[k]) {
-                            GameSfx(0x4F, &crate->pos);
+                    if (crate->newtype == -1) {
+                        switch (crate->i) {
+                        case 1:
+                            crate->subtype = crate->type3;
+                            break;
+                        case 2:
+                            crate->subtype = crate->type4;
+                            break;
+                        default:
+                            crate->subtype = 8;
+                            break;
+                        }
+                        if (crate->subtype != old) {
+                            gamesfx_effect_volume = CHANGERVOLUME;
+                            gamesfx_pitch = CHANGERPITCH;
+                            GameSfx(SFX_CHANGER, &crate->pos);
                         }
                     }
-                    if (crate->timer > 3.0f) {
-                        crate->timer = 3.0f;
-                    }
-                    if (crate->timer == 3.0f) {
-                        CrateOff(group, crate, 0, 0);
-                        speed = CRATEHOPSPEED;
-                        hc = crate;
-                    hopA:
-                        crate3 = &Crate[group->iCrate];
-                        for (k = 0; k < group->nCrates; k++, crate3++) {
-                            if (crate3->on != 0 && crate3->dx == hc->dx &&
-                                crate3->dz == hc->dz &&
-                                hc->pos.y + 0.5f == crate3->pos.y) {
-                                crate3->mom = speed;
-                                hc = crate3;
-                                goto hopA;
-                            }
-                        }
-                    } else if (crate->timer < 1.0f) {
-                        crate->subtype = 0x16;
-                    } else if (crate->timer < 2.0f) {
-                        crate->subtype = 0x17;
-                    } else {
-                        crate->subtype = 0x18;
-                    }
-                } else {
-                    crate->subtype = type;
-                }
-                break;
-            case 8:
-                old = crate->subtype;
-                crate->timer += 0.02f;
-                if (crate->duration <= crate->timer) {
-                    crate->i++;
-                    switch (crate->i) {
-                    case 1:
-                        if (crate->type3 == -1) {
-                            crate->i = 0;
-                        }
-                        break;
-                    case 2:
-                        if (crate->type4 == -1) {
-                            crate->i = 0;
-                        }
-                        break;
-                    default:
-                        crate->i = 0;
-                        break;
-                    }
-                    crate->timer = 0.0f;
-                    if ((crate->flags & 8) != 0) {
-                        crate->duration *= 0.9f;
-                        if (crate->duration < 0.02f) {
-                            crate->newtype = 0xF;
-                            sfx = 0x82;
-                            crate->subtype = -1;
-                            NewBuzz(&player->rumble, 6);
-                        }
-                    } else if (player->used != 0) {
-                        NuVecSub(&v, &crate->pos, &player->obj.pos);
-                        if (v.x * v.x + v.y * v.y + v.z * v.z < 25.0f) {
-                            crate->flags |= 8;
+                    break;
+                case 6:
+                    if (crate->timer > 0.0f) {
+                        crate->timer += 0.02f;
+                        if (((crate->flags & 0x20) != 0 &&
+                             crate->timer >= 2.5f) ||
+                            ((crate->flags & 0x20) == 0 &&
+                             crate->timer >= 5.0f)) {
+                            crate->timer =
+                                (crate->flags & 0x20) != 0 ? 2.5f : 5.0f;
+                            crate->counter = 0;
                         }
                     }
-                }
-                if (crate->newtype == -1) {
-                    switch (crate->i) {
-                    case 1:
-                        crate->subtype = crate->type3;
-                        break;
-                    case 2:
-                        crate->subtype = crate->type4;
-                        break;
-                    default:
-                        crate->subtype = 8;
-                        break;
+                    break;
+                case 0x10:
+                    if (qrand() <= 0xFF) {
+                        sfx = 0x34;
                     }
-                    if (crate->subtype != old) {
-                        gamesfx_effect_volume = CHANGERVOLUME;
-                        gamesfx_pitch = CHANGERPITCH;
-                        GameSfx(SFX_CHANGER, &crate->pos);
+                    break;
+                case 3:
+                    if (qrand() <= 0x7FF) {
+                        sfx = 0;
                     }
+                    break;
                 }
-                break;
-            case 6:
-                if (crate->timer > 0.0f) {
-                    crate->timer += 0.02f;
-                    if (((crate->flags & 0x20) != 0 && crate->timer >= 2.5f) ||
-                        ((crate->flags & 0x20) == 0 && crate->timer >= 5.0f)) {
-                        crate->timer =
-                            (crate->flags & 0x20) != 0 ? 2.5f : 5.0f;
-                        crate->counter = 0;
-                    }
-                }
-                break;
-            case 0x10:
-                if (qrand() <= 0xFF) {
-                    sfx = 0x34;
-                }
-                break;
-            case 3:
-                if (qrand() <= 0x7FF) {
-                    sfx = 0;
-                }
-                break;
-            }
-            goto DoModel;
-        SkipContact:
-            if (crate->timer != 0.0f) {
+            } else if (crate->timer != 0.0f) {
                 crate->timer = 0.0f;
             }
-        DoModel:
             if (crate->model != 0) {
                 crate->model->draw = 0;
                 if (crate->on != 0) {
                     crate->model->draw = 1;
                 }
             }
-            if (crate->on == 0) {
-                goto EndCrate;
-            }
-            if ((crate->flags & 0x400) != 0) {
-                crate->pos.y = crate->pos0.y + y_adjust;
-                crate->mom = crate->pos.y - crate->oldy;
-                goto EndCrate;
-            }
-            if ((crate->flags & 1) != 0 || (crate->flags & 0xC00) == 0x800) {
-                contact = 0;
-                crate->pos.y += crate->mom;
-                if (crate->pos.y <= crate->shadow) {
-                    if (crate->mom < 0.0f) {
-                        contact = 1;
-                        if ((crate->flags & 0x800) != 0) {
-                            type = GetCrateType(crate, 0);
-                            BreakCrate(group, crate, type, 0);
-                            if (type == 5 && Level != 0x1D) {
-                                AddGliderHitPoints(0x19);
-                            }
-                            goto EndLoop;
-                        }
-                    }
-                    crate->mom = 0.0f;
-                    crate->pos.y = crate->shadow;
-                    if (qrand() < 0x1000) {
-                        type = GetCrateType(crate, 0);
-                        if (type == 0x10 || type == 3) {
-                            speed = (f32)qrand() * 1.525902189e-05f *
-                                    CRATEHOPSPEED;
-                            crate->mom = speed;
-                            hc = crate;
-                        hopB:
-                            crate3 = &Crate[group->iCrate];
-                            for (k = 0; k < group->nCrates; k++, crate3++) {
-                                if (crate3->on != 0 && crate3->dx == hc->dx &&
-                                    crate3->dz == hc->dz &&
-                                    hc->pos.y + 0.5f == crate3->pos.y) {
-                                    crate3->mom = speed;
-                                    hc = crate3;
-                                    goto hopB;
+            if (crate->on != 0) {
+                if ((crate->flags & 0x400) != 0) {
+                    crate->pos.y = crate->pos0.y + y_adjust;
+                    crate->mom = crate->pos.y - crate->oldy;
+                } else if ((crate->flags & 1) != 0 ||
+                           (crate->flags & 0xC00) == 0x800) {
+                    contact = 0;
+                    crate->pos.y += crate->mom;
+                    if (crate->pos.y <= crate->shadow) {
+                        if (crate->mom < 0.0f) {
+                            contact = 1;
+                            if ((crate->flags & 0x800) != 0) {
+                                type = GetCrateType(crate, 0);
+                                BreakCrate(group, crate, type, 0);
+                                if (type == 5 && Level != 0x1D) {
+                                    AddGliderHitPoints(0x19);
                                 }
+                                continue;
                             }
                         }
-                    }
-                } else {
-                    hit = 0;
-                    crate2 = &Crate[group->iCrate];
-                    for (k = 0; k < group->nCrates; k++, crate2++) {
-                        if (crate2 != crate && crate2->on != 0 &&
-                            crate2->dx == crate->dx &&
-                            crate2->dz == crate->dz) {
-                            if (crate2->dy < crate->dy) {
-                                if (crate->pos.y < crate2->pos.y + 0.5f) {
-                                    crate->pos.y = crate2->pos.y + 0.5f;
-                                }
-                                if (crate2->pos.y + 0.5f == crate->pos.y) {
-                                    hit = 1;
-                                    break;
-                                }
-                            } else if (type == 0xF) {
-                                if (crate->pos.y + 0.5f > crate2->pos.y) {
-                                    crate->pos.y = crate2->pos.y - 0.5f;
-                                }
-                                if (crate2->pos.y == crate->pos.y + 0.5f) {
-                                    crate->mom = -0.02f;
-                                    if (GetCrateType(crate2, 0) == 0x10) {
-                                        CrateOff(group, crate2, 0, 0);
-                                    }
-                                    goto PostMotion;
-                                }
-                            }
-                        }
-                    }
-                    if (hit != 0) {
-                        if (type == 0xF && GetCrateType(crate2, 0) == 0xD) {
-                            crate->mom = METALCRATEBOUNCESPEED;
-                            NewCrateAnimation(crate2, 0xD, 0x58, 0);
-                        } else {
-                            crate->mom = (crate->mom + crate2->mom) * 0.5f;
-                        }
+                        crate->mom = 0.0f;
+                        crate->pos.y = crate->shadow;
                         if (qrand() < 0x1000) {
                             type = GetCrateType(crate, 0);
                             if (type == 0x10 || type == 3) {
                                 speed = (f32)qrand() * 1.525902189e-05f *
                                         CRATEHOPSPEED;
                                 crate->mom = speed;
-                                hc = crate;
-                            hopC:
-                                crate3 = &Crate[group->iCrate];
-                                for (k = 0; k < group->nCrates;
-                                     k++, crate3++) {
-                                    if (crate3->on != 0 &&
-                                        crate3->dx == hc->dx &&
-                                        crate3->dz == hc->dz &&
-                                        hc->pos.y + 0.5f == crate3->pos.y) {
-                                        crate3->mom = speed;
-                                        hc = crate3;
-                                        goto hopC;
+                                HopCratesAbove(speed, group, crate);
+                            }
+                        }
+                    } else {
+                        hit = 0;
+                        crate2 = &Crate[group->iCrate];
+                        for (k = 0; k < group->nCrates; k++, crate2++) {
+                            if (crate2 != crate && crate2->on != 0 &&
+                                crate2->dx == crate->dx &&
+                                crate2->dz == crate->dz) {
+                                if (crate2->dy < crate->dy) {
+                                    if (crate->pos.y < crate2->pos.y + 0.5f) {
+                                        crate->pos.y = crate2->pos.y + 0.5f;
+                                    }
+                                    if (crate2->pos.y + 0.5f == crate->pos.y) {
+                                        hit = 1;
+                                        break;
+                                    }
+                                } else if (type == 0xF) {
+                                    if (crate->pos.y + 0.5f > crate2->pos.y) {
+                                        crate->pos.y = crate2->pos.y - 0.5f;
+                                    }
+                                    if (crate2->pos.y == crate->pos.y + 0.5f) {
+                                        crate->mom = -0.02f;
+                                        if (GetCrateType(crate2, 0) == 0x10) {
+                                            CrateOff(group, crate2, 0, 0);
+                                        }
+                                        goto landed;
                                     }
                                 }
                             }
                         }
-                    } else {
-                        crate->mom += CRATEGRAVITY;
+                        if (hit != 0) {
+                            if (type == 0xF && GetCrateType(crate2, 0) == 0xD) {
+                                crate->mom = METALCRATEBOUNCESPEED;
+                                NewCrateAnimation(crate2, 0xD, 0x58, 0);
+                            } else {
+                                crate->mom = (crate->mom + crate2->mom) * 0.5f;
+                            }
+                            if (qrand() < 0x1000) {
+                                type = GetCrateType(crate, 0);
+                                if (type == 0x10 || type == 3) {
+                                    speed = (f32)qrand() * 1.525902189e-05f *
+                                            CRATEHOPSPEED;
+                                    crate->mom = speed;
+                                    HopCratesAbove(speed, group, crate);
+                                }
+                            }
+                        } else {
+                            crate->mom += CRATEGRAVITY;
+                        }
                     }
-                }
-            PostMotion:
-                if ((contact & 1) != 0) {
-                    type = GetCrateType(crate, 0);
-                    if (type == 9 && crate->timer == 0.0f &&
-                        (crate->flags & 2) == 0) {
-                        crate->timer = 0.02f;
-                    } else if (type == 8 && crate->newtype == -1 &&
-                               crate->subtype == 9) {
-                        crate->newtype = 9;
-                        crate->timer = 0.02f;
+                landed:
+                    if ((contact & 1) != 0) {
+                        type = GetCrateType(crate, 0);
+                        if (type == 9 && crate->timer == 0.0f &&
+                            (crate->flags & 2) == 0) {
+                            crate->timer = 0.02f;
+                        } else if (type == 8 && crate->newtype == -1 &&
+                                   crate->subtype == 9) {
+                            crate->newtype = 9;
+                            crate->timer = 0.02f;
+                        }
                     }
-                }
-                if ((contact & 2) != 0) {
-                    type = GetCrateType(crate2, 0);
-                    if (type == 9 && crate2->timer == 0.0f &&
-                        (crate->flags & 2) == 0) {
-                        crate2->timer = 0.02f;
-                    } else if (type == 8 && crate2->newtype == -1 &&
-                               crate2->subtype == 9) {
-                        crate2->newtype = 9;
-                        crate2->timer = 0.02f;
+                    if ((contact & 2) != 0) {
+                        type = GetCrateType(crate2, 0);
+                        if (type == 9 && crate2->timer == 0.0f &&
+                            (crate->flags & 2) == 0) {
+                            crate2->timer = 0.02f;
+                        } else if (type == 8 && crate2->newtype == -1 &&
+                                   crate2->subtype == 9) {
+                            crate2->newtype = 9;
+                            crate2->timer = 0.02f;
+                        }
                     }
                 }
             }
-        EndCrate:
             if (sfx != -1) {
                 GameSfx(sfx, &crate->pos);
             }
-        EndLoop:;
         }
     }
 }
