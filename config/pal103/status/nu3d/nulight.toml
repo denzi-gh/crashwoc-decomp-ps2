@@ -13,7 +13,7 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0042:00132090:NuLightMatInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0042:00135160:NuLightInit"
@@ -29,7 +29,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0042:00135cb8:NuLightProcessSpot"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0042:00139788:NuLightHaze"
@@ -41,7 +41,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0042:0013cbe8:NuLightFogDraw"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0042:0013f268:NuLigthSetModeMask"

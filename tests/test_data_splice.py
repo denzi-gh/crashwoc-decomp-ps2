@@ -12,9 +12,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 from gen_hybrid import (DataItem, HybridError, _JumpTable,  # noqa: E402
-                        _directive_size, _is_align_pad, _plan_data,
-                        _relabel_data, _relabel_items, _small_data_externs,
-                        _split_sections, has_c_data, parse_s, piece_name)
+                        _directive_size, _is_align_pad, _own_static_renames,
+                        _plan_data, _relabel, _relabel_data, _relabel_items,
+                        _small_data_externs, _split_sections, has_c_data,
+                        parse_s, piece_name)
 
 PROBE = """\
 \t.file\t1 "probe.c"
@@ -272,6 +273,50 @@ class TestHelpers(unittest.TestCase):
         self.assertFalse(_is_align_pad(bytes(4), 0x29385C, 0x293860, 2))
         self.assertFalse(_is_align_pad(bytes(12), 0x293854, 0x293860, 3))
         self.assertFalse(_is_align_pad(bytes(4), 0x29385C, 0x293860, 0))
+
+
+class TestOwnStaticExterns(unittest.TestCase):
+    """C reaches its unit's own statics by retail name; the hybrid by address."""
+
+    def test_own_statics_resolve_to_their_address(self):
+        lines = ["\t.extern\tvmtx, 64", "\t.extern\tcam_state_count, 4",
+                 "\t.extern\tzx, 4", "\t.extern\tcam_state, 11072"]
+        self.assertEqual(_own_static_renames(lines, "pal103", "unit-0031", "-G8"),
+                         {"vmtx": "D_0067A700", "cam_state_count": "D_0062EB3C",
+                          "zx": "D_00633048", "cam_state": "D_0067A940"})
+
+    def test_a_static_name_resolves_per_unit(self):
+        # nucamera and nuvport each have a static `smtx`.
+        lines = ["\t.extern\tsmtx, 64"]
+        self.assertEqual(_own_static_renames(lines, "pal103", "unit-0031", "-G8"),
+                         {"smtx": "D_0067A780"})
+        self.assertEqual(_own_static_renames(lines, "pal103", "unit-0034", "-G8"),
+                         {"smtx": "D_0067D500"})
+
+    def test_globals_and_foreign_statics_are_left_alone(self):
+        # global_camera is a global (symbol_addrs); vpDevice is nuvport's.
+        lines = ["\t.extern\tglobal_camera, 96", "\t.extern\tvpDevice, 4",
+                 "\t.extern\tinvented, 4"]
+        self.assertEqual(_own_static_renames(lines, "pal103", "unit-0031", "-G8"),
+                         {})
+
+    def test_declared_size_must_address_it_like_retail(self):
+        with self.assertRaisesRegex(HybridError, "zx: declared 16 bytes under -G8"):
+            _own_static_renames(["\t.extern\tzx, 16"], "pal103", "unit-0031", "-G8")
+        with self.assertRaisesRegex(HybridError, "vmtx: declared 8 bytes under -G8"):
+            _own_static_renames(["\t.extern\tvmtx, 8"], "pal103", "unit-0031", "-G8")
+        with self.assertRaisesRegex(HybridError, "camfx: declared 8 bytes, retail"):
+            _own_static_renames(["\t.extern\tcamfx, 8"], "pal103", "unit-0031", "-G8")
+        with self.assertRaisesRegex(HybridError, "vmtx: declared 128 bytes, retail"):
+            _own_static_renames(["\t.extern\tvmtx, 128"], "pal103", "unit-0031", "-G8")
+
+    def test_references_follow_the_rename(self):
+        rename = _own_static_renames(["\t.extern\tvmtx, 64"], "pal103",
+                                     "unit-0031", "-G8")
+        self.assertEqual(_relabel(["\tlui\t$3,%hi(vmtx)", "\taddiu\t$8,$3,%lo(vmtx)",
+                                   "\tlw\t$2,vmtx_x"], rename),
+                         ["\tlui\t$3,%hi(D_0067A700)", "\taddiu\t$8,$3,%lo(D_0067A700)",
+                          "\tlw\t$2,vmtx_x"])
 
 
 if __name__ == "__main__":

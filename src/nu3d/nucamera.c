@@ -89,53 +89,53 @@ extern struct nuvec_s D_002D3EB0;
 extern struct nuvec_s D_002D3EF0;
 #define camera_trans D_002D3EF0
 
-extern struct numtx_s D_0067A700;
-#define view_mtx D_0067A700
+extern struct numtx_s vmtx;
+#define view_mtx vmtx
 
-extern struct numtx_s D_0067A740;
-#define projection_mtx D_0067A740
+extern struct numtx_s pmtx;
+#define projection_mtx pmtx
 
-extern struct numtx_s D_0067A780;
-#define scaling_mtx D_0067A780
+extern struct numtx_s smtx;
+#define scaling_mtx smtx
 
-extern struct numtx_s D_0067A7C0;
-#define vport_clip_mtx D_0067A7C0
+extern struct numtx_s vpmtx;
+#define vport_clip_mtx vpmtx
 
-extern struct numtx_s D_0067A800;
-#define scissor_clip_mtx D_0067A800
+extern struct numtx_s vpc_sci_mtx;
+#define scissor_clip_mtx vpc_sci_mtx
 
-extern struct numtx_s D_0067A840;
-#define vpc_mtx D_0067A840
+extern struct numtx_s vpc_vport_mtx;
+#define vpc_mtx vpc_vport_mtx
 
-extern struct numtx_s D_0067A880;
-#define pc_mtx D_0067A880
+extern struct numtx_s pc_vport_mtx;
+#define pc_mtx pc_vport_mtx
 
-extern struct numtx_s D_0067A8C0;
-#define vpcs_mtx D_0067A8C0
+extern struct numtx_s vpsmtx;
+#define vpcs_mtx vpsmtx
 
-extern struct numtx_s D_0067A900;
-#define pcs_mtx D_0067A900
+extern struct numtx_s psmtx;
+#define pcs_mtx psmtx
 
-extern int D_0062EB3C;
-#define state_buffer_count D_0062EB3C
+extern int cam_state_count;
+#define state_buffer_count cam_state_count
 
-extern NuCameraState D_0067A940[16];
-#define state_buffer D_0067A940
+extern NuCameraState cam_state[16];
+#define state_buffer cam_state
 
-extern int D_0062EB38;
-#define camera_reflect D_0062EB38
+extern int camfx;
+#define camera_reflect camfx
 
-extern float D_00633048;
-#define clip_ratio_x D_00633048
+extern float zx;
+#define clip_ratio_x zx
 
-extern float D_0063304C;
-#define clip_ratio_y D_0063304C
+extern float zy;
+#define clip_ratio_y zy
 
-extern float D_00633050;
-#define clip_ratio_z D_00633050
+extern float zxs;
+#define clip_ratio_z zxs
 
-extern float D_00633054;
-#define clip_ratio_w D_00633054
+extern float zys;
+#define clip_ratio_w zys
 
 extern struct numtx_s D_0067A630;
 #define scissor_proj_mtx D_0067A630

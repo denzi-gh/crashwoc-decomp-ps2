@@ -21,11 +21,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0031:001129b0:NuCameraSaveState"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0031:00112fc8:NuCameraRestoreState"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0031:00113618:NuCameraCreate"

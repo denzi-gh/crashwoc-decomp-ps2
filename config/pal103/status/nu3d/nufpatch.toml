@@ -25,7 +25,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0054:0015ba00:NuRndrFPatchBegin"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0054:0015bca8:NuRndrFPatchInit"
@@ -53,7 +53,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0054:0015e2b0:NuFPatchSplit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0054:0015e8e8:NuFPatchTesselateGrid"
@@ -129,4 +129,4 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0054:00162ae0:testShadowCast"
-state = "asm"
+state = "matching"

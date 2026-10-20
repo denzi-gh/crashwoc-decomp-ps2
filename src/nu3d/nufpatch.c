@@ -102,19 +102,10 @@ extern s32 D_006331A0;
 extern s32 D_006331A4;
 #define fpatch_texaddr D_006331A4
 
-extern f32 D_0062CBAC;
-#define fpatch_stat_blend D_0062CBAC
-
-extern f32 D_0062CBB0;
-#define water_wave_height D_0062CBB0
-
 extern struct fpatchstat_s D_002E9598[3];
 #define fpatch_stats D_002E9598
 
 extern s32 nutex_force_overbrighten;
-
-extern f32 D_0062CBC8;
-#define water_split_height D_0062CBC8
 
 extern struct numtx_s D_002E95C0;
 #define fpatch_split_left D_002E95C0
@@ -312,7 +303,6 @@ void NuRndrFPatchBegin(struct nuvec_s *lightdir, f32 scale, f32 bias)
 {
     s32 size;
     f32 blend;
-    f32 height;
     struct nuvec4_s *waves;
     struct nuvec4_s *wave;
     void *entry;
@@ -320,7 +310,7 @@ void NuRndrFPatchBegin(struct nuvec_s *lightdir, f32 scale, f32 bias)
     s32 i;
 
     size = 32;
-    blend = fpatch_stat_blend;
+    blend = 0.999f;
     if (fpatch_stream[0] == 0) {
         fpatch_stream[0] = NuRndrStreamAllocStream(0x7FFFFFFD, fpatch_mpgtag, 0xFFFFFFFF);
         NuFPatchLightTexture(&fpatch_lighttex, size, lightdir, 4.0f, scale, bias);
@@ -330,12 +320,11 @@ void NuRndrFPatchBegin(struct nuvec_s *lightdir, f32 scale, f32 bias)
         if (water_wave_src == 0) {
             waves = NuMemAllocFn(0x1000, fpatch_file, 0xEA);
             NuRandSeed(0x11);
-            height = water_wave_height;
             wave = waves;
             for (i = 0; i < 0x100; i++) {
                 wave->x = (NuRandFloat() - 0.5f) * 0.0f;
                 wave->y = (NuRandFloat() - 0.5f) * 0.0f;
-                wave->z = (NuRandFloat() - 0.5f) * height;
+                wave->z = (NuRandFloat() - 0.5f) * 0.7f;
                 wave->w = (NuRandFloat() - 0.5f) * 0.0f;
                 wave->y = wave->z;
                 wave++;
@@ -860,7 +849,6 @@ void NuFPatchSplit(struct nufpatch_s *patch, struct nufpatch_s *children, f32 am
     struct numtx_s left;
     struct numtx_s right;
     s32 wave[9];
-    f32 height;
     struct nuvec4_s *waves;
     struct nuvec4_s *w;
     struct nuvec4_s *table;
@@ -870,12 +858,11 @@ void NuFPatchSplit(struct nufpatch_s *patch, struct nufpatch_s *children, f32 am
     if (water_wave_src == 0) {
         waves = NuMemAllocFn(0x1000, fpatch_file, 0xEA);
         NuRandSeed(0x11);
-        height = water_split_height;
         w = waves;
         for (i = 0; i < 0x100; i++) {
             w->x = (NuRandFloat() - 0.5f) * 0.0f;
             w->y = (NuRandFloat() - 0.5f) * 0.0f;
-            w->z = (NuRandFloat() - 0.5f) * height;
+            w->z = (NuRandFloat() - 0.5f) * 0.7f;
             w->w = (NuRandFloat() - 0.5f) * 0.0f;
             w->y = w->z;
             w++;
@@ -1666,34 +1653,17 @@ f32 NuFPatchLightPoint(struct nuvec_s *normal, f32 scale, f32 bias, f32 dx, f32 
     return light;
 }
 
-/* Near-match (state=asm), 124/168 bytes: only the store order differs.
- * Retail stores nrm[2].x, the four 1.0f pnt fields, nrm[3].y/z, then the rest
- * in x,y,z order; sched1 here always issues the last store of each constant
- * first (reg-death weight), so the pnt stores land after nrm[3].y/z. */
+
 void testShadowCast(void)
 {
-    struct nufpatch_s patch;
+    struct nufpatch_s patch = {
+        {0},
+        {{0}, {1.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
+        {0},
+        {{-0.099f, -0.099f, 0.99f, 0.0f}, {0.099f, -0.099f, 0.99f}, {-0.099f, 0.099f, 0.99f},
+         {0.099f, 0.099f, 0.99f}}
+    };
+    struct nuvec_s lightpos = {0.1f, 0.1f, 1.0f};
 
-    memset(&patch, 0, sizeof(patch));
-    patch.pnt[1].x = 1.0f;
-    patch.pnt[2].y = 1.0f;
-    patch.pnt[3].x = 1.0f;
-    patch.pnt[3].y = 1.0f;
-    patch.nrm[0].x = -0.099f;
-    patch.nrm[0].z = 0.99f;
-    patch.nrm[0].y = -0.099f;
-    patch.nrm[1].x = 0.099f;
-    patch.nrm[1].z = 0.99f;
-    patch.nrm[1].y = -0.099f;
-    patch.nrm[2].x = -0.099f;
-    patch.nrm[2].z = 0.99f;
-    patch.nrm[2].y = 0.099f;
-    patch.nrm[3].x = 0.099f;
-    patch.nrm[3].z = 0.99f;
-    patch.nrm[3].y = 0.099f;
-    {
-        struct nuvec_s lightpos = {0.1f, 0.1f, 1.0f};
-
-        NuFPatchShadowCast(&patch, &lightpos);
-    }
+    NuFPatchShadowCast(&patch, &lightpos);
 }

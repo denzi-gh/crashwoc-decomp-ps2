@@ -180,7 +180,7 @@ void UpdateSaveSlots(struct cursor_s *cursor) {
 }
 
 
-void DrawGameSlot(struct game_s *game, s32 colour, float x, float y) {
+void DrawGameSlot(struct game_s *game, float x, float y, s32 colour) {
     if (game->empty == 0) {
         Text3D(game->name, x, y + 0.15f, 1.0f, 0.6f, 0.6f, 0.6f, 0, colour);
         CalculateGamePercentage(game);
@@ -270,7 +270,7 @@ void DrawGameSlots(void) {
             if (Cursor.y == row && Cursor.x == column) {
                 colour = (GlobalTimer.frame % 10 < 5) ? 4 : 3;
             }
-            DrawGameSlot(&SaveSlot[row][column], colour, x, y);
+            DrawGameSlot(&SaveSlot[row][column], x, y, colour);
         }
         y -= dy;
     }

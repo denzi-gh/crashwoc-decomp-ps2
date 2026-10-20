@@ -32,9 +32,10 @@ gets data pieces -- one input section per owned data range
 their registry addresses and every other byte as retail `.incbin`; the image
 link then takes that unit's data from the hybrid instead of the expected
 data object. C data of `asm`/`retail` entries is dropped and its references
-renamed onto the retail symbol. A sidecar `<object>.data.json` records the
-pieces, the retail byte ranges in them and the compiler-private retail slots
-the code borrows (verify_promoted's `complete` rule reads it).
+renamed onto the retail symbol; so is an `extern` of one of the unit's own
+registry statics under its retail name. A sidecar `<object>.data.json`
+records the pieces, the retail byte ranges in them and the compiler-private
+retail slots the code borrows (verify_promoted's `complete` rule reads it).
 
 Whole-unit mode (data/private): a `complete` unit's hybrid borrows nothing.
 Its compiler-private data -- `$LC` strings and aggregates, jump tables, the
@@ -1572,6 +1573,43 @@ def _small_data_externs(items, emit, rename):
     return out
 
 
+_EXTERN_DECL_RE = re.compile(r"^\s*\.extern\s+(\S+)\s*,\s*(\d+)\s*$")
+_SMALL_SECTIONS = (".sdata", ".sbss")
+
+
+def _own_static_renames(lines, version, unit_dir, g_flag):
+    """{NAME: D_<VRAM>} for each `.extern NAME, size` that names a file-scope
+    static of this unit in the data registry.
+
+    Its C keeps the retail name (GCSE hashes symbol names, so the spelling
+    steers codegen); the hybrid addresses the retail object. Only the unit's
+    own statics qualify; any other undeclared name stays unresolved. The
+    declared size must address it as retail does (gp-relative iff small
+    data) and, where .symtab sized it, equal that size."""
+    from status import load_data_registry
+    unit_index = int(unit_dir.split("-")[1])
+    registry = load_data_registry(ROOT / "config" / version).get(unit_index, {})
+    statics = {s["name"]: s for s in registry.values() if s["scope"] == "static"}
+    threshold = int(g_flag[2:])
+    rename = {}
+    for line in lines:
+        m = _EXTERN_DECL_RE.match(line)
+        if not m or m.group(1) not in statics:
+            continue
+        name, size = m.group(1), int(m.group(2))
+        sym = statics[name]
+        if (0 < size <= threshold) != (sym["section"] in _SMALL_SECTIONS):
+            raise HybridError(f"{name}: declared {size} bytes under {g_flag}, "
+                              f"retail {name} is {sym['section']}")
+        limit = sym.get("size", sym.get("extent"))
+        if sym.get("size") is not None and size != sym["size"] \
+                or limit is not None and size > limit:
+            raise HybridError(f"{name}: declared {size} bytes, retail {name} "
+                              f"is {limit}")
+        rename[name] = f"D_{sym['address']:08X}"
+    return rename
+
+
 def _directive_size(line):
     """Bytes one data directive emits (a symbolic .word is 4)."""
     word = line.split()[0]
@@ -2219,6 +2257,9 @@ def _compile_and_split(data, out_o, link_set, version, report=False):
     for item, _sym in emit:
         item.lines = _relabel_items(item.lines, data_rename, {})
     rename = _duplicate_static_labels(functions, version)
+    rename.update(_own_static_renames(
+        prologue, version, unit_dir,
+        profile_g_flag(data.get("profile", "default"), version)))
     prologue = _relabel(prologue, rename)
     segments = [(name, _relabel(seg, rename)) for name, seg in segments]
     seg_by_name = dict(segments)

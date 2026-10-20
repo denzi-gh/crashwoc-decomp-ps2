@@ -136,6 +136,7 @@ extern void NuRndrFxCode(int code, void *fx, void *dma, struct numtl_s *mtl);
 extern void *NuScratchAlloc32(u32 size);
 extern void NuScratchRelease(void);
 extern void NuVec4MtxTransformVU0(struct nuvec4_s *dst, struct nuvec4_s *src, struct numtx_s *m);
+extern void NuVec4ScaleVU0(struct nuvec4_s *dst, struct nuvec4_s *src, f32 scale);
 extern void NuVec4ScaleXYZVU0(struct nuvec4_s *dst, struct nuvec4_s *src, f32 scale);
 extern void NuVecConvertToIntVU0(void *dst, struct nuvec_s *src);
 extern f32 NuFsqrt(f32 x);
@@ -179,6 +180,11 @@ extern struct numtl_s *NuLightZBufMat;
 extern struct numtl_s *NuLightAddMat;
 extern struct numtl_s *NuLightAddMat2;
 extern struct numtl_s *NuLgtBackAlphaBuff;
+extern u8 NuRndrTopBit[];
+extern struct nurndrstream_s *rndrstream_fx;
+extern void NuRndrSetRTarget(struct nurndrstream_s *stream, int target);
+extern void NuRndrRectUVStream(struct nurndrstream_s *stream, int x, int y, int width, int height,
+                               float u0, float v0, float u1, float v1, int colour, int z);
 
 /* Retail passes the palette in $a1 although NuTexPalChange takes only the
    texture. */
@@ -189,7 +195,14 @@ void NuLightMatInit(void) {
     struct nutex_s tex;
     int lp;
     int pal[256];
-    struct numtl_s *mtl;
+    struct numtl_s *zmat;
+    struct numtl_s *greymat;
+    struct numtl_s *greynzmat;
+    struct numtl_s *zbufmat;
+    struct numtl_s *addmat;
+    struct numtl_s *addmat2;
+    struct numtl_s *backbuff;
+    struct numtl_s *backalphabuff;
 
     tex.type = 0x12;
     tex.width = PS2_REZ_W;
@@ -454,9 +467,9 @@ void NuLightMatInit(void) {
     NuLgtSurf[10]->attrib2.afail = 1;
     NuMtlUpdate(NuLgtSurf[10]);
 
+    tex.type = 0xE;
     tex.width = PS2_REZ_W;
     tex.height = PS2_REZ_H;
-    tex.type = 0xE;
     NuLgtHSurf[11] = NuTexCreate(&tex);
     NuLgtSurf[11] = NuMtlCreate(1);
     NuLgtSurf[11]->diffuse.r = 1.0f;
@@ -502,30 +515,30 @@ void NuLightMatInit(void) {
     }
     NuTexPalChangePal(NuLgtSurf[13]->tid, pal);
 
-    mtl = NuMtlCreate(1);
-    NuLightZMat = mtl;
-    mtl->attrib2.afail = 1;
-    mtl->tid = -2;
-    mtl->attrib.cull = 2;
-    mtl->attrib.zmode = 3;
-    mtl->attrib.filter = 0;
-    mtl->attrib.lighting = 2;
-    mtl->attrib.colour = 1;
-    mtl->attrib.utc = 1;
-    mtl->attrib.vtc = 1;
-    mtl->attrib.alpha = 0;
-    mtl->alpha_sort = 0x80;
-    mtl->diffuse.r = 1.0f;
-    mtl->diffuse.g = 1.0f;
-    mtl->diffuse.b = 1.0f;
-    mtl->alpha = 0.999f;
-    NuMtlUpdate(mtl);
+    zmat = NuMtlCreate(1);
+    NuLightZMat = zmat;
+    zmat->attrib2.afail = 1;
+    zmat->tid = -2;
+    zmat->attrib.cull = 2;
+    zmat->attrib.zmode = 3;
+    zmat->attrib.filter = 0;
+    zmat->attrib.lighting = 2;
+    zmat->attrib.colour = 1;
+    zmat->attrib.utc = 1;
+    zmat->attrib.vtc = 1;
+    zmat->attrib.alpha = 0;
+    zmat->alpha_sort = 0x80;
+    zmat->diffuse.r = 1.0f;
+    zmat->diffuse.g = 1.0f;
+    zmat->diffuse.b = 1.0f;
+    zmat->alpha = 0.999f;
+    NuMtlUpdate(zmat);
 
-    tex.width = PS2_REZ_W;
-    tex.height = PS2_REZ_H << 2;
     NuLgtSurf[13]->attrib.utc = 1;
     NuLgtSurf[13]->attrib.vtc = 1;
     tex.type = 9;
+    tex.width = PS2_REZ_W;
+    tex.height = PS2_REZ_H << 2;
     NuLgtHSurf[14] = NuTexCreate(&tex);
     NuLgtSurf[14] = NuMtlCreate(1);
     NuLgtSurf[14]->diffuse.r = 1.0f;
@@ -545,13 +558,13 @@ void NuLightMatInit(void) {
     NuLgtSurf[14]->alpha_sort = 0x80;
     NuMtlUpdate(NuLgtSurf[14]);
     for (lp = 0; lp < 256; lp++) {
-        pal[lp] = lp + (lp << 8) + (lp << 16) + 0x80000000;
+        pal[lp] = lp + (lp << 8) + (lp << 16) + (0x80 << 24);
     }
     NuTexPalChangePal(NuLgtSurf[14]->tid, pal);
 
     tex.type = 0xE;
-    tex.height = PS2_REZ_H;
     tex.width = PS2_REZ_W;
+    tex.height = PS2_REZ_H;
     NuLgtHSurf[12] = NuTexCreate(&tex);
     NuLgtSurf[12] = NuMtlCreate(1);
     NuLgtSurf[12]->diffuse.r = 1.0f;
@@ -732,119 +745,119 @@ void NuLightMatInit(void) {
         NuMtlUpdate(NuLgtLightMat[lp]);
     }
 
-    mtl = NuMtlCreate(1);
-    NuLgtGreyMat = mtl;
-    mtl->attrib2.afail = 1;
-    mtl->attrib.zmode = 1;
-    mtl->attrib.filter = 0;
-    mtl->attrib.lighting = 2;
-    mtl->attrib.utc = 1;
-    mtl->attrib.vtc = 1;
-    mtl->attrib.colour = 1;
-    mtl->attrib.utc = 1;
-    mtl->attrib.vtc = 1;
-    mtl->attrib.alpha = 0;
-    NuMtlUpdate(mtl);
+    greymat = NuMtlCreate(1);
+    NuLgtGreyMat = greymat;
+    greymat->attrib2.afail = 1;
+    greymat->attrib.zmode = 1;
+    greymat->attrib.filter = 0;
+    greymat->attrib.lighting = 2;
+    greymat->attrib.utc = 1;
+    greymat->attrib.vtc = 1;
+    greymat->attrib.colour = 1;
+    greymat->attrib.utc = 1;
+    greymat->attrib.vtc = 1;
+    greymat->attrib.alpha = 0;
+    NuMtlUpdate(greymat);
 
-    mtl = NuMtlCreate(1);
-    NuLgtGreyNZMat = mtl;
-    mtl->attrib2.afail = 1;
-    mtl->attrib.zmode = 3;
-    mtl->attrib.filter = 0;
-    mtl->attrib.lighting = 2;
-    mtl->attrib.utc = 1;
-    mtl->attrib.vtc = 1;
-    mtl->attrib.colour = 1;
-    mtl->attrib.utc = 1;
-    mtl->attrib.vtc = 1;
-    mtl->attrib.alpha = 0;
-    NuMtlUpdate(mtl);
+    greynzmat = NuMtlCreate(1);
+    NuLgtGreyNZMat = greynzmat;
+    greynzmat->attrib2.afail = 1;
+    greynzmat->attrib.zmode = 3;
+    greynzmat->attrib.filter = 0;
+    greynzmat->attrib.lighting = 2;
+    greynzmat->attrib.utc = 1;
+    greynzmat->attrib.vtc = 1;
+    greynzmat->attrib.colour = 1;
+    greynzmat->attrib.utc = 1;
+    greynzmat->attrib.vtc = 1;
+    greynzmat->attrib.alpha = 0;
+    NuMtlUpdate(greynzmat);
 
-    mtl = NuMtlCreate(1);
-    NuLightZBufMat = mtl;
-    mtl->attrib2.afail = 1;
-    mtl->tid = -2;
-    mtl->attrib.cull = 2;
-    mtl->attrib.zmode = 3;
-    mtl->diffuse.r = 1.0f;
-    mtl->diffuse.g = 1.0f;
-    mtl->attrib.filter = 0;
-    mtl->attrib.lighting = 2;
-    mtl->attrib.colour = 1;
-    mtl->attrib.alpha = 0;
-    mtl->diffuse.b = 1.0f;
-    mtl->alpha = 0.999f;
-    mtl->alpha_sort = 0x80;
-    NuMtlUpdate(mtl);
+    zbufmat = NuMtlCreate(1);
+    NuLightZBufMat = zbufmat;
+    zbufmat->attrib2.afail = 1;
+    zbufmat->tid = -2;
+    zbufmat->attrib.cull = 2;
+    zbufmat->attrib.zmode = 3;
+    zbufmat->diffuse.r = 1.0f;
+    zbufmat->diffuse.g = 1.0f;
+    zbufmat->attrib.filter = 0;
+    zbufmat->attrib.lighting = 2;
+    zbufmat->attrib.colour = 1;
+    zbufmat->attrib.alpha = 0;
+    zbufmat->diffuse.b = 1.0f;
+    zbufmat->alpha = 0.999f;
+    zbufmat->alpha_sort = 0x80;
+    NuMtlUpdate(zbufmat);
 
-    mtl = NuMtlCreate(1);
-    NuLightAddMat = mtl;
-    mtl->attrib2.afail = 1;
-    mtl->attrib.cull = 2;
-    mtl->attrib.zmode = 1;
-    mtl->attrib.alpha = 2;
-    mtl->attrib.utc = 1;
-    mtl->attrib.vtc = 1;
-    mtl->attrib.lighting = 2;
-    mtl->diffuse.r = 1.0f;
-    mtl->diffuse.g = 1.0f;
-    mtl->diffuse.b = 1.0f;
-    mtl->alpha = 0.999f;
-    mtl->alpha_sort = 0x100;
-    mtl->tid = 0;
-    NuMtlUpdate(mtl);
+    addmat = NuMtlCreate(1);
+    NuLightAddMat = addmat;
+    addmat->attrib2.afail = 1;
+    addmat->attrib.cull = 2;
+    addmat->attrib.zmode = 1;
+    addmat->attrib.alpha = 2;
+    addmat->attrib.utc = 1;
+    addmat->attrib.vtc = 1;
+    addmat->attrib.lighting = 2;
+    addmat->diffuse.r = 1.0f;
+    addmat->diffuse.g = 1.0f;
+    addmat->diffuse.b = 1.0f;
+    addmat->alpha = 0.999f;
+    addmat->alpha_sort = 0x100;
+    addmat->tid = 0;
+    NuMtlUpdate(addmat);
 
-    mtl = NuMtlCreate(1);
-    NuLightAddMat2 = mtl;
-    mtl->attrib2.afail = 1;
-    mtl->attrib2.gouraud = 0;
-    mtl->attrib.cull = 2;
-    mtl->attrib.zmode = 1;
-    mtl->attrib.alpha = 2;
-    mtl->attrib.utc = 1;
-    mtl->attrib.vtc = 1;
-    mtl->attrib.lighting = 2;
-    mtl->alpha_sort = 0x100;
-    mtl->diffuse.r = 1.0f;
-    mtl->diffuse.g = 1.0f;
-    mtl->diffuse.b = 1.0f;
-    mtl->alpha = 0.999f;
-    mtl->tid = 0;
-    NuMtlUpdate(mtl);
+    addmat2 = NuMtlCreate(1);
+    NuLightAddMat2 = addmat2;
+    addmat2->attrib2.afail = 1;
+    addmat2->attrib2.gouraud = 0;
+    addmat2->attrib.cull = 2;
+    addmat2->attrib.zmode = 1;
+    addmat2->attrib.alpha = 2;
+    addmat2->attrib.utc = 1;
+    addmat2->attrib.vtc = 1;
+    addmat2->attrib.lighting = 2;
+    addmat2->alpha_sort = 0x100;
+    addmat2->diffuse.r = 1.0f;
+    addmat2->diffuse.g = 1.0f;
+    addmat2->diffuse.b = 1.0f;
+    addmat2->alpha = 0.999f;
+    addmat2->tid = 0;
+    NuMtlUpdate(addmat2);
 
-    mtl = NuMtlCreate(1);
-    NuLgtBackBuff = mtl;
-    mtl->attrib2.afail = 1;
-    mtl->attrib.cull = 2;
-    mtl->attrib.zmode = 3;
-    mtl->attrib.filter = 1;
-    mtl->attrib.lighting = 2;
-    mtl->attrib.colour = 1;
-    mtl->attrib.alpha = 0;
-    mtl->diffuse.r = 1.0f;
-    mtl->diffuse.g = 1.0f;
-    mtl->diffuse.b = 1.0f;
-    mtl->alpha = 0.999f;
-    mtl->tid = -1;
-    mtl->alpha_sort = 0x80;
-    NuMtlUpdate(mtl);
+    backbuff = NuMtlCreate(1);
+    NuLgtBackBuff = backbuff;
+    backbuff->attrib2.afail = 1;
+    backbuff->attrib.cull = 2;
+    backbuff->attrib.zmode = 3;
+    backbuff->attrib.filter = 1;
+    backbuff->attrib.lighting = 2;
+    backbuff->attrib.colour = 1;
+    backbuff->attrib.alpha = 0;
+    backbuff->diffuse.r = 1.0f;
+    backbuff->diffuse.g = 1.0f;
+    backbuff->diffuse.b = 1.0f;
+    backbuff->alpha = 0.999f;
+    backbuff->tid = -1;
+    backbuff->alpha_sort = 0x80;
+    NuMtlUpdate(backbuff);
 
-    mtl = NuMtlCreate(1);
-    NuLgtBackAlphaBuff = mtl;
-    mtl->attrib2.afail = 1;
-    mtl->attrib.cull = 2;
-    mtl->attrib.zmode = 1;
-    mtl->attrib.filter = 1;
-    mtl->attrib.lighting = 2;
-    mtl->attrib.colour = 1;
-    mtl->attrib.alpha = 1;
-    mtl->diffuse.b = 1.0f;
-    mtl->alpha = 0.999f;
-    mtl->tid = -1;
-    mtl->alpha_sort = 0x80;
-    mtl->diffuse.r = 1.0f;
-    mtl->diffuse.g = 1.0f;
-    NuMtlUpdate(mtl);
+    backalphabuff = NuMtlCreate(1);
+    NuLgtBackAlphaBuff = backalphabuff;
+    backalphabuff->attrib.cull = 2;
+    backalphabuff->attrib.zmode = 1;
+    backalphabuff->attrib.filter = 1;
+    backalphabuff->attrib.lighting = 2;
+    backalphabuff->attrib.colour = 1;
+    backalphabuff->attrib.alpha = 1;
+    backalphabuff->diffuse.r = 1.0f;
+    backalphabuff->diffuse.g = 1.0f;
+    backalphabuff->diffuse.b = 1.0f;
+    backalphabuff->alpha = 0.999f;
+    backalphabuff->attrib2.afail = 1;
+    backalphabuff->tid = -1;
+    backalphabuff->alpha_sort = 0x80;
+    NuMtlUpdate(backalphabuff);
 }
 
 
@@ -1334,6 +1347,882 @@ void NuLightFxSetup(void) {
     txupload_on = upload;
     fx_ang += 0x6F;
     fx_ang2 += 0x173;
+}
+
+
+void NuLightProcessSpot(int mode) {
+    struct FxSprite fx;
+    struct FxSprite2 fx2;
+    struct nuvec4_s *pnts;
+    struct nuvec_s *vecs;
+    struct numtx_s *pcs;
+    struct numtx_s *scale;
+    struct numtx_s *proj;
+    struct numtx_s *view;
+    u32 *clut;
+    u32 *dma;
+    u32 *packet;
+    float zoffset;
+    float zscale;
+    float far;
+    float near;
+    int spot;
+    float zbase;
+    float fogz;
+    float fog;
+    float range;
+    float fogscale;
+    float invw;
+    float f;
+    float depth;
+    int shift;
+    int last;
+    int xs;
+    int xe;
+    int ys;
+    int ye;
+    int count;
+    int fogcol;
+    int alpha;
+    int add;
+    int step;
+    u32 col;
+    int val;
+    int k;
+    int a;
+    int i;
+    int j;
+    int x0;
+    int x1;
+    int c0;
+    int c1;
+    int c2;
+
+    pnts = NuScratchAlloc32(0x80);
+    vecs = NuScratchAlloc32(0x60);
+    clut = NuScratchAlloc32(0x800);
+    pcs = NuCameraGetPCSMtx();
+    scale = NuCameraGetScalingMtx();
+    proj = NuCameraGetProjectionMtx();
+    view = NuCameraGetViewMtx();
+    zoffset = proj->_22 * scale->_22 + scale->_32;
+    zscale = proj->_32 * scale->_22;
+    txupload_on = 0;
+    if (mode) {
+        NuLightSpotCnt = NuLightOldSpotCnt;
+    }
+    for (spot = 0; spot < NuLightSpotCnt; spot++) {
+        f = 1.0f;
+        pnts[2].x = NuLightSpots[spot].pos.x;
+        pnts[2].y = NuLightSpots[spot].pos.y;
+        pnts[2].z = NuLightSpots[spot].pos.z;
+        pnts[2].w = f;
+        NuVec4MtxTransformVU0(&pnts[7], &pnts[2], view);
+        depth = pnts[7].z + NuLightSpots[spot].size * 1.2f;
+        if (!(depth > f)) {
+            continue;
+        }
+        if (pnts[7].z < f) {
+            f = (depth - f) / (NuLightSpots[spot].size * 1.2f);
+            NuLightSpots[spot].size *= f;
+            NuLightSpots[spot].colour =
+                (NuLightSpots[spot].colour & 0xFFFFFF) + ((int)((NuLightSpots[spot].colour >> 24) * f) << 24);
+            pnts[7].z = 1.0f;
+        }
+        vecs[1].x = pnts[7].x;
+        vecs[1].y = pnts[7].y;
+        vecs[1].z = pnts[7].z + NuLightSpots[spot].size * 1.2f;
+        pnts[2].x = vecs[1].x;
+        pnts[2].y = vecs[1].y;
+        pnts[2].z = vecs[1].z;
+        pnts[2].w = 1.0f;
+        NuVec4MtxTransformVU0(&pnts[2], &pnts[2], pcs);
+        NuVec4ScaleXYZVU0(&pnts[2], &pnts[2], 1.0f / pnts[2].w);
+        NuTexCloneTempAddr(NuLgtLightMat[spot + 8]->tid, NuLgtSurf[4]->tid);
+        NuTexCloneTempAddr(NuLgtLightMat[spot]->tid, NuLgtSurf[2]->tid);
+        NuTexCloneTempAddr(NuLgtLightMat[spot + 16]->tid, NuLgtSurf[2]->tid);
+        far = pnts[7].z + NuLightSpots[spot].size * 1.2f;
+        NuVec4MtxTransformVU0(&pnts[1], &pnts[7], pcs);
+        pnts[0].x = pnts[1].x - NuLightSpots[spot].size * 8192.0f;
+        pnts[0].z = pnts[1].x + NuLightSpots[spot].size * 8192.0f;
+        pnts[0].y = pnts[1].y - NuLightSpots[spot].size * 4096.0f;
+        pnts[0].w = pnts[1].y + NuLightSpots[spot].size * 4096.0f;
+        NuVec4ScaleVU0(&pnts[0], &pnts[0], 1.0f / pnts[1].w);
+        if (!(pnts[0].x < (float)(0x8000 + (nurndr_pixel_width << 3))
+              && pnts[0].z > (float)(0x8000 - (nurndr_pixel_width << 3))
+              && pnts[0].y < (float)(0x8000 + (nurndr_pixel_height << 3))
+              && pnts[0].w > (float)(0x8000 - (nurndr_pixel_height << 3)))) {
+            continue;
+        }
+        xs = (int)((pnts[0].x - 32768.0f) / 16.0f + (float)(nurndr_pixel_width >> 1));
+        ys = (int)((pnts[0].y - 32768.0f) / 16.0f + (float)(nurndr_pixel_height >> 1));
+        xe = (int)((pnts[0].z - 32768.0f) / 16.0f + (float)(nurndr_pixel_width >> 1));
+        ye = (int)((pnts[0].w - 32768.0f) / 16.0f + (float)(nurndr_pixel_height >> 1));
+        if (xe > nurndr_pixel_width) {
+            xe = nurndr_pixel_width;
+        }
+        if (xs < 0) {
+            xs = 0;
+        }
+        xs &= 0xFFF8;
+        xe = (xe + 7) & 0xFFF8;
+        if (ys < 0) {
+            ys = 0;
+        }
+        if (ye > nurndr_pixel_height) {
+            ye = nurndr_pixel_height;
+        }
+        if (NuLightSpots[spot].mode == 1) {
+            xs = 0;
+            ys = 0;
+            xe = (nurndr_pixel_width + 7) & 0xFFF8;
+            ye = nurndr_pixel_height;
+        }
+        if (xs >= xe || ys >= ye) {
+            continue;
+        }
+        vecs[2].x = pnts[7].x;
+        vecs[2].y = pnts[7].y;
+        vecs[2].z = pnts[7].z;
+        if (pnts[7].z - NuLightSpots[spot].size * 1.2f < 1.0f) {
+            near = 16777215.0f;
+            vecs[3].z = 1.0f;
+        } else {
+            near = 0.0f;
+            vecs[3].z = pnts[7].z - NuLightSpots[spot].size * 1.2f;
+        }
+        pnts[1].x = pnts[7].x;
+        pnts[1].y = pnts[7].y;
+        pnts[1].z = vecs[3].z;
+        pnts[1].w = 1.0f;
+        NuVec4MtxTransformVU0(&pnts[1], &pnts[1], pcs);
+        NuVec4ScaleXYZVU0(&pnts[0], &pnts[1], 1.0f / pnts[1].w);
+        if (near == 0.0f) {
+            near = pnts[0].z;
+        }
+        if (pnts[0].w <= 0.0f || pnts[0].z < 0.0f) {
+            shift = 16;
+        } else {
+            range = (float)((((int)pnts[0].z + 0xFFFF) & 0xFF0000) - ((int)pnts[2].z & 0xFF0000)) / 256.0f;
+            if (range >= 256.0f) {
+                shift = NuRndrTopBit[(int)(range / 256.0f)] + 9;
+            } else {
+                shift = NuRndrTopBit[(int)range] + 1;
+            }
+        }
+        zbase = (float)(((int)pnts[2].z >> shift) << shift) - zoffset;
+        count = (int)(pnts[0].z - zbase - zoffset);
+        count = ((count + (1 << shift) - 1) >> shift) + 8;
+        if (count > 256) {
+            count = 256;
+        }
+        if (shift >= 9) {
+            col = ((int)pnts[2].z >> shift) & 0xFF;
+            step = 0x80 >> (shift - 9);
+            col += col << 16;
+            j = (int)pnts[2].z >> 16;
+            if (j > 256) {
+                j = 256;
+            }
+            for (i = 0; i < j; i++) {
+                clut[i] = col;
+                clut[i + 256] = 0;
+            }
+            val = (step * i) & 0xFF;
+            j = i + (1 << (shift - 8));
+            col = (col & 0xFF0000) + 0x80000000;
+            if (j > 256) {
+                j = 256;
+            }
+            for (; i < j; i++) {
+                clut[i] = val + col;
+                clut[i + 256] = (((val << 16) - col) & 0xFF0000) + 0x80000000;
+                val = (val + step) & 0xFF;
+            }
+            col = ((col & 0xFF0000) >> 16) + (col & 0xFF0000);
+            val = ((-((int)pnts[2].z >> shift) & 0xFF) << 16) + 0x7F000000;
+            for (; i < 256; i++) {
+                clut[i] = col;
+                clut[i + 256] = val;
+            }
+            NuTexPalChangeStreamTemp(NuLgtLightMat[spot]->tid, clut);
+            NuTexPalChangeStreamTemp(NuLgtLightMat[spot + 16]->tid, clut + 256);
+        } else {
+            shift = 8;
+        }
+        fogscale = 256.0f / (NuLightSpots[spot].size * 1.2f * 2.0f);
+        val = ((int)pnts[2].z >> shift) & 0xFF;
+        fogz = 0.0f;
+        if (NuLightSpots[spot].xspan) {
+            k = 0x80 - NuLightSpots[spot].xspan;
+            fogcol = ((((NuLightSpots[spot].colour & 0xFF0000) * k) >> 7) & 0xFF0000)
+                  + ((((NuLightSpots[spot].colour & 0xFF00) * k) >> 7) & 0xFF00)
+                  + (((NuLightSpots[spot].colour & 0xFF) * k) >> 7);
+            alpha = ((NuLightSpots[spot].colour >> 24) * k) << 5;
+            add = NuLightSpots[spot].xspan << 24;
+        } else {
+            add = 0;
+            fogcol = NuLightSpots[spot].colour & 0xFFFFFF;
+            alpha = (NuLightSpots[spot].colour >> 24) << 12;
+        }
+        last = -1;
+        for (i = 0; i < count; i++) {
+            fog = zscale / (zbase + (float)(i << shift));
+            fog = (far - fog) * fogscale;
+            fog = fog * fog / 1024.0f + fog * 0.75f;
+            if (fog >= 192.0f) {
+                fog = (255.0f - fog) * 2.0f;
+                if (fog < 63.0f && fog > 52.0f) {
+                    last = i;
+                }
+            } else {
+                fog *= 2.0f / 3.0f;
+            }
+            if (fog < 0.0f) {
+                fog = 0.0f;
+            }
+            fog = (1.0f - NuTrigTable[(int)(fog * 256.0f + 16384.0f) & 0xFFFF]) * 64.0f;
+            a = (int)(fog * 32.0f);
+            if (a < 0) {
+                a = 0;
+            }
+            clut[(i + val) & 0xFF] = fogcol + ((alpha * a) & 0xFF000000) + add;
+            if (fogz == 0.0f && clut[(i + val) & 0xFF] > 0x40000000) {
+                fogz = zbase + zoffset + (float)(i << shift);
+            }
+        }
+        for (; i < 256; i++) {
+            clut[(i + val) & 0xFF] = add;
+        }
+        NuTexPalChangeStreamTemp(NuLgtLightMat[spot + 8]->tid, clut);
+        if (last > -1) {
+            last = (int)(zbase + zoffset + (float)(last << shift));
+        }
+        if (NuRndrBeginSceneEx(NuLgtHSurf[4], NuLgtHSurf[1], 0)) {
+            if (shift >= 9) {
+                dma = NuRndrStreamAlloc(8);
+                packet = (u32 *)vpDmaTag_RetEx(dma, 0, 0x50000000) - 1;
+                packet = vtBeginDirect(packet, 0);
+                packet = gsBeginGifPacket(packet, 0, 1, 0, 0, 0, 1, 0xE);
+                *((u64 *)packet)++ = 0xA;
+                *((u64 *)packet)++ = 0x42;
+                packet = gsCloseGifPacket(packet);
+                packet = vtCloseDirect(packet);
+                packet = vpDmaTag_Close(packet);
+                fx2.parameter_00 = 33554432.0f;
+                fx2.parameter_04 = 1;
+                fx2.count = 0;
+                for (j = xs / 320; j < (xe + 319) / 320; j++) {
+                    if (j == 0) {
+                        x0 = (xs / 160) << 5;
+                        x1 = ((xe + 159) / 160) << 5;
+                        if (x1 > 64) {
+                            x1 = 64;
+                        }
+                        x1 -= x0;
+                    } else {
+                        x0 = ((xs - 320) / 160) << 5;
+                        if (x0 < 0) {
+                            x0 = 0;
+                        }
+                        x1 = ((xe - 161) / 160) << 5;
+                    }
+                    fx2.colour[fx2.count] = 0x80800080;
+                    fx2.parameter_1c[fx2.count] = (((ye + 3) & 0xFFFC) - (ys & 0xFFFC)) / 4;
+                    fx2.channel[0][fx2.count] = (j << 10) + 0x1400 + (x0 << 4);
+                    fx2.channel[1][fx2.count] = (ys & 0xFFFC) << 4;
+                    fx2.channel[2][fx2.count] = ((float)j * 64.0f + (float)x0) / 1024.0f;
+                    fx2.channel[3][fx2.count] = ((float)(ys & 0xFFFC) * 2.0f + 0.5f) / 1024.0f;
+                    fx2.channel[4][fx2.count] = x1 << 4;
+                    fx2.channel[6][fx2.count] = (float)x1 / 1024.0f;
+                    fx2.channel[5][fx2.count] = 24.0f;
+                    fx2.channel[7][fx2.count] = 1.0f / 1024.0f;
+                    fx2.channel[8][fx2.count] = 0.0f;
+                    fx2.channel[9][fx2.count] = 64.0f;
+                    fx2.channel[10][fx2.count] = 0.0f;
+                    fx2.channel[11][fx2.count] = 1.0f / 128.0f;
+                    fx2.channel[12][fx2.count] = (j << 10) + 0x1400 + (x0 << 4);
+                    fx2.channel[13][fx2.count] = ((ys & 0xFFFC) << 4) + 32;
+                    fx2.channel[14][fx2.count] = ((float)j * 64.0f + (float)x0) / 1024.0f;
+                    fx2.channel[15][fx2.count] = ((float)(ys & 0xFFFC) * 2.0f + 6.5f) / 1024.0f;
+                    fx2.channel[16][fx2.count] = x1 << 4;
+                    fx2.channel[18][fx2.count] = (float)x1 / 1024.0f;
+                    fx2.channel[17][fx2.count] = 24.0f;
+                    fx2.channel[19][fx2.count] = 1.0f / 1024.0f;
+                    fx2.channel[20][fx2.count] = 0.0f;
+                    fx2.channel[21][fx2.count] = 64.0f;
+                    fx2.channel[22][fx2.count] = 0.0f;
+                    fx2.channel[23][fx2.count] = 1.0f / 128.0f;
+                    fx2.count++;
+                }
+                NuRndrFxCode(0x308, &fx2, dma, NuLgtLightMat[spot]);
+            }
+            dma = NuRndrStreamAlloc(8);
+            packet = (u32 *)vpDmaTag_RetEx(dma, 0, 0x50000000) - 1;
+            packet = vtBeginDirect(packet, 0);
+            packet = gsBeginGifPacket(packet, 0, 1, 0, 0, 0, 1, 0xE);
+            if (shift >= 9) {
+                *((u64 *)packet)++ = 0x58;
+            } else {
+                *((u64 *)packet)++ = 0xA;
+            }
+            *((u64 *)packet)++ = 0x42;
+            packet = gsCloseGifPacket(packet);
+            packet = vtCloseDirect(packet);
+            packet = vpDmaTag_Close(packet);
+            fx2.parameter_00 = 33554432.0f;
+            fx2.parameter_04 = 1;
+            fx2.count = 0;
+            for (j = xs / 320; j < (xe + 319) / 320; j++) {
+                if (j == 0) {
+                    x0 = (xs / 160) << 5;
+                    x1 = ((xe + 159) / 160) << 5;
+                    if (x1 > 64) {
+                        x1 = 64;
+                    }
+                    x1 -= x0;
+                } else {
+                    x0 = ((xs - 320) / 160) << 5;
+                    if (x0 < 0) {
+                        x0 = 0;
+                    }
+                    x1 = ((xe - 161) / 160) << 5;
+                }
+                fx2.colour[fx2.count] = (0x80 >> (shift - 8)) + 0x80000000;
+                fx2.parameter_1c[fx2.count] = (((ye + 3) & 0xFFFC) - (ys & 0xFFFC)) / 4;
+                fx2.channel[0][fx2.count] = (j << 10) + 0x1400 + (x0 << 4);
+                fx2.channel[1][fx2.count] = (ys & 0xFFFC) << 4;
+                fx2.channel[2][fx2.count] = ((float)j * 64.0f + (float)x0) / 1024.0f;
+                fx2.channel[3][fx2.count] = ((float)(ys & 0xFFFC) * 2.0f + 4.5f) / 1024.0f;
+                fx2.channel[4][fx2.count] = x1 << 4;
+                fx2.channel[6][fx2.count] = (float)x1 / 1024.0f;
+                fx2.channel[5][fx2.count] = 24.0f;
+                fx2.channel[7][fx2.count] = 1.0f / 1024.0f;
+                fx2.channel[8][fx2.count] = 0.0f;
+                fx2.channel[9][fx2.count] = 64.0f;
+                fx2.channel[10][fx2.count] = 0.0f;
+                fx2.channel[11][fx2.count] = 1.0f / 128.0f;
+                fx2.channel[12][fx2.count] = (j << 10) + 0x1400 + (x0 << 4);
+                fx2.channel[13][fx2.count] = ((ys & 0xFFFC) << 4) + 32;
+                fx2.channel[14][fx2.count] = ((float)j * 64.0f + (float)x0) / 1024.0f;
+                fx2.channel[15][fx2.count] = ((float)(ys & 0xFFFC) * 2.0f + 2.5f) / 1024.0f;
+                fx2.channel[16][fx2.count] = x1 << 4;
+                fx2.channel[18][fx2.count] = (float)x1 / 1024.0f;
+                fx2.channel[17][fx2.count] = 24.0f;
+                fx2.channel[19][fx2.count] = 1.0f / 1024.0f;
+                fx2.channel[20][fx2.count] = 0.0f;
+                fx2.channel[21][fx2.count] = 64.0f;
+                fx2.channel[22][fx2.count] = 0.0f;
+                fx2.channel[23][fx2.count] = 1.0f / 128.0f;
+                fx2.count++;
+            }
+            NuRndrFxCode(0x308, &fx2, dma, NuLgtSurf[14]);
+            if (shift >= 9) {
+                dma = NuRndrStreamAlloc(8);
+                packet = (u32 *)vpDmaTag_RetEx(dma, 0, 0x50000000) - 1;
+                packet = vtBeginDirect(packet, 0);
+                packet = gsBeginGifPacket(packet, 0, 1, 0, 0, 0, 1, 0xE);
+                *((u64 *)packet)++ = 0x48;
+                *((u64 *)packet)++ = 0x42;
+                *((u64 *)packet)++ = 0;
+                *((u64 *)packet)++ = 0x46;
+                packet = gsCloseGifPacket(packet);
+                packet = vtCloseDirect(packet);
+                packet = vpDmaTag_Close(packet);
+                fx2.parameter_00 = 33554432.0f;
+                fx2.parameter_04 = 1;
+                fx2.count = 0;
+                for (j = xs / 320; j < (xe + 319) / 320; j++) {
+                    if (j == 0) {
+                        x0 = (xs / 160) << 5;
+                        x1 = ((xe + 159) / 160) << 5;
+                        if (x1 > 64) {
+                            x1 = 64;
+                        }
+                        x1 -= x0;
+                    } else {
+                        x0 = ((xs - 320) / 160) << 5;
+                        if (x0 < 0) {
+                            x0 = 0;
+                        }
+                        x1 = ((xe - 161) / 160) << 5;
+                    }
+                    fx2.colour[fx2.count] = 0x80800000;
+                    fx2.parameter_1c[fx2.count] = (((ye + 3) & 0xFFFC) - (ys & 0xFFFC)) / 4;
+                    fx2.channel[0][fx2.count] = (j << 10) + 0x1400 + (x0 << 4);
+                    fx2.channel[1][fx2.count] = (ys & 0xFFFC) << 4;
+                    fx2.channel[2][fx2.count] = ((float)j * 64.0f + (float)x0 + 128.0f) / 1024.0f;
+                    fx2.channel[3][fx2.count] = ((float)(ys & 0xFFFC) * 2.0f + 0.5f) / 1024.0f;
+                    fx2.channel[4][fx2.count] = x1 << 4;
+                    fx2.channel[6][fx2.count] = (float)x1 / 1024.0f;
+                    fx2.channel[5][fx2.count] = 24.0f;
+                    fx2.channel[7][fx2.count] = 1.0f / 1024.0f;
+                    fx2.channel[8][fx2.count] = 0.0f;
+                    fx2.channel[9][fx2.count] = 64.0f;
+                    fx2.channel[10][fx2.count] = 0.0f;
+                    fx2.channel[11][fx2.count] = 1.0f / 128.0f;
+                    fx2.channel[12][fx2.count] = (j << 10) + 0x1400 + (x0 << 4);
+                    fx2.channel[13][fx2.count] = ((ys & 0xFFFC) << 4) + 32;
+                    fx2.channel[14][fx2.count] = ((float)j * 64.0f + (float)x0 + 128.0f) / 1024.0f;
+                    fx2.channel[15][fx2.count] = ((float)(ys & 0xFFFC) * 2.0f + 6.5f) / 1024.0f;
+                    fx2.channel[16][fx2.count] = x1 << 4;
+                    fx2.channel[18][fx2.count] = (float)x1 / 1024.0f;
+                    fx2.channel[17][fx2.count] = 24.0f;
+                    fx2.channel[19][fx2.count] = 1.0f / 1024.0f;
+                    fx2.channel[20][fx2.count] = 0.0f;
+                    fx2.channel[21][fx2.count] = 64.0f;
+                    fx2.channel[22][fx2.count] = 0.0f;
+                    fx2.channel[23][fx2.count] = 1.0f / 128.0f;
+                    fx2.count++;
+                }
+                NuRndrFxCode(0x308, &fx2, dma, NuLgtLightMat[spot + 16]);
+            }
+            dma = NuRndrStreamAlloc(8);
+            packet = (u32 *)vpDmaTag_RetEx(dma, 0, 0x50000000) - 1;
+            packet = vtBeginDirect(packet, 0);
+            packet = gsBeginGifPacket(packet, 0, 1, 0, 0, 0, 1, 0xE);
+            *((u64 *)packet)++ = 0x58;
+            *((u64 *)packet)++ = 0x42;
+            *((u64 *)packet)++ = 1;
+            *((u64 *)packet)++ = 0x46;
+            *((u64 *)packet)++ = 0x4C000;
+            *((u64 *)packet)++ = 0x47;
+            packet = gsCloseGifPacket(packet);
+            packet = vtCloseDirect(packet);
+            packet = vpDmaTag_Close(packet);
+            fx2.parameter_00 = 33554432.0f;
+            fx2.parameter_04 = 1;
+            fx2.count = 0;
+            for (j = xs / 320; j < (xe + 319) / 320; j++) {
+                if (j == 0) {
+                    x0 = (xs / 160) << 5;
+                    x1 = ((xe + 159) / 160) << 5;
+                    if (x1 > 64) {
+                        x1 = 64;
+                    }
+                    x1 -= x0;
+                } else {
+                    x0 = ((xs - 320) / 160) << 5;
+                    if (x0 < 0) {
+                        x0 = 0;
+                    }
+                    x1 = ((xe - 161) / 160) << 5;
+                }
+                fx2.colour[fx2.count] = (0x800000 >> (shift - 8)) + 0x80000000;
+                fx2.parameter_1c[fx2.count] = (((ye + 3) & 0xFFFC) - (ys & 0xFFFC)) / 4;
+                fx2.channel[0][fx2.count] = (j << 10) + 0x1400 + (x0 << 4);
+                fx2.channel[1][fx2.count] = (ys & 0xFFFC) << 4;
+                fx2.channel[2][fx2.count] = ((float)j * 64.0f + (float)x0 + 128.0f) / 1024.0f;
+                fx2.channel[3][fx2.count] = ((float)(ys & 0xFFFC) * 2.0f + 4.5f) / 1024.0f;
+                fx2.channel[4][fx2.count] = x1 << 4;
+                fx2.channel[6][fx2.count] = (float)x1 / 1024.0f;
+                fx2.channel[5][fx2.count] = 24.0f;
+                fx2.channel[7][fx2.count] = 1.0f / 1024.0f;
+                fx2.channel[8][fx2.count] = 0.0f;
+                fx2.channel[9][fx2.count] = 64.0f;
+                fx2.channel[10][fx2.count] = 0.0f;
+                fx2.channel[11][fx2.count] = 1.0f / 128.0f;
+                fx2.channel[12][fx2.count] = (j << 10) + 0x1400 + (x0 << 4);
+                fx2.channel[13][fx2.count] = ((ys & 0xFFFC) << 4) + 32;
+                fx2.channel[14][fx2.count] = ((float)j * 64.0f + (float)x0 + 128.0f) / 1024.0f;
+                fx2.channel[15][fx2.count] = ((float)(ys & 0xFFFC) * 2.0f + 2.5f) / 1024.0f;
+                fx2.channel[16][fx2.count] = x1 << 4;
+                fx2.channel[18][fx2.count] = (float)x1 / 1024.0f;
+                fx2.channel[17][fx2.count] = 24.0f;
+                fx2.channel[19][fx2.count] = 1.0f / 1024.0f;
+                fx2.channel[20][fx2.count] = 0.0f;
+                fx2.channel[21][fx2.count] = 64.0f;
+                fx2.channel[22][fx2.count] = 0.0f;
+                fx2.channel[23][fx2.count] = 1.0f / 128.0f;
+                fx2.count++;
+            }
+            NuRndrFxCode(0x308, &fx2, dma, NuLgtSurf[14]);
+            dma = NuRndrStreamAlloc(8);
+            packet = (u32 *)vpDmaTag_RetEx(dma, 0, 0x50000000) - 1;
+            packet = vtBeginDirect(packet, 0);
+            packet = gsBeginGifPacket(packet, 0, 1, 0, 0, 0, 1, 0xE);
+            *((u64 *)packet)++ = 1;
+            *((u64 *)packet)++ = 0x46;
+            packet = gsCloseGifPacket(packet);
+            packet = vtCloseDirect(packet);
+            packet = vpDmaTag_Close(packet);
+            fx.parameter_00 = 33554432.0f;
+            fx.parameter_04 = 1;
+            fx.count = 0;
+            if ((ys & 0x1E) || (ys & 0xFFE0) == (ye & 0xFFE0)) {
+                fx.colour[fx.count] = 0x80808080;
+                if ((ys & 0xFFE0) == (ye & 0xFFE0)) {
+                    fx.parameter_1c[fx.count] = (ye - ys + 1) / 2;
+                } else {
+                    fx.parameter_1c[fx.count] = (32 - (ys & 0x1E)) / 2;
+                }
+                fx.channel[0][fx.count] = xs << 4;
+                fx.channel[1][fx.count] = (ys & 0xFFFE) << 4;
+                fx.channel[2][fx.count] = (float)xs * 256.0f / 655360.0f;
+                fx.channel[3][fx.count] = ((float)(ys / 32) * 128.0f + 64.5f + (float)((ys & 0x1E) << 1)) / 1024.0f;
+                fx.channel[4][fx.count] = (xe - xs) << 4;
+                fx.channel[5][fx.count] = 24.0f;
+                fx.channel[6][fx.count] = (float)(xe - xs) * 256.0f / 655360.0f;
+                fx.channel[7][fx.count] = 1.0f / 1024.0f;
+                fx.channel[8][fx.count] = 0.0f;
+                fx.channel[9][fx.count] = 32.0f;
+                fx.channel[10][fx.count] = 0.0f;
+                fx.channel[11][fx.count] = 1.0f / 256.0f;
+                fx.count++;
+            }
+            for (j = (ys + 30) / 32; j < (ye + 1) / 32; j++) {
+                fx.colour[fx.count] = 0x80808080;
+                fx.parameter_1c[fx.count] = 16;
+                fx.channel[0][fx.count] = xs << 4;
+                fx.channel[1][fx.count] = j << 9;
+                fx.channel[2][fx.count] = (float)xs * 256.0f / 655360.0f;
+                fx.channel[3][fx.count] = ((float)j * 128.0f + 64.5f) / 1024.0f;
+                fx.channel[4][fx.count] = (xe - xs) << 4;
+                fx.channel[5][fx.count] = 24.0f;
+                fx.channel[6][fx.count] = (float)(xe - xs) * 256.0f / 655360.0f;
+                fx.channel[7][fx.count] = 1.0f / 1024.0f;
+                fx.channel[8][fx.count] = 0.0f;
+                fx.channel[9][fx.count] = 32.0f;
+                fx.channel[10][fx.count] = 0.0f;
+                fx.channel[11][fx.count] = 1.0f / 256.0f;
+                fx.count++;
+            }
+            if (((ye + 1) & 0x1E) && (ys & 0xFFE0) != (ye & 0xFFE0)) {
+                fx.colour[fx.count] = 0x80808080;
+                fx.parameter_1c[fx.count] = (ye & 0x1E) / 2;
+                fx.channel[0][fx.count] = xs << 4;
+                fx.channel[1][fx.count] = (ye & 0xFFE0) << 4;
+                fx.channel[2][fx.count] = (float)xs * 256.0f / 655360.0f;
+                fx.channel[3][fx.count] = ((float)(ye / 32) * 128.0f + 64.5f) / 1024.0f;
+                fx.channel[4][fx.count] = (xe - xs) << 4;
+                fx.channel[5][fx.count] = 24.0f;
+                fx.channel[6][fx.count] = (float)(xe - xs) * 256.0f / 655360.0f;
+                fx.channel[7][fx.count] = 1.0f / 1024.0f;
+                fx.channel[8][fx.count] = 0.0f;
+                fx.channel[9][fx.count] = 32.0f;
+                fx.channel[10][fx.count] = 0.0f;
+                fx.channel[11][fx.count] = 1.0f / 256.0f;
+                fx.count++;
+            }
+            NuRndrFxCode(0x306, &fx, dma, NuLgtLightMat[spot + 8]);
+            NuRndrEndSceneEx(0);
+        }
+        if (shift == 8 && NuRndrBeginSceneEx(NuLgtHSurf[4], -2, 0)) {
+            rndrstream_3d = rndrstream_3d_u;
+            rndrstream_3d->mtl = 0;
+            rndrstream_3d->mtl_tid = 0;
+            NuRndrStreamLink(rndrstream_3d);
+            NuRndrStreamSetMisc(rndrstream_3d);
+            NuRndrStreamAddMtl(rndrstream_3d, NuLgtGreyMat);
+            if (xs & 0x3F) {
+                NuRndrRectUV3di(xs << 4, ys << 4, ((0x40 - (xs & 0x3F)) << 4) | 8, ye << 4,
+                                0.0f, 0.0f, 0.0f, 0.0f, 0, (int)pnts[2].z);
+            }
+            for (i = (xs + 63) / 64; i < xe / 64; i++) {
+                NuRndrRectUV3di(i << 10, ys << 4, 0x3F8, ye << 4, 0.0f, 0.0f, 0.0f, 0.0f, 0, (int)pnts[2].z);
+            }
+            if ((xe & 0x3F) && (xs + 63) / 64 < xe / 64) {
+                NuRndrRectUV3di((xe & 0xFFC0) << 4, ys << 4, ((xe & 0x3F) << 4) | 8, ye << 4,
+                                0.0f, 0.0f, 0.0f, 0.0f, 0, (int)pnts[2].z);
+            }
+            rndrstream_free = vpDmaTag_Next(rndrstream_3d->cur.w, 0);
+            NuRndrEndSceneEx(0);
+        }
+        if (fogz != 0.0f && NuRndrBeginSceneEx(NuLgtHSurf[4], -2, 0)) {
+            rndrstream_3d = rndrstream_3d_u;
+            rndrstream_3d->mtl = 0;
+            rndrstream_3d->mtl_tid = 0;
+            NuRndrStreamLink(rndrstream_3d);
+            NuRndrStreamSetMisc(rndrstream_3d);
+            NuRndrStreamAddMtl(rndrstream_3d, NuLgtGreyMat);
+            rndrstream_3d->cur.w = (u32 *)vpDmaTag_CntEx(rndrstream_3d->cur.w, 0, 0x50000000) - 1;
+            rndrstream_3d->cur.w = vtBeginDirect(rndrstream_3d->cur.w, 0);
+            rndrstream_3d->cur.w = gsBeginGifPacket(rndrstream_3d->cur.w, 0, 1, 0, 0, 0, 1, 0xE);
+            *((u64 *)rndrstream_3d->cur.w)++ = 0x5C000;
+            *((u64 *)rndrstream_3d->cur.w)++ = 0x47;
+            rndrstream_3d->cur.w = gsCloseGifPacket(rndrstream_3d->cur.w);
+            rndrstream_3d->cur.w = vtCloseDirect(rndrstream_3d->cur.w);
+            rndrstream_3d->cur.w = vpDmaTag_Close(rndrstream_3d->cur.w);
+            if (xs & 0x3F) {
+                NuRndrRectUV3di(xs << 4, ys << 4, ((0x40 - (xs & 0x3F)) << 4) | 8, ye << 4,
+                                0.0f, 0.0f, 0.0f, 0.0f, 0, (int)fogz);
+            }
+            for (i = (xs + 63) / 64; i < xe / 64; i++) {
+                NuRndrRectUV3di(i << 10, ys << 4, 0x3F8, ye << 4, 0.0f, 0.0f, 0.0f, 0.0f, 0, (int)fogz);
+            }
+            if ((xe & 0x3F) && (xs + 63) / 64 < xe / 64) {
+                NuRndrRectUV3di((xe & 0xFFC0) << 4, ys << 4, ((xe & 0x3F) << 4) | 8, ye << 4,
+                                0.0f, 0.0f, 0.0f, 0.0f, 0, (int)fogz);
+            }
+            if (NuLightSpots[spot].fade && last >= 0) {
+                NuRndrSetRTarget(rndrstream_3d, -2);
+                NuRndrStreamAddMtl(rndrstream_3d, NuLightAddMat);
+                rndrstream_3d->cur.w = (u32 *)vpDmaTag_CntEx(rndrstream_3d->cur.w, 0x11000000, 0x50000000) - 1;
+                rndrstream_3d->cur.w = vtBeginDirect(rndrstream_3d->cur.w, 0);
+                rndrstream_3d->cur.w = gsBeginGifPacket(rndrstream_3d->cur.w, 0, 1, 0, 0, 0, 1, 0xE);
+                *((u64 *)rndrstream_3d->cur.w)++ = 0x84;
+                *((u64 *)rndrstream_3d->cur.w)++ = 0x42;
+                *((u64 *)rndrstream_3d->cur.w)++ = 0x20000;
+                *((u64 *)rndrstream_3d->cur.w)++ = 0x47;
+                rndrstream_3d->cur.w = gsCloseGifPacket(rndrstream_3d->cur.w);
+                rndrstream_3d->cur.w = vtCloseDirect(rndrstream_3d->cur.w);
+                rndrstream_3d->cur.w = vpDmaTag_Close(rndrstream_3d->cur.w);
+                for (i = 0; i < 10; i++) {
+                    NuRndrRectUV3di((i << 10) - 4, -4, 0x400, PS2_REZ_H << 4, 0.0f, 0.0f, 0.0f, 0.0f,
+                                    0x80FFFFFF, 0xFFFFFF);
+                }
+                NuRndrSetRTarget(rndrstream_3d, NuLgtHSurf[4]);
+                NuRndrStreamAddMtl(rndrstream_3d, NuLgtGreyMat);
+                rndrstream_3d->cur.w = (u32 *)vpDmaTag_CntEx(rndrstream_3d->cur.w, 0, 0x50000000) - 1;
+                rndrstream_3d->cur.w = vtBeginDirect(rndrstream_3d->cur.w, 0);
+                rndrstream_3d->cur.w = gsBeginGifPacket(rndrstream_3d->cur.w, 0, 1, 0, 0, 0, 1, 0xE);
+                *((u64 *)rndrstream_3d->cur.w)++ = 0x5C000;
+                *((u64 *)rndrstream_3d->cur.w)++ = 0x47;
+                rndrstream_3d->cur.w = gsCloseGifPacket(rndrstream_3d->cur.w);
+                rndrstream_3d->cur.w = vtCloseDirect(rndrstream_3d->cur.w);
+                rndrstream_3d->cur.w = vpDmaTag_Close(rndrstream_3d->cur.w);
+                if (xs & 0x3F) {
+                    NuRndrRectUV3di(xs << 4, ys << 4, ((0x40 - (xs & 0x3F)) << 4) | 8, ye << 4,
+                                    0.0f, 0.0f, 0.0f, 0.0f, 0, 0xFFFFFF - last);
+                }
+                for (i = (xs + 63) / 64; i < xe / 64; i++) {
+                    NuRndrRectUV3di(i << 10, ys << 4, 0x3F8, ye << 4, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0xFFFFFF - last);
+                }
+                if ((xe & 0x3F) && (xs + 63) / 64 < xe / 64) {
+                    NuRndrRectUV3di((xe & 0xFFC0) << 4, ys << 4, ((xe & 0x3F) << 4) | 8, ye << 4,
+                                    0.0f, 0.0f, 0.0f, 0.0f, 0, 0xFFFFFF - last);
+                }
+                NuRndrSetRTarget(rndrstream_3d, -2);
+                NuRndrStreamAddMtl(rndrstream_3d, NuLightAddMat);
+                rndrstream_3d->cur.w = (u32 *)vpDmaTag_CntEx(rndrstream_3d->cur.w, 0x11000000, 0x50000000) - 1;
+                rndrstream_3d->cur.w = vtBeginDirect(rndrstream_3d->cur.w, 0);
+                rndrstream_3d->cur.w = gsBeginGifPacket(rndrstream_3d->cur.w, 0, 1, 0, 0, 0, 1, 0xE);
+                *((u64 *)rndrstream_3d->cur.w)++ = 0x84;
+                *((u64 *)rndrstream_3d->cur.w)++ = 0x42;
+                *((u64 *)rndrstream_3d->cur.w)++ = 0x20000;
+                *((u64 *)rndrstream_3d->cur.w)++ = 0x47;
+                rndrstream_3d->cur.w = gsCloseGifPacket(rndrstream_3d->cur.w);
+                rndrstream_3d->cur.w = vtCloseDirect(rndrstream_3d->cur.w);
+                rndrstream_3d->cur.w = vpDmaTag_Close(rndrstream_3d->cur.w);
+                for (i = 0; i < 10; i++) {
+                    NuRndrRectUV3di((i << 10) - 4, -4, 0x400, PS2_REZ_H << 4, 0.0f, 0.0f, 0.0f, 0.0f,
+                                    0x80FFFFFF, 0xFFFFFF);
+                }
+            }
+            rndrstream_free = vpDmaTag_Next(rndrstream_3d->cur.w, 0);
+            NuRndrEndSceneEx(0);
+        }
+        if (NuRndrBeginSceneEx(-1, -2, 0)) {
+            rndrstream_3d = rndrstream_3d_u;
+            rndrstream_3d->mtl = 0;
+            rndrstream_3d->mtl_tid = 0;
+            NuRndrStreamLink(rndrstream_3d);
+            NuRndrStreamSetMisc(rndrstream_3d);
+            NuRndrStreamAddMtl(rndrstream_3d, NuLgtSurf[9]);
+            rndrstream_3d->cur.w = (u32 *)vpDmaTag_CntEx(rndrstream_3d->cur.w, 0x11000000, 0x50000000) - 1;
+            rndrstream_3d->cur.w = vtBeginDirect(rndrstream_3d->cur.w, 0);
+            rndrstream_3d->cur.w = gsBeginGifPacket(rndrstream_3d->cur.w, 0, 1, 0, 0, 0, 1, 0xE);
+            switch (NuLightSpots[spot].mode) {
+            default:
+            case 0:
+                *((u64 *)rndrstream_3d->cur.w)++ = 0x41;
+                c0 = 0xFF;
+                c2 = 0;
+                c1 = 0x80;
+                break;
+            case 1:
+                *((u64 *)rndrstream_3d->cur.w)++ = 9;
+                if (NuLightSpots[spot].xspan) {
+                    c0 = 0xFF - NuLightSpots[spot].xspan;
+                    c1 = 0x80;
+                    if (c0 < 0x80) {
+                        c0 = 0x80;
+                    }
+                    c2 = NuLightSpots[spot].xspan;
+                } else {
+                    c0 = 0xFF;
+                    c2 = 0;
+                    c1 = 0x80;
+                }
+                near = 33554432.0f;
+                break;
+            case 2:
+                *((u64 *)rndrstream_3d->cur.w)++ = 0x48;
+                c0 = 0xFF;
+                c2 = 0;
+                c1 = 0x80;
+                break;
+            }
+            *((u64 *)rndrstream_3d->cur.w)++ = 0x42;
+            rndrstream_3d->cur.w = gsCloseGifPacket(rndrstream_3d->cur.w);
+            rndrstream_3d->cur.w = vtCloseDirect(rndrstream_3d->cur.w);
+            rndrstream_3d->cur.w = vpDmaTag_Close(rndrstream_3d->cur.w);
+            rndrstream_3d->cur.w = (u32 *)vpDmaTag_CntEx(rndrstream_3d->cur.w, 0x10000000, 0x50000000) - 1;
+            rndrstream_3d->cur.w = vtBeginDirect(rndrstream_3d->cur.w, 0);
+            rndrstream_3d->cur.w = gsBeginGifPacket(rndrstream_3d->cur.w, 0, 1, 1, 5, 0, 3, 1, 2, 5);
+            pnts[1].x = vecs[2].x;
+            pnts[1].y = vecs[2].y;
+            pnts[1].z = vecs[2].z;
+            pnts[1].w = 1.0f;
+            NuVec4MtxTransformVU0(&pnts[1], &pnts[1], pcs);
+            pnts[2].w = pnts[1].w;
+            invw = 1.0f / pnts[1].w;
+            pnts[2].z = pnts[1].z;
+            *rndrstream_3d->cur.w++ = 0x80;
+            *rndrstream_3d->cur.w++ = 0x80;
+            *rndrstream_3d->cur.w++ = 0x80;
+            *rndrstream_3d->cur.w++ = c0;
+            pnts[2].x = pnts[1].x;
+            pnts[2].y = pnts[1].y;
+            NuVec4ScaleXYZVU0(&pnts[0], &pnts[2], invw);
+            if (pnts[0].x < 0.0f) {
+                pnts[0].x = 0.0f;
+            }
+            if (pnts[0].x > 65535.0f) {
+                pnts[0].x = 65535.0f;
+            }
+            if (pnts[0].y < 0.0f) {
+                pnts[0].y = 0.0f;
+            }
+            if (pnts[0].y > 65535.0f) {
+                pnts[0].y = 65535.0f;
+            }
+            *rndrstream_3d->cur.f++ = ((pnts[0].x - 32768.0f) / 16.0f + 320.5f) / 1024.0f;
+            *rndrstream_3d->cur.f++ = ((pnts[0].y - 32768.0f) / 16.0f + (float)(PS2_REZ_H >> 1)) / 255.0f;
+            *rndrstream_3d->cur.f++ = 1.0f;
+            *rndrstream_3d->cur.f++ = 0.0f;
+            pnts[0].z = near;
+            NuVecConvertToIntVU0(rndrstream_3d->cur.w, (struct nuvec_s *)&pnts[0]);
+            rndrstream_3d->cur.b += 0xC;
+            *rndrstream_3d->cur.w++ = 0;
+            dma = rndrstream_3d->cur.w;
+            for (i = 0; i < 65; i++) {
+                *rndrstream_3d->cur.w++ = c1;
+                *rndrstream_3d->cur.w++ = c1;
+                *rndrstream_3d->cur.w++ = c1;
+                *rndrstream_3d->cur.w++ = c2;
+                pnts[2].x = pnts[1].x
+                            + NuTrigTable[((i << 10) + 0x4000) & 0xFFFF] * 8192.0f * NuLightSpots[spot].size
+                                  * NuLightSpots[spot].brightness;
+                pnts[2].y = pnts[1].y + NuTrigTable[(i << 10) & 0xFFFF] * 4096.0f * NuLightSpots[spot].size;
+                NuVec4ScaleXYZVU0(&pnts[0], &pnts[2], invw);
+                if (pnts[0].x < 0.0f) {
+                    pnts[0].x = 0.0f;
+                }
+                if (pnts[0].x > 65535.0f) {
+                    pnts[0].x = 65535.0f;
+                }
+                if (pnts[0].y < 0.0f) {
+                    pnts[0].y = 0.0f;
+                }
+                if (pnts[0].y > 65535.0f) {
+                    pnts[0].y = 65535.0f;
+                }
+                *rndrstream_3d->cur.f++ = ((pnts[0].x - 32768.0f) / 16.0f + 320.5f) / 1024.0f;
+                *rndrstream_3d->cur.f++ = ((pnts[0].y - 32768.0f) / 16.0f + (float)(PS2_REZ_H >> 1)) / 255.0f;
+                *rndrstream_3d->cur.f++ = 1.0f;
+                *rndrstream_3d->cur.w++ = 0;
+                pnts[0].z = near;
+                NuVecConvertToIntVU0(rndrstream_3d->cur.w, (struct nuvec_s *)&pnts[0]);
+                rndrstream_3d->cur.b += 0xC;
+                *rndrstream_3d->cur.w++ = 0;
+            }
+            rndrstream_3d->cur.w = gsCloseGifPacket(rndrstream_3d->cur.w);
+            rndrstream_3d->cur.w = vtCloseDirect(rndrstream_3d->cur.w);
+            rndrstream_3d->cur.w = vpDmaTag_Close(rndrstream_3d->cur.w);
+            if (NuLightSpots[spot].mode == 1) {
+                rndrstream_3d->cur.w = (u32 *)vpDmaTag_CntEx(rndrstream_3d->cur.w, 0x10000000, 0x50000000) - 1;
+                rndrstream_3d->cur.w = vtBeginDirect(rndrstream_3d->cur.w, 0);
+                rndrstream_3d->cur.w = gsBeginGifPacket(rndrstream_3d->cur.w, 0, 1, 1, 4, 0, 3, 1, 2, 5);
+                for (i = 0; i < 65; i++) {
+                    *rndrstream_3d->cur.w++ = *dma++;
+                    *rndrstream_3d->cur.w++ = *dma++;
+                    *rndrstream_3d->cur.w++ = *dma++;
+                    *rndrstream_3d->cur.w++ = *dma++;
+                    *rndrstream_3d->cur.f++ = *((f32 *)dma)++;
+                    *rndrstream_3d->cur.f++ = *((f32 *)dma)++;
+                    *rndrstream_3d->cur.f++ = *((f32 *)dma)++;
+                    *rndrstream_3d->cur.f++ = *((f32 *)dma)++;
+                    *rndrstream_3d->cur.w++ = *dma++;
+                    *rndrstream_3d->cur.w++ = *dma++;
+                    *rndrstream_3d->cur.w++ = *dma++;
+                    *rndrstream_3d->cur.w++ = *dma++;
+                    *rndrstream_3d->cur.w++ = c1;
+                    *rndrstream_3d->cur.w++ = c1;
+                    *rndrstream_3d->cur.w++ = c1;
+                    *rndrstream_3d->cur.w++ = c2;
+                    pnts[0].x = dma[-4];
+                    pnts[0].y = dma[-3];
+                    switch ((i + 16) & 0x3F) {
+                    case 8:
+                        if (pnts[0].y > 28672.0f) {
+                            pnts[0].y = 28672.0f;
+                        }
+                    case 9 ... 23:
+                        if (pnts[0].x < 38912.0f) {
+                            pnts[0].x = 38912.0f;
+                        }
+                        break;
+                    case 24:
+                        if (pnts[0].x < 38912.0f) {
+                            pnts[0].x = 38912.0f;
+                        }
+                    case 25 ... 39:
+                        if (pnts[0].y < 36864.0f) {
+                            pnts[0].y = 36864.0f;
+                        }
+                        break;
+                    case 40:
+                        if (pnts[0].y < 36864.0f) {
+                            pnts[0].y = 36864.0f;
+                        }
+                        if (pnts[0].x > 26624.0f) {
+                            pnts[0].x = 26624.0f;
+                        }
+                        break;
+                    case 41 ... 55:
+                        if (pnts[0].x > 26624.0f) {
+                            pnts[0].x = 26624.0f;
+                        }
+                        break;
+                    case 56:
+                        if (pnts[0].x > 26624.0f) {
+                            pnts[0].x = 26624.0f;
+                        }
+                        if (pnts[0].y > 28672.0f) {
+                            pnts[0].y = 28672.0f;
+                        }
+                        break;
+                    case 0 ... 7:
+                    case 57 ... 63:
+                        if (pnts[0].y > 28672.0f) {
+                            pnts[0].y = 28672.0f;
+                        }
+                        break;
+                    }
+                    *rndrstream_3d->cur.f++ = ((pnts[0].x - 32768.0f) / 16.0f + 320.5f) / 1024.0f;
+                    *rndrstream_3d->cur.f++ = ((pnts[0].y - 32768.0f) / 16.0f + (float)(PS2_REZ_H >> 1)) / 255.0f;
+                    *rndrstream_3d->cur.f++ = 1.0f;
+                    *rndrstream_3d->cur.w++ = 0;
+                    pnts[0].z = near;
+                    NuVecConvertToIntVU0(rndrstream_3d->cur.w, (struct nuvec_s *)&pnts[0]);
+                    rndrstream_3d->cur.b += 0xC;
+                    *rndrstream_3d->cur.w++ = 0;
+                }
+                rndrstream_3d->cur.w = gsCloseGifPacket(rndrstream_3d->cur.w);
+                rndrstream_3d->cur.w = vtCloseDirect(rndrstream_3d->cur.w);
+                rndrstream_3d->cur.w = vpDmaTag_Close(rndrstream_3d->cur.w);
+            }
+            rndrstream_free = vpDmaTag_Next(rndrstream_3d->cur.w, 0);
+            NuRndrEndSceneEx(0);
+        }
+    }
+    NuScratchRelease();
+    NuScratchRelease();
+    NuScratchRelease();
+    txupload_on = 1;
+    NuLightOldSpotCnt = NuLightSpotCnt;
+    NuLightSpotCnt = 0;
 }
 
 
@@ -1982,6 +2871,576 @@ void NuLightPolyHaze(int paused) {
         NuScratchRelease();
     }
 }
+
+
+void NuLightFogDraw(int paused) {
+    struct FxSprite fx;
+    struct FxSprite2 fx2;
+    struct nuvec4_s *pnts;
+    u32 *clut;
+    u32 *dma;
+    u32 *packet;
+    struct numtx_s *scale;
+    struct numtx_s *proj;
+    float zoffset;
+    float zscale;
+    float far;
+    float znear;
+    float zbase;
+    float fogz;
+    float fog;
+    float z;
+    float range;
+    float depth;
+    float fogscale;
+    int shift;
+    int count;
+    int last;
+    int width;
+    int height;
+    int fogcol;
+    int alpha;
+    int step;
+    int col;
+    int val;
+    int end;
+    int i;
+    int j;
+    int x0;
+    int x1;
+    int xs;
+    int ys;
+    int xe;
+    int ye;
+
+    if (NuRndrFogFar <= NuRndrFogNear) {
+        return;
+    }
+    pnts = NuScratchAlloc32(0x80);
+    NuScratchAlloc32(0x60);
+    clut = NuScratchAlloc32(0x800);
+    NuCameraGetPCSMtx();
+    scale = NuCameraGetScalingMtx();
+    proj = NuCameraGetProjectionMtx();
+    NuCameraGetViewMtx();
+    zoffset = proj->_22 * scale->_22 + scale->_32;
+    zscale = proj->_32 * scale->_22;
+    txupload_on = 0;
+    NuTexCloneTempAddr(NuLgtFogMat[1]->tid, NuLgtSurf[4]->tid);
+    NuTexCloneTempAddr(NuLgtFogMat[0]->tid, NuLgtSurf[2]->tid);
+    NuTexCloneTempAddr(NuLgtFogMat[2]->tid, NuLgtSurf[2]->tid);
+    far = NuRndrFogFar;
+    depth = zscale / far + zoffset;
+    pnts[2].z = depth;
+    pnts[0].z = zscale / NuRndrFogNear + zoffset;
+    znear = pnts[0].z;
+    height = nurndr_pixel_height;
+    width = nurndr_pixel_width;
+    xs = 0;
+    ys = 0;
+    xe = width;
+    ye = height;
+    range = (float)((((int)znear + 0xFFFF) & 0xFF0000) - ((int)pnts[2].z & 0xFF0000)) / 256.0f;
+    if (range >= 256.0f) {
+        shift = NuRndrTopBit[(int)(range / 256.0f)] + 9;
+    } else {
+        shift = NuRndrTopBit[(int)range] + 1;
+    }
+    if (shift < 9) {
+        shift = 9;
+    }
+    zbase = (float)(((int)pnts[2].z >> shift) << shift) - zoffset;
+    count = (int)(pnts[0].z - zbase - zoffset);
+    count = ((count + (1 << shift) - 1) >> shift) + 8;
+    if (count > 256) {
+        count = 256;
+    }
+    if (shift >= 9) {
+        col = ((int)pnts[2].z >> shift) & 0xFF;
+        step = 0x80 >> (shift - 9);
+        col += col << 16;
+        j = (int)pnts[2].z >> 16;
+        if (j > 256) {
+            j = 256;
+        }
+        for (i = 0; i < j; i++) {
+            clut[i] = col;
+            clut[i + 256] = 0;
+        }
+        val = (step * i) & 0xFF;
+        j = i + (1 << (shift - 8));
+        col = (col & 0xFF0000) + 0x80000000;
+        for (; i < j; i++) {
+            clut[i] = val + col;
+            clut[i + 256] = (((val << 16) - col) & 0xFF0000) + 0x80000000;
+            val = (val + step) & 0xFF;
+        }
+        col &= 0xFF0000;
+        val = ((-((int)pnts[2].z >> shift) & 0xFF) << 16) + 0x7F000000;
+        for (; i < 256; i++) {
+            clut[i] = col;
+            clut[i + 256] = val;
+        }
+        NuTexPalChangeStreamTemp(NuLgtFogMat[0]->tid, clut);
+        NuTexPalChangeStreamTemp(NuLgtFogMat[2]->tid, clut + 256);
+    } else {
+        shift = 8;
+    }
+    last = count + 6;
+    fogscale = 256.0f / (NuRndrFogFar - NuRndrFogNear);
+    val = ((int)pnts[2].z >> shift) & 0xFF;
+    fogcol = NuRndrFogCol & 0xFFFFFF;
+    alpha = 0x1FE0000;
+    fogz = 0.0f;
+    for (i = 0; i < count; i++) {
+        z = (float)(i << shift);
+        depth = far - zscale / (zbase + z);
+        fog = depth * fogscale;
+        fog = 255.0f - fog;
+        if (fog < 0.0f) {
+            fog = 0.0f;
+        }
+        if (fog > 255.0f) {
+            fog = 255.0f;
+        }
+        clut[(i + val) & 0xFF] =
+            fogcol + ((alpha * (int)((1.0f - NuTrigTable[(int)(fog * 128.0f + 16384.0f) & 0xFFFF]) * 64.0f)) & 0xFF000000);
+        if (fogz == 0.0f && clut[(i + val) & 0xFF] > 0x40000000) {
+            fogz = zbase + zoffset + z;
+        }
+    }
+    end = last;
+    if (end > 256) {
+        end = 256;
+    }
+    for (; i < end; i++) {
+        clut[(i + val) & 0xFF] = 0;
+    }
+    for (; i < 256; i++) {
+        clut[(i + val) & 0xFF] = (NuRndrFogCol & 0xFFFFFF) + 0xFF000000;
+    }
+    NuTexPalChangeStreamTemp(NuLgtFogMat[1]->tid, clut);
+    if (NuRndrBeginSceneEx(NuLgtHSurf[4], -2, 0)) {
+        if (shift >= 9) {
+            dma = NuRndrStreamAlloc(8);
+            packet = (u32 *)vpDmaTag_RetEx(dma, 0, 0x50000000) - 1;
+            packet = vtBeginDirect(packet, 0);
+            packet = gsBeginGifPacket(packet, 0, 1, 0, 0, 0, 1, 0xE);
+            *((u64 *)packet)++ = 0xA;
+            *((u64 *)packet)++ = 0x42;
+            packet = gsCloseGifPacket(packet);
+            packet = vtCloseDirect(packet);
+            vpDmaTag_Close(packet);
+            fx2.parameter_00 = 33554432.0f;
+            fx2.parameter_04 = 1;
+            fx2.count = 0;
+            for (j = xs / 320; j < (xe + 319) / 320; j++) {
+                if (j == 0) {
+                    x0 = (xs / 160) << 5;
+                    x1 = ((xe + 159) / 160) << 5;
+                    if (x1 > 64) {
+                        x1 = 64;
+                    }
+                    x1 -= x0;
+                } else {
+                    x0 = ((xs - 320) / 160) << 5;
+                    if (x0 < 0) {
+                        x0 = 0;
+                    }
+                    x1 = ((xe - 161) / 160) << 5;
+                }
+                fx2.colour[fx2.count] = 0x80800080;
+                fx2.parameter_1c[fx2.count] = (((ye + 3) & 0xFFFC) - (ys & 0xFFFC)) / 4;
+                fx2.channel[0][fx2.count] = (j << 10) + 0x1400 + (x0 << 4);
+                fx2.channel[1][fx2.count] = (ys & 0xFFFC) << 4;
+                fx2.channel[2][fx2.count] = ((float)j * 64.0f + (float)x0) / 1024.0f;
+                fx2.channel[3][fx2.count] = ((float)(ys & 0xFFFC) * 2.0f + 0.5f) / 1024.0f;
+                fx2.channel[4][fx2.count] = x1 << 4;
+                fx2.channel[6][fx2.count] = (float)x1 / 1024.0f;
+                fx2.channel[5][fx2.count] = 24.0f;
+                fx2.channel[7][fx2.count] = 1.0f / 1024.0f;
+                fx2.channel[8][fx2.count] = 0.0f;
+                fx2.channel[9][fx2.count] = 64.0f;
+                fx2.channel[10][fx2.count] = 0.0f;
+                fx2.channel[11][fx2.count] = 1.0f / 128.0f;
+                fx2.channel[12][fx2.count] = (j << 10) + 0x1400 + (x0 << 4);
+                fx2.channel[13][fx2.count] = ((ys & 0xFFFC) << 4) + 32;
+                fx2.channel[14][fx2.count] = ((float)j * 64.0f + (float)x0) / 1024.0f;
+                fx2.channel[15][fx2.count] = ((float)(ys & 0xFFFC) * 2.0f + 6.5f) / 1024.0f;
+                fx2.channel[16][fx2.count] = x1 << 4;
+                fx2.channel[18][fx2.count] = (float)x1 / 1024.0f;
+                fx2.channel[17][fx2.count] = 24.0f;
+                fx2.channel[19][fx2.count] = 1.0f / 1024.0f;
+                fx2.channel[20][fx2.count] = 0.0f;
+                fx2.channel[21][fx2.count] = 64.0f;
+                fx2.channel[22][fx2.count] = 0.0f;
+                fx2.channel[23][fx2.count] = 1.0f / 128.0f;
+                fx2.count++;
+            }
+            NuRndrFxCode(0x308, &fx2, dma, NuLgtFogMat[0]);
+        }
+        dma = NuRndrStreamAlloc(8);
+        packet = (u32 *)vpDmaTag_RetEx(dma, 0, 0x50000000) - 1;
+        packet = vtBeginDirect(packet, 0);
+        packet = gsBeginGifPacket(packet, 0, 1, 0, 0, 0, 1, 0xE);
+        if (shift >= 9) {
+            *((u64 *)packet)++ = 0x58;
+        } else {
+            *((u64 *)packet)++ = 0xA;
+        }
+        *((u64 *)packet)++ = 0x42;
+        packet = gsCloseGifPacket(packet);
+        packet = vtCloseDirect(packet);
+        vpDmaTag_Close(packet);
+        fx2.parameter_00 = 33554432.0f;
+        fx2.parameter_04 = 1;
+        fx2.count = 0;
+        for (j = xs / 320; j < (xe + 319) / 320; j++) {
+            if (j == 0) {
+                x0 = (xs / 160) << 5;
+                x1 = ((xe + 159) / 160) << 5;
+                if (x1 > 64) {
+                    x1 = 64;
+                }
+                x1 -= x0;
+            } else {
+                x0 = ((xs - 320) / 160) << 5;
+                if (x0 < 0) {
+                    x0 = 0;
+                }
+                x1 = ((xe - 161) / 160) << 5;
+            }
+            fx2.colour[fx2.count] = (0x80 >> (shift - 8)) + 0x80000000;
+            fx2.parameter_1c[fx2.count] = (((ye + 3) & 0xFFFC) - (ys & 0xFFFC)) / 4;
+            fx2.channel[0][fx2.count] = (j << 10) + 0x1400 + (x0 << 4);
+            fx2.channel[1][fx2.count] = (ys & 0xFFFC) << 4;
+            fx2.channel[2][fx2.count] = ((float)j * 64.0f + (float)x0) / 1024.0f;
+            fx2.channel[3][fx2.count] = ((float)(ys & 0xFFFC) * 2.0f + 4.5f) / 1024.0f;
+            fx2.channel[4][fx2.count] = x1 << 4;
+            fx2.channel[6][fx2.count] = (float)x1 / 1024.0f;
+            fx2.channel[5][fx2.count] = 24.0f;
+            fx2.channel[7][fx2.count] = 1.0f / 1024.0f;
+            fx2.channel[8][fx2.count] = 0.0f;
+            fx2.channel[9][fx2.count] = 64.0f;
+            fx2.channel[10][fx2.count] = 0.0f;
+            fx2.channel[11][fx2.count] = 1.0f / 128.0f;
+            fx2.channel[12][fx2.count] = (j << 10) + 0x1400 + (x0 << 4);
+            fx2.channel[13][fx2.count] = ((ys & 0xFFFC) << 4) + 32;
+            fx2.channel[14][fx2.count] = ((float)j * 64.0f + (float)x0) / 1024.0f;
+            fx2.channel[15][fx2.count] = ((float)(ys & 0xFFFC) * 2.0f + 2.5f) / 1024.0f;
+            fx2.channel[16][fx2.count] = x1 << 4;
+            fx2.channel[18][fx2.count] = (float)x1 / 1024.0f;
+            fx2.channel[17][fx2.count] = 24.0f;
+            fx2.channel[19][fx2.count] = 1.0f / 1024.0f;
+            fx2.channel[20][fx2.count] = 0.0f;
+            fx2.channel[21][fx2.count] = 64.0f;
+            fx2.channel[22][fx2.count] = 0.0f;
+            fx2.channel[23][fx2.count] = 1.0f / 128.0f;
+            fx2.count++;
+        }
+        NuRndrFxCode(0x308, &fx2, dma, NuLgtSurf[14]);
+        if (shift >= 9) {
+            dma = NuRndrStreamAlloc(8);
+            packet = (u32 *)vpDmaTag_RetEx(dma, 0, 0x50000000) - 1;
+            packet = vtBeginDirect(packet, 0);
+            packet = gsBeginGifPacket(packet, 0, 1, 0, 0, 0, 1, 0xE);
+            *((u64 *)packet)++ = 0x48;
+            *((u64 *)packet)++ = 0x42;
+            *((u64 *)packet)++ = 0;
+            *((u64 *)packet)++ = 0x46;
+            packet = gsCloseGifPacket(packet);
+            packet = vtCloseDirect(packet);
+            vpDmaTag_Close(packet);
+            fx2.parameter_00 = 33554432.0f;
+            fx2.parameter_04 = 1;
+            fx2.count = 0;
+            for (j = xs / 320; j < (xe + 319) / 320; j++) {
+                if (j == 0) {
+                    x0 = (xs / 160) << 5;
+                    x1 = ((xe + 159) / 160) << 5;
+                    if (x1 > 64) {
+                        x1 = 64;
+                    }
+                    x1 -= x0;
+                } else {
+                    x0 = ((xs - 320) / 160) << 5;
+                    if (x0 < 0) {
+                        x0 = 0;
+                    }
+                    x1 = ((xe - 161) / 160) << 5;
+                }
+                fx2.colour[fx2.count] = 0x80800000;
+                fx2.parameter_1c[fx2.count] = (((ye + 3) & 0xFFFC) - (ys & 0xFFFC)) / 4;
+                fx2.channel[0][fx2.count] = (j << 10) + 0x1400 + (x0 << 4);
+                fx2.channel[1][fx2.count] = (ys & 0xFFFC) << 4;
+                fx2.channel[2][fx2.count] = ((float)j * 64.0f + (float)x0 + 128.0f) / 1024.0f;
+                fx2.channel[3][fx2.count] = ((float)(ys & 0xFFFC) * 2.0f + 0.5f) / 1024.0f;
+                fx2.channel[4][fx2.count] = x1 << 4;
+                fx2.channel[6][fx2.count] = (float)x1 / 1024.0f;
+                fx2.channel[5][fx2.count] = 24.0f;
+                fx2.channel[7][fx2.count] = 1.0f / 1024.0f;
+                fx2.channel[8][fx2.count] = 0.0f;
+                fx2.channel[9][fx2.count] = 64.0f;
+                fx2.channel[10][fx2.count] = 0.0f;
+                fx2.channel[11][fx2.count] = 1.0f / 128.0f;
+                fx2.channel[12][fx2.count] = (j << 10) + 0x1400 + (x0 << 4);
+                fx2.channel[13][fx2.count] = ((ys & 0xFFFC) << 4) + 32;
+                fx2.channel[14][fx2.count] = ((float)j * 64.0f + (float)x0 + 128.0f) / 1024.0f;
+                fx2.channel[15][fx2.count] = ((float)(ys & 0xFFFC) * 2.0f + 6.5f) / 1024.0f;
+                fx2.channel[16][fx2.count] = x1 << 4;
+                fx2.channel[18][fx2.count] = (float)x1 / 1024.0f;
+                fx2.channel[17][fx2.count] = 24.0f;
+                fx2.channel[19][fx2.count] = 1.0f / 1024.0f;
+                fx2.channel[20][fx2.count] = 0.0f;
+                fx2.channel[21][fx2.count] = 64.0f;
+                fx2.channel[22][fx2.count] = 0.0f;
+                fx2.channel[23][fx2.count] = 1.0f / 128.0f;
+                fx2.count++;
+            }
+            NuRndrFxCode(0x308, &fx2, dma, NuLgtFogMat[2]);
+        }
+        dma = NuRndrStreamAlloc(8);
+        packet = (u32 *)vpDmaTag_RetEx(dma, 0, 0x50000000) - 1;
+        packet = vtBeginDirect(packet, 0);
+        packet = gsBeginGifPacket(packet, 0, 1, 0, 0, 0, 1, 0xE);
+        *((u64 *)packet)++ = 0x58;
+        *((u64 *)packet)++ = 0x42;
+        *((u64 *)packet)++ = 1;
+        *((u64 *)packet)++ = 0x46;
+        *((u64 *)packet)++ = 0x4C000;
+        *((u64 *)packet)++ = 0x47;
+        packet = gsCloseGifPacket(packet);
+        packet = vtCloseDirect(packet);
+        vpDmaTag_Close(packet);
+        fx2.parameter_00 = 33554432.0f;
+        fx2.parameter_04 = 1;
+        fx2.count = 0;
+        for (j = xs / 320; j < (xe + 319) / 320; j++) {
+            if (j == 0) {
+                x0 = (xs / 160) << 5;
+                x1 = ((xe + 159) / 160) << 5;
+                if (x1 > 64) {
+                    x1 = 64;
+                }
+                x1 -= x0;
+            } else {
+                x0 = ((xs - 320) / 160) << 5;
+                if (x0 < 0) {
+                    x0 = 0;
+                }
+                x1 = ((xe - 161) / 160) << 5;
+            }
+            fx2.colour[fx2.count] = (0x800000 >> (shift - 8)) + 0x80000000;
+            fx2.parameter_1c[fx2.count] = (((ye + 3) & 0xFFFC) - (ys & 0xFFFC)) / 4;
+            fx2.channel[0][fx2.count] = (j << 10) + 0x1400 + (x0 << 4);
+            fx2.channel[1][fx2.count] = (ys & 0xFFFC) << 4;
+            fx2.channel[2][fx2.count] = ((float)j * 64.0f + (float)x0 + 128.0f) / 1024.0f;
+            fx2.channel[3][fx2.count] = ((float)(ys & 0xFFFC) * 2.0f + 4.5f) / 1024.0f;
+            fx2.channel[4][fx2.count] = x1 << 4;
+            fx2.channel[6][fx2.count] = (float)x1 / 1024.0f;
+            fx2.channel[5][fx2.count] = 24.0f;
+            fx2.channel[7][fx2.count] = 1.0f / 1024.0f;
+            fx2.channel[8][fx2.count] = 0.0f;
+            fx2.channel[9][fx2.count] = 64.0f;
+            fx2.channel[10][fx2.count] = 0.0f;
+            fx2.channel[11][fx2.count] = 1.0f / 128.0f;
+            fx2.channel[12][fx2.count] = (j << 10) + 0x1400 + (x0 << 4);
+            fx2.channel[13][fx2.count] = ((ys & 0xFFFC) << 4) + 32;
+            fx2.channel[14][fx2.count] = ((float)j * 64.0f + (float)x0 + 128.0f) / 1024.0f;
+            fx2.channel[15][fx2.count] = ((float)(ys & 0xFFFC) * 2.0f + 2.5f) / 1024.0f;
+            fx2.channel[16][fx2.count] = x1 << 4;
+            fx2.channel[18][fx2.count] = (float)x1 / 1024.0f;
+            fx2.channel[17][fx2.count] = 24.0f;
+            fx2.channel[19][fx2.count] = 1.0f / 1024.0f;
+            fx2.channel[20][fx2.count] = 0.0f;
+            fx2.channel[21][fx2.count] = 64.0f;
+            fx2.channel[22][fx2.count] = 0.0f;
+            fx2.channel[23][fx2.count] = 1.0f / 128.0f;
+            fx2.count++;
+        }
+        NuRndrFxCode(0x308, &fx2, dma, NuLgtSurf[14]);
+        dma = NuRndrStreamAlloc(8);
+        packet = (u32 *)vpDmaTag_RetEx(dma, 0, 0x50000000) - 1;
+        packet = vtBeginDirect(packet, 0);
+        packet = gsBeginGifPacket(packet, 0, 1, 0, 0, 0, 1, 0xE);
+        *((u64 *)packet)++ = 1;
+        *((u64 *)packet)++ = 0x46;
+        packet = gsCloseGifPacket(packet);
+        packet = vtCloseDirect(packet);
+        vpDmaTag_Close(packet);
+        fx.parameter_00 = 33554432.0f;
+        fx.parameter_04 = 1;
+        fx.count = 0;
+        for (j = (ys + 30) / 32; j < (ye + 1) / 32; j++) {
+            fx.colour[fx.count] = 0x80808080;
+            fx.parameter_1c[fx.count] = 16;
+            fx.channel[0][fx.count] = xs << 4;
+            fx.channel[1][fx.count] = j << 9;
+            fx.channel[2][fx.count] = (float)xs * 256.0f / 655360.0f;
+            fx.channel[3][fx.count] = ((float)j * 128.0f + 64.5f) / 1024.0f;
+            fx.channel[4][fx.count] = (xe - xs) << 4;
+            fx.channel[5][fx.count] = 24.0f;
+            fx.channel[6][fx.count] = (float)(xe - xs) * 256.0f / 655360.0f;
+            fx.channel[7][fx.count] = 1.0f / 1024.0f;
+            fx.channel[8][fx.count] = 0.0f;
+            fx.channel[9][fx.count] = 32.0f;
+            fx.channel[10][fx.count] = 0.0f;
+            fx.channel[11][fx.count] = 1.0f / 256.0f;
+            fx.count++;
+        }
+        NuRndrFxCode(0x306, &fx, dma, NuLgtFogMat[1]);
+    }
+    NuRndrStreamLink(rndrstream_fx);
+    NuRndrStreamSetMisc(rndrstream_fx);
+    NuRndrStreamAddMtl(rndrstream_fx, NuLgtSurf[15]);
+    NuRndrRectUVStream(rndrstream_fx, -8, (nurndr_pixel_height << 4) - 24, 0x2800, 0x10,
+                       0.0f, (float)(nurndr_pixel_height - 2) / 256.0f, 0.625f,
+                       (float)(nurndr_pixel_height - 2) / NuPower2(PS2_REZ_H), 0x80808080, 0xFFFFFF);
+    rndrstream_free = vpDmaTag_Next(rndrstream_fx->cur.w, 0);
+    NuRndrEndSceneEx(0);
+    if (NuRndrFogClear && NuRndrBeginSceneEx(NuLgtHSurf[4], -2, 0)) {
+        rndrstream_3d = rndrstream_3d_u;
+        rndrstream_3d->mtl = 0;
+        rndrstream_3d->mtl_tid = 0;
+        NuRndrStreamLink(rndrstream_3d);
+        NuRndrStreamSetMisc(rndrstream_3d);
+        NuRndrStreamAddMtl(rndrstream_3d, NuLgtGreyMat);
+        rndrstream_3d->cur.w = (u32 *)vpDmaTag_CntEx(rndrstream_3d->cur.w, 0x11000000, 0x50000000) - 1;
+        rndrstream_3d->cur.w = vtBeginDirect(rndrstream_3d->cur.w, 0);
+        rndrstream_3d->cur.w = gsBeginGifPacket(rndrstream_3d->cur.w, 0, 1, 0, 0, 0, 1, 0xE);
+        *((u64 *)rndrstream_3d->cur.w)++ = 0x40;
+        *((u64 *)rndrstream_3d->cur.w)++ = 0x42;
+        *((u64 *)rndrstream_3d->cur.w)++ = 0x54000;
+        *((u64 *)rndrstream_3d->cur.w)++ = 0x47;
+        rndrstream_3d->cur.w = gsCloseGifPacket(rndrstream_3d->cur.w);
+        rndrstream_3d->cur.w = vtCloseDirect(rndrstream_3d->cur.w);
+        rndrstream_3d->cur.w = vpDmaTag_Close(rndrstream_3d->cur.w);
+        for (i = (xs + 63) / 64; i < xe / 64; i++) {
+            NuRndrRectUV3di(i << 10, ys << 4, 0x3F8, ye << 4, 0.0f, 0.0f, 0.0f, 0.0f, 0x80000000,
+                            (int)((pnts[2].z * 3.0f + pnts[0].z) * 0.25f));
+        }
+        NuRndrSetRTarget(rndrstream_3d, -2);
+        NuRndrStreamAddMtl(rndrstream_3d, NuLightAddMat);
+        rndrstream_3d->cur.w = (u32 *)vpDmaTag_CntEx(rndrstream_3d->cur.w, 0x11000000, 0x50000000) - 1;
+        rndrstream_3d->cur.w = vtBeginDirect(rndrstream_3d->cur.w, 0);
+        rndrstream_3d->cur.w = gsBeginGifPacket(rndrstream_3d->cur.w, 0, 1, 0, 0, 0, 1, 0xE);
+        *((u64 *)rndrstream_3d->cur.w)++ = 0x84;
+        *((u64 *)rndrstream_3d->cur.w)++ = 0x42;
+        *((u64 *)rndrstream_3d->cur.w)++ = 0x20000;
+        *((u64 *)rndrstream_3d->cur.w)++ = 0x47;
+        rndrstream_3d->cur.w = gsCloseGifPacket(rndrstream_3d->cur.w);
+        rndrstream_3d->cur.w = vtCloseDirect(rndrstream_3d->cur.w);
+        rndrstream_3d->cur.w = vpDmaTag_Close(rndrstream_3d->cur.w);
+        for (i = 0; i < 10; i++) {
+            NuRndrRectUV3di((i << 10) - 4, -4, 0x400, 0xE00, 0.0f, 0.0f, 0.0f, 0.0f, 0x80FFFFFF, 0xFFFFFF);
+        }
+        NuRndrSetRTarget(rndrstream_3d, NuLgtHSurf[9]);
+        NuRndrStreamAddMtl(rndrstream_3d, NuLightAddMat);
+        rndrstream_3d->cur.w = (u32 *)vpDmaTag_CntEx(rndrstream_3d->cur.w, 0x11000000, 0x50000000) - 1;
+        rndrstream_3d->cur.w = vtBeginDirect(rndrstream_3d->cur.w, 0);
+        rndrstream_3d->cur.w = gsBeginGifPacket(rndrstream_3d->cur.w, 0, 1, 0, 0, 0, 1, 0xE);
+        *((u64 *)rndrstream_3d->cur.w)++ = 0x40;
+        *((u64 *)rndrstream_3d->cur.w)++ = 0x42;
+        *((u64 *)rndrstream_3d->cur.w)++ = 0x5C000;
+        *((u64 *)rndrstream_3d->cur.w)++ = 0x47;
+        rndrstream_3d->cur.w = gsCloseGifPacket(rndrstream_3d->cur.w);
+        rndrstream_3d->cur.w = vtCloseDirect(rndrstream_3d->cur.w);
+        rndrstream_3d->cur.w = vpDmaTag_Close(rndrstream_3d->cur.w);
+        for (i = 0; i < 10; i++) {
+            NuRndrRectUV3di((i << 10) - 4, 0, 0x400, 0xE00, 0.0f, 0.0f, 0.0f, 0.0f, 0,
+                            0xFFFFFF - (int)((pnts[2].z + pnts[0].z * 3.0f) * 0.25f));
+        }
+        NuRndrSetRTarget(rndrstream_3d, -2);
+        NuRndrStreamAddMtl(rndrstream_3d, NuLightAddMat);
+        rndrstream_3d->cur.w = (u32 *)vpDmaTag_CntEx(rndrstream_3d->cur.w, 0x11000000, 0x50000000) - 1;
+        rndrstream_3d->cur.w = vtBeginDirect(rndrstream_3d->cur.w, 0);
+        rndrstream_3d->cur.w = gsBeginGifPacket(rndrstream_3d->cur.w, 0, 1, 0, 0, 0, 1, 0xE);
+        *((u64 *)rndrstream_3d->cur.w)++ = 0x84;
+        *((u64 *)rndrstream_3d->cur.w)++ = 0x42;
+        *((u64 *)rndrstream_3d->cur.w)++ = 0x20000;
+        *((u64 *)rndrstream_3d->cur.w)++ = 0x47;
+        rndrstream_3d->cur.w = gsCloseGifPacket(rndrstream_3d->cur.w);
+        rndrstream_3d->cur.w = vtCloseDirect(rndrstream_3d->cur.w);
+        rndrstream_3d->cur.w = vpDmaTag_Close(rndrstream_3d->cur.w);
+        for (i = 0; i < 10; i++) {
+            NuRndrRectUV3di((i << 10) - 4, -4, 0x400, 0xE00, 0.0f, 0.0f, 0.0f, 0.0f, 0x80FFFFFF, 0xFFFFFF);
+        }
+        rndrstream_free = vpDmaTag_Next(rndrstream_3d->cur.w, 0);
+        NuRndrEndSceneEx(0);
+    }
+    znear = (float)((((int)znear >> shift) - 1) << shift);
+    if (NuRndrFogCol || NuRndrFogBlur) {
+        if (NuRndrBeginSceneEx(-1, -2, 0)) {
+            rndrstream_3d = rndrstream_3d_u;
+            rndrstream_3d->mtl = 0;
+            rndrstream_3d->mtl_tid = 0;
+            NuRndrStreamLink(rndrstream_3d);
+            NuRndrStreamSetMisc(rndrstream_3d);
+            NuRndrStreamAddMtl(rndrstream_3d, NuLgtSurf[9]);
+            rndrstream_3d->cur.w = (u32 *)vpDmaTag_CntEx(rndrstream_3d->cur.w, 0x11000000, 0x50000000) - 1;
+            rndrstream_3d->cur.w = vtBeginDirect(rndrstream_3d->cur.w, 0);
+            rndrstream_3d->cur.w = gsBeginGifPacket(rndrstream_3d->cur.w, 0, 1, 0, 0, 0, 1, 0xE);
+            *((u64 *)rndrstream_3d->cur.w)++ = 0x44;
+            *((u64 *)rndrstream_3d->cur.w)++ = 0x42;
+            *((u64 *)rndrstream_3d->cur.w)++ = 1;
+            *((u64 *)rndrstream_3d->cur.w)++ = 0x46;
+            rndrstream_3d->cur.w = gsCloseGifPacket(rndrstream_3d->cur.w);
+            rndrstream_3d->cur.w = vtCloseDirect(rndrstream_3d->cur.w);
+            rndrstream_3d->cur.w = vpDmaTag_Close(rndrstream_3d->cur.w);
+            for (i = 0; i < 10; i++) {
+                NuRndrRectUV3di((i << 10) - 8, (ys << 4) - 8, 0x400, ye << 4,
+                                (float)i * 64.0f / 1024.0f, 0.0f,
+                                ((float)i * 64.0f + 64.0f) / 1024.0f,
+                                ((float)PS2_REZ_H - 0.5f) / NuPower2(PS2_REZ_H),
+                                ((NuRndrFogCol & 0xFE000000) >> 1) | 0x808080, (int)znear);
+            }
+            rndrstream_free = vpDmaTag_Next(rndrstream_3d->cur.w, 0);
+            NuRndrEndSceneEx(0);
+        }
+        if (NuRndrFogBlur && NuRndrBeginSceneEx(-1, -2, 0)) {
+            rndrstream_3d = rndrstream_3d_u;
+            rndrstream_3d->mtl = 0;
+            rndrstream_3d->mtl_tid = 0;
+            NuRndrStreamLink(rndrstream_3d);
+            NuRndrStreamSetMisc(rndrstream_3d);
+            NuRndrStreamAddMtl(rndrstream_3d, NuLgtBackAlphaBuff);
+            rndrstream_3d->cur.w = (u32 *)vpDmaTag_CntEx(rndrstream_3d->cur.w, 0x11000000, 0x50000000) - 1;
+            rndrstream_3d->cur.w = vtBeginDirect(rndrstream_3d->cur.w, 0);
+            rndrstream_3d->cur.w = gsBeginGifPacket(rndrstream_3d->cur.w, 0, 1, 0, 0, 0, 1, 0xE);
+            *((u64 *)rndrstream_3d->cur.w)++ = 0x54;
+            *((u64 *)rndrstream_3d->cur.w)++ = 0x42;
+            rndrstream_3d->cur.w = gsCloseGifPacket(rndrstream_3d->cur.w);
+            rndrstream_3d->cur.w = vtCloseDirect(rndrstream_3d->cur.w);
+            rndrstream_3d->cur.w = vpDmaTag_Close(rndrstream_3d->cur.w);
+            for (i = 0; i < 9; i++) {
+                NuRndrRectUV3di((i << 10) - 8, (ys << 4) - 8, 0x3E0, ye << 4,
+                                ((float)i * 64.0f + 2.0f) / 1024.0f, 0.0f,
+                                ((float)i * 64.0f + 62.0f + 2.0f) / 1024.0f,
+                                (float)PS2_REZ_H / NuPower2(PS2_REZ_H),
+                                NuRndrFogBlur + 0x808080, (int)znear);
+                NuRndrRectUV3di((i << 10) + 0x3D8, (ys << 4) - 8, 0x20, ye << 4,
+                                ((float)i * 64.0f + 64.0f) / 1024.0f, 0.0f,
+                                ((float)i * 64.0f + 64.0f + 2.0f) / 1024.0f,
+                                (float)PS2_REZ_H / NuPower2(PS2_REZ_H),
+                                NuRndrFogBlur + 0x808080, (int)znear);
+            }
+            NuRndrRectUV3di((i << 10) - 8, (ys << 4) - 8, 0x3E0, ye << 4,
+                            ((float)i * 64.0f + 2.0f) / 1024.0f, 0.0f,
+                            ((float)i * 64.0f + 62.0f + 2.0f) / 1024.0f,
+                            (float)PS2_REZ_H / NuPower2(PS2_REZ_H),
+                            NuRndrFogBlur + 0x808080, (int)znear);
+            rndrstream_free = vpDmaTag_Next(rndrstream_3d->cur.w, 0);
+            NuRndrEndSceneEx(0);
+        }
+    }
+    NuScratchRelease();
+    NuScratchRelease();
+    NuScratchRelease();
+    NuLightPolyHaze(paused);
+    NuLightHaze((int)znear, paused);
+    txupload_on = 1;
+}
+
 
 void NuLightDestroy(struct nulight_s *light) {
     int i;

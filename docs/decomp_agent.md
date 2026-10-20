@@ -221,6 +221,11 @@ extern struct nulsthdr_s *D_006309FC;
 #define sceneinst_pool D_006309FC
 ```
 
+A unit may also `extern` one of its own registry statics under its retail
+name, declared with the registry size (`extern struct numtx_s vmtx;` in
+nucamera); gen_hybrid renames it to the retail `D_<vram>`. GCSE hashes symbol
+names, so the retail spelling can decide register ties.
+
 Compiler-private data (`$LC` strings and aggregates, jump tables, `li.d`
 pools) and the unit's `.lit4` pool are borrowed retail slots until the unit
 is `complete`; then its hybrid runs in whole-unit mode and emits them from C
