@@ -21,9 +21,11 @@ half of the image is retail-byte-exact by construction. A unit with C data
 its hybrid object provides all of its ranges as pieces
 (`<sec>.split_<vram8>`, selected file-qualified) and its expected data
 object is left out -- one data provider per unit. A `complete` unit also
-supplies every gap range its manifest `[[claim]]`s bytes in (its C strings,
-jump tables and pools that sit past its owned ranges), so that gap's
-expected object is left out too. Every range is ASSERTed at its address.
+supplies the spans of gap ranges its manifest `[[claim]]`s (its C strings,
+jump tables and pools that sit past its owned ranges; several units may
+claim spans of one gap); such a gap's expected object is left out, and its
+unclaimed bytes come from a retail incbin. Every range is ASSERTed at its
+address.
 Only `.vutext` still rides as a whole-section incbin (VU microcode, no
 attribution yet).
 
@@ -60,7 +62,7 @@ from declib.target import derive_tiling, load_target, parse_linker_script
 from declib.tu import load_tu_runs, load_units
 from gen_data_objects import (NOBITS_SECTIONS, load_map, object_groups,
                               section_label)
-from gen_hybrid import manifest_claims, piece_name, provides_data
+from gen_hybrid import manifest_claims, piece_name, provides_data, whole_unit
 from gen_expected_s import unit_stem
 from split_text import nm_defined_undefined
 
@@ -95,14 +97,16 @@ def tool_error(exc, default):
     return shown + (f" | (+{more} more lines)" if more > 0 else "")
 
 
-def manifest_units(version, link_set, with_data=None, claims=None):
+def manifest_units(version, link_set, with_data=None, claims=None, whole=None):
     """{unit_index: object rel path} for units that build a hybrid in this set.
 
     Only units with a function in a state this set links from C, or a
     `matching` data entry, get a hybrid; the rest (e.g. all-`asm` skeletons)
     fall through to the expected object. Units whose hybrid provides their
-    data (pieces) are added to the `with_data` set, and their `[[claim]]`s to
-    the `claims` dict ({unit_index: [(section, start, end)]}), when passed.
+    data (pieces) are added to the `with_data` set, `complete` ones (whose
+    hybrid also carries their .sbss/.bss pieces) to `whole`, and their
+    `[[claim]]`s to the `claims` dict ({unit_index: [(section, start,
+    end)]}), when passed.
     """
     wanted = _HYBRID_STATES[link_set]
     out = {}
@@ -119,15 +123,18 @@ def manifest_units(version, link_set, with_data=None, claims=None):
             out[idx] = Path(data["source"]).relative_to("src").with_suffix(".o")
             if c_data and with_data is not None:
                 with_data.add(idx)
+            if whole_unit(data) and whole is not None:
+                whole.add(idx)
             if c_data and claims is not None and data.get("claim"):
                 claims[idx] = manifest_claims(data)
     return out
 
 
 def claimed_ranges(map_ranges, claims, objects):
-    """{(section, gap start): object} -- the gap ranges a unit's hybrid
-    supplies whole because it claims bytes in them; a gap two units claim
-    fails loudly (status.py refuses it too)."""
+    """{(section, gap start): [(start, end, object)]} -- the claimed spans of
+    each gap range, by address, each supplied by its claimant's hybrid (the
+    piece of exactly that span); overlapping claims fail loudly (status.py
+    refuses them too)."""
     out = {}
     for unit, unit_claims in sorted(claims.items()):
         for section, start, end in unit_claims:
@@ -137,20 +144,40 @@ def claimed_ranges(map_ranges, claims, objects):
             if gap is None:
                 raise ValueError(f"unit {unit}: claim {section} 0x{start:08x}-"
                                  f"0x{end:08x} is not inside one data-map gap")
-            key = (section, gap["start"])
-            if out.setdefault(key, objects[unit]) != objects[unit]:
-                raise ValueError(f"{section} gap 0x{gap['start']:08x} is "
-                                 f"claimed by two units")
+            out.setdefault((section, gap["start"]), []).append(
+                (start, end, objects[unit]))
+    for (section, _gap), spans in out.items():
+        spans.sort(key=lambda s: s[0])
+        for (_s, e, _o), (s, _e, _o2) in zip(spans, spans[1:]):
+            if s < e:
+                raise ValueError(f"{section} claims overlap at 0x{s:08x}")
     return out
 
 
-def select_text_objects(version, link_set, with_data=None, claims=None):
+def gap_holes(map_ranges, claimed):
+    """[(section, start, end)] -- the unclaimed bytes of the claimed gaps,
+    which the link fills with retail bytes (`.split.gapfill_<vram8>`)."""
+    holes = []
+    for r in map_ranges:
+        spans = claimed.get((r["section"], r["start"]))
+        if not spans:
+            continue
+        cursor = r["start"]
+        for start, end, _obj in spans + [(r["end"], r["end"], None)]:
+            if start > cursor:
+                holes.append((r["section"], cursor, start))
+            cursor = end
+    return holes
+
+
+def select_text_objects(version, link_set, with_data=None, claims=None,
+                        whole=None):
     """[(unit_index, object_path)] in retail address order.
 
     Hybrid object where the unit builds one for this link set, expected object
     otherwise.
     """
-    hybrids = manifest_units(version, link_set, with_data, claims)
+    hybrids = manifest_units(version, link_set, with_data, claims, whole)
     names = load_units()
     objs = []
     for unit, _addr in load_tu_runs():
@@ -164,17 +191,22 @@ def select_text_objects(version, link_set, with_data=None, claims=None):
 
 
 def build_script(text_addr, text_objs, vutext_vaddr, map_ranges, nobits,
-                 defsyms, providers=None, claimed=None):
+                 defsyms, providers=None, claimed=None, nobits_ranges=None,
+                 nobits_providers=None):
     """Link script: .text from TU objects, data sections from map ranges.
 
     `providers` maps a range owner (`unit-NNNN`) to the hybrid object that
-    supplies its pieces, `claimed` a gap range ((section, start)) to the
-    hybrid that claims bytes in it; every other range comes from its
-    expected object. Each range is ASSERTed at its address (inside an output
-    section `.` is section-relative, hence ABSOLUTE), and each section's end
-    too."""
+    supplies its pieces, `claimed` a gap range ((section, start)) to its
+    claimed spans (claimed_ranges), whose holes come from the gap-fill object
+    (gap_holes); every other range comes from its expected object. Each range
+    is ASSERTed at its address (inside an output section `.` is
+    section-relative, hence ABSOLUTE), and each section's end too.
+    .sbss/.bss hold no file bytes: a `complete` unit's hybrid
+    (`nobits_providers`) or a claimant supplies its `nobits_ranges` pieces,
+    every other byte is reserved space."""
     providers = providers or {}
     claimed = claimed or {}
+    nobits_providers = nobits_providers or {}
     L = ["SECTIONS", "{", f"    . = 0x{text_addr:08X};",
          "    .text : SUBALIGN(1)", "    {"]
     L += [f"        {p.as_posix()}(.text)" for p in text_objs]
@@ -193,20 +225,56 @@ def build_script(text_addr, text_objs, vutext_vaddr, map_ranges, nobits,
         for r in rs:
             L.append(f"        ASSERT(ABSOLUTE(.) == 0x{r['start']:08X}, "
                      f"\"{sec} range 0x{r['start']:08X} misplaced\");")
-            obj = providers.get(r["owner"]) \
-                or claimed.get((r["section"], r["start"]))
+            obj = providers.get(r["owner"])
+            spans = claimed.get((r["section"], r["start"]))
             if obj is not None:
                 L.append(f"        {obj.as_posix()}({piece_name(sec, r['start'])})")
+            elif spans:
+                cursor = r["start"]
+                for start, end, cobj in spans:
+                    if start > cursor:
+                        L.append(f"        *(.split.gapfill_{cursor:08x})")
+                    L.append(f"        {cobj.as_posix()}({piece_name(sec, start)})")
+                    cursor = end
+                if cursor < r["end"]:
+                    L.append(f"        *(.split.gapfill_{cursor:08x})")
             else:
                 L.append(f"        *(.split.{section_label(r)})")
         L.append(f"        ASSERT(ABSOLUTE(.) == 0x{rs[-1]['end']:08X}, "
                  f"\"{sec} ends misplaced\");")
         L.append("    }")
 
-    L.append("    . = 0x00633000;")
-    L.append(f"    .sbss (NOLOAD) : {{ . += 0x{nobits['sbss']:06X}; }}")
-    L.append("    . = 0x00633400;")
-    L.append(f"    .bss  (NOLOAD) : {{ . += 0x{nobits['bss']:06X}; }}")
+    for sec, start in ((".sbss", 0x00633000), (".bss", 0x00633400)):
+        size = nobits[sec.lstrip(".")]
+        L.append(f"    . = 0x{start:08X};")
+        rs = sorted((r for r in nobits_ranges or [] if r["section"] == sec),
+                    key=lambda r: r["start"])
+        if not rs:
+            L.append(f"    {sec:<5} (NOLOAD) : {{ . += 0x{size:06X}; }}")
+            continue
+        L.append(f"    {sec} (NOLOAD) : SUBALIGN(1)")
+        L.append("    {")
+        for r in rs:
+            L.append(f"        ASSERT(ABSOLUTE(.) == 0x{r['start']:08X}, "
+                     f"\"{sec} range 0x{r['start']:08X} misplaced\");")
+            obj = nobits_providers.get(r["owner"])
+            spans = claimed.get((sec, r["start"]))
+            if obj is not None:
+                L.append(f"        {obj.as_posix()}({piece_name(sec, r['start'])})")
+            elif spans:
+                cursor = r["start"]
+                for s, e, cobj in spans:
+                    if s > cursor:
+                        L.append(f"        . += 0x{s - cursor:X};")
+                    L.append(f"        {cobj.as_posix()}({piece_name(sec, s)})")
+                    cursor = e
+                if cursor < r["end"]:
+                    L.append(f"        . += 0x{r['end'] - cursor:X};")
+            else:
+                L.append(f"        . += 0x{r['end'] - r['start']:X};")
+        L.append(f"        ASSERT(ABSOLUTE(.) == 0x{start + size:08X}, "
+                 f"\"{sec} ends misplaced\");")
+        L.append("    }")
     L.append(f"    _gp = 0x{_GP:08X};")
     L.append("    /DISCARD/ : { *(.pdr) *(.reginfo) *(.mdebug*) *(.comment) "
              "*(.gnu.attributes) }")
@@ -236,15 +304,17 @@ def link_image(reporter, version, link_set):
     vutext = next(o for o in tiling if o["name"] == "vutext")
     _addrs, nobits = parse_linker_script((ROOT / "linker.ld").read_text())
 
-    with_data, claims = set(), {}
-    text_objs = select_text_objects(version, link_set, with_data, claims)
+    with_data, claims, whole = set(), {}, set()
+    text_objs = select_text_objects(version, link_set, with_data, claims, whole)
     hybrid_count = sum(1 for _u, p in text_objs
                        if p.is_relative_to(ROOT / "build"))
-    map_ranges = [r for r in load_map(version)
-                  if r["section"] not in NOBITS_SECTIONS]
+    all_ranges = load_map(version)
+    map_ranges = [r for r in all_ranges if r["section"] not in NOBITS_SECTIONS]
+    nobits_ranges = [r for r in all_ranges if r["section"] in NOBITS_SECTIONS]
     providers = {f"unit-{u:04d}": p for u, p in text_objs if u in with_data}
+    nobits_providers = {f"unit-{u:04d}": p for u, p in text_objs if u in whole}
     try:
-        claimed = claimed_ranges(map_ranges, claims, dict(text_objs))
+        claimed = claimed_ranges(all_ranges, claims, dict(text_objs))
     except ValueError as exc:
         reporter.result("Claimed gap ranges", False, str(exc))
         return None, None
@@ -273,15 +343,23 @@ def link_image(reporter, version, link_set):
     out_dir = ROOT / "build" / version / "image"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # .vutext still rides as one incbin (VU microcode, unattributed).
+    # .vutext still rides as one incbin (VU microcode, unattributed), and so
+    # do the retail bytes of claimed gaps that no claim covers.
     vutext_bin = out_dir / "vutext.bin"
     vutext_bin.write_bytes(
         elf[vutext["offset"]:vutext["offset"] + vutext["size"]])
+    incbins = ('\t.section .split.vutext, "a", @progbits\n'
+               f'\t.incbin "{vutext_bin.as_posix()}"\n')
+    delta = h(pt_load["vaddr"]) - h(pt_load["offset"])
+    for section, start, end in gap_holes(map_ranges, claimed):
+        hole_bin = out_dir / f"gapfill_{start:08x}.bin"
+        hole_bin.write_bytes(elf[start - delta:end - delta])
+        flags = "a" if section == ".rodata" else "aw"
+        incbins += (f'\t.section .split.gapfill_{start:08x}, "{flags}", @progbits\n'
+                    f'\t.incbin "{hole_bin.as_posix()}"\n')
     (out_dir / "vutext.s").write_text(
         "/* Generated by tools/link_image.py -- do not edit, do not commit "
-        "(game-derived). */\n"
-        '\t.section .split.vutext, "a", @progbits\n'
-        f'\t.incbin "{vutext_bin.as_posix()}"\n')
+        "(game-derived). */\n" + incbins)
 
     defined, undefined = set(), set()
     try:
@@ -308,7 +386,7 @@ def link_image(reporter, version, link_set):
 
     script = build_script(text_addr, [p for _u, p in text_objs],
                           vutext["vaddr"], map_ranges, nobits, defsyms,
-                          providers, claimed)
+                          providers, claimed, nobits_ranges, nobits_providers)
     ld_script = out_dir / f"{link_set}.ld"
     ld_script.write_text(script)
     elf_out = out_dir / f"{link_set}.elf"

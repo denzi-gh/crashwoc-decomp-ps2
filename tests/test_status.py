@@ -84,6 +84,10 @@ DATA_TABLE = textwrap.dedent("""\
     [[data]]
     id = "testv:unit-0007:00613fb0:nulist_table"
     state = "asm"
+
+    [[data]]
+    id = "testv:unit-0007:00633000:count"
+    state = "asm"
     """)
 
 PROFILES_TOML = textwrap.dedent("""\
@@ -249,20 +253,18 @@ class TestDataEntries(unittest.TestCase):
     def test_good_table_passes_and_counts(self):
         self.assertEqual(self.tree.problems(), [])
         _results, counts = status.check_version(VERSION, self.tree.root)
-        self.assertEqual((counts["data_retail"], counts["data_asm"]), (1, 1))
+        self.assertEqual((counts["data_retail"], counts["data_asm"]), (1, 2))
 
-    def test_every_progbits_symbol_must_be_listed(self):
+    def test_every_symbol_must_be_listed(self):
         text = self.tree.manifest.read_text()
         self.tree.manifest.write_text(text.split("[[data]]")[0] + "[[data]]"
                                       + text.split("[[data]]")[1])
         self.assert_rejected("(nulist_table) not listed")
+        self.assert_rejected("(count) not listed")
 
-    def test_rejects_nobits_symbol(self):
-        self.tree.manifest.write_text(self.tree.manifest.read_text() + textwrap.dedent("""
-            [[data]]
-            id = "testv:unit-0007:00633000:count"
-            state = "asm"
-            """))
+    def test_nobits_symbol_cannot_be_retail(self):
+        self.rewrite('00633000:count"\nstate = "asm"',
+                     '00633000:count"\nstate = "retail"\nreason = "x"')
         self.assert_rejected(".sbss symbols carry no file bytes")
 
     def test_rejects_wrong_name_and_address(self):
@@ -292,6 +294,8 @@ class TestDataEntries(unittest.TestCase):
         self.rewrite("complete = false", "complete = true")
         self.assert_rejected("a data entry is still `asm`")
         self.rewrite('nulist_table"\nstate = "asm"', 'nulist_table"\nstate = "matching"')
+        self.assert_rejected("a data entry is still `asm`")
+        self.rewrite('count"\nstate = "asm"', 'count"\nstate = "matching"')
         self.assertEqual(self.tree.problems(), [])
 
     def test_complete_needs_a_data_table(self):

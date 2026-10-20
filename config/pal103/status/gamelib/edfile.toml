@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0075"
 source = "src/gamelib/edfile.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0075:001a7500:EdFileOpen"
@@ -97,24 +97,24 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0075:0062f748:edfile_media"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0075:0062f74c:edfile_handle"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0075:0062f750:edfile_write_flag"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0075:0062f754:edfile_mcresult"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0075:0062f758:edfile_lock"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0075:0062f760:edfile_buffer_pointer"
-state = "asm"
+state = "matching"

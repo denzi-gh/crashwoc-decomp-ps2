@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0036"
 source = "src/nu3d/nunode.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0036:001165b0:NuNodeDestroyChildren"
@@ -161,8 +161,18 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0036:0062eb88:global_id"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0036:0062eb8c:g_nunode_keep_names"
-state = "asm"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x006142b0
+end = 0x006142c8
+
+[[claim]]
+section = ".sdata"
+start = 0x0062eb90
+end = 0x0062eb91

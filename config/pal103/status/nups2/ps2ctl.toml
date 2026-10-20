@@ -57,8 +57,8 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0063:0062f1d8:PadRecInfo"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0063:0062f1dc:PadDemoEnd"
-state = "asm"
+state = "matching"

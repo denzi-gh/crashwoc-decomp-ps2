@@ -26,3 +26,12 @@ state = "matching"
 [[data]]
 id = "pal103:unit-0182:00612440:p.3"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0182:00702a40:initialized.10"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x00702a40
+end = 0x00702a44

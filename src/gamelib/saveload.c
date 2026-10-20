@@ -83,104 +83,81 @@ char saveload_slotname[32] = { 0 };
 
 s32 saveloadGetDirectory(void);
 
-extern s32 D_0062F770;
-extern void *iconbuff;
-extern s32 saveload_status;
+static s32 iconsize = 0;
+void *iconbuff = 0;
+s32 saveload_status = 0;
+s32 saveload_error = 0;
+s32 saveload_cardtype = -1;
+s32 saveload_freespace = -1;
+s32 saveload_cardformatted = -1;
+s32 saveload_cardchanged = 0;
 extern s32 saveload_slotid;
 extern void *saveload_data;
 extern s32 saveload_datasize;
+extern s32 saveload_handle;
 
-extern s32 D_0063321C;
-extern s32 D_00633220;
-extern s32 D_00633224;
-extern s32 D_00633228;
-
-extern char D_00619B70[];
-extern char D_00619BB0[];
-extern char D_00619BC0[];
-
-#define iconsize D_0062F770
-#define mc_type D_0063321C
-#define mc_free D_00633220
-#define mc_format D_00633224
-#define mc_result D_00633228
-#define saveload_gamecode D_00619B70
-#define saveload_slotfmt D_00619BB0
-#define saveload_savedir D_00619BC0
+static s32 mctype;
+static s32 mcfree;
+static s32 mcformat;
+static s32 mcresult;
 
 #define SCE_RDONLY 1
 
-extern char D_006B3B40[];               /* sceMcGetDir entry table */
-#define mc_dirtable D_006B3B40
+static char mcdir[0x480];               /* sceMcGetDir entry table */
 
-
-extern char D_0062F790[];
-extern char D_0062F798[];
-extern char D_0062F7A0[];
-extern char D_0062F7A8[];
-#define saveload_rootdir D_0062F790
-#define saveload_fnamefmt D_0062F798
-#define saveload_dnamefmt D_0062F7A0
-#define saveload_dirfmt D_0062F7A8
 
 s32 saveloadCheckCardPresent(void) {
     s32 nocard;
 
     sceMcGetInfo(0, 0, 0, 0, 0);
-    sceMcSync(0, 0, &mc_result);
+    sceMcSync(0, 0, &mcresult);
     nocard = -10;
-    return mc_result > nocard;
+    return mcresult > nocard;
 }
 
 
-/* Fills mc_dirtable with the save directory listing. Returns 0 when the
+/* Fills mcdir with the save directory listing. Returns 0 when the
    directory does not exist yet, otherwise the entry count or -1 on error. */
 s32 saveloadGetDirectory(void) {
     char path[32];
     s32 present;
 
     sceMcGetInfo(0, 0, 0, 0, 0);
-    sceMcSync(0, 0, &mc_result);
-    present = mc_result > -10;
+    sceMcSync(0, 0, &mcresult);
+    present = mcresult > -10;
     if (!present) {
         return -1;
     }
-    sceMcChdir(0, 0, saveload_rootdir, 0);
-    sceMcSync(0, 0, &mc_result);
-    if (mc_result != 0) {
+    sceMcChdir(0, 0, "/", 0);
+    sceMcSync(0, 0, &mcresult);
+    if (mcresult != 0) {
         return -1;
     }
-    sprintf(fname, saveload_fnamefmt, saveload_gamecode);
-    sprintf(dname, saveload_dnamefmt, fname);
-    sprintf(path, saveload_dirfmt, fname);
-    sceMcGetDir(0, 0, fname, 0, 0x12, mc_dirtable);
-    sceMcSync(0, 0, &mc_result);
-    if (mc_result == 0) {
+    sprintf(fname, "%s", "BESLES-50386");
+    sprintf(dname, "/%s", fname);
+    sprintf(path, "%s*", fname);
+    sceMcGetDir(0, 0, fname, 0, 0x12, mcdir);
+    sceMcSync(0, 0, &mcresult);
+    if (mcresult == 0) {
         return 0;
     }
     sceMcChdir(0, 0, dname, 0);
-    sceMcSync(0, 0, &mc_result);
-    if (mc_result != 0) {
+    sceMcSync(0, 0, &mcresult);
+    if (mcresult != 0) {
         return -1;
     }
-    sceMcGetDir(0, 0, path, 0, 0x12, mc_dirtable);
-    sceMcSync(0, 0, &mc_result);
-    if (mc_result == 0) {
+    sceMcGetDir(0, 0, path, 0, 0x12, mcdir);
+    sceMcSync(0, 0, &mcresult);
+    if (mcresult == 0) {
         return -1;
     }
-    return mc_result;
+    return mcresult;
 }
 
 extern s32 sceMcDelete(s32 port, s32 slot, const char *name);
-extern char D_00619B80[];
-extern char D_00619BA0[];
-#define saveload_iconsys D_00619B80
-#define saveload_iconfile D_00619BA0
 
 extern s32 sceMcMkdir(s32 port, s32 slot, const char *name);
 extern s32 sceMcWrite(s32 fd, const void *buf, s32 size);
-extern char D_00619B90[];
-#define saveload_iconsrc D_00619B90
 
 /* Writes `size` bytes of `buf` to save `slot`, creating the save directory
    (with its icon files) first if the card has none. Returns 1 on success. */
@@ -198,73 +175,73 @@ s32 saveloadSaveSlot(s32 slot, void *buf, s32 size) {
         return 0;
     }
     if (count == 0) {
-        sceMcChdir(0, 0, saveload_rootdir, 0);
-        sceMcSync(0, 0, &mc_result);
-        if (mc_result != 0) {
+        sceMcChdir(0, 0, "/", 0);
+        sceMcSync(0, 0, &mcresult);
+        if (mcresult != 0) {
             return 0;
         }
         sceMcMkdir(0, 0, fname);
-        sceMcSync(0, 0, &mc_result);
-        if (mc_result != 0) {
+        sceMcSync(0, 0, &mcresult);
+        if (mcresult != 0) {
             return 0;
         }
         sceMcChdir(0, 0, dname, 0);
-        sceMcSync(0, 0, &mc_result);
-        if (mc_result != 0) {
+        sceMcSync(0, 0, &mcresult);
+        if (mcresult != 0) {
             return 0;
         }
         sceMcOpen(0, 0, fname, 0x200);
-        sceMcSync(0, 0, &mc_result);
-        fd = mc_result;
+        sceMcSync(0, 0, &mcresult);
+        fd = mcresult;
         sceMcWrite(fd, &count, 4);
-        sceMcSync(0, 0, &mc_result);
+        sceMcSync(0, 0, &mcresult);
         sceMcClose(fd);
-        sceMcSync(0, 0, &mc_result);
+        sceMcSync(0, 0, &mcresult);
 
-        sceMcOpen(0, 0, saveload_iconsys, 0x200);
-        sceMcSync(0, 0, &mc_result);
-        fd = mc_result;
+        sceMcOpen(0, 0, "icon.sys", 0x200);
+        sceMcSync(0, 0, &mcresult);
+        fd = mcresult;
         sceMcWrite(fd, &mciconsys, 0x3C4);
-        sceMcSync(0, 0, &mc_result);
+        sceMcSync(0, 0, &mcresult);
         sceMcClose(fd);
-        sceMcSync(0, 0, &mc_result);
+        sceMcSync(0, 0, &mcresult);
 
-        iconsize = NuFileSize(saveload_iconsrc);
+        iconsize = NuFileSize("stuff\\crash.ico");
         icon = NuStreamGetOutputBuffer(0);
-        iconsize = NuFileLoadBuffer(saveload_iconsrc, icon, 0x7FFFFFFF);
-        sceMcOpen(0, 0, saveload_iconfile, 0x200);
-        sceMcSync(0, 0, &mc_result);
-        fd = mc_result;
+        iconsize = NuFileLoadBuffer("stuff\\crash.ico", icon, 0x7FFFFFFF);
+        sceMcOpen(0, 0, "crash.ico", 0x200);
+        sceMcSync(0, 0, &mcresult);
+        fd = mcresult;
         sceMcWrite(fd, icon, iconsize);
-        sceMcSync(0, 0, &mc_result);
+        sceMcSync(0, 0, &mcresult);
         sceMcClose(fd);
-        sceMcSync(0, 0, &mc_result);
+        sceMcSync(0, 0, &mcresult);
         NuRndrSwapStreamBuffers();
     }
-    sprintf(path, saveload_slotfmt, fname, slot);
-    sceMcGetDir(0, 0, path, 0, 0x12, mc_dirtable);
-    sceMcSync(0, 0, &mc_result);
-    if (mc_result == 1) {
+    sprintf(path, "%sslot%02d", fname, slot);
+    sceMcGetDir(0, 0, path, 0, 0x12, mcdir);
+    sceMcSync(0, 0, &mcresult);
+    if (mcresult == 1) {
         sceMcDelete(0, 0, path);
-        sceMcSync(0, 0, &mc_result);
-        if (mc_result != 0) {
+        sceMcSync(0, 0, &mcresult);
+        if (mcresult != 0) {
             return 0;
         }
     }
     sceMcOpen(0, 0, path, 0x200);
-    sceMcSync(0, 0, &mc_result);
-    fd = mc_result;
+    sceMcSync(0, 0, &mcresult);
+    fd = mcresult;
     if (fd < 0) {
         return 0;
     }
     sceMcWrite(fd, buf, size);
-    sceMcSync(0, 0, &mc_result);
-    if (mc_result < 0) {
+    sceMcSync(0, 0, &mcresult);
+    if (mcresult < 0) {
         return 0;
     }
     sceMcClose(fd);
-    sceMcSync(0, 0, &mc_result);
-    if (mc_result < 0) {
+    sceMcSync(0, 0, &mcresult);
+    if (mcresult < 0) {
         return 0;
     }
     return 1;
@@ -283,44 +260,34 @@ s32 saveloadDeleteSlot(s32 slot) {
     if (count == -1 || count == 0) {
         return 0;
     }
-    sprintf(path, saveload_slotfmt, fname, slot);
-    sceMcGetDir(0, 0, path, 0, 0x12, mc_dirtable);
-    sceMcSync(0, 0, &mc_result);
-    if (mc_result != 1) {
+    sprintf(path, "%sslot%02d", fname, slot);
+    sceMcGetDir(0, 0, path, 0, 0x12, mcdir);
+    sceMcSync(0, 0, &mcresult);
+    if (mcresult != 1) {
         return 0;
     }
     sceMcDelete(0, 0, path);
-    sceMcSync(0, 0, &mc_result);
-    if (mc_result < 0) {
+    sceMcSync(0, 0, &mcresult);
+    if (mcresult < 0) {
         return 0;
     }
     if (count == 2) {
         sceMcDelete(0, 0, fname);
-        sceMcSync(0, 0, &mc_result);
-        sceMcDelete(0, 0, saveload_iconsys);
-        sceMcSync(0, 0, &mc_result);
-        sceMcDelete(0, 0, saveload_iconfile);
-        sceMcSync(0, 0, &mc_result);
-        sceMcChdir(0, 0, saveload_rootdir, 0);
-        sceMcSync(0, 0, &mc_result);
+        sceMcSync(0, 0, &mcresult);
+        sceMcDelete(0, 0, "icon.sys");
+        sceMcSync(0, 0, &mcresult);
+        sceMcDelete(0, 0, "crash.ico");
+        sceMcSync(0, 0, &mcresult);
+        sceMcChdir(0, 0, "/", 0);
+        sceMcSync(0, 0, &mcresult);
         sceMcDelete(0, 0, fname);
-        sceMcSync(0, 0, &mc_result);
+        sceMcSync(0, 0, &mcresult);
     }
     return 1;
 }
 
-extern s32 saveload_error;
-extern s32 saveload_cardtype;
-extern s32 saveload_freespace;
-extern s32 saveload_cardformatted;
-extern s32 saveload_cardchanged;
-extern s32 saveload_handle;
-extern s32 D_0062F7AC;
-extern char D_0062F7B0[];
-#define saveload_retries D_0062F7AC
-#define saveload_slotmask D_0062F7B0
-
 void saveloadASCallEachFrame(void) {
+    static s32 freqcount = 0;
     char path[32];
     s32 result;
     s32 done;
@@ -332,9 +299,9 @@ void saveloadASCallEachFrame(void) {
     }
     done = sceMcSync(1, 0, &result);
     if (done == -1) {
-        saveload_retries++;
-        if (saveload_retries >= 5) {
-            saveload_retries = 0;
+        freqcount++;
+        if (freqcount >= 5) {
+            freqcount = 0;
             sceMcGetInfo(0, 0, 0, 0, 0);
             saveload_status = 2;
         }
@@ -431,10 +398,10 @@ void saveloadASCallEachFrame(void) {
         break;
     case 9:
         if (result == -4) {
-            sceMcMkdir(0, 0, saveload_savedir);
+            sceMcMkdir(0, 0, "/BESLES-50386");
             saveload_status = 14;
         } else if (result == 0) {
-            sceMcGetDir(0, 0, saveload_gamecode, 0, 0x12, mc_dirtable);
+            sceMcGetDir(0, 0, "BESLES-50386", 0, 0x12, mcdir);
             saveload_status = 10;
         } else {
             saveload_status = 1;
@@ -446,7 +413,7 @@ void saveloadASCallEachFrame(void) {
             sceMcOpen(0, 0, saveload_slotname, 0x200);
             saveload_status = 11;
         } else if (result == 0) {
-            sceMcOpen(0, 0, saveload_iconfile, 0x200);
+            sceMcOpen(0, 0, "crash.ico", 0x200);
             saveload_status = 16;
         } else {
             saveload_status = 1;
@@ -484,7 +451,7 @@ void saveloadASCallEachFrame(void) {
         break;
     case 14:
         if (result == 0) {
-            sceMcChdir(0, 0, saveload_savedir, 0);
+            sceMcChdir(0, 0, "/BESLES-50386", 0);
             saveload_status = 15;
         } else {
             saveload_status = 1;
@@ -493,7 +460,7 @@ void saveloadASCallEachFrame(void) {
         break;
     case 15:
         if (result == 0) {
-            sceMcOpen(0, 0, saveload_iconfile, 0x200);
+            sceMcOpen(0, 0, "crash.ico", 0x200);
             saveload_status = 16;
         } else {
             saveload_status = 1;
@@ -521,7 +488,7 @@ void saveloadASCallEachFrame(void) {
         break;
     case 18:
         if (result == 0) {
-            sceMcOpen(0, 0, saveload_iconsys, 0x200);
+            sceMcOpen(0, 0, "icon.sys", 0x200);
             saveload_status = 19;
         } else {
             saveload_status = 1;
@@ -549,7 +516,7 @@ void saveloadASCallEachFrame(void) {
         break;
     case 21:
         if (result == 0) {
-            sceMcOpen(0, 0, saveload_gamecode, 0x200);
+            sceMcOpen(0, 0, "BESLES-50386", 0x200);
             saveload_status = 22;
         } else {
             saveload_status = 1;
@@ -595,8 +562,8 @@ void saveloadASCallEachFrame(void) {
         break;
     case 26:
         if (result == 0) {
-            sprintf(path, saveload_slotmask, saveload_gamecode);
-            sceMcGetDir(0, 0, path, 0, 0x12, mc_dirtable);
+            sprintf(path, "%sslot*", "BESLES-50386");
+            sceMcGetDir(0, 0, path, 0, 0x12, mcdir);
             saveload_status = 27;
         } else {
             saveload_status = 1;
@@ -609,7 +576,7 @@ void saveloadASCallEachFrame(void) {
             saveload_error = 0;
             saveload_status = 3;
         } else if (result == 0) {
-            sceMcDelete(0, 0, saveload_gamecode);
+            sceMcDelete(0, 0, "BESLES-50386");
             saveload_status = 28;
         } else {
             saveload_status = 1;
@@ -618,7 +585,7 @@ void saveloadASCallEachFrame(void) {
         break;
     case 28:
         if (result == 0) {
-            sceMcDelete(0, 0, saveload_iconsys);
+            sceMcDelete(0, 0, "icon.sys");
             saveload_status = 29;
         } else {
             saveload_status = 1;
@@ -627,7 +594,7 @@ void saveloadASCallEachFrame(void) {
         break;
     case 29:
         if (result == 0) {
-            sceMcDelete(0, 0, saveload_iconfile);
+            sceMcDelete(0, 0, "crash.ico");
             saveload_status = 30;
         } else {
             saveload_status = 1;
@@ -636,7 +603,7 @@ void saveloadASCallEachFrame(void) {
         break;
     case 30:
         if (result == 0) {
-            sceMcChdir(0, 0, saveload_rootdir, 0);
+            sceMcChdir(0, 0, "/", 0);
             saveload_status = 31;
         } else {
             saveload_status = 1;
@@ -645,7 +612,7 @@ void saveloadASCallEachFrame(void) {
         break;
     case 31:
         if (result == 0) {
-            sceMcDelete(0, 0, saveload_gamecode);
+            sceMcDelete(0, 0, "BESLES-50386");
             saveload_status = 32;
         } else {
             saveload_status = 1;
@@ -665,6 +632,10 @@ void saveloadASCallEachFrame(void) {
     }
 }
 
+s32 saveload_slotid = 0;
+void *saveload_data = 0;
+s32 saveload_datasize = 0;
+s32 saveload_handle = 0;
 
 s32 saveloadLoadIcon(char *name, void *buf) {
     iconsize = NuFileSize(name);
@@ -676,44 +647,44 @@ s32 saveloadLoadIcon(char *name, void *buf) {
 
 
 s32 saveloadCheckCardType(void) {
-    sceMcGetInfo(0, 0, &mc_type, 0, 0);
-    sceMcSync(0, 0, &mc_result);
-    if (mc_result < -9) {
+    sceMcGetInfo(0, 0, &mctype, 0, 0);
+    sceMcSync(0, 0, &mcresult);
+    if (mcresult < -9) {
         return 0;
     }
-    return mc_type == 2;
+    return mctype == 2;
 }
 
 
 s32 saveloadCheckCardFormatted(void) {
-    sceMcGetInfo(0, 0, &mc_type, 0, &mc_format);
-    sceMcSync(0, 0, &mc_result);
-    if (mc_result < -9) {
+    sceMcGetInfo(0, 0, &mctype, 0, &mcformat);
+    sceMcSync(0, 0, &mcresult);
+    if (mcresult < -9) {
         return 0;
     }
-    if (mc_type != 2) {
+    if (mctype != 2) {
         return 0;
     }
-    return mc_format == 1;
+    return mcformat == 1;
 }
 
 
 s32 saveloadCheckCardFreeSpace(s32 size) {
-    sceMcGetInfo(0, 0, &mc_type, &mc_free, &mc_format);
-    sceMcSync(0, 0, &mc_result);
-    if (mc_result < -9) {
+    sceMcGetInfo(0, 0, &mctype, &mcfree, &mcformat);
+    sceMcSync(0, 0, &mcresult);
+    if (mcresult < -9) {
         return 0;
     }
-    if (mc_type != 2) {
+    if (mctype != 2) {
         return 0;
     }
-    if (mc_format != 1) {
+    if (mcformat != 1) {
         return 0;
     }
     if (size <= 0) {
-        return mc_free;
+        return mcfree;
     }
-    if (mc_free >= size) {
+    if (mcfree >= size) {
         return 1;
     }
     return 0;
@@ -722,15 +693,15 @@ s32 saveloadCheckCardFreeSpace(s32 size) {
 
 s32 saveloadFormatCard(void) {
     sceMcFormat(0, 0);
-    sceMcSync(0, 0, &mc_result);
-    return mc_result == 0;
+    sceMcSync(0, 0, &mcresult);
+    return mcresult == 0;
 }
 
 
 s32 saveloadUnFormatCard(void) {
     sceMcUnformat(0, 0);
-    sceMcSync(0, 0, &mc_result);
-    return mc_result == 0;
+    sceMcSync(0, 0, &mcresult);
+    return mcresult == 0;
 }
 
 
@@ -757,26 +728,26 @@ s32 saveloadLoadSlot(s32 slot, void *buf, s32 size) {
     if (dir == 0 || dir == -1) {
         return 0;
     }
-    sprintf(path, saveload_slotfmt, fname, slot);
-    sceMcGetDir(0, 0, path, 0, 0x12, mc_dirtable);
-    sceMcSync(0, 0, &mc_result);
-    if (mc_result != 1) {
+    sprintf(path, "%sslot%02d", fname, slot);
+    sceMcGetDir(0, 0, path, 0, 0x12, mcdir);
+    sceMcSync(0, 0, &mcresult);
+    if (mcresult != 1) {
         return 0;
     }
     sceMcOpen(0, 0, path, SCE_RDONLY);
-    sceMcSync(0, 0, &mc_result);
-    fd = mc_result;
+    sceMcSync(0, 0, &mcresult);
+    fd = mcresult;
     if (fd < 0) {
         return 0;
     }
     sceMcRead(fd, buf, size);
-    sceMcSync(0, 0, &mc_result);
-    if (mc_result < 0) {
+    sceMcSync(0, 0, &mcresult);
+    if (mcresult < 0) {
         return 0;
     }
     sceMcClose(fd);
-    sceMcSync(0, 0, &mc_result);
-    if (mc_result < 0) {
+    sceMcSync(0, 0, &mcresult);
+    if (mcresult < 0) {
         return 0;
     }
     return 1;
@@ -795,8 +766,8 @@ void saveloadASLoad(s32 slot, void *data, s32 size) {
         saveload_slotid = slot;
         saveload_data = data;
         saveload_datasize = size;
-        sprintf(saveload_slotname, saveload_slotfmt, saveload_gamecode, slot);
-        sceMcChdir(0, 0, saveload_savedir, 0);
+        sprintf(saveload_slotname, "%sslot%02d", "BESLES-50386", slot);
+        sceMcChdir(0, 0, "/BESLES-50386", 0);
         saveload_status = 5;
     }
 }
@@ -807,8 +778,8 @@ void saveloadASSave(s32 slot, void *data, s32 size) {
         saveload_slotid = slot;
         saveload_data = data;
         saveload_datasize = size;
-        sprintf(saveload_slotname, saveload_slotfmt, saveload_gamecode, slot);
-        sceMcChdir(0, 0, saveload_savedir, 0);
+        sprintf(saveload_slotname, "%sslot%02d", "BESLES-50386", slot);
+        sceMcChdir(0, 0, "/BESLES-50386", 0);
         saveload_status = 9;
     }
 }
@@ -817,8 +788,8 @@ void saveloadASSave(s32 slot, void *data, s32 size) {
 void saveloadASDelete(s32 slot) {
     if (slot < 4) {
         saveload_slotid = slot;
-        sprintf(saveload_slotname, saveload_slotfmt, saveload_gamecode, slot);
-        sceMcChdir(0, 0, saveload_savedir, 0);
+        sprintf(saveload_slotname, "%sslot%02d", "BESLES-50386", slot);
+        sceMcChdir(0, 0, "/BESLES-50386", 0);
         saveload_status = 0x19;
     }
 }

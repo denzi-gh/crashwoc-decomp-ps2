@@ -66,9 +66,14 @@ typedef union {
     } bits;
 } FLO_union_type;
 
-extern fp_number_type D_00702A48;
-#define thenan D_00702A48
 extern float __make_fp(fp_class_type class, unsigned int sign, int exp, unsigned int frac);
+
+
+static inline fp_number_type *nan(void) {
+    static fp_number_type thenan;
+
+    return &thenan;
+}
 
 
 static inline int isnan(fp_number_type *x) {
@@ -195,7 +200,7 @@ static fp_number_type *_fpadd_parts(fp_number_type *a, fp_number_type *b, fp_num
     }
     if (isinf(a)) {
         if (isinf(b) && a->sign != b->sign) {
-            return &thenan;
+            return nan();
         }
         return a;
     }
@@ -322,14 +327,14 @@ static inline fp_number_type *_fpmul_parts(fp_number_type *a, fp_number_type *b,
     }
     if (isinf(a)) {
         if (iszero(b)) {
-            return &thenan;
+            return nan();
         }
         a->sign = a->sign != b->sign;
         return a;
     }
     if (isinf(b)) {
         if (iszero(a)) {
-            return &thenan;
+            return nan();
         }
         b->sign = a->sign != b->sign;
         return b;
@@ -434,7 +439,7 @@ static inline fp_number_type *_fpdiv_parts(fp_number_type *a, fp_number_type *b)
 
     if (isinf(a) || iszero(a)) {
         if (a->class == b->class) {
-            return &thenan;
+            return nan();
         }
         return a;
     }

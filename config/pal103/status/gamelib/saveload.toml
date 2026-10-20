@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0077"
 source = "src/gamelib/saveload.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0077:001a9b08:saveloadGetDirectory"
@@ -97,52 +97,87 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0077:0062f770:iconsize"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0077:0062f774:iconbuff"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0077:0062f778:saveload_status"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0077:0062f77c:saveload_error"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0077:0062f780:saveload_cardtype"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0077:0062f784:saveload_freespace"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0077:0062f788:saveload_cardformatted"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0077:0062f78c:saveload_cardchanged"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0077:0062f7ac:freqcount.105"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0077:0062f7b8:saveload_slotid"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0077:0062f7bc:saveload_data"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0077:0062f7c0:saveload_datasize"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0077:0062f7c4:saveload_handle"
-state = "asm"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0077:0063321c:mctype"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0077:00633220:mcfree"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0077:00633224:mcformat"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0077:00633228:mcresult"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0077:006b3b40:mcdir"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x006b3b40
+end = 0x006b3fc0
+
+[[claim]]
+section = ".rodata"
+start = 0x00619bd0
+end = 0x00619c4c
+
+[[claim]]
+section = ".sbss"
+start = 0x00633228
+end = 0x0063322c

@@ -50,55 +50,20 @@ typedef struct NuExternalMemory {
 
 static char blk_hdr[13] = "MEMBLKHEADER";
 static char blk_end[13] = "MEMBLKTAIL01";
+static NuMemHeader *alloc_list = 0;
+static int totalloc = 0;
+static NuDiscardable *discardbuff = 0;
+static int alloccnt = 0;
+static NuExternalMemory *memexternal = 0;
+int highallocaddr = 0;
+static int peakallocaddr = 0;
 
-extern NuMemHeader *D_0062EA04;
-extern int D_0062EA08;
-extern NuDiscardable *D_0062EA0C;
-extern int D_0062EA10;
-extern NuExternalMemory *D_0062EA14;
-extern int highallocaddr;
-extern int D_0062EA1C;
-extern NuExternalMemory D_00633018;
-extern char D_00613A10[];
-extern char D_00613A30[];
-extern char D_00613A58[];
-extern char D_00613A78[];
-extern char D_00613AA0[];
-extern char D_00613AF0[];
-extern char D_00613B18[];
-extern char D_00613B40[];
-extern char D_00613B68[];
-extern char D_00613B90[];
-extern char D_00613BB8[];
-extern char D_00613BE8[];
-extern char D_00613C48[];
-extern char D_00613C80[];
-#define memblock_list D_0062EA04
-#define memory_allocated D_0062EA08
-#define current_discardable D_0062EA0C
-#define memblock_count D_0062EA10
-#define current_external D_0062EA14
-#define memory_high_water D_0062EA1C
-#define external_memory D_00633018
-#define numem_file D_00613A10
-#define msg_alloc_failed D_00613A30
-#define msg_alloc_over_32mb D_00613A58
-#define msg_alloc_failed_at D_00613A78
-#define msg_misaligned_alloc D_00613AA0
-#define msg_realloc_external D_00613AF0
-#define msg_free_external D_00613B18
-#define msg_invalid_free D_00613B40
-#define msg_tail_overwritten D_00613B68
-#define msg_header_overwritten D_00613B90
-#define msg_already_free D_00613BB8
-#define msg_validate_tail D_00613BE8
-#define msg_block_not_released D_00613C48
-#define msg_total_allocated D_00613C80
+static NuExternalMemory memext;
 
 
 void *NuMemAlloc(int size)
 {
-    NuExternalMemory *external = current_external;
+    NuExternalMemory *external = memexternal;
     NuDiscardable *pool;
     unsigned char *ptr;
     int end;
@@ -112,7 +77,7 @@ void *NuMemAlloc(int size)
         }
         return 0;
     }
-    pool = current_discardable;
+    pool = discardbuff;
     if (pool) {
         size = (size + 15) & 0xFFFFFFF0;
         if (size < pool->remaining) {
@@ -121,24 +86,24 @@ void *NuMemAlloc(int size)
             pool->next = ptr + size;
             return ptr;
         }
-        NuErrorProlog(numem_file, 0xCF)(msg_alloc_failed, size);
+        NuErrorProlog("..\\nu2crash.ps2\\nucore\\numem.c", 0xCF)("NuMemAlloc : Failed to alloc %d bytes!", size);
         return 0;
     }
-    memory_allocated += size;
+    totalloc += size;
     ptr = malloc(size);
     if (ptr == 0) {
-        NuErrorProlog(numem_file, 0xD6)(msg_alloc_failed, size);
+        NuErrorProlog("..\\nu2crash.ps2\\nucore\\numem.c", 0xD6)("NuMemAlloc : Failed to alloc %d bytes!", size);
     }
     memset(ptr, 0, size);
     end = (int)ptr + size;
     if (highallocaddr < end) {
         highallocaddr = end;
     }
-    if (memory_high_water < end) {
-        memory_high_water = end;
+    if (peakallocaddr < end) {
+        peakallocaddr = end;
     }
     if (end > 0x2000000) {
-        NuDebugMsgProlog(numem_file, 0xE1)(msg_alloc_over_32mb, size, ptr);
+        NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\numem.c", 0xE1)("Warning - alloc > 32MB %d @ %d", size, ptr);
     }
     return ptr;
 }
@@ -146,7 +111,7 @@ void *NuMemAlloc(int size)
 
 void *NuMemReAlloc(void *old, int size)
 {
-    NuExternalMemory *external = current_external;
+    NuExternalMemory *external = memexternal;
     NuDiscardable *pool;
     unsigned char *ptr;
 
@@ -159,7 +124,7 @@ void *NuMemReAlloc(void *old, int size)
         }
         return 0;
     }
-    pool = current_discardable;
+    pool = discardbuff;
     if (pool) {
         size = (size + 15) & 0xFFFFFFF0;
         if (size < pool->remaining) {
@@ -168,12 +133,12 @@ void *NuMemReAlloc(void *old, int size)
             pool->next = ptr + size;
             return ptr;
         }
-        NuErrorProlog(numem_file, 0xFE)(msg_alloc_failed, size);
+        NuErrorProlog("..\\nu2crash.ps2\\nucore\\numem.c", 0xFE)("NuMemAlloc : Failed to alloc %d bytes!", size);
         return 0;
     }
     ptr = realloc(old, size);
     if (ptr == 0) {
-        NuErrorProlog(numem_file, 0x104)(msg_alloc_failed, size);
+        NuErrorProlog("..\\nu2crash.ps2\\nucore\\numem.c", 0x104)("NuMemAlloc : Failed to alloc %d bytes!", size);
     }
     return ptr;
 }
@@ -181,7 +146,7 @@ void *NuMemReAlloc(void *old, int size)
 
 void *NuMemAllocFn(int size, char *file, int line)
 {
-    NuExternalMemory *external = current_external;
+    NuExternalMemory *external = memexternal;
     NuDiscardable *pool;
     NuMemHeader *block;
     unsigned char *ptr;
@@ -197,7 +162,7 @@ void *NuMemAllocFn(int size, char *file, int line)
         }
         return 0;
     }
-    pool = current_discardable;
+    pool = discardbuff;
     if (pool) {
         size = (size + 15) & 0xFFFFFFF0;
         if (size < pool->remaining) {
@@ -211,39 +176,39 @@ void *NuMemAllocFn(int size, char *file, int line)
     }
     ptr = malloc(strlen(file) + size + sizeof(NuMemHeader) + sizeof(NuMemGuard) + 1);
     if (ptr == 0) {
-        NuDebugMsgProlog(numem_file, 0x139)(msg_alloc_failed_at, size, file, line);
-        NuErrorProlog(numem_file, 0x13A)(msg_alloc_failed_at, size, file, line);
+        NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\numem.c", 0x139)("Alloc failed %d requested at : %s (%d)", size, file, line);
+        NuErrorProlog("..\\nu2crash.ps2\\nucore\\numem.c", 0x13A)("Alloc failed %d requested at : %s (%d)", size, file, line);
     } else {
         block = (NuMemHeader *)ptr;
         data = block->data;
         memset(block, 0, strlen(file) + size + sizeof(NuMemHeader) + sizeof(NuMemGuard) + 1);
-        memory_allocated += size;
+        totalloc += size;
         block->size = size;
         block->guard = *(NuMemGuard *)blk_hdr;
         memcpy(data + size, blk_end, sizeof(NuMemGuard));
         strcpy(data + size + sizeof(NuMemGuard), file);
         block->line = line;
-        block->id = memblock_count++;
-        block->next = memblock_list;
-        if (memblock_list) {
-            memblock_list->prev = block;
+        block->id = alloccnt++;
+        block->next = alloc_list;
+        if (alloc_list) {
+            alloc_list->prev = block;
         }
         block->prev = 0;
-        memblock_list = block;
+        alloc_list = block;
         ptr = data;
     }
     if ((int)ptr & 15) {
-        NuDebugMsgProlog(numem_file, 0x151)(msg_misaligned_alloc);
+        NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\numem.c", 0x151)("Warning misaligned alloc ***************************************************");
     }
     end = (int)ptr + size;
     if (highallocaddr < end) {
         highallocaddr = end;
     }
-    if (memory_high_water < end) {
-        memory_high_water = end;
+    if (peakallocaddr < end) {
+        peakallocaddr = end;
     }
     if (end > 0x2000000) {
-        NuDebugMsgProlog(numem_file, 0x15A)(msg_alloc_over_32mb, size, ptr);
+        NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\numem.c", 0x15A)("Warning - alloc > 32MB %d @ %d", size, ptr);
     }
     return ptr;
 }
@@ -258,9 +223,9 @@ void *NuMemReAllocFn(void *old, int size, char *file, int line)
     unsigned char *data;
     int end;
 
-    if (current_external) {
-        NuErrorProlog(numem_file, 0x170)(msg_realloc_external);
-        external = current_external;
+    if (memexternal) {
+        NuErrorProlog("..\\nu2crash.ps2\\nucore\\numem.c", 0x170)("cannot realloc while memexternal active");
+        external = memexternal;
         *external->cursor = (*external->cursor + 15) & 0xFFFFFFF0;
         if (external->end - *external->cursor >= size) {
             ptr = (unsigned char *)*external->cursor;
@@ -272,7 +237,7 @@ void *NuMemReAllocFn(void *old, int size, char *file, int line)
     ptr = old;
     ptr -= sizeof(NuMemHeader);
     block = (NuMemHeader *)ptr;
-    pool = current_discardable;
+    pool = discardbuff;
     if (pool) {
         size = (size + 15) & 0xFFFFFFF0;
         if (size < pool->remaining) {
@@ -290,39 +255,39 @@ void *NuMemReAllocFn(void *old, int size, char *file, int line)
     if (block->prev) {
         block->prev->next = block->next;
     } else {
-        memblock_list = block->next;
+        alloc_list = block->next;
     }
     ptr = realloc(ptr, strlen(file) + size + sizeof(NuMemHeader) + sizeof(NuMemGuard) + 1);
     if (ptr == 0) {
-        NuDebugMsgProlog(numem_file, 0x195)(msg_alloc_failed_at, size, file, line);
+        NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\numem.c", 0x195)("Alloc failed %d requested at : %s (%d)", size, file, line);
     } else {
         block = (NuMemHeader *)ptr;
         data = block->data;
-        memory_allocated = memory_allocated - block->size + size;
+        totalloc = totalloc - block->size + size;
         block->size = size;
         memcpy(data + size, blk_end, sizeof(NuMemGuard));
         strcpy(data + size + sizeof(NuMemGuard), file);
         block->line = line;
-        block->next = memblock_list;
-        if (memblock_list) {
-            memblock_list->prev = block;
+        block->next = alloc_list;
+        if (alloc_list) {
+            alloc_list->prev = block;
         }
         block->prev = 0;
-        memblock_list = block;
+        alloc_list = block;
         ptr = data;
     }
     if ((int)ptr & 15) {
-        NuDebugMsgProlog(numem_file, 0x1AB)(msg_misaligned_alloc);
+        NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\numem.c", 0x1AB)("Warning misaligned alloc ***************************************************");
     }
     end = (int)ptr + size;
     if (highallocaddr < end) {
         highallocaddr = end;
     }
-    if (memory_high_water < end) {
-        memory_high_water = end;
+    if (peakallocaddr < end) {
+        peakallocaddr = end;
     }
     if (end > 0x2000000) {
-        NuDebugMsgProlog(numem_file, 0x1B4)(msg_alloc_over_32mb, size, ptr);
+        NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\numem.c", 0x1B4)("Warning - alloc > 32MB %d @ %d", size, ptr);
     }
     return ptr;
 }
@@ -332,22 +297,22 @@ void NuMemFreeFn(void *ptr, char *file, int line)
 {
     NuMemHeader *block;
 
-    if (current_external) {
-        NuErrorProlog(numem_file, 0x1C7)(msg_free_external);
+    if (memexternal) {
+        NuErrorProlog("..\\nu2crash.ps2\\nucore\\numem.c", 0x1C7)("cannot free while memexternal active");
     }
     if (ptr == 0) {
-        NuDebugMsgProlog(numem_file, 0x1CA)(msg_invalid_free, file, line);
+        NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\numem.c", 0x1CA)("Invalid Free attempted at : %s (%d)", file, line);
         return;
     }
     block = (NuMemHeader *)ptr - 1;
     if (memcmp((char *)ptr + block->size, blk_end, sizeof(NuMemGuard))) {
-        NuDebugMsgProlog(numem_file, 0x1D2)(msg_tail_overwritten, file, line);
+        NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\numem.c", 0x1D2)("Mem Block tail overwritten %s (%d)", file, line);
     }
     if (memcmp(&block->guard, blk_hdr, sizeof(NuMemGuard))) {
-        NuDebugMsgProlog(numem_file, 0x1D6)(msg_header_overwritten, file, line);
+        NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\numem.c", 0x1D6)("Mem Block header overwritten %s (%d)", file, line);
     }
     if (block->next == 0 && block->prev == 0) {
-        NuDebugMsgProlog(numem_file, 0x1D9)(msg_already_free, file, line);
+        NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\numem.c", 0x1D9)("Attempted to free already free memory %s (%d)", file, line);
     }
     if (block->next) {
         block->next->prev = block->prev;
@@ -355,11 +320,11 @@ void NuMemFreeFn(void *ptr, char *file, int line)
     if (block->prev) {
         block->prev->next = block->next;
     } else {
-        memblock_list = block->next;
+        alloc_list = block->next;
     }
     block->next = 0;
     block->prev = 0;
-    memory_allocated -= block->size;
+    totalloc -= block->size;
     free(block);
 }
 
@@ -370,14 +335,18 @@ void *NuMemValidateFn(void)
     unsigned char *tail;
     unsigned char *name;
 
-    for (block = memblock_list; block; block = block->next) {
+    for (block = alloc_list; block; block = block->next) {
         tail = block->data;
         tail += block->size;
         name = tail + sizeof(NuMemGuard);
         if (memcmp(tail, blk_end, sizeof(NuMemGuard))) {
-            NuDebugMsgProlog(numem_file, 0x1FF)(msg_validate_tail, tail, name, block->line);
+            NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\numem.c", 0x1FF)("Mem Block tail overwritten (@%d) [%s(%d)]", tail, name, block->line);
         }
         return tail;
+        /* unreachable; retail still emits its string */
+        if (memcmp(&block->guard, blk_hdr, sizeof(NuMemGuard))) {
+            NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\numem.c", 0x203)("Mem Block header overwritten (@%d) [%s(%d)]", block, name, block->line);
+        }
     }
     return 0;
 }
@@ -388,20 +357,20 @@ void NuMemDumpFn(int min_size)
     NuMemHeader *block;
     char *name;
 
-    for (block = memblock_list; block; block = block->next) {
+    for (block = alloc_list; block; block = block->next) {
         name = (char *)block + block->size + sizeof(NuMemHeader) + sizeof(NuMemGuard);
         if (block->size >= min_size) {
-            NuDebugMsgProlog(numem_file, 0x221)(msg_block_not_released, name, block->line, block->id,
+            NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\numem.c", 0x221)("Mem block not released %s(%d)[CNT:%d] ->%d bytes", name, block->line, block->id,
                                                 block->size);
         }
     }
-    NuDebugMsgProlog(numem_file, 0x225)(msg_total_allocated, memory_allocated);
+    NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\numem.c", 0x225)("Total allocated memory %d", totalloc);
 }
 
 
 void NuMemFlushFn(void)
 {
-    NuMemHeader *block = memblock_list;
+    NuMemHeader *block = alloc_list;
     NuMemHeader *next;
 
     while (block) {
@@ -414,9 +383,9 @@ void NuMemFlushFn(void)
 
 NuDiscardable *NuMemSetDiscardable(NuDiscardable *pool)
 {
-    NuDiscardable *previous = current_discardable;
+    NuDiscardable *previous = discardbuff;
 
-    current_discardable = pool;
+    discardbuff = pool;
     return previous;
 }
 
@@ -432,24 +401,24 @@ void NuMemFlushDiscardable(NuDiscardable *pool)
 
 NuDiscardable *NuMemCreateDiscardable(int size)
 {
-    NuDiscardable *saved = current_discardable;
+    NuDiscardable *saved = discardbuff;
     NuDiscardable *pool;
 
-    current_discardable = 0;
-    pool = NuMemAllocFn(size + sizeof(NuDiscardable), numem_file, 0x91);
+    discardbuff = 0;
+    pool = NuMemAllocFn(size + sizeof(NuDiscardable), "..\\nu2crash.ps2\\nucore\\numem.c", 0x91);
     if (pool) {
         pool->size = size;
         pool->remaining = size;
         pool->next = pool + 1;
     }
-    current_discardable = saved;
+    discardbuff = saved;
     return pool;
 }
 
 
 void NuMemDestroyDiscardable(NuDiscardable *pool)
 {
-    NuMemFreeFn(pool, numem_file, 0xA0);
+    NuMemFreeFn(pool, "..\\nu2crash.ps2\\nucore\\numem.c", 0xA0);
 }
 
 
@@ -458,15 +427,15 @@ void NuMemSetExternal(void *buffer, int *end)
     NuExternalMemory *memory;
 
     if (buffer) {
-        memory = &external_memory;
+        memory = &memext;
         memory->cursor = buffer;
-        current_external = memory;
+        memexternal = memory;
         if (end) {
             memory->end = *end;
             return;
         }
     } else {
-        current_external = 0;
+        memexternal = 0;
     }
 }
 

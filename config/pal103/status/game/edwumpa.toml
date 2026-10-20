@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0104"
 source = "src/game/edwumpa.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0104:00235280:edwmpDrawInfo"
@@ -73,48 +73,70 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0104:00631bf0:edwmp_active_menu"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0104:00631bf4:edwmp_options_menu"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0104:00631bf8:edwmp_count"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0104:00631bfc:edwmp_radius"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0104:00631c00:wmp_start"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0104:00631c04:cursor_terrain_height_diff"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0104:00631c08:old_cursor_height"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0104:00631c20:edwmp_used"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0104:00631c24:wumpa_lock_button.102"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0104:00631c28:edwmp_cam_dist"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0104:00631c2c:edwmp_cam_ax"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0104:00631c30:edwmp_cam_ay"
-state = "asm"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0104:00633340:edwmp_ter_dy"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0104:00633344:edwmp_in_crate"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0104:00633348:edwmp_i_wumpa"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x00620358
+end = 0x00620375
+
+[[claim]]
+section = ".sbss"
+start = 0x00633348
+end = 0x0063334c

@@ -89,14 +89,14 @@ architectural blocker; restore the best safe checkpoint before ending.
 
 Data policy: C defines a global only in a fully matching unit, for a data \
 registry symbol of that unit, under its retail name and storage (static where \
-retail is static, const for .rodata), in .rodata/.data, listed under [[data]] and \
-verified by promote_matching (list_data_candidates, get_context and compile_diff \
-accept data ids). Everywhere else reference retail data with registered names or \
-extern D_... symbols; compiler-private data and .lit4 stay borrowed until the \
-unit is complete (whole-unit mode emits them from C), .sdata and .sbss/.bss stay \
-retail. Never hand-set state=matching (only promote_matching writes it, after \
-byte verification) and never set equivalent or a data state retail (human review \
-only). Model and reasoning-effort choices are the client's.
+retail is static, const for .rodata), in .rodata/.data/.sdata, listed under \
+[[data]] and verified by promote_matching (list_data_candidates, get_context and \
+compile_diff accept data ids). Everywhere else reference retail data with \
+registered names or extern D_... symbols; compiler-private data and .lit4 stay \
+borrowed until the unit is complete (whole-unit mode emits them, and the \
+.sbss/.bss objects, from C). Never hand-set state=matching (only promote_matching \
+writes it, after byte verification) and never set equivalent or a data state \
+retail (human review only). Model and reasoning-effort choices are the client's.
 """
 
 

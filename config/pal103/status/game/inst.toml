@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0092"
 source = "src/game/inst.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0092:001d5a98:InstSceneLoad"
@@ -45,12 +45,12 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0092:006309fc:sceneinst_pool"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0092:00630a00:animdatainst_pool"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0092:00630a04:shaddatainst_pool"
-state = "asm"
+state = "matching"

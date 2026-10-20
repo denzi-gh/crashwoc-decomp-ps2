@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
-from promote import data_table_text, flip_state, set_complete
+from promote import data_table_text, flip_state, set_complete, whole_unit_only
 
 MANIFEST = '''schema = 1
 unit = "pal103:unit-0007"
@@ -70,6 +70,17 @@ class TestDataEntries(unittest.TestCase):
                       set_complete("schema = 1\r\ncomplete = false\r\n"))
         with self.assertRaises(SystemExit):
             set_complete("schema = 1\n")
+
+    def test_whole_unit_only(self):
+        # bitconv's block_table32.83 is unsized and sits in the data-map gap
+        # after the unit's .data range (committed data_map.toml).
+        data = {"unit": "pal103:unit-0057", "data": [
+            {"id": "pal103:unit-0057:002e98b0:lut.69", "state": "asm"},
+            {"id": "pal103:unit-0057:002ea030:block_table32.83", "state": "asm"}]}
+        self.assertEqual(whole_unit_only("pal103", data),
+                         ["pal103:unit-0057:002ea030:block_table32.83"])
+        data["data"][1]["state"] = "matching"
+        self.assertEqual(whole_unit_only("pal103", data), [])
 
 
 if __name__ == "__main__":

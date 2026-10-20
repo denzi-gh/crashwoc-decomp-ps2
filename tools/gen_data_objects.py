@@ -6,8 +6,8 @@ NOBITS ranges carry no file bytes and are skipped) this emits an `.incbin`
 slice of the retail bytes and assembles it:
 
   expected/<version>/data/unit-NNNN.o           all ranges a unit owns, one
-                                                object per unit (its future
-                                                objdiff data target)
+                                                object per unit (its objdiff
+                                                data target)
   expected/<version>/data/unassigned/<sec>_<addr>.o
                                                 each gap / orphan range
 
@@ -15,6 +15,8 @@ Every range becomes its own input section, `.split.<sec>_<vram8hex>`, so the
 image link script can place the pieces back at their exact addresses in
 order -- the linked data sections are retail-byte-exact by construction
 (tools/link_image.py consumes these; `ninja verify-loaded` proves it).
+Each section carries a local symbol `<sec>_<vram8hex>` sized to the range:
+objdiff only diffs data bytes covered by a symbol.
 
 Needs the PS2 binutils: run in the Containerfile image (ninja target
 `data`). Everything emitted is game-derived: objects land in gitignored
@@ -60,6 +62,17 @@ def range_bytes(elf, sections_spec, pt_load, entry):
 def section_label(entry):
     sec = entry["section"].lstrip(".")
     return f"{sec}_{entry['start']:08x}"
+
+
+def range_section(label, bin_path, size):
+    """`.split.<label>` section with symbol `<label>` over `bin_path`.
+
+    Shared with gen_report_data so objdiff pairs target and base."""
+    return (f'\t.section .split.{label}, "a", @progbits\n'
+            f'\t.type\t{label}, @object\n'
+            f'\t.size\t{label}, {size}\n'
+            f'{label}:\n'
+            f'\t.incbin "{bin_path.as_posix()}"\n')
 
 
 def object_groups(ranges):
@@ -109,8 +122,8 @@ def main():
             bin_path = work / f"{label}.bin"
             bin_path.write_bytes(range_bytes(elf, sections_spec, pt_load,
                                              entry))
-            pieces.append(f'\t.section .split.{label}, "a", @progbits\n'
-                          f'\t.incbin "{bin_path.as_posix()}"\n')
+            pieces.append(range_section(label, bin_path,
+                                        entry["end"] - entry["start"]))
         s_path.write_text("".join(pieces))
         obj = out_root / f"{stem}.o"
         try:

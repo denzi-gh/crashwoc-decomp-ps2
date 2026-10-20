@@ -42,96 +42,8 @@ extern void *CreateSpecialTerrainData(int levelnum, struct nugscn_s *gscene, uni
 extern void NuGScnUpdate(struct nugscn_s *scene, float time);
 extern void NuGScnRndr3(struct nugscn_s *scene);
 
-extern char D_0061A090[];
-extern char D_0061A0A0[];
-extern char D_0061A0B0[];
-extern char D_0061A0C0[];
-extern char D_0061A0E8[];
-extern char D_0061A128[];
-extern char D_0061A138[];
-extern char D_0061A170[];
-extern char D_0061A180[];
-extern char D_0061A1C0[];
-extern char D_0061A210[];
-extern char D_0061A278[];
-extern char D_0061A288[];
-extern char D_0061A298[];
-extern char D_0061A2A8[];
-extern char D_0061A2B8[];
-extern char D_0061A2C8[];
-extern char D_0061A300[];
-extern char D_0061A310[];
-extern char D_0061A348[];
-extern char D_0061A358[];
-extern char D_0061A368[];
-extern char D_0061A378[];
-extern char D_0061A388[];
-extern char D_0061A3C0[];
-extern char D_0061A3D0[];
-extern char D_0061A410[];
-extern char D_0061A470[];
-extern char D_0061A4A8[];
-extern char D_0061A510[];
-extern char D_0061A520[];
-extern char D_0061A538[];
-extern char D_0061A550[];
-extern char D_0061A560[];
-extern char D_0061A570[];
-extern char D_0061A580[];
-extern char D_0062F810[];
-extern char D_0062F818[];
-extern char D_0062F820[];
-extern char D_0062F828[];
-extern char D_0062F830[];
-extern char D_0062F838[];
-
-#define scenecfg_fmt D_0061A090
-#define gscfile_fmt D_0061A0A0
-#define trgfile_fmt D_0061A0B0
-#define terfile_fmt D_0062F818
-#define sceneman_srcfile D_0061A0C0
-#define kw_scene D_0062F810
-#define kw_numcutscenes D_0061A128
-#define kw_cutscene D_0061A170
-#define kw_script D_0062F820
-#define err_multiple_scene D_0061A0E8
-#define err_multiple_numcutscenes D_0061A138
-#define err_missing_numcutscenes D_0061A180
-#define err_too_many_cutscenes D_0061A1C0
-#define err_cutscene_count D_0061A210
-#define kw_looping D_0062F830
-#define kw_autostart D_0061A278
-#define kw_clipbbox D_0061A288
-#define kw_maxvisidist D_0061A298
-#define kw_position D_0061A2A8
-#define kw_numcamtgts D_0061A2B8
-#define err_multiple_numcamtgts D_0061A2C8
-#define kw_addcamtgt D_0061A300
-#define err_expected_addcamtgt D_0061A310
-#define kw_endinstance D_0061A348
-#define cutfile_fmt D_0061A358
-#define kw_endcutscene D_0061A368
-#define kw_numinstances D_0061A378
-#define err_multiple_numinstances D_0061A388
-#define kw_instance D_0061A3C0
-#define err_missing_numinstances D_0061A3D0
-#define err_too_many_instances D_0061A410
-#define err_cutscene_load D_0061A470
-#define err_instance_count D_0061A4A8
-#define kw_endscript D_0061A510
-#define kw_startcutsceneinst D_0061A520
-#define kw_chaincutsceneinst D_0061A538
-#define kw_settriggerflag D_0061A550
-#define kw_resettrigger D_0061A560
-#define kw_scenefinished D_0061A570
-#define kw_setvisibility D_0061A580
-#define kw_on D_0062F838
-#define kw_player D_0062F828
-
-extern struct NuSceneInstance *D_0062F808;
-extern struct numtx_s *D_0062F80C;
-#define sceneinst_list D_0062F808
-#define player_mtx D_0062F80C
+static struct NuSceneInstance *sceneinstances = 0;
+static struct numtx_s *player_mtx = 0;
 
 struct NuSceneCamTarget {
     char *name;
@@ -209,7 +121,7 @@ struct NuSceneData *NuSceneDataLoad(char *dir, union variptr_u *heap, union vari
     char *namebuf;
     int cutscene;
 
-    sprintf(path, scenecfg_fmt, dir);
+    sprintf(path, "%s\\scene.cfg", dir);
     result = 0;
     lastscript = 0;
     parser = NuFParCreate(path);
@@ -222,7 +134,7 @@ struct NuSceneData *NuSceneDataLoad(char *dir, union variptr_u *heap, union vari
         while (NuFParGetLine(parser)) {
             NuFParGetWord(parser);
             word = parser->wbuff;
-            if (strcasecmp(word, kw_scene) == 0) {
+            if (strcasecmp(word, "SCENE") == 0) {
                 NuFParGetWord(parser);
                 heap->intaddr = (heap->intaddr + 15) & ~15;
                 scene->name = heap->voidptr;
@@ -231,23 +143,25 @@ struct NuSceneData *NuSceneDataLoad(char *dir, union variptr_u *heap, union vari
                 sprintf(scene->name, word);
                 if (scene->gscene == 0) {
                     heap->intaddr = (heap->intaddr + 15) & ~15;
-                    sprintf(path, gscfile_fmt, dir, word);
+                    sprintf(path, "%s\\%s.gsc", dir, word);
                     scene->gscene = NuGScnRead(&heap->charptr, heapend->charptr, path);
                     if (scene->gscene) {
-                        sprintf(path, terfile_fmt, dir, word);
+                        sprintf(path, "%s\\%s", dir, word);
                         scene->terrain = terraininit(0, &heap->s16, heapend->s16, 0, path, scene->gscene, 0);
                         if (scene->terrain) {
                             scene->specialterrain = CreateSpecialTerrainData(0, scene->gscene, heap, heapend);
                         }
-                        sprintf(path, trgfile_fmt, dir, word);
+                        sprintf(path, "%s\\%s.trg", dir, word);
                         scene->triggers = NuTriggerSysLoad(path, heap, heapend);
                     }
                 } else {
-                    NuErrorProlog(sceneman_srcfile, 0xAF)(err_multiple_scene, dir);
+                    NuErrorProlog("..\\nu2crash.ps2\\gamelib\\sceneman.c", 0xAF)(
+                        "NuSceneDataLoad: scene.cfg in <%s> has more than one SCENE", dir);
                 }
-            } else if (strcasecmp(word, kw_numcutscenes) == 0) {
+            } else if (strcasecmp(word, "NUMCUTSCENES") == 0) {
                 if (scene->ncutscenes) {
-                    NuErrorProlog(sceneman_srcfile, 0xB3)(err_multiple_numcutscenes, path);
+                    NuErrorProlog("..\\nu2crash.ps2\\gamelib\\sceneman.c", 0xB3)(
+                        "NuSceneDataLoad <%s>: Should only have one NUMCUTSCENES", path);
                 }
                 scene->ncutscenes = NuFParGetInt(parser);
                 if (scene->ncutscenes) {
@@ -257,16 +171,18 @@ struct NuSceneData *NuSceneDataLoad(char *dir, union variptr_u *heap, union vari
                     memset(scene->cutscenes, 0, scene->ncutscenes * sizeof(struct NuSceneCutscene));
                     cutscene = 0;
                 }
-            } else if (strcasecmp(word, kw_cutscene) == 0) {
+            } else if (strcasecmp(word, "CUTSCENE") == 0) {
                 if (scene->ncutscenes == 0) {
-                    NuErrorProlog(sceneman_srcfile, 0xC0)(err_missing_numcutscenes, path);
+                    NuErrorProlog("..\\nu2crash.ps2\\gamelib\\sceneman.c", 0xC0)(
+                        "NuSceneDataLoad <%s>: Need NUMCUTSCENES <num> before CUTSCENE", path);
                 }
                 if (cutscene >= scene->ncutscenes) {
-                    NuErrorProlog(sceneman_srcfile, 0xC1)(err_too_many_cutscenes, path);
+                    NuErrorProlog("..\\nu2crash.ps2\\gamelib\\sceneman.c", 0xC1)(
+                        "NuSceneDataLoad <%s>: There are more cutscenes than was defined by NUMCUTSCENES", path);
                 }
                 LoadCutsceneData(parser, dir, scene, &scene->cutscenes[cutscene], heap, heapend);
                 cutscene++;
-            } else if (strcasecmp(word, kw_script) == 0) {
+            } else if (strcasecmp(word, "SCRIPT") == 0) {
                 script = LoadCutsceneScript(parser, scene, heap, heapend);
                 if (script) {
                     if (lastscript) {
@@ -280,7 +196,8 @@ struct NuSceneData *NuSceneDataLoad(char *dir, union variptr_u *heap, union vari
         }
         NuFParDestroy(parser);
         if (cutscene < scene->ncutscenes) {
-            NuErrorProlog(sceneman_srcfile, 0xD3)(err_cutscene_count, path);
+            NuErrorProlog("..\\nu2crash.ps2\\gamelib\\sceneman.c", 0xD3)(
+                "NuSceneDataLoad <%s>: Num cutscenes does not match NUMCUTSCENES <num>", path);
         }
         for (cutscene = 0; cutscene < scene->ncutscenes; cutscene++) {
             NuGCutSceneFixUp(scene->cutscenes[cutscene].def, scene->gscene, scene->triggers);
@@ -309,11 +226,11 @@ struct NuSceneInstance *NuSceneInstanceCreate(struct NuSceneData *data, int dupl
         heap->u8 += sizeof(struct NuSceneInstance);
         memset(inst, 0, sizeof(struct NuSceneInstance));
         result->prev = 0;
-        result->next = sceneinst_list;
-        if (sceneinst_list) {
-            sceneinst_list->prev = result;
+        result->next = sceneinstances;
+        if (sceneinstances) {
+            sceneinstances->prev = result;
         }
-        sceneinst_list = result;
+        sceneinstances = result;
         result->data = data;
         if (duplicate) {
             result->gscene = NuGScnDuplicate(data->gscene, &heap->charptr, &heapend->charptr);
@@ -349,7 +266,7 @@ struct NuSceneInstance *NuSceneInstanceCreate(struct NuSceneData *data, int dupl
                     if (cinst->ncamtgts) {
                         instNuGCutSceneCreateCamTgtArray(inst->cutscenes[k], cinst->ncamtgts, heap);
                         for (t = 0; t < cinst->ncamtgts; t++) {
-                            if (strcasecmp(cinst->camtgts[t].name, kw_player) == 0) {
+                            if (strcasecmp(cinst->camtgts[t].name, "Player") == 0) {
                                 instNuGCutSceneAddCamTgt(inst->cutscenes[k], (struct nuvec_s *)&player_mtx->_30,
                                                          cinst->camtgts[t].frame, cinst->camtgts[t].nframes,
                                                          cinst->camtgts[t].camid);
@@ -441,25 +358,26 @@ void LoadCutSceneInstanceData(struct nufpar_s *parser, struct NuSceneCutsceneIns
     while (NuFParGetLine(parser)) {
         NuFParGetWord(parser);
         word = parser->wbuff;
-        if (strcasecmp(word, kw_looping) == 0) {
+        if (strcasecmp(word, "LOOPING") == 0) {
             inst->looping = 1;
-        } else if (strcasecmp(word, kw_autostart) == 0) {
+        } else if (strcasecmp(word, "AUTOSTART") == 0) {
             inst->autostart = 1;
-        } else if (strcasecmp(word, kw_clipbbox) == 0) {
+        } else if (strcasecmp(word, "CLIPBBOX") == 0) {
             inst->clipbbox = 1;
-        } else if (strcasecmp(word, kw_maxvisidist) == 0) {
+        } else if (strcasecmp(word, "MAXVISIDIST") == 0) {
             inst->maxvisidist = 1;
             inst->maxvisidist_sq = NuFParGetFloat(parser);
             inst->maxvisidist_sq *= inst->maxvisidist_sq;
-        } else if (strcasecmp(word, kw_position) == 0) {
+        } else if (strcasecmp(word, "POSITION") == 0) {
             pos.x = NuFParGetFloat(parser);
             pos.y = NuFParGetFloat(parser);
             pos.z = NuFParGetFloat(parser);
             NuMtxTranslate(&inst->mtx, &pos);
             inst->position = 1;
-        } else if (strcasecmp(word, kw_numcamtgts) == 0) {
+        } else if (strcasecmp(word, "NUMCAMTGTS") == 0) {
             if (inst->ncamtgts) {
-                NuErrorProlog(sceneman_srcfile, 0x204)(err_multiple_numcamtgts);
+                NuErrorProlog("..\\nu2crash.ps2\\gamelib\\sceneman.c", 0x204)(
+                    "LoadCutsceneData: defined NUMCAMTGTS more than once");
             }
             inst->ncamtgts = NuFParGetInt(parser);
             heap->intaddr = (heap->intaddr + 15) & ~15;
@@ -469,8 +387,9 @@ void LoadCutSceneInstanceData(struct nufpar_s *parser, struct NuSceneCutsceneIns
             for (i = 0; i < inst->ncamtgts; i++) {
                 NuFParGetLine(parser);
                 NuFParGetWord(parser);
-                if (strcasecmp(parser->wbuff, kw_addcamtgt) != 0) {
-                    NuErrorProlog(sceneman_srcfile, 0x20E)(err_expected_addcamtgt, parser->wbuff);
+                if (strcasecmp(parser->wbuff, "ADDCAMTGT") != 0) {
+                    NuErrorProlog("..\\nu2crash.ps2\\gamelib\\sceneman.c", 0x20E)(
+                        "LoadCutsceneData: expecting ADDCAMTGT, found <%s>", parser->wbuff);
                 }
                 NuFParGetWord(parser);
                 inst->camtgts[i].name = heap->charptr;
@@ -481,7 +400,7 @@ void LoadCutSceneInstanceData(struct nufpar_s *parser, struct NuSceneCutsceneIns
                 inst->camtgts[i].nframes = NuFParGetFloat(parser);
                 inst->camtgts[i].camid = NuFParGetInt(parser);
             }
-        } else if (strcasecmp(word, kw_endinstance) == 0) {
+        } else if (strcasecmp(word, "ENDINSTANCE") == 0) {
             return;
         }
     }
@@ -496,7 +415,7 @@ void LoadCutsceneData(struct nufpar_s *parser, char *dir, struct NuSceneData *sc
     int i;
 
     NuFParGetWord(parser);
-    sprintf(path, cutfile_fmt, dir, parser->wbuff);
+    sprintf(path, "%s\\%s.cut", dir, parser->wbuff);
     cutscene->def = NuGCutSceneLoad(path, heap, heapend);
     if (cutscene->def) {
         cutscene->name = heap->charptr;
@@ -506,12 +425,13 @@ void LoadCutsceneData(struct nufpar_s *parser, char *dir, struct NuSceneData *sc
         while (NuFParGetLine(parser)) {
             NuFParGetWord(parser);
             word = parser->wbuff;
-            if (strcasecmp(word, kw_endcutscene) == 0) {
+            if (strcasecmp(word, "ENDCUTSCENE") == 0) {
                 break;
             }
-            if (strcasecmp(word, kw_numinstances) == 0) {
+            if (strcasecmp(word, "NUMINSTANCES") == 0) {
                 if (cutscene->ninstances) {
-                    NuErrorProlog(sceneman_srcfile, 0x235)(err_multiple_numinstances, cutscene->name);
+                    NuErrorProlog("..\\nu2crash.ps2\\gamelib\\sceneman.c", 0x235)(
+                        "LoadCutsceneData: defined NUMINSTANCES more than once", cutscene->name);
                 }
                 cutscene->ninstances = NuFParGetInt(parser);
                 if (cutscene->ninstances) {
@@ -521,12 +441,14 @@ void LoadCutsceneData(struct nufpar_s *parser, char *dir, struct NuSceneData *sc
                     memset(cutscene->instances, 0, cutscene->ninstances * sizeof(struct NuSceneCutsceneInst));
                     i = 0;
                 }
-            } else if (strcasecmp(word, kw_instance) == 0) {
+            } else if (strcasecmp(word, "INSTANCE") == 0) {
                 if (cutscene->ninstances == 0) {
-                    NuErrorProlog(sceneman_srcfile, 0x242)(err_missing_numinstances, cutscene->name);
+                    NuErrorProlog("..\\nu2crash.ps2\\gamelib\\sceneman.c", 0x242)(
+                        "LoadCutsceneData: need to define NUMINSTANCES before INSTANCE's", cutscene->name);
                 }
                 if (i >= cutscene->ninstances) {
-                    NuErrorProlog(sceneman_srcfile, 0x243)(err_too_many_instances, path);
+                    NuErrorProlog("..\\nu2crash.ps2\\gamelib\\sceneman.c", 0x243)(
+                        "LoadCutsceneData <%s>: There are more cutscenes instances than was defined by NUMINSTANCES", path);
                 }
                 LoadCutSceneInstanceData(parser, (struct NuSceneCutsceneInst *)cutscene->instances + i, heap, heapend);
                 i++;
@@ -534,10 +456,12 @@ void LoadCutsceneData(struct nufpar_s *parser, char *dir, struct NuSceneData *sc
             }
         }
     } else {
-        NuErrorProlog(sceneman_srcfile, 0x24B)(err_cutscene_load, path);
+        NuErrorProlog("..\\nu2crash.ps2\\gamelib\\sceneman.c", 0x24B)(
+            "LoadCutsceneData <%s>: Could not load cutscene <%s>", path);
     }
     if (cutscene->ninstances && cutscene->ninstances != i) {
-        NuErrorProlog(sceneman_srcfile, 0x250)(err_instance_count, cutscene->name, cutscene->ninstances, i);
+        NuErrorProlog("..\\nu2crash.ps2\\gamelib\\sceneman.c", 0x250)(
+            "LoadCutsceneData: mismatch between number of instance of <%s> declared <NUMINSTANCES %d> and found <%d>", cutscene->name, cutscene->ninstances, i);
     }
 }
 
@@ -586,10 +510,10 @@ struct NuSceneScript *LoadCutsceneScript(struct nufpar_s *parser, struct NuScene
     while (NuFParGetLine(parser)) {
         NuFParGetWord(parser);
         word = parser->wbuff;
-        if (strcasecmp(word, kw_endscript) == 0) {
+        if (strcasecmp(word, "ENDSCRIPT") == 0) {
             break;
         }
-        if (strcasecmp(word, kw_startcutsceneinst) == 0) {
+        if (strcasecmp(word, "STARTCUTSCENEINST") == 0) {
             cmd = (struct NuSceneCommand *)((heap->intaddr + 15) & ~15);
             heap->voidptr = cmd + 1;
             NuSceneScriptAddCommand(script, last, cmd, NUSCENECMD_STARTCUTSCENE);
@@ -599,7 +523,7 @@ struct NuSceneScript *LoadCutsceneScript(struct nufpar_s *parser, struct NuScene
             last = cmd;
             args = cmd->args;
             NuSceneScriptReadName(parser, args.name, heap);
-        } else if (strcasecmp(word, kw_chaincutsceneinst) == 0) {
+        } else if (strcasecmp(word, "CHAINCUTSCENEINST") == 0) {
             cmd = (struct NuSceneCommand *)((heap->intaddr + 15) & ~15);
             heap->voidptr = cmd + 1;
             NuSceneScriptAddCommand(script, last, cmd, NUSCENECMD_CHAINCUTSCENE);
@@ -610,7 +534,7 @@ struct NuSceneScript *LoadCutsceneScript(struct nufpar_s *parser, struct NuScene
             args = cmd->args;
             NuSceneScriptReadName(parser, &args.chain->first, heap);
             NuSceneScriptReadName(parser, &args.chain->next, heap);
-        } else if (strcasecmp(word, kw_settriggerflag) == 0) {
+        } else if (strcasecmp(word, "SETTRIGGERFLAG") == 0) {
             cmd = (struct NuSceneCommand *)((heap->intaddr + 15) & ~15);
             heap->voidptr = cmd + 1;
             NuSceneScriptAddCommand(script, last, cmd, NUSCENECMD_TRIGGERFLAG);
@@ -622,12 +546,12 @@ struct NuSceneScript *LoadCutsceneScript(struct nufpar_s *parser, struct NuScene
             args.flag->index = NuFParGetInt(parser);
             NuSceneScriptReadName(parser, &args.flag->trigger, heap);
             NuFParGetWord(parser);
-            if (strcasecmp(parser->wbuff, kw_on) == 0) {
+            if (strcasecmp(parser->wbuff, "ON") == 0) {
                 args.flag->set = 1;
             } else {
                 args.flag->set = 0;
             }
-        } else if (strcasecmp(word, kw_resettrigger) == 0) {
+        } else if (strcasecmp(word, "RESETTRIGGER") == 0) {
             cmd = (struct NuSceneCommand *)((heap->intaddr + 15) & ~15);
             heap->voidptr = cmd + 1;
             NuSceneScriptAddCommand(script, last, cmd, NUSCENECMD_TRIGGERRESET);
@@ -637,12 +561,12 @@ struct NuSceneScript *LoadCutsceneScript(struct nufpar_s *parser, struct NuScene
             last = cmd;
             args = cmd->args;
             NuSceneScriptReadName(parser, &args.flag->trigger, heap);
-        } else if (strcasecmp(word, kw_scenefinished) == 0) {
+        } else if (strcasecmp(word, "SCENEFINISHED") == 0) {
             finish = (struct NuSceneCommand *)((heap->intaddr + 15) & ~15);
             heap->voidptr = finish + 1;
             NuSceneScriptAddCommand(script, last, finish, NUSCENECMD_FINISH);
             last = finish;
-        } else if (strcasecmp(word, kw_setvisibility) == 0) {
+        } else if (strcasecmp(word, "SETVISIBILITY") == 0) {
             cmd = (struct NuSceneCommand *)((heap->intaddr + 15) & ~15);
             heap->voidptr = cmd + 1;
             NuSceneScriptAddCommand(script, last, cmd, NUSCENECMD_SPECIALVISIBLE);
@@ -653,7 +577,7 @@ struct NuSceneScript *LoadCutsceneScript(struct nufpar_s *parser, struct NuScene
             args = cmd->args;
             NuSceneScriptReadName(parser, &args.special->special, heap);
             NuFParGetWord(parser);
-            if (strcasecmp(parser->wbuff, kw_on) == 0) {
+            if (strcasecmp(parser->wbuff, "ON") == 0) {
                 args.special->visible = 1;
             } else {
                 args.special->visible = 0;
@@ -665,7 +589,7 @@ struct NuSceneScript *LoadCutsceneScript(struct nufpar_s *parser, struct NuScene
 
 
 void NuSceneManagerSysInit(void) {
-    sceneinst_list = 0;
+    sceneinstances = 0;
 }
 
 
@@ -673,7 +597,7 @@ void NuSceneManagerSysUpdate(void) {
     struct NuSceneInstance *inst;
     struct NuSceneInstance *next;
 
-    for (inst = sceneinst_list; inst; inst = next) {
+    for (inst = sceneinstances; inst; inst = next) {
         next = inst->next;
         if (!(inst->flags & NUSCENEINST_DISABLED)) {
             NuGScnUpdate(inst->gscene, inst->rate);
@@ -699,7 +623,7 @@ void NuSceneInstanceDestroy(struct NuSceneInstance *inst) {
     if (inst->prev) {
         inst->prev->next = inst->next;
     } else {
-        sceneinst_list = inst->next;
+        sceneinstances = inst->next;
     }
 }
 
@@ -773,7 +697,7 @@ void NuSceneManagerSysRender(void) {
     struct NuSceneInstance *inst;
     struct NuSceneInstance *next;
 
-    for (inst = sceneinst_list; inst; inst = next) {
+    for (inst = sceneinstances; inst; inst = next) {
         next = inst->next;
         if (!(inst->flags & NUSCENEINST_DISABLED)) {
             NuGScnRndr3(inst->gscene);

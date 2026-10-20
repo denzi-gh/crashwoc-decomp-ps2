@@ -70,3 +70,12 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0002:001042b8:NuGetChar"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0002:00633008:old_line_pos"
+state = "matching"
+
+[[claim]]
+section = ".sbss"
+start = 0x00633008
+end = 0x0063300c

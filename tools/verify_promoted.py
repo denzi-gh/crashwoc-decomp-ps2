@@ -16,16 +16,20 @@ For each status manifest this verifier proves, from scratch:
      function's hybrid bytes always come from the C compile.
   4. Every `matching` data entry ([[data]]) is BYTE-IDENTICAL to retail over
      [addr, addr+size) -- size from .symtab/STABS, never the extent; an
-     unsized object uses its compiled .size only if at most 15 zero bytes
-     remain to the next item -- and its linked symbol sits at the registry
+     unsized object uses its compiled .size only if at most 15 zero bytes,
+     or exactly the zero pad aligning it (up to 128), remain to the next
+     item -- and its linked symbol sits at the registry
      address. Padding and compiler-private bytes are left to the image gate.
+     A .sbss/.bss entry has no bytes: only its address (and, unsized, a
+     compiled size within its extent) is checked.
   5. A `complete` unit: every function `matching`, every data entry
-     `matching`/`retail`, no owned .sbss/.bss range (data/bss), and its
-     whole-unit hybrid (gen_hybrid: compiler-private data, jump tables,
-     pools and the .lit4 pool from C) carries no retail bytes in its owned
-     ranges except its `retail` entries, borrows no retail slot, leaves no
-     owned range to the expected data object, and every piece it links --
-     owned ranges and the gap ranges it `[[claim]]`s -- equals retail.
+     `matching`/`retail`, and its whole-unit hybrid (gen_hybrid:
+     compiler-private data, jump tables, pools, the .lit4 pool and the
+     .sbss/.bss objects from C) carries no retail bytes in its owned ranges
+     except its `retail` entries, borrows no retail slot, leaves no owned
+     range to the expected data object (or, .sbss/.bss, to reserved space),
+     and every piece it links with file bytes -- owned ranges and the gap
+     ranges it `[[claim]]`s -- equals retail.
   6. The image gate: link the full matching image from the hybrids step 3
      rebuilt (rebuilding any it did not) -- it must reproduce the retail
      loaded-image SHA.
@@ -50,8 +54,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 from cc import compile_c, profiles_fingerprint
-from gen_hybrid import (HybridError, build_hybrid, data_report_path,
-                        has_c_data, provides_data)
+from gen_hybrid import (NOBITS_SECTIONS, HybridError, build_hybrid,
+                        data_report_path, has_c_data, provides_data)
 from link_image import link_image
 from status import check_version
 from declib.asmtext import load_symbol_addrs, load_text_target, resolve
@@ -111,16 +115,23 @@ def verify_data(reporter, label, data, unit_index, version, elf, pieces,
         sym = registry.get(addr, {})
         obj = objects.get(addr)
         size = sym.get("size")
+        nobits = sym.get("section") in NOBITS_SECTIONS
         reason = None
         if obj is None:
             reason = "not emitted by the hybrid"
         elif size is None:
             # Unsized (an .lcomm-like static): the compiled size, when the
-            # rest of the registry extent is (at most 15 bytes of) zero pad.
+            # rest of the registry extent is zero pad -- at most 15 bytes,
+            # or exactly what aligns the next item (the next object file's
+            # section alignment, at most 128); .sbss/.bss hold no bytes, only
+            # the extent bounds the size.
             size = obj["size"]
             rest = sym.get("extent", size) - size
             pad = _retail_data(elf, version, addr + size, rest) if rest > 0 else b""
-            if rest < 0 or rest > 15 or (pad and any(pad)):
+            nxt = addr + sym.get("extent", size)
+            align = min(nxt & -nxt, 128)
+            if rest < 0 or (not nobits and ((rest > 15 and rest >= align)
+                                            or (pad and any(pad)))):
                 reason = (f"unsized: compiled size {size:#x} leaves {rest:#x} "
                           f"non-pad bytes of the extent")
         if reason is None:
@@ -128,7 +139,7 @@ def verify_data(reporter, label, data, unit_index, version, elf, pieces,
             blob = linked_pieces[piece["name"]]
             got = blob[addr - piece["start"]:addr - piece["start"] + size]
             want = _retail_data(elf, version, addr, size)
-            if got != want:
+            if not nobits and got != want:
                 reason = "bytes differ from retail"
             elif symbols.get(sym.get("name")) != addr:
                 reason = (f"linked at {symbols.get(sym.get('name'), 0):#010x}, "
@@ -149,9 +160,6 @@ def complete_problems(data, unit_index, version, report, ranges):
     out = []
     owner = f"unit-{unit_index:04d}"
     owned = [r for r in ranges if r["owner"] == owner]
-    nobits = [r for r in owned if r["section"] in (".sbss", ".bss")]
-    if nobits:
-        out.append(f"owns {len(nobits)} .sbss/.bss range(s) (data/bss)")
     if not (report or {}).get("whole_unit"):
         out.append("its hybrid was not built in whole-unit mode")
         return out
@@ -162,9 +170,8 @@ def complete_problems(data, unit_index, version, report, ranges):
             addr = int(entry["id"].split(":")[2], 16)
             sym = registry.get(addr, {})
             retail_ok.append((addr, addr + (sym.get("size") or sym.get("extent", 0))))
-    progbits = [r for r in owned if r["section"] not in (".sbss", ".bss")]
     pieces = {p["start"] for p in report.get("pieces", [])}
-    left = [r for r in progbits if r["start"] not in pieces]
+    left = [r for r in owned if r["start"] not in pieces]
     if left:
         out.append(f"{len(left)} owned data range(s) still come from the "
                    f"expected object (no C data pieces)")
@@ -284,9 +291,11 @@ def verify_manifest(reporter, manifest, version, elf, text_addr, text_off,
             verify_data(reporter, label, data, unit_index, version, elf,
                         report["pieces"], linked_pieces, symbols, results)
         if report.get("whole_unit") and report["pieces"]:
-            # Every byte a whole-unit hybrid links, its gap claims included.
+            # Every byte a whole-unit hybrid links, its gap claims included
+            # (.sbss/.bss pieces carry none).
             off = [p["name"] for p in report["pieces"]
-                   if linked_pieces[p["name"]] != _retail_data(
+                   if p["section"] not in NOBITS_SECTIONS
+                   and linked_pieces[p["name"]] != _retail_data(
                        elf, version, p["start"], p["end"] - p["start"])]
             reporter.result(f"{label} (unit data, {len(report['pieces'])} "
                             f"pieces)", not off,

@@ -55,9 +55,9 @@ typedef int (*ClipTestFn)(void);
 typedef float (*ClipIntersectFn)(ClipPoint *curr, ClipPoint *prev);
 
 ClipPoint pnts[2][8] = {0};
-extern int npnts[2];
-extern int inbuffer;
-extern int clipflags;
+int npnts[2] = {0};
+int inbuffer = 0;
+int clipflags = 0;
 
 int TestCurrZN(void);
 int TestCurrLeft(void);

@@ -204,11 +204,14 @@ C defines a global only when all of this holds:
 - it is a registry symbol of that unit, defined under its retail name and
   storage: `static` where retail is static, `const` for `.rodata`, a function
   static inside the function that references it;
-- its section is `.rodata` or `.data`;
+- its section is `.rodata`, `.data` or `.sdata` (under `-G8` every object of
+  at most 8 bytes is small data, addressed gp-relative; a zero object needs an
+  explicit `= 0`, or it becomes COMMON), or `.sbss`/`.bss` for an
+  uninitialised object (no initialiser) of a unit that is `complete`;
 - `promote_matching` (tools/promote.py) verified it: its bytes over
   `[addr, addr+size)` and its linked address equal retail.
 
-Everywhere else - partially matched units, `.sdata`, `.sbss`/`.bss`, COMMON -
+Everywhere else - partially matched units, COMMON -
 reference retail data with registered names or `extern D_...` symbols taken
 from the PS2 disassembly, `target-asm`, `asm/text.s` or
 `config/pal103/symbol_addrs.txt`, with readable aliases:
@@ -221,9 +224,11 @@ extern struct nulsthdr_s *D_006309FC;
 Compiler-private data (`$LC` strings and aggregates, jump tables, `li.d`
 pools) and the unit's `.lit4` pool are borrowed retail slots until the unit
 is `complete`; then its hybrid runs in whole-unit mode and emits them from C
-(below). `.sdata` symbols wait for `data/sdata`, `.sbss`/`.bss` for
-`data/bss`. A raw binary asset (a font bitmap) keeps its retail bytes with
-`state = "retail"` and a `reason`, set by hand like `equivalent`.
+(below), and so are its `.sbss`/`.bss` objects. A raw binary asset (a font
+bitmap) keeps its retail bytes with `state = "retail"` and a `reason`, set by
+hand like `equivalent`. A small (`.sdata`/`.sbss`) symbol the C still reaches
+through `extern` keeps its retail address and its gp-relative loads (the
+hybrid declares it `.extern NAME, size`).
 
 If compile_diff reaches 100% but the hybrid build fails with "data section in
 compiler output not supported yet", a file-scope definition slipped into a
@@ -231,10 +236,11 @@ unit without a `[[data]]` table: replace it with the extern form above
 (or, in a fully matching unit, do the data work below).
 
 `complete = true` is written only by `promote.py --complete <unit id>`, after
-the verifier proved: every function and data entry is done, the unit owns no
-`.sbss`/`.bss`, and its whole-unit hybrid carries no retail bytes in the
-unit's ranges beyond its `retail` entries, borrows nothing, and links every
-piece equal to retail.
+the verifier proved: every function and data entry is done, and its
+whole-unit hybrid supplies every range the unit owns, carries no retail bytes
+in them beyond its `retail` entries, borrows nothing, and links every piece
+with file bytes equal to retail and every `.sbss`/`.bss` object at its
+address.
 
 Whole-unit mode (every `complete` unit): gen_hybrid lays the unit's data out
 the way the assembler did - each data section in retail function order (an
@@ -244,12 +250,27 @@ built inline, nothing merged - and anchors each section where the code's and
 the data pointers' retail references put it. Bytes it emits past the unit's
 own ranges (a jump table or strings after its last code reference) lie in
 data-map gaps; `promote.py --complete` records them as `[[claim]]`
-(`section`, `start`, `end`), and the image link takes such a gap range from
-the claimant's hybrid (C bytes where claimed, retail elsewhere). Re-run
-`--complete` after a C change moves them. Typical C work to get there:
-string literals instead of `extern char D_...[]`, float literals instead of
-`extern f32 D_...` `.lit4` slots, functions in retail order where they emit
-data.
+(`section`, `start`, `end`), and the image link takes each claimed span from
+its claimant's hybrid (several units may claim spans of one gap; the
+unclaimed bytes stay retail). Re-run
+`--complete` after a C change moves them. The unit's `.sbss`/`.bss` objects
+come from C too (pieces without file bytes): ee-gcc writes an uninitialised
+static as label, `.align`, `.space` - a function's statics before its code,
+the file-scope ones at the end of the unit in declaration order - and an
+uninitialised global as COMMON (retail has one, newlib's `errno`, which the
+hybrid places like a static). The last static of a unit's run is unsized in
+retail, so it lies in a data-map gap and becomes a claim. An object only
+this layout can place (every `.sbss`/`.bss` object, an unsized symbol past
+the unit's ranges such as bitconv `block_table32.83`) is promoted by
+`promote.py --complete` together with the unit. Typical C work to get there: string
+literals instead of `extern char D_...[]`, float literals instead of
+`extern f32 D_...` `.lit4` slots, definitions placed before the function
+retail emits them with (a function static goes out when its function is
+parsed, an `inline` function's statics and literals where it is defined or
+first inlined; a non-`static` `inline` function's own code goes to the end of
+the unit, which is how retail ends up with functions whose data sits far
+from their code), and the literals of dead statements kept when retail has
+them (GCC 2.95 emits a string constant even for unreachable code).
 
 ### Per-unit data workflow
 
@@ -278,9 +299,10 @@ no open `decomp/*` PR or running batch, and no NuWorld `NW_HOST` PR touches it.
    `status.py --check`, `check_types.py --check` (update the census if the
    extern counts moved), unit tests, CRLF byte check.
 
-Order by section: `.rodata`, then `.data`. Never in this workflow:
-compiler-private data and the `.lit4` pool in partially matched units (they
-stay borrowed until `--complete`).
+Order by section: `.rodata`, `.data`, `.sdata`; `.sbss`/`.bss` objects get
+their definitions with the rest and are promoted by `--complete`. Never in
+this workflow: compiler-private data and the `.lit4` pool in partially
+matched units (they stay borrowed until `--complete`).
 
 ### Types and shared headers
 

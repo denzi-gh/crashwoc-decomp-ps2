@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0107"
 source = "src/game/glass.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0107:00238bf8:InitGlass"
@@ -61,60 +61,82 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0107:00631e68:glass_mix"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0107:00631e6c:glass_col_mix"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0107:00631e70:glass_col_mix_speed"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0107:00631e74:glass_mix_speed"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0107:00631e78:glass_strength"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0107:00631e7c:glass_enabled"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0107:00631e80:glass_col_enabled"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0107:00631e84:spectid"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0107:00631e88:envtid"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0107:00631e8c:WATERBOSSGLASSMIX"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0107:00631e90:ANGELGLASSMIX"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0107:00631e94:MAXGLASSMIX"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0107:00631e98:glass_mtl"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0107:00631e9c:glass_spec_mtl"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0107:00631ea0:glass_copy_mtl"
-state = "asm"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0107:00633358:glass_rt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0107:0063335c:glassu1"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0107:00633360:glassv1"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x00620798
+end = 0x006207a4
+
+[[claim]]
+section = ".sbss"
+start = 0x00633360
+end = 0x00633364

@@ -36,22 +36,7 @@
 
 extern int NuFileLoadBuffer(void *name, void *buf, int size);
 
-extern char D_00619EF8[];
-extern char D_00619F20[];
-extern char D_00619F60[];
-
-
-extern struct instNUTRIGGERSYS_s *D_00633230;
-#define g_NuTriggerSysList D_00633230
-
-extern int D_0062F7F8;
-#define g_DbgTriggerExtents D_0062F7F8
-
-extern int D_0062F7FC;
-#define g_DbgTriggerShapes D_0062F7FC
-
-extern int D_0062F800;
-#define g_DbgTriggerOff D_0062F800
+static struct instNUTRIGGERSYS_s *active_triggersys_instances;
 
 
 struct NUTRIGGERSYS_s *NuTriggerSysLoad(char *name, union variptr_u *heap, union variptr_u *heapend)
@@ -69,7 +54,8 @@ struct NUTRIGGERSYS_s *NuTriggerSysLoad(char *name, union variptr_u *heap, union
     heap->u8 = heap->u8 + size;
 
     if (blob->version != 1)
-        NuErrorProlog(D_00619EF8, 0x87)(D_00619F20, name, blob->version);
+        NuErrorProlog("..\\nu2crash.ps2\\gamelib\\trigger.c", 0x87)(
+            "Out of date version of trigger file <%s>, you have version <%d>", name, blob->version);
 
     blob->address_offset = (int)blob - blob->address_offset;
     blob->triggers = blob->triggers ? (struct NUTRIGGER_s *)((char *)blob->triggers + blob->address_offset)
@@ -108,7 +94,7 @@ void NuTriggerSysUpdate(struct nuvec_s *pos, f32 radius)
     int active;
     char buf[32];
 
-    for (sys = g_NuTriggerSysList; sys != 0; sys = sys->next) {
+    for (sys = active_triggersys_instances; sys != 0; sys = sys->next) {
         gscene = sys->scenemanager->gscene;
         def = sys->triggersys;
         if (sys->is_disabled)
@@ -161,7 +147,7 @@ void NuTriggerSysUpdate(struct nuvec_s *pos, f32 radius)
             } else {
                 if (trig->flags & 1) {
                     if (d->persistant) {
-                        sprintf(buf, D_00619F60, d->triggername);
+                        sprintf(buf, "reset_%s", d->triggername);
                         NuSceneInstanceRunScript(sys->scenemanager, buf);
                         trig->flags &= 0xFE;
                     }
@@ -174,6 +160,9 @@ void NuTriggerSysUpdate(struct nuvec_s *pos, f32 radius)
 
 void DebugRenderTriggers(void)
 {
+    static int do_bbox = 0;
+    static int do_prims = 1;
+    static int do_nothing = 0;
     struct nuvtx_tc1_s line[2];
     struct instNUTRIGGERSYS_s *sys;
     struct NUTRIGGERSYS_s *hdr;
@@ -183,8 +172,8 @@ void DebugRenderTriggers(void)
     int i;
     int k;
 
-    sys = g_NuTriggerSysList;
-    if (g_DbgTriggerOff)
+    sys = active_triggersys_instances;
+    if (do_nothing)
         return;
 
     line[1].diffuse = -1;
@@ -209,7 +198,7 @@ void DebugRenderTriggers(void)
                 struct numtx_s inv;
                 struct numtx_s *mtx = &gscene->instances[def->instance_ix].mtx;
 
-                if (g_DbgTriggerExtents) {
+                if (do_bbox) {
                     line[1].pnt = *(struct nuvec_s *)&mtx->_30;
                     line[0].pnt = line[1].pnt;
                     line[0].pnt.x += def->radius;
@@ -271,7 +260,7 @@ void DebugRenderTriggers(void)
                     NuRndrLine3d(line, 0, 0);
                 }
 
-                if (g_DbgTriggerShapes) {
+                if (do_prims) {
                     for (k = 0; k < def->numprims; k++) {
                         struct NUTRIGGERPRIM_s *sub = &def->prims[k];
 
@@ -396,7 +385,7 @@ void DebugRenderTriggers(void)
             } else {
                 struct numtx_s inv;
 
-                if (g_DbgTriggerExtents) {
+                if (do_bbox) {
                     line[0].pnt.x = def->min.x;
                     line[0].pnt.y = def->min.y;
                     line[0].pnt.z = def->min.z;
@@ -446,7 +435,7 @@ void DebugRenderTriggers(void)
                     NuRndrLine3d(line, 0, 0);
                 }
 
-                if (g_DbgTriggerShapes) {
+                if (do_prims) {
                     for (k = 0; k < def->numprims; k++) {
                         struct NUTRIGGERPRIM_s *sub = &def->prims[k];
 
@@ -562,7 +551,7 @@ void DebugRenderTriggers(void)
 
 void NuTriggerSysInit(void)
 {
-    g_NuTriggerSysList = 0;
+    active_triggersys_instances = 0;
 }
 
 
@@ -587,12 +576,12 @@ struct instNUTRIGGERSYS_s *instNuTriggerSysCreate(struct NUTRIGGERSYS_s *trigger
         memset(itriggersys, 0, 0x18);
 
         itriggersys->prev = 0;
-        itriggersys->next = g_NuTriggerSysList;
+        itriggersys->next = active_triggersys_instances;
 
-        if (g_NuTriggerSysList)
-            g_NuTriggerSysList->prev = itriggersys;
+        if (active_triggersys_instances)
+            active_triggersys_instances->prev = itriggersys;
 
-        g_NuTriggerSysList = itriggersys;
+        active_triggersys_instances = itriggersys;
 
         itriggersys->scenemanager = scenemanager;
         itriggersys->triggersys = triggersys;
@@ -615,7 +604,7 @@ void instNuTriggerSysDestroy(struct instNUTRIGGERSYS_s *sys)
     if (sys->prev)
         sys->prev->next = sys->next;
     else
-        g_NuTriggerSysList = sys->next;
+        active_triggersys_instances = sys->next;
 }
 
 
@@ -672,7 +661,7 @@ void NuTriggerPull(struct instNUTRIGGERSYS_s *sys, struct NUTRIGGER_s *def, stru
         NuSceneInstanceRunScript(sys->scenemanager, def->triggername);
         trig->flags |= 1;
     } else {
-        sprintf(buf, D_00619F60, def->triggername);
+        sprintf(buf, "reset_%s", def->triggername);
         NuSceneInstanceRunScript(sys->scenemanager, buf);
         trig->flags &= 0xFE;
     }
@@ -818,7 +807,7 @@ int WeaponCheckTriggers(struct nuvec_s *pos, float r, int hitpoints)
     struct nuinstance_s *instance;
     char script[32];
 
-    for (itriggersys = g_NuTriggerSysList; itriggersys != 0; itriggersys = itriggersys->next) {
+    for (itriggersys = active_triggersys_instances; itriggersys != 0; itriggersys = itriggersys->next) {
         gscene = itriggersys->scenemanager->gscene;
         triggersys = itriggersys->triggersys;
         if (itriggersys->is_disabled)

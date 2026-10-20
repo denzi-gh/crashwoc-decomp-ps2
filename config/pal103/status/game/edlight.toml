@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0110"
 source = "src/game/edlight.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0110:00240d28:InsideLight"
@@ -161,172 +161,210 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:00632670:edlight_active_menu"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:00632674:edlight_options_menu"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:00632678:edlight_double_menu"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:0063267c:edlight_glb_menu"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:00632680:edlight_r_slider"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:00632684:edlight_g_slider"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:00632688:edlight_b_slider"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:0063268c:edlight_type"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:00632690:Gr"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:00632691:Gg"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:00632692:Gb"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:00632693:Lr"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:00632694:Lg"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:00632695:Lb"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:00632698:edlight_glb_amb_light"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:0063269c:edlight_glb_dir_light"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:006326a0:glb_amb_error_flag"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:006326a4:glb_dir_error_flag"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:006326a8:radius_has_changed"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:006326b8:r.99"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:006326bc:g.100"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:006326c0:b.101"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:00632708:edlight_used"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:0063270c:mtl"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:00632710:default_radius"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:00632714:topx"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:00632718:topy"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:0063271c:topz"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:00632720:bottomx"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:00632724:bottomy"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:00632728:bottomz"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:0063272c:northx"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:00632730:northy"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:00632734:northz"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:00632738:eastx"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:0063273c:easty"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:00632740:eastz"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:00632744:southx"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:00632748:southy"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:0063274c:southz"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:00632750:westx"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:00632754:westy"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0110:00632758:westz"
-state = "asm"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0110:00633364:edlight_cam_ax"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0110:00633368:edlight_cam_ay"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0110:0063336c:edlight_in_crate"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0110:00633370:edlight_in_light"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0110:00633374:edlight_i_light"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0110:00633378:edlight_d_light"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0110:0063337c:edlight_l_light"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x006251c8
+end = 0x006251e5
+
+[[claim]]
+section = ".sbss"
+start = 0x0063337c
+end = 0x00633380

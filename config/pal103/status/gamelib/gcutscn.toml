@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0078"
 source = "src/gamelib/gcutscn.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0078:001aae88:NuGCutSceneLoad"
@@ -293,48 +293,62 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0078:0062f7c8:do_cameras"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0078:0062f7cc:do_rigids"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0078:0062f7d0:do_chars"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0078:0062f7d4:do_locator"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0078:0062f7d8:do_debug_rndr"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0078:0062f7dc:set_cutscenecammtx"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0078:0062f7e0:NuCutSceneCharacterRender"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0078:0062f7e4:NuCutSceneCharacterRelease"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0078:0062f7e8:NuCutSceneFindCharacters"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0078:0062f7ec:NuCutSceneCharacterCreateData"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0078:0062f7f0:NuCutSceneRigidCollisionCheck"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0078:0062f7f4:locatorfns"
-state = "asm"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0078:0063322c:active_cutscene_instances"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x00619ed0
+end = 0x00619ef4
+
+[[claim]]
+section = ".sbss"
+start = 0x0063322c
+end = 0x00633230

@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0038"
 source = "src/nu3d/numtl.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0038:0011a900:CreateStateBlock"
@@ -121,60 +121,65 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0038:0062eba0:initialised"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0038:0062eba4:smlist"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0038:0062eba8:mtl_store"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0038:0062ebac:mtl_allocix"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0038:0062ebb0:mtl_allocmax"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0038:0062ebb4:numtl_lighting_disabled"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0038:0062ebb8:numtl_force_colour"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0038:0062ebbc:numtl_force_mtlsize"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0038:0062ebc0:numtl_force_lit"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0038:0062ebc4:numtl_force_mipmap"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0038:0062ebc8:NuMtlReadEvent"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0038:0062ebd8:sinetime.75"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0038:0062ebdc:sm.127"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0038:0062ebe0:numtl_defaultmtl2d"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0038:0062ebe4:numtl_defaultmtl3d"
-state = "asm"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x00614568
+end = 0x00614582

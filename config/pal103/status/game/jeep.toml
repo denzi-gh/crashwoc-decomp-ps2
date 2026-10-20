@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0101"
 source = "src/game/jeep.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0101:00223ae0:SpinWheelsJeep"
@@ -465,296 +465,387 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631948:PYROTILTX"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:0063194c:AKUAKUTILTX"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631950:CurrentDebugJeep"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631954:DropAdj"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631958:Replay"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631968:JCDist"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:0063196c:buggy_contact"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631978:FIREBOSSTHROWSPEED"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:0063197c:FIREBOSSCHASESPEED"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631980:FIREBOSSSCAREDSPEED"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631984:FIREBOSSENDRUNAWAY"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631988:FIREBOSSSTART"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:0063198c:FIREBOSSHOLDPLAYERTIME"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631990:FIREBOSSHOLDINTROTIME"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631994:FIREBOSSENDCHASE"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631998:FIREBOSSTURNTOMECH"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:0063199c:FIREBOSSTURNFROMMECH"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:006319a0:FIREBOSSWALLFIREDIST"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:006319a4:FOOTJUDDERTIME"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:006319a8:FOOTSTEPVOL"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:006319ac:TRANSLATEFIREBOSS"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:006319b0:FIREBOSSRUNAHEADTIMER"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:006319b4:FOOTRUMBLEPOWER"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:006319b8:FIREVOL"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:006319bc:BREAKVOL"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:006319c0:BOSSBANGVOL"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:006319c4:BOSSANGRYVOL"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:006319c8:BOSSBREATHVOL"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:006319cc:BOSSBREATHFRAME"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:006319d0:FireIndx.242"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:006319fc:SMASHRUMPOWER"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a00:FBSCREAMVOL"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a04:FIREWATERSOUNDTIME"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a08:WATERFIRESOUNDVOL"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a0c:WaterLength"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a10:WaterWidth"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a14:SEEKANGSPEED"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a18:MAXWATERTIME"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a1c:FireBossHoldPlayer"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a20:SmokeyCam"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a24:FireBossCam"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a28:SmokeyFinished"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a2c:SmokeyPosition"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a30:SmokeyCountDownValue"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a34:FireBossFinished"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a38:FireBossWon"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a3c:AshesMechInZ"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a40:AshesMechOutZ"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a44:JeepFrame"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a48:JeepInControl"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a4c:WesternCountdown"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a50:JeepCamSnapShot"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a54:JeepBaseAng"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a58:JeepCamTween"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a5c:JeepRailCamTween"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a60:JeepRailCamTween2"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a64:HoldFireBoss"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a68:WaterTimer"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a6c:JeepIntroLookSpline"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a70:JeepIntroCamSpline"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a74:HighCam"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a78:FireBossWaterSoundTimer"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a7c:RaceOn"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a80:FireBossHealth"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a84:DebugTest"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a88:ResetJeepCamera"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a8c:gggg"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a90:tttt2"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a94:WID"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a98:WesternTime"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631a9c:WallOfFireOn"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631aa0:WallOfFireAttatched"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631aa4:WallOfFireAngleY"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0101:00631aa8:WallOfFireHurtTimer"
-state = "asm"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0101:006332b0:LastChangePad.93"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0101:006332b4:JCamAngY.134"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0101:006332b6:JCamAngX.135"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0101:006332b8:JCamMag.136"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0101:006332bc:AngVelY.138"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0101:006332c0:VelSet.139"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0101:006332c4:BackJeepCamX.142"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0101:006332c8:BackJeepCamY.143"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0101:006332cc:FinalPosition.198"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0101:006332d0:LastBossAct.241"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0101:006332d4:DontDropRocks.243"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0101:006332d8:JustFromIntro.244"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0101:006332dc:LastVehicleControl.245"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0101:006332e0:WaterCurrentAngleY.297"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0101:006332e4:JeepCamX"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0101:006332e8:JeepCamY"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0101:006b75e0:Vel.137"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0101:006b75f0:TweenTargPos.140"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0101:006b7600:BackCamPos.141"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x006b7600
+end = 0x006b760c
+
+[[claim]]
+section = ".rodata"
+start = 0x0061fc70
+end = 0x0061fc88
+
+[[claim]]
+section = ".sbss"
+start = 0x006332e8
+end = 0x006332ec

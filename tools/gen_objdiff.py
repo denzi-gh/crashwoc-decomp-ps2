@@ -12,11 +12,8 @@ WHOLE program is visible from day one:
   * Units whose source file exists in src/ also get a base object (the plain
     compile of the C -- build/<v>/current/...). Units with no C yet have no
     base: objdiff shows their functions at 0%, which is the honest number.
-  * Every linked data object from the committed data map is modelled too, as
-    a target-only unit in a dedicated "data" category (see data_units): its
-    total_data is the real linked byte count and matched_data is honestly 0
-    until decompiled C data exists. objdiff measures those bytes from the
-    `.split.*` sections directly, so no data symbols are required.
+  * Every linked data object from the committed data map is a unit in the
+    "data" category (see data_units); units with C data get a base.
   * Builds go through `python tools/dispatch.py ninja <object>`: on Windows
     that forwards into the dev container, so clicking "build" in objdiff
     rebuilds exactly one ninja node wherever objdiff runs.
@@ -122,33 +119,34 @@ def unit_table(version):
 def data_units(version):
     """objdiff units for the linked data objects, in data-map order.
 
-    Every object tools/gen_data_objects.py emits from the committed data map
-    becomes a unit whose target is that expected data object and which has NO
-    base -- there is no decompiled C data yet, so objdiff reports total_data
-    honestly with zero matched. objdiff 3.7.2 measures data from the
-    allocated `.split.*` section bytes, so these units carry a real
-    total_data even though the objects hold no symbols. Names mirror the data
-    map (`data/unit-NNNN`, `data/unassigned/<section>_<addr>`) and are prefixed
-    `data/`, so they never collide with a `.text` unit; the shared
-    object_groups() keeps the model and the built objects in lockstep.
-
-    Pure over the committed data map -- no game files, no toolchain (it does
-    not read the ELF; only the retail bytes inside the objects do, and those
-    stay in gitignored expected/).
+    Target: the expected data object. Units with C data
+    (gen_report_data.report_data_units) get the report-data base and the
+    manifest's `complete`; the rest have no base (0 matched). Names are
+    `data/unit-NNNN` / `data/unassigned/<section>_<addr>`. Pure.
     """
     # Imported lazily: gen_data_objects pulls in the binutils path helpers,
     # which are irrelevant here (we never assemble), but keeping the import
     # local documents that this is the only coupling.
     from gen_data_objects import load_map, object_groups, NOBITS_SECTIONS
+    from gen_report_data import report_data_units
     ranges = [r for r in load_map(version)
               if r["section"] not in NOBITS_SECTIONS]
+    with_c = {stem: complete
+              for stem, _m, complete in report_data_units(version)}
     units = []
     for stem, _entries in object_groups(ranges):
-        units.append({
+        unit = {
             "name": f"data/{stem}",
             "target_path": f"expected/{version}/data/{stem}.o",
             "metadata": {"progress_categories": ["data"]},
-        })
+            # objdiff-cli report combines `.split.*` into one section; keep
+            # one section per range so each range is scored on its own.
+            "options": {"combineDataSections": False},
+        }
+        if stem in with_c:
+            unit["base_path"] = f"build/{version}/report-data/{stem}.o"
+            unit["metadata"]["complete"] = with_c[stem]
+        units.append(unit)
     return units
 
 
@@ -228,7 +226,7 @@ def emit_objdiff(version="pal103", out_path=None):
                 entry["base_path"] = f"build/{version}/current/{name}.o"
         units.append(entry)
 
-    # Data units: one per linked data object, target only (honest 0 matched).
+    # Data units: one per linked data object; a C base where C provides it.
     units += data_units(version)
 
     config = {
@@ -260,10 +258,13 @@ def main():
         pass
     all_units = json.loads(path.read_text())["units"]
     n_text = len(load_tu_runs())
-    n_data = sum(1 for u in all_units if u["name"].startswith("data/"))
-    with_base = sum(1 for u in all_units if "base_path" in u)
+    data = [u for u in all_units if u["name"].startswith("data/")]
+    with_base = sum(1 for u in all_units
+                    if "base_path" in u and u not in data)
+    data_base = sum(1 for u in data if "base_path" in u)
     print(f"wrote {Path(shown).as_posix()} (gitignored): {n_text} text units "
-          f"({with_base} with a C base object) + {n_data} data units")
+          f"({with_base} with a C base object) + {len(data)} data units "
+          f"({data_base} with C data)")
     return 0
 
 

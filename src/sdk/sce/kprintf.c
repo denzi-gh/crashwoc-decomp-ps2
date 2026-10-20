@@ -32,15 +32,12 @@ typedef char *va_list;
 
 extern int kputs(const char *str);
 
-extern char D_00703640[DECI2_BUF_SIZE];
-
-#define deci2_buf  D_00703640
-
 void serialPutchar(int c);
 void kprintf(const char *fmt, ...);
 
 static int count = 0;
 static void (*_putchar)(int c) = serialPutchar;
+static char linebuf[DECI2_BUF_SIZE];
 
 
 int kputchar(int c)
@@ -56,16 +53,16 @@ void deci2Putchar(int c)
 {
     if (count >= DECI2_BUF_SIZE - 2) {
         count = 0;
-        deci2_buf[DECI2_BUF_SIZE - 1] = 0;
-        kputs(deci2_buf);
+        linebuf[DECI2_BUF_SIZE - 1] = 0;
+        kputs(linebuf);
     }
     if (c == '\n') {
-        deci2_buf[count] = c;
-        deci2_buf[count + 1] = 0;
+        linebuf[count] = c;
+        linebuf[count + 1] = 0;
         count = 0;
-        kputs(deci2_buf);
+        kputs(linebuf);
     } else {
-        deci2_buf[count++] = c;
+        linebuf[count++] = c;
     }
 }
 

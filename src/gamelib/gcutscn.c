@@ -93,22 +93,20 @@
 
 #define NUINSTANCE_VISIBLE 0x1
 
-extern NuCutSceneCharacterRenderFn NuCutSceneCharacterRender;
-extern NuCutSceneCharacterReleaseFn NuCutSceneCharacterRelease;
-extern NuCutSceneFindCharactersFn NuCutSceneFindCharacters;
-extern NuCutSceneCharacterCreateDataFn NuCutSceneCharacterCreateData;
-extern NuCutSceneRigidCollisionCheckFn NuCutSceneRigidCollisionCheck;
-extern struct NUGCUTLOCFNDATA_s *locatorfns;
+static int do_cameras = 1;
+static int do_rigids = 1;
+static int do_chars = 1;
+static int do_locator = 1;
+static int do_debug_rndr = 0;
+int set_cutscenecammtx = 0;
+NuCutSceneCharacterRenderFn NuCutSceneCharacterRender = 0;
+NuCutSceneCharacterReleaseFn NuCutSceneCharacterRelease = 0;
+NuCutSceneFindCharactersFn NuCutSceneFindCharacters = 0;
+NuCutSceneCharacterCreateDataFn NuCutSceneCharacterCreateData = 0;
+NuCutSceneRigidCollisionCheckFn NuCutSceneRigidCollisionCheck = 0;
+struct NUGCUTLOCFNDATA_s *locatorfns = 0;
 
-extern struct instNUGCUTSCENE_s *D_0063322C;
-#define cutscenelist D_0063322C
-
-extern int D_0062F7CC;
-extern int D_0062F7D0;
-extern int D_0062F7D4;
-#define cutscene_rndr_rigids   D_0062F7CC
-#define cutscene_rndr_chars    D_0062F7D0
-#define cutscene_rndr_locators D_0062F7D4
+static struct instNUGCUTSCENE_s *active_cutscene_instances;
 
 #define NUANIM_CURVESET_ROTATE 0x1
 #define NUANIM_CURVESET_SCALE  0x8
@@ -134,19 +132,59 @@ extern int D_0062F7D4;
 /* Round a heap address up to the next 16-byte boundary. */
 #define ALIGN16(a) (((a) + 15) & ~15)
 
+extern int NuFileLoadBuffer(char *name, void *buf, int size);
+
+/* Defined first: retail .rodata starts with this function's strings. */
+struct NUGCUTSCENE_s *NuGCutSceneLoad(char *name, union variptr_u *heap, union variptr_u *heapend) {
+    struct NUGCUTSCENE_s *def;
+    int size;
+
+    heap->intaddr = ALIGN16(heap->intaddr);
+    size = NuFileLoadBuffer(name, heap->voidptr, heapend->u8 - heap->u8);
+    if (size == 0) {
+        NuErrorProlog("..\\nu2crash.ps2\\gamelib\\gcutscn.c", 0x14C)(
+            "Could not read from cutscene <fname>, either file is not there or the buffer may be full");
+    }
+    def = heap->voidptr;
+    heap->voidptr = (char *)def + size;
+    if (def->version != 1) {
+        NuErrorProlog("..\\nu2crash.ps2\\gamelib\\gcutscn.c", 0x151)(
+            "Out of date version of cutscene <%s>, you have version <%d>", name, def->version);
+    }
+    def->base = (int)def - def->base;
+    def->names = def->names ? def->names + def->base : 0;
+    if (def->camdef) {
+        NuGCutCamsSysFixPtrs(def, def->base);
+    }
+    if (def->locatordef) {
+        NuGCutLocatorSysFixPtrs(def, def->base);
+    }
+    if (def->rigiddef) {
+        NuGCutRigidSysFixPtrs(def, def->base);
+    }
+    if (def->chardef) {
+        NuGCutCharSysFixPtrs(def, def->base);
+    }
+    if (def->triggerdef) {
+        NuGCutTriggerSysFixPtrs(def, def->base);
+    }
+    def->bounds = def->bounds ? (struct NUGCUTBBOX_s *)((char *)def->bounds + def->base) : 0;
+    return def;
+}
+
 void instNuGCutSceneEnd(struct instNUGCUTSCENE_s *scene);
 
 
 void NuGCutSceneSysInit(struct NUGCUTLOCFNDATA_s *fns) {
     locatorfns = fns;
-    cutscenelist = 0;
+    active_cutscene_instances = 0;
 }
 
 
 void NuGCutSceneSysUpdate(int paused) {
     struct instNUGCUTSCENE_s *scene;
 
-    for (scene = cutscenelist; scene; scene = scene->next) {
+    for (scene = active_cutscene_instances; scene; scene = scene->next) {
         if (!(scene->flags & NUGCUTSCENE_UPDATED)) {
             instNuGCutSceneUpdate(scene, paused);
             scene->flags |= NUGCUTSCENE_UPDATED;
@@ -158,7 +196,7 @@ void NuGCutSceneSysUpdate(int paused) {
 void NuGCutSceneSysRender(void) {
     struct instNUGCUTSCENE_s *scene;
 
-    for (scene = cutscenelist; scene; scene = scene->next) {
+    for (scene = active_cutscene_instances; scene; scene = scene->next) {
         instNuGCutSceneRender(scene);
         scene->flags &= ~NUGCUTSCENE_UPDATED;
     }
@@ -226,7 +264,7 @@ void NuGCutSceneFixUp(struct NUGCUTSCENE_s *def, void *gscene, struct NUTRIGGERS
 struct instNUGCUTSCENE_s *instNuGCutSceneFind(const char *name) {
     struct instNUGCUTSCENE_s *scene;
 
-    for (scene = cutscenelist; scene; scene = scene->next) {
+    for (scene = active_cutscene_instances; scene; scene = scene->next) {
         if (strcasecmp(name, scene->name) == 0) {
             return scene;
         }
@@ -245,7 +283,7 @@ void instNuGCutSceneDestroy(struct instNUGCUTSCENE_s *scene) {
     if (scene->prev) {
         scene->prev->next = scene->next;
     } else {
-        cutscenelist = scene->next;
+        active_cutscene_instances = scene->next;
     }
 }
 
@@ -290,9 +328,6 @@ inline void instNuGCutSceneEnd(struct instNUGCUTSCENE_s *scene) {
     }
 }
 
-
-extern int D_0062F7C8;
-#define cutscene_rndr_cameras D_0062F7C8
 
 extern struct numtx_s numtx_identity;
 
@@ -383,13 +418,13 @@ void instNuGCutSceneUpdate(struct instNUGCUTSCENE_s *scene, int paused) {
     } else {
         scene->flags |= NUGCUTSCENE_STARTED;
     }
-    if (cutscene_rndr_cameras && scene->camsys) {
+    if (do_cameras && scene->camsys) {
         instNuGCutCamSysUpdate(scene, scene->time);
     }
     if (scene->triggersys) {
         instNuGCutTriggerSysUpdate(scene, scene->time);
     }
-    if (cutscene_rndr_rigids && scene->rigidsys) {
+    if (do_rigids && scene->rigidsys) {
         instNuGCutRigidSysUpdate(scene, scene->time);
     }
 }
@@ -508,10 +543,6 @@ inline int NuGCutLocatorIsVisble(struct NUGCUTLOCATOR_s *data, float time, struc
 }
 
 
-extern int D_0062F7D8;
-#define cutscene_rndr_emitters D_0062F7D8
-
-
 void DebugRndrEmitter(struct nuvec_s *pos, short rotz, short roty) {
     struct nuvec_s tip = { 0.0f, 2.0f, 0.0f };
     struct nuvec_s left = { 0.2f, 1.8f, 0.0f };
@@ -520,7 +551,7 @@ void DebugRndrEmitter(struct nuvec_s *pos, short rotz, short roty) {
     struct nuvec_s back = { 0.0f, 1.8f, -0.2f };
     struct nuvtx_tc1_s line[2];
 
-    if (cutscene_rndr_emitters) {
+    if (do_debug_rndr) {
         line[1].diffuse = -1;
         line[0].diffuse = -1;
         NuVecRotateZ(&tip, &tip, rotz);
@@ -660,6 +691,44 @@ extern void AddVariableShotDebrisEffect(int type, struct nuvec_s *pos, int count
 
 #define NUGCUTLOCATOR_PIVOT  0x4
 #define NUGCUTLOCATOR_FINITE 0x10
+
+extern int LookupDebrisEffect(char *name);
+
+/* Index of the locator function called `name`, or -1. */
+static inline int LookupLocatorFn(char *name) {
+    int ix = 0;
+
+    if (locatorfns != 0) {
+        while (locatorfns[ix].name) {
+            if (strcasecmp(name, locatorfns[ix].name) == 0) {
+                return ix;
+            }
+            ix++;
+        }
+    }
+    return -1;
+}
+
+/* Bind each locator type to its debris effect or update function. Inline (its
+ * output deferred) and defined here: retail emits its message right before the
+ * debris-update jump table in .rodata. */
+inline void NuGCutLocatorSysFixUp(struct NUGCUTLOCATORSYS_s *def) {
+    unsigned int i;
+
+    for (i = 0; i < def->ntypes; i++) {
+        struct NUGCUTLOCATORTYPE_s *type = &def->types[i];
+
+        if (type->flags & NUGCUTLOCATOR_DEBRIS) {
+            type->fn = LookupDebrisEffect(type->name);
+        } else if (type->flags & NUGCUTLOCATOR_FUNC) {
+            type->fn = LookupLocatorFn(type->name);
+        }
+        if (type->fn == NUGCUTLOCATOR_NOFN) {
+            NuDebugMsgProlog("..\\nu2crash.ps2\\gamelib\\gcutscn.c", 0x4FE)(
+                "NuGCutLocatorSysFixUp: cannot fixup locator <%s> in cutscene", type->name);
+        }
+    }
+}
 
 void instNuGCutDebrisLocatorUpdate(struct NUGCUTLOCATORSYS_s *def, struct instNUGCUTLOCATOR_s *locator,
                                    struct NUGCUTLOCATOR_s *data, float time, struct numtx_s *wm) {
@@ -902,103 +971,6 @@ void NuGCutLocatorSysFixPtrs(struct NUGCUTSCENE_s *def, int base) {
 
                 type->name = def->names + (int)type->name - 1;
             }
-        }
-    }
-}
-
-extern int LookupDebrisEffect(char *name);
-
-/* Retail-owned (no Data-from-C yet). */
-extern char D_00619C50[];               /* source file name */
-extern char D_00619D90[];               /* debug message */
-#define gcutscn_srcfile D_00619C50
-#define nolocatorfn_msg D_00619D90
-
-/* Index of the locator function called `name`, or -1. */
-static inline int LookupLocatorFn(char *name) {
-    int ix = 0;
-
-    if (locatorfns != 0) {
-        while (locatorfns[ix].name) {
-            if (strcasecmp(name, locatorfns[ix].name) == 0) {
-                return ix;
-            }
-            ix++;
-        }
-    }
-    return -1;
-}
-
-/* Bind each locator type to its debris effect or update function. */
-void NuGCutLocatorSysFixUp(struct NUGCUTLOCATORSYS_s *def) {
-    unsigned int i;
-
-    for (i = 0; i < def->ntypes; i++) {
-        struct NUGCUTLOCATORTYPE_s *type = &def->types[i];
-
-        if (type->flags & NUGCUTLOCATOR_DEBRIS) {
-            type->fn = LookupDebrisEffect(type->name);
-        } else if (type->flags & NUGCUTLOCATOR_FUNC) {
-            type->fn = LookupLocatorFn(type->name);
-        }
-        if (type->fn == NUGCUTLOCATOR_NOFN) {
-            NuDebugMsgProlog(gcutscn_srcfile, 0x4FE)(nolocatorfn_msg, type->name);
-        }
-    }
-}
-
-extern char D_00619DF8[];               /* debug message */
-#define norigid_msg D_00619DF8
-
-/* Find each rigid's object in the scene and point it at its locators. */
-void NuGCutRigidSysFixUp(struct NUGCUTSCENE_s *def, void *scene) {
-    struct NUGCUTRIGIDSYS_s *rigiddef;
-    struct NUGCUTLOCATORSYS_s *locatordef;
-    int i;
-
-    rigiddef = def->rigiddef;
-    locatordef = def->locatordef;
-    if (scene != 0) {
-        for (i = 0; i < rigiddef->count; i++) {
-            struct NUGCUTRIGID_s *rigid = &rigiddef->rigids[i];
-
-            if (NuSpecialFind(scene, &rigid->obj, rigid->name)) {
-                rigid->flags |= NUGCUTRIGID_FOUND;
-            } else {
-                NuDebugMsgProlog(gcutscn_srcfile, 0x5D9)(norigid_msg, rigid->name);
-            }
-            if (rigid->nlocators != 0 && (int)rigid->locators < 0xFF) {
-                rigid->first_locator = (int)rigid->locators;
-                rigid->locators = &locatordef->locators[(int)rigid->locators];
-            } else {
-                rigid->first_locator = 0xFF;
-            }
-        }
-    }
-}
-
-extern char D_00619E90[];               /* error message */
-#define notrigger_msg D_00619E90
-
-/* Point each cutscene trigger at the scene trigger with the same name. */
-void NuGCutTriggerSysFixUp(struct NUGCUTSCENE_s *def, struct NUTRIGGERSYS_s *triggersys) {
-    struct NUGCUTTRIGGERSYS_s *triggerdef;
-    int i;
-    int j;
-
-    triggerdef = def->triggerdef;
-    for (i = 0; i < triggerdef->count; i++) {
-        struct NUGCUTTRIGGER_s *trigger = &triggerdef->triggers[i];
-
-        for (j = 0; j < triggersys->ntriggers; j++) {
-            trigger->target = -1;
-            if (strcasecmp(trigger->name, triggersys->triggers[j].triggername) == 0) {
-                trigger->target = j;
-                break;
-            }
-        }
-        if (trigger->target == -1) {
-            NuErrorProlog(gcutscn_srcfile, 0x8A8)(notrigger_msg, trigger->name);
         }
     }
 }
@@ -1409,8 +1381,34 @@ struct instNUGCUTTRIGGERSYS_s *instNuCGutTriggerSysCreate(struct NUGCUTSCENE_s *
 }
 
 
-extern char D_00619E38[];
-#define nospecial_msg D_00619E38
+/* Find each rigid's object in the scene and point it at its locators. Inline
+ * and defined here for the same .rodata order reason. */
+inline void NuGCutRigidSysFixUp(struct NUGCUTSCENE_s *def, void *scene) {
+    struct NUGCUTRIGIDSYS_s *rigiddef;
+    struct NUGCUTLOCATORSYS_s *locatordef;
+    int i;
+
+    rigiddef = def->rigiddef;
+    locatordef = def->locatordef;
+    if (scene != 0) {
+        for (i = 0; i < rigiddef->count; i++) {
+            struct NUGCUTRIGID_s *rigid = &rigiddef->rigids[i];
+
+            if (NuSpecialFind(scene, &rigid->obj, rigid->name)) {
+                rigid->flags |= NUGCUTRIGID_FOUND;
+            } else {
+                NuDebugMsgProlog("..\\nu2crash.ps2\\gamelib\\gcutscn.c", 0x5D9)(
+                    "NuGCutRigidSysFixUp: cannot fixup rigid object <%s> in cutscene", rigid->name);
+            }
+            if (rigid->nlocators != 0 && (int)rigid->locators < 0xFF) {
+                rigid->first_locator = (int)rigid->locators;
+                rigid->locators = &locatordef->locators[(int)rigid->locators];
+            } else {
+                rigid->first_locator = 0xFF;
+            }
+        }
+    }
+}
 
 struct instNUGCUTRIGIDSYS_s *instNuCGutRigidSysCreate(struct NUGCUTSCENE_s *def, struct nugscn_s *gscene, union variptr_u *heap) {
     struct NUGCUTRIGIDSYS_s *rigiddef = def->rigiddef;
@@ -1433,7 +1431,8 @@ struct instNUGCUTRIGIDSYS_s *instNuCGutRigidSysCreate(struct NUGCUTSCENE_s *def,
                     rigid->obj.scene = gscene;
                     rigid->obj.special = &gscene->specials[data->obj.special - data->obj.scene->specials];
                 } else {
-                    NuDebugMsgProlog(gcutscn_srcfile, 0x609)(nospecial_msg, data->name);
+                    NuDebugMsgProlog("..\\nu2crash.ps2\\gamelib\\gcutscn.c", 0x609)(
+                        "instNuCGutRigidSysCreate: cannot reference rigid object <%s>, object was not fixed up", data->name);
                 }
             } else {
                 rigid->obj = data->obj;
@@ -1478,6 +1477,31 @@ struct instNUGCUTCHARSYS_s *instNuCGutCharSysCreate(struct NUGCUTSCENE_s *def, u
     return charsys;
 }
 
+/* Point each cutscene trigger at the scene trigger with the same name. Inline
+ * and defined here for the same .rodata order reason. */
+inline void NuGCutTriggerSysFixUp(struct NUGCUTSCENE_s *def, struct NUTRIGGERSYS_s *triggersys) {
+    struct NUGCUTTRIGGERSYS_s *triggerdef;
+    int i;
+    int j;
+
+    triggerdef = def->triggerdef;
+    for (i = 0; i < triggerdef->count; i++) {
+        struct NUGCUTTRIGGER_s *trigger = &triggerdef->triggers[i];
+
+        for (j = 0; j < triggersys->ntriggers; j++) {
+            trigger->target = -1;
+            if (strcasecmp(trigger->name, triggersys->triggers[j].triggername) == 0) {
+                trigger->target = j;
+                break;
+            }
+        }
+        if (trigger->target == -1) {
+            NuErrorProlog("..\\nu2crash.ps2\\gamelib\\gcutscn.c", 0x8A8)(
+                "NuGCutTriggerSysFixUp: Unable to find trigger <%s>", trigger->name);
+        }
+    }
+}
+
 struct instNUGCUTSCENE_s *instNuGCutSceneCreate(struct NUGCUTSCENE_s *def, void *gscene, struct instNUTRIGGERSYS_s *triggers,
                                    char *name, union variptr_u *heap) {
     struct instNUGCUTSCENE_s *scene;
@@ -1487,11 +1511,11 @@ struct instNUGCUTSCENE_s *instNuGCutSceneCreate(struct NUGCUTSCENE_s *def, void 
         scene = (struct instNUGCUTSCENE_s *)(heap->intaddr = ALIGN16(heap->intaddr));
         heap->voidptr = scene + 1;
         memset(scene, 0, sizeof(struct instNUGCUTSCENE_s));
-        scene->next = cutscenelist;
-        if (cutscenelist) {
-            cutscenelist->prev = scene;
+        scene->next = active_cutscene_instances;
+        if (active_cutscene_instances) {
+            active_cutscene_instances->prev = scene;
         }
-        cutscenelist = scene;
+        active_cutscene_instances = scene;
         scene->def = def;
         if (name) {
             sprintf(scene->name, name);
@@ -1561,13 +1585,13 @@ void instNuGCutSceneRender(struct instNUGCUTSCENE_s *scene) {
     if (!(scene->flags & NUGCUTSCENE_VISIBLE)) {
         return;
     }
-    if (cutscene_rndr_rigids && scene->rigidsys) {
+    if (do_rigids && scene->rigidsys) {
         instNuGCutRigidSysRender(scene, scene->time);
     }
-    if (cutscene_rndr_chars && scene->charsys) {
+    if (do_chars && scene->charsys) {
         instNuGCutCharSysRender(scene, scene->time);
     }
-    if (cutscene_rndr_locators && scene->locatorsys) {
+    if (do_locator && scene->locatorsys) {
         instNuGCutLocatorSysUpdate(scene, scene->time);
     }
 }
@@ -1631,18 +1655,7 @@ void instNuGCutCharSysRender(struct instNUGCUTSCENE_s *scene, float time) {
 }
 
 
-extern char D_00619C78[];               /* error message */
-extern char D_00619CD8[];               /* error message */
-#define loadfail_msg D_00619C78
-#define badversion_msg D_00619CD8
-extern int NuFileLoadBuffer(char *name, void *buf, int size);
-
-
 struct numtx_s cutscenecammtx = {0};
-extern int set_cutscenecammtx;
-extern char D_00619D18[];
-#define badcamera_msg D_00619D18
-
 void instNuGCutCamSysUpdate(struct instNUGCUTSCENE_s *scene, float time) {
     struct NUGCUTCAMSYS_s *camdef = scene->def->camdef;
     struct instNUGCUTCAMSYS_s *camsys = scene->camsys;
@@ -1680,7 +1693,8 @@ void instNuGCutCamSysUpdate(struct instNUGCUTSCENE_s *scene, float time) {
         return;
     }
     if (camsys->current >= camdef->count) {
-        NuErrorProlog(gcutscn_srcfile, 0x37B)(badcamera_msg);
+        NuErrorProlog("..\\nu2crash.ps2\\gamelib\\gcutscn.c", 0x37B)(
+            "instNuGCutCamSysUpdate: internal error");
     }
     cam = &camsys->cams[camsys->current];
     camdata = &camdef->cams[camsys->current];
@@ -1732,40 +1746,4 @@ void instNuGCutCamSysUpdate(struct instNUGCUTSCENE_s *scene, float time) {
         NuQuatToMtx(&qblend, &cutscenecammtx);
         *(struct nuvec_s *)&cutscenecammtx._30 = campos;
     }
-}
-
-
-struct NUGCUTSCENE_s *NuGCutSceneLoad(char *name, union variptr_u *heap, union variptr_u *heapend) {
-    struct NUGCUTSCENE_s *def;
-    int size;
-
-    heap->intaddr = ALIGN16(heap->intaddr);
-    size = NuFileLoadBuffer(name, heap->voidptr, heapend->u8 - heap->u8);
-    if (size == 0) {
-        NuErrorProlog(gcutscn_srcfile, 0x14C)(loadfail_msg);
-    }
-    def = heap->voidptr;
-    heap->voidptr = (char *)def + size;
-    if (def->version != 1) {
-        NuErrorProlog(gcutscn_srcfile, 0x151)(badversion_msg, name, def->version);
-    }
-    def->base = (int)def - def->base;
-    def->names = def->names ? def->names + def->base : 0;
-    if (def->camdef) {
-        NuGCutCamsSysFixPtrs(def, def->base);
-    }
-    if (def->locatordef) {
-        NuGCutLocatorSysFixPtrs(def, def->base);
-    }
-    if (def->rigiddef) {
-        NuGCutRigidSysFixPtrs(def, def->base);
-    }
-    if (def->chardef) {
-        NuGCutCharSysFixPtrs(def, def->base);
-    }
-    if (def->triggerdef) {
-        NuGCutTriggerSysFixPtrs(def, def->base);
-    }
-    def->bounds = def->bounds ? (struct NUGCUTBBOX_s *)((char *)def->bounds + def->base) : 0;
-    return def;
 }

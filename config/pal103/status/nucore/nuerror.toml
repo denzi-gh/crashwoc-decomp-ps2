@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0003"
 source = "src/nucore/nuerror.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0003:00104360:NuErrorFunction"
@@ -41,20 +41,47 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0003:0062e9d8:errmsg_to_file"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0003:0062e9dc:allow_printf"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0003:0062e9e0:initialised.69"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0003:0062e9f4:err_msg_quiet.88"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0003:0062e9f8:dbg_msg_cnt.89"
-state = "asm"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0003:0063300c:errfilepath"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0003:00633010:errfile"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0003:00633014:errline"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x006139e8
+end = 0x00613a0f
+
+[[claim]]
+section = ".sbss"
+start = 0x00633014
+end = 0x00633018
+
+[[claim]]
+section = ".sdata"
+start = 0x0062e9fc
+end = 0x0062ea03

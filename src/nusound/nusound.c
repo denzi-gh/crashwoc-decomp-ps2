@@ -122,60 +122,38 @@ void SetIOPCommand(short command, short count);
 void SetIOPCommandEx(short command, short size, void *data);
 int FlushIOPCommand(int mode);
 
-extern int IOP_Cnt;
 extern int nusound_irx_loaded;
-extern char D_0061AA20[];
-extern char D_0061AA38[];
-extern char D_0061AA60[];
-extern char D_0061AA78[];
-extern char D_0061AAB0[];
-extern char D_0061AAD0[];
-extern char D_0061AAF8[];
-extern char D_0061AB10[];
-extern char D_0061AB30[];
-extern char D_0061AB70[];
-extern char D_0061AB90[];
-extern char D_0061ABB0[];
-extern char D_0061ABD0[];
-extern int D_0062F9D4;
 extern struct nuvec_s D_002D3EF0;
-extern float nusound_fade_start;
-extern float nusound_fade_end;
-extern int nusound_dpl_enabled;
+float nusound_fade_start = 2.0f;
+float nusound_fade_end = 15.0f;
+int nusound_dpl_enabled = 1;
+int IOP_Cnt = 0;
+int SOUND_STEREO_READY_FLAG = 0;
+int SOUND_CD_STATUS = 0;
+int SOUND_SPU_ADDR = 0;
+int SOUND_STREAM_CD_ACCESS = 0;
+int SOUND_IOP_REQUEST_LOAD = -1;
+int SOUND_STREAM_STATUS = 0;
+int SOUND_SFX_TRANSFER_STATUS = 0;
+int SOUND_SFX_TRANSFER_END = 0;
+int SOUND_SHUTOFF_STATUS = 0;
+static int fileinfo_cnt = 0;
+int SSample = 0;
+int VolL = 0x3FFF;
+int VolR = 0x3FFF;
+int SStat = 0;
+int Pitch = 0xEB3;
+int Pitch22khz = 0x759;
+int SChan = 6;
+int Attack = 0;
+int Release = 0x10;
+struct nuvec_s *NuSoundListenPos = 0;
+int NuSndSteroPitch = 0;
 extern int NoSoundPlease;
-extern sceSifClientData D_006B4100;
-extern struct nusound_filename_info_s D_006B4128[];
-extern struct nuvec_s *NuSoundListenPos;
-extern int NuSndSteroPitch;
-extern int SOUND_STREAM_CD_ACCESS;
-extern int SOUND_STREAM_STATUS;
-extern int SOUND_CD_STATUS;
-extern int SOUND_IOP_REQUEST_LOAD;
-extern int SOUND_SHUTOFF_STATUS;
-extern int SOUND_SFX_TRANSFER_STATUS;
-extern int SOUND_SFX_TRANSFER_END;
-extern int SOUND_STEREO_READY_FLAG;
-extern int SChan;
-extern int Attack;
-extern int Release;
+static sceSifClientData nusound_client_data;
+static struct nusound_filename_info_s ADPCM_FileNames[300];
 
-#define bind_error_message D_0061AA20
-#define nusound_source_file D_0061AA38
-#define irx_not_loaded_message D_0061AB30
-#define iop_buffer_full_message D_0061AA78
-#define too_many_samples_message D_0061AA60
-#define spotfx_start_message D_0061AAB0
-#define spotfx_done_message D_0061AAD0
-#define spotfx_failed_message D_0061AAF8
-#define spotfx_end_message D_0061AB10
-#define stereo_message D_0061AB70
-#define stereo2_message D_0061AB90
-#define kill_audio_start_message D_0061ABB0
-#define kill_audio_done_message D_0061ABD0
-#define sound_sample_count D_0062F9D4
 #define camera_position D_002D3EF0
-#define sound_rpc_client D_006B4100
-#define sound_sample_info D_006B4128
 
 #define SOUND_RPC_ID 0x12345
 
@@ -196,9 +174,54 @@ volatile int sbuff2[128] __attribute__((aligned(64))) = { 0 };
 
 static inline int sound_rpc_transfer(int function, void *data, int mode)
 {
-    sceSifCallRpc(&sound_rpc_client, function, mode, data, 0x800,
+    sceSifCallRpc(&nusound_client_data, function, mode, data, 0x800,
                   (void *)sbuff2, 0x200, 0, 0);
     return sbuff2[0];
+}
+
+
+static inline void bind_sound_rpc(void)
+{
+    int delay;
+
+    sceSifInitRpc(0);
+    while (1) {
+        if (sceSifBindRpc(&nusound_client_data, SOUND_RPC_ID, 0) < 0) {
+            printf("error: sceSifBindRpc \n");
+            while (1) {
+            }
+        }
+        delay = 10000;
+        while (delay--) {
+        }
+        if (nusound_client_data.serve != 0) {
+            break;
+        }
+    }
+}
+
+
+static inline void transfer_sample_infos(struct nusound_filename_info_s *info)
+{
+    int batch;
+
+    batch = 12;
+    while (info->Filename[0] != 0) {
+        if (batch == 0) {
+            FlushIOPCommand(0);
+            batch = 12;
+        }
+        batch--;
+        if (fileinfo_cnt < 300) {
+            ADPCM_FileNames[fileinfo_cnt] = *info;
+            SetIOPCommandEx(0x1A, sizeof(struct nusound_filename_info_s), info);
+            info++;
+            fileinfo_cnt++;
+        } else {
+            NuErrorProlog("..\\nu2crash.ps2\\nusound\\nusound.c", 0x234)(
+                "Too many sample files");
+        }
+    }
 }
 
 
@@ -207,7 +230,7 @@ static inline void queue_iop_command(short command, short count)
     int i;
 
     if (IOP_Cnt + count + 3 >= 0x400) {
-        printf(iop_buffer_full_message);
+        printf("*** Function:SetIOPCommand - IOP Buffer full ***\n");
         return;
     }
     senddata[IOP_Cnt + 1] = command;
@@ -225,7 +248,7 @@ static inline int flush_iop_commands(int mode)
     int count;
 
     SOUND_CopyIOPBuffer();
-    if (sceSifCheckStatRpc(&sound_rpc_client.rpcd) != 0) {
+    if (sceSifCheckStatRpc(&nusound_client_data.rpcd) != 0) {
         return -1;
     }
     if (senddata[0] == 0) {
@@ -298,27 +321,6 @@ static inline int find_free_channel(int channel)
         }
     }
     return channel;
-}
-
-
-static inline void bind_sound_rpc(void)
-{
-    int delay;
-
-    sceSifInitRpc(0);
-    while (1) {
-        if (sceSifBindRpc(&sound_rpc_client, SOUND_RPC_ID, 0) < 0) {
-            printf(bind_error_message);
-            while (1) {
-            }
-        }
-        delay = 10000;
-        while (delay--) {
-        }
-        if (sound_rpc_client.serve != 0) {
-            break;
-        }
-    }
 }
 
 
@@ -405,29 +407,6 @@ static inline void check_and_start_stereo(int stream, int left_channel,
     IOPCommandData[1] = left_channel;
     IOPCommandData[2] = right_channel;
     queue_iop_command(0x11, 3);
-}
-
-
-static inline void transfer_sample_infos(struct nusound_filename_info_s *info)
-{
-    int batch;
-
-    batch = 12;
-    while (info->Filename[0] != 0) {
-        if (batch == 0) {
-            FlushIOPCommand(0);
-            batch = 12;
-        }
-        batch--;
-        if (sound_sample_count < 300) {
-            sound_sample_info[sound_sample_count] = *info;
-            SetIOPCommandEx(0x1A, sizeof(struct nusound_filename_info_s), info);
-            info++;
-            sound_sample_count++;
-        } else {
-            NuErrorProlog(nusound_source_file, 0x234)(too_many_samples_message);
-        }
-    }
 }
 
 
@@ -519,7 +498,7 @@ void TransferAllSpotFX(int first)
     if (NoSoundPlease) {
         return;
     }
-    printf(spotfx_start_message);
+    printf("Transfering resident SFX....\n");
     for (i = first; i < 1000; i++) {
         transfer_sfx(i + 0x1000, i);
         request_status(-1);
@@ -530,16 +509,16 @@ void TransferAllSpotFX(int first)
             request_status(-1);
         }
         if (SOUND_SFX_TRANSFER_END == 1) {
-            printf(spotfx_done_message, failures);
+            printf("End of transfer. Found %d resident SFX\n", failures);
             return;
         }
         if (SOUND_SFX_TRANSFER_END == 2) {
-            printf(spotfx_failed_message, i + 0x1000);
+            printf("File Not Found (id %x)\n", i + 0x1000);
         } else {
             failures++;
         }
     }
-    printf(spotfx_end_message);
+    printf("Transfered resident SFX....\n");
 }
 
 
@@ -569,7 +548,8 @@ void NuSoundInit(struct nusound_filename_info_s *sfx_info)
     int i;
 
     if (!nusound_irx_loaded) {
-        NuDebugMsgProlog(nusound_source_file, 0x433)(irx_not_loaded_message);
+        NuDebugMsgProlog("..\\nu2crash.ps2\\nusound\\nusound.c", 0x433)(
+            "Sound services not available - could not load IRX module");
         return;
     }
     for (i = 0; i < 8; i++) {
@@ -713,13 +693,13 @@ void NuSoundPlay(int sfx, int left, int right, int pitch)
         if (right <= -0x4000) {
             right = -0x3FFF;
         }
-        if (sound_sample_info[sfx].ID >= 0x1000) {
+        if (ADPCM_FileNames[sfx].ID >= 0x1000) {
             SChan = find_free_channel(SChan);
-            play_sfx(sound_sample_info[sfx].ID, SChan, left, right, pitch,
+            play_sfx(ADPCM_FileNames[sfx].ID, SChan, left, right, pitch,
                      Attack, Release);
             SChan = (SChan - 6 + 1) % 0x12 + 6;
         } else {
-            play_stream(sound_sample_info[sfx].ID, 0x80, 0, left, right, pitch,
+            play_stream(ADPCM_FileNames[sfx].ID, 0x80, 0, left, right, pitch,
                         2, Attack, Release);
         }
     }
@@ -743,7 +723,7 @@ void NuSoundPlayChan(int sfx, int left, int right, int pitch, int channel)
         if (right <= -0x4000) {
             right = -0x3FFF;
         }
-        sample = sound_sample_info[sfx].ID;
+        sample = ADPCM_FileNames[sfx].ID;
         if (sample >= 0x1000) {
             play_sfx(sample, channel, left, right, pitch, Attack, Release);
         } else {
@@ -758,13 +738,13 @@ void NuSoundPlay3d(struct nuvec_s *pos, int sfx, int left, int right, int pitch)
 {
     if (nusound_irx_loaded) {
         if (NuSoundApply3d(pos, &left, &right)) {
-            if (sound_sample_info[sfx].ID >= 0x1000) {
+            if (ADPCM_FileNames[sfx].ID >= 0x1000) {
                 SChan = find_free_channel(SChan);
-                play_sfx(sound_sample_info[sfx].ID, SChan, left, right, pitch,
+                play_sfx(ADPCM_FileNames[sfx].ID, SChan, left, right, pitch,
                          Attack, Release);
                 SChan = (SChan - 6 + 1) % 0x12 + 6;
             } else {
-                play_stream(sound_sample_info[sfx].ID, 0x80, 0, left, right,
+                play_stream(ADPCM_FileNames[sfx].ID, 0x80, 0, left, right,
                             pitch, 2, Attack, Release);
             }
         }
@@ -779,7 +759,7 @@ void NuSoundPlay3dChan(struct nuvec_s *pos, int sfx, int left, int right, int pi
 
     if (nusound_irx_loaded) {
         if (NuSoundApply3d(pos, &left, &right)) {
-            sample = sound_sample_info[sfx].ID;
+            sample = ADPCM_FileNames[sfx].ID;
             if (sample >= 0x1000) {
                 play_sfx(sample, channel, left, right, pitch, Attack, Release);
             } else {
@@ -794,9 +774,9 @@ void NuSoundPlay3dChan(struct nuvec_s *pos, int sfx, int left, int right, int pi
 void NuSoundPlayStereo(int sfx_left, int sfx_right, int left, int right,
                        int pitch)
 {
-    if (sound_sample_info[sfx_left].ID < 0x1000
-        && sound_sample_info[sfx_right].ID < 0x1000) {
-        printf(stereo_message);
+    if (ADPCM_FileNames[sfx_left].ID < 0x1000
+        && ADPCM_FileNames[sfx_right].ID < 0x1000) {
+        printf("****** Playing Stereo ******\n");
         if (left >= 0x4000) {
             left = 0x3FFF;
         }
@@ -810,9 +790,9 @@ void NuSoundPlayStereo(int sfx_left, int sfx_right, int left, int right,
             right = -0x3FFF;
         }
         NuSndSteroPitch = pitch;
-        play_stream(sound_sample_info[sfx_left].ID, 0, 0, left, 0, 0, 2,
+        play_stream(ADPCM_FileNames[sfx_left].ID, 0, 0, left, 0, 0, 2,
                     Attack, Release);
-        play_stream(sound_sample_info[sfx_right].ID, 1, 1, 0, right, 0, 2,
+        play_stream(ADPCM_FileNames[sfx_right].ID, 1, 1, 0, right, 0, 2,
                     Attack, Release);
         check_and_start_stereo(0, 1, pitch);
     }
@@ -822,9 +802,9 @@ void NuSoundPlayStereo(int sfx_left, int sfx_right, int left, int right,
 void NuSoundPlayStereo2(int sfx_left, int sfx_right, int left, int right,
                         int pitch)
 {
-    if (sound_sample_info[sfx_left].ID < 0x1000
-        && sound_sample_info[sfx_right].ID < 0x1000) {
-        printf(stereo2_message);
+    if (ADPCM_FileNames[sfx_left].ID < 0x1000
+        && ADPCM_FileNames[sfx_right].ID < 0x1000) {
+        printf("****** Playing Stereo 2 ******\n");
         if (left >= 0x4000) {
             left = 0x3FFF;
         }
@@ -837,9 +817,9 @@ void NuSoundPlayStereo2(int sfx_left, int sfx_right, int left, int right,
         if (right <= -0x4000) {
             right = -0x3FFF;
         }
-        play_stream(sound_sample_info[sfx_left].ID, 2, 2, left, 0, 0, 2,
+        play_stream(ADPCM_FileNames[sfx_left].ID, 2, 2, left, 0, 0, 2,
                     Attack, Release);
-        play_stream(sound_sample_info[sfx_right].ID, 3, 3, 0, right, 0, 2,
+        play_stream(ADPCM_FileNames[sfx_right].ID, 3, 3, 0, right, 0, 2,
                     Attack, Release);
         check_and_start_stereo(2, 3, pitch);
     }
@@ -856,12 +836,12 @@ void NuSoundPlay3dLoopSfx(struct nuvec_s *pos, int sfx, int left, int right, int
         base_left = left;
         base_right = right;
         if (NuSoundApply3d(pos, &left, &right)) {
-            if (sound_sample_info[sfx].ID >= 0x1000) {
+            if (ADPCM_FileNames[sfx].ID >= 0x1000) {
                 info = find_loop_info(pos);
                 if (info) {
                     if (info->playing == 0) {
                         info->playing = 1;
-                        play_sfx(sound_sample_info[sfx].ID, info->channel, left,
+                        play_sfx(ADPCM_FileNames[sfx].ID, info->channel, left,
                                  right, pitch, Attack, Release);
                     } else {
                         set_channel_volume(info->channel, left, right);
@@ -880,7 +860,7 @@ void NuSoundPlay3dLoopSfx(struct nuvec_s *pos, int sfx, int left, int right, int
 void NuSoundKillAllAudio(void)
 {
     if (nusound_irx_loaded) {
-        printf(kill_audio_start_message);
+        printf("****** Stopping Sounds ******\n");
         while (1) {
             queue_iop_command(0x21, 0);
             flush_iop_commands(0);
@@ -897,7 +877,7 @@ void NuSoundKillAllAudio(void)
             request_status(-1);
             flush_iop_commands(0);
         } while (SOUND_SHUTOFF_STATUS);
-        printf(kill_audio_done_message);
+        printf("****** Stopped Sounds ******\n");
     }
 }
 
@@ -954,7 +934,7 @@ int NuSoundStopStream(int stream)
 void NuSoundLocalSet(struct nusound_filename_info_s *sfx_info, int unused, int first)
 {
     SOUND_RestoreLocalStart();
-    sound_sample_count = first;
+    fileinfo_cnt = first;
     transfer_sample_infos(sfx_info);
     FlushIOPCommand(0);
     SOUND_InitAdpcmLocal();
@@ -1011,7 +991,7 @@ void SetIOPCommand(short command, short count)
 void SetIOPCommandEx(short command, short size, void *data)
 {
     if (IOP_Cnt + size + 3 >= 0x400) {
-        printf(iop_buffer_full_message);
+        printf("*** Function:SetIOPCommand - IOP Buffer full ***\n");
         return;
     }
     senddata[IOP_Cnt + 1] = command;
@@ -1027,7 +1007,7 @@ int FlushIOPCommand(int mode)
     int count;
 
     SOUND_CopyIOPBuffer();
-    if (sceSifCheckStatRpc(&sound_rpc_client.rpcd) != 0) {
+    if (sceSifCheckStatRpc(&nusound_client_data.rpcd) != 0) {
         return -1;
     }
     if (senddata[0] == 0) {

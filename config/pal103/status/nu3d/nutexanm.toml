@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0053"
 source = "src/nu3d/nutexanm.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0053:00159090:NuTexAnimProgAssembleEnd"
@@ -193,12 +193,64 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0053:0062ef30:sys_progs"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0053:0062ef34:ntal_first"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0053:0062ef38:ntal_free"
-state = "asm"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0053:00633188:labtabcnt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0053:0063318c:xdeflabtabcnt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0053:00633190:parprog"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0053:00633194:nta_sig_on"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0053:00633198:nta_sig_off"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0053:0063319c:nta_sig_old"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0053:006ae528:labtab"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0053:006aea68:xdeflabtab"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x006aea68
+end = 0x006aff68
+
+[[claim]]
+section = ".rodata"
+start = 0x00615bc0
+end = 0x00615bd8
+
+[[claim]]
+section = ".sbss"
+start = 0x0063319c
+end = 0x006331a0
+
+[[claim]]
+section = ".sdata"
+start = 0x0062ef3c
+end = 0x0062efbc

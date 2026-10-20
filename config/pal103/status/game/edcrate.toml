@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0102"
 source = "src/game/edcrate.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0102:0022c430:edcrtDrawSpecialCrates"
@@ -177,80 +177,106 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0102:00631ab0:edcrt_active_menu"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0102:00631ab4:edcrt_options_menu"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0102:00631ab8:edcrt_memcard_menu"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0102:00631abc:edcrt_filename_menu"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0102:00631ac0:edcrt_loadeffects_menu"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0102:00631ac4:edcrt_deleteeffects_menu"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0102:00631ac8:edcrt_cratetypes_menu"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0102:00631acc:edcrt_specifictype_menu"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0102:00631ad0:edcrt_resetcrates_menu"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0102:00631ad4:edcrt_displaytype_menu"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0102:00631ad8:edcrt_count"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0102:00631adc:edcrt_terrainlock"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0102:00631ae0:edcrt_showalltriggers"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0102:00631ae4:edcrtDrawType"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0102:00631ae8:edcrt_currentselcrate"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0102:00631b48:edcrt_used"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0102:00631b78:edcrt_mtl_zoff"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0102:00631b7c:edcrt_cam_dist"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0102:00631b80:edcrt_cam_ax"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0102:00631b84:edcrt_cam_ay"
-state = "asm"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0102:006332ec:edcrt_mctype"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0102:006332f0:edcrt_mcfree"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0102:006332f4:edcrt_mcformat"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0102:006332f8:edcrt_mcresult"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x0061ff68
+end = 0x0061ff9d
+
+[[claim]]
+section = ".sbss"
+start = 0x006332f8
+end = 0x006332fc

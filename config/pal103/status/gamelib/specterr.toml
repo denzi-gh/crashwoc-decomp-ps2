@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0076"
 source = "src/gamelib/specterr.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0076:001a8850:CreateSpecialTerrainData"
@@ -29,8 +29,13 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0076:0062f764:do_bbox.78"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0076:0062f768:inst_to_rndr.79"
-state = "asm"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x00619b20
+end = 0x00619b62

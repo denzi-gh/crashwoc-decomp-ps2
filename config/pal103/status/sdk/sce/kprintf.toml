@@ -51,6 +51,15 @@ state = "matching"
 id = "pal103:unit-0253:00613370:_putchar"
 state = "matching"
 
+[[data]]
+id = "pal103:unit-0253:00703640:linebuf"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x00703640
+end = 0x007036c0
+
 [[claim]]
 section = ".rodata"
 start = 0x0062c640

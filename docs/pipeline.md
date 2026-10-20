@@ -86,8 +86,7 @@ python tools/extract_data_map.py --check       # data map == fresh extraction
 **`data_symbols.toml`** ([tools/extract_data_symbols.py](../tools/extract_data_symbols.py))
 holds every data global the external table defines and every file-local
 static of a unit's local symbol run: the set the data map attributes. Linker
-symbols (`_gp`, `_fbss`) and COMMON globals (named nowhere in the ELF) are not in
-it. Per symbol:
+symbols (`_gp`, `_fbss`) are not in it. Per symbol:
 
 | Field | Rule |
 |---|---|
@@ -119,7 +118,11 @@ run exactly. A range is owned by one unit or `unassigned`:
 | `orphan` | the un-sectioned run at `0x00293680` |
 
 A named run ends at `max(address + size)`, so an unsized trailing symbol owns
-nothing past its address and a lone unsized symbol owns nothing. Code
+nothing past its address and a lone unsized symbol owns nothing. In
+`.sbss`/`.bss` every gap starts at such a symbol (the last uninitialised
+static of a unit, which only that unit's code references): retail has no
+unnamed COMMON globals there, only newlib's `errno`, which the registry
+names. Code
 references come from a pure-Python decoder over `.text`
 ([tools/declib/elf.py](../tools/declib/elf.py) `code_refs`): it pairs each `lui rX`
 with the `addiu`/load/store that uses `rX` as its base (the value lives until
@@ -368,18 +371,22 @@ state = "matching"        # asm | matching | retail (retail needs a `reason`)
   registry address, every other byte a retail `.incbin`), and a sidecar
   `<object>.data.json` (pieces, retail byte ranges, borrowed slots). C data
   of an `asm`/`retail` entry is dropped and its references renamed onto the
-  retail symbol (`D_<VRAM>` for statics). Hard errors: C data without a
-  `[[data]]` table, a section other than the registry's
-  (`data_section_mismatch`: `const`, `-G`), `.size` != `.symtab` size,
-  overlaps, `.sdata`/`.sbss`/`.bss`/COMMON data from C.
+  retail symbol (`D_<VRAM>` for statics; a dropped `.sdata`/`.sbss`/`.bss`
+  object gets an `.extern NAME, size`, so its loads stay gp-relative or not).
+  `.sbss`/`.bss` objects are always dropped here; only whole-unit mode places
+  them. Hard errors: C data without a `[[data]]` table, a section other than
+  the registry's (`data_section_mismatch`: `const`, `-G`), `.size` !=
+  `.symtab` size, overlaps.
 - **link_image** takes such a unit's ranges from its hybrid (file-qualified
   patterns) and leaves its expected data object out - one data provider per
   unit; every range is `ASSERT`ed at its address. A gap range a `complete`
-  unit `[[claim]]`s bytes in comes from that unit's hybrid too.
+  unit `[[claim]]`s bytes in comes from the claimants' hybrids (one
+  piece per claimed span, retail bytes for the rest of the gap).
 - **verify_promoted** links the hybrid with its pieces at their addresses
   (`declib.verify.link_unit_at`), compares each `matching` entry over
   `[addr, addr+size)` (size from `.symtab`/STABS; an unsized object's compiled
-  size only with at most 15 zero bytes left to the next item) and its linked
+  size only with at most 15 zero bytes left to the next item, or exactly the
+  zero pad that aligns it, up to 128) and its linked
   symbol address, and reports them under `"data"` in `verify_results.json`.
 - **`complete = true`** (only `promote.py --complete <unit id>...` writes it)
   switches the unit's hybrid to whole-unit mode: its compiler-private data
@@ -387,10 +394,15 @@ state = "matching"        # asm | matching | retail (retail needs a `reason`)
   pool) is laid out in retail order the way the assembler did, anchored by
   the retail references, and emitted from C; gap bytes it emits past the
   unit's ranges are the manifest's `[[claim]]`s (written by `--complete`,
-  validated by `status.py`). It needs every function `matching`, every data
-  entry `matching`/`retail`, no retail bytes in the unit's ranges beyond its
-  `retail` entries, no borrowed slot, every linked piece equal to retail, and
-  no owned `.sbss`/`.bss`.
+  validated by `status.py`); `--complete` also promotes the `asm` entries
+  only that layout can place (its `.sbss`/`.bss` objects, an unsized symbol
+  past the unit's ranges). The `.sbss`/`.bss` objects become NOBITS pieces
+  (`.space` around the labels); the image link places a complete unit's
+  pieces in its `.sbss`/`.bss` ranges and reserves every other range. It
+  needs every function `matching`, every data entry `matching`/`retail`,
+  every owned range supplied by its pieces, no retail bytes in them beyond
+  its `retail` entries, no borrowed slot, and every linked piece with file
+  bytes equal to retail (a `.sbss`/`.bss` object is checked by address).
 
 [tools/dump_data.py](../tools/dump_data.py) prints the C initialiser of a
 registry symbol from the retail bytes (`--probe` takes a struct layout from
@@ -406,13 +418,14 @@ alignment, function-static numbering) and compares nuvec4, e_pow and a
 program is visible in [objdiff](https://github.com/encounter/objdiff) from day
 one: all 247 `.text` units (each targeting its expected object; units with a
 manifest diff against `report-current`, the rest against raw `current`), plus one
-target-only unit per linked data object in a dedicated **`data`** progress
-category. Those data units report an honest `total_data` (the real linked byte
-count) with zero matched until decompiled C data exists - objdiff measures their
-bytes from the sections directly, so no artificial code value is invented for
-them. The decomp.dev treemap only renders units with `total_code > 0`, so the
-data units are correctly counted in the report and category metrics but do not
-appear as clickable tiles - expected, not a bug.
+unit per linked data object in a dedicated **`data`** progress category. Its
+target is the expected data object (one section and one sized symbol per range).
+A unit whose hybrid provides C data gets a base from
+[tools/gen_report_data.py](../tools/gen_report_data.py): the hybrid linked at
+its addresses, keeping only ranges with no retail bytes. A range counts as
+matched data at 100%; a `complete` unit's data unit is complete (linked data).
+Claimed gap spans are not counted. The decomp.dev treemap only renders units
+with `total_code > 0`, so data units count in the metrics but are not tiles.
 
 `ninja report` scores the objects and [tools/sanitize_report.py](../tools/sanitize_report.py)
 whitelist-filters the result into the only report that is ever published

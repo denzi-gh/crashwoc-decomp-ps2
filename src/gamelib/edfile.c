@@ -48,13 +48,12 @@ extern int sceMcClose(int fd);
 extern int sceMcSync(int mode, int *cmd, int *result);
 
 char edfile_buffer[EDFILE_BUFFER_SIZE] = {0};
-extern int edfile_handle;
-extern int edfile_write_flag;
-extern int edfile_mcresult;
-extern int edfile_lock[2];
-extern int edfile_buffer_pointer;
-extern int D_0062F748;
-#define edfile_media D_0062F748
+static int edfile_media = 0;
+int edfile_handle = -1;
+int edfile_write_flag = 0;
+int edfile_mcresult = 0;
+int edfile_lock[2] = {0};
+int edfile_buffer_pointer = 0;
 
 
 static inline void EdFileReadBlock(void) {

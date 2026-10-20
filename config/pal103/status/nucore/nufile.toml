@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0001"
 source = "src/nucore/nufile.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0001:001000c8:NuFileSifLoadModule"
@@ -277,52 +277,104 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0001:0062e980:blkcnt"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0001:0062e984:wblkcnt"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0001:0062e988:iff_padsize"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0001:0062e998:curr_dat"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0001:0062e99c:nufile_deviceid"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0001:0062e9a0:file_time_count"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0001:0062e9a4:iop_img_name"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0001:0062e9a8:nufile_buffering_enabled"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0001:0062e9ac:nufile_try_packed"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0001:0062e9c8:MAX_FILE_ADDRESS"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0001:0062e9cc:addr_ref"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0001:0062e9d0:addr_pos"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0001:0062e9d4:pad.213"
-state = "asm"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0001:00633000:ref_count"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0001:00633004:pos_count"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0001:00633548:nufile_blkinfo"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0001:00636548:nufile_wblkinfo"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0001:00639548:memfiles"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0001:006396d8:datfiles"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0001:00639908:file_info"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0001:00639b08:file_buff"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x00639b08
+end = 0x00679b28
+
+[[claim]]
+section = ".rodata"
+start = 0x00613480
+end = 0x006134b0
+
+[[claim]]
+section = ".rodata"
+start = 0x00613948
+end = 0x00613977
+
+[[claim]]
+section = ".sbss"
+start = 0x00633004
+end = 0x00633008

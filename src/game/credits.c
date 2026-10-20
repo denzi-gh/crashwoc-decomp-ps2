@@ -370,15 +370,12 @@ struct credit_s Credit[352] = {
     { "BANANA ICE", 0, 60 },
     { 0, 0, 0 },
 };
-extern s32 CREDITCOUNT;
-extern f32 credit_speed;
-extern f32 credit_time;
+f32 credit_speed = 0.333f;
+s32 CREDITCOUNT = 0;
+f32 credit_time = 0.0f;
 extern struct game_s Game;
 extern struct gtimer_s GameTimer;
 extern char tbuf[];
-
-/* .rodata string "SR. MANAGER OF PUBLIC RELATIONS" (retail-owned). */
-extern char D_0062A608[];
 
 extern void NuStrCpy(char *dst, char *src);
 extern void AddSpacesIntoText(char *text, s32 flag);
@@ -399,7 +396,7 @@ void DrawCredits(void) {
         if ((credit->txt != 0) && (ypos > -1.5f) && (ypos < 1.7f)) {
             NuStrCpy(tbuf, credit->txt);
             widthscale = 1.0f;
-            if (strcmp(tbuf, D_0062A608) == 0) {
+            if (strcmp(tbuf, "SR. MANAGER OF PUBLIC RELATIONS") == 0) {
                 widthscale = 0.95f;
             }
             if (Game.language == 0x63) {

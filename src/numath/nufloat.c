@@ -15,8 +15,7 @@
 
 #include "numath/nufloat.h"
 
-extern float D_0062EA50;
-#define fetol D_0062EA50
+static float fetol = 0.01f;
 
 float NuFabs(float f) {
     int i = *(int *)&f;

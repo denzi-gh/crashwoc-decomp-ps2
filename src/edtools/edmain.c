@@ -33,36 +33,18 @@
 
 typedef void (*EDUICALLBACK)(struct eduimenu_s *menu, struct eduiitem_s *item);
 
-extern s32 D_0062F8C8;
-extern struct edmainreg_s *D_0062F8CC;
-extern struct edmainreg_s *D_0062F8D0;
-extern s32 D_0062F8D4;
-extern struct eduimenu_s *D_0062F8D8;
-extern struct eduimenu_s *D_0062F8DC;
-extern void *D_0062F8E0;
-extern struct nucamera_s *D_0062F8E4;
-extern struct nuvec_s *D_0062F8E8;
-extern s32 D_00633234;
-extern char D_006B3FC0[0x100];
-extern struct eduistyle_s D_0061A710;
-extern char D_0061A750[];
-extern char D_0061A760[];
-extern char D_0061A770[];
-extern char D_0061A780[];
-extern char D_0061A790[];
+static s32 ed_init = 0;
+static struct edmainreg_s *ed_list = 0;
+static struct edmainreg_s *ed_curr = 0;
+static s32 ed_module_active = 0;
+static struct eduimenu_s *ed_main_menu = 0;
+static struct eduimenu_s *ed_cfg_menu = 0;
+static void *ed_fnt = 0;
+static struct nucamera_s *edmaincam = 0;
+static struct nuvec_s *ed_loc = 0;
 
-#define edmain_initialised D_0062F8C8
-#define edmain_registry    D_0062F8CC
-#define edmain_current     D_0062F8D0
-#define edmain_active      D_0062F8D4
-#define edmain_mainmenu    D_0062F8D8
-#define edmain_cfgmenu     D_0062F8DC
-#define edmain_font        D_0062F8E0
-#define edmain_camera      D_0062F8E4
-#define edmain_locvec      D_0062F8E8
-#define edmain_return      D_00633234
-#define edmain_levelfile   D_006B3FC0
-#define edmain_itemstyle   D_0061A710
+static s32 editor_return;
+static char ed_levelfile[0x100];
 
 extern void edmainClose(void);
 extern void eduiMenuProcess(struct eduimenu_s *menu, struct nupad_s *pad);
@@ -96,84 +78,128 @@ void cbMMEditorConfig(struct eduimenu_s *menu, struct eduiitem_s *item);
 void cbMMReturnToApp(struct eduimenu_s *menu, struct eduiitem_s *item);
 void cbmcfgCancel(struct eduimenu_s *menu, struct eduiitem_s *item);
 void cbmcfgCameraSpeed(struct eduimenu_s *menu, struct eduiitem_s *item);
+void popmcbCancel(struct eduimenu_s *menu, struct eduiitem_s *item);
+void popmcbOkay(struct eduimenu_s *menu, struct eduiitem_s *item);
+
+
+/* The Reload All / Reload Current / Save All callbacks (still called in the
+ * e3 demo build) end in an "Okay" popup. Nothing calls them here, so, being
+ * inline, GCC 2.95 emits no code for them, only their literals; their file
+ * handling leaves no data and is not reproduced. */
+static inline void cbMMReloadAll(struct eduimenu_s *menu, struct eduiitem_s *item) {
+    struct eduistyle_s style = { { 0x80000000, 0x80FF0000 }, { 0x80808080, 0x80404040 } };
+    struct eduimenu_s *popup;
+
+    popup = eduiMenuCreate(item->x + 10, item->y + 10, 0xB4, 0x32, menu->font,
+                           popmcbCancel, "Loaded all");
+    if (popup) {
+        eduiMenuAddItem(popup, eduiItemSelCreate(0, &style, 0, 0, popmcbOkay, "Okay"));
+        eduiMenuAttach(menu, popup);
+    }
+}
+
+
+static inline void cbMMReloadCurr(struct eduimenu_s *menu, struct eduiitem_s *item) {
+    struct eduistyle_s style = { { 0x80000000, 0x80FF0000 }, { 0x80808080, 0x80404040 } };
+    struct eduimenu_s *popup;
+
+    popup = eduiMenuCreate(item->x + 10, item->y + 10, 0xB4, 0x32, menu->font,
+                           popmcbCancel, "Loaded current");
+    if (popup) {
+        eduiMenuAddItem(popup, eduiItemSelCreate(0, &style, 0, 0, popmcbOkay, "Okay"));
+        eduiMenuAttach(menu, popup);
+    }
+}
+
+
+static inline void cbMMSaveAll(struct eduimenu_s *menu, struct eduiitem_s *item) {
+    struct eduistyle_s style = { { 0x80000000, 0x80FF0000 }, { 0x80808080, 0x80404040 } };
+    struct eduimenu_s *popup;
+
+    popup = eduiMenuCreate(item->x + 10, item->y + 10, 0xB4, 0x32, menu->font,
+                           popmcbCancel, "Written all");
+    if (popup) {
+        eduiMenuAddItem(popup, eduiItemSelCreate(0, &style, 0, 0, popmcbOkay, "Okay"));
+        eduiMenuAttach(menu, popup);
+    }
+}
 
 
 void edmainCreateMainMenu(void) {
-    struct eduistyle_s style;
+    struct eduistyle_s style = { { 0x80000000, 0x80FF0000 }, { 0x80808080, 0x80404040 } };
     struct edmainreg_s *reg;
     struct eduiitem_s *item;
 
-    style = edmain_itemstyle;
-    edmain_cfgmenu = eduiMenuCreate(0xDC, 0x32, 0xB4, 0x190, edmain_font,
-                                    cbmcfgCancel, D_0061A750);
-    if (edmain_cfgmenu) {
-        eduiMenuAddItem(edmain_cfgmenu,
+    ed_cfg_menu = eduiMenuCreate(0xDC, 0x32, 0xB4, 0x190, ed_fnt,
+                                 cbmcfgCancel, "Editor Config");
+    if (ed_cfg_menu) {
+        eduiMenuAddItem(ed_cfg_menu,
                         eduiItemSliderCreate(0, &style, 0, cbmcfgCameraSpeed,
-                                             1.0f, 9.0f, 1.0f, D_0061A760));
-        eduiMenuFitWidth(edmain_cfgmenu, 8);
+                                             1.0f, 9.0f, 1.0f, "Camera Speed"));
+        eduiMenuFitWidth(ed_cfg_menu, 8);
     }
-    edmain_mainmenu = eduiMenuCreate(0xDC, 0x32, 0xB4, 0x190, edmain_font,
-                                     cbMMCancel, D_0061A770);
-    if (edmain_mainmenu) {
-        for (reg = edmain_registry; reg; reg = reg->next) {
-            item = eduiMenuAddItem(edmain_mainmenu,
+    ed_main_menu = eduiMenuCreate(0xDC, 0x32, 0xB4, 0x190, ed_fnt,
+                                  cbMMCancel, "Editor Options");
+    if (ed_main_menu) {
+        for (reg = ed_list; reg; reg = reg->next) {
+            item = eduiMenuAddItem(ed_main_menu,
                                    eduiItemSelCreate(reg, &style, 0, 1,
                                                      cbMMRegSel, reg->name));
-            if (reg == edmain_current) {
-                eduiMenuHighlight(edmain_mainmenu, item);
+            if (reg == ed_curr) {
+                eduiMenuHighlight(ed_main_menu, item);
             }
         }
-        eduiMenuAddItem(edmain_mainmenu,
+        eduiMenuAddItem(ed_main_menu,
                         eduiItemSelCreate(0, &style, 0, 0, cbMMEditorConfig,
-                                          D_0061A780));
-        eduiMenuAddItem(edmain_mainmenu,
+                                          "Cursor Speed"));
+        eduiMenuAddItem(ed_main_menu,
                         eduiItemSelCreate(0, &style, 0, 0, cbMMReturnToApp,
-                                          D_0061A790));
+                                          "Return To App"));
     }
 }
 
 
 void edmainSetReturn(s32 value) {
-    edmain_return = value;
+    editor_return = value;
 }
 
 
 s32 edmainRegister(struct edmainreg_s *reg) {
-    if (edmain_initialised) {
+    if (ed_init) {
         edmainClose();
     }
-    if (edmain_registry) {
-        edmain_registry->prev = reg;
+    if (ed_list) {
+        ed_list->prev = reg;
     }
     reg->prev = 0;
-    reg->next = edmain_registry;
-    edmain_registry = reg;
+    reg->next = ed_list;
+    ed_list = reg;
     return 1;
 }
 
 
 s32 edmainProcess(struct nupad_s *pad, f32 dt) {
-    edmain_return = 0;
-    if (edmain_active && edmain_current) {
-        if (!edmain_current->process || edmain_current->process(pad, dt)) {
-            edmain_active = 0;
+    editor_return = 0;
+    if (ed_module_active && ed_curr) {
+        if (!ed_curr->process || ed_curr->process(pad, dt)) {
+            ed_module_active = 0;
         }
     } else {
-        if (!edmain_current) {
-            edmain_current = edmain_registry;
+        if (!ed_curr) {
+            ed_curr = ed_list;
         }
         edmainMainMenuProc(pad);
     }
-    return edmain_return;
+    return editor_return;
 }
 
 
 void edmainRender(void) {
-    if (edmain_active && edmain_current) {
-        if (edmain_current->render) {
-            edmain_current->render();
+    if (ed_module_active && ed_curr) {
+        if (ed_curr->render) {
+            ed_curr->render();
         } else {
-            edmain_active = 0;
+            ed_module_active = 0;
         }
     } else {
         edmainMainMenuRender();
@@ -182,77 +208,77 @@ void edmainRender(void) {
 
 
 void edmainSetCamera(struct numtx_s *mtx) {
-    edmain_camera->mtx = *mtx;
-    NuCameraSet(edmain_camera);
+    edmaincam->mtx = *mtx;
+    NuCameraSet(edmaincam);
 }
 
 
 void edmainInit(void *font, char *levelfile) {
     struct edmainreg_s *reg;
 
-    if (edmain_initialised) {
+    if (ed_init) {
         edmainClose();
     }
-    edmain_font = font;
-    edmain_active = 0;
-    for (reg = edmain_registry; reg; reg = reg->next) {
+    ed_fnt = font;
+    ed_module_active = 0;
+    for (reg = ed_list; reg; reg = reg->next) {
         if (reg->init) {
             reg->init();
         }
     }
-    edmain_camera = NuCameraCreate();
+    edmaincam = NuCameraCreate();
     eduiInit();
     edmainCreateMainMenu();
     if (levelfile) {
-        NuStrCpy(edmain_levelfile, levelfile);
+        NuStrCpy(ed_levelfile, levelfile);
     } else {
-        edmain_levelfile[0] = 0;
+        ed_levelfile[0] = 0;
     }
     edmainReadLevelFile();
-    edmain_initialised = 1;
+    ed_init = 1;
 }
 
 
 void edmainClose(void) {
-    if (edmain_initialised) {
-        NuCameraDestroy(edmain_camera);
-        while (edmain_registry) {
-            if (edmain_registry->close) {
-                edmain_registry->close();
+    if (ed_init) {
+        NuCameraDestroy(edmaincam);
+        while (ed_list) {
+            if (ed_list->close) {
+                ed_list->close();
             }
-            edmain_registry = edmain_registry->next;
+            ed_list = ed_list->next;
         }
-        if (edmain_mainmenu) {
-            eduiMenuDestroy(edmain_mainmenu);
-            edmain_mainmenu = 0;
+        if (ed_main_menu) {
+            eduiMenuDestroy(ed_main_menu);
+            ed_main_menu = 0;
         }
-        edmain_registry = 0;
-        edmain_current = 0;
-        edmain_initialised = 0;
+        ed_list = 0;
+        ed_curr = 0;
+        ed_init = 0;
     }
 }
 
 
 void edmainRegisterLocVec(struct nuvec_s *vec) {
-    edmain_locvec = vec;
+    ed_loc = vec;
 }
 
 
 struct nuvec_s *edmainQueryLocVec(void) {
-    return edmain_locvec;
+    return ed_loc;
 }
 
 
 void edmainMainMenuProc(struct nupad_s *pad) {
-    if (edmain_mainmenu) {
-        eduiMenuProcess(edmain_mainmenu, pad);
+    if (ed_main_menu) {
+        eduiMenuProcess(ed_main_menu, pad);
     }
 }
 
 
 void edmainMainMenuRender(void) {
-    if (edmain_mainmenu) {
-        eduiMenuRender(edmain_mainmenu);
+    if (ed_main_menu) {
+        eduiMenuRender(ed_main_menu);
     }
 }
 
@@ -262,12 +288,12 @@ void edmainReadLevelFile(void) {
     s32 blockid;
     struct edmainreg_s *reg;
 
-    if (edmain_levelfile[0]) {
-        fh = NuFileOpen(edmain_levelfile, 0);
+    if (ed_levelfile[0]) {
+        fh = NuFileOpen(ed_levelfile, 0);
         if (fh) {
             NuFileBeginBlkRead(fh, 0x3032554E);
             while ((blockid = NuFileBeginBlkRead(fh, 0)) != 0) {
-                for (reg = edmain_registry; reg; reg = reg->next) {
+                for (reg = ed_list; reg; reg = reg->next) {
                     if (reg->blockid == blockid) {
                         if (reg->readblock) {
                             reg->readblock(fh);
@@ -288,8 +314,8 @@ void cbMMRegSel(struct eduimenu_s *menu, struct eduiitem_s *item) {
     struct edmainreg_s *reg;
 
     reg = item->data;
-    edmain_active = 1;
-    edmain_current = reg;
+    ed_module_active = 1;
+    ed_curr = reg;
     if (reg->select) {
         reg->select();
     }
@@ -301,14 +327,14 @@ void cbMMCancel(struct eduimenu_s *menu, struct eduiitem_s *item) {
 
 
 void cbMMEditorConfig(struct eduimenu_s *menu, struct eduiitem_s *item) {
-    edmain_cfgmenu->x = item->x + 10;
-    edmain_cfgmenu->y = item->y + 10;
-    eduiMenuAttach(menu, edmain_cfgmenu);
+    ed_cfg_menu->x = item->x + 10;
+    ed_cfg_menu->y = item->y + 10;
+    eduiMenuAttach(menu, ed_cfg_menu);
 }
 
 
 void cbMMReturnToApp(struct eduimenu_s *menu, struct eduiitem_s *item) {
-    edmain_return = 1;
+    editor_return = 1;
 }
 
 

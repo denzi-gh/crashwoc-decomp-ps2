@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0057"
 source = "src/nu3d/bitconv.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0057:001650a8:BlockConv4to32"
@@ -61,4 +61,9 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0057:002ea030:block_table32.83"
-state = "asm"
+state = "matching"
+
+[[claim]]
+section = ".data"
+start = 0x002ea030
+end = 0x002ea0b0

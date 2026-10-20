@@ -304,56 +304,14 @@ struct nuvec_s WallSplList[128] = {0};
 struct nuvec_s PlatImpactNorm = { 0.0f, 0.0f, 0.0f };
 tertype PlatImpactTer = {0};
 s32 TempScanStack[2048] = {0};
+s32 TerrPlatDis = -1;
 
-extern TerTempInfoType *TerI;
-extern TerrShapeType *TerrShape;
 extern f32 NuTrigTable[];
-extern f32 D_0062CDA4; /* 0.2f (gp-relative .sdata constant) */
-extern f32 D_0062CDC4;
-extern f32 D_0062CCC4;
-extern f32 D_0062CCC8;
-extern f32 D_0062CCE0;
-extern f32 D_0062CCE4;
-extern s32 TerrShapeAdjCnt;
-extern s32 terraincnt;
-extern TerrainSetType *CurTerr;
-extern PickupTerrType *PickupTerr;
-extern s32 situtotal;
-extern s32 terlistptr;
-extern TerrainTrackInfoType *CurTrackInfo;
-extern tertype *TerrPoly;
-extern s32 TerrPolyObj;
-extern s32 plathitid;
-extern s32 PlatCrush;
-extern s32 terrhitflags;
-extern s32 platinrange;
-extern f32 EShadY;
-extern f32 ShadRoofY;
-extern f32 EShadRoofY;
-extern tertype *EShadPoly;
-extern tertype *ShadRoofPoly;
-extern tertype *EShadRoofPoly;
-extern short castnum;
-extern short ecastnum;
-extern short castroofnum;
-extern short ecastroofnum;
-extern short shadhit;
-extern short eshadhit;
-extern short shadroofhit;
-extern short eshadroofhit;
-extern s32 testlock;
-extern s32 curSphereter;
-extern s32 curPickInst;
 extern void *crashdata;
-extern tertype *ShadPoly;
-extern tertype *ScaleTerrain;
-extern void *TempStackPtr;
 extern tertype *D_0034E7E0[];
 #define ScanHitLimit D_0034E7E0
 extern tertype *D_0034E970[];
 #define ScanHitLimitEnd D_0034E970
-extern s32 TerrPlatDis;
-extern s32 PlatImpactId;
 
 extern f32 NuFsqrt(f32 x);
 extern void *NuScratchAlloc32(s32 size);
@@ -363,15 +321,8 @@ extern void NuVec4MtxTransformVU0(struct nuvec4_s *dst, struct nuvec4_s *src,
 extern void NuVec4MtxInvTransformVU0(struct nuvec4_s *dst, struct nuvec4_s *src,
                                      struct numtx_s *m);
 extern void NuRndrLine3dDbg(f32 x0, f32 y0, f32 z0, f32 x1, f32 y1, f32 z1, u32 colour);
-extern s32 WallSplCount;
 extern struct nucamera_s global_camera;
 extern s32 NuFileLoadBuffer(char *name, void *buf, s32 max);
-extern char D_006178D0[];
-extern char D_006178F8[];
-extern char D_0062F1F8[];
-#define terrain_source_file D_006178D0
-#define terrain_store_msg D_006178F8
-#define terrain_file_ext D_0062F1F8
 extern s32 nufile_buffering_enabled;
 
 #define DABS(v) ({ double d_ = (v); if (d_ < 0.0) { d_ = -d_; } d_; })
@@ -389,9 +340,9 @@ s32 ReadTerrain(char *name, s32 situ, short **store, TerrainSetType *terrset) {
     f32 maxz;
     char filename[100];
 
-    NuDebugMsgProlog(terrain_source_file, 0x313)(terrain_store_msg, store);
+    NuDebugMsgProlog("..\\nu2crash.ps2\\gamelib\\terrain.c", 0x313)("store adv (%d)", store);
     strcpy(filename, name);
-    strcat(filename, terrain_file_ext);
+    strcat(filename, ".ter");
     if (NuFileLoadBuffer(filename, *store, 0x7FFFFFFF) == 0) {
         return -1;
     }
@@ -463,6 +414,45 @@ s32 ReadTerrain(char *name, s32 situ, short **store, TerrainSetType *terrset) {
     return count;
 }
 
+
+f32 EShadY = 0;
+s32 terrhitflags = 0;
+f32 ShadRoofY = 0;
+f32 EShadRoofY = 0;
+TerrainSetType *CurTerr = 0;
+PickupTerrType *PickupTerr = 0;
+s32 curSphereter = 0;
+s32 curPickInst = 0;
+TerrainTrackInfoType *CurTrackInfo = 0;
+TerTempInfoType *TerI = 0;
+tertype *TerrPoly = 0;
+s32 TerrPolyObj = 0;
+tertype *ShadPoly = 0;
+tertype *EShadPoly = 0;
+tertype *ShadRoofPoly = 0;
+tertype *EShadRoofPoly = 0;
+s32 WallSplCount = 0;
+tertype *ScaleTerrain = 0;
+TerrShapeType *TerrShape = 0;
+s32 TerrShapeAdjCnt = 0;
+s32 PlatImpactId = 0;
+s32 PlatCrush = 0;
+s32 plathitid = 0;
+short castnum = 0;
+short ecastnum = 0;
+short castroofnum = 0;
+short ecastroofnum = 0;
+short shadhit = 0;
+short eshadhit = 0;
+short shadroofhit = 0;
+short eshadroofhit = 0;
+s32 terraincnt = 0;
+s32 situtotal = 0;
+s32 platinrange = 0;
+void *crashdata = 0;
+s32 terlistptr = 0;
+void *TempStackPtr = 0;
+s32 testlock = 0;
 
 short *terraininit(s32 levelnum, short **store, short *endstore, s32 opt, char *name,
                    struct nugscn_s *gscene, s32 gsid) {
@@ -807,7 +797,7 @@ s32 ReadTerrainPickup(char *name, short **store, PickupTerrType *pickup) {
     char filename[100];
 
     strcpy(filename, name);
-    strcat(filename, terrain_file_ext);
+    strcat(filename, ".ter");
     NuFileLoadBuffer(filename, *store, 0x7FFFFFFF);
     offfile = (OffFileType *)(*store + *(s32 *)*store);
     *store += 2;
@@ -1398,11 +1388,11 @@ void TerrainSideClamp(struct nuvec_s *slide, struct nuvec_s *pos) {
     if (dotp < -TerrShape->size) {
         dotp = -TerrShape->size;
     }
-    if (dotq > TerrShape->size * D_0062CDA4) {
-        dotq = TerrShape->size * D_0062CDA4;
+    if (dotq > TerrShape->size * 0.2f) {
+        dotq = TerrShape->size * 0.2f;
     }
-    if (dotq < -TerrShape->size * D_0062CDA4) {
-        dotq = -TerrShape->size * D_0062CDA4;
+    if (dotq < -TerrShape->size * 0.2f) {
+        dotq = -TerrShape->size * 0.2f;
     }
     pos->x = pos->x - ((dotp * slide->x + dotq * slide->z) - (TerrShape->offset).x);
     pos->z = pos->z - ((dotp * slide->z - dotq * slide->x) - (TerrShape->offset).z);
@@ -2623,7 +2613,7 @@ s32 HitPoly(f32 ps, f32 pe, f32 ps2, f32 pe2, tertype *ter) {
             check = 1;
         } else {
             if ((ps < 0.0f) && (pe < 0.0f)) {
-                time = D_0062CCC4;
+                time = 1e-9f;
                 hitpos.x = hitpos.x + -ps * ter->norm[0].x;
                 hitpos.y = hitpos.y + -ps * ter->norm[0].y;
                 hitpos.z = hitpos.z + -ps * ter->norm[0].z;
@@ -2667,7 +2657,7 @@ s32 HitPoly(f32 ps, f32 pe, f32 ps2, f32 pe2, tertype *ter) {
             check = 1;
         } else {
             if ((ps2 < 0.0f) && (pe2 < 0.0f)) {
-                time = D_0062CCC8;
+                time = 1e-9f;
                 hitpos.x = hitpos.x + -ps2 * ter->norm[1].x;
                 hitpos.y = hitpos.y + -ps2 * ter->norm[1].y;
                 hitpos.z = hitpos.z + -ps2 * ter->norm[1].z;
@@ -2891,7 +2881,7 @@ s32 HitTerrain(void) {
     size = TerI->size;
     hit = 0;
     TerI->hittype = 0;
-    TerI->hittime = D_0062CCE0;
+    TerI->hittime = 999.9f;
     HitWallSpline();
     TerI->vellen = NuFsqrt(TerI->curvel.x * TerI->curvel.x +
                            TerI->curvel.z * TerI->curvel.z);
@@ -2984,7 +2974,7 @@ s32 HitTerrPoly(tertype *ter, s32 terrindex) {
     hit = 0;
     size = TerI->size;
     TerI->hittype = 0;
-    TerI->hittime = D_0062CCE4;
+    TerI->hittime = 999.9f;
     TerI->vellen = NuFsqrt(TerI->curvel.x * TerI->curvel.x +
                            TerI->curvel.z * TerI->curvel.z);
 
@@ -4626,7 +4616,7 @@ void NewTerrainScaleY(struct nuvec_s *vpos, struct nuvec_s *vvel, u8 *flags,
             TerrainImpactNorm();
             if (TerI->hittype != 0) {
                 ShadNorm = TerI->uhitnorm;
-                if ((TerI->uhitnorm.y > D_0062CDC4) && (TerI->hitterrno >= 0) &&
+                if ((TerI->uhitnorm.y > 0.707f) && (TerI->hitterrno >= 0) &&
                     (CurTerr->terr[TerI->hitterrno].type == 1)) {
                     CurTerr->platdata[CurTerr->terr[TerI->hitterrno].info].status.bit.hit = 1;
                 }

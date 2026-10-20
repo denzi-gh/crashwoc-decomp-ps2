@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0026"
 source = "src/numath/nurand.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0026:0010e458:NuRandSetSeed"
@@ -37,8 +37,8 @@ state = "matching"
 
 [[data]]
 id = "pal103:unit-0026:0062ea60:global_rand"
-state = "asm"
+state = "matching"
 
 [[data]]
 id = "pal103:unit-0026:0062ea68:fseed"
-state = "asm"
+state = "matching"

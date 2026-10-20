@@ -53,10 +53,10 @@ struct grassclump_s {
     float height;
 };
 
-extern struct eduimenu_s *edgra_active_menu;
-extern struct eduimenu_s *edgra_options_menu;
-extern struct eduimenu_s *edgra_instance_menu;
-extern struct eduimenu_s *edgra_clumpproperties_menu;
+struct eduimenu_s *edgra_active_menu = 0;
+struct eduimenu_s *edgra_options_menu = 0;
+struct eduimenu_s *edgra_instance_menu = 0;
+struct eduimenu_s *edgra_clumpproperties_menu = 0;
 extern float edgra_radius;
 extern int edgra_nearest;
 extern int edgra_instance_type;
@@ -72,57 +72,8 @@ extern float edgra_cam_ay;
 extern void *app_fnt;
 extern struct numtl_s *edgra_mtl;
 extern struct numtl_s *edgra_mtl_zoff;
-
-extern char D_0061A678[];
-extern char D_0062F888[];
-extern char D_0061A688[];
-extern char D_0061A698[];
-extern char D_0061A6A8[];
-extern char D_0061A6B8[];
-extern char D_0061A6C8[];
-extern char D_0061A6E0[];
-extern char D_0061A6F0[];
-extern char D_0062F890[];
-
-extern struct eduistyle_s D_0061A5A8;
-extern char D_0061A5B8[];
-extern char D_0061A5C8[];
-extern char D_0061A5E0[];
-extern char D_0061A5F0[];
-extern char D_0062F870[];
-extern char D_0062F878[];
-extern char D_0061A600[];
-extern char D_0061A610[];
-extern char D_0061A628[];
-extern char D_0061A638[];
-extern char D_0061A650[];
-extern char D_0061A660[];
-extern char D_0062F880[];
-
-#define edgra_item_style D_0061A5A8
-#define edgra_instance_menu_title D_0061A5B8
-#define edgra_clumpproperties_menu_title D_0061A5C8
-#define edgra_text_height D_0061A5E0
-#define edgra_text_reactive D_0061A5F0
-#define edgra_text_none D_0062F870
-#define edgra_text_wind D_0062F878
-#define edgra_text_info_box D_0061A600
-#define edgra_text_no_instance D_0061A610
-#define edgra_text_instance D_0061A628
-#define edgra_text_radius D_0061A638
-#define edgra_text_clump_size D_0061A650
-#define edgra_text_used D_0061A660
-#define edgra_text_coord D_0062F880
-#define edgra_filename_fmt D_0061A678
-#define edgra_filename_fmt_alt D_0062F888
-#define edgra_text_saved_ok D_0061A688
-#define edgra_text_save_error D_0061A698
-#define edgra_text_loaded_ok D_0061A6A8
-#define edgra_text_load_error D_0061A6B8
-#define edgra_text_clumpproperties D_0061A6C8
-#define edgra_text_save_grass D_0061A6E0
-#define edgra_text_load_grass D_0061A6F0
-#define edgra_options_menu_title D_0062F890
+extern struct nuvec_s edgra_cam_pos;
+extern struct grassclump_s GrassClumps[64];
 
 extern void eduiMenuDestroy(void *menu);
 extern void *eduiItemSelCreate(int value, struct eduistyle_s *style, int on, int group, void *cb,
@@ -184,14 +135,6 @@ void edgraEnter(void);
 int edgraProc(struct nupad_s *pad);
 void edgraRender(void);
 
-struct edmainreg_s edgradesc = {
-    0, 0, "Grass Editor", edgraInit, edgraClose, edgraEnter, {0}, 0,
-    EDMAIN_BLOCKID('g', 'r', 'a', 's'), edgraProc, edgraRender
-};
-struct nuvec_s edgra_cam_pos = { 0.0f, 0.0f, 0.0f };
-struct grassclump_s GrassClumps[64] = { { 0 } };
-
-
 void edgraInitAllClumps(void)
 {
     struct nuvec4_s points[256];
@@ -237,17 +180,16 @@ void edgraInitAllClumps(void)
 
 void edgracbInstanceMenu(struct eduimenu_s *menu)
 {
-    struct eduistyle_s style;
+    struct eduistyle_s style = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
     int checked;
     int i;
 
-    style = edgra_item_style;
     edgra_instance_menu = eduiMenuCreate(70, 70, 180, 250, app_fnt, edgracbCancelInstanceMenu,
-                                         edgra_instance_menu_title);
+                                         "Instance Select");
     if (edgra_instance_menu != 0 && edbits_base_scene != 0) {
         eduiMenuAddItem(edgra_instance_menu,
                         eduiItemCheckCreate(-1, &style, edgra_instance_type == -1, 1,
-                                            edgracbSetInstanceType, edgra_text_none));
+                                            edgracbSetInstanceType, "None"));
         for (i = 0; i < edbits_base_scene->numspecial; i++) {
             if (edgra_instance_type == i) {
                 checked = 1;
@@ -270,26 +212,25 @@ void edgracbInstanceMenu(struct eduimenu_s *menu)
 
 void edgracbClumpPropertiesMenu(struct eduimenu_s *menu)
 {
-    struct eduistyle_s style;
+    struct eduistyle_s style = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
 
-    style = edgra_item_style;
     if (edgra_nearest != -1 && GrassClumps[edgra_nearest].size != 0) {
         edgra_clumpproperties_menu = eduiMenuCreate(70, 70, 180, 250, app_fnt,
                                                     edgracbCancelClumpPropertiesMenu,
-                                                    edgra_clumpproperties_menu_title);
+                                                    "Clump Properties");
         if (edgra_clumpproperties_menu != 0) {
             eduiMenuAddItem(edgra_clumpproperties_menu,
                             eduiItemSliderCreate(0, &style, 0, edgracbSetClumpWind, 0.01f, 1.99f,
                                                  GrassClumps[edgra_nearest].wind,
-                                                 edgra_text_wind));
+                                                 "Wind"));
             eduiMenuAddItem(edgra_clumpproperties_menu,
                             eduiItemSliderCreate(0, &style, 0, edgracbSetClumpHeight, 0.1f, 9.9f,
                                                  GrassClumps[edgra_nearest].height,
-                                                 edgra_text_height));
+                                                 "Model Height"));
             eduiMenuAddItem(edgra_clumpproperties_menu,
                             eduiItemToggleCreate(0, &style, GrassClumps[edgra_nearest].reactive, 1,
                                                  edgracbToggleClumpReactive,
-                                                 edgra_text_reactive));
+                                                 "React to Crash"));
             eduiMenuAttach(menu, edgra_clumpproperties_menu);
             edgra_clumpproperties_menu->x = menu->x + 10;
             edgra_clumpproperties_menu->y = menu->y + 40;
@@ -486,20 +427,20 @@ void edgraDrawCursor(void)
     NuRndrLine2di(0x1710, 0xDC8, 0x24F0, 0xDC8, 0x80000000, edgra_mtl_zoff);
     NuFntSet(app_fnt);
     NuFntSetPen(0x80808080);
-    NuFntPrintEx(0x17C0, 0xA28, 0, edgra_text_info_box);
+    NuFntPrintEx(0x17C0, 0xA28, 0, "Info Box");
     NuFntSetPen(0x80000000);
     if (edgra_instance_type == -1) {
-        NuFntPrintEx(0x17C0, 0xAF0, 0, edgra_text_no_instance);
+        NuFntPrintEx(0x17C0, 0xAF0, 0, "Curr Inst: <none>");
     } else {
-        NuFntPrintEx(0x17C0, 0xAF0, 0, edgra_text_instance,
+        NuFntPrintEx(0x17C0, 0xAF0, 0, "Curr Inst: %s",
                      edbits_base_scene->specials[edgra_instance_type].name);
     }
-    NuFntPrintEx(0x17C0, 0xB90, 0, edgra_text_radius, edgra_radius);
-    NuFntPrintEx(0x17C0, 0xC30, 0, edgra_text_clump_size, edgra_clump_size);
-    NuFntPrintEx(0x17C0, 0xCD0, 0, edgra_text_used, edgra_units_used, 0x400, edgra_clumps_used, 64);
-    NuFntPrintEx(0x17C0, 0xD70, 0, edgra_text_coord, edgra_cam_pos.x);
-    NuFntPrintEx(0x1C20, 0xD70, 0, edgra_text_coord, edgra_cam_pos.y);
-    NuFntPrintEx(0x2080, 0xD70, 0, edgra_text_coord, edgra_cam_pos.z);
+    NuFntPrintEx(0x17C0, 0xB90, 0, "Base Radius: %0.2f", edgra_radius);
+    NuFntPrintEx(0x17C0, 0xC30, 0, "Clump Size: %d", edgra_clump_size);
+    NuFntPrintEx(0x17C0, 0xCD0, 0, "Used: %d/%d,%d/%d", edgra_units_used, 0x400, edgra_clumps_used, 64);
+    NuFntPrintEx(0x17C0, 0xD70, 0, "%5.2f", edgra_cam_pos.x);
+    NuFntPrintEx(0x1C20, 0xD70, 0, "%5.2f", edgra_cam_pos.y);
+    NuFntPrintEx(0x2080, 0xD70, 0, "%5.2f", edgra_cam_pos.z);
 }
 
 
@@ -621,13 +562,60 @@ inline void edgraClumpsReset(void)
 }
 
 
+/* The inline callbacks' strings sit here in retail, their code is deferred to the end. */
+inline void edgracbFileSave(void *menu)
+{
+    char filename[256];
+
+    if (edbits_what_game == 1) {
+        sprintf(filename, "%s\\Grass.dat", edbits_level_filename);
+        if (edgraFileSave(filename)) {
+            eduiCreateMessageMenu(menu, "Saved OK", 1);
+        } else {
+            eduiCreateMessageMenu(menu, "File Save Error", 0);
+        }
+    } else if (edbits_what_game == 2) {
+        sprintf(filename, "%s.gra", edbits_level_filename);
+        if (edgraFileSave(filename)) {
+            eduiCreateMessageMenu(menu, "Saved OK", 1);
+        } else {
+            eduiCreateMessageMenu(menu, "File Save Error", 0);
+        }
+    } else {
+        eduiCreateMessageMenu(menu, "File Save Error", 0);
+    }
+}
+
+
+inline void edgracbFileLoad(void *menu)
+{
+    char filename[256];
+
+    edgraClumpsReset();
+    if (edbits_what_game == 1) {
+        sprintf(filename, "%s\\Grass.dat", edbits_level_filename);
+        if (NuFileSize(filename) > 0) {
+            edgraFileLoad(filename);
+        }
+        eduiCreateMessageMenu(menu, "Loaded OK", 1);
+    } else if (edbits_what_game == 2) {
+        sprintf(filename, "%s.gra", edbits_level_filename);
+        if (NuFileSize(filename) > 0) {
+            edgraFileLoad(filename);
+        }
+        eduiCreateMessageMenu(menu, "Loaded OK", 1);
+    } else {
+        eduiCreateMessageMenu(menu, "File Load Error", 0);
+    }
+}
+
+
 void edgraInit(void)
 {
-    struct eduistyle_s style;
+    struct eduistyle_s style = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
     struct numtl_s *mtl;
     struct numtl_s *zoff;
 
-    style = edgra_item_style;
     edgraClumpsReset();
     mtl = NuMtlCreate(1);
     edgra_mtl = mtl;
@@ -651,22 +639,42 @@ void edgraInit(void)
     NuMtlUpdate(zoff);
     edgra_instance_type = -1;
     edgra_options_menu = eduiMenuCreate(70, 70, 220, 300, app_fnt, edgracbCancelOptMenu,
-                                        edgra_options_menu_title);
+                                        "Options");
     if (edgra_options_menu != 0) {
         eduiMenuAddItem(edgra_options_menu,
                         eduiItemSelCreate(1, &style, 0, 0, edgracbInstanceMenu,
-                                          edgra_instance_menu_title));
+                                          "Instance Select"));
         eduiMenuAddItem(edgra_options_menu,
                         eduiItemSelCreate(1, &style, 0, 0, edgracbClumpPropertiesMenu,
-                                          edgra_text_clumpproperties));
+                                          "Clump Properties..."));
         eduiMenuAddItem(edgra_options_menu,
                         eduiItemSelCreate(1, &style, 0, 0, edgracbFileSave,
-                                          edgra_text_save_grass));
+                                          "Save Grass"));
         eduiMenuAddItem(edgra_options_menu,
                         eduiItemSelCreate(1, &style, 0, 0, edgracbFileLoad,
-                                          edgra_text_load_grass));
+                                          "Load Grass"));
     }
 }
+
+
+struct edmainreg_s edgradesc = {
+    0, 0, "Grass Editor", edgraInit, edgraClose, edgraEnter, {0}, 0,
+    EDMAIN_BLOCKID('g', 'r', 'a', 's'), edgraProc, edgraRender
+};
+struct nuvec_s edgra_cam_pos = { 0.0f, 0.0f, 0.0f };
+struct grassclump_s GrassClumps[64] = { { 0 } };
+struct numtl_s *edgra_mtl = 0;
+struct numtl_s *edgra_mtl_zoff = 0;
+float edgra_cam_dist = 0.0f;
+float edgra_cam_ax = 0.0f;
+float edgra_cam_ay = 0.0f;
+float edgra_radius = 0.0f;
+int edgra_nearest = 0;
+int edgra_instance_type = 0;
+int edgra_next_clump = 0;
+int edgra_units_used = 0;
+int edgra_clumps_used = 0;
+int edgra_clump_size = 0;
 
 
 void edgracbSetInstanceType(void *menu, struct eduiitem_s *item)
@@ -751,51 +759,4 @@ int edgraProc(struct nupad_s *pad)
         return 1;
     }
     return 0;
-}
-
-
-void edgracbFileSave(void *menu)
-{
-    char filename[256];
-
-    if (edbits_what_game == 1) {
-        sprintf(filename, edgra_filename_fmt, edbits_level_filename);
-        if (edgraFileSave(filename)) {
-            eduiCreateMessageMenu(menu, edgra_text_saved_ok, 1);
-        } else {
-            eduiCreateMessageMenu(menu, edgra_text_save_error, 0);
-        }
-    } else if (edbits_what_game == 2) {
-        sprintf(filename, edgra_filename_fmt_alt, edbits_level_filename);
-        if (edgraFileSave(filename)) {
-            eduiCreateMessageMenu(menu, edgra_text_saved_ok, 1);
-        } else {
-            eduiCreateMessageMenu(menu, edgra_text_save_error, 0);
-        }
-    } else {
-        eduiCreateMessageMenu(menu, edgra_text_save_error, 0);
-    }
-}
-
-
-void edgracbFileLoad(void *menu)
-{
-    char filename[256];
-
-    edgraClumpsReset();
-    if (edbits_what_game == 1) {
-        sprintf(filename, edgra_filename_fmt, edbits_level_filename);
-        if (NuFileSize(filename) > 0) {
-            edgraFileLoad(filename);
-        }
-        eduiCreateMessageMenu(menu, edgra_text_loaded_ok, 1);
-    } else if (edbits_what_game == 2) {
-        sprintf(filename, edgra_filename_fmt_alt, edbits_level_filename);
-        if (NuFileSize(filename) > 0) {
-            edgraFileLoad(filename);
-        }
-        eduiCreateMessageMenu(menu, edgra_text_loaded_ok, 1);
-    } else {
-        eduiCreateMessageMenu(menu, edgra_text_load_error, 0);
-    }
 }

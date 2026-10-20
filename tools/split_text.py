@@ -117,7 +117,11 @@ def build_link_script(text_addr, tu_objs, incbin_objects, nobits, defsyms):
 
 
 def nm_defined_undefined(nm_bin, obj):
-    """(defined_names, undefined_names) from one object's symbol table."""
+    """(defined_names, undefined_names) from one object's symbol table.
+
+    Only global definitions count: a unit's local static never satisfies
+    another object's reference to a global of the same name (saveload's
+    `mcdir` vs edptl's)."""
     out = subprocess.run([nm_bin, str(obj)], check=True,
                          capture_output=True, text=True).stdout
     defined, undefined = set(), set()
@@ -125,7 +129,7 @@ def nm_defined_undefined(nm_bin, obj):
         parts = line.split()
         if len(parts) == 2 and parts[0] in ("U", "w"):
             undefined.add(parts[1])
-        elif len(parts) == 3:
+        elif len(parts) == 3 and parts[1].isupper():
             defined.add(parts[2])
     return defined, undefined
 

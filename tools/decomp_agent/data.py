@@ -123,11 +123,6 @@ def list_data_candidates(project, *, limit=20) -> dict:
     by_unit = {}
     for s in syms:
         by_unit.setdefault(s["unit"], []).append(s)
-    dm = tomllib.loads(project.path("config", project.version,
-                                    "data_map.toml").read_text())["range"]
-    owned = {}
-    for r in dm:
-        owned.setdefault(r["owner"], []).append(r)
     rows, complete_only, init_needed = [], [], []
     status = project.path("config", project.version, "status")
     for path in sorted(status.rglob("*.toml")):
@@ -136,20 +131,20 @@ def list_data_candidates(project, *, limit=20) -> dict:
         if not fns or any(f["state"] != "matching" for f in fns):
             continue
         unit = int(data["unit"].split("unit-")[1])
-        unit_syms = [s for s in by_unit.get(unit, []) if s["section"] in PROGBITS]
+        all_syms = by_unit.get(unit, [])
+        unit_syms = [s for s in all_syms if s["section"] in PROGBITS]
         # `--complete` (whole-unit mode) can take any unit whose functions
-        # and data entries are done and that owns no .sbss/.bss; its
-        # verification decides whether the C emits all of the unit's data.
-        completable = not data.get("complete") and not any(
-            r["section"] in (".sbss", ".bss")
-            for r in owned.get(f"unit-{unit:04d}", []))
-        if not unit_syms:
+        # and file-byte data entries are done (it promotes the .sbss/.bss
+        # ones itself); its verification decides whether the C emits all of
+        # the unit's data.
+        completable = not data.get("complete")
+        if not all_syms:
             if completable:
                 complete_only.append(data["unit"])
             continue
-        if not data.get("data"):
+        if len(data.get("data", [])) < len(all_syms):
             init_needed.append({"unit": data["unit"], "source": data["source"],
-                                "symbols": len(unit_syms),
+                                "symbols": len(all_syms),
                                 "command": f"python tools/promote.py --init-data "
                                            f"{data['source']}"})
             continue
@@ -159,9 +154,7 @@ def list_data_candidates(project, *, limit=20) -> dict:
             if _entry_state(data, did) != "asm":
                 continue
             pending = True
-            reasons, excluded = [], None
-            if s["section"] == ".sdata":
-                excluded = ".sdata data from C needs data/sdata"
+            reasons = []
             typ = s.get("type") or ""
             if typ:
                 reasons.append(f"STABS type {typ}")
@@ -170,8 +163,8 @@ def list_data_candidates(project, *, limit=20) -> dict:
             rows.append({
                 "id": did, "unit": data["unit"], "source": data["source"],
                 "section": s["section"], "size": s.get("size"), "type": typ or None,
-                "reasons": reasons, "excluded": excluded,
-                "_key": (excluded is not None, s["section"] != ".rodata",
+                "reasons": reasons, "excluded": None,
+                "_key": (s["section"] != ".rodata",
                          not typ, "*" in typ, s.get("size") or 1 << 30,
                          s["address"])})
         if not pending and completable:

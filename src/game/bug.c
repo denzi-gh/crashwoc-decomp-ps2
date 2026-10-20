@@ -41,10 +41,6 @@ extern s32 FurtherBEHIND(s32 iRAIL, s32 iALONG, f32 fALONG, s32 iRAIL2,
                          s32 iALONG2, f32 fALONG2);
 
 extern struct spltab_s SplTab[];
-extern struct nuvec_s D_006FFA90;
-#define bug_splpos D_006FFA90
-extern f32 D_006333B8;
-#define bug_splratio D_006333B8
 
 extern s32 temp_iRAIL;
 extern u16 temp_iALONG;
@@ -56,21 +52,18 @@ extern void PointAlongSpline(struct nugspline_s *spl, f32 ratio,
 extern void GetALONG(struct nuvec_s *pos, void *rpos, s32 iRAIL, s32 iALONG,
                      s32 info);
 
-/* File-scope statics in the retail TU (data-from-C unsupported -> extern). */
-extern struct nuvec_s D_006FFA80;
-#define bug_pos D_006FFA80
-extern f32 D_006333A8;
-#define bug_scale D_006333A8
-extern f32 D_006333AC;
-#define bug_span D_006333AC
-extern f32 D_006333B0;
-#define bug_fade D_006333B0
-extern f32 D_00632CD4;
-#define BUGFADETIME D_00632CD4
-extern u16 D_006333B4;
-#define bug_xrot D_006333B4
-extern u16 D_006333B6;
-#define bug_yrot D_006333B6
+static f32 mechlight_fade;
+static f32 buglight_fade;
+static u16 buglight_ang[4];
+static struct nuvec_s bug_pos;
+static f32 bug_radius;
+static f32 bug_scale;
+static f32 bug_fade;
+static f32 BUGFADETIME = 2.0f;
+static u16 bug_xrot;
+static u16 bug_yrot;
+static f32 bug_splratio;
+static struct nuvec_s bug_splpos;
 struct anim_s BugAnim = { 0 };
 extern s32 FRAME;
 extern s32 FRAMES;
@@ -89,21 +82,10 @@ extern f32 NuFsqrt(f32 x);
 extern u16 SeekRot(u16 a, u16 target, s32 rate);
 extern void AddGameDebris(s32 type, struct nuvec_s *pos);
 
-extern f32 D_00632CD8;
-#define mechlight_distance D_00632CD8
-extern f32 D_00632CDC;
-#define mechlight_scale D_00632CDC
-extern f32 D_00632CE0;
-#define buglight_distance D_00632CE0
-extern f32 D_00632CE4;
-#define bug_scale_base D_00632CE4
-
-extern f32 D_00633398;
-#define mechlight_fade D_00633398
-extern f32 D_0063339C;
-#define buglight_fade D_0063339C
-extern u16 D_006333A0[4];
-#define buglight_ang D_006333A0
+static f32 mechlight_distance = 3.0f;
+static f32 mechlight_radius = 5.0f;
+static f32 buglight_distance = 3.0f;
+static f32 buglight_radius = 5.0f;
 
 /* PS2 signatures derived from these call sites (EABI: int and float args use
  * independent register files a0.. / f12..). */
@@ -223,20 +205,20 @@ void UpdateBugLight(struct creature_s *c) {
                 mechlight_fade = fade;
             }
         }
-        bug_scale = bug_scale_base + NuTrigTable[buglight_ang[3]] * bug_scale_base * 0.025f;
+        bug_radius = buglight_radius + NuTrigTable[buglight_ang[3]] * buglight_radius * 0.025f;
         if (mechlight_fade > 0.0f) {
             bug_pos.x = player->obj.pos.x;
             bug_pos.y = player->obj.pos.y + player->obj.top * player->obj.SCALE;
             bug_pos.z = player->obj.pos.z;
             ang = NuAtan2D(bug_pos.x - GameCam[0].pos.x, bug_pos.z - GameCam[0].pos.z);
             bug_pos.x = bug_pos.x + NuTrigTable[ang] * mechlight_distance;
-            bug_span = 1.5f;
+            bug_scale = 1.5f;
             bug_pos.z = bug_pos.z + NuTrigTable[(u16)(ang + 0x4000)] * mechlight_distance;
         }
         bug_fade = mechlight_fade;
         rnd = (f32)qrand();
-        d0 = mechlight_scale + (rnd * (1.0f / 65535.0f) - 0.5f) * 0.25f;
-        bug_scale = bug_scale + (d0 - bug_scale) * 0.02f;
+        d0 = mechlight_radius + (rnd * (1.0f / 65535.0f) - 0.5f) * 0.25f;
+        bug_radius = bug_radius + (d0 - bug_radius) * 0.02f;
         return;
     }
     if (Level != 0x1b) {
@@ -304,7 +286,7 @@ void UpdateBugLight(struct creature_s *c) {
     buglight_ang[0] += 0x276;
     buglight_ang[1] += 0x162;
     buglight_ang[2] += 0x414;
-    bug_scale = bug_scale_base + NuTrigTable[buglight_ang[3]] * bug_scale_base * 0.025f;
+    bug_radius = buglight_radius + NuTrigTable[buglight_ang[3]] * buglight_radius * 0.025f;
     bug_pos.x = bug_pos.x + NuTrigTable[buglight_ang[0]] * 0.25f;
     bug_pos.y = bug_pos.y + NuTrigTable[buglight_ang[1]] * 0.25f;
     bug_pos.z = bug_pos.z + NuTrigTable[buglight_ang[2]] * 0.25f;
@@ -329,7 +311,7 @@ void UpdateBugLight(struct creature_s *c) {
         }
     }
     if (buglight_fade > 0.0f) {
-        bug_span = 1.0f;
+        bug_scale = 1.0f;
     }
     bug_fade = buglight_fade;
     if (0x7fff < qrand()) {
@@ -341,7 +323,7 @@ void UpdateBugLight(struct creature_s *c) {
 void AddBugLight(void) {
     if (bug_fade > 0.0f) {
         if (FRAME == FRAMES - 1) {
-            NuLightAddSpotXSpanFade(&bug_pos, bug_scale, bug_span,
+            NuLightAddSpotXSpanFade(&bug_pos, bug_radius, bug_scale,
                                     0xFF000000, 1,
                                     128 - (s32)(bug_fade * (128.0f / BUGFADETIME)),
                                     1);
