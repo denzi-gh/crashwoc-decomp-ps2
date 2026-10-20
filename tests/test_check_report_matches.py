@@ -10,7 +10,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
-from check_report_matches import check, verified_matching
+from check_report_matches import (check, check_complete_data,
+                                  verified_matching)
 
 UNIT_NAME = {7: "nucore/nulist", 91: "game/creature"}
 
@@ -87,6 +88,39 @@ class TestCheck(unittest.TestCase):
         matched, problems = check(VERIFY, report_with(), UNIT_NAME)
         self.assertEqual(matched, 2)
         self.assertEqual(problems, [])
+
+
+def data_unit(name, total, matched, complete):
+    measures = {"total_data": str(total)}
+    if matched:
+        measures["matched_data"] = str(matched)
+    return {"name": name, "measures": measures,
+            "metadata": {"progress_categories": ["data"],
+                         "complete": complete}}
+
+
+class TestCheckCompleteData(unittest.TestCase):
+    def test_complete_fully_matched_passes(self):
+        report = {"units": [data_unit("data/unit-0002", 64, 64, True)]}
+        self.assertEqual(check_complete_data(report), [])
+
+    def test_complete_partly_matched_is_flagged(self):
+        report = {"units": [data_unit("data/unit-0002", 64, 48, True)]}
+        problems = check_complete_data(report)
+        self.assertEqual(len(problems), 1)
+        self.assertIn("48/64", problems[0])
+
+    def test_complete_unmatched_is_flagged(self):
+        report = {"units": [data_unit("data/unit-0002", 64, 0, True)]}
+        self.assertEqual(len(check_complete_data(report)), 1)
+
+    def test_incomplete_and_code_units_are_ignored(self):
+        report = {"units": [
+            data_unit("data/unit-0003", 64, 0, False),
+            {"name": "nucore/nufpar", "measures": {"total_data": "0"},
+             "metadata": {"progress_categories": ["engine"],
+                          "complete": True}}]}
+        self.assertEqual(check_complete_data(report), [])
 
 
 if __name__ == "__main__":

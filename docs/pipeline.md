@@ -418,13 +418,14 @@ alignment, function-static numbering) and compares nuvec4, e_pow and a
 program is visible in [objdiff](https://github.com/encounter/objdiff) from day
 one: all 247 `.text` units (each targeting its expected object; units with a
 manifest diff against `report-current`, the rest against raw `current`), plus one
-target-only unit per linked data object in a dedicated **`data`** progress
-category. Those data units report an honest `total_data` (the real linked byte
-count) with zero matched until decompiled C data exists - objdiff measures their
-bytes from the sections directly, so no artificial code value is invented for
-them. The decomp.dev treemap only renders units with `total_code > 0`, so the
-data units are correctly counted in the report and category metrics but do not
-appear as clickable tiles - expected, not a bug.
+unit per linked data object in a dedicated **`data`** progress category. Its
+target is the expected data object (one section and one sized symbol per range).
+A unit whose hybrid provides C data gets a base from
+[tools/gen_report_data.py](../tools/gen_report_data.py): the hybrid linked at
+its addresses, keeping only ranges with no retail bytes. A range counts as
+matched data at 100%; a `complete` unit's data unit is complete (linked data).
+Claimed gap spans are not counted. The decomp.dev treemap only renders units
+with `total_code > 0`, so data units count in the metrics but are not tiles.
 
 `ninja report` scores the objects and [tools/sanitize_report.py](../tools/sanitize_report.py)
 whitelist-filters the result into the only report that is ever published
