@@ -73,7 +73,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001ba910:eduicbRenderColourPick"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001bbc50:eduicbRenderGreyPick"
@@ -109,7 +109,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001bd800:eduiMenuRender"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001bdba8:eduiMenuProcess"
@@ -181,7 +181,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001c0890:eduiItemSliderSetVal"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001c08e0:eduiItemSliderSetValEx"

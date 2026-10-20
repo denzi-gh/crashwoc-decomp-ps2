@@ -181,7 +181,7 @@ extern void *NuMemAllocFn(s32 size, char *file, s32 line);
 extern void NuMemFreeFn(void *ptr, char *file, s32 line);
 extern void NuRndrLineRect2di(s32 x, s32 y, s32 w, s32 h, u32 colour,
                               struct numtl_s *mtl);
-extern void NuRndrRect2di(s32 x, s32 y, s32 w, s32 h, u32 colour, struct numtl_s *mtl);
+extern void NuRndrRect2di(s32 x, s32 y, s32 w, s32 h, s32 colour, struct numtl_s *mtl);
 extern void NuRndrGradRect2di(s32 x, s32 y, s32 w, s32 h, u32 *colours,
                               struct numtl_s *mtl);
 extern void NuRndrTriStrip2di(s32 *pnts, u32 *colours, s32 count, u32 colour,
@@ -1280,16 +1280,6 @@ void eduiItemColourPickSetRGB(struct eduiitem_s *item, f32 r, f32 g, f32 b) {
 }
 
 
-void eduiItemSliderSetVal(struct eduiitem_s *item, f32 val) {
-    item->u.slider.flash = 60;
-    item->u.slider.val = val;
-    item->u.slider.frac = (val - item->u.slider.min) / item->u.slider.range;
-    if (item->u.slider.change) {
-        item->u.slider.change(0, item, 0);
-    }
-}
-
-
 inline void eduiItemSliderSetValEx(struct eduiitem_s *item, f32 val, s32 flash,
                                   s32 notify) {
     item->u.slider.frac = (val - item->u.slider.min) / item->u.slider.range;
@@ -1300,6 +1290,11 @@ inline void eduiItemSliderSetValEx(struct eduiitem_s *item, f32 val, s32 flash,
     if (notify && item->u.slider.change) {
         item->u.slider.change(0, item, 0);
     }
+}
+
+
+void eduiItemSliderSetVal(struct eduiitem_s *item, f32 val) {
+    eduiItemSliderSetValEx(item, val, 1, 1);
 }
 
 
@@ -1625,6 +1620,126 @@ s32 eduicbProcessColourPick(struct eduimenu_s *menu, struct eduiitem_s *item, st
         item->u.colour.change(menu, item, pad->paddata_db);
     }
     return 0;
+}
+
+
+/* A colour with byte access to its channels. */
+union eduicol_u {
+    u32 all;                            /* 0x00 */
+    u8 comp[4];                         /* 0x00 */
+}; /* 0x04 */
+
+
+/* Fills [x + w * lastpos, x + w * pos) of a box h rows high, top to bottom
+ * from black to lastcol (left) and col (right), in eight strips. */
+static inline void eduiRndrHueBand(s32 x, s32 y, s32 w, s32 h, f32 lastpos, f32 pos,
+                                   u32 lastcol, u32 col) {
+    s32 steps = 8;
+    union eduicol_u cols[4];
+    union eduicol_u drawcols[4];
+    s32 n;
+    s32 right;
+    s32 left;
+
+    h *= 8;
+    left = x + (s32)(w * lastpos);
+    right = x + (s32)(w * pos);
+    cols[0].all = 0x80000000;
+    cols[1].all = 0x80000000;
+    cols[2].all = lastcol;
+    cols[3].all = col;
+    drawcols[0] = cols[0];
+    drawcols[1] = cols[1];
+    for (n = 0; n < steps; n++) {
+        drawcols[2].comp[0] = cols[0].comp[0] + (n * (cols[2].comp[0] - cols[0].comp[0])) / steps;
+        drawcols[2].comp[1] = cols[0].comp[1] + (n * (cols[2].comp[1] - cols[0].comp[1])) / steps;
+        drawcols[2].comp[2] = cols[0].comp[2] + (n * (cols[2].comp[2] - cols[0].comp[2])) / steps;
+        drawcols[2].comp[3] = cols[0].comp[3] + (n * (cols[2].comp[3] - cols[0].comp[3])) / steps;
+        drawcols[3].comp[0] = cols[1].comp[0] + (n * (cols[3].comp[0] - cols[1].comp[0])) / steps;
+        drawcols[3].comp[1] = cols[1].comp[1] + (n * (cols[3].comp[1] - cols[1].comp[1])) / steps;
+        drawcols[3].comp[2] = cols[1].comp[2] + (n * (cols[3].comp[2] - cols[1].comp[2])) / steps;
+        drawcols[3].comp[3] = cols[1].comp[3] + (n * (cols[3].comp[3] - cols[1].comp[3])) / steps;
+        NuRndrGradRect2di(left, y + (n * h) / steps, right - left, h / steps,
+                          &drawcols[0].all, edui_mtl[ui_bgmtl]);
+        drawcols[0] = drawcols[2];
+        drawcols[1] = drawcols[3];
+    }
+}
+
+
+/* Fills [x + w * lastpos, x + w * pos) left to right from lastcol to col. */
+static inline void eduiRndrGradBar(s32 x, s32 y, s32 w, s32 h, f32 lastpos, f32 pos,
+                                   u32 lastcol, u32 col) {
+    u32 cols[4];
+
+    cols[0] = cols[2] = lastcol;
+    cols[1] = cols[3] = col;
+    NuRndrGradRect2di(x + (s32)(w * lastpos), y, (s32)(w * pos) - (s32)(w * lastpos), h,
+                      cols, edui_mtl[ui_bgmtl]);
+}
+
+
+s32 eduicbRenderColourPick(struct eduimenu_s *menu, struct eduiitem_s *item, s32 x, s32 y, s32 w,
+                           s32 highlight) {
+    s32 h;
+    f32 r;
+    f32 g;
+    f32 b;
+    u32 hsvcol;
+    u32 hvcol;
+
+    h = (w * 3) / 4;
+    item->x = x;
+    item->y = y;
+    eduiRndrHueBand(x * 16, y * 8, w * 16, h, 0.0f, 1.0f / 6.0f, 0x800000FF, 0x8000FFFF);
+    eduiRndrHueBand(x * 16, y * 8, w * 16, h, 1.0f / 6.0f, 2.0f / 6.0f, 0x8000FFFF,
+                    0x8000FF00);
+    eduiRndrHueBand(x * 16, y * 8, w * 16, h, 2.0f / 6.0f, 3.0f / 6.0f, 0x8000FF00,
+                    0x80FFFF00);
+    eduiRndrHueBand(x * 16, y * 8, w * 16, h, 3.0f / 6.0f, 4.0f / 6.0f, 0x80FFFF00,
+                    0x80FF0000);
+    eduiRndrHueBand(x * 16, y * 8, w * 16, h, 4.0f / 6.0f, 5.0f / 6.0f, 0x80FF0000,
+                    0x80FF00FF);
+    eduiRndrHueBand(x * 16, y * 8, w * 16, h, 5.0f / 6.0f, 1.0f, 0x80FF00FF, 0x800000FF);
+    NuRndrLine2di(x * 16, (s32)(y + (s32)(f32)h * item->u.colour.brightness) * 8,
+                  (x + w - 1) * 16, (s32)(y + h * item->u.colour.brightness) * 8, 0x80FFFFFF,
+                  edui_mtl[0]);
+    NuRndrLine2di((s32)(x + w * item->u.colour.hue) * 16, y * 8,
+                  (s32)(x + w * item->u.colour.hue) * 16, (y + h - 1) * 8, 0x80FFFFFF,
+                  edui_mtl[0]);
+    y += h;
+    h = w / 8;
+    eduiHSVToRGB(item->u.colour.h, 1.0f, item->u.colour.v, &r, &g, &b);
+    hsvcol = 0x80000000 + ((s32)(b * 255.0f) << 16) + ((s32)(g * 255.0f) << 8) +
+             (s32)(r * 255.0f);
+    eduiHSVToRGB(item->u.colour.h, 0.0f, item->u.colour.v, &r, &g, &b);
+    hvcol = 0x80000000 + ((s32)(b * 255.0f) << 16) + ((s32)(g * 255.0f) << 8) +
+            (s32)(r * 255.0f);
+    eduiRndrGradBar(x * 16, y * 8, w * 16, h * 8, 0.0f, 1.0f, hvcol, hsvcol);
+    NuRndrLine2di((s32)(x + 1 + (w - 2) * item->u.colour.s) * 16, y * 8,
+                  (s32)(x + 1 + (w - 2) * item->u.colour.s) * 16, (y + (h >> 1) - 1) * 8,
+                  0x80FFFFFF, edui_mtl[0]);
+    NuRndrLine2di((s32)(x + (w - 2) * item->u.colour.s) * 16, y * 8,
+                  (s32)(x + (w - 2) * item->u.colour.s) * 16, (y + (h >> 1) - 1) * 8,
+                  0x80FFFFFF, edui_mtl[0]);
+    NuRndrLine2di((s32)(x - 1 + (w - 2) * item->u.colour.s) * 16, y * 8,
+                  (s32)(x - 1 + (w - 2) * item->u.colour.s) * 16, (y + (h >> 1) - 1) * 8,
+                  0x80FFFFFF, edui_mtl[0]);
+    NuRndrLine2di((s32)(x + 1 + (w - 2) * item->u.colour.s) * 16, (y + (h >> 1)) * 8,
+                  (s32)(x + 1 + (w - 2) * item->u.colour.s) * 16, (y + h - 1) * 8,
+                  0x80000000, edui_mtl[0]);
+    NuRndrLine2di((s32)(x + (w - 2) * item->u.colour.s) * 16, (y + (h >> 1)) * 8,
+                  (s32)(x + (w - 2) * item->u.colour.s) * 16, (y + h - 1) * 8,
+                  0x80000000, edui_mtl[0]);
+    NuRndrLine2di((s32)(x - 1 + (w - 2) * item->u.colour.s) * 16, (y + (h >> 1)) * 8,
+                  (s32)(x - 1 + (w - 2) * item->u.colour.s) * 16, (y + h - 1) * 8,
+                  0x80000000, edui_mtl[0]);
+    y += h;
+    eduiHSVToRGB(item->u.colour.h, item->u.colour.s, item->u.colour.v, &r, &g, &b);
+    hsvcol = 0x80000000 + ((s32)(b * 255.0f) << 16) + ((s32)(g * 255.0f) << 8) +
+             (s32)(r * 255.0f);
+    eduiRndrGradBar(x * 16, y * 8, w * 16, h * 8, 0.0f, 1.0f, hsvcol, hsvcol);
+    return w;
 }
 
 
@@ -2165,9 +2280,21 @@ void eduiCreateMessageMenu(struct eduimenu_s *parent, char *text, s32 error) {
 }
 
 
+inline s32 eduiItemRender(struct eduiitem_s *item, s32 x, s32 y, s32 w, s32 highlight) {
+    s32 height;
+
+    edui_item_width = w;
+    height = item->render(0, item, x, y, w, highlight);
+    if (highlight) {
+        NuRndrLineRect2di(x * 16, y * 8, edui_item_width * 16, height * 8,
+                          0x80FFFFFF, edui_mtl[0]);
+    }
+    return height;
+}
+
+
 void eduiMenuRender(struct eduimenu_s *menu) {
     struct eduiitem_s *item;
-    s32 x;
     s32 y;
     s32 height;
     s32 size;
@@ -2209,13 +2336,7 @@ void eduiMenuRender(struct eduimenu_s *menu) {
             if (item == menu->current) {
                 highlight = menu->child == 0;
             }
-            x = menu->x;
-            edui_item_width = menu->w;
-            size = item->render(0, item, x, y, menu->w, highlight);
-            if (highlight) {
-                NuRndrLineRect2di(x * 16, y * 8, edui_item_width * 16,
-                                  size * 8, 0x80FFFFFF, edui_mtl[0]);
-            }
+            size = eduiItemRender(item, menu->x, y, menu->w, highlight);
             item = item->next;
             y += size;
             if (item && y >= menu->y + menu->h) {
@@ -2486,19 +2607,6 @@ void eduicbPickCFGCancel(struct eduimenu_s *menu, struct eduimenu_s *parent) {
 void eduicbCancelMessageMenu(struct eduimenu_s *menu, struct eduiitem_s *item) {
     eduiMenuDestroy(edui_messagemenu);
     edui_messagemenu = 0;
-}
-
-
-s32 eduiItemRender(struct eduiitem_s *item, s32 x, s32 y, s32 w, s32 highlight) {
-    s32 height;
-
-    edui_item_width = w;
-    height = item->render(0, item, x, y, w, highlight);
-    if (highlight) {
-        NuRndrLineRect2di(x * 16, y * 8, edui_item_width * 16, height * 8,
-                          0x80FFFFFF, edui_mtl[0]);
-    }
-    return height;
 }
 
 
