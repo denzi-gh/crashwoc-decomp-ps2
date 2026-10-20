@@ -134,9 +134,9 @@ void cloudInit() {
     if (cloudmtl != 0) {
         cloudmtl->attrib.alpha = 2;
         cloudmtl->attrib.zmode = 1;
-        cloudmtl->alpha_sort = 0x7D00;
+        cloudmtl->sort_pri = 0x7D00;
         NuMtlUpdateEx(cloudmtl, 1);
-        cloudmtl->stream.mpgtag = cloud_mpg;
+        cloudmtl->rs.mpgtag = cloud_mpg;
     }
     if (cloudtex != 0) {
         if (cloudtex->bits != 0) {
@@ -325,9 +325,9 @@ void TimeTunnelInit(union variptr_u *buffer, union variptr_u *buffend) {
     if (ttmtl != 0) {
         ttmtl->attrib.alpha = 2;
         ttmtl->attrib.zmode = 1;
-        ttmtl->alpha_sort = 0x7FFF;
+        ttmtl->sort_pri = 0x7FFF;
         NuMtlUpdateEx(ttmtl, 1);
-        ttmtl->stream.mpgtag = cloud_mpg;
+        ttmtl->rs.mpgtag = cloud_mpg;
     }
 }
 

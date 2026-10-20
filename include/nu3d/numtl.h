@@ -2,14 +2,14 @@
 #define NU3D_NUMTL_H
 
 #include "nu_types.h"
+#include "nucore/nucoretypes.h"
 #include "numath/numathtypes.h"
 #include "nu3d/nustream.h"
 
-/* Material flags. The struct is 8-byte aligned, so the compiler accesses
- * these bit-fields through whole 64-bit units: attrib shares its unit with
- * display_next (low word), attrib2 with ambient.r (high word). */
+/* Material flags. numtl_s is 8-byte aligned (sbdata), so the compiler
+ * accesses these bit-fields through whole 64-bit units: the first word
+ * shares its unit with numtl_s.next, the second with ambient.r. */
 struct numtlattrib_s {
-    unsigned int : 32;               /* numtl_s.display_next */
     unsigned int alpha : 4;
     unsigned int filter : 2;
     unsigned int fx : 2;
@@ -22,16 +22,14 @@ struct numtlattrib_s {
     unsigned int fill : 1;
     unsigned int atst : 3;
     unsigned int aref : 8;
-    unsigned int : 1;
-} __attribute__((aligned(8))); /* 0x8 */
-
-struct numtlattrib2_s {
     unsigned int afail : 2;
     unsigned int uvmode : 1;
-    unsigned int punch : 1;
-    unsigned int gouraud : 1;
-    unsigned int : 27;
-} __attribute__((aligned(8))); /* 0x8 */
+    unsigned int ot : 1;
+    unsigned int shade : 1;
+    unsigned int date : 1;
+    unsigned int datm : 1;
+    unsigned int pad : 25;
+}; /* 0x8 */
 
 /* Per-effect material parameter. */
 union nufx_u {
@@ -45,50 +43,23 @@ union nufx_u {
     float f32;
 }; /* 0x4 */
 
-struct numtluv_s {
-    float u;                /* 0x00 */
-    float v;                /* 0x04 */
-    u32 pad08[6];           /* 0x08 */
-    u32 strow;              /* 0x20 */
-    int row_u;              /* 0x24 */
-    int row_v;              /* 0x28 */
-    int row_z;              /* 0x2C */
-    int row_w;              /* 0x30 */
-}; /* 0x34 */
-
-struct nuwaterfx_s;
-union variptr_u;
-
 struct numtl_s {
-    u8 pad000[0x120];                       /* 0x000 GS state, not decoded */
-    union {
-        u64 flags;                          /* 0x120 NUMTL_* */
-        struct {
-            u32 : 32;
-            struct nurndrstream_s stream;   /* 0x124 */
-            union {
-                struct numtluv_s *uv;
-                f32 *param;
-                struct nuwaterfx_s *water;
-            } effect;                       /* 0x15C */
-        };
-    };
-    struct numtl_s *next;                   /* 0x160 */
-    struct numtl_s *prev;                   /* 0x164 */
-    union {
-        struct numtl_s *display_next;       /* 0x168 */
-        struct numtl_s *specmtl;            /* 0x168 glass: specular material */
-        struct numtl_s *layer;              /* 0x168 water: layer material */
-        u64 attrib_reg;                     /* 0x168 whole unit */
-        struct numtlattrib_s attrib;        /* 0x168 */
-    };
-    union {
-        struct numtlattrib2_s attrib2;      /* 0x170 */
-        struct {
-            u32 : 32;
-            struct nucolour3_s ambient;     /* 0x174 */
-        };
-    };
+    u64 sbdata[36];                         /* 0x000 GS state block */
+    short used : 1;                         /* 0x120 */
+    short fromblock : 1;
+    short intalloc : 1;
+    short zupd : 1;
+    short sbexists : 1;
+    short renderplane_id : 8;
+    char accesscount;                       /* 0x122 */
+    char curr_rp;                           /* 0x123 */
+    struct nurndrstream_s rs;               /* 0x124 */
+    union variptr_u vuattr;                 /* 0x15C */
+    struct numtl_s *snext;                  /* 0x160 */
+    struct numtl_s *slast;                  /* 0x164 */
+    struct numtl_s *next;               /* 0x168 */
+    struct numtlattrib_s attrib;            /* 0x16C */
+    struct nucolour3_s ambient;             /* 0x174 */
     struct nucolour3_s diffuse;             /* 0x180 */
     union nufx_u fx1;                       /* 0x18C */
     union nufx_u fx2;                       /* 0x190 */
@@ -100,22 +71,24 @@ struct numtl_s {
     union {
         u64 alpha_reg;                      /* 0x1A8 whole unit */
         struct {
-            int alpha_sort;                 /* 0x1A8 */
+            int sort_pri;                   /* 0x1A8 */
             short K;                        /* 0x1AC mipmap K */
-            u8 L;                           /* 0x1AE mipmap L */
-            u8 uanmode : 4;                 /* 0x1AF */
-            u8 vanmode : 4;
+            unsigned char L;                /* 0x1AE mipmap L */
+            unsigned char uanmmode : 4;     /* 0x1AF */
+            unsigned char vanmmode : 4;
         };
     };
-    float su;                               /* 0x1B0 */
-    float sv;                               /* 0x1B4 */
-    float du;                               /* 0x1B8 */
-    float dv;                               /* 0x1BC */
-    struct numtl_s *zmtl;                   /* 0x1C0 */
-    s8 ctxt;                                /* 0x1C4 */
-    u8 fxid;                                /* 0x1C5 */
-    u8 special_id;                          /* 0x1C6 */
-    u8 pad1C7[9];                           /* 0x1C7 */
+    float du;                           /* 0x1B0 */
+    float dv;                           /* 0x1B4 */
+    float su;                           /* 0x1B8 */
+    float sv;                           /* 0x1BC */
+    void *callback;                         /* 0x1C0 */
+    char context;                           /* 0x1C4 */
+    unsigned char fxid;                     /* 0x1C5 */
+    unsigned char special_id;               /* 0x1C6 */
+    unsigned char inuvanimlist;             /* 0x1C7 */
+    unsigned int fb_mask;                   /* 0x1C8 */
+    union variptr_u callbackdata;           /* 0x1CC */
 }; /* 0x1D0 */
 
 typedef int (*NuMtlReadEventFunc)(struct numtl_s *mtl);

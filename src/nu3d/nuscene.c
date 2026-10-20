@@ -907,7 +907,7 @@ void NuSceneMtlUpdate(struct nuscene_s *scene) {
         } else {
             mtl->tid = scene->tids[mtl->tid];
         }
-        scene->mtls[i]->specmtl = specmtl;
+        scene->mtls[i]->next = specmtl;
         if (!NuMtlReadEvent(scene->mtls[i])) {
             NuMtlUpdate(scene->mtls[i]);
         }

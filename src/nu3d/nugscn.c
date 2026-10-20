@@ -1986,15 +1986,15 @@ void ReadMaterialSet(int fh)
         } else {
             loading_scene->mtls[i]->tid = loading_scene->tids[loading_scene->mtls[i]->tid];
         }
-        if ((int)loading_scene->mtls[i]->display_next == -1) {
-            loading_scene->mtls[i]->display_next = 0;
+        if ((int)loading_scene->mtls[i]->next == -1) {
+            loading_scene->mtls[i]->next = 0;
         }
-        next = loading_scene->mtls[i]->display_next;
+        next = loading_scene->mtls[i]->next;
         if (nugscn_mtlupdate_enabled) {
             NuDisableVBlank();
             in_protected_bit = 1;
             NuMtlAdd(loading_scene->mtls[i]);
-            loading_scene->mtls[i]->display_next = next;
+            loading_scene->mtls[i]->next = next;
             if (!NuMtlReadEvent(loading_scene->mtls[i])) {
                 NuMtlUpdate(loading_scene->mtls[i]);
             }
@@ -2004,11 +2004,11 @@ void ReadMaterialSet(int fh)
     }
     for (i = 0; i < nmtls; i++) {
         mtl = loading_scene->mtls[i];
-        ix = (unsigned int)mtl->display_next;
+        ix = (unsigned int)mtl->next;
         if (ix == 0xFFFFFFFF) {
-            mtl->display_next = 0;
+            mtl->next = 0;
         } else if (ix >= 1 && ix <= 0xFFFF) {
-            mtl->display_next = loading_scene->mtls[ix - 1];
+            mtl->next = loading_scene->mtls[ix - 1];
         }
     }
     NuDebugMsgProlog(nugscn_srcfile, 0xB1A)(mtlset_count_msg, nmtls);
@@ -2099,7 +2099,7 @@ void ReadObjSet(int fh)
                     if (size & 0xF) {
                         NuErrorProlog(nugscn_srcfile, 0xB95)(geom_size_msg);
                     }
-                    if (geom->mtl->attrib2.punch == 1) {
+                    if (geom->mtl->attrib.ot == 1) {
                         geom->otbatch = NuMemFileAddr(fh);
                         for (m = 0; m < ((struct nucvttribatch_s *)geom->otbatch)->count; m++) {
                             ((struct nucvttribatch_s *)geom->otbatch)->blocks[m].data = ((struct nucvttribatch_s *)geom->otbatch)->blocks[m].qw;

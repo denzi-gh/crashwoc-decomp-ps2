@@ -205,7 +205,8 @@ extern s32 temp_face;
 
 /* Near-match (state=asm), 732/744 bytes: only x0's register differs (retail
  * $f9, here $f12): `dx = v.x - x0` lets global alloc hand x0 the $f12
- * preference dx gets from NuAtan2D. A separate variable fixes x0 but loses dx. */
+ * preference dx gets from NuAtan2D. A separate variable fixes x0 but loses dx.
+ * The GC build confirms the dx reuse (v.x - x0 lands in dx's f1 there). */
 s32 CylinderCuboidOverlapXZ(struct nuvec_s *pos, struct obj_s *obj,
                             struct nuvec_s *p2, f32 radius) {
     struct nuvec_s v;

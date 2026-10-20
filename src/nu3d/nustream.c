@@ -1052,7 +1052,7 @@ int NuRndrStreamAddMtl(struct nurndrstream_s *stream, struct numtl_s *mtl)
         if (stream->mtl_tid != mtl->tid) {
             stream->mtl_tid = mtl->tid;
             NuTexAccomodateRS(stream, mtl->tid);
-            stream->cur.b = NuTexSet(stream->cur.b, mtl->tid, mtl->ctxt);
+            stream->cur.b = NuTexSet(stream->cur.b, mtl->tid, mtl->context);
         }
         stream->cur.b = vpDmaTag_Call(stream->cur.b, NuMtlGetStateBlockDma(mtl));
         stream->cur.b = NuRndrStreamAddZBState(stream->cur.b, NuMtlGetZupd(mtl));

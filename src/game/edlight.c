@@ -704,17 +704,15 @@ void edlightInit(void)
 
     if (mtl == 0) {
         struct numtl_s *m = NuMtlCreate(1);
-        struct numtlattrib_s attrib = m->attrib;
 
-        attrib.zmode = 3;
-        attrib.filter = 1;
-        attrib.lighting = 2;
-        attrib.utc = 1;
-        attrib.vtc = 1;
-        attrib.colour = 1;
-        attrib.alpha = 0;
         mtl = m;
-        m->attrib = attrib;
+        mtl->attrib.zmode = 3;
+        mtl->attrib.filter = 1;
+        mtl->attrib.lighting = 2;
+        mtl->attrib.utc = 1;
+        mtl->attrib.vtc = 1;
+        mtl->attrib.colour = 1;
+        mtl->attrib.alpha = 0;
         NuMtlUpdate(m);
     }
     if (edlight_i_light != -1) {

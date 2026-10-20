@@ -29,16 +29,6 @@
 #include "nu3d/nucamera.h"
 #include "nu3d/nugscn.h"
 
-struct nuwaterfx_s {
-    u8 pad00[0x8];
-    float wave;
-    int phase;
-    float uscale;
-    float vscale;
-    float width;
-    float height;
-};
-
 typedef struct WaterTable {
     struct nuvec4_s wave[32];
     float fx1;
@@ -188,22 +178,22 @@ void fixNewMaterials(void) {
         case 0x85:
         case 0x86:
             if (mtl->fxid == 0x86) {
-                mtl->stream.mpgtag = water_alt_microcode;
+                mtl->rs.mpgtag = water_alt_microcode;
             } else {
-                mtl->stream.mpgtag = water_microcode;
+                mtl->rs.mpgtag = water_microcode;
             }
-            mtl->effect.water->wave = mtl->fx3.f32 / mtl->fx4.f32;
-            mtl->effect.water->phase = 0;
+            mtl->vuattr.vec3->z = mtl->fx3.f32 / mtl->fx4.f32;
+            mtl->vuattr.vec4->w = 0;
             width = 1;
             while (width < PS2_REZ_W) {
                 width <<= 1;
             }
-            mtl->effect.water->uscale = 1.0 / (width * 16.0);
+            mtl->vuattr.mtx44->_10 = 1.0 / (width * 16.0);
             for (height = 1; height < PS2_REZ_H; height <<= 1) {
             }
-            mtl->effect.water->vscale = 1.0 / (height * 16.0);
-            mtl->effect.water->width = PS2_REZ_W;
-            mtl->effect.water->height = PS2_REZ_H;
+            mtl->vuattr.mtx44->_11 = 1.0 / (height * 16.0);
+            mtl->vuattr.mtx44->_12 = PS2_REZ_W;
+            mtl->vuattr.mtx44->_13 = PS2_REZ_H;
             table = getWaterTable(mtl->fx1.f32, mtl->fx4.f32);
             watermtl_table[nwatermtl] = table;
             if (nwatermtl >= 8) {
@@ -215,19 +205,19 @@ void fixNewMaterials(void) {
             water_grab = 1;
             mtl->tid = water_grab_tid;
             NuMtlUpdate(mtl);
-            mtl->stream.mpgtag = water_microcode;
-            mtl->effect.water->wave = mtl->fx2.f32 / 48.0f / mtl->fx4.f32;
-            mtl->effect.water->phase = 0;
+            mtl->rs.mpgtag = water_microcode;
+            mtl->vuattr.vec3->z = mtl->fx2.f32 / 48.0f / mtl->fx4.f32;
+            mtl->vuattr.vec4->w = 0;
             width = 1;
             while (width < PS2_REZ_W) {
                 width <<= 1;
             }
-            mtl->effect.water->uscale = 1.0 / (width * 16.0);
+            mtl->vuattr.mtx44->_10 = 1.0 / (width * 16.0);
             for (height = 1; height < PS2_REZ_H; height <<= 1) {
             }
-            mtl->effect.water->vscale = 1.0 / (height * 16.0);
-            mtl->effect.water->width = PS2_REZ_W;
-            mtl->effect.water->height = PS2_REZ_H;
+            mtl->vuattr.mtx44->_11 = 1.0 / (height * 16.0);
+            mtl->vuattr.mtx44->_12 = PS2_REZ_W;
+            mtl->vuattr.mtx44->_13 = PS2_REZ_H;
             table = getWaterTable(mtl->fx1.f32, mtl->fx4.f32);
             watermtl_table[nwatermtl] = table;
             if (nwatermtl >= 8) {
@@ -284,27 +274,27 @@ void fixMaterials(void) {
         /* atst is 3 bits, so % 8 is a no-op; it changes the RTL that sets the
            $s7/$fp allocation tie between watermtl and watertable. */
         layer->attrib.atst = mtl->attrib.atst % 8;
-        layer->attrib2.afail = mtl->attrib2.afail;
+        layer->attrib.afail = mtl->attrib.afail;
         layer->attrib.fx = 1;
         layer->attrib.zmode = 0;
         layer->attrib.lighting = 0;
         layer->attrib.colour = 1;
-        layer->alpha_sort = 0x7FFF;
+        layer->sort_pri = 0x7FFF;
         NuMtlUpdate(layer);
-        layer->stream.mpgtag = water_microcode;
-        layer->effect.water->wave = mtl->fx3.f32 / mtl->fx4.f32;
-        layer->effect.water->phase = 0;
+        layer->rs.mpgtag = water_microcode;
+        layer->vuattr.vec3->z = mtl->fx3.f32 / mtl->fx4.f32;
+        layer->vuattr.vec4->w = 0;
         width = 1;
         while (width < PS2_REZ_W) {
             width <<= 1;
         }
-        layer->effect.water->uscale = 1.0 / (width * 16.0);
+        layer->vuattr.mtx44->_10 = 1.0 / (width * 16.0);
         for (height = 1; height < PS2_REZ_H; height <<= 1) {
         }
-        layer->effect.water->vscale = 1.0 / (height * 16.0);
-        layer->effect.water->width = PS2_REZ_W;
-        layer->effect.water->height = PS2_REZ_H;
-        layer->layer = 0;
+        layer->vuattr.mtx44->_11 = 1.0 / (height * 16.0);
+        layer->vuattr.mtx44->_12 = PS2_REZ_W;
+        layer->vuattr.mtx44->_13 = PS2_REZ_H;
+        layer->next = 0;
         table = getWaterTable(layer->fx1.f32, layer->fx4.f32);
         watermtl_table[nwatermtl + i] = table;
         watermtl[nwatermtl + i] = layer;
@@ -318,24 +308,24 @@ void fixMaterials(void) {
         mtl->attrib.colour = 1;
         mtl->alpha = 1.0f;
         mtl->tid = water_grab_tid;
-        mtl->alpha_sort = 0x7FFE;
+        mtl->sort_pri = 0x7FFE;
         NuMtlUpdate(mtl);
-        mtl->stream.mpgtag = water_microcode;
-        mtl->effect.water->wave = mtl->fx2.f32 / 48.0f / mtl->fx4.f32;
-        mtl->effect.water->phase = 0;
+        mtl->rs.mpgtag = water_microcode;
+        mtl->vuattr.vec3->z = mtl->fx2.f32 / 48.0f / mtl->fx4.f32;
+        mtl->vuattr.vec4->w = 0;
         width = 1;
         while (width < PS2_REZ_W) {
             width <<= 1;
         }
-        mtl->effect.water->uscale = 1.0 / (width * 16.0);
+        mtl->vuattr.mtx44->_10 = 1.0 / (width * 16.0);
         for (height = 1; height < PS2_REZ_H; height <<= 1) {
         }
-        mtl->effect.water->vscale = 1.0 / (height * 16.0);
-        mtl->effect.water->width = PS2_REZ_W;
-        mtl->effect.water->height = PS2_REZ_H;
+        mtl->vuattr.mtx44->_11 = 1.0 / (height * 16.0);
+        mtl->vuattr.mtx44->_12 = PS2_REZ_W;
+        mtl->vuattr.mtx44->_13 = PS2_REZ_H;
         table = getWaterTable(mtl->fx1.f32, mtl->fx4.f32);
         watermtl_table[nwatermtl] = table;
-        mtl->layer = layer;
+        mtl->next = layer;
     }
     nwatermtl *= 2;
     fixNewMaterials();
@@ -409,15 +399,13 @@ void animateWaterTables(float scale, float time) {
     }
     for (i = 0; i < nwatermtl; i++) {
         mtl = watermtl[i];
-        table = &watertable[watermtl_table[i]].wave[0].x;
-        stream = &mtl->stream;
+        stream = &mtl->rs;
         NuRndrStreamLink(stream);
         stream->cur.w = vpDmaTag_Cnt(stream->cur.w);
         *stream->cur.w++ = 0x10000000;
         *stream->cur.w++ = 0x6C2001B2;
         for (j = 0; j < 32; j++) {
-            *((struct nuvec4_s *)stream->cur.w)++ = *(struct nuvec4_s *)table;
-            table += 4;
+            *((struct nuvec4_s *)stream->cur.w)++ = watertable[watermtl_table[i]].wave[j];
         }
         stream->cur.w = vpDmaTag_Close(stream->cur.w);
         rndrstream_free = vpDmaTag_Next(stream->cur.w, 0);
@@ -444,7 +432,7 @@ void animateWater(float scale, float time) {
         mtl = watermtl[i];
         freq = time * mtl->fx1.f32;
         amp = mtl->fx4.f32 * scale;
-        stream = &mtl->stream;
+        stream = &mtl->rs;
         NuRndrStreamLink(stream);
         stream->cur.w = vpDmaTag_Cnt(stream->cur.w);
         *stream->cur.w++ = 0;
@@ -524,10 +512,10 @@ void NuWaterOverride(float fx1, float fx2, float fx3, float fx4) {
         if (fx4 != unset) {
             mtl->fx4.f32 = fx4;
         }
-        if (mtl->alpha_sort == 0x7FFE) {
-            mtl->effect.water->wave = mtl->fx2.f32 / 48.0f / mtl->fx4.f32;
+        if (mtl->sort_pri == 0x7FFE) {
+            mtl->vuattr.vec3->z = mtl->fx2.f32 / 48.0f / mtl->fx4.f32;
         } else {
-            mtl->effect.water->wave = mtl->fx3.f32 / mtl->fx4.f32;
+            mtl->vuattr.vec3->z = mtl->fx3.f32 / mtl->fx4.f32;
         }
     }
 }

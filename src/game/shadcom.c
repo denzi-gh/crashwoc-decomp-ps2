@@ -152,7 +152,7 @@ void ShadRndr(struct numtx_s *mtx, struct shadentry_s *shad, f32 frame, f32 scal
     if (shad->mtl != 0) {
         mtl = shad->mtl;
     }
-    rs = &mtl->stream;
+    rs = &mtl->rs;
     tid = palids[pal];
     if (tid != 0) {
         NuRndrStreamLink(rs);
@@ -225,7 +225,7 @@ struct shaddata_s *ShadDataLoad(char *file, union variptr_u *buffer) {
                 entry->mtl->attrib.alpha = 3;
                 entry->mtl->attrib.filter = 1;
                 entry->mtl->tid = entry->tid;
-                entry->mtl->alpha_sort = 100;
+                entry->mtl->sort_pri = 100;
                 NuMtlUpdate(entry->mtl);
             }
         }

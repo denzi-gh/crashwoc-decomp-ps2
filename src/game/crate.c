@@ -1746,7 +1746,7 @@ void AddQuad3DrotXYZ(struct nuvec_s *pos, struct nuvec_s *shape,
     screen[3].y = v4.y;
     screen[3].z = v4.z;
 
-    rndrstream_3d = &mtl->stream;
+    rndrstream_3d = &mtl->rs;
     NuRndrStreamLink(rndrstream_3d);
     rndrstream_3d->cur.b = vpDmaTag_Cnt(rndrstream_3d->cur.b);
     *rndrstream_3d->cur.w++ = 0x10000000;
