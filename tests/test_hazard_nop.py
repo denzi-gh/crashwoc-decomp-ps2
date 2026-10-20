@@ -76,11 +76,13 @@ class TestHazardNop(unittest.TestCase):
         seg = ["\tli.s\t$f21,1.8e2", "\t.p2align 3", "$L295:"]
         self.assertEqual(_insns(seg), [l.strip() for l in seg])
 
-    def test_lis_hazard_across_aligned_loop_head_keeps_its_nop(self):
+    def test_lis_hazard_across_aligned_loop_head_pads_after_alignment(self):
+        # retail NuLightInit: mtc1 $zero,$f0 / pad / nop / loop head swc1 $f0
         got = _insns(["\tli.s\t$f0,1.0", "\t.p2align 3", "$Lloop:",
                       "\tadd.s\t$f2,$f0,$f1"])
-        self.assertEqual(got, ["li.s\t$f0,1.0", "nop", ".p2align 3", "$Lloop:",
-                               "add.s\t$f2,$f0,$f1"])
+        self.assertEqual(got, [".set\tnoreorder", "li.s\t$f0,1.0",
+                               ".p2align 3", "nop", "$Lloop:",
+                               ".set\treorder", "add.s\t$f2,$f0,$f1"])
 
     def test_inline_lis_hazard_padding_precedes_join_label(self):
         # Incoming branches must skip the nop needed by the fall-through load.

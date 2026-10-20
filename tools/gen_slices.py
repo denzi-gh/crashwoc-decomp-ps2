@@ -43,7 +43,8 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 from declib.asmtext import disambiguate, instr_at
 from declib.toolchain import Reporter
-from declib.tu import drop_alignment, parse_toml_blocks, prologue_end, split_body
+from declib.tu import (drop_alignment, load_tu_runs, parse_toml_blocks,
+                       prologue_end, split_body)
 
 # Block-macro expansion for the original assembler (see module docstring).
 _GLOBAL_LABELS = ("glabel", "alabel")
@@ -159,7 +160,13 @@ def main():
 
     functions = load_functions(args.version)
     body_start = prologue_end(lines)
-    chunks = split_body(lines, body_start, [a for a, _n, _u in functions[1:]])
+    # Included code ahead of a unit's first procedure is in no slice.
+    addrs = {a for a, _n, _u in functions}
+    included = [a for _u, a in load_tu_runs() if a not in addrs]
+    cuts = sorted([a for a, _n, _u in functions[1:]] + included)
+    chunks = [chunk for start, chunk in zip(
+                  [functions[0][0]] + cuts, split_body(lines, body_start, cuts))
+              if start in addrs]
     if len(chunks) != len(functions):
         reporter.result("Function-granularity split", False,
                         f"{len(chunks)} chunks for {len(functions)} functions")

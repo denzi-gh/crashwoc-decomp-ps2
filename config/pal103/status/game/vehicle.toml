@@ -41,7 +41,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00203f00:GliderSmoke"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:002041c8:DeadGliderCoco"

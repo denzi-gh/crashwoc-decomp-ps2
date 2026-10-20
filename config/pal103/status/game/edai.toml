@@ -33,7 +33,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0105:00236bc0:edaiDRAW"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0105:00237418:edaicbSelectType"

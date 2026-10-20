@@ -29,7 +29,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018a9a0:edppDrawCursor"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0070:0018b1a8:edppDetermineNearest"

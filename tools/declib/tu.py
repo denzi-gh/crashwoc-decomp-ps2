@@ -38,6 +38,10 @@ def load_tu_runs():
     Built from the procedure table: sort procedures by address and start a new
     run whenever the owning unit changes. The mdebug lays each TU's code out
     contiguously, so these runs are exactly the .text translation units.
+
+    A procedure-less file descriptor right after a unit's own and below its
+    first procedure is included code; the run starts there (nu2api.i in
+    asmdma.s, 0x0016ECA4).
     """
     funcs = [(int(r["address"], 16), int(r["unit"]))
              for r in parse_toml_blocks(
@@ -47,7 +51,23 @@ def load_tu_runs():
     for addr, unit in sorted(funcs):
         if not runs or runs[-1][0] != unit:
             runs.append((unit, addr))
+    fdrs = {int(r["index"]): (int(r["address"], 16), int(r["procs"]))
+            for r in parse_toml_blocks(
+                ROOT / "config" / "pal103" / "units.toml",
+                {"index": r"index = (\d+)", "address": r"address = (0x[0-9A-Fa-f]+)",
+                 "procs": r"proc_count = (\d+)"})}
+    for k, (unit, addr) in enumerate(runs):
+        included = fdrs.get(unit + 1)
+        if (included and included[1] == 0 and included[0] < addr
+                and (k == 0 or runs[k - 1][1] < included[0])):
+            runs[k] = (unit, included[0])
     return runs
+
+
+def extent_end(addr, next_function, runs):
+    """End of the function at `addr`: `next_function` or an earlier TU start."""
+    later = [a for _u, a in runs if addr < a < next_function]
+    return min(later, default=next_function)
 
 
 def glabel_addresses(lines):

@@ -226,6 +226,21 @@ class Registry:
         return firsts
 
     @cached_property
+    def _included_code_starts(self) -> list:
+        """Included code ahead of a unit's first procedure (mirrors
+        declib.tu.load_tu_runs)."""
+        fdrs = {int(u["index"]): u for u in self._load_toml("units.toml")["unit"]}
+        firsts = sorted(self.unit_first_address.items(), key=lambda kv: kv[1])
+        out = []
+        for k, (unit, first) in enumerate(firsts):
+            inc = fdrs.get(unit + 1)
+            if (inc and int(inc.get("proc_count", 1)) == 0
+                    and _h(inc["address"]) < first
+                    and (k == 0 or firsts[k - 1][1] < _h(inc["address"]))):
+                out.append(_h(inc["address"]))
+        return out
+
+    @cached_property
     def functions(self) -> list:
         """Address-sorted FunctionRecords with extents computed to the next."""
         text_end = self._text_extent[1]
@@ -237,6 +252,8 @@ class Registry:
         for i, r in enumerate(rows):
             addr = _h(r["address"])
             end = _h(rows[i + 1]["address"]) if i + 1 < len(rows) else text_end
+            end = min([a for a in self._included_code_starts if addr < a < end],
+                      default=end)
             out.append(FunctionRecord(
                 version=self.version,
                 index=int(r["index"]),
