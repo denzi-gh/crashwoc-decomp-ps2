@@ -16,7 +16,8 @@ Checks (all reuse the sibling tools, so the gate can never drift from them):
   * no hollow measure survived -- a derived measure whose governing total is
     absent or 0 would claim "100% of nothing";
   * every verified `matching` function reads 100% in the report, agreeing with
-    verify_results.json (check_report_matches.check).
+    verify_results.json (check_report_matches.check), and every complete data
+    unit has all its data matched (check_complete_data).
 
 The checks are pure functions over the two JSON documents plus the unit-index
 map; main() wires the default paths. Stdlib and the sibling tools only -- no
@@ -31,7 +32,8 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 from sanitize_report import (violations, MEASURE_KEYS, UNIT_METADATA_KEYS,
                              HOLLOW_WHEN_TOTAL_ZERO, _measure_zero_or_absent)
-from check_report_matches import check, verified_matching
+from check_report_matches import (check, check_complete_data,
+                                  verified_matching)
 from gen_objdiff import unit_table
 
 TOP_KEYS = {"version", "measures", "units", "categories"}
@@ -94,6 +96,7 @@ def smoke(report, verify, unit_name):
     problems += schema_problems(report)
     _matched, match_problems = check(verify, report, unit_name)
     problems += match_problems
+    problems += check_complete_data(report)
     return problems
 
 

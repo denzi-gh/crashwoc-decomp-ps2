@@ -87,8 +87,9 @@ class TestEmitNinja(unittest.TestCase):
 
     def test_phony_targets_and_default(self):
         for name in ("expected", "current", "matching", "report-current",
-                     "fallback", "data", "verify-loaded", "image-equivalent",
-                     "verify-promoted", "report", "report-public", "check"):
+                     "report-data", "fallback", "data", "verify-loaded",
+                     "image-equivalent", "verify-promoted", "report",
+                     "report-public", "check"):
             self.assertIn(f"build {name}: phony", self.text)
         self.assertIn("default expected current matching", self.lines)
 
@@ -104,10 +105,26 @@ class TestEmitNinja(unittest.TestCase):
         self.assertIn("build/pal103/report-current/", report)
         # Data objects are report targets too, so their stamp is a dependency.
         self.assertIn("build/pal103/data_objects.stamp", report)
+        # ...and so are the report data bases.
+        for edge in self.edges("report_data"):
+            out = edge.split(":")[0].removeprefix("build ")
+            self.assertIn(out, report)
         (sanitize,) = self.edges("sanitize_report")
         self.assertTrue(sanitize.startswith(
             "build build/pal103/report.public.json: sanitize_report "
             "build/pal103/report.json"))
+
+    def test_report_data_edges(self):
+        from gen_report_data import report_data_units
+        units = report_data_units("pal103")
+        edges = self.edges("report_data")
+        self.assertEqual(len(edges), len(units))
+        for (stem, manifest, _complete), edge in zip(units, edges):
+            # Built from the unit's matching hybrid.
+            self.assertTrue(edge.startswith(
+                f"build build/pal103/report-data/{stem}.o: report_data "
+                "build/pal103/matching/"), edge)
+            self.assertIn(manifest, edge)
 
     def test_image_edges(self):
         image_edges = self.edges("link_image")
@@ -234,20 +251,29 @@ class TestEmitObjdiff(unittest.TestCase):
                 self.assertEqual(u["base_path"],
                                  f"build/pal103/current/{u['name']}.o")
 
-    def test_data_units_are_target_only(self):
+    def test_data_units(self):
+        from gen_report_data import report_data_units
+        with_c = {f"data/{stem}": complete
+                  for stem, _m, complete in report_data_units("pal103")}
         data = self.data_units()
-        # One unit per linked data object; there are always more gaps/orphans
-        # and owned ranges than text units in this game.
         self.assertGreater(len(data), 0)
         for u in data:
-            # Target is the expected data object; no base (no C data yet), so
-            # objdiff reports total_data with an honest zero matched.
             self.assertTrue(u["target_path"].startswith(
                 "expected/pal103/data/"))
-            self.assertNotIn("base_path", u)
             self.assertEqual(u["metadata"]["progress_categories"], ["data"])
-            # No source_path: a data object is not decompiled from a .c file.
             self.assertNotIn("source_path", u["metadata"])
+            # Scored per range, not as one combined section.
+            self.assertEqual(u["options"], {"combineDataSections": False})
+            if u["name"] in with_c:
+                # C data: scored against the linked hybrid data.
+                self.assertEqual(
+                    u["base_path"], "build/pal103/report-data/"
+                    f"{u['name'].removeprefix('data/')}.o")
+                self.assertEqual(u["metadata"]["complete"], with_c[u["name"]])
+            else:
+                # No C data: target only, an honest 0 matched.
+                self.assertNotIn("base_path", u)
+                self.assertNotIn("complete", u["metadata"])
 
     def test_units_use_known_categories(self):
         ids = {c["id"] for c in CATEGORIES}
@@ -282,13 +308,12 @@ class TestDataUnits(unittest.TestCase):
                   if r["section"] not in NOBITS_SECTIONS]
         stems = [stem for stem, _e in object_groups(ranges)]
         units = data_units("pal103")
-        # Exactly one target-only unit per data object, name/target aligned.
+        # Exactly one unit per data object, name/target aligned.
         self.assertEqual(len(units), len(stems))
         for u, stem in zip(units, stems):
             self.assertEqual(u["name"], f"data/{stem}")
             self.assertEqual(u["target_path"],
                              f"expected/pal103/data/{stem}.o")
-            self.assertNotIn("base_path", u)
 
     def test_deterministic(self):
         from gen_objdiff import data_units
