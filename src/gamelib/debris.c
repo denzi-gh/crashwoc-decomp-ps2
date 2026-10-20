@@ -779,14 +779,14 @@ struct numtl_s *CreateAlphaBlendTexture256(char *file, s32 blend, s32 alphamode)
     mtl->attrib.zmode = 1;
     mtl->attrib.alpha = alphamode;
     if (blend != 0) {
-        mtl->attrib2.uvmode = 1;
-        mtl->attrib2.gouraud = 0;
+        mtl->attrib.uvmode = 1;
+        mtl->attrib.shade = 0;
     }
     mtl->attrib.utc = 1;
     mtl->attrib.vtc = 1;
     mtl->tid = NuTexCreate(&tex);
-    mtl->attrib2.afail = 1;
-    mtl->alpha_sort = 0x100;
+    mtl->attrib.afail = 1;
+    mtl->sort_pri = 0x100;
     NuMtlUpdate(mtl);
     return mtl;
 }
@@ -876,14 +876,14 @@ inline struct numtl_s *CreateCopyMat(struct numtl_s *src, s32 blend, s32 alphamo
     mtl->attrib.filter = filter;
     mtl->attrib.alpha = alphamode;
     if (blend != 0) {
-        mtl->attrib2.uvmode = 1;
-        mtl->attrib2.gouraud = 0;
+        mtl->attrib.uvmode = 1;
+        mtl->attrib.shade = 0;
     }
     mtl->attrib.utc = 1;
     mtl->attrib.vtc = 1;
     mtl->tid = src->tid;
-    mtl->alpha_sort = src->alpha_sort;
-    mtl->attrib2.afail = 1;
+    mtl->sort_pri = src->sort_pri;
+    mtl->attrib.afail = 1;
     NuMtlUpdate(mtl);
     return mtl;
 }

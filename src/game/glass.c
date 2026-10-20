@@ -110,7 +110,7 @@ inline void SpecularGivenMaterial(struct numtl_s *mtl)
     spec->diffuse.g = 1.0f;
     spec->diffuse.b = 1.0f;
     spec->alpha = 1.0f;
-    spec->alpha_sort = 0x7FFF;
+    spec->sort_pri = 0x7FFF;
     spec->attrib.utc = 1;
     spec->attrib.vtc = 1;
     spec->attrib.lighting = 1;
@@ -118,10 +118,10 @@ inline void SpecularGivenMaterial(struct numtl_s *mtl)
     spec->attrib.zmode = 1;
     spec->attrib.fx = 0;
     NuMtlUpdate(spec);
-    while (mtl->specmtl != 0) {
-        mtl = mtl->specmtl;
+    while (mtl->next != 0) {
+        mtl = mtl->next;
     }
-    mtl->specmtl = spec;
+    mtl->next = spec;
 }
 
 
@@ -135,7 +135,7 @@ inline void EnviroGivenMaterial(struct numtl_s *mtl)
     env->diffuse.g = 0.7f;
     env->diffuse.b = 0.7f;
     env->alpha = 0.3f;
-    env->alpha_sort = 0x7FF0;
+    env->sort_pri = 0x7FF0;
     env->attrib.utc = 1;
     env->attrib.vtc = 1;
     env->attrib.lighting = 2;
@@ -143,10 +143,10 @@ inline void EnviroGivenMaterial(struct numtl_s *mtl)
     env->attrib.zmode = 1;
     env->attrib.fx = 1;
     NuMtlUpdate(env);
-    while (mtl->specmtl != 0) {
-        mtl = mtl->specmtl;
+    while (mtl->next != 0) {
+        mtl = mtl->next;
     }
-    mtl->specmtl = env;
+    mtl->next = env;
 }
 
 
@@ -178,7 +178,7 @@ void InitGlass(void)
     glass_spec_mtl->attrib.alpha = 2;
     glass_spec_mtl->attrib.zmode = 1;
     glass_spec_mtl->attrib.fx = 0;
-    glass_spec_mtl->alpha_sort = 0x7FFF;
+    glass_spec_mtl->sort_pri = 0x7FFF;
     glass_spec_mtl->diffuse.g = 1.0f;
     glass_spec_mtl->diffuse.b = 1.0f;
     glass_spec_mtl->alpha = 1.0f;
@@ -200,7 +200,7 @@ void InitGlass(void)
     glass_mtl->attrib.atst = 1;
     glass_mtl->attrib.fx = 1;
     glass_mtl->attrib.zmode = 0;
-    glass_mtl->alpha_sort = 0x7FFE;
+    glass_mtl->sort_pri = 0x7FFE;
     glass_mtl->attrib.lighting = 0;
     glass_mtl->attrib.colour = 1;
     glass_mtl->diffuse.r = 1.0f;
@@ -208,18 +208,18 @@ void InitGlass(void)
     glass_mtl->diffuse.b = 1.0f;
     glass_mtl->alpha = 0.5f;
     NuMtlUpdate(glass_mtl);
-    glass_mtl->stream.mpgtag = glass_fxcode;
-    glass_mtl->effect.param[0] =
+    glass_mtl->rs.mpgtag = glass_fxcode;
+    glass_mtl->vuattr.f32[0] =
         ((PS2_REZ_W * 0.5f) * 16.0 - 32768.0) / (NuPower2(PS2_REZ_W) * 16.0);
-    glass_mtl->effect.param[1] =
+    glass_mtl->vuattr.f32[1] =
         ((PS2_REZ_H * 0.5f) * 16.0 - 32768.0) / (NuPower2(PS2_REZ_H) * 16.0);
-    glass_mtl->effect.param[2] = glass_strength;
-    glass_mtl->effect.param[3] = 0.0f;
-    glass_mtl->effect.param[4] = 1.0 / (NuPower2(PS2_REZ_W) * 16.0);
-    glass_mtl->effect.param[5] = 1.0 / (NuPower2(PS2_REZ_H) * 16.0);
-    glass_mtl->effect.param[6] = (PS2_REZ_W - 1.0f) / NuPower2(PS2_REZ_W);
-    glass_mtl->effect.param[7] = (PS2_REZ_H - 1.0f) / NuPower2(PS2_REZ_H);
-    glass_mtl->specmtl = glass_spec_mtl;
+    glass_mtl->vuattr.f32[2] = glass_strength;
+    glass_mtl->vuattr.f32[3] = 0.0f;
+    glass_mtl->vuattr.f32[4] = 1.0 / (NuPower2(PS2_REZ_W) * 16.0);
+    glass_mtl->vuattr.f32[5] = 1.0 / (NuPower2(PS2_REZ_H) * 16.0);
+    glass_mtl->vuattr.f32[6] = (PS2_REZ_W - 1.0f) / NuPower2(PS2_REZ_W);
+    glass_mtl->vuattr.f32[7] = (PS2_REZ_H - 1.0f) / NuPower2(PS2_REZ_H);
+    glass_mtl->next = glass_spec_mtl;
 
     LoadScreen("Initglass 2");
     glass_copy_mtl = NuMtlCreate(1);
@@ -252,21 +252,21 @@ void GlassGivenMaterial(struct numtl_s *mtl)
     mtl->attrib.zmode = 0;
     mtl->attrib.lighting = 0;
     mtl->attrib.colour = 0;
-    mtl->vanmode = 0;
-    mtl->uanmode = 0;
-    mtl->alpha_sort = 0x7FEF;
+    mtl->vanmmode = 0;
+    mtl->uanmmode = 0;
+    mtl->sort_pri = 0x7FEF;
     NuMtlUpdate(mtl);
-    mtl->stream.mpgtag = glass_fxcode;
-    mtl->effect.param[0] =
+    mtl->rs.mpgtag = glass_fxcode;
+    mtl->vuattr.f32[0] =
         ((PS2_REZ_W * 0.5f) * 16.0 - 32768.0) / (NuPower2(PS2_REZ_W) * 16.0);
-    mtl->effect.param[1] =
+    mtl->vuattr.f32[1] =
         ((PS2_REZ_H * 0.5f) * 16.0 - 32768.0) / (NuPower2(PS2_REZ_H) * 16.0);
-    mtl->effect.param[2] = glass_strength;
-    mtl->effect.param[3] = 0.0f;
-    mtl->effect.param[4] = 1.0 / (NuPower2(PS2_REZ_W) * 16.0);
-    mtl->effect.param[5] = 1.0 / (NuPower2(PS2_REZ_H) * 16.0);
-    mtl->effect.param[6] = (PS2_REZ_W - 1.0f) / NuPower2(PS2_REZ_W);
-    mtl->effect.param[7] = (PS2_REZ_H - 1.0f) / NuPower2(PS2_REZ_H);
+    mtl->vuattr.f32[2] = glass_strength;
+    mtl->vuattr.f32[3] = 0.0f;
+    mtl->vuattr.f32[4] = 1.0 / (NuPower2(PS2_REZ_W) * 16.0);
+    mtl->vuattr.f32[5] = 1.0 / (NuPower2(PS2_REZ_H) * 16.0);
+    mtl->vuattr.f32[6] = (PS2_REZ_W - 1.0f) / NuPower2(PS2_REZ_W);
+    mtl->vuattr.f32[7] = (PS2_REZ_H - 1.0f) / NuPower2(PS2_REZ_H);
 }
 
 
@@ -307,7 +307,7 @@ void ProcessGlass(s32 paused)
     glass_mtl->diffuse = glass_col[0];
     NuMtlUpdateEx(glass_spec_mtl, 0);
     NuMtlUpdateEx(glass_mtl, 2);
-    glass_mtl->stream.mpgtag = glass_fxcode;
+    glass_mtl->rs.mpgtag = glass_fxcode;
 }
 
 

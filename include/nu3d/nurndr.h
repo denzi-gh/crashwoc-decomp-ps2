@@ -40,32 +40,68 @@ struct nurndrscreenvtx_s {
     short v;                            /* 0x06 */
 }; /* 0x08 */
 
-/* Sixteen entries per channel; names of the sprite parameters remain unknown. */
-struct FxSprite {
-    float parameter_00;                 /* 0x00 */
-    int parameter_04;                   /* 0x04 */
-    int count;                          /* 0x08 */
-    float parameter_0c;                 /* 0x0C */
-    float parameter_10;                 /* 0x10 */
-    float parameter_14;                 /* 0x14 */
-    float parameter_18;                 /* 0x18 */
-    int parameter_1c[16];               /* 0x1C */
-    int colour[16];                     /* 0x5C */
-    float channel[12][16];              /* 0x9C */
+/* Sixteen-entry sprite table for NuRndrFxSpriteSet. Field names from the
+   DWARF of FxSpriteSet in another game on this engine. */
+struct FxSpriteSet {
+    float zval;                         /* 0x000 */
+    int oiterations;                    /* 0x004 */
+    int tablecount;                     /* 0x008 */
+    float oxstep;                       /* 0x00C */
+    float oystep;                       /* 0x010 */
+    float oustep;                       /* 0x014 */
+    float ovstep;                       /* 0x018 */
+    int iterations[16];                 /* 0x01C */
+    int rgba[16];                       /* 0x05C */
+    float xstart[16];                   /* 0x09C */
+    float ystart[16];                   /* 0x0DC */
+    float ustart[16];                   /* 0x11C */
+    float vstart[16];                   /* 0x15C */
+    float xw[16];                       /* 0x19C */
+    float yh[16];                       /* 0x1DC */
+    float uw[16];                       /* 0x21C */
+    float vh[16];                       /* 0x25C */
+    float xstep[16];                    /* 0x29C */
+    float ystep[16];                    /* 0x2DC */
+    float ustep[16];                    /* 0x31C */
+    float vstep[16];                    /* 0x35C */
 }; /* 0x39C */
 
-/* Eight entries per channel; names of the sprite parameters remain unknown. */
-struct FxSprite2 {
-    float parameter_00;                 /* 0x00 */
-    int parameter_04;                   /* 0x04 */
-    int count;                          /* 0x08 */
-    float parameter_0c;                 /* 0x0C */
-    float parameter_10;                 /* 0x10 */
-    float parameter_14;                 /* 0x14 */
-    float parameter_18;                 /* 0x18 */
-    int parameter_1c[8];                /* 0x1C */
-    int colour[8];                      /* 0x3C */
-    float channel[24][8];               /* 0x5C */
+/* Eight-entry, two-set sprite table for NuRndrFxSprite2Set. Field names from
+   the DWARF of FxSprite2Set in another game on this engine. */
+struct FxSprite2Set {
+    float zval;                         /* 0x000 */
+    int oiterations;                    /* 0x004 */
+    int tablecount;                     /* 0x008 */
+    float oxstep;                       /* 0x00C */
+    float oystep;                       /* 0x010 */
+    float oustep;                       /* 0x014 */
+    float ovstep;                       /* 0x018 */
+    int iterations[8];                  /* 0x01C */
+    int rgba[8];                        /* 0x03C */
+    float xstart[8];                    /* 0x05C */
+    float ystart[8];                    /* 0x07C */
+    float ustart[8];                    /* 0x09C */
+    float vstart[8];                    /* 0x0BC */
+    float xw[8];                        /* 0x0DC */
+    float yh[8];                        /* 0x0FC */
+    float uw[8];                        /* 0x11C */
+    float vh[8];                        /* 0x13C */
+    float xstep[8];                     /* 0x15C */
+    float ystep[8];                     /* 0x17C */
+    float ustep[8];                     /* 0x19C */
+    float vstep[8];                     /* 0x1BC */
+    float xstart2[8];                   /* 0x1DC */
+    float ystart2[8];                   /* 0x1FC */
+    float ustart2[8];                   /* 0x21C */
+    float vstart2[8];                   /* 0x23C */
+    float xw2[8];                       /* 0x25C */
+    float yh2[8];                       /* 0x27C */
+    float uw2[8];                       /* 0x29C */
+    float vh2[8];                       /* 0x2BC */
+    float xstep2[8];                    /* 0x2DC */
+    float ystep2[8];                    /* 0x2FC */
+    float ustep2[8];                    /* 0x31C */
+    float vstep2[8];                    /* 0x33C */
 }; /* 0x35C */
 
 extern struct nurndrscreenvtx_s watertab[33][21];
