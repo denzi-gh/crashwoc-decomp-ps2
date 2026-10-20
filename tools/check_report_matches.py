@@ -6,9 +6,10 @@ The canonical matching truth is verify_results.json: byte-identity of each
 asserts the PUBLIC objdiff report agrees with it -- every function the manifest
 calls `matching` and verify_promoted.py confirmed must score 100% in
 build/<v>/report.json, and the report must count at least as many verified
-matching functions as verify_results.json does. It runs before the report
-artifact is staged, so a report base that silently dropped or mis-scored a
-verified function fails CI.
+matching functions as verify_results.json does. Every complete data unit
+must read all its data matched. It runs before the report artifact is
+staged, so a report base that silently dropped or mis-scored a verified
+function or data unit fails CI.
 
 Pure Python; reads only the two generated JSON files (no toolchain, no game
 files). The report base objects are built by `ninja report-current`.
@@ -66,6 +67,23 @@ def check(verify, report, unit_name):
     return matched, problems
 
 
+def check_complete_data(report):
+    """[problems] -- every complete data unit must read all its data matched
+    (a complete unit's data is all from C and verified)."""
+    problems = []
+    for u in report.get("units", []):
+        meta = u.get("metadata", {})
+        if "data" not in meta.get("progress_categories", []) \
+                or not meta.get("complete"):
+            continue
+        m = u.get("measures", {})
+        total, matched = int(m.get("total_data", 0)), int(m.get("matched_data", 0))
+        if not total or matched != total:
+            problems.append(f"{u['name']}: complete but matched_data "
+                            f"{matched}/{total}")
+    return problems
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--version", default="pal103")
@@ -91,8 +109,9 @@ def main():
 
     expected = len(verified_matching(verify))
     matched, problems = check(verify, report, unit_name)
+    problems += check_complete_data(report)
     if problems:
-        print("report does not honor verified matching functions:",
+        print("report does not honor verified matching functions/data:",
               file=sys.stderr)
         for p in problems:
             print(f"  - {p}", file=sys.stderr)
