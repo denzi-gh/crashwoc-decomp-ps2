@@ -13,7 +13,7 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0042:00132090:NuLightMatInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0042:00135160:NuLightInit"
