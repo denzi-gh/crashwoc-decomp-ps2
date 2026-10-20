@@ -2583,7 +2583,6 @@ void NuHGobjEvalAnim2(struct NUHGOBJ_s *hobj, struct nuanimdata2_s *animdata, fl
     int curvesetflags;
     struct NUJOINTANIM_s *offset;
     struct numtx_s *m;
-    struct nuvec_s *jscale;
     struct numtx_s *wt;
     u8 i;
     u8 joint_ix;
@@ -2624,10 +2623,9 @@ void NuHGobjEvalAnim2(struct NUHGOBJ_s *hobj, struct nuanimdata2_s *animdata, fl
         m = &local;
         if ((u8)hobj->joints[i].parent_ix == 0xff) {
             if ((curvesetflags & 0x40) != 0) {
-                jscale = &scale[i];
-                jscale->x = 1.0f;
-                jscale->y = 1.0f;
-                jscale->z = 1.0f;
+                (scale + i)->x = 1.0f;
+                (scale + i)->y = 1.0f;
+                (scale + i)->z = 1.0f;
             }
             *wt = *m;
         } else {
@@ -3098,7 +3096,6 @@ void NuHGobjEvalAnimBlend2(struct NUHGOBJ_s *hobj, struct nuanimdata2_s *animdat
     int curvesetflags1;
     int curvesetflags2;
     struct NUJOINTANIM_s *offset;
-    struct nuvec_s *jscale;
     struct numtx_s *m;
     struct numtx_s *wt;
     u8 i;
@@ -3142,10 +3139,9 @@ void NuHGobjEvalAnimBlend2(struct NUHGOBJ_s *hobj, struct nuanimdata2_s *animdat
                                           &scale[(u8)hobj->joints[i].parent_ix], m, offset);
         if ((u8)hobj->joints[i].parent_ix == 0xff) {
             if ((curvesetflags1 & 0x40) != 0) {
-                jscale = &scale[i];
-                jscale->x = 1.0f;
-                jscale->y = 1.0f;
-                jscale->z = 1.0f;
+                (scale + i)->x = 1.0f;
+                (scale + i)->y = 1.0f;
+                (scale + i)->z = 1.0f;
             }
             *wt = *m;
         } else {
