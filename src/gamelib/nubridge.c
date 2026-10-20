@@ -86,17 +86,14 @@ struct nubridge_s {
     char padB4C[0xB50 - 0xB4C];
 };
 
-extern struct nubridge_s Bridges[BRIDGE_MAX];
-extern int BridgeFree;
-extern int NuBridgeProc;
-extern struct nugscn_s *NuBridge_base_scene;
+struct nubridge_s Bridges[BRIDGE_MAX] = { 0 };
+struct nugscn_s *NuBridge_base_scene = 0;
+int BridgeFree = 0;
+int NuBridgeProc = 0;
 extern struct nurndrstream_s *rndrstream_fx;
 extern u8 *rndrstream_free;
 extern struct numtx_s numtx_identity;
 extern struct nucamera_s global_camera;
-
-extern char D_0061A590[];
-#define bridge_sections_msg D_0061A590
 
 extern float NuFsqrt(float x);
 extern void NuVec4MtxTransformVU0(struct nuvec4_s *dst, struct nuvec4_s *src, struct numtx_s *m);
@@ -179,7 +176,7 @@ struct nubridge_s *NuBridgeCreate(struct nuinstance_s **instance, struct nuinsta
     int i;
 
     if (sections > BRIDGE_MAX_SECTIONS) {
-        printf(bridge_sections_msg);
+        printf("to many sections/n");
     }
     NuBridgeOn(1);
     bridge = NuBridgeAlloc();

@@ -93,22 +93,16 @@ typedef union LoadFileSendData {
     LoadFileIopValArg iopval;
 } LoadFileSendData;
 
-extern LoadFileSendData D_007066C0;
-extern sceSifClientData D_007068C0;
-extern char D_007068E8[];
 extern char D_00612BB4[];
-extern char *D_0061341C[];
-extern int D_00613418[];
-extern char D_0062C7E8[];
 
-#define lf_arg          D_007066C0.file
-#define lf_iopval       D_007066C0.iopval
-#define lf_client       D_007068C0
-#define lf_iop_version  D_007068E8
 #define lf_ee_version   D_00612BB4
-#define lf_dummy_version D_0061341C
-#define lf_init         D_00613418
-#define lf_all_sections D_0062C7E8
+
+static int _bind_check = -1;
+static char *_lfwildcard = "....";
+
+static LoadFileSendData _senddata;
+static sceSifClientData cd;
+static char _lfversion[4];
 
 extern int sceSifBindRpc(sceSifClientData *client, unsigned int request,
                          unsigned int mode);
@@ -126,17 +120,17 @@ extern int _lf_bind(void);
 int _lf_bind(void) {
     int wait;
 
-    if (lf_init[0] < 0) {
+    if (_bind_check < 0) {
         while (1) {
-            if (sceSifBindRpc(&lf_client, LF_RPC_SERVER, 0) < 0) {
+            if (sceSifBindRpc(&cd, LF_RPC_SERVER, 0) < 0) {
                 return -1;
             }
-            if (lf_client.server != 0) {
-                lf_init[0] = 0;
-                if (sceSifCallRpc(&lf_client, LF_GET_VERSION, 0, 0, 0, &lf_arg, 4, 0, 0) < 0) {
+            if (cd.server != 0) {
+                _bind_check = 0;
+                if (sceSifCallRpc(&cd, LF_GET_VERSION, 0, 0, 0, &_senddata.file, 4, 0, 0) < 0) {
                     return -SCE_ECALLMISS;
                 }
-                memcpy(lf_iop_version, &lf_arg, 4);
+                memcpy(_lfversion, &_senddata.file, 4);
                 return 0;
             }
             wait = 0x100000;
@@ -151,19 +145,19 @@ int _lf_bind(void) {
 int _lf_version(void) {
     int mismatch = 0;
     char *ee_version = lf_ee_version;
-    char *iop_version = lf_iop_version;
+    char *iop_version = _lfversion;
 
     if (memcmp(iop_version, ee_version, 4) != 0
-        && memcmp(iop_version, lf_dummy_version[0], 4) != 0) {
-        mismatch = memcmp(ee_version, lf_dummy_version[0], 4) != 0;
+        && memcmp(iop_version, _lfwildcard, 4) != 0) {
+        mismatch = memcmp(ee_version, _lfwildcard, 4) != 0;
     }
     return mismatch;
 }
 
 
 int sceSifLoadFileReset(void) {
-    lf_init[0] = -1;
-    memset(lf_iop_version, 0, 4);
+    _bind_check = -1;
+    memset(_lfversion, 0, 4);
     return 0;
 }
 
@@ -177,23 +171,23 @@ int _sceSifLoadModuleBuffer(const void *addr, int arg_len, const char *args,
     if (_lf_version() != 0) {
         return -SCE_EVERSIONMISS;
     }
-    lf_arg.p.addr = addr;
+    _senddata.file.p.addr = addr;
     if (args != 0) {
         if (arg_len > LF_ARG_MAX) {
-            memcpy(lf_arg.args, args, LF_ARG_MAX);
-            lf_arg.q.arg_len = LF_ARG_MAX;
+            memcpy(_senddata.file.args, args, LF_ARG_MAX);
+            _senddata.file.q.arg_len = LF_ARG_MAX;
         } else {
-            memcpy(lf_arg.args, args, arg_len);
-            lf_arg.q.arg_len = arg_len;
+            memcpy(_senddata.file.args, args, arg_len);
+            _senddata.file.q.arg_len = arg_len;
         }
     } else {
-        lf_arg.q.arg_len = 0;
+        _senddata.file.q.arg_len = 0;
     }
-    if (sceSifCallRpc(&lf_client, LF_MODULE_BUFFER_LOAD, 0, &lf_arg, sizeof(lf_arg), &lf_arg, 8, 0, 0) < 0) {
+    if (sceSifCallRpc(&cd, LF_MODULE_BUFFER_LOAD, 0, &_senddata.file, sizeof(_senddata.file), &_senddata.file, 8, 0, 0) < 0) {
         return -SCE_ECALLMISS;
     }
-    module_id = lf_arg.p.result;
-    *result = lf_arg.q.start_result;
+    module_id = _senddata.file.p.result;
+    *result = _senddata.file.q.start_result;
     return module_id;
 }
 
@@ -207,23 +201,23 @@ int sceSifStopModule(int id, int arg_len, const char *args, int *result) {
     if (_lf_version() != 0) {
         return -SCE_EVERSIONMISS;
     }
-    lf_arg.p.id = id;
+    _senddata.file.p.id = id;
     if (args != 0) {
         if (arg_len > LF_ARG_MAX) {
-            memcpy(lf_arg.args, args, LF_ARG_MAX);
-            lf_arg.q.arg_len = LF_ARG_MAX;
+            memcpy(_senddata.file.args, args, LF_ARG_MAX);
+            _senddata.file.q.arg_len = LF_ARG_MAX;
         } else {
-            memcpy(lf_arg.args, args, arg_len);
-            lf_arg.q.arg_len = arg_len;
+            memcpy(_senddata.file.args, args, arg_len);
+            _senddata.file.q.arg_len = arg_len;
         }
     } else {
-        lf_arg.q.arg_len = 0;
+        _senddata.file.q.arg_len = 0;
     }
-    if (sceSifCallRpc(&lf_client, LF_MODULE_STOP, 0, &lf_arg, sizeof(lf_arg), &lf_arg, 8, 0, 0) < 0) {
+    if (sceSifCallRpc(&cd, LF_MODULE_STOP, 0, &_senddata.file, sizeof(_senddata.file), &_senddata.file, 8, 0, 0) < 0) {
         return -SCE_ECALLMISS;
     }
-    module_id = lf_arg.p.result;
-    *result = lf_arg.q.start_result;
+    module_id = _senddata.file.p.result;
+    *result = _senddata.file.q.start_result;
     return module_id;
 }
 
@@ -235,11 +229,11 @@ int sceSifUnloadModule(int id) {
     if (_lf_version() != 0) {
         return -SCE_EVERSIONMISS;
     }
-    lf_arg.p.id = id;
-    if (sceSifCallRpc(&lf_client, LF_UNLOAD, 0, &lf_arg, 4, &lf_arg, 4, 0, 0) < 0) {
+    _senddata.file.p.id = id;
+    if (sceSifCallRpc(&cd, LF_UNLOAD, 0, &_senddata.file, 4, &_senddata.file, 4, 0, 0) < 0) {
         return -SCE_ECALLMISS;
     }
-    return lf_arg.p.result;
+    return _senddata.file.p.result;
 }
 
 
@@ -250,12 +244,12 @@ int sceSifSearchModuleByName(const char *name) {
     if (_lf_version() != 0) {
         return -SCE_EVERSIONMISS;
     }
-    strncpy(lf_arg.path, name, LF_PATH_MAX);
-    lf_arg.path[LF_PATH_MAX - 1] = 0;
-    if (sceSifCallRpc(&lf_client, LF_SEARCH_NAME, 0, &lf_arg, sizeof(lf_arg), &lf_arg, 4, 0, 0) < 0) {
+    strncpy(_senddata.file.path, name, LF_PATH_MAX);
+    _senddata.file.path[LF_PATH_MAX - 1] = 0;
+    if (sceSifCallRpc(&cd, LF_SEARCH_NAME, 0, &_senddata.file, sizeof(_senddata.file), &_senddata.file, 4, 0, 0) < 0) {
         return -SCE_ECALLMISS;
     }
-    return lf_arg.p.result;
+    return _senddata.file.p.result;
 }
 
 
@@ -266,11 +260,11 @@ int sceSifSearchModuleByAddress(const void *addr) {
     if (_lf_version() != 0) {
         return -SCE_EVERSIONMISS;
     }
-    lf_arg.p.addr = addr;
-    if (sceSifCallRpc(&lf_client, LF_SEARCH_ADDR, 0, &lf_arg, 4, &lf_arg, 4, 0, 0) < 0) {
+    _senddata.file.p.addr = addr;
+    if (sceSifCallRpc(&cd, LF_SEARCH_ADDR, 0, &_senddata.file, 4, &_senddata.file, 4, 0, 0) < 0) {
         return -SCE_ECALLMISS;
     }
-    return lf_arg.p.result;
+    return _senddata.file.p.result;
 }
 
 
@@ -297,25 +291,25 @@ int _sceSifLoadModule(const char *filename, int arg_len, const char *args,
     if (_lf_version() != 0) {
         return -SCE_EVERSIONMISS;
     }
-    strncpy(lf_arg.path, filename, LF_PATH_MAX);
-    lf_arg.path[LF_PATH_MAX - 1] = 0;
+    strncpy(_senddata.file.path, filename, LF_PATH_MAX);
+    _senddata.file.path[LF_PATH_MAX - 1] = 0;
     if (args != 0) {
         if (arg_len > LF_ARG_MAX) {
-            memcpy(lf_arg.args, args, LF_ARG_MAX);
-            lf_arg.p.arg_len = LF_ARG_MAX;
+            memcpy(_senddata.file.args, args, LF_ARG_MAX);
+            _senddata.file.p.arg_len = LF_ARG_MAX;
         } else {
-            memcpy(lf_arg.args, args, arg_len);
-            lf_arg.p.arg_len = arg_len;
+            memcpy(_senddata.file.args, args, arg_len);
+            _senddata.file.p.arg_len = arg_len;
         }
     } else {
-        lf_arg.args[0] = 0;
-        lf_arg.p.arg_len = 0;
+        _senddata.file.args[0] = 0;
+        _senddata.file.p.arg_len = 0;
     }
-    if (sceSifCallRpc(&lf_client, mode, 0, &lf_arg, sizeof(lf_arg), &lf_arg, 8, 0, 0) < 0) {
+    if (sceSifCallRpc(&cd, mode, 0, &_senddata.file, sizeof(_senddata.file), &_senddata.file, 8, 0, 0) < 0) {
         return -SCE_ECALLMISS;
     }
-    module_id = lf_arg.p.result;
-    *result = lf_arg.q.start_result;
+    module_id = _senddata.file.p.result;
+    *result = _senddata.file.q.start_result;
     return module_id;
 }
 
@@ -341,18 +335,18 @@ int _sceSifLoadElfPart(const char *name, const char *secname,
     if (_lf_version() != 0) {
         return -SCE_EVERSIONMISS;
     }
-    strncpy(lf_arg.path, name, LF_PATH_MAX);
-    lf_arg.path[LF_PATH_MAX - 1] = 0;
-    strncpy(lf_arg.args, secname, LF_ARG_MAX);
-    lf_arg.args[LF_ARG_MAX - 1] = 0;
-    if (sceSifCallRpc(&lf_client, mode, 0, &lf_arg, sizeof(lf_arg), &lf_arg, sizeof(sceExecData), 0, 0) < 0) {
+    strncpy(_senddata.file.path, name, LF_PATH_MAX);
+    _senddata.file.path[LF_PATH_MAX - 1] = 0;
+    strncpy(_senddata.file.args, secname, LF_ARG_MAX);
+    _senddata.file.args[LF_ARG_MAX - 1] = 0;
+    if (sceSifCallRpc(&cd, mode, 0, &_senddata.file, sizeof(_senddata.file), &_senddata.file, sizeof(sceExecData), 0, 0) < 0) {
         return -SCE_ECALLMISS;
     }
-    if (lf_arg.p.entry_point == 0) {
+    if (_senddata.file.p.entry_point == 0) {
         return -SCE_ELOADMISS;
     }
-    data->entry_point = lf_arg.p.entry_point;
-    data->global_pointer = lf_arg.q.global_pointer;
+    data->entry_point = _senddata.file.p.entry_point;
+    data->global_pointer = _senddata.file.q.global_pointer;
     return 0;
 }
 
@@ -364,7 +358,7 @@ int sceSifLoadElfPart(const char *name, const char *secname,
 
 
 int sceSifLoadElf(const char *name, sceExecData *data) {
-    return _sceSifLoadElfPart(name, lf_all_sections, data, 1);
+    return _sceSifLoadElfPart(name, "all", data, 1);
 }
 
 
@@ -375,17 +369,17 @@ int sceSifGetIopAddr(unsigned int iop_addr, void *val, int type) {
     if (type < 0 || type > 2) {
         return -SCE_ETYPEMISS;
     }
-    lf_iopval.p.iop_addr = iop_addr;
-    lf_iopval.type = type;
-    if (sceSifCallRpc(&lf_client, LF_GET_ADDR, 0, &lf_iopval, 32, &lf_iopval, 32, 0, 0) < 0) {
+    _senddata.iopval.p.iop_addr = iop_addr;
+    _senddata.iopval.type = type;
+    if (sceSifCallRpc(&cd, LF_GET_ADDR, 0, &_senddata.iopval, 32, &_senddata.iopval, 32, 0, 0) < 0) {
         return -SCE_ECALLMISS;
     }
     if (type == 0) {
-        *(unsigned char *)val = lf_iopval.p.result;
+        *(unsigned char *)val = _senddata.iopval.p.result;
     } else if (type == 1) {
-        *(unsigned short *)val = lf_iopval.p.result;
+        *(unsigned short *)val = _senddata.iopval.p.result;
     } else if (type == 2) {
-        *(unsigned int *)val = lf_iopval.p.result;
+        *(unsigned int *)val = _senddata.iopval.p.result;
     } else {
         return -SCE_ETYPEMISS;
     }
@@ -397,18 +391,18 @@ int sceSifSetIopAddr(unsigned int iop_addr, void *val, int type) {
     if (_lf_bind() < 0) {
         return -SCE_EBINDMISS;
     }
-    lf_iopval.p.iop_addr = iop_addr;
-    lf_iopval.type = type;
+    _senddata.iopval.p.iop_addr = iop_addr;
+    _senddata.iopval.type = type;
     if (type == 0) {
-        lf_iopval.val.b = *(unsigned char *)val;
+        _senddata.iopval.val.b = *(unsigned char *)val;
     } else if (type == 1) {
-        lf_iopval.val.s = *(unsigned short *)val;
+        _senddata.iopval.val.s = *(unsigned short *)val;
     } else if (type == 2) {
-        lf_iopval.val.l = *(unsigned int *)val;
+        _senddata.iopval.val.l = *(unsigned int *)val;
     } else {
         return -SCE_ETYPEMISS;
     }
-    if (sceSifCallRpc(&lf_client, LF_SET_ADDR, 0, &lf_iopval, 32, &lf_iopval, 16, 0, 0) < 0) {
+    if (sceSifCallRpc(&cd, LF_SET_ADDR, 0, &_senddata.iopval, 32, &_senddata.iopval, 16, 0, 0) < 0) {
         return -SCE_ECALLMISS;
     }
     return 0;

@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0260"
 source = "src/sdk/sce/diei.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0260:00280b50:DIntr"

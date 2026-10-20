@@ -1255,7 +1255,7 @@ static inline void cbCancelGlbMenu(void)
 }
 
 struct edmainreg_s edlightdesc = {
-    0, 0, "Light Editor", edlightInit, edlightClose, edlightEnter, {0}, 0,
+    0, 0, "Light Editor", edlightInit, edlightClose, edlightEnter, 0, 0, 0, 0,
     EDMAIN_BLOCKID('l', 'g', 'h', 't'), edlightProc, edlightRender
 };
 struct nuvec_s edlight_cam_pos = { 0.0f, 0.0f, 0.0f };

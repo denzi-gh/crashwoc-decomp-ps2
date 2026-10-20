@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0254"
 source = "src/sdk/sce/sifcmd.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0254:0027ac20:_set_sreg"
@@ -74,3 +74,40 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0254:0027b2b8:sceSifWriteBackDCache"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0254:00613374:_cmd_init_check"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0254:007036c0:_pckt_buffer"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0254:00703740:_send_buffer"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0254:00703780:_csdata"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0254:00703794:sif0_handleid"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0254:00703798:_data_table"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0254:007037c0:_sys_buffer"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0254:007038c0:soft_reg"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x007038c0
+end = 0x00703940

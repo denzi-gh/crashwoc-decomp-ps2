@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0082"
 source = "src/gamelib/nuwind.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0082:001b51e0:NuWindCreate"
@@ -45,4 +45,36 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0082:001b5e58:NuWindFreeMtxs"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0082:004aeb10:NuWindMtxs"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0082:004beb10:NuWindGroup"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0082:0062f848:NuWindQS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0082:0062f84c:NuWindGCount"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0082:0062f850:NuWindMtxIndex"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0082:0062f854:NuWindWave"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0082:0062f858:NuWindDir"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0082:0062f85c:NuWindDir2"
 state = "matching"

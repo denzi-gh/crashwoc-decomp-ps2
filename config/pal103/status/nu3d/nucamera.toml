@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0031"
 source = "src/nu3d/nucamera.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0031:00112118:NuCameraSetProjectionMtx"
@@ -162,3 +162,118 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0031:00114608:NuCameraTransformScissorClip"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0031:002d3eb0:cam_axes"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0031:002d3ec0:global_camera"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0031:0062eb38:camfx"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0031:0062eb3c:cam_state_count"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0031:0062eb40:vw"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0031:0062eb44:vh"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0031:0062eb48:sw"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0031:0062eb4c:sh"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0031:0062eb50:nucamera_farclip_hack"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0031:00633048:zx"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0031:0063304c:zy"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0031:00633050:zxs"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0031:00633054:zys"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0031:0067a630:cmtx.78"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0031:0067a670:global_reflect"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0031:0067a700:vmtx"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0031:0067a740:pmtx"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0031:0067a780:smtx"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0031:0067a7c0:vpmtx"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0031:0067a800:vpc_sci_mtx"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0031:0067a840:vpc_vport_mtx"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0031:0067a880:pc_vport_mtx"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0031:0067a8c0:vpsmtx"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0031:0067a900:psmtx"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0031:0067a940:cam_state"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x0067a940
+end = 0x0067d480
+
+[[claim]]
+section = ".sbss"
+start = 0x00633054
+end = 0x00633058
+
+[[claim]]
+section = ".sdata"
+start = 0x0062eb54
+end = 0x0062eb5f

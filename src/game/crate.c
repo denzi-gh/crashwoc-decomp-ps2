@@ -107,18 +107,73 @@ struct BoxExpType {
     u8 pad_end[0x76C - (0x1C + 30 * 0x34)];
 };
 
-extern struct nulsthdr_s *D_006311F0;   /* static crates list */
-#define crates D_006311F0
-extern s32 num_crates_used;
-extern s32 CRATECOUNT;
-extern s32 CRATEGROUPCOUNT;
-extern s32 iBOXEXP;
-extern struct BoxExpType BoxExpList[];
+extern struct crate_s LockCrate;
+
+static struct nulsthdr_s *crates = 0;
+struct crate_s *marker_crate = 0;
+struct crate_s *flash_crate = 0;
+struct crate_s *lock_crate = &LockCrate;
+struct crate_s *locked_crate = 0;
+struct crate_s *triggerorigin_crate = 0;
+struct crate_s *triggerdest_crate = 0;
+struct crate_s *highlight_crate = 0;
+struct crate_s *highlighted_crate = 0;
+s32 current_selected_crate = 0;
+s32 CRATEGROUPCOUNT = 0;
+s32 CRATECOUNT = 0;
+s32 num_crates_used = 0;
+f32 CRATEGRAVITY = -0.0072000003f;
+f32 CRATEHOPSPEED = 0.054f;
+f32 METALCRATEBOUNCESPEED = 0.168f;
+f32 JUMPONCRATEBREAKSPEED = 0.0f;
+f32 FALLONCRATEBREAKSPEED = 0.099999994f;
+f32 plr_invisibility_time = 0.0f;
+
+struct crateeditor_s crate_list[29] = {
+    {{0, 0}, 0, "wireframe_crate", -1},
+    {{0, 0}, 1, "crate", -1},
+    {{0, 0}, 2, "crash_crate", -1},
+    {{0, 0}, 3, "aku_aku_crate", 74},
+    {{0, 0}, 4, "uparrow_crate", 72},
+    {{0, 0}, 5, "question_crate", -1},
+    {{0, 0}, 6, "bouncy_crate", 71},
+    {{0, 0}, 7, "checkpoint_crate", 75},
+    {{0, 0}, 8, "changer_crate", -1},
+    {{0, 0}, 9, "tnt_crate", -1},
+    {{0, 0}, 10, "time1_crate", -1},
+    {{0, 0}, 11, "time2_crate", -1},
+    {{0, 0}, 12, "time3_crate", -1},
+    {{0, 0}, 13, "uparrow_steel_crate", 73},
+    {{0, 0}, 14, "exclamation_crate", 76},
+    {{0, 0}, 15, "steel_crate", -1},
+    {{0, 0}, 16, "nitro_crate", -1},
+    {{0, 0}, 17, "nitro_exploder_crate", 77},
+    {{0, 0}, 18, "proximity_crate", -1},
+    {{0, 0}, 19, "reinforced_crate", 78},
+    {{0, 0}, 20, "invisibility_crate", -1},
+    {{0, 0}, 21, "crate_open", -1},
+    {{0, 0}, 22, "tnt3_crate", -1},
+    {{0, 0}, 23, "tnt2_crate", -1},
+    {{0, 0}, 24, "tnt1_crate", -1},
+    {{0, 0}, 25, "coco_crate", -1},
+    {{0, 0}, 26, "construction1", -1},
+    {{0, 0}, 27, "construction3", -1},
+    {{0, 0}, 28, "construction2", -1},
+};
+s32 DRAWCRATESHADOWS = 1;
+f32 tntsfxtime[7] = { 0.7f, 1.4f, 1.8f, 2.2f, 2.4f, 2.6f, 2.8f };
+f32 uvs[48] = {
+    0.01f, 0.01f, 0.24f, 0.01f, 0.01f, 0.24f, 0.24f, 0.24f, 0.25f, 0.01f,
+    0.49f, 0.01f, 0.25f, 0.25f, 0.49f, 0.25f, 0.5f, 0.01f, 0.74f, 0.01f, 0.5f,
+    0.25f, 0.74f, 0.25f, 0.01f, 0.25f, 0.24f, 0.25f, 0.01f, 0.5f, 0.24f, 0.5f,
+    0.25f, 0.25f, 0.49f, 0.25f, 0.25f, 0.5f, 0.49f, 0.5f, 0.5f, 0.25f, 0.74f,
+    0.25f, 0.5f, 0.5f, 0.74f, 0.5f
+};
+
 extern struct cratecube_s Crate[];
 extern struct CRATETYPEDATA CrateTypeData[];
 extern s32 i_cratetypedata;
 extern s32 Level;
-extern f32 plr_invisibility_time;
 extern f32 WATERBOSSGLASSMIX;
 extern f32 glass_mix;
 extern s32 glass_col_mix;
@@ -130,15 +185,12 @@ extern struct cratecube_s *temp_pCrate;
 extern void AddKaboom(s32 type, struct nuvec_s *pos, f32 radius);
 extern void GameSfx(s32 id, struct nuvec_s *pos);
 extern s32 level_part_2;
-extern s32 temp_crate_type;
 extern struct cratecube_s *InCrate(f32 x, f32 z, f32 top, f32 bot, f32 radius);
 extern void BreakCrate(struct crategroup_s *group, struct cratecube_s *crate,
                        s32 type, s32 attack);
 extern struct crategroup_s CrateGroup[];
 extern s32 FurtherALONG(s32 iRAIL, s32 iALONG, f32 fALONG, s32 iRAIL2,
                         s32 iALONG2, f32 fALONG2);
-extern f32 CRATEBALLOONRADIUS;
-extern f32 CRATEBALLOONOFFSET;
 extern s32 TimeTrial;
 
 inline struct crate_s *NextCrate(struct crate_s *a) {
@@ -149,8 +201,6 @@ inline struct crate_s *NextCrate(struct crate_s *a) {
 extern struct ldata_s *LDATA;
 
 extern struct cammtx_s GameCam[];
-extern f32 D_0062D7B4;                   /* 0.1f (gp-rel) */
-extern u64 D_0061EFB8[];                  /* extra-life scale, double const (abs) */
 extern void AddPanelDebris(f32 x, f32 y, s32 obj, f32 z, s32 flag);
 extern u64 fptodp(f32 x);
 extern s32 dpcmp(u64 a, u64 b);
@@ -158,13 +208,7 @@ extern u64 dpsub(u64 a, u64 b);
 extern u64 dpmul(u64 a, u64 b);
 extern f32 dptofp(u64 x);
 
-extern f32 D_0062D714;
 extern s32 qrand(void);
-extern f32 uvs[];
-extern struct nuvec_s D_00592DE8[];
-extern struct numtl_s *CrateMat;
-extern f32 D_0062D798;
-extern f32 D_0062D79C;
 
 extern struct nurndrstream_s *rndrstream_3d;
 extern u8 *rndrstream_free;
@@ -183,20 +227,6 @@ extern void AddQuad3DrotXYZ(struct nuvec_s *pos, struct nuvec_s *shape,
                             struct numtl_s *mtl, s32 *a, f32 *uvs, u32 colour);
 
 extern struct nugscn_s *crate_scene;
-extern struct crateeditor_s crate_list[];
-extern struct crate_s MarkerCrate;
-extern struct crate_s LockCrate;
-extern struct crate_s HighlightCrate;
-extern struct crate_s FlashCrate;
-extern struct crate_s *marker_crate;
-extern struct crate_s *lock_crate;
-extern struct crate_s *highlight_crate;
-extern struct crate_s *flash_crate;
-extern struct crate_s *locked_crate;
-extern struct crate_s *triggerorigin_crate;
-extern struct crate_s *triggerdest_crate;
-extern struct crate_s *highlighted_crate;
-extern u8 current_selected_crate;
 
 
 s32 GetCrateType(struct cratecube_s *crt, s32 flags) {
@@ -415,12 +445,9 @@ void OpenPreviousCheckpoints(s32 iRAIL, s32 iALONG, f32 fALONG) {
     }
 }
 
-extern f32 temp_ratio;
-extern s32 temp_face;
 extern struct nuvec_s vTEMP;
 extern char tbuf[];
 extern char LevelFileName[];
-extern char D_00631250[];
 extern struct chase_s Chase[3];
 extern s32 NuFileLoadBuffer(char *name, void *buf, s32 max);
 extern s32 NuMemFileOpen(void *buf, s32 size, s32 mode);
@@ -693,7 +720,7 @@ s32 ReadCrateData(void) {
 
     maxversion = 4;
     CRATECOUNT = 0;
-    sprintf(tbuf, D_00631250, LevelFileName);
+    sprintf(tbuf, "%s.crt", LevelFileName);
     handle = NuMemFileOpen(Chase, NuFileLoadBuffer(tbuf, Chase, 0x7fffffff), 0);
     if (handle != 0) {
         version = NuFileReadInt(handle);
@@ -750,6 +777,39 @@ s32 ReadCrateData(void) {
     }
     return 0;
 }
+
+s32 i_cratetypedata = 0;
+s32 last_questionmark_extralife = 0;
+s32 CHANGERPITCH = 941;
+s32 CHANGERVOLUME = 16383;
+s32 SFX_CHANGER = 122;
+s32 CRATEEXPLOSIONFRAMES = 50;
+f32 CRATEBALLOONOFFSET = 2.65f;
+f32 CRATEBALLOONRADIUS = 1.1f;
+s32 cp_goto = -1;
+s32 temp_crate_y_ceiling_adjust = 0;
+s32 temp_crate_y_floor_adjust = 0;
+s32 temp_crate_xz_adjust = 0;
+s32 temp_crate_bounce = 0;
+s32 DESTRUCTIBLECRATECOUNT = 0;
+s32 DESTRUCTIBLEBONUSCRATECOUNT = 0;
+struct crategroup_s *temp_pGroup = 0;
+struct cratecube_s *temp_pCrate = 0;
+struct numtl_s *CrateMat = 0;
+s32 temp_crate_type = 0;
+s32 temp_face = 0;
+f32 temp_ratio = 0.0f;
+s32 iBOXEXP = 0;
+
+struct cratecube_s Crate[256] = {0};
+struct crategroup_s CrateGroup[128] = {0};
+struct CRATETYPEDATA CrateTypeData[32] = {0};
+struct nuvec_s cpGOTO = {0};
+struct crate_s MarkerCrate = {0};
+struct crate_s FlashCrate = {0};
+struct crate_s LockCrate = {0};
+struct crate_s HighlightCrate = {0};
+struct BoxExpType BoxExpList[16] = {0};
 
 s32 RayIntersectCuboid(struct nuvec_s *p0, struct nuvec_s *p1,
                        struct nuvec_s *min, struct nuvec_s *max) {
@@ -897,7 +957,6 @@ s32 CrateRayCast(struct nuvec_s *p0, struct nuvec_s *p1) {
     return 0;
 }
 
-extern f32 CRATEHOPSPEED;
 extern s32 KillPlayer(struct obj_s *obj, s32 anim);
 
 void BreakCrate(struct crategroup_s *group, struct cratecube_s *crate, s32 type,
@@ -1019,7 +1078,6 @@ extern struct nuvec_s vNEWMASK;
 extern s32 mask_crates;
 extern s32 newmask_advise;
 extern f32 TimeTrialWait;
-extern s32 last_questionmark_extralife;
 extern void ResetCheckpoint(s32 iRAIL, s32 iALONG, struct nuvec_s *pos,
                             f32 fALONG);
 extern void AddGameDebris(s32 type, struct nuvec_s *pos);
@@ -1156,9 +1214,7 @@ s32 CrateOff(struct crategroup_s *group, struct cratecube_s *crate, s32 how,
     return 1;
 }
 
-extern u16 CRATEEXPLOSIONFRAMES;
 extern f32 NuTrigTable[];
-extern s32 temp_crate_bounce;
 
 /* One crate's reaction to being bounced on, dispatched on `type` as a plain
  * if/else-if chain (retail tests 0xF, 9, 9, 0xE, 0x11, 0x13, 6, 4||0xD in
@@ -1436,9 +1492,6 @@ void UpdateCrateExplosions(void) {
 
 extern void NewTopBot(struct obj_s *obj);
 extern void OldTopBot(struct obj_s *obj);
-extern f32 D_0062D7B0;
-extern f32 D_0062D7A0;
-extern f32 D_0062D7A4;
 
 /* The three `0.249` compares are double literals, not floats: each one makes
  * gcc call fptodp/dpcmp and emit its own `li.d $a1,0.249`, which SN's `as`
@@ -1496,8 +1549,6 @@ struct crate_s *FindOverlap(struct crate_s *crate) {
 }
 
 extern struct RPos_s *best_cRPos;
-extern s32 cp_goto;
-extern struct nuvec_s cpGOTO;
 
 s32 GotoCheckpoint(struct nuvec_s *pos, s32 direction) {
     struct crategroup_s *group;
@@ -1772,6 +1823,12 @@ void AddQuad3DrotXYZ(struct nuvec_s *pos, struct nuvec_s *shape,
 }
 
 void DrawCrateExplosions(void) {
+    static struct nuvec_s shape[4] = {
+        {-0.25f, 0.25f, 0.0f},
+        {0.25f, 0.25f, 0.0f},
+        {-0.25f, -0.25f, 0.0f},
+        {0.25f, -0.25f, 0.0f},
+    };
     struct BoxPol_s *BoxFace;
     s32 lp;
     s32 lpo;
@@ -1803,12 +1860,12 @@ void DrawCrateExplosions(void) {
                     fade = BoxExpList[lp].time - BoxFace->rndfade;
                     if (fade < 7) {
                         if (fade > 0) {
-                            AddQuad3DrotXYZ(&BoxFace->pos, D_00592DE8, CrateMat,
+                            AddQuad3DrotXYZ(&BoxFace->pos, shape, CrateMat,
                                             BoxFace->ang, &uvs[lp2 * 8],
                                             col | (fade << 28));
                         }
                     } else {
-                        AddQuad3DrotXYZ(&BoxFace->pos, D_00592DE8, CrateMat,
+                        AddQuad3DrotXYZ(&BoxFace->pos, shape, CrateMat,
                                         BoxFace->ang, &uvs[lp2 * 8],
                                         col + 0x80000000);
                     }
@@ -2069,8 +2126,6 @@ inline s32 LowestCrate(struct crategroup_s *group, struct cratecube_s *crate) {
     return 1;
 }
 
-extern s32 DESTRUCTIBLECRATECOUNT;
-extern s32 DESTRUCTIBLEBONUSCRATECOUNT;
 extern s32 Bonus;
 extern s32 bonus_restart;
 extern s32 cp_iRAIL;
@@ -2094,12 +2149,6 @@ extern void FindAnglesZX(struct nuvec_s *n);
 extern void ResetKabooms(void);
 
 extern struct gtimer_s GameTimer;
-extern f32 tntsfxtime[];
-extern f32 CRATEGRAVITY;
-extern f32 METALCRATEBOUNCESPEED;
-extern s32 SFX_CHANGER;
-extern s32 CHANGERVOLUME;
-extern s32 CHANGERPITCH;
 extern s32 gamesfx_pitch;
 extern s32 gamesfx_effect_volume;
 extern void AddGliderHitPoints(s32 x);
@@ -2752,7 +2801,6 @@ void ResetCrates(void) {
     ResetInvisibility();
 }
 
-extern s32 DRAWCRATESHADOWS;
 extern s32 editor_active;
 extern s32 edcrtDrawType;
 extern struct gtimer_s GlobalTimer;

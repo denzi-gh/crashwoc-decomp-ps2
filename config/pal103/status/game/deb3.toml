@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0112"
 source = "src/game/deb3.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0112:00247aa0:PlayRandSFX"
@@ -82,3 +82,180 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0112:0024c960:JonMaskFPS"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:005d5180:cortcols"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:005d51d8:rsfxJung"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:005d51f0:HotRocks"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:005d5318:HotCoals"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:005d5350:HutList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:005d53c0:Deb3Emit"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:005d54c0:Deb3Info"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:005d5820:H2OElec"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:005d5ae0:rbclass"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:005d5c60:deb3"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:005d9460:firedrop"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:005d95a0:maskpos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:005d95b0:cortlights"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:0063286c:rockpt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:00632870:debpt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:00632874:firedroppt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:00632878:dropfire"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:0063287c:hutexplode"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:00632880:hutframe"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:00632884:exroty"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:00632888:exkey"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:0063288c:jonframe1"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:00632890:subprop"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:00632894:water1"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:00632898:water2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:0063289c:wdir"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:006328a0:wtimer"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:006328a4:xrayon"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:006328a8:flooron"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:006328ac:roofon"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:006328b0:jcrunch"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:006328b4:lcrunch"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:006328b8:maskoff"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:006328bc:cmask"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:006328c0:dmask"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:006328c4:maskx"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:006328c8:masky"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:006328cc:maskrot"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:006328d0:floor1"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:006328d4:roof1"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:006328d8:torndist"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:006328dc:rsfxcount"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0112:006328e0:rsfxpt"
+state = "matching"
+
+[[claim]]
+section = ".sdata"
+start = 0x00632798
+end = 0x0063286c

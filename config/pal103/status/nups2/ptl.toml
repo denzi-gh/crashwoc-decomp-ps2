@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0064"
 source = "src/nups2/ptl.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0064:0016e890:CreateDmaPartEffectList"

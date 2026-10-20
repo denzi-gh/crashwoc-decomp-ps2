@@ -658,7 +658,7 @@ void edgraInit(void)
 
 
 struct edmainreg_s edgradesc = {
-    0, 0, "Grass Editor", edgraInit, edgraClose, edgraEnter, {0}, 0,
+    0, 0, "Grass Editor", edgraInit, edgraClose, edgraEnter, 0, 0, 0, 0,
     EDMAIN_BLOCKID('g', 'r', 'a', 's'), edgraProc, edgraRender
 };
 struct nuvec_s edgra_cam_pos = { 0.0f, 0.0f, 0.0f };

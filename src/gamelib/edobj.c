@@ -2627,7 +2627,7 @@ void edobjInit(void)
 
 
 struct edmainreg_s edobjdesc = {
-    0, 0, "Object Editor", edobjInit, edobjClose, edobjEnter, {0}, 0,
+    0, 0, "Object Editor", edobjInit, edobjClose, edobjEnter, 0, 0, 0, 0,
     EDMAIN_BLOCKID('o', 'b', 'j', 't'), edobjProc, edobjRender
 };
 struct nuanimdata_s *ObjectAnim[64] = { 0 };

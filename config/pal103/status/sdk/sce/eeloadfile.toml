@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0258"
 source = "src/sdk/sce/eeloadfile.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0258:0027fb40:_lf_bind"
@@ -82,3 +82,38 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0258:002807c0:sceSifSetIopAddr"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0258:00613418:_bind_check"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0258:0061341c:_lfwildcard"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0258:007066c0:_senddata"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0258:007068c0:cd"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0258:007068e8:_lfversion"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x007068e8
+end = 0x007068ec
+
+[[claim]]
+section = ".rodata"
+start = 0x0062c7e0
+end = 0x0062c7e8
+
+[[claim]]
+section = ".rodata"
+start = 0x0062c7e8
+end = 0x0062c7ec

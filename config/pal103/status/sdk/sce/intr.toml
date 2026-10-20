@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0250"
 source = "src/sdk/sce/intr.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0250:002796c8:DisableIntc"
@@ -61,4 +61,16 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0250:00279950:InitAlarm"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0250:00612bc0:srcfile"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0250:00613300:eenull"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0250:00613328:SysEntry"
 state = "matching"

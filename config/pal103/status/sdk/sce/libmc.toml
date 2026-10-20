@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0150"
 source = "src/sdk/sce/libmc.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0150:00266c68:sceMcInit"
@@ -114,3 +114,65 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0150:00268308:sceMcGetEntSpace"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0150:006123f0:__ps2_libinfo__"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0150:00612400:mcRunCmdNo"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0150:00612404:semaidRegFunc"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0150:00700140:mcClientID"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0150:00700168:typeAddr"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0150:0070016c:freeAddr"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0150:00700170:formAddr"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0150:00700180:buffFileInfo"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0150:007001c0:sifParamOrd"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0150:007001f0:sifParamFname"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0150:00700640:sifParamNext"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0150:00700700:currentDir"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0150:00701700:retval"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x00701700
+end = 0x00701740
+
+[[claim]]
+section = ".rodata"
+start = 0x0062b250
+end = 0x0062b275

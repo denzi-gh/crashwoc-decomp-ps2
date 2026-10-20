@@ -188,6 +188,7 @@
 #include "nups2/ps2ctl.h"
 #include "gamelib/debris.h"
 #include "edtools/edui.h"
+#include "edtools/edmain.h"
 
 struct edppptl_s {
     struct nuvec_s pos;
@@ -210,6 +211,51 @@ struct edppptl_s {
     char pad4A[0x2];
 };
 
+static char mcfilename[32] = "Save1";
+static char levelfilename[256] = {0};
+
+int edpp_create_type = -1;
+int edpp_dpad_mode = 0;
+struct eduimenu_s *edptl_switch_menu = 0;
+struct eduimenu_s *edptl_switchtype_menu = 0;
+struct eduimenu_s *edptl_sounds_menu = 0;
+struct eduimenu_s *edptl_soundx_menu = 0;
+struct eduimenu_s *edptl_soundid_menu = 0;
+struct eduimenu_s *edptl_soundcontrol_menu = 0;
+struct eduimenu_s *edptl_bounce_menu = 0;
+struct eduimenu_s *edptl_group_menu = 0;
+int edpp_emitrotz = 0;
+int edpp_emitroty = 0;
+int edpp_rotz = 0;
+int edpp_roty = 0;
+int edpp_offset = 0;
+int edpp_refrotz = 0;
+int edpp_refroty = 0;
+static int superscale = 1;
+static int edptl_count = 0;
+int edptl_clipboard_entry = -1;
+static void *grad_item = 0;
+static void *grad_alpha_item = 0;
+static struct eduiitem_s *grad_size_w_item = 0;
+static struct eduiitem_s *grad_size_h_item = 0;
+static struct eduiitem_s *grad_size_min_item = 0;
+static struct eduiitem_s *grad_size_max_item = 0;
+static struct eduiitem_s *grad_rot_item = 0;
+static struct eduiitem_s *grad_rot_min_item = 0;
+static struct eduiitem_s *grad_rot_max_item = 0;
+static struct eduiitem_s *grad_jib_x_freq_item = 0;
+static struct eduiitem_s *grad_jib_x_amp_item = 0;
+static struct eduiitem_s *grad_jib_y_freq_item = 0;
+static struct eduiitem_s *grad_jib_y_amp_item = 0;
+static void *coll_env_item = 0;
+static signed char levelfilenametype = 0;
+
+static int mctype;
+static int mcfree;
+static int mcformat;
+static int mcresult;
+static struct nuvec_s entry_position;
+
 extern struct edppptl_s edpp_ptls[256];
 extern struct debinfo_s effecttypes[128];
 
@@ -218,21 +264,13 @@ extern int edpp_nearest;
 extern int debris_render_group;
 extern int effect_types_used;
 
-
-extern int edpp_dpad_mode;
 extern int edpp_snap_enabled;
 extern void *edpp_active_menu;
 extern struct eduimenu_s *changegenratemenu;
 extern struct eduimenu_s *messagemenu;
 extern struct eduimenu_s *effectlistmenu;
-extern struct eduimenu_s *edptl_switch_menu;
-extern struct eduimenu_s *edptl_group_menu;
 extern struct eduimenu_s *dpadmodemenu;
 extern struct eduimenu_s *ptltypemenu;
-extern struct eduimenu_s *edptl_bounce_menu;
-extern struct eduimenu_s *edptl_soundid_menu;
-extern struct eduimenu_s *edptl_soundcontrol_menu;
-extern struct eduimenu_s *edptl_soundx_menu;
 extern struct eduimenu_s *collmenu;
 extern struct eduimenu_s *ptlcutoffmenu;
 extern struct eduimenu_s *ptlvaremitmenu;
@@ -249,8 +287,6 @@ extern void *ptloptmenu;
 extern void *ptlgcodemenu;
 extern struct eduimenu_s *etimemenu;
 extern struct eduimenu_s *confirmmenu;
-extern struct eduimenu_s *edptl_switchtype_menu;
-extern struct eduimenu_s *edptl_sounds_menu;
 extern struct eduimenu_s *sscalemenu;
 extern struct eduimenu_s *filenamemenu;
 extern struct eduimenu_s *loadeffectsmenu;
@@ -258,20 +294,6 @@ extern struct eduimenu_s *mergeeffectsmenu;
 extern struct eduimenu_s *deleteeffectsmenu;
 extern struct eduimenu_s *ptlcolmenu;
 extern struct eduimenu_s *ptlrotmenu;
-extern void *D_0062F354;
-extern int D_0062F314;
-extern int edptl_clipboard_entry;
-extern int edpp_create_type;
-extern void *D_0062F320;
-extern void *D_0062F324;
-extern struct eduiitem_s *D_0062F338;
-extern struct eduiitem_s *D_0062F33C;
-extern struct eduiitem_s *D_0062F340;
-
-#define edpp_slider_scale D_0062F314
-#define collenvmenu D_0062F354
-#define colgradmenu D_0062F320
-#define alphagradmenu D_0062F324
 
 extern void edmainRegisterLocVec(struct nuvec_s *loc);
 extern void eduiMenuDetach(void *menu);
@@ -279,48 +301,14 @@ extern void eduiMenuDestroy(void *menu);
 extern void edcamSetPosAng(void *pos, void *ang, int flags);
 extern void cbPtlDeleteEffect(struct eduimenu_s *menu);
 
-extern char D_0062F368[];
-#define copynameformat D_0062F368
-
-extern char D_0062F360[];
-#define newnameformat D_0062F360
-
-extern char D_00484DC0[];
-#define savefilename D_00484DC0
-
-extern struct nuvec_s D_006B3B30;
-#define edpp_game_loc D_006B3B30
-
 extern struct eduimenu_s *ptljibmenu;
 extern struct eduimenu_s *ptlsizemenu;
 extern struct eduimenu_s *texturemenu;
 extern struct eduimenu_s *textureselectmenu;
-extern struct eduiitem_s *D_0062F328;
-extern struct eduiitem_s *D_0062F32C;
-extern struct eduiitem_s *D_0062F330;
-extern struct eduiitem_s *D_0062F334;
-extern char D_00617FB8[];
 extern void DebReAlloc(struct debkeydatatype_s *deb, int count);
 extern void eduiGradStageDelete(struct eduiitem_s *menu, void *stage);
 extern void cbCancelChangeGenRateMenu(void);
 extern void cbPtlChangeGenRate(void *menu, struct eduiitem_s *item);
-
-#define genratetitle D_00617FB8
-#define widthgradmenu D_0062F328
-#define heightgradmenu D_0062F32C
-#define sizeminitem D_0062F330
-#define sizemaxitem D_0062F334
-#define rotgradmenu D_0062F338
-#define rotminitem D_0062F33C
-#define rotmaxitem D_0062F340
-extern struct eduiitem_s *D_0062F344;
-extern struct eduiitem_s *D_0062F348;
-extern struct eduiitem_s *D_0062F34C;
-extern struct eduiitem_s *D_0062F350;
-extern signed char D_0062F358;
-extern char D_00484DE0[];
-extern int D_0062F318;
-#define edptl_count D_0062F318
 
 extern void NuStrCpy(char *dst, char *src);
 extern void DebFreeInstantly(int *key);
@@ -334,14 +322,7 @@ extern void edbitsDrawCube(float x, float y, float z, float sizex, float sizey, 
 extern void *edpp_mtl;
 extern signed char edpp_effect_list;
 
-#define ptljibitem0 D_0062F344
-#define ptljibitem1 D_0062F348
-#define ptljibitem2 D_0062F34C
-#define ptljibitem3 D_0062F350
-
 extern struct eduimenu_s *namemenu;
-extern char D_00617F88[];
-#define nameduplicatemessage D_00617F88
 
 extern int NuFileReadInt(void *file);
 extern float NuFileReadFloat(void *file);
@@ -351,34 +332,21 @@ extern int edppPtlCreate(struct nuvec_s *pos, int type);
 extern void edppRestartAllEffectsInLevel(void);
 extern void edcamSet(void);
 extern void edppDrawCursor(void);
+extern void edppClose(void);
+extern void edppEnter(void);
+extern void edppApply(void);
+extern int edppWrite(void *file);
+extern int edppRead(void *file);
+extern int edppProc(float dt, struct nupad_s *pad);
+extern void edppRender(void);
 extern void GenericDebinfoDmaTypeUpdate(struct debinfo_s *dt);
 static void CreateMessageMenu(struct eduimenu_s *parent, char *message, int flags);
 
-extern int edpp_rotz;
-extern int edpp_roty;
-extern int edpp_emitrotz;
-extern int edpp_emitroty;
-extern int edpp_refrotz;
-extern int edpp_refroty;
 extern int edpp_first_time_this_level;
 extern void *gencodetab[];
 extern void *gensorttab[];
 extern struct nucamera_s global_camera;
 extern void *app_fnt;
-
-extern struct eduistyle_s D_00617F98;
-extern struct eduistyle_s D_00617FE0;
-extern char D_00618500[];
-extern char D_006185B8[];
-extern char D_006185D8[];
-extern char D_0062F370[];
-
-#define edpp_menu_font D_00617F98
-#define edpp_message_font D_00617FE0
-#define sscalemenutitle D_00618500
-#define memcarderasemessage D_006185B8
-#define filenamemenutitle D_006185D8
-#define messagemenutitle D_0062F370
 
 extern void DebrisEmiterPos(int key, float x, float y, float z);
 extern void DebrisOrientation(int key, short rotz, short roty);
@@ -412,116 +380,31 @@ extern void edptlcbSetDpadMode(void *menu, struct eduiitem_s *item);
 extern void edptlcbCancelBounceMenu(void);
 extern void edptlcbApplyBounceOffset(void *menu, struct eduiitem_s *item);
 extern void edptlcbApplyBounceFactor(void *menu, struct eduiitem_s *item);
-extern char D_00617FF0[];
-extern char D_0062F388[];
-extern char D_0062F390[];
-extern char D_0062F398[];
-extern char D_00618060[];
-extern char D_00618070[];
-extern char D_00618080[];
-extern char D_00618090[];
-extern char D_006180A0[];
-extern char D_006180B0[];
-extern char D_0062F3A8[];
-extern char D_006180C0[];
-extern char D_00618178[];
-extern char D_00618188[];
-extern char D_00618198[];
-extern char D_006186D0[];
-extern char D_006186E8[];
-extern char D_00489B60[][64];
-extern int D_00633218;
 extern int sceMcDelete(int port, int slot, char *name);
 extern int sceMcSync(int mode, int *cmd, int *result);
 
-#define effectlisttitle D_00617FF0
-#define effectlistgeneral D_0062F388
-#define effectlistlevel D_0062F390
-#define effectlistchar D_0062F398
-#define grouptitle D_00618060
-#define mastergrouplabel D_00618070
-#define grouplabel D_00618080
-#define dpadmodetitle D_00618090
-#define dpademitrotlabel D_006180A0
-#define dpadgravrotlabel D_006180B0
-#define dpadoffsetlabel D_0062F3A8
-#define dpadreflectlabel D_006180C0
-#define bouncetitle D_00618178
-#define bounceoffsetlabel D_00618188
-#define bouncefactorlabel D_00618198
-#define memcarddeleteerror D_006186D0
-#define memcarddeleteok D_006186E8
-#define memcardfilenames D_00489B60
-#define memcardresult D_00633218
 extern void cbChangeFileName(void *menu, struct eduiitem_s *item);
 extern void cbPtlCancelDataMenu(void);
-extern void cbChangeNameMenu(struct eduimenu_s *menu);
+static void cbChangeNameMenu(struct eduimenu_s *menu);
 extern void cbFileSaveEffects(struct eduimenu_s *menu);
 extern void cbFileLoadEffects(struct eduimenu_s *menu);
 extern void cbMemCardMenu(struct eduimenu_s *menu);
 extern void edptlcbClipboardMenu(struct eduimenu_s *menu);
-extern char D_006188C8[];
-extern char D_006188D8[];
-extern char D_006188E8[];
-extern char D_006188F8[];
-extern char D_00618908[];
-extern char D_00618920[];
-extern char D_00618930[];
-extern char D_00618940[];
-extern char D_00618958[];
-extern char D_00618968[];
 
-#define datamenutitle D_006188C8
-#define datamenutypename D_006188D8
-#define datamenudelete D_006188E8
-#define datamenucopy D_006188F8
-#define datamenusavegeneral D_00618908
-#define datamenusavelevel D_00618920
-#define datamenusavechar D_00618930
-#define datamenuloadall D_00618940
-#define datamenumemcard D_00618958
-#define datamenuclipboard D_00618968
 extern void cbPtlCancelEmitMenu(void);
 extern void cbPtlEmitVelMenu(struct eduimenu_s *menu);
 extern void cbPtlGravMenu(struct eduimenu_s *menu);
 extern void cbPtlVarStartMenu(struct eduimenu_s *menu);
 extern void cbPtlVarEmitMenu(struct eduimenu_s *menu);
 extern void cbChangeGenRateMenu(struct eduimenu_s *menu);
-extern void cbChangeETimeMenu(struct eduimenu_s *menu);
+static void cbChangeETimeMenu(struct eduimenu_s *menu);
 extern void cbPtlEmitTimeMenu(struct eduimenu_s *menu);
 extern void cbPtlCutOffMenu(struct eduimenu_s *menu);
-extern char D_00618978[];
-extern char D_00618990[];
-extern char D_006189A0[];
-extern char D_006189B0[];
-extern char D_006189C0[];
-extern char D_006189D8[];
-extern char D_006189F0[];
-extern char D_00618A00[];
-extern char D_00618A18[];
-extern char D_00618A30[];
 
-#define emitmenutitle D_00618978
-#define emitmenuvel D_00618990
-#define emitmenugravity D_006189A0
-#define emitmenurandomstart D_006189B0
-#define emitmenubasevector D_006189C0
-#define emitmenuvariation D_006189D8
-#define emitmenugenrate D_006189F0
-#define emitmenulife D_00618A00
-#define emitmenutiming D_00618A18
-#define emitmenucutoff D_00618A30
 extern void cbCancelConfirmMenu(void);
 extern void cbConfirmMenuNo(struct eduimenu_s *menu);
-extern void cbMemCardErase(struct eduimenu_s *menu);
-extern char D_006185C8[];
-extern char D_0062F378[];
-extern char D_0062F380[];
+static void cbMemCardErase(struct eduimenu_s *menu);
 
-#define memcarderasetitle D_006185C8
-#define confirmnolabel D_0062F378
-#define confirmyeslabel D_0062F380
-extern int edpp_offset;
 extern void DebrisStartOffset(int key, int offset);
 extern void DebrisSetGroupID(int key, short groupid);
 extern struct nuvec_s edpp_cam_pos;
@@ -538,92 +421,6 @@ extern void NuRndrLine2di(int x0, int y0, int x1, int y1, int colour, void *mtl)
 extern void NuFntSet(void *fnt);
 extern void NuFntSetPen(int colour);
 extern void NuFntPrintEx(int x, int y, int flags, char *fmt, ...);
-extern char D_00617E28[];
-extern char D_00617E38[];
-extern char D_00617E50[];
-extern char D_00617E68[];
-extern char D_00617E80[];
-extern char D_00617E98[];
-extern char D_00617EB0[];
-extern char D_00617EC8[];
-extern char D_00617ED8[];
-extern char D_00617EF0[];
-extern char D_00617F00[];
-extern char D_00617F18[];
-extern char D_00617F30[];
-extern char D_00617F48[];
-extern char D_00617F60[];
-
-#define infoboxtitle D_00617E28
-#define infolistlevel D_00617E38
-#define infolistgeneral D_00617E50
-#define infolistchar D_00617E68
-#define infonotype D_00617E80
-#define infotype D_00617E98
-#define infonoclipboard D_00617EB0
-#define infoclipboard D_00617EC8
-#define infonohighlight D_00617ED8
-#define infohighlight D_00617EF0
-#define infoparticles D_00617F00
-#define infodpademit D_00617F18
-#define infodpadgrav D_00617F30
-#define infodpadoffset D_00617F48
-#define infodpadreflect D_00617F60
-
-
-extern char D_00618020[];
-extern char D_00618030[];
-extern char D_00618040[];
-extern char D_00618050[];
-extern char D_006180D0[];
-extern char D_006180E0[];
-extern char D_006180F0[];
-extern char D_00618100[];
-extern char D_00618110[];
-extern char D_00618128[];
-extern char D_00618138[];
-extern char D_00618148[];
-extern char D_00618158[];
-extern char D_00618168[];
-extern char D_006181A8[];
-extern char D_0062F3B0[];
-extern char D_006181B8[];
-extern char D_0062F3B8[];
-extern char D_0062F3C0[];
-extern char D_006181C8[];
-extern char D_006181D8[];
-extern char D_0062F3C8[];
-extern char D_006181E8[];
-extern char D_006181F8[];
-extern char D_00618208[];
-extern char D_00618220[];
-
-#define switchmenutitle D_00618020
-#define switchtypelabel D_00618030
-#define switchidlabel D_00618040
-#define switchvarlabel D_00618050
-#define typemenutitle D_006180D0
-#define addeffectlabel D_006180E0
-#define colmenutitle D_006180F0
-#define colgradlabel D_00618100
-#define alphagradlabel D_00618110
-#define jibmenutitle D_00618128
-#define jibxfreqlabel D_00618138
-#define jibxamplabel D_00618148
-#define jibyfreqlabel D_00618158
-#define jibyamplabel D_00618168
-#define soundidtitle D_006181A8
-#define soundnonelabel D_0062F3B0
-#define soundcontroltitle D_006181B8
-#define soundofflabel D_0062F3B8
-#define soundonedgelabel D_0062F3C0
-#define soundoffedgelabel D_006181C8
-#define soundperparticlelabel D_006181D8
-#define soundregularlabel D_0062F3C8
-#define soundxtitleformat D_006181E8
-#define soundidlabel D_006181F8
-#define soundcontrollabel D_00618208
-#define sounddelaylabel D_00618220
 
 extern int edSfxAllCount;
 extern char *edbitsGetSoundName(int id);
@@ -633,7 +430,7 @@ extern void *eduiItemGreyGradPickCreate(void *data, struct eduistyle_s *font, vo
 extern void cbPtlApplyGrad(void);
 extern void cbPtlAddEffect(struct eduimenu_s *menu);
 extern void edptlcbCancelSwitchMenu(void);
-extern void edptlcbSwitchTypeMenu(struct eduimenu_s *menu);
+static void edptlcbSwitchTypeMenu(struct eduimenu_s *menu);
 extern void edptlcbSetSwitchId(void *menu, struct eduiitem_s *item);
 extern void edptlcbSetSwitchVar(void *menu, struct eduiitem_s *item);
 extern void cbPtlCancelTypeMenu(void);
@@ -655,187 +452,41 @@ extern void cbMemCardCancelMergeEffectsMenu(void);
 extern void cbMemCardMergeEffects(struct eduimenu_s *menu, struct eduiitem_s *item);
 extern void cbMemCardCancelDeleteEffectsMenu(void);
 extern void cbMemCardDeleteEffects(struct eduimenu_s *menu, struct eduiitem_s *item);
-extern char D_00618000[];
-extern char D_0062F3A0[];
-extern char D_00618010[];
-extern char D_00618230[];
-extern char D_00618240[];
-extern char D_006186A0[];
-extern char D_006186C0[];
-extern char D_006186F8[];
 
-#define switchtypetitle D_00618000
-#define nonelabel D_0062F3A0
-#define switchtypegloballabel D_00618010
-#define soundsmenutitle D_00618230
-#define soundsmenuformat D_00618240
-#define loadeffectstitle D_006186A0
-#define mergeeffectstitle D_006186C0
-#define deleteeffectstitle D_006186F8
 extern void cbChangeName(void *menu, struct eduiitem_s *item);
-extern void cbCancelChangeNameMenu(void *menu);
+static void cbCancelChangeNameMenu(void *menu);
 extern void cbPtlChangeETime(void *menu, struct eduiitem_s *item);
 extern void cbCancelChangeETimeMenu(void);
-extern char D_00617FA8[];
-extern char D_00617FC8[];
 
-#define typenametitle D_00617FA8
-#define etimetitle D_00617FC8
-extern char D_006186B0[];
-
-#define mergedokmessage D_006186B0
 extern void edptlcbCancelClipboardMenu(void);
 extern void edptlcbEmptyClipboard(struct eduimenu_s *menu);
 extern void edptlcbPasteClipboard(struct eduimenu_s *menu);
 extern void edptlcbCutClipboard(struct eduimenu_s *menu);
-extern char D_00618850[];
-extern char D_00618860[];
-extern char D_00618870[];
-extern char D_00618880[];
-extern char D_00618890[];
-extern char D_006188A0[];
-extern char D_006188B8[];
 
-#define clipboardtitle D_00618850
-#define clipboardgenerallist D_00618860
-#define clipboardlevellist D_00618870
-#define clipboardcharlist D_00618880
-#define clipboardemptylabel D_00618890
-#define clipboardpasteformat D_006188A0
-#define clipboardcutformat D_006188B8
 extern void cbPtlCancelGSortMenu(void);
-extern char D_00618A48[];
-extern char D_0062F428[];
-extern char D_0062F430[];
-extern char D_00618A58[];
-extern char D_00618A68[];
-extern char D_0062F438[];
-extern char D_00618A78[];
 
-#define gsorttitle D_00618A48
-#define gsortnormallabel D_0062F428
-#define gsortradiallabel D_0062F430
-#define gsortradialrotorlabel D_00618A58
-#define gsortspheroidlabel D_00618A68
-#define gsortbounceylabel D_0062F438
-#define gsortbouncexzlabel D_00618A78
 extern int sceMcGetInfo(int port, int slot, int *type, int *free, int *format);
 extern int sceMcFormat(int port, int slot);
 extern int sceMcChdir(int port, int slot, char *newdir, char *curdir);
 extern int sceMcMkdir(int port, int slot, char *name);
 extern void cbCancelMemCardMenu(void);
-extern void cbMemCardDeleteEffectsMenu(struct eduimenu_s *menu);
-extern void cbMemCardEraseConfirm(struct eduimenu_s *menu);
-extern void cbChangeFileNameMenu(struct eduimenu_s *menu);
-extern void cbMemCardLoadEffectsMenu(struct eduimenu_s *menu);
-extern void cbMemCardMergeEffectsMenu(struct eduimenu_s *menu);
-extern int D_0063320C;
-extern int D_00633210;
-extern int D_00633214;
-extern char D_0062F418[];
-extern char D_00618708[];
-extern char D_00618718[];
-extern char D_0062F420[];
-extern char D_00618728[];
-extern char D_00618738[];
-extern char D_00618748[];
-extern char D_00618760[];
-extern char D_00618778[];
-extern char D_00618798[];
-extern char D_006187B8[];
-extern char D_006187D0[];
-extern char D_006187F0[];
-extern char D_00618808[];
-extern char D_00618828[];
-extern char D_00618840[];
-
-#define memcardtype D_0063320C
-#define memcardfree D_00633210
-#define memcardformat D_00633214
-#define memcardrootdir D_0062F418
-#define memcardptldirname D_00618708
-#define memcardptldir D_00618718
-#define memcardwildcard D_0062F420
-#define memcardmenutitle D_00618728
-#define memcardfilenamelabel D_00618738
-#define memcardsavealllabel D_00618748
-#define memcardloadalllabel D_00618760
-#define memcardsavegenerallabel D_00618778
-#define memcardmergegenerallabel D_00618798
-#define memcardsavelevellabel D_006187B8
-#define memcardmergelevellabel D_006187D0
-#define memcardsavecharlabel D_006187F0
-#define memcardmergecharlabel D_00618808
-#define memcarddeletelabel D_00618828
-#define memcarderaselabel D_00618840
+static void cbMemCardDeleteEffectsMenu(struct eduimenu_s *menu);
+static void cbMemCardEraseConfirm(struct eduimenu_s *menu);
+static void cbChangeFileNameMenu(struct eduimenu_s *menu);
+static void cbMemCardLoadEffectsMenu(struct eduimenu_s *menu);
+static void cbMemCardMergeEffectsMenu(struct eduimenu_s *menu);
 
 extern void *eduiItemToggleCreate(int value, struct eduistyle_s *font, int on, int group, void *cb,
                                   char *label);
 extern int edpp_curr;
-extern void edptlcbSoundsMenu(struct eduimenu_s *menu);
-extern void cbPtlSScaleMenu(struct eduimenu_s *menu);
+static void edptlcbSoundsMenu(struct eduimenu_s *menu);
+static void cbPtlSScaleMenu(struct eduimenu_s *menu);
 extern void edptlcbResetParticles(void);
 extern void cbPtlSnapToggle(void *menu, struct eduiitem_s *item);
 extern void cbPtlCancel(void);
 extern void edptlcbJumpToGameLocation(void *menu, struct eduiitem_s *item);
 extern void cbPtlSelGCode(struct eduimenu_s *menu, struct eduiitem_s *item);
-extern char D_00618A88[];
-extern char D_0062F440[];
-extern char D_0062F448[];
-extern char D_0062F450[];
-extern char D_0062F458[];
-extern char D_00618A98[];
-extern char D_0062F460[];
-extern char D_0062F468[];
-extern char D_00618AA8[];
-extern char D_00618AB8[];
-extern char D_00618AD0[];
-extern char D_00618AE0[];
-extern char D_00618AF0[];
-extern char D_00618B08[];
-extern char D_00618B20[];
-extern char D_00618B38[];
-extern char D_00618B50[];
-extern char D_00618B68[];
-extern char D_00618B80[];
-extern char D_00618B98[];
-extern char D_00618BB0[];
-extern char D_00618BC8[];
-extern char D_00618BD8[];
-extern char D_00618BE8[];
-extern char D_00618BF8[];
-extern char D_00618C08[];
-extern char D_0062F470[];
-extern char D_00618C18[];
 
-#define gcodetitle D_00618A88
-#define gcodeposlabel D_0062F440
-#define gcodeposrevlabel D_0062F448
-#define gcodesplashlabel D_0062F450
-#define gcodeashrocklabel D_0062F458
-#define gcodeposrevtreelabel D_00618A98
-#define gcodeposalllabel D_0062F460
-#define optionstitle D_0062F468
-#define optionseffectlist D_00618AA8
-#define optionsptltype D_00618AB8
-#define optionsdatamenu D_00618AD0
-#define optionsgsort D_00618AE0
-#define optionscolour D_00618AF0
-#define optionstexture D_00618B08
-#define optionsemitter D_00618B20
-#define optionssize D_00618B38
-#define optionsrotation D_00618B50
-#define optionsjibber D_00618B68
-#define optionsbounces D_00618B80
-#define optionssounds D_00618B98
-#define optionscollision D_00618BB0
-#define optionssuperscale D_00618BC8
-#define optionsdpadmode D_00618BD8
-#define optionsswitch D_00618BE8
-#define optionsrendergroup D_00618BF8
-#define optionsreset D_00618C08
-#define optionssnap D_0062F470
-#define optionsjumptogame D_00618C18
 extern struct numtl_s *DebMat[8];
 extern void eduiItemSliderSetFmt(void *item, char *fmt);
 extern void *eduiItemTexturePickCreate(void *data, struct eduistyle_s *font, void *cb, char *label);
@@ -864,109 +515,7 @@ extern void cbPtlCancelEmitVelMenu(void);
 extern void cbPtlChangeEmitVel(void *menu, struct eduiitem_s *item);
 extern void cbPtlCancelGravMenu(void);
 extern void cbPtlChangeGrav(void *menu, struct eduiitem_s *item);
-extern char D_00618250[];
-extern char D_00618268[];
-extern char D_00618280[];
-extern char D_00618290[];
-extern char D_006182A8[];
-extern char D_006182B8[];
-extern char D_006182C8[];
-extern char D_006182D8[];
-extern char D_006182E8[];
-extern char D_006182F8[];
-extern char D_00618308[];
-extern char D_00618320[];
-extern char D_00618340[];
-extern char D_00618358[];
-extern char D_00618370[];
-extern char D_00618380[];
-extern char D_00618390[];
-extern char D_006183A0[];
-extern char D_006183B0[];
-extern char D_006183C0[];
-extern char D_006183D0[];
-extern char D_006183E8[];
-extern char D_006183F8[];
-extern char D_00618408[];
-extern char D_00618418[];
-extern char D_00618428[];
-extern char D_00618438[];
-extern char D_00618448[];
-extern char D_00618458[];
-extern char D_00618468[];
-extern char D_00618478[];
-extern char D_00618488[];
-extern char D_006184A0[];
-extern char D_006184B0[];
-extern char D_006184C0[];
-extern char D_006184D0[];
-extern char D_006184E0[];
-extern char D_006184F0[];
-extern char D_00618510[];
-extern char D_00618520[];
-extern char D_00618530[];
-extern char D_00618540[];
-extern char D_00618550[];
-extern char D_00618568[];
-extern char D_0062F3D8[];
-extern char D_00618578[];
-extern char D_00618588[];
-extern char D_00618598[];
-extern char D_006185A8[];
-extern char D_0062F3E0[];
-extern char D_0062F3D0[];
 
-#define collmenutitle D_00618250
-#define collenvlabel D_00618268
-#define numsphereslabel D_00618280
-#define defaultenvlabel D_00618290
-#define sizemenutitle D_006182A8
-#define widthenvlabel D_006182B8
-#define heightenvlabel D_006182C8
-#define minsizelabel D_006182D8
-#define onedecimalfmt D_006182E8
-#define maxsizelabel D_006182F8
-#define copywidthlabel D_00618308
-#define copyheightlabel D_00618320
-#define rotmenutitle D_00618340
-#define rotenvlabel D_00618358
-#define minrotlabel D_00618370
-#define maxrotlabel D_00618380
-#define cutoffmenutitle D_00618390
-#define cutofflabel D_006183A0
-#define cutonlabel D_006183B0
-#define drawcutofflabel D_006183C0
-#define varemitmenutitle D_006183D0
-#define randemitxlabel D_006183E8
-#define randemitylabel D_006183F8
-#define randemitzlabel D_00618408
-#define randmagxlabel D_00618418
-#define randrotylabel D_00618428
-#define randrotzlabel D_00618438
-#define randmaglabel D_00618448
-#define steprotylabel D_00618458
-#define steprotzlabel D_00618468
-#define randstarttitle D_00618478
-#define baseemittitle D_00618488
-#define randstartxlabel D_006184A0
-#define randstartylabel D_006184B0
-#define randstartzlabel D_006184C0
-#define basemaglabel D_006184D0
-#define baserotylabel D_006184E0
-#define baserotzlabel D_006184F0
-#define textureselecttitle D_00618510
-#define additivelabel D_00618520
-#define modulationlabel D_00618530
-#define subtractivelabel D_00618540
-#define textureselectorlabel D_00618550
-#define emittimemenutitle D_00618568
-#define ontimelabel D_0062F3D8
-#define randontimelabel D_00618578
-#define offtimelabel D_00618588
-#define randofftimelabel D_00618598
-#define emitveltitle D_006185A8
-#define gravitytitle D_0062F3E0
-#define texturemenutitle D_0062F3D0
 extern void EdFileSetMedia(int media);
 extern int EdFileOpen(char *name, int mode);
 extern int EdFileClose(void);
@@ -979,32 +528,10 @@ extern int LookupDebrisEffect(char *name);
 extern void DebrisSetTrigger(int key, int type, int id, float var);
 extern void cbCancelMessageMenu(void);
 extern void ParticleReset(void);
-extern char D_00618610[];
-extern char D_00618620[];
-extern char D_00618648[];
-extern char D_00618658[];
-
-#define savedokmessage D_00618610
-#define saveerrormessage D_00618620
-#define loadedokmessage D_00618648
-#define loaderrormessage D_00618658
 
 extern struct mcdirent_s mcdir[];
 extern int sceMcGetDir(int port, int slot, char *name, unsigned int mode, int maxent,
                        struct mcdirent_s *table);
-extern char D_0062F3F8[];
-extern char D_0062F400[];
-extern char D_0062F408[];
-extern char D_0062F410[];
-extern char D_00618668[];
-extern char D_00618680[];
-
-#define effectsfilter D_0062F3F8
-#define effectsnameformat D_0062F400
-#define effecttypesfilter D_0062F408
-#define effecttypesnameformat D_0062F410
-#define toomanyeffectsmessage D_00618668
-#define toomanytypesmessage D_00618680
 
 extern int freeDmaDebType;
 extern int EdFileReadInt(void);
@@ -1013,19 +540,6 @@ extern void EdFileRead(void *data, int size);
 extern float EdFileReadFloat(void);
 extern short EdFileReadShort(void);
 extern char EdFileReadChar(void);
-extern char D_006185E8[];
-extern char D_00618600[];
-extern char D_00618630[];
-extern char D_0062F3E8[];
-extern char D_0062F3F0[];
-
-#define edpp_level_path D_00484DE0
-#define edpp_level_type D_0062F358
-#define genericeffectsfile D_006185E8
-#define leveleffectsformat D_00618600
-#define generalptlfile D_00618630
-#define levelptlformat D_0062F3E8
-#define charptlformat D_0062F3F0
 
 
 
@@ -1350,27 +864,27 @@ void edppDrawCursor(void) {
     NuRndrLine2di(0x1710, 0xDC8, 0x24F0, 0xDC8, 0x80000000, edpp_boxmtl);
     NuFntSet(app_fnt);
     NuFntSetPen(0x80808080);
-    NuFntPrintEx(0x17C0, 0x988, 0, infoboxtitle);
+    NuFntPrintEx(0x17C0, 0x988, 0, "Info Box");
     NuFntSetPen(0x80000000);
     if (edpp_effect_list == 1) {
-        NuFntPrintEx(0x17C0, 0xA50, 0, infolistlevel);
+        NuFntPrintEx(0x17C0, 0xA50, 0, "Current List: Level");
     } else if (edpp_effect_list == 0) {
-        NuFntPrintEx(0x17C0, 0xA50, 0, infolistgeneral);
+        NuFntPrintEx(0x17C0, 0xA50, 0, "Current List: General");
     } else if (edpp_effect_list == 5) {
-        NuFntPrintEx(0x17C0, 0xA50, 0, infolistchar);
+        NuFntPrintEx(0x17C0, 0xA50, 0, "Current List: Character");
     }
     if (edpp_create_type == -1) {
-        NuFntPrintEx(0x17C0, 0xAF0, 0, infonotype);
+        NuFntPrintEx(0x17C0, 0xAF0, 0, "Current Type: <none>");
     } else {
-        NuFntPrintEx(0x17C0, 0xAF0, 0, infotype, debtab[edpp_create_type]->id);
+        NuFntPrintEx(0x17C0, 0xAF0, 0, "Current Type: %s", debtab[edpp_create_type]->id);
     }
     if (edptl_clipboard_entry == -1) {
-        NuFntPrintEx(0x17C0, 0xB90, 0, infonoclipboard);
+        NuFntPrintEx(0x17C0, 0xB90, 0, "Clipboard: <none>");
     } else {
-        NuFntPrintEx(0x17C0, 0xB90, 0, infoclipboard, debtab[edptl_clipboard_entry]->id);
+        NuFntPrintEx(0x17C0, 0xB90, 0, "Clipboard: %s", debtab[edptl_clipboard_entry]->id);
     }
     if (edpp_nearest == -1) {
-        NuFntPrintEx(0x17C0, 0xC30, 0, infonohighlight);
+        NuFntPrintEx(0x17C0, 0xC30, 0, "Highlight: <none>");
     } else {
         dt = debtab[debkeydata[edpp_ptls[edpp_nearest].debris].type];
         if (dt->gensort == 0) {
@@ -1379,18 +893,18 @@ void edppDrawCursor(void) {
                            edpp_rotz, edpp_roty, 0xFF0000FF, edpp_mtl);
             edppDrawSpheres(dt, edpp_ptls[edpp_nearest].debris);
         }
-        NuFntPrintEx(0x17C0, 0xC30, 0, infohighlight, dt->id);
-        NuFntPrintEx(0x17C0, 0xCD0, 0, infoparticles, dt->debnum,
+        NuFntPrintEx(0x17C0, 0xC30, 0, "Highlight: %s", dt->id);
+        NuFntPrintEx(0x17C0, 0xCD0, 0, "Particles: %d (%d)", dt->debnum,
                      ((dt->debnum - 1) / 32 + 1) * 32);
     }
     if (edpp_dpad_mode == 0) {
-        NuFntPrintEx(0x17C0, 0xD70, 0, infodpademit);
+        NuFntPrintEx(0x17C0, 0xD70, 0, "Dpad Mode: Emit Rotate");
     } else if (edpp_dpad_mode == 1) {
-        NuFntPrintEx(0x17C0, 0xD70, 0, infodpadgrav);
+        NuFntPrintEx(0x17C0, 0xD70, 0, "Dpad Mode: Grav Rotate");
     } else if (edpp_dpad_mode == 2) {
-        NuFntPrintEx(0x17C0, 0xD70, 0, infodpadoffset, edpp_offset);
+        NuFntPrintEx(0x17C0, 0xD70, 0, "Dpad Mode: Offset (%d)", edpp_offset);
     } else if (edpp_dpad_mode == 3) {
-        NuFntPrintEx(0x17C0, 0xD70, 0, infodpadreflect);
+        NuFntPrintEx(0x17C0, 0xD70, 0, "Dpad Mode: Reflections");
     }
 }
 
@@ -1428,7 +942,7 @@ void cbPtlApplyGrad(void) {
     int i;
     int j;
 
-    count = eduiGradPickRead(colgradmenu, keys, 8);
+    count = eduiGradPickRead(grad_item, keys, 8);
     if (count >= 2 && count <= 8 && edpp_nearest != -1
         && edpp_ptls[edpp_nearest].debris != -1) {
         coldt = debtab[debkeydata[edpp_ptls[edpp_nearest].debris].type];
@@ -1440,7 +954,7 @@ void cbPtlApplyGrad(void) {
         }
         GenericDebinfoDmaTypeUpdate(coldt);
     }
-    count = eduiGradPickRead(alphagradmenu, keys, 8);
+    count = eduiGradPickRead(grad_alpha_item, keys, 8);
     if (count >= 2 && count <= 8 && edpp_nearest != -1
         && edpp_ptls[edpp_nearest].debris != -1) {
         alphadt = debtab[debkeydata[edpp_ptls[edpp_nearest].debris].type];
@@ -1524,7 +1038,7 @@ void cbPtlAddEffect(struct eduimenu_s *menu) {
             if (debtab[i] == 0) {
                 debtab[i] = &effecttypes[i];
                 *debtab[i] = *debtab[0];
-                sprintf(debtab[i]->id, newnameformat, i);
+                sprintf(debtab[i]->id, "New%d", i);
                 debtab[i]->listid = edpp_effect_list;
                 edpp_create_type = i;
                 effect_types_used++;
@@ -1553,7 +1067,7 @@ void cbPtlCopyEffect(struct eduimenu_s *menu) {
                 debtab[i] = &effecttypes[i];
                 *debtab[i] = *debtab[edpp_create_type];
                 debtab[i]->DmaDebTypePointer = 0;
-                sprintf(debtab[i]->id, copynameformat, i);
+                sprintf(debtab[i]->id, "Copy%d", i);
                 edpp_create_type = i;
                 effect_types_used++;
                 break;
@@ -1688,12 +1202,47 @@ void UpdateTotalPtls(struct debinfo_s *dt) {
 }
 
 
+static inline void cbCancelChangeNameMenu(void *menu) {
+    struct debinfo_s *dt;
+
+    if (edpp_create_type != -1) {
+        dt = debtab[edpp_create_type];
+        if (dt != 0) {
+            if (dt->id[0] == 0) {
+                CreateMessageMenu(menu, "Name Duplicate", 0);
+                return;
+            }
+            eduiMenuDestroy(namemenu);
+            namemenu = 0;
+        }
+    }
+}
+
+
+static inline void cbChangeNameMenu(struct eduimenu_s *menu) {
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
+    struct debinfo_s *dt;
+
+    if (edpp_create_type == -1) {
+        return;
+    }
+    dt = debtab[edpp_create_type];
+    namemenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt, cbCancelChangeNameMenu, "Type Name");
+    if (namemenu != 0) {
+        eduiMenuAddItem(namemenu, eduiItemTextPickCreate(0, &font, cbChangeName, "Type Name"));
+        strcpy(edui_last_item->u.textpick.text, dt->id);
+        eduiMenuAttach(menu, namemenu);
+        namemenu->x = menu->x + 10;
+        namemenu->y = menu->y + 40;
+    }
+}
+
+
 void cbChangeGenRateMenu(struct eduimenu_s *menu) {
-    struct eduistyle_s font;
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
     struct debkeydatatype_s *deb;
     struct debinfo_s *dt;
 
-    font = edpp_menu_font;
     if (edpp_nearest == -1) {
         return;
     }
@@ -1703,15 +1252,39 @@ void cbChangeGenRateMenu(struct eduimenu_s *menu) {
     deb = &debkeydata[edpp_ptls[edpp_nearest].debris];
     dt = debtab[deb->type];
     changegenratemenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt, cbCancelChangeGenRateMenu,
-                                       genratetitle);
+                                       "Gen Rate");
     if (changegenratemenu != 0) {
         eduiMenuAddItem(changegenratemenu,
                         eduiItemSliderCreateInt(0, &font, 0, cbPtlChangeGenRate, -10,
-                                                edpp_slider_scale * 20.0, dt->generate,
-                                                genratetitle));
+                                                superscale * 20.0, dt->generate, "Gen Rate"));
         eduiMenuAttach(menu, changegenratemenu);
         changegenratemenu->x = menu->x + 10;
         changegenratemenu->y = menu->y + 40;
+    }
+}
+
+
+static inline void cbChangeETimeMenu(struct eduimenu_s *menu) {
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
+    struct debkeydatatype_s *deb;
+    struct debinfo_s *dt;
+
+    if (edpp_nearest == -1) {
+        return;
+    }
+    if (edpp_ptls[edpp_nearest].debris == -1) {
+        return;
+    }
+    deb = &debkeydata[edpp_ptls[edpp_nearest].debris];
+    dt = debtab[deb->type];
+    etimemenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt, cbCancelChangeETimeMenu,
+                               "Particle Life");
+    if (etimemenu != 0) {
+        eduiMenuAddItem(etimemenu, eduiItemSliderCreate(0, &font, 0, cbPtlChangeETime, 0.0f, 10.0f,
+                                                        dt->etime, "Particle Life"));
+        eduiMenuAttach(menu, etimemenu);
+        etimemenu->x = menu->x + 10;
+        etimemenu->y = menu->y + 40;
     }
 }
 
@@ -1741,9 +1314,9 @@ void cbPtlCopySize(void *menu, struct eduiitem_s *item) {
         }
     }
     if (item->value == 1) {
-        grad = heightgradmenu;
+        grad = grad_size_h_item;
     } else {
-        grad = widthgradmenu;
+        grad = grad_size_w_item;
     }
     while (grad->u.grad.first != 0) {
         eduiGradStageDelete(grad, grad->u.grad.first);
@@ -1751,13 +1324,13 @@ void cbPtlCopySize(void *menu, struct eduiitem_s *item) {
     for (i = 0; i < 8; i++) {
         if (item->value == 1) {
             ratio = (dt->hslot[i].value - dt->minsize) / (dt->maxsize - dt->minsize);
-            eduiGradStageAddRGB(heightgradmenu, dt->hslot[i].t, ratio, ratio, ratio);
+            eduiGradStageAddRGB(grad_size_h_item, dt->hslot[i].t, ratio, ratio, ratio);
             if (dt->hslot[i].t == 1.0f) {
                 break;
             }
         } else {
             ratio = (dt->wslot[i].value - dt->minsize) / (dt->maxsize - dt->minsize);
-            eduiGradStageAddRGB(widthgradmenu, dt->wslot[i].t, ratio, ratio, ratio);
+            eduiGradStageAddRGB(grad_size_w_item, dt->wslot[i].t, ratio, ratio, ratio);
             if (dt->wslot[i].t == 1.0f) {
                 break;
             }
@@ -1776,13 +1349,14 @@ void cbPtlApplySize(void) {
     int count;
     int i;
 
-    if (sizeminitem == 0 || sizemaxitem == 0 || heightgradmenu == 0 || widthgradmenu == 0) {
+    if (grad_size_min_item == 0 || grad_size_max_item == 0 || grad_size_h_item == 0
+        || grad_size_w_item == 0) {
         return;
     }
-    count = eduiGradPickRead(widthgradmenu, keys, 8);
-    item = sizeminitem;
+    count = eduiGradPickRead(grad_size_w_item, keys, 8);
+    item = grad_size_min_item;
     lo = item->u.slider.val;
-    item = sizemaxitem;
+    item = grad_size_max_item;
     hi = item->u.slider.val;
     if (count >= 2 && count <= 8 && edpp_nearest != -1
         && edpp_ptls[edpp_nearest].debris != -1) {
@@ -1795,7 +1369,7 @@ void cbPtlApplySize(void) {
         dt->maxsize = hi;
         GenericDebinfoDmaTypeUpdate(dt);
     }
-    count = eduiGradPickRead(heightgradmenu, keys, 8);
+    count = eduiGradPickRead(grad_size_h_item, keys, 8);
     if (count >= 2 && count <= 8 && edpp_nearest != -1
         && edpp_ptls[edpp_nearest].debris != -1) {
         dt = debtab[debkeydata[edpp_ptls[edpp_nearest].debris].type];
@@ -1820,13 +1394,13 @@ void cbPtlApplyRot(void) {
     int count;
     int i;
 
-    if (rotminitem == 0 || rotmaxitem == 0 || rotgradmenu == 0) {
+    if (grad_rot_min_item == 0 || grad_rot_max_item == 0 || grad_rot_item == 0) {
         return;
     }
-    count = eduiGradPickRead(rotgradmenu, keys, 8);
-    item = rotminitem;
+    count = eduiGradPickRead(grad_rot_item, keys, 8);
+    item = grad_rot_min_item;
     lo = item->u.slider.val;
-    item = rotmaxitem;
+    item = grad_rot_max_item;
     hi = item->u.slider.val;
     if (lo == hi) {
         hi = hi + 0.1;
@@ -1869,19 +1443,48 @@ void cbPtlSelGSort(struct eduimenu_s *menu, struct eduiitem_s *item) {
 }
 
 
-void cbEffectListMenu(struct eduimenu_s *menu) {
-    struct eduistyle_s font;
+static inline void CreateMessageMenu(struct eduimenu_s *parent, char *message, int flags) {
+    struct eduistyle_s font = {{0x800000C0, 0x80FF0000}, {0x80808080, 0x80404040}};
 
-    font = edpp_menu_font;
+    if (flags == 1) {
+        font.pen[0] = 0x8000C000;
+    }
+    messagemenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt, cbCancelMessageMenu, "Message");
+    if (messagemenu != 0) {
+        eduiMenuAddItem(messagemenu, eduiItemSelCreate(1, &font, 0, 0, 0, message));
+        eduiMenuAttach(parent, messagemenu);
+        messagemenu->x = parent->x + 10;
+        messagemenu->y = parent->y + 40;
+    }
+}
+
+
+static inline void CreateConfirmMenu(struct eduimenu_s *parent, char *title, void *yescb) {
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
+
+    confirmmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt, cbCancelConfirmMenu, title);
+    if (confirmmenu != 0) {
+        eduiMenuAddItem(confirmmenu, eduiItemSelCreate(1, &font, 0, 0, cbConfirmMenuNo, "No"));
+        eduiMenuAddItem(confirmmenu, eduiItemSelCreate(1, &font, 0, 0, yescb, "Yes"));
+        eduiMenuAttach(parent, confirmmenu);
+        confirmmenu->x = parent->x + 10;
+        confirmmenu->y = parent->y + 40;
+    }
+}
+
+
+void cbEffectListMenu(struct eduimenu_s *menu) {
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
+
     effectlistmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt, cbCancelEffectListMenu,
-                                    effectlisttitle);
+                                    "Effect List");
     if (effectlistmenu != 0) {
         eduiMenuAddItem(effectlistmenu, eduiItemCheckCreate(0, &font, edpp_effect_list == 0, 1,
-                                                            cbSelEffectList, effectlistgeneral));
+                                                            cbSelEffectList, "General"));
         eduiMenuAddItem(effectlistmenu, eduiItemCheckCreate(1, &font, edpp_effect_list == 1, 1,
-                                                            cbSelEffectList, effectlistlevel));
+                                                            cbSelEffectList, "Level"));
         eduiMenuAddItem(effectlistmenu, eduiItemCheckCreate(5, &font, edpp_effect_list == 5, 1,
-                                                            cbSelEffectList, effectlistchar));
+                                                            cbSelEffectList, "Char"));
         eduiMenuAttach(menu, effectlistmenu);
         effectlistmenu->x = menu->x + 10;
         effectlistmenu->y = menu->y + 40;
@@ -1889,10 +1492,28 @@ void cbEffectListMenu(struct eduimenu_s *menu) {
 }
 
 
-void edptlcbSwitchMenu(struct eduimenu_s *menu) {
-    struct eduistyle_s font;
+static inline void edptlcbSwitchTypeMenu(struct eduimenu_s *menu) {
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
 
-    font = edpp_menu_font;
+    edptl_switchtype_menu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt,
+                                           edptlcbCancelSwitchTypeMenu, "Switch Type");
+    if (edptl_switchtype_menu != 0) {
+        eduiMenuAddItem(edptl_switchtype_menu,
+                        eduiItemCheckCreate(0, &font, edpp_ptls[edpp_nearest].switchtype == 0, 1,
+                                            edptlcbSetSwitchType, "None"));
+        eduiMenuAddItem(edptl_switchtype_menu,
+                        eduiItemCheckCreate(1, &font, edpp_ptls[edpp_nearest].switchtype == 1, 1,
+                                            edptlcbSetSwitchType, "Global Switch"));
+        eduiMenuAttach(menu, edptl_switchtype_menu);
+        edptl_switchtype_menu->x = menu->x + 10;
+        edptl_switchtype_menu->y = menu->y + 40;
+    }
+}
+
+
+void edptlcbSwitchMenu(struct eduimenu_s *menu) {
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
+
     if (edpp_nearest == -1) {
         return;
     }
@@ -1900,16 +1521,16 @@ void edptlcbSwitchMenu(struct eduimenu_s *menu) {
         return;
     }
     edptl_switch_menu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt, edptlcbCancelSwitchMenu,
-                                       switchmenutitle);
+                                       "Switch Menu");
     if (edptl_switch_menu != 0) {
         eduiMenuAddItem(edptl_switch_menu, eduiItemSelCreate(1, &font, 0, 0, edptlcbSwitchTypeMenu,
-                                                             switchtypelabel));
+                                                             "Switch Type..."));
         eduiMenuAddItem(edptl_switch_menu,
                         eduiItemSliderCreateInt(0, &font, 0, edptlcbSetSwitchId, -1, 0x81,
-                                                edpp_ptls[edpp_nearest].switchid, switchidlabel));
+                                                edpp_ptls[edpp_nearest].switchid, "Switch ID"));
         eduiMenuAddItem(edptl_switch_menu,
                         eduiItemSliderCreate(0, &font, 0, edptlcbSetSwitchVar, 0.0f, 20.0f,
-                                             edpp_ptls[edpp_nearest].switchvar, switchvarlabel));
+                                             edpp_ptls[edpp_nearest].switchvar, "Switch Var"));
         eduiMenuAttach(menu, edptl_switch_menu);
         edptl_switch_menu->x = menu->x + 10;
         edptl_switch_menu->y = menu->y + 40;
@@ -1918,19 +1539,18 @@ void edptlcbSwitchMenu(struct eduimenu_s *menu) {
 
 
 void edptlcbGroupMenu(struct eduimenu_s *menu) {
-    struct eduistyle_s font;
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
 
-    font = edpp_menu_font;
     edptl_group_menu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt, edptlcbCancelGroupMenu,
-                                      grouptitle);
+                                      "Render Group");
     if (edptl_group_menu != 0) {
         eduiMenuAddItem(edptl_group_menu,
                         eduiItemSliderCreateInt(0, &font, 0, edptlcbSetMasterGroup, 0, 0x20,
-                                                debris_render_group, mastergrouplabel));
+                                                debris_render_group, "Master Switch"));
         if (edpp_nearest != -1 && edpp_ptls[edpp_nearest].debris != -1) {
             eduiMenuAddItem(edptl_group_menu,
                             eduiItemSliderCreateInt(0, &font, 0, edptlcbSetGroup, 0, 0x20,
-                                                    edpp_ptls[edpp_nearest].group, grouplabel));
+                                                    edpp_ptls[edpp_nearest].group, "Group ID"));
         }
         eduiMenuAttach(menu, edptl_group_menu);
         edptl_group_menu->x = menu->x + 10;
@@ -1940,20 +1560,19 @@ void edptlcbGroupMenu(struct eduimenu_s *menu) {
 
 
 void edptlcbDpadModeMenu(struct eduimenu_s *menu) {
-    struct eduistyle_s font;
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
 
-    font = edpp_menu_font;
     dpadmodemenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt, edptlcbCancelDpadModeMenu,
-                                  dpadmodetitle);
+                                  "Dpad Mode");
     if (dpadmodemenu != 0) {
         eduiMenuAddItem(dpadmodemenu, eduiItemCheckCreate(0, &font, edpp_dpad_mode == 0, 1,
-                                                          edptlcbSetDpadMode, dpademitrotlabel));
+                                                          edptlcbSetDpadMode, "Emitter Rotate"));
         eduiMenuAddItem(dpadmodemenu, eduiItemCheckCreate(1, &font, edpp_dpad_mode == 1, 1,
-                                                          edptlcbSetDpadMode, dpadgravrotlabel));
+                                                          edptlcbSetDpadMode, "Gravity Rotate"));
         eduiMenuAddItem(dpadmodemenu, eduiItemCheckCreate(2, &font, edpp_dpad_mode == 2, 1,
-                                                          edptlcbSetDpadMode, dpadoffsetlabel));
+                                                          edptlcbSetDpadMode, "Offset"));
         eduiMenuAddItem(dpadmodemenu, eduiItemCheckCreate(3, &font, edpp_dpad_mode == 3, 1,
-                                                          edptlcbSetDpadMode, dpadreflectlabel));
+                                                          edptlcbSetDpadMode, "Reflections"));
         eduiMenuAttach(menu, dpadmodemenu);
         dpadmodemenu->x = menu->x + 10;
         dpadmodemenu->y = menu->y + 40;
@@ -1962,16 +1581,15 @@ void edptlcbDpadModeMenu(struct eduimenu_s *menu) {
 
 
 void cbPtlTypeMenu(struct eduimenu_s *menu) {
-    struct eduistyle_s font;
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
     int checked;
     int i;
 
-    font = edpp_menu_font;
     ptltypemenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt, cbPtlCancelTypeMenu,
-                                 typemenutitle);
+                                 "Particle Type");
     if (ptltypemenu != 0) {
         eduiMenuAddItem(ptltypemenu, eduiItemSelCreate(1, &font, 0, 0, cbPtlAddEffect,
-                                                       addeffectlabel));
+                                                       "Add Effect"));
         for (i = 1; i < 128; i++) {
             if (debtab[i] != 0 && debtab[i]->listid == edpp_effect_list) {
                 checked = 0;
@@ -1993,12 +1611,11 @@ void cbPtlTypeMenu(struct eduimenu_s *menu) {
 
 
 void cbPtlColMenu(struct eduimenu_s *menu) {
-    struct eduistyle_s font;
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
     struct debkeydatatype_s *deb;
     struct debinfo_s *dt;
     int i;
 
-    font = edpp_menu_font;
     if (edpp_nearest == -1) {
         return;
     }
@@ -2007,22 +1624,24 @@ void cbPtlColMenu(struct eduimenu_s *menu) {
     }
     deb = &debkeydata[edpp_ptls[edpp_nearest].debris];
     dt = debtab[deb->type];
-    ptlcolmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt, cbPtlCancelColMenu, colmenutitle);
+    ptlcolmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt, cbPtlCancelColMenu,
+                                "Particle Colour");
     if (ptlcolmenu != 0) {
-        eduiMenuAddItem(ptlcolmenu, eduiItemGradPickCreate(0, &font, cbPtlApplyGrad, colgradlabel));
-        colgradmenu = edui_last_item;
+        eduiMenuAddItem(ptlcolmenu, eduiItemGradPickCreate(0, &font, cbPtlApplyGrad,
+                                                           "Colour Grad"));
+        grad_item = edui_last_item;
         for (i = 0; i < 8; i++) {
-            eduiGradStageAddRGB(colgradmenu, dt->colslot[i].t, dt->colslot[i].r / 255.0,
+            eduiGradStageAddRGB(grad_item, dt->colslot[i].t, dt->colslot[i].r / 255.0,
                                 dt->colslot[i].g / 255.0, dt->colslot[i].b / 255.0);
             if (dt->colslot[i].t == 1.0f) {
                 break;
             }
         }
         eduiMenuAddItem(ptlcolmenu, eduiItemGreyGradPickCreate(0, &font, cbPtlApplyGrad,
-                                                               alphagradlabel));
-        alphagradmenu = edui_last_item;
+                                                               "Alpha Grad"));
+        grad_alpha_item = edui_last_item;
         for (i = 0; i < 8; i++) {
-            eduiGradStageAddRGB(alphagradmenu, dt->alpslot[i].t, dt->alpslot[i].value / 255.0,
+            eduiGradStageAddRGB(grad_alpha_item, dt->alpslot[i].t, dt->alpslot[i].value / 255.0,
                                 dt->alpslot[i].value / 255.0, dt->alpslot[i].value / 255.0);
             if (dt->alpslot[i].t == 1.0f) {
                 break;
@@ -2036,11 +1655,10 @@ void cbPtlColMenu(struct eduimenu_s *menu) {
 
 
 void cbPtlJibMenu(struct eduimenu_s *menu) {
-    struct eduistyle_s font;
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
     struct debkeydatatype_s *deb;
     struct debinfo_s *dt;
 
-    font = edpp_menu_font;
     if (edpp_nearest == -1) {
         return;
     }
@@ -2049,20 +1667,21 @@ void cbPtlJibMenu(struct eduimenu_s *menu) {
     }
     deb = &debkeydata[edpp_ptls[edpp_nearest].debris];
     dt = debtab[deb->type];
-    ptljibmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0x12C, app_fnt, cbPtlCancelJibMenu, jibmenutitle);
+    ptljibmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0x12C, app_fnt, cbPtlCancelJibMenu,
+                                "Particle Jibber");
     if (ptljibmenu != 0) {
         eduiMenuAddItem(ptljibmenu, eduiItemSliderCreate(0, &font, 0, cbPtlApplyJib, 0.0f, 32.0f,
-                                                         dt->jibxfreq, jibxfreqlabel));
-        ptljibitem0 = edui_last_item;
+                                                         dt->jibxfreq, "Jibber X Freq"));
+        grad_jib_x_freq_item = edui_last_item;
         eduiMenuAddItem(ptljibmenu, eduiItemSliderCreate(0, &font, 0, cbPtlApplyJib, 0.0f, 1000.0f,
-                                                         dt->jibxamp, jibxamplabel));
-        ptljibitem1 = edui_last_item;
+                                                         dt->jibxamp, "Jibber X Amp"));
+        grad_jib_x_amp_item = edui_last_item;
         eduiMenuAddItem(ptljibmenu, eduiItemSliderCreate(0, &font, 0, cbPtlApplyJib, 0.0f, 32.0f,
-                                                         dt->jibyfreq, jibyfreqlabel));
-        ptljibitem2 = edui_last_item;
+                                                         dt->jibyfreq, "Jibber Y Freq"));
+        grad_jib_y_freq_item = edui_last_item;
         eduiMenuAddItem(ptljibmenu, eduiItemSliderCreate(0, &font, 0, cbPtlApplyJib, 0.0f, 1000.0f,
-                                                         dt->jibyamp, jibyamplabel));
-        ptljibitem3 = edui_last_item;
+                                                         dt->jibyamp, "Jibber Y Amp"));
+        grad_jib_y_amp_item = edui_last_item;
         eduiMenuAttach(menu, ptljibmenu);
         ptljibmenu->x = menu->x + 10;
         ptljibmenu->y = menu->y + 40;
@@ -2071,10 +1690,9 @@ void cbPtlJibMenu(struct eduimenu_s *menu) {
 
 
 void edptlcbBounceMenu(struct eduimenu_s *menu) {
-    struct eduistyle_s font;
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
     struct debkeydatatype_s *deb;
 
-    font = edpp_menu_font;
     if (edpp_nearest == -1) {
         return;
     }
@@ -2083,14 +1701,14 @@ void edptlcbBounceMenu(struct eduimenu_s *menu) {
     }
     deb = &debkeydata[edpp_ptls[edpp_nearest].debris];
     edptl_bounce_menu = eduiMenuCreate(0x46, 0x46, 0xC8, 0x12C, app_fnt, edptlcbCancelBounceMenu,
-                                       bouncetitle);
+                                       "Particle Bounce");
     if (edptl_bounce_menu != 0) {
         eduiMenuAddItem(edptl_bounce_menu,
                         eduiItemSliderCreate(0, &font, 0, edptlcbApplyBounceOffset, -2.0f, 4.0f,
-                                             deb->refoff, bounceoffsetlabel));
+                                             deb->refoff, "Plane Offset"));
         eduiMenuAddItem(edptl_bounce_menu,
                         eduiItemSliderCreate(0, &font, 0, edptlcbApplyBounceFactor, 0.0f, 2.0f,
-                                             deb->refbounce, bouncefactorlabel));
+                                             deb->refbounce, "Bounce Factor"));
         eduiMenuAttach(menu, edptl_bounce_menu);
         edptl_bounce_menu->x = menu->x + 10;
         edptl_bounce_menu->y = menu->y + 40;
@@ -2099,22 +1717,21 @@ void edptlcbBounceMenu(struct eduimenu_s *menu) {
 
 
 void edptlcbSoundIDMenu(struct eduimenu_s *menu, struct eduiitem_s *item) {
-    struct eduistyle_s font;
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
     struct debkeydatatype_s *deb;
     struct debinfo_s *dt;
     int checked;
     int i;
 
-    font = edpp_menu_font;
     deb = &debkeydata[edpp_ptls[edpp_nearest].debris];
     dt = debtab[deb->type];
     edptl_soundid_menu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt, edptlcbCancelSoundIDMenu,
-                                        soundidtitle);
+                                        "Sound ID");
     if (edptl_soundid_menu != 0) {
         eduiMenuAddItem(edptl_soundid_menu,
                         eduiItemCheckCreate((item->value << 16) | 9999, &font,
                                             dt->sounds[item->value].id == -1, 0,
-                                            edptlcbSetSoundID, soundnonelabel));
+                                            edptlcbSetSoundID, "NONE"));
         for (i = 0; i < edSfxAllCount; i++) {
             checked = 0;
             if (dt->sounds[item->value].id == i) {
@@ -2135,48 +1752,47 @@ void edptlcbSoundIDMenu(struct eduimenu_s *menu, struct eduiitem_s *item) {
 
 
 void edptlcbSoundControlMenu(struct eduimenu_s *menu, struct eduiitem_s *item) {
-    struct eduistyle_s font;
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
     struct debkeydatatype_s *deb;
     struct debinfo_s *dt;
 
-    font = edpp_menu_font;
     deb = &debkeydata[edpp_ptls[edpp_nearest].debris];
     dt = debtab[deb->type];
     edptl_soundcontrol_menu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt,
-                                             edptlcbCancelSoundControlMenu, soundcontroltitle);
+                                             edptlcbCancelSoundControlMenu, "Sound Control");
     if (edptl_soundcontrol_menu != 0) {
         eduiMenuAddItem(edptl_soundcontrol_menu,
                         eduiItemCheckCreate(item->value << 16, &font,
                                             dt->sounds[item->value].type == 0, 1,
-                                            edptlcbSetSoundControl, soundofflabel));
+                                            edptlcbSetSoundControl, "Off"));
         if (edui_last_item->on) {
             edptl_soundcontrol_menu->current = edui_last_item;
         }
         eduiMenuAddItem(edptl_soundcontrol_menu,
                         eduiItemCheckCreate((item->value << 16) | 1, &font,
                                             dt->sounds[item->value].type == 1, 1,
-                                            edptlcbSetSoundControl, soundonedgelabel));
+                                            edptlcbSetSoundControl, "On Edge"));
         if (edui_last_item->on) {
             edptl_soundcontrol_menu->current = edui_last_item;
         }
         eduiMenuAddItem(edptl_soundcontrol_menu,
                         eduiItemCheckCreate((item->value << 16) | 2, &font,
                                             dt->sounds[item->value].type == 2, 1,
-                                            edptlcbSetSoundControl, soundoffedgelabel));
+                                            edptlcbSetSoundControl, "Off Edge"));
         if (edui_last_item->on) {
             edptl_soundcontrol_menu->current = edui_last_item;
         }
         eduiMenuAddItem(edptl_soundcontrol_menu,
                         eduiItemCheckCreate((item->value << 16) | 3, &font,
                                             dt->sounds[item->value].type == 3, 1,
-                                            edptlcbSetSoundControl, soundperparticlelabel));
+                                            edptlcbSetSoundControl, "Per Particle"));
         if (edui_last_item->on) {
             edptl_soundcontrol_menu->current = edui_last_item;
         }
         eduiMenuAddItem(edptl_soundcontrol_menu,
                         eduiItemCheckCreate((item->value << 16) | 4, &font,
                                             dt->sounds[item->value].type == 4, 1,
-                                            edptlcbSetSoundControl, soundregularlabel));
+                                            edptlcbSetSoundControl, "Regular"));
         if (edui_last_item->on) {
             edptl_soundcontrol_menu->current = edui_last_item;
         }
@@ -2188,12 +1804,11 @@ void edptlcbSoundControlMenu(struct eduimenu_s *menu, struct eduiitem_s *item) {
 
 
 void edptlcbSoundXMenu(struct eduimenu_s *menu, struct eduiitem_s *item) {
-    struct eduistyle_s font;
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
     char title[16];
     struct debkeydatatype_s *deb;
     struct debinfo_s *dt;
 
-    font = edpp_menu_font;
     if (edpp_nearest == -1) {
         return;
     }
@@ -2202,18 +1817,19 @@ void edptlcbSoundXMenu(struct eduimenu_s *menu, struct eduiitem_s *item) {
     }
     deb = &debkeydata[edpp_ptls[edpp_nearest].debris];
     dt = debtab[deb->type];
-    sprintf(title, soundxtitleformat, item->value + 1);
+    sprintf(title, "Sound %d Menu", item->value + 1);
     edptl_soundx_menu = eduiMenuCreate(0x46, 0x46, 0xFA, 0x12C, app_fnt, edptlcbCancelSoundXMenu,
                                        title);
     if (edptl_soundx_menu != 0) {
         eduiMenuAddItem(edptl_soundx_menu, eduiItemSelCreate(item->value, &font, 0, 0,
-                                                             edptlcbSoundIDMenu, soundidlabel));
+                                                             edptlcbSoundIDMenu, "Sound ID..."));
         eduiMenuAddItem(edptl_soundx_menu, eduiItemSelCreate(item->value, &font, 0, 0,
                                                              edptlcbSoundControlMenu,
-                                                             soundcontrollabel));
+                                                             "Sound Control..."));
         eduiMenuAddItem(edptl_soundx_menu,
-                        eduiItemSliderCreateInt(item->value, &font, 0, edptlcbChangeSoundDelay, 0, 0x32,
-                                                dt->sounds[item->value].delay, sounddelaylabel));
+                        eduiItemSliderCreateInt(item->value, &font, 0, edptlcbChangeSoundDelay, 0,
+                                                0x32, dt->sounds[item->value].delay,
+                                                "Sound Delay"));
         eduiMenuAttach(menu, edptl_soundx_menu);
         edptl_soundx_menu->x = menu->x + 10;
         edptl_soundx_menu->y = menu->y + 40;
@@ -2221,14 +1837,39 @@ void edptlcbSoundXMenu(struct eduimenu_s *menu, struct eduiitem_s *item) {
 }
 
 
+static inline void edptlcbSoundsMenu(struct eduimenu_s *menu) {
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
+    char label[16];
+    int i;
+
+    if (edpp_nearest == -1) {
+        return;
+    }
+    if (edpp_ptls[edpp_nearest].debris == -1) {
+        return;
+    }
+    edptl_sounds_menu = eduiMenuCreate(0x46, 0x46, 0xFA, 0x12C, app_fnt, edptlcbCancelSoundsMenu,
+                                       "Attached Sounds");
+    if (edptl_sounds_menu != 0) {
+        for (i = 0; i < 4; i++) {
+            sprintf(label, "Sound %d...", i + 1);
+            eduiMenuAddItem(edptl_sounds_menu,
+                            eduiItemSelCreate(i, &font, 0, 0, edptlcbSoundXMenu, label));
+        }
+        eduiMenuAttach(menu, edptl_sounds_menu);
+        edptl_sounds_menu->x = menu->x + 10;
+        edptl_sounds_menu->y = menu->y + 40;
+    }
+}
+
+
 void cbPtlCollMenu(struct eduimenu_s *menu) {
-    struct eduistyle_s font;
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
     struct debkeydatatype_s *deb;
     struct debinfo_s *dt;
     float ratio;
     int i;
 
-    font = edpp_menu_font;
     if (edpp_nearest == -1) {
         return;
     }
@@ -2237,11 +1878,12 @@ void cbPtlCollMenu(struct eduimenu_s *menu) {
     }
     deb = &debkeydata[edpp_ptls[edpp_nearest].debris];
     dt = debtab[deb->type];
-    collmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0x12C, app_fnt, cbPtlCancelCollMenu, collmenutitle);
+    collmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0x12C, app_fnt, cbPtlCancelCollMenu,
+                              "Collision Spheres");
     if (collmenu != 0) {
         eduiMenuAddItem(collmenu, eduiItemGreyGradPickCreate(0, &font, cbPtlApplyCollEnv,
-                                                             collenvlabel));
-        collenvmenu = edui_last_item;
+                                                             "Collision Envelope"));
+        coll_env_item = edui_last_item;
         for (i = 0; i < 8; i++) {
             if (dt->minsize == dt->maxsize) {
                 ratio = 1.0f;
@@ -2249,15 +1891,15 @@ void cbPtlCollMenu(struct eduimenu_s *menu) {
                 ratio = (dt->sphereslot[i].value - dt->minsize / 10000.0f)
                       / ((dt->maxsize - dt->minsize) / 10000.0f);
             }
-            eduiGradStageAddRGB(collenvmenu, dt->sphereslot[i].t, ratio, ratio, ratio);
+            eduiGradStageAddRGB(coll_env_item, dt->sphereslot[i].t, ratio, ratio, ratio);
             if (dt->sphereslot[i].t == 1.0f) {
                 break;
             }
         }
         eduiMenuAddItem(collmenu, eduiItemSliderCreateInt(0, &font, 0, cbChangeNumCollSpheres, 0, 8,
-                                                          dt->numspheres, numsphereslabel));
+                                                          dt->numspheres, "Num Spheres"));
         eduiMenuAddItem(collmenu, eduiItemSelCreate(1, &font, 0, 0, cbPtlDefaultCollEnv,
-                                                    defaultenvlabel));
+                                                    "Default Envelope"));
         eduiMenuAttach(menu, collmenu);
         collmenu->x = menu->x + 10;
         collmenu->y = menu->y + 40;
@@ -2266,13 +1908,12 @@ void cbPtlCollMenu(struct eduimenu_s *menu) {
 
 
 void cbPtlSizeMenu(struct eduimenu_s *menu) {
-    struct eduistyle_s font;
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
     struct debkeydatatype_s *deb;
     struct debinfo_s *dt;
     float ratio;
     int i;
 
-    font = edpp_menu_font;
     if (edpp_nearest == -1) {
         return;
     }
@@ -2282,52 +1923,52 @@ void cbPtlSizeMenu(struct eduimenu_s *menu) {
     deb = &debkeydata[edpp_ptls[edpp_nearest].debris];
     dt = debtab[deb->type];
     ptlsizemenu = eduiMenuCreate(0x46, 0x46, 0xDC, 0x12C, app_fnt, cbPtlCancelSizeMenu,
-                                 sizemenutitle);
+                                 "Particle Size");
     if (ptlsizemenu != 0) {
         eduiMenuAddItem(ptlsizemenu, eduiItemGreyGradPickCreate(0, &font, cbPtlApplySize,
-                                                                widthenvlabel));
-        widthgradmenu = edui_last_item;
+                                                                "Width Envelope"));
+        grad_size_w_item = edui_last_item;
         for (i = 0; i < 8; i++) {
             if (dt->minsize == dt->maxsize) {
                 ratio = 1.0f;
             } else {
                 ratio = (dt->wslot[i].value - dt->minsize) / (dt->maxsize - dt->minsize);
             }
-            eduiGradStageAddRGB(widthgradmenu, dt->wslot[i].t, ratio, ratio, ratio);
+            eduiGradStageAddRGB(grad_size_w_item, dt->wslot[i].t, ratio, ratio, ratio);
             if (dt->wslot[i].t == 1.0f) {
                 break;
             }
         }
         eduiMenuAddItem(ptlsizemenu, eduiItemGreyGradPickCreate(0, &font, cbPtlApplySize,
-                                                                heightenvlabel));
-        heightgradmenu = edui_last_item;
+                                                                "Height Envelope"));
+        grad_size_h_item = edui_last_item;
         for (i = 0; i < 8; i++) {
             if (dt->minsize == dt->maxsize) {
                 ratio = 1.0f;
             } else {
                 ratio = (dt->hslot[i].value - dt->minsize) / (dt->maxsize - dt->minsize);
             }
-            eduiGradStageAddRGB(heightgradmenu, dt->hslot[i].t, ratio, ratio, ratio);
+            eduiGradStageAddRGB(grad_size_h_item, dt->hslot[i].t, ratio, ratio, ratio);
             if (dt->hslot[i].t == 1.0f) {
                 break;
             }
         }
         eduiMenuAddItem(ptlsizemenu, eduiItemSliderCreate(0, &font, 0, cbPtlApplySize, 0.0f,
-                                                          edpp_slider_scale * 5000.0, dt->minsize,
-                                                          minsizelabel));
-        sizeminitem = edui_last_item;
-        eduiItemSliderSetFmt(edui_last_item, onedecimalfmt);
+                                                          superscale * 5000.0, dt->minsize,
+                                                          "Min Size"));
+        grad_size_min_item = edui_last_item;
+        eduiItemSliderSetFmt(edui_last_item, "(%1.01f)");
         eduiItemSliderSetGranularity(edui_last_item, 0.1f);
         eduiMenuAddItem(ptlsizemenu, eduiItemSliderCreate(0, &font, 0, cbPtlApplySize, 0.0f,
-                                                          edpp_slider_scale * 5000.0, dt->maxsize,
-                                                          maxsizelabel));
-        sizemaxitem = edui_last_item;
-        eduiItemSliderSetFmt(edui_last_item, onedecimalfmt);
+                                                          superscale * 5000.0, dt->maxsize,
+                                                          "Max Size"));
+        grad_size_max_item = edui_last_item;
+        eduiItemSliderSetFmt(edui_last_item, "(%1.01f)");
         eduiItemSliderSetGranularity(edui_last_item, 0.1f);
         eduiMenuAddItem(ptlsizemenu, eduiItemSelCreate(1, &font, 0, 0, cbPtlCopySize,
-                                                       copywidthlabel));
+                                                       "Copy Width to Height"));
         eduiMenuAddItem(ptlsizemenu, eduiItemSelCreate(2, &font, 0, 0, cbPtlCopySize,
-                                                       copyheightlabel));
+                                                       "Copy Height to Width"));
         eduiMenuAttach(menu, ptlsizemenu);
         ptlsizemenu->x = menu->x + 10;
         ptlsizemenu->y = menu->y + 40;
@@ -2336,13 +1977,12 @@ void cbPtlSizeMenu(struct eduimenu_s *menu) {
 
 
 void cbPtlRotMenu(struct eduimenu_s *menu) {
-    struct eduistyle_s font;
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
     struct debkeydatatype_s *deb;
     struct debinfo_s *dt;
     float ratio;
     int i;
 
-    font = edpp_menu_font;
     if (edpp_nearest == -1) {
         return;
     }
@@ -2351,11 +1991,12 @@ void cbPtlRotMenu(struct eduimenu_s *menu) {
     }
     deb = &debkeydata[edpp_ptls[edpp_nearest].debris];
     dt = debtab[deb->type];
-    ptlrotmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0x12C, app_fnt, cbPtlCancelRotMenu, rotmenutitle);
+    ptlrotmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0x12C, app_fnt, cbPtlCancelRotMenu,
+                                "Particle Rotation");
     if (ptlrotmenu != 0) {
         eduiMenuAddItem(ptlrotmenu, eduiItemGreyGradPickCreate(0, &font, cbPtlApplyRot,
-                                                               rotenvlabel));
-        rotgradmenu = edui_last_item;
+                                                               "Rotation Envelope"));
+        grad_rot_item = edui_last_item;
         for (i = 0; i < 8; i++) {
             if (dt->minrot == dt->maxrot) {
                 ratio = 1.0f;
@@ -2363,20 +2004,20 @@ void cbPtlRotMenu(struct eduimenu_s *menu) {
                 ratio = (dt->rotslot[i].value * (360.0f / 65536.0f) - dt->minrot)
                       / (dt->maxrot - dt->minrot);
             }
-            eduiGradStageAddRGB(rotgradmenu, dt->rotslot[i].t, ratio, ratio, ratio);
+            eduiGradStageAddRGB(grad_rot_item, dt->rotslot[i].t, ratio, ratio, ratio);
             if (dt->rotslot[i].t == 1.0f) {
                 break;
             }
         }
         eduiMenuAddItem(ptlrotmenu, eduiItemSliderCreate(0, &font, 0, cbPtlApplyRot, -720.0f,
-                                                         1440.0f, dt->minrot, minrotlabel));
-        rotminitem = edui_last_item;
-        eduiItemSliderSetFmt(edui_last_item, onedecimalfmt);
+                                                         1440.0f, dt->minrot, "Min Rotation"));
+        grad_rot_min_item = edui_last_item;
+        eduiItemSliderSetFmt(edui_last_item, "(%1.01f)");
         eduiItemSliderSetGranularity(edui_last_item, 0.1f);
         eduiMenuAddItem(ptlrotmenu, eduiItemSliderCreate(0, &font, 0, cbPtlApplyRot, -720.0f,
-                                                         1440.0f, dt->maxrot, maxrotlabel));
-        rotmaxitem = edui_last_item;
-        eduiItemSliderSetFmt(edui_last_item, onedecimalfmt);
+                                                         1440.0f, dt->maxrot, "Max Rotation"));
+        grad_rot_max_item = edui_last_item;
+        eduiItemSliderSetFmt(edui_last_item, "(%1.01f)");
         eduiItemSliderSetGranularity(edui_last_item, 0.1f);
         eduiMenuAttach(menu, ptlrotmenu);
         ptlrotmenu->x = menu->x + 10;
@@ -2386,11 +2027,10 @@ void cbPtlRotMenu(struct eduimenu_s *menu) {
 
 
 void cbPtlCutOffMenu(struct eduimenu_s *menu) {
-    struct eduistyle_s font;
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
     struct debkeydatatype_s *deb;
     struct debinfo_s *dt;
 
-    font = edpp_menu_font;
     if (edpp_nearest == -1) {
         return;
     }
@@ -2400,17 +2040,17 @@ void cbPtlCutOffMenu(struct eduimenu_s *menu) {
     deb = &debkeydata[edpp_ptls[edpp_nearest].debris];
     dt = debtab[deb->type];
     ptlcutoffmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0x12C, app_fnt, cbPtlCancelCutOffMenu,
-                                   cutoffmenutitle);
+                                   "CutOff/On Radii");
     if (ptlcutoffmenu != 0) {
         eduiMenuAddItem(ptlcutoffmenu, eduiItemSliderCreate(0, &font, 0, cbPtlChangeCutOff, 0.0f,
-                                                            edpp_slider_scale * 25.0, dt->cutoff,
-                                                            cutofflabel));
+                                                            superscale * 25.0, dt->cutoff,
+                                                            "CutOff Rad"));
         eduiMenuAddItem(ptlcutoffmenu, eduiItemSliderCreate(0, &font, 0, cbPtlChangeCutOn, 0.0f,
-                                                            edpp_slider_scale * 25.0, dt->cuton,
-                                                            cutonlabel));
+                                                            superscale * 25.0, dt->cuton,
+                                                            "CutOn Rad"));
         eduiMenuAddItem(ptlcutoffmenu, eduiItemSliderCreate(0, &font, 0, cbPtlChangeDrawCutOff,
-                                                            0.0f, edpp_slider_scale * 25.0,
-                                                            dt->drawcutoff, drawcutofflabel));
+                                                            0.0f, superscale * 25.0,
+                                                            dt->drawcutoff, "DrawCutOff Rad"));
         eduiMenuAttach(menu, ptlcutoffmenu);
         ptlcutoffmenu->x = menu->x + 10;
         ptlcutoffmenu->y = menu->y + 40;
@@ -2419,11 +2059,10 @@ void cbPtlCutOffMenu(struct eduimenu_s *menu) {
 
 
 void cbPtlVarEmitMenu(struct eduimenu_s *menu) {
-    struct eduistyle_s font;
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
     struct debkeydatatype_s *deb;
     struct debinfo_s *dt;
 
-    font = edpp_menu_font;
     if (edpp_nearest == -1) {
         return;
     }
@@ -2433,54 +2072,54 @@ void cbPtlVarEmitMenu(struct eduimenu_s *menu) {
     deb = &debkeydata[edpp_ptls[edpp_nearest].debris];
     dt = debtab[deb->type];
     ptlvaremitmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0x12C, app_fnt, cbPtlCancelVarEmitMenu,
-                                    varemitmenutitle);
+                                    "Emitter Variation");
     if (ptlvaremitmenu != 0) {
         if (dt->gensort == 0 || dt->gensort == 8 || dt->gensort == 9 || dt->gensort == 10) {
             eduiMenuAddItem(ptlvaremitmenu,
                             eduiItemSliderCreate(0, &font, 0, cbPtlChangeX, 0.0f,
-                                                 edpp_slider_scale * 5.0, dt->variable_emit.x,
-                                                 randemitxlabel));
+                                                 superscale * 5.0, dt->variable_emit.x,
+                                                 "Rand Emit X"));
             eduiMenuAddItem(ptlvaremitmenu,
                             eduiItemSliderCreate(0, &font, 0, cbPtlChangeY, 0.0f,
-                                                 edpp_slider_scale * 5.0, dt->variable_emit.y,
-                                                 randemitylabel));
+                                                 superscale * 5.0, dt->variable_emit.y,
+                                                 "Rand Emit Y"));
             eduiMenuAddItem(ptlvaremitmenu,
                             eduiItemSliderCreate(0, &font, 0, cbPtlChangeZ, 0.0f,
-                                                 edpp_slider_scale * 5.0, dt->variable_emit.z,
-                                                 randemitzlabel));
+                                                 superscale * 5.0, dt->variable_emit.z,
+                                                 "Rand Emit Z"));
         } else if (dt->gensort == 6) {
             eduiMenuAddItem(ptlvaremitmenu,
                             eduiItemSliderCreate(0, &font, 0, cbPtlChangeX, 0.0f,
-                                                 edpp_slider_scale * 5.0, dt->variable_emit.x,
-                                                 randmagxlabel));
+                                                 superscale * 5.0, dt->variable_emit.x,
+                                                 "Rand Mag X"));
             eduiMenuAddItem(ptlvaremitmenu,
                             eduiItemSliderCreate(0, &font, 0, cbPtlChangeY, 0.0f, 180.0f,
                                                  dt->variable_emit.y * (360.0f / 65536.0f),
-                                                 randrotylabel));
-            eduiItemSliderSetFmt(edui_last_item, onedecimalfmt);
+                                                 "Rand Rot Y"));
+            eduiItemSliderSetFmt(edui_last_item, "(%1.01f)");
             eduiItemSliderSetGranularity(edui_last_item, 0.1f);
             eduiMenuAddItem(ptlvaremitmenu,
                             eduiItemSliderCreate(0, &font, 0, cbPtlChangeZ, 0.0f, 180.0f,
                                                  dt->variable_emit.z * (360.0f / 65536.0f),
-                                                 randrotzlabel));
-            eduiItemSliderSetFmt(edui_last_item, onedecimalfmt);
+                                                 "Rand Rot Z"));
+            eduiItemSliderSetFmt(edui_last_item, "(%1.01f)");
             eduiItemSliderSetGranularity(edui_last_item, 0.1f);
         } else if (dt->gensort == 7) {
             eduiMenuAddItem(ptlvaremitmenu,
                             eduiItemSliderCreate(0, &font, 0, cbPtlChangeX, 0.0f,
-                                                 edpp_slider_scale * 5.0, dt->variable_emit.x,
-                                                 randmaglabel));
+                                                 superscale * 5.0, dt->variable_emit.x,
+                                                 "Rand Mag"));
             eduiMenuAddItem(ptlvaremitmenu,
                             eduiItemSliderCreate(0, &font, 0, cbPtlChangeY, -90.0f, 180.0f,
                                                  dt->variable_emit.y * (360.0f / 65536.0f),
-                                                 steprotylabel));
-            eduiItemSliderSetFmt(edui_last_item, onedecimalfmt);
+                                                 "Step Rot Y"));
+            eduiItemSliderSetFmt(edui_last_item, "(%1.01f)");
             eduiItemSliderSetGranularity(edui_last_item, 0.1f);
             eduiMenuAddItem(ptlvaremitmenu,
                             eduiItemSliderCreate(0, &font, 0, cbPtlChangeZ, -90.0f, 180.0f,
                                                  dt->variable_emit.z * (360.0f / 65536.0f),
-                                                 steprotzlabel));
-            eduiItemSliderSetFmt(edui_last_item, onedecimalfmt);
+                                                 "Step Rot Z"));
+            eduiItemSliderSetFmt(edui_last_item, "(%1.01f)");
             eduiItemSliderSetGranularity(edui_last_item, 0.1f);
         }
         eduiMenuAttach(menu, ptlvaremitmenu);
@@ -2491,11 +2130,10 @@ void cbPtlVarEmitMenu(struct eduimenu_s *menu) {
 
 
 void cbPtlVarStartMenu(struct eduimenu_s *menu) {
-    struct eduistyle_s font;
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
     struct debkeydatatype_s *deb;
     struct debinfo_s *dt;
 
-    font = edpp_menu_font;
     if (edpp_nearest == -1) {
         return;
     }
@@ -2506,41 +2144,41 @@ void cbPtlVarStartMenu(struct eduimenu_s *menu) {
     dt = debtab[deb->type];
     if (dt->gensort == 0 || dt->gensort == 8 || dt->gensort == 9 || dt->gensort == 10) {
         ptlvarstartmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0x12C, app_fnt, cbPtlCancelVarStartMenu,
-                                         randstarttitle);
+                                         "Random Start");
     } else if (dt->gensort == 6 || dt->gensort == 7) {
         ptlvarstartmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0x12C, app_fnt, cbPtlCancelVarStartMenu,
-                                         baseemittitle);
+                                         "Base Emit Vector");
     }
     if (ptlvarstartmenu != 0) {
         if (dt->gensort == 0 || dt->gensort == 8 || dt->gensort == 9 || dt->gensort == 10) {
             eduiMenuAddItem(ptlvarstartmenu,
                             eduiItemSliderCreate(0, &font, 0, cbPtlChangeX, 0.0f,
-                                                 edpp_slider_scale * 5.0, dt->variable_start.x,
-                                                 randstartxlabel));
+                                                 superscale * 5.0, dt->variable_start.x,
+                                                 "Rand Start X"));
             eduiMenuAddItem(ptlvarstartmenu,
                             eduiItemSliderCreate(0, &font, 0, cbPtlChangeY, 0.0f,
-                                                 edpp_slider_scale * 5.0, dt->variable_start.y,
-                                                 randstartylabel));
+                                                 superscale * 5.0, dt->variable_start.y,
+                                                 "Rand Start Y"));
             eduiMenuAddItem(ptlvarstartmenu,
                             eduiItemSliderCreate(0, &font, 0, cbPtlChangeZ, 0.0f,
-                                                 edpp_slider_scale * 5.0, dt->variable_start.z,
-                                                 randstartzlabel));
+                                                 superscale * 5.0, dt->variable_start.z,
+                                                 "Rand Start Z"));
         } else if (dt->gensort == 6 || dt->gensort == 7) {
             eduiMenuAddItem(ptlvarstartmenu,
                             eduiItemSliderCreate(0, &font, 0, cbPtlChangeX, 0.0f,
-                                                 edpp_slider_scale * 5.0, dt->variable_start.x,
-                                                 basemaglabel));
+                                                 superscale * 5.0, dt->variable_start.x,
+                                                 "Base Mag"));
             eduiMenuAddItem(ptlvarstartmenu,
                             eduiItemSliderCreate(0, &font, 0, cbPtlChangeY, -180.0f, 360.0f,
                                                  dt->variable_start.y * (360.0f / 65536.0f),
-                                                 baserotylabel));
-            eduiItemSliderSetFmt(edui_last_item, onedecimalfmt);
+                                                 "Base Rot Y"));
+            eduiItemSliderSetFmt(edui_last_item, "(%1.01f)");
             eduiItemSliderSetGranularity(edui_last_item, 0.1f);
             eduiMenuAddItem(ptlvarstartmenu,
                             eduiItemSliderCreate(0, &font, 0, cbPtlChangeZ, -180.0f, 180.0f,
                                                  dt->variable_start.z * (360.0f / 65536.0f),
-                                                 baserotzlabel));
-            eduiItemSliderSetFmt(edui_last_item, onedecimalfmt);
+                                                 "Base Rot Z"));
+            eduiItemSliderSetFmt(edui_last_item, "(%1.01f)");
             eduiItemSliderSetGranularity(edui_last_item, 0.1f);
         }
         eduiMenuAttach(menu, ptlvarstartmenu);
@@ -2550,13 +2188,27 @@ void cbPtlVarStartMenu(struct eduimenu_s *menu) {
 }
 
 
+static inline void cbPtlSScaleMenu(struct eduimenu_s *menu) {
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
+
+    sscalemenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0x12C, app_fnt, cbPtlCancelSScaleMenu,
+                                "Super Scale");
+    if (sscalemenu != 0) {
+        eduiMenuAddItem(sscalemenu, eduiItemSliderCreateInt(0, &font, 0, cbPtlChangeSScale, 1, 0x13,
+                                                            superscale, "Super Scale"));
+        eduiMenuAttach(menu, sscalemenu);
+        sscalemenu->x = menu->x + 10;
+        sscalemenu->y = menu->y + 40;
+    }
+}
+
+
 void cbPtlTextureSelectMenu(struct eduimenu_s *menu) {
-    struct eduistyle_s font;
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
     struct debkeydatatype_s *deb;
     struct debinfo_s *dt;
     struct eduiitem_s *item;
 
-    font = edpp_menu_font;
     if (edpp_nearest == -1) {
         return;
     }
@@ -2566,14 +2218,13 @@ void cbPtlTextureSelectMenu(struct eduimenu_s *menu) {
     deb = &debkeydata[edpp_ptls[edpp_nearest].debris];
     dt = debtab[deb->type];
     if (textureselectmenu == 0) {
-        textureselectmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0x12C, app_fnt, 0,
-                                           textureselecttitle);
+        textureselectmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0x12C, app_fnt, 0, "Texture Select");
         if (textureselectmenu == 0) {
             return;
         }
         eduiMenuAddItem(textureselectmenu,
                         eduiItemTexturePickCreate(0, &font, cbPtlChangeTextureSelect,
-                                                  textureselecttitle));
+                                                  "Texture Select"));
         item = (struct eduiitem_s *)edui_last_item;
         item->u.texpick.mtl = DebMat[1];
         item->u.texpick.u[0] = (dt->u1 - 524288.0f) * (1.0f / 256.0f);
@@ -2590,11 +2241,10 @@ void cbPtlTextureSelectMenu(struct eduimenu_s *menu) {
 
 
 void cbPtlTextureMenu(struct eduimenu_s *menu) {
-    struct eduistyle_s font;
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
     struct debkeydatatype_s *deb;
     struct debinfo_s *dt;
 
-    font = edpp_menu_font;
     if (edpp_nearest == -1) {
         return;
     }
@@ -2604,16 +2254,16 @@ void cbPtlTextureMenu(struct eduimenu_s *menu) {
     deb = &debkeydata[edpp_ptls[edpp_nearest].debris];
     dt = debtab[deb->type];
     texturemenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0x12C, app_fnt, cbPtlCancelTextureMenu,
-                                 texturemenutitle);
+                                 "Texture");
     if (texturemenu != 0) {
         eduiMenuAddItem(texturemenu, eduiItemCheckCreate(0, &font, dt->mat == 0, 1,
-                                                         cbPtlSelTextureType, additivelabel));
+                                                         cbPtlSelTextureType, "Addative"));
         eduiMenuAddItem(texturemenu, eduiItemCheckCreate(2, &font, dt->mat == 2, 1,
-                                                         cbPtlSelTextureType, modulationlabel));
+                                                         cbPtlSelTextureType, "Modulation"));
         eduiMenuAddItem(texturemenu, eduiItemCheckCreate(3, &font, dt->mat == 3, 1,
-                                                         cbPtlSelTextureType, subtractivelabel));
+                                                         cbPtlSelTextureType, "Subtractive"));
         eduiMenuAddItem(texturemenu, eduiItemSelCreate(1, &font, 0, 0, cbPtlTextureSelectMenu,
-                                                       textureselectorlabel));
+                                                       "Texture Selector..."));
         eduiMenuAttach(menu, texturemenu);
         texturemenu->x = menu->x + 10;
         texturemenu->y = menu->y + 40;
@@ -2622,11 +2272,10 @@ void cbPtlTextureMenu(struct eduimenu_s *menu) {
 
 
 void cbPtlEmitTimeMenu(struct eduimenu_s *menu) {
-    struct eduistyle_s font;
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
     struct debkeydatatype_s *deb;
     struct debinfo_s *dt;
 
-    font = edpp_menu_font;
     if (edpp_nearest == -1) {
         return;
     }
@@ -2636,24 +2285,22 @@ void cbPtlEmitTimeMenu(struct eduimenu_s *menu) {
     deb = &debkeydata[edpp_ptls[edpp_nearest].debris];
     dt = debtab[deb->type];
     emittimemenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0x12C, app_fnt, cbPtlCancelEmitTimeMenu,
-                                  emittimemenutitle);
+                                  "Emitter Timing");
     if (emittimemenu != 0) {
         eduiMenuAddItem(emittimemenu,
                         eduiItemSliderCreateInt(0, &font, 0, cbPtlChangeIvalOn, 1,
-                                                edpp_slider_scale * 120.0 - 1.0, dt->ival_on,
-                                                ontimelabel));
+                                                superscale * 120.0 - 1.0, dt->ival_on, "On Time"));
         eduiMenuAddItem(emittimemenu,
                         eduiItemSliderCreateInt(0, &font, 0, cbPtlChangeIvalOnRan, 0,
-                                                edpp_slider_scale * 120.0, dt->ival_on_ran,
-                                                randontimelabel));
+                                                superscale * 120.0, dt->ival_on_ran,
+                                                "Random On Time"));
         eduiMenuAddItem(emittimemenu,
                         eduiItemSliderCreateInt(0, &font, 0, cbPtlChangeIvalOff, 0,
-                                                edpp_slider_scale * 120.0, dt->ival_off,
-                                                offtimelabel));
+                                                superscale * 120.0, dt->ival_off, "Off Time"));
         eduiMenuAddItem(emittimemenu,
                         eduiItemSliderCreateInt(0, &font, 0, cbPtlChangeIvalOffRan, 0,
-                                                edpp_slider_scale * 120.0, dt->ival_off_ran,
-                                                randofftimelabel));
+                                                superscale * 120.0, dt->ival_off_ran,
+                                                "Random Off Time"));
         eduiMenuAttach(menu, emittimemenu);
         emittimemenu->x = menu->x + 10;
         emittimemenu->y = menu->y + 40;
@@ -2662,11 +2309,10 @@ void cbPtlEmitTimeMenu(struct eduimenu_s *menu) {
 
 
 void cbPtlEmitVelMenu(struct eduimenu_s *menu) {
-    struct eduistyle_s font;
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
     struct debkeydatatype_s *deb;
     struct debinfo_s *dt;
 
-    font = edpp_menu_font;
     if (edpp_nearest == -1) {
         return;
     }
@@ -2676,11 +2322,11 @@ void cbPtlEmitVelMenu(struct eduimenu_s *menu) {
     deb = &debkeydata[edpp_ptls[edpp_nearest].debris];
     dt = debtab[deb->type];
     ptlemitvelmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt, cbPtlCancelEmitVelMenu,
-                                    emitveltitle);
+                                    "Emitter Vel");
     if (ptlemitvelmenu != 0) {
         eduiMenuAddItem(ptlemitvelmenu, eduiItemSliderCreate(0, &font, 0, cbPtlChangeEmitVel, 0.0f,
-                                                             edpp_slider_scale * 10.0, dt->emitmag,
-                                                             emitveltitle));
+                                                             superscale * 10.0, dt->emitmag,
+                                                             "Emitter Vel"));
         eduiMenuAttach(menu, ptlemitvelmenu);
         ptlemitvelmenu->x = menu->x + 10;
         ptlemitvelmenu->y = menu->y + 40;
@@ -2689,11 +2335,10 @@ void cbPtlEmitVelMenu(struct eduimenu_s *menu) {
 
 
 void cbPtlGravMenu(struct eduimenu_s *menu) {
-    struct eduistyle_s font;
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
     struct debkeydatatype_s *deb;
     struct debinfo_s *dt;
 
-    font = edpp_menu_font;
     if (edpp_nearest == -1) {
         return;
     }
@@ -2702,16 +2347,50 @@ void cbPtlGravMenu(struct eduimenu_s *menu) {
     }
     deb = &debkeydata[edpp_ptls[edpp_nearest].debris];
     dt = debtab[deb->type];
-    ptlgravmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt, cbPtlCancelGravMenu,
-                                 gravitytitle);
+    ptlgravmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt, cbPtlCancelGravMenu, "Gravity");
     if (ptlgravmenu != 0) {
         eduiMenuAddItem(ptlgravmenu, eduiItemSliderCreate(0, &font, 0, cbPtlChangeGrav,
-                                                          edpp_slider_scale * -10.0,
-                                                          edpp_slider_scale * 20.0, dt->grav,
-                                                          gravitytitle));
+                                                          superscale * -10.0,
+                                                          superscale * 20.0, dt->grav, "Gravity"));
         eduiMenuAttach(menu, ptlgravmenu);
         ptlgravmenu->x = menu->x + 10;
         ptlgravmenu->y = menu->y + 40;
+    }
+}
+
+
+static inline void cbMemCardErase(struct eduimenu_s *menu) {
+    struct eduimenu_s *arg;
+
+    arg = 0;
+    if (menu->parent != 0) {
+        arg = menu->parent;
+        eduiMenuDetach(menu);
+    }
+    if (menu->cancel != 0) {
+        menu->cancel(menu, arg);
+    }
+    CreateMessageMenu((struct eduimenu_s *)arg, "Test message", 0);
+}
+
+
+static inline void cbMemCardEraseConfirm(struct eduimenu_s *menu) {
+    CreateConfirmMenu(menu, "Erase Card?", cbMemCardErase);
+}
+
+
+static inline void cbChangeFileNameMenu(struct eduimenu_s *menu) {
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
+
+    filenamemenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt, cbCancelChangeFileNameMenu,
+                                  "File Name");
+    if (filenamemenu != 0) {
+        eduiMenuAddItem(filenamemenu, eduiItemTextPickCreate(0, &font, cbChangeFileName,
+                                                             "File Name"));
+        strcpy(edui_last_item->u.textpick.text, mcfilename);
+        eduiMenuAttach(menu, filenamemenu);
+        filenamemenu->x = menu->x + 10;
+        filenamemenu->y = menu->y + 40;
     }
 }
 
@@ -2851,55 +2530,37 @@ int edppSaveEffects(char *filename, signed char list) {
 }
 
 
-static inline void ShowMessageMenu(struct eduimenu_s *parent, char *message, int flags) {
-    struct eduistyle_s font;
-
-    font = edpp_message_font;
-    if (flags == 1) {
-        font.pen[0] = 0x8000C000;
-    }
-    messagemenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt, cbCancelMessageMenu,
-                                 messagemenutitle);
-    if (messagemenu != 0) {
-        eduiMenuAddItem(messagemenu, eduiItemSelCreate(1, &font, 0, 0, 0, message));
-        eduiMenuAttach(parent, messagemenu);
-        messagemenu->x = parent->x + 10;
-        messagemenu->y = parent->y + 40;
-    }
-}
-
-
 void cbFileSaveEffects(struct eduimenu_s *menu) {
     char filename[256];
 
-    if (edpp_level_type == 1) {
+    if (levelfilenametype == 1) {
         if (edpp_effect_list == 0) {
-            sprintf(filename, genericeffectsfile);
+            sprintf(filename, "Generic\\Particle.dat");
         } else {
-            sprintf(filename, leveleffectsformat, edpp_level_path);
+            sprintf(filename, "%s\\Particle.dat", levelfilename);
         }
         if (edppSaveEffects(filename, edpp_effect_list)) {
-            ShowMessageMenu(menu, savedokmessage, 1);
+            CreateMessageMenu(menu, "Saved OK", 1);
         } else {
-            ShowMessageMenu(menu, saveerrormessage, 0);
+            CreateMessageMenu(menu, "File Save Error", 0);
         }
-    } else if (edpp_level_type == 2) {
+    } else if (levelfilenametype == 2) {
         if (edpp_effect_list == 0) {
-            sprintf(filename, generalptlfile);
+            sprintf(filename, "stuff\\general.ptl");
         } else if (edpp_effect_list == 1) {
-            sprintf(filename, levelptlformat, edpp_level_path);
+            sprintf(filename, "%s.ptl", levelfilename);
         } else if (edpp_effect_list == 5) {
-            sprintf(filename, charptlformat, edpp_level_path);
+            sprintf(filename, "%s.cpt", levelfilename);
         } else {
-            ShowMessageMenu(menu, saveerrormessage, 0);
+            CreateMessageMenu(menu, "File Save Error", 0);
         }
         if (edppSaveEffects(filename, edpp_effect_list)) {
-            ShowMessageMenu(menu, savedokmessage, 1);
+            CreateMessageMenu(menu, "Saved OK", 1);
         } else {
-            ShowMessageMenu(menu, saveerrormessage, 0);
+            CreateMessageMenu(menu, "File Save Error", 0);
         }
     } else {
-        ShowMessageMenu(menu, saveerrormessage, 0);
+        CreateMessageMenu(menu, "File Save Error", 0);
     }
 }
 
@@ -3241,34 +2902,34 @@ void cbFileLoadEffects(struct eduimenu_s *menu) {
         debtab[j] = 0;
     }
     effect_types_used = 1;
-    if (edpp_level_type == 1) {
-        sprintf(filename, leveleffectsformat, edpp_level_path);
+    if (levelfilenametype == 1) {
+        sprintf(filename, "%s\\Particle.dat", levelfilename);
         if (NuFileSize(filename) > 0) {
             edppLoadEffects(filename, 1);
         }
-        sprintf(filename, genericeffectsfile);
+        sprintf(filename, "Generic\\Particle.dat");
         if (NuFileSize(filename) > 0) {
             edppMergeEffects(filename, 0);
         }
         edppRestartAllEffectsInLevel();
-        ShowMessageMenu(menu, loadedokmessage, 1);
-    } else if (edpp_level_type == 2) {
-        sprintf(filename, levelptlformat, edpp_level_path);
+        CreateMessageMenu(menu, "Loaded OK", 1);
+    } else if (levelfilenametype == 2) {
+        sprintf(filename, "%s.ptl", levelfilename);
         if (NuFileSize(filename) > 0) {
             edppLoadEffects(filename, 1);
         }
-        sprintf(filename, generalptlfile);
+        sprintf(filename, "stuff\\general.ptl");
         if (NuFileSize(filename) > 0) {
             edppMergeEffects(filename, 0);
         }
-        sprintf(filename, charptlformat, edpp_level_path);
+        sprintf(filename, "%s.cpt", levelfilename);
         if (NuFileSize(filename) > 0) {
             edppMergeEffects(filename, 5);
         }
         edppRestartAllEffectsInLevel();
-        ShowMessageMenu(menu, loadedokmessage, 1);
+        CreateMessageMenu(menu, "Loaded OK", 1);
     } else {
-        ShowMessageMenu(menu, loaderrormessage, 0);
+        CreateMessageMenu(menu, "File Load Error", 0);
     }
 }
 
@@ -3413,16 +3074,16 @@ int edppMemCardSaveEffects(char *filename, signed char list) {
 void cbMemCardSaveEffects(struct eduimenu_s *menu) {
     char filename[256];
 
-    sceMcGetDir(0, 0, effectsfilter, 0, 10, mcdir);
-    sceMcSync(0, 0, &memcardresult);
-    if (memcardresult >= 8) {
-        ShowMessageMenu(menu, toomanyeffectsmessage, 0);
+    sceMcGetDir(0, 0, "*.eff", 0, 10, mcdir);
+    sceMcSync(0, 0, &mcresult);
+    if (mcresult >= 8) {
+        CreateMessageMenu(menu, "Too Many Effects Saves", 0);
     } else {
-        sprintf(filename, effectsnameformat, savefilename);
+        sprintf(filename, "%s.eff", mcfilename);
         if (edppMemCardSaveEffects(filename, 2)) {
-            ShowMessageMenu(menu, savedokmessage, 1);
+            CreateMessageMenu(menu, "Saved OK", 1);
         } else {
-            ShowMessageMenu(menu, saveerrormessage, 0);
+            CreateMessageMenu(menu, "File Save Error", 0);
         }
     }
 }
@@ -3431,16 +3092,16 @@ void cbMemCardSaveEffects(struct eduimenu_s *menu) {
 void cbMemCardSaveEffectTypes(struct eduimenu_s *menu) {
     char filename[256];
 
-    sceMcGetDir(0, 0, effecttypesfilter, 0, 10, mcdir);
-    sceMcSync(0, 0, &memcardresult);
-    if (memcardresult >= 8) {
-        ShowMessageMenu(menu, toomanytypesmessage, 0);
+    sceMcGetDir(0, 0, "*.eft", 0, 10, mcdir);
+    sceMcSync(0, 0, &mcresult);
+    if (mcresult >= 8) {
+        CreateMessageMenu(menu, "Too Many Effect Type Saves", 0);
     } else {
-        sprintf(filename, effecttypesnameformat, savefilename);
+        sprintf(filename, "%s.eft", mcfilename);
         if (edppMemCardSaveEffects(filename, edpp_effect_list)) {
-            ShowMessageMenu(menu, savedokmessage, 1);
+            CreateMessageMenu(menu, "Saved OK", 1);
         } else {
-            ShowMessageMenu(menu, saveerrormessage, 0);
+            CreateMessageMenu(menu, "File Save Error", 0);
         }
     }
 }
@@ -3631,12 +3292,35 @@ void cbMemCardLoadEffects(struct eduimenu_s *menu, struct eduiitem_s *item) {
         debtab[j] = 0;
     }
     effect_types_used = 1;
-    sprintf(filename, memcardfilenames[item->value]);
+    sprintf(filename, mcdir[item->value].name);
     if (edppMemCardLoadEffects(filename, 2)) {
         edppRestartAllEffectsInLevel();
-        ShowMessageMenu(menu, loadedokmessage, 1);
+        CreateMessageMenu(menu, "Loaded OK", 1);
     } else {
-        ShowMessageMenu(menu, loaderrormessage, 0);
+        CreateMessageMenu(menu, "File Load Error", 0);
+    }
+}
+
+
+static inline void cbMemCardLoadEffectsMenu(struct eduimenu_s *menu) {
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
+    int i;
+
+    sceMcGetDir(0, 0, "*.eff", 0, 10, mcdir);
+    sceMcSync(0, 0, &mcresult);
+    if (mcresult > 0) {
+        loadeffectsmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt,
+                                         cbMemCardCancelLoadEffectsMenu, "Load Effects");
+        if (loadeffectsmenu != 0) {
+            for (i = 0; i < mcresult; i++) {
+                eduiMenuAddItem(loadeffectsmenu, eduiItemSelCreate(i, &font, 0, 0,
+                                                                   cbMemCardLoadEffects,
+                                                                   mcdir[i].name));
+            }
+            eduiMenuAttach(menu, loadeffectsmenu);
+            loadeffectsmenu->x = menu->x + 10;
+            loadeffectsmenu->y = menu->y + 40;
+        }
     }
 }
 
@@ -3683,74 +3367,140 @@ int edppMemCardMergeEffects(char *filename, signed char list) {
 void cbMemCardMergeEffects(struct eduimenu_s *menu, struct eduiitem_s *item) {
     char filename[256];
 
-    sprintf(filename, memcardfilenames[item->value]);
+    sprintf(filename, mcdir[item->value].name);
     if (edppMemCardMergeEffects(filename, edpp_effect_list)) {
-        ShowMessageMenu(menu, mergedokmessage, 1);
+        CreateMessageMenu(menu, "Merged OK", 1);
     } else {
-        ShowMessageMenu(menu, loaderrormessage, 0);
+        CreateMessageMenu(menu, "File Load Error", 0);
+    }
+}
+
+
+static inline void cbMemCardMergeEffectsMenu(struct eduimenu_s *menu) {
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
+    int i;
+
+    sceMcGetDir(0, 0, "*.eft", 0, 10, mcdir);
+    sceMcSync(0, 0, &mcresult);
+    if (mcresult > 0) {
+        mergeeffectsmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt,
+                                          cbMemCardCancelMergeEffectsMenu, "Merge Effects");
+        if (mergeeffectsmenu != 0) {
+            for (i = 0; i < mcresult; i++) {
+                eduiMenuAddItem(mergeeffectsmenu, eduiItemSelCreate(i, &font, 0, 0,
+                                                                    cbMemCardMergeEffects,
+                                                                    mcdir[i].name));
+            }
+            eduiMenuAttach(menu, mergeeffectsmenu);
+            mergeeffectsmenu->x = menu->x + 10;
+            mergeeffectsmenu->y = menu->y + 40;
+        }
+    }
+}
+
+
+void cbMemCardDeleteEffects(struct eduimenu_s *menu, struct eduiitem_s *item) {
+    struct eduimenu_s *arg;
+
+    arg = 0;
+    sceMcDelete(0, 0, mcdir[item->value].name);
+    sceMcSync(0, 0, &mcresult);
+    if (menu->parent != 0) {
+        arg = menu->parent;
+        eduiMenuDetach(menu);
+    }
+    if (menu->cancel != 0) {
+        menu->cancel(menu, arg);
+    }
+    if (mcresult < 0) {
+        CreateMessageMenu((struct eduimenu_s *)arg, "File Delete Error", 0);
+    } else {
+        CreateMessageMenu((struct eduimenu_s *)arg, "File Delete OK", 1);
+    }
+}
+
+
+static inline void cbMemCardDeleteEffectsMenu(struct eduimenu_s *menu) {
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
+    int i;
+
+    sceMcGetDir(0, 0, "*.eff", 0, 10, mcdir);
+    sceMcSync(0, 0, &mcresult);
+    if (mcresult > 0) {
+        deleteeffectsmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt,
+                                           cbMemCardCancelDeleteEffectsMenu, "Delete Effects");
+        if (deleteeffectsmenu != 0) {
+            for (i = 0; i < mcresult; i++) {
+                eduiMenuAddItem(deleteeffectsmenu, eduiItemSelCreate(i, &font, 0, 0,
+                                                                     cbMemCardDeleteEffects,
+                                                                     mcdir[i].name));
+            }
+            eduiMenuAttach(menu, deleteeffectsmenu);
+            deleteeffectsmenu->x = menu->x + 10;
+            deleteeffectsmenu->y = menu->y + 40;
+        }
     }
 }
 
 
 void cbMemCardMenu(struct eduimenu_s *menu) {
-    struct eduistyle_s font;
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
 
-    font = edpp_menu_font;
-    sceMcGetInfo(0, 0, &memcardtype, &memcardfree, &memcardformat);
-    sceMcSync(0, 0, &memcardresult);
-    if (memcardformat == 0) {
+    sceMcGetInfo(0, 0, &mctype, &mcfree, &mcformat);
+    sceMcSync(0, 0, &mcresult);
+    if (mcformat == 0) {
         sceMcFormat(0, 0);
-        sceMcSync(0, 0, &memcardresult);
-        sceMcGetInfo(0, 0, &memcardtype, &memcardfree, &memcardformat);
-        sceMcSync(0, 0, &memcardresult);
+        sceMcSync(0, 0, &mcresult);
+        sceMcGetInfo(0, 0, &mctype, &mcfree, &mcformat);
+        sceMcSync(0, 0, &mcresult);
     }
-    sceMcChdir(0, 0, memcardrootdir, 0);
-    sceMcSync(0, 0, &memcardresult);
-    sceMcGetDir(0, 0, memcardptldirname, 0, 10, mcdir);
-    sceMcSync(0, 0, &memcardresult);
-    if (memcardresult == 0) {
-        sceMcMkdir(0, 0, memcardptldirname);
-        sceMcSync(0, 0, &memcardresult);
+    sceMcChdir(0, 0, "/", 0);
+    sceMcSync(0, 0, &mcresult);
+    sceMcGetDir(0, 0, "ParticleData", 0, 10, mcdir);
+    sceMcSync(0, 0, &mcresult);
+    if (mcresult == 0) {
+        sceMcMkdir(0, 0, "ParticleData");
+        sceMcSync(0, 0, &mcresult);
     }
-    sceMcChdir(0, 0, memcardptldir, 0);
-    sceMcSync(0, 0, &memcardresult);
-    sceMcGetDir(0, 0, memcardwildcard, 0, 10, mcdir);
-    sceMcSync(0, 0, &memcardresult);
+    sceMcChdir(0, 0, "/ParticleData", 0);
+    sceMcSync(0, 0, &mcresult);
+    sceMcGetDir(0, 0, "*", 0, 10, mcdir);
+    sceMcSync(0, 0, &mcresult);
     memcardmenu = eduiMenuCreate(0x46, 0x46, 0x10E, 0xFA, app_fnt, cbCancelMemCardMenu,
-                                 memcardmenutitle);
+                                 "Memory Card");
     if (memcardmenu != 0) {
         eduiMenuAddItem(memcardmenu, eduiItemSelCreate(1, &font, 0, 0, cbChangeFileNameMenu,
-                                                       memcardfilenamelabel));
+                                                       "File Name..."));
         eduiMenuAddItem(memcardmenu, eduiItemSelCreate(1, &font, 0, 0, cbMemCardSaveEffects,
-                                                       memcardsavealllabel));
+                                                       "Save All Effects"));
         eduiMenuAddItem(memcardmenu, eduiItemSelCreate(1, &font, 0, 0, cbMemCardLoadEffectsMenu,
-                                                       memcardloadalllabel));
+                                                       "Load All Effects..."));
         if (edpp_effect_list == 0) {
             eduiMenuAddItem(memcardmenu, eduiItemSelCreate(1, &font, 0, 0,
                                                            cbMemCardSaveEffectTypes,
-                                                           memcardsavegenerallabel));
+                                                           "Save General Effect Types"));
             eduiMenuAddItem(memcardmenu, eduiItemSelCreate(1, &font, 0, 0,
                                                            cbMemCardMergeEffectsMenu,
-                                                           memcardmergegenerallabel));
+                                                           "Merge Effect Types > General..."));
         } else if (edpp_effect_list == 1) {
             eduiMenuAddItem(memcardmenu, eduiItemSelCreate(1, &font, 0, 0,
                                                            cbMemCardSaveEffectTypes,
-                                                           memcardsavelevellabel));
+                                                           "Save Level Effect Types"));
             eduiMenuAddItem(memcardmenu, eduiItemSelCreate(1, &font, 0, 0,
                                                            cbMemCardMergeEffectsMenu,
-                                                           memcardmergelevellabel));
+                                                           "Merge Effect Types > Level..."));
         } else if (edpp_effect_list == 5) {
             eduiMenuAddItem(memcardmenu, eduiItemSelCreate(1, &font, 0, 0,
                                                            cbMemCardSaveEffectTypes,
-                                                           memcardsavecharlabel));
+                                                           "Save Char Effect Types"));
             eduiMenuAddItem(memcardmenu, eduiItemSelCreate(1, &font, 0, 0,
                                                            cbMemCardMergeEffectsMenu,
-                                                           memcardmergecharlabel));
+                                                           "Merge Effect Types > Char..."));
         }
         eduiMenuAddItem(memcardmenu, eduiItemSelCreate(1, &font, 0, 0, cbMemCardDeleteEffectsMenu,
-                                                       memcarddeletelabel));
+                                                       "Delete Effects..."));
         eduiMenuAddItem(memcardmenu, eduiItemSelCreate(1, &font, 0, 0, cbMemCardEraseConfirm,
-                                                       memcarderaselabel));
+                                                       "Erase Card"));
         eduiMenuAttach(menu, memcardmenu);
         memcardmenu->x = menu->x + 10;
         memcardmenu->y = menu->y + 40;
@@ -3759,34 +3509,33 @@ void cbMemCardMenu(struct eduimenu_s *menu) {
 
 
 void edptlcbClipboardMenu(struct eduimenu_s *menu) {
-    struct eduistyle_s font;
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
     char label[64];
     char listname[32];
     struct debinfo_s *dt;
 
-    font = edpp_menu_font;
     if (edpp_create_type == -1) {
         return;
     }
     dt = debtab[edpp_create_type];
     ptlclipmenu = eduiMenuCreate(0x46, 0x46, 0x12C, 0xFA, app_fnt, edptlcbCancelClipboardMenu,
-                                 clipboardtitle);
+                                 "Clipboard Menu");
     if (ptlclipmenu != 0) {
         if (edpp_effect_list == 0) {
-            sprintf(listname, clipboardgenerallist);
+            sprintf(listname, "General List");
         } else if (edpp_effect_list == 1) {
-            sprintf(listname, clipboardlevellist);
+            sprintf(listname, "Level List");
         } else if (edpp_effect_list == 5) {
-            sprintf(listname, clipboardcharlist);
+            sprintf(listname, "Char List");
         }
         if (edptl_clipboard_entry != -1) {
             eduiMenuAddItem(ptlclipmenu, eduiItemSelCreate(1, &font, 0, 0, edptlcbEmptyClipboard,
-                                                           clipboardemptylabel));
-            sprintf(label, clipboardpasteformat, debtab[edptl_clipboard_entry]->id, listname);
+                                                           "Empty Clipboard"));
+            sprintf(label, "Paste %s into %s", debtab[edptl_clipboard_entry]->id, listname);
             eduiMenuAddItem(ptlclipmenu,
                             eduiItemSelCreate(1, &font, 0, 0, edptlcbPasteClipboard, label));
         } else {
-            sprintf(label, clipboardcutformat, dt->id, listname);
+            sprintf(label, "Cut %s from %s", dt->id, listname);
             eduiMenuAddItem(ptlclipmenu,
                             eduiItemSelCreate(1, &font, 0, 0, edptlcbCutClipboard, label));
         }
@@ -3798,37 +3547,35 @@ void edptlcbClipboardMenu(struct eduimenu_s *menu) {
 
 
 void cbPtlDataMenu(struct eduimenu_s *menu) {
-    struct eduistyle_s font;
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
 
-    font = edpp_menu_font;
-    ptldatamenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt, cbPtlCancelDataMenu,
-                                 datamenutitle);
+    ptldatamenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt, cbPtlCancelDataMenu, "Data Menu");
     if (ptldatamenu != 0) {
         eduiMenuAddItem(ptldatamenu, eduiItemSelCreate(1, &font, 0, 0, cbChangeNameMenu,
-                                                       datamenutypename));
+                                                       "Type Name..."));
         if (edpp_create_type != -1) {
             eduiMenuAddItem(ptldatamenu, eduiItemSelCreate(1, &font, 0, 0, cbPtlDeleteEffect,
-                                                           datamenudelete));
+                                                           "Delete Effect"));
             eduiMenuAddItem(ptldatamenu, eduiItemSelCreate(1, &font, 0, 0, cbPtlCopyEffect,
-                                                           datamenucopy));
+                                                           "Copy Effect"));
         }
         if (edpp_effect_list == 0) {
             eduiMenuAddItem(ptldatamenu, eduiItemSelCreate(1, &font, 0, 0, cbFileSaveEffects,
-                                                           datamenusavegeneral));
+                                                           "Save General list"));
         } else if (edpp_effect_list == 1) {
             eduiMenuAddItem(ptldatamenu, eduiItemSelCreate(1, &font, 0, 0, cbFileSaveEffects,
-                                                           datamenusavelevel));
+                                                           "Save Level list"));
         } else if (edpp_effect_list == 5) {
             eduiMenuAddItem(ptldatamenu, eduiItemSelCreate(1, &font, 0, 0, cbFileSaveEffects,
-                                                           datamenusavechar));
+                                                           "Save Char list"));
         }
         eduiMenuAddItem(ptldatamenu, eduiItemSelCreate(1, &font, 0, 0, cbFileLoadEffects,
-                                                       datamenuloadall));
+                                                       "Load all from file"));
         eduiMenuAddItem(ptldatamenu, eduiItemSelCreate(1, &font, 0, 0, cbMemCardMenu,
-                                                       datamenumemcard));
+                                                       "Mem Card..."));
         if (edpp_create_type != -1) {
             eduiMenuAddItem(ptldatamenu, eduiItemSelCreate(1, &font, 0, 0, edptlcbClipboardMenu,
-                                                           datamenuclipboard));
+                                                           "Clipboard..."));
         }
         eduiMenuAttach(menu, ptldatamenu);
         ptldatamenu->x = menu->x + 10;
@@ -3838,10 +3585,9 @@ void cbPtlDataMenu(struct eduimenu_s *menu) {
 
 
 void cbPtlEmitMenu(struct eduimenu_s *menu) {
-    struct eduistyle_s font;
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
     struct debinfo_s *dt;
 
-    font = edpp_menu_font;
     if (edpp_nearest == -1) {
         return;
     }
@@ -3850,29 +3596,29 @@ void cbPtlEmitMenu(struct eduimenu_s *menu) {
     }
     dt = debtab[debkeydata[edpp_ptls[edpp_nearest].debris].type];
     ptlemitmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0x12C, app_fnt, cbPtlCancelEmitMenu,
-                                 emitmenutitle);
+                                 "Emitter Settings");
     if (ptlemitmenu != 0) {
         eduiMenuAddItem(ptlemitmenu, eduiItemSelCreate(1, &font, 0, 0, cbPtlEmitVelMenu,
-                                                       emitmenuvel));
+                                                       "Emitter Vel..."));
         eduiMenuAddItem(ptlemitmenu, eduiItemSelCreate(1, &font, 0, 0, cbPtlGravMenu,
-                                                       emitmenugravity));
+                                                       "Gravity..."));
         if (dt->gensort == 0 || dt->gensort == 8 || dt->gensort == 9 || dt->gensort == 10) {
             eduiMenuAddItem(ptlemitmenu, eduiItemSelCreate(1, &font, 0, 0, cbPtlVarStartMenu,
-                                                           emitmenurandomstart));
+                                                           "Random Start..."));
         } else if (dt->gensort == 6 || dt->gensort == 7) {
             eduiMenuAddItem(ptlemitmenu, eduiItemSelCreate(1, &font, 0, 0, cbPtlVarStartMenu,
-                                                           emitmenubasevector));
+                                                           "Base Emit Vector..."));
         }
         eduiMenuAddItem(ptlemitmenu, eduiItemSelCreate(1, &font, 0, 0, cbPtlVarEmitMenu,
-                                                       emitmenuvariation));
+                                                       "Emitter Variation..."));
         eduiMenuAddItem(ptlemitmenu, eduiItemSelCreate(1, &font, 0, 0, cbChangeGenRateMenu,
-                                                       emitmenugenrate));
+                                                       "Gen Rate..."));
         eduiMenuAddItem(ptlemitmenu, eduiItemSelCreate(1, &font, 0, 0, cbChangeETimeMenu,
-                                                       emitmenulife));
+                                                       "Particle Life..."));
         eduiMenuAddItem(ptlemitmenu, eduiItemSelCreate(1, &font, 0, 0, cbPtlEmitTimeMenu,
-                                                       emitmenutiming));
+                                                       "Emitter Timing..."));
         eduiMenuAddItem(ptlemitmenu, eduiItemSelCreate(1, &font, 0, 0, cbPtlCutOffMenu,
-                                                       emitmenucutoff));
+                                                       "CutOff/On Radii..."));
     }
     eduiMenuAttach(menu, ptlemitmenu);
     ptlemitmenu->x = menu->x + 10;
@@ -3881,10 +3627,9 @@ void cbPtlEmitMenu(struct eduimenu_s *menu) {
 
 
 void cbPtlGSortMenu(struct eduimenu_s *menu) {
-    struct eduistyle_s font;
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
     struct debinfo_s *dt;
 
-    font = edpp_menu_font;
     if (edpp_nearest == -1) {
         return;
     }
@@ -3893,20 +3638,20 @@ void cbPtlGSortMenu(struct eduimenu_s *menu) {
     }
     dt = debtab[debkeydata[edpp_ptls[edpp_nearest].debris].type];
     ptlgsortmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt, cbPtlCancelGSortMenu,
-                                  gsorttitle);
+                                  "GenSort Type");
     if (ptlgsortmenu != 0) {
         eduiMenuAddItem(ptlgsortmenu, eduiItemCheckCreate(0, &font, dt->gensort == 0, 1,
-                                                          cbPtlSelGSort, gsortnormallabel));
+                                                          cbPtlSelGSort, "Normal"));
         eduiMenuAddItem(ptlgsortmenu, eduiItemCheckCreate(6, &font, dt->gensort == 6, 1,
-                                                          cbPtlSelGSort, gsortradiallabel));
+                                                          cbPtlSelGSort, "Radial"));
         eduiMenuAddItem(ptlgsortmenu, eduiItemCheckCreate(7, &font, dt->gensort == 7, 1,
-                                                          cbPtlSelGSort, gsortradialrotorlabel));
+                                                          cbPtlSelGSort, "Radial Rotor"));
         eduiMenuAddItem(ptlgsortmenu, eduiItemCheckCreate(8, &font, dt->gensort == 8, 1,
-                                                          cbPtlSelGSort, gsortspheroidlabel));
+                                                          cbPtlSelGSort, "Spheroid"));
         eduiMenuAddItem(ptlgsortmenu, eduiItemCheckCreate(9, &font, dt->gensort == 9, 1,
-                                                          cbPtlSelGSort, gsortbounceylabel));
+                                                          cbPtlSelGSort, "BounceY"));
         eduiMenuAddItem(ptlgsortmenu, eduiItemCheckCreate(10, &font, dt->gensort == 10, 1,
-                                                          cbPtlSelGSort, gsortbouncexzlabel));
+                                                          cbPtlSelGSort, "BounceXZ"));
     }
     eduiMenuAttach(menu, ptlgsortmenu);
     ptlgsortmenu->x = menu->x + 10;
@@ -3915,13 +3660,12 @@ void cbPtlGSortMenu(struct eduimenu_s *menu) {
 
 
 void edppInit(void) {
-    struct eduistyle_s font;
+    struct eduistyle_s font = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
     struct numtl_s *mtl;
     struct numtl_s *boxmtl;
     int i;
 
     edpp_first_time_this_level = 1;
-    font = edpp_menu_font;
     mtl = NuMtlCreate(1);
     edpp_mtl = mtl;
     mtl->attrib.cull = 2;
@@ -3952,64 +3696,124 @@ void edppInit(void) {
     edpp_effect_list = 0;
     edpp_emitrotz = 0;
     edpp_emitroty = 0;
-    ptlgcodemenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt, 0, gcodetitle);
+    ptlgcodemenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt, 0, "GenCode Type");
     if (ptlgcodemenu != 0) {
         eduiMenuAddItem(ptlgcodemenu, eduiItemCheckCreate(1, &font, 0, 1,
-                                                          cbPtlSelGCode, nonelabel));
+                                                          cbPtlSelGCode, "None"));
         eduiMenuAddItem(ptlgcodemenu, eduiItemCheckCreate(2, &font, 0, 1,
-                                                          cbPtlSelGCode, gcodeposlabel));
+                                                          cbPtlSelGCode, "Pos"));
         eduiMenuAddItem(ptlgcodemenu, eduiItemCheckCreate(3, &font, 0, 1,
-                                                          cbPtlSelGCode, gcodeposrevlabel));
+                                                          cbPtlSelGCode, "PosRev"));
         eduiMenuAddItem(ptlgcodemenu, eduiItemCheckCreate(4, &font, 0, 1,
-                                                          cbPtlSelGCode, gcodesplashlabel));
+                                                          cbPtlSelGCode, "Splash"));
         eduiMenuAddItem(ptlgcodemenu, eduiItemCheckCreate(5, &font, 0, 1,
-                                                          cbPtlSelGCode, gcodeashrocklabel));
+                                                          cbPtlSelGCode, "AshRock"));
         eduiMenuAddItem(ptlgcodemenu, eduiItemCheckCreate(6, &font, 0, 1,
-                                                          cbPtlSelGCode, gcodeposrevtreelabel));
+                                                          cbPtlSelGCode, "PosRevTree"));
         eduiMenuAddItem(ptlgcodemenu, eduiItemCheckCreate(7, &font, 0, 1,
-                                                          cbPtlSelGCode, gcodeposalllabel));
+                                                          cbPtlSelGCode, "PosAll"));
     }
-    ptloptmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0x12C, app_fnt, cbPtlCancel, optionstitle);
+    ptloptmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0x12C, app_fnt, cbPtlCancel, "Options");
     if (ptloptmenu != 0) {
         eduiMenuAddItem(ptloptmenu, eduiItemSelCreate(1, &font, 0, 0,
-                                                      cbEffectListMenu, optionseffectlist));
+                                                      cbEffectListMenu, "Effect List..."));
         eduiMenuAddItem(ptloptmenu, eduiItemSelCreate(1, &font, 0, 0,
-                                                      cbPtlTypeMenu, optionsptltype));
+                                                      cbPtlTypeMenu, "Particle Type..."));
         eduiMenuAddItem(ptloptmenu, eduiItemSelCreate(1, &font, 0, 0,
-                                                      cbPtlDataMenu, optionsdatamenu));
+                                                      cbPtlDataMenu, "Data Menu..."));
         eduiMenuAddItem(ptloptmenu, eduiItemSelCreate(1, &font, 0, 0,
-                                                      cbPtlGSortMenu, optionsgsort));
-        eduiMenuAddItem(ptloptmenu, eduiItemSelCreate(1, &font, 0, 0, cbPtlColMenu, optionscolour));
+                                                      cbPtlGSortMenu, "GenSort Type..."));
         eduiMenuAddItem(ptloptmenu, eduiItemSelCreate(1, &font, 0, 0,
-                                                      cbPtlTextureMenu, optionstexture));
+                                                      cbPtlColMenu, "Particle Colour..."));
         eduiMenuAddItem(ptloptmenu, eduiItemSelCreate(1, &font, 0, 0,
-                                                      cbPtlEmitMenu, optionsemitter));
-        eduiMenuAddItem(ptloptmenu, eduiItemSelCreate(1, &font, 0, 0, cbPtlSizeMenu, optionssize));
+                                                      cbPtlTextureMenu, "Particle Texture..."));
         eduiMenuAddItem(ptloptmenu, eduiItemSelCreate(1, &font, 0, 0,
-                                                      cbPtlRotMenu, optionsrotation));
-        eduiMenuAddItem(ptloptmenu, eduiItemSelCreate(1, &font, 0, 0, cbPtlJibMenu, optionsjibber));
+                                                      cbPtlEmitMenu, "Emitter Settings..."));
         eduiMenuAddItem(ptloptmenu, eduiItemSelCreate(1, &font, 0, 0,
-                                                      edptlcbBounceMenu, optionsbounces));
+                                                      cbPtlSizeMenu, "Particle Size..."));
         eduiMenuAddItem(ptloptmenu, eduiItemSelCreate(1, &font, 0, 0,
-                                                      edptlcbSoundsMenu, optionssounds));
+                                                      cbPtlRotMenu, "Particle Rotation..."));
         eduiMenuAddItem(ptloptmenu, eduiItemSelCreate(1, &font, 0, 0,
-                                                      cbPtlCollMenu, optionscollision));
+                                                      cbPtlJibMenu, "Particle Jibber..."));
         eduiMenuAddItem(ptloptmenu, eduiItemSelCreate(1, &font, 0, 0,
-                                                      cbPtlSScaleMenu, optionssuperscale));
+                                                      edptlcbBounceMenu, "Particle Bounces..."));
         eduiMenuAddItem(ptloptmenu, eduiItemSelCreate(1, &font, 0, 0,
-                                                      edptlcbDpadModeMenu, optionsdpadmode));
+                                                      edptlcbSoundsMenu, "Attached Sounds..."));
         eduiMenuAddItem(ptloptmenu, eduiItemSelCreate(1, &font, 0, 0,
-                                                      edptlcbSwitchMenu, optionsswitch));
+                                                      cbPtlCollMenu, "Collision Spheres..."));
         eduiMenuAddItem(ptloptmenu, eduiItemSelCreate(1, &font, 0, 0,
-                                                      edptlcbGroupMenu, optionsrendergroup));
+                                                      cbPtlSScaleMenu, "Super Scale..."));
         eduiMenuAddItem(ptloptmenu, eduiItemSelCreate(1, &font, 0, 0,
-                                                      edptlcbResetParticles, optionsreset));
+                                                      edptlcbDpadModeMenu, "Dpad Mode..."));
+        eduiMenuAddItem(ptloptmenu, eduiItemSelCreate(1, &font, 0, 0,
+                                                      edptlcbSwitchMenu, "Switch Menu..."));
+        eduiMenuAddItem(ptloptmenu, eduiItemSelCreate(1, &font, 0, 0,
+                                                      edptlcbGroupMenu, "Render Group..."));
+        eduiMenuAddItem(ptloptmenu, eduiItemSelCreate(1, &font, 0, 0,
+                                                      edptlcbResetParticles, "Reset Particles"));
         eduiMenuAddItem(ptloptmenu, eduiItemToggleCreate(1, &font, 0, 1,
-                                                         cbPtlSnapToggle, optionssnap));
+                                                         cbPtlSnapToggle, "Snap"));
         eduiMenuAddItem(ptloptmenu, eduiItemSelCreate(1, &font, 0, 0, edptlcbJumpToGameLocation,
-                                                      optionsjumptogame));
+                                                      "Jump To Game Location"));
     }
 }
+
+
+float edpp_cam_dist = 0.0f;
+float edpp_cam_ax = 0.0f;
+float edpp_cam_ay = 0.0f;
+int edpp_first_time_this_level = 0;
+int edpp_numparticles = 0;
+void *edpp_mtl = 0;
+void *edpp_boxmtl = 0;
+int edpp_nextalloc = 0;
+int edpp_nearest = 0;
+int edpp_curr = 0;
+int edpp_snap_enabled = 0;
+signed char edpp_effect_list = 0;
+void *edpp_active_menu = 0;
+struct eduimenu_s *ptltypemenu = 0;
+void *ptloptmenu = 0;
+struct eduimenu_s *ptlgsortmenu = 0;
+void *ptlgcodemenu = 0;
+struct eduimenu_s *ptlemitmenu = 0;
+struct eduimenu_s *ptlsizemenu = 0;
+struct eduimenu_s *ptlrotmenu = 0;
+struct eduimenu_s *ptljibmenu = 0;
+struct eduimenu_s *ptlcolmenu = 0;
+struct eduimenu_s *ptlemitvelmenu = 0;
+struct eduimenu_s *ptlgravmenu = 0;
+struct eduimenu_s *ptlvaremitmenu = 0;
+struct eduimenu_s *ptlvarstartmenu = 0;
+struct eduimenu_s *ptlcutoffmenu = 0;
+struct eduimenu_s *ptldatamenu = 0;
+struct eduimenu_s *memcardmenu = 0;
+struct eduimenu_s *messagemenu = 0;
+struct eduimenu_s *loadeffectsmenu = 0;
+struct eduimenu_s *mergeeffectsmenu = 0;
+struct eduimenu_s *deleteeffectsmenu = 0;
+struct eduimenu_s *filenamemenu = 0;
+struct eduimenu_s *namemenu = 0;
+struct eduimenu_s *confirmmenu = 0;
+struct eduimenu_s *changegenratemenu = 0;
+struct eduimenu_s *totalptlsmenu = 0;
+struct eduimenu_s *etimemenu = 0;
+struct eduimenu_s *emittimemenu = 0;
+struct eduimenu_s *sscalemenu = 0;
+struct eduimenu_s *texturemenu = 0;
+struct eduimenu_s *textureselectmenu = 0;
+struct eduimenu_s *collmenu = 0;
+struct eduimenu_s *effectlistmenu = 0;
+struct eduimenu_s *ptlclipmenu = 0;
+struct eduimenu_s *dpadmodemenu = 0;
+struct edmainreg_s edptldesc = {
+    0, 0, "Particle Positioner", edppInit, edppClose, edppEnter, 0, edppApply,
+    edppWrite, edppRead, EDMAIN_BLOCKID('p', 't', 'l', 'p'), edppProc, edppRender
+};
+struct edppptl_s edpp_ptls[256] = {{{0}}};
+struct nuvec_s edpp_cam_pos = {0.0f, 0.0f, 0.0f};
+/* sceMcGetDir needs a 64-byte aligned table */
+struct mcdirent_s mcdir[10] __attribute__((aligned(64))) = {{{0}}};
 
 
 void ParticleReset(void) {
@@ -4046,11 +3850,11 @@ void edppDestroyAllEffects(void) {
 
 void edppRegisterLevel(char *path, int id) {
     if (path != 0) {
-        NuStrCpy(D_00484DE0, path);
+        NuStrCpy(levelfilename, path);
     } else {
-        D_00484DE0[0] = 0;
+        levelfilename[0] = 0;
     }
-    D_0062F358 = id;
+    levelfilenametype = id;
 }
 
 
@@ -4167,27 +3971,6 @@ void cbPtlChangeGrav(void *menu, struct eduiitem_s *item) {
     dt->grav = item->u.slider.val;
     current = debtab[debkeydata[edpp_ptls[edpp_nearest].debris].type];
     current->DmaDebTypePointer->grav = item->u.slider.val;
-}
-
-
-void cbChangeNameMenu(struct eduimenu_s *menu) {
-    struct eduistyle_s font;
-    struct debinfo_s *dt;
-
-    font = edpp_menu_font;
-    if (edpp_create_type == -1) {
-        return;
-    }
-    dt = debtab[edpp_create_type];
-    namemenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt, cbCancelChangeNameMenu,
-                              typenametitle);
-    if (namemenu != 0) {
-        eduiMenuAddItem(namemenu, eduiItemTextPickCreate(0, &font, cbChangeName, typenametitle));
-        strcpy(edui_last_item->u.textpick.text, dt->id);
-        eduiMenuAttach(menu, namemenu);
-        namemenu->x = menu->x + 10;
-        namemenu->y = menu->y + 40;
-    }
 }
 
 
@@ -4386,32 +4169,6 @@ void cbCancelChangeGenRateMenu(void) {
 }
 
 
-void cbChangeETimeMenu(struct eduimenu_s *menu) {
-    struct eduistyle_s font;
-    struct debkeydatatype_s *deb;
-    struct debinfo_s *dt;
-
-    font = edpp_menu_font;
-    if (edpp_nearest == -1) {
-        return;
-    }
-    if (edpp_ptls[edpp_nearest].debris == -1) {
-        return;
-    }
-    deb = &debkeydata[edpp_ptls[edpp_nearest].debris];
-    dt = debtab[deb->type];
-    etimemenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt, cbCancelChangeETimeMenu,
-                               etimetitle);
-    if (etimemenu != 0) {
-        eduiMenuAddItem(etimemenu, eduiItemSliderCreate(0, &font, 0, cbPtlChangeETime, 0.0f, 10.0f,
-                                                        dt->etime, etimetitle));
-        eduiMenuAttach(menu, etimemenu);
-        etimemenu->x = menu->x + 10;
-        etimemenu->y = menu->y + 40;
-    }
-}
-
-
 void cbPtlApplyJib(void *menu, struct eduiitem_s *item) {
     struct debkeydatatype_s *deb;
     struct debinfo_s *dt;
@@ -4424,17 +4181,17 @@ void cbPtlApplyJib(void *menu, struct eduiitem_s *item) {
     }
     deb = &debkeydata[edpp_ptls[edpp_nearest].debris];
     dt = debtab[deb->type];
-    if (ptljibitem0 != 0) {
-        dt->jibxfreq = ptljibitem0->u.slider.val;
+    if (grad_jib_x_freq_item != 0) {
+        dt->jibxfreq = grad_jib_x_freq_item->u.slider.val;
     }
-    if (ptljibitem1 != 0) {
-        dt->jibxamp = ptljibitem1->u.slider.val;
+    if (grad_jib_x_amp_item != 0) {
+        dt->jibxamp = grad_jib_x_amp_item->u.slider.val;
     }
-    if (ptljibitem2 != 0) {
-        dt->jibyfreq = ptljibitem2->u.slider.val;
+    if (grad_jib_y_freq_item != 0) {
+        dt->jibyfreq = grad_jib_y_freq_item->u.slider.val;
     }
-    if (ptljibitem3 != 0) {
-        dt->jibyamp = ptljibitem3->u.slider.val;
+    if (grad_jib_y_amp_item != 0) {
+        dt->jibyamp = grad_jib_y_amp_item->u.slider.val;
     }
     GenericDebinfoDmaTypeUpdate(dt);
 }
@@ -4527,26 +4284,6 @@ void edptlcbSetSwitchVar(void *menu, struct eduiitem_s *item) {
 }
 
 
-void edptlcbSwitchTypeMenu(struct eduimenu_s *menu) {
-    struct eduistyle_s font;
-
-    font = edpp_menu_font;
-    edptl_switchtype_menu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt,
-                                           edptlcbCancelSwitchTypeMenu, switchtypetitle);
-    if (edptl_switchtype_menu != 0) {
-        eduiMenuAddItem(edptl_switchtype_menu,
-                        eduiItemCheckCreate(0, &font, edpp_ptls[edpp_nearest].switchtype == 0, 1,
-                                            edptlcbSetSwitchType, nonelabel));
-        eduiMenuAddItem(edptl_switchtype_menu,
-                        eduiItemCheckCreate(1, &font, edpp_ptls[edpp_nearest].switchtype == 1, 1,
-                                            edptlcbSetSwitchType, switchtypegloballabel));
-        eduiMenuAttach(menu, edptl_switchtype_menu);
-        edptl_switchtype_menu->x = menu->x + 10;
-        edptl_switchtype_menu->y = menu->y + 40;
-    }
-}
-
-
 void edptlcbCancelSwitchMenu(void) {
     eduiMenuDestroy(edptl_switch_menu);
     edptl_switch_menu = 0;
@@ -4589,7 +4326,7 @@ void edptlcbCancelDpadModeMenu(void) {
 
 void edptlcbJumpToGameLocation(void *menu, struct eduiitem_s *item) {
     item->on = 0;
-    edcamSetPosAng(&edpp_game_loc, 0, 0);
+    edcamSetPosAng(&entry_position, 0, 0);
 }
 
 
@@ -4602,18 +4339,18 @@ void cbPtlCancelTypeMenu(void) {
 void cbPtlCancelColMenu(void) {
     eduiMenuDestroy(ptlcolmenu);
     ptlcolmenu = 0;
-    colgradmenu = 0;
-    alphagradmenu = 0;
+    grad_item = 0;
+    grad_alpha_item = 0;
 }
 
 
 void cbPtlCancelJibMenu(void) {
     eduiMenuDestroy(ptljibmenu);
     ptljibmenu = 0;
-    D_0062F344 = 0;
-    D_0062F348 = 0;
-    D_0062F34C = 0;
-    D_0062F350 = 0;
+    grad_jib_x_freq_item = 0;
+    grad_jib_x_amp_item = 0;
+    grad_jib_y_freq_item = 0;
+    grad_jib_y_amp_item = 0;
 }
 
 
@@ -4673,10 +4410,10 @@ void cbPtlApplyCollEnv(void) {
     int count;
     int i;
 
-    if (collenvmenu == 0) {
+    if (coll_env_item == 0) {
         return;
     }
-    count = eduiGradPickRead(collenvmenu, keys, 8);
+    count = eduiGradPickRead(coll_env_item, keys, 8);
     if (count < 2 || count > 8) {
         return;
     }
@@ -4780,56 +4517,29 @@ void edptlcbCancelSoundXMenu(void) {
 }
 
 
-void edptlcbSoundsMenu(struct eduimenu_s *menu) {
-    struct eduistyle_s font;
-    char label[16];
-    int i;
-
-    font = edpp_menu_font;
-    if (edpp_nearest == -1) {
-        return;
-    }
-    if (edpp_ptls[edpp_nearest].debris == -1) {
-        return;
-    }
-    edptl_sounds_menu = eduiMenuCreate(0x46, 0x46, 0xFA, 0x12C, app_fnt, edptlcbCancelSoundsMenu,
-                                       soundsmenutitle);
-    if (edptl_sounds_menu != 0) {
-        for (i = 0; i < 4; i++) {
-            sprintf(label, soundsmenuformat, i + 1);
-            eduiMenuAddItem(edptl_sounds_menu,
-                            eduiItemSelCreate(i, &font, 0, 0, edptlcbSoundXMenu, label));
-        }
-        eduiMenuAttach(menu, edptl_sounds_menu);
-        edptl_sounds_menu->x = menu->x + 10;
-        edptl_sounds_menu->y = menu->y + 40;
-    }
-}
-
-
 void cbPtlCancelCollMenu(void) {
     eduiMenuDestroy(collmenu);
     collmenu = 0;
-    collenvmenu = 0;
+    coll_env_item = 0;
 }
 
 
 void cbPtlCancelSizeMenu(void) {
     eduiMenuDestroy(ptlsizemenu);
     ptlsizemenu = 0;
-    widthgradmenu = 0;
-    heightgradmenu = 0;
-    sizeminitem = 0;
-    sizemaxitem = 0;
+    grad_size_w_item = 0;
+    grad_size_h_item = 0;
+    grad_size_min_item = 0;
+    grad_size_max_item = 0;
 }
 
 
 void cbPtlCancelRotMenu(void) {
     eduiMenuDestroy(ptlrotmenu);
     ptlrotmenu = 0;
-    rotgradmenu = 0;
-    rotminitem = 0;
-    rotmaxitem = 0;
+    grad_rot_item = 0;
+    grad_rot_min_item = 0;
+    grad_rot_max_item = 0;
 }
 
 
@@ -4848,22 +4558,6 @@ void cbPtlCancelVarEmitMenu(void) {
 void cbPtlCancelVarStartMenu(void) {
     eduiMenuDestroy(ptlvarstartmenu);
     ptlvarstartmenu = 0;
-}
-
-
-void cbPtlSScaleMenu(struct eduimenu_s *menu) {
-    struct eduistyle_s font;
-
-    font = edpp_menu_font;
-    sscalemenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0x12C, app_fnt, cbPtlCancelSScaleMenu,
-                                sscalemenutitle);
-    if (sscalemenu != 0) {
-        eduiMenuAddItem(sscalemenu, eduiItemSliderCreateInt(0, &font, 0, cbPtlChangeSScale, 1, 0x13,
-                                                            edpp_slider_scale, sscalemenutitle));
-        eduiMenuAttach(menu, sscalemenu);
-        sscalemenu->x = menu->x + 10;
-        sscalemenu->y = menu->y + 40;
-    }
 }
 
 
@@ -5008,116 +4702,6 @@ void cbPtlCancelGravMenu(void) {
 }
 
 
-static inline void CreateConfirmMenu(struct eduimenu_s *parent, char *title, void *yescb) {
-    struct eduistyle_s font;
-
-    font = edpp_menu_font;
-    confirmmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt, cbCancelConfirmMenu, title);
-    if (confirmmenu != 0) {
-        eduiMenuAddItem(confirmmenu, eduiItemSelCreate(1, &font, 0, 0, cbConfirmMenuNo,
-                                                       confirmnolabel));
-        eduiMenuAddItem(confirmmenu, eduiItemSelCreate(1, &font, 0, 0, yescb, confirmyeslabel));
-        eduiMenuAttach(parent, confirmmenu);
-        confirmmenu->x = parent->x + 10;
-        confirmmenu->y = parent->y + 40;
-    }
-}
-
-
-void cbMemCardEraseConfirm(struct eduimenu_s *menu) {
-    CreateConfirmMenu(menu, memcarderasetitle, cbMemCardErase);
-}
-
-
-void cbChangeFileNameMenu(struct eduimenu_s *menu) {
-    struct eduistyle_s font;
-
-    font = edpp_menu_font;
-    filenamemenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt, cbCancelChangeFileNameMenu,
-                                  filenamemenutitle);
-    if (filenamemenu != 0) {
-        eduiMenuAddItem(filenamemenu, eduiItemTextPickCreate(0, &font, cbChangeFileName,
-                                                             filenamemenutitle));
-        strcpy(edui_last_item->u.textpick.text, savefilename);
-        eduiMenuAttach(menu, filenamemenu);
-        filenamemenu->x = menu->x + 10;
-        filenamemenu->y = menu->y + 40;
-    }
-}
-
-
-void cbMemCardLoadEffectsMenu(struct eduimenu_s *menu) {
-    struct eduistyle_s font;
-    int i;
-
-    font = edpp_menu_font;
-    sceMcGetDir(0, 0, effectsfilter, 0, 10, mcdir);
-    sceMcSync(0, 0, &memcardresult);
-    if (memcardresult > 0) {
-        loadeffectsmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt,
-                                         cbMemCardCancelLoadEffectsMenu, loadeffectstitle);
-        if (loadeffectsmenu != 0) {
-            for (i = 0; i < memcardresult; i++) {
-                eduiMenuAddItem(loadeffectsmenu, eduiItemSelCreate(i, &font, 0, 0,
-                                                                   cbMemCardLoadEffects,
-                                                                   mcdir[i].name));
-            }
-            eduiMenuAttach(menu, loadeffectsmenu);
-            loadeffectsmenu->x = menu->x + 10;
-            loadeffectsmenu->y = menu->y + 40;
-        }
-    }
-}
-
-
-void cbMemCardMergeEffectsMenu(struct eduimenu_s *menu) {
-    struct eduistyle_s font;
-    int i;
-
-    font = edpp_menu_font;
-    sceMcGetDir(0, 0, effecttypesfilter, 0, 10, mcdir);
-    sceMcSync(0, 0, &memcardresult);
-    if (memcardresult > 0) {
-        mergeeffectsmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt,
-                                          cbMemCardCancelMergeEffectsMenu, mergeeffectstitle);
-        if (mergeeffectsmenu != 0) {
-            for (i = 0; i < memcardresult; i++) {
-                eduiMenuAddItem(mergeeffectsmenu, eduiItemSelCreate(i, &font, 0, 0,
-                                                                    cbMemCardMergeEffects,
-                                                                    mcdir[i].name));
-            }
-            eduiMenuAttach(menu, mergeeffectsmenu);
-            mergeeffectsmenu->x = menu->x + 10;
-            mergeeffectsmenu->y = menu->y + 40;
-        }
-    }
-}
-
-
-void cbMemCardDeleteEffectsMenu(struct eduimenu_s *menu) {
-    struct eduistyle_s font;
-    int i;
-
-    font = edpp_menu_font;
-    sceMcGetDir(0, 0, effectsfilter, 0, 10, mcdir);
-    sceMcSync(0, 0, &memcardresult);
-    if (memcardresult > 0) {
-        deleteeffectsmenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt,
-                                           cbMemCardCancelDeleteEffectsMenu, deleteeffectstitle);
-        if (deleteeffectsmenu != 0) {
-            for (i = 0; i < memcardresult; i++) {
-                eduiMenuAddItem(deleteeffectsmenu, eduiItemSelCreate(i, &font, 0, 0,
-                                                                     cbMemCardDeleteEffects,
-                                                                     mcdir[i].name));
-            }
-            eduiMenuAttach(menu, deleteeffectsmenu);
-            deleteeffectsmenu->x = menu->x + 10;
-            deleteeffectsmenu->y = menu->y + 40;
-        }
-    }
-}
-
-
 void cbCancelMemCardMenu(void) {
     eduiMenuDestroy(memcardmenu);
     memcardmenu = 0;
@@ -5182,11 +4766,11 @@ void edppEnter(void) {
 
     memset(&origin, 0, sizeof(origin));
     if (edmainQueryLocVec() != 0) {
-        edpp_game_loc = *edmainQueryLocVec();
+        entry_position = *edmainQueryLocVec();
     } else {
-        edpp_game_loc.x = global_camera.mtx._30;
-        edpp_game_loc.y = global_camera.mtx._31;
-        edpp_game_loc.z = global_camera.mtx._32;
+        entry_position.x = global_camera.mtx._30;
+        entry_position.y = global_camera.mtx._31;
+        entry_position.z = global_camera.mtx._32;
     }
     if (edpp_first_time_this_level != 0) {
         if (edmainQueryLocVec() != 0) {
@@ -5210,23 +4794,6 @@ void cbChangeName(void *menu, struct eduiitem_s *item) {
         dt = debtab[edpp_create_type];
         if (dt != 0) {
             strcpy(dt->id, item->u.textpick.text);
-        }
-    }
-}
-
-
-void cbCancelChangeNameMenu(void *menu) {
-    struct debinfo_s *dt;
-
-    if (edpp_create_type != -1) {
-        dt = debtab[edpp_create_type];
-        if (dt != 0) {
-            if (dt->id[0] == 0) {
-                CreateMessageMenu(menu, nameduplicatemessage, 0);
-                return;
-            }
-            eduiMenuDestroy(namemenu);
-            namemenu = 0;
         }
     }
 }
@@ -5303,7 +4870,7 @@ void edptlcbCancelSoundsMenu(void) {
 
 
 void cbPtlChangeSScale(void *menu, struct eduiitem_s *item) {
-    edpp_slider_scale = item->u.slider.val;
+    superscale = item->u.slider.val;
 }
 
 
@@ -5313,63 +4880,9 @@ void cbPtlCancelSScaleMenu(void) {
 }
 
 
-static inline void CreateMessageMenu(struct eduimenu_s *parent, char *message, int flags) {
-    struct eduistyle_s font;
-
-    font = edpp_message_font;
-    if (flags == 1) {
-        font.pen[0] = 0x8000C000;
-    }
-    messagemenu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt, cbCancelMessageMenu,
-                                 messagemenutitle);
-    if (messagemenu != 0) {
-        eduiMenuAddItem(messagemenu, eduiItemSelCreate(1, &font, 0, 0, 0, message));
-        eduiMenuAttach(parent, messagemenu);
-        messagemenu->x = parent->x + 10;
-        messagemenu->y = parent->y + 40;
-    }
-}
-
-
-void cbMemCardDeleteEffects(struct eduimenu_s *menu, struct eduiitem_s *item) {
-    struct eduimenu_s *arg;
-
-    arg = 0;
-    sceMcDelete(0, 0, memcardfilenames[item->value]);
-    sceMcSync(0, 0, &memcardresult);
-    if (menu->parent != 0) {
-        arg = menu->parent;
-        eduiMenuDetach(menu);
-    }
-    if (menu->cancel != 0) {
-        menu->cancel(menu, arg);
-    }
-    if (memcardresult < 0) {
-        CreateMessageMenu((struct eduimenu_s *)arg, memcarddeleteerror, 0);
-    } else {
-        CreateMessageMenu((struct eduimenu_s *)arg, memcarddeleteok, 1);
-    }
-}
-
-
-void cbMemCardErase(struct eduimenu_s *menu) {
-    struct eduimenu_s *arg;
-
-    arg = 0;
-    if (menu->parent != 0) {
-        arg = menu->parent;
-        eduiMenuDetach(menu);
-    }
-    if (menu->cancel != 0) {
-        menu->cancel(menu, arg);
-    }
-    CreateMessageMenu((struct eduimenu_s *)arg, memcarderasemessage, 0);
-}
-
-
 void cbChangeFileName(void *menu, struct eduiitem_s *item) {
 
-    strcpy(savefilename, item->u.textpick.text);
+    strcpy(mcfilename, item->u.textpick.text);
 }
 
 
