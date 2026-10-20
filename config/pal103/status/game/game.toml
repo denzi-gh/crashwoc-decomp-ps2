@@ -189,7 +189,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001e68d8:DrawMenu"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001e9e48:ResetCheckpoint"

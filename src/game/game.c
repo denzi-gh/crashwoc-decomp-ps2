@@ -133,6 +133,7 @@
 #include "nu_libc.h"
 #include "nu_types.h"
 
+#include "nucore/nucoretypes.h"
 #include "nu3d/nucamera.h"
 #include "nu3d/nugscn.h"
 #include "nu3d/nulight.h"
@@ -213,9 +214,6 @@ extern char *tCONTINUE[];
 extern char *tGAMEOVER[];
 extern char *tRESTARTRACE[];
 extern char *LanguageName[];
-extern float D_0062D410; /* pause slide scale */
-extern float D_0062D488; /* restart-time-trial menu top y */
-extern float D_0062D48C; /* restart-race menu top y */
 extern float PANELMENUX;
 extern float GAMENAMEY;
 extern char tbuf[];
@@ -2220,118 +2218,803 @@ void DrawMenuEntry2(struct cursor_s *cursor, char *txt0, char *txt1, float *x,
     dme_sy = 1.0f;
 }
 
-/*
- * DrawMenu: equivalent reconstruction, stays asm. Won't byte-match -- retail
- * emits mtc1->FP hazard nops at 12 sites that ee-gcc-tt does not. Cases follow
- * jump table jtbl_0061DF40 and the PS2 string tables.
- */
+extern char *tGO[];
+extern char *tLOAD[];
+extern char *tSAVE[];
+extern char *tSAVEGAME[];
+extern char *tDELETEGAME[];
+extern char *tEXIT[];
+extern char *tNODATAAVAILABLE[];
+extern char *tFAILEDTOLOAD[];
+extern char *tCONFIRMLOAD[];
+extern char *tCONFIRMSAVE[];
+extern char *tCONFIRMDELETE[];
+extern char *tCONFIRMFORMAT[];
+extern char *tGAMELOADED[];
+extern char *tGAMESAVED[];
+extern char *tGAMEDELETED[];
+extern char *tFORMATTINGCOMPLETE[];
+extern char *tFAILEDTOSAVE[];
+extern char *tFAILEDTODELETE[];
+extern char *tFAILEDTOFORMAT[];
+extern char *tSAVING[];
+extern char *tDELETING[];
+extern char *tFORMATTING[];
+extern char *tGAMEREQUIRESiKB[];
+extern char *tYOUNEEDAMEMORYCARD[][8];
+extern char *tPLEASEINSERTMEMORYCARDSLOT1[][3];
+extern char *tCHECKINGMEMORYCARD[][2];
+extern char *tDONOTREMOVEMEMORYCARD[][3];
+extern char *tNOTENOUGHSPACEONMEMORYCARD[][3];
+extern char *tMEMORYCARDISNOTFORMATTED[][3];
+extern char *tCONFIRMOVERWRITE[][2];
+extern char *HubName[6][6];
+extern char *LevelName[44][6];
+extern struct powerdata_s PData[6];
+extern struct font3dobj_s Font3DObjTab[0x1a];
+extern s32 new_power;
+extern float POWERTEXTY;
+extern float TT_INPUTY;
+extern s32 highallocaddr;
+extern union variptr_u superbuffer_ptr;
+extern union variptr_u superbuffer_base;
+extern s32 memcard_loadcompleted;
+extern s32 memcard_loadmessage_delay;
+extern s32 memcard_loadfailed;
+extern s32 memcard_gamesavailable;
+extern s32 memcard_savefailed;
+extern s32 memcard_deletefailed;
+extern void DrawGameSlot(struct game_s *game, float x, float y, s32 colour);
+extern void DrawGameSlots();
+extern s32 DrawPanel3DCharacter(s32 character, float x, float y, float z,
+                                float scalex, float scaley, float scalez,
+                                u16 xrot, u16 yrot, u16 zrot, s32 action,
+                                float anim_time, s32 rot);
+extern char D_0061DB60[]; /* "%s:   %s" */
+extern char D_0061DB70[]; /* "%c %i%% %c" */
+extern char D_0061DB80[]; /* "%s:   %i" */
+extern char D_00630C80[]; /* "%s: %i" */
+extern char D_00630C88[]; /* "%s%s" */
+extern char D_0061DB90[]; /* "R E S T A R T   L E V E L " */
+extern char D_0061DBB0[]; /* "RESTART LEVEL" */
+extern char D_0061DBC0[]; /* "R E S E T   L E V E L " */
+extern char D_0061DBD8[]; /* "RESET LEVEL" */
+extern char D_0061DBE8[]; /* "G O T O   L E V E L " */
+extern char D_0061DC00[]; /* "GOTO LEVEL" */
+extern char D_0061DC10[]; /* "I N V I N C I B I L I T Y :   " */
+extern char D_0061DC30[]; /* "INVINCIBILITY: " */
+extern char D_0061DC40[]; /* "G O T O   N E X T   C H E C K P O I N T " */
+extern char D_0061DC70[]; /* "GOTO NEXT CHECKPOINT" */
+extern char D_0061DC88[]; /* "G O T O   L A S T   C H E C K P O I N T " */
+extern char D_0061DCB8[]; /* "GOTO LAST CHECKPOINT" */
+extern char D_0061DCD0[]; /* "O P E N   G A M E " */
+extern char D_0061DCE8[]; /* "OPEN GAME" */
+extern char D_0061DCF8[]; /* "L I F T   P L A Y E R :   " */
+extern char D_0061DD18[]; /* "LIFT PLAYER: " */
+extern char D_0061DD28[]; /* "P L A Y E R   C O O R D I N A T E :   " */
+extern char D_0061DD50[]; /* "PLAYER COORDINATE: " */
+extern char D_0061DD68[]; /* "E X T R A   M O V E S :   " */
+extern char D_0061DD88[]; /* "EXTRA MOVES: " */
+extern char D_0061DD98[]; /* "R E S E T   G A M E " */
+extern char D_0061DDB0[]; /* "RESET GAME" */
+extern char D_0061DDC0[]; /* "L O G O S " */
+extern char D_00630C90[]; /* "LOGOS" */
+extern char D_0061DDD0[]; /* "I N T R O 1 " */
+extern char D_00630C98[]; /* "INTRO1" */
+extern char D_0061DDE0[]; /* "I N T R O 2 " */
+extern char D_00630CA0[]; /* "INTRO2" */
+extern char D_0061DDF0[]; /* "O U T R O " */
+extern char D_00630CA8[]; /* "OUTRO" */
+extern char D_0061DE00[]; /* "O U T R O 2 " */
+extern char D_00630CB0[]; /* "OUTRO2" */
+extern char D_0061DE10[]; /* "DRAW DISTANCE: %i/%i" */
+extern char D_0061DE28[]; /* "FOG NEAR: %i/%i" */
+extern char D_0061DE38[]; /* "FOG FAR: %i/%i" */
+extern char D_0061DE48[]; /* "FOG RED: %i/255" */
+extern char D_0061DE58[]; /* "FOG GREEN: %i/255" */
+extern char D_0061DE70[]; /* "FOG BLUE: %i/255" */
+extern char D_0061DE88[]; /* "FOG OPACITY: %i/127" */
+extern char D_0061DEA0[]; /* "HAZE RED: %i/255" */
+extern char D_0061DEB8[]; /* "HAZE GREEN: %i/255" */
+extern char D_0061DED0[]; /* "HAZE BLUE: %i/255" */
+extern char D_0061DEE8[]; /* "HAZE WOBBLE: %i/255" */
+extern char D_0061DF00[]; /* "SUPERBUFFER USED: %.2fMB/%.2fMB" */
+extern char D_0061DF20[]; /* "HIGHALLOCADDR: %.2fMB/32.00MB" */
+extern char D_00630CB8[]; /* "?" */
+extern char D_00630CC0[]; /* "%s/ %s" */
+extern char D_00630CC8[]; /* "%s/%s" */
+extern char D_00630CD0[]; /* "" */
+
 void DrawMenu(struct cursor_s *cursor, s32 paused) {
+    struct powerdata_s *pdata;
     s32 i;
+    s32 j;
+    s32 col;
+    u8 c;
+    float f;
+    float size;
+    float scale;
     float x;
     float y;
     float dy;
-    float dvar8;
+    float xnew;
+    float dx;
 
     if (editor_active != 0) {
         return;
     }
-    if (cursor->wait != 0) {
-        return;
-    }
-    if (cursor->menu == -1) {
-        return;
-    }
-    if (GameMode == 1) {
+    if (cursor->wait != 0 || cursor->menu == -1 || GameMode == 1) {
         return;
     }
     x = 0.0f;
     if (pause_dir != 0) {
-        x = (0x19 - paused) * D_0062D410;
+        size = (25 - paused) * 0.08f;
         if (pause_dir == 1) {
-            x = 0.0f - x;
+            x -= size;
         } else {
-            x = x + 0.0f;
+            x += size;
         }
     }
-    dy = (cursor->y_max - cursor->y_min) * MENUDY;
-    dvar8 = dy * 0.5f;
+    dy = (cursor->y_max - cursor->y_min) * MENUDY * 0.5f;
     i = 0;
+    f = 1.0f;
     switch (cursor->menu) {
-    case 0: /* main menu */
-        y = -0.75f - dvar8;
+    case 0:
+        y = -0.75f - dy;
         DrawMenuEntry(cursor, tNEWGAME[Game.language], &x, &y, &i);
         DrawMenuEntry(cursor, tLOADGAME[Game.language], &x, &y, &i);
-        sprintf(tbuf, D_00630C78, tLANGUAGE[Game.language],
-                LanguageName[Game.language]);
+        sprintf(tbuf, D_00630C78, tLANGUAGE[Game.language], LanguageName[Game.language]);
         DrawMenuEntry(cursor, tbuf, &x, &y, &i);
         break;
-    case 2: /* name entry (new game) */
+    case 1:
+        y = -0.75f;
+        Text3D(tYOUNEEDAMEMORYCARD[Game.language][0], 0.0f, 0.2f, 1.0f, 0.4f, 0.4f, 0.4f, 0, 0);
+        Text3D(tYOUNEEDAMEMORYCARD[Game.language][1], 0.0f, 0.1f, 1.0f, 0.4f, 0.4f, 0.4f, 0, 0);
+        if (Game.language == 'c') {
+            sprintf(tbuf, tYOUNEEDAMEMORYCARD[Game.language][2], 6, 6);
+        } else {
+            sprintf(tbuf, tYOUNEEDAMEMORYCARD[Game.language][2], 0x42);
+        }
+        Text3D(tbuf, 0.0f, 0.0f, 1.0f, 0.4f, 0.4f, 0.4f, 0, 0);
+        Text3D(tYOUNEEDAMEMORYCARD[Game.language][3], 0.0f, -0.1f, 1.0f, 0.4f, 0.4f, 0.4f, 0, 0);
+        Text3D(tYOUNEEDAMEMORYCARD[Game.language][4], 0.0f, -0.2f, 1.0f, 0.4f, 0.4f, 0.4f, 0, 0);
+        Text3D(tYOUNEEDAMEMORYCARD[Game.language][5], 0.0f, -0.3f, 1.0f, 0.4f, 0.4f, 0.4f, 0, 0);
+        if (Game.language == 2 || Game.language == 'c') {
+            NuStrCpy(tbuf, tYOUNEEDAMEMORYCARD[Game.language][6]);
+        } else {
+            sprintf(tbuf, tYOUNEEDAMEMORYCARD[Game.language][6], 0x42);
+            if (Game.language == 'c') {
+                AddSpacesIntoText(tbuf, 2);
+            }
+        }
+        Text3D(tbuf, 0.0f, -0.4f, 1.0f, 0.4f, 0.4f, 0.4f, 0, 0);
+        if (Game.language == 2) {
+            sprintf(tbuf, tYOUNEEDAMEMORYCARD[Game.language][7], 0x42);
+            if (Game.language == 'c') {
+                AddSpacesIntoText(tbuf, 2);
+            }
+        } else {
+            NuStrCpy(tbuf, tYOUNEEDAMEMORYCARD[Game.language][7]);
+        }
+        Text3D(tbuf, 0.0f, -0.5f, 1.0f, 0.4f, 0.4f, 0.4f, 0, 0);
+        DrawMenuEntry(cursor, tGO[Game.language], &x, &y, &i);
+        break;
+    case 2:
         DrawNameInputTable(cursor, 0.0f, -0.5f);
-        Text3D(MakeEditText(Game.name), 0.0f, GAMENAMEY, 1.0f, 1.0f, 1.0f, 1.0f,
-               0, 4);
-        return;
-    case 3: /* pause menu */
-        if (paused < 0x1e) {
+        Text3D(MakeEditText(Game.name), 0.0f, GAMENAMEY, 1.0f, 1.0f, 1.0f, 1.0f, 0, 4);
+        break;
+    case 3:
+        if (paused < 25) {
             return;
         }
         x = PANELMENUX;
-        y = -0.5f - dvar8;
+        y = -0.5f - dy;
         DrawMenuEntry(cursor, tRESUME[Game.language], &x, &y, &i);
         DrawMenuEntry(cursor, tOPTIONS[Game.language], &x, &y, &i);
-        DrawMenuEntry(cursor,
-                      (Level == 0x25) ? tQUIT[Game.language]
-                                      : tWARPROOM[Game.language],
+        DrawMenuEntry(cursor, (Level == 0x25) ? tQUIT[Game.language] : tWARPROOM[Game.language],
                       &x, &y, &i);
-        if (TimeTrial == 0) {
-            return;
+        if (TimeTrial != 0) {
+            DrawMenuEntry(cursor, tRESTARTTRIAL[Game.language], &x, &y, &i);
         }
-        DrawMenuEntry(cursor, tRESTARTTRIAL[Game.language], &x, &y, &i);
         break;
-    case 7: /* language select */
-        if (paused < 0x1e) {
+    case 4:
+        if (paused < 25) {
             return;
         }
         x = PANELMENUX;
-        y = -0.5f - dvar8;
-        for (i = 0; i < 6; i++) {
-            DrawMenuEntry(cursor, LanguageName[i], &x, &y, &i);
+        y = -0.5f - dy;
+        if (Game.language == 'c') {
+            sprintf(tbuf, D_0061DB60, tVIBRATION[Game.language],
+                    (temp_vibration != 0) ? tON[Game.language] : tOFF[Game.language]);
+        } else {
+            sprintf(tbuf, D_00630C78, tVIBRATION[Game.language],
+                    (temp_vibration != 0) ? tON[Game.language] : tOFF[Game.language]);
         }
-        return;
-    case 8: /* quit confirm */
-        if (paused < 0x1e) {
+        dme_sx = f;
+        DrawMenuEntry(cursor, tbuf, &x, &y, &i);
+        dme_sx = f;
+        DrawMenuEntry(cursor, tSOUNDOPTIONS[Game.language], &x, &y, &i);
+        dme_sx = f;
+        DrawMenuEntry(cursor, tADJUSTSCREEN[Game.language], &x, &y, &i);
+        if (LANGUAGEOPTION != 0) {
+            dme_sx = f;
+            DrawMenuEntry(cursor, tLANGUAGE[Game.language], &x, &y, &i);
+        }
+        dme_sx = f;
+        DrawMenuEntry(cursor, tDONE[Game.language], &x, &y, &i);
+        break;
+    case 5:
+        if (paused < 25) {
             return;
         }
         x = PANELMENUX;
-        y = -0.5f - dvar8;
+        y = -0.5f - dy - dy * 0.5f;
+        if (Game.language == 'c') {
+            sprintf(tbuf, D_0061DB60, tSURROUND[Game.language],
+                    (temp_surround != 0) ? tON[Game.language] : tOFF[Game.language]);
+        } else {
+            sprintf(tbuf, D_00630C78, tSURROUND[Game.language],
+                    (temp_surround != 0) ? tON[Game.language] : tOFF[Game.language]);
+        }
+        dme_sx = f;
+        if (Game.language == 2) {
+            dme_yadj = 0.0275f;
+        }
+        DrawMenuEntry(cursor, tbuf, &x, &y, &i);
+        sprintf(tbuf, D_0061DB70, (temp_sfx_volume != 0) ? '<' : ' ', temp_sfx_volume,
+                (temp_sfx_volume < 100) ? '>' : ' ');
+        if (Game.language == 'c') {
+            AddSpacesIntoText(tbuf, 1);
+        }
+        dme_sx = f;
+        DrawMenuEntry2(cursor, tSFXVOLUME[Game.language], tbuf, &x, &y, &i);
+        sprintf(tbuf, D_0061DB70, (temp_music_volume != 0) ? '<' : ' ', temp_music_volume,
+                (temp_music_volume < 100) ? '>' : ' ');
+        if (Game.language == 'c') {
+            AddSpacesIntoText(tbuf, 1);
+        }
+        dme_sx = f;
+        DrawMenuEntry2(cursor, tMUSICVOLUME[Game.language], tbuf, &x, &y, &i);
+        dme_sx = f;
+        DrawMenuEntry(cursor, tDONE[Game.language], &x, &y, &i);
+        break;
+    case 6:
+        if (paused < 25) {
+            return;
+        }
+        x = PANELMENUX;
+        y = -0.5f - dy;
+        if (Game.language == 'c') {
+            sprintf(tbuf, D_0061DB80, tHORIZONTAL[Game.language], temp_screen_x);
+            AddSpacesIntoText(tbuf, 6);
+        } else {
+            sprintf(tbuf, D_00630C80, tHORIZONTAL[Game.language], temp_screen_x);
+        }
+        dme_sx = f;
+        DrawMenuEntry(cursor, tbuf, &x, &y, &i);
+        if (Game.language == 'c') {
+            sprintf(tbuf, D_0061DB80, tVERTICAL[Game.language], temp_screen_y);
+            AddSpacesIntoText(tbuf, 6);
+        } else {
+            sprintf(tbuf, D_00630C80, tVERTICAL[Game.language], temp_screen_y);
+        }
+        dme_sx = f;
+        DrawMenuEntry(cursor, tbuf, &x, &y, &i);
+        dme_sx = f;
+        DrawMenuEntry(cursor, tDONE[Game.language], &x, &y, &i);
+        break;
+    case 7:
+        if (paused < 25) {
+            return;
+        }
+        x = PANELMENUX;
+        y = -0.5f - dy;
+        for (j = 0; j < 6; j++) {
+            DrawMenuEntry(cursor, LanguageName[j], &x, &y, &i);
+        }
+        break;
+    case 8:
+        if (paused < 25) {
+            return;
+        }
+        x = PANELMENUX;
+        y = -0.5f - dy;
         DrawMenuEntry(cursor, tYES[Game.language], &x, &y, &i);
         DrawMenuEntry(cursor, tNO[Game.language], &x, &y, &i);
         break;
-    case 14: /* restart time trial */
-        y = D_0062D488 - dvar8;
+    case 9:
+        if (paused < 25) {
+            return;
+        }
+        dy = (cursor->y_max - cursor->y_min) * MENUDY * 0.8333333f * 0.5f;
+        dme_sy = 0.8333333f;
+        y = 0.0f - dy;
+        DrawMenuEntry(cursor, (Game.language == 'c') ? D_0061DB90 : D_0061DBB0, &x, &y, &i);
+        dme_sy = 0.8333333f;
+        DrawMenuEntry(cursor, (Game.language == 'c') ? D_0061DBC0 : D_0061DBD8, &x, &y, &i);
+        dme_sy = 0.8333333f;
+        DrawMenuEntry(cursor, (Game.language == 'c') ? D_0061DBE8 : D_0061DC00, &x, &y, &i);
+        dme_sy = 0.8333333f;
+        sprintf(tbuf, D_00630C88, (Game.language == 'c') ? D_0061DC10 : D_0061DC30,
+                (InvincibilityCHEAT != 0) ? tON[Game.language] : tOFF[Game.language]);
+        DrawMenuEntry(cursor, tbuf, &x, &y, &i);
+        dme_sy = 0.8333333f;
+        DrawMenuEntry(cursor, (Game.language == 'c') ? D_0061DC40 : D_0061DC70, &x, &y, &i);
+        dme_sy = 0.8333333f;
+        DrawMenuEntry(cursor, (Game.language == 'c') ? D_0061DC88 : D_0061DCB8, &x, &y, &i);
+        dme_sy = 0.8333333f;
+        DrawMenuEntry(cursor, (Game.language == 'c') ? D_0061DCD0 : D_0061DCE8, &x, &y, &i);
+        dme_sy = 0.8333333f;
+        sprintf(tbuf, D_00630C88, (Game.language == 'c') ? D_0061DCF8 : D_0061DD18,
+                (LIFTPLAYER != 0) ? tON[Game.language] : tOFF[Game.language]);
+        DrawMenuEntry(cursor, tbuf, &x, &y, &i);
+        dme_sy = 0.8333333f;
+        sprintf(tbuf, D_00630C88, (Game.language == 'c') ? D_0061DD28 : D_0061DD50,
+                (ShowPlayerCoordinate != 0) ? tON[Game.language] : tOFF[Game.language]);
+        DrawMenuEntry(cursor, tbuf, &x, &y, &i);
+        dme_sy = 0.8333333f;
+        sprintf(tbuf, D_00630C88, (Game.language == 'c') ? D_0061DD68 : D_0061DD88,
+                (ExtraMoves != 0) ? tON[Game.language] : tOFF[Game.language]);
+        DrawMenuEntry(cursor, tbuf, &x, &y, &i);
+        dme_sy = 0.8333333f;
+        DrawMenuEntry(cursor, (Game.language == 'c') ? D_0061DD98 : D_0061DDB0, &x, &y, &i);
+        break;
+    case 13:
+        y = 0.0f - dy;
+        DrawMenuEntry(cursor, (Game.language == 'c') ? D_0061DDC0 : D_00630C90, &x, &y, &i);
+        DrawMenuEntry(cursor, (Game.language == 'c') ? D_0061DDD0 : D_00630C98, &x, &y, &i);
+        DrawMenuEntry(cursor, (Game.language == 'c') ? D_0061DDE0 : D_00630CA0, &x, &y, &i);
+        DrawMenuEntry(cursor, (Game.language == 'c') ? D_0061DDF0 : D_00630CA8, &x, &y, &i);
+        DrawMenuEntry(cursor, (Game.language == 'c') ? D_0061DE00 : D_00630CB0, &x, &y, &i);
+        break;
+    case 10:
+        if (paused < 25) {
+            return;
+        }
+        y = 0.0f - dy;
+        sprintf(tbuf, D_0061DE10, LDATA->farclip, 1000);
+        if (Game.language == 'c') {
+            AddSpacesIntoText(tbuf, 1);
+        }
+        DrawMenuEntry(cursor, tbuf, &x, &y, &i);
+        sprintf(tbuf, D_0061DE28, (s32)LDATA->fognear, LDATA->farclip);
+        if (Game.language == 'c') {
+            AddSpacesIntoText(tbuf, 1);
+        }
+        DrawMenuEntry(cursor, tbuf, &x, &y, &i);
+        sprintf(tbuf, D_0061DE38, (s32)LDATA->fogfar, LDATA->farclip);
+        if (Game.language == 'c') {
+            AddSpacesIntoText(tbuf, 1);
+        }
+        DrawMenuEntry(cursor, tbuf, &x, &y, &i);
+        sprintf(tbuf, D_0061DE48, LDATA->fogr);
+        if (Game.language == 'c') {
+            AddSpacesIntoText(tbuf, 1);
+        }
+        DrawMenuEntry(cursor, tbuf, &x, &y, &i);
+        sprintf(tbuf, D_0061DE58, LDATA->fogg);
+        if (Game.language == 'c') {
+            AddSpacesIntoText(tbuf, 1);
+        }
+        DrawMenuEntry(cursor, tbuf, &x, &y, &i);
+        sprintf(tbuf, D_0061DE70, LDATA->fogb);
+        if (Game.language == 'c') {
+            AddSpacesIntoText(tbuf, 1);
+        }
+        DrawMenuEntry(cursor, tbuf, &x, &y, &i);
+        sprintf(tbuf, D_0061DE88, LDATA->foga);
+        if (Game.language == 'c') {
+            AddSpacesIntoText(tbuf, 1);
+        }
+        DrawMenuEntry(cursor, tbuf, &x, &y, &i);
+        sprintf(tbuf, D_0061DEA0, LDATA->hazer);
+        if (Game.language == 'c') {
+            AddSpacesIntoText(tbuf, 1);
+        }
+        DrawMenuEntry(cursor, tbuf, &x, &y, &i);
+        sprintf(tbuf, D_0061DEB8, LDATA->hazeg);
+        if (Game.language == 'c') {
+            AddSpacesIntoText(tbuf, 1);
+        }
+        DrawMenuEntry(cursor, tbuf, &x, &y, &i);
+        sprintf(tbuf, D_0061DED0, LDATA->hazeb);
+        if (Game.language == 'c') {
+            AddSpacesIntoText(tbuf, 1);
+        }
+        DrawMenuEntry(cursor, tbuf, &x, &y, &i);
+        sprintf(tbuf, D_0061DEE8, LDATA->hazea);
+        if (Game.language == 'c') {
+            AddSpacesIntoText(tbuf, 1);
+        }
+        DrawMenuEntry(cursor, tbuf, &x, &y, &i);
+        break;
+    case 11:
+        if (paused < 25) {
+            return;
+        }
+        y = 0.05f;
+        dy = -0.1f;
+        scale = 0.5f;
+        sprintf(tbuf, D_0061DF00,
+                (u32)(superbuffer_ptr.intaddr - superbuffer_base.intaddr) * 9.536743e-07f, 18.0);
+        if (Game.language == 'c') {
+            AddSpacesIntoText(tbuf, 1);
+        }
+        Text3D(tbuf, x, y, 1.0f, scale, scale, scale, 0, 0);
+        y += dy;
+        sprintf(tbuf, D_0061DF20, highallocaddr * 9.536743e-07f);
+        if (Game.language == 'c') {
+            AddSpacesIntoText(tbuf, 1);
+        }
+        Text3D(tbuf, x, y, 1.0f, scale, scale, scale, 0, 0);
+        y += dy;
+        break;
+    case 12:
+        if (paused < 25) {
+            return;
+        }
+        scale = 0.5f;
+        y = (cursor->y_max - cursor->y_min + 2) * 0.1f * scale - 0.2f;
+        for (i = cursor->y_min; i <= cursor->y_max; i++) {
+            xnew = x - (cursor->x - cursor->x_min) * 0.5f;
+            for (j = cursor->x_min; j <= cursor->x_max; j++, xnew += dx) {
+                dx = 0.5f;
+                if (i == 0) {
+                    Text3D(HubName[j][Game.language], xnew, y + 0.2, 1.0f, scale * dx, scale,
+                           scale, 0, 4);
+                }
+                NuStrCpy(tbuf, (HData[j].level[i] == -1)
+                                   ? D_00630CB8
+                                   : LevelName[HData[j].level[i]][Game.language]);
+                if (i == cursor->y && j == cursor->x) {
+                    col = (GlobalTimer.frame % 10 < 5) ? 4 : 3;
+                } else {
+                    col = 0;
+                }
+                Text3D(tbuf, xnew, y, 1.0f, scale * dx, scale, scale, 0, col);
+            }
+            y -= 0.1f;
+        }
+        break;
+    case 18:
+        if (TempAnim.newaction == 0x75 || TempAnim.newaction == 0x33) {
+            break;
+        }
+        if (new_level != -1) {
+            break;
+        }
+        if (TempAnim.newaction == 0x22 && fadeval == 0) {
+            x = 0.5f;
+            y = 0.5f - dy;
+            DrawMenuEntry(cursor, tCONTINUE[Game.language], &x, &y, &i);
+            DrawMenuEntry(cursor, tQUIT[Game.language], &x, &y, &i);
+        }
+        if (Game.language == 5 || Game.language == 4 || Game.language == 3 ||
+            Game.language == 2) {
+            x = 0.0f;
+            y = -0.6f;
+        } else {
+            x = 0.5f;
+            y = -0.5f;
+        }
+        Text3D(tGAMEOVER[Game.language], x, y, 1.0f, 0.8f, 0.8f, 0.8f, 0, 0);
+        break;
+    case 32:
+        DrawCredits();
+        break;
+    case 14:
+        y = -0.7f - dy;
         DrawMenuEntry(cursor, tRESTARTTRIAL[Game.language], &x, &y, &i);
         DrawMenuEntry(cursor, tWARPROOM[Game.language], &x, &y, &i);
-        return;
-    case 15: /* time-trial name entry */
-        DrawNameInputTable(cursor, 0.0f, -0.5f);
-        return;
-    case 16: /* restart race */
-        y = D_0062D48C - dvar8;
+        break;
+    case 15:
+        DrawNameInputTable(cursor, 0.0f, TT_INPUTY);
+        break;
+    case 16:
+        y = -0.7f - dy;
         DrawMenuEntry(cursor, tRESTARTRACE[Game.language], &x, &y, &i);
         DrawMenuEntry(cursor, tWARPROOM[Game.language], &x, &y, &i);
+        break;
+    case 19:
+        sprintf(tbuf, (Game.language == 'c') ? D_00630CC0 : D_00630CC8, tLOAD[Game.language],
+                tSAVE[Game.language]);
+        Text3D(tbuf, 0.0f, 0.75f, 1.0f, 0.6f, 0.6f, 0.6f, 0, 0);
+        DrawGameSlot(&Game, 0.0f, 0.25f, 4);
+        y = -0.5f - dy;
+        if (Game.language == 2) {
+            y -= dy * 0.666f;
+        }
+        DrawMenuEntry(cursor, tLOADGAME[Game.language], &x, &y, &i);
+        if (Game.language == 2) {
+            y += dy * 0.222f;
+        }
+        DrawMenuEntry(cursor, tSAVEGAME[Game.language], &x, &y, &i);
+        if (Game.language == 2) {
+            y += dy * 0.222f;
+        }
+        DrawMenuEntry(cursor, tDELETEGAME[Game.language], &x, &y, &i);
+        if (Game.language == 2) {
+            y += dy * 0.222f;
+        }
+        DrawMenuEntry(cursor, tEXIT[Game.language], &x, &y, &i);
+        break;
+    case 20:
+        Text3D(tLOADGAME[Game.language], 0.0f, 0.75f, 1.0f, 0.6f, 0.6f, 0.6f, 0, 0);
+        if (saveload_cardtype != 2) {
+            Text3D(tPLEASEINSERTMEMORYCARDSLOT1[Game.language][0], 0.0f, 0.15f, 1.0f, 0.5f,
+                   0.5f, 0.5f, 0, 0);
+            Text3D(tPLEASEINSERTMEMORYCARDSLOT1[Game.language][1], 0.0f, 0.0f, 1.0f, 0.5f,
+                   0.5f, 0.5f, 0, 0);
+            Text3D(tPLEASEINSERTMEMORYCARDSLOT1[Game.language][2], 0.0f, -0.15f, 1.0f, 0.5f,
+                   0.5f, 0.5f, 0, 0);
+            cursor->y = cursor->y_max;
+        } else if (saveload_cardformatted == 0) {
+            Text3D(tNODATAAVAILABLE[Game.language], 0.0f, 0.0f, 1.0f, 0.6f, 0.6f, 0.6f, 0, 0);
+            cursor->y = cursor->y_max;
+        } else if (memcard_loadattempted == 0 || memcard_loadcompleted == 0 ||
+                   memcard_loadmessage_delay != 0) {
+            size = (Game.language == 5) ? 0.5f : 0.6f;
+            Text3D(tCHECKINGMEMORYCARD[Game.language][0], 0.0f, 0.3f, 1.0f, size, size, size,
+                   4, 0);
+            Text3D(tCHECKINGMEMORYCARD[Game.language][1], 0.0f, 0.25f, 1.0f, size, size, size,
+                   1, 0);
+            Text3D(tDONOTREMOVEMEMORYCARD[Game.language][0], 0.0f, 0.0f, 1.0f, 0.5f, 0.5f, 0.5f,
+                   0, 0);
+            Text3D(tDONOTREMOVEMEMORYCARD[Game.language][1], 0.0f, -0.15f, 1.0f, 0.5f, 0.5f,
+                   0.5f, 0, 0);
+            Text3D(tDONOTREMOVEMEMORYCARD[Game.language][2], 0.0f, -0.3f, 1.0f, 0.5f, 0.5f,
+                   0.5f, 0, 0);
+            cursor->y = cursor->y_max;
+        } else if (memcard_loadfailed != 0) {
+            Text3D(tFAILEDTOLOAD[Game.language], 0.0f, 0.0f, 1.0f, 0.6f, 0.6f, 0.6f, 0, 0);
+            cursor->y = cursor->y_max;
+        } else if (memcard_gamesavailable == 0) {
+            Text3D(tNODATAAVAILABLE[Game.language], 0.0f, 0.0f, 1.0f, 0.6f, 0.6f, 0.6f, 0, 0);
+            cursor->y = cursor->y_max;
+        } else {
+            DrawGameSlots(cursor);
+        }
+        if (cursor->y == cursor->y_max) {
+            col = (GlobalTimer.frame % 10 < 5) ? 0 : 3;
+        } else {
+            col = 2;
+        }
+        scale = 0.6f;
+        Text3D(tCANCEL[Game.language], 0.0f, -0.75f, 1.0f, scale, scale, scale, 0, col);
+        break;
+    case 21:
+        Text3D(tLOADGAME[Game.language], 0.0f, 0.75f, 1.0f, 0.6f, 0.6f, 0.6f, 0, 0);
+        DrawGameSlot(game, 0.0f, 0.25f, 4);
+        Text3D(tCONFIRMLOAD[Game.language], 0.0f, -0.3f, 1.0f, 0.6f, 0.6f, 0.6f, 0, 0);
+        y = -0.7f - dy;
+        DrawMenuEntry(cursor, tYES[Game.language], &x, &y, &i);
         DrawMenuEntry(cursor, tNO[Game.language], &x, &y, &i);
-        return;
-    case 17: /* empty */
-        return;
-    case 32: /* credits */
-        DrawCredits();
-        return;
-    /*
-     * TODO (not yet reconstructed): case 1 (memory-card), 4/5/6 (options/
-     * sound/screen), 9-13 (debug menus), 18 (game-over), 19-31 (memcard state
-     * machines + power screen) -- each a distinct PS2 case block.
-     */
+        break;
+    case 22:
+        Text3D(tLOADGAME[Game.language], 0.0f, 0.75f, 1.0f, 0.6f, 0.6f, 0.6f, 0, 0);
+        Text3D(tGAMELOADED[Game.language], 0.0f, -0.3f, 1.0f, 0.6f, 0.6f, 0.6f, 0, 0);
+        break;
+    case 23:
+        Text3D(tSAVEGAME[Game.language], 0.0f, 0.75f, 1.0f, 0.6f, 0.6f, 0.6f, 0, 0);
+        if (saveload_cardtype != 2) {
+            Text3D(tPLEASEINSERTMEMORYCARDSLOT1[Game.language][0], 0.0f, 0.15f, 1.0f, 0.5f,
+                   0.5f, 0.5f, 0, 0);
+            Text3D(tPLEASEINSERTMEMORYCARDSLOT1[Game.language][1], 0.0f, 0.0f, 1.0f, 0.5f,
+                   0.5f, 0.5f, 0, 0);
+            Text3D(tPLEASEINSERTMEMORYCARDSLOT1[Game.language][2], 0.0f, -0.15f, 1.0f, 0.5f,
+                   0.5f, 0.5f, 0, 0);
+            cursor->y = cursor->y_max;
+        } else if (memcard_loadattempted == 0 || memcard_loadcompleted == 0 ||
+                   memcard_loadmessage_delay != 0) {
+            size = (Game.language == 5) ? 0.5f : 0.6f;
+            Text3D(tCHECKINGMEMORYCARD[Game.language][0], 0.0f, 0.3f, 1.0f, size, size, size,
+                   4, 0);
+            Text3D(tCHECKINGMEMORYCARD[Game.language][1], 0.0f, 0.25f, 1.0f, size, size, size,
+                   1, 0);
+            Text3D(tDONOTREMOVEMEMORYCARD[Game.language][0], 0.0f, 0.0f, 1.0f, 0.5f, 0.5f, 0.5f,
+                   0, 0);
+            Text3D(tDONOTREMOVEMEMORYCARD[Game.language][1], 0.0f, -0.15f, 1.0f, 0.5f, 0.5f,
+                   0.5f, 0, 0);
+            Text3D(tDONOTREMOVEMEMORYCARD[Game.language][2], 0.0f, -0.3f, 1.0f, 0.5f, 0.5f,
+                   0.5f, 0, 0);
+            cursor->y = cursor->y_max;
+        } else if (memcard_gamesavailable == 0 && saveload_freespace < 0x42) {
+            size = 0.45f;
+            if (Game.language == 4) {
+                size = 0.42f;
+            }
+            scale = 0.45f;
+            Text3D(tNOTENOUGHSPACEONMEMORYCARD[Game.language][0], 0.0f, 0.15f, 1.0f, size, scale,
+                   scale, 0, 0);
+            Text3D(tNOTENOUGHSPACEONMEMORYCARD[Game.language][1], 0.0f, 0.0f, 1.0f, size, scale,
+                   scale, 0, 0);
+            Text3D(tNOTENOUGHSPACEONMEMORYCARD[Game.language][2], 0.0f, -0.15f, 1.0f, size, scale,
+                   scale, 0, 0);
+            if (Game.language != 'c') {
+                sprintf(tbuf, tGAMEREQUIRESiKB[Game.language], 0x42);
+                Text3D(tbuf, 0.0f, -0.35f, 1.0f, scale, scale, scale, 0, 0);
+            }
+            cursor->y = cursor->y_max;
+        } else {
+            DrawGameSlots(cursor);
+        }
+        if (cursor->y == cursor->y_max) {
+            col = (GlobalTimer.frame % 10 < 5) ? 0 : 3;
+        } else {
+            col = 2;
+        }
+        scale = 0.6f;
+        if (memcard_formatting == 0 && memcard_formatme == 0 && memcard_formatmessage_delay == 0) {
+            Text3D(tCANCEL[Game.language], 0.0f, -0.75f, 1.0f, scale, scale, scale, 0, col);
+        }
+        break;
+    case 24:
+        Text3D(tSAVEGAME[Game.language], 0.0f, 0.75f, 1.0f, 0.6f, 0.6f, 0.6f, 0, 0);
+        DrawGameSlot(&Game, 0.0f, 0.25f, 4);
+        if (game->empty != 0) {
+            Text3D(tCONFIRMSAVE[Game.language], 0.0f, -0.3f, 1.0f, 0.6f, 0.6f, 0.6f, 0, 0);
+        } else {
+            Text3D(tCONFIRMOVERWRITE[Game.language][0], 0.0f, -0.3f, 1.0f, 0.6f, 0.6f, 0.6f, 0,
+                   0);
+            Text3D(tCONFIRMOVERWRITE[Game.language][1], 0.0f, -0.45f, 1.0f, 0.6f, 0.6f, 0.6f, 0,
+                   0);
+        }
+        y = -0.7f - dy;
+        DrawMenuEntry(cursor, tYES[Game.language], &x, &y, &i);
+        DrawMenuEntry(cursor, tNO[Game.language], &x, &y, &i);
+        break;
+    case 25:
+        Text3D(tSAVEGAME[Game.language], 0.0f, 0.75f, 1.0f, 0.6f, 0.6f, 0.6f, 0, 0);
+        if (memcard_saveneeded != 0 || memcard_savestarted != 0 ||
+            memcard_savemessage_delay != 0) {
+            size = (Game.language == 'c') ? 0.5f : 0.6f;
+            Text3D(tSAVING[Game.language], 0.0f, 0.2f, 1.0f, size, 0.6f, 0.6f, 0, 0);
+            Text3D(tDONOTREMOVEMEMORYCARD[Game.language][0], 0.0f, 0.0f, 1.0f, 0.5f, 0.5f, 0.5f,
+                   0, 0);
+            Text3D(tDONOTREMOVEMEMORYCARD[Game.language][1], 0.0f, -0.15f, 1.0f, 0.5f, 0.5f,
+                   0.5f, 0, 0);
+            Text3D(tDONOTREMOVEMEMORYCARD[Game.language][2], 0.0f, -0.3f, 1.0f, 0.5f, 0.5f,
+                   0.5f, 0, 0);
+        } else if (memcard_savefailed != 0) {
+            Text3D(tFAILEDTOSAVE[Game.language], 0.0f, -0.3f, 1.0f, 0.6f, 0.6f, 0.6f, 0, 0);
+        } else {
+            Text3D(tGAMESAVED[Game.language], 0.0f, -0.3f, 1.0f, 0.6f, 0.6f, 0.6f, 0, 0);
+        }
+        break;
+    case 26:
+        Text3D(tDELETEGAME[Game.language], 0.0f, 0.75f, 1.0f, 0.6f, 0.6f, 0.6f, 0, 0);
+        if (saveload_cardtype != 2) {
+            Text3D(tPLEASEINSERTMEMORYCARDSLOT1[Game.language][0], 0.0f, 0.15f, 1.0f, 0.5f,
+                   0.5f, 0.5f, 0, 0);
+            Text3D(tPLEASEINSERTMEMORYCARDSLOT1[Game.language][1], 0.0f, 0.0f, 1.0f, 0.5f,
+                   0.5f, 0.5f, 0, 0);
+            Text3D(tPLEASEINSERTMEMORYCARDSLOT1[Game.language][2], 0.0f, -0.15f, 1.0f, 0.5f,
+                   0.5f, 0.5f, 0, 0);
+            cursor->y = cursor->y_max;
+        } else if (saveload_cardformatted == 0) {
+            Text3D(tNODATAAVAILABLE[Game.language], 0.0f, 0.0f, 1.0f, 0.6f, 0.6f, 0.6f, 0, 0);
+            cursor->y = cursor->y_max;
+        } else if (memcard_loadattempted == 0 || memcard_loadcompleted == 0 ||
+                   memcard_loadmessage_delay != 0) {
+            size = (Game.language == 5) ? 0.5f : 0.6f;
+            Text3D(tCHECKINGMEMORYCARD[Game.language][0], 0.0f, 0.3f, 1.0f, size, size, size,
+                   4, 0);
+            Text3D(tCHECKINGMEMORYCARD[Game.language][1], 0.0f, 0.25f, 1.0f, size, size, size,
+                   1, 0);
+            Text3D(tDONOTREMOVEMEMORYCARD[Game.language][0], 0.0f, 0.0f, 1.0f, 0.5f, 0.5f, 0.5f,
+                   0, 0);
+            Text3D(tDONOTREMOVEMEMORYCARD[Game.language][1], 0.0f, -0.15f, 1.0f, 0.5f, 0.5f,
+                   0.5f, 0, 0);
+            Text3D(tDONOTREMOVEMEMORYCARD[Game.language][2], 0.0f, -0.3f, 1.0f, 0.5f, 0.5f,
+                   0.5f, 0, 0);
+            cursor->y = cursor->y_max;
+        } else if (memcard_gamesavailable == 0) {
+            Text3D(tNODATAAVAILABLE[Game.language], 0.0f, 0.0f, 1.0f, 0.6f, 0.6f, 0.6f, 0, 0);
+            cursor->y = cursor->y_max;
+        } else {
+            DrawGameSlots(cursor);
+        }
+        if (cursor->y == cursor->y_max) {
+            col = (GlobalTimer.frame % 10 < 5) ? 0 : 3;
+        } else {
+            col = 2;
+        }
+        scale = 0.6f;
+        if (memcard_saveneeded == 0 && memcard_savestarted == 0 && memcard_savemessage_delay == 0) {
+            Text3D(tCANCEL[Game.language], 0.0f, -0.75f, 1.0f, scale, scale, scale, 0, col);
+        }
+        break;
+    case 27:
+        Text3D(tDELETEGAME[Game.language], 0.0f, 0.75f, 1.0f, 0.6f, 0.6f, 0.6f, 0, 0);
+        DrawGameSlot(game, 0.0f, 0.25f, 4);
+        Text3D(tCONFIRMDELETE[Game.language], 0.0f, -0.3f, 1.0f, 0.6f, 0.6f, 0.6f, 0, 0);
+        y = -0.7f - dy;
+        DrawMenuEntry(cursor, tYES[Game.language], &x, &y, &i);
+        DrawMenuEntry(cursor, tNO[Game.language], &x, &y, &i);
+        break;
+    case 28:
+        Text3D(tDELETEGAME[Game.language], 0.0f, 0.75f, 1.0f, 0.6f, 0.6f, 0.6f, 0, 0);
+        if (memcard_saveneeded != 0 || memcard_savestarted != 0 || memcard_deleteneeded != 0 ||
+            memcard_deletestarted != 0 || memcard_savemessage_delay != 0) {
+            size = (Game.language == 'c') ? 0.5f : 0.6f;
+            Text3D(tDELETING[Game.language], 0.0f, 0.2f, 1.0f, size, 0.6f, 0.6f, 0, 0);
+            Text3D(tDONOTREMOVEMEMORYCARD[Game.language][0], 0.0f, 0.0f, 1.0f, 0.5f, 0.5f, 0.5f,
+                   0, 0);
+            Text3D(tDONOTREMOVEMEMORYCARD[Game.language][1], 0.0f, -0.15f, 1.0f, 0.5f, 0.5f,
+                   0.5f, 0, 0);
+            Text3D(tDONOTREMOVEMEMORYCARD[Game.language][2], 0.0f, -0.3f, 1.0f, 0.5f, 0.5f,
+                   0.5f, 0, 0);
+        } else if (memcard_deletefailed != 0 || memcard_savefailed != 0) {
+            Text3D(tFAILEDTODELETE[Game.language], 0.0f, -0.3f, 1.0f, 0.6f, 0.6f, 0.6f, 0, 0);
+        } else {
+            Text3D(tGAMEDELETED[Game.language], 0.0f, -0.3f, 1.0f, 0.6f, 0.6f, 0.6f, 0, 0);
+        }
+        break;
+    case 29:
+        Text3D(tSAVEGAME[Game.language], 0.0f, 0.75f, 1.0f, 0.6f, 0.6f, 0.6f, 0, 0);
+        Text3D(tMEMORYCARDISNOTFORMATTED[Game.language][0], 0.0f, 0.3f, 1.0f, 0.45f, 0.45f,
+               0.45f, 0, 0);
+        Text3D(tMEMORYCARDISNOTFORMATTED[Game.language][1], 0.0f, 0.15f, 1.0f, 0.45f, 0.45f,
+               0.45f, 0, 0);
+        Text3D(tMEMORYCARDISNOTFORMATTED[Game.language][2], 0.0f, 0.0f, 1.0f, 0.45f, 0.45f,
+               0.45f, 0, 0);
+        Text3D(tCONFIRMFORMAT[Game.language], 0.0f, -0.3f, 1.0f, 0.6f, 0.6f, 0.6f, 0, 0);
+        y = -0.75f - dy;
+        DrawMenuEntry(cursor, tYES[Game.language], &x, &y, &i);
+        DrawMenuEntry(cursor, tNO[Game.language], &x, &y, &i);
+        break;
+    case 30:
+        Text3D(tSAVEGAME[Game.language], 0.0f, 0.75f, 1.0f, 0.6f, 0.6f, 0.6f, 0, 0);
+        if (memcard_formatting != 0 || memcard_formatme != 0 || memcard_formatmessage_delay != 0) {
+            size = (Game.language == 'c') ? 0.5f : 0.6f;
+            Text3D(tFORMATTING[Game.language], 0.0f, 0.2f, 1.0f, size, 0.6f, 0.6f, 0, 0);
+            Text3D(tDONOTREMOVEMEMORYCARD[Game.language][0], 0.0f, 0.0f, 1.0f, 0.5f, 0.5f, 0.5f,
+                   0, 0);
+            Text3D(tDONOTREMOVEMEMORYCARD[Game.language][1], 0.0f, -0.15f, 1.0f, 0.5f, 0.5f,
+                   0.5f, 0, 0);
+            Text3D(tDONOTREMOVEMEMORYCARD[Game.language][2], 0.0f, -0.3f, 1.0f, 0.5f, 0.5f,
+                   0.5f, 0, 0);
+        } else if (memcard_formatfailed != 0) {
+            Text3D(tFAILEDTOFORMAT[Game.language], 0.0f, -0.3f, 1.0f, 0.6f, 0.6f, 0.6f, 0, 0);
+        } else {
+            Text3D(tFORMATTINGCOMPLETE[Game.language], 0.0f, -0.3f, 1.0f, 0.6f, 0.6f, 0.6f, 0,
+                   0);
+        }
+        break;
+    case 31:
+        pdata = &PData[new_power];
+        scale = 0.6f;
+        if (new_power == 0 && Game.language == 1) {
+            scale = 0.55f;
+        }
+        Text3D(pdata->name, 0.0f, POWERTEXTY + 0.6f, 1.0f, scale, 0.6f, 0.6f, 0, 1);
+        if (cursor->button_lock == 0) {
+            y = POWERTEXTY - 0.6f - dy;
+            DrawMenuEntry(cursor, tPRESSxTOCONTINUE[Game.language], &x, &y, &i);
+        }
+        c = pdata->font3d_letter - 'a';
+        size = Font3DObjTab[c].scale * 2.5f;
+        DrawPanel3DCharacter(pdata->character, 0.0f, -0.8f, 1.0f, size, size, size, 0, 0, 0,
+                             Font3DObjTab[c].action, Font3DObjTab[c].anim_time, 0);
+        for (j = 0; j < 7; j++) {
+            if (strcmp(pdata->text[j], D_00630CD0) == 0) {
+                break;
+            }
+        }
+        dy = MENUDY * 1.2f;
+        y = POWERTEXTY - (j - 1) * dy * 0.5f;
+        for (i = 0; i < j; i++) {
+            scale = 0.6f;
+            if (Game.language == 2 || Game.language == 3 || Game.language == 4) {
+                scale = 0.5f;
+            }
+            Text3D(pdata->text[i], 0.0f, y, 1.0f, 0.6f, scale, 0.6f, 0, 0);
+            y += dy;
+        }
+        break;
     }
 }
+
 
 void NextMenuEntry(float *y, s32 *i) {
     *y += MENUDY * dme_sy;
