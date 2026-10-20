@@ -171,6 +171,7 @@ extern u16 D_0058A00E[];   /* Mask.active (absolute, far from $gp) */
 extern struct mask_s Mask;
 extern struct cursor_s Cursor;
 extern struct gtimer_s GlobalTimer;
+extern struct gtimer_s GameTimer;
 extern struct nuangvec_s proberot;
 extern s32 probeon;
 extern s32 probey;
@@ -257,7 +258,6 @@ extern s32 LivesLost;
 extern s32 qseed;
 extern s32 pausebuzz;
 extern s32 LANGUAGEOPTION;
-extern u8 D_0058B117[];
 extern float NuTrigTable[];
 extern float nusound_fade_start;
 extern struct cammtx_s GameCam[];
@@ -290,19 +290,14 @@ extern s32 force_menu;
 extern char D_0061DA38[]; /* "        " */
 extern s32 next_cut_movie;
 extern s32 input_alphabet;
-extern float D_0059202C[];
 extern float credit_time;
-extern short D_0058B0C8[];
 extern s32 cortex_continue_i;
 extern s32 cortex_gameover_i;
 extern short cortex_gameover_tab[][2];
-extern s8 D_0056233A[];
 extern s32 tempanim_nextaction;
-extern u8 D_0058B504[];
 extern s32 gamesfx_channel;
 extern s32 tempanim_waitaudio;
 extern s32 cortex_quit_i;
-extern char D_0058B134[];
 extern s32 newleveltime_slot;
 extern char D_00630C48[];
 extern u16 new_lev_flags;
@@ -318,7 +313,6 @@ extern struct game_s SaveSlot[];
 extern struct game_s *game;
 extern s32 memcard_loadresult_delay;
 extern struct panelcount_s plr_lives;
-extern short D_0063203A;
 extern s32 memcard_formatme;
 extern s32 memcard_formatting;
 extern s32 memcard_formatmessage_delay;
@@ -407,7 +401,7 @@ void ResumeGame(void);
 void edobjResetAnimsToZero(void);
 s32 GotoCheckpoint(struct nuvec_s *pos, s32 dir);
 void loadsaveCallEachFrame(void);
-void UpdateSaveSlots(struct cursor_s *cur);
+void UpdateSaveSlots();
 int NuSoundStopStream(s32 ch);
 void ResetMaskFeathers(void);
 
@@ -995,6 +989,42 @@ void NewMenu(struct cursor_s *cur, s32 menu, s32 y, s32 level) {
     }
 }
 
+inline void CleanLetters(char *txt) {
+    while (*txt != '\0') {
+        if (*txt == '_') {
+            *txt = ' ';
+        }
+        txt++;
+        if (Game.language == 'c') {
+            txt++;
+        }
+    }
+}
+
+inline void InputNewLetter(struct cursor_s *cursor, char *name, s32 *i, s32 count) {
+    char c0;
+    s32 j;
+
+    c0 = NameInputTable[cursor->y][cursor->x];
+    if (c0 == '<') {
+        if (*i > 0) {
+            (*i)--;
+            name[*i] = '_';
+        }
+        return;
+    }
+    if (*i >= count - 1) {
+        cursor->y = 4;
+        j = count - 1;
+    } else {
+        j = *i;
+    }
+    name[j] = c0;
+    if (*i < count) {
+        *i = *i + 1;
+    }
+}
+
 void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
     s32 old;
     s32 bits;
@@ -1010,11 +1040,15 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
     s32 TRIANGLE;
     s32 FASTLEFT;
     s32 FASTRIGHT;
-    s32 uVar16;
-    s32 y_cursor_temp;
-    s32 x_cursor_temp;
+    s32 CONFIRM;
+    s32 x;
+    s32 y;
+    s32 range;
+    s32 rem;
+    s32 i;
+    s32 old_y;
+    s32 j;
     char *txt;
-    s32 nosaves;
     s32 test_sfx[4] = { 0x25, 0x19, 0x13, 0x2c };
     float pos[3];
 
@@ -1072,16 +1106,16 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
         bits = 0;
     }
     CROSS = bits_db & 0x40;
-    TRIANGLE = bits_db & 0x10;
     DOWN = bits_db & 0x1000;
     UP = bits_db & 0x4000;
     RIGHT = bits_db & 0x8000;
     LEFT = bits_db & 0x2000;
+    TRIANGLE = bits_db & 0x10;
     FASTLEFT = bits & 0x8000;
     FASTRIGHT = bits & 0x2000;
-    uVar16 = CROSS;
+    CONFIRM = CROSS;
     if (cursor->item_frame == 0) {
-        uVar16 = 0;
+        CONFIRM = 0;
         TRIANGLE = 0;
         CROSS = 0;
     }
@@ -1157,13 +1191,13 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
         return;
     }
 
-    y_cursor_temp = cursor->y;
-    x_cursor_temp = cursor->x;
+    x = cursor->x;
+    y = cursor->y;
     switch (cursor->menu) {
-    case 3: /* PAUSE MENU */
+    case 3:
         if (CROSS != 0) {
             sfx = 0x36;
-            switch (y_cursor_temp) {
+            switch (y) {
             case 0:
                 pause_dir = 2;
                 break;
@@ -1171,10 +1205,10 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
                 NewMenu(cursor, 4, -1, -1);
                 break;
             case 2:
-                if (Level != 0x25) {
-                    new_level = 0x25;
-                } else {
+                if (Level == 0x25) {
                     NewMenu(cursor, 8, 1, -1);
+                } else {
+                    new_level = 0x25;
                 }
                 break;
             case 3:
@@ -1190,22 +1224,22 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
             }
         }
         break;
-    case 4: /* OPTIONS MENU */
+    case 4:
         if (CROSS != 0) {
-            if (y_cursor_temp == 0) {
+            if (y == 0) {
                 temp_vibration = 1 - temp_vibration;
-                if (temp_vibration != 0) {
-                    pausebuzz = qrand() * 0xA / 0x10000 + 5;
-                } else {
-                    pausebuzz = 0;
-                }
-            } else if (y_cursor_temp == 1) {
+                pausebuzz = (temp_vibration != 0) ? qrand() * 0xA / 0x10000 + 5 : 0;
+                sfx = 0x36;
+            } else if (y == 1) {
                 NewMenu(cursor, 5, -1, -1);
-            } else if (y_cursor_temp == 2) {
+                sfx = 0x36;
+            } else if (y == 2) {
                 NewMenu(cursor, 6, -1, -1);
-            } else if (LANGUAGEOPTION != 0 && y_cursor_temp == 3) {
-                NewMenu(cursor, 7, D_0058B117[0], -1);
-            } else if (y_cursor_temp == cursor->y_max) {
+                sfx = 0x36;
+            } else if (LANGUAGEOPTION != 0 && y == 3) {
+                NewMenu(cursor, 7, Game.language, -1);
+                sfx = 0x36;
+            } else if (y == cursor->y_max) {
                 Game.vibration = temp_vibration;
                 Game.surround = temp_surround;
                 Game.sfx_volume = temp_sfx_volume;
@@ -1213,99 +1247,122 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
                 Game.screen_x = temp_screen_x;
                 Game.screen_y = temp_screen_y;
                 NewMenu(cursor, 3, -1, -1);
+                sfx = 0x36;
             }
-            sfx = 0x36;
         } else if (TRIANGLE != 0) {
             NewMenu(cursor, 3, -1, -1);
             sfx = 0x3C;
             pausebuzz = 0;
         }
-        if (y_cursor_temp != 0) {
-            pausebuzz = 0;
-        } else if (pausebuzz != 0) {
-            pausebuzz--;
-        } else if (temp_vibration != 0) {
-            if (qrand() < 0x800) {
-                pausebuzz = qrand() * 0xA / 0x10000 + 5;
+        if (y == 0) {
+            if (pausebuzz != 0) {
+                pausebuzz--;
+            } else if (temp_vibration != 0) {
+                if (qrand() < 0x800) {
+                    pausebuzz = qrand() * 0xA / 0x10000 + 5;
+                }
             }
+        } else {
+            pausebuzz = 0;
         }
         break;
-    case 5: /* SOUND MENU */
+    case 5:
         if (CROSS != 0) {
-            if (y_cursor_temp == 0) {
+            switch (y) {
+            case 0:
                 temp_surround = 1 - temp_surround;
                 sfx = 0x36;
-            } else if (y_cursor_temp == 3) {
+                break;
+            case 3:
                 Game.surround = temp_surround;
                 Game.sfx_volume = temp_sfx_volume;
                 Game.music_volume = temp_music_volume;
                 NewMenu(cursor, 4, -1, -1);
+                sfx = 0x36;
+                break;
             }
         } else if (TRIANGLE != 0) {
             NewMenu(cursor, 4, -1, -1);
             sfx = 0x3C;
-        } else if (y_cursor_temp == 0) {
-            if (qrand() < 0x1000) {
-                if (temp_surround != 0) {
-                    s32 angle = qrand();
-                    pos[0] = GameCam[0].pos.x + NuTrigTable[angle] * nusound_fade_start;
-                    pos[1] = GameCam[0].pos.y;
-                    pos[2] = GameCam[0].pos.z + NuTrigTable[(angle + 0x4000) & 0xFFFF] * nusound_fade_start;
-                    gamesfx_volume = temp_sfx_volume;
-                    GameSfx(test_sfx[qrand() / 0x4000], pos);
+        } else {
+            switch (y) {
+            case 0:
+                if (qrand() < 0x1000) {
+                    sfx = test_sfx[qrand() / 0x4000];
+                    if (temp_surround != 0) {
+                        range = y / 400;
+                        rem = y % 400;
+                        y = qrand();
+                        pos[0] = GameCam[0].pos.x + NuTrigTable[y] * nusound_fade_start;
+                        pos[1] = GameCam[0].pos.y;
+                        pos[2] = GameCam[0].pos.z +
+                                 NuTrigTable[(y + 0x4000) & 0xFFFF] * nusound_fade_start;
+                        gamesfx_volume = temp_sfx_volume;
+                        GameSfx(sfx, pos);
+                        sfx = -1;
+                    }
                 }
-            }
-        } else if (y_cursor_temp == 1) {
-            if (qrand() < 0x1000) {
-                gamesfx_volume = temp_sfx_volume;
-                GameSfx(test_sfx[qrand() / 0x4000], NULL);
-            }
-            if (FASTLEFT != 0 && temp_sfx_volume != 0) {
-                temp_sfx_volume--;
-            } else if (FASTRIGHT != 0 && temp_sfx_volume < 100) {
-                temp_sfx_volume++;
-            }
-        } else if (y_cursor_temp == 2) {
-            if (FASTLEFT != 0 && temp_music_volume != 0) {
-                temp_music_volume--;
-            } else if (FASTRIGHT != 0 && temp_music_volume < 100) {
-                temp_music_volume++;
+                break;
+            case 1:
+                if (qrand() < 0x1000) {
+                    gamesfx_volume = temp_sfx_volume;
+                    GameSfx(test_sfx[qrand() / 0x4000], NULL);
+                }
+                if (FASTLEFT != 0 && temp_sfx_volume != 0) {
+                    temp_sfx_volume--;
+                } else if (FASTRIGHT != 0 && temp_sfx_volume < 100) {
+                    temp_sfx_volume++;
+                }
+                break;
+            case 2:
+                if (FASTLEFT != 0 && temp_music_volume != 0) {
+                    temp_music_volume--;
+                } else if (FASTRIGHT != 0 && temp_music_volume < 100) {
+                    temp_music_volume++;
+                }
+                break;
             }
         }
         break;
-    case 6: /* SCREEN MENU */
+    case 6:
         if (CROSS != 0) {
-            if (y_cursor_temp == 2) {
-                Game.screen_y = temp_screen_y;
+            if (y == 2) {
                 Game.screen_x = temp_screen_x;
+                Game.screen_y = temp_screen_y;
                 NewMenu(cursor, 4, -1, -1);
+                sfx = 0x36;
             }
         } else if (TRIANGLE != 0) {
             NewMenu(cursor, 4, -1, -1);
             sfx = 0x3C;
             NuPs2VideoSetPos(Game.screen_x << 2, Game.screen_y << 1);
         } else {
-            if (y_cursor_temp == 0) {
+            i = temp_screen_x;
+            old_y = temp_screen_y;
+            switch (y) {
+            case 0:
                 if (FASTLEFT != 0 && temp_screen_x >= -0x3F) {
                     temp_screen_x--;
                 } else if (FASTRIGHT != 0 && temp_screen_x < 0x40) {
                     temp_screen_x++;
                 }
-            } else if (y_cursor_temp == 1) {
+                break;
+            case 1:
                 if (FASTLEFT != 0 && temp_screen_y >= -0x1F) {
                     temp_screen_y--;
                 } else if (FASTRIGHT != 0 && temp_screen_y < 0x20) {
                     temp_screen_y++;
                 }
+                break;
             }
-            if (temp_screen_x != old || temp_screen_y != (char)cursor->y) {
+            if (temp_screen_x != i || temp_screen_y != old_y) {
                 NuPs2VideoSetPos(temp_screen_x << 2, temp_screen_y << 1);
             }
         }
         break;
-    case 7: /* LANGUAGE MENU */
+    case 7:
         if (CROSS != 0) {
-            NewLanguage(y_cursor_temp);
+            NewLanguage(y);
             NewMenu(cursor, 4, -1, -1);
             sfx = 0x36;
         } else if (TRIANGLE != 0) {
@@ -1313,9 +1370,9 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
             sfx = 0x3C;
         }
         break;
-    case 8: /* ABANDON MENU */
+    case 8:
         if (CROSS != 0) {
-            if (y_cursor_temp == 0) {
+            if (y == 0) {
                 new_level = (Level == 0x25) ? 0x23 : 0x25;
                 sfx = 0x36;
             } else {
@@ -1327,9 +1384,9 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
             sfx = 0x3C;
         }
         break;
-    case 9: /* DEBUG MENU */
+    case 9:
         if (CROSS != 0) {
-            switch (y_cursor_temp) {
+            switch (y) {
             case 0:
                 new_mode = GameMode;
                 ResetCheckpoint(-1, -1, 0.0f, NULL);
@@ -1411,9 +1468,9 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
             NewMenu(cursor, 3, -1, -1);
         }
         break;
-    case 13: /* DEBUG MOVIE MENU */
+    case 13:
         if (CROSS != 0) {
-            switch (y_cursor_temp) {
+            switch (y) {
             case 0:
                 logos_played = 0;
                 cutmovie = 0;
@@ -1437,7 +1494,7 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
             NewMenu(cursor, 9, -1, -1);
         }
         break;
-    case 10: /* DEBUG DRAW MENU */
+    case 10:
         if (CROSS != 0) {
             break;
         }
@@ -1445,34 +1502,35 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
             NewMenu(cursor, 9, -1, -1);
             break;
         }
-        switch (y_cursor_temp) {
+        switch (y) {
         case 0:
             if (FASTLEFT != 0 && LDATA->farclip > 0xa) {
                 LDATA->farclip--;
             } else if (FASTRIGHT != 0 && LDATA->farclip < 1000) {
                 LDATA->farclip++;
             }
-            if ((s32) LDATA->fogfar > LDATA->farclip) {
+            if ((s32)LDATA->fogfar > LDATA->farclip) {
                 LDATA->fogfar = LDATA->farclip;
             }
-            if ((s32) LDATA->fognear > LDATA->fogfar) {
+            if ((s32)LDATA->fognear > LDATA->fogfar) {
                 LDATA->fognear = LDATA->fogfar;
             }
             if (pNuCam != NULL) {
-                pNuCam->farclip = (float) LDATA->farclip;
+                pNuCam->farclip = (float)LDATA->farclip;
             }
             break;
         case 1:
             if (FASTLEFT != 0 && LDATA->fognear > 1.0f) {
                 LDATA->fognear -= 1.0f;
-            } else if (FASTRIGHT != 0 && (s32) LDATA->fognear < LDATA->farclip && LDATA->fognear < LDATA->fogfar) {
+            } else if (FASTRIGHT != 0 && (s32)LDATA->fognear < LDATA->farclip &&
+                       LDATA->fognear < LDATA->fogfar) {
                 LDATA->fognear += 1.0f;
             }
             break;
         case 2:
             if (FASTLEFT != 0 && LDATA->fogfar > 1.0f && LDATA->fogfar > LDATA->fognear) {
                 LDATA->fogfar -= 1.0f;
-            } else if (FASTRIGHT != 0 && (s32) LDATA->fogfar < LDATA->farclip) {
+            } else if (FASTRIGHT != 0 && (s32)LDATA->fogfar < LDATA->farclip) {
                 LDATA->fogfar += 1.0f;
             }
             break;
@@ -1534,51 +1592,50 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
             break;
         }
         break;
-    case 11: /* DEBUG MEMORY MENU */
+    case 11:
         if (TRIANGLE != 0) {
             NewMenu(cursor, 9, -1, -1);
         }
         break;
-    case 12: /* GOTO LEVEL MENU */
+    case 12:
         if (CROSS != 0) {
-            if (HData[x_cursor_temp].level[y_cursor_temp] != -1) {
-                new_level = HData[x_cursor_temp].level[y_cursor_temp];
-                Hub = HubFromLevel(HData[x_cursor_temp].level[y_cursor_temp]);
+            i = HData[cursor->x].level[cursor->y];
+            if (i != -1) {
+                new_level = i;
+                Hub = HubFromLevel(i);
             }
         } else if (TRIANGLE != 0) {
             NewMenu(cursor, 9, -1, -1);
         }
         break;
-    case 0: /* MAIN MENU */
+    case 0:
         loadsaveCallEachFrame();
         if (CROSS != 0) {
-            if (y_cursor_temp == 0) {
-                if (saveload_cardtype != 2) {
-                    NewMenu(cursor, 1, 0, -1);
-                } else if (saveload_cardformatted == 0) {
-                    NewMenu(cursor, 2, 0, -1);
-                } else if (saveload_freespace < 0x42) {
+            switch (y) {
+            case 0:
+                if (saveload_cardtype != 2 ||
+                    (saveload_cardformatted != 0 && saveload_freespace < 0x42)) {
                     NewMenu(cursor, 1, 0, -1);
                 } else {
                     NewMenu(cursor, 2, 0, -1);
                 }
                 sfx = 0x36;
-            } else if (y_cursor_temp == 1) {
+                break;
+            case 1:
                 NuStrCpy(Game.name, D_0061DA28);
                 Game.cutbits |= 1;
                 new_level = 0x25;
                 force_menu = 0x14;
+                sfx = 0x36;
                 if (cutmovie == 0) {
                     fade_rate = 0xA;
                 }
-                sfx = 0x36;
+                break;
             }
-        } else if (y_cursor_temp == 2) {
+        } else if (y == 2) {
             old = Game.language;
-            if (LEFT != 0) {
-                if ((u32) Game.language < 5) {
-                    Game.language++;
-                }
+            if (LEFT != 0 && Game.language < 5) {
+                Game.language++;
             } else if (RIGHT != 0 && Game.language != 0) {
                 Game.language--;
             }
@@ -1592,14 +1649,15 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
         loadsaveCallEachFrame();
         if (CROSS != 0) {
             NewMenu(cursor, 2, 0, -1);
+            sfx = 0x36;
         } else if (TRIANGLE != 0) {
             NewMenu(cursor, 0, -1, -1);
+            sfx = 0x36;
         }
         break;
     case 2:
-        loadsaveCallEachFrame();
         if (CROSS != 0) {
-            if (y_cursor_temp == cursor->y_max - 1) {
+            if (y == cursor->y_max - 1) {
                 CleanLetters(Game.name);
                 if (strcmp(Game.name, D_0061DA38) == 0) {
                     NuStrCpy(Game.name, D_0061DA28);
@@ -1612,52 +1670,34 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
                 } else {
                     cutmovie = 1;
                 }
-                sfx = 0x36;
-                break;
+                goto name_done;
             }
-            if (y_cursor_temp == cursor->y_max) {
+            if (y == cursor->y_max) {
                 NewMenu(cursor, 0, -1, -1);
                 sfx = 0x36;
                 break;
             }
-            if (Game.language == 0x63) {
-                if (y_cursor_temp == cursor->y_max - 2) {
+            if (Game.language == 'c') {
+                if (y == cursor->y_max - 2) {
                     input_alphabet = 2;
                     GetMenuInfo(cursor);
-                    sfx = 0x36;
-                    break;
-                } else if (y_cursor_temp == cursor->y_max - 3) {
+                    goto name_done;
+                } else if (y == cursor->y_max - 3) {
                     input_alphabet = 1;
                     GetMenuInfo(cursor);
-                    sfx = 0x36;
-                    break;
-                } else if (y_cursor_temp == cursor->y_max - 4) {
+                    goto name_done;
+                } else if (y == cursor->y_max - 4) {
                     input_alphabet = 0;
                     GetMenuInfo(cursor);
-                    sfx = 0x36;
-                    break;
+                    goto name_done;
                 } else if (input_alphabet == 2) {
                     if (cursor->y == 0 || cursor->y == 4) {
-                        sfx = 0x36;
-                        break;
+                        goto name_done;
                     }
                 }
             }
-            if (NameInputTable[cursor->y][cursor->x] == '<') {
-                if (i_nameinput > 0) {
-                    i_nameinput--;
-                    Game.name[i_nameinput] = '_';
-                }
-                sfx = 0x36;
-                break;
-            }
-            if (i_nameinput >= 7) {
-                cursor->y = 4;
-            }
-            Game.name[i_nameinput] = NameInputTable[cursor->y][cursor->x];
-            if (i_nameinput < 8) {
-                i_nameinput++;
-            }
+            InputNewLetter(cursor, Game.name, &i_nameinput, 8);
+        name_done:
             sfx = 0x36;
         } else if (TRIANGLE != 0) {
             NewMenu(cursor, 0, -1, -1);
@@ -1677,45 +1717,48 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
     case 32:
         if ((bits & 0x800) != 0) {
             new_level = 0x25;
-        } else if (credit_time <= D_0059202C[0]) {
+        } else if (credit_time <= GameTimer.ftime) {
             new_level = 0x25;
         }
         break;
     case 18:
-        if (CROSS != 0) {
-            if (D_0058B0C8[0] == 0x22) {
-                if (y_cursor_temp == 0) {
-                    cortex_gameover_i = cortex_continue_i;
-                    cortex_continue_i++;
-                    if (cortex_continue_i == 2) {
-                        cortex_continue_i = 0;
-                    }
-                    tempanim_nextaction = cortex_gameover_tab[cortex_gameover_i][0];
-                    if (D_0056233A[0] == -1 || CModel[D_0056233A[0]].anmdata[0] == NULL) {
-                        D_0058B504[0] = 4;
-                        new_level = 0x25;
-                    } else {
-                        gamesfx_channel = 4;
-                        GameSfx(cortex_gameover_tab[cortex_gameover_i][1], NULL);
-                        tempanim_waitaudio = 1;
-                    }
-                    sfx = 0x36;
-                } else if (y_cursor_temp == 1) {
-                    cortex_gameover_i = cortex_quit_i;
-                    cortex_quit_i++;
-                    if (cortex_quit_i == 7) {
-                        cortex_quit_i = 2;
-                    }
-                    tempanim_nextaction = cortex_gameover_tab[cortex_gameover_i][0];
-                    if (D_0056233A[0] == -1 || CModel[D_0056233A[0]].anmdata[0] == NULL) {
-                        new_level = 0x23;
-                    } else {
-                        gamesfx_channel = 4;
-                        GameSfx(cortex_gameover_tab[cortex_gameover_i][1], NULL);
-                        tempanim_waitaudio = 1;
-                    }
-                    sfx = 0x3C;
+        if (CROSS != 0 && TempAnim.newaction == 0x22) {
+            switch (y) {
+            case 0:
+                cortex_gameover_i = cortex_continue_i;
+                cortex_continue_i++;
+                if (cortex_continue_i == 2) {
+                    cortex_continue_i = 0;
                 }
+                tempanim_nextaction = cortex_gameover_tab[cortex_gameover_i][0];
+                i = CRemap[2];
+                if (i == -1 || CModel[i].anmdata[tempanim_nextaction] == NULL) {
+                    Game.lives = 4;
+                    new_level = 0x25;
+                } else {
+                    gamesfx_channel = 4;
+                    GameSfx(cortex_gameover_tab[cortex_gameover_i][1], NULL);
+                    tempanim_waitaudio = 1;
+                }
+                sfx = 0x36;
+                break;
+            case 1:
+                cortex_gameover_i = cortex_quit_i;
+                cortex_quit_i++;
+                if (cortex_quit_i == 7) {
+                    cortex_quit_i = 2;
+                }
+                tempanim_nextaction = cortex_gameover_tab[cortex_gameover_i][0];
+                i = CRemap[2];
+                if (i == -1 || CModel[i].anmdata[tempanim_nextaction] == NULL) {
+                    new_level = 0x23;
+                } else {
+                    gamesfx_channel = 4;
+                    GameSfx(cortex_gameover_tab[cortex_gameover_i][1], NULL);
+                    tempanim_waitaudio = 1;
+                }
+                sfx = 0x3C;
+                break;
             }
         }
         break;
@@ -1723,20 +1766,23 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
     case 16:
         if (CROSS != 0) {
             sfx = 0x36;
-            if (y_cursor_temp == 0) {
+            switch (y) {
+            case 0:
                 new_mode = GameMode;
                 ResetCheckpoint(-1, -1, 0.0f, NULL);
                 ResetBonus();
                 ResetDeath();
                 ResetGemPath();
-            } else if (y_cursor_temp == 1) {
+                break;
+            case 1:
                 new_level = 0x25;
+                break;
             }
         }
         break;
     case 15:
         if (CROSS != 0) {
-            if (y_cursor_temp == cursor->y_max) {
+            if (y == cursor->y_max) {
                 txt = Game.level[Level].time[newleveltime_slot].name;
                 CleanLetters(txt);
                 if (strcmp(txt, D_00630C48) == 0) {
@@ -1747,59 +1793,73 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
                 } else {
                     NewMenu(cursor, 0xE, 0, -1);
                 }
-                sfx = 0x36;
-                break;
+                goto time_name_done;
             }
-            if (Game.language == 0x63) {
-                if (y_cursor_temp == cursor->y_max - 1) {
+            if (Game.language == 'c') {
+                if (y == cursor->y_max - 1) {
                     input_alphabet = 2;
                     GetMenuInfo(cursor);
-                    sfx = 0x36;
-                    break;
-                } else if (y_cursor_temp == cursor->y_max - 2) {
+                    goto time_name_done;
+                } else if (y == cursor->y_max - 2) {
                     input_alphabet = 1;
                     GetMenuInfo(cursor);
-                    sfx = 0x36;
-                    break;
-                } else if (y_cursor_temp == cursor->y_max - 3) {
+                    goto time_name_done;
+                } else if (y == cursor->y_max - 3) {
                     input_alphabet = 0;
                     GetMenuInfo(cursor);
-                    sfx = 0x36;
-                    break;
+                    goto time_name_done;
                 } else if (input_alphabet == 2) {
-                    if (y_cursor_temp == 0 || y_cursor_temp == 4) {
-                        sfx = 0x36;
-                        break;
+                    if (cursor->y == 0 || cursor->y == 4) {
+                        goto time_name_done;
                     }
                 }
             }
-            if (NameInputTable[cursor->y][cursor->x] == '<') {
-                if (i_nameinput > 0) {
-                    i_nameinput--;
-                    Game.level[Level].time[newleveltime_slot].name[i_nameinput] = '_';
-                }
-                sfx = 0x36;
-                break;
-            }
-            if (i_nameinput >= 2) {
-                cursor->y = 4;
-            }
-            Game.level[Level].time[newleveltime_slot].name[i_nameinput] = NameInputTable[cursor->y][cursor->x];
-            if (i_nameinput < 3) {
-                i_nameinput++;
-            }
+            InputNewLetter(cursor, Game.level[Level].time[newleveltime_slot].name, &i_nameinput, 3);
+        time_name_done:
             sfx = 0x36;
         }
         break;
     case 19:
         loadsaveCallEachFrame();
+        if (CROSS != 0) {
+            switch (y) {
+            case 0:
+                NewMenu(cursor, 0x14, 2, -1);
+                sfx = 0x36;
+                break;
+            case 1:
+                NewMenu(cursor, 0x17, 2, -1);
+                sfx = 0x36;
+                break;
+            case 2:
+                NewMenu(cursor, 0x1A, 2, -1);
+                sfx = 0x36;
+                break;
+            case 3:
+                NewMenu(cursor, -1, -1, -1);
+                sfx = 0x3C;
+                tumble_action = -1;
+                tumble_time = tumble_duration = 0.0f;
+                last_level = -1;
+                last_hub = -1;
+                Hub = -1;
+                player->obj.hdg = 0x8000;
+                if (pos_START != NULL) {
+                    player->obj.pos = *pos_START;
+                }
+                break;
+            }
+        }
+        break;
+    case 20:
+        loadsaveCallEachFrame();
         if (saveload_cardchanged != 0) {
             NewMenu(cursor, 0x13, -1, -1);
         }
-        UpdateSaveSlots(cursor);
+        UpdateSaveSlots();
         if (CROSS != 0) {
             if (cursor->y < cursor->y_max) {
-                game = &SaveSlot[cursor->x * 2 + cursor->y];
+                game = SaveSlot + cursor->y * 2 + cursor->x;
                 if (game->empty == 0) {
                     NewMenu(cursor, 0x15, 1, -1);
                     sfx = 0x36;
@@ -1807,12 +1867,12 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
                     sfx = 2;
                 }
             } else {
-                NewMenu(cursor, 0x13, -1, -1);
+                NewMenu(cursor, 0x13, 0, -1);
                 sfx = 0x3C;
             }
         }
         break;
-    case 20:
+    case 21:
         loadsaveCallEachFrame();
         if (saveload_cardchanged != 0) {
             NewMenu(cursor, 0x13, -1, -1);
@@ -1825,44 +1885,44 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
                 Game = *game;
                 NewLanguage(Game.language);
                 NewMenu(cursor, 0x16, 0, -1);
+                plr_lives.count = plr_lives.draw = Game.lives;
                 memcard_loadresult_delay = 0x28;
-                plr_lives.count = (short) Game.lives;
-                D_0063203A = plr_lives.count;
                 NuPs2VideoSetPos(Game.screen_x << 2, Game.screen_y << 1);
+                sfx = 0x36;
             }
-        }
-        break;
-    case 21:
-        loadsaveCallEachFrame();
-        UpdateSaveSlots(cursor);
-        if (memcard_loadresult_delay != 0) {
-            break;
-        }
-        NewMenu(cursor, -1, -1, -1);
-        tumble_action = -1;
-        tumble_duration = 0.0f;
-        tumble_time = 0.0f;
-        last_level = -1;
-        last_hub = -1;
-        Hub = -1;
-        player->obj.hdg = 0x8000;
-        if (pos_START != NULL) {
-            player->obj.pos = *pos_START;
         }
         break;
     case 22:
         loadsaveCallEachFrame();
+        UpdateSaveSlots();
+        if (memcard_loadresult_delay == 0) {
+            NewMenu(cursor, -1, -1, -1);
+            sfx = 0x3C;
+            tumble_action = -1;
+            tumble_time = tumble_duration = 0.0f;
+            last_level = -1;
+            last_hub = -1;
+            Hub = -1;
+            player->obj.hdg = 0x8000;
+            if (pos_START != NULL) {
+                player->obj.pos = *pos_START;
+            }
+        }
+        break;
+    case 23:
+        loadsaveCallEachFrame();
         if (saveload_cardchanged != 0) {
             NewMenu(cursor, 0x13, -1, -1);
         }
-        UpdateSaveSlots(cursor);
-        if (saveload_cardtype == 2 && saveload_cardformatted == 0 && memcard_formatme == 0 && memcard_formatting == 0) {
+        UpdateSaveSlots();
+        if (saveload_cardtype == 2 && saveload_cardformatted == 0 && memcard_formatme == 0 &&
+            memcard_formatting == 0) {
             NewMenu(cursor, 0x1D, 1, -1);
         }
         if (CROSS != 0) {
             if (memcard_formatting == 0 && memcard_formatme == 0 && memcard_formatmessage_delay == 0) {
                 if (cursor->y < cursor->y_max) {
-                    game = &SaveSlot[cursor->x * 2 + cursor->y];
+                    game = SaveSlot + cursor->y * 2 + cursor->x;
                     NewMenu(cursor, 0x18, 1, -1);
                     sfx = 0x36;
                 } else {
@@ -1872,7 +1932,7 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
             }
         }
         break;
-    case 23:
+    case 24:
         loadsaveCallEachFrame();
         if (saveload_cardchanged != 0) {
             NewMenu(cursor, 0x13, -1, -1);
@@ -1881,46 +1941,38 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
             if (cursor->y == 1) {
                 NewMenu(cursor, 0x17, -1, -1);
                 sfx = 0x3C;
-            } else if ((game->relics | Game.relics) & 7) {
-                /* placeholder */
+            } else {
+                *game = Game;
+                memcard_saveneeded = 1;
+                NewMenu(cursor, 0x19, 0, -1);
+                sfx = 0x36;
             }
-        }
-        break;
-    case 24:
-        loadsaveCallEachFrame();
-        if (saveload_cardchanged != 0) {
-            NewMenu(cursor, 0x13, -1, -1);
-        }
-        if (CROSS != 0) {
-            /* save slot logic */
         }
         break;
     case 25:
     case 28:
         loadsaveCallEachFrame();
-        UpdateSaveSlots(cursor);
+        UpdateSaveSlots();
         if (memcard_saveneeded != 0 || memcard_savestarted != 0 || memcard_deleteneeded != 0 ||
             memcard_deletestarted != 0 || memcard_savemessage_delay != 0) {
             memcard_saveresult_delay = 0x32;
         }
-        if (memcard_saveresult_delay != 0) {
-            break;
+        if (memcard_saveresult_delay == 0) {
+            NewMenu(cursor, 0x13, 3, -1);
         }
-        NewMenu(cursor, 0x13, 3, -1);
         break;
     case 30:
         loadsaveCallEachFrame();
-        UpdateSaveSlots(cursor);
+        UpdateSaveSlots();
         if (memcard_formatting != 0 || memcard_formatme != 0 || memcard_formatmessage_delay != 0) {
             memcard_saveresult_delay = 0x32;
         }
-        if (memcard_saveresult_delay != 0) {
-            break;
-        }
-        if (memcard_formatfailed != 0) {
-            NewMenu(cursor, 0x13, 3, -1);
-        } else {
-            NewMenu(cursor, 0x17, -1, -1);
+        if (memcard_saveresult_delay == 0) {
+            if (memcard_formatfailed != 0) {
+                NewMenu(cursor, 0x13, 3, -1);
+            } else {
+                NewMenu(cursor, 0x17, 0, -1);
+            }
         }
         break;
     case 26:
@@ -1928,10 +1980,10 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
         if (saveload_cardchanged != 0) {
             NewMenu(cursor, 0x13, -1, -1);
         }
-        UpdateSaveSlots(cursor);
+        UpdateSaveSlots();
         if (CROSS != 0) {
             if (cursor->y < cursor->y_max) {
-                game = &SaveSlot[cursor->x * 2 + cursor->y];
+                game = SaveSlot + cursor->y * 2 + cursor->x;
                 if (game->empty == 0) {
                     NewMenu(cursor, 0x1B, 1, -1);
                     sfx = 0x36;
@@ -1939,7 +1991,7 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
                     sfx = 2;
                 }
             } else {
-                NewMenu(cursor, 0x13, -1, -1);
+                NewMenu(cursor, 0x13, 2, -1);
                 sfx = 0x3C;
             }
         }
@@ -1954,25 +2006,21 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
                 NewMenu(cursor, 0x1A, -1, -1);
                 sfx = 0x3C;
             } else {
+                i = 1;
                 game->empty = 1;
-                nosaves = 1;
-                {
-                    s32 i;
-                    for (i = 0; i < 2; i++) {
-                        s32 k;
-                        for (k = 1; k >= 0; k--) {
-                            if (SaveSlot[i].empty == 0) {
-                                nosaves = 0;
-                            }
+                for (x = 0; x < 2; x++) {
+                    for (j = 0; j < 2; j++) {
+                        if ((SaveSlot + x * 2 + j)->empty == 0) {
+                            i = 0;
                         }
                     }
                 }
-                if (nosaves != 0) {
+                if (i != 0) {
                     memcard_deleteneeded = 1;
                 } else {
                     memcard_saveneeded = 1;
                 }
-                NewMenu(cursor, 0x1C, -1, -1);
+                NewMenu(cursor, 0x1C, 0, -1);
                 sfx = 0x36;
             }
         }
@@ -1984,16 +2032,17 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
         }
         if (CROSS != 0) {
             if (cursor->y == 1) {
-                memcard_formatme = 1;
-                NewMenu(cursor, 0x13, -1, -1);
+                NewMenu(cursor, 0x13, 0, -1);
+                sfx = 0x3C;
             } else {
-                NewMenu(cursor, 0x1E, -1, -1);
+                memcard_formatme = 1;
+                NewMenu(cursor, 0x1E, 0, -1);
                 sfx = 0x36;
             }
         }
         break;
     case 31:
-        if (uVar16 != 0) {
+        if (CONFIRM != 0) {
             if (Level == 0x16 || Level == 0x18) {
                 boss_dead = 2;
             }
@@ -2002,13 +2051,12 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
         }
         break;
     case 33:
-        if (uVar16 != 0) {
+        if (TRIANGLE != 0) {
             sfx = 0x36;
             NuSoundStopStream(4);
             NewMenu(cursor, -1, -1, -1);
         } else if (player->obj.mask != NULL &&
-                   ((player->obj.mask->anim.flags & 1) != 0 ||
-                    0x5db < cursor->item_frame || player->obj.mask->active >= 3)) {
+                   ((player->obj.mask->anim.flags & 1) != 0 || player->obj.mask->active >= 3)) {
             NewMenu(cursor, -1, -1, -1);
         }
         break;
@@ -2016,7 +2064,6 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
     if (sfx != -1) {
         GameSfx(sfx, NULL);
     }
-    return;
 }
 
 extern char *tCANCEL[];
@@ -2283,42 +2330,6 @@ void DrawMenu(struct cursor_s *cursor, s32 paused) {
      * sound/screen), 9-13 (debug menus), 18 (game-over), 19-31 (memcard state
      * machines + power screen) -- each a distinct PS2 case block.
      */
-    }
-}
-
-void InputNewLetter(struct cursor_s *cursor, char *name, s32 *i, s32 count) {
-    char c0;
-    s32 j;
-
-    c0 = NameInputTable[cursor->y][cursor->x];
-    if (c0 == '<') {
-        if (*i > 0) {
-            (*i)--;
-            name[*i] = '_';
-        }
-        return;
-    }
-    j = count - 1;
-    if (*i >= j) {
-        cursor->y = 4;
-    } else {
-        j = *i;
-    }
-    name[j] = c0;
-    if (*i < count) {
-        *i = *i + 1;
-    }
-}
-
-void CleanLetters(char *txt) {
-    while (*txt != '\0') {
-        if (*txt == '_') {
-            *txt = ' ';
-        }
-        txt++;
-        if (Game.language == 'c') {
-            txt++;
-        }
     }
 }
 
@@ -4161,7 +4172,6 @@ s32 HitWumpa(struct obj_s *obj, s32 destroy) {
     return 0;
 }
 
-extern struct gtimer_s GameTimer;
 extern struct gtimer_s PauseTimer;
 extern u32 finish_frame;
 extern s32 pausestats_frame;
