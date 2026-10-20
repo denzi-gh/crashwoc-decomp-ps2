@@ -930,6 +930,512 @@ void GetTopBot(struct creature_s *c) {
 }
 
 
+extern struct crategroup_s CrateGroup[];
+extern struct cratecube_s Crate[];
+extern s32 CRATEGROUPCOUNT;
+extern s32 temp_crate_y_floor_adjust;
+extern s32 temp_crate_y_ceiling_adjust;
+extern s32 temp_crate_xz_adjust;
+extern s32 temp_crate_bounce;
+extern f32 CRATEHOPSPEED;
+extern f32 JUMPONCRATEBREAKSPEED;
+extern f32 FALLONCRATEBREAKSPEED;
+extern f32 METALCRATEBOUNCESPEED;
+
+s32 GetCrateType(struct cratecube_s *crate, s32 flags);
+s32 AttackCrate(struct obj_s *obj, struct crategroup_s *group,
+                struct cratecube_s *crate);
+void HopCratesAbove(f32 speed, struct crategroup_s *group,
+                    struct cratecube_s *crate);
+s32 CrateAbove(struct obj_s *obj, struct crategroup_s *group,
+               struct cratecube_s *crate);
+s32 CrateBelow(struct obj_s *obj, struct crategroup_s *group,
+               struct cratecube_s *crate);
+s32 NewCrateAnimation(struct cratecube_s *crate, s32 type, s32 action,
+                      s32 random);
+void CrateSafety(struct crategroup_s *group, struct cratecube_s *crate,
+                 struct obj_s *obj);
+s32 CrateBounceReaction(struct crategroup_s *group, struct cratecube_s *crate,
+                        s32 type, s32 attack);
+s32 CrateInTheWay(struct obj_s *obj, struct crategroup_s *group,
+                  struct cratecube_s *crate, s32 dx, s32 dz, char *hit);
+
+
+inline f32 GameObjectRadius(struct obj_s *obj) {
+    f32 r;
+
+    r = obj->radius * obj->SCALE;
+    if ((obj->attack & 8) != 0) {
+        return r + 0.5f;
+    }
+    if ((obj->attack & 4) != 0) {
+        return r + 0.25f;
+    }
+    if ((obj->attack & 2) != 0) {
+        return (obj->character == 1 &&
+                ((struct creature_s *)obj->parent)->slide != 0) ? r * 3.0f : r + r;
+    }
+    return r;
+}
+
+
+void CrateCollisions(struct obj_s *obj) {
+    struct crategroup_s *group;
+    struct cratecube_s *crate;
+    struct nuvec_s vOld;
+    struct nuvec_s vNew;
+    struct nuvec_s vMom;
+    s32 i;
+    s32 j;
+    s32 in;
+    s32 mask;
+    s32 miss;
+    s32 xz_overlap;
+    f32 x0;
+    f32 z0;
+    f32 x1;
+    f32 z1;
+    f32 y;
+    f32 d;
+    f32 d0;
+    f32 dy;
+    f32 y_floor;
+    f32 y_ceiling;
+    f32 reach;
+    f32 f;
+    s32 corner;
+    s32 i_floor;
+    s32 i_ceiling;
+    s32 xz_adjust;
+    s32 got_floor;
+    s32 got_ceiling;
+    s32 ceiling_attack;
+    s32 type;
+    s32 attack;
+    s32 jump;
+    s32 appeared;
+    s32 obj_dx;
+    s32 obj_dz;
+    char hit[256];
+
+    if (level_part_2 != 0) {
+        return;
+    }
+    obj->objbot = obj->pos.y + obj->bot * obj->SCALE;
+    obj->objtop = obj->pos.y + obj->top * obj->SCALE;
+    if (obj->parent == player) {
+        jump = ((struct creature_s *)obj->parent)->jump;
+    } else {
+        jump = 0;
+    }
+    obj->clearance = 2000000.0f;
+    temp_crate_y_floor_adjust = 0;
+    temp_crate_y_ceiling_adjust = 0;
+    temp_crate_xz_adjust = 0;
+    temp_crate_bounce = 0;
+    group = CrateGroup;
+    for (i = 0; i < CRATEGROUPCOUNT; i++, group++) {
+        if (!(obj->pos.x < group->minclip.x - obj->RADIUS - 0.5f) &&
+            !(obj->pos.x > group->maxclip.x + obj->RADIUS + 0.5f) &&
+            !(obj->pos.z < group->minclip.z - obj->RADIUS - 0.5f) &&
+            !(obj->pos.z > group->maxclip.z + obj->RADIUS + 0.5f)) {
+            NuVecSub(&vNew, &obj->pos, &group->origin);
+            NuVecRotateY(&vNew, &vNew, -group->angle);
+            NuVecSub(&vOld, &obj->oldpos, &group->origin);
+            NuVecRotateY(&vOld, &vOld, -group->angle);
+            NuVecRotateY(&vMom, &obj->mom, -group->angle);
+            obj_dx = (s32)(vNew.x + vNew.x);
+            if (vNew.x < 0.0f) {
+                obj_dx--;
+            }
+            obj_dz = (s32)(vNew.z + vNew.z);
+            if (vNew.z < 0.0f) {
+                obj_dz--;
+            }
+            xz_adjust = 0;
+            got_floor = 0;
+            got_ceiling = 0;
+            crate = &Crate[group->iCrate];
+            for (j = 0; j < group->nCrates; j++, crate++) {
+                hit[j] = 0;
+                if (crate->on == 0) {
+                    continue;
+                }
+                appeared = crate->appeared;
+                crate->appeared = 0;
+                type = GetCrateType(crate, 0);
+                if ((u32)(type + 1) <= 1) {
+                    continue;
+                }
+                xz_overlap = 0;
+                x0 = crate->dx * 0.5f - obj->RADIUS;
+                if (!(vNew.x < x0)) {
+                    x1 = crate->dx * 0.5f + 0.5f + obj->RADIUS;
+                    if (!(vNew.x > x1)) {
+                        z0 = crate->dz * 0.5f - obj->RADIUS;
+                        if (!(vNew.z < z0)) {
+                            z1 = crate->dz * 0.5f + 0.5f + obj->RADIUS;
+                            if (!(vNew.z > z1)) {
+                                xz_overlap = 1;
+                            }
+                        }
+                    }
+                }
+                if (xz_overlap == 0 &&
+                    ((obj->attack & 2) ||
+                     ((obj->attack & 0xC) && obj->mom.y < 0.0f))) {
+                    if (!(obj->objtop < crate->pos.y) &&
+                        !(obj->objbot > crate->pos.y + 0.5f)) {
+                        reach = GameObjectRadius(obj);
+                        if (!(vNew.x < crate->dx * 0.5f - reach) &&
+                            !(vNew.x > crate->dx * 0.5f + 0.5f + reach) &&
+                            !(vNew.z < crate->dz * 0.5f - reach) &&
+                            !(vNew.z > crate->dz * 0.5f + 0.5f + reach)) {
+                            if (obj->attack & 2) {
+                                if (obj->pad_speed == 0.0f) {
+                                    in = 0;
+                                    y = obj->objbot + 0.25f;
+                                    if (y > crate->pos.y && y < crate->pos.y + 0.5f) {
+                                        in = 1;
+                                    }
+                                } else {
+                                    in = 1;
+                                }
+                                if (in != 0) {
+                                    if (type != 0x13) {
+                                        if (AttackCrate(obj, group, crate) == 1) {
+                                            HopCratesAbove(CRATEHOPSPEED, group, crate);
+                                            if ((obj->oldobjbot >= crate->oldy + 0.5f - 0.012f &&
+                                                 CrateAbove(obj, group, crate) == 0) ||
+                                                (obj->oldobjtop <= crate->oldy + 0.012f &&
+                                                 CrateBelow(obj, group, crate) == 0)) {
+                                                obj->mom.y = 0.0f;
+                                                temp_crate_y_ceiling_adjust = 1;
+                                            } else {
+                                                if (VEHICLECONTROL == 1 && obj->vehicle == 0x3B) {
+                                                    f = 0.90000004f;
+                                                } else {
+                                                    f = 0.3f;
+                                                }
+                                                obj->mom.x *= f;
+                                                obj->mom.z *= f;
+                                            }
+                                        }
+                                    } else if (crate->action == -1) {
+                                        NewCrateAnimation(crate, 0x13, 0x58, 0);
+                                        GameSfx(0x39, &crate->pos);
+                                    }
+                                }
+                            } else if (obj->oldobjbot >= crate->oldy + 0.5f - 0.012f &&
+                                       CrateAbove(obj, group, crate) == 0) {
+                                AttackCrate(obj, group, crate);
+                            }
+                        }
+                    }
+                    continue;
+                }
+                if (xz_overlap != 0) {
+                    miss = 0;
+                    if (obj->objtop < crate->pos.y || obj->objbot > crate->pos.y + 0.5f) {
+                        miss = 1;
+                    } else if (appeared != 0) {
+                        CrateSafety(group, crate, obj);
+                        continue;
+                    } else if (obj->oldobjbot >= crate->oldy + 0.5f - 0.012f &&
+                               CrateAbove(obj, group, crate) == 0) {
+                        attack = obj->attack & 0xE;
+                        if ((type == 0x13 ? (attack & 0x8C) : (attack & 0xE)) != 0 ||
+                            (type == 0x10 && obj->anim.newaction != 0x53) ||
+                            (*(u32 *)&obj->attack & 0x480)) {
+                            if (AttackCrate(obj, group, crate) == 1) {
+                                if (attack & 2) {
+                                    obj->mom.y = 0.0f;
+                                }
+                                continue;
+                            }
+                        }
+                        if (type == 0x13 && attack != 0 && crate->action == -1) {
+                            NewCrateAnimation(crate, 0x13, 0x58, 0);
+                            GameSfx(0x38, &crate->pos);
+                        }
+                        y = crate->pos.y + 0.5f;
+                        if (got_floor == 0 || y >= y_floor) {
+                            d = NuVecXZDistSqr(&obj->pos, &crate->pos, 0);
+                            if (got_floor == 0 ||
+                                (crate->dx == obj_dx && crate->dz == obj_dz) || d < d0) {
+                                i_floor = j;
+                                d0 = d;
+                            }
+                            y_floor = y;
+                            got_floor = 1;
+                        }
+                        hit[j] = 2;
+                        continue;
+                    } else if (obj->oldobjtop <= crate->oldy + 0.012f &&
+                               CrateBelow(obj, group, crate) == 0) {
+                        attack = obj->attack;
+                        if (type == 0x13 ? (attack & 0x80)
+                                         : (attack != 0 || crate->mom < 0.0f || type == 0x10 ||
+                                            (*(u32 *)&obj->attack & 0x480))) {
+                            if (AttackCrate(obj, group, crate) == 1) {
+                                if (attack & 2) {
+                                    temp_crate_y_ceiling_adjust = 1;
+                                    obj->mom.y = 0.0f;
+                                }
+                                continue;
+                            }
+                        }
+                        if (type == 0x13 && attack != 0 && crate->action == -1) {
+                            NewCrateAnimation(crate, 0x13, 0x58, 0);
+                            GameSfx(0x39, &crate->pos);
+                        }
+                        y = crate->pos.y;
+                        if (got_ceiling == 0 || y <= y_ceiling) {
+                            d = NuVecXZDistSqr(&obj->pos, &crate->pos, 0);
+                            if (got_ceiling == 0 ||
+                                (crate->dx == obj_dx && crate->dz == obj_dz) || d < d0) {
+                                i_ceiling = j;
+                                d0 = d;
+                            }
+                            ceiling_attack = attack;
+                            y_ceiling = y;
+                            got_ceiling = 1;
+                        }
+                        hit[j] = 4;
+                        continue;
+                    }
+                    if (miss != 0) {
+                        dy = crate->pos.y - obj->objbot;
+                        if (dy > 0.0f && dy < obj->clearance &&
+                            CrateBelow(obj, group, crate) == 0) {
+                            obj->clearance = dy;
+                        }
+                        y = crate->pos.y + 0.5f;
+                        if (y < (obj->objtop + obj->objbot) * 0.5f &&
+                            (obj->got_shadow == 0 || y > obj->shadow) &&
+                            CrateAbove(obj, group, crate) == 0) {
+                            obj->shadow = y;
+                            obj->surface_type = 0xF;
+                            obj->got_shadow = 1;
+                            obj->vSN = v010;
+                        }
+                    } else {
+                        hit[j] = 1;
+                    }
+                }
+            }
+            if (got_floor != 0) {
+                crate = &Crate[group->iCrate + i_floor];
+                type = GetCrateType(crate, 0);
+                if (crate->oldy + 0.5f < obj->oldobjbot &&
+                    (type == 4 || type == 6 || type == 0xD ||
+                     (jump != 0 ? fabs(crate->mom - obj->mom.y) > JUMPONCRATEBREAKSPEED
+                                : fabs(crate->mom - obj->mom.y) > FALLONCRATEBREAKSPEED) ||
+                     (VEHICLECONTROL != 0 && type == 9))) {
+                    CrateBounceReaction(group, crate, type, 2);
+                    obj->boing = temp_crate_bounce;
+                } else {
+                    obj->boing = 0;
+                }
+                obj->ground = 2;
+                obj->pos.y = y_floor - obj->bot * obj->SCALE;
+                obj->got_shadow = 1;
+                obj->surface_type = 0xF;
+                obj->shadow = y_floor;
+                obj->mom.y = 0.0f;
+                obj->vSN = v010;
+                temp_crate_y_floor_adjust = 1;
+            }
+            if (got_ceiling != 0) {
+                crate = &Crate[group->iCrate + i_ceiling];
+                type = GetCrateType(crate, 0);
+                if (crate->oldy > obj->oldobjtop) {
+                    if ((obj == &player->obj && VEHICLECONTROL == 0) || ceiling_attack != 0 ||
+                        (VEHICLECONTROL == 2 && type == 9)) {
+                        CrateBounceReaction(group, crate, type, 4);
+                    }
+                }
+                mask = 0;
+                if (obj->mask != 0 && obj->mask->active != 0 && (LDATA->flags & 0xE00) == 0) {
+                    mask = obj->mask->active;
+                }
+                if (type == 0xF && (crate->flags & 1) && obj->invincible == 0 && mask < 3) {
+                    if (mask != 0) {
+                        LoseMask(obj);
+                        crate->mom = METALCRATEBOUNCESPEED;
+                    } else {
+                        KillGameObject(obj, GetDieAnim(obj, -1));
+                    }
+                }
+                if (got_floor == 0 && obj->ground == 0) {
+                    obj->pos.y = y_ceiling - obj->top * obj->SCALE;
+                    obj->mom.y = 0.0f;
+                    temp_crate_y_ceiling_adjust = 1;
+                }
+            }
+            obj->objbot = obj->pos.y + obj->bot * obj->SCALE;
+            obj->objtop = obj->pos.y + obj->top * obj->SCALE;
+            crate = &Crate[group->iCrate];
+            for (j = 0; j < group->nCrates; j++, crate++) {
+                if (hit[j] != 1) {
+                    continue;
+                }
+                if (crate->pos.y + 0.5f == obj->objbot) {
+                    continue;
+                }
+                type = GetCrateType(crate, 0);
+                attack = obj->attack & 0x12;
+                dy = obj->objbot + 0.25f;
+                if ((attack & 2) &&
+                    (obj->pad_speed > 0.0f ||
+                     ((obj->flags & 1) && VEHICLECONTROL == 1 && obj->vehicle == 0x3B))) {
+                    in = 1;
+                } else {
+                    in = 0;
+                    if (dy > crate->pos.y && dy < crate->pos.y + 0.5f) {
+                        in = 1;
+                    }
+                }
+                if ((type == 0x13 && (obj->attack & 0x80)) ||
+                    (type != 0x13 && ((attack != 0 && in != 0) || type == 0x10 ||
+                                      (obj->attack & 0x480)))) {
+                    if (AttackCrate(obj, group, crate) == 1) {
+                        HopCratesAbove(CRATEHOPSPEED, group, crate);
+                        continue;
+                    }
+                }
+                if (type == 0x13 && attack != 0 && crate->action == -1) {
+                    NewCrateAnimation(crate, type, 0x58, 0);
+                    GameSfx(0x39, &crate->pos);
+                }
+                x0 = crate->dx * 0.5f - obj->RADIUS;
+                x1 = crate->dx * 0.5f + 0.5f + obj->RADIUS;
+                z0 = crate->dz * 0.5f - obj->RADIUS;
+                z1 = crate->dz * 0.5f + 0.5f + obj->RADIUS;
+                corner = 0;
+                if (vNew.x - x0 < x1 - vNew.x) {
+                    if (vNew.z - z0 < z1 - vNew.z) {
+                        if (vNew.z - z0 < vNew.x - x0) {
+                            if (CrateInTheWay(obj, group, crate, crate->dx, crate->dz - 1, hit) == 0) {
+                                vNew.z = z0;
+                                vMom.z = 0.0f;
+                            } else if (CrateInTheWay(obj, group, crate, crate->dx - 1, crate->dz, hit) == 0) {
+                                vNew.x = x0;
+                                vMom.x = 0.0f;
+                            } else {
+                                corner = 0xA;
+                            }
+                        } else {
+                            if (CrateInTheWay(obj, group, crate, crate->dx - 1, crate->dz, hit) == 0) {
+                                vNew.x = x0;
+                                vMom.x = 0.0f;
+                            } else if (CrateInTheWay(obj, group, crate, crate->dx, crate->dz - 1, hit) == 0) {
+                                vNew.z = z0;
+                                vMom.z = 0.0f;
+                            } else {
+                                corner = 0xA;
+                            }
+                        }
+                    } else {
+                        if (z1 - vNew.z < vNew.x - x0) {
+                            if (CrateInTheWay(obj, group, crate, crate->dx, crate->dz + 1, hit) == 0) {
+                                vNew.z = z1;
+                                vMom.z = 0.0f;
+                            } else if (CrateInTheWay(obj, group, crate, crate->dx - 1, crate->dz, hit) == 0) {
+                                vNew.x = x0;
+                                vMom.x = 0.0f;
+                            } else {
+                                corner = 9;
+                            }
+                        } else {
+                            if (CrateInTheWay(obj, group, crate, crate->dx - 1, crate->dz, hit) == 0) {
+                                vNew.x = x0;
+                                vMom.x = 0.0f;
+                            } else if (CrateInTheWay(obj, group, crate, crate->dx, crate->dz + 1, hit) == 0) {
+                                vNew.z = z1;
+                                vMom.z = 0.0f;
+                            } else {
+                                corner = 9;
+                            }
+                        }
+                    }
+                } else {
+                    if (vNew.z - z0 < z1 - vNew.z) {
+                        if (vNew.z - z0 < x1 - vNew.x) {
+                            if (CrateInTheWay(obj, group, crate, crate->dx, crate->dz - 1, hit) == 0) {
+                                vNew.z = z0;
+                                vMom.z = 0.0f;
+                            } else if (CrateInTheWay(obj, group, crate, crate->dx + 1, crate->dz, hit) == 0) {
+                                vNew.x = x1;
+                                vMom.x = 0.0f;
+                            } else {
+                                corner = 6;
+                            }
+                        } else {
+                            if (CrateInTheWay(obj, group, crate, crate->dx + 1, crate->dz, hit) == 0) {
+                                vNew.x = x1;
+                                vMom.x = 0.0f;
+                            } else if (CrateInTheWay(obj, group, crate, crate->dx, crate->dz - 1, hit) == 0) {
+                                vNew.z = z0;
+                                vMom.z = 0.0f;
+                            } else {
+                                corner = 6;
+                            }
+                        }
+                    } else {
+                        if (z1 - vNew.z < x1 - vNew.x) {
+                            if (CrateInTheWay(obj, group, crate, crate->dx, crate->dz + 1, hit) == 0) {
+                                vNew.z = z1;
+                                vMom.z = 0.0f;
+                            } else if (CrateInTheWay(obj, group, crate, crate->dx + 1, crate->dz, hit) == 0) {
+                                vNew.x = x1;
+                                vMom.x = 0.0f;
+                            } else {
+                                corner = 5;
+                            }
+                        } else {
+                            if (CrateInTheWay(obj, group, crate, crate->dx + 1, crate->dz, hit) == 0) {
+                                vNew.x = x1;
+                                vMom.x = 0.0f;
+                            } else if (CrateInTheWay(obj, group, crate, crate->dx, crate->dz + 1, hit) == 0) {
+                                vNew.z = z1;
+                                vMom.z = 0.0f;
+                            } else {
+                                corner = 5;
+                            }
+                        }
+                    }
+                }
+                if (corner != 0) {
+                    if (corner & 8) {
+                        vNew.x = x0;
+                    } else {
+                        vNew.x = x1;
+                    }
+                    if (corner & 2) {
+                        vNew.z = z0;
+                    } else {
+                        vNew.z = z1;
+                    }
+                    vMom.x = 0.0f;
+                    vMom.z = 0.0f;
+                }
+                xz_adjust = 1;
+            }
+            if (xz_adjust != 0) {
+                NuVecRotateY(&vNew, &vNew, group->angle);
+                obj->pos.x = group->origin.x + vNew.x;
+                obj->pos.z = group->origin.z + vNew.z;
+                NuVecRotateY(&vMom, &vMom, group->angle);
+                obj->mom.x = vMom.x;
+                obj->mom.z = vMom.z;
+                temp_crate_xz_adjust = 1;
+            }
+        }
+    }
+}
+
+
 s32 WumpaCollisions(struct obj_s *obj) {
     s32 i;
     s32 key;
@@ -2972,29 +3478,6 @@ void ResetProjectiles(void) {
     jonglow = 0;
     jonglowsize = 0;
 }
-
-f32 GameObjectRadius(struct obj_s *obj) {
-    f32 r;
-
-    r = obj->radius * obj->SCALE;
-    if ((obj->attack & 8) != 0) {
-        return r + 0.5f;
-    }
-    if ((obj->attack & 4) != 0) {
-        return r + 0.25f;
-    }
-    if ((obj->attack & 2) != 0) {
-        if ((obj->character == 1) &&
-            (((struct creature_s *)obj->parent)->slide != 0)) {
-            return r * 3.0f;
-        } else {
-            return r + r;
-        }
-    }
-    return r;
-}
-
-
 
 void PickupRelic(s32 relic) {
     plr_crystal.item = relic;

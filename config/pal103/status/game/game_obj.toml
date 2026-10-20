@@ -33,7 +33,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:001fab20:CrateCollisions"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:001fbef0:WumpaCollisions"
