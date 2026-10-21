@@ -66,9 +66,6 @@ void LoseMask(struct obj_s *obj);
 s32 KillGameObject(struct obj_s *obj, s32 anim);
 
 extern s32 level_part_2;
-extern s32 temp_xzmomset;
-extern s32 GAMEOBJECTCOUNT;
-extern struct obj_s *pObj[];
 
 /* Projectile record; obj header at 0x0, active flag at 0x1A9, stride 0x1B0. */
 struct projectile_s {
@@ -85,20 +82,66 @@ struct projectile_s {
     u8 unk_0x1AE[0x2];       /* 0x1AE */
 };
 
-extern struct projectile_s Projectile[16];
-extern s32 jonglow;
-extern f32 jonglowsize;
-extern s32 temp_cuboid_side;
-extern f32 temp_cuboid_bounce_angle;
+struct tersurface_s TerSurface[16] = {
+    { 1.0f, -1, 0x08 }, { 0.15f, -1, 0x28 }, { 1.0f, -1, 0x08 }, { 1.0f, -1, 0x01 },
+    { 1.0f, -1, 0x02 }, { 1.0f, -1, 0x04 }, { 1.0f, -1, 0x00 }, { 1.0f, -1, 0x01 },
+    { 1.0f, -1, 0x08 }, { 1.0f, -1, 0x10 }, { 1.0f, -1, 0x00 }, { 1.0f, -1, 0x00 },
+    { 0.15f, -1, 0x28 }, { 0.15f, -1, 0x2C }, { 1.0f, -1, 0x04 }, { 1.0f, -1, 0x00 },
+};
+
+struct tersurface_s TerLayer[11] = {
+    { 1.0f, -1, 0x00 }, { 2.0f, -1, 0x00 }, { 1.0f, -1, 0x00 }, { 3.0f, -1, 0x00 },
+    { 3.0f, -1, 0x08 }, { 1.0f, -1, 0x40 }, { 1.0f, -1, 0x40 }, { 1.0f, -1, 0x40 },
+    { 1.0f, -1, 0x40 }, { 1.0f, -1, 0x40 }, { 1.0f, -1, 0x40 },
+};
+
+/* indexed by new_power; character is the pickup type (see PickupPower) */
+struct powerdata_s PData[6] = {
+    { 0xA7, 0x67, -1, -1 },
+    { 0xA5, 0x68, -1, -1 },
+    { 0xA6, 0x69, -1, -1 },
+    { 0xA2, 0x6A, -1, -1 },
+    { 0xA4, 0x6B, -1, -1 },
+    { 0xA3, 0x6C, -1, -1 },
+};
+
+struct nuvec_s vNEWMASK = { 0.0f, 0.0f, 0.0f };
+struct obj_s *pObj[64] = { 0 };
+struct projectile_s Projectile[16] = { 0 };
+struct nuvec_s plr_conveyor_mom = { 0.0f, 0.0f, 0.0f };
+struct nuvec_s jonglowpos = { 0.0f, 0.0f, 0.0f };
+
+s32 newmask_advise = 0;
+s32 boss_dead = 0;
+s32 i_projectile = 0;
+s32 jonglow = 0;
+f32 jonwidth = 0.0f;
+f32 jonwidth2 = 0.0f;
+s32 FIZZLEVOL = 0xFFFF;
+s32 GAMEOBJECTCOUNT = 0;
+s32 new_power = 0;
+f32 in_speed = 0.0f;
+f32 in_f_friction = 0.0f;
+f32 in_s_friction = 0.0f;
+s32 mask_crates = 0;
+s32 crates_destroyed = 0;
+s32 crate_wumpa = 0;
+u16 temp_xrot = 0;
+u16 temp_yrot = 0;
+u16 temp_zrot = 0;
+f32 temp_cuboid_bounce_angle = 0.0f;
+s32 temp_cuboid_side = 0;
+s32 temp_xzmomset = 0;
+u16 temp_roof_xrot = 0;
+u16 temp_roof_zrot = 0;
+u16 plr_conveyor_yrot = 0;
+f32 jonglowsize = 0.0f;
+
 extern s32 VEHICLECONTROL;
 extern s32 gamesfx_effect_volume;
 extern f32 NuTrigTable[];
 extern struct nuvec_s v010;
 
-extern s32 i_projectile;
-extern f32 jonwidth;
-extern f32 jonwidth2;
-extern s32 FIZZLEVOL;
 extern struct nuvec_s v000;
 extern f32 GRAVITY;
 extern f32 D_005F28F8[];
@@ -123,24 +166,16 @@ extern u16 plr_items;
 extern struct panelcount_s plr_crystal;
 extern struct panelcount_s plr_crategem;
 extern struct panelcount_s plr_bonusgem;
-extern f32 D_0062D904;
-extern f32 D_0062D908;
-extern f32 D_0062D90C;
 
 void AddPanelDebris(f32 x, f32 y, s32 obj, f32 z, s32 flag);
 
-extern s32 new_power;
 extern struct game_s Game;
 extern struct cursor_s Cursor;
 extern s32 Level;
-extern u16 temp_xrot;
-extern u16 temp_zrot;
-extern u16 temp_yrot;
 s32 qrand(void);
 extern s32 new_mode;
 extern s32 new_level;
 extern u64 LBIT;
-extern s32 boss_dead;
 void ClockOff(void);
 void StartTimeTrial(struct nuvec_s *pos, s32 clock);
 void NewMenu(void *cursor, s32 menu, s32 mode, s32 item);
@@ -154,22 +189,13 @@ void FlyWumpa(struct wumpa_s *wumpa);
 void AddScreenWumpa(f32 x, f32 y, f32 z, s32 n);
 void AddFiniteShotDebrisEffect(s32 *key, s32 effect, struct nuvec_s *pos, s32 n);
 
-extern f32 in_speed;
-extern f32 in_s_friction;
-extern f32 in_f_friction;
 
-extern struct tersurface_s TerSurface[];
-extern struct tersurface_s TerLayer[];
 extern f32 SAFEY;
 extern f32 EShadY;
 extern f32 ShadRoofY;
 extern struct nuvec_s ShadNorm;
 extern struct nuvec_s EShadNorm;
 extern struct nuvec_s ShadRoofNorm;
-extern u16 plr_conveyor_yrot;
-extern struct nuvec_s plr_conveyor_mom;
-extern u16 temp_roof_xrot;
-extern u16 temp_roof_zrot;
 
 s32 RotDiff(u16 a, u16 b);
 u16 SeekRot(u16 a, u16 target, s32 rate);
@@ -181,7 +207,6 @@ extern f32 temp_ratio;
 
 extern struct objtab_s ObjTab[];
 extern struct cammtx_s *pCam;
-extern struct nuvec_s jonglowpos;
 extern s32 D_00588824[];
 extern s32 Paused;
 extern s32 FRAME;
@@ -3342,7 +3367,7 @@ void PickupCrystal(void) {
     plr_crystal.frame = 0x19;
     plr_items |= 1;
     GameSfx(0x26, 0);
-    AddPanelDebris(0.0f, D_0062D904, 6, 0.125f, 0x10);
+    AddPanelDebris(0.0f, -0.7f, 6, 0.125f, 0x10);
 }
 
 void PickupCrateGem(void) {
@@ -3350,7 +3375,7 @@ void PickupCrateGem(void) {
     plr_crategem.frame = 0x19;
     plr_items |= 2;
     GameSfx(0x26, 0);
-    AddPanelDebris(D_0062D908, D_0062D90C, 6, 0.125f, 0x10);
+    AddPanelDebris(-0.2f, -0.7f, 6, 0.125f, 0x10);
 }
 
 void PickupBonusGem(s32 mask) {
@@ -3364,22 +3389,22 @@ void PickupBonusGem(s32 mask) {
 
 void PickupPower(s32 type) {
     switch (type) {
-    case 0xA2:
+    case 0xA7:
         new_power = 0;
         break;
-    case 0xA3:
+    case 0xA5:
         new_power = 1;
         break;
-    case 0xA4:
+    case 0xA6:
         new_power = 2;
         break;
-    case 0xA5:
+    case 0xA2:
         new_power = 3;
         break;
-    case 0xA6:
+    case 0xA4:
         new_power = 4;
         break;
-    case 0xA7:
+    case 0xA3:
         new_power = 5;
         break;
     }

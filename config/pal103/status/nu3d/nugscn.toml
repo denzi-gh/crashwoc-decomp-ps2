@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0044"
 source = "src/nu3d/nugscn.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0044:001453b8:CvtNuIFFTexAnimSet"
@@ -238,3 +238,202 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0044:0014c768:FindSplinePtSize"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:002e8f90:nugscn_gobj_min"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:002e8fa0:nugscn_gobj_max"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:0062ee28:nugscn_generate_colourref"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:0062ee2c:scene_version"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:0062ee30:cvt_splines"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:0062ee34:cvt_numsplines"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:0062ee38:cvt_spline_cvs"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:0062ee50:nugscn_mtlupdate_enabled"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:0062ee54:in_protected_bit"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:0062ee58:nugscn_cfg"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:0062eea8:gscn_dbg"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:0062eeac:gscn_showsplines"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:0062eeb0:info_texturecount"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:0062eeb4:info_texturesize"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:0062eeb8:info_colourrefsize"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:0062eebc:nametable_base"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:0062eec0:nametable_free"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:0062eec4:splcnt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:0062eec8:verts_this_frame"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:00633090:i.231"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:00633098:buffer_start"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:0063309c:buffer_freeptr"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:006330a0:buffer_tmpptr"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:006330a8:buffer_endptr"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:006330b0:buffer_tmpstart"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:006330b8:buffer_tmpend"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:006330c0:readfile_base"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:006330c4:fhout"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:006330c8:cvtmtls"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:006330cc:cvtvtx"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:006330d0:cvtvtxcnt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:006330d4:cvtpd"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:006330d8:dmabuff"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:006330e0:dmabase"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:006330e4:instances"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:006330e8:refcnt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:006330ec:fspecials"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:006330f0:speccnt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:006330f4:tristream_header"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:006330f8:sc_nnodes"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:006330fc:sc_names"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:00633100:sc_strings"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:00633108:splout"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:00633110:sploutptr"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:00633114:gscene"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0044:006add00:gsc_load_context"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x006add00
+end = 0x006add14
+
+[[claim]]
+section = ".rodata"
+start = 0x00615230
+end = 0x0061528c
+
+[[claim]]
+section = ".sbss"
+start = 0x00633114
+end = 0x00633118

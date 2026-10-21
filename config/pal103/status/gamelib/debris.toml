@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0069"
 source = "src/gamelib/debris.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0069:00182ca8:GenericDebinfoDmaTypeUpdate"
@@ -261,4 +261,148 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:00189f60:DebrisDoSounds"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0069:00306240:effecttypes"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0069:00320c40:debtab"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0069:00320e40:gensorttab"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0069:00320e70:gencodetab"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0069:00320e90:DebMat"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0069:00320eb0:debkeydata"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0069:00377ab0:ParticleChunkRenderStack"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0069:0037d2b0:ColourSlots"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0069:0037dc10:debris_chunk_controls"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0069:00383410:debris_chunk_control_stack"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0069:00383490:freedebchunks"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0069:00383890:freedebkeys"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0069:00383a90:freechunkcontrols"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0069:00384290:DmaDebTypes"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0069:00384490:debris_emitter_stack"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0069:00384510:singledebriskey"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0069:00384d10:debris_single_stack"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0069:00384d90:debbuffer"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0069:00484d90:flamehandel"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0069:0062f288:effect_types_used"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0069:0062f28c:CutoffCameraVec"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0069:0062f290:curdeba"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0069:0062f294:curdebb"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0069:0062f298:debris_render_group"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0069:0062f29c:render_debris_enabled"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0069:0062f2a0:debris_sfx"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0069:0062f2a4:freeDmaDebType"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0069:0062f2a8:globaltime"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0069:0062f2ac:globalframes"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0069:0062f2b0:FreeColourSlot"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0069:0062f2b4:debris_chunk_control_stack_index"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0069:0062f2b8:freedebchkptr"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0069:0062f2bc:freedebkeyptr"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0069:0062f2c0:freechunkcontrolsptr"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0069:0062f2c4:debris_emitter_stack_index"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0069:0062f2c8:debris_single_stack_index"
 state = "matching"

@@ -103,44 +103,151 @@ struct chunkctrl_s {
     f32 reflect_y;
 };
 
-extern struct numtl_s *DebMat[8];
-extern s32 debris_emitter_stack_index;
-extern char debbuffer[0x100000];
-extern s32 D_0062F29C;
-#define debris_draw_on D_0062F29C
-extern struct debpart_s *(*gensorttab[])();
-extern void (*gencodetab[])(struct debkeydatatype_s *deb, struct debinfo_s *info, struct debpart_s *part);
+struct singledebriskey_s {
+    struct singledebriskey_s *next;
+    struct debpart_s *debris;
+};
+
+struct debpart_s *GenDebIndex(struct debkeydatatype_s *deb, struct debinfo_s *info);
+struct debpart_s *GenDebIndexRadial(struct debkeydatatype_s *deb, struct debinfo_s *info);
+struct debpart_s *GenDebIndexRadialRotor(struct debkeydatatype_s *deb, struct debinfo_s *info);
+struct debpart_s *GenDebIndexSpheroid(struct debkeydatatype_s *deb, struct debinfo_s *info);
+struct debpart_s *GenDebIndexBounceY(struct debkeydatatype_s *deb, struct debinfo_s *info);
+struct debpart_s *GenDebIndexBounceXZ(struct debkeydatatype_s *deb, struct debinfo_s *info);
+struct debpart_s *GenDebIndexPos(struct debkeydatatype_s *deb, struct debinfo_s *info);
+struct debpart_s *GenDebIndexPosRandTime(struct debkeydatatype_s *deb, struct debinfo_s *info);
+struct debpart_s *GenDebIndexWaterFall(struct debkeydatatype_s *deb, struct debinfo_s *info);
+struct debpart_s *GenDebIndexWaterFallSplash(struct debkeydatatype_s *deb, struct debinfo_s *info);
+struct debpart_s *GenDebIndexSort(struct debkeydatatype_s *deb, struct debinfo_s *info);
+void GenDebMomAdjFromPos(struct debkeydatatype_s *deb, struct debinfo_s *info, struct debpart_s *part);
+void GenDebMomAdjFromPosAll(struct debkeydatatype_s *deb, struct debinfo_s *info, struct debpart_s *part);
+void GenDebMomAdjFromPosRev(struct debkeydatatype_s *deb, struct debinfo_s *info, struct debpart_s *part);
+void GenDebMomAdjFromSplash(struct debkeydatatype_s *deb, struct debinfo_s *info, struct debpart_s *part);
+void GenDebMomAdjFromAshRock(struct debkeydatatype_s *deb, struct debinfo_s *info, struct debpart_s *part);
+void GenDebMomAdjFromPosRevTree(struct debkeydatatype_s *deb, struct debinfo_s *info, struct debpart_s *part);
+
+struct debinfo_s effecttypes[128] = {
+    {
+        "null", 0, 1, 100, 0, 1, 0, 0, 0,
+        0, 0, 0, 0,
+        40000.0f, 0.0f, 25.0f, 0.0f, 1.0f,
+        {0}, {0}, {0}, {0},
+        {0}, {0}, {0}, {0},
+        0.0f, 1.0f,
+        0, 0, 0, 0.0f,
+        0.0f, 0.0f, 0.0f, 0.0f,
+        { { 0.0f, 64.0f, 64.0f, 64.0f }, { 1.0f, 0.0f, 0.0f, 0.0f } },
+        { { 0.0f, 64.0f }, { 1.0f, 0.0f } },
+        0.0f, 500.0f,
+        { { 0.0f, 500.0f }, { 1.0f, 500.0f } },
+        { { 0.0f, 500.0f }, { 1.0f, 500.0f } },
+        -360.0f, 360.0f,
+        { {0}, { 1.0f, 0.0f } },
+        { {0}, { 1.0f, 0.0f } },
+        { {0}, { 1.0f, 0.0f } },
+        0.0f, 0.0f, 256.0f, 256.0f,
+        0,
+        {0},
+        0, -1,
+        { { -1, 0, 0 }, { -1, 0, 0 }, { -1, 0, 0 }, { -1, 0, 0 } },
+    },
+    {
+        "flamet", 0, 2, 240, 0, 1, 0, 0, 0,
+        0, 0, 0, 0,
+        40000.0f, 0.0f, 25.0f, 0.0f, 1.0f,
+        {0}, {0}, {0}, {0},
+        { 2.3283064e-10f, 0.0f, 2.3283064e-10f },
+        { -0.25f, 0.0f, -0.25f },
+        { 1.1641532e-10f, 1.8626452e-10f, 1.1641532e-10f },
+        { -0.125f, 1.6f, -0.125f },
+        0.0f, 2.0f,
+        16, 1, 3, 0.0f,
+        0.0f, 0.0f, 0.0f, 0.0f,
+        {
+            { 0.0f, 192.0f, 192.0f, 0.0f },
+            { 0.4f, 192.0f, 0.0f, 0.0f },
+            { 0.6f, 64.0f, 64.0f, 64.0f },
+            { 1.0f, 0.0f, 0.0f, 0.0f },
+        },
+        { { 0.0f, 96.0f }, { 0.4f, 128.0f }, { 0.6f, 64.0f }, { 1.0f, 0.0f } },
+        0.0f, 5000.0f,
+        { { 0.0f, 1500.0f }, { 1.0f, 3500.0f } },
+        { { 0.0f, 1500.0f }, { 1.0f, 3500.0f } },
+        -360.0f, 360.0f,
+        { {0}, { 1.0f, 32768.0f } },
+        { {0}, { 1.0f, 0.0f } },
+        { {0}, { 1.0f, 0.0f } },
+        3.5f, 4.5f, 12.5f, 11.5f,
+        0,
+        { { 0.0f, 0.1f }, { 1.0f, 0.4f } },
+        0, -1,
+        { { -1, 0, 0 }, { -1, 0, 0 }, { -1, 0, 0 }, { -1, 0, 0 } },
+    },
+};
+struct debinfo_s *debtab[128] = { &effecttypes[0], &effecttypes[1] };
+struct debpart_s *(*gensorttab[11])() = {
+    GenDebIndex,
+    GenDebIndexSort,
+    GenDebIndexPos,
+    GenDebIndexWaterFall,
+    GenDebIndexWaterFallSplash,
+    GenDebIndexPosRandTime,
+    GenDebIndexRadial,
+    GenDebIndexRadialRotor,
+    GenDebIndexSpheroid,
+    GenDebIndexBounceY,
+    GenDebIndexBounceXZ,
+};
+void (*gencodetab[7])(struct debkeydatatype_s *deb, struct debinfo_s *info, struct debpart_s *part) = {
+    0,
+    GenDebMomAdjFromPos,
+    GenDebMomAdjFromPosRev,
+    GenDebMomAdjFromSplash,
+    GenDebMomAdjFromAshRock,
+    GenDebMomAdjFromPosRevTree,
+    GenDebMomAdjFromPosAll,
+};
+struct numtl_s *DebMat[8] = { 0 };
+struct debkeydatatype_s debkeydata[256] = { 0 };
+struct debrender_s ParticleChunkRenderStack[256] = { 0 };
+/* Layout unknown: unreferenced in every build. */
+u8 ColourSlots[2400] = { 0 };
+struct chunkctrl_s debris_chunk_controls[512] = { 0 };
+struct chunkctrl_s *debris_chunk_control_stack[32] = { 0 };
+struct debchunk_s *freedebchunks[256] = { 0 };
+s16 freedebkeys[256] = { 0 };
+struct chunkctrl_s *freechunkcontrols[512] = { 0 };
+struct debdma_s *DmaDebTypes[128] = { 0 };
+struct debkeydatatype_s *debris_emitter_stack[32] = { 0 };
+struct singledebriskey_s singledebriskey[256] = { 0 };
+struct singledebriskey_s *debris_single_stack[32] = { 0 };
+char debbuffer[0x100000] = { 0 };
+/* Layout unknown: unreferenced in every build. */
+u8 flamehandel[32] = { 0 };
+
+s32 effect_types_used = 2;
+struct nuvec_s *CutoffCameraVec = 0;
+s32 curdeba = 0;
+s32 curdebb = 0;
+s32 debris_render_group = 0;
+static s32 render_debris_enabled = 1;
+s32 debris_sfx = 0;
+s32 freeDmaDebType = 0;
+f32 globaltime = 0.0f;
+s32 globalframes = 0;
+s32 FreeColourSlot = 0;
+s32 debris_chunk_control_stack_index = 0;
+s32 freedebchkptr = 0;
+s32 freedebkeyptr = 0;
+s32 freechunkcontrolsptr = 0;
+s32 debris_emitter_stack_index = 0;
+s32 debris_single_stack_index = 0;
+
 extern struct numtx_s numtx_identity;
 extern f32 NuTrigTable[];
-extern s32 globalframes;
-extern struct debkeydatatype_s *debris_emitter_stack[32];
-extern s16 freedebkeys[256];
-extern s32 freedebkeyptr;
-extern struct debchunk_s *freedebchunks[256];
-extern s32 freedebchkptr;
-extern struct chunkctrl_s *freechunkcontrols[512];
-extern struct chunkctrl_s debris_chunk_controls[512];
-extern s32 freechunkcontrolsptr;
-extern struct chunkctrl_s *debris_chunk_control_stack[32];
-extern s32 debris_chunk_control_stack_index;
-extern s32 debris_render_group;
-extern struct nuvec_s *CutoffCameraVec;
-extern f32 D_0062CEB8;
-#define deb_mom_scale D_0062CEB8
-extern f32 D_0062CEBC;
-#define deb_tree_pull D_0062CEBC
-extern f32 D_0062CEC0;
-#define deb_tree_rand_scale D_0062CEC0
-extern s32 debris_sfx;
-extern struct debdma_s *DmaDebTypes[128];
-extern s32 freeDmaDebType;
-extern f32 globaltime;
 extern u8 object_switches[];
-extern f32 D_0062CEA4;
-#define deb_randtime_scale D_0062CEA4
 
 void SetupDebris(void);
-struct debpart_s *GenDebIndex(struct debkeydatatype_s *deb, struct debinfo_s *info);
 void DebFree(s32 *key);
 void DebFreeInstantly(s32 *key);
 struct debkeydatatype_s **FindDebrisEffectStack(struct debkeydatatype_s *node);
@@ -658,7 +765,7 @@ struct debpart_s *GenDebIndexPosRandTime(struct debkeydatatype_s *deb, struct de
     part += (s16)(deb->pointer % 32);
     deb->pointer++;
     part->time = globaltime;
-    part->rate = 64.0f / (info->etime + info->etime * rand() / deb_randtime_scale);
+    part->rate = 64.0f / (info->etime + info->etime * rand() / 1503238528.0f);
     part->pos.x = (f32)rand() * info->pos_range.x + info->pos_base.x;
     part->pos.y = (f32)rand() * info->pos_range.y + info->pos_base.y;
     part->pos.z = (f32)rand() * info->pos_range.z + info->pos_base.z;
@@ -1424,7 +1531,7 @@ void DebrisDraw(void) {
     s32 visible;
     s32 i;
 
-    if (debris_draw_on == 0) {
+    if (render_debris_enabled == 0) {
         return;
     }
     for (i = 0; i < 256; i++) {
@@ -1548,7 +1655,7 @@ void Debris(s32 paused) {
     s32 i;
     s32 j;
 
-    if (debris_draw_on == 0 || paused != 0) {
+    if (render_debris_enabled == 0 || paused != 0) {
         return;
     }
     globaltime += 1.0 / 60.0;
@@ -2091,9 +2198,9 @@ void GenDebMomAdjFromPos(struct debkeydatatype_s *deb, struct debinfo_s *info, s
 
 
 void GenDebMomAdjFromPosAll(struct debkeydatatype_s *deb, struct debinfo_s *info, struct debpart_s *part) {
-    part->mom.x = part->pos.x * deb_mom_scale;
-    part->mom.y = part->pos.y * deb_mom_scale;
-    part->mom.z = part->pos.z * deb_mom_scale;
+    part->mom.x = part->pos.x * 5.4f;
+    part->mom.y = part->pos.y * 5.4f;
+    part->mom.z = part->pos.z * 5.4f;
 }
 
 
@@ -2116,10 +2223,10 @@ void GenDebMomAdjFromAshRock(struct debkeydatatype_s *deb, struct debinfo_s *inf
 
 
 void GenDebMomAdjFromPosRevTree(struct debkeydatatype_s *deb, struct debinfo_s *info, struct debpart_s *part) {
-    part->mom.x += part->pos.x * deb_tree_pull;
-    part->mom.z += part->pos.z * deb_tree_pull;
+    part->mom.x += part->pos.x * -0.6f;
+    part->mom.z += part->pos.z * -0.6f;
     part->pos.y = part->pos.y - sqrt(part->pos.x * part->pos.x + part->pos.z * part->pos.z) * 0.4f;
-    part->rate = 64.0f / (info->etime + info->etime * rand() / deb_tree_rand_scale);
+    part->rate = 64.0f / (info->etime + info->etime * rand() / 1503238528.0f);
 }
 
 
