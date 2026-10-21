@@ -65,7 +65,7 @@ typedef struct BmpInfoHeader {
 } BmpInfoHeader; /* 0x28 */
 
 struct numtl_s;
-struct nurndrstream_s;
+struct rndrstream_s;
 union variptr_u;
 
 int NuTexFindFreeSlot(void);
@@ -75,7 +75,7 @@ struct nutex_s *NuTexReadBitmapMem(u8 *mem);
 u8 *NuTexSetRenderTarget(u8 *stream, int tex);
 int NuTexCreateEx(struct nutex_s *spec, void *extmem, int extsize);
 int NuTexCreateStream(struct nutex_s *spec);
-void NuTexAccomodateRS(struct nurndrstream_s *rs, int tex);
+void NuTexAccomodateRS(struct rndrstream_s *rs, int tex);
 u8 *NuTexAccomodate(u8 *stream, int tex);
 u8 *NuTexSet(u8 *stream, int tex, char context);
 void NuTexDisplayTexturePage(int page, float depth);

@@ -53,7 +53,7 @@ struct numtl_s {
     int renderplane_id : 8;
     char accesscount;                       /* 0x122 */
     char curr_rp;                           /* 0x123 */
-    struct nurndrstream_s rs;               /* 0x124 */
+    struct rndrstream_s rs;               /* 0x124 */
     union variptr_u vuattr;                 /* 0x15C */
     struct numtl_s *snext;                  /* 0x160 */
     struct numtl_s *slast;                  /* 0x164 */

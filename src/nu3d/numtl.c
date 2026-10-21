@@ -42,46 +42,52 @@
 #include "nucore/nucoretypes.h"
 #include "nups2/nups2types.h"
 
-struct numtlfile_s {
-    struct numtl_s *next;
-    u32 alpha_mode : 2;
-    u32 filter : 2;
-    u32 fx : 2;
-    u32 utc : 2;
-    u32 vtc : 2;
-    u32 cull : 2;
-    u32 zmode : 2;
-    u32 lighting : 2;
-    u32 colour : 1;
-    u32 fill : 1;
-    u32 atst : 3;
-    u32 aref : 8;
-    u32 afail : 2;
-    u32 fst : 1;
-    struct nucolour3_s ambient;
-    struct nucolour3_s diffuse;
-    int fx1;
-    int fx2;
-    int fx3;
-    int fx4;
-    float power;
-    float alpha;
-    int tid;
-    short alpha_sort;
-    u8 fxid;
-    u8 special_id;
-    short K;
-    u8 L;
-    u8 uanmmode : 4;
-    u8 vanmmode : 4;
-    float du;
-    float dv;
-    float su;
-    float sv;
-};
+/* Material attributes as stored in a scene file. */
+struct nufmtlattrib_s {
+    unsigned int alpha : 2;
+    unsigned int filter : 2;
+    unsigned int fx : 2;
+    unsigned int utc : 2;
+    unsigned int vtc : 2;
+    unsigned int cull : 2;
+    unsigned int zmode : 2;
+    unsigned int lighting : 2;
+    unsigned int colour : 1;
+    unsigned int fill : 1;
+    unsigned int atst : 3;
+    unsigned int aref : 8;
+    unsigned int afail : 2;
+    unsigned int uvmode : 1;
+}; /* 0x4 */
+
+/* Material record of a scene file (the GC-layout numtl_s). */
+struct nufilemtl_s {
+    struct numtl_s *next;                   /* 0x00 */
+    struct nufmtlattrib_s attrib;           /* 0x04 */
+    struct nucolour3_s ambient;             /* 0x08 */
+    struct nucolour3_s diffuse;             /* 0x14 */
+    union nufx_u fx1;                       /* 0x20 */
+    union nufx_u fx2;                       /* 0x24 */
+    union nufx_u fx3;                       /* 0x28 */
+    union nufx_u fx4;                       /* 0x2C */
+    float power;                            /* 0x30 */
+    float alpha;                            /* 0x34 */
+    s32 tid;                                /* 0x38 */
+    short sort_pri;                         /* 0x3C */
+    unsigned char fxid;                     /* 0x3E */
+    unsigned char special_id;               /* 0x3F */
+    short K;                                /* 0x40 */
+    unsigned char L;                        /* 0x42 */
+    unsigned char uanmmode : 4;             /* 0x43 */
+    unsigned char vanmmode : 4;
+    float du;                               /* 0x44 */
+    float dv;                               /* 0x48 */
+    float su;                               /* 0x4C */
+    float sv;                               /* 0x50 */
+}; /* 0x54 */
 
 
-extern void NuRndrStreamLink(struct nurndrstream_s *rs);
+extern void NuRndrStreamLink(struct rndrstream_s *rs);
 extern void *vpDmaTag_Call(void *cur, void *addr);
 extern void *vpDmaTag_Next(void *cur, void *addr);
 
@@ -125,7 +131,7 @@ extern char D_00285EE0[];
 extern char D_00286FC0[];
 #define rndr3d_fx_microcode D_00286FC0
 
-extern struct nurndrstream_s *rndrstream_mtl_sort;
+extern struct rndrstream_s *rndrstream_mtl_sort;
 extern void *rndrstream_free;
 
 extern struct numtl_s *numtl_defaultmtl2d;
@@ -272,24 +278,24 @@ void NuMtlAnimate(float dt) {
         case 1:
             u = mtl->du;
             mtl->vuattr.f32[0] = u;
-            mtl->vuattr.u32[9] = (int)(u * 4096.0f);
+            mtl->vuattr.s32[9] = u * 4096.0f;
             break;
         case 2:
             mtl->du += mtl->su * dt;
             mtl->du = mtl->du - floor(mtl->du);
             u = mtl->du;
             mtl->vuattr.f32[0] = u;
-            mtl->vuattr.u32[9] = (int)(u * 4096.0f);
+            mtl->vuattr.s32[9] = u * 4096.0f;
             break;
         case 3:
             u = NuTrigTable[(int)(sinetime * mtl->su * 65536.0f) & 0xFFFF] * mtl->du;
             mtl->vuattr.f32[0] = u;
-            mtl->vuattr.u32[9] = (int)(u * 4096.0f);
+            mtl->vuattr.s32[9] = u * 4096.0f;
             break;
         case 4:
             u = NuTrigTable[((int)(sinetime * mtl->su * 65536.0f) + 0x4000) & 0xFFFF] * mtl->du;
             mtl->vuattr.f32[0] = u;
-            mtl->vuattr.u32[9] = (int)(u * 4096.0f);
+            mtl->vuattr.s32[9] = u * 4096.0f;
             break;
         }
         switch (mtl->vanmmode) {
@@ -298,24 +304,24 @@ void NuMtlAnimate(float dt) {
         case 1:
             v = mtl->dv;
             mtl->vuattr.f32[1] = v;
-            mtl->vuattr.u32[10] = (int)(v * 4096.0f);
+            mtl->vuattr.s32[10] = v * 4096.0f;
             break;
         case 2:
             mtl->dv += mtl->sv * dt;
             mtl->dv = mtl->dv - floor(mtl->dv);
             v = mtl->dv;
             mtl->vuattr.f32[1] = v;
-            mtl->vuattr.u32[10] = (int)(v * 4096.0f);
+            mtl->vuattr.s32[10] = v * 4096.0f;
             break;
         case 3:
             v = NuTrigTable[(int)(sinetime * mtl->sv * 65536.0f) & 0xFFFF] * mtl->dv;
             mtl->vuattr.f32[1] = v;
-            mtl->vuattr.u32[10] = (int)(v * 4096.0f);
+            mtl->vuattr.s32[10] = v * 4096.0f;
             break;
         case 4:
             v = NuTrigTable[((int)(sinetime * mtl->sv * 65536.0f) + 0x4000) & 0xFFFF] * mtl->dv;
             mtl->vuattr.f32[1] = v;
-            mtl->vuattr.u32[10] = (int)(v * 4096.0f);
+            mtl->vuattr.s32[10] = v * 4096.0f;
             break;
         }
     }
@@ -328,7 +334,7 @@ inline int NuMtlGetZupd(struct numtl_s *mtl) {
 
 
 void NuMtlBuildRenderList(void) {
-    struct nurndrstream_s *rs;
+    struct rndrstream_s *rs;
     struct numtl_s *mtl;
     struct numtl_s *tex_mtl;
     u32 *last_tag;
@@ -346,41 +352,41 @@ void NuMtlBuildRenderList(void) {
     for (tex_mtl = mtl; mtl; mtl = mtl->snext) {
         if (tex_mtl) {
             if (last_tag) {
-                last_tag[1] = (u32)rs->cur.b;
+                last_tag[1] = (u32)rs->ptr.u8;
                 last_tag = 0;
             }
-            if (tex_mtl->rs.start && tex_mtl->rs.cur.b != tex_mtl->rs.start
+            if (tex_mtl->rs.base.u8 && tex_mtl->rs.ptr.u8 != tex_mtl->rs.base.u8
                 && tex_mtl->tid != accomodated_tid) {
                 NuTexAccomodateRS(rs, tex_mtl->tid);
                 accomodated_tid = tex_mtl->tid;
             }
             tex_mtl = tex_mtl->snext;
         }
-        if (mtl->rs.start && mtl->rs.cur.b != mtl->rs.start) {
+        if (mtl->rs.base.u8 && mtl->rs.ptr.u8 != mtl->rs.base.u8) {
             if (last_tag) {
-                last_tag[1] = (u32)rs->cur.b;
+                last_tag[1] = (u32)rs->ptr.u8;
             }
             if (mtl->tid != tid) {
-                rs->cur.b = NuTexSet(rs->cur.b, mtl->tid, mtl->context);
+                rs->ptr.u8 = NuTexSet(rs->ptr.u8, mtl->tid, mtl->context);
                 tid = mtl->tid;
             }
-            if (mpgtag != mtl->rs.mpgtag) {
-                rs->cur.b = vpDmaTag_Call(rs->cur.b, mtl->rs.mpgtag);
-                mpgtag = mtl->rs.mpgtag;
+            if (mpgtag != mtl->rs.mpg) {
+                rs->ptr.u8 = vpDmaTag_Call(rs->ptr.u8, mtl->rs.mpg);
+                mpgtag = mtl->rs.mpg;
             }
-            rs->cur.b = vpDmaTag_Call(rs->cur.b, mtl);
-            rs->cur.b = NuRndrStreamAddZBState(rs->cur.b, NuMtlGetZupd(mtl));
-            rs->cur.b = vpDmaTag_Next(rs->cur.b, mtl->rs.start);
-            last_tag = mtl->rs.cur.b;
+            rs->ptr.u8 = vpDmaTag_Call(rs->ptr.u8, mtl);
+            rs->ptr.u8 = NuRndrStreamAddZBState(rs->ptr.u8, NuMtlGetZupd(mtl));
+            rs->ptr.u8 = vpDmaTag_Next(rs->ptr.u8, mtl->rs.base.u8);
+            last_tag = mtl->rs.ptr.u8;
             NuRndrStreamResetStream(&mtl->rs, 1);
         }
-        mtl->rs.start = 0;
-        mtl->rs.cur.b = 0;
+        mtl->rs.base.u8 = 0;
+        mtl->rs.ptr.u8 = 0;
     }
     if (last_tag) {
-        last_tag[1] = (u32)rs->cur.b;
+        last_tag[1] = (u32)rs->ptr.u8;
     }
-    rndrstream_free = vpDmaTag_Next(rs->cur.b, 0);
+    rndrstream_free = vpDmaTag_Next(rs->ptr.u8, 0);
 }
 
 
@@ -468,7 +474,7 @@ struct numtl_s *NuMtlCreate(int count) {
         mtl->rs.mtl = mtl;
         mtl->K = -90;
         mtl->sort_pri = 0x7FFF;
-        mtl->rs.flags = 0x3D;
+        mtl->rs.attr = 0x3D;
         NuRndrStreamResetStream(&mtl->rs, 1);
         NuMtlInsert(mtl);
         mtl->next = 0;
@@ -481,7 +487,7 @@ struct numtl_s *NuMtlCreate(int count) {
 
 struct numtl_s *NuMtlRead(int fh) {
     struct numtl_s *mtl;
-    struct numtlfile_s file;
+    struct nufilemtl_s file;
 
     mtl = NuMtlCreate(1);
     if (numtl_force_mtlsize) {
@@ -491,14 +497,14 @@ struct numtl_s *NuMtlRead(int fh) {
         mtl->next = file.next;
         mtl->ambient = file.ambient;
         mtl->diffuse = file.diffuse;
-        mtl->fx1.s32 = file.fx1;
-        mtl->fx2.s32 = file.fx2;
-        mtl->fx3.s32 = file.fx3;
-        mtl->fx4.s32 = file.fx4;
+        mtl->fx1.s32 = file.fx1.s32;
+        mtl->fx2.s32 = file.fx2.s32;
+        mtl->fx3.s32 = file.fx3.s32;
+        mtl->fx4.s32 = file.fx4.s32;
         mtl->power = file.power;
         mtl->alpha = file.alpha;
         mtl->tid = file.tid;
-        mtl->sort_pri = file.alpha_sort;
+        mtl->sort_pri = file.sort_pri;
         mtl->K += file.K;
         mtl->L += file.L;
         mtl->uanmmode = file.uanmmode;
@@ -509,20 +515,20 @@ struct numtl_s *NuMtlRead(int fh) {
         mtl->sv = file.sv;
         mtl->fxid = file.fxid;
         mtl->special_id = file.special_id;
-        mtl->attrib.alpha = file.alpha_mode;
-        mtl->attrib.filter = file.filter;
+        mtl->attrib.alpha = file.attrib.alpha;
+        mtl->attrib.filter = file.attrib.filter;
         mtl->attrib.fx = 0;
-        mtl->attrib.utc = file.utc;
-        mtl->attrib.vtc = file.vtc;
-        mtl->attrib.cull = file.cull;
-        mtl->attrib.zmode = file.zmode;
-        mtl->attrib.lighting = file.lighting;
-        mtl->attrib.colour = file.colour;
-        mtl->attrib.fill = file.fill;
-        mtl->attrib.atst = file.atst;
-        mtl->attrib.aref = file.aref;
-        mtl->attrib.afail = file.afail;
-        mtl->attrib.uvmode = file.fst;
+        mtl->attrib.utc = file.attrib.utc;
+        mtl->attrib.vtc = file.attrib.vtc;
+        mtl->attrib.cull = file.attrib.cull;
+        mtl->attrib.zmode = file.attrib.zmode;
+        mtl->attrib.lighting = file.attrib.lighting;
+        mtl->attrib.colour = file.attrib.colour;
+        mtl->attrib.fill = file.attrib.fill;
+        mtl->attrib.atst = file.attrib.atst;
+        mtl->attrib.aref = file.attrib.aref;
+        mtl->attrib.afail = file.attrib.afail;
+        mtl->attrib.uvmode = file.attrib.uvmode;
         mtl->attrib.ot = 0;
         if (mtl->attrib.alpha && mtl->attrib.atst == 5) {
             if (mtl->attrib.aref == 0xFF) {
@@ -819,33 +825,33 @@ void NuMtlUpdateEx(struct numtl_s *mtl, int flags) {
     }
     switch (mtl->attrib.lighting) {
     case 3:
-        mtl->rs.flags = 0x3D;
-        mtl->rs.mpgtag = rndr3d_mode3_microcode;
+        mtl->rs.attr = 0x3D;
+        mtl->rs.mpg = rndr3d_mode3_microcode;
         break;
     case 2:
-        mtl->rs.flags = 0x3C;
-        mtl->rs.mpgtag = rndr3d_u_microcode;
+        mtl->rs.attr = 0x3C;
+        mtl->rs.mpg = rndr3d_u_microcode;
         break;
     case 0:
     default:
         if (mtl->attrib.colour == 1) {
-            mtl->rs.mpgtag = rndr3d_l_microcode;
+            mtl->rs.mpg = rndr3d_l_microcode;
         } else {
-            mtl->rs.mpgtag = rndr3d_microcode;
+            mtl->rs.mpg = rndr3d_microcode;
         }
-        mtl->rs.flags = 0x3D;
+        mtl->rs.attr = 0x3D;
         break;
     case 1:
-        mtl->rs.flags = 0x3E;
-        mtl->rs.mpgtag = rndr3d_fx_microcode;
+        mtl->rs.attr = 0x3E;
+        mtl->rs.mpg = rndr3d_fx_microcode;
         break;
     }
     switch (mtl->attrib.fx) {
     case 0:
         break;
     case 1:
-        mtl->rs.flags = 0x7C;
-        mtl->rs.mpgtag = rndr3d_fx_microcode;
+        mtl->rs.attr = 0x7C;
+        mtl->rs.mpg = rndr3d_fx_microcode;
         break;
     }
     if (flags & 1) {

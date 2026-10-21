@@ -69,7 +69,7 @@ struct nufpatch_s {
 
 #define FPATCH_STREAMS 1
 
-extern struct nurndrstream_s *D_0062EFD0[FPATCH_STREAMS];
+extern struct rndrstream_s *D_0062EFD0[FPATCH_STREAMS];
 #define fpatch_stream D_0062EFD0
 
 extern struct nuvec4_s *D_0062EFC4;
@@ -148,7 +148,7 @@ extern u8 *vpDmaTag_RefEx(u8 *cur, void *addr, u32 vif0, u32 vif1);
 extern void NuMtxBilinear(struct nuvec4_s *corner, struct nuvec4_s *quad0, struct nuvec4_s *quad1,
                           struct nuvec4_s *quad2, struct nuvec4_s *quad3);
 extern void NuVec4LerpVU0(struct nuvec4_s *out, struct nuvec4_s *a, struct nuvec4_s *b, f32 *t);
-extern void NuRndrStreamLink(struct nurndrstream_s *rs);
+extern void NuRndrStreamLink(struct rndrstream_s *rs);
 extern u8 *vpDmaTag_Call(u8 *cur, void *microcode);
 extern u8 *vpDmaTag_Next(u8 *cur, s32 mode);
 
@@ -336,8 +336,8 @@ void NuRndrFPatchBegin(struct nuvec_s *lightdir, f32 scale, f32 bias)
     for (i = 0; i < FPATCH_STREAMS; i++) {
         NuRndrStreamLink(fpatch_stream[i]);
         NuTexGetPointers(fpatch_lighttid, &entry, &ps2tex);
-        fpatch_stream[i]->cur.b = NuPs2TxGenUpload(fpatch_stream[i]->cur.b, ps2tex, fpatch_texaddr);
-        rndrstream_free = vpDmaTag_Next(fpatch_stream[i]->cur.b, 0);
+        fpatch_stream[i]->ptr.u8 = NuPs2TxGenUpload(fpatch_stream[i]->ptr.u8, ps2tex, fpatch_texaddr);
+        rndrstream_free = vpDmaTag_Next(fpatch_stream[i]->ptr.u8, 0);
     }
     if (fpatch_stats[0].total > fpatch_stats[0].peak) {
         fpatch_stats[0].peak = fpatch_stats[0].total;
@@ -383,62 +383,62 @@ void NuRndrFPatchInit(u32 levels, s32 detail, f32 lodscale, f32 heightscale, f32
     one = 1.0f;
     for (i = 0; i < FPATCH_STREAMS; i++) {
         NuRndrStreamLink(fpatch_stream[i]);
-        fpatch_stream[i]->cur.b = vpDmaTag_RefEx(fpatch_stream[i]->cur.b, water_wave_src, 0x10000000,
+        fpatch_stream[i]->ptr.u8 = vpDmaTag_RefEx(fpatch_stream[i]->ptr.u8, water_wave_src, 0x10000000,
                                                  0x6C000300);
-        *(u16 *)(fpatch_stream[i]->cur.b - 0x10) = 0x100;
-        fpatch_stream[i]->cur.b = vpDmaTag_Cnt(fpatch_stream[i]->cur.b);
-        *fpatch_stream[i]->cur.w++ = 0x10000000;
-        *fpatch_stream[i]->cur.w++ = 0x6C840200;
+        *(u16 *)(fpatch_stream[i]->ptr.u8 - 0x10) = 0x100;
+        fpatch_stream[i]->ptr.u8 = vpDmaTag_Cnt(fpatch_stream[i]->ptr.u8);
+        *fpatch_stream[i]->ptr.u32++ = 0x10000000;
+        *fpatch_stream[i]->ptr.u32++ = 0x6C840200;
         for (j = 0; j < 0x84; j++) {
-            *fpatch_stream[i]->cur.w++ = 0x80;
-            *fpatch_stream[i]->cur.w++ = 0x80;
-            *fpatch_stream[i]->cur.w++ = 0x80;
-            *fpatch_stream[i]->cur.w++ = 0x80;
+            *fpatch_stream[i]->ptr.u32++ = 0x80;
+            *fpatch_stream[i]->ptr.u32++ = 0x80;
+            *fpatch_stream[i]->ptr.u32++ = 0x80;
+            *fpatch_stream[i]->ptr.u32++ = 0x80;
         }
-        *fpatch_stream[i]->cur.w++ = 0x10000000;
-        *fpatch_stream[i]->cur.w++ = 0x6C4202BE;
+        *fpatch_stream[i]->ptr.u32++ = 0x10000000;
+        *fpatch_stream[i]->ptr.u32++ = 0x6C4202BE;
         for (j = 0; j < levels; j++) {
             heightscale *= 0.5f;
         }
         dist = 0.125f;
-        *fpatch_stream[i]->cur.f++ = one;
-        *fpatch_stream[i]->cur.f++ = dist;
-        *fpatch_stream[i]->cur.f++ = heightscale * 1.732f;
-        *fpatch_stream[i]->cur.w++ = 0;
-        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x3002C0000000000AULL;
-        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x512;
-        *((struct nuvec4_s *)fpatch_stream[i]->cur.b)++ = submtx2[0];
-        *((struct nuvec4_s *)fpatch_stream[i]->cur.b)++ = submtx2[1];
-        *((struct nuvec4_s *)fpatch_stream[i]->cur.b)++ = submtx2[2];
-        *((struct nuvec4_s *)fpatch_stream[i]->cur.b)++ = submtx2[3];
-        *((struct nuvec4_s *)fpatch_stream[i]->cur.b)++ = submtx2[4];
-        *((struct nuvec4_s *)fpatch_stream[i]->cur.b)++ = submtx2[5];
-        *((struct nuvec4_s *)fpatch_stream[i]->cur.b)++ = submtx2[6];
-        *((struct nuvec4_s *)fpatch_stream[i]->cur.b)++ = submtx2[7];
-        *((struct nuvec4_s *)fpatch_stream[i]->cur.b)++ = submtx2[8];
-        *((struct nuvec4_s *)fpatch_stream[i]->cur.b)++ = submtx2[9];
-        *((struct nuvec4_s *)fpatch_stream[i]->cur.b)++ = submtx2[10];
-        *((struct nuvec4_s *)fpatch_stream[i]->cur.b)++ = submtx2[11];
-        *((struct numtx_s *)fpatch_stream[i]->cur.b)++ = vpc;
+        *fpatch_stream[i]->ptr.f32++ = one;
+        *fpatch_stream[i]->ptr.f32++ = dist;
+        *fpatch_stream[i]->ptr.f32++ = heightscale * 1.732f;
+        *fpatch_stream[i]->ptr.u32++ = 0;
+        *((u64 *)fpatch_stream[i]->ptr.u8)++ = 0x3002C0000000000AULL;
+        *((u64 *)fpatch_stream[i]->ptr.u8)++ = 0x512;
+        *((struct nuvec4_s *)fpatch_stream[i]->ptr.u8)++ = submtx2[0];
+        *((struct nuvec4_s *)fpatch_stream[i]->ptr.u8)++ = submtx2[1];
+        *((struct nuvec4_s *)fpatch_stream[i]->ptr.u8)++ = submtx2[2];
+        *((struct nuvec4_s *)fpatch_stream[i]->ptr.u8)++ = submtx2[3];
+        *((struct nuvec4_s *)fpatch_stream[i]->ptr.u8)++ = submtx2[4];
+        *((struct nuvec4_s *)fpatch_stream[i]->ptr.u8)++ = submtx2[5];
+        *((struct nuvec4_s *)fpatch_stream[i]->ptr.u8)++ = submtx2[6];
+        *((struct nuvec4_s *)fpatch_stream[i]->ptr.u8)++ = submtx2[7];
+        *((struct nuvec4_s *)fpatch_stream[i]->ptr.u8)++ = submtx2[8];
+        *((struct nuvec4_s *)fpatch_stream[i]->ptr.u8)++ = submtx2[9];
+        *((struct nuvec4_s *)fpatch_stream[i]->ptr.u8)++ = submtx2[10];
+        *((struct nuvec4_s *)fpatch_stream[i]->ptr.u8)++ = submtx2[11];
+        *((struct numtx_s *)fpatch_stream[i]->ptr.u8)++ = vpc;
         for (j = 0; j < 16; j++) {
-            *fpatch_stream[i]->cur.i++ = stitchtable[j][0] + 4;
-            *fpatch_stream[i]->cur.i++ = stitchtable[j][1] + 4;
-            *fpatch_stream[i]->cur.i++ = stitchtable[j][2] + 4;
-            *fpatch_stream[i]->cur.i++ = stitchtable[j][3] + 4;
+            *fpatch_stream[i]->ptr.s32++ = stitchtable[j][0] + 4;
+            *fpatch_stream[i]->ptr.s32++ = stitchtable[j][1] + 4;
+            *fpatch_stream[i]->ptr.s32++ = stitchtable[j][2] + 4;
+            *fpatch_stream[i]->ptr.s32++ = stitchtable[j][3] + 4;
         }
-        *((struct numtx_s *)fpatch_stream[i]->cur.b)++ = frustum;
-        *((struct numtx_s *)fpatch_stream[i]->cur.b)++ = inv_clip;
-        *fpatch_stream[i]->cur.f++ = nearclip;
-        *fpatch_stream[i]->cur.f++ = farclip;
-        *fpatch_stream[i]->cur.f++ = lodscale;
-        *fpatch_stream[i]->cur.f++ = lodscale;
+        *((struct numtx_s *)fpatch_stream[i]->ptr.u8)++ = frustum;
+        *((struct numtx_s *)fpatch_stream[i]->ptr.u8)++ = inv_clip;
+        *fpatch_stream[i]->ptr.f32++ = nearclip;
+        *fpatch_stream[i]->ptr.f32++ = farclip;
+        *fpatch_stream[i]->ptr.f32++ = lodscale;
+        *fpatch_stream[i]->ptr.f32++ = lodscale;
         lodscale += lodscale;
-        *fpatch_stream[i]->cur.f++ = one;
-        *fpatch_stream[i]->cur.f++ = one;
-        *fpatch_stream[i]->cur.f++ = one;
-        *fpatch_stream[i]->cur.f++ = one;
-        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x3002C0000000800AULL;
-        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x512;
+        *fpatch_stream[i]->ptr.f32++ = one;
+        *fpatch_stream[i]->ptr.f32++ = one;
+        *fpatch_stream[i]->ptr.f32++ = one;
+        *fpatch_stream[i]->ptr.f32++ = one;
+        *((u64 *)fpatch_stream[i]->ptr.u8)++ = 0x3002C0000000800AULL;
+        *((u64 *)fpatch_stream[i]->ptr.u8)++ = 0x512;
         falloff = 0.47f;
         dist = 0.25f;
         if (water_table_ready) {
@@ -451,68 +451,68 @@ void NuRndrFPatchInit(u32 levels, s32 detail, f32 lodscale, f32 heightscale, f32
         }
         base = dist;
         for (j = 0; j < 16; j++) {
-            *fpatch_stream[i]->cur.f++ = lodscale;
-            *fpatch_stream[i]->cur.f++ = -1.0f / (lodscale * lodrange);
-            *fpatch_stream[i]->cur.f++ = falloff;
+            *fpatch_stream[i]->ptr.f32++ = lodscale;
+            *fpatch_stream[i]->ptr.f32++ = -1.0f / (lodscale * lodrange);
+            *fpatch_stream[i]->ptr.f32++ = falloff;
             if (j < 3 && detail) {
-                *fpatch_stream[i]->cur.f++ = base * 4.0f;
+                *fpatch_stream[i]->ptr.f32++ = base * 4.0f;
             } else {
-                *fpatch_stream[i]->cur.f++ = dist;
+                *fpatch_stream[i]->ptr.f32++ = dist;
             }
             lodscale *= 0.5f;
             falloff *= 0.47f;
             dist += dist;
         }
-        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x0002C00000008000ULL;
-        *((u64 *)fpatch_stream[i]->cur.b)++ = 0;
+        *((u64 *)fpatch_stream[i]->ptr.u8)++ = 0x0002C00000008000ULL;
+        *((u64 *)fpatch_stream[i]->ptr.u8)++ = 0;
         if (heightmin == 0.0f && heightmax == 0.0f) {
             heightmin = 10000.0f;
             heightmax = 9999.0f;
         }
-        *fpatch_stream[i]->cur.f++ = heightmin;
-        *fpatch_stream[i]->cur.f++ = 128.0f / (heightmax - heightmin);
-        *fpatch_stream[i]->cur.w++ = 0;
-        *fpatch_stream[i]->cur.w++ = 0;
+        *fpatch_stream[i]->ptr.f32++ = heightmin;
+        *fpatch_stream[i]->ptr.f32++ = 128.0f / (heightmax - heightmin);
+        *fpatch_stream[i]->ptr.u32++ = 0;
+        *fpatch_stream[i]->ptr.u32++ = 0;
         for (j = 0; j < 3; j++) {
-            *fpatch_stream[i]->cur.w++ = heightTable[j][0];
-            *fpatch_stream[i]->cur.w++ = heightTable[j][1];
-            *fpatch_stream[i]->cur.w++ = heightTable[j][2];
-            *fpatch_stream[i]->cur.w++ = heightTable[j][3];
+            *fpatch_stream[i]->ptr.u32++ = heightTable[j][0];
+            *fpatch_stream[i]->ptr.u32++ = heightTable[j][1];
+            *fpatch_stream[i]->ptr.u32++ = heightTable[j][2];
+            *fpatch_stream[i]->ptr.u32++ = heightTable[j][3];
         }
-        *fpatch_stream[i]->cur.w++ = 0x10000000;
-        *fpatch_stream[i]->cur.w++ = 0x6C030200;
-        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x1000000000000001ULL;
-        *((u64 *)fpatch_stream[i]->cur.b)++ = 0xE;
-        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x58;
-        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x1B;
-        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x3002C0000000000AULL;
-        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x512;
-        *fpatch_stream[i]->cur.w++ = 0x10000000;
-        *fpatch_stream[i]->cur.w++ = 0x6C030221;
-        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x1000000000000001ULL;
-        *((u64 *)fpatch_stream[i]->cur.b)++ = 0xE;
-        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x258;
-        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x1B;
-        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x3002C0000000800AULL;
-        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x512;
-        *fpatch_stream[i]->cur.w++ = 0x10000000;
-        *fpatch_stream[i]->cur.w++ = 0x6C030242;
-        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x1000000000000001ULL;
-        *((u64 *)fpatch_stream[i]->cur.b)++ = 0xE;
-        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x58;
-        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x1B;
-        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x3002C0000000000AULL;
-        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x512;
-        *fpatch_stream[i]->cur.w++ = 0x10000000;
-        *fpatch_stream[i]->cur.w++ = 0x6C030263;
-        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x1000000000000001ULL;
-        *((u64 *)fpatch_stream[i]->cur.b)++ = 0xE;
-        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x258;
-        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x1B;
-        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x3002C0000000800AULL;
-        *((u64 *)fpatch_stream[i]->cur.b)++ = 0x512;
-        fpatch_stream[i]->cur.b = vpDmaTag_Close(fpatch_stream[i]->cur.b);
-        rndrstream_free = vpDmaTag_Next(fpatch_stream[i]->cur.b, 0);
+        *fpatch_stream[i]->ptr.u32++ = 0x10000000;
+        *fpatch_stream[i]->ptr.u32++ = 0x6C030200;
+        *((u64 *)fpatch_stream[i]->ptr.u8)++ = 0x1000000000000001ULL;
+        *((u64 *)fpatch_stream[i]->ptr.u8)++ = 0xE;
+        *((u64 *)fpatch_stream[i]->ptr.u8)++ = 0x58;
+        *((u64 *)fpatch_stream[i]->ptr.u8)++ = 0x1B;
+        *((u64 *)fpatch_stream[i]->ptr.u8)++ = 0x3002C0000000000AULL;
+        *((u64 *)fpatch_stream[i]->ptr.u8)++ = 0x512;
+        *fpatch_stream[i]->ptr.u32++ = 0x10000000;
+        *fpatch_stream[i]->ptr.u32++ = 0x6C030221;
+        *((u64 *)fpatch_stream[i]->ptr.u8)++ = 0x1000000000000001ULL;
+        *((u64 *)fpatch_stream[i]->ptr.u8)++ = 0xE;
+        *((u64 *)fpatch_stream[i]->ptr.u8)++ = 0x258;
+        *((u64 *)fpatch_stream[i]->ptr.u8)++ = 0x1B;
+        *((u64 *)fpatch_stream[i]->ptr.u8)++ = 0x3002C0000000800AULL;
+        *((u64 *)fpatch_stream[i]->ptr.u8)++ = 0x512;
+        *fpatch_stream[i]->ptr.u32++ = 0x10000000;
+        *fpatch_stream[i]->ptr.u32++ = 0x6C030242;
+        *((u64 *)fpatch_stream[i]->ptr.u8)++ = 0x1000000000000001ULL;
+        *((u64 *)fpatch_stream[i]->ptr.u8)++ = 0xE;
+        *((u64 *)fpatch_stream[i]->ptr.u8)++ = 0x58;
+        *((u64 *)fpatch_stream[i]->ptr.u8)++ = 0x1B;
+        *((u64 *)fpatch_stream[i]->ptr.u8)++ = 0x3002C0000000000AULL;
+        *((u64 *)fpatch_stream[i]->ptr.u8)++ = 0x512;
+        *fpatch_stream[i]->ptr.u32++ = 0x10000000;
+        *fpatch_stream[i]->ptr.u32++ = 0x6C030263;
+        *((u64 *)fpatch_stream[i]->ptr.u8)++ = 0x1000000000000001ULL;
+        *((u64 *)fpatch_stream[i]->ptr.u8)++ = 0xE;
+        *((u64 *)fpatch_stream[i]->ptr.u8)++ = 0x258;
+        *((u64 *)fpatch_stream[i]->ptr.u8)++ = 0x1B;
+        *((u64 *)fpatch_stream[i]->ptr.u8)++ = 0x3002C0000000800AULL;
+        *((u64 *)fpatch_stream[i]->ptr.u8)++ = 0x512;
+        fpatch_stream[i]->ptr.u8 = vpDmaTag_Close(fpatch_stream[i]->ptr.u8);
+        rndrstream_free = vpDmaTag_Next(fpatch_stream[i]->ptr.u8, 0);
     }
 }
 
@@ -523,14 +523,14 @@ void NuRndrFPatchCameraUpdate(void)
 
     for (i = 0; i < FPATCH_STREAMS; i++) {
         NuRndrStreamLink(fpatch_stream[i]);
-        fpatch_stream[i]->cur.b = vpDmaTag_Cnt(fpatch_stream[i]->cur.b);
-        *((u32 *)fpatch_stream[i]->cur.b)++ = 0;
-        *((u32 *)fpatch_stream[i]->cur.b)++ = 0;
-        *((u32 *)fpatch_stream[i]->cur.b)++ = 0x10000000;
-        *((u32 *)fpatch_stream[i]->cur.b)++ = 0x6C0402CC;
-        *((struct numtx_s *)fpatch_stream[i]->cur.b)++ = *NuCameraGetVPCSMtx();
-        fpatch_stream[i]->cur.b = vpDmaTag_Close(fpatch_stream[i]->cur.b);
-        rndrstream_free = vpDmaTag_Next(fpatch_stream[i]->cur.b, 0);
+        fpatch_stream[i]->ptr.u8 = vpDmaTag_Cnt(fpatch_stream[i]->ptr.u8);
+        *((u32 *)fpatch_stream[i]->ptr.u8)++ = 0;
+        *((u32 *)fpatch_stream[i]->ptr.u8)++ = 0;
+        *((u32 *)fpatch_stream[i]->ptr.u8)++ = 0x10000000;
+        *((u32 *)fpatch_stream[i]->ptr.u8)++ = 0x6C0402CC;
+        *((struct numtx_s *)fpatch_stream[i]->ptr.u8)++ = *NuCameraGetVPCSMtx();
+        fpatch_stream[i]->ptr.u8 = vpDmaTag_Close(fpatch_stream[i]->ptr.u8);
+        rndrstream_free = vpDmaTag_Next(fpatch_stream[i]->ptr.u8, 0);
     }
 }
 
@@ -544,31 +544,31 @@ void NuRndrFPatchHeightField(struct nufpatch_s *patch, void *heightbuf, s32 flag
         patch->mtl[1]->tid = patch->tid[1];
         NuRndrStreamAddMtl(fpatch_stream[0], patch->mtl[1]);
     }
-    fpatch_stream[0]->cur.b = vpDmaTag_Cnt(fpatch_stream[0]->cur.b);
-    *((u32 *)fpatch_stream[0]->cur.b)++ = 0x10000000;
-    *((u32 *)fpatch_stream[0]->cur.b)++ = 0x6C100001;
-    *((struct numtx_s *)fpatch_stream[0]->cur.b)++ = patch->uv;
-    *((struct nuvec4_s *)fpatch_stream[0]->cur.b)++ = patch->nrm[0];
-    ((u32 *)fpatch_stream[0]->cur.b)[-1] = (heightbuf != 0);
-    *((struct nuvec4_s *)fpatch_stream[0]->cur.b)++ = patch->nrm[1];
-    ((u32 *)fpatch_stream[0]->cur.b)[-1] = flags & 1;
-    *((struct nuvec4_s *)fpatch_stream[0]->cur.b)++ = patch->nrm[2];
-    ((u32 *)fpatch_stream[0]->cur.b)[-1] = flags & 8;
-    *((struct nuvec4_s *)fpatch_stream[0]->cur.b)++ = patch->nrm[3];
-    *((struct numtx_s *)fpatch_stream[0]->cur.b)++ = patch->col;
-    *((struct numtx_s *)fpatch_stream[0]->cur.b)++ = *(struct numtx_s *)patch->pnt;
+    fpatch_stream[0]->ptr.u8 = vpDmaTag_Cnt(fpatch_stream[0]->ptr.u8);
+    *((u32 *)fpatch_stream[0]->ptr.u8)++ = 0x10000000;
+    *((u32 *)fpatch_stream[0]->ptr.u8)++ = 0x6C100001;
+    *((struct numtx_s *)fpatch_stream[0]->ptr.u8)++ = patch->uv;
+    *((struct nuvec4_s *)fpatch_stream[0]->ptr.u8)++ = patch->nrm[0];
+    ((u32 *)fpatch_stream[0]->ptr.u8)[-1] = (heightbuf != 0);
+    *((struct nuvec4_s *)fpatch_stream[0]->ptr.u8)++ = patch->nrm[1];
+    ((u32 *)fpatch_stream[0]->ptr.u8)[-1] = flags & 1;
+    *((struct nuvec4_s *)fpatch_stream[0]->ptr.u8)++ = patch->nrm[2];
+    ((u32 *)fpatch_stream[0]->ptr.u8)[-1] = flags & 8;
+    *((struct nuvec4_s *)fpatch_stream[0]->ptr.u8)++ = patch->nrm[3];
+    *((struct numtx_s *)fpatch_stream[0]->ptr.u8)++ = patch->col;
+    *((struct numtx_s *)fpatch_stream[0]->ptr.u8)++ = *(struct numtx_s *)patch->pnt;
     if (heightbuf != 0) {
-        fpatch_stream[0]->cur.b = vpDmaTag_Close(fpatch_stream[0]->cur.b);
-        fpatch_stream[0]->cur.b = vpDmaTag_CntEx(fpatch_stream[0]->cur.b, 0x20000000, 0x3F);
-        fpatch_stream[0]->cur.b = vpDmaTag_RefEx(fpatch_stream[0]->cur.b, heightbuf, 0x10000000,
+        fpatch_stream[0]->ptr.u8 = vpDmaTag_Close(fpatch_stream[0]->ptr.u8);
+        fpatch_stream[0]->ptr.u8 = vpDmaTag_CntEx(fpatch_stream[0]->ptr.u8, 0x20000000, 0x3F);
+        fpatch_stream[0]->ptr.u8 = vpDmaTag_RefEx(fpatch_stream[0]->ptr.u8, heightbuf, 0x10000000,
                                                0x70000300);
-        *(u16 *)(fpatch_stream[0]->cur.b - 0x10) = 0x40;
-        fpatch_stream[0]->cur.b = vpDmaTag_Cnt(fpatch_stream[0]->cur.b);
+        *(u16 *)(fpatch_stream[0]->ptr.u8 - 0x10) = 0x40;
+        fpatch_stream[0]->ptr.u8 = vpDmaTag_Cnt(fpatch_stream[0]->ptr.u8);
     }
-    *((u32 *)fpatch_stream[0]->cur.b)++ = 0;
-    *((u32 *)fpatch_stream[0]->cur.b)++ = 0x14000000;
-    fpatch_stream[0]->cur.b = vpDmaTag_Close(fpatch_stream[0]->cur.b);
-    rndrstream_free = vpDmaTag_Next(fpatch_stream[0]->cur.b, 0);
+    *((u32 *)fpatch_stream[0]->ptr.u8)++ = 0;
+    *((u32 *)fpatch_stream[0]->ptr.u8)++ = 0x14000000;
+    fpatch_stream[0]->ptr.u8 = vpDmaTag_Close(fpatch_stream[0]->ptr.u8);
+    rndrstream_free = vpDmaTag_Next(fpatch_stream[0]->ptr.u8, 0);
 }
 
 void NuFPatchHeightFieldIndexSlow(struct nufpatch_s *src, f32 *heights, s32 index,
@@ -1501,7 +1501,7 @@ void NuFPatchHeightFieldIndexFast(struct nufpatch_s *src, f32 *heights, s32 inde
 }
 
 
-struct nurndrstream_s *NuFPatchGetStream(void)
+struct rndrstream_s *NuFPatchGetStream(void)
 {
     return fpatch_stream[0];
 }
@@ -1513,8 +1513,8 @@ void NuRndrFPatchEnd(void)
 
     for (i = 0; i < FPATCH_STREAMS; i++) {
         NuRndrStreamLink(fpatch_stream[i]);
-        fpatch_stream[i]->cur.b = vpDmaTag_Call(fpatch_stream[i]->cur.b, fpatch_microcode);
-        rndrstream_free = vpDmaTag_Next(fpatch_stream[i]->cur.b, 0);
+        fpatch_stream[i]->ptr.u8 = vpDmaTag_Call(fpatch_stream[i]->ptr.u8, fpatch_microcode);
+        rndrstream_free = vpDmaTag_Next(fpatch_stream[i]->ptr.u8, 0);
     }
     NuTexUnReserve();
 }

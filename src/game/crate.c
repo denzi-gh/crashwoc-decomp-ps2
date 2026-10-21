@@ -210,14 +210,14 @@ extern f32 dptofp(u64 x);
 
 extern s32 qrand(void);
 
-extern struct nurndrstream_s *rndrstream_3d;
+extern struct rndrstream_s *rndrstream_3d;
 extern u8 *rndrstream_free;
 
 extern void NuVec4MtxTransformVU0(struct nuvec4_s *dst, struct nuvec4_s *src,
                                   struct numtx_s *m);
 extern void NuVec4ScaleXYZVU0(struct nuvec4_s *dst, struct nuvec4_s *src,
                               f32 scale);
-extern void NuRndrStreamLink(struct nurndrstream_s *rs);
+extern void NuRndrStreamLink(struct rndrstream_s *rs);
 extern void NuVecConvertToIntVU0(void *dst, struct nuvec_s *src);
 extern u8 *vpDmaTag_Cnt(u8 *cur);
 extern u8 *vpDmaTag_Close(u8 *cur);
@@ -1799,27 +1799,27 @@ void AddQuad3DrotXYZ(struct nuvec_s *pos, struct nuvec_s *shape,
 
     rndrstream_3d = &mtl->rs;
     NuRndrStreamLink(rndrstream_3d);
-    rndrstream_3d->cur.b = vpDmaTag_Cnt(rndrstream_3d->cur.b);
-    *rndrstream_3d->cur.w++ = 0x10000000;
-    *rndrstream_3d->cur.w++ = 0x5000000D;
+    rndrstream_3d->ptr.u8 = vpDmaTag_Cnt(rndrstream_3d->ptr.u8);
+    *rndrstream_3d->ptr.u32++ = 0x10000000;
+    *rndrstream_3d->ptr.u32++ = 0x5000000D;
     /* GNU cast-as-lvalue: the cursor union has no 64-bit member. */
-    *((u64 *)rndrstream_3d->cur.w)++ = 0x3002400000008004ULL;
-    *((u64 *)rndrstream_3d->cur.w)++ = 0x512;
+    *((u64 *)rndrstream_3d->ptr.u32)++ = 0x3002400000008004ULL;
+    *((u64 *)rndrstream_3d->ptr.u32)++ = 0x512;
     for (i = 0; i < 4; i++) {
-        *rndrstream_3d->cur.f++ = uvs[i * 2];
-        *rndrstream_3d->cur.f++ = uvs[i * 2 + 1];
-        *rndrstream_3d->cur.f++ = 1.0f;
-        rndrstream_3d->cur.w++;
-        *rndrstream_3d->cur.w++ = colour & 0xFF;
-        *rndrstream_3d->cur.w++ = (colour >> 8) & 0xFF;
-        *rndrstream_3d->cur.w++ = (colour >> 16) & 0xFF;
-        *rndrstream_3d->cur.w++ = colour >> 24;
-        NuVecConvertToIntVU0(rndrstream_3d->cur.b, &screen[i]);
-        rndrstream_3d->cur.b += 0xC;
-        *rndrstream_3d->cur.w++ = 0;
+        *rndrstream_3d->ptr.f32++ = uvs[i * 2];
+        *rndrstream_3d->ptr.f32++ = uvs[i * 2 + 1];
+        *rndrstream_3d->ptr.f32++ = 1.0f;
+        rndrstream_3d->ptr.u32++;
+        *rndrstream_3d->ptr.u32++ = colour & 0xFF;
+        *rndrstream_3d->ptr.u32++ = (colour >> 8) & 0xFF;
+        *rndrstream_3d->ptr.u32++ = (colour >> 16) & 0xFF;
+        *rndrstream_3d->ptr.u32++ = colour >> 24;
+        NuVecConvertToIntVU0(rndrstream_3d->ptr.u8, &screen[i]);
+        rndrstream_3d->ptr.u8 += 0xC;
+        *rndrstream_3d->ptr.u32++ = 0;
     }
-    rndrstream_3d->cur.b = vpDmaTag_Close(rndrstream_3d->cur.b);
-    rndrstream_free = vpDmaTag_Next(rndrstream_3d->cur.b, 0);
+    rndrstream_3d->ptr.u8 = vpDmaTag_Close(rndrstream_3d->ptr.u8);
+    rndrstream_free = vpDmaTag_Next(rndrstream_3d->ptr.u8, 0);
 }
 
 void DrawCrateExplosions(void) {

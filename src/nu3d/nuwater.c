@@ -40,7 +40,7 @@ extern void NuRndrEndScene(void);
 extern void NuRndrRectUV2di(int x, int y, int w, int h, float u0, float v0, float u1, float v1,
                             u32 colour, struct numtl_s *mtl);
 extern void NuRndrGobj(struct nugobj_s *gobj, struct nuinstance_s *inst);
-extern void NuRndrStreamLink(struct nurndrstream_s *stream);
+extern void NuRndrStreamLink(struct rndrstream_s *stream);
 extern u32 *vpDmaTag_Cnt(u32 *cur);
 extern u32 *vpDmaTag_Close(u32 *cur);
 extern u32 *vpDmaTag_Next(u32 *cur, int mode);
@@ -178,9 +178,9 @@ void fixNewMaterials(void) {
         case 0x85:
         case 0x86:
             if (mtl->fxid == 0x86) {
-                mtl->rs.mpgtag = water_alt_microcode;
+                mtl->rs.mpg = water_alt_microcode;
             } else {
-                mtl->rs.mpgtag = water_microcode;
+                mtl->rs.mpg = water_microcode;
             }
             mtl->vuattr.vec3->z = mtl->fx3.f32 / mtl->fx4.f32;
             mtl->vuattr.vec4->w = 0;
@@ -205,7 +205,7 @@ void fixNewMaterials(void) {
             water_grab = 1;
             mtl->tid = water_grab_tid;
             NuMtlUpdate(mtl);
-            mtl->rs.mpgtag = water_microcode;
+            mtl->rs.mpg = water_microcode;
             mtl->vuattr.vec3->z = mtl->fx2.f32 / 48.0f / mtl->fx4.f32;
             mtl->vuattr.vec4->w = 0;
             width = 1;
@@ -281,7 +281,7 @@ void fixMaterials(void) {
         layer->attrib.colour = 1;
         layer->sort_pri = 0x7FFF;
         NuMtlUpdate(layer);
-        layer->rs.mpgtag = water_microcode;
+        layer->rs.mpg = water_microcode;
         layer->vuattr.vec3->z = mtl->fx3.f32 / mtl->fx4.f32;
         layer->vuattr.vec4->w = 0;
         width = 1;
@@ -310,7 +310,7 @@ void fixMaterials(void) {
         mtl->tid = water_grab_tid;
         mtl->sort_pri = 0x7FFE;
         NuMtlUpdate(mtl);
-        mtl->rs.mpgtag = water_microcode;
+        mtl->rs.mpg = water_microcode;
         mtl->vuattr.vec3->z = mtl->fx2.f32 / 48.0f / mtl->fx4.f32;
         mtl->vuattr.vec4->w = 0;
         width = 1;
@@ -371,7 +371,7 @@ void animateWaterTables(float scale, float time) {
     struct numtx_s mtx;
     struct nuvec_s mtxscale = {0.5f, 0.5f, 0.5f};
     struct numtl_s *mtl;
-    struct nurndrstream_s *stream;
+    struct rndrstream_s *stream;
     float *table;
     float amp;
     float freq;
@@ -402,15 +402,15 @@ void animateWaterTables(float scale, float time) {
         mtl = watermtl[i];
         stream = &mtl->rs;
         NuRndrStreamLink(stream);
-        stream->cur.w = vpDmaTag_Cnt(stream->cur.w);
-        *stream->cur.w++ = 0x10000000;
-        *stream->cur.w++ = 0x6C2001B2;
+        stream->ptr.u32 = vpDmaTag_Cnt(stream->ptr.u32);
+        *stream->ptr.u32++ = 0x10000000;
+        *stream->ptr.u32++ = 0x6C2001B2;
         for (j = 0; j < 32; j++) {
-            *((struct nuvec4_s *)stream->cur.w)++ = *(struct nuvec4_s *)table;
+            *((struct nuvec4_s *)stream->ptr.u32)++ = *(struct nuvec4_s *)table;
             table += 4;
         }
-        stream->cur.w = vpDmaTag_Close(stream->cur.w);
-        rndrstream_free = vpDmaTag_Next(stream->cur.w, 0);
+        stream->ptr.u32 = vpDmaTag_Close(stream->ptr.u32);
+        rndrstream_free = vpDmaTag_Next(stream->ptr.u32, 0);
     }
 }
 
@@ -421,7 +421,7 @@ void animateWater(float scale, float time) {
     struct numtx_s mtx;
     struct nuvec_s mtxscale = {0.5f, 0.5f, 0.5f};
     struct numtl_s *mtl;
-    struct nurndrstream_s *stream;
+    struct rndrstream_s *stream;
     float amp;
     float freq;
     int i;
@@ -436,24 +436,24 @@ void animateWater(float scale, float time) {
         amp = mtl->fx4.f32 * scale;
         stream = &mtl->rs;
         NuRndrStreamLink(stream);
-        stream->cur.w = vpDmaTag_Cnt(stream->cur.w);
-        *stream->cur.w++ = 0;
-        *stream->cur.w++ = 0;
-        *stream->cur.w++ = 0x10000000;
-        *stream->cur.w++ = 0x6C2001B2;
+        stream->ptr.u32 = vpDmaTag_Cnt(stream->ptr.u32);
+        *stream->ptr.u32++ = 0;
+        *stream->ptr.u32++ = 0;
+        *stream->ptr.u32++ = 0x10000000;
+        *stream->ptr.u32++ = 0x6C2001B2;
         NuRandSeed(0x11);
         for (j = 0; j < 32; j++) {
             wave.x = NuTrigTable[(u16)((freq * (NuRandFloat() * 0.4f + 0.8f) + NuRandFloat() * 6.284f) * 10430.378f)] * amp;
             wave.y = 0.0f;
             wave.z = NuTrigTable[(u16)((freq * (NuRandFloat() * 0.4f + 0.7f) + NuRandFloat() * 6.284f) * 10430.378f)] * amp;
             NuVecMtxTransformH(&pos, &wave, &mtx);
-            *((float *)stream->cur.w)++ = pos.x;
-            *((float *)stream->cur.w)++ = pos.y;
-            *((float *)stream->cur.w)++ = 1.0f;
-            *((float *)stream->cur.w)++ = wave.x;
+            *((float *)stream->ptr.u32)++ = pos.x;
+            *((float *)stream->ptr.u32)++ = pos.y;
+            *((float *)stream->ptr.u32)++ = 1.0f;
+            *((float *)stream->ptr.u32)++ = wave.x;
         }
-        stream->cur.w = vpDmaTag_Close(stream->cur.w);
-        rndrstream_free = vpDmaTag_Next(stream->cur.w, 0);
+        stream->ptr.u32 = vpDmaTag_Close(stream->ptr.u32);
+        rndrstream_free = vpDmaTag_Next(stream->ptr.u32, 0);
     }
 }
 
