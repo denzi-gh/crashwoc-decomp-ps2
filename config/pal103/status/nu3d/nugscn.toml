@@ -97,7 +97,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:00148c90:ReadObjSet"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0044:00149690:ReadTexAnimSet"
