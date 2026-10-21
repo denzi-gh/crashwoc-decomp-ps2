@@ -63,7 +63,7 @@ extern void NuFileClose(s32 handle);
 extern void *NuMemAllocFn(s32 size, char *file, s32 line);
 extern void NuMemFreeFn(void *ptr, char *file, s32 line);
 
-extern void NuRndrStreamLink(struct nurndrstream_s *rs);
+extern void NuRndrStreamLink(struct rndrstream_s *rs);
 extern u8 *vpDmaTag_CntEx(u8 *cur, u32 qwc, u32 tag);
 extern u8 *vpDmaTag_Close(u8 *cur);
 extern u8 *vpDmaTag_Next(u8 *cur, s32 tag);
@@ -73,7 +73,7 @@ extern u8 *gsBeginGifPacket(u8 *cur, s32 eop, s32 nloop, s32 pre, s32 prim,
                             s32 flg, s32 nreg, ...);
 extern u8 *gsCloseGifPacket(u8 *cur);
 
-extern struct nurndrstream_s *rndrstream_2d;
+extern struct rndrstream_s *rndrstream_2d;
 extern u8 *rndrstream_free;
 extern s32 PS2_REZ_W;
 extern s32 PS2_REZ_H;
@@ -225,12 +225,12 @@ static inline s32 NuFntColumnHasInk(struct nutex_s *bmp, s32 x, s32 y, s32 h,
     u8 *pixel;
     s32 i;
 
-    pixel = bmp->bits + bmp->width * y + x;
-    for (i = 0; i < h; i++) {
+    pixel = bmp->bits + bmp->width * y;
+    pixel += x;
+    for (i = 0; i < h; i++, pixel += bmp->width) {
         if (*pixel != key) {
             return 1;
         }
-        pixel += bmp->width;
     }
     return 0;
 }
@@ -380,24 +380,24 @@ s32 NuFntPrintChar(char c)
     font = NuFntCur;
     if (font != 0) {
         ch = &font->chars[font->map.index[(u8)c]];
-        *rndrstream_2d->cur.f++ = ch->u0;
-        *rndrstream_2d->cur.f++ = ch->v0;
-        *rndrstream_2d->cur.f++ = 1.0f;
-        rndrstream_2d->cur.i++;
-        *rndrstream_2d->cur.i++ = font_x;
-        *rndrstream_2d->cur.i++ = font_y;
-        *rndrstream_2d->cur.i++ = 0;
-        *rndrstream_2d->cur.i++ = 0;
-        *rndrstream_2d->cur.f++ = ch->u1;
-        *rndrstream_2d->cur.f++ = ch->v1;
-        *rndrstream_2d->cur.f++ = 1.0f;
-        rndrstream_2d->cur.i++;
+        *rndrstream_2d->ptr.f32++ = ch->u0;
+        *rndrstream_2d->ptr.f32++ = ch->v0;
+        *rndrstream_2d->ptr.f32++ = 1.0f;
+        rndrstream_2d->ptr.s32++;
+        *rndrstream_2d->ptr.s32++ = font_x;
+        *rndrstream_2d->ptr.s32++ = font_y;
+        *rndrstream_2d->ptr.s32++ = 0;
+        *rndrstream_2d->ptr.s32++ = 0;
+        *rndrstream_2d->ptr.f32++ = ch->u1;
+        *rndrstream_2d->ptr.f32++ = ch->v1;
+        *rndrstream_2d->ptr.f32++ = 1.0f;
+        rndrstream_2d->ptr.s32++;
         w = ((ch->width - 1) << 4) * font_xscale >> 4;
         h = ((ch->height - 1) << 3) * font_yscale >> 4;
-        *rndrstream_2d->cur.i++ = font_x + w;
-        *rndrstream_2d->cur.i++ = font_y + h;
-        *rndrstream_2d->cur.i++ = 0;
-        *rndrstream_2d->cur.i++ = 0;
+        *rndrstream_2d->ptr.s32++ = font_x + w;
+        *rndrstream_2d->ptr.s32++ = font_y + h;
+        *rndrstream_2d->ptr.s32++ = 0;
+        *rndrstream_2d->ptr.s32++ = 0;
         return w;
     }
     return 0;
@@ -417,19 +417,19 @@ s32 NuFntPrintV(char *fmt, va_list args)
         len = 0;
         NuRndrStreamLink(rndrstream_2d);
         NuRndrStreamAddMtl(rndrstream_2d, NuFntCur->mtl);
-        rndrstream_2d->cur.b = vpDmaTag_CntEx(rndrstream_2d->cur.b, 0x10000000,
+        rndrstream_2d->ptr.u8 = vpDmaTag_CntEx(rndrstream_2d->ptr.u8, 0x10000000,
                                               0x50000000);
-        rndrstream_2d->cur.b[-0xE] = 0xE;
-        rndrstream_2d->cur.b -= 4;
-        rndrstream_2d->cur.b = vtBeginDirect(rndrstream_2d->cur.b, 0);
-        rndrstream_2d->cur.b = gsBeginGifPacket(rndrstream_2d->cur.b,
+        rndrstream_2d->ptr.u8[-0xE] = 0xE;
+        rndrstream_2d->ptr.u8 -= 4;
+        rndrstream_2d->ptr.u8 = vtBeginDirect(rndrstream_2d->ptr.u8, 0);
+        rndrstream_2d->ptr.u8 = gsBeginGifPacket(rndrstream_2d->ptr.u8,
                                                 0, 1, 0, 0, 0, 1, 1);
-        *rndrstream_2d->cur.i++ = font_pen[0];
-        *rndrstream_2d->cur.i++ = font_pen[1];
-        *rndrstream_2d->cur.i++ = font_pen[2];
-        *rndrstream_2d->cur.i++ = font_pen[3];
-        rndrstream_2d->cur.b = gsCloseGifPacket(rndrstream_2d->cur.b);
-        rndrstream_2d->cur.b = gsBeginGifPacket(rndrstream_2d->cur.b,
+        *rndrstream_2d->ptr.s32++ = font_pen[0];
+        *rndrstream_2d->ptr.s32++ = font_pen[1];
+        *rndrstream_2d->ptr.s32++ = font_pen[2];
+        *rndrstream_2d->ptr.s32++ = font_pen[3];
+        rndrstream_2d->ptr.u8 = gsCloseGifPacket(rndrstream_2d->ptr.u8);
+        rndrstream_2d->ptr.u8 = gsBeginGifPacket(rndrstream_2d->ptr.u8,
                                                 0, 1, 1, 6, 0, 2, 2, 5);
         vsprintf(buf, fmt, args);
         left = font_x;
@@ -462,10 +462,10 @@ s32 NuFntPrintV(char *fmt, va_list args)
                 break;
             }
         }
-        rndrstream_2d->cur.b = gsCloseGifPacket(rndrstream_2d->cur.b);
-        rndrstream_2d->cur.b = vtCloseDirect(rndrstream_2d->cur.b);
-        rndrstream_2d->cur.b = vpDmaTag_Close(rndrstream_2d->cur.b);
-        rndrstream_free = vpDmaTag_Next(rndrstream_2d->cur.b, 0);
+        rndrstream_2d->ptr.u8 = gsCloseGifPacket(rndrstream_2d->ptr.u8);
+        rndrstream_2d->ptr.u8 = vtCloseDirect(rndrstream_2d->ptr.u8);
+        rndrstream_2d->ptr.u8 = vpDmaTag_Close(rndrstream_2d->ptr.u8);
+        rndrstream_free = vpDmaTag_Next(rndrstream_2d->ptr.u8, 0);
     }
     return NuFntPrintLength;
 }

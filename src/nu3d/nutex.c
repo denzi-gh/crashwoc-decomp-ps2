@@ -592,36 +592,36 @@ int NuTexCreateStream(struct nutex_s *spec) {
 }
 
 
-void NuTexAccomodateRS(struct nurndrstream_s *rs, int tex) {
+void NuTexAccomodateRS(struct rndrstream_s *rs, int tex) {
     u32 *prev;
 
-    gs_topfree = rs->zbuf;
+    gs_topfree = rs->gs_ptr;
     if (nutex_use_path3) {
-        prev = rs->cur.w;
-        rs->cur.b = vpDmaTag_Next(prev, 0);
-        rs->cur.b[3 - DMA_TAG_SIZE] |= 0x80;
-        rs->cur.b[-0xE] = 0x18;
-        rs->cur.w[0] = 0;
-        rs->cur.w[1] = 0xACEB00B5;
-        rs->cur.b += 16;
-        if (rs->txtr_end) {
-            rs->txtr_end[1] = (u32)rs->cur.b;
+        prev = rs->ptr.u32;
+        rs->ptr.u8 = vpDmaTag_Next(prev, 0);
+        rs->ptr.u8[3 - DMA_TAG_SIZE] |= 0x80;
+        rs->ptr.u8[-0xE] = 0x18;
+        rs->ptr.u32[0] = 0;
+        rs->ptr.u32[1] = 0xACEB00B5;
+        rs->ptr.u8 += 16;
+        if (rs->t_ptr.u32) {
+            rs->t_ptr.u32[1] = (u32)rs->ptr.u8;
         } else {
-            rs->txtr_start = rs->cur.w;
+            rs->t_base.u32 = rs->ptr.u32;
         }
-        rs->cur.b = NuTexAccomodate(rs->cur.b, tex);
-        rs->txtr_end = rs->cur.w;
-        rs->cur.b = vpDmaTag_Next(rs->cur.b, 0);
-        rs->cur.b[3 - DMA_TAG_SIZE] |= 0x80;
-        rs->cur.b[-0xE] = 0x19;
-        rs->cur.w[0] = (u32)prev;
-        rs->cur.w[1] = 0xBABEF00D;
-        rs->cur.b += 16;
-        prev[1] = (u32)rs->cur.b;
+        rs->ptr.u8 = NuTexAccomodate(rs->ptr.u8, tex);
+        rs->t_ptr.u32 = rs->ptr.u32;
+        rs->ptr.u8 = vpDmaTag_Next(rs->ptr.u8, 0);
+        rs->ptr.u8[3 - DMA_TAG_SIZE] |= 0x80;
+        rs->ptr.u8[-0xE] = 0x19;
+        rs->ptr.u32[0] = (u32)prev;
+        rs->ptr.u32[1] = 0xBABEF00D;
+        rs->ptr.u8 += 16;
+        prev[1] = (u32)rs->ptr.u8;
     } else {
-        rs->cur.b = NuTexAccomodate(rs->cur.b, tex);
+        rs->ptr.u8 = NuTexAccomodate(rs->ptr.u8, tex);
     }
-    rs->zbuf = gs_topfree;
+    rs->gs_ptr = gs_topfree;
 }
 
 

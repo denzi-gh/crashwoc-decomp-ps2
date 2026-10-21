@@ -208,7 +208,7 @@ void InitGlass(void)
     glass_mtl->diffuse.b = 1.0f;
     glass_mtl->alpha = 0.5f;
     NuMtlUpdate(glass_mtl);
-    glass_mtl->rs.mpgtag = glass_fxcode;
+    glass_mtl->rs.mpg = glass_fxcode;
     glass_mtl->vuattr.f32[0] =
         ((PS2_REZ_W * 0.5f) * 16.0 - 32768.0) / (NuPower2(PS2_REZ_W) * 16.0);
     glass_mtl->vuattr.f32[1] =
@@ -256,7 +256,7 @@ void GlassGivenMaterial(struct numtl_s *mtl)
     mtl->uanmmode = 0;
     mtl->sort_pri = 0x7FEF;
     NuMtlUpdate(mtl);
-    mtl->rs.mpgtag = glass_fxcode;
+    mtl->rs.mpg = glass_fxcode;
     mtl->vuattr.f32[0] =
         ((PS2_REZ_W * 0.5f) * 16.0 - 32768.0) / (NuPower2(PS2_REZ_W) * 16.0);
     mtl->vuattr.f32[1] =
@@ -307,7 +307,7 @@ void ProcessGlass(s32 paused)
     glass_mtl->diffuse = glass_col[0];
     NuMtlUpdateEx(glass_spec_mtl, 0);
     NuMtlUpdateEx(glass_mtl, 2);
-    glass_mtl->rs.mpgtag = glass_fxcode;
+    glass_mtl->rs.mpg = glass_fxcode;
 }
 
 

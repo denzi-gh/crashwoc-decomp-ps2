@@ -318,7 +318,9 @@ void Update3DFontObjects(void) {
     }
 }
 
-s32 CombinationCharacterBD(char c0, char c1) {
+/* Inlined into Text3D; GCC emits the out-of-line copies at the end of the
+ * unit, which is why both follow Text3D in retail. */
+inline s32 CombinationCharacterBD(char c0, char c1) {
     char *p;
 
     for (p = D_005CD7B0; *p != '\0'; p += 2) {
@@ -329,7 +331,7 @@ s32 CombinationCharacterBD(char c0, char c1) {
     return 0;
 }
 
-s32 CombinationCharacterBC(char c0, char c1) {
+inline s32 CombinationCharacterBC(char c0, char c1) {
     char *p;
 
     for (p = D_005CD808; *p != '\0'; p += 2) {
@@ -365,30 +367,25 @@ void Text3D(char *txt, f32 x, f32 y, f32 z, f32 scalex, f32 scaley, f32 scalez,
     }
     font3d_dx = 0.0f;
     font3d_dy = 0.0f;
-    font3d_xright = x;
-    font3d_xmid = x;
-    font3d_xleft = x;
-    font3d_ybottom = y;
-    font3d_ymid = y;
-    font3d_ytop = y;
+    font3d_xleft = font3d_xmid = font3d_xright = x;
+    font3d_ytop = font3d_ymid = font3d_ybottom = y;
     if (txt == 0) {
         return;
     }
     l = strlen(txt);
-    if (l <= 0) {
+    if (l < 1) {
         return;
     }
 
-    w = 0.0f;
-    for (i = 0; txt[i] != 0; i++) {
-        c = txt[i];
-        if (c == '#') {
+    for (i = 0, w = 0.0f; txt[i] != 0; i++) {
+        if (txt[i] == '#') {
             if (txt[i + 1] != 0) {
                 i++;
             }
         } else if (Game.language == 0x63) {
-            c1 = txt[i + 1];
-            if (c1 != 0) {
+            if (txt[i + 1] != 0) {
+                c1 = txt[i + 1];
+                c = txt[i];
                 f = 1.0f;
                 if (c1 == ' ') {
                     if ((c == ':') || (c == '.')) {
@@ -397,8 +394,7 @@ void Text3D(char *txt, f32 x, f32 y, f32 z, f32 scalex, f32 scaley, f32 scalez,
                         f = 12.0f;
                     }
                 } else if (((c == '8' || c == '9') || (c >= 'A' && c <= 'F')) &&
-                           ((c1 >= '0' && c1 <= '9') ||
-                            (c1 >= 'A' && c1 <= 'F'))) {
+                           ((c1 >= '0' && c1 <= '9') || (c1 >= 'A' && c1 <= 'F'))) {
                     f = FONT3D_JSCALEDX;
                     if (txt[i + 2] == 'B' &&
                         ((txt[i + 3] == 'D' && CombinationCharacterBD(c, c1)) ||
@@ -410,9 +406,9 @@ void Text3D(char *txt, f32 x, f32 y, f32 z, f32 scalex, f32 scaley, f32 scalez,
                 i++;
             }
         } else {
-            if ((c == ':') || (c == '.')) {
+            if ((txt[i] == ':') || (txt[i] == '.')) {
                 w += 0.5f;
-            } else if (c == 'p') {
+            } else if (txt[i] == 'p') {
                 w += 12.0f;
             } else {
                 w += 1.0f;
@@ -424,20 +420,22 @@ void Text3D(char *txt, f32 x, f32 y, f32 z, f32 scalex, f32 scaley, f32 scalez,
     font3d_dx = dx;
     dy = (scaley * D_0062E358) * FONT3DYMUL;
     font3d_dy = dy;
-    if ((align & 5) == 4) {
+    i = align & 5;
+    if (i == 4) {
         y = y + dy * 0.5f;
-    } else if ((align & 5) == 1) {
+    } else if (i == 1) {
         y = y - dy * 0.5f;
     }
-    if ((align & 0xA) == 8) {
+    i = align & 0xA;
+    if (i == 8) {
         x = x - (dx * w - dx * 0.5f);
-    } else if ((align & 0xA) == 2) {
+    } else if (i == 2) {
         x = x + dx * 0.5f;
     } else {
         x = x - (dx * w * 0.5f - dx * 0.5f);
     }
-    idx = ((u32)colour < 5) ? colour : 0;
-    nurndr_forced_mtl_table = &Font3DMtlTab[idx][0];
+    i = ((u32)colour < 5) ? colour : 0;
+    nurndr_forced_mtl_table = &Font3DMtlTab[i][0];
     font3d_xleft = x - dx * 0.5f;
 
     for (i = 0; i < l; i++) {
@@ -446,10 +444,10 @@ void Text3D(char *txt, f32 x, f32 y, f32 z, f32 scalex, f32 scaley, f32 scalez,
         if (Game.language == 0x63) {
             c1 = txt[i + 1];
             if (c1 == 0) {
-                break;
+                goto Finish;
             }
             if ((c != '#') && (c1 != ' ')) {
-                goto advance;
+                goto Skip;
             }
         }
         if ((c >= 0) || (c == (char)0xF8) || (c == (char)0xFE)) {
@@ -466,8 +464,8 @@ void Text3D(char *txt, f32 x, f32 y, f32 z, f32 scalex, f32 scaley, f32 scalez,
                     if (idx != -1) {
                         nurndr_forced_mtl_table = &Font3DMtlTab[idx][0];
                     }
+                    i++;
                 }
-                i++;
                 continue;
             } else if ((c >= 'a' && c <= 'z') && (Font3DRemap[c] == -1)) {
                 obj = &Font3DObjTab[c - 'a'];
@@ -478,7 +476,6 @@ void Text3D(char *txt, f32 x, f32 y, f32 z, f32 scalex, f32 scaley, f32 scalez,
                                 obj->scale * scalex, obj->scale * scaley,
                                 obj->scale * scalez, 0, 0, 0,
                                 ObjTab[obj->i].obj.scene, ObjTab[obj->i].obj.special, 1);
-                            goto advance;
                         }
                     } else if ((obj->flags & 1) != 0) {
                         DrawPanel3DCharacter(obj->i, x, y, z,
@@ -487,50 +484,47 @@ void Text3D(char *txt, f32 x, f32 y, f32 z, f32 scalex, f32 scaley, f32 scalez,
                             obj->anim_time, 1);
                     }
                 }
-                goto advance;
             } else {
                 idx = Font3DRemap[c];
-                if (idx == -1) {
-                    goto advance;
+                if (idx != -1) {
+                    if (c == 'x' || c == 't' || c == 'o' || c == 's') {
+                        f = 1.0f;
+                    } else {
+                        f = 4.0f;
+                    }
+                    if ((c == ':') || (c == '.')) {
+                        x0 = x - dx * 0.25f;
+                    } else if (c == 'p') {
+                        x0 = x + dx * 5.5f;
+                    } else {
+                        x0 = x;
+                    }
+                    if (c == (char)0xFE) {
+                        x0 = x0 - dx * D_0062E35C;
+                        y0 = y + dy * D_0062E360;
+                    } else {
+                        y0 = y;
+                    }
+                    DrawPanel3DObject(-1, x0, y0, z, FONT3DSIZE * scalex,
+                        FONT3DSIZE * scaley, (FONT3DSIZE * scalez) * f, 0, 0, 0,
+                        font3d_scene, Font3DTab[idx].obj.special, 1);
                 }
-                if (c == 'x' || c == 't' || c == 'o' || c == 's') {
-                    f = 1.0f;
-                } else {
-                    f = 4.0f;
-                }
-                if ((c == ':') || (c == '.')) {
-                    x0 = x - dx * 0.25f;
-                } else if (c == 'p') {
-                    x0 = x + dx * 5.5f;
-                } else {
-                    x0 = x;
-                }
-                if (c == (char)0xFE) {
-                    x0 = x0 - dx * D_0062E35C;
-                    y0 = y + dy * D_0062E360;
-                } else {
-                    y0 = y;
-                }
-                DrawPanel3DObject(-1, x0, y0, z, FONT3DSIZE * scalex,
-                    FONT3DSIZE * scaley, (FONT3DSIZE * scalez) * f, 0, 0, 0,
-                    font3d_scene, Font3DTab[idx].obj.special, 1);
-                goto advance;
             }
         } else if (c < 0) {
             accent = RemapAccentedCharacter(&c);
-            if (accent == -1) {
-                goto advance;
-            }
-            if (Font3DRemap[c] != -1) {
+            if (accent != -1) {
+                idx = Font3DRemap[c];
+                if (idx != -1) {
+                    DrawPanel3DObject(-1, x, y, z, FONT3DSIZE * scalex,
+                        FONT3DSIZE * scaley, (FONT3DSIZE * scalez) * 4.0f, 0, 0, 0,
+                        font3d_scene, Font3DTab[idx].obj.special, 1);
+                }
                 DrawPanel3DObject(-1, x, y, z, FONT3DSIZE * scalex,
-                    FONT3DSIZE * scaley, (FONT3DSIZE * scalez) * 4.0f, 0, 0, 0,
-                    font3d_scene, Font3DTab[Font3DRemap[c]].obj.special, 1);
+                    FONT3DSIZE * scaley, (FONT3DSIZE * scalez) * 6.0f, 0, 0, 0,
+                    font3d_scene, Font3DAccentTab[accent].obj.special, 1);
             }
-            DrawPanel3DObject(-1, x, y, z, FONT3DSIZE * scalex,
-                FONT3DSIZE * scaley, (FONT3DSIZE * scalez) * 6.0f, 0, 0, 0,
-                font3d_scene, Font3DAccentTab[accent].obj.special, 1);
         }
-    advance:
+    Skip:
         if ((c == ':') || (c == '.')) {
             x = x + (dx * 0.5f) * xpulse;
         } else if (c == 'p') {
@@ -543,12 +537,11 @@ void Text3D(char *txt, f32 x, f32 y, f32 z, f32 scalex, f32 scaley, f32 scalez,
         }
     }
 
-    nurndr_forced_mtl_table = 0;
-    y0 = dy * 0.5f;
-    font3d_ybottom = y - y0;
-    font3d_ytop = y + y0;
-    x0 = x - dx * 0.5f;
-    font3d_xright = x0;
+Finish:
+    font3d_xright = x - dx * 0.5f;
     font3d_xmid = (font3d_xleft + font3d_xright) * 0.5f;
+    font3d_ytop = y + dy * 0.5f;
+    font3d_ybottom = y - dy * 0.5f;
     font3d_ymid = (font3d_ytop + font3d_ybottom) * 0.5f;
+    nurndr_forced_mtl_table = 0;
 }
