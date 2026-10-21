@@ -45,6 +45,7 @@ int vsprintf(char *buf, const char *fmt, va_list args);
 
 int abs(int x);
 int rand(void);
+void srand(unsigned int seed);
 int atoi(const char *s);
 double atof(const char *s);
 void *malloc(size_t n);

@@ -1781,7 +1781,7 @@ int main(int argc, char** argv) {
         NuMtlRelease();
         NuGobjInit();
         InstInit();
-        if (cutmovie != -1) {
+        while (cutmovie != -1) {
             pad_play = 0;
             NuSoundKillAllAudio();
             InitPadPlayRecord(PadRecordPath, 0, 30000, &PadData);
