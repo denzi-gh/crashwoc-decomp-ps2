@@ -931,7 +931,7 @@ int NuSoundStopStream(int stream)
 }
 
 
-void NuSoundLocalSet(struct nusound_filename_info_s *sfx_info, int unused, int first)
+void NuSoundLocalSet(NUSOUND_FILENAME_INFO *sfx_info, int unused, int first)
 {
     SOUND_RestoreLocalStart();
     fileinfo_cnt = first;

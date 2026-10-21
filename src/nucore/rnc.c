@@ -143,7 +143,19 @@ void NuPPUnpack(unsigned char *src, unsigned char *out) {
 
     src += 4;
     sp = &stack[64];
-    *(unsigned int *)sp = (src[0] << 24) | (src[1] << 16) | (src[2] << 8) | src[3];
+    /* the header bytes go through the working variables, which keeps the
+     * temps off $a0/$a1 so src and out stay in their argument registers */
+    bits = src[0];
+    even = src[1];
+    odd = src[2];
+    carry = src[3];
+    bits <<= 24;
+    even <<= 16;
+    odd <<= 8;
+    bits |= even;
+    bits |= odd;
+    bits |= carry;
+    *(unsigned int *)sp = bits;
     *--sp = 0;
     in = src;
     in += 14;
@@ -334,8 +346,8 @@ chunkend:
     }
     if (carry) goto next;
     for (bits = *sp++; bits != 0; bits--) {
-        len = *sp++;
-        *out++ = len;
+        even = *sp++;
+        *out++ = even;
     }
 }
 
