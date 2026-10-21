@@ -316,7 +316,6 @@ static inline void *CloseUnpack(void *pkt) {
 float *AddPointDataToPacket(float *pkt, SkinPrimDef *defs, int prim, int vtx, int last) {
     float *start;
     VifWord *hdr;
-    VifWord *wp;
     VifWord weights[8];
     VifWord w;
     u8 *colour;
@@ -339,24 +338,23 @@ float *AddPointDataToPacket(float *pkt, SkinPrimDef *defs, int prim, int vtx, in
     maxweight = 0.0f;
     maxix = 0;
     cnt = 0;
-    wp = weights;
     for (i = 0; i < 8; i++) {
         if (defs[prim].mtxid[i] != -1) {
             weight = defs[prim].weights[vtx][i];
-            cnt++;
             w.weight = weight;
             w.tag &= 0xF8;
             w.tag |= i;
-            *wp++ = w;
+            weights[cnt] = w;
+            cnt++;
             if (maxweight < weight) {
                 maxweight = weight;
                 maxix = i;
             }
         }
     }
+    pktvid[pkttot] = defs[prim].vid[vtx];
     pktprim[pkttot] = &defs[prim];
     pktvrtix[pkttot] = vtx;
-    pktvid[pkttot] = defs[prim].vid[vtx];
     *pkt++ = defs[prim].vrts[vtx].pnt.x;
     *pkt++ = defs[prim].vrts[vtx].pnt.y;
     *pkt++ = defs[prim].vrts[vtx].pnt.z;
@@ -378,7 +376,8 @@ float *AddPointDataToPacket(float *pkt, SkinPrimDef *defs, int prim, int vtx, in
     hdr[4].tag = last != 0;
     pkt += 5;
     if (pktvtxcolour) {
-        colour = (u8 *)&defs[prim].vrts[vtx].diffuse;
+        colour = (u8 *)&defs[prim].vrts->diffuse;
+        colour += vtx * sizeof(struct nuvtx_tc1_s);
         *pkt++ = colour[0] >> pktcolourshift;
         *pkt++ = colour[1] >> pktcolourshift;
         *pkt++ = colour[2] >> pktcolourshift;
@@ -397,15 +396,16 @@ float *AddPointDataToPacket(float *pkt, SkinPrimDef *defs, int prim, int vtx, in
         up = CloseUnpack(start);
         qwc = (pktvtxcolour ? pkttot * 5 : pkttot * 4) + 3;
         up[0] = qwc | 0x61028000;
-        h = (u16 *)(up + 1);
+        pkt = (float *)(up + 1);
+        h = (u16 *)pkt;
         *h++ = PrevPktIdx(defs[prim].vid[vtx]) + 1;
         *h++ = last != 0;
-        up = (u32 *)h;
-        pktupaddr = up;
+        pkt = (float *)h;
+        pktupaddr = (u32 *)pkt;
         pkttot++;
-        *up++ = pkttot;
+        *(u32 *)pkt = pkttot;
         pktcnt = 0;
-        pkt = (float *)up;
+        pkt++;
     } else {
         pkttot++;
         pktcnt++;
@@ -521,8 +521,8 @@ int FindStripNext(int cur, int base, int cnt, int mode, int *used) {
     int k;
     int next;
     int count;
-    int found;
     int m;
+    int vtx;
 
     best = -1;
     bestcount = 0;
@@ -544,30 +544,30 @@ int FindStripNext(int cur, int base, int cnt, int mode, int *used) {
         }
         return best;
     }
-    found = -1;
+    next = -1;
     for (i = 0; i < cnt; i++) {
         if (i == cur - base || used[i] > 0) {
             continue;
         }
         k = i + base;
-        for (j = 0; j < 3; j++) {
-            if (stripprimdefs[k].vid[j] == ptcache[0]) {
+        for (vtx = 0; vtx < 3; vtx++) {
+            if (stripprimdefs[k].vid[vtx] == ptcache[0]) {
                 for (m = 0; m < 3; m++) {
                     if (stripprimdefs[k].vid[m] != ptcache[1]) {
                         continue;
                     }
-                    found = k;
+                    next = k;
                     goto done;
                 }
             }
         }
-        found = -1;
+        next = -1;
     done:
-        if (found != -1) {
+        if (next != -1) {
             break;
         }
     }
-    return found;
+    return next;
 }
 
 
@@ -867,6 +867,7 @@ void NuPs2CreateSkinNorm(struct nugobj_s *gobj) {
 
 
 void NuPs2CreateSkinSmoothOld(struct nugobj_s *gobj) {
+    int i;
     struct nugeom_s *geom;
     struct nuprim_s *prim;
     struct nuvtx_tc1_s *verts;
@@ -878,7 +879,6 @@ void NuPs2CreateSkinSmoothOld(struct nugobj_s *gobj) {
     int cnt;
     int common;
     int peak;
-    int i;
 
     start = skinbuffer_free;
     dupes = 0;
