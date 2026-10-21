@@ -7,6 +7,8 @@
  *   0x001057b8 NuFreeHigh
  */
 
+#include "nu_types.h"
+
 #include "nucore/nuerror.h"
 
 typedef struct NuHighBlock {
@@ -18,7 +20,7 @@ typedef struct NuHighBlock {
 static NuHighBlock *freep = 0;
 
 
-void NuAllocHighInit(int base, int size)
+void NuAllocHighInit(nusintptr base, int size)
 {
     NuHighBlock *block;
 

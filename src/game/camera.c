@@ -641,12 +641,12 @@ inline s32 InSplineArea(struct nuvec_s *pos, struct nugspline_s *spl) {
     s32 j;
 
     for (i = 1; i < spl->len; i++) {
-        p1 = (struct nuvec_s *)((s32)spl->pts + i * spl->ptsize);
+        p1 = (struct nuvec_s *)((nusintptr)spl->pts + i * spl->ptsize);
         j = i + 1;
         if (j == spl->len) {
             j = 1;
         }
-        p0 = (struct nuvec_s *)((s32)spl->pts + j * spl->ptsize);
+        p0 = (struct nuvec_s *)((nusintptr)spl->pts + j * spl->ptsize);
         if (!((pos->x - p1->x) * (p0->z - p1->z) +
               (pos->z - p1->z) * (p1->x - p0->x) >= 0.0f)) {
             return 0;

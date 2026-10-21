@@ -180,12 +180,12 @@ static inline union variptr_u GScnTempAlloc(int size)
 
     if (buffer_tmpstart.voidptr != 0) {
         if (buffer_tmpstart.charptr + size + 4 < buffer_tmpptr.charptr) {
-            buffer_tmpptr.charptr = (char *)(((int)buffer_tmpptr.charptr - size) & ~3);
+            buffer_tmpptr.charptr = (char *)(((nusintptr)buffer_tmpptr.charptr - size) & ~3);
             buf.charptr = buffer_tmpptr.charptr;
             return buf;
         }
     } else if (*buffer_freeptr + size + 4 < buffer_tmpptr.charptr) {
-        buffer_tmpptr.charptr = (char *)(((int)buffer_tmpptr.charptr - size) & ~3);
+        buffer_tmpptr.charptr = (char *)(((nusintptr)buffer_tmpptr.charptr - size) & ~3);
         buf.charptr = buffer_tmpptr.charptr;
         return buf;
     }
@@ -200,7 +200,7 @@ static inline union variptr_u GScnBufferAlloc(int size, int align)
     union variptr_u ret;
     char *ptr;
 
-    ptr = (char *)(((int)*buffer_freeptr + align - 1) & ~(align - 1));
+    ptr = (char *)(((nusintptr)*buffer_freeptr + align - 1) & ~(align - 1));
     if (ptr + size < buffer_tmpptr.charptr) {
         *buffer_freeptr = ptr + size;
         ret.charptr = ptr;

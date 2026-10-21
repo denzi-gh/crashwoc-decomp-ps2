@@ -177,4 +177,11 @@ extern struct debkeydatatype_s debkeydata[256];
 extern struct debinfo_s *debtab[128];
 extern struct debrender_s ParticleChunkRenderStack[256];
 
+#ifdef NW_HOST
+/* Retail calls these without a prototype in scope (game/main.c); only the host declares them. */
+/* Callers pass a flag it ignores (as retail does). */
+void DebrisDraw();
+void DebrisSetup(void);
+#endif
+
 #endif /* GAMELIB_DEBRIS_H */

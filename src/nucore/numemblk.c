@@ -11,6 +11,7 @@
  */
 
 #include "nu_libc.h"
+#include "nu_types.h"
 
 #include "nucore/nuerror.h"
 
@@ -50,7 +51,7 @@ NuMemBlk *NuMemBlkCreateHigh(unsigned int size, int count, int align)
     blk->blksize = blksize;
     blk->count = count;
     blk->nfree = count;
-    if ((int)blk & align) {
+    if ((nusintptr)blk & align) {
         NuErrorProlog(numemblk_file, 0x59)(msg_assert);
     }
     stride = blksize / 4;
@@ -79,7 +80,7 @@ NuMemBlk *NuMemBlkCreate(unsigned int size, int count, int align)
     blk = NuMemAllocFn(((align + 16) & ~align) + blksize * count, numemblk_file, 0x79);
     stride = blksize / 4;
     blk->freelist = (void **)(blk + 1);
-    blk->freelist = (void **)(((int)blk->freelist + align) & ~align);
+    blk->freelist = (void **)(((nusintptr)blk->freelist + align) & ~align);
     blk->blksize = blksize;
     blk->count = count;
     blk->nfree = count;

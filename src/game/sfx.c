@@ -312,7 +312,7 @@ void UpdateGameSfx(void) {
             p->wait--;
         }
         p++;
-    } while ((s32)p < (s32)&SfxTabGLOBAL[0xC5]);
+    } while ((nusintptr)p < (nusintptr)&SfxTabGLOBAL[0xC5]);
 
     if (CurSfxTabLocal == 0) {
         return;

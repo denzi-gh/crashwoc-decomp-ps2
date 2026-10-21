@@ -107,7 +107,7 @@ inline void SetLights(struct nucolour3_s *vCOL0, struct nuvec_s *vDIR0,
                       struct nucolour3_s *vCOL2, struct nuvec_s *vDIR2,
                       struct nuvec_s *vAMB) {
     NuRndrSetDirectionalLights(vDIR0, vCOL0, vDIR1, vCOL1, vDIR2, vCOL2);
-    NuRndrSetAmbientLight(vAMB);
+    NuRndrSetAmbientLight((struct nucolour3_s *)vAMB);
 }
 
 inline void UpdateGlobals(struct Nearest_Light_s *nl) {
@@ -959,7 +959,7 @@ void SetLevelLights(void) {
         creditsdircol[2].r = intensity;
         NuRndrSetDirectionalLights(&creditsdir[0], &creditsdircol[0], &creditsdir[1],
                                    &creditsdircol[1], &creditsdir[2], &creditsdircol[2]);
-        NuRndrSetAmbientLight(&creditsrgb);
+        NuRndrSetAmbientLight((struct nucolour3_s *)&creditsrgb);
     } else {
         SetLights(&lcol[0], &ldir[0], &lcol[1], &ldir[1], &lcol[2], &ldir[2], &acol);
     }

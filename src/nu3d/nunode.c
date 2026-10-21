@@ -173,7 +173,7 @@ static inline void resolveReferenceNodes(struct nunode_s *root, struct nunode_s 
 
     xform = (struct nutransformnode_s *)node;
     if (node->type == NUNODETYPE_TRANSFORM && (xform->flags & 2)) {
-        node->child = NuNodeFindByID(root, (int)node->data);
+        node->child = NuNodeFindByID(root, (nusintptr)node->data);
         return;
     }
     child = node->child;
@@ -201,7 +201,7 @@ static inline void resolveSkinNodes(struct nunode_s *node, struct nunode_s *root
     if (node->type == NUNODETYPE_SKIN) {
         skin = (struct nuskinnode_s *)node;
         for (i = 0; i < skin->num_joints; i++) {
-            joint = (struct nujointnode_s *)NuNodeFindByID(root, (int)skin->joints[i]);
+            joint = (struct nujointnode_s *)NuNodeFindByID(root, (nusintptr)skin->joints[i]);
             skin->joints[i] = &joint->wmtx;
             NuMtxInv(&skin->joint_mtxs[i], skin->joints[i]);
         }

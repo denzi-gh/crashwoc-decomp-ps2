@@ -19,6 +19,7 @@
  */
 
 #include "nu_libc.h"
+#include "nu_types.h"
 
 #include "nucore/nuerror.h"
 
@@ -44,8 +45,8 @@ typedef struct NuDiscardable {
 } NuDiscardable;
 
 typedef struct NuExternalMemory {
-    unsigned int *cursor;
-    unsigned int end;
+    nuintptr *cursor;
+    nuintptr end;
 } NuExternalMemory;
 
 static char blk_hdr[13] = "MEMBLKHEADER";
@@ -69,10 +70,10 @@ void *NuMemAlloc(int size)
     int end;
 
     if (external) {
-        *external->cursor = (*external->cursor + 15) & 0xFFFFFFF0;
+        *external->cursor = (*external->cursor + 15) & ~(nuintptr)15;
         if (external->end - *external->cursor >= size) {
             ptr = (unsigned char *)*external->cursor;
-            *external->cursor = (unsigned int)(ptr + size);
+            *external->cursor = (nuintptr)(ptr + size);
             return ptr;
         }
         return 0;
@@ -95,7 +96,7 @@ void *NuMemAlloc(int size)
         NuErrorProlog("..\\nu2crash.ps2\\nucore\\numem.c", 0xD6)("NuMemAlloc : Failed to alloc %d bytes!", size);
     }
     memset(ptr, 0, size);
-    end = (int)ptr + size;
+    end = (nusintptr)ptr + size;
     if (highallocaddr < end) {
         highallocaddr = end;
     }
@@ -116,10 +117,10 @@ void *NuMemReAlloc(void *old, int size)
     unsigned char *ptr;
 
     if (external) {
-        *external->cursor = (*external->cursor + 15) & 0xFFFFFFF0;
+        *external->cursor = (*external->cursor + 15) & ~(nuintptr)15;
         if (external->end - *external->cursor >= size) {
             ptr = (unsigned char *)*external->cursor;
-            *external->cursor = (unsigned int)(ptr + size);
+            *external->cursor = (nuintptr)(ptr + size);
             return ptr;
         }
         return 0;
@@ -154,10 +155,10 @@ void *NuMemAllocFn(int size, char *file, int line)
     int end;
 
     if (external) {
-        *external->cursor = (*external->cursor + 15) & 0xFFFFFFF0;
+        *external->cursor = (*external->cursor + 15) & ~(nuintptr)15;
         if (external->end - *external->cursor >= size) {
             ptr = (unsigned char *)*external->cursor;
-            *external->cursor = (unsigned int)(ptr + size);
+            *external->cursor = (nuintptr)(ptr + size);
             return ptr;
         }
         return 0;
@@ -197,10 +198,10 @@ void *NuMemAllocFn(int size, char *file, int line)
         alloc_list = block;
         ptr = data;
     }
-    if ((int)ptr & 15) {
+    if ((nusintptr)ptr & 15) {
         NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\numem.c", 0x151)("Warning misaligned alloc ***************************************************");
     }
-    end = (int)ptr + size;
+    end = (nusintptr)ptr + size;
     if (highallocaddr < end) {
         highallocaddr = end;
     }
@@ -226,10 +227,10 @@ void *NuMemReAllocFn(void *old, int size, char *file, int line)
     if (memexternal) {
         NuErrorProlog("..\\nu2crash.ps2\\nucore\\numem.c", 0x170)("cannot realloc while memexternal active");
         external = memexternal;
-        *external->cursor = (*external->cursor + 15) & 0xFFFFFFF0;
+        *external->cursor = (*external->cursor + 15) & ~(nuintptr)15;
         if (external->end - *external->cursor >= size) {
             ptr = (unsigned char *)*external->cursor;
-            *external->cursor = (unsigned int)(ptr + size);
+            *external->cursor = (nuintptr)(ptr + size);
             return ptr;
         }
         return 0;
@@ -276,10 +277,10 @@ void *NuMemReAllocFn(void *old, int size, char *file, int line)
         alloc_list = block;
         ptr = data;
     }
-    if ((int)ptr & 15) {
+    if ((nusintptr)ptr & 15) {
         NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\numem.c", 0x1AB)("Warning misaligned alloc ***************************************************");
     }
-    end = (int)ptr + size;
+    end = (nusintptr)ptr + size;
     if (highallocaddr < end) {
         highallocaddr = end;
     }

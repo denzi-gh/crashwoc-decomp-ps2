@@ -321,7 +321,7 @@ struct nupad_s *NuPs2OpenPad(s32 port, s32 slot) {
         pad->actalign[0] = 0;
         pad->actalign[1] = 1;
         if (!scePadPortOpen(pad->port, pad->slot,
-                            (void *)(((u32)pad->dmabuf + 0x3F) & 0xFFFFFFC0))) {
+                            (void *)(((nuintptr)pad->dmabuf + 0x3F) & ~(nuintptr)0x3F))) {
             NuMemFreeFn(pad, "..\\nu2crash.ps2\\nups2\\ps2ctl.c", 0xB8);
             pad = 0;
         }

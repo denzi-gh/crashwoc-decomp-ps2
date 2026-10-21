@@ -352,7 +352,7 @@ void NuMtlBuildRenderList(void) {
     for (tex_mtl = mtl; mtl; mtl = mtl->snext) {
         if (tex_mtl) {
             if (last_tag) {
-                last_tag[1] = (u32)rs->ptr.u8;
+                last_tag[1] = (u32)(nuintptr)rs->ptr.u8;
                 last_tag = 0;
             }
             if (tex_mtl->rs.base.u8 && tex_mtl->rs.ptr.u8 != tex_mtl->rs.base.u8
@@ -364,7 +364,7 @@ void NuMtlBuildRenderList(void) {
         }
         if (mtl->rs.base.u8 && mtl->rs.ptr.u8 != mtl->rs.base.u8) {
             if (last_tag) {
-                last_tag[1] = (u32)rs->ptr.u8;
+                last_tag[1] = (u32)(nuintptr)rs->ptr.u8;
             }
             if (mtl->tid != tid) {
                 rs->ptr.u8 = NuTexSet(rs->ptr.u8, mtl->tid, mtl->context);
@@ -377,14 +377,14 @@ void NuMtlBuildRenderList(void) {
             rs->ptr.u8 = vpDmaTag_Call(rs->ptr.u8, mtl);
             rs->ptr.u8 = NuRndrStreamAddZBState(rs->ptr.u8, NuMtlGetZupd(mtl));
             rs->ptr.u8 = vpDmaTag_Next(rs->ptr.u8, mtl->rs.base.u8);
-            last_tag = mtl->rs.ptr.u8;
+            last_tag = (u32 *)mtl->rs.ptr.u8;
             NuRndrStreamResetStream(&mtl->rs, 1);
         }
         mtl->rs.base.u8 = 0;
         mtl->rs.ptr.u8 = 0;
     }
     if (last_tag) {
-        last_tag[1] = (u32)rs->ptr.u8;
+        last_tag[1] = (u32)(nuintptr)rs->ptr.u8;
     }
     rndrstream_free = vpDmaTag_Next(rs->ptr.u8, 0);
 }

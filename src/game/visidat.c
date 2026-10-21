@@ -313,7 +313,7 @@ struct visidata_s *visiLoadData(char *fname, struct nugscn_s *sc, union variptr_
         }
         NuMemFreeFn(fdatabase, visidat_srcfile, 0x15C);
         buff->intaddr = (buff->intaddr + 15) & ~15;
-        NuDebugMsgProlog(visidat_srcfile, 0x15F)(msg_visidata_used, buff->intaddr - (u32)vd);
+        NuDebugMsgProlog(visidat_srcfile, 0x15F)(msg_visidata_used, buff->intaddr - (nuintptr)vd);
     }
     return vd;
 }

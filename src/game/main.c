@@ -69,6 +69,55 @@
 #include "nucore/nucoretypes.h"
 #include "nups2/ps2ctl.h"
 
+#ifdef NW_HOST
+#include "edtools/edmain.h"
+#include "game/ai.h"
+#include "game/bgload.h"
+#include "game/bug.h"
+#include "game/camera.h"
+#include "game/chase.h"
+#include "game/cloudfx.h"
+#include "game/crate.h"
+#include "game/cut.h"
+#include "game/deb3.h"
+#include "game/font3d.h"
+#include "game/game.h"
+#include "game/game_obj.h"
+#include "game/glass.h"
+#include "game/inst.h"
+#include "game/lights.h"
+#include "game/move.h"
+#include "game/panel.h"
+#include "game/particle.h"
+#include "game/sfx.h"
+#include "game/shadcom.h"
+#include "game/vehicle.h"
+#include "game/visi.h"
+#include "gamelib/debris.h"
+#include "nu3d/nufont.h"
+#include "nu3d/nugobj.h"
+#include "nu3d/nurndr.h"
+#include "nucore/nufile.h"
+#include "nucore/numem.h"
+#include "numath/nurand.h"
+#include "nups2/ps2video.h"
+#include "nups2/vu1man.h"
+#include "nusound/nusound.h"
+/* gnu89 inline globals stay out of module headers. */
+struct nufont_s;
+struct nuvec_s;
+struct obj_s;
+void DrawCutMovie(void);
+void GameVP(void);
+s32 KillPlayer(struct obj_s *obj, s32 anim);
+void MaxVP(void);
+void NewCut(s32 i);
+void NuFntDestroy(struct nufont_s *font);
+void ResetTimeTrial(void);
+void RotateDirectionalLight(struct nuvec_s *v, s32 xrot, s32 yrot);
+void UpdateCutMovie(void);
+#endif
+
 extern s32 Level;
 extern s32 level_part_2;
 extern float AtmosphericPressureHackedZ;
@@ -1134,7 +1183,7 @@ void InitLights(void)
 
 extern struct numtl_s *pause_src_mtl;
 extern struct numtl_s *pause_rndr_mtl;
-extern struct nutex_s *pause_rt;
+extern s32 pause_rt;
 
 void ClosePauseRender(void)
 {
@@ -1170,7 +1219,7 @@ extern s32 PS2_REZ_W;
 extern s32 PS2_REZ_H;
 extern s32 screendump;
 extern s32 NuRndrBeginScene(s32 a);
-extern s32 NuRndrBeginSceneEx(struct nutex_s *rt, s32 a, s32 b);
+extern s32 NuRndrBeginSceneEx(s32 target, s32 zbuffer, s32 halfoffset);
 extern void NuRndrEndScene(void);
 extern void NuRndrClear(s32 mode, s32 col, float z);
 extern void NuRndrFlush(s32 flags);
@@ -1184,11 +1233,11 @@ void InitPauseRender(void)
     desc.type = 0xB;
     desc.width = 0x100;
     desc.height = 0x100;
-    pause_rt = NuTexCreate(&desc);
+    pause_rt = NuTexCreate((struct nutex_s *)&desc);
 
     pause_rndr_mtl = NuMtlCreate(1);
     pause_rndr_mtl->alpha = 1.0f;
-    pause_rndr_mtl->tid = (s32)pause_rt;
+    pause_rndr_mtl->tid = pause_rt;
     pause_rndr_mtl->attrib.zmode = 3;
     pause_rndr_mtl->attrib.utc = 1;
     pause_rndr_mtl->attrib.vtc = 1;
@@ -1253,7 +1302,7 @@ void HandlePauseRender(void)
 
 extern void NuMemSetExternal(void *addr, s32 size);
 
-void TextureCreate(char *name, struct numtl_s **mtl, s32 *tid)
+void TextureCreate(char *name, struct numtl_s **mtl, struct nutex_s **tid)
 {
     if (NuFileSize(name) < 0) {
         *mtl = 0;
@@ -1269,13 +1318,13 @@ void TextureCreate(char *name, struct numtl_s **mtl, s32 *tid)
     (*mtl)->attrib.vtc = 1;
     (*mtl)->attrib.colour = 1;
     (*mtl)->attrib.alpha = 0;
-    (*mtl)->tid = (s32)NuTexCreate((struct nutexdesc_s *)*tid);
+    (*mtl)->tid = (s32)NuTexCreate(*tid);
     NuMtlUpdate(*mtl);
     NuMemSetExternal(0, 0);
 }
 
 
-void TextureCreateEx(char *name, struct numtl_s **mtl, s32 *tid, void *extmem, s32 extsize,
+void TextureCreateEx(char *name, struct numtl_s **mtl, struct nutex_s **tid, void *extmem, s32 extsize,
                      union variptr_u *addr, union variptr_u *addrend)
 {
     union variptr_u a;
@@ -1302,7 +1351,7 @@ void TextureCreateEx(char *name, struct numtl_s **mtl, s32 *tid, void *extmem, s
     if (extmem != 0) {
         (*mtl)->tid = NuTexCreateEx(*tid, extmem, extsize);
     } else {
-        (*mtl)->tid = (s32)NuTexCreate((struct nutexdesc_s *)*tid);
+        (*mtl)->tid = (s32)NuTexCreate(*tid);
     }
     NuMtlUpdate(*mtl);
     if (addr != 0) {
@@ -1347,7 +1396,7 @@ void TextureDestroy(struct numtl_s *mtl, struct nutexdesc_s *tex)
     if (mtl != 0) {
         NuMtlDestroy(mtl);
         if (mtl->tid != 0) {
-            NuTexDestroy((struct nutex_s *)mtl->tid);
+            NuTexDestroy(mtl->tid);
         }
     }
     if (tex != 0) {
@@ -1443,7 +1492,7 @@ s32 BGLoadCutMovie(s32 movie)
     do {
         NuSoundUpdate();
         pNuCam->mtx = numtx_identity;
-        NuMtxTranslate(&pNuCam->mtx, &bgload_campos);
+        NuMtxTranslate(&pNuCam->mtx, (struct nuvec_s *)&bgload_campos);
         NuCameraSet(pNuCam);
         if (NuRndrBeginScene(-1) != 0) {
             NuRndrClear(3, 0, 1.0f);
@@ -1567,8 +1616,8 @@ extern struct nulight_s* D_0062FAE8;
 #define main_light D_0062FAE8
 extern struct gtimer_s CutTimer;
 extern struct nupadrec_s PadData;
-extern int foot_u[];
-extern int foot_v[];
+extern float foot_u[];
+extern float foot_v[];
 extern int tempanim_waitaudio;
 extern int cortex_gameover_i;
 extern int gamesfx_channel;
@@ -2165,7 +2214,7 @@ next_game_mode:
                                 visiSetSplineKnot(world_vd, pVIS - world_scene[0]->splines, iVIS);
                             }
                         } else {
-                            ApplyVisiTable(world_scene[0], pCam->pos);
+                            ApplyVisiTable(world_scene[0], &pCam->pos);
                         }
                         if (DRAWWORLDHACK != 0) {
                             DrawWorld();
@@ -2762,13 +2811,13 @@ void BGLoad(void)
 bgload_render_characters:
                     GameSfxLoop(0x8a, (struct nuvec_s *)&m[character]._30);
                     if (bgloadchr[character] != 0 && bgloadanim[character] != 0) {
-                        NuHGobjEvalAnim(bgloadchr[character], bgloadanim[character],
+                        NuHGobjEvalAnim(bgloadchr[character], (struct nuanimdata_s *)bgloadanim[character],
                             bgload_animtime[character], 0, 0, tmtx);
                         NuHGobjRndrMtxDwa(bgloadchr[character], &m[character], 2, layers, tmtx, 0);
                     }
                     if (old_character != -1 && bgloadchr[old_character] != 0 &&
                         bgloadanim[old_character] != 0) {
-                        NuHGobjEvalAnim(bgloadchr[old_character], bgloadanim[old_character],
+                        NuHGobjEvalAnim(bgloadchr[old_character], (struct nuanimdata_s *)bgloadanim[old_character],
                             bgload_animtime[old_character], 0, 0, tmtx);
                         NuHGobjRndrMtxDwa(bgloadchr[old_character], &m[old_character], 2, layers, tmtx, 0);
                     }

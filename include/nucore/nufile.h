@@ -9,4 +9,9 @@ enum nufilemode_e {
     NUFILE_MODE_CNT = 4
 };
 
+#ifdef NW_HOST
+/* Retail calls these without a prototype in scope (game/main.c); only the host declares them. */
+void NuFileInitEx(int deviceid, int rebootiop);
+#endif
+
 #endif
