@@ -105,26 +105,44 @@ class TestEmitNinja(unittest.TestCase):
         self.assertIn("build/pal103/report-current/", report)
         # Data objects are report targets too, so their stamp is a dependency.
         self.assertIn("build/pal103/data_objects.stamp", report)
-        # ...and so are the report data bases.
+        # ...and so are the report data bases, their claimed spans included.
         for edge in self.edges("report_data"):
-            out = edge.split(":")[0].removeprefix("build ")
-            self.assertIn(out, report)
+            outs = edge.split(": report_data ")[0].removeprefix("build ")
+            for out in outs.replace(" | ", " ").split():
+                self.assertIn(out, report)
         (sanitize,) = self.edges("sanitize_report")
         self.assertTrue(sanitize.startswith(
             "build build/pal103/report.public.json: sanitize_report "
             "build/pal103/report.json"))
 
     def test_report_data_edges(self):
-        from gen_report_data import report_data_units
+        from gen_data_objects import load_claims
+        from gen_report_data import claim_stem, report_data_units
         units = report_data_units("pal103")
         edges = self.edges("report_data")
         self.assertEqual(len(edges), len(units))
+        claims = {}
+        for section, start, _end, unit in load_claims("pal103"):
+            claims.setdefault(unit, []).append(
+                f"build/pal103/report-data/{claim_stem(section, start)}.o")
         for (stem, manifest, _complete), edge in zip(units, edges):
-            # Built from the unit's matching hybrid.
-            self.assertTrue(edge.startswith(
-                f"build build/pal103/report-data/{stem}.o: report_data "
-                "build/pal103/matching/"), edge)
+            # Built from the unit's matching hybrid; its claimed spans'
+            # bases are implicit outputs.
+            outs, ins = edge.split(": report_data ")
+            want = f"build build/pal103/report-data/{stem}.o"
+            if stem in claims:
+                want += " | " + " ".join(claims[stem])
+            self.assertEqual(outs, want)
+            self.assertTrue(ins.startswith("build/pal103/matching/"), edge)
             self.assertIn(manifest, edge)
+
+    def test_data_objects_follow_the_claims(self):
+        # Claimed gaps are cut at the manifests' [[claim]]s.
+        (edge,) = self.edges("data_objects")
+        for m in sorted((ROOT / "config" / "pal103" / "status")
+                        .rglob("*.toml")):
+            if "[[claim]]" in m.read_text():
+                self.assertIn(m.relative_to(ROOT).as_posix(), edge)
 
     def test_image_edges(self):
         image_edges = self.edges("link_image")
@@ -252,9 +270,14 @@ class TestEmitObjdiff(unittest.TestCase):
                                  f"build/pal103/current/{u['name']}.o")
 
     def test_data_units(self):
-        from gen_report_data import report_data_units
+        from gen_data_objects import load_claims
+        from gen_report_data import claim_stem, report_data_units
         with_c = {f"data/{stem}": complete
                   for stem, _m, complete in report_data_units("pal103")}
+        # A claimed span is scored against its claimant's linked bytes.
+        for section, start, _end, unit in load_claims("pal103"):
+            with_c[f"data/{claim_stem(section, start)}"] = \
+                with_c[f"data/{unit}"]
         data = self.data_units()
         self.assertGreater(len(data), 0)
         for u in data:
@@ -299,13 +322,14 @@ class TestEmitObjdiff(unittest.TestCase):
 class TestDataUnits(unittest.TestCase):
     """gen_objdiff.data_units mirrors the built data objects, deterministically.
 
-    Pure over the committed data map (no game files, no toolchain)."""
+    Pure over the committed data map and manifests (no game files, no
+    toolchain)."""
 
-    def test_one_unit_per_linked_data_object(self):
+    def test_one_unit_per_data_object(self):
         from gen_objdiff import data_units
-        from gen_data_objects import load_map, object_groups, NOBITS_SECTIONS
-        ranges = [r for r in load_map("pal103")
-                  if r["section"] not in NOBITS_SECTIONS]
+        from gen_data_objects import (load_claims, load_map, object_groups,
+                                      split_claims)
+        ranges = split_claims(load_map("pal103"), load_claims("pal103"))
         stems = [stem for stem, _e in object_groups(ranges)]
         units = data_units("pal103")
         # Exactly one unit per data object, name/target aligned.
