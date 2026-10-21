@@ -142,7 +142,9 @@ reaches into other units' globals by field offset there. Result: 0x4182AB of
 
 Each owned range is one expected data object (`tools/gen_data_objects.py`), so a
 map change regroups the objects but never changes the linked bytes: the image
-SHA gate still holds. `gen_hybrid`'s borrow-by-bytes fallback for a
+SHA gate still holds. `.sbss`/`.bss` ranges get NOBITS sections and a gap with
+manifest `[[claim]]`s is cut into one object per claimed span and per hole;
+both exist for the objdiff report only, the image link never takes them. `gen_hybrid`'s borrow-by-bytes fallback for a
 compiler-private aggregate (`Lit4Mapper._borrow_addr_in_unit`) scans the unit's
 ranges except its `.lit4` pool.
 
@@ -421,13 +423,16 @@ program is visible in [objdiff](https://github.com/encounter/objdiff) from day
 one: all 247 `.text` units (each targeting its expected object; units with a
 manifest diff against `report-current`, the rest against raw `current`), plus one
 unit per linked data object in a dedicated **`data`** progress category. Its
-target is the expected data object (one section and one sized symbol per range).
-A unit whose hybrid provides C data gets a base from
+target is the expected data object (one section and one sized symbol per range,
+`.sbss`/`.bss` included). A unit whose hybrid provides C data gets a base from
 [tools/gen_report_data.py](../tools/gen_report_data.py): the hybrid linked at
-its addresses, keeping only ranges with no retail bytes. A range counts as
-matched data at 100%; a `complete` unit's data unit is complete (linked data).
-Claimed gap spans are not counted. The decomp.dev treemap only renders units
-with `total_code > 0`, so data units count in the metrics but are not tiles.
+its addresses, keeping only ranges with no retail bytes (a `.sbss`/`.bss` range
+counts when the whole-unit hybrid places it). A range counts as matched data at
+100%; a `complete` unit's data unit is complete (linked data). Each claimed
+span of a gap is its own data unit, scored against the claimant's linked piece
+and complete with it; the unclaimed holes stay target-only. The decomp.dev
+treemap only renders units with `total_code > 0`, so data units count in the
+metrics but are not tiles.
 
 `ninja report` scores the objects and [tools/sanitize_report.py](../tools/sanitize_report.py)
 whitelist-filters the result into the only report that is ever published

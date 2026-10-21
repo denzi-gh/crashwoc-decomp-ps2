@@ -12,8 +12,8 @@ WHOLE program is visible from day one:
   * Units whose source file exists in src/ also get a base object (the plain
     compile of the C -- build/<v>/current/...). Units with no C yet have no
     base: objdiff shows their functions at 0%, which is the honest number.
-  * Every linked data object from the committed data map is a unit in the
-    "data" category (see data_units); units with C data get a base.
+  * Every expected data object from the committed data map is a unit in
+    the "data" category (see data_units); units with C data get a base.
   * Builds go through `python tools/dispatch.py ninja <object>`: on Windows
     that forwards into the dev container, so clicking "build" in objdiff
     rebuilds exactly one ninja node wherever objdiff runs.
@@ -117,24 +117,26 @@ def unit_table(version):
 
 
 def data_units(version):
-    """objdiff units for the linked data objects, in data-map order.
+    """objdiff units for the expected data objects, in stem order.
 
-    Target: the expected data object. Units with C data
-    (gen_report_data.report_data_units) get the report-data base and the
-    manifest's `complete`; the rest have no base (0 matched). Names are
-    `data/unit-NNNN` / `data/unassigned/<section>_<addr>`. Pure.
+    Target: the expected data object (.sbss/.bss included; a claimed gap is
+    one unit per claimed span and per hole). Units with C data
+    (gen_report_data.report_data_units) and their claimed spans get the
+    report-data base and the manifest's `complete`; the rest have no base
+    (0 matched). Names are `data/unit-NNNN` /
+    `data/unassigned/<section>_<addr>`. Pure.
     """
     # Imported lazily: gen_data_objects pulls in the binutils path helpers,
     # which are irrelevant here (we never assemble), but keeping the import
     # local documents that this is the only coupling.
-    from gen_data_objects import load_map, object_groups, NOBITS_SECTIONS
+    from gen_data_objects import (load_claims, load_map, object_groups,
+                                  split_claims)
     from gen_report_data import report_data_units
-    ranges = [r for r in load_map(version)
-              if r["section"] not in NOBITS_SECTIONS]
+    ranges = split_claims(load_map(version), load_claims(version))
     with_c = {stem: complete
               for stem, _m, complete in report_data_units(version)}
     units = []
-    for stem, _entries in object_groups(ranges):
+    for stem, entries in object_groups(ranges):
         unit = {
             "name": f"data/{stem}",
             "target_path": f"expected/{version}/data/{stem}.o",
@@ -143,9 +145,10 @@ def data_units(version):
             # one section per range so each range is scored on its own.
             "options": {"combineDataSections": False},
         }
-        if stem in with_c:
+        owner = entries[0].get("claimant", stem)
+        if owner in with_c:
             unit["base_path"] = f"build/{version}/report-data/{stem}.o"
-            unit["metadata"]["complete"] = with_c[stem]
+            unit["metadata"]["complete"] = with_c[owner]
         units.append(unit)
     return units
 

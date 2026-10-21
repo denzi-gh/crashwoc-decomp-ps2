@@ -25,7 +25,8 @@ supplies the spans of gap ranges its manifest `[[claim]]`s (its C strings,
 jump tables and pools that sit past its owned ranges; several units may
 claim spans of one gap); such a gap's expected object is left out, and its
 unclaimed bytes come from a retail incbin. Every range is ASSERTed at its
-address.
+address. The expected objects' `.sbss`/`.bss` sections and the per-span
+objects of claimed gaps exist for the objdiff report only and never link.
 Only `.vutext` still rides as a whole-section incbin (VU microcode, no
 attribution yet).
 
@@ -276,8 +277,9 @@ def build_script(text_addr, text_objs, vutext_vaddr, map_ranges, nobits,
                  f"\"{sec} ends misplaced\");")
         L.append("    }")
     L.append(f"    _gp = 0x{_GP:08X};")
+    # The expected data objects' .sbss/.bss sections are objdiff targets.
     L.append("    /DISCARD/ : { *(.pdr) *(.reginfo) *(.mdebug*) *(.comment) "
-             "*(.gnu.attributes) }")
+             "*(.gnu.attributes) *(.split.sbss_*) *(.split.bss_*) }")
     L.append("}")
     L += [f"{n} = 0x{a:08X};" for n, a in sorted(defsyms.items())]
     return "\n".join(L) + "\n"
