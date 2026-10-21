@@ -215,16 +215,15 @@ void InitChases(void) {
     char parsebuf[32];
     struct nuvec_s pos;
     struct nugspline_s *spl;
-    struct nuvec_s *p0;
-    struct nuvec_s *p1;
     s32 j;
     s32 k;
-    s32 l;
     s32 count;
     s32 base_len;
     s32 name_len;
-    s32 char_idx;
+    s32 i;
     char c;
+    struct nuvec_s *p0;
+    struct nuvec_s *p1;
 
     chase = Chase;
     for (j = 0; j < 3; j++) {
@@ -303,29 +302,29 @@ void InitChases(void) {
                     continue;
                 }
 
-                for (l = 0; l < 24; l++) {
-                    chase->event[j][k].obj[l].special = 0;
+                for (i = 0; i < 24; i++) {
+                    chase->event[j][k].obj[i].special = 0;
                 }
 
                 count = 0;
                 name_len = strlen(txt);
-                char_idx = 0;
+                i = 0;
                 for (; base_len < name_len; base_len++) {
                     c = txt[base_len];
                     if (c == 'x' || base_len == name_len - 1) {
                         if (base_len == name_len - 1) {
-                            parsebuf[char_idx++] = c;
+                            parsebuf[i++] = c;
                         }
-                        parsebuf[char_idx] = 0;
+                        parsebuf[i] = 0;
                         if (NuSpecialFind(world_scene[0], &chase->event[j][k].obj[count], parsebuf) != 0) {
                             count++;
                             if (count == 24) {
                                 break;
                             }
                         }
-                        char_idx = 0;
+                        i = 0;
                     } else {
-                        parsebuf[char_idx++] = c;
+                        parsebuf[i++] = c;
                     }
                 }
             }
@@ -359,10 +358,9 @@ void InitChases(void) {
             chase->i = pc->i;
             chase->i_last = pc->i_last;
             chase->i_next = pc->i_next;
-            chase->status = 1;
             chase->cuboid = pc->cuboid;
+            chase->status = 1;
         }
-
     }
 }
 
