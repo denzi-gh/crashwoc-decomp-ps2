@@ -17,7 +17,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001db900:UpdateTempCharacter"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001dbae8:DrawTempCharacter"
@@ -197,7 +197,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001ea0e0:MakeTimeI"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001ea228:GameTiming"
@@ -277,7 +277,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001ee410:Draw3DCharacter"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001ee7b8:DrawParallax"
@@ -297,7 +297,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001ef0d8:DrawTarget"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001ef430:DrawProbeFX"
@@ -453,7 +453,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001f0980:Draw3DObject"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001f0ba0:StartHGobjAnim"
