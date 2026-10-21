@@ -57,10 +57,10 @@ union nucvtgiftag_u {
 };
 
 struct nucvtrgba_s {
-    unsigned int b : 8;
-    unsigned int g : 8;
-    unsigned int r : 8;
-    unsigned int a : 8;
+    u8 b;
+    u8 g;
+    u8 r;
+    u8 a;
 };
 
 union nucvtcolour_u {
@@ -168,9 +168,13 @@ extern char D_00615690[];
 #define FLOAT_EXP_MASK 0x7F800000
 #define SPAN_EXP_BIAS 0x04008000
 
-#define HALVE_COLOUR(col, shift) \
-    (((col).c.a >> 1) << 24 | ((((col).w >> 16) & 0xFF) >> (shift)) << 16 \
-     | ((((col).w >> 8) & 0xFF) >> (shift)) << 8 | (((col).w & 0xFF) >> (shift)))
+#define HALVE_ALPHA_RED_GREEN(col, shift) \
+    ((u8)((col).c.a >> 1) << 24 | (u8)((((col).w >> 16) & 0xFF) >> (shift)) << 16 \
+     | (u8)((((col).w >> 8) & 0xFF) >> (shift)) << 8)
+
+#define HALVE_BLUE(col, shift) ((u8)(((col).w & 0xFF) >> (shift)))
+
+#define HALVE_COLOUR(col, shift) (HALVE_ALPHA_RED_GREEN(col, shift) | HALVE_BLUE(col, shift))
 
 #define NEXT_COLOURREF(ref) ((NuColourRef *)((char *)(ref) + ((ref)->count * 8 + 8)))
 
@@ -410,7 +414,9 @@ u8 *NuCvtDmaFaceOn(u8 **dma, struct nufaceon_s *faceon, int count, struct numtl_
             lit.c.r = colour.c.r * 1.0f;
             lit.c.a = colour.c.a;
             if (colourref_on) {
-                colourref_cur->pair[colourref_cur->count].colour = HALVE_COLOUR(colour, shift);
+                u32 blue = HALVE_BLUE(colour, shift);
+
+                colourref_cur->pair[colourref_cur->count].colour = HALVE_ALPHA_RED_GREEN(colour, shift) | blue;
                 colourref_cur->pair[colourref_cur->count].lit = HALVE_COLOUR(lit, shift);
                 colourref_cur->count++;
             }
@@ -521,7 +527,9 @@ u8 *NuCvtDmaFaceY(u8 **dma, struct nufaceon_s *faceon, int count, struct numtl_s
             lit.c.r = colour.c.r * 1.0f;
             lit.c.a = colour.c.a;
             if (colourref_on) {
-                colourref_cur->pair[colourref_cur->count].colour = HALVE_COLOUR(colour, shift);
+                u32 blue = HALVE_BLUE(colour, shift);
+
+                colourref_cur->pair[colourref_cur->count].colour = HALVE_ALPHA_RED_GREEN(colour, shift) | blue;
                 colourref_cur->pair[colourref_cur->count].lit = HALVE_COLOUR(lit, shift);
                 colourref_cur->count++;
             }
@@ -739,7 +747,11 @@ int NuCvtTriStreamCFromIdx(u8 **dma, struct nuvtx_tc1_s *vtx, short *idx, int ni
     int shift;
     int j;
 
-    shift = mtl->tid != -1;
+    if (mtl->tid != -1) {
+        shift = 1;
+    } else {
+        shift = 0;
+    }
     tri = (struct nucvtstreamtri_s *)*dma;
     count = 0;
     while (nidx) {
@@ -771,15 +783,15 @@ int NuCvtTriStreamCFromIdx(u8 **dma, struct nuvtx_tc1_s *vtx, short *idx, int ni
             switch (mtl->attrib.colour) {
             case 0:
                 if (mtl->attrib.lighting == NUMTL_ALPHA_BLEND) {
-                    tri->vtx[j].r = ((int)(mtl->diffuse.r * 255.0f) & 0xFF) >> shift;
-                    tri->vtx[j].g = ((int)(mtl->diffuse.g * 255.0f) & 0xFF) >> shift;
-                    tri->vtx[j].b = ((int)(mtl->diffuse.b * 255.0f) & 0xFF) >> shift;
-                    tri->vtx[j].a = (int)(mtl->alpha * 127.0f) & 0xFF;
+                    tri->vtx[j].r = (u8)(mtl->diffuse.r * 255.0f) >> shift;
+                    tri->vtx[j].g = (u8)(mtl->diffuse.g * 255.0f) >> shift;
+                    tri->vtx[j].b = (u8)(mtl->diffuse.b * 255.0f) >> shift;
+                    tri->vtx[j].a = (u8)(mtl->alpha * 127.0f);
                 } else {
                     tri->vtx[j].r = 0;
                     tri->vtx[j].g = 0;
                     tri->vtx[j].b = 0;
-                    tri->vtx[j].a = (int)(mtl->alpha * 127.0f) & 0xFF;
+                    tri->vtx[j].a = (u8)(mtl->alpha * 127.0f);
                 }
                 break;
             case 1:
@@ -810,7 +822,11 @@ int NuCvtTriStripStreamCFromIdx(u8 **dma, struct nuvtx_tc1_s *vtx, short *idx, i
     int shift;
     int j;
 
-    shift = mtl->tid != -1;
+    if (mtl->tid != -1) {
+        shift = 1;
+    } else {
+        shift = 0;
+    }
     tri = (struct nucvtstreamtri_s *)*dma;
     count = 0;
     left = 0;
@@ -854,15 +870,15 @@ int NuCvtTriStripStreamCFromIdx(u8 **dma, struct nuvtx_tc1_s *vtx, short *idx, i
             switch (mtl->attrib.colour) {
             case 0:
                 if (mtl->attrib.lighting == NUMTL_ALPHA_BLEND) {
-                    tri->vtx[j].r = ((int)(mtl->diffuse.r * 255.0f) & 0xFF) >> shift;
-                    tri->vtx[j].g = ((int)(mtl->diffuse.g * 255.0f) & 0xFF) >> shift;
-                    tri->vtx[j].b = ((int)(mtl->diffuse.b * 255.0f) & 0xFF) >> shift;
-                    tri->vtx[j].a = (int)(mtl->alpha * 127.0f) & 0xFF;
+                    tri->vtx[j].r = (u8)(mtl->diffuse.r * 255.0f) >> shift;
+                    tri->vtx[j].g = (u8)(mtl->diffuse.g * 255.0f) >> shift;
+                    tri->vtx[j].b = (u8)(mtl->diffuse.b * 255.0f) >> shift;
+                    tri->vtx[j].a = (u8)(mtl->alpha * 127.0f);
                 } else {
                     tri->vtx[j].r = 0;
                     tri->vtx[j].g = 0;
                     tri->vtx[j].b = 0;
-                    tri->vtx[j].a = (int)(mtl->alpha * 127.0f) & 0xFF;
+                    tri->vtx[j].a = (u8)(mtl->alpha * 127.0f);
                 }
                 break;
             case 1:
@@ -1181,7 +1197,9 @@ u8 *NuCvtDmaTriCFromIdx(u8 **dma, struct nuvtx_tc1_s *vtx, short *idx, int nidx,
                     lit.c.r = colour.c.r * 1.0f;
                     lit.c.a = colour.c.a;
                     if (colourref_on) {
-                        colourref_cur->pair[colourref_cur->count].colour = HALVE_COLOUR(colour, shift);
+                        u32 blue = HALVE_BLUE(colour, shift);
+
+                        colourref_cur->pair[colourref_cur->count].colour = HALVE_ALPHA_RED_GREEN(colour, shift) | blue;
                         colourref_cur->pair[colourref_cur->count].lit = HALVE_COLOUR(lit, shift);
                         colourref_cur->count++;
                     }
@@ -1733,8 +1751,12 @@ u8 *NuCvtDmaTriStripCFromIdx(u8 **dma, struct nuvtx_tc1_s *vtx, short *idx, int 
                     lit.c.r = colour.c.r * 1.0f;
                     lit.c.a = colour.c.a;
                     if (colourref_on) {
-                        colourref_cur->pair[colourref_cur->count].colour = HALVE_COLOUR(colour, shift);
-                        colourref_cur->pair[colourref_cur->count].lit = HALVE_COLOUR(lit, shift);
+                        u32 blue = (colour.w & 0xFF) >> shift;
+
+                        colourref_cur->pair[colourref_cur->count].colour = (colour.c.a >> 1) << 24 | (((colour.w >> 16) & 0xFF) >> shift) << 16
+                            | (((colour.w >> 8) & 0xFF) >> shift) << 8 | blue;
+                        colourref_cur->pair[colourref_cur->count].lit = (lit.c.a >> 1) << 24 | (((lit.w >> 16) & 0xFF) >> shift) << 16
+                            | (((lit.w >> 8) & 0xFF) >> shift) << 8 | ((lit.w & 0xFF) >> shift);
                         colourref_cur->count++;
                     }
                     k++;

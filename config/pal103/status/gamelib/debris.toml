@@ -57,7 +57,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:00184f70:CreateAlphaBlendTexture256"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0069:00185208:SplashEffect"

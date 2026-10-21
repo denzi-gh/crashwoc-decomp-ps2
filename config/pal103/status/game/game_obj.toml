@@ -13,7 +13,7 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0096:001f9270:CylinderCuboidOverlapXZ"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:001f9558:ObjectCylinderCollision"
@@ -65,7 +65,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:001fd4a8:KillGameObject"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0096:001fe0a0:AddProjectile"

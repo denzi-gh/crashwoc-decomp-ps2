@@ -1912,18 +1912,18 @@ extern int NuMemFileSeek(int fh, int offset, int origin);
 /* Carves `size` bytes, aligned to `align`, off the scene load buffer. */
 static inline union variptr_u GScnBufferAlloc(int size, int align)
 {
-    union variptr_u buf;
-    char *end;
+    union variptr_u ret;
+    char *ptr;
 
-    buf.charptr = (char *)(((int)*gscn_buffer + align - 1) & ~(align - 1));
-    end = buf.charptr + size;
-    if (end < gscn_bufferlimit.charptr) {
-        *gscn_buffer = end;
-        return buf;
+    ptr = (char *)(((int)*gscn_buffer + align - 1) & ~(align - 1));
+    if (ptr + size < gscn_bufferlimit.charptr) {
+        *gscn_buffer = ptr + size;
+        ret.charptr = ptr;
+    } else {
+        NuErrorProlog(nugscn_srcfile, 0x184)(bufferalloc_failed_msg);
+        ret.voidptr = 0;
     }
-    NuErrorProlog(nugscn_srcfile, 0x184)(bufferalloc_failed_msg);
-    buf.voidptr = 0;
-    return buf;
+    return ret;
 }
 
 void ReadTextureSet(int fh)
@@ -2044,9 +2044,6 @@ extern char D_00615118[];
 void ReadObjSet(int fh)
 {
     struct nuvec_s origin;
-    struct nugobj_s *gobj;
-    struct nugeom_s *geom;
-    struct nufaceongeom_s *fgeom;
     int ngobjs;
     int nsub;
     int colourref;
@@ -2058,6 +2055,9 @@ void ReadObjSet(int fh)
     int j;
     int k;
     int m;
+    struct nugobj_s *gobj;
+    struct nugeom_s *geom;
+    struct nufaceongeom_s *fgeom;
 
     memset(&origin, 0, sizeof(struct nuvec_s));
     NuDebugMsgProlog(nugscn_srcfile, 0xB5C)(objset_msg);

@@ -13,7 +13,7 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0118:002586f8:InitChases"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0118:00258db0:UpdateCrateBallsOfFireDoors"

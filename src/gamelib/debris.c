@@ -744,7 +744,7 @@ struct numtl_s *CreateAlphaBlendTexture256(char *file, s32 blend, s32 alphamode)
     u32 *dst;
     s32 i;
     u16 pixel;
-    s32 spixel;
+    s32 texel;
     u16 colour;
 
     NuFileLoadBuffer(file, pixels, 0x7FFFFFFF);
@@ -757,15 +757,20 @@ struct numtl_s *CreateAlphaBlendTexture256(char *file, s32 blend, s32 alphamode)
     src = (u16 *)pixels + 0x10000;
     for (i = 0; i < 0x10000; i++) {
         src--;
-        dst--;
-        pixel = (*src >> 8) | ((*src & 0xFF) << 8);
-        if (pixel == 0x3E0) {
-            spixel = 0;
-        } else {
-            spixel = pixel | 0x8000;
-        }
-        colour = spixel;
-        *dst = ((spixel & 0x1F) * 255 / 31) << 24;
+        texel = *src;
+        pixel = ((u32)texel >> 8) | ((texel & 0xFF) << 8);
+        do {
+            if (pixel == 0x3E0) {
+                dst--;
+                texel = 0;
+                goto convert;
+            }
+            dst--;
+        } while (0);
+        texel = pixel | 0x8000;
+    convert:
+        colour = texel;
+        *dst = ((texel & 0x1F) * 255 / 31) << 24;
         *dst |= (((colour >> 5) & 0x1F) * 255 / 31) << 16;
         *dst |= (((colour >> 10) & 0x1F) * 255 / 31) << 8;
         *dst |= 0x80;

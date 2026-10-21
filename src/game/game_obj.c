@@ -203,10 +203,6 @@ void NuRndrAddShadow(struct nuvec_s *pos, s32 alpha, s32 xrot, s32 yrot, s32 zro
 extern s32 temp_face;
 
 
-/* Near-match (state=asm), 732/744 bytes: only x0's register differs (retail
- * $f9, here $f12): `dx = v.x - x0` lets global alloc hand x0 the $f12
- * preference dx gets from NuAtan2D. A separate variable fixes x0 but loses dx.
- * The GC build confirms the dx reuse (v.x - x0 lands in dx's f1 there). */
 s32 CylinderCuboidOverlapXZ(struct nuvec_s *pos, struct obj_s *obj,
                             struct nuvec_s *p2, f32 radius) {
     struct nuvec_s v;
@@ -285,18 +281,19 @@ s32 CylinderCuboidOverlapXZ(struct nuvec_s *pos, struct obj_s *obj,
         return 1;
     }
 
-    dx = v.x - x0;
-    if (x1 - v.x > dx) {
+    if (v.x - x0 < x1 - v.x) {
+        dx = v.x - x0;
         if (v.z - z0 < z1 - v.z) {
             ang = (v.z - z0 < dx) ? 0x8000 : 0xC000;
         } else {
             ang = (z1 - v.z < dx) ? 0 : 0xC000;
         }
     } else {
+        dx = x1 - v.x;
         if (v.z - z0 < z1 - v.z) {
-            ang = (v.z - z0 < x1 - v.x) ? 0x8000 : 0x4000;
+            ang = (v.z - z0 < dx) ? 0x8000 : 0x4000;
         } else {
-            ang = (z1 - v.z < x1 - v.x) ? 0 : 0x4000;
+            ang = (z1 - v.z < dx) ? 0 : 0x4000;
         }
     }
     temp_cuboid_bounce_angle = ang + obj->hdg;
@@ -1974,6 +1971,7 @@ s32 KillGameObject(struct obj_s *obj, s32 anim) {
     u16 angle;
     f32 delay;
     f32 duration;
+    s32 control;
 
     vehicle = -1;
     sfx = -1;
@@ -1984,12 +1982,13 @@ s32 KillGameObject(struct obj_s *obj, s32 anim) {
     if (obj == &player->obj && VEHICLECONTROL == 1 && obj->vehicle != -1) {
         vehicle = obj->vehicle;
     }
+    control = VEHICLECONTROL;
     if (anim == 0x14) {
         anim = 6;
         if (obj->flags & 1) {
-            if (VEHICLECONTROL == 2) {
+            if (control == 2) {
                 anim = 0xE;
-            } else if (VEHICLECONTROL == 1 && obj->vehicle != -1) {
+            } else if (control == 1 && obj->vehicle != -1) {
                 anim = 0xB;
             } else if (Level == 0xF) {
                 anim = 0xD;
