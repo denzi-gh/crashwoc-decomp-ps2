@@ -21,7 +21,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0041:00130e00:NuFntCreate"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0041:00131480:NuFntPrintChar"

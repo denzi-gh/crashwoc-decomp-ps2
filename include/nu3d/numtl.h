@@ -45,12 +45,12 @@ union nufx_u {
 
 struct numtl_s {
     u64 sbdata[36];                         /* 0x000 GS state block */
-    short used : 1;                         /* 0x120 */
-    short fromblock : 1;
-    short intalloc : 1;
-    short zupd : 1;
-    short sbexists : 1;
-    short renderplane_id : 8;
+    int used : 1;                           /* 0x120 */
+    int fromblock : 1;
+    int intalloc : 1;
+    int zupd : 1;
+    int sbexists : 1;
+    int renderplane_id : 8;
     char accesscount;                       /* 0x122 */
     char curr_rp;                           /* 0x123 */
     struct nurndrstream_s rs;               /* 0x124 */
@@ -68,20 +68,15 @@ struct numtl_s {
     float power;                            /* 0x19C */
     float alpha;                            /* 0x1A0 */
     int tid;                                /* 0x1A4 */
-    union {
-        u64 alpha_reg;                      /* 0x1A8 whole unit */
-        struct {
-            int sort_pri;                   /* 0x1A8 */
-            short K;                        /* 0x1AC mipmap K */
-            unsigned char L;                /* 0x1AE mipmap L */
-            unsigned char uanmmode : 4;     /* 0x1AF */
-            unsigned char vanmmode : 4;
-        };
-    };
-    float du;                           /* 0x1B0 */
-    float dv;                           /* 0x1B4 */
-    float su;                           /* 0x1B8 */
-    float sv;                           /* 0x1BC */
+    int sort_pri;                           /* 0x1A8 */
+    short K;                                /* 0x1AC mipmap K */
+    unsigned char L;                        /* 0x1AE mipmap L */
+    unsigned char uanmmode : 4;             /* 0x1AF */
+    unsigned char vanmmode : 4;
+    float du;                               /* 0x1B0 */
+    float dv;                               /* 0x1B4 */
+    float su;                               /* 0x1B8 */
+    float sv;                               /* 0x1BC */
     void *callback;                         /* 0x1C0 */
     char context;                           /* 0x1C4 */
     unsigned char fxid;                     /* 0x1C5 */

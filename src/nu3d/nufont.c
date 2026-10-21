@@ -225,12 +225,12 @@ static inline s32 NuFntColumnHasInk(struct nutex_s *bmp, s32 x, s32 y, s32 h,
     u8 *pixel;
     s32 i;
 
-    pixel = bmp->bits + bmp->width * y + x;
-    for (i = 0; i < h; i++) {
+    pixel = bmp->bits + bmp->width * y;
+    pixel += x;
+    for (i = 0; i < h; i++, pixel += bmp->width) {
         if (*pixel != key) {
             return 1;
         }
-        pixel += bmp->width;
     }
     return 0;
 }
