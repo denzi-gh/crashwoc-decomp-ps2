@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0118"
 source = "src/game/chase.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0118:002586f8:InitChases"
@@ -50,3 +50,25 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0118:0025ac98:NearestChaserDistance"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0118:005f3ed0:Chase"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0118:00609ea8:chase_midpos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0118:00632a78:LIGHTCHASECHARACTERS"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x00628788
+end = 0x00628791
+
+[[claim]]
+section = ".sdata"
+start = 0x00632a7c
+end = 0x00632b17

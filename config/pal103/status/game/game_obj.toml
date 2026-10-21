@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0096"
 source = "src/game/game_obj.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0096:001f9270:CylinderCuboidOverlapXZ"
@@ -174,3 +174,140 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0096:00201418:PickupRelic"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0096:005a4e88:TerSurface"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0096:005a4f08:TerLayer"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0096:005a4f60:PData"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0096:005a4fa8:vNEWMASK"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0096:005a4fb8:pObj"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0096:005a50b8:Projectile"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0096:005a6bb8:plr_conveyor_mom"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0096:005a6bc8:jonglowpos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0096:006312b0:newmask_advise"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0096:006312b4:boss_dead"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0096:006312b8:i_projectile"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0096:006312bc:jonglow"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0096:006312c0:jonwidth"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0096:006312c4:jonwidth2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0096:006312c8:FIZZLEVOL"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0096:006312cc:GAMEOBJECTCOUNT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0096:006312d0:new_power"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0096:006312d4:in_speed"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0096:006312d8:in_f_friction"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0096:006312dc:in_s_friction"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0096:006312e0:mask_crates"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0096:006312e4:crates_destroyed"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0096:006312e8:crate_wumpa"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0096:006312ec:temp_xrot"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0096:006312ee:temp_yrot"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0096:006312f0:temp_zrot"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0096:006312f4:temp_cuboid_bounce_angle"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0096:006312f8:temp_cuboid_side"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0096:006312fc:temp_xzmomset"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0096:00631300:temp_roof_xrot"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0096:00631302:temp_roof_zrot"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0096:00631304:plr_conveyor_yrot"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0096:00631308:jonglowsize"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x0061f2d0
+end = 0x0061f2e8
