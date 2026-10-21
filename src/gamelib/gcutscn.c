@@ -470,7 +470,7 @@ int instNuGCutSceneAddCamTgt(struct instNUGCUTSCENE_s *scene, struct nuvec_s *ob
 
 void instNuGCutSceneSetPos(struct instNUGCUTSCENE_s *scene, struct nuvec4_s *pos) {
     scene->flags |= NUGCUTSCENE_MATRIXSET;
-    NuMtxSetTranslation(&scene->mtx, pos);
+    NuMtxSetTranslation(&scene->mtx, (struct nuvec_s *)pos);
     instNuGCutSceneCalculateCentre(scene, &scene->mtx);
 }
 
@@ -935,7 +935,7 @@ void NuGCutRigidSysFixPtrs(struct NUGCUTSCENE_s *def, int base) {
                 struct NUGCUTRIGID_s *rigid = &rigiddef->rigids[i];
 
                 if (rigid->name) {
-                    rigid->name = def->names + (int)rigid->name - 1;
+                    rigid->name = def->names + (nusintptr)rigid->name - 1;
                 }
                 if (rigid->anim) {
                     rigid->anim = NuAnimData2FixPtrs(rigid->anim, base);
@@ -969,7 +969,7 @@ void NuGCutLocatorSysFixPtrs(struct NUGCUTSCENE_s *def, int base) {
             for (i = 0; i < locatordef->ntypes; i++) {
                 struct NUGCUTLOCATORTYPE_s *type = &locatordef->types[i];
 
-                type->name = def->names + (int)type->name - 1;
+                type->name = def->names + (nusintptr)type->name - 1;
             }
         }
     }
@@ -988,7 +988,7 @@ void NuGCutCharSysFixPtrs(struct NUGCUTSCENE_s *def, int base) {
                 struct NUGCUTCHAR_s *desc = &chardef->chars[i];
 
                 if (desc->name) {
-                    desc->name = def->names + (int)desc->name - 1;
+                    desc->name = def->names + (nusintptr)desc->name - 1;
                 }
                 if (desc->char_anim) {
                     desc->char_anim = NuAnimData2FixPtrs(desc->char_anim, base);
@@ -1400,9 +1400,9 @@ inline void NuGCutRigidSysFixUp(struct NUGCUTSCENE_s *def, void *scene) {
                 NuDebugMsgProlog("..\\nu2crash.ps2\\gamelib\\gcutscn.c", 0x5D9)(
                     "NuGCutRigidSysFixUp: cannot fixup rigid object <%s> in cutscene", rigid->name);
             }
-            if (rigid->nlocators != 0 && (int)rigid->locators < 0xFF) {
-                rigid->first_locator = (int)rigid->locators;
-                rigid->locators = &locatordef->locators[(int)rigid->locators];
+            if (rigid->nlocators != 0 && (nusintptr)rigid->locators < 0xFF) {
+                rigid->first_locator = (nusintptr)rigid->locators;
+                rigid->locators = &locatordef->locators[(nusintptr)rigid->locators];
             } else {
                 rigid->first_locator = 0xFF;
             }

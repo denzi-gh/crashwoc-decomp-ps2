@@ -68,6 +68,7 @@
 
 #include "nu_libc.h"
 #include "nu_stdarg.h"
+#include "nu_types.h"
 
 #include "nucore/nuerror.h"
 #include "nucore/nufile.h"
@@ -461,7 +462,7 @@ inline int NuMemFilePos(int fh)
         return NuDatFilePos(fh);
     }
     fh -= 0x400;
-    return (int)memfiles[fh].curr - (int)memfiles[fh].start;
+    return (nusintptr)memfiles[fh].curr - (nusintptr)memfiles[fh].start;
 }
 
 

@@ -1196,7 +1196,7 @@ char NuMcReadChar(int fd)
 }
 
 
-TbSet *tbsetCreate(int *colours)
+struct TbSet *tbsetCreate(int *colours)
 {
     return tbsetAlloc(colours);
 }
@@ -1220,7 +1220,7 @@ void tbslotReset(TbSet *set, int slot)
 }
 
 
-int tbslotLastValue(TbSet *set, int slot)
+int tbslotLastValue(struct TbSet *set, int slot)
 {
     set = set != 0 ? set : D_0062F034;
     slot &= 0xF;
@@ -1237,7 +1237,7 @@ void tbslotBeginFn(TbSet *set, int slot)
 }
 
 
-void tbslotBeginExFn(TbSet *set, int slot, char *name)
+void tbslotBeginExFn(struct TbSet *set, int slot, char *name)
 {
     set = set != 0 ? set : D_0062F034;
     slot &= 0xF;
