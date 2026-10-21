@@ -420,7 +420,7 @@ struct nutex_s *NuTexReadBitmapMMEx(char *name, int mipmaps, union variptr_u *bu
                 scale *= 2;
             }
             if (palsize) {
-                spec->pal = (u8 *)spec->bits + total;
+                spec->pal = (int *)((u8 *)spec->bits + total);
                 memcpy(spec->pal, pal, palsize);
             }
         }
@@ -500,7 +500,7 @@ struct nutex_s *NuTexReadBitmapMem(u8 *mem) {
         }
         NuMemFreeFn(row, nutex_srcfile, 0x32F);
         if (palsize) {
-            spec->pal = (u8 *)spec->bits + NuTexImgSize(spec->type, spec->width, spec->height);
+            spec->pal = (int *)((u8 *)spec->bits + NuTexImgSize(spec->type, spec->width, spec->height));
             memcpy(spec->pal, pal, palsize);
         }
     }

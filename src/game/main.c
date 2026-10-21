@@ -1134,7 +1134,7 @@ void InitLights(void)
 
 extern struct numtl_s *pause_src_mtl;
 extern struct numtl_s *pause_rndr_mtl;
-extern struct nutex_s *pause_rt;
+extern s32 pause_rt;
 
 void ClosePauseRender(void)
 {
@@ -1170,7 +1170,7 @@ extern s32 PS2_REZ_W;
 extern s32 PS2_REZ_H;
 extern s32 screendump;
 extern s32 NuRndrBeginScene(s32 a);
-extern s32 NuRndrBeginSceneEx(struct nutex_s *rt, s32 a, s32 b);
+extern s32 NuRndrBeginSceneEx(s32 target, s32 zbuffer, s32 halfoffset);
 extern void NuRndrEndScene(void);
 extern void NuRndrClear(s32 mode, s32 col, float z);
 extern void NuRndrFlush(s32 flags);
@@ -1184,11 +1184,11 @@ void InitPauseRender(void)
     desc.type = 0xB;
     desc.width = 0x100;
     desc.height = 0x100;
-    pause_rt = NuTexCreate(&desc);
+    pause_rt = NuTexCreate((struct nutex_s *)&desc);
 
     pause_rndr_mtl = NuMtlCreate(1);
     pause_rndr_mtl->alpha = 1.0f;
-    pause_rndr_mtl->tid = (s32)pause_rt;
+    pause_rndr_mtl->tid = pause_rt;
     pause_rndr_mtl->attrib.zmode = 3;
     pause_rndr_mtl->attrib.utc = 1;
     pause_rndr_mtl->attrib.vtc = 1;
@@ -1253,7 +1253,7 @@ void HandlePauseRender(void)
 
 extern void NuMemSetExternal(void *addr, s32 size);
 
-void TextureCreate(char *name, struct numtl_s **mtl, s32 *tid)
+void TextureCreate(char *name, struct numtl_s **mtl, struct nutex_s **tid)
 {
     if (NuFileSize(name) < 0) {
         *mtl = 0;
@@ -1269,13 +1269,13 @@ void TextureCreate(char *name, struct numtl_s **mtl, s32 *tid)
     (*mtl)->attrib.vtc = 1;
     (*mtl)->attrib.colour = 1;
     (*mtl)->attrib.alpha = 0;
-    (*mtl)->tid = (s32)NuTexCreate((struct nutexdesc_s *)*tid);
+    (*mtl)->tid = (s32)NuTexCreate(*tid);
     NuMtlUpdate(*mtl);
     NuMemSetExternal(0, 0);
 }
 
 
-void TextureCreateEx(char *name, struct numtl_s **mtl, s32 *tid, void *extmem, s32 extsize,
+void TextureCreateEx(char *name, struct numtl_s **mtl, struct nutex_s **tid, void *extmem, s32 extsize,
                      union variptr_u *addr, union variptr_u *addrend)
 {
     union variptr_u a;
@@ -1302,7 +1302,7 @@ void TextureCreateEx(char *name, struct numtl_s **mtl, s32 *tid, void *extmem, s
     if (extmem != 0) {
         (*mtl)->tid = NuTexCreateEx(*tid, extmem, extsize);
     } else {
-        (*mtl)->tid = (s32)NuTexCreate((struct nutexdesc_s *)*tid);
+        (*mtl)->tid = (s32)NuTexCreate(*tid);
     }
     NuMtlUpdate(*mtl);
     if (addr != 0) {
@@ -1347,7 +1347,7 @@ void TextureDestroy(struct numtl_s *mtl, struct nutexdesc_s *tex)
     if (mtl != 0) {
         NuMtlDestroy(mtl);
         if (mtl->tid != 0) {
-            NuTexDestroy((struct nutex_s *)mtl->tid);
+            NuTexDestroy(mtl->tid);
         }
     }
     if (tex != 0) {
@@ -1443,7 +1443,7 @@ s32 BGLoadCutMovie(s32 movie)
     do {
         NuSoundUpdate();
         pNuCam->mtx = numtx_identity;
-        NuMtxTranslate(&pNuCam->mtx, &bgload_campos);
+        NuMtxTranslate(&pNuCam->mtx, (struct nuvec_s *)&bgload_campos);
         NuCameraSet(pNuCam);
         if (NuRndrBeginScene(-1) != 0) {
             NuRndrClear(3, 0, 1.0f);
@@ -2762,13 +2762,13 @@ void BGLoad(void)
 bgload_render_characters:
                     GameSfxLoop(0x8a, (struct nuvec_s *)&m[character]._30);
                     if (bgloadchr[character] != 0 && bgloadanim[character] != 0) {
-                        NuHGobjEvalAnim(bgloadchr[character], bgloadanim[character],
+                        NuHGobjEvalAnim(bgloadchr[character], (struct nuanimdata_s *)bgloadanim[character],
                             bgload_animtime[character], 0, 0, tmtx);
                         NuHGobjRndrMtxDwa(bgloadchr[character], &m[character], 2, layers, tmtx, 0);
                     }
                     if (old_character != -1 && bgloadchr[old_character] != 0 &&
                         bgloadanim[old_character] != 0) {
-                        NuHGobjEvalAnim(bgloadchr[old_character], bgloadanim[old_character],
+                        NuHGobjEvalAnim(bgloadchr[old_character], (struct nuanimdata_s *)bgloadanim[old_character],
                             bgload_animtime[old_character], 0, 0, tmtx);
                         NuHGobjRndrMtxDwa(bgloadchr[old_character], &m[old_character], 2, layers, tmtx, 0);
                     }
