@@ -39,8 +39,6 @@ struct nutexanimenv_s {
 struct nufpar_s;
 
 void NuTexAnimProgAssembleEnd(struct nutexanimprog_s *prog);
-int NuTexAnimLabelIndex(char *name);
-int NuTexAnimXDefIndex(char *name);
 void pftaXDef(struct nufpar_s *parser);
 void pftaGoto(struct nufpar_s *parser);
 void pftaXRef(struct nufpar_s *parser);
@@ -49,7 +47,6 @@ void pftaGosub(struct nufpar_s *parser);
 void pftaUntiltex(struct nufpar_s *parser);
 void NuTexAnimProgInit(struct nutexanimprog_s *prog);
 struct nutexanimprog_s *NuTexAnimProgReadScript(union variptr_u *buff, char *name);
-int NuTexAnimCondition(int condition, int value, int ref);
 void NuTexAnimEnvProc(struct nutexanimenv_s *env);
 void NuTexAnimProgSysInit(void);
 void NuTexAnimProgRelease(void);

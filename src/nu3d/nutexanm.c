@@ -367,7 +367,7 @@ struct nutexanimprog_s *NuTexAnimProgReadScript(union variptr_u *buff, char *nam
 
     if (buff) {
         mem = buff->voidptr;
-        mem = (struct nutexanimprog_s *)(((int)mem + 3) & 0xFFFFFFFC);
+        mem = (struct nutexanimprog_s *)(((nusintptr)mem + 3) & ~(nuintptr)3);
     } else {
         mem = NuMemAllocFn(0x400, "..\\nu2crash.ps2\\nu3d\\nutexanm.c", 0x2FC);
     }

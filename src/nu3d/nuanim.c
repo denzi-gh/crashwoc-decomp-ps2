@@ -1851,7 +1851,7 @@ struct nuanimdata2_s *NuAnimData2LoadBuff(char *file, union variptr_u *buffer, u
     if (hdr->version != 2) {
         NuErrorProlog(nuanim_srcfile, 0x34E)(nuanim_old_format_msg, file);
     }
-    hdr->address_offset = (int)hdr - hdr->address_offset;
+    hdr->address_offset = (nusintptr)hdr - hdr->address_offset;
     hdr->data = NuAnimData2FixPtrs(hdr->data, hdr->address_offset);
     return hdr->data;
 }

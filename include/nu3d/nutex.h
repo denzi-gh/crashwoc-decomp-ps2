@@ -68,7 +68,6 @@ struct numtl_s;
 struct rndrstream_s;
 union variptr_u;
 
-int NuTexFindFreeSlot(void);
 int NuTexHasAlpha(int tex);
 struct nutex_s *NuTexReadBitmapMMEx(char *name, int mipmaps, union variptr_u *buff, union variptr_u *buffend);
 struct nutex_s *NuTexReadBitmapMem(u8 *mem);
@@ -80,7 +79,6 @@ u8 *NuTexAccomodate(u8 *stream, int tex);
 u8 *NuTexSet(u8 *stream, int tex, char context);
 void NuTexDisplayTexturePage(int page, float depth);
 int NuTexRecoverNativeDataEx(int tex, u8 *dest, int size, int header, int palette, int image);
-struct nutexslot_s *NuTexMarkNative(struct nutexslot_s *entry);
 int NuTexCreateNative(void *data);
 u64 *NuTexWriteMaterialSettings(u64 *dst, struct numtl_s *mtl);
 int NuTexGetSysBuffSize(int count);

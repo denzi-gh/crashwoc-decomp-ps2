@@ -1031,7 +1031,7 @@ void SetupDebris(void) {
         debtab[i]->v1 = debtab[i]->v1 + 524288.0f;
         debtab[i]->v2 = debtab[i]->v2 + 524288.0f;
     }
-    buffer = (char *)(((s32)debbuffer + 15) & ~15U);
+    buffer = (char *)(((nusintptr)debbuffer + 15) & ~(nuintptr)15);
     freeDmaDebType = 0;
     size = 0x43000;
     for (i = 0; i < 256; i++) {
