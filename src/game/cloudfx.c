@@ -50,7 +50,7 @@ f32 MAXCLOUDS = 512.0f;
 f32 CLOUDRNG = 15.0f;
 struct numtl_s *cloudmtl = 0;
 s32 cloudreset = 0;
-struct nurndrstream_s *clouds_rs = 0;
+struct rndrstream_s *clouds_rs = 0;
 f32 cloud_density = 64.0f;
 static s32 disable_clouds = 0;
 static f32 TTSIZE = 1024.0f;
@@ -111,7 +111,7 @@ extern void TextureCreate(void *desc, void *mtl, void *tex);
 extern void TextureCreateEx(void *desc, void *mtl, void *tex, void *sbptr,
                             void *buf, void *buf2, void *buffend);
 extern void NuMemFreeFn(void *ptr, void *src, s32 id);
-extern void NuRndrStreamLink(struct nurndrstream_s *rs);
+extern void NuRndrStreamLink(struct rndrstream_s *rs);
 extern u8 *vpDmaTag_CntEx(u8 *cur, s32 qwc, u32 tag);
 extern u8 *vpDmaTag_Close(u8 *cur);
 extern u8 *vpDmaTag_RefEx(u8 *cur, u32 addr, s32 qwc, u32 tag);
@@ -136,7 +136,7 @@ void cloudInit() {
         cloudmtl->attrib.zmode = 1;
         cloudmtl->sort_pri = 0x7D00;
         NuMtlUpdateEx(cloudmtl, 1);
-        cloudmtl->rs.mpgtag = cloud_mpg;
+        cloudmtl->rs.mpg = cloud_mpg;
     }
     if (cloudtex != 0) {
         if (cloudtex->bits != 0) {
@@ -154,7 +154,7 @@ void cloudRender(struct nuvec_s *pos, struct nuvec_s *off, f32 size, f32 rng, s3
         u32 w[4];
     } gif;
     struct nuvec_s scroll;
-    struct nurndrstream_s *rs;
+    struct rndrstream_s *rs;
     f32 wrap;
     f32 x;
     f32 y;
@@ -166,65 +166,65 @@ void cloudRender(struct nuvec_s *pos, struct nuvec_s *off, f32 size, f32 rng, s3
     NuRndrStreamSetMisc(rs);
     NuRndrStreamAddMtl(rs, mtl);
     NuRndrStreamSetViewMtx(rs);
-    rs->cur.b = vpDmaTag_CntEx(rs->cur.b, 0, 0x6C068002);
-    *rs->cur.f++ = pos->x;
-    *rs->cur.f++ = pos->y;
-    *rs->cur.f++ = pos->z;
-    *rs->cur.f++ = rng;
+    rs->ptr.u8 = vpDmaTag_CntEx(rs->ptr.u8, 0, 0x6C068002);
+    *rs->ptr.f32++ = pos->x;
+    *rs->ptr.f32++ = pos->y;
+    *rs->ptr.f32++ = pos->z;
+    *rs->ptr.f32++ = rng;
     NuVecScale(&scroll, off, rng);
     wrap = rng + rng;
     x = pos->x + scroll.x;
-    *rs->cur.f++ = x - wrap * (s32)(x / wrap);
+    *rs->ptr.f32++ = x - wrap * (s32)(x / wrap);
     y = pos->y + scroll.y;
-    *rs->cur.f++ = y - wrap * (s32)(y / wrap);
+    *rs->ptr.f32++ = y - wrap * (s32)(y / wrap);
     z = pos->z + scroll.z;
-    *rs->cur.f++ = z - wrap * (s32)(z / wrap);
-    *rs->cur.i++ = 0;
-    *rs->cur.f++ = size;
-    *rs->cur.f++ = size * 0.5f;
-    *rs->cur.f++ = density;
-    *rs->cur.i++ = 0;
-    *rs->cur.i++ = 0;
-    *rs->cur.i++ = 0;
-    *rs->cur.i++ = 0;
-    *rs->cur.i++ = 0;
-    *rs->cur.f++ = col->x;
-    *rs->cur.f++ = col->y;
-    *rs->cur.f++ = col->z;
-    *rs->cur.i++ = 0;
-    *rs->cur.f++ = (2048.0f + 320.0f) * 16.0f;
-    *rs->cur.f++ = ((PS2_REZ_H >> 1) + 2048.0f) * 16.0f;
-    *rs->cur.f++ = (2048.0f - 320.0f) * 16.0f;
-    *rs->cur.f++ = (2048.0f - (PS2_REZ_H >> 1)) * 16.0f;
-    *rs->cur.w++ = 0x14000300;
-    *rs->cur.w++ = 0x17000000;
-    rs->cur.b = vpDmaTag_Close(rs->cur.b);
+    *rs->ptr.f32++ = z - wrap * (s32)(z / wrap);
+    *rs->ptr.s32++ = 0;
+    *rs->ptr.f32++ = size;
+    *rs->ptr.f32++ = size * 0.5f;
+    *rs->ptr.f32++ = density;
+    *rs->ptr.s32++ = 0;
+    *rs->ptr.s32++ = 0;
+    *rs->ptr.s32++ = 0;
+    *rs->ptr.s32++ = 0;
+    *rs->ptr.s32++ = 0;
+    *rs->ptr.f32++ = col->x;
+    *rs->ptr.f32++ = col->y;
+    *rs->ptr.f32++ = col->z;
+    *rs->ptr.s32++ = 0;
+    *rs->ptr.f32++ = (2048.0f + 320.0f) * 16.0f;
+    *rs->ptr.f32++ = ((PS2_REZ_H >> 1) + 2048.0f) * 16.0f;
+    *rs->ptr.f32++ = (2048.0f - 320.0f) * 16.0f;
+    *rs->ptr.f32++ = (2048.0f - (PS2_REZ_H >> 1)) * 16.0f;
+    *rs->ptr.u32++ = 0x14000300;
+    *rs->ptr.u32++ = 0x17000000;
+    rs->ptr.u8 = vpDmaTag_Close(rs->ptr.u8);
     gif.dw[0] = 0x5003400000008000ULL;
     gif.dw[1] = 0x52521;
     while (maxc > 0) {
         n = (maxc > 0x20) ? 0x20 : maxc;
         maxc -= 0x20;
-        rs->cur.b = vpDmaTag_CntEx(rs->cur.b, 0, 0x6D018002);
-        *((u16 *)rs->cur.b)++ = n;
-        *((u16 *)rs->cur.b)++ = 0;
-        *((u16 *)rs->cur.b)++ = 0;
-        *((u16 *)rs->cur.b)++ = 0;
-        *rs->cur.w++ = 0x6C0180D2;
-        *rs->cur.w++ = gif.w[0];
-        *rs->cur.w++ = gif.w[1];
-        *rs->cur.w++ = gif.w[2];
-        *rs->cur.w++ = gif.w[3];
-        *rs->cur.w++ = 0;
-        *rs->cur.w++ = 0;
-        *rs->cur.w++ = 0;
-        rs->cur.b = vpDmaTag_Close(rs->cur.b);
-        rs->cur.b = vpDmaTag_RefEx(rs->cur.b, (u32)cl, 0, (n << 16) | 0x69008003);
+        rs->ptr.u8 = vpDmaTag_CntEx(rs->ptr.u8, 0, 0x6D018002);
+        *((u16 *)rs->ptr.u8)++ = n;
+        *((u16 *)rs->ptr.u8)++ = 0;
+        *((u16 *)rs->ptr.u8)++ = 0;
+        *((u16 *)rs->ptr.u8)++ = 0;
+        *rs->ptr.u32++ = 0x6C0180D2;
+        *rs->ptr.u32++ = gif.w[0];
+        *rs->ptr.u32++ = gif.w[1];
+        *rs->ptr.u32++ = gif.w[2];
+        *rs->ptr.u32++ = gif.w[3];
+        *rs->ptr.u32++ = 0;
+        *rs->ptr.u32++ = 0;
+        *rs->ptr.u32++ = 0;
+        rs->ptr.u8 = vpDmaTag_Close(rs->ptr.u8);
+        rs->ptr.u8 = vpDmaTag_RefEx(rs->ptr.u8, (u32)cl, 0, (n << 16) | 0x69008003);
         cl += n;
-        ((u16 *)rs->cur.b)[-8] = (n * 6) >> 4;
-        rs->cur.b = vpDmaTag_CntEx(rs->cur.b, 0, 0x17000000);
+        ((u16 *)rs->ptr.u8)[-8] = (n * 6) >> 4;
+        rs->ptr.u8 = vpDmaTag_CntEx(rs->ptr.u8, 0, 0x17000000);
     }
-    rs->cur.b = vpDmaTag_CntEx(rs->cur.b, 0, 0x10000000);
-    rndrstream_free = vpDmaTag_Next(rs->cur.b, 0);
+    rs->ptr.u8 = vpDmaTag_CntEx(rs->ptr.u8, 0, 0x10000000);
+    rndrstream_free = vpDmaTag_Next(rs->ptr.u8, 0);
 }
 
 
@@ -327,7 +327,7 @@ void TimeTunnelInit(union variptr_u *buffer, union variptr_u *buffend) {
         ttmtl->attrib.zmode = 1;
         ttmtl->sort_pri = 0x7FFF;
         NuMtlUpdateEx(ttmtl, 1);
-        ttmtl->rs.mpgtag = cloud_mpg;
+        ttmtl->rs.mpg = cloud_mpg;
     }
 }
 

@@ -24,7 +24,8 @@ union variptr_u {
     u16 *u16;
     s16 *s16;
     u32 *u32;
-    u32 *s32;                   /* unsigned in the DWARF */
+    s32 *s32;                   /* unsigned int * in that DWARF; retail converts
+                                   floats stored through it as signed */
     u64 *u64;
     f32 *f32;
     struct nuvec_s *vec3;

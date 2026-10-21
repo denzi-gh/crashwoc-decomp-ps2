@@ -164,7 +164,6 @@ extern char D_00615690[];
 #define NUMTL_ALPHA_BLEND 2
 #define NUPRIM_TRILIST 5
 #define NUPRIM_TRISTRIP 6
-#define ALPHA_REG_TOP_MASK 0xFF00000000000000ULL
 #define FLOAT_EXP_MASK 0x7F800000
 #define SPAN_EXP_BIAS 0x04008000
 
@@ -1851,12 +1850,12 @@ void NuCvtCalcFastPoint(struct nuvec_s *a, struct nuvec_s *b, struct numtl_s *mt
 
     if (mtl) {
         if (mtl->attrib.lighting == NUMTL_ALPHA_BLEND && mtl->fxid == 0
-            && (mtl->alpha_reg & ALPHA_REG_TOP_MASK) == 0) {
+            && mtl->uanmmode == 0 && mtl->vanmmode == 0) {
             point = 1;
         } else {
             point = 0;
         }
-        if ((mtl->alpha_reg & ALPHA_REG_TOP_MASK) != 0 || !NuCvtPntEna) {
+        if (mtl->uanmmode != 0 || mtl->vanmmode != 0 || !NuCvtPntEna) {
             NuCvtUvOn = 1;
         } else {
             NuCvtUvOn = 0;

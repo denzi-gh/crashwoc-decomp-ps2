@@ -47,9 +47,9 @@ extern s32 NuFileSize(char *name);
 extern s32 NuFileLoadBuffer(char *name, void *buf, s32 max);
 extern void *NuMemAllocFn(s32 size, char *file, s32 line);
 extern void NuMemFreeFn(void *ptr, char *file, s32 line);
-extern void NuRndrStreamLink(struct nurndrstream_s *rs);
+extern void NuRndrStreamLink(struct rndrstream_s *rs);
 extern s32 NuRndrStreamTriStrip3dClip(struct nuvtx_tc1_s *vtx, s32 num, struct numtx_s *mtx,
-                                      struct nurndrstream_s *rs);
+                                      struct rndrstream_s *rs);
 extern u8 *vpDmaTag_CntEx(u8 *cur, s32 qwc, u32 tag);
 extern u8 *vpDmaTag_Next(u8 *cur, s32 mode);
 
@@ -85,7 +85,7 @@ static u32 *pals[4] = { pal0, pal1, pal2, pal3 };
 void ShadRndr(struct numtx_s *mtx, struct shadentry_s *shad, f32 frame, f32 scale) {
     struct numtx_s m;
     struct numtl_s *mtl;
-    struct nurndrstream_s *rs;
+    struct rndrstream_s *rs;
     s32 tid;
     s32 last;
     s32 n;
@@ -157,16 +157,16 @@ void ShadRndr(struct numtx_s *mtx, struct shadentry_s *shad, f32 frame, f32 scal
     if (tid != 0) {
         NuRndrStreamLink(rs);
         rs->mtl = 0;
-        rs->mtl_tid = 0;
+        rs->tid = 0;
         NuRndrStreamAddMtl(rs, mtl);
         NuTexAccomodateRS(rs, tid);
-        rs->cur.b = NuTexSetPal(rs->cur.b, mtl->tid, tid, 0);
-        rndrstream_free = vpDmaTag_Next(rs->cur.b, 0);
+        rs->ptr.u8 = NuTexSetPal(rs->ptr.u8, mtl->tid, tid, 0);
+        rndrstream_free = vpDmaTag_Next(rs->ptr.u8, 0);
     }
     NuRndrStreamTriStrip3dClip(vtx, 4, &m, rs);
     NuRndrStreamLink(rs);
-    rs->cur.b = vpDmaTag_CntEx(rs->cur.b, 0, 0x13000000);
-    rndrstream_free = vpDmaTag_Next(rs->cur.b, 0);
+    rs->ptr.u8 = vpDmaTag_CntEx(rs->ptr.u8, 0, 0x13000000);
+    rndrstream_free = vpDmaTag_Next(rs->ptr.u8, 0);
 }
 
 

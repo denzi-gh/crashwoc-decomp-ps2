@@ -29,7 +29,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0056:001647f8:animateWaterTables"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0056:00164b68:animateWater"
