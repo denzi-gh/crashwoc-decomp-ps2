@@ -37,7 +37,7 @@ typedef struct {
     u8 pad1;          /* 0x21 */
     u16 id;           /* 0x22 verified in InitGlobalSfx (lhu 0x22) */
     struct nuvec_s Pos;   /* 0x24 */
-} ;              /* 0x30 */
+} GameSound;              /* 0x30 */
 
 extern GameSound SfxTabGLOBAL[];
 extern NUSOUND_FILENAME_INFO SfxInfo[];
@@ -326,7 +326,7 @@ void InitGlobalSfx(void) {
 void InitLocalSfx(GameSound *SfxTab, int count) {
     int i;
     
-    if (SfxTab == NULL) {
+    if (SfxTab == 0) {
         printf("No local SFX table available!\n");
         return;
     }
