@@ -11,4 +11,12 @@
 #define NW_GET(T, p) *((T *)p)++
 #endif
 
+/* Ends a retail function that falls off the end of a non-void body: nothing on the
+ * EE (callers ignore the value), a defined return value on the host. */
+#ifdef NW_HOST
+#define NW_HOST_RETURN(v) return v
+#else
+#define NW_HOST_RETURN(v)
+#endif
+
 #endif /* NU_PORT_H */
