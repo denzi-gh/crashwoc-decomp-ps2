@@ -336,7 +336,7 @@ Layout of `include/` (the engine's own module structure):
 
 | Path | Holds |
 |---|---|
-| `include/nu_types.h`, `nu_stdarg.h`, `nu_libc.h` (later `nu_port.h`) | platform layer only: fixed-width types (`u8`..`s64`, `u128`, `f32`, `nuintptr`), varargs, libc, port seams |
+| `include/nu_types.h`, `nu_stdarg.h`, `nu_libc.h`, `nu_port.h` | platform layer only: fixed-width types (`u8`..`s64`, `u128`, `f32`, `nuintptr`), varargs, libc, port seams |
 | `include/<lib>/<lib>types.h` | structs shared by several modules of one library (`game/gametypes.h`) |
 | `include/<lib>/<module>.h` | one per `src/<lib>/<module>.c`: that module's structs, `extern` globals and prototypes |
 
@@ -389,6 +389,9 @@ Rules for type refactors:
    disassembly), model it with a union rather than picking one view.
 5. Where retail provably used an implicit declaration or a mismatched
    prototype, the PS2 build keeps it; host-only fixes go behind a guard.
+   `nu_port.h` holds the guarded seams; their EE expansion is the original
+   spelling, so the PS2 code cannot change. gcc's cast-as-lvalue stores and
+   reads (`*((u64 *)p)++ = v`) are spelled `NW_PUT(u64, p, v)` / `NW_GET(T, p)`.
 6. Headers hold types, `extern` declarations and prototypes only, and no
    alias `#define`s (`#define fseed D_0062EA68` would rename every `fseed` in
    every includer); the readable alias stays in the `.c` file.
