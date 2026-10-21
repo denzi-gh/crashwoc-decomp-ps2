@@ -209,7 +209,7 @@ extern s32 last_testglobalsfx;
 extern s32 ChaseActive(void);
 extern int SOUND_SetChannelVolume(unsigned int channel, int left, int right);
 extern void edbitsSetSoundFxVolume(int volume);
-void NuSoundLocalSet(NUSOUND_FILENAME_INFO* nfi, s32 SFX_COUNT, s32 GLOBAL_SFX_COUNT);
+extern void NuSoundLocalSet(NUSOUND_FILENAME_INFO* nfi, s32 SFX_COUNT, s32 GLOBAL_SFX_COUNT);
 
 
 void InitLevelSfxTables(void) {

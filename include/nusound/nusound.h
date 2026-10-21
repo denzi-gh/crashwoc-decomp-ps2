@@ -9,4 +9,6 @@ struct nusound_filename_info_s {
     int ID;                         /* 0x28 */
 }; /* 0x2C */
 
+typedef struct nusound_filename_info_s NUSOUND_FILENAME_INFO;
+
 #endif /* NUSOUND_NUSOUND_H */
