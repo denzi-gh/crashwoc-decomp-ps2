@@ -787,16 +787,6 @@ void OpenGame(void) {
     ResetGemPath();
 }
 
-void ResetItems(void) {
-    plr_items = 0;
-    plr_crystal.draw = 0;
-    plr_crystal.count = 0;
-    plr_crategem.draw = 0;
-    plr_crategem.count = 0;
-    plr_bonusgem.draw = 0;
-    plr_bonusgem.count = 0;
-}
-
 void DefaultGame(void) {
     Game.vibration = 1;
     Game.surround = 0;
@@ -3021,17 +3011,69 @@ void NextMenuEntry(float *y, s32 *i) {
     *i += 1;
 }
 
+/* ResetItems and ResetGemPath are inline (their out-of-line copies sit among
+ * the unit's inline helpers) and defined here, after ProcMenu and OpenGame,
+ * which call them out of line, so that only InitLevel inlines them. */
+inline void ResetItems(void) {
+    plr_items = 0;
+    plr_crystal.draw = 0;
+    plr_crystal.count = 0;
+    plr_crategem.draw = 0;
+    plr_crategem.count = 0;
+    plr_bonusgem.draw = 0;
+    plr_bonusgem.count = 0;
+}
+
+inline void ResetGemPath(void) {
+    u8 bits;
+    s32 open;
+
+    /* GemPath first: gempath_begun is then the last store before the switch, so
+     * it fills the range-check's beqz delay slot (GC has these reversed). */
+    GemPath = 0;
+    gempath_begun = 0;
+    switch (Level) {
+    case 0xc:
+        bits = 1;
+        break;
+    case 0x21:
+        bits = 2;
+        break;
+    case 0xe:
+        bits = 4;
+        break;
+    case 4:
+        bits = 8;
+        break;
+    case 0x14:
+        bits = 0x10;
+        break;
+    default:
+        bits = 0;
+        break;
+    }
+    if ((Game.gembits & bits) == 0) {
+        open = 0;
+    } else {
+        open = 1;
+    }
+    gempath_open = open;
+    if (ObjTab[101].obj.special != NULL) {
+        /* `^ 1` not `1 - x`: open comes from an sltu so gcc knows it is 0/1 and
+         * folds the bitfield's `& 1` away, giving retail's single xori. */
+        ObjTab[101].obj.special->instance->flags.visible = gempath_open ^ 1;
+    }
+}
+
 void InitLevel(void) {
-    s32 lp;
-    s32 y;
     s32 menu;
+    s32 y;
     s32 level;
+    s32 lp;
     struct nuvec_s start;
     struct nuvec_s end;
     struct nuinstance_s *ipost;
     struct nuinstance_s *instgrp[24];
-    u8 bits;
-    s32 open;
 
     menu = -1;
     y = -1;
@@ -3044,9 +3086,9 @@ void InitLevel(void) {
     switch (Level) {
     case 0x23:
         NewGame();
-        y = 0;
-        Hub = -1;
         menu = 0;
+        Hub = -1;
+        y = 0;
         ResetTempCharacter(0x60, 0x2b);
         Demo = 0;
         break;
@@ -3094,9 +3136,16 @@ void InitLevel(void) {
     case 0x1e:
         ResetTempCharacter(0xba, 0x22);
         break;
-    case 0x15:
-    case 0x16:
+    /* Three separate cases, as on GC (jump2 cross-jumps them into one). As a
+     * single case list gcse sees fewer insns, and its hash-table size then
+     * gives $fp to v000's %hi instead of ObjTab's. */
     case 0x18:
+        ResetTempCharacter(0xbc, 0x22);
+        break;
+    case 0x15:
+        ResetTempCharacter(0xbc, 0x22);
+        break;
+    case 0x16:
         ResetTempCharacter(0xbc, 0x22);
         break;
     case 0x13:
@@ -3220,55 +3269,20 @@ void InitLevel(void) {
         new_hub_flags = 0;
         new_lev_flags = 0;
     }
-    /* ResetItems (inlined) */
-    plr_bonusgem.count = 0;
-    plr_crystal.draw = 0;
-    plr_crystal.count = 0;
-    plr_crategem.draw = 0;
-    plr_crategem.count = 0;
-    plr_bonusgem.draw = 0;
-    plr_items = 0;
+    ResetItems();
     boss_dead = 0;
     COMPLEXPLAYERSHADOW = (Level == 0xc);
     bonusgem_ok = (Level != 5);
-    /* ResetGemPath (inlined) */
-    gempath_begun = 0;
-    GemPath = 0;
-    switch (Level) {
-    case 0xc:
-        bits = 1;
-        break;
-    case 0x21:
-        bits = 2;
-        break;
-    case 0xe:
-        bits = 4;
-        break;
-    case 4:
-        bits = 8;
-        break;
-    case 0x14:
-        bits = 0x10;
-        break;
-    default:
-        bits = 0;
-        break;
-    }
-    if ((Game.gembits & bits) == 0) {
-        open = 0;
-    } else {
-        open = 1;
-    }
-    gempath_open = open;
-    if (ObjTab[101].obj.special != NULL) {
-        ObjTab[101].obj.special->instance->flags.visible = gempath_open ^ 1;
-    }
+    ResetGemPath();
+    /* HubLevelText before hubleveltext_pos (GC: after the tumble stores): the
+     * two zero stores tie in sched1 on source order, and hubleveltext_pos has
+     * to come last to fill InitBugAreas' delay slot. */
     hubleveltext_level = -1;
+    HubLevelText = 0;
     hubleveltext_pos = 0.0f;
     tumble_moveduration = 1.0f;
     tumble_duration = 1.0f;
     tumble_time = 1.0f;
-    HubLevelText = 0;
     InitBugAreas();
     bonus_restart = 0;
     plr_invisibility_time = 5.0f;
@@ -3728,47 +3742,6 @@ inline void WumpaHitTerrain(struct wumpa_s *wmp) {
     f = NuVecMag(&ray);
     if (NewRayCast(&wmp->pos, &ray, 0.0f) != 0) {
         wmp->duration *= (NuVecMag(&ray) / f);
-    }
-}
-
-void ResetGemPath(void) {
-    u8 bits;
-    s32 open;
-
-    /* GemPath first: gempath_begun is then the last store before the switch, so
-     * it fills the range-check's beqz delay slot (GC has these reversed). */
-    GemPath = 0;
-    gempath_begun = 0;
-    switch (Level) {
-    case 0xc:
-        bits = 1;
-        break;
-    case 0x21:
-        bits = 2;
-        break;
-    case 0xe:
-        bits = 4;
-        break;
-    case 4:
-        bits = 8;
-        break;
-    case 0x14:
-        bits = 0x10;
-        break;
-    default:
-        bits = 0;
-        break;
-    }
-    if ((Game.gembits & bits) == 0) {
-        open = 0;
-    } else {
-        open = 1;
-    }
-    gempath_open = open;
-    if (ObjTab[101].obj.special != NULL) {
-        /* `^ 1` not `1 - x`: open comes from an sltu so gcc knows it is 0/1 and
-         * folds the bitfield's `& 1` away, giving retail's single xori. */
-        ObjTab[101].obj.special->instance->flags.visible = gempath_open ^ 1;
     }
 }
 

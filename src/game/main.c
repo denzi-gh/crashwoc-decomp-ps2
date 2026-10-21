@@ -2549,16 +2549,15 @@ void BGLoad(void)
     bgloadanim[0] = 0;
     bgload_animtime[1] = 1.0f;
     character = LDATA->character;
-    bgload_objpos[0].y = bgload_objstart;
-    bgload_objpos[1].y = bgload_objstart;
+    bgload_objpos[1].y = bgload_objpos[0].y = bgload_objstart;
     mg_frame = -1;
     mg_scoreoff = 1.0f;
     MiniGameReset();
     if (character != last_used_character && last_used_character != -1 &&
         character != -1) {
-        phase = 0;
-        bgloadlastcharacter = last_used_character;
         old_character = last_used_character;
+        phase = 0;
+        bgloadlastcharacter = old_character;
     }
     if (NuRndrBeginScene(-1) != 0) {
         NuRndrEndScene();
@@ -2568,8 +2567,7 @@ void BGLoad(void)
     anim_step = 0.48f;
     fadeval = 0xff;
     fade_rate = -10;
-    fall_speed[0] = 0.0f;
-    fall_speed[1] = 0.0f;
+    fall_speed[1] = fall_speed[0] = 0.0f;
     bob_angle = 0;
     done = 0;
     NuVpSetSize(PS2_REZ_W << 4, PS2_REZ_H << 4);

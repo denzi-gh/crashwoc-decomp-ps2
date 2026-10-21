@@ -253,7 +253,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001ecf50:InitLevel"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001ed8e8:InitGameMode"
