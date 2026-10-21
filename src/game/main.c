@@ -69,6 +69,55 @@
 #include "nucore/nucoretypes.h"
 #include "nups2/ps2ctl.h"
 
+#ifdef NW_HOST
+#include "edtools/edmain.h"
+#include "game/ai.h"
+#include "game/bgload.h"
+#include "game/bug.h"
+#include "game/camera.h"
+#include "game/chase.h"
+#include "game/cloudfx.h"
+#include "game/crate.h"
+#include "game/cut.h"
+#include "game/deb3.h"
+#include "game/font3d.h"
+#include "game/game.h"
+#include "game/game_obj.h"
+#include "game/glass.h"
+#include "game/inst.h"
+#include "game/lights.h"
+#include "game/move.h"
+#include "game/panel.h"
+#include "game/particle.h"
+#include "game/sfx.h"
+#include "game/shadcom.h"
+#include "game/vehicle.h"
+#include "game/visi.h"
+#include "gamelib/debris.h"
+#include "nu3d/nufont.h"
+#include "nu3d/nugobj.h"
+#include "nu3d/nurndr.h"
+#include "nucore/nufile.h"
+#include "nucore/numem.h"
+#include "numath/nurand.h"
+#include "nups2/ps2video.h"
+#include "nups2/vu1man.h"
+#include "nusound/nusound.h"
+/* gnu89 inline globals stay out of module headers. */
+struct nufont_s;
+struct nuvec_s;
+struct obj_s;
+void DrawCutMovie(void);
+void GameVP(void);
+s32 KillPlayer(struct obj_s *obj, s32 anim);
+void MaxVP(void);
+void NewCut(s32 i);
+void NuFntDestroy(struct nufont_s *font);
+void ResetTimeTrial(void);
+void RotateDirectionalLight(struct nuvec_s *v, s32 xrot, s32 yrot);
+void UpdateCutMovie(void);
+#endif
+
 extern s32 Level;
 extern s32 level_part_2;
 extern float AtmosphericPressureHackedZ;
@@ -1567,8 +1616,8 @@ extern struct nulight_s* D_0062FAE8;
 #define main_light D_0062FAE8
 extern struct gtimer_s CutTimer;
 extern struct nupadrec_s PadData;
-extern int foot_u[];
-extern int foot_v[];
+extern float foot_u[];
+extern float foot_v[];
 extern int tempanim_waitaudio;
 extern int cortex_gameover_i;
 extern int gamesfx_channel;
@@ -2165,7 +2214,7 @@ next_game_mode:
                                 visiSetSplineKnot(world_vd, pVIS - world_scene[0]->splines, iVIS);
                             }
                         } else {
-                            ApplyVisiTable(world_scene[0], pCam->pos);
+                            ApplyVisiTable(world_scene[0], &pCam->pos);
                         }
                         if (DRAWWORLDHACK != 0) {
                             DrawWorld();
