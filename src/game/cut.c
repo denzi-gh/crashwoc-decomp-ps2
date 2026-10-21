@@ -1419,9 +1419,9 @@ static void AppCutSceneFindCharacters(struct NUGCUTSCENE_s *cutscene) {
         if (cutchar->character == 0) {
             NuDebugMsgProlog(cut_srcfile, 0x2a1)(nocutchar_msg, cutchar->name);
         }
-        if (cutchar->nlocators != 0 && (s32)cutchar->locators < 0xff) {
-            cutchar->first_locator = (u8)(s32)cutchar->locators;
-            cutchar->locators = &locator->locators[(s32)cutchar->locators];
+        if (cutchar->nlocators != 0 && (nusintptr)cutchar->locators < 0xff) {
+            cutchar->first_locator = (u8)(nusintptr)cutchar->locators;
+            cutchar->locators = &locator->locators[(nusintptr)cutchar->locators];
         } else {
             cutchar->first_locator = -1;
         }

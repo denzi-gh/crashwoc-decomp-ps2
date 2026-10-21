@@ -605,7 +605,7 @@ void NuTexAccomodateRS(struct rndrstream_s *rs, int tex) {
         rs->ptr.u32[1] = 0xACEB00B5;
         rs->ptr.u8 += 16;
         if (rs->t_ptr.u32) {
-            rs->t_ptr.u32[1] = (u32)rs->ptr.u8;
+            rs->t_ptr.u32[1] = (u32)(nuintptr)rs->ptr.u8;
         } else {
             rs->t_base.u32 = rs->ptr.u32;
         }
@@ -614,10 +614,10 @@ void NuTexAccomodateRS(struct rndrstream_s *rs, int tex) {
         rs->ptr.u8 = vpDmaTag_Next(rs->ptr.u8, 0);
         rs->ptr.u8[3 - DMA_TAG_SIZE] |= 0x80;
         rs->ptr.u8[-0xE] = 0x19;
-        rs->ptr.u32[0] = (u32)prev;
+        rs->ptr.u32[0] = (u32)(nuintptr)prev;
         rs->ptr.u32[1] = 0xBABEF00D;
         rs->ptr.u8 += 16;
-        prev[1] = (u32)rs->ptr.u8;
+        prev[1] = (u32)(nuintptr)rs->ptr.u8;
     } else {
         rs->ptr.u8 = NuTexAccomodate(rs->ptr.u8, tex);
     }
@@ -811,7 +811,7 @@ int NuTexRecoverNativeDataEx(int tex, u8 *dest, int size, int header, int palett
                 mip->upsize = ps2tex->upsize[level];
                 mip->tbw = ps2tex->tbw[level];
                 mip->dbw = ps2tex->dbw[level];
-                mip->pad = (((int)p + 0x7F) & 0xFFFFFF80) - (int)p;
+                mip->pad = (((nusintptr)p + 0x7F) & ~(nuintptr)0x7F) - (nusintptr)p;
                 if (nutex_use_path3) {
                     if (!mip->pad) {
                         mip->pad = 0x80;
@@ -1235,7 +1235,7 @@ int NuTexReadNative(char *name, char *buff, int size, int *loaded) {
     int pad;
     int len;
 
-    pad = -((int)buff & 15) & 15;
+    pad = -((nusintptr)buff & 15) & 15;
     buff += pad;
     len = pad + NuFileLoadBuffer(name, buff, size - pad);
     if (len) {

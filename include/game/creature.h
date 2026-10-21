@@ -239,7 +239,7 @@ struct AI_s {
 
 struct creatcmd_s {
     s32 cmd;                            /* 0x0 */
-    s32 i;                              /* 0x4 */
+    nusintptr i;                        /* 0x4 */
     float f;                            /* 0x8 */
 }; /* 0xC */
 
