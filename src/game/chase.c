@@ -34,7 +34,10 @@ struct pchase_s {
     f32 duration;         /* 0x34 */
 };                        /* 0x38 */
 
-extern struct chase_s Chase[3];
+struct chase_s Chase[3] = {0};
+struct nuvec_s chase_midpos[3] = {0};
+s32 LIGHTCHASECHARACTERS = 1;
+
 extern struct ldata_s *LDATA;
 extern struct rail_s Rail[];
 extern struct objtab_s ObjTab[201];
@@ -44,67 +47,15 @@ extern s32 temp_iRAIL;
 extern s32 temp_iALONG;
 extern f32 temp_fALONG;
 
-extern char D_00628738[];
-#define fmt_chase_prefix D_00628738
-extern char D_00632A80[];
-#define str_trigger D_00632A80
-extern char D_00632A88[];
-#define fmt_name_index D_00632A88
-extern char D_00632A90[];
-#define fmt_name_index_sep D_00632A90
-extern char D_00628748[];
-#define str_trigger_event D_00628748
-extern char D_00628758[];
-#define str_trigger_misc D_00628758
-extern char D_00632A98[];
-#define str_door1 D_00632A98
-extern char D_00632AA0[];
-#define str_door2 D_00632AA0
-extern char D_00632AA8[];
-#define str_door3 D_00632AA8
-extern char D_00632AB0[];
-#define str_door4 D_00632AB0
-extern char D_00632AB8[];
-#define str_door25 D_00632AB8
-extern char D_00632AC0[];
-#define str_door26 D_00632AC0
-extern char D_00632AC8[];
-#define str_door27 D_00632AC8
-extern char D_00632AD0[];
-#define str_door28 D_00632AD0
-extern char D_00632AD8[];
-#define str_door5 D_00632AD8
-extern char D_00632AE0[];
-#define str_door6 D_00632AE0
-extern char D_00632AE8[];
-#define str_door7 D_00632AE8
-extern char D_00632AF0[];
-#define str_door8 D_00632AF0
-extern char D_00632AF8[];
-#define str_door29 D_00632AF8
-extern char D_00632B00[];
-#define str_door30 D_00632B00
-extern char D_00632B08[];
-#define str_door31 D_00632B08
-extern char D_00632B10[];
-#define str_door32 D_00632B10
-extern char D_00628768[];
-#define doors_none D_00628768
-extern char D_00628778[];
-#define doors_first D_00628778
-extern char D_00628788[];
-#define doors_second D_00628788
 extern struct RPos_s *best_cRPos;
 extern s32 Level;
 extern s32 LivesLost;
 extern s32 jonframe1;
 extern struct nuvec_s v000;
-extern struct nuvec_s chase_midpos[];
 extern struct gdeb_s GDeb[];
 extern s32 editor_active;
 extern s32 Paused;
 extern s32 USELIGHTS;
-extern s32 LIGHTCHASECHARACTERS;
 extern s32 temp_action;
 extern f32 temp_time;
 extern struct cammtx_s GameCam[];
@@ -215,16 +166,15 @@ void InitChases(void) {
     char parsebuf[32];
     struct nuvec_s pos;
     struct nugspline_s *spl;
-    struct nuvec_s *p0;
-    struct nuvec_s *p1;
     s32 j;
     s32 k;
-    s32 l;
     s32 count;
     s32 base_len;
     s32 name_len;
-    s32 char_idx;
+    s32 i;
     char c;
+    struct nuvec_s *p0;
+    struct nuvec_s *p1;
 
     chase = Chase;
     for (j = 0; j < 3; j++) {
@@ -239,10 +189,10 @@ void InitChases(void) {
 
     for (; pc->i != -1; pc++) {
         chase = &Chase[pc->i];
-        sprintf(buf, fmt_chase_prefix, pc->i);
+        sprintf(buf, "chase_%.2i_", pc->i);
         NuStrCpy(chname, buf);
         NuStrCpy(tbuf, chname);
-        NuStrCat(tbuf, str_trigger);
+        NuStrCat(tbuf, "trigger");
         spl = NuSplineFind(world_scene[0], tbuf);
         chase->spl_START = spl;
         if (spl == 0) {
@@ -264,7 +214,7 @@ void InitChases(void) {
                 continue;
             }
 
-            sprintf(tbuf, fmt_name_index, buf, j);
+            sprintf(tbuf, "%s%.2i", buf, j);
             spl = NuSplineFind(world_scene[0], tbuf);
             chase->spl_CHASER[j] = spl;
             if (spl == 0) {
@@ -289,10 +239,10 @@ void InitChases(void) {
             }
             chase->scale[j] = pc->scale[j];
 
-            sprintf(name, fmt_name_index_sep, buf, j);
-            NuStrCat(name, str_trigger_event);
+            sprintf(name, "%s%.2i_", buf, j);
+            NuStrCat(name, "trigger_event_");
             for (k = 0; k < 24; k++) {
-                sprintf(tbuf, fmt_name_index_sep, name, k);
+                sprintf(tbuf, "%s%.2i_", name, k);
                 base_len = strlen(tbuf);
                 spl = NuSplineFindPartial(world_scene[0], tbuf, txt);
                 chase->event[j][k].spl = spl;
@@ -303,37 +253,37 @@ void InitChases(void) {
                     continue;
                 }
 
-                for (l = 0; l < 24; l++) {
-                    chase->event[j][k].obj[l].special = 0;
+                for (i = 0; i < 24; i++) {
+                    chase->event[j][k].obj[i].special = 0;
                 }
 
                 count = 0;
                 name_len = strlen(txt);
-                char_idx = 0;
+                i = 0;
                 for (; base_len < name_len; base_len++) {
                     c = txt[base_len];
                     if (c == 'x' || base_len == name_len - 1) {
                         if (base_len == name_len - 1) {
-                            parsebuf[char_idx++] = c;
+                            parsebuf[i++] = c;
                         }
-                        parsebuf[char_idx] = 0;
+                        parsebuf[i] = 0;
                         if (NuSpecialFind(world_scene[0], &chase->event[j][k].obj[count], parsebuf) != 0) {
                             count++;
                             if (count == 24) {
                                 break;
                             }
                         }
-                        char_idx = 0;
+                        i = 0;
                     } else {
-                        parsebuf[char_idx++] = c;
+                        parsebuf[i++] = c;
                     }
                 }
             }
 
-            sprintf(name, fmt_name_index_sep, buf, j);
-            NuStrCat(name, str_trigger_misc);
+            sprintf(name, "%s%.2i_", buf, j);
+            NuStrCat(name, "trigger_misc_");
             for (k = 0; k < 4; k++) {
-                sprintf(tbuf, fmt_name_index, name, k);
+                sprintf(tbuf, "%s%.2i", name, k);
                 spl = NuSplineFind(world_scene[0], tbuf);
                 chase->spl_MISC[j][k] = spl;
                 if (spl != 0 && spl->len != 2) {
@@ -359,10 +309,9 @@ void InitChases(void) {
             chase->i = pc->i;
             chase->i_last = pc->i_last;
             chase->i_next = pc->i_next;
-            chase->status = 1;
             chase->cuboid = pc->cuboid;
+            chase->status = 1;
         }
-
     }
 }
 
@@ -373,20 +322,20 @@ void UpdateCrateBallsOfFireDoors(void) {
     s32 i;
 
     if (best_cRPos != 0 && Rail[best_cRPos->iRAIL].type == 0) {
-        NuSpecialFind(world_scene[0], &obj[0], str_door1);
-        NuSpecialFind(world_scene[0], &obj[1], str_door2);
-        NuSpecialFind(world_scene[0], &obj[2], str_door3);
-        NuSpecialFind(world_scene[0], &obj[3], str_door4);
-        NuSpecialFind(world_scene[0], &obj[4], str_door25);
-        NuSpecialFind(world_scene[0], &obj[5], str_door26);
-        NuSpecialFind(world_scene[0], &obj[6], str_door27);
-        NuSpecialFind(world_scene[0], &obj[7], str_door28);
+        NuSpecialFind(world_scene[0], &obj[0], "door1");
+        NuSpecialFind(world_scene[0], &obj[1], "door2");
+        NuSpecialFind(world_scene[0], &obj[2], "door3");
+        NuSpecialFind(world_scene[0], &obj[3], "door4");
+        NuSpecialFind(world_scene[0], &obj[4], "door25");
+        NuSpecialFind(world_scene[0], &obj[5], "door26");
+        NuSpecialFind(world_scene[0], &obj[6], "door27");
+        NuSpecialFind(world_scene[0], &obj[7], "door28");
         if (FurtherBEHIND(best_cRPos->iRAIL, best_cRPos->iALONG, best_cRPos->fALONG, 2, 0x14, 0.5f) != 0) {
-            NuStrCpy(txt, doors_none);
+            NuStrCpy(txt, "00000000");
         } else if (FurtherBEHIND(best_cRPos->iRAIL, best_cRPos->iALONG, best_cRPos->fALONG, 2, 0x21, 0.5f) != 0) {
-            NuStrCpy(txt, doors_first);
+            NuStrCpy(txt, "11110000");
         } else {
-            NuStrCpy(txt, doors_second);
+            NuStrCpy(txt, "00001111");
         }
         for (i = 0; i < 8; i++) {
             if (obj[i].special != 0) {
@@ -394,20 +343,20 @@ void UpdateCrateBallsOfFireDoors(void) {
             }
         }
 
-        NuSpecialFind(world_scene[0], &obj[0], str_door5);
-        NuSpecialFind(world_scene[0], &obj[1], str_door6);
-        NuSpecialFind(world_scene[0], &obj[2], str_door7);
-        NuSpecialFind(world_scene[0], &obj[3], str_door8);
-        NuSpecialFind(world_scene[0], &obj[4], str_door29);
-        NuSpecialFind(world_scene[0], &obj[5], str_door30);
-        NuSpecialFind(world_scene[0], &obj[6], str_door31);
-        NuSpecialFind(world_scene[0], &obj[7], str_door32);
+        NuSpecialFind(world_scene[0], &obj[0], "door5");
+        NuSpecialFind(world_scene[0], &obj[1], "door6");
+        NuSpecialFind(world_scene[0], &obj[2], "door7");
+        NuSpecialFind(world_scene[0], &obj[3], "door8");
+        NuSpecialFind(world_scene[0], &obj[4], "door29");
+        NuSpecialFind(world_scene[0], &obj[5], "door30");
+        NuSpecialFind(world_scene[0], &obj[6], "door31");
+        NuSpecialFind(world_scene[0], &obj[7], "door32");
         if (FurtherBEHIND(best_cRPos->iRAIL, best_cRPos->iALONG, best_cRPos->fALONG, 2, 0x38, 0.5f) != 0) {
-            NuStrCpy(txt, doors_none);
+            NuStrCpy(txt, "00000000");
         } else if (FurtherBEHIND(best_cRPos->iRAIL, best_cRPos->iALONG, best_cRPos->fALONG, 2, 0x41, 0.5f) != 0) {
-            NuStrCpy(txt, doors_first);
+            NuStrCpy(txt, "11110000");
         } else {
-            NuStrCpy(txt, doors_second);
+            NuStrCpy(txt, "00001111");
         }
         for (i = 0; i < 8; i++) {
             if (obj[i].special != 0) {

@@ -41,7 +41,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 from declib.stabs import (Array, Basic, Enum, Pointer, Struct,  # noqa: E402
-                          TypeTable)
+                          TypeTable, join_continuations)
 from declib.target import load_target  # noqa: E402
 from declib.toolchain import h  # noqa: E402
 
@@ -221,11 +221,9 @@ def probe_table(type_text, source, version, profile="default"):
     finally:
         shutil.rmtree(work, ignore_errors=True)
     table, ref = TypeTable(), None
-    for line in asm.splitlines():
-        m = STABS_RE.match(line)
-        if not m:
-            continue
-        string = m.group(1).encode().decode("unicode_escape")
+    parts = [m.group(1).encode().decode("unicode_escape")
+             for line in asm.splitlines() if (m := STABS_RE.match(line))]
+    for string in join_continuations(parts):
         name, _desc, r = table.add(string)
         if name == PROBE_NAME:
             ref = r
@@ -323,6 +321,12 @@ class Renderer:
             blob = img.bytes(value, min(256, sec[2] - value))
             end = blob.find(b"\0")
             if end >= 0:
+                return c_escape(blob[:end])
+        if sec and sec[0] == ".sdata":
+            # ee-gcc puts strings of at most 8 bytes in .sdata.
+            blob = img.bytes(value, min(8, sec[2] - value))
+            end = blob.find(b"\0")
+            if end > 0 and all(32 <= b < 127 for b in blob[:end]):
                 return c_escape(blob[:end])
         return f"D_{value:08X} /* unresolved */"
 

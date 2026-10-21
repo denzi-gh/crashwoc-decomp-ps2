@@ -33,9 +33,7 @@ typedef struct sceSifDmaData {
     unsigned int mode;
 } sceSifDmaData;
 
-extern SifCmdResetData D_00706900 __attribute__((aligned(64)));
-
-#define iop_reset_pkt D_00706900
+static SifCmdResetData rdata __attribute__((aligned(64)));
 
 #define SIF_CMD_RESET_CMD    0x80000003
 #define SIF_SYSREG_SUBADDR   0x80000000
@@ -67,22 +65,22 @@ int sceSifResetIop(const char *arg, int mode)
     sceSifStopDma();
     iop_addr = sceSifGetReg(SIF_SYSREG_SUBADDR);
 
-    iop_reset_pkt.mode = mode;
+    rdata.mode = mode;
     for (i = 0; arg[i] != 0; i++) {
-        iop_reset_pkt.arg[i] = arg[i];
+        rdata.arg[i] = arg[i];
     }
-    iop_reset_pkt.header.dest = 0;
-    iop_reset_pkt.arglen = i;
-    iop_reset_pkt.header.cid = SIF_CMD_RESET_CMD;
-    iop_reset_pkt.header.dsize = 0;
-    iop_reset_pkt.header.psize = sizeof(SifCmdResetData);
+    rdata.header.dest = 0;
+    rdata.arglen = i;
+    rdata.header.cid = SIF_CMD_RESET_CMD;
+    rdata.header.dsize = 0;
+    rdata.header.psize = sizeof(SifCmdResetData);
 
-    dma.data = (unsigned int)&iop_reset_pkt;
+    dma.data = (unsigned int)&rdata;
     dma.addr = iop_addr;
     dma.size = sizeof(SifCmdResetData);
     dma.mode = SIF_DMA_ERT | SIF_DMA_INT_O;
 
-    sceSifWriteBackDCache(&iop_reset_pkt, sizeof(SifCmdResetData));
+    sceSifWriteBackDCache(&rdata, sizeof(SifCmdResetData));
     sceSifSetReg(SIF_REG_SMFLAG, SIF_STAT_BOOTEND);
 
     if (sceSifSetDma(&dma, 1) != 0) {

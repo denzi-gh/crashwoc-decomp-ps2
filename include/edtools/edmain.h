@@ -19,7 +19,9 @@ struct edmainreg_s {
     void (*init)(void); /* 0x0C */
     void (*close)(void); /* 0x10 */
     void (*select)(void); /* 0x14 */
-    char pad_0x18[0xC]; /* 0x18 */
+    void *pad_0x18; /* 0x18 */
+    void (*apply)(void); /* 0x1C */
+    void (*writeblock)(s32 fh); /* 0x20 */
     void (*readblock)(s32 fh); /* 0x24 */
     s32 blockid; /* 0x28 */
     s32 (*process)(struct nupad_s *pad, f32 dt); /* 0x2C */

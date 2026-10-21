@@ -4449,7 +4449,7 @@ void MakeTimeI(s32 time, s32 hours, char *txt) {
     temp_tenths = temp_hundredths / 10;
     if (txt != NULL) {
         sprintf(txt, D_0061DFD0, temp_minutes, temp_seconds / 10 + 0x30,
-                temp_seconds % 10 + 0x30, temp_tenths + 0x30,
+                temp_seconds % 10 + 0x30, temp_hundredths / 10 + 0x30,
                 temp_hundredths % 10 + 0x30);
         if (Game.language == 'c') {
             AddSpacesIntoText(txt, 1);
@@ -5435,8 +5435,6 @@ void DrawProbeFX(struct obj_s *obj) {
     }
 }
 
-extern float D_0062D274;
-extern float D_0062D278;
 extern s32 NuSoundKeyStatus(s32 ch);
 
 void UpdateTempCharacter(void) {
@@ -5449,10 +5447,9 @@ void UpdateTempCharacter(void) {
             return;
         }
         TempAnim2.oldaction = TempAnim2.action;
-        /* hoisted: retail computes &CModel[i] before the action checks */
         model = &CModel[i];
         if ((u16)TempAnim2.action < 0x76 && (u16)TempAnim2.newaction < 0x76) {
-            UpdateAnimPacket(model, &TempAnim2, D_0062D274, 0.0f);
+            UpdateAnimPacket(model, &TempAnim2, 0.59999996f, 0.0f);
         }
     }
     if (temp_character != -1) {
@@ -5493,7 +5490,7 @@ void UpdateTempCharacter(void) {
         }
         model = &CModel[i];
         if ((u16)TempAnim.action < 0x76 && (u16)TempAnim.newaction < 0x76) {
-            UpdateAnimPacket(model, &TempAnim, D_0062D278, 0.0f);
+            UpdateAnimPacket(model, &TempAnim, 0.59999996f, 0.0f);
         }
     }
 }
@@ -8494,7 +8491,6 @@ inline s32 Draw3DObject(s32 object, struct nuvec_s *pos, u16 xrot, u16 yrot,
                         u16 zrot, float scalex, float scaley, float scalez,
                         struct nugscn_s *scn, struct nuspecial_s *obj, s32 rot) {
     struct numtx_s m;
-    struct nuvec_s s;
     s32 o;
 
     if (scn != NULL && obj != NULL &&
@@ -8512,36 +8508,37 @@ inline s32 Draw3DObject(s32 object, struct nuvec_s *pos, u16 xrot, u16 yrot,
                              ObjTab[o].obj.scene, ObjTab[o].obj.special, rot);
             }
         }
-        s.x = scalex;
-        s.y = scaley;
-        s.z = scalez;
-        NuMtxSetScale(&m, &s);
-        switch (rot) {
-        case 0:
-            if (xrot != 0) {
-                NuMtxRotateX(&m, xrot);
+        {
+            struct nuvec_s s = {scalex, scaley, scalez};
+
+            NuMtxSetScale(&m, &s);
+            switch (rot) {
+            case 0:
+                if (xrot != 0) {
+                    NuMtxRotateX(&m, xrot);
+                }
+                if (yrot != 0) {
+                    NuMtxRotateY(&m, yrot);
+                }
+                if (zrot != 0) {
+                    NuMtxRotateZ(&m, zrot);
+                }
+                break;
+            case 1:
+                if (yrot != 0) {
+                    NuMtxRotateY(&m, yrot);
+                }
+                if (xrot != 0) {
+                    NuMtxRotateX(&m, xrot);
+                }
+                if (zrot != 0) {
+                    NuMtxRotateZ(&m, zrot);
+                }
+                break;
             }
-            if (yrot != 0) {
-                NuMtxRotateY(&m, yrot);
-            }
-            if (zrot != 0) {
-                NuMtxRotateZ(&m, zrot);
-            }
-            break;
-        case 1:
-            if (yrot != 0) {
-                NuMtxRotateY(&m, yrot);
-            }
-            if (xrot != 0) {
-                NuMtxRotateX(&m, xrot);
-            }
-            if (zrot != 0) {
-                NuMtxRotateZ(&m, zrot);
-            }
-            break;
+            NuMtxTranslate(&m, pos);
+            return NuRndrGScnObj(scn->gobjs[obj->instance->objid], &m);
         }
-        NuMtxTranslate(&m, pos);
-        return NuRndrGScnObj(scn->gobjs[obj->instance->objid], &m);
     }
     return 0;
 }

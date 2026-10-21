@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0251"
 source = "src/sdk/sce/thread.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0251:00279a28:topThread"
@@ -30,3 +30,29 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0251:00279cf0:iSuspendThread"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0251:00613368:topId"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0251:00702a70:stack.6"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0251:00702e70:topSema"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0251:00702e78:topArg"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x00702e78
+end = 0x00703280
+
+[[claim]]
+section = ".rodata"
+start = 0x0062c578
+end = 0x0062c59a

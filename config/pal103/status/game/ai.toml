@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0103"
 source = "src/game/ai.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0103:0022ef10:LoadAI"
@@ -134,3 +134,571 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0103:00235198:PlayerLateralOutOfRange"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c1b00:CMD_FISHSWIM"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c1c18:CMD_EEL"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c1cd0:CMD_CLAM"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c1d58:CMD_DONKEY"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c1ea0:CMD_DROID1"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c1fa0:CMD_DROID2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c20b8:CMD_DROID3"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c2238:CMD_DROID4"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c2358:CMD_SCORPION"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c24a0:CMD_ROOFSCORPION"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c25d8:CMD_BIRD"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c2768:CMD_BUTTERFLY"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c28d0:CMD_BEE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c2948:CMD_SHARK"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c2a50:CMD_DEEPSEASHARK"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c2b08:CMD_PENGUINP"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c2d70:CMD_BIGPENGUINP"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c2fc8:CMD_CRAB"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c31c0:CMD_KNIGHT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c3538:CMD_SEAL"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c35d8:CMD_PARROT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c3840:CMD_NARWHAL"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c3940:CMD_WIZARD"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c3bd8:CMD_MONKEYBANANA"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c3de0:CMD_KOICARP"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c3f00:CMD_TURTLE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c4098:CMD_NINJASTALK"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c4248:CMD_NINJASWORD"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c45f0:CMD_BAT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c46c0:CMD_GONGBONGER"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c4820:CMD_FLAMINGO"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c4958:CMD_NGIN"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c4aa8:CMD_NTROPY"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c4b90:CMD_DINGODILEFLAME"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c4c90:CMD_DINGODILEFIRE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c4d90:CMD_GORILLA"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c4e90:CMD_MAMMOTH"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c4f78:CMD_TINY"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c5158:CMD_LIZARD"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c5450:CMD_LIZARDAB"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c57b0:CMD_RICKSHAW"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c58d0:CMD_TUNA"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c5988:CMD_WHEELA"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c5ad8:CMD_CACTUS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c5c10:CMD_DIVER"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c5ce8:CMD_DYNO"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c5dd8:CMD_VULTURE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c5f40:CMD_JELLYFISH"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c6048:CMD_WETJELLYFISH"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c6108:CMD_PYGMY"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c61f0:CMD_OCTOPUS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c62d8:CMD_TENTACLE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c63c0:CMD_MOUSE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c6540:CMD_ROBIN"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c65b8:CMD_STARFISH"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c6640:CMD_DRAGONFLY"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c66f8:CMD_SNOWHOG"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c6780:CMD_POLARGUARD"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c6808:CMD_SKIER"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c6a00:CMD_MINE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c6a88:CMD_FALLINGMINE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c6b90:CMD_HARPOONIST"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c6cc8:CMD_LABGUYSHIELD"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c7020:CMD_LABGUYPOTION"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c70c0:CMD_IDLELABGUY"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c7160:CMD_STAMPEDER"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c71e8:CMD_FISHY"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c7248:CMD_CRYSTAL"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c7308:CMD_FLYINGCRYSTAL"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c73b0:CMD_CLOCK"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c7470:CMD_FLYINGCLOCK"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c7518:CMD_CRATEGEM"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c7660:CMD_FLYINGCRATEGEM"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c7790:CMD_GEM"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c7850:CMD_FLYINGGEM"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c78f8:CMD_ICON"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c79b8:CMD_COCO"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c7a58:CMD_PROBE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c7b18:CMD_FLYINGPROBE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c7bc0:CMD_EARTHCRUNCH"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c7d08:CMD_ATLASCRUNCH"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c7e08:punchpos1"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c7e38:punchpos2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c7e68:CMD_WATERCRUNCH"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c8870:crunchtime_arena_midpos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c8880:water_attack_pos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c88b0:fire_backpos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c88f0:fire_frontpos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c8930:weather_srcpos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c89a0:weather_dstpos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c8a10:space_buttonpos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c8a40:CMD_SPACECRUNCH"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c8f80:CMD_SPACECORTEX"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c9338:CMD_SPACEROKKO"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c93b0:CMD_SPACEWAWA"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c9428:CMD_SPACEPYRO"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c94a0:CMD_SPACELOLO"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005c9518:AIType"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005ca0d0:LevelAIType"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005ca140:AITab"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005cd140:ai_lookpos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:005cd150:weather_attack_on"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:00631b90:DRAINWAWADY"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:00631b94:crunch_vulnerable"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:00631b98:SPACEUKAHACKY"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:00631b9c:SPACEUKADIST"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:00631ba0:SPACEUKAFRAMEHACK"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:00631ba8:crunchtime_phase1tab"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:00631bb0:crunchtime_phase2tab"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:00631bb8:crunchtime_phase3tab"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:00631bc0:crunchtime_phase4tab"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:00631bc8:LEVELAITYPES"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:00631bcc:LEVELAICOUNT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:00631bd0:temp_creature_i"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:00631bd4:DrainDamage_Intro"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:00631bd8:earth_attack_on"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:00631bdc:water_attack_on"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:00631be0:fire_attack_on"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:00631be4:CrunchTime_Intro"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:00631be8:SpaceCortex_Defeated"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:00633300:drain_wawa_ok"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:00633304:drain_wawa_xrot"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:00633306:drain_wawa_yrot"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:00633308:drain_ang"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:00633310:drain_wawa_model"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:00633314:crunchtime_attack_phase"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:00633318:earth_attack_wait"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:0063331c:water_attack_wait"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:00633320:water_last_chute"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:00633324:fire_attack_wait"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:00633328:weather_attack_wait"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:00633330:spaceuka_angle"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:00633338:SpaceCrunch_Punch"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:0063333c:SpaceCortex_Back"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:006b7610:drain_wawa_pos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:006b7620:drain_wawa_anim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0103:006b7640:space_ukapos"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x006b7640
+end = 0x006b764c
+
+[[claim]]
+section = ".rodata"
+start = 0x00620290
+end = 0x006202e4
+
+[[claim]]
+section = ".sbss"
+start = 0x0063333c
+end = 0x00633340
+
+[[claim]]
+section = ".sdata"
+start = 0x00631b88
+end = 0x00631b90

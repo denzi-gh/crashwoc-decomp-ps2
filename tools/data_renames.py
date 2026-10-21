@@ -3,7 +3,7 @@
 
 The C references retail data through `extern ... D_<vram>` declarations, often
 behind `#define <alias> D_<vram>` (or `D_<vram>[i]`, `(*(T *)D_<vram>)`).
-The per-unit data workflow (PLAN_DATA.md Part 3) replaces those with
+The per-unit data workflow (docs/decomp_agent.md) replaces those with
 definitions under the retail name; this tool prepares that work. It writes
 build/<version>/data_renames.json (game-derived evidence, never committed) and
 prints a summary. Nothing in the tree is changed.

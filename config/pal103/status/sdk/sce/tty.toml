@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0252"
 source = "src/sdk/sce/tty.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0252:00279d88:QueueInit"
@@ -38,3 +38,29 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0252:0027a1e8:sceTtyInit"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0252:00703280:q.3"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0252:00703390:tinfo"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0252:007033c0:wbuf"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0252:00703500:rbuf"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x00703500
+end = 0x00703640
+
+[[claim]]
+section = ".rodata"
+start = 0x0062c5f8
+end = 0x0062c610

@@ -193,7 +193,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0020c7b8:CheckGliderCollisions"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0020d730:DrawGliderBombs"
@@ -217,7 +217,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0020e770:InitBigGuns"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0020f640:GetBigGunBestTarget"
@@ -413,7 +413,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:002196e8:ProcessEarthBossLevel"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00219bd0:ProcessAtlasAtlasCollisions_a"
@@ -425,7 +425,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021a138:SetTrailPos"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0021a498:ProcessAtlasTrail"

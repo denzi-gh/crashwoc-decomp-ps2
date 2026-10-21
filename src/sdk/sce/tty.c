@@ -58,15 +58,9 @@ typedef struct {
 
 typedef void (*Deci2Handler)(int event, int param, void *opt);
 
-extern Queue D_00703280;
-extern TtyInfo D_00703390;
-extern unsigned char D_007033C0[0x140];
-extern unsigned char D_00703500[0x140];
-
-#define tty_queue D_00703280
-#define tty_info  D_00703390
-#define tty_wbuf  D_007033C0
-#define tty_rbuf  D_00703500
+static TtyInfo tinfo;
+static unsigned char wbuf[0x140] __attribute__((aligned(64)));
+static unsigned char rbuf[0x140] __attribute__((aligned(64)));
 
 extern int sceDeci2Open(unsigned short protocol, void *opt, Deci2Handler handler);
 extern int sceDeci2ReqSend(int socket, char dest);
@@ -81,12 +75,12 @@ extern int kprintf(const char *fmt, ...);
 
 Queue *QueueInit(int size)
 {
-    Queue *q = &tty_queue;
+    static Queue q;
 
-    q->size = size;
-    q->count = 0;
-    q->rp = q->wp = q->buf;
-    return q;
+    q.size = size;
+    q.count = 0;
+    q.rp = q.wp = q.buf;
+    return &q;
 }
 
 
@@ -120,7 +114,7 @@ void sceTtyHandler(int event, int param, TtyInfo *ti)
     case DECI2_READ:
     case DECI2_READDONE:
         if (param != 0) {
-            if (ti->rlen + param > sizeof(tty_rbuf)) {
+            if (ti->rlen + param > sizeof(rbuf)) {
                 kprintf("TTY: packet size larger than expect\n");
             }
             n = sceDeci2ExRecv(ti->socket, ti->rbuf + ti->rlen, param);
@@ -164,13 +158,13 @@ int sceTtyWrite(const char *buf, int len)
     int n = 0;
     int written = 0;
 
-    if (tty_info.writing) {
+    if (tinfo.writing) {
         return -1;
     }
     DIntr();
-    tty_info.writing = 1;
-    pkt = UNCACHED(tty_wbuf);
-    tty_info.wbuf = (unsigned char *)pkt;
+    tinfo.writing = 1;
+    pkt = UNCACHED(wbuf);
+    tinfo.wbuf = (unsigned char *)pkt;
     p = pkt->data;
     while (len-- != 0) {
         if (*buf == '\n') {
@@ -186,15 +180,15 @@ int sceTtyWrite(const char *buf, int len)
             break;
         }
     }
-    tty_info.wlen = n + sizeof(TtyHdr);
-    pkt->hdr.len = tty_info.wlen;
-    if (sceDeci2ReqSend(tty_info.socket, pkt->hdr.dest) < 0) {
-        tty_info.writing = 0;
+    tinfo.wlen = n + sizeof(TtyHdr);
+    pkt->hdr.len = tinfo.wlen;
+    if (sceDeci2ReqSend(tinfo.socket, pkt->hdr.dest) < 0) {
+        tinfo.writing = 0;
         EIntr();
         return -1;
     }
-    while (tty_info.writing) {
-        sceDeci2Poll(tty_info.socket);
+    while (tinfo.writing) {
+        sceDeci2Poll(tinfo.socket);
     }
     EIntr();
     return written;
@@ -206,10 +200,10 @@ int sceTtyRead(char *buf, int len)
     int i;
 
     for (i = 0; i < len; i++) {
-        while (tty_info.queue->count == 0) {
+        while (tinfo.queue->count == 0) {
         }
-        buf[i] = *tty_info.queue->rp;
-        QueuePeekReadDone(tty_info.queue);
+        buf[i] = *tinfo.queue->rp;
+        QueuePeekReadDone(tinfo.queue);
         if (buf[i] == '\n' || buf[i] == '\r') {
             return i + 1;
         }
@@ -223,21 +217,21 @@ int sceTtyInit(void)
     TtyHdr *hdr;
 
     FlushCache(0);
-    tty_info.socket = sceDeci2Open(PROTO_ETTY, &tty_info, (Deci2Handler)sceTtyHandler);
-    if (tty_info.socket < 0) {
+    tinfo.socket = sceDeci2Open(PROTO_ETTY, &tinfo, (Deci2Handler)sceTtyHandler);
+    if (tinfo.socket < 0) {
         return 0;
     }
-    tty_info.writing = 0;
-    tty_info.wlen = 0;
-    tty_info.rlen = 0;
-    tty_info.rbuf = UNCACHED(tty_rbuf);
-    hdr = UNCACHED(tty_wbuf);
-    tty_info.wbuf = (unsigned char *)hdr;
+    tinfo.writing = 0;
+    tinfo.wlen = 0;
+    tinfo.rlen = 0;
+    tinfo.rbuf = UNCACHED(rbuf);
+    hdr = UNCACHED(wbuf);
+    tinfo.wbuf = (unsigned char *)hdr;
     hdr->proto = PROTO_ETTY;
     hdr->src = 'E';
     hdr->dest = 'H';
     hdr->rsvd = 0;
     hdr->id = 0;
-    tty_info.queue = QueueInit(TTY_BUFSZ);
+    tinfo.queue = QueueInit(TTY_BUFSZ);
     return 1;
 }

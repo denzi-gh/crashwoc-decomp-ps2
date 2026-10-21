@@ -2223,9 +2223,10 @@ inline void InitBigGun(struct nuvec_s *pos, f32 angle, s32 type, f32 pitchmin, f
     gun->pos = *pos;
     gun->action = 1;
     gun->lastaction = -1;
-    gun->yaw = gun->fireyawmain;
+    gun->yaw = angle;
     gun->firepitch = 0.0f;
     gun->fireyaw = 0.0f;
+    gun->yaw = gun->fireyawmain;
     gun->type = type;
     NuVecSub(&dir, &gun->pos, SetNuVecPntr(0.0f, 7.75f, 11.17f));
     NuVecNorm(&dir, &dir);
@@ -6231,19 +6232,19 @@ void CheckGliderCollisions(void)
         struct nuvec_s outline[6];
         struct nuvec_s *points = outline;
 
-        GetGliderCollPoints(points);
+        GetGliderCollPoints(outline);
         points[5] = outline[0];
         for (i = 0; i < 6; i++) {
             if (HovaBlimp[i].active == 0
                 || !SphereCollideDiff(&HovaBlimp[i].pos, &PlayerGlider.Position, BigRad, 1.0f, &diff2)) {
                 continue;
             }
-            if (LinesIntersectEllipse(points, 5, &HovaBlimp[i].pos, HovaRad + 3.0f, HovaY)) {
+            if (LinesIntersectEllipse(outline, 5, &HovaBlimp[i].pos, HovaRad + 3.0f, HovaY)) {
                 hit = 1;
             } else {
                 diff = HovaBlimp[i].pos;
                 diff.y += PropYOff;
-                hit = LinesIntersectEllipse(points, 5, &diff, PropRad + 3.0f, PropY) != 0;
+                hit = LinesIntersectEllipse(outline, 5, &diff, PropRad + 3.0f, PropY) != 0;
             }
             if (hit) {
                 NuVecSub(&diff2, &PlayerGlider.Position, &HovaBlimp[i].pos);
@@ -7215,7 +7216,6 @@ void SetTrailPos(s32 pt, struct NEWBUGGY *atlas, struct nuvec_s *pos, s32 reset,
     f32 fade;
     f32 intensity;
     s32 base;
-    s32 negative;
     s32 count;
     s32 tries;
     s32 j;
@@ -7229,7 +7229,6 @@ void SetTrailPos(s32 pt, struct NEWBUGGY *atlas, struct nuvec_s *pos, s32 reset,
     }
     j = pt - 1;
     prev = &trail[j & 0x7F];
-    negative = angle & 0x8000;
     count = 128;
     tries = 4;
     while (--count != -1 && --tries != -1) {
@@ -7255,7 +7254,7 @@ void SetTrailPos(s32 pt, struct NEWBUGGY *atlas, struct nuvec_s *pos, s32 reset,
             IntoTrail = 8;
         }
     }
-    if (negative != 0) {
+    if (angle & 0x8000) {
         intensity = IntoTrail * -31.9999f * 0.125f;
     } else {
         intensity = IntoTrail * 31.9999f * 0.125f;
@@ -9063,11 +9062,11 @@ extern void ProcessWesternArenaLevel(struct nupad_s *pad);
 extern f32 HitMag;
 extern s32 AtlasHitsLost;
 extern s32 ROKAMBVOL;
-extern s32 r1;
+extern volatile s32 r1;
 extern s32 FRAME;
 extern void *app_tbset;
 extern void tbslotBeginFn(void *tbset, s32 slot);
-extern void tbslotEndFn(void *tbset, s32 slot);
+extern s32 tbslotEndFn(void *tbset, s32 slot);
 extern void ProcessEarthBossActions(struct NEWBUGGY *boss);
 
 
@@ -9077,7 +9076,8 @@ void ProcessEarthBossLevel(struct nupad_s *pad)
     f32 mag;
     f32 bump;
     s32 damage;
-    s32 power;
+    s32 hitpower;
+    s32 bumppower;
     s32 hit;
 
     MyGameSfxLoop(0xD0, &v000, ROKAMBVOL);
@@ -9135,9 +9135,9 @@ void ProcessEarthBossLevel(struct nupad_s *pad)
         }
         mag = mag * 25.0f / 20.0f;
         damage = mag;
-        power = mag * 3.0f;
-        NewRumble(&player->rumble, power);
-        NewBuzz(&player->rumble, power = power / 6);
+        hitpower = mag * 3.0f;
+        NewRumble(&player->rumble, hitpower);
+        NewBuzz(&player->rumble, hitpower / 6);
         if (InvincibilityCHEAT == 0 && VehicleLevelImmune == 0) {
             PlayerAtlas.desthitpoints = PlayerAtlas.ball_health - damage;
         }
@@ -9154,16 +9154,16 @@ void ProcessEarthBossLevel(struct nupad_s *pad)
             bump = 20.0f;
         }
         bump = bump * 25.0f / 20.0f;
-        power = bump * 3.0f;
-        NewRumble(&player->rumble, power);
-        NewBuzz(&player->rumble, power = power / 6);
+        bumppower = bump * 3.0f;
+        NewRumble(&player->rumble, bumppower);
+        NewBuzz(&player->rumble, bumppower / 6);
     }
     PlayerAtlas.ball_beenhit = 0;
     if (PlayerAtlas.hitpointcounter != 0) {
         PlayerAtlas.hitpointcounter--;
     } else if (PlayerAtlas.desthitpoints < PlayerAtlas.ball_health) {
-        PlayerAtlas.hitpointcounter = 5;
         PlayerAtlas.ball_health--;
+        PlayerAtlas.hitpointcounter = 5;
     }
     if (PlayerAtlas.ball_health <= 0) {
         if (PlayerAtlas.owner->obj.dead == 0) {

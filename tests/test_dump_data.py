@@ -19,8 +19,8 @@ class StubImage:
     """Just enough of dump_data.Image for Renderer."""
 
     def __init__(self):
-        self.rodata = 0x00613480
-        self.blob = b"hello\0" + bytes(10)
+        self.regions = [(".rodata", 0x00613480, b"hello\0" + bytes(10)),
+                        (".sdata", 0x00631240, b"crate\0\0\0\x01\x02\0\0")]
         self.functions = {0x00100100: ("Main", False),
                           0x00100200: ("Dup__00100200", True)}
         self.by_address = {0x00293700: {"name": "table", "address": 0x00293700}}
@@ -28,13 +28,15 @@ class StubImage:
                        {"name": "table", "address": 0x00293700})]
 
     def section_of(self, addr):
-        if self.rodata <= addr < self.rodata + len(self.blob):
-            return (".rodata", self.rodata, self.rodata + len(self.blob), 0, 1)
+        for name, lo, blob in self.regions:
+            if lo <= addr < lo + len(blob):
+                return (name, lo, lo + len(blob), 0, 1)
         return None
 
     def bytes(self, addr, size):
-        off = addr - self.rodata
-        return self.blob[off:off + size]
+        _name, lo, blob = next(r for r in self.regions
+                               if r[1] <= addr < r[1] + len(r[2]))
+        return blob[addr - lo:addr - lo + size]
 
 
 def render(type_text, blob):
@@ -95,6 +97,9 @@ class TestRender(unittest.TestCase):
         self.assertEqual(text, '{\n    0,\n    Main,\n    &table,\n'
                                '    (char *)&table + 0x8,\n    "hello",\n'
                                '    D_00700000 /* unresolved */\n}')
+        # A short .sdata string; a non-string .sdata word stays unresolved.
+        self.assertEqual(render("void *[2]", struct.pack("<2I", 0x00631240, 0x00631248))[0],
+                         '{\n    "crate",\n    D_00631248 /* unresolved */\n}')
         self.assertEqual(render("void *", struct.pack("<I", 0x00100200))[1].notes,
                          ["Dup__00100200: a duplicated static, declared per unit"])
 

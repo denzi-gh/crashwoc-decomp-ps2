@@ -285,6 +285,9 @@ def _temp_manifest(reg, fn, unit, profile):
     for f in sorted(reg.by_unit.get(fn.unit_index, []), key=lambda r: r.address):
         state = "matching" if f.address == fn.address else "asm"
         lines += ["[[function]]", f'id = "{f.id_str()}"', f'state = "{state}"', ""]
+    manifest = reg.manifest_for_unit(fn.unit_index) or {}
+    for d in manifest.get("data", []):
+        lines += ["[[data]]", f'id = "{d["id"]}"', 'state = "asm"', ""]
     return "\n".join(lines)
 
 

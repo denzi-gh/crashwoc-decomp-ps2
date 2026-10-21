@@ -271,7 +271,7 @@ def data_context(project, target) -> dict:
                         "(python tools/promote.py --init-data <source>)")
     if not facts["unit_fully_matching"]:
         unknowns.append("the unit is not fully matching: its data stays retail "
-                        "(PLAN_DATA Part 3 preconditions)")
+                        "(docs/decomp_agent.md, \"Per-unit data workflow\")")
     if sym["section"] not in (".data", ".rodata"):
         unknowns.append(f"{sym['section']} data from C is a later PR")
     if sym.get("size") is None:

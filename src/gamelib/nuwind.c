@@ -40,14 +40,14 @@ extern float NuFsqrt(float x);
 extern float NuTrigTable[];
 extern struct nucamera_s global_camera;
 
-extern int NuWindQS;
-extern int NuWindGCount;
-extern int NuWindMtxIndex;
-extern int NuWindWave;
-extern int NuWindDir;
-extern int NuWindDir2;
-extern struct numtx_s NuWindMtxs[1024];
-extern struct nuwindgrp_s NuWindGroup[64];
+int NuWindQS = 0x1365;
+int NuWindGCount = 0;
+int NuWindMtxIndex = 0;
+int NuWindWave = 0;
+int NuWindDir = 0;
+int NuWindDir2 = 0;
+struct numtx_s NuWindMtxs[1024] = { 0 };
+struct nuwindgrp_s NuWindGroup[64] = { 0 };
 
 
 inline int NuWindRand(void)

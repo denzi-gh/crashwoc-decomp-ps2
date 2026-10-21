@@ -13,11 +13,11 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0049:001505b0:NuCvtDmaFaceOn"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0049:00150a58:NuCvtDmaFaceY"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0049:00150f28:NuCvtSizeDmaBezTriCFromIdx"
@@ -29,11 +29,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0049:00151c40:NuCvtTriStreamCFromIdx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0049:00152090:NuCvtTriStripStreamCFromIdx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0049:00152528:NuCvtSizeDmaTriCFromIdx"
@@ -49,7 +49,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0049:00153738:NuCvtDmaTriStripCFromIdx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0049:001547d8:NuPs2CreateFaceOn"
