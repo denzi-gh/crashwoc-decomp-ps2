@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0100"
 source = "src/game/vehterr.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0100:00221b60:TryUnembeddPointDir"
@@ -45,4 +45,32 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0100:00223a70:FindSurfaceRotXZFromNormal"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0100:005b93e8:WorldAxis"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0100:005b9410:TempX.95"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0100:005b9420:TempY.96"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0100:005b9430:TempZ.97"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0100:00631938:WheelId"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0100:0063193c:OldBase.78"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0100:00631940:LastJeepWithinBounds.79"
 state = "matching"

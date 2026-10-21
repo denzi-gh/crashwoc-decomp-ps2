@@ -102,14 +102,6 @@ typedef struct SemaParam {
     unsigned int option;
 } SemaParam;
 
-extern sceMcTblGetDir D_00700180;
-extern McFileParam D_007001F0;
-extern McEndParam D_00700640;
-
-#define mc_file_info D_00700180
-#define mc_file      D_007001F0
-#define mc_end_param D_00700640
-
 extern int CreateSema(SemaParam *param);
 extern int WaitSema(int sema);
 extern void FlushCache(int mode);
@@ -123,25 +115,20 @@ extern void sceSifWriteBackDCache(void *ptr, int size);
 extern int sceMcSync(int mode, int *cmd, int *result);
 extern void mcDelayThread(unsigned short time);
 
-extern int D_00612400[];
-extern int D_00612404[];
-extern sceSifClientData D_00700140;
-extern int *D_00700168[];
-extern int *D_0070016C[];
-extern int *D_00700170[];
-extern McDescParam D_007001C0;
-extern char D_00700700[];
-extern int D_00701700[];
+static char __ps2_libinfo__[16] = "PsIIlibmc   2320";
+static int mcRunCmdNo = 0;
+static int semaidRegFunc = -1;
 
-#define mc_last_cmd    (D_00612400[0])
-#define mc_sema        (D_00612404[0])
-#define mc_client      D_00700140
-#define mc_info_type   (D_00700168[0])
-#define mc_info_free   (D_0070016C[0])
-#define mc_info_format (D_00700170[0])
-#define mc_desc        D_007001C0
-#define mc_pwd         D_00700700
-#define mc_rdata       D_00701700
+static sceSifClientData mcClientID;
+static int *typeAddr;
+static int *freeAddr;
+static int *formAddr;
+static sceMcTblGetDir buffFileInfo __attribute__((aligned(64)));
+static McDescParam sifParamOrd;
+static McFileParam sifParamFname;
+static McEndParam sifParamNext __attribute__((aligned(64)));
+static char currentDir[4096];
+static int retval[16];
 
 #define UNCACHED(p) ((unsigned int)(p) | 0x20000000)
 
@@ -166,99 +153,99 @@ int sceMcInit(void) {
     int ret;
     int i;
 
-    if (mc_sema < 0) {
+    if (semaidRegFunc < 0) {
         sema.initCount = 1;
         sema.maxCount = 1;
         sema.option = 0;
-        mc_sema = CreateSema(&sema);
+        semaidRegFunc = CreateSema(&sema);
     }
     sceMcSync(0, 0, 0);
-    WaitSema(mc_sema);
+    WaitSema(semaidRegFunc);
     sceSifInitRpc(0);
     while (1) {
-        if (sceSifBindRpc(&mc_client, 0x80000400, 0) < 0) {
+        if (sceSifBindRpc(&mcClientID, 0x80000400, 0) < 0) {
             printf("bind error libmc \n");
             while (1) {
             }
         }
-        if (mc_client.server != 0) {
+        if (mcClientID.server != 0) {
             break;
         }
         for (i = 0x100000; i != 0; i--) {
         }
     }
-    ret = sceSifCallRpc(&mc_client, 0xFE, 0, &mc_desc, 0x30, mc_rdata, 0xC, 0, 0);
-    SignalSema(mc_sema);
+    ret = sceSifCallRpc(&mcClientID, 0xFE, 0, &sifParamOrd, 0x30, retval, 0xC, 0, 0);
+    SignalSema(semaidRegFunc);
     if (ret < 0) {
-        mc_client.server = 0;
+        mcClientID.server = 0;
         return ret - 100;
     }
-    if (mc_rdata[1] < 0x20A) {
+    if (retval[1] < 0x20A) {
         printf("libmc: too old release of mcserv.irx\n");
-        mc_client.server = 0;
+        mcClientID.server = 0;
         return -120;
     }
-    if (mc_rdata[2] < 0x20E) {
+    if (retval[2] < 0x20E) {
         printf("libmc: too old release of mcman.irx\n");
-        mc_client.server = 0;
+        mcClientID.server = 0;
         return -121;
     }
-    return mc_rdata[0];
+    return retval[0];
 }
 
 
 int sceMcSync(int mode, int *cmd, int *result) {
     int ret;
 
-    if (mc_last_cmd == 0) {
+    if (mcRunCmdNo == 0) {
         return -1;
     }
-    ret = sceSifCheckStatRpc(&mc_client);
+    ret = sceSifCheckStatRpc(&mcClientID);
     if (mode == 0 && ret != 0) {
-        while (sceSifCheckStatRpc(&mc_client) != 0) {
+        while (sceSifCheckStatRpc(&mcClientID) != 0) {
             mcDelayThread(60);
         }
         ret = 0;
     }
     ret = !ret;
     if (cmd != 0) {
-        *cmd = mc_last_cmd;
+        *cmd = mcRunCmdNo;
     }
     if (ret != 0) {
-        mc_last_cmd = 0;
+        mcRunCmdNo = 0;
         if (result != 0) {
-            *result = mc_rdata[0];
+            *result = retval[0];
         }
-        SignalSema(mc_sema);
+        SignalSema(semaidRegFunc);
     }
     return ret;
 }
 
 
 sceSifClientData *_lmcGetClientPtr(unsigned int *rdata, unsigned int *last_cmd) {
-    *rdata = (unsigned int)mc_rdata;
-    *last_cmd = (unsigned int)&mc_last_cmd;
-    mc_rdata[15] = mc_sema;
-    return &mc_client;
+    *rdata = (unsigned int)retval;
+    *last_cmd = (unsigned int)&mcRunCmdNo;
+    retval[15] = semaidRegFunc;
+    return &mcClientID;
 }
 
 
 int sceMcChangeThreadPriority(int level) {
     int ret;
 
-    if (PollSema(mc_sema) < 0) {
+    if (PollSema(semaidRegFunc) < 0) {
         return -200;
     }
-    if (mc_client.server == 0) {
-        SignalSema(mc_sema);
+    if (mcClientID.server == 0) {
+        SignalSema(semaidRegFunc);
         return -100;
     }
-    mc_desc.origin = level;
-    ret = sceSifCallRpc(&mc_client, 0x14, 1, &mc_desc, 0x30, mc_rdata, 4, 0, 0);
+    sifParamOrd.origin = level;
+    ret = sceSifCallRpc(&mcClientID, 0x14, 1, &sifParamOrd, 0x30, retval, 4, 0, 0);
     if (ret == 0) {
-        mc_last_cmd = 0x14;
+        mcRunCmdNo = 0x14;
     } else {
-        SignalSema(mc_sema);
+        SignalSema(semaidRegFunc);
     }
     return ret;
 }
@@ -267,48 +254,48 @@ int sceMcChangeThreadPriority(int level) {
 int sceMcGetSlotMax(int port) {
     int ret;
 
-    if (PollSema(mc_sema) < 0) {
+    if (PollSema(semaidRegFunc) < 0) {
         return -200;
     }
-    if (mc_client.server == 0) {
-        SignalSema(mc_sema);
+    if (mcClientID.server == 0) {
+        SignalSema(semaidRegFunc);
         return -100;
     }
-    mc_desc.port = port;
-    ret = sceSifCallRpc(&mc_client, 0x15, 0, &mc_desc, 0x30, mc_rdata, 4, 0, 0);
+    sifParamOrd.port = port;
+    ret = sceSifCallRpc(&mcClientID, 0x15, 0, &sifParamOrd, 0x30, retval, 4, 0, 0);
     if (ret != 0) {
-        SignalSema(mc_sema);
+        SignalSema(semaidRegFunc);
         return ret;
     }
-    SignalSema(mc_sema);
-    return mc_rdata[0];
+    SignalSema(semaidRegFunc);
+    return retval[0];
 }
 
 
 int sceMcOpen(int port, int slot, const char *name, int mode) {
     int ret;
 
-    if (PollSema(mc_sema) < 0) {
+    if (PollSema(semaidRegFunc) < 0) {
         return -200;
     }
-    if (mc_client.server == 0) {
-        SignalSema(mc_sema);
+    if (mcClientID.server == 0) {
+        SignalSema(semaidRegFunc);
         return -100;
     }
     if (name == 0 || *name == 0) {
-        SignalSema(mc_sema);
+        SignalSema(semaidRegFunc);
         return -210;
     }
-    strncpy(mc_file.name, name, 0x3FF);
-    mc_file.port = port;
-    mc_file.flags = mode;
-    mc_file.slot = slot;
-    mc_file.name[0x3FF] = 0;
-    ret = sceSifCallRpc(&mc_client, 2, 1, &mc_file, 0x414, mc_rdata, 4, 0, 0);
+    strncpy(sifParamFname.name, name, 0x3FF);
+    sifParamFname.port = port;
+    sifParamFname.flags = mode;
+    sifParamFname.slot = slot;
+    sifParamFname.name[0x3FF] = 0;
+    ret = sceSifCallRpc(&mcClientID, 2, 1, &sifParamFname, 0x414, retval, 4, 0, 0);
     if (ret == 0) {
-        mc_last_cmd = 2;
+        mcRunCmdNo = 2;
     } else {
-        SignalSema(mc_sema);
+        SignalSema(semaidRegFunc);
     }
     return ret;
 }
@@ -319,7 +306,7 @@ int sceMcMkdir(int port, int slot, const char *name) {
 
     ret = sceMcOpen(port, slot, name, 0x40);
     if (ret == 0) {
-        mc_last_cmd = 0xB;
+        mcRunCmdNo = 0xB;
     }
     return ret;
 }
@@ -328,19 +315,19 @@ int sceMcMkdir(int port, int slot, const char *name) {
 int sceMcClose(int fd) {
     int ret;
 
-    if (PollSema(mc_sema) < 0) {
+    if (PollSema(semaidRegFunc) < 0) {
         return -200;
     }
-    if (mc_client.server == 0) {
-        SignalSema(mc_sema);
+    if (mcClientID.server == 0) {
+        SignalSema(semaidRegFunc);
         return -100;
     }
-    mc_desc.fd = fd;
-    ret = sceSifCallRpc(&mc_client, 3, 1, &mc_desc, 0x30, mc_rdata, 4, 0, 0);
+    sifParamOrd.fd = fd;
+    ret = sceSifCallRpc(&mcClientID, 3, 1, &sifParamOrd, 0x30, retval, 4, 0, 0);
     if (ret == 0) {
-        mc_last_cmd = 3;
+        mcRunCmdNo = 3;
     } else {
-        SignalSema(mc_sema);
+        SignalSema(semaidRegFunc);
     }
     return ret;
 }
@@ -349,21 +336,21 @@ int sceMcClose(int fd) {
 int sceMcSeek(int fd, int offset, int origin) {
     int ret;
 
-    if (PollSema(mc_sema) < 0) {
+    if (PollSema(semaidRegFunc) < 0) {
         return -200;
     }
-    if (mc_client.server == 0) {
-        SignalSema(mc_sema);
+    if (mcClientID.server == 0) {
+        SignalSema(semaidRegFunc);
         return -100;
     }
-    mc_desc.fd = fd;
-    mc_desc.offset = offset;
-    mc_desc.origin = origin;
-    ret = sceSifCallRpc(&mc_client, 4, 1, &mc_desc, 0x30, mc_rdata, 4, 0, 0);
+    sifParamOrd.fd = fd;
+    sifParamOrd.offset = offset;
+    sifParamOrd.origin = origin;
+    ret = sceSifCallRpc(&mcClientID, 4, 1, &sifParamOrd, 0x30, retval, 4, 0, 0);
     if (ret == 0) {
-        mc_last_cmd = 4;
+        mcRunCmdNo = 4;
     } else {
-        SignalSema(mc_sema);
+        SignalSema(semaidRegFunc);
     }
     return ret;
 }
@@ -393,25 +380,25 @@ void mceIntrReadFixAlign(void *data) {
 int sceMcRead(int fd, void *buff, int size) {
     int ret;
 
-    if (PollSema(mc_sema) < 0) {
+    if (PollSema(semaidRegFunc) < 0) {
         return -200;
     }
-    if (mc_client.server == 0) {
-        SignalSema(mc_sema);
+    if (mcClientID.server == 0) {
+        SignalSema(semaidRegFunc);
         return -100;
     }
-    mc_desc.fd = fd;
-    mc_desc.buffer = buff;
-    mc_desc.size = size;
-    mc_desc.param = &mc_end_param;
+    sifParamOrd.fd = fd;
+    sifParamOrd.buffer = buff;
+    sifParamOrd.size = size;
+    sifParamOrd.param = &sifParamNext;
     sceSifWriteBackDCache(buff, size);
-    sceSifWriteBackDCache(&mc_end_param, 0xC0);
-    ret = sceSifCallRpc(&mc_client, 5, 1, &mc_desc, 0x30, mc_rdata, 4,
-                        mceIntrReadFixAlign, &mc_end_param);
+    sceSifWriteBackDCache(&sifParamNext, 0xC0);
+    ret = sceSifCallRpc(&mcClientID, 5, 1, &sifParamOrd, 0x30, retval, 4,
+                        mceIntrReadFixAlign, &sifParamNext);
     if (ret == 0) {
-        mc_last_cmd = 5;
+        mcRunCmdNo = 5;
     } else {
-        SignalSema(mc_sema);
+        SignalSema(semaidRegFunc);
     }
     return ret;
 }
@@ -422,33 +409,33 @@ int sceMcWrite(int fd, const void *buff, int size) {
     int head;
     unsigned int i;
 
-    if (PollSema(mc_sema) < 0) {
+    if (PollSema(semaidRegFunc) < 0) {
         return -200;
     }
-    if (mc_client.server == 0) {
-        SignalSema(mc_sema);
+    if (mcClientID.server == 0) {
+        SignalSema(semaidRegFunc);
         return -100;
     }
-    mc_desc.fd = fd;
+    sifParamOrd.fd = fd;
     if (size < 17) {
-        mc_desc.origin = size;
-        mc_desc.size = 0;
-        mc_desc.buffer = 0;
+        sifParamOrd.origin = size;
+        sifParamOrd.size = 0;
+        sifParamOrd.buffer = 0;
     } else {
         head = ((((unsigned int)buff - 1) & 0xFFFFFFF0) + 0x10) - (unsigned int)buff;
-        mc_desc.origin = head;
-        mc_desc.size = size - head;
-        mc_desc.buffer = (char *)buff + head;
+        sifParamOrd.origin = head;
+        sifParamOrd.size = size - head;
+        sifParamOrd.buffer = (char *)buff + head;
     }
-    for (i = 0; i < mc_desc.origin; i++) {
-        mc_desc.data[i] = ((const unsigned char *)buff)[i];
+    for (i = 0; i < sifParamOrd.origin; i++) {
+        sifParamOrd.data[i] = ((const unsigned char *)buff)[i];
     }
     FlushCache(0);
-    ret = sceSifCallRpc(&mc_client, 6, 1, &mc_desc, 0x30, mc_rdata, 4, 0, 0);
+    ret = sceSifCallRpc(&mcClientID, 6, 1, &sifParamOrd, 0x30, retval, 4, 0, 0);
     if (ret == 0) {
-        mc_last_cmd = 6;
+        mcRunCmdNo = 6;
     } else {
-        SignalSema(mc_sema);
+        SignalSema(semaidRegFunc);
     }
     return ret;
 }
@@ -470,14 +457,14 @@ void mceGetInfoApdx(void *data) {
     McEndParam *param;
 
     param = (McEndParam *)UNCACHED(data);
-    if (mc_info_type != 0) {
-        *mc_info_type = param->size1;
+    if (typeAddr != 0) {
+        *typeAddr = param->size1;
     }
-    if (mc_info_free != 0) {
-        *mc_info_free = param->size2;
+    if (freeAddr != 0) {
+        *freeAddr = param->size2;
     }
-    if (mc_info_format != 0) {
-        *mc_info_format = param->format;
+    if (formAddr != 0) {
+        *formAddr = param->format;
     }
 }
 
@@ -485,41 +472,41 @@ void mceGetInfoApdx(void *data) {
 int sceMcGetInfo(int port, int slot, int *type, int *free, int *format) {
     int ret;
 
-    if (PollSema(mc_sema) < 0) {
+    if (PollSema(semaidRegFunc) < 0) {
         return -200;
     }
-    if (mc_client.server == 0) {
-        SignalSema(mc_sema);
+    if (mcClientID.server == 0) {
+        SignalSema(semaidRegFunc);
         return -100;
     }
-    mc_desc.port = port;
-    mc_desc.slot = slot;
-    mc_desc.param = &mc_end_param;
+    sifParamOrd.port = port;
+    sifParamOrd.slot = slot;
+    sifParamOrd.param = &sifParamNext;
     if (type != 0) {
-        mc_desc.origin = 1;
+        sifParamOrd.origin = 1;
     } else {
-        mc_desc.origin = 0;
+        sifParamOrd.origin = 0;
     }
     if (free != 0) {
-        mc_desc.offset = 1;
+        sifParamOrd.offset = 1;
     } else {
-        mc_desc.offset = 0;
+        sifParamOrd.offset = 0;
     }
     if (format != 0) {
-        mc_desc.size = 1;
+        sifParamOrd.size = 1;
     } else {
-        mc_desc.size = 0;
+        sifParamOrd.size = 0;
     }
-    mc_info_type = type;
-    mc_info_free = free;
-    mc_info_format = format;
-    sceSifWriteBackDCache(&mc_end_param, 0xC0);
-    ret = sceSifCallRpc(&mc_client, 1, 1, &mc_desc, 0x30, mc_rdata, 4,
-                        mceGetInfoApdx, &mc_end_param);
+    typeAddr = type;
+    freeAddr = free;
+    formAddr = format;
+    sceSifWriteBackDCache(&sifParamNext, 0xC0);
+    ret = sceSifCallRpc(&mcClientID, 1, 1, &sifParamOrd, 0x30, retval, 4,
+                        mceGetInfoApdx, &sifParamNext);
     if (ret == 0) {
-        mc_last_cmd = 1;
+        mcRunCmdNo = 1;
     } else {
-        SignalSema(mc_sema);
+        SignalSema(semaidRegFunc);
     }
     return ret;
 }
@@ -529,32 +516,32 @@ int sceMcGetDir(int port, int slot, const char *name, unsigned int mode,
                 int maxent, sceMcTblGetDir *table) {
     int ret;
 
-    if (PollSema(mc_sema) < 0) {
+    if (PollSema(semaidRegFunc) < 0) {
         return -200;
     }
-    if (mc_client.server == 0) {
-        SignalSema(mc_sema);
+    if (mcClientID.server == 0) {
+        SignalSema(semaidRegFunc);
         return -100;
     }
     if (name == 0 || *name == 0) {
-        SignalSema(mc_sema);
+        SignalSema(semaidRegFunc);
         return -210;
     }
-    mc_file.port = port;
-    mc_file.slot = slot;
-    mc_file.flags = mode;
-    mc_file.maxent = maxent;
-    mc_file.info = table;
-    strncpy(mc_file.name, name, 0x3FF);
-    mc_file.name[0x3FF] = 0;
+    sifParamFname.port = port;
+    sifParamFname.slot = slot;
+    sifParamFname.flags = mode;
+    sifParamFname.maxent = maxent;
+    sifParamFname.info = table;
+    strncpy(sifParamFname.name, name, 0x3FF);
+    sifParamFname.name[0x3FF] = 0;
     if (maxent >= 0) {
         sceSifWriteBackDCache(table, maxent * sizeof(sceMcTblGetDir));
     }
-    ret = sceSifCallRpc(&mc_client, 0xD, 1, &mc_file, 0x414, mc_rdata, 4, 0, 0);
+    ret = sceSifCallRpc(&mcClientID, 0xD, 1, &sifParamFname, 0x414, retval, 4, 0, 0);
     if (ret == 0) {
-        mc_last_cmd = 0xD;
+        mcRunCmdNo = 0xD;
     } else {
-        SignalSema(mc_sema);
+        SignalSema(semaidRegFunc);
     }
     return ret;
 }
@@ -564,12 +551,12 @@ void mceStorePwd(char *pwd) {
     int len;
 
     if (pwd != 0) {
-        if (strlen((char *)UNCACHED(mc_pwd)) < 0x400) {
-            len = strlen((char *)UNCACHED(mc_pwd));
+        if (strlen((char *)UNCACHED(currentDir)) < 0x400) {
+            len = strlen((char *)UNCACHED(currentDir));
         } else {
             len = 0x3FF;
         }
-        memcpy(pwd, (char *)UNCACHED(mc_pwd), len);
+        memcpy(pwd, (char *)UNCACHED(currentDir), len);
         pwd[len] = 0;
     }
 }
@@ -578,29 +565,29 @@ void mceStorePwd(char *pwd) {
 int sceMcChdir(int port, int slot, const char *newDir, char *curDir) {
     int ret;
 
-    if (PollSema(mc_sema) < 0) {
+    if (PollSema(semaidRegFunc) < 0) {
         return -200;
     }
-    if (mc_client.server == 0) {
-        SignalSema(mc_sema);
+    if (mcClientID.server == 0) {
+        SignalSema(semaidRegFunc);
         return -100;
     }
     if (newDir == 0 || *newDir == 0) {
-        SignalSema(mc_sema);
+        SignalSema(semaidRegFunc);
         return -210;
     }
-    mc_file.port = port;
-    mc_file.slot = slot;
-    mc_file.info = mc_pwd;
-    strncpy(mc_file.name, newDir, 0x3FF);
-    mc_file.name[0x3FF] = 0;
-    sceSifWriteBackDCache(mc_pwd, 0x400);
-    ret = sceSifCallRpc(&mc_client, 0xC, 1, &mc_file, 0x414, mc_rdata, 4,
+    sifParamFname.port = port;
+    sifParamFname.slot = slot;
+    sifParamFname.info = currentDir;
+    strncpy(sifParamFname.name, newDir, 0x3FF);
+    sifParamFname.name[0x3FF] = 0;
+    sceSifWriteBackDCache(currentDir, 0x400);
+    ret = sceSifCallRpc(&mcClientID, 0xC, 1, &sifParamFname, 0x414, retval, 4,
                         mceStorePwd, curDir);
     if (ret == 0) {
-        mc_last_cmd = 0xC;
+        mcRunCmdNo = 0xC;
     } else {
-        SignalSema(mc_sema);
+        SignalSema(semaidRegFunc);
     }
     return ret;
 }
@@ -609,20 +596,20 @@ int sceMcChdir(int port, int slot, const char *newDir, char *curDir) {
 int sceMcFormat(int port, int slot) {
     int ret;
 
-    if (PollSema(mc_sema) < 0) {
+    if (PollSema(semaidRegFunc) < 0) {
         return -200;
     }
-    if (mc_client.server == 0) {
-        SignalSema(mc_sema);
+    if (mcClientID.server == 0) {
+        SignalSema(semaidRegFunc);
         return -100;
     }
-    mc_desc.port = port;
-    mc_desc.slot = slot;
-    ret = sceSifCallRpc(&mc_client, 0x10, 1, &mc_desc, 0x30, mc_rdata, 4, 0, 0);
+    sifParamOrd.port = port;
+    sifParamOrd.slot = slot;
+    ret = sceSifCallRpc(&mcClientID, 0x10, 1, &sifParamOrd, 0x30, retval, 4, 0, 0);
     if (ret == 0) {
-        mc_last_cmd = 0x10;
+        mcRunCmdNo = 0x10;
     } else {
-        SignalSema(mc_sema);
+        SignalSema(semaidRegFunc);
     }
     return ret;
 }
@@ -631,27 +618,27 @@ int sceMcFormat(int port, int slot) {
 int sceMcDelete(int port, int slot, const char *name) {
     int ret;
 
-    if (PollSema(mc_sema) < 0) {
+    if (PollSema(semaidRegFunc) < 0) {
         return -200;
     }
-    if (mc_client.server == 0) {
-        SignalSema(mc_sema);
+    if (mcClientID.server == 0) {
+        SignalSema(semaidRegFunc);
         return -100;
     }
     if (name == 0 || *name == 0) {
-        SignalSema(mc_sema);
+        SignalSema(semaidRegFunc);
         return -210;
     }
-    strncpy(mc_file.name, name, 0x3FF);
-    mc_file.port = port;
-    mc_file.slot = slot;
-    mc_file.name[0x3FF] = 0;
-    mc_file.flags = 0;
-    ret = sceSifCallRpc(&mc_client, 0xF, 1, &mc_file, 0x414, mc_rdata, 4, 0, 0);
+    strncpy(sifParamFname.name, name, 0x3FF);
+    sifParamFname.port = port;
+    sifParamFname.slot = slot;
+    sifParamFname.name[0x3FF] = 0;
+    sifParamFname.flags = 0;
+    ret = sceSifCallRpc(&mcClientID, 0xF, 1, &sifParamFname, 0x414, retval, 4, 0, 0);
     if (ret == 0) {
-        mc_last_cmd = 0xF;
+        mcRunCmdNo = 0xF;
     } else {
-        SignalSema(mc_sema);
+        SignalSema(semaidRegFunc);
     }
     return ret;
 }
@@ -660,19 +647,19 @@ int sceMcDelete(int port, int slot, const char *name) {
 int sceMcFlush(int fd) {
     int ret;
 
-    if (PollSema(mc_sema) < 0) {
+    if (PollSema(semaidRegFunc) < 0) {
         return -200;
     }
-    if (mc_client.server == 0) {
-        SignalSema(mc_sema);
+    if (mcClientID.server == 0) {
+        SignalSema(semaidRegFunc);
         return -100;
     }
-    mc_desc.fd = fd;
-    ret = sceSifCallRpc(&mc_client, 0xA, 1, &mc_desc, 0x30, mc_rdata, 4, 0, 0);
+    sifParamOrd.fd = fd;
+    ret = sceSifCallRpc(&mcClientID, 0xA, 1, &sifParamOrd, 0x30, retval, 4, 0, 0);
     if (ret == 0) {
-        mc_last_cmd = 0xA;
+        mcRunCmdNo = 0xA;
     } else {
-        SignalSema(mc_sema);
+        SignalSema(semaidRegFunc);
     }
     return ret;
 }
@@ -682,31 +669,31 @@ int sceMcSetFileInfo(int port, int slot, const char *name, const char *info,
                      unsigned int valid) {
     int ret;
 
-    if (PollSema(mc_sema) < 0) {
+    if (PollSema(semaidRegFunc) < 0) {
         return -200;
     }
-    if (mc_client.server == 0) {
-        SignalSema(mc_sema);
+    if (mcClientID.server == 0) {
+        SignalSema(semaidRegFunc);
         return -100;
     }
     if (name == 0 || *name == 0) {
-        SignalSema(mc_sema);
+        SignalSema(semaidRegFunc);
         return -210;
     }
-    mc_file.port = port;
-    mc_file.slot = slot;
+    sifParamFname.port = port;
+    sifParamFname.slot = slot;
     valid &= 7;
-    mc_file.flags = valid;
-    mc_file_info = *(const sceMcTblGetDir *)info;
-    mc_file.info = &mc_file_info;
-    strncpy(mc_file.name, name, 0x3FF);
-    mc_file.name[0x3FF] = 0;
+    sifParamFname.flags = valid;
+    buffFileInfo = *(const sceMcTblGetDir *)info;
+    sifParamFname.info = &buffFileInfo;
+    strncpy(sifParamFname.name, name, 0x3FF);
+    sifParamFname.name[0x3FF] = 0;
     FlushCache(0);
-    ret = sceSifCallRpc(&mc_client, 0xE, 1, &mc_file, 0x414, mc_rdata, 4, 0, 0);
+    ret = sceSifCallRpc(&mcClientID, 0xE, 1, &sifParamFname, 0x414, retval, 4, 0, 0);
     if (ret == 0) {
-        mc_last_cmd = 0xE;
+        mcRunCmdNo = 0xE;
     } else {
-        SignalSema(mc_sema);
+        SignalSema(semaidRegFunc);
     }
     return ret;
 }
@@ -715,31 +702,31 @@ int sceMcSetFileInfo(int port, int slot, const char *name, const char *info,
 int sceMcRename(int port, int slot, const char *oldName, const char *newName) {
     int ret;
 
-    if (PollSema(mc_sema) < 0) {
+    if (PollSema(semaidRegFunc) < 0) {
         return -200;
     }
-    if (mc_client.server == 0) {
-        SignalSema(mc_sema);
+    if (mcClientID.server == 0) {
+        SignalSema(semaidRegFunc);
         return -100;
     }
     if (oldName == 0 || *oldName == 0 || newName == 0) {
-        SignalSema(mc_sema);
+        SignalSema(semaidRegFunc);
         return -210;
     }
-    mc_file.port = port;
-    mc_file.slot = slot;
-    mc_file.flags = 0x10;
-    strncpy(mc_file.name, oldName, 0x3FF);
-    mc_file.name[0x3FF] = 0;
-    strncpy((char *)mc_file_info.entryName, newName, 0x20);
-    mc_file_info.entryName[0x1F] = 0;
-    mc_file.info = &mc_file_info;
+    sifParamFname.port = port;
+    sifParamFname.slot = slot;
+    sifParamFname.flags = 0x10;
+    strncpy(sifParamFname.name, oldName, 0x3FF);
+    sifParamFname.name[0x3FF] = 0;
+    strncpy((char *)buffFileInfo.entryName, newName, 0x20);
+    buffFileInfo.entryName[0x1F] = 0;
+    sifParamFname.info = &buffFileInfo;
     FlushCache(0);
-    ret = sceSifCallRpc(&mc_client, 0xE, 1, &mc_file, 0x414, mc_rdata, 4, 0, 0);
+    ret = sceSifCallRpc(&mcClientID, 0xE, 1, &sifParamFname, 0x414, retval, 4, 0, 0);
     if (ret == 0) {
-        mc_last_cmd = 0x13;
+        mcRunCmdNo = 0x13;
     } else {
-        SignalSema(mc_sema);
+        SignalSema(semaidRegFunc);
     }
     return ret;
 }
@@ -748,20 +735,20 @@ int sceMcRename(int port, int slot, const char *oldName, const char *newName) {
 int sceMcUnformat(int port, int slot) {
     int ret;
 
-    if (PollSema(mc_sema) < 0) {
+    if (PollSema(semaidRegFunc) < 0) {
         return -200;
     }
-    if (mc_client.server == 0) {
-        SignalSema(mc_sema);
+    if (mcClientID.server == 0) {
+        SignalSema(semaidRegFunc);
         return -100;
     }
-    mc_desc.port = port;
-    mc_desc.slot = slot;
-    ret = sceSifCallRpc(&mc_client, 0x11, 1, &mc_desc, 0x30, mc_rdata, 4, 0, 0);
+    sifParamOrd.port = port;
+    sifParamOrd.slot = slot;
+    ret = sceSifCallRpc(&mcClientID, 0x11, 1, &sifParamOrd, 0x30, retval, 4, 0, 0);
     if (ret == 0) {
-        mc_last_cmd = 0x11;
+        mcRunCmdNo = 0x11;
     } else {
-        SignalSema(mc_sema);
+        SignalSema(semaidRegFunc);
     }
     return ret;
 }
@@ -770,26 +757,26 @@ int sceMcUnformat(int port, int slot) {
 int sceMcGetEntSpace(int port, int slot, const char *path) {
     int ret;
 
-    if (PollSema(mc_sema) < 0) {
+    if (PollSema(semaidRegFunc) < 0) {
         return -200;
     }
-    if (mc_client.server == 0) {
-        SignalSema(mc_sema);
+    if (mcClientID.server == 0) {
+        SignalSema(semaidRegFunc);
         return -100;
     }
     if (path == 0 || *path == 0) {
-        SignalSema(mc_sema);
+        SignalSema(semaidRegFunc);
         return -210;
     }
-    mc_file.port = port;
-    mc_file.slot = slot;
-    strncpy(mc_file.name, path, 0x3FF);
-    mc_file.name[0x3FF] = 0;
-    ret = sceSifCallRpc(&mc_client, 0x12, 1, &mc_file, 0x414, mc_rdata, 4, 0, 0);
+    sifParamFname.port = port;
+    sifParamFname.slot = slot;
+    strncpy(sifParamFname.name, path, 0x3FF);
+    sifParamFname.name[0x3FF] = 0;
+    ret = sceSifCallRpc(&mcClientID, 0x12, 1, &sifParamFname, 0x414, retval, 4, 0, 0);
     if (ret == 0) {
-        mc_last_cmd = 0x12;
+        mcRunCmdNo = 0x12;
     } else {
-        SignalSema(mc_sema);
+        SignalSema(semaidRegFunc);
     }
     return ret;
 }

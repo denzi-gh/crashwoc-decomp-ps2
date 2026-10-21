@@ -50,16 +50,11 @@ enum {
     TOP_SUSPEND
 };
 
-extern int D_00613368[];
-extern int D_00702E70[];
-extern char D_00702A70[];
-extern TopArg D_00702E78;
 extern char _gp[];
 
-#define topId    D_00613368[0]
-#define topSema  D_00702E70[0]
-#define topStack D_00702A70
-#define topArg   D_00702E78
+static int topId = 0;
+static int topSema;
+static TopArg topArg;
 
 extern int CreateThread(ThreadParam *param);
 extern int StartThread(int tid, void *arg);
@@ -116,6 +111,7 @@ static void topThread(void *arg)
 
 int InitThread(void)
 {
+    static char stack[0x400];
     ThreadParam thread;
     SemaParam sema;
 
@@ -129,7 +125,7 @@ int InitThread(void)
         return -1;
     }
     thread.entry = topThread;
-    thread.stack = topStack;
+    thread.stack = stack;
     thread.stackSize = 0x400;
     thread.gpReg = _gp;
     thread.initPriority = 0;

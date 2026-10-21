@@ -66,23 +66,15 @@ typedef struct SifCmdData {
     unsigned int *sregs;
 } SifCmdData;
 
-extern int D_00613374[];
-extern unsigned char D_007036C0[];
-extern unsigned char D_00703740[];
-extern SifCmdChangeAddrData D_00703780;
-extern int D_00703794[];
-extern SifCmdData D_00703798;
-extern SifCmdHandlerData D_007037C0[];
-extern unsigned int D_007038C0[];
+static int _cmd_init_check = 0;
 
-#define sif_cmd_initialized   D_00613374
-#define sif_pktbuf            D_007036C0
-#define sif_cbuf              D_00703740
-#define sif_change_addr_pkt   D_00703780
-#define sif_dmac_handler_id   D_00703794
-#define sif_cmd_data          D_00703798
-#define sif_sys_cmd_handlers  D_007037C0
-#define sif_sregs             D_007038C0
+static unsigned char _pckt_buffer[128];
+static unsigned char _send_buffer[64];
+static SifCmdChangeAddrData _csdata;
+static int sif0_handleid;
+static SifCmdData _data_table;
+static SifCmdHandlerData _sys_buffer[32] __attribute__((aligned(64)));
+static unsigned int soft_reg[32];
 
 #define UNCACHED(p) ((void *)((unsigned int)(p) | 0x20000000))
 
@@ -128,17 +120,17 @@ void _change_addr(SifCmdChangeAddrData *packet, SifCmdData *cmd) {
 
 
 unsigned int sceSifGetSreg(int index) {
-    return sif_sregs[index];
+    return soft_reg[index];
 }
 
 
 unsigned int sceSifSetSreg(int index, unsigned int value) {
-    return sif_sregs[index] = value;
+    return soft_reg[index] = value;
 }
 
 
 SifCmdData *sceSifGetDataTable(void) {
-    return &sif_cmd_data;
+    return &_data_table;
 }
 
 
@@ -146,33 +138,33 @@ void sceSifInitCmd(void) {
     int i;
 
     DIntr();
-    if (sif_cmd_initialized[0]) {
+    if (_cmd_init_check) {
         EIntr();
         return;
     }
-    sif_cmd_initialized[0] = 1;
+    _cmd_init_check = 1;
 
-    sif_cmd_data.pktbuf = UNCACHED(sif_pktbuf);
-    sif_cmd_data.cbuf = UNCACHED(sif_cbuf);
-    sif_cmd_data.iopbuf = 0;
-    sif_cmd_data.sys_cmd_handlers = sif_sys_cmd_handlers;
-    sif_cmd_data.nr_sys_handlers = 32;
-    sif_cmd_data.usr_cmd_handlers = 0;
-    sif_cmd_data.nr_usr_handlers = 0;
-    sif_cmd_data.sregs = sif_sregs;
+    _data_table.pktbuf = UNCACHED(_pckt_buffer);
+    _data_table.cbuf = UNCACHED(_send_buffer);
+    _data_table.iopbuf = 0;
+    _data_table.sys_cmd_handlers = _sys_buffer;
+    _data_table.nr_sys_handlers = 32;
+    _data_table.usr_cmd_handlers = 0;
+    _data_table.nr_usr_handlers = 0;
+    _data_table.sregs = soft_reg;
 
     for (i = 0; i < 32; i++) {
-        sif_sys_cmd_handlers[i].func = 0;
-        sif_sys_cmd_handlers[i].data = 0;
+        _sys_buffer[i].func = 0;
+        _sys_buffer[i].data = 0;
     }
     for (i = 0; i < 32; i++) {
-        sif_sregs[i] = 0;
+        soft_reg[i] = 0;
     }
 
-    sif_sys_cmd_handlers[0].func = (SifCmdHandler)_change_addr;
-    sif_sys_cmd_handlers[0].data = &sif_cmd_data;
-    sif_sys_cmd_handlers[1].func = (SifCmdHandler)_set_sreg;
-    sif_sys_cmd_handlers[1].data = &sif_cmd_data;
+    _sys_buffer[0].func = (SifCmdHandler)_change_addr;
+    _sys_buffer[0].data = &_data_table;
+    _sys_buffer[1].func = (SifCmdHandler)_set_sreg;
+    _sys_buffer[1].data = &_data_table;
     EIntr();
 
     FlushCache(0);
@@ -182,42 +174,42 @@ void sceSifInitCmd(void) {
     if (!(DMAC_SIF0_CHCR & 0x100)) {
         sceSifSetDChain();
     }
-    sif_dmac_handler_id[0] = AddDmacHandler(5, _sceSifCmdIntrHdlr, 0);
+    sif0_handleid = AddDmacHandler(5, _sceSifCmdIntrHdlr, 0);
     EnableDmac(5);
 
-    sif_cmd_data.iopbuf = (void *)sceSifGetReg(SIF_SYSREG_SUBADDR);
-    if (sif_cmd_data.iopbuf) {
-        sif_change_addr_pkt.newaddr = sif_pktbuf;
-        sceSifSendCmd(SIF_CMD_CHANGE_SADDR, &sif_change_addr_pkt,
-                      sizeof(sif_change_addr_pkt), 0, 0, 0);
+    _data_table.iopbuf = (void *)sceSifGetReg(SIF_SYSREG_SUBADDR);
+    if (_data_table.iopbuf) {
+        _csdata.newaddr = _pckt_buffer;
+        sceSifSendCmd(SIF_CMD_CHANGE_SADDR, &_csdata,
+                      sizeof(_csdata), 0, 0, 0);
         return;
     }
 
     while (!(sceSifGetReg(SIF_REG_SMFLAG) & SIF_STAT_CMDINIT)) {
     }
-    sif_cmd_data.iopbuf = (void *)sceSifGetReg(SIF_REG_SUBADDR);
-    sceSifSetReg(SIF_SYSREG_SUBADDR, (unsigned int)sif_cmd_data.iopbuf);
-    sceSifSetReg(SIF_SYSREG_MAINADDR, (unsigned int)&sif_cmd_data);
-    sif_change_addr_pkt.newaddr = sif_pktbuf;
-    sif_change_addr_pkt.header.opt = 0;
-    sceSifSendCmd(SIF_CMD_INIT_CMD, &sif_change_addr_pkt,
-                  sizeof(sif_change_addr_pkt), 0, 0, 0);
+    _data_table.iopbuf = (void *)sceSifGetReg(SIF_REG_SUBADDR);
+    sceSifSetReg(SIF_SYSREG_SUBADDR, (unsigned int)_data_table.iopbuf);
+    sceSifSetReg(SIF_SYSREG_MAINADDR, (unsigned int)&_data_table);
+    _csdata.newaddr = _pckt_buffer;
+    _csdata.header.opt = 0;
+    sceSifSendCmd(SIF_CMD_INIT_CMD, &_csdata,
+                  sizeof(_csdata), 0, 0, 0);
 }
 
 
 void sceSifExitCmd(void) {
     DisableDmac(5);
-    RemoveDmacHandler(5, sif_dmac_handler_id[0]);
-    sif_cmd_initialized[0] = 0;
+    RemoveDmacHandler(5, sif0_handleid);
+    _cmd_init_check = 0;
 }
 
 
 SifCmdHandlerData *sceSifSetCmdBuffer(SifCmdHandlerData *buffer, int count) {
     SifCmdHandlerData *old;
 
-    old = sif_cmd_data.usr_cmd_handlers;
-    sif_cmd_data.usr_cmd_handlers = buffer;
-    sif_cmd_data.nr_usr_handlers = count;
+    old = _data_table.usr_cmd_handlers;
+    _data_table.usr_cmd_handlers = buffer;
+    _data_table.nr_usr_handlers = count;
     return old;
 }
 
@@ -225,29 +217,29 @@ SifCmdHandlerData *sceSifSetCmdBuffer(SifCmdHandlerData *buffer, int count) {
 SifCmdHandlerData *sceSifSetSysCmdBuffer(SifCmdHandlerData *buffer, int count) {
     SifCmdHandlerData *old;
 
-    old = sif_cmd_data.sys_cmd_handlers;
-    sif_cmd_data.sys_cmd_handlers = buffer;
-    sif_cmd_data.nr_sys_handlers = count;
+    old = _data_table.sys_cmd_handlers;
+    _data_table.sys_cmd_handlers = buffer;
+    _data_table.nr_sys_handlers = count;
     return old;
 }
 
 
 void sceSifAddCmdHandler(int cid, SifCmdHandler handler, void *data) {
     if (cid < 0) {
-        sif_cmd_data.sys_cmd_handlers[cid].func = handler;
-        sif_cmd_data.sys_cmd_handlers[cid].data = data;
+        _data_table.sys_cmd_handlers[cid].func = handler;
+        _data_table.sys_cmd_handlers[cid].data = data;
     } else {
-        sif_cmd_data.usr_cmd_handlers[cid].func = handler;
-        sif_cmd_data.usr_cmd_handlers[cid].data = data;
+        _data_table.usr_cmd_handlers[cid].func = handler;
+        _data_table.usr_cmd_handlers[cid].data = data;
     }
 }
 
 
 void sceSifRemoveCmdHandler(int cid) {
     if (cid < 0) {
-        sif_cmd_data.sys_cmd_handlers[cid].func = 0;
+        _data_table.sys_cmd_handlers[cid].func = 0;
     } else {
-        sif_cmd_data.usr_cmd_handlers[cid].func = 0;
+        _data_table.usr_cmd_handlers[cid].func = 0;
     }
 }
 
@@ -281,7 +273,7 @@ unsigned int _sceSifSendCmd(int cid, int mode, void *packet, int packet_size,
     }
 
     dmat[count].data = (unsigned int)packet;
-    dmat[count].addr = (unsigned int)sif_cmd_data.iopbuf;
+    dmat[count].addr = (unsigned int)_data_table.iopbuf;
     dmat[count].size = packet_size;
     header->cid = cid;
     header->psize = packet_size;
@@ -310,7 +302,7 @@ unsigned int isceSifSendCmd(int cid, void *packet, int packet_size, void *src,
 
 int _sceSifCmdIntrHdlr(int channel) {
     u128 packet[7];
-    SifCmdData *cmd = &sif_cmd_data;
+    SifCmdData *cmd = &_data_table;
     volatile SifCmdHeader *header;
     u128 *src;
     SifCmdHandler func;

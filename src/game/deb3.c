@@ -42,8 +42,6 @@ typedef struct
     int ang;                 /* 0x1C */
 } ELEC; /* 0x20 */
 
-extern ELEC H2OElec[22];
-
 struct deb3_s;
 
 
@@ -88,7 +86,6 @@ struct rbclass_s {
     f32 kf;                            /* 0x48 */
 }; /* 0x4C */
 
-extern struct deb3_s deb3[64];
 struct deb3emit_s {
     f32 yoff;
     f32 grav;
@@ -101,14 +98,7 @@ struct deb3emit_s {
     f32 ang;
 };
 
-extern struct deb3emit_s Deb3Emit[7];
-extern struct deb3info Deb3Info[27];
-
-extern struct rbclass_s rbclass[5];
 extern struct nuvec_s ShadNorm;
-
-extern f32 D_0062E774;   /* rigid-body integration timestep */
-extern f32 D_0062E778;   /* minimum ShadNorm.y for debris to come to rest */
 
 extern void RBodyMove(struct deb3_s *deb, f32 dt);
 extern void RBodyImpact(struct deb3_s *deb, struct nuvec_s *pnt,
@@ -136,12 +126,10 @@ struct CortLight_s {
     int unk14;
 };
 
-extern int cortlights[132];
 extern int lcrunch;
 extern int wdir;
 extern int wtimer;
 extern int debpt;
-extern float HotCoals[13];
 
 extern struct nucamera_s global_camera;
 
@@ -162,14 +150,106 @@ extern struct nupad_s *Pad[];
 extern struct nugscn_s *world_scene[32];
 extern struct nugspline_s *pVIS;
 extern s32 iVIS;
-extern char *HutList[];
-extern u32 cortcols[];
-extern struct firedrop_s firedrop[16];
-extern f32 HotRocks[73];
-extern s32 rsfxJung[];
+void DynaBreak(struct deb3_s *deb);
+void RockBreak(struct deb3_s *deb);
+void CoalBreak(struct deb3_s *deb);
+void RockSpark(struct deb3_s *deb);
+void CoalSpark(struct deb3_s *deb);
+
+u32 cortcols[21] = {
+    0x50400000, 0x50004000, 0x50000040, 0x50400040, 0x50404000, 0x50004040,
+    0x50404040, 0x50400000, 0x50004000, 0x50000040, 0x50400040, 0x50404000,
+    0x50004040, 0x50404040, 0x50400000, 0x50004000, 0x50000040, 0x50400040,
+    0x50404000, 0x50004040, 0x50404040
+};
+s32 rsfxJung[5] = { 600, 300, 2, 125, 118 };
+f32 HotRocks[73] = {
+    6.7f, 11.84f, -20.7f, 0.0f, 300.0f, 5.0f, 10.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+    10.0f, -1.34f, 9.06f, -22.01f, 100.0f, 300.0f, 5.0f, 10.0f, 0.0f, 0.0f,
+    0.0f, 0.0f, 10.0f, 7.96f, 18.09f, 15.46f, 200.0f, 300.0f, 5.0f, 10.0f,
+    0.0f, 0.0f, 0.0f, 0.0f, 10.0f, 11.33f, 18.08f, 12.19f, 0.0f, 300.0f, 5.0f,
+    10.0f, 0.0f, 0.0f, 0.0f, 0.0f, 10.0f, 9.87f, 12.74f, -17.59f, 100.0f,
+    300.0f, 5.0f, 10.0f, 0.0f, 0.0f, 0.0f, 0.0f, 10.0f, -0.3f, 26.44f, -0.04f,
+    0.0f, 30.0f, 1.0f, 10.0f, 2.0f, 2.0f, 0.0f, 0.0f, -1.0f, 9999.0f
+};
+float HotCoals[13] = {
+    -25.74f, 0.61f, -2.53f, 0.0f, 400.0f, 5.0f, 40.0f, 1.0f, 1.0f, 4096.0f,
+    0.0f, 10.0f, 9999.0f
+};
+char *HutList[27] = {
+    "hut_00", "hut_01", "hut_02", "hut_03", "hut_04", "hut_05", "hut_06", "hut_07", "hut_08",
+    "hut_09", "hut_10", "hut_11", "hut_12", "hut_13", "hut_14", "hut_15", "hut_16", "hut_17",
+    "hut_18", "hut_19", "hut_20", "hut_21", "hut_22", "hut_23", "hut_24", "hut_25", 0
+};
+struct deb3emit_s Deb3Emit[7] = {
+    { 4.0f, -3.5f, 0.0f, 0.0f, 0.0f, 1.0f, 0.5f, 1.0f, 10.0f },
+    { 4.0f, -3.5f, 0.25f, 0.0f, 0.0f, 0.5f, 0.5f, 1.0f, 10.0f },
+    { 16.0f, -7.0f, 4.0f, 0.0f, 4.0f, 16.0f, 0.0f, 16.0f, 10.0f },
+    { 8.0f, -3.5f, 0.0f, 0.0f, 0.0f, 8.0f, 4.0f, 8.0f, 10.0f },
+    { 8.0f, -7.0f, 0.0f, 0.0f, 0.0f, 8.0f, 4.0f, 8.0f, 5.0f },
+    { -2.0f, -2.5f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 2.0f, 10.0f },
+    { 0.0f, 0.0f, 0.25f, 0.25f, 0.25f, 0.5f, 0.5f, 0.5f, 10.0f }
+};
+struct deb3info Deb3Info[27] = {
+    { 0x3D, 4, 3, 3.0f, 0.3f, 32, 1, RockSpark, RockBreak, 3 },
+    { 0x3E, 4, 3, 3.0f, 0.1f, 34, 1, CoalSpark, CoalBreak, 3 },
+    { 0x3A, 4, 8, 3.6f, 1.0f, 38, 1, 0, 0, 0 },
+    { 0x46, 4, 8, 6.0f, 1.0f, 47, -3, 0, 0, 0 },
+    { 0x47, 4, 8, 6.0f, 1.0f, 47, -3, 0, 0, 0 },
+    { 0x48, 4, 8, 6.0f, 1.0f, 47, -3, 0, 0, 0 },
+    { 0x49, 4, 8, 6.0f, 1.0f, 0, 0, 0, 0, 0 },
+    { 0x4A, 4, 8, 6.0f, 1.0f, 0, 0, 0, 0, 0 },
+    { 0x4B, 4, 8, 6.0f, 1.0f, 0, 0, 0, 0, 0 },
+    { 0x52, 4, 1, 3.0f, 0.1f, 34, 1, 0, DynaBreak, 3 },
+    { 0x7A, 4, 1, 3.0f, 0.2f, 0, 1, 0, 0, 1 },
+    { 0x7B, 4, 1, 3.0f, 0.2f, 0, 1, 0, 0, 1 },
+    { 0x7C, 4, 1, 3.0f, 0.2f, 0, 1, 0, 0, 1 },
+    { 0x7D, 4, 1, 3.0f, 0.2f, 0, 1, 0, 0, 1 },
+    { 0x7E, 4, 1, 3.0f, 0.2f, 0, 1, 0, 0, 1 },
+    { 0x7F, 4, 1, 3.0f, 0.2f, 0, 1, 0, 0, 1 },
+    { 0x80, 4, 1, 3.0f, 0.2f, 0, 1, 0, 0, 1 },
+    { 0x93, 4, 19, 5.0f, 0.4f, 119, -4, 0, 0, 1 },
+    { 0xAC, 4, 1, 3.0f, 0.2f, 0, 1, 0, 0, 1 },
+    { 0xAD, 4, 1, 3.0f, 0.2f, 0, 1, 0, 0, 1 },
+    { 0xAE, 4, 1, 3.0f, 0.2f, 0, 1, 0, 0, 1 },
+    { 0xAF, 4, 1, 3.0f, 0.2f, 0, 1, 0, 0, 1 },
+    { 0xB0, 4, 1, 3.0f, 0.2f, 0, 1, 0, 0, 1 },
+    { 0xB1, 4, 1, 3.0f, 0.2f, 0, 1, 0, 0, 1 },
+    { 0xB2, 4, 1, 3.0f, 0.2f, 0, 1, 0, 0, 1 },
+    { 0xB3, 4, 1, 3.0f, 0.2f, 0, 1, 0, 0, 1 },
+    { 0xB4, 4, 1, 3.0f, 0.2f, 0, 1, 0, 0, 1 }
+};
+ELEC H2OElec[22] = {
+    { { 2.38f, -1.43f, 106.1f }, { 2.99f, -2.5f, 106.35f }, 0, 0 },
+    { { 2.32f, -1.68f, 106.39f }, { 2.9f, -2.5f, 106.86f }, 0, 0 },
+    { { 1.9f, -1.63f, 106.29f }, { 1.7f, -2.5f, 106.44f }, 0, 0 },
+    { { -2.39f, -1.39f, 98.04f }, { -2.7f, -2.5f, 98.38f }, 0, 0 },
+    { { -2.24f, -1.67f, 97.8f }, { -2.47f, -2.5f, 97.9f }, 0, 0 },
+    { { -1.97f, -1.6f, 97.86f }, { -2.29f, -2.5f, 98.0f }, 0, 0 },
+    { { 1.37f, -1.67f, 48.45f }, { 1.47f, -2.5f, 48.19f }, 0, 0 },
+    { { 1.38f, -1.62f, 48.72f }, { 1.49f, -2.5f, 48.67f }, 0, 0 },
+    { { 1.2f, -1.65f, 48.87f }, { 0.92f, -2.5f, 49.34f }, 0, 0 },
+    { { -1.87f, -1.42f, 56.65f }, { -1.53f, -2.5f, 56.75f }, 0, 0 },
+    { { -2.14f, -1.61f, 56.19f }, { -2.62f, -2.5f, 56.23f }, 0, 0 },
+    { { -2.12f, -1.69f, 56.62f }, { -2.08f, -2.5f, 56.85f }, 0, 0 },
+    { { 15.96f, -1.61f, 156.08f }, { 15.72f, -2.5f, 156.1f }, 0, 0 },
+    { { 16.13f, -1.6f, 155.99f }, { 16.11f, -2.5f, 155.64f }, 0, 0 },
+    { { 15.98f, -1.7f, 156.37f }, { 16.02f, -2.5f, 156.4f }, 0, 0 },
+    { { 8.35f, -1.66f, 152.07f }, { 8.55f, -2.5f, 152.01f }, 0, 0 },
+    { { 8.11f, -1.6f, 152.1f }, { 8.07f, -2.5f, 152.09f }, 0, 0 },
+    { { 7.96f, -1.6f, 151.99f }, { 7.78f, -2.5f, 152.02f }, 0, 0 },
+    { { 9.56f, -1.63f, 149.35f }, { 9.42f, -2.5f, 149.53f }, 0, 0 },
+    { { 9.74f, -1.64f, 149.15f }, { 9.7f, -2.5f, 149.36f }, 0, 0 },
+    { { 9.94f, -1.63f, 149.13f }, { 10.04f, -2.5f, 149.04f }, 0, 0 },
+    { { 99999.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, 0, 0 }
+};
+struct rbclass_s rbclass[5] = { 0 };
+struct deb3_s deb3[64] = { 0 };
+struct firedrop_s firedrop[16] = { 0 };
+struct nuvec_s maskpos = { 0.0f, 0.0f, 0.0f };
+int cortlights[126] = { 0 };
 
 extern f32 NuTrigTable[];
-extern struct nuvec_s D_00632868;   /* Level 0x13 tornado reference point */
 
 extern s32 Level;
 extern s32 VEHICLECONTROL;
@@ -1143,8 +1223,9 @@ void LaunchObjects(void) {
     }
 
     if (Level == 0x13) {
-        dx = global_camera.mtx._30 - D_00632868.x;
-        dz = global_camera.mtx._32 - D_00632868.x;
+        /* -0.0f is retail's literal (a negated zero), not a typo for 0.0f. */
+        dx = global_camera.mtx._30 - (-0.0f);
+        dz = global_camera.mtx._32 - (-0.0f);
         dx = 50.0f - NuFsqrt(dx * dx + dz * dz) * 0.125f;
         if (dx < 0.0f) {
             dx = 0.0f;
@@ -1623,6 +1704,38 @@ void LaunchObjects(void) {
 }
 
 
+/* Defined after LaunchObjects: retail .sdata has its -0.0f pool constant before rockpt. */
+f32 *rockpt = 0;
+int debpt = 0;
+s32 firedroppt = 0;
+s32 dropfire = 0;
+s32 hutexplode = 0;
+s32 hutframe = 0;
+s32 exroty = 0;
+s32 exkey = 0;
+s32 jonframe1 = 0;
+s32 subprop = 0;
+s32 water1 = 0;
+s32 water2 = 0;
+int wdir = 0;
+int wtimer = 0;
+s32 xrayon = 0;
+s32 flooron = 0;
+s32 roofon = 0;
+s32 jcrunch = 0;
+int lcrunch = 0;
+s32 maskoff = 0;
+s32 cmask = 0;
+s32 dmask = 0;
+s32 maskx = 0;
+s32 masky = 0;
+s32 maskrot = 0;
+f32 floor1 = 0.0f;
+f32 roof1 = 0.0f;
+f32 torndist = 0.0f;
+s32 rsfxcount = 0;
+s32 *rsfxpt = 0;
+
 void NuRndrAddShadow(struct nuvec_s * pos, float r, int shade, int xrot, int yrot, int zrot);
 
 void ProcDeb3(void) {
@@ -1650,7 +1763,7 @@ void ProcDeb3(void) {
       deb->diff.z *= 0.5f;
       if ((deb->status & 1) == 0) {
         mat = deb->mtx;
-        RBodyMove(deb,D_0062E774);
+        RBodyMove(deb,0.02f);
         if ((deb->info->info & 6U) != 0) {
           dx = deb->mtx._30 - player->obj.pos.x;
           dy = deb->mtx._31 - (player->obj.pos.y + ((player->obj.bot + player->obj.top) * player->obj.SCALE) * 0.5f);
@@ -1743,7 +1856,7 @@ void ProcDeb3(void) {
                   deb->mtx._32 = deb->impact.z;
                   deb->count++;
                   if (deb->count > 4) {
-                    if (ShadNorm.y > D_0062E778) {
+                    if (ShadNorm.y > 0.7f) {
                       if ((deb->info->info & 1U) != 0) {
                         deb->timer = 1;
                       }

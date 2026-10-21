@@ -32,20 +32,11 @@ extern f32 frand(void);
 
 extern struct nuvec_s NullNuVec;
 extern struct nuvec_s ShadNorm;         /* 0x002ea9d0 */
-extern struct nuvec_s WorldAxis[3];     /* 0x005b93e8 */
 extern short JeepBaseAng;
-extern short D_0063193C;
-extern s32 D_00631940;
 extern s32 Level;
-extern struct nuvec_s D_005B9410;
-extern struct nuvec_s D_005B9420;
-extern struct nuvec_s D_005B9430;
 
-#define LastJeepBaseAng D_0063193C
-#define JeepAngleLocked D_00631940
-#define JeepAxisX D_005B9410
-#define JeepAxisY D_005B9420
-#define JeepAxisZ D_005B9430
+struct nuvec_s WorldAxis[3] = { { 1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 1.0f } };
+s32 WheelId = 1;
 
 s32 TryUnembeddPointDir(struct nuvec_s *pos, struct nuvec_s *dir1,
                         struct nuvec_s *dir2, f32 radius, s16 *handle)
@@ -222,6 +213,8 @@ inline void FindSurfaceRotXZFromNormal(struct nuvec_s *normal, s16 *rotX, s16 *r
 
 void BestGuessActualsJeep(struct VEHICLE *Vehicle)
 {
+    static short OldBase = 0;
+    static s32 LastJeepWithinBounds = 0;
     struct nuvec_s WheelBuf[4];
     struct nuvec_s *Wheel;
     struct nuvec_s Front;
@@ -274,24 +267,24 @@ void BestGuessActualsJeep(struct VEHICLE *Vehicle)
     base = JeepBaseAng;
     delta = Vehicle->aActualAngle - base;
 
-    turn = JeepBaseAng - LastJeepBaseAng;
+    turn = JeepBaseAng - OldBase;
     if (turn < -0xAAB || turn > 0xAAB) {
-        JeepAngleLocked = 0;
+        LastJeepWithinBounds = 0;
     }
-    if (JeepAngleLocked != 0 && (Level != 3 || Vehicle->ActualPosition.z < 751.5f)) {
+    if (LastJeepWithinBounds != 0 && (Level != 3 || Vehicle->ActualPosition.z < 751.5f)) {
         if (delta > 0x2000) {
             Vehicle->aActualAngle = base + 0x2000;
         } else if (delta < -0x2000) {
             Vehicle->aActualAngle = base - 0x2000;
         }
     } else if (delta > -0x2000 && delta < 0x2000) {
-        JeepAngleLocked = 1;
+        LastJeepWithinBounds = 1;
     }
 
     Side.x = (Front.x + Rear.x) * 0.5f;
     Side.y = (Front.y + Rear.y) * 0.5f;
     Side.z = (Front.z + Rear.z) * 0.5f;
-    LastJeepBaseAng = JeepBaseAng;
+    OldBase = JeepBaseAng;
     WheelPoint = GenerateJeepWheelPoint(5);
     NuVecRotateY(&Offset, &WheelPoint, Vehicle->aActualAngle);
     NuVecRotateZ(&Offset, &Offset, Vehicle->aActSurfRotZ);
@@ -535,6 +528,9 @@ void FindSurfaceNormalAndUnembedd(struct VEHICLE *Vehicle, f32 dt)
 
 struct nuvec_s TerrainVehicleSoft(struct VEHICLE *Vehicle, struct nuvec_s *Vel)
 {
+    static struct nuvec_s TempX = { 1.0f, 0.0f, 0.0f };
+    static struct nuvec_s TempY = { 0.0f, 1.0f, 0.0f };
+    static struct nuvec_s TempZ = { 0.0f, 0.0f, 1.0f };
     struct numtx_s TargetMtx;
     struct numtx_s OldMtx;
     struct nuvec_s Wheel[4];
@@ -592,9 +588,9 @@ struct nuvec_s TerrainVehicleSoft(struct VEHICLE *Vehicle, struct nuvec_s *Vel)
         Wheel[i].y += Min.y;
         Wheel[i].z += Min.z;
     }
-    NuVecMtxRotate(&Vehicle->WheelAxis[0], &JeepAxisX, &TargetMtx);
-    NuVecMtxRotate(&Vehicle->WheelAxis[1], &JeepAxisY, &TargetMtx);
-    NuVecMtxRotate(&Vehicle->WheelAxis[2], &JeepAxisZ, &TargetMtx);
+    NuVecMtxRotate(&Vehicle->WheelAxis[0], &TempX, &TargetMtx);
+    NuVecMtxRotate(&Vehicle->WheelAxis[1], &TempY, &TargetMtx);
+    NuVecMtxRotate(&Vehicle->WheelAxis[2], &TempZ, &TargetMtx);
 
     radius = 0.23669f;
     Min = Vehicle->ActualWheelPosition[0];

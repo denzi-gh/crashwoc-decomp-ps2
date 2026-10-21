@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0061"
 source = "src/nups2/vu1man.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0061:0016b7a0:NuPs2InitVU"
@@ -26,3 +26,8 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0061:0016b948:VU1_LoadXD"
 state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x00616a60
+end = 0x00616a73

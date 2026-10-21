@@ -207,7 +207,7 @@ inline void edwmpInit(void)
 }
 
 struct edmainreg_s edwmpdesc = {
-    0, 0, "Wumpa Editor", edwmpInit, edwmpClose, edwmpEnter, {0}, 0,
+    0, 0, "Wumpa Editor", edwmpInit, edwmpClose, edwmpEnter, 0, 0, 0, 0,
     EDMAIN_BLOCKID('w', 'u', 'm', 'p'), edwmpProc, edwmpRender
 };
 struct nuvec_s edwmp_cam_pos = { 0.0f, 0.0f, 0.0f };

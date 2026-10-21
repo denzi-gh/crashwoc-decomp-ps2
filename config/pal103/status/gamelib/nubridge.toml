@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0081"
 source = "src/gamelib/nubridge.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0081:001b2870:NuBridgeCreate"
@@ -50,3 +50,24 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0081:001b50c8:NuBrdigeDrawRope"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0081:004a9090:Bridges"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0081:0062f83c:NuBridge_base_scene"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0081:0062f840:BridgeFree"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0081:0062f844:NuBridgeProc"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x0061a590
+end = 0x0061a5a3

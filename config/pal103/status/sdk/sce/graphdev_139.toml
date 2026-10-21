@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0139"
 source = "src/sdk/sce/graphdev_139.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0139:002624a0:sceGsSetDefDrawEnv"

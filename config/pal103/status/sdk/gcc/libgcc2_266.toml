@@ -9,8 +9,12 @@ schema = 1
 unit = "pal103:unit-0266"
 source = "src/sdk/gcc/libgcc2_266.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0266:00280fe8:__umoddi3"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0266:0062c820:__clz_tab"
 state = "matching"

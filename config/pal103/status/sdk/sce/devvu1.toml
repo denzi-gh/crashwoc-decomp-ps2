@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0145"
 source = "src/sdk/sce/devvu1.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0145:00263938:sceVuCheckBusy"
@@ -70,3 +70,8 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0145:00263d48:sceDevVu1PutCnd"
 state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x0062aef0
+end = 0x0062af04

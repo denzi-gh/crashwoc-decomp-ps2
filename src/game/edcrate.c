@@ -1188,7 +1188,7 @@ static inline void edcrtcbCancelResetCratesMenu(void)
 }
 
 struct edmainreg_s edcrtdesc = {
-    0, 0, "Crate Editor", edcrtInit, edcrtClose, edcrtEnter, {0}, 0,
+    0, 0, "Crate Editor", edcrtInit, edcrtClose, edcrtEnter, 0, 0, 0, 0,
     EDMAIN_BLOCKID('c', 'r', 'a', 't'), edcrtProc, edcrtRender
 };
 struct nuvec_s edcrt_cam_pos = { 0.0f, 0.0f, 0.0f };

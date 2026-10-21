@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0070"
 source = "src/gamelib/edptl.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0070:0018a058:edppPtlCreate"
@@ -694,3 +694,390 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0070:00197338:CreateMessageMenu"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:00484dc0:mcfilename"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:00484de0:levelfilename"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:00484ee0:edptldesc"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:00484f18:edpp_ptls"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:00489b18:edpp_cam_pos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:00489b40:mcdir"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f2d0:edpp_create_type"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f2d4:edpp_dpad_mode"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f2d8:edptl_switch_menu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f2dc:edptl_switchtype_menu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f2e0:edptl_sounds_menu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f2e4:edptl_soundx_menu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f2e8:edptl_soundid_menu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f2ec:edptl_soundcontrol_menu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f2f0:edptl_bounce_menu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f2f4:edptl_group_menu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f2f8:edpp_emitrotz"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f2fc:edpp_emitroty"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f300:edpp_rotz"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f304:edpp_roty"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f308:edpp_offset"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f30c:edpp_refrotz"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f310:edpp_refroty"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f314:superscale"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f318:edptl_count"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f31c:edptl_clipboard_entry"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f320:grad_item"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f324:grad_alpha_item"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f328:grad_size_w_item"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f32c:grad_size_h_item"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f330:grad_size_min_item"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f334:grad_size_max_item"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f338:grad_rot_item"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f33c:grad_rot_min_item"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f340:grad_rot_max_item"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f344:grad_jib_x_freq_item"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f348:grad_jib_x_amp_item"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f34c:grad_jib_y_freq_item"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f350:grad_jib_y_amp_item"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f354:coll_env_item"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f358:levelfilenametype"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f478:edpp_cam_dist"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f47c:edpp_cam_ax"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f480:edpp_cam_ay"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f484:edpp_first_time_this_level"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f488:edpp_numparticles"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f48c:edpp_mtl"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f490:edpp_boxmtl"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f494:edpp_nextalloc"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f498:edpp_nearest"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f49c:edpp_curr"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f4a0:edpp_snap_enabled"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f4a4:edpp_effect_list"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f4a8:edpp_active_menu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f4ac:ptltypemenu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f4b0:ptloptmenu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f4b4:ptlgsortmenu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f4b8:ptlgcodemenu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f4bc:ptlemitmenu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f4c0:ptlsizemenu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f4c4:ptlrotmenu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f4c8:ptljibmenu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f4cc:ptlcolmenu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f4d0:ptlemitvelmenu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f4d4:ptlgravmenu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f4d8:ptlvaremitmenu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f4dc:ptlvarstartmenu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f4e0:ptlcutoffmenu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f4e4:ptldatamenu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f4e8:memcardmenu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f4ec:messagemenu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f4f0:loadeffectsmenu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f4f4:mergeeffectsmenu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f4f8:deleteeffectsmenu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f4fc:filenamemenu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f500:namemenu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f504:confirmmenu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f508:changegenratemenu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f50c:totalptlsmenu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f510:etimemenu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f514:emittimemenu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f518:sscalemenu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f51c:texturemenu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f520:textureselectmenu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f524:collmenu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f528:effectlistmenu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f52c:ptlclipmenu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0062f530:dpadmodemenu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:0063320c:mctype"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:00633210:mcfree"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:00633214:mcformat"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:00633218:mcresult"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0070:006b3b30:entry_position"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x006b3b30
+end = 0x006b3b3c
+
+[[claim]]
+section = ".rodata"
+start = 0x00618c18
+end = 0x00618c44
+
+[[claim]]
+section = ".sbss"
+start = 0x00633218
+end = 0x0063321c

@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0190"
 source = "src/sdk/gcc/libgcc2_190.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0190:00270328:__muldi3"

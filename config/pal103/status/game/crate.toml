@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0095"
 source = "src/game/crate.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0095:001f11c8:InitCrates"
@@ -234,3 +234,228 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0095:001f9208:ResetCrate"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:00592ac0:crate_list"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:00592d08:tntsfxtime"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:00592d28:uvs"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:00592de8:shape.195"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:00592e18:Crate"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:0059be18:CrateGroup"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:0059d618:CrateTypeData"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:0059d718:cpGOTO"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:0059d728:MarkerCrate"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:0059d750:FlashCrate"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:0059d778:LockCrate"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:0059d7a0:HighlightCrate"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:0059d7c8:BoxExpList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:006311f0:crates"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:006311f4:marker_crate"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:006311f8:flash_crate"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:006311fc:lock_crate"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:00631200:locked_crate"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:00631204:triggerorigin_crate"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:00631208:triggerdest_crate"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:0063120c:highlight_crate"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:00631210:highlighted_crate"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:00631214:current_selected_crate"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:00631218:CRATEGROUPCOUNT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:0063121c:CRATECOUNT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:00631220:num_crates_used"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:00631224:CRATEGRAVITY"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:00631228:CRATEHOPSPEED"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:0063122c:METALCRATEBOUNCESPEED"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:00631230:JUMPONCRATEBREAKSPEED"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:00631234:FALLONCRATEBREAKSPEED"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:00631238:plr_invisibility_time"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:00631248:DRAWCRATESHADOWS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:00631258:i_cratetypedata"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:0063125c:last_questionmark_extralife"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:00631260:CHANGERPITCH"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:00631264:CHANGERVOLUME"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:00631268:SFX_CHANGER"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:0063126c:CRATEEXPLOSIONFRAMES"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:00631270:CRATEBALLOONOFFSET"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:00631274:CRATEBALLOONRADIUS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:00631278:cp_goto"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:0063127c:temp_crate_y_ceiling_adjust"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:00631280:temp_crate_y_floor_adjust"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:00631284:temp_crate_xz_adjust"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:00631288:temp_crate_bounce"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:0063128c:DESTRUCTIBLECRATECOUNT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:00631290:DESTRUCTIBLEBONUSCRATECOUNT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:00631294:temp_pGroup"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:00631298:temp_pCrate"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:0063129c:CrateMat"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:006312a0:temp_crate_type"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:006312a4:temp_face"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:006312a8:temp_ratio"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0095:006312ac:iBOXEXP"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x0061eca0
+end = 0x0061ee90
