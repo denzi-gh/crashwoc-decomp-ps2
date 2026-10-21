@@ -1023,8 +1023,8 @@ u32 *NuRndrFxSpriteSet(u32 code, struct FxSpriteSet *fx) {
         *packet++ = fx->iterations[i];
         *packet++ = fx->rgba[i];
         *packet++ = fx->rgba[i] >> 8;
-        *packet++ = (short)(fx->rgba[i] >> 16);
-        *packet++ = (signed char)(fx->rgba[i] >> 24);
+        *packet++ = fx->rgba[i] >> 16;
+        *packet++ = fx->rgba[i] >> 24;
         *(float *)packet++ = fx->ustart[i];
         *(float *)packet++ = fx->vstart[i];
         *(float *)packet++ = fx->xstart[i];
@@ -4494,26 +4494,25 @@ void NuRndrWater(void) {
                 rndrstream_3d->cur.w = gsBeginGifPacket(rndrstream_3d->cur.w, 0, 1, 1, 4, 0, 9, 1, 2, 5, 2, 5, 2, 5, 2, 5);
                 for (j = 0; j < 14; j++) {
                     u0 = (float)i * 64.0f / 1024.0f;
-                    u1 = (float)(i + 1) * 64.0f / 1024.0f;
                     v0 = (float)(j << 4) / 256.0f;
                     v1 = (float)((j + 1) << 4) / 256.0f;
                     xoffset = (PS2_VCNTR_X - (nurndr_pixel_width >> 1)) << 4;
                     yoffset = (PS2_VCNTR_Y - (nurndr_pixel_height >> 1)) << 4;
                     dx0 = (int)(NuTrigTable[watertab[j][i].x & 0xFFFF] * waveampx) - 8;
-                    dx1 = (int)(NuTrigTable[watertab[j][i + 1].x & 0xFFFF] * waveampx) - 8;
-                    dy0 = (int)(NuTrigTable[(watertab[j][i].y + 0x4000) & 0xFFFF] * waveampy) - 8;
-                    dx2 = (int)(NuTrigTable[watertab[j + 1][i].x & 0xFFFF] * waveampx) - 8;
-                    dy1 = (int)(NuTrigTable[(watertab[j][i + 1].y + 0x4000) & 0xFFFF] * waveampy) - 8;
-                    dy2 = (int)(NuTrigTable[(watertab[j + 1][i].y + 0x4000) & 0xFFFF] * waveampy) - 8;
-                    dx3 = (int)(NuTrigTable[watertab[j + 1][i + 1].x & 0xFFFF] * waveampx) - 8;
-                    dy3 = (int)(NuTrigTable[(watertab[j + 1][i + 1].y + 0x4000) & 0xFFFF] * waveampy) - 8;
                     x0 = (i << 10) + dx0;
-                    y0 = (j << 8) + dy0;
+                    dx1 = (int)(NuTrigTable[watertab[j][i + 1].x & 0xFFFF] * waveampx) - 8;
                     x1 = ((i + 1) << 10) + dx1;
-                    y1 = (j << 8) + dy1;
+                    dy0 = (int)(NuTrigTable[(watertab[j][i].y + 0x4000) & 0xFFFF] * waveampy) - 8;
+                    y0 = (j << 8) + dy0;
+                    dx2 = (int)(NuTrigTable[watertab[j + 1][i].x & 0xFFFF] * waveampx) - 8;
                     x2 = (i << 10) + dx2;
+                    dy1 = (int)(NuTrigTable[(watertab[j][i + 1].y + 0x4000) & 0xFFFF] * waveampy) - 8;
+                    y1 = (j << 8) + dy1;
+                    dy2 = (int)(NuTrigTable[(watertab[j + 1][i].y + 0x4000) & 0xFFFF] * waveampy) - 8;
                     y2 = ((j + 1) << 8) + dy2;
+                    dx3 = (int)(NuTrigTable[watertab[j + 1][i + 1].x & 0xFFFF] * waveampx) - 8;
                     x3 = ((i + 1) << 10) + dx3;
+                    dy3 = (int)(NuTrigTable[(watertab[j + 1][i + 1].y + 0x4000) & 0xFFFF] * waveampy) - 8;
                     y3 = ((j + 1) << 8) + dy3;
                     x0 += xoffset;
                     y0 += yoffset;
@@ -4523,6 +4522,7 @@ void NuRndrWater(void) {
                     y2 += yoffset;
                     x3 += xoffset;
                     y3 += yoffset;
+                    u1 = (float)(i + 1) * 64.0f / 1024.0f;
                     *rndrstream_3d->cur.w++ = 0x80;
                     *rndrstream_3d->cur.w++ = 0x80;
                     *rndrstream_3d->cur.w++ = 0x80;
@@ -4801,9 +4801,8 @@ void NuRndrShadowStencil(int paused, struct nuvec_s *pos) {
     float dx;
     float dz;
     float dist;
-    float bestdist;
+    float mag;
     float wobble;
-    float scale;
     int best;
     int i;
 
@@ -4815,14 +4814,14 @@ void NuRndrShadowStencil(int paused, struct nuvec_s *pos) {
         return;
     }
     best = -1;
-    bestdist = 1000000.0f;
+    mag = 1000000.0f;
     for (i = 0; i < NuRndrShadMaskCount; i++) {
         maskpts = (struct nuvec_s *)NuRndrShadMasks[i]->pts;
         dx = maskpts->x - pos->x;
         dz = maskpts->z - pos->z;
         dist = dx * dx + dz * dz;
-        if (dist < bestdist) {
-            bestdist = dist;
+        if (dist < mag) {
+            mag = dist;
             pts = maskpts;
             best = i;
         }
@@ -4830,7 +4829,7 @@ void NuRndrShadowStencil(int paused, struct nuvec_s *pos) {
     if (best < 0) {
         return;
     }
-    if (bestdist > 400.0f) {
+    if (mag > 400.0f) {
         shadstorecnt = 0;
         return;
     }
@@ -4846,16 +4845,16 @@ void NuRndrShadowStencil(int paused, struct nuvec_s *pos) {
     }
     dir.x = pts[0].x - dir.x / (float)(NuRndrShadMasks[best]->len - 2);
     dir.z = pts[0].z - dir.z / (float)(NuRndrShadMasks[best]->len - 2);
-    scale = 2.0f / NuFsqrt(dir.x * dir.x + dir.z * dir.z);
-    dir.x *= scale;
-    dir.z *= scale;
+    mag = 2.0f / NuFsqrt(dir.x * dir.x + dir.z * dir.z);
+    dir.x *= mag;
+    dir.z *= mag;
     wobble = NuTrigTable[(shadow_wobble_ang + 0x4000) & 0xFFFF] * 0.5f + NuTrigTable[shadow_spin_ang & 0xFFFF];
     dir.x = pos->x - pts[0].x - dir.x - wobble * (pts[0].x - pts[1].x) * 0.15f;
     dir.z = pos->z - pts[0].z - dir.z - wobble * (pts[0].z - pts[1].z) * 0.15f;
-    scale = 2.0f / NuFsqrt(dir.x * dir.x + dir.z * dir.z);
+    mag = 2.0f / NuFsqrt(dir.x * dir.x + dir.z * dir.z);
     dir.y = -0.2f;
-    dir.x *= scale;
-    dir.z *= scale;
+    dir.x *= mag;
+    dir.z *= mag;
     vpcs = NuCameraGetVPCSMtx();
     NuRndrShadBox[1].y = 0.0f;
     NuRndrShadBox[1].x = 0.0f;

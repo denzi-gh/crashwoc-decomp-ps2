@@ -41,7 +41,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:001207d0:NuRndrFxSpriteSet"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00120a78:NuRndrFxSprite2Set"
@@ -249,7 +249,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012bac0:NuRndrWater"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012cbf8:NuRndrShadow"
@@ -261,7 +261,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012d5b0:NuRndrShadowStencil"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:0012db68:NuRndrTrail"
