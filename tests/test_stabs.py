@@ -9,7 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
-from declib.stabs import StabsError, TypeTable  # noqa: E402
+from declib.stabs import StabsError, TypeTable, join_continuations  # noqa: E402
 
 BASIC = [
     "int:t1=r1;-2147483648;2147483647;",
@@ -104,6 +104,16 @@ class TestDerivedTypes(unittest.TestCase):
     def test_typedef_of_anonymous_struct(self):
         t = table("lconv_t:t43=s8a:1,0,32;b:1,32,32;;")
         self.assertEqual(typed(t, "lconv:S43"), ("S", "lconv_t", 8))
+
+    def test_continued_struct(self):
+        # ee-gcc -g splits a long stab; every part but the last ends in `\`.
+        parts = ["pair:T44=s8a:1,0,32;\\", "b:1,32,32;;", "p:S44"]
+        joined = list(join_continuations(parts))
+        self.assertEqual(joined, ["pair:T44=s8a:1,0,32;b:1,32,32;;", "p:S44"])
+        t = table(joined[0])
+        self.assertEqual(typed(t, joined[1]), ("S", "struct pair", 8))
+        with self.assertRaises(StabsError):
+            list(join_continuations(["x:T45=s4\\"]))
 
 
 class TestErrors(unittest.TestCase):

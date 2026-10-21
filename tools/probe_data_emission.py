@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """Probe how both EE compilers emit data, and compare with retail bytes.
 
-Data-from-C (PLAN_DATA.md, `data/core`) needs facts, not guesses, about where
-and in which order ee-gcc puts initialised data: which section an item lands
-in at `-G8` / `-G0`, whether a static is emitted at its definition or deferred
-to the end of the file, whether an unreferenced one is dropped, the `.align`
-in front of it, how function statics are numbered (`name.N`), and where `$LC`
-strings, jump tables and float pools go. This tool compiles a fixed probe
-source under a fixed matrix and records exactly that; its JSON is the evidence
-`config/<version>/profiles.toml` requires before a profile change.
+Data-from-C (docs/decomp_agent.md, "Per-unit data workflow") needs facts, not
+guesses, about where and in which order ee-gcc puts initialised data: which
+section an item lands in at `-G8` / `-G0`, whether a static is emitted at its
+definition or deferred to the end of the file, whether an unreferenced one is
+dropped, the `.align` in front of it, how function statics are numbered
+(`name.N`), and where `$LC` strings, jump tables and float pools go. This tool
+compiles a fixed probe source under a fixed matrix and records exactly that;
+its JSON is the evidence `config/<version>/profiles.toml` requires before a
+profile change.
 
 Matrix: {ee-gcc-tt (profile default), ee-gcc (profile sce)} x {-G8, -G0}
 (+ `-G0 -membedded-data` for ee-gcc), always `-O2 -fomit-frame-pointer -S`,

@@ -357,6 +357,18 @@ class _Range(Type):
         return self.basic
 
 
+def join_continuations(strings):
+    held = ""
+    for string in strings:
+        if string.endswith("\\"):
+            held += string[:-1]
+            continue
+        yield held + string
+        held = ""
+    if held:
+        raise StabsError(f"continued stab string never ends: {held[:60]!r}")
+
+
 def symbol_type(table, string):
     """(descriptor, Ref) of a data symbol's stab string, e.g. `one:S13`."""
     _name, desc, ref = table.add(string)

@@ -594,6 +594,41 @@ glabel DupStatic
 """
 
 
+class TestDiffTempManifest(unittest.TestCase):
+    """compile_diff's manifest keeps the unit's [[data]] table, all `asm`."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.p = make_project(Path(self._tmp.name))
+        path = self.p.root / "config" / "pal103" / "status" / "nucore" / "nulist.toml"
+        path.write_text(MANIFEST + textwrap.dedent("""
+            [[data]]
+            id = "pal103:unit-0001:00293700:someGlobal"
+            state = "matching"
+
+            [[data]]
+            id = "pal103:unit-0001:00293800:font"
+            state = "retail"
+            reason = "raw asset"
+            """))
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def test_data_entries_copied_as_asm(self):
+        import tomllib
+        from decomp_agent import diff
+        reg = Registry(self.p)
+        fn = reg.by_id["pal103:unit-0001:00100060:NuListDoWork"]
+        data = tomllib.loads(diff._temp_manifest(reg, fn, reg.units[1], "default"))
+        self.assertEqual([(e["id"].split(":")[-1], e["state"]) for e in data["function"]],
+                         [("NuListGetHead", "asm"), ("NuListDoWork", "matching"),
+                          ("DupStatic", "asm")])
+        self.assertEqual([(e["id"].split(":")[-1], e["state"]) for e in data["data"]],
+                         [("someGlobal", "asm"), ("font", "asm")])
+        self.assertFalse(data["complete"])
+
+
 class TestDuplicateStaticListings(unittest.TestCase):
     """Each copy of a duplicated static gets its own listing."""
 
