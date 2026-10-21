@@ -21,9 +21,9 @@
 #include "game/creature.h"
 #include "nusound/nusound.h"
 
-/* pSFX entry (offsets verified in GameMusic/GameSfxLoop), stride 0x30. */
-struct pSFX {
-    u8 pad0[0x10];
+/* GameSound entry (offsets verified in GameMusic/GameSfxLoop), stride 0x30. */
+typedef struct {
+    char name[16];
     u16 pitch;        /* 0x10 */
     u16 volume;       /* 0x12 */
     u8 buzz;          /* 0x14 */
@@ -34,18 +34,18 @@ struct pSFX {
     s16 frequency;    /* 0x1C verified in InitGlobalSfx (lh 0x1C) */
     u16 stream;       /* 0x1E verified in InitGlobalSfx (lhu 0x1E) */
     s8 type;          /* 0x20 */
-    u8 pad2;          /* 0x21 */
+    u8 pad1;          /* 0x21 */
     u16 id;           /* 0x22 verified in InitGlobalSfx (lhu 0x22) */
     struct nuvec_s Pos;   /* 0x24 */
-};                    /* 0x30 */
+} ;              /* 0x30 */
 
-extern struct pSFX SfxTabGLOBAL[];
-extern struct nusound_filename_info_s SfxInfo[];
+extern GameSound SfxTabGLOBAL[];
+extern NUSOUND_FILENAME_INFO SfxInfo[];
 
 extern void NuStrCpy(char *dst, const char *src);
 extern void NuStrCat(char *dst, const char *src);
 extern void NuSoundSetGlobalDat(void *dat);
-extern void NuSoundInit(struct nusound_filename_info_s *info);
+extern void NuSoundInit(NUSOUND_FILENAME_INFO *info);
 
 extern char D_00632938[];
 extern char D_00632940[];
@@ -55,8 +55,9 @@ extern u8 D_00632950[];
 #define sfx_path_suffix D_00632940
 #define sfx_empty_name D_00632948
 #define sfx_dat_name D_00632950
-extern struct pSFX *CurSfxTabLocal;
+extern GameSound *CurSfxTabLocal;
 extern s32 SFXCOUNT_ALL;
+extern int sfxcount_local;
 
 extern struct game_s Game;
 extern s32 game_music;
@@ -80,88 +81,108 @@ extern void NuSoundPlayStereo(s32 track, s32 sfx2, s32 volL, s32 volR, s32 pitch
 extern void NuSoundPlayStereo2(s32 track, s32 sfx2, s32 volL, s32 volR, s32 pitch);
 extern void NuSoundPlay3dLoopSfx(struct nuvec_s *pos, s32 sfx, s32 volL, s32 volR,
                                  s32 pitch);
-extern void InitLocalSfx(struct pSFX *sfxTab, s32 totalCount);
+extern void InitLocalSfx(GameSound *sfxTab, s32 totalCount);
 extern void NuSoundKillAllAudio(void);
 
 extern struct ldata_s LData[];
 
-extern struct pSFX D_005E81F0[];
+extern GameSound D_005E81F0[];
 #define SfxTabESKIMO D_005E81F0
-extern struct pSFX D_005E8340[];
+extern GameSound D_005E8340[];
 #define SfxTabBURN D_005E8340
-extern struct pSFX D_005E85B0[];
+extern GameSound D_005E85B0[];
 #define SfxTabOHNO D_005E85B0
-extern struct pSFX D_005E8700[];
+extern GameSound D_005E8700[];
 #define SfxTabSMOKEY D_005E8700
-extern struct pSFX D_005E87C0[];
+extern GameSound D_005E87C0[];
 #define SfxTabREACTOR D_005E87C0
-extern struct pSFX D_005E88B0[];
+extern GameSound D_005E88B0[];
 #define SfxTabAVALANCHE D_005E88B0
-extern struct pSFX D_005E8A60[];
+extern GameSound D_005E8A60[];
 #define SfxTabCORAL D_005E8A60
-extern struct pSFX D_005E8B80[];
+extern GameSound D_005E8B80[];
 #define SfxTabARCTIC D_005E8B80
-extern struct pSFX D_005E8CD0[];
+extern GameSound D_005E8CD0[];
 #define SfxTabJUNGLE D_005E8CD0
-extern struct pSFX D_005E8E20[];
+extern GameSound D_005E8E20[];
 #define SfxTabNATURE D_005E8E20
-extern struct pSFX D_005E8F70[];
+extern GameSound D_005E8F70[];
 #define SfxTabGAUNTLET D_005E8F70
-extern struct pSFX D_005E9030[];
+extern GameSound D_005E9030[];
 #define SfxTabBAMBOO D_005E9030
-extern struct pSFX D_005E9120[];
+extern GameSound D_005E9120[];
 #define SfxTabBANZAI D_005E9120
-extern struct pSFX D_005E92D0[];
+extern GameSound D_005E92D0[];
 #define SfxTabTORNADO D_005E92D0
-extern struct pSFX D_005E9450[];
+extern GameSound D_005E9450[];
 #define SfxTabTSUNAMI D_005E9450
-extern struct pSFX D_005E9750[];
+extern GameSound D_005E9750[];
 #define SfxTabFRENZY D_005E9750
-extern struct pSFX D_005E9930[];
+extern GameSound D_005E9930[];
 #define SfxTabMADNESS D_005E9930
-extern struct pSFX D_005E99C0[];
+extern GameSound D_005E99C0[];
 #define SfxTabLIZARDS D_005E99C0
-extern struct pSFX D_005E9BD0[];
+extern GameSound D_005E9BD0[];
 #define SfxTabSINKING D_005E9BD0
-extern struct pSFX D_005E9FC0[];
+extern GameSound D_005E9FC0[];
 #define SfxTabGOLD D_005E9FC0
-extern struct pSFX D_005EA230[];
+extern GameSound D_005EA230[];
 #define SfxTabVOID D_005EA230
-extern struct pSFX D_005EA320[];
+extern GameSound D_005EA320[];
 #define SfxTabROKS D_005EA320
-extern struct pSFX D_005EA650[];
+extern GameSound D_005EA650[];
 #define SfxTabASHES D_005EA650
-extern struct pSFX D_005EA9B0[];
+extern GameSound D_005EA9B0[];
 #define SfxTabDRAIN D_005EA9B0
-extern struct pSFX D_005EABC0[];
+extern GameSound D_005EABC0[];
 #define SfxTabPRESSURE D_005EABC0
-extern struct pSFX D_005EAD40[];
+extern GameSound D_005EAD40[];
 #define SfxTabCRUNCH D_005EAD40
-extern struct pSFX D_005EAE90[];
+extern GameSound D_005EAE90[];
 #define SfxTabOIDS D_005EAE90
-extern struct pSFX D_005EB2B0[];
+extern GameSound D_005EB2B0[];
 #define SfxTabKNIGHT D_005EB2B0
-extern struct pSFX D_005EB340[];
+extern GameSound D_005EB340[];
 #define SfxTabTOWN D_005EB340
-extern struct pSFX D_005EB3D0[];
+extern GameSound D_005EB3D0[];
 #define SfxTabICE D_005EB3D0
-extern struct pSFX D_005EB4F0[];
+extern GameSound D_005EB4F0[];
 #define SfxTabHEIGHTS D_005EB4F0
-extern struct pSFX D_005EB550[];
+extern GameSound D_005EB550[];
 #define SfxTabBALLS D_005EB550
-extern struct pSFX D_005EB670[];
+extern GameSound D_005EB670[];
 #define SfxTabBOWLER D_005EB670
-extern struct pSFX D_005EB700[];
+extern GameSound D_005EB700[];
 #define SfxTabVORTEX D_005EB700
-extern struct pSFX D_005EB790[];
+extern GameSound D_005EB790[];
 #define SfxTabSEA D_005EB790
-extern struct pSFX SfxTabFRONTEND[];
-extern struct pSFX D_005EC780[];
+extern GameSound SfxTabFRONTEND[];
+extern GameSound D_005EC780[];
 #define SfxTabGAMEOVER D_005EC780
-extern struct pSFX D_005ED1A0[];
+extern GameSound D_005ED1A0[];
 #define SfxTabSPACE D_005ED1A0
-extern struct pSFX D_005EF240[];
+extern GameSound D_005EF240[];
 #define SfxTabCREDITS D_005EF240
+extern GameSound D_005ED710[29];
+#define SfxTabSPACEFre D_005ED710
+extern GameSound D_005EDC80[29];
+#define SfxTabSPACEGer D_005EDC80
+extern GameSound D_005EE1F0[29];
+#define SfxTabSPACEIta D_005EE1F0
+extern GameSound D_005EE760[29];
+#define SfxTabSPACESpa D_005EE760
+extern GameSound D_005EECD0[29];
+#define SfxTabSPACEDut D_005EECD0
+extern GameSound D_005EC930[9];
+#define SfxTabGAMEOVERFre D_005EC930
+extern GameSound D_005ECAE0[9];
+#define SfxTabGAMEOVERGer D_005ECAE0
+extern GameSound D_005ECC90[9];
+#define SfxTabGAMEOVERIta D_005ECC90
+extern GameSound D_005ECE40[9];
+#define SfxTabGAMEOVERSpa D_005ECE40
+extern GameSound D_005ECFF0[9];
+#define SfxTabGAMEOVERDut D_005ECFF0
 
 extern s32 soundtestcount;
 
@@ -188,6 +209,7 @@ extern s32 last_testglobalsfx;
 extern s32 ChaseActive(void);
 extern int SOUND_SetChannelVolume(unsigned int channel, int left, int right);
 extern void edbitsSetSoundFxVolume(int volume);
+void NuSoundLocalSet(NUSOUND_FILENAME_INFO* nfi, s32 SFX_COUNT, s32 GLOBAL_SFX_COUNT);
 
 
 void InitLevelSfxTables(void) {
@@ -301,9 +323,93 @@ void InitGlobalSfx(void) {
     SFXCOUNT_ALL = i;
 }
 
+void InitLocalSfx(GameSound *SfxTab, int count) {
+    int i;
+    
+    if (SfxTab == NULL) {
+        printf("No local SFX table available!\n");
+        return;
+    }
+        
+    if (SfxTab == SfxTabSPACE) {
+        switch(Game.language) {
+        case 0:
+            break;
+        case 1:
+          SfxTab = SfxTabSPACEFre;
+          break;
+        case 2:
+          SfxTab = SfxTabSPACEGer;
+          break;
+        case 3:
+          SfxTab = SfxTabSPACEIta;
+          break;
+        case 4:
+          SfxTab = SfxTabSPACESpa;
+          break;
+        case 5:
+          SfxTab = SfxTabSPACEDut;
+        }
+    }
+    
+    if (SfxTab == SfxTabGAMEOVER) {
+        switch(Game.language) {
+        case 0:
+            break;
+        case 1:
+          SfxTab = SfxTabGAMEOVERFre;
+          break;
+        case 2:
+          SfxTab = SfxTabGAMEOVERGer;
+          break;
+        case 3:
+          SfxTab = SfxTabGAMEOVERIta;
+          break;
+        case 4:
+          SfxTab = SfxTabGAMEOVERSpa;
+          break;
+        case 5:
+          SfxTab = SfxTabGAMEOVERDut;
+        }
+    }
+    
+    if (count - 0xC5 < 1) {
+        printf("No local SFX in table!\n");
+        return;
+    }
+    
+    if (count > 299) {
+        printf("SFX table not large enough for all local SFX...\n");
+        count = 0x12B;
+    }
+    
+    count -= 0xC5;
+    sfxcount_local = count;
+    for (i = 0; i < count; i++) {
+        NuStrCpy(SfxInfo[i].Filename, sfx_path_prefix);
+        NuStrCat(SfxInfo[i].Filename, SfxTab[i].path);
+        NuStrCat(SfxInfo[i].Filename, sfx_path_suffix);
+        SfxInfo[i].Pitch = (short)SfxTab[i].frequency;
+        SfxInfo[i].LoopInfo = SfxTab[i].stream;
+        SfxInfo[i].ID = SfxTab[i].id;
+    }
+    NuStrCpy(SfxInfo[i].Filename, sfx_empty_name);
+    SfxInfo[i].Pitch = 0;
+    SfxInfo[i].LoopInfo = 1;
+    SfxInfo[i].ID = -1;
+    NuSoundLocalSet(SfxInfo, count, 0xC5);
+    CurSfxTabLocal = SfxTab;
+    SFXCOUNT_ALL = count + 0xC5;
+    for (i = 0; i < count; i++) {
+        CurSfxTabLocal[i].wait = 0;
+    }
+    
+    return;
+}
+
 
 void UpdateGameSfx(void) {
-    struct pSFX *p;
+    GameSound *p;
     s32 i;
 
     p = SfxTabGLOBAL;
@@ -370,7 +476,7 @@ void ResumeGameAudio(void) {
 }
 
 void GameSfx(s32 sfx, struct nuvec_s *pos) {
-    struct pSFX *info;
+    GameSound *info;
     struct nuvec_s camPos;
     s32 vol;
     s32 pitch;
@@ -454,7 +560,7 @@ cleanup:
 }
 
 void GameSfxLoop(s32 sfx, struct nuvec_s *pos) {
-    struct pSFX *info;
+    GameSound *info;
     s32 vol;
     s32 pitch;
 
@@ -610,7 +716,7 @@ void GameAudioUpdate(void) {
 
 
 void GameMusic(s32 sfx, s32 i) {
-    struct pSFX *info;
+    GameSound *info;
     s32 vol;
 
     if (sfx < 0) {
