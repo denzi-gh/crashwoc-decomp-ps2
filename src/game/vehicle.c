@@ -2288,6 +2288,7 @@ f32 GetBigGunBestTarget(f32 bestdot, struct nuvec_s **pos, struct nuvec_s **vel,
     struct nuvec_s rel;
     struct nuvec_s shootdir;
     s32 i;
+    s32 clear;
     f32 dot;
     f32 mag;
 
@@ -2304,7 +2305,8 @@ f32 GetBigGunBestTarget(f32 bestdot, struct nuvec_s **pos, struct nuvec_s **vel,
                         NuVecSub(&shootdir, &PlayerGlider.Position, &BigGunList[i].terrpos);
                         NuVecNorm(&shootdir, &shootdir);
                         NuVecScale(&shootdir, &shootdir, 3.0f);
-                        if (NewRayCast(&BigGunList[i].terrpos, &shootdir, 0.0f) == 0) {
+                        clear = NewRayCast(&BigGunList[i].terrpos, &shootdir, 0.0f) == 0;
+                        if (clear) {
                             *pos = &BigGunList[i].terrpos;
                             bestdot = dot;
                             *vel = &v000;
@@ -3801,6 +3803,8 @@ void ProcessAtlasAtlasCollisions_a(struct NEWBUGGY *a, struct NEWBUGGY *b)
     struct nuvec_s norm;
     struct NEWBUGGY *rock;
     f32 reach;
+    f32 dva;
+    f32 dvb;
     f32 dist;
     f32 vb;
     f32 massa;
@@ -3809,8 +3813,7 @@ void ProcessAtlasAtlasCollisions_a(struct NEWBUGGY *a, struct NEWBUGGY *b)
     s32 ivol;
     s32 neutral;
 
-    reach = a->ball_radius + b->ball_radius;
-    reach *= reach;
+    reach = (a->ball_radius + b->ball_radius) * (a->ball_radius + b->ball_radius);
     NuVecSub(&rel, &a->ball_pos, &b->ball_pos);
     dist = NuVecMagSqr(&rel);
     if (dist < reach) {
@@ -3821,13 +3824,13 @@ void ProcessAtlasAtlasCollisions_a(struct NEWBUGGY *a, struct NEWBUGGY *b)
             vb = DotProduct(&b->ball_vel, &norm);
             massa = a->ball_radius * a->ball_radius * a->ball_radius;
             massb = b->ball_radius * b->ball_radius * b->ball_radius;
-            reach = (massb * 2.0f * vb + dist * (massa - massb)) / (massa + massb) - dist;
-            dist = (massa * 2.0f * dist - vb * (massa - massb)) / (massa + massb) - vb;
-            NuVecScaleAccum(&a->ball_vel, &norm, reach);
-            NuVecScaleAccum(&b->ball_vel, &norm, dist);
+            dvb = (massa * 2.0f * dist - vb * (massa - massb)) / (massa + massb) - vb;
+            dva = (massb * 2.0f * vb + dist * (massa - massb)) / (massa + massb) - dist;
+            NuVecScaleAccum(&a->ball_vel, &norm, dva);
+            NuVecScaleAccum(&b->ball_vel, &norm, dvb);
             a->ball_beenhit = b->type;
             b->ball_beenhit = a->type;
-            vol = fabs(reach) * a->ball_radius + fabs(dist) * b->ball_radius;
+            vol = fabs(dva) * a->ball_radius + fabs(dvb) * b->ball_radius;
             BIGIMPACT = vol;
             vol /= 10.0f;
             if (vol < MINROKVOL) {
@@ -3841,11 +3844,12 @@ void ProcessAtlasAtlasCollisions_a(struct NEWBUGGY *a, struct NEWBUGGY *b)
                         MyGameSfx(0xD3, &a->ball_pos, ivol);
                     } else {
                         neutral = 0;
-                        rock = 0;
                         if (a->rock != 0) {
                             rock = a;
                         } else if (b->rock != 0) {
                             rock = b;
+                        } else {
+                            rock = 0;
                         }
                         if (rock != 0) {
                             neutral = JeepRock[rock->rocknum].owner == 0;
@@ -3866,11 +3870,12 @@ void ProcessAtlasAtlasCollisions_a(struct NEWBUGGY *a, struct NEWBUGGY *b)
                     MyGameSfx(0xD3, &a->ball_pos, ivol);
                 } else {
                     neutral = 0;
-                    rock = 0;
                     if (a->rock != 0) {
                         rock = a;
                     } else if (b->rock != 0) {
                         rock = b;
+                    } else {
+                        rock = 0;
                     }
                     if (rock != 0) {
                         neutral = JeepRock[rock->rocknum].owner == 0;
@@ -5881,6 +5886,7 @@ void ProcessAsteroid(struct asteroid_s *asteroid)
     asteroid->explode = 0;
     if (asteroid->hitpoints != 0) {
         struct nuvec_s scale;
+        struct nuvec_s offset;
         struct nuvec_s dirs[3];
 
         NuVecScale(&asteroid->scale, &asteroid->scale, 0.5f);
@@ -10152,7 +10158,8 @@ void ControlGliderWeatherBoss(struct gliderflight_s *glider, struct nupad_s *pad
     struct nuvec_s offset;
 
     if (glider->TerminalDive == 0 && WBIntroOn == 0 && FlyingLevelExtro == 0) {
-        if ((pad->paddata & 0x2) && (u32)glider->BarrelRoll < 2 && glider->Position.x > -WBLIMX) {
+        if ((((volatile struct nupad_s *)pad)->paddata & 0x2) && (u32)glider->BarrelRoll < 2
+            && glider->Position.x > -WBLIMX) {
             glider->BarrelRoll = 3;
             GameSfx(0x5C, &glider->Position);
         } else if ((pad->paddata & 0x1) && (u32)(glider->BarrelRoll + 1) < 2
