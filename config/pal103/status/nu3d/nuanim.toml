@@ -33,7 +33,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:00141080:NuAnimCurveCalcVal2"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0043:00141220:NuAnimCurve2CalcVal"

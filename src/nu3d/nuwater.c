@@ -29,11 +29,11 @@
 #include "nu3d/nucamera.h"
 #include "nu3d/nugscn.h"
 
-typedef struct WaterTable {
+typedef struct waterTableEntry_s {
     struct nuvec4_s wave[32];
     float fx1;
     float fx4;
-} WaterTable;
+} WATERTABLEENTRY;
 
 extern int NuRndrBeginScene(int target);
 extern void NuRndrEndScene(void);
@@ -106,7 +106,7 @@ extern int D_006B1ED0[8];
 extern struct nuinstance_s *D_006B1EF0[256];
 #define waterinst D_006B1EF0
 
-extern WaterTable D_006B22F0[8];
+extern WATERTABLEENTRY D_006B22F0[8];
 #define watertable D_006B22F0
 
 
@@ -150,8 +150,8 @@ void initWater(struct nugscn_s *scene) {
 
 static inline u32 getWaterTable(float fx1, float fx4) {
     u32 table;
-    WaterTable *wt;
-    WaterTable *tables;
+    WATERTABLEENTRY *wt;
+    WATERTABLEENTRY *tables;
 
     for (table = 0; table < nwatertable; table++) {
         wt = &watertable[table];
@@ -398,6 +398,7 @@ void animateWaterTables(float scale, float time) {
         }
     }
     for (i = 0; i < nwatermtl; i++) {
+        table = &watertable[watermtl_table[i]].wave[0].x;
         mtl = watermtl[i];
         stream = &mtl->rs;
         NuRndrStreamLink(stream);
@@ -405,7 +406,8 @@ void animateWaterTables(float scale, float time) {
         *stream->cur.w++ = 0x10000000;
         *stream->cur.w++ = 0x6C2001B2;
         for (j = 0; j < 32; j++) {
-            *((struct nuvec4_s *)stream->cur.w)++ = watertable[watermtl_table[i]].wave[j];
+            *((struct nuvec4_s *)stream->cur.w)++ = *(struct nuvec4_s *)table;
+            table += 4;
         }
         stream->cur.w = vpDmaTag_Close(stream->cur.w);
         rndrstream_free = vpDmaTag_Next(stream->cur.w, 0);

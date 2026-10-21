@@ -365,6 +365,7 @@ float NuAnimCurveCalcVal2(struct nuanimcurve_s *curve, struct nuanimtime_s *atim
     float a;
     float b;
     float c;
+    float val;
 
     switch (atime->time_byte) {
     case 0:
@@ -388,15 +389,18 @@ float NuAnimCurveCalcVal2(struct nuanimcurve_s *curve, struct nuanimtime_s *atim
     }
     next = &curve->animkeys[nkey];
     key = next - 1;
-    if (!(curve->flags & 1)) {
+    if (curve->flags & 1) {
+        val = key->d;
+    } else {
         dt = next->time - key->time;
         u = (atime->time - key->time) * key->dtime;
         b = key->c * dt;
         c = next->c * dt;
         a = key->d - next->d;
-        return u * (u * (u * (a + a + b + c) + a * -3.0f - (b + b) - c) + b) + key->d;
+        val = u * (a + a + b + c) + a * -3.0f - (b + b) - c;
+        val = u * (u * val + b) + key->d;
     }
-    return key->d;
+    return val;
 }
 
 
