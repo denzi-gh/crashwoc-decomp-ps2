@@ -13,4 +13,4 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0136:002620a8:sceGsSetDefDispEnv"
-state = "asm"
+state = "matching"

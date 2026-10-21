@@ -21,7 +21,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0050:001558d8:AddPointDataToPacket"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0050:00155e68:GenModData"
@@ -33,7 +33,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0050:00156350:FindStripNext"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0050:00156520:AddStripTri"
@@ -61,7 +61,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0050:00158108:NuPs2CreateSkinSmoothOld"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0050:00158900:NuPs2CreateSkinSmooth"

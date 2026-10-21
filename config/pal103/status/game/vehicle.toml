@@ -29,7 +29,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00202980:ControlGliderWeatherBoss"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00202dc0:ControlGlider"
@@ -177,7 +177,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0020b2a0:ProcessAsteroid"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0020b8a0:CheckForPotentialMidAirCollisions"
@@ -221,7 +221,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0020f640:GetBigGunBestTarget"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:0020f810:ProcessBigGun"
@@ -417,7 +417,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00219bd0:ProcessAtlasAtlasCollisions_a"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00219f90:TrailPointInPoly"

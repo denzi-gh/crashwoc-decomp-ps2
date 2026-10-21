@@ -41,6 +41,7 @@ typedef struct {
 #define GS_DISPLAY(dx, dy, magh, dw, dh) \
     (((u_long)(magh) << 23) | ((u_long)(dh) << 44) | (u_long)(dx) | \
     ((u_long)(dy) << 12) | ((u_long)(dw) << 32))
+#define GS_MAGH(w) (((w) + 2559) / (w))
 
 extern char D_0062AE50[];
 #define unsupported_mode_msg D_0062AE50
@@ -66,29 +67,21 @@ void sceGsSetDefDispEnv(sceGsDispEnv *disp, short psm, short w, short h, short d
     disp->dispfb = GS_DISPFB(((w + 63) >> 6) & 0x3f, psm & 0xf);
     if (gp->sceGsOutMode == SCE_GS_NTSC) {
         if (gp->sceGsInterMode == SCE_GS_INTERLACE) {
-            int magh = (w + 2559) / w;
-
-            disp->display = GS_DISPLAY(((u_long)(dx * magh) + 636) & 0xfff, (50 + dy) & 0xfff,
-                                       magh - 1, magh * w - 1,
+            disp->display = GS_DISPLAY(((u_long)(dx * GS_MAGH(w)) + 636) & 0xfff, (50 + dy) & 0xfff,
+                                       GS_MAGH(w) - 1, GS_MAGH(w) * w - 1,
                                        gp->sceGsFFMode ? h * 2 - 1 : h - 1);
         } else {
-            int magh = (w + 2559) / w;
-
-            disp->display = GS_DISPLAY(((u_long)(dx * magh) + 636) & 0xfff, (25 + dy) & 0xfff,
-                                       magh - 1, magh * w - 1, h - 1);
+            disp->display = GS_DISPLAY(((u_long)(dx * GS_MAGH(w)) + 636) & 0xfff, (25 + dy) & 0xfff,
+                                       GS_MAGH(w) - 1, GS_MAGH(w) * w - 1, h - 1);
         }
     } else if (gp->sceGsOutMode == SCE_GS_PAL) {
         if (gp->sceGsInterMode == SCE_GS_INTERLACE) {
-            int magh = (w + 2559) / w;
-
-            disp->display = GS_DISPLAY(((u_long)(dx * magh) + 656) & 0xfff, (72 + dy) & 0xfff,
-                                       magh - 1, magh * w - 1,
+            disp->display = GS_DISPLAY(((u_long)(dx * GS_MAGH(w)) + 656) & 0xfff, (72 + dy) & 0xfff,
+                                       GS_MAGH(w) - 1, GS_MAGH(w) * w - 1,
                                        gp->sceGsFFMode ? h * 2 - 1 : h - 1);
         } else {
-            int magh = (w + 2559) / w;
-
-            disp->display = GS_DISPLAY(((u_long)(dx * magh) + 656) & 0xfff, (36 + dy) & 0xfff,
-                                       magh - 1, magh * w - 1, h - 1);
+            disp->display = GS_DISPLAY(((u_long)(dx * GS_MAGH(w)) + 656) & 0xfff, (36 + dy) & 0xfff,
+                                       GS_MAGH(w) - 1, GS_MAGH(w) * w - 1, h - 1);
         }
     } else {
         printf(unsupported_mode_msg, gp->sceGsOutMode);
