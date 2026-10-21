@@ -116,7 +116,7 @@ void CheckFinish(struct obj_s *obj);
 void CheckGates(struct obj_s *obj);
 void CheckRings(struct obj_s *obj, s32 *ring);
 void tbslotBeginFn(void *tbset, s32 slot);
-void tbslotEndFn(void *tbset, s32 slot);
+s32 tbslotEndFn(void *tbset, s32 slot);
 
 extern s32 jeep_draw;
 extern s32 glass_draw;
@@ -381,7 +381,7 @@ void ManageCreatures(void)
     s32 index;
     struct aitab_s *pAI;
     struct aitab_s *ai;
-    struct creature_s *c;
+    struct aitype_s *type;
 
     if ((Level == 0x25) || ((LDATA->flags & 0x202) != 0)) {
         d = (f32)LDATA->farclip;
@@ -450,9 +450,9 @@ void ManageCreatures(void)
                         Character[i].obj.die_time = Character[i].obj.die_duration;
                         Character[i].on = 0;
                         Character[i].off_wait = 2;
-                        if ((Character[i].i_aitab != -1) &&
-                            (AITab[Character[i].i_aitab].delay <= 0.0f)) {
-                            AITab[Character[i].i_aitab].status = 0;
+                        j = Character[i].i_aitab;
+                        if ((j != -1) && (AITab[j].delay <= 0.0f)) {
+                            AITab[j].status = 0;
                         }
                     }
                 } else if ((NuVecDistSqr(&AITab[Character[i].i_aitab].origin,
@@ -499,8 +499,7 @@ void ManageCreatures(void)
             }
         }
         for (j = 1; j < 9; j++) {
-            c = &Character[j];
-            if ((c->used != 0) && (c->i_aitab == i) &&
+            if ((Character[j].used != 0) && (Character[j].i_aitab == i) &&
                 (!(pAI->delay > 0.0f) || (pAI->time != 0.0f))) {
                 goto next;
             }
@@ -611,6 +610,7 @@ void ManageCreatures(void)
 
     if ((index != -1) && (index != old_index)) {
         ai = &AITab[index];
+        type = AIType;
         if (!(AITab[index].delay > 0.0f) || !(AITab[index].time > 0.0f)) {
             if (Character[c_slot].used != 0) {
                 Character[c_slot].on = 0;
@@ -620,7 +620,8 @@ void ManageCreatures(void)
                 }
             } else if (NuVecDistSqr(&AITab[index].origin,
                                     &player->obj.pos, 0) < range2) {
-                i = AIType[ai->ai_type].character;
+                j = ai->ai_type;
+                i = type[j].character;
                 NuDebugMsgProlog(".\\creature.c", 0x135C)(
                     "ManageCreatures - new character = %s", CData[i].name);
                 AddCreature(i, c_slot, index);

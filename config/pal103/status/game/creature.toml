@@ -49,7 +49,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0091:001d1ff0:ProcessCreatures"
-state = "equivalent"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0091:001d2470:EvalModelAnim"

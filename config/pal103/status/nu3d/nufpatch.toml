@@ -45,7 +45,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0054:0015d510:NuFPatchHeightFieldIndex"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0054:0015dfd0:NuMtxBilinear"

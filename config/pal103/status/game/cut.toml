@@ -45,7 +45,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0121:0025ca10:UpdateGameCut"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0121:0025ce20:DrawGameCut"

@@ -773,9 +773,6 @@ inline void NewGameCutAnim(void) {
 /* Advance the hub/space cutscene: start it when entering the level, step
  * through pCutAnim (skippable with the pad), then return to the hub or go on
  * to the level the cutscene was routing to. */
-/* Near-match (state=asm), 1020/1040 bytes: only register choice differs (the
- * previous character after pCutAnim++, and CRemap[183]; retail uses $a1).
- * Tried: GC-style `i` for CRemap[183], pCutAnim[-1].character, s16/decl order. */
 void UpdateGameCut(void) {
     struct CharacterModel *model;
     f32 dt;
@@ -795,9 +792,11 @@ void UpdateGameCut(void) {
         }
         if (gamecut_finished == 0) {
             model = 0;
-            if (pCutAnim->character >= 0 && pCutAnim->character < 0xBF &&
-                CRemap[pCutAnim->character] != -1) {
-                model = &CModel[CRemap[pCutAnim->character]];
+            if (pCutAnim->character >= 0 && pCutAnim->character < 0xBF) {
+                character = CRemap[pCutAnim->character];
+                if (character != -1) {
+                    model = &CModel[character];
+                }
             }
             CutAnim.oldaction = CutAnim.action;
             CutAnim.newaction = pCutAnim->action;
@@ -843,8 +842,9 @@ void UpdateGameCut(void) {
             }
         }
         if (Level == 0x28) {
-            if (CRemap[183] != -1) {
-                model = &CModel[CRemap[183]];
+            character = CRemap[183];
+            if (character != -1) {
+                model = &CModel[character];
                 CutVortexAnim.oldaction = CutVortexAnim.action;
                 CutVortexAnim.newaction = 0x22;
                 UpdateAnimPacket(model, &CutVortexAnim, 0.59999996f, 0.0f);
