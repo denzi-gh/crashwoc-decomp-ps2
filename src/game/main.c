@@ -68,6 +68,8 @@
 #include "game/visidat.h"
 #include "nucore/nucoretypes.h"
 #include "nups2/ps2ctl.h"
+#include "game/main.h"
+#include "game/sfx.h"
 
 #ifdef NW_HOST
 #include "edtools/edmain.h"
@@ -89,7 +91,6 @@
 #include "game/move.h"
 #include "game/panel.h"
 #include "game/particle.h"
-#include "game/sfx.h"
 #include "game/shadcom.h"
 #include "game/vehicle.h"
 #include "game/visi.h"
@@ -141,11 +142,6 @@ extern void NuWindDraw(struct nugscn_s *scene);
 extern void edobjRenderObjects(struct nugscn_s *scene);
 extern void NuRndrRect2di(s32 x, s32 y, s32 w, s32 h, s32 colour,
                           struct numtl_s *mtl);
-
-struct texanimref_s {
-    void *script;    /* 0x00 */
-    u64 lbit;        /* 0x08 */
-}; /* 0x10 */
 
 struct hazecol_s {
     u8 c[8];
@@ -232,7 +228,7 @@ extern s32 SFXCOUNT_ALL;
 extern struct nugscn_s *crate_scene;
 extern struct nugscn_s *pause_scene;
 extern struct numtl_s *ShadowMat;
-extern u8 SfxTabGLOBAL[];
+extern GameSound SfxTabGLOBAL[];
 extern u8 D_0057EEA4[];
 extern s32 edcrt_used;
 extern s32 edwmp_used;
