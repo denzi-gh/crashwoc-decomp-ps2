@@ -84,7 +84,7 @@ struct numtl_s {
     unsigned char inuvanimlist;             /* 0x1C7 */
     unsigned int fb_mask;                   /* 0x1C8 */
     union variptr_u callbackdata;           /* 0x1CC */
-}; /* 0x1D0 */
+} __attribute__((aligned(16))); /* 0x1D0 */
 
 typedef int (*NuMtlReadEventFunc)(struct numtl_s *mtl);
 
