@@ -112,7 +112,7 @@ extern float NuTrigTable[];
 extern void NuMemFreeFn(void *ptr, char *file, int line);
 extern int NuVecClipTestPointVU0(struct nuvec_s *pos, struct numtx_s *clipmtx);
 extern void *NuMemAllocFn(int size, char *file, int line);
-extern void NuCameraInitClipTestVU0(struct numtx_s *vpc, struct numtx_s *scissor);
+extern void NuCameraInitClipTestVU0(struct numtx_s *vpc, struct numtx_s *scissor, struct numtx_s *wm);
 extern int NuCameraClipTestExtentsVU0(struct nuvec_s *min, struct nuvec_s *max);
 extern void NuMtxMulVU0(struct numtx_s *dst, struct numtx_s *a, struct numtx_s *b);
 extern void NuMtxInvVU0(struct numtx_s *dst, struct numtx_s *src);
@@ -502,7 +502,7 @@ void NuCameraTransformScreenVU0(struct nuvec4_s *dst, struct nuvec4_s *src, int 
 int NuCameraClipTestExtents(struct nuvec_s *min, struct nuvec_s *max, struct numtx_s *wm) {
     int result;
 
-    NuCameraInitClipTestVU0(&vpc_vport_mtx, &vpc_sci_mtx);
+    NuCameraInitClipTestVU0(&vpc_vport_mtx, &vpc_sci_mtx, wm);
     result = NuCameraClipTestExtentsVU0(min, max);
     if (!(result & 0x3F)) {
         return (result & 0x3F00) ? 2 : 1;
