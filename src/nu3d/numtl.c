@@ -116,20 +116,15 @@ extern void *system_font;
 extern struct NuPs2GsReg D_002EA1A0;
 #define NuPs2ZBufReg0 D_002EA1A0
 
-extern char D_00282980[];
-#define rndr3d_microcode D_00282980
+extern char vu_load_tri_mpg[];
 
-extern char D_002834E0[];
-#define rndr3d_l_microcode D_002834E0
+extern char vu_load_tric_mpg[];
 
-extern char D_00284620[];
-#define rndr3d_u_microcode D_00284620
+extern char vu_load_tricu_mpg[];
 
-extern char D_00285EE0[];
-#define rndr3d_mode3_microcode D_00285EE0
+extern char vu_load_trica_mpg[];
 
-extern char D_00286FC0[];
-#define rndr3d_fx_microcode D_00286FC0
+extern char vu_load_xformuv_mpg[];
 
 extern struct rndrstream_s *rndrstream_mtl_sort;
 extern void *rndrstream_free;
@@ -826,24 +821,24 @@ void NuMtlUpdateEx(struct numtl_s *mtl, int flags) {
     switch (mtl->attrib.lighting) {
     case 3:
         mtl->rs.attr = 0x3D;
-        mtl->rs.mpg = rndr3d_mode3_microcode;
+        mtl->rs.mpg = vu_load_trica_mpg;
         break;
     case 2:
         mtl->rs.attr = 0x3C;
-        mtl->rs.mpg = rndr3d_u_microcode;
+        mtl->rs.mpg = vu_load_tricu_mpg;
         break;
     case 0:
     default:
         if (mtl->attrib.colour == 1) {
-            mtl->rs.mpg = rndr3d_l_microcode;
+            mtl->rs.mpg = vu_load_tric_mpg;
         } else {
-            mtl->rs.mpg = rndr3d_microcode;
+            mtl->rs.mpg = vu_load_tri_mpg;
         }
         mtl->rs.attr = 0x3D;
         break;
     case 1:
         mtl->rs.attr = 0x3E;
-        mtl->rs.mpg = rndr3d_fx_microcode;
+        mtl->rs.mpg = vu_load_xformuv_mpg;
         break;
     }
     switch (mtl->attrib.fx) {
@@ -851,7 +846,7 @@ void NuMtlUpdateEx(struct numtl_s *mtl, int flags) {
         break;
     case 1:
         mtl->rs.attr = 0x7C;
-        mtl->rs.mpg = rndr3d_fx_microcode;
+        mtl->rs.mpg = vu_load_xformuv_mpg;
         break;
     }
     if (flags & 1) {

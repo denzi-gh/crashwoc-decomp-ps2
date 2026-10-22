@@ -59,11 +59,9 @@ extern char D_00616100[];
 extern char D_0062F000[];
 #define msg_assert D_0062F000
 
-extern char D_0028F470[];
-#define water_microcode D_0028F470
+extern char vu_load_water_mpg[];
 
-extern char D_00290840[];
-#define water_alt_microcode D_00290840
+extern char vu_load_wateruv_mpg[];
 
 extern int D_006331AC;
 #define nwaterinst D_006331AC
@@ -179,9 +177,9 @@ void fixNewMaterials(void) {
         case 0x85:
         case 0x86:
             if (mtl->fxid == 0x86) {
-                mtl->rs.mpg = water_alt_microcode;
+                mtl->rs.mpg = vu_load_wateruv_mpg;
             } else {
-                mtl->rs.mpg = water_microcode;
+                mtl->rs.mpg = vu_load_water_mpg;
             }
             mtl->vuattr.vec3->z = mtl->fx3.f32 / mtl->fx4.f32;
             mtl->vuattr.vec4->w = 0;
@@ -206,7 +204,7 @@ void fixNewMaterials(void) {
             water_grab = 1;
             mtl->tid = water_grab_tid;
             NuMtlUpdate(mtl);
-            mtl->rs.mpg = water_microcode;
+            mtl->rs.mpg = vu_load_water_mpg;
             mtl->vuattr.vec3->z = mtl->fx2.f32 / 48.0f / mtl->fx4.f32;
             mtl->vuattr.vec4->w = 0;
             width = 1;
@@ -282,7 +280,7 @@ void fixMaterials(void) {
         layer->attrib.colour = 1;
         layer->sort_pri = 0x7FFF;
         NuMtlUpdate(layer);
-        layer->rs.mpg = water_microcode;
+        layer->rs.mpg = vu_load_water_mpg;
         layer->vuattr.vec3->z = mtl->fx3.f32 / mtl->fx4.f32;
         layer->vuattr.vec4->w = 0;
         width = 1;
@@ -311,7 +309,7 @@ void fixMaterials(void) {
         mtl->tid = water_grab_tid;
         mtl->sort_pri = 0x7FFE;
         NuMtlUpdate(mtl);
-        mtl->rs.mpg = water_microcode;
+        mtl->rs.mpg = vu_load_water_mpg;
         mtl->vuattr.vec3->z = mtl->fx2.f32 / 48.0f / mtl->fx4.f32;
         mtl->vuattr.vec4->w = 0;
         width = 1;

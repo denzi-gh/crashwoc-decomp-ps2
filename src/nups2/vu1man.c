@@ -15,11 +15,8 @@
 extern int FlushCache(int operation);
 extern void VU1_DmaWrite(void *tag, int wait);
 
-extern char D_00281530[];
-extern char D_002834E0[];
-
-#define fpatch_microcode    D_00281530
-#define rndr3d_l_microcode  D_002834E0
+extern char vu_load_xform_mpg[];
+extern char vu_load_tric_mpg[];
 
 #define VU1_VF_BASE 0x400
 #define VU1_VI_BASE 0x420
@@ -56,8 +53,8 @@ inline void VU1_DisplaySRegs(void)
 inline void VU1_LoadXD(void)
 {
     FlushCache(0);
-    VU1_DmaWrite(fpatch_microcode, 1);
-    VU1_DmaWrite(rndr3d_l_microcode, 1);
+    VU1_DmaWrite(vu_load_xform_mpg, 1);
+    VU1_DmaWrite(vu_load_tric_mpg, 1);
     NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\vu1man.c", 0x38)("Loaded default mpg");
 }
 
