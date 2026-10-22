@@ -4515,11 +4515,10 @@ void GetMenuInfo(struct cursor_s *cur) {
     case 4:
         cur->y_max = 3;
         if (LANGUAGEOPTION != 0) {
-            cur->y_max = 4;
+            cur->y_max++;
         }
         return;
     case 5:
-    case 19:
         cur->y_max = 3;
         return;
     case 6:
@@ -4535,17 +4534,21 @@ void GetMenuInfo(struct cursor_s *cur) {
         cur->y_max = 4;
         return;
     case 8:
-    case 14:
-    case 16:
-    case 18:
         cur->y_max = 1;
         return;
     case 10:
         cur->y_max = 0xA;
         return;
     case 12:
-        cur->y_max = 5;
         cur->x_max = 5;
+        cur->y_max = 5;
+        return;
+    case 14:
+        cur->y_max = 1;
+        return;
+    case 16:
+    case 18:
+        cur->y_max = 1;
         return;
     case 2:
         cur->x_max = 6;
@@ -4560,6 +4563,9 @@ void GetMenuInfo(struct cursor_s *cur) {
         if (Game.language == 0x63) {
             cur->y_max = 7;
         }
+        return;
+    case 19:
+        cur->y_max = 3;
         return;
     case 20:
     case 23:
@@ -4578,8 +4584,8 @@ void GetMenuInfo(struct cursor_s *cur) {
     case 25:
     case 28:
     case 30:
-        cur->y_max = 0;
         cur->x_max = 0;
+        cur->y_max = 0;
         return;
     }
 }

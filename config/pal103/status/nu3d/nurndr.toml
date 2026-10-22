@@ -53,7 +53,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00121220:NuRndrGobjSkin"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00121498:NuRndrShadowInit"
@@ -145,7 +145,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0040:00126c28:NuHGobjEvalDwaBlend2"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00126ee0:NuHGobjEvalAnimBlend"
