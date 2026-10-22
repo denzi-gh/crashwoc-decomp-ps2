@@ -84,14 +84,12 @@ extern struct nuvec4_s D_006AFF68[0x100];
 extern struct nuhfvtx_s D_006B0F80[];
 #define hf_vtx D_006B0F80
 
-extern char D_00281530[];
-#define fpatch_microcode D_00281530
+extern char vu_load_xform_mpg[];
 
 extern char D_00615BD8[];
 #define fpatch_file D_00615BD8
 
-extern char D_0028AD70[];
-#define fpatch_mpgtag D_0028AD70
+extern char patch_vu0_mpg[];
 
 extern struct nutex_s D_006B0F68;
 #define fpatch_lighttex D_006B0F68
@@ -312,7 +310,7 @@ void NuRndrFPatchBegin(struct nuvec_s *lightdir, f32 scale, f32 bias)
     size = 32;
     blend = 0.999f;
     if (fpatch_stream[0] == 0) {
-        fpatch_stream[0] = NuRndrStreamAllocStream(0x7FFFFFFD, fpatch_mpgtag, 0xFFFFFFFF);
+        fpatch_stream[0] = NuRndrStreamAllocStream(0x7FFFFFFD, patch_vu0_mpg, 0xFFFFFFFF);
         NuFPatchLightTexture(&fpatch_lighttex, size, lightdir, 4.0f, scale, bias);
         nutex_force_overbrighten = 1;
         fpatch_lighttid = NuTexCreate(&fpatch_lighttex);
@@ -1518,7 +1516,7 @@ void NuRndrFPatchEnd(void)
 
     for (i = 0; i < FPATCH_STREAMS; i++) {
         NuRndrStreamLink(fpatch_stream[i]);
-        fpatch_stream[i]->ptr.u8 = vpDmaTag_Call(fpatch_stream[i]->ptr.u8, fpatch_microcode);
+        fpatch_stream[i]->ptr.u8 = vpDmaTag_Call(fpatch_stream[i]->ptr.u8, vu_load_xform_mpg);
         rndrstream_free = vpDmaTag_Next(fpatch_stream[i]->ptr.u8, 0);
     }
     NuTexUnReserve();

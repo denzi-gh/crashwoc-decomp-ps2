@@ -36,8 +36,7 @@ struct nuivec_s {
     s32 z;
 };
 
-extern u8 D_00293090[];
-#define cloud_mpg D_00293090
+extern u8 vu_load_cloud_mpg[];
 extern struct nuvec_s D_002D3EF0;
 #define camera_trans D_002D3EF0
 extern f32 NuTrigTable[];
@@ -136,7 +135,7 @@ void cloudInit() {
         cloudmtl->attrib.zmode = 1;
         cloudmtl->sort_pri = 0x7D00;
         NuMtlUpdateEx(cloudmtl, 1);
-        cloudmtl->rs.mpg = cloud_mpg;
+        cloudmtl->rs.mpg = vu_load_cloud_mpg;
     }
     if (cloudtex != 0) {
         if (cloudtex->bits != 0) {
@@ -327,7 +326,7 @@ void TimeTunnelInit(union variptr_u *buffer, union variptr_u *buffend) {
         ttmtl->attrib.zmode = 1;
         ttmtl->sort_pri = 0x7FFF;
         NuMtlUpdateEx(ttmtl, 1);
-        ttmtl->rs.mpg = cloud_mpg;
+        ttmtl->rs.mpg = vu_load_cloud_mpg;
     }
 }
 
@@ -429,6 +428,6 @@ void TimeTunnelClose(void) {
 
 void CloudFxInit(void) {
     if (clouds_rs == 0) {
-        clouds_rs = NuRndrStreamAllocStream(0x10000000, cloud_mpg, 0x3C);
+        clouds_rs = NuRndrStreamAllocStream(0x10000000, vu_load_cloud_mpg, 0x3C);
     }
 }
