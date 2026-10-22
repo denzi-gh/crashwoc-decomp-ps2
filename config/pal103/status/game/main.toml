@@ -65,7 +65,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0088:001c7210:BGLoad"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0088:001c83b0:BGLoadCutMovie"
@@ -77,7 +77,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0088:001c8ce0:main"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0088:001cab58:ResetSuperBuffer"
