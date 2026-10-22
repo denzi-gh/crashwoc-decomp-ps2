@@ -51,6 +51,7 @@
 #include "nucore/nucoretypes.h"
 #include "nups2/ps2ctl.h"
 #include "game/cut.h"
+#include "nucore/nufile.h"
 
 extern struct game_s Game;
 extern s32 gamecut;
@@ -237,10 +238,11 @@ extern char D_006293D8[];                /* "ats\\elecy\\elecy2.ats" */
 extern s32 D_00633390;
 extern u8 texanimbuff[];
 extern void LoadFont3D(void);
+#ifndef NW_HOST /* the host takes the prototypes of nucore/nufile.h */
 extern void *NuDatOpen(char *name, char **mem, s32 *used);
-struct nudathdr_s;
 extern void NuDatSet(struct nudathdr_s *ndh);
 extern void NuDatClose(struct nudathdr_s *ndh);
+#endif
 struct nutexanimprog_s;
 void CutSceneNextLogoFunction(struct instNUGCUTSCENE_s *icutscene);
 

@@ -19,4 +19,12 @@
 #define NW_HOST_RETURN(v)
 #endif
 
+/* A file-scope static the port's replacement of its accessors must reach: static on the EE, global on
+ * the host. */
+#ifdef NW_HOST
+#define NW_STATIC
+#else
+#define NW_STATIC static
+#endif
+
 #endif /* NU_PORT_H */

@@ -203,9 +203,11 @@ extern void InitSpecular(void);
 extern void InitEnviro(void);
 extern void InitGlass(void);
 extern void InitClouds(void);
+#ifndef NW_HOST /* the host takes the prototypes of nucore/nufile.h */
 extern void *NuDatOpen(char *name, s32 a, s32 b);
 extern void NuDatSet(void *dat);
 extern void NuDatClose(void *dat);
+#endif
 extern void InitFont3D(struct nugscn_s *scene);
 extern void LoadScreen(char *name);
 extern void ClearGameObjects(void);

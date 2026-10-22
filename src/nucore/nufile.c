@@ -69,6 +69,7 @@
 #include "nu_libc.h"
 #include "nu_stdarg.h"
 #include "nu_types.h"
+#include "nu_port.h"
 
 #include "nucore/nuerror.h"
 #include "nucore/nufile.h"
@@ -93,34 +94,6 @@ struct fileinfo_s {
     int use_buff;  	            /* 0x18 */
     struct filebuff_s *buff;        /* 0x1c */
 }; /* 0x20 */
-
-struct NUDATFINFO_s {
-    int foffset;              /* 0x00 */
-    int flen;                 /* 0x04 */
-    int uplen;	              /* 0x08 */
-    int ppack;                /* 0x0c */
-}; /* 0x10 */
-
-struct NUDFNODE_s {
-    short childix;              /* 0x00 */
-    short sibix;                /* 0x02 */
-    char* txt;	                /* 0x04 */
-}; /* 0x08 */
-
-struct nudathdr_s {
-    int ver;                      /* 0x00 */
-    int nfiles;                   /* 0x04 */
-    struct NUDATFINFO_s * finfo;  /* 0x08 */
-    int treecnt;                  /* 0x0c */
-    struct NUDFNODE_s * filetree; /* 0x10 */
-    int leafnamesize;             /* 0x14 */
-    char * leafnames;             /* 0x18 */
-    int dfhandle;                 /* 0x1c */
-    int fh;                       /* 0x20 */
-    short intalloc;               /* 0x24 */
-    short openmode;               /* 0x26 */
-    int data[0];                  /* 0x28 */
-}; /* 0x28 */
 
 struct filebuff_s {
     struct fileinfo_s * info;    /* 0x00 */
@@ -372,7 +345,7 @@ extern int sceSifLoadModule(const char* name, int arg_size, const char* args);
    between iff_padsize and curr_dat. */
 static char *filesys_root[4] = { "host0:", "cdrom0:\\", "host0:", "cdrom0:\\" };
 static char working_dir[256] = { 0 };
-static struct nudathdr_s *curr_dat = 0;
+NW_STATIC struct nudathdr_s *curr_dat = 0;
 static int nufile_deviceid = 0;
 static int file_time_count = 0;
 char *iop_img_name = "cdrom0:\\SYS\\IOPRP23.IMG;1";
