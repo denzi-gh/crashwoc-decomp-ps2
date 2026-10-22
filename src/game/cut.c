@@ -50,6 +50,8 @@
 #include "game/creature.h"
 #include "nucore/nucoretypes.h"
 #include "nups2/ps2ctl.h"
+#include "game/cut.h"
+#include "nucore/nufile.h"
 
 extern struct game_s Game;
 extern s32 gamecut;
@@ -63,18 +65,8 @@ extern struct cursor_s Cursor;
 extern s32 D_00633388;
 #define cutworldix D_00633388
 
-struct csc_s {
-    void *obj;            /* 0x0 */
-    char *path;           /* 0x4 */
-    char *name;           /* 0x8 */
-};                        /* 0xC */
-
 extern struct csc_s *CutChar;
 
-struct csccache_s {
-    char *path;          /* 0x0 */
-    void *obj;           /* 0x4 */
-};
 extern struct csccache_s D_006FF880[];
 extern s32 D_0063338C;
 #define cutcharcache D_006FF880            /* loaded character models, by path */
@@ -214,13 +206,6 @@ void AppCutSceneCharacterRender(struct instNUGCUTSCENE_s *icutscene, struct NUGC
     }
 }
 
-struct cutscenedesc_s {
-    char *gscname;        /* 0x0 scene (.gsc) */
-    char *cutname;        /* 0x4 cutscene (.cut) */
-    s32 sfxid;            /* 0x8 audio stream */
-    s32 debgroup;         /* 0xC */
-};                        /* 0x10 */
-
 /* Cutscene tables (scenes/cuts, characters); unnamed in the symbol map, named
  * here after the files they load. */
 extern struct cutscenedesc_s D_0060AFE0[]; /* levels\\b\\logos\\logos.gsc, ... */
@@ -253,17 +238,14 @@ extern char D_006293D8[];                /* "ats\\elecy\\elecy2.ats" */
 extern s32 D_00633390;
 extern u8 texanimbuff[];
 extern void LoadFont3D(void);
+#ifndef NW_HOST /* the host takes the prototypes of nucore/nufile.h */
 extern void *NuDatOpen(char *name, char **mem, s32 *used);
-struct nudathdr_s;
 extern void NuDatSet(struct nudathdr_s *ndh);
 extern void NuDatClose(struct nudathdr_s *ndh);
+#endif
 struct nutexanimprog_s;
 void CutSceneNextLogoFunction(struct instNUGCUTSCENE_s *icutscene);
 
-struct scenecache_s {
-    char *path;           /* 0x0 */
-    void *scene;          /* 0x4 */
-};
 extern struct scenecache_s D_006FF980[];
 extern s32 D_006FF800[];
 #define cutscncache D_006FF980             /* loaded scenes, by path */

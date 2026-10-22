@@ -20,24 +20,7 @@
 #include "game/gametypes.h"
 #include "game/creature.h"
 #include "nusound/nusound.h"
-
-/* GameSound entry (offsets verified in GameMusic/GameSfxLoop), stride 0x30. */
-typedef struct {
-    char name[16];
-    u16 pitch;        /* 0x10 */
-    u16 volume;       /* 0x12 */
-    u8 buzz;          /* 0x14 */
-    u8 rumble;        /* 0x15 */
-    u8 delay;         /* 0x16 */
-    u8 wait;          /* 0x17 */
-    char *path;       /* 0x18 verified in InitGlobalSfx (lw 0x18) */
-    s16 frequency;    /* 0x1C verified in InitGlobalSfx (lh 0x1C) */
-    u16 stream;       /* 0x1E verified in InitGlobalSfx (lhu 0x1E) */
-    s8 type;          /* 0x20 */
-    u8 pad1;          /* 0x21 */
-    u16 id;           /* 0x22 verified in InitGlobalSfx (lhu 0x22) */
-    struct nuvec_s Pos;   /* 0x24 */
-} GameSound;              /* 0x30 */
+#include "game/sfx.h"
 
 extern GameSound SfxTabGLOBAL[];
 extern NUSOUND_FILENAME_INFO SfxInfo[];
