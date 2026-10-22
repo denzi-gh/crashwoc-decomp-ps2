@@ -666,13 +666,13 @@ u32 *VTDecode(u32 *code, char *indent)
         if (debug_dma_level >= 7) {
             DirectDecode((u64 *)code, indent, qwc);
         }
-        code += qwc * 4;
-        break;
+        goto direct_advance;
     case 0x51:
         qwc = vifcode & 0xFFFF;
         if (debug_dma_level > 0) {
             NuDebugMsgProlog(ps2dma_file, 0x1C8)(vt_directhl_fmt, indent, start, qwc);
         }
+direct_advance:
         code += qwc * 4;
         break;
     default:

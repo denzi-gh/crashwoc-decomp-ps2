@@ -1251,14 +1251,22 @@ int tbslotEndFn(TbSet *set, int slot)
     unsigned int elapsed;
     int over;
     unsigned int lim = 0xFFFF;
+    int *begin;
+    int *current;
+    int index;
+    int valueIndex;
 
     set = set != 0 ? set : D_0062F034;
     slot &= 0xF;
-    elapsed = EE_T1_COUNT - set->begin[slot];
+    begin = &set->begin[slot];
+    current = &set->current[slot];
+    elapsed = EE_T1_COUNT - *begin;
     over = elapsed > lim;
     elapsed += over * lim;
-    set->values[slot][1 - set->current[slot]] += elapsed;
-    return set->values[slot][1 - set->current[slot]];
+    index = 1 - *current;
+    valueIndex = index;
+    set->values[slot][valueIndex] += elapsed;
+    return set->values[slot][1 - *current];
 }
 
 

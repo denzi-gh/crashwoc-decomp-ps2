@@ -781,6 +781,7 @@ u64 *Ps2TxSetSurfaceStateData(u64 *dst, int surface) {
     case 1:
         tcc = 0;
         break;
+    case 2:
     default:
         tcc = 0;
         break;
