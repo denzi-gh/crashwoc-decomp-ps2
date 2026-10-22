@@ -190,14 +190,14 @@ struct shaddata_s *ShadDataLoad(char *file, union variptr_u *buffer) {
             external = 0;
             local.voidptr = NuMemAllocFn(size + 0x100, ".\\shadcom.c", 0x12B);
         }
-        buffer->intaddr = (buffer->intaddr + 0xF) & 0xFFFFFFF0;
+        buffer->intaddr = (buffer->intaddr + 0xF) & ~(nuintptr)0xF;
         size = NuFileLoadBuffer(file, buffer->voidptr, 0x7FFFFFFF);
         data = buffer->voidptr;
         buffer->u8 = buffer->u8 + size;
         shad = data;
         data->external = external;
         if (external != 0) {
-            buffer->intaddr = (buffer->intaddr + 0xF) & 0xFFFFFFF0;
+            buffer->intaddr = (buffer->intaddr + 0xF) & ~(nuintptr)0xF;
             mtls = buffer->voidptr;
             memset(mtls, 0, data->count * sizeof(struct numtl_s));
             buffer->u8 = buffer->u8 + data->count * sizeof(struct numtl_s);

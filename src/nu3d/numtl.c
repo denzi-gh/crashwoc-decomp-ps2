@@ -595,7 +595,7 @@ void NuMtlInitEx(union variptr_u *buff, int count) {
     mtl_store = 0;
     NuMtlCreateDefault();
     NuMtlReadEventSetHandler(0);
-    pool = (struct numtl_s *)((buff->intaddr + 0xF) & 0xFFFFFFF0);
+    pool = (struct numtl_s *)((buff->intaddr + 0xF) & ~(nuintptr)0xF);
     mtl_allocmax = count;
     mtl_allocix = 0;
     buff->voidptr = pool;

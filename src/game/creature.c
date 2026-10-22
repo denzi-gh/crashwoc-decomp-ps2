@@ -12,6 +12,7 @@
 #include "nu3d/nugscn.h"
 #include "nu3d/nuanim.h"
 #include "game/gametypes.h"
+#include "nucore/nufile.h"
 #include "gamelib/terrain.h"
 #include "game/creature.h"
 #include "nucore/nucoretypes.h"
@@ -668,9 +669,11 @@ extern struct animlist D_0055C370[];
 extern struct animlist D_0055C3E8[];
 extern struct animlist D_0055CCA0[];
 
+#ifndef NW_HOST /* the host takes the prototypes of nucore/nufile.h */
 void *NuDatOpen(char *name, s32 mode, s32 arg);
 void NuDatSet(void *dat);
 void NuDatClose(void *dat);
+#endif
 void LoadScreen(char *name);
 void NuStrCpy(char *dst, char *src);
 void NuStrCat(char *dst, char *src);

@@ -68,6 +68,8 @@
 #include "game/visidat.h"
 #include "nucore/nucoretypes.h"
 #include "nups2/ps2ctl.h"
+#include "game/main.h"
+#include "game/sfx.h"
 
 #ifdef NW_HOST
 #include "edtools/edmain.h"
@@ -89,7 +91,6 @@
 #include "game/move.h"
 #include "game/panel.h"
 #include "game/particle.h"
-#include "game/sfx.h"
 #include "game/shadcom.h"
 #include "game/vehicle.h"
 #include "game/visi.h"
@@ -141,11 +142,6 @@ extern void NuWindDraw(struct nugscn_s *scene);
 extern void edobjRenderObjects(struct nugscn_s *scene);
 extern void NuRndrRect2di(s32 x, s32 y, s32 w, s32 h, s32 colour,
                           struct numtl_s *mtl);
-
-struct texanimref_s {
-    void *script;    /* 0x00 */
-    u64 lbit;        /* 0x08 */
-}; /* 0x10 */
 
 struct hazecol_s {
     u8 c[8];
@@ -207,9 +203,11 @@ extern void InitSpecular(void);
 extern void InitEnviro(void);
 extern void InitGlass(void);
 extern void InitClouds(void);
+#ifndef NW_HOST /* the host takes the prototypes of nucore/nufile.h */
 extern void *NuDatOpen(char *name, s32 a, s32 b);
 extern void NuDatSet(void *dat);
 extern void NuDatClose(void *dat);
+#endif
 extern void InitFont3D(struct nugscn_s *scene);
 extern void LoadScreen(char *name);
 extern void ClearGameObjects(void);
@@ -232,7 +230,7 @@ extern s32 SFXCOUNT_ALL;
 extern struct nugscn_s *crate_scene;
 extern struct nugscn_s *pause_scene;
 extern struct numtl_s *ShadowMat;
-extern u8 SfxTabGLOBAL[];
+extern GameSound SfxTabGLOBAL[];
 extern u8 D_0057EEA4[];
 extern s32 edcrt_used;
 extern s32 edwmp_used;
@@ -427,7 +425,7 @@ void InitWorld(void)
     if (Level == 0x25) {
         LOAD_MESSAGE(D_0061B088);
         n = saveloadLoadIcon(D_0061B0A0, superbuffer_ptr.voidptr);
-        superbuffer_ptr.intaddr = (superbuffer_ptr.intaddr + n + 0xF) & 0xFFFFFFF0;
+        superbuffer_ptr.intaddr = (superbuffer_ptr.intaddr + n + 0xF) & ~(nuintptr)0xF;
     }
 
     noterraininit();
@@ -436,7 +434,7 @@ void InitWorld(void)
         TerrainSetCur(superbuffer_ptr.voidptr);
         terraininit(Level, &superbuffer_ptr.s16, superbuffer_end.s16, 0, LevelFileName,
                     world_scene[0], 0);
-        superbuffer_ptr.intaddr = (superbuffer_ptr.intaddr + 0xF) & 0xFFFFFFF0;
+        superbuffer_ptr.intaddr = (superbuffer_ptr.intaddr + 0xF) & ~(nuintptr)0xF;
     }
 
     WUMPACOUNT = 0;

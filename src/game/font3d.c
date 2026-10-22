@@ -17,6 +17,7 @@
 #include "nu3d/nugscn.h"
 #include "game/gametypes.h"
 #include "game/creature.h"
+#include "game/font3d.h"
 
 extern struct font3dobj_s Font3DObjTab[];
 extern f32 D_0062E350;
@@ -28,13 +29,6 @@ extern char D_005CD808[];   /* j_bc */
 extern s32 qrand(void);
 
 /* --- Font3D scene / material types (offsets verified from InitFont3D) --- */
-
-/* Font3DAccentTab entry: obj{scene@0,special@4}, name@8; stride 0xC.
- * Offsets verified in InitFont3D. */
-struct font3djchar_s {
-    struct nuhspecial_s obj; /* 0x0 scene, 0x4 special */
-    char *name;             /* 0x8 */
-};                          /* 0xC */
 
 extern struct font3dtab_s Font3DTab[];
 extern struct font3djchar_s Font3DAccentTab[];

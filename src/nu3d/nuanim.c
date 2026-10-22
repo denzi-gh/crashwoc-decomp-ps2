@@ -1613,7 +1613,7 @@ struct nuanimdata_s *NuAnimDataLoadBuff(char *file, union variptr_u *buffer, uni
     struct nuanimdatahdr_s *hdr;
     int size;
 
-    buffer->intaddr = (buffer->intaddr + 0xF) & 0xFFFFFFF0;
+    buffer->intaddr = (buffer->intaddr + 0xF) & ~(nuintptr)0xF;
     size = NuFileLoadBuffer(file, buffer->voidptr, buffend->u8 - buffer->u8);
     if (!size) {
         NuErrorProlog(nuanim_srcfile, 0x2F8)(nuanim_load_failed_msg, file);
@@ -1841,7 +1841,7 @@ struct nuanimdata2_s *NuAnimData2LoadBuff(char *file, union variptr_u *buffer, u
     struct nuanimdata2hdr_s *hdr;
     int size;
 
-    buffer->intaddr = (buffer->intaddr + 0xF) & 0xFFFFFFF0;
+    buffer->intaddr = (buffer->intaddr + 0xF) & ~(nuintptr)0xF;
     size = NuFileLoadBuffer(file, buffer->voidptr, buffend->u8 - buffer->u8);
     if (!size) {
         NuErrorProlog(nuanim_srcfile, 0x348)(nuanim_load_failed_msg, file);

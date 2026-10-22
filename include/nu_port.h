@@ -19,4 +19,19 @@
 #define NW_HOST_RETURN(v)
 #endif
 
+/* Alignment only the host needs (a header before 16-byte aligned data): the EE layout stays. */
+#ifdef NW_HOST
+#define NW_HOST_ALIGNED(n) __attribute__((aligned(n)))
+#else
+#define NW_HOST_ALIGNED(n)
+#endif
+
+/* A file-scope static the port's replacement of its accessors must reach: static on the EE, global on
+ * the host. */
+#ifdef NW_HOST
+#define NW_STATIC
+#else
+#define NW_STATIC static
+#endif
+
 #endif /* NU_PORT_H */
