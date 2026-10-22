@@ -646,7 +646,8 @@ struct space_s {
 extern s8 CLetter[191];
 extern s32 gamecut;
 extern struct space_s *SpaceGameCutTab[][2];
-extern struct CharacterModel *bgload_model[2];
+/* Unsized here: retail addresses it with %hi/%lo in this unit, not $gp. */
+extern struct CharacterModel *bgload_model[];
 extern union variptr_u superbuffer_ptr;
 extern char tbuf[];
 extern struct font3dobj_s Font3DObjTab[];
@@ -703,9 +704,10 @@ void LoadCharacterModels(void)
         CModel[i].obj = 0;
     }
 
-    space = 0;
     if (Level == 0x28) {
         space = SpaceGameCutTab[gamecut][0];
+    } else {
+        space = 0;
     }
 
     dat = NuDatOpen(D_0061D270, 0, 0);
@@ -713,11 +715,14 @@ void LoadCharacterModels(void)
 
     if (LDATA->clist != 0) {
         cmodel_index = 0;
-        model = CModel;
         i = 0;
+        model = CModel;
     next_character:
         if (space != 0) {
-            character = space[i].character;
+            /* Raw index as in the GC source: the separate shift insn sizes
+             * gcse's PRE table, which orders the i+1 / cmodel_index+1 /
+             * model+1 spills (space[i].character does not match). */
+            character = ((s32 *)space)[i << 5];
         } else {
             character = LDATA->clist[i];
         }
@@ -756,10 +761,10 @@ void LoadCharacterModels(void)
                     NuStrCat(charsdat_filename, CData[0].path);
                     NuStrCat(charsdat_filename, D_00630988);
                 }
+                anim = cdata->anim;
                 if (Level == 0x28) {
                     anim = space[i].anim;
                 } else {
-                    anim = cdata->anim;
                     if (character == 0) {
                         if ((LBIT & 0x1001002000) && (Level != 0x1E)) {
                             anim = D_0055C100;
@@ -1393,17 +1398,15 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
     s32 oldvc;
     s32 i;
     f32 spd;
+    s32 sfx;
 
     UpdateRumble(&c->rumble);
     if (pad != 0) {
         if (Game.vibration != 0 && Demo == 0) {
-            s32 v;
-            if (c->rumble.frame != 0) {
-                v = (c->rumble.power * c->rumble.frame) / c->rumble.frames;
-            } else {
-                v = 0;
-            }
-            NuPs2PadSetMotors(pad, c->rumble.buzz != 0, v);
+            NuPs2PadSetMotors(pad, c->rumble.buzz != 0,
+                              (c->rumble.frame != 0)
+                                  ? (c->rumble.power * c->rumble.frame) / c->rumble.frames
+                                  : 0);
         } else {
             NuPs2PadSetMotors(pad, 0, 0);
         }
@@ -1485,9 +1488,12 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
             if (vtog_time >= vtog_duration) {
                 vtog_time = vtog_duration;
                 if (VEHICLECONTROL == 1) {
-                    i = (veh == 0xA0) ? 0x54 : 0x48;
-                    if (i != -1) {
-                        GameSfx(i, &c->obj.pos);
+                    sfx = 0x48;
+                    if (veh == 0xA0) {
+                        sfx = 0x54;
+                    }
+                    if (sfx != -1) {
+                        GameSfx(sfx, &c->obj.pos);
                     }
                     NewRumble(&c->rumble, 0xBF);
                     NewBuzz(&c->rumble, 0xA);
@@ -1495,12 +1501,12 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
             }
             if (vtog_blend != 0) {
                 f32 t = vtog_time / vtog_duration;
-                c->obj.pos.x = (vtog_newpos.x - vtog_oldpos.x) * t + vtog_oldpos.x;
-                c->obj.pos.y = (vtog_newpos.y - vtog_oldpos.y) * t + vtog_oldpos.y;
-                c->obj.pos.z = (vtog_newpos.z - vtog_oldpos.z) * t + vtog_oldpos.z;
+                c->obj.pos.x = vtog_oldpos.x + (vtog_newpos.x - vtog_oldpos.x) * t;
+                c->obj.pos.y = vtog_oldpos.y + (vtog_newpos.y - vtog_oldpos.y) * t;
+                c->obj.pos.z = vtog_oldpos.z + (vtog_newpos.z - vtog_oldpos.z) * t;
                 c->obj.mom = v000;
                 c->obj.thdg = vtog_angle;
-                c->obj.hdg = SeekRot(c->obj.hdg, vtog_angle, 3);
+                c->obj.hdg = SeekRot(c->obj.hdg, c->obj.thdg, 3);
                 c->obj.shadow = NewShadowMaskPlat(&c->obj.pos, 0.0f, -1);
                 if (c->obj.shadow != 2000000.0f) {
                     GetSurfaceInfo(&c->obj, 1, c->obj.shadow);
@@ -1566,6 +1572,8 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
                     }
                 }
             }
+        }
+        if (Level == 0x25) {
             if (tumble_time < tumble_duration && last_hub != -1) {
                 if (tumble_time >= tumble_moveduration) {
                     c->obj.pos.x = tumble_newpos.x;
@@ -1573,12 +1581,12 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
                     c->obj.pos.z = tumble_newpos.z;
                 } else {
                     f32 t = tumble_time / tumble_moveduration;
-                    c->obj.pos.x = (tumble_newpos.x - tumble_oldpos.x) * t +
-                                   tumble_oldpos.x;
-                    c->obj.pos.y = (tumble_newpos.y - tumble_oldpos.y) * t +
-                                   tumble_oldpos.y;
-                    c->obj.pos.z = (tumble_newpos.z - tumble_oldpos.z) * t +
-                                   tumble_oldpos.z;
+                    c->obj.pos.x = tumble_oldpos.x +
+                                   (tumble_newpos.x - tumble_oldpos.x) * t;
+                    c->obj.pos.y = tumble_oldpos.y +
+                                   (tumble_newpos.y - tumble_oldpos.y) * t;
+                    c->obj.pos.z = tumble_oldpos.z +
+                                   (tumble_newpos.z - tumble_oldpos.z) * t;
                     c->obj.shadow = NewShadowMaskPlat(&c->obj.pos, 0.0f, -1);
                     if (c->obj.shadow != 2000000.0f) {
                         GetSurfaceInfo(&c->obj, 1, c->obj.shadow);
@@ -3054,27 +3062,55 @@ void EvalModelAnim(struct CharacterModel *model, struct anim_s *anim,
 }
 
 
+/* GNU89 `inline`: inlined into DrawCharacterModel and DrawCreatures; the
+ * standalone copy is emitted deferred at the end of the unit (retail
+ * 0x001D5918). */
+inline void StoreLocatorMatrices(struct CharacterModel *model,
+                                 struct numtx_s *mC, struct numtx_s *tmtx,
+                                 struct numtx_s *mtx, struct nuvec_s *mom)
+{
+    struct nuvec_s oldpos;
+    s32 i;
+    struct numtx_s m;
+
+    if (mtx != 0) {
+        for (i = 0; i < 0x10; i++) {
+            if (model->pLOCATOR[i] != 0) {
+                oldpos.x = mtx[i]._30;
+                oldpos.y = mtx[i]._31;
+                oldpos.z = mtx[i]._32;
+                NuHGobjPOIMtx(model->obj, i, mC, tmtx, &m);
+                mtx[i] = m;
+                if (mom != 0) {
+                    mom[i].x = mtx[i]._30 - oldpos.x;
+                    mom[i].y = mtx[i]._31 - oldpos.y;
+                    mom[i].z = mtx[i]._32 - oldpos.z;
+                }
+            }
+        }
+    }
+}
+
+
 s32 DrawCharacterModel(struct CharacterModel *model, struct anim_s *anim,
                        struct numtx_s *mC, struct numtx_s *mS, s32 render,
                        struct numtx_s *mR, struct numtx_s *loc_mtx,
                        struct nuvec_s *loc_mom, struct obj_s *obj)
 {
     struct numtx_s tmtx[256];
+    float **dwa;
+    s32 action;
+    float time;
+    struct CharacterModel *model2;
+    s32 Drawn;
     struct NUJOINTANIM_s joint[4];
     struct NUJOINTANIM_s *pJ;
-    float **dwa;
-    struct CharacterModel *model2;
-    short layertab[2] = { 0, 1 };
-    short *layer = layertab;
-    struct nuvec_s oldpos;
-    struct numtx_s m;
-    float time;
-    float scale;
-    s32 action;
     s32 nJ;
-    s32 nlayers;
-    s32 Drawn;
     s32 i;
+    short layertab[2] = { 0, 1 };
+    short *layer;
+    s32 nlayers;
+    float scale;
 
     if (jeep_draw != 0) {
         for (i = 0; i < 4; i++) {
@@ -3101,6 +3137,7 @@ s32 DrawCharacterModel(struct CharacterModel *model, struct anim_s *anim,
         goto Exit;
     }
 
+    layer = layertab;
     nlayers = 1;
     if (model->character == 0) {
         nlayers = 2;
@@ -3108,10 +3145,10 @@ s32 DrawCharacterModel(struct CharacterModel *model, struct anim_s *anim,
 
     if (anim != 0) {
         if ((anim->blend != 0)
-            && (((u16)anim->blend_src_action <= 0x75)
-                && (model->fanmdata[anim->blend_src_action] != 0))
-            && (((u16)anim->blend_dst_action <= 0x75)
-                && (model->fanmdata[anim->blend_dst_action] != 0))) {
+            && ((u16)anim->blend_src_action <= 0x75)
+            && (model->fanmdata[anim->blend_src_action] != 0)
+            && ((u16)anim->blend_dst_action <= 0x75)
+            && (model->fanmdata[anim->blend_dst_action] != 0)) {
             dwa = NuHGobjEvalDwaBlend(
                 nlayers, layer,
                 model->fanmdata[anim->blend_src_action], anim->blend_src_time,
@@ -3147,9 +3184,8 @@ s32 DrawCharacterModel(struct CharacterModel *model, struct anim_s *anim,
 
     pJ = 0;
     nJ = 0;
-    if (((jeep_draw == 0) && (plr_render != 0))
-        && ((player->target != 0)
-            && ((VEHICLECONTROL != 1) || (player->obj.vehicle == -1)))
+    if ((jeep_draw == 0) && (plr_render != 0) && (player->target != 0)
+        && ((VEHICLECONTROL != 1) || (player->obj.vehicle == -1))
         && ((model2->character == 0) || (model2->character == 0x54)
             || (model2->character == 0x8c))) {
         pJ = joint;
@@ -3161,58 +3197,40 @@ s32 DrawCharacterModel(struct CharacterModel *model, struct anim_s *anim,
     }
 
     if (anim != 0) {
-        if (anim->blend != 0) {
-            if ((((u16)anim->blend_src_action < 0x76)
-                 && (model2->anmdata[anim->blend_src_action] != 0))
-                && (((u16)anim->blend_dst_action < 0x76)
-                    && (model2->anmdata[anim->blend_dst_action] != 0))) {
-                NuHGobjEvalAnimBlend(
-                    model2->obj,
-                    model2->anmdata[anim->blend_src_action],
-                    anim->blend_src_time,
-                    model2->anmdata[anim->blend_dst_action],
-                    anim->blend_dst_time,
-                    (float)anim->blend_frame / (float)anim->blend_frames,
-                    nJ, pJ, tmtx);
-                action = anim->blend_dst_action;
-                time = anim->blend_dst_time;
-                goto AfterEval;
-            }
+        if ((anim->blend != 0)
+            && ((u16)anim->blend_src_action < 0x76)
+            && (model2->anmdata[anim->blend_src_action] != 0)
+            && ((u16)anim->blend_dst_action < 0x76)
+            && (model2->anmdata[anim->blend_dst_action] != 0)) {
+            NuHGobjEvalAnimBlend(
+                model2->obj,
+                model2->anmdata[anim->blend_src_action],
+                anim->blend_src_time,
+                model2->anmdata[anim->blend_dst_action],
+                anim->blend_dst_time,
+                (float)anim->blend_frame / (float)anim->blend_frames,
+                nJ, pJ, tmtx);
+            action = anim->blend_dst_action;
+            time = anim->blend_dst_time;
+        } else if ((anim->blend == 0)
+                   && ((u16)anim->action < 0x76)
+                   && (model2->anmdata[anim->action] != 0)) {
+            NuHGobjEvalAnim(model2->obj, model2->anmdata[anim->action],
+                            anim->anim_time, nJ, pJ, tmtx);
+            action = anim->action;
+            time = anim->anim_time;
+        } else {
             goto NoModelAnim;
         }
-        if (((u16)anim->action >= 0x76)
-            || (model2->anmdata[anim->action] == 0)) {
-            goto NoModelAnim;
-        }
-        NuHGobjEvalAnim(model2->obj, model2->anmdata[anim->action],
-                        anim->anim_time, nJ, pJ, tmtx);
-        action = anim->action;
-        time = anim->anim_time;
     } else {
     NoModelAnim:
         NuHGobjEval(model2->obj, nJ, pJ, tmtx);
         action = -1;
     }
 
-AfterEval:
-    if ((glass_draw == 0) && (loc_mtx != 0)) {
-        /* StoreLocatorMatrices(model2, mC, tmtx, loc_mtx, loc_mom) inlined */
-        for (i = 0; i < 0x10; i++) {
-            if (model2->pLOCATOR[i] != 0) {
-                oldpos.x = loc_mtx[i]._30;
-                oldpos.y = loc_mtx[i]._31;
-                oldpos.z = loc_mtx[i]._32;
-                NuHGobjPOIMtx(model2->obj, i, mC, tmtx, &m);
-                loc_mtx[i] = m;
-                if (loc_mom != 0) {
-                    loc_mom[i].x = loc_mtx[i]._30 - oldpos.x;
-                    loc_mom[i].y = loc_mtx[i]._31 - oldpos.y;
-                    loc_mom[i].z = loc_mtx[i]._32 - oldpos.z;
-                }
-            }
-        }
+    if (glass_draw == 0) {
+        StoreLocatorMatrices(model2, mC, tmtx, loc_mtx, loc_mom);
     }
-
     if ((action != -1) && (loc_mtx != 0) && (Paused == 0)
         && (glass_draw == 0)) {
         AddAnimDebris(model, loc_mtx, action, time, obj);
@@ -3231,26 +3249,22 @@ AfterEval:
         if (mR != 0) {
             NuHGobjRndrMtxDwa(model->obj, mR, nlayers, layer, tmtx, dwa);
         }
-        if (mS != 0) {
-            if (model->shadhdr != 0) {
-                scale = CData[model->character].shadow_scale;
-                if (model->character == 0x99) {
-                    ShadRndr(mS, model->shaddata[98], 1.0f, scale);
-                } else if (anim->blend != 0) {
-                    if (((u16)anim->blend_dst_action < 0x76)
-                        && (model->anmdata[anim->blend_dst_action] != 0)) {
-                        ShadRndr(mS, model->shaddata[anim->blend_dst_action],
-                                 anim->blend_dst_time, scale);
-                    } else {
-                        ShadRndr(mS, model->shaddata, 1.0f, scale);
-                    }
-                } else if (((u16)anim->action < 0x76)
-                           && (model->anmdata[anim->action] != 0)) {
-                    ShadRndr(mS, model->shaddata[anim->action],
-                             anim->anim_time, scale);
-                } else {
-                    ShadRndr(mS, model->shaddata, 1.0f, scale);
-                }
+        if ((mS != 0) && (model->shadhdr != 0)) {
+            scale = CData[model->character].shadow_scale;
+            if (model->character == 0x99) {
+                ShadRndr(mS, model->shaddata[98], 1.0f, scale);
+            } else if ((anim->blend != 0)
+                       && ((u16)anim->blend_dst_action < 0x76)
+                       && (model->anmdata[anim->blend_dst_action] != 0)) {
+                ShadRndr(mS, model->shaddata[anim->blend_dst_action],
+                         anim->blend_dst_time, scale);
+            } else if ((anim->blend == 0)
+                       && ((u16)anim->action < 0x76)
+                       && (model->anmdata[anim->action] != 0)) {
+                ShadRndr(mS, model->shaddata[anim->action],
+                         anim->anim_time, scale);
+            } else {
+                ShadRndr(mS, model->shaddatarest, 1.0f, scale);
             }
         }
     }
@@ -3302,35 +3316,6 @@ int NuHGobjRndrMtx(struct NUHGOBJ_s *hobj, struct numtx_s *m, s32 nlayers,
                     short *layer, struct numtx_s *tmtx);
 void NuHGobjRndr(struct NUHGOBJ_s *hobj, struct numtx_s *m, s32 nlayers,
                  short *layer);
-
-
-/* GNU89 `inline`: inlined into DrawCreatures; the standalone copy is
- * emitted deferred at the end of the unit (retail 0x001D5918). */
-inline void StoreLocatorMatrices(struct CharacterModel *model,
-                                 struct numtx_s *mC, struct numtx_s *tmtx,
-                                 struct numtx_s *mtx, struct nuvec_s *mom)
-{
-    struct nuvec_s oldpos;
-    s32 i;
-    struct numtx_s m;
-
-    if (mtx != 0) {
-        for (i = 0; i < 0x10; i++) {
-            if (model->pLOCATOR[i] != 0) {
-                oldpos.x = mtx[i]._30;
-                oldpos.y = mtx[i]._31;
-                oldpos.z = mtx[i]._32;
-                NuHGobjPOIMtx(model->obj, i, mC, tmtx, &m);
-                mtx[i] = m;
-                if (mom != 0) {
-                    mom[i].x = mtx[i]._30 - oldpos.x;
-                    mom[i].y = mtx[i]._31 - oldpos.y;
-                    mom[i].z = mtx[i]._32 - oldpos.z;
-                }
-            }
-        }
-    }
-}
 
 
 void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
@@ -3440,7 +3425,6 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
             }
         }
 
-        bVar9 = 0;
         if (editor_active == 0) {
             dx = (pCam->pos.x - c->obj.pos.x) * (pCam->pos.x - c->obj.pos.x) +
                  (pCam->pos.z - c->obj.pos.z) * (pCam->pos.z - c->obj.pos.z);
@@ -3451,6 +3435,7 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
             }
         }
 
+        bVar9 = 0;
         shflag = 0;
         reflect = 0;
         if ((VEHICLE == 0x63) || (VEHICLE == 0x36) || (VEHICLE == 0x81) ||
@@ -3496,12 +3481,12 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
             if (CRemap[116] != -1) {
                 yrot = c->obj.hdg - 0x8000;
                 s.x = s.y = s.z = c->obj.SCALE;
-                pm = &mC;
                 NuMtxSetScale(&mC, &s);
                 NuMtxRotateZ(&mC, c->spin_frame * 0x1999);
                 NuMtxRotateX(&mC, c->obj.xrot);
                 NuMtxRotateY(&mC, yrot);
                 NuMtxTranslate(&mC, &c->obj.pos);
+                pm = &mC;
                 model[0] = &CModel[CRemap[116]];
                 if (model[0]->anmdata[0x46] != 0) {
                     NuHGobjEvalAnim(model[0]->obj, model[0]->anmdata[0x46],
@@ -3567,12 +3552,12 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
             if (CRemap[8] != -1) {
                 yrot = -(c->spin_frame * 0x1999);
                 s.x = s.y = s.z = c->obj.SCALE;
-                pm = &mC;
                 NuMtxSetScale(&mC, &s);
                 NuMtxRotateY(&mC, yrot);
                 NuMtxRotateZ(&mC, c->obj.zrot);
                 NuMtxRotateX(&mC, c->obj.xrot);
                 NuMtxTranslate(&mC, &c->obj.pos);
+                pm = &mC;
                 if ((SKELETALCRASH != 0) && (CRemap[159] != -1)) {
                     model[0] = &CModel[CRemap[159]];
                 } else {

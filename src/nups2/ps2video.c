@@ -215,7 +215,7 @@ extern void *vpDmaTag_Close(void *packet);
 extern void *gsBeginGifPacket(void *packet, int eop, int nloop, int pre, int prim, int flg, int nreg, ...);
 extern void *gsCloseGifPacket(void *packet);
 extern void GS_DmaWrite(void *p, int mode);
-extern int sceGsResetGraph(short mode, short inter, short omode, short ffmode);
+extern void sceGsResetGraph(short mode, short inter, short omode, short ffmode);
 extern void sceGsSetDefDBuffDc(GsDispEnv *db, short psm, short w, short h, short ztest, short zpsm, short clear);
 extern void NuFntSet(void *font);
 extern void NuFntPrintEx(int x, int y, int flags, char *fmt, ...);
@@ -231,10 +231,8 @@ extern int D_006331C4;
 extern volatile int D_0062F03C;
 extern int D_006331F8;
 extern TbSet *D_0062F034;
-extern int D_006331E8;
-extern int D_006331EC;
-extern int D_006331F0;
-extern int D_006331F4;
+extern int displayx[2];
+extern int displayy[2];
 extern GsDispEnv ps2video_display_cfg[2];
 extern int D_0062F08C;
 extern int D_0062F090;
@@ -293,10 +291,10 @@ extern int tb_peak_reset;
 #define NuPs2FrameCount D_006331C4
 #define NuPs2SwapTime   D_0062F03C
 #define NuPs2SwapDelay  D_006331F8
-#define NuPs2DisplayX0  D_006331E8
-#define NuPs2DisplayX1  D_006331EC
-#define NuPs2DisplayY0  D_006331F0
-#define NuPs2DisplayY1  D_006331F4
+#define NuPs2DisplayX0  displayx[0]
+#define NuPs2DisplayX1  displayx[1]
+#define NuPs2DisplayY0  displayy[0]
+#define NuPs2DisplayY1  displayy[1]
 #define NuPs2DispEnv    ps2video_display_cfg
 #define idmac_vif1_waiting  D_0062F08C
 #define idmac_gs_waiting    D_0062F090

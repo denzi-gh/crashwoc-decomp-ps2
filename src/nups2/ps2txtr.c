@@ -304,7 +304,7 @@ int GenTextureLoad(struct nutex_s *spec, struct nups2tex_s *tex) {
         if (h >= halign) {
             halign = h;
         }
-        tex->upsize[tex->mipcount] = ((tbw * (halign << 6) * bpp >> 3) + 0x1FFF) & 0xFFFFE000;
+        tex->upsize[tex->mipcount] = ((tbw * (halign << 6) * bpp / 8) + 0x1FFF) & 0xFFFFE000;
         allocsize = size + 0x90;
         allocsize += (allocsize + 0x7CFFF) / 0x7D000 * 32;
         tex->mipdata[tex->mipcount] = NuMemAllocFn(allocsize, ps2txtr_srcfile, 0x250);
@@ -556,7 +556,7 @@ int GenTextureLoad(struct nutex_s *spec, struct nups2tex_s *tex) {
             switch (spec->type) {
             case 6:
                 w = spec->width * 2;
-                tbw = ((w + 0x7F) & ~0x7F) >> 6;
+                tbw = ((w + 0x7F) & ~0x7F) / 64;
                 tex->tbw[tex->mipcount] = tbw;
                 tex->psm = 0x14;
                 tex->tw += 1;
@@ -564,7 +564,7 @@ int GenTextureLoad(struct nutex_s *spec, struct nups2tex_s *tex) {
                 break;
             case 7:
                 w = spec->width * 2;
-                tbw = ((w + 0x7F) & ~0x7F) >> 6;
+                tbw = ((w + 0x7F) & ~0x7F) / 64;
                 tex->tbw[tex->mipcount] = tbw;
                 tex->psm = 0x13;
                 tex->tw += 1;
