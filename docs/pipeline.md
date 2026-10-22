@@ -51,7 +51,7 @@ binary, in native table order, into three deterministic registries:
 | ----------------------------------------------------------------- | ------: | ----------------------------------------------- |
 | [config/pal103/units.toml](../config/pal103/units.toml)           |     267 | translation units (file descriptors)            |
 | [config/pal103/functions.toml](../config/pal103/functions.toml)   |   3,751 | procedures (address, frame, register masks)      |
-| [config/pal103/symbol_addrs.txt](../config/pal103/symbol_addrs.txt) |   6,302 | splat-style `name = address` (functions + data) |
+| [config/pal103/symbol_addrs.txt](../config/pal103/symbol_addrs.txt) |   6,318 | splat-style `name = address` (functions + data) |
 
 ```bash
 python tools/extract_mdebug.py           # (re)generate the registries
@@ -63,7 +63,9 @@ or computed from the tables (`fdr.adr + pdr.adr`), never guessed, and `--check`
 proves regeneration reproduces the committed files. Global data addresses in
 `symbol_addrs.txt` are cross-checked against the allocated section ranges in
 [config/pal103/sections.json](../config/pal103/sections.json), so an ECOFF `value`
-that is a size rather than an address can never be emitted as one.
+that is a size rather than an address can never be emitted as one. Executable
+sections are excluded except `.vutext`, whose VU1 microcode packages
+(`vu_load_*_mpg`, `patch_vu0_mpg`) the EE code handles as data.
 
 ## Data registry and data map
 

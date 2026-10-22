@@ -332,20 +332,22 @@ def render_functions(md, provenance):
 
 
 def data_section_ranges(sections_spec):
-    """Address ranges of allocated, non-executable sections.
+    """Address ranges of allocated, non-executable sections, plus .vutext.
 
     Used to validate global-data externals. A data object cannot live in an
-    executable section, so excluding SHF_EXECINSTR sections (.text, .vutext)
-    rejects absolute linker constants that merely coincide with a code address
-    (e.g. _stack_size, whose value 0x00100000 equals the .text base) while
-    keeping every real data symbol.
+    executable section, so excluding SHF_EXECINSTR sections (.text) rejects
+    absolute linker constants that merely coincide with a code address (e.g.
+    _stack_size, whose value 0x00100000 equals the .text base) while keeping
+    every real data symbol. .vutext is code only for VU1: to the EE its
+    microcode packages (vu_load_*_mpg) are data that DMA tags call.
     """
     ranges = []
     for s in sections_spec["sections"]:
         flags = int(s["flags"], 0)
         addr = int(s["addr"], 0)
         size = int(s["size"], 0)
-        if flags & 0x2 and not flags & 0x4 and addr and size:  # ALLOC, not EXEC
+        data = flags & 0x2 and not flags & 0x4                  # ALLOC, not EXEC
+        if (data or s["name"] == ".vutext") and addr and size:
             ranges.append((addr, addr + size, s["name"]))
     return ranges
 

@@ -159,10 +159,9 @@ extern struct rndrstream_s *rndrstream_fx;
 
 extern void *rndrstream_fx_microcode;
 
-extern char D_0028CFF0[];
+extern char vu_load_fx2_mpg[];
 
-extern char D_00289020[];
-#define fx_microcode_default D_00289020
+extern char vu_load_fx_mpg[];
 
 extern void *vpDmaTag_Call(void *cur, void *microcode);
 
@@ -315,17 +314,13 @@ extern struct rndrstream_s *rndrstream_ptl;
 
 extern struct rndrstream_s *rndrstream_ot_sort;
 
-extern char D_002834E0[];
-#define rndr3d_l_microcode D_002834E0
+extern char vu_load_tric_mpg[];
 
-extern char D_00284620[];
-#define rndr3d_u_microcode D_00284620
+extern char vu_load_tricu_mpg[];
 
-extern char D_002885B0[];
-#define faceon_microcode D_002885B0
+extern char vu_load_faceon_mpg[];
 
-extern char D_002888E0[];
-#define ptl_microcode D_002888E0
+extern char vu_load_ptl_mpg[];
 
 extern int testfclip;
 
@@ -448,17 +443,17 @@ void NuRndrStreamInit(int size)
     stream_outbuf_size = size;
     rndrstream_system = NuRndrStreamAllocStream(0x7FFFFFFF, 0, 0);
     rndrstream_mtl_sort = NuRndrStreamAllocStream(0x1000000, 0, 0x3D);
-    rndrstream_faceon = NuRndrStreamAllocStream(0x1000000, faceon_microcode, 0x3C);
-    rndrstream_3d_u = NuRndrStreamAllocStream(0x10000000, rndr3d_u_microcode, 0x3C);
-    rndrstream_3d_l = NuRndrStreamAllocStream(0x10000000, rndr3d_l_microcode, 0x3D);
+    rndrstream_faceon = NuRndrStreamAllocStream(0x1000000, vu_load_faceon_mpg, 0x3C);
+    rndrstream_3d_u = NuRndrStreamAllocStream(0x10000000, vu_load_tricu_mpg, 0x3C);
+    rndrstream_3d_l = NuRndrStreamAllocStream(0x10000000, vu_load_tric_mpg, 0x3D);
     rndrstream_2d = NuRndrStreamAllocStream(0x100000, 0, 0x10);
-    rndrstream_ptl = NuRndrStreamAllocStream(0xFFFFFF, ptl_microcode, 0x3C);
-    rndrstream_fx = NuRndrStreamAllocStream(0xFFFFFF, fx_microcode_default, 0x3C);
+    rndrstream_ptl = NuRndrStreamAllocStream(0xFFFFFF, vu_load_ptl_mpg, 0x3C);
+    rndrstream_fx = NuRndrStreamAllocStream(0xFFFFFF, vu_load_fx_mpg, 0x3C);
     rndrstream_ot_sort = NuRndrStreamAllocStream(0xFFFFFF, 0, 0x3D);
     rndrstream_buffer_index = 0;
     memset(stream_outbuf0, 0, size);
     memset(stream_outbuf1, 0, size);
-    rndrstream_fx_microcode = fx_microcode_default;
+    rndrstream_fx_microcode = vu_load_fx_mpg;
     NuRndrInitStreams();
 }
 
@@ -574,7 +569,7 @@ void NuRndrStreamFlush(void)
     }
     rndrstream_rt_light_addr[0] = 0;
     rndrstream_spec_addr = 0;
-    rndrstream_fx_microcode = fx_microcode_default;
+    rndrstream_fx_microcode = vu_load_fx_mpg;
     rndrstream_fx_mtx_addr[0] = 0;
 }
 
@@ -996,7 +991,7 @@ void NuRndrStreamResetStreams(int flag)
     }
     rndrstream_rt_light_addr[0] = 0;
     rndrstream_spec_addr = 0;
-    rndrstream_fx_microcode = fx_microcode_default;
+    rndrstream_fx_microcode = vu_load_fx_mpg;
     rndrstream_fx_mtx_addr[0] = 0;
 }
 
@@ -1021,9 +1016,9 @@ void NuRndrStreamFxMPG(int mode)
     void *microcode;
 
     if (mode == 0) {
-        microcode = D_00289020;
+        microcode = vu_load_fx_mpg;
     } else {
-        microcode = (mode != 1) ? D_00289020 : D_0028CFF0;
+        microcode = (mode != 1) ? vu_load_fx_mpg : vu_load_fx2_mpg;
     }
     if (rndrstream_fx_microcode != microcode) {
         rndrstream_fx->ptr.u8 = vpDmaTag_Call(rndrstream_fx->ptr.u8, microcode);
