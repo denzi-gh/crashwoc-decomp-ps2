@@ -202,10 +202,10 @@ void NuTexCreateLuminanceMultiplyMap(struct nutex_s *colourmap, struct nutex_s *
     u8 nibble;
 
     ncolours = 16;
-    texbits = tex->bits;
-    mapbits = colourmap->bits;
     width = tex->width;
     height = tex->height;
+    texbits = tex->bits;
+    mapbits = colourmap->bits;
     dst->width = width;
     dst->height = height;
     dst->mmcnt = 0;

@@ -2686,11 +2686,9 @@ void BGLoad(void)
     memset(light_colour, 0, sizeof(light_colour));
     camera_rotation = 0;
     memcpy(light_angle, D_0062FC40, sizeof(light_angle));
-    bumped = 0;
+    bumped = bump_angle = bump_rate = 0;
     score_scale = 0.4f;
     memset(&bump, 0, sizeof(bump));
-    bump_angle = 0;
-    bump_rate = 0;
     mg_player_pos = v000;
     mg_player_tilt = 0;
     mg_player_spin = 0;

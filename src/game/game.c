@@ -4495,12 +4495,13 @@ void DrawTempCharacter2(s32 render) {
     }
 }
 
-/* Case order below follows jtbl_0061D900's block layout (address order), not
- * numeric order -- gcc emits the blocks in source order. Menu->block mapping
- * decoded from asm/data/rodata.rodata.s:19394. The GC reference is unusable
- * here: it calls ParseNintendoErrorCode (absent on PS2) and several y_max
- * values differ. */
+/* Case order and layout follow the GC version (menu ids shifted by 2, no
+ * ParseNintendoErrorCode case, a few y_max values differ); jump2 cross-jumps
+ * the identical return blocks (14/16/18 into 8, 19 into 5), as in retail. */
 void GetMenuInfo(struct cursor_s *cur) {
+    /* int-typed, so case 10's li is SImode and not cross-jumped into case 9 */
+    s32 items = 0xA;
+
     cur->x_min = 0;
     cur->y_min = 0;
     cur->x_max = 0;
@@ -4537,7 +4538,7 @@ void GetMenuInfo(struct cursor_s *cur) {
         cur->y_max = 1;
         return;
     case 10:
-        cur->y_max = 0xA;
+        cur->y_max = items;
         return;
     case 12:
         cur->x_max = 5;

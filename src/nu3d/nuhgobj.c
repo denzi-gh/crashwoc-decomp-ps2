@@ -42,6 +42,7 @@
 #include "nu3d/nugscn.h"
 #include "nu3d/nuscene.h"
 #include "nucore/nucoretypes.h"
+#include "nucore/nufile.h"
 
 /* A gobj as NuGHGWrite stores it: nugobj_s up to origin. */
 struct nughggobj_s {
@@ -963,6 +964,370 @@ extern char D_00615520[];
 #define msg_ghg_loader_old D_006154C0
 #define msg_ghg_reading D_00615510
 #define msg_ghg_read_size D_00615520
+
+/* A layer as NuGHGWrite stores it: every pointer as an offset from the file base. */
+struct nughglayer_s {
+    int name;
+    int gobjs;
+    int skin_object;
+    int blend_gobjs;
+    int blend_skin_object;
+};
+
+extern int NuFileOpen(char *file, enum nufilemode_e mode);
+extern int NuFileWrite(int fh, void *data, int size);
+extern void NuStrCpy(char *dst, char *src);
+extern int NuStrLen(char *str);
+extern char D_006153A0[];
+extern char D_006153B8[];
+extern char D_006153D0[];
+extern char D_006153E8[];
+extern char D_00615400[];
+extern char D_00615420[];
+extern char D_00615438[];
+extern char D_00615458[];
+#define msg_ghg_wrote_textures D_006153A0
+#define msg_ghg_wrote_materials D_006153B8
+#define msg_ghg_wrote_strings D_006153D0
+#define msg_ghg_wrote_joints D_006153E8
+#define msg_ghg_wrote_pois D_00615400
+#define msg_ghg_wrote_layer D_00615420
+#define msg_ghg_wrote_texanims D_00615438
+#define msg_ghg_wrote_shadow D_00615458
+
+void NuGHGWrite(struct NUHGOBJ_s *hobj, char *file, int size) {
+    char *base;
+    struct nughgheader_s *header;
+    char *ptr;
+    int *offsets;
+    struct numtl_s *mtl;
+    struct NUJOINTDATA_s *joints;
+    struct NUPOINTOFINTEREST_s *pois;
+    struct nughglayer_s *layer;
+    struct nuhcollide_s *collide;
+    struct nuhcollideentry_s *entry;
+    struct nutexanim_s *anims;
+    short *tids;
+    struct nushadowdata_s *shadow;
+    struct nushadowdata_s *outshadow;
+    struct nushadowmesh_s *mesh;
+    struct nushadowmesh_s *outmesh;
+    char *ellipsoids;
+    char *cylinders;
+    char *meshes;
+    char *verts;
+    int nshadows;
+    int nellipsoids;
+    int ncylinders;
+    int nmeshes;
+    int nnormals;
+    int nverts;
+    int count;
+    int fh;
+    int i;
+    int j;
+    int k;
+
+    base = NuMemAllocFn(size, nuhgobj_file, 0x425);
+    if (base) {
+        header = (struct nughgheader_s *)base;
+        memset(header, 0, size);
+        header->version = nughg_version;
+        ptr = (char *)(((unsigned int)&header[1] + 3) & ~3);
+        header->scale = hobj->scale;
+        header->numtid = hobj->numtid;
+        if (hobj->numtid) {
+            offsets = (int *)ptr;
+            header->tids = ptr - base;
+            ptr += hobj->numtid * 4;
+            for (i = 0; i < hobj->numtid; i++) {
+                ptr = (char *)(((unsigned int)ptr + 0xF) & ~0xF);
+                offsets[i] = ptr - base;
+                ptr += NuTexRecoverNativeData(hobj->tids[i], ptr, size);
+            }
+        }
+        NuDebugMsgProlog(nuhgobj_file, 0x444)(msg_ghg_wrote_textures, ptr - base);
+
+        ptr = (char *)(((unsigned int)ptr + 3) & ~3);
+        offsets = (int *)ptr;
+        header->mtls = ptr - base;
+        header->nummtl = hobj->nummtl;
+        ptr += hobj->nummtl * 4;
+        for (i = 0; i < hobj->nummtl; i++) {
+            ptr = (char *)(((unsigned int)ptr + 0xF) & ~0xF);
+            offsets[i] = ptr - base;
+            mtl = (struct numtl_s *)ptr;
+            *mtl = *hobj->mtls[i];
+            if (mtl->tid) {
+                for (j = 0; j < hobj->numtid; j++) {
+                    if (mtl->tid == hobj->tids[j]) {
+                        mtl->tid = j + 1;
+                        break;
+                    }
+                }
+                if (j == hobj->numtid) {
+                    mtl->tid = 0;
+                }
+            }
+            ptr = (char *)&mtl[1];
+        }
+        NuDebugMsgProlog(nuhgobj_file, 0x45E)(msg_ghg_wrote_materials, ptr - base);
+
+        header->string_table = ptr - base;
+        header->string_table_size = hobj->string_table_size;
+        memcpy(ptr, hobj->string_table, hobj->string_table_size);
+        ptr += hobj->string_table_size;
+        NuDebugMsgProlog(nuhgobj_file, 0x467)(msg_ghg_wrote_strings, ptr - base);
+
+        header->num_joints = hobj->num_joints;
+        ptr = (char *)(((unsigned int)ptr + 0xF) & ~0xF);
+        joints = (struct NUJOINTDATA_s *)ptr;
+        header->joints = ptr - base;
+        for (i = 0; i < hobj->num_joints; i++) {
+            *joints = hobj->joints[i];
+            joints->name = joints->name - hobj->string_table + header->string_table;
+            joints++;
+        }
+        ptr += hobj->num_joints * sizeof(struct NUJOINTDATA_s);
+        ptr = (char *)(((unsigned int)ptr + 0xF) & ~0xF);
+        header->T = ptr - base;
+        memcpy(ptr, hobj->T, hobj->num_joints * sizeof(struct numtx_s));
+        ptr += hobj->num_joints * sizeof(struct numtx_s);
+        ptr = (char *)(((unsigned int)ptr + 0xF) & ~0xF);
+        header->INV_WT = ptr - base;
+        memcpy(ptr, hobj->INV_WT, hobj->num_joints * sizeof(struct numtx_s));
+        header->num_joint_ixs = hobj->num_joint_ixs;
+        ptr += hobj->num_joints * sizeof(struct numtx_s);
+        header->joint_ixs = ptr - base;
+        for (i = 0; i < hobj->num_joint_ixs; i++) {
+            *ptr++ = hobj->joint_ixs[i];
+        }
+        NuDebugMsgProlog(nuhgobj_file, 0x486)(msg_ghg_wrote_joints, ptr - base);
+
+        if (hobj->num_poi_ixs) {
+            header->poi_ixs = ptr - base;
+            header->num_poi_ixs = hobj->num_poi_ixs;
+            for (i = 0; i < hobj->num_poi_ixs; i++) {
+                *ptr++ = hobj->poi_ixs[i];
+            }
+        }
+        if (hobj->num_pois) {
+            ptr = (char *)(((unsigned int)ptr + 0xF) & ~0xF);
+            header->num_pois = hobj->num_pois;
+            header->pois = ptr - base;
+            pois = (struct NUPOINTOFINTEREST_s *)ptr;
+            ptr += hobj->num_pois * sizeof(struct NUPOINTOFINTEREST_s);
+            for (i = 0; i < hobj->num_pois; i++) {
+                *pois = hobj->pois[i];
+                if (pois->name) {
+                    pois->name = pois->name - hobj->string_table + header->string_table;
+                }
+                pois++;
+            }
+        }
+        NuDebugMsgProlog(nuhgobj_file, 0x4A0)(msg_ghg_wrote_pois, ptr - base);
+
+        ptr = (char *)(((unsigned int)ptr + 3) & ~3);
+        header->num_layers = hobj->num_layers;
+        header->layers = ptr - base;
+        layer = (struct nughglayer_s *)ptr;
+        ptr += hobj->num_layers * sizeof(struct nughglayer_s);
+        for (i = 0; i < hobj->num_layers; i++) {
+            if (hobj->layers[i].name) {
+                layer->name = ptr - base;
+                NuStrCpy(ptr, hobj->layers[i].name);
+                ptr += NuStrLen(hobj->layers[i].name) + 1;
+            } else {
+                layer->name = 0;
+            }
+            if (hobj->layers[i].gobjs) {
+                ptr = (char *)(((unsigned int)ptr + 3) & ~3);
+                offsets = (int *)ptr;
+                layer->gobjs = ptr - base;
+                ptr += hobj->num_joints * 4;
+                for (j = 0; j < hobj->num_joints; j++) {
+                    ptr = NuGHGWriteGobj(base, ptr, hobj, hobj->layers[i].gobjs[j], &offsets[j]);
+                }
+            } else {
+                layer->gobjs = 0;
+            }
+            if (hobj->layers[i].blend_gobjs) {
+                ptr = (char *)(((unsigned int)ptr + 3) & ~3);
+                offsets = (int *)ptr;
+                layer->blend_gobjs = ptr - base;
+                ptr += hobj->num_joints * 4;
+                for (j = 0; j < hobj->num_joints; j++) {
+                    ptr = NuGHGWriteGobj(base, ptr, hobj, hobj->layers[i].blend_gobjs[j], &offsets[j]);
+                }
+            } else {
+                layer->blend_gobjs = 0;
+            }
+            ptr = NuGHGWriteGobj(base, ptr, hobj, hobj->layers[i].skin_object, &layer->skin_object);
+            ptr = NuGHGWriteGobj(base, ptr, hobj, hobj->layers[i].blend_skin_object,
+                                 &layer->blend_skin_object);
+            NuDebugMsgProlog(nuhgobj_file, 0x4D2)(msg_ghg_wrote_layer, i, ptr - base);
+            layer++;
+        }
+
+        header->sphere_radius = hobj->sphere_radius;
+        header->sphere_y = hobj->sphere_y;
+        header->bbox_min = hobj->bbox_min;
+        header->bbox_max = hobj->bbox_max;
+        header->cyl_y = hobj->cyl_y;
+        header->cyl_height = hobj->cyl_height;
+        header->cyl_radius = hobj->cyl_radius;
+        header->collide = 0;
+        if (hobj->collide) {
+            ptr = (char *)(((unsigned int)ptr + 3) & ~3);
+            header->collide = ptr - base;
+            collide = (struct nuhcollide_s *)ptr;
+            *collide = *hobj->collide;
+            ptr += sizeof(struct nuhcollide_s);
+            collide->entries = (struct nuhcollideentry_s *)(ptr - base);
+            entry = (struct nuhcollideentry_s *)ptr;
+            memcpy(ptr, hobj->collide->entries,
+                   hobj->collide->nentries * sizeof(struct nuhcollideentry_s));
+            ptr += hobj->collide->nentries * sizeof(struct nuhcollideentry_s);
+            ptr = (char *)(((unsigned int)ptr + 3) & ~3);
+            for (i = 0; i < hobj->collide->nentries; i++) {
+                entry[i].data = (void *)(ptr - base);
+                if (hobj->collide->entries[i].type == 1) {
+                    memcpy(ptr, hobj->collide->entries[i].data, sizeof(struct nuhcollidesphere_s));
+                    ptr += sizeof(struct nuhcollidesphere_s);
+                }
+            }
+        }
+
+        header->numtexanims = hobj->numtexanims;
+        if (hobj->numtexanims) {
+            ptr = (char *)(((unsigned int)ptr + 0xF) & ~0xF);
+            anims = (struct nutexanim_s *)ptr;
+            header->texanims = ptr - base;
+            tids = (short *)&anims[hobj->numtexanims];
+            for (i = 0; i < hobj->numtexanims; i++) {
+                anims[i] = hobj->texanims[i];
+                for (j = 0; j < hobj->nummtl; j++) {
+                    if (anims[i].mtl == hobj->mtls[j]) {
+                        anims[i].mtl = (struct numtl_s *)j;
+                        break;
+                    }
+                }
+                anims[i].scriptname = anims[i].scriptname - hobj->string_table + header->string_table;
+                anims[i].tids = (short *)((char *)tids - base);
+                tids += anims[i].numtids;
+                anims[i].ntaname = anims[i].ntaname - hobj->string_table + header->string_table;
+            }
+            ptr = (char *)&anims[hobj->numtexanims];
+            for (i = 0; i < hobj->numtexanims; i++) {
+                for (j = 0; j < hobj->texanims[i].numtids; j++) {
+                    for (k = 0; k < hobj->numtid; k++) {
+                        if (hobj->texanims[i].tids[j] == hobj->tids[k]) {
+                            *(short *)ptr = k;
+                            break;
+                        }
+                    }
+                    ptr += 2;
+                }
+            }
+            NuDebugMsgProlog(nuhgobj_file, 0x538)(msg_ghg_wrote_texanims, ptr - base);
+        }
+
+        header->shadow = 0;
+        shadow = hobj->shadow;
+        if (shadow) {
+            nshadows = 0;
+            nellipsoids = 0;
+            ncylinders = 0;
+            nmeshes = 0;
+            nnormals = 0;
+            nverts = 0;
+            for (; shadow->last != 0xFF; shadow++) {
+                nshadows++;
+                nellipsoids += shadow->numellipsoids;
+                ncylinders += shadow->numcylinders;
+                nmeshes += shadow->nummeshes;
+                if (shadow->nummeshes) {
+                    for (i = 0; i < shadow->nummeshes; i++) {
+                        mesh = &shadow->meshes[i];
+                        count = mesh->second->count;
+                        nnormals += count;
+                        for (j = 0; j < count; j++) {
+                            nverts += mesh->first[j].count;
+                        }
+                    }
+                }
+            }
+            ptr = (char *)(((unsigned int)ptr + 0xF) & ~0xF);
+            outshadow = (struct nushadowdata_s *)ptr;
+            ptr += (nshadows + 1) * sizeof(struct nushadowdata_s);
+            memcpy(outshadow, hobj->shadow, (nshadows + 1) * sizeof(struct nushadowdata_s));
+            header->shadow = (char *)outshadow - base;
+            if (nellipsoids) {
+                ptr = (char *)(((unsigned int)ptr + 0xF) & ~0xF);
+                ellipsoids = ptr;
+                ptr += nellipsoids * 0x30;
+            }
+            if (ncylinders) {
+                ptr = (char *)(((unsigned int)ptr + 0xF) & ~0xF);
+                cylinders = ptr;
+                ptr += ncylinders * 0x40;
+            }
+            if (nmeshes) {
+                ptr = (char *)(((unsigned int)ptr + 0xF) & ~0xF);
+                meshes = ptr;
+                ptr += nmeshes * sizeof(struct nushadowmesh_s);
+            }
+            if (nnormals + nverts) {
+                ptr = (char *)(((unsigned int)ptr + 0xF) & ~0xF);
+                verts = ptr;
+                ptr += (nnormals + nverts) * sizeof(struct nushadowvtx_s);
+            }
+            for (shadow = hobj->shadow; shadow->last != 0xFF; shadow++, outshadow++) {
+                if (shadow->numellipsoids) {
+                    outshadow->ellipsoids = (void *)(ellipsoids - base);
+                    memcpy(ellipsoids, shadow->ellipsoids, shadow->numellipsoids * 0x30);
+                    ellipsoids += shadow->numellipsoids * 0x30;
+                }
+                if (shadow->numcylinders) {
+                    outshadow->cylinders = (void *)(cylinders - base);
+                    memcpy(cylinders, shadow->cylinders, shadow->numcylinders * 0x40);
+                    cylinders += shadow->numcylinders * 0x40;
+                }
+                if (shadow->nummeshes) {
+                    outshadow->meshes = (struct nushadowmesh_s *)(meshes - base);
+                    outmesh = (struct nushadowmesh_s *)meshes;
+                    memcpy(meshes, shadow->meshes, shadow->nummeshes * sizeof(struct nushadowmesh_s));
+                    meshes += shadow->nummeshes * sizeof(struct nushadowmesh_s);
+                    mesh = shadow->meshes;
+                    for (i = 0; i < shadow->nummeshes; i++) {
+                        count = mesh->second->count;
+                        outmesh->first = (struct nushadowvtx_s *)(verts - base);
+                        memcpy(verts, mesh->first, count * sizeof(struct nushadowvtx_s));
+                        verts += count * sizeof(struct nushadowvtx_s);
+                        nverts = 0;
+                        for (j = 0; j < count; j++) {
+                            nverts += mesh->first[j].count;
+                        }
+                        outmesh->second = (struct nushadowvtx_s *)(verts - base);
+                        memcpy(verts, mesh->second, nverts * sizeof(struct nushadowvtx_s));
+                        verts += nverts * sizeof(struct nushadowvtx_s);
+                        mesh++;
+                        outmesh++;
+                    }
+                }
+            }
+            NuDebugMsgProlog(nuhgobj_file, 0x5C4)(msg_ghg_wrote_shadow, ptr - base);
+        }
+
+        header->size = ptr - base;
+        fh = NuFileOpen(file, NUFILE_WRITE);
+        if (fh) {
+            NuFileWrite(fh, base, ptr - base);
+            NuFileClose(fh);
+        }
+        NuMemFreeFn(base, nuhgobj_file, 0x5D3);
+    }
+}
 
 struct NUHGOBJ_s *NuGHGRead(union variptr_u *buffer, char *file) {
     struct nughgheader_s *header;
