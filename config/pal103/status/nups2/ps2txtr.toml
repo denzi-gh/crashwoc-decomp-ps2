@@ -29,7 +29,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0059:001675a8:Ps2TxSetSurfaceStateData"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0059:00167798:NuPs2CreateRenderTarget"
