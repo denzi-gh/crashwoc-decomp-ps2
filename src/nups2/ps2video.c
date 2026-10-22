@@ -1246,6 +1246,22 @@ void tbslotBeginExFn(struct TbSet *set, int slot, char *name)
 }
 
 
+int tbslotEndFn(TbSet *set, int slot)
+{
+    unsigned int elapsed;
+    int over;
+    unsigned int lim = 0xFFFF;
+
+    set = set != 0 ? set : D_0062F034;
+    slot &= 0xF;
+    elapsed = EE_T1_COUNT - set->begin[slot];
+    over = elapsed > lim;
+    elapsed += over * lim;
+    set->values[slot][1 - set->current[slot]] += elapsed;
+    return set->values[slot][1 - set->current[slot]];
+}
+
+
 void tbInit(void)
 {
     EE_T1_MODE = 0x83;

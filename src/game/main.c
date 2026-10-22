@@ -1457,7 +1457,7 @@ extern char *tLOADING[];
 extern s32 mg_frame;
 extern struct gtimer_s GameTimer;
 
-extern void NuRndrSwapScreen(s32 a);
+extern int NuRndrSwapScreen(int target);
 extern void BGLoadStart(void (*func)(void));
 extern void BGLoadEnd(void);
 extern void BGLoad(void);
@@ -1665,6 +1665,125 @@ extern void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad);
 extern s32 DebrisFindAllOfType(s32 type, struct nuvec_s **list, s32 max, s32 skip, s32 activeonly);
 extern int LookupDebrisEffect(char* name);
 
+extern void AddBugLight();
+extern void ApplyVisiTable(struct nugscn_s *sc, struct nuvec_s *pos);
+extern void BGLoadInit(void);
+extern void CloseCrates(void);
+extern void CloseCutMovie(s32 all);
+extern void CloseParticles(void);
+extern void CloudFxInit(void);
+extern void DebrisDraw();
+extern void DebrisSetup(void);
+extern void DefaultGame(void);
+extern void DoClouds(s32 paused);
+extern void DrawAwards(void);
+extern void DrawBug(void);
+extern void DrawCarpet(void);
+extern void DrawChases(s32 render);
+extern void DrawCrateExplosions(void);
+extern void DrawCrates(void);
+extern void DrawCutMovie(void);
+extern void DrawDeb3(void);
+extern void DrawExtraCreatures(void);
+extern void DrawGameCut(void);
+extern void DrawKabooms(void);
+extern void DrawLevel(void);
+extern void DrawMask(struct mask_s *mask);
+extern void DrawMaskFeathers(void);
+extern void DrawNextVehicle(s32 render);
+extern void DrawProjectiles(void);
+extern void DrawRings(void);
+extern void DrawTarget(void);
+extern void DrawTempCharacter(s32 render);
+extern void DrawTempCharacter2(s32 render);
+extern void DrawTransporters(void);
+extern void DrawVehicleTrail(void);
+extern void DrawWumpa(void);
+extern void GameTiming(void);
+extern void GameVP(void);
+extern void InitCameraTargetMaterial(void);
+extern void InitCrateExplosions(void);
+extern void InitDeb3(void);
+extern void InitGameMode();
+extern void InitPlayerEvents(void);
+extern void InstClose(void);
+extern void InstInit(void);
+extern s32 KillPlayer(struct obj_s *obj, s32 anim);
+extern void LightEverythingInEditor(void);
+extern void MaxVP(void);
+extern void NewCut(s32 i);
+extern void NewGame(void);
+extern void NuFileInitEx(int deviceid, int rebootiop);
+extern void NuFntClose(void);
+struct nufont_s;
+extern void NuFntDestroy(struct nufont_s *font);
+extern void NuFntInit(void);
+extern void NuFntScale(s32 xscale, s32 yscale);
+extern void NuGobjInit(void);
+extern void NuMemDumpFn(int min_size);
+extern void NuPs2Init(void);
+extern void NuPs2InitIOP(void);
+extern void NuPs2InitVU(void);
+extern void NuRandSeed(unsigned int seed);
+extern void NuRndrEndSceneEx(int flags);
+extern void NuRndrFootPrints(struct numtl_s *mtl, float *u, float *v);
+extern void NuRndrFx(int mode, void *fxdata);
+extern void NuRndrInitEx(int streamsize);
+extern void NuRndrShadPolys(struct numtl_s *mtl);
+extern void NuRndrShadowOnOff(int on);
+extern void NuRndrWaterRip(struct numtl_s *mtl);
+extern void NuRndrWaterRippleUpdate(int frames);
+extern void NuSoundFlushLoops(void);
+extern int NuSoundKeyStatus(unsigned int channel);
+extern void NuSoundKillAllAudio(void);
+extern int NuSoundStopStream(int stream);
+extern void PlayCutMovie(s32 movie);
+extern void ProcessGlass(s32 paused);
+extern void ReleaseVisiTable(void);
+extern void Reset3DFontObjects(void);
+extern void ResetAI(void);
+extern void ResetAwards(void);
+extern void ResetBonus(void);
+extern void ResetBug(void);
+extern void ResetCrates(void);
+extern void ResetDeath(void);
+extern void ResetGame(void);
+extern void ResetGates(void);
+extern void ResetGemPath(void);
+extern void ResetLevel(void);
+extern void ResetPanelDebris(void);
+extern void ResetPlayerEvents(void);
+extern void ResetProjectiles(void);
+extern void ResetRings(void);
+extern void ResetTimeTrial(void);
+extern void ResetWumpa(void);
+extern void RotateDirectionalLight(struct nuvec_s *v, s32 xrot, s32 yrot);
+extern void SetLevelLights(void);
+extern void ShadComInit(void);
+extern void UpdateAwards(void);
+extern void UpdateBugLight(struct creature_s *c);
+extern void UpdateChases(void);
+extern void UpdateCrateExplosions(void);
+extern void UpdateCrates(void);
+extern void UpdateCutMovie(void);
+extern void UpdateGameCut(void);
+extern void UpdateKabooms(void);
+extern void UpdateLevel(void);
+extern void UpdateMaskFeathers(void);
+extern void UpdatePanelDebris(void);
+extern void UpdatePlayerStats(struct creature_s *plr);
+extern void UpdateProjectiles(void);
+extern void UpdateTempCharacter(void);
+extern void UpdateWumpa(void);
+extern void VehicleSetup(void);
+extern void edmainRender(void);
+extern struct TbSet *tbsetCreate(int *colours);
+extern void tbslotBeginExFn(struct TbSet *set, int slot, char *name);
+extern void tbslotBeginFn(struct TbSet *set, int slot);
+extern int tbslotEndFn(void *tbset, int slot);
+extern int tbslotLastValue(struct TbSet *set, int slot);
+extern void tbslotReset(struct TbSet *set, int slot);
+
 int main(int argc, char** argv) {
     int render_frame;
     struct creature_s* plr;
@@ -1673,7 +1792,6 @@ int main(int argc, char** argv) {
     int phase_value;
     s64 frame_delta;
     int timing_or_collision_result;
-    s64 initial_vblank;
     int debris_type;
     struct nuvec_s **effect_cursor;
     int effect_offset;
@@ -1935,9 +2053,8 @@ next_game_mode:
         fade_rate = -10;
         frameout = 0;
         frameout_count = nuvideo_global_vbcnt;
-        initial_vblank = frameout_count;
         do {
-        } while (initial_vblank == nuvideo_global_vbcnt);
+        } while (frameout_count == nuvideo_global_vbcnt);
         frameout_count = nuvideo_global_vbcnt;
         half = 0.5f;
         pause_frameout_grace = 0;
@@ -1987,7 +2104,7 @@ next_game_mode:
                 if (editor_active != 0) {
                     if (edmainProcess(Pad[0], 0.016666668f) == 1) {
                         editor_active = 0;
-                        Pad[0]->oldpaddata = Pad[0]->paddata = 0;
+                        Pad[0]->paddata_db = Pad[0]->paddata = 0;
                     }
                     if ((LDATA->flags & 8) != 0) {
                         TerrainPlatformOldUpdate();
@@ -2016,7 +2133,7 @@ next_game_mode:
                         }
                         pNuCam->mtx = GameCam[0].m;
                         NuCameraSet(pNuCam);
-                        if ((Pad[0] != 0) && ((Pad[0]->oldpaddata & 0xa0) != 0)) {
+                        if ((Pad[0] != 0) && ((Pad[0]->paddata_db & 0xa0) != 0)) {
                             pausestats_frame = (pausestats_frame + 150) - (pausestats_frame % 150U);
                             GameSfx(0x36, 0);
                         }
@@ -2585,6 +2702,7 @@ void BGLoad(void)
         CrateMat = CreateAlphaBlendTexture256_32(D_0061B308, 0, 1, 0x100, 0);
     }
 
+    mg_frame = -1;
     bgload_model[1] = 0;
     bgload_animtime[0] = 1.0f;
     bgload_model[0] = 0;
@@ -2597,7 +2715,6 @@ void BGLoad(void)
     bgload_animtime[1] = 1.0f;
     character = LDATA->character;
     bgload_objpos[1].y = bgload_objpos[0].y = bgload_objstart;
-    mg_frame = -1;
     mg_scoreoff = 1.0f;
     MiniGameReset();
     if (character != last_used_character && last_used_character != -1 &&

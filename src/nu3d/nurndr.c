@@ -1230,8 +1230,12 @@ int NuRndrGobjSkin(struct nugobj_s *gobj, struct numtx_s *wm, int njoints, struc
             if (skinskipix != geomidx && skinskipix != -1) {
                 continue;
             }
-            mtl = nurndr_forced_mtl;
-            if (!mtl && !(mtl = geom->mtl)) {
+            if (nurndr_forced_mtl) {
+                mtl = nurndr_forced_mtl;
+            } else {
+                mtl = geom->mtl;
+            }
+            if (!mtl) {
                 NuDebugMsgProlog(nurndr_file, 0x8E5)(err_skin_no_mtl);
             } else if (nurndr_forced_mtl_table && mtl->special_id) {
                 if (nurndr_forced_mtl_table[mtl->special_id]) {
@@ -2949,11 +2953,11 @@ float **NuHGobjEvalDwaBlend2(int nlayers, short *layer, struct nuanimdata2_s *an
                              struct nuanimdata2_s *animdata2, float time2, float blend) {
     struct nuanimtime_s atime1;
     struct nuanimtime_s atime2;
+    float **dwa;
     union nuanimcurve2_u *curves1;
     union nuanimcurve2_u *curves2;
     signed char *curveflags1;
     signed char *curveflags2;
-    float **dwa;
     float *weights;
     float value1;
     float value2;
@@ -2989,17 +2993,19 @@ float **NuHGobjEvalDwaBlend2(int nlayers, short *layer, struct nuanimdata2_s *an
                 } else {
                     ix = 0;
                 }
-                ncurves1 = 0;
                 if (animdata1 != 0 && ix < animdata1->nnodes) {
                     ncurves1 = animdata1->ncurves;
-                    curveflags1 = &animdata1->curveflags[ncurves1 * ix];
                     curves1 = &animdata1->curves[ncurves1 * ix];
+                    curveflags1 = &animdata1->curveflags[ncurves1 * ix];
+                } else {
+                    ncurves1 = 0;
                 }
-                ncurves2 = 0;
                 if (animdata2 != 0 && ix < animdata2->nnodes) {
                     ncurves2 = animdata2->ncurves;
-                    curveflags2 = &animdata2->curveflags[ncurves2 * ix];
                     curves2 = &animdata2->curves[ncurves2 * ix];
+                    curveflags2 = &animdata2->curveflags[ncurves2 * ix];
+                } else {
+                    ncurves2 = 0;
                 }
                 ncurves = ncurves2 < ncurves1 ? ncurves1 : ncurves2;
                 weights = (float *)NuRndrCreateBlendShapeDeformerWeightsArray(ncurves);
