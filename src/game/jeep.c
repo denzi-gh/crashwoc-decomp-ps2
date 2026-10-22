@@ -1832,12 +1832,12 @@ void LoadWesternArenaData(void) {
     LoadScreen("loading Ai Paths");
     TerrainSetCur(superbuffer_ptr.voidptr);
     terraininit(Level, &superbuffer_ptr.s16, superbuffer_end.s16, 0, LevelFileName, world_scene[0], 0);
-    superbuffer_ptr.intaddr = (superbuffer_ptr.intaddr + 0xF) & 0xFFFFFFF0;
+    superbuffer_ptr.intaddr = (superbuffer_ptr.intaddr + 0xF) & ~(nuintptr)0xF;
     for (i = 0; i < 4; i++) {
         BuggyData[i] = superbuffer_ptr.voidptr;
         superbuffer_ptr.u8 = LoadBuggyData(superbuffer_ptr.u8, i);
     }
-    superbuffer_ptr.intaddr = (superbuffer_ptr.intaddr + 0xF) & 0xFFFFFFF0;
+    superbuffer_ptr.intaddr = (superbuffer_ptr.intaddr + 0xF) & ~(nuintptr)0xF;
 }
 
 

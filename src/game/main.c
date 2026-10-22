@@ -425,7 +425,7 @@ void InitWorld(void)
     if (Level == 0x25) {
         LOAD_MESSAGE(D_0061B088);
         n = saveloadLoadIcon(D_0061B0A0, superbuffer_ptr.voidptr);
-        superbuffer_ptr.intaddr = (superbuffer_ptr.intaddr + n + 0xF) & 0xFFFFFFF0;
+        superbuffer_ptr.intaddr = (superbuffer_ptr.intaddr + n + 0xF) & ~(nuintptr)0xF;
     }
 
     noterraininit();
@@ -434,7 +434,7 @@ void InitWorld(void)
         TerrainSetCur(superbuffer_ptr.voidptr);
         terraininit(Level, &superbuffer_ptr.s16, superbuffer_end.s16, 0, LevelFileName,
                     world_scene[0], 0);
-        superbuffer_ptr.intaddr = (superbuffer_ptr.intaddr + 0xF) & 0xFFFFFFF0;
+        superbuffer_ptr.intaddr = (superbuffer_ptr.intaddr + 0xF) & ~(nuintptr)0xF;
     }
 
     WUMPACOUNT = 0;

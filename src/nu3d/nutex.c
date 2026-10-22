@@ -298,7 +298,7 @@ struct nutex_s *NuTexReadBitmapMMEx(char *name, int mipmaps, union variptr_u *bu
     fh = NuFileOpen(name, 0);
     if (fh) {
         if (buff) {
-            spec = (struct nutex_s *)((buff->intaddr + 15) & 0xFFFFFFF0);
+            spec = (struct nutex_s *)((buff->intaddr + 15) & ~(nuintptr)0xF);
             buff->voidptr = (char *)spec + sizeof(struct nutex_s);
             if (buffend->u8 < buff->u8) {
                 NuErrorProlog(nutex_srcfile, 0x23B)(nutex_err_overflow);
@@ -366,7 +366,7 @@ struct nutex_s *NuTexReadBitmapMMEx(char *name, int mipmaps, union variptr_u *bu
                 height >>= 1;
             } while (i);
             if (buff) {
-                buff->intaddr = (buff->intaddr + 15) & 0xFFFFFFF0;
+                buff->intaddr = (buff->intaddr + 15) & ~(nuintptr)0xF;
                 spec->bits = buff->voidptr;
                 buff->u8 += total + palsize;
                 if (buffend->u8 < buff->u8) {
@@ -379,7 +379,7 @@ struct nutex_s *NuTexReadBitmapMMEx(char *name, int mipmaps, union variptr_u *bu
             NuFileSeek(fh, file.offbits, pos);
             NuFileRead(fh, spec->bits, NuTexImgSize(spec->type, spec->width, spec->height));
             if (buff) {
-                row = (u8 *)((buff->intaddr + 15) & 0xFFFFFFF0);
+                row = (u8 *)((buff->intaddr + 15) & ~(nuintptr)0xF);
                 buff->u8 = row + rowbytes;
                 if (buffend->u8 < buff->u8) {
                     NuErrorProlog(nutex_srcfile, 0x28F)(nutex_err_overflow);
@@ -1016,7 +1016,7 @@ inline void NuTexInitEx(union variptr_u *buff, int count) {
     }
     ps2videoGetFreeMem(&gs_bot, 0);
     size = count * sizeof(struct nutexslot_s);
-    list = (struct nutexslot_s *)((buff->intaddr + 15) & 0xFFFFFFF0);
+    list = (struct nutexslot_s *)((buff->intaddr + 15) & ~(nuintptr)0xF);
     gs_botfree = gs_bot;
     gs_top = 0x4000;
     gs_topfree = 0x4000;
