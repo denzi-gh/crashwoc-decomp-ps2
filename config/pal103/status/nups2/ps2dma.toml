@@ -21,7 +21,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016bfe8:VTDecode"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016c8f0:TagWalk"
