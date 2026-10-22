@@ -46,6 +46,7 @@
 
 #include "nucore/nuerror.h"
 #include "nups2/nups2types.h"
+#include "nups2/ps2dma.h"
 
 typedef struct DmaTag *(*TagWalkFunc)(struct DmaTag *tag, void *user);
 
@@ -537,9 +538,7 @@ u32 *VTDecode(u32 *code, char *indent)
 {
     char name[32];
     u32 *start;
-    u32 *qw;
     u32 vifcode;
-    u32 qwc;
     u32 i;
     int num;
 
@@ -651,29 +650,25 @@ u32 *VTDecode(u32 *code, char *indent)
         }
         break;
     case 0x50:
-        qwc = vifcode & 0xFFFF;
         if (debug_dma_level > 0) {
-            NuDebugMsgProlog(ps2dma_file, 0x1BB)(vt_direct_fmt, indent, start, qwc);
+            NuDebugMsgProlog(ps2dma_file, 0x1BB)(vt_direct_fmt, indent, start, (vifcode & 0xFFFF));
         }
         if (debug_dma_level == 5) {
-            qw = code;
-            for (i = 0; i < (qwc > 10 ? 10 : qwc); i++) {
+            for (i = 0; i < ((vifcode & 0xFFFF) > 10 ? 10 : (vifcode & 0xFFFF)); i++) {
                 NuDebugMsgProlog(ps2dma_file, 0x1BE)(vt_direct_qw_fmt, indent, i,
-                    qw[3], qw[2], qw[1], qw[0]);
-                qw += 4;
+                    code[i * 4 + 3], code[i * 4 + 2], code[i * 4 + 1], code[i * 4]);
             }
         }
         if (debug_dma_level >= 7) {
-            DirectDecode((u64 *)code, indent, qwc);
+            DirectDecode((u64 *)code, indent, (vifcode & 0xFFFF));
         }
         goto direct_advance;
     case 0x51:
-        qwc = vifcode & 0xFFFF;
         if (debug_dma_level > 0) {
-            NuDebugMsgProlog(ps2dma_file, 0x1C8)(vt_directhl_fmt, indent, start, qwc);
+            NuDebugMsgProlog(ps2dma_file, 0x1C8)(vt_directhl_fmt, indent, start, (vifcode & 0xFFFF));
         }
 direct_advance:
-        code += qwc * 4;
+        code += (vifcode & 0xFFFF) * 4;
         break;
     default:
         if ((vifcode & 0x60000000) == 0x60000000) {
@@ -782,7 +777,7 @@ direct_advance:
                 break;
             }
             if ((u32)code & 3) {
-                code = (u32 *)((u32)code + 4 - ((u32)code & 3));
+                code = (u32 *)((u32)code + (4 - ((u32)code & 3)));
             }
         } else {
             NuDebugMsgProlog(ps2dma_file, 0x222)(vt_unknown_fmt, indent, start, vifcode);

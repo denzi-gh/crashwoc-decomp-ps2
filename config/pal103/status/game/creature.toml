@@ -21,7 +21,7 @@ state = "asm"
 
 [[function]]
 id = "pal103:unit-0091:001ccbf8:LoadCharacterModels"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0091:001cd7c8:ChangeCharacter"
