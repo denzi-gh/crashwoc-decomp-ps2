@@ -104,12 +104,12 @@ static inline int PtInsideFBound(struct nuvec_s *pt, int npts, struct nuvec_s *p
     int crossings;
     int i;
 
+    prev = &pts[npts - 1];
     pln.a = 0.0f;
     pln.b = 0.0f;
     pln.c = 1.0f;
     pln.d = -(pln.a * pt->x + pln.b * pt->y + pln.c * pt->z);
     crossings = 0;
-    prev = &pts[npts - 1];
     for (i = 0; i < npts; i++) {
         if (NuPlnLineVU0(&pln, prev, pts, &hit) && hit.x >= pt->x) {
             crossings++;
@@ -123,36 +123,32 @@ static inline int PtInsideFBound(struct nuvec_s *pt, int npts, struct nuvec_s *p
 
 struct visidata_s *visiLoadData(char *fname, struct nugscn_s *sc, union variptr_u *buff) {
     struct visidata_s *vd;
-    int *fdatabase;
-    int *fdata;
+    union variptr_u fdatabase;
+    union variptr_u fdata;
     int numassoc;
     int numbnd;
     int splen;
     struct nugobj_s *g;
     struct nuvec_s wpos;
-    int ngobj;
+    int gcnt;
     int n;
     int m;
     int o;
     int p;
+    int binfix;
     int tmpsize;
     int spline_used;
     struct visbndassoc_s *assocs;
     u64 *binfo;
     u64 *tmpalloc;
+    u64 *tmpdelta;
     int binfosize;
     int ver;
-    u64 *binfo_data;
-    int allocsize;
-    u64 deltatot;
-    u64 *base;
-    int word;
-    u64 mask;
 
     vd = 0;
-    fdatabase = NuFileLoad(fname);
-    if (fdatabase != 0) {
-        fdata = fdatabase + 1;
+    fdatabase.voidptr = NuFileLoad(fname);
+    if (fdatabase.voidptr != 0) {
+        fdata.s32 = fdatabase.s32 + 1;
         vd = buff->voidptr;
         buff->intaddr += sizeof(struct visidata_s);
         memset(vd, 0, sizeof(struct visidata_s));
@@ -162,59 +158,60 @@ struct visidata_s *visiLoadData(char *fname, struct nugscn_s *sc, union variptr_
         vd->vspline = buff->voidptr;
         buff->intaddr += sc->numsplines * 4;
 
-        ver = fdatabase[0];
+        ver = fdatabase.s32[0];
         if (ver < 0) {
-            numbnd = fdatabase[1];
-            fdata = fdatabase + 2;
+            numbnd = fdatabase.s32[1];
+            fdata.s32 = fdatabase.s32 + 2;
         } else {
             numbnd = ver;
         }
 
         binfosize = (vd->sc->numinstance + 63) / 64;
         vd->binfosize = binfosize;
-        allocsize = binfosize * numbnd * 8;
-        tmpalloc = NuMemAllocFn(allocsize, visidat_srcfile, 0xC0);
+        tmpalloc = NuMemAllocFn(binfosize * numbnd * 8, visidat_srcfile, 0xC0);
         if (tmpalloc == 0) {
-            NuErrorProlog(visidat_srcfile, 0xC2)(err_alloc, allocsize);
+            NuErrorProlog(visidat_srcfile, 0xC2)(err_alloc, binfosize * numbnd * 8);
         }
 
         for (o = 0; o < numbnd; o++) {
-            splen = *fdata++;
-            tmpalloc[o * binfosize] = 0;
-            base = &tmpalloc[o * binfosize];
-            word = 0;
+            u64 mask;
+
+            splen = *fdata.s32++;
+            binfix = o * binfosize;
+            tmpalloc[binfix] = 0;
             mask = 1;
             for (n = 0; n < vd->sc->numinstance; n++) {
                 g = vd->sc->gobjs[vd->sc->instances[n].objid];
-                ngobj = g->ngobjs;
-                for (m = 0; m < ngobj; m++, g++) {
+                gcnt = g->ngobjs;
+                for (m = 0; m < gcnt; m++) {
                     NuVecMtxTransform(&wpos, &g->cntr, &vd->sc->instances[n].mtx);
-                    if (PtInsideFBound(&wpos, splen, (struct nuvec_s *)fdata)) {
-                        base[word] |= mask;
+                    if (PtInsideFBound(&wpos, splen, fdata.vec3)) {
+                        tmpalloc[binfix] |= mask;
                     }
+                    g++;
                 }
                 mask <<= 1;
                 if (mask == 0) {
-                    word++;
+                    binfix++;
                     mask = 1;
                 }
             }
-            fdata += splen * 3;
+            fdata.vec3 += splen;
         }
 
-        numassoc = *fdata;
-        assocs = (struct visbndassoc_s *)(fdata + 1);
+        numassoc = *fdata.s32++;
+        assocs = fdata.voidptr;
 
         if (ver < 0) {
-            struct visnames_s *splnames;
+            union variptr_u splused;
             int *spix;
             char *spname;
 
-            splnames = (struct visnames_s *)&assocs[numassoc];
-            if (splnames->count != 0) {
-                spix = NuMemAllocFn(splnames->count * 4, visidat_srcfile, 0xEE);
-                spname = splnames->names;
-                for (o = 0; o < splnames->count; o++) {
+            splused.voidptr = &assocs[numassoc];
+            if ((*splused.u32) != 0) {
+                spix = NuMemAllocFn((*splused.u32) * 4, visidat_srcfile, 0xEE);
+                spname = splused.charptr + 4;
+                for (o = 0; o < (*splused.u32); o++) {
                     spix[o] = -1;
                     for (n = 0; n < sc->numsplines; n++) {
                         if (strcmp(sc->splines[n].name, spname) == 0) {
@@ -241,7 +238,7 @@ struct visidata_s *visiLoadData(char *fname, struct nugscn_s *sc, union variptr_
 
         binfo = NuMemAllocFn(binfosize * 8, visidat_srcfile, 0x10E);
         tmpsize = 0;
-        binfo_data = 0;
+        tmpdelta = 0;
         if (binfo == 0) {
             NuErrorProlog(visidat_srcfile, 0x110)(err_alloc, binfosize * 8);
         }
@@ -254,16 +251,16 @@ struct visidata_s *visiLoadData(char *fname, struct nugscn_s *sc, union variptr_
                 }
                 if (spline_used == 0) {
                     if (tmpsize < vd->sc->splines[o].len * binfosize) {
-                        if (binfo_data != 0) {
-                            NuMemFreeFn(binfo_data, visidat_srcfile, 0x11D);
+                        if (tmpdelta != 0) {
+                            NuMemFreeFn(tmpdelta, visidat_srcfile, 0x11D);
                         }
                         tmpsize = vd->sc->splines[o].len * binfosize + 1;
-                        binfo_data = NuMemAllocFn(tmpsize * 8, visidat_srcfile, 0x120);
-                        if (binfo_data == 0) {
+                        tmpdelta = NuMemAllocFn(tmpsize * 8, visidat_srcfile, 0x120);
+                        if (tmpdelta == 0) {
                             NuErrorProlog(visidat_srcfile, 0x122)(err_alloc, tmpsize * 8);
                         }
                     }
-                    memset(binfo_data, 0, tmpsize * 8);
+                    memset(tmpdelta, 0, tmpsize * 8);
                 }
                 spline_used = 1;
                 assocs[n].visstart_ix = (assocs[n].visstart_ix < vd->sc->splines[o].len)
@@ -272,7 +269,7 @@ struct visidata_s *visiLoadData(char *fname, struct nugscn_s *sc, union variptr_
                                           ? assocs[n].visend_ix : vd->sc->splines[o].len;
                 for (m = assocs[n].visstart_ix; m <= assocs[n].visend_ix; m++) {
                     for (p = 0; p < binfosize; p++) {
-                        binfo_data[m * binfosize + p] |= tmpalloc[assocs[n].bndspline * binfosize + p];
+                        tmpdelta[m * binfosize + p] |= tmpalloc[assocs[n].bndspline * binfosize + p];
                     }
                 }
             }
@@ -283,27 +280,27 @@ struct visidata_s *visiLoadData(char *fname, struct nugscn_s *sc, union variptr_
                 memset(vd->vspline[o], 0, vd->sc->splines[o].len * 4);
                 buff->intaddr = (buff->intaddr + 7) & ~7;
                 for (n = 0; n < vd->sc->splines[o].len; n++) {
-                    deltatot = 0;
+                    u64 deltatot = 0;
                     for (m = 0; m < binfosize; m++) {
                         if (n == 0) {
-                            binfo[m] = binfo_data[m];
+                            binfo[m] = tmpdelta[m];
                         } else {
-                            binfo[m] = binfo_data[(n - 1) * binfosize + m] ^ binfo_data[n * binfosize + m];
+                            binfo[m] = tmpdelta[(n - 1) * binfosize + m] ^ tmpdelta[n * binfosize + m];
                         }
                         deltatot |= binfo[m];
                     }
                     if (deltatot != 0) {
                         vd->vspline[o][n] = buff->u64;
                         for (m = 0; m < binfosize; m++) {
-                            *buff->u64++ = binfo_data[n * binfosize + m];
+                            *buff->u64++ = tmpdelta[n * binfosize + m];
                         }
                     }
                 }
             }
         }
 
-        if (binfo_data != 0) {
-            NuMemFreeFn(binfo_data, visidat_srcfile, 0x156);
+        if (tmpdelta != 0) {
+            NuMemFreeFn(tmpdelta, visidat_srcfile, 0x156);
         }
         if (binfo != 0) {
             NuMemFreeFn(binfo, visidat_srcfile, 0x158);
@@ -311,7 +308,7 @@ struct visidata_s *visiLoadData(char *fname, struct nugscn_s *sc, union variptr_
         if (tmpalloc != 0) {
             NuMemFreeFn(tmpalloc, visidat_srcfile, 0x15A);
         }
-        NuMemFreeFn(fdatabase, visidat_srcfile, 0x15C);
+        NuMemFreeFn(fdatabase.voidptr, visidat_srcfile, 0x15C);
         buff->intaddr = (buff->intaddr + 15) & ~15;
         NuDebugMsgProlog(visidat_srcfile, 0x15F)(msg_visidata_used, buff->intaddr - (nuintptr)vd);
     }

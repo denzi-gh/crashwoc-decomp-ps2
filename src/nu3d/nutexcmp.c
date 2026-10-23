@@ -320,7 +320,17 @@ void NuTexCreateLuminanceMultiplyMap(struct nutex_s *colourmap, struct nutex_s *
                     block[j * 2 + i] = GetPixel(mapbits, ((x + 2) >> 2) + i - 1, ((y + 2) >> 2) + j - 1, mapwidth, mapheight);
                 }
             }
-            lum = GetLuminance(BilinearExpand(block, x % 4, y % 4));
+            colour = BilinearExpand(block, x % 4, y % 4);
+            r = colour & 0xFF;
+            g = (colour >> 8) & 0xFF;
+            b = (colour >> 16) & 0xFF;
+            lum = r;
+            if (lum < g) {
+                lum = g;
+            }
+            if (lum < b) {
+                lum = b;
+            }
             if (lum == 0) {
                 lum = 1;
             }
@@ -338,7 +348,7 @@ void NuTexCreateLuminanceMultiplyMap(struct nutex_s *colourmap, struct nutex_s *
                     diff = abs((palette[k] >> 24) - alpha);
                     index = k + 1;
                     if (diff < nextdiff) {
-                        index = i;
+                        index = k;
                     }
                     goto found;
                 }
