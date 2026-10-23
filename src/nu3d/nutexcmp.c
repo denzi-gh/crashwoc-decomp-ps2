@@ -279,16 +279,17 @@ static inline void MakeLuminancePalette(u32 *pal, int twobit)
 void NuTexCreateLuminanceMultiplyMap(struct nutex_s *colourmap, struct nutex_s *tex, struct nutex_s *dst, int twobit)
 {
     u32 block[16];
+    int x, y, i, j, k;
+    int width, height;
     int ncolours;
-    int mapheight;
+    int mapwidth, mapheight;
     u8 *texbits;
     u8 *mapbits;
     u8 *dstbits;
     u32 *pal;
     u32 *palette;
-    int width, height;
-    int mapwidth;
-    int x, y, i, j;
+    u32 colour;
+    u32 r, g, b;
     int lum, alpha, index;
     int diff, nextdiff;
 
@@ -313,8 +314,7 @@ void NuTexCreateLuminanceMultiplyMap(struct nutex_s *colourmap, struct nutex_s *
     MakeLuminancePalette(pal, twobit);
     for (x = 0; x < width; x++) {
         for (y = 0; y < height; y++) {
-            lum = GetLuminance(GetPixel(texbits, x, y, width, height));
-            alpha = lum << 7;
+            alpha = GetLuminance(GetPixel(texbits, x, y, width, height)) << 7;
             for (j = 0; j < 2; j++) {
                 for (i = 0; i < 2; i++) {
                     block[j * 2 + i] = GetPixel(mapbits, ((x + 2) >> 2) + i - 1, ((y + 2) >> 2) + j - 1, mapwidth, mapheight);
@@ -332,11 +332,11 @@ void NuTexCreateLuminanceMultiplyMap(struct nutex_s *colourmap, struct nutex_s *
                 alpha = 255;
             }
             palette = dst->pal;
-            for (i = 0; i < ncolours - 1; i++) {
-                if ((palette[i + 1] >> 24) >= alpha) {
-                    nextdiff = abs((palette[i + 1] >> 24) - alpha);
-                    diff = abs((palette[i] >> 24) - alpha);
-                    index = i + 1;
+            for (k = 0; k < ncolours - 1; k++) {
+                if ((palette[k + 1] >> 24) >= alpha) {
+                    nextdiff = abs((palette[k + 1] >> 24) - alpha);
+                    diff = abs((palette[k] >> 24) - alpha);
+                    index = k + 1;
                     if (diff < nextdiff) {
                         index = i;
                     }

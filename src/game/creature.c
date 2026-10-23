@@ -1395,11 +1395,14 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
     s32 old_layer;
     struct MoveInfo *minfo;
     s32 veh;
-    s32 oldvc;
     s32 i;
     f32 spd;
     s32 sfx;
     f32 f;
+    f32 t;
+    f32 dx;
+    f32 dy;
+    f32 dz;
 
     UpdateRumble(&c->rumble);
     if (pad != 0) {
@@ -1412,12 +1415,12 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
             NuPs2PadSetMotors(pad, 0, 0);
         }
     }
-    oldvc = VEHICLECONTROL;
+    i = VEHICLECONTROL;
     if (c->obj.vehicle != -1) {
         if ((LBIT & 0x1105252801ULL) != 0 || Level == 3 || Level == 0x1D ||
             Level == 0x1C) {
             VEHICLECONTROL = 1;
-        } else if ((LBIT & 0x400000040ULL) != 0 && oldvc == 0) {
+        } else if ((LBIT & 0x400000040ULL) != 0 && i == 0) {
             VEHICLECONTROL = 1;
         }
     } else {
@@ -1458,7 +1461,7 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
     } else {
         minfo = c->minfo;
     }
-    if (VEHICLECONTROL == 1 && oldvc != 1) {
+    if (VEHICLECONTROL == 1 && i != 1) {
         plr_vehicle_time = 0.0f;
         if (veh == 0x89) {
             VEHICLETIME = 60.0f;
@@ -1481,8 +1484,8 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
     if (GameMode != 1) {
         if (vtog_time < vtog_duration) {
             vtog_time += 0.02f;
-            if (vtog_time >= vtog_duration * 0.333f &&
-                vtog_time < vtog_duration * 0.333f) {
+            t = vtog_duration * 0.333f;
+            if (vtog_time >= t && vtog_time < t) {
                 gamesfx_effect_volume = 0x2FFF;
                 GameSfx(0x2F, &c->obj.pos);
             }
@@ -1501,7 +1504,7 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
                 }
             }
             if (vtog_blend != 0) {
-                f32 t = vtog_time / vtog_duration;
+                t = vtog_time / vtog_duration;
                 c->obj.pos.x = vtog_oldpos.x + (vtog_newpos.x - vtog_oldpos.x) * t;
                 c->obj.pos.y = vtog_oldpos.y + (vtog_newpos.y - vtog_oldpos.y) * t;
                 c->obj.pos.z = vtog_oldpos.z + (vtog_newpos.z - vtog_oldpos.z) * t;
@@ -1556,11 +1559,8 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
                         } else {
                             c->jump_type = 1;
                         }
-                        if (c->jump_type == 0) {
-                            c->jump_frames = minfo->STARJUMPFRAMES;
-                        } else {
-                            c->jump_frames = minfo->JUMPFRAMES0;
-                        }
+                        c->jump_frames = (c->jump_type == 0) ? minfo->STARJUMPFRAMES
+                                                             : minfo->JUMPFRAMES0;
                         c->jump_frame = 0;
                         c->somersault = 0;
                         c->land = 0;
@@ -1581,7 +1581,7 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
                     c->obj.pos.y = tumble_newpos.y;
                     c->obj.pos.z = tumble_newpos.z;
                 } else {
-                    f32 t = tumble_time / tumble_moveduration;
+                    t = tumble_time / tumble_moveduration;
                     c->obj.pos.x = tumble_oldpos.x +
                                    (tumble_newpos.x - tumble_oldpos.x) * t;
                     c->obj.pos.y = tumble_oldpos.y +
@@ -1709,8 +1709,8 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
                     c->pad_type = 2;
                 }
             }
-            in.z = fz * 0.00784313772f;
             in.x = f * 0.00784313772f;
+            in.z = fz * 0.00784313772f;
             NuVecMag(&in);
             i = NuAtan2D(in.x, in.z);
             in2.x = 0.0f;
@@ -1758,9 +1758,6 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
             c->obj.vehicle != 0xA0 && c->obj.vehicle != 0x44 &&
             c->obj.vehicle != 0xB2 && c->obj.vehicle != 0x89 &&
             c->obj.vehicle != 0xA1 && c->obj.vehicle != 0x99) {
-            f32 dx;
-            f32 dy;
-            f32 dz;
             c->obj.boing = 0;
             MoveVehicle(c, pad);
             dx = c->obj.pos.x - c->obj.oldpos.x;
@@ -1769,7 +1766,8 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
             dz = dz * dz;
             dy = c->obj.pos.y - c->obj.oldpos.y;
             c->obj.xz_distance = NuFsqrt(dx + dz);
-            c->obj.xyz_distance = NuFsqrt(dx + dy * dy + dz);
+            dx += dy * dy;
+            c->obj.xyz_distance = NuFsqrt(dx + dz);
             goto post_move;
         }
         if (veh == 0x6B || veh == 0xA0 || veh == 0x99 || veh == 0xA1 ||
@@ -1845,7 +1843,7 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
             c->obj.dyrot = RotDiff(oldhdg, c->obj.hdg);
             if (frozen == 0) {
                 c0.x = NuTrigTable[c->obj.hdg] * spd;
-                c0.z = NuTrigTable[(u16)(c->obj.hdg + 0x4000)] * spd;
+                c0.z = NuTrigTable[(c->obj.hdg + 0x4000) & 0xFFFF] * spd;
             }
             c->obj.dangle = 0;
             if (frozen == 0) {
@@ -1965,19 +1963,18 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
             }
             if (c->target != 0) {
                 if (c->fire == 0) {
-                    f32 hack;
+                    s32 ax;
+                    s32 ay;
                     if (veh == 0x44) {
-                        s32 tx;
-                        s32 ty;
                         if (c->obj.pad_speed > 0.0f) {
-                            tx = (s32)(-c->obj.pad_dz * 5461.0f);
-                            ty = (s32)(c->obj.pad_dx * 10923.0f);
+                            ax = (s32)(-c->obj.pad_dz * 5461.0f);
+                            ay = (s32)(c->obj.pad_dx * 10923.0f);
                         } else {
-                            ty = c->obj.target_yrot;
-                            tx = c->obj.target_xrot;
+                            ax = c->obj.target_xrot;
+                            ay = c->obj.target_yrot;
                         }
-                        c->obj.target_xrot += (short)(tx - c->obj.target_xrot >> 5);
-                        c->obj.target_yrot += (short)(ty - c->obj.target_yrot >> 5);
+                        c->obj.target_xrot += (short)(ax - c->obj.target_xrot >> 5);
+                        c->obj.target_yrot += (short)(ay - c->obj.target_yrot >> 5);
                         plr_target_firepos =
                             *(struct nuvec_s *)&c->mtxLOCATOR[1][0]._30;
                         plr_target_pos[0] = plr_target_firepos;
@@ -1985,29 +1982,32 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
                                      -(u16)c->obj.target_xrot & 0xFFFF);
                         NuVecRotateY(&plr_target_dir, &plr_target_dir,
                                      c->obj.hdg + (u16)c->obj.target_yrot);
-                        hack = MECHTARGETHACK;
+                        plr_target_pos[0].x -= plr_target_dir.x * MECHTARGETHACK;
+                        plr_target_pos[0].y -= plr_target_dir.y * MECHTARGETHACK;
+                        plr_target_pos[0].z -= plr_target_dir.z * MECHTARGETHACK;
+                        plr_target_sightpos =
+                            *(struct nuvec_s *)&c->mtxLOCATOR[1][1]._30;
                     } else {
-                        s32 r;
-                        r = c->obj.target_yrot +
-                            (s32)(c->obj.pad_dx * 16384.0f * 0.02f);
-                        if (r < -0x3555) {
-                            s32 d = -0x3555 - r;
-                            r = -0x3555;
+                        i = (s32)(c->obj.pad_dx * 16384.0f * 0.02f);
+                        ay = c->obj.target_yrot + i;
+                        if (ay < -0x3555) {
+                            s32 d = -0x3555 - ay;
+                            ay = -0x3555;
                             c->obj.hdg -= d / 2;
-                        } else if (r > 0x3555) {
-                            s32 d = 0x3555 - r;
-                            r = 0x3555;
+                        } else if (ay > 0x3555) {
+                            s32 d = 0x3555 - ay;
+                            ay = 0x3555;
                             c->obj.hdg -= d / 2;
                         }
-                        c->obj.target_yrot = r;
-                        r = c->obj.target_xrot -
-                            (s32)(c->obj.pad_dz * 16384.0f * 0.02f);
-                        if (r < -0x1555) {
-                            r = -0x1555;
-                        } else if (r > 0x2AAB) {
-                            r = 0x2AAB;
+                        c->obj.target_yrot = ay;
+                        i = (s32)(c->obj.pad_dz * 16384.0f * 0.02f);
+                        ax = c->obj.target_xrot - i;
+                        if (ax < -0x1555) {
+                            ax = -0x1555;
+                        } else if (ax > 0x2AAB) {
+                            ax = 0x2AAB;
                         }
-                        c->obj.target_xrot = r;
+                        c->obj.target_xrot = ax;
                         plr_target_firepos =
                             *(struct nuvec_s *)&c->mtxLOCATOR[1][0]._30;
                         plr_target_pos[0] = plr_target_firepos;
@@ -2015,13 +2015,12 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
                                      -(u16)c->obj.target_xrot & 0xFFFF);
                         NuVecRotateY(&plr_target_dir, &plr_target_dir,
                                      c->obj.hdg + (u16)c->obj.target_yrot);
-                        hack = BAZOOKATARGETHACK;
+                        plr_target_pos[0].x -= plr_target_dir.x * BAZOOKATARGETHACK;
+                        plr_target_pos[0].y -= plr_target_dir.y * BAZOOKATARGETHACK;
+                        plr_target_pos[0].z -= plr_target_dir.z * BAZOOKATARGETHACK;
+                        plr_target_sightpos =
+                            *(struct nuvec_s *)&c->mtxLOCATOR[1][1]._30;
                     }
-                    plr_target_pos[0].x -= plr_target_dir.x * hack;
-                    plr_target_pos[0].y -= plr_target_dir.y * hack;
-                    plr_target_pos[0].z -= plr_target_dir.z * hack;
-                    plr_target_sightpos =
-                        *(struct nuvec_s *)&c->mtxLOCATOR[1][1]._30;
                 }
                 GameRayCast(&plr_target_pos[0], &plr_target_dir, 10.0f,
                             &plr_target_pos[1]);
@@ -2219,8 +2218,8 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
                     }
                     in2.y *= c->obj.pad_speed;
                 } else {
-                    in2.z = 0.0f;
                     in2.y = 0.0f;
+                    in2.z = 0.0f;
                 }
                 if (c->obj.mom.z > in2.z) {
                     c->obj.mom.z -= in_s_friction;
@@ -2306,15 +2305,15 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
                 c->obj.mom.x = (pos_START != 0) ? pos_START->x - c->obj.pos.x : 0.0f;
             } else {
                 if (c->slide != 0) {
-                    in_f_friction = 0.0216f;
                     in_s_friction = 0.0216f;
+                    in_f_friction = 0.0216f;
                 } else if (c->freeze != 0) {
                     f = 0.5f;
                     if (c->obj.ground != 0) {
                         f = 0.15f;
                     }
-                    in_f_friction = f * 0.007200000341981649f;
                     in_s_friction = f * 0.007200000341981649f;
+                    in_f_friction = f * 0.007200000341981649f;
                 } else if (c->obj.ground != 0) {
                     in_s_friction = TerSurface[c->obj.surface_type].friction *
                                     0.007200000341981649f;
@@ -2324,8 +2323,8 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
                            c->spin != 0 &&
                            c->spin_frame < c->spin_frames -
                                c->minfo->SPINRESETFRAMES) {
-                    in_f_friction = 0.0024f;
                     in_s_friction = 0.0024f;
+                    in_f_friction = 0.0024f;
                 } else if (c->jump != 0) {
                     if (c->jump_type == 0) {
                         in_s_friction = in_s_friction * 0.5f;
@@ -2337,8 +2336,8 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
                     }
                 }
                 if (veh == 0x3B && best_cRPos != 0) {
-                    in_f_friction = in_f_friction * 0.1f;
                     in_s_friction = in_s_friction * 0.1f;
+                    in_f_friction = in_f_friction * 0.1f;
                     hold = NuAtan2D(in.x, in.z);
                     MoveLoopXZ(&c->obj, &hold);
                 } else {
@@ -2353,16 +2352,15 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
         }
         if (LIFTPLAYER != 0 && (pad->paddata & 0x10) != 0 &&
             c->obj.transporting == 0) {
-            c->obj.gndflags.all = 0;
             c->obj.pos.y += 0.1f;
             c->obj.mom.y = 0.0f;
             c->obj.ground = 0;
+            c->obj.gndflags.all = 0;
         }
         if (FRAME == 0) {
             tbslotBeginFn(app_tbset, 7);
         }
         if (c->obj.transporting == 0) {
-            f32 k;
             s32 id;
             id = ((u32)c - (u32)Character) / sizeof(struct creature_s);
             d0.x = c->obj.pos.x;
@@ -2372,12 +2370,10 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
                 c->obj.mom.z == 0.0f && d0.y - c->obj.shadow > 0.1f) {
                 c->obj.gndflags.all = 0;
             }
-            k = 0.0036000001709908247f;
-            if (c->obj.pad_speed > 0.0f) {
-                k = 0.0f;
-            }
-            NewTerrainScaleY(&d0, &c->obj.mom, c->obj.gndflags.chrs,
-                             id, k, c->obj.RADIUS,
+            NewTerrainScaleY(&d0, &c->obj.mom, c->obj.gndflags.chrs, id,
+                             (c->obj.pad_speed > 0.0f) ? 0.0f
+                                                       : 0.0036000001709908247f,
+                             c->obj.RADIUS,
                              (c->obj.top - c->obj.bot) * c->obj.SCALE /
                                  (c->obj.RADIUS + c->obj.RADIUS));
             c->obj.pos.x = d0.x;
@@ -2389,27 +2385,30 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
         if (FRAME == 0) {
             tbslotEndFn(app_tbset, 7);
         }
-        i = PlatformCrush();
-        if (i != 0) {
-            switch (i) {
-            case 6:
-                i = 0x12;
-                break;
-            case 7:
-                i = 0x13;
-                break;
-            case 9:
-                i = 0x9;
-                break;
-            case 10:
-                i = 0x11;
-                break;
-            case 11:
-            default:
-                i = GetDieAnim(&c->obj, -1);
-                break;
+        {
+            s32 die;
+            i = PlatformCrush();
+            if (i != 0) {
+                switch (i) {
+                case 6:
+                    die = 0x12;
+                    break;
+                case 7:
+                    die = 0x13;
+                    break;
+                case 9:
+                    die = 0x9;
+                    break;
+                case 10:
+                    die = 0x11;
+                    break;
+                case 11:
+                default:
+                    die = GetDieAnim(&c->obj, -1);
+                    break;
+                }
+                KillPlayer(&c->obj, die);
             }
-            KillPlayer(&c->obj, i);
         }
         if (c->obj.mask != 0 && c->obj.mask->active > 2) {
             c->obj.mask->active--;
@@ -2535,8 +2534,11 @@ skip_surface:
                 c->obj.ddwater = 0x78;
                 c->obj.ddg = 0x78;
                 c->obj.ddb = -0x80;
-                if ((c->obj.idle_gametime != 0.0f) ? qrand() < 0x1000
-                                                   : qrand() <= 0x7FFF) {
+                if (c->obj.idle_gametime != 0.0f) {
+                    if (qrand() < 0x1000) {
+                        NuRndrAddWaterRipple(&av, 0.2f, 0.4f, 0x20, 0x60706050);
+                    }
+                } else if (qrand() <= 0x7FFF) {
                     NuRndrAddWaterRipple(&av, 0.2f, 0.4f, 0x20, 0x60706050);
                 }
                 break;
@@ -2648,20 +2650,19 @@ skip_surface:
         if ((c->obj.ground & 2) != 0 && c->obj.dead == 0) {
             if ((TerSurface[c->obj.surface_type].flags & 1) != 0 &&
                 c->obj.invincible == 0 && veh != 0x20 && VEHICLECONTROL != 2) {
-                s32 anim;
                 if (VEHICLECONTROL == 1 && c->obj.vehicle != -1) {
-                    anim = 0xB;
+                    i = 0xB;
                 } else {
                     if (c->obj.character == 0 && c->obj.layer_type != -1 &&
                         CRemap[79] != -1 && Level == 7) {
-                        anim = 8;
+                        i = 8;
                     } else if (c->obj.character == 0 &&
                                c->obj.surface_type == 7 && CRemap[151] != -1) {
-                        anim = 0xD;
+                        i = 0xD;
                     } else {
-                        anim = 5;
+                        i = 5;
                         if (c->obj.layer_type != -1 && c->obj.submerged != 0) {
-                            anim = 0xA;
+                            i = 0xA;
                         }
                     }
                 }
@@ -2674,11 +2675,11 @@ skip_surface:
                             LoseMask(&c->obj);
                         }
                     } else {
-                        KillGameObject(&c->obj, anim);
+                        KillGameObject(&c->obj, i);
                     }
                 } else {
                     c->obj.invincible = 0;
-                    KillGameObject(&c->obj, anim);
+                    KillGameObject(&c->obj, i);
                     if (c->obj.mask != 0 && c->obj.mask->active != 0 &&
                         (LDATA->flags & 0xE00) == 0) {
                         AddMaskFeathers(c->obj.mask);
@@ -2759,24 +2760,22 @@ post_move:
         plr_lives.count = Game.lives;
     }
     if (Adventure != 0) {
-        Game.lives = (u8)plr_lives.count;
         Game.wumpas = (u8)plr_wumpas.count;
+        Game.lives = (u8)plr_lives.count;
         if (c->obj.mask != 0) {
             Game.mask = (c->obj.mask->active < 3) ? (u8)c->obj.mask->active : 2;
         }
     }
     BonusTiming(c);
     {
-        f32 dx;
-        f32 dy;
-        f32 dz;
         dx = c->obj.pos.x - c->obj.oldpos.x;
         dx = dx * dx;
         dz = c->obj.pos.z - c->obj.oldpos.z;
         dz = dz * dz;
         dy = c->obj.pos.y - c->obj.oldpos.y;
         c->obj.xz_distance = NuFsqrt(dx + dz);
-        c->obj.xyz_distance = NuFsqrt(dx + dy * dy + dz);
+        dx += dy * dy;
+        c->obj.xyz_distance = NuFsqrt(dx + dz);
     }
     c->obj.anim.oldaction = c->obj.anim.action;
     if (vtog_time < vtog_duration && vtog_blend != 0) {
