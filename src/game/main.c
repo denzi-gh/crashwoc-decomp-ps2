@@ -45,6 +45,7 @@
 
 #include "nu_libc.h"
 #include "nu_types.h"
+#include "nu_port.h"
 
 #include "nu3d/nuhgobj.h"
 #include "nu3d/numtl.h"
@@ -814,6 +815,7 @@ void BGLoadSfxFn(void)
     InitGlobalSfx();
     bgload_complete = done;
     for (;;) {
+        NW_HOST_IDLE();
     }
 }
 
@@ -1432,6 +1434,7 @@ void BGLoadLevel(void)
     LoadLevel();
     bgload_complete = 1;
     for (;;) {
+        NW_HOST_IDLE();
     }
 }
 
@@ -1447,6 +1450,7 @@ void BGLoadCutScene(void)
     bg_cutloadrv = LoadCutMovie(bg_cutmovie_id);
     bgload_complete = 1;
     for (;;) {
+        NW_HOST_IDLE();
     }
 }
 
