@@ -191,16 +191,18 @@ void NuMtxInvRSS(struct numtx_s* dest, struct numtx_s* m)
 void NuMtxInvH(struct numtx_s *mi, struct numtx_s *m0)
 {
     double a[4][4];
-    int p[4];
     int i;
     int j;
     int k;
-    double best;
-    double sum;
-    double v;
+    int p[4];
+    double h;
+    double q;
+    double s;
+    double sup;
     double pivot;
-    double tmp;
+    int n;
 
+    n = 4;
     a[0][0] = m0->_00;
     a[0][1] = m0->_01;
     a[0][2] = m0->_02;
@@ -218,61 +220,61 @@ void NuMtxInvH(struct numtx_s *mi, struct numtx_s *m0)
     a[3][2] = m0->_32;
     a[3][3] = m0->_33;
 
-    for (i = 0; i < 4; i++) {
-        best = 0.0;
+    for (i = 0; i < n; i++) {
+        sup = 0.0;
         p[i] = 0;
-        for (j = i; j < 4; j++) {
-            sum = 0.0;
-            for (k = i; k < 4; k++) {
-                v = a[j][k];
-                if (v < 0.0) {
-                    v = -v;
+        for (j = i; j < n; j++) {
+            s = 0.0;
+            for (k = i; k < n; k++) {
+                q = a[j][k];
+                if (q < 0.0) {
+                    q = -q;
                 }
-                sum += v;
+                s += q;
             }
-            v = a[j][i];
-            if (v < 0.0) {
-                v = -v;
+            q = a[j][i];
+            if (q < 0.0) {
+                q = -q;
             }
-            v = v / sum;
-            if (best < v) {
+            q = q / s;
+            if (sup < q) {
                 p[i] = j;
-                best = v;
+                sup = q;
             }
         }
-        if (best == 0.0) {
+        if (sup == 0.0) {
             return;
         }
         if (p[i] != i) {
-            for (k = 0; k < 4; k++) {
-                tmp = a[i][k];
+            for (k = 0; k < n; k++) {
+                h = a[i][k];
                 a[i][k] = a[p[i]][k];
-                a[p[i]][k] = tmp;
+                a[p[i]][k] = h;
             }
         }
         pivot = a[i][i];
-        for (k = 0; k < 4; k++) {
+        for (k = 0; k < n; k++) {
             if (k != i) {
                 a[i][k] = -a[i][k] / pivot;
-                for (j = 0; j < 4; j++) {
+                for (j = 0; j < n; j++) {
                     if (j != i) {
                         a[j][k] += a[j][i] * a[i][k];
                     }
                 }
             }
         }
-        for (j = 0; j < 4; j++) {
+        for (j = 0; j < n; j++) {
             a[j][i] = a[j][i] / pivot;
         }
         a[i][i] = 1.0 / pivot;
     }
 
-    for (i = 3; i >= 0; i--) {
+    for (i = n - 1; i >= 0; i--) {
         if (p[i] != i) {
-            for (k = 0; k < 4; k++) {
-                tmp = a[k][i];
-                a[k][i] = a[k][p[i]];
-                a[k][p[i]] = tmp;
+            for (j = 0; j < n; j++) {
+                h = a[j][i];
+                a[j][i] = a[j][p[i]];
+                a[j][p[i]] = h;
             }
         }
     }

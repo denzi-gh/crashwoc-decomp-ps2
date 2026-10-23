@@ -179,6 +179,103 @@ int BilinearExpand(u32 *pixels, float u, float v)
 }
 
 
+static inline u32 GetPixel(u8 *bits, int x, int y, int width, int height)
+{
+    u8 *texel;
+
+    if (x < 0) {
+        x = 0;
+    }
+    if (x >= width) {
+        x = width - 1;
+    }
+    if (y < 0) {
+        y = 0;
+    }
+    if (y >= height) {
+        y = height - 1;
+    }
+    texel = &bits[(x + y * width) * 3];
+    return texel[0] + (texel[1] << 8) + (texel[2] << 16);
+}
+
+
+static inline u8 GetLuminance(u32 colour)
+{
+    u32 r, g, b;
+    int lum;
+
+    r = colour & 0xFF;
+    g = (colour >> 8) & 0xFF;
+    b = (colour >> 16) & 0xFF;
+    lum = r;
+    if (lum < g) {
+        lum = g;
+    }
+    if (lum < b) {
+        lum = b;
+    }
+    return lum;
+}
+
+
+static inline void SetPixel2(u8 *bits, int x, int y, int width, int index)
+{
+    int byte;
+
+    byte = bits[((x % (width >> 1)) >> 1) + y * (width >> 2)];
+    index &= 3;
+    if (x % 2 == 1) {
+        if (x * 2 >= width) {
+            byte = (byte & 0x3F) + (index << 6);
+        } else {
+            byte = (byte & 0xCF) + (index << 4);
+        }
+    } else {
+        if (x * 2 >= width) {
+            byte = (byte & 0xF3) + (index << 2);
+        } else {
+            byte = (byte & 0xFC) + index;
+        }
+    }
+    bits[((x % (width >> 1)) >> 1) + y * (width >> 2)] = byte;
+}
+
+
+static inline void SetPixel4(u8 *bits, int x, int y, int width, u8 nibble)
+{
+    if ((x & 1) == 0) {
+        bits[(x >> 1) + y * (width >> 1)] = (bits[(x >> 1) + y * (width >> 1)] & 0x0F) + ((nibble & 0xF) << 4);
+    } else {
+        bits[(x >> 1) + y * (width >> 1)] = (bits[(x >> 1) + y * (width >> 1)] & 0xF0) + (nibble & 0xF);
+    }
+}
+
+
+static inline void MakeLuminancePalette(u32 *pal, int twobit)
+{
+    int levels16[16] = {
+        -128, -84, -52, -32, -20, -12, -8, -4,
+        0, 5, 11, 17, 29, 47, 76, 123
+    };
+    int levels32[32] = {
+        -42, -8, 8, 42, -42, -8, 8, 42,
+        -42, -8, 8, 42, -42, -8, 8, 42,
+        -42, -42, -42, -42, -8, -8, -8, -8,
+        8, 8, 8, 8, 42, 42, 42, 42
+    };
+    int nentries;
+    int k;
+    int level;
+
+    nentries = twobit ? 32 : 16;
+    for (k = 0; k < nentries; k++) {
+        level = ((nentries == 16 ? levels16[k] : levels32[k]) + 128) & 0xFF;
+        pal[k] = level + (level << 8) + (level << 16) + (level << 24);
+    }
+}
+
+
 void NuTexCreateLuminanceMultiplyMap(struct nutex_s *colourmap, struct nutex_s *tex, struct nutex_s *dst, int twobit)
 {
     u32 block[16];
@@ -187,19 +284,13 @@ void NuTexCreateLuminanceMultiplyMap(struct nutex_s *colourmap, struct nutex_s *
     u8 *texbits;
     u8 *mapbits;
     u8 *dstbits;
-    u8 *texel;
     u32 *pal;
+    u32 *palette;
     int width, height;
     int mapwidth;
-    int nentries;
-    int x, y, i, j, k;
-    int cx, cy, mx, my;
-    u32 colour;
-    u32 r, g, b;
-    int lum, alpha, level, index;
+    int x, y, i, j;
+    int lum, alpha, index;
     int diff, nextdiff;
-    int byte;
-    u8 nibble;
 
     ncolours = 16;
     width = tex->width;
@@ -214,84 +305,22 @@ void NuTexCreateLuminanceMultiplyMap(struct nutex_s *colourmap, struct nutex_s *
     dst->pal = pal;
     dstbits = dst->bits;
     dst->type = 4;
-    mapheight = colourmap->height;
     mapwidth = colourmap->width;
+    mapheight = colourmap->height;
     if (twobit) {
         ncolours = 4;
     }
-    {
-        int levels16[16] = {
-            -128, -84, -52, -32, -20, -12, -8, -4,
-            0, 5, 11, 17, 29, 47, 76, 123
-        };
-        int levels32[32] = {
-            -42, -8, 8, 42, -42, -8, 8, 42,
-            -42, -8, 8, 42, -42, -8, 8, 42,
-            -42, -42, -42, -42, -8, -8, -8, -8,
-            8, 8, 8, 8, 42, 42, 42, 42
-        };
-
-        nentries = twobit ? 32 : 16;
-        for (k = 0; k < nentries; k++) {
-            if (nentries == 16) {
-                level = levels16[k];
-            } else {
-                level = levels32[k];
-            }
-            level = (level + 128) & 0xFF;
-            pal[k] = level + (level << 8) + (level << 16) + (level << 24);
-        }
-    }
+    MakeLuminancePalette(pal, twobit);
     for (x = 0; x < width; x++) {
         for (y = 0; y < height; y++) {
-            cx = (x < 0) ? 0 : x;
-            if (cx >= width) {
-                cx = width - 1;
-            }
-            cy = (y < 0) ? 0 : y;
-            if (cy >= height) {
-                cy = height - 1;
-            }
-            texel = &texbits[(cx + cy * width) * 3];
-            colour = texel[0] + (texel[1] << 8) + (texel[2] << 16);
-            r = colour & 0xFF;
-            g = (colour >> 8) & 0xFF;
-            b = (colour >> 16) & 0xFF;
-            lum = r;
-            if (lum < g) {
-                lum = g;
-            }
-            if (lum < b) {
-                lum = b;
-            }
+            lum = GetLuminance(GetPixel(texbits, x, y, width, height));
             alpha = lum << 7;
             for (j = 0; j < 2; j++) {
                 for (i = 0; i < 2; i++) {
-                    mx = ((x + 2) >> 2) - 1 + i;
-                    my = ((y + 2) >> 2) - 1 + j;
-                    mx = (mx < 0) ? 0 : mx;
-                    if (mx >= mapwidth) {
-                        mx = mapwidth - 1;
-                    }
-                    my = (my < 0) ? 0 : my;
-                    if (my >= mapheight) {
-                        my = mapheight - 1;
-                    }
-                    texel = &mapbits[(mx + my * mapwidth) * 3];
-                    block[j * 2 + i] = texel[0] + (texel[1] << 8) + (texel[2] << 16);
+                    block[j * 2 + i] = GetPixel(mapbits, ((x + 2) >> 2) + i - 1, ((y + 2) >> 2) + j - 1, mapwidth, mapheight);
                 }
             }
-            colour = BilinearExpand(block, x % 4, y % 4);
-            r = colour & 0xFF;
-            g = (colour >> 8) & 0xFF;
-            b = (colour >> 16) & 0xFF;
-            lum = r;
-            if (lum < g) {
-                lum = g;
-            }
-            if (lum < b) {
-                lum = b;
-            }
+            lum = GetLuminance(BilinearExpand(block, x % 4, y % 4));
             if (lum == 0) {
                 lum = 1;
             }
@@ -302,14 +331,14 @@ void NuTexCreateLuminanceMultiplyMap(struct nutex_s *colourmap, struct nutex_s *
             if (alpha > 255) {
                 alpha = 255;
             }
-            pal = dst->pal;
-            for (k = 0; k < ncolours - 1; k++) {
-                if ((pal[k + 1] >> 24) >= alpha) {
-                    nextdiff = abs((pal[k + 1] >> 24) - alpha);
-                    diff = abs((pal[k] >> 24) - alpha);
-                    index = k + 1;
+            palette = dst->pal;
+            for (i = 0; i < ncolours - 1; i++) {
+                if ((palette[i + 1] >> 24) >= alpha) {
+                    nextdiff = abs((palette[i + 1] >> 24) - alpha);
+                    diff = abs((palette[i] >> 24) - alpha);
+                    index = i + 1;
                     if (diff < nextdiff) {
-                        index = k;
+                        index = i;
                     }
                     goto found;
                 }
@@ -317,29 +346,9 @@ void NuTexCreateLuminanceMultiplyMap(struct nutex_s *colourmap, struct nutex_s *
             index = ncolours - 1;
         found:
             if (twobit) {
-                byte = dstbits[((x % (width >> 1)) >> 1) + y * (width >> 2)];
-                index &= 3;
-                if (x % 2 == 1) {
-                    if (x * 2 >= width) {
-                        byte = (byte & 0x3F) + (index << 6);
-                    } else {
-                        byte = (byte & 0xCF) + (index << 4);
-                    }
-                } else {
-                    if (x * 2 >= width) {
-                        byte = (byte & 0xF3) + (index << 2);
-                    } else {
-                        byte = (byte & 0xFC) + index;
-                    }
-                }
-                dstbits[((x % (width >> 1)) >> 1) + y * (width >> 2)] = byte;
+                SetPixel2(dstbits, x, y, width, index);
             } else {
-                nibble = index;
-                if ((x & 1) == 0) {
-                    dstbits[(x >> 1) + y * (width >> 1)] = (dstbits[(x >> 1) + y * (width >> 1)] & 0x0F) + ((nibble & 0xF) << 4);
-                } else {
-                    dstbits[(x >> 1) + y * (width >> 1)] = (dstbits[(x >> 1) + y * (width >> 1)] & 0xF0) + (nibble & 0xF);
-                }
+                SetPixel4(dstbits, x, y, width, index);
             }
         }
     }
