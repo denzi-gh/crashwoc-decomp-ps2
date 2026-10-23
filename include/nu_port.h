@@ -34,4 +34,12 @@
 #define NW_STATIC static
 #endif
 
+
+#ifdef NW_HOST
+void nw_ee_idle(void);
+#define NW_HOST_IDLE() nw_ee_idle()
+#else
+#define NW_HOST_IDLE()
+#endif
+
 #endif /* NU_PORT_H */
