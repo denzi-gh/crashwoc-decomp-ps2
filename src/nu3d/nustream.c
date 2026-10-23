@@ -815,16 +815,17 @@ int NuRndrSetLocalMtx(struct numtx_s *mtx, int clip)
 
     if (local_mtx_pkt_dirty) {
         local_mtx_pkt_dirty = 0;
-        pkt = vpDmaTag_CntEx(local_mtx_pkt.tag, 0, 0x6C040000);
+        pkt = vpDmaTag_CntEx(&local_mtx_pkt, 0, 0x6C040000);
         ((struct _sceDmaTag *)pkt)[-1].mark = 0x14;
         NuMemCopy128(pkt, mtx, 4);
         pkt += 0x40;
         *((unsigned int *)pkt)++ = 0x6D010017;
-        code = (unsigned int *)(pkt + 8);
         *((short *)pkt)++ = 0;
-        code[0] = (clip != 1) ? 0x14000002 : 0x14000000;
-        code[1] = 0x17000000;
-        local_mtx_pkt_size = (char *)vpDmaTag_Close(code + 2) - local_mtx_pkt.tag;
+        pkt += 6;
+        code = (unsigned int *)pkt;
+        *code++ = (clip != 1) ? 0x14000002 : 0x14000000;
+        *code++ = 0x17000000;
+        local_mtx_pkt_size = (char *)vpDmaTag_Close(code) - (char *)&local_mtx_pkt;
     } else {
         NuMemCopy128(&local_mtx_pkt.mtx, mtx, 4);
         local_mtx_pkt.mscal = (clip != 1) ? 0x14000002 : 0x14000000;
@@ -834,7 +835,6 @@ int NuRndrSetLocalMtx(struct numtx_s *mtx, int clip)
     local_mtx_id_next &= 0x7FFF;
     return 1;
 }
-
 
 void NuRndrSetXYOffset(int x, int y)
 {

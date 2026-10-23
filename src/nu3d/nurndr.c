@@ -2862,12 +2862,16 @@ float **NuHGobjEvalDwaBlend(int nlayers, short *layer, struct nuanimdata_s *anim
                             struct nuanimdata_s *animdata2, float time2, float blend) {
     struct nuanimtime_s atime1;
     struct nuanimtime_s atime2;
-    struct nuanimdatachunk_s *chunk;
-    struct nuanimcurveset_s *curveset;
     float **dwa;
+    struct nuanimcurveset_s *curveset1;
+    struct nuanimcurveset_s *curveset2;
     float *weights;
+    float *base;
+    float *w;
+    float *dest;
     float value1;
     float value2;
+    float result;
     u32 qwc;
     int ncurves1;
     int ncurves2;
@@ -2900,46 +2904,56 @@ float **NuHGobjEvalDwaBlend(int nlayers, short *layer, struct nuanimdata_s *anim
                 } else {
                     ix = 0;
                 }
-                ncurves1 = 0;
-                if (animdata1 != 0) {
-                    chunk = animdata1->chunks[atime1.chunk];
-                    if (ix < chunk->numnodes && chunk->animcurvesets[ix] != 0) {
-                        ncurves1 = chunk->animcurvesets[ix]->ncurves;
-                    }
+                if (animdata1 != 0 && ix < animdata1->chunks[atime1.chunk]->numnodes
+                    && animdata1->chunks[atime1.chunk]->animcurvesets[ix] != 0) {
+                    ncurves1 = animdata1->chunks[atime1.chunk]->animcurvesets[ix]->ncurves;
+                } else {
+                    ncurves1 = 0;
                 }
-                ncurves2 = 0;
-                if (animdata2 != 0) {
-                    chunk = animdata2->chunks[atime2.chunk];
-                    if (ix < chunk->numnodes && chunk->animcurvesets[ix] != 0) {
-                        ncurves2 = chunk->animcurvesets[ix]->ncurves;
-                    }
+                if (animdata2 != 0 && ix < animdata2->chunks[atime2.chunk]->numnodes
+                    && animdata2->chunks[atime2.chunk]->animcurvesets[ix] != 0) {
+                    ncurves2 = animdata2->chunks[atime2.chunk]->animcurvesets[ix]->ncurves;
+                } else {
+                    ncurves2 = 0;
                 }
                 ncurves = ncurves2 < ncurves1 ? ncurves1 : ncurves2;
                 weights = (float *)NuRndrCreateBlendShapeDeformerWeightsArray(ncurves);
                 dwa[i] = weights;
                 if (weights != 0) {
                     for (j = 0; j < ncurves; j++) {
+                        /* Skip the six-word blend-shape packet header. */
+                        base = weights + 6;
                         if (j < ncurves1) {
-                            curveset = animdata1->chunks[atime1.chunk]->animcurvesets[ix];
-                            if (curveset->set[j] != 0) {
-                                value1 = NuAnimCurveCalcVal2(curveset->set[j], &atime1);
+                            curveset1 = animdata1->chunks[atime1.chunk]->animcurvesets[ix];
+                            if (curveset1->set[j] != 0) {
+                                value1 = NuAnimCurveCalcVal2(curveset1->set[j], &atime1);
                             } else {
-                                value1 = curveset->constants[j];
+                                w = curveset1->constants;
+                                value1 = w[j];
                             }
                         } else {
                             value1 = 0.0f;
                         }
                         if (j < ncurves2) {
-                            curveset = animdata2->chunks[atime2.chunk]->animcurvesets[ix];
-                            if (curveset->set[j] != 0) {
-                                value2 = NuAnimCurveCalcVal2(curveset->set[j], &atime2);
+                            curveset2 = animdata2->chunks[atime2.chunk]->animcurvesets[ix];
+                            if (curveset2->set[j] != 0) {
+                                value2 = NuAnimCurveCalcVal2(curveset2->set[j], &atime2);
                             } else {
-                                value2 = curveset->constants[j];
+                                w = curveset2->constants;
+                                value2 = w[j];
                             }
                         } else {
                             value2 = 0.0f;
                         }
-                        weights[j + 6] = value2 * blend + value1 * (1.0f - blend);
+                        w = base;
+                        dest = w + j;
+                        /* Keep these scalar steps separate for the retail compiler. */
+                        result = 1.0f;
+                        result -= blend;
+                        value2 *= blend;
+                        value2 += value1 * result;
+                        result = value2;
+                        *dest = result;
                     }
                 }
             }

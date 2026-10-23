@@ -636,6 +636,18 @@ void AddStripTri(int prim, int prev, int first) {
 }
 
 
+/* Retail static names preserve GCC 2.95 GCSE choices in this loop. */
+#undef ptcache
+#undef stritot
+#undef stripptr
+#undef stripprimdefs
+#undef callcnt
+extern int ptcache[3];
+extern int stritot;
+extern float *stripptr;
+extern SkinPrimDef *stripprimdefs;
+extern int callcnt;
+
 float *GenStrips(SkinPrimDef *defs, float *pkt, int base, int cnt, int *used) {
     int best;
     int bestcount;
@@ -651,9 +663,9 @@ float *GenStrips(SkinPrimDef *defs, float *pkt, int base, int cnt, int *used) {
     stripptr = pkt;
     stripprimdefs = defs;
     do {
+        ptcache[0] = ptcache[1] = ptcache[2] = -1;
         best = -1;
         bestcount = 0x7FFFFFFF;
-        ptcache[0] = ptcache[1] = ptcache[2] = -1;
         for (i = 0; i < cnt; i++) {
             if (used[i] == 0) {
                 count = 0;
@@ -673,22 +685,26 @@ float *GenStrips(SkinPrimDef *defs, float *pkt, int base, int cnt, int *used) {
             return stripptr;
         }
         length = 1;
-        i = cur - base;
-        start = i;
+        start = cur - base;
         do {
-            used[i] = length;
+            used[cur - base] = length;
             next = FindStripNext(cur, base, cnt, length, used);
             if (next == -1) {
-                stritot += length;
                 used[start] = length;
+                stritot += length;
                 break;
             }
             AddStripTri(next, cur, length++);
-            i = next - base;
             cur = next;
         } while (1);
     } while (1);
 }
+
+#define ptcache D_006AE518
+#define stritot D_0063315C
+#define stripptr D_00633170
+#define stripprimdefs D_00633174
+#define callcnt D_0062EF20
 
 
 SkinDmaTag *NuPs2CreateSkinDma(char **buffer, struct nugeom_s *geom, SkinPrimDef *defs, int cnt) {
@@ -699,6 +715,7 @@ SkinDmaTag *NuPs2CreateSkinDma(char **buffer, struct nugeom_s *geom, SkinPrimDef
     } tri;
     union variptr_u pkt;
     SkinPrimDef *pd;
+    SkinPrimDef *scan;
     u8 *chain;
     char *start;
     u16 *gt;
@@ -712,7 +729,6 @@ SkinDmaTag *NuPs2CreateSkinDma(char **buffer, struct nugeom_s *geom, SkinPrimDef
     int end;
     int prim;
     int left;
-    int count;
     int edges;
     int loose;
     int i;
@@ -723,38 +739,44 @@ SkinDmaTag *NuPs2CreateSkinDma(char **buffer, struct nugeom_s *geom, SkinPrimDef
     matrices = 0;
     colour = geom->mtl->attrib.colour;
     shift = geom->mtl->tid != 0;
-    for (i = cnt, pd = defs; i > 0; i--, pd++) {
-        if (pd->group != group) {
-            groups++;
-            matrices += pd->nmtx;
-            group = pd->group;
-        }
+    prim = cnt;
+    scan = defs;
+    if (prim > 0) {
+        do {
+            prim--;
+            if (scan->group != group) {
+                groups++;
+                matrices += scan->nmtx;
+                group = scan->group;
+            }
+            scan++;
+        } while (prim != 0);
     }
     prim = 0;
     start = *buffer;
     end = 0;
     pkt.charptr = start + groups * 16 + matrices * 16 + groups * 16 + 16;
     chain = (u8 *)start;
-    while (prim < cnt) {
+    if (cnt > 0) {
+      do {
         u32 offset = pkt.charptr - start;
-        int inrange = prim < cnt;
 
         pd = &defs[prim];
         group = pd->group;
         chain = vpDmaTag_CntEx(chain, 0x01000108, 0);
         ((SkinDmaTag *)chain)[-1].mode = 7;
-        for (i = 0; i < pd->nmtx; i++) {
-            if (i == 0) {
+        for (j = 0; j < pd->nmtx; j++) {
+            if (j == 0) {
                 chain = vpDmaTag_RefEx(chain, pd->mtxid[0] << 6, 0x10000000, 0x6C040018);
             } else {
-                chain = vpDmaTag_RefEx(chain, pd->mtxid[i] << 6, 0, 0x6C040000 | (i + 24));
+                chain = vpDmaTag_RefEx(chain, defs[prim].mtxid[j] << 6, 0, 0x6C040000 | (j + 24));
             }
             ((SkinDmaTag *)chain)[-1].mode = 8;
             ((SkinDmaTag *)chain)[-1].qwc = 4;
         }
         chain = vpDmaTag_Call(chain, offset);
         left = 0;
-        for (i = prim; inrange && i < cnt && defs[i].group == group; i++) {
+        for (j = prim; j < cnt && defs[j].group == group; j++) {
             left++;
         }
         pkt.u8 = vpDmaTag_RetEx(pkt.u8, 0x01000101, 0);
@@ -763,18 +785,18 @@ SkinDmaTag *NuPs2CreateSkinDma(char **buffer, struct nugeom_s *geom, SkinPrimDef
             gt = (u16 *)(pkt.u32 + 1);
             hdr = (u16 *)(pkt.u32 + 6);
             up = pkt.u32 + 9;
-            count = left < 15 ? left : 14;
-            left -= count;
-            count *= 3;
-            for (i = 0; i < count; i += 3) {
+            group = left < 15 ? left : 14;
+            left -= group;
+            group *= 3;
+            for (i = 0; i < group; i += 3) {
                 defs[prim + i / 3].adj[2] = -1;
                 defs[prim + i / 3].adj[0] = -1;
                 defs[prim + i / 3].adj[1] = -1;
             }
             edges = 0;
             memset(used, 0, 14 * sizeof(int));
-            for (i = 0; i < count; i += 3) {
-                for (j = prim + i / 3 + 1; j < prim + count / 3; j++) {
+            for (i = 0; i < group; i += 3) {
+                for (j = prim + i / 3 + 1; j < prim + group / 3; j++) {
                     edges += ShareEdge(defs, prim + i / 3, j);
                 }
             }
@@ -804,17 +826,17 @@ SkinDmaTag *NuPs2CreateSkinDma(char **buffer, struct nugeom_s *geom, SkinPrimDef
             pktcnt = 0;
             pkt.u32 = up + 1;
             if (edges) {
-                pkt.f32 = GenStrips(defs, pkt.f32, prim, count / 3, used);
+                pkt.f32 = GenStrips(defs, pkt.f32, prim, group / 3, used);
             }
             loose = 0;
-            for (i = 0; i < count / 3; i++) {
+            for (i = 0; i < group / 3; i++) {
                 if (used[i] == 0) {
                     loose++;
                 }
             }
             if (loose) {
                 tritot += loose;
-                for (i = 0; i < count; i += 3, prim++) {
+                for (i = 0; i < group; i += 3, prim++) {
                     if (used[i / 3] == 0) {
                         for (j = 0; j < 3; j++) {
                             pkt.f32 = AddPointDataToPacket(pkt.f32, defs, prim, j, j != 2);
@@ -822,12 +844,13 @@ SkinDmaTag *NuPs2CreateSkinDma(char **buffer, struct nugeom_s *geom, SkinPrimDef
                     }
                 }
             } else {
-                prim += count / 3;
+                prim += group / 3;
             }
             pkt.voidptr = EndSkinPacket(pkt.voidptr, geom, end);
             end = 1;
         }
         pkt.u8 = vpDmaTag_Close(pkt.u8);
+      } while (prim < cnt);
     }
     vpDmaTag_Ret(chain);
     *buffer = pkt.charptr;
