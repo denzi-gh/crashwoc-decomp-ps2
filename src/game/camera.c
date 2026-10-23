@@ -721,8 +721,6 @@ extern f32 SIDECAMDISTANCE;
 extern f32 WesternCountdown;
 
 /* {1,1,1} in camera.c's .rodata: the jeep cameras' seek rate. */
-extern struct nuvec_s D_0061D3A0;
-#define jeepcam_seek D_0061D3A0
 /* MoveGameCamera's function-static rail blend factor. */
 extern f32 D_00630AA8;
 #define rail_blend D_00630AA8
@@ -1059,14 +1057,16 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
 
     case 0xE:
         GliderCam(GameCamera);
-        goto SetCamera;
+        pNuCam->mtx = GameCamera->m;
+        NuCameraSet(pNuCam);
+        goto Finish;
 
     case 0x1D:
         JeepCam(GameCamera);
-        GameCamera->seek = jeepcam_seek;
-        seek = jeepcam_seek;
-        look = JeepvObj;
+        seek = (struct nuvec_s){1.0f, 1.0f, 1.0f};
         GameCamera->pos = pos = JeepvPos;
+        look = JeepvObj;
+        GameCamera->seek = (struct nuvec_s){1.0f, 1.0f, 1.0f};
         break;
 
     case 0x14:
@@ -1077,7 +1077,6 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
 
     case 0x15:
         JeepCamIntro(GameCamera);
-    SetCamera:
         pNuCam->mtx = GameCamera->m;
         NuCameraSet(pNuCam);
         goto Finish;
@@ -1085,8 +1084,8 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
     case 0x11:
         JeepCam(GameCamera);
     case 0xF:
-        GameCamera->seek = jeepcam_seek;
-        seek = jeepcam_seek;
+        GameCamera->seek = (struct nuvec_s){1.0f, 1.0f, 1.0f};
+        seek = (struct nuvec_s){1.0f, 1.0f, 1.0f};
         look = JeepvObj;
         GameCamera->pos = pos = JeepvPos;
         break;

@@ -958,24 +958,36 @@ static inline void fpatchScaleMtx(struct numtx_s *mtx, f32 scale)
 }
 
 
-void NuFPatchTesselateGrid(s32 depth, struct nufpatch_s *patch, f32 scale, f32 height,
-                           struct nufpatch_s **out, f32 falloff)
+void NuFPatchTesselateGrid(s32 depth, struct nufpatch_s *patch, f32 scale, f32 depth_scale,
+                           struct nufpatch_s **grid, f32 lod_scale)
 {
-    struct nufpatch_s children[4];
+    struct nufpatch_s split[4];
 
     if (depth == 1) {
-        fpatchScaleMtx((struct numtx_s *)patch->pnt, scale);
-        fpatchScaleMtx((struct numtx_s *)patch->nrm, scale);
-        **out = *patch;
-        (*out)++;
+        {
+            f32 k = scale;
+            struct numtx_s *m = (struct numtx_s *)patch->pnt;
+            fpatchScaleMtx(m, k);
+        }
+        {
+            f32 k = scale;
+            struct numtx_s *m = (struct numtx_s *)patch->nrm;
+            fpatchScaleMtx(m, k);
+        }
+        {
+            struct nuvec4_s *n = patch->nrm;
+            n += 4;
+        }
+        **grid = *patch;
+        (*grid)++;
     } else {
-        height *= falloff;
-        NuFPatchSplit(patch, children, height);
+        depth_scale *= lod_scale;
+        NuFPatchSplit(patch, split, depth_scale);
         depth--;
-        NuFPatchTesselateGrid(depth, &children[0], scale, height, out, 0.5f);
-        NuFPatchTesselateGrid(depth, &children[1], scale, height, out, 0.5f);
-        NuFPatchTesselateGrid(depth, &children[2], scale, height, out, 0.5f);
-        NuFPatchTesselateGrid(depth, &children[3], scale, height, out, 0.5f);
+        NuFPatchTesselateGrid(depth, &split[0], scale, depth_scale, grid, 0.5f);
+        NuFPatchTesselateGrid(depth, &split[1], scale, depth_scale, grid, 0.5f);
+        NuFPatchTesselateGrid(depth, &split[2], scale, depth_scale, grid, 0.5f);
+        NuFPatchTesselateGrid(depth, &split[3], scale, depth_scale, grid, 0.5f);
     }
 }
 
