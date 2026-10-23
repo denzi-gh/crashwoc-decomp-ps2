@@ -1396,6 +1396,8 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
     struct MoveInfo *minfo;
     s32 veh;
     s32 i;
+    s32 gfx;
+    s32 jrate;
     f32 spd;
     s32 sfx;
     f32 f;
@@ -1593,10 +1595,10 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
                         GetSurfaceInfo(&c->obj, 1, c->obj.shadow);
                     }
                 }
-                c->obj.ground = 3;
-                c->obj.thdg = tumble_hdg;
                 c->obj.hdg = tumble_hdg;
+                c->obj.thdg = tumble_hdg;
                 c->obj.old_ground = 3;
+                c->obj.ground = 3;
                 goto terrain;
             } else if (Level == 0x25) {
                 if (warp_level != -1) {
@@ -1632,11 +1634,11 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
                     if (c->obj.dead != 0x13) {
                         f32 m = c->obj.mom.y + GRAVITY;
                         f32 ny = c->obj.pos.y + m;
-                        f32 b = c->obj.bot * c->obj.SCALE;
+                        crate = c->obj.bot * c->obj.SCALE;
                         c->obj.mom.y = m;
                         c->obj.pos.y = ny;
-                        if (ny + b < c->obj.shadow) {
-                            c->obj.pos.y = c->obj.shadow - b;
+                        if (ny + crate < c->obj.shadow) {
+                            c->obj.pos.y = c->obj.shadow - crate;
                         }
                     } else {
                         c->obj.pos.y = c->obj.shadow -
@@ -1659,7 +1661,7 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
             c->pad_type = 1;
             in.x = 0.0f;
             in.z = 0.0f;
-            spd = in.x;
+            spd = 0.0f;
             c->obj.pad_angle = 0;
             c->obj.pad_speed = spd;
             c->obj.pad_dx = spd;
@@ -1667,13 +1669,14 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
         } else {
             f32 fz;
             f32 m;
+            s32 dang;
             if ((pad->paddata & 0xF000) != 0) {
                 if ((pad->paddata & 0x8000) != 0) {
                     f = -127.5f;
                 } else if ((pad->paddata & 0x2000) != 0) {
                     f = 127.5f;
                 } else {
-                    f = in.y;
+                    f = 0.0f;
                 }
                 if ((pad->paddata & 0x4000) != 0) {
                     fz = -127.5f;
@@ -1712,14 +1715,13 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
             in.x = f * 0.00784313772f;
             in.z = fz * 0.00784313772f;
             NuVecMag(&in);
-            i = NuAtan2D(in.x, in.z);
+            dang = NuAtan2D(in.x, in.z);
             in2.x = 0.0f;
             in2.y = 0.0f;
             {
                 double ax;
                 double az;
                 double am;
-                f32 big;
                 ax = in.x;
                 if (ax < 0.0) {
                     ax = 0.0 - ax;
@@ -1729,17 +1731,19 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
                     az = 0.0 - az;
                 }
                 if (ax > az) {
-                    big = in.x;
+                    am = in.x;
+                    if (am < 0.0) {
+                        am = 0.0 - am;
+                    }
                 } else {
-                    big = in.z;
-                }
-                am = big;
-                if (am < 0.0) {
-                    am = 0.0 - am;
+                    am = in.z;
+                    if (am < 0.0) {
+                        am = 0.0 - am;
+                    }
                 }
                 in2.z = am;
             }
-            NuVecRotateY(&in, &in2, i);
+            NuVecRotateY(&in, &in2, dang);
             m = NuVecMag(&in);
             if (m < 0.2f) {
                 spd = 0.0f;
@@ -1850,7 +1854,8 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
                 f32 k;
                 if (Level == 3) {
                     f = OFFROADERSEEK * 1.2f;
-                    k = (f - 0.3f) * (c->obj.xz_distance / 0.06f) + 0.3f;
+                    k = 0.3f;
+                    k += (f - k) * (c->obj.xz_distance / 0.06f);
                     if (k < f) {
                         k = f;
                     }
@@ -1906,9 +1911,9 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
                     NewRumble(&player->rumble, r / 512);
                 }
                 {
-                    u32 bt = pad->paddata & 0x60;
+                    i = pad->paddata & 0x60;
                     if (c->tap == 0) {
-                        if (bt == 0x40) {
+                        if (i == 0x40) {
                             if (c->obj.direction != 0) {
                                 c->obj.direction = 0;
                                 c->tap = 0x19;
@@ -1919,7 +1924,7 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
                                 b0.z += NuTrigTable[(u16)(best_railangle + 0x4000)] *
                                         minfo->RUNSPEED;
                             }
-                        } else if (bt == 0x20) {
+                        } else if (i == 0x20) {
                             if (c->obj.direction != 1) {
                                 c->obj.direction = 1;
                                 c->tap = 0x19;
@@ -1935,20 +1940,19 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
                 }
             }
             {
-                f32 k = t * 0.02f;
-                s32 d;
+                f = t * 0.02f;
                 c->obj.thdg = best_railangle;
-                c->obj.mom.x += (b0.x - c->obj.mom.x) * k;
-                c->obj.mom.y += (b0.y - c->obj.mom.y) * k;
-                c->obj.mom.z += (b0.z - c->obj.mom.z) * k;
+                c->obj.mom.x += (b0.x - c->obj.mom.x) * f;
+                c->obj.mom.y += (b0.y - c->obj.mom.y) * f;
+                c->obj.mom.z += (b0.z - c->obj.mom.z) * f;
                 if (c->obj.direction == 1) {
                     c->obj.thdg = best_railangle - 0x8000;
                 }
-                d = RotDiff(c->obj.hdg, c->obj.thdg);
-                if (c->tap != 0 && d < 0) {
-                    d += 0x10000;
+                i = RotDiff(c->obj.hdg, c->obj.thdg);
+                if (c->tap != 0 && i < 0) {
+                    i += 0x10000;
                 }
-                c->obj.hdg += (short)(d >> 4);
+                c->obj.hdg += (short)(i >> 4);
             }
         } else {
             if (c->target == 0) {
@@ -2071,7 +2075,6 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
                         }
                     }
                 } else if (VEHICLECONTROL == 2) {
-                    s32 d;
                     if (c->obj.pad_speed > 0.0f) {
                         u32 pa = c->obj.pad_angle;
                         if (pa - 0x1555 < 0x5557) {
@@ -2080,11 +2083,11 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
                             c->obj.thdg = 0x8000;
                         }
                     }
-                    d = RotDiff(c->obj.hdg, c->obj.thdg);
-                    if (d > 0) {
-                        d -= 0x10000;
+                    i = RotDiff(c->obj.hdg, c->obj.thdg);
+                    if (i > 0) {
+                        i -= 0x10000;
                     }
-                    if (d < -0x369) {
+                    if (i < -0x369) {
                         c->obj.hdg -= 0x369;
                     } else {
                         c->obj.hdg = c->obj.thdg;
@@ -2146,54 +2149,52 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
                     spd = minfo->SPRINTSPEED;
                 } else if (plr_rebound != 0) {
                     spd = minfo->WALKSPEED;
-                } else if (c->slam_wait == 0 && c->target == 0 &&
-                           (c->jump == 0 || c->jump_hold == 0) &&
-                           (veh != 0x44 ||
-                            (*(u32 *)&c->fire_action & 0xFFFF0000) == 0)) {
-                    if (c->slam != 0 && c->slam < 3 && c->obj.ground == 0) {
-                        spd = spd * 0.1f;
-                    } else if (c->obj.dangle != 0) {
-                        if (c->obj.pad_speed == 0.0f ||
-                            (c->spin != 0 &&
-                             c->spin_frame < c->spin_frames -
-                                 c->minfo->SPINRESETFRAMES) ||
-                            c->obj.dangle == 2) {
-                            spd = 0.0f;
-                        } else {
-                            spd = minfo->DANGLESPEED;
-                        }
-                    } else if (c->slide != 0) {
-                        spd = 0.0f;
-                        if (c->obj.character != 1) {
-                            spd = minfo->SLIDESPEED;
-                        }
-                    } else if (c->crawl != 0) {
-                        if (c->obj.pad_speed > 0.0f) {
-                            spd = minfo->CRAWLSPEED;
-                        } else {
-                            spd = 0.0f;
-                        }
-                    } else if (c->tiptoe != 0) {
-                        if (c->obj.pad_speed > 0.0f) {
-                            spd = minfo->TIPTOESPEED;
-                        } else {
-                            spd = 0.0f;
-                        }
-                    } else if (c->obj.wade != 0) {
-                        if (c->obj.pad_speed > 0.0f) {
-                            spd = minfo->WADESPEED;
-                        } else {
-                            spd = 0.0f;
-                        }
-                    } else if (c->sprint != 0) {
-                        if (c->obj.pad_speed > 0.0f) {
-                            spd = minfo->SPRINTSPEED;
-                        } else {
-                            spd = 0.0f;
-                        }
-                    }
-                } else {
+                } else if (c->slam_wait != 0 || c->target != 0 ||
+                           (c->jump != 0 && c->jump_hold != 0) ||
+                           (veh == 0x44 &&
+                            (*(u32 *)&c->fire_action & 0xFFFF0000) != 0)) {
                     spd = 0.0f;
+                } else if (c->slam != 0 && c->slam < 3 && c->obj.ground == 0) {
+                    spd = spd * 0.1f;
+                } else if (c->obj.dangle != 0) {
+                    if (c->obj.pad_speed != 0.0f &&
+                        (c->spin == 0 ||
+                         c->spin_frame >= c->spin_frames -
+                             c->minfo->SPINRESETFRAMES) &&
+                        c->obj.dangle != 2) {
+                        spd = minfo->DANGLESPEED;
+                    } else {
+                        spd = 0.0f;
+                    }
+                } else if (c->slide != 0) {
+                    spd = 0.0f;
+                    if (c->obj.character != 1) {
+                        spd = minfo->SLIDESPEED;
+                    }
+                } else if (c->crawl != 0) {
+                    if (c->obj.pad_speed > 0.0f) {
+                        spd = minfo->CRAWLSPEED;
+                    } else {
+                        spd = 0.0f;
+                    }
+                } else if (c->tiptoe != 0) {
+                    if (c->obj.pad_speed > 0.0f) {
+                        spd = minfo->TIPTOESPEED;
+                    } else {
+                        spd = 0.0f;
+                    }
+                } else if (c->obj.wade != 0) {
+                    if (c->obj.pad_speed > 0.0f) {
+                        spd = minfo->WADESPEED;
+                    } else {
+                        spd = 0.0f;
+                    }
+                } else if (c->sprint != 0) {
+                    if (c->obj.pad_speed > 0.0f) {
+                        spd = minfo->SPRINTSPEED;
+                    } else {
+                        spd = 0.0f;
+                    }
                 }
             }
             in_speed = spd;
@@ -2481,9 +2482,9 @@ terrain:
                 if (NOTERRAINSTOP != 0) {
                     c->obj.pos.x = c->obj.oldpos.x;
                     c->obj.pos.z = c->obj.oldpos.z;
-                    c->obj.mom.z = 0.0f;
-                    c->obj.dangle = 0;
                     c->obj.mom.x = 0.0f;
+                    c->obj.dangle = 0;
+                    c->obj.mom.z = 0.0f;
                     goto skip_surface;
                 }
             } else {
@@ -2503,8 +2504,6 @@ terrain:
 skip_surface:
         c->obj.wade = 0;
         if (c->obj.layer_type != -1) {
-            s32 di;
-            s32 dt;
             if (c->obj.pos.y + c->obj.top * c->obj.SCALE <
                 c->obj.layer_shadow) {
                 if (c->obj.submerged < 0x32) {
@@ -2516,20 +2515,20 @@ skip_surface:
             } else {
                 c->obj.submerged = 0;
             }
-            if ((c->obj.bot + c->obj.top) * c->obj.SCALE * 0.5f +
-                    c->obj.pos.y < c->obj.layer_shadow) {
+            if (c->obj.pos.y + (c->obj.bot + c->obj.top) * c->obj.SCALE * 0.5f <
+                c->obj.layer_shadow) {
                 c->obj.wade = 1;
             }
-            di = 1;
+            jrate = 1;
             in2.x = c->obj.pos.x;
-            dt = -1;
+            gfx = -1;
             in2.y = c->obj.layer_shadow;
             in2.z = c->obj.pos.z;
             switch (c->obj.layer_type) {
             case 1:
-                av.x = (f32)qrand() * 1.5258789289873675e-06f + in2.x;
-                av.y = (f32)qrand() * 1.5258789289873675e-06f + in2.y;
-                av.z = (f32)qrand() * 1.5258789289873675e-06f + in2.z;
+                av.x = in2.x + (f32)qrand() * 1.5258789289873675e-06f;
+                av.y = in2.y + (f32)qrand() * 1.5258789289873675e-06f;
+                av.z = in2.z + (f32)qrand() * 1.5258789289873675e-06f;
                 c->obj.ddr = 0x40;
                 c->obj.ddwater = 0x78;
                 c->obj.ddg = 0x78;
@@ -2543,31 +2542,29 @@ skip_surface:
                 }
                 break;
             case 2:
-                dt = 1;
+                gfx = 1;
                 break;
             case 3:
-                dt = 1;
+                gfx = 1;
                 break;
             case 4:
                 if (c->obj.idle_gametime == 0.0f) {
-                    dt = 1;
-                    di = 2;
+                    gfx = 1;
+                    jrate = 2;
                     in2.y += 0.03f;
                 }
                 break;
             }
-            if (Paused == 0 && dt >= 0 && jonframe1 % di == 0) {
-                AddVariableShotDebrisEffect(GDeb[dt].i, &in2, 1, 0, 0);
+            if (Paused == 0 && gfx >= 0 && jonframe1 % jrate == 0) {
+                AddVariableShotDebrisEffect(GDeb[gfx].i, &in2, 1, 0, 0);
             }
         } else {
             c->obj.submerged = 0;
         }
         if (c->obj.surface_type > 0) {
-            s32 di;
-            s32 dt;
-            di = 1;
+            jrate = 1;
             in2.x = c->obj.pos.x;
-            dt = -1;
+            gfx = -1;
             in2.y = c->obj.pos.y;
             in2.z = c->obj.pos.z;
             switch (c->obj.surface_type) {
@@ -2575,28 +2572,28 @@ skip_surface:
             case 12:
             case 13:
                 if (c->obj.idle_gametime == 0.0f) {
-                    dt = 2;
-                    di = 2;
+                    gfx = 2;
+                    jrate = 2;
                 }
                 break;
             case 2:
                 if (c->obj.idle_gametime == 0.0f) {
-                    dt = 1;
-                    di = 2;
+                    gfx = 1;
+                    jrate = 2;
                     in2.y += 0.03f;
                 }
                 break;
             case 8:
                 if (c->obj.idle_gametime == 0.0f && Level != 3) {
-                    dt = 4;
-                    di = 4;
+                    gfx = 4;
+                    jrate = 4;
                     in2.y += 0.03f;
                 }
                 break;
             }
-            if (Paused == 0 && dt >= 0 && c->obj.ground != 0 &&
-                jonframe1 % di == 0) {
-                AddVariableShotDebrisEffect(GDeb[dt].i, &in2, 1, 0, 0);
+            if (Paused == 0 && gfx >= 0 && c->obj.ground != 0 &&
+                jonframe1 % jrate == 0) {
+                AddVariableShotDebrisEffect(GDeb[gfx].i, &in2, 1, 0, 0);
             }
         }
         if (c->obj.roof_type != -1 &&
@@ -2627,22 +2624,18 @@ skip_surface:
             GameSfx(0x47, &c->obj.pos);
         }
         TerrainFailsafe(&c->obj);
-        {
-            s32 onground;
-            if (c->obj.got_shadow != 0) {
-                onground = c->obj.pos.y + c->obj.bot * c->obj.SCALE <=
-                           c->obj.shadow;
-            } else {
-                onground = (c->obj.pos.y + c->obj.bot * c->obj.SCALE) -
-                               c->obj.shadow < 0.025f;
-            }
-            c->obj.ground = 0;
-            if (c->obj.gndflags.chrs[1] != 0) {
-                c->obj.ground = 1;
-            }
-            if (onground) {
-                c->obj.ground |= 2;
-            }
+        if (c->obj.got_shadow != 0) {
+            i = c->obj.pos.y + c->obj.bot * c->obj.SCALE <= c->obj.shadow;
+        } else {
+            i = (c->obj.pos.y + c->obj.bot * c->obj.SCALE) - c->obj.shadow <
+                0.025f;
+        }
+        c->obj.ground = 0;
+        if (c->obj.gndflags.chrs[1] != 0) {
+            c->obj.ground = 1;
+        }
+        if (i) {
+            c->obj.ground |= 2;
         }
         if (c->obj.ground != 0) {
             c->obj.last_ground = c->obj.ground;
@@ -2659,11 +2652,10 @@ skip_surface:
                     } else if (c->obj.character == 0 &&
                                c->obj.surface_type == 7 && CRemap[151] != -1) {
                         i = 0xD;
+                    } else if (c->obj.layer_type != -1 && c->obj.submerged != 0) {
+                        i = 0xA;
                     } else {
                         i = 5;
-                        if (c->obj.layer_type != -1 && c->obj.submerged != 0) {
-                            i = 0xA;
-                        }
                     }
                 }
                 if (c->obj.layer_type != -1 && c->obj.submerged == 0 &&
