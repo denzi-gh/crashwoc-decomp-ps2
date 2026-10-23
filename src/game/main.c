@@ -45,6 +45,7 @@
 
 #include "nu_libc.h"
 #include "nu_types.h"
+#include "nu_port.h"
 
 #include "nu3d/nuhgobj.h"
 #include "nu3d/numtl.h"
@@ -814,6 +815,7 @@ void BGLoadSfxFn(void)
     InitGlobalSfx();
     bgload_complete = done;
     for (;;) {
+        NW_HOST_IDLE();
     }
 }
 
@@ -1432,6 +1434,7 @@ void BGLoadLevel(void)
     LoadLevel();
     bgload_complete = 1;
     for (;;) {
+        NW_HOST_IDLE();
     }
 }
 
@@ -1447,6 +1450,7 @@ void BGLoadCutScene(void)
     bg_cutloadrv = LoadCutMovie(bg_cutmovie_id);
     bgload_complete = 1;
     for (;;) {
+        NW_HOST_IDLE();
     }
 }
 
@@ -2681,12 +2685,15 @@ void BGLoad(void)
     float light_intensity;
     float score_scale;
     float anim_step;
+    float gibber_scale;
+    float gibber_x;
+    float gibber_y;
 
     camera_tilt = 0;
     memset(light_colour, 0, sizeof(light_colour));
     camera_rotation = 0;
     memcpy(light_angle, D_0062FC40, sizeof(light_angle));
-    bumped = bump_angle = bump_rate = 0;
+    bump_rate = bump_angle = bumped = 0;
     score_scale = 0.4f;
     memset(&bump, 0, sizeof(bump));
     mg_player_pos = v000;
@@ -2712,7 +2719,7 @@ void BGLoad(void)
     bgloadanim[0] = 0;
     bgload_animtime[1] = 1.0f;
     character = LDATA->character;
-    bgload_objpos[1].y = bgload_objpos[0].y = bgload_objstart;
+    bgload_objpos[0].y = bgload_objpos[1].y = bgload_objstart;
     mg_scoreoff = 1.0f;
     MiniGameReset();
     if (character != last_used_character && last_used_character != -1 &&
@@ -2727,9 +2734,9 @@ void BGLoad(void)
     }
     BGLoadStart(BGLoadLevel);
     anim_step = 0.48f;
-    fadeval = 0xff;
+    fall_speed[0] = fall_speed[1] = 0.0f;
     fade_rate = -10;
-    fall_speed[1] = fall_speed[0] = 0.0f;
+    fadeval = 0xff;
     bob_angle = 0;
     done = 0;
     NuVpSetSize(PS2_REZ_W << 4, PS2_REZ_H << 4);
@@ -2757,8 +2764,8 @@ void BGLoad(void)
                 NuRndrSetAmbientLight(&ambient);
                 pNuCam->mtx = numtx_identity;
                 bgload_campos.y = NuTrigTable[camera_tilt & 0xffff] * camtiltscale;
-                camera_tilt += camtiltrate;
                 bgload_campos.x = NuTrigTable[camera_rotation & 0xffff] * camrotscale;
+                camera_tilt += camtiltrate;
                 camera_rotation += camrotrate;
                 NuMtxTranslate(&pNuCam->mtx, (struct nuvec_s *)&bgload_campos);
                 NuCameraSet(pNuCam);
@@ -2948,7 +2955,9 @@ bgload_render_characters:
                     }
                     DrawGameMessage(tLOADING[Game.language], mg_frame, 0.8f);
                 }
-                NuFabs(NuTrigTable[bgloadgibberscalecnt & 0xffff]);
+                gibber_scale = NuFabs(NuTrigTable[bgloadgibberscalecnt & 0xffff]);
+                gibber_x = NuTrigTable[bgloadgibbercntx & 0xffff] * gibber_scale;
+                gibber_y = NuTrigTable[bgloadgibbercnty & 0xffff] * gibber_scale;
                 bgloadgibberscalecnt += bgloadgibberscalecntrate;
                 bgloadgibbercntx += bgloadgibberratex;
                 bgloadgibbercnty += bgloadgibberratey;
