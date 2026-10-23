@@ -803,20 +803,22 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
     s32 xseek;
     s32 yseek;
     s32 vehicle;
-    s32 cam_angle;
+    u16 cam_angle;
     s32 iSPL;
     s32 character;
     s32 old_vertical;
+    s32 stride;
+    s32 behind;
     s32 tilt;
     s32 xrot;
     s32 yrot;
     s32 zrot;
-    s32 ang;
+    u16 ang;
     s32 idx;
+    s32 rot;
     s32 i;
     s32 n;
     s32 railsum;
-    s32 camsum;
     f32 t;
     f32 f;
     f32 countdown;
@@ -854,7 +856,7 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
     if (Level == 0x23) {
         GameCamera->mode = 8;
         if ((SplTab[12].spl != NULL) && (SplTab[13].spl != NULL) &&
-            ((i = CRemap[96]) != -1) && (CModel[i].anmdata[0x2B] != NULL)) {
+            ((i = CRemap[96]) != -1) && ((CModel + i)->anmdata[0x2B] != NULL)) {
             anim = &TempAnim;
             GameCamera->mode = 0x18;
         }
@@ -1003,8 +1005,9 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
         look.x = obj->pos.x;
         look.y = obj->pos.y + (obj->min.y + obj->max.y) * obj->SCALE * 0.5f;
         look.z = obj->pos.z;
+        stride = SplTab[8].spl->ptsize;
         p0 = (struct nuvec_s *)SplTab[8].spl->pts;
-        p1 = (struct nuvec_s *)((u8 *)p0 + SplTab[8].spl->ptsize);
+        p1 = (struct nuvec_s *)((u8 *)p0 + stride);
         pos.x = look.x + (p1->x - p0->x);
         pos.y = look.y + (p1->y - p0->y);
         pos.z = look.z + (p1->z - p0->z);
@@ -1090,7 +1093,8 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
 
     case 0xC:
         /* blend between a close rail camera (0) and a far one (1) */
-        if (abs(RotDiff(-GameCamera->yrot, obj->hdg)) > 0x4000) {
+        behind = abs(RotDiff(-GameCamera->yrot, obj->hdg)) > 0x4000;
+        if (behind) {
             if (rail_blend > 1.0f) {
                 rail_blend -= 0.025f;
                 if (rail_blend < 1.0f) {
@@ -1232,9 +1236,10 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
                 }
                 if (cRPos[i].vertical != 0) {
                     tmp.y = obj->pos.y + obj->max.y * obj->SCALE;
-                    spl = Rail[cRPos[i].iRAIL].pCAM;
-                    p0 = (struct nuvec_s *)(spl->pts + cRPos[i].i1 * spl->ptsize);
-                    p1 = (struct nuvec_s *)(spl->pts + cRPos[i].i2 * spl->ptsize);
+                    p0 = (struct nuvec_s *)(Rail[cRPos[i].iRAIL].pCAM->pts +
+                                            cRPos[i].i1 * Rail[cRPos[i].iRAIL].pCAM->ptsize);
+                    p1 = (struct nuvec_s *)(Rail[cRPos[i].iRAIL].pCAM->pts +
+                                            cRPos[i].i2 * Rail[cRPos[i].iRAIL].pCAM->ptsize);
                     if (tmp.y < p0->y) {
                         tmp.y = p0->y;
                     } else if (tmp.y > p1->y) {
@@ -1250,13 +1255,13 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
             pos.y *= f;
             pos.z *= f;
             if (cRPosCOUNT > 1) {
-                camsum = 0;
+                n = 0;
                 railsum = 0;
                 for (i = 1; i < cRPosCOUNT; i++) {
-                    camsum += RotDiff(cam_angle, cRPos[i].cam_angle);
+                    n += RotDiff(cam_angle, cRPos[i].cam_angle);
                     railsum += RotDiff(best_railangle, cRPos[i].angle);
                 }
-                cam_angle = (cam_angle + camsum / (cRPosCOUNT - 1)) & 0xFFFF;
+                cam_angle += n / (cRPosCOUNT - 1);
                 best_railangle += railsum / (cRPosCOUNT - 1);
             }
         } else {
@@ -1294,8 +1299,8 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
             dx = NuTrigTable[best_cRPos->angle] * GameCamera->ahead;
             dz = NuTrigTable[(best_cRPos->angle + 0x4000) & 0xFFFF] * GameCamera->ahead;
             look.x += dx;
-            pos.x += dx;
             look.z += dz;
+            pos.x += dx;
             pos.z += dz;
         }
         if (vehicle == 0xA1) {
@@ -1458,8 +1463,8 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
         oldmode = -1;
         look.x = 0.0f;
         look.z = 0.0f;
-        pos.x = NuTrigTable[0x8000] * 3.0f + look.x;
         look.y = (CData[187].min.y + CData[187].max.y) * 0.5f;
+        pos.x = NuTrigTable[0x8000] * 3.0f + look.x;
         pos.z = NuTrigTable[0xC000] * 3.0f + look.z;
         pos.y = look.y;
         break;
@@ -1506,10 +1511,10 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
         /* circle a fixed point at radius 4 */
         pos.x = 0.0f;
         pos.y = 9.3f;
-        pos.z = 0.0f;
         look.x = obj->pos.x;
         look.y = obj->pos.y + (obj->min.y + obj->max.y) * obj->SCALE * 0.5f;
         look.z = obj->pos.z;
+        pos.z = 0.0f;
         dx = pos.x - look.x;
         dz = pos.z - look.z;
         dist = NuFsqrt(dx * dx + dz * dz) + 0.1f;
@@ -1519,9 +1524,11 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
             ang = NuAtan2D(dx, dz) & 0xFFFF;
         }
         if (GameCamera->mode == oldmode) {
-            ang = TurnRot(GameCamera->angle, ang, 0x51E);
+            rot = TurnRot(GameCamera->angle, ang, 0x51E);
+        } else {
+            rot = ang;
         }
-        GameCamera->angle = ang;
+        GameCamera->angle = rot;
         f = 4.0f;
         pos.x = NuTrigTable[GameCamera->angle] * f + 0.0f;
         pos.z = NuTrigTable[(GameCamera->angle + 0x4000) & 0xFFFF] * f + 0.0f;
@@ -1539,6 +1546,7 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
     case 8:
         xrot_fixed = 0x4000;
         yrot_fixed = 0;
+        zrot_fixed = 0;
         pos.x = LOGOCAMX;
         pos.y = LOGOCAMY;
         pos.z = LOGOCAMZ;
@@ -1626,10 +1634,8 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
         yrot_fixed = 0xC000;
         look.x = obj->pos.x;
         pos.x = look.x + SIDECAMDISTANCE;
-        pos.y = obj->pos.y + (obj->min.y + obj->max.y) * obj->SCALE * 0.5f;
-        pos.z = obj->pos.z;
-        look.z = pos.z;
-        look.y = pos.y;
+        pos.y = look.y = obj->pos.y + (obj->min.y + obj->max.y) * obj->SCALE * 0.5f;
+        pos.z = look.z = obj->pos.z;
         break;
 
     case 0:
@@ -1762,8 +1768,9 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
             yrot += (RotDiff(yrot, ang) * tilt) / 8;
         } else if ((GameCamera->mode == 5) && (tilt != 0) && (cRPosCOUNT == 1)) {
             ang = NuAtan2D(dx, dz) & 0xFFFF;
-            if (cam_angle != -1) {
-                yrot = cam_angle + (RotDiff(cam_angle, ang) * tilt) / 8;
+            yrot = cam_angle;
+            if (yrot != -1) {
+                yrot += (RotDiff(yrot, ang) * tilt) / 8;
             } else {
                 yrot = ang;
             }
