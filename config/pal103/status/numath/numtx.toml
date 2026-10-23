@@ -33,7 +33,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0015:001087e0:NuMtxInvH"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0015:00108d30:NuMtxAlignZ"

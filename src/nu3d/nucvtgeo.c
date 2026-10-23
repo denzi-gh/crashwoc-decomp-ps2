@@ -1006,12 +1006,13 @@ u8 *NuCvtDmaTriCFromIdx(u8 **dma, struct nuvtx_tc1_s *vtx, short *idx, int nidx,
     if (NuCvtPntEna && mtl->attrib.lighting == NUMTL_ALPHA_BLEND) {
         fast = mtl->fxid == 0;
     }
-    size = (((nidx + 41) / 42) * 21 + nidx * 9 + 4) * 4;
     shift = mtl->tid != -1;
     strip.dw[0] = 0x3002400000008000LL;
     strip.dw[1] = 0x512;
     fan.dw[0] = 0x3002C00000008000LL;
     fan.dw[1] = 0x512;
+    size = nidx * 9 + 4;
+    size = (((nidx + 41) / 42) * 21 + size) * 4;
     if (size > 0xFFFFF) {
         NuErrorProlog(nucvtgeo_srcfile, 0x556)(dma_size_msg, size, nidx);
     }
@@ -1083,10 +1084,11 @@ u8 *NuCvtDmaTriCFromIdx(u8 **dma, struct nuvtx_tc1_s *vtx, short *idx, int nidx,
             *(u32 *)p = 0x05000001;
             p += 4;
             *(u32 *)p = (batch << 16) | 0x6D008003;
+            p += 4;
         } else {
             *(u32 *)p = (batch << 16) | 0x6C008003;
+            p += 4;
         }
-        p += 4;
         left = nidx - batch;
         for (i = 0; i < batch; i++) {
             if (!NuCvtPntOn) {
