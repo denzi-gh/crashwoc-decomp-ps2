@@ -2058,6 +2058,7 @@ next_game_mode:
         frameout = 0;
         frameout_count = nuvideo_global_vbcnt;
         do {
+            NW_HOST_IDLE();
         } while (frameout_count == nuvideo_global_vbcnt);
         frameout_count = nuvideo_global_vbcnt;
         half = 0.5f;
