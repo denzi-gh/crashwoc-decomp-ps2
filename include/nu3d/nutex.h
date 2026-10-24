@@ -72,7 +72,7 @@ int NuTexHasAlpha(int tex);
 struct nutex_s *NuTexReadBitmapMMEx(char *name, int mipmaps, union variptr_u *buff, union variptr_u *buffend);
 struct nutex_s *NuTexReadBitmapMem(u8 *mem);
 u8 *NuTexSetRenderTarget(u8 *stream, int tex);
-int NuTexCreateEx(struct nutex_s *spec, void *extmem, int extsize);
+int NuTexCreateEx(struct nutex_s *spec, void *extmem, int *extend);
 int NuTexCreateStream(struct nutex_s *spec);
 void NuTexAccomodateRS(struct rndrstream_s *rs, int tex);
 u8 *NuTexAccomodate(u8 *stream, int tex);

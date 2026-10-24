@@ -1787,7 +1787,7 @@ void edanimInit(void)
 
 struct edmainreg_s edanimdesc = {
     0, 0, "Anim Editor", edanimInit, edanimClose, edanimEnter, 0, 0, 0, 0,
-    EDMAIN_BLOCKID('a', 'n', 'i', 'm'), edanimProc, edanimRender
+    EDMAIN_BLOCKID('a', 'n', 'i', 'm'), (s32 (*)(struct nupad_s *, f32))edanimProc, edanimRender
 };
 struct edanimparam_s AnimParams[64] = { { 0 } };
 struct nuvec_s edanim_cam_pos = { 0.0f, 0.0f, 0.0f };
