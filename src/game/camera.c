@@ -1074,8 +1074,6 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
         seek = (struct nuvec_s){1.0f, 1.0f, 1.0f};
         look = JeepvObj;
         GameCamera->pos = pos = JeepvPos;
-        look = JeepvObj;
-        GameCamera->seek = (struct nuvec_s){1.0f, 1.0f, 1.0f};
         break;
 
     case 0x14:
