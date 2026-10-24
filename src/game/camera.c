@@ -1061,9 +1061,18 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
         NuCameraSet(pNuCam);
         goto Finish;
 
+    case 0xF:
+        GameCamera->seek = (struct nuvec_s){1.0f, 1.0f, 1.0f};
+        seek = (struct nuvec_s){1.0f, 1.0f, 1.0f};
+        look = JeepvObj;
+        GameCamera->pos = pos = JeepvPos;
+        break;
+
     case 0x1D:
         JeepCam(GameCamera);
+        GameCamera->seek = (struct nuvec_s){1.0f, 1.0f, 1.0f};
         seek = (struct nuvec_s){1.0f, 1.0f, 1.0f};
+        look = JeepvObj;
         GameCamera->pos = pos = JeepvPos;
         look = JeepvObj;
         GameCamera->seek = (struct nuvec_s){1.0f, 1.0f, 1.0f};
@@ -1083,7 +1092,6 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
 
     case 0x11:
         JeepCam(GameCamera);
-    case 0xF:
         GameCamera->seek = (struct nuvec_s){1.0f, 1.0f, 1.0f};
         seek = (struct nuvec_s){1.0f, 1.0f, 1.0f};
         look = JeepvObj;

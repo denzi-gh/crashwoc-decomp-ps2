@@ -6412,7 +6412,9 @@ void ProcessRumblePanel(void)
     s32 n;
     s32 i;
     s32 axis;
-    f32 start;
+    f32 BlueStart;
+    f32 GreyStart;
+    f32 RedStart;
 
     playerroks = GetRumblePlayerRoks();
     crunchroks = GetRumbleCrunchRoks();
@@ -6424,9 +6426,9 @@ void ProcessRumblePanel(void)
         RockPanelRotZ[axis] += RockPanelRotIncZ[axis];
     }
     if (playerroks > 0) {
-        start = -RockPanelEdge;
+        BlueStart = -RockPanelEdge;
         for (i = 0; i < playerroks; i++) {
-            RockPanelDest[n].x = start + i * RockPanelSpacing;
+            RockPanelDest[n].x = BlueStart + i * RockPanelSpacing;
             RockPanelDest[n].y = 0.8f;
             RockPanelDest[n].z = 1.0f;
             RockPanelObj[n] = 0xA9;
@@ -6434,9 +6436,9 @@ void ProcessRumblePanel(void)
         }
     }
     if (freeroks > 0) {
-        start = (1.0f - freeroks) * RockPanelSpacing * 0.5f;
+        GreyStart = (1.0f - freeroks) * RockPanelSpacing * 0.5f;
         for (i = 0; i < freeroks; i++) {
-            RockPanelDest[n].x = start + i * RockPanelSpacing;
+            RockPanelDest[n].x = GreyStart + i * RockPanelSpacing;
             RockPanelDest[n].y = 0.8f;
             RockPanelDest[n].z = 1.0f;
             RockPanelObj[n] = 0xAA;
@@ -6444,9 +6446,9 @@ void ProcessRumblePanel(void)
         }
     }
     if (crunchroks > 0) {
-        start = RockPanelEdge - crunchroks * RockPanelSpacing;
+        RedStart = RockPanelEdge - crunchroks * RockPanelSpacing;
         for (i = 0; i < crunchroks; i++) {
-            RockPanelDest[n].x = start + i * RockPanelSpacing;
+            RockPanelDest[n].x = RedStart + i * RockPanelSpacing;
             RockPanelDest[n].y = 0.8f;
             RockPanelDest[n].z = 1.0f;
             RockPanelObj[n] = 0xAB;
@@ -6481,6 +6483,7 @@ void ProcessRumblePanel(void)
         }
     }
 }
+
 
 extern f32 RockPanelScale;
 extern f32 RADARSCALE;

@@ -1076,9 +1076,10 @@ done:
 }
 
 
-/* Fills [x + w * lastpos, x + w * pos) left to right from lastcol to col. */
-static inline void eduiRndrGradBar(s32 x, s32 y, s32 w, s32 h, f32 lastpos, f32 pos,
-                                   u32 lastcol, u32 col) {
+/* eduiRndrGradBar with x and w already in pixels (ColourPick). With a single
+ * shared helper, ColourPick's spill slot for h moves (4872/4928). */
+static inline void eduiRndrGradRect(s32 x, s32 y, s32 w, s32 h, f32 lastpos, f32 pos,
+                                    u32 lastcol, u32 col) {
     u32 cols[4];
 
     cols[0] = cols[2] = lastcol;
@@ -1088,11 +1089,21 @@ static inline void eduiRndrGradBar(s32 x, s32 y, s32 w, s32 h, f32 lastpos, f32 
 }
 
 
-/* state=asm: retail keeps x * 16 and (f32)(w * 16) inside the gradient loop
- * (only height >> 1, y + (height >> 1) and &edui_mtl are hoisted). Here CSE
- * replaces the inline's x/w params with the argument temps, whose single use
- * cannot absorb the shift, so loop.c hoists them; no loop form or
- * eduiRndrGradBar body tried keeps them in. */
+/* Fills [x + w * lastpos, x + w * pos) left to right from lastcol to col.
+ * x and w are in character cells; y and h are already in pixels. */
+static inline void eduiRndrGradBar(s32 x, s32 y, s32 w, s32 h, f32 lastpos, f32 pos,
+                                   u32 lastcol, u32 col) {
+    u32 cols[4];
+
+    cols[0] = cols[2] = lastcol;
+    cols[1] = cols[3] = col;
+    x <<= 4;
+    w <<= 4;
+    NuRndrGradRect2di(x + (s32)(w * lastpos), y, (s32)(w * pos) - (s32)(w * lastpos), h, cols,
+                      edui_mtl[ui_bgmtl]);
+}
+
+
 s32 eduicbRenderGradPick(struct eduimenu_s *menu, struct eduiitem_s *item, s32 x, s32 y, s32 w,
                          s32 highlight) {
     s32 height;
@@ -1121,7 +1132,7 @@ s32 eduicbRenderGradPick(struct eduimenu_s *menu, struct eduiitem_s *item, s32 x
         pos = stage->pos;
         colour = stage->colour;
         for (stage = stage->next; stage; stage = stage->next) {
-            eduiRndrGradBar(x * 16, (y + (height >> 1)) * 8, w * 16, (height >> 1) * 8, pos,
+            eduiRndrGradBar(x, (y + (height >> 1)) * 8, w, (height >> 1) * 8, pos,
                             stage->pos, colour, stage->colour);
             pos = stage->pos;
             colour = stage->colour;
@@ -1711,7 +1722,7 @@ s32 eduicbRenderColourPick(struct eduimenu_s *menu, struct eduiitem_s *item, s32
     eduiHSVToRGB(item->u.colour.h, 0.0f, item->u.colour.v, &r, &g, &b);
     hvcol = 0x80000000 + ((s32)(b * 255.0f) << 16) + ((s32)(g * 255.0f) << 8) +
             (s32)(r * 255.0f);
-    eduiRndrGradBar(x * 16, y * 8, w * 16, h * 8, 0.0f, 1.0f, hvcol, hsvcol);
+    eduiRndrGradRect(x * 16, y * 8, w * 16, h * 8, 0.0f, 1.0f, hvcol, hsvcol);
     NuRndrLine2di((s32)(x + 1 + (w - 2) * item->u.colour.s) * 16, y * 8,
                   (s32)(x + 1 + (w - 2) * item->u.colour.s) * 16, (y + (h >> 1) - 1) * 8,
                   0x80FFFFFF, edui_mtl[0]);
@@ -1734,7 +1745,7 @@ s32 eduicbRenderColourPick(struct eduimenu_s *menu, struct eduiitem_s *item, s32
     eduiHSVToRGB(item->u.colour.h, item->u.colour.s, item->u.colour.v, &r, &g, &b);
     hsvcol = 0x80000000 + ((s32)(b * 255.0f) << 16) + ((s32)(g * 255.0f) << 8) +
              (s32)(r * 255.0f);
-    eduiRndrGradBar(x * 16, y * 8, w * 16, h * 8, 0.0f, 1.0f, hsvcol, hsvcol);
+    eduiRndrGradRect(x * 16, y * 8, w * 16, h * 8, 0.0f, 1.0f, hsvcol, hsvcol);
     return w;
 }
 

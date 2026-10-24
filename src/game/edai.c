@@ -186,7 +186,6 @@ void AdjustPosY(struct nuvec_s *pos)
 {
     f32 best;
     f32 y;
-    f32 v;
     s32 found;
     double d;
 
@@ -204,28 +203,26 @@ void AdjustPosY(struct nuvec_s *pos)
         found = 1;
     }
     if (D_00633350 != 2000000.0f) {
-        v = D_00633350;
         if (found) {
-            d = v - pos->y;
+            d = D_00633350 - pos->y;
             if (d < 0.0) {
                 d = 0.0 - d;
             }
         }
         if (!found || d < best) {
-            y = v;
+            y = D_00633350;
             found = 1;
         }
     }
     if (D_00633354 != 2000000.0f) {
-        v = D_00633354;
         if (found) {
-            d = v - pos->y;
+            d = D_00633354 - pos->y;
             if (d < 0.0) {
                 d = 0.0 - d;
             }
         }
         if (!found || d < best) {
-            y = v;
+            y = D_00633354;
             found = 1;
         }
     }
