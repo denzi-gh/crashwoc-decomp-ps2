@@ -218,7 +218,7 @@ extern u64 cur_rt;
 
 extern void NuDisableVBlank(void);
 extern void NuEnableVBlank(void);
-extern void NuMemSetExternal(void *addr, int size);
+extern void NuMemSetExternal(void *addr, int *end);
 extern int NuPs2TxCreate(struct nutex_s *spec, struct nups2tex_s *ps2tex);
 extern void *NuPs2TxGenUpload(void *stream, struct nups2tex_s *ps2tex, int addr);
 extern void *vpDmaTag_CntEx(void *cur, unsigned int qwc, unsigned int tag);
@@ -540,7 +540,7 @@ u8 *NuTexSetRenderTarget(u8 *stream, int tex) {
 }
 
 
-int NuTexCreateEx(struct nutex_s *spec, void *extmem, int extsize) {
+int NuTexCreateEx(struct nutex_s *spec, void *extmem, int *extend) {
     int slot;
 
     NuDisableVBlank();
@@ -551,7 +551,7 @@ int NuTexCreateEx(struct nutex_s *spec, void *extmem, int extsize) {
             TexList[slot].spec = *spec;
         }
         if (extmem) {
-            NuMemSetExternal(extmem, extsize);
+            NuMemSetExternal(extmem, extend);
         }
         if (NuPs2TxCreate(&TexList[slot].spec, &TexList[slot].ps2tex)) {
             TexList[slot].bits = 0;

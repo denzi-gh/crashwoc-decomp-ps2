@@ -24,20 +24,14 @@
 #include "nu3d/nugobj.h"
 #include "nu3d/nurndr.h"
 #include "nu3d/nugscn.h"
-
-struct edsfx_s {
-    char name[16];
-    unsigned short pitch;
-    unsigned short volume;
-    char pad14[0x30 - 0x14];
-};
+#include "game/sfx.h"
 
 extern int debris_sfx;
 int edqseed = 0x3039;
 int edbitsSfxVol = 100;
 signed char edbits_what_game = 0;
-struct edsfx_s *edSfxGlobalTab = 0;
-struct edsfx_s *edSfxLevelTab = 0;
+GameSound *edSfxGlobalTab = 0;
+GameSound *edSfxLevelTab = 0;
 int edSfxAllCount = 0;
 int edSfxGlobalCount = 0;
 struct nugscn_s *edbits_base_scene = 0;
@@ -100,7 +94,7 @@ void edbitsRegisterLevel(char *filename, int game) {
 }
 
 
-void edbitsRegisterSfx(struct edsfx_s *globaltab, struct edsfx_s *leveltab, int globalcount,
+void edbitsRegisterSfx(GameSound *globaltab, GameSound *leveltab, int globalcount,
                        int allcount) {
     edSfxGlobalTab = globaltab;
     edSfxLevelTab = leveltab;

@@ -1300,7 +1300,7 @@ void HandlePauseRender(void)
     }
 }
 
-extern void NuMemSetExternal(void *addr, s32 size);
+extern void NuMemSetExternal(void *addr, s32 *end);
 
 void TextureCreate(char *name, struct numtl_s **mtl, struct nutex_s **tid)
 {
@@ -1324,7 +1324,7 @@ void TextureCreate(char *name, struct numtl_s **mtl, struct nutex_s **tid)
 }
 
 
-void TextureCreateEx(char *name, struct numtl_s **mtl, struct nutex_s **tid, void *extmem, s32 extsize,
+void TextureCreateEx(char *name, struct numtl_s **mtl, struct nutex_s **tid, void *extmem, s32 *extend,
                      union variptr_u *addr, union variptr_u *addrend)
 {
     union variptr_u a;
@@ -1349,7 +1349,7 @@ void TextureCreateEx(char *name, struct numtl_s **mtl, struct nutex_s **tid, voi
     (*mtl)->attrib.colour = 1;
     (*mtl)->attrib.alpha = 0;
     if (extmem != 0) {
-        (*mtl)->tid = NuTexCreateEx(*tid, extmem, extsize);
+        (*mtl)->tid = NuTexCreateEx(*tid, extmem, extend);
     } else {
         (*mtl)->tid = (s32)NuTexCreate(*tid);
     }

@@ -153,7 +153,7 @@ extern struct nurtlight_s rndrstream_rt_light_buffer;
 
 extern void *rndrstream_rt_light_addr[1];
 
-extern void *gs_top;
+extern int gs_top;
 
 extern struct rndrstream_s *rndrstream_fx;
 
