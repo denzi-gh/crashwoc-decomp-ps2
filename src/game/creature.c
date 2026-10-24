@@ -3309,6 +3309,8 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
     u32 anim_action;
     s32 frames;
     f32 dx;
+    f32 dz;
+    f32 dist;
     f32 r2;
     f32 y;
     u16 yrot;
@@ -3395,10 +3397,11 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
         }
 
         if (editor_active == 0) {
-            dx = (pCam->pos.x - c->obj.pos.x) * (pCam->pos.x - c->obj.pos.x) +
-                 (pCam->pos.z - c->obj.pos.z) * (pCam->pos.z - c->obj.pos.z);
+            dx = pCam->pos.x - c->obj.pos.x;
+            dz = pCam->pos.z - c->obj.pos.z;
+            dist = dx * dx + dz * dz;
             if ((LDATA->flags & 0x200) == 0) {
-                if (r2 < dx) {
+                if (r2 < dist) {
                     goto next;
                 }
             }
@@ -3480,17 +3483,17 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                     mR._01 = -mR._01;
                     mR._11 = -mR._11;
                     mR._21 = -mR._21;
-                    mR._31 = c->obj.reflect_y -
-                             (mR._31 - c->obj.reflect_y);
+                    y = c->obj.reflect_y;
+                    mR._31 = y - (mR._31 - y);
                     NuHGobjRndrMtx(model[0]->obj, &mR, 1, 0, tmtx);
                 }
                 if ((shadow != 0) && (c->obj.shadow != 2000000.0f) &&
-                    (dx < r2) &&
+                    (dist < r2) &&
                     ((TerSurface[c->obj.surface_type].flags & 1) == 0) &&
                     (SKELETALCRASH == 0) && (c->freeze == 0) &&
                     (glass_draw == 0)) {
-                    ScaleFlatShadow(&s, c->obj.pos.y, c->obj.shadow,
-                                    c->obj.SCALE);
+                    y = c->obj.shadow;
+                    ScaleFlatShadow(&s, c->obj.pos.y, y, c->obj.SCALE);
                     NuMtxSetScale(&mS, &s);
                     NuMtxRotateY(&mS, yrot);
                     NuMtxRotateZ(&mS, c->obj.surface_zrot);
@@ -3565,12 +3568,12 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                     NuHGobjRndrMtx(model[0]->obj, &mR, 1, 0, tmtx);
                 }
                 if ((shadow != 0) && (c->obj.shadow != 2000000.0f) &&
-                    (dx < r2) &&
+                    (dist < r2) &&
                     ((TerSurface[c->obj.surface_type].flags & 1) == 0) &&
                     (SKELETALCRASH == 0) && (c->freeze == 0) &&
                     (glass_draw == 0)) {
-                    ScaleFlatShadow(&s, c->obj.pos.y, c->obj.shadow,
-                                    c->obj.SCALE);
+                    y = c->obj.shadow;
+                    ScaleFlatShadow(&s, c->obj.pos.y, y, c->obj.SCALE);
                     NuMtxSetScale(&mS, &s);
                     NuMtxRotateY(&mS, yrot);
                     NuMtxRotateZ(&mS, c->obj.surface_zrot);
@@ -3603,8 +3606,8 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                     mR._01 = -mR._01;
                     mR._11 = -mR._11;
                     mR._21 = -mR._21;
-                    mR._31 = c->obj.reflect_y -
-                             (mR._31 - c->obj.reflect_y);
+                    y = c->obj.reflect_y;
+                    mR._31 = y - (mR._31 - y);
                     NuHGobjRndr(model[1]->obj, &mR, 1, 0);
                 }
             }
@@ -3635,8 +3638,10 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                 j = 0x8C;
             } else if (c->obj.character == 0x7C) {
                 j = 0x8D;
+            } else if (c->obj.character == 0x7D) {
+                j = 0x8E;
             } else {
-                j = (c->obj.character == 0x7D) ? 0x8E : -1;
+                j = -1;
             }
             if (j != -1) {
                 Draw3DObject(j, &c->obj.pos, 0,
@@ -3727,7 +3732,7 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                 mR._31 = y - (mR._31 - y);
             }
             if ((render != 0) && (shadow != 0) &&
-                (c->obj.shadow != 2000000.0f) && (dx < r2) &&
+                (c->obj.shadow != 2000000.0f) && (dist < r2) &&
                 ((TerSurface[c->obj.surface_type].flags & 1) == 0) &&
                 (c->freeze == 0) && (glass_draw == 0) &&
                 ((c->obj.flags & 0x4000) == 0) && (bVar9 == 0) &&
@@ -3735,8 +3740,8 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                 ((vflag == 0) || (SKELETALCRASH == 0)) &&
                 (VEHICLE != 0xA1) && (VEHICLE != 0x89) && (VEHICLE != 0x63) &&
                 ((vflag != 0) || (c->obj.vehicle != 0xA1))) {
-                ScaleFlatShadow(&s, c->obj.pos.y, c->obj.shadow,
-                                c->obj.SCALE);
+                y = c->obj.shadow;
+                ScaleFlatShadow(&s, c->obj.pos.y, y, c->obj.SCALE);
                 NuMtxSetScale(&mS, &s);
                 NuMtxRotateY(&mS, yrot);
                 NuMtxRotateZ(&mS, c->obj.surface_zrot);

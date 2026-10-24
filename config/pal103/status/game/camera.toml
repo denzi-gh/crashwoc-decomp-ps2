@@ -33,7 +33,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0093:001d73b8:MoveGameCamera"
-state = "matching"
+state = "asm"
 
 [[function]]
 id = "pal103:unit-0093:001daaf8:DrawCameraTarget"
