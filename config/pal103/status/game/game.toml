@@ -37,7 +37,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001dc150:DrawAwards"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001dc458:HubStart"
@@ -57,7 +57,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001ddb20:HubDrawItems"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001de090:ResetGame"
@@ -169,7 +169,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001e3cf8:GetMenuInfo"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001e3e70:NewMenu"
@@ -421,7 +421,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001f0310:NewMask"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0094:001f03e8:NearestSplinePoint"
