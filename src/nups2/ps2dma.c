@@ -1252,66 +1252,66 @@ struct DmaTag *VifTagWalk(struct DmaTag *tag, void *user)
 }
 
 
-u64 CrcChain(struct DmaTag *tag, int uncached)
+u64 CrcChain(void *addr, int uncached)
 {
-    struct DmaTag *stack[4];
-    u64 *data;
+    struct DmaTag *tag;
     struct DmaTag *next;
-    u64 crc;
-    u64 word;
-    int depth;
-    int qwc;
-    int i;
+    u64 tot;
+    int id;
+    struct DmaTag *stack[2];
+    int stackptr;
+    u64 *lptr;
+    int n;
 
-    depth = 0;
-    crc = 0;
+    tag = addr;
+    stackptr = 0;
+    tot = 0;
     if (uncached) {
         tag = (struct DmaTag *)((u32)tag | 0x20000000);
     }
     while (tag) {
-        word = ((u64 *)tag)[0];
-        crc += word;
-        switch (tag->id >> 4) {
+        tot += ((u64 *)tag)[0];
+        id = tag->id >> 4;
+        switch (id) {
         case 1:
-            data = (u64 *)(tag + 1);
+            lptr = (u64 *)(tag + 1);
             next = tag + tag->qwc + 1;
             break;
         case 5:
-            stack[depth++] = tag + 1;
-            data = (u64 *)(tag + 1);
+            stack[stackptr++] = tag + 1;
+            lptr = (u64 *)(tag + 1);
             next = (struct DmaTag *)tag->addr;
             break;
         case 6:
-            data = (u64 *)(tag + 1);
-            next = stack[--depth];
+            lptr = (u64 *)(tag + 1);
+            next = stack[--stackptr];
             break;
         case 2:
             next = (struct DmaTag *)tag->addr;
-            data = (u64 *)(tag + 1);
+            lptr = (u64 *)(tag + 1);
             break;
         case 0:
         case 7:
             next = 0;
-            data = (u64 *)(tag + 1);
+            lptr = (u64 *)(tag + 1);
             break;
         default:
             next = tag + 1;
-            data = (u64 *)next;
+            lptr = (u64 *)next;
             break;
         }
-        word = ((u64 *)tag)[1];
-        crc += word;
-        qwc = tag->qwc;
-        if (qwc) {
-            for (i = 0; i < qwc; i++) {
-                word = *data++;
-                crc += word;
-                crc += *data++;
+        tot += ((u64 *)tag)[1];
+        n = tag->qwc;
+        if (n) {
+            int i;
+            for (i = 0; i < n; i++) {
+                tot += *lptr++;
+                tot += *lptr++;
             }
         }
         tag = next;
     }
-    return crc;
+    return tot;
 }
 
 

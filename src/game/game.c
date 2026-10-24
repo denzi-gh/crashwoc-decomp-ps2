@@ -5534,20 +5534,21 @@ s32 Draw3DObject(s32 object, struct nuvec_s *pos, u16 xrot, u16 yrot, u16 zrot,
 void DrawAwards(void) {
     struct award_s *award;
     struct nuvec_s pos;
+    float f;
     float scale;
-    float t;
-    s32 object;
-    s32 character;
-    s32 model;
     s32 i;
+    s32 i_obj;
+    s32 i_chr;
+    s32 j;
 
     award = Award;
     for (i = 0; i < 3; i++, award++) {
-        if (award->time < 1.0f) {
+        f = award->time;
+        if (f < 1.0f) {
             if (award->wait != 0) {
                 pos = award->oldpos0;
-                t = tumble_item_starttime + 1.0f;
-                scale = (player->obj.anim.anim_time - t) / (tumble_item_addtime - t);
+                scale = (player->obj.anim.anim_time - (tumble_item_starttime + 1.0f)) /
+                        (tumble_item_addtime - (tumble_item_starttime + 1.0f));
                 if (scale > 1.0f) {
                     scale = 1.0f;
                 }
@@ -5556,53 +5557,53 @@ void DrawAwards(void) {
                 } else {
                     scale = (scale - 0.333f) / 0.667f;
                 }
-            } else if (award->time < 0.666f) {
+            } else if (f < 0.666f) {
                 scale = 1.0f;
                 pos = award->oldpos0;
             } else {
-                t = (award->time - 0.666f) / 0.334f;
-                pos.x = award->oldpos0.x + (award->newpos.x - award->oldpos0.x) * t;
-                pos.y = award->oldpos0.y + (award->newpos.y - award->oldpos0.y) * t;
-                pos.z = award->oldpos0.z + (award->newpos.z - award->oldpos0.z) * t;
                 scale = 1.0f;
+                f = (f - 0.666f) / 0.334f;
+                pos.x = award->oldpos0.x + (award->newpos.x - award->oldpos0.x) * f;
+                pos.y = award->oldpos0.y + (award->newpos.y - award->oldpos0.y) * f;
+                pos.z = award->oldpos0.z + (award->newpos.z - award->oldpos0.z) * f;
             }
-            object = -1;
-            character = -1;
+            i_obj = -1;
+            i_chr = -1;
             if ((award->got & 4) != 0) {
-                object = 1;
+                i_obj = 1;
             } else if ((award->got & 2) != 0) {
-                object = 2;
+                i_obj = 2;
             } else if ((award->got & 1) != 0) {
-                object = 3;
+                i_obj = 3;
             } else if (award->got == 8) {
-                object = 0xC1;
+                i_obj = 0xC1;
             } else if (award->got == 0x10) {
-                object = 0xC2;
+                i_obj = 0xC2;
             } else if (award->got == 0x20) {
-                object = 0xC3;
+                i_obj = 0xC3;
             } else if (award->got == 0x40) {
-                object = 0xC4;
+                i_obj = 0xC4;
             } else if (award->got == 0x80) {
-                object = 0xC5;
+                i_obj = 0xC5;
             } else if (award->got == 0x100) {
-                object = 0xC6;
+                i_obj = 0xC6;
             } else if (award->got == 0x200) {
-                object = 0xC8;
+                i_obj = 0xC8;
             } else if (award->got == 0x400) {
-                object = 0xC7;
+                i_obj = 0xC7;
             }
-            if (object != -1) {
-                if (ObjTab[object].obj.special != NULL) {
-                    Draw3DObject(object, &pos, 0, award->yrot, 0, scale * 0.77f,
-                                 scale * 0.77f, scale * 0.77f,
-                                 ObjTab[object].obj.scene,
-                                 ObjTab[object].obj.special, 0);
+            if (i_obj != -1) {
+                f = scale * 0.77f;
+                if (ObjTab[i_obj].obj.special != NULL) {
+                    Draw3DObject(i_obj, &pos, 0, award->yrot, 0, f, f, f,
+                                 ObjTab[i_obj].obj.scene, ObjTab[i_obj].obj.special, 0);
                 }
-            } else if (character != -1) {
-                model = CRemap[character];
-                if (model != -1) {
-                    Draw3DCharacter(&pos, 0, award->yrot, 0, &CModel[model],
-                                    scale * 0.77f, -1, 1.0f, 0);
+            } else if (i_chr != -1) {
+                f = scale * 0.77f;
+                j = CRemap[i_chr];
+                if (j != -1) {
+                    Draw3DCharacter(&pos, 0, award->yrot, 0, &CModel[j], f, -1,
+                                    1.0f, 0);
                 }
             }
         }
@@ -5951,126 +5952,125 @@ void HubMoveVR(void) {
 
 
 void HubDrawItems(void) {
-    struct nuspecial_s *special;
     struct nugspline_s *spl;
+    s32 i;
+    s32 j;
+    s32 k;
+    s32 l;
+    s32 level;
+    s32 i_obj;
+    s32 i_chr;
     struct nuvec_s *p0;
     struct nuvec_s *p1;
-    s32 level;
-    s32 language;
-    s32 object;
-    s32 character;
-    s32 i;
-    s32 n;
-    s32 k;
 
-    language = 0;
+    l = 0;
     if (Game.language != 'c') {
-        language = Game.language;
+        l = Game.language;
     }
     for (i = 0; i < 6; i++) {
         if (ObjTab[0x73 + i].obj.special != NULL) {
-            if (GameMode != 1 && i == language) {
+            if (GameMode != 1 && i == l) {
                 ObjTab[0x73 + i].obj.special->instance->flags.visible = 1;
             } else {
                 ObjTab[0x73 + i].obj.special->instance->flags.visible = 0;
             }
         }
     }
-    special = ObjTab[0x79].obj.special;
-    if (special != NULL) {
+    if (ObjTab[0x79].obj.special != NULL) {
         if (GameMode == 1) {
-            special->instance->flags.visible = 1;
+            ObjTab[0x79].obj.special->instance->flags.visible = 1;
         } else {
-            special->instance->flags.visible = 0;
+            ObjTab[0x79].obj.special->instance->flags.visible = 0;
         }
     }
     if (hub_vr_scale > 0.0f) {
-        n = 0x66;
+        i_obj = 0x66;
         if (hubleveltext_level != -1 && hubleveltext_pos == 0.333f) {
-            n = hubleveltext_level + 0x17;
+            i_obj = hubleveltext_level + 0x17;
         }
-        Draw3DObject(n, &hub_vr_pos, hub_vr_xrot, hub_vr_yrot, 0, hub_vr_scale,
-                     hub_vr_scale, hub_vr_scale, ObjTab[n].obj.scene,
-                     ObjTab[n].obj.special, 0);
+        Draw3DObject(i_obj, &hub_vr_pos, hub_vr_xrot, hub_vr_yrot, 0, hub_vr_scale,
+                     hub_vr_scale, hub_vr_scale, ObjTab[i_obj].obj.scene,
+                     ObjTab[i_obj].obj.special, 0);
         Draw3DObject(0x16, &hub_vr_pos, hub_vr_xrot, hub_vr_yrot, 0, hub_vr_scale,
                      hub_vr_scale, hub_vr_scale, ObjTab[0x16].obj.scene,
                      ObjTab[0x16].obj.special, 0);
     }
     for (i = 0; i < 6; i++) {
-        n = HData[i].barrier;
-        if (n != 0xFF && ObjTab[n].obj.special != NULL) {
-            ObjTab[n].obj.special->instance->flags.visible = Game.hub[i].flags ^ 1;
+        i_obj = HData[i].barrier;
+        if (i_obj != 0xFF && ObjTab[i_obj].obj.special != NULL) {
+            ObjTab[i_obj].obj.special->instance->flags.visible = Game.hub[i].flags ^ 1;
         }
-        n = HData[i].i_spl[1];
-        if (n == -1) {
+        i_obj = HData[i].i_spl[1];
+        if (i_obj == -1) {
             continue;
         }
-        spl = SplTab[n].spl;
+        spl = SplTab[i_obj].spl;
         if (spl == NULL) {
             continue;
         }
-        for (n = 0; n < 6; n++) {
-            if (i == 5 && n == i) {
+        for (j = 0; j < 6; j++) {
+            if (i == 5 && j == i) {
                 continue;
             }
-            if (n == 5) {
+            if (j == 5) {
                 continue;
             }
             for (k = 0; k < 4; k++) {
-                level = HData[i].level[n];
+                level = HData[i].level[j];
                 if (level == -1) {
                     continue;
                 }
-                p0 = (struct nuvec_s *)(spl->pts + (n * 8 + k * 2) * spl->ptsize);
-                p1 = (struct nuvec_s *)(spl->pts + (n * 8 + k * 2 + 1) * spl->ptsize);
-                object = -1;
-                character = -1;
+                p0 = (struct nuvec_s *)(spl->pts + (j * 8 + k * 2) * spl->ptsize);
+                p1 = (struct nuvec_s *)(spl->pts + (j * 8 + k * 2 + 1) * spl->ptsize);
+                i_obj = -1;
+                i_chr = -1;
                 switch (k) {
                 case 0:
                     if ((Game.level[level].flags & 0x10) != 0) {
-                        object = 0xC2;
+                        i_obj = 0xC2;
                     }
                     break;
                 case 1:
                     if ((Game.level[level].flags & 8) != 0) {
-                        object = 0xC1;
+                        i_obj = 0xC1;
                     }
                     break;
                 case 2:
                     if ((Game.level[level].flags & 4) != 0) {
-                        object = 1;
+                        i_obj = 1;
                     } else if ((Game.level[level].flags & 2) != 0) {
-                        object = 2;
+                        i_obj = 2;
                     } else if ((Game.level[level].flags & 1) != 0) {
-                        object = 3;
+                        i_obj = 3;
                     }
                     break;
                 case 3:
                     if ((Game.level[level].flags & 0x20) != 0) {
-                        object = 0xC3;
+                        i_obj = 0xC3;
                     } else if ((Game.level[level].flags & 0x40) != 0) {
-                        object = 0xC4;
+                        i_obj = 0xC4;
                     } else if ((Game.level[level].flags & 0x80) != 0) {
-                        object = 0xC5;
+                        i_obj = 0xC5;
                     } else if ((Game.level[level].flags & 0x100) != 0) {
-                        object = 0xC6;
+                        i_obj = 0xC6;
                     } else if ((Game.level[level].flags & 0x200) != 0) {
-                        object = 0xC8;
+                        i_obj = 0xC8;
                     } else if ((Game.level[level].flags & 0x400) != 0) {
-                        object = 0xC7;
+                        i_obj = 0xC7;
                     }
                     break;
                 }
-                if (object != -1) {
-                    if (ObjTab[object].obj.special != NULL) {
-                        Draw3DObject(object, p0, 0, NuAtan2D(p1->x - p0->x, p1->z - p0->z), 0,
-                                     0.77f, 0.77f, 0.77f, ObjTab[object].obj.scene,
-                                     ObjTab[object].obj.special, 0);
+                if (i_obj != -1) {
+                    if (ObjTab[i_obj].obj.special != NULL) {
+                        Draw3DObject(i_obj, p0, 0, NuAtan2D(p1->x - p0->x, p1->z - p0->z), 0,
+                                     0.77f, 0.77f, 0.77f, ObjTab[i_obj].obj.scene,
+                                     ObjTab[i_obj].obj.special, 0);
                     }
-                } else if (character != -1) {
-                    if (CRemap[character] != -1) {
+                } else if (i_chr != -1) {
+                    l = CRemap[i_chr];
+                    if (l != -1) {
                         Draw3DCharacter(p0, 0, NuAtan2D(p1->x - p0->x, p1->z - p0->z), 0,
-                                        &CModel[CRemap[character]], 0.77f, -1, 1.0f, 0);
+                                        &CModel[l], 0.77f, -1, 1.0f, 0);
                     }
                 }
             }
