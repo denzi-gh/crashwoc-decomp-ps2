@@ -217,7 +217,7 @@ extern int D_0062EA80;
 #define local_mtx_pkt_size D_0062EA80
 
 extern struct nulocalmtxpkt_s D_0067A340;
-#define local_mtx_pkt D_0067A340
+#define rndrstream_local_mtx_buffer D_0067A340
 
 extern float NuTrigTable[];
 
@@ -670,18 +670,18 @@ int NuRndrStreamSetLocalMtx(struct rndrstream_s *stream)
     if (stream->local_mtx_id != rndrstream_local_mtx_id && (stream->attr & 8)) {
         switch (stream->attr & 0x43) {
         case 1:
-            local_mtx_pkt.mode = 1;
+            rndrstream_local_mtx_buffer.mode = 1;
             break;
         case 2:
         case 0x40:
-            local_mtx_pkt.mode = 4;
+            rndrstream_local_mtx_buffer.mode = 4;
             break;
         default:
-            local_mtx_pkt.mode = 0;
+            rndrstream_local_mtx_buffer.mode = 0;
             break;
         }
         rndrstream_last_mtx[0] = stream->ptr.u8;
-        NuMemCopy128(stream->ptr.u8, &local_mtx_pkt, local_mtx_pkt_size >> 4);
+        NuMemCopy128(stream->ptr.u8, &rndrstream_local_mtx_buffer, local_mtx_pkt_size >> 4);
         stream->ptr.u8 += local_mtx_pkt_size;
         stream->local_mtx_id = rndrstream_local_mtx_id;
         done = 1;
@@ -815,20 +815,21 @@ int NuRndrSetLocalMtx(struct numtx_s *mtx, int clip)
 
     if (local_mtx_pkt_dirty) {
         local_mtx_pkt_dirty = 0;
-        pkt = vpDmaTag_CntEx(&local_mtx_pkt, 0, 0x6C040000);
+        pkt = (u8 *)&rndrstream_local_mtx_buffer;
+        pkt = vpDmaTag_CntEx(pkt, 0, 0x6C040000);
         ((struct _sceDmaTag *)pkt)[-1].mark = 0x14;
         NuMemCopy128(pkt, mtx, 4);
         pkt += 0x40;
         *((unsigned int *)pkt)++ = 0x6D010017;
-        *((short *)pkt)++ = 0;
-        pkt += 6;
-        code = (unsigned int *)pkt;
-        *code++ = (clip != 1) ? 0x14000002 : 0x14000000;
-        *code++ = 0x17000000;
-        local_mtx_pkt_size = (char *)vpDmaTag_Close(code) - (char *)&local_mtx_pkt;
+        *(short *)pkt = 0;
+        code = (unsigned int *)(pkt + 8);
+        pkt += 8;
+        code[0] = (clip != 1) ? 0x14000002 : 0x14000000;
+        code[1] = 0x17000000;
+        local_mtx_pkt_size = (char *)vpDmaTag_Close(code + 2) - (char *)&rndrstream_local_mtx_buffer;
     } else {
-        NuMemCopy128(&local_mtx_pkt.mtx, mtx, 4);
-        local_mtx_pkt.mscal = (clip != 1) ? 0x14000002 : 0x14000000;
+        NuMemCopy128(&rndrstream_local_mtx_buffer.mtx, mtx, 4);
+        rndrstream_local_mtx_buffer.mscal = (clip != 1) ? 0x14000002 : 0x14000000;
     }
     local_mtx_clip = clip;
     rndrstream_local_mtx_id = local_mtx_id_next++;
@@ -1117,18 +1118,18 @@ int NuRndrStreamSetLocalMtxEx(struct rndrstream_s *stream, int clip)
     if (stream->local_mtx_id != rndrstream_local_mtx_id && (stream->attr & 8)) {
         switch (stream->attr & 0x43) {
         case 1:
-            local_mtx_pkt.mode = 1;
+            rndrstream_local_mtx_buffer.mode = 1;
             break;
         case 2:
         case 0x40:
-            local_mtx_pkt.mode = 4;
+            rndrstream_local_mtx_buffer.mode = 4;
             break;
         default:
-            local_mtx_pkt.mode = 0;
+            rndrstream_local_mtx_buffer.mode = 0;
             break;
         }
         rndrstream_last_mtx[0] = stream->ptr.u8;
-        NuMemCopy128(stream->ptr.u8, &local_mtx_pkt, local_mtx_pkt_size >> 4);
+        NuMemCopy128(stream->ptr.u8, &rndrstream_local_mtx_buffer, local_mtx_pkt_size >> 4);
         stream->ptr.u8 += local_mtx_pkt_size;
         stream->local_mtx_id = rndrstream_local_mtx_id;
         if (clip) {

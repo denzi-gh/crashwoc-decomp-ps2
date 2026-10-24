@@ -1007,6 +1007,7 @@ void NuGHGWrite(struct NUHGOBJ_s *hobj, char *file, int size) {
     struct nuhcollide_s *collide;
     struct nuhcollideentry_s *entry;
     struct nutexanim_s *anims;
+    struct nutexanim_s *anim;
     short *tids;
     struct nushadowdata_s *shadow;
     struct nushadowdata_s *outshadow;
@@ -1028,16 +1029,17 @@ void NuGHGWrite(struct NUHGOBJ_s *hobj, char *file, int size) {
     int j;
     int k;
 
-    base = NuMemAllocFn(size, nuhgobj_file, 0x425);
-    if (base) {
-        header = (struct nughgheader_s *)base;
+    ptr = NuMemAllocFn(size, nuhgobj_file, 0x425);
+    if (ptr) {
+        header = (struct nughgheader_s *)ptr;
+        base = ptr;
         memset(header, 0, size);
         header->version = nughg_version;
         ptr = (char *)(((unsigned int)&header[1] + 3) & ~3);
+        offsets = (int *)ptr;
         header->scale = hobj->scale;
         header->numtid = hobj->numtid;
-        if (hobj->numtid) {
-            offsets = (int *)ptr;
+        if (header->numtid) {
             header->tids = ptr - base;
             ptr += hobj->numtid * 4;
             for (i = 0; i < hobj->numtid; i++) {
@@ -1054,9 +1056,8 @@ void NuGHGWrite(struct NUHGOBJ_s *hobj, char *file, int size) {
         header->nummtl = hobj->nummtl;
         ptr += hobj->nummtl * 4;
         for (i = 0; i < hobj->nummtl; i++) {
-            ptr = (char *)(((unsigned int)ptr + 0xF) & ~0xF);
-            offsets[i] = ptr - base;
-            mtl = (struct numtl_s *)ptr;
+            mtl = (struct numtl_s *)(((unsigned int)ptr + 0xF) & ~0xF);
+            offsets[i] = (char *)mtl - base;
             *mtl = *hobj->mtls[i];
             if (mtl->tid) {
                 for (j = 0; j < hobj->numtid; j++) {
@@ -1203,19 +1204,20 @@ void NuGHGWrite(struct NUHGOBJ_s *hobj, char *file, int size) {
             ptr = (char *)(((unsigned int)ptr + 0xF) & ~0xF);
             anims = (struct nutexanim_s *)ptr;
             header->texanims = ptr - base;
-            tids = (short *)&anims[hobj->numtexanims];
-            for (i = 0; i < hobj->numtexanims; i++) {
-                anims[i] = hobj->texanims[i];
+            tids = (short *)(ptr += hobj->numtexanims * sizeof(struct nutexanim_s));
+            anim = anims;
+            for (i = 0; i < hobj->numtexanims; i++, anim++) {
+                *anim = hobj->texanims[i];
                 for (j = 0; j < hobj->nummtl; j++) {
-                    if (anims[i].mtl == hobj->mtls[j]) {
-                        anims[i].mtl = (struct numtl_s *)j;
+                    if (anim->mtl == hobj->mtls[j]) {
+                        anim->mtl = (struct numtl_s *)j;
                         break;
                     }
                 }
-                anims[i].scriptname = anims[i].scriptname - hobj->string_table + header->string_table;
-                anims[i].tids = (short *)((char *)tids - base);
-                tids += anims[i].numtids;
-                anims[i].ntaname = anims[i].ntaname - hobj->string_table + header->string_table;
+                anim->scriptname = anim->scriptname - hobj->string_table + header->string_table;
+                anim->tids = (short *)((char *)tids - base);
+                tids += anim->numtids;
+                anim->ntaname = anim->ntaname - hobj->string_table + header->string_table;
             }
             ptr = (char *)&anims[hobj->numtexanims];
             for (i = 0; i < hobj->numtexanims; i++) {
