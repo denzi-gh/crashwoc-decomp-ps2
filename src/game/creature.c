@@ -2363,7 +2363,7 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
         }
         if (c->obj.transporting == 0) {
             s32 id;
-            id = ((u32)c - (u32)Character) / sizeof(struct creature_s);
+            id = ((nuintptr)c - (nuintptr)Character) / sizeof(struct creature_s);
             d0.x = c->obj.pos.x;
             d0.y = c->obj.pos.y + c->obj.bot * c->obj.SCALE;
             d0.z = c->obj.pos.z;
