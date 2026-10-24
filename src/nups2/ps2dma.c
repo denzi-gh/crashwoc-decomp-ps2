@@ -1258,6 +1258,7 @@ u64 CrcChain(struct DmaTag *tag, int uncached)
     u64 *data;
     struct DmaTag *next;
     u64 crc;
+    u64 word;
     int depth;
     int qwc;
     int i;
@@ -1268,7 +1269,8 @@ u64 CrcChain(struct DmaTag *tag, int uncached)
         tag = (struct DmaTag *)((u32)tag | 0x20000000);
     }
     while (tag) {
-        crc += ((u64 *)tag)[0];
+        word = ((u64 *)tag)[0];
+        crc += word;
         switch (tag->id >> 4) {
         case 1:
             data = (u64 *)(tag + 1);
@@ -1297,11 +1299,13 @@ u64 CrcChain(struct DmaTag *tag, int uncached)
             data = (u64 *)next;
             break;
         }
-        crc += ((u64 *)tag)[1];
+        word = ((u64 *)tag)[1];
+        crc += word;
         qwc = tag->qwc;
         if (qwc) {
             for (i = 0; i < qwc; i++) {
-                crc += *data++;
+                word = *data++;
+                crc += word;
                 crc += *data++;
             }
         }

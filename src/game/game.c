@@ -3943,8 +3943,6 @@ inline float DistanceToLine(struct nuvec_s *pos, struct nuvec_s *p0,
     return d;
 }
 
-extern float D_0062D710; /* new-mask scale (PAL; GC used 0.8f) */
-
 void NewMask(struct mask_s *mask, struct nuvec_s *pos) {
     if (CRemap[3] != -1 && (LBIT & 0x3E00000) == 0) {
         if (mask->active < 2) {
@@ -3952,11 +3950,8 @@ void NewMask(struct mask_s *mask, struct nuvec_s *pos) {
                 if (pos != NULL) {
                     mask->pos = *pos;
                 }
-                /* Faithful near-match (96.3%), kept as state=asm -- see
-                 * blocker: gcc duplicates this D_0062D710 load into the
-                 * `pos == NULL` branch delay slot (retail leaves a nop). */
                 mask->character = 3;
-                mask->scale = D_0062D710;
+                mask->scale = 0.8f;
                 ResetLights(&mask->lights);
             }
             mask->active++;

@@ -1402,6 +1402,7 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
     s32 sfx;
     f32 f;
     f32 t;
+    f32 y;
     f32 dx;
     f32 dy;
     f32 dz;
@@ -1621,24 +1622,23 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
                         veh == 0x99)) {
                 c->obj.shadow = NewShadowMaskPlat(&c->obj.pos, 0.0f, -1);
                 if (c->obj.shadow != 2000000.0f) {
-                    f32 crate;
                     tv.x = c->obj.pos.x;
                     tv.y = c->obj.pos.y +
                            (c->obj.bot + c->obj.top) * c->obj.SCALE * 0.5f;
                     tv.z = c->obj.pos.z;
                     b0 = tv;
-                    crate = CrateTopBelow(&b0);
-                    if (crate != 2000000.0f && c->obj.shadow < crate) {
-                        c->obj.shadow = crate;
+                    y = CrateTopBelow(&b0);
+                    if (y != 2000000.0f && c->obj.shadow < y) {
+                        c->obj.shadow = y;
                     }
                     if (c->obj.dead != 0x13) {
                         f32 m = c->obj.mom.y + GRAVITY;
                         f32 ny = c->obj.pos.y + m;
-                        crate = c->obj.bot * c->obj.SCALE;
+                        y = c->obj.bot * c->obj.SCALE;
                         c->obj.mom.y = m;
                         c->obj.pos.y = ny;
-                        if (ny + crate < c->obj.shadow) {
-                            c->obj.pos.y = c->obj.shadow - crate;
+                        if (ny + y < c->obj.shadow) {
+                            c->obj.pos.y = c->obj.shadow - y;
                         }
                     } else {
                         c->obj.pos.y = c->obj.shadow -
@@ -2475,31 +2475,29 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
             c->obj.pos_adjusted = 1;
         }
 terrain:
-        {
-            f32 f = NewShadowMaskPlatRot(&c->obj.pos, 0.0f, -1);
-            if (f == 2000000.0f && c->obj.transporting == 0) {
-                plr_terrain_ok = 0;
-                if (NOTERRAINSTOP != 0) {
-                    c->obj.pos.x = c->obj.oldpos.x;
-                    c->obj.pos.z = c->obj.oldpos.z;
-                    c->obj.mom.x = 0.0f;
-                    c->obj.dangle = 0;
-                    c->obj.mom.z = 0.0f;
-                    goto skip_surface;
-                }
-            } else {
-                plr_terrain_ok = 1;
+        y = NewShadowMaskPlatRot(&c->obj.pos, 0.0f, -1);
+        if (y == 2000000.0f && c->obj.transporting == 0) {
+            plr_terrain_ok = 0;
+            if (NOTERRAINSTOP != 0) {
+                c->obj.pos.x = c->obj.oldpos.x;
+                c->obj.pos.z = c->obj.oldpos.z;
+                c->obj.mom.x = 0.0f;
+                c->obj.dangle = 0;
+                c->obj.mom.z = 0.0f;
+                goto skip_surface;
             }
-            old_layer = c->obj.layer_type;
-            if (c->obj.got_shadow == 0 ||
-                (c->obj.transporting == 0 && f != 2000000.0f &&
-                 f > c->obj.shadow)) {
-                c->obj.got_shadow = 0;
-                c->obj.shadow = f;
-                GetSurfaceInfo(&c->obj, 2, f);
-            } else {
-                GetSurfaceInfo(&c->obj, 0, f);
-            }
+        } else {
+            plr_terrain_ok = 1;
+        }
+        old_layer = c->obj.layer_type;
+        if (c->obj.got_shadow == 0 ||
+            (c->obj.transporting == 0 && y != 2000000.0f &&
+             y > c->obj.shadow)) {
+            c->obj.got_shadow = 0;
+            c->obj.shadow = y;
+            GetSurfaceInfo(&c->obj, 2, y);
+        } else {
+            GetSurfaceInfo(&c->obj, 0, y);
         }
 skip_surface:
         c->obj.wade = 0;
@@ -3294,7 +3292,6 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
     struct numtx_s mR;
     struct CharacterModel *model[2];
     struct numtx_s tmtx[256];
-    struct numtx_s *pm;
     struct numtx_s *jm;
     s32 i;
     s32 j;
@@ -3303,9 +3300,9 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
     s32 reflect;
     s32 old_frame;
     s32 VEHICLE;
-    s32 o;
     s32 bVar9;
     u32 anim_action;
+    s32 frames;
     f32 dx;
     f32 r2;
     f32 y;
@@ -3453,15 +3450,11 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                 NuMtxRotateX(&mC, c->obj.xrot);
                 NuMtxRotateY(&mC, yrot);
                 NuMtxTranslate(&mC, &c->obj.pos);
-                pm = &mC;
                 model[0] = &CModel[CRemap[116]];
                 if (model[0]->anmdata[0x46] != 0) {
+                    frames = c->minfo->SPINFRAMES + c->minfo->SUPERSPINFRAMES * 3;
                     NuHGobjEvalAnim(model[0]->obj, model[0]->anmdata[0x46],
-                                    (model[0]->anmdata[0x46]->time - 1.0f) *
-                                    ((f32)c->spin_frame /
-                                     (f32)(c->minfo->SPINFRAMES +
-                                           c->minfo->SUPERSPINFRAMES * 3))
-                                    + 1.0f,
+                                    (model[0]->anmdata[0x46]->time - 1.0f) * ((f32)c->spin_frame / (f32)frames) + 1.0f,
                                     0, 0, tmtx);
                 } else {
                     NuHGobjEval(model[0]->obj, 0, 0, tmtx);
@@ -3475,7 +3468,7 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                     goto next;
                 }
                 SetCreatureLights(c);
-                NuHGobjRndrMtx(model[0]->obj, pm, 1, 0, tmtx);
+                NuHGobjRndrMtx(model[0]->obj, &mC, 1, 0, tmtx);
                 if ((c->obj.reflect_y != 2000000.0f) &&
                     (glass_mix == 0.0f) && (glass_draw == 0)) {
                     mR = mC;
@@ -3501,7 +3494,7 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                     mS._31 = c->obj.shadow + 0.025f;
                     mS._32 = c->obj.pos.z;
                     if (model[0]->shaddata != 0) {
-                        ShadRndr(&mS, model[0]->shaddata, 1.0f,
+                        ShadRndr(&mS, model[0]->shaddatarest, 1.0f,
                                  CData[model[0]->character].shadow_scale);
                     }
                 }
@@ -3524,7 +3517,6 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                 NuMtxRotateZ(&mC, c->obj.zrot);
                 NuMtxRotateX(&mC, c->obj.xrot);
                 NuMtxTranslate(&mC, &c->obj.pos);
-                pm = &mC;
                 if ((SKELETALCRASH != 0) && (CRemap[159] != -1)) {
                     model[0] = &CModel[CRemap[159]];
                 } else {
@@ -3537,13 +3529,9 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                 }
                 if ((anim_action < 0x76) &&
                     (model[0]->anmdata[anim_action] != 0)) {
-                    NuHGobjEvalAnim(model[0]->obj,
-                                    model[0]->anmdata[anim_action],
-                                    (model[0]->anmdata[anim_action]->time - 1.0f) *
-                                    ((f32)c->spin_frame /
-                                     (f32)(c->minfo->SPINFRAMES +
-                                           c->minfo->SUPERSPINFRAMES * 3))
-                                    + 1.0f,
+                    frames = c->minfo->SPINFRAMES + c->minfo->SUPERSPINFRAMES * 3;
+                    NuHGobjEvalAnim(model[0]->obj, model[0]->anmdata[anim_action],
+                                    (model[0]->anmdata[anim_action]->time - 1.0f) * ((f32)c->spin_frame / (f32)frames) + 1.0f,
                                     0, 0, tmtx);
                 } else {
                     NuHGobjEval(model[0]->obj, 0, 0, tmtx);
@@ -3556,7 +3544,7 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                 if (render == 0) {
                     goto next;
                 }
-                NuHGobjRndrMtx(model[0]->obj, pm, 1, 0, tmtx);
+                NuHGobjRndrMtx(model[0]->obj, &mC, 1, 0, tmtx);
                 if ((c->obj.reflect_y != 2000000.0f) &&
                     (glass_mix == 0.0f) && (glass_draw == 0)) {
                     mR = mC;
@@ -3586,7 +3574,7 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                     mS._31 = c->obj.shadow + 0.025f;
                     mS._32 = c->obj.pos.z;
                     if (model[0]->shaddata != 0) {
-                        ShadRndr(&mS, model[0]->shaddata, 1.0f,
+                        ShadRndr(&mS, model[0]->shaddatarest, 1.0f,
                                  CData[model[0]->character].shadow_scale);
                     }
                 }
@@ -3629,28 +3617,28 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
 
         if (render != 0) {
             if (c->obj.character == 0x75) {
-                o = 0x84;
+                j = 0x84;
             } else if (c->obj.character == 0x77) {
-                o = 0x88;
+                j = 0x88;
             } else if (c->obj.character == 0x78) {
-                o = 0x89;
+                j = 0x89;
             } else if (c->obj.character == 0x79) {
-                o = 0x8A;
+                j = 0x8A;
             } else if (c->obj.character == 0x7A) {
-                o = 0x8B;
+                j = 0x8B;
             } else if (c->obj.character == 0x7B) {
-                o = 0x8C;
+                j = 0x8C;
             } else if (c->obj.character == 0x7C) {
-                o = 0x8D;
+                j = 0x8D;
             } else {
-                o = (c->obj.character == 0x7D) ? 0x8E : -1;
+                j = (c->obj.character == 0x7D) ? 0x8E : -1;
             }
-            if (o != -1) {
-                Draw3DObject(o, &c->obj.pos, 0,
+            if (j != -1) {
+                Draw3DObject(j, &c->obj.pos, 0,
                              NuAtan2D(c->obj.pos.x - GameCam[0].pos.x,
                                       c->obj.pos.z - GameCam[0].pos.z),
                              0, 1.0f, 1.0f, 1.0f,
-                             ObjTab[o].obj.scene, ObjTab[o].obj.special, 0);
+                             ObjTab[j].obj.scene, ObjTab[j].obj.special, 0);
             }
         }
 
@@ -3678,15 +3666,10 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                    (VEHICLECONTROL == 2) || (VEHICLE == 0x20) ||
                    (VEHICLE == 0x89) || (VEHICLE == 0xA1)) {
             s.x = s.y = s.z = c->obj.SCALE;
-            pm = &mC;
             NuMtxSetScale(&mC, &s);
             NuMtxRotateZ(&mC, c->obj.zrot);
-            if (VEHICLE == 0x20) {
-                o = RotDiff(0, c->obj.xrot) / 4;
-            } else {
-                o = c->obj.xrot;
-            }
-            NuMtxRotateX(&mC, o);
+            NuMtxRotateX(&mC, (VEHICLE == 0x20) ? RotDiff(0, c->obj.xrot) / 4
+                                                : c->obj.xrot);
             NuMtxRotateY(&mC, yrot);
             NuMtxTranslate(&mC, &c->obj.pos);
             c->m = mC;
@@ -3796,51 +3779,51 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
             (c->obj.die_model[1] != c->obj.die_model[0])) {
             model[1] = &CModel[c->obj.die_model[1]];
         } else {
-            o = -1;
+            j = -1;
             if (c->obj.character == 0x11) {
-                o = 0x12;
+                j = 0x12;
             } else if ((c->obj.character == 0x24) &&
                        (c->obj.anim.newaction == 0)) {
-                o = 0x87;
+                j = 0x87;
             } else if (c->obj.character == 0x6D) {
-                o = 0x3D;
+                j = 0x3D;
             } else if ((c->obj.dead == 0) && (c->obj.character == 0) &&
                        ((c->obj.anim.newaction == 0x25) ||
                         (c->obj.anim.newaction == 0x26))) {
-                o = 0x45;
+                j = 0x45;
             } else if ((c->freeze != 0) && (c->obj.dead == 0)) {
-                o = 0x4F;
+                j = 0x4F;
             } else if ((vflag != 0) && (c->obj.dead == 0) &&
                        (c->target != 0) && (c->obj.character == 0) &&
                        (VEHICLE == -1)) {
-                o = 0x8C;
+                j = 0x8C;
             } else if ((VEHICLE != -1) && (vtog_time == vtog_duration)) {
                 if (VEHICLE == 0x6B) {
-                    o = 0x6B;
+                    j = 0x6B;
                 } else if (VEHICLE == 0xA0) {
-                    o = 0xA0;
+                    j = 0xA0;
                 } else if (VEHICLE == 0x44) {
-                    o = 0x44;
+                    j = 0x44;
                 } else if (VEHICLE == 0xB2) {
-                    o = 0xB2;
+                    j = 0xB2;
                 } else if (VEHICLE == 0x3B) {
-                    o = 0x3B;
+                    j = 0x3B;
                 } else if (VEHICLE == 0x20) {
-                    o = 0x20;
+                    j = 0x20;
                 } else if (VEHICLE == 0x89) {
-                    o = 0x89;
+                    j = 0x89;
                 } else if (VEHICLE == 0xA1) {
-                    o = 0xA1;
+                    j = 0xA1;
                 } else if (VEHICLE == 0x99) {
-                    o = 0x99;
+                    j = 0x99;
                 }
             } else {
                 if ((vflag == 0) && (c->obj.vehicle == 0xA1)) {
-                    o = 0xA1;
+                    j = 0xA1;
                 }
             }
-            if ((o != -1) && (CRemap[o] != -1)) {
-                model[1] = &CModel[CRemap[o]];
+            if ((j != -1) && (CRemap[j] != -1)) {
+                model[1] = &CModel[CRemap[j]];
             }
         }
 
@@ -3859,7 +3842,6 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                  (model[j]->character != 0x6B)) ||
                 ((model[j]->anmdata[c->obj.anim.blend_src_action] != 0) &&
                  (model[j]->anmdata[c->obj.anim.blend_dst_action] != 0))) {
-                pm = &mC;
                 if ((Level == 0x1C) && (j == 1) &&
                     (model[0]->character == 0x7F)) {
                     s.x = s.y = s.z = 1.2987013f;
@@ -3881,7 +3863,7 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                 if (model[j]->character == 0x99) {
                     jeep_draw = 1;
                 }
-                DrawCharacterModel(model[j], &c->obj.anim, pm,
+                DrawCharacterModel(model[j], &c->obj.anim, &mC,
                                    ((shflag != 0) &&
                                     ((vflag == 0) || (j != 0) ||
                                      (model[1] == 0) ||
@@ -3910,8 +3892,8 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
         c->anim_processed = 1;
     }
 
-    glass_phase = 0;
     glass_draw = 0;
+    glass_phase = 0;
     if (render != 0) {
         SetLevelLights();
     }

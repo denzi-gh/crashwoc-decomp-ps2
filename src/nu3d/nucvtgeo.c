@@ -999,7 +999,6 @@ u8 *NuCvtDmaTriCFromIdx(u8 **dma, struct nuvtx_tc1_s *vtx, short *idx, int nidx,
     int shift;
     int size;
     int batch;
-    int left;
     int i;
 
     fast = 0;
@@ -1089,7 +1088,6 @@ u8 *NuCvtDmaTriCFromIdx(u8 **dma, struct nuvtx_tc1_s *vtx, short *idx, int nidx,
             *(u32 *)p = (batch << 16) | 0x6C008003;
             p += 4;
         }
-        left = nidx - batch;
         for (i = 0; i < batch; i++) {
             if (!NuCvtPntOn) {
                 *(float *)p = vtx[idx[i]].pnt.x;
@@ -1213,7 +1211,7 @@ u8 *NuCvtDmaTriCFromIdx(u8 **dma, struct nuvtx_tc1_s *vtx, short *idx, int nidx,
         *(u32 *)p = 0x14000300;
         p += 4;
         idx += batch;
-        nidx = left;
+        nidx -= batch;
     }
     *dma = vpDmaTag_Close(p);
     return start;
