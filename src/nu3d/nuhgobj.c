@@ -1235,14 +1235,14 @@ void NuGHGWrite(struct NUHGOBJ_s *hobj, char *file, int size) {
         }
 
         header->shadow = 0;
-        shadow = hobj->shadow;
-        if (shadow) {
+        if (hobj->shadow) {
+            shadow = hobj->shadow;
             nshadows = 0;
             nellipsoids = 0;
             ncylinders = 0;
             nmeshes = 0;
-            nnormals = 0;
             nverts = 0;
+            nnormals = 0;
             for (; shadow->last != 0xFF; shadow++) {
                 nshadows++;
                 nellipsoids += shadow->numellipsoids;
@@ -1301,14 +1301,14 @@ void NuGHGWrite(struct NUHGOBJ_s *hobj, char *file, int size) {
                     memcpy(meshes, shadow->meshes, shadow->nummeshes * sizeof(struct nushadowmesh_s));
                     meshes += shadow->nummeshes * sizeof(struct nushadowmesh_s);
                     mesh = shadow->meshes;
-                    for (i = 0; i < shadow->nummeshes; i++) {
+                    for (j = 0; j < shadow->nummeshes; j++) {
                         count = mesh->second->count;
                         outmesh->first = (struct nushadowvtx_s *)(verts - base);
                         memcpy(verts, mesh->first, count * sizeof(struct nushadowvtx_s));
                         verts += count * sizeof(struct nushadowvtx_s);
                         nverts = 0;
-                        for (j = 0; j < count; j++) {
-                            nverts += mesh->first[j].count;
+                        for (k = 0; k < count; k++) {
+                            nverts += mesh->first[k].count;
                         }
                         outmesh->second = (struct nushadowvtx_s *)(verts - base);
                         memcpy(verts, mesh->second, nverts * sizeof(struct nushadowvtx_s));
