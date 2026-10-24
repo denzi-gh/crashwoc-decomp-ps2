@@ -373,7 +373,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00216ba8:ProcessAtlas"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0098:00216f48:MoveAtlas"

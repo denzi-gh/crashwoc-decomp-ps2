@@ -2995,6 +2995,10 @@ extern void ProcessPlatformsAtlas(struct NEWBUGGY *atlas, f32 dt);
 extern void TerrainAtlas(struct NEWBUGGY *atlas, f32 dt);
 
 
+extern f32 D_0062DD90;
+extern f32 D_0062DD94;
+extern f32 D_0062DD98;
+
 void ProcessAtlas(struct NEWBUGGY *atlas)
 {
     if (AtlasFrame >= 0x1FE) {
@@ -3004,13 +3008,13 @@ void ProcessAtlas(struct NEWBUGGY *atlas)
     atlas->rotquat_delta = SetNuQuat(0.0f, 0.0f, 0.0f, 1.0f);
     atlas->ball_lastpos = atlas->ball_pos;
     ProcessTimer(&atlas->boosttimer);
-    ProcessMovementAtlas(atlas, 0.02f);
+    ProcessMovementAtlas(atlas, D_0062DD90);
     NewScanInit();
     atlas->terrhandle = NewScanHandel(&atlas->ball_pos, &atlas->ball_vel, 1, 0, atlas->ball_radius + 0.25f);
     if (Level != 0x15) {
-        ProcessPlatformsAtlas(atlas, 0.02f);
+        ProcessPlatformsAtlas(atlas, D_0062DD94);
     }
-    TerrainAtlas(atlas, 0.02f);
+    TerrainAtlas(atlas, D_0062DD98);
     if (atlas->type == 1) {
         CheckAtlasGround(atlas);
     } else if (Level == 0x16 && (atlas->onground & 3)) {
@@ -3035,13 +3039,15 @@ void ProcessAtlas(struct NEWBUGGY *atlas)
         f32 dist;
         f32 dot;
 
-        limit = 15.3f - atlas->ball_radius;
         dist = atlas->ball_pos.x * atlas->ball_pos.x + atlas->ball_pos.z * atlas->ball_pos.z;
+        limit = 15.3f - atlas->ball_radius;
         if (limit * limit < dist) {
-            dist = NuFsqrt(dist);
-            dir.x = atlas->ball_pos.x / dist;
+            f32 MagXZ;
+
+            MagXZ = NuFsqrt(dist);
+            dir.x = atlas->ball_pos.x / MagXZ;
             dir.y = 0.0f;
-            dir.z = atlas->ball_pos.z / dist;
+            dir.z = atlas->ball_pos.z / MagXZ;
             edge = dir;
             dot = DotProduct(&atlas->ball_vel, &edge);
             atlas->ball_pos.x = edge.x * limit;
@@ -6890,8 +6896,8 @@ extern s32 IntoTrail;
 extern f32 CurrentIntensity;
 
 
-void SetTrailPos(s32 pt, struct NEWBUGGY *atlas, struct nuvec_s *pos, s32 reset, s32 angle, s32 surface,
-                 f32 width)
+void SetTrailPos(s32 pt, struct NEWBUGGY *atlas, struct nuvec_s *pos, s32 reset, s32 angle, f32 width,
+                 s32 surface)
 {
     struct trail_s *cur;
     struct trail_s *prev;
@@ -6963,87 +6969,104 @@ extern s32 AtlasTrailType[2];
 extern f32 TRAILFUDGE;
 
 
+inline u16 FindTrailAng(struct nuvec_s *a, struct nuvec_s *b)
+{
+    struct nuvec_s d;
+
+    NuVecSub(&d, b, a);
+    return (u16)(NuAtan2D(d.x, d.z) - 0x2000);
+}
+
 void ProcessAtlasTrail(struct NEWBUGGY *atlas)
 {
-    struct nuvec_s edge[2];
-    s32 surface[2];
-    struct nuvec_s up;
-    struct nuvec_s side;
-    struct nuvec_s step;
-    struct trail_s *last;
     f32 dx;
     f32 dz;
-    s32 angle;
-    s32 lastangle;
-    s32 turn;
-    s32 ok;
-    s32 i;
+    struct trail_s *t;
+    struct nuvec_s TrailPos[2];
+    s32 TrailType[2];
+    s32 TrailOn;
+    f32 Scale = 1.0f;
 
-    ok = 0;
+    TrailOn = 0;
     if (atlas->platformid == -1) {
-        up = D_0061F750[0];
-        NuVecSub(&step, &atlas->ball_pos, &atlas->ball_oldpos);
-        NuVecCross(&side, &step, &up);
-        NuVecNorm(&side, &side);
-        edge[1] = atlas->ball_pos;
-        edge[0] = edge[1];
-        NuVecScaleAccum(&edge[0], &side, 0.25f);
-        NuVecScaleAccum(&edge[1], &side, -0.25f);
-        for (i = 0; i < 2; i++) {
-            ok = 0;
-            edge[i].y = TRAILFUDGE + NewShadowMask(&edge[i], atlas->ball_radius, -1);
-            if (atlas->ball_pos.y - edge[i].y < atlas->ball_radius + 1.0f && edge[i].y != 2000000.0f) {
-                ok = 1;
+        {
+            struct nuvec_s Temp;
+            struct nuvec_s Normal;
+            struct nuvec_s Line;
+            s32 k;
+
+            Temp = D_0061F750[0];
+            NuVecSub(&Line, &atlas->ball_pos, &atlas->ball_oldpos);
+            NuVecCross(&Normal, &Line, &Temp);
+            NuVecNorm(&Normal, &Normal);
+            TrailPos[1] = atlas->ball_pos;
+            TrailPos[0] = TrailPos[1];
+            NuVecScaleAccum(&TrailPos[0], &Normal, 0.25f);
+            NuVecScaleAccum(&TrailPos[1], &Normal, -0.25f);
+            for (k = 0; k < 2; k++) {
+                TrailOn = 0;
+                TrailPos[k].y = TRAILFUDGE + NewShadowMask(&TrailPos[k], atlas->ball_radius, -1);
+                if (atlas->ball_pos.y - TrailPos[k].y < atlas->ball_radius + 1.0f && TrailPos[k].y != 2000000.0f) {
+                    TrailOn = 1;
+                }
+                if (TrailOn == 0) {
+                    break;
+                }
+                TrailType[k] = ShadowInfo();
             }
-            if (ok == 0) {
-                break;
-            }
-            surface[i] = ShadowInfo();
         }
     }
-    if (ok != 0) {
-        if (surface[0] == surface[1]) {
-            if (surface[1] != 0) {
-                atlas->trailsurfacetype = surface[1];
+    if (TrailOn != 0) {
+        if (TrailType[0] == TrailType[1]) {
+            if (TrailType[1] != 0) {
+                atlas->trailsurfacetype = TrailType[1];
             } else {
-                ok = 0;
+                TrailOn = 0;
                 atlas->trailsurfacetype = -1;
             }
-        } else if (atlas->trailsurfacetype != surface[0] && atlas->trailsurfacetype != surface[1]) {
-            ok = 0;
+        } else if (atlas->trailsurfacetype != TrailType[0] && atlas->trailsurfacetype != TrailType[1]) {
+            TrailOn = 0;
             atlas->trailsurfacetype = -1;
         }
     } else {
         atlas->trailsurfacetype = -1;
     }
-    if (ok != 0) {
-        AtlasTrailType[0] = surface[0];
-        AtlasTrailType[1] = surface[1];
+    if (TrailOn != 0) {
+        AtlasTrailType[0] = TrailType[0];
+        AtlasTrailType[1] = TrailType[1];
     } else {
-        AtlasTrailType[0] = AtlasTrailType[1] = -1;
+        AtlasTrailType[1] = AtlasTrailType[0] = -1;
     }
-    if (ok != 0) {
+    if (TrailOn != 0) {
         if (trailair != 0) {
+            s32 Ang;
+
             trailpt = (trailpt + 1) & 0x7F;
             trailair = 0;
-            NuVecSub(&up, &edge[1], &edge[0]);
-            angle = (u16)(NuAtan2D(up.x, up.z) - 0x2000);
-            SetTrailPos(trailpt, atlas, edge, 1, angle, atlas->trailsurfacetype, 1.0f);
+            Ang = FindTrailAng(&TrailPos[0], &TrailPos[1]);
+            SetTrailPos(trailpt, atlas, TrailPos, 1, Ang, Scale, atlas->trailsurfacetype);
             trailpt = (trailpt + 1) & 0x7F;
-            SetTrailPos(trailpt, atlas, edge, 1, angle, atlas->trailsurfacetype, 1.0f);
+            SetTrailPos(trailpt, atlas, TrailPos, 1, Ang, Scale, atlas->trailsurfacetype);
         } else {
-            last = &trail[(trailpt - 1) & 0x7F];
-            dx = (edge[0].x + edge[1].x) * 0.5f - (last->pos[0].x + (last->pos[1].x - last->pos[0].x) * 0.5f);
-            dz = (edge[0].z + edge[1].z) * 0.5f - (last->pos[0].z + (last->pos[1].z - last->pos[0].z) * 0.5f);
-            NuVecSub(&up, &edge[1], &edge[0]);
-            angle = (u16)(NuAtan2D(up.x, up.z) - 0x2000);
-            NuVecSub(&up, &last->pos[1], &last->pos[0]);
-            lastangle = (u16)(NuAtan2D(up.x, up.z) - 0x2000);
-            turn = (u16)(angle - lastangle - 0x8000) - 0x8000;
-            if (dx * dx + dz * dz > 0.040000003f || (turn < 0 ? -turn : turn) >= 0x1556) {
-                trailpt = (trailpt + 1) & 0x7F;
+            s32 Ang;
+
+            t = &trail[(trailpt - 1) & 0x7F];
+            dx = (TrailPos[0].x + TrailPos[1].x) * 0.5f - (t->pos[0].x + (t->pos[1].x - t->pos[0].x) * 0.5f);
+            dz = (TrailPos[0].z + TrailPos[1].z) * 0.5f - (t->pos[0].z + (t->pos[1].z - t->pos[0].z) * 0.5f);
+            {
+                s32 OldAng;
+                s32 NewAng;
+                s32 DeltaAng;
+
+                NewAng = FindTrailAng(&TrailPos[0], &TrailPos[1]);
+                OldAng = FindTrailAng(&t->pos[0], &t->pos[1]);
+                DeltaAng = (u16)(NewAng - OldAng - 0x8000) - 0x8000;
+                if (dx * dx + dz * dz > 0.040000003f || (DeltaAng < 0 ? -DeltaAng : DeltaAng) >= 0x1556) {
+                    trailpt = (trailpt + 1) & 0x7F;
+                }
+                Ang = NewAng;
             }
-            SetTrailPos(trailpt, atlas, edge, 0, angle, atlas->trailsurfacetype, 1.0f);
+            SetTrailPos(trailpt, atlas, TrailPos, 0, Ang, Scale, atlas->trailsurfacetype);
         }
     } else {
         if (trailair == 0) {
@@ -7055,13 +7078,6 @@ void ProcessAtlasTrail(struct NEWBUGGY *atlas)
     }
 }
 
-u16 FindTrailAng(struct nuvec_s *a, struct nuvec_s *b)
-{
-    struct nuvec_s d;
-
-    NuVecSub(&d, b, a);
-    return (u16)(NuAtan2D(d.x, d.z) - 0x2000);
-}
 
 inline struct jeeprock_s *FindJeepRock(void)
 {
