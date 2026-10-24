@@ -5534,16 +5534,18 @@ s32 Draw3DObject(s32 object, struct nuvec_s *pos, u16 xrot, u16 yrot, u16 zrot,
 void DrawAwards(void) {
     struct award_s *award;
     struct nuvec_s pos;
+    float f;
     float scale;
     float t;
+    s32 i;
+    s32 model;
     s32 object;
     s32 character;
-    s32 model;
-    s32 i;
 
     award = Award;
     for (i = 0; i < 3; i++, award++) {
-        if (award->time < 1.0f) {
+        f = award->time;
+        if (f < 1.0f) {
             if (award->wait != 0) {
                 pos = award->oldpos0;
                 t = tumble_item_starttime + 1.0f;
@@ -5556,15 +5558,15 @@ void DrawAwards(void) {
                 } else {
                     scale = (scale - 0.333f) / 0.667f;
                 }
-            } else if (award->time < 0.666f) {
+            } else if (f < 0.666f) {
                 scale = 1.0f;
                 pos = award->oldpos0;
             } else {
-                t = (award->time - 0.666f) / 0.334f;
-                pos.x = award->oldpos0.x + (award->newpos.x - award->oldpos0.x) * t;
-                pos.y = award->oldpos0.y + (award->newpos.y - award->oldpos0.y) * t;
-                pos.z = award->oldpos0.z + (award->newpos.z - award->oldpos0.z) * t;
                 scale = 1.0f;
+                f = (f - 0.666f) / 0.334f;
+                pos.x = award->oldpos0.x + (award->newpos.x - award->oldpos0.x) * f;
+                pos.y = award->oldpos0.y + (award->newpos.y - award->oldpos0.y) * f;
+                pos.z = award->oldpos0.z + (award->newpos.z - award->oldpos0.z) * f;
             }
             object = -1;
             character = -1;
@@ -5592,17 +5594,20 @@ void DrawAwards(void) {
                 object = 0xC7;
             }
             if (object != -1) {
+                f = scale * 0.77f;
                 if (ObjTab[object].obj.special != NULL) {
-                    Draw3DObject(object, &pos, 0, award->yrot, 0, scale * 0.77f,
-                                 scale * 0.77f, scale * 0.77f,
+                    Draw3DObject(object, &pos, 0, award->yrot, 0, f, f, f,
                                  ObjTab[object].obj.scene,
                                  ObjTab[object].obj.special, 0);
+                } else {
+                    object = -1;
                 }
             } else if (character != -1) {
+                f = scale * 0.77f;
                 model = CRemap[character];
                 if (model != -1) {
                     Draw3DCharacter(&pos, 0, award->yrot, 0, &CModel[model],
-                                    scale * 0.77f, -1, 1.0f, 0);
+                                    f, -1, 1.0f, 0);
                 }
             }
         }
@@ -5956,20 +5961,17 @@ void HubDrawItems(void) {
     struct nuvec_s *p0;
     struct nuvec_s *p1;
     s32 level;
-    s32 language;
+    s32 id;
     s32 object;
     s32 character;
     s32 i;
     s32 n;
     s32 k;
 
-    language = 0;
-    if (Game.language != 'c') {
-        language = Game.language;
-    }
+    id = (Game.language != 'c') ? Game.language : 0;
     for (i = 0; i < 6; i++) {
         if (ObjTab[0x73 + i].obj.special != NULL) {
-            if (GameMode != 1 && i == language) {
+            if (GameMode != 1 && i == id) {
                 ObjTab[0x73 + i].obj.special->instance->flags.visible = 1;
             } else {
                 ObjTab[0x73 + i].obj.special->instance->flags.visible = 0;
@@ -6010,6 +6012,7 @@ void HubDrawItems(void) {
             continue;
         }
         for (n = 0; n < 6; n++) {
+            level = HData[i].level[n];
             if (i == 5 && n == i) {
                 continue;
             }
@@ -6019,6 +6022,7 @@ void HubDrawItems(void) {
             for (k = 0; k < 4; k++) {
                 level = HData[i].level[n];
                 if (level == -1) {
+                    object = -1;
                     continue;
                 }
                 p0 = (struct nuvec_s *)(spl->pts + (n * 8 + k * 2) * spl->ptsize);
@@ -6066,11 +6070,14 @@ void HubDrawItems(void) {
                         Draw3DObject(object, p0, 0, NuAtan2D(p1->x - p0->x, p1->z - p0->z), 0,
                                      0.77f, 0.77f, 0.77f, ObjTab[object].obj.scene,
                                      ObjTab[object].obj.special, 0);
+                    } else {
+                        object = -1;
                     }
                 } else if (character != -1) {
-                    if (CRemap[character] != -1) {
+                    id = CRemap[character];
+                    if (id != -1) {
                         Draw3DCharacter(p0, 0, NuAtan2D(p1->x - p0->x, p1->z - p0->z), 0,
-                                        &CModel[CRemap[character]], 0.77f, -1, 1.0f, 0);
+                                        &CModel[id], 0.77f, -1, 1.0f, 0);
                     }
                 }
             }

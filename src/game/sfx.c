@@ -306,88 +306,88 @@ void InitGlobalSfx(void) {
     SFXCOUNT_ALL = i;
 }
 
-void InitLocalSfx(GameSound *SfxTab, int count) {
-    int i;
-    
-    if (SfxTab == 0) {
+void InitLocalSfx(GameSound *sfxTab, s32 count) {
+    s32 i;
+
+    if (sfxTab == 0) {
         printf("No local SFX table available!\n");
         return;
     }
-        
-    if (SfxTab == SfxTabSPACE) {
-        switch(Game.language) {
+
+    if (sfxTab == SfxTabSPACE) {
+        switch (Game.language) {
         case 0:
             break;
         case 1:
-          SfxTab = SfxTabSPACEFre;
-          break;
+            sfxTab = SfxTabSPACEFre;
+            break;
         case 2:
-          SfxTab = SfxTabSPACEGer;
-          break;
+            sfxTab = SfxTabSPACEGer;
+            break;
         case 3:
-          SfxTab = SfxTabSPACEIta;
-          break;
+            sfxTab = SfxTabSPACEIta;
+            break;
         case 4:
-          SfxTab = SfxTabSPACESpa;
-          break;
+            sfxTab = SfxTabSPACESpa;
+            break;
         case 5:
-          SfxTab = SfxTabSPACEDut;
+            sfxTab = SfxTabSPACEDut;
+            break;
         }
     }
-    
-    if (SfxTab == SfxTabGAMEOVER) {
-        switch(Game.language) {
+
+    if (sfxTab == SfxTabGAMEOVER) {
+        switch (Game.language) {
         case 0:
             break;
         case 1:
-          SfxTab = SfxTabGAMEOVERFre;
-          break;
+            sfxTab = SfxTabGAMEOVERFre;
+            break;
         case 2:
-          SfxTab = SfxTabGAMEOVERGer;
-          break;
+            sfxTab = SfxTabGAMEOVERGer;
+            break;
         case 3:
-          SfxTab = SfxTabGAMEOVERIta;
-          break;
+            sfxTab = SfxTabGAMEOVERIta;
+            break;
         case 4:
-          SfxTab = SfxTabGAMEOVERSpa;
-          break;
+            sfxTab = SfxTabGAMEOVERSpa;
+            break;
         case 5:
-          SfxTab = SfxTabGAMEOVERDut;
+            sfxTab = SfxTabGAMEOVERDut;
+            break;
         }
     }
-    
+
     if (count - 0xC5 < 1) {
         printf("No local SFX in table!\n");
         return;
     }
-    
-    if (count > 299) {
+
+    if (count > 0x12B) {
         printf("SFX table not large enough for all local SFX...\n");
         count = 0x12B;
     }
-    
+
     count -= 0xC5;
     sfxcount_local = count;
     for (i = 0; i < count; i++) {
         NuStrCpy(SfxInfo[i].Filename, sfx_path_prefix);
-        NuStrCat(SfxInfo[i].Filename, SfxTab[i].path);
+        NuStrCat(SfxInfo[i].Filename, sfxTab[i].path);
         NuStrCat(SfxInfo[i].Filename, sfx_path_suffix);
-        SfxInfo[i].Pitch = (short)SfxTab[i].frequency;
-        SfxInfo[i].LoopInfo = SfxTab[i].stream;
-        SfxInfo[i].ID = SfxTab[i].id;
+        SfxInfo[i].Pitch = sfxTab[i].frequency;
+        SfxInfo[i].LoopInfo = sfxTab[i].stream;
+        SfxInfo[i].ID = sfxTab[i].id;
     }
     NuStrCpy(SfxInfo[i].Filename, sfx_empty_name);
     SfxInfo[i].Pitch = 0;
     SfxInfo[i].LoopInfo = 1;
     SfxInfo[i].ID = -1;
     NuSoundLocalSet(SfxInfo, count, 0xC5);
-    CurSfxTabLocal = SfxTab;
+    CurSfxTabLocal = sfxTab;
     SFXCOUNT_ALL = count + 0xC5;
     for (i = 0; i < count; i++) {
         CurSfxTabLocal[i].wait = 0;
     }
-    
-    return;
 }
 
 

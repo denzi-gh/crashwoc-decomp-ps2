@@ -21,7 +21,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0116:0024f778:InitLocalSfx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0116:0024fa08:UpdateGameSfx"

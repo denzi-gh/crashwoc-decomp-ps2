@@ -14,6 +14,7 @@ sys.path.insert(0, str(ROOT))
 import decomp
 
 CREATURE = "src/game/creature.c"
+FONT3D = "src/game/font3d.c"
 
 
 class TestCommandConstruction(unittest.TestCase):
@@ -170,10 +171,10 @@ class _Recorder:
 
 
 class TestOrchestration(unittest.TestCase):
-    # ManageCreatures is `asm` in the committed creature manifest; report it 100%.
+    # Text3D is `asm` in the committed font3d manifest; report it 100%.
     FAKE_REPORT = {"units": [{
-        "name": "game/creature", "measures": {},
-        "functions": [{"name": "ManageCreatures",
+        "name": "game/font3d", "measures": {},
+        "functions": [{"name": "Text3D",
                        "fuzzy_match_percent": 100.0}]}]}
 
     def setUp(self):
@@ -201,15 +202,15 @@ class TestOrchestration(unittest.TestCase):
 
     def test_unit_auto_promotes_hundred_percent_asm(self):
         decomp.run = rec = _Recorder(rc=0)
-        self.assertEqual(decomp.cmd_unit(CREATURE, "pal103", promote=True), 0)
+        self.assertEqual(decomp.cmd_unit(FONT3D, "pal103", promote=True), 0)
         promote_calls = [c for c in rec.calls if "tools/promote.py" in c]
         self.assertEqual(len(promote_calls), 1)
-        self.assertIn("pal103:unit-0091:001cc218:ManageCreatures",
+        self.assertIn("pal103:unit-0106:00238280:Text3D",
                       promote_calls[0])
 
     def test_unit_no_promote_flag_skips_promotion(self):
         decomp.run = rec = _Recorder(rc=0)
-        self.assertEqual(decomp.cmd_unit(CREATURE, "pal103", promote=False), 0)
+        self.assertEqual(decomp.cmd_unit(FONT3D, "pal103", promote=False), 0)
         self.assertFalse(any("tools/promote.py" in c for c in rec.calls))
 
 

@@ -382,7 +382,8 @@ void ManageCreatures(void)
     s32 index;
     struct aitab_s *pAI;
     struct aitab_s *ai;
-    struct aitype_s *type;
+    u8 *types;
+    s32 size;
 
     if ((Level == 0x25) || ((LDATA->flags & 0x202) != 0)) {
         d = (f32)LDATA->farclip;
@@ -611,7 +612,8 @@ void ManageCreatures(void)
 
     if ((index != -1) && (index != old_index)) {
         ai = &AITab[index];
-        type = AIType;
+        types = (u8 *)AIType;
+        size = sizeof(struct aitype_s);
         if (!(AITab[index].delay > 0.0f) || !(AITab[index].time > 0.0f)) {
             if (Character[c_slot].used != 0) {
                 Character[c_slot].on = 0;
@@ -621,8 +623,7 @@ void ManageCreatures(void)
                 }
             } else if (NuVecDistSqr(&AITab[index].origin,
                                     &player->obj.pos, 0) < range2) {
-                j = ai->ai_type;
-                i = type[j].character;
+                i = ((struct aitype_s *)(types + ai->ai_type * size))->character;
                 NuDebugMsgProlog(".\\creature.c", 0x135C)(
                     "ManageCreatures - new character = %s", CData[i].name);
                 AddCreature(i, c_slot, index);
@@ -3480,8 +3481,8 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                     mR._01 = -mR._01;
                     mR._11 = -mR._11;
                     mR._21 = -mR._21;
-                    mR._31 = c->obj.reflect_y -
-                             (mR._31 - c->obj.reflect_y);
+                    y = c->obj.reflect_y;
+                    mR._31 = y - (mR._31 - y);
                     NuHGobjRndrMtx(model[0]->obj, &mR, 1, 0, tmtx);
                 }
                 if ((shadow != 0) && (c->obj.shadow != 2000000.0f) &&
@@ -3489,8 +3490,8 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                     ((TerSurface[c->obj.surface_type].flags & 1) == 0) &&
                     (SKELETALCRASH == 0) && (c->freeze == 0) &&
                     (glass_draw == 0)) {
-                    ScaleFlatShadow(&s, c->obj.pos.y, c->obj.shadow,
-                                    c->obj.SCALE);
+                    y = c->obj.shadow;
+                    ScaleFlatShadow(&s, c->obj.pos.y, y, c->obj.SCALE);
                     NuMtxSetScale(&mS, &s);
                     NuMtxRotateY(&mS, yrot);
                     NuMtxRotateZ(&mS, c->obj.surface_zrot);
@@ -3569,8 +3570,8 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                     ((TerSurface[c->obj.surface_type].flags & 1) == 0) &&
                     (SKELETALCRASH == 0) && (c->freeze == 0) &&
                     (glass_draw == 0)) {
-                    ScaleFlatShadow(&s, c->obj.pos.y, c->obj.shadow,
-                                    c->obj.SCALE);
+                    y = c->obj.shadow;
+                    ScaleFlatShadow(&s, c->obj.pos.y, y, c->obj.SCALE);
                     NuMtxSetScale(&mS, &s);
                     NuMtxRotateY(&mS, yrot);
                     NuMtxRotateZ(&mS, c->obj.surface_zrot);
@@ -3603,8 +3604,8 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                     mR._01 = -mR._01;
                     mR._11 = -mR._11;
                     mR._21 = -mR._21;
-                    mR._31 = c->obj.reflect_y -
-                             (mR._31 - c->obj.reflect_y);
+                    y = c->obj.reflect_y;
+                    mR._31 = y - (mR._31 - y);
                     NuHGobjRndr(model[1]->obj, &mR, 1, 0);
                 }
             }
@@ -3735,8 +3736,8 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                 ((vflag == 0) || (SKELETALCRASH == 0)) &&
                 (VEHICLE != 0xA1) && (VEHICLE != 0x89) && (VEHICLE != 0x63) &&
                 ((vflag != 0) || (c->obj.vehicle != 0xA1))) {
-                ScaleFlatShadow(&s, c->obj.pos.y, c->obj.shadow,
-                                c->obj.SCALE);
+                y = c->obj.shadow;
+                ScaleFlatShadow(&s, c->obj.pos.y, y, c->obj.SCALE);
                 NuMtxSetScale(&mS, &s);
                 NuMtxRotateY(&mS, yrot);
                 NuMtxRotateZ(&mS, c->obj.surface_zrot);
