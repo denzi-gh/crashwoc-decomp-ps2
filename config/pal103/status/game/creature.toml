@@ -17,7 +17,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0091:001cc218:ManageCreatures"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0091:001ccbf8:LoadCharacterModels"
@@ -45,7 +45,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0091:001ce3e0:MovePlayer"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0091:001d1ff0:ProcessCreatures"
@@ -57,11 +57,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0091:001d2728:DrawCharacterModel"
-state = "equivalent"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0091:001d2f50:DrawCreatures"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0091:001d4fc0:UpdateAnimPacket"

@@ -720,7 +720,6 @@ extern f32 CAMSTOPFAR;
 extern f32 SIDECAMDISTANCE;
 extern f32 WesternCountdown;
 
-/* {1,1,1} in camera.c's .rodata: the jeep cameras' seek rate. */
 /* MoveGameCamera's function-static rail blend factor. */
 extern f32 D_00630AA8;
 #define rail_blend D_00630AA8
@@ -1074,8 +1073,6 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
         seek = (struct nuvec_s){1.0f, 1.0f, 1.0f};
         look = JeepvObj;
         GameCamera->pos = pos = JeepvPos;
-        look = JeepvObj;
-        GameCamera->seek = (struct nuvec_s){1.0f, 1.0f, 1.0f};
         break;
 
     case 0x14:
