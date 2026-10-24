@@ -3808,7 +3808,8 @@ struct eduimenu_s *ptlclipmenu = 0;
 struct eduimenu_s *dpadmodemenu = 0;
 struct edmainreg_s edptldesc = {
     0, 0, "Particle Positioner", edppInit, edppClose, edppEnter, 0, edppApply,
-    edppWrite, edppRead, EDMAIN_BLOCKID('p', 't', 'l', 'p'), edppProc, edppRender
+    (void (*)(s32))edppWrite, (void (*)(s32))edppRead, EDMAIN_BLOCKID('p', 't', 'l', 'p'),
+    (s32 (*)(struct nupad_s *, f32))edppProc, edppRender
 };
 struct edppptl_s edpp_ptls[256] = {{{0}}};
 struct nuvec_s edpp_cam_pos = {0.0f, 0.0f, 0.0f};

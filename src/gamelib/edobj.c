@@ -2628,7 +2628,7 @@ void edobjInit(void)
 
 struct edmainreg_s edobjdesc = {
     0, 0, "Object Editor", edobjInit, edobjClose, edobjEnter, 0, 0, 0, 0,
-    EDMAIN_BLOCKID('o', 'b', 'j', 't'), edobjProc, edobjRender
+    EDMAIN_BLOCKID('o', 'b', 'j', 't'), (s32 (*)(struct nupad_s *, f32))edobjProc, edobjRender
 };
 struct nuanimdata_s *ObjectAnim[64] = { 0 };
 /* Retail pads ObjectInstance to a 16-byte boundary. */
