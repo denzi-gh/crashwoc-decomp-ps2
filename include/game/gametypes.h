@@ -574,6 +574,19 @@ typedef struct {
     signed char hold;                   /* 0x18F */
 } MaskInfo; /* 0x190 */
 
+/* MaskFeathers entry: 4 x 0x90 = 0x240 (memset len in ResetMaskFeathers). */
+typedef struct {
+    struct numtx_s mM;                  /* 0x00 */
+    struct numtx_s mS;                  /* 0x40 */
+    float time;                         /* 0x80 */
+    float duration;                     /* 0x84 */
+    float shadow;                       /* 0x88 */
+    char pad1;                          /* 0x8C */
+    char pad2;                          /* 0x8D */
+    char pad3;                          /* 0x8E */
+    char pad4;                          /* 0x8F */
+} MaskFeathersInfo; /* 0x90 */
+
 struct chase_s {
     struct nugspline_s *spl_START;      /* 0x0000 */
     float time;                         /* 0x0004 */
