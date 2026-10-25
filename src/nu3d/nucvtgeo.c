@@ -1976,50 +1976,54 @@ void NuPs2CreateRenderStream(struct nugobj_s *gobj) {
             if (geom->skins || geom->vtxskininfo) {
                 continue;
             }
-            geom->dmastream = dma;
+            /* store through a cast: retail reloads dma after this store */
+            *(u8 **)&geom->dmastream = dma;
             info_pktbuff = dma;
-            prim = geom->prim;
-            if (prim) {
-                switch (prim->type) {
-                case NUPRIM_TRILIST:
-                    idx = prim->vid;
-                    for (left = prim->cnt; left > 0;) {
-                        n = left > 6000 ? 6000 : left;
-                        left -= 6000;
-                        dmasize = NuCvtSizeDmaTriCFromIdx(idx, n, geom->mtl, 0);
-                        memset(dma, 0, dmasize);
-                        NuCvtDmaTriCFromIdx(&dma, geom->vtxptr, idx, n, geom->mtl);
-                        idx += n;
-                    }
-                    break;
-                case NUPRIM_TRISTRIP:
-                    idx = prim->vid;
-                    for (left = prim->cnt; left > 0;) {
-                        int limit = 6000;
-
-                        len = 0;
-                        strip = idx;
-                        while (len < left) {
-                            next = len + (*strip + 1);
-                            strip += *strip + 1;
-                            if (next > limit) {
-                                break;
-                            }
-                            len = next;
+            /* loop note: retail keeps the prim load below the stores and 8-aligns the case label */
+            do {
+                prim = geom->prim;
+                if (prim) {
+                    switch (prim->type) {
+                    case NUPRIM_TRILIST:
+                        idx = prim->vid;
+                        for (left = prim->cnt; left > 0;) {
+                            n = left > 6000 ? 6000 : left;
+                            left -= 6000;
+                            dmasize = NuCvtSizeDmaTriCFromIdx(idx, n, geom->mtl, 0);
+                            memset(dma, 0, dmasize);
+                            NuCvtDmaTriCFromIdx(&dma, geom->vtxptr, idx, n, geom->mtl);
+                            idx += n;
                         }
-                        n = len;
-                        left -= n;
-                        dmasize = NuCvtSizeDmaTriStripCFromIdx(idx, n, geom->mtl, 0);
-                        memset(dma, 0, dmasize);
-                        NuCvtDmaTriStripCFromIdx(&dma, geom->vtxptr, idx, n, geom->mtl);
-                        idx += n;
+                        break;
+                    case NUPRIM_TRISTRIP:
+                        idx = prim->vid;
+                        for (left = prim->cnt; left > 0;) {
+                            int limit = 6000;
+
+                            len = 0;
+                            strip = idx;
+                            while (len < left) {
+                                next = len + (*strip + 1);
+                                strip += *strip + 1;
+                                if (next > limit) {
+                                    break;
+                                }
+                                len = next;
+                            }
+                            n = len;
+                            left -= n;
+                            dmasize = NuCvtSizeDmaTriStripCFromIdx(idx, n, geom->mtl, 0);
+                            memset(dma, 0, dmasize);
+                            NuCvtDmaTriStripCFromIdx(&dma, geom->vtxptr, idx, n, geom->mtl);
+                            idx += n;
+                        }
+                        break;
+                    default:
+                        NuErrorProlog(nucvtgeo_srcfile, 0xA67)(prim_type_msg);
+                        break;
                     }
-                    break;
-                default:
-                    NuErrorProlog(nucvtgeo_srcfile, 0xA67)(prim_type_msg);
-                    break;
                 }
-            }
+            } while (0);
             dma = vpDmaTag_Ret(dma);
             geom->dmasize = dma - (u8 *)geom->dmastream;
         }
