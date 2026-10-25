@@ -690,11 +690,6 @@ void SetNewMaskStuff(s32 index, struct nuvec_s *centre, struct nuvec_s *offset,
     mask->tiltx[0] = tiltx;
 }
 
-inline void ProcessCrashteroidsIntro(void)
-{
-    ProcessFireFlyIntro();
-}
-
 struct nuvec_s *GetWeatherBossPos(void)
 {
     return D_005B44F8;
@@ -1465,10 +1460,10 @@ void ProcessGliderBombs(void)
     floor = -30.0f;
     for (enemy = 0; enemy < 2; enemy++) {
         for (i = 0; i < count; i++) {
-            bomb = &bombs[i];
-            if (bomb->life == 0) {
+            if (bombs[i].life == 0) {
                 continue;
             }
+            bomb = &bombs[i];
             bomb->life--;
             vel = bomb->vel;
             if (NewRayCast(&bomb->pos, &vel, 0.0f)) {
@@ -1488,8 +1483,8 @@ void ProcessGliderBombs(void)
             AddGameDebrisRot(0x45, &pos, 1, 0, 0);
             NuVecAdd(&bomb->pos, &bomb->pos, &bomb->vel);
             if (bomb->pos.y < floor && Level == 0x12) {
-                bomb->pos.y = 0.0f;
                 bomb->life = 0;
+                bomb->pos.y = 0.0f;
                 AddGameDebris(0x35, &bomb->pos);
                 continue;
             }
@@ -3234,6 +3229,9 @@ extern struct nuvec_s NullNuVec;
 extern struct nuvec_s *CrossProduct(struct nuvec_s *dest, struct nuvec_s *a, struct nuvec_s *b);
 
 
+extern f32 D_0062DD3C;
+extern f32 D_0062DD44;
+
 void TerrainAtlas(struct NEWBUGGY *atlas, f32 dt)
 {
     struct nuvec_s history[6];
@@ -3242,7 +3240,6 @@ void TerrainAtlas(struct NEWBUGGY *atlas, f32 dt)
     struct nuvec_s step;
     s32 tries;
     s32 maxtries;
-    s32 left;
     s32 hit;
     f32 dot;
     f32 speed;
@@ -3251,18 +3248,18 @@ void TerrainAtlas(struct NEWBUGGY *atlas, f32 dt)
 
     tries = 6;
     maxtries = 6;
+    /* Keep the debug-counter accesses on their retail execution paths. */
     if (AtlasFrame >= 500) {
-        tttt++;
+        (*(volatile s32 *)&tttt)++;
     }
     step.x = atlas->ball_target.x - atlas->ball_pos.x;
     step.y = atlas->ball_target.y - atlas->ball_pos.y;
     step.z = atlas->ball_target.z - atlas->ball_pos.z;
     do {
-        left = tries - 1;
         move = step;
-        history[left] = atlas->ball_pos;
-        spins[left] = atlas->rotquat_delta;
-        hit = NewRayCastSetHandel(&atlas->ball_pos, &move, atlas->ball_radius, 0.01f, 0.0f, atlas->terrhandle);
+        history[tries - 1] = atlas->ball_pos;
+        spins[tries - 1] = atlas->rotquat_delta;
+        hit = NewRayCastSetHandel(&atlas->ball_pos, &move, atlas->ball_radius, D_0062DD3C, 0.0f, atlas->terrhandle);
         if (hit & 0x10) {
             if (TerrainPlatId() != -1 && ShadNorm.y >= 0.5f) {
                 if (!UnembedRayCastAtlasSimple(atlas, atlas->terrhandle)) {
@@ -3272,7 +3269,7 @@ void TerrainAtlas(struct NEWBUGGY *atlas, f32 dt)
                 UnembedRayCastAtlas(atlas, atlas->terrhandle);
             }
             move = step;
-            hit = NewRayCastSetHandel(&atlas->ball_pos, &move, atlas->ball_radius, 0.01f, 0.0f, atlas->terrhandle);
+            hit = NewRayCastSetHandel(&atlas->ball_pos, &move, atlas->ball_radius, D_0062DD44, 0.0f, atlas->terrhandle);
         }
         atlas->ball_oldpos = atlas->ball_pos;
         NuVecSub(&step, &step, &move);
@@ -3310,7 +3307,8 @@ void TerrainAtlas(struct NEWBUGGY *atlas, f32 dt)
             }
             dot = DotProduct(&norm, &step);
             NuVecScaleAccum(&step, &norm, -dot);
-            if (tries != maxtries && dot > -0.99f && NuVecMagSqr(&move) < 1e-11f) {
+            /* Retail reloads the starting depth after the ray casts. */
+            if (*(volatile s32 *)&maxtries != tries && dot > -0.99f && NuVecMagSqr(&move) < 1e-11f) {
                 if (DotProduct(&norm, &atlas->lastnormal) >= 0.0f) {
                     probe = atlas->ball_pos;
                     NuVecScaleAccum(&probe, &norm, 0.001f);
@@ -3339,10 +3337,10 @@ void TerrainAtlas(struct NEWBUGGY *atlas, f32 dt)
             }
             atlas->lastnormal = norm;
         }
-        tries = left;
-    } while (hit != 0 && left != 0);
-    if (left == 0) {
-        tttt++;
+        tries--;
+    } while (hit != 0 && tries != 0);
+    if (tries == 0) {
+        (*(volatile s32 *)&tttt)++;
     }
 }
 
@@ -7829,6 +7827,8 @@ extern void ControlGliderWeatherBoss(struct gliderflight_s *glider, struct nupad
 extern void ProcessGliderMovement(struct gliderflight_s *glider, f32 dt);
 extern void GliderFire(struct gliderflight_s *glider, struct nupad_s *pad);
 
+extern void ProcessCrashteroidsIntro(void);
+
 void MoveGlider(struct creature_s *Cre, struct nupad_s *Pad)
 {
     struct gliderflight_s *Glider;
@@ -8096,6 +8096,12 @@ void MoveGlider(struct creature_s *Cre, struct nupad_s *Pad)
         AddVariableShotDebrisEffect(GDeb[0x9F].i, (struct nuvec_s *)&Glider->Cre->mtxLOCATOR[1][2]._30, 1, 0, 0);
     }
 }
+
+inline void ProcessCrashteroidsIntro(void)
+{
+    ProcessFireFlyIntro();
+}
+
 
 
 inline void DrawAsteroids(void)
@@ -9832,32 +9838,33 @@ extern struct nuvec_s WeatherBossFirePoint;
 
 void ControlGliderWeatherBoss(struct gliderflight_s *glider, struct nupad_s *pad)
 {
-    f32 oldtiltz;
-    f32 tilt;
+    f32 OldTiltZ;
     struct nuvec_s *campos;
     struct nuvec_s *bosspos;
     struct nuvec_s offset;
 
     if (glider->TerminalDive == 0 && WBIntroOn == 0 && FlyingLevelExtro == 0) {
-        if ((((volatile struct nupad_s *)pad)->paddata & 0x2) && (u32)glider->BarrelRoll < 2
+        if ((((volatile struct nupad_s *)pad)->paddata & 0x2) && 
+            (glider->BarrelRoll == 0 || glider->BarrelRoll == 1)
             && glider->Position.x > -WBLIMX) {
             glider->BarrelRoll = 3;
             GameSfx(0x5C, &glider->Position);
-        } else if ((pad->paddata & 0x1) && (u32)(glider->BarrelRoll + 1) < 2
-                   && glider->Position.x < WBLIMX) {
+        } else if ((((pad->paddata & 0x1) != 0) && ((glider->BarrelRoll == -1) || (glider->BarrelRoll == 0))) &&
+         (glider->Position.x < WBLIMX)) {
             glider->BarrelRoll = -3;
             GameSfx(0x5C, &glider->Position);
         }
     }
     if (glider->BarrelRoll != 0) {
-        oldtiltz = Rationalise360f(glider->TiltZ);
+        OldTiltZ = Rationalise360f(glider->TiltZ);
         if (glider->BarrelRoll == 2 && glider->TiltZ > -45.0f) {
             glider->BarrelRoll = 1;
         }
         if (glider->BarrelRoll == -2 && glider->TiltZ < 45.0f) {
             glider->BarrelRoll = -1;
         }
-        if ((u32)(glider->BarrelRoll + 1) > 2 || glider->TiltZ > 30.0f || glider->TiltZ < -30.0f) {
+        if ((glider->BarrelRoll < -1 || glider->BarrelRoll > 1) 
+            || glider->TiltZ > 30.0f || glider->TiltZ < -30.0f) {
             SeekHalfLife(&glider->BarrelDelta, 7.2f, 0.05f, 0.02f);
         } else if (glider->TiltZ > 1.0f || glider->TiltZ < -1.0f) {
             glider->BarrelDelta = (f32)fabs(glider->TiltZ * 20.0f * 0.02f * 0.5f);
@@ -9865,20 +9872,18 @@ void ControlGliderWeatherBoss(struct gliderflight_s *glider, struct nupad_s *pad
             glider->BarrelDelta = 1.0f;
         }
         if (glider->BarrelRoll > 0) {
-            tilt = Rationalise360f(oldtiltz + glider->BarrelDelta);
-            glider->TiltZ = tilt;
-            if (oldtiltz >= 0.0f && tilt < 0.0f) {
+            glider->TiltZ = Rationalise360f(OldTiltZ + glider->BarrelDelta);
+            if (OldTiltZ >= 0.0f && glider->TiltZ < 0.0f) {
                 glider->BarrelRoll = 2;
             }
         } else {
-            tilt = Rationalise360f(oldtiltz - glider->BarrelDelta);
-            glider->TiltZ = tilt;
-            if (oldtiltz <= 0.0f && tilt > 0.0f) {
+            glider->TiltZ = Rationalise360f(OldTiltZ - glider->BarrelDelta);
+            if (OldTiltZ <= 0.0f && glider->TiltZ > 0.0f) {
                 glider->BarrelRoll = -2;
             }
         }
-        if ((glider->BarrelRoll == 1 && oldtiltz < 0.0f && glider->TiltZ >= 0.0f)
-            || (glider->BarrelRoll == -1 && oldtiltz > 0.0f && glider->TiltZ <= 0.0f)) {
+        if ((glider->BarrelRoll == 1 && OldTiltZ < 0.0f && glider->TiltZ >= 0.0f)
+            || (glider->BarrelRoll == -1 && OldTiltZ > 0.0f && glider->TiltZ <= 0.0f)) {
             glider->BarrelRoll = 0;
             glider->TiltZ = 0.0f;
         }
@@ -9886,10 +9891,9 @@ void ControlGliderWeatherBoss(struct gliderflight_s *glider, struct nupad_s *pad
     ProcessWeatherBossTarget();
     campos = (struct nuvec_s *)&WeatherBossCamMtx._30;
     bosspos = GetWeatherBossPos();
-    NuVecScale(&offset, &WeatherBossTargetPos, (bosspos->z - campos->z) / WeatherBossTargetPos.z);
+    NuVecScale(&offset, &WeatherBossTargetPos, (bosspos->z - WeatherBossCamMtx._32) / WeatherBossTargetPos.z);
     NuVecAdd(&WeatherBossFirePoint, &offset, campos);
 }
-
 
 void ControlGlider(struct gliderflight_s *glider, struct nupad_s *pad)
 {

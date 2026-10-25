@@ -1252,7 +1252,8 @@ int tbslotEndFn(TbSet *set, int slot)
 
     set = set != 0 ? set : D_0062F034;
     slot &= 0xF;
-    elapsed = EE_T1_COUNT - *(volatile int *)&set->begin[(unsigned char)slot];
+    /* The narrow index preserves the retail compiler's address-copy sequence. */
+    elapsed = EE_T1_COUNT - set->begin[(unsigned char)slot];
     over = elapsed > lim;
     elapsed += over * lim;
     set->values[slot][1 - set->current[slot]] += elapsed;
