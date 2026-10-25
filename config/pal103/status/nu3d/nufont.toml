@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0041"
 source = "src/nu3d/nufont.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0041:001309a8:NuFntLoad"
@@ -82,3 +82,70 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0041:00131f98:NuFntPrintLenV"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0041:002e5c58:ariel16_fnt"
+state = "retail"
+reason = "raw .fnt file of the built-in system font"
+
+[[data]]
+id = "pal103:unit-0041:002e64f8:ariel16_bmp"
+state = "retail"
+reason = "raw bitmap of the built-in system font"
+
+[[data]]
+id = "pal103:unit-0041:002e8570:fnt_fg_rgba"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0041:0062ed30:NuFntCur"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0041:0062ed34:scale_x"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0041:0062ed38:scale_y"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0041:0062ed3c:crsr_x"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0041:0062ed40:crsr_y"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0041:0062ed44:system_font"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0041:0062ed48:no_default_font"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0041:0062ed60:nufnt_init"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0041:0062ed64:NuFntHeight"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0041:0062ed68:NuFntBase"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0041:0062ed6c:NuFntPrintLength"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0041:0062ed70:NuFntPrintHeight"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x00614938
+end = 0x00614957

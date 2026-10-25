@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0111"
 source = "src/game/lights.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0111:002445a8:LoadLights"
@@ -90,3 +90,108 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0111:00247a20:SortLights"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0111:005cf5f0:lcutdir"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0111:005cf618:lcutdircol"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0111:005cf640:lcutambcol"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0111:005cf650:titledir"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0111:005cf678:titlergb"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0111:005cf688:titlergb2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0111:005cf698:creditsdir"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0111:005cf6c0:creditsdircol"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0111:005cf6e8:creditsrgb"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0111:005cf6f8:ZVec"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0111:005cf708:creditsang"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0111:005cf718:ldir"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0111:005cf740:lcol"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0111:005cf768:acol"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0111:005cf778:Lights"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0111:00632760:sf"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0111:00632764:sf2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0111:00632768:size"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0111:0063276c:size2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0111:00632770:intensity"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0111:00632780:LIGHTCOUNT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0111:00632784:AMBIENTCOUNT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0111:00632788:DIRECTCOUNT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0111:0063278c:POINTCOUNT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0111:00632790:NEGATIVECOUNT"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x006251e8
+end = 0x006251f4

@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0121"
 source = "src/game/cut.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0121:0025b850:AppCutSceneCharacterRender"
@@ -118,3 +118,431 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0121:0025edb8:MakeLightDirection"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060af58:cutdir"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060af80:cutdircol"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060afa8:cutambcol"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060afb8:csc_titles"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060afe0:csd_titles"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060b010:csc_intro1and2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060b160:csd_intro1and2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060b220:csc_outro"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060b280:csd_outro"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060b2a0:csc_outro2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060b358:csd_outro2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060b398:cutscene_locatorfns"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060b3a8:DirCol"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060b3d0:DirVec"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060b3f8:AmbCol"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060b408:cutcampos_FRONTEND"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060b418:cutcamlook_FRONTEND"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060b428:cutpos_CRASH"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060b438:cutpos_FRONTEND"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060b450:cutpos_SPACE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060b478:campos_SPACE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060b488:GameCut_EARTH_CORTEX"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060b4d8:Space_EARTH_1STLEVEL_PlayList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060b658:GameCut_EARTH_1STLEVEL"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060b678:Space_EARTH_2CRYSTALS_PlayList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060b7f8:GameCut_EARTH_2CRYSTALS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060b818:Space_EARTH_4CRYSTALS_PlayList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060b998:GameCut_EARTH_4CRYSTALS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060b9b8:Space_EARTH_BOSS_PlayList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060bbb8:GameCut_EARTH_BOSS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060bbf0:Space_EARTH_AKUAKU_PlayList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060bd70:GameCut_EARTH_AKUAKU"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060bd90:GameCut_WATER_CORTEX"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060bde0:Space_WATER_1STLEVEL_PlayList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060bf60:GameCut_WATER_1STLEVEL"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060bf80:Space_WATER_2CRYSTALS_PlayList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060c100:GameCut_WATER_2CRYSTALS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060c120:Space_WATER_4CRYSTALS_PlayList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060c2a0:GameCut_WATER_4CRYSTALS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060c2c0:Space_WATER_BOSS_PlayList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060c4c0:GameCut_WATER_BOSS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060c4f8:GameCut_FIRE_CORTEX"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060c548:Space_FIRE_1STLEVEL_PlayList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060c6c8:GameCut_FIRE_1STLEVEL"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060c6e8:Space_FIRE_2CRYSTALS_PlayList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060c868:GameCut_FIRE_2CRYSTALS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060c888:Space_FIRE_4CRYSTALS_PlayList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060ca08:GameCut_FIRE_4CRYSTALS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060ca28:Space_FIRE_BOSS_PlayList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060cc28:GameCut_FIRE_BOSS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060cc60:GameCut_WEATHER_CORTEX"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060ccb0:Space_WEATHER_1STLEVEL_PlayList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060ce30:GameCut_WEATHER_1STLEVEL"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060ce50:Space_WEATHER_2CRYSTALS_PlayList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060cfd0:GameCut_WEATHER_2CRYSTALS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060cff0:Space_WEATHER_4CRYSTALS_PlayList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060d170:GameCut_WEATHER_4CRYSTALS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060d190:Space_WEATHER_BOSS_PlayList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060d390:GameCut_WEATHER_BOSS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060d3c8:Space_SPACE_1STLEVEL_PlayList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060d5c8:GameCut_SPACE_1STLEVEL"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060d600:Space_SPACE_2CRYSTALS_PlayList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060d780:GameCut_SPACE_2CRYSTALS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060d7a0:Space_SPACE_4CRYSTALS_PlayList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060d920:GameCut_SPACE_4CRYSTALS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060d940:Space_SPACE_BOSS_PlayList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060db40:GameCut_SPACE_BOSS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060db78:SpaceGameCutTab"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060dc48:CutAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060dc68:CutTimer"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0060dc80:CutVortexAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:00632b98:logos_played"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:00632b9c:TITLESTARTTIME"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:00632ba0:TITLEFPS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:00632ba4:cutmovie_hold"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:00632bb8:CutChar"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:00632bd8:cutratefrig"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:00632bdc:cutmovie"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:00632be0:cutang_CRASH"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:00632be4:gamecut"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:00632be8:gamecut_start"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:00632bec:gamecut_finished"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:00632bf0:gamecut_newlevel"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:00632bf4:gamecut_sfx"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:00632bf8:pCutAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:00632bfc:gamecut_hack"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:00632c00:SPACEMASKADJUSTY"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:00632c04:FRONTENDCORTEXADJUSTY"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:00632c08:HUBHOLOSCALE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:00632cb8:next_cut_movie"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:00632cc0:cutang_FRONTEND"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:00632cc8:cutang_SPACE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:00632cd0:gamecut_hold"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:00633388:cutworldix"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:0063338c:ghg_inst_count"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:00633390:scene_inst_count"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:006ff680:CutScene"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:006ff700:CutInst"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:006ff780:CutAudio"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:006ff800:cutdebgroups"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:006ff880:ghg_insts"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0121:006ff980:scene_insts"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x006ff980
+end = 0x006ffa80
+
+[[claim]]
+section = ".rodata"
+start = 0x006287f0
+end = 0x00629350
+
+[[claim]]
+section = ".rodata"
+start = 0x00629550
+end = 0x00629570
+
+[[claim]]
+section = ".sbss"
+start = 0x00633390
+end = 0x00633394

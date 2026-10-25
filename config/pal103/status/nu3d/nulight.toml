@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0042"
 source = "src/nu3d/nulight.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0042:00132090:NuLightMatInit"
@@ -114,3 +114,258 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0042:001404e8:NuLgtRand"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:002e8580:NuRndrTopBit"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:002e8680:NuLgtHSurf"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:002e86c8:NuLgtSurf"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:002e8710:NuLgtArcLaserData"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:002e8b10:NuLightHazePolyus"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:002e8b20:NuLightHazePolyvs"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:002e8b30:NuLgtPolyHazeData"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:002e8db0:NuLightSpots"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:002e8eb0:NuLgtHFogMat"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:002e8ec0:NuLgtHLightMat"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:002e8f20:NuLgtFogMat"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:002e8f30:NuLgtLightMat"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:0062ed78:NuLgtSeed"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:0062ed7c:Hazeampx"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:0062ed80:Hazeampy"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:0062ed84:HazeColour"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:0062ed88:testmult"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:0062ed8c:testbasespeed"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:0062ed90:testfogmult"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:0062ed94:testfogheight"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:0062ed9c:NuLightAddMat"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:0062eda0:NuLightAddMat2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:0062eda4:NuLightZBufMat"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:0062eda8:NuLgtBackBuff"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:0062edac:NuLgtGreyNZMat"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:0062edb0:NuLgtArcLaserCnt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:0062edb4:NuLgtArcLaserOldCnt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:0062edb8:NuLgtArcLaserFrame"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:0062edbc:NuLgtArcMtl"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:0062edc0:NuLgtArcU0"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:0062edc4:NuLgtArcV0"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:0062edc8:NuLgtArcU1"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:0062edcc:NuLgtArcV1"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:0062edd0:NuLightHazePolyCnt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:0062edd4:NuLightHazePolymtl"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:0062edd8:NuLightSpotCnt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:0062eddc:NuLightOldSpotCnt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:0062ede0:NuLgtGreyMat"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:0062ede4:NuLightZMat"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:0062ede8:NuLgtBackAlphaBuff"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:0062edf0:NuLgtBuff"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:0062edf4:NuLgtFxSetCall"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:0062edf8:NuLgtFxFogCop"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:0062edfc:NuLgtFxFogClr"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:0062ee00:NuRndrFogNear"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:0062ee04:NuRndrFogFar"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:0062ee08:NuRndrFogCol"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:0062ee0c:NuRndrFogBlur"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:0062ee10:NuRndrFogClear"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:0062ee14:testmax"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:00633080:ang.105"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:00633084:ang2.106"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:00633088:update_count"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:006ad100:lights"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:006ad580:ldirs"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:006ad5a8:lcols"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:006ad5d0:assignment"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:006ad5e0:assignment_age"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:006ad5f0:lamb"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0042:006ad600:NuLightBuff"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x006ad600
+end = 0x006adc00
+
+[[claim]]
+section = ".rodata"
+start = 0x00614960
+end = 0x00614a60
+
+[[claim]]
+section = ".sbss"
+start = 0x00633088
+end = 0x0063308c

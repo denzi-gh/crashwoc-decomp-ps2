@@ -80,48 +80,19 @@ extern s32 PS2_REZ_H;
 extern s32 PS2_VCNTR_X;
 extern s32 PS2_VCNTR_Y;
 
-extern struct nufont_s *NuFntCur;
-extern struct nufont_s *system_font;
-extern s32 no_default_font;
-extern s32 NuFntBase;
-extern s32 NuFntHeight;
-extern s32 NuFntPrintLength;
-extern s32 NuFntPrintHeight;
-extern u8 ariel16_fnt[];
-extern u8 ariel16_bmp[];
+/* raw font assets: the matching build takes their bytes from retail */
+u8 ariel16_fnt[2208] = { 0 };
+u8 ariel16_bmp[8310] = { 0 };
+static s32 fnt_fg_rgba[4] = { 0x80, 0x80, 0x80, 0x80 };
+struct nufont_s *NuFntCur = 0;
+static s32 scale_x = 16;
+static s32 scale_y = 16;
+static s32 crsr_x = 0x8000;
+static s32 crsr_y = 0x8000;
+struct nufont_s *system_font = 0;
+s32 no_default_font = 0;
 
-extern s32 D_0062ED34;
-extern s32 D_0062ED38;
-extern s32 D_0062ED3C;
-extern s32 D_0062ED40;
-extern s32 D_0062ED60;
-extern s32 D_002E8570[4];
-extern char D_0062ED50[];
-extern char D_0062ED58[];
-extern char D_00614858[];
-extern char D_00614878[];
-extern char D_00614898[];
-extern char D_006148B8[];
-extern char D_006148E8[];
-extern char D_00614900[];
-extern char D_00614918[];
-extern char D_00614938[];
-#define font_xscale D_0062ED34
-#define font_yscale D_0062ED38
-#define font_x D_0062ED3C
-#define font_y D_0062ED40
-#define font_initialised D_0062ED60
-#define font_pen D_002E8570
-#define fnt_name_fmt D_0062ED50
-#define bmp_name_fmt D_0062ED58
-#define nufont_srcfile D_00614858
-#define str_font_load_failed D_00614878
-#define str_memfont_load_failed D_00614898
-#define str_font_not_8bit D_006148B8
-#define str_font_off_map D_006148E8
-#define str_font_alloc_failed D_00614900
-#define str_font_tex_failed D_00614918
-#define str_font_mtl_failed D_00614938
+#define nufont_srcfile "..\\nu2crash.ps2\\nu3d\\nufont.c"
 
 
 struct nufont_s *NuFntLoad(char *name)
@@ -134,7 +105,7 @@ struct nufont_s *NuFntLoad(char *name)
     s32 handle;
     s32 tid;
 
-    sprintf(path, fnt_name_fmt, name);
+    sprintf(path, "%s.fnt", name);
     size = NuFileSize(path);
     if (size != 0) {
         font = NuMemAllocFn(size, nufont_srcfile, 0x50);
@@ -144,7 +115,7 @@ struct nufont_s *NuFntLoad(char *name)
                 NuFileRead(handle, font, size);
                 NuFileClose(handle);
             }
-            sprintf(path, bmp_name_fmt, name);
+            sprintf(path, "%s.bmp", name);
             bmp = NuTexReadBitmap(path);
             if (bmp != 0) {
                 tid = NuTexCreate(bmp);
@@ -172,9 +143,16 @@ struct nufont_s *NuFntLoad(char *name)
             }
         }
     }
-    NuErrorProlog(nufont_srcfile, 0x75)(str_font_load_failed, name);
+    NuErrorProlog(nufont_srcfile, 0x75)("unable to create font %s", name);
     return 0;
 }
+
+
+static s32 nufnt_init = 0;
+s32 NuFntHeight = 0;
+s32 NuFntBase = 0;
+s32 NuFntPrintLength = 0;
+s32 NuFntPrintHeight = 0;
 
 
 struct nufont_s *NuFntLoadMem(void *fntdata, s32 size, void *bmpdata)
@@ -214,7 +192,7 @@ struct nufont_s *NuFntLoadMem(void *fntdata, s32 size, void *bmpdata)
             NuMemFreeFn(bmp, nufont_srcfile, 0xA4);
         }
     }
-    NuErrorProlog(nufont_srcfile, 0xA7)(str_memfont_load_failed);
+    NuErrorProlog(nufont_srcfile, 0xA7)("unable to create memfont");
     return 0;
 }
 
@@ -295,7 +273,7 @@ struct nufont_s *NuFntCreate(char *name, s32 height, s32 base, s32 key,
     bmp = NuTexReadBitmap(name);
     if (bmp != 0) {
         if (bmp->type != 5) {
-            NuErrorProlog(nufont_srcfile, 0x105)(str_font_not_8bit);
+            NuErrorProlog(nufont_srcfile, 0x105)("Can only create fonts from 8 bit palettized");
         }
         for (i = 0; i < 256; i++) {
             if (i == key) {
@@ -317,13 +295,13 @@ struct nufont_s *NuFntCreate(char *name, s32 height, s32 base, s32 key,
                 chars[nchars].height = height;
             } else {
                 if (!NuFntFindGlyphStart(bmp, &x, &y, height, key)) {
-                    NuErrorProlog(nufont_srcfile, 0x11E)(str_font_off_map);
+                    NuErrorProlog(nufont_srcfile, 0x11E)("Off end of map guvnor");
                 }
                 chars[nchars].u0 = (f32)x / (f32)bmp->width;
                 chars[nchars].v0 = (f32)y / (f32)bmp->height;
                 left = x;
                 if (!NuFntFindGlyphEnd(bmp, &x, &y, height, key)) {
-                    NuErrorProlog(nufont_srcfile, 0x124)(str_font_off_map);
+                    NuErrorProlog(nufont_srcfile, 0x124)("Off end of map guvnor");
                 }
                 chars[nchars].u1 = (f32)x / (f32)bmp->width;
                 chars[nchars].v1 = ((f32)y + (f32)height - 1.0f)
@@ -338,7 +316,7 @@ struct nufont_s *NuFntCreate(char *name, s32 height, s32 base, s32 key,
                             + nchars * sizeof(struct nufontchar_s),
                             nufont_srcfile, 0x12F);
         if (font == 0) {
-            NuErrorProlog(nufont_srcfile, 0x131)(str_font_alloc_failed);
+            NuErrorProlog(nufont_srcfile, 0x131)("could not allocate font");
         }
         font->map = map;
         memcpy(font->chars, chars, nchars * sizeof(struct nufontchar_s));
@@ -347,11 +325,11 @@ struct nufont_s *NuFntCreate(char *name, s32 height, s32 base, s32 key,
         font->nchars = nchars;
         tid = NuTexCreate(bmp);
         if (tid == 0) {
-            NuErrorProlog(nufont_srcfile, 0x13B)(str_font_tex_failed);
+            NuErrorProlog(nufont_srcfile, 0x13B)("could not create font texture");
         }
         font->mtl = NuMtlCreate(1);
         if (font->mtl == 0) {
-            NuErrorProlog(nufont_srcfile, 0x13E)(str_font_mtl_failed);
+            NuErrorProlog(nufont_srcfile, 0x13E)("could not create font material");
         }
         font->mtl->diffuse.r = 1.0f;
         font->mtl->diffuse.g = 1.0f;
@@ -384,18 +362,18 @@ s32 NuFntPrintChar(char c)
         *rndrstream_2d->ptr.f32++ = ch->v0;
         *rndrstream_2d->ptr.f32++ = 1.0f;
         rndrstream_2d->ptr.s32++;
-        *rndrstream_2d->ptr.s32++ = font_x;
-        *rndrstream_2d->ptr.s32++ = font_y;
+        *rndrstream_2d->ptr.s32++ = crsr_x;
+        *rndrstream_2d->ptr.s32++ = crsr_y;
         *rndrstream_2d->ptr.s32++ = 0;
         *rndrstream_2d->ptr.s32++ = 0;
         *rndrstream_2d->ptr.f32++ = ch->u1;
         *rndrstream_2d->ptr.f32++ = ch->v1;
         *rndrstream_2d->ptr.f32++ = 1.0f;
         rndrstream_2d->ptr.s32++;
-        w = ((ch->width - 1) << 4) * font_xscale >> 4;
-        h = ((ch->height - 1) << 3) * font_yscale >> 4;
-        *rndrstream_2d->ptr.s32++ = font_x + w;
-        *rndrstream_2d->ptr.s32++ = font_y + h;
+        w = ((ch->width - 1) << 4) * scale_x >> 4;
+        h = ((ch->height - 1) << 3) * scale_y >> 4;
+        *rndrstream_2d->ptr.s32++ = crsr_x + w;
+        *rndrstream_2d->ptr.s32++ = crsr_y + h;
         *rndrstream_2d->ptr.s32++ = 0;
         *rndrstream_2d->ptr.s32++ = 0;
         return w;
@@ -424,39 +402,39 @@ s32 NuFntPrintV(char *fmt, va_list args)
         rndrstream_2d->ptr.u8 = vtBeginDirect(rndrstream_2d->ptr.u8, 0);
         rndrstream_2d->ptr.u8 = gsBeginGifPacket(rndrstream_2d->ptr.u8,
                                                 0, 1, 0, 0, 0, 1, 1);
-        *rndrstream_2d->ptr.s32++ = font_pen[0];
-        *rndrstream_2d->ptr.s32++ = font_pen[1];
-        *rndrstream_2d->ptr.s32++ = font_pen[2];
-        *rndrstream_2d->ptr.s32++ = font_pen[3];
+        *rndrstream_2d->ptr.s32++ = fnt_fg_rgba[0];
+        *rndrstream_2d->ptr.s32++ = fnt_fg_rgba[1];
+        *rndrstream_2d->ptr.s32++ = fnt_fg_rgba[2];
+        *rndrstream_2d->ptr.s32++ = fnt_fg_rgba[3];
         rndrstream_2d->ptr.u8 = gsCloseGifPacket(rndrstream_2d->ptr.u8);
         rndrstream_2d->ptr.u8 = gsBeginGifPacket(rndrstream_2d->ptr.u8,
                                                 0, 1, 1, 6, 0, 2, 2, 5);
         vsprintf(buf, fmt, args);
-        left = font_x;
+        left = crsr_x;
         for (s = buf; *s != 0; s++) {
             switch (*s) {
             case '\n':
                 NuFntPrintLength = (NuFntPrintLength < len) ? len
                                                             : NuFntPrintLength;
-                font_y += NuFntHeight;
+                crsr_y += NuFntHeight;
                 NuFntPrintHeight += NuFntHeight;
                 len = 0;
-                font_x = left;
+                crsr_x = left;
                 break;
             case '\r':
                 NuFntPrintLength = (NuFntPrintLength < len) ? len
                                                             : NuFntPrintLength;
-                font_y += NuFntHeight;
+                crsr_y += NuFntHeight;
                 NuFntPrintHeight += NuFntHeight;
                 len = 0;
-                font_x = 0;
+                crsr_x = 0;
                 break;
             case '\t':
                 break;
             default:
                 w = NuFntPrintChar(*s);
                 len += w;
-                font_x += w;
+                crsr_x += w;
                 NuFntPrintLength = (NuFntPrintLength < len) ? len
                                                             : NuFntPrintLength;
                 break;
@@ -502,7 +480,7 @@ inline s32 NuFntPrintLenV(char *fmt, va_list args)
                 len = 0;
             } else {
                 len += (NuFntCur->chars[NuFntCur->map.index[(u8)*s]].width << 4)
-                     * font_xscale;
+                     * scale_x;
             }
         }
         NuFntPrintLength = (NuFntPrintLength < len) ? len : NuFntPrintLength;
@@ -533,16 +511,16 @@ s32 NuFntPrintEx(s32 x, s32 y, s32 align, char *fmt, ...)
     len = NuFntPrintLenV(fmt, args);
     switch (align) {
     case 0:
-        font_x = x + ((PS2_VCNTR_X - (PS2_REZ_W >> 1)) << 4);
-        font_y = y - NuFntBase + ((PS2_VCNTR_Y - (PS2_REZ_H >> 1)) << 4);
+        crsr_x = x + ((PS2_VCNTR_X - (PS2_REZ_W >> 1)) << 4);
+        crsr_y = y - NuFntBase + ((PS2_VCNTR_Y - (PS2_REZ_H >> 1)) << 4);
         break;
     case 1:
-        font_x = x - len + ((PS2_VCNTR_X - (PS2_REZ_W >> 1)) << 4);
-        font_y = y - NuFntBase + ((PS2_VCNTR_Y - (PS2_REZ_H >> 1)) << 4);
+        crsr_x = x - len + ((PS2_VCNTR_X - (PS2_REZ_W >> 1)) << 4);
+        crsr_y = y - NuFntBase + ((PS2_VCNTR_Y - (PS2_REZ_H >> 1)) << 4);
         break;
     case 2:
-        font_x = x - (len >> 1) + ((PS2_VCNTR_X - (PS2_REZ_W >> 1)) << 4);
-        font_y = y - NuFntBase + ((PS2_VCNTR_Y - (PS2_REZ_H >> 1)) << 4);
+        crsr_x = x - (len >> 1) + ((PS2_VCNTR_X - (PS2_REZ_W >> 1)) << 4);
+        crsr_y = y - NuFntBase + ((PS2_VCNTR_Y - (PS2_REZ_H >> 1)) << 4);
         break;
     }
     return NuFntPrintV(fmt, args);
@@ -555,15 +533,15 @@ inline void NuFntSet(struct nufont_s *font)
         font = system_font;
     }
     NuFntCur = font;
-    NuFntHeight = (font->height << 3) * font_yscale >> 4;
-    NuFntBase = (font->base << 3) * font_yscale >> 4;
+    NuFntHeight = (font->height << 3) * scale_y >> 4;
+    NuFntBase = (font->base << 3) * scale_y >> 4;
 }
 
 
 void NuFntInit(void)
 {
-    if (no_default_font == 0 && font_initialised == 0) {
-        font_initialised = 1;
+    if (no_default_font == 0 && nufnt_init == 0) {
+        nufnt_init = 1;
         system_font = NuFntLoadMem(ariel16_fnt, 0x8A0, ariel16_bmp);
         NuFntSet(system_font);
     }
@@ -588,14 +566,14 @@ void NuFntClose(void)
 {
     NuFntDestroy(system_font);
     system_font = 0;
-    font_initialised = 0;
+    nufnt_init = 0;
 }
 
 
 void NuFntScale(s32 xscale, s32 yscale)
 {
-    font_xscale = xscale;
-    font_yscale = yscale;
+    scale_x = xscale;
+    scale_y = yscale;
     NuFntHeight = (NuFntCur->height << 3) * yscale >> 4;
     NuFntBase = (NuFntCur->base << 3) * yscale >> 4;
 }
@@ -603,30 +581,30 @@ void NuFntScale(s32 xscale, s32 yscale)
 
 void NuFntMoveAbs(s32 x, s32 y)
 {
-    font_x = x + ((PS2_VCNTR_X - (PS2_REZ_W >> 1)) << 4);
-    font_y = y - NuFntBase + ((PS2_VCNTR_Y - (PS2_REZ_H >> 1)) << 4);
+    crsr_x = x + ((PS2_VCNTR_X - (PS2_REZ_W >> 1)) << 4);
+    crsr_y = y - NuFntBase + ((PS2_VCNTR_Y - (PS2_REZ_H >> 1)) << 4);
 }
 
 
 void NuFntMoveRel(s32 x, s32 y)
 {
-    font_x += x;
-    font_y += y;
+    crsr_x += x;
+    crsr_y += y;
 }
 
 
 void NuFntPos(s32 *x, s32 *y)
 {
-    *x = font_x - ((PS2_VCNTR_X - (PS2_REZ_W >> 1)) << 4);
-    *y = font_y - ((PS2_VCNTR_Y - (PS2_REZ_H >> 1)) << 4);
+    *x = crsr_x - ((PS2_VCNTR_X - (PS2_REZ_W >> 1)) << 4);
+    *y = crsr_y - ((PS2_VCNTR_Y - (PS2_REZ_H >> 1)) << 4);
 }
 
 
 void NuFntSetPen(s32 colour)
 {
-    font_pen[0] = colour & 0xFF;
-    font_pen[1] = (colour >> 8) & 0xFF;
-    font_pen[2] = (colour >> 16) & 0xFF;
-    font_pen[3] = (colour >> 24) & 0xFF;
+    fnt_fg_rgba[0] = colour & 0xFF;
+    fnt_fg_rgba[1] = (colour >> 8) & 0xFF;
+    fnt_fg_rgba[2] = (colour >> 16) & 0xFF;
+    fnt_fg_rgba[3] = (colour >> 24) & 0xFF;
 }
 

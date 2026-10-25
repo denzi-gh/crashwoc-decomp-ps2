@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0091"
 source = "src/game/creature.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0091:001cbce8:ResetPlayer"
@@ -106,3 +106,786 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0091:001d5918:StoreLocatorMatrices"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055c100:CrashAnim_GLIDER"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055c178:CrashAnim_MOSQUITO"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055c1c0:CrashAnim_ATLASPHERE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055c2c8:CrashAnim_GYRO"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055c370:CrashAnim_MINETUB"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055c3e8:CrashAnim_CREDITS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055c418:CrashAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055cca0:CocoAnim_DROPSHIP"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055cce8:CocoAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055d018:CortexAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055d180:HoloCortexAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055d258:AkuAkuAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055d288:AkuAkuFeathersAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055d2b8:UkaUkaAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055d2d0:HoloUkaUkaAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055d348:NGinAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055d3c0:NTropyAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055d408:AngelWingsAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055d450:SpinCrashAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055d498:CrashBodyPartsAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055d4e0:PenguinPAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055d588:PolarGuardAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055d5b8:SnowHogAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055d5e8:ParrotAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055d648:ParrotFeathersAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055d678:MonkeyAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055d6c0:BananaAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055d708:SharkAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055d750:StarfishAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055d7c8:GorillaAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055d828:TurtleAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055d858:DragonflyAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055d888:CrabAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055d900:ClamAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055d930:DonkeyAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055d978:EelAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055d9a8:FishyAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055d9d8:GeckoAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055da08:LionFishAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055da38:SalmonAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055da68:SubmarineAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055da98:VultureAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055dae0:AnglerFishAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055db10:ScorpionAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055db40:MoleAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055db88:DrillAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055dbb8:BlobAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055dbe8:SnowMachineAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055dc60:WarthogAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055dc90:BabyRhinoAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055dcd8:GiraffeAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055dd20:ElephantAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055dd68:HippoAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055ddb0:PenguinFAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055de10:BirdAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055de40:ButterflyAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055de88:BeeAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055deb8:LionAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055dee8:DaddyRhinoAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055df18:GliderAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055df90:SealAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055dfc0:NarwhalAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055dff0:KnightAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055e068:WizardAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055e0b0:GyroAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055e158:KoiCarpAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055e1a0:NinjaAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055e218:BatAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055e248:CrashBatAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055e278:GongBongerAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055e2c0:FlamingoAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055e308:ZoffaAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055e338:ZoffaGenericAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055e368:ZoffaNGinAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055e398:ZoffaTinyAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055e3c8:ZoffaDingodileAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055e3f8:ZoffaNTropyAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055e428:HovaBlimpAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055e458:JeepAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055e500:DragonAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055e578:MechAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055e6f8:WumpaAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055e740:MammothAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055e788:BouncyCrateAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055e7d0:ArrowCrateAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055e800:MetalArrowCrateAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055e830:AkuAkuCrateAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055e860:CheckpointCrateAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055e890:MetalExclamationCrateAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055e8c0:NitroExclamationCrateAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055e8f0:ReinforcedCrateAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055e920:IceCubeAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055e950:DingodileAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055e9b0:ZepplinAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055e9c8:TinyAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055ea40:AtlasSphereAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055ea58:RokKoAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055ea70:PyRoAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055ea88:WaWaAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055ead0:LoLoAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055eae8:PigAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055eb30:CowAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055eb48:GameTitleAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055eb78:LizardAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055ebc0:BlimpIconAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055ebf0:ShipIconAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055ec08:SpaceIconAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055ec20:GunBoatAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055ec38:GunBoatAnimNGin"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055ec50:GunBoatAnimNTropy"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055ec68:GunBoatAnimDingo"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055ec80:GunBoatAnimTiny"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055ec98:BattleShipAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055ecc8:RickShawAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055ecf8:ScooterAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055ed70:TunaAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055eda0:WheelaAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055edd0:CactusAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055ee18:Droid1Anim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055ee60:Droid2Anim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055eea8:Droid3Anim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055eef0:Droid4Anim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055ef38:CrashScubaAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055ef98:CrashScubaSpinAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055efc8:DiverAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055f028:UFOAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055f058:WeatherCrunchAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055f0d0:WeatherBossBangAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055f100:CrunchAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055f2e0:HoloCrunchHeadAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055f388:DynoAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055f3d0:DropShipAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055f3e8:JellyFishAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055f418:MineCartAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055f460:PygmyAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055f4a8:MosquitoAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055f4d8:BazookaAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055f538:SatelliteAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055f568:BuggyAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055f598:OctopusAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055f5e0:TentacleAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055f628:MouseAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055f658:RobinAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055f688:WetJellyFishAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055f6b8:AshCrashAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055f6e8:SkierAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055f748:MineAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055f778:HarpoonistAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055f7c0:FireBossAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055f898:FireBossBangAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055f8c8:CrashScubaGearAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055f8f8:SnowBoardAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055f9a0:MineTubAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055fa60:ClockAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055fa78:IconAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055faa8:CrashLegsAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055fad8:LabGuyAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055fb50:NuclearLabGuyAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055fb80:CylonLabGuyAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055fbb0:EarthCrunchAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055fbf8:BugAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055fc28:DiscoLabGuyAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0055fc58:CData"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:00562328:loadsavepos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:00562338:CRemap"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:005623f8:CModel"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0057ed78:CLetter"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0057ee38:Character"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:00630968:player"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:0063096c:IDLEWAIT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:00630970:plr_died"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:00630974:c_slot"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:00630978:AIVISRANGE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:006309b0:SMOKEYSPEED"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:006309b4:SMOKEYBOOSTSPEED"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:006309b8:OFFROADERSEEK"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:006309bc:plr_terrain_ok"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:006309c0:plr_allow_jump"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:006309c4:LIGHTCREATURES"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:006309cc:plr_render"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:006309d0:jeep_draw"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:006309d4:glass_draw"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:006309d8:glass_phase"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:006309dc:DRAWCREATURESHADOWS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:006309e0:HUBREFLECTY"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:006309e4:ATLASPLAYERLIFT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:006309e8:temp_action"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:006309ec:temp_time"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:006309f0:temp_anim_speed"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:006309f4:temp_surface_xrot"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:006309f6:temp_surface_yrot"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0091:006309f8:temp_surface_zrot"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x0061b610
+end = 0x0061d1e0
+
+[[claim]]
+section = ".rodata"
+start = 0x0061d318
+end = 0x0061d324
+
+[[claim]]
+section = ".sdata"
+start = 0x0062fcf8
+end = 0x00630968

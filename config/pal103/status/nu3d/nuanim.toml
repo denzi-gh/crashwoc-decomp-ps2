@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0043"
 source = "src/nu3d/nuanim.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0043:00140508:NuAnimDataWrite"
@@ -158,3 +158,26 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0043:00145358:NuAnimCurveScale"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0043:0062ee18:isBitCountTable"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0043:006adc00:BitCountTable"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x006adc00
+end = 0x006add00
+
+[[claim]]
+section = ".rodata"
+start = 0x00614ce8
+end = 0x00614cff
+
+[[claim]]
+section = ".sdata"
+start = 0x0062ee1c
+end = 0x0062ee27

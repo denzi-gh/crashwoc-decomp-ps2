@@ -20,7 +20,6 @@
 
 /* --- externals ---------------------------------------------------- */
 
-extern float IDLEWAIT;
 extern float SAFEY;
 extern u64 LBIT;
 extern s32 Level;
@@ -29,7 +28,6 @@ extern s32 Adventure;
 extern s32 FRAME;
 extern s32 PLAYERCOUNT;
 extern s32 USELIGHTS;
-extern s32 LIGHTCREATURES;
 extern s32 level_part_2;
 extern s32 cRPosCOUNT;
 extern s32 TimeTrial;
@@ -46,7 +44,6 @@ extern struct nuvec_s *pos_START;
 extern struct nuvec_s v000;
 extern struct nuvec_s cutpos_CRASH;
 extern unsigned short cutang_CRASH;
-extern struct nuvec_s D_0061D318;     /* TimeTrial restart position (.rodata) */
 
 extern struct MoveInfo CrashMoveInfo;
 extern struct MoveInfo CocoMoveInfo;
@@ -65,7 +62,6 @@ extern struct panelcount_s plr_bonus_wumpas;
 extern void *app_tbset;
 
 /* Globals ManageCreatures reads/writes (PS2 v1.03 addresses in symbol_addrs). */
-extern f32 AIVISRANGE;
 extern s32 Demo;
 extern s32 Bonus;
 extern s32 GemPath;
@@ -77,9 +73,7 @@ extern s32 bonus_lives;
 extern s32 bonus_finish_frame;
 extern s32 save_bonus_crates_destroyed;
 extern s32 LivesLost;
-extern s32 plr_died;
 extern s32 clock_ok;
-extern s32 c_slot;
 extern s32 LEVELAICOUNT;
 extern s32 bonusgem_ok;
 extern s32 boss_dead;
@@ -119,9 +113,6 @@ void CheckRings(struct obj_s *obj, s32 *ring);
 void tbslotBeginFn(void *tbset, s32 slot);
 s32 tbslotEndFn(void *tbset, s32 slot);
 
-extern s32 jeep_draw;
-extern s32 glass_draw;
-extern s32 plr_render;
 extern s32 Paused;
 extern s32 ChrisJointOveride;
 extern s32 ChrisNumJoints;
@@ -222,6 +213,1521 @@ void ResetAtlas(struct creature_s *c);
 void SetWeatherStartPos(struct creature_s *c);
 void ResetJeep(struct creature_s *c);
 void NewMask(struct mask_s *mask, struct nuvec_s *pos);
+
+
+static struct animlist CrashAnim_GLIDER[5] = {
+    { "c\\gldridle", 98, 5, 25, 1.0f, 7, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "c\\gldrleft", 101, 5, 25, 1.0f, 7, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "c\\gldrrght", 103, 5, 25, 1.0f, 7, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "h\\gldrvict", 117, 25, 50, 1.0f, 7, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist CrashAnim_MOSQUITO[3] = {
+    { "d\\mosqdrve", 98, 16, 16, 1.0f, 7, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "g\\mosqvict", 117, 16, 16, 1.0f, 7, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist CrashAnim_ATLASPHERE[11] = {
+    { "a\\walk", 113, 10, 10, 5.0f, 19, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "b\\idle", 34, 10, 10, 1.0f, 7, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "b\\itch", 35, 10, 10, 1.0f, 14, -1, -1, 0xFFFFFFFFDFFFFF5EULL },
+    { "b\\scratch", 36, 10, 10, 1.0f, 14, -1, -1, 0xFFFFFFFFDFFFFF5EULL },
+    { "b\\sigh", 61, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFDFFFFF5EULL },
+    { "c\\atlasrun", 104, 10, 10, 1.0f, 23, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "c\\coldfing", 41, 10, 10, 1.0f, 15, -1, -1, 0x200000A1 },
+    { "c\\shiver", 40, 10, 10, 1.6f, 15, -1, -1, 0x200000A1 },
+    { "d\\atlsfall", 89, 10, 10, 0.7f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "e\\taunt", 39, 10, 10, 1.0f, 14, -1, -1, 0xFFFFFFFFDFFFFF5EULL },
+    { 0 }
+};
+
+static struct animlist CrashAnim_GYRO[7] = {
+    { "c\\cptrdown", 90, 10, 10, 1.0f, 3, -1, -1, 0x20008000 },
+    { "c\\cptridle", 98, 10, 10, 1.0f, 7, -1, -1, 0x20008000 },
+    { "c\\cptrleft", 101, 10, 10, 1.0f, 3, -1, -1, 0x20008000 },
+    { "c\\cptrrght", 103, 10, 10, 1.0f, 3, -1, -1, 0x20008000 },
+    { "c\\cptrup", 112, 10, 10, 1.0f, 3, -1, -1, 0x20008000 },
+    { "d\\cptrspin", 105, 0, 0, 2.0f, 6, -1, -1, 0x20008000 },
+    { 0 }
+};
+
+static struct animlist CrashAnim_MINETUB[5] = {
+    { "e\\tubdie", 89, 10, 10, 1.0f, 6, -1, -1, 0x10000010 },
+    { "e\\tubidle", 104, 10, 10, 1.0f, 7, -1, -1, 0x10000010 },
+    { "e\\tubleft", 101, 10, 10, 1.0f, 7, -1, -1, 0x10000010 },
+    { "e\\tubright", 103, 10, 10, 1.0f, 7, -1, -1, 0x10000010 },
+    { 0 }
+};
+
+static struct animlist CrashAnim_CREDITS[2] = {
+    { "g\\boogie", 34, 0, 0, 0.8f, 7, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist CrashAnim[91] = {
+    { "f\\fall", 25, 10, 0, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "a\\bodyslam", 65, 5, 5, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "a\\crawl", 2, 10, 5, 1.0f, 7, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "a\\crchdwn", 3, 5, 5, 1.6f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "a\\crchidle", 4, 5, 5, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "a\\crchstnd", 5, 5, 5, 1.6f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "a\\land", 48, 0, 5, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "a\\run", 58, 5, 5, 1.3f, 7, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "a\\runjump", 68, 5, 0, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "a\\slidattk", 67, 5, 5, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "a\\sprint", 72, 5, 5, 1.0f, 7, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "a\\starjump", 45, 5, 5, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "a\\tiptoe", 83, 5, 5, 1.6f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "a\\walk", 116, 5, 5, 1.2f, 7, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "b\\angelbsc", 29, 5, 5, 1.0f, 6, -1, -1, 0xFFFFFFFFFF7FFFFFULL },
+    { "b\\die", 14, 5, 5, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "b\\hngabout", 32, 5, 5, 1.0f, 7, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "b\\hngpulup", 54, 5, 5, 1.2f, 7, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "b\\hngwalk", 77, 5, 5, 1.0f, 7, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "b\\idle", 34, 5, 5, 1.0f, 7, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "b\\itch", 35, 10, 10, 1.0f, 14, -1, -1, 0xFFFFFFFFDFFFFF5EULL },
+    { "b\\jump", 44, 0, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "b\\sbdyslam", 75, 5, 5, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "b\\scratch", 36, 10, 10, 1.0f, 14, -1, -1, 0xFFFFFFFFDFFFFF5EULL },
+    { "b\\sigh", 61, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFDFFFFF5EULL },
+    { "b\\splatup", 31, 0, 5, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "b\\wade", 114, 5, 5, 1.0f, 7, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "b\\wumpatrk", 37, 10, 10, 1.0f, 14, -1, -1, 0xFFFFFFFFDFFFFF5EULL },
+    { "c\\coldfing", 41, 10, 10, 1.0f, 15, -1, -1, 0x200000A1 },
+    { "c\\cptrdown", 90, 10, 10, 1.0f, 3, -1, -1, 0x20008000 },
+    { "c\\cptridle", 98, 10, 10, 1.0f, 7, -1, -1, 0x20008000 },
+    { "c\\cptrleft", 101, 10, 10, 1.0f, 3, -1, -1, 0x20008000 },
+    { "c\\cptrrght", 103, 10, 10, 1.0f, 3, -1, -1, 0x20008000 },
+    { "c\\cptrup", 112, 10, 10, 1.0f, 3, -1, -1, 0x20008000 },
+    { "c\\gldridle", 98, 5, 5, 1.0f, 7, -1, -1, 0x1001002000ULL },
+    { "c\\gldrleft", 101, 5, 5, 1.0f, 7, -1, -1, 0x1001002000ULL },
+    { "c\\gldrrght", 103, 5, 5, 1.0f, 7, -1, -1, 0x1001002000ULL },
+    { "c\\iceskid", 64, 5, 5, 1.2f, 7, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "c\\iceslide", 63, 5, 5, 1.2f, 7, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "c\\mechrun", 104, 5, 5, 2.0f, 7, -1, -1, 0x80100000 },
+    { "c\\mechwalk", 113, 5, 5, 1.6f, 7, -1, -1, 0x80500000 },
+    { "c\\shiver", 40, 10, 10, 1.6f, 15, -1, -1, 0x200000A1 },
+    { "d\\bloondth", 15, 5, 5, 1.0f, 6, -1, -1, 0xFFFFFFFFDDFFFF5EULL },
+    { "d\\clddeath", 15, 0, 0, 0.7f, 6, -1, -1, 0x220000A1 },
+    { "d\\cptrspin", 105, 0, 0, 1.0f, 7, -1, -1, 0x20008000 },
+    { "d\\dive", 117, 5, 5, 1.0f, 6, -1, -1, 0xFFFFFFFFFC1FFFFFULL },
+    { "d\\drown", 23, 25, 25, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "d\\kartdrv", 104, 10, 10, 2.0f, 23, -1, -1, 0x80000 },
+    { "d\\mchjump", 99, 0, 10, 1.5f, 6, -1, -1, 0x80500000 },
+    { "d\\mchsjump", 100, 0, 10, 1.0f, 6, -1, -1, 0x80500000 },
+    { "d\\mechidle", 98, 10, 10, 1.0f, 7, -1, -1, 0x80500000 },
+    { "d\\mosqdrve", 98, 10, 10, 1.0f, 3, -1, -1, 0x40000 },
+    { "d\\subidle", 98, 5, 5, 1.0f, 7, -1, -1, 0x400000044ULL },
+    { "e\\bzidle", 78, 5, 5, 1.0f, 7, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "e\\bzshoot", 79, 0, 5, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "e\\bzshufle", 80, 5, 5, 1.0f, 7, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "e\\frzldzl", 18, 5, 5, 1.0f, 6, -1, -1, 0xFFFFFFFBDFFFFF1EULL },
+    { "e\\gayjump", 46, 5, 5, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "e\\kartjump", 99, 10, 10, 1.0f, 6, -1, -1, 0x80000 },
+    { "e\\pickear", 38, 10, 10, 1.0f, 14, -1, -1, 0xFFFFFFFFDFFFFF5EULL },
+    { "e\\stubbs", 16, 10, 10, 1.0f, 6, -1, -1, 0x80000 },
+    { "e\\taunt", 39, 10, 10, 1.0f, 14, -1, -1, 0xFFFFFFFFDFFFFF5EULL },
+    { "e\\teeter", 81, 5, 5, 1.0f, 7, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "e\\tubdie", 89, 10, 10, 1.0f, 6, -1, -1, 0x10000010 },
+    { "e\\tubidle", 104, 10, 10, 1.0f, 7, -1, -1, 0x10000010 },
+    { "e\\tubleft", 101, 10, 10, 1.0f, 7, -1, -1, 0x10000010 },
+    { "e\\tubright", 103, 10, 10, 1.0f, 7, -1, -1, 0x10000010 },
+    { "f\\cuttop", 16, 5, 5, 1.0f, 6, -1, -1, 0x20400 },
+    { "f\\gotgem", 86, 10, 0, 1.0f, 6, -1, -1, 0x2000000000ULL },
+    { "f\\jpdeath", 89, 10, 10, 1.0f, 6, -1, -1, 0x108 },
+    { "f\\jpdrive", 104, 10, 10, 1.0f, 7, -1, -1, 0x108 },
+    { "f\\jpleft", 101, 10, 10, 1.0f, 7, -1, -1, 0x108 },
+    { "f\\jpntrdth", 91, 10, 10, 1.0f, 6, -1, -1, 0x108 },
+    { "f\\jpright", 103, 10, 10, 1.0f, 7, -1, -1, 0x108 },
+    { "f\\nogem", 85, 10, 0, 1.0f, 6, -1, -1, 0x2000000000ULL },
+    { "f\\runll", 50, 10, 10, 1.3f, 7, -1, -1, 0x80020000 },
+    { "f\\runlr", 57, 10, 10, 1.3f, 7, -1, -1, 0x80020000 },
+    { "f\\splat", 17, 5, 5, 1.0f, 6, -1, -1, 0x400 },
+    { "g\\fmrun", 104, 10, 10, 2.4f, 23, -1, -1, 0x400000 },
+    { "g\\freeze", 30, 0, 0, 1.0f, 6, -1, -1, 0x2000000 },
+    { "g\\gundown", 109, 10, 10, 1.0f, 7, -1, -1, 0x80500000 },
+    { "g\\gunfwd", 107, 10, 10, 1.0f, 7, -1, -1, 0x80500000 },
+    { "g\\gunlft", 110, 10, 10, 1.0f, 7, -1, -1, 0x80500000 },
+    { "g\\gunrgh", 111, 10, 10, 1.0f, 7, -1, -1, 0x80500000 },
+    { "g\\gunup", 108, 10, 10, 1.0f, 7, -1, -1, 0x80500000 },
+    { "g\\jpstill", 98, 10, 10, 1.0f, 7, -1, -1, 0x108 },
+    { "g\\shootfwd", 92, 0, 10, 1.0f, 6, -1, -1, 0x80500000 },
+    { "g\\shootlft", 95, 0, 10, 1.0f, 6, -1, -1, 0x80500000 },
+    { "g\\shootrgh", 96, 0, 10, 1.0f, 6, -1, -1, 0x80500000 },
+    { "g\\shootup", 93, 0, 10, 1.0f, 6, -1, -1, 0x80500000 },
+    { 0 }
+};
+
+static struct animlist CocoAnim_DROPSHIP[3] = {
+    { "a\\dropship", 98, 25, 25, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "b\\wave", 117, 25, 25, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist CocoAnim[34] = {
+    { "b\\fall", 25, 5, 0, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "a\\die", 14, 5, 5, 1.0f, 2, -1, -1, 0xFFFFFFDFFFFFFFFFULL },
+    { "a\\dropship", 98, 5, 5, 1.0f, 2, -1, -1, 0x4000000 },
+    { "a\\drown", 23, 5, 5, 1.0f, 2, -1, -1, 0xFFFFFFDFFFFFFFFFULL },
+    { "a\\flckhair", 36, 10, 10, 1.0f, 10, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "a\\hop", 99, 0, 0, 1.0f, 2, -1, -1, 0x4000 },
+    { "a\\idle", 34, 5, 5, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "a\\jmpuplnd", 49, 5, 5, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "a\\jump", 44, 0, 5, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "a\\jumpup", 45, 0, 5, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "a\\land", 48, 0, 5, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "a\\lkatnail", 35, 10, 10, 1.0f, 10, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "a\\ride", 104, 5, 5, 1.0f, 3, -1, -1, 0x4000 },
+    { "a\\roundhse", 70, 0, 5, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "a\\scootdie", 89, 5, 5, 1.0f, 2, -1, -1, 0x4000 },
+    { "a\\slam", 65, 5, 5, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "a\\slamland", 31, 0, 5, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "a\\smrsault", 68, 5, 0, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "a\\sprint", 106, 5, 5, 1.0f, 3, -1, -1, 0x4000 },
+    { "a\\walk", 116, 5, 5, 1.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "b\\ccagldia", 29, 5, 5, 1.2f, 2, -1, -1, 0xFFFFFFDFFFFFFFFFULL },
+    { "b\\gotgem", 86, 10, 0, 1.0f, 2, -1, -1, 0x2000000000ULL },
+    { "b\\nogem", 85, 10, 0, 1.0f, 2, -1, -1, 0x2000000000ULL },
+    { "b\\slip", 64, 5, 5, 1.3f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "b\\snwdie", 89, 10, 10, 1.0f, 2, -1, -1, 0x220 },
+    { "b\\snwidle", 104, 10, 10, 1.0f, 3, -1, -1, 0x220 },
+    { "b\\snwjump", 99, 10, 10, 1.0f, 2, -1, -1, 0x220 },
+    { "b\\snwleft", 101, 10, 10, 1.0f, 3, -1, -1, 0x220 },
+    { "b\\snwrght", 103, 10, 10, 1.0f, 3, -1, -1, 0x220 },
+    { "b\\snwspdup", 106, 10, 10, 1.0f, 3, -1, -1, 0x220 },
+    { "b\\sprint", 58, 5, 5, 1.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "b\\sprint2", 72, 5, 5, 1.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "b\\sweep", 67, 5, 5, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist CortexAnim[15] = {
+    { "a\\arsespin", 70, 10, 10, 1.0f, 6, -1, -1, 0x2000000 },
+    { "a\\contidle", 34, 25, 10, 1.0f, 7, -1, -1, 0x4000000000ULL },
+    { "a\\continue", 115, 10, 10, 1.0f, 6, -1, -1, 0x4000000000ULL },
+    { "a\\contno", 14, 10, 25, 1.0f, 6, -1, -1, 0x4000000000ULL },
+    { "a\\contyes", 15, 10, 25, 1.0f, 6, -1, -1, 0x4000000000ULL },
+    { "a\\hubtaunt", 34, 10, 10, 1.0f, 7, -1, -1, 0x2000000000ULL },
+    { "a\\idle", 34, 10, 10, 1.0f, 7, -1, -1, 0xFFFFFF9FFDFFFFFFULL },
+    { "a\\takepnch", 73, 10, 0, 1.0f, 6, -1, -1, 0x2000000 },
+    { "a\\uscor015", 35, 10, 25, 1.0f, 6, -1, -1, 0x4000000000ULL },
+    { "a\\uscor016", 36, 10, 25, 1.0f, 6, -1, -1, 0x4000000000ULL },
+    { "a\\uscor017", 37, 10, 25, 1.0f, 6, -1, -1, 0x4000000000ULL },
+    { "a\\uscor018", 38, 10, 25, 1.0f, 6, -1, -1, 0x4000000000ULL },
+    { "a\\uscor019", 39, 10, 25, 1.0f, 6, -1, -1, 0x4000000000ULL },
+    { "b\\console", 34, 10, 10, 1.0f, 7, -1, -1, 0x2000000 },
+    { "b\\floater", 28, 10, 10, 1.0f, 6, -1, -1, 0x2000000 }
+};
+
+static struct animlist HoloCortexAnim[9] = {
+    { "b\\hubin", 12, 10, 0, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "b\\hubout", 13, 0, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "b\\uscor45", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "b\\uscor46", 7, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "b\\uscor47", 8, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "b\\uscor49", 9, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "b\\uscor50", 10, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "b\\uscor51", 11, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist AkuAkuAnim[2] = {
+    { "usaku24", 6, 0, 0, 1.0f, 6, -1, -1, 0x80 },
+    { 0 }
+};
+
+static struct animlist AkuAkuFeathersAnim[2] = {
+    { "explode", 14, 0, 0, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist UkaUkaAnim[1] = {
+    { 0 }
+};
+
+static struct animlist HoloUkaUkaAnim[5] = {
+    { "hubin", 12, 10, 0, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "hubout", 13, 0, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "usuka17", 6, 0, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "usuka18", 7, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist NGinAnim[5] = {
+    { "idle1", 34, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "idle2", 43, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "switch", 0, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "warp", 53, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist NTropyAnim[3] = {
+    { "fire", 0, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "idle", 34, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist AngelWingsAnim[3] = {
+    { "angelbsc", 29, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFF3FFAFDFULL },
+    { "ccagldia", 29, 10, 10, 1.0f, 2, -1, -1, 0xC005020 },
+    { 0 }
+};
+
+static struct animlist SpinCrashAnim[3] = {
+    { "a\\spin", 70, 0, 0, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "e\\hangspin", 71, 0, 0, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist CrashBodyPartsAnim[3] = {
+    { "exploded", 24, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "inhole", 25, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist PenguinPAnim[7] = {
+    { "pfdizzy", 115, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "pfidle", 34, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "pfshake", 60, 10, 10, 1.6f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "pfspin", 70, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "pfturn", 87, 10, 10, 4.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "pfwalk", 116, 10, 10, 1.6f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist PolarGuardAnim[2] = {
+    { "flying", 29, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist SnowHogAnim[2] = {
+    { "walk", 116, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist ParrotAnim[4] = {
+    { "divebomb", 0, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "fly", 29, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "walk", 116, 10, 10, 1.6f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist ParrotFeathersAnim[2] = {
+    { "explode", 24, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist MonkeyAnim[3] = {
+    { "mnattack", 0, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "mnwalk", 116, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist BananaAnim[3] = {
+    { "bnattack", 0, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "bnwalk", 116, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist SharkAnim[3] = {
+    { "jmpsnp", 0, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "swim", 76, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist StarfishAnim[5] = {
+    { "idle", 34, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "plopdown", 65, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "strfshhp", 116, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "walk", 116, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist GorillaAnim[4] = {
+    { "knockdwn", 25, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "idle", 34, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "takehit", 56, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist TurtleAnim[2] = {
+    { "swim", 76, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist DragonflyAnim[2] = {
+    { "fly", 29, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist CrabAnim[5] = {
+    { "attack", 0, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "idle", 34, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "walklr", 50, 10, 10, 1.6f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "walkrl", 57, 10, 10, 1.6f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist ClamAnim[2] = {
+    { "idle", 34, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist DonkeyAnim[3] = {
+    { "attack", 0, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "idle", 34, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist EelAnim[2] = {
+    { "swim", 76, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist FishyAnim[2] = {
+    { "toandfro", 76, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist GeckoAnim[2] = {
+    { "walk", 116, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist LionFishAnim[2] = {
+    { "swim", 76, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist SalmonAnim[2] = {
+    { "swim", 116, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist SubmarineAnim[2] = {
+    { "subidle", 98, 5, 5, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist VultureAnim[3] = {
+    { "fly", 29, 10, 10, 1.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "glide", 34, 10, 10, 1.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist AnglerFishAnim[2] = {
+    { "swim", 76, 10, 10, 2.4f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist ScorpionAnim[2] = {
+    { "walk", 116, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist MoleAnim[3] = {
+    { "idle", 34, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "moledril", 0, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist DrillAnim[2] = {
+    { "drildril", 0, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist BlobAnim[2] = {
+    { "blob", 116, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist SnowMachineAnim[5] = {
+    { "fill", 26, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "fullidle", 34, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "shoot", 0, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "spent", 69, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist WarthogAnim[2] = {
+    { "idle", 34, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist BabyRhinoAnim[3] = {
+    { "idle", 34, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "run", 58, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist GiraffeAnim[3] = {
+    { "idle", 34, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "run", 58, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist ElephantAnim[3] = {
+    { "idle", 34, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "run", 58, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist HippoAnim[3] = {
+    { "idle", 34, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "run", 58, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist PenguinFAnim[4] = {
+    { "hop", 33, 10, 10, 1.0f, 2, -1, -1, 0 },
+    { "idle", 34, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "swim", 76, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist BirdAnim[2] = {
+    { "idle", 34, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist ButterflyAnim[3] = {
+    { "fly", 29, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "idle", 34, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist BeeAnim[2] = {
+    { "fly", 29, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist LionAnim[2] = {
+    { "idle", 34, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist DaddyRhinoAnim[2] = {
+    { "run", 58, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist GliderAnim[5] = {
+    { "gldridle", 98, 25, 25, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "gldrleft", 101, 25, 25, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "gldrrght", 103, 25, 25, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "gldridle", 117, 25, 25, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist SealAnim[2] = {
+    { "walk", 116, 10, 10, 1.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist NarwhalAnim[2] = {
+    { "jump", 44, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist KnightAnim[5] = {
+    { "attack", 0, 5, 5, 1.3f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "idle", 34, 5, 5, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "leftstep", 50, 5, 5, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "rghtstep", 57, 5, 5, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist WizardAnim[3] = {
+    { "attack", 0, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "idle", 34, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist GyroAnim[7] = {
+    { "cptrdown", 90, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "cptridle", 98, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "cptrleft", 101, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "cptrrght", 103, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "cptrspin", 105, 0, 0, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "cptrup", 112, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist KoiCarpAnim[3] = {
+    { "bite", 0, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "peck", 34, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist NinjaAnim[5] = {
+    { "arrive", 43, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "attack", 0, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "drive", 58, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "lkabout", 34, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist BatAnim[2] = {
+    { "fly", 29, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist CrashBatAnim[2] = {
+    { "crashdth", 14, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist GongBongerAnim[3] = {
+    { "attack", 0, 10, 10, 1.5f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "idle", 34, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist FlamingoAnim[3] = {
+    { "attack", 0, 10, 0, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "idle", 34, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist ZoffaAnim[2] = {
+    { "noise", 29, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist ZoffaGenericAnim[2] = {
+    { "nginz", 29, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist ZoffaNGinAnim[2] = {
+    { "nginz", 29, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist ZoffaTinyAnim[2] = {
+    { "tinyz", 29, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist ZoffaDingodileAnim[2] = {
+    { "dingoz", 29, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist ZoffaNTropyAnim[2] = {
+    { "ntrophyz", 29, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist HovaBlimpAnim[2] = {
+    { "spin", 70, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist JeepAnim[7] = {
+    { "jpdeath", 89, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "jpdrive", 104, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "jpleft", 101, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "jpntrdth", 91, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "jpright", 103, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "jpstill", 98, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist DragonAnim[5] = {
+    { "run", 58, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "skid", 64, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "stuck", 51, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "victory", 117, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist MechAnim[16] = {
+    { "fmrun", 104, 10, 10, 2.4f, 3, -1, -1, 0x400000 },
+    { "gundown", 109, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "gunfwd", 107, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "gunlft", 110, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "gunrgh", 111, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "gunup", 108, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "mchjump", 99, 0, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "mchsjump", 100, 0, 5, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "mechidle", 98, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "mechrun", 104, 10, 10, 2.0f, 3, -1, -1, 0xFFFFFFFFFFBFFFFFULL },
+    { "mechwalk", 113, 10, 10, 1.6f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "shootfwd", 92, 0, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "shootlft", 95, 0, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "shootrgh", 96, 0, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "shootup", 93, 0, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist WumpaAnim[3] = {
+    { "pickear", 38, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "wmpatrck", 37, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist MammothAnim[3] = {
+    { "idle", 34, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "toss", 56, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist BouncyCrateAnim[3] = {
+    { "bouncea", 88, 0, 0, 1.0f, 4, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "invbnce", 22, 0, 0, 1.0f, 4, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist ArrowCrateAnim[2] = {
+    { "bounce", 88, 0, 0, 1.0f, 4, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist MetalArrowCrateAnim[2] = {
+    { "bounce", 88, 0, 0, 1.0f, 4, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist AkuAkuCrateAnim[2] = {
+    { "ferret", 34, 0, 0, 1.0f, 7, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist CheckpointCrateAnim[2] = {
+    { "open", 52, 0, 0, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist MetalExclamationCrateAnim[2] = {
+    { "bounce", 53, 0, 0, 1.0f, 4, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist NitroExclamationCrateAnim[2] = {
+    { "bounce", 53, 0, 0, 1.0f, 4, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist ReinforcedCrateAnim[2] = {
+    { "bounce", 88, 0, 0, 1.0f, 4, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist IceCubeAnim[2] = {
+    { "clddeath", 15, 0, 0, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist DingodileAnim[4] = {
+    { "fire", 27, 10, 10, 1.5f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "idle", 34, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "spray", 0, 10, 0, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist ZepplinAnim[1] = {
+    { 0 }
+};
+
+static struct animlist TinyAnim[5] = {
+    { "idle1", 34, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "lstep", 50, 5, 10, 1.5f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "push", 56, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "rstep", 57, 5, 10, 1.5f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist AtlasSphereAnim[1] = {
+    { 0 }
+};
+
+static struct animlist RokKoAnim[1] = {
+    { 0 }
+};
+
+static struct animlist PyRoAnim[1] = {
+    { 0 }
+};
+
+static struct animlist WaWaAnim[3] = {
+    { "hubin", 12, 10, 0, 0.8f, 6, -1, -1, 0x800000 },
+    { "hubout", 13, 0, 10, 0.8f, 6, -1, -1, 0x800000 },
+    { 0 }
+};
+
+static struct animlist LoLoAnim[1] = {
+    { 0 }
+};
+
+static struct animlist PigAnim[3] = {
+    { "idle", 34, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "stuck", 74, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist CowAnim[1] = {
+    { 0 }
+};
+
+static struct animlist GameTitleAnim[2] = {
+    { "tada", 43, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist LizardAnim[3] = {
+    { "idle", 34, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "run", 58, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist BlimpIconAnim[2] = {
+    { "hova", 34, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist ShipIconAnim[1] = {
+    { 0 }
+};
+
+static struct animlist SpaceIconAnim[1] = {
+    { 0 }
+};
+
+static struct animlist GunBoatAnim[1] = {
+    { 0 }
+};
+
+static struct animlist GunBoatAnimNGin[1] = {
+    { 0 }
+};
+
+static struct animlist GunBoatAnimNTropy[1] = {
+    { 0 }
+};
+
+static struct animlist GunBoatAnimDingo[1] = {
+    { 0 }
+};
+
+static struct animlist GunBoatAnimTiny[1] = {
+    { 0 }
+};
+
+static struct animlist BattleShipAnim[2] = {
+    { "fire", 27, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist RickShawAnim[2] = {
+    { "run", 58, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist ScooterAnim[5] = {
+    { "die", 89, 0, 5, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "hop", 99, 0, 5, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "ride", 104, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "sprint", 106, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist TunaAnim[2] = {
+    { "flop", 34, 10, 10, 0.85f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist WheelaAnim[2] = {
+    { "drive", 58, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist CactusAnim[3] = {
+    { "attack", 0, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "idle", 34, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist Droid1Anim[3] = {
+    { "attack", 0, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "idle", 34, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist Droid2Anim[3] = {
+    { "attack", 0, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "idle", 34, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist Droid3Anim[3] = {
+    { "drive", 58, 10, 10, 1.5f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "work", 0, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist Droid4Anim[3] = {
+    { "attack", 0, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "idle", 34, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist CrashScubaAnim[4] = {
+    { "idle", 34, 25, 25, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "scbafrzl", 18, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "swim", 76, 25, 25, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist CrashScubaSpinAnim[2] = {
+    { "spin", 70, 0, 0, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist DiverAnim[4] = {
+    { "down", 22, 25, 25, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "idle", 34, 25, 25, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "up", 88, 25, 25, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist UFOAnim[2] = {
+    { "revolve", 29, 25, 25, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist WeatherCrunchAnim[5] = {
+    { "idle", 34, 25, 25, 1.0f, 7, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "chstatck", 0, 25, 25, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "eyeattck", 27, 25, 25, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "lftattck", 50, 25, 25, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "rghtatck", 57, 25, 25, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+};
+
+static struct animlist WeatherBossBangAnim[2] = {
+    { "eplode", 14, 25, 25, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist CrunchAnim[20] = {
+    { "a\\crchride", 98, 10, 10, 1.0f, 7, -1, -1, 0x10000000 },
+    { "a\\crchtubl", 95, 10, 0, 1.0f, 6, -1, -1, 0x10000000 },
+    { "a\\crchtubr", 96, 10, 0, 1.0f, 6, -1, -1, 0x10000000 },
+    { "a\\idle", 34, 16, 16, 1.0f, 7, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "a\\jump", 44, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "a\\knockdwn", 25, 10, 10, 1.0f, 2, -1, -1, 0xA00000 },
+    { "a\\run", 58, 10, 10, 1.0f, 7, -1, -1, 0xA00000 },
+    { "a\\sphrin", 43, 10, 10, 1.0f, 6, -1, -1, 0x200000 },
+    { "a\\sphrout", 53, 10, 10, 1.0f, 6, -1, -1, 0x200000 },
+    { "a\\walk", 116, 10, 10, 1.0f, 7, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "a\\waterdwn", 55, 10, 10, 1.0f, 6, -1, -1, 0x800000 },
+    { "a\\waterhgh", 88, 10, 10, 1.0f, 6, -1, -1, 0x800000 },
+    { "a\\waterlow", 22, 10, 10, 1.0f, 6, -1, -1, 0x800000 },
+    { "b\\jumpleft", 50, 10, 0, 1.0f, 6, -1, -1, 0x2000000 },
+    { "b\\jumprght", 57, 10, 0, 1.0f, 6, -1, -1, 0x2000000 },
+    { "b\\tired", 115, 16, 10, 1.0f, 7, -1, -1, 0x2000000 },
+    { "b\\uppercut", 0, 0, 0, 1.0f, 6, -1, -1, 0x2000000 },
+    { "b\\whumped", 73, 10, 10, 1.0f, 6, -1, -1, 0x2000000 },
+    { "b\\defeated", 14, 10, 10, 1.0f, 6, -1, -1, 0xA00000 },
+    { 0 }
+};
+
+static struct animlist HoloCrunchHeadAnim[7] = {
+    { "b\\hubin", 12, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "b\\hubout", 13, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "b\\uscrn01", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "b\\uscrn06", 7, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "b\\uscrn08", 8, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "b\\uscrn09", 9, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist DynoAnim[3] = {
+    { "attack", 0, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "idle", 34, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist DropShipAnim[1] = {
+    { 0 }
+};
+
+static struct animlist JellyFishAnim[2] = {
+    { "swim", 76, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist MineCartAnim[3] = {
+    { "kartdrv", 104, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "kartjump", 99, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist PygmyAnim[3] = {
+    { "dance", 34, 10, 10, 1.0f, 7, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "throw", 82, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist MosquitoAnim[2] = {
+    { "mosqdrve", 98, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist BazookaAnim[4] = {
+    { "bzidle", 78, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "bzshoot", 79, 0, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "bzshufle", 80, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist SatelliteAnim[2] = {
+    { "spin", 27, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist BuggyAnim[2] = {
+    { "drive", 29, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist OctopusAnim[3] = {
+    { "idle", 34, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "spit", 0, 5, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist TentacleAnim[3] = {
+    { "feel", 0, 5, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "idle", 34, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist MouseAnim[2] = {
+    { "run", 58, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist RobinAnim[2] = {
+    { "flutter", 29, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist WetJellyFishAnim[2] = {
+    { "swim", 76, 0, 0, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist AshCrashAnim[2] = {
+    { "crumble", 1, 0, 0, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist SkierAnim[4] = {
+    { "crouch", 3, 16, 16, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "ski", 58, 16, 16, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "idle", 34, 16, 16, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist MineAnim[2] = {
+    { "bob", 34, 0, 0, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist HarpoonistAnim[3] = {
+    { "idle", 34, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "shoot", 27, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist FireBossAnim[9] = {
+    { "run", 58, 25, 25, 1.4f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "run", 59, 25, 25, 1.4f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "throw", 27, 25, 25, 1.4f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "throw", 29, 25, 25, 1.4f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "tired", 34, 25, 25, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "tired", 35, 25, 25, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "turnto", 70, 25, 25, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "turnaway", 71, 25, 25, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist FireBossBangAnim[2] = {
+    { "explode", 14, 25, 25, 1.4f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist CrashScubaGearAnim[2] = {
+    { "explode", 24, 0, 0, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist SnowBoardAnim[7] = {
+    { "snwdie", 89, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "snwidle", 104, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "snwjump", 99, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "snwleft", 101, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "snwrght", 103, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "snwspdup", 106, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist MineTubAnim[8] = {
+    { "crchride", 98, 10, 10, 1.0f, 3, -1, -1, 0x10000000 },
+    { "crchtubl", 95, 10, 0, 1.0f, 2, -1, -1, 0x10000000 },
+    { "crchtubr", 96, 10, 0, 1.0f, 2, -1, -1, 0x10000000 },
+    { "tubdie", 89, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "tubidle", 104, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "tubleft", 101, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "tubright", 103, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist ClockAnim[1] = {
+    { 0 }
+};
+
+static struct animlist IconAnim[2] = {
+    { "iconanim", 34, 0, 0, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist CrashLegsAnim[2] = {
+    { "cutbttm", 16, 5, 5, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist LabGuyAnim[5] = {
+    { "fall", 25, 10, 0, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "hop", 44, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "push", 56, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "throw", 82, 10, 10, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist NuclearLabGuyAnim[2] = {
+    { "idle", 34, 0, 0, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist CylonLabGuyAnim[2] = {
+    { "idle", 34, 0, 0, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist EarthCrunchAnim[3] = {
+    { "explode", 24, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { "reform", 31, 10, 10, 1.0f, 2, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist BugAnim[2] = {
+    { "fly", 34, 0, 0, 1.0f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+static struct animlist DiscoLabGuyAnim[2] = {
+    { "boogie", 34, 0, 0, 0.8f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+    { 0 }
+};
+
+struct CharacterData CData[191] = {
+    { "a\\crash", "crash", "CRASH BANDICOOT", CrashAnim, 0.225f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.9f, 0.0f }, 1.0f, 0.55f },
+    { "a\\coco", "coco", "COCO BANDICOOT", CocoAnim, 0.225f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.8f, 0.0f }, 1.0f, 0.55f },
+    { "b\\cortex", "cortex", "CORTEX", CortexAnim, 0.225f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.666f, 0.0f }, 1.0f, 0.55f },
+    { "a\\akuaku", "akuaku", "AKU AKU", AkuAkuAnim, 0.2f,
+      { 0.0f, -0.25f, 0.0f }, { 0.0f, 0.25f, 0.0f }, 1.0f, 0.175f },
+    { "b\\ukauka", "ukauka", "UKA UKA", UkaUkaAnim, 0.2f,
+      { 0.0f, -0.25f, 0.0f }, { 0.0f, 0.25f, 0.0f }, 1.0f, 0.55f },
+    { "b\\ngin", "ngin", "N GIN", NGinAnim, 0.25f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, 1.0f, 0.55f },
+    { "b\\ntropy", "ntrophey", "N TROPY", NTropyAnim, 0.35f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.075f, 0.0f }, 1.0f, 0.55f },
+    { "b\\angel", "angel", "ANGEL WINGS", AngelWingsAnim, 0.225f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.9f, 0.0f }, 1.0f, 0.55f },
+    { "a\\crash", "crshspin", "SPINNING CRASH", SpinCrashAnim, 0.225f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.9f, 0.0f }, 1.0f, 0.55f },
+    { "a\\crash", "hangspin", "SPINNING CRASH ARMS", 0, 0.225f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.9f, 0.0f }, 1.0f, 0.55f },
+    { "b\\bdyparts", "bdyparts", "CRASH BODY PARTS", CrashBodyPartsAnim, 0.225f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.9f, 0.0f }, 1.0f, 0.55f },
+    { "a\\akuaku", "feathers", "AKU AKU FEATHERS", AkuAkuFeathersAnim, 0.2f,
+      { 0.0f, -0.25f, 0.0f }, { 0.0f, 0.25f, 0.0f }, 1.0f, 0.55f },
+    { "a\\penguin", "penguinp", "PENGUIN P", PenguinPAnim, 0.2f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.4f, 0.0f }, 1.5f, 0.35f },
+    { "a\\snowhog", "snowhog", "SNOW HOG", SnowHogAnim, 0.2f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.25f, 0.0f }, 1.5f, 0.55f },
+    { "a\\polargrd", "polargrd", "POLAR GUARD", PolarGuardAnim, 0.5f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.4f, 0.0f }, 1.0f, 0.55f },
+    { "a\\parrot", "parrot", "PARROT", ParrotAnim, 0.2f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.4f, 0.0f }, 1.0f, 0.55f },
+    { "a\\parrot", "feathers", "PARROT FEATHERS", ParrotFeathersAnim, 0.2f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.4f, 0.0f }, 1.0f, 0.55f },
+    { "a\\monkeys", "monkey", "MONKEY", MonkeyAnim, 0.3f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.5f, 0.0f }, 1.5f, 0.55f },
+    { "a\\monkeys", "banana", "BANANA", BananaAnim, 0.3f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.5f, 0.0f }, 1.5f, 0.55f },
+    { "a\\shark", "shark", "SHARK", SharkAnim, 0.4f,
+      { 0.0f, -0.4f, 0.0f }, { 0.0f, 0.3f, 0.0f }, 1.0f, 0.55f },
+    { "a\\starfish", "stfshblu", "STARFISH", StarfishAnim, 0.4f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.3f, 0.0f }, 1.0f, 0.55f },
+    { "a\\gorilla", "gorilla", "GORILLA", GorillaAnim, 1.25f,
+      { -1.1f, 0.0f, -0.4f }, { 1.1f, 1.5f, 1.1f }, 1.0f, 1.55f },
+    { "a\\turtle", "turtle", "TURTLE", TurtleAnim, 0.5f,
+      { 0.0f, -0.25f, 0.0f }, { 0.0f, 0.4f, 0.0f }, 1.0f, 0.55f },
+    { "a\\dragfly", "dragfly", "DRAGONFLY", DragonflyAnim, 0.5f,
+      { 0.0f, -0.2f, 0.0f }, { 0.0f, 0.2f, 0.0f }, 1.0f, 0.55f },
+    { "a\\crab", "crab", "CRAB", CrabAnim, 0.25f,
+      { -0.3f, 0.0f, -0.25f }, { 0.3f, 0.35f, 0.5f }, 1.5f, 0.55f },
+    { "a\\clam", "clam", "CLAM", ClamAnim, 0.35f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.6f, 0.0f }, 1.0f, 0.55f },
+    { "a\\donkey", "uglydnky", "DONKEY", DonkeyAnim, 0.5f,
+      { -0.5f, 0.0f, -0.7f }, { 0.5f, 0.75f, 0.4f }, 1.5f, 0.55f },
+    { "a\\eel", "eel", "EEL", EelAnim, 0.5f,
+      { 0.0f, -0.4f, 0.0f }, { 0.0f, 0.4f, 0.0f }, 1.0f, 0.55f },
+    { "a\\fish", "anglfish", "FISHY", FishyAnim, 0.1f,
+      { 0.0f, -0.1f, 0.0f }, { 0.0f, 0.1f, 0.0f }, 3.0f, 0.55f },
+    { "a\\geko", "geko", "GECKO", GeckoAnim, 0.5f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.4f, 0.0f }, 1.0f, 0.55f },
+    { "a\\lionfish", "lionfish", "LIONFISH", LionFishAnim, 0.2f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.4f, 0.0f }, 1.0f, 0.55f },
+    { "a\\salmon", "salmon", "SALMON", SalmonAnim, 0.2f,
+      { 0.0f, -0.25f, 0.0f }, { 0.0f, 0.25f, 0.0f }, 1.0f, 0.55f },
+    { "a\\sub", "sub", "SUBMARINE", SubmarineAnim, 0.7f,
+      { 0.0f, -0.6f, 0.0f }, { 0.0f, 0.5f, 0.0f }, 1.0f, 0.55f },
+    { "a\\vulture", "vulture", "VULTURE", VultureAnim, 0.5f,
+      { -0.75f, -0.1f, -0.4f }, { 0.75f, 0.75f, 0.9f }, 1.0f, 1.0f },
+    { "a\\anglrfsh", "anglrfsh", "ANGLER FISH", AnglerFishAnim, 0.75f,
+      { 0.0f, -0.8f, 0.0f }, { 0.0f, 0.7f, 0.0f }, 1.0f, 0.55f },
+    { "a\\scorpion", "scorpion", "SCORPION", ScorpionAnim, 0.5f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.5f, 0.0f }, 1.0f, 0.55f },
+    { "a\\mole", "mole", "MOLE", MoleAnim, 0.4f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, 1.0f, 0.55f },
+    { "a\\blob", "blublob", "BLUE SEA BLOB", BlobAnim, 0.5f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.4f, 0.0f }, 1.0f, 0.55f },
+    { "a\\blob", "grnblob", "GREEN SEA BLOB", BlobAnim, 0.5f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.4f, 0.0f }, 1.0f, 0.55f },
+    { "a\\blob", "purblob", "PURPLE SEA BLOB", BlobAnim, 0.5f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.4f, 0.0f }, 1.0f, 0.55f },
+    { "a\\blob", "redblob", "RED SEA BLOB", BlobAnim, 0.5f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.4f, 0.0f }, 1.0f, 0.55f },
+    { "a\\snwblast", "snwblast", "SNOW MACHINE", SnowMachineAnim, 0.25f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, 1.5f, 0.55f },
+    { "a\\wharthog", "wharthog", "WARTHOG", WarthogAnim, 0.5f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, 1.0f, 0.55f },
+    { "a\\rhino", "rhino", "BABY RHINO", BabyRhinoAnim, 0.5f,
+      { -0.3f, 0.0f, -0.6f }, { 0.3f, 1.0f, 0.7f }, 1.5f, 0.55f },
+    { "b\\giraffe", "giraffe", "GIRAFFE", GiraffeAnim, 0.5f,
+      { -0.3f, 0.0f, -0.5f }, { 0.3f, 2.6f, 0.7f }, 1.5f, 0.55f },
+    { "b\\elephant", "elephant", "ELEPHANT", ElephantAnim, 1.0f,
+      { -0.5f, 0.0f, -0.6f }, { 0.5f, 1.5f, 1.5f }, 1.5f, 0.55f },
+    { "b\\hippo", "hippo", "HIPPO", HippoAnim, 0.5f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, 2.0f, 0.55f },
+    { "b\\penguin", "penguinf", "PENGUIN F", PenguinFAnim, 0.5f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, 1.0f, 0.55f },
+    { "b\\bird", "bird", "BIRD", BirdAnim, 0.1f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.2f, 0.0f }, 1.0f, 0.55f },
+    { "b\\bird", "bird2", "BIRD 2", BirdAnim, 0.1f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.2f, 0.0f }, 1.0f, 0.55f },
+    { "b\\buttrfly", "buttrfly", "BUTTERFLY", ButterflyAnim, 0.2f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.2f, 0.0f }, 0.5f, 0.55f },
+    { "b\\bee", "bee", "BEE", BeeAnim, 0.1f,
+      { 0.0f, -0.1f, 0.0f }, { 0.0f, 0.1f, 0.0f }, 1.0f, 0.55f },
+    { "b\\lion", "lion", "LION", LionAnim, 0.5f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, 1.0f, 0.55f },
+    { "b\\drhino", "rhino", "DADDY RHINO", DaddyRhinoAnim, 1.0f,
+      { -0.4f, 0.0f, -1.0f }, { 0.4f, 1.0f, 1.1f }, 2.0f, 0.55f },
+    { "b\\glider", "glider", "GLIDER", GliderAnim, 1.0f,
+      { 0.0f, -0.5f, 0.0f }, { 0.0f, 0.5f, 0.0f }, 1.0f, 0.55f },
+    { "b\\seal", "seal", "SEAL", SealAnim, 0.4f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.5f, 0.0f }, 1.0f, 0.55f },
+    { "b\\narwhal", "narwhal", "NARWHAL", NarwhalAnim, 0.7f,
+      { 0.0f, -0.7f, 0.0f }, { 0.0f, 0.7f, 0.0f }, 1.0f, 0.55f },
+    { "b\\knight", "knight", "KNIGHT", KnightAnim, 0.3f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.25f, 0.0f }, 1.0f, 0.55f },
+    { "b\\wizard", "wizard", "WIZARD", WizardAnim, 0.25f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.5f, 0.0f }, 1.0f, 0.55f },
+    { "b\\copter", "gyro", "GYRO", GyroAnim, 0.25f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.25f, 0.0f }, 1.0f, 0.55f },
+    { "b\\goldfish", "goldfish", "KOI CARP", KoiCarpAnim, 0.15f,
+      { 0.0f, -0.2f, 0.0f }, { 0.0f, 0.2f, 0.0f }, 2.0f, 0.55f },
+    { "b\\ninja", "ninja", "NINJA", NinjaAnim, 0.2f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.25f, 0.0f }, 1.0f, 0.55f },
+    { "b\\bat", "bat", "BAT", BatAnim, 0.2f,
+      { 0.0f, -0.1f, 0.0f }, { 0.0f, 0.2f, 0.0f }, 1.0f, 0.55f },
+    { "b\\chinagrd", "guard", "GONG BONGER", GongBongerAnim, 0.2f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.25f, 0.0f }, 1.0f, 0.55f },
+    { "b\\flamingo", "crane", "FLAMINGO", FlamingoAnim, 0.1f,
+      { -0.1f, 0.0f, -0.1f }, { 0.1f, 0.7f, 0.2f }, 2.0f, 0.55f },
+    { "b\\zoffa", "zoffa", "ZOFFA", ZoffaAnim, 0.5f,
+      { 0.0f, -0.5f, 0.0f }, { 0.0f, 0.5f, 0.0f }, 1.0f, 0.55f },
+    { "b\\dragon", "dragon", "DRAGON", DragonAnim, 1.5f,
+      { 0.0f, -0.5f, 0.0f }, { 0.0f, 2.5f, 0.0f }, 0.9f, 0.55f },
+    { "b\\windcol", "windcol", "WINDCOL", HovaBlimpAnim, 0.5f,
+      { 0.0f, -0.5f, 0.0f }, { 0.0f, 0.5f, 0.0f }, 1.0f, 0.55f },
+    { "b\\mech", "mech", "MECH", MechAnim, 0.35f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.5f, 0.0f }, 1.0f, 1.0f },
+    { "c\\whumpa", "whumpa", "WUMPA", WumpaAnim, 0.1f,
+      { 0.0f, -0.1f, 0.0f }, { 0.0f, 0.1f, 0.0f }, 1.0f, 0.55f },
+    { "c\\mammoth", "mammoth", "MAMMOTH", MammothAnim, 1.0f,
+      { -0.4f, 0.0f, -0.6f }, { 0.4f, 1.3f, 1.0f }, 1.0f, 0.55f },
+    { "crates\\bouncebx", "bnceboxa", "BOUNCY CRATE", BouncyCrateAnim, 0.25f,
+      { -0.25f, 0.0f, -0.25f }, { 0.25f, 0.5f, 0.25f }, 1.0f, 0.55f },
+    { "crates\\uparrow", "uparrow", "ARROW CRATE", ArrowCrateAnim, 0.25f,
+      { -0.25f, 0.0f, -0.25f }, { 0.25f, 0.5f, 0.25f }, 1.0f, 0.55f },
+    { "crates\\metarrow", "metarrow", "METAL ARROW CRATE", MetalArrowCrateAnim, 0.25f,
+      { -0.25f, 0.0f, -0.25f }, { 0.25f, 0.5f, 0.25f }, 1.0f, 0.55f },
+    { "crates\\akuaku", "akuaku", "AKU AKU CRATE", AkuAkuCrateAnim, 0.25f,
+      { -0.25f, 0.0f, -0.25f }, { 0.25f, 0.5f, 0.25f }, 1.0f, 0.55f },
+    { "crates\\checkp", "checkp", "CHECKPOINT CRATE", CheckpointCrateAnim, 0.25f,
+      { -0.25f, 0.0f, -0.25f }, { 0.25f, 0.5f, 0.25f }, 1.0f, 0.55f },
+    { "crates\\exclamat", "exclamat", "METAL EXCLAMATION CRATE", MetalExclamationCrateAnim, 0.25f,
+      { -0.25f, 0.0f, -0.25f }, { 0.25f, 0.5f, 0.25f }, 1.0f, 0.55f },
+    { "crates\\nitroexp", "nitroexp", "NITRO EXCLAMATION CRATE", NitroExclamationCrateAnim, 0.25f,
+      { -0.25f, 0.0f, -0.25f }, { 0.25f, 0.5f, 0.25f }, 1.0f, 0.55f },
+    { "crates\\reinforc", "reinforc", "REINFORCED CRATE", ReinforcedCrateAnim, 0.25f,
+      { -0.25f, 0.0f, -0.25f }, { 0.25f, 0.5f, 0.25f }, 1.0f, 0.55f },
+    { "c\\icecube", "icecube", "ICE CUBE", IceCubeAnim, 1.0f,
+      { -0.3f, -0.1f, -0.3f }, { 0.3f, 1.0f, 0.3f }, 1.0f, 0.55f },
+    { "c\\dingodil", "dingo", "DINGODILE", DingodileAnim, 0.65f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.1f, 0.0f }, 1.0f, 0.55f },
+    { "c\\zepplin", "zeppelin", "ZEPPLIN", ZepplinAnim, 1.0f,
+      { 0.0f, -1.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, 1.0f, 0.55f },
+    { "c\\tiny", "tiny", "TINY", TinyAnim, 0.5f,
+      { -0.6f, 0.0f, -0.2f }, { 0.6f, 1.2f, 0.6f }, 1.0f, 0.55f },
+    { "c\\atlas", "atlas", "ATLAS SPHERE", AtlasSphereAnim, 0.65f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.3f, 0.0f }, 1.0f, 0.55f },
+    { "c\\skeleton", "skeleton", "CRASH SKELETON", CrashAnim, 0.225f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.9f, 0.0f }, 1.0f, 0.55f },
+    { "e\\rokko", "rokko", "ROK-KO", RokKoAnim, 0.2f,
+      { 0.0f, -0.25f, 0.0f }, { 0.0f, 0.25f, 0.0f }, 1.0f, 0.55f },
+    { "e\\pyro", "pyro", "PY-RO", PyRoAnim, 0.2f,
+      { 0.0f, -0.25f, 0.0f }, { 0.0f, 0.25f, 0.0f }, 1.0f, 0.55f },
+    { "e\\wawa", "wawa", "WA-WA", WaWaAnim, 0.2f,
+      { 0.0f, -0.25f, 0.0f }, { 0.0f, 0.25f, 0.0f }, 1.0f, 0.55f },
+    { "e\\lolo", "lolo", "LO-LO", LoLoAnim, 0.2f,
+      { 0.0f, -0.25f, 0.0f }, { 0.0f, 0.25f, 0.0f }, 1.0f, 0.55f },
+    { "c\\pig", "pig", "PIG", PigAnim, 0.25f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.5f, 0.0f }, 5.0f, 0.55f },
+    { "c\\cow", "cow", "COW", CowAnim, 0.25f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.5f, 0.0f }, 2.0f, 0.55f },
+    { "b\\zoffa", "nginz", "NGINZ", ZoffaNGinAnim, 0.5f,
+      { 0.0f, -0.5f, 0.0f }, { 0.0f, 0.5f, 0.0f }, 1.0f, 0.55f },
+    { "b\\zoffa", "tinyz", "TINYZ", ZoffaTinyAnim, 0.5f,
+      { 0.0f, -0.5f, 0.0f }, { 0.0f, 0.5f, 0.0f }, 1.0f, 0.55f },
+    { "b\\zoffa", "dingoz", "DINGOZ", ZoffaDingodileAnim, 0.5f,
+      { 0.0f, -0.5f, 0.0f }, { 0.0f, 0.5f, 0.0f }, 1.0f, 0.55f },
+    { "b\\zoffa", "Ntrophyz", "NTROPHYZ", ZoffaNTropyAnim, 0.5f,
+      { 0.0f, -0.5f, 0.0f }, { 0.0f, 0.5f, 0.0f }, 1.0f, 0.55f },
+    { "b\\zoffa", "nzoffa", "NZOFFA", ZoffaGenericAnim, 0.5f,
+      { 0.0f, -0.5f, 0.0f }, { 0.0f, 0.5f, 0.0f }, 1.0f, 0.55f },
+    { "c\\title", "title", "GAME TITLE", GameTitleAnim, 0.5f,
+      { 0.0f, -0.5f, 0.0f }, { 0.0f, 0.5f, 0.0f }, 1.0f, 0.55f },
+    { "c\\lizzard", "lizzard", "LIZARD", LizardAnim, 0.25f,
+      { -0.15f, 0.0f, -0.15f }, { 0.15f, 0.5f, 0.3f }, 1.25f, 0.55f },
+    { "c\\pnlwndcl", "pnlwndcl", "BLIMP ICON", BlimpIconAnim, 1.0f,
+      { 0.0f, -1.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, 1.0f, 0.55f },
+    { "c\\jeep", "jeepall", "JEEP", JeepAnim, 0.5f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, 1.0f, 0.55f },
+    { "c\\gunboat", "gunboat", "GUNBOAT", GunBoatAnim, 1.0f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, 1.0f, 0.55f },
+    { "c\\neonaut", "neo", "NEO NAUT", BattleShipAnim, 1.0f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, 1.0f, 0.55f },
+    { "c\\gunboat", "sgbdingo", "GUNBOAT TINY", GunBoatAnimTiny, 1.0f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, 1.0f, 0.55f },
+    { "c\\gunboat", "sgbdingo", "GUNBOAT DINGO", GunBoatAnimDingo, 1.0f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, 1.0f, 0.55f },
+    { "c\\gunboat", "sgbdingo", "GUNBOAT NGIN", GunBoatAnimNGin, 1.0f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, 1.0f, 0.55f },
+    { "c\\gunboat", "sgbdingo", "GUNBOAT NTROPY", GunBoatAnimNTropy, 1.0f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, 1.0f, 0.55f },
+    { "c\\rickshaw", "rickshaw", "RICK SHAW", RickShawAnim, 0.25f,
+      { -0.2f, 0.0f, -1.0f }, { 0.2f, 1.0f, 0.1f }, 1.6f, 0.95f },
+    { "d\\scooter", "scooter", "SCOOTER", ScooterAnim, 0.225f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.8f, 0.0f }, 1.0f, 0.55f },
+    { "c\\tunna", "tunna", "TUNA", TunaAnim, 0.15f,
+      { -0.07f, 0.0f, -0.25f }, { 0.07f, 0.1f, 0.17f }, 3.0f, 0.25f },
+    { "c\\wheela", "wheela", "WHEELA", WheelaAnim, 0.225f,
+      { -0.25f, 0.0f, -0.7f }, { 0.7f, 1.6f, 0.45f }, 1.0f, 0.95f },
+    { "d\\cacti", "cacti", "CACTUS", CactusAnim, 0.2f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.4f, 0.0f }, 1.0f, 0.55f },
+    { "c\\droid1", "droid", "DROID1", Droid1Anim, 0.3f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.6f, 0.0f }, 1.5f, 0.3f },
+    { "d\\droid2", "droid", "DROID2", Droid2Anim, 0.4f,
+      { -0.4f, -0.3f, -0.3f }, { 0.35f, 0.25f, 0.3f }, 1.0f, 1.0f },
+    { "d\\droid3", "droid", "DROID3", Droid3Anim, 0.3f,
+      { -0.3f, 0.0f, -0.15f }, { 0.3f, 0.75f, 0.35f }, 1.25f, 0.4f },
+    { "d\\droid4", "droid", "DROID4", Droid4Anim, 0.3f,
+      { -0.2f, -0.3f, -0.15f }, { 0.2f, 0.15f, 0.4f }, 1.0f, 0.4f },
+    { "d\\scuba", "scuba", "CRASH SCUBA", CrashScubaAnim, 0.525f,
+      { 0.0f, -0.225f, 0.0f }, { 0.0f, 0.225f, 0.0f }, 1.0f, 0.55f },
+    { "d\\scuba", "scubaspn", "CRASH SCUBA SPIN", CrashScubaSpinAnim, 0.45f,
+      { 0.0f, -0.225f, 0.0f }, { 0.0f, 0.225f, 0.0f }, 1.0f, 0.55f },
+    { "d\\items", "crystal", "CRYSTAL", 0, 0.17f,
+      { -0.17f, -0.42f, -0.17f }, { 0.17f, 0.71f, 0.17f }, 1.0f, 0.2f },
+    { "d\\items", "clock", "CLOCK", ClockAnim, 0.36f,
+      { -0.36f, -0.37f, -0.13f }, { 0.36f, 0.51f, 0.13f }, 1.0f, 0.45f },
+    { "d\\items", "crategem", "CRATE GEM", 0, 0.25f,
+      { -0.25f, -0.27f, -0.25f }, { 0.25f, 0.14f, 0.25f }, 1.0f, 0.325f },
+    { "d\\items", "bonusgem", "BONUS GEM", 0, 0.27f,
+      { -0.27f, -0.21f, -0.27f }, { 0.27f, 0.1f, 0.27f }, 1.0f, 0.325f },
+    { "d\\items", "red", "RED GEM", 0, 0.33f,
+      { -0.33f, -0.14f, -0.33f }, { 0.33f, 0.14f, 0.33f }, 1.0f, 0.35f },
+    { "d\\items", "green", "GREEN GEM", 0, 0.36f,
+      { -0.36f, -0.27f, -0.36f }, { 0.36f, 0.17f, 0.36f }, 1.0f, 0.425f },
+    { "d\\items", "blue", "BLUE GEM", 0, 0.37f,
+      { -0.37f, -0.15f, -0.37f }, { 0.37f, 0.15f, 0.37f }, 1.0f, 0.4f },
+    { "d\\items", "yellow", "YELLOW GEM", 0, 0.25f,
+      { -0.25f, -0.27f, -0.25f }, { 0.25f, 0.14f, 0.25f }, 1.0f, 0.3f },
+    { "d\\items", "purple", "PURPLE GEM", 0, 0.28f,
+      { -0.28f, -0.27f, -0.28f }, { 0.28f, 0.1f, 0.28f }, 1.0f, 0.325f },
+    { "d\\dpseadvr", "dpseadvr", "DEEP SEA DIVER", DiverAnim, 0.25f,
+      { 0.0f, -0.3f, 0.0f }, { 0.0f, 1.2f, 0.0f }, 1.0f, 0.55f },
+    { "d\\crunch", "crunch", "CRUNCH", CrunchAnim, 0.75f,
+      { -0.9f, 0.0f, -0.7f }, { 0.9f, 2.2f, 0.4f }, 1.0f, 1.5f },
+    { "d\\dyno", "dyno", "DYNO", DynoAnim, 0.225f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.9f, 0.0f }, 0.75f, 0.55f },
+    { "d\\dropship", "dropship", "DROPSHIP", DropShipAnim, 1.0f,
+      { 0.0f, -0.5f, 0.0f }, { 0.0f, 0.5f, 0.0f }, 1.0f, 0.55f },
+    { "d\\ufo", "nginb", "UFO NGIN", UFOAnim, 0.25f,
+      { 0.0f, -0.3f, 0.0f }, { 0.0f, 1.2f, 0.0f }, 1.0f, 0.55f },
+    { "d\\ufo", "ntrophyb", "UFO NTROPY", UFOAnim, 0.25f,
+      { 0.0f, -0.3f, 0.0f }, { 0.0f, 1.2f, 0.0f }, 1.0f, 0.55f },
+    { "d\\ufo", "dingob", "UFO DINGO", UFOAnim, 0.25f,
+      { 0.0f, -0.3f, 0.0f }, { 0.0f, 1.2f, 0.0f }, 1.0f, 0.55f },
+    { "d\\ufo", "tinyb", "UFO TINY", UFOAnim, 0.25f,
+      { 0.0f, -0.3f, 0.0f }, { 0.0f, 1.2f, 0.0f }, 1.0f, 0.55f },
+    { "d\\weather", "weather", "WEATHER BOSS", WeatherCrunchAnim, 2.0f,
+      { -2.0f, -1.0f, -2.0f }, { 2.0f, 1.0f, 2.0f }, 1.0f, 0.55f },
+    { "a\\mole", "drill", "DRILL", DrillAnim, 0.5f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.4f, 0.0f }, 1.0f, 0.55f },
+    { "d\\jelly", "jelly", "JELLYFISH", JellyFishAnim, 0.25f,
+      { 0.0f, -0.4f, 0.0f }, { 0.0f, 0.25f, 0.0f }, 1.0f, 0.55f },
+    { "d\\minekart", "kart", "MINECART", MineCartAnim, 0.25f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.25f, 0.0f }, 1.0f, 0.55f },
+    { "d\\tribe", "tribe", "PYGMY", PygmyAnim, 0.25f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.75f, 0.0f }, 1.0f, 0.55f },
+    { "d\\mosqbike", "mosqbike", "MOSQUITO", MosquitoAnim, 1.0f,
+      { 0.0f, -0.5f, 0.0f }, { 0.0f, 0.5f, 0.0f }, 1.0f, 0.55f },
+    { "d\\bazooka", "bazooka", "BAZOOKA", BazookaAnim, 0.225f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.9f, 0.0f }, 1.0f, 0.55f },
+    { "d\\satellit", "satell", "SATELLITE", SatelliteAnim, 0.5f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, 1.0f, 0.55f },
+    { "d\\buggies\\blue", "tinybug", "BLUE BUGGY", BuggyAnim, 0.5f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, 1.0f, 0.55f },
+    { "d\\buggies\\green", "nginbug", "GREEN BUGGY", BuggyAnim, 0.5f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, 1.0f, 0.55f },
+    { "d\\buggies\\red", "ntrobug", "RED BUGGY", BuggyAnim, 0.5f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, 1.0f, 0.55f },
+    { "d\\buggies\\yellow", "dingobug", "YELLOW BUGGY", BuggyAnim, 0.5f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, 1.0f, 0.55f },
+    { "d\\octopus", "octopus", "OCTOPUS", OctopusAnim, 0.75f,
+      { 0.0f, -0.25f, 0.0f }, { 0.0f, 1.9f, 0.0f }, 1.0f, 0.55f },
+    { "d\\tentacle", "tentacle", "TENTACLE", TentacleAnim, 0.3f,
+      { 0.0f, -2.25f, 0.0f }, { 0.0f, 1.75f, 0.0f }, 1.0f, 0.55f },
+    { "c\\mouse", "mouse", "MOUSE", MouseAnim, 0.1f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.1f, 0.0f }, 0.5f, 0.55f },
+    { "c\\robin", "robin", "ROBIN", RobinAnim, 0.1f,
+      { 0.0f, -0.1f, 0.0f }, { 0.0f, 0.1f, 0.0f }, 0.5f, 0.55f },
+    { "d\\wetjelly", "wetjelly", "WET JELLYFISH", WetJellyFishAnim, 0.075f,
+      { 0.0f, -0.3f, 0.0f }, { 0.0f, 0.04f, 0.0f }, 4.0f, 0.55f },
+    { "d\\crshburn", "crshburn", "BURNING CRASH", AshCrashAnim, 0.225f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.9f, 0.0f }, 1.0f, 0.55f },
+    { "d\\skier", "skier", "SKIER", SkierAnim, 0.225f,
+      { -0.2f, 0.0f, -0.3f }, { 0.2f, 1.1f, 0.7f }, 1.0f, 0.55f },
+    { "c\\jeep", "jeepall", "OFF ROADER", JeepAnim, 0.5f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, 1.0f, 0.55f },
+    { "d\\mine", "mine", "MINE", MineAnim, 0.15f,
+      { 0.0f, -0.15f, 0.0f }, { 0.0f, 0.15f, 0.0f }, 3.5f, 0.55f },
+    { "d\\scubadvr", "scuba", "HARPOONIST", HarpoonistAnim, 0.25f,
+      { -0.25f, -0.2f, -0.25f }, { 0.25f, 0.7f, 0.6f }, 1.0f, 0.55f },
+    { "d\\fire", "fire", "FIRE BOSS", FireBossAnim, 0.25f,
+      { -0.25f, -0.2f, -0.25f }, { 0.25f, 0.7f, 0.6f }, 1.0f, 0.55f },
+    { "d\\scuba", "scoobagr", "CRASH SCUBA GEAR", CrashScubaGearAnim, 0.225f,
+      { 0.0f, -0.225f, 0.0f }, { 0.0f, 0.225f, 0.0f }, 1.0f, 0.55f },
+    { "b\\bat", "crashbat", "CRASH BAT", CrashBatAnim, 0.225f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.9f, 0.0f }, 1.0f, 0.55f },
+    { "c\\skeleton", "skelspin", "SPINNING CRASH SKELETON", SpinCrashAnim, 0.225f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.9f, 0.0f }, 1.0f, 0.55f },
+    { "d\\snowbrd", "snowbrd", "SNOWBOARD", SnowBoardAnim, 0.225f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.8f, 0.0f }, 1.0f, 0.55f },
+    { "d\\minetub", "minetub", "MINETUB", MineTubAnim, 0.5f,
+      { -0.35f, 0.0f, -0.5f }, { 0.35f, 1.25f, 0.5f }, 1.0f, 0.55f },
+    { "e\\icons", "bazooka", "BAZOOKA ICON", IconAnim, 0.25f,
+      { -0.25f, -0.25f, -0.25f }, { 0.25f, 0.25f, 0.25f }, 1.0f, 0.55f },
+    { "e\\icons", "bodyslam", "SUPER SLAM ICON", IconAnim, 0.25f,
+      { -0.25f, -0.25f, -0.25f }, { 0.25f, 0.25f, 0.25f }, 1.0f, 0.55f },
+    { "e\\icons", "crshdash", "SPRINT ICON", IconAnim, 0.25f,
+      { -0.25f, -0.25f, -0.25f }, { 0.25f, 0.25f, 0.25f }, 1.0f, 0.55f },
+    { "e\\icons", "sprjump", "DOUBLE JUMP ICON", IconAnim, 0.25f,
+      { -0.25f, -0.25f, -0.25f }, { 0.25f, 0.25f, 0.25f }, 1.0f, 0.55f },
+    { "e\\icons", "tornado", "SUPER SPIN ICON", IconAnim, 0.25f,
+      { -0.25f, -0.25f, -0.25f }, { 0.25f, 0.25f, 0.25f }, 1.0f, 0.55f },
+    { "e\\icons", "tiptoe", "TIPTOE ICON", IconAnim, 0.25f,
+      { -0.25f, -0.25f, -0.25f }, { 0.25f, 0.25f, 0.25f }, 1.0f, 0.55f },
+    { "e\\crshlegs", "crshlegs", "CRASH LEGS", CrashLegsAnim, 0.225f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.9f, 0.0f }, 1.0f, 0.55f },
+    { "e\\labbloke", "labbloke", "WHITE LAB GUY", LabGuyAnim, 0.2f,
+      { -3.0f, 0.0f, -0.2f }, { 3.0f, 1.25f, 0.4f }, 1.0f, 0.55f },
+    { "e\\labbloke", "labblk", "BLACK LAB BLOKE", LabGuyAnim, 0.2f,
+      { -3.0f, 0.0f, -0.2f }, { 3.0f, 1.25f, 0.4f }, 1.0f, 0.55f },
+    { "e\\nuclear", "duke", "NUCLEAR LAB BLOKE", NuclearLabGuyAnim, 0.2f,
+      { -0.2f, 0.0f, -0.2f }, { 0.2f, 1.25f, 0.4f }, 1.0f, 0.55f },
+    { "e\\cyclon", "cyclon", "CYLON LAB BLOKE", CylonLabGuyAnim, 0.2f,
+      { -0.2f, 0.0f, -0.2f }, { 0.2f, 1.25f, 0.4f }, 1.0f, 0.55f },
+    { "e\\ecrunch", "ecrunch", "EARTH CRUNCH", EarthCrunchAnim, 1.0f,
+      { -1.0f, -1.0f, -1.0f }, { 1.0f, 1.0f, 1.0f }, 2.0f, 0.55f },
+    { "e\\firefly", "firefly", "BUG", BugAnim, 0.1f,
+      { -0.1f, -0.1f, -0.1f }, { 0.1f, 0.1f, 0.1f }, 2.0f, 0.55f },
+    { "e\\elecy", "elecy", "CRASH ZAP", 0, 0.225f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.9f, 0.0f }, 1.0f, 0.55f },
+    { "e\\elecy", "scubafrz", "CRASH SCUBA ZAP", 0, 0.45f,
+      { 0.0f, -0.225f, 0.0f }, { 0.0f, 0.225f, 0.0f }, 1.0f, 0.55f },
+    { "e\\probe", "probe", "PROBE", 0, 0.25f,
+      { -0.25f, -0.25f, -0.25f }, { 0.25f, 0.25f, 0.25f }, 1.0f, 0.55f },
+    { "b\\mech", "firemech", "FIRE ENGINE", MechAnim, 0.35f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.5f, 0.0f }, 1.0f, 1.0f },
+    { "d\\crunch", "crchnrml", "CRUNCH HEAD", 0, 0.75f,
+      { -0.9f, 0.0f, -0.7f }, { 0.9f, 2.2f, 0.4f }, 1.0f, 0.55f },
+    { "d\\crunch", "crchholo", "HOLO CRUNCH HEAD", HoloCrunchHeadAnim, 0.75f,
+      { -0.9f, 0.0f, -0.7f }, { 0.9f, 2.2f, 0.4f }, 1.0f, 0.55f },
+    { "b\\cortex", "crtxholo", "HOLO CORTEX", HoloCortexAnim, 0.225f,
+      { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.9f, 0.0f }, 1.0f, 0.55f },
+    { "b\\ukauka", "ukaholo", "HOLO UKA UKA", HoloUkaUkaAnim, 0.2f,
+      { 0.0f, -0.25f, 0.0f }, { 0.0f, 0.25f, 0.0f }, 1.0f, 0.55f },
+    { "e\\vortex", "vortex", "VORTEX", 0, 0.2f,
+      { 0.0f, -0.25f, 0.0f }, { 0.0f, 0.25f, 0.0f }, 1.0f, 0.55f },
+    { "e\\saticon", "sat_icon", "SAT ICON", SpaceIconAnim, 1.0f,
+      { 0.0f, -1.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, 1.0f, 0.55f },
+    { "e\\shipicon", "shipicon", "SHIP ICON", ShipIconAnim, 1.0f,
+      { 0.0f, -1.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, 1.0f, 0.55f },
+    { "e\\shipicon", "shipicon", "BIGGUN ICON", ShipIconAnim, 1.0f,
+      { 0.0f, -1.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, 1.0f, 0.55f },
+    { "e\\disco", "disco", "DISCO LAB BLOKE", DiscoLabGuyAnim, 0.2f,
+      { -0.2f, 0.0f, -0.2f }, { 0.2f, 1.25f, 0.4f }, 1.0f, 0.55f },
+    { "d\\crunch", "crchnrml", "CRUNCH HEAD", 0, 0.75f,
+      { -0.9f, 0.0f, -0.7f }, { 0.9f, 2.2f, 0.4f }, 1.0f, 0.55f },
+    { "d\\fire", "explode", "FIRE BOSS BANG", FireBossBangAnim, 0.25f,
+      { -0.25f, -0.2f, -0.25f }, { 0.25f, 0.7f, 0.6f }, 1.0f, 0.55f },
+    { "d\\weather", "bones", "WEATHER BOZZ BANG", WeatherBossBangAnim, 2.0f,
+      { -2.0f, -1.0f, -2.0f }, { 2.0f, 1.0f, 2.0f }, 1.0f, 0.55f }
+};
+struct nuvec_s loadsavepos = { 0.0f, 8.0f, 3.5f };
+signed char CRemap[191] = { 0 };
+struct CharacterModel CModel[48] = { 0 };
+s8 CLetter[191] = { 0 };
+struct creature_s Character[9] = { 0 };
+struct creature_s *player = Character;
+float IDLEWAIT = 5.0f;
+s32 plr_died = 0;
+s32 c_slot = 1;
+f32 AIVISRANGE = 25.0f;
 
 
 void ResetPlayer(s32 set)
@@ -636,15 +2142,6 @@ void ManageCreatures(void)
 }
 
 
-/* One SpaceGameCut load entry (Level 0x28 only, stride 0x80): the character
- * id at +0x0 and an inline animation-descriptor table at +0x8. */
-struct space_s {
-    s32 character;            /* 0x00 */
-    s32 unk_0x04;             /* 0x04 */
-    struct animlist anim[5];  /* 0x08 */
-}; /* 0x80 */
-
-extern s8 CLetter[191];
 extern s32 gamecut;
 extern struct space_s *SpaceGameCutTab[][2];
 /* Unsized here: retail addresses it with %hi/%lo in this unit, not $gp. */
@@ -653,23 +2150,6 @@ extern union variptr_u superbuffer_ptr;
 extern char tbuf[];
 extern struct font3dobj_s Font3DObjTab[];
 extern struct MoveInfo MineCartMoveInfo;
-
-/* Retail-owned filename fragments and per-variant animation tables. */
-extern char D_0061D270[];   /* .dat path passed to NuDatOpen */
-extern char D_0061D280[];   /* sprintf format for the load screen */
-extern char D_00630980[];
-extern char D_00630988[];
-extern char D_00630990[];
-extern char D_00630998[];
-extern char D_006309A0[];
-extern char D_006309A8[];
-extern struct animlist D_0055C100[];
-extern struct animlist D_0055C178[];
-extern struct animlist D_0055C1C0[];
-extern struct animlist D_0055C2C8[];
-extern struct animlist D_0055C370[];
-extern struct animlist D_0055C3E8[];
-extern struct animlist D_0055CCA0[];
 
 #ifndef NW_HOST /* the host takes the prototypes of nucore/nufile.h */
 void *NuDatOpen(char *name, s32 mode, s32 arg);
@@ -711,7 +2191,7 @@ void LoadCharacterModels(void)
         space = 0;
     }
 
-    dat = NuDatOpen(D_0061D270, 0, 0);
+    dat = NuDatOpen("chars.dat", 0, 0);
     NuDatSet(dat);
 
     if (LDATA->clist != 0) {
@@ -728,19 +2208,19 @@ void LoadCharacterModels(void)
             character = LDATA->clist[i];
         }
         if ((character != 0xFF) && (cmodel_index < 0x30)) {
-            sprintf(tbuf, D_0061D280, CData[character].name);
+            sprintf(tbuf, "loading %s", CData[character].name);
             LoadScreen(tbuf);
             memset(model, 0, sizeof(struct CharacterModel));
             if ((u32)character < 2) {
                 bgload_model[character] = model;
             }
             cdata = &CData[character];
-            NuStrCpy(charsdat_filename, D_00630980);
+            NuStrCpy(charsdat_filename, "chars\\");
             NuStrCat(charsdat_filename, cdata->path);
-            NuStrCat(charsdat_filename, D_00630988);
+            NuStrCat(charsdat_filename, "\\");
             NuStrCpy(tbuf, charsdat_filename);
             NuStrCat(tbuf, cdata->file);
-            NuStrCat(tbuf, D_00630990);
+            NuStrCat(tbuf, ".ghg");
             model->obj = NuGHGRead(&superbuffer_ptr, tbuf);
             if (model->obj != 0) {
                 NuStrCpy(tbuf, charsdat_filename);
@@ -749,7 +2229,7 @@ void LoadCharacterModels(void)
                 } else {
                     NuStrCat(tbuf, cdata->file);
                 }
-                NuStrCat(tbuf, D_00630998);
+                NuStrCat(tbuf, ".shd");
                 model->shadhdr = InstShadDataLoad(tbuf);
                 if (model->shadhdr != 0) {
                     model->shaddatarest = ShadFindData((int *)model->shadhdr, 0);
@@ -758,9 +2238,9 @@ void LoadCharacterModels(void)
                     model->pLOCATOR[j] = NuHGobjGetPOI(model->obj, j);
                 }
                 if ((character == 0x54) || (character == 0x9F)) {
-                    NuStrCpy(charsdat_filename, D_00630980);
+                    NuStrCpy(charsdat_filename, "chars\\");
                     NuStrCat(charsdat_filename, CData[0].path);
-                    NuStrCat(charsdat_filename, D_00630988);
+                    NuStrCat(charsdat_filename, "\\");
                 }
                 anim = cdata->anim;
                 if (Level == 0x28) {
@@ -768,21 +2248,21 @@ void LoadCharacterModels(void)
                 } else {
                     if (character == 0) {
                         if ((LBIT & 0x1001002000) && (Level != 0x1E)) {
-                            anim = D_0055C100;
+                            anim = CrashAnim_GLIDER;
                         } else if (LBIT & 0x40000) {
-                            anim = D_0055C178;
+                            anim = CrashAnim_MOSQUITO;
                         } else if (LBIT & 0x100210801) {
-                            anim = D_0055C1C0;
+                            anim = CrashAnim_ATLASPHERE;
                         } else if (Level == 0x1D) {
-                            anim = D_0055C2C8;
+                            anim = CrashAnim_GYRO;
                         } else if (Level == 0x1C) {
-                            anim = D_0055C370;
+                            anim = CrashAnim_MINETUB;
                         } else if (Level == 0x2B) {
-                            anim = D_0055C3E8;
+                            anim = CrashAnim_CREDITS;
                         }
                     } else if (character == 1) {
                         if (LBIT & 0x4000000) {
-                            anim = D_0055CCA0;
+                            anim = CocoAnim_DROPSHIP;
                         }
                     }
                 }
@@ -793,7 +2273,7 @@ void LoadCharacterModels(void)
                             (model->anmdata[anim->action] == 0)) {
                             NuStrCpy(tbuf, charsdat_filename);
                             NuStrCat(tbuf, anim->file);
-                            NuStrCat(tbuf, D_006309A0);
+                            NuStrCat(tbuf, ".ani");
                             model->anmdata[anim->action] = InstAnimDataLoad(tbuf);
                             if (model->anmdata[anim->action] != 0) {
                                 model->animlist[anim->action] = anim;
@@ -808,7 +2288,7 @@ void LoadCharacterModels(void)
                             (model->fanmdata[anim->action] == 0)) {
                             NuStrCpy(tbuf, charsdat_filename);
                             NuStrCat(tbuf, anim->file);
-                            NuStrCat(tbuf, D_006309A8);
+                            NuStrCat(tbuf, ".bsa");
                             model->fanmdata[anim->action] = InstAnimDataLoad(tbuf);
                             if (model->fanmdata[anim->action] != 0) {
                                 model->fanimlist[anim->action] = anim;
@@ -1251,10 +2731,13 @@ extern s32 in_finish_range;
 extern s32 FireBossHoldPlayer;
 extern s32 fadeval;
 extern s32 SmokeyCountDownValue;
-extern f32 SMOKEYSPEED;
-extern f32 SMOKEYBOOSTSPEED;
+f32 SMOKEYSPEED = 8.0f;
+f32 SMOKEYBOOSTSPEED = 12.0f;
+f32 OFFROADERSEEK = 0.02f;
+s32 plr_terrain_ok = 0;
+s32 plr_allow_jump = 0;
+s32 LIGHTCREATURES = 1;
 extern f32 offroader_speedtime;
-extern f32 OFFROADERSEEK;
 extern f32 TERMINALVELOCITY;
 extern f32 GRAVITY;
 extern u16 best_railangle;
@@ -1277,12 +2760,9 @@ extern s32 temp_crate_y_ceiling_adjust;
 extern s32 temp_crate_y_floor_adjust;
 extern s32 temp_crate_xz_adjust;
 extern s32 NOTERRAINSTOP;
-extern s32 plr_terrain_ok;
 extern s32 jonframe1;
-extern s32 plr_allow_jump;
 extern s32 InvincibilityCHEAT;
 extern s32 loadsave_frame;
-extern struct nuvec_s loadsavepos;
 extern f32 NuTrigTable[];
 
 void ToggleVehicle(struct creature_s *c);
@@ -2398,18 +3878,19 @@ void MovePlayer(struct creature_s *c, struct nupad_s *pad)
             if (i != 0) {
                 switch (i) {
                 case 6:
+                case 8:
+                case 9:
                     die = 0x12;
                     break;
                 case 7:
                     die = 0x13;
                     break;
-                case 9:
+                case 10:
                     die = 0x9;
                     break;
-                case 10:
+                case 11:
                     die = 0x11;
                     break;
-                case 11:
                 default:
                     die = GetDieAnim(&c->obj, -1);
                     break;
@@ -2947,7 +4428,7 @@ void ProcessCreatures(void)
         if (Level == 0x11) {
             if ((TimeTrial != 0) && (c->obj.dead == 0) && (Pad[0] != 0) &&
                 ((Pad[0]->paddata_db & 0x100) != 0)) {
-                c->obj.pos = D_0061D318;
+                c->obj.pos = (struct nuvec_s){ -53.01f, 0.0f, -3.36f };
                 c->obj.mom = v000;
                 GameCam[0].mode = -1;
             }
@@ -3031,6 +4512,21 @@ void EvalModelAnim(struct CharacterModel *model, struct anim_s *anim,
         }
     }
 }
+
+
+s32 plr_render = 0;
+s32 jeep_draw = 0;
+s32 glass_draw = 0;
+s32 glass_phase = 0;
+s32 DRAWCREATURESHADOWS = 1;
+f32 HUBREFLECTY = 7.825f;
+f32 ATLASPLAYERLIFT = 0.1f;
+s32 temp_action = 0;
+f32 temp_time = 0.0f;
+f32 temp_anim_speed = 0.0f;
+unsigned short temp_surface_xrot = 0;
+unsigned short temp_surface_yrot = 0;
+unsigned short temp_surface_zrot = 0;
 
 
 /* GNU89 `inline`: inlined into DrawCharacterModel and DrawCreatures; the
@@ -3251,20 +4747,13 @@ Exit:
 
 /* (tersurface_s / objtab_s / nuspecial_s are defined above MovePlayer.) */
 
-extern s32 DRAWCREATURESHADOWS;
 extern s32 editor_active;
 extern s32 in_finish_range;
 extern s32 warp_level;
-extern s32 glass_phase;
 extern f32 glass_mix;
 extern s32 SKELETALCRASH;
-extern f32 HUBREFLECTY;
-extern f32 ATLASPLAYERLIFT;
 extern f32 vtog_time;
 extern f32 vtog_duration;
-extern unsigned short temp_surface_xrot;
-extern unsigned short temp_surface_yrot;
-extern unsigned short temp_surface_zrot;
 extern struct cammtx_s *pCam;
 extern struct numtx_s mTEMP;
 extern f32 NuTrigTable[];

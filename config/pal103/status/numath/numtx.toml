@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0015"
 source = "src/numath/numtx.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0015:00107b00:NuMtxSetRotateXYZ"
@@ -197,4 +197,16 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0015:0010aa10:NuMtxGetTranslation"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0015:002938a0:gm"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0015:002938e0:numtx_identity"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0015:00293920:numtx_zero"
 state = "matching"
