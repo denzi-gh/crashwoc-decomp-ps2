@@ -824,6 +824,15 @@ void ReadNuIFFHGobj(int fh, struct NUHGOBJ_s *hobj) {
 }
 
 
+/* Cursor aligners taking &ptr: retail's ptr is address-taken, so gcse never moves ptr arithmetic. */
+static inline void NuGHGAlign16(char **ptr) {
+    *ptr = (char *)(((unsigned int)*ptr + 0xF) & ~0xF);
+}
+
+static inline void NuGHGAlign4(char **ptr) {
+    *ptr = (char *)(((unsigned int)*ptr + 3) & ~3);
+}
+
 char *NuGHGWriteGobj(char *base, char *ptr, struct NUHGOBJ_s *hobj, struct nugobj_s *gobj,
                      int *offset) {
     struct nughggobj_s *out;
@@ -835,7 +844,7 @@ char *NuGHGWriteGobj(char *base, char *ptr, struct NUHGOBJ_s *hobj, struct nugob
     last = 0;
     *offset = 0;
     while (gobj) {
-        ptr = (char *)(((unsigned int)ptr + 3) & ~3);
+        NuGHGAlign4(&ptr);
         out = (struct nughggobj_s *)ptr;
         if (last) {
             last->next_gobj = (struct nugobj_s *)(ptr - base);
@@ -847,7 +856,7 @@ char *NuGHGWriteGobj(char *base, char *ptr, struct NUHGOBJ_s *hobj, struct nugob
         out->faceon_geom = 0;
         lastgeom = 0;
         for (geom = gobj->geom; geom; geom = geom->next) {
-            ptr = (char *)(((unsigned int)ptr + 3) & ~3);
+            NuGHGAlign4(&ptr);
             ogeom = (struct nughggeom_s *)ptr;
             if (lastgeom) {
                 lastgeom->next = (struct nughggeom_s *)(ptr - base);
@@ -858,7 +867,7 @@ char *NuGHGWriteGobj(char *base, char *ptr, struct NUHGOBJ_s *hobj, struct nugob
             ogeom->mtl_id = geom->mtl_id;
             ptr = (char *)&ogeom[1];
             if (geom->dmastream) {
-                ptr = (char *)(((unsigned int)ptr + 0xF) & ~0xF);
+                NuGHGAlign16(&ptr);
                 ogeom->dmastream = ptr - base;
                 memcpy(ptr, geom->dmastream, geom->dmasize);
                 ptr += geom->dmasize;
@@ -866,7 +875,7 @@ char *NuGHGWriteGobj(char *base, char *ptr, struct NUHGOBJ_s *hobj, struct nugob
                 ogeom->dmastream = 0;
             }
             if (geom->skindma) {
-                ptr = (char *)(((unsigned int)ptr + 0xF) & ~0xF);
+                NuGHGAlign16(&ptr);
                 ogeom->skindma = ptr - base;
                 NuCvtSknInstUnFix(geom->skindma);
                 memcpy(ptr, geom->skindma, geom->dmasize);
@@ -995,14 +1004,6 @@ extern char D_00615458[];
 #define msg_ghg_wrote_texanims D_00615438
 #define msg_ghg_wrote_shadow D_00615458
 
-static inline void NuGHGAlign16(char **ptr) {
-    *ptr = (char *)(((unsigned int)*ptr + 0xF) & ~0xF);
-}
-
-static inline void NuGHGAlign4(char **ptr) {
-    *ptr = (char *)(((unsigned int)*ptr + 3) & ~3);
-}
-
 void NuGHGWrite(struct NUHGOBJ_s *hobj, char *file, int size) {
     char *base;
     struct nughgheader_s *header;
@@ -1100,8 +1101,8 @@ void NuGHGWrite(struct NUHGOBJ_s *hobj, char *file, int size) {
         NuDebugMsgProlog(nuhgobj_file, 0x486)(msg_ghg_wrote_joints, ptr - base);
 
         if (hobj->num_poi_ixs) {
-            header->poi_ixs = ptr - base;
             header->num_poi_ixs = hobj->num_poi_ixs;
+            header->poi_ixs = ptr - base;
             for (i = 0; i < hobj->num_poi_ixs; i++) {
                 *ptr++ = hobj->poi_ixs[i];
             }
@@ -1131,7 +1132,7 @@ void NuGHGWrite(struct NUHGOBJ_s *hobj, char *file, int size) {
             if (hobj->layers[i].name) {
                 layer->name = ptr - base;
                 NuStrCpy(ptr, hobj->layers[i].name);
-                ptr += NuStrLen(hobj->layers[i].name) + 1;
+                ptr += (NuStrLen(hobj->layers[i].name) + 1) * sizeof(char);
             } else {
                 layer->name = 0;
             }
@@ -1209,9 +1210,9 @@ void NuGHGWrite(struct NUHGOBJ_s *hobj, char *file, int size) {
                     }
                 }
                 anim->scriptname = anim->scriptname - hobj->string_table + header->string_table;
+                anim->ntaname = anim->ntaname - hobj->string_table + header->string_table;
                 anim->tids = (short *)((char *)tids - base);
                 tids += anim->numtids;
-                anim->ntaname = anim->ntaname - hobj->string_table + header->string_table;
             }
             ptr = (char *)&anims[hobj->numtexanims];
             for (i = 0; i < hobj->numtexanims; i++) {
@@ -1263,8 +1264,8 @@ void NuGHGWrite(struct NUHGOBJ_s *hobj, char *file, int size) {
                         meshes = &shadow->meshes[i];
                         count = meshes->second->count;
                         nnormals += count;
-                        for (j = 0; j < count; j++) {
-                            nverts += meshes->first[j].count;
+                        for (k = 0; k < count; k++) {
+                            nverts += meshes->first[k].count;
                         }
                     }
                 }
