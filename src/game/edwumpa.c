@@ -38,7 +38,7 @@ static s32 edwmp_i_wumpa;
 extern void *app_fnt;
 extern s32 PANELOFF;
 extern char tbuf[];
-extern char **LDATA;
+extern struct ldata_s *LDATA;
 extern s32 screendump;
 
 extern void eduiMenuDestroy(void *menu);
@@ -107,7 +107,7 @@ void edwmpDrawInfo(void)
     }
     NuFntScale(8, 12);
     NuFntSetPen(-1);
-    strcpy(tbuf, LDATA[0]);
+    strcpy(tbuf, LDATA->path);
     strupr(tbuf);
     NuFntPrintEx(0x400, 0x100, 0, "%s.WMP", tbuf);
     NuFntPrintEx(0x400, 0x200, 0, "WUMPACOUNT:   %i/%i", WUMPACOUNT, 0x100);

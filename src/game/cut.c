@@ -97,11 +97,11 @@ extern s32 fade_rate;
 extern s32 fadeval;
 extern void NuSoundUpdate(void);
 extern void sceGsSyncV(s32 mode);
-extern void *world_scene[];
+extern struct nugscn_s *world_scene[];
 extern void NuSoundFlushLoops(void);
 extern s32 set_cutscenecammtx;
 extern struct numtx_s cutscenecammtx;
-extern struct numtx_s *pNuCam;
+extern struct nucamera_s *pNuCam;
 extern void NuCameraSet(void *cam);
 
 /* Defined after GetSpaceCut, where retail emits them. */
@@ -711,7 +711,7 @@ inline void UpdateCutMovieCamera(struct numtx_s *cam) {
     if (set_cutscenecammtx != 0) {
         *cam = cutscenecammtx;
         set_cutscenecammtx = 0;
-        *pNuCam = *cam;
+        pNuCam->mtx = *cam;
         NuCameraSet(pNuCam);
     }
 }

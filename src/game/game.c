@@ -3818,7 +3818,7 @@ inline u16 SplinePointTilt(struct nugspline_s *spl, s32 i) {
     return NuAtan2D(dy, d);
 }
 
-extern u32 iTEMP;
+extern s32 iTEMP;
 
 void PointAlongSpline(struct nugspline_s *spl, float ratio, struct nuvec_s *pos,
                       u16 *ang, u16 *tilt) {
@@ -5781,7 +5781,7 @@ float point_delay = 0.0f;
 s32 cp_iRAIL = 0;
 s32 cp_iALONG = 0;
 float cp_fALONG = 0.0f;
-u32 iTEMP = 0;
+s32 iTEMP = 0;
 s32 plr_target_found = 0;
 struct game_s *game = NULL;
 s32 probeon = 0;

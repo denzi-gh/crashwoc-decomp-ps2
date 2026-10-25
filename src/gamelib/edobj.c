@@ -221,7 +221,7 @@ extern struct nucamera_s global_camera;
 
 #define OBJECT_CURVESET(obj) (ObjectAnim[obj]->chunks[0]->animcurvesets[0])
 
-extern signed char edbits_what_game;
+extern char edbits_what_game;
 extern char edbits_level_filename[];
 extern struct numtl_s *edobj_mtl;
 extern struct numtl_s *edobj_mtl_zoff;

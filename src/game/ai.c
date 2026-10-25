@@ -89,7 +89,7 @@ extern s32 Hub;
 
 extern struct game_s Game;
 extern s32 gamesfx_effect_volume;
-extern void *world_scene[32];
+extern struct nugscn_s *world_scene[32];
 
 extern s32 jcrunch;
 extern s32 CrunchTime_Intro;

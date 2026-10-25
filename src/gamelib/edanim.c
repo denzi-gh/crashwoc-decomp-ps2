@@ -165,7 +165,7 @@ extern void *app_fnt;
 extern unsigned char object_switches[];
 extern struct numtx_s numtx_identity;
 
-extern signed char edbits_what_game;
+extern char edbits_what_game;
 extern char edbits_level_filename[];
 
 extern void eduiMenuDestroy(void *menu);

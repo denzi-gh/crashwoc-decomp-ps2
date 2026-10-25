@@ -809,7 +809,7 @@ extern s32 pause_dir;
 extern s32 pausestats_frame;
 extern s32 ExtraMoves;
 extern struct powerdata_s PData[6];
-extern s8 CLetter[191];
+extern u8 CLetter[191];
 extern s32 sapphire_relics;
 extern s32 gold_relics;
 extern s32 platinum_relics;
