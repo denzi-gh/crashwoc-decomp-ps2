@@ -64,18 +64,6 @@ typedef struct SkinPrimDef {
     int id;
 } SkinPrimDef;
 
-typedef struct SkinVtxInfo {
-    float weights[3];
-    u8 mtxid[4];
-} SkinVtxInfo;
-
-typedef struct SkinV {
-    void *pnts;
-    void *nrms;
-    void *pid;
-    void *nid;
-} SkinV;
-
 
 extern void *NuMemAllocFn(int size, char *file, int line);
 extern void NuMemFreeFn(void *ptr, char *file, int line);
@@ -962,7 +950,7 @@ void SetVtxSkinData(SkinPrimDef *pd, int vtx, struct nuvtx_tc1_s *verts, int vid
     pd->vid[vtx] = vid;
     if (vtx < 3) {
         pd->adj[vtx] = -1;
-        for (skin = geom->skins; skin; skin = skin->next) {
+        for (skin = geom->skin; skin; skin = skin->next) {
             offset = vid - skin->vtxoffset;
             if (offset >= 0 && offset < skin->vtxcnt) {
                 weights = &skin->weights[skin->mtxcnt * offset];
@@ -994,15 +982,15 @@ static inline void RelocateSkinDma(SkinDmaTag *tag) {
 
 
 static inline void SetVtxSkinInfo(SkinPrimDef *pd, int vtx, struct nuvtx_tc1_s *verts, int vid, struct nugeom_s *geom) {
-    SkinVtxInfo *infos;
+    struct NUVTXSKININFO_s *infos;
     int i;
 
     pd->vrts[vtx] = verts[vid];
     pd->vid[vtx] = vid;
     pd->adj[vtx] = -1;
     infos = geom->vtxskininfo;
-    for (i = 0; i != 3 && infos[vid].weights[i] != 0.0f; i++) {
-        pd->weights[vtx][AddMtxToPrimDef(pd, infos[vid].mtxid[i])] = infos[vid].weights[i];
+    for (i = 0; i != 3 && infos[vid].wts[i] != 0.0f; i++) {
+        pd->weights[vtx][AddMtxToPrimDef(pd, infos[vid].joint_ixs[i])] = infos[vid].wts[i];
     }
 }
 
@@ -1031,7 +1019,7 @@ void NuPs2CreateSkinNorm(struct nugobj_s *gobj) {
     stritot = 0;
     buffer = &skinbuffer_free;
     for (geom = gobj->geom; geom; geom = geom->next) {
-        if (!geom->skins && !geom->vtxskininfo) {
+        if (!geom->skin && !geom->vtxskininfo) {
             continue;
         }
         prim = geom->prim;
@@ -1072,7 +1060,7 @@ void NuPs2CreateSkinNorm(struct nugobj_s *gobj) {
             }
         }
         geom->skindma = NuPs2CreateSkinDma(buffer, geom, primdefs_sorted, cnt);
-        geom->dmasize = *buffer - (char *)geom->skindma;
+        geom->dma_len = *buffer - (char *)geom->skindma;
         RelocateSkinDma(geom->skindma);
         total += cnt;
     }
@@ -1112,7 +1100,7 @@ void NuPs2CreateSkinSmoothOld(struct nugobj_s *gobj) {
     stritot = 0;
     buffer = &skinbuffer_free;
     for (geom = gobj->geom; geom; geom = geom->next) {
-        if (!geom->skins && !geom->vtxskininfo) {
+        if (!geom->skin && !geom->vtxskininfo) {
             continue;
         }
         prim = geom->prim;
@@ -1148,7 +1136,7 @@ void NuPs2CreateSkinSmoothOld(struct nugobj_s *gobj) {
         }
         NuDebugMsgProlog(nucvtskn_srcfile, 0x5F9)(peak_msg, peak, common);
         geom->skindma = NuPs2CreateSkinDma(buffer, geom, primdefs_sorted, cnt);
-        geom->dmasize = *buffer - (char *)geom->skindma;
+        geom->dma_len = *buffer - (char *)geom->skindma;
         RelocateSkinDma(geom->skindma);
         total += cnt;
     }
@@ -1188,7 +1176,7 @@ void NuPs2CreateSkinSmooth(struct nugobj_s *gobj) {
     stritot = 0;
     buffer = &skinbuffer_free;
     for (geom = gobj->geom; geom; geom = geom->next) {
-        if (!geom->skins && !geom->vtxskininfo) {
+        if (!geom->skin && !geom->vtxskininfo) {
             continue;
         }
         prim = geom->prim;
@@ -1221,7 +1209,7 @@ void NuPs2CreateSkinSmooth(struct nugobj_s *gobj) {
         }
         NuDebugMsgProlog(nucvtskn_srcfile, 0x64C)(peak_msg, peak, common);
         geom->skindma = NuPs2CreateSkinDma(buffer, geom, primdefs_sorted, cnt);
-        geom->dmasize = *buffer - (char *)geom->skindma;
+        geom->dma_len = *buffer - (char *)geom->skindma;
         RelocateSkinDma(geom->skindma);
         total += cnt;
     }

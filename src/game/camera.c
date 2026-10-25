@@ -71,25 +71,25 @@ extern s32 GemPath;
 
 /* Defined (zeroed) at the end of the unit, where retail emits them. */
 extern struct rail_s Rail[];
-extern struct RPos_s TempRPos;
+extern RailPosition TempRPos;
 extern s32 nRAILS;
 extern s32 temp_iRAIL;
 extern s32 temp_iALONG;
 extern f32 temp_fALONG;
 extern f32 temp_fACROSS;
-extern struct RPos_s cRPos[];
-extern struct RPos_s temp_cRPos[];
-extern struct RPos_s *best_cRPos;
-extern struct RPos_s *temp_best_cRPos;
+extern RailPosition cRPos[];
+extern RailPosition temp_cRPos[];
+extern RailPosition *best_cRPos;
+extern RailPosition *temp_best_cRPos;
 extern s32 cRPosCOUNT;
 extern s32 temp_cRPosCOUNT;
 
 extern void ComplexRailPosition(struct nuvec_s *pos, s32 iRAIL, s32 iALONG,
-                                struct RPos_s *rpos, s32 a4);
+                                RailPosition *rpos, s32 a4);
 extern f32 RatioBetweenEdges(struct nuvec_s *pos, struct nuvec_s *p0,
                              struct nuvec_s *p1, struct nuvec_s *p2,
                              struct nuvec_s *p3);
-extern void RailInfo(struct RPos_s *rpos, struct nuvec_s *pos, u16 *angle,
+extern void RailInfo(RailPosition *rpos, struct nuvec_s *pos, u16 *angle,
                      u16 *cam_angle, u8 *mode);
 extern f32 NuTrigTable[];
 extern s32 RotDiff(u16 a, u16 b);
@@ -183,7 +183,7 @@ void InitRails(void) {
 
 /* dbest and iVar6 are deliberately left uninitialised: retail never seeds
  * $f20 nor the 0x60(sp) slot before the search loop. */
-f32 BestRailPosition(struct nuvec_s *pos, struct RPos_s *rpos, s32 iRAIL,
+f32 BestRailPosition(struct nuvec_s *pos, RailPosition *rpos, s32 iRAIL,
                      s32 iALONG) {
     struct nuvec_s v;
     struct nuvec_s v0;
@@ -354,9 +354,9 @@ Finish:
 
 
 void ComplexRailPosition(struct nuvec_s *pos, s32 iRAIL, s32 iALONG,
-                         struct RPos_s *rpos, s32 set) {
-    struct RPos_s *list;
-    struct RPos_s *best;
+                         RailPosition *rpos, s32 set) {
+    RailPosition *list;
+    RailPosition *best;
     s32 i;
     s32 bonus;
     s32 death;
@@ -422,10 +422,10 @@ void ComplexRailPosition(struct nuvec_s *pos, s32 iRAIL, s32 iALONG,
 }
 
 
-void MoveRailPosition(struct nuvec_s *dst, struct RPos_s *rpos, f32 distance,
+void MoveRailPosition(struct nuvec_s *dst, RailPosition *rpos, f32 distance,
                       s32 direction) {
     struct rail_s *rail;
-    struct RPos_s RPos;
+    RailPosition RPos;
     struct nuvec_s *p0;
     struct nuvec_s *p1;
     struct nuvec_s *p;
@@ -494,7 +494,7 @@ Loop:
 }
 
 
-void RailInfo(struct RPos_s *rpos, struct nuvec_s *pos, u16 *angle,
+void RailInfo(RailPosition *rpos, struct nuvec_s *pos, u16 *angle,
               u16 *cam_angle, u8 *mode) {
     struct rail_s *rail;
     struct nuvec_s *pL;
@@ -675,7 +675,7 @@ extern struct gtimer_s GameTimer;
 extern struct gtimer_s GlobalTimer;
 extern struct nupad_s *Pad[];
 extern struct cammtx_s GameCam[];
-extern struct anim_s TempAnim;
+extern AnimPacket TempAnim;
 extern struct numtx_s cutscenecammtx;
 
 extern s32 set_cutscenecammtx;
@@ -773,7 +773,7 @@ inline f32 LookUpDownRail(struct obj_s *obj, u16 angle, s32 mode) {
  * The PAL build runs at 50Hz, so per-frame rates are the GC values x1.2. */
 void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
     static f32 Blend = 0.0f;
-    struct RPos_s RPos;
+    RailPosition RPos;
     struct nuvec_s pos;          /* where the camera wants to be */
     struct nuvec_s look;         /* where it looks */
     struct nuvec_s seek;         /* per-axis seek rate toward pos */
@@ -786,7 +786,7 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
     struct nuvec_s shift;
     struct creature_s *c;
     struct creature_s *plr;
-    struct anim_s *anim;
+    AnimPacket *anim;
     struct nugspline_s *spl;
     struct nuvec_s *p0;
     struct nuvec_s *p1;
@@ -1891,7 +1891,7 @@ void DrawCameraTarget(struct nuvec_s *pos) {
 }
 
 
-void GetALONG(struct nuvec_s *pos, struct RPos_s *rpos, s32 iRAIL, s32 iALONG,
+void GetALONG(struct nuvec_s *pos, RailPosition *rpos, s32 iRAIL, s32 iALONG,
               s32 info) {
     if (rpos == 0) {
         rpos = &TempRPos;
@@ -2003,17 +2003,17 @@ s32 temp_iRAIL = 0;
 s32 temp_iALONG = 0;
 f32 temp_fALONG = 0.0f;
 f32 temp_fACROSS = 0.0f;
-struct RPos_s *best_cRPos = 0;
+RailPosition *best_cRPos = 0;
 s32 cRPosCOUNT = 0;
-struct RPos_s *temp_best_cRPos = 0;
+RailPosition *temp_best_cRPos = 0;
 s32 temp_cRPosCOUNT = 0;
 s32 nRAILS = 0;
 struct cammtx_s *pCam = 0;
 struct nucamera_s *pNuCam = 0;
 s32 cut_on = 0;
 u16 best_railangle = 0;
-struct RPos_s TempRPos = {0};
-struct RPos_s cRPos[3] = {0};
-struct RPos_s temp_cRPos[3] = {0};
+RailPosition TempRPos = {0};
+RailPosition cRPos[3] = {0};
+RailPosition temp_cRPos[3] = {0};
 struct rail_s Rail[8] = {0};
 struct cammtx_s GameCam[1] = {0};

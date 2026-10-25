@@ -57,7 +57,7 @@ extern void NuMemFreeFn(void *ptr, char *file, int line);
 extern u32 *vpDmaTag_RetEx(void *buf, u32 vif0, u32 vif1);
 extern void *vpDmaTag_Close(void *end);
 extern void NuPs2DestroyRenderStream(struct nugobj_s *gobj);
-extern int NuGobjColourBlendGobj(struct nucolourblend_s *blend, short fade);
+extern int NuGobjColourBlendGobj(struct nucolourref_s *blend, short fade);
 
 static int sysinit = 0;
 static struct nugobj_s *sysgobj = 0;
@@ -509,16 +509,16 @@ void NuGeomDestroy(struct nugeom_s *geom) {
         NuPrimDestroy(prim);
         prim = nextprim;
     }
-    while (geom->skins) {
-        nextskin = geom->skins->next;
-        if (geom->skins->mtxid) {
-            NuMemFreeFn(geom->skins->mtxid, "..\\nu2crash.ps2\\nu3d\\nugobj.c", 0x1D4);
+    while (geom->skin) {
+        nextskin = geom->skin->next;
+        if (geom->skin->mtxid) {
+            NuMemFreeFn(geom->skin->mtxid, "..\\nu2crash.ps2\\nu3d\\nugobj.c", 0x1D4);
         }
-        if (geom->skins->weights) {
-            NuMemFreeFn(geom->skins->weights, "..\\nu2crash.ps2\\nu3d\\nugobj.c", 0x1D6);
+        if (geom->skin->weights) {
+            NuMemFreeFn(geom->skin->weights, "..\\nu2crash.ps2\\nu3d\\nugobj.c", 0x1D6);
         }
-        NuMemFreeFn(geom->skins, "..\\nu2crash.ps2\\nu3d\\nugobj.c", 0x1D7);
-        geom->skins = nextskin;
+        NuMemFreeFn(geom->skin, "..\\nu2crash.ps2\\nu3d\\nugobj.c", 0x1D7);
+        geom->skin = nextskin;
     }
     if (geom->vtxskininfo) {
         NuMemFreeFn(geom->vtxskininfo, "..\\nu2crash.ps2\\nu3d\\nugobj.c", 0x1DC);
@@ -575,13 +575,13 @@ void NuGeomAddSkin(struct nugeom_s *geom, struct nuskin_s *skin) {
     struct nuskin_s *s;
 
     last = 0;
-    for (s = geom->skins; s; s = s->next) {
+    for (s = geom->skin; s; s = s->next) {
         last = s;
     }
     if (last) {
         last->next = skin;
     } else {
-        geom->skins = skin;
+        geom->skin = skin;
     }
 }
 

@@ -192,7 +192,7 @@ extern s32 sapphire_relics;
 extern s32 temp_hub;
 extern s32 temp_hublevel;
 extern s32 Hub;
-extern struct mask_s Mask;
+extern MaskInfo Mask;
 extern struct cursor_s Cursor;
 extern struct gtimer_s GlobalTimer;
 extern struct gtimer_s GameTimer;
@@ -274,17 +274,8 @@ extern struct cammtx_s GameCam[];
 extern s32 gamesfx_volume;
 extern s32 LostLife;
 extern s32 bonus_restart;
-/* MaskFeathers entry: 4 x 0x90 = 0x240 (memset len in ResetMaskFeathers);
- * time (+0x80) / duration (+0x84) verified in UpdateMaskFeathers. */
-struct mfeathers_s {
-    struct numtx_s mM; /* 0x0 (AddMaskFeathers) */
-    struct numtx_s mS; /* 0x40 (also the ShadRndr arg in DrawMaskFeathers) */
-    float time;        /* 0x80 */
-    float duration;    /* 0x84 */
-    float shadow;      /* 0x88 */
-    char pad_8c[0x90 - 0x8C];
-};
-extern struct mfeathers_s MaskFeathers[];
+
+extern MaskFeathersInfo MaskFeathers[];
 extern s32 LIFTPLAYER;
 extern s32 ShowPlayerCoordinate;
 extern s32 ExtraMoves;
@@ -329,8 +320,8 @@ extern s32 boss_dead;
 /* --- InitLevel support --- */
 
 extern struct objtab_s ObjTab[];
-extern struct anim_s TempAnim;
-extern struct anim_s TempAnim2;
+extern AnimPacket TempAnim;
+extern AnimPacket TempAnim2;
 extern struct Nearest_Light_s TempLights;
 extern struct Nearest_Light_s TempLights2;
 extern s32 loadsave_frame;
@@ -3525,7 +3516,7 @@ s32 ResetHGobjAnim(struct nuhspecial_s *obj) {
 
 
 void UpdateMaskFeathers(void) {
-    struct mfeathers_s *f = MaskFeathers;
+    MaskFeathersInfo *f = MaskFeathers;
     s32 i;
 
     for (i = 0; i < 4; i++) {
@@ -3901,7 +3892,7 @@ inline float DistanceToLine(struct nuvec_s *pos, struct nuvec_s *p0,
     return d;
 }
 
-void NewMask(struct mask_s *mask, struct nuvec_s *pos) {
+void NewMask(MaskInfo *mask, struct nuvec_s *pos) {
     if (CRemap[3] != -1 && (LBIT & 0x3E00000) == 0) {
         if (mask->active < 2) {
             if (mask->active == 0) {
@@ -4201,7 +4192,7 @@ void InitPositions(void) {
 extern s32 FurtherALONG(s32 iRAIL0, s32 iALONG0, float fALONG0, s32 iRAIL1,
                         s32 iALONG1, float fALONG1);
 
-s32 WipeWumpa(struct RPos_s *rpos) {
+s32 WipeWumpa(RailPosition *rpos) {
     s32 i;
     struct wumpa_s *wumpa;
 
@@ -4321,7 +4312,7 @@ extern void ShadRndr(void *a, void *b, float t, float r);
 
 void DrawMaskFeathers(void) {
     struct CharacterModel *model;
-    struct mfeathers_s *feathers;
+    MaskFeathersInfo *feathers;
     s32 i;
     float dead;
     struct numtx_s tmtx[0x100];
@@ -4655,8 +4646,8 @@ void DrawTempCharacter(s32 render) {
 
 
 /* gnu89 plain inline: standalone AND inlined into LoseMask. */
-inline void AddMaskFeathers(struct mask_s *mask) {
-    struct mfeathers_s *feathers;
+inline void AddMaskFeathers(MaskInfo *mask) {
+    MaskFeathersInfo *feathers;
     s32 i;
 
     feathers = &MaskFeathers[i_maskfeathers];
@@ -5638,8 +5629,8 @@ struct objtab_s ObjTab[201] = {
     { {0}, world_scene, 0, 63, 0, 0, "purple_gem_h", 0x2000000000 },
     { {0}, world_scene, 0, 63, 0, 0, "yellow_gem_h", 0x2000000000 }
 };
-struct mask_s Mask = {0};
-struct mfeathers_s MaskFeathers[4] = {0};
+MaskInfo Mask = {0};
+MaskFeathersInfo MaskFeathers[4] = {0};
 struct kaboom_s Kaboom[72] = {0};
 struct vtog_s VTog[6] = {0};
 struct nuvec_s vtog_oldpos = {0};
@@ -5650,11 +5641,11 @@ struct nuvec_s hubwarp_oldpos = {0};
 struct nuvec_s hubwarp_newpos = {0};
 struct award_s Award[3] = {0};
 char LevelFileName[32] = {0};
-struct anim_s TempAnim = {0};
-struct anim_s TempAnim2 = {0};
+AnimPacket TempAnim = {0};
+AnimPacket TempAnim2 = {0};
 struct nuvec_s TTScrPos = {0};
 struct game_s Game = {0};
-struct RPos_s gempath_RPos = {0};
+RailPosition gempath_RPos = {0};
 struct nuvec_s finish_oldpos = {0};
 struct nuvec_s finish_newpos = {0};
 struct nuvec_s in_finish_pos = {0};
@@ -6281,7 +6272,7 @@ text:
     }
 }
 
-extern struct RPos_s *best_cRPos;
+extern RailPosition *best_cRPos;
 u16 SeekRot(u16 a, u16 b, s32 shift);
 
 void HubMoveVR(void) {
@@ -6559,7 +6550,7 @@ void BonusTiming(struct creature_s *plr) {
 
 extern void ScaleFlatShadow(struct nuvec_s *s, float y, float shadow, float f);
 
-void MakeMaskMatrix(struct mask_s *mask, struct numtx_s *mM, struct numtx_s *mS,
+void MakeMaskMatrix(MaskInfo *mask, struct numtx_s *mM, struct numtx_s *mS,
                     struct numtx_s *mLOCATOR, float scale) {
     struct nuvec_s s;
     u16 yrot;
@@ -6611,11 +6602,11 @@ void LoseMask(struct obj_s *plr) {
     NewRumble(&player->rumble, 0x7F);
 }
 
-extern struct RPos_s TempRPos;
+extern RailPosition TempRPos;
 extern struct nuvec_s ShadNorm;
 extern u16 temp_xrot;
 extern u16 temp_zrot;
-extern void GetALONG(struct nuvec_s *pos, struct RPos_s *rpos, s32 iRAIL, s32 iALONG,
+extern void GetALONG(struct nuvec_s *pos, RailPosition *rpos, s32 iRAIL, s32 iALONG,
                      s32 dir);
 extern void FindAnglesZX(struct nuvec_s *norm);
 
@@ -7430,7 +7421,7 @@ void ToggleVehicle(struct creature_s *c) {
 
 void DrawNextVehicle(s32 render) {
     struct nuvec_s pos;
-    struct anim_s anim;
+    AnimPacket anim;
     struct CharacterModel *model;
     struct vtog_s *vt;
     float y;
@@ -7681,7 +7672,7 @@ extern void SetLights(struct nucolour3_s *col0, struct nuvec_s *dir0,
                       struct nuvec_s *amb);
 extern void SetLevelLights(void);
 
-void DrawMask(struct mask_s *mask) {
+void DrawMask(MaskInfo *mask) {
     struct numtx_s tmtx[0x100];
     struct numtx_s mM;
     struct numtx_s mS;
@@ -7941,7 +7932,7 @@ inline u16 SeekRot(u16 a, u16 b, s32 shift) {
     return a + (diff >> shift);
 }
 
-void UpdateMask(struct mask_s *mask, struct obj_s *obj) {
+void UpdateMask(MaskInfo *mask, struct obj_s *obj) {
     struct nuvec_s v;
     struct nuvec_s oldpos;
     struct numtx_s *mtx;
@@ -9329,7 +9320,7 @@ inline s32 Draw3DObject(s32 object, struct nuvec_s *pos, u16 xrot, u16 yrot,
 
 
 void DrawTarget(void) {
-    struct anim_s *anim;
+    AnimPacket *anim;
     struct nuvec_s v;
     s32 i;
 

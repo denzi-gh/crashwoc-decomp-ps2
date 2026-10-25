@@ -4,12 +4,59 @@
 #include "nu_types.h"
 #include "numath/numathtypes.h"
 
+#include "nu3d/nucvtgeo.h"
+#include "nups2/nups2types.h"
+
 struct numtl_s;
-struct nutribatch_s;
-struct nucntrl_s;
-struct nucolourblend_s;
 struct SkinDmaTag;
-struct SkinV;
+
+struct skinv_s {
+    struct nuvec4_s *pnts;              /* 0x00 */
+    struct nuvec4_s *nrms;              /* 0x04 */
+    unsigned short *pid;                /* 0x08 */
+    unsigned short *nid;                /* 0x0C */
+}; /* 0x10 */
+typedef struct skinv_s SKINV;
+
+struct NUVTXSKININFO_s {
+    float wts[3];                       /* 0x00 */
+    unsigned char joint_ixs[3];         /* 0x0C */
+    unsigned char pad;                  /* 0x0F */
+}; /* 0x10 */
+typedef struct NUVTXSKININFO_s NUVTXSKININFO;
+
+struct nuvupnt_s {
+    float px;                           /* 0x00 */
+    float py;                           /* 0x04 */
+    float pz;                           /* 0x08 */
+    union {
+        float f32;
+        unsigned short u16[2];
+        unsigned char u8[4];
+    } nx;                               /* 0x0C */
+    int u;                              /* 0x10 */
+    int v;                              /* 0x14 */
+    int ny;                             /* 0x18 */
+    int nz;                             /* 0x1C */
+    int r;                              /* 0x20 */
+    int g;                              /* 0x24 */
+    int b;                              /* 0x28 */
+    int a;                              /* 0x2C */
+}; /* 0x30 */
+typedef struct nuvupnt_s NUVUPNT;
+
+struct nuvutri_s {
+    struct DmaTag dt;                   /* 0x00 */
+    struct nuvupnt_s pnts[3];           /* 0x10 */
+}; /* 0xA0 */
+typedef struct nuvutri_s NUVUTRI;
+
+struct nutristream_s {
+    int count;                          /* 0x00 */
+    int pad[3];                         /* 0x04 */
+    struct nuvutri_s tris[1];           /* 0x10 */
+}; /* 0xB0 */
+typedef struct nutristream_s NUTRISTREAM;
 
 struct nuvtx_tc1_s {
     struct nuvec_s pnt;                 /* 0x00 */
@@ -20,6 +67,7 @@ struct nuvtx_tc1_s {
     };
     float tc[2];                        /* 0x1C */
 }; /* 0x24 */
+typedef struct nuvtx_tc1_s NUVTX_TC1;
 
 struct nuprim_s {
     struct nuprim_s *next;              /* 0x00 */
@@ -52,20 +100,20 @@ struct nugeom_s {
     struct numtl_s *mtl;                /* 0x04 */
     void *dmastream;                    /* 0x08 */
     struct SkinDmaTag *skindma;         /* 0x0C */
-    struct nutribatch_s *otbatch;       /* 0x10 */
+    struct nutristream_s *tristream;    /* 0x10 */
     int mtl_id;                         /* 0x14 */
     int vtxtype;                        /* 0x18 */
     int vtxflags;                       /* 0x1C */
     int vtxcnt;                         /* 0x20 */
     int vtxmax;                         /* 0x24 */
-    void *vtxptr;                       /* 0x28 */
+    struct nuvtx_tc1_s *vtxptr;         /* 0x28 */
     struct nuprim_s *prim;              /* 0x2C */
-    struct nuskin_s *skins;             /* 0x30 */
-    void *vtxskininfo;                  /* 0x34 */
-    struct nucntrl_s *cntrls;           /* 0x38 */
-    int ncntrls;                        /* 0x3C */
-    int dmasize;                        /* 0x40 */
-    struct SkinV *skinv;                /* 0x44 */
+    struct nuskin_s *skin;              /* 0x30 */
+    struct NUVTXSKININFO_s *vtxskininfo; /* 0x34 */
+    struct nuvec_s *cntrl_pts;          /* 0x38 */
+    int ncntrl_pts;                     /* 0x3C */
+    int dma_len;                        /* 0x40 */
+    struct skinv_s *skinv;              /* 0x44 */
     struct nublendgeom_s *blendgeom;    /* 0x48 */
     int id;                             /* 0x4C */
 }; /* 0x50 */
@@ -104,9 +152,9 @@ struct nugobj_s {
     int ngobjs;                         /* 0x48 */
     struct nugobj_s *next_gobj;         /* 0x4C */
     struct nuvec_s origin;              /* 0x50 */
-    struct nucolourblend_s *blend;      /* 0x5C */
+    struct nucolourref_s *blend;        /* 0x5C */
     int tricount;                       /* 0x60 */
-    struct nucolourblend_s *faceon_blend; /* 0x64 */
+    struct nucolourref_s *faceon_blend; /* 0x64 */
     char pad68[0x04];                   /* 0x68 */
 }; /* 0x6C */
 

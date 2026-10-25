@@ -75,7 +75,7 @@ extern f32 NuTrigTable[];
 extern s32 VEHICLECONTROL;
 extern struct nuvec_s *pos_START;
 extern void ComplexRailPosition(struct nuvec_s *pos, s32 iRAIL, s32 iALONG,
-                                struct RPos_s *rpos, s32 a4);
+                                RailPosition *rpos, s32 a4);
 extern void edcamMove(struct nupad_s *pad);
 extern void edcamGetPosAng(struct nuvec_s *pos, f32 *ax, f32 *ay);
 extern void edcamSetPos(struct nuvec_s *pos);
@@ -217,7 +217,7 @@ s32 edwmp_used = 0;
 void edwmpDoInput(struct nupad_s *pad)
 {
     static s32 wumpa_lock_button = 0;
-    struct RPos_s rpos;
+    RailPosition rpos;
     f32 shadow = 0.0f;
     u16 angle;
     s32 i;

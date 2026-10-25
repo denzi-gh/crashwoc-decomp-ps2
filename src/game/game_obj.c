@@ -199,7 +199,7 @@ extern struct nuvec_s ShadRoofNorm;
 
 s32 RotDiff(u16 a, u16 b);
 u16 SeekRot(u16 a, u16 target, s32 rate);
-void GetALONG(struct nuvec_s *pos, struct RPos_s *rpos, s32 iRAIL, s32 iALONG, s32 dir);
+void GetALONG(struct nuvec_s *pos, RailPosition *rpos, s32 iRAIL, s32 iALONG, s32 dir);
 s32 FurtherALONG(s32 iRAIL, s32 iALONG, f32 fALONG, s32 iRAIL2, s32 iALONG2, f32 fALONG2);
 f32 CrateBottomAbove(struct nuvec_s *pos);
 s32 RayIntersectCuboid(struct nuvec_s *p0, struct nuvec_s *p1, struct nuvec_s *min, struct nuvec_s *max);
@@ -1956,7 +1956,7 @@ s32 HitCreatures(struct obj_s *obj, s32 how, s32 hit_type) {
 }
 
 
-s32 WipeCreatures(struct RPos_s *rpos) {
+s32 WipeCreatures(RailPosition *rpos) {
     s32 i;
     struct obj_s *po;
     struct nuvec_s pos;
@@ -2767,7 +2767,7 @@ inline s32 GetDieAnim(struct obj_s *obj, s32 anim) {
 
 inline s32 KillPlayer(struct obj_s *obj, s32 anim)
 {
-    struct mask_s *mask;
+    MaskInfo *mask;
 
     if (obj->dead) {
         return 0;

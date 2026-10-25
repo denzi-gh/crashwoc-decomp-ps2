@@ -1548,7 +1548,7 @@ struct crate_s *FindOverlap(struct crate_s *crate) {
     return FindLocalCrate(&crate->pos);
 }
 
-extern struct RPos_s *best_cRPos;
+extern RailPosition *best_cRPos;
 
 s32 GotoCheckpoint(struct nuvec_s *pos, s32 direction) {
     struct crategroup_s *group;
@@ -2135,7 +2135,7 @@ extern s16 temp_iALONG;
 extern f32 temp_fALONG;
 extern u16 temp_xrot;
 extern u16 temp_zrot;
-extern struct RPos_s gempath_RPos;
+extern RailPosition gempath_RPos;
 extern struct nuvec_s ShadNorm;
 extern f32 EShadY;
 

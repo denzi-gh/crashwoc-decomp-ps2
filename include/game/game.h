@@ -2,14 +2,26 @@
 #define GAME_GAME_H
 
 #include "nu_types.h"
+#include "game/gametypes.h"
 
-struct mask_s;
+typedef struct {
+    struct numtx_s mM;                  /* 0x00 */
+    struct numtx_s mS;                  /* 0x40 */
+    float time;                         /* 0x80 */
+    float duration;                     /* 0x84 */
+    float shadow;                       /* 0x88 */
+    char pad1;                          /* 0x8C */
+    char pad2;                          /* 0x8D */
+    char pad3;                          /* 0x8E */
+    char pad4;                          /* 0x8F */
+} MaskFeathersInfo; /* 0x90 */
+
 
 void DefaultGame(void);
 void DrawAwards(void);
 void DrawKabooms(void);
 void DrawLevel(void);
-void DrawMask(struct mask_s *mask);
+void DrawMask(MaskInfo *mask);
 void DrawMaskFeathers(void);
 void DrawNextVehicle(s32 render);
 void DrawTarget(void);

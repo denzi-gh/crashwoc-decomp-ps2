@@ -4,11 +4,10 @@
 #include "nu_types.h"
 #include "game/gametypes.h"
 
-/* Full view of the player glider: struct glider_s (game/gametypes.h) only
- * names the members other units touch; the flight model needs the rest. */
-struct gliderflight_s {
+/* Player glider state: GC DWARF names, with PS2-verified member offsets. */
+struct GLIDERSTRUCT {
     struct creature_s *Cre;             /* 0x000 */
-    struct nuvec_s vel;                 /* 0x004 */
+    struct nuvec_s Vel;                 /* 0x004 */
     s32 Dead;                           /* 0x010 */
     s32 CocoDead;                       /* 0x014 */
     f32 CocoDeadTimer;                  /* 0x018 */

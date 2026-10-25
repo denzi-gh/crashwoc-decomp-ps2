@@ -12,5 +12,5 @@ offset_casts = 0
 sizeof_pads = 0
 libc_prototypes = 0
 extern_conflicts = 13
-prototype_conflicts = 180
+prototype_conflicts = 179
 misplaced_headers = 0

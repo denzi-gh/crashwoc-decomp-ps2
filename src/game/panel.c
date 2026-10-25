@@ -136,7 +136,7 @@ extern s32 new_mode, new_level;
 extern struct cursor_s Cursor;
 extern float PANEL3DMULX, PANEL3DMULY;
 extern s32 temp_character;
-extern struct anim_s TempAnim;
+extern AnimPacket TempAnim;
 extern struct game_s Game;
 extern char tbuf[];
 extern float font3d_xleft, font3d_ytop, font3d_xright, font3d_ybottom;
@@ -1800,7 +1800,7 @@ extern s32 newmask_advise;
 extern struct nuvec_s vNEWMASK;
 
 extern void AddPanelDebris(f32 x, f32 y, s32 type, f32 scale, s32 count);
-extern void NewMask(struct mask_s *mask, struct nuvec_s *pos);
+extern void NewMask(MaskInfo *mask, struct nuvec_s *pos);
 extern void NewMenu(void *cursor, s32 a, s32 b, s32 c);
 
 void UpdatePlayerStats(struct creature_s *plr) {

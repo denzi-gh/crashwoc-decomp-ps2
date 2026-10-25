@@ -298,7 +298,7 @@ extern void FindSurfaceNormalAndUnembedd(struct VEHICLE *Vehicle,
                                          f32 DeltaTime);
 extern void SeekAngHalfLife(u16 *dest, short target, f32 halflife, f32 dt);
 extern void FindTerrainType(struct JEEPSTRUCT *Jeep);
-extern struct RPos_s *best_cRPos;
+extern RailPosition *best_cRPos;
 extern short JeepBaseAng;
 static f32 JeepCamX;
 static f32 JeepCamY;
@@ -324,9 +324,9 @@ extern void JeepCamFollowAng(struct cammtx_s *cam, s32 blend);
 extern s32 AddBalloon(struct nuvec_s *Pos, struct nuvec_s *Vel);
 extern void DrawCross(struct nuvec_s *pos, f32 size, s32 colour);
 extern void DrawLine(struct nuvec_s *p0, struct nuvec_s *p1, s32 colour);
-extern void MoveRailPosition(struct nuvec_s *dst, struct RPos_s *rpos,
+extern void MoveRailPosition(struct nuvec_s *dst, RailPosition *rpos,
                              f32 distance, s32 direction);
-extern struct RPos_s cRPos[];
+extern RailPosition cRPos[];
 extern s32 cRPosCOUNT;
 extern s32 ChrisInTheHouse;
 extern s32 HighCam;
@@ -2671,7 +2671,7 @@ extern void KeepHoldOnRock(struct jeeprock_s *rock, struct nuvec_s *pos,
 extern void GetLocatorMtxMyDraw(struct MYDRAW *Draw, struct numtx_s *dest,
                                 struct numtx_s *baseMtx);
 extern s32 KillGameObject(struct obj_s *obj, s32 anim);
-extern void AddMaskFeathers(struct mask_s *mask);
+extern void AddMaskFeathers(MaskInfo *mask);
 extern void JudderGameCamera(struct cammtx_s *cam, f32 time,
                              struct nuvec_s *pos);
 f32 FIREBOSSTHROWSPEED = 10.0f;

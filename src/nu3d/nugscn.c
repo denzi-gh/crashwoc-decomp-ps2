@@ -1921,7 +1921,7 @@ struct nucvttribatch_s {
     struct nucvttriblock_s blocks[1]; /* 0x10 */
 };
 
-extern void NuCvtGeoFixup(struct nucolourblend_s *ref, int offset);
+extern void NuCvtGeoFixup(struct nucolourref_s *ref, int offset);
 
 #define DIST2(dx, dy, dz) ((dx) * (dx) + (dy) * (dy) + (dz) * (dz))
 #define KEEP_MAX(dst, val) ((dst) = ((val) < (dst)) ? (dst) : (val))
@@ -1985,9 +1985,9 @@ void ReadObjSet(int fh)
                         NuErrorProlog(nugscn_srcfile, 0xB95)("invalid qwc");
                     }
                     if (geom->mtl->attrib.ot == 1) {
-                        geom->otbatch = NuMemFileAddr(fh);
-                        for (m = 0; m < ((struct nucvttribatch_s *)geom->otbatch)->count; m++) {
-                            ((struct nucvttribatch_s *)geom->otbatch)->blocks[m].data = ((struct nucvttribatch_s *)geom->otbatch)->blocks[m].qw;
+                        geom->tristream = NuMemFileAddr(fh);
+                        for (m = 0; m < ((struct nucvttribatch_s *)geom->tristream)->count; m++) {
+                            ((struct nucvttribatch_s *)geom->tristream)->blocks[m].data = ((struct nucvttribatch_s *)geom->tristream)->blocks[m].qw;
                         }
                     } else {
                         struct nudmatag_s *tag;
