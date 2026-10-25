@@ -9867,7 +9867,7 @@ void ControlGliderWeatherBoss(struct gliderflight_s *glider, struct nupad_s *pad
             || glider->TiltZ > 30.0f || glider->TiltZ < -30.0f) {
             SeekHalfLife(&glider->BarrelDelta, 7.2f, 0.05f, 0.02f);
         } else if (glider->TiltZ > 1.0f || glider->TiltZ < -1.0f) {
-            glider->BarrelDelta = NuFabs((glider->TiltZ * 20.0f * 0.01666667f * 0.5f));
+            glider->BarrelDelta = NuFabs((glider->TiltZ * 20.0f * 0.2f * 0.5f));
         } else {
             glider->BarrelDelta = 1.0f;
         }
