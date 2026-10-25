@@ -29,7 +29,7 @@
 extern int debris_sfx;
 int edqseed = 0x3039;
 int edbitsSfxVol = 100;
-signed char edbits_what_game = 0;
+char edbits_what_game = 0;
 GameSound *edSfxGlobalTab = 0;
 GameSound *edSfxLevelTab = 0;
 int edSfxAllCount = 0;

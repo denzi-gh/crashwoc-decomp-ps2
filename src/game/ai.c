@@ -47,7 +47,7 @@
 #include "gamelib/debris.h"
 
 extern struct rail_s Rail[];           /* 0x00586388 */
-extern struct RPos_s gempath_RPos;     /* 0x0058b518 */
+extern RailPosition gempath_RPos;     /* 0x0058b518 */
 extern s32 LEVELAITYPES;               /* 0x00631bc8 */
 extern s32 LEVELAICOUNT;               /* 0x00631bcc */
 extern s32 Level;                      /* 0x00630b90 */
@@ -60,7 +60,7 @@ void LoadScreen(char *name);           /* 0x001cabf0 */
 f32 FindNearestCreature(struct nuvec_s *pos, s32 type, struct nuvec_s *out); /* 0x002349c0 */
 void LoadAI(void);                     /* 0x0022ef10 */
 void ResetAI(void);                    /* 0x0022f2c8 */
-void GetALONG(struct nuvec_s *pos, struct RPos_s *rpos, s32 iRAIL, s32 iALONG, s32 dir); /* 0x001dac00 */
+void GetALONG(struct nuvec_s *pos, RailPosition *rpos, s32 iRAIL, s32 iALONG, s32 dir); /* 0x001dac00 */
 s32 AheadOfCheckpoint(s32 iRAIL, s32 iALONG, f32 fALONG); /* 0x001f0278 */
 void RemoveGameObject(struct obj_s *obj); /* 0x00200c38 */
 
@@ -89,7 +89,7 @@ extern s32 Hub;
 
 extern struct game_s Game;
 extern s32 gamesfx_effect_volume;
-extern void *world_scene[32];
+extern struct nugscn_s *world_scene[32];
 
 extern s32 jcrunch;
 extern s32 CrunchTime_Intro;
@@ -136,7 +136,7 @@ static u16 drain_wawa_xrot;
 static u16 drain_wawa_yrot;
 static s16 drain_ang[3];
 static struct nuvec_s drain_wawa_pos;
-static struct anim_s drain_wawa_anim;
+static AnimPacket drain_wawa_anim;
 static struct CharacterModel *drain_wawa_model;
 static u32 crunchtime_attack_phase;
 static u32 earth_attack_wait;

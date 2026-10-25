@@ -40,7 +40,7 @@ extern s32 font3d_initialised;
 
 extern struct objtab_s ObjTab[201];
 extern struct game_s Game;
-extern void *font3d_scene;
+extern struct nugscn_s *font3d_scene;
 extern f32 font3d_dx, font3d_dy;
 extern f32 font3d_xleft, font3d_xright, font3d_xmid;
 extern f32 font3d_ytop, font3d_ybottom, font3d_ymid;

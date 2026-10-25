@@ -11,8 +11,15 @@ struct nugscn_s;
 struct nuspline_s {
     int ncvs;                           /* 0x00 */
     struct nuvec_s *cvs;                /* 0x04 */
-    char pad08[0x34];                   /* 0x08 */
+    float r;                            /* 0x08 */
+    float r2;                           /* 0x0C */
+    struct nuvec_s min;                 /* 0x10 */
+    struct nuvec_s max;                 /* 0x1C */
+    struct nuvec_s cntr;                /* 0x28 */
+    float cntr_r;                       /* 0x34 */
+    float cntr_r2;                      /* 0x38 */
 }; /* 0x3C */
+typedef struct nuspline_s NUSPLINE;
 
 struct nuscene_s {
     int numnodes;                       /* 0x00 */

@@ -9,6 +9,90 @@ struct nugobj_s;
 struct nutexanim_s;
 union variptr_u;
 
+/* Serialized GHG records. Offsets are measured from the file base. */
+union NUGOBJEX_s {
+    struct nuvec_s origin;              /* 0x00 */
+    struct {
+        float dist;
+        float dist2;
+        unsigned short centre_at_origin : 1;
+        char pad[2];
+    } lod;                              /* 0x00 */
+}; /* 0x0C */
+typedef union NUGOBJEX_s NUGOBJEX;
+
+struct nufgobj_s {
+    struct nugobj_s *sysnext;           /* 0x00 */
+    struct nugobj_s *syslast;           /* 0x04 */
+    int type;                           /* 0x08 */
+    int geom;                           /* 0x0C */
+    int faceon_geom;                    /* 0x10 */
+    f32 r;                              /* 0x14 */
+    f32 r2;                             /* 0x18 */
+    struct nuvec_s min;                 /* 0x1C */
+    struct nuvec_s max;                 /* 0x28 */
+    struct nuvec_s cntr;                /* 0x34 */
+    f32 cntr_r;                         /* 0x40 */
+    f32 cntr_r2;                        /* 0x44 */
+    int flags;                          /* 0x48: PS2 nugobj_s.ngobjs word */
+    int next_gobj;                      /* 0x4C */
+    union NUGOBJEX_s exdata;            /* 0x50 */
+}; /* 0x5C */
+typedef struct nufgobj_s NUFGOBJ;
+
+struct nufgeomps2_s {
+    int next;                           /* 0x00 */
+    int mtl_id;                         /* 0x04 */
+    int dmastream;                      /* 0x08 */
+    int skindma;                        /* 0x0C */
+}; /* 0x10 */
+typedef struct nufgeomps2_s NUFGEOMPS2;
+
+struct nuflayerdata_s {
+    int name;                           /* 0x00 */
+    int gobjs;                          /* 0x04 */
+    int skin_gobj;                      /* 0x08 */
+    int blend_gobjs;                    /* 0x0C */
+    int blend_skin_gobj;                /* 0x10 */
+}; /* 0x14 */
+typedef struct nuflayerdata_s NUFLAYERDATA;
+
+struct nuhghhdr_s {
+    int filesize;                       /* 0x00 */
+    int version;                        /* 0x04 */
+    int numtxtrs;                       /* 0x08 */
+    int txtrs;                          /* 0x0C */
+    int nummtls;                        /* 0x10 */
+    int mtls;                           /* 0x14 */
+    int num_joints;                     /* 0x18 */
+    int joints;                         /* 0x1C */
+    int t;                              /* 0x20 */
+    int inv_wt;                         /* 0x24 */
+    int num_joint_ixs;                  /* 0x28 */
+    int joint_ixs;                      /* 0x2C */
+    int string_table;                   /* 0x30 */
+    int string_table_size;              /* 0x34 */
+    int num_poi_ixs;                    /* 0x38 */
+    int poi_ixs;                        /* 0x3C */
+    int num_points_of_interest;         /* 0x40 */
+    int points_of_interest;             /* 0x44 */
+    int num_layers;                     /* 0x48 */
+    int layers;                         /* 0x4C */
+    int shadow_data;                    /* 0x50 */
+    f32 sphere_radius;                  /* 0x54 */
+    f32 sphere_yoff;                    /* 0x58 */
+    struct nuvec_s min;                 /* 0x5C */
+    struct nuvec_s max;                 /* 0x68 */
+    f32 cylinder_yoff;                  /* 0x74 */
+    f32 cylinder_height;                /* 0x78 */
+    f32 cylinder_radius;                /* 0x7C */
+    int collision_data;                 /* 0x80 */
+    f32 tbrdist;                        /* 0x84 */
+    int numtexanims;                    /* 0x88 */
+    int texanims;                       /* 0x8C */
+}; /* 0x90 */
+typedef struct nuhghhdr_s NUGHGHDR;
+
 struct NUPOINTOFINTEREST_s {
     struct numtx_s offset;              /* 0x00 */
     char *name;                         /* 0x40 */
@@ -25,42 +109,80 @@ struct NUJOINTDATA_s {
     char pad52[0x0E];                   /* 0x52 */
 }; /* 0x60 */
 
-struct NUHLAYERDATA_s {
+struct NULAYERDATA_s {
     char *name;                         /* 0x00 */
     struct nugobj_s **gobjs;            /* 0x04 */
-    struct nugobj_s *skin_object;       /* 0x08 */
+    struct nugobj_s *skin_gobj;         /* 0x08 */
     struct nugobj_s **blend_gobjs;      /* 0x0C */
-    struct nugobj_s *blend_skin_object; /* 0x10 */
+    struct nugobj_s *blend_skin_gobj;   /* 0x10 */
 }; /* 0x14 */
+typedef struct NULAYERDATA_s NULAYERDATA;
 
 struct nushadowvtx_s {
     struct nuvec_s pos;                 /* 0x00 */
     int count;                          /* 0x0C */
 }; /* 0x10 */
 
-struct nushadowmesh_s {
-    struct nushadowvtx_s *first;        /* 0x00 */
-    struct nushadowvtx_s *second;       /* 0x04 */
+/* The renderer also reads integer counts from the fourth vector word. */
+struct NUSHADOWMESH_s {
+    union {
+        struct nuvec4_s *normals;
+        struct nushadowvtx_s *normal_counts;
+    };                                  /* 0x00 */
+    union {
+        struct nuvec4_s *verts;
+        struct nushadowvtx_s *vert_counts;
+    };                                  /* 0x04 */
 }; /* 0x08 */
+typedef struct NUSHADOWMESH_s NUSHADOWMESH;
 
-struct nushadowdata_s {
-    void *ellipsoids;                   /* 0x00 */
-    void *cylinders;                    /* 0x04 */
-    struct nushadowmesh_s *meshes;      /* 0x08 */
-    u8 numellipsoids;                   /* 0x0C */
-    u8 numcylinders;                    /* 0x0D */
-    u8 nummeshes;                       /* 0x0E */
-    u8 last;                            /* 0x0F */
+struct NUELLIPSOID_s {
+    struct nuvec_s centre;              /* 0x00 */
+    struct nuvec_s y_axis;              /* 0x0C */
+    struct nuvec_s x_axis;              /* 0x18 */
+    struct nuvec_s z_axis;              /* 0x24 */
+}; /* 0x30 */
+typedef struct NUELLIPSOID_s NUELLIPSOID;
+
+struct NUCYLINDER_s {
+    union {
+        struct nuvec_s centre;
+        int flags;
+    };                                  /* 0x00 */
+    struct nuvec_s y_axis;              /* 0x0C */
+    struct nuvec4_s x_axis;             /* 0x18 */
+    struct nuvec4_s z_axis;             /* 0x28 */
+    char pad[8];                        /* 0x38 */
+}; /* 0x40 */
+typedef struct NUCYLINDER_s NUCYLINDER;
+
+struct NUSHADOWDATA_s {
+    struct NUELLIPSOID_s *ellipsoids;   /* 0x00 */
+    struct NUCYLINDER_s *cylinders;     /* 0x04 */
+    struct NUSHADOWMESH_s *shadow_meshes; /* 0x08 */
+    u8 nellipsoids;                     /* 0x0C */
+    u8 ncylinders;                      /* 0x0D */
+    u8 nshadow_meshes;                  /* 0x0E */
+    u8 joint;                           /* 0x0F */
 }; /* 0x10 */
+typedef struct NUSHADOWDATA_s NUSHADOWDATA;
 
-struct nuhcollideentry_s {
+struct NUCOLLISIONSPHERE_s {
+    struct nuvec_s centre;              /* 0x00 */
+    f32 radius;                         /* 0x0C */
+    u8 joint;                           /* 0x10 */
+}; /* 0x14 */
+typedef struct NUCOLLISIONSPHERE_s NUCOLLISIONSPHERE;
+
+struct NUCOLLISIONHDR_s {
     int type;                           /* 0x00 */
     void *data;                         /* 0x04 */
 }; /* 0x08 */
+typedef struct NUCOLLISIONHDR_s NUCOLLISIONHDR;
 
 struct nuhcollide_s {
     unsigned int nentries;              /* 0x00 */
-    struct nuhcollideentry_s *entries;  /* 0x04 */
+    struct NUCOLLISIONHDR_s *entries;   /* 0x04 */
 }; /* 0x08 */
 
 struct NUHGOBJ_s {
@@ -73,13 +195,13 @@ struct NUHGOBJ_s {
     struct numtx_s *T;                  /* 0x18 */
     struct numtx_s *INV_WT;             /* 0x1C */
     u8 *joint_ixs;                      /* 0x20 */
-    struct NUHLAYERDATA_s *layers;      /* 0x24 */
+    struct NULAYERDATA_s *layers;       /* 0x24 */
     struct NUPOINTOFINTEREST_s *pois;   /* 0x28 */
     u8 *poi_ixs;                        /* 0x2C */
     char *string_table;                 /* 0x30 */
     int string_table_size;              /* 0x34 */
     f32 scale;                          /* 0x38 */
-    struct nushadowdata_s *shadow;      /* 0x3C */
+    struct NUSHADOWDATA_s *shadow;      /* 0x3C */
     f32 sphere_radius;                  /* 0x40 */
     f32 sphere_y;                       /* 0x44 */
     struct nuvec_s bbox_min;            /* 0x48 */

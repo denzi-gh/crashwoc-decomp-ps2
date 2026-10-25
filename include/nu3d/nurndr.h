@@ -6,6 +6,16 @@
 struct nuvtx_tc1_s;
 struct numtl_s;
 
+typedef struct {
+    struct nuvec_s pos;                 /* 0x00 */
+    float size;                         /* 0x0C */
+    short shade;                        /* 0x10 */
+    short xrot;                         /* 0x12 */
+    short yrot;                         /* 0x14 */
+    short zrot;                         /* 0x16 */
+} NuRndrShadType; /* 0x18 */
+typedef NuRndrShadType shadstoretype;
+
 int NuRndrLine3d(struct nuvtx_tc1_s *vtx, struct numtl_s *mtl,
                  struct numtx_s *wm);
 

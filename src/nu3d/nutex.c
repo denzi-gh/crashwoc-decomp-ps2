@@ -752,8 +752,9 @@ void NuTexDisplayTexturePage(int page, float depth) {
                 rect.z = depth;
                 rect.u0 = rect.v0 = 0.0f;
                 rect.u1 = rect.v1 = 1.0f;
-                rect.mtl = nutex_page_mtl[count++];
+                rect.mtl = nutex_page_mtl[count];
                 NuRndrRect(&rect);
+                count++;
             }
             x += w + 0.01f;
         }

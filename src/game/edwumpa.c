@@ -38,7 +38,7 @@ static s32 edwmp_i_wumpa;
 extern void *app_fnt;
 extern s32 PANELOFF;
 extern char tbuf[];
-extern char **LDATA;
+extern struct ldata_s *LDATA;
 extern s32 screendump;
 
 extern void eduiMenuDestroy(void *menu);
@@ -75,7 +75,7 @@ extern f32 NuTrigTable[];
 extern s32 VEHICLECONTROL;
 extern struct nuvec_s *pos_START;
 extern void ComplexRailPosition(struct nuvec_s *pos, s32 iRAIL, s32 iALONG,
-                                struct RPos_s *rpos, s32 a4);
+                                RailPosition *rpos, s32 a4);
 extern void edcamMove(struct nupad_s *pad);
 extern void edcamGetPosAng(struct nuvec_s *pos, f32 *ax, f32 *ay);
 extern void edcamSetPos(struct nuvec_s *pos);
@@ -107,7 +107,7 @@ void edwmpDrawInfo(void)
     }
     NuFntScale(8, 12);
     NuFntSetPen(-1);
-    strcpy(tbuf, LDATA[0]);
+    strcpy(tbuf, LDATA->path);
     strupr(tbuf);
     NuFntPrintEx(0x400, 0x100, 0, "%s.WMP", tbuf);
     NuFntPrintEx(0x400, 0x200, 0, "WUMPACOUNT:   %i/%i", WUMPACOUNT, 0x100);
@@ -217,7 +217,7 @@ s32 edwmp_used = 0;
 void edwmpDoInput(struct nupad_s *pad)
 {
     static s32 wumpa_lock_button = 0;
-    struct RPos_s rpos;
+    RailPosition rpos;
     f32 shadow = 0.0f;
     u16 angle;
     s32 i;

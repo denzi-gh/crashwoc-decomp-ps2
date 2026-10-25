@@ -443,7 +443,7 @@ struct VEHICLE {
     s32 FrontWheelGroundBits;           /* 0xFC */
 }; /* 0x100 */
 
-struct anim_s {
+typedef struct {
     float anim_time;                    /* 0x00 */
     float blend_src_time;               /* 0x04 */
     float blend_dst_time;               /* 0x08 */
@@ -456,7 +456,7 @@ struct anim_s {
     short blend_frames;                 /* 0x18 */
     signed char blend;                  /* 0x1A */
     u8 flags;                           /* 0x1B */
-}; /* 0x1C */
+} AnimPacket; /* 0x1C */
 
 /* Vehicle toggle point: switches the player into/out of a vehicle. */
 struct vtog_s {
@@ -465,7 +465,7 @@ struct vtog_s {
     struct nugspline_s *pLOOK;          /* 0x08 */
     struct numtx_s m;                   /* 0x0C */
     struct nuvec_s pos;                 /* 0x4C */
-    struct anim_s anim;                 /* 0x58 */
+    AnimPacket anim;                 /* 0x58 */
     signed char type;                   /* 0x74 */
     signed char iRAIL;                  /* 0x75 */
     short iALONG;                       /* 0x76 */
@@ -529,7 +529,7 @@ struct Nearest_Light_s {
     struct pdir_s glbdirectional;       /* 0x90 */
 }; /* 0xB0 */
 
-struct RPos_s {
+typedef struct {
     signed char iRAIL;                  /* 0x00 */
     signed char vertical;               /* 0x01 */
     short iALONG;                       /* 0x02 */
@@ -544,15 +544,15 @@ struct RPos_s {
     char pad2;                          /* 0x16 */
     char pad3;                          /* 0x17 */
     struct nuvec_s pos;                 /* 0x18 */
-}; /* 0x24 */
+} RailPosition; /* 0x24 */
 
-struct mask_s {
+typedef struct {
     struct numtx_s mM;                  /* 0x000 */
     struct numtx_s mS;                  /* 0x040 */
     struct nuvec_s pos;                 /* 0x080 */
     struct nuvec_s newpos;              /* 0x08C */
     struct Nearest_Light_s lights;      /* 0x098 */
-    struct anim_s anim;                 /* 0x148 */
+    AnimPacket anim;                 /* 0x148 */
     float scale;                        /* 0x164 */
     float shadow;                       /* 0x168 */
     short character;                    /* 0x16C */
@@ -572,7 +572,20 @@ struct mask_s {
     signed char reflect;                /* 0x18D */
     u8 offset_frame;                    /* 0x18E */
     signed char hold;                   /* 0x18F */
-}; /* 0x190 */
+} MaskInfo; /* 0x190 */
+
+/* MaskFeathers entry: 4 x 0x90 = 0x240 (memset len in ResetMaskFeathers). */
+typedef struct {
+    struct numtx_s mM;                  /* 0x00 */
+    struct numtx_s mS;                  /* 0x40 */
+    float time;                         /* 0x80 */
+    float duration;                     /* 0x84 */
+    float shadow;                       /* 0x88 */
+    char pad1;                          /* 0x8C */
+    char pad2;                          /* 0x8D */
+    char pad3;                          /* 0x8E */
+    char pad4;                          /* 0x8F */
+} MaskFeathersInfo; /* 0x90 */
 
 struct chase_s {
     struct nugspline_s *spl_START;      /* 0x0000 */
@@ -580,8 +593,8 @@ struct chase_s {
     float duration;                     /* 0x0008 */
     struct nugspline_s *spl_CHASER[6];  /* 0x000C */
     struct nuvec_s pos[6];              /* 0x0024 */
-    struct RPos_s RPos[6];              /* 0x006C */
-    struct anim_s anim[6];              /* 0x0144 */
+    RailPosition RPos[6];              /* 0x006C */
+    AnimPacket anim[6];              /* 0x0144 */
     struct nuhspecial_s obj[6];         /* 0x01EC */
     short character[6];                 /* 0x021C */
     short action[6];                    /* 0x0228 */
@@ -605,7 +618,7 @@ struct chase_s {
 }; /* 0x7548 */
 
 struct MYDRAW {
-    struct anim_s Anim;                 /* 0x00 */
+    AnimPacket Anim;                 /* 0x00 */
     struct CharacterModel *Model;       /* 0x1C */
     s32 Character;                      /* 0x20 */
     s32 NumJoints;                      /* 0x24 */
@@ -617,41 +630,10 @@ struct MYDRAW {
 /* creature_s.Buggy (creature+0x224) points at the vehicle the creature is
  * driving, and the pointee's type depends on the vehicle (as in the GC
  * source, where Buggy is cast to GLIDERSTRUCT / ATLASSTRUCT / JEEPSTRUCT):
- *   glider (vehicle 0x36/0x81/0x8B)  struct glider_s (GC GLIDERSTRUCT)
+ *   glider (vehicle 0x36/0x81/0x8B)  struct GLIDERSTRUCT (game/vehicle.h)
  *   atlasphere (vehicle 0x53)        struct NEWBUGGY (GC ATLASSTRUCT)
  *   jeep (vehicle 0x63)              struct JEEPSTRUCT (game/jeep.c)
  * Offsets are PS2-verified in unit game/vehicle; gaps are opaque padding. */
-
-/* The player's glider (PlayerGlider). */
-struct glider_s {
-    struct creature_s *Cre;             /* 0x000 */
-    char pad_04[0x10 - 0x04];
-    s32 Dead;                           /* 0x010 */
-    char pad_14[0x30 - 0x14];
-    struct nuvec_s Position;            /* 0x030 */
-    char pad_3C[0x6C - 0x3C];
-    float RailAngle;                    /* 0x06C */
-    float TiltX;                        /* 0x070  pitch (NuMtxRotateX) */
-    float TiltZ;                        /* 0x074  roll (NuMtxSetRotationZ) */
-    float DestTiltX;                    /* 0x078 */
-    float DestTiltZ;                    /* 0x07C */
-    float AngleY;                       /* 0x080  heading (NuMtxRotateY) */
-    char pad_84[0x98 - 0x84];
-    s32 BarrelRoll;                     /* 0x098 */
-    char pad_9C[0xA4 - 0x9C];
-    s32 TerminalDive;                   /* 0x0A4 */
-    char pad_A8[0xAC - 0xA8];
-    float FireTimer;                    /* 0x0AC */
-    float HitTimer;                     /* 0x0B0 */
-    s32 AutoPilot;                      /* 0x0B4 */
-    char pad_B8[0xBC - 0xB8];
-    s32 HitPoints;                      /* 0x0BC  0..100 */
-    char LocatorList[16];               /* 0x0C0 */
-    float LocatorTime[16];              /* 0x0D0 */
-    s32 InTornado;                      /* 0x110 */
-    char pad_114[0x43C - 0x114];
-    float NextHitSoundTimer;            /* 0x43C */
-}; /* 0x440 */
 
 /* The atlasphere ("ball"): PlayerAtlas and EarthBoss are one each, and every
  * JeepRock embeds one at +0x30 (JeepRock stride 0x3D4, rock fields resume at

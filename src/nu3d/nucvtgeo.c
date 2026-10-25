@@ -34,19 +34,9 @@
 #include "numath/nufloat.h"
 #include "nu3d/numtl.h"
 #include "nu3d/nugobj.h"
+#include "nu3d/nucvtgeo.h"
 #include "nups2/nups2types.h"
 #include "nucore/nuerror.h"
-
-struct nucolourpair_s {
-    u32 colour;
-    u32 lit;
-};
-
-typedef struct nucolourblend_s {
-    unsigned int addr;
-    int count;
-    struct nucolourpair_s pair[0];
-} NuColourRef;
 
 struct nudmatag_s;
 
@@ -131,8 +121,8 @@ extern int show_strip;
 
 extern int D_0062EEDC;
 extern int D_0062EEE0;
-extern NuColourRef *D_00633118;
-extern NuColourRef *D_0063311C;
+extern struct nucolourref_s *D_00633118;
+extern struct nucolourref_s *D_0063311C;
 extern char D_00615538[];
 extern char D_00615558[];
 extern char D_00615568[];
@@ -175,12 +165,12 @@ extern char D_00615690[];
 
 #define HALVE_COLOUR(col, shift) (HALVE_ALPHA_RED_GREEN(col, shift) | HALVE_BLUE(col, shift))
 
-#define NEXT_COLOURREF(ref) ((NuColourRef *)((char *)(ref) + ((ref)->count * 8 + 8)))
+#define NEXT_COLOURREF(ref) ((struct nucolourref_s *)((char *)(ref) + ((ref)->count * 8 + 8)))
 
 void NuCvtGeoSetColourRefOffset(int offset);
-void NuCvtGeoFixup(NuColourRef *ref, int offset);
-void NuCvtGeoBeginColourRef(NuColourRef *list);
-NuColourRef *NuCvtGeoEndColourRef(void);
+void NuCvtGeoFixup(struct nucolourref_s *ref, int offset);
+void NuCvtGeoBeginColourRef(struct nucolourref_s *list);
+struct nucolourref_s *NuCvtGeoEndColourRef(void);
 unsigned int NuCvtSizeDmaFaceOn(void *dma, int count, void *unused, int *qwc);
 unsigned int NuCvtSizeDmaFaceY(void *dma, int count, void *unused, int *qwc);
 void NuCvtSetMaxSpan(float span);
@@ -193,15 +183,15 @@ inline void NuCvtGeoSetColourRefOffset(int offset) {
 }
 
 
-inline void NuCvtGeoFixup(NuColourRef *ref, int offset) {
+inline void NuCvtGeoFixup(struct nucolourref_s *ref, int offset) {
     while (ref->count != 0) {
-        ref->addr = offset + ref->addr;
+        ref->addr_offset = offset + ref->addr_offset;
         ref = NEXT_COLOURREF(ref);
     }
 }
 
 
-inline void NuCvtGeoBeginColourRef(NuColourRef *list) {
+inline void NuCvtGeoBeginColourRef(struct nucolourref_s *list) {
     colourref_list = list;
     colourref_on = 1;
     colourref_cur = 0;
@@ -209,8 +199,8 @@ inline void NuCvtGeoBeginColourRef(NuColourRef *list) {
 }
 
 
-inline NuColourRef *NuCvtGeoEndColourRef(void) {
-    NuColourRef *end;
+inline struct nucolourref_s *NuCvtGeoEndColourRef(void) {
+    struct nucolourref_s *end;
 
     NuCvtGeoAddColourRef(0);
     end = NEXT_COLOURREF(colourref_cur);
@@ -319,7 +309,7 @@ inline void NuCvtGeoAddColourRef(unsigned int addr) {
         } else {
             colourref_cur = NEXT_COLOURREF(colourref_cur);
         }
-        colourref_cur->addr = addr + colourref_offset;
+        colourref_cur->addr_offset = addr + colourref_offset;
         colourref_cur->count = 0;
     }
 }
@@ -1781,7 +1771,7 @@ u8 *NuCvtDmaTriStripCFromIdx(u8 **dma, struct nuvtx_tc1_s *vtx, short *idx, int 
 
 void NuPs2CreateFaceOn(struct nugobj_s *gobj) {
     struct nufaceongeom_s *geom;
-    NuColourRef *colourref;
+    struct nucolourref_s *colourref;
     u8 *buffer;
     u8 *dma;
     int words;
@@ -1814,7 +1804,7 @@ void NuPs2CreateFaceOn(struct nugobj_s *gobj) {
         buffer = NuMemAllocFn(size + total, nucvtgeo_srcfile, 0x937);
         dma = buffer;
         if (nugscn_generate_colourref) {
-            colourref = (NuColourRef *)(buffer + size);
+            colourref = (struct nucolourref_s *)(buffer + size);
             gobj->blend = colourref;
             NuCvtGeoBeginColourRef(colourref);
         }
@@ -1888,7 +1878,7 @@ void NuCvtCalcFastPoint(struct nuvec_s *a, struct nuvec_s *b, struct numtl_s *mt
 void NuPs2CreateRenderStream(struct nugobj_s *gobj) {
     struct nugeom_s *geom;
     struct nuprim_s *prim;
-    NuColourRef *colourref;
+    struct nucolourref_s *colourref;
     u8 *buffer;
     u8 *dma;
     short *idx;
@@ -1911,7 +1901,7 @@ void NuPs2CreateRenderStream(struct nugobj_s *gobj) {
     info_pktcnt = 0;
     NuCvtCalcFastPoint(&gobj->min, &gobj->max, 0);
     for (; geom; geom = geom->next) {
-        if (!geom->skins && !geom->vtxskininfo) {
+        if (!geom->skin && !geom->vtxskininfo) {
             build = 1;
         }
         if (NuCvtPntEna) {
@@ -1968,12 +1958,12 @@ void NuPs2CreateRenderStream(struct nugobj_s *gobj) {
         }
         info_pktsizecnt = 0;
         if (nugscn_generate_colourref) {
-            colourref = (NuColourRef *)(buffer + size);
+            colourref = (struct nucolourref_s *)(buffer + size);
             gobj->blend = colourref;
             NuCvtGeoBeginColourRef(colourref);
         }
         for (geom = gobj->geom; geom; geom = geom->next) {
-            if (geom->skins || geom->vtxskininfo) {
+            if (geom->skin || geom->vtxskininfo) {
                 continue;
             }
             /* store through a cast: retail reloads dma after this store */
@@ -2025,7 +2015,7 @@ void NuPs2CreateRenderStream(struct nugobj_s *gobj) {
                 }
             } while (0);
             dma = vpDmaTag_Ret(dma);
-            geom->dmasize = dma - (u8 *)geom->dmastream;
+            geom->dma_len = dma - (u8 *)geom->dmastream;
         }
         if (nugscn_generate_colourref) {
             gobj->tricount = (u8 *)NuCvtGeoEndColourRef() - (u8 *)colourref;

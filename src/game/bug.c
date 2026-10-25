@@ -64,7 +64,7 @@ static u16 bug_xrot;
 static u16 bug_yrot;
 static f32 bug_splratio;
 static struct nuvec_s bug_splpos;
-struct anim_s BugAnim = { 0 };
+AnimPacket BugAnim = { 0 };
 extern s32 FRAME;
 extern s32 FRAMES;
 
@@ -73,7 +73,7 @@ extern u64 LBIT;
 extern s32 GemPath;
 extern s32 VEHICLECONTROL;
 extern f32 NuTrigTable[];
-extern struct RPos_s *best_cRPos;
+extern RailPosition *best_cRPos;
 
 extern struct cammtx_s GameCam[];
 

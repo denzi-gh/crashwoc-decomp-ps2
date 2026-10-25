@@ -97,18 +97,18 @@ extern s32 fade_rate;
 extern s32 fadeval;
 extern void NuSoundUpdate(void);
 extern void sceGsSyncV(s32 mode);
-extern void *world_scene[];
+extern struct nugscn_s *world_scene[];
 extern void NuSoundFlushLoops(void);
 extern s32 set_cutscenecammtx;
 extern struct numtx_s cutscenecammtx;
-extern struct numtx_s *pNuCam;
+extern struct nucamera_s *pNuCam;
 extern void NuCameraSet(void *cam);
 
 /* Defined after GetSpaceCut, where retail emits them. */
 extern void *SpaceGameCutTab[][2];
-extern struct anim_s CutAnim;
+extern AnimPacket CutAnim;
 extern struct gtimer_s CutTimer;
-extern struct anim_s CutVortexAnim;
+extern AnimPacket CutVortexAnim;
 extern s32 next_cut_movie;
 extern u16 cutang_FRONTEND[2];
 extern u16 cutang_SPACE[3];
@@ -711,7 +711,7 @@ inline void UpdateCutMovieCamera(struct numtx_s *cam) {
     if (set_cutscenecammtx != 0) {
         *cam = cutscenecammtx;
         set_cutscenecammtx = 0;
-        *pNuCam = *cam;
+        pNuCam->mtx = *cam;
         NuCameraSet(pNuCam);
     }
 }
@@ -1138,13 +1138,13 @@ struct pcutanm_s GameCut_EARTH_CORTEX[10] = {
     { -1, 0, 0, 0, 0 }
 };
 
-struct space_s Space_EARTH_1STLEVEL_PlayList[3] = {
-    { 85, 0, {
+SPACEANIM Space_EARTH_1STLEVEL_PlayList[3] = {
+    { 85, {
         { "userth1", 6, 10, 10, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "hubin", 12, 10, 0, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "hubout", 13, 0, 10, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
-    { 183, 0, {
+    { 183, {
         { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
     { 255 }
@@ -1157,13 +1157,13 @@ struct pcutanm_s GameCut_EARTH_1STLEVEL[4] = {
     { -1, 0, 0, 0, 0 }
 };
 
-struct space_s Space_EARTH_2CRYSTALS_PlayList[3] = {
-    { 85, 0, {
+SPACEANIM Space_EARTH_2CRYSTALS_PlayList[3] = {
+    { 85, {
         { "userth2", 6, 10, 10, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "hubin", 12, 10, 0, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "hubout", 13, 0, 10, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
-    { 183, 0, {
+    { 183, {
         { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
     { 255 }
@@ -1176,13 +1176,13 @@ struct pcutanm_s GameCut_EARTH_2CRYSTALS[4] = {
     { -1, 0, 0, 0, 0 }
 };
 
-struct space_s Space_EARTH_4CRYSTALS_PlayList[3] = {
-    { 85, 0, {
+SPACEANIM Space_EARTH_4CRYSTALS_PlayList[3] = {
+    { 85, {
         { "userth5", 6, 10, 10, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "hubin", 12, 10, 0, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "hubout", 13, 0, 10, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
-    { 183, 0, {
+    { 183, {
         { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
     { 255 }
@@ -1195,18 +1195,18 @@ struct pcutanm_s GameCut_EARTH_4CRYSTALS[4] = {
     { -1, 0, 0, 0, 0 }
 };
 
-struct space_s Space_EARTH_BOSS_PlayList[4] = {
-    { 85, 0, {
+SPACEANIM Space_EARTH_BOSS_PlayList[4] = {
+    { 85, {
         { "userth7", 6, 10, 10, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "hubin", 12, 10, 0, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "hubout", 13, 0, 10, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
-    { 179, 0, {
+    { 179, {
         { "b\\uscrn02", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "b\\hubin", 12, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "b\\hubout", 13, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
-    { 183, 0, {
+    { 183, {
         { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
     { 255 }
@@ -1222,13 +1222,13 @@ struct pcutanm_s GameCut_EARTH_BOSS[7] = {
     { -1, 0, 0, 0, 0 }
 };
 
-struct space_s Space_EARTH_AKUAKU_PlayList[3] = {
-    { 3, 0, {
+SPACEANIM Space_EARTH_AKUAKU_PlayList[3] = {
+    { 3, {
         { "usaku24", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "hubin", 12, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "hubout", 13, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
-    { 183, 0, {
+    { 183, {
         { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
     { 255 }
@@ -1254,13 +1254,13 @@ struct pcutanm_s GameCut_WATER_CORTEX[10] = {
     { -1, 0, 0, 0, 0 }
 };
 
-struct space_s Space_WATER_1STLEVEL_PlayList[3] = {
-    { 87, 0, {
+SPACEANIM Space_WATER_1STLEVEL_PlayList[3] = {
+    { 87, {
         { "uswa1", 6, 10, 10, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "hubin", 12, 10, 0, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "hubout", 13, 0, 10, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
-    { 183, 0, {
+    { 183, {
         { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
     { 255 }
@@ -1273,13 +1273,13 @@ struct pcutanm_s GameCut_WATER_1STLEVEL[4] = {
     { -1, 0, 0, 0, 0 }
 };
 
-struct space_s Space_WATER_2CRYSTALS_PlayList[3] = {
-    { 87, 0, {
+SPACEANIM Space_WATER_2CRYSTALS_PlayList[3] = {
+    { 87, {
         { "uswa2", 6, 10, 10, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "hubin", 12, 10, 0, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "hubout", 13, 0, 10, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
-    { 183, 0, {
+    { 183, {
         { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
     { 255 }
@@ -1292,13 +1292,13 @@ struct pcutanm_s GameCut_WATER_2CRYSTALS[4] = {
     { -1, 0, 0, 0, 0 }
 };
 
-struct space_s Space_WATER_4CRYSTALS_PlayList[3] = {
-    { 87, 0, {
+SPACEANIM Space_WATER_4CRYSTALS_PlayList[3] = {
+    { 87, {
         { "uswa4", 6, 10, 10, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "hubin", 12, 10, 0, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "hubout", 13, 0, 10, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
-    { 183, 0, {
+    { 183, {
         { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
     { 255 }
@@ -1311,18 +1311,18 @@ struct pcutanm_s GameCut_WATER_4CRYSTALS[4] = {
     { -1, 0, 0, 0, 0 }
 };
 
-struct space_s Space_WATER_BOSS_PlayList[4] = {
-    { 87, 0, {
+SPACEANIM Space_WATER_BOSS_PlayList[4] = {
+    { 87, {
         { "uswa8", 6, 10, 10, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "hubin", 12, 10, 0, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "hubout", 13, 0, 10, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
-    { 179, 0, {
+    { 179, {
         { "c\\uscrn07", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "b\\hubin", 12, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "b\\hubout", 13, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
-    { 183, 0, {
+    { 183, {
         { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
     { 255 }
@@ -1351,13 +1351,13 @@ struct pcutanm_s GameCut_FIRE_CORTEX[10] = {
     { -1, 0, 0, 0, 0 }
 };
 
-struct space_s Space_FIRE_1STLEVEL_PlayList[3] = {
-    { 86, 0, {
+SPACEANIM Space_FIRE_1STLEVEL_PlayList[3] = {
+    { 86, {
         { "usfire2", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "hubin", 12, 10, 0, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "hubout", 13, 0, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
-    { 183, 0, {
+    { 183, {
         { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
     { 255 }
@@ -1370,13 +1370,13 @@ struct pcutanm_s GameCut_FIRE_1STLEVEL[4] = {
     { -1, 0, 0, 0, 0 }
 };
 
-struct space_s Space_FIRE_2CRYSTALS_PlayList[3] = {
-    { 86, 0, {
+SPACEANIM Space_FIRE_2CRYSTALS_PlayList[3] = {
+    { 86, {
         { "usfire5", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "hubin", 12, 10, 0, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "hubout", 13, 0, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
-    { 183, 0, {
+    { 183, {
         { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
     { 255 }
@@ -1389,13 +1389,13 @@ struct pcutanm_s GameCut_FIRE_2CRYSTALS[4] = {
     { -1, 0, 0, 0, 0 }
 };
 
-struct space_s Space_FIRE_4CRYSTALS_PlayList[3] = {
-    { 86, 0, {
+SPACEANIM Space_FIRE_4CRYSTALS_PlayList[3] = {
+    { 86, {
         { "usfire6", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "hubin", 12, 10, 0, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "hubout", 13, 0, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
-    { 183, 0, {
+    { 183, {
         { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
     { 255 }
@@ -1408,18 +1408,18 @@ struct pcutanm_s GameCut_FIRE_4CRYSTALS[4] = {
     { -1, 0, 0, 0, 0 }
 };
 
-struct space_s Space_FIRE_BOSS_PlayList[4] = {
-    { 86, 0, {
+SPACEANIM Space_FIRE_BOSS_PlayList[4] = {
+    { 86, {
         { "usfire7", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "hubin", 12, 10, 0, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "hubout", 13, 0, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
-    { 179, 0, {
+    { 179, {
         { "c\\uscrn10", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "b\\hubin", 12, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "b\\hubout", 13, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
-    { 183, 0, {
+    { 183, {
         { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
     { 255 }
@@ -1448,13 +1448,13 @@ struct pcutanm_s GameCut_WEATHER_CORTEX[10] = {
     { -1, 0, 0, 0, 0 }
 };
 
-struct space_s Space_WEATHER_1STLEVEL_PlayList[3] = {
-    { 88, 0, {
+SPACEANIM Space_WEATHER_1STLEVEL_PlayList[3] = {
+    { 88, {
         { "usair01", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "hubin", 12, 10, 0, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "hubout", 13, 0, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
-    { 183, 0, {
+    { 183, {
         { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
     { 255 }
@@ -1467,13 +1467,13 @@ struct pcutanm_s GameCut_WEATHER_1STLEVEL[4] = {
     { -1, 0, 0, 0, 0 }
 };
 
-struct space_s Space_WEATHER_2CRYSTALS_PlayList[3] = {
-    { 88, 0, {
+SPACEANIM Space_WEATHER_2CRYSTALS_PlayList[3] = {
+    { 88, {
         { "usair02", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "hubin", 12, 10, 0, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "hubout", 13, 0, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
-    { 183, 0, {
+    { 183, {
         { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
     { 255 }
@@ -1486,13 +1486,13 @@ struct pcutanm_s GameCut_WEATHER_2CRYSTALS[4] = {
     { -1, 0, 0, 0, 0 }
 };
 
-struct space_s Space_WEATHER_4CRYSTALS_PlayList[3] = {
-    { 88, 0, {
+SPACEANIM Space_WEATHER_4CRYSTALS_PlayList[3] = {
+    { 88, {
         { "usair04", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "hubin", 12, 10, 0, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "hubout", 13, 0, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
-    { 183, 0, {
+    { 183, {
         { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
     { 255 }
@@ -1505,18 +1505,18 @@ struct pcutanm_s GameCut_WEATHER_4CRYSTALS[4] = {
     { -1, 0, 0, 0, 0 }
 };
 
-struct space_s Space_WEATHER_BOSS_PlayList[4] = {
-    { 88, 0, {
+SPACEANIM Space_WEATHER_BOSS_PlayList[4] = {
+    { 88, {
         { "usair06", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "hubin", 12, 10, 0, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "hubout", 13, 0, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
-    { 179, 0, {
+    { 179, {
         { "c\\uscrn19", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "b\\hubin", 12, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "b\\hubout", 13, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
-    { 183, 0, {
+    { 183, {
         { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
     { 255 }
@@ -1532,18 +1532,18 @@ struct pcutanm_s GameCut_WEATHER_BOSS[7] = {
     { -1, 0, 0, 0, 0 }
 };
 
-struct space_s Space_SPACE_1STLEVEL_PlayList[4] = {
-    { 2, 0, {
+SPACEANIM Space_SPACE_1STLEVEL_PlayList[4] = {
+    { 2, {
         { "b\\uscor56", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "b\\hubin", 12, 10, 0, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "b\\hubout", 13, 0, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
-    { 179, 0, {
+    { 179, {
         { "b\\uscrn21", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "b\\hubin", 12, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "b\\hubout", 13, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
-    { 183, 0, {
+    { 183, {
         { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
     { 255 }
@@ -1559,13 +1559,13 @@ struct pcutanm_s GameCut_SPACE_1STLEVEL[7] = {
     { -1, 0, 0, 0, 0 }
 };
 
-struct space_s Space_SPACE_2CRYSTALS_PlayList[3] = {
-    { 2, 0, {
+SPACEANIM Space_SPACE_2CRYSTALS_PlayList[3] = {
+    { 2, {
         { "b\\uscor44", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "b\\hubin", 12, 10, 0, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "b\\hubout", 13, 0, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
-    { 183, 0, {
+    { 183, {
         { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
     { 255 }
@@ -1578,13 +1578,13 @@ struct pcutanm_s GameCut_SPACE_2CRYSTALS[4] = {
     { -1, 0, 0, 0, 0 }
 };
 
-struct space_s Space_SPACE_4CRYSTALS_PlayList[3] = {
-    { 2, 0, {
+SPACEANIM Space_SPACE_4CRYSTALS_PlayList[3] = {
+    { 2, {
         { "b\\uscor54", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "b\\hubin", 12, 10, 0, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "b\\hubout", 13, 0, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
-    { 183, 0, {
+    { 183, {
         { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
     { 255 }
@@ -1597,18 +1597,18 @@ struct pcutanm_s GameCut_SPACE_4CRYSTALS[4] = {
     { -1, 0, 0, 0, 0 }
 };
 
-struct space_s Space_SPACE_BOSS_PlayList[4] = {
-    { 2, 0, {
+SPACEANIM Space_SPACE_BOSS_PlayList[4] = {
+    { 2, {
         { "b\\uscor52", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "b\\hubin", 12, 10, 0, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "b\\hubout", 13, 0, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
-    { 179, 0, {
+    { 179, {
         { "b\\uscrn12", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "b\\hubin", 12, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
         { "b\\hubout", 13, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
-    { 183, 0, {
+    { 183, {
         { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
     } },
     { 255 }
@@ -1653,10 +1653,10 @@ void *SpaceGameCutTab[26][2] = {
     { Space_SPACE_BOSS_PlayList, GameCut_SPACE_BOSS }
 };
 
-struct anim_s CutAnim = {0};
+AnimPacket CutAnim = {0};
 struct gtimer_s CutTimer = {0};
 
-struct anim_s CutVortexAnim = {0};
+AnimPacket CutVortexAnim = {0};
 
 
 s32 next_cut_movie = 0;

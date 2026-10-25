@@ -51,7 +51,7 @@ extern struct MoveInfo DefaultMoveInfo;
 extern struct aitab_s AITab[];
 extern struct aitype_s AIType[];
 extern struct game_s Game;
-extern struct mask_s Mask;
+extern MaskInfo Mask;
 extern struct ldata_s *LDATA;
 extern struct ldata_s LData[];
 extern struct cammtx_s GameCam[];
@@ -100,9 +100,9 @@ void NewTopBot(struct obj_s *obj);
 void HubStart(struct obj_s *obj, s32 hub, s32 level, struct nuvec_s *pos);
 void MoveCreature(struct creature_s *c);
 void ComplexRailPosition(struct nuvec_s *pos, s32 iRAIL, s32 iALONG,
-                         struct RPos_s *rpos, s32 mode);
+                         RailPosition *rpos, s32 mode);
 void BlendGameCamera(struct cammtx_s *cam, float t);
-void UpdateMask(struct mask_s *mask, struct obj_s *obj);
+void UpdateMask(MaskInfo *mask, struct obj_s *obj);
 void HubSelect(struct creature_s *c);
 void HubLevelSelect(struct obj_s *obj, s32 hub);
 void HubMoveVR(void);
@@ -193,7 +193,7 @@ extern s32 cp_iRAIL;
 extern s32 cp_goto;
 extern struct nuvec_s cpGOTO;
 extern struct nuvec_s cpPOS;
-extern struct RPos_s *best_cRPos;
+extern RailPosition *best_cRPos;
 extern s32 plr_rebound;
 extern f32 ATLASCAMHEIGHT;
 extern struct panelcount_s plr_crates;
@@ -212,7 +212,7 @@ void GetSurfaceInfo(struct obj_s *obj, s32 mode, f32 y);
 void ResetAtlas(struct creature_s *c);
 void SetWeatherStartPos(struct creature_s *c);
 void ResetJeep(struct creature_s *c);
-void NewMask(struct mask_s *mask, struct nuvec_s *pos);
+void NewMask(MaskInfo *mask, struct nuvec_s *pos);
 
 
 static struct animlist CrashAnim_GLIDER[5] = {
@@ -2143,7 +2143,7 @@ void ManageCreatures(void)
 
 
 extern s32 gamecut;
-extern struct space_s *SpaceGameCutTab[][2];
+extern SPACEANIM *SpaceGameCutTab[][2];
 /* Unsized here: retail addresses it with %hi/%lo in this unit, not $gp. */
 extern struct CharacterModel *bgload_model[];
 extern union variptr_u superbuffer_ptr;
@@ -2170,7 +2170,7 @@ void LoadCharacterModels(void)
     s32 j;
     s32 character;
     s32 cmodel_index;
-    struct space_s *space;
+    SPACEANIM *space;
     struct CharacterModel *model;
     struct animlist *anim;
     struct CharacterData *cdata;
@@ -2244,7 +2244,7 @@ void LoadCharacterModels(void)
                 }
                 anim = cdata->anim;
                 if (Level == 0x28) {
-                    anim = space[i].anim;
+                    anim = space[i].animlist;
                 } else {
                     if (character == 0) {
                         if ((LBIT & 0x1001002000) && (Level != 0x1E)) {
@@ -2798,7 +2798,7 @@ void AddVariableShotDebrisEffect(s32 type, struct nuvec_s *pos, s32 count,
                                  s32 a, s32 b);
 void LoseMask(struct obj_s *obj);
 void KillGameObject(struct obj_s *obj, s32 anim);
-void AddMaskFeathers(struct mask_s *mask);
+void AddMaskFeathers(MaskInfo *mask);
 s32 WumpaCollisions(struct obj_s *obj);
 void BonusTiming(struct creature_s *c);
 void NewMenu(struct cursor_s *cursor, s32 menu, s32 mode, s32 item);
@@ -4445,7 +4445,7 @@ extern s32 temp_action;
 extern f32 temp_time;
 
 
-void EvalModelAnim(struct CharacterModel *model, struct anim_s *anim,
+void EvalModelAnim(struct CharacterModel *model, AnimPacket *anim,
                    struct numtx_s *m, struct numtx_s *tmtx, float ***dwa,
                    struct numtx_s *mLOCATOR)
 {
@@ -4559,7 +4559,7 @@ inline void StoreLocatorMatrices(struct CharacterModel *model,
 }
 
 
-s32 DrawCharacterModel(struct CharacterModel *model, struct anim_s *anim,
+s32 DrawCharacterModel(struct CharacterModel *model, AnimPacket *anim,
                        struct numtx_s *mC, struct numtx_s *mS, s32 render,
                        struct numtx_s *mR, struct numtx_s *loc_mtx,
                        struct nuvec_s *loc_mom, struct obj_s *obj)
@@ -5395,7 +5395,7 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
 }
 
 
-void UpdateAnimPacket(struct CharacterModel *mod, struct anim_s *anim,
+void UpdateAnimPacket(struct CharacterModel *mod, AnimPacket *anim,
                       float dt, float xz_distance)
 {
     float t;
@@ -5586,7 +5586,7 @@ void CloseCreatures(void)
 }
 
 
-void ResetAnimPacket(struct anim_s *anim, s32 action)
+void ResetAnimPacket(AnimPacket *anim, s32 action)
 {
     if (anim == 0) {
         return;

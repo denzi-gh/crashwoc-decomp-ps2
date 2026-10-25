@@ -36,7 +36,7 @@ extern s32 temp_iRAIL;
 extern s32 temp_iALONG;
 extern f32 temp_fALONG;
 
-extern struct RPos_s *best_cRPos;
+extern RailPosition *best_cRPos;
 extern s32 Level;
 extern s32 LivesLost;
 extern s32 jonframe1;
@@ -86,10 +86,10 @@ extern s32 HitCreatures(struct obj_s *obj, s32 destroy, s32 type);
 extern s32 HitCrates(struct obj_s *obj, s32 destroy);
 extern s32 HitWumpa(struct obj_s *obj, s32 destroy);
 extern void GetLights(struct nuvec_s *pos, struct Nearest_Light_s *lights, s32 glbflag);
-extern s32 WipeCreatures(struct RPos_s *rpos);
+extern s32 WipeCreatures(RailPosition *rpos);
 extern s32 WipeCrates(s32 iRAIL0, s32 iALONG0, f32 fALONG0, s32 iRAIL1, s32 iALONG1,
                       f32 fALONG1, s32 destroy);
-extern s32 WipeWumpa(struct RPos_s *rpos);
+extern s32 WipeWumpa(RailPosition *rpos);
 extern void AddVariableShotDebrisEffect(s32 type, struct nuvec_s *pos, s32 count,
                                         s32 a, s32 b);
 extern s32 CylinderCuboidOverlapXZ(struct nuvec_s *pos, struct obj_s *obj,
@@ -99,7 +99,7 @@ extern void GameSfxLoop(s32 id, struct nuvec_s *pos);
 extern s32 GetDieAnim(struct obj_s *obj, s32 anim);
 extern s32 KillGameObject(struct obj_s *obj, s32 anim);
 extern void LoseMask(struct obj_s *obj);
-extern void GetALONG(struct nuvec_s *pos, struct RPos_s *rpos, s32 iRAIL, s32 iALONG, s32 dir);
+extern void GetALONG(struct nuvec_s *pos, RailPosition *rpos, s32 iRAIL, s32 iALONG, s32 dir);
 
 void UpdateCrateBallsOfFireDoors(void);
 void InitChase(struct chase_s *chase);
@@ -464,7 +464,7 @@ void UpdateChase(struct chase_s *chase, struct obj_s *obj) {
     struct nuvec_s oldpos;
     struct nuvec_s pos;
     struct obj_s c_obj;
-    struct RPos_s best_RPos;
+    RailPosition best_RPos;
     struct nuvec_s *p0;
     struct nuvec_s *p1;
     struct CharacterData *cdata;

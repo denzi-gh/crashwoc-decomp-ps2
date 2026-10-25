@@ -89,7 +89,7 @@ extern s32 PLAYERCOUNT;
 extern s32 VEHICLECONTROL;
 extern struct nuvec_s *pos_START;
 extern struct nuvec_s v000;
-extern char **LDATA;
+extern struct ldata_s *LDATA;
 extern char LevelFileName[];
 extern char tbuf[];
 
@@ -996,7 +996,7 @@ void edcrtDrawInfo(void)
         return;
     NuFntScale(8, 0xC);
     NuFntSetPen(-1);
-    strcpy(tbuf, LDATA[0]);
+    strcpy(tbuf, LDATA->path);
     strupr(tbuf);
     NuFntPrintEx(0x400, 0x100, 0, "%s.CRT", tbuf);
     NuFntPrintEx(0x400, 0x200, 0, "CRATEGROUPCOUNT:   %i/%i", CRATEGROUPCOUNT,

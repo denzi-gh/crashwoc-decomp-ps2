@@ -72,7 +72,7 @@ s32 KillPlayer(struct obj_s *obj, s32 anim);
 extern s32 FlyingLevelVictoryDance;
 extern s32 Level;
 extern s32 SmokeyCountDownValue;
-extern struct RPos_s *best_cRPos;
+extern RailPosition *best_cRPos;
 extern s32 FireBossHoldPlayer;
 
 extern struct nupad_s *Pad[];
@@ -505,8 +505,8 @@ struct nuvec_s carpet_splpos = { 0.0f, 0.0f, 0.0f };
 struct nuvec_s carpet_pos = { 0.0f, 0.0f, 0.0f };
 struct nuvec_s carpet_oldpos = { 0.0f, 0.0f, 0.0f };
 struct nuvec_s carpet_mom = { 0.0f, 0.0f, 0.0f };
-struct anim_s carpet_anim = { 0 };
-struct RPos_s carpet_RPos = { 0 };
+AnimPacket carpet_anim = { 0 };
+RailPosition carpet_RPos = { 0 };
 struct Nearest_Light_s carpet_lights = { 0 };
 struct nuvec_s gyropos = { 0.0f, 0.0f, 0.0f };
 struct nuvec_s TempTubPos = { 0.0f, 0.0f, 0.0f };
@@ -592,7 +592,7 @@ extern f32 temp_fALONG;
 
 s32 RotDiff(u16 a, u16 b);
 void AddGameDebrisRot(s32 i, struct nuvec_s *pos, s32 n, u16 xrot, u16 yrot);
-void GetALONG(struct nuvec_s *pos, struct RPos_s *rpos, s32 iRAIL, s32 iALONG, s32 dir);
+void GetALONG(struct nuvec_s *pos, RailPosition *rpos, s32 iRAIL, s32 iALONG, s32 dir);
 s32 AheadOfCheckpoint(s32 iRAIL, s32 iALONG, f32 fALONG);
 f32 NuFsqrt(f32 x);
 u16 SeekRot(u16 a, u16 target, s32 rate);
@@ -2216,7 +2216,7 @@ void CheckRings(struct obj_s *obj, s32 *ring) {
     struct nuvec_s *p;
     struct nuvec_s *p0;
     struct nuvec_s *p1;
-    struct RPos_s *rpos;
+    RailPosition *rpos;
     s32 is_player;
     s32 i;
     f32 len;

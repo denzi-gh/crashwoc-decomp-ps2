@@ -53,13 +53,13 @@ struct animlist {
     char pad2;                          /* 0x0F */
     u64 levbits;                        /* 0x10 */
 }; /* 0x18 */
+typedef struct animlist AnimList;
 
 /* One character of a hub/space cutscene and its animations (SpaceGameCutTab). */
-struct space_s {
+typedef struct {
     s32 character;                      /* 0x00 */
-    s32 unk_0x04;                       /* 0x04 */
-    struct animlist anim[5];            /* 0x08 */
-}; /* 0x80 */
+    AnimList animlist[5];              /* 0x08 */
+} SPACEANIM; /* 0x80 */
 
 /* Entry of the static character table CData. */
 struct CharacterData {
@@ -95,17 +95,17 @@ struct CharacterModel {
 struct obj_s {
     void *parent;                       /* 0x000 */
     struct CharacterModel *model;       /* 0x004 */
-    struct mask_s *mask;                /* 0x008 */
+    MaskInfo *mask;                /* 0x008 */
     void *contact;                      /* 0x00C */
     struct numtx_s *pLOCATOR;           /* 0x010 */
-    struct anim_s anim;                 /* 0x014 */
+    AnimPacket anim;                 /* 0x014 */
     short character;                    /* 0x030 */
     short vehicle;                      /* 0x032 */
     u32 flags;                          /* 0x034 */
     u32 frame;                          /* 0x038 */
     u32 draw_frame;                     /* 0x03C */
     u32 vehicle_frame;                  /* 0x040 */
-    struct RPos_s RPos;                 /* 0x044 */
+    RailPosition RPos;                 /* 0x044 */
     struct nuvec_s pos;                 /* 0x068 */
     struct nuvec_s mom;                 /* 0x074 */
     struct nuvec_s oldpos;              /* 0x080 */
@@ -335,16 +335,16 @@ s32 NewCharacterIdle(struct creature_s *c, struct CharacterModel *model);
 void UpdateCharacterIdle(struct creature_s *c, s32 character);
 void MovePlayer(struct creature_s *c, struct nupad_s *pad);
 void ProcessCreatures(void);
-void EvalModelAnim(struct CharacterModel *model, struct anim_s *anim, struct numtx_s *m, struct numtx_s *tmtx, float ***dwa, struct numtx_s *mLOCATOR);
-s32 DrawCharacterModel(struct CharacterModel *model, struct anim_s *anim, struct numtx_s *mC, struct numtx_s *mS, s32 render, struct numtx_s *mR, struct numtx_s *loc_mtx, struct nuvec_s *loc_mom, struct obj_s *obj);
+void EvalModelAnim(struct CharacterModel *model, AnimPacket *anim, struct numtx_s *m, struct numtx_s *tmtx, float ***dwa, struct numtx_s *mLOCATOR);
+s32 DrawCharacterModel(struct CharacterModel *model, AnimPacket *anim, struct numtx_s *mC, struct numtx_s *mS, s32 render, struct numtx_s *mR, struct numtx_s *loc_mtx, struct nuvec_s *loc_mom, struct obj_s *obj);
 void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow);
-void UpdateAnimPacket(struct CharacterModel *mod, struct anim_s *anim, float dt, float xz_distance);
+void UpdateAnimPacket(struct CharacterModel *mod, AnimPacket *anim, float dt, float xz_distance);
 float ModelAnimDuration(u32 character, u32 action, float start, float end);
 void TerrainFailsafe(struct obj_s *obj);
 void ResetPlayerMoves(struct creature_s *c);
 void RemoveCreature(struct creature_s *c);
 void CloseCreatures(void);
-void ResetAnimPacket(struct anim_s *anim, s32 action);
+void ResetAnimPacket(AnimPacket *anim, s32 action);
 void UpdateRumble(struct rumble_s *rumble);
 void NewRumble(struct rumble_s *rumble, s32 power);
 void NewBuzz(struct rumble_s *rumble, s32 frames);

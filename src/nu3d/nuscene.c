@@ -43,10 +43,6 @@
 #include "nu3d/nuscene.h"
 #include "nu3d/nuanim.h"
 
-struct nucntrl_s {
-    char pad00[0x0C];
-}; /* 0x0C */
-
 struct nuspecialfile_s {
     struct numtx_s mtx;             /* 0x00 */
     int instance;                   /* 0x40 */
@@ -323,7 +319,7 @@ struct nugobj_s *ReadNuIFFGeom(int fh, struct numtl_s **mtls) {
         }
         NuGobjCalcDims(gobj);
         if (gobj->geom) {
-            if (!gobj->geom->skins) {
+            if (!gobj->geom->skin) {
                 tricount = info_tricount + info_tristripcount;
                 NuPs2CreateRenderStream(gobj);
                 NuPs2CreateFaceOn(gobj);
@@ -942,11 +938,11 @@ void ReadNuIFFGeomCntrl(int fh, struct nugeom_s *geom) {
     int size;
 
     count = NuFileReadInt(fh);
-    geom->ncntrls = count;
+    geom->ncntrl_pts = count;
     if (count) {
-        size = count * sizeof(struct nucntrl_s);
-        geom->cntrls = NuMemAllocFn(size, "..\\nu2crash.ps2\\nu3d\\nuscene.c", 0x398);
-        NuFileRead(fh, geom->cntrls, size);
+        size = count * sizeof(struct nuvec_s);
+        geom->cntrl_pts = NuMemAllocFn(size, "..\\nu2crash.ps2\\nu3d\\nuscene.c", 0x398);
+        NuFileRead(fh, geom->cntrl_pts, size);
     }
 }
 

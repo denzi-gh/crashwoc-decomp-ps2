@@ -279,11 +279,11 @@ s32 ProcessTimer(f32 *timer);
 
 void DrawGlider(struct creature_s *c)
 {
-    struct glider_s *g;
+    struct GLIDERSTRUCT *g;
     float lift;
     s32 model;
 
-    g = (struct glider_s *)c->Buggy;
+    g = (struct GLIDERSTRUCT *)c->Buggy;
     if (Level == 0xD) {
         lift = 0.0f;
     } else if (Level == 0x1A) {
@@ -371,7 +371,7 @@ extern s32 D_005B7CA0[];   /* current rumble objectives (far) */
 extern struct nuvec_s D_005B44F8[]; /* weather boss position (far) */
 extern struct nugspline_s D_005B4548; /* weather boss spline (far) */
 extern struct nuvec_s D_006B75B0;   /* weather start pos temp (far) */
-extern struct gliderflight_s PlayerGlider;
+extern struct GLIDERSTRUCT PlayerGlider;
 extern struct nuvec_s v000;
 
 extern void ProcessFireFlyIntro(void);
@@ -380,7 +380,7 @@ struct weatherboss_s;
 extern void ProcessWeatherBoss_a(struct weatherboss_s *wb);
 extern void DrawWeatherBoss_a(struct weatherboss_s *wb);
 extern struct jeeprock_s *AddRockVel(struct nuvec_s *pos, struct nuvec_s *vel, f32 radius, s32 owner);
-extern struct RPos_s *best_cRPos;
+extern RailPosition *best_cRPos;
 
 /* The earth boss is an atlasphere, like PlayerAtlas (far). */
 extern struct NEWBUGGY EarthBoss;
@@ -585,7 +585,7 @@ s32 GetRumbleTotalRoks(void)
 
 void AddGliderHitPoints(void)
 {
-    struct glider_s *g = (struct glider_s *)player->Buggy;
+    struct GLIDERSTRUCT *g = (struct GLIDERSTRUCT *)player->Buggy;
 
     g->HitPoints += 25;
     if (g->HitPoints > 100) {
@@ -611,7 +611,7 @@ s32 GetRumblePlayerHealthPercentage(void)
 
 s32 GetGliderHealthPercentage(struct creature_s *c)
 {
-    struct glider_s *g = (struct glider_s *)c->Buggy;
+    struct GLIDERSTRUCT *g = (struct GLIDERSTRUCT *)c->Buggy;
 
     if (g != 0) {
         return g->HitPoints;
@@ -5207,7 +5207,7 @@ extern s32 HitItems(struct obj_s *obj);
 extern struct creature_s *FindClock(void);
 extern void StartTimeTrial(struct nuvec_s *pos, s32 clock);
 
-void GliderBulletsHitThings(struct gliderflight_s *glider)
+void GliderBulletsHitThings(struct GLIDERSTRUCT *glider)
 {
     struct obj_s obj;
     struct nuvec_s clockpos;
@@ -5272,7 +5272,7 @@ void GliderBulletsHitThings(struct gliderflight_s *glider)
     }
 }
 
-void GliderBombsHitThings(struct gliderflight_s *glider)
+void GliderBombsHitThings(struct GLIDERSTRUCT *glider)
 {
     struct obj_s obj;
     struct nuvec_s clockpos;
@@ -7245,14 +7245,14 @@ void MoveVehicle(struct creature_s *c, struct nupad_s *pad)
 extern f32 FireFlyIntroTween;
 extern void edppRegisterPointerToGameCharLocation(struct nuvec_s *loc);
 
-inline void InitGlider(struct gliderflight_s *Glider, struct nuvec_s *StartPos, f32 StartAng)
+inline void InitGlider(struct GLIDERSTRUCT *Glider, struct nuvec_s *StartPos, f32 StartAng)
 {
     struct CharacterData *cdata;
     struct creature_s *cre;
     s32 i;
 
     WBIntroOn = 0;
-    memset(Glider, 0, sizeof(struct gliderflight_s));
+    memset(Glider, 0, sizeof(struct GLIDERSTRUCT));
     Glider->Cre = player;
     if (StartPos != 0) {
         Glider->Position = *StartPos;
@@ -7638,7 +7638,7 @@ static inline s8 GrabAnotherLocator(char *list, struct NUPOINTOFINTEREST_s **loc
     return 0x7F;
 }
 
-void GliderSmoke(struct gliderflight_s *glider)
+void GliderSmoke(struct GLIDERSTRUCT *glider)
 {
     struct CharacterModel *model;
     f32 time;
@@ -7687,7 +7687,7 @@ next:
     }
 }
 
-inline void ExplodeGlider(struct gliderflight_s *glider)
+inline void ExplodeGlider(struct GLIDERSTRUCT *glider)
 {
     NewBuzz(&player->rumble, BEENHITBIGBUZZTIME);
     NewRumble(&player->rumble, BEENHITBIGRUMTIME);
@@ -7715,7 +7715,7 @@ inline void ExplodeGlider(struct gliderflight_s *glider)
 }
 
 
-inline void DeadGliderWB(struct gliderflight_s *glider)
+inline void DeadGliderWB(struct GLIDERSTRUCT *glider)
 {
     if (glider->Dead == 0) {
         ExplodeGlider(glider);
@@ -7723,7 +7723,7 @@ inline void DeadGliderWB(struct gliderflight_s *glider)
 }
 
 
-void DeadGliderCoco(struct gliderflight_s *glider)
+void DeadGliderCoco(struct GLIDERSTRUCT *glider)
 {
     if (glider->CocoDead == 0) {
         glider->CocoDead = 1;
@@ -7754,7 +7754,7 @@ extern f32 WBBARRELSPEED;
 extern f32 WBBARRELSEEKSPEEDZERO;
 extern f32 WBBARRELSEEKSPEEDNONZERO;
 
-void ProcessGliderMovementWB(struct gliderflight_s *glider)
+void ProcessGliderMovementWB(struct GLIDERSTRUCT *glider)
 {
     f32 dest;
     struct nuvec_s roll;
@@ -7822,16 +7822,16 @@ extern f32 GLIDRUMTIM;
 extern struct nuvec_s ExhaustPosA;
 extern struct nuvec_s ExhaustPosB;
 extern void AddExtraLife(struct nuvec_s *pos, s32 pdeb);
-extern void ControlGlider(struct gliderflight_s *glider, struct nupad_s *pad);
-extern void ControlGliderWeatherBoss(struct gliderflight_s *glider, struct nupad_s *pad);
-extern void ProcessGliderMovement(struct gliderflight_s *glider, f32 dt);
-extern void GliderFire(struct gliderflight_s *glider, struct nupad_s *pad);
+extern void ControlGlider(struct GLIDERSTRUCT *glider, struct nupad_s *pad);
+extern void ControlGliderWeatherBoss(struct GLIDERSTRUCT *glider, struct nupad_s *pad);
+extern void ProcessGliderMovement(struct GLIDERSTRUCT *glider, f32 dt);
+extern void GliderFire(struct GLIDERSTRUCT *glider, struct nupad_s *pad);
 
 extern void ProcessCrashteroidsIntro(void);
 
 void MoveGlider(struct creature_s *Cre, struct nupad_s *Pad)
 {
-    struct gliderflight_s *Glider;
+    struct GLIDERSTRUCT *Glider;
     struct creature_s *c;
     struct nuvec_s v;
     f32 r;
@@ -7839,7 +7839,7 @@ void MoveGlider(struct creature_s *Cre, struct nupad_s *Pad)
     double absval;
     short Rumble;
 
-    Glider = (struct gliderflight_s *)Cre->Buggy;
+    Glider = (struct GLIDERSTRUCT *)Cre->Buggy;
     if (Glider == 0) {
         NuDebugMsgProlog(D_0061F370, 0xFB1)(D_0061F380);
         Glider = &PlayerGlider;
@@ -9499,7 +9499,7 @@ extern struct nuvec_s D_0061F300;
 #define bullet_scale D_0061F300
 extern void NuVecMtxRotateVU0(struct nuvec_s *dst, struct nuvec_s *src, struct numtx_s *mtx);
 
-void GliderFire(struct gliderflight_s *glider, struct nupad_s *pad)
+void GliderFire(struct GLIDERSTRUCT *glider, struct nupad_s *pad)
 {
     s32 firebutton;
     struct numtx_s mat;
@@ -9836,7 +9836,7 @@ extern f32 SeekTiltZNonZero;
 extern f32 fsign(f32 x);
 extern struct nuvec_s WeatherBossFirePoint;
 
-void ControlGliderWeatherBoss(struct gliderflight_s *glider, struct nupad_s *pad)
+void ControlGliderWeatherBoss(struct GLIDERSTRUCT *glider, struct nupad_s *pad)
 {
     f32 OldTiltZ;
     struct nuvec_s *campos;
@@ -9895,7 +9895,7 @@ void ControlGliderWeatherBoss(struct gliderflight_s *glider, struct nupad_s *pad
     NuVecAdd(&WeatherBossFirePoint, &offset, campos);
 }
 
-void ControlGlider(struct gliderflight_s *glider, struct nupad_s *pad)
+void ControlGlider(struct GLIDERSTRUCT *glider, struct nupad_s *pad)
 {
     f32 anx;
     f32 anz;
@@ -10150,7 +10150,7 @@ extern f32 FIXVELFADETIME;
 extern f32 WBFRICX;
 extern f32 WBFRICY;
 
-void ProcessGliderMovement(struct gliderflight_s *glider, f32 dt)
+void ProcessGliderMovement(struct GLIDERSTRUCT *glider, f32 dt)
 {
     struct numtx_s in;
     struct numtx_s out;
