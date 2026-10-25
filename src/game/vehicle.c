@@ -9844,12 +9844,12 @@ void ControlGliderWeatherBoss(struct gliderflight_s *glider, struct nupad_s *pad
     struct nuvec_s offset;
 
     if (glider->TerminalDive == 0 && WBIntroOn == 0 && FlyingLevelExtro == 0) {
-        if ((((volatile struct nupad_s *)pad)->paddata & 8) && 
+        if ((((volatile struct nupad_s *)pad)->paddata & 0x2) && 
             (glider->BarrelRoll == 0 || glider->BarrelRoll == 1)
             && glider->Position.x > -WBLIMX) {
             glider->BarrelRoll = 3;
             GameSfx(0x5C, &glider->Position);
-        } else if ((((pad->paddata & 4) != 0) && ((glider->BarrelRoll == -1) || (glider->BarrelRoll == 0))) &&
+        } else if ((((pad->paddata & 0x1) != 0) && ((glider->BarrelRoll == -1) || (glider->BarrelRoll == 0))) &&
          (glider->Position.x < WBLIMX)) {
             glider->BarrelRoll = -3;
             GameSfx(0x5C, &glider->Position);
@@ -9867,7 +9867,7 @@ void ControlGliderWeatherBoss(struct gliderflight_s *glider, struct nupad_s *pad
             || glider->TiltZ > 30.0f || glider->TiltZ < -30.0f) {
             SeekHalfLife(&glider->BarrelDelta, 7.2f, 0.05f, 0.02f);
         } else if (glider->TiltZ > 1.0f || glider->TiltZ < -1.0f) {
-            glider->BarrelDelta = NuFabs((glider->TiltZ * 20.0f * 0.2f * 0.5f));
+            glider->BarrelDelta = (f32)fabs(glider->TiltZ * 20.0f * 0.02f * 0.5f);
         } else {
             glider->BarrelDelta = 1.0f;
         }
