@@ -795,11 +795,11 @@ void ReadNuIFFHGobj(int fh, struct NUHGOBJ_s *hobj) {
 
 /* Cursor aligners taking &ptr: retail's ptr is address-taken, so gcse never moves ptr arithmetic. */
 static inline void NuGHGAlign16(char **ptr) {
-    *ptr = (char *)(((unsigned int)*ptr + 0xF) & ~0xF);
+    *ptr = (char *)(((nuintptr)*ptr + 0xF) & ~0xF);
 }
 
 static inline void NuGHGAlign4(char **ptr) {
-    *ptr = (char *)(((unsigned int)*ptr + 3) & ~3);
+    *ptr = (char *)(((nuintptr)*ptr + 3) & ~3);
 }
 
 char *NuGHGWriteGobj(char *base, char *ptr, struct NUHGOBJ_s *hobj, struct nugobj_s *gobj,
