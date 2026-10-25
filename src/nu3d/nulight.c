@@ -80,31 +80,20 @@ typedef struct nulgtpolyhaze_s {
 } nulgtpolyhaze_s;
 
 extern int NuRndrFogClear;
-extern struct nulight_s D_006AD100[];
-extern struct nuvec_s D_006AD580[];
-extern struct nucolour3_s D_006AD5A8[];
-extern struct nulight_s *D_006AD5D0[];
 extern float NuRndrFogNear;
 extern float NuRndrFogFar;
 extern int NuRndrFogCol;
 extern int NuRndrFogBlur;
-extern int HazeColour;
 extern void *NuLgtArcMtl;
 extern float NuLgtArcU0;
 extern float NuLgtArcV0;
 extern float NuLgtArcU1;
 extern float NuLgtArcV1;
-extern int NuLgtSeed;
 extern void *NuLightHazePolymtl;
-extern float NuLightHazePolyus[4];
-extern float NuLightHazePolyvs[4];
 extern int NuLightSpotCnt;
-extern nulgtspot_s NuLightSpots[];
 extern int NuLgtArcLaserCnt;
 extern int NuLgtArcLaserFrame;
-extern nulgtarclaser_s NuLgtArcLaserData[];
 extern int NuLightHazePolyCnt;
-extern nulgtpolyhaze_s NuLgtPolyHazeData[];
 extern void *NuLgtBuff;
 extern int PS2_REZ_W;
 extern int PS2_REZ_H;
@@ -123,8 +112,6 @@ extern struct rndrstream_s *rndrstream_3d_u;
 extern u32 *rndrstream_free;
 extern u64 cur_rt;
 extern int txupload_on;
-extern int NuLgtHSurf[18];
-extern struct numtl_s *NuLgtSurf[18];
 extern struct numtl_s *NuLightZMat;
 extern void *vpDmaTag_Call(void *packet, void *addr);
 extern u32 *vpDmaTag_Next(void *packet, u32 addr);
@@ -143,45 +130,67 @@ extern void NuVecConvertToIntVU0(void *dst, struct nuvec_s *src);
 extern f32 NuFsqrt(f32 x);
 extern f32 NuTrigTable[];
 
-extern int D_00633080;
-extern int D_00633084;
-extern int D_00633088;
-extern int D_006AD5E0[];
-extern struct nuvec_s D_006AD5F0;
-extern u32 D_006AD600[];
+u8 NuRndrTopBit[256] = {
+    0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
+    4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+    5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+    5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+    6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+    6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+    6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+    6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+};
+int NuLgtHSurf[18] = { 0 };
+struct numtl_s *NuLgtSurf[18] = { 0 };
+nulgtarclaser_s NuLgtArcLaserData[16] = { 0 };
+float NuLightHazePolyus[4] = { 0.0f };
+float NuLightHazePolyvs[4] = { 0.0f };
+nulgtpolyhaze_s NuLgtPolyHazeData[32] = { 0 };
+nulgtspot_s NuLightSpots[8] = { 0 };
+int NuLgtHFogMat[3] = { 0 };
+int NuLgtHLightMat[24] = { 0 };
+struct numtl_s *NuLgtFogMat[3] = { 0 };
+struct numtl_s *NuLgtLightMat[24] = { 0 };
+int NuLgtSeed = 12345;
+float Hazeampx = 24.0f;
+float Hazeampy = 24.0f;
+int HazeColour = 0;
+float testmult = 217.0f;
+float testbasespeed = 117.0f;
+float testfogmult = 32.0f;
+float testfogheight = 1.0f;
+static int update_count;
+static struct nulight_s lights[8];
+static struct nuvec_s ldirs[3];
+static struct nucolour3_s lcols[3];
+static struct nulight_s *assignment[3];
+static int assignment_age[3];
+static struct nuvec_s lamb;
+static u32 NuLightBuff[384];
+
 extern int NuLightOldSpotCnt;
 extern int NuLgtArcLaserOldCnt;
 extern void *NuLgtFxSetCall;
 extern void *NuLgtFxFogCop;
 extern void *NuLgtFxFogClr;
 extern struct numtl_s *NuLgtBackBuff;
-extern float Hazeampx;
-extern float Hazeampy;
 extern int nurndr_pixel_width;
 extern int nurndr_pixel_height;
 
-#define nulights D_006AD100
-#define nulight_dirs D_006AD580
-#define nulight_colours D_006AD5A8
-#define nulight_current D_006AD5D0
-#define nulight_ambient D_006AD5F0
-#define nulgt_packet_buffer D_006AD600
-#define nulight_stamp D_00633088
-#define nulight_stamps D_006AD5E0
-#define fx_ang D_00633080
-#define fx_ang2 D_00633084
-
-extern int NuLgtHFogMat[3];
-extern struct numtl_s *NuLgtFogMat[3];
-extern int NuLgtHLightMat[24];
-extern struct numtl_s *NuLgtLightMat[24];
 extern struct numtl_s *NuLgtGreyMat;
 extern struct numtl_s *NuLgtGreyNZMat;
 extern struct numtl_s *NuLightZBufMat;
 extern struct numtl_s *NuLightAddMat;
 extern struct numtl_s *NuLightAddMat2;
 extern struct numtl_s *NuLgtBackAlphaBuff;
-extern u8 NuRndrTopBit[];
 extern struct rndrstream_s *rndrstream_fx;
 extern void NuRndrSetRTarget(struct rndrstream_s *stream, int target);
 extern void NuRndrRectUVStream(struct rndrstream_s *stream, int x, int y, int width, int height,
@@ -903,26 +912,26 @@ void NuLightInit(void) {
     int i;
 
     for (i = 0; i < 3; i++) {
-        nulight_colours[i].r = nulight_colours[i].g = nulight_colours[i].b = 0.0f;
-        nulight_current[i] = 0;
-        nulight_stamps[i] = 0;
+        lcols[i].r = lcols[i].g = lcols[i].b = 0.0f;
+        assignment[i] = 0;
+        assignment_age[i] = 0;
     }
-    nulight_ambient.x = 0.15f;
-    nulight_ambient.y = 0.15f;
-    nulight_ambient.z = 0.15f;
+    lamb.x = 0.15f;
+    lamb.y = 0.15f;
+    lamb.z = 0.15f;
     for (i = 0; i < 8; i++) {
-        nulights[i].index = i;
-        nulights[i].used = 0;
+        lights[i].index = i;
+        lights[i].used = 0;
     }
 
-    nulight_stamp = 0;
+    update_count = 0;
     NuLightSpotCnt = 0;
     NuLightOldSpotCnt = 0;
     NuLightHazePolyCnt = 0;
     NuLgtArcLaserCnt = 0;
     NuLgtArcLaserOldCnt = 0;
     NuLightHazePolymtl = 0;
-    NuLgtBuff = nulgt_packet_buffer;
+    NuLgtBuff = NuLightBuff;
     NuLgtFxSetCall = NuLightSprDmaOpen(10);
     for (i = 0; i < 10; i++) {
         NuLightSprMake((int)(i * 409.6f) - 8, 0, (int)((i + 1) * 409.6f) - (int)(i * 409.6f),
@@ -1188,9 +1197,9 @@ struct nulight_s *NuLightCreate(void) {
     int i;
 
     for (i = 0; i < 8; i++) {
-        if (!nulights[i].used) {
-            nulights[i].used = 1;
-            return &nulights[i];
+        if (!lights[i].used) {
+            lights[i].used = 1;
+            return &lights[i];
         }
     }
     return 0;
@@ -1209,14 +1218,14 @@ void NuLightUpdate(struct nulight_s *light) {
     l = light;
     for (i = 0; i < 3; i++) {
         if (i == 0) {
-            oldest = nulight_stamps[0];
+            oldest = assignment_age[0];
             best = 0;
-            if (nulight_current[0] == light) {
+            if (assignment[0] == light) {
                 break;
             }
         }
-        if (nulight_stamps[i] < oldest) {
-            oldest = nulight_stamps[i];
+        if (assignment_age[i] < oldest) {
+            oldest = assignment_age[i];
             best = i;
         }
     }
@@ -1226,17 +1235,19 @@ void NuLightUpdate(struct nulight_s *light) {
     dir.x = 0.0f;
     dir.y = 0.0f;
     dir.z = -1.0f;
-    NuVecMtxRotate(&nulight_dirs[i], &dir, &light->mtx);
-    nulight_colours[i] = l->diffuse;
-    nulight_stamps[i] = ++nulight_stamp;
-    nulight_current[i] = light;
-    NuRndrSetDirectionalLights(&nulight_dirs[0], &nulight_colours[0],
-                               &nulight_dirs[1], &nulight_colours[1],
-                               &nulight_dirs[2], &nulight_colours[2]);
+    NuVecMtxRotate(&ldirs[i], &dir, &light->mtx);
+    lcols[i] = l->diffuse;
+    assignment_age[i] = ++update_count;
+    assignment[i] = light;
+    NuRndrSetDirectionalLights(&ldirs[0], &lcols[0],
+                               &ldirs[1], &lcols[1],
+                               &ldirs[2], &lcols[2]);
 }
 
 
 void NuLightFxSetup(void) {
+    static int ang;
+    static int ang2;
     int upload;
     int i;
     int height;
@@ -1297,8 +1308,8 @@ void NuLightFxSetup(void) {
         NuRndrEndSceneEx(0);
     }
     txupload_on = upload;
-    fx_ang += 0x6F;
-    fx_ang2 += 0x173;
+    ang += 0x6F;
+    ang2 += 0x173;
 }
 
 
@@ -3394,21 +3405,53 @@ void NuLightFogDraw(int paused) {
 }
 
 
+struct numtl_s *NuLightAddMat = 0;
+struct numtl_s *NuLightAddMat2 = 0;
+struct numtl_s *NuLightZBufMat = 0;
+struct numtl_s *NuLgtBackBuff = 0;
+struct numtl_s *NuLgtGreyNZMat = 0;
+int NuLgtArcLaserCnt = 0;
+int NuLgtArcLaserOldCnt = 0;
+int NuLgtArcLaserFrame = 0;
+void *NuLgtArcMtl = 0;
+float NuLgtArcU0 = 0.0f;
+float NuLgtArcV0 = 0.0f;
+float NuLgtArcU1 = 0.0f;
+float NuLgtArcV1 = 0.0f;
+int NuLightHazePolyCnt = 0;
+void *NuLightHazePolymtl = 0;
+int NuLightSpotCnt = 0;
+int NuLightOldSpotCnt = 0;
+struct numtl_s *NuLgtGreyMat = 0;
+struct numtl_s *NuLightZMat = 0;
+struct numtl_s *NuLgtBackAlphaBuff = 0;
+/* retail leaves a 4-byte hole before it */
+void *NuLgtBuff __attribute__((aligned(8))) = 0;
+void *NuLgtFxSetCall = 0;
+void *NuLgtFxFogCop = 0;
+void *NuLgtFxFogClr = 0;
+float NuRndrFogNear = 0.0f;
+float NuRndrFogFar = 0.0f;
+int NuRndrFogCol = 0;
+int NuRndrFogBlur = 0;
+int NuRndrFogClear = 0;
+float testmax = 0.0f;
+
 void NuLightDestroy(struct nulight_s *light) {
     int i;
 
     light->used = 0;
     for (i = 0; i < 3; i++) {
-        if (nulight_current[i] == light) {
-            nulight_current[i] = 0;
-            nulight_colours[i].r = nulight_colours[i].g = nulight_colours[i].b = 0.0f;
+        if (assignment[i] == light) {
+            assignment[i] = 0;
+            lcols[i].r = lcols[i].g = lcols[i].b = 0.0f;
         }
     }
 }
 
 
 struct nulight_s *NuLightGetLight(int index) {
-    return &nulights[index];
+    return &lights[index];
 }
 
 

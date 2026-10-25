@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0094"
 source = "src/game/game.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0094:001db150:JonProbe"
@@ -514,3 +514,1348 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0094:001f1120:SplinePointAngle"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:005865f0:DemoLevel"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586600:v000"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586610:v100"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586620:v010"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586630:v001"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586640:v111"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586650:v101"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586660:cortex_gameover_tab"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586680:HData"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:005866c8:hubmidpos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:005866e0:EskimoRollModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586708:CrashAndBurnModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586738:H2OhNoModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586770:AirshipModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586790:CompactorReactorModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:005867b8:AvalancheModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:005867e0:AvalancheChaseData"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586850:CoralCanyonModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586880:ArcticAnticsModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:005868a8:JungleRumbleModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:005868d0:JungleRumbleChaseData"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586978:ForceOfNatureModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:005869a0:TheGauntletModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:005869c8:BamboozledModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:005869e8:BanzaiBonsaiModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586a10:TornadoAlleyModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586a38:TsunamiModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586a60:TsunamiChaseData"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586ad0:FahrenheitFrenzyModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586b00:MedievalMadnessModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586b20:WizardsAndLizardsModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586b48:WizardsAndLizardsChaseData"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586c28:ThatSinkingFeelingModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586c50:GoldRushModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586c78:DroidVoidModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586ca8:RumbleInTheRoksModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586cc8:CrashesToAshesModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586cf0:DrainDamageModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586d10:AtmosphericPressureModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586d30:CrunchTimeModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586d60:CrashteroidsModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586d88:KnightTimeModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586da8:GhostTownModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586dc8:IceStationBandicootModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586de8:WeatheringHeightsModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586e10:CrateBallsOfFireModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586e40:CrateBallsOfFireChaseData"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586f20:SolarBowlerModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586f40:CortexVortexModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586f70:SeaShellShenanigansModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586fa0:TitlesModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586fa8:SmokeyAndTheBandicootModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586fc8:FrontEndModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586fe8:GameOverModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586ff0:IntroModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00586ff8:SpaceModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00587000:OutroModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00587008:TestZoneModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00587010:CreditsModelList"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00587018:LData"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00587e88:NameInputTable"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00587ea8:SplTab"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00588580:ObjTab"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00589ea0:Mask"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:0058a030:MaskFeathers"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:0058a270:Kaboom"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:0058ac90:VTog"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:0058afa8:vtog_oldpos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:0058afb8:vtog_newpos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:0058afc8:tumble_oldpos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:0058afd8:tumble_newpos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:0058afe8:hubwarp_oldpos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:0058aff8:hubwarp_newpos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:0058b008:Award"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:0058b098:LevelFileName"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:0058b0b8:TempAnim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:0058b0d8:TempAnim2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:0058b0f8:TTScrPos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:0058b108:Game"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:0058b518:gempath_RPos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:0058b540:finish_oldpos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:0058b550:finish_newpos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:0058b560:in_finish_pos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:0058b570:Wumpa"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00591470:WInfo"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:005916f0:WScr"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00591af0:NewWumpa"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00591f70:Cursor"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00591fe8:CutSceneText"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00592008:GlobalTimer"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00592020:GameTimer"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00592038:PauseTimer"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00592050:MenuTimer"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00592068:TimeTrialTimer"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00592080:cpPOS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00592090:tbuf"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00592110:vTEMP"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00592120:mTEMP"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00592160:vTEMP4"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:005921a0:plr_target_firepos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:005921b0:plr_target_pos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:005921c8:plr_target_sightpos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:005921d8:plr_target_dir"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:005921e8:plr_target_mtx"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00592228:probepos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00592238:probedpos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00592248:probespk"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00592258:proberot"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00592268:probepos2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00592278:TempLights"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00592328:TempLights2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:005923d8:hub_vr_pos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:005923e8:hublevelopen"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00592410:start_pos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00592420:edit_txt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00592460:bonus_obj"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00592770:death_obj"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:005928f8:gempath_obj"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00592a80:lev_ambpos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630ae8:DEMOMENUS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630aec:i_demolevel"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630af0:PLAYERCOUNT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630af4:Paused"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630af8:pause_dir"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630afc:sizeof_GameObject"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b00:sizeof_AIPacket"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b04:sizeof_CrateCube"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b08:sizeof_CHASE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b0c:sizeof_GameState"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b10:sizeof_CharacterModel"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b14:cortex_gameover_i"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b18:cortex_continue_i"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b1c:cortex_quit_i"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b20:temp_character"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b24:temp_character2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b28:temp_character_action"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b2c:temp_character2_action"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b30:tempanim_waitaudio"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b34:tempanim_nextaction"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b38:TESTCORTEXVOICES"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b3c:DISCOXOFFSET"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b44:Hub"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b48:HubLevelText"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b4c:HubLevelAngle"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b4e:hub_vr_xrot"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b50:hub_vr_yrot"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b54:hub_vr_level"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b58:hub_vr_image"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b5c:hub_vr_scale"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b60:hub_vr_newscale"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b64:i_award"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b68:tumble_character"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b6c:last_hub"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b70:last_character"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b74:last_used_character"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b78:plr_rebound"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b7c:FINISHRADIUSHUB"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b80:FINISHRADIUSLEVEL"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b84:LDATA"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b88:LBIT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b90:Level"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b94:new_level"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b98:last_level"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630b9c:warp_level"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630ba0:level_part_2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630ba4:i_kaboom"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630ba8:TT_RELICX"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630bac:TT_RELICY"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630bb0:bonusgem_ok"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630bb4:in_finish_range"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630bb8:CRATECOUNT3DSCALE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630bbc:CRATECOUNT3DSEPERATION"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630bc8:GAMERAND"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630bd0:qseed"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630bd8:wumpa_a"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630be0:i_screenwumpa"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630be4:i_newwumpa"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630bf0:sw_hack"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630bf4:DRAWWUMPAS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630bf8:i_tempwumpa"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630bfc:LIGHTMASK"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630c00:i_maskfeathers"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630c04:MENUDY"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630c08:i_nameinput"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630c0c:input_alphabet"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630c10:NAMEENTRYSIZE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630c14:INPUTSX"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630c18:TTINPUTPDY"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630c1c:GAMEINPUTPDY"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630c20:TTINPUTPSY"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630c24:GAMEINPUTPSY"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630c28:InvincibilityCHEAT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630c2c:ShowPlayerCoordinate"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630c30:TimingBarSet"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630c34:ExtraMoves"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630c38:CYCLELANGUAGES"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630c3c:menu_language"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630c40:menu_language_wait"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630c44:ForceRestart"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630c54:dme_sx"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630c58:dme_sy"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630c5c:dme_symul"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630c60:dme_yadj"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630c64:CUTINFO"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630c68:POWERTEXTY"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630c6c:PANELMENUX"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630c70:GAMENAMEY"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630cd4:LivesLost"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630cd8:LostLife"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630cdc:CHECKWAIT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630ce0:POINTWAIT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630ce4:check_time"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630ce8:check_duration"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630cec:point_time"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630cf0:point_duration"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630cf4:CPLTIME"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630cf8:CPLDELAY"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630cfc:tt_flash"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630d14:Adventure"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630d18:TimeTrial"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630d1c:TT_SCALE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630d20:TEXTZMUL"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630d24:new_mode"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630d28:Demo"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630d2c:max_game_percentage"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630d30:Bonus"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630d34:bonus_restart"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630d38:Death"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00630d3c:force_menu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631068:BAZOOKATARGETHACK"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:0063106c:MECHTARGETHACK"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631070:vtog_time"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631074:vtog_duration"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631078:vtog_blend"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:0063107c:pVTog"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631080:vtog_angle"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631084:HubLevel"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631088:HubLevel_available"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:0063108c:hubleveltext_pos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631090:hubleveltext_level"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631094:hubleveltext_i"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631098:hubleveltext_open"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:0063109c:temp_hub"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006310a0:temp_hublevel"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006310a4:tumble_time"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006310a8:tumble_duration"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006310ac:tumble_moveduration"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006310b0:tumble_cycleduration"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006310b4:tumble_item_starttime"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006310b8:tumble_item_addtime"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006310bc:tumble_hdg"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006310be:temp_lev_flags"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006310c0:tumble_action"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006310c4:GameMode"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006310c8:tt_sx"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006310cc:tt_sy"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006310d0:new_hub_flags"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006310d2:new_lev_flags"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006310d4:temp_vibration"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006310d5:temp_surround"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006310d6:temp_sfx_volume"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006310d7:temp_music_volume"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006310d8:temp_screen_x"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006310d9:temp_screen_y"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006310dc:platinum_relics"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006310e0:gold_relics"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006310e4:sapphire_relics"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006310e8:bonus_crates_destroyed"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006310ec:save_bonus_crates_destroyed"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006310f0:bonus_lives"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006310f4:bonus_pCAM"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006310f8:bonus_pPLAT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006310fc:bonus_time"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631100:bonus_duration"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631104:bonus_wumpa_delay"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631105:bonus_crate_delay"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631106:bonus_life_delay"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631108:bonus_wumpa_wait"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:0063110c:bonus_crates_wait"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631110:bonus_lives_wait"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631114:bonus_panel_wait"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631118:bonus_finished"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:0063111c:bonus_finish_frame"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631120:death_pCAM"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631124:death_pPLAT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631128:death_time"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:0063112c:death_duration"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631130:death_begun"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631134:death_lock"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631138:GemPath"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:0063113c:gempath_pCAM"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631140:gempath_pPLAT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631144:gempath_time"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631148:gempath_duration"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:0063114c:gempath_begun"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631150:gempath_lock"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631154:gempath_open"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631158:pos_START"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:0063115c:shadow_START"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631160:shadow_FINISH"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631164:SAFEY"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631168:plr_items"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:0063116c:finish_type"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631170:finish_angle"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631174:start_time"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631178:clock_ok"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:0063117c:WUMPACOUNT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631180:finish_frame"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631184:finish_frames"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631188:pausestats_frame"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:0063118c:TimeTrialWait"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631190:timetrial_frame"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631194:temp_hours"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:00631198:temp_minutes"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:0063119c:temp_seconds"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006311a0:temp_tenths"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006311a4:temp_hundredths"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006311a8:newleveltime_slot"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006311ac:nCheckLetters"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006311b0:nPointLetters"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006311b4:check_delay"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006311b8:point_delay"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006311bc:cp_iRAIL"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006311c0:cp_iALONG"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006311c4:cp_fALONG"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006311c8:iTEMP"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006311cc:plr_target_found"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006311d0:game"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006311d4:probeon"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006311d8:probey"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006311dc:probetime"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006311e0:probecol"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006311e4:vtog_action"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006311e8:NoMusicHack"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0094:006311ec:plr_target_frame"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x0061ec20
+end = 0x0061ec98

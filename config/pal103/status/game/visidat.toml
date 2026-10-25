@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0114"
 source = "src/game/visidat.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0114:0024d0b0:visiSetSplineKnot"
@@ -22,3 +22,8 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0114:0024dc20:visiReset"
 state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x00625238
+end = 0x0062525b

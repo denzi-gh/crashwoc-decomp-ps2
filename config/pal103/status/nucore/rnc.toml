@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0012"
 source = "src/nucore/rnc.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0012:00105db0:NuPPLoadBuffer"
@@ -22,3 +22,13 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0012:001065f8:NuPPGetSize"
 state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x00613f90
+end = 0x00613fa7
+
+[[claim]]
+section = ".sdata"
+start = 0x0062ea40
+end = 0x0062ea50

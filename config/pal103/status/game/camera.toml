@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0093"
 source = "src/game/camera.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0093:001d5f80:InitRails"
@@ -82,3 +82,197 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0093:001db078:AddCross"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00586240:tRailExt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00586260:BOSSCAMPOS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00586270:BOSSCAMPOS2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00586280:TempRPos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:005862a8:cRPos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00586318:temp_cRPos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00586388:Rail"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:005864c8:GameCam"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00630a08:NORMALCAMERAHEIGHT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00630a0c:CAMTOCRASH1"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00630a10:CAMTOCRASH2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00630a14:CAMTOSUB"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00630a18:SIDECAMDISTANCE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00630a1c:CAMTOJEEP"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00630a20:CAMHEIGHT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00630a24:CAMSTOPNEAR"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00630a28:CAMSTOPFAR"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00630a2c:ATLASCAMHEIGHT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00630a30:temp_rail_end"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00630a34:LOGOCAMX"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00630a38:LOGOCAMY"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00630a3c:LOGOCAMZ"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00630a40:tInPlatRail"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00630a44:tInCamRail"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00630a48:tLeftRail"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00630a4c:tCamRail"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00630a50:tRightRail"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00630a54:tOutCamRail"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00630a58:tOutPlatRail"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00630aa8:Blend.102"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00630aac:pVIS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00630ab0:iVIS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00630ab4:temp_iRAIL"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00630ab8:temp_iALONG"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00630abc:temp_fALONG"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00630ac0:temp_fACROSS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00630ac4:best_cRPos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00630ac8:cRPosCOUNT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00630acc:temp_best_cRPos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00630ad0:temp_cRPosCOUNT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00630ad4:nRAILS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00630ad8:pCam"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00630adc:pNuCam"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00630ae0:cut_on"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00630ae4:best_railangle"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0093:00633268:ctmtl"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x0061d330
+end = 0x0061d3a0
+
+[[claim]]
+section = ".sbss"
+start = 0x00633268
+end = 0x0063326c

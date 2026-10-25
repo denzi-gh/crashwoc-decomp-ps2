@@ -71,33 +71,10 @@ extern void NuMtxMulRVU0(struct numtx_s *dst, struct numtx_s *a, struct numtx_s 
 extern void NuMtxPreScaleVU0(struct numtx_s *m, struct nuvec_s *s);
 extern void NuMtxScaleVU0(struct numtx_s *m, struct nuvec_s *s);
 
-extern unsigned char D_006ADC00[256];
-extern int D_0062EE18;
-extern char D_00614A60[];
-extern char D_00614AD0[];
-extern char D_00614B20[];
-extern char D_00614B60[];
-extern char D_00614BC8[];
-extern char D_00614C10[];
-extern char D_00614C50[];
-extern char D_0062EE20[];
-extern char D_00614CB8[];
-extern char D_00614CD0[];
-extern char D_00614CE8[];
+static int isBitCountTable = 0;
+static unsigned char BitCountTable[256];
 
-#define bitcount_table D_006ADC00
-#define bitcount_table_built D_0062EE18
-#define nuanim_srcfile D_00614A60
-#define nuanim_load_failed_msg D_00614AD0
-#define nuanim_new_format_msg D_00614B20
-#define nuanim_old_format_msg D_00614B60
-#define nuanim_assert_msg D_0062EE20
-#define nuanim_bad_index_msg D_00614CB8
-#define nuanim_bad_curveset_msg D_00614CD0
-#define nuanim_blend_bad_curveset_msg D_00614CE8
-#define nuanim_keytype_none_msg D_00614BC8
-#define nuanim_keytype_small_msg D_00614C10
-#define nuanim_keytype_boolean_msg D_00614C50
+#define nuanim_srcfile "..\\nu2crash.ps2\\nu3d\\nuanim.c"
 
 #define NUANIMKEYTYPE_NONE 0
 #define NUANIMKEYTYPE_HERMITE 1
@@ -115,14 +92,14 @@ inline void buildBitCountTable(void) {
     int bit;
 
     for (value = 0; value < 256; value++) {
-        bitcount_table[value] = 0;
+        BitCountTable[value] = 0;
         for (bit = 0; bit < 8; bit++) {
             if ((value >> bit) & 1) {
-                bitcount_table[value]++;
+                BitCountTable[value]++;
             }
         }
     }
-    bitcount_table_built = 1;
+    isBitCountTable = 1;
 }
 
 
@@ -215,7 +192,7 @@ struct nuanimdata_s *NuAnimDataRead(int fh) {
     int j;
     int k;
 
-    if (!bitcount_table_built) {
+    if (!isBitCountTable) {
         buildBitCountTable();
     }
     size = NuFileReadInt(fh);
@@ -278,6 +255,34 @@ struct nuanimdata_s *NuAnimDataRead(int fh) {
 }
 
 
+extern int NuMemFileOpen(void *buf, int size, int mode);
+
+struct nuanimdata_s *NuAnimDataLoad(char *file) {
+    struct nuanimdata_s *data;
+    void *buf;
+    int size;
+    int fh;
+
+    NuErrorProlog(nuanim_srcfile, 0x2D4)("Obsolete - do not use!!!");
+    data = 0;
+    if (!isBitCountTable) {
+        buildBitCountTable();
+    }
+    buf = NuStreamGetOutputBuffer(0);
+    size = NuFileLoadBuffer(file, buf, 0x7FFFFFFF);
+    if (size > 0) {
+        fh = NuMemFileOpen(buf, size, 0);
+        if (fh) {
+            data = NuAnimDataRead(fh);
+            NuFileClose(fh);
+        } else {
+            NuDebugMsgProlog(nuanim_srcfile, 0x2EA)("NuAnimLoad : Failed to open animation file %s!", file);
+        }
+    }
+    return data;
+}
+
+
 struct nuanimdata_s *NuAnimDataFixPtrs(struct nuanimdata_s *data, int base) {
     struct nuanimdatachunk_s *chunk;
     struct nuanimcurveset_s *curveset;
@@ -286,7 +291,7 @@ struct nuanimdata_s *NuAnimDataFixPtrs(struct nuanimdata_s *data, int base) {
     int j;
     int k;
 
-    if (!bitcount_table_built) {
+    if (!isBitCountTable) {
         buildBitCountTable();
     }
     data = NUANIM_FIXPTR(data, base);
@@ -333,7 +338,7 @@ struct nuanimdata2_s *NuAnimData2FixPtrs(struct nuanimdata2_s *data, int base) {
     int i;
     int count;
 
-    if (!bitcount_table_built) {
+    if (!isBitCountTable) {
         buildBitCountTable();
     }
     data = NUANIM_FIXPTR(data, base);
@@ -356,6 +361,52 @@ struct nuanimdata2_s *NuAnimData2FixPtrs(struct nuanimdata2_s *data, int base) {
 }
 
 
+inline struct nuanimdata_s *NuAnimDataLoadBuff(char *file, union variptr_u *buffer, union variptr_u *buffend) {
+    struct nuanimdatahdr_s *hdr;
+    int size;
+
+    buffer->intaddr = (buffer->intaddr + 0xF) & ~(nuintptr)0xF;
+    size = NuFileLoadBuffer(file, buffer->voidptr, buffend->u8 - buffer->u8);
+    if (!size) {
+        NuErrorProlog(nuanim_srcfile, 0x2F8)("Could not read from <%s>, either file is not there or the buffer may be full", file);
+    }
+    hdr = buffer->voidptr;
+    buffer->voidptr = (char *)hdr + size;
+    if (hdr->version != 1) {
+        NuErrorProlog(nuanim_srcfile, 0x2FE)("NuAnimDataLoadBuff: Is in new format, expecting old format.", file);
+    }
+    hdr->address_offset = (int)hdr - hdr->address_offset;
+    hdr->data = NuAnimDataFixPtrs(hdr->data, hdr->address_offset);
+    return hdr->data;
+}
+
+
+inline struct nuanimdata2_s *NuAnimData2LoadBuff(char *file, union variptr_u *buffer, union variptr_u *buffend) {
+    struct nuanimdata2hdr_s *hdr;
+    int size;
+
+    buffer->intaddr = (buffer->intaddr + 0xF) & ~(nuintptr)0xF;
+    size = NuFileLoadBuffer(file, buffer->voidptr, buffend->u8 - buffer->u8);
+    if (!size) {
+        NuErrorProlog(nuanim_srcfile, 0x348)("Could not read from <%s>, either file is not there or the buffer may be full", file);
+    }
+    hdr = buffer->voidptr;
+    buffer->voidptr = (char *)hdr + size;
+    if (hdr->version != 2) {
+        NuErrorProlog(nuanim_srcfile, 0x34E)("NuAnimDataLoadBuff: Is in old format, expecting new format.", file);
+    }
+    hdr->address_offset = (nusintptr)hdr - hdr->address_offset;
+    hdr->data = NuAnimData2FixPtrs(hdr->data, hdr->address_offset);
+    return hdr->data;
+}
+
+
+/* Never called: retail has no code for it, only its message in .rodata. */
+static inline void NuAnimNonJointError(void) {
+    NuErrorProlog(nuanim_srcfile, 0x3A0)("Non-joint node in joint hierarchy.");
+}
+
+
 float NuAnimCurveCalcVal2(struct nuanimcurve_s *curve, struct nuanimtime_s *atime) {
     int nkey;
     struct nuanimkey_s *key;
@@ -369,22 +420,22 @@ float NuAnimCurveCalcVal2(struct nuanimcurve_s *curve, struct nuanimtime_s *atim
 
     switch (atime->time_byte) {
     case 0:
-        nkey = bitcount_table[curve->mask.bytes[0] & atime->time_mask];
+        nkey = BitCountTable[curve->mask.bytes[0] & atime->time_mask];
         break;
     case 1:
-        nkey = bitcount_table[curve->mask.bytes[0]];
-        nkey += bitcount_table[curve->mask.bytes[1] & atime->time_mask];
+        nkey = BitCountTable[curve->mask.bytes[0]];
+        nkey += BitCountTable[curve->mask.bytes[1] & atime->time_mask];
         break;
     case 2:
-        nkey = bitcount_table[curve->mask.bytes[0]];
-        nkey += bitcount_table[curve->mask.bytes[1]];
-        nkey += bitcount_table[curve->mask.bytes[2] & atime->time_mask];
+        nkey = BitCountTable[curve->mask.bytes[0]];
+        nkey += BitCountTable[curve->mask.bytes[1]];
+        nkey += BitCountTable[curve->mask.bytes[2] & atime->time_mask];
         break;
     case 3:
-        nkey = bitcount_table[curve->mask.bytes[0]];
-        nkey += bitcount_table[curve->mask.bytes[1]];
-        nkey += bitcount_table[curve->mask.bytes[2]];
-        nkey += bitcount_table[curve->mask.bytes[3] & atime->time_mask];
+        nkey = BitCountTable[curve->mask.bytes[0]];
+        nkey += BitCountTable[curve->mask.bytes[1]];
+        nkey += BitCountTable[curve->mask.bytes[2]];
+        nkey += BitCountTable[curve->mask.bytes[3] & atime->time_mask];
         break;
     }
     next = &curve->animkeys[nkey];
@@ -429,29 +480,29 @@ float NuAnimCurve2CalcVal(union nuanimcurve2_u *curve, struct nuanimtime_s *atim
     }
     switch (atime->time_byte) {
     case 0:
-        nkey = bitcount_table[mask->bytes[0] & atime->time_mask];
+        nkey = BitCountTable[mask->bytes[0] & atime->time_mask];
         break;
     case 1:
-        nkey = bitcount_table[mask->bytes[0]];
-        nkey += bitcount_table[mask->bytes[1] & atime->time_mask];
+        nkey = BitCountTable[mask->bytes[0]];
+        nkey += BitCountTable[mask->bytes[1] & atime->time_mask];
         break;
     case 2:
-        nkey = bitcount_table[mask->bytes[0]];
-        nkey += bitcount_table[mask->bytes[1]];
-        nkey += bitcount_table[mask->bytes[2] & atime->time_mask];
+        nkey = BitCountTable[mask->bytes[0]];
+        nkey += BitCountTable[mask->bytes[1]];
+        nkey += BitCountTable[mask->bytes[2] & atime->time_mask];
         break;
     case 3:
-        nkey = bitcount_table[mask->bytes[0]];
-        nkey += bitcount_table[mask->bytes[1]];
-        nkey += bitcount_table[mask->bytes[2]];
-        nkey += bitcount_table[mask->bytes[3] & atime->time_mask];
+        nkey = BitCountTable[mask->bytes[0]];
+        nkey += BitCountTable[mask->bytes[1]];
+        nkey += BitCountTable[mask->bytes[2]];
+        nkey += BitCountTable[mask->bytes[3] & atime->time_mask];
         break;
     }
     curvedata = curve->curvedata;
     ix = curvedata->key_ixs[atime->chunk];
     switch (keytype) {
     case NUANIMKEYTYPE_NONE:
-        NuErrorProlog(nuanim_srcfile, 0x4ED)(nuanim_keytype_none_msg);
+        NuErrorProlog(nuanim_srcfile, 0x4ED)("NuAnimCurve2CalcVal: should have already evaluated NUANIMKEYTYPE_NONE");
         break;
     case NUANIMKEYTYPE_HERMITE:
         key = &curvedata->keys[ix + nkey - 1];
@@ -463,13 +514,13 @@ float NuAnimCurve2CalcVal(union nuanimcurve2_u *curve, struct nuanimtime_s *atim
         a = key->value - next->value;
         return u * (u * (u * (a + a + b + c) + a * -3.0f - (b + b) - c) + b) + key->value;
     case NUANIMKEYTYPE_SMALL:
-        NuErrorProlog(nuanim_srcfile, 0x50C)(nuanim_keytype_small_msg);
+        NuErrorProlog(nuanim_srcfile, 0x50C)("NuAnimCurve2CalcVal: not supporting NUANIMKEYTYPE_SMALL yet");
         break;
     case NUANIMKEYTYPE_STEP:
         stepkeys = (struct nuanimstepkey_s *)curvedata->keys;
         return stepkeys[ix + nkey - 1].value;
     case NUANIMKEYTYPE_BOOLEAN:
-        NuErrorProlog(nuanim_srcfile, 0x517)(nuanim_keytype_boolean_msg);
+        NuErrorProlog(nuanim_srcfile, 0x517)("NuAnimCurve2CalcVal: should have already evaluated NUANIMKEYTYPE_BOOLEAN");
         break;
     }
     return 0.0f;
@@ -488,11 +539,11 @@ void NuAnimCurveSetApplyToJoint(struct nuanimdatachunk_s *chunk, struct nuanimti
 
     m = &joint->mtx;
     if (node < 0 || node >= chunk->numnodes) {
-        NuErrorProlog(nuanim_srcfile, 0x590)(nuanim_bad_index_msg);
+        NuErrorProlog(nuanim_srcfile, 0x590)("Invalid NUANIM Index.");
     }
     curveset = chunk->animcurvesets[node];
     if (!curveset) {
-        NuErrorProlog(nuanim_srcfile, 0x595)(nuanim_bad_curveset_msg);
+        NuErrorProlog(nuanim_srcfile, 0x595)("Invalid NUANIMCURVESET.");
     }
     if (curveset->flags & 1) {
         if (curveset->set[3]) {
@@ -598,11 +649,11 @@ void NuAnimCurveSetApplyBlendToJoint(struct nuanimdatachunk_s *chunk1, struct nu
     omblend = 1.0f - blend;
     curveset1 = chunk1->animcurvesets[0];
     if (!curveset1) {
-        NuErrorProlog(nuanim_srcfile, 0x619)(nuanim_blend_bad_curveset_msg);
+        NuErrorProlog(nuanim_srcfile, 0x619)("Invalid NUANIMCURVESET");
     }
     curveset2 = chunk2->animcurvesets[node];
     if (!curveset2) {
-        NuErrorProlog(nuanim_srcfile, 0x61B)(nuanim_blend_bad_curveset_msg);
+        NuErrorProlog(nuanim_srcfile, 0x61B)("Invalid NUANIMCURVESET");
     }
     if ((curveset1->flags & 1) || (curveset2->flags & 1)) {
         for (i = 3; i < 6; i++) {
@@ -1578,57 +1629,6 @@ void NuAnimCurve2SetApplyToMatrix(union nuanimcurve2_u *curves, signed char *cur
 }
 
 
-extern int NuMemFileOpen(void *buf, int size, int mode);
-extern char D_00614A80[];
-extern char D_00614AA0[];
-#define nuanim_load_deprecated_msg D_00614A80
-#define nuanim_memfile_failed_msg D_00614AA0
-
-struct nuanimdata_s *NuAnimDataLoad(char *file) {
-    struct nuanimdata_s *data;
-    void *buf;
-    int size;
-    int fh;
-
-    NuErrorProlog(nuanim_srcfile, 0x2D4)(nuanim_load_deprecated_msg);
-    data = 0;
-    if (!bitcount_table_built) {
-        buildBitCountTable();
-    }
-    buf = NuStreamGetOutputBuffer(0);
-    size = NuFileLoadBuffer(file, buf, 0x7FFFFFFF);
-    if (size > 0) {
-        fh = NuMemFileOpen(buf, size, 0);
-        if (fh) {
-            data = NuAnimDataRead(fh);
-            NuFileClose(fh);
-        } else {
-            NuDebugMsgProlog(nuanim_srcfile, 0x2EA)(nuanim_memfile_failed_msg, file);
-        }
-    }
-    return data;
-}
-
-struct nuanimdata_s *NuAnimDataLoadBuff(char *file, union variptr_u *buffer, union variptr_u *buffend) {
-    struct nuanimdatahdr_s *hdr;
-    int size;
-
-    buffer->intaddr = (buffer->intaddr + 0xF) & ~(nuintptr)0xF;
-    size = NuFileLoadBuffer(file, buffer->voidptr, buffend->u8 - buffer->u8);
-    if (!size) {
-        NuErrorProlog(nuanim_srcfile, 0x2F8)(nuanim_load_failed_msg, file);
-    }
-    hdr = buffer->voidptr;
-    buffer->voidptr = (char *)hdr + size;
-    if (hdr->version != 1) {
-        NuErrorProlog(nuanim_srcfile, 0x2FE)(nuanim_new_format_msg, file);
-    }
-    hdr->address_offset = (int)hdr - hdr->address_offset;
-    hdr->data = NuAnimDataFixPtrs(hdr->data, hdr->address_offset);
-    return hdr->data;
-}
-
-
 void NuAnimDataDestroy(struct nuanimdata_s *data) {
     int i;
 
@@ -1758,7 +1758,7 @@ struct nuanimcurve_s *NuAnimCurveCreate(int numkeys) {
     int size;
 
     if (numkeys <= 0) {
-        NuErrorProlog(nuanim_srcfile, 0x469)(nuanim_assert_msg);
+        NuErrorProlog(nuanim_srcfile, 0x469)("assert");
     }
     curve = NuMemAllocFn(sizeof(struct nuanimcurve_s), nuanim_srcfile, 0x46B);
     size = numkeys * sizeof(struct nuanimkey_s);
@@ -1837,26 +1837,6 @@ int NuAnimDataFindVersion(char *file) {
 }
 
 
-struct nuanimdata2_s *NuAnimData2LoadBuff(char *file, union variptr_u *buffer, union variptr_u *buffend) {
-    struct nuanimdata2hdr_s *hdr;
-    int size;
-
-    buffer->intaddr = (buffer->intaddr + 0xF) & ~(nuintptr)0xF;
-    size = NuFileLoadBuffer(file, buffer->voidptr, buffend->u8 - buffer->u8);
-    if (!size) {
-        NuErrorProlog(nuanim_srcfile, 0x348)(nuanim_load_failed_msg, file);
-    }
-    hdr = buffer->voidptr;
-    buffer->voidptr = (char *)hdr + size;
-    if (hdr->version != 2) {
-        NuErrorProlog(nuanim_srcfile, 0x34E)(nuanim_old_format_msg, file);
-    }
-    hdr->address_offset = (nusintptr)hdr - hdr->address_offset;
-    hdr->data = NuAnimData2FixPtrs(hdr->data, hdr->address_offset);
-    return hdr->data;
-}
-
-
 void NuAnimData2CalcTime(struct nuanimdata2_s *data, float time, struct nuanimtime_s *atime) {
     int key;
 
@@ -1890,7 +1870,7 @@ struct nuanimdatachunk_s *NuAnimDataChunkCreate(int numnodes) {
     int size;
 
     if (numnodes <= 0) {
-        NuErrorProlog(nuanim_srcfile, 0x27C)(nuanim_assert_msg);
+        NuErrorProlog(nuanim_srcfile, 0x27C)("assert");
     }
     chunk = NuMemAllocFn(sizeof(struct nuanimdatachunk_s), nuanim_srcfile, 0x27D);
     size = numnodes * sizeof(struct nuanimcurveset_s *);

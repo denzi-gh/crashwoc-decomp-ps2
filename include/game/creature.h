@@ -54,6 +54,13 @@ struct animlist {
     u64 levbits;                        /* 0x10 */
 }; /* 0x18 */
 
+/* One character of a hub/space cutscene and its animations (SpaceGameCutTab). */
+struct space_s {
+    s32 character;                      /* 0x00 */
+    s32 unk_0x04;                       /* 0x04 */
+    struct animlist anim[5];            /* 0x08 */
+}; /* 0x80 */
+
 /* Entry of the static character table CData. */
 struct CharacterData {
     char *path;                         /* 0x00 */

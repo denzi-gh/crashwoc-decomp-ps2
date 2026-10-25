@@ -146,6 +146,7 @@
 #include "gamelib/terrain.h"
 #include "game/creature.h"
 #include "nups2/ps2ctl.h"
+#include "numath/nurand.h"
 
 #define NULL 0
 
@@ -158,6 +159,30 @@ struct hdata_s {
     short sfx;
 };
 
+s32 DEMOMENUS = 0;
+s32 i_demolevel = 0;
+s32 PLAYERCOUNT = 0;
+s32 Paused = 0;
+s32 pause_dir = 0;
+s32 sizeof_GameObject = 392;
+s32 sizeof_AIPacket = 152;
+s32 sizeof_CrateCube = 144;
+s32 sizeof_CHASE = 30024;
+s32 sizeof_GameState = 1036;
+s32 sizeof_CharacterModel = 2440;
+s32 cortex_gameover_i = -1;
+s32 cortex_continue_i = 0;
+s32 cortex_quit_i = 2;
+s32 temp_character = -1;
+s32 temp_character2 = -1;
+s32 temp_character_action = -1;
+s32 temp_character2_action = -1;
+s32 tempanim_waitaudio = 0;
+s32 tempanim_nextaction = -1;
+s32 TESTCORTEXVOICES = 0;
+float DISCOXOFFSET = 0.8f;
+
+
 extern struct game_s Game;
 extern struct ldata_s LData[];
 extern struct hdata_s HData[6];
@@ -167,8 +192,6 @@ extern s32 sapphire_relics;
 extern s32 temp_hub;
 extern s32 temp_hublevel;
 extern s32 Hub;
-extern char D_0061DFE0[]; /* "MIDGET  " */
-extern u16 D_0058A00E[];   /* Mask.active (absolute, far from $gp) */
 extern struct mask_s Mask;
 extern struct cursor_s Cursor;
 extern struct gtimer_s GlobalTimer;
@@ -178,12 +201,6 @@ extern s32 probeon;
 extern s32 probey;
 extern s32 probetime;
 extern s32 probecol;
-extern float D_00630C04; /* MENUDY */
-extern float D_00630C58; /* dme_sy */
-extern float D_00630C54; /* dme_sx */
-#define MENUDY D_00630C04
-#define dme_sy D_00630C58
-#define dme_sx D_00630C54
 extern char *tSFXVOLUME[];
 extern char *tMUSICVOLUME[];
 extern void Text3D(char *txt, float x, float y, float z, float scalex, float scaley,
@@ -217,14 +234,12 @@ extern char *LanguageName[];
 extern float PANELMENUX;
 extern float GAMENAMEY;
 extern char tbuf[];
-extern char D_00630C78[]; /* "%s: %s" language format */
 extern void AddSpacesIntoText(char *, s32);
 extern void DrawCredits(void);
 extern char NameInputTable[][7];
 extern char edit_txt[];
 extern s32 i_nameinput;
-extern u8 MenuTimer[];
-extern char D_0061D980[]; /* "________" */
+extern struct gtimer_s MenuTimer;
 extern u8 temp_vibration;
 extern u8 temp_surround;
 extern u8 temp_sfx_volume;
@@ -236,7 +251,6 @@ extern s32 memcard_loadattempted;
 extern s32 ForceRestart;
 extern s32 fadeval;
 extern s32 editor_active;
-extern s32 Paused;
 extern s32 cutmovie;
 extern s32 new_mode;
 extern s32 cut_on;
@@ -244,12 +258,10 @@ extern s32 new_level;
 extern s32 stick_bits;
 extern s32 stick_bits_db;
 extern s32 Level;
-extern s32 i_demolevel;
 extern s32 DemoLevel[];
 extern s32 Demo;
 extern s32 InvincibilityCHEAT;
 extern s32 fade_rate;
-extern s32 pause_dir;
 extern s32 TimeTrial;
 extern s32 GameMode;
 extern s32 LivesLost;
@@ -283,23 +295,14 @@ extern struct nucamera_s *pNuCam;
 extern s32 saveload_cardtype;
 extern s32 saveload_cardformatted;
 extern s32 saveload_freespace;
-extern char D_0061DA28[]; /* "CRASH   " */
 extern s32 force_menu;
-extern char D_0061DA38[]; /* "        " */
 extern s32 next_cut_movie;
 extern s32 input_alphabet;
 extern float credit_time;
-extern s32 cortex_continue_i;
-extern s32 cortex_gameover_i;
 extern short cortex_gameover_tab[][2];
-extern s32 tempanim_nextaction;
 extern s32 gamesfx_channel;
-extern s32 tempanim_waitaudio;
-extern s32 cortex_quit_i;
 extern s32 newleveltime_slot;
-extern char D_00630C48[];
 extern u16 new_lev_flags;
-extern char D_00630C50[];
 extern struct nuvec_s *pos_START;
 extern float tumble_time;
 extern s32 tumble_action;
@@ -330,10 +333,6 @@ extern struct anim_s TempAnim;
 extern struct anim_s TempAnim2;
 extern struct Nearest_Light_s TempLights;
 extern struct Nearest_Light_s TempLights2;
-extern s32 temp_character;
-extern s32 temp_character_action;
-extern s32 temp_character2;
-extern s32 temp_character2_action;
 extern s32 loadsave_frame;
 extern s32 warp_level;
 extern s32 hub_vr_level;
@@ -723,11 +722,11 @@ void NewGame(void) {
     Game.screen_y = save[5];
     Game.language = save[6];
     NewLanguage(save[6]);
-    NuStrCpy(Game.name, D_0061DFE0);
+    NuStrCpy(Game.name, "MIDGET  ");
     DefaultTimeTrialNames(1);
     Game.lives = 4;
     Game.hub[0].flags = 1;
-    D_0058A00E[0] = (u16)Game.mask;
+    Mask.active = Game.mask;
     Hub = -1;
 }
 
@@ -911,7 +910,7 @@ void NewMenu(struct cursor_s *cur, s32 menu, s32 y, s32 level) {
             }
             break;
         case 2:
-            NuStrCpy(Game.name, D_0061D980);
+            NuStrCpy(Game.name, "________");
         case 15:
             i_nameinput = 0;
             break;
@@ -946,7 +945,7 @@ void NewMenu(struct cursor_s *cur, s32 menu, s32 y, s32 level) {
         cur->new_menu = menu;
         cur->wait_frames = cur->wait;
     } else {
-        ResetTimer(MenuTimer);
+        ResetTimer(&MenuTimer);
         cur->new_level = level;
         cur->new_menu = -1;
         cur->button_lock = lock;
@@ -1610,7 +1609,7 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
                 sfx = 0x36;
                 break;
             case 1:
-                NuStrCpy(Game.name, D_0061DA28);
+                NuStrCpy(Game.name, "CRASH   ");
                 Game.cutbits |= 1;
                 new_level = 0x25;
                 force_menu = 0x14;
@@ -1647,8 +1646,8 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
         if (CROSS != 0) {
             if (y == cursor->y_max - 1) {
                 CleanLetters(Game.name);
-                if (strcmp(Game.name, D_0061DA38) == 0) {
-                    NuStrCpy(Game.name, D_0061DA28);
+                if (strcmp(Game.name, "        ") == 0) {
+                    NuStrCpy(Game.name, "CRASH   ");
                 }
                 new_level = 0x25;
                 if (cutmovie == 0) {
@@ -1773,8 +1772,8 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
             if (y == cursor->y_max) {
                 txt = Game.level[Level].time[newleveltime_slot].name;
                 CleanLetters(txt);
-                if (strcmp(txt, D_00630C48) == 0) {
-                    NuStrCpy(txt, D_00630C50);
+                if (strcmp(txt, "   ") == 0) {
+                    NuStrCpy(txt, "  ?");
                 }
                 if ((new_lev_flags & 7) != 0) {
                     new_level = 0x25;
@@ -2060,6 +2059,29 @@ extern s32 DrawPanel3DObject(s32 object, float x, float y, float z, float scalex
                              u16 zrot, struct nugscn_s *scn,
                              struct nuspecial_s *obj, s32 rot);
 
+s32 sw_hack = 0;
+s32 DRAWWUMPAS = 1;
+s32 i_tempwumpa = 0;
+s32 LIGHTMASK = 1;
+s32 i_maskfeathers = 0;
+static float MENUDY = -0.120000005f;
+s32 i_nameinput = 0;
+s32 input_alphabet = 0;
+float NAMEENTRYSIZE = 0.125f;
+float INPUTSX = 0.95f;
+float TTINPUTPDY = -0.07f;
+float GAMEINPUTPDY = -0.05f;
+float TTINPUTPSY = 0.95f;
+float GAMEINPUTPSY = 1.1f;
+s32 InvincibilityCHEAT = 0;
+s32 ShowPlayerCoordinate = 0;
+s32 TimingBarSet = 0;
+s32 ExtraMoves = 0;
+s32 CYCLELANGUAGES = 0;
+s32 menu_language = 0;
+s32 menu_language_wait = 25;
+s32 ForceRestart = 0;
+
 void DrawNameInputTable(struct cursor_s *cursor, float x0, float y0) {
     float size;
     float step;
@@ -2123,6 +2145,15 @@ void DrawNameInputTable(struct cursor_s *cursor, float x0, float y0) {
         }
     }
 }
+
+static float dme_sx = 1.0f;
+static float dme_sy = 1.0f;
+float dme_symul = 1.0f;
+float dme_yadj = 0.0f;
+s32 CUTINFO = 0;
+float POWERTEXTY = 0.15f;
+float PANELMENUX = -0.435f;
+float GAMENAMEY = 0.75f;
 
 void DrawMenuEntry(struct cursor_s *cursor, char *txt, float *x, float *y,
                    s32 *i) {
@@ -2243,7 +2274,6 @@ extern char *LevelName[44][6];
 extern struct powerdata_s PData[6];
 extern struct font3dobj_s Font3DObjTab[0x1a];
 extern s32 new_power;
-extern float POWERTEXTY;
 extern float TT_INPUTY;
 extern s32 highallocaddr;
 extern union variptr_u superbuffer_ptr;
@@ -2260,60 +2290,6 @@ extern s32 DrawPanel3DCharacter(s32 character, float x, float y, float z,
                                 float scalex, float scaley, float scalez,
                                 u16 xrot, u16 yrot, u16 zrot, s32 action,
                                 float anim_time, s32 rot);
-extern char D_0061DB60[]; /* "%s:   %s" */
-extern char D_0061DB70[]; /* "%c %i%% %c" */
-extern char D_0061DB80[]; /* "%s:   %i" */
-extern char D_00630C80[]; /* "%s: %i" */
-extern char D_00630C88[]; /* "%s%s" */
-extern char D_0061DB90[]; /* "R E S T A R T   L E V E L " */
-extern char D_0061DBB0[]; /* "RESTART LEVEL" */
-extern char D_0061DBC0[]; /* "R E S E T   L E V E L " */
-extern char D_0061DBD8[]; /* "RESET LEVEL" */
-extern char D_0061DBE8[]; /* "G O T O   L E V E L " */
-extern char D_0061DC00[]; /* "GOTO LEVEL" */
-extern char D_0061DC10[]; /* "I N V I N C I B I L I T Y :   " */
-extern char D_0061DC30[]; /* "INVINCIBILITY: " */
-extern char D_0061DC40[]; /* "G O T O   N E X T   C H E C K P O I N T " */
-extern char D_0061DC70[]; /* "GOTO NEXT CHECKPOINT" */
-extern char D_0061DC88[]; /* "G O T O   L A S T   C H E C K P O I N T " */
-extern char D_0061DCB8[]; /* "GOTO LAST CHECKPOINT" */
-extern char D_0061DCD0[]; /* "O P E N   G A M E " */
-extern char D_0061DCE8[]; /* "OPEN GAME" */
-extern char D_0061DCF8[]; /* "L I F T   P L A Y E R :   " */
-extern char D_0061DD18[]; /* "LIFT PLAYER: " */
-extern char D_0061DD28[]; /* "P L A Y E R   C O O R D I N A T E :   " */
-extern char D_0061DD50[]; /* "PLAYER COORDINATE: " */
-extern char D_0061DD68[]; /* "E X T R A   M O V E S :   " */
-extern char D_0061DD88[]; /* "EXTRA MOVES: " */
-extern char D_0061DD98[]; /* "R E S E T   G A M E " */
-extern char D_0061DDB0[]; /* "RESET GAME" */
-extern char D_0061DDC0[]; /* "L O G O S " */
-extern char D_00630C90[]; /* "LOGOS" */
-extern char D_0061DDD0[]; /* "I N T R O 1 " */
-extern char D_00630C98[]; /* "INTRO1" */
-extern char D_0061DDE0[]; /* "I N T R O 2 " */
-extern char D_00630CA0[]; /* "INTRO2" */
-extern char D_0061DDF0[]; /* "O U T R O " */
-extern char D_00630CA8[]; /* "OUTRO" */
-extern char D_0061DE00[]; /* "O U T R O 2 " */
-extern char D_00630CB0[]; /* "OUTRO2" */
-extern char D_0061DE10[]; /* "DRAW DISTANCE: %i/%i" */
-extern char D_0061DE28[]; /* "FOG NEAR: %i/%i" */
-extern char D_0061DE38[]; /* "FOG FAR: %i/%i" */
-extern char D_0061DE48[]; /* "FOG RED: %i/255" */
-extern char D_0061DE58[]; /* "FOG GREEN: %i/255" */
-extern char D_0061DE70[]; /* "FOG BLUE: %i/255" */
-extern char D_0061DE88[]; /* "FOG OPACITY: %i/127" */
-extern char D_0061DEA0[]; /* "HAZE RED: %i/255" */
-extern char D_0061DEB8[]; /* "HAZE GREEN: %i/255" */
-extern char D_0061DED0[]; /* "HAZE BLUE: %i/255" */
-extern char D_0061DEE8[]; /* "HAZE WOBBLE: %i/255" */
-extern char D_0061DF00[]; /* "SUPERBUFFER USED: %.2fMB/%.2fMB" */
-extern char D_0061DF20[]; /* "HIGHALLOCADDR: %.2fMB/32.00MB" */
-extern char D_00630CB8[]; /* "?" */
-extern char D_00630CC0[]; /* "%s/ %s" */
-extern char D_00630CC8[]; /* "%s/%s" */
-extern char D_00630CD0[]; /* "" */
 
 void DrawMenu(struct cursor_s *cursor, s32 paused) {
     struct powerdata_s *pdata;
@@ -2353,7 +2329,7 @@ void DrawMenu(struct cursor_s *cursor, s32 paused) {
         y = -0.75f - dy;
         DrawMenuEntry(cursor, tNEWGAME[Game.language], &x, &y, &i);
         DrawMenuEntry(cursor, tLOADGAME[Game.language], &x, &y, &i);
-        sprintf(tbuf, D_00630C78, tLANGUAGE[Game.language], LanguageName[Game.language]);
+        sprintf(tbuf, "%s: %s", tLANGUAGE[Game.language], LanguageName[Game.language]);
         DrawMenuEntry(cursor, tbuf, &x, &y, &i);
         break;
     case 1:
@@ -2414,10 +2390,10 @@ void DrawMenu(struct cursor_s *cursor, s32 paused) {
         x = PANELMENUX;
         y = -0.5f - dy;
         if (Game.language == 'c') {
-            sprintf(tbuf, D_0061DB60, tVIBRATION[Game.language],
+            sprintf(tbuf, "%s:   %s", tVIBRATION[Game.language],
                     (temp_vibration != 0) ? tON[Game.language] : tOFF[Game.language]);
         } else {
-            sprintf(tbuf, D_00630C78, tVIBRATION[Game.language],
+            sprintf(tbuf, "%s: %s", tVIBRATION[Game.language],
                     (temp_vibration != 0) ? tON[Game.language] : tOFF[Game.language]);
         }
         dme_sx = f;
@@ -2440,10 +2416,10 @@ void DrawMenu(struct cursor_s *cursor, s32 paused) {
         x = PANELMENUX;
         y = -0.5f - dy - dy * 0.5f;
         if (Game.language == 'c') {
-            sprintf(tbuf, D_0061DB60, tSURROUND[Game.language],
+            sprintf(tbuf, "%s:   %s", tSURROUND[Game.language],
                     (temp_surround != 0) ? tON[Game.language] : tOFF[Game.language]);
         } else {
-            sprintf(tbuf, D_00630C78, tSURROUND[Game.language],
+            sprintf(tbuf, "%s: %s", tSURROUND[Game.language],
                     (temp_surround != 0) ? tON[Game.language] : tOFF[Game.language]);
         }
         dme_sx = f;
@@ -2451,14 +2427,14 @@ void DrawMenu(struct cursor_s *cursor, s32 paused) {
             dme_yadj = 0.0275f;
         }
         DrawMenuEntry(cursor, tbuf, &x, &y, &i);
-        sprintf(tbuf, D_0061DB70, (temp_sfx_volume != 0) ? '<' : ' ', temp_sfx_volume,
+        sprintf(tbuf, "%c %i%% %c", (temp_sfx_volume != 0) ? '<' : ' ', temp_sfx_volume,
                 (temp_sfx_volume < 100) ? '>' : ' ');
         if (Game.language == 'c') {
             AddSpacesIntoText(tbuf, 1);
         }
         dme_sx = f;
         DrawMenuEntry2(cursor, tSFXVOLUME[Game.language], tbuf, &x, &y, &i);
-        sprintf(tbuf, D_0061DB70, (temp_music_volume != 0) ? '<' : ' ', temp_music_volume,
+        sprintf(tbuf, "%c %i%% %c", (temp_music_volume != 0) ? '<' : ' ', temp_music_volume,
                 (temp_music_volume < 100) ? '>' : ' ');
         if (Game.language == 'c') {
             AddSpacesIntoText(tbuf, 1);
@@ -2475,18 +2451,18 @@ void DrawMenu(struct cursor_s *cursor, s32 paused) {
         x = PANELMENUX;
         y = -0.5f - dy;
         if (Game.language == 'c') {
-            sprintf(tbuf, D_0061DB80, tHORIZONTAL[Game.language], temp_screen_x);
+            sprintf(tbuf, "%s:   %i", tHORIZONTAL[Game.language], temp_screen_x);
             AddSpacesIntoText(tbuf, 6);
         } else {
-            sprintf(tbuf, D_00630C80, tHORIZONTAL[Game.language], temp_screen_x);
+            sprintf(tbuf, "%s: %i", tHORIZONTAL[Game.language], temp_screen_x);
         }
         dme_sx = f;
         DrawMenuEntry(cursor, tbuf, &x, &y, &i);
         if (Game.language == 'c') {
-            sprintf(tbuf, D_0061DB80, tVERTICAL[Game.language], temp_screen_y);
+            sprintf(tbuf, "%s:   %i", tVERTICAL[Game.language], temp_screen_y);
             AddSpacesIntoText(tbuf, 6);
         } else {
-            sprintf(tbuf, D_00630C80, tVERTICAL[Game.language], temp_screen_y);
+            sprintf(tbuf, "%s: %i", tVERTICAL[Game.language], temp_screen_y);
         }
         dme_sx = f;
         DrawMenuEntry(cursor, tbuf, &x, &y, &i);
@@ -2519,100 +2495,100 @@ void DrawMenu(struct cursor_s *cursor, s32 paused) {
         dy = (cursor->y_max - cursor->y_min) * MENUDY * 0.8333333f * 0.5f;
         dme_sy = 0.8333333f;
         y = 0.0f - dy;
-        DrawMenuEntry(cursor, (Game.language == 'c') ? D_0061DB90 : D_0061DBB0, &x, &y, &i);
+        DrawMenuEntry(cursor, (Game.language == 'c') ? "R E S T A R T   L E V E L " : "RESTART LEVEL", &x, &y, &i);
         dme_sy = 0.8333333f;
-        DrawMenuEntry(cursor, (Game.language == 'c') ? D_0061DBC0 : D_0061DBD8, &x, &y, &i);
+        DrawMenuEntry(cursor, (Game.language == 'c') ? "R E S E T   L E V E L " : "RESET LEVEL", &x, &y, &i);
         dme_sy = 0.8333333f;
-        DrawMenuEntry(cursor, (Game.language == 'c') ? D_0061DBE8 : D_0061DC00, &x, &y, &i);
+        DrawMenuEntry(cursor, (Game.language == 'c') ? "G O T O   L E V E L " : "GOTO LEVEL", &x, &y, &i);
         dme_sy = 0.8333333f;
-        sprintf(tbuf, D_00630C88, (Game.language == 'c') ? D_0061DC10 : D_0061DC30,
+        sprintf(tbuf, "%s%s", (Game.language == 'c') ? "I N V I N C I B I L I T Y :   " : "INVINCIBILITY: ",
                 (InvincibilityCHEAT != 0) ? tON[Game.language] : tOFF[Game.language]);
         DrawMenuEntry(cursor, tbuf, &x, &y, &i);
         dme_sy = 0.8333333f;
-        DrawMenuEntry(cursor, (Game.language == 'c') ? D_0061DC40 : D_0061DC70, &x, &y, &i);
+        DrawMenuEntry(cursor, (Game.language == 'c') ? "G O T O   N E X T   C H E C K P O I N T " : "GOTO NEXT CHECKPOINT", &x, &y, &i);
         dme_sy = 0.8333333f;
-        DrawMenuEntry(cursor, (Game.language == 'c') ? D_0061DC88 : D_0061DCB8, &x, &y, &i);
+        DrawMenuEntry(cursor, (Game.language == 'c') ? "G O T O   L A S T   C H E C K P O I N T " : "GOTO LAST CHECKPOINT", &x, &y, &i);
         dme_sy = 0.8333333f;
-        DrawMenuEntry(cursor, (Game.language == 'c') ? D_0061DCD0 : D_0061DCE8, &x, &y, &i);
+        DrawMenuEntry(cursor, (Game.language == 'c') ? "O P E N   G A M E " : "OPEN GAME", &x, &y, &i);
         dme_sy = 0.8333333f;
-        sprintf(tbuf, D_00630C88, (Game.language == 'c') ? D_0061DCF8 : D_0061DD18,
+        sprintf(tbuf, "%s%s", (Game.language == 'c') ? "L I F T   P L A Y E R :   " : "LIFT PLAYER: ",
                 (LIFTPLAYER != 0) ? tON[Game.language] : tOFF[Game.language]);
         DrawMenuEntry(cursor, tbuf, &x, &y, &i);
         dme_sy = 0.8333333f;
-        sprintf(tbuf, D_00630C88, (Game.language == 'c') ? D_0061DD28 : D_0061DD50,
+        sprintf(tbuf, "%s%s", (Game.language == 'c') ? "P L A Y E R   C O O R D I N A T E :   " : "PLAYER COORDINATE: ",
                 (ShowPlayerCoordinate != 0) ? tON[Game.language] : tOFF[Game.language]);
         DrawMenuEntry(cursor, tbuf, &x, &y, &i);
         dme_sy = 0.8333333f;
-        sprintf(tbuf, D_00630C88, (Game.language == 'c') ? D_0061DD68 : D_0061DD88,
+        sprintf(tbuf, "%s%s", (Game.language == 'c') ? "E X T R A   M O V E S :   " : "EXTRA MOVES: ",
                 (ExtraMoves != 0) ? tON[Game.language] : tOFF[Game.language]);
         DrawMenuEntry(cursor, tbuf, &x, &y, &i);
         dme_sy = 0.8333333f;
-        DrawMenuEntry(cursor, (Game.language == 'c') ? D_0061DD98 : D_0061DDB0, &x, &y, &i);
+        DrawMenuEntry(cursor, (Game.language == 'c') ? "R E S E T   G A M E " : "RESET GAME", &x, &y, &i);
         break;
     case 13:
         y = 0.0f - dy;
-        DrawMenuEntry(cursor, (Game.language == 'c') ? D_0061DDC0 : D_00630C90, &x, &y, &i);
-        DrawMenuEntry(cursor, (Game.language == 'c') ? D_0061DDD0 : D_00630C98, &x, &y, &i);
-        DrawMenuEntry(cursor, (Game.language == 'c') ? D_0061DDE0 : D_00630CA0, &x, &y, &i);
-        DrawMenuEntry(cursor, (Game.language == 'c') ? D_0061DDF0 : D_00630CA8, &x, &y, &i);
-        DrawMenuEntry(cursor, (Game.language == 'c') ? D_0061DE00 : D_00630CB0, &x, &y, &i);
+        DrawMenuEntry(cursor, (Game.language == 'c') ? "L O G O S " : "LOGOS", &x, &y, &i);
+        DrawMenuEntry(cursor, (Game.language == 'c') ? "I N T R O 1 " : "INTRO1", &x, &y, &i);
+        DrawMenuEntry(cursor, (Game.language == 'c') ? "I N T R O 2 " : "INTRO2", &x, &y, &i);
+        DrawMenuEntry(cursor, (Game.language == 'c') ? "O U T R O " : "OUTRO", &x, &y, &i);
+        DrawMenuEntry(cursor, (Game.language == 'c') ? "O U T R O 2 " : "OUTRO2", &x, &y, &i);
         break;
     case 10:
         if (paused < 25) {
             return;
         }
         y = 0.0f - dy;
-        sprintf(tbuf, D_0061DE10, LDATA->farclip, 1000);
+        sprintf(tbuf, "DRAW DISTANCE: %i/%i", LDATA->farclip, 1000);
         if (Game.language == 'c') {
             AddSpacesIntoText(tbuf, 1);
         }
         DrawMenuEntry(cursor, tbuf, &x, &y, &i);
-        sprintf(tbuf, D_0061DE28, (s32)LDATA->fognear, LDATA->farclip);
+        sprintf(tbuf, "FOG NEAR: %i/%i", (s32)LDATA->fognear, LDATA->farclip);
         if (Game.language == 'c') {
             AddSpacesIntoText(tbuf, 1);
         }
         DrawMenuEntry(cursor, tbuf, &x, &y, &i);
-        sprintf(tbuf, D_0061DE38, (s32)LDATA->fogfar, LDATA->farclip);
+        sprintf(tbuf, "FOG FAR: %i/%i", (s32)LDATA->fogfar, LDATA->farclip);
         if (Game.language == 'c') {
             AddSpacesIntoText(tbuf, 1);
         }
         DrawMenuEntry(cursor, tbuf, &x, &y, &i);
-        sprintf(tbuf, D_0061DE48, LDATA->fogr);
+        sprintf(tbuf, "FOG RED: %i/255", LDATA->fogr);
         if (Game.language == 'c') {
             AddSpacesIntoText(tbuf, 1);
         }
         DrawMenuEntry(cursor, tbuf, &x, &y, &i);
-        sprintf(tbuf, D_0061DE58, LDATA->fogg);
+        sprintf(tbuf, "FOG GREEN: %i/255", LDATA->fogg);
         if (Game.language == 'c') {
             AddSpacesIntoText(tbuf, 1);
         }
         DrawMenuEntry(cursor, tbuf, &x, &y, &i);
-        sprintf(tbuf, D_0061DE70, LDATA->fogb);
+        sprintf(tbuf, "FOG BLUE: %i/255", LDATA->fogb);
         if (Game.language == 'c') {
             AddSpacesIntoText(tbuf, 1);
         }
         DrawMenuEntry(cursor, tbuf, &x, &y, &i);
-        sprintf(tbuf, D_0061DE88, LDATA->foga);
+        sprintf(tbuf, "FOG OPACITY: %i/127", LDATA->foga);
         if (Game.language == 'c') {
             AddSpacesIntoText(tbuf, 1);
         }
         DrawMenuEntry(cursor, tbuf, &x, &y, &i);
-        sprintf(tbuf, D_0061DEA0, LDATA->hazer);
+        sprintf(tbuf, "HAZE RED: %i/255", LDATA->hazer);
         if (Game.language == 'c') {
             AddSpacesIntoText(tbuf, 1);
         }
         DrawMenuEntry(cursor, tbuf, &x, &y, &i);
-        sprintf(tbuf, D_0061DEB8, LDATA->hazeg);
+        sprintf(tbuf, "HAZE GREEN: %i/255", LDATA->hazeg);
         if (Game.language == 'c') {
             AddSpacesIntoText(tbuf, 1);
         }
         DrawMenuEntry(cursor, tbuf, &x, &y, &i);
-        sprintf(tbuf, D_0061DED0, LDATA->hazeb);
+        sprintf(tbuf, "HAZE BLUE: %i/255", LDATA->hazeb);
         if (Game.language == 'c') {
             AddSpacesIntoText(tbuf, 1);
         }
         DrawMenuEntry(cursor, tbuf, &x, &y, &i);
-        sprintf(tbuf, D_0061DEE8, LDATA->hazea);
+        sprintf(tbuf, "HAZE WOBBLE: %i/255", LDATA->hazea);
         if (Game.language == 'c') {
             AddSpacesIntoText(tbuf, 1);
         }
@@ -2625,14 +2601,14 @@ void DrawMenu(struct cursor_s *cursor, s32 paused) {
         y = 0.05f;
         dy = -0.1f;
         scale = 0.5f;
-        sprintf(tbuf, D_0061DF00,
+        sprintf(tbuf, "SUPERBUFFER USED: %.2fMB/%.2fMB",
                 (u32)(superbuffer_ptr.intaddr - superbuffer_base.intaddr) * 9.536743e-07f, 18.0);
         if (Game.language == 'c') {
             AddSpacesIntoText(tbuf, 1);
         }
         Text3D(tbuf, x, y, 1.0f, scale, scale, scale, 0, 0);
         y += dy;
-        sprintf(tbuf, D_0061DF20, highallocaddr * 9.536743e-07f);
+        sprintf(tbuf, "HIGHALLOCADDR: %.2fMB/32.00MB", highallocaddr * 9.536743e-07f);
         if (Game.language == 'c') {
             AddSpacesIntoText(tbuf, 1);
         }
@@ -2654,7 +2630,7 @@ void DrawMenu(struct cursor_s *cursor, s32 paused) {
                            scale, 0, 4);
                 }
                 NuStrCpy(tbuf, (HData[j].level[i] == -1)
-                                   ? D_00630CB8
+                                   ? "?"
                                    : LevelName[HData[j].level[i]][Game.language]);
                 if (i == cursor->y && j == cursor->x) {
                     col = (GlobalTimer.frame % 10 < 5) ? 4 : 3;
@@ -2706,7 +2682,7 @@ void DrawMenu(struct cursor_s *cursor, s32 paused) {
         DrawMenuEntry(cursor, tWARPROOM[Game.language], &x, &y, &i);
         break;
     case 19:
-        sprintf(tbuf, (Game.language == 'c') ? D_00630CC0 : D_00630CC8, tLOAD[Game.language],
+        sprintf(tbuf, (Game.language == 'c') ? "%s/ %s" : "%s/%s", tLOAD[Game.language],
                 tSAVE[Game.language]);
         Text3D(tbuf, 0.0f, 0.75f, 1.0f, 0.6f, 0.6f, 0.6f, 0, 0);
         DrawGameSlot(&Game, 0.0f, 0.25f, 4);
@@ -2987,7 +2963,7 @@ void DrawMenu(struct cursor_s *cursor, s32 paused) {
         DrawPanel3DCharacter(pdata->character, 0.0f, -0.8f, 1.0f, size, size, size, 0, 0, 0,
                              Font3DObjTab[c].action, Font3DObjTab[c].anim_time, 0);
         for (j = 0; j < 7; j++) {
-            if (strcmp(pdata->text[j], D_00630CD0) == 0) {
+            if (strcmp(pdata->text[j], "") == 0) {
                 break;
             }
         }
@@ -3250,7 +3226,7 @@ void InitLevel(void) {
         break;
     }
     if ((LBIT & 0x3e00000) != 0) {
-        D_0058A00E[0] = 0;
+        Mask.active = 0;
     }
     ai_lookpos = v000;
     Cursor.menu = -1;
@@ -3289,7 +3265,7 @@ void InitLevel(void) {
     in_finish_range = 0;
     LivesLost = 0;
     if ((LBIT & 0x3e00000) != 0) {
-        D_0058A00E[0] = 0;
+        Mask.active = 0;
     }
 }
 
@@ -3378,12 +3354,11 @@ void InitWumpa(void) {
     ResetWumpa();
 }
 
-extern float D_0062D700;
 
 void FlyWumpa(struct wumpa_s *obj) {
     obj->mom.x = 0.0f;
     obj->mom.y = 0.0f;
-    obj->mom.z = D_0062D700;
+    obj->mom.z = 0.19999999f;
     NuVecRotateX(&obj->mom, &obj->mom, -0x400);
     NuVecRotateY(&obj->mom, &obj->mom, qrand());
     obj->time = 0;
@@ -3396,7 +3371,6 @@ void FlyWumpa(struct wumpa_s *obj) {
 
 extern struct newwumpa_s NewWumpa[];
 extern s32 i_newwumpa;
-extern s32 sw_hack;
 extern s32 Bonus;
 
 void AddScreenWumpa(float x, float y, float z, s32 n) {
@@ -3549,7 +3523,6 @@ s32 ResetHGobjAnim(struct nuhspecial_s *obj) {
     return 0;
 }
 
-extern float D_0062D6FC; /* mask-feather advance rate (PAL) */
 
 void UpdateMaskFeathers(void) {
     struct mfeathers_s *f = MaskFeathers;
@@ -3557,7 +3530,7 @@ void UpdateMaskFeathers(void) {
 
     for (i = 0; i < 4; i++) {
         if (f->time < f->duration) {
-            f->time += D_0062D6FC;
+            f->time += 0.59999996f;
             if (f->time > f->duration) {
                 f->time = f->duration;
             }
@@ -3571,7 +3544,6 @@ extern s32 TimeTrial;
 extern float TimeTrialWait;
 extern u32 timetrial_frame;
 extern s32 clock_ok;
-extern s32 PLAYERCOUNT;
 
 /* gnu89 plain inline: standalone AND inlined into InitGameMode. */
 inline void ResetTimeTrial(void) {
@@ -3643,21 +3615,7 @@ inline void ClockOff(void) {
 
 /* signed: MakeTimeI clamps with `slt $v0,-1,$a0` + movn */
 extern void MakeTimeI(s32 itime, s32 hours, char *buf);
-extern char D_00630D00[]; /* "%s  %s" */
-extern char D_00630D08[]; /* "%s %s"  */
 
-void MakeLevelTimeString(struct time_s *time, char *txt) {
-    char *fmt;
-    char time_string[64];
-
-    MakeTimeI(time->itime, 0, time_string);
-    if (Game.language == 'c') {
-        fmt = D_00630D00;
-    } else {
-        fmt = D_00630D08;
-    }
-    sprintf(txt, fmt, time, time_string);
-}
 
 
 void MakeTimeF(float time, s32 hours, char *txt) {
@@ -3966,8 +3924,6 @@ void NewMask(struct mask_s *mask, struct nuvec_s *pos) {
     }
 }
 
-extern char D_00630BE8[];
-#define wumpa_file_fmt D_00630BE8
 extern char LevelFileName[];
 extern struct chase_s Chase[3];
 extern s32 NuFileLoadBuffer(char *name, void *buf, s32 max);
@@ -3976,13 +3932,20 @@ extern s32 NuFileReadInt(s32 fh);
 extern float NuFileReadFloat(s32 fh);
 extern void NuFileClose(s32 fh);
 
+extern u16 wumpa_a[];
+struct nunrand_s GAMERAND = { 0x1f3ad27f };
+s32 qseed = 12345;
+u16 wumpa_a[3] = { 0, 21845, 43690 };
+s32 i_screenwumpa = 0;
+s32 i_newwumpa = 0;
+
 void LoadWumpa(void) {
     s32 fh;
     s32 i;
     void *fbuff;
     s32 fsize;
 
-    sprintf(tbuf, wumpa_file_fmt, LevelFileName);
+    sprintf(tbuf, "%s.wmp", LevelFileName);
     /* PS2 drops GC's `if (NuFileExists(tbuf))` guard */
     fbuff = Chase;
     fsize = NuFileLoadBuffer(tbuf, fbuff, 0x7FFFFFFF);
@@ -4009,7 +3972,7 @@ void SaveWumpa(void) {
     s32 fh;
     s32 i;
 
-    sprintf(tbuf, wumpa_file_fmt, LevelFileName);
+    sprintf(tbuf, "%s.wmp", LevelFileName);
     fh = NuFileOpen(tbuf, 1);
     if (fh != 0) {
         NuFileWriteInt(fh, WUMPACOUNT);
@@ -4023,7 +3986,6 @@ void SaveWumpa(void) {
 }
 
 extern struct cammtx_s *pCam;
-extern float D_0062D6D0; /* parallax farclip scale (GC 0.1f) */
 extern s32 NuRndrGScnObj(void *gobj, struct numtx_s *m);
 extern void NuRndrClear(s32 mode, s32 col, float z);
 
@@ -4033,7 +3995,7 @@ void DrawParallax(void) {
     s32 n;
 
     n = 0;
-    s.x = s.y = s.z = pNuCam->farclip * D_0062D6D0 * 0.5f;
+    s.x = s.y = s.z = pNuCam->farclip * 0.1f * 0.5f;
     NuMtxSetScale(&m, &s);
     m._30 = pCam->m._30;
     m._31 = pCam->m._31;
@@ -4238,7 +4200,6 @@ void InitPositions(void) {
 
 extern s32 FurtherALONG(s32 iRAIL0, s32 iALONG0, float fALONG0, s32 iRAIL1,
                         s32 iALONG1, float fALONG1);
-extern float D_0062D340; /* wipe-fly speed (FlyWumpa itself uses D_0062D700) */
 
 s32 WipeWumpa(struct RPos_s *rpos) {
     s32 i;
@@ -4253,11 +4214,9 @@ s32 WipeWumpa(struct RPos_s *rpos) {
             FurtherALONG(rpos->iRAIL, rpos->iALONG, rpos->fALONG,
                          wumpa->iRAIL, wumpa->iALONG,
                          wumpa->fALONG) != 0) {
-            /* FlyWumpa's body, copied in source (retail reads D_0062D340 here,
-             * not FlyWumpa's D_0062D700, so it cannot be that function inlined) */
             wumpa->mom.x = 0.0f;
             wumpa->mom.y = 0.0f;
-            wumpa->mom.z = D_0062D340;
+            wumpa->mom.z = 0.19999999f;
             NuVecRotateX(&wumpa->mom, &wumpa->mom, -0x400);
             NuVecRotateY(&wumpa->mom, &wumpa->mom, qrand());
             wumpa->time = 0;
@@ -4354,7 +4313,6 @@ struct shadinfo_s {
     char pad_4[0x34 - 0x4];
 };
 extern struct shadinfo_s D_0055FC88[];
-extern float D_0062D3B8;
 extern void NuHGobjEvalAnim(void *hobj, void *anm, float t, s32 a, void *b,
                             struct numtx_s *mtx);
 extern s32 NuHGobjRndrMtx(void *hobj, void *m, s32 a, void *b,
@@ -4374,7 +4332,7 @@ void DrawMaskFeathers(void) {
         if (model->anmdata[0xe] != NULL) {
             /* explicit loop-invariant local: retail keeps this in the
              * callee-saved $f20 across the two calls (freg_mask 0x00100000). */
-            dead = D_0062D3B8;
+            dead = 2000000.0f;
             feathers = &MaskFeathers[0];
             for (i = 0; i < 4; i++) {
                 if (feathers->time < feathers->duration) {
@@ -4399,7 +4357,6 @@ extern s32 temp_minutes;
 extern s32 temp_seconds;
 extern s32 temp_hundredths;
 extern s32 temp_tenths;
-extern char D_0061DFD0[]; /* "%i:%c%c.%c%c" */
 
 void MakeTimeI(s32 time, s32 hours, char *txt) {
     if (time < 0) {
@@ -4416,7 +4373,7 @@ void MakeTimeI(s32 time, s32 hours, char *txt) {
     temp_hundredths = time % 100;
     temp_tenths = temp_hundredths / 10;
     if (txt != NULL) {
-        sprintf(txt, D_0061DFD0, temp_minutes, temp_seconds / 10 + 0x30,
+        sprintf(txt, "%i:%c%c.%c%c", temp_minutes, temp_seconds / 10 + 0x30,
                 temp_seconds % 10 + 0x30, temp_hundredths / 10 + 0x30,
                 temp_hundredths % 10 + 0x30);
         if (Game.language == 'c') {
@@ -4448,7 +4405,6 @@ void DefaultTimeTrialNames(s32 all) {
     }
 }
 
-extern float DISCOXOFFSET;
 extern void NuHGobjRndrMtxDwa(void *hobj, struct numtx_s *m, s32 nlayers,
                               short *layer, struct numtx_s *tmtx, float **dwa);
 
@@ -4586,7 +4542,6 @@ void GetMenuInfo(struct cursor_s *cur) {
     }
 }
 
-extern s32 i_tempwumpa;
 
 void AddFlyingWumpa(struct nuvec_s *src, struct nuvec_s *dir,
                     struct nuvec_s *dst, s32 destroy) {
@@ -4656,11 +4611,6 @@ float RatioBetweenEdges(struct nuvec_s *pos, struct nuvec_s *p0,
     return d1 / (d1 + d2);
 }
 
-/* retail-owned const vectors: {5,5,5} scale and {0,11,6.25} translate.
- * Copied into ONE stack slot -- two initialised locals would take two. */
-extern struct nuvec_s D_0061D468;
-extern struct nuvec_s D_0061D478;
-
 void DrawTempCharacter(s32 render) {
     struct CharacterModel *model;
     struct numtx_s m;
@@ -4681,9 +4631,9 @@ void DrawTempCharacter(s32 render) {
     }
     model = &CModel[i];
     if (Level == 0x25) {
-        v = D_0061D468;
+        v = (struct nuvec_s){5.0f, 5.0f, 5.0f};
         NuMtxSetScale(&m, &v);
-        v = D_0061D478;
+        v = (struct nuvec_s){0.0f, 11.0f, 6.25f};
         NuMtxTranslate(&m, &v);
     } else {
         NuMtxSetIdentity(&m);
@@ -4703,7 +4653,6 @@ void DrawTempCharacter(s32 render) {
     }
 }
 
-extern s32 i_maskfeathers;
 
 /* gnu89 plain inline: standalone AND inlined into LoseMask. */
 inline void AddMaskFeathers(struct mask_s *mask) {
@@ -4729,6 +4678,38 @@ inline void AddMaskFeathers(struct mask_s *mask) {
 }
 
 extern s32 i_award;
+
+s32 Hub = -1;
+s32 HubLevelText = 0;
+u16 HubLevelAngle = 0;
+u16 hub_vr_xrot = 0;
+u16 hub_vr_yrot = 0;
+s32 hub_vr_level = 2;
+s32 hub_vr_image = -1;
+float hub_vr_scale = 0.0f;
+float hub_vr_newscale = 0.0f;
+s32 i_award = 0;
+s32 tumble_character = 0;
+s32 last_hub = -1;
+s32 last_character = 0;
+s32 last_used_character = 0;
+s32 plr_rebound = 0;
+float FINISHRADIUSHUB = 1.0f;
+float FINISHRADIUSLEVEL = 1.1f;
+struct ldata_s *LDATA = &LData[35];
+u64 LBIT = 0x800000000;
+s32 Level = 35;
+s32 new_level = -1;
+s32 last_level = -1;
+s32 warp_level = -1;
+s32 level_part_2 = 0;
+s32 i_kaboom = 0;
+float TT_RELICX = 0.0f;
+float TT_RELICY = -0.15f;
+s32 bonusgem_ok = 0;
+s32 in_finish_range = 0;
+float CRATECOUNT3DSCALE = 0.25f;
+float CRATECOUNT3DSEPERATION = 0.55f;
 
 s32 AddAward(s32 hub, s32 level, u16 got) {
     struct award_s *award;
@@ -4962,14 +4943,37 @@ void GameTiming(void) {
         }
         tt_flash = flash;
     }
-    UpdateTimer(MenuTimer);
+    UpdateTimer(&MenuTimer);
     UpdateTimer(&GlobalTimer);
     Update3DFontObjects();
     GameAudioUpdate();
 }
 
-extern char D_00630D10[]; /* "___" */
-#define new_time_name D_00630D10
+
+s32 LivesLost = 0;
+s32 LostLife = 0;
+float CHECKWAIT = 0.5f;
+float POINTWAIT = 0.0f;
+float check_time = 0.0f;
+float check_duration = 0.0f;
+float point_time = 0.0f;
+float point_duration = 0.0f;
+float CPLTIME = 0.15f;
+float CPLDELAY = 0.45f;
+s32 tt_flash = 0;
+
+inline void MakeLevelTimeString(struct time_s *time, char *txt) {
+    char *fmt;
+    char time_string[64];
+
+    MakeTimeI(time->itime, 0, time_string);
+    if (Game.language == 'c') {
+        fmt = "%s  %s";
+    } else {
+        fmt = "%s %s";
+    }
+    sprintf(txt, fmt, time, time_string);
+}
 
 void NewLevelTime(s32 t) {
     s32 i;
@@ -4985,7 +4989,7 @@ void NewLevelTime(s32 t) {
             Game.level[Level].time[j] = Game.level[Level].time[j - 1];
         }
         Game.level[Level].time[i].itime = t;
-        NuStrCpy(Game.level[Level].time[i].name, new_time_name);
+        NuStrCpy(Game.level[Level].time[i].name, "___");
         if (i < 2 && Game.level[Level].time[2].itime == 0) {
             NuStrCpy(Game.level[Level].time[2].name, PlaceName3[2][Game.language]);
         }
@@ -5006,7 +5010,7 @@ void InitGameMode(s32 mode) {
     finish_frame = 0;
     ResetTimer(&PauseTimer);
     pausestats_frame = 0;
-    ResetTimer(MenuTimer);
+    ResetTimer(&MenuTimer);
     ResetTimeTrial();
     if (force_menu != -1) {
         NewMenu(&Cursor, force_menu, -1, -1);
@@ -5048,7 +5052,6 @@ void InitGameMode(s32 mode) {
 /* animpacket: action +0xC / oldaction +0xE / newaction +0x10 / flags +0x1B
  * verified in UpdateTempCharacter */
 
-extern s32 TESTCORTEXVOICES;
 extern struct nuvec_s in_finish_pos;
 extern struct nuvec_s probepos;
 extern struct nuvec_s probedpos;
@@ -5374,6 +5377,430 @@ void GameRayCast(struct nuvec_s *src, struct nuvec_s *dir, float d,
     }
 }
 
+extern struct nugscn_s *wumpa_scene;
+extern struct nugscn_s *crate_scene;
+extern struct nugscn_s *pause_scene;
+
+s32 Adventure = 1;
+s32 TimeTrial = 0;
+float TT_SCALE = 0.6f;
+float TEXTZMUL = 3.0f;
+s32 new_mode = -1;
+s32 Demo = 0;
+s32 max_game_percentage = 106;
+s32 Bonus = 0;
+s32 bonus_restart = 0;
+s32 Death = 0;
+s32 force_menu = -1;
+struct spltab_s SplTab[73] = {
+    { 0, "start_finish", 1, 0, 0xffffffffffffffff },
+    { 0, "plopcam", 2, 2, 0xffffffffffffffff }, { 0, "earth_hub", 19, 19, 0x2000000000 },
+    { 0, "water_hub", 19, 19, 0x2000000000 }, { 0, "fire_hub", 19, 19, 0x2000000000 },
+    { 0, "weather_hub", 19, 19, 0x2000000000 }, { 0, "space_hub", 19, 19, 0x2000000000 },
+    { 0, "bonus_hub", 19, 19, 0x2000000000 },
+    { 0, "smacko_cam_00", 4, 0, 0xffffffffffffffff },
+    { 0, "moocam_00", 4, 0, 0xffffffffffffffff },
+    { 0, "moocam_01", 4, 0, 0xffffffffffffffff },
+    { 0, "moocam_02", 4, 0, 0xffffffffffffffff },
+    { 0, "camSpline", 0, 0, 0xffffffffffffffff },
+    { 0, "lookSpline", 0, 0, 0xffffffffffffffff }, { 0, "driver_01", 0, 0, 8 },
+    { 0, "driver_02", 0, 0, 8 }, { 0, "driver_03", 0, 0, 8 }, { 0, "driver_04", 0, 0, 8 },
+    { 0, "earth_bits", 40, 40, 0x2000000000 }, { 0, "water_bits", 40, 40, 0x2000000000 },
+    { 0, "fire_bits", 40, 40, 0x2000000000 }, { 0, "weather_bits", 40, 40, 0x2000000000 },
+    { 0, "space_bits", 40, 40, 0x2000000000 }, { 0, "bonus_bits", 40, 40, 0x2000000000 },
+    { 0, "mine", 0, 0, 0x80000 }, { 0, "boss", 0, 0, 0x1000000 },
+    { 0, "weecam_mid_00", 0, 0, 0x1000000 }, { 0, "fire", 0, 0, 0x400000 },
+    { 0, "gate", 2, 0, 32 }, { 0, "mine_left_00", 4, 0, 0x10000010 },
+    { 0, "mine_left_01", 4, 0, 0x10000010 }, { 0, "mine_left_02", 4, 0, 0x10000010 },
+    { 0, "mine_left_03", 4, 0, 0x10000010 }, { 0, "mine_left_04", 4, 0, 0x10000010 },
+    { 0, "mine_left_05", 4, 0, 0x10000010 }, { 0, "mine_left_06", 4, 0, 0x10000010 },
+    { 0, "mine_left_07", 4, 0, 0x10000010 }, { 0, "mine_left_08", 4, 0, 0x10000010 },
+    { 0, "mine_left_09", 4, 0, 0x10000010 }, { 0, "mine_left_10", 4, 0, 0x10000010 },
+    { 0, "mine_left_11", 4, 0, 0x10000010 }, { 0, "mine_left_12", 4, 0, 0x10000010 },
+    { 0, "mine_left_13", 4, 0, 0x10000010 }, { 0, "mine_left_14", 4, 0, 0x10000010 },
+    { 0, "mine_left_15", 4, 0, 0x10000010 }, { 0, "mine_right_00", 4, 0, 0x10000010 },
+    { 0, "mine_right_01", 4, 0, 0x10000010 }, { 0, "mine_right_02", 4, 0, 0x10000010 },
+    { 0, "mine_right_03", 4, 0, 0x10000010 }, { 0, "mine_right_04", 4, 0, 0x10000010 },
+    { 0, "mine_right_05", 4, 0, 0x10000010 }, { 0, "mine_right_06", 4, 0, 0x10000010 },
+    { 0, "mine_right_07", 4, 0, 0x10000010 }, { 0, "mine_right_08", 4, 0, 0x10000010 },
+    { 0, "mine_right_09", 4, 0, 0x10000010 }, { 0, "mine_right_10", 4, 0, 0x10000010 },
+    { 0, "mine_right_11", 4, 0, 0x10000010 }, { 0, "mine_right_12", 4, 0, 0x10000010 },
+    { 0, "mine_right_13", 4, 0, 0x10000010 }, { 0, "mine_right_14", 4, 0, 0x10000010 },
+    { 0, "mine_right_15", 4, 0, 0x10000010 },
+    { 0, "gempath_inplat", 4, 0, 0xffffffffffffffff },
+    { 0, "gempath_incam", 4, 0, 0xffffffffffffffff },
+    { 0, "finish_line", 2, 0, 0x10000000 }, { 0, "rings", 3, 0, 0x20000000 },
+    { 0, "loadsave_cam", 2, 0, 0x2000000000 }, { 0, "loadsave_look", 2, 0, 0x2000000000 },
+    { 0, "bug_light", 1, 0, 0x88100000 }, { 0, "start_cam", 0, 0, 0xffffffffffffffff },
+    { 0, "start_look", 0, 0, 0xffffffffffffffff }, { 0, "firefly", 0, 0, 0x8000000 },
+    { 0, "carpet", 0, 0, 0x20000000 }, { 0, "intro", 0, 0, 0x1000000 }
+};
+struct objtab_s ObjTab[201] = {
+    { {0}, &wumpa_scene, 0, 63, 0, 0, "wumpa", 0xffffffffffffffff },
+    { {0}, &wumpa_scene, 0, 63, 0, 0, "relic_p", 0xffffffffffffffff },
+    { {0}, &wumpa_scene, 0, 63, 0, 0, "relic_g", 0xffffffffffffffff },
+    { {0}, &wumpa_scene, 0, 63, 0, 0, "relic_s", 0xffffffffffffffff },
+    { {0}, world_scene, 0, 63, 0, 0, "bonus_plat", 0xffffffffffffffff },
+    { {0}, world_scene, 0, 63, 0, 0, "death_solid", 0xffffffffffffffff },
+    { {0}, world_scene, 0, 63, 0, 0, "death_wire", 0xffffffffffffffff },
+    { {0}, world_scene, 0, 63, 0, 0, "gem_solid", 0xffffffffffffffff },
+    { {0}, world_scene, 0, 63, 0, 0, "gem_wire", 0xffffffffffffffff },
+    { {0}, world_scene, 0, 63, 0, 0, "plax_ball", 0xffffffffffffffff },
+    { {0}, world_scene, 0, 63, 0, 0, "plax_cloud", 0xffffffffffffffff },
+    { {0}, &wumpa_scene, 0, 63, 0, 0, "shockwave_r", 0xffffffffffffffff },
+    { {0}, &wumpa_scene, 0, 63, 0, 0, "shockwave_g", 0xffffffffffffffff },
+    { {0}, &wumpa_scene, 0, 63, 0, 0, "shockwave_y", 0xffffffffffffffff },
+    { {0}, &wumpa_scene, 0, 63, 0, 0, "ammo", 0x1005042000 },
+    { {0}, &crate_scene, 0, 63, 0, 0, "exclamation", 0xffffffffffffffff },
+    { {0}, &crate_scene, 0, 63, 0, 0, "end_crate", 0xffffffffffffffff },
+    { {0}, &wumpa_scene, 0, 63, 0, 0, "crash_head", 0xffffffffffffffff },
+    { {0}, &wumpa_scene, 0, 63, 0, 0, "coco_head", 0xffffffffffffffff },
+    { {0}, world_scene, 0, 63, 0, 0, "damage_01", 0x1005042000 },
+    { {0}, world_scene, 0, 63, 0, 0, "damage_02", 0x1005042000 },
+    { {0}, &crate_scene, 0, 63, 0, 0, "shadow", 0xffffffffffffffff },
+    { {0}, world_scene, 0, 63, 0, 0, "screen", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "view_00", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "view_01", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "view_02", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "view_03", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "view_04", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "view_05", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "view_06", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "view_07", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "view_08", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "view_09", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "view_10", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "view_11", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "view_12", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "view_13", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "view_14", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "view_15", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "view_16", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "view_17", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "view_18", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "view_19", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "view_20", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "view_21", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "view_22", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "view_23", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "view_24", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "view_25", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "view_26", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "view_27", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "view_28", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "view_29", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "view_30", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "view_31", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "view_32", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "view_33", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "view_34", 0x2000000000 },
+    { {0}, world_scene, 1, 63, 0, 0, "boulder1", 2 },
+    { {0}, world_scene, 1, 63, 0, 0, "boulder2", 2 },
+    { {0}, world_scene, 0, 63, 0, 0, "sword", 20480 },
+    { {0}, world_scene, 0, 63, 0, 0, "rock", 2 },
+    { {0}, world_scene, 0, 63, 0, 0, "coal", 0x20000 },
+    { {0}, world_scene, 0, 63, 0, 0, "volcano_low", 2 },
+    { {0}, world_scene, 0, 63, 0, 0, "volcano_low1", 2 },
+    { {0}, world_scene, 0, 63, 0, 0, "ballon_00", 0x1025042000 },
+    { {0}, world_scene, 0, 63, 0, 0, "ballon_01", 0x1025042000 },
+    { {0}, world_scene, 0, 63, 0, 0, "ballon_02", 0x1025042000 },
+    { {0}, world_scene, 0, 63, 0, 0, "hut_70", 0x20000 },
+    { {0}, world_scene, 0, 63, 0, 0, "tornado", 8192 },
+    { {0}, world_scene, 0, 63, 0, 0, "bit_01", 8192 },
+    { {0}, world_scene, 0, 63, 0, 0, "bit_02", 8192 },
+    { {0}, world_scene, 0, 63, 0, 0, "bit_03", 8192 },
+    { {0}, world_scene, 0, 63, 0, 0, "explosion_01", 8192 },
+    { {0}, world_scene, 0, 63, 0, 0, "explosion_02", 8192 },
+    { {0}, world_scene, 0, 63, 0, 0, "explosion_03", 8192 },
+    { {0}, &world_scene[1], 0, 63, 0, 0, "TidalWave", 16384 },
+    { {0}, &wumpa_scene, 0, 63, 0, 0, "bomb", 0x1000040000 },
+    { {0}, &world_scene[1], 0, 63, 0, 0, "fireball", 0x80000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "fireball", 0x80000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "astro", 0x4000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "avalanche", 32 },
+    { {0}, world_scene, 0, 63, 0, 0, "dynamite", 0x80000 },
+    { {0}, &wumpa_scene, 0, 63, 0, 0, "harpoon", 0x400000044 },
+    { {0}, world_scene, 0, 63, 0, 0, "water_fence", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "fire_fence", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "weather_fence", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "space_fence", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "rock", 0x600000 },
+    { {0}, world_scene, 0, 63, 0, 0, "balloon", 0x400000 },
+    { {0}, world_scene, 0, 63, 0, 0, "target_green", 0x1040000 },
+    { {0}, world_scene, 0, 63, 0, 0, "target_white", 0x1040000 },
+    { {0}, world_scene, 0, 63, 0, 0, "target_green_a", 0x40000 },
+    { {0}, world_scene, 0, 63, 0, 0, "target_white_a  ", 0x40000 },
+    { {0}, world_scene, 0, 63, 0, 0, "target_red", 0x1001000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "target_white", 0x1000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "target_red_a", 0x1000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "target_white_a  ", 0x1000000000 },
+    { {0}, &pause_scene, 0, 63, 0, 0, "bit_b", 0xffffffffffffffff },
+    { {0}, &pause_scene, 0, 63, 0, 0, "bit_a", 0xffffffffffffffff },
+    { {0}, &wumpa_scene, 0, 63, 0, 0, "potionBlue", 0xffffffffffffffff },
+    { {0}, world_scene, 0, 63, 0, 0, "gem_barrier", 0xffffffffffffffff },
+    { {0}, world_scene, 0, 63, 0, 0, "view_static", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "ring_a", 0x20000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "ring_b", 0x20000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "ring_end", 0x20000000 },
+    { {0}, &wumpa_scene, 0, 63, 0, 0, "torpedo", 0x400000044 },
+    { {0}, &wumpa_scene, 0, 63, 0, 0, "charge", 0x400000044 },
+    { {0}, &wumpa_scene, 0, 63, 0, 0, "arrow", 0xffffffffffffffff },
+    { {0}, world_scene, 0, 63, 0, 0, "space_station", 0x4000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "lazer_green", 0x4000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "lazer_red", 0x4000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "hit1", 0x4000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "hit", 0x4000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "target", 0x1005042000 },
+    { {0}, world_scene, 0, 63, 0, 0, "loadsave_01", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "loadsave_02", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "loadsave_03", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "loadsave_04", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "loadsave_05", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "loadsave_06", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "loadsave_07", 0x2000000000 },
+    { {0}, &world_scene[2], 0, 63, 0, 0, "bit_01", 0xffffffffffffffff },
+    { {0}, &world_scene[2], 0, 63, 0, 0, "bit_02", 0xffffffffffffffff },
+    { {0}, &world_scene[2], 0, 63, 0, 0, "bit_03", 0xffffffffffffffff },
+    { {0}, &world_scene[2], 0, 63, 0, 0, "bit_04", 0xffffffffffffffff },
+    { {0}, &world_scene[2], 0, 63, 0, 0, "bit_05", 0xffffffffffffffff },
+    { {0}, &world_scene[2], 0, 63, 0, 0, "bit_06", 0xffffffffffffffff },
+    { {0}, &world_scene[2], 0, 63, 0, 0, "bit_07", 0xffffffffffffffff },
+    { {0}, &pause_scene, 0, 63, 0, 0, "text_frame", 0xffffffffffffffff },
+    { {0}, &wumpa_scene, 0, 63, 0, 0, "sight_red", 0xffffffffffffffff },
+    { {0}, &wumpa_scene, 0, 63, 0, 0, "sight_green", 0xffffffffffffffff },
+    { {0}, &wumpa_scene, 0, 63, 0, 0, "crystal_glow", 0xffffffffffffffff },
+    { {0}, &wumpa_scene, 0, 63, 0, 0, "relic_p_glow", 0xffffffffffffffff },
+    { {0}, &wumpa_scene, 0, 63, 0, 0, "relic_g_glow", 0xffffffffffffffff },
+    { {0}, &wumpa_scene, 0, 63, 0, 0, "relic_s_glow", 0xffffffffffffffff },
+    { {0}, &wumpa_scene, 0, 63, 0, 0, "crate_gem_glow", 0xffffffffffffffff },
+    { {0}, &wumpa_scene, 0, 63, 0, 0, "bonus_gem_glow", 0xffffffffffffffff },
+    { {0}, &wumpa_scene, 0, 63, 0, 0, "red_gem_glow", 0xffffffffffffffff },
+    { {0}, &wumpa_scene, 0, 63, 0, 0, "green_gem_glow", 0xffffffffffffffff },
+    { {0}, &wumpa_scene, 0, 63, 0, 0, "blue_gem_glow", 0xffffffffffffffff },
+    { {0}, &wumpa_scene, 0, 63, 0, 0, "yellow_gem_glow", 0xffffffffffffffff },
+    { {0}, &wumpa_scene, 0, 63, 0, 0, "purple_gem_glow", 0xffffffffffffffff },
+    { {0}, world_scene, 0, 63, 0, 0, "log_01", 0x80000 },
+    { {0}, world_scene, 0, 63, 0, 0, "log_02", 0x80000 },
+    { {0}, world_scene, 0, 63, 0, 0, "log_03", 0x80000 },
+    { {0}, world_scene, 0, 63, 0, 0, "log_04", 0x80000 },
+    { {0}, world_scene, 0, 63, 0, 0, "ice", 0x2000000 },
+    { {0}, &wumpa_scene, 0, 63, 0, 0, "lasersight", 0xffffffffffffffff },
+    { {0}, &wumpa_scene, 0, 63, 0, 0, "spear", 0xffffffffffffffff },
+    { {0}, world_scene, 1, 63, 0, 0, "elec_floor", 0x100000 },
+    { {0}, world_scene, 1, 63, 0, 0, "elec_roof", 0x100000 },
+    { {0}, world_scene, 0, 63, 0, 0, "rock", 0x2000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "grass_01", 0x80000 },
+    { {0}, world_scene, 0, 63, 0, 0, "grass_02", 0x80000 },
+    { {0}, world_scene, 0, 63, 0, 0, "bridge_03", 256 },
+    { {0}, world_scene, 0, 63, 0, 0, "space_icon", 0x4000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "ship_icon", 0x40000 },
+    { {0}, world_scene, 0, 63, 0, 0, "post", 256 },
+    { {0}, world_scene, 0, 63, 0, 0, "bridge_01", 2 },
+    { {0}, world_scene, 0, 63, 0, 0, "bridge_02", 2 },
+    { {0}, world_scene, 0, 63, 0, 0, "post", 2 },
+    { {0}, world_scene, 0, 63, 0, 0, "radarbase", 0x200000 },
+    { {0}, world_scene, 0, 63, 0, 0, "orangedot", 0x200000 },
+    { {0}, world_scene, 0, 63, 0, 0, "reddot", 0x200000 },
+    { {0}, world_scene, 0, 63, 0, 0, "greendot", 0x200000 },
+    { {0}, world_scene, 0, 63, 0, 0, "bluedot", 0x200000 },
+    { {0}, world_scene, 0, 63, 0, 0, "greydot", 0x200000 },
+    { {0}, world_scene, 0, 63, 0, 0, "rock", 0x200000 },
+    { {0}, world_scene, 0, 63, 0, 0, "rock1", 0x200000 },
+    { {0}, world_scene, 0, 63, 0, 0, "rock2", 0x200000 },
+    { {0}, world_scene, 0, 63, 0, 0, "rock3", 0x200000 },
+    { {0}, &world_scene[2], 0, 63, 0, 0, "atlas_01", 0xffffffffffffffff },
+    { {0}, &world_scene[2], 0, 63, 0, 0, "atlas_02", 0xffffffffffffffff },
+    { {0}, &world_scene[2], 0, 63, 0, 0, "atlas_03", 0xffffffffffffffff },
+    { {0}, &world_scene[2], 0, 63, 0, 0, "mech_01", 0xffffffffffffffff },
+    { {0}, &world_scene[2], 0, 63, 0, 0, "mech_02", 0xffffffffffffffff },
+    { {0}, &world_scene[2], 0, 63, 0, 0, "mech_03", 0xffffffffffffffff },
+    { {0}, &world_scene[2], 0, 63, 0, 0, "heli_01", 0xffffffffffffffff },
+    { {0}, &world_scene[2], 0, 63, 0, 0, "heli_02", 0xffffffffffffffff },
+    { {0}, &world_scene[2], 0, 63, 0, 0, "heli_03", 0xffffffffffffffff },
+    { {0}, world_scene, 1, 63, 0, 0, "button01", 0x2000000 },
+    { {0}, world_scene, 1, 63, 0, 0, "button02", 0x2000000 },
+    { {0}, world_scene, 1, 63, 0, 0, "button03", 0x2000000 },
+    { {0}, world_scene, 1, 63, 0, 0, "button04", 0x2000000 },
+    { {0}, &wumpa_scene, 0, 63, 0, 0, "healthbar", 0x1600000 },
+    { {0}, &wumpa_scene, 0, 63, 0, 0, "bar_red", 0x1600000 },
+    { {0}, &wumpa_scene, 0, 63, 0, 0, "bar_green", 0x1600000 },
+    { {0}, &wumpa_scene, 0, 63, 0, 0, "bar_white", 0x1600000 },
+    { {0}, world_scene, 0, 63, 0, 0, "ball", 0x1000000 },
+    { {0}, &world_scene[1], 0, 63, 0, 0, "red_01", 0xffffffffffffffff },
+    { {0}, &world_scene[1], 0, 63, 0, 0, "red_02", 0xffffffffffffffff },
+    { {0}, &world_scene[1], 0, 63, 0, 0, "red_03", 0xffffffffffffffff },
+    { {0}, world_scene, 0, 63, 0, 0, "crystal_h", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "crate_gem_h", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "bonus_gem_h", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "red_gem_h", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "green_gem_h", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "blue_gem_h", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "purple_gem_h", 0x2000000000 },
+    { {0}, world_scene, 0, 63, 0, 0, "yellow_gem_h", 0x2000000000 }
+};
+struct mask_s Mask = {0};
+struct mfeathers_s MaskFeathers[4] = {0};
+struct kaboom_s Kaboom[72] = {0};
+struct vtog_s VTog[6] = {0};
+struct nuvec_s vtog_oldpos = {0};
+struct nuvec_s vtog_newpos = {0};
+struct nuvec_s tumble_oldpos = {0};
+struct nuvec_s tumble_newpos = {0};
+struct nuvec_s hubwarp_oldpos = {0};
+struct nuvec_s hubwarp_newpos = {0};
+struct award_s Award[3] = {0};
+char LevelFileName[32] = {0};
+struct anim_s TempAnim = {0};
+struct anim_s TempAnim2 = {0};
+struct nuvec_s TTScrPos = {0};
+struct game_s Game = {0};
+struct RPos_s gempath_RPos = {0};
+struct nuvec_s finish_oldpos = {0};
+struct nuvec_s finish_newpos = {0};
+struct nuvec_s in_finish_pos = {0};
+struct wumpa_s Wumpa[320] = {0};
+struct winfo_s WInfo[8] = {0};
+struct wscr_s WScr[32] = {0};
+struct newwumpa_s NewWumpa[32] = {0};
+struct cursor_s Cursor = {0};
+char CutSceneText[32] = {0};
+struct gtimer_s GlobalTimer = {0};
+struct gtimer_s GameTimer = {0};
+struct gtimer_s PauseTimer = {0};
+struct gtimer_s MenuTimer = {0};
+struct gtimer_s TimeTrialTimer = {0};
+struct nuvec_s cpPOS = {0};
+char tbuf[128] = {0};
+struct nuvec_s vTEMP = {0};
+struct numtx_s mTEMP = {0};
+struct nuvec4_s vTEMP4[4] = {0};
+struct nuvec_s plr_target_firepos = {0};
+struct nuvec_s plr_target_pos[2] = {0};
+struct nuvec_s plr_target_sightpos = {0};
+struct nuvec_s plr_target_dir = {0};
+struct numtx_s plr_target_mtx = {0};
+struct nuvec_s probepos = {0};
+struct nuvec_s probedpos = {0};
+struct nuvec_s probespk = {0};
+struct nuangvec_s proberot = {0};
+struct nuvec_s probepos2 = {0};
+struct Nearest_Light_s TempLights = {0};
+struct Nearest_Light_s TempLights2 = {0};
+struct nuvec_s hub_vr_pos = {0};
+u8 hublevelopen[6][6] = {0};
+struct nuvec_s start_pos = {0};
+char edit_txt[64] = {0};
+struct obj_s bonus_obj[2] = {0};
+struct obj_s death_obj = {0};
+struct obj_s gempath_obj = {0};
+struct nuvec_s lev_ambpos[5] = {0};
+float BAZOOKATARGETHACK = 0.6f;
+float MECHTARGETHACK = 1.2f;
+float vtog_time = 0.0f;
+float vtog_duration = 0.0f;
+s32 vtog_blend = 0;
+struct vtog_s *pVTog = NULL;
+u16 vtog_angle = 0;
+s32 HubLevel = 0;
+s32 HubLevel_available = 0;
+float hubleveltext_pos = 0.0f;
+s32 hubleveltext_level = 0;
+s32 hubleveltext_i = 0;
+s32 hubleveltext_open = 0;
+s32 temp_hub = 0;
+s32 temp_hublevel = 0;
+float tumble_time = 0.0f;
+float tumble_duration = 0.0f;
+float tumble_moveduration = 0.0f;
+float tumble_cycleduration = 0.0f;
+float tumble_item_starttime = 0.0f;
+float tumble_item_addtime = 0.0f;
+u16 tumble_hdg = 0;
+u16 temp_lev_flags = 0;
+s32 tumble_action = 0;
+s32 GameMode = 0;
+float tt_sx = 0.0f;
+float tt_sy = 0.0f;
+u8 new_hub_flags = 0;
+u16 new_lev_flags = 0;
+u8 temp_vibration = 0;
+u8 temp_surround = 0;
+u8 temp_sfx_volume = 0;
+u8 temp_music_volume = 0;
+char temp_screen_x = 0;
+char temp_screen_y = 0;
+s32 platinum_relics = 0;
+s32 gold_relics = 0;
+s32 sapphire_relics = 0;
+s32 bonus_crates_destroyed = 0;
+s32 save_bonus_crates_destroyed = 0;
+s32 bonus_lives = 0;
+struct nugspline_s *bonus_pCAM = NULL;
+struct nugspline_s *bonus_pPLAT = NULL;
+float bonus_time = 0.0f;
+float bonus_duration = 0.0f;
+u8 bonus_wumpa_delay = 0;
+u8 bonus_crate_delay = 0;
+u8 bonus_life_delay = 0;
+float bonus_wumpa_wait = 0.0f;
+float bonus_crates_wait = 0.0f;
+float bonus_lives_wait = 0.0f;
+float bonus_panel_wait = 0.0f;
+s32 bonus_finished = 0;
+s32 bonus_finish_frame = 0;
+struct nugspline_s *death_pCAM = NULL;
+struct nugspline_s *death_pPLAT = NULL;
+float death_time = 0.0f;
+float death_duration = 0.0f;
+s32 death_begun = 0;
+s32 death_lock = 0;
+s32 GemPath = 0;
+struct nugspline_s *gempath_pCAM = NULL;
+struct nugspline_s *gempath_pPLAT = NULL;
+float gempath_time = 0.0f;
+float gempath_duration = 0.0f;
+s32 gempath_begun = 0;
+s32 gempath_lock = 0;
+s32 gempath_open = 0;
+struct nuvec_s *pos_START = NULL;
+float shadow_START = 0.0f;
+float shadow_FINISH = 0.0f;
+float SAFEY = 0.0f;
+u16 plr_items = 0;
+s32 finish_type = 0;
+u16 finish_angle = 0;
+float start_time = 0.0f;
+s32 clock_ok = 0;
+s32 WUMPACOUNT = 0;
+u32 finish_frame = 0;
+u32 finish_frames = 0;
+s32 pausestats_frame = 0;
+float TimeTrialWait = 0.0f;
+u32 timetrial_frame = 0;
+s32 temp_hours = 0;
+s32 temp_minutes = 0;
+s32 temp_seconds = 0;
+s32 temp_tenths = 0;
+s32 temp_hundredths = 0;
+s32 newleveltime_slot = 0;
+s32 nCheckLetters = 0;
+s32 nPointLetters = 0;
+float check_delay = 0.0f;
+float point_delay = 0.0f;
+s32 cp_iRAIL = 0;
+s32 cp_iALONG = 0;
+float cp_fALONG = 0.0f;
+u32 iTEMP = 0;
+s32 plr_target_found = 0;
+struct game_s *game = NULL;
+s32 probeon = 0;
+s32 probey = 0;
+s32 probetime = 0;
+s32 probecol = 0;
+s32 vtog_action = 0;
+s32 NoMusicHack = 0;
+s32 plr_target_frame = 0;
+
 void DrawProbeFX(struct obj_s *obj) {
     struct nuvec_s pos;
     struct nuvec_s end;
@@ -5470,8 +5897,6 @@ void UpdateTempCharacter(void) {
     }
 }
 
-extern s32 tumble_character;
-extern float tumble_item_addtime;
 
 void UpdateAwards(void) {
     struct award_s *award;
@@ -5526,7 +5951,6 @@ void UpdateAwards(void) {
     }
 }
 
-extern float tumble_item_starttime;
 s32 Draw3DObject(s32 object, struct nuvec_s *pos, u16 xrot, u16 yrot, u16 zrot,
                  float scalex, float scaley, float scalez,
                  struct nugscn_s *scn, struct nuspecial_s *obj, s32 rot);
@@ -5614,12 +6038,6 @@ void DrawAwards(void) {
     }
 }
 
-extern u16 temp_lev_flags;
-extern u16 tumble_hdg;
-extern struct nuvec_s tumble_oldpos;
-extern struct nuvec_s tumble_newpos;
-extern float tumble_cycleduration;
-extern float D_0062D29C;
 
 void HubStart(struct obj_s *obj, s32 hub, s32 level, struct nuvec_s *pos) {
     struct nugspline_s *spl;
@@ -5664,7 +6082,7 @@ found:
     pos->y = p0->y;
     pos->z = p0->z + (p1->z - p0->z) * 2.0f;
     y = NewShadowMaskPlat(pos, 0.0f, -1);
-    if (y != D_0062D29C) {
+    if (y != 2000000.0f) {
         pos->y = y;
     }
     tumble_newpos.x = pos->x;
@@ -5692,16 +6110,6 @@ found:
                                              tumble_item_starttime);
 }
 
-extern s32 HubLevel;
-extern s32 HubLevel_available;
-extern u16 HubLevelAngle;
-extern s32 hubleveltext_i;
-extern s32 hubleveltext_open;
-extern s32 hub_vr_image;
-extern u32 finish_frames;
-extern float FINISHRADIUSHUB;
-extern struct nuvec_s hubwarp_oldpos;
-extern struct nuvec_s hubwarp_newpos;
 extern void AddWarpDebris(struct obj_s *obj, struct nuvec_s *pos);
 
 void HubLevelSelect(struct obj_s *obj, s32 hub) {
@@ -5874,11 +6282,6 @@ text:
 }
 
 extern struct RPos_s *best_cRPos;
-extern float hub_vr_scale;
-extern float hub_vr_newscale;
-extern struct nuvec_s hub_vr_pos;
-extern u16 hub_vr_xrot;
-extern u16 hub_vr_yrot;
 u16 SeekRot(u16 a, u16 b, s32 shift);
 
 void HubMoveVR(void) {
@@ -6087,19 +6490,11 @@ void HubDrawItems(void) {
 }
 
 
-extern s32 bonus_finish_frame;
-extern u8 bonus_wumpa_delay;
-extern u8 bonus_life_delay;
-extern s32 bonus_lives;
-extern float bonus_wumpa_wait;
-extern float bonus_lives_wait;
 extern struct panelcount_s plr_bonus_wumpas;
 extern float BONUSWUMPAOBJSX;
 extern float BONUSLIVESOBJSX;
 extern float BONUSPANELSY;
 extern float BONUSLIFESCALE;
-extern float D_0062D5F0; /* wumpa wait step (PAL; GC 1/60) */
-extern float D_0062D5F4; /* lives wait step (PAL; GC 1/60) */
 extern void AddPanelDebris(float x, float y, s32 i, float scale, s32 n);
 
 void BonusTiming(struct creature_s *plr) {
@@ -6133,7 +6528,7 @@ void BonusTiming(struct creature_s *plr) {
                 bonus_wumpa_wait = 0.5f;
             }
         } else if (bonus_wumpa_wait > 0.0f) {
-            bonus_wumpa_wait -= D_0062D5F0;
+            bonus_wumpa_wait -= 0.02f;
             if (bonus_wumpa_wait < 0.0f) {
                 bonus_wumpa_wait = 0.0f;
             }
@@ -6155,7 +6550,7 @@ void BonusTiming(struct creature_s *plr) {
             bonus_lives_wait = 0.5f;
         }
     } else if (bonus_lives_wait > 0.0f) {
-        bonus_lives_wait -= D_0062D5F4;
+        bonus_lives_wait -= 0.02f;
         if (bonus_lives_wait < 0.0f) {
             bonus_lives_wait = 0.0f;
         }
@@ -6216,20 +6611,474 @@ void LoseMask(struct obj_s *plr) {
     NewRumble(&player->rumble, 0x7F);
 }
 
-extern struct vtog_s VTog[];
-extern s32 vtog_action;
 extern struct RPos_s TempRPos;
 extern struct nuvec_s ShadNorm;
 extern u16 temp_xrot;
 extern u16 temp_zrot;
-extern float D_0062D2E8;
-extern char D_0061D7F8[]; /* "vehicle_trigger_%.2i_in" */
-extern char D_0061D810[]; /* "vehicle_trigger_%.2i_out" */
-extern char D_0061D830[]; /* "vehicle_cam_%.2i" */
-extern char D_0061D848[]; /* "vehicle_look_%.2i" */
 extern void GetALONG(struct nuvec_s *pos, struct RPos_s *rpos, s32 iRAIL, s32 iALONG,
                      s32 dir);
 extern void FindAnglesZX(struct nuvec_s *norm);
+
+s32 DemoLevel[4] = { 17, 12, 19, 32 };
+struct nuvec_s v000 = {0};
+struct nuvec_s v100 = { 1.0f, 0.0f, 0.0f };
+struct nuvec_s v010 = { 0.0f, 1.0f, 0.0f };
+struct nuvec_s v001 = { 0.0f, 0.0f, 1.0f };
+struct nuvec_s v111 = { 1.0f, 1.0f, 1.0f };
+struct nuvec_s v101 = { 1.0f, 0.0f, 1.0f };
+short cortex_gameover_tab[7][2] = {
+    { 14, 197 }, { 15, 199 }, { 35, 200 }, { 36, 201 }, { 37, 202 }, { 38, 203 },
+    { 39, 204 }
+};
+struct hdata_s HData[6] = {
+    { { 7, 13, 11, 17, 4, 21 }, { 2, 18 }, 255, 164, 271 },
+    { { 8, 34, 12, 18, 2, 23 }, { 3, 19 }, 84, 165, 269 },
+    { { 10, 14, 3, 0, 15, 22 }, { 4, 20 }, 85, 166, 270 },
+    { { 5, 20, 26, 6, 30, 24 }, { 5, 21 }, 86, 167, 274 },
+    { { 1, 19, 16, 31, 33, 25 }, { 6, 22 }, 87, 168, 275 },
+    { { 27, 28, 29, 32, 9, 38 }, { 7, 23 }, 255, 169, 275 }
+};
+struct nuvec_s hubmidpos[2] = { { 0.0f, 7.95f, 0.0f }, { 0.0f, 37.25f, 10.0f } };
+u8 EskimoRollModelList[33] = {
+    0, 83, 5, 6, 80, 82, 12, 70, 75, 71, 72, 73, 74, 76, 77, 78, 117, 118, 119, 120, 121,
+    122, 123, 124, 125, 177, 162, 163, 164, 165, 166, 167, 255
+};
+u8 CrashAndBurnModelList[44] = {
+    0, 8, 9, 7, 10, 140, 151, 3, 11, 69, 17, 18, 15, 16, 24, 22, 97, 19, 21, 75, 71, 72, 73,
+    74, 76, 77, 78, 117, 118, 119, 120, 121, 122, 123, 124, 125, 177, 162, 163, 164, 165,
+    166, 167, 255
+};
+u8 H2OhNoModelList[50] = {
+    0, 8, 9, 7, 10, 84, 175, 140, 3, 11, 32, 69, 126, 155, 27, 30, 136, 150, 147, 108, 154,
+    28, 169, 170, 171, 75, 71, 72, 73, 74, 76, 77, 78, 117, 118, 119, 120, 121, 122, 123,
+    124, 125, 177, 162, 163, 164, 165, 166, 167, 255
+};
+u8 AirshipModelList[27] = {
+    0, 54, 75, 71, 72, 73, 74, 76, 77, 78, 117, 118, 119, 120, 121, 122, 123, 124, 125, 177,
+    162, 163, 164, 165, 166, 167, 255
+};
+u8 CompactorReactorModelList[40] = {
+    0, 8, 9, 7, 10, 140, 3, 11, 69, 111, 113, 161, 169, 170, 171, 75, 71, 72, 73, 74, 76,
+    77, 78, 117, 118, 119, 120, 121, 122, 123, 124, 125, 177, 162, 163, 164, 165, 166, 167,
+    255
+};
+u8 AvalancheModelList[33] = {
+    1, 7, 160, 3, 11, 12, 70, 152, 75, 71, 72, 73, 74, 76, 77, 78, 117, 118, 119, 120, 121,
+    122, 123, 124, 125, 177, 162, 163, 164, 165, 166, 167, 255
+};
+struct pchase_s AvalancheChaseData[2] = {
+    {
+        0, -1, -1, 0, { 1080, -1, -1, -1, -1, -1 }, { -1, -1, -1, -1, -1, -1 },
+        { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f }, 60.0f
+    },
+    { -1, 0, 0, 0, {0}, {0}, {0}, 0.0f }
+};
+u8 CoralCanyonModelList[43] = {
+    0, 115, 116, 157, 176, 84, 3, 11, 32, 126, 155, 27, 30, 34, 150, 19, 147, 154, 75, 71,
+    72, 73, 74, 76, 77, 78, 117, 118, 119, 120, 121, 122, 123, 124, 125, 177, 162, 163, 164,
+    165, 166, 167, 255
+};
+u8 ArcticAnticsModelList[39] = {
+    0, 8, 9, 7, 10, 140, 79, 3, 11, 12, 55, 56, 70, 152, 75, 71, 72, 73, 74, 76, 77, 78,
+    117, 118, 119, 120, 121, 122, 123, 124, 125, 177, 162, 163, 164, 165, 166, 167, 255
+};
+u8 JungleRumbleModelList[38] = {
+    0, 8, 9, 7, 10, 140, 3, 11, 69, 43, 53, 138, 153, 75, 71, 72, 73, 74, 76, 77, 78, 117,
+    118, 119, 120, 121, 122, 123, 124, 125, 177, 162, 163, 164, 165, 166, 167, 255
+};
+struct pchase_s JungleRumbleChaseData[3] = {
+    {
+        0, -1, -1, 255, { 43, 43, 53, 53, 53, -1 }, { 58, 58, 58, 58, 58, -1 },
+        { 0.8f, 0.8f, 0.9f, 0.9f, 1.0f, 0.0f }, 45.0f
+    },
+    {
+        1, -1, -1, 255, { 43, 43, 53, 53, 53, -1 }, { 58, 58, 58, 58, 58, -1 },
+        { 0.8f, 0.8f, 0.9f, 0.9f, 1.0f, 0.0f }, 45.0f
+    },
+    { -1, 0, 0, 0, {0}, {0}, {0}, 0.0f }
+};
+u8 ForceOfNatureModelList[33] = {
+    1, 7, 160, 3, 11, 12, 70, 152, 75, 71, 72, 73, 74, 76, 77, 78, 117, 118, 119, 120, 121,
+    122, 123, 124, 125, 177, 162, 163, 164, 165, 166, 167, 255
+};
+u8 TheGauntletModelList[39] = {
+    0, 8, 9, 7, 10, 140, 158, 168, 3, 11, 69, 57, 58, 62, 75, 71, 72, 73, 74, 76, 77, 78,
+    117, 118, 119, 120, 121, 122, 123, 124, 125, 177, 162, 163, 164, 165, 166, 167, 255
+};
+u8 BamboozledModelList[27] = {
+    0, 83, 75, 71, 72, 73, 74, 76, 77, 78, 117, 118, 119, 120, 121, 122, 123, 124, 125, 177,
+    162, 163, 164, 165, 166, 167, 255
+};
+u8 BanzaiBonsaiModelList[34] = {
+    1, 7, 3, 11, 60, 61, 63, 64, 97, 75, 71, 72, 73, 74, 76, 77, 78, 117, 118, 119, 120,
+    121, 122, 123, 124, 125, 177, 162, 163, 164, 165, 166, 167, 255
+};
+u8 TornadoAlleyModelList[34] = {
+    0, 54, 67, 81, 91, 92, 93, 94, 98, 75, 71, 72, 73, 74, 76, 77, 78, 117, 118, 119, 120,
+    121, 122, 123, 124, 125, 177, 162, 163, 164, 165, 166, 167, 255
+};
+u8 TsunamiModelList[34] = {
+    1, 7, 107, 3, 11, 106, 109, 61, 108, 75, 71, 72, 73, 74, 76, 77, 78, 117, 118, 119, 120,
+    121, 122, 123, 124, 125, 177, 162, 163, 164, 165, 166, 167, 255
+};
+struct pchase_s TsunamiChaseData[2] = {
+    {
+        0, -1, -1, 0, { 1075, -1, -1, -1, -1, -1 }, { -1, -1, -1, -1, -1, -1 },
+        { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f }, 40.0f
+    },
+    { -1, 0, 0, 0, {0}, {0}, {0}, 0.0f }
+};
+u8 FahrenheitFrenzyModelList[44] = {
+    0, 8, 9, 7, 10, 84, 175, 159, 140, 151, 69, 3, 11, 59, 112, 114, 169, 170, 171, 75, 71,
+    72, 73, 74, 76, 77, 78, 117, 118, 119, 120, 121, 122, 123, 124, 125, 177, 162, 163, 164,
+    165, 166, 167, 255
+};
+u8 MedievalMadnessModelList[31] = {
+    0, 83, 5, 6, 80, 82, 75, 71, 72, 73, 74, 76, 77, 78, 117, 118, 119, 120, 121, 122, 123,
+    124, 125, 177, 162, 163, 164, 165, 166, 167, 255
+};
+u8 WizardsAndLizardsModelList[39] = {
+    0, 8, 9, 7, 10, 140, 158, 3, 11, 69, 66, 57, 58, 62, 75, 71, 72, 73, 74, 76, 77, 78,
+    117, 118, 119, 120, 121, 122, 123, 124, 125, 177, 162, 163, 164, 165, 166, 167, 255
+};
+struct pchase_s WizardsAndLizardsChaseData[4] = {
+    {
+        0, -1, 1, 0, { 66, -1, -1, -1, -1, -1 }, { 58, -1, -1, -1, -1, -1 },
+        { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f }, 20.0f
+    },
+    {
+        1, 0, 2, 0, { 66, -1, -1, -1, -1, -1 }, { 58, -1, -1, -1, -1, -1 },
+        { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f }, 23.0f
+    },
+    {
+        2, 1, 99, 0, { 66, -1, -1, -1, -1, -1 }, { 58, -1, -1, -1, -1, -1 },
+        { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f }, 20.0f
+    },
+    { -1, 0, 0, 0, {0}, {0}, {0}, 0.0f }
+};
+u8 ThatSinkingFeelingModelList[34] = {
+    0, 139, 101, 104, 105, 103, 102, 95, 185, 75, 71, 72, 73, 74, 76, 77, 78, 117, 118, 119,
+    120, 121, 122, 123, 124, 125, 177, 162, 163, 164, 165, 166, 167, 255
+};
+u8 GoldRushModelList[40] = {
+    0, 8, 9, 7, 10, 140, 3, 11, 69, 110, 35, 26, 128, 33, 137, 75, 71, 72, 73, 74, 76, 77,
+    78, 117, 118, 119, 120, 121, 122, 123, 124, 125, 177, 162, 163, 164, 165, 166, 167, 255
+};
+u8 DroidVoidModelList[44] = {
+    0, 8, 9, 7, 10, 140, 84, 3, 11, 69, 68, 111, 112, 113, 114, 169, 170, 171, 172, 75, 71,
+    72, 73, 74, 76, 77, 78, 117, 118, 119, 120, 121, 122, 123, 124, 125, 177, 162, 163, 164,
+    165, 166, 167, 255
+};
+u8 RumbleInTheRoksModelList[32] = {
+    0, 83, 127, 173, 188, 3, 85, 75, 71, 72, 73, 74, 76, 77, 78, 117, 118, 119, 120, 121,
+    122, 123, 124, 125, 177, 162, 163, 164, 165, 166, 167, 255
+};
+u8 CrashesToAshesModelList[36] = {
+    0, 8, 10, 151, 69, 156, 189, 178, 188, 86, 3, 75, 71, 72, 73, 74, 76, 77, 78, 117, 118,
+    119, 120, 121, 122, 123, 124, 125, 177, 162, 163, 164, 165, 166, 167, 255
+};
+u8 DrainDamageModelList[31] = {
+    0, 8, 10, 69, 127, 87, 75, 71, 72, 73, 74, 76, 77, 78, 117, 118, 119, 120, 121, 122,
+    123, 124, 125, 177, 162, 163, 164, 165, 166, 167, 255
+};
+u8 AtmosphericPressureModelList[32] = {
+    0, 190, 54, 134, 188, 88, 3, 75, 71, 72, 73, 74, 76, 77, 78, 117, 118, 119, 120, 121,
+    122, 123, 124, 125, 177, 162, 163, 164, 165, 166, 167, 255
+};
+u8 CrunchTimeModelList[41] = {
+    0, 8, 7, 10, 140, 151, 79, 69, 127, 4, 3, 85, 87, 86, 88, 2, 75, 71, 72, 73, 74, 76, 77,
+    78, 117, 118, 119, 120, 121, 122, 123, 124, 125, 177, 162, 163, 164, 165, 166, 167, 255
+};
+u8 CrashteroidsModelList[33] = {
+    1, 129, 133, 131, 132, 130, 141, 184, 75, 71, 72, 73, 74, 76, 77, 78, 117, 118, 119,
+    120, 121, 122, 123, 124, 125, 177, 162, 163, 164, 165, 166, 167, 255
+};
+u8 KnightTimeModelList[32] = {
+    1, 7, 3, 11, 57, 58, 174, 75, 71, 72, 73, 74, 76, 77, 78, 117, 118, 119, 120, 121, 122,
+    123, 124, 125, 177, 162, 163, 164, 165, 166, 167, 255
+};
+u8 GhostTownModelList[28] = {
+    0, 161, 127, 75, 71, 72, 73, 74, 76, 77, 78, 117, 118, 119, 120, 121, 122, 123, 124,
+    125, 177, 162, 163, 164, 165, 166, 167, 255
+};
+u8 IceStationBandicootModelList[28] = {
+    0, 59, 14, 75, 71, 72, 73, 74, 76, 77, 78, 117, 118, 119, 120, 121, 122, 123, 124, 125,
+    177, 162, 163, 164, 165, 166, 167, 255
+};
+u8 WeatheringHeightsModelList[40] = {
+    0, 8, 9, 7, 10, 140, 3, 11, 69, 112, 114, 169, 170, 171, 172, 75, 71, 72, 73, 74, 76,
+    77, 78, 117, 118, 119, 120, 121, 122, 123, 124, 125, 177, 162, 163, 164, 165, 166, 167,
+    255
+};
+u8 CrateBallsOfFireModelList[43] = {
+    0, 8, 9, 7, 10, 140, 3, 11, 69, 68, 111, 112, 113, 114, 136, 169, 171, 172, 75, 71, 72,
+    73, 74, 76, 77, 78, 117, 118, 119, 120, 121, 122, 123, 124, 125, 177, 162, 163, 164,
+    165, 166, 167, 255
+};
+struct pchase_s CrateBallsOfFireChaseData[4] = {
+    {
+        0, -1, 1, 0, { 1078, -1, -1, -1, -1, -1 }, { -1, -1, -1, -1, -1, -1 },
+        { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f }, 25.0f
+    },
+    {
+        1, 0, 2, 0, { 1078, -1, -1, -1, -1, -1 }, { -1, -1, -1, -1, -1, -1 },
+        { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f }, 20.0f
+    },
+    {
+        2, 1, 99, 0, { 1078, -1, -1, -1, -1, -1 }, { -1, -1, -1, -1, -1, -1 },
+        { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f }, 32.0f
+    },
+    { -1, 0, 0, 0, {0}, {0}, {0}, 0.0f }
+};
+u8 SolarBowlerModelList[32] = {
+    0, 83, 5, 6, 80, 82, 169, 75, 71, 72, 73, 74, 76, 77, 78, 117, 118, 119, 120, 121, 122,
+    123, 124, 125, 177, 162, 163, 164, 165, 166, 167, 255
+};
+u8 CortexVortexModelList[43] = {
+    0, 8, 9, 7, 10, 140, 84, 3, 11, 69, 111, 112, 113, 114, 169, 170, 171, 172, 75, 71, 72,
+    73, 74, 76, 77, 78, 117, 118, 119, 120, 121, 122, 123, 124, 125, 177, 162, 163, 164,
+    165, 166, 167, 255
+};
+u8 SeaShellShenanigansModelList[42] = {
+    0, 115, 116, 157, 176, 84, 3, 11, 32, 126, 155, 27, 30, 34, 150, 19, 154, 75, 71, 72,
+    73, 74, 76, 77, 78, 117, 118, 119, 120, 121, 122, 123, 124, 125, 177, 162, 163, 164,
+    165, 166, 167, 255
+};
+u8 TitlesModelList[] = { 96, 255 };
+u8 SmokeyAndTheBandicootModelList[32] = {
+    0, 69, 153, 142, 143, 144, 145, 75, 71, 72, 73, 74, 76, 77, 78, 117, 118, 119, 120, 121,
+    122, 123, 124, 125, 177, 162, 163, 164, 165, 166, 167, 255
+};
+u8 FrontEndModelList[26] = {
+    0, 8, 140, 69, 1, 3, 182, 181, 180, 117, 118, 119, 120, 121, 122, 123, 124, 125, 177,
+    162, 163, 164, 165, 166, 167, 255
+};
+u8 GameOverModelList[] = { 2, 255 };
+u8 IntroModelList[] = { 255 };
+u8 SpaceModelList[] = { 85, 87, 86, 88, 4, 2, 183, 255 };
+u8 OutroModelList[] = { 255 };
+u8 TestZoneModelList[] = { 0, 255 };
+u8 CreditsModelList[] = { 0, 187, 255 };
+struct ldata_s LData[44] = {
+    {
+        "a\\cold_a\\cold_a", EskimoRollModelList, 0, { 25500, 13500, 10200 }, { 197, -1 },
+        0, 0, -1, -1, 3549, 0, 83, 0, { -35.97f, 6.8f, -142.73f }, {0}, 10.0f, 14.0f, 64,
+        57, 127, 64, 127, 127, 127, 0
+    },
+    {
+        "a\\volcano\\volcano", CrashAndBurnModelList, 0, { 31500, 24000, 22500 },
+        { 197, 160 }, 0, 0, -1, -1, 477, 0, -1, 200, { -34.99f, 1.82f, -90.98f },
+        { 44.29f, 3.25f, 12.92f }, 4.0f, 14.0f, 96, 32, 0, 39, 128, 128, 128, 48
+    },
+    {
+        "a\\water_r\\water", H2OhNoModelList, 0, { 31500, 18000, 15000 }, { 197, 166 }, 0,
+        0, -1, -1, 477, 0, 32, 50, { -0.78f, 4.9f, -149.82f }, { 18.04f, -2.58f, 182.44f },
+        4.0f, 16.0f, 0, 40, 50, 64, 128, 128, 128, 200
+    },
+    {
+        "a\\west_a\\west_a", SmokeyAndTheBandicootModelList, 0, { 24000, 21000, 18000 },
+        { 197, -1 }, 0, 0, -1, -1, 477, 0, 153, 120, { -0.45f, 0.0f, -3.0f }, {0}, 45.0f,
+        95.0f, 69, 63, 97, 127, 127, 127, 127, 0
+    },
+    {
+        "a\\earth_r\\earth", CompactorReactorModelList, 0, { 31500, 19500, 16500 },
+        { 197, 166 }, 0, 0, -1, -1, 477, 0, 161, 0, {0}, { -107.49f, 6.84f, 78.65f }, 6.0f,
+        20.0f, 80, 80, 80, 64, 127, 127, 127, 0
+    },
+    {
+        "a\\avalanch\\avalanch", AvalancheModelList, AvalancheChaseData,
+        { 28500, 18000, 15099 }, { 197, 168 }, 0, 0, -1, -1, 477, 1, 160, 100,
+        { 0.84f, 69.37f, -224.32f }, { 4.09f, 69.45f, -149.44f }, 15.0f, 21.0f, 0, 0, 0, 64,
+        127, 127, 127, 0
+    },
+    {
+        "a\\coral_c\\coral", CoralCanyonModelList, 0, { 22251, 16911, 14574 }, { 197, -1 },
+        0, 0, -1, -1, 4573, 0, 32, 0, { -6.2f, 49.58f, -274.83f }, {0}, 6.0f, 12.0f, 0, 41,
+        47, 64, 0, 94, 95, 102
+    },
+    {
+        "a\\snow_m\\snow", ArcticAnticsModelList, 0, { 22500, 15000, 11100 }, { 197, 168 },
+        0, 0, -1, -1, 477, 0, -1, 50, {0}, { -23.36f, 3.08f, 3.31f }, 9.0f, 23.0f, 139, 113,
+        182, 103, 127, 127, 127, 0
+    },
+    {
+        "a\\jungle_r\\jungle", JungleRumbleModelList, JungleRumbleChaseData,
+        { 36000, 24000, 21600 }, { 197, 164 }, 0, 0, -1, -1, 477, 0, 153, 76, {0}, {0},
+        1.0f, 15.0f, 0, 15, 30, 64, 127, 127, 127, 0
+    },
+    {
+        "c\\snow_b\\snow_b", ForceOfNatureModelList, 0, { 21000, 15000, 12900 },
+        { 197, -1 }, 0, 0, -1, -1, 477, 1, 160, 50, {0}, {0}, 8.0f, 33.0f, 111, 101, 134,
+        127, 127, 127, 127, 0
+    },
+    {
+        "a\\castle\\castle", TheGauntletModelList, 0, { 27000, 15000, 12000 },
+        { 197, 158 }, 0, 0, -1, -1, 477, 0, -1, 91, { 0.0f, 0.0f, 2.11f },
+        { -66.05f, 0.51f, -80.02f }, 14.0f, 45.0f, 48, 32, 16, 64, 127, 127, 127, 0
+    },
+    {
+        "a\\jungle_a\\jungle_a", BamboozledModelList, 0, { 22500, 10500, 7500 },
+        { 197, -1 }, 0, 0, -1, -1, 477, 0, 83, 100, {0}, {0}, 13.0f, 57.0f, 0, 0, 0, 127,
+        127, 127, 127, 0
+    },
+    {
+        "a\\garden\\garden", BanzaiBonsaiModelList, 0, { 27000, 18000, 13500 },
+        { 197, 164 }, 0, 0, -1, -1, 477, 1, -1, 60, { 7.22f, 0.75f, 10.12f },
+        { -47.16f, 0.83f, -110.12f }, 9.0f, 16.0f, 18, 18, 60, 46, 127, 127, 127, 0
+    },
+    {
+        "a\\farm\\farm", TornadoAlleyModelList, 0, { 36000, 24000, 18000 }, { 197, -1 }, 0,
+        0, -1, -1, 3037, 0, 54, 1000, {0}, {0}, 62.0f, 109.0f, 15, 0, 74, 48, 127, 127, 127,
+        0
+    },
+    {
+        "a\\tsunami\\toonarmy", TsunamiModelList, TsunamiChaseData,
+        { 27000, 13500, 12000 }, { 197, 164 }, 0, 0, -1, -1, 477, 1, 107, 70,
+        { 45.84f, 0.5f, -80.54f }, { 11.25f, 0.4f, -29.0f }, 2.0f, 18.0f, 0, 6, 33, 100,
+        127, 127, 127, 0
+    },
+    {
+        "a\\fire_r\\fire_r", FahrenheitFrenzyModelList, 0, { 36000, 24000, 21000 },
+        { 197, 166 }, 0, 0, -1, -1, 477, 0, 59, 76, {0}, { -48.84f, -3.44f, 250.48f }, 1.0f,
+        9.0f, 64, 16, 0, 64, 127, 127, 127, 186
+    },
+    {
+        "a\\castle_a\\castle_a", MedievalMadnessModelList, 0, { 30000, 21000, 18000 },
+        { 197, 158 }, 0, 0, -1, -1, 3549, 0, 83, 60, {0}, {0}, 15.0f, 33.0f, 0, 0, 0, 127,
+        127, 127, 127, 0
+    },
+    {
+        "a\\castle_c\\castle_c", WizardsAndLizardsModelList, WizardsAndLizardsChaseData,
+        { 22500, 13500, 10500 }, { 197, 158 }, 0, 0, -1, -1, 477, 0, -1, 50, {0},
+        { 0.03f, 0.0f, -182.66f }, 5.0f, 12.0f, 16, 16, 16, 64, 127, 127, 127, 0
+    },
+    {
+        "a\\fire_fly\\fire_fly", ThatSinkingFeelingModelList, 0, { 63000, 42000, 21000 },
+        { 197, -1 }, 0, 0, -1, -1, 3037, 0, 139, 1000, {0}, {0}, 49.0f, 163.0f, 54, 0, 70,
+        66, 127, 127, 127, 0
+    },
+    {
+        "a\\western\\western", GoldRushModelList, 0, { 40500, 31500, 27000 }, { 197, 164 },
+        0, 0, -1, -1, 477, 0, 137, 78, {0}, { 36.21f, 0.11f, 133.27f }, 3.0f, 16.0f, 82, 50,
+        0, 64, 127, 127, 127, 0
+    },
+    {
+        "a\\droid\\droid", DroidVoidModelList, 0, { 36000, 25500, 22500 }, { 197, 160 }, 0,
+        0, -1, -1, 477, 0, 68, 79, {0}, { 54.99f, 0.0f, 61.41f }, 10.0f, 10.0f, 127, 127,
+        127, 63, 127, 127, 127, 0
+    },
+    {
+        "c\\earth_b\\earth_b", RumbleInTheRoksModelList, 0, { 63000, 42000, 21000 },
+        { 197, -1 }, 0, 0, -1, -1, 3551, 0, 83, 132, {0}, {0}, 5.0f, 29.0f, 0, 0, 16, 32,
+        127, 127, 127, 0
+    },
+    {
+        "c\\fire_b\\fire_b", CrashesToAshesModelList, 0, { 63000, 42000, 21000 },
+        { 197, -1 }, 0, 0, -1, -1, 479, 0, 178, 250, { -0.15f, -1.02f, 52.46f }, {0}, 4.0f,
+        50.0f, 16, 0, 0, 64, 127, 127, 127, 150
+    },
+    {
+        "c\\water_b\\water_b", DrainDamageModelList, 0, { 63000, 42000, 21000 },
+        { 197, -1 }, 0, 0, -1, -1, 479, 0, -1, 200, {0}, {0}, 38.0f, 69.0f, 0, 0, 0, 106,
+        127, 127, 127, 0
+    },
+    {
+        "c\\weath_b\\weath_b", AtmosphericPressureModelList, 0, { 63000, 42000, 21000 },
+        { 197, -1 }, 0, 0, -1, -1, 991, 0, 54, 1000, {0}, {0}, 10.0f, 10.0f, 127, 127, 127,
+        63, 127, 127, 127, 0
+    },
+    {
+        "c\\space_b\\space_b", CrunchTimeModelList, 0, { 63000, 42000, 21000 },
+        { 197, -1 }, 0, 0, -1, -1, 479, 0, -1, 1000, { -0.75f, 0.0f, 4.0f }, {0}, 5.0f,
+        12.0f, 127, 127, 127, 64, 128, 32, 0, 0
+    },
+    {
+        "a\\space_a\\space_a", CrashteroidsModelList, 0, { 34308, 24849, 22815 },
+        { 197, -1 }, 0, 0, -1, -1, 3037, 1, 129, 1000, {0}, {0}, 10.0f, 10.0f, 127, 127,
+        127, 63, 127, 127, 127, 0
+    },
+    {
+        "c\\cast_bug\\cast_bug", KnightTimeModelList, 0, { 28641, 21708, 15033 },
+        { 197, 158 }, 0, 0, -1, -1, 477, 1, -1, 1000, {0}, {0}, 10.0f, 10.0f, 127, 127, 127,
+        63, 127, 127, 127, 0
+    },
+    {
+        "c\\west_b\\west_b", GhostTownModelList, 0, { 20814, 14607, 10938 }, { 197, -1 },
+        0, 0, -1, -1, 477, 0, 161, 1000, {0}, {0}, 10.0f, 10.0f, 127, 127, 127, 63, 127,
+        127, 127, 0
+    },
+    {
+        "c\\cold_b\\cold_b", IceStationBandicootModelList, 0, { 21195, 19026, 15369 },
+        { 197, -1 }, 0, 0, -1, -1, 477, 0, 59, 1000, { 25.3f, 7.84f, -17.57f }, {0}, 10.0f,
+        10.0f, 127, 127, 127, 63, 127, 127, 127, 0
+    },
+    {
+        "a\\weath_r\\weather", WeatheringHeightsModelList, 0, { 29202, 18495, 16224 },
+        { 197, 166 }, 0, 0, -1, -1, 477, 0, -1, 100, {0}, { -117.48f, 0.4f, 11.08f }, 5.0f,
+        11.0f, 127, 127, 127, 48, 127, 127, 127, 0
+    },
+    {
+        "a\\fireball\\ballsof", CrateBallsOfFireModelList, CrateBallsOfFireChaseData,
+        { 42000, 34500, 30000 }, { 197, 168 }, 0, 0, -1, -1, 477, 0, 68, 1000, {0}, {0},
+        10.0f, 10.0f, 127, 127, 127, 63, 127, 127, 127, 0
+    },
+    {
+        "c\\s_balls\\s_balls", SolarBowlerModelList, 0, { 18000, 12000, 9000 },
+        { 197, -1 }, 0, 0, -1, -1, 477, 0, 83, 1000, {0}, {0}, 10.0f, 10.0f, 127, 127, 127,
+        63, 127, 127, 127, 0
+    },
+    {
+        "a\\space_r\\space_r", CortexVortexModelList, 0, { 30000, 19500, 17400 },
+        { 197, 166 }, 0, 0, -1, -1, 477, 0, -1, 75, {0}, {0}, 10.0f, 30.0f, 0, 0, 0, 91,
+        127, 127, 127, 0
+    },
+    {
+        "a\\seashell\\seashell", SeaShellShenanigansModelList, 0, { 25080, 20373, 15714 },
+        { 197, -1 }, 0, 0, -1, -1, 4573, 0, 32, 1000, { -1.35f, 51.63f, -73.55f }, {0},
+        6.0f, 9.0f, 0, 40, 50, 64, 128, 128, 128, 200
+    },
+    {
+        "b\\titles\\title", TitlesModelList, 0, {0}, { 170, -1 }, 0, 0, -1, -1, 20, -1, -1,
+        0, {0}, {0}, 10.0f, 10.0f, 127, 127, 127, 63, 127, 127, 127, 0
+    },
+    {
+        "a\\airship\\airship", AirshipModelList, 0, { 24000, 21000, 18000 }, { 197, -1 },
+        0, 0, -1, -1, 3037, 0, 54, 1000, {0}, {0}, 10.0f, 10.0f, 89, 63, 97, 127, 127, 127,
+        127, 0
+    },
+    {
+        "b\\hub\\hub", FrontEndModelList, 0, {0}, { 170, -1 }, 0, 0, -1, -1, 285, 0, -1, 0,
+        { 0.0f, 7.85f, 1.9f }, {0}, 10.0f, 10.0f, 127, 127, 127, 63, 127, 127, 127, 0
+    },
+    {
+        "b\\gameover\\chamber", GameOverModelList, 0, {0}, { -1, -1 }, 0, 0, -1, -1, 20,
+        -1, -1, 0, {0}, {0}, 10.0f, 10.0f, 127, 127, 127, 63, 127, 127, 127, 0
+    },
+    {
+        "b\\intro\\intro1", IntroModelList, 0, {0}, { -1, -1 }, 0, 0, -1, -1, 20, -1, -1,
+        0, {0}, {0}, 10.0f, 10.0f, 127, 127, 127, 63, 127, 127, 127, 0
+    },
+    {
+        "b\\space\\space", SpaceModelList, 0, {0}, { -1, -1 }, 0, 0, -1, -1, 0, -1, -1, 0,
+        {0}, {0}, 10.0f, 10.0f, 127, 127, 127, 63, 127, 127, 127, 0
+    },
+    {
+        "b\\intro\\outro1", OutroModelList, 0, {0}, { -1, -1 }, 0, 0, -1, -1, 20, -1, -1,
+        0, {0}, {0}, 10.0f, 10.0f, 127, 127, 127, 63, 127, 127, 127, 0
+    },
+    {
+        "b\\testzone\\test", TestZoneModelList, 0, {0}, { -1, -1 }, 0, 0, -1, -1, 477, 1,
+        -1, 0, {0}, {0}, 10.0f, 10.0f, 127, 127, 127, 63, 127, 127, 127, 0
+    },
+    {
+        "b\\disco\\disco", CreditsModelList, 0, {0}, { 197, -1 }, 0, 0, -1, -1, 0, -1, -1,
+        0, {0}, {0}, 10.0f, 10.0f, 127, 127, 127, 63, 127, 127, 127, 0
+    }
+};
+char NameInputTable[4][7] = {
+    { 65, 66, 67, 68, 69, 70, 71 }, { 72, 73, 74, 75, 76, 77, 78 },
+    { 79, 80, 81, 82, 83, 84, 85 }, { 86, 87, 88, 89, 90, 95, 60 }
+};
 
 void InitVehicleToggles(void) {
     struct vtog_s *vt;
@@ -6251,12 +7100,12 @@ void InitVehicleToggles(void) {
         if (world_scene[0] == NULL) {
             continue;
         }
-        sprintf(tbuf, D_0061D7F8, i);
+        sprintf(tbuf, "vehicle_trigger_%.2i_in", i);
         vt->pTRIGGER = NuSplineFind(world_scene[0], tbuf);
         if (vt->pTRIGGER != NULL) {
             vt->type = 0;
         } else {
-            sprintf(tbuf, D_0061D810, i);
+            sprintf(tbuf, "vehicle_trigger_%.2i_out", i);
             vt->pTRIGGER = NuSplineFind(world_scene[0], tbuf);
             if (vt->pTRIGGER == NULL) {
                 continue;
@@ -6275,25 +7124,22 @@ void InitVehicleToggles(void) {
         vt->yrot = TempRPos.angle;
         if (vt->type != 0 || (LBIT & 0x10080010) == 0) {
             y = NewShadowMask(&vt->pos, 0.0f, -1);
-            if (y != D_0062D2E8) {
+            if (y != 2000000.0f) {
                 vt->pos.y = y;
                 FindAnglesZX(&ShadNorm);
                 vt->xrot = temp_xrot;
                 vt->zrot = temp_zrot;
             }
         }
-        sprintf(tbuf, D_0061D830, i);
+        sprintf(tbuf, "vehicle_cam_%.2i", i);
         vt->pCAM = NuSplineFind(world_scene[0], tbuf);
-        sprintf(tbuf, D_0061D848, i);
+        sprintf(tbuf, "vehicle_look_%.2i", i);
         vt->pLOOK = NuSplineFind(world_scene[0], tbuf);
     }
 }
 
 extern s32 FurtherBEHIND(s32 iRAIL0, s32 iALONG0, float fALONG0, s32 iRAIL1,
                          s32 iALONG1, float fALONG1);
-extern struct vtog_s D_0058AF24[];
-extern float vtog_time;
-extern float vtog_duration;
 
 void ResetVehicleControl(s32 iRAIL, s32 iALONG, float fALONG) {
     struct vtog_s *vt;
@@ -6334,7 +7180,7 @@ void ResetVehicleControl(s32 iRAIL, s32 iALONG, float fALONG) {
         }
     }
 
-    for (i = 5, vt = D_0058AF24; i >= 0; i--, vt--) {
+    for (i = 5, vt = &VTog[5]; i >= 0; i--, vt--) {
         if (vt->pTRIGGER != NULL &&
             FurtherBEHIND(vt->iRAIL, vt->iALONG, vt->fALONG, iRAIL, iALONG,
                           fALONG)) {
@@ -6372,22 +7218,11 @@ end:
     vtog_duration = 0.0f;
 }
 
-extern struct numtx_s mTEMP;
 extern struct nuvec_s AshesMechInPos;
-extern struct vtog_s *pVTog;
-extern s32 vtog_blend;
-extern u16 vtog_angle;
-extern float D_0062D2FC;
 
-extern struct nuvec_s vtog_oldpos;
-extern struct nuvec_s vtog_newpos;
 extern struct nuvec_s AshesMechOutPos;
 extern float AshesMechInZ;
 extern float AshesMechOutZ;
-extern float D_0062D2EC;
-extern float D_0062D2F0;
-extern float D_0062D2F4;
-extern float D_0062D2F8;
 extern void AddMechanicalDebris(struct nuvec_s *pos, s32 vehicle);
 extern void BlendGameCamera(struct cammtx_s *cam, float t);
 extern void JudderGameCamera(struct cammtx_s *cam, struct nuvec_s *pos, float amt);
@@ -6435,7 +7270,7 @@ void ToggleVehicle(struct creature_s *c) {
             vtog_duration = 1.0f;
             vtog_newpos = AshesMechInPos;
             y = NewShadow(&vtog_newpos, vtog_time);
-            if (y != D_0062D2EC) {
+            if (y != 2000000.0f) {
                 vtog_newpos.y = y - c->obj.bot * c->obj.SCALE;
             }
             vtog_blend = 1;
@@ -6454,7 +7289,7 @@ void ToggleVehicle(struct creature_s *c) {
             vtog_duration = 1.0f;
             vtog_newpos = AshesMechOutPos;
             y = NewShadow(&vtog_newpos, vtog_time);
-            if (y != D_0062D2F0) {
+            if (y != 2000000.0f) {
                 vtog_newpos.y = y - c->obj.bot * c->obj.SCALE;
             }
             vtog_blend = 1;
@@ -6468,7 +7303,7 @@ void ToggleVehicle(struct creature_s *c) {
             pos.z = c->obj.pos.z;
             AddMechanicalDebris(&pos, 0xB2);
             GameSfx(0x3B, &c->obj.pos);
-            JudderGameCamera(&GameCam[0], NULL, D_0062D2F4);
+            JudderGameCamera(&GameCam[0], NULL, 0.3f);
             return;
         }
     }
@@ -6570,7 +7405,7 @@ void ToggleVehicle(struct creature_s *c) {
                     break;
                 }
                 GameSfx(0x3B, &c->obj.pos);
-                JudderGameCamera(&GameCam[0], NULL, D_0062D2F8);
+                JudderGameCamera(&GameCam[0], NULL, 0.3f);
             }
             pVTog = vt;
             vtog_angle = vt->yrot;
@@ -6614,7 +7449,7 @@ void DrawNextVehicle(s32 render) {
     if (Level == 0x16 && (VEHICLECONTROL == 0 || vtog_time < vtog_duration)) {
         pos = AshesMechInPos;
         y = NewShadow(&pos, 0.0f);
-        if (y != D_0062D2FC) {
+        if (y != 2000000.0f) {
             pos.y = y;
             FindAnglesZX(&ShadNorm);
         } else {
@@ -6708,8 +7543,6 @@ void AddTempWumpa(struct cratecube_s *crate, s32 n, float x, float y, float z) {
     }
 }
 
-extern struct wscr_s WScr[32];
-extern struct RPos_s gempath_RPos;
 extern signed char temp_iRAIL;
 extern short temp_iALONG;
 extern float temp_fALONG;
@@ -6769,7 +7602,6 @@ void ResetWumpa(void) {
     }
 }
 
-extern s32 i_screenwumpa;
 extern s32 mg_wumpatot;
 extern float WUMPAOBJSX;
 extern float PANELSY;
@@ -6843,7 +7675,6 @@ void UpdateScreenWumpas(void) {
 }
 
 extern s32 USELIGHTS;
-extern s32 LIGHTMASK;
 extern void SetLights(struct nucolour3_s *col0, struct nuvec_s *dir0,
                       struct nucolour3_s *col1, struct nuvec_s *dir1,
                       struct nucolour3_s *col2, struct nuvec_s *dir2,
@@ -6993,7 +7824,6 @@ void DrawWumpa(void) {
     }
 }
 
-extern u16 wumpa_a[];
 extern struct numtx_s numtx_identity;
 extern s32 HitCreatures(struct obj_s *obj, s32 destroy, s32 type);
 extern s32 HitCrates(struct obj_s *obj, s32 destroy);
@@ -7420,7 +8250,6 @@ extern struct cratecube_s Crate[];
 extern s32 CRATEGROUPCOUNT;
 extern float CRATEHOPSPEED;
 extern struct obj_s *pObj[64];
-extern float D_0062D314; /* kaboom time step */
 extern s32 GetCrateType(struct cratecube_s *crate, s32 flags);
 extern s32 NewCrateAnimation(struct cratecube_s *crate, s32 character, s32 action, s32 flag);
 extern s32 CrateOff(struct crategroup_s *group, struct cratecube_s *crate, s32 type, s32 b);
@@ -7577,7 +8406,7 @@ void UpdateKabooms(void) {
                 }
             }
         }
-        k->time += D_0062D314;
+        k->time += 0.02f;
         if (k->time > k->duration) {
             k->time = k->duration;
         }
@@ -7640,10 +8469,6 @@ void DrawKabooms(void) {
 }
 
 extern struct tubinfo_s PlrTub;
-extern struct nuvec_s finish_newpos;
-extern struct nuvec_s finish_oldpos;
-extern s32 finish_type;
-extern float FINISHRADIUSLEVEL;
 extern float FlyingLevelCompleteTimer;
 extern s32 ChrisBigBossDead;
 extern s32 SmokeyFinished;
@@ -7653,9 +8478,6 @@ extern s32 i_ring;
 extern s32 RINGCOUNT;
 extern s32 carpet_place;
 extern s32 DESTRUCTIBLECRATECOUNT;
-extern float TT_RELICX;
-extern float TT_RELICY;
-extern float D_0062D318;
 extern float FindNearestCreature(struct nuvec_s *pos, s32 type, struct nuvec_s *out);
 extern s32 GetCurrentLevelObjectives(void);
 extern void PickupCrateGem(void);
@@ -7907,7 +8729,7 @@ void CheckFinish(struct obj_s *obj) {
             } else {
                 NewMenu(&Cursor, 0xE, 0, -1);
             }
-            JudderGameCamera(&GameCam[0], NULL, D_0062D318);
+            JudderGameCamera(&GameCam[0], NULL, 0.3f);
             GameSfx(0x3C, NULL);
             return;
         }
@@ -7940,10 +8762,6 @@ void CheckFinish(struct obj_s *obj) {
 extern struct font3dtab_s Font3DTab[];
 extern s8 Font3DRemap[];
 extern struct nugscn_s *font3d_scene;
-extern struct nuvec_s D_0061D8E8; /* crate count icon scale {1.5, 1.5, 1.5} */
-extern char D_00630BC0[];         /* "%i/%i" */
-extern float CRATECOUNT3DSEPERATION;
-extern float CRATECOUNT3DSCALE;
 extern s32 DESTRUCTIBLECRATECOUNT;
 
 void Draw3DCrateCount(struct nuvec_s *pos, u16 angle) {
@@ -7955,7 +8773,7 @@ void Draw3DCrateCount(struct nuvec_s *pos, u16 angle) {
     s32 i;
     u16 ang;
 
-    v = D_0061D8E8;
+    v = (struct nuvec_s){1.5f, 1.5f, 1.5f};
     NuMtxSetScale(&mTEMP, &v);
     NuMtxRotateY(&mTEMP, angle);
     NuMtxTranslate(&mTEMP, pos);
@@ -7970,7 +8788,7 @@ void Draw3DCrateCount(struct nuvec_s *pos, u16 angle) {
     v.z -= NuTrigTable[(u16)(ang + 0x4000)] * CRATECOUNT3DSEPERATION;
     dx = NuTrigTable[(u16)(ang + 0x4000)] * CRATECOUNT3DSCALE;
     dz = NuTrigTable[(u16)(ang - 0x8000)] * CRATECOUNT3DSCALE;
-    sprintf(tbuf, D_00630BC0, plr_crates.draw, DESTRUCTIBLECRATECOUNT);
+    sprintf(tbuf, "%i/%i", plr_crates.draw, DESTRUCTIBLECRATECOUNT);
     len = strlen(tbuf);
     v.x -= dx * (len - 1) * 0.5f;
     v.z -= dz * (len - 1) * 0.5f;
@@ -7987,11 +8805,6 @@ void Draw3DCrateCount(struct nuvec_s *pos, u16 angle) {
 }
 
 
-extern float gempath_time;
-extern float gempath_duration;
-extern s32 gempath_lock;
-extern struct nugspline_s *gempath_pCAM;
-extern struct nugspline_s *gempath_pPLAT;
 extern struct rail_s D_005864A0;
 #define gempath_rail D_005864A0
 extern s32 ObjectCylinderCollision(struct obj_s *obj, struct obj_s *cyl, s32 flag,
@@ -8136,11 +8949,6 @@ void GemPathTransporter(struct creature_s *plr) {
 }
 
 
-extern float death_time;
-extern float death_duration;
-extern s32 death_lock;
-extern struct nugspline_s *death_pCAM;
-extern struct nugspline_s *death_pPLAT;
 
 void DeathTransporter(struct creature_s *plr) {
     struct nuvec_s pos;
@@ -8285,13 +9093,6 @@ void DeathTransporter(struct creature_s *plr) {
 }
 
 
-extern struct nugspline_s *bonus_pCAM;
-extern struct nugspline_s *bonus_pPLAT;
-extern float bonus_time;
-extern float bonus_duration;
-extern float bonus_crates_wait;
-extern float bonus_panel_wait;
-extern u8 bonus_crate_delay;
 extern void GameMusic(s32 music, s32 i);
 
 void BonusTransporter(struct creature_s *plr) {
@@ -8526,8 +9327,6 @@ inline s32 Draw3DObject(s32 object, struct nuvec_s *pos, u16 xrot, u16 yrot,
 }
 
 
-extern s32 plr_target_frame;
-extern struct nuvec_s plr_target_sightpos;
 
 void DrawTarget(void) {
     struct anim_s *anim;

@@ -9,7 +9,6 @@ struct CharacterModel;
 struct NUJOINTANIM_s;
 struct creatcmd_s;
 struct creature_s;
-struct pchase_s;
 
 struct hub_s {
     u8 flags;                           /* 0x00 */
@@ -55,6 +54,18 @@ struct game_s {
     u8 empty;                           /* 0x407 */
     u32 cutbits;                        /* 0x408 */
 }; /* 0x40C */
+
+/* One chase step of a level's *ChaseData table (ldata_s.pChase). */
+struct pchase_s {
+    s8 i;                               /* 0x00 */
+    s8 i_last;                          /* 0x01 */
+    s8 i_next;                          /* 0x02 */
+    u8 cuboid;                          /* 0x03 */
+    s16 character[6];                   /* 0x04 */
+    s16 action[6];                      /* 0x10 */
+    f32 scale[6];                       /* 0x1C */
+    f32 duration;                       /* 0x34 */
+}; /* 0x38 */
 
 struct ldata_s {
     char *path;                         /* 0x00 */
