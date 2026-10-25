@@ -1304,7 +1304,7 @@ u64 CrcChain(void *addr, int uncached)
         n = tag->qwc;
         if (n) {
             int i;
-            for (i = 0; i < n; i++) {
+            for (i = 0; i < (u16)n; i++) {
                 tot += *lptr++;
                 tot += *lptr++;
             }

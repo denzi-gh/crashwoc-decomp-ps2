@@ -1009,21 +1009,6 @@ void NuGHGWrite(struct NUHGOBJ_s *hobj, char *file, int size) {
     struct nutexanim_s *anims;
     struct nutexanim_s *anim;
     short *tids;
-    struct nushadowdata_s *shadow;
-    struct nushadowdata_s *outshadow;
-    struct nushadowmesh_s *mesh;
-    struct nushadowmesh_s *outmesh;
-    char *ellipsoids;
-    char *cylinders;
-    char *meshes;
-    char *verts;
-    int nshadows;
-    int nellipsoids;
-    int ncylinders;
-    int nmeshes;
-    int nnormals;
-    int nverts;
-    int count;
     int fh;
     int i;
     int j;
@@ -1236,6 +1221,22 @@ void NuGHGWrite(struct NUHGOBJ_s *hobj, char *file, int size) {
 
         header->shadow = 0;
         if (hobj->shadow) {
+        struct nushadowdata_s *shadow;
+        struct nushadowdata_s *outshadow;
+        struct nushadowmesh_s *mesh;
+        struct nushadowmesh_s *outmesh;
+        char *ellipsoids;
+        char *cylinders;
+        char *meshes;
+        char *verts;
+        int nshadows;
+        int nellipsoids;
+        int ncylinders;
+        int nmeshes;
+        int nnormals;
+        int nverts;
+        int count;
+
             shadow = hobj->shadow;
             nshadows = 0;
             nellipsoids = 0;

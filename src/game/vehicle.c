@@ -690,11 +690,6 @@ void SetNewMaskStuff(s32 index, struct nuvec_s *centre, struct nuvec_s *offset,
     mask->tiltx[0] = tiltx;
 }
 
-inline void ProcessCrashteroidsIntro(void)
-{
-    ProcessFireFlyIntro();
-}
-
 struct nuvec_s *GetWeatherBossPos(void)
 {
     return D_005B44F8;
@@ -1465,10 +1460,10 @@ void ProcessGliderBombs(void)
     floor = -30.0f;
     for (enemy = 0; enemy < 2; enemy++) {
         for (i = 0; i < count; i++) {
-            bomb = &bombs[i];
-            if (bomb->life == 0) {
+            if (bombs[i].life == 0) {
                 continue;
             }
+            bomb = &bombs[i];
             bomb->life--;
             vel = bomb->vel;
             if (NewRayCast(&bomb->pos, &vel, 0.0f)) {
@@ -1488,8 +1483,8 @@ void ProcessGliderBombs(void)
             AddGameDebrisRot(0x45, &pos, 1, 0, 0);
             NuVecAdd(&bomb->pos, &bomb->pos, &bomb->vel);
             if (bomb->pos.y < floor && Level == 0x12) {
-                bomb->pos.y = 0.0f;
                 bomb->life = 0;
+                bomb->pos.y = 0.0f;
                 AddGameDebris(0x35, &bomb->pos);
                 continue;
             }
@@ -3234,6 +3229,9 @@ extern struct nuvec_s NullNuVec;
 extern struct nuvec_s *CrossProduct(struct nuvec_s *dest, struct nuvec_s *a, struct nuvec_s *b);
 
 
+extern f32 D_0062DD3C;
+extern f32 D_0062DD44;
+
 void TerrainAtlas(struct NEWBUGGY *atlas, f32 dt)
 {
     struct nuvec_s history[6];
@@ -3242,7 +3240,6 @@ void TerrainAtlas(struct NEWBUGGY *atlas, f32 dt)
     struct nuvec_s step;
     s32 tries;
     s32 maxtries;
-    s32 left;
     s32 hit;
     f32 dot;
     f32 speed;
@@ -3258,11 +3255,10 @@ void TerrainAtlas(struct NEWBUGGY *atlas, f32 dt)
     step.y = atlas->ball_target.y - atlas->ball_pos.y;
     step.z = atlas->ball_target.z - atlas->ball_pos.z;
     do {
-        left = tries - 1;
         move = step;
-        history[left] = atlas->ball_pos;
-        spins[left] = atlas->rotquat_delta;
-        hit = NewRayCastSetHandel(&atlas->ball_pos, &move, atlas->ball_radius, 0.01f, 0.0f, atlas->terrhandle);
+        history[tries - 1] = atlas->ball_pos;
+        spins[tries - 1] = atlas->rotquat_delta;
+        hit = NewRayCastSetHandel(&atlas->ball_pos, &move, atlas->ball_radius, D_0062DD3C, 0.0f, atlas->terrhandle);
         if (hit & 0x10) {
             if (TerrainPlatId() != -1 && ShadNorm.y >= 0.5f) {
                 if (!UnembedRayCastAtlasSimple(atlas, atlas->terrhandle)) {
@@ -3272,7 +3268,7 @@ void TerrainAtlas(struct NEWBUGGY *atlas, f32 dt)
                 UnembedRayCastAtlas(atlas, atlas->terrhandle);
             }
             move = step;
-            hit = NewRayCastSetHandel(&atlas->ball_pos, &move, atlas->ball_radius, 0.01f, 0.0f, atlas->terrhandle);
+            hit = NewRayCastSetHandel(&atlas->ball_pos, &move, atlas->ball_radius, D_0062DD44, 0.0f, atlas->terrhandle);
         }
         atlas->ball_oldpos = atlas->ball_pos;
         NuVecSub(&step, &step, &move);
@@ -3339,9 +3335,9 @@ void TerrainAtlas(struct NEWBUGGY *atlas, f32 dt)
             }
             atlas->lastnormal = norm;
         }
-        tries = left;
-    } while (hit != 0 && left != 0);
-    if (left == 0) {
+        tries--;
+    } while (hit != 0 && tries != 0);
+    if (tries == 0) {
         tttt++;
     }
 }
@@ -7829,6 +7825,8 @@ extern void ControlGliderWeatherBoss(struct gliderflight_s *glider, struct nupad
 extern void ProcessGliderMovement(struct gliderflight_s *glider, f32 dt);
 extern void GliderFire(struct gliderflight_s *glider, struct nupad_s *pad);
 
+extern void ProcessCrashteroidsIntro(void);
+
 void MoveGlider(struct creature_s *Cre, struct nupad_s *Pad)
 {
     struct gliderflight_s *Glider;
@@ -8096,6 +8094,12 @@ void MoveGlider(struct creature_s *Cre, struct nupad_s *Pad)
         AddVariableShotDebrisEffect(GDeb[0x9F].i, (struct nuvec_s *)&Glider->Cre->mtxLOCATOR[1][2]._30, 1, 0, 0);
     }
 }
+
+inline void ProcessCrashteroidsIntro(void)
+{
+    ProcessFireFlyIntro();
+}
+
 
 
 inline void DrawAsteroids(void)
