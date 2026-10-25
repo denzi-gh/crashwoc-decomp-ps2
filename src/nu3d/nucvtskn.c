@@ -648,7 +648,7 @@ extern float *stripptr;
 extern SkinPrimDef *stripprimdefs;
 extern int callcnt;
 
-float *GenStrips(SkinPrimDef *defs, float *pkt, int base, int cnt, int *used) {
+float *GenStrips(SkinPrimDef *defs, float *pkt, int base, int cnt, int *used, int colour, int shift) {
     int best;
     int bestcount;
     int i;
@@ -708,73 +708,65 @@ float *GenStrips(SkinPrimDef *defs, float *pkt, int base, int cnt, int *used) {
 
 
 SkinDmaTag *NuPs2CreateSkinDma(char **buffer, struct nugeom_s *geom, SkinPrimDef *defs, int cnt) {
-    int used[16];
+    int used[14];
     union {
-        u64 dw[2];
-        u32 w[4];
+        u64 dw[4];
+        u32 w[8];
     } tri;
     union variptr_u pkt;
-    SkinPrimDef *pd;
-    SkinPrimDef *scan;
-    u8 *chain;
+    int prim;
+    int left;
+    int colour;
+    int shift;
     char *start;
-    u16 *gt;
-    u16 *hdr;
+    int end;
     u32 *up;
+    u16 *s;
+    u64 *tag;
+    u8 *chain;
+    SkinPrimDef *pd;
     int group;
     int groups;
     int matrices;
-    int colour;
-    int shift;
-    int end;
-    int prim;
-    int left;
     int edges;
     int loose;
     int i;
     int j;
+    int k;
 
     group = -1;
-    groups = 0;
     matrices = 0;
+    groups = 0;
     colour = geom->mtl->attrib.colour;
     shift = geom->mtl->tid != 0;
-    prim = cnt;
-    scan = defs;
-    if (prim > 0) {
-        do {
-            prim--;
-            if (scan->group != group) {
-                groups++;
-                matrices += scan->nmtx;
-                group = scan->group;
-            }
-            scan++;
-        } while (prim != 0);
+    for (prim = 0; prim < cnt; prim++) {
+        if (defs[prim].group != group) {
+            group = defs[prim].group;
+            groups++;
+            matrices += defs[prim].nmtx;
+        }
     }
-    prim = 0;
     start = *buffer;
+    prim = 0;
     end = 0;
     pkt.charptr = start + groups * 16 + matrices * 16 + groups * 16 + 16;
     chain = (u8 *)start;
-    if (cnt > 0) {
-      do {
-        u32 offset = pkt.charptr - start;
-
-        pd = &defs[prim];
-        group = pd->group;
+    while (prim < cnt) {
+        group = defs[prim].group;
         chain = vpDmaTag_CntEx(chain, 0x01000108, 0);
         ((SkinDmaTag *)chain)[-1].mode = 7;
-        for (j = 0; j < pd->nmtx; j++) {
-            if (j == 0) {
-                chain = vpDmaTag_RefEx(chain, pd->mtxid[0] << 6, 0x10000000, 0x6C040018);
+        for (k = 0; k < defs[prim].nmtx; k++) {
+            if (k == 0) {
+                chain = vpDmaTag_RefEx(chain, defs[prim].mtxid[0] << 6, 0x10000000, 0x6C040018);
+                ((SkinDmaTag *)chain)[-1].qwc = 4;
+                ((SkinDmaTag *)chain)[-1].mode = 8;
             } else {
-                chain = vpDmaTag_RefEx(chain, defs[prim].mtxid[j] << 6, 0, 0x6C040000 | (j + 24));
+                chain = vpDmaTag_RefEx(chain, defs[prim].mtxid[k] << 6, 0, (k + 24) | 0x6C040000);
+                ((SkinDmaTag *)chain)[-1].qwc = 4;
+                ((SkinDmaTag *)chain)[-1].mode = 8;
             }
-            ((SkinDmaTag *)chain)[-1].mode = 8;
-            ((SkinDmaTag *)chain)[-1].qwc = 4;
         }
-        chain = vpDmaTag_Call(chain, offset);
+        chain = vpDmaTag_Call(chain, pkt.charptr - start);
         left = 0;
         for (j = prim; j < cnt && defs[j].group == group; j++) {
             left++;
@@ -782,55 +774,60 @@ SkinDmaTag *NuPs2CreateSkinDma(char **buffer, struct nugeom_s *geom, SkinPrimDef
         pkt.u8 = vpDmaTag_RetEx(pkt.u8, 0x01000101, 0);
         ((SkinDmaTag *)pkt.voidptr)[-1].mode = 6;
         while (left) {
-            gt = (u16 *)(pkt.u32 + 1);
-            hdr = (u16 *)(pkt.u32 + 6);
-            up = pkt.u32 + 9;
             group = left < 15 ? left : 14;
             left -= group;
             group *= 3;
             for (i = 0; i < group; i += 3) {
-                defs[prim + i / 3].adj[2] = -1;
-                defs[prim + i / 3].adj[0] = -1;
-                defs[prim + i / 3].adj[1] = -1;
+                pd = &defs[prim + i / 3];
+                pd->adj[0] = -1;
+                pd->adj[1] = -1;
+                pd->adj[2] = -1;
             }
             edges = 0;
-            memset(used, 0, 14 * sizeof(int));
+            memset(used, 0, sizeof(used));
             for (i = 0; i < group; i += 3) {
-                for (j = prim + i / 3 + 1; j < prim + group / 3; j++) {
+                for (j = 1 + prim + i / 3; j < prim + group / 3; j++) {
                     edges += ShareEdge(defs, prim + i / 3, j);
                 }
             }
-            tri.dw[0] = 0x3002400000008003ULL;
-            tri.dw[1] = 0x512;
+            tag = tri.dw;
+            tag[0] = 0x3002400000008003ULL;
+            tag[1] = 0x512;
             pktvtxcolour = colour;
             pktcolourshift = shift;
             pkttot = 0;
             pktdupes = 0;
             prevvidcnt = 0;
             pkt.u32[0] = 0x6C0180D2;
-            pktgt = gt;
+            pktgt = pkt.u16 + 2;
             pkt.u32[1] = tri.w[0];
             pkt.u32[2] = tri.w[1];
             pkt.u32[3] = tri.w[2];
             pkt.u32[4] = tri.w[3];
             pkt.u32[5] = 0x6D018002;
-            pkthdr = hdr;
-            hdr[1] = 1;
-            hdr[0] = 0;
-            hdr[2] = 0;
-            hdr[3] = 0;
-            pkt.u32[8] = pktvtxcolour ? 0x01000305 : 0x01000204;
+            pkthdr = pkt.u16 + 12;
+            up = pkt.u32 + 9;
+            s = pkthdr;
+            *s++ = 0;
+            *s++ = 1;
+            *s++ = 0;
+            *s = 0;
+            if (pktvtxcolour) {
+                pkt.u32[8] = 0x01000305;
+            } else {
+                pkt.u32[8] = 0x01000204;
+            }
             memset(packet_unique, -1, 42 * sizeof(int));
             pktupaddr = up;
             *up = pkttot;
             pktcnt = 0;
             pkt.u32 = up + 1;
             if (edges) {
-                pkt.f32 = GenStrips(defs, pkt.f32, prim, group / 3, used);
+                pkt.f32 = GenStrips(defs, pkt.f32, prim, group / 3, used, colour, shift);
             }
             loose = 0;
-            for (i = 0; i < group / 3; i++) {
-                if (used[i] == 0) {
+            for (k = 0; k < group / 3; k++) {
+                if (used[k] == 0) {
                     loose++;
                 }
             }
@@ -850,7 +847,6 @@ SkinDmaTag *NuPs2CreateSkinDma(char **buffer, struct nugeom_s *geom, SkinPrimDef
             end = 1;
         }
         pkt.u8 = vpDmaTag_Close(pkt.u8);
-      } while (prim < cnt);
     }
     vpDmaTag_Ret(chain);
     *buffer = pkt.charptr;

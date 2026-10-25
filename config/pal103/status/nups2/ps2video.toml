@@ -133,7 +133,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0060:0016a778:tbslotEndFn"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0060:0016a800:tbInit"
