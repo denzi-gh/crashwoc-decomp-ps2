@@ -23,17 +23,6 @@
 #include "gamelib/terrain.h"
 #include "game/creature.h"
 
-struct pchase_s {
-    s8 i;                 /* 0x00 */
-    s8 i_last;            /* 0x01 */
-    s8 i_next;            /* 0x02 */
-    u8 cuboid;            /* 0x03 */
-    s16 character[6];     /* 0x04 */
-    s16 action[6];        /* 0x10 */
-    f32 scale[6];         /* 0x1C */
-    f32 duration;         /* 0x34 */
-};                        /* 0x38 */
-
 struct chase_s Chase[3] = {0};
 struct nuvec_s chase_midpos[3] = {0};
 s32 LIGHTCHASECHARACTERS = 1;

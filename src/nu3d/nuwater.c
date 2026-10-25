@@ -51,62 +51,27 @@ extern float NuTrigTable[];
 extern u32 *rndrstream_free;
 extern int PS2_REZ_W;
 extern int PS2_REZ_H;
-extern int skip_grab;
+int skip_grab = 0;
+static int nwater_mtl = 0;
+static float theta_step = 0.1f;
+static int get_screen = 0;
+static int water_tables_active = 0;
+static int nwater_tables = 0;
+static int nwinst;
+static struct numtl_s *water_copy_mtl;
+static int water_rt;
+static float wateru1;
+static float waterv1;
+static struct numtl_s *water_mtls[8];
+static int water_mtl_tables[8];
+static struct nuinstance_s *winst[256];
+static WATERTABLEENTRY water_table[8];
 
-extern char D_00616100[];
-#define nuwater_file D_00616100
-
-extern char D_0062F000[];
-#define msg_assert D_0062F000
+#define nuwater_file "..\\nu2crash.ps2\\nu3d\\nuwater.c"
 
 extern char vu_load_water_mpg[];
 
 extern char vu_load_wateruv_mpg[];
-
-extern int D_006331AC;
-#define nwaterinst D_006331AC
-
-extern struct numtl_s *D_006331B0;
-#define water_grab_mtl D_006331B0
-
-extern int D_006331B4;
-#define water_grab_tid D_006331B4
-
-extern float D_006331B8;
-#define water_grab_u D_006331B8
-
-extern float D_006331BC;
-#define water_grab_v D_006331BC
-
-extern int D_0062EFEC;
-#define nwatermtl D_0062EFEC
-
-extern float D_0062EFF0;
-#define water_speed D_0062EFF0
-
-extern int D_0062EFF4;
-#define water_grab D_0062EFF4
-
-extern int D_0062EFF8;
-#define water_use_tables D_0062EFF8
-
-extern int D_0062EFFC;
-#define nwatertable D_0062EFFC
-
-extern float D_0062F008;
-#define water_time D_0062F008
-
-extern struct numtl_s *D_006B1EB0[8];
-#define watermtl D_006B1EB0
-
-extern int D_006B1ED0[8];
-#define watermtl_table D_006B1ED0
-
-extern struct nuinstance_s *D_006B1EF0[256];
-#define waterinst D_006B1EF0
-
-extern WATERTABLEENTRY D_006B22F0[8];
-#define watertable D_006B22F0
 
 
 static inline int isWaterGobj(struct nugobj_s *gobj) {
@@ -130,17 +95,17 @@ void initWater(struct nugscn_s *scene) {
     int count;
 
     count = 0;
-    for (i = 0, nwaterinst = 0; i < scene->numinstance; i++) {
+    for (i = 0, nwinst = 0; i < scene->numinstance; i++) {
         if (isWaterGobj(scene->gobjs[scene->instances[i].objid])) {
-            nwaterinst++;
+            nwinst++;
         }
     }
-    if (nwaterinst >= 256) {
-        NuErrorProlog(nuwater_file, 0x98)(msg_assert);
+    if (nwinst >= 256) {
+        NuErrorProlog(nuwater_file, 0x98)("assert");
     }
     for (i = 0; i < scene->numinstance; i++) {
         if (isWaterGobj(scene->gobjs[scene->instances[i].objid])) {
-            waterinst[count++] = &scene->instances[i];
+            winst[count++] = &scene->instances[i];
             scene->instances[i].flagword &= ~1;
         }
     }
@@ -152,14 +117,14 @@ static inline u32 getWaterTable(float fx1, float fx4) {
     WATERTABLEENTRY *wt;
     WATERTABLEENTRY *tables;
 
-    for (table = 0; table < nwatertable; table++) {
-        wt = &watertable[table];
+    for (table = 0; table < nwater_tables; table++) {
+        wt = &water_table[table];
         if (wt->fx1 == fx1 && wt->fx4 == fx4) {
             return table;
         }
     }
-    tables = watertable;
-    table = nwatertable++;
+    tables = water_table;
+    table = nwater_tables++;
     tables[table].fx1 = fx1;
     tables[table].fx4 = fx4;
     return table;
@@ -194,15 +159,15 @@ void fixNewMaterials(void) {
             mtl->vuattr.mtx44->_12 = PS2_REZ_W;
             mtl->vuattr.mtx44->_13 = PS2_REZ_H;
             table = getWaterTable(mtl->fx1.f32, mtl->fx4.f32);
-            watermtl_table[nwatermtl] = table;
-            if (nwatermtl >= 8) {
-                NuErrorProlog(nuwater_file, 0xE0)(msg_assert);
+            water_mtl_tables[nwater_mtl] = table;
+            if (nwater_mtl >= 8) {
+                NuErrorProlog(nuwater_file, 0xE0)("assert");
             }
-            watermtl[nwatermtl++] = mtl;
+            water_mtls[nwater_mtl++] = mtl;
             break;
         case 0x84:
-            water_grab = 1;
-            mtl->tid = water_grab_tid;
+            get_screen = 1;
+            mtl->tid = water_rt;
             NuMtlUpdate(mtl);
             mtl->rs.mpg = vu_load_water_mpg;
             mtl->vuattr.vec3->z = mtl->fx2.f32 / 48.0f / mtl->fx4.f32;
@@ -218,11 +183,11 @@ void fixNewMaterials(void) {
             mtl->vuattr.mtx44->_12 = PS2_REZ_W;
             mtl->vuattr.mtx44->_13 = PS2_REZ_H;
             table = getWaterTable(mtl->fx1.f32, mtl->fx4.f32);
-            watermtl_table[nwatermtl] = table;
-            if (nwatermtl >= 8) {
-                NuErrorProlog(nuwater_file, 0xF6)(msg_assert);
+            water_mtl_tables[nwater_mtl] = table;
+            if (nwater_mtl >= 8) {
+                NuErrorProlog(nuwater_file, 0xF6)("assert");
             }
-            watermtl[nwatermtl++] = mtl;
+            water_mtls[nwater_mtl++] = mtl;
             break;
         }
     }
@@ -239,22 +204,22 @@ void fixMaterials(void) {
     int height;
     u32 table;
 
-    nwatermtl = 0;
+    nwater_mtl = 0;
     for (mtl = NuMtlIterate(1); mtl; mtl = NuMtlIterate(0)) {
         if (mtl->fxid == 4) {
-            if (nwatermtl >= 8) {
-                NuErrorProlog(nuwater_file, 0x110)(msg_assert);
+            if (nwater_mtl >= 8) {
+                NuErrorProlog(nuwater_file, 0x110)("assert");
             }
-            watermtl[nwatermtl++] = mtl;
+            water_mtls[nwater_mtl++] = mtl;
         }
     }
-    for (i = 0; i < nwatermtl; i++) {
-        mtl = watermtl[i];
+    for (i = 0; i < nwater_mtl; i++) {
+        mtl = water_mtls[i];
         fxid = mtl->fxid;
         if (fxid != 4) {
             continue;
         }
-        water_grab = 1;
+        get_screen = 1;
         diffuse = mtl->diffuse;
         layer = NuMtlCreate(1);
         layer->fxid = fxid;
@@ -271,7 +236,7 @@ void fixMaterials(void) {
         layer->alpha = mtl->alpha;
         layer->attrib.alpha = mtl->attrib.alpha;
         /* atst is 3 bits, so % 8 is a no-op; it changes the RTL that sets the
-           $s7/$fp allocation tie between watermtl and watertable. */
+           $s7/$fp allocation tie between water_mtls and water_table. */
         layer->attrib.atst = mtl->attrib.atst % 8;
         layer->attrib.afail = mtl->attrib.afail;
         layer->attrib.fx = 1;
@@ -295,8 +260,8 @@ void fixMaterials(void) {
         layer->vuattr.mtx44->_13 = PS2_REZ_H;
         layer->next = 0;
         table = getWaterTable(layer->fx1.f32, layer->fx4.f32);
-        watermtl_table[nwatermtl + i] = table;
-        watermtl[nwatermtl + i] = layer;
+        water_mtl_tables[nwater_mtl + i] = table;
+        water_mtls[nwater_mtl + i] = layer;
         mtl->diffuse = diffuse;
         mtl->attrib.alpha = 0;
         mtl->attrib.utc = 1;
@@ -306,7 +271,7 @@ void fixMaterials(void) {
         mtl->attrib.fx = 1;
         mtl->attrib.colour = 1;
         mtl->alpha = 1.0f;
-        mtl->tid = water_grab_tid;
+        mtl->tid = water_rt;
         mtl->sort_pri = 0x7FFE;
         NuMtlUpdate(mtl);
         mtl->rs.mpg = vu_load_water_mpg;
@@ -323,10 +288,10 @@ void fixMaterials(void) {
         mtl->vuattr.mtx44->_12 = PS2_REZ_W;
         mtl->vuattr.mtx44->_13 = PS2_REZ_H;
         table = getWaterTable(mtl->fx1.f32, mtl->fx4.f32);
-        watermtl_table[nwatermtl] = table;
+        water_mtl_tables[nwater_mtl] = table;
         mtl->next = layer;
     }
-    nwatermtl *= 2;
+    nwater_mtl *= 2;
     fixNewMaterials();
 }
 
@@ -335,15 +300,15 @@ void NuWaterInit(struct nugscn_s *scene) {
     struct nutex_s spec;
     struct numtl_s *mtl;
 
-    water_grab = 0;
+    get_screen = 0;
     spec.type = 0xF;
     spec.width = PS2_REZ_W;
     spec.height = PS2_REZ_H;
-    water_grab_tid = NuTexCreate(&spec);
-    water_grab_u = ((float)PS2_REZ_W - 1.0f) / (float)NuPower2(PS2_REZ_W);
-    water_grab_v = ((float)PS2_REZ_H - 1.0f) / (float)NuPower2(PS2_REZ_H);
+    water_rt = NuTexCreate(&spec);
+    wateru1 = ((float)PS2_REZ_W - 1.0f) / (float)NuPower2(PS2_REZ_W);
+    waterv1 = ((float)PS2_REZ_H - 1.0f) / (float)NuPower2(PS2_REZ_H);
     mtl = NuMtlCreate(1);
-    water_grab_mtl = mtl;
+    water_copy_mtl = mtl;
     mtl->attrib.cull = 2;
     mtl->attrib.zmode = 3;
     mtl->attrib.filter = 0;
@@ -356,7 +321,7 @@ void NuWaterInit(struct nugscn_s *scene) {
     mtl->attrib.alpha = 0;
     mtl->tid = -1;
     NuMtlUpdate(mtl);
-    nwaterinst = 0;
+    nwinst = 0;
     if (scene) {
         initWater(scene);
         fixMaterials();
@@ -380,10 +345,10 @@ void animateWaterTables(float scale, float time) {
     NuMtxInvR(&mtx, &global_camera.mtx);
     NuMtxScale(&mtx, &mtxscale);
     mtx._03 = mtx._13 = mtx._23 = 0.0f;
-    for (i = 0; i < nwatertable; i++) {
-        freq = time * watermtl[i]->fx1.f32;
-        amp = watermtl[i]->fx4.f32 * scale;
-        table = &watertable[i].wave[0].x;
+    for (i = 0; i < nwater_tables; i++) {
+        freq = time * water_mtls[i]->fx1.f32;
+        amp = water_mtls[i]->fx4.f32 * scale;
+        table = &water_table[i].wave[0].x;
         NuRandSeed(0x11);
         for (j = 0; j < 32; j++) {
             wave.x = NuTrigTable[(u16)((freq * (NuRandFloat() * 0.4f + 0.8f) + NuRandFloat() * 6.284f) * 10430.378f)] * amp;
@@ -396,9 +361,9 @@ void animateWaterTables(float scale, float time) {
             *table++ = wave.x;
         }
     }
-    for (i = 0; i < nwatermtl; i++) {
-        table = &watertable[watermtl_table[i]].wave[0].x;
-        mtl = watermtl[i];
+    for (i = 0; i < nwater_mtl; i++) {
+        table = &water_table[water_mtl_tables[i]].wave[0].x;
+        mtl = water_mtls[i];
         stream = &mtl->rs;
         NuRndrStreamLink(stream);
         stream->ptr.u32 = vpDmaTag_Cnt(stream->ptr.u32);
@@ -429,8 +394,8 @@ void animateWater(float scale, float time) {
     NuMtxInvR(&mtx, &global_camera.mtx);
     NuMtxScale(&mtx, &mtxscale);
     mtx._03 = mtx._13 = mtx._23 = 0.0f;
-    for (i = 0; i < nwatermtl; i++) {
-        mtl = watermtl[i];
+    for (i = 0; i < nwater_mtl; i++) {
+        mtl = water_mtls[i];
         freq = time * mtl->fx1.f32;
         amp = mtl->fx4.f32 * scale;
         stream = &mtl->rs;
@@ -458,36 +423,37 @@ void animateWater(float scale, float time) {
 
 
 void NuWaterRender(struct nugscn_s *scene) {
+    static float theta = 7.0f;
     int i;
     struct nuinstance_s *inst;
 
-    if (scene == 0 || nwaterinst == 0) {
+    if (scene == 0 || nwinst == 0) {
         return;
     }
-    if (water_grab) {
-        NuTexAssignAddr(water_grab_tid, NuTexReserve(NuTexGetReqSize(water_grab_tid, 0)));
-        if (!skip_grab && NuRndrBeginScene(water_grab_tid)) {
-            NuRndrRectUV2di(0, 0, PS2_REZ_W << 4, PS2_REZ_H << 4, 0.0f, 0.0f, water_grab_u,
-                            water_grab_v, 0x80808080, water_grab_mtl);
+    if (get_screen) {
+        NuTexAssignAddr(water_rt, NuTexReserve(NuTexGetReqSize(water_rt, 0)));
+        if (!skip_grab && NuRndrBeginScene(water_rt)) {
+            NuRndrRectUV2di(0, 0, PS2_REZ_W << 4, PS2_REZ_H << 4, 0.0f, 0.0f, wateru1,
+                            waterv1, 0x80808080, water_copy_mtl);
             NuRndrEndScene();
         }
     }
     if (NuRndrBeginScene(-1)) {
-        if (water_use_tables) {
-            animateWaterTables(0.1f, water_time);
+        if (water_tables_active) {
+            animateWaterTables(0.1f, theta);
         } else {
-            animateWater(0.1f, water_time);
+            animateWater(0.1f, theta);
         }
-        for (i = 0; i < nwaterinst; i++) {
-            inst = waterinst[i];
+        for (i = 0; i < nwinst; i++) {
+            inst = winst[i];
             if (inst->flagword & 4) {
                 NuRndrGobj(scene->gobjs[inst->objid], inst);
             }
         }
-        water_time += water_speed;
+        theta += theta_step;
         NuRndrEndScene();
     }
-    if (water_grab) {
+    if (get_screen) {
         NuTexUnReserve();
     }
 }
@@ -499,8 +465,8 @@ void NuWaterOverride(float fx1, float fx2, float fx3, float fx4) {
     float unset;
 
     unset = 4294967296.0f;
-    for (i = 0; i < nwatermtl; i++) {
-        mtl = watermtl[i];
+    for (i = 0; i < nwater_mtl; i++) {
+        mtl = water_mtls[i];
         if (fx1 != unset) {
             mtl->fx1.f32 = fx1;
         }
@@ -523,12 +489,12 @@ void NuWaterOverride(float fx1, float fx2, float fx3, float fx4) {
 
 
 void NuWaterSpeed(float speed) {
-    water_speed = speed * 0.1f;
+    theta_step = speed * 0.1f;
 }
 
 
 void NuWaterLoad(struct nugscn_s *scene) {
-    nwaterinst = 0;
+    nwinst = 0;
     if (scene) {
         initWater(scene);
         fixMaterials();

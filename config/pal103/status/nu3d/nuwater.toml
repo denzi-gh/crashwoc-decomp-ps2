@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0056"
 source = "src/nu3d/nuwater.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0056:00163910:initWater"
@@ -50,3 +50,82 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0056:00165078:NuWaterLoad"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0056:0062efe8:skip_grab"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0056:0062efec:nwater_mtl"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0056:0062eff0:theta_step"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0056:0062eff4:get_screen"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0056:0062eff8:water_tables_active"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0056:0062effc:nwater_tables"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0056:0062f008:theta.105"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0056:006331ac:nwinst"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0056:006331b0:water_copy_mtl"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0056:006331b4:water_rt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0056:006331b8:wateru1"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0056:006331bc:waterv1"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0056:006b1eb0:water_mtls"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0056:006b1ed0:water_mtl_tables"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0056:006b1ef0:winst"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0056:006b22f0:water_table"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x006b22f0
+end = 0x006b3330
+
+[[claim]]
+section = ".rodata"
+start = 0x00616120
+end = 0x0061612c
+
+[[claim]]
+section = ".sbss"
+start = 0x006331bc
+end = 0x006331c0

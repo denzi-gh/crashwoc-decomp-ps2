@@ -31,37 +31,8 @@ extern void timeUserReset(void);
 extern unsigned int timeUserRead(void);
 void NuPPUnpack(unsigned char *src, unsigned char *out);
 
-extern char D_00613D70[];
-extern char D_00613D90[];
-extern char D_00613DC8[];
-extern char D_00613E00[];
-extern char D_00613E18[];
-extern char D_00613E50[];
-extern char D_00613E90[];
-extern char D_00613EA8[];
-extern char D_00613EE0[];
-extern char D_00613F08[];
-extern char D_00613F20[];
-extern char D_00613F58[];
-extern char D_00613F90[];
-extern char D_0062EA40[];
-extern char D_0062EA48[];
 
-#define rnc_file D_00613D70
-#define msg_header_seek_retry D_00613D90
-#define msg_header_read_retry D_00613DC8
-#define msg_packed_start D_00613E00
-#define msg_packed_seek_retry D_00613E18
-#define msg_packed_read_retry D_00613E50
-#define msg_packed_done D_00613E90
-#define msg_unpack_stats D_00613EA8
-#define msg_buffer_too_small D_00613EE0
-#define msg_unpacked_start D_00613F08
-#define msg_unpacked_seek_retry D_00613F20
-#define msg_unpacked_read_retry D_00613F58
-#define msg_unpacked_done D_00613F90
-#define msg_seeking D_0062EA40
-#define msg_reading D_0062EA48
+#define rnc_file "..\\nu2crash.ps2\\nucore\\rnc.c"
 
 
 int NuPPLoadBuffer(int fh, unsigned char *dest, int maxsize) {
@@ -74,11 +45,11 @@ int NuPPLoadBuffer(int fh, unsigned char *dest, int maxsize) {
 
     do {
         while (NuFileSeek(fh, 0, 0) < 0) {
-            NuDebugMsgProlog(rnc_file, 0x89)(msg_header_seek_retry);
+            NuDebugMsgProlog(rnc_file, 0x89)("NuPPLoadBuffer1 - recoverable seek failure, retrying");
         }
         size = NuFileRead(fh, &hdr, sizeof(hdr));
         if (size < 0) {
-            NuDebugMsgProlog(rnc_file, 0x8D)(msg_header_read_retry);
+            NuDebugMsgProlog(rnc_file, 0x8D)("NuPPLoadBuffer2 - recoverable read failure, retrying");
         }
     } while (size < 0);
 
@@ -90,39 +61,39 @@ int NuPPLoadBuffer(int fh, unsigned char *dest, int maxsize) {
         hdr.packed = length;
         timeUserReset();
         start = packed - 4;
-        NuDebugMsgProlog(rnc_file, 0x9B)(msg_packed_start);
+        NuDebugMsgProlog(rnc_file, 0x9B)("Packed read commenced");
         do {
-            NuDebugMsgProlog(rnc_file, 0x9D)(msg_seeking);
+            NuDebugMsgProlog(rnc_file, 0x9D)("Seeking");
             while (NuFileSeek(fh, 4, 0) < 0) {
-                NuDebugMsgProlog(rnc_file, 0x9F)(msg_packed_seek_retry);
+                NuDebugMsgProlog(rnc_file, 0x9F)("NuPPLoadBuffer3 - recoverable seek failure, retrying");
             }
-            NuDebugMsgProlog(rnc_file, 0xA2)(msg_reading);
+            NuDebugMsgProlog(rnc_file, 0xA2)("Reading");
             size = NuFileRead(fh, packed, hdr.packed - 4);
             if (size < 0) {
-                NuDebugMsgProlog(rnc_file, 0xA5)(msg_packed_read_retry, size);
+                NuDebugMsgProlog(rnc_file, 0xA5)("NuPPLoadBuffer4 - recoverable read failure, retrying (err%d)", size);
             }
         } while (size < 0);
-        NuDebugMsgProlog(rnc_file, 0xA8)(msg_packed_done);
+        NuDebugMsgProlog(rnc_file, 0xA8)("Packed read finished");
         NuPPUnpack(start, dest);
         size = timeUserRead();
-        NuDebugMsgProlog(rnc_file, 0xAD)(msg_unpack_stats, hdr.packed, hdr.unpacked, size);
+        NuDebugMsgProlog(rnc_file, 0xAD)("Loaded %d bytes and unpacked to %d bytes in %d ticks", hdr.packed, hdr.unpacked, size);
         size = hdr.unpacked;
     } else {
         size = NuFileOpenSize(fh);
         if (maxsize < size) {
-            NuErrorProlog(rnc_file, 0xB3)(msg_buffer_too_small, maxsize, size);
+            NuErrorProlog(rnc_file, 0xB3)("given buffer (%d) too small for (%d)", maxsize, size);
         }
-        NuDebugMsgProlog(rnc_file, 0xB5)(msg_unpacked_start);
+        NuDebugMsgProlog(rnc_file, 0xB5)("Unpacked read commenced");
         do {
             while (NuFileSeek(fh, 0, 0) < 0) {
-                NuDebugMsgProlog(rnc_file, 0xB9)(msg_unpacked_seek_retry);
+                NuDebugMsgProlog(rnc_file, 0xB9)("NuPPLoadBuffer5 - recoverable seek failure, retrying");
             }
             result = NuFileRead(fh, dest, size);
             if (result < 0) {
-                NuDebugMsgProlog(rnc_file, 0xBD)(msg_unpacked_read_retry);
+                NuDebugMsgProlog(rnc_file, 0xBD)("NuPPLoadBuffer6 - recoverable read failure, retrying");
             }
         } while (result < 0);
-        NuDebugMsgProlog(rnc_file, 0xC0)(msg_unpacked_done);
+        NuDebugMsgProlog(rnc_file, 0xC0)("Unpacked read finished");
     }
     return size;
 }

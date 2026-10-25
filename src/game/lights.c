@@ -33,23 +33,23 @@
 
 extern s32 USELIGHTS;
 extern s32 LIGHTCREATURES;
+extern s32 glb_dir_error_flag;
+extern s32 glb_amb_error_flag;
+extern struct nuvec_s v001;
+extern char tbuf[];
+extern char LevelFileName[];
+
+f32 sf = 0.003921569f;
+f32 sf2 = 0.007843138f;
+f32 size = 0.0375f;
+f32 size2 = 0.075f;
+f32 intensity = 0.0f;
+
+/* Defined (zeroed) at the end of the unit, where retail emits them. */
 extern s32 LIGHTCOUNT;
 extern s32 AMBIENTCOUNT;
 extern s32 DIRECTCOUNT;
 extern s32 POINTCOUNT;
-extern s32 glb_dir_error_flag;
-extern s32 glb_amb_error_flag;
-extern f32 sf;
-extern f32 sf2;
-extern f32 size;
-extern f32 size2;
-extern struct nuvec_s v001;
-extern char tbuf[];
-extern char LevelFileName[];
-extern char D_00632778[];
-
-#define lgt_file_fmt D_00632778
-
 extern struct lights_s Lights[];
 
 /* Object light block filled by InitObjectLights (dir[3], col[3], AmbCol). */
@@ -68,21 +68,21 @@ extern s32 GameMode;
 extern s32 gamecut;
 extern s32 cutmovie;
 extern f32 NuTrigTable[];
-extern struct nuvec_s lcutdir[3];
-extern struct nucolour3_s lcutdircol[3];
-extern struct nuvec_s lcutambcol;
-extern struct nuvec_s titledir[3];
-extern struct nucolour3_s titlergb;
-extern struct nucolour3_s titlergb2;
-extern struct nuvec_s creditsdir[3];
-extern struct nucolour3_s creditsdircol[3];
-extern struct nuvec_s creditsrgb;
-extern struct nuvec_s ZVec;
-extern f32 intensity;
-extern s32 creditsang[3];
-extern struct nucolour3_s lcol[3];
-extern struct nuvec_s ldir[3];
-extern struct nuvec_s acol;
+
+struct nuvec_s lcutdir[3] = {{1.0f, -1.0f, 0.0f}, {-1.0f, -1.0f, 0.0f}, {0.0f, 1.0f, -1.0f}};
+struct nucolour3_s lcutdircol[3] = {{1.0f, 0.0f, 2.0f}, {0.5f, 0.0f, 1.5f}, {0.5f, 0.0f, 0.75f}};
+struct nuvec_s lcutambcol = {0.45f, 0.25f, 0.45f};
+struct nuvec_s titledir[3] = {{1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}};
+struct nucolour3_s titlergb = {0.5f, 0.5f, 0.5f};
+struct nucolour3_s titlergb2 = {1.0f, 1.0f, 1.0f};
+struct nuvec_s creditsdir[3] = {{0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, -1.0f}, {0.0f, 1.0f, 0.0f}};
+struct nucolour3_s creditsdircol[3] = {{1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}};
+struct nuvec_s creditsrgb = {0.25f, 0.25f, 0.25f};
+struct nuvec_s ZVec = {0.0f, 0.0f, 1.0f};
+s32 creditsang[3] = {0, 0x4000, 0};
+struct nuvec_s ldir[3] = {{0.7f, -0.7f, 0.0f}, {-1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}};
+struct nucolour3_s lcol[3] = {{0.7f, 0.7f, 0.7f}, {0.7f, 0.7f, 0.7f}, {0.7f, 0.7f, 0.7f}};
+struct nuvec_s acol = {0.7f, 0.7f, 0.7f};
 
 s32 NuFileLoadBuffer(char *name, void *buf, s32 max);
 void *NuMemFileOpen(void *buf, s32 size, s32 mode);
@@ -186,7 +186,7 @@ void LoadLights(void) {
     for (i = 0; i < 256; i++) {
         Lights[i].type = -1;
     }
-    sprintf(tbuf, lgt_file_fmt, LevelFileName);
+    sprintf(tbuf, "%s.lgt", LevelFileName);
     fsize = NuFileLoadBuffer(tbuf, Chase, 0x7FFFFFFF);
     fh = NuMemFileOpen(Chase, fsize, 0);
     if (fh != 0) {
@@ -249,7 +249,7 @@ void SaveLights(void) {
         DIRECTCOUNT = directional;
         POINTCOUNT = point;
     }
-    sprintf(tbuf, lgt_file_fmt, LevelFileName);
+    sprintf(tbuf, "%s.lgt", LevelFileName);
     handle = NuFileOpen(tbuf, 1);
     if (handle != 0) {
         NuFileWriteInt(handle, LIGHTCOUNT);
@@ -1024,3 +1024,10 @@ void SetNearestLights(struct Nearest_Light_s *l) {
                   &l->AmbCol);
     }
 }
+
+s32 LIGHTCOUNT = 0;
+s32 AMBIENTCOUNT = 0;
+s32 DIRECTCOUNT = 0;
+s32 POINTCOUNT = 0;
+s32 NEGATIVECOUNT = 0;
+struct lights_s Lights[320] = {0};

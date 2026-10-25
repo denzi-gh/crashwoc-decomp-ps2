@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0088"
 source = "src/game/main.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0088:001c5490:SetTexAnimSignals"
@@ -170,3 +170,662 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0088:001cb600:SetLevel"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:004c1200:foot_u"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:004c1280:foot_v"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:004c1300:texanimscripts"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:004c1480:world_scene"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:004c1500:load_txt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:004c1540:bgload_objpos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:004c1558:bgloadcharnames"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:004c1560:bgloadanimnames"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:004c1568:mg_gopos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:004c1578:mg_fontpos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:004c1588:mg_fontscale"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:004c1598:mg_scorewumpa"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:004c15a8:bgload_campos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:004c15b8:bgloadpos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:004c15c8:PadRecordPath"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:004c16c8:PadData"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:00553e88:texanimbuff"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0055be88:mg_player_pos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0055be98:mg_wumpa_shapes"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0055beb0:mg_player_actpos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0055bec0:mg_wumpaobj"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0055c0c0:mg_wumpamtx"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fa08:HACKDRAWLIGHTS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fa0c:memdump_enabled"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fa10:editor_active"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fa14:app_fnt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fa18:NODEBRIS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fa1c:peak_poly_count"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fa20:poly_count"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fa24:poo_wee"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fa28:number_of_times_played"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fa2c:fmvdump_enabled"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fa30:pad_record"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fa34:pad_play"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fa38:ForcePlayRecord"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fa3c:FixFrameRate"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fa40:texanimbits"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fa50:Pad"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fa58:world_vd"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fa5c:wumpa_scene"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fa60:crate_scene"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fa64:font3d_scene"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fa68:pause_scene"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fa6c:screendump"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fa70:gamma_val"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fa74:fadeval"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fa78:fadehack"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fa7c:fade_rate"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fad8:pausebuzz"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fadc:stick_bits"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fae0:stick_bits_db"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fae4:stick_oldbits"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fae8:main_light"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062faec:NoSoundPlease"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062faf0:frameout_count"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062faf8:frameout"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fafc:FRAME"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fb00:FRAMES"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fb04:test_sfx"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fb08:LIFTPLAYER"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fb0c:CRATEGIBBER"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fb10:COMPLEXPLAYERSHADOW"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fb14:PANELOFF"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fb18:GLASSPLAYER"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fb1c:SKELETALCRASH"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fb20:DRAWCREATUREHACK"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fb24:DRAWWORLDHACK"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fb28:BLUR"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fb2c:HAZE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fb30:NOTERRAINSTOP"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fb34:DRAWCRATESHACK"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fb38:DRAWDEBRISHACK"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fb3c:DRAWWUMPAHACK"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fb40:USELIGHTS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fb44:LANGUAGEOPTION"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fb48:fmv"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fb4c:pause_rndr_on"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fb50:pause_rt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fb54:old_pause_state.147"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fb58:bgloadchr"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fb60:bgloadanim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fb68:bgload_objstart"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fb6c:bgload_objtarg"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fb70:bgload_bumppos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fb74:bgload_objspd"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fb78:bobrate"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fb7c:bobscale"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fb80:fallrate"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fb84:maxfallspd"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fb88:bgload_model"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fb90:bgloadlastcharacter"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fb94:mg_accel"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fb98:mg_friction"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fb9c:mg_spd_rng"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fba0:mg_player_rng"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fba4:mg_player_y_offset"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fba8:mg_player_spin"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fbac:mg_player_spin_rate"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fbb0:mg_player_tilt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fbb4:mg_player_tilt_scale"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fbb8:mg_wumpa_issue_delay"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fbbc:mg_wumpa_issue_extra_delay"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fbc0:mg_wumpa_rand_rng"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fbc4:mg_wumpa_rng"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fbc8:mg_wumpa_spd"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fbcc:mg_wumpacore_spd"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fbd0:mg_wumpagibber"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fbd4:mg_scoregibber"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fbd8:mg_scoremaxgibber"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fbdc:mg_scoregibbercntx"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fbe0:mg_scoregibberratex"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fbe4:mg_scoregibbercnty"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fbe8:mg_scoregibberratey"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fbec:mg_colldist"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fbf0:mg_gforce"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fbf4:mg_yspdscale"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fc00:mg_scoreoff"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fc04:mg_frame"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fc0c:camtiltrate"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fc10:camrotrate"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fc14:camtiltscale"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fc18:camrotscale"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fc1c:bump_scale"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fc20:bgloadgibberscale"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fc24:bgloadgibberscalecnt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fc28:bgloadgibberscalecntrate"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fc2c:bgloadgibbercntx"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fc30:bgloadgibberratex"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fc34:bgloadgibbercnty"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fc38:bgloadgibberratey"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fc48:loading"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fc68:odevframe.190"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fc6c:dumpidx.191"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fc70:superbuffer_ptr"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fc78:superbuffer_base"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fc80:superbuffer_end"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fc88:superbuffer_free"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fc8c:AtmosphericPressureHackedZ"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fc90:app_tbset"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fc94:SWIDTH"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fc98:SHEIGHT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fca0:superbuffer_reset_base"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fca4:ShadowMat"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fca8:DoMeChris"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fcac:save_paused"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fcb0:pause_rndr_mtl"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fcb4:pause_src_mtl"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fcb8:bgload_animtime"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fcc0:mg_rand"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fcc8:mg_spd"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fccc:mg_yspd"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fcd0:mg_wumpa_init"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fcd4:mg_wumpa_ix"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fcd8:mg_wumpa_issue_wait"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fcdc:mg_wumpatot"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fce0:bg_cutloadrv"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fce4:bg_cutmovie_id"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fce8:testt1"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:0062fcec:testt2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:00633260:fade_mtl"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0088:00633264:fadecol"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x0061abf0
+end = 0x0061ae18
+
+[[claim]]
+section = ".rodata"
+start = 0x0061b5f0
+end = 0x0061b5fc
+
+[[claim]]
+section = ".sbss"
+start = 0x00633264
+end = 0x00633268

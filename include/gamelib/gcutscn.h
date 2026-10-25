@@ -237,7 +237,7 @@ struct instNUGCUTSCENE_s {
 /* Entry of the application's locator function table (NuGCutSceneSysInit). */
 typedef void (*NuGCutLocatorUpdateFn)(struct instNUGCUTSCENE_s *scene, struct NUGCUTLOCATORSYS_s *def,
                                       struct instNUGCUTLOCATOR_s *locator,
-                                      struct NUGCUTLOCATOR_s *data, struct numtx_s *mtx, float time);
+                                      struct NUGCUTLOCATOR_s *data, float time, struct numtx_s *mtx);
 
 struct NUGCUTLOCFNDATA_s {
     const char *name;                   /* 0x00 */

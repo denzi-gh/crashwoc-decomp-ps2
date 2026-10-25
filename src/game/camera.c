@@ -39,18 +39,44 @@
 
 #define NULL ((void *)0)
 
+f32 NORMALCAMERAHEIGHT = 1.3f;
+f32 CAMTOCRASH1 = 3.0f;
+f32 CAMTOCRASH2 = 5.0f;
+f32 CAMTOSUB = 20.0f;
+f32 SIDECAMDISTANCE = 6.0f;
+f32 CAMTOJEEP = 3.0f;
+f32 CAMHEIGHT = 1.5f;
+f32 CAMSTOPNEAR = 5.0f;
+f32 CAMSTOPFAR = 7.0f;
+f32 ATLASCAMHEIGHT = 2.5f;
+s32 temp_rail_end = 0;
+f32 LOGOCAMX = 0.0f;
+f32 LOGOCAMY = 4.0f;
+f32 LOGOCAMZ = -0.25f;
+char *tInPlatRail = "weeplat_in_";
+char *tInCamRail = "weecam_in_";
+char *tLeftRail = "weecam_left_";
+char *tCamRail = "weecam_mid_";
+char *tRightRail = "weecam_right_";
+char *tOutCamRail = "weecam_out_";
+char *tOutPlatRail = "weeplat_out_";
+char *tRailExt[8] = {"00", "01", "02", "03", "04", "bonus", "death", "gem"};
+struct nuvec_s BOSSCAMPOS = {0.0f, 2.5f, -2.5f};
+struct nuvec_s BOSSCAMPOS2 = {-13.53f, 2.23f, 29.9f};
+
+extern s32 Level;
+extern s32 Bonus;
+extern s32 Death;
+extern s32 GemPath;
+
+/* Defined (zeroed) at the end of the unit, where retail emits them. */
 extern struct rail_s Rail[];
 extern struct RPos_s TempRPos;
-extern s32 temp_rail_end;
 extern s32 nRAILS;
 extern s32 temp_iRAIL;
 extern s32 temp_iALONG;
 extern f32 temp_fALONG;
 extern f32 temp_fACROSS;
-extern s32 Level;
-extern s32 Bonus;
-extern s32 Death;
-extern s32 GemPath;
 extern struct RPos_s cRPos[];
 extern struct RPos_s temp_cRPos[];
 extern struct RPos_s *best_cRPos;
@@ -72,23 +98,6 @@ extern f32 NuFsqrt(f32 x);
 
 extern struct nugscn_s *world_scene[];
 extern char tbuf[];
-extern char *tRailExt[];
-extern char *tInPlatRail;
-extern char *tInCamRail;
-extern char *tLeftRail;
-extern char *tCamRail;
-extern char *tRightRail;
-extern char *tOutCamRail;
-extern char *tOutPlatRail;
-
-extern char D_00630AA0[];
-#define fmt_railname D_00630AA0
-extern char D_00630A70[];
-#define railext_bonus D_00630A70
-extern char D_00630A68[];
-#define railext_death D_00630A68
-extern char D_00630A60[];
-#define railext_gem D_00630A60
 
 extern f32 SplineDistance(struct nugspline_s *spl);
 
@@ -115,7 +124,7 @@ void InitRails(void) {
             rail->pOUTCAM = 0;
             rail->pOUTPLAT = 0;
             rail->circuit = 0;
-            sprintf(tbuf, fmt_railname, tCamRail, tRailExt[i]);
+            sprintf(tbuf, "%s%s", tCamRail, tRailExt[i]);
             rail->pCAM = NuSplineFind(world_scene[0], tbuf);
             if (rail->pCAM == 0) {
                 continue;
@@ -124,7 +133,7 @@ void InitRails(void) {
             if (camlen < 2) {
                 continue;
             }
-            sprintf(tbuf, fmt_railname, tLeftRail, tRailExt[i]);
+            sprintf(tbuf, "%s%s", tLeftRail, tRailExt[i]);
             rail->pLEFT = NuSplineFind(world_scene[0], tbuf);
             if (rail->pLEFT == 0) {
                 continue;
@@ -133,7 +142,7 @@ void InitRails(void) {
             if (leftlen != camlen) {
                 continue;
             }
-            sprintf(tbuf, fmt_railname, tRightRail, tRailExt[i]);
+            sprintf(tbuf, "%s%s", tRightRail, tRailExt[i]);
             rail->pRIGHT = NuSplineFind(world_scene[0], tbuf);
             if (rail->pRIGHT == 0) {
                 continue;
@@ -143,25 +152,25 @@ void InitRails(void) {
                 continue;
             }
             rail->edges = rightlen - 1;
-            sprintf(tbuf, fmt_railname, tInPlatRail, tRailExt[i]);
+            sprintf(tbuf, "%s%s", tInPlatRail, tRailExt[i]);
             rail->pINPLAT = NuSplineFind(world_scene[0], tbuf);
             if (rail->pINPLAT != 0) {
                 rail->in_distance = SplineDistance(rail->pINPLAT);
             }
-            sprintf(tbuf, fmt_railname, tInCamRail, tRailExt[i]);
+            sprintf(tbuf, "%s%s", tInCamRail, tRailExt[i]);
             rail->pINCAM = NuSplineFind(world_scene[0], tbuf);
-            sprintf(tbuf, fmt_railname, tOutPlatRail, tRailExt[i]);
+            sprintf(tbuf, "%s%s", tOutPlatRail, tRailExt[i]);
             rail->pOUTPLAT = NuSplineFind(world_scene[0], tbuf);
             if (rail->pOUTPLAT != 0) {
                 rail->out_distance = SplineDistance(rail->pOUTPLAT);
             }
-            sprintf(tbuf, fmt_railname, tOutCamRail, tRailExt[i]);
+            sprintf(tbuf, "%s%s", tOutCamRail, tRailExt[i]);
             rail->pOUTCAM = NuSplineFind(world_scene[0], tbuf);
-            if (strcmp(tRailExt[i], railext_bonus) == 0) {
+            if (strcmp(tRailExt[i], "bonus") == 0) {
                 rail->type = 1;
-            } else if (strcmp(tRailExt[i], railext_death) == 0) {
+            } else if (strcmp(tRailExt[i], "death") == 0) {
                 rail->type = 2;
-            } else if (strcmp(tRailExt[i], railext_gem) == 0) {
+            } else if (strcmp(tRailExt[i], "gem") == 0) {
                 rail->type = 3;
             } else {
                 rail->type = 0;
@@ -708,21 +717,8 @@ extern struct nuvec_s JeepvPos;
 extern struct nuvec_s campos_SPACE;
 extern struct nuvec_s cutcampos_FRONTEND;
 extern struct nuvec_s cutcamlook_FRONTEND;
-extern struct nuvec_s BOSSCAMPOS;
-extern struct nuvec_s BOSSCAMPOS2;
-extern f32 ATLASCAMHEIGHT;
 extern s32 ResetAtlasCamera;
-extern f32 LOGOCAMX;
-extern f32 LOGOCAMY;
-extern f32 LOGOCAMZ;
-extern f32 CAMSTOPNEAR;
-extern f32 CAMSTOPFAR;
-extern f32 SIDECAMDISTANCE;
 extern f32 WesternCountdown;
-
-/* MoveGameCamera's function-static rail blend factor. */
-extern f32 D_00630AA8;
-#define rail_blend D_00630AA8
 
 extern f32 FindNearestCreature(struct nuvec_s *pos, s32 type,
                                struct nuvec_s *out);
@@ -776,6 +772,7 @@ inline f32 LookUpDownRail(struct obj_s *obj, u16 angle, s32 mode) {
  * jump table is indexed from mode 0; the 0xB sweep keeps its period in `i`.
  * The PAL build runs at 50Hz, so per-frame rates are the GC values x1.2. */
 void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
+    static f32 Blend = 0.0f;
     struct RPos_s RPos;
     struct nuvec_s pos;          /* where the camera wants to be */
     struct nuvec_s look;         /* where it looks */
@@ -1099,34 +1096,34 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
         /* blend between a close rail camera (0) and a far one (1) */
         behind = abs(RotDiff(-GameCamera->yrot, obj->hdg)) > 0x4000;
         if (behind) {
-            if (rail_blend > 1.0f) {
-                rail_blend -= 0.025f;
-                if (rail_blend < 1.0f) {
-                    rail_blend = 1.0f;
+            if (Blend > 1.0f) {
+                Blend -= 0.025f;
+                if (Blend < 1.0f) {
+                    Blend = 1.0f;
                 }
-            } else if (rail_blend < 1.0f) {
-                rail_blend += 0.025f;
-                if (rail_blend > 1.0f) {
-                    rail_blend = 1.0f;
+            } else if (Blend < 1.0f) {
+                Blend += 0.025f;
+                if (Blend > 1.0f) {
+                    Blend = 1.0f;
                 }
             }
         } else {
-            if (rail_blend > 0.0f) {
-                rail_blend -= 0.025f;
-                if (rail_blend < 0.0f) {
-                    rail_blend = 0.0f;
+            if (Blend > 0.0f) {
+                Blend -= 0.025f;
+                if (Blend < 0.0f) {
+                    Blend = 0.0f;
                 }
-            } else if (rail_blend < 0.0f) {
-                rail_blend += 0.025f;
-                if (rail_blend > 0.0f) {
-                    rail_blend = 0.0f;
+            } else if (Blend < 0.0f) {
+                Blend += 0.025f;
+                if (Blend > 0.0f) {
+                    Blend = 0.0f;
                 }
             }
         }
         RPos = obj->RPos;
         if ((RPos.iRAIL != -1) && (RPos.iALONG != -1)) {
             back = 5.0f;
-            if (rail_blend != 1.0f) {
+            if (Blend != 1.0f) {
                 MoveRailPosition(&railpos[0], &RPos, 3.0f, 1);
                 GameCamera->iRAIL = TempRPos.iRAIL;
                 GameCamera->iALONG = TempRPos.iALONG;
@@ -1155,7 +1152,7 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
                     raillook[0].z -= shift.z;
                 }
             }
-            if (rail_blend != 0.0f) {
+            if (Blend != 0.0f) {
                 raillook[1].x = obj->pos.x;
                 raillook[1].y = obj->pos.y + obj->top * obj->SCALE + 0.5f;
                 raillook[1].z = obj->pos.z;
@@ -1163,12 +1160,12 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
                 GameCamera->iRAIL = TempRPos.iRAIL;
                 GameCamera->iALONG = TempRPos.iALONG;
             }
-            look.x = (1.0f - rail_blend) * raillook[0].x + rail_blend * raillook[1].x;
-            look.y = (1.0f - rail_blend) * raillook[0].y + rail_blend * raillook[1].y;
-            look.z = (1.0f - rail_blend) * raillook[0].z + rail_blend * raillook[1].z;
-            pos.x = (1.0f - rail_blend) * railpos[0].x + rail_blend * railpos[1].x;
-            pos.y = (1.0f - rail_blend) * railpos[0].y + rail_blend * railpos[1].y;
-            pos.z = (1.0f - rail_blend) * railpos[0].z + rail_blend * railpos[1].z;
+            look.x = (1.0f - Blend) * raillook[0].x + Blend * raillook[1].x;
+            look.y = (1.0f - Blend) * raillook[0].y + Blend * raillook[1].y;
+            look.z = (1.0f - Blend) * raillook[0].z + Blend * raillook[1].z;
+            pos.x = (1.0f - Blend) * railpos[0].x + Blend * railpos[1].x;
+            pos.y = (1.0f - Blend) * railpos[0].y + Blend * railpos[1].y;
+            pos.z = (1.0f - Blend) * railpos[0].z + Blend * railpos[1].z;
         } else {
             pos = GameCamera->pos;
         }
@@ -1863,8 +1860,7 @@ Finish:
 }
 
 
-extern struct numtl_s *D_00633268;
-#define camtarget_mtl D_00633268
+static struct numtl_s *ctmtl;
 
 extern void NuRndrLine3dDbg(u32 colour, f32 x0, f32 y0, f32 z0, f32 x1,
                             f32 y1, f32 z1);
@@ -1886,11 +1882,11 @@ inline void DrawMtlLine3D(struct numtl_s *mtl, f32 x0, f32 y0, f32 z0, f32 x1,
 
 
 void DrawCameraTarget(struct nuvec_s *pos) {
-    DrawMtlLine3D(camtarget_mtl, pos->x - 0.25f, pos->y, pos->z,
+    DrawMtlLine3D(ctmtl, pos->x - 0.25f, pos->y, pos->z,
                   pos->x + 0.25f, pos->y, pos->z);
-    DrawMtlLine3D(camtarget_mtl, pos->x, pos->y - 0.25f, pos->z,
+    DrawMtlLine3D(ctmtl, pos->x, pos->y - 0.25f, pos->z,
                   pos->x, pos->y + 0.25f, pos->z);
-    DrawMtlLine3D(camtarget_mtl, pos->x, pos->y, pos->z - 0.25f,
+    DrawMtlLine3D(ctmtl, pos->x, pos->y, pos->z - 0.25f,
                   pos->x, pos->y, pos->z + 0.25f);
 }
 
@@ -1971,7 +1967,7 @@ void InitCameraTargetMaterial(void) {
     struct numtl_s *mtl;
 
     mtl = NuMtlCreate(1);
-    camtarget_mtl = mtl;
+    ctmtl = mtl;
     mtl->attrib.cull = 2;
     mtl->attrib.zmode = 0;
     mtl->diffuse.r = 0.5f;
@@ -2000,3 +1996,24 @@ void AddCross(struct nuvec_s *pos, u32 colour, f32 size) {
                         line[5]);
     }
 }
+
+struct nugspline_s *pVIS = 0;
+s32 iVIS = 0;
+s32 temp_iRAIL = 0;
+s32 temp_iALONG = 0;
+f32 temp_fALONG = 0.0f;
+f32 temp_fACROSS = 0.0f;
+struct RPos_s *best_cRPos = 0;
+s32 cRPosCOUNT = 0;
+struct RPos_s *temp_best_cRPos = 0;
+s32 temp_cRPosCOUNT = 0;
+s32 nRAILS = 0;
+struct cammtx_s *pCam = 0;
+struct nucamera_s *pNuCam = 0;
+s32 cut_on = 0;
+u16 best_railangle = 0;
+struct RPos_s TempRPos = {0};
+struct RPos_s cRPos[3] = {0};
+struct RPos_s temp_cRPos[3] = {0};
+struct rail_s Rail[8] = {0};
+struct cammtx_s GameCam[1] = {0};

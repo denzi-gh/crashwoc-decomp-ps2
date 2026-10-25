@@ -54,51 +54,31 @@
 #include "nucore/nufile.h"
 
 extern struct game_s Game;
-extern s32 gamecut;
-extern struct nucolour3_s cutdircol[];
-extern struct nuvec_s cutdir[];
 
-extern s32 cutmovie;
 extern s32 cut_on;
-extern s32 logos_played;
 extern struct cursor_s Cursor;
-extern s32 D_00633388;
-#define cutworldix D_00633388
 
-extern struct csc_s *CutChar;
+static s32 cutworldix;
+static s32 ghg_inst_count;
+static s32 scene_inst_count;
+static struct NUGCUTSCENE_s *CutScene[32];
+static struct instNUGCUTSCENE_s *CutInst[32];
+static s32 CutAudio[32];
+static s32 cutdebgroups[32];
+static struct csccache_s ghg_insts[32];     /* loaded character models, by path */
+static struct scenecache_s scene_insts[32]; /* loaded scenes, by path */
 
-extern struct csccache_s D_006FF880[];
-extern s32 D_0063338C;
-#define cutcharcache D_006FF880            /* loaded character models, by path */
-#define ncutcharcache D_0063338C
 extern union variptr_u superbuffer_ptr;
 
 extern void NewMenu(void *cursor, s32 a, s32 b, s32 c);
 extern void GameMusic(s32 sfx, s32 i);
 
-extern s32 cutmovie_hold;
 extern s32 Paused;
-extern struct NUGCUTLOCFNDATA_s D_0060B398[];
-#define cutscene_locatorfns D_0060B398
-
-extern struct NUGCUTSCENE_s *D_006FF680[];
-extern struct instNUGCUTSCENE_s *D_006FF700[];
-extern s32 D_006FF780[];
-#define CutScene D_006FF680
-#define CutInst D_006FF700
-#define CutAudio D_006FF780
 
 extern u32 texanimbits;
-extern f32 TITLESTARTTIME;
-extern f32 TITLEFPS;
 
-static void AppCutSceneFindCharacters(struct NUGCUTSCENE_s *cutscene);
 extern s32 NuSoundKeyStatus(s32 chan);
 extern void SetCutMovieRate(void);
-
-extern f32 D_0062E888;
-extern f32 D_0062E88C;
-extern f32 D_00632BD8;
 
 struct pcutanm_s {
     s16 character;    /* 0x0 */
@@ -107,9 +87,7 @@ struct pcutanm_s {
     s8 i;             /* 0x6 */
     s8 pad1;          /* 0x7 */
 };
-extern struct pcutanm_s *pCutAnim;
-extern s32 gamecut_hold;
-extern s32 gamecut_sfx;
+
 extern s32 gamesfx_channel;
 extern s32 Level;
 extern s32 NuSoundStopStream(s32 chan);
@@ -126,16 +104,15 @@ extern struct numtx_s cutscenecammtx;
 extern struct numtx_s *pNuCam;
 extern void NuCameraSet(void *cam);
 
-extern struct nuvec_s cutpos_CRASH;
-extern struct nuvec_s cutpos_FRONTEND[];
-extern struct nuvec_s cutpos_SPACE[];
-extern struct nuvec_s campos_SPACE;
-extern u16 cutang_FRONTEND[2];
-extern u16 cutang_SPACE[3];
+/* Defined after GetSpaceCut, where retail emits them. */
 extern void *SpaceGameCutTab[][2];
 extern struct anim_s CutAnim;
+extern struct gtimer_s CutTimer;
 extern struct anim_s CutVortexAnim;
-extern s32 gamecut_finished;
+extern s32 next_cut_movie;
+extern u16 cutang_FRONTEND[2];
+extern u16 cutang_SPACE[3];
+extern s32 gamecut_hold;
 
 extern s32 NuHGobjRndrMtxDwa(struct NUHGOBJ_s *hobj, struct numtx_s *m,
                              s32 nlayers, short *layer, struct numtx_s *tmtx,
@@ -147,6 +124,218 @@ extern void NuHGobjEval(struct NUHGOBJ_s *obj, s32 njoints, void *joints,
                         struct numtx_s *tmtx);
 extern float **NuHGobjEvalDwa2(s32 nlayers, short *layers, void *face_anim, f32 frame);
 extern void NuMtxMulVU0(struct numtx_s *dst, struct numtx_s *a, struct numtx_s *b);
+
+struct nuvec_s cutdir[3] = {0};
+struct nucolour3_s cutdircol[3] = {0};
+struct nuvec_s cutambcol = {0};
+s32 logos_played = 0;
+f32 TITLESTARTTIME = 6.0f;
+f32 TITLEFPS = 30.0f;
+s32 cutmovie_hold = 0;
+
+/* The characters (models) and the scenes/cuts of each movie. */
+static struct csc_s csc_titles[3] = {
+    { 0, "levels\\b\\logos\\ttchar.ghg", "ttchar" },
+    { 0, "levels\\b\\logos\\title.ghg", "title" },
+    {0}
+};
+
+static struct cutscenedesc_s csd_titles[3] = {
+    { "levels\\b\\logos\\logos.gsc", "levels\\b\\logos\\logos1.cut", 172, -1 },
+    { "levels\\b\\logos\\logos.gsc", "levels\\b\\logos\\logos2.cut", -1, -1 },
+    { 0, 0, -1, -1 }
+};
+
+static struct csc_s csc_intro1and2[28] = {
+    { 0, "levels\\b\\intro\\cortex.ghg", "CS_Cortex_group" },
+    { 0, "levels\\b\\intro\\csdingo.ghg", "CS_Dingo_group" },
+    { 0, "levels\\b\\intro\\csngin.ghg", "CS_NGin_group" },
+    { 0, "levels\\b\\intro\\csntro.ghg", "CS_Ntro_group" },
+    { 0, "levels\\b\\intro\\cstiny.ghg", "CS_Tiny_group" },
+    { 0, "levels\\b\\intro\\csuka.ghg", "CS_Uka_group" },
+    { 0, "levels\\b\\intro\\graph.ghg", "CS_Graph_group" },
+    { 0, "levels\\b\\intro\\hcrash.ghg", "CS_HoloCrash_group" },
+    { 0, "levels\\b\\intro2\\cscrash.ghg", "cscrash_group" },
+    { 0, "levels\\b\\intro2\\cscoco.ghg", "cscoco_group" },
+    { 0, "levels\\b\\intro2\\board.ghg", "cssurfboard_group" },
+    { 0, "levels\\b\\intro2\\csscoota.ghg", "csscoota_group" },
+    { 0, "levels\\b\\intro2\\purra.ghg", "purra_group" },
+    { 0, "levels\\b\\intro\\csaku.ghg", "csaku_group" },
+    { 0, "levels\\b\\intro2\\tsunami.ghg", "tsunami_group" },
+    { 0, "levels\\b\\intro\\firemask.ghg", "firemask_group" },
+    { 0, "levels\\b\\intro\\windmask.ghg", "wind_group" },
+    { 0, "levels\\b\\intro\\watermsk.ghg", "water_group" },
+    { 0, "levels\\b\\intro\\earthmsk.ghg", "earth_group" },
+    { 0, "levels\\b\\intro\\csuka.ghg", "csuka_group" },
+    { 0, "levels\\b\\intro2\\bigpurra.ghg", "bigpurra_group" },
+    { 0, "levels\\b\\intro2\\towel.ghg", "towel_group" },
+    { 0, "levels\\b\\intro2\\door.ghg", "door_group" },
+    { 0, "levels\\b\\intro2\\laptop.ghg", "laptop_group" },
+    { 0, "levels\\b\\intro2\\contdoor.ghg", "contdoor_group" },
+    { 0, "levels\\b\\intro2\\vchair.ghg", "vchair_group" },
+    { 0, "levels\\b\\intro2\\volcano.ghg", "volcano_group" },
+    {0}
+};
+
+static struct cutscenedesc_s csd_intro1and2[12] = {
+    { "levels\\b\\intro\\space.gsc", "levels\\b\\intro2\\station.cut", 173, 1 },
+    { "levels\\b\\intro\\corridor.gsc", "levels\\b\\intro2\\corridor.cut", -1, 2 },
+    { "levels\\b\\intro\\chamber.gsc", "levels\\b\\intro\\inchambr.cut", -1, 3 },
+    { "levels\\b\\intro\\volcano.gsc", "levels\\b\\intro2\\surf.cut", 174, 4 },
+    { "levels\\b\\intro\\volcano.gsc", "levels\\b\\intro2\\sunny.cut", -1, 5 },
+    { "levels\\b\\intro\\volcano.gsc", "levels\\b\\intro2\\storm.cut", -1, 6 },
+    { "levels\\b\\intro2\\blackbox.gsc", "levels\\b\\intro2\\black.cut", -1, 7 },
+    { "levels\\b\\intro\\volcano.gsc", "levels\\b\\intro2\\washedup.cut", -1, 8 },
+    { "levels\\b\\intro\\elemen.gsc", "levels\\b\\intro2\\mystic.cut", -1, 9 },
+    { "levels\\b\\intro\\house.gsc", "levels\\b\\intro2\\house.cut", -1, 10 },
+    { "levels\\b\\intro\\control.gsc", "levels\\b\\intro2\\control.cut", -1, 11 },
+    { 0, 0, -1, -1 }
+};
+
+static struct csc_s csc_outro[8] = {
+    { 0, "levels\\b\\outro\\crunch.ghg", "CS_Crunch_Group" },
+    { 0, "levels\\b\\outro\\Crash.ghg", "CS_Crash_Group" },
+    { 0, "levels\\b\\outro\\Cortex.ghg", "CS_Cortex_Group" },
+    { 0, "levels\\b\\outro\\UkaUka.ghg", "CS_Uka_Group" },
+    { 0, "levels\\b\\outro\\AkuAku.ghg", "CS_Aku_Group" },
+    { 0, "levels\\b\\outro\\Crash.ghg", "CS_Crash_Group1" },
+    { 0, "levels\\b\\outro\\Crunch.ghg", "CS_Crunch2_Group" },
+    {0}
+};
+
+static struct cutscenedesc_s csd_outro[2] = {
+    { "levels\\b\\outro\\station.gsc", "levels\\b\\outro\\outrosml.cut", 175, 12 },
+    { 0, 0, -1, -1 }
+};
+
+static struct csc_s csc_outro2[15] = {
+    { 0, "levels\\b\\outro\\Crunch.ghg", "CS_Crunch_Group" },
+    { 0, "levels\\b\\outro\\Crash.ghg", "CS_Crash_Group" },
+    { 0, "levels\\b\\outro\\Cortex.ghg", "CS_Cortex_Group" },
+    { 0, "levels\\b\\outro\\UkaUka.ghg", "CS_Uka_Group" },
+    { 0, "levels\\b\\outro\\AkuAku.ghg", "CS_Aku_Group" },
+    { 0, "levels\\b\\outro\\Crunch.ghg", "CS_Crunch2_Group" },
+    { 0, "levels\\b\\outro\\Crash.ghg", "CS_Crash_Group1" },
+    { 0, "levels\\b\\outro2\\Crash.ghg", "CSCrash_group" },
+    { 0, "levels\\b\\outro2\\Purra.ghg", "BigPurra_group" },
+    { 0, "levels\\b\\outro2\\AkuAku.ghg", "CS_AkuAku_Group" },
+    { 0, "levels\\b\\outro2\\Coco.ghg", "CS_Coco_Group" },
+    { 0, "levels\\b\\outro2\\Crunch.ghg", "CS_Crunch3_Group" },
+    { 0, "levels\\b\\outro2\\Cortex.ghg", "CS_Cortex_Group" },
+    { 0, "levels\\b\\outro2\\UkaUka.ghg", "CS_UkaUka_Group" },
+    {0}
+};
+
+static struct cutscenedesc_s csd_outro2[4] = {
+    { "levels\\b\\outro\\station.gsc", "levels\\b\\outro\\outro.cut", 176, 13 },
+    { "levels\\b\\outro2\\house.gsc", "levels\\b\\outro2\\outhouse.cut", -1, 14 },
+    { "levels\\b\\outro2\\iceberg.gsc", "levels\\b\\outro2\\iceberg.cut", -1, 15 },
+    { 0, 0, -1, -1 }
+};
+
+struct csc_s *CutChar = 0;
+
+/* Load each character model once, sharing already-loaded ones by path.
+ * Inline: LoadCutComponents carries a copy of it in retail. */
+inline void LoadCutSceneCharacters(struct csc_s *name) {
+    s32 i;
+    void *obj;
+    void *tmp;
+    char *path;
+
+    while (name->path != 0) {
+        path = name->path;
+        for (i = 0; i < ghg_inst_count; i++) {
+            if (strcasecmp(path, ghg_insts[i].path) == 0) {
+                obj = ghg_insts[i].obj;
+                goto found;
+            }
+        }
+        ghg_insts[i].path = path;
+        tmp = NuGHGRead(&superbuffer_ptr, path);
+        ghg_insts[i].obj = tmp;
+        obj = tmp;
+        ghg_inst_count++;
+    found:
+        name->obj = obj;
+        name++;
+    }
+}
+
+inline void *FindCutChar(char *name) {
+    struct csc_s *chr;
+
+    chr = CutChar;
+    if (CutChar != 0) {
+        for (; chr->path != 0; chr++) {
+            if (strcasecmp(name, chr->name) == 0) {
+                return chr->obj;
+            }
+        }
+    }
+    return 0;
+}
+
+/* Inline so that its code is deferred to the end of the unit, after its
+ * strings were emitted here, as in retail. */
+static inline void AppCutSceneFindCharacters(struct NUGCUTSCENE_s *cutscene) {
+    struct NUGCUTCHARSYS_s *charSys;
+    struct NUGCUTCHAR_s *cutchar;
+    struct NUGCUTLOCATORSYS_s *locator;
+    s32 i;
+
+    charSys = cutscene->chardef;
+    locator = cutscene->locatordef;
+    for (i = 0; i < charSys->count; i++) {
+        cutchar = &charSys->chars[i];
+        cutchar->character = FindCutChar(cutchar->name);
+        if (cutchar->character == 0) {
+            NuDebugMsgProlog(".\\cut.c", 0x2a1)("AppCutSceneFindCharacters: cannot fixup cutscene character <%s>",
+                                                cutchar->name);
+        }
+        if (cutchar->nlocators != 0 && (nusintptr)cutchar->locators < 0xff) {
+            cutchar->first_locator = (u8)(nusintptr)cutchar->locators;
+            cutchar->locators = &locator->locators[(nusintptr)cutchar->locators];
+        } else {
+            cutchar->first_locator = -1;
+        }
+    }
+}
+
+void locatorfn_fadeout(struct instNUGCUTSCENE_s *icutscene, struct NUGCUTLOCATORSYS_s *locatorsys,
+                       struct instNUGCUTLOCATOR_s *ilocator, struct NUGCUTLOCATOR_s *locator, f32 currf,
+                       struct numtx_s *wm);
+
+static struct NUGCUTLOCFNDATA_s cutscene_locatorfns[2] = {
+    { "FadeOut", locatorfn_fadeout },
+    { 0, 0 }
+};
+
+struct nucolour3_s DirCol[3] = {0};
+
+struct nuvec_s DirVec[3] = {
+    { 1.0f, 0.0f, 0.0f },
+    { 0.0f, 1.0f, 0.0f },
+    { 0.0f, 0.0f, 1.0f }
+};
+
+struct nucolour3_s AmbCol = {0};
+struct nuvec_s cutcampos_FRONTEND = { -2.5f, 8.72f, 0.68f };
+struct nuvec_s cutcamlook_FRONTEND = { 0.0f, 9.88f, 4.58f };
+struct nuvec_s cutpos_CRASH = { 0.0f, 7.9f, 2.31f };
+
+struct nuvec_s cutpos_FRONTEND[2] = {
+    { -0.72f, 9.88f, 4.58f },
+    { 0.72f, 9.88f, 4.58f }
+};
+
+struct nuvec_s cutpos_SPACE[3] = {
+    { -0.2f, 0.0f, 0.0f },
+    { 0.0f, 0.0f, 0.0f },
+    { 0.2f, 0.0f, 0.0f }
+};
+
+struct nuvec_s campos_SPACE = { 0.0f, 0.0f, -1.15f };
 
 /* Cutscene character render callback: animate and draw one character, then
  * update the locators attached to it (on a joint, or to the character). */
@@ -206,36 +395,6 @@ void AppCutSceneCharacterRender(struct instNUGCUTSCENE_s *icutscene, struct NUGC
     }
 }
 
-/* Cutscene tables (scenes/cuts, characters); unnamed in the symbol map, named
- * here after the files they load. */
-extern struct cutscenedesc_s D_0060AFE0[]; /* levels\\b\\logos\\logos.gsc, ... */
-extern struct csc_s D_0060AFB8[];        /* levels\\b\\logos\\ttchar.ghg, ... */
-extern struct cutscenedesc_s D_0060B160[]; /* levels\\b\\intro\\space.gsc, ... */
-extern struct csc_s D_0060B010[];        /* levels\\b\\intro\\cortex.ghg, ... */
-extern struct cutscenedesc_s D_0060B280[]; /* levels\\b\\outro\\station.gsc, ... */
-extern struct csc_s D_0060B220[];        /* levels\\b\\outro\\crunch.ghg, ... */
-extern struct cutscenedesc_s D_0060B358[]; /* levels\\b\\outro\\station.gsc, outro2 */
-extern struct csc_s D_0060B2A0[];        /* levels\\b\\outro\\Crunch.ghg, ... */
-#define csd_logos D_0060AFE0
-#define csc_logos D_0060AFB8
-#define csd_intro D_0060B160
-#define csc_intro D_0060B010
-#define csd_outro D_0060B280
-#define csc_outro D_0060B220
-#define csd_outro2 D_0060B358
-#define csc_outro2 D_0060B2A0
-
-/* Retail-owned strings (no Data-from-C yet). */
-extern char D_00632BD0[];                /* "ats.dat" */
-extern char D_006293A0[];                /* "ats\\levels\\pal\\title.ats" */
-extern char D_006293C0[];                /* "ats\\splash\\ripples.ats" */
-extern char D_006293D8[];                /* "ats\\elecy\\elecy2.ats" */
-#define ats_dat D_00632BD0
-#define title_ats D_006293A0
-#define ripples_ats D_006293C0
-#define elecy2_ats D_006293D8
-
-extern s32 D_00633390;
 extern u8 texanimbuff[];
 extern void LoadFont3D(void);
 #ifndef NW_HOST /* the host takes the prototypes of nucore/nufile.h */
@@ -246,43 +405,11 @@ extern void NuDatClose(struct nudathdr_s *ndh);
 struct nutexanimprog_s;
 void CutSceneNextLogoFunction(struct instNUGCUTSCENE_s *icutscene);
 
-extern struct scenecache_s D_006FF980[];
-extern s32 D_006FF800[];
-#define cutscncache D_006FF980             /* loaded scenes, by path */
-#define ncutscncache D_00633390
-#define cutdebgroups D_006FF800
 extern union variptr_u superbuffer_end;
 extern void InitSpecular(void);
 extern void InitEnviro(void);
 void CutSceneEndFunction(struct instNUGCUTSCENE_s *icutscene);
 void CutSceneNextFunction(struct instNUGCUTSCENE_s *icutscene);
-
-/* Load each character model once, sharing already-loaded ones by path.
- * Inline: LoadCutComponents carries a copy of it in retail. */
-inline void LoadCutSceneCharacters(struct csc_s *name) {
-    s32 i;
-    void *obj;
-    void *tmp;
-    char *path;
-
-    while (name->path != 0) {
-        path = name->path;
-        for (i = 0; i < ncutcharcache; i++) {
-            if (strcasecmp(path, cutcharcache[i].path) == 0) {
-                obj = cutcharcache[i].obj;
-                goto found;
-            }
-        }
-        cutcharcache[i].path = path;
-        tmp = NuGHGRead(&superbuffer_ptr, path);
-        cutcharcache[i].obj = tmp;
-        obj = tmp;
-        ncutcharcache++;
-    found:
-        name->obj = obj;
-        name++;
-    }
-}
 
 /* Load the characters and every scene/cutscene of a movie, sharing models and
  * scenes already loaded, and chain the cutscenes so each plays the next.
@@ -308,17 +435,17 @@ s32 LoadCutComponents(struct cutscenedesc_s *csd, struct csc_s *chars) {
 
         scnpath = csd[ix].gscname;
         end = superbuffer_end.charptr;
-        for (i = 0; i < ncutscncache; i++) {
-            if (strcasecmp(scnpath, cutscncache[i].path) == 0) {
-                scene = cutscncache[i].scene;
+        for (i = 0; i < scene_inst_count; i++) {
+            if (strcasecmp(scnpath, scene_insts[i].path) == 0) {
+                scene = scene_insts[i].scene;
                 goto found;
             }
         }
-        cutscncache[i].path = scnpath;
+        scene_insts[i].path = scnpath;
         tmp = NuGScnRead(&superbuffer_ptr.charptr, end, scnpath);
-        cutscncache[i].scene = tmp;
+        scene_insts[i].scene = tmp;
         scene = tmp;
-        ncutscncache++;
+        scene_inst_count++;
     found:
         world_scene[ix] = scene;
 
@@ -361,11 +488,11 @@ s32 LoadCutMovie(s32 movie) {
     s32 i;
 
     LoadFont3D();
-    ncutscncache = 0;
+    scene_inst_count = 0;
     for (i = 0x1F; i >= 0; i--) {
         world_scene[i] = 0;
     }
-    ncutcharcache = 0;
+    ghg_inst_count = 0;
     for (i = 0; i < 0x20; i++) {
         CutScene[i] = 0;
         CutInst[i] = 0;
@@ -377,38 +504,38 @@ s32 LoadCutMovie(s32 movie) {
 
     switch (movie) {
     case 0:
-        dat = NuDatOpen(ats_dat, 0, 0);
+        dat = NuDatOpen("ats.dat", 0, 0);
         NuDatSet(dat);
         buf.voidptr = texanimbuff;
-        NuTexAnimProgReadScript(&buf, title_ats);
+        NuTexAnimProgReadScript(&buf, "ats\\levels\\pal\\title.ats");
         NuDatSet(0);
         if (dat != 0) {
             NuDatClose(dat);
         }
-        count = LoadCutComponents(csd_logos, csc_logos);
+        count = LoadCutComponents(csd_titles, csc_titles);
         instNuGCutSceneSetEndCallback(CutInst[0], CutSceneNextLogoFunction);
         CutInst[count - 1]->flags |= NUGCUTSCENE_LOOP;
         instNuGCutSceneSetEndCallback(CutInst[count - 1], 0);
         break;
     case 1:
-        dat = NuDatOpen(ats_dat, 0, 0);
+        dat = NuDatOpen("ats.dat", 0, 0);
         NuDatSet(dat);
         buf.voidptr = texanimbuff;
-        NuTexAnimProgReadScript(&buf, ripples_ats);
+        NuTexAnimProgReadScript(&buf, "ats\\splash\\ripples.ats");
         NuDatSet(0);
         if (dat != 0) {
             NuDatClose(dat);
         }
-        LoadCutComponents(csd_intro, csc_intro);
+        LoadCutComponents(csd_intro1and2, csc_intro1and2);
         break;
     case 3:
     case 4:
-        dat = NuDatOpen(ats_dat, 0, 0);
+        dat = NuDatOpen("ats.dat", 0, 0);
         NuDatSet(dat);
         buf.voidptr = texanimbuff;
-        NuTexAnimProgReadScript(&buf, elecy2_ats);
+        NuTexAnimProgReadScript(&buf, "ats\\elecy\\elecy2.ats");
         if (movie == 4) {
-            NuTexAnimProgReadScript(&buf, ripples_ats);
+            NuTexAnimProgReadScript(&buf, "ats\\splash\\ripples.ats");
         }
         NuDatSet(0);
         if (dat != 0) {
@@ -424,16 +551,30 @@ s32 LoadCutMovie(s32 movie) {
     return CutInst[0] != 0;
 }
 
+static f32 cutratefrig = 0.0f;
+s32 cutmovie = -1;
+u16 cutang_CRASH = 0;
+s32 gamecut = -1;
+s32 gamecut_start = 0;
+s32 gamecut_finished = 0;
+s32 gamecut_newlevel = -1;
+s32 gamecut_sfx = -1;
+struct pcutanm_s *pCutAnim = 0;
+s32 gamecut_hack = 0;
+f32 SPACEMASKADJUSTY = -0.175f;
+f32 FRONTENDCORTEXADJUSTY = -0.15f;
+f32 HUBHOLOSCALE = 3.0f;
+
 void SetCutMovieRate(void) {
     CutInst[cutworldix]->speed = 0.5f;
     if (cutmovie == 3 || cutmovie == 4) {
         if (cutworldix == 0) {
-            CutInst[cutworldix]->speed *= D_0062E888;
+            CutInst[cutworldix]->speed *= 0.8f;
         }
     }
-    CutInst[cutworldix]->speed *= D_0062E88C;
-    if (D_00632BD8 != 0.0f) {
-        CutInst[cutworldix]->speed = D_00632BD8;
+    CutInst[cutworldix]->speed *= 1.2f;
+    if (cutratefrig != 0.0f) {
+        CutInst[cutworldix]->speed = cutratefrig;
     }
 }
 
@@ -447,12 +588,12 @@ void CloseCutMovie(s32 all) {
             CutInst[i] = 0;
         }
     }
-    if (ncutcharcache != 0) {
-        for (i = 0; i < ncutcharcache; i++) {
-            NuHGobjDestroy(cutcharcache[i].obj);
+    if (ghg_inst_count != 0) {
+        for (i = 0; i < ghg_inst_count; i++) {
+            NuHGobjDestroy(ghg_insts[i].obj);
         }
     }
-    ncutcharcache = 0;
+    ghg_inst_count = 0;
     for (i = 0; i < 0x20; i++) {
         world_scene[i] = 0;
     }
@@ -507,7 +648,6 @@ extern s32 SHEIGHT;
 extern f32 DIVPANEL3D;
 extern f32 PANEL3DMULX;
 extern f32 PANEL3DMULY;
-extern s32 next_cut_movie;
 extern s32 mg_frame;
 extern s32 fadehack;
 extern struct nugscn_s *font3d_scene;
@@ -516,10 +656,6 @@ extern struct cammtx_s GameCam[];
 extern struct cammtx_s *pCam;
 extern struct gtimer_s GameTimer;
 extern struct nupad_s *Pad[];
-extern char D_006293F0[];
-extern char D_00629410[];
-#define intro_ptl D_006293F0
-#define general_ptl D_00629410
 
 extern void ResetSuperBuffer(void);
 extern void DebrisSetup(void);
@@ -594,11 +730,11 @@ void PlayCutMovie(s32 movie) {
         ParticleReset();
         edppDestroyAllParticles();
         edppDestroyAllEffects();
-        if (NuFileSize(intro_ptl) > 0) {
-            edppLoadEffects(intro_ptl, 1);
+        if (NuFileSize("levels\\b\\intro\\intro.ptl") > 0) {
+            edppLoadEffects("levels\\b\\intro\\intro.ptl", 1);
         }
-        if (NuFileSize(general_ptl) > 0) {
-            edppMergeEffects(general_ptl, 0);
+        if (NuFileSize("stuff\\general.ptl") > 0) {
+            edppMergeEffects("stuff\\general.ptl", 0);
         }
         edppRestartAllEffectsInLevel();
         CreateFadeMtl();
@@ -706,17 +842,10 @@ void InitGameCut(void) {
 }
 
 extern s32 GameMode;
-extern f32 HUBHOLOSCALE;
-extern f32 SPACEMASKADJUSTY;
-extern f32 FRONTENDCORTEXADJUSTY;
 
-extern struct gtimer_s CutTimer;
 extern struct nuvec_s v000;
-extern s32 gamecut_start;
-extern s32 gamecut_newlevel;
 extern s32 new_level;
 extern s32 new_mode;
-extern s32 gamecut_hack;
 extern s32 last_hub;
 extern f32 tumble_time;
 extern f32 tumble_duration;
@@ -994,7 +1123,547 @@ void GetSpaceCut(s32 last, s32 next) {
     }
 }
 
-extern struct nuvec_s cutambcol;
+/* Hub/space cutscenes: who plays which animation and voice line (GameCut_*),
+ * the space level's character animations (Space_*_PlayList), by gamecut. */
+struct pcutanm_s GameCut_EARTH_CORTEX[10] = {
+    { 181, 12, -1, 0, -1 },
+    { 181, 6, 197, 0, -1 },
+    { 181, 13, -1, 0, -1 },
+    { 180, 12, -1, 1, -1 },
+    { 180, 6, 203, 1, -1 },
+    { 180, 13, -1, 1, -1 },
+    { 181, 12, -1, 0, -1 },
+    { 181, 7, 198, 0, -1 },
+    { 181, 13, -1, 0, -1 },
+    { -1, 0, 0, 0, 0 }
+};
+
+struct space_s Space_EARTH_1STLEVEL_PlayList[3] = {
+    { 85, 0, {
+        { "userth1", 6, 10, 10, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "hubin", 12, 10, 0, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "hubout", 13, 0, 10, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 183, 0, {
+        { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 255 }
+};
+
+struct pcutanm_s GameCut_EARTH_1STLEVEL[4] = {
+    { 85, 12, -1, 1, -1 },
+    { 85, 6, 213, 1, -1 },
+    { 85, 13, -1, 1, -1 },
+    { -1, 0, 0, 0, 0 }
+};
+
+struct space_s Space_EARTH_2CRYSTALS_PlayList[3] = {
+    { 85, 0, {
+        { "userth2", 6, 10, 10, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "hubin", 12, 10, 0, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "hubout", 13, 0, 10, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 183, 0, {
+        { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 255 }
+};
+
+struct pcutanm_s GameCut_EARTH_2CRYSTALS[4] = {
+    { 85, 12, -1, 1, -1 },
+    { 85, 6, 214, 1, -1 },
+    { 85, 13, -1, 1, -1 },
+    { -1, 0, 0, 0, 0 }
+};
+
+struct space_s Space_EARTH_4CRYSTALS_PlayList[3] = {
+    { 85, 0, {
+        { "userth5", 6, 10, 10, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "hubin", 12, 10, 0, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "hubout", 13, 0, 10, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 183, 0, {
+        { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 255 }
+};
+
+struct pcutanm_s GameCut_EARTH_4CRYSTALS[4] = {
+    { 85, 12, -1, 1, -1 },
+    { 85, 6, 215, 1, -1 },
+    { 85, 13, -1, 1, -1 },
+    { -1, 0, 0, 0, 0 }
+};
+
+struct space_s Space_EARTH_BOSS_PlayList[4] = {
+    { 85, 0, {
+        { "userth7", 6, 10, 10, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "hubin", 12, 10, 0, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "hubout", 13, 0, 10, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 179, 0, {
+        { "b\\uscrn02", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "b\\hubin", 12, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "b\\hubout", 13, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 183, 0, {
+        { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 255 }
+};
+
+struct pcutanm_s GameCut_EARTH_BOSS[7] = {
+    { 85, 12, -1, 0, -1 },
+    { 85, 6, 216, 0, -1 },
+    { 85, 13, -1, 0, -1 },
+    { 179, 12, -1, 2, -1 },
+    { 179, 6, 206, 2, -1 },
+    { 179, 13, -1, 2, -1 },
+    { -1, 0, 0, 0, 0 }
+};
+
+struct space_s Space_EARTH_AKUAKU_PlayList[3] = {
+    { 3, 0, {
+        { "usaku24", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "hubin", 12, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "hubout", 13, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 183, 0, {
+        { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 255 }
+};
+
+struct pcutanm_s GameCut_EARTH_AKUAKU[4] = {
+    { 3, 12, -1, 1, -1 },
+    { 3, 6, 201, 1, -1 },
+    { 3, 13, -1, 1, -1 },
+    { -1, 0, 0, 0, 0 }
+};
+
+struct pcutanm_s GameCut_WATER_CORTEX[10] = {
+    { 182, 12, -1, 0, -1 },
+    { 182, 6, 207, 0, -1 },
+    { 182, 13, -1, 0, -1 },
+    { 181, 12, -1, 1, -1 },
+    { 181, 8, 199, 1, -1 },
+    { 181, 13, -1, 1, -1 },
+    { 180, 12, -1, 0, -1 },
+    { 180, 7, 204, 0, -1 },
+    { 180, 13, -1, 0, -1 },
+    { -1, 0, 0, 0, 0 }
+};
+
+struct space_s Space_WATER_1STLEVEL_PlayList[3] = {
+    { 87, 0, {
+        { "uswa1", 6, 10, 10, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "hubin", 12, 10, 0, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "hubout", 13, 0, 10, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 183, 0, {
+        { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 255 }
+};
+
+struct pcutanm_s GameCut_WATER_1STLEVEL[4] = {
+    { 87, 12, -1, 1, -1 },
+    { 87, 6, 221, 1, -1 },
+    { 87, 13, -1, 1, -1 },
+    { -1, 0, 0, 0, 0 }
+};
+
+struct space_s Space_WATER_2CRYSTALS_PlayList[3] = {
+    { 87, 0, {
+        { "uswa2", 6, 10, 10, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "hubin", 12, 10, 0, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "hubout", 13, 0, 10, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 183, 0, {
+        { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 255 }
+};
+
+struct pcutanm_s GameCut_WATER_2CRYSTALS[4] = {
+    { 87, 12, -1, 1, -1 },
+    { 87, 6, 222, 1, -1 },
+    { 87, 13, -1, 1, -1 },
+    { -1, 0, 0, 0, 0 }
+};
+
+struct space_s Space_WATER_4CRYSTALS_PlayList[3] = {
+    { 87, 0, {
+        { "uswa4", 6, 10, 10, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "hubin", 12, 10, 0, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "hubout", 13, 0, 10, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 183, 0, {
+        { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 255 }
+};
+
+struct pcutanm_s GameCut_WATER_4CRYSTALS[4] = {
+    { 87, 12, -1, 1, -1 },
+    { 87, 6, 223, 1, -1 },
+    { 87, 13, -1, 1, -1 },
+    { -1, 0, 0, 0, 0 }
+};
+
+struct space_s Space_WATER_BOSS_PlayList[4] = {
+    { 87, 0, {
+        { "uswa8", 6, 10, 10, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "hubin", 12, 10, 0, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "hubout", 13, 0, 10, 0.8f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 179, 0, {
+        { "c\\uscrn07", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "b\\hubin", 12, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "b\\hubout", 13, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 183, 0, {
+        { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 255 }
+};
+
+struct pcutanm_s GameCut_WATER_BOSS[7] = {
+    { 87, 12, -1, 0, -1 },
+    { 87, 6, 224, 0, -1 },
+    { 87, 13, -1, 0, -1 },
+    { 179, 12, -1, 2, -1 },
+    { 179, 6, 207, 2, -1 },
+    { 179, 13, -1, 2, -1 },
+    { -1, 0, 0, 0, 0 }
+};
+
+struct pcutanm_s GameCut_FIRE_CORTEX[10] = {
+    { 181, 12, -1, 0, -1 },
+    { 181, 10, 201, 0, -1 },
+    { 181, 13, -1, 0, -1 },
+    { 180, 12, -1, 1, -1 },
+    { 180, 9, 206, 1, -1 },
+    { 180, 13, -1, 1, -1 },
+    { 181, 12, -1, 0, -1 },
+    { 181, 11, 202, 0, -1 },
+    { 181, 13, -1, 0, -1 },
+    { -1, 0, 0, 0, 0 }
+};
+
+struct space_s Space_FIRE_1STLEVEL_PlayList[3] = {
+    { 86, 0, {
+        { "usfire2", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "hubin", 12, 10, 0, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "hubout", 13, 0, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 183, 0, {
+        { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 255 }
+};
+
+struct pcutanm_s GameCut_FIRE_1STLEVEL[4] = {
+    { 86, 12, -1, 1, -1 },
+    { 86, 6, 217, 1, -1 },
+    { 86, 13, -1, 1, -1 },
+    { -1, 0, 0, 0, 0 }
+};
+
+struct space_s Space_FIRE_2CRYSTALS_PlayList[3] = {
+    { 86, 0, {
+        { "usfire5", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "hubin", 12, 10, 0, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "hubout", 13, 0, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 183, 0, {
+        { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 255 }
+};
+
+struct pcutanm_s GameCut_FIRE_2CRYSTALS[4] = {
+    { 86, 12, -1, 1, -1 },
+    { 86, 6, 218, 1, -1 },
+    { 86, 13, -1, 1, -1 },
+    { -1, 0, 0, 0, 0 }
+};
+
+struct space_s Space_FIRE_4CRYSTALS_PlayList[3] = {
+    { 86, 0, {
+        { "usfire6", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "hubin", 12, 10, 0, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "hubout", 13, 0, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 183, 0, {
+        { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 255 }
+};
+
+struct pcutanm_s GameCut_FIRE_4CRYSTALS[4] = {
+    { 86, 12, -1, 1, -1 },
+    { 86, 6, 219, 1, -1 },
+    { 86, 13, -1, 1, -1 },
+    { -1, 0, 0, 0, 0 }
+};
+
+struct space_s Space_FIRE_BOSS_PlayList[4] = {
+    { 86, 0, {
+        { "usfire7", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "hubin", 12, 10, 0, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "hubout", 13, 0, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 179, 0, {
+        { "c\\uscrn10", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "b\\hubin", 12, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "b\\hubout", 13, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 183, 0, {
+        { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 255 }
+};
+
+struct pcutanm_s GameCut_FIRE_BOSS[7] = {
+    { 86, 12, -1, 0, -1 },
+    { 86, 6, 220, 0, -1 },
+    { 86, 13, -1, 0, -1 },
+    { 179, 12, -1, 2, -1 },
+    { 179, 6, 209, 2, -1 },
+    { 179, 13, -1, 2, -1 },
+    { -1, 0, 0, 0, 0 }
+};
+
+struct pcutanm_s GameCut_WEATHER_CORTEX[10] = {
+    { 182, 12, -1, 0, -1 },
+    { 182, 7, 208, 0, -1 },
+    { 182, 13, -1, 0, -1 },
+    { 180, 12, -1, 0, -1 },
+    { 180, 8, 205, 0, -1 },
+    { 180, 13, -1, 0, -1 },
+    { 181, 12, -1, 1, -1 },
+    { 181, 9, 200, 1, -1 },
+    { 181, 13, -1, 1, -1 },
+    { -1, 0, 0, 0, 0 }
+};
+
+struct space_s Space_WEATHER_1STLEVEL_PlayList[3] = {
+    { 88, 0, {
+        { "usair01", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "hubin", 12, 10, 0, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "hubout", 13, 0, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 183, 0, {
+        { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 255 }
+};
+
+struct pcutanm_s GameCut_WEATHER_1STLEVEL[4] = {
+    { 88, 12, -1, 1, -1 },
+    { 88, 6, 197, 1, -1 },
+    { 88, 13, -1, 1, -1 },
+    { -1, 0, 0, 0, 0 }
+};
+
+struct space_s Space_WEATHER_2CRYSTALS_PlayList[3] = {
+    { 88, 0, {
+        { "usair02", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "hubin", 12, 10, 0, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "hubout", 13, 0, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 183, 0, {
+        { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 255 }
+};
+
+struct pcutanm_s GameCut_WEATHER_2CRYSTALS[4] = {
+    { 88, 12, -1, 1, -1 },
+    { 88, 6, 198, 1, -1 },
+    { 88, 13, -1, 1, -1 },
+    { -1, 0, 0, 0, 0 }
+};
+
+struct space_s Space_WEATHER_4CRYSTALS_PlayList[3] = {
+    { 88, 0, {
+        { "usair04", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "hubin", 12, 10, 0, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "hubout", 13, 0, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 183, 0, {
+        { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 255 }
+};
+
+struct pcutanm_s GameCut_WEATHER_4CRYSTALS[4] = {
+    { 88, 12, -1, 1, -1 },
+    { 88, 6, 199, 1, -1 },
+    { 88, 13, -1, 1, -1 },
+    { -1, 0, 0, 0, 0 }
+};
+
+struct space_s Space_WEATHER_BOSS_PlayList[4] = {
+    { 88, 0, {
+        { "usair06", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "hubin", 12, 10, 0, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "hubout", 13, 0, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 179, 0, {
+        { "c\\uscrn19", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "b\\hubin", 12, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "b\\hubout", 13, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 183, 0, {
+        { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 255 }
+};
+
+struct pcutanm_s GameCut_WEATHER_BOSS[7] = {
+    { 88, 12, -1, 0, -1 },
+    { 88, 6, 200, 0, -1 },
+    { 88, 13, -1, 0, -1 },
+    { 179, 12, -1, 2, -1 },
+    { 179, 6, 211, 2, -1 },
+    { 179, 13, -1, 2, -1 },
+    { -1, 0, 0, 0, 0 }
+};
+
+struct space_s Space_SPACE_1STLEVEL_PlayList[4] = {
+    { 2, 0, {
+        { "b\\uscor56", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "b\\hubin", 12, 10, 0, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "b\\hubout", 13, 0, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 179, 0, {
+        { "b\\uscrn21", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "b\\hubin", 12, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "b\\hubout", 13, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 183, 0, {
+        { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 255 }
+};
+
+struct pcutanm_s GameCut_SPACE_1STLEVEL[7] = {
+    { 2, 12, -1, 0, -1 },
+    { 2, 6, 205, 0, -1 },
+    { 2, 13, -1, 0, -1 },
+    { 179, 12, -1, 2, -1 },
+    { 179, 6, 212, 2, -1 },
+    { 179, 13, -1, 2, -1 },
+    { -1, 0, 0, 0, 0 }
+};
+
+struct space_s Space_SPACE_2CRYSTALS_PlayList[3] = {
+    { 2, 0, {
+        { "b\\uscor44", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "b\\hubin", 12, 10, 0, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "b\\hubout", 13, 0, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 183, 0, {
+        { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 255 }
+};
+
+struct pcutanm_s GameCut_SPACE_2CRYSTALS[4] = {
+    { 2, 12, -1, 1, -1 },
+    { 2, 6, 202, 1, -1 },
+    { 2, 13, -1, 1, -1 },
+    { -1, 0, 0, 0, 0 }
+};
+
+struct space_s Space_SPACE_4CRYSTALS_PlayList[3] = {
+    { 2, 0, {
+        { "b\\uscor54", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "b\\hubin", 12, 10, 0, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "b\\hubout", 13, 0, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 183, 0, {
+        { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 255 }
+};
+
+struct pcutanm_s GameCut_SPACE_4CRYSTALS[4] = {
+    { 2, 12, -1, 1, -1 },
+    { 2, 6, 204, 1, -1 },
+    { 2, 13, -1, 1, -1 },
+    { -1, 0, 0, 0, 0 }
+};
+
+struct space_s Space_SPACE_BOSS_PlayList[4] = {
+    { 2, 0, {
+        { "b\\uscor52", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "b\\hubin", 12, 10, 0, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "b\\hubout", 13, 0, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 179, 0, {
+        { "b\\uscrn12", 6, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "b\\hubin", 12, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL },
+        { "b\\hubout", 13, 10, 10, 1.0f, 6, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 183, 0, {
+        { "swirl", 34, 0, 0, 0.2f, 3, -1, -1, 0xFFFFFFFFFFFFFFFFULL }
+    } },
+    { 255 }
+};
+
+struct pcutanm_s GameCut_SPACE_BOSS[7] = {
+    { 2, 12, -1, 0, -1 },
+    { 2, 6, 203, 0, -1 },
+    { 2, 13, -1, 0, -1 },
+    { 179, 12, -1, 2, -1 },
+    { 179, 6, 210, 2, -1 },
+    { 179, 13, -1, 2, -1 },
+    { -1, 0, 0, 0, 0 }
+};
+
+void *SpaceGameCutTab[26][2] = {
+    { 0, GameCut_EARTH_CORTEX },
+    { Space_EARTH_1STLEVEL_PlayList, GameCut_EARTH_1STLEVEL },
+    { Space_EARTH_2CRYSTALS_PlayList, GameCut_EARTH_2CRYSTALS },
+    { Space_EARTH_4CRYSTALS_PlayList, GameCut_EARTH_4CRYSTALS },
+    { Space_EARTH_BOSS_PlayList, GameCut_EARTH_BOSS },
+    { Space_EARTH_AKUAKU_PlayList, GameCut_EARTH_AKUAKU },
+    { 0, GameCut_WATER_CORTEX },
+    { Space_WATER_1STLEVEL_PlayList, GameCut_WATER_1STLEVEL },
+    { Space_WATER_2CRYSTALS_PlayList, GameCut_WATER_2CRYSTALS },
+    { Space_WATER_4CRYSTALS_PlayList, GameCut_WATER_4CRYSTALS },
+    { Space_WATER_BOSS_PlayList, GameCut_WATER_BOSS },
+    { 0, GameCut_FIRE_CORTEX },
+    { Space_FIRE_1STLEVEL_PlayList, GameCut_FIRE_1STLEVEL },
+    { Space_FIRE_2CRYSTALS_PlayList, GameCut_FIRE_2CRYSTALS },
+    { Space_FIRE_4CRYSTALS_PlayList, GameCut_FIRE_4CRYSTALS },
+    { Space_FIRE_BOSS_PlayList, GameCut_FIRE_BOSS },
+    { 0, GameCut_WEATHER_CORTEX },
+    { Space_WEATHER_1STLEVEL_PlayList, GameCut_WEATHER_1STLEVEL },
+    { Space_WEATHER_2CRYSTALS_PlayList, GameCut_WEATHER_2CRYSTALS },
+    { Space_WEATHER_4CRYSTALS_PlayList, GameCut_WEATHER_4CRYSTALS },
+    { Space_WEATHER_BOSS_PlayList, GameCut_WEATHER_BOSS },
+    {0},
+    { Space_SPACE_1STLEVEL_PlayList, GameCut_SPACE_1STLEVEL },
+    { Space_SPACE_2CRYSTALS_PlayList, GameCut_SPACE_2CRYSTALS },
+    { Space_SPACE_4CRYSTALS_PlayList, GameCut_SPACE_4CRYSTALS },
+    { Space_SPACE_BOSS_PlayList, GameCut_SPACE_BOSS }
+};
+
+struct anim_s CutAnim = {0};
+struct gtimer_s CutTimer = {0};
+
+struct anim_s CutVortexAnim = {0};
+
+
+s32 next_cut_movie = 0;
+u16 cutang_FRONTEND[2] = {0};
+u16 cutang_SPACE[3] = {0};
+s32 gamecut_hold = 0;
+
 extern void SetLights(struct nucolour3_s *col0, struct nuvec_s *dir0,
                       struct nucolour3_s *col1, struct nuvec_s *dir1,
                       struct nucolour3_s *col2, struct nuvec_s *dir2, struct nuvec_s *amb);
@@ -1364,48 +2033,5 @@ void CutSceneNextLogoFunction(struct instNUGCUTSCENE_s *icutscene) {
     NewMenu(&Cursor, 0, 0, -1);
     if (logos_played == 0) {
         GameMusic(0xaa, 0);
-    }
-}
-
-
-inline void *FindCutChar(char *name) {
-    struct csc_s *chr;
-
-    chr = CutChar;
-    if (CutChar != 0) {
-        for (; chr->path != 0; chr++) {
-            if (strcasecmp(name, chr->name) == 0) {
-                return chr->obj;
-            }
-        }
-    }
-    return 0;
-}
-
-extern char D_00632BC0[];                /* ".\\cut.c" */
-extern char D_00629350[];                /* "AppCutSceneFindCharacters: cannot fixup ..." */
-#define cut_srcfile D_00632BC0
-#define nocutchar_msg D_00629350
-
-static void AppCutSceneFindCharacters(struct NUGCUTSCENE_s *cutscene) {
-    struct NUGCUTCHARSYS_s *charSys;
-    struct NUGCUTCHAR_s *cutchar;
-    struct NUGCUTLOCATORSYS_s *locator;
-    s32 i;
-
-    charSys = cutscene->chardef;
-    locator = cutscene->locatordef;
-    for (i = 0; i < charSys->count; i++) {
-        cutchar = &charSys->chars[i];
-        cutchar->character = FindCutChar(cutchar->name);
-        if (cutchar->character == 0) {
-            NuDebugMsgProlog(cut_srcfile, 0x2a1)(nocutchar_msg, cutchar->name);
-        }
-        if (cutchar->nlocators != 0 && (nusintptr)cutchar->locators < 0xff) {
-            cutchar->first_locator = (u8)(nusintptr)cutchar->locators;
-            cutchar->locators = &locator->locators[(nusintptr)cutchar->locators];
-        } else {
-            cutchar->first_locator = -1;
-        }
     }
 }

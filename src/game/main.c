@@ -58,6 +58,7 @@
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
 #include "numath/nufloat.h"
+#include "numath/nurand.h"
 #include "nu3d/nugscn.h"
 #include "nu3d/nulight.h"
 #include "nu3d/nuvport.h"
@@ -101,7 +102,6 @@
 #include "nu3d/nurndr.h"
 #include "nucore/nufile.h"
 #include "nucore/numem.h"
-#include "numath/nurand.h"
 #include "nups2/ps2video.h"
 #include "nups2/vu1man.h"
 #include "nusound/nusound.h"
@@ -133,8 +133,8 @@ extern s32 fade_rate;
 extern s32 fadehack;
 extern s32 SWIDTH;
 extern s32 SHEIGHT;
-extern s32 D_00633264;              /* fade colour */
-extern struct numtl_s *D_00633260; /* fade material */
+static struct numtl_s *fade_mtl;
+static s32 fadecol;
 
 extern void NuCameraSet(struct nucamera_s *cam);
 extern void NuGScnRndr3(struct nugscn_s *scene);
@@ -144,8 +144,20 @@ extern void edobjRenderObjects(struct nugscn_s *scene);
 extern void NuRndrRect2di(s32 x, s32 y, s32 w, s32 h, s32 colour,
                           struct numtl_s *mtl);
 
-struct hazecol_s {
-    u8 c[8];
+struct vec2_s {
+    float x;
+    float y;
+};
+
+struct vec3_s {
+    float x;
+    float y;
+    float z;
+};
+
+struct mg_wumpa_s {
+    struct nuvec_s pos;
+    s32 type;
 };
 
 extern struct ldata_s LData[];
@@ -160,39 +172,11 @@ extern s32 GAMEOBJECTCOUNT;
 extern s32 i_cratetypedata;
 extern s32 PLAYERCOUNT;
 extern union variptr_u superbuffer_ptr;
+extern union variptr_u superbuffer_base;
 extern union variptr_u superbuffer_end;
+extern union variptr_u superbuffer_reset_base;
 
-extern char load_txt[];
 extern u8 texanimbuff[];
-extern struct texanimref_s D_004C1300[];
-#define texanimscripts D_004C1300
-extern struct hazecol_s D_0062FAC8[];
-extern struct hazecol_s D_0062FAD0[];
-extern char D_0062FA48[];
-extern char D_0061B2E8[];
-extern char D_0061B308[];
-extern char D_0061B318[];
-extern char D_0061B330[];
-extern char D_0061B340[];
-extern char D_0061B350[];
-extern char D_0061B360[];
-extern char D_0061B370[];
-extern char D_0061B388[];
-extern char D_0061B3A0[];
-extern char D_0061B3B0[];
-extern char D_0061B3C0[];
-extern char D_0061B3D8[];
-extern char D_0061B3E8[];
-extern char D_0061B400[];
-extern char D_0061B418[];
-extern char D_0061B428[];
-extern char D_0061AE18[];
-extern char D_0061AE28[];
-extern char D_0061AE58[];
-extern char D_0061AE88[];
-extern char D_0061AEA0[];
-extern char D_0061AEB0[];
-extern char D_0061AEC0[];
 
 extern void NuDisableVBlank(void);
 extern void NuEnableVBlank(void);
@@ -236,60 +220,6 @@ extern u8 D_0057EEA4[];
 extern s32 edcrt_used;
 extern s32 edwmp_used;
 extern s32 edai_used;
-
-extern char D_0062FA80[];
-extern char D_0062FA88[];
-extern char D_0062FA90[];
-extern char D_0062FA98[];
-extern char D_0062FAA0[];
-extern char D_0062FAA8[];
-extern char D_0062FAB0[];
-extern char D_0062FAB8[];
-extern char D_0062FAC0[];
-extern char D_0061AED0[];
-extern char D_0061AEE8[];
-extern char D_0061AF00[];
-extern char D_0061AF20[];
-extern char D_0061AF40[];
-extern char D_0061AF58[];
-extern char D_0061AF78[];
-extern char D_0061AF90[];
-extern char D_0061AFB0[];
-extern char D_0061AFC8[];
-extern char D_0061AFE8[];
-extern char D_0061B000[];
-extern char D_0061B020[];
-extern char D_0061B038[];
-extern char D_0061B058[];
-extern char D_0061B070[];
-extern char D_0061B088[];
-extern char D_0061B0A0[];
-extern char D_0061B0B0[];
-extern char D_0061B0C0[];
-extern char D_0061B0D8[];
-extern char D_0061B0F0[];
-extern char D_0061B108[];
-extern char D_0061B118[];
-extern char D_0061B130[];
-extern char D_0061B150[];
-extern char D_0061B168[];
-extern char D_0061B180[];
-extern char D_0061B1A0[];
-extern char D_0061B1B8[];
-extern char D_0061B1D0[];
-extern char D_0061B1E8[];
-extern char D_0061B200[];
-extern char D_0061B218[];
-extern char D_0061B228[];
-extern char D_0061B248[];
-extern char D_0061B260[];
-extern char D_0061B270[];
-extern char D_0061B280[];
-extern char D_0061B290[];
-extern char D_0061B2A0[];
-extern char D_0061B2B0[];
-extern char D_0061B2C0[];
-extern char D_0061B2D8[];
 
 extern void NuStrCat(char *dst, char *src);
 extern void NuRndrInitWorld(void);
@@ -338,6 +268,162 @@ extern void InitLevel(void);
 extern s32 qrand(void);
 extern void NuRndrShadowInit(void *buf);
 extern void NuLightMatInit(void);
+extern void* NuMemAllocFn(int size, char* file, int line);
+
+float foot_u[32] = {
+    0.0f,     0.09375f, 0.0f,    0.09375f,  0.09375f,  0.1875f, 0.09375f,  0.1875f,
+    0.1875f,  0.28125f, 0.1875f, 0.296875f, 0.296875f, 0.375f,  0.296875f, 0.375f,
+    0.0f,     0.09375f, 0.0f,    0.09375f,  0.09375f,  0.1875f, 0.09375f,  0.1875f,
+    0.1875f,  0.28125f, 0.1875f, 0.296875f, 0.296875f, 0.375f,  0.296875f, 0.375f,
+};
+float foot_v[32] = {
+    0.5f,   0.5f,   0.625f, 0.625f, 0.5f,   0.5f,   0.625f, 0.625f,
+    0.5f,   0.5f,   0.625f, 0.625f, 0.5f,   0.5f,   0.625f, 0.625f,
+    0.625f, 0.625f, 0.75f,  0.75f,  0.625f, 0.625f, 0.75f,  0.75f,
+    0.625f, 0.625f, 0.75f,  0.75f,  0.625f, 0.625f, 0.75f,  0.75f,
+};
+
+static struct texanimref_s texanimscripts[24] = {
+    { "ats\\crash\\angel.ats", -1, 0xFFFFFFF7FFFFFFFFULL },
+    { "ats\\crash\\lefteye.ats", -1, 0xFFFFFFF7FFFFFFFFULL },
+    { "ats\\crash\\righteye.ats", -1, 0xFFFFFFF7FFFFFFFFULL },
+    { "ats\\levels\\blink_01.ats", -1, 0xFFFFFFF7FFFFFFFFULL },
+    { "ats\\cortex\\crtxblnk.ats", -1, 0xFFFFFF37FFFFFFFFULL },
+    { "ats\\droid\\blink.ats", -1, 0xFFFFFFF7FFFFFFFFULL },
+    { "ats\\droid\\blink2.ats", -1, 0xFFFFFFF7FFFFFFFFULL },
+    { "ats\\akuaku\\akuaku.ats", -1, 0xFFFFFFF7FFFFFFFFULL },
+    { "ats\\crunch\\blkfd.ats", -1, 0x3E00000 },
+    { "ats\\crunch\\blkfd2.ats", -1, 0x3E00000 },
+    { "ats\\crunch\\crncheye.ats", -1, 0x12003E00000ULL },
+    { "ats\\crunch\\crunch.ats", -1, 0x3E00000 },
+    { "ats\\crunch\\holo.ats", -1, 0x2000000000ULL },
+    { "ats\\crunch\\lnkmstr.ats", -1, 0x3E00000 },
+    { "ats\\crunch\\lnkslv.ats", -1, 0x3E00000 },
+    { "ats\\crunch\\lnkslv2.ats", -1, 0x3E00000 },
+    { "ats\\levels\\title.ats", -1, 0x800000000ULL },
+    { "ats\\levels\\titlelgt.ats", -1, 0x800000000ULL },
+    { "ats\\elecy\\elecy.ats", -1, 0x90600108044ULL },
+    { "ats\\elecy\\elecy2.ats", -1, 0x2002000000ULL },
+    { "ats\\elecy\\elecys.ats", -1, 0x10000100000ULL },
+    { "ats\\coco\\rghteyec.ats", -1, 0x200C005020ULL },
+    { "ats\\coco\\lefteyec.ats", -1, 0x200C005020ULL },
+    { 0, -1, 0 },
+};
+
+struct nugscn_s *world_scene[32] = { 0 };
+char load_txt[64] = { 0 };
+
+int HACKDRAWLIGHTS = 0;
+s8 memdump_enabled = 0;
+s32 editor_active = 0;
+void *app_fnt = 0;
+int NODEBRIS = 0;
+int peak_poly_count = 0;
+int poly_count = 0;
+int poo_wee = 99;
+static int number_of_times_played = 0;
+static int fmvdump_enabled = 0;
+s32 pad_record = 0;
+int pad_play = 0;
+int ForcePlayRecord = 0;
+int FixFrameRate = 0;
+s32 texanimbits = 0;
+
+inline void InitTexAnimScripts(void)
+{
+    struct texanimref_s *list = texanimscripts;
+    void *dat;
+    union variptr_u animbuf;
+    NuErrorFunc dbg;
+
+    NuTexAnimProgSysInit();
+    dat = NuDatOpen("ats.dat", 0, 0);
+    NuDatSet(dat);
+    animbuf.voidptr = texanimbuff;
+    memset(texanimbuff, 0, 0x8000);
+
+    for (; list->script != 0; list++) {
+        if ((list->lbit & LBIT) != 0 &&
+            NuTexAnimProgReadScript(&animbuf, list->script) == 0) {
+            dbg = NuDebugMsgProlog(".\\main.c", 0x4FF);
+            dbg("Unable to load animated texture script \"%s\"", list->script);
+        }
+    }
+
+    NuDatSet(0);
+    if (dat != 0) {
+        NuDatClose(dat);
+    }
+}
+
+/* Declared unsized first: retail addresses Pad absolutely although it lives in .sdata. */
+extern struct nupad_s *Pad[];
+struct nupad_s *Pad[2] = { 0 };
+struct visidata_s *world_vd = 0;
+struct nugscn_s *wumpa_scene = 0;
+struct nugscn_s *crate_scene = 0;
+struct nugscn_s *font3d_scene = 0;
+struct nugscn_s *pause_scene = 0;
+s32 screendump = 0;
+static float gamma_val = 0.75f;
+s32 fadeval = 0xFF;
+s32 fadehack = 0;
+s32 fade_rate = 0;
+
+inline void LoadFont3D(void)
+{
+    font3d_initialised = 0;
+    font3d_scene = NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, "stuff\\font.gsc");
+    InitFont3D(font3d_scene);
+}
+
+static inline void InitSuperBuffer(void)
+{
+    superbuffer_base.voidptr = NuMemAllocFn(0x1200000, ".\\main.c", 0x579);
+    superbuffer_end.intaddr = (superbuffer_base.intaddr + 0x1200000);
+    superbuffer_reset_base.voidptr = superbuffer_base.voidptr;
+    if (superbuffer_base.voidptr == 0) {
+        NuErrorProlog(".\\main.c", 0x57c)("unable to allocate super buffer");
+    }
+}
+
+inline void InitCreatureModels(void)
+{
+    s32 i;
+
+    for (i = 0; i < 9; i++) {
+        Character[i].used = 0;
+        Character[i].on = 0;
+        Character[i].off_wait = 0;
+    }
+    GAMEOBJECTCOUNT = 0;
+    LoadScreen("LoadCharacterModels...");
+    LoadCharacterModels();
+}
+
+inline void InitCreatures(void)
+{
+    LoadScreen("InitAI...");
+    InitAI();
+    LoadScreen("InitChases...");
+    InitChases();
+    LoadScreen("ResetChases...");
+    ResetChases();
+
+    if (LDATA->flags & 0x1) {
+        AddCreature(LDATA->character, 0, -1);
+        PLAYERCOUNT = 1;
+    } else {
+        PLAYERCOUNT = 0;
+    }
+}
+
+inline void LoadScreen(char *name)
+{
+    NuDisableVBlank();
+    NuStrCpy(load_txt, name);
+    NuEnableVBlank();
+}
 
 /* Keep the message argument alive while the VBlank callback is disabled. */
 static inline void LOAD_MESSAGE(char *name)
@@ -353,10 +439,10 @@ void InitWorld(void)
     s32 n;
     char buf[0x800];
 
-    NuStrCpy(LevelFileName, D_0062FA80);
+    NuStrCpy(LevelFileName, "levels\\");
     NuStrCat(LevelFileName, LDATA->path);
     NuStrCpy(PadRecordPath, LevelFileName);
-    NuStrCat(PadRecordPath, D_0062FA88);
+    NuStrCat(PadRecordPath, ".ppd");
 
     for (i = 0; i < 32; i++) {
         world_scene[i] = 0;
@@ -364,52 +450,52 @@ void InitWorld(void)
     NuRndrInitWorld();
 
     if (LDATA->flags & 0x4) {
-        LOAD_MESSAGE(D_0061AED0);
+        LOAD_MESSAGE("loading world scene");
         NuStrCpy(tbuf, LevelFileName);
-        NuStrCat(tbuf, D_0062FA90);
+        NuStrCat(tbuf, ".gsc");
 
         if (Level != 0x27 && Level != 0x29) {
             world_scene[0] = NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, tbuf);
             NuStrCpy(tbuf, LevelFileName);
-            NuStrCat(tbuf, D_0062FA98);
+            NuStrCat(tbuf, ".vis");
             world_vd = visiLoadData(tbuf, world_scene[0], &superbuffer_ptr);
             if (world_scene[0] != 0 && world_vd == 0) {
                 BuildVisiTable(world_scene[0]);
             }
         }
 
-        LOAD_MESSAGE(D_0061AEE8);
+        LOAD_MESSAGE("loading more scenes");
 
         if (Level == 0xE) {
             world_scene[1] =
-                NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, D_0061AF00);
+                NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, "levels\\a\\tsunami\\wave.gsc");
         } else if (Level == 0x1F) {
             world_scene[1] =
-                NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, D_0061AF20);
+                NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, "levels\\a\\fireball\\fire.gsc");
         } else if (Level == 0x27 || Level == 0x29) {
-            LOAD_MESSAGE(D_0061AF40);
+            LOAD_MESSAGE("loading 1st world scene");
             world_scene[0] =
-                NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, D_0061AF58);
-            LOAD_MESSAGE(D_0061AF78);
+                NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, "levels\\b\\intro\\intro1.gsc");
+            LOAD_MESSAGE("loading 2nd world scene");
             world_scene[1] =
-                NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, D_0061AF90);
-            LOAD_MESSAGE(D_0061AFB0);
+                NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, "levels\\b\\intro\\intro2.gsc");
+            LOAD_MESSAGE("loading 3rd world scene");
             world_scene[2] =
-                NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, D_0061AFC8);
-            LOAD_MESSAGE(D_0061AFE8);
+                NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, "levels\\b\\intro\\corridor.gsc");
+            LOAD_MESSAGE("loading 4th world scene");
             world_scene[3] =
-                NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, D_0061B000);
-            LOAD_MESSAGE(D_0061B020);
+                NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, "levels\\b\\intro\\mystic.gsc");
+            LOAD_MESSAGE("loading 5th world scene");
             world_scene[4] =
-                NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, D_0061B038);
+                NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, "levels\\b\\intro\\space.gsc");
         }
 
         if (LBIT & 0x400000) {
             world_scene[2] =
-                NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, D_0061B058);
+                NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, "stuff\\redbits.gsc");
         } else if (LBIT & 0x5A031894DULL) {
             world_scene[2] =
-                NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, D_0061B070);
+                NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, "stuff\\jeepbits.gsc");
         }
     }
 
@@ -424,14 +510,14 @@ void InitWorld(void)
     NuLightFogClear(0);
 
     if (Level == 0x25) {
-        LOAD_MESSAGE(D_0061B088);
-        n = saveloadLoadIcon(D_0061B0A0, superbuffer_ptr.voidptr);
+        LOAD_MESSAGE("loading Mem card Icon");
+        n = saveloadLoadIcon("stuff\\crash.ico", superbuffer_ptr.voidptr);
         superbuffer_ptr.intaddr = (superbuffer_ptr.intaddr + n + 0xF) & ~(nuintptr)0xF;
     }
 
     noterraininit();
     if (LDATA->flags & 0x8) {
-        LOAD_MESSAGE(D_0061B0B0);
+        LOAD_MESSAGE("loading terrain");
         TerrainSetCur(superbuffer_ptr.voidptr);
         terraininit(Level, &superbuffer_ptr.s16, superbuffer_end.s16, 0, LevelFileName,
                     world_scene[0], 0);
@@ -441,71 +527,71 @@ void InitWorld(void)
     WUMPACOUNT = 0;
     crate_scene = 0;
     if (LDATA->flags & 0x40) {
-        LOAD_MESSAGE(D_0061B0C0);
-        crate_scene = NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, D_0061B0D8);
+        LOAD_MESSAGE("loading crate scene");
+        crate_scene = NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, "stuff\\crates.gsc");
     }
 
     pause_scene = 0;
     if ((LDATA->flags & 0x1) || Level == 0x23) {
-        LOAD_MESSAGE(D_0061B0F0);
-        pause_scene = NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, D_0061B108);
+        LOAD_MESSAGE("loading pause scene");
+        pause_scene = NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, "stuff\\pause.gsc");
     }
 
     edppDestroyAllParticles();
     edppDestroyAllEffects();
 
     if (LDATA->flags & 0x10) {
-        LOAD_MESSAGE(D_0061B118);
-        sprintf(tbuf, D_0062FAA0, LevelFileName);
+        LOAD_MESSAGE("loading level.ptl file");
+        sprintf(tbuf, "%s.ptl", LevelFileName);
         if (NuFileSize(tbuf) > 0) {
             edppLoadEffects(tbuf, 1);
         }
 
-        LOAD_MESSAGE(D_0061B130);
-        sprintf(tbuf, D_0061B150);
+        LOAD_MESSAGE("loading general.ptl file");
+        sprintf(tbuf, "stuff\\general.ptl");
         if (NuFileSize(tbuf) > 0) {
             edppMergeEffects(tbuf, 0);
         }
 
-        LOAD_MESSAGE(D_0061B168);
-        sprintf(tbuf, D_0062FAA8, LevelFileName);
+        LOAD_MESSAGE("loading level.cpt file");
+        sprintf(tbuf, "%s.cpt", LevelFileName);
         if (NuFileSize(tbuf) > 0) {
             edppMergeEffects(tbuf, 5);
         }
     }
 
     InitGameDebris();
-    LOAD_MESSAGE(D_0061B180);
+    LOAD_MESSAGE("edppRestartAllEffectsInLevel");
     edppRestartAllEffectsInLevel();
 
-    LOAD_MESSAGE(D_0061B1A0);
+    LOAD_MESSAGE("edobjObjectReset");
     edobjObjectReset();
 
-    LOAD_MESSAGE(D_0061B1B8);
-    sprintf(tbuf, D_0062FAB0, LevelFileName);
+    LOAD_MESSAGE("loading .obj file");
+    sprintf(tbuf, "%s.obj", LevelFileName);
     if (NuFileSize(tbuf) > 0) {
         edobjFileLoadObjects(tbuf);
     }
 
     edanimParamReset();
-    LOAD_MESSAGE(D_0061B1D0);
-    sprintf(tbuf, D_0062FAB8, LevelFileName);
+    LOAD_MESSAGE("loading .anm file");
+    sprintf(tbuf, "%s.anm", LevelFileName);
     if (NuFileSize(tbuf) > 0) {
         edanimFileLoad(tbuf);
     }
 
     edgraClumpsReset();
-    LOAD_MESSAGE(D_0061B1E8);
-    sprintf(tbuf, D_0062FAC0, LevelFileName);
+    LOAD_MESSAGE("loading .gra file");
+    sprintf(tbuf, "%s.gra", LevelFileName);
     if (NuFileSize(tbuf) > 0) {
         edgraFileLoad(tbuf);
     }
 
     edgraInitAllClumps();
-    LOAD_MESSAGE(D_0061B200);
+    LOAD_MESSAGE("LoadVehicleStuff...");
     LoadVehicleStuff();
 
-    LOAD_MESSAGE(D_0061B218);
+    LOAD_MESSAGE("LoadCutMovie...");
 
     if (Level == 0x27) {
         LoadCutMovie(1);
@@ -526,40 +612,40 @@ void InitWorld(void)
     TerrainPlatformNewUpdate();
 
     if ((LDATA->flags & 0x1) && Level != 0x25) {
-        LOAD_MESSAGE(D_0061B228);
-        ShadowMat = CreateAlphaBlendTexture64(D_0061B248, 0, 1, 0x64);
+        LOAD_MESSAGE("creating shadow material");
+        ShadowMat = CreateAlphaBlendTexture64("stuff\\gradient.raw", 0, 1, 0x64);
     }
 
     ResetCheckpoint(-1, -1, 0, 0.0f);
 
-    LOAD_MESSAGE(D_0061B260);
+    LOAD_MESSAGE("InitSplineTable");
     InitSplineTable();
 
-    LOAD_MESSAGE(D_0061B270);
+    LOAD_MESSAGE("InitObjectTable");
     InitObjectTable();
 
-    LOAD_MESSAGE(D_0061B280);
+    LOAD_MESSAGE("InitRails");
     InitRails();
 
-    LOAD_MESSAGE(D_0061B290);
+    LOAD_MESSAGE("InitWumpa");
     InitWumpa();
     ResetMaskFeathers();
 
-    LOAD_MESSAGE(D_0061B2A0);
+    LOAD_MESSAGE("InitCrates");
     InitCrates();
     InitVehicleToggles();
 
-    LOAD_MESSAGE(D_0061B2B0);
+    LOAD_MESSAGE("InitLevel");
     InitLevel();
 
     for (i = 0; i < 0x800; i++) {
         buf[i] = qrand() >> 8;
     }
 
-    LOAD_MESSAGE(D_0061B2C0);
+    LOAD_MESSAGE("NuRndrShadowInit");
     NuRndrShadowInit(buf);
 
-    LOAD_MESSAGE(D_0061B2D8);
+    LOAD_MESSAGE("NuLightMatInit");
     NuLightMatInit();
 
     edcrt_used = 0;
@@ -567,149 +653,120 @@ void InitWorld(void)
     edai_used = 0;
 }
 
-inline void InitTexAnimScripts(void)
-{
-    struct texanimref_s *list = texanimscripts;
-    void *dat;
-    union variptr_u animbuf;
-    NuErrorFunc dbg;
-
-    NuTexAnimProgSysInit();
-    dat = NuDatOpen(D_0062FA48, 0, 0);
-    NuDatSet(dat);
-    animbuf.voidptr = texanimbuff;
-    memset(texanimbuff, 0, 0x8000);
-
-    for (; list->script != 0; list++) {
-        if ((list->lbit & LBIT) != 0 &&
-            NuTexAnimProgReadScript(&animbuf, list->script) == 0) {
-            dbg = NuDebugMsgProlog(D_0061AE18, 0x4FF);
-            dbg(D_0061AE28, list->script);
-        }
-    }
-
-    NuDatSet(0);
-    if (dat != 0) {
-        NuDatClose(dat);
-    }
-}
-
-
-inline void InitCreatureModels(void)
-{
-    s32 i;
-
-    for (i = 0; i < 9; i++) {
-        Character[i].used = 0;
-        Character[i].on = 0;
-        Character[i].off_wait = 0;
-    }
-    GAMEOBJECTCOUNT = 0;
-    LoadScreen(D_0061AE88);
-    LoadCharacterModels();
-}
-
-
-inline void InitCreatures(void)
-{
-    LoadScreen(D_0061AEA0);
-    InitAI();
-    LoadScreen(D_0061AEB0);
-    InitChases();
-    LoadScreen(D_0061AEC0);
-    ResetChases();
-
-    if (LDATA->flags & 0x1) {
-        AddCreature(LDATA->character, 0, -1);
-        PLAYERCOUNT = 1;
-    } else {
-        PLAYERCOUNT = 0;
-    }
-}
-
-
-inline void LoadScreen(char *name)
-{
-    NuDisableVBlank();
-    NuStrCpy(load_txt, name);
-    NuEnableVBlank();
-}
-
-
-inline void LoadFont3D(void)
-{
-    font3d_initialised = 0;
-    font3d_scene = NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, D_0061AE58);
-    InitFont3D(font3d_scene);
-}
-
-
 void LoadLevel(void)
 {
-    struct hazecol_s haze0;
-    struct hazecol_s haze1;
-
     if ((LDATA->flags & 0x40) && CrateMat == 0) {
-        LoadScreen(D_0061B2E8);
-        CrateMat = CreateAlphaBlendTexture256_32(D_0061B308, 0, 1, 0x100, 0);
+        LoadScreen("CreateAlphaBlendTexture256_32");
+        CrateMat = CreateAlphaBlendTexture256_32("stuff\\box.raw", 0, 1, 0x100, 0);
     }
 
-    LoadScreen(D_0061B318);
+    LoadScreen("ParticleReset...");
     ParticleReset();
-    LoadScreen(D_0061B330);
+    LoadScreen("InitSpecular...");
     InitSpecular();
-    LoadScreen(D_0061B340);
+    LoadScreen("InitEnviro...");
     InitEnviro();
-    LoadScreen(D_0061B350);
+    LoadScreen("InitGlass...");
     InitGlass();
-    LoadScreen(D_0061B360);
+    LoadScreen("InitClouds...");
     if (LBIT & 0x200000A1) {
         InitClouds();
     }
-    LoadScreen(D_0061B370);
+    LoadScreen("InitTexAnimScripts...");
 
     InitTexAnimScripts();
     NuMtlReadEventSetHandler(MtlReadEventHandler);
 
     wumpa_scene = 0;
     if (LDATA->flags & 0x100) {
-        LoadScreen(D_0061B388);
-        wumpa_scene = NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, D_0061B3A0);
+        LoadScreen("loading wumpa scene");
+        wumpa_scene = NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, "stuff\\wumpa.gsc");
     }
 
-    LoadScreen(D_0061B3B0);
+    LoadScreen("LoadFont3D...");
     if (Level != 0x28) {
         LoadFont3D();
     }
 
-    LoadScreen(D_0061B3C0);
+    LoadScreen("InitCreatureModels...");
     InitCreatureModels();
 
-    haze0 = D_0062FAC8[0];
-    haze1 = D_0062FAD0[0];
-    NuLigthSetPolyHazeMat(DebMat[4], (float *)&haze0, (float *)&haze1);
+    {
+        float haze0[2] = { 0.625f, 0.75f };
+        float haze1[2] = { 0.25f, 0.5f };
+
+        NuLigthSetPolyHazeMat(DebMat[4], haze0, haze1);
+    }
 
     ClearGameObjects();
     ResetCheckpoint(-1, -1, 0, 0.0f);
 
-    LoadScreen(D_0061B3D8);
+    LoadScreen("InitWorld...");
     InitWorld();
 
     i_cratetypedata = 0;
     if (LDATA->flags & 0x40) {
-        LoadScreen(D_0061B3E8);
+        LoadScreen("ReadCrateData...");
         if (ReadCrateData() != 0) {
-            LoadScreen(D_0061B400);
+            LoadScreen("ReadInCrateData...");
             ReadInCrateData();
         }
     }
 
-    LoadScreen(D_0061B418);
+    LoadScreen("LoadLights...");
     LoadLights();
-    LoadScreen(D_0061B428);
+    LoadScreen("InitCreatures...");
     InitCreatures();
 }
 
+struct nuvec_s bgload_objpos[2] = { 0 };
+char *bgloadcharnames[] = { "chars\\a\\crash\\crash.ghg", "chars\\a\\coco\\coco.ghg" };
+char *bgloadanimnames[] = { "chars\\a\\crash\\g\\longfall.ani", "chars\\a\\coco\\b\\falllong.ani" };
+struct nuvec_s mg_gopos = { 0.0f, 0.0f, -0.2f };
+struct nuvec_s mg_fontpos = { -0.65f, 0.85f, 1.0f };
+struct nuvec_s mg_fontscale = { 1.0f, 1.0f, 1.0f };
+struct nuvec_s mg_scorewumpa = { -1.1f, 0.7f, 2.5f };
+struct vec3_s bgload_campos = { 0.0f, 0.0f, -4.0f };
+struct nuvec_s bgloadpos = { 0.0f, 0.8f, 1.0f };
+char PadRecordPath[256] = { 0 };
+struct nupadframe_s PadData[30000] = { 0 };
+u8 texanimbuff[0x8000] = { 0 };
+struct nuvec_s mg_player_pos = { 0 };
+struct nuhspecial_s mg_wumpa_shapes[3] = { 0 };
+struct vec3_s mg_player_actpos = { 0 };
+struct mg_wumpa_s mg_wumpaobj[32] = { 0 };
+struct numtx_s mg_wumpamtx = { 0 };
+
+s32 pausebuzz = 0;
+s32 stick_bits = 0;
+s32 stick_bits_db = 0;
+s32 stick_oldbits = 0;
+static struct nulight_s *main_light = 0;
+int NoSoundPlease = 0;
+s64 frameout_count = 0;
+int frameout = 0;
+int FRAME = 0;
+int FRAMES = 1;
+int test_sfx = 0;
+int LIFTPLAYER = 0;
+int CRATEGIBBER = 0;
+int COMPLEXPLAYERSHADOW = 1;
+int PANELOFF = 0;
+int GLASSPLAYER = 1;
+int SKELETALCRASH = 0;
+int DRAWCREATUREHACK = 1;
+int DRAWWORLDHACK = 1;
+int BLUR = 1;
+int HAZE = 0;
+int NOTERRAINSTOP = 1;
+int DRAWCRATESHACK = 1;
+int DRAWDEBRISHACK = 1;
+int DRAWWUMPAHACK = 1;
+int USELIGHTS = 1;
+int LANGUAGEOPTION = 1;
+int fmv = -1;
+s32 pause_rndr_on = 0;
+s32 pause_rt = 0;
 
 void DrawWorld(void)
 {
@@ -745,14 +802,14 @@ void CreateFadeMtl(void)
 {
     struct numtl_s *m = NuMtlCreate(1);
 
-    D_00633260 = m;
-    D_00633260->attrib.zmode = 3;
-    D_00633260->attrib.filter = 1;
-    D_00633260->attrib.lighting = 2;
-    D_00633260->attrib.utc = 1;
-    D_00633260->attrib.vtc = 1;
-    D_00633260->attrib.colour = 1;
-    D_00633260->attrib.alpha = 3;
+    fade_mtl = m;
+    fade_mtl->attrib.zmode = 3;
+    fade_mtl->attrib.filter = 1;
+    fade_mtl->attrib.lighting = 2;
+    fade_mtl->attrib.utc = 1;
+    fade_mtl->attrib.vtc = 1;
+    fade_mtl->attrib.colour = 1;
+    fade_mtl->attrib.alpha = 3;
     NuMtlUpdate(m);
 }
 
@@ -777,47 +834,22 @@ inline void UpdateFade(void)
         fade_rate = 0;
     }
 
-    D_00633264 =
+    fadecol =
         fadeval | (fadeval << 8) | (fadeval << 16) | 0x80000000;
 }
 
 inline void DrawFade(void)
 {
     if (fadeval != 0) {
-        NuRndrRect2di(0, 0, SWIDTH << 4, SHEIGHT << 3, D_00633264,
-                      D_00633260);
+        NuRndrRect2di(0, 0, SWIDTH << 4, SHEIGHT << 3, fadecol,
+                      fade_mtl);
     }
 }
 
-extern char D_0061B550[];
-extern union variptr_u superbuffer_reset_base;
 extern volatile s32 bgload_complete;
 extern void BGLoadScreenInit(s32 a);
 extern void InitLevelSfxTables(void);
 extern void InitGlobalSfx(void);
-
-void BGLoadSfxFn(void)
-{
-    char *msg = D_0061B550;
-    s32 done = 1;
-
-    NuDisableVBlank();
-    NuStrCpy(load_txt, msg);
-    NuEnableVBlank();
-
-    superbuffer_ptr = superbuffer_reset_base;
-    font3d_initialised = 0;
-    font3d_scene = NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, D_0061AE58);
-    InitFont3D(font3d_scene);
-    font3d_initialised = done;
-    BGLoadScreenInit(0);
-    InitLevelSfxTables();
-    InitGlobalSfx();
-    bgload_complete = done;
-    for (;;) {
-        NW_HOST_IDLE();
-    }
-}
 
 void SetLevel(void)
 {
@@ -833,26 +865,18 @@ void SetLevel(void)
     AIVISRANGE = 25.0f;
 }
 
-extern struct nupad_s *Pad[];
 extern struct cursor_s Cursor;
 extern struct game_s Game;
 extern struct gtimer_s PauseTimer;
-extern char PadRecordPath[];
 
-extern s32 pad_record;
-extern s32 stick_bits;
-extern s32 stick_oldbits;
-extern s32 stick_bits_db;
 extern s32 new_mode;
 extern s32 new_level;
-extern s32 editor_active;
 extern s32 GameMode;
 extern s32 cutmovie;
 extern s32 Paused;
 extern s32 last_hub;
 extern s32 pause_dir;
 extern s32 pausestats_frame;
-extern s32 pausebuzz;
 extern s32 Demo;
 extern float tumble_time;
 extern float tumble_duration;
@@ -863,19 +887,54 @@ extern void PauseGameAudio(s32 a);
 extern void GameSfx(s32 id, s32 a);
 extern void NuPs2VideoSetPos(s32 x, s32 y);
 
-typedef struct {
-    u32 score;
-    u32 time;
-    u32 flags;
-} minigamedata_s;
+struct NUHGOBJ_s *bgloadchr[2] = { 0 };
+volatile struct nuanimdata_s *bgloadanim[2] = { 0 };
+float bgload_objstart = 2.0f;
+float bgload_objtarg = -0.6f;
+float bgload_bumppos = 0.0f;
+float bgload_objspd = 0.016666668f;
+int bobrate = 1000;
+float bobscale = 0.1f;
+float fallrate = 0.005f;
+float maxfallspd = 0.05f;
+struct CharacterModel *bgload_model[2] = { 0 };
+s32 bgloadlastcharacter = -1;
+float mg_accel = 0.01f;
+float mg_friction = 0.8f;
+float mg_spd_rng = 0.08f;
+float mg_player_rng = 0.6f;
+float mg_player_y_offset = 0.5f;
+s32 mg_player_spin = 0;
+int mg_player_spin_rate = 0x71C;
+s32 mg_player_tilt = 0;
+float mg_player_tilt_scale = -131072.0f;
+int mg_wumpa_issue_delay = 10;
+int mg_wumpa_issue_extra_delay = 10;
+int mg_wumpa_rand_rng = 16;
+float mg_wumpa_rng = 0.18f;
+float mg_wumpa_spd = 0.05f;
+float mg_wumpacore_spd = 0.02f;
+float mg_wumpagibber = 0.0f;
+float mg_scoregibber = 0.0f;
+float mg_scoremaxgibber = 0.2f;
+int mg_scoregibbercntx = 0;
+int mg_scoregibberratex = 7000;
+int mg_scoregibbercnty = 0;
+int mg_scoregibberratey = 12000;
+float mg_colldist = 0.2f;
+float mg_gforce = 0.05f;
+float mg_yspdscale = 0.00022f;
 
-extern minigamedata_s D_0061B4B0;
-
+/* The minigame is stubbed out; its literals still sit in retail .rodata/.sdata. */
 void MiniGameReset(void)
 {
-    minigamedata_s save = D_0061B4B0;
+    struct nuvec_s scale = { 0.65f, 0.65f, 0.65f };
+    char *shape = "wumpa";
+    char *core = "wumpa_core";
 }
 
+float mg_scoreoff = 1.0f;
+s32 mg_frame = -1;
 
 void MiniGame(struct nuvec_s *pos)
 {
@@ -889,6 +948,7 @@ void MiniGameRender(void)
 void MiniGameRenderScore(void)
 {
     char buf[16];
+    char *fmt = "%i";
 }
 
 void DoInput(void)
@@ -1027,12 +1087,6 @@ void DoInput(void)
 }
 
 
-extern char D_0061B4D0[];
-extern s32 bgloadlastcharacter;
-extern char *bgloadcharnames[];
-extern char *bgloadanimnames[];
-extern struct NUHGOBJ_s *bgloadchr[2];
-extern volatile struct nuanimdata_s *bgloadanim[2];
 
 extern void TimeTunnelInit(union variptr_u *buffer, union variptr_u *buffend);
 
@@ -1046,7 +1100,7 @@ void BGLoadScreenInit(s32 loadchars)
     buffer.u8 = superbuffer_end.u8 - 0x100000;
     TimeTunnelInit(&buffer, buffend);
     if (loadchars != 0) {
-        dat = NuDatOpen(D_0061B4D0, 0, 0);
+        dat = NuDatOpen("chars.dat", 0, 0);
         NuDatSet(dat);
         c = bgloadlastcharacter;
         if (c >= 0 && c < 2) {
@@ -1066,7 +1120,6 @@ void BGLoadScreenInit(s32 loadchars)
 }
 
 
-extern s32 texanimbits;
 extern float WeatherBossSkeletonTimer;
 extern s32 WeatherBossDead;
 
@@ -1149,41 +1202,26 @@ void PauseRumble(void)
 }
 
 
-struct vec2_s {
-    float x;
-    float y;
-};
-
-struct vec3_s {
-    float x;
-    float y;
-    float z;
-};
-
-extern struct nulight_s *D_0062FAE8;
-#define level_light D_0062FAE8
-
 void InitLights(void)
 {
-    level_light = NuLightCreate();
-    if (level_light != 0) {
-        level_light->type = 0;
-        level_light->on = 1;
-        level_light->ambient.r = 0.0f;
-        level_light->ambient.g = 0.0f;
-        level_light->ambient.b = 0.0f;
-        level_light->diffuse.r = 0.0f;
-        level_light->diffuse.g = 0.0f;
-        level_light->diffuse.b = 1.0f;
-        NuMtxSetRotationX(&level_light->mtx, 0xC000);
-        NuLightUpdate(level_light);
+    main_light = NuLightCreate();
+    if (main_light != 0) {
+        main_light->type = 0;
+        main_light->on = 1;
+        main_light->ambient.r = 0.0f;
+        main_light->ambient.g = 0.0f;
+        main_light->ambient.b = 0.0f;
+        main_light->diffuse.r = 0.0f;
+        main_light->diffuse.g = 0.0f;
+        main_light->diffuse.b = 1.0f;
+        NuMtxSetRotationX(&main_light->mtx, 0xC000);
+        NuLightUpdate(main_light);
     }
 }
 
 
 extern struct numtl_s *pause_src_mtl;
 extern struct numtl_s *pause_rndr_mtl;
-extern s32 pause_rt;
 
 void ClosePauseRender(void)
 {
@@ -1213,11 +1251,8 @@ struct nutexdesc_s {
     s32 linear;              /* 0x1C */
 }; /* 0x20 */
 
-extern s32 pause_rndr_on;
-extern s32 D_0062FB54;                 /* Paused state of the previous frame */
 extern s32 PS2_REZ_W;
 extern s32 PS2_REZ_H;
-extern s32 screendump;
 extern s32 NuRndrBeginScene(s32 a);
 extern s32 NuRndrBeginSceneEx(s32 target, s32 zbuffer, s32 halfoffset);
 extern void NuRndrEndScene(void);
@@ -1266,6 +1301,7 @@ void InitPauseRender(void)
 
 void HandlePauseRender(void)
 {
+    static s32 old_pause_state = 5;
     struct nuviewport_s *vp;
     float u;
     float v;
@@ -1276,7 +1312,7 @@ void HandlePauseRender(void)
         NuRndrRectUV2di(0, 0, vp->width, vp->height, 0.0f, 0.0f, 1.0f, 1.0f, 0x80808080, pause_rndr_mtl);
         NuRndrEndScene();
     }
-    if (Paused != 0 && D_0062FB54 == 0) {
+    if (Paused != 0 && old_pause_state == 0) {
         u = (PS2_REZ_W - 1.0f) / NuPower2(PS2_REZ_W);
         v = (PS2_REZ_H - 1.0f) / NuPower2(PS2_REZ_H);
         if (pause_rt != 0) {
@@ -1288,10 +1324,10 @@ void HandlePauseRender(void)
         }
         pause_rndr_on = 1;
     }
-    if (Paused == 0 && D_0062FB54 != 0) {
+    if (Paused == 0 && old_pause_state != 0) {
         pause_rndr_on = 0;
     }
-    D_0062FB54 = Paused;
+    old_pause_state = Paused;
     if (editor_active != 0) {
         pause_rndr_on = 0;
     }
@@ -1401,15 +1437,13 @@ void TextureDestroy(struct numtl_s *mtl, struct nutexdesc_s *tex)
     }
     if (tex != 0) {
         if (tex->bits != 0) {
-            NuMemFreeFn(tex->bits, D_0061AE18, 0x70A);
+            NuMemFreeFn(tex->bits, ".\\main.c", 0x70A);
         }
-        NuMemFreeFn(tex, D_0061AE18, 0x70B);
+        NuMemFreeFn(tex, ".\\main.c", 0x70B);
     }
 }
 
 
-extern struct vec3_s mg_player_actpos;
-extern float mg_colldist;
 
 s32 MGCheckRng(struct vec2_s *pos)
 {
@@ -1419,33 +1453,13 @@ s32 MGCheckRng(struct vec2_s *pos)
 }
 
 
-extern char D_0061B4E0[];
 
-void BGLoadLevel(void)
-{
-    char *msg = D_0061B4E0;
-
-    NuDisableVBlank();
-    NuStrCpy(load_txt, msg);
-    NuEnableVBlank();
-
-    superbuffer_ptr = superbuffer_reset_base;
-    BGLoadScreenInit(1);
-    LoadLevel();
-    bgload_complete = 1;
-    for (;;) {
-        NW_HOST_IDLE();
-    }
-}
-
-
-extern char D_0061B530[];
 extern s32 bg_cutmovie_id;
 extern s32 bg_cutloadrv;
 
-void BGLoadCutScene(void)
+inline void BGLoadCutScene(void)
 {
-    LoadScreen(D_0061B530);
+    LoadScreen("LoadCutscene Thread started");
     BGLoadScreenInit(0);
     bg_cutloadrv = LoadCutMovie(bg_cutmovie_id);
     bgload_complete = 1;
@@ -1456,9 +1470,7 @@ void BGLoadCutScene(void)
 
 
 extern struct numtx_s numtx_identity;
-extern struct vec3_s bgload_campos;
 extern char *tLOADING[];
-extern s32 mg_frame;
 extern struct gtimer_s GameTimer;
 
 extern int NuRndrSwapScreen(int target);
@@ -1540,7 +1552,6 @@ s32 BGLoadCutMovie(s32 movie)
     return bg_cutloadrv;
 }
 
-extern union variptr_u superbuffer_base;
 extern struct nuvec_s ldir[1];
 extern struct cammtx_s GameCam[];
 extern int no_default_font;
@@ -1554,32 +1565,19 @@ extern int highallocaddr;
 extern int pad_play;
 extern int logos_played;
 extern s8 memdump_enabled;
-#define fade_mtl D_00633260
 extern int ForcePlayRecord;
 extern int musicvol_mul;
 extern int USELIGHTS;
 extern int Bonus;
 extern struct RPos_s* best_cRPos;
-extern int D_0062FC6C;
-#define dumpidx D_0062FC6C
-extern float D_0062FA70;
-#define gamma_val D_0062FA70
 extern int ps2video_novsync;
 extern int ps2video_ignore_frameout;
-extern int D_0062FA2C;
-#define fmvdump_enabled D_0062FA2C
-extern int D_0062FC68;
-#define odevframe_193 D_0062FC68
 extern int plr_died;
 extern void *app_fnt;
 extern int last_character;
 extern int last_used_character;
-extern int D_0062FA28;
-#define number_of_times_played D_0062FA28
-extern int peak_poly_count;
 extern int poly_count;
 extern int nurndr_tritot_this_frame;
-extern float D_0062D06C;
 extern float POWERTEXTY;
 extern int DRAWDEBRISHACK;
 extern int DRAWWORLDHACK;
@@ -1607,35 +1605,23 @@ extern int crate_wumpa;
 extern int NODEBRIS;
 extern int GLASSPLAYER;
 extern float plr_invisibility_time;
-#define fadecol D_00633264
 extern int VEHICLECONTROL;
 extern int BLUR;
 extern int LostLife;
 extern int game_music;
 extern int qseed;
 extern struct rail_s Rail[8];
-extern struct nulight_s* D_0062FAE8;
-#define main_light D_0062FAE8
 extern struct gtimer_s CutTimer;
-extern struct nupadrec_s PadData;
-extern float foot_u[];
-extern float foot_v[];
 extern int tempanim_waitaudio;
 extern int cortex_gameover_i;
 extern int gamesfx_channel;
 extern int tempanim_nextaction;
 extern struct nucamera_s global_camera;
-extern char D_0062FC50[];
-extern char D_0062FC58[];
-extern char D_0062FC60[];
-#define frmtmr_str D_0062FC58
-#define Candle_str D_0062FC60
 extern int gamecut;
 extern int Hub;
 
 extern struct nupad_s* NuPs2OpenPad(int port, int slot);
 extern struct nulight_s* NuLightCreate();
-extern void* NuMemAllocFn(int size, char* file, int line);
 extern void DrawCreatures(struct creature_s * c, int count, int render, int shadow);
 extern void NuLgtSetArcMat(void *material, float u0, float v0, float u1, float v1);
 extern void ResetVehicleControl(int iRAIL, int iALONG, float fALONG);
@@ -1815,12 +1801,7 @@ int main(int argc, char** argv) {
 
     frameout_streak = 0;
     no_default_font = 0;
-    superbuffer_base.voidptr = NuMemAllocFn(0x1200000, ".\\main.c", 0x579);
-    superbuffer_end.intaddr = (superbuffer_base.intaddr + 0x1200000);
-    superbuffer_reset_base.voidptr = superbuffer_base.voidptr;
-    if (superbuffer_base.voidptr == 0) {
-        NuErrorProlog(".\\main.c", 0x57c)("unable to allocate super buffer");
-    }
+    InitSuperBuffer();
     DefaultGame();
     ResetGame();
     NuPs2Init();
@@ -1904,7 +1885,7 @@ int main(int argc, char** argv) {
         while (cutmovie != -1) {
             pad_play = 0;
             NuSoundKillAllAudio();
-            InitPadPlayRecord(PadRecordPath, 0, 30000, &PadData);
+            InitPadPlayRecord(PadRecordPath, 0, 30000, (struct nupadrec_s *)PadData);
             NuDebugMsgProlog(".\\main.c", 0x11f1)("Entering PlayCutMovie");
             PlayCutMovie(cutmovie);
             NuDebugMsgProlog(".\\main.c", 0x11f3)("Leaving PlayCutMovie");
@@ -1985,11 +1966,11 @@ int main(int argc, char** argv) {
         }
 
         if (pad_record != 0) {
-            InitPadPlayRecord(PadRecordPath, 1, 30000, &PadData);
+            InitPadPlayRecord(PadRecordPath, 1, 30000, (struct nupadrec_s *)PadData);
         } else if (pad_play != 0) {
-            InitPadPlayRecord(PadRecordPath, 2, 30000, &PadData);
+            InitPadPlayRecord(PadRecordPath, 2, 30000, (struct nupadrec_s *)PadData);
         } else {
-            InitPadPlayRecord(PadRecordPath, 0, 30000, &PadData);
+            InitPadPlayRecord(PadRecordPath, 0, 30000, (struct nupadrec_s *)PadData);
         }
         ResetBonus();
         ResetDeath();
@@ -2005,7 +1986,7 @@ int main(int argc, char** argv) {
         qseed = 0x3039;
         NuRandSeed(0);
         NuDisableVBlank();
-        NuStrCpy(load_txt, D_0062FC50);
+        NuStrCpy(load_txt, "NewMode");
         NuEnableVBlank();
 next_game_mode:
         NuSoundUpdate();
@@ -2074,7 +2055,7 @@ next_game_mode:
             for (FRAME = 0; FRAME < FRAMES; FRAME++) {
                 if (FRAME < FRAMES - 1) {
                     tbslotReset(0, 0xf);
-                    tbslotBeginExFn(0, 0xf, frmtmr_str);
+                    tbslotBeginExFn(0, 0xf, "frmtmr");
                 }
 
                 if (FRAME == 0) {
@@ -2346,7 +2327,7 @@ next_game_mode:
                     }
                     if ((LDATA->flags & 0x10) != 0) {
                         effect_offset = 0;
-                        debris_type = LookupDebrisEffect(Candle_str);
+                        debris_type = LookupDebrisEffect("Candle");
                         effect_count = DebrisFindAllOfType(debris_type, flamepos, 0x20, effect_offset, 1);
                         while (effect_count != 0) {
                             if (effect_count > 0) {
@@ -2448,7 +2429,7 @@ next_game_mode:
                     if (Cursor.menu == '\x1f') {
                         int panel_y;
                         int end_y;
-                        panel_y = ((1.0f - (POWERTEXTY + D_0062D06C + 1.0f) * half) * (float)(SHEIGHT << 3));
+                        panel_y = ((1.0f - (POWERTEXTY + 0.7f + 1.0f) * half) * (float)(SHEIGHT << 3));
                         end_y = ((1.0f - ((POWERTEXTY - 0.75f) + 1.0f) * half) * (float)(SHEIGHT << 3));
                         NuRndrRect2di(
                             0,
@@ -2514,33 +2495,38 @@ next_game_mode:
                 continue;
             }
 
-            ps2video_ignore_frameout = 1;
-            odevframe_193 = 1 - odevframe_193;
-            ps2video_novsync = 0;
-            if (odevframe_193 == 0) {
-                frameout = 0;
-                continue;
-            }
-            NuPs2VideoScreenDump("fmvdump\\frm", 1, gamma_val, dumpidx);
-            dumpidx++;
+            {
+                static int odevframe = 0;
+                static int dumpidx = 0;
 
-            if (NuRndrBeginScene(-1) != 0) {
+                ps2video_ignore_frameout = 1;
+                odevframe = 1 - odevframe;
+                ps2video_novsync = 0;
+                if (odevframe == 0) {
+                    frameout = 0;
+                    continue;
+                }
+                NuPs2VideoScreenDump("fmvdump\\frm", 1, gamma_val, dumpidx);
+                dumpidx++;
+
+                if (NuRndrBeginScene(-1) != 0) {
+                    NuRndrEndScene();
+                    NuRndrSwapScreen(-1);
+                }
+
+                if (NuRndrBeginScene(-1) != 0) {
+                    NuRndrEndScene();
+                    NuRndrSwapScreen(-1);
+                }
+
+                if (NuRndrBeginScene(-1) == 0) {
+                    frameout = 0;
+                    continue;
+                }
                 NuRndrEndScene();
                 NuRndrSwapScreen(-1);
-            }
-
-            if (NuRndrBeginScene(-1) != 0) {
-                NuRndrEndScene();
-                NuRndrSwapScreen(-1);
-            }
-
-            if (NuRndrBeginScene(-1) == 0) {
                 frameout = 0;
-                continue;
             }
-            NuRndrEndScene();
-            NuRndrSwapScreen(-1);
-            frameout = 0;
         }
         pause_dir = 0;
         Paused = 0;
@@ -2617,38 +2603,25 @@ next_game_mode:
 extern struct nuvec_s v000;
 extern float NuTrigTable[];
 extern struct nuvec_s nuvec_zero;
-extern struct nuvec_s mg_player_pos;
-extern struct nuvec_s bgload_objpos[2];
-extern struct CharacterModel *bgload_model[2];
 extern float bgload_animtime[2];
-extern s32 mg_player_tilt;
-extern s32 mg_player_spin;
-extern float mg_scoreoff;
 extern float DIVPANEL3D;
 extern float PANEL3DMULX;
 extern float PANEL3DMULY;
-extern float bgload_objstart;
-extern float bgload_objtarg;
-extern float bgload_bumppos;
-extern float bgload_objspd;
-extern u16 bobrate;
-extern float bobscale;
-extern float fallrate;
-extern float maxfallspd;
-extern s32 camtiltrate;
-extern s32 camrotrate;
-extern float camtiltscale;
-extern float camrotscale;
-extern float bump_scale;
-extern s32 bgloadgibberscalecnt;
-extern s32 bgloadgibberscalecntrate;
-extern s32 bgloadgibbercntx;
-extern s32 bgloadgibberratex;
-extern s32 bgloadgibbercnty;
-extern s32 bgloadgibberratey;
 extern s32 gamesfx_effect_volume;
 
-extern s32 D_0062FC40[];
+s32 camtiltrate = 0xB6;
+s32 camrotrate = 0x100;
+float camtiltscale = 0.25f;
+float camrotscale = 0.3f;
+float bump_scale = 0.3f;
+float bgloadgibberscale = 0.1f;
+s32 bgloadgibberscalecnt = 0;
+s32 bgloadgibberscalecntrate = 1000;
+s32 bgloadgibbercntx = 0;
+s32 bgloadgibberratex = 7000;
+s32 bgloadgibbercnty = 0;
+s32 bgloadgibberratey = 12000;
+
 
 extern void GameSfxLoop(s32 sfx, struct nuvec_s *pos);
 extern void NuHGobjEvalAnim(struct NUHGOBJ_s *hobj, struct nuanimdata_s *data,
@@ -2658,6 +2631,22 @@ extern s32 NuHGobjRndrMtxDwa(struct NUHGOBJ_s *hobj, struct numtx_s *m,
                            s32 nlayers, short *layers, struct numtx_s *tmtx,
                            float **dwa);
 
+inline void BGLoadLevel(void)
+{
+    char *msg = "LoadLevel Thread started";
+
+    NuDisableVBlank();
+    NuStrCpy(load_txt, msg);
+    NuEnableVBlank();
+
+    superbuffer_ptr = superbuffer_reset_base;
+    BGLoadScreenInit(1);
+    LoadLevel();
+    bgload_complete = 1;
+    for (;;) {
+        NW_HOST_IDLE();
+    }
+}
 
 void BGLoad(void)
 {
@@ -2668,9 +2657,9 @@ void BGLoad(void)
     struct nucolour3_s ambient = {0.4f, 0.4f, 0.4f};
     struct nuvec_s light_dir[2];
     struct nuvec_s down = {0.0f, -1.0f, 0.0f};
-    struct nucolour3_s light_colour[2];
-    s32 light_angle[2];
-    struct nuvec_s bump;
+    struct nucolour3_s light_colour[2] = { 0 };
+    s32 light_angle[2] = { 0, 0x4000 };
+    struct nuvec_s bump = { 0 };
     s32 phase;
     s32 done;
     s32 render_characters;
@@ -2691,12 +2680,9 @@ void BGLoad(void)
     float gibber_y;
 
     camera_tilt = 0;
-    memset(light_colour, 0, sizeof(light_colour));
     camera_rotation = 0;
-    memcpy(light_angle, D_0062FC40, sizeof(light_angle));
     bump_rate = bump_angle = bumped = 0;
     score_scale = 0.4f;
-    memset(&bump, 0, sizeof(bump));
     mg_player_pos = v000;
     mg_player_tilt = 0;
     mg_player_spin = 0;
@@ -2704,8 +2690,8 @@ void BGLoad(void)
     PANEL3DMULY = (float)SHEIGHT / (DIVPANEL3D * ((float)SHEIGHT / 448.0f));
     font3d_scene = 0;
     if (LDATA->flags & 0x40) {
-        LOAD_MESSAGE(D_0061B2E8);
-        CrateMat = CreateAlphaBlendTexture256_32(D_0061B308, 0, 1, 0x100, 0);
+        LOAD_MESSAGE("CreateAlphaBlendTexture256_32");
+        CrateMat = CreateAlphaBlendTexture256_32("stuff\\box.raw", 0, 1, 0x100, 0);
     }
 
     mg_frame = -1;
@@ -2853,7 +2839,7 @@ void BGLoad(void)
                             } else {
                                 bgload_objpos[old_character].y = bgload_objtarg +
                                     NuTrigTable[bob_angle] * bobscale;
-                                bob_angle = (bob_angle + bobrate) & 0xffff;
+                                bob_angle = (bob_angle + (u16)bobrate) & 0xffff;
                             }
                             bgload_animtime[old_character] += anim_step;
                             if (bgload_animtime[old_character] > bgloadanim[old_character]->time) {
@@ -2872,7 +2858,7 @@ void BGLoad(void)
                         MiniGame((struct nuvec_s *)&m[character]._30);
                         NuMtxTranslate(&m[character], &mg_player_pos);
                         bgload_objpos[character].y = bgload_objtarg + NuTrigTable[bob_angle] * bobscale;
-                        bob_angle = (bob_angle + bobrate) & 0xffff;
+                        bob_angle = (bob_angle + (u16)bobrate) & 0xffff;
                         if (bump_rate != 0) {
                             bump_angle += bump_rate;
                             if (bump_angle > 0x7fff) {
@@ -2904,7 +2890,7 @@ void BGLoad(void)
                             } else {
                                 bgload_objpos[old_character].y = bgload_objtarg +
                                     NuTrigTable[bob_angle] * bobscale;
-                                bob_angle = (bob_angle + bobrate) & 0xffff;
+                                bob_angle = (bob_angle + (u16)bobrate) & 0xffff;
                             }
                             bgload_animtime[old_character] += anim_step;
                             if (bgload_animtime[old_character] > bgloadanim[old_character]->time) {
@@ -3016,6 +3002,31 @@ bgload_render_characters:
     fadeval = 0xff;
 }
 
+int loading = 0;
+
+inline void BGLoadSfxFn(void)
+{
+    char *msg = "LoadSfxFn Thread started";
+    s32 done = 1;
+
+    NuDisableVBlank();
+    NuStrCpy(load_txt, msg);
+    NuEnableVBlank();
+
+    superbuffer_ptr = superbuffer_reset_base;
+    font3d_initialised = 0;
+    font3d_scene = NuGScnRead(&superbuffer_ptr.charptr, superbuffer_end.charptr, "stuff\\font.gsc");
+    InitFont3D(font3d_scene);
+    font3d_initialised = done;
+    BGLoadScreenInit(0);
+    InitLevelSfxTables();
+    InitGlobalSfx();
+    bgload_complete = done;
+    for (;;) {
+        NW_HOST_IDLE();
+    }
+}
+
 void BGLoadSfx(void)
 {
     s32 done;
@@ -3090,3 +3101,31 @@ void BGLoadSfx(void)
     TimeTunnelClose();
     fadeval = 0xff;
 }
+
+
+union variptr_u superbuffer_ptr = { 0 };
+union variptr_u superbuffer_base = { 0 };
+union variptr_u superbuffer_end = { 0 };
+union variptr_u superbuffer_free = { 0 };
+float AtmosphericPressureHackedZ = 0.0f;
+void *app_tbset = 0;
+s32 SWIDTH = 0;
+s32 SHEIGHT = 0;
+union variptr_u superbuffer_reset_base = { 0 };
+struct numtl_s *ShadowMat = 0;
+int DoMeChris = 0;
+int save_paused = 0;
+struct numtl_s *pause_rndr_mtl = 0;
+struct numtl_s *pause_src_mtl = 0;
+float bgload_animtime[2] = { 0 };
+struct nunrand_s mg_rand = { 0 };
+float mg_spd = 0.0f;
+float mg_yspd = 0.0f;
+int mg_wumpa_init = 0;
+int mg_wumpa_ix = 0;
+int mg_wumpa_issue_wait = 0;
+int mg_wumpatot = 0;
+s32 bg_cutloadrv = 0;
+s32 bg_cutmovie_id = 0;
+int testt1 = 0;
+int testt2 = 0;

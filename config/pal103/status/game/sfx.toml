@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0116"
 source = "src/game/sfx.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0116:0024f318:InitLevelSfxTables"
@@ -58,3 +58,277 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0116:00250518:TestLocalSfx"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005e5d00:SfxTabGLOBAL"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005e81f0:SfxTabESKIMO"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005e8340:SfxTabBURN"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005e85b0:SfxTabOHNO"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005e8700:SfxTabSMOKEY"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005e87c0:SfxTabREACTOR"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005e88b0:SfxTabAVALANCHE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005e8a60:SfxTabCORAL"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005e8b80:SfxTabARCTIC"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005e8cd0:SfxTabJUNGLE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005e8e20:SfxTabNATURE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005e8f70:SfxTabGAUNTLET"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005e9030:SfxTabBAMBOO"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005e9120:SfxTabBANZAI"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005e92d0:SfxTabTORNADO"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005e9450:SfxTabTSUNAMI"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005e9750:SfxTabFRENZY"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005e9930:SfxTabMADNESS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005e99c0:SfxTabLIZARDS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005e9bd0:SfxTabSINKING"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005e9fc0:SfxTabGOLD"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005ea230:SfxTabVOID"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005ea320:SfxTabROKS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005ea650:SfxTabASHES"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005ea9b0:SfxTabDRAIN"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005eabc0:SfxTabPRESSURE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005ead40:SfxTabCRUNCH"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005eae90:SfxTabOIDS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005eb2b0:SfxTabKNIGHT"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005eb340:SfxTabTOWN"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005eb3d0:SfxTabICE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005eb4f0:SfxTabHEIGHTS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005eb550:SfxTabBALLS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005eb670:SfxTabBOWLER"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005eb700:SfxTabVORTEX"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005eb790:SfxTabSEA"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005eb880:SfxTabFRONTEND"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005ec780:SfxTabGAMEOVER"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005ec930:SfxTabGAMEOVERFre"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005ecae0:SfxTabGAMEOVERGer"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005ecc90:SfxTabGAMEOVERIta"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005ece40:SfxTabGAMEOVERSpa"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005ecff0:SfxTabGAMEOVERDut"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005ed1a0:SfxTabSPACE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005ed710:SfxTabSPACEFre"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005edc80:SfxTabSPACEGer"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005ee1f0:SfxTabSPACEIta"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005ee760:SfxTabSPACESpa"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005eecd0:SfxTabSPACEDut"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005ef240:SfxTabCREDITS"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:005ef2a0:SfxInfo"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:00632930:sfxcount_global"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:00632934:sfxcount_local"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:00632958:game_music"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:0063295c:gamesfx_channel"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:00632960:gamesfx_effect_volume"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:00632964:gamesfx_volume"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:00632968:gamesfx_pitch"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:0063296c:gamesfx_edbits"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:00632970:testglobalsfx"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:00632974:last_testglobalsfx"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:00632978:testsfx"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:0063297c:musicvol_mul"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:00632980:soundtestcount"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:00632984:SFXCOUNT_ALL"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0116:00632988:CurSfxTabLocal"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x006252b0
+end = 0x00628630
+
+[[claim]]
+section = ".rodata"
+start = 0x006286c0
+end = 0x006286d8

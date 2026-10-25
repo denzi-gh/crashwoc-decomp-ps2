@@ -36,14 +36,6 @@ extern void *NuMemAllocFn(int size, char *file, int line);
 extern void NuMemFreeFn(void *ptr, char *file, int line);
 extern int NuPlnLineVU0(struct nuplane_s *pln, struct nuvec_s *p0, struct nuvec_s *p1, struct nuvec_s *hit);
 
-extern char D_00625208[];
-extern char D_00625218[];
-extern char D_00625238[];
-
-#define visidat_srcfile D_00625208
-#define err_alloc D_00625218
-#define msg_visidata_used D_00625238
-
 
 void visiSetSplineKnot(struct visidata_s *vd, int spix, int knotix) {
     int i;
@@ -168,9 +160,9 @@ struct visidata_s *visiLoadData(char *fname, struct nugscn_s *sc, union variptr_
 
         binfosize = (vd->sc->numinstance + 63) / 64;
         vd->binfosize = binfosize;
-        tmpalloc = NuMemAllocFn(binfosize * numbnd * 8, visidat_srcfile, 0xC0);
+        tmpalloc = NuMemAllocFn(binfosize * numbnd * 8, ".\\visidat.c", 0xC0);
         if (tmpalloc == 0) {
-            NuErrorProlog(visidat_srcfile, 0xC2)(err_alloc, binfosize * numbnd * 8);
+            NuErrorProlog(".\\visidat.c", 0xC2)("unable to alloc %d bytes", binfosize * numbnd * 8);
         }
 
         for (o = 0; o < numbnd; o++) {
@@ -209,7 +201,7 @@ struct visidata_s *visiLoadData(char *fname, struct nugscn_s *sc, union variptr_
 
             splused.voidptr = &assocs[numassoc];
             if ((*splused.u32) != 0) {
-                spix = NuMemAllocFn((*splused.u32) * 4, visidat_srcfile, 0xEE);
+                spix = NuMemAllocFn((*splused.u32) * 4, ".\\visidat.c", 0xEE);
                 spname = splused.charptr + 4;
                 for (o = 0; o < (*splused.u32); o++) {
                     spix[o] = -1;
@@ -232,15 +224,15 @@ struct visidata_s *visiLoadData(char *fname, struct nugscn_s *sc, union variptr_
                         assocs[o].visend_ix = 1;
                     }
                 }
-                NuMemFreeFn(spix, visidat_srcfile, 0x107);
+                NuMemFreeFn(spix, ".\\visidat.c", 0x107);
             }
         }
 
-        binfo = NuMemAllocFn(binfosize * 8, visidat_srcfile, 0x10E);
+        binfo = NuMemAllocFn(binfosize * 8, ".\\visidat.c", 0x10E);
         tmpsize = 0;
         tmpdelta = 0;
         if (binfo == 0) {
-            NuErrorProlog(visidat_srcfile, 0x110)(err_alloc, binfosize * 8);
+            NuErrorProlog(".\\visidat.c", 0x110)("unable to alloc %d bytes", binfosize * 8);
         }
 
         for (o = 0; o < vd->sc->numsplines; o++) {
@@ -252,12 +244,12 @@ struct visidata_s *visiLoadData(char *fname, struct nugscn_s *sc, union variptr_
                 if (spline_used == 0) {
                     if (tmpsize < vd->sc->splines[o].len * binfosize) {
                         if (tmpdelta != 0) {
-                            NuMemFreeFn(tmpdelta, visidat_srcfile, 0x11D);
+                            NuMemFreeFn(tmpdelta, ".\\visidat.c", 0x11D);
                         }
                         tmpsize = vd->sc->splines[o].len * binfosize + 1;
-                        tmpdelta = NuMemAllocFn(tmpsize * 8, visidat_srcfile, 0x120);
+                        tmpdelta = NuMemAllocFn(tmpsize * 8, ".\\visidat.c", 0x120);
                         if (tmpdelta == 0) {
-                            NuErrorProlog(visidat_srcfile, 0x122)(err_alloc, tmpsize * 8);
+                            NuErrorProlog(".\\visidat.c", 0x122)("unable to alloc %d bytes", tmpsize * 8);
                         }
                     }
                     memset(tmpdelta, 0, tmpsize * 8);
@@ -300,17 +292,17 @@ struct visidata_s *visiLoadData(char *fname, struct nugscn_s *sc, union variptr_
         }
 
         if (tmpdelta != 0) {
-            NuMemFreeFn(tmpdelta, visidat_srcfile, 0x156);
+            NuMemFreeFn(tmpdelta, ".\\visidat.c", 0x156);
         }
         if (binfo != 0) {
-            NuMemFreeFn(binfo, visidat_srcfile, 0x158);
+            NuMemFreeFn(binfo, ".\\visidat.c", 0x158);
         }
         if (tmpalloc != 0) {
-            NuMemFreeFn(tmpalloc, visidat_srcfile, 0x15A);
+            NuMemFreeFn(tmpalloc, ".\\visidat.c", 0x15A);
         }
-        NuMemFreeFn(fdatabase.voidptr, visidat_srcfile, 0x15C);
+        NuMemFreeFn(fdatabase.voidptr, ".\\visidat.c", 0x15C);
         buff->intaddr = (buff->intaddr + 15) & ~15;
-        NuDebugMsgProlog(visidat_srcfile, 0x15F)(msg_visidata_used, buff->intaddr - (nuintptr)vd);
+        NuDebugMsgProlog(".\\visidat.c", 0x15F)("Generated Visi-Data, used %d bytes", buff->intaddr - (nuintptr)vd);
     }
     return vd;
 }
