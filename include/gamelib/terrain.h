@@ -4,6 +4,119 @@
 #include "nu_types.h"
 #include "numath/numathtypes.h"
 
+/* Terrain collision structures (offsets verified against retail asm). */
+typedef struct {
+    float minx;
+    float maxx;
+    float miny;
+    float maxy;
+    float minz;
+    float maxz;
+    struct nuvec_s pnts[4];
+    struct nuvec_s norm[2];
+    unsigned char info[4];
+} tertype; /* 0x64 */
+
+typedef struct {
+    void *ptrid;              /* 0x00 */
+    s16 platid;               /* 0x04 */
+    s16 platinf;              /* 0x06 */
+    s16 timer;                /* 0x08 */
+    s16 pad;                  /* 0x0A */
+} TerrainTrackInfoType;
+
+typedef struct {
+    struct nuvec_s Location;  /* 0x00 */
+    s16 *model;               /* 0x0C */
+    struct nuvec_s min;       /* 0x10 */
+    struct nuvec_s max;       /* 0x1C */
+    u32 flags;                /* 0x28 */
+    s32 type;                 /* 0x2C */
+    s16 info;                 /* 0x30 */
+    s16 id;                   /* 0x32 */
+    f32 radius;               /* 0x34 */
+} TerrainSituType; /* 0x38 */
+
+typedef union {
+    u32 all;
+    struct {
+        u32 rotate : 1;
+        u32 hit : 1;
+    } bit;
+} PlatStatusType;
+
+typedef struct {
+    struct numtx_s oldmtx;    /* 0x00 */
+    struct numtx_s *curmtx;   /* 0x40 */
+    s16 terrno;               /* 0x44 */
+    s16 instance;             /* 0x46 */
+    PlatStatusType status;    /* 0x48 */
+    s16 hitcnt;               /* 0x4C */
+    s16 pad;                  /* 0x4E */
+    f32 plrgrav;              /* 0x50 */
+    f32 ypos;                 /* 0x54 */
+    f32 yvel;                 /* 0x58 */
+    f32 tension;              /* 0x5C */
+    f32 damp;                 /* 0x60 */
+} TerrainPlatformType; /* 0x64 */
+
+typedef struct {
+    s16 start;                /* 0x00 */
+    s16 count;                /* 0x02 */
+    f32 bounds[4];            /* 0x04 */
+} TerrainGroupType; /* 0x14 */
+
+typedef struct {
+    f32 x;                                /* 0x000 */
+    f32 y;                                /* 0x004 */
+    f32 z;                                /* 0x008 */
+    f32 x2;                               /* 0x00C */
+    f32 y2;                               /* 0x010 */
+    f32 z2;                               /* 0x014 */
+    s16 timer;                            /* 0x018 */
+    s16 pad;                              /* 0x01A */
+    tertype *hitdata[512];                /* 0x01C */
+} TerrainPollType; /* 0x81C */
+
+typedef struct {
+    TerrainSituType *terr;                /* 0x0000 */
+    TerrainPlatformType platdata[128];    /* 0x0004 */
+    void *wallinfo;                       /* 0x3204 */
+    TerrainTrackInfoType TrackInfo[4];    /* 0x3208 */
+    TerrainGroupType terrgroup[257];      /* 0x3238 */
+    s32 miny;                             /* 0x464C */
+    s32 terrgroupcnt;                     /* 0x4650 */
+    s16 terrlist[4096];                   /* 0x4654 */
+    TerrainPollType pollist[9];           /* 0x6654 */
+} TerrainSetType;
+
+typedef struct {
+    s32 offset;
+    struct nuvec_s translation;
+    s16 type;
+    s16 info;
+    s16 rx;
+    s16 ry;
+    s16 rz;
+    s16 pad;
+    struct nuvec_s rotation;
+    u32 flags;
+    s16 prim;
+    s16 id;
+    s32 datapos;
+} OffType;
+
+typedef struct {
+    s32 count;
+    OffType offlist[512];
+} OffFileType;
+
+typedef struct {
+    u16 count;
+    u16 val;
+    struct nuvec_s spl[4096];
+} WallSplineType;
+
 struct nugscn_s;
 
 short *terraininit(s32 levelnum, short **store, short *endstore, s32 opt, char *name, struct nugscn_s *gscene, s32 gsid);

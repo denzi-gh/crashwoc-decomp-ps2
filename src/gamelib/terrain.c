@@ -118,18 +118,6 @@
 
 /* Terrain collision info structures (offsets verified against retail asm). */
 typedef struct {
-    float minx;
-    float maxx;
-    float miny;
-    float maxy;
-    float minz;
-    float maxz;
-    struct nuvec_s pnts[4];
-    struct nuvec_s norm[2];
-    unsigned char info[4];
-} tertype; /* 0x64 */
-
-typedef struct {
     struct nuvec_s offset;    /* 0x00 */
     float ang;                /* 0x0C */
     float size;               /* 0x10 */
@@ -178,79 +166,6 @@ typedef struct {
 } TerTempInfoType;
 
 typedef struct {
-    void *ptrid;              /* 0x00 */
-    s16 platid;               /* 0x04 */
-    s16 platinf;              /* 0x06 */
-    s16 timer;                /* 0x08 */
-    s16 pad;                  /* 0x0A */
-} TerrainTrackInfoType;
-
-typedef struct {
-    struct nuvec_s Location;  /* 0x00 */
-    s16 *model;               /* 0x0C */
-    struct nuvec_s min;       /* 0x10 */
-    struct nuvec_s max;       /* 0x1C */
-    u32 flags;                /* 0x28 */
-    s32 type;                 /* 0x2C */
-    s16 info;                 /* 0x30 */
-    s16 id;                   /* 0x32 */
-    f32 radius;               /* 0x34 */
-} TerrainSituType; /* 0x38 */
-
-typedef union {
-    u32 all;
-    struct {
-        u32 rotate : 1;
-        u32 hit : 1;
-    } bit;
-} PlatStatusType;
-
-typedef struct {
-    struct numtx_s oldmtx;    /* 0x00 */
-    struct numtx_s *curmtx;   /* 0x40 */
-    s16 terrno;               /* 0x44 */
-    s16 instance;             /* 0x46 */
-    PlatStatusType status;    /* 0x48 */
-    s16 hitcnt;               /* 0x4C */
-    s16 pad;                  /* 0x4E */
-    f32 plrgrav;              /* 0x50 */
-    f32 ypos;                 /* 0x54 */
-    f32 yvel;                 /* 0x58 */
-    f32 tension;              /* 0x5C */
-    f32 damp;                 /* 0x60 */
-} TerrainPlatformType; /* 0x64 */
-
-typedef struct {
-    s16 start;                /* 0x00 */
-    s16 count;                /* 0x02 */
-    f32 bounds[4];            /* 0x04 */
-} TerrainGroupType; /* 0x14 */
-
-typedef struct {
-    f32 x;                                /* 0x000 */
-    f32 y;                                /* 0x004 */
-    f32 z;                                /* 0x008 */
-    f32 x2;                               /* 0x00C */
-    f32 y2;                               /* 0x010 */
-    f32 z2;                               /* 0x014 */
-    s16 timer;                            /* 0x018 */
-    s16 pad;                              /* 0x01A */
-    tertype *hitdata[512];                /* 0x01C */
-} TerrainPollType; /* 0x81C */
-
-typedef struct {
-    TerrainSituType *terr;                /* 0x0000 */
-    TerrainPlatformType platdata[128];    /* 0x0004 */
-    void *wallinfo;                       /* 0x3204 */
-    TerrainTrackInfoType TrackInfo[4];    /* 0x3208 */
-    TerrainGroupType terrgroup[257];      /* 0x3238 */
-    s32 miny;                             /* 0x464C */
-    s32 terrgroupcnt;                     /* 0x4650 */
-    s16 terrlist[4096];                   /* 0x4654 */
-    TerrainPollType pollist[9];           /* 0x6654 */
-} TerrainSetType;
-
-typedef struct {
     TerrainSituType *terr;                /* 0x0000 */
     void *data;                           /* 0x0004 */
     s16 typeterr[128];                    /* 0x0008 */
@@ -263,32 +178,9 @@ typedef struct {
     f32 radius;                           /* 0x0C */
 } SphereType;
 
-typedef struct {
-    s32 offset;
-    struct nuvec_s translation;
-    s16 type;
-    s16 info;
-    s16 rx;
-    s16 ry;
-    s16 rz;
-    s16 pad;
-    struct nuvec_s rotation;
-    u32 flags;
-    s16 prim;
-    s16 id;
-    s32 datapos;
-} OffType;
-
-typedef struct {
-    s32 count;
-    OffType offlist[512];
-} OffFileType;
-
-typedef struct {
-    u16 count;
-    u16 val;
-    struct nuvec_s spl[4096];
-} WallSplineType;
+/* A scan list holds a (count, terrain id) pair of shorts in a pointer slot, then count tertype pointers; a
+ * handle list then holds wall-spline point pointers up to a null slot. SCAN_SLOT is a slot in shorts. */
+#define SCAN_SLOT ((s32)(sizeof(tertype *) / sizeof(short)))
 
 struct nuvec_s ShadNorm = { 0.0f, 0.0f, 0.0f };
 struct nuvec_s EShadNorm = { 0.0f, 0.0f, 0.0f };
@@ -303,7 +195,7 @@ tertype ScaleTerrainT2[512] = {0};
 struct nuvec_s WallSplList[128] = {0};
 struct nuvec_s PlatImpactNorm = { 0.0f, 0.0f, 0.0f };
 tertype PlatImpactTer = {0};
-s32 TempScanStack[2048] = {0};
+s32 TempScanStack[2048 * sizeof(tertype *) / sizeof(s32)] = {0};
 s32 TerrPlatDis = -1;
 
 extern f32 NuTrigTable[];
@@ -487,14 +379,14 @@ short *terraininit(s32 levelnum, short **store, short *endstore, s32 opt, char *
 
     rv = *store;
     terrset = (TerrainSetType *)*store;
-    *store += 0x57A8;
+    *store += sizeof(TerrainSetType) / sizeof(short);
     terrset->terr = (TerrainSituType *)*store;
-    *store += 0xEE00;
+    *store += 0x880 * sizeof(TerrainSituType) / sizeof(short);
     for (lp = 0; lp < 9; lp++) {
         terrset->pollist[lp].timer = 0;
         terrset->pollist[lp].hitdata[0] = 0;
     }
-    memset(terrset->terr, 0, 0x1C000);
+    memset(terrset->terr, 0, 0x800 * sizeof(TerrainSituType));
     c = 0;
     mbuf = terrset->terr;
     while (c < 0x800) {
@@ -1525,7 +1417,7 @@ void NewScan(struct nuvec_s *ppos, s32 extramask, s32 platscan) {
         while (*curdata > 0) {
             curobj = curdata[1];
             situ = &CurTerr->terr[curobj];
-            curter = (tertype **)(curdata + 2);
+            curter = (tertype **)(curdata + SCAN_SLOT);
             if ((maxx >= situ->min.x) && (maxz >= situ->min.z) && (minx <= situ->max.x) &&
                 (minz < situ->max.z) && (situ->type != -1)) {
                 tmaxx = maxx - situ->Location.x;
@@ -1628,7 +1520,7 @@ void NewScan(struct nuvec_s *ppos, s32 extramask, s32 platscan) {
         while (*curdata > 0) {
             curobj = curdata[1];
             situ = &CurTerr->terr[curobj];
-            curter = (tertype **)(curdata + 2);
+            curter = (tertype **)(curdata + SCAN_SLOT);
             if ((maxx >= situ->min.x) && (maxz >= situ->min.z) && (minx <= situ->max.x) &&
                 (minz < situ->max.z) && (situ->type != -1)) {
                 tmaxx = maxx - situ->Location.x;
@@ -1800,7 +1692,7 @@ void NewScanRot(struct nuvec_s *ppos, s32 extramask) {
         while (*curdata > 0) {
             curobj = curdata[1];
             situ = &CurTerr->terr[curobj];
-            curter = (tertype **)(curdata + 2);
+            curter = (tertype **)(curdata + SCAN_SLOT);
             if ((maxx >= situ->min.x) && (maxz >= situ->min.z) && (minx <= situ->max.x) &&
                 (minz < situ->max.z) && (situ->type != -1)) {
                 tmaxx = maxx - situ->Location.x;
@@ -1903,7 +1795,7 @@ void NewScanRot(struct nuvec_s *ppos, s32 extramask) {
         while (*curdata > 0) {
             curobj = curdata[1];
             situ = &CurTerr->terr[curobj];
-            curter = (tertype **)(curdata + 2);
+            curter = (tertype **)(curdata + SCAN_SLOT);
             if ((maxx >= situ->min.x) && (maxz >= situ->min.z) && (minx <= situ->max.x) &&
                 (minz < situ->max.z) && (situ->type != -1)) {
                 tmaxx = maxx - situ->Location.x;
@@ -2148,7 +2040,7 @@ float NewCast(struct nuvec_s *pos, float ytol) {
         tx = pos->x - CurTerr->terr[CurData[1]].Location.x;
         tz = pos->z - CurTerr->terr[CurData[1]].Location.z;
         objnum = CurData[1];
-        curter = (tertype **)(CurData + 2);
+        curter = (tertype **)(CurData + SCAN_SLOT);
         lp = *(short *)CurData;
         for (; lp > 0; lp--, curter++) {
             ter = (tertype *)*curter;
@@ -2943,7 +2835,7 @@ loop1:
 
     if (*CurData < 0) {
         while (*CurData < 0) {
-            CurData += ((*CurData >= 0) ? *CurData : -*CurData) * 2 + 2;
+            CurData += ((*CurData >= 0) ? *CurData : -*CurData) * SCAN_SLOT + SCAN_SLOT;
         }
         goto loop1;
     }
@@ -3283,7 +3175,7 @@ s32 TerrainPlatformMoveCheck(struct nuvec_s *dest, struct nuvec_s *norm, s32 pla
         if (curdata[1] == terrno) {
             *curdata = -((*curdata < 0) ? -*curdata : *curdata);
         }
-        curdata += ((*curdata < 0) ? -*curdata : *curdata) * 2 + 2;
+        curdata += ((*curdata < 0) ? -*curdata : *curdata) * SCAN_SLOT + SCAN_SLOT;
     }
     curvel = TerI->curvel;
     hitcnt = TerI->hitcnt;
@@ -3323,7 +3215,7 @@ s32 TerrainPlatformMoveCheck(struct nuvec_s *dest, struct nuvec_s *norm, s32 pla
             if (curdata[1] == terrno) {
                 *curdata = (*curdata < 0) ? -*curdata : *curdata;
             }
-            curdata += ((*curdata < 0) ? -*curdata : *curdata) * 2 + 2;
+            curdata += ((*curdata < 0) ? -*curdata : *curdata) * SCAN_SLOT + SCAN_SLOT;
         }
     }
     if (TerI->hittype != 0) {
@@ -3378,7 +3270,7 @@ s32 TerrainPlatformEmbedded(struct nuvec_s *vvel) {
         oldcurSphereter = curSphereter;
         curSphereter = 0;
         ScaleTerrain = ScaleTerrainT2;
-        TerI = (TerTempInfoType *)NuScratchAlloc32(0x930);
+        TerI = (TerTempInfoType *)NuScratchAlloc32(sizeof(TerTempInfoType));
         TerI->yscale = TerITemp->yscale;
         TerI->yscalesq = TerITemp->yscalesq;
         TerI->inyscale = TerITemp->inyscale;
@@ -3679,17 +3571,21 @@ s32 PlatformChecks(s32 itterationcnt, struct nuvec_s *vvel) {
         return itterationcnt;
     }
     TerITemp = TerI;
-    TerI = TerITemp2 = (TerTempInfoType *)NuScratchAlloc32(0x930);
+    TerI = TerITemp2 = (TerTempInfoType *)NuScratchAlloc32(sizeof(TerTempInfoType));
     CurData = TerITemp->PlatScanStart;
     WriteData = (short *)&TerI->hitdata[0];
     while (*CurData > 0) {
         lp = *WriteData = *CurData;
         WriteData[1] = CurData[1];
-        WriteData += 2;
-        CurData += 2;
+        WriteData += SCAN_SLOT;
+        CurData += SCAN_SLOT;
         while (lp > 0) {
             *WriteData++ = *CurData++;
             *WriteData++ = *CurData++;
+#ifdef NW_HOST /* the upper half of a host pointer */
+            *WriteData++ = *CurData++;
+            *WriteData++ = *CurData++;
+#endif
             lp--;
         }
     }
@@ -3917,7 +3813,7 @@ void TerrShowCamTerr(void) {
     TerrPoly = 0;
     PlatCrush = 0;
     terrhitflags = 0;
-    TerI = (TerTempInfoType *)NuScratchAlloc32(0x930);
+    TerI = (TerTempInfoType *)NuScratchAlloc32(sizeof(TerTempInfoType));
     TerI->yscale = 1.0f;
     TerI->yscalesq = TerI->yscale * TerI->yscale;
     TerI->inyscale = 1.0f / TerI->yscale;
@@ -3952,7 +3848,7 @@ f32 NewShadow(struct nuvec_s *ppos, f32 size) {
     if (CurTerr == 0) {
         return 2000000.0f;
     }
-    TerI = NuScratchAlloc32(0x930);
+    TerI = NuScratchAlloc32(sizeof(TerTempInfoType));
     pos = *ppos;
     NewScan(&pos, 0, 0);
     NewCast(&pos, 5.0f);
@@ -3966,7 +3862,7 @@ f32 NewShadowMask(struct nuvec_s *ppos, f32 size, s32 extramask) {
     if (CurTerr == 0) {
         return 2000000.0f;
     }
-    TerI = NuScratchAlloc32(0x930);
+    TerI = NuScratchAlloc32(sizeof(TerTempInfoType));
     pos = *ppos;
     NewScan(&pos, extramask, 0);
     NewCast(&pos, 5.0f);
@@ -3980,7 +3876,7 @@ f32 NewShadowTol(struct nuvec_s *ppos, f32 size, f32 tol) {
     if (CurTerr == 0) {
         return 2000000.0f;
     }
-    TerI = NuScratchAlloc32(0x930);
+    TerI = NuScratchAlloc32(sizeof(TerTempInfoType));
     pos = *ppos;
     NewScan(&pos, 0, 0);
     NewCast(&pos, tol);
@@ -3994,7 +3890,7 @@ f32 NewShadowTolMask(struct nuvec_s *ppos, f32 size, f32 tol, s32 extramask) {
     if (CurTerr == 0) {
         return 2000000.0f;
     }
-    TerI = NuScratchAlloc32(0x930);
+    TerI = NuScratchAlloc32(sizeof(TerTempInfoType));
     pos = *ppos;
     NewScan(&pos, extramask, 0);
     NewCast(&pos, tol);
@@ -4008,7 +3904,7 @@ f32 NewShadowPlat(struct nuvec_s *ppos, f32 size) {
     if (CurTerr == 0) {
         return 2000000.0f;
     }
-    TerI = NuScratchAlloc32(0x930);
+    TerI = NuScratchAlloc32(sizeof(TerTempInfoType));
     pos = *ppos;
     NewScan(&pos, 0, 1);
     NewCast(&pos, 5.0f);
@@ -4022,7 +3918,7 @@ f32 NewShadowMaskPlat(struct nuvec_s *ppos, f32 size, s32 extramask) {
     if (CurTerr == 0) {
         return 2000000.0f;
     }
-    TerI = NuScratchAlloc32(0x930);
+    TerI = NuScratchAlloc32(sizeof(TerTempInfoType));
     pos = *ppos;
     NewScan(&pos, extramask, 1);
     NewCast(&pos, 5.0f);
@@ -4036,7 +3932,7 @@ f32 NewShadowMaskPlatRot(struct nuvec_s *ppos, f32 size, s32 extramask) {
     if (CurTerr == 0) {
         return 2000000.0f;
     }
-    TerI = NuScratchAlloc32(0x930);
+    TerI = NuScratchAlloc32(sizeof(TerTempInfoType));
     pos = *ppos;
     NewScanRot(&pos, extramask);
     NewCast(&pos, 5.0f);
@@ -4050,7 +3946,7 @@ f32 NewShadowTolPlat(struct nuvec_s *ppos, f32 size, f32 tol) {
     if (CurTerr == 0) {
         return 2000000.0f;
     }
-    TerI = NuScratchAlloc32(0x930);
+    TerI = NuScratchAlloc32(sizeof(TerTempInfoType));
     pos = *ppos;
     NewScan(&pos, 0, 1);
     NewCast(&pos, tol);
@@ -4064,7 +3960,7 @@ f32 NewShadowTolMaskPlat(struct nuvec_s *ppos, f32 size, f32 tol, s32 extramask)
     if (CurTerr == 0) {
         return 2000000.0f;
     }
-    TerI = NuScratchAlloc32(0x930);
+    TerI = NuScratchAlloc32(sizeof(TerTempInfoType));
     pos = *ppos;
     NewScan(&pos, extramask, 1);
     NewCast(&pos, tol);
@@ -4361,7 +4257,7 @@ void NewTerrain(struct nuvec_s *vpos, struct nuvec_s *vvel, u8 *flags, s32 terid
     PlatCrush = 0;
     terrhitflags = 0;
     CurTrackInfo = ScanTerrId(flags);
-    TerI = (TerTempInfoType *)NuScratchAlloc32(0x930);
+    TerI = (TerTempInfoType *)NuScratchAlloc32(sizeof(TerTempInfoType));
     TerI->inyscalesq = TerI->inyscale = TerI->yscalesq = TerI->yscale = 1.0f;
     TerI->size = size;
     TerI->sizediv = 1.0f / size;
@@ -4565,7 +4461,7 @@ void NewTerrainScaleY(struct nuvec_s *vpos, struct nuvec_s *vvel, u8 *flags,
         plathitid = -1;
     }
 
-    TerI = (TerTempInfoType *)NuScratchAlloc32(0x930);
+    TerI = (TerTempInfoType *)NuScratchAlloc32(sizeof(TerTempInfoType));
     TerI->yscale = yscale;
     TerI->yscalesq = TerI->yscale * TerI->yscale;
     TerI->inyscale = 1.0f / yscale;
@@ -4701,7 +4597,7 @@ s32 NewRayCast(struct nuvec_s *vpos, struct nuvec_s *vvel, f32 size) {
     plathitid = -1;
     TerrPolyObj = -1;
     TerrPoly = 0;
-    TerI = (TerTempInfoType *)NuScratchAlloc32(0x930);
+    TerI = (TerTempInfoType *)NuScratchAlloc32(sizeof(TerTempInfoType));
     TerI->inyscalesq = TerI->inyscale = TerI->yscalesq = TerI->yscale = 1.0f;
     TerI->size = size;
     TerI->sizediv = 1.0f / TerI->size;
@@ -4734,7 +4630,7 @@ s32 NewRayCastMask(struct nuvec_s *vpos, struct nuvec_s *vvel, f32 size, s32 ext
     plathitid = -1;
     TerrPolyObj = -1;
     TerrPoly = 0;
-    TerI = (TerTempInfoType *)NuScratchAlloc32(0x930);
+    TerI = (TerTempInfoType *)NuScratchAlloc32(sizeof(TerTempInfoType));
     TerI->inyscalesq = TerI->inyscale = TerI->yscalesq = TerI->yscale = 1.0f;
     TerI->size = size;
     TerI->sizediv = 1.0f / TerI->size;
@@ -4768,7 +4664,7 @@ s32 NewRayCastSet(struct nuvec_s *vpos, struct nuvec_s *vvel, f32 size, f32 time
     plathitid = -1;
     TerrPolyObj = -1;
     TerrPoly = 0;
-    TerI = (TerTempInfoType *)NuScratchAlloc32(0x930);
+    TerI = (TerTempInfoType *)NuScratchAlloc32(sizeof(TerTempInfoType));
     TerI->inyscalesq = TerI->inyscale = TerI->yscalesq = TerI->yscale = 1.0f;
     TerI->size = size;
     TerI->sizediv = 1.0f / TerI->size;
@@ -4802,7 +4698,7 @@ s32 NewRayCastSetMask(struct nuvec_s *vpos, struct nuvec_s *vvel, f32 size, f32 
     plathitid = -1;
     TerrPolyObj = -1;
     TerrPoly = 0;
-    TerI = (TerTempInfoType *)NuScratchAlloc32(0x930);
+    TerI = (TerTempInfoType *)NuScratchAlloc32(sizeof(TerTempInfoType));
     TerI->inyscalesq = TerI->inyscale = TerI->yscalesq = TerI->yscale = 1.0f;
     TerI->size = size;
     TerI->sizediv = 1.0f / TerI->size;
@@ -4865,7 +4761,7 @@ short *NewScanHandelFull(struct nuvec_s *vpos, struct nuvec_s *vvel, s32 platsca
     curscltemp = 0;
     ScaleTerrain = ScaleTerrainT1;
     scandata = LastWrite = TempStackPtr;
-    HitData = (tertype **)(LastWrite + 2);
+    HitData = (tertype **)(LastWrite + SCAN_SLOT);
     MaxData = HitData + 0x1FC;
     if (HitData > ScanHitLimit) {
         return 0;
@@ -5125,7 +5021,7 @@ short *NewScanHandelFull(struct nuvec_s *vpos, struct nuvec_s *vvel, s32 platsca
     }
     LastWrite[0] = 0;
     LastWrite[1] = 0;
-    walldata = (struct nuvec_s **)(LastWrite + 2);
+    walldata = (struct nuvec_s **)(LastWrite + SCAN_SLOT);
     minx = minx - 0.02;
     minz = minz - 0.02;
     maxx = maxx + 0.02;
@@ -5157,9 +5053,12 @@ short *NewScanHandelFull(struct nuvec_s *vpos, struct nuvec_s *vvel, s32 platsca
         }
     }
     LastWrite = (short *)walldata;
+#ifdef NW_HOST /* the wall list ends in a null pointer slot */
+    *walldata = 0;
+#endif
     LastWrite[0] = 0;
     LastWrite[1] = 0;
-    TempStackPtr = LastWrite + 2;
+    TempStackPtr = LastWrite + SCAN_SLOT;
     return scandata;
 }
 
@@ -5196,7 +5095,7 @@ short *NewScanHandelSubset(short *handel, struct nuvec_s *vpos, struct nuvec_s *
         return 0;
     }
     scandata = LastWrite = TempStackPtr;
-    HitData = (tertype **)(LastWrite + 2);
+    HitData = (tertype **)(LastWrite + SCAN_SLOT);
     MaxData = HitData + 0x1FC;
     if (HitData > ScanHitLimit) {
         return 0;
@@ -5269,7 +5168,7 @@ short *NewScanHandelSubset(short *handel, struct nuvec_s *vpos, struct nuvec_s *
             if (CurTerr->platdata[mbuf2->info].status.bit.rotate == 0) {
                 if ((tmaxx >= mbuf2->min.x) && (tmaxy >= mbuf2->min.y) && (tmaxz >= mbuf2->min.z) &&
                     (tminx <= mbuf2->max.x) && (tminy < mbuf2->max.y) && (tminz < mbuf2->max.z)) {
-                    curter = (tertype **)(CurData + 2);
+                    curter = (tertype **)(CurData + SCAN_SLOT);
                     for (lp = *CurData; lp > 0; lp--, curter++) {
                         if ((tmaxx >= (*curter)->minx) && (tminx < (*curter)->maxx) &&
                             (tmaxz >= (*curter)->minz) && (tminz < (*curter)->maxz) &&
@@ -5281,7 +5180,7 @@ short *NewScanHandelSubset(short *handel, struct nuvec_s *vpos, struct nuvec_s *
                         }
                     }
                 } else {
-                    curter = (tertype **)(CurData + 2);
+                    curter = (tertype **)(CurData + SCAN_SLOT);
                     curter += *CurData;
                 }
             } else {
@@ -5290,7 +5189,7 @@ short *NewScanHandelSubset(short *handel, struct nuvec_s *vpos, struct nuvec_s *
                          (((maxy + miny) * 0.5f - mbuf2->Location.y) * TerI->inyscale) +
                      ((maxz + minz) * 0.5f - mbuf2->Location.z) * ((maxz + minz) * 0.5f - mbuf2->Location.z);
                 if (tn < mbuf2->radius + radmov) {
-                    curter = (tertype **)(CurData + 2);
+                    curter = (tertype **)(CurData + SCAN_SLOT);
                     for (lp = *CurData; lp > 0; lp--, curter++) {
                         if ((HitData < MaxData) &&
                             (((*curter)->info[1] == 0) || (((*curter)->info[1] & extramask) != 0)) &&
@@ -5307,7 +5206,7 @@ short *NewScanHandelSubset(short *handel, struct nuvec_s *vpos, struct nuvec_s *
                         }
                     }
                 } else {
-                    curter = (tertype **)(CurData + 2);
+                    curter = (tertype **)(CurData + SCAN_SLOT);
                     curter += *CurData;
                 }
             }
@@ -5320,7 +5219,7 @@ short *NewScanHandelSubset(short *handel, struct nuvec_s *vpos, struct nuvec_s *
             tminz = minz - mbuf2->Location.z;
             if ((maxx >= mbuf2->min.x) && (maxy >= mbuf2->min.y) && (maxz >= mbuf2->min.z) &&
                 (minx <= mbuf2->max.x) && (miny < mbuf2->max.y) && (minz < mbuf2->max.z)) {
-                curter = (tertype **)(CurData + 2);
+                curter = (tertype **)(CurData + SCAN_SLOT);
                 for (lp = *CurData; lp > 0; lp--, curter++) {
                     if ((tmaxx >= (*curter)->minx) && (tminx < (*curter)->maxx) &&
                         (tmaxz >= (*curter)->minz) && (tminz < (*curter)->maxz) &&
@@ -5332,7 +5231,7 @@ short *NewScanHandelSubset(short *handel, struct nuvec_s *vpos, struct nuvec_s *
                     }
                 }
             } else {
-                curter = (tertype **)(CurData + 2);
+                curter = (tertype **)(CurData + SCAN_SLOT);
                 curter += *CurData;
             }
         }
@@ -5347,13 +5246,13 @@ short *NewScanHandelSubset(short *handel, struct nuvec_s *vpos, struct nuvec_s *
     }
     LastWrite[0] = 0;
     LastWrite[1] = 0;
-    walldata = (struct nuvec_s **)(LastWrite + 2);
-    CurData += 2;
+    walldata = (struct nuvec_s **)(LastWrite + SCAN_SLOT);
+    CurData += SCAN_SLOT;
     minx = minx - 0.02;
     minz = minz - 0.02;
     maxx = maxx + 0.02;
     maxz = maxz + 0.02;
-    while (*(s32 *)CurData > 0) {
+    while (*(nusintptr *)CurData > 0) {
         spl = (struct nuvec_s **)CurData;
         if (((((*spl)[0].x >= minx) && ((*spl)[1].x <= maxx)) ||
              (((*spl)[1].x >= minx) && ((*spl)[0].x <= maxx))) &&
@@ -5361,12 +5260,15 @@ short *NewScanHandelSubset(short *handel, struct nuvec_s *vpos, struct nuvec_s *
              (((*spl)[1].z >= minz) && ((*spl)[0].z <= maxz)))) {
             *walldata++ = *spl;
         }
-        CurData += 2;
+        CurData += SCAN_SLOT;
     }
     LastWrite = (short *)walldata;
+#ifdef NW_HOST /* the wall list ends in a null pointer slot */
+    *walldata = 0;
+#endif
     LastWrite[0] = 0;
     LastWrite[1] = 0;
-    TempStackPtr = LastWrite + 2;
+    TempStackPtr = LastWrite + SCAN_SLOT;
     return scandata;
 }
 
@@ -5449,7 +5351,7 @@ void ScanTerrainHandel(s32 extramask, short *Handel) {
     while (*CurData > 0) {
         terrid = CurData[1];
         mbuf2 = &CurTerr->terr[CurData[1]];
-        curter = (tertype **)(CurData + 2);
+        curter = (tertype **)(CurData + SCAN_SLOT);
         if ((mbuf2->type == 1) && (CurTerr->platdata[mbuf2->info].curmtx != 0)) {
             if (CurTerr->platdata[mbuf2->info].curmtx->_30 > CurTerr->platdata[mbuf2->info].oldmtx._30) {
                 tminx = minx - mbuf2->Location.x;
@@ -5485,7 +5387,7 @@ void ScanTerrainHandel(s32 extramask, short *Handel) {
                         mbuf2->Location.z;
             }
             if (mbuf2->info == TerrPlatDis) {
-                curter = (tertype **)(CurData + 2);
+                curter = (tertype **)(CurData + SCAN_SLOT);
                 curter += *CurData;
             } else if (CurTerr->platdata[mbuf2->info].status.bit.rotate == 0) {
                 if ((tmaxx >= mbuf2->min.x) && (tmaxy >= mbuf2->min.y) && (tmaxz >= mbuf2->min.z) &&
@@ -5501,7 +5403,7 @@ void ScanTerrainHandel(s32 extramask, short *Handel) {
                         }
                     }
                 } else {
-                    curter = (tertype **)(CurData + 2);
+                    curter = (tertype **)(CurData + SCAN_SLOT);
                     curter += *CurData;
                 }
             } else {
@@ -5526,7 +5428,7 @@ void ScanTerrainHandel(s32 extramask, short *Handel) {
                         }
                     }
                 } else {
-                    curter = (tertype **)(CurData + 2);
+                    curter = (tertype **)(CurData + SCAN_SLOT);
                     curter += *CurData;
                 }
             }
@@ -5549,7 +5451,7 @@ void ScanTerrainHandel(s32 extramask, short *Handel) {
                 }
             }
         } else {
-            curter = (tertype **)(CurData + 2);
+            curter = (tertype **)(CurData + SCAN_SLOT);
             curter += *CurData;
         }
         if (HitCnt != 0) {
@@ -5563,13 +5465,13 @@ void ScanTerrainHandel(s32 extramask, short *Handel) {
     }
     LastWrite[0] = 0;
     LastWrite[1] = 0;
-    CurData += 2;
+    CurData += SCAN_SLOT;
     minx = minx - 0.02;
     minz = minz - 0.02;
     maxx = maxx + 0.02;
     maxz = maxz + 0.02;
     WallSplCount = 0;
-    while (*(s32 *)CurData != 0) {
+    while (*(nusintptr *)CurData != 0) {
         spl = (struct nuvec_s **)CurData;
         if (((((*spl)[0].x >= minx) && ((*spl)[1].x <= maxx)) ||
              (((*spl)[1].x >= minx) && ((*spl)[0].x <= maxx))) &&
@@ -5581,7 +5483,7 @@ void ScanTerrainHandel(s32 extramask, short *Handel) {
             WallSplList[WallSplCount] = (*spl)[1];
             WallSplCount++;
         }
-        CurData += 2;
+        CurData += SCAN_SLOT;
     }
     TerrPlatDis = -1;
 }
@@ -5597,7 +5499,7 @@ s32 NewRayCastSetHandel(struct nuvec_s *vpos, struct nuvec_s *vvel, f32 size, f3
     plathitid = -1;
     TerrPolyObj = -1;
     TerrPoly = 0;
-    TerI = (TerTempInfoType *)NuScratchAlloc32(0x930);
+    TerI = (TerTempInfoType *)NuScratchAlloc32(sizeof(TerTempInfoType));
     TerI->inyscalesq = TerI->inyscale = TerI->yscalesq = TerI->yscale = 1.0f;
     TerI->size = size;
     TerI->sizediv = 1.0f / TerI->size;
@@ -5629,7 +5531,7 @@ s32 TerrainTrackBack(struct nuvec_s *pos, struct nuvec_s *vel, struct nuvec_s *d
     if ((CurTerr == 0) || (TerrPolyObj == -1)) {
         return 0;
     }
-    TerI = (TerTempInfoType *)NuScratchAlloc32(0x930);
+    TerI = (TerTempInfoType *)NuScratchAlloc32(sizeof(TerTempInfoType));
     TerI->inyscalesq = TerI->inyscale = TerI->yscalesq = TerI->yscale = 1.0f;
     TerI->size = size;
     TerI->sizediv = 1.0f / TerI->size;
@@ -5979,7 +5881,7 @@ s32 NewRayCastPlatForm(struct nuvec_s *vpos, struct nuvec_s *vvel, f32 size, f32
     plathitid = -1;
     TerrPolyObj = -1;
     TerrPoly = 0;
-    TerI = (TerTempInfoType *)NuScratchAlloc32(0x930);
+    TerI = (TerTempInfoType *)NuScratchAlloc32(sizeof(TerTempInfoType));
     TerI->inyscalesq = TerI->inyscale = TerI->yscalesq = TerI->yscale = 1.0f;
     TerI->size = size;
     TerI->sizediv = 1.0f / TerI->size;
