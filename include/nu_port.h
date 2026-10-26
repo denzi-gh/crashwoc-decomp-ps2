@@ -42,4 +42,31 @@ void nw_ee_idle(void);
 #define NW_HOST_IDLE()
 #endif
 
+/* The n records x the code above carved off a game heap, its cursor now past them; ps2size is one record's PS2
+ * size, which the EE build checks. The host (NuWorld's src/port/heap.c) puts the cursor back past their PS2 size,
+ * so the heap keeps retail's layout, and points x at zeroed host records beside the heap. */
+#ifdef NW_HOST
+void *nw_heap_twin(void *at, __SIZE_TYPE__ charge, __SIZE_TYPE__ size, __SIZE_TYPE__ align);
+#define NW_HEAP_TWIN(x, cursor, n, ps2size) \
+    ((cursor) = (void *)((char *)(x) + (__SIZE_TYPE__)(n) * (ps2size)), \
+     (x) = nw_heap_twin((x), (__SIZE_TYPE__)(n) * (ps2size), (__SIZE_TYPE__)(n) * sizeof(*(x)), __alignof__(*(x))))
+#else
+#define NW_HEAP_TWIN(x, cursor, n, ps2size) ((void)sizeof(char[sizeof(*(x)) == (ps2size) ? 1 : -1]))
+#endif
+
+/* What a load returns of the record it carved at the heap address at: at on the EE, its twin rec on the host. */
+#ifdef NW_HOST
+#define NW_HEAP_REC(at, rec) ((__typeof__(at))(rec))
+#else
+#define NW_HEAP_REC(at, rec) at
+#endif
+
+/* A pointer p the caller aimed at the heap address at, where the code above carved a record: on the host it aims at
+ * the record's twin rec instead. */
+#ifdef NW_HOST
+#define NW_HEAP_AIM(p, at, rec) ((p) == (void *)(at) ? (void)((p) = (rec)) : (void)0)
+#else
+#define NW_HEAP_AIM(p, at, rec)
+#endif
+
 #endif /* NU_PORT_H */
