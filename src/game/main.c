@@ -1867,7 +1867,7 @@ int main(int argc, char** argv) {
             Level = 0x25;
             Demo = 0;
         }
-        LBIT = 1L << Level;
+        LBIT = (u64)1 << Level;
         LDATA = &LData[Level];
         if (pNuCam != 0) {
             if (LDATA->farclip >= 10) {
@@ -1894,7 +1894,7 @@ int main(int argc, char** argv) {
             logos_played = 1;
         }
         NuSoundKillAllAudio();
-        LBIT = 1L << Level;
+        LBIT = (u64)1 << Level;
         LDATA = &LData[Level];
         if (pNuCam != 0) {
             if (LDATA->farclip >= 10) {
