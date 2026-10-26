@@ -103,7 +103,9 @@ struct debtri_s {
 struct debdma_s {
     u8 pad_00[0x14];                        /* 0x00 */
     f32 grav;                               /* 0x14 */
-    u8 pad_18[0x18];                        /* 0x18 */
+    u8 pad_18[4];                           /* 0x18 */
+    f32 time;                               /* 0x1C: set by NuRndrParticleGroup */
+    u8 pad_20[0x10];                        /* 0x20 */
     s32 u0;                                 /* 0x30 */
     s32 v0;                                 /* 0x34 */
     s32 u1;                                 /* 0x38 */
