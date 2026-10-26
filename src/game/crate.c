@@ -2029,8 +2029,8 @@ struct cratecube_s *HitCrateBalloons(struct nuvec_s *pos, f32 radius) {
     struct crategroup_s *group;
     struct cratecube_s *crate;
     f32 r2;
-    s32 iVar1;
-    s32 iVar3;
+    s32 i;
+    s32 j;
     struct nuvec_s v;
     struct nuvec_s d;
 
@@ -2040,11 +2040,12 @@ struct cratecube_s *HitCrateBalloons(struct nuvec_s *pos, f32 radius) {
         return temp_pCrate;
     }
     group = CrateGroup;
-    r2 = (radius + CRATEBALLOONRADIUS);
+    r2 = radius + CRATEBALLOONRADIUS;
     r2 *= r2;
-    for (iVar1 = 0; iVar1 < CRATEGROUPCOUNT; iVar1++, group++) {
+    for (i = 0; i < CRATEGROUPCOUNT; i++, group++) {
         crate = Crate + group->iCrate;
-        for (iVar3 = 0; iVar3 < group->nCrates; iVar3++, crate++) {
+        for (j = 0; j < group->nCrates; j++, crate++) {
+            /* Flag 0x400 enables the balloon sphere above the crate. */
             if ((crate->on != 0) && ((crate->flags & 0x400) != 0)) {
                 v.x = crate->pos.x;
                 v.y = crate->pos.y + CRATEBALLOONOFFSET;
