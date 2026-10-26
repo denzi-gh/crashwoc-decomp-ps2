@@ -7999,6 +7999,10 @@ void MoveGlider(struct creature_s *Cre, struct nupad_s *Pad)
     GliderFire(Glider, Pad);
     if (Level == 0x12) {
         s32 indx;
+        struct nuvec_s Pos;
+        struct nuvec_s Dir;
+        struct numtx_s Mtx;
+        struct nuvec_s Scale;
         struct nuvec_s Temp;
 
         indx = 0x86;
