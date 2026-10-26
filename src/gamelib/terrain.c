@@ -107,6 +107,7 @@
 /* Retail called memset as a plain function here (terrainpickupinit). */
 #define NU_LIBC_MEMSET_NOT_BUILTIN
 #include "nu_libc.h"
+#include "nu_port.h"
 
 #include "nucore/nuerror.h"
 #include "numath/nutrig.h"
@@ -385,8 +386,11 @@ short *terraininit(s32 levelnum, short **store, short *endstore, s32 opt, char *
     rv = *store;
     terrset = (TerrainSetType *)*store;
     *store += sizeof(TerrainSetType) / sizeof(short);
+    NW_HEAP_TWIN(terrset, *store, 1, 0xAF50);
+    NW_HEAP_AIM(CurTerr, rv, terrset);
     terrset->terr = (TerrainSituType *)*store;
     *store += 0x880 * sizeof(TerrainSituType) / sizeof(short);
+    NW_HEAP_TWIN(terrset->terr, *store, 0x880, 0x38);
     for (lp = 0; lp < 9; lp++) {
         terrset->pollist[lp].timer = 0;
         terrset->pollist[lp].hitdata[0] = 0;
@@ -683,7 +687,7 @@ short *terraininit(s32 levelnum, short **store, short *endstore, s32 opt, char *
     curSphereter = 0;
     TerrShapeAdjCnt = 0;
     curPickInst = 0;
-    return rv;
+    return NW_HEAP_REC(rv, terrset);
 }
 
 
