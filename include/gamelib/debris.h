@@ -4,9 +4,21 @@
 #include "nu_types.h"
 #include "numath/numathtypes.h"
 
-struct debchunk_s;
-struct debpart_s;
 struct debinfo_s;
+
+/* One particle as the ptl program reads it. */
+struct debpart_s {
+    struct nuvec_s pos;                     /* 0x00 */
+    f32 time;                               /* 0x0C */
+    struct nuvec_s mom;                     /* 0x10 */
+    f32 rate;                               /* 0x1C */
+}; /* 0x20 */
+
+/* A DMA particle set (CreateDmaParticleSet): its tags, then 32 particles. */
+struct debchunk_s {
+    u8 pad_00[0x20];                        /* 0x00 */
+    struct debpart_s parts[32];             /* 0x20 */
+}; /* 0x420 */
 
 /* One collision sphere of an emitter. */
 struct debrissphere_s {
