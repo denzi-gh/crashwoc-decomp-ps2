@@ -75,18 +75,6 @@
 #include "nu3d/nutex.h"
 #include "gamelib/debris.h"
 
-struct debpart_s {
-    struct nuvec_s pos;
-    f32 time;
-    struct nuvec_s mom;
-    f32 rate;
-};
-
-struct debchunk_s {
-    u8 pad_00[0x20];
-    struct debpart_s parts[32];
-};
-
 struct chunkctrl_s {
     struct debchunk_s *chunk;
     s32 life;

@@ -32,6 +32,7 @@
  */
 
 #include "nu_libc.h"
+#include "nu_port.h"
 
 #include "nu3d/nugobj.h"
 #include "nu3d/nugscn.h"
@@ -58,11 +59,11 @@ extern struct game_s Game;
 extern s32 cut_on;
 extern struct cursor_s Cursor;
 
-static s32 cutworldix;
+NW_STATIC s32 cutworldix;
 static s32 ghg_inst_count;
 static s32 scene_inst_count;
 static struct NUGCUTSCENE_s *CutScene[32];
-static struct instNUGCUTSCENE_s *CutInst[32];
+NW_STATIC struct instNUGCUTSCENE_s *CutInst[32];
 static s32 CutAudio[32];
 static s32 cutdebgroups[32];
 static struct csccache_s ghg_insts[32];     /* loaded character models, by path */

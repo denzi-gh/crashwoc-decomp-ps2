@@ -180,14 +180,6 @@ extern float NuRndrWaterLevel;
 extern u32 NuRndrWaterTint;
 extern int NuRndrShadMaskCount;
 
-typedef struct nurndrfoot_s {
-    struct nuvec_s pnts[4];
-    short brightness;
-    char timer;
-    char gfx;
-    u32 colour;
-} nurndrfoot_s;
-
 extern int D_002D4110[4][2];
 #define oldfaceon_uvindex D_002D4110
 extern int D_002D4130[4][2];
@@ -197,7 +189,7 @@ extern void NuVecConvertToIntVU0(void *dst, struct nuvec_s *src);
 extern int D_002D4150[4][2];
 #define facey_uvindex D_002D4150
 
-extern nurndrfoot_s NuRndrFootData[];
+extern struct nurndrfoot_s NuRndrFootData[];
 extern int NuRndrFootFree;
 extern u32 testfootcol;
 
@@ -261,18 +253,7 @@ extern int txupload_on;
 extern struct nucamera_s global_camera;
 extern float NuFsqrt(float x);
 
-typedef struct nurndrwaterrip_s {
-    struct nuvec_s pos;
-    float startsize;
-    float endsize;
-    float size;
-    u32 colour;
-    u32 curcolour;
-    short timer;
-    short duration;
-} nurndrwaterrip_s;
-
-extern nurndrwaterrip_s NuRndrWaterRipDat[];
+extern struct nurndrwaterrip_s NuRndrWaterRipDat[];
 extern int NuRndrWaterRipCnt;
 
 
@@ -407,11 +388,6 @@ extern char D_00614820[];
 #define err_skin_no_mtl D_00614820
 
 extern int shadstorecnt;
-
-struct nurndrshadstore_s {
-    struct numtx_s mtx;
-    struct NUSHADOWDATA_s shadow;
-};
 
 extern struct nurndrshadstore_s shadstore[256];
 extern int testcntp;
@@ -5064,7 +5040,7 @@ void NuRndrAddFootPrint(int rot, float sizex, float sizez, int brightness, struc
 void NuRndrFootPrints(struct numtl_s *mtl, float *u, float *v) {
     struct nuvtx_tc1_s vtx[2048];
     struct nuvtx_tc1_s *vp;
-    nurndrfoot_s *foot;
+    struct nurndrfoot_s *foot;
     int count;
     int gfx;
     int colour;
@@ -5756,7 +5732,7 @@ void NuRndrShadPolys(struct numtl_s *mtl) {
 
 
 void NuRndrAddWaterRipple(struct nuvec_s *pos, int duration, u32 colour, float startsize, float endsize) {
-    nurndrwaterrip_s *rip;
+    struct nurndrwaterrip_s *rip;
     int i;
 
     for (i = 0; i < 32; i++) {
@@ -5779,7 +5755,7 @@ void NuRndrAddWaterRipple(struct nuvec_s *pos, int duration, u32 colour, float s
 
 void NuRndrWaterRip(struct numtl_s *mtl) {
     short visible[32];
-    nurndrwaterrip_s *rip;
+    struct nurndrwaterrip_s *rip;
     int i;
 
     NuRndrWaterRipCnt = 0;

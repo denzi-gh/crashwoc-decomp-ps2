@@ -17,7 +17,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0105:002363c0:AdjustPosY"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0105:00236570:edaiJUMP"

@@ -16,19 +16,13 @@
 
 #include "nu_libc.h"
 
+#include "game/cloudfx.h"
 #include "nu3d/numtl.h"
 #include "nu3d/nustream.h"
 #include "nu3d/nutex.h"
 #include "numath/nurand.h"
 #include "numath/nuvec.h"
 #include "nucore/nucoretypes.h"
-
-/* PS2 compact cloud particle (s16 x/y/z), stride 6. */
-struct cloud_s {
-    s16 x;
-    s16 y;
-    s16 z;
-};
 
 struct nuivec_s {
     s32 x;

@@ -232,7 +232,7 @@ void NuGobjCalcDims(struct nugobj_s *gobj) {
     gobj->r2 = 0.0f;
     for (; geom; geom = geom->next) {
         stride = NuVtxStride(geom->vtxtype);
-        vtx = geom->vtxptr;
+        vtx = (char *)geom->vtxptr;
         if (!vtx) {
             NuErrorProlog("..\\nu2crash.ps2\\nu3d\\nugobj.c", 0x180)(
                 "NuGobjCalcDims : Lock VB failed!");
@@ -271,7 +271,7 @@ void NuGobjCalcDims(struct nugobj_s *gobj) {
     gobj->cntr_r2 = 0.0f;
     for (geom = gobj->geom; geom; geom = geom->next) {
         stride = NuVtxStride(geom->vtxtype);
-        vtx = geom->vtxptr;
+        vtx = (char *)geom->vtxptr;
         if (!vtx) {
             NuErrorProlog("..\\nu2crash.ps2\\nu3d\\nugobj.c", 0x19B)(
                 "NuGobjCalcDims : Lock VB failed!");

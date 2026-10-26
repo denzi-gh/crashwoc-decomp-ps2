@@ -2,6 +2,7 @@
 #define NU3D_NURNDR_H
 
 #include "numath/numathtypes.h"
+#include "nu3d/nuhgobj.h"
 
 struct nuvtx_tc1_s;
 struct numtl_s;
@@ -15,6 +16,33 @@ typedef struct {
     short zrot;                         /* 0x16 */
 } NuRndrShadType; /* 0x18 */
 typedef NuRndrShadType shadstoretype;
+
+/* A footprint (NuRndrFootData[64]). */
+struct nurndrfoot_s {
+    struct nuvec_s pnts[4];             /* 0x00 */
+    short brightness;                   /* 0x30 */
+    char timer;                         /* 0x32 */
+    char gfx;                           /* 0x33 */
+    u32 colour;                         /* 0x34 */
+}; /* 0x38 */
+
+/* A water ripple (NuRndrWaterRipDat[32]). */
+struct nurndrwaterrip_s {
+    struct nuvec_s pos;                 /* 0x00 */
+    float startsize;                    /* 0x0C */
+    float endsize;                      /* 0x10 */
+    float size;                         /* 0x14 */
+    u32 colour;                         /* 0x18 */
+    u32 curcolour;                      /* 0x1C */
+    short timer;                        /* 0x20 */
+    short duration;                     /* 0x22 */
+}; /* 0x24 */
+
+/* A joint's shadow volumes, stored by NuHGobjRndrMtxDwa for NuRndrShadowStack (shadstore[256]). */
+struct nurndrshadstore_s {
+    struct numtx_s mtx;                 /* 0x00 */
+    struct NUSHADOWDATA_s shadow;       /* 0x40 */
+}; /* 0x50 */
 
 int NuRndrLine3d(struct nuvtx_tc1_s *vtx, struct numtl_s *mtl,
                  struct numtx_s *wm);
