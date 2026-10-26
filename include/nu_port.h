@@ -69,4 +69,13 @@ void *nw_heap_twin(void *at, __SIZE_TYPE__ charge, __SIZE_TYPE__ size, __SIZE_TY
 #define NW_HEAP_AIM(p, at, rec)
 #endif
 
+/* main.c's superbuffer. The loads inside it align to 0x80, so on the host nw_superbuffer_alloc (NuWorld's
+ * src/port/heap.c) starts it at retail's address modulo the alignment, keeping retail's layout. */
+#ifdef NW_HOST
+void *nw_superbuffer_alloc(int size, char *file, int line);
+#define NW_SUPERBUFFER_ALLOC(size, file, line) nw_superbuffer_alloc(size, file, line)
+#else
+#define NW_SUPERBUFFER_ALLOC(size, file, line) NuMemAllocFn(size, file, line)
+#endif
+
 #endif /* NU_PORT_H */

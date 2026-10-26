@@ -379,7 +379,7 @@ inline void LoadFont3D(void)
 
 static inline void InitSuperBuffer(void)
 {
-    superbuffer_base.voidptr = NuMemAllocFn(0x1200000, ".\\main.c", 0x579);
+    superbuffer_base.voidptr = NW_SUPERBUFFER_ALLOC(0x1200000, ".\\main.c", 0x579);
     superbuffer_end.intaddr = (superbuffer_base.intaddr + 0x1200000);
     superbuffer_reset_base.voidptr = superbuffer_base.voidptr;
     if (superbuffer_base.voidptr == 0) {
