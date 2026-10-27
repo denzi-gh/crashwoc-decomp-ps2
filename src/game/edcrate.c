@@ -128,7 +128,12 @@ extern void ReadInCrateData(void);
 extern void RestoreCrateTypeData(void);
 
 extern void ResetTimeTrial(void);
+#ifdef NW_HOST /* retail's prototype passes pos as an int before fALONG; the EE passes them in a2 and $f12 either way */
+extern void ResetCheckpoint(s32 iRAIL, s32 iALONG, f32 fALONG, struct nuvec_s *pos);
+#define ResetCheckpoint(a, b, c, d) ResetCheckpoint(a, b, d, (struct nuvec_s *)(c))
+#else
 extern void ResetCheckpoint(s32 a, s32 b, s32 c, f32 d);
+#endif
 extern void ResetBonus(void);
 extern void ResetDeath(void);
 extern void ResetGemPath(void);

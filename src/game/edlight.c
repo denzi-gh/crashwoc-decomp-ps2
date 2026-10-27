@@ -142,7 +142,12 @@ extern void NuFntScale(s32 x, s32 y);
 extern void NuRndrLine3dDbg(s32 colour, f32 x0, f32 y0, f32 z0, f32 x1, f32 y1,
                             f32 z1);
 extern void edcamSetPosAng(struct nuvec_s *pos, s32 a, s32 b);
+#ifdef NW_HOST /* retail's prototype passes pos as an int before fALONG; the EE passes them in a2 and $f12 either way */
+extern void ResetCheckpoint(s32 iRAIL, s32 iALONG, f32 fALONG, struct nuvec_s *pos);
+#define ResetCheckpoint(a, b, c, d) ResetCheckpoint(a, b, d, (struct nuvec_s *)(c))
+#else
 extern void ResetCheckpoint(s32 a, s32 b, s32 c, f32 d);
+#endif
 extern void ResetTimeTrial(void);
 extern void ResetBonus(void);
 extern void ResetDeath(void);

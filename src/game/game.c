@@ -7216,7 +7216,12 @@ extern float AshesMechInZ;
 extern float AshesMechOutZ;
 extern void AddMechanicalDebris(struct nuvec_s *pos, s32 vehicle);
 extern void BlendGameCamera(struct cammtx_s *cam, float t);
+#ifdef NW_HOST /* retail's prototype puts pos before the time; the EE passes them in a1 and $f12 either way */
+extern void JudderGameCamera(struct cammtx_s *cam, float amt, struct nuvec_s *pos);
+#define JudderGameCamera(cam, pos, amt) JudderGameCamera(cam, amt, pos)
+#else
 extern void JudderGameCamera(struct cammtx_s *cam, struct nuvec_s *pos, float amt);
+#endif
 
 void ToggleVehicle(struct creature_s *c) {
     struct nuvec_s p0;
@@ -7481,7 +7486,9 @@ void DrawNextVehicle(s32 render) {
     }
 }
 
+#ifndef NW_HOST
 extern void JudderGameCamera(struct cammtx_s *cam, struct nuvec_s *pos, float amt);
+#endif
 
 /* Only the fields AddKaboom reads are known (lhu 0x5A / lhu 0x14). */
 /* struct cratecube_s subset, stride 0x90 */
@@ -8798,8 +8805,13 @@ void Draw3DCrateCount(struct nuvec_s *pos, u16 angle) {
 
 extern struct rail_s D_005864A0;
 #define gempath_rail D_005864A0
+#ifdef NW_HOST /* retail's prototype puts flag before scale; the EE passes them in a2 and $f12 either way */
+extern s32 ObjectCylinderCollision(struct obj_s *obj, struct obj_s *cyl, float scale, s32 flag);
+#define ObjectCylinderCollision(obj, cyl, flag, scale) ObjectCylinderCollision(obj, cyl, scale, flag)
+#else
 extern s32 ObjectCylinderCollision(struct obj_s *obj, struct obj_s *cyl, s32 flag,
                                    float scale);
+#endif
 
 void GemPathTransporter(struct creature_s *plr) {
     struct nuvec_s pos;

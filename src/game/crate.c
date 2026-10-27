@@ -1078,8 +1078,13 @@ extern struct nuvec_s vNEWMASK;
 extern s32 mask_crates;
 extern s32 newmask_advise;
 extern f32 TimeTrialWait;
+#ifdef NW_HOST /* retail's prototype puts pos before fALONG; the EE passes them in a2 and $f12 either way */
+extern void ResetCheckpoint(s32 iRAIL, s32 iALONG, f32 fALONG, struct nuvec_s *pos);
+#define ResetCheckpoint(iRAIL, iALONG, pos, fALONG) ResetCheckpoint(iRAIL, iALONG, fALONG, pos)
+#else
 extern void ResetCheckpoint(s32 iRAIL, s32 iALONG, struct nuvec_s *pos,
                             f32 fALONG);
+#endif
 extern void AddGameDebris(s32 type, struct nuvec_s *pos);
 extern void AddTempWumpa(struct cratecube_s *crate, s32 n, f32 x, f32 y, f32 z);
 extern void AddCrateExplosion(struct nuvec_s *pos, s32 type, s32 ang,

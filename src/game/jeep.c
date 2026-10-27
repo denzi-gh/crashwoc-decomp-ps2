@@ -322,7 +322,12 @@ extern void SeekAngHalfLife360f(f32 *dest, f32 target, f32 halflife, f32 dt);
 extern f32 Rationalise360f(f32 a);
 extern void JeepCamFollowAng(struct cammtx_s *cam, s32 blend);
 extern s32 AddBalloon(struct nuvec_s *Pos, struct nuvec_s *Vel);
+#ifdef NW_HOST /* retail's prototype puts size before colour; the EE passes them in $f12 and a1 either way */
+extern void DrawCross(struct nuvec_s *pos, s32 colour, f32 size);
+#define DrawCross(pos, size, colour) DrawCross(pos, colour, size)
+#else
 extern void DrawCross(struct nuvec_s *pos, f32 size, s32 colour);
+#endif
 extern void DrawLine(struct nuvec_s *p0, struct nuvec_s *p1, s32 colour);
 extern void MoveRailPosition(struct nuvec_s *dst, RailPosition *rpos,
                              f32 distance, s32 direction);
