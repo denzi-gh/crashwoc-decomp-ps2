@@ -30,19 +30,19 @@
         },
         "wibo": {
             "role": "pe-runner",
-            "version": "1.1.0",
+            "version": "1.2.0",
             "summary": "decompals wibo: minimal Win32 PE loader for Linux. Runs the SN ProDG compiler binaries inside the container. Execution vehicle only -- the compiler binaries' fingerprints define codegen identity, wibo never does.",
             "source": "https://github.com/decompals/wibo",
             "artifact": {
-                "url": "https://github.com/decompals/wibo/releases/download/1.1.0/wibo-x86_64",
+                "url": "https://github.com/decompals/wibo/releases/download/1.2.0/wibo-x86_64",
                 "filename": "wibo-x86_64",
-                "sha256": "b9ab9f2c5eb014bc79a97f1a2bee9a7ab177d905a7d2f637da5735820021c40c",
+                "sha256": "13f86a2d618f0dbe67179d349625345eabf9b46450295cb4c904e49f6aff85af",
                 "kind": "binary",
                 "install_as": "wibo"
             },
-            "install_dir": "wibo-1.1.0",
+            "install_dir": "wibo-1.2.0",
             "fingerprints": {
-                "wibo": "b9ab9f2c5eb014bc79a97f1a2bee9a7ab177d905a7d2f637da5735820021c40c"
+                "wibo": "13f86a2d618f0dbe67179d349625345eabf9b46450295cb4c904e49f6aff85af"
             }
         },
         "ee-gcc": {
