@@ -66,7 +66,12 @@ extern void DrawCameraTarget(struct nuvec_s *pos);
 extern void NuFntScale(s32 x, s32 y);
 extern void ResetAI(void);
 extern void ResetTimeTrial(void);
+#ifdef NW_HOST /* retail's prototype passes pos as an int before fALONG; the EE passes them in a2 and $f12 either way */
+extern void ResetCheckpoint(s32 iRAIL, s32 iALONG, f32 fALONG, struct nuvec_s *pos);
+#define ResetCheckpoint(a, b, c, d) ResetCheckpoint(a, b, d, (struct nuvec_s *)(c))
+#else
 extern void ResetCheckpoint(s32 a, s32 b, s32 c, f32 d);
+#endif
 extern void ResetBonus(void);
 extern void ResetDeath(void);
 extern void ResetGemPath(void);
@@ -128,8 +133,13 @@ extern s32 D_005CD1D0[8];
 
 extern void NuHGobjRndr(struct NUHGOBJ_s *hobj, struct numtx_s *m, s32 nlayers,
                         s16 *layer);
+#ifdef NW_HOST /* retail's prototype moves colour last; the EE passes it in a0 either way */
+extern void NuRndrLine3dDbg(u32 colour, f32 x0, f32 y0, f32 z0, f32 x1, f32 y1, f32 z1);
+#define NuRndrLine3dDbg(x0, y0, z0, x1, y1, z1, colour) NuRndrLine3dDbg(colour, x0, y0, z0, x1, y1, z1)
+#else
 extern void NuRndrLine3dDbg(f32 x0, f32 y0, f32 z0, f32 x1, f32 y1, f32 z1,
                             u32 colour);
+#endif
 extern void *eduiMenuCreate(s32 x, s32 y, s32 w, s32 h, void *font,
                             void *cancelcb, void *arg);
 extern void *eduiItemSelCreate(s32 a0, void *tmpl, s32 a2, s32 a3, void *cb,

@@ -218,7 +218,12 @@ extern void NuVec4MtxTransformVU0(struct nuvec4_s *dst, struct nuvec4_s *src,
                                   struct numtx_s *m);
 extern void NuVec4MtxInvTransformVU0(struct nuvec4_s *dst, struct nuvec4_s *src,
                                      struct numtx_s *m);
+#ifdef NW_HOST /* retail's prototype moves colour last; the EE passes it in a0 either way */
+extern void NuRndrLine3dDbg(u32 colour, f32 x0, f32 y0, f32 z0, f32 x1, f32 y1, f32 z1);
+#define NuRndrLine3dDbg(x0, y0, z0, x1, y1, z1, colour) NuRndrLine3dDbg(colour, x0, y0, z0, x1, y1, z1)
+#else
 extern void NuRndrLine3dDbg(f32 x0, f32 y0, f32 z0, f32 x1, f32 y1, f32 z1, u32 colour);
+#endif
 extern struct nucamera_s global_camera;
 extern s32 NuFileLoadBuffer(char *name, void *buf, s32 max);
 extern s32 nufile_buffering_enabled;

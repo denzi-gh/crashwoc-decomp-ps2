@@ -196,7 +196,12 @@ extern void NuDatClose(void *dat);
 extern void InitFont3D(struct nugscn_s *scene);
 extern void LoadScreen(char *name);
 extern void ClearGameObjects(void);
+#ifdef NW_HOST /* retail's prototype passes pos as an int before fALONG; the EE passes them in a2 and $f12 either way */
+extern void ResetCheckpoint(s32 iRAIL, s32 iALONG, f32 fALONG, struct nuvec_s *pos);
+#define ResetCheckpoint(a, b, c, d) ResetCheckpoint(a, b, d, (struct nuvec_s *)(c))
+#else
 extern void ResetCheckpoint(s32 a, s32 b, s32 c, float d);
+#endif
 extern void InitWorld(void);
 extern s32 ReadCrateData(void);
 extern void ReadInCrateData(void);
