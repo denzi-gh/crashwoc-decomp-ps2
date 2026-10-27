@@ -4786,13 +4786,13 @@ void NuHGobjRndr(struct NUHGOBJ_s *hobj, struct numtx_s *m, s32 nlayers,
 void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
 {
     struct nuvec_s s;
-    struct numtx_s mV;
-    struct numtx_s mC;
-    struct numtx_s mS;
-    struct numtx_s mR;
+    struct numtx_s mV; /* Vehicle attachment transform. */
+    struct numtx_s mC; /* Creature world transform. */
+    struct numtx_s mS; /* Flat shadow transform. */
+    struct numtx_s mR; /* Reflection transform. */
     struct CharacterModel *model[2];
     struct numtx_s tmtx[256];
-    struct numtx_s *jm;
+    struct numtx_s *m;
     s32 i;
     s32 j;
     s32 vflag;
@@ -4800,10 +4800,10 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
     s32 reflect;
     s32 old_frame;
     s32 VEHICLE;
-    s32 bVar9;
-    u32 anim_action;
+    s32 use_vehicle_matrix; /* mV was supplied by the vehicle renderer. */
+    u32 action;
     s32 frames;
-    f32 dx;
+    f32 dist; /* Squared XZ distance to the camera. */
     f32 r2;
     f32 y;
     u16 yrot;
@@ -4890,16 +4890,17 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
         }
 
         if (editor_active == 0) {
-            dx = (pCam->pos.x - c->obj.pos.x) * (pCam->pos.x - c->obj.pos.x) +
-                 (pCam->pos.z - c->obj.pos.z) * (pCam->pos.z - c->obj.pos.z);
+            dist = (pCam->pos.x - c->obj.pos.x) * (pCam->pos.x - c->obj.pos.x) +
+                   (pCam->pos.z - c->obj.pos.z) * (pCam->pos.z - c->obj.pos.z);
             if ((LDATA->flags & 0x200) == 0) {
-                if (r2 < dx) {
+                if (r2 < dist) {
                     goto next;
                 }
             }
         }
 
-        bVar9 = 0;
+        /* Special vehicle renderers also supply the rider transform. */
+        use_vehicle_matrix = 0;
         shflag = 0;
         reflect = 0;
         if ((VEHICLE == 0x63) || (VEHICLE == 0x36) || (VEHICLE == 0x81) ||
@@ -4915,33 +4916,34 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                 DrawGlider(c);
                 c->obj.draw_frame = old_frame + 1;
                 mV = mTEMP;
-                bVar9 = 1;
+                use_vehicle_matrix = 1;
                 break;
             case 0x53:
                 DrawAtlas(c);
-                bVar9 = 1;
+                use_vehicle_matrix = 1;
                 c->obj.draw_frame = old_frame + 1;
                 NuMtxSetRotationY(&mV, c->obj.hdg);
                 NuMtxTranslate(&mV, &c->obj.pos);
                 mV._31 = mV._31 + ATLASPLAYERLIFT;
                 break;
             case 0x63:
-                jm = DrawPlayerJeep(c);
+                m = DrawPlayerJeep(c);
                 c->obj.draw_frame = old_frame + 1;
-                if (jm == 0) {
+                if (m == 0) {
                     goto next;
                 }
-                mV = *jm;
-                bVar9 = 1;
+                mV = *m;
+                use_vehicle_matrix = 1;
                 break;
             }
         }
 
+        /* Spin models have their own animation, reflection and shadow. */
         if ((vflag != 0) && (VEHICLECONTROL == 2) && (c->obj.dead == 0) &&
             (c->spin != 0) &&
             (c->spin_frame <
              c->spin_frames - c->minfo->SPINRESETFRAMES) &&
-            (bVar9 == 0)) {
+            (use_vehicle_matrix == 0)) {
             if (CRemap[116] != -1) {
                 yrot = c->obj.hdg - 0x8000;
                 s.x = s.y = s.z = c->obj.SCALE;
@@ -4980,7 +4982,7 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                     NuHGobjRndrMtx(model[0]->obj, &mR, 1, 0, tmtx);
                 }
                 if ((shadow != 0) && (c->obj.shadow != 2000000.0f) &&
-                    (dx < r2) &&
+                    (dist < r2) &&
                     ((TerSurface[c->obj.surface_type].flags & 1) == 0) &&
                     (SKELETALCRASH == 0) && (c->freeze == 0) &&
                     (glass_draw == 0)) {
@@ -5005,7 +5007,8 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                    (c->obj.dead == 0) && (c->spin != 0) &&
                    (c->spin_frame <
                     c->spin_frames - c->minfo->SPINRESETFRAMES) &&
-                   (bVar9 == 0) && (VEHICLE == -1) && (c->freeze == 0)) {
+                   (use_vehicle_matrix == 0) && (VEHICLE == -1) &&
+                   (c->freeze == 0)) {
             if (render != 0) {
                 SetCreatureLights(c);
             }
@@ -5023,15 +5026,15 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                     model[0] = &CModel[CRemap[8]];
                 }
                 if (c->obj.dangle != 0) {
-                    anim_action = 0x47;
+                    action = 0x47;
                 } else {
-                    anim_action = 0x46;
+                    action = 0x46;
                 }
-                if ((anim_action < 0x76) &&
-                    (model[0]->anmdata[anim_action] != 0)) {
+                if ((action < 0x76) &&
+                    (model[0]->anmdata[action] != 0)) {
                     frames = c->minfo->SPINFRAMES + c->minfo->SUPERSPINFRAMES * 3;
-                    NuHGobjEvalAnim(model[0]->obj, model[0]->anmdata[anim_action],
-                                    (model[0]->anmdata[anim_action]->time - 1.0f) * ((f32)c->spin_frame / (f32)frames) + 1.0f,
+                    NuHGobjEvalAnim(model[0]->obj, model[0]->anmdata[action],
+                                    (model[0]->anmdata[action]->time - 1.0f) * ((f32)c->spin_frame / (f32)frames) + 1.0f,
                                     0, 0, tmtx);
                 } else {
                     NuHGobjEval(model[0]->obj, 0, 0, tmtx);
@@ -5060,7 +5063,7 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                     NuHGobjRndrMtx(model[0]->obj, &mR, 1, 0, tmtx);
                 }
                 if ((shadow != 0) && (c->obj.shadow != 2000000.0f) &&
-                    (dx < r2) &&
+                    (dist < r2) &&
                     ((TerSurface[c->obj.surface_type].flags & 1) == 0) &&
                     (SKELETALCRASH == 0) && (c->freeze == 0) &&
                     (glass_draw == 0)) {
@@ -5159,7 +5162,8 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
             }
         }
 
-        if (bVar9 != 0) {
+        /* Build the world transform, or reuse the vehicle attachment. */
+        if (use_vehicle_matrix != 0) {
             mC = mV;
             c->m = mC;
         } else if (((vflag == 0) && (c->obj.vehicle == 0xA1)) ||
@@ -5222,10 +5226,10 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
                 mR._31 = y - (mR._31 - y);
             }
             if ((render != 0) && (shadow != 0) &&
-                (c->obj.shadow != 2000000.0f) && (dx < r2) &&
+                (c->obj.shadow != 2000000.0f) && (dist < r2) &&
                 ((TerSurface[c->obj.surface_type].flags & 1) == 0) &&
                 (c->freeze == 0) && (glass_draw == 0) &&
-                ((c->obj.flags & 0x4000) == 0) && (bVar9 == 0) &&
+                ((c->obj.flags & 0x4000) == 0) && (use_vehicle_matrix == 0) &&
                 (c->obj.dead != 8) &&
                 ((vflag == 0) || (SKELETALCRASH == 0)) &&
                 (VEHICLE != 0xA1) && (VEHICLE != 0x89) && (VEHICLE != 0x63) &&
@@ -5257,6 +5261,7 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
             }
         }
 
+        /* Select the main model and any secondary model/attachment. */
         model[0] = c->obj.model;
         if ((c->obj.dead != 0) && (c->obj.die_model[0] != -1) &&
             (c->obj.die_model[0] != CRemap[c->obj.character])) {
@@ -5331,6 +5336,7 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
             SetCreatureLights(c);
         }
 
+        /* Render both models and update their locator matrices. */
         for (j = 0; j < 2; j++) {
             if (model[j] == 0) {
                 continue;

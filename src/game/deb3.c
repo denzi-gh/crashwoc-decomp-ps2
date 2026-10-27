@@ -360,29 +360,23 @@ void RBodyInitClasses(void)
     RBodySetFakeClass(4, 10.0f, 0.75f);
 }
 
+/* rsfxpt: delay range, minimum delay, sound count, then sound IDs. */
 void PlayRandSFX(void) {
     struct nuvec_s vec;
-    s32 iVar1;
 
     if (rsfxpt != 0) {
-        rsfxcount -= 0x3c;
+        rsfxcount -= 60;
         if (rsfxcount < 1) {
+            /* Pick a position within eight units of the camera on each axis. */
             vec.x = global_camera.mtx._30 +
-                    (s32)(qrand() - 0x8000U) * 0.00024414062f;
+                    (qrand() - 0x8000) * 0.000244140625f;
             vec.y = global_camera.mtx._31 +
-                    (s32)(qrand() - 0x8000U) * 0.00024414062f;
+                    (qrand() - 0x8000) * 0.000244140625f;
             vec.z = global_camera.mtx._32 +
-                    (s32)(qrand() - 0x8000U) * 0.00024414062f;
-            iVar1 = qrand() * *rsfxpt;
-            if (iVar1 < 0) {
-                iVar1 += 0xffff;
-            }
-            rsfxcount = ((iVar1 >> 0x10) + rsfxpt[1]) * 0x32;
-            iVar1 = qrand() * rsfxpt[2];
-            if (iVar1 < 0) {
-                iVar1 += 0xffff;
-            }
-            GameSfx(rsfxpt[(iVar1 >> 0x10) + 3], &vec);
+                    (qrand() - 0x8000) * 0.000244140625f;
+
+            rsfxcount = ((qrand() * rsfxpt[0]) / 65536 + rsfxpt[1]) * 50;
+            GameSfx(rsfxpt[(qrand() * rsfxpt[2]) / 65536 + 3], &vec);
         }
     }
 }
