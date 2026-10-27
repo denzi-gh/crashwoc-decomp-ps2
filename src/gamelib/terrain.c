@@ -107,7 +107,6 @@
 /* Retail called memset as a plain function here (terrainpickupinit). */
 #define NU_LIBC_MEMSET_NOT_BUILTIN
 #include "nu_libc.h"
-#include "nu_port.h"
 
 #include "nucore/nuerror.h"
 #include "numath/nutrig.h"

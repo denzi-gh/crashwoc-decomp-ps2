@@ -14,7 +14,6 @@
  *   0x00165078 NuWaterLoad
  */
 
-#include "nu_port.h"
 #include "nu_types.h"
 
 #include "nucore/nuerror.h"

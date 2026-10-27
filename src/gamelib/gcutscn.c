@@ -74,7 +74,6 @@
  */
 
 #include "nu_libc.h"
-#include "nu_port.h"
 
 #include "nu3d/nucamera.h"
 #include "nu3d/nugobj.h"

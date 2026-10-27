@@ -20,7 +20,6 @@
 
 #include "nu_libc.h"
 #include "nu_types.h"
-#include "nu_port.h"
 
 #include "nucore/nuerror.h"
 

@@ -45,7 +45,6 @@
 
 #include "nu_libc.h"
 #include "nu_types.h"
-#include "nu_port.h"
 
 #include "nu3d/nuhgobj.h"
 #include "nu3d/numtl.h"
@@ -1415,7 +1414,6 @@ inline void BGLoadCutScene(void)
     bg_cutloadrv = LoadCutMovie(bg_cutmovie_id);
     bgload_complete = 1;
     for (;;) {
-        NW_HOST_IDLE();
     }
 }
 
@@ -1990,7 +1988,6 @@ next_game_mode:
         frameout = 0;
         frameout_count = nuvideo_global_vbcnt;
         do {
-            NW_HOST_IDLE();
         } while (frameout_count == nuvideo_global_vbcnt);
         frameout_count = nuvideo_global_vbcnt;
         half = 0.5f;
@@ -2595,7 +2592,6 @@ inline void BGLoadLevel(void)
     LoadLevel();
     bgload_complete = 1;
     for (;;) {
-        NW_HOST_IDLE();
     }
 }
 
@@ -2974,7 +2970,6 @@ inline void BGLoadSfxFn(void)
     InitGlobalSfx();
     bgload_complete = done;
     for (;;) {
-        NW_HOST_IDLE();
     }
 }
 
