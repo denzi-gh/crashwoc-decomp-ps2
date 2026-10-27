@@ -35,7 +35,7 @@ typedef struct NuMemHeader {
     int id;
     int size;
     NuMemGuard guard;
-    unsigned char data[0];
+    unsigned char data[0] NW_HOST_ALIGNED(16);
 } NuMemHeader;
 
 typedef struct NuDiscardable {
@@ -97,6 +97,7 @@ void *NuMemAlloc(int size)
         NuErrorProlog("..\\nu2crash.ps2\\nucore\\numem.c", 0xD6)("NuMemAlloc : Failed to alloc %d bytes!", size);
     }
     memset(ptr, 0, size);
+#ifndef NW_HOST /* the host heap lies anywhere: no 32 MB address bookkeeping */
     end = (nusintptr)ptr + size;
     if (highallocaddr < end) {
         highallocaddr = end;
@@ -107,6 +108,7 @@ void *NuMemAlloc(int size)
     if (end > 0x2000000) {
         NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\numem.c", 0xE1)("Warning - alloc > 32MB %d @ %d", size, ptr);
     }
+#endif
     return ptr;
 }
 
@@ -202,6 +204,7 @@ void *NuMemAllocFn(int size, char *file, int line)
     if ((nusintptr)ptr & 15) {
         NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\numem.c", 0x151)("Warning misaligned alloc ***************************************************");
     }
+#ifndef NW_HOST /* the host heap lies anywhere: no 32 MB address bookkeeping */
     end = (nusintptr)ptr + size;
     if (highallocaddr < end) {
         highallocaddr = end;
@@ -212,6 +215,7 @@ void *NuMemAllocFn(int size, char *file, int line)
     if (end > 0x2000000) {
         NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\numem.c", 0x15A)("Warning - alloc > 32MB %d @ %d", size, ptr);
     }
+#endif
     return ptr;
 }
 
@@ -281,6 +285,7 @@ void *NuMemReAllocFn(void *old, int size, char *file, int line)
     if ((nusintptr)ptr & 15) {
         NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\numem.c", 0x1AB)("Warning misaligned alloc ***************************************************");
     }
+#ifndef NW_HOST /* the host heap lies anywhere: no 32 MB address bookkeeping */
     end = (nusintptr)ptr + size;
     if (highallocaddr < end) {
         highallocaddr = end;
@@ -291,6 +296,7 @@ void *NuMemReAllocFn(void *old, int size, char *file, int line)
     if (end > 0x2000000) {
         NuDebugMsgProlog("..\\nu2crash.ps2\\nucore\\numem.c", 0x1B4)("Warning - alloc > 32MB %d @ %d", size, ptr);
     }
+#endif
     return ptr;
 }
 

@@ -449,6 +449,7 @@ void instNuGCutSceneCreateCamTgtArray(struct instNUGCUTSCENE_s *scene, int count
         heap->intaddr = ALIGN16(heap->intaddr);
         camsys->targets = heap->voidptr;
         heap->u8 += count * sizeof(struct NUGCUTCAMTGT_s);
+        NW_HEAP_TWIN(camsys->targets, heap->voidptr, count, 0x10);
         memset(camsys->targets, 0, count * sizeof(struct NUGCUTCAMTGT_s));
     }
 }
@@ -863,6 +864,7 @@ struct instNUGCUTCAMSYS_s *instNuCGutCamSysCreate(struct NUGCUTCAMSYS_s *def, un
     if (def && def->count && heap) {
         camsys = (struct instNUGCUTCAMSYS_s *)ALIGN16(heap->intaddr);
         heap->voidptr = (char *)camsys + sizeof(struct instNUGCUTCAMSYS_s);
+        NW_HEAP_TWIN(camsys, heap->voidptr, 1, 0x10);
         memset(camsys, 0, sizeof(struct instNUGCUTCAMSYS_s));
         heap->intaddr = ALIGN16(heap->intaddr);
         camsys->cams = heap->voidptr;
@@ -893,6 +895,7 @@ struct instNUGCUTLOCATORSYS_s *NuCGutLocatorSysCreateInst(struct NUGCUTLOCATORSY
     if (def && def->count && heap) {
         sys = (struct instNUGCUTLOCATORSYS_s *)ALIGN16(heap->intaddr);
         heap->voidptr = (char *)sys + sizeof(struct instNUGCUTLOCATORSYS_s);
+        NW_HEAP_TWIN(sys, heap->voidptr, 1, 0x04);
         memset(sys, 0, sizeof(struct instNUGCUTLOCATORSYS_s));
         heap->intaddr = ALIGN16(heap->intaddr);
         sys->locators = heap->voidptr;
@@ -1373,6 +1376,7 @@ struct instNUGCUTTRIGGERSYS_s *instNuCGutTriggerSysCreate(struct NUGCUTSCENE_s *
 
     sys = (struct instNUGCUTTRIGGERSYS_s *)ALIGN16(heap->intaddr);
     heap->voidptr = (char *)sys + sizeof(struct instNUGCUTTRIGGERSYS_s);
+    NW_HEAP_TWIN(sys, heap->voidptr, 1, 0x08);
     memset(sys, 0, sizeof(struct instNUGCUTTRIGGERSYS_s));
     sys->list = list;
     sys->triggers = heap->voidptr;
@@ -1419,9 +1423,11 @@ struct instNUGCUTRIGIDSYS_s *instNuCGutRigidSysCreate(struct NUGCUTSCENE_s *def,
     if (rigiddef && rigiddef->count && heap) {
         sys = (struct instNUGCUTRIGIDSYS_s *)(heap->intaddr = ALIGN16(heap->intaddr));
         heap->voidptr = (char *)sys + sizeof(struct instNUGCUTRIGIDSYS_s);
+        NW_HEAP_TWIN(sys, heap->voidptr, 1, 0x04);
         sys->rigids = 0;
         sys->rigids = (struct instNUGCUTRIGID_s *)(heap->intaddr = ALIGN16(heap->intaddr));
         heap->u8 += rigiddef->count * sizeof(struct instNUGCUTRIGID_s);
+        NW_HEAP_TWIN(sys->rigids, heap->voidptr, rigiddef->count, 0x0C);
         memset(sys->rigids, 0, rigiddef->count * sizeof(struct instNUGCUTRIGID_s));
         for (i = 0; i < rigiddef->count; i++) {
             struct NUGCUTRIGID_s *data = &rigiddef->rigids[i];
@@ -1456,10 +1462,12 @@ struct instNUGCUTCHARSYS_s *instNuCGutCharSysCreate(struct NUGCUTSCENE_s *def, u
     if (chardef && chardef->count && heap) {
         charsys = (struct instNUGCUTCHARSYS_s *)(heap->intaddr = ALIGN16(heap->intaddr));
         heap->voidptr = charsys + 1;
+        NW_HEAP_TWIN(charsys, heap->voidptr, 1, 0x04);
         charsys->chars = 0;
         character = (struct instNUGCUTCHAR_s *)(heap->intaddr = ALIGN16(heap->intaddr));
         charsys->chars = character;
         heap->u8 += chardef->count * sizeof(struct instNUGCUTCHAR_s);
+        NW_HEAP_TWIN(charsys->chars, heap->voidptr, chardef->count, 0x18);
         memset(charsys->chars, 0, chardef->count * sizeof(struct instNUGCUTCHAR_s));
         for (i = 0; i < chardef->count; i++) {
             desc = &chardef->chars[i];
@@ -1511,6 +1519,7 @@ struct instNUGCUTSCENE_s *instNuGCutSceneCreate(struct NUGCUTSCENE_s *def, void 
     if (def) {
         scene = (struct instNUGCUTSCENE_s *)(heap->intaddr = ALIGN16(heap->intaddr));
         heap->voidptr = scene + 1;
+        NW_HEAP_TWIN(scene, heap->voidptr, 1, 0x94);
         memset(scene, 0, sizeof(struct instNUGCUTSCENE_s));
         scene->next = active_cutscene_instances;
         if (active_cutscene_instances) {
