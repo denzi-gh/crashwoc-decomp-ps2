@@ -13,4 +13,17 @@ struct NuVBlankHandler {
 void NuIntAddVBlankS(struct NuVBlankHandler *handler);
 void NuIntRemVBlankS(struct NuVBlankHandler *handler);
 
+#ifdef NW_HOST
+/* Retail calls these without a prototype in scope (game/main.c); only the host declares them. */
+struct TbSet;
+void NuPs2Init(void);
+void NuPs2InitIOP(void);
+struct TbSet *tbsetCreate(int *colours);
+void tbslotBeginExFn(struct TbSet *set, int slot, char *name);
+void tbslotBeginFn(struct TbSet *set, int slot);
+int tbslotEndFn(void *tbset, int slot);
+int tbslotLastValue(struct TbSet *set, int slot);
+void tbslotReset(struct TbSet *set, int slot);
+#endif
+
 #endif

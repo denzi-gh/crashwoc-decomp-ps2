@@ -37,4 +37,24 @@ struct nudathdr_s {
     int data[0];                  /* 0x28 */
 }; /* 0x28 */
 
+#ifdef NW_HOST
+/* Retail calls these without a prototype in scope (game/main.c); only the host declares them. */
+void NuFileInitEx(int deviceid, int rebootiop);
+
+/* The port replaces the .DAT layer (NuDat*), so it sees nufile.c's current archive. */
+extern struct nudathdr_s *curr_dat;
+struct nudathdr_s *NuDatOpenEx(char *fname, char **mem, int *used, short mode);
+struct nudathdr_s *NuDatOpen(char *fname, char **mem, int *used);
+void NuDatSet(struct nudathdr_s *ndh);
+void NuDatClose(struct nudathdr_s *ndh);
+int NuDatFileFindTree(struct nudathdr_s *ndh, char *fname);
+int NuDatFileOpen(struct nudathdr_s *ndh, char *fname, enum nufilemode_e mode);
+int NuDatFileRead(int fh, void *data, int size);
+int NuDatFileSeek(int fh, int offset, int origin);
+int NuDatFilePos(int fh);
+int NuDatFileOpenSize(int fh);
+void NuDatFileClose(int fh);
+int NuDatFileLoadBuffer(struct nudathdr_s *ndh, char *fname, void *dest, int maxsize);
+#endif
+
 #endif

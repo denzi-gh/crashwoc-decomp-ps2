@@ -351,8 +351,13 @@ extern void *app_fnt;
 extern void DebrisEmiterPos(int key, float x, float y, float z);
 extern void DebrisOrientation(int key, short rotz, short roty);
 extern void DebrisEmitterOrientation(int key, short rotz, short roty);
+#ifdef NW_HOST /* retail's prototype puts the floats first; the EE passes them in $f12/$f13 either way */
+extern void DebrisReflectionOrientation(int key, short rotz, short roty, float offset, float factor);
+#define DebrisReflectionOrientation(key, offset, factor, rotz, roty) DebrisReflectionOrientation(key, rotz, roty, offset, factor)
+#else
 extern void DebrisReflectionOrientation(int key, float offset, float factor, short rotz,
                                         short roty);
+#endif
 extern struct nuvec_s *edmainQueryLocVec(void);
 extern struct eduimenu_s *eduiMenuCreate(int x, int y, int w, int h, void *font, void *cancelcb,
                                           char *title);

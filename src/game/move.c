@@ -60,6 +60,15 @@
 #include "game/creature.h"
 #include "nups2/ps2ctl.h"
 
+#ifdef NW_HOST
+#include "game/crate.h"
+#include "game/game_obj.h"
+/* gnu89 inline globals stay out of module headers. */
+struct obj_s;
+s32 HitItems(struct obj_s *obj);
+s32 KillPlayer(struct obj_s *obj, s32 anim);
+#endif
+
 extern s32 FlyingLevelVictoryDance;
 extern s32 Level;
 extern s32 SmokeyCountDownValue;

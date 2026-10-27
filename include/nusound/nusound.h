@@ -10,5 +10,12 @@ struct nusound_filename_info_s {
 }; /* 0x2C */
 
 typedef struct nusound_filename_info_s NUSOUND_FILENAME_INFO;
+#ifdef NW_HOST
+/* Retail calls these without a prototype in scope (game/main.c); only the host declares them. */
+void NuSoundFlushLoops(void);
+int NuSoundKeyStatus(unsigned int channel);
+void NuSoundKillAllAudio(void);
+int NuSoundStopStream(int stream);
+#endif
 
 #endif /* NUSOUND_NUSOUND_H */

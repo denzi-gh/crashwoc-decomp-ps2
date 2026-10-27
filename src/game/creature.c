@@ -2151,9 +2151,11 @@ extern char tbuf[];
 extern struct font3dobj_s Font3DObjTab[];
 extern struct MoveInfo MineCartMoveInfo;
 
+#ifndef NW_HOST /* the host takes the prototypes of nucore/nufile.h */
 void *NuDatOpen(char *name, s32 mode, s32 arg);
 void NuDatSet(void *dat);
 void NuDatClose(void *dat);
+#endif
 void LoadScreen(char *name);
 void NuStrCpy(char *dst, char *src);
 void NuStrCat(char *dst, char *src);
@@ -2790,8 +2792,13 @@ s32 HitItems(struct obj_s *obj);
 s32 PlayerObjectAnimCollision(struct obj_s *obj, struct nuspecial_s *special,
                               f32 range);
 void CrateCollisions(struct obj_s *obj);
+#ifdef NW_HOST /* retail's prototype puts the floats first; the EE passes them in $f12/$f13 either way */
+void NuRndrAddWaterRipple(struct nuvec_s *pos, s32 frames, u32 colour, f32 size, f32 grow);
+#define NuRndrAddWaterRipple(pos, size, grow, frames, colour) NuRndrAddWaterRipple(pos, frames, colour, size, grow)
+#else
 void NuRndrAddWaterRipple(struct nuvec_s *pos, f32 size, f32 grow, s32 frames,
                           u32 colour);
+#endif
 void AddVariableShotDebrisEffect(s32 type, struct nuvec_s *pos, s32 count,
                                  s32 a, s32 b);
 void LoseMask(struct obj_s *obj);

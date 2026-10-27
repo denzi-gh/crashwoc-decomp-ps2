@@ -145,4 +145,17 @@ struct FxSprite2Set {
 extern struct nurndrscreenvtx_s watertab[33][21];
 extern struct nurndrscreenvtx_s Hazetab[33][21];
 
+#ifdef NW_HOST
+/* Retail calls these without a prototype in scope (game/main.c); only the host declares them. */
+struct numtl_s;
+void NuRndrEndSceneEx(int flags);
+void NuRndrFootPrints(struct numtl_s *mtl, float *u, float *v);
+void NuRndrFx(int mode, void *fxdata);
+void NuRndrInitEx(int streamsize);
+void NuRndrShadPolys(struct numtl_s *mtl);
+void NuRndrShadowOnOff(int on);
+void NuRndrWaterRip(struct numtl_s *mtl);
+void NuRndrWaterRippleUpdate(int frames);
+#endif
+
 #endif
