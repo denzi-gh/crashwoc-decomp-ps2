@@ -107,7 +107,6 @@
 /* Retail called memset as a plain function here (terrainpickupinit). */
 #define NU_LIBC_MEMSET_NOT_BUILTIN
 #include "nu_libc.h"
-#include "nu_port.h"
 
 #include "nucore/nuerror.h"
 #include "numath/nutrig.h"
@@ -201,15 +200,10 @@ s32 TerrPlatDis = -1;
 
 extern f32 NuTrigTable[];
 extern void *crashdata;
-#ifdef NW_HOST /* retail's limits lie in debkeydata, past TempScanStack, so no scan stops at them: here they end it */
-#define ScanHitLimit ((tertype **)TempScanStack + 0x800 - 100)
-#define ScanHitLimitEnd ((tertype **)TempScanStack + 0x800)
-#else
 extern tertype *D_0034E7E0[];
 #define ScanHitLimit D_0034E7E0
 extern tertype *D_0034E970[];
 #define ScanHitLimitEnd D_0034E970
-#endif
 
 extern f32 NuFsqrt(f32 x);
 extern void *NuScratchAlloc32(s32 size);
@@ -386,11 +380,8 @@ short *terraininit(s32 levelnum, short **store, short *endstore, s32 opt, char *
     rv = *store;
     terrset = (TerrainSetType *)*store;
     *store += sizeof(TerrainSetType) / sizeof(short);
-    NW_HEAP_TWIN(terrset, *store, 1, 0xAF50);
-    NW_HEAP_AIM(CurTerr, rv, terrset);
     terrset->terr = (TerrainSituType *)*store;
     *store += 0x880 * sizeof(TerrainSituType) / sizeof(short);
-    NW_HEAP_TWIN(terrset->terr, *store, 0x880, 0x38);
     for (lp = 0; lp < 9; lp++) {
         terrset->pollist[lp].timer = 0;
         terrset->pollist[lp].hitdata[0] = 0;
@@ -687,7 +678,7 @@ short *terraininit(s32 levelnum, short **store, short *endstore, s32 opt, char *
     curSphereter = 0;
     TerrShapeAdjCnt = 0;
     curPickInst = 0;
-    return NW_HEAP_REC(rv, terrset);
+    return rv;
 }
 
 
@@ -3591,10 +3582,6 @@ s32 PlatformChecks(s32 itterationcnt, struct nuvec_s *vvel) {
         while (lp > 0) {
             *WriteData++ = *CurData++;
             *WriteData++ = *CurData++;
-#ifdef NW_HOST /* the upper half of a host pointer */
-            *WriteData++ = *CurData++;
-            *WriteData++ = *CurData++;
-#endif
             lp--;
         }
     }
@@ -5062,9 +5049,6 @@ short *NewScanHandelFull(struct nuvec_s *vpos, struct nuvec_s *vvel, s32 platsca
         }
     }
     LastWrite = (short *)walldata;
-#ifdef NW_HOST /* the wall list ends in a null pointer slot */
-    *walldata = 0;
-#endif
     LastWrite[0] = 0;
     LastWrite[1] = 0;
     TempStackPtr = LastWrite + SCAN_SLOT;
@@ -5272,9 +5256,6 @@ short *NewScanHandelSubset(short *handel, struct nuvec_s *vpos, struct nuvec_s *
         CurData += SCAN_SLOT;
     }
     LastWrite = (short *)walldata;
-#ifdef NW_HOST /* the wall list ends in a null pointer slot */
-    *walldata = 0;
-#endif
     LastWrite[0] = 0;
     LastWrite[1] = 0;
     TempStackPtr = LastWrite + SCAN_SLOT;

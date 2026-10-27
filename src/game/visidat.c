@@ -8,7 +8,6 @@
  */
 
 #include "nu_libc.h"
-#include "nu_port.h"
 #include "nu_types.h"
 #include "game/visidat.h"
 
@@ -144,14 +143,12 @@ struct visidata_s *visiLoadData(char *fname, struct nugscn_s *sc, union variptr_
         fdata.s32 = fdatabase.s32 + 1;
         vd = buff->voidptr;
         buff->intaddr += sizeof(struct visidata_s);
-        NW_HEAP_TWIN(vd, buff->voidptr, 1, 0x14);
         memset(vd, 0, sizeof(struct visidata_s));
         vd->sc = sc;
         vd->curspline = -1;
         vd->curknot = -1;
         vd->vspline = buff->voidptr;
         buff->intaddr += sc->numsplines * 4;
-        NW_HEAP_TWIN(vd->vspline, buff->voidptr, sc->numsplines, 4);
 
         ver = fdatabase.s32[0];
         if (ver < 0) {
@@ -272,7 +269,6 @@ struct visidata_s *visiLoadData(char *fname, struct nugscn_s *sc, union variptr_
             if (spline_used != 0) {
                 vd->vspline[o] = buff->voidptr;
                 buff->intaddr += vd->sc->splines[o].len * 4;
-                NW_HEAP_TWIN(vd->vspline[o], buff->voidptr, vd->sc->splines[o].len, 4);
                 memset(vd->vspline[o], 0, vd->sc->splines[o].len * 4);
                 buff->intaddr = (buff->intaddr + 7) & ~7;
                 for (n = 0; n < vd->sc->splines[o].len; n++) {

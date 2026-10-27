@@ -42,7 +42,6 @@
  */
 
 #include "nu_libc.h"
-#include "nu_port.h"
 
 #include "nu3d/nustream.h"
 #include "nucore/nuerror.h"
@@ -72,7 +71,7 @@ extern void NuMtxMulRVU0(struct numtx_s *dst, struct numtx_s *a, struct numtx_s 
 extern void NuMtxPreScaleVU0(struct numtx_s *m, struct nuvec_s *s);
 extern void NuMtxScaleVU0(struct numtx_s *m, struct nuvec_s *s);
 
-NW_STATIC int isBitCountTable = 0;
+static int isBitCountTable = 0;
 static unsigned char BitCountTable[256];
 
 #define nuanim_srcfile "..\\nu2crash.ps2\\nu3d\\nuanim.c"

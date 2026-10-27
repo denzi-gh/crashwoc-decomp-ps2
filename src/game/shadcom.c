@@ -10,7 +10,6 @@
  */
 
 #include "nu_libc.h"
-#include "nu_port.h"
 
 #include "nu3d/numtl.h"
 #include "nu3d/nustream.h"
@@ -22,7 +21,7 @@
 extern struct numtl_s *numtl_defaultmtl3d;
 extern u8 *rndrstream_free;
 
-NW_STATIC s32 palids[4];
+static s32 palids[4];
 
 extern s32 NuFileSize(char *name);
 extern s32 NuFileLoadBuffer(char *name, void *buf, s32 max);
