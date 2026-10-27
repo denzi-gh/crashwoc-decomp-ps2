@@ -2200,10 +2200,15 @@ void LoadCharacterModels(void)
         model = CModel;
     next_character:
         if (space != 0) {
+#ifdef NW_HOST
+            /* The raw index below strides the EE's 0x80-byte SPACEANIM. */
+            character = space[i].character;
+#else
             /* Raw index as in the GC source: the separate shift insn sizes
              * gcse's PRE table, which orders the i+1 / cmodel_index+1 /
              * model+1 spills (space[i].character does not match). */
             character = ((s32 *)space)[i << 5];
+#endif
         } else {
             character = LDATA->clist[i];
         }
