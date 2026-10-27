@@ -390,7 +390,8 @@ Rules for type refactors:
 5. Where retail provably used an implicit declaration or a mismatched
    prototype, the PS2 build keeps it. `main` holds no host code: the NuWorld
    port's `NW_HOST` guards and `nu_port.h` seams live only on the
-   `nuworld-host` branch, where `main` is merged in.
+   `nuworld-host` branch, where `main` is merged in (docs/pipeline.md, "The
+   nuworld-host branch").
 6. Headers hold types, `extern` declarations and prototypes only, and no
    alias `#define`s (`#define fseed D_0062EA68` would rename every `fseed` in
    every includer); the readable alias stays in the `.c` file.
