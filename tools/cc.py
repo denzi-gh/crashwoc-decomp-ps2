@@ -29,8 +29,10 @@ Exit status: 0 on success; 1 with the compiler's stderr on a failed compile.
 import argparse
 import hashlib
 import json
+import os
 import re
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -145,6 +147,31 @@ def _stage_headers(work):
 INCLUDE_ARGS = ["-I."]
 
 
+COMPILE_TIMEOUT = 120
+COMPILE_ATTEMPTS = 3
+
+
+def _run_compiler(cmd, cwd):
+    for attempt in range(1, COMPILE_ATTEMPTS + 1):
+        proc = subprocess.Popen(cmd, cwd=cwd, stdin=subprocess.DEVNULL,
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                text=True, start_new_session=True)
+        try:
+            out, err = proc.communicate(timeout=COMPILE_TIMEOUT)
+        except subprocess.TimeoutExpired:
+            os.killpg(proc.pid, signal.SIGKILL)
+            proc.communicate()
+            print(f"cc.py: compiler hung {COMPILE_TIMEOUT}s on {cmd[-1]} "
+                  f"(attempt {attempt}/{COMPILE_ATTEMPTS})", file=sys.stderr)
+            continue
+        if proc.returncode:
+            raise subprocess.CalledProcessError(proc.returncode, cmd, out, err)
+        return
+    raise subprocess.CalledProcessError(
+        -signal.SIGKILL, cmd, "", f"cc.py: compiler hung {COMPILE_ATTEMPTS} "
+        f"times on {cmd[-1]}\n")
+
+
 def _run_driver(src, out_name, extra_args, out_path, profile, version):
     """Stage src into the scratch dir, run the profile's driver, copy the output."""
     src = Path(src)
@@ -159,9 +186,8 @@ def _run_driver(src, out_name, extra_args, out_path, profile, version):
         shutil.copy(src, work / src.name)
         _stage_headers(work)
         produced = work / out_name
-        subprocess.run([*argv, *spec["flags"], *INCLUDE_ARGS, *extra_args,
-                        "-o", str(produced), str(work / src.name)],
-                       check=True, capture_output=True, text=True, cwd=work)
+        _run_compiler([*argv, *spec["flags"], *INCLUDE_ARGS, *extra_args,
+                       "-o", str(produced), str(work / src.name)], work)
         out_path.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(produced, out_path)
     finally:

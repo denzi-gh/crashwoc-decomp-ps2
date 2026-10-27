@@ -31,7 +31,6 @@
  */
 
 #include "nu_libc.h"
-#include "nu_port.h"
 #include "nu_types.h"
 
 #include "nu3d/nucamera.h"
@@ -876,8 +875,8 @@ inline void *NuLightSprDmaOpen(int count) {
 
     NuLgtBuff = (u32 *)vpDmaTag_RetEx(start, 0x10000000, 0x50000000) - 1;
     NuLgtBuff = vtBeginDirect(NuLgtBuff, 0);
-    NW_PUT(u64, NuLgtBuff, (u64)(count | 0x8000) | ((u64)0x64034000 << 32));
-    NW_PUT(u64, NuLgtBuff, 0x525210);
+    *((u64 *)NuLgtBuff)++ = (u64)(count | 0x8000) | ((u64)0x64034000 << 32);
+    *((u64 *)NuLgtBuff)++ = 0x525210;
     return start;
 }
 
@@ -892,19 +891,19 @@ inline void NuLightSprMake(int x, int y, int width, int height, int colour, int 
                            float u0, float v0, float u1, float v1) {
     x += (PS2_VCNTR_X - (PS2_REZ_W >> 1)) << 4;
     y += (PS2_VCNTR_Y - (PS2_REZ_H >> 1)) << 4;
-    NW_PUT(u64, NuLgtBuff, 6);
-    NW_PUT(int, NuLgtBuff, colour);
-    NW_PUT(float, NuLgtBuff, 1.0f);
-    NW_PUT(float, NuLgtBuff, u0);
-    NW_PUT(float, NuLgtBuff, v0);
-    NW_PUT(short, NuLgtBuff, x);
-    NW_PUT(short, NuLgtBuff, y);
-    NW_PUT(int, NuLgtBuff, z);
-    NW_PUT(float, NuLgtBuff, u1);
-    NW_PUT(float, NuLgtBuff, v1);
-    NW_PUT(short, NuLgtBuff, x + width);
-    NW_PUT(short, NuLgtBuff, y + height);
-    NW_PUT(int, NuLgtBuff, z);
+    *((u64 *)NuLgtBuff)++ = 6;
+    *((int *)NuLgtBuff)++ = colour;
+    *((float *)NuLgtBuff)++ = 1.0f;
+    *((float *)NuLgtBuff)++ = u0;
+    *((float *)NuLgtBuff)++ = v0;
+    *((short *)NuLgtBuff)++ = x;
+    *((short *)NuLgtBuff)++ = y;
+    *((int *)NuLgtBuff)++ = z;
+    *((float *)NuLgtBuff)++ = u1;
+    *((float *)NuLgtBuff)++ = v1;
+    *((short *)NuLgtBuff)++ = x + width;
+    *((short *)NuLgtBuff)++ = y + height;
+    *((int *)NuLgtBuff)++ = z;
 }
 
 
@@ -965,14 +964,14 @@ void NuLigthSetModeMask(int tex, int zpsm, int fbmsk, int zmsk) {
     rndrstream_3d->ptr.u32 = gsBeginGifPacket(rndrstream_3d->ptr.u32, 0, 1, 0, 0, 0, 1, 0xE);
     zbp = NuTexGetTextAddr(tex);
     if (zbp) {
-        NW_PUT(u64, rndrstream_3d->ptr.u32, (zbp >> 5) | (u64)zpsm << 24 | (u64)zmsk << 32);
-        NW_PUT(u64, rndrstream_3d->ptr.u32, 0x4E);
+        *((u64 *)rndrstream_3d->ptr.u32)++ = (zbp >> 5) | (u64)zpsm << 24 | (u64)zmsk << 32;
+        *((u64 *)rndrstream_3d->ptr.u32)++ = 0x4E;
     }
-    NW_PUT(u64, rndrstream_3d->ptr.u32, (int)(cur_rt & 0x1FF)
+    *((u64 *)rndrstream_3d->ptr.u32)++ = (int)(cur_rt & 0x1FF)
                                      | (int)((cur_rt >> 16) & 0x3F) << 16
                                      | (int)((cur_rt >> 24) & 0x3F) << 24
-                                     | (u64)fbmsk << 32);
-    NW_PUT(u64, rndrstream_3d->ptr.u32, 0x4C);
+                                     | (u64)fbmsk << 32;
+    *((u64 *)rndrstream_3d->ptr.u32)++ = 0x4C;
     rndrstream_3d->ptr.u32 = gsCloseGifPacket(rndrstream_3d->ptr.u32);
     rndrstream_3d->ptr.u32 = vtCloseDirect(rndrstream_3d->ptr.u32);
     rndrstream_3d->ptr.u32 = vpDmaTag_Close(rndrstream_3d->ptr.u32);
@@ -1150,8 +1149,8 @@ void NuLgtArcLaserDraw(int paused) {
                         && (!(pnts[0].y < 30208.0f) || !(pnts[1].y < 30208.0f))
                         && (!(pnts[0].y > 35328.0f) || !(pnts[1].y > 35328.0f))) {
                         rndrstream_3d->ptr.u32 = vpDmaTag_CntEx(rndrstream_3d->ptr.u32, 0x10000000, 0x5000000D);
-                        NW_PUT(u64, rndrstream_3d->ptr.u32, 0x3002400000008004);
-                        NW_PUT(u64, rndrstream_3d->ptr.u32, 0x512);
+                        *((u64 *)rndrstream_3d->ptr.u32)++ = 0x3002400000008004;
+                        *((u64 *)rndrstream_3d->ptr.u32)++ = 0x512;
                         rgba = NuLgtArcLaserData[id].rgba;
                         for (k = 0; k < 4; k++) {
                             *rndrstream_3d->ptr.f32++ = uv[0][k];
@@ -1567,8 +1566,8 @@ void NuLightProcessSpot(int mode) {
                 packet = (u32 *)vpDmaTag_RetEx(dma, 0, 0x50000000) - 1;
                 packet = vtBeginDirect(packet, 0);
                 packet = gsBeginGifPacket(packet, 0, 1, 0, 0, 0, 1, 0xE);
-                NW_PUT(u64, packet, 0xA);
-                NW_PUT(u64, packet, 0x42);
+                *((u64 *)packet)++ = 0xA;
+                *((u64 *)packet)++ = 0x42;
                 packet = gsCloseGifPacket(packet);
                 packet = vtCloseDirect(packet);
                 packet = vpDmaTag_Close(packet);
@@ -1625,11 +1624,11 @@ void NuLightProcessSpot(int mode) {
             packet = vtBeginDirect(packet, 0);
             packet = gsBeginGifPacket(packet, 0, 1, 0, 0, 0, 1, 0xE);
             if (shift >= 9) {
-                NW_PUT(u64, packet, 0x58);
+                *((u64 *)packet)++ = 0x58;
             } else {
-                NW_PUT(u64, packet, 0xA);
+                *((u64 *)packet)++ = 0xA;
             }
-            NW_PUT(u64, packet, 0x42);
+            *((u64 *)packet)++ = 0x42;
             packet = gsCloseGifPacket(packet);
             packet = vtCloseDirect(packet);
             packet = vpDmaTag_Close(packet);
@@ -1685,10 +1684,10 @@ void NuLightProcessSpot(int mode) {
                 packet = (u32 *)vpDmaTag_RetEx(dma, 0, 0x50000000) - 1;
                 packet = vtBeginDirect(packet, 0);
                 packet = gsBeginGifPacket(packet, 0, 1, 0, 0, 0, 1, 0xE);
-                NW_PUT(u64, packet, 0x48);
-                NW_PUT(u64, packet, 0x42);
-                NW_PUT(u64, packet, 0);
-                NW_PUT(u64, packet, 0x46);
+                *((u64 *)packet)++ = 0x48;
+                *((u64 *)packet)++ = 0x42;
+                *((u64 *)packet)++ = 0;
+                *((u64 *)packet)++ = 0x46;
                 packet = gsCloseGifPacket(packet);
                 packet = vtCloseDirect(packet);
                 packet = vpDmaTag_Close(packet);
@@ -1744,12 +1743,12 @@ void NuLightProcessSpot(int mode) {
             packet = (u32 *)vpDmaTag_RetEx(dma, 0, 0x50000000) - 1;
             packet = vtBeginDirect(packet, 0);
             packet = gsBeginGifPacket(packet, 0, 1, 0, 0, 0, 1, 0xE);
-            NW_PUT(u64, packet, 0x58);
-            NW_PUT(u64, packet, 0x42);
-            NW_PUT(u64, packet, 1);
-            NW_PUT(u64, packet, 0x46);
-            NW_PUT(u64, packet, 0x4C000);
-            NW_PUT(u64, packet, 0x47);
+            *((u64 *)packet)++ = 0x58;
+            *((u64 *)packet)++ = 0x42;
+            *((u64 *)packet)++ = 1;
+            *((u64 *)packet)++ = 0x46;
+            *((u64 *)packet)++ = 0x4C000;
+            *((u64 *)packet)++ = 0x47;
             packet = gsCloseGifPacket(packet);
             packet = vtCloseDirect(packet);
             packet = vpDmaTag_Close(packet);
@@ -1804,8 +1803,8 @@ void NuLightProcessSpot(int mode) {
             packet = (u32 *)vpDmaTag_RetEx(dma, 0, 0x50000000) - 1;
             packet = vtBeginDirect(packet, 0);
             packet = gsBeginGifPacket(packet, 0, 1, 0, 0, 0, 1, 0xE);
-            NW_PUT(u64, packet, 1);
-            NW_PUT(u64, packet, 0x46);
+            *((u64 *)packet)++ = 1;
+            *((u64 *)packet)++ = 0x46;
             packet = gsCloseGifPacket(packet);
             packet = vtCloseDirect(packet);
             packet = vpDmaTag_Close(packet);
@@ -1901,8 +1900,8 @@ void NuLightProcessSpot(int mode) {
             rndrstream_3d->ptr.u32 = (u32 *)vpDmaTag_CntEx(rndrstream_3d->ptr.u32, 0, 0x50000000) - 1;
             rndrstream_3d->ptr.u32 = vtBeginDirect(rndrstream_3d->ptr.u32, 0);
             rndrstream_3d->ptr.u32 = gsBeginGifPacket(rndrstream_3d->ptr.u32, 0, 1, 0, 0, 0, 1, 0xE);
-            NW_PUT(u64, rndrstream_3d->ptr.u32, 0x5C000);
-            NW_PUT(u64, rndrstream_3d->ptr.u32, 0x47);
+            *((u64 *)rndrstream_3d->ptr.u32)++ = 0x5C000;
+            *((u64 *)rndrstream_3d->ptr.u32)++ = 0x47;
             rndrstream_3d->ptr.u32 = gsCloseGifPacket(rndrstream_3d->ptr.u32);
             rndrstream_3d->ptr.u32 = vtCloseDirect(rndrstream_3d->ptr.u32);
             rndrstream_3d->ptr.u32 = vpDmaTag_Close(rndrstream_3d->ptr.u32);
@@ -1923,10 +1922,10 @@ void NuLightProcessSpot(int mode) {
                 rndrstream_3d->ptr.u32 = (u32 *)vpDmaTag_CntEx(rndrstream_3d->ptr.u32, 0x11000000, 0x50000000) - 1;
                 rndrstream_3d->ptr.u32 = vtBeginDirect(rndrstream_3d->ptr.u32, 0);
                 rndrstream_3d->ptr.u32 = gsBeginGifPacket(rndrstream_3d->ptr.u32, 0, 1, 0, 0, 0, 1, 0xE);
-                NW_PUT(u64, rndrstream_3d->ptr.u32, 0x84);
-                NW_PUT(u64, rndrstream_3d->ptr.u32, 0x42);
-                NW_PUT(u64, rndrstream_3d->ptr.u32, 0x20000);
-                NW_PUT(u64, rndrstream_3d->ptr.u32, 0x47);
+                *((u64 *)rndrstream_3d->ptr.u32)++ = 0x84;
+                *((u64 *)rndrstream_3d->ptr.u32)++ = 0x42;
+                *((u64 *)rndrstream_3d->ptr.u32)++ = 0x20000;
+                *((u64 *)rndrstream_3d->ptr.u32)++ = 0x47;
                 rndrstream_3d->ptr.u32 = gsCloseGifPacket(rndrstream_3d->ptr.u32);
                 rndrstream_3d->ptr.u32 = vtCloseDirect(rndrstream_3d->ptr.u32);
                 rndrstream_3d->ptr.u32 = vpDmaTag_Close(rndrstream_3d->ptr.u32);
@@ -1939,8 +1938,8 @@ void NuLightProcessSpot(int mode) {
                 rndrstream_3d->ptr.u32 = (u32 *)vpDmaTag_CntEx(rndrstream_3d->ptr.u32, 0, 0x50000000) - 1;
                 rndrstream_3d->ptr.u32 = vtBeginDirect(rndrstream_3d->ptr.u32, 0);
                 rndrstream_3d->ptr.u32 = gsBeginGifPacket(rndrstream_3d->ptr.u32, 0, 1, 0, 0, 0, 1, 0xE);
-                NW_PUT(u64, rndrstream_3d->ptr.u32, 0x5C000);
-                NW_PUT(u64, rndrstream_3d->ptr.u32, 0x47);
+                *((u64 *)rndrstream_3d->ptr.u32)++ = 0x5C000;
+                *((u64 *)rndrstream_3d->ptr.u32)++ = 0x47;
                 rndrstream_3d->ptr.u32 = gsCloseGifPacket(rndrstream_3d->ptr.u32);
                 rndrstream_3d->ptr.u32 = vtCloseDirect(rndrstream_3d->ptr.u32);
                 rndrstream_3d->ptr.u32 = vpDmaTag_Close(rndrstream_3d->ptr.u32);
@@ -1960,10 +1959,10 @@ void NuLightProcessSpot(int mode) {
                 rndrstream_3d->ptr.u32 = (u32 *)vpDmaTag_CntEx(rndrstream_3d->ptr.u32, 0x11000000, 0x50000000) - 1;
                 rndrstream_3d->ptr.u32 = vtBeginDirect(rndrstream_3d->ptr.u32, 0);
                 rndrstream_3d->ptr.u32 = gsBeginGifPacket(rndrstream_3d->ptr.u32, 0, 1, 0, 0, 0, 1, 0xE);
-                NW_PUT(u64, rndrstream_3d->ptr.u32, 0x84);
-                NW_PUT(u64, rndrstream_3d->ptr.u32, 0x42);
-                NW_PUT(u64, rndrstream_3d->ptr.u32, 0x20000);
-                NW_PUT(u64, rndrstream_3d->ptr.u32, 0x47);
+                *((u64 *)rndrstream_3d->ptr.u32)++ = 0x84;
+                *((u64 *)rndrstream_3d->ptr.u32)++ = 0x42;
+                *((u64 *)rndrstream_3d->ptr.u32)++ = 0x20000;
+                *((u64 *)rndrstream_3d->ptr.u32)++ = 0x47;
                 rndrstream_3d->ptr.u32 = gsCloseGifPacket(rndrstream_3d->ptr.u32);
                 rndrstream_3d->ptr.u32 = vtCloseDirect(rndrstream_3d->ptr.u32);
                 rndrstream_3d->ptr.u32 = vpDmaTag_Close(rndrstream_3d->ptr.u32);
@@ -1988,13 +1987,13 @@ void NuLightProcessSpot(int mode) {
             switch (NuLightSpots[spot].mode) {
             default:
             case 0:
-                NW_PUT(u64, rndrstream_3d->ptr.u32, 0x41);
+                *((u64 *)rndrstream_3d->ptr.u32)++ = 0x41;
                 c0 = 0xFF;
                 c2 = 0;
                 c1 = 0x80;
                 break;
             case 1:
-                NW_PUT(u64, rndrstream_3d->ptr.u32, 9);
+                *((u64 *)rndrstream_3d->ptr.u32)++ = 9;
                 if (NuLightSpots[spot].xspan) {
                     c0 = 0xFF - NuLightSpots[spot].xspan;
                     c1 = 0x80;
@@ -2010,13 +2009,13 @@ void NuLightProcessSpot(int mode) {
                 near = 33554432.0f;
                 break;
             case 2:
-                NW_PUT(u64, rndrstream_3d->ptr.u32, 0x48);
+                *((u64 *)rndrstream_3d->ptr.u32)++ = 0x48;
                 c0 = 0xFF;
                 c2 = 0;
                 c1 = 0x80;
                 break;
             }
-            NW_PUT(u64, rndrstream_3d->ptr.u32, 0x42);
+            *((u64 *)rndrstream_3d->ptr.u32)++ = 0x42;
             rndrstream_3d->ptr.u32 = gsCloseGifPacket(rndrstream_3d->ptr.u32);
             rndrstream_3d->ptr.u32 = vtCloseDirect(rndrstream_3d->ptr.u32);
             rndrstream_3d->ptr.u32 = vpDmaTag_Close(rndrstream_3d->ptr.u32);
@@ -2102,10 +2101,10 @@ void NuLightProcessSpot(int mode) {
                     *rndrstream_3d->ptr.u32++ = *dma++;
                     *rndrstream_3d->ptr.u32++ = *dma++;
                     *rndrstream_3d->ptr.u32++ = *dma++;
-                    *rndrstream_3d->ptr.f32++ = NW_GET(f32, dma);
-                    *rndrstream_3d->ptr.f32++ = NW_GET(f32, dma);
-                    *rndrstream_3d->ptr.f32++ = NW_GET(f32, dma);
-                    *rndrstream_3d->ptr.f32++ = NW_GET(f32, dma);
+                    *rndrstream_3d->ptr.f32++ = *((f32 *)dma)++;
+                    *rndrstream_3d->ptr.f32++ = *((f32 *)dma)++;
+                    *rndrstream_3d->ptr.f32++ = *((f32 *)dma)++;
+                    *rndrstream_3d->ptr.f32++ = *((f32 *)dma)++;
                     *rndrstream_3d->ptr.u32++ = *dma++;
                     *rndrstream_3d->ptr.u32++ = *dma++;
                     *rndrstream_3d->ptr.u32++ = *dma++;
@@ -2457,8 +2456,8 @@ void NuLightHaze(int z, int paused) {
             rndrstream_3d->ptr.u32 = (u32 *)vpDmaTag_CntEx(rndrstream_3d->ptr.u32, 0x11000000, 0x50000000) - 1;
             rndrstream_3d->ptr.u32 = vtBeginDirect(rndrstream_3d->ptr.u32, 0);
             rndrstream_3d->ptr.u32 = gsBeginGifPacket(rndrstream_3d->ptr.u32, 0, 1, 0, 0, 0, 1, 0xE);
-            NW_PUT(u64, rndrstream_3d->ptr.u32, 0x44);
-            NW_PUT(u64, rndrstream_3d->ptr.u32, 0x42);
+            *((u64 *)rndrstream_3d->ptr.u32)++ = 0x44;
+            *((u64 *)rndrstream_3d->ptr.u32)++ = 0x42;
             rndrstream_3d->ptr.u32 = gsCloseGifPacket(rndrstream_3d->ptr.u32);
             rndrstream_3d->ptr.u32 = vtCloseDirect(rndrstream_3d->ptr.u32);
             rndrstream_3d->ptr.u32 = vpDmaTag_Close(rndrstream_3d->ptr.u32);
@@ -2731,8 +2730,8 @@ void NuLightPolyHaze(int paused) {
             rndrstream_3d->ptr.u32 = (u32 *)vpDmaTag_CntEx(rndrstream_3d->ptr.u32, 0x10000000, 0x50000000) - 1;
             rndrstream_3d->ptr.u32 = vtBeginDirect(rndrstream_3d->ptr.u32, 0);
             rndrstream_3d->ptr.u32 = gsBeginGifPacket(rndrstream_3d->ptr.u32, 0, 1, 0, 0, 0, 1, 0xE);
-            NW_PUT(u64, rndrstream_3d->ptr.u32, 0x48);
-            NW_PUT(u64, rndrstream_3d->ptr.u32, 0x42);
+            *((u64 *)rndrstream_3d->ptr.u32)++ = 0x48;
+            *((u64 *)rndrstream_3d->ptr.u32)++ = 0x42;
             rndrstream_3d->ptr.u32 = gsCloseGifPacket(rndrstream_3d->ptr.u32);
             rndrstream_3d->ptr.u32 = vtCloseDirect(rndrstream_3d->ptr.u32);
             rndrstream_3d->ptr.u32 = vpDmaTag_Close(rndrstream_3d->ptr.u32);
@@ -2816,8 +2815,8 @@ void NuLightPolyHaze(int paused) {
             rndrstream_3d->ptr.u32 = (u32 *)vpDmaTag_CntEx(rndrstream_3d->ptr.u32, 0x11000000, 0x50000000) - 1;
             rndrstream_3d->ptr.u32 = vtBeginDirect(rndrstream_3d->ptr.u32, 0);
             rndrstream_3d->ptr.u32 = gsBeginGifPacket(rndrstream_3d->ptr.u32, 0, 1, 0, 0, 0, 1, 0xE);
-            NW_PUT(u64, rndrstream_3d->ptr.u32, 0x44);
-            NW_PUT(u64, rndrstream_3d->ptr.u32, 0x42);
+            *((u64 *)rndrstream_3d->ptr.u32)++ = 0x44;
+            *((u64 *)rndrstream_3d->ptr.u32)++ = 0x42;
             rndrstream_3d->ptr.u32 = gsCloseGifPacket(rndrstream_3d->ptr.u32);
             rndrstream_3d->ptr.u32 = vtCloseDirect(rndrstream_3d->ptr.u32);
             rndrstream_3d->ptr.u32 = vpDmaTag_Close(rndrstream_3d->ptr.u32);
@@ -2989,8 +2988,8 @@ void NuLightFogDraw(int paused) {
             packet = (u32 *)vpDmaTag_RetEx(dma, 0, 0x50000000) - 1;
             packet = vtBeginDirect(packet, 0);
             packet = gsBeginGifPacket(packet, 0, 1, 0, 0, 0, 1, 0xE);
-            NW_PUT(u64, packet, 0xA);
-            NW_PUT(u64, packet, 0x42);
+            *((u64 *)packet)++ = 0xA;
+            *((u64 *)packet)++ = 0x42;
             packet = gsCloseGifPacket(packet);
             packet = vtCloseDirect(packet);
             vpDmaTag_Close(packet);
@@ -3047,11 +3046,11 @@ void NuLightFogDraw(int paused) {
         packet = vtBeginDirect(packet, 0);
         packet = gsBeginGifPacket(packet, 0, 1, 0, 0, 0, 1, 0xE);
         if (shift >= 9) {
-            NW_PUT(u64, packet, 0x58);
+            *((u64 *)packet)++ = 0x58;
         } else {
-            NW_PUT(u64, packet, 0xA);
+            *((u64 *)packet)++ = 0xA;
         }
-        NW_PUT(u64, packet, 0x42);
+        *((u64 *)packet)++ = 0x42;
         packet = gsCloseGifPacket(packet);
         packet = vtCloseDirect(packet);
         vpDmaTag_Close(packet);
@@ -3107,10 +3106,10 @@ void NuLightFogDraw(int paused) {
             packet = (u32 *)vpDmaTag_RetEx(dma, 0, 0x50000000) - 1;
             packet = vtBeginDirect(packet, 0);
             packet = gsBeginGifPacket(packet, 0, 1, 0, 0, 0, 1, 0xE);
-            NW_PUT(u64, packet, 0x48);
-            NW_PUT(u64, packet, 0x42);
-            NW_PUT(u64, packet, 0);
-            NW_PUT(u64, packet, 0x46);
+            *((u64 *)packet)++ = 0x48;
+            *((u64 *)packet)++ = 0x42;
+            *((u64 *)packet)++ = 0;
+            *((u64 *)packet)++ = 0x46;
             packet = gsCloseGifPacket(packet);
             packet = vtCloseDirect(packet);
             vpDmaTag_Close(packet);
@@ -3166,12 +3165,12 @@ void NuLightFogDraw(int paused) {
         packet = (u32 *)vpDmaTag_RetEx(dma, 0, 0x50000000) - 1;
         packet = vtBeginDirect(packet, 0);
         packet = gsBeginGifPacket(packet, 0, 1, 0, 0, 0, 1, 0xE);
-        NW_PUT(u64, packet, 0x58);
-        NW_PUT(u64, packet, 0x42);
-        NW_PUT(u64, packet, 1);
-        NW_PUT(u64, packet, 0x46);
-        NW_PUT(u64, packet, 0x4C000);
-        NW_PUT(u64, packet, 0x47);
+        *((u64 *)packet)++ = 0x58;
+        *((u64 *)packet)++ = 0x42;
+        *((u64 *)packet)++ = 1;
+        *((u64 *)packet)++ = 0x46;
+        *((u64 *)packet)++ = 0x4C000;
+        *((u64 *)packet)++ = 0x47;
         packet = gsCloseGifPacket(packet);
         packet = vtCloseDirect(packet);
         vpDmaTag_Close(packet);
@@ -3226,8 +3225,8 @@ void NuLightFogDraw(int paused) {
         packet = (u32 *)vpDmaTag_RetEx(dma, 0, 0x50000000) - 1;
         packet = vtBeginDirect(packet, 0);
         packet = gsBeginGifPacket(packet, 0, 1, 0, 0, 0, 1, 0xE);
-        NW_PUT(u64, packet, 1);
-        NW_PUT(u64, packet, 0x46);
+        *((u64 *)packet)++ = 1;
+        *((u64 *)packet)++ = 0x46;
         packet = gsCloseGifPacket(packet);
         packet = vtCloseDirect(packet);
         vpDmaTag_Close(packet);
@@ -3271,10 +3270,10 @@ void NuLightFogDraw(int paused) {
         rndrstream_3d->ptr.u32 = (u32 *)vpDmaTag_CntEx(rndrstream_3d->ptr.u32, 0x11000000, 0x50000000) - 1;
         rndrstream_3d->ptr.u32 = vtBeginDirect(rndrstream_3d->ptr.u32, 0);
         rndrstream_3d->ptr.u32 = gsBeginGifPacket(rndrstream_3d->ptr.u32, 0, 1, 0, 0, 0, 1, 0xE);
-        NW_PUT(u64, rndrstream_3d->ptr.u32, 0x40);
-        NW_PUT(u64, rndrstream_3d->ptr.u32, 0x42);
-        NW_PUT(u64, rndrstream_3d->ptr.u32, 0x54000);
-        NW_PUT(u64, rndrstream_3d->ptr.u32, 0x47);
+        *((u64 *)rndrstream_3d->ptr.u32)++ = 0x40;
+        *((u64 *)rndrstream_3d->ptr.u32)++ = 0x42;
+        *((u64 *)rndrstream_3d->ptr.u32)++ = 0x54000;
+        *((u64 *)rndrstream_3d->ptr.u32)++ = 0x47;
         rndrstream_3d->ptr.u32 = gsCloseGifPacket(rndrstream_3d->ptr.u32);
         rndrstream_3d->ptr.u32 = vtCloseDirect(rndrstream_3d->ptr.u32);
         rndrstream_3d->ptr.u32 = vpDmaTag_Close(rndrstream_3d->ptr.u32);
@@ -3287,10 +3286,10 @@ void NuLightFogDraw(int paused) {
         rndrstream_3d->ptr.u32 = (u32 *)vpDmaTag_CntEx(rndrstream_3d->ptr.u32, 0x11000000, 0x50000000) - 1;
         rndrstream_3d->ptr.u32 = vtBeginDirect(rndrstream_3d->ptr.u32, 0);
         rndrstream_3d->ptr.u32 = gsBeginGifPacket(rndrstream_3d->ptr.u32, 0, 1, 0, 0, 0, 1, 0xE);
-        NW_PUT(u64, rndrstream_3d->ptr.u32, 0x84);
-        NW_PUT(u64, rndrstream_3d->ptr.u32, 0x42);
-        NW_PUT(u64, rndrstream_3d->ptr.u32, 0x20000);
-        NW_PUT(u64, rndrstream_3d->ptr.u32, 0x47);
+        *((u64 *)rndrstream_3d->ptr.u32)++ = 0x84;
+        *((u64 *)rndrstream_3d->ptr.u32)++ = 0x42;
+        *((u64 *)rndrstream_3d->ptr.u32)++ = 0x20000;
+        *((u64 *)rndrstream_3d->ptr.u32)++ = 0x47;
         rndrstream_3d->ptr.u32 = gsCloseGifPacket(rndrstream_3d->ptr.u32);
         rndrstream_3d->ptr.u32 = vtCloseDirect(rndrstream_3d->ptr.u32);
         rndrstream_3d->ptr.u32 = vpDmaTag_Close(rndrstream_3d->ptr.u32);
@@ -3302,10 +3301,10 @@ void NuLightFogDraw(int paused) {
         rndrstream_3d->ptr.u32 = (u32 *)vpDmaTag_CntEx(rndrstream_3d->ptr.u32, 0x11000000, 0x50000000) - 1;
         rndrstream_3d->ptr.u32 = vtBeginDirect(rndrstream_3d->ptr.u32, 0);
         rndrstream_3d->ptr.u32 = gsBeginGifPacket(rndrstream_3d->ptr.u32, 0, 1, 0, 0, 0, 1, 0xE);
-        NW_PUT(u64, rndrstream_3d->ptr.u32, 0x40);
-        NW_PUT(u64, rndrstream_3d->ptr.u32, 0x42);
-        NW_PUT(u64, rndrstream_3d->ptr.u32, 0x5C000);
-        NW_PUT(u64, rndrstream_3d->ptr.u32, 0x47);
+        *((u64 *)rndrstream_3d->ptr.u32)++ = 0x40;
+        *((u64 *)rndrstream_3d->ptr.u32)++ = 0x42;
+        *((u64 *)rndrstream_3d->ptr.u32)++ = 0x5C000;
+        *((u64 *)rndrstream_3d->ptr.u32)++ = 0x47;
         rndrstream_3d->ptr.u32 = gsCloseGifPacket(rndrstream_3d->ptr.u32);
         rndrstream_3d->ptr.u32 = vtCloseDirect(rndrstream_3d->ptr.u32);
         rndrstream_3d->ptr.u32 = vpDmaTag_Close(rndrstream_3d->ptr.u32);
@@ -3318,10 +3317,10 @@ void NuLightFogDraw(int paused) {
         rndrstream_3d->ptr.u32 = (u32 *)vpDmaTag_CntEx(rndrstream_3d->ptr.u32, 0x11000000, 0x50000000) - 1;
         rndrstream_3d->ptr.u32 = vtBeginDirect(rndrstream_3d->ptr.u32, 0);
         rndrstream_3d->ptr.u32 = gsBeginGifPacket(rndrstream_3d->ptr.u32, 0, 1, 0, 0, 0, 1, 0xE);
-        NW_PUT(u64, rndrstream_3d->ptr.u32, 0x84);
-        NW_PUT(u64, rndrstream_3d->ptr.u32, 0x42);
-        NW_PUT(u64, rndrstream_3d->ptr.u32, 0x20000);
-        NW_PUT(u64, rndrstream_3d->ptr.u32, 0x47);
+        *((u64 *)rndrstream_3d->ptr.u32)++ = 0x84;
+        *((u64 *)rndrstream_3d->ptr.u32)++ = 0x42;
+        *((u64 *)rndrstream_3d->ptr.u32)++ = 0x20000;
+        *((u64 *)rndrstream_3d->ptr.u32)++ = 0x47;
         rndrstream_3d->ptr.u32 = gsCloseGifPacket(rndrstream_3d->ptr.u32);
         rndrstream_3d->ptr.u32 = vtCloseDirect(rndrstream_3d->ptr.u32);
         rndrstream_3d->ptr.u32 = vpDmaTag_Close(rndrstream_3d->ptr.u32);
@@ -3343,10 +3342,10 @@ void NuLightFogDraw(int paused) {
             rndrstream_3d->ptr.u32 = (u32 *)vpDmaTag_CntEx(rndrstream_3d->ptr.u32, 0x11000000, 0x50000000) - 1;
             rndrstream_3d->ptr.u32 = vtBeginDirect(rndrstream_3d->ptr.u32, 0);
             rndrstream_3d->ptr.u32 = gsBeginGifPacket(rndrstream_3d->ptr.u32, 0, 1, 0, 0, 0, 1, 0xE);
-            NW_PUT(u64, rndrstream_3d->ptr.u32, 0x44);
-            NW_PUT(u64, rndrstream_3d->ptr.u32, 0x42);
-            NW_PUT(u64, rndrstream_3d->ptr.u32, 1);
-            NW_PUT(u64, rndrstream_3d->ptr.u32, 0x46);
+            *((u64 *)rndrstream_3d->ptr.u32)++ = 0x44;
+            *((u64 *)rndrstream_3d->ptr.u32)++ = 0x42;
+            *((u64 *)rndrstream_3d->ptr.u32)++ = 1;
+            *((u64 *)rndrstream_3d->ptr.u32)++ = 0x46;
             rndrstream_3d->ptr.u32 = gsCloseGifPacket(rndrstream_3d->ptr.u32);
             rndrstream_3d->ptr.u32 = vtCloseDirect(rndrstream_3d->ptr.u32);
             rndrstream_3d->ptr.u32 = vpDmaTag_Close(rndrstream_3d->ptr.u32);
@@ -3370,8 +3369,8 @@ void NuLightFogDraw(int paused) {
             rndrstream_3d->ptr.u32 = (u32 *)vpDmaTag_CntEx(rndrstream_3d->ptr.u32, 0x11000000, 0x50000000) - 1;
             rndrstream_3d->ptr.u32 = vtBeginDirect(rndrstream_3d->ptr.u32, 0);
             rndrstream_3d->ptr.u32 = gsBeginGifPacket(rndrstream_3d->ptr.u32, 0, 1, 0, 0, 0, 1, 0xE);
-            NW_PUT(u64, rndrstream_3d->ptr.u32, 0x54);
-            NW_PUT(u64, rndrstream_3d->ptr.u32, 0x42);
+            *((u64 *)rndrstream_3d->ptr.u32)++ = 0x54;
+            *((u64 *)rndrstream_3d->ptr.u32)++ = 0x42;
             rndrstream_3d->ptr.u32 = gsCloseGifPacket(rndrstream_3d->ptr.u32);
             rndrstream_3d->ptr.u32 = vtCloseDirect(rndrstream_3d->ptr.u32);
             rndrstream_3d->ptr.u32 = vpDmaTag_Close(rndrstream_3d->ptr.u32);

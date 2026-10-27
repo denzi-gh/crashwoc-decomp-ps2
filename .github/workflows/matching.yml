@@ -15,7 +15,7 @@ name: matching
 
 on:
   push:
-    branches: ["**"]
+    branches: [main]
   pull_request:
   schedule:
     - cron: "17 3 * * *"
@@ -35,6 +35,7 @@ permissions:
 jobs:
   matching:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     container:
       image: ghcr.io/denzi-gh/crashwoc-decomp-ps2-build:main
       credentials:

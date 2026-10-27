@@ -69,7 +69,6 @@
 #include "nu_libc.h"
 #include "nu_stdarg.h"
 #include "nu_types.h"
-#include "nu_port.h"
 
 #include "nucore/nuerror.h"
 #include "nucore/nufile.h"
@@ -345,7 +344,7 @@ extern int sceSifLoadModule(const char* name, int arg_size, const char* args);
    between iff_padsize and curr_dat. */
 static char *filesys_root[4] = { "host0:", "cdrom0:\\", "host0:", "cdrom0:\\" };
 static char working_dir[256] = { 0 };
-NW_STATIC struct nudathdr_s *curr_dat = 0;
+static struct nudathdr_s *curr_dat = 0;
 static int nufile_deviceid = 0;
 static int file_time_count = 0;
 char *iop_img_name = "cdrom0:\\SYS\\IOPRP23.IMG;1";

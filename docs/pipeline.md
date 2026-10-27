@@ -485,7 +485,7 @@ Every tool is pinned in [toolchain.lock.json](../toolchain.lock.json):
 | -------------- | -------------------- | ------------------------------------------ |
 | `ee-gcc-tt`    | 2.95.2-EE (SN ProDG) | `default` matching compiler (game/engine)  |
 | `ee-gcc`       | 2.9-ee-991111-01     | `sce` matching compiler (Sony runtime)     |
-| `wibo`         | 1.1.0                | runs the Win32 `ee-gcc-tt` under Linux     |
+| `wibo`         | 1.2.0                | runs the Win32 `ee-gcc-tt` under Linux     |
 | `ps2-binutils` | 0.10                 | reconstruction + hybrid assembler / linker |
 | `python`       | 3.12                 | tooling runtime (via uv)                   |
 | `splat`        | 0.41.0               | ELF disassembler / splitter                |
@@ -519,17 +519,19 @@ python tools/fingerprint_compiler.py --all     # verify every fingerprinted comp
 
 ## CI (dtk-template private-build-image method)
 
-Two workflows, both on GitHub-hosted runners:
+Three workflows, all on GitHub-hosted runners:
 
-- **validate.yml** - every push and PR. Structure only: manifests, registries,
-  tests, and the guard that nothing game-derived is tracked in this repository.
-  Needs no game files.
-- **matching.yml** - pushes to any branch in this repo, nightly, and manual
-  dispatch (never on `pull_request`; see the fork-safety note below). The full
-  byte-gated pipeline. It needs the retail ELF, which this public repository
-  must never contain - so the job runs *inside* a private container image that
-  has the game files baked in, following
+- **validate.yml** - pushes to `main` and every PR. Structure only: manifests,
+  registries, tests, and the guard that nothing game-derived is tracked in this
+  repository. Needs no game files.
+- **matching.yml** - pushes to `main`, every PR, nightly, and manual dispatch
+  (see the fork-safety note below). The full byte-gated pipeline. It needs the
+  retail ELF, which this public repository must never contain - so the job
+  runs *inside* a private container image that has the game files baked in,
+  following
   [dtk-template's method](https://github.com/encounter/dtk-template/blob/main/docs/github_actions.md).
+- **sync-main-to-nuworld-host.yml** - pushes to `main`: keeps the
+  `nuworld-host` branch following `main` ("The nuworld-host branch" below).
 
 ```
 this repo (public, zero game bytes)
@@ -633,31 +635,72 @@ schema (no stray fields), no `orig/` reference / absolute path / embedded byte
 blob, no hollow "100% of nothing" measure, and again every verified matching
 function at 100%. A stale or tampered staged file fails the run before upload.
 
-### PR verification (no fork ever touches the private image)
+### PR verification
 
-`matching.yml` deliberately has **no `pull_request` trigger**. A
-`pull_request` run would execute the workflow file *from the PR branch*
-inside the private `/orig` image, so any fork could rewrite it to exfiltrate
-the retail game files. Removing the trigger closes that hole entirely;
-`pull_request_target` is **not** used, because it would run the same
-untrusted PR code with the same private resources.
+A branch is byte-verified through its pull request; `push` runs only on
+`main`, so a PR branch is built once per push, not twice. The `pull_request`
+run uploads `SLES_503.86_report`, which the decomp.dev app attaches to the PR
+as a progress-vs-main comment. Branches without a PR use `workflow_dispatch`.
 
-Instead, byte verification is driven by the **`push` trigger on any branch**
-(`branches: ["**"]`). This is fork-safe by construction: a push to a fork
-runs in the *fork's* Actions, never in this repository, so untrusted code can
-never reach the private `/orig` image through it. Only someone with write
-access can push a branch here, and their code is as trusted as a push to
-`main`.
+A `pull_request` run executes the workflow file *from the PR branch* inside
+the private `/orig` image, so a fork PR could rewrite it to exfiltrate the
+retail game files. The guard is the repository setting "Require approval for
+all external contributors" (Settings -> Actions -> General): a maintainer
+reviews the diff (especially `.github/`, `tools/`, the toolchain lock) before
+approving the run. `pull_request_target` is **not** used, because it would run
+the same untrusted PR code with the same private resources.
 
-The practical payoff - same-repo PRs get their byte gates and a decomp.dev
-progress comment automatically:
+### Hung compiles
 
-- A **collaborator branch** (same-repo PR): every push runs the full pipeline
-  and uploads `SLES_503.86_report`. The decomp.dev app attaches that artifact
-  to the open PR as a progress-vs-main comment. No manual dispatch needed.
-- A **fork PR**: triggers only **validate.yml** (public, no game files -
-  manifests, registries, unit tests, the "nothing game-derived is tracked"
-  guard). That is the full contract a fork PR can rely on. To byte-verify it,
-  a maintainer reviews the diff (especially `.github/`, `tools/`, the
-  toolchain lock), cherry-picks / merges the vetted commit onto an **in-repo**
-  branch, and lets that branch's push (or `workflow_dispatch`) run the gates.
+A compile under wibo occasionally never exits (seen only on CI, a random
+`default`-profile unit each time). `tools/cc.py` kills a compile that runs
+longer than 120 s, together with its child processes, and reruns it (3
+attempts); objects are deterministic, so a rerun cannot change bytes. The job
+also has `timeout-minutes: 30` (a normal run takes about 6 minutes).
+
+## The nuworld-host branch
+
+`main` is the PS2 decompilation only. The NuWorld PC port
+(`crashwoc-nuworld`, which has this repository as its `decomp/` submodule)
+compiles the same sources with `-DNW_HOST`; everything that exists only for
+that build - the `NW_HOST` guards and `include/nu_port.h` with its seams
+(`NW_PUT`/`NW_GET`, `NW_STATIC`, the heap twins, ...) - lives on the
+long-lived branch `nuworld-host`: `main` plus the `host:` commits. Every seam
+expands to `main`'s spelling on the EE, so `nuworld-host` builds the same PS2
+objects and passes the same byte gates.
+
+- **Decomp work** (matching C, types, data, tools): a PR into `main`, as
+  always. Where it costs nothing, keep types portable (`nuintptr` for pointer
+  arithmetic, `sizeof` for record sizes) so `nuworld-host` keeps building.
+- **Host-only fix**: branch off `nuworld-host` and open the PR into
+  `nuworld-host`. `check_codegen.py --compare` against a `nuworld-host`
+  snapshot stays at 0.
+- **main into nuworld-host**: `sync-main-to-nuworld-host.yml` runs on every
+  push to `main` (and by hand). It opens one PR `main` -> `nuworld-host`, or
+  reuses the open one (its head is `main`, so new commits land in it), and
+  enables auto-merge with a merge commit. GitHub merges it once `validate`
+  and `matching` pass on the PR and there is no conflict; with nothing to
+  carry over the job does nothing. Never squash or rebase that PR: the merge
+  commit puts `main`'s commits into `nuworld-host`, so the next sync carries
+  only new ones.
+- **Conflicts**: the sync PR stays open. Merge by hand on a branch from
+  `nuworld-host` (`git checkout -b sync/<topic> origin/nuworld-host`,
+  `git merge origin/main`), keep `main`'s change and the host seam, run the
+  codegen compare, and open a PR into `nuworld-host` (merge commit). Once it
+  lands, the sync PR has nothing left and GitHub closes it as merged.
+- **Protection on nuworld-host**: PRs only, required checks `validate` and
+  `matching` (not "up to date": `main` never contains the `host:` commits),
+  no force pushes, no deletion.
+- **Credentials**: a PR opened with `GITHUB_TOKEN` starts no `pull_request`
+  workflows, so the checks would never report. The workflow takes a GitHub
+  App installed on this repository with Contents, Pull requests and
+  Workflows read/write (secrets `NUWORLD_SYNC_APP_CLIENT_ID`,
+  `NUWORLD_SYNC_APP_PRIVATE_KEY`), or a fine-grained PAT with the same
+  permissions (`NUWORLD_SYNC_TOKEN`). Without either, or when
+  `nuworld-host` does not require both checks, it fails without touching a
+  PR.
+
+NuWorld pins an exact `nuworld-host` commit; `.gitmodules` names the branch
+(`branch = nuworld-host`) only for `git submodule update --remote decomp`. A
+bump: `git submodule update --remote decomp`, build and `ctest`, then commit
+the gitlink. `git clone --recursive` checks out the pinned commit.
