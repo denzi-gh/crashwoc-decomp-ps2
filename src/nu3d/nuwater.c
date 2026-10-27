@@ -370,7 +370,7 @@ void animateWaterTables(float scale, float time) {
         *stream->ptr.u32++ = 0x10000000;
         *stream->ptr.u32++ = 0x6C2001B2;
         for (j = 0; j < 32; j++) {
-            NW_PUT(struct nuvec4_s, stream->ptr.u32, *(struct nuvec4_s *)table);
+            *((struct nuvec4_s *)stream->ptr.u32)++ = *(struct nuvec4_s *)table;
             table += 4;
         }
         stream->ptr.u32 = vpDmaTag_Close(stream->ptr.u32);
@@ -411,10 +411,10 @@ void animateWater(float scale, float time) {
             wave.y = 0.0f;
             wave.z = NuTrigTable[(u16)((freq * (NuRandFloat() * 0.4f + 0.7f) + NuRandFloat() * 6.284f) * 10430.378f)] * amp;
             NuVecMtxTransformH(&pos, &wave, &mtx);
-            NW_PUT(float, stream->ptr.u32, pos.x);
-            NW_PUT(float, stream->ptr.u32, pos.y);
-            NW_PUT(float, stream->ptr.u32, 1.0f);
-            NW_PUT(float, stream->ptr.u32, wave.x);
+            *((float *)stream->ptr.u32)++ = pos.x;
+            *((float *)stream->ptr.u32)++ = pos.y;
+            *((float *)stream->ptr.u32)++ = 1.0f;
+            *((float *)stream->ptr.u32)++ = wave.x;
         }
         stream->ptr.u32 = vpDmaTag_Close(stream->ptr.u32);
         rndrstream_free = vpDmaTag_Next(stream->ptr.u32, 0);
