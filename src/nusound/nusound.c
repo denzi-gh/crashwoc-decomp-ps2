@@ -276,9 +276,6 @@ static inline int play_stream(int stream, int bank, unsigned int channel,
     envelope = flags + (priority << 8);
     right &= 0x7FFF;
     if (bank != 0x80) {
-#ifdef NW_HOST /* past the 48 entries retail clears a byte of senddata */
-        if (channel < 0x30)
-#endif
         SOUND_SPUKeyStatus[channel] = 0;
     }
     IOPCommandData[0] = stream;
