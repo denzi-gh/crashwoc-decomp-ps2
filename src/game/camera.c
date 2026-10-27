@@ -181,7 +181,7 @@ void InitRails(void) {
 }
 
 
-/* dbest and iVar6 are deliberately left uninitialised: retail never seeds
+/* dbest and use are deliberately left uninitialised: retail never seeds
  * $f20 nor the 0x60(sp) slot before the search loop. */
 f32 BestRailPosition(struct nuvec_s *pos, RailPosition *rpos, s32 iRAIL,
                      s32 iALONG) {
@@ -195,23 +195,24 @@ f32 BestRailPosition(struct nuvec_s *pos, RailPosition *rpos, s32 iRAIL,
     struct nuvec_s *p2;
     struct nuvec_s *p3;
     struct rail_s *rail;
-    s32 iVar1;
-    s32 iVar2;
-    s32 iVar3;
-    s32 iVar4;
-    s32 iVar8;
-    s32 iVar7;
-    s32 iVar5;
-    s32 iVar6;
-    s32 bVar2;
+    s32 i0;
+    s32 i1;
+    s32 i_origin;
+    s32 pick;
+    s32 i_up;
+    s32 i_down;
+    s32 done;
+    s32 use;
+    s32 yz;
     f32 d;
     f32 dbest;
 
-    bVar2 = 0;
+    yz = 0;
     if ((Level == 6) || (Level == 0x22)) {
-        bVar2 = 1;
+        yz = 1;
     }
-    if (bVar2 != 0) {
+    /* Rotate XY so a vertical rail can use the same XZ tests. */
+    if (yz != 0) {
         v.x = -pos->y;
         v.y = pos->x;
         v.z = pos->z;
@@ -227,34 +228,36 @@ f32 BestRailPosition(struct nuvec_s *pos, RailPosition *rpos, s32 iRAIL,
         return 0.0f;
     }
     if (iALONG == -1) {
-        iVar3 = (s32)rail->edges / 2;
+        i_origin = (s32)rail->edges / 2;
     } else {
-        iVar3 = iALONG;
+        i_origin = iALONG;
     }
-    iVar8 = iVar3 + 1;
-    iVar7 = iVar3 - 1;
-    iVar4 = 0;
-    iVar5 = 0;
+    i_up = i_origin + 1;
+    i_down = i_origin - 1;
+    pick = 0;
+    done = 0;
+    /* Search the origin first, then alternate above and below it.
+     * pick/done: 1 = increasing indices, 2 = decreasing indices. */
 Loop:
-    if (iVar4 == 0) {
-        iVar1 = iVar3;
-    } else if (iVar4 == 1) {
-        iVar1 = iVar8;
-        iVar8++;
+    if (pick == 0) {
+        i0 = i_origin;
+    } else if (pick == 1) {
+        i0 = i_up;
+        i_up++;
     } else {
-        iVar1 = iVar7;
-        iVar7--;
+        i0 = i_down;
+        i_down--;
     }
-    if (iVar1 >= 0 && iVar1 < rail->edges) {
-        iVar2 = iVar1 + 1;
-        if ((iVar2 == rail->edges) && (rail->circuit != 0)) {
-            iVar2 = 0;
+    if (i0 >= 0 && i0 < rail->edges) {
+        i1 = i0 + 1;
+        if ((i1 == rail->edges) && (rail->circuit != 0)) {
+            i1 = 0;
         }
-        p0 = (struct nuvec_s *)(rail->pLEFT->pts + (iVar1 * rail->pLEFT->ptsize));
-        p1 = (struct nuvec_s *)(rail->pLEFT->pts + (iVar2 * rail->pLEFT->ptsize));
-        p2 = (struct nuvec_s *)(rail->pRIGHT->pts + (iVar2 * rail->pRIGHT->ptsize));
-        p3 = (struct nuvec_s *)(rail->pRIGHT->pts + (iVar1 * rail->pRIGHT->ptsize));
-        if (bVar2 != 0) {
+        p0 = (struct nuvec_s *)(rail->pLEFT->pts + (i0 * rail->pLEFT->ptsize));
+        p1 = (struct nuvec_s *)(rail->pLEFT->pts + (i1 * rail->pLEFT->ptsize));
+        p2 = (struct nuvec_s *)(rail->pRIGHT->pts + (i1 * rail->pRIGHT->ptsize));
+        p3 = (struct nuvec_s *)(rail->pRIGHT->pts + (i0 * rail->pRIGHT->ptsize));
+        if (yz != 0) {
             v0.x = -p0->y;
             v0.y = p0->x;
             v0.z = p0->z;
@@ -276,6 +279,7 @@ Loop:
             v2 = *p2;
             v3 = *p3;
         }
+        /* The point must lie inside all four edges in the XZ plane. */
         if ((((0.0f <= (v.x - v0.x) * (v1.z - v0.z) +
                            (v.z - v0.z) * (v0.x - v1.x)) &&
               (0.0f <= (v.x - v1.x) * (v2.z - v1.z) +
@@ -284,38 +288,40 @@ Loop:
                           (v.z - v2.z) * (v2.x - v3.x))) &&
             (0.0f <= (v.x - v3.x) * (v0.z - v3.z) +
                          (v.z - v3.z) * (v3.x - v0.x))) {
+            /* Retail truncates the height difference before taking abs. */
             d = abs((s32)((v0.y + v1.y + v2.y + v3.y) * 0.25f - v.y));
             if (iALONG == -1) {
                 if (rpos->iALONG == -1 || d < dbest) {
                     dbest = d;
-                    iVar6 = 1;
+                    use = 1;
                 }
             } else {
                 dbest = d;
-                iVar6 = 2;
+                use = 2;
             }
-            if (iVar6 != 0) {
-                rpos->iALONG = iVar1;
+            /* use: 1 = retain candidate, 2 = accept and finish. */
+            if (use != 0) {
+                rpos->iALONG = i0;
                 rpos->iRAIL = iRAIL;
-                rpos->i1 = iVar2;
-                rpos->i2 = iVar2 + 1;
+                rpos->i1 = i1;
+                rpos->i2 = i1 + 1;
                 if ((rpos->i2 == rail->edges) && (rail->circuit != 0)) {
                     rpos->i2 = 0;
                 }
                 rpos->fALONG = RatioBetweenEdges(&v, &v3, &v0, &v2, &v1);
                 rpos->fACROSS = RatioBetweenEdges(&v, &v0, &v1, &v3, &v2);
-                if (iVar6 == 2) {
+                if (use == 2) {
                     goto Finish;
                 }
             }
         }
     } else {
-        iVar5 |= iVar4;
+        done |= pick;
     }
-    if (iVar5 == 3) {
+    if (done == 3) {
         goto Finish;
     }
-    iVar4 = (iVar4 == 1) ? 2 : 1;
+    pick = (pick == 1) ? 2 : 1;
     goto Loop;
 
 Finish:
@@ -327,7 +333,7 @@ Finish:
     if ((rpos->iRAIL != -1) && (temp_iALONG != -1)) {
         rpos->vertical = 0;
         if ((rpos->i2 != rpos->i1) && (rpos->i2 < rail->edges) &&
-            (bVar2 == 0)) {
+            (yz == 0)) {
             p0 = (struct nuvec_s *)(rail->pLEFT->pts +
                                     (rpos->i1 * rail->pLEFT->ptsize));
             p1 = (struct nuvec_s *)(rail->pLEFT->pts +
@@ -342,7 +348,7 @@ Finish:
                 }
             }
         }
-        if (bVar2 != 0) {
+        if (yz != 0) {
             RailInfo(rpos, &rpos->pos, 0, &rpos->cam_angle, 0);
         } else {
             RailInfo(rpos, &rpos->pos, &rpos->angle, &rpos->cam_angle,
