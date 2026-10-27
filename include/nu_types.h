@@ -1,6 +1,24 @@
 #ifndef NU_TYPES_H
 #define NU_TYPES_H
 
+#ifdef NW_HOST
+
+#include <stdint.h>
+
+typedef uint8_t u8;
+typedef int8_t s8;
+typedef uint16_t u16;
+typedef int16_t s16;
+typedef uint32_t u32;
+typedef int32_t s32;
+typedef uint64_t u64;
+typedef int64_t s64;
+typedef unsigned __int128 u128;
+typedef uintptr_t nuintptr;
+typedef intptr_t nusintptr;
+
+#else
+
 typedef unsigned char u8;
 typedef signed char s8;
 typedef unsigned short u16;
@@ -12,6 +30,8 @@ typedef signed long long s64;
 typedef unsigned int u128 __attribute__((mode(TI)));
 typedef unsigned int nuintptr;
 typedef signed int nusintptr;
+
+#endif
 
 typedef float f32;
 typedef double f64;

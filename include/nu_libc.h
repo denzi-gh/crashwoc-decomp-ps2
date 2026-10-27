@@ -3,6 +3,16 @@
 
 #include "nu_stdarg.h"
 
+#ifdef NW_HOST
+
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <strings.h>
+
+#else
+
 /* The subset of the SDK's newlib that the game calls, with newlib's own
  * signatures. */
 typedef unsigned int size_t;
@@ -51,5 +61,7 @@ double sin(double x);
 double cos(double x);
 double tan(double x);
 double atan2(double y, double x);
+
+#endif
 
 #endif /* NU_LIBC_H */
