@@ -224,12 +224,7 @@ void AddExtraLife(struct nuvec_s *pos, s32 pdeb);
 void AddMechanicalDebris(struct nuvec_s *pos, s32 vehicle);
 
 s32 NuRndrGScnObj(void *gobj, struct numtx_s *m);
-#ifdef NW_HOST /* retail's prototype moves size last; the EE passes it in $f12 either way */
-void NuRndrAddShadow(struct nuvec_s *pos, f32 size, s32 alpha, s32 xrot, s32 yrot, s32 zrot);
-#define NuRndrAddShadow(pos, alpha, xrot, yrot, zrot, size) NuRndrAddShadow(pos, size, alpha, xrot, yrot, zrot)
-#else
 void NuRndrAddShadow(struct nuvec_s *pos, s32 alpha, s32 xrot, s32 yrot, s32 zrot, f32 size);
-#endif
 extern s32 temp_face;
 
 

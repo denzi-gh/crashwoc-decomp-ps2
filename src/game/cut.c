@@ -398,11 +398,9 @@ void AppCutSceneCharacterRender(struct instNUGCUTSCENE_s *icutscene, struct NUGC
 
 extern u8 texanimbuff[];
 extern void LoadFont3D(void);
-#ifndef NW_HOST /* the host takes the prototypes of nucore/nufile.h */
 extern void *NuDatOpen(char *name, char **mem, s32 *used);
 extern void NuDatSet(struct nudathdr_s *ndh);
 extern void NuDatClose(struct nudathdr_s *ndh);
-#endif
 struct nutexanimprog_s;
 void CutSceneNextLogoFunction(struct instNUGCUTSCENE_s *icutscene);
 

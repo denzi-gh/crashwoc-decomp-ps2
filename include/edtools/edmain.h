@@ -28,9 +28,4 @@ struct edmainreg_s {
     void (*render)(void); /* 0x30 */
 }; /* 0x34 */
 
-#ifdef NW_HOST
-/* Retail calls these without a prototype in scope (game/main.c); only the host declares them. */
-void edmainRender(void);
-#endif
-
 #endif

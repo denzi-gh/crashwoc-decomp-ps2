@@ -73,53 +73,6 @@
 #include "game/main.h"
 #include "game/sfx.h"
 
-#ifdef NW_HOST
-#include "edtools/edmain.h"
-#include "game/ai.h"
-#include "game/bgload.h"
-#include "game/bug.h"
-#include "game/camera.h"
-#include "game/chase.h"
-#include "game/cloudfx.h"
-#include "game/crate.h"
-#include "game/cut.h"
-#include "game/deb3.h"
-#include "game/font3d.h"
-#include "game/game.h"
-#include "game/game_obj.h"
-#include "game/glass.h"
-#include "game/inst.h"
-#include "game/lights.h"
-#include "game/move.h"
-#include "game/panel.h"
-#include "game/particle.h"
-#include "game/shadcom.h"
-#include "game/vehicle.h"
-#include "game/visi.h"
-#include "gamelib/debris.h"
-#include "nu3d/nufont.h"
-#include "nu3d/nugobj.h"
-#include "nu3d/nurndr.h"
-#include "nucore/nufile.h"
-#include "nucore/numem.h"
-#include "nups2/ps2video.h"
-#include "nups2/vu1man.h"
-#include "nusound/nusound.h"
-/* gnu89 inline globals stay out of module headers. */
-struct nufont_s;
-struct nuvec_s;
-struct obj_s;
-void DrawCutMovie(void);
-void GameVP(void);
-s32 KillPlayer(struct obj_s *obj, s32 anim);
-void MaxVP(void);
-void NewCut(s32 i);
-void NuFntDestroy(struct nufont_s *font);
-void ResetTimeTrial(void);
-void RotateDirectionalLight(struct nuvec_s *v, s32 xrot, s32 yrot);
-void UpdateCutMovie(void);
-#endif
-
 extern s32 Level;
 extern s32 level_part_2;
 extern float AtmosphericPressureHackedZ;
@@ -188,11 +141,9 @@ extern void InitSpecular(void);
 extern void InitEnviro(void);
 extern void InitGlass(void);
 extern void InitClouds(void);
-#ifndef NW_HOST /* the host takes the prototypes of nucore/nufile.h */
 extern void *NuDatOpen(char *name, s32 a, s32 b);
 extern void NuDatSet(void *dat);
 extern void NuDatClose(void *dat);
-#endif
 extern void InitFont3D(struct nugscn_s *scene);
 extern void LoadScreen(char *name);
 extern void ClearGameObjects(void);

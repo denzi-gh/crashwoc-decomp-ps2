@@ -244,12 +244,6 @@
 #include "nucore/nuerror.h"
 #include "game/vehicle.h"
 
-#ifdef NW_HOST
-/* gnu89 inline globals stay out of module headers. */
-struct obj_s;
-s32 KillPlayer(struct obj_s *obj, s32 anim);
-#endif
-
 extern s32 Level;
 extern struct numtx_s mTEMP;
 
