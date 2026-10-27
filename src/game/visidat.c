@@ -8,6 +8,7 @@
  */
 
 #include "nu_libc.h"
+#include "nu_port.h"
 #include "nu_types.h"
 #include "game/visidat.h"
 

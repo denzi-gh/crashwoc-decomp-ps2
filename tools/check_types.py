@@ -58,7 +58,7 @@ SHARED_STDARG = "include/nu_stdarg.h"
 SHARED_LIBC = "include/nu_libc.h"
 # The only headers allowed in the root of include/: the platform layer.
 PLATFORM_HEADERS = frozenset((
-    "include/nu_types.h", SHARED_STDARG, SHARED_LIBC,
+    "include/nu_types.h", "include/nu_port.h", SHARED_STDARG, SHARED_LIBC,
 ))
 
 METRICS = (

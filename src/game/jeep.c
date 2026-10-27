@@ -77,6 +77,7 @@
  */
 
 #include "nu_libc.h"
+#include "nu_port.h"
 
 #include "numath/numtx.h"
 #include "numath/nuquat.h"
@@ -2625,6 +2626,7 @@ s32 DrawFireBoss(struct fireboss_s *Boss) {
         NuVecAdd(&P1, &WallOfFirePosition, &P1);
         NuVecSub(&Rel, &P1, &P0);
     }
+    NW_HOST_RETURN(0);
 }
 
 
