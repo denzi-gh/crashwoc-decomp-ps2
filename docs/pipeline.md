@@ -519,7 +519,7 @@ python tools/fingerprint_compiler.py --all     # verify every fingerprinted comp
 
 ## CI (dtk-template private-build-image method)
 
-Two workflows, both on GitHub-hosted runners:
+Three workflows, all on GitHub-hosted runners:
 
 - **validate.yml** - pushes to `main` and every PR. Structure only: manifests,
   registries, tests, and the guard that nothing game-derived is tracked in this
@@ -530,6 +530,8 @@ Two workflows, both on GitHub-hosted runners:
   runs *inside* a private container image that has the game files baked in,
   following
   [dtk-template's method](https://github.com/encounter/dtk-template/blob/main/docs/github_actions.md).
+- **sync-main-to-nuworld-host.yml** - pushes to `main`: keeps the
+  `nuworld-host` branch following `main` ("The nuworld-host branch" below).
 
 ```
 this repo (public, zero game bytes)
@@ -655,3 +657,50 @@ A compile under wibo occasionally never exits (seen only on CI, a random
 longer than 120 s, together with its child processes, and reruns it (3
 attempts); objects are deterministic, so a rerun cannot change bytes. The job
 also has `timeout-minutes: 30` (a normal run takes about 6 minutes).
+
+## The nuworld-host branch
+
+`main` is the PS2 decompilation only. The NuWorld PC port
+(`crashwoc-nuworld`, which has this repository as its `decomp/` submodule)
+compiles the same sources with `-DNW_HOST`; everything that exists only for
+that build - the `NW_HOST` guards and `include/nu_port.h` with its seams
+(`NW_PUT`/`NW_GET`, `NW_STATIC`, the heap twins, ...) - lives on the
+long-lived branch `nuworld-host`: `main` plus the `host:` commits. Every seam
+expands to `main`'s spelling on the EE, so `nuworld-host` builds the same PS2
+objects and passes the same byte gates.
+
+- **Decomp work** (matching C, types, data, tools): a PR into `main`, as
+  always. Where it costs nothing, keep types portable (`nuintptr` for pointer
+  arithmetic, `sizeof` for record sizes) so `nuworld-host` keeps building.
+- **Host-only fix**: branch off `nuworld-host` and open the PR into
+  `nuworld-host`. `check_codegen.py --compare` against a `nuworld-host`
+  snapshot stays at 0.
+- **main into nuworld-host**: `sync-main-to-nuworld-host.yml` runs on every
+  push to `main` (and by hand). It opens one PR `main` -> `nuworld-host`, or
+  reuses the open one (its head is `main`, so new commits land in it), and
+  enables auto-merge with a merge commit. GitHub merges it once `validate`
+  and `matching` pass on the PR and there is no conflict; with nothing to
+  carry over the job does nothing. Never squash or rebase that PR: the merge
+  commit puts `main`'s commits into `nuworld-host`, so the next sync carries
+  only new ones.
+- **Conflicts**: the sync PR stays open. Merge by hand on a branch from
+  `nuworld-host` (`git checkout -b sync/<topic> origin/nuworld-host`,
+  `git merge origin/main`), keep `main`'s change and the host seam, run the
+  codegen compare, and open a PR into `nuworld-host` (merge commit). Once it
+  lands, the sync PR has nothing left and GitHub closes it as merged.
+- **Protection on nuworld-host**: PRs only, required checks `validate` and
+  `matching` (not "up to date": `main` never contains the `host:` commits),
+  no force pushes, no deletion.
+- **Credentials**: a PR opened with `GITHUB_TOKEN` starts no `pull_request`
+  workflows, so the checks would never report. The workflow takes a GitHub
+  App installed on this repository with Contents, Pull requests and
+  Workflows read/write (secrets `NUWORLD_SYNC_APP_CLIENT_ID`,
+  `NUWORLD_SYNC_APP_PRIVATE_KEY`), or a fine-grained PAT with the same
+  permissions (`NUWORLD_SYNC_TOKEN`). Without either, or when
+  `nuworld-host` does not require both checks, it fails without touching a
+  PR.
+
+NuWorld pins an exact `nuworld-host` commit; `.gitmodules` names the branch
+(`branch = nuworld-host`) only for `git submodule update --remote decomp`. A
+bump: `git submodule update --remote decomp`, build and `ctest`, then commit
+the gitlink. `git clone --recursive` checks out the pinned commit.
