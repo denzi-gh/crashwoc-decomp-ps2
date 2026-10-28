@@ -439,7 +439,7 @@ void NuMemSetExternal(void *buffer, int *end)
         memory->cursor = buffer;
         memexternal = memory;
         if (end) {
-            memory->end = *end;
+            memory->end = *(nuintptr *)end; /* the callers pass a heap cursor */
             return;
         }
     } else {

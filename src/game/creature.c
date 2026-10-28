@@ -2,6 +2,7 @@
  */
 
 #include "nu_libc.h"
+#include "nu_port.h"
 
 #include "nu3d/nuhgobj.h"
 #include "nucore/nuerror.h"
@@ -2164,6 +2165,13 @@ struct shadentry_s *ShadFindData(int *hdr, char *name);
 struct nuanimdata_s *InstAnimDataLoad(char *name);
 
 
+/* CortexAnim and WeatherCrunchAnim have no end entry (retail bugs): retail's data goes on with the table after
+   each. */
+#define ANIM_NEXT(a)                                                                                      \
+    NW_RETAIL((a) + 1, (a) + 1 == CortexAnim + 15         ? HoloCortexAnim                           \
+                       : (a) + 1 == WeatherCrunchAnim + 5 ? WeatherBossBangAnim                      \
+                                                          : (a) + 1)
+
 void LoadCharacterModels(void)
 {
     s32 i;
@@ -2300,7 +2308,7 @@ void LoadCharacterModels(void)
                             }
                         }
                     }
-                    anim++;
+                    anim = ANIM_NEXT(anim);
                 }
                 model->character = character;
                 CRemap[character] = cmodel_index;

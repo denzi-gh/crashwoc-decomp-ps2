@@ -68,6 +68,7 @@
  */
 
 #include "nu_libc.h"
+#include "nu_port.h"
 
 #include "numath/numtx.h"
 #include "numath/nuvec.h"
@@ -296,61 +297,61 @@ void GenericDebinfoDmaTypeUpdate(struct debinfo_s *info) {
             j++;
         }
         dt = t - info->wslot[j].t;
-        range = info->wslot[j + 1].t - info->wslot[j].t;
-        width = info->wslot[j].value + dt / range * (info->wslot[j + 1].value - info->wslot[j].value);
+        range = NW_PAST(info, wslot, j + 1).t - info->wslot[j].t;
+        width = NW_EE_LERP(info->wslot[j].value, dt, range, NW_PAST(info, wslot, j + 1).value);
 
         j = 0;
         while (j < 7 && !(info->hslot[j].t <= t && t <= info->hslot[j + 1].t)) {
             j++;
         }
         dt = t - info->hslot[j].t;
-        range = info->hslot[j + 1].t - info->hslot[j].t;
-        height = info->hslot[j].value + dt / range * (info->hslot[j + 1].value - info->hslot[j].value);
+        range = NW_PAST(info, hslot, j + 1).t - info->hslot[j].t;
+        height = NW_EE_LERP(info->hslot[j].value, dt, range, NW_PAST(info, hslot, j + 1).value);
 
         j = 0;
         while (j < 7 && !(info->rotslot[j].t <= t && t <= info->rotslot[j + 1].t)) {
             j++;
         }
         dt = t - info->rotslot[j].t;
-        range = info->rotslot[j + 1].t - info->rotslot[j].t;
-        angle = info->rotslot[j].value + dt / range * (info->rotslot[j + 1].value - info->rotslot[j].value);
+        range = NW_PAST(info, rotslot, j + 1).t - info->rotslot[j].t;
+        angle = NW_EE_LERP(info->rotslot[j].value, dt, range, NW_PAST(info, rotslot, j + 1).value);
 
         tri = &info->DmaDebTypePointer->tri[i];
         wobx = info->jibxamp * NuTrigTable[(u16)(s32)(info->jibxfreq * t * 65536.0f)];
         woby = info->jibyamp * NuTrigTable[(u16)(s32)(info->jibyfreq * t * 65536.0f)];
-        tri->v0x.coord = (-(width * 0.5f) * NuTrigTable[(u16)(s32)(angle + 16384.0f)]
-                          - height * 0.5f * NuTrigTable[(u16)(s32)angle] + wobx) * 640.0f * 0.00390625f;
-        tri->v0y.coord = width * 0.5f * NuTrigTable[(u16)(s32)angle]
-                       - height * 0.5f * NuTrigTable[(u16)(s32)(angle + 16384.0f)] + woby;
-        tri->v2x = (width * 0.5f * NuTrigTable[(u16)(s32)(angle + 16384.0f)]
-                    - height * 0.5f * NuTrigTable[(u16)(s32)angle] + wobx) * 640.0f * 0.00390625f;
-        tri->v2y = -(width * 0.5f) * NuTrigTable[(u16)(s32)angle]
-                 - height * 0.5f * NuTrigTable[(u16)(s32)(angle + 16384.0f)] + woby;
-        tri->v1x.coord = height * NuTrigTable[(u16)(s32)angle] * 640.0f * 0.00390625f;
-        tri->v1y.coord = height * NuTrigTable[(u16)(s32)(angle + 16384.0f)];
+        tri->v0x.coord = (-(width * 0.5f) * NuTrigTable[(u16)NW_EE_S32(angle + 16384.0f)]
+                          - height * 0.5f * NuTrigTable[(u16)NW_EE_S32(angle)] + wobx) * 640.0f * 0.00390625f;
+        tri->v0y.coord = width * 0.5f * NuTrigTable[(u16)NW_EE_S32(angle)]
+                       - height * 0.5f * NuTrigTable[(u16)NW_EE_S32(angle + 16384.0f)] + woby;
+        tri->v2x = (width * 0.5f * NuTrigTable[(u16)NW_EE_S32(angle + 16384.0f)]
+                    - height * 0.5f * NuTrigTable[(u16)NW_EE_S32(angle)] + wobx) * 640.0f * 0.00390625f;
+        tri->v2y = -(width * 0.5f) * NuTrigTable[(u16)NW_EE_S32(angle)]
+                 - height * 0.5f * NuTrigTable[(u16)NW_EE_S32(angle + 16384.0f)] + woby;
+        tri->v1x.coord = height * NuTrigTable[(u16)NW_EE_S32(angle)] * 640.0f * 0.00390625f;
+        tri->v1y.coord = height * NuTrigTable[(u16)NW_EE_S32(angle + 16384.0f)];
 
         j = 0;
         while (j < 7 && !(info->colslot[j].t <= t && t <= info->colslot[j + 1].t)) {
             j++;
         }
         dt = t - info->colslot[j].t;
-        range = info->colslot[j + 1].t - info->colslot[j].t;
-        r = info->colslot[j].r + dt / range * (info->colslot[j + 1].r - info->colslot[j].r);
-        g = info->colslot[j].g + dt / range * (info->colslot[j + 1].g - info->colslot[j].g);
-        b = info->colslot[j].b + dt / range * (info->colslot[j + 1].b - info->colslot[j].b);
+        range = NW_PAST(info, colslot, j + 1).t - info->colslot[j].t;
+        r = NW_EE_LERP(info->colslot[j].r, dt, range, NW_PAST(info, colslot, j + 1).r);
+        g = NW_EE_LERP(info->colslot[j].g, dt, range, NW_PAST(info, colslot, j + 1).g);
+        b = NW_EE_LERP(info->colslot[j].b, dt, range, NW_PAST(info, colslot, j + 1).b);
 
         j = 0;
         while (j < 7 && !(info->alpslot[j].t <= t && t <= info->alpslot[j + 1].t)) {
             j++;
         }
         dt = t - info->alpslot[j].t;
-        range = info->alpslot[j + 1].t - info->alpslot[j].t;
-        alpha = info->alpslot[j].value + dt / range * (info->alpslot[j + 1].value - info->alpslot[j].value);
+        range = NW_PAST(info, alpslot, j + 1).t - info->alpslot[j].t;
+        alpha = NW_EE_LERP(info->alpslot[j].value, dt, range, NW_PAST(info, alpslot, j + 1).value);
 
-        tri->v0x.bits = (tri->v0x.bits & 0xFFFFFF00) + ((s32)r & 0xFF);
-        tri->v0y.bits = (tri->v0y.bits & 0xFFFFFF00) + ((s32)g & 0xFF);
-        tri->v1x.bits = (tri->v1x.bits & 0xFFFFFF00) + ((s32)b & 0xFF);
-        tri->v1y.bits = (tri->v1y.bits & 0xFFFFFF00) + ((s32)alpha & 0xFF);
+        tri->v0x.bits = (tri->v0x.bits & 0xFFFFFF00) + (NW_EE_S32(r) & 0xFF);
+        tri->v0y.bits = (tri->v0y.bits & 0xFFFFFF00) + (NW_EE_S32(g) & 0xFF);
+        tri->v1x.bits = (tri->v1x.bits & 0xFFFFFF00) + (NW_EE_S32(b) & 0xFF);
+        tri->v1y.bits = (tri->v1y.bits & 0xFFFFFF00) + (NW_EE_S32(alpha) & 0xFF);
     }
 }
 
@@ -491,12 +492,12 @@ struct debpart_s *GenDebIndexRadialRotor(struct debkeydatatype_s *deb, struct de
     if (info->variable_emit.y == zero) {
         deb->rotory = 0;
     } else {
-        deb->rotory = deb->rotory + info->variable_emit.y;
+        deb->rotory = (s32)(deb->rotory + info->variable_emit.y);
     }
     if (info->variable_emit.z == 0.0f) {
         deb->rotorz = 0;
     } else {
-        deb->rotorz = deb->rotorz + info->variable_emit.z;
+        deb->rotorz = (s32)(deb->rotorz + info->variable_emit.z);
     }
     return part;
 }
@@ -1271,8 +1272,8 @@ void DebrisStartOffset(s32 key, s32 offset) {
         } else {
             if (type->gensort == 7) {
                 debkeydata[key].delay = 0;
-                debkeydata[key].rotory = offset * type->variable_emit.y;
-                debkeydata[key].rotorz = offset * type->variable_emit.z;
+                debkeydata[key].rotory = (s32)(offset * type->variable_emit.y);
+                debkeydata[key].rotorz = (s32)(offset * type->variable_emit.z);
             }
             looptime = type->ival_on + type->ival_off;
             loopfrac = globalframes % looptime - offset;

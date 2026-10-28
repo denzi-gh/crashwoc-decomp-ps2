@@ -768,7 +768,7 @@ void instNuGCutDebrisLocatorUpdate(struct NUGCUTLOCATORSYS_s *def, struct instNU
                     }
                     CalculateLocatorDirection(*(int *)data->pad54, &mtx, &dir);
                     roty = NuAngSub(NuAtan2(dir.x, dir.z) * 10430.378f, 0x4000);
-                    rotz = NuAtan2(NuFsqrt(dir.x * dir.x + dir.z * dir.z), -dir.y) * 10430.378f;
+                    rotz = (s32)(NuAtan2(NuFsqrt(dir.x * dir.x + dir.z * dir.z), -dir.y) * 10430.378f);
                     if (data->flags & NUGCUTLOCATOR_FINITE) {
                         key = -1;
                         AddFiniteShotDebrisEffect(&key, debtype, (struct nuvec_s *)&mtx._30, shots);

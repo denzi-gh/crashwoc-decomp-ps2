@@ -2319,7 +2319,7 @@ s32 CheckCylinder(s32 p0, s32 p1, s32 *flags, s32 type) {
             lensq = TerI->rotter.pnts[p1].x * TerI->rotter.pnts[p1].x +
                     TerI->rotter.pnts[p1].y * TerI->rotter.pnts[p1].y;
             if (lensq <= TerI->sizesq) {
-                lensq = 1.0f / NuFsqrt(lensq);
+                lensq = NW_EE_DIV(1.0f, NuFsqrt(lensq));
                 TerI->hittype = 0x12;
                 TerI->hittime = 0.0f;
                 TerI->hitnorm.x = -TerI->rotter.pnts[p1].x * lensq;
@@ -2396,7 +2396,7 @@ s32 CheckCylinder(s32 p0, s32 p1, s32 *flags, s32 type) {
         dir.z = dir.z * lensq + TerI->rotter.pnts[p0].z;
         lensq = dir.x * dir.x + dir.y * dir.y + dir.z * dir.z;
         if (lensq < TerI->sizesq) {
-            lensq = 1.0f / NuFsqrt(lensq);
+            lensq = NW_EE_DIV(1.0f, NuFsqrt(lensq));
             TerI->hittype = 0x12;
             TerI->hittime = 0.0f;
             TerI->hitnorm.x = -dir.x * lensq;
@@ -2430,7 +2430,7 @@ s32 CheckSphere(s32 p) {
         (TerI->rotter.pnts[p].z - a > TerI->len)) {
         b += TerI->rotter.pnts[p].z * TerI->rotter.pnts[p].z;
         if (b < TerI->sizesq) {
-            a = 1.0f / NuFsqrt(b);
+            a = NW_EE_DIV(1.0f, NuFsqrt(b));
             TerI->hittype = 0x13;
             TerI->hittime = 0.0f;
             TerI->hitnorm.x = -TerI->rotter.pnts[p].x * a;
@@ -2474,7 +2474,7 @@ s32 CheckSphereTer(struct nuvec_s *pnt, f32 radius) {
     if ((pnt->z - a < 0.0f) || (pnt->z - a > TerI->len)) {
         b += pnt->z * pnt->z;
         if (b < rsq) {
-            a = 1.0f / NuFsqrt(b);
+            a = NW_EE_DIV(1.0f, NuFsqrt(b));
             TerI->hittype = 0x14;
             TerI->hittime = 0.0f;
             TerI->hitnorm.x = -pnt->x * a;
@@ -3833,7 +3833,7 @@ void TerrShowCamTerr(void) {
     TerI->inyscale = 1.0f / TerI->yscale;
     TerI->inyscalesq = TerI->inyscale * TerI->inyscale;
     TerI->size = 0.1f;
-    TerI->sizediv = 1.0f / TerI->size;
+    TerI->sizediv = NW_EE_DIV(1.0f, TerI->size);
     TerI->sizesq = TerI->size * TerI->size;
     TerI->origpos.x = TerI->curpos.x = global_camera.mtx._30 - 2.0f;
     TerI->origpos.y = TerI->curpos.y = global_camera.mtx._31 - 2.0f;
@@ -4274,7 +4274,7 @@ void NewTerrain(struct nuvec_s *vpos, struct nuvec_s *vvel, u8 *flags, s32 terid
     TerI = (TerTempInfoType *)NuScratchAlloc32(sizeof(TerTempInfoType));
     TerI->inyscalesq = TerI->inyscale = TerI->yscalesq = TerI->yscale = 1.0f;
     TerI->size = size;
-    TerI->sizediv = 1.0f / size;
+    TerI->sizediv = NW_EE_DIV(1.0f, size);
     TerI->sizesq = size * size;
     TerI->curpos.x = vpos->x;
     TerI->curpos.y = vpos->y + size;
@@ -4481,7 +4481,7 @@ void NewTerrainScaleY(struct nuvec_s *vpos, struct nuvec_s *vvel, u8 *flags,
     TerI->inyscale = 1.0f / yscale;
     TerI->inyscalesq = TerI->inyscale * TerI->inyscale;
     TerI->size = size;
-    TerI->sizediv = 1.0f / TerI->size;
+    TerI->sizediv = NW_EE_DIV(1.0f, TerI->size);
     TerI->sizesq = TerI->size * TerI->size;
     TerI->origpos.x = TerI->curpos.x = vpos->x;
     TerI->origpos.y = TerI->curpos.y = vpos->y + TerI->size * yscale;
@@ -4614,7 +4614,7 @@ s32 NewRayCast(struct nuvec_s *vpos, struct nuvec_s *vvel, f32 size) {
     TerI = (TerTempInfoType *)NuScratchAlloc32(sizeof(TerTempInfoType));
     TerI->inyscalesq = TerI->inyscale = TerI->yscalesq = TerI->yscale = 1.0f;
     TerI->size = size;
-    TerI->sizediv = 1.0f / TerI->size;
+    TerI->sizediv = NW_EE_DIV(1.0f, TerI->size);
     TerI->sizesq = TerI->size * TerI->size;
     TerI->origpos.x = TerI->curpos.x = vpos->x;
     TerI->origpos.y = TerI->curpos.y = vpos->y;
@@ -4647,7 +4647,7 @@ s32 NewRayCastMask(struct nuvec_s *vpos, struct nuvec_s *vvel, f32 size, s32 ext
     TerI = (TerTempInfoType *)NuScratchAlloc32(sizeof(TerTempInfoType));
     TerI->inyscalesq = TerI->inyscale = TerI->yscalesq = TerI->yscale = 1.0f;
     TerI->size = size;
-    TerI->sizediv = 1.0f / TerI->size;
+    TerI->sizediv = NW_EE_DIV(1.0f, TerI->size);
     TerI->sizesq = TerI->size * TerI->size;
     TerI->origpos.x = TerI->curpos.x = vpos->x;
     TerI->origpos.y = TerI->curpos.y = vpos->y;
@@ -4681,7 +4681,7 @@ s32 NewRayCastSet(struct nuvec_s *vpos, struct nuvec_s *vvel, f32 size, f32 time
     TerI = (TerTempInfoType *)NuScratchAlloc32(sizeof(TerTempInfoType));
     TerI->inyscalesq = TerI->inyscale = TerI->yscalesq = TerI->yscale = 1.0f;
     TerI->size = size;
-    TerI->sizediv = 1.0f / TerI->size;
+    TerI->sizediv = NW_EE_DIV(1.0f, TerI->size);
     TerI->sizesq = TerI->size * TerI->size;
     TerI->origpos.x = TerI->curpos.x = vpos->x;
     TerI->origpos.y = TerI->curpos.y = vpos->y;
@@ -4715,7 +4715,7 @@ s32 NewRayCastSetMask(struct nuvec_s *vpos, struct nuvec_s *vvel, f32 size, f32 
     TerI = (TerTempInfoType *)NuScratchAlloc32(sizeof(TerTempInfoType));
     TerI->inyscalesq = TerI->inyscale = TerI->yscalesq = TerI->yscale = 1.0f;
     TerI->size = size;
-    TerI->sizediv = 1.0f / TerI->size;
+    TerI->sizediv = NW_EE_DIV(1.0f, TerI->size);
     TerI->sizesq = TerI->size * TerI->size;
     TerI->origpos.x = TerI->curpos.x = vpos->x;
     TerI->origpos.y = TerI->curpos.y = vpos->y;
@@ -5516,7 +5516,7 @@ s32 NewRayCastSetHandel(struct nuvec_s *vpos, struct nuvec_s *vvel, f32 size, f3
     TerI = (TerTempInfoType *)NuScratchAlloc32(sizeof(TerTempInfoType));
     TerI->inyscalesq = TerI->inyscale = TerI->yscalesq = TerI->yscale = 1.0f;
     TerI->size = size;
-    TerI->sizediv = 1.0f / TerI->size;
+    TerI->sizediv = NW_EE_DIV(1.0f, TerI->size);
     TerI->sizesq = TerI->size * TerI->size;
     TerI->origpos.x = TerI->curpos.x = vpos->x;
     TerI->origpos.y = TerI->curpos.y = vpos->y;
@@ -5548,7 +5548,7 @@ s32 TerrainTrackBack(struct nuvec_s *pos, struct nuvec_s *vel, struct nuvec_s *d
     TerI = (TerTempInfoType *)NuScratchAlloc32(sizeof(TerTempInfoType));
     TerI->inyscalesq = TerI->inyscale = TerI->yscalesq = TerI->yscale = 1.0f;
     TerI->size = size;
-    TerI->sizediv = 1.0f / TerI->size;
+    TerI->sizediv = NW_EE_DIV(1.0f, TerI->size);
     TerI->sizesq = TerI->size * TerI->size;
     TerI->curpos.x = pos->x + vel->x * (size + 0.5f);
     TerI->curpos.y = pos->y + vel->y * (size + 0.5f);
@@ -5898,7 +5898,7 @@ s32 NewRayCastPlatForm(struct nuvec_s *vpos, struct nuvec_s *vvel, f32 size, f32
     TerI = (TerTempInfoType *)NuScratchAlloc32(sizeof(TerTempInfoType));
     TerI->inyscalesq = TerI->inyscale = TerI->yscalesq = TerI->yscale = 1.0f;
     TerI->size = size;
-    TerI->sizediv = 1.0f / TerI->size;
+    TerI->sizediv = NW_EE_DIV(1.0f, TerI->size);
     TerI->sizesq = TerI->size * TerI->size;
     TerI->origpos.x = TerI->curpos.x = vpos->x;
     TerI->origpos.y = TerI->curpos.y = vpos->y;
