@@ -3396,74 +3396,74 @@ extern f32 BALLHITVOLBASE;
 extern struct nuvec_s NullNuVec;
 extern struct nuvec_s *CrossProduct(struct nuvec_s *dest, struct nuvec_s *a, struct nuvec_s *b);
 
-void TerrainAtlas(struct NEWBUGGY *atlas, f32 dt)
+void TerrainAtlas(struct NEWBUGGY *Atlas, f32 DeltaTime)
 {
-    struct nuvec_s history[6];
-    struct nuquat_s spins[6];
-    struct nuvec_s move;
-    struct nuvec_s step;
-    s32 maxtries;
-    s32 hit;
+    struct nuvec_s Stack[6];
+    struct nuquat_s QuatStack[6];
+    struct nuvec_s Delta;
+    struct nuvec_s ToMove;
+    s32 StartDepth;
+    s32 Hit;
     f32 dot;
     f32 speed;
     f32 scale;
     f32 vol;
     s32 platid;
     s32 unembedded;
-    s32 tries;
+    s32 Depth;
 
-    tries = 6;
-    maxtries = 6;
+    Depth = 6;
+    StartDepth = 6;
     /* Keep the debug-counter accesses on their retail execution paths. */
     if (AtlasFrame >= 500) {
         (*(volatile s32 *)&tttt)++;
     }
-    step.x = atlas->ball_target.x - atlas->ball_pos.x;
-    step.y = atlas->ball_target.y - atlas->ball_pos.y;
-    step.z = atlas->ball_target.z - atlas->ball_pos.z;
+    ToMove.x = Atlas->ball_target.x - Atlas->ball_pos.x;
+    ToMove.y = Atlas->ball_target.y - Atlas->ball_pos.y;
+    ToMove.z = Atlas->ball_target.z - Atlas->ball_pos.z;
     do {
-        move = step;
-        history[tries - 1] = atlas->ball_pos;
-        spins[tries - 1] = atlas->rotquat_delta;
-        hit = NewRayCastSetHandel(&atlas->ball_pos, &move, atlas->ball_radius, 0.01f, 0.0f, atlas->terrhandle);
-        if (hit & 0x10) {
+        Delta = ToMove;
+        Stack[Depth - 1] = Atlas->ball_pos;
+        QuatStack[Depth - 1] = Atlas->rotquat_delta;
+        Hit = NewRayCastSetHandel(&Atlas->ball_pos, &Delta, Atlas->ball_radius, 0.01f, 0.0f, Atlas->terrhandle);
+        if (Hit & 0x10) {
             platid = TerrainPlatId();
             if (platid != -1 && ShadNorm.y >= 0.5f) {
-                unembedded = UnembedRayCastAtlasSimple(atlas, atlas->terrhandle);
+                unembedded = UnembedRayCastAtlasSimple(Atlas, Atlas->terrhandle);
                 if (!unembedded) {
-                    UnembedRayCastAtlas(atlas, atlas->terrhandle);
+                    UnembedRayCastAtlas(Atlas, Atlas->terrhandle);
                 }
             } else {
-                UnembedRayCastAtlas(atlas, atlas->terrhandle);
+                UnembedRayCastAtlas(Atlas, Atlas->terrhandle);
             }
-            move = step;
-            hit = NewRayCastSetHandel(&atlas->ball_pos, &move, atlas->ball_radius, 0.01f, 0.0f, atlas->terrhandle);
+            Delta = ToMove;
+            Hit = NewRayCastSetHandel(&Atlas->ball_pos, &Delta, Atlas->ball_radius, 0.01f, 0.0f, Atlas->terrhandle);
         }
-        atlas->ball_oldpos = atlas->ball_pos;
-        NuVecSub(&step, &step, &move);
-        NuVecAdd(&atlas->ball_pos, &atlas->ball_pos, &move);
-        AdjustAtlasRotations(atlas, &move, &atlas->lastnormal, atlas->ball_radius);
-        atlas->lasthit = hit;
-        if (hit != 0) {
+        Atlas->ball_oldpos = Atlas->ball_pos;
+        NuVecSub(&ToMove, &ToMove, &Delta);
+        NuVecAdd(&Atlas->ball_pos, &Atlas->ball_pos, &Delta);
+        AdjustAtlasRotations(Atlas, &Delta, &Atlas->lastnormal, Atlas->ball_radius);
+        Atlas->lasthit = Hit;
+        if (Hit != 0) {
             struct nuvec_s norm;
             struct nuvec_s probe;
             struct nuvec_s edge;
             struct nuvec_s slide;
 
             norm = ShadNorm;
-            atlas->onground |= 1;
-            if (norm.y * atlas->ball_vel.y < -7.0f && atlas->ball_vel.y < 0.0f) {
-                atlas->bigdrop = 1;
+            Atlas->onground |= 1;
+            if (norm.y * Atlas->ball_vel.y < -7.0f && Atlas->ball_vel.y < 0.0f) {
+                Atlas->bigdrop = 1;
             }
-            dot = DotProduct(&norm, &atlas->ball_vel);
-            NuVecScaleAccum(&atlas->ball_vel, &norm, -dot);
-            if (atlas->type != 2 && dot < -1.0f) {
-                speed = NuVecMag(&atlas->ball_vel);
+            dot = DotProduct(&norm, &Atlas->ball_vel);
+            NuVecScaleAccum(&Atlas->ball_vel, &norm, -dot);
+            if (Atlas->type != 2 && dot < -1.0f) {
+                speed = NuVecMag(&Atlas->ball_vel);
                 if (fabs(dot) > BALLBUZZLIMCOS * speed) {
-                    scale = atlas->ball_radius / 0.65f;
+                    scale = Atlas->ball_radius / 0.65f;
                     vol = BALLHITVOLBASE + (1.0f - dot * scale * scale * scale) / BALLHITVOLDIV;
-                    MyGameSfx(0x11, &atlas->ball_pos, GetVolumeI(vol));
-                    if (atlas->type == 1 && vol > BALLBUZZMIN) {
+                    MyGameSfx(0x11, &Atlas->ball_pos, GetVolumeI(vol));
+                    if (Atlas->type == 1 && vol > BALLBUZZMIN) {
                         vol = (vol - BALLBUZZMIN) / (1.0f - BALLBUZZMIN);
                         NewBuzz(&player->rumble, (s32)(BALLBUZZSLOPE * (1.0f - (1.0f - vol) * (1.0f - vol))) + 2);
                     }
@@ -3473,46 +3473,44 @@ void TerrainAtlas(struct NEWBUGGY *atlas, f32 dt)
                 AtlasWhackValue = -dot;
                 AtlasWhackTimer = 1.0f;
             }
-            dot = DotProduct(&norm, &step);
-            NuVecScaleAccum(&step, &norm, -dot);
-            /* No-op narrowing; keeps the starting depth in its retail stack slot. */
-            maxtries = (s16)maxtries;
-            if (tries != maxtries && dot > -0.99f && NuVecMagSqr(&move) < 1e-11f) {
-                if (DotProduct(&norm, &atlas->lastnormal) >= 0.0f) {
-                    probe = atlas->ball_pos;
+            dot = DotProduct(&norm, &ToMove);
+            NuVecScaleAccum(&ToMove, &norm, -dot);
+            if (Depth != StartDepth && dot > -0.99f && NuVecMagSqr(&Delta) < 1e-11f) {
+                if (DotProduct(&norm, &Atlas->lastnormal) >= 0.0f) {
+                    probe = Atlas->ball_pos;
                     NuVecScaleAccum(&probe, &norm, 0.001f);
-                    if (!NewRayCastSetHandel(&probe, &NullNuVec, atlas->ball_radius, 0.0f, 0.0f, atlas->terrhandle)) {
-                        atlas->ball_pos = probe;
+                    if (!NewRayCastSetHandel(&probe, &NullNuVec, Atlas->ball_radius, 0.0f, 0.0f, Atlas->terrhandle)) {
+                        Atlas->ball_pos = probe;
                     } else {
-                        probe = atlas->ball_pos;
+                        probe = Atlas->ball_pos;
                         NuVecScaleAccum(&probe, &norm, 0.0007f);
                         NuVecScaleAccum(&probe, &ShadNorm, 0.0007f);
-                        if (!NewRayCastSetHandel(&probe, &NullNuVec, atlas->ball_radius, 0.0f, 0.0f, atlas->terrhandle)) {
-                            atlas->ball_pos = probe;
+                        if (!NewRayCastSetHandel(&probe, &NullNuVec, Atlas->ball_radius, 0.0f, 0.0f, Atlas->terrhandle)) {
+                            Atlas->ball_pos = probe;
                         }
                     }
                 } else {
-                    CrossProduct(&edge, &norm, &atlas->lastnormal);
+                    CrossProduct(&edge, &norm, &Atlas->lastnormal);
                     NuVecNorm(&edge, &edge);
-                    NuVecScale(&step, &edge, DotProduct(&edge, &step));
-                    NuVecScale(&atlas->ball_vel, &edge, DotProduct(&edge, &atlas->ball_vel));
-                    slide = atlas->ball_pos;
+                    NuVecScale(&ToMove, &edge, DotProduct(&edge, &ToMove));
+                    NuVecScale(&Atlas->ball_vel, &edge, DotProduct(&edge, &Atlas->ball_vel));
+                    slide = Atlas->ball_pos;
                     NuVecScaleAccum(&slide, &norm, 0.0007f);
-                    NuVecScaleAccum(&slide, &atlas->lastnormal, 0.0007f);
-                    if (!NewRayCastSetHandel(&slide, &NullNuVec, atlas->ball_radius, 0.0f, 0.0f, atlas->terrhandle)) {
-                        atlas->ball_pos = slide;
+                    NuVecScaleAccum(&slide, &Atlas->lastnormal, 0.0007f);
+                    if (!NewRayCastSetHandel(&slide, &NullNuVec, Atlas->ball_radius, 0.0f, 0.0f, Atlas->terrhandle)) {
+                        Atlas->ball_pos = slide;
                     }
                 }
             }
-            atlas->lastnormal = norm;
+            Atlas->lastnormal = norm;
         }
-        tries--;
-    } while (hit != 0 && tries != 0);
-    if (tries == 0) {
-        (*(volatile s32 *)&tttt)++;
+        Depth--;
+    } while (Hit != 0 && Depth != 0);
+    if (Depth == 0) {
+        StartDepth = (*(volatile s32 *)&tttt) + 1;
+        (*(volatile s32 *)&tttt) = StartDepth;
     }
 }
-
 
 void CheckAtlasGround(struct NEWBUGGY *atlas)
 {
