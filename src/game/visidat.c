@@ -250,7 +250,8 @@ struct visidata_s *visiLoadData(char *fname, struct nugscn_s *sc, union variptr_
                             NuMemFreeFn(tmpdelta, ".\\visidat.c", 0x11D);
                         }
                         tmpsize = vd->sc->splines[o].len * binfosize + 1;
-                        tmpdelta = NuMemAllocFn(tmpsize * 8, ".\\visidat.c", 0x120);
+                        /* The last index's row (m == len) runs binfosize - 1 past the end; the host gives it room. */
+                        tmpdelta = NuMemAllocFn(NW_RETAIL(tmpsize, tmpsize + binfosize) * 8, ".\\visidat.c", 0x120);
                         if (tmpdelta == 0) {
                             NuErrorProlog(".\\visidat.c", 0x122)("unable to alloc %d bytes", tmpsize * 8);
                         }

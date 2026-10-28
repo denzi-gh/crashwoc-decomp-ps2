@@ -46,6 +46,7 @@
  */
 
 #include "nu_libc.h"
+#include "nu_port.h"
 
 #include "nu3d/nugscn.h"
 #include "nu3d/nulight.h"
@@ -1745,7 +1746,7 @@ void ObjectRotation(struct obj_s *obj, s32 mode, s32 blend) {
             obj->surface_xrot = SeekRot(obj->surface_xrot, temp_xrot, 3);
             obj->surface_zrot = SeekRot(obj->surface_zrot, temp_zrot, 3);
             if (obj->pad_speed == 0.0f || fabs(obj->pad_dx) < 0.33333334f) {
-                xrot = obj->pad_dz * 16384.0f;
+                xrot = NW_EE_S32(obj->pad_dz * 16384.0f);
             } else {
                 xrot = 0x4000 - abs(RotDiff(0, obj->pad_angle));
             }
@@ -1773,7 +1774,7 @@ void ObjectRotation(struct obj_s *obj, s32 mode, s32 blend) {
                         t = 0.0f;
                     }
                 tilt:
-                    xrot = t * 16384.0f;
+                    xrot = NW_EE_S32(t * 16384.0f);
                 }
             }
         seek:

@@ -36,6 +36,7 @@
  */
 
 #include "nu_libc.h"
+#include "nu_port.h"
 
 #include "nu3d/nugscn.h"
 #include "nu3d/nulight.h"
@@ -4050,7 +4051,7 @@ typedef s32 (*aieventfn_t)(struct creature_s *c, struct nuvec_s *pos);
  * the 0x8C label walk is a goto loop and 0x8D/0x8E a two-case switch; two
  * shared floats fa/fb land in $f20/$f21 (block-scoped temps push t to $f23);
  * one UpdateAnimPacket call with a ternary model. */
-void MoveCreature(struct creature_s *c)
+NW_HOST_LOOSE_CALLS void MoveCreature(struct creature_s *c)
 {
     struct nuvec_s v;
     struct nuvec_s v2;

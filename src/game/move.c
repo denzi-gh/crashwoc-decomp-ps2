@@ -3262,9 +3262,9 @@ void MoveTub(struct tubinfo_s *tub, s32 LEFT, s32 RIGHT) {
         NuVecRotateY(&p1, &p1, -ang);
         ang = -NuAtan2D(p1.y - p0.y, p1.z - p0.z);
         if (tub->count != 0 && tub->wait != 0) {
-            tub->c->obj.xrot = tub->old_xrot + RotDiff(tub->old_xrot, xrot) * (TUBWAIT - tub->wait) / TUBWAIT;
-            tub->c->obj.hdg = tub->old_yrot + RotDiff(tub->old_yrot, yrot) * (TUBWAIT - tub->wait) / TUBWAIT;
-            tub->c->obj.zrot = tub->old_zrot + RotDiff(tub->old_zrot, ang) * (TUBWAIT - tub->wait) / TUBWAIT;
+            tub->c->obj.xrot = NW_EE_S32(tub->old_xrot + RotDiff(tub->old_xrot, xrot) * (TUBWAIT - tub->wait) / TUBWAIT);
+            tub->c->obj.hdg = NW_EE_S32(tub->old_yrot + RotDiff(tub->old_yrot, yrot) * (TUBWAIT - tub->wait) / TUBWAIT);
+            tub->c->obj.zrot = NW_EE_S32(tub->old_zrot + RotDiff(tub->old_zrot, ang) * (TUBWAIT - tub->wait) / TUBWAIT);
         } else {
             tub->c->obj.hdg = yrot;
             tub->c->obj.xrot = xrot;
