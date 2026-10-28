@@ -14,7 +14,7 @@ sys.path.insert(0, str(ROOT))
 import decomp
 
 CREATURE = "src/game/creature.c"
-VEHICLE = "src/game/vehicle.c"
+NUSTREAM = "src/nu3d/nustream.c"
 
 
 class TestCommandConstruction(unittest.TestCase):
@@ -171,10 +171,10 @@ class _Recorder:
 
 
 class TestOrchestration(unittest.TestCase):
-    # TerrainAtlas is `asm` in the committed vehicle manifest; report it 100%.
+    # NuRndrSetLocalMtx is `asm` in the committed nustream manifest; report it 100%.
     FAKE_REPORT = {"units": [{
-        "name": "game/vehicle", "measures": {},
-        "functions": [{"name": "TerrainAtlas",
+        "name": "nu3d/nustream", "measures": {},
+        "functions": [{"name": "NuRndrSetLocalMtx",
                        "fuzzy_match_percent": 100.0}]}]}
 
     def setUp(self):
@@ -202,15 +202,15 @@ class TestOrchestration(unittest.TestCase):
 
     def test_unit_auto_promotes_hundred_percent_asm(self):
         decomp.run = rec = _Recorder(rc=0)
-        self.assertEqual(decomp.cmd_unit(VEHICLE, "pal103", promote=True), 0)
+        self.assertEqual(decomp.cmd_unit(NUSTREAM, "pal103", promote=True), 0)
         promote_calls = [c for c in rec.calls if "tools/promote.py" in c]
         self.assertEqual(len(promote_calls), 1)
-        self.assertIn("pal103:unit-0098:00215df0:TerrainAtlas",
+        self.assertIn("pal103:unit-0030:00111538:NuRndrSetLocalMtx",
                       promote_calls[0])
 
     def test_unit_no_promote_flag_skips_promotion(self):
         decomp.run = rec = _Recorder(rc=0)
-        self.assertEqual(decomp.cmd_unit(VEHICLE, "pal103", promote=False), 0)
+        self.assertEqual(decomp.cmd_unit(NUSTREAM, "pal103", promote=False), 0)
         self.assertFalse(any("tools/promote.py" in c for c in rec.calls))
 
 
