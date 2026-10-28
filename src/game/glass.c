@@ -15,6 +15,8 @@
  *   0x00239cb8 DrawGlassCreatures
  */
 
+#include "nu_port.h"
+
 #include "nu3d/numtl.h"
 #include "nu3d/nustream.h"
 #include "nu3d/nutex.h"
@@ -333,8 +335,10 @@ void DoGlass(s32 editor)
 
     NuTexAssignAddr(glass_rt, NuTexReserve(NuTexGetReqSize(glass_rt, 0)));
     if (NuRndrBeginScene(glass_rt)) {
+        /* the host's frame width can change after InitGlass */
         NuRndrRectUV2di(0, 0, PS2_REZ_W << 4, PS2_REZ_H << 4, 0.0f, 0.0f,
-                        glassu1, glassv1, 0x80808080, glass_copy_mtl);
+                        NW_WIDE(glassu1, (PS2_REZ_W - 1.0f) / NuPower2(PS2_REZ_W)), glassv1, 0x80808080,
+                        glass_copy_mtl);
         NuRndrEndSceneEx(0);
     }
     NuMtxInvR(&m, &global_camera.mtx);

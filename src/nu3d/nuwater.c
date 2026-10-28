@@ -433,8 +433,10 @@ void NuWaterRender(struct nugscn_s *scene) {
     if (get_screen) {
         NuTexAssignAddr(water_rt, NuTexReserve(NuTexGetReqSize(water_rt, 0)));
         if (!skip_grab && NuRndrBeginScene(water_rt)) {
-            NuRndrRectUV2di(0, 0, PS2_REZ_W << 4, PS2_REZ_H << 4, 0.0f, 0.0f, wateru1,
-                            waterv1, 0x80808080, water_copy_mtl);
+            /* the host's frame width can change after NuWaterInit */
+            NuRndrRectUV2di(0, 0, PS2_REZ_W << 4, PS2_REZ_H << 4, 0.0f, 0.0f,
+                            NW_WIDE(wateru1, ((float)PS2_REZ_W - 1.0f) / (float)NuPower2(PS2_REZ_W)), waterv1,
+                            0x80808080, water_copy_mtl);
             NuRndrEndScene();
         }
     }
