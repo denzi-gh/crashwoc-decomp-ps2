@@ -1400,7 +1400,10 @@ def _rewrite_local_data(seg, local_data, version, unit_dir, name, addr,
             sym = mapper_box[0].map_owned_data(slice_text, val, name, unit_dir)
             externs.append(f"\t.extern\t{sym}, {len(val)}")
         rename[lbl] = sym
-        if trace is not None and trace.setdefault(lbl, sym) != sym:
+        # Same address under two spellings (D_0061F460 / D_0061f460) is one borrow.
+        if (trace is not None and trace.setdefault(lbl, sym) != sym
+                and _symbol_address(trace[lbl], version)
+                != _symbol_address(sym, version)):
             raise HybridError(f"{name}: {lbl} borrows {sym}, another function "
                               f"borrows {trace[lbl]}")
     out = []
