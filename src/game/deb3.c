@@ -22,6 +22,7 @@
  *   0x0024c960 JonMaskFPS
  */
 
+#include "nu_port.h"
 #include "nu3d/nucamera.h"
 #include "nu3d/nugscn.h"
 #include "nu3d/nulight.h"
@@ -864,7 +865,7 @@ void JonExtraDraw(void)
         vec.z = NuTrigTable[(u16)(maskx / 50 + 0x4000)] * 3.0f + vec.z;
         if (i != -1) {
             Draw3DCharacter(&vec, 0,
-                            (u16)(NuTrigTable[(u16)(maskrot / 50)] * 8192.0f),
+                            (u16)NW_EE_S32(NuTrigTable[(u16)(maskrot / 50)] * 8192.0f),
                             0, &CModel[i], 1.0f, -1, 1.0f, 0);
             vec.y += 0.2f;
             if (Paused == 0) {

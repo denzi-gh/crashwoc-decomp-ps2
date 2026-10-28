@@ -3723,12 +3723,12 @@ inline s32 PossIntersect(struct nuvec_s *PosA, struct nuvec_s *VelA, struct nuve
     MagVelA = NuVecMag(VelA);
     NuVecMag(&AV); /* result unused, but retail makes the call */
 
-    Angle = -DotProduct(&A, VelA) / (MagA * MagVelA);
+    Angle = NW_EE_DIV(-DotProduct(&A, VelA), MagA * MagVelA);
     if (Angle < 0.866f) {
         return 0;
     }
 
-    Time = DotProduct(&A, &A) / DotProduct(&A, &AV);
+    Time = NW_EE_DIV(DotProduct(&A, &A), DotProduct(&A, &AV));
     if (Time > 0.0f && Time < MaxTime) {
         if (DotProduct(VelA, VelB) <= 0.0f) {
             return 1;

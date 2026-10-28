@@ -62,8 +62,9 @@ DUP_SUFFIX = re.compile(r"__[0-9a-fA-F]{8}$")
 
 # A declaration or definition head: [storage] type name(params) followed by ';'
 # or '{'. One level of nested parentheses covers function-pointer parameters.
+# NW_HOST_* attribute words (nu_port.h) are not part of the type.
 SIGNATURE = re.compile(
-    r"^[ \t]*(?:extern\s+|static\s+|inline\s+)*"
+    r"^[ \t]*(?:extern\s+|static\s+|inline\s+|NW_HOST_[A-Z_]+\s+)*"
     r"([A-Za-z_][\w\s\*]*?[\s\*])"          # return type
     r"([A-Za-z_]\w*)\s*"                   # name
     r"\(([^;{}()]*(?:\([^()]*\)[^;{}()]*)*)\)\s*([;{])",

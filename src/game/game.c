@@ -131,6 +131,7 @@
  */
 
 #include "nu_libc.h"
+#include "nu_port.h"
 #include "nu_types.h"
 
 #include "nucore/nucoretypes.h"
@@ -6172,7 +6173,10 @@ void HubLevelSelect(struct obj_s *obj, s32 hub) {
     } else {
         HubLevel_available = 1;
     }
-    level = HData[hub].level[HubLevel];
+    /* level[-1] off a hub: the byte before it, the hub before's sfx high byte, before hub 0 the zero padding after
+       cortex_gameover_tab. */
+    level = NW_RETAIL(HData[hub].level[HubLevel],
+                      HubLevel >= 0 ? HData[hub].level[HubLevel] : hub > 0 ? ((s8 *)&HData[hub])[-1] : 0);
     if (HubLevel != -1) {
         if (Level == 0x25 && tumble_time < tumble_duration && last_hub != -1) {
             in_finish_range = 0;

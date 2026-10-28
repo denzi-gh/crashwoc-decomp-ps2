@@ -867,9 +867,9 @@ void NuAnimCurveSetApplyBlendToJoint2(struct nuanimcurveset_s *curveset1, struct
         *scale = *parentscale;
     }
     if ((curveset1->flags | curveset2->flags) & 0x10) {
-        invscale.x = 1.0f / parentscale->x;
-        invscale.y = 1.0f / parentscale->y;
-        invscale.z = 1.0f / parentscale->z;
+        invscale.x = NW_EE_DIV(1.0f, parentscale->x);
+        invscale.y = NW_EE_DIV(1.0f, parentscale->y);
+        invscale.z = NW_EE_DIV(1.0f, parentscale->z);
         NuMtxScaleVU0(m, &invscale);
         scale->x *= invscale.x;
         scale->y *= invscale.y;
@@ -1019,9 +1019,9 @@ void NuAnimCurve2SetApplyBlendToJoint2(union nuanimcurve2_u *curves1, signed cha
         *scale = *parentscale;
     }
     if ((curvesetflags1 | curvesetflags2) & 0x10) {
-        invscale.x = 1.0f / parentscale->x;
-        invscale.y = 1.0f / parentscale->y;
-        invscale.z = 1.0f / parentscale->z;
+        invscale.x = NW_EE_DIV(1.0f, parentscale->x);
+        invscale.y = NW_EE_DIV(1.0f, parentscale->y);
+        invscale.z = NW_EE_DIV(1.0f, parentscale->z);
         NuMtxScaleVU0(m, &invscale);
         scale->x *= invscale.x;
         scale->y *= invscale.y;
@@ -1172,9 +1172,9 @@ void NuAnimCurveSetApplyToJoint2(struct nuanimcurveset_s *curveset, struct nuani
         *scale = *parentscale;
     }
     if ((curveset->flags & 0x10) && parentscale) {
-        invscale.x = 1.0f / parentscale->x;
-        invscale.y = 1.0f / parentscale->y;
-        invscale.z = 1.0f / parentscale->z;
+        invscale.x = NW_EE_DIV(1.0f, parentscale->x);
+        invscale.y = NW_EE_DIV(1.0f, parentscale->y);
+        invscale.z = NW_EE_DIV(1.0f, parentscale->z);
         NuMtxScaleVU0(m, &invscale);
         scale->x *= invscale.x;
         scale->y *= invscale.y;
@@ -1313,9 +1313,9 @@ void NuAnimCurve2SetApplyToJoint(union nuanimcurve2_u *curves, signed char *curv
         *scale = *parentscale;
     }
     if ((curvesetflags & 0x10) && parentscale) {
-        invscale.x = 1.0f / parentscale->x;
-        invscale.y = 1.0f / parentscale->y;
-        invscale.z = 1.0f / parentscale->z;
+        invscale.x = NW_EE_DIV(1.0f, parentscale->x);
+        invscale.y = NW_EE_DIV(1.0f, parentscale->y);
+        invscale.z = NW_EE_DIV(1.0f, parentscale->z);
         NuMtxScaleVU0(m, &invscale);
         scale->x *= invscale.x;
         scale->y *= invscale.y;

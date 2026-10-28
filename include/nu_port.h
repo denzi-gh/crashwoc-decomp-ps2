@@ -121,6 +121,14 @@ float nw_ee_fdiv(float a, float b);
 #define NW_EE_DIV(a, b) ((a) / (b))
 #endif
 
+/* A function that calls through pointers to functions retail defined with other prototypes (fewer parameters,
+ * another return type), which both ABIs take: the host's -fsanitize=function leaves its calls alone. */
+#ifdef NW_HOST
+#define NW_HOST_LOOSE_CALLS __attribute__((no_sanitize("function")))
+#else
+#define NW_HOST_LOOSE_CALLS
+#endif
+
 /* An initializer only the host has, for a variable retail reads before it is set: what retail finds there. */
 #ifdef NW_HOST
 #define NW_HOST_INIT(v) = (v)
