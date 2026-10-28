@@ -231,6 +231,7 @@
  */
 
 #include "nu_libc.h"
+#include "nu_port.h"
 
 #include "numath/numtx.h"
 #include "numath/nuquat.h"
@@ -8399,7 +8400,7 @@ void ProcessFireFlyIntro(void)
         GliderIntroCamPos.x = PlayerGlider.Position.x;
         GliderIntroCamPos.z = PlayerGlider.Position.z;
         NuVecScaleAccum(&GliderIntroCamPos, &dir,
-                        MatchMinDist + (fireflyintro_timer / MatchTimer) * (MatchMaxDist - MatchMinDist));
+                        MatchMinDist + NW_EE_DIV(fireflyintro_timer, MatchTimer) * (MatchMaxDist - MatchMinDist));
         if (ProcessTimer(&fireflyintro_timer) != 0) {
             FireFlyIntroAction = 3;
         }

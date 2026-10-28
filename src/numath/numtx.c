@@ -52,6 +52,7 @@
  */
 
 #include "nu_libc.h"
+#include "nu_port.h"
 
 #include "numath/nufloat.h"
 #include "numath/numtx.h"
@@ -328,30 +329,30 @@ void NuMtxAlignZ(struct numtx_s *m, struct nuvec_s *v)
     zaxis = (struct nuvec_s *)&m->_20;
     xlen2 = m->_00 * m->_00 + m->_01 * m->_01 + m->_02 * m->_02;
     ylen2 = m->_10 * m->_10 + m->_11 * m->_11 + m->_12 * m->_12;
-    scale = NuFsqrt((m->_20 * m->_20 + m->_21 * m->_21 + m->_22 * m->_22) /
-                    (v->x * v->x + v->y * v->y + v->z * v->z));
+    scale = NuFsqrt(NW_EE_DIV(m->_20 * m->_20 + m->_21 * m->_21 + m->_22 * m->_22,
+                              v->x * v->x + v->y * v->y + v->z * v->z));
     m->_20 = scale * v->x;
     m->_21 = scale * v->y;
     m->_22 = scale * v->z;
     if (0.86602539f < NuFabs(NuVecDot(yaxis, zaxis))) {
         NuVecCross(yaxis, zaxis, xaxis);
-        scale = NuFsqrt(ylen2 / (m->_10 * m->_10 + m->_11 * m->_11 + m->_12 * m->_12));
+        scale = NuFsqrt(NW_EE_DIV(ylen2, m->_10 * m->_10 + m->_11 * m->_11 + m->_12 * m->_12));
         m->_10 = m->_10 * scale;
         m->_11 = m->_11 * scale;
         m->_12 = m->_12 * scale;
         NuVecCross(xaxis, yaxis, zaxis);
-        scale = NuFsqrt(xlen2 / (m->_00 * m->_00 + m->_01 * m->_01 + m->_02 * m->_02));
+        scale = NuFsqrt(NW_EE_DIV(xlen2, m->_00 * m->_00 + m->_01 * m->_01 + m->_02 * m->_02));
         m->_00 = m->_00 * scale;
         m->_01 = m->_01 * scale;
         m->_02 = m->_02 * scale;
     } else {
         NuVecCross(xaxis, yaxis, zaxis);
-        scale = NuFsqrt(xlen2 / (m->_00 * m->_00 + m->_01 * m->_01 + m->_02 * m->_02));
+        scale = NuFsqrt(NW_EE_DIV(xlen2, m->_00 * m->_00 + m->_01 * m->_01 + m->_02 * m->_02));
         m->_00 = m->_00 * scale;
         m->_01 = m->_01 * scale;
         m->_02 = m->_02 * scale;
         NuVecCross(yaxis, zaxis, xaxis);
-        scale = NuFsqrt(ylen2 / (m->_10 * m->_10 + m->_11 * m->_11 + m->_12 * m->_12));
+        scale = NuFsqrt(NW_EE_DIV(ylen2, m->_10 * m->_10 + m->_11 * m->_11 + m->_12 * m->_12));
         m->_10 = m->_10 * scale;
         m->_11 = m->_11 * scale;
         m->_12 = m->_12 * scale;

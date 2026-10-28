@@ -78,4 +78,54 @@ void *nw_superbuffer_alloc(int size, char *file, int line);
 #define NW_SUPERBUFFER_ALLOC(size, file, line) NuMemAllocFn(size, file, line)
 #endif
 
+/* A read retail makes outside its object (a faithful bug): what retail's layout puts there, which the host reads
+ * from where its own layout keeps the same bytes. */
+#ifdef NW_HOST
+#define NW_RETAIL(ps2, host) (host)
+#else
+#define NW_RETAIL(ps2, host) (ps2)
+#endif
+
+/* Element i of the array obj->member, which may be past its end: the struct's next members, the same on the host.
+ * The host indexes from obj, so the read stays inside the object it is in. */
+#ifdef NW_HOST
+#define NW_PAST(obj, member, i) \
+    (((__typeof__(&(obj)->member[0]))((char *)(obj) + __builtin_offsetof(__typeof__(*(obj)), member)))[i])
+#else
+#define NW_PAST(obj, member, i) ((obj)->member[i])
+#endif
+
+/* a + dt / range * (b - a) in the EE's float: a range of 0 (two keys at one time) gives its largest value where IEEE
+ * gives an inf or a NaN (NuWorld's src/hle/eefloat.c). */
+#ifdef NW_HOST
+float nw_ee_lerp(float a, float dt, float range, float b);
+#define NW_EE_LERP(a, dt, range, b) nw_ee_lerp(a, dt, range, b)
+#else
+#define NW_EE_LERP(a, dt, range, b) ((a) + (dt) / (range) * ((b) - (a)))
+#endif
+
+/* (int)x as the EE's cvt.w.s: saturating where C's conversion is undefined. */
+#ifdef NW_HOST
+int nw_ee_s32(float x);
+#define NW_EE_S32(x) nw_ee_s32(x)
+#else
+#define NW_EE_S32(x) ((int)(x))
+#endif
+
+/* a / b as the EE's div.s: by zero its largest value with the operands' signs combined, where IEEE gives an inf or
+ * a NaN (NuWorld's src/hle/eefloat.c). */
+#ifdef NW_HOST
+float nw_ee_fdiv(float a, float b);
+#define NW_EE_DIV(a, b) nw_ee_fdiv(a, b)
+#else
+#define NW_EE_DIV(a, b) ((a) / (b))
+#endif
+
+/* An initializer only the host has, for a variable retail reads before it is set: what retail finds there. */
+#ifdef NW_HOST
+#define NW_HOST_INIT(v) = (v)
+#else
+#define NW_HOST_INIT(v)
+#endif
+
 #endif /* NU_PORT_H */

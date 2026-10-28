@@ -367,7 +367,7 @@ struct nutexanimprog_s *NuTexAnimProgReadScript(union variptr_u *buff, char *nam
 
     if (buff) {
         mem = buff->voidptr;
-        mem = (struct nutexanimprog_s *)(((nusintptr)mem + 3) & ~(nuintptr)3);
+        mem = (struct nutexanimprog_s *)(((nusintptr)mem + (sizeof(void *) - 1)) & ~(nuintptr)(sizeof(void *) - 1));
     } else {
         mem = NuMemAllocFn(0x400, "..\\nu2crash.ps2\\nu3d\\nutexanm.c", 0x2FC);
     }
@@ -779,7 +779,7 @@ struct nutexanimprog_s *NuTexAnimProgRead(union variptr_u *buff, char *name)
     if (fh) {
         size = NuFileOpenSize(fh);
         if (buff) {
-            prog = (struct nutexanimprog_s *)((buff->intaddr + 3) & ~(nuintptr)3);
+            prog = (struct nutexanimprog_s *)((buff->intaddr + (sizeof(void *) - 1)) & ~(nuintptr)(sizeof(void *) - 1));
             buff->voidptr = (char *)prog + size;
         } else {
             prog = NuMemAllocFn(size, "..\\nu2crash.ps2\\nu3d\\nutexanm.c", 0x117);

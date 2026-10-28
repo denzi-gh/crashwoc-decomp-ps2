@@ -50,6 +50,7 @@
  */
 
 #include "nu_libc.h"
+#include "nu_port.h"
 
 #include "numath/numtx.h"
 #include "numath/nutrig.h"
@@ -2834,8 +2835,13 @@ void AnimateOFFROADER(struct creature_s *plr) {
 void AnimateSUBMARINE(struct creature_s *plr) {
     plr->obj.anim.newaction = 0x62;
     UpdateCharacterIdle(plr, 0);
-    AddGameDebrisRot(0x56, (struct nuvec_s *)&plr->mtxLOCATOR[2][0]._30, 1, 0, 0);
-    AddGameDebrisRot(0x56, (struct nuvec_s *)&plr->mtxLOCATOR[3][0]._30, 1, 0, 0);
+    /* Models 2 and 3 of two (a retail bug): retail's layout has momLOCATOR[0][4] and the next creature's
+       ai.radius, ai.distance and ai.height there. */
+    AddGameDebrisRot(0x56, NW_RETAIL((struct nuvec_s *)&plr->mtxLOCATOR[2][0]._30, &plr->momLOCATOR[0][4]), 1, 0,
+                     0);
+    AddGameDebrisRot(0x56,
+                     NW_RETAIL((struct nuvec_s *)&plr->mtxLOCATOR[3][0]._30, (struct nuvec_s *)&plr[1].ai.radius),
+                     1, 0, 0);
 }
 
 void AnimateMINECART(struct creature_s *plr) {

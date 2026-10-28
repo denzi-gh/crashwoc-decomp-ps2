@@ -25,6 +25,7 @@
  */
 
 #include "nu_libc.h"
+#include "nu_port.h"
 
 #include "nu3d/nustream.h"
 #include "numath/nuvec.h"
@@ -83,6 +84,8 @@ s32 creditsang[3] = {0, 0x4000, 0};
 struct nuvec_s ldir[3] = {{0.7f, -0.7f, 0.0f}, {-1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}};
 struct nucolour3_s lcol[3] = {{0.7f, 0.7f, 0.7f}, {0.7f, 0.7f, 0.7f}, {0.7f, 0.7f, 0.7f}};
 struct nuvec_s acol = {0.7f, 0.7f, 0.7f};
+/* Lights[-1].brightness (an Index of -1, a retail bug): retail's data puts byte 6 of acol there. */
+#define LIGHT_BEFORE_BRIGHTNESS (((u8 *)&acol)[6])
 
 s32 NuFileLoadBuffer(char *name, void *buf, s32 max);
 void *NuMemFileOpen(void *buf, s32 size, s32 mode);
@@ -422,7 +425,9 @@ s32 FindNearestLights(struct nuvec_s *vec, struct Nearest_Light_s *nearest_light
     f32 distance;
     s32 scount;
     struct nuvec_s direction;
-    f32 sfactor;
+    /* Read unset when a light's brightness is neither 6 nor 7 (a retail bug): main keeps 1.0f in that register
+       ($f20), which ProcessCreatures and GetLights leave alone. */
+    f32 sfactor NW_HOST_INIT(1.0f);
     struct pdir_s *tptr;
     struct pdir_s *tptr2;
 
@@ -552,9 +557,9 @@ s32 FindNearestLights(struct nuvec_s *vec, struct Nearest_Light_s *nearest_light
     } else if (nearest_light->glbdirectional.Index != -1 &&
                (Lights[nearest_light->glbdirectional.Index].type == 1 ||
                 Lights[nearest_light->glbdirectional.Index].type == 2)) {
-        if (Lights[nearest_light->pDir1st->Index].brightness == 6) {
+        if (NW_RETAIL(Lights[nearest_light->pDir1st->Index].brightness, LIGHT_BEFORE_BRIGHTNESS) == 6) {
             sfactor = sf2;
-        } else if (Lights[nearest_light->pDir1st->Index].brightness == 7) {
+        } else if (NW_RETAIL(Lights[nearest_light->pDir1st->Index].brightness, LIGHT_BEFORE_BRIGHTNESS) == 7) {
             sfactor = sf;
         }
         nearest_light->pDir1st->Colour.r =
@@ -587,9 +592,9 @@ s32 FindNearestLights(struct nuvec_s *vec, struct Nearest_Light_s *nearest_light
     } else if (nearest_light->glbdirectional.Index != -1 &&
                (Lights[nearest_light->glbdirectional.Index].type == 1 ||
                 Lights[nearest_light->glbdirectional.Index].type == 2)) {
-        if (Lights[nearest_light->pDir2nd->Index].brightness == 6) {
+        if (NW_RETAIL(Lights[nearest_light->pDir2nd->Index].brightness, LIGHT_BEFORE_BRIGHTNESS) == 6) {
             sfactor = sf2;
-        } else if (Lights[nearest_light->pDir2nd->Index].brightness == 7) {
+        } else if (NW_RETAIL(Lights[nearest_light->pDir2nd->Index].brightness, LIGHT_BEFORE_BRIGHTNESS) == 7) {
             sfactor = sf;
         }
         nearest_light->pDir2nd->Colour.r =
@@ -622,9 +627,9 @@ s32 FindNearestLights(struct nuvec_s *vec, struct Nearest_Light_s *nearest_light
     } else if (nearest_light->glbdirectional.Index != -1 &&
                (Lights[nearest_light->glbdirectional.Index].type == 1 ||
                 Lights[nearest_light->glbdirectional.Index].type == 2)) {
-        if (Lights[nearest_light->pDir3rd->Index].brightness == 6) {
+        if (NW_RETAIL(Lights[nearest_light->pDir3rd->Index].brightness, LIGHT_BEFORE_BRIGHTNESS) == 6) {
             sfactor = sf2;
-        } else if (Lights[nearest_light->pDir3rd->Index].brightness == 7) {
+        } else if (NW_RETAIL(Lights[nearest_light->pDir3rd->Index].brightness, LIGHT_BEFORE_BRIGHTNESS) == 7) {
             sfactor = sf;
         }
         nearest_light->pDir3rd->Colour.r =

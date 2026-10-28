@@ -1749,7 +1749,7 @@ void DrawEnemyJeep(struct enemyjeep_s *Jeep) {
             aDelta = TempAf;
             aWheel = aDelta + Temp;
             TempAf = Jeep->PlayBackTime * 196608.0f;
-            aRot = TempAf;
+            aRot = (s32)TempAf;
             aSteer = aWheel * 9 / 8;
             Jeep->Joints[0].rz = (u16)-aSteer * 9.587380191e-05f;
             Jeep->Joints[1].rz = aSteer * 9.587380191e-05f;

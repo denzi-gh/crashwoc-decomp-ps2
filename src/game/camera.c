@@ -23,6 +23,7 @@
  */
 
 #include "nu_libc.h"
+#include "nu_port.h"
 
 #include "numath/numtx.h"
 #include "numath/nutrig.h"
@@ -559,7 +560,7 @@ void RailInfo(RailPosition *rpos, struct nuvec_s *pos, u16 *angle,
                 v0.z = NuTrigTable[(ang + 0x4000) & 0xFFFF];
                 dx = mid.x - pos->x;
                 dz = mid.z - pos->z;
-                l = 1.0f / NuFsqrt(dx * dx + dz * dz);
+                l = NW_EE_DIV(1.0f, NuFsqrt(dx * dx + dz * dz));
                 v1.x = dx * l;
                 v1.z = dz * l;
                 dp = v0.x * v1.x + v0.z * v1.z;
