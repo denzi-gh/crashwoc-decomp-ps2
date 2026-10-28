@@ -109,11 +109,7 @@ void NuTexAssignAddr(int tex, int addr);
 void NuTexAssignTempAddr(int tex);
 int NuTexGetReqSize(int tex, int level);
 void NuTexCloneTempAddr(int dst, int src);
-#ifdef NW_HOST /* retail forwards the palette its callers pass in $a1 */
-void NuTexPalChange(int tex, u32 *pal);
-#else
 void NuTexPalChange(int tex);
-#endif
 void NuTexPalChangeStreamTemp(int tex, u32 *pal);
 u64 NuTexGetTex0(int tex);
 u8 *NuTexSetPal(u8 *stream, int tex, int paltex, char context);
