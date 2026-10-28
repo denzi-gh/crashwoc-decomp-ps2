@@ -2655,7 +2655,7 @@ inline void BGLoadLevel(void)
 
 void BGLoad(void)
 {
-    struct numtx_s m[2];
+    NW_HOST_KEPT struct numtx_s m[2]; /* sfx 0x8a's position, which fades out after the load */
     struct numtx_s tmtx[256];
     short layers[5] = {0, 1, 2, 3, 4};
     float fall_speed[2];
