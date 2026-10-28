@@ -48,7 +48,8 @@ struct nulsthdr_s *NuLstCreate(int elcnt, int elsize) {
     struct nulnkhdr_s *next;
     int n;
 
-    list = (struct nulsthdr_s *)NuMemAllocFn(elcnt * (elsize + 0x10) + 0x10,
+    list = (struct nulsthdr_s *)NuMemAllocFn(elcnt * (elsize + sizeof(struct nulnkhdr_s))
+                                                 + sizeof(struct nulsthdr_s),
                                              D_0061B600, 0x24);
     if (list != 0) {
         list->free = (struct nulnkhdr_s *)(list + 1);
@@ -56,13 +57,13 @@ struct nulsthdr_s *NuLstCreate(int elcnt, int elsize) {
         list->elcnt = elcnt;
         list->elsize = elsize;
         curr = list->free;
-        next = (struct nulnkhdr_s *)((char *)curr + elsize + 0x10);
+        next = (struct nulnkhdr_s *)((char *)curr + elsize + sizeof(struct nulnkhdr_s));
         for (n = 1; n < elcnt; n++) {
             curr->succ = next;
             curr->id = n - 1;
             curr->owner = list;
             curr = next;
-            next = (struct nulnkhdr_s *)((char *)next + (elsize + 0x10));
+            next = (struct nulnkhdr_s *)((char *)next + (elsize + sizeof(struct nulnkhdr_s)));
         }
         curr->succ = 0;
         curr->id = n - 1;

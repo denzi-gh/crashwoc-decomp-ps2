@@ -1935,7 +1935,7 @@ s32 NewCrateAnimation(struct cratecube_s *crate, s32 type, s32 action,
 void InitCrates(void) {
     s32 i;
 
-    crates = NuLstCreate(0x100, 0x28);
+    crates = NuLstCreate(0x100, sizeof(struct crate_s));
     CRATEGROUPCOUNT = 0;
     CRATECOUNT = 0;
     if (crate_scene != 0) {
@@ -1975,7 +1975,7 @@ void ResetAllCrates(void) {
         NuLstDestroy(crates);
         crates = 0;
     }
-    crates = NuLstCreate(0x100, 0x28);
+    crates = NuLstCreate(0x100, sizeof(struct crate_s));
     CRATEGROUPCOUNT = 0;
     CRATECOUNT = 0;
 }
@@ -1992,7 +1992,7 @@ struct crate_s *AddCrate(s32 type, struct nuvec_s *pos) {
 
     crate = (struct crate_s *)NuLstAlloc(crates);
     if (crate != 0) {
-        memset(crate, 0, 0x28);
+        memset(crate, 0, sizeof(struct crate_s));
         crate->pos = *pos;
         crate->type[1] = type;
         crate->type[3] = -1;
