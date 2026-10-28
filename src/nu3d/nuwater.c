@@ -446,7 +446,7 @@ void NuWaterRender(struct nugscn_s *scene) {
         }
         for (i = 0; i < nwinst; i++) {
             inst = winst[i];
-            if (inst->flagword & 4) {
+            if (NW_WIDE_PVS(inst->flagword & 4)) {
                 NuRndrGobj(scene->gobjs[inst->objid], inst);
             }
         }

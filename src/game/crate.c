@@ -61,6 +61,7 @@
  */
 
 #include "nu_libc.h"
+#include "nu_port.h"
 
 #include "nu3d/nucamera.h"
 #include "nu3d/nugscn.h"
@@ -274,7 +275,8 @@ inline void AddExtraLife(struct nuvec_s *pos, s32 pdeb) {
     if (scale < 0.0) {
         scale = 0.0 - scale;
     }
-    AddPanelDebris(scr.x, scr.y, pdeb, scale * 3.6363637f, 1);
+    AddPanelDebris(NW_WIDE_SCALE(scr.x, nw_wide.panel_x), scr.y, pdeb,
+                   NW_WIDE_SCALE(scale, nw_wide.k) * 3.6363637f, 1);
 }
 
 
@@ -2850,6 +2852,7 @@ void DrawCrates(void) {
     s32 j;
     s32 type;
     s32 character;
+    NW_WIDE_ONLY(s32 wide_far;)
 
     shadows = 0;
     if ((!((((LDATA->flags & 0x200) != 0) || (Level == 0x1D)) &&
@@ -2871,7 +2874,7 @@ void DrawCrates(void) {
          !((((LDATA->flags & 0x200) != 0) || (Level == 0x1D)) &&
            (VEHICLECONTROL == 1)) &&
          (Level != 0xB))) {
-        shadowrange2 = range2;
+        shadowrange2 = NW_WIDE_SCALE(range2, nw_wide.draw2);
         shadows = 1;
     }
     group = CrateGroup;
@@ -2880,6 +2883,7 @@ void DrawCrates(void) {
         crate = &Crate[group->iCrate];
         for (j = 0; j < group->nCrates; j++, crate++) {
             crate->in_range = 0;
+            NW_WIDE_ONLY(wide_far = 0;)
             if (editor_active != 0) {
                 switch (edcrtDrawType) {
                 case 0:
@@ -2912,14 +2916,15 @@ void DrawCrates(void) {
                 dx = pCam->pos.x - crate->pos.x;
                 dz = pCam->pos.z - crate->pos.z;
                 dist2 = dx * dx + dz * dz;
-                if ((editor_active == 0) && (range2 < dist2)) {
+                if ((editor_active == 0) && (NW_WIDE_SCALE(range2, nw_wide.draw2) < dist2)) {
                     continue;
                 }
+                NW_WIDE_ONLY(wide_far = (editor_active == 0) && (range2 < dist2);)
             }
             v.y = crate->pos.y + 0.25f;
             v.x = crate->pos.x;
             v.z = crate->pos.z;
-            crate->in_range = 1;
+            crate->in_range = NW_WIDE(1, !wide_far);
             if ((crate->xrot != 0) || (crate->zrot != 0)) {
                 pmtx = &mtx2;
                 NuMtxSetRotationY(pmtx, group->angle);

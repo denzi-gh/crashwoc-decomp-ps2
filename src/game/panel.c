@@ -27,6 +27,7 @@
  */
 
 #include "nu_libc.h"
+#include "nu_port.h"
 
 #include "nu3d/nucamera.h"
 #include "nu3d/nugscn.h"
@@ -959,7 +960,7 @@ void DrawPanel(void) {
     wobble_y = NuTrigTable[((((GlobalTimer.frame % 200) << 16) / 200) + 0x4000) & 0xFFFF] *
                2731.0f;
 
-    PANEL3DMULX = (float)SWIDTH / (DIVPANEL3D * ((float)SWIDTH / 640.0f));
+    PANEL3DMULX = NW_WIDE_SCALE((float)SWIDTH / (DIVPANEL3D * ((float)SWIDTH / 640.0f)), nw_wide.hud);
     PANEL3DMULY = (float)SHEIGHT / (DIVPANEL3D * ((float)SHEIGHT / 448.0f));
 
     if (editor_active != 0) {

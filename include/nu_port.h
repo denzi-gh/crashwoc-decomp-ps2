@@ -144,4 +144,42 @@ float nw_ee_fdiv(float a, float b);
 #define NW_HOST_INIT(v)
 #endif
 
+/* Hor+ widescreen (NuWorld's src/port/wide.c): the host's view is nw_wide.k times retail's 4:3 width. Drawing widens
+ * with it (frame, camera, HUD, draw radii, PVS); logic keeps retail's 4:3 tests. k = 1 is retail.
+ * NW_WIDE: the host's value instead of retail's. NW_WIDE_SCALE: x times the host's factor f.
+ * NW_WIDE_ONLY: a statement only the host runs (no top-level commas).
+ * NW_WIDE_PVS: an instance the PVS hid, drawn on the host when the wider view needs it.
+ * NW_WIDE_ANIM: the same for its animation, which the host keeps on retail's test where it carries collision.
+ * NW_WIDE_SEEN: what a draw returned, narrowed to retail's 4:3 frustum where logic reads it. */
+#ifdef NW_HOST
+struct nuinstance_s;
+struct nw_wide_s {
+    float k;       /* the view's width over retail's 4:3 */
+    float aspect;  /* the camera's aspect, h/w */
+    int width;     /* the GS frame's width, 640 at 4:3 */
+    float hud;     /* the HUD's x reach over retail's */
+    float panel_x; /* a clip-space x as a panel x: k over hud */
+    float draw;    /* draw radii over retail's */
+    float draw2;   /* its square, for squared radii */
+    int pvs_all;   /* every instance the PVS hid is drawn */
+};
+extern struct nw_wide_s nw_wide;
+int nw_wide_anim(struct nuinstance_s *inst, int test);
+void nw_wide_mark(void);
+int nw_wide_seen(int drawn);
+#define NW_WIDE(ps2, host) (host)
+#define NW_WIDE_SCALE(x, f) ((x) * (f))
+#define NW_WIDE_ONLY(stmt) stmt
+#define NW_WIDE_PVS(test) ((test) || nw_wide.pvs_all)
+#define NW_WIDE_ANIM(inst, test) nw_wide_anim(inst, test)
+#define NW_WIDE_SEEN(drawn) (nw_wide_mark(), nw_wide_seen(drawn))
+#else
+#define NW_WIDE(ps2, host) (ps2)
+#define NW_WIDE_SCALE(x, f) (x)
+#define NW_WIDE_ONLY(stmt)
+#define NW_WIDE_PVS(test) (test)
+#define NW_WIDE_ANIM(inst, test) (test)
+#define NW_WIDE_SEEN(drawn) (drawn)
+#endif
+
 #endif /* NU_PORT_H */

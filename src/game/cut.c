@@ -721,7 +721,7 @@ inline void UpdateCutMovieCamera(struct numtx_s *cam) {
 void PlayCutMovie(s32 movie) {
     s32 quit;
 
-    PANEL3DMULX = (float)SWIDTH / (DIVPANEL3D * ((float)SWIDTH / 640.0f));
+    PANEL3DMULX = NW_WIDE_SCALE((float)SWIDTH / (DIVPANEL3D * ((float)SWIDTH / 640.0f)), nw_wide.hud);
     PANEL3DMULY = (float)SHEIGHT / (DIVPANEL3D * ((float)SHEIGHT / 448.0f));
     do {
         next_cut_movie = -1;

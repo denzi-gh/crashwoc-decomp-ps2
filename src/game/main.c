@@ -1815,9 +1815,9 @@ int main(int argc, char** argv) {
     Level = -1;
     NuPs2InitIOP();
     InitCutScenes();
-    SWIDTH = 0x280;
+    SWIDTH = NW_WIDE(0x280, nw_wide.width);
     SHEIGHT = 0x200;
-    NuPs2InitVideo(0x280, 0x100, 0, 0x31, 3);
+    NuPs2InitVideo(NW_WIDE(0x280, nw_wide.width), 0x100, 0, 0x31, 3);
     NuPs2VideoSetPos(0, 0);
     MAXVPSIZEX = SWIDTH;
     MAXVPSIZEY = SHEIGHT;
@@ -2691,7 +2691,7 @@ void BGLoad(void)
     mg_player_pos = v000;
     mg_player_tilt = 0;
     mg_player_spin = 0;
-    PANEL3DMULX = (float)SWIDTH / (DIVPANEL3D * ((float)SWIDTH / 640.0f));
+    PANEL3DMULX = NW_WIDE_SCALE((float)SWIDTH / (DIVPANEL3D * ((float)SWIDTH / 640.0f)), nw_wide.hud);
     PANEL3DMULY = (float)SHEIGHT / (DIVPANEL3D * ((float)SHEIGHT / 448.0f));
     font3d_scene = 0;
     if (LDATA->flags & 0x40) {
@@ -3053,7 +3053,7 @@ void BGLoadSfx(void)
     NuPs2FlushVRam(0, 0, 0);
     done = 0;
     font3d_scene = 0;
-    PANEL3DMULX = (float)SWIDTH / (DIVPANEL3D * ((float)SWIDTH / 640.0f));
+    PANEL3DMULX = NW_WIDE_SCALE((float)SWIDTH / (DIVPANEL3D * ((float)SWIDTH / 640.0f)), nw_wide.hud);
     PANEL3DMULY = (float)SHEIGHT / (DIVPANEL3D * ((float)SHEIGHT / 448.0f));
     BGLoadStart(BGLoadSfxFn);
     fade_rate = -10;

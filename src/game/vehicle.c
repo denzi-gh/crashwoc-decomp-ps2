@@ -2616,10 +2616,10 @@ void DrawTorpedoTarget(void)
     NuVecSub(&centre, PlayerGlider.MovingTargetPoint, &GameCam[0].pos);
     NuVecScale(&scaledpos, &centre, 10.0f / NuVecMag(&centre));
     NuVecAdd(&scaledpos, &scaledpos, (struct nuvec_s *)&GameCam[0].m._30);
-    NuVecMtxTransform(&corner[0], SetNuVecPntr(-4.5f, 3.5f, 10.0f), &GameCam[0].m);
-    NuVecMtxTransform(&corner[1], SetNuVecPntr(4.5f, 3.5f, 10.0f), &GameCam[0].m);
-    NuVecMtxTransform(&corner[2], SetNuVecPntr(4.5f, -3.5f, 10.0f), &GameCam[0].m);
-    NuVecMtxTransform(&corner[3], SetNuVecPntr(-4.5f, -3.5f, 10.0f), &GameCam[0].m);
+    NuVecMtxTransform(&corner[0], SetNuVecPntr(NW_WIDE_SCALE(-4.5f, nw_wide.hud), 3.5f, 10.0f), &GameCam[0].m);
+    NuVecMtxTransform(&corner[1], SetNuVecPntr(NW_WIDE_SCALE(4.5f, nw_wide.hud), 3.5f, 10.0f), &GameCam[0].m);
+    NuVecMtxTransform(&corner[2], SetNuVecPntr(NW_WIDE_SCALE(4.5f, nw_wide.hud), -3.5f, 10.0f), &GameCam[0].m);
+    NuVecMtxTransform(&corner[3], SetNuVecPntr(NW_WIDE_SCALE(-4.5f, nw_wide.hud), -3.5f, 10.0f), &GameCam[0].m);
     i = 0;
     do {
         next = (i + 1) & 3;
@@ -4014,7 +4014,7 @@ inline void DrawZoffa(struct zoffa_s *ufo)
     NuMtxRotateX(&mTEMP, -ufo->pitch * 182.0444489f);
     NuMtxRotateY(&mTEMP, (ufo->yaw + 180.0f) * 182.0444489f);
     NuMtxTranslate(&mTEMP, &ufo->pos);
-    ufo->seen = MyDrawModelNew(&ufo->draw, &mTEMP, ufo->locators);
+    ufo->seen = NW_WIDE_SEEN(MyDrawModelNew(&ufo->draw, &mTEMP, ufo->locators));
 }
 
 extern struct zoffa_s EnemyZoffa[4];
