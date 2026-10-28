@@ -198,7 +198,11 @@ extern void NuRndrRectUVStream(struct rndrstream_s *stream, int x, int y, int wi
 
 /* Retail passes the palette in $a1 although NuTexPalChange takes only the
    texture. */
+#ifdef NW_HOST
+#define NuTexPalChangePal(tex, pal) NuTexPalChange(tex, (u32 *)(pal))
+#else
 #define NuTexPalChangePal(tex, pal) ((void (*)(int, int *))NuTexPalChange)(tex, pal)
+#endif
 
 
 void NuLightMatInit(void) {

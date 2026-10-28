@@ -1305,6 +1305,13 @@ void NuTexCloneTempAddr(int dst, int src) {
 }
 
 
+#ifdef NW_HOST
+void NuTexPalChange(int tex, u32 *pal) {
+    if (tex > 0) {
+        NuPs2ChangeTexPal(&TexList[tex - 1].ps2tex, pal);
+    }
+}
+#else
 void NuTexPalChange(int tex) {
     if (tex > 0) {
         /* Retail bug: called without the palette argument, which the
@@ -1312,6 +1319,7 @@ void NuTexPalChange(int tex) {
         ((void (*)(struct nups2tex_s *))NuPs2ChangeTexPal)(&TexList[tex - 1].ps2tex);
     }
 }
+#endif
 
 
 void NuTexPalChangeStreamTemp(int tex, u32 *pal) {
