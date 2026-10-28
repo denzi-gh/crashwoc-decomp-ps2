@@ -1314,16 +1314,19 @@ void HandlePauseRender(void)
     if (pause_rndr_on != 0 && pause_rt != 0 && NuRndrBeginScene(-1) != 0) {
         vp = NuVpGetCurrentViewport();
         NuRndrClear(5, 0, 1.0f);
-        NuRndrRectUV2di(0, 0, vp->width, vp->height, 0.0f, 0.0f, 1.0f, 1.0f, 0x80808080, pause_rndr_mtl);
+        NuRndrRectUV2di(NW_WIDE(0, nw_wide_vp_x()), 0, vp->width, vp->height, 0.0f, 0.0f, 1.0f, 1.0f, 0x80808080,
+                        pause_rndr_mtl);
         NuRndrEndScene();
     }
     if (Paused != 0 && old_pause_state == 0) {
-        u = (PS2_REZ_W - 1.0f) / NuPower2(PS2_REZ_W);
+        u = (NW_WIDE(PS2_REZ_W, (PS2_REZ_W + 640) >> 1) - 1.0f) / NuPower2(PS2_REZ_W);
         v = (PS2_REZ_H - 1.0f) / NuPower2(PS2_REZ_H);
         if (pause_rt != 0) {
             NuRndrFlush(3);
             if (NuRndrBeginSceneEx(pause_rt, -2, 0) != 0) {
-                NuRndrRectUV2di(0, 0, 0xFF0, 0xFF0, 0.0f, 0.0f, u, v, 0x80808080, pause_src_mtl);
+                NuRndrRectUV2di(0, 0, 0xFF0, 0xFF0,
+                                NW_WIDE(0.0f, (float)((PS2_REZ_W - 640) >> 1) / NuPower2(PS2_REZ_W)), 0.0f, u, v,
+                                0x80808080, pause_src_mtl);
                 NuRndrEndScene();
             }
         }
@@ -1815,13 +1818,13 @@ int main(int argc, char** argv) {
     Level = -1;
     NuPs2InitIOP();
     InitCutScenes();
-    SWIDTH = 0x280;
+    SWIDTH = NW_WIDE(0x280, nw_wide.width);
     SHEIGHT = 0x200;
-    NuPs2InitVideo(0x280, 0x100, 0, 0x31, 3);
+    NuPs2InitVideo(NW_WIDE(0x280, nw_wide.width), 0x100, 0, 0x31, 3);
     NuPs2VideoSetPos(0, 0);
     MAXVPSIZEX = SWIDTH;
     MAXVPSIZEY = SHEIGHT;
-    MINVPSIZEX = (SWIDTH * 0x18c) / 0x280;
+    MINVPSIZEX = (NW_WIDE(SWIDTH, 0x280) * 0x18c) / 0x280;
     MINVPSIZEY = SHEIGHT / 2;
     NuPs2InitVU();
     NuTrigInit();

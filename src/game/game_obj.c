@@ -3140,7 +3140,7 @@ void DrawProjectiles(void) {
         dx = pCam->pos.x - p->obj.pos.x;
         dz = pCam->pos.z - p->obj.pos.z;
         distsq = dx * dx + dz * dz;
-        if (!(distsq < farsq)) {
+        if (!(distsq < NW_WIDE_SCALE(farsq, nw_wide.draw2))) {
             continue;
         }
         ratio = p->time / p->duration;

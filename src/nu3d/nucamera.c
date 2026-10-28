@@ -43,6 +43,7 @@
  */
 
 #include "nu_libc.h"
+#include "nu_port.h"
 
 #include "nu3d/nustream.h"
 #include "nucore/nuerror.h"
@@ -319,7 +320,7 @@ struct nucamera_s *NuCameraCreate(void) {
     cam->nearclip = 0.15f;
     cam->farclip = 10000.0f;
     cam->fov = 0.75f;
-    cam->aspect = 0.75f;
+    cam->aspect = NW_WIDE(0.75f, nw_wide.aspect);
     cam->portalnearclip = 0.0f;
     cam->scale.z = 1.0f;
     cam->scale.y = 1.0f;

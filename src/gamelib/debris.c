@@ -1534,7 +1534,8 @@ void DebrisDraw(void) {
         visible = 1;
         if (ParticleChunkRenderStack[i].debdata != 0) {
             if (info->drawcutoff > 0.0f
-                && CameraEmitterDistance(&ParticleChunkRenderStack[i].debdata->emitpos) > info->drawcutoff) {
+                && CameraEmitterDistance(&ParticleChunkRenderStack[i].debdata->emitpos) >
+                   NW_WIDE_SCALE(info->drawcutoff, nw_wide.draw)) {
                 visible = 0;
             }
             mtx = ParticleChunkRenderStack[i].debdata->rotmtx;
@@ -1542,7 +1543,8 @@ void DebrisDraw(void) {
             pos.y = ParticleChunkRenderStack[i].debdata->emitpos.y;
             pos.z = ParticleChunkRenderStack[i].debdata->emitpos.z;
         } else {
-            if (info->drawcutoff > 0.0f && CameraEmitterDistance(&ParticleChunkRenderStack[i].pos) > info->drawcutoff) {
+            if (info->drawcutoff > 0.0f && CameraEmitterDistance(&ParticleChunkRenderStack[i].pos) >
+                                              NW_WIDE_SCALE(info->drawcutoff, nw_wide.draw)) {
                 visible = 0;
             }
             mtx = ParticleChunkRenderStack[i].rotmtx;

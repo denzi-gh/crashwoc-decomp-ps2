@@ -105,6 +105,7 @@
  */
 
 #include "nu_libc.h"
+#include "nu_port.h"
 
 #include "numath/numathtypes.h"
 #include "numath/numtx.h"
@@ -636,7 +637,7 @@ inline int edobjRenderCutoffTest(struct nuvec_s *pos)
     dx = pos->x - global_camera.mtx._30;
     dy = pos->y - global_camera.mtx._31;
     dz = pos->z - global_camera.mtx._32;
-    if (NuFsqrt(dx * dx + dy * dy + dz * dz) > 40.0f) {
+    if (NuFsqrt(dx * dx + dy * dy + dz * dz) > NW_WIDE_SCALE(40.0f, nw_wide.draw)) {
         return 0;
     }
     return 1;

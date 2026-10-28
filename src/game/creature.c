@@ -4807,6 +4807,7 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
     s32 shflag;
     s32 reflect;
     s32 old_frame;
+    NW_WIDE_ONLY(s32 wide_far;)
     s32 VEHICLE;
     s32 use_vehicle_matrix; /* mV was supplied by the vehicle renderer. */
     u32 action;
@@ -4857,6 +4858,7 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
 
         old_frame = c->obj.draw_frame;
         c->obj.draw_frame = 0;
+        NW_WIDE_ONLY(wide_far = 0;)
         if (c->used == 0) {
             goto next;
         }
@@ -4901,9 +4903,10 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
             dist = (pCam->pos.x - c->obj.pos.x) * (pCam->pos.x - c->obj.pos.x) +
                    (pCam->pos.z - c->obj.pos.z) * (pCam->pos.z - c->obj.pos.z);
             if ((LDATA->flags & 0x200) == 0) {
-                if (r2 < dist) {
+                if (NW_WIDE_SCALE(r2, nw_wide.draw2) < dist) {
                     goto next;
                 }
+                NW_WIDE_ONLY(wide_far = r2 < dist;)
             }
         }
 
@@ -5403,6 +5406,7 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
         c->obj.draw_frame = old_frame + 1;
 
     next:
+        NW_WIDE_ONLY(if (wide_far) c->obj.draw_frame = 0;)
         c->anim_processed = 1;
     }
 

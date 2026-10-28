@@ -62,6 +62,7 @@
  */
 
 #include "nu_libc.h"
+#include "nu_port.h"
 #include "nu_stdarg.h"
 
 #include "nu3d/nugobj.h"
@@ -2456,7 +2457,7 @@ void NuGScnUpdate(struct nugscn_s *scene, float dt)
         if (gscn_dbg != 0 && gscn_dbg != i) {
             continue;
         }
-        if (!(inst->flags.visible & inst->flags.visitest)) {
+        if (!(inst->flags.visible & NW_WIDE_ANIM(inst, inst->flags.visitest))) {
             continue;
         }
         anim = inst->anim;
@@ -2525,7 +2526,7 @@ void NuGScnRndr3(struct nugscn_s *scene)
         if (gscn_dbg != 0 && gscn_dbg != i) {
             continue;
         }
-        if (inst->flags.visible & inst->flags.visitest) {
+        if (inst->flags.visible & NW_WIDE_PVS(inst->flags.visitest)) {
             if (inst->anim != 0) {
                 inst->flags.onscreen = NuRndrGScnObj(scene->gobjs[inst->objid], &inst->anim->mtx);
             } else {
@@ -2586,7 +2587,7 @@ void NuGScnRndr2(struct nugscn_s *scene, float dt)
         if (gscn_dbg != 0 && gscn_dbg != i) {
             continue;
         }
-        if (inst->flags.visible & inst->flags.visitest) {
+        if (inst->flags.visible & NW_WIDE_PVS(inst->flags.visitest)) {
             anim = inst->anim;
             if (anim != 0) {
                 if (scene->instanimdata != 0) {
@@ -2684,7 +2685,7 @@ void NuGScnRndr(struct nugscn_s *scene)
         if (gscn_dbg != 0 && gscn_dbg != i) {
             continue;
         }
-        if (inst->flags.visible & inst->flags.visitest) {
+        if (inst->flags.visible & NW_WIDE_PVS(inst->flags.visitest)) {
             inst->flags.onscreen = NuRndrGScnObj(scene->gobjs[inst->objid], &inst->mtx);
         }
     }

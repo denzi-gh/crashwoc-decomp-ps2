@@ -27,6 +27,7 @@
  */
 
 #include "nu_libc.h"
+#include "nu_port.h"
 
 #include "nu3d/nucamera.h"
 #include "nu3d/nugscn.h"
@@ -287,6 +288,7 @@ inline s32 DrawPanel3DTempCharacter(u16 xrot, u16 yrot, u16 zrot, s32 rot, float
 
 inline void MaxVP(void) {
     NuVpSetSize((float)(MAXVPSIZEX << 4), (float)(MAXVPSIZEY << 3));
+    NW_WIDE_ONLY(nw_wide_vp(0);)
 }
 
 
@@ -303,10 +305,12 @@ inline void GameVP(void) {
     if ((editor_active != 0) ||
         ((paused != 0) && ((Cursor.menu < 3) || (Cursor.menu > 8)))) {
         NuVpSetSize((float)(MAXVPSIZEX << 4), (float)(MAXVPSIZEY << 3));
+        NW_WIDE_ONLY(nw_wide_vp(0);)
     } else {
         x = (MAXVPSIZEX << 4) + (((MINVPSIZEX << 4) - (MAXVPSIZEX << 4)) * paused) / 0x19;
         y = (MAXVPSIZEY << 3) + (((MINVPSIZEY << 3) - (MAXVPSIZEY << 3)) * paused) / 0x19;
         NuVpSetSize((float)x, (float)y);
+        NW_WIDE_ONLY(nw_wide_vp(paused);)
     }
 }
 

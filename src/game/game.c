@@ -4577,6 +4577,7 @@ void StartTimeTrial(struct nuvec_s *pos, s32 clock) {
     }
     NuCameraTransformScreenClip(&TTScrPos, pos, 1, 0);
     TTScrPos.z = (1.0f - TTScrPos.z) * (TEXTZMUL / 0.1f);
+    NW_WIDE_ONLY(TTScrPos.x *= nw_wide.k;)
     if (ObjTab[101].obj.special != NULL) {
         ObjTab[101].obj.special->instance->flags.visible = 1;
     }
@@ -7642,7 +7643,8 @@ void UpdateScreenWumpas(void) {
                     v[0].y = anew->pos.y + GameCam[0].vX.y * 0.1f;
                     v[0].z = anew->pos.z + GameCam[0].vX.z * 0.1f;
                     NuCameraTransformScreenClip(&v[1], v, 1, 0);
-                    anew->scale = fabs(anew->screen.x - v[1].x) * 3.6363637f;
+                    anew->scale = NW_WIDE_SCALE(fabs(anew->screen.x - v[1].x), nw_wide.k) * 3.6363637f;
+                    NW_WIDE_ONLY(anew->screen.x *= nw_wide.k;)
                 }
                 scr = &WScr[i_screenwumpa];
                 scr->pos = anew->screen;
@@ -7762,10 +7764,10 @@ void DrawWumpa(void) {
             dz = pCam->pos.z - wumpa->pos.z;
             dx2 = dx * dx;
             dz2 = dz * dz;
-            if (editor_active == 0 && dx2 + dz2 > r2) {
+            if (editor_active == 0 && dx2 + dz2 > NW_WIDE_SCALE(r2, nw_wide.draw2)) {
                 continue;
             }
-            wumpa->in_range = 1;
+            wumpa->in_range = NW_WIDE(1, editor_active != 0 || !(dx2 + dz2 > r2));
             info = &WInfo[i & 7];
             if (wumpa->shadow != 2000000.0f && VEHICLECONTROL != 2 &&
                 (VEHICLECONTROL != 1 || player->obj.vehicle != 0x20) &&
