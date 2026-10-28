@@ -4577,7 +4577,7 @@ void StartTimeTrial(struct nuvec_s *pos, s32 clock) {
     }
     NuCameraTransformScreenClip(&TTScrPos, pos, 1, 0);
     TTScrPos.z = (1.0f - TTScrPos.z) * (TEXTZMUL / 0.1f);
-    NW_WIDE_ONLY(TTScrPos.x *= nw_wide.panel_x;)
+    NW_WIDE_ONLY(TTScrPos.x *= nw_wide.k;)
     if (ObjTab[101].obj.special != NULL) {
         ObjTab[101].obj.special->instance->flags.visible = 1;
     }
@@ -7644,7 +7644,7 @@ void UpdateScreenWumpas(void) {
                     v[0].z = anew->pos.z + GameCam[0].vX.z * 0.1f;
                     NuCameraTransformScreenClip(&v[1], v, 1, 0);
                     anew->scale = NW_WIDE_SCALE(fabs(anew->screen.x - v[1].x), nw_wide.k) * 3.6363637f;
-                    NW_WIDE_ONLY(anew->screen.x *= nw_wide.panel_x;)
+                    NW_WIDE_ONLY(anew->screen.x *= nw_wide.k;)
                 }
                 scr = &WScr[i_screenwumpa];
                 scr->pos = anew->screen;

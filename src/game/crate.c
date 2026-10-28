@@ -275,7 +275,7 @@ inline void AddExtraLife(struct nuvec_s *pos, s32 pdeb) {
     if (scale < 0.0) {
         scale = 0.0 - scale;
     }
-    AddPanelDebris(NW_WIDE_SCALE(scr.x, nw_wide.panel_x), scr.y, pdeb,
+    AddPanelDebris(NW_WIDE_SCALE(scr.x, nw_wide.k), scr.y, pdeb,
                    NW_WIDE_SCALE(scale, nw_wide.k) * 3.6363637f, 1);
 }
 
