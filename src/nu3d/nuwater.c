@@ -52,20 +52,20 @@ extern u32 *rndrstream_free;
 extern int PS2_REZ_W;
 extern int PS2_REZ_H;
 int skip_grab = 0;
-static int nwater_mtl = 0;
+NW_STATIC int nwater_mtl = 0;
 static float theta_step = 0.1f;
 static int get_screen = 0;
 static int water_tables_active = 0;
-static int nwater_tables = 0;
+NW_STATIC int nwater_tables = 0;
 static int nwinst;
 static struct numtl_s *water_copy_mtl;
 static int water_rt;
 static float wateru1;
 static float waterv1;
-static struct numtl_s *water_mtls[8];
-static int water_mtl_tables[8];
+NW_STATIC struct numtl_s *water_mtls[8];
+NW_STATIC int water_mtl_tables[8];
 static struct nuinstance_s *winst[256];
-static WATERTABLEENTRY water_table[8];
+NW_STATIC WATERTABLEENTRY water_table[8];
 
 #define nuwater_file "..\\nu2crash.ps2\\nu3d\\nuwater.c"
 
