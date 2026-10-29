@@ -185,4 +185,17 @@ int nw_wide_vp_x(void);
 #define NW_WIDE_SEEN(drawn) (drawn)
 #endif
 
+/* Display-rate interpolation (NuWorld's src/gfx/interp.c), which blends each draw from the frame before by a key.
+ * NW_INTERP_KEY: the object the draws after it belong to (0: none), where a draw that skips an object would shift
+ * the keys of the ones after it. NW_INTERP_SNAP: the frame shows a cut, drawn without blending. */
+#ifdef NW_HOST
+void nw_interp_key(const void *key);
+void nw_interp_snap(void);
+#define NW_INTERP_KEY(p) nw_interp_key(p)
+#define NW_INTERP_SNAP() nw_interp_snap()
+#else
+#define NW_INTERP_KEY(p)
+#define NW_INTERP_SNAP()
+#endif
+
 #endif /* NU_PORT_H */

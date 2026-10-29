@@ -609,6 +609,7 @@ void RailInfo(RailPosition *rpos, struct nuvec_s *pos, u16 *angle,
 
 
 void ResetGameCameras(struct cammtx_s *Gamecam, s32 n) {
+    NW_INTERP_SNAP();
     while (n > 0) {
         Gamecam->mode = -1;
         Gamecam->judder = 0.0f;

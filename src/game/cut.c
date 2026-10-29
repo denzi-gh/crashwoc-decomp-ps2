@@ -375,7 +375,9 @@ void AppCutSceneCharacterRender(struct instNUGCUTSCENE_s *icutscene, struct NUGC
     } else {
         dwa = 0;
     }
+    NW_INTERP_KEY(icutchar);
     NuHGobjRndrMtxDwa(obj, &mtx, obj->num_layers, layertab, tmtx, dwa);
+    NW_INTERP_KEY(0);
 
     if (cutchar->first_locator == 0xFF) {
         return;
