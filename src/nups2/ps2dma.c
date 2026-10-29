@@ -1262,6 +1262,7 @@ u64 CrcChain(void *addr, int uncached)
     int stackptr;
     u64 *lptr;
     int n;
+    u64 header;
 
     tag = addr;
     stackptr = 0;
@@ -1300,7 +1301,12 @@ u64 CrcChain(void *addr, int uncached)
             lptr = (u64 *)next;
             break;
         }
-        tot += ((u64 *)tag)[1];
+        header = ((u64 *)tag)[1];
+        /* The dead assignment preserves this block boundary through GCC 2.95
+         * register allocation; no label-address code survives optimization. */
+        addr = &&sum_header;
+    sum_header:
+        tot += header;
         n = tag->qwc;
         if (n) {
             int i;
