@@ -1154,7 +1154,8 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
     }
     cursor->menu_frame++;
     cursor->item_frame++;
-    if ((Level == 0x23 || cutmovie == 0) && cursor->menu == 0 && NW_HZ(0x5db, 0x707) < cursor->item_frame) {
+    if ((Level == 0x23 || cutmovie == 0) && cursor->menu == 0 && NW_HZ(0x5db, 0x707) < cursor->item_frame &&
+        NW_DEMOS()) {
         new_level = DemoLevel[i_demolevel];
         Demo = 1;
         i_demolevel++;

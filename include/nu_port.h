@@ -210,4 +210,13 @@ extern int nw_hz;
 #define NW_HZ(pal, ntsc) (pal)
 #endif
 
+/* The title's attract demos replay .ppd recordings, one pad state per 50 Hz tick. NW_DEMOS: whether the title may
+ * start one, always on the PS2. */
+#ifdef NW_HOST
+int nw_demos(void);
+#define NW_DEMOS() nw_demos()
+#else
+#define NW_DEMOS() 1
+#endif
+
 #endif /* NU_PORT_H */
