@@ -10,6 +10,7 @@
  *   0x0025fa88 DrawBug
  */
 
+#include "nu_port.h"
 #include "nu3d/nulight.h"
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
@@ -195,12 +196,12 @@ void UpdateBugLight(struct creature_s *c) {
     buglight_ang[3] += qrand() / 0x40 * 6;
     if ((LBIT & 0x80100000) != 0) {
         if (mechlight_fade > fade) {
-            mechlight_fade -= 0.02f;
+            mechlight_fade -= NW_HZ(0.02f, 0.016666668f);
             if (mechlight_fade < fade) {
                 mechlight_fade = fade;
             }
         } else if (mechlight_fade < fade) {
-            mechlight_fade += 0.02f;
+            mechlight_fade += NW_HZ(0.02f, 0.016666668f);
             if (mechlight_fade > fade) {
                 mechlight_fade = fade;
             }
@@ -218,7 +219,7 @@ void UpdateBugLight(struct creature_s *c) {
         bug_fade = mechlight_fade;
         rnd = (f32)qrand();
         d0 = mechlight_radius + (rnd * (1.0f / 65535.0f) - 0.5f) * 0.25f;
-        bug_radius = bug_radius + (d0 - bug_radius) * 0.02f;
+        bug_radius = bug_radius + (d0 - bug_radius) * NW_HZ(0.02f, 0.016666668f);
         return;
     }
     if (Level != 0x1b) {
@@ -260,20 +261,20 @@ void UpdateBugLight(struct creature_s *c) {
             d0 = r1;
         }
         if (bug_splratio > d0) {
-            bug_splratio = bug_splratio - dr * 0.02f * 10.0f;
+            bug_splratio = bug_splratio - dr * NW_HZ(0.02f, 0.016666668f) * 10.0f;
             if (bug_splratio < d0) {
                 bug_splratio = d0;
             }
         } else if (bug_splratio < d0) {
-            bug_splratio = bug_splratio + dr * 0.02f * 10.0f;
+            bug_splratio = bug_splratio + dr * NW_HZ(0.02f, 0.016666668f) * 10.0f;
             if (bug_splratio > d0) {
                 bug_splratio = d0;
             }
         }
         PointAlongSpline(SplTab[70].spl, bug_splratio, &pos, 0, 0);
-        bug_splpos.x = bug_splpos.x + (pos.x - bug_splpos.x) * 0.3f;
-        bug_splpos.y = bug_splpos.y + (pos.y - bug_splpos.y) * 0.3f;
-        bug_splpos.z = bug_splpos.z + (pos.z - bug_splpos.z) * 0.3f;
+        bug_splpos.x = bug_splpos.x + (pos.x - bug_splpos.x) * NW_HZ(0.3f, 0.25f);
+        bug_splpos.y = bug_splpos.y + (pos.y - bug_splpos.y) * NW_HZ(0.3f, 0.25f);
+        bug_splpos.z = bug_splpos.z + (pos.z - bug_splpos.z) * NW_HZ(0.3f, 0.25f);
         bug_pos = bug_splpos;
     } else {
         bug_pos.x = player->obj.pos.x;
@@ -283,9 +284,9 @@ void UpdateBugLight(struct creature_s *c) {
         bug_pos.x = bug_pos.x + NuTrigTable[ang] * buglight_distance;
         bug_pos.z = bug_pos.z + NuTrigTable[(u16)(ang + 0x4000)] * buglight_distance;
     }
-    buglight_ang[0] += 0x276;
-    buglight_ang[1] += 0x162;
-    buglight_ang[2] += 0x414;
+    buglight_ang[0] += NW_HZ(0x276, 0x20D);
+    buglight_ang[1] += NW_HZ(0x162, 0x127);
+    buglight_ang[2] += NW_HZ(0x414, 0x366);
     bug_radius = buglight_radius + NuTrigTable[buglight_ang[3]] * buglight_radius * 0.025f;
     bug_pos.x = bug_pos.x + NuTrigTable[buglight_ang[0]] * 0.25f;
     bug_pos.y = bug_pos.y + NuTrigTable[buglight_ang[1]] * 0.25f;
@@ -297,15 +298,15 @@ void UpdateBugLight(struct creature_s *c) {
     bug_yrot = SeekRot(bug_yrot, ang, 3);
     if (CRemap[174] != -1) {
         BugAnim.oldaction = BugAnim.action;
-        UpdateAnimPacket(&CModel[CRemap[174]], &BugAnim, 0.59999996f, 0.0f);
+        UpdateAnimPacket(&CModel[CRemap[174]], &BugAnim, NW_HZ(0.59999996f, 0.5f), 0.0f);
     }
     if (buglight_fade > fade) {
-        buglight_fade -= 0.02f;
+        buglight_fade -= NW_HZ(0.02f, 0.016666668f);
         if (buglight_fade < fade) {
             buglight_fade = fade;
         }
     } else if (buglight_fade < fade) {
-        buglight_fade += 0.02f;
+        buglight_fade += NW_HZ(0.02f, 0.016666668f);
         if (buglight_fade > fade) {
             buglight_fade = fade;
         }

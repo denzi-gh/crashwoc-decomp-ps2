@@ -11,6 +11,7 @@
  *   0x00260d50 AddMechanicalDebris
  */
 
+#include "nu_port.h"
 #include "numath/numtx.h"
 #include "numath/nuvec.h"
 #include "game/gametypes.h"
@@ -557,7 +558,7 @@ void AddAnimDebris(struct CharacterModel *model, struct numtx_s *mtxLOCATOR,
                   && (adeb->time2 <= 1.0f
                       || (adeb->time2 > adeb->time && time <= adeb->time2)))
               || (time > adeb->time
-                  && time - model->animlist[action]->speed * 0.59999996f
+                  && time - model->animlist[action]->speed * NW_HZ(0.59999996f, 0.5f)
                          <= adeb->time))) {
             continue;
         }

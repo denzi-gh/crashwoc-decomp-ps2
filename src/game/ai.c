@@ -3201,7 +3201,7 @@ s32 WaterCrunchFunction_Attack(struct creature_s *c)
     gamesfx_effect_volume = 0x7FFE;
     GameSfx(0x88, &c->obj.pos);
     NewRumble(&player->rumble, 0xBF);
-    NewBuzz(&player->rumble, 0xA);
+    NewBuzz(&player->rumble, NW_HZ(0xA, 0xC));
     return 1;
 }
 
@@ -3250,9 +3250,9 @@ void UpdateDRAINDAMAGE(void)
     if (model != -1) {
         drain_wawa_model = &CModel[model];
         if (drain_wawa_model->anmdata[12] != 0 && drain_wawa_model->anmdata[13] != 0) {
-            drain_ang[0] += 0x816;
-            drain_ang[1] += 0x57C;
-            drain_ang[2] += 0xAB0;
+            drain_ang[0] += NW_HZ(0x816, 0x6BD);
+            drain_ang[1] += NW_HZ(0x57C, 0x492);
+            drain_ang[2] += NW_HZ(0xAB0, 0x8E8);
             if (c != 0 || drain_wawa_ok != 0) {
                 if (c != 0) {
                     pos.x = c->obj.pos.x - NuTrigTable[c->obj.hdg] * 3.0f;
@@ -3275,7 +3275,7 @@ void UpdateDRAINDAMAGE(void)
                     drain_wawa_yrot = SeekRot(drain_wawa_yrot, yrot, 3);
                 }
                 drain_wawa_anim.oldaction = drain_wawa_anim.action;
-                UpdateAnimPacket(&CModel[model], &drain_wawa_anim, 0.59999996f, 0.0f);
+                UpdateAnimPacket(&CModel[model], &drain_wawa_anim, NW_HZ(0.59999996f, 0.5f), 0.0f);
                 if (drain_wawa_anim.flags & 1) {
                     if (drain_wawa_anim.action == 0xC) {
                         if (c == 0
@@ -3319,7 +3319,7 @@ s32 WaterCrunchFunction_Spladoosh(struct creature_s *c)
     GameSfx(0x47, &c->obj.pos);
     JudderGameCamera(&GameCam[0], 0.2f, 0);
     NewRumble(&player->rumble, 0x7F);
-    NewBuzz(&player->rumble, 0xA);
+    NewBuzz(&player->rumble, NW_HZ(0xA, 0xC));
     for (i = 0; i < 0x40; i++) {
         NuVecScale(&v, &v001, (f32)qrand() * 1.5259022e-05f);
         NuVecRotateY(&v, &v, qrand());
@@ -3423,11 +3423,11 @@ s32 UpdateCRUNCHTIME(void)
     plrmid.y = player->obj.pos.y
            + (player->obj.bot + player->obj.top) * player->obj.SCALE * 0.5f;
     plrmid.z = player->obj.pos.z;
-    spaceuka_angle[0] += 0x57C;
-    spaceuka_angle[1] += 0x804;
-    spaceuka_angle[2] += 0xA20;
+    spaceuka_angle[0] += NW_HZ(0x57C, 0x492);
+    spaceuka_angle[1] += NW_HZ(0x804, 0x6AE);
+    spaceuka_angle[2] += NW_HZ(0xA20, 0x870);
     crunchtime_attack_phase = (cortex != 0) ? 4 - cortex->ai.hits : 0;
-    extra_time = 5;
+    extra_time = NW_HZ(5, 6);
 
     if (crunch != 0 && (u32)crunchtime_attack_phase < 4
         && crunch->ai.i0 > 0 && crunch->ai.i0 < 5
@@ -3474,7 +3474,7 @@ s32 UpdateCRUNCHTIME(void)
     }
     if (earth_attack_wait == 0 && earth_attack_on != 0) {
         AddProjectile(0, 0, 0, 0xE, qrand(), 0);
-        earth_attack_wait = 0x19;
+        earth_attack_wait = NW_HZ(0x19, 0x1E);
     }
 
     if (crunch != 0 && crunch->ai.i0 == 2 && crunch->obj.anim.newaction == 0x22
@@ -3501,7 +3501,7 @@ s32 UpdateCRUNCHTIME(void)
         ang2 = ang;
         AddDeb3(p0, 0x11, 5, &ang2);
         GameSfx(0x48, p0);
-        water_attack_wait = 0x3E;
+        water_attack_wait = NW_HZ(0x3E, 0x4B);
     }
 
     active = 0;
@@ -3511,7 +3511,7 @@ s32 UpdateCRUNCHTIME(void)
     }
     if (fire_attack_wait != 0) {
         fire_attack_wait--;
-        if (fire_attack_wait == 0x32) {
+        if (fire_attack_wait == NW_HZ(0x32, 0x3C)) {
             GameSfx(0x4D, 0);
         }
     }
@@ -3520,7 +3520,7 @@ s32 UpdateCRUNCHTIME(void)
             j = qrand() / 0x4000;
         } while (j == fire_attack_on);
         fire_attack_on = j;
-        fire_attack_wait = 100;
+        fire_attack_wait = NW_HZ(100, 120);
         GameSfx(0x85, 0);
     }
     if (fire_attack_wait != 0) {
@@ -3539,7 +3539,7 @@ s32 UpdateCRUNCHTIME(void)
         v.x = pos[1].x + (pos[0].x - pos[1].x) * f;
         v.y = pos[1].y + (pos[0].y - pos[1].y) * f;
         v.z = pos[1].z + (pos[0].z - pos[1].z) * f;
-        if ((u32)fire_attack_wait >= 0x32) {
+        if ((u32)fire_attack_wait >= NW_HZ(0x32, 0x3C)) {
             for (i = 0; i < 2; i++) {
                 AddGameDebrisRot(0x75, &v, 1, 0, 0);
             }
@@ -3567,15 +3567,15 @@ s32 UpdateCRUNCHTIME(void)
         do {
             j = qrand() / 0x1C72;
         } while (weather_attack_on[j] != 0);
-        weather_attack_on[j] = 100;
-        weather_attack_wait = 0x21;
+        weather_attack_on[j] = NW_HZ(100, 120);
+        weather_attack_wait = NW_HZ(0x21, 0x28);
         GameSfx(0x32, &weather_dstpos[j]);
     }
     kill = 0;
     for (j = 0; j < 9; j++) {
         if (weather_attack_on[j] != 0) {
             weather_attack_on[j]--;
-            if (weather_attack_on[j] == 0x32) {
+            if (weather_attack_on[j] == NW_HZ(0x32, 0x3C)) {
                 gamesfx_effect_volume = 0xBFFD;
                 GameSfx(0x4B, &weather_dstpos[j]);
             }
@@ -3584,7 +3584,7 @@ s32 UpdateCRUNCHTIME(void)
                 AddGameDebrisRot(0x78, &weather_dstpos[j], 1, 0, 0);
             }
         }
-        if ((u32)(weather_attack_on[j] - 1) < 0x31) {
+        if ((u32)(weather_attack_on[j] - 1) < NW_HZ(0x31, 0x3B)) {
             if (NuVecDistSqr(&plrmid, &weather_srcpos[j], 0) < 0.110889f
                 || NuVecDistSqr(&plrmid, &weather_dstpos[j], 0) < 0.110889f) {
                 kill = 1;
@@ -3622,7 +3622,7 @@ s32 UpdateCRUNCHTIME(void)
                      && SPACEUKAFRAMEHACK < cortex->obj.anim.anim_time))) {
             v.y += 2.0f;
         }
-        f = 0.039960004f;
+        f = NW_HZ(0.039960004f, 0.0333f);
         v.x += NuTrigTable[spaceuka_angle[0]] * 0.1f;
         v.y += NuTrigTable[spaceuka_angle[1]] * 0.1f;
         v.z += NuTrigTable[spaceuka_angle[2]] * 0.1f;
@@ -3669,13 +3669,13 @@ void DrawCRUNCHTIME(void)
     u32 col;
 
     for (i = 0; i < 9; i++) {
-        if ((u32)weather_attack_on[i] >= 0x32) {
+        if ((u32)weather_attack_on[i] >= NW_HZ(0x32, 0x3C)) {
             continue;
         }
         if (weather_attack_on[i] != 0 && Paused == 0) {
             a = weather_attack_on[i];
-            if (a >= 0x23) {
-                a = (0x32 - a) << 4;
+            if (a >= NW_HZ(0x23, 0x2D)) {
+                a = (NW_HZ(0x32, 0x3C) - a) << 4;
             } else {
                 a = a << 4;
             }
@@ -4577,7 +4577,7 @@ NW_HOST_LOOSE_CALLS void MoveCreature(struct creature_s *c)
             case 0x3D:
                 NuVecSub(&v, &c->ai.newpos, &c->ai.oldpos);
                 c->ai.duration = NuVecMag(&v) / c->cmdcurr->f;
-                if (c->ai.duration < 0.02f) {
+                if (c->ai.duration < NW_HZ(0.02f, 0.016666668f)) {
                     c->ai.duration = 0.02f;
                 }
                 break;
@@ -4633,7 +4633,7 @@ NW_HOST_LOOSE_CALLS void MoveCreature(struct creature_s *c)
                     } else if ((c->ai.rotflags & 0x400) && i > 0) {
                         i -= 0x10000;
                     }
-                    c->ai.duration = (f32)abs(i) / (f32)(c->ai.rotspeed * 50);
+                    c->ai.duration = (f32)abs(i) / (f32)(c->ai.rotspeed * NW_HZ(50, 60));
                 } else {
                     c->ai.duration = 1.0f;
                 }
@@ -4884,7 +4884,7 @@ label8c:
 
             evhit = 0;
             branch = -2;
-            c->ai.time += 0.02f;
+            c->ai.time += NW_HZ(0.02f, 0.016666668f);
             if (0.0f < c->ai.duration && c->ai.duration <= c->ai.time) {
                 c->ai.time = c->ai.duration;
                 branch = -1;
@@ -4929,7 +4929,7 @@ label8c:
                 dz = q->z - c->obj.pos.z;
                 fy = dx * dx + dz * dz;
                 ang = NuAtan2D(dx, dz);
-                fb = c->ai.speed * 0.02f;
+                fb = c->ai.speed * NW_HZ(0.02f, 0.016666668f);
                 if (fy <= fb * fb) {
                     c->obj.pos = *q;
                     if (!i) {
@@ -4977,7 +4977,7 @@ label8c:
                 double dd;
                 dx = pos[c->ai.i1].x - pos[c->ai.i0].x;
                 dz = pos[c->ai.i1].z - pos[c->ai.i0].z;
-                fb = (c->ai.speed * 0.02f) / NuFsqrt(dx * dx + dz * dz);
+                fb = (c->ai.speed * NW_HZ(0.02f, 0.016666668f)) / NuFsqrt(dx * dx + dz * dz);
                 fa = RatioAlongLine(&plr->obj.pos, &pos[c->ai.i0], &pos[c->ai.i1]);
                 dd = c->ai.lateral - fa;
                 if (dd < 0.0) {
@@ -5451,17 +5451,17 @@ rotdone:
                 if (c->obj.attack != 0) {
                     if (plr->spin != 0
                         && plr->spin_frame < plr->spin_frames - plr->minfo->SPINRESETFRAMES) {
-                        if (v2.y + d - 0.012f <= plr->obj.oldobjbot) {
+                        if (v2.y + d - NW_HZ(0.012f, 0.010000001f) <= plr->obj.oldobjbot) {
                             plr->obj.mom.y = 0.0f;
                             plr->obj.boing |= 1;
                             NewRumble(&plr->rumble, 0x7F);
-                            NewBuzz(&plr->rumble, 0xA);
-                        } else if (plr->obj.oldobjtop <= v2.y - d + 0.012f) {
+                            NewBuzz(&plr->rumble, NW_HZ(0xA, 0xC));
+                        } else if (plr->obj.oldobjtop <= v2.y - d + NW_HZ(0.012f, 0.010000001f)) {
                             plr->obj.mom.y = 0.0f;
                         } else {
                             ang = NuAtan2D(dx, dz);
-                            plr->obj.mom.x = -NuTrigTable[ang] * 0.12f;
-                            plr->obj.mom.z = -NuTrigTable[(ang + 0x4000) & 0xFFFF] * 0.12f;
+                            plr->obj.mom.x = -NuTrigTable[ang] * NW_HZ(0.12f, 0.10000001f);
+                            plr->obj.mom.z = -NuTrigTable[(ang + 0x4000) & 0xFFFF] * NW_HZ(0.12f, 0.10000001f);
                         }
                     } else {
                         if (KillPlayer(&plr->obj, (c->ai.locator_kill != -1)
@@ -5481,7 +5481,7 @@ rotdone:
     if (c->obj.dead != 0) {
         if (c->obj.die_action != -1) {
             c->obj.anim.newaction = c->obj.die_action;
-            fb = 0.59999996f;
+            fb = NW_HZ(0.59999996f, 0.5f);
         } else {
             fb = 0.0f;
         }
@@ -5489,7 +5489,7 @@ rotdone:
         if (c->ai.force_action != -1) {
             c->obj.anim.newaction = c->ai.force_action;
         }
-        fb = 0.59999996f;
+        fb = NW_HZ(0.59999996f, 0.5f);
     }
     if (c->ai.idle_update != 0) {
         UpdateCharacterIdle(c, c->obj.character);
@@ -5504,7 +5504,7 @@ rotdone:
         GameSfxLoop(0x61, &c->obj.pos);
         break;
     case 0x9A:
-        if (ai_type == 0x35 && 0.00666f < c->obj.xyz_distance) {
+        if (ai_type == 0x35 && NW_HZ(0.00666f, 0.0055500004f) < c->obj.xyz_distance) {
             switch (Level) {
             case 6:
                 i = 0xCA;

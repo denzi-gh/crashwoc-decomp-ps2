@@ -17,6 +17,7 @@
  */
 
 #include "nu_libc.h"
+#include "nu_port.h"
 
 #include "numath/nuvec.h"
 #include "game/gametypes.h"
@@ -345,7 +346,7 @@ s32 edwmpProc(struct nupad_s *pad)
     if (screendump) {
         return 0;
     }
-    edwmp_count += 6;
+    edwmp_count += NW_HZ(6, 5);
     if (edwmp_active_menu) {
         eduiMenuProcess(edwmp_active_menu, pad);
         return 0;

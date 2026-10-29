@@ -198,4 +198,16 @@ void nw_interp_snap(void);
 #define NW_INTERP_SNAP()
 #endif
 
+/* 50/60 Hz (NuWorld's src/port/hz.c): game logic on PAL's 50 Hz tick or NTSC's 60 Hz one. NW_HZ: a value tied to
+ * the tick, PAL's on the PS2, the one of nw_hz's rate on the host. NW_HZ_NTSC builds the PS2 code with the NTSC
+ * values, which NuWorld's tools/ntsc_diff.py compares with the US release. */
+#ifdef NW_HOST
+extern int nw_hz;
+#define NW_HZ(pal, ntsc) (nw_hz == 60 ? (ntsc) : (pal))
+#elif defined(NW_HZ_NTSC)
+#define NW_HZ(pal, ntsc) (ntsc)
+#else
+#define NW_HZ(pal, ntsc) (pal)
+#endif
+
 #endif /* NU_PORT_H */

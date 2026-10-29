@@ -11,6 +11,7 @@
  */
 
 #include "nu_libc.h"
+#include "nu_port.h"
 #include "nu_types.h"
 
 #include "nu3d/nugscn.h"
@@ -268,7 +269,7 @@ void DrawGameSlots(void) {
         for (column = 0; column < 2; column++, x += dx) {
             colour = 0;
             if (Cursor.y == row && Cursor.x == column) {
-                colour = (GlobalTimer.frame % 10 < 5) ? 4 : 3;
+                colour = (GlobalTimer.frame % NW_HZ(10, 12) < 5) ? 4 : 3;
             }
             DrawGameSlot(&SaveSlot[row][column], x, y, colour);
         }

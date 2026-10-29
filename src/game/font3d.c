@@ -12,6 +12,7 @@
  */
 
 #include "nu_libc.h"
+#include "nu_port.h"
 
 #include "nu3d/numtl.h"
 #include "nu3d/nugscn.h"
@@ -301,7 +302,7 @@ void Update3DFontObjects(void) {
                     ad = model->anmdata[tab->action];
                     if (ad != 0) {
                         al = model->animlist[tab->action];
-                        tab->anim_time += al->speed * anim_step;
+                        tab->anim_time += al->speed * NW_HZ(anim_step, 0.5f);
                         if (ad->time < tab->anim_time) {
                             WRAP_ANIM_TIME(tab->anim_time, ad, al);
                         }

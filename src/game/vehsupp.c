@@ -50,6 +50,7 @@
  */
 
 #include "nu_libc.h"
+#include "nu_port.h"
 
 #include "nu3d/nuhgobj.h"
 #include "numath/numtx.h"
@@ -253,7 +254,7 @@ struct nuvec_s *CrossProduct(struct nuvec_s *dest, struct nuvec_s *A,
 
 s32 ProcessTimer(f32 *Timer) {
     if (Paused == 0) {
-        *Timer -= 1.0f / 50.0f;
+        *Timer -= 1.0f / NW_HZ(50.0f, 60.0f);
     }
     if (*Timer <= 0.0f) {
         *Timer = 0.0f;

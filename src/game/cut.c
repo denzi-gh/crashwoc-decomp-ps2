@@ -466,7 +466,7 @@ s32 LoadCutComponents(struct cutscenedesc_s *csd, struct csc_s *chars) {
             }
             CutInst[ix] = instNuGCutSceneCreate(*cutscn, 0, 0, instname, &superbuffer_ptr);
             if (CutInst[ix] != 0) {
-                CutInst[ix]->speed = 0.6f;
+                CutInst[ix]->speed = NW_HZ(0.6f, 0.5f);
                 CutAudio[ix] = csd[ix].sfxid;
                 instNuGCutSceneSetEndCallback(CutInst[ix], CutSceneEndFunction);
                 if (ix != 0 && CutInst[ix - 1] != 0) {
@@ -575,7 +575,7 @@ void SetCutMovieRate(void) {
             CutInst[cutworldix]->speed *= 0.8f;
         }
     }
-    CutInst[cutworldix]->speed *= 1.2f;
+    CutInst[cutworldix]->speed *= NW_HZ(1.2f, 1.0f);
     if (cutratefrig != 0.0f) {
         CutInst[cutworldix]->speed = cutratefrig;
     }
@@ -752,7 +752,7 @@ void PlayCutMovie(s32 movie) {
             MaxVP();
             cut_on = 1;
             fadeval = 0xFF;
-            fade_rate = -10;
+            fade_rate = -NW_HZ(10, 8);
             do {
                 DebrisSetRenderGroup(cutdebgroups[cutworldix]);
                 DoInput();
@@ -774,7 +774,7 @@ void PlayCutMovie(s32 movie) {
                         next_cut_movie = -1;
                         quit = 1;
                     }
-                    NuMtlAnimate(0.02f);
+                    NuMtlAnimate(NW_HZ(0.02f, 0.016666668f));
                     NuTexAnimSetSignals(texanimbits);
                     NuTexAnimProcess();
                     pCam = GameCam;
@@ -918,7 +918,7 @@ void UpdateGameCut(void) {
                 if (gamecut_hold != 0 && gamecut_sfx != -1 && NuSoundKeyStatus(4) != 1) {
                     dt = 0.0f;
                 } else {
-                    dt = 0.59999996f;
+                    dt = NW_HZ(0.59999996f, 0.5f);
                     gamecut_hold = 0;
                 }
                 UpdateAnimPacket(model, &CutAnim, dt, 0.0f);
@@ -961,7 +961,7 @@ void UpdateGameCut(void) {
                 model = &CModel[character];
                 CutVortexAnim.oldaction = CutVortexAnim.action;
                 CutVortexAnim.newaction = 0x22;
-                UpdateAnimPacket(model, &CutVortexAnim, 0.59999996f, 0.0f);
+                UpdateAnimPacket(model, &CutVortexAnim, NW_HZ(0.59999996f, 0.5f), 0.0f);
             }
             GameSfxLoop(0xE1, &v000);
         }
@@ -2027,7 +2027,7 @@ void CutSceneNextFunction(struct instNUGCUTSCENE_s *icutscene) {
         cutmovie_hold = 1;
     }
     if (fadeval != 0) {
-        fade_rate = -10;
+        fade_rate = -NW_HZ(10, 8);
     }
 }
 

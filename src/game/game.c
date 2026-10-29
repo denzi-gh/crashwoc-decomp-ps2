@@ -559,8 +559,8 @@ void HubSelect(struct creature_s *c) {
             c->obj.pos.z = c->obj.oldpos.z;
             yrot = NuAtan2D(p1->x - p0->x, p1->z - p0->z) + 0x4000;
             if (c->spin && c->spin_frame < c->spin_frames - c->minfo->SPINRESETFRAMES) {
-                c->obj.mom.x = NuTrigTable[yrot] * 0.06f;
-                c->obj.mom.z = NuTrigTable[(u16)(yrot + 0x4000)] * 0.06f;
+                c->obj.mom.x = NuTrigTable[yrot] * NW_HZ(0.06f, 0.050000004f);
+                c->obj.mom.z = NuTrigTable[(u16)(yrot + 0x4000)] * NW_HZ(0.06f, 0.050000004f);
                 return;
             }
             minfo = c->minfo;
@@ -584,7 +584,7 @@ void HubSelect(struct creature_s *c) {
                 ResetAnimPacket(&c->obj.anim, 0x19);
                 c->obj.anim.anim_time = c->obj.model->anmdata[0x19]->time;
             }
-            NewBuzz(&c->rumble, 10);
+            NewBuzz(&c->rumble, NW_HZ(10, 12));
             gamesfx_effect_volume = 0x7FFE;
             GameSfx(0x4B, &c->obj.pos);
             pos.x = c->obj.pos.x - NuTrigTable[yrot] * c->obj.RADIUS;
@@ -874,7 +874,7 @@ char *MakeEditText(char *txt) {
         if ((Game.language == 'c' && j == i_nameinput + i_nameinput) ||
             (Game.language != 'c' && j == i_nameinput)) {
             edit_txt[k++] = '#';
-            edit_txt[k++] = (GlobalTimer.frame % 10 < 5) ? 'o' : 'b';
+            edit_txt[k++] = (GlobalTimer.frame % NW_HZ(10, 12) < NW_HZ(5, 6)) ? 'o' : 'b';
         } else if ((Game.language == 'c' && j == (i_nameinput + 1) * 2) ||
                    (Game.language != 'c' && j == i_nameinput + 1)) {
             edit_txt[k++] = '#';
@@ -897,8 +897,8 @@ void NewMenu(struct cursor_s *cur, s32 menu, s32 y, s32 level) {
     if (menu != cur->new_menu || cur->wait_hack == 0) {
         switch (menu) {
         case -1:
-            if (cur->menu == 0x13 || cur->menu == 0x16) {
-                cur->wait = 0x32;
+            if (cur->menu == 0x13 || cur->menu == NW_HZ(0x16, 0x13)) {
+                cur->wait = NW_HZ(0x32, 0x3C);
             }
             break;
         case 2:
@@ -929,7 +929,7 @@ void NewMenu(struct cursor_s *cur, s32 menu, s32 y, s32 level) {
             memcard_loadattempted = 0;
             break;
         case 31:
-            lock = 0x96;
+            lock = NW_HZ(0x96, 0xB4);
             break;
         }
     }
@@ -1051,7 +1051,7 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
         if (editor_active != 0) {
             return;
         }
-        if (Paused - 1U < 0x18) {
+        if (Paused - 1U < NW_HZ(0x18, 0x1D)) {
             return;
         }
         if (pad == NULL) {
@@ -1154,7 +1154,7 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
     }
     cursor->menu_frame++;
     cursor->item_frame++;
-    if ((Level == 0x23 || cutmovie == 0) && cursor->menu == 0 && 0x5db < cursor->item_frame) {
+    if ((Level == 0x23 || cutmovie == 0) && cursor->menu == 0 && NW_HZ(0x5db, 0x707) < cursor->item_frame) {
         new_level = DemoLevel[i_demolevel];
         Demo = 1;
         i_demolevel++;
@@ -1166,7 +1166,7 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
             return;
         }
         Level = new_level;
-        fade_rate = 0xA;
+        fade_rate = NW_HZ(0xA, 0x8);
         return;
     }
 
@@ -1207,7 +1207,7 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
         if (CROSS != 0) {
             if (y == 0) {
                 temp_vibration = 1 - temp_vibration;
-                pausebuzz = (temp_vibration != 0) ? qrand() * 0xA / 0x10000 + 5 : 0;
+                pausebuzz = (temp_vibration != 0) ? qrand() * NW_HZ(0xA, 0x8) / 0x10000 + 5 : 0;
                 sfx = 0x36;
             } else if (y == 1) {
                 NewMenu(cursor, 5, -1, -1);
@@ -1238,7 +1238,7 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
                 pausebuzz--;
             } else if (temp_vibration != 0) {
                 if (qrand() < 0x800) {
-                    pausebuzz = qrand() * 0xA / 0x10000 + 5;
+                    pausebuzz = qrand() * NW_HZ(0xA, 0xC) / 0x10000 + NW_HZ(5, 6);
                 }
             }
         } else {
@@ -1269,8 +1269,8 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
                 if (qrand() < 0x1000) {
                     sfx = test_sfx[qrand() / 0x4000];
                     if (temp_surround != 0) {
-                        range = y / 400;
-                        rem = y % 400;
+                        range = y / NW_HZ(400, 480);
+                        rem = y % NW_HZ(400, 480);
                         y = qrand();
                         pos[0] = GameCam[0].pos.x + NuTrigTable[y] * nusound_fade_start;
                         pos[1] = GameCam[0].pos.y;
@@ -1607,7 +1607,7 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
                 force_menu = 0x14;
                 sfx = 0x36;
                 if (cutmovie == 0) {
-                    fade_rate = 0xA;
+                    fade_rate = NW_HZ(0xA, 0x8);
                 }
                 break;
             }
@@ -1645,7 +1645,7 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
                 if (cutmovie == 0) {
                     next_cut_movie = 1;
                     NewMenu(cursor, -1, -1, -1);
-                    fade_rate = 0xA;
+                    fade_rate = NW_HZ(0xA, 0x8);
                 } else {
                     cutmovie = 1;
                 }
@@ -1934,7 +1934,7 @@ void ProcMenu(struct cursor_s *cursor, struct nupad_s *pad) {
         UpdateSaveSlots();
         if (memcard_saveneeded != 0 || memcard_savestarted != 0 || memcard_deleteneeded != 0 ||
             memcard_deletestarted != 0 || memcard_savemessage_delay != 0) {
-            memcard_saveresult_delay = 0x32;
+            memcard_saveresult_delay = NW_HZ(0x32, 0x28);
         }
         if (memcard_saveresult_delay == 0) {
             NewMenu(cursor, 0x13, 3, -1);
@@ -2099,7 +2099,7 @@ void DrawNameInputTable(struct cursor_s *cursor, float x0, float y0) {
         for (j = cursor->x_min; j <= cursor->x_max; j++) {
             tbuf[0] = NameInputTable[i][j];
             if (i == cursor->y && j == cursor->x) {
-                col = (GlobalTimer.frame % 10 < 5) ? 0 : 3;
+                col = (GlobalTimer.frame % NW_HZ(10, 12) < NW_HZ(5, 6)) ? 0 : 3;
             } else {
                 col = 2;
             }
@@ -2110,7 +2110,7 @@ void DrawNameInputTable(struct cursor_s *cursor, float x0, float y0) {
     }
     if (cursor->y_max >= 4) {
         if (cursor->y == 4) {
-            col = (GlobalTimer.frame % 10 < 5) ? 0 : 3;
+            col = (GlobalTimer.frame % NW_HZ(10, 12) < NW_HZ(5, 6)) ? 0 : 3;
         } else {
             col = 2;
         }
@@ -2119,7 +2119,7 @@ void DrawNameInputTable(struct cursor_s *cursor, float x0, float y0) {
     }
     if (cursor->y_max >= 5) {
         if (cursor->y == 5) {
-            col = (GlobalTimer.frame % 10 < 5) ? 0 : 3;
+            col = (GlobalTimer.frame % NW_HZ(10, 12) < NW_HZ(5, 6)) ? 0 : 3;
         } else {
             col = 2;
         }
@@ -2154,7 +2154,7 @@ void DrawMenuEntry(struct cursor_s *cursor, char *txt, float *x, float *y,
 
     if (*i >= cursor->y_min && *i <= cursor->y_max) {
         if (*i == cursor->y) {
-            col = (GlobalTimer.frame % 10 < 5) ? 0 : 3;
+            col = (GlobalTimer.frame % NW_HZ(10, 12) < NW_HZ(5, 6)) ? 0 : 3;
         } else {
             col = 2;
         }
@@ -2207,7 +2207,7 @@ void DrawMenuEntry2(struct cursor_s *cursor, char *txt0, char *txt1, float *x,
 
     if (*i >= cursor->y_min && *i <= cursor->y_max) {
         if (*i == cursor->y) {
-            col = (GlobalTimer.frame % 10 < 5) ? 0 : 3;
+            col = (GlobalTimer.frame % NW_HZ(10, 12) < NW_HZ(5, 6)) ? 0 : 3;
         } else {
             col = 2;
         }
@@ -2306,7 +2306,7 @@ void DrawMenu(struct cursor_s *cursor, s32 paused) {
     }
     x = 0.0f;
     if (pause_dir != 0) {
-        size = (25 - paused) * 0.08f;
+        size = (NW_HZ(25, 30) - paused) * NW_HZ(0.08f, 0.06666667f);
         if (pause_dir == 1) {
             x -= size;
         } else {
@@ -2362,7 +2362,7 @@ void DrawMenu(struct cursor_s *cursor, s32 paused) {
         Text3D(MakeEditText(Game.name), 0.0f, GAMENAMEY, 1.0f, 1.0f, 1.0f, 1.0f, 0, 4);
         break;
     case 3:
-        if (paused < 25) {
+        if (paused < NW_HZ(25, 30)) {
             return;
         }
         x = PANELMENUX;
@@ -2376,7 +2376,7 @@ void DrawMenu(struct cursor_s *cursor, s32 paused) {
         }
         break;
     case 4:
-        if (paused < 25) {
+        if (paused < NW_HZ(25, 30)) {
             return;
         }
         x = PANELMENUX;
@@ -2402,7 +2402,7 @@ void DrawMenu(struct cursor_s *cursor, s32 paused) {
         DrawMenuEntry(cursor, tDONE[Game.language], &x, &y, &i);
         break;
     case 5:
-        if (paused < 25) {
+        if (paused < NW_HZ(25, 30)) {
             return;
         }
         x = PANELMENUX;
@@ -2437,7 +2437,7 @@ void DrawMenu(struct cursor_s *cursor, s32 paused) {
         DrawMenuEntry(cursor, tDONE[Game.language], &x, &y, &i);
         break;
     case 6:
-        if (paused < 25) {
+        if (paused < NW_HZ(25, 30)) {
             return;
         }
         x = PANELMENUX;
@@ -2462,7 +2462,7 @@ void DrawMenu(struct cursor_s *cursor, s32 paused) {
         DrawMenuEntry(cursor, tDONE[Game.language], &x, &y, &i);
         break;
     case 7:
-        if (paused < 25) {
+        if (paused < NW_HZ(25, 30)) {
             return;
         }
         x = PANELMENUX;
@@ -2472,7 +2472,7 @@ void DrawMenu(struct cursor_s *cursor, s32 paused) {
         }
         break;
     case 8:
-        if (paused < 25) {
+        if (paused < NW_HZ(25, 30)) {
             return;
         }
         x = PANELMENUX;
@@ -2481,7 +2481,7 @@ void DrawMenu(struct cursor_s *cursor, s32 paused) {
         DrawMenuEntry(cursor, tNO[Game.language], &x, &y, &i);
         break;
     case 9:
-        if (paused < 25) {
+        if (paused < NW_HZ(25, 30)) {
             return;
         }
         dy = (cursor->y_max - cursor->y_min) * MENUDY * 0.8333333f * 0.5f;
@@ -2526,7 +2526,7 @@ void DrawMenu(struct cursor_s *cursor, s32 paused) {
         DrawMenuEntry(cursor, (Game.language == 'c') ? "O U T R O 2 " : "OUTRO2", &x, &y, &i);
         break;
     case 10:
-        if (paused < 25) {
+        if (paused < NW_HZ(25, 30)) {
             return;
         }
         y = 0.0f - dy;
@@ -2587,7 +2587,7 @@ void DrawMenu(struct cursor_s *cursor, s32 paused) {
         DrawMenuEntry(cursor, tbuf, &x, &y, &i);
         break;
     case 11:
-        if (paused < 25) {
+        if (paused < NW_HZ(25, 30)) {
             return;
         }
         y = 0.05f;
@@ -2608,7 +2608,7 @@ void DrawMenu(struct cursor_s *cursor, s32 paused) {
         y += dy;
         break;
     case 12:
-        if (paused < 25) {
+        if (paused < NW_HZ(25, 30)) {
             return;
         }
         scale = 0.5f;
@@ -2625,7 +2625,7 @@ void DrawMenu(struct cursor_s *cursor, s32 paused) {
                                    ? "?"
                                    : LevelName[HData[j].level[i]][Game.language]);
                 if (i == cursor->y && j == cursor->x) {
-                    col = (GlobalTimer.frame % 10 < 5) ? 4 : 3;
+                    col = (GlobalTimer.frame % NW_HZ(10, 12) < NW_HZ(5, 6)) ? 4 : 3;
                 } else {
                     col = 0;
                 }
@@ -2733,7 +2733,7 @@ void DrawMenu(struct cursor_s *cursor, s32 paused) {
             DrawGameSlots(cursor);
         }
         if (cursor->y == cursor->y_max) {
-            col = (GlobalTimer.frame % 10 < 5) ? 0 : 3;
+            col = (GlobalTimer.frame % NW_HZ(10, 12) < NW_HZ(5, 6)) ? 0 : 3;
         } else {
             col = 2;
         }
@@ -2797,7 +2797,7 @@ void DrawMenu(struct cursor_s *cursor, s32 paused) {
             DrawGameSlots(cursor);
         }
         if (cursor->y == cursor->y_max) {
-            col = (GlobalTimer.frame % 10 < 5) ? 0 : 3;
+            col = (GlobalTimer.frame % NW_HZ(10, 12) < NW_HZ(5, 6)) ? 0 : 3;
         } else {
             col = 2;
         }
@@ -2873,7 +2873,7 @@ void DrawMenu(struct cursor_s *cursor, s32 paused) {
             DrawGameSlots(cursor);
         }
         if (cursor->y == cursor->y_max) {
-            col = (GlobalTimer.frame % 10 < 5) ? 0 : 3;
+            col = (GlobalTimer.frame % NW_HZ(10, 12) < NW_HZ(5, 6)) ? 0 : 3;
         } else {
             col = 2;
         }
@@ -3064,7 +3064,7 @@ void InitLevel(void) {
         CalculateGamePercentage(&Game);
         ResetTempCharacter(2, 0x22);
         hub_vr_level = -1;
-        loadsave_frame = 0x33;
+        loadsave_frame = NW_HZ(0x33, 0x3D);
         warp_level = -1;
         break;
     case 0x27:
@@ -3340,7 +3340,7 @@ void InitWumpa(void) {
     }
     for (i = 0; i < 8; i++) {
         WInfo[i].angle = 0;
-        WInfo[i].spin = 0x7AE;
+        WInfo[i].spin = NW_HZ(0x7AE, 0x666);
         WInfo[i].scale = 0.75f;
     }
     ResetWumpa();
@@ -3350,7 +3350,7 @@ void InitWumpa(void) {
 void FlyWumpa(struct wumpa_s *obj) {
     obj->mom.x = 0.0f;
     obj->mom.y = 0.0f;
-    obj->mom.z = 0.19999999f;
+    obj->mom.z = NW_HZ(0.19999999f, 0.16666667f);
     NuVecRotateX(&obj->mom, &obj->mom, -0x400);
     NuVecRotateY(&obj->mom, &obj->mom, qrand());
     obj->time = 0;
@@ -3480,7 +3480,7 @@ inline s32 RotDiff(u16 a, u16 b) {
 
 inline void TransporterGo(void) {
     GameSfx(0x82, &player->obj.pos);
-    NewBuzz(&player->rumble, 5);
+    NewBuzz(&player->rumble, NW_HZ(5, 6));
 }
 
 s32 StartHGobjAnim(struct nuhspecial_s *obj) {
@@ -3522,7 +3522,7 @@ void UpdateMaskFeathers(void) {
 
     for (i = 0; i < 4; i++) {
         if (f->time < f->duration) {
-            f->time += 0.59999996f;
+            f->time += NW_HZ(0.59999996f, 0.5f);
             if (f->time > f->duration) {
                 f->time = f->duration;
             }
@@ -3577,13 +3577,13 @@ inline void UpdateTimer(void *timer) {
 
     t->frame++;
     /* PAL: 300/50 = 6 per frame (GC 60Hz used 5). */
-    t->itime += 6;
-    t->isec += 6;
+    t->itime += NW_HZ(6, 5);
+    t->isec += NW_HZ(6, 5);
     if (t->isec > 299) {
         t->isec -= 0x12C;
     }
-    t->ftime += 0.02f;
-    t->fsec += 0.02f;
+    t->ftime += NW_HZ(0.02f, 0.016666668f);
+    t->fsec += NW_HZ(0.02f, 0.016666668f);
     if (t->fsec >= 1.0f) {
         t->fsec -= 1.0f;
     }
@@ -3685,7 +3685,7 @@ inline void WumpaHitTerrain(struct wumpa_s *wmp) {
     struct nuvec_s ray;
 
     /* PAL: 50.0f (GC 60Hz used 60.0f) */
-    f = wmp->duration * 50.0f;
+    f = wmp->duration * NW_HZ(50.0f, 60.0f);
     ray.x = wmp->mom.x * f;
     ray.y = wmp->mom.y * f;
     ray.z = wmp->mom.z * f;
@@ -3908,7 +3908,7 @@ void NewMask(MaskInfo *mask, struct nuvec_s *pos) {
         } else {
             /* PAL: 0x228 (GC 0x296); and a channel-forced GameSfx rather than
              * GC's GameMusic(0xa2, 0). */
-            mask->active = 0x228;
+            mask->active = NW_HZ(0x228, 0x296);
             gamesfx_channel = 4;
             GameSfx(0xA2, 0);
         }
@@ -4208,7 +4208,7 @@ s32 WipeWumpa(RailPosition *rpos) {
                          wumpa->fALONG) != 0) {
             wumpa->mom.x = 0.0f;
             wumpa->mom.y = 0.0f;
-            wumpa->mom.z = 0.19999999f;
+            wumpa->mom.z = NW_HZ(0.19999999f, 0.16666667f);
             NuVecRotateX(&wumpa->mom, &wumpa->mom, -0x400);
             NuVecRotateY(&wumpa->mom, &wumpa->mom, qrand());
             wumpa->time = 0;
@@ -4548,7 +4548,7 @@ void AddFlyingWumpa(struct nuvec_s *src, struct nuvec_s *dir,
     wumpa->active = 3;
     wumpa->duration = 2.0f;
     wumpa->time = 0;
-    NuVecScale(&wumpa->mom, dir, 0.19999999f);
+    NuVecScale(&wumpa->mom, dir, NW_HZ(0.19999999f, 0.16666667f));
     WumpaHitTerrain(wumpa);
     if (destroy == 3) {
         destroy = 2;
@@ -4786,7 +4786,7 @@ s32 HitWumpa(struct obj_s *obj, s32 destroy) {
                     } else {
                         wumpa->mom.x = 0.0f;
                         wumpa->mom.y = 0.0f;
-                        wumpa->mom.z = 0.19999999f;
+                        wumpa->mom.z = NW_HZ(0.19999999f, 0.16666667f);
                         NuVecRotateX(&wumpa->mom, &wumpa->mom, -0x400);
                         NuVecRotateY(&wumpa->mom, &wumpa->mom, qrand());
                         wumpa->time = 0;
@@ -4836,7 +4836,7 @@ void GameTiming(void) {
 
     if (pause_dir == 1) {
         Paused++;
-        if (Paused == 0x19) {
+        if (Paused == NW_HZ(0x19, 0x1E)) {
             pause_dir = 0;
         }
     } else if (pause_dir == 2) {
@@ -4848,7 +4848,7 @@ void GameTiming(void) {
         }
     }
     if (Paused != 0) {
-        if (Paused == 0x19) {
+        if (Paused == NW_HZ(0x19, 0x1E)) {
             UpdateTimer(&PauseTimer);
             pausestats_frame++;
         }
@@ -4867,12 +4867,12 @@ void GameTiming(void) {
             force_panel_items_update--;
         }
         if (Pad[0] != NULL && (Pad[0]->paddata & 0x10) != 0 && GameMode != 1) {
-            force_panel_wumpa_update = 50;
+            force_panel_wumpa_update = NW_HZ(50, 60);
             if (TimeTrial == 0 && LDATA->hub != -1) {
-                force_panel_crate_update = 50;
+                force_panel_crate_update = NW_HZ(50, 60);
             }
-            force_panel_lives_update = 50;
-            force_panel_items_update = 50;
+            force_panel_lives_update = NW_HZ(50, 60);
+            force_panel_items_update = NW_HZ(50, 60);
         }
         UpdatePanelItem(&plr_wumpas, force_panel_wumpa_update, 1);
         UpdatePanelItem(&plr_crates, force_panel_crate_update, 0);
@@ -4881,30 +4881,30 @@ void GameTiming(void) {
         UpdatePanelItem(&plr_crategem, force_panel_items_update, 1);
         UpdatePanelItem(&plr_bonusgem, force_panel_items_update, 1);
         if (check_time < check_duration) {
-            check_time += 0.02f;
+            check_time += NW_HZ(0.02f, 0.016666668f);
             if (check_time >= check_duration) {
                 check_time = check_duration;
                 point_time = 0.0f;
             }
         }
         if (point_time < point_duration) {
-            point_time += 0.02f;
+            point_time += NW_HZ(0.02f, 0.016666668f);
             if (point_time >= point_duration) {
                 point_time = point_duration;
             }
         }
         if (start_time > 0.0f) {
-            start_time -= 0.02f;
+            start_time -= NW_HZ(0.02f, 0.016666668f);
             if (start_time < 0.0f) {
                 start_time = 0.0f;
             }
         }
         if (TimeTrial != 0) {
             if (TimeTrialWait > 0.0f) {
-                if (timetrial_frame % 12 == 0) {
+                if (timetrial_frame % NW_HZ(12, 15) == 0) {
                     GameSfx(0x4E, NULL);
                 }
-                TimeTrialWait -= 0.02f;
+                TimeTrialWait -= NW_HZ(0.02f, 0.016666668f);
                 if (TimeTrialWait < 0.0f) {
                     TimeTrialWait = 0.0f;
                 }
@@ -4916,11 +4916,11 @@ void GameTiming(void) {
         if (Bonus == 2) {
             bonus_frame++;
         }
-        PANELWUMPAYROT -= 0x7C1;
-        PANELCRATEYROT -= 0x28F;
+        PANELWUMPAYROT -= NW_HZ(0x7C1, 0x666);
+        PANELCRATEYROT -= NW_HZ(0x28F, 0x222);
         panel_head_xrot = 0;
         panel_head_yrot = 0;
-        if (Level != 0x1A ? GameTimer.frame == 0x96 : GameTimer.frame == 0x19) {
+        if (Level != 0x1A ? GameTimer.frame == NW_HZ(0x96, 0xB4) : GameTimer.frame == NW_HZ(0x19, 0x1E)) {
             sfx = -1;
             if (Level == 0xD || Level == 0x1A) {
                 sfx = 0xC7;
@@ -4932,7 +4932,7 @@ void GameTiming(void) {
         }
         flash = 0;
         if (TimeTrial != 0 && player->obj.finished == 1) {
-            flash = (finish_frame % 50 > 36) ? 0 : player->obj.finished;
+            flash = (finish_frame % NW_HZ(50, 60) > NW_HZ(36, 44)) ? 0 : player->obj.finished;
         }
         tt_flash = flash;
     }
@@ -5075,9 +5075,9 @@ void JonProbe(void) {
             probeon = 1;
             GameSfx(0x82, &probepos);
             NewRumble(&player->rumble, 0x7F);
-            NewBuzz(&player->rumble, 5);
+            NewBuzz(&player->rumble, NW_HZ(5, 6));
         }
-        probetime = 0x5DC;
+        probetime = NW_HZ(0x5DC, 0x708);
         probedpos = in_finish_pos;
     }
     oldpos = probepos;
@@ -5091,8 +5091,8 @@ void JonProbe(void) {
                 probetime = 0;
             }
             probey += 0x5A00;
-            if (probey > 0xC8000) {
-                probey = 0xC8000;
+            if (probey > NW_HZ(0xC8000, 0xF0000)) {
+                probey = NW_HZ(0xC8000, 0xF0000);
             }
         } else {
             probey -= 0x5A00;
@@ -5101,11 +5101,11 @@ void JonProbe(void) {
                 probeon = 0;
                 GameSfx(0x82, &probepos);
                 NewRumble(&player->rumble, 0x7F);
-                NewBuzz(&player->rumble, 5);
+                NewBuzz(&player->rumble, NW_HZ(5, 6));
             }
         }
         pos = probedpos;
-        pos.y += 4.5f - NuTrigTable[(probey / 50) & 0xFFFF] * 2.5f;
+        pos.y += 4.5f - NuTrigTable[(probey / NW_HZ(50, 60)) & 0xFFFF] * 2.5f;
         x = (probepos.x - pos.x) * 0.0625f;
         if (x > 0.1f) {
             x = 0.1f;
@@ -5123,8 +5123,8 @@ void JonProbe(void) {
         }
         probepos.y -= (probepos.y - pos.y) * 0.5f;
         probepos.z -= z;
-        proberot.y = (proberot.y + 0xA3) & 0xFFFF;
-        if (NuFabs(x) < 0.005f && NuFabs(z) < 0.005f && probey == 0xC8000) {
+        proberot.y = (proberot.y + NW_HZ(0xA3, 0x88)) & 0xFFFF;
+        if (NuFabs(x) < 0.005f && NuFabs(z) < 0.005f && probey == NW_HZ(0xC8000, 0xF0000)) {
             if (probecol == 0) {
                 gamesfx_effect_volume = 0xBFFD;
                 GameSfx(0x4B, &probepos);
@@ -5133,8 +5133,8 @@ void JonProbe(void) {
             pos = probepos;
             AddVariableShotDebrisEffect(GDeb[76].i, &pos, 1, -0x8000, 0);
             probecol += 0xF0;
-            if (probecol > 0x1900) {
-                probecol = 0x1900;
+            if (probecol > NW_HZ(0x1900, 0x1E00)) {
+                probecol = NW_HZ(0x1900, 0x1E00);
             }
             charging = 0;
         } else {
@@ -5148,16 +5148,16 @@ void JonProbe(void) {
     }
     if (probecol != 0) {
         ang = proberot.y + 0xBB8;
-        col = (probecol / 50) << 24;
+        col = (probecol / NW_HZ(50, 60)) << 24;
         for (i = 0; i < 3; i++) {
             pos = probespk;
             end.y = pos.y;
             pos.y -= 0.05;
             end.y -= 1.8f;
             if (charging != 0) {
-                pos.y -= (float)(0x80 - probecol / 50) * 0.015625f;
-                x = (float)(probecol / 50) / 426.66666f;
-                z = (float)(probecol / 50) / 266.66669f;
+                pos.y -= (float)(0x80 - probecol / NW_HZ(50, 60)) * 0.015625f;
+                x = (float)(probecol / NW_HZ(50, 60)) / 426.66666f;
+                z = (float)(probecol / NW_HZ(50, 60)) / 266.66669f;
             } else {
                 x = 0.3f;
                 z = 0.48f;
@@ -5184,7 +5184,7 @@ void JonProbe(void) {
         Draw3DCharacter(&probepos, proberot.x, proberot.y, proberot.z,
                         &CModel[CRemap[0xB1]], 1.0f, -1, 1.0f, 0);
     }
-    vol = 16383.0f - NuVecDist(&probepos, &oldpos, 0) * 16383.0f / 0.06f;
+    vol = 16383.0f - NuVecDist(&probepos, &oldpos, 0) * 16383.0f / NW_HZ(0.06f, 0.050000004f);
     if (vol > 0) {
         gamesfx_effect_volume = vol;
         gamesfx_pitch = 0x75A;
@@ -5192,13 +5192,13 @@ void JonProbe(void) {
     }
     probepos2 = probepos;
     dist = NuVecDist(&probepos, &oldpos, 0);
-    vol = dist * 16383.0f / 0.06f;
+    vol = dist * 16383.0f / NW_HZ(0.06f, 0.050000004f);
     if (vol >= 0x4000) {
         vol = 0x3FFF;
     }
     if (vol > 0) {
         gamesfx_effect_volume = vol;
-        gamesfx_pitch = dist * 4700.0005f + 470.0f;
+        gamesfx_pitch = dist * NW_HZ(4700.0005f, 5640.0f) + 470.0f;
         if (gamesfx_pitch > 0x3AD) {
             gamesfx_pitch = 0x3AD;
         }
@@ -5844,7 +5844,7 @@ void UpdateTempCharacter(void) {
         TempAnim2.oldaction = TempAnim2.action;
         model = &CModel[i];
         if ((u16)TempAnim2.action < 0x76 && (u16)TempAnim2.newaction < 0x76) {
-            UpdateAnimPacket(model, &TempAnim2, 0.59999996f, 0.0f);
+            UpdateAnimPacket(model, &TempAnim2, NW_HZ(0.59999996f, 0.5f), 0.0f);
         }
     }
     if (temp_character != -1) {
@@ -5885,7 +5885,7 @@ void UpdateTempCharacter(void) {
         }
         model = &CModel[i];
         if ((u16)TempAnim.action < 0x76 && (u16)TempAnim.newaction < 0x76) {
-            UpdateAnimPacket(model, &TempAnim, 0.59999996f, 0.0f);
+            UpdateAnimPacket(model, &TempAnim, NW_HZ(0.59999996f, 0.5f), 0.0f);
         }
     }
 }
@@ -5926,7 +5926,7 @@ void UpdateAwards(void) {
                     AddGameDebris(0xA1, &award->oldpos1);
                 }
             } else {
-                time += 0.02f;
+                time += NW_HZ(0.02f, 0.016666668f);
                 award->time = time;
                 if (time >= 1.0f) {
                     award->time = 1.0f;
@@ -6127,12 +6127,12 @@ void HubLevelSelect(struct obj_s *obj, s32 hub) {
             new_level = HData[hub].level[HubLevel];
         }
         if (hubleveltext_pos > 0.333f) {
-            hubleveltext_pos -= 0.02f;
+            hubleveltext_pos -= NW_HZ(0.02f, 0.016666668f);
             if (hubleveltext_pos < 0.333f) {
                 hubleveltext_pos = 0.333f;
             }
         } else if (hubleveltext_pos < 0.333f) {
-            hubleveltext_pos += 0.02f;
+            hubleveltext_pos += NW_HZ(0.02f, 0.016666668f);
             if (hubleveltext_pos > 0.333f) {
                 hubleveltext_pos = 0.333f;
             }
@@ -6202,7 +6202,7 @@ void HubLevelSelect(struct obj_s *obj, s32 hub) {
                     in_finish_pos = *p0;
                     if (HubLevel_available != 0) {
                         in_finish_range++;
-                        if (in_finish_range < 50) {
+                        if (in_finish_range < NW_HZ(50, 60)) {
                             goto text;
                         }
                     }
@@ -6220,7 +6220,7 @@ void HubLevelSelect(struct obj_s *obj, s32 hub) {
                         HubLevelAngle = NuAtan2D(p1->x - p0->x, p1->z - p0->z);
                         warp_level = HData[hub].level[HubLevel];
                         AddWarpDebris(obj, &pos);
-                        finish_frames = 50;
+                        finish_frames = NW_HZ(50, 60);
                         hubwarp_oldpos = obj->pos;
                         hubwarp_newpos = *p0;
                         gamesfx_effect_volume = 0x7FFE;
@@ -6231,12 +6231,12 @@ void HubLevelSelect(struct obj_s *obj, s32 hub) {
                         goto text;
                     }
                     if (HubLevel == 5) {
-                        obj->mom.x = NuTrigTable[ang] * 0.06f;
-                        obj->mom.z = NuTrigTable[(u16)(ang + 0x4000)] * 0.06f;
+                        obj->mom.x = NuTrigTable[ang] * NW_HZ(0.06f, 0.050000004f);
+                        obj->mom.z = NuTrigTable[(u16)(ang + 0x4000)] * NW_HZ(0.06f, 0.050000004f);
                     } else {
                         ang = NuAtan2D(p1->x - p0->x, p1->z - p0->z);
-                        obj->mom.x = NuTrigTable[ang] * 0.06f;
-                        obj->mom.z = NuTrigTable[(u16)(ang + 0x4000)] * 0.06f;
+                        obj->mom.x = NuTrigTable[ang] * NW_HZ(0.06f, 0.050000004f);
+                        obj->mom.z = NuTrigTable[(u16)(ang + 0x4000)] * NW_HZ(0.06f, 0.050000004f);
                     }
                 } else {
                     in_finish_range = 0;
@@ -6262,12 +6262,12 @@ text:
         }
     }
     if (hubleveltext_pos > best) {
-        hubleveltext_pos -= 0.02f;
+        hubleveltext_pos -= NW_HZ(0.02f, 0.016666668f);
         if (hubleveltext_pos < best) {
             hubleveltext_pos = best;
         }
     } else if (hubleveltext_pos < best) {
-        hubleveltext_pos += 0.02f;
+        hubleveltext_pos += NW_HZ(0.02f, 0.016666668f);
         if (hubleveltext_pos > best) {
             hubleveltext_pos = best;
         }
@@ -6299,12 +6299,12 @@ void HubMoveVR(void) {
     if (hub_vr_level == -1) {
         hub_vr_scale = hub_vr_newscale = 0.0f;
     } else if (hub_vr_scale > hub_vr_newscale) {
-        hub_vr_scale -= 0.04f;
+        hub_vr_scale -= NW_HZ(0.04f, 0.033333335f);
         if (hub_vr_scale < hub_vr_newscale) {
             hub_vr_scale = hub_vr_newscale;
         }
     } else if (hub_vr_scale < hub_vr_newscale) {
-        hub_vr_scale += 0.04f;
+        hub_vr_scale += NW_HZ(0.04f, 0.033333335f);
         if (hub_vr_scale > hub_vr_newscale) {
             hub_vr_scale = hub_vr_newscale;
         }
@@ -6511,7 +6511,7 @@ void BonusTiming(struct creature_s *plr) {
         }
     } else {
         if (plr_bonus_wumpas.count != 0) {
-            bonus_wumpa_delay = 5; /* PAL (GC 6) */
+            bonus_wumpa_delay = NW_HZ(5, 6); /* PAL (GC 6) */
             if (dead == 0) {
                 plr_wumpas.count++;
                 AddPanelDebris(BONUSWUMPAOBJSX, BONUSPANELSY, 0, 1.0f, 1);
@@ -6524,7 +6524,7 @@ void BonusTiming(struct creature_s *plr) {
                 bonus_wumpa_wait = 0.5f;
             }
         } else if (bonus_wumpa_wait > 0.0f) {
-            bonus_wumpa_wait -= 0.02f;
+            bonus_wumpa_wait -= NW_HZ(0.02f, 0.016666668f);
             if (bonus_wumpa_wait < 0.0f) {
                 bonus_wumpa_wait = 0.0f;
             }
@@ -6537,7 +6537,7 @@ void BonusTiming(struct creature_s *plr) {
             bonus_lives_wait = 0.5f;
         }
     } else if (bonus_lives != 0) {
-        bonus_life_delay = 0x4B; /* PAL: 90 * 50/60 (GC 90) */
+        bonus_life_delay = NW_HZ(0x4B, 0x5A); /* PAL: 90 * 50/60 (GC 90) */
         if (!dead) {
             AddPanelDebris(BONUSLIVESOBJSX, BONUSPANELSY, 4, BONUSLIFESCALE, 1);
         }
@@ -6546,7 +6546,7 @@ void BonusTiming(struct creature_s *plr) {
             bonus_lives_wait = 0.5f;
         }
     } else if (bonus_lives_wait > 0.0f) {
-        bonus_lives_wait -= 0.02f;
+        bonus_lives_wait -= NW_HZ(0.02f, 0.016666668f);
         if (bonus_lives_wait < 0.0f) {
             bonus_lives_wait = 0.0f;
         }
@@ -6601,9 +6601,9 @@ void LoseMask(struct obj_s *plr) {
     GameSfx(1, &plr->pos);
     AddMaskFeathers(plr->mask);
     plr->mask->active--;
-    plr->invincible = 0x96;
+    plr->invincible = NW_HZ(0x96, 0xB4);
     plr->mom.x = plr->mom.z = 0.0f;
-    NewBuzz(&player->rumble, 0x19);
+    NewBuzz(&player->rumble, NW_HZ(0x19, 0x1E));
     NewRumble(&player->rumble, 0x7F);
 }
 
@@ -7618,7 +7618,7 @@ void UpdateScreenWumpas(void) {
     scr = WScr;
     for (i = 0; i < 32; i++, scr++) {
         if (0.0f < scr->timer) {
-            scr->timer = scr->timer - 0.02f;
+            scr->timer = scr->timer - NW_HZ(0.02f, 0.016666668f);
             if (scr->timer < 0.0f) {
                 scr->timer = 0.0f;
                 if (sw_hack != 0) {
@@ -7658,7 +7658,7 @@ void UpdateScreenWumpas(void) {
                     scr->xs = WUMPAOBJSX;
                     scr->ys = PANELSY;
                     scr->bonus = 0;
-                    force_panel_wumpa_update = 50;
+                    force_panel_wumpa_update = NW_HZ(50, 60);
                 }
                 i_screenwumpa++;
                 if (i_screenwumpa == 32) {
@@ -7669,7 +7669,7 @@ void UpdateScreenWumpas(void) {
                     anew->active = 0;
                     continue;
                 }
-                anew->delay = 10;
+                anew->delay = NW_HZ(10, 12);
             } else {
                 anew->delay--;
             }
@@ -7848,9 +7848,9 @@ void UpdateWumpa(void) {
     float size;
     float t;
 
-    la[0] = wumpa_a[0] += 0x28F;
-    la[1] = wumpa_a[1] += 0x300;
-    la[2] = wumpa_a[2] += 0x400;
+    la[0] = wumpa_a[0] += NW_HZ(0x28F, 0x222);
+    la[1] = wumpa_a[1] += NW_HZ(0x300, 0x280);
+    la[2] = wumpa_a[2] += NW_HZ(0x400, 0x355);
     info = WInfo;
     for (i = 0; i < 8; i++) {
         info->angle -= info->spin;
@@ -7881,7 +7881,7 @@ void UpdateWumpa(void) {
     for (i = 0; i < 320; i++, wumpa++) {
         active = wumpa->active;
         if (active == 1) {
-            wumpa->time += 0.02f;
+            wumpa->time += NW_HZ(0.02f, 0.016666668f);
             if (wumpa->time >= 0.75f) {
                 wumpa->time = 0.75f;
                 wumpa->pos = wumpa->pos1;
@@ -7894,7 +7894,7 @@ void UpdateWumpa(void) {
                 wumpa->pos.y += NuTrigTable[(u16)(s32)(t * 32768.0f)];
             }
         } else if (active == 3) {
-            wumpa->time += 0.02f;
+            wumpa->time += NW_HZ(0.02f, 0.016666668f);
             if (wumpa->time < wumpa->duration) {
                 NuVecAdd(&wumpa->pos, &wumpa->pos, &wumpa->mom);
                 hitobj.pos = wumpa->pos;
@@ -7965,7 +7965,7 @@ void UpdateMask(MaskInfo *mask, struct obj_s *obj) {
         return;
     }
     if (obj->idle_gametime > 0.0f && Cursor.menu != 0x21) {
-        mask->idle_time += 0.02f;
+        mask->idle_time += NW_HZ(0.02f, 0.016666668f);
         if (mask->idle_time >= mask->idle_duration) {
             float rnd;
 
@@ -8038,7 +8038,7 @@ void UpdateMask(MaskInfo *mask, struct obj_s *obj) {
                 target += 0x2000;
             }
         }
-        mask->angle = TurnRot(mask->angle, target, 0x51E);
+        mask->angle = TurnRot(mask->angle, target, NW_HZ(0x51E, 0x444));
         mask->newpos.x = obj->pos.x + NuTrigTable[mask->angle] * 0.7f;
         mask->newpos.y = obj->pos.y + obj->top * obj->SCALE;
         if (dist < 1.0f) {
@@ -8051,14 +8051,14 @@ void UpdateMask(MaskInfo *mask, struct obj_s *obj) {
         mask->newpos.z = obj->pos.z + NuTrigTable[(u16)(mask->angle + 0x4000)] * 0.7f;
     }
     if (dist < 1.0f || Cursor.menu == 0x21) {
-        mask->wibble_ang[0] += 0xD8;
-        mask->wibble_ang[1] += 0x138;
-        mask->wibble_ang[2] += 0x10E;
+        mask->wibble_ang[0] += NW_HZ(0xD8, 0xB4);
+        mask->wibble_ang[1] += NW_HZ(0x138, 0x104);
+        mask->wibble_ang[2] += NW_HZ(0x10E, 0xE1);
         wibble = 0.1f;
     } else {
-        mask->wibble_ang[0] += 0x360;
-        mask->wibble_ang[1] += 0x4E0;
-        mask->wibble_ang[2] += 0x438;
+        mask->wibble_ang[0] += NW_HZ(0x360, 0x2D0);
+        mask->wibble_ang[1] += NW_HZ(0x4E0, 0x410);
+        mask->wibble_ang[2] += NW_HZ(0x438, 0x384);
         wibble = (dist - 1.0f) * 0.4f + 0.1f;
     }
     mask->newpos.x += NuTrigTable[mask->wibble_ang[0]] * wibble;
@@ -8073,9 +8073,9 @@ void UpdateMask(MaskInfo *mask, struct obj_s *obj) {
     }
     yrot = mask->yrot;
     if (obj->idle_gametime > 0.0f) {
-        i = 0x147;
+        i = NW_HZ(0x147, 0x111);
     } else {
-        i = 0x28F;
+        i = NW_HZ(0x28F, 0x222);
     }
     mask->yrot = TurnRot(yrot, target, i);
     mask->shadow = NewShadowMaskPlat(&mask->pos, 0.0f, -1);
@@ -8117,10 +8117,10 @@ void UpdateMask(MaskInfo *mask, struct obj_s *obj) {
         dx = mask->pos.x - oldpos.x;
         dz = mask->pos.z - oldpos.z;
         dist = NuFsqrt(dx * dx + dz * dz);
-        if (dist > 0.06f) {
+        if (dist > NW_HZ(0.06f, 0.050000004f)) {
             xrot = 0xF555;
         } else {
-            xrot = (s32)(dist * 16.666668f * -2731.0f);
+            xrot = (s32)(dist * NW_HZ(16.666668f, 19.999998f) * -2731.0f);
         }
     } else {
         mask->pos = mask->newpos;
@@ -8129,7 +8129,7 @@ void UpdateMask(MaskInfo *mask, struct obj_s *obj) {
     mask->xrot = SeekRot(mask->xrot, xrot, 2);
     mask->anim.oldaction = mask->anim.action;
     mask->anim.newaction = 0x22;
-    UpdateAnimPacket(&CModel[CRemap[3]], &mask->anim, 0.5999999642f, 0.0f);
+    UpdateAnimPacket(&CModel[CRemap[3]], &mask->anim, NW_HZ(0.5999999642f, 0.5f), 0.0f);
     mtx = 0;
     locked = 0;
     if (obj->parent == player) {
@@ -8410,7 +8410,7 @@ void UpdateKabooms(void) {
                 }
             }
         }
-        k->time += 0.02f;
+        k->time += NW_HZ(0.02f, 0.016666668f);
         if (k->time > k->duration) {
             k->time = k->duration;
         }
@@ -8526,10 +8526,10 @@ void CheckFinish(struct obj_s *obj) {
             }
             in_finish_pos = nearest;
             finish_newpos = nearest;
-            in_finish_range = 50;
+            in_finish_range = NW_HZ(50, 60);
             finish_oldpos = obj->pos;
             finish_type = 1;
-            finish_frames = 50;
+            finish_frames = NW_HZ(50, 60);
             break;
 
         case 0xD:
@@ -8546,7 +8546,7 @@ void CheckFinish(struct obj_s *obj) {
             if ((Game.level[Level].flags & 8) == 0) {
                 PickupCrystal();
             }
-            finish_frames = 50;
+            finish_frames = NW_HZ(50, 60);
             break;
         case 0x15:
         case 0x16:
@@ -8573,11 +8573,11 @@ void CheckFinish(struct obj_s *obj) {
                 return;
             }
             in_finish_range++;
-            if (in_finish_range < 50) {
+            if (in_finish_range < NW_HZ(50, 60)) {
                 return;
             }
             finish_newpos = obj->pos;
-            finish_frames = 50;
+            finish_frames = NW_HZ(50, 60);
             if ((Game.hub[Hub].flags & 6) == 2) {
                 Game.hub[Hub].flags |= 4;
                 Game.hub[Hub + 1].flags |= 1;
@@ -8605,11 +8605,11 @@ void CheckFinish(struct obj_s *obj) {
                 PickupCrystal();
             }
             in_finish_range++;
-            if (in_finish_range < 50) {
+            if (in_finish_range < NW_HZ(50, 60)) {
                 return;
             }
             finish_newpos = obj->pos;
-            finish_frames = 50;
+            finish_frames = NW_HZ(50, 60);
             break;
         case 0x1C:
             if (TimeTrial == 0 && (Game.level[Level].flags & 0x10) == 0 &&
@@ -8620,14 +8620,14 @@ void CheckFinish(struct obj_s *obj) {
                 return;
             }
             in_finish_range++;
-            if (in_finish_range < 50) {
+            if (in_finish_range < NW_HZ(50, 60)) {
                 return;
             }
             finish_newpos = obj->pos;
             if (TimeTrial == 0 && PlrTub.place == 1 && (Game.level[Level].flags & 0x20) == 0) {
                 PickupBonusGem(4);
             }
-            finish_frames = 50;
+            finish_frames = NW_HZ(50, 60);
             break;
         case 0x1D:
             if (TimeTrial == 0 && (Game.level[Level].flags & 0x10) == 0 &&
@@ -8638,14 +8638,14 @@ void CheckFinish(struct obj_s *obj) {
                 return;
             }
             in_finish_range++;
-            if (in_finish_range < 50) {
+            if (in_finish_range < NW_HZ(50, 60)) {
                 return;
             }
             finish_newpos = obj->pos;
             if (TimeTrial == 0 && carpet_place == 2 && (Game.level[Level].flags & 0x20) == 0) {
                 PickupBonusGem(4);
             }
-            finish_frames = 50;
+            finish_frames = NW_HZ(50, 60);
             break;
         }
         if ((Level == 3 && SmokeyPosition >= 2) || (Level == 0x1D && carpet_place == 1) ||
@@ -8678,11 +8678,11 @@ void CheckFinish(struct obj_s *obj) {
                 } else if (TimeTrialTimer.itime < LDATA->time[0]) {
                     Game.level[Level].flags |= 1;
                 }
-                if (finish_frames < 0x96) {
-                    finish_frames = 0x96;
+                if (finish_frames < NW_HZ(0x96, 0xB4)) {
+                    finish_frames = NW_HZ(0x96, 0xB4);
                 }
             } else {
-                finish_frames = 50;
+                finish_frames = NW_HZ(50, 60);
             }
         } else {
             if ((plr_items & 2) != 0) {
@@ -8880,7 +8880,7 @@ void GemPathTransporter(struct creature_s *plr) {
         break;
     case 1:
         if (gempath_time < gempath_duration) {
-            gempath_time = gempath_time + 0.02f;
+            gempath_time = gempath_time + NW_HZ(0.02f, 0.016666668f);
             if (gempath_time >= gempath_duration) {
                 gempath_time = gempath_duration;
             }
@@ -8910,7 +8910,7 @@ void GemPathTransporter(struct creature_s *plr) {
         break;
     case 3:
         if (gempath_time < gempath_duration) {
-            gempath_time = gempath_time + 0.02f;
+            gempath_time = gempath_time + NW_HZ(0.02f, 0.016666668f);
             if (gempath_time >= gempath_duration) {
                 gempath_time = gempath_duration;
             }
@@ -9025,7 +9025,7 @@ void DeathTransporter(struct creature_s *plr) {
         break;
     case 1:
         if (death_time < death_duration) {
-            death_time = death_time + 0.02f;
+            death_time = death_time + NW_HZ(0.02f, 0.016666668f);
             if (death_time >= death_duration) {
                 death_time = death_duration;
             }
@@ -9058,7 +9058,7 @@ void DeathTransporter(struct creature_s *plr) {
         break;
     case 3:
         if (death_time < death_duration) {
-            death_time = death_time + 0.02f;
+            death_time = death_time + NW_HZ(0.02f, 0.016666668f);
             if (death_time >= death_duration) {
                 death_time = death_duration;
             }
@@ -9154,7 +9154,7 @@ void BonusTransporter(struct creature_s *plr) {
             bonus_lives = 0;
             bonus_frame = 0;
             BlendGameCamera(&GameCam[0], 1.0f);
-            bonus_wumpa_delay = 5;
+            bonus_wumpa_delay = NW_HZ(5, 6);
             bonus_crate_delay = 5;
             bonus_life_delay = 1;
             bonus_wumpa_wait = 0.0f;
@@ -9166,7 +9166,7 @@ void BonusTransporter(struct creature_s *plr) {
     case 1:
         if (bonus_time < bonus_duration) {
             old = bonus_time;
-            bonus_time += 0.02f;
+            bonus_time += NW_HZ(0.02f, 0.016666668f);
             if (bonus_time >= bonus_duration) {
                 bonus_time = bonus_duration;
             }
@@ -9191,7 +9191,7 @@ void BonusTransporter(struct creature_s *plr) {
         break;
     case 2:
         if (bonus_panel_wait > 0.0f) {
-            bonus_panel_wait = bonus_panel_wait - 0.02f;
+            bonus_panel_wait = bonus_panel_wait - NW_HZ(0.02f, 0.016666668f);
             if (bonus_panel_wait < 0.0f) {
                 bonus_panel_wait = 0.0f;
             }
@@ -9212,8 +9212,8 @@ void BonusTransporter(struct creature_s *plr) {
         } else {
             ObjectCylinderCollision(&plr->obj, &bonus_obj[0], 0, 1.0f);
         }
-        plr_bonus_wumpas.frame = 0x19;
-        UpdatePanelItem(&plr_bonus_wumpas, 0x19, 0);
+        plr_bonus_wumpas.frame = NW_HZ(0x19, 0x1E);
+        UpdatePanelItem(&plr_bonus_wumpas, NW_HZ(0x19, 0x1E), 0);
         if (Bonus == 3 && plr_bonus_wumpas.count != 0) {
             GameSfx(0x2C, NULL);
         }
@@ -9221,7 +9221,7 @@ void BonusTransporter(struct creature_s *plr) {
     case 3:
         if (bonus_time < bonus_duration) {
             old = bonus_time;
-            bonus_time += 0.02f;
+            bonus_time += NW_HZ(0.02f, 0.016666668f);
             if (bonus_time >= bonus_duration) {
                 bonus_time = bonus_duration;
             }

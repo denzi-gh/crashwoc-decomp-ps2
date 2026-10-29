@@ -1027,7 +1027,7 @@ void DoInput(void)
             PauseGameAudio(1);
             GameSfx(0x36, 0);
             GameSfx(0x36, 0);
-        } else if (Paused == 25) {
+        } else if (Paused == NW_HZ(25, 30)) {
             pause_dir = 2;
             pausebuzz = 0;
             NuPs2VideoSetPos(Game.screen_x << 2, Game.screen_y << 1);
@@ -1507,7 +1507,7 @@ s32 BGLoadCutMovie(s32 movie)
     bg_cutmovie_id = movie;
     BGLoadStart(BGLoadCutScene);
     done = 0;
-    fade_rate = -10;
+    fade_rate = -NW_HZ(10, 8);
     fadeval = 0xFF;
     NuVpSetSize(PS2_REZ_W << 4, PS2_REZ_H << 4);
 
@@ -1538,7 +1538,7 @@ s32 BGLoadCutMovie(s32 movie)
         NuRndrVu1Draw();
         NuRndrSwapStreamBuffers();
         if (bgload_complete == 1) {
-            fade_rate = 10;
+            fade_rate = NW_HZ(10, 8);
             bgload_complete++;
         }
         if (bgload_complete != 0 && fadeval == 0xFF) {
@@ -2043,7 +2043,7 @@ next_game_mode:
         NuSoundUpdate();
         NuRndrSwapStreamBuffers();
         (void)nuvideo_global_vbcnt;
-        fade_rate = -10;
+        fade_rate = -NW_HZ(10, 8);
         frameout = 0;
         frameout_count = nuvideo_global_vbcnt;
         do {
@@ -2073,8 +2073,8 @@ next_game_mode:
                 ProcessGlass(Paused);
                 NuRndrShadowOnOff(COMPLEXPLAYERSHADOW);
 
-                if (149U < GameTimer.frame) {
-                    if (((GlobalTimer.frame % 50 == 25) && (fadeval == 0))
+                if (NW_HZ(149U, 179U) < GameTimer.frame) {
+                    if (((GlobalTimer.frame % NW_HZ(50, 60) == NW_HZ(25, 30)) && (fadeval == 0))
                         && ((NuSoundKeyStatus(0) != 1) || (NuSoundKeyStatus(1) != 1))
                         && (Bonus != 1 && (Bonus != 3)))
                     {
@@ -2128,13 +2128,15 @@ next_game_mode:
                         pNuCam->mtx = GameCam[0].m;
                         NuCameraSet(pNuCam);
                         if ((Pad[0] != 0) && ((Pad[0]->paddata_db & 0xa0) != 0)) {
-                            pausestats_frame = (pausestats_frame + 150) - (pausestats_frame % 150U);
+                            pausestats_frame = (pausestats_frame + NW_HZ(150, 180)) -
+                                               (pausestats_frame % NW_HZ(150U, 180U));
                             GameSfx(0x36, 0);
                         }
                     } else {
                         mask_crates = 0;
                         crate_wumpa = 0;
-                        RotateDirectionalLight(ldir, -0x2000, ((int)GameTimer.frame % 400U << 0x10) / 400U);
+                        RotateDirectionalLight(ldir, -0x2000,
+                                               ((int)GameTimer.frame % NW_HZ(400U, 480U) << 0x10) / NW_HZ(400U, 480U));
 
                         for (phase_value = 0; phase_value <= 8; phase_value++) {
                             Character[phase_value].anim_processed = 0;
@@ -2202,7 +2204,7 @@ next_game_mode:
                                 }
                             }
                         }
-                        NuMtlAnimate(0.02f);
+                        NuMtlAnimate(NW_HZ(0.02f, 0.016666668f));
                         UpdateTempCharacter();
                         UpdateAwards();
                         MoveGameCamera(GameCam, &plr->obj);
@@ -2315,7 +2317,7 @@ next_game_mode:
 
             if (pause_rndr_on == 0) {
                 if (scene_started != 0) {
-                    NuWaterSpeed((render_paused) ? 0 : 1.2f);
+                    NuWaterSpeed((render_paused) ? 0 : NW_HZ(1.2f, 1.0f));
                     if ((LDATA->flags & 4) != 0) {
                         tbslotBeginFn(app_tbset, 10);
                         if (world_vd != 0) {
@@ -2455,7 +2457,7 @@ next_game_mode:
                 }
                 DrawPanel();
                 if ((new_mode != -1) || (new_level != -1)) {
-                    fade_rate = 10;
+                    fade_rate = NW_HZ(10, 8);
                 }
                 if (fadeval != 0) {
                     NuRndrRect2di(0, 0, SWIDTH << 4, SHEIGHT << 3, fadecol, fade_mtl);
@@ -2481,7 +2483,8 @@ next_game_mode:
                 if (frameout_streak > 5) {
                     phase_value = tbslotLastValue(0, 0);
                     timing_or_collision_result = tbslotLastValue(0, 1);
-                    if ((timing_or_collision_result < 285) && (phase_value - skipped_frame_ticks < 285)) {
+                    if ((timing_or_collision_result < NW_HZ(285, 235)) &&
+                        (phase_value - skipped_frame_ticks < NW_HZ(285, 235))) {
                         frameout = 0;
                     }
                     frameout_streak = 6;
@@ -2728,9 +2731,9 @@ void BGLoad(void)
         NuRndrSwapScreen(-1);
     }
     BGLoadStart(BGLoadLevel);
-    anim_step = 0.48f;
+    anim_step = NW_HZ(0.48f, 0.4f);
     fall_speed[0] = fall_speed[1] = 0.0f;
-    fade_rate = -10;
+    fade_rate = -NW_HZ(10, 8);
     fadeval = 0xff;
     bob_angle = 0;
     done = 0;
@@ -2880,7 +2883,7 @@ void BGLoad(void)
                         }
                         if (bgload_complete != 0) {
                             phase = 3;
-                            fade_rate = 10;
+                            fade_rate = NW_HZ(10, 8);
                         }
                         if (old_character != -1 && bgloadchr[old_character] != 0 &&
                             bgloadanim[old_character] != 0) {
@@ -2957,7 +2960,7 @@ bgload_render_characters:
                 bgloadgibbercntx += bgloadgibberratex;
                 bgloadgibbercnty += bgloadgibberratey;
                 if (font3d_scene != 0 && score_scale > 0.0f) {
-                    score_scale *= 1.08f;
+                    score_scale *= NW_HZ(1.08f, 0.9f);
                 }
             } else {
                 done = bgload_complete;
@@ -3059,7 +3062,7 @@ void BGLoadSfx(void)
     PANEL3DMULX = (float)SWIDTH / (DIVPANEL3D * ((float)SWIDTH / 640.0f));
     PANEL3DMULY = (float)SHEIGHT / (DIVPANEL3D * ((float)SHEIGHT / 448.0f));
     BGLoadStart(BGLoadSfxFn);
-    fade_rate = -10;
+    fade_rate = -NW_HZ(10, 8);
     fadeval = 0xff;
     mg_frame = -1;
     NuVpSetSize(PS2_REZ_W << 4, PS2_REZ_H << 4);
@@ -3092,7 +3095,7 @@ void BGLoadSfx(void)
         NuRndrVu1Draw();
         NuRndrSwapStreamBuffers();
         if (bgload_complete == 1) {
-            fade_rate = 10;
+            fade_rate = NW_HZ(10, 8);
             bgload_complete++;
         }
     } while (done == 0);

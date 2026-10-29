@@ -307,8 +307,8 @@ inline void GameVP(void) {
         NuVpSetSize((float)(MAXVPSIZEX << 4), (float)(MAXVPSIZEY << 3));
         NW_WIDE_ONLY(nw_wide_vp(0);)
     } else {
-        x = (MAXVPSIZEX << 4) + (((MINVPSIZEX << 4) - (MAXVPSIZEX << 4)) * paused) / 0x19;
-        y = (MAXVPSIZEY << 3) + (((MINVPSIZEY << 3) - (MAXVPSIZEY << 3)) * paused) / 0x19;
+        x = (MAXVPSIZEX << 4) + (((MINVPSIZEX << 4) - (MAXVPSIZEX << 4)) * paused) / NW_HZ(0x19, 0x1E);
+        y = (MAXVPSIZEY << 3) + (((MINVPSIZEY << 3) - (MAXVPSIZEY << 3)) * paused) / NW_HZ(0x19, 0x1E);
         NuVpSetSize((float)x, (float)y);
         NW_WIDE_ONLY(nw_wide_vp(paused);)
     }
@@ -316,12 +316,12 @@ inline void GameVP(void) {
 
 
 void UpdatePanelItem(struct panelcount_s *item, s32 reset, s32 snap_allowed) {
-    if (item->frame == 25) {
+    if (item->frame == NW_HZ(25, 30)) {
         if (item->wait != 0) {
             item->wait--;
         }
         if (reset != 0) {
-            item->wait = 50;
+            item->wait = NW_HZ(50, 60);
         }
         if (item->delay != 0) {
             item->delay--;
@@ -329,12 +329,12 @@ void UpdatePanelItem(struct panelcount_s *item, s32 reset, s32 snap_allowed) {
             item->draw++;
             if ((item == (struct panelcount_s *)&plr_wumpas) || (item == &plr_bonus_wumpas)) {
                 GameSfx(0x19, 0);
-                item->delay = 5;
+                item->delay = NW_HZ(5, 6);
             }
-            item->wait = 50;
+            item->wait = NW_HZ(50, 60);
         } else if (item->count < item->draw) {
             item->draw = item->count;
-            item->wait = 50;
+            item->wait = NW_HZ(50, 60);
         }
         if ((item->draw == item->count) && (item->wait == 0)) {
             item->frame--;
@@ -342,10 +342,10 @@ void UpdatePanelItem(struct panelcount_s *item, s32 reset, s32 snap_allowed) {
     } else if ((reset != 0) ||
                ((snap_allowed != 0) && (item->draw != item->count) &&
                 (new_mode == -1) && (new_level == new_mode))) {
-        if (item->frame < 25) {
+        if (item->frame < NW_HZ(25, 30)) {
             item->frame += 2;
-            if (item->frame > 25) {
-                item->frame = 25;
+            if (item->frame > NW_HZ(25, 30)) {
+                item->frame = NW_HZ(25, 30);
             }
         }
     } else {
@@ -588,11 +588,11 @@ void Draw3DCheckpointLetters(void) {
              CHECKPOINT3DSEPERATION;
         dz = NuTrigTable[(GameCam->yrot - 0x8000) & 0xFFFF] *
              CHECKPOINT3DSEPERATION;
-        ang = ((GameTimer.frame % 150) << 16) / 150;
+        ang = ((GameTimer.frame % NW_HZ(150, 180)) << 16) / NW_HZ(150, 180);
         if ((check_time < check_duration) && (check_time >= CHECKWAIT)) {
             time = check_time - CHECKWAIT;
             txt = tCHECK[Game.language];
-            for (i = 0; i < nCheckLetters; i++, ang += 0x176A) {
+            for (i = 0; i < nCheckLetters; i++, ang += NW_HZ(0x176A, 0x1383)) {
                 t = CPLTIME * i;
                 txt = &txt[NextLetter(txt, obj)];
                 if ((obj[0] != 0) && (time >= t) && (time < t + check_delay)) {
@@ -634,7 +634,7 @@ void Draw3DCheckpointLetters(void) {
         if ((point_time < point_duration) && (point_time >= POINTWAIT)) {
             time = point_time - POINTWAIT;
             txt = tPOINT[Game.language];
-            for (i = 0; i < nPointLetters; i++, ang += 0x176A) {
+            for (i = 0; i < nPointLetters; i++, ang += NW_HZ(0x176A, 0x1383)) {
                 t = CPLTIME * i;
                 txt = &txt[NextLetter(txt, obj)];
                 if ((obj[0] != 0) && (time >= t) && (time < t + point_delay)) {
@@ -701,28 +701,28 @@ void DrawGameMessage(char *txt, s32 message_frame, float ys) {
         len = strlen(txt);
     }
 
-    frame = (len - 1) * 16;
+    frame = (len - 1) * NW_HZ(16, 20);
     frames[0] = frame;
-    frames[1] = frame + 0x19;
-    frames[2] = frame + 0x3E;
-    frames[3] = frame + 0x70;
+    frames[1] = frame + NW_HZ(0x19, 0x1E);
+    frames[2] = frame + NW_HZ(0x3E, 0x4B);
+    frames[3] = frame + NW_HZ(0x70, 0x87);
 
     x = (frames[2] + message_frame) % frames[3];
 
     i = -1;
     if (x < frames[0]) {
-        if (x % 16 < 11) {
-            i = x / 16 + 1;
+        if (x % NW_HZ(16, 20) < NW_HZ(11, 13)) {
+            i = x / NW_HZ(16, 20) + 1;
         }
     } else if (x < frames[1]) {
-        if ((x - frames[0]) < 18) {
+        if ((x - frames[0]) < NW_HZ(18, 21)) {
             i = len;
         }
     } else if (x < frames[2]) {
-        if ((x - frames[1]) < 31) {
+        if ((x - frames[1]) < NW_HZ(31, 37)) {
             i = len;
         }
-    } else if (((x - frames[2]) % 50) < 43) {
+    } else if (((x - frames[2]) % NW_HZ(50, 60)) < NW_HZ(43, 52)) {
         i = len;
     }
 
@@ -958,9 +958,9 @@ void DrawPanel(void) {
 
     plr = (PLAYERCOUNT != 0) ? player : 0;
 
-    wobble_x = NuTrigTable[(((GlobalTimer.frame % 250) << 16) / 250) & 0xFFFF] *
+    wobble_x = NuTrigTable[(((GlobalTimer.frame % NW_HZ(250, 300)) << 16) / NW_HZ(250, 300)) & 0xFFFF] *
                2731.0f + 1820.0f;
-    wobble_y = NuTrigTable[((((GlobalTimer.frame % 200) << 16) / 200) + 0x4000) & 0xFFFF] *
+    wobble_y = NuTrigTable[((((GlobalTimer.frame % NW_HZ(200, 240)) << 16) / NW_HZ(200, 240)) + 0x4000) & 0xFFFF] *
                2731.0f;
 
     PANEL3DMULX = (float)SWIDTH / (DIVPANEL3D * ((float)SWIDTH / 640.0f));
@@ -980,7 +980,7 @@ void DrawPanel(void) {
         return;
     }
 
-    yrot = -(((GlobalTimer.frame % 100) << 16) / 100);
+    yrot = -(((GlobalTimer.frame % NW_HZ(100, 120)) << 16) / NW_HZ(100, 120));
 
     if ((pause_rndr_on == 0) && (cutmovie == -1)) {
         Draw3DCheckpointLetters();
@@ -1057,7 +1057,7 @@ void DrawPanel(void) {
             }
             Text3D(tbuf, vTEMP.x, vTEMP.y, 1.0f, 0.4f, 0.5f, 0.5f, 0, 3);
         }
-        if ((InvincibilityCHEAT != 0) && ((GlobalTimer.frame % 25) < 12)) {
+        if ((InvincibilityCHEAT != 0) && ((GlobalTimer.frame % NW_HZ(25, 30)) < NW_HZ(12, 15))) {
             Text3D((Game.language == 0x63) ? "I N V I N C I B L E " : "INVINCIBLE", 0.0f,
                    1.0f, 1.0f, 0.4f, 0.4f, 0.4f, 1, 4);
         }
@@ -1067,32 +1067,32 @@ void DrawPanel(void) {
         if ((Cursor.menu >= 3) && (Cursor.menu <= 8)) {
             ys = 0.0f;
             if (pause_dir != 0) {
-                f = (25 - paused) * (PAUSEVMUL / 25.0f);
+                f = (NW_HZ(25, 30) - paused) * (PAUSEVMUL / NW_HZ(25.0f, 30.0f));
                 ys -= f;
             }
             DrawPanel3DObject(99, 0.0f, ys, PAUSEPANELZ, 0.1f, 0.1f, f * 0.1f, 0, 0, 0,
                               ObjTab[99].obj.scene, ObjTab[99].obj.special, 1);
             xs = 0.0f;
             if (pause_dir != 0) {
-                f = (25 - paused) * (PAUSEHMUL / 25.0f);
+                f = (NW_HZ(25, 30) - paused) * (PAUSEHMUL / NW_HZ(25.0f, 30.0f));
                 xs += f;
             }
             DrawPanel3DObject(98, xs, 0.0f, PAUSEPANELZ, 0.1f, 0.1f, f * 0.1f, 0, 0, 0,
                               ObjTab[98].obj.scene, ObjTab[98].obj.special, 1);
-            if (paused == 25) {
+            if (paused == NW_HZ(25, 30)) {
                 Text3D(Game.name, PAUSEPANELX, PAUSENAMEY, 1.0f, 0.6f, 0.6f, 0.6f, 0, 0);
                 sprintf(tbuf, "%i%%", Game.percent);
                 if (Game.language == 0x63) {
                     AddSpacesIntoText(tbuf, 1);
                 }
-                Text3D(tbuf, PAUSEPANELX, PAUSEPERCENTY - (25 - paused), 1.0f, 1.0f,
+                Text3D(tbuf, PAUSEPANELX, PAUSEPERCENTY - (NW_HZ(25, 30) - paused), 1.0f, 1.0f,
                        1.0f, 1.0f, 0, 0);
                 if (LDATA->hub != -1) {
                     j = 5;
                 } else {
                     j = 4;
                 }
-                i = (pausestats_frame % (j * 150U)) / 150U;
+                i = (pausestats_frame % (j * NW_HZ(150U, 180U))) / NW_HZ(150U, 180U);
                 xs = PAUSEPANELX;
                 ys = PAUSEINFOY;
                 switch (i) {
@@ -1260,7 +1260,7 @@ void DrawPanel(void) {
         }
 
         i = 0;
-        if ((bonus_finish_frame < save_bonus_crates_destroyed * 5 + 5) ||
+        if ((bonus_finish_frame < save_bonus_crates_destroyed * NW_HZ(5, 6) + NW_HZ(5, 6)) ||
             (bonus_crates_wait > 0.0f)) {
             i = 1;
         }
@@ -1331,7 +1331,7 @@ void DrawPanel(void) {
 
         if (plr != 0) {
             if (plr_wumpas.frame != 0) {
-                f = PANELSY + (25 - plr_wumpas.frame) * 0.04f * 0.4f;
+                f = PANELSY + (NW_HZ(25, 30) - plr_wumpas.frame) * NW_HZ(0.04f, 0.033333335f) * 0.4f;
                 DrawPanel3DObject(0, WUMPAOBJSX, f, 1.0f, 0.2f, 0.2f, 0.2f, 0xE800,
                                   PANELWUMPAYROT, 0, ObjTab[0].obj.scene,
                                   ObjTab[0].obj.special, 1);
@@ -1343,7 +1343,7 @@ void DrawPanel(void) {
             }
             if ((plr_crates.frame != 0) && (LDATA->hub != -1) &&
                 ((LDATA->flags & 2) == 0)) {
-                f = PANELSY + (25 - plr_crates.frame) * 0.04f * 0.4f;
+                f = PANELSY + (NW_HZ(25, 30) - plr_crates.frame) * NW_HZ(0.04f, 0.033333335f) * 0.4f;
                 DrawPanel3DObject(-1, CRATEOBJSX, f, 1.0f, 0.15f, 0.15f, 0.15f, 0xE800,
                                   PANELCRATEYROT, 0, crate_scene,
                                   crate_list[5].obj.special, 1);
@@ -1360,7 +1360,7 @@ void DrawPanel(void) {
                        2);
             }
             if (plr_lives.frame != 0) {
-                f = PANELSY + (25 - plr_lives.frame) * 0.04f * 0.4f;
+                f = PANELSY + (NW_HZ(25, 30) - plr_lives.frame) * NW_HZ(0.04f, 0.033333335f) * 0.4f;
                 i = 0x11;
                 if (LDATA->character == 1) {
                     i = 0x12;
@@ -1376,23 +1376,23 @@ void DrawPanel(void) {
                 Text3D(tbuf, LIVESTXTSX, f, 1.0f, 1.2f, 1.2f, 1.2f, 2, 0);
             }
 
-            a = ((GameTimer.frame % 100) << 16) / 100;
+            a = ((GameTimer.frame % NW_HZ(100, 120)) << 16) / NW_HZ(100, 120);
 
             if ((plr_crystal.count != 0) && (plr_crystal.frame != 0) &&
                 (LDATA->hub != -1)) {
-                f = -0.7f - (25 - plr_crystal.frame) * 0.04f * 0.6f;
+                f = -0.7f - (NW_HZ(25, 30) - plr_crystal.frame) * NW_HZ(0.04f, 0.033333335f) * 0.6f;
                 DrawPanel3DCharacter(0x75, 0.0f, f, 1.0f, 0.15f, 0.15f, 0.15f, 0, a, 0,
                                      -1, 0.0f, 1);
             }
             if ((plr_crategem.count != 0) && (plr_crategem.frame != 0) &&
                 (LDATA->hub != -1)) {
-                f = -0.7f - (25 - plr_crategem.frame) * 0.04f * 0.6f;
+                f = -0.7f - (NW_HZ(25, 30) - plr_crategem.frame) * NW_HZ(0.04f, 0.033333335f) * 0.6f;
                 DrawPanel3DCharacter(0x77, -0.2f, f, 1.0f, 0.15f, 0.15f, 0.15f, 0, a, 0,
                                      -1, 0.0f, 1);
             }
             if ((plr_bonusgem.count != 0) && (plr_bonusgem.frame != 0) &&
                 (LDATA->hub != -1)) {
-                f = -0.7f - (25 - plr_bonusgem.frame) * 0.04f * 0.6f;
+                f = -0.7f - (NW_HZ(25, 30) - plr_bonusgem.frame) * NW_HZ(0.04f, 0.033333335f) * 0.6f;
                 if (plr_bonusgem.item == 8) {
                     i = 0x79;
                 } else if (plr_bonusgem.item == 0x20) {
@@ -1424,7 +1424,7 @@ void DrawPanel(void) {
             if (TimeTrial != 0) {
                 switch (plr->obj.finished) {
                     case 1:
-                        frame = finish_frame - (finish_frames - 50);
+                        frame = finish_frame - (finish_frames - NW_HZ(50, 60));
                         if (frame < 0) {
                             frame = 0;
                         }
@@ -1443,24 +1443,24 @@ void DrawPanel(void) {
                         ys -= (i - 1) * TT_TIMESDY * 0.5f;
                         y = ys + newleveltime_slot * TT_TIMESDY;
                         scale = 0.9f;
-                        if (frame < 25) {
-                            if ((frame == 0) || ((frame % 10) > 4)) {
+                        if (frame < NW_HZ(25, 30)) {
+                            if ((frame == 0) || ((frame % NW_HZ(10, 12)) > NW_HZ(4, 5))) {
                                 xs = tt_sx;
                                 y = tt_sy;
                                 scale = TT_SCALE;
                             } else {
                                 scale = xs;
                             }
-                        } else if (frame < 50) {
-                            f = (frame - 25) / 25.0f;
+                        } else if (frame < NW_HZ(50, 60)) {
+                            f = (frame - NW_HZ(25, 30)) / NW_HZ(25.0f, 30.0f);
                             xs = tt_sx + (xs - tt_sx) * f;
                             y = tt_sy + (y - tt_sy) * f;
                             scale = TT_SCALE + (scale - TT_SCALE) * f;
                         }
-                        if (((newleveltime_slot == 3) || (frame < 50)) && (scale > 0.0f)) {
+                        if (((newleveltime_slot == 3) || (frame < NW_HZ(50, 60))) && (scale > 0.0f)) {
                             MakeTimeI(TimeTrialTimer.itime, 0, txt);
                             if (Game.language == 0x63) {
-                                if (finish_frame < finish_frames - 50) {
+                                if (finish_frame < finish_frames - NW_HZ(50, 60)) {
                                     sprintf(tbuf, "    %c   %s", (u8)CLetter[118],
                                             txt);
                                 } else {
@@ -1468,7 +1468,7 @@ void DrawPanel(void) {
                                                                           : "        %s",
                                             txt);
                                 }
-                            } else if (finish_frame < finish_frames - 50) {
+                            } else if (finish_frame < finish_frames - NW_HZ(50, 60)) {
                                 sprintf(tbuf, "  %c %s", (u8)CLetter[118], txt);
                             } else {
                                 sprintf(tbuf, (newleveltime_slot < 3) ? "___ %s" : "    %s",
@@ -1477,7 +1477,7 @@ void DrawPanel(void) {
                             Text3D(tbuf, xs, y, 1.0f, scale, scale, scale, 0, 4);
                         }
                         for (i = 0; i < 3; i++) {
-                            if (frame < 50) {
+                            if (frame < NW_HZ(50, 60)) {
                                 return;
                             }
                             MakeLevelTimeString(&Game.level[Level].time[i], tbuf);
@@ -1504,9 +1504,9 @@ void DrawPanel(void) {
                             }
                             ys += TT_TIMESDY;
                         }
-                        if ((tt_flash != 0) && (frame >= 50) &&
+                        if ((tt_flash != 0) && (frame >= NW_HZ(50, 60)) &&
                             ((Cursor.menu != 0xE) ||
-                             ((newleveltime_slot == 3) && (Cursor.menu_frame < 250)))) {
+                             ((newleveltime_slot == 3) && (Cursor.menu_frame < NW_HZ(250, 300))))) {
                             switch (newleveltime_slot) {
                                 case 0:
                                     NuStrCpy(tbuf, tBESTTIME[Game.language]);
@@ -1525,7 +1525,8 @@ void DrawPanel(void) {
                         }
                         break;
                     case 0:
-                        if ((timetrial_frame - 50 < 150) && ((timetrial_frame % 50) < 40)) {
+                        if ((timetrial_frame - NW_HZ(50, 60) < NW_HZ(150, 180)) &&
+                            ((timetrial_frame % NW_HZ(50, 60)) < NW_HZ(40, 48))) {
                             Text3D(tENTERINGTIMETRIAL[Game.language], 0.0f, 0.0f, 1.0f,
                                    0.6f, 0.6f, 0.6f, 0, 4);
                         }
@@ -1538,16 +1539,16 @@ void DrawPanel(void) {
                                 (u8)CLetter[118], txt);
                         xs = tt_sx;
                         ys = tt_sy;
-                        if (timetrial_frame < 37) {
-                            if ((timetrial_frame % 12) < 6) {
+                        if (timetrial_frame < NW_HZ(37, 45)) {
+                            if ((timetrial_frame % NW_HZ(12, 15)) < NW_HZ(6, 7)) {
                                 scale = 0.5f;
                                 xs = TTScrPos.x;
                                 ys = TTScrPos.y;
                             } else {
                                 scale = 0.0f;
                             }
-                        } else if (timetrial_frame < 50) {
-                            f = (timetrial_frame - 37) / 12.0f;
+                        } else if (timetrial_frame < NW_HZ(50, 60)) {
+                            f = (timetrial_frame - NW_HZ(37, 45)) / NW_HZ(12.0f, 15.0f);
                             xs += (TTScrPos.x - xs) * (1.0f - f);
                             ys += (TTScrPos.y - ys) * (1.0f - f);
                             scale = f * 0.5f + 0.5f;
@@ -1599,7 +1600,7 @@ void DrawPanel(void) {
                 if (Level == 0x12) {
                     DrawPanel3DTempCharacter(panel_head_xrot,
                                              panel_head_yrot +
-                                                 ((GameTimer.frame % 100) << 16) / 100,
+                                                 ((GameTimer.frame % NW_HZ(100, 120)) << 16) / NW_HZ(100, 120),
                                              0, 0, PANELSINKX, PANELSINKY, PANELSINKZ,
                                              PANELSINKSCALE);
                 } else if (Level == 0x18) {
@@ -1609,7 +1610,7 @@ void DrawPanel(void) {
                 } else {
                     DrawPanel3DTempCharacter(panel_head_xrot,
                                              panel_head_yrot +
-                                                 ((GameTimer.frame % 100) << 16) / 100,
+                                                 ((GameTimer.frame % NW_HZ(100, 120)) << 16) / NW_HZ(100, 120),
                                              0, 0, PANELBLIMPX, PANELBLIMPY, PANELBLIMPZ,
                                              PANELBLIMPSCALE);
                 }
@@ -1673,8 +1674,8 @@ void DrawPanel(void) {
                 Text3D(PlaceName[SmokeyPosition - 1][Game.language], -0.7f, -0.85f, 1.0f,
                        0.8f, 0.8f, 0.8f, 2, (SmokeyPosition == 1) ? 4 : 0);
             } else if (Level == 0x1C) {
-                if (GameTimer.frame < 150) {
-                    tbuf[0] = '3' - GameTimer.frame / 50;
+                if (GameTimer.frame < NW_HZ(150, 180)) {
+                    tbuf[0] = '3' - GameTimer.frame / NW_HZ(50, 60);
                     if (Game.language == 0x63) {
                         tbuf[1] = ' ';
                         tbuf[2] = 0;
@@ -1683,7 +1684,7 @@ void DrawPanel(void) {
                     }
                     i = 0;
                     f = 1.5f;
-                } else if (GameTimer.frame < 200) {
+                } else if (GameTimer.frame < NW_HZ(200, 240)) {
                     NuStrCpy(tbuf, tGO[Game.language]);
                     f = 2.5f;
                     if (Game.language == 4) {
@@ -1711,12 +1712,12 @@ void DrawPanel(void) {
                 }
                 Text3D(tbuf, 0.7f, -0.85f, 1.0f, 0.8f, 0.8f, 0.8f, 8, (i > 0) ? 4 : 0);
             } else if (Level == 0x1D) {
-                if (GameTimer.frame < 150) {
+                if (GameTimer.frame < NW_HZ(150, 180)) {
                     f = 1.5f;
-                    tbuf[0] = '3' - GameTimer.frame / 50;
+                    tbuf[0] = '3' - GameTimer.frame / NW_HZ(50, 60);
                     tbuf[1] = 0;
                     i = 0;
-                } else if (GameTimer.frame < 200) {
+                } else if (GameTimer.frame < NW_HZ(200, 240)) {
                     NuStrCpy(tbuf, tGO[Game.language]);
                     f = 2.5f;
                     if (Game.language == 4) {
@@ -1733,7 +1734,7 @@ void DrawPanel(void) {
                     goto debris;
                 }
                 if (i_ring > 0) {
-                    f = (25 - carpet_panelpos) / 25.0f * 0.4f;
+                    f = (NW_HZ(25, 30) - carpet_panelpos) / NW_HZ(25.0f, 30.0f) * 0.4f;
                     DrawPanel3DObject(0x11, -0.8f, -0.8f - f, 1.0f, 0.3f, 0.3f, 0.3f,
                                       panel_head_xrot, panel_head_yrot + 0xE000, 0,
                                       ObjTab[0x11].obj.scene, ObjTab[0x11].obj.special, 1);
@@ -1844,7 +1845,7 @@ void UpdatePlayerStats(struct creature_s *plr) {
 
     if ((Bonus == 4) || (Bonus == 3) || dead) {
         if (bonus_finish_frame < bonus_crates_destroyed * 5) {
-            x = bonus_finish_frame / 5;
+            x = bonus_finish_frame / NW_HZ(5, 6);
             if (!dead) {
                 crates_destroyed += x;
             }
@@ -1855,12 +1856,12 @@ void UpdatePlayerStats(struct creature_s *plr) {
             }
             bonus_crates_destroyed = 0;
         }
-        if (bonus_finish_frame == save_bonus_crates_destroyed * 5 + 4) {
+        if (bonus_finish_frame == save_bonus_crates_destroyed * NW_HZ(5, 6) + NW_HZ(4, 5)) {
             bonus_crates_wait = 0.5f;
-        } else if ((bonus_finish_frame >= save_bonus_crates_destroyed * 5 + 5) &&
-                   (bonus_crates_wait -= 0.02f,
+        } else if ((bonus_finish_frame >= save_bonus_crates_destroyed * NW_HZ(5, 6) + NW_HZ(5, 6)) &&
+                   (bonus_crates_wait -= NW_HZ(0.02f, 0.016666668f),
                     bonus_crates_wait <= 0.0f)) {
-            bonus_crates_wait = -0.02f;
+            bonus_crates_wait = -NW_HZ(0.02f, 0.016666668f);
         }
     }
 
@@ -1873,7 +1874,7 @@ void UpdatePlayerStats(struct creature_s *plr) {
 
     if (99 < plr_lives.count) {
         plr_lives.count = 99;
-        force_panel_lives_update = 0x32;
+        force_panel_lives_update = NW_HZ(0x32, 0x3C);
     }
 
     for (; mask_crates != 0; mask_crates--) {
@@ -1917,8 +1918,8 @@ void AddPanelDebris(f32 x, f32 y, s32 type, f32 scale, s32 count) {
                 deb->zrot = 0;
                 switch ((s8)type) {
                     case 1:
-                        deb->mom.x = qrand() * 1.5259022e-05f * 0.5f * 0.02f;
-                        deb->mom.y = (qrand() * 1.5259022e-05f + 2.0f) * 0.02f;
+                        deb->mom.x = qrand() * 1.5259022e-05f * 0.5f * NW_HZ(0.02f, 0.016666668f);
+                        deb->mom.y = (qrand() * 1.5259022e-05f + 2.0f) * NW_HZ(0.02f, 0.016666668f);
                         deb->pos.x = x + (deb->mom.x + deb->mom.x);
                         deb->pos.y = (y + 0.05f) + deb->mom.y;
                         break;
@@ -1933,7 +1934,7 @@ void AddPanelDebris(f32 x, f32 y, s32 type, f32 scale, s32 count) {
                         break;
                     case 6:
                         deb->zrot = qrand() / 2 + 0xC000;
-                        f = qrand() * 1.5259022e-05f * 0.02f;
+                        f = qrand() * 1.5259022e-05f * NW_HZ(0.02f, 0.016666668f);
                         deb->mom.x = NuTrigTable[deb->zrot] * f;
                         deb->mom.y =
                             NuTrigTable[(deb->zrot + 0x4000) & 0xFFFF] * f;
@@ -1975,7 +1976,7 @@ void UpdatePanelDebris(void) {
     for (i = 0; i < 32; i++, deb++) {
         if (deb->active != 0) {
             old_time = deb->time;
-            deb->time += 0.02f;
+            deb->time += NW_HZ(0.02f, 0.016666668f);
             if (deb->time < deb->info->duration) {
                 tmul = deb->time / deb->info->duration;
                 switch (deb->type) {
@@ -1985,7 +1986,7 @@ void UpdatePanelDebris(void) {
                         deb->pos.y = BONUSPANELSY +
                                      (PANELSY - BONUSPANELSY) * 0.9f * tmul;
                         deb->xrot = tmul * -5529.5996f;
-                        deb->yrot = -(((GameTimer.frame % 33) << 16) / 33);
+                        deb->yrot = -(((GameTimer.frame % NW_HZ(33, 40)) << 16) / NW_HZ(33, 40));
                         deb->scale = tmul * 0.075f + 0.125f;
                         break;
                     case 1:
@@ -1993,7 +1994,7 @@ void UpdatePanelDebris(void) {
                         deb->mom.y += deb->info->gravity;
                         deb->pos.y += deb->mom.y;
                         deb->xrot = 0;
-                        deb->yrot = -(((GameTimer.frame % 33) << 16) / 33);
+                        deb->yrot = -(((GameTimer.frame % NW_HZ(33, 40)) << 16) / NW_HZ(33, 40));
                         deb->scale = 0.125f;
                         break;
                     case 2:
@@ -2026,8 +2027,8 @@ void UpdatePanelDebris(void) {
                             if (old_time < 0.25f) {
                                 GameSfx(0x2B, 0);
                             }
-                            if ((deb->time - 0.02f) < 0.25f) {
-                                force_panel_lives_update = 50;
+                            if ((deb->time - NW_HZ(0.02f, 0.016666668f)) < 0.25f) {
+                                force_panel_lives_update = NW_HZ(50, 60);
                             }
                             deb->pos.x = xs[0];
                             deb->pos.y = ys;

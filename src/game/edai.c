@@ -24,6 +24,7 @@
  */
 
 #include "nu_libc.h"
+#include "nu_port.h"
 
 #include "numath/numtx.h"
 #include "numath/nutrig.h"
@@ -388,7 +389,7 @@ void edaiDRAW(void)
     struct aitype_s *type;
     struct nuvec_s *next;
 
-    ang = ((GlobalTimer.frame % 200) << 16) / 200;
+    ang = ((GlobalTimer.frame % NW_HZ(200, 240)) << 16) / NW_HZ(200, 240);
     for (i = 0; i < LEVELAICOUNT; i++) {
         type = &AIType[AITab[i].ai_type];
         count = type->points;
@@ -432,7 +433,7 @@ void edaiDRAW(void)
     }
     if (D_00631C4C != -1) {
         DrawCube(&AITab[D_00631C4C].pos[D_00631C50], ang, 0.125f);
-    } else if (D_00631C40 >= 0 && GlobalTimer.frame % 50 < 25) {
+    } else if (D_00631C40 >= 0 && GlobalTimer.frame % NW_HZ(50, 60) < NW_HZ(25, 30)) {
         character = AIType[D_00631C44].character;
         v.x = v.y = v.z = CData[character].scale * 0.5f;
         NuMtxSetScale(&mTEMP, &v);
@@ -604,7 +605,7 @@ s32 edaiProc(struct nupad_s *pad)
     if (screendump) {
         return 0;
     }
-    D_00631C38 += 6;
+    D_00631C38 += NW_HZ(6, 5);
     if (edai_active_menu) {
         eduiMenuProcess(edai_active_menu, pad);
         return 0;

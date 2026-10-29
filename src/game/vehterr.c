@@ -14,6 +14,7 @@
  */
 
 #include "nu_libc.h"
+#include "nu_port.h"
 
 #include "numath/nutrig.h"
 #include "numath/nuvec.h"
@@ -657,9 +658,9 @@ struct nuvec_s TerrainVehicleSoft(struct VEHICLE *Vehicle, struct nuvec_s *Vel)
         }
     }
     if (rate == 0.0f) {
-        SeekHalfLife(&Vehicle->FrontWheelSpeedAdj, rate, 0.2f, 0.02f);
+        SeekHalfLife(&Vehicle->FrontWheelSpeedAdj, rate, 0.2f, NW_HZ(0.02f, 0.016666668f));
     } else {
-        SeekHalfLife(&Vehicle->FrontWheelSpeedAdj, rate, 0.1f, 0.02f);
+        SeekHalfLife(&Vehicle->FrontWheelSpeedAdj, rate, 0.1f, NW_HZ(0.02f, 0.016666668f));
     }
     return Move;
 }

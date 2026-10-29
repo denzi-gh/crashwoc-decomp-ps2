@@ -711,7 +711,7 @@ void UpdateChaseRunAnim(struct creature_s *plr) {
         if (plr_tocam_wait != 0) {
             plr_tocam_wait--;
             if (plr_tocam_wait == 0) {
-                plr_tocam_wait = ((qrand() * 50) >> 16) + 50;
+                plr_tocam_wait = ((qrand() * NW_HZ(50, 60)) >> 16) + NW_HZ(50, 60);
                 if (plr_tocam_turn == -1) {
                     plr_tocam_turn = qrand() / 0x8000;
                 } else if (plr_tocam_turn == 1) {
@@ -723,7 +723,7 @@ void UpdateChaseRunAnim(struct creature_s *plr) {
         }
     } else {
         plr_tocam_turn = 0;
-        plr_tocam_wait = ((qrand() * 50) >> 16) + 50;
+        plr_tocam_wait = ((qrand() * NW_HZ(50, 60)) >> 16) + NW_HZ(50, 60);
     }
     if (plr->obj.anim.newaction == 0x3A) {
         if (plr_tocam_turn < 0) {
@@ -761,7 +761,7 @@ void MoveCRASH(struct creature_s *plr, struct nupad_s *pad) {
     target_pressed = (ExtraMoves != 0 || (Game.powerbits & 8) != 0) && Level != 0x25 &&
                      (LBIT & 0x1E00000) == 0 && (pad->paddata & 0x4) != 0;
     can_jump = (plr->obj.max.y - plr->obj.min.y) * plr->obj.SCALE < plr->obj.clearance;
-    if (menu_mode == 0x1F || menu_mode == 0x21 || GameTimer.frame < 0x32 || fadeval > 0) {
+    if (menu_mode == 0x1F || menu_mode == 0x21 || GameTimer.frame < NW_HZ(0x32, 0x3C) || fadeval > 0) {
         target_pressed = 0;
         duck_pressed = 0;
         tiptoe_pressed = 0;
@@ -776,10 +776,10 @@ void MoveCRASH(struct creature_s *plr, struct nupad_s *pad) {
     if (plr->target != 0 && plr->fire == 0 && plr->fire_lock == 0 && plr->tap == 0 &&
         (pad->paddata_db & 0x28) != 0) {
         AddFlyingWumpa(&plr_target_pos[0], &plr_target_dir, &plr_target_pos[1], 1);
-        frames = (s32)(ModelAnimDuration(0, 0x4F, 0.0f, 0.0f) * 50.0f);
+        frames = (s32)(ModelAnimDuration(0, 0x4F, 0.0f, 0.0f) * NW_HZ(50.0f, 60.0f));
         plr->obj.anim.anim_time = 1.0f;
         plr->fire = frames;
-        plr->tap = frames + 10;
+        plr->tap = frames + NW_HZ(10, 12);
         AddGameDebrisMtx(0x51, &plr_target_firepos, 0x20, &plr_target_mtx);
         AddGameDebrisMtx(0x52, &plr_target_firepos, 0x10, &plr_target_mtx);
         GameSfx(6, &plr->obj.pos);
@@ -824,8 +824,8 @@ void MoveCRASH(struct creature_s *plr, struct nupad_s *pad) {
                    plr->spin != 0 &&
                    plr->spin_frame < plr->spin_frames - plr->minfo->SPINRESETFRAMES &&
                    plr->spin >= 3) {
-            if (plr->obj.mom.y > -0.02f) {
-                plr->obj.mom.y = -0.02f;
+            if (plr->obj.mom.y > -NW_HZ(0.02f, 0.016666668f)) {
+                plr->obj.mom.y = -NW_HZ(0.02f, 0.016666668f);
             } else if (plr->spin < 8 && (plr->spin & 1) == 0) {
                 plr->obj.mom.y += GRAVITY * 0.2f;
             }
@@ -899,7 +899,8 @@ void MoveCRASH(struct creature_s *plr, struct nupad_s *pad) {
             case 2:
                 break;
             case 3:
-                if ((ExtraMoves != 0 || (Game.powerbits & 2) != 0) && plr->obj.mom.y > -0.099999994f &&
+                if ((ExtraMoves != 0 || (Game.powerbits & 2) != 0) &&
+                    plr->obj.mom.y > -NW_HZ(0.099999994f, 0.083333336f) &&
                     (plr->spin == 0 ||
                      plr->spin_frame >= plr->spin_frames - plr->minfo->SPINRESETFRAMES)) {
                     if (plr->obj.pad_speed == 0.0f) {
@@ -1240,7 +1241,7 @@ void MoveSWIMMING(struct creature_s *plr, struct nupad_s *pad) {
     spin_pressed = pad->paddata & 0xA8;
     GameSfxLoop(0x27, &plr->obj.pos);
     if (plr->tap == 0 && (pad->paddata_db & 0x40) != 0) {
-        plr->tap = 10;
+        plr->tap = NW_HZ(10, 12);
         gamesfx_pitch = 0x583;
         GameSfx(0x28, &plr->obj.pos);
     }
@@ -1296,7 +1297,7 @@ void MoveCOCO(struct creature_s *plr, struct nupad_s *pad) {
     duck_pressed = pad->paddata & 0x8;
     sprint_pressed = pad->paddata & 0x2;
     can_jump = (plr->obj.max.y - plr->obj.min.y) * plr->obj.SCALE < plr->obj.clearance;
-    if (menu_mode == 0x1F || menu_mode == 0x21 || GameTimer.frame < 0x32 || fadeval > 0) {
+    if (menu_mode == 0x1F || menu_mode == 0x21 || GameTimer.frame < NW_HZ(0x32, 0x3C) || fadeval > 0) {
         sprint_pressed = 0;
         duck_pressed = 0;
         crouch_pressed = 0;
@@ -1455,7 +1456,7 @@ void MoveCOCO(struct creature_s *plr, struct nupad_s *pad) {
         plr->obj.attack = 2;
     } else if (plr->obj.anim.action == 0x43 && plr->obj.anim.anim_time >= SWEEPATTACKSTARTTIME &&
                plr->obj.anim.anim_time < SWEEPATTACKENDTIME) {
-        if (plr->obj.anim.anim_time - 0.59999996f < SWEEPATTACKSTARTTIME) {
+        if (plr->obj.anim.anim_time - NW_HZ(0.59999996f, 0.5f) < SWEEPATTACKSTARTTIME) {
             GameSfx(0x46, &plr->obj.pos);
         }
         plr->obj.attack |= 0x12;
@@ -1740,7 +1741,7 @@ void MoveGYRO(struct creature_s *plr, struct nupad_s *pad) {
 
     spin_pressed = pad->paddata & 0x80;
     gyropos = plr->obj.pos;
-    pitch = (s32)(plr->obj.xyz_distance * 5120.0005f);
+    pitch = (s32)(plr->obj.xyz_distance * NW_HZ(5120.0005f, 6144.0f));
     if (pitch > 0x200) {
         pitch = 0x400;
     }
@@ -1755,16 +1756,16 @@ void MoveGYRO(struct creature_s *plr, struct nupad_s *pad) {
     }
     GameSfxLoop(0x9D, &gyropos);
     if (Level == 0x1D) {
-        if (GameTimer.frame == 0 || GameTimer.frame == 50 || GameTimer.frame == 100) {
+        if (GameTimer.frame == 0 || GameTimer.frame == NW_HZ(50, 60) || GameTimer.frame == NW_HZ(100, 120)) {
             sfx = 0x4F;
         } else {
-            sfx = (GameTimer.frame == 150) ? 0x4C : -1;
+            sfx = (GameTimer.frame == NW_HZ(150, 180)) ? 0x4C : -1;
         }
         if (sfx != -1) {
             GameSfx(sfx, 0);
         }
     }
-    if (Level != 0x1D || GameTimer.frame >= 150) {
+    if (Level != 0x1D || GameTimer.frame >= NW_HZ(150, 180)) {
         if (Level == 0x1D) {
             clock = FindClock();
             if (clock != 0) {
@@ -1773,7 +1774,7 @@ void MoveGYRO(struct creature_s *plr, struct nupad_s *pad) {
                 v.z = clock->obj.pos.z;
                 radius = CRATEBALLOONRADIUS + plr->obj.RADIUS * 5.0f;
                 if (NuVecDistSqr(&plr->obj.pos, &v, 0) < radius * radius) {
-                    NewBuzz(&player->rumble, 5);
+                    NewBuzz(&player->rumble, NW_HZ(5, 6));
                     StartTimeTrial(&clock->obj.pos, 1);
                 }
             }
@@ -1834,8 +1835,8 @@ void MoveGYRO(struct creature_s *plr, struct nupad_s *pad) {
             carpet_overlap = 0;
         }
         CARPETLOOPTIME = CARPETTIME * 0.94418603f;
-        if (GameTimer.frame >= 150) {
-            carpet_time += 0.02f;
+        if (GameTimer.frame >= NW_HZ(150, 180)) {
+            carpet_time += NW_HZ(0.02f, 0.016666668f);
             if (carpet_time > CARPETTIME) {
                 carpet_time -= CARPETTIME - CARPETLOOPTIME;
             }
@@ -1849,22 +1850,22 @@ void MoveGYRO(struct creature_s *plr, struct nupad_s *pad) {
             carpet_yrot = yrot;
         }
         carpet_oldpos = carpet_pos;
-        carpet_pos.x += (carpet_splpos.x - carpet_pos.x) * 0.099999994f;
-        carpet_pos.y += (carpet_splpos.y - carpet_pos.y) * 0.099999994f;
-        carpet_pos.z += (carpet_splpos.z - carpet_pos.z) * 0.099999994f;
+        carpet_pos.x += (carpet_splpos.x - carpet_pos.x) * NW_HZ(0.099999994f, 0.083333336f);
+        carpet_pos.y += (carpet_splpos.y - carpet_pos.y) * NW_HZ(0.099999994f, 0.083333336f);
+        carpet_pos.z += (carpet_splpos.z - carpet_pos.z) * NW_HZ(0.099999994f, 0.083333336f);
         NuVecSub(&carpet_mom, &carpet_pos, &carpet_oldpos);
         GetALONG(&carpet_pos, &carpet_RPos, carpet_RPos.iRAIL, carpet_RPos.iALONG, 1);
         carpet_anim.oldaction = carpet_anim.action;
         carpet_anim.newaction = carpet_action;
-        UpdateAnimPacket(carpet_model[0], &carpet_anim, 0.59999996f, 0.0f);
+        UpdateAnimPacket(carpet_model[0], &carpet_anim, NW_HZ(0.59999996f, 0.5f), 0.0f);
         GetLights(&carpet_pos, &carpet_lights, 1);
-        if (GameTimer.frame >= 150 && i_ring < RINGCOUNT &&
+        if (GameTimer.frame >= NW_HZ(150, 180) && i_ring < RINGCOUNT &&
             GameTimer.ftime - 3.0f < CARPETLOOPTIME) {
             carpet_place = FurtherALONG(carpet_RPos.iRAIL, carpet_RPos.iALONG, carpet_RPos.fALONG,
                                         player->obj.RPos.iRAIL, player->obj.RPos.iALONG,
                                         player->obj.RPos.fALONG) ? 1 : 2;
         }
-        if (i_ring > 0 && carpet_panelpos < 0x19) {
+        if (i_ring > 0 && carpet_panelpos < NW_HZ(0x19, 0x1E)) {
             carpet_panelpos++;
         }
         carpet_bot = carpet_pos.y;
@@ -1873,8 +1874,8 @@ void MoveGYRO(struct creature_s *plr, struct nupad_s *pad) {
             !(carpet_top < plr->obj.pos.y + plr->obj.bot * plr->obj.SCALE)) {
             carpet_mid = (carpet_bot + carpet_top) * 0.5f;
             yrot = NuAtan2D(plr->obj.pos.x - carpet_pos.x, plr->obj.pos.z - carpet_pos.z);
-            plr->obj.mom.x = carpet_mom.x + NuTrigTable[yrot] * 0.04f;
-            plr->obj.mom.z = carpet_mom.z + NuTrigTable[(yrot + 0x4000) & 0xFFFF] * 0.04f;
+            plr->obj.mom.x = carpet_mom.x + NuTrigTable[yrot] * NW_HZ(0.04f, 0.033333335f);
+            plr->obj.mom.z = carpet_mom.z + NuTrigTable[(yrot + 0x4000) & 0xFFFF] * NW_HZ(0.04f, 0.033333335f);
             if (carpet_overlap == 0) {
                 v.x = (plr->obj.pos.x + carpet_pos.x) * 0.5f;
                 v.y = (plr->obj.pos.y + (plr->obj.bot + plr->obj.top) * plr->obj.SCALE * 0.5f +
@@ -1882,7 +1883,7 @@ void MoveGYRO(struct creature_s *plr, struct nupad_s *pad) {
                 v.z = (plr->obj.pos.z + carpet_pos.z) * 0.5f;
                 AddGameDebris(0x82, &v);
                 NewRumble(&player->rumble, 0xBF);
-                NewBuzz(&player->rumble, 0x10);
+                NewBuzz(&player->rumble, NW_HZ(0x10, 0x14));
                 GameSfx(0x5A, &v);
             }
             carpet_overlap = 1;
@@ -1890,7 +1891,7 @@ void MoveGYRO(struct creature_s *plr, struct nupad_s *pad) {
             carpet_overlap = 0;
         }
         if (HitCrateBalloons(&plr->obj.pos, plr->obj.RADIUS * 5.0f) != 0) {
-            NewBuzz(&player->rumble, 5);
+            NewBuzz(&player->rumble, NW_HZ(5, 6));
             AddScreenWumpa(temp_pCrate->pos.x, temp_pCrate->pos.y + CRATEBALLOONOFFSET,
                            temp_pCrate->pos.z, 1);
             temp_pCrate->flags = (temp_pCrate->flags | 0x400) ^ 0x400;
@@ -1966,7 +1967,7 @@ void MoveSUBMARINE(struct creature_s *plr, struct nupad_s *pad) {
     s32 fire_button;
     s32 pitch;
 
-    pitch = (s32)(plr->obj.xyz_distance * 5120.0005f);
+    pitch = (s32)(plr->obj.xyz_distance * NW_HZ(5120.0005f, 6144.0f));
     fire_button = pad->paddata_db & 0x80;
     tap_button = pad->paddata_db & 0x40;
     if (pitch > 0x200) {
@@ -1978,7 +1979,7 @@ void MoveSUBMARINE(struct creature_s *plr, struct nupad_s *pad) {
         (plr->obj.hdg < 0x1555 || plr->obj.hdg > 0x6AAB)) {
         mom.x = 0.0f;
         mom.y = 0.0f;
-        mom.z = 0.16f;
+        mom.z = NW_HZ(0.16f, 0.13333334f);
         if (plr->obj.hdg > 0x4000) {
             mom.z = -mom.z;
         }
@@ -1986,16 +1987,16 @@ void MoveSUBMARINE(struct creature_s *plr, struct nupad_s *pad) {
         pos.y = plr->obj.pos.y + (plr->obj.bot + plr->obj.top) * plr->obj.SCALE * 0.5f;
         pos.z = plr->obj.pos.z;
         AddProjectile(&pos, 0, &mom, 4, (mom.z > 0.0f) ? 0 : 0x8000, &plr->obj);
-        plr->fire = 0x19;
+        plr->fire = NW_HZ(0x19, 0x1E);
     } else if (plr->tap == 0 && tap_button != 0) {
         mom.x = 0.0f;
-        mom.y = plr->obj.mom.y - 0.02f;
+        mom.y = plr->obj.mom.y - NW_HZ(0.02f, 0.016666668f);
         mom.z = 0.0f;
         pos.x = plr->obj.pos.x;
         pos.y = plr->obj.pos.y + plr->obj.bot * plr->obj.SCALE + 0.1f;
         pos.z = plr->obj.pos.z;
         AddProjectile(&pos, 0, &mom, 10, qrand(), &plr->obj);
-        plr->tap = 0x32;
+        plr->tap = NW_HZ(0x32, 0x3C);
     }
     plr->obj.attack = 0;
     if (plr->obj.mask != 0 && plr->obj.mask->active >= 3) {
@@ -2024,17 +2025,17 @@ void MoveMINECART(struct creature_s *plr, struct nupad_s *pad) {
     jump_held = pad->paddata & 0x80;
     GameSfxLoop(0xCE, &plr->obj.pos);
     if (boost_held != 0 && plr->jump == 0) {
-        plr_vehicle_speedmul += FASTMINECARTMUL * 0.02f;
+        plr_vehicle_speedmul += FASTMINECARTMUL * NW_HZ(0.02f, 0.016666668f);
         if (plr_vehicle_speedmul > 4.0f) {
             plr_vehicle_speedmul = 4.0f;
         }
     } else {
-        plr_vehicle_speedmul -= SLOWMINECARTMUL * 0.02f;
+        plr_vehicle_speedmul -= SLOWMINECARTMUL * NW_HZ(0.02f, 0.016666668f);
         if (plr_vehicle_speedmul < 1.0f) {
             plr_vehicle_speedmul = 1.0f;
         }
     }
-    plr_vehicle_time += plr_vehicle_speedmul * 0.02f;
+    plr_vehicle_time += plr_vehicle_speedmul * NW_HZ(0.02f, 0.016666668f);
     if (plr_vehicle_time >= VEHICLETIME) {
         VEHICLECONTROL = 0;
         plr_vehicle_time = VEHICLETIME;
@@ -2091,10 +2092,10 @@ void MoveMINECART(struct creature_s *plr, struct nupad_s *pad) {
         plr->obj.attack = 0x80;
     }
     plr->obj.attack |= 0x400;
-    gamesfx_pitch = (s32)(plr->obj.xyz_distance * 235.0f) / 0.099999994f + 470.0f;
+    gamesfx_pitch = (s32)(plr->obj.xyz_distance * 235.0f) / NW_HZ(0.099999994f, 0.083333336f) + 470.0f;
     GameSfxLoop(0xCE, &plr->obj.pos);
     if (plr->obj.anim.action == 0x68 && plr->obj.model != 0 && plr->obj.model->anmdata[0x68] != 0) {
-        t = plr->obj.model->animlist[0x68]->speed * 0.59999996f * plr->obj.xz_distance * 10.0f;
+        t = plr->obj.model->animlist[0x68]->speed * NW_HZ(0.59999996f, 0.5f) * plr->obj.xz_distance * 10.0f;
         if ((plr->obj.anim.anim_time >= 14.0f && plr->obj.anim.anim_time - t < 14.0f) ||
             (plr->obj.anim.anim_time >= 2.0f && plr->obj.anim.anim_time - t < 2.0f)) {
             do {
@@ -2134,7 +2135,7 @@ void CheckGates(struct obj_s *obj) {
                 cross = LineCrossed(obj->oldpos.x, obj->oldpos.z, obj->pos.x, obj->pos.z,
                                     p1->x, p1->z, p0->x, p0->z);
                 if (cross != 0) {
-                    NewBuzz(&player->rumble, 5);
+                    NewBuzz(&player->rumble, NW_HZ(5, 6));
                 }
                 if (cross == 2) {
                     sfx = 0x36;
@@ -2245,7 +2246,7 @@ void CheckRings(struct obj_s *obj, s32 *ring) {
             NuVecNorm(&to_cur, &to_cur);
             if ((NuVecDot(&axis, &to_old) < 0.0f && NuVecDot(&axis, &to_cur) >= 0.0f) ||
                 (NuVecDot(&axis, &to_old) >= 0.0f && NuVecDot(&axis, &to_cur) < 0.0f)) {
-                NewBuzz(&player->rumble, 5);
+                NewBuzz(&player->rumble, NW_HZ(5, 6));
                 if (i == *ring) {
                     GameSfx(0x1E, &obj->pos);
                     (*ring)++;
@@ -2331,7 +2332,7 @@ void MoveMECH(struct creature_s *plr, struct nupad_s *pad) {
 
     jump_pressed = pad->paddata & 0x40;
     fire_pressed = pad->paddata & 0x80;
-    if (menu_mode == 0x1F || menu_mode == 0x21 || GameTimer.frame < 0x32 || fadeval > 0) {
+    if (menu_mode == 0x1F || menu_mode == 0x21 || GameTimer.frame < NW_HZ(0x32, 0x3C) || fadeval > 0) {
         fire_pressed = 0;
         jump_pressed = 0;
     }
@@ -2342,10 +2343,10 @@ void MoveMECH(struct creature_s *plr, struct nupad_s *pad) {
     if (plr->target == 2 && plr->fire == 0 && plr->fire_lock == 0 && plr->tap == 0) {
         plr->target = 1;
         AddFlyingWumpa(&plr_target_pos[0], &plr_target_dir, &plr_target_pos[1], 3);
-        frames = (s32)(ModelAnimDuration(0, plr->fire_action, 0.0f, 0.0f) * 50.0f);
+        frames = (s32)(ModelAnimDuration(0, plr->fire_action, 0.0f, 0.0f) * NW_HZ(50.0f, 60.0f));
         plr->obj.anim.anim_time = 1.0f;
         plr->fire = frames;
-        plr->tap = frames + 5;
+        plr->tap = frames + NW_HZ(5, 6);
         AddGameDebrisMtx(0x51, &plr_target_firepos, 0x20, &plr_target_mtx);
         AddGameDebrisMtx(0x52, &plr_target_firepos, 0x10, &plr_target_mtx);
         GameSfx(6, &plr->obj.pos);
@@ -2435,7 +2436,7 @@ void MoveMECH(struct creature_s *plr, struct nupad_s *pad) {
             plr->obj.target_yrot = 0;
             plr->obj.target_xrot = 0;
             plr->fire_action = 0x5C;
-            plr->tap = 10;
+            plr->tap = NW_HZ(10, 12);
             GameSfx(0x30, &plr->obj.pos);
         } else if ((*(u32 *)&plr->fire_action & 0xFFFF0000) == 0) {
             old = plr->fire_action;
@@ -2453,7 +2454,7 @@ void MoveMECH(struct creature_s *plr, struct nupad_s *pad) {
                 plr->fire_action = action;
             }
             if (plr->fire_action != old) {
-                plr->tap = 10;
+                plr->tap = NW_HZ(10, 12);
             }
         }
     } else {
@@ -2659,7 +2660,7 @@ void MoveOFFROADER(struct creature_s *plr, struct nupad_s *pad) {
 
     accel = pad->paddata & 0x60;
     jeeptyrepos = plr->obj.pos;
-    n = (s32)(plr->obj.xyz_distance * 2560.0002f);
+    n = (s32)(plr->obj.xyz_distance * NW_HZ(2560.0002f, 3072.0f));
     if (n > 0x200) {
         n = 0x200;
     }
@@ -2675,12 +2676,12 @@ void MoveOFFROADER(struct creature_s *plr, struct nupad_s *pad) {
         v.x = player->obj.mom.x;
         v.z = player->obj.mom.z;
         NuVecRotateY(&v, &v, -player->obj.hdg);
-        if (NuFabs(v.x) * 2.0f > NuFabs(v.z) && plr->obj.xz_distance > 0.02f) {
+        if (NuFabs(v.x) * 2.0f > NuFabs(v.z) && plr->obj.xz_distance > NW_HZ(0.02f, 0.016666668f)) {
             GameSfx(0x12, &plr->obj.pos);
         }
     }
     if (plr->obj.ground != 0 && plr->obj.old_ground == 0 &&
-        (qrand() < 0x4000 || plr->obj.mom.y < -0.02f)) {
+        (qrand() < 0x4000 || plr->obj.mom.y < -NW_HZ(0.02f, 0.016666668f))) {
         do {
             n = qrand() / 0x4000;
         } while (n == i_jkeepsfx);
@@ -2688,7 +2689,7 @@ void MoveOFFROADER(struct creature_s *plr, struct nupad_s *pad) {
         GameSfx(jeepsfx[n], &plr->obj.pos);
     }
     if (plr->obj.ground != 0) {
-        gamesfx_effect_volume = (s32)(plr->obj.xyz_distance * 81915.008f);
+        gamesfx_effect_volume = (s32)(plr->obj.xyz_distance * NW_HZ(81915.008f, 98298.0f));
         if (gamesfx_effect_volume > 0x3FFF) {
             gamesfx_effect_volume = 0x3FFF;
         }
@@ -2698,7 +2699,7 @@ void MoveOFFROADER(struct creature_s *plr, struct nupad_s *pad) {
         PlayerHitBuggies(plr);
     }
     if ((Level != 8 || ChaseActive() == -1) && plr->obj.ground != 0 && qrand() < 0x800) {
-        n = (s32)(plr->obj.xz_distance / 0.099999994f * 127.0f);
+        n = (s32)(plr->obj.xz_distance / NW_HZ(0.099999994f, 0.083333336f) * 127.0f);
         NewRumble(&plr->rumble, (n > 0x7F) ? 0x7F : n);
     }
     if (plr->obj.ground != 0 && plr->obj.surface_type == 0xB) {
@@ -2708,7 +2709,7 @@ void MoveOFFROADER(struct creature_s *plr, struct nupad_s *pad) {
             gamesfx_effect_volume = 0x5FFE;
             GameSfx(0x6D, &plr->obj.pos);
         }
-        plr->fire = 0x32;
+        plr->fire = NW_HZ(0x32, 0x3C);
     }
     if (plr->fire != 0) {
         NewBuzz(&plr->rumble, 2);
@@ -2718,12 +2719,12 @@ void MoveOFFROADER(struct creature_s *plr, struct nupad_s *pad) {
     } else if (plr->fire != 0) {
         offroader_speedtime = OFFROADERSPEEDTIME;
     } else if (accel != 0) {
-        offroader_speedtime += 0.02f;
+        offroader_speedtime += NW_HZ(0.02f, 0.016666668f);
         if (offroader_speedtime > OFFROADERSPEEDTIME) {
             offroader_speedtime = OFFROADERSPEEDTIME;
         }
     } else {
-        offroader_speedtime -= 0.04f;
+        offroader_speedtime -= NW_HZ(0.04f, 0.033333335f);
         if (offroader_speedtime < 0.0f) {
             offroader_speedtime = 0.0f;
         }
@@ -2737,9 +2738,9 @@ void MoveOFFROADER(struct creature_s *plr, struct nupad_s *pad) {
     }
     plr->obj.attack |= 0x400;
     if ((plr->obj.ground != 0 || plr->fire != 0) &&
-        (plr->obj.xz_distance > 0.02f || abs(plr->obj.dyrot) > 0x60) &&
+        (plr->obj.xz_distance > NW_HZ(0.02f, 0.016666668f) || abs(plr->obj.dyrot) > NW_HZ(0x60, 0x50)) &&
         (plr->sprint != 0 || (jonframe1 & 3) == 0 || accel != 0 || plr->fire != 0 ||
-         abs(plr->obj.dyrot) > 0x60)) {
+         abs(plr->obj.dyrot) > NW_HZ(0x60, 0x50))) {
         for (i = 0; i < 4; i++) {
             v = plr->obj.pos;
             switch (i) {
@@ -2819,7 +2820,7 @@ void AnimateOFFROADER(struct creature_s *plr) {
         if ((Level == 3) &&
             ((Pad[0] == 0) || ((Pad[0]->paddata & 0x60) == 0) ||
              (SmokeyCountDownValue > 0)) &&
-            (plr->obj.xz_distance < 0.02f)) {
+            (plr->obj.xz_distance < NW_HZ(0.02f, 0.016666668f))) {
             plr->obj.anim.newaction = 0x62;
         } else if (d >= 0x801) {
             plr->obj.anim.newaction = 0x67;
@@ -2903,7 +2904,7 @@ void AnimateATLASPHERE(struct creature_s *plr) {
         plr->obj.anim.newaction = plr->obj.die_action;
     } else {
         if ((plr->obj.pad_speed == 0.0f) &&
-            (plr->obj.xz_distance < 0.005f)) {
+            (plr->obj.xz_distance < NW_HZ(0.005f, 0.004166667f))) {
             plr->obj.anim.newaction = 0x22;
         } else {
             if (plr->obj.xz_distance < CrashMoveInfo.WALKSPEED) {
@@ -3089,8 +3090,8 @@ void ResetTubs(void) {
         c->obj.pos.z = (p0->z + p1->z) * 0.5f;
     }
     opptub_action = 0x62;
-    i = qrand() * 50;
-    opptub_wait = i / 0x10000 + 50;
+    i = qrand() * NW_HZ(50, 60);
+    opptub_wait = i / 0x10000 + NW_HZ(50, 60);
 }
 
 
@@ -3129,13 +3130,14 @@ void MoveTub(struct tubinfo_s *tub, s32 LEFT, s32 RIGHT) {
 
     is_player = (tub == &PlrTub);
     control = is_player ? VEHICLECONTROL : 1;
-    if (Level != 0x1C || (GameTimer.frame >= 150 && tub->stall == 0 &&
+    if (Level != 0x1C || (GameTimer.frame >= NW_HZ(150, 180) && tub->stall == 0 &&
                           (tub->finished == 0 || tub->finished < tub->finishframes))) {
-        speed = 0.02f;
+        speed = NW_HZ(0.02f, 0.016666668f);
         if (Level == 0x1C && tub->finished != 0) {
             speed = NuTrigTable[((tub->finished << 14) / tub->finishframes + 0x4000) & 0xFFFF] * speed;
-        } else if (Level == 0x1C && GameTimer.frame < 200) {
-            speed = (1.0f - NuTrigTable[(((GameTimer.frame - 150) << 14) / 50 + 0x4000) & 0xFFFF]) *
+        } else if (Level == 0x1C && GameTimer.frame < NW_HZ(200, 240)) {
+            speed = (1.0f -
+                     NuTrigTable[(((GameTimer.frame - NW_HZ(150, 180)) << 14) / NW_HZ(50, 60) + 0x4000) & 0xFFFF]) *
                     speed;
         } else if (is_player) {
             tub->spark = 0;
@@ -3295,7 +3297,7 @@ void MoveTub(struct tubinfo_s *tub, s32 LEFT, s32 RIGHT) {
                 tub->laps++;
                 if (tub->laps == MAXLAPS) {
                     race_finished = 1;
-                    tub->finishframes = (tub->place == 1) ? 100 : 50;
+                    tub->finishframes = (tub->place == 1) ? NW_HZ(100, 120) : NW_HZ(50, 60);
                 }
             }
             if (tub->laps >= MAXLAPS && tub->finished < tub->finishframes) {
@@ -3325,17 +3327,17 @@ void MoveMINETUB(struct creature_s *plr, struct nupad_s *pad) {
 
     TubLink = (Level == 0x1C) ? TubLinkGT : TubLinkCR;
     OppTub.c->obj.oldpos = OppTub.c->obj.pos;
-    if (Level == 0x1C && GameTimer.frame < 150) {
+    if (Level == 0x1C && GameTimer.frame < NW_HZ(150, 180)) {
         race_finished = 0;
     }
     if (PlrTub.boost != 0) {
         PlrTub.boost--;
     }
     if (Level == 0x1C) {
-        if (GameTimer.frame == 0 || GameTimer.frame == 50 || GameTimer.frame == 100) {
+        if (GameTimer.frame == 0 || GameTimer.frame == NW_HZ(50, 60) || GameTimer.frame == NW_HZ(100, 120)) {
             sfx = 0x4F;
         } else {
-            sfx = (GameTimer.frame == 150) ? 0x4C : -1;
+            sfx = (GameTimer.frame == NW_HZ(150, 180)) ? 0x4C : -1;
         }
         if (sfx != -1) {
             GameSfx(sfx, 0);
@@ -3344,7 +3346,7 @@ void MoveMINETUB(struct creature_s *plr, struct nupad_s *pad) {
     RIGHT = 0;
     LEFT = 0;
     if (plr->obj.pad_speed > 0.0f &&
-        (Level != 0x1C || (PlrTub.laps < MAXLAPS && GameTimer.frame >= 150))) {
+        (Level != 0x1C || (PlrTub.laps < MAXLAPS && GameTimer.frame >= NW_HZ(150, 180)))) {
         if ((u16)(plr->obj.pad_angle + 0x6AAA) < 0x5555) {
             LEFT = 1;
         } else {
@@ -3368,7 +3370,7 @@ void MoveMINETUB(struct creature_s *plr, struct nupad_s *pad) {
             }
         } else {
             if (plr_tub_tilt != tilt) {
-                NewBuzz(&plr->rumble, 5);
+                NewBuzz(&plr->rumble, NW_HZ(5, 6));
             }
             if (LEFT != 0) {
                 plr_tub_tilttarget = -plr_tub_tiltlock;
@@ -3434,14 +3436,14 @@ void MoveMINETUB(struct creature_s *plr, struct nupad_s *pad) {
                 if (tub[0] == &PlrTub) {
                     tub[0]->boost = (s32)TUBBOOSTFRAMES;
                     NewRumble(&player->rumble, 0xFF);
-                    NewBuzz(&player->rumble, 0x32);
+                    NewBuzz(&player->rumble, NW_HZ(0x32, 0x3C));
                 } else {
                     NewRumble(&player->rumble, 0x7F);
-                    NewBuzz(&player->rumble, 0x19);
+                    NewBuzz(&player->rumble, NW_HZ(0x19, 0x1E));
                 }
                 if (tub_overlap == 0) {
                     GameSfx(0x70, &plr->obj.pos);
-                    NewBuzz(&plr->rumble, 10);
+                    NewBuzz(&plr->rumble, NW_HZ(10, 12));
                 }
             }
             tub_overlap = 1;
@@ -3475,12 +3477,12 @@ void MoveMINETUB(struct creature_s *plr, struct nupad_s *pad) {
         plr->obj.attack = 0x80;
     }
     plr->obj.attack |= 0x400;
-    if (Level == 4 || GameTimer.frame >= 150) {
-        gamesfx_effect_volume = (s32)(plr->obj.xyz_distance * 32766.0f) / 0.099999994f;
+    if (Level == 4 || GameTimer.frame >= NW_HZ(150, 180)) {
+        gamesfx_effect_volume = (s32)(plr->obj.xyz_distance * 32766.0f) / NW_HZ(0.099999994f, 0.083333336f);
         if (gamesfx_effect_volume > 0x7FFE) {
             gamesfx_effect_volume = 0x7FFE;
         }
-        gamesfx_pitch = (s32)(plr->obj.xyz_distance * 235.0f) / 0.099999994f + 470.0f;
+        gamesfx_pitch = (s32)(plr->obj.xyz_distance * 235.0f) / NW_HZ(0.099999994f, 0.083333336f) + 470.0f;
         GameSfxLoop(0x73, &PlrTub.c->obj.pos);
     }
 }
@@ -3535,15 +3537,15 @@ void AnimateMINETUB(struct creature_s *plr) {
             if (opptub_action == 0x62) {
                 opptub_action = (qrand() <= 0x7FFF) ? 0x5F : 0x60;
                 opptub_wait = (s32)(ModelAnimDuration(OppTub.c->obj.character, opptub_action,
-                                                      0.0f, 0.0f) * 50.0f);
+                                                      0.0f, 0.0f) * NW_HZ(50.0f, 60.0f));
             } else {
                 opptub_action = 0x62;
-                opptub_wait = (qrand() * 50) / 0x10000 + 50;
+                opptub_wait = (qrand() * NW_HZ(50, 60)) / 0x10000 + NW_HZ(50, 60);
             }
         }
         OppTub.c->obj.anim.oldaction = OppTub.c->obj.anim.action;
         OppTub.c->obj.anim.newaction = opptub_action;
-        UpdateAnimPacket(OppTub.c->obj.model, &OppTub.c->obj.anim, 0.59999996f,
+        UpdateAnimPacket(OppTub.c->obj.model, &OppTub.c->obj.anim, NW_HZ(0.59999996f, 0.5f),
                          OppTub.c->obj.xz_distance);
     }
 }

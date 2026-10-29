@@ -981,9 +981,9 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
     }
 
     /* --- defaults --- */
-    seek.x = 0.14999999f;
-    seek.y = 0.14999999f;
-    seek.z = 0.14999999f;
+    seek.x = NW_HZ(0.14999999f, 0.125f);
+    seek.y = NW_HZ(0.14999999f, 0.125f);
+    seek.z = NW_HZ(0.14999999f, 0.125f);
     if (pos_START != NULL) {
         pos = *pos_START;
     } else {
@@ -1030,18 +1030,18 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
             NuCameraSet(pNuCam);
             goto Finish;
         }
-        if (GameTimer.frame < 100) {
+        if (GameTimer.frame < NW_HZ(100, 120)) {
             height = 2.5f;
         } else {
             height = 5.0f;
         }
         if (ATLASCAMHEIGHT > height) {
-            ATLASCAMHEIGHT -= 0.04f;
+            ATLASCAMHEIGHT -= NW_HZ(0.04f, 0.033333335f);
             if (ATLASCAMHEIGHT < height) {
                 ATLASCAMHEIGHT = height;
             }
         } else if (ATLASCAMHEIGHT < height) {
-            ATLASCAMHEIGHT += 0.04f;
+            ATLASCAMHEIGHT += NW_HZ(0.04f, 0.033333335f);
             if (ATLASCAMHEIGHT > height) {
                 ATLASCAMHEIGHT = height;
             }
@@ -1223,12 +1223,12 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
                         dist = 0.0f;
                     }
                     if (GameCamera->distance > dist) {
-                        GameCamera->distance -= 0.04f;
+                        GameCamera->distance -= NW_HZ(0.04f, 0.033333335f);
                         if (GameCamera->distance < dist) {
                             GameCamera->distance = dist;
                         }
                     } else if (GameCamera->distance < dist) {
-                        GameCamera->distance += 0.04f;
+                        GameCamera->distance += NW_HZ(0.04f, 0.033333335f);
                         if (GameCamera->distance > dist) {
                             GameCamera->distance = dist;
                         }
@@ -1282,7 +1282,7 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
 
         /* look ahead along the rail */
         dist = 0.0f;
-        f = 0.04f;
+        f = NW_HZ(0.04f, 0.033333335f);
         if ((VEHICLECONTROL != 2) &&
             ((VEHICLECONTROL != 1) || (obj->vehicle != 0x20)) &&
             (best_cRPos != NULL) && (best_cRPos->mode & 0xC)) {
@@ -1291,7 +1291,7 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
             } else {
                 dist = NuTrigTable[(RotDiff(obj->hdg, best_cRPos->angle) + 0x4000) & 0xFFFF];
             }
-            f = fabs(dist) * 0.02f;
+            f = fabs(dist) * NW_HZ(0.02f, 0.016666668f);
         }
         if (GameCamera->ahead > dist) {
             GameCamera->ahead -= f;
@@ -1384,9 +1384,9 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
             t = 0.0f;
         }
         PointAlongSpline(SplTab[65].spl, t, &pos, NULL, NULL);
-        pos.x += WOBBLE(206) * 0.1f;
-        pos.y += WOBBLE(159) * 0.1f;
-        pos.z += WOBBLE(178) * 0.1f;
+        pos.x += WOBBLE(NW_HZ(206, 247)) * 0.1f;
+        pos.y += WOBBLE(NW_HZ(159, 191)) * 0.1f;
+        pos.z += WOBBLE(NW_HZ(178, 213)) * 0.1f;
         pVIS = death_pCAM;
         iVIS = iTEMP;
         PointAlongSpline(SplTab[66].spl, t, &look, NULL, NULL);
@@ -1456,9 +1456,9 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
         pos = *(struct nuvec_s *)spl->pts;
         look = *(struct nuvec_s *)(spl->pts + spl->ptsize);
         if (Level == 0x26) {
-            pos.x += WOBBLE(518) * 0.05f;
-            pos.y += WOBBLE(409) * 0.05f;
-            pos.z += WOBBLE(396) * 0.05f;
+            pos.x += WOBBLE(NW_HZ(518, 622)) * 0.05f;
+            pos.y += WOBBLE(NW_HZ(409, 491)) * 0.05f;
+            pos.z += WOBBLE(NW_HZ(396, 476)) * 0.05f;
         }
         break;
 
@@ -1481,9 +1481,9 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
     case 0x21:
         pos = cutcampos_FRONTEND;
         look = cutcamlook_FRONTEND;
-        pos.x += WOBBLE(206) * 0.1f;
-        pos.y += WOBBLE(159) * 0.1f;
-        pos.z += WOBBLE(178) * 0.1f;
+        pos.x += WOBBLE(NW_HZ(206, 247)) * 0.1f;
+        pos.y += WOBBLE(NW_HZ(159, 191)) * 0.1f;
+        pos.z += WOBBLE(NW_HZ(178, 213)) * 0.1f;
         break;
 
     case 0x1A:
@@ -1533,7 +1533,7 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
             ang = NuAtan2D(dx, dz) & 0xFFFF;
         }
         if (GameCamera->mode == oldmode) {
-            rot = TurnRot(GameCamera->angle, ang, 0x51E);
+            rot = TurnRot(GameCamera->angle, ang, NW_HZ(0x51E, 0x444));
         } else {
             rot = ang;
         }
@@ -1567,9 +1567,9 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
         pos.y = 0.5f;
         pos.z = -1.0f;
         yrot_fixed = 0;
-        pos.x += WOBBLE(206) * 0.1f;
-        pos.y += WOBBLE(159) * 0.1f;
-        pos.z += WOBBLE(178) * 0.1f;
+        pos.x += WOBBLE(NW_HZ(206, 247)) * 0.1f;
+        pos.y += WOBBLE(NW_HZ(159, 191)) * 0.1f;
+        pos.z += WOBBLE(NW_HZ(178, 213)) * 0.1f;
         break;
 
     case 4:
@@ -1614,7 +1614,7 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
 
     case 0xB:
         /* sweep along rail 1 */
-        i = 500; /* sweep period in frames */
+        i = NW_HZ(500, 600); /* sweep period in frames */
         idx = (((GameTimer.frame % i) << 16) / i + 0x4000) & 0xFFFF;
         PointAlongSpline(Rail[1].pINCAM, NuTrigTable[idx] * 0.5f + 0.5f, &pos,
                          NULL, NULL);
@@ -1626,12 +1626,12 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
         /* side-on camera, distance adjustable with the shoulder buttons */
         if (Pad[0] != NULL) {
             if ((Pad[0]->paddata & 4) && !(Pad[0]->paddata & 1)) {
-                SIDECAMDISTANCE += 0.02f;
+                SIDECAMDISTANCE += NW_HZ(0.02f, 0.016666668f);
                 if (SIDECAMDISTANCE > 9.0f) {
                     SIDECAMDISTANCE = 9.0f;
                 }
             } else if (!(Pad[0]->paddata & 4) && (Pad[0]->paddata & 1)) {
-                SIDECAMDISTANCE -= 0.02f;
+                SIDECAMDISTANCE -= NW_HZ(0.02f, 0.016666668f);
                 if (SIDECAMDISTANCE < 3.0f) {
                     SIDECAMDISTANCE = 3.0f;
                 }
@@ -1661,7 +1661,7 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
 
     /* --- move toward the dist --- */
     if (GameCamera->blend_time < GameCamera->blend_duration) {
-        GameCamera->blend_time += 0.02f;
+        GameCamera->blend_time += NW_HZ(0.02f, 0.016666668f);
         if (GameCamera->blend_time > GameCamera->blend_duration) {
             GameCamera->blend_time = GameCamera->blend_duration;
         }
@@ -1675,34 +1675,34 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
             seek.y *= 0.25f;
         }
         if (GameCamera->seek.x > seek.x) {
-            GameCamera->seek.x -= 0.0011999999f;
+            GameCamera->seek.x -= NW_HZ(0.0011999999f, 0.0009999999f);
             if (GameCamera->seek.x < seek.x) {
                 GameCamera->seek.x = seek.x;
             }
         } else if (GameCamera->seek.x < seek.x) {
-            GameCamera->seek.x += 0.0011999999f;
+            GameCamera->seek.x += NW_HZ(0.0011999999f, 0.0009999999f);
             if (GameCamera->seek.x > seek.x) {
                 GameCamera->seek.x = seek.x;
             }
         }
         if (GameCamera->seek.y > seek.y) {
-            GameCamera->seek.y -= 0.0011999999f;
+            GameCamera->seek.y -= NW_HZ(0.0011999999f, 0.0009999999f);
             if (GameCamera->seek.y < seek.y) {
                 GameCamera->seek.y = seek.y;
             }
         } else if (GameCamera->seek.y < seek.y) {
-            GameCamera->seek.y += 0.0011999999f;
+            GameCamera->seek.y += NW_HZ(0.0011999999f, 0.0009999999f);
             if (GameCamera->seek.y > seek.y) {
                 GameCamera->seek.y = seek.y;
             }
         }
         if (GameCamera->seek.z > seek.z) {
-            GameCamera->seek.z -= 0.0011999999f;
+            GameCamera->seek.z -= NW_HZ(0.0011999999f, 0.0009999999f);
             if (GameCamera->seek.z < seek.z) {
                 GameCamera->seek.z = seek.z;
             }
         } else if (GameCamera->seek.z < seek.z) {
-            GameCamera->seek.z += 0.0011999999f;
+            GameCamera->seek.z += NW_HZ(0.0011999999f, 0.0009999999f);
             if (GameCamera->seek.z > seek.z) {
                 GameCamera->seek.z = seek.z;
             }
@@ -1831,10 +1831,10 @@ void MoveGameCamera(struct cammtx_s *GameCamera, struct obj_s *obj) {
     yrot = GameCamera->yrot;
     zrot = GameCamera->zrot;
     if (GameCamera->judder > 0.0f) {
-        GameCamera->judder -= 0.02f;
+        GameCamera->judder -= NW_HZ(0.02f, 0.016666668f);
         if (GameCamera->judder > 0.0f) {
             i = (s32)((GameCamera->judder + GameCamera->judder) * 256.0f);
-            if (fmod(GameCamera->judder, 0.08f) < 0.04f) {
+            if (fmod(GameCamera->judder, NW_HZ(0.08f, 0.06666667f)) < NW_HZ(0.04f, 0.033333335f)) {
                 i = -i;
             }
             xrot += i;

@@ -16,6 +16,7 @@
  *   0x00250518 TestLocalSfx
  */
 
+#include "nu_port.h"
 #include "numath/nuvec.h"
 #include "game/gametypes.h"
 #include "game/creature.h"
@@ -1416,12 +1417,12 @@ void GameAudioUpdate(void) {
     }
 
     if (musicvol_mul > volScale) {
-        musicvol_mul -= 0.02f;
+        musicvol_mul -= NW_HZ(0.02f, 0.016666668f);
         if (musicvol_mul < volScale) {
             musicvol_mul = volScale;
         }
     } else if (musicvol_mul < volScale) {
-        musicvol_mul += 0.02f;
+        musicvol_mul += NW_HZ(0.02f, 0.016666668f);
         if (musicvol_mul > volScale) {
             musicvol_mul = volScale;
         }
@@ -1437,7 +1438,7 @@ void GameAudioUpdate(void) {
             }
             volScale = dist;
             if (volScale < 1.0f) {
-                volScale *= (f32)(25 - Paused) / 25.0f;
+                volScale *= (f32)(NW_HZ(25, 30) - Paused) / NW_HZ(25.0f, 30.0f);
                 vol = (f32)vol * volScale;
             }
         }
@@ -1471,12 +1472,12 @@ void GameAudioUpdate(void) {
     }
 
     if (nusound_fade_end > fadeTarget) {
-        nusound_fade_end -= 0.5f;
+        nusound_fade_end -= NW_HZ(0.5f, 0.41666669f);
         if (nusound_fade_end < fadeTarget) {
             nusound_fade_end = fadeTarget;
         }
     } else if (nusound_fade_end < fadeTarget) {
-        nusound_fade_end += 0.5f;
+        nusound_fade_end += NW_HZ(0.5f, 0.41666669f);
         if (nusound_fade_end > fadeTarget) {
             nusound_fade_end = fadeTarget;
         }

@@ -1262,7 +1262,7 @@ s32 CrateBounceReaction(struct crategroup_s *group, struct cratecube_s *crate,
         if ((TimeTrial == 0 ? crate->type1 == 8 : crate->type2 == 8) &&
             crate->newtype == -1 && crate->subtype == 9) {
             crate->newtype = 9;
-            crate->timer = 0.02f;
+            crate->timer = NW_HZ(0.02f, 0.016666668f);
             sfx = 2;
             bounce = 1;
             goto done;
@@ -1272,7 +1272,7 @@ s32 CrateBounceReaction(struct crategroup_s *group, struct cratecube_s *crate,
         if (crate->timer != 0.0f) {
             goto done;
         }
-        crate->timer = crate->timer + 0.02f;
+        crate->timer = crate->timer + NW_HZ(0.02f, 0.016666668f);
         sfx = 2;
         bounce = 1;
     } else if (type == 0xE) {
@@ -1327,7 +1327,7 @@ s32 CrateBounceReaction(struct crategroup_s *group, struct cratecube_s *crate,
     } else if (type == 6) {
         sfx = 2;
         if (crate->timer == 0.0f) {
-            crate->timer = crate->timer + 0.02f;
+            crate->timer = crate->timer + NW_HZ(0.02f, 0.016666668f);
         }
         if (crate->counter >= 2) {
             crate->counter--;
@@ -1360,7 +1360,7 @@ done:
         temp_crate_bounce |= bounce;
         if (bounce != 0) {
             NewRumble(&player->rumble, 0x7F);
-            NewBuzz(&player->rumble, 0xA);
+            NewBuzz(&player->rumble, NW_HZ(0xA, 0xC));
         }
     }
     if (sfx != -1) {
@@ -2181,7 +2181,7 @@ void UpdateCrates(void) {
 
     if (plr_invisibility_time < 5.0f) {
         old_time = plr_invisibility_time;
-        plr_invisibility_time += 0.02f;
+        plr_invisibility_time += NW_HZ(0.02f, 0.016666668f);
         if (old_time < 4.0f && plr_invisibility_time >= 4.0f) {
             GameSfx(0x21, 0);
         }
@@ -2190,7 +2190,7 @@ void UpdateCrates(void) {
         }
     }
     glass_enabled = plr_invisibility_time < 4.0f;
-    angle = (u16)(((GameTimer.frame % 50) << 16) / 50);
+    angle = (u16)(((GameTimer.frame % NW_HZ(50, 60)) << 16) / NW_HZ(50, 60));
     group = CrateGroup;
     for (i = 0; i < CRATEGROUPCOUNT; i++, group++) {
         crate = &Crate[group->iCrate];
@@ -2204,7 +2204,7 @@ void UpdateCrates(void) {
             if (crate->on != 0 || (TimeTrial == 0 && crate->type1 == 7)) {
                 if (crate->action != -1) {
                     if (crate->anim_time < crate->anim_duration) {
-                        crate->anim_time += crate->anim_speed * 0.5999999642f;
+                        crate->anim_time += crate->anim_speed * NW_HZ(0.5999999642f, 0.5f);
                         if (crate->anim_time >= crate->anim_duration) {
                             if (crate->anim_cycle != 0) {
                                 crate->anim_time -= crate->anim_duration - 1.0f;
@@ -2235,10 +2235,10 @@ void UpdateCrates(void) {
                 switch (type) {
                 case 9:
                     if (crate->timer != 0.0f) {
-                        crate->timer += 0.02f;
+                        crate->timer += NW_HZ(0.02f, 0.016666668f);
                         for (k = 0; k < 7; k++) {
                             if (crate->timer >= tntsfxtime[k] &&
-                                crate->timer - 0.02f < tntsfxtime[k]) {
+                                crate->timer - NW_HZ(0.02f, 0.016666668f) < tntsfxtime[k]) {
                                 GameSfx(0x4F, &crate->pos);
                             }
                         }
@@ -2261,7 +2261,7 @@ void UpdateCrates(void) {
                     break;
                 case 8:
                     old = crate->subtype;
-                    crate->timer += 0.02f;
+                    crate->timer += NW_HZ(0.02f, 0.016666668f);
                     if (crate->timer >= crate->duration) {
                         crate->i++;
                         switch (crate->i) {
@@ -2282,11 +2282,11 @@ void UpdateCrates(void) {
                         crate->timer = 0.0f;
                         if ((crate->flags & 8) != 0) {
                             crate->duration *= 0.9f;
-                            if (crate->duration < 0.02f) {
+                            if (crate->duration < NW_HZ(0.02f, 0.016666668f)) {
                                 crate->newtype = 0xF;
                                 sfx = 0x82;
                                 crate->subtype = -1;
-                                NewBuzz(&player->rumble, 5);
+                                NewBuzz(&player->rumble, NW_HZ(5, 6));
                             }
                         } else if (player->used != 0) {
                             NuVecSub(&v, &crate->pos, &player->obj.pos);
@@ -2316,7 +2316,7 @@ void UpdateCrates(void) {
                     break;
                 case 6:
                     if (crate->timer > 0.0f) {
-                        crate->timer += 0.02f;
+                        crate->timer += NW_HZ(0.02f, 0.016666668f);
                         if (((crate->flags & 0x20) != 0 &&
                              crate->timer >= 2.5f) ||
                             ((crate->flags & 0x20) == 0 &&
@@ -2398,7 +2398,7 @@ void UpdateCrates(void) {
                                         crate->pos.y = crate2->pos.y - 0.5f;
                                     }
                                     if (crate2->pos.y == crate->pos.y + 0.5f) {
-                                        crate->mom = -0.02f;
+                                        crate->mom = -NW_HZ(0.02f, 0.016666668f);
                                         if (GetCrateType(crate2, 0) == 0x10) {
                                             CrateOff(group, crate2, 0, 0);
                                         }
@@ -2432,22 +2432,22 @@ void UpdateCrates(void) {
                         type = GetCrateType(crate, 0);
                         if (type == 9 && crate->timer == 0.0f &&
                             (crate->flags & 2) == 0) {
-                            crate->timer = 0.02f;
+                            crate->timer = NW_HZ(0.02f, 0.016666668f);
                         } else if (type == 8 && crate->newtype == -1 &&
                                    crate->subtype == 9) {
                             crate->newtype = 9;
-                            crate->timer = 0.02f;
+                            crate->timer = NW_HZ(0.02f, 0.016666668f);
                         }
                     }
                     if ((contact & 2) != 0) {
                         type = GetCrateType(crate2, 0);
                         if (type == 9 && crate2->timer == 0.0f &&
                             (crate->flags & 2) == 0) {
-                            crate2->timer = 0.02f;
+                            crate2->timer = NW_HZ(0.02f, 0.016666668f);
                         } else if (type == 8 && crate2->newtype == -1 &&
                                    crate2->subtype == 9) {
                             crate2->newtype = 9;
-                            crate2->timer = 0.02f;
+                            crate2->timer = NW_HZ(0.02f, 0.016666668f);
                         }
                     }
                 }
@@ -2900,7 +2900,7 @@ void DrawCrates(void) {
                     break;
                 }
                 if (type == -1) {
-                    type = ((GlobalTimer.frame % 10) > 4) ? type : 0;
+                    type = ((GlobalTimer.frame % NW_HZ(10, 12)) > NW_HZ(4, 5)) ? type : 0;
                 }
             } else {
                 type = GetCrateType(crate, 1);

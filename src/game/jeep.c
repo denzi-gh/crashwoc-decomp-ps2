@@ -511,7 +511,7 @@ void TiltJeep(struct JEEPSTRUCT *Jeep, f32 DeltaTime) {
         Jeep->aDestTiltZ = Jeep->CentrefugalForce * 5461.0f;
     }
     Jeep->TiltSeekTime = 0.1f;
-    TiltSeek(Jeep, 0.02f);
+    TiltSeek(Jeep, NW_HZ(0.02f, 0.016666668f));
 }
 
 
@@ -598,7 +598,7 @@ void MovePlayerJeep(struct creature_s *Cre, struct nupad_s *Pad) {
             struct nuvec_s Temp;
 
             for (i = 0; i < 4; i++) {
-                Tempf = Jeep->WheelHeight[i] + 0.009999999776f;
+                Tempf = Jeep->WheelHeight[i] + NW_HZ(0.009999999776f, 0.008333334f);
                 if (Tempf > 0.125f) {
                     Tempf = 0.125f;
                 }
@@ -644,7 +644,7 @@ void MovePlayerJeep(struct creature_s *Cre, struct nupad_s *Pad) {
         s32 i;
         s32 j;
 
-        NuVecScale(&Movement, &Jeep->Move.Velocity, 0.009999999776f);
+        NuVecScale(&Movement, &Jeep->Move.Velocity, NW_HZ(0.009999999776f, 0.008333334f));
         for (i = 0; i < 2; i++) {
             NuVecMtxTransform(&Temp, &ExhaustPos[i], &Jeep->DrawMtx);
             for (j = 0; j < 2; j++) {
@@ -659,7 +659,7 @@ void MovePlayerJeep(struct creature_s *Cre, struct nupad_s *Pad) {
         s32 i;
         s32 j;
 
-        NuVecScale(&Movement, &Jeep->Move.Velocity, 0.009999999776f);
+        NuVecScale(&Movement, &Jeep->Move.Velocity, NW_HZ(0.009999999776f, 0.008333334f));
         for (i = 0; i < 4; i++) {
             Temp = *(struct nuvec_s *)&Jeep->ChassisLocators[i]._30;
             for (j = 0; j < 2; j++) {
@@ -793,7 +793,7 @@ void DriveJeep(struct JEEPSTRUCT *Jeep, struct nupad_s *Pad) {
     short DeltaAng;
     struct nuvec_s *Vel;
     struct nuvec_s Move;
-    f32 DeltaTime = 0.01999999955f;
+    f32 DeltaTime = NW_HZ(0.01999999955f, 0.016666668f);
 
     if (Level == 0x16 && FireBossHealth <= 0) {
         Jeep->Finished = 1;
@@ -883,7 +883,7 @@ void DriveJeep(struct JEEPSTRUCT *Jeep, struct nupad_s *Pad) {
     if (Jeep->BoostOnTimer > 0.0f) {
         Jeep->MaxSpeed = Jeep->MySpeed * 1.5f;
     } else if (Jeep->MaxSpeed > Jeep->MySpeed) {
-        SeekHalfLife(&Jeep->MaxSpeed, Jeep->MySpeed, 0.5f, 0.01999999955f);
+        SeekHalfLife(&Jeep->MaxSpeed, Jeep->MySpeed, 0.5f, NW_HZ(0.01999999955f, 0.016666668f));
     } else {
         Jeep->MaxSpeed = Jeep->MySpeed;
     }
@@ -1329,8 +1329,8 @@ void JeepCamFollowAng(struct cammtx_s *Cam, s32 Snap) {
         BlendNUVECs(&Obj, &Ahead, &Jeep->RestartCamObj, Blend);
         DoCamMtx(Cam, &Obj, &Pos);
     } else if (Jeep->Finished != 0 && Snap == 0) {
-        SeekAngHalfLife360f(&AngVelY, 0.0f, 0.5f, 0.01999999955f);
-        SeekHalfLifeNUVEC(&Vel, &v000, 0.5f, 0.01999999955f);
+        SeekAngHalfLife360f(&AngVelY, 0.0f, 0.5f, NW_HZ(0.01999999955f, 0.016666668f));
+        SeekHalfLifeNUVEC(&Vel, &v000, 0.5f, NW_HZ(0.01999999955f, 0.016666668f));
         Pos.x = Cam->m._30;
         Pos.y = Cam->m._31;
         Pos.z = Cam->m._32;
@@ -1386,15 +1386,15 @@ void JeepCamFollowAng(struct cammtx_s *Cam, s32 Snap) {
                 aYaw = Jeep->aAngleY;
             }
             if (Level == 0x16) {
-                SeekAngHalfLife((u16 *)&JCamAngY, aYaw, 0.5f, 0.01999999955f);
+                SeekAngHalfLife((u16 *)&JCamAngY, aYaw, 0.5f, NW_HZ(0.01999999955f, 0.016666668f));
                 SeekAngHalfLife((u16 *)&JCamAngX, aPitch, 0.009999999776f,
-                                0.01999999955f);
-                SeekHalfLife(&JCamMag, 5.0f, 0.1f, 0.01999999955f);
+                                NW_HZ(0.01999999955f, 0.016666668f));
+                SeekHalfLife(&JCamMag, 5.0f, 0.1f, NW_HZ(0.01999999955f, 0.016666668f));
             } else {
-                SeekAngHalfLife((u16 *)&JCamAngY, aYaw, 1.0f, 0.01999999955f);
+                SeekAngHalfLife((u16 *)&JCamAngY, aYaw, 1.0f, NW_HZ(0.01999999955f, 0.016666668f));
                 SeekAngHalfLife((u16 *)&JCamAngX, aPitch, 0.009999999776f,
-                                0.01999999955f);
-                SeekHalfLife(&JCamMag, 5.0f, 0.1f, 0.01999999955f);
+                                NW_HZ(0.01999999955f, 0.016666668f));
+                SeekHalfLife(&JCamMag, 5.0f, 0.1f, NW_HZ(0.01999999955f, 0.016666668f));
             }
         }
         Pos = SetNuVec(0.0f, 0.0f, -JCamMag);
@@ -1604,11 +1604,11 @@ void ProcessEnemyJeep(struct enemyjeep_s *Jeep) {
     s32 i;
 
     if (Jeep == EnemyJeep) {
-        Jeep->PlayBackTime += 0.01960000023f;
+        Jeep->PlayBackTime += NW_HZ(0.01960000023f, 0.016333334f);
     } else {
-        Jeep->PlayBackTime += 0.01999999955f;
+        Jeep->PlayBackTime += NW_HZ(0.01999999955f, 0.016666668f);
     }
-    MyAnimateModelNew(&Jeep->Draw, 0.5999999642f);
+    MyAnimateModelNew(&Jeep->Draw, NW_HZ(0.5999999642f, 0.5f));
     if (Jeep->TrailOn != 0 && Jeep->LocatorValidFrame == JeepFrame - 1) {
         for (i = 0; i < 4; i++) {
             Jeep->TrailWheel[i].OldPosition = Jeep->TrailWheel[i].Position;
@@ -1788,12 +1788,12 @@ void PlayerHitBuggies(struct creature_s *Cre) {
             Pos.x = EnemyJeep[i].Position.x + NuTrigTable[Ang] * 1.5f;
             Pos.z = EnemyJeep[i].Position.z +
                     NuTrigTable[(u16)(Ang + 0x4000)] * 1.5f;
-            Cre->obj.pos.x += (Pos.x - Cre->obj.pos.x) * 0.3330000043f * 1.200000048f;
-            Cre->obj.pos.z += (Pos.z - Cre->obj.pos.z) * 0.3330000043f * 1.200000048f;
-            Cre->obj.mom.x += (NuTrigTable[Ang] * 0.05999999866f - Cre->obj.mom.x) *
-                              0.1110000014f * 1.200000048f;
-            Cre->obj.mom.z += (NuTrigTable[(u16)(Ang + 0x4000)] * 0.05999999866f -
-                               Cre->obj.mom.z) * 0.1110000014f * 1.200000048f;
+            Cre->obj.pos.x += (Pos.x - Cre->obj.pos.x) * 0.3330000043f * NW_HZ(1.200000048f, 1.0f);
+            Cre->obj.pos.z += (Pos.z - Cre->obj.pos.z) * 0.3330000043f * NW_HZ(1.200000048f, 1.0f);
+            Cre->obj.mom.x += (NuTrigTable[Ang] * NW_HZ(0.05999999866f, 0.050000004f) - Cre->obj.mom.x) *
+                              0.1110000014f * NW_HZ(1.200000048f, 1.0f);
+            Cre->obj.mom.z += (NuTrigTable[(u16)(Ang + 0x4000)] * NW_HZ(0.05999999866f, 0.050000004f) -
+                               Cre->obj.mom.z) * 0.1110000014f * NW_HZ(1.200000048f, 1.0f);
             Pos.x = (EnemyJeep[i].Position.x + Cre->obj.pos.x) * 0.5f;
             Pos.y = (EnemyJeep[i].Position.y +
                      (player->obj.top - player->obj.bot) * player->obj.SCALE * 0.5f) *
@@ -2035,10 +2035,10 @@ void ProcessJeepBalloon(struct JEEPBALLOON *Balloon) {
     if (ProcessTimer(&Balloon->Life) != 0) {
         Balloon->Explode = 1;
     } else {
-        NuVecScale(&Step, &Balloon->Vel, 0.01999999955f);
+        NuVecScale(&Step, &Balloon->Vel, NW_HZ(0.01999999955f, 0.016666668f));
         Hit = NewRayCast(&Balloon->Pos, &Step, 0.1f);
         NuVecAdd(&Balloon->Pos, &Balloon->Pos, &Step);
-        Balloon->Vel.y -= 0.1999999881f;
+        Balloon->Vel.y -= NW_HZ(0.1999999881f, 0.16666667f);
         if (Hit != 0) {
             Balloon->Explode = 1;
         }
@@ -2155,7 +2155,7 @@ void FireBossWaterFire(s32 WaterOn) {
         } else {
             WaterCurrentAngleY -= SEEKANGSPEED;
         }
-        WaterTimer += 0.01999999955f;
+        WaterTimer += NW_HZ(0.01999999955f, 0.016666668f);
         if (WaterTimer > MAXWATERTIME) {
             WaterTimer = MAXWATERTIME;
         }
@@ -2247,7 +2247,7 @@ void ProcessWesternArenaLevel(void) {
 
     if (WesternCountdown == 0.0f) {
         if (PlayerJeepFinished[0] == 0) {
-            WesternTime += 0.02f;
+            WesternTime += NW_HZ(0.02f, 0.016666668f);
         }
         for (i = 0; i < 4; i++) {
             if (EnemyJeep[i].Active != 0) {
@@ -2259,7 +2259,7 @@ void ProcessWesternArenaLevel(void) {
             if (EnemyJeep[i].Active != 0) {
                 struct enemyjeep_s *jeep = &EnemyJeep[i];
 
-                MyAnimateModelNew(&jeep->Draw, 0.5999999642f);
+                MyAnimateModelNew(&jeep->Draw, NW_HZ(0.5999999642f, 0.5f));
             }
         }
     }
@@ -2291,7 +2291,7 @@ void ProcessFireBossLevel(void) {
     NuVecSub(&Rel, &player->obj.pos, &player->obj.oldpos);
     if (CheckAgainstRocks(&player->obj.pos, &Rel) != 0) {
         NewRumble(&player->rumble, SMASHRUMPOWER);
-        NewBuzz(&player->rumble, 5);
+        NewBuzz(&player->rumble, NW_HZ(5, 6));
         if (FireBossHoldPlayer == 0 && FireBoss.HitPoints > 0) {
             KillPlayer(&player->obj, 0xD);
         }
@@ -2805,16 +2805,16 @@ void ProcessFireBoss(struct fireboss_s *Boss) {
     if (Boss->MainSpline.Inc > 0.0f && Boss->MainDraw.Anim.action == 0x3B) {
         if (Boss->Speed > FIREBOSSSCAREDSPEED) {
             MyAnimateModelNew(&Boss->MainDraw,
-                              (Boss->Speed * 0.5999999642f) / FIREBOSSCHASESPEED);
+                              (Boss->Speed * NW_HZ(0.5999999642f, 0.5f)) / FIREBOSSCHASESPEED);
         } else {
             MyAnimateModelNew(&Boss->MainDraw,
-                              (FIREBOSSSCAREDSPEED * 0.5999999642f) /
+                              (FIREBOSSSCAREDSPEED * NW_HZ(0.5999999642f, 0.5f)) /
                                   FIREBOSSCHASESPEED);
         }
     } else {
-        MyAnimateModelNew(&Boss->MainDraw, 0.5999999642f);
+        MyAnimateModelNew(&Boss->MainDraw, NW_HZ(0.5999999642f, 0.5f));
     }
-    MyAnimateModelNew(&Boss->ExplodeDraw, 0.4499999881f);
+    MyAnimateModelNew(&Boss->ExplodeDraw, NW_HZ(0.4499999881f, 0.375f));
 
     switch (Boss->Action) {
     case 0:
@@ -2851,7 +2851,7 @@ void ProcessFireBoss(struct fireboss_s *Boss) {
         if (Boss->MainDraw.Anim.action == 0x1B) {
             f32 ThisTime = Boss->MainDraw.Anim.anim_time;
             f32 LastTime = ThisTime - Boss->MainDraw.Model->animlist[0x1B]->speed *
-                                          0.5999999642f;
+                                          NW_HZ(0.5999999642f, 0.5f);
 
             if (ThisTime >= 13.0f && LastTime < 13.0f) {
                 ThrowNow = 1;
@@ -2915,35 +2915,35 @@ void ProcessFireBoss(struct fireboss_s *Boss) {
         }
         if (Boss->BeenHitThisPass != 0) {
             if (Boss->Speed > FIREBOSSSCAREDSPEED + 3.0f) {
-                Boss->Speed -= 0.03999999911f;
+                Boss->Speed -= NW_HZ(0.03999999911f, 0.033333335f);
                 if (Boss->Speed < FIREBOSSSCAREDSPEED + 3.0f) {
                     Boss->Speed = FIREBOSSSCAREDSPEED + 3.0f;
                 }
             } else if (Boss->Speed < FIREBOSSSCAREDSPEED + 3.0f) {
-                Boss->Speed += 0.03999999911f;
+                Boss->Speed += NW_HZ(0.03999999911f, 0.033333335f);
                 if (Boss->Speed > FIREBOSSSCAREDSPEED + 3.0f) {
                     Boss->Speed = FIREBOSSSCAREDSPEED + 3.0f;
                 }
             }
         } else if (Boss->Pos.z - player->obj.pos.z < 5.0f) {
             if (Boss->Speed > FIREBOSSSCAREDSPEED + 1.0f) {
-                Boss->Speed -= 0.03999999911f;
+                Boss->Speed -= NW_HZ(0.03999999911f, 0.033333335f);
                 if (Boss->Speed < FIREBOSSSCAREDSPEED + 1.0f) {
                     Boss->Speed = FIREBOSSSCAREDSPEED + 1.0f;
                 }
             } else if (Boss->Speed < FIREBOSSSCAREDSPEED + 1.0f) {
-                Boss->Speed += 0.03999999911f;
+                Boss->Speed += NW_HZ(0.03999999911f, 0.033333335f);
                 if (Boss->Speed > FIREBOSSSCAREDSPEED + 1.0f) {
                     Boss->Speed = FIREBOSSSCAREDSPEED + 1.0f;
                 }
             }
         } else if (Boss->Speed > FIREBOSSSCAREDSPEED) {
-            Boss->Speed -= 0.03999999911f;
+            Boss->Speed -= NW_HZ(0.03999999911f, 0.033333335f);
             if (Boss->Speed < FIREBOSSSCAREDSPEED) {
                 Boss->Speed = FIREBOSSSCAREDSPEED;
             }
         } else if (Boss->Speed < FIREBOSSSCAREDSPEED) {
-            Boss->Speed += 0.03999999911f;
+            Boss->Speed += NW_HZ(0.03999999911f, 0.033333335f);
             if (Boss->Speed > FIREBOSSSCAREDSPEED) {
                 Boss->Speed = FIREBOSSSCAREDSPEED;
             }
@@ -2956,7 +2956,7 @@ void ProcessFireBoss(struct fireboss_s *Boss) {
                 f32 ThisTime = Boss->MainDraw.Anim.anim_time;
                 f32 LastTime = ThisTime -
                                Boss->MainDraw.Model->animlist[0x3A]->speed *
-                                   0.5999999642f;
+                                   NW_HZ(0.5999999642f, 0.5f);
 
                 if (ThisTime >= 20.0f && LastTime < 20.0f) {
                     Boss->DropSide = 0;
@@ -3007,7 +3007,7 @@ void ProcessFireBoss(struct fireboss_s *Boss) {
         if (Boss->MainDraw.Anim.action == 0x22) {
             f32 ThisTime = Boss->MainDraw.Anim.anim_time;
             f32 LastTime = ThisTime - Boss->MainDraw.Model->animlist[0x22]->speed *
-                                          0.5999999642f;
+                                          NW_HZ(0.5999999642f, 0.5f);
 
             if (ThisTime >= BOSSBREATHFRAME && LastTime < BOSSBREATHFRAME) {
                 MyGameSfx(0xD6, &Boss->Pos, BOSSBREATHVOL);
@@ -3037,7 +3037,7 @@ void ProcessFireBoss(struct fireboss_s *Boss) {
         NuVecSub(&Temp, &Target2, &Boss->Pos);
         NuVecNorm(&DestVel, &Temp);
         NuVecScale(&DestVel, &DestVel, Boss->Speed);
-        NuVecScaleAccum(&Boss->Pos, &DestVel, 0.01999999955f);
+        NuVecScaleAccum(&Boss->Pos, &DestVel, NW_HZ(0.01999999955f, 0.016666668f));
         {
             struct nuvec_s Ray = {0.0f, -6.0f, 0.0f};
 
@@ -3047,7 +3047,7 @@ void ProcessFireBoss(struct fireboss_s *Boss) {
             Boss->Pos.y -= 0.3f;
         }
         if (Boss->Action != 0 && Boss->Action != 5 && Boss->Speed > 1.5f &&
-            NuVecMagSqr(&Temp) > 0.003599999705f) {
+            NuVecMagSqr(&Temp) > NW_HZ(0.003599999705f, 0.0025000002f)) {
             f32 TempY = NuAtan2D(DestVel.x * 100.0f, DestVel.z * 100.0f) /
                         182.0444489f;
 
@@ -3078,7 +3078,7 @@ void ProcessFireBoss(struct fireboss_s *Boss) {
         } else {
             NuVecRotateY(&Temp,
                          SetNuVecPntr(0.0f, 0.0f,
-                                      FIREBOSSCHASESPEED * 0.01999999955f),
+                                      FIREBOSSCHASESPEED * NW_HZ(0.01999999955f, 0.016666668f)),
                          WallOfFireAngleY * 182.0444489f);
             NuVecAdd(&WallOfFirePosition, &WallOfFirePosition, &Temp);
         }
@@ -3125,7 +3125,7 @@ void ProcessFireBoss(struct fireboss_s *Boss) {
     if (Boss->Action != 5) {
         f32 ThisTime = Boss->MainDraw.Anim.anim_time;
         f32 LastTime = ThisTime - Boss->MainDraw.Model->animlist[0x1B]->speed *
-                                      0.5999999642f;
+                                      NW_HZ(0.5999999642f, 0.5f);
         s32 Footstep = 0;
 
         if (ProcessTimer(&Boss->FootTime)) {
@@ -3212,7 +3212,7 @@ void ProcessFireBoss(struct fireboss_s *Boss) {
 done:
     if (FireBoss.BeenHitThisPass != 0) {
         JonnySteam(Boss);
-        FireBoss.BeenHitThisPassTimer += 0.01999999955f;
+        FireBoss.BeenHitThisPassTimer += NW_HZ(0.01999999955f, 0.016666668f);
     } else {
         FireBoss.BeenHitThisPassTimer = 0.0f;
     }
@@ -3301,7 +3301,7 @@ void ProcessEnemyJeeps(void) {
 }
 
 inline void AnimateForLightsEnemyJeep(struct enemyjeep_s *j) {
-    MyAnimateModelNew(&j->Draw, 0.5999999642f);
+    MyAnimateModelNew(&j->Draw, NW_HZ(0.5999999642f, 0.5f));
 }
 
 void AnimateForLightsEnemyJeeps(void) {

@@ -919,21 +919,21 @@ void SetLevelLights(void) {
 
     if (GameMode == 1 && gamecut != 0 && gamecut != 6 && gamecut != 11 &&
         gamecut != 16) {
-        RotateDirectionalLight(&lcutdir[0], ((GameTimer.frame % 100) << 16) / 100,
-                               ((GameTimer.frame % 100) << 16) / 100);
-        RotateDirectionalLight(&lcutdir[1], ((GameTimer.frame % 100) << 16) / 100,
-                               ((GameTimer.frame % 100) << 16) / 100);
-        RotateDirectionalLight(&lcutdir[2], ((GameTimer.frame % 100) << 16) / 100,
-                               ((GameTimer.frame % 100) << 16) / 100);
+        RotateDirectionalLight(&lcutdir[0], ((GameTimer.frame % NW_HZ(100, 120)) << 16) / NW_HZ(100, 120),
+                               ((GameTimer.frame % NW_HZ(100, 120)) << 16) / NW_HZ(100, 120));
+        RotateDirectionalLight(&lcutdir[1], ((GameTimer.frame % NW_HZ(100, 120)) << 16) / NW_HZ(100, 120),
+                               ((GameTimer.frame % NW_HZ(100, 120)) << 16) / NW_HZ(100, 120));
+        RotateDirectionalLight(&lcutdir[2], ((GameTimer.frame % NW_HZ(100, 120)) << 16) / NW_HZ(100, 120),
+                               ((GameTimer.frame % NW_HZ(100, 120)) << 16) / NW_HZ(100, 120));
         SetLights(&lcutdircol[0], &lcutdir[0], &lcutdircol[1], &lcutdir[1],
                   &lcutdircol[2], &lcutdir[2], &lcutambcol);
     } else if (cutmovie == 0) {
-        RotateDirectionalLight(&titledir[0], ((GameTimer.frame % 200) << 16) / 200,
-                               ((GameTimer.frame % 325) << 16) / 325);
-        RotateDirectionalLight(&titledir[1], ((GameTimer.frame % 275) << 16) / 275,
-                               ((GameTimer.frame % 375) << 16) / 375);
-        RotateDirectionalLight(&titledir[2], ((GameTimer.frame % 100) << 16) / 100,
-                               ((GameTimer.frame % 125) << 16) / 125);
+        RotateDirectionalLight(&titledir[0], ((GameTimer.frame % NW_HZ(200, 240)) << 16) / NW_HZ(200, 240),
+                               ((GameTimer.frame % NW_HZ(325, 390)) << 16) / NW_HZ(325, 390));
+        RotateDirectionalLight(&titledir[1], ((GameTimer.frame % NW_HZ(275, 330)) << 16) / NW_HZ(275, 330),
+                               ((GameTimer.frame % NW_HZ(375, 450)) << 16) / NW_HZ(375, 450));
+        RotateDirectionalLight(&titledir[2], ((GameTimer.frame % NW_HZ(100, 120)) << 16) / NW_HZ(100, 120),
+                               ((GameTimer.frame % NW_HZ(125, 150)) << 16) / NW_HZ(125, 150));
         SetLights(&titlergb, &titledir[0], &titlergb, &titledir[1], &titlergb2,
                   &titledir[2], (struct nuvec_s *)&titlergb);
         NuRndrSetSpecularLight(&specular, 0);

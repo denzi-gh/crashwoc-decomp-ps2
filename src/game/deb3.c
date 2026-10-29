@@ -376,7 +376,7 @@ void PlayRandSFX(void) {
             vec.z = global_camera.mtx._32 +
                     (qrand() - 0x8000) * 0.000244140625f;
 
-            rsfxcount = ((qrand() * rsfxpt[0]) / 65536 + rsfxpt[1]) * 50;
+            rsfxcount = ((qrand() * rsfxpt[0]) / 65536 + rsfxpt[1]) * NW_HZ(50, 60);
             GameSfx(rsfxpt[(qrand() * rsfxpt[2]) / 65536 + 3], &vec);
         }
     }
@@ -622,11 +622,11 @@ struct deb3_s *AddDeb3Ang(struct nuvec_s *pos, s32 db, s32 emit,
             NuMtxSetRotateXYZ(&deb->mtx, &ang);
             NuMtxTranslate(&deb->mtx, pos);
             vec.x = Deb3Emit[emit].vx * (f32)((qrand() - 0x8000) >> 8)
-                    / 100.0f;
+                    / NW_HZ(100.0f, 120.0f);
             vec.y = (Deb3Emit[emit].vy * (f32)((qrand() - 0x8000) >> 8)
-                     + Deb3Emit[emit].yoff * 128.0f) / 100.0f;
+                     + Deb3Emit[emit].yoff * 128.0f) / NW_HZ(100.0f, 120.0f);
             vec.z = Deb3Emit[emit].vz * (f32)((qrand() - 0x8000) >> 8)
-                    / 100.0f;
+                    / NW_HZ(100.0f, 120.0f);
             NuVecRotateX(&vec, &vec, rotx);
             NuVecRotateY(&vec, &vec, roty);
             deb->velocity.x = vec.x;
@@ -654,15 +654,15 @@ struct deb3_s *AddDeb3Ang(struct nuvec_s *pos, s32 db, s32 emit,
                 deb->angularMomentum.z = 0.0f;
             }
             deb->status = 0;
-            deb->timer = deb->info->timer * 50.0f;
+            deb->timer = deb->info->timer * NW_HZ(50.0f, 60.0f);
             deb->count = 0;
             deb->diff.x = 0.0f;
             deb->diff.y = 0.0f;
             deb->diff.z = 0.0f;
             deb->data = deb->info->data;
-            vec.x = deb->velocity.x * 8.0f / 50.0f;
-            vec.y = deb->velocity.y * 8.0f / 50.0f;
-            vec.z = deb->velocity.z * 8.0f / 50.0f;
+            vec.x = deb->velocity.x * 8.0f / NW_HZ(50.0f, 60.0f);
+            vec.y = deb->velocity.y * 8.0f / NW_HZ(50.0f, 60.0f);
+            vec.z = deb->velocity.z * 8.0f / NW_HZ(50.0f, 60.0f);
             t.x = deb->mtx._30;
             t.y = deb->mtx._31;
             t.z = deb->mtx._32;
@@ -739,7 +739,7 @@ struct deb3_s *AddDeb3(struct nuvec_s *pos, s32 db, s32 emit,
             NuMtxTranslate(&deb->mtx, pos);
             deb->velocity.y =
                 (Deb3Emit[emit].vy * (f32)((qrand() - 0x8000) >> 8)
-                 + Deb3Emit[emit].yoff * 128.0f) / 100.0f;
+                 + Deb3Emit[emit].yoff * 128.0f) / NW_HZ(100.0f, 120.0f);
             if (Deb3Emit[emit].vx >= 0.0f) {
                 deb->velocity.x = Deb3Emit[emit].vx
                                   * (f32)((qrand() - 0x8000) >> 8) / 100.0f;
@@ -773,15 +773,15 @@ struct deb3_s *AddDeb3(struct nuvec_s *pos, s32 db, s32 emit,
                 deb->angularMomentum.z = 0.0f;
             }
             deb->status = 0;
-            deb->timer = deb->info->timer * 50.0f;
+            deb->timer = deb->info->timer * NW_HZ(50.0f, 60.0f);
             deb->count = 0;
             deb->diff.x = 0.0f;
             deb->diff.y = 0.0f;
             deb->diff.z = 0.0f;
             deb->data = deb->info->data;
-            vec.x = deb->velocity.x * 8.0f / 50.0f;
-            vec.y = deb->velocity.y * 8.0f / 50.0f;
-            vec.z = deb->velocity.z * 8.0f / 50.0f;
+            vec.x = deb->velocity.x * 8.0f / NW_HZ(50.0f, 60.0f);
+            vec.y = deb->velocity.y * 8.0f / NW_HZ(50.0f, 60.0f);
+            vec.z = deb->velocity.z * 8.0f / NW_HZ(50.0f, 60.0f);
             t.x = deb->mtx._30;
             t.y = deb->mtx._31;
             t.z = deb->mtx._32;
@@ -858,14 +858,14 @@ void JonExtraDraw(void)
             break;
         }
         vec.x = 0.0f;
-        vec.y = 5.0f - NuTrigTable[(u16)(maskoff / 50)] * 3.0f;
+        vec.y = 5.0f - NuTrigTable[(u16)(maskoff / NW_HZ(50, 60))] * 3.0f;
         vec.z = 2.87f;
-        vec.x = NuTrigTable[(u16)(maskx / 50)] * 1.5f + vec.x;
-        vec.y += NuTrigTable[(u16)(masky / 50)] * 0.75f;
-        vec.z = NuTrigTable[(u16)(maskx / 50 + 0x4000)] * 3.0f + vec.z;
+        vec.x = NuTrigTable[(u16)(maskx / NW_HZ(50, 60))] * 1.5f + vec.x;
+        vec.y += NuTrigTable[(u16)(masky / NW_HZ(50, 60))] * 0.75f;
+        vec.z = NuTrigTable[(u16)(maskx / NW_HZ(50, 60) + 0x4000)] * 3.0f + vec.z;
         if (i != -1) {
             Draw3DCharacter(&vec, 0,
-                            (u16)NW_EE_S32(NuTrigTable[(u16)(maskrot / 50)] * 8192.0f),
+                            (u16)NW_EE_S32(NuTrigTable[(u16)(maskrot / NW_HZ(50, 60))] * 8192.0f),
                             0, &CModel[i], 1.0f, -1, 1.0f, 0);
             vec.y += 0.2f;
             if (Paused == 0) {
@@ -886,17 +886,17 @@ void JonExtraDraw(void)
         if (vec.x * vec.x + vec.z * vec.z < 625.0f) {
             pt->time -= 60;
             if (pt->time < 0) {
-                pt->time = ((qrand() & 0xFF) + 60) * 50;
+                pt->time = ((qrand() & 0xFF) + 60) * NW_HZ(50, 60);
                 pt->ang = qrand() & 0xFFFF;
             }
-            if (pt->time < 2000) {
+            if (pt->time < NW_HZ(2000, 2400)) {
                 if (qrand() < 0x4000) {
                     GameSfx(0x89, &pt->start);
                 }
-                if (pt->time > 1200) {
-                    col = ((40 - pt->time) << 4) / 50;
-                } else if (pt->time < 800) {
-                    col = (pt->time << 4) / 50;
+                if (pt->time > NW_HZ(1200, 1440)) {
+                    col = ((40 - pt->time) << 4) / NW_HZ(50, 60);
+                } else if (pt->time < NW_HZ(800, 960)) {
+                    col = (pt->time << 4) / NW_HZ(50, 60);
                 } else {
                     col = 0x80;
                 }
@@ -958,7 +958,7 @@ void LaunchObjects(void) {
             g = 0;
             b = 0x40;
             hazea = 0;
-            r = (int)(NuTrigTable[(u16)(water1 / 50)] * 64.0f) + 0x40;
+            r = (int)(NuTrigTable[(u16)(water1 / NW_HZ(50, 60))] * 64.0f) + 0x40;
         }
         if (jcrunch == 0) {
             if (water2 < 0) {
@@ -969,14 +969,14 @@ void LaunchObjects(void) {
                 water2 = 0;
             }
             if (LDATA->hazea != 0) {
-                LDATA->hazea -= 9;
+                LDATA->hazea -= NW_HZ(9, 8);
                 if ((s8)LDATA->hazea < 0) {
                     LDATA->hazea = 0;
                 }
             }
         } else if (water2 >= 0) {
             if (LDATA->hazea != 0) {
-                LDATA->hazea -= 9;
+                LDATA->hazea -= NW_HZ(9, 8);
                 if ((s8)LDATA->hazea < 0) {
                     LDATA->hazea = 0;
                 }
@@ -1008,27 +1008,27 @@ void LaunchObjects(void) {
                 break;
             }
             water2 -= 480;
-            if (water2 < -0x1900) {
-                water2 = -0x1900;
+            if (water2 < -NW_HZ(0x1900, 0x1E00)) {
+                water2 = -NW_HZ(0x1900, 0x1E00);
             }
             if (LDATA->hazea != 0) {
-                LDATA->hazea += 9;
+                LDATA->hazea += NW_HZ(9, 8);
                 if ((s8)LDATA->hazea < 0) {
                     LDATA->hazea = 0x7F;
                 }
             }
             if (LDATA->fogb == 0x40) {
                 water1 = JONMASK(water1, 800);
-                LDATA->fogr = (s32)(NuTrigTable[(u16)(water1 / 50)] * 64.0f)
+                LDATA->fogr = (s32)(NuTrigTable[(u16)(water1 / NW_HZ(50, 60))] * 64.0f)
                               + 0x40;
             }
         }
-        LDATA->foga = abs(water2 / 100);
+        LDATA->foga = abs(water2 / NW_HZ(100, 120));
         dmask = jcrunch;
         if (cmask == jcrunch && cmask != 0) {
             maskoff += 0x5A00;
-            if (maskoff > 0xC8000) {
-                maskoff = 0xC8000;
+            if (maskoff > NW_HZ(0xC8000, 0xF0000)) {
+                maskoff = NW_HZ(0xC8000, 0xF0000);
             }
         } else {
             maskoff -= 0x5A00;
@@ -1149,7 +1149,7 @@ void LaunchObjects(void) {
             if (roofon < 0) {
                 roofon = 0;
             }
-            if (roofon < 0xDAC) {
+            if (roofon < NW_HZ(0xDAC, 0x1068)) {
                 if (ObjTab[150].obj.special != 0) {
                     ObjTab[150].obj.special->instance->mtx._31 = floor1 - 100.0f;
                 }
@@ -1162,7 +1162,7 @@ void LaunchObjects(void) {
             if (flooron < 0) {
                 flooron = 0;
             }
-            if (flooron < 0xDAC) {
+            if (flooron < NW_HZ(0xDAC, 0x1068)) {
                 if (ObjTab[150].obj.special != 0) {
                     ObjTab[150].obj.special->instance->mtx._31 = floor1;
                 }
@@ -1179,12 +1179,12 @@ void LaunchObjects(void) {
             }
             water1 -= 60;
             if (water1 < 0) {
-                water1 = ((qrand() & 0x7F) + 30) * 50;
+                water1 = ((qrand() & 0x7F) + 30) * NW_HZ(50, 60);
                 water2 = 1 - water2;
                 if (water2 != 0) {
-                    flooron = 6000;
+                    flooron = NW_HZ(6000, 7200);
                 } else {
-                    roofon = 6000;
+                    roofon = NW_HZ(6000, 7200);
                 }
             }
         }
@@ -1229,9 +1229,9 @@ void LaunchObjects(void) {
     }
 
     if (Level == 0x22 || Level == 2 || Level == 6) {
-        LDATA->fogg = (int)((float)(int)(NuTrigTable[(u16)(water1 / 50)] * 30.0f)
+        LDATA->fogg = (int)((float)(int)(NuTrigTable[(u16)(water1 / NW_HZ(50, 60))] * 30.0f)
                             + 40.0f);
-        LDATA->fogb = (int)((float)(int)(NuTrigTable[(u16)(water2 / 50)] * 30.0f)
+        LDATA->fogb = (int)((float)(int)(NuTrigTable[(u16)(water2 / NW_HZ(50, 60))] * 30.0f)
                             + 50.0f);
         water1 = JONMASK(water1, 110);
         water2 = JONMASK(water2, 105);
@@ -1249,21 +1249,21 @@ void LaunchObjects(void) {
     }
 
     if (Level == 0xF && player->obj.dead == 0) {
-        key = LDATA->foga * 50;
+        key = LDATA->foga * NW_HZ(50, 60);
         if (SKELETALCRASH != 0) {
             LDATA->fogr = 0;
             LDATA->fogg =
-                (s32)((f32)(s32)(NuTrigTable[(u16)(water1 / 50)] * 5.0f)
+                (s32)((f32)(s32)(NuTrigTable[(u16)(water1 / NW_HZ(50, 60))] * 5.0f)
                       + 65.0f);
             water1 = JONMASK(water1, 256);
             LDATA->fogb = 50;
-            if (key < 0x1900) {
-                key = 0x1900;
+            if (key < NW_HZ(0x1900, 0x1E00)) {
+                key = NW_HZ(0x1900, 0x1E00);
             }
-            if (key < 0x3070) {
+            if (key < NW_HZ(0x3070, 0x3A20)) {
                 key = key + 480;
             } else {
-                key = 0x31CE;
+                key = NW_HZ(0x31CE, 0x3BC4);
             }
             LDATA->fogfar = 3.21f;
             LDATA->fognear = 3.2f;
@@ -1274,17 +1274,17 @@ void LaunchObjects(void) {
             LDATA->fogb = 0;
             LDATA->fogfar = 9.0f;
             LDATA->fognear = 1.0f;
-            if (key > 0x1900) {
-                key = 0x1900;
+            if (key > NW_HZ(0x1900, 0x1E00)) {
+                key = NW_HZ(0x1900, 0x1E00);
             }
-            if (key > 0xC80) {
+            if (key > NW_HZ(0xC80, 0xF00)) {
                 key = key - 480;
             } else {
-                key = 0xC80;
+                key = NW_HZ(0xC80, 0xF00);
             }
         }
-        LDATA->foga = key / 50;
-        key = LDATA->hazea * 50;
+        LDATA->foga = key / NW_HZ(50, 60);
+        key = LDATA->hazea * NW_HZ(50, 60);
         if (VEHICLECONTROL != 1) {
             key -= 300;
             if (key < 0) {
@@ -1292,8 +1292,8 @@ void LaunchObjects(void) {
             }
         } else {
             key += 300;
-            if (key >= 0x2455) {
-                key = 0x2454;
+            if (key >= NW_HZ(0x2455, 0x2B99)) {
+                key = NW_HZ(0x2454, 0x2B98);
             }
             vec.x = player->obj.pos.x
                     + NuTrigTable[(u16)(player->obj.hdg + 0x1000)] * -0.3f;
@@ -1309,10 +1309,10 @@ void LaunchObjects(void) {
             AddVariableShotDebrisEffect(GDeb[104].i, &vec, 1, 0x4000,
                                         (s16)(player->obj.hdg - 0x4000));
         }
-        LDATA->hazea = key / 50;
+        LDATA->hazea = key / NW_HZ(50, 60);
     }
 
-    if (Level == 0x1D && in_finish_range < 0x32 && player->obj.dead == 0) {
+    if (Level == 0x1D && in_finish_range < NW_HZ(0x32, 0x3C) && player->obj.dead == 0) {
         vec.x = player->obj.pos.x
                 + NuTrigTable[(u16)(player->obj.hdg + 0x1000)] * -0.3f;
         vec.y = player->obj.pos.y + 0.55f;
@@ -1362,8 +1362,8 @@ void LaunchObjects(void) {
     }
 
     if (VEHICLECONTROL == 1 && player->obj.vehicle == 0x20) {
-        vec.y = player->obj.pos.y + NuTrigTable[(u16)(subprop / 50)] * 0.15f;
-        dx = NuTrigTable[((u16)(subprop / 50) + 0x4000) & 0xFFFF] * 0.15f + 0.8f;
+        vec.y = player->obj.pos.y + NuTrigTable[(u16)(subprop / NW_HZ(50, 60))] * 0.15f;
+        dx = NuTrigTable[((u16)(subprop / NW_HZ(50, 60)) + 0x4000) & 0xFFFF] * 0.15f + 0.8f;
         vec.x = player->obj.pos.x
                 + NuTrigTable[(u16)(player->obj.hdg + 0x5000)] * dx;
         vec.z = player->obj.pos.z
@@ -1480,13 +1480,13 @@ void LaunchObjects(void) {
             water1 -= 60;
             if (water1 < 0) {
                 if (qrand() <= 0x7FFF) {
-                    water1 = ((qrand() & 0xFF) + 60) * 50;
+                    water1 = ((qrand() & 0xFF) + 60) * NW_HZ(50, 60);
                 } else {
-                    water1 = ((qrand() & 0xF) + 10) * 50;
+                    water1 = ((qrand() & 0xF) + 10) * NW_HZ(50, 60);
                 }
             }
-            if (water1 < 0x96) {
-                if (water1 + 60 >= 0x96) {
+            if (water1 < NW_HZ(0x96, 0xB4)) {
+                if (water1 + 60 >= NW_HZ(0x96, 0xB4)) {
                     if (Level == 0xE) {
                         GameSfx(0xD3, 0);
                     } else {
@@ -1513,11 +1513,11 @@ void LaunchObjects(void) {
                     LDATA->fogb = 0x21;
                 }
                 LDATA->foga = 0x4C;
-                LDATA->fognear = LDATA->fognear + 2.0f / 50.0f * 60.0f;
+                LDATA->fognear = LDATA->fognear + NW_HZ(2.0f / 50.0f * 60.0f, 2.0f);
                 if (LDATA->fognear > 3.0f) {
                     LDATA->fognear = 3.0f;
                 }
-                LDATA->fogfar = LDATA->fogfar + 2.0f / 50.0f * 60.0f;
+                LDATA->fogfar = LDATA->fogfar + NW_HZ(2.0f / 50.0f * 60.0f, 2.0f);
                 if (LDATA->fogfar > 10.0f) {
                     LDATA->fogfar = 10.0f;
                 }
@@ -1574,7 +1574,7 @@ void LaunchObjects(void) {
                 temp = pt[3];
                 pt[3] = temp - 1.0f;
                 if (pt[3] <= 0.0f) {
-                    pt[3] = pt[3] + pt[4] * 50.0f / 60.0f;
+                    pt[3] = pt[3] + pt[4] * NW_HZ(50.0f, 60.0f) / 60.0f;
                 }
                 vec.x = pt[0];
                 vec.y = pt[1];
@@ -1615,33 +1615,33 @@ void LaunchObjects(void) {
             if (hutexplode > 0) {
                 key = hutexplode;
                 hutexplode += 60;
-                if (hutexplode >= 0x3E8) {
+                if (hutexplode >= NW_HZ(0x3E8, 0x4B0)) {
                     vec.x = 11.94f;
                     vec.y = 2.12f;
                     vec.z = -42.61f;
-                    if (key < 0x3E8) {
+                    if (key < NW_HZ(0x3E8, 0x4B0)) {
                         exkey = -1;
                         AddFiniteShotDebrisEffect(&exkey, GDeb[43].i, &vec, 1);
-                        exroty = 0xC8000;
+                        exroty = NW_HZ(0xC8000, 0xF0000);
                         GameSfx(0xD1, 0);
                         NewRumble(&player->rumble, 0xFF);
-                        NewBuzz(&player->rumble, 0xA);
+                        NewBuzz(&player->rumble, NW_HZ(0xA, 0xC));
                     }
-                    hutexplode = 0x5DC;
+                    hutexplode = NW_HZ(0x5DC, 0x708);
                     hutframe += 60;
-                    if (hutframe >= 0xC9) {
-                        hutframe -= 200;
+                    if (hutframe >= NW_HZ(0xC9, 0xF1)) {
+                        hutframe -= NW_HZ(200, 240);
                         AddVariableShotDebrisEffect(GDeb[42].i, &vec, 1, 0, 0);
                     }
                     if (exroty > 0) {
                         DebrisEmitterOrientation(exkey, 0x1000,
-                                                 (s16)(exroty / 50));
+                                                 (s16)(exroty / NW_HZ(50, 60)));
                         exroty -= 0x1E000;
                     }
                 }
             }
             if (iVIS >= 0xCA && iVIS < 0xE5 && pVIS != 0) {
-                dropfire = 0x1F4;
+                dropfire = NW_HZ(0x1F4, 0x258);
             }
             dropfire -= 60;
             if (dropfire <= 0) {
@@ -1658,15 +1658,15 @@ void LaunchObjects(void) {
                     } else {
                         firedrop[firedroppt].type = 0x28;
                     }
-                    firedrop[firedroppt].time = 3000.0f;
+                    firedrop[firedroppt].time = NW_HZ(3000.0f, 3600.0f);
                     firedrop[firedroppt].pos = vec;
                     firedroppt = (firedroppt + 1) & 0xF;
                     vec.y += 10.0f;
                     AddVariableShotDebrisEffect(GDeb[39].i, &vec, 1, -0x8000,
                                                 0);
-                    dropfire = 0x1F4;
+                    dropfire = NW_HZ(0x1F4, 0x258);
                 } else {
-                    dropfire = 0x32;
+                    dropfire = NW_HZ(0x32, 0x3C);
                 }
             }
             for (loop = 0; loop <= 0xF; loop++) {
@@ -1758,7 +1758,7 @@ void ProcDeb3(void) {
       deb->diff.z *= 0.5f;
       if ((deb->status & 1) == 0) {
         mat = deb->mtx;
-        RBodyMove(deb,0.02f);
+        RBodyMove(deb,NW_HZ(0.02f, 0.016666668f));
         if ((deb->info->info & 6U) != 0) {
           dx = deb->mtx._30 - player->obj.pos.x;
           dy = deb->mtx._31 - (player->obj.pos.y + ((player->obj.bot + player->obj.top) * player->obj.SCALE) * 0.5f);
@@ -1766,7 +1766,7 @@ void ProcDeb3(void) {
           r = (deb->info->size * 0.5f + radius);
           if (dx * dx + dy * dy + dz * dz < r * r) {
             if (((deb->info->info & 2U) != 0) && (deb->info->type == 0x93)) {
-              player->freeze = 100;
+              player->freeze = NW_HZ(100, 120);
               player->spin = 0;
               GameSfx(0x54,&player->obj.pos);
             }
@@ -1809,9 +1809,9 @@ void ProcDeb3(void) {
               GameSfx(0x44,(struct nuvec_s *)&deb->mtx._30);
             }
           }
-          vec.x = ((deb->velocity.x * 8.0f) / 50.0f);
-          vec.y = ((deb->velocity.y * 8.0f) / 50.0f);
-          vec.z = ((deb->velocity.z * 8.0f) / 50.0f);
+          vec.x = ((deb->velocity.x * 8.0f) / NW_HZ(50.0f, 60.0f));
+          vec.y = ((deb->velocity.y * 8.0f) / NW_HZ(50.0f, 60.0f));
+          vec.z = ((deb->velocity.z * 8.0f) / NW_HZ(50.0f, 60.0f));
           dist = (vec.x * vec.x + vec.y * vec.y + vec.z * vec.z);
           t.x = deb->mtx._30;
           t.y = deb->mtx._31;

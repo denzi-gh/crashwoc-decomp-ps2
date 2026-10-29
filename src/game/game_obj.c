@@ -382,7 +382,7 @@ s32 ObjectCylinderCollision(struct obj_s *obj, struct obj_s *cyl, f32 scale,
         if (obj->pos.y + obj_bot > cyl_top) {
             side = 1;
         } else if (obj->oldpos.y + obj->bot * obj->old_SCALE >=
-                   cyl->oldpos.y + cyl->top * cyl->old_SCALE - 0.012f) {
+                   cyl->oldpos.y + cyl->top * cyl->old_SCALE - NW_HZ(0.012f, 0.010000001f)) {
             obj->pos.y = cyl_top - obj_bot;
             obj->ground = 3;
             result = 2;
@@ -393,10 +393,10 @@ s32 ObjectCylinderCollision(struct obj_s *obj, struct obj_s *cyl, f32 scale,
             obj->mom.y = cyl->mom.y;
             goto apply;
         } else if (obj->oldpos.y + obj->top * obj->old_SCALE <=
-                   cyl->oldpos.y + cyl->bot * cyl->old_SCALE + 0.012f) {
+                   cyl->oldpos.y + cyl->bot * cyl->old_SCALE + NW_HZ(0.012f, 0.010000001f)) {
             result = 4;
             obj->pos.y = cyl_bot - obj_top;
-            obj->mom.y = cyl->mom.y - 0.012f;
+            obj->mom.y = cyl->mom.y - NW_HZ(0.012f, 0.010000001f);
             goto apply;
         }
     }
@@ -420,8 +420,8 @@ s32 ObjectCylinderCollision(struct obj_s *obj, struct obj_s *cyl, f32 scale,
     } else {
         result = 1;
         a = NuAtan2D(obj->pos.x - cyl->pos.x, obj->pos.z - cyl->pos.z);
-        obj->mom.x = NuTrigTable[a] * 0.06f;
-        obj->mom.z = NuTrigTable[(u16)(a + 0x4000)] * 0.06f;
+        obj->mom.x = NuTrigTable[a] * NW_HZ(0.06f, 0.050000004f);
+        obj->mom.z = NuTrigTable[(u16)(a + 0x4000)] * NW_HZ(0.06f, 0.050000004f);
     }
 
 apply:
@@ -657,13 +657,13 @@ void PlayerCreatureCollisions(struct obj_s *obj)
                     }
                     AddGameDebris(0x82, &dpos);
                     if (obj->attack & 0x2) {
-                        if (po->oldobjtop - 0.012f <= obj->oldobjbot) {
+                        if (po->oldobjtop - NW_HZ(0.012f, 0.010000001f) <= obj->oldobjbot) {
                             obj->mom.y = 0.0f;
-                        } else if (obj->oldobjtop <= po->oldobjbot + 0.012f) {
+                        } else if (obj->oldobjtop <= po->oldobjbot + NW_HZ(0.012f, 0.010000001f)) {
                             obj->mom.y = 0.0f;
                         } else {
-                            obj->mom.x *= 0.3f;
-                            obj->mom.z *= 0.3f;
+                            obj->mom.x *= NW_HZ(0.3f, 0.25f);
+                            obj->mom.z *= NW_HZ(0.3f, 0.25f);
                         }
                     }
                     goto killed;
@@ -689,9 +689,9 @@ void PlayerCreatureCollisions(struct obj_s *obj)
             } else {
                 obj->dead = 1;
             }
-            NuVecScale(&obj->mom, &obj->mom, 0.3f);
+            NuVecScale(&obj->mom, &obj->mom, NW_HZ(0.3f, 0.25f));
             goto contact;
-        } else if (po->oldobjtop - 0.012f <= obj->oldobjbot) {
+        } else if (po->oldobjtop - NW_HZ(0.012f, 0.010000001f) <= obj->oldobjbot) {
             s32 top_vuln = po->vulnerable & 0x8E;
             ctype = 2;
             bounce = 0;
@@ -751,7 +751,7 @@ void PlayerCreatureCollisions(struct obj_s *obj)
                     obj->boing |= bounce;
                     GameSfx(2, &obj->pos);
                     NewRumble(&player->rumble, 0x7F);
-                    NewBuzz(&player->rumble, 0xA);
+                    NewBuzz(&player->rumble, NW_HZ(0xA, 0xC));
                 } else if (push != 0) {
                     obj->pos.x += po->mom.x;
                     obj->pos.z += po->mom.z;
@@ -773,7 +773,7 @@ void PlayerCreatureCollisions(struct obj_s *obj)
             }
             po->touch = 2;
             goto contact;
-        } else if (obj->oldobjtop <= po->oldobjbot + 0.012f) {
+        } else if (obj->oldobjtop <= po->oldobjbot + NW_HZ(0.012f, 0.010000001f)) {
             s32 bot_vuln = po->vulnerable & 0x8E;
             ctype = 4;
             push = 0;
@@ -859,7 +859,7 @@ void PlayerCreatureCollisions(struct obj_s *obj)
                 } else {
                     ang = NuAtan2D(obj->pos.x - po->pos.x, obj->pos.z - po->pos.z);
                 }
-                speed = (po->attack & 0x2) ? 0.12f : 0.06f;
+                speed = (po->attack & 0x2) ? NW_HZ(0.12f, 0.10000001f) : NW_HZ(0.06f, 0.050000004f);
                 obj->mom.x = NuTrigTable[(u16)ang] * speed;
                 obj->mom.z = NuTrigTable[(u16)(ang + 0x4000)] * speed;
                 temp_xzmomset = 1;
@@ -884,7 +884,7 @@ void PlayerCreatureCollisions(struct obj_s *obj)
             }
             AddGameDebris(0x82, &dpos);
             NewRumble(&player->rumble, 0x7F);
-            NewBuzz(&player->rumble, 5);
+            NewBuzz(&player->rumble, NW_HZ(5, 6));
             if ((po->flags & 0x40000) && !(obj->attack & 0x80)) {
                 po->kill_contact = 1;
                 po->dead = 0;
@@ -894,7 +894,7 @@ void PlayerCreatureCollisions(struct obj_s *obj)
                 u16 yrot = NuAtan2D(po->pos.x - obj->pos.x, po->pos.z - obj->pos.z);
                 po->mom.x = 0.0f;
                 po->mom.y = 0.0f;
-                po->mom.z = 0.19999999f;
+                po->mom.z = NW_HZ(0.19999999f, 0.16666667f);
                 NuVecRotateX(&po->mom, &po->mom, -0x400);
                 NuVecRotateY(&po->mom, &po->mom, yrot);
                 GameSfx(0x37, &po->pos);
@@ -1134,17 +1134,17 @@ void CrateCollisions(struct obj_s *obj) {
                                     if (type != 0x13) {
                                         if (AttackCrate(obj, group, crate) == 1) {
                                             HopCratesAbove(CRATEHOPSPEED, group, crate);
-                                            if ((obj->oldobjbot >= crate->oldy + 0.5f - 0.012f &&
+                                            if ((obj->oldobjbot >= crate->oldy + 0.5f - NW_HZ(0.012f, 0.010000001f) &&
                                                  CrateAbove(obj, group, crate) == 0) ||
-                                                (obj->oldobjtop <= crate->oldy + 0.012f &&
+                                                (obj->oldobjtop <= crate->oldy + NW_HZ(0.012f, 0.010000001f) &&
                                                  CrateBelow(obj, group, crate) == 0)) {
                                                 obj->mom.y = 0.0f;
                                                 temp_crate_y_ceiling_adjust = 1;
                                             } else {
                                                 if (VEHICLECONTROL == 1 && obj->vehicle == 0x3B) {
-                                                    f = 0.90000004f;
+                                                    f = NW_HZ(0.90000004f, 0.75f);
                                                 } else {
-                                                    f = 0.3f;
+                                                    f = NW_HZ(0.3f, 0.25f);
                                                 }
                                                 obj->mom.x *= f;
                                                 obj->mom.z *= f;
@@ -1155,7 +1155,7 @@ void CrateCollisions(struct obj_s *obj) {
                                         GameSfx(0x39, &crate->pos);
                                     }
                                 }
-                            } else if (obj->oldobjbot >= crate->oldy + 0.5f - 0.012f &&
+                            } else if (obj->oldobjbot >= crate->oldy + 0.5f - NW_HZ(0.012f, 0.010000001f) &&
                                        CrateAbove(obj, group, crate) == 0) {
                                 AttackCrate(obj, group, crate);
                             }
@@ -1170,7 +1170,7 @@ void CrateCollisions(struct obj_s *obj) {
                     } else if (appeared != 0) {
                         CrateSafety(group, crate, obj);
                         continue;
-                    } else if (obj->oldobjbot >= crate->oldy + 0.5f - 0.012f &&
+                    } else if (obj->oldobjbot >= crate->oldy + 0.5f - NW_HZ(0.012f, 0.010000001f) &&
                                CrateAbove(obj, group, crate) == 0) {
                         attack = obj->attack & 0xE;
                         if ((type == 0x13 ? (attack & 0x8C) : (attack & 0xE)) != 0 ||
@@ -1200,7 +1200,7 @@ void CrateCollisions(struct obj_s *obj) {
                         }
                         hit[j] = 2;
                         continue;
-                    } else if (obj->oldobjtop <= crate->oldy + 0.012f &&
+                    } else if (obj->oldobjtop <= crate->oldy + NW_HZ(0.012f, 0.010000001f) &&
                                CrateBelow(obj, group, crate) == 0) {
                         attack = obj->attack;
                         if (type == 0x13 ? (attack & 0x80)
@@ -1554,10 +1554,10 @@ void MoveLoopXZ(struct obj_s *obj, u16 *hdg) {
             v.x = 0.0f;
         }
     }
-    if (v.x < -0.08999999613f) {
-        v.x = v.x + (-0.08999999613f - v.x) * 0.25f;
-    } else if (v.x > 0.08999999613f) {
-        v.x = v.x + (0.08999999613f - v.x) * 0.25f;
+    if (v.x < -NW_HZ(0.08999999613f, 0.075f)) {
+        v.x = v.x + (-NW_HZ(0.08999999613f, 0.075f) - v.x) * 0.25f;
+    } else if (v.x > NW_HZ(0.08999999613f, 0.075f)) {
+        v.x = v.x + (NW_HZ(0.08999999613f, 0.075f) - v.x) * 0.25f;
     }
     obj->side = v.x;
     obj->abs_side = fabs(v.x);
@@ -1622,14 +1622,14 @@ void GetSurfaceInfo(struct obj_s *obj, s32 mode, f32 reflect) {
                 if (obj->surface_type == 6) {
                     ShadowDir(&dir);
                     plr_conveyor_yrot = NuAtan2D(dir.x, dir.z) + 0x4000;
-                    obj->pos.x += NuTrigTable[plr_conveyor_yrot] * 0.03f;
-                    obj->pos.z += NuTrigTable[(plr_conveyor_yrot + 0x4000) & 0xFFFF] * 0.03f;
+                    obj->pos.x += NuTrigTable[plr_conveyor_yrot] * NW_HZ(0.03f, 0.025000002f);
+                    obj->pos.z += NuTrigTable[(plr_conveyor_yrot + 0x4000) & 0xFFFF] * NW_HZ(0.03f, 0.025000002f);
                     NuVecSub(&plr_conveyor_mom, &obj->pos, &obj->oldpos);
                 } else if (old_surface == 6) {
                     yrot = NuAtan2D(plr_conveyor_mom.x, plr_conveyor_mom.z);
                     if (fabs(RotDiff(plr_conveyor_yrot, yrot)) < 16384.0) {
-                        obj->mom.x = NuTrigTable[plr_conveyor_yrot] * 0.03f * 2.0f;
-                        obj->mom.z = NuTrigTable[(u16)(plr_conveyor_yrot + 0x4000)] * 0.03f * 2.0f;
+                        obj->mom.x = NuTrigTable[plr_conveyor_yrot] * NW_HZ(0.03f, 0.025000002f) * 2.0f;
+                        obj->mom.z = NuTrigTable[(u16)(plr_conveyor_yrot + 0x4000)] * NW_HZ(0.03f, 0.025000002f) * 2.0f;
                     }
                 }
             }
@@ -1699,7 +1699,7 @@ void ObjectRotation(struct obj_s *obj, s32 mode, s32 blend) {
         temp_zrot = 0;
     } else {
         if (blend) {
-            t = obj->xz_distance / 0.1999999881f;
+            t = obj->xz_distance / NW_HZ(0.1999999881f, 0.16666667f);
             v = obj->vSN;
             if (t > 1.0f) {
                 t = 1.0f;
@@ -1824,7 +1824,7 @@ void PickupItem(struct obj_s *obj) {
         switch (obj->character) {
         case 0x75:
             plr_crystal.count = 1;
-            plr_crystal.frame = 0x19;
+            plr_crystal.frame = NW_HZ(0x19, 0x1E);
             plr_items |= 1;
             GameSfx(0x26, 0);
             AddPanelDebris(0.0f, -0.7f, 6, 0.125f, 0x10);
@@ -1836,7 +1836,7 @@ void PickupItem(struct obj_s *obj) {
             break;
         case 0x77:
             plr_crategem.count = 1;
-            plr_crategem.frame = 0x19;
+            plr_crategem.frame = NW_HZ(0x19, 0x1E);
             plr_items |= 2;
             GameSfx(0x26, 0);
             AddPanelDebris(-0.2f, -0.7f, 6, 0.125f, 0x10);
@@ -1863,7 +1863,7 @@ void PickupItem(struct obj_s *obj) {
             plr_items |= mask;
             plr_bonusgem.item = mask;
             plr_bonusgem.count = 1;
-            plr_bonusgem.frame = 0x19;
+            plr_bonusgem.frame = NW_HZ(0x19, 0x1E);
             GameSfx(0x26, 0);
             AddPanelDebris(0.2f, -0.7f, 6, 0.125f, 0x10);
             GameSfx(0x26, 0);
@@ -1919,7 +1919,7 @@ void PickupItem(struct obj_s *obj) {
 inline void FlyGameObject(struct obj_s *obj, u16 yrot) {
     obj->mom.x = 0.0f;
     obj->mom.y = 0.0f;
-    obj->mom.z = 0.1999999881f;
+    obj->mom.z = NW_HZ(0.1999999881f, 0.16666667f);
     NuVecRotateX(&obj->mom, &obj->mom, -0x400);
     NuVecRotateY(&obj->mom, &obj->mom, yrot);
     GameSfx(0x37, &obj->pos);
@@ -2041,7 +2041,7 @@ s32 KillGameObject(struct obj_s *obj, s32 anim) {
         }
         if (obj->dead != 0) {
             old_bonus_crates = bonus_crates_destroyed;
-            NewBuzz(&player->rumble, 0x32);
+            NewBuzz(&player->rumble, NW_HZ(0x32, 0x3C));
             NewRumble(&player->rumble, 0xFF);
             if (vehicle == 0xA1) {
                 sfx = 0x71;
@@ -2479,7 +2479,7 @@ void AddProjectile(struct nuvec_s *src, struct nuvec_s *dst, struct nuvec_s *mom
                 p->obj.shadow = p->obj.pos.y;
             }
             p->obj.pos.y += 7.0f;
-            p->obj.mom.y = -0.099999994f;
+            p->obj.mom.y = -NW_HZ(0.099999994f, 0.083333336f);
             p->obj.flags |= 0xC00;
             p->object = 0x98;
             p->duration = 2.0f;
@@ -2489,7 +2489,7 @@ void AddProjectile(struct nuvec_s *src, struct nuvec_s *dst, struct nuvec_s *mom
             break;
         case 3:
             p->obj.hdg = yrot;
-            f = 0.06f;
+            f = NW_HZ(0.06f, 0.050000004f);
             p->obj.flags |= 0x4800;
             p->duration = 3.0f;
             p->obj.mom.x = NuTrigTable[p->obj.hdg] * f;
@@ -2501,9 +2501,9 @@ void AddProjectile(struct nuvec_s *src, struct nuvec_s *dst, struct nuvec_s *mom
         case 11:
             if (dst != 0) {
                 p->duration = NuVecDist(src, dst, 0) / 5.0f;
-                p->obj.mom.x = (dst->x - src->x) / (p->duration * 50.0f);
-                p->obj.mom.y = (dst->y - src->y) / (p->duration * 50.0f);
-                p->obj.mom.z = (dst->z - src->z) / (p->duration * 50.0f);
+                p->obj.mom.x = (dst->x - src->x) / (p->duration * NW_HZ(50.0f, 60.0f));
+                p->obj.mom.y = (dst->y - src->y) / (p->duration * NW_HZ(50.0f, 60.0f));
+                p->obj.mom.z = (dst->z - src->z) / (p->duration * NW_HZ(50.0f, 60.0f));
             } else {
                 p->obj.mom.x = NuTrigTable[yrot] * 5.0f;
                 p->obj.mom.z = NuTrigTable[(u16)(yrot + 0x4000)] * 5.0f;
@@ -2565,8 +2565,8 @@ void AddProjectile(struct nuvec_s *src, struct nuvec_s *dst, struct nuvec_s *mom
             p->obj.min.z = -0.1f;
             p->obj.max.z = 0.1f;
             p->duration = 3.0f;
-            p->obj.mom.x = NuTrigTable[yrot] * 5.0f * 0.02f;
-            p->obj.mom.z = NuTrigTable[(u16)(yrot + 0x4000)] * 5.0f * 0.02f;
+            p->obj.mom.x = NuTrigTable[yrot] * 5.0f * NW_HZ(0.02f, 0.016666668f);
+            p->obj.mom.z = NuTrigTable[(u16)(yrot + 0x4000)] * 5.0f * NW_HZ(0.02f, 0.016666668f);
             p->obj.hdg = yrot;
             p->object = -1;
             p->obj.max.x = 1.0f;
@@ -2598,13 +2598,13 @@ void AddProjectile(struct nuvec_s *src, struct nuvec_s *dst, struct nuvec_s *mom
             p->obj.hdg = qrand();
             p->obj.xrot = qrand();
             p->obj.direction = qrand() / 0x8000;
-            p->owner_safety = 10;
+            p->owner_safety = NW_HZ(10, 12);
             p->obj.shadow = NewShadowMaskPlat(&p->obj.pos, 0.0f, -1);
             break;
         case 5:
             p->duration = 1.333f;
-            p->obj.mom.x = NuTrigTable[yrot] * 5.0f * 0.02f;
-            p->obj.mom.z = NuTrigTable[(u16)(yrot + 0x4000)] * 5.0f * 0.02f;
+            p->obj.mom.x = NuTrigTable[yrot] * 5.0f * NW_HZ(0.02f, 0.016666668f);
+            p->obj.mom.z = NuTrigTable[(u16)(yrot + 0x4000)] * 5.0f * NW_HZ(0.02f, 0.016666668f);
             p->obj.flags |= 0x4800;
             p->object = 0x53;
             p->obj.hdg = yrot - 0x8000;
@@ -2628,7 +2628,7 @@ void AddProjectile(struct nuvec_s *src, struct nuvec_s *dst, struct nuvec_s *mom
                 p->obj.mom.x = p->obj.pos.x - owner->pos.x;
                 p->obj.mom.y = 0.0f;
                 p->obj.mom.z = p->obj.pos.z - owner->pos.z;
-                f = 0.12f / NuFsqrt(p->obj.mom.x * p->obj.mom.x + p->obj.mom.z * p->obj.mom.z);
+                f = NW_HZ(0.12f, 0.10000001f) / NuFsqrt(p->obj.mom.x * p->obj.mom.x + p->obj.mom.z * p->obj.mom.z);
                 p->duration = 0.5f;
                 p->obj.flags |= 0xC00;
                 p->object = -1;
@@ -2684,8 +2684,8 @@ void AddProjectile(struct nuvec_s *src, struct nuvec_s *dst, struct nuvec_s *mom
             break;
         case 7:
             p->duration = 3.0f;
-            p->obj.mom.x = NuTrigTable[yrot] * 0.02f;
-            p->obj.mom.z = NuTrigTable[(u16)(yrot + 0x4000)] * 0.02f;
+            p->obj.mom.x = NuTrigTable[yrot] * NW_HZ(0.02f, 0.016666668f);
+            p->obj.mom.z = NuTrigTable[(u16)(yrot + 0x4000)] * NW_HZ(0.02f, 0.016666668f);
             p->obj.flags |= 0x800;
             p->object = 0;
             break;
@@ -2697,7 +2697,7 @@ void AddProjectile(struct nuvec_s *src, struct nuvec_s *dst, struct nuvec_s *mom
         }
 
         if (p->type == 4 || p->type == 5) {
-            f = p->duration * 50.0f;
+            f = p->duration * NW_HZ(50.0f, 60.0f);
             v.x = p->obj.mom.x * f;
             v.y = p->obj.mom.y * f;
             v.z = p->obj.mom.z * f;
@@ -2827,7 +2827,7 @@ void UpdateProjectiles(void) {
         expired = 0;
         sfx = -1;
         sfxvol = -1;
-        p->time += 0.02f;
+        p->time += NW_HZ(0.02f, 0.016666668f);
         if (p->time >= p->duration) {
             expired = 1;
             p->active = 0;
@@ -2850,14 +2850,14 @@ void UpdateProjectiles(void) {
                 AddVariableShotDebrisEffect(GDeb[116].i, &p->obj.pos, 1, 0, 0);
                 break;
             case 3:
-                p->obj.xrot -= 0xA3D;
+                p->obj.xrot -= NW_HZ(0xA3D, 0x888);
                 NuVecAdd(&p->obj.pos, &p->obj.pos, &p->obj.mom);
                 break;
             case 2:
                 if (plr->obj.dead == 0) {
                     dx = plr->obj.pos.x - p->obj.pos.x;
                     dz = plr->obj.pos.z - p->obj.pos.z;
-                    speed = 0.035f;
+                    speed = NW_HZ(0.035f, 0.029166669f);
                     d = NuFsqrt(dx * dx + dz * dz);
                     if (d > speed) {
                         f = 1.0f / d * speed;
@@ -2868,7 +2868,8 @@ void UpdateProjectiles(void) {
                 } else {
                     NuVecAdd(&p->obj.pos, &p->obj.pos, &p->obj.mom);
                 }
-                p->obj.pos.y += (p->obj.shadow + p->obj.RADIUS * 2.0f - p->obj.pos.y) * 0.02f * 5.0f;
+                p->obj.pos.y += (p->obj.shadow + p->obj.RADIUS * 2.0f - p->obj.pos.y) *
+                                NW_HZ(0.02f, 0.016666668f) * 5.0f;
                 AddVariableShotDebrisEffect(GDeb[37].i, &p->obj.pos, 1, 0, 0);
                 break;
             case 1:
@@ -2879,9 +2880,9 @@ void UpdateProjectiles(void) {
             case 4:
                 NuVecAdd(&p->obj.pos, &p->obj.pos, &p->obj.mom);
                 if (p->obj.direction == 0) {
-                    p->obj.zrot += 0x51E;
+                    p->obj.zrot += NW_HZ(0x51E, 0x444);
                 } else {
-                    p->obj.zrot -= 0x51E;
+                    p->obj.zrot -= NW_HZ(0x51E, 0x444);
                 }
                 if (HitCreatures(&p->obj, 2, 5) || HitCrates(&p->obj, 1) || HitItems(&p->obj) ||
                     HitWumpa(&p->obj, 1)) {
@@ -2901,15 +2902,15 @@ void UpdateProjectiles(void) {
                 AddVariableShotDebrisEffect(GDeb[114].i, &p->obj.pos, 1, 0, 0);
                 break;
             case 10:
-                p->obj.mom.y += (-terminal_fall_speed - p->obj.mom.y) * 0.02f;
+                p->obj.mom.y += (-terminal_fall_speed - p->obj.mom.y) * NW_HZ(0.02f, 0.016666668f);
                 NuVecAdd(&p->obj.pos, &p->obj.pos, &p->obj.mom);
                 AddVariableShotDebrisEffect(GDeb[20].i, &p->obj.pos, 1, 0, 0);
                 if (p->obj.direction == 0) {
-                    p->obj.hdg += 0x249;
+                    p->obj.hdg += NW_HZ(0x249, 0x1E5);
                 } else {
-                    p->obj.hdg -= 0x249;
+                    p->obj.hdg -= NW_HZ(0x249, 0x1E5);
                 }
-                p->obj.xrot += 0x51E;
+                p->obj.xrot += NW_HZ(0x51E, 0x444);
                 if (p->obj.shadow != 2000000.0f &&
                     p->obj.pos.y + p->obj.bot * p->obj.SCALE < p->obj.shadow) {
                     p->obj.pos.y = p->obj.shadow - p->obj.bot * p->obj.SCALE;
@@ -2933,14 +2934,14 @@ void UpdateProjectiles(void) {
                 p->obj.pos.x = p->srcpos.x + (p->dstpos.x - p->srcpos.x) * tmul;
                 p->obj.pos.y = p->srcpos.y + (p->dstpos.y - p->srcpos.y) * tmul;
                 p->obj.pos.z = p->srcpos.z + (p->dstpos.z - p->srcpos.z) * tmul;
-                p->obj.xrot += 0x47A;
+                p->obj.xrot += NW_HZ(0x47A, 0x3BB);
                 p->obj.pos.y += NuTrigTable[(u16)(tmul * 32768.0f)] * 1.5f;
                 break;
             case 9:
                 p->obj.pos.x = p->srcpos.x + (p->dstpos.x - p->srcpos.x) * tmul;
                 p->obj.pos.y = p->srcpos.y + (p->dstpos.y - p->srcpos.y) * tmul;
                 p->obj.pos.z = p->srcpos.z + (p->dstpos.z - p->srcpos.z) * tmul;
-                p->obj.xrot -= 0xDA;
+                p->obj.xrot -= NW_HZ(0xDA, 0xB6);
                 p->obj.pos.y += NuTrigTable[(u16)(tmul * 32768.0f)];
                 break;
             case 15:
@@ -3370,7 +3371,7 @@ s32 CreatureRayCast(struct nuvec_s *start, struct nuvec_s *end) {
 
 void PickupCrystal(void) {
     plr_crystal.count = 1;
-    plr_crystal.frame = 0x19;
+    plr_crystal.frame = NW_HZ(0x19, 0x1E);
     plr_items |= 1;
     GameSfx(0x26, 0);
     AddPanelDebris(0.0f, -0.7f, 6, 0.125f, 0x10);
@@ -3378,7 +3379,7 @@ void PickupCrystal(void) {
 
 void PickupCrateGem(void) {
     plr_crategem.count = 1;
-    plr_crategem.frame = 0x19;
+    plr_crategem.frame = NW_HZ(0x19, 0x1E);
     plr_items |= 2;
     GameSfx(0x26, 0);
     AddPanelDebris(-0.2f, -0.7f, 6, 0.125f, 0x10);
@@ -3388,7 +3389,7 @@ void PickupBonusGem(s32 mask) {
     plr_items |= mask;
     plr_bonusgem.item = mask;
     plr_bonusgem.count = 1;
-    plr_bonusgem.frame = 0x19;
+    plr_bonusgem.frame = NW_HZ(0x19, 0x1E);
     GameSfx(0x26, 0);
     AddPanelDebris(0.2f, -0.7f, 6, 0.125f, 0x10);
 }
@@ -3513,6 +3514,6 @@ void ResetProjectiles(void) {
 void PickupRelic(s32 relic) {
     plr_crystal.item = relic;
     plr_crystal.count = 1;
-    plr_crystal.frame = 0x19;
+    plr_crystal.frame = NW_HZ(0x19, 0x1E);
     GameSfx(0x26, 0);
 }

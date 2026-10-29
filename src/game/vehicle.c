@@ -541,8 +541,8 @@ void ObjectToAtlas(struct obj_s *obj, struct creature_s *c)
     b->ball_pos.y = obj->pos.y + CData[0x53].radius;
     b->ball_pos.z = obj->pos.z;
     if (temp_xzmomset != 0) {
-        b->ball_vel.x = obj->mom.x / 0.02f;
-        b->ball_vel.z = obj->mom.z / 0.02f;
+        b->ball_vel.x = obj->mom.x / NW_HZ(0.02f, 0.016666668f);
+        b->ball_vel.z = obj->mom.z / NW_HZ(0.02f, 0.016666668f);
     }
     if (obj->boing != 0) {
         obj->mom.y = 3.3333335f;
@@ -598,7 +598,7 @@ extern f32 Rationalise360f(f32 a);
 /* Spin the tornado and keep it under its blimp, or retire it with it. */
 static inline void ProcessTornado(struct tornado_s *tornado, struct hovablimp_s *hova)
 {
-    tornado->yang += tornado->yanginc * 0.02f;
+    tornado->yang += tornado->yanginc * NW_HZ(0.02f, 0.016666668f);
     tornado->yang = Rationalise360f(tornado->yang);
     if (hova->active != 0) {
         tornado->pos = hova->pos;
@@ -847,7 +847,7 @@ void SetNewMaskStuff(s32 index, struct nuvec_s *centre, struct nuvec_s *offset,
     mask->killatend = killatend;
     if (mask->active != 0) {
         mask->tween = 1.0f;
-        mask->tweeninc = tweeninc * 0.02f;
+        mask->tweeninc = tweeninc * NW_HZ(0.02f, 0.016666668f);
         mask->offset[1] = mask->offset[0];
         mask->anginc[1] = mask->anginc[0];
         mask->rad[1] = mask->rad[0];
@@ -871,7 +871,7 @@ void SetNewMaskStuff(s32 index, struct nuvec_s *centre, struct nuvec_s *offset,
         mask->point[0] = centre;
     }
     mask->offset[0] = *offset;
-    mask->anginc[0] = anginc * 0.02f;
+    mask->anginc[0] = anginc * NW_HZ(0.02f, 0.016666668f);
     mask->rad[0] = rad;
     mask->scale[0] = scale;
     mask->tiltx[0] = tiltx;
@@ -999,7 +999,7 @@ inline void ProcessBazookaToken(void)
         NuVecScaleAccum(&pos, &PlayerGlider.Position, t);
         pos.y += t * 0.75f;
         BazookaTokenCurrentPos = pos;
-        MyAnimateModelNew(&IconMainDraw, 0.59999996f);
+        MyAnimateModelNew(&IconMainDraw, NW_HZ(0.59999996f, 0.5f));
     }
 }
 
@@ -1141,8 +1141,8 @@ void ProcessWeatherBoss_a(struct weatherboss_s *wb)
     }
     ProcessTimer(&WeatherBossSkeletonTimer);
     laston = 0;
-    MyAnimateModelNew(&wb->maindraw, 0.59999996f);
-    MyAnimateModelNew(&wb->bonesdraw, 0.12f);
+    MyAnimateModelNew(&wb->maindraw, NW_HZ(0.59999996f, 0.5f));
+    MyAnimateModelNew(&wb->bonesdraw, NW_HZ(0.12f, 0.1f));
     if (wb->oldaction != wb->action) {
         switch (wb->action) {
         case 0:
@@ -1357,9 +1357,9 @@ void ProcessWeatherBoss_a(struct weatherboss_s *wb)
         break;
     }
     vulnerableon = 0;
-    SeekAngHalfLife360f(&wb->yaw, wb->destyaw, 0.5f, 0.02f);
-    SeekHalfLifeLim(&wb->dist, wb->destdist, WBDISTANCESPEED, WBDISTANCETIME, 0.02f);
-    SeekHalfLifeLim(&wb->pos.y, wb->destposy, WBDISTANCEYSPEED, WBDISTANCEYTIME, 0.02f);
+    SeekAngHalfLife360f(&wb->yaw, wb->destyaw, 0.5f, NW_HZ(0.02f, 0.016666668f));
+    SeekHalfLifeLim(&wb->dist, wb->destdist, WBDISTANCESPEED, WBDISTANCETIME, NW_HZ(0.02f, 0.016666668f));
+    SeekHalfLifeLim(&wb->pos.y, wb->destposy, WBDISTANCEYSPEED, WBDISTANCEYTIME, NW_HZ(0.02f, 0.016666668f));
     wb->pos.z = PlayerGlider.Position.z - wb->dist;
     if (VulnerableA != 0 && wb->hitpoints[VulnerableSection] > 0) {
         vulnerableon = 1;
@@ -1443,7 +1443,7 @@ void ProcessWeatherBossLevel(struct nupad_s *pad)
 {
     ProcessWBIntro();
     if (WBIntroOn == 0) {
-        AtmosphericPressureHackedZ -= 1.92f;
+        AtmosphericPressureHackedZ -= NW_HZ(1.92f, 1.6000001f);
         if (AtmosphericPressureHackedZ < -1200.0f) {
             AtmosphericPressureHackedZ += 1200.0f;
         }
@@ -1486,13 +1486,13 @@ extern f32 RUMZOOM;
 inline void UpdateRumbleCamTween(void)
 {
     if (RumbleCamTweenDest > RumbleCamTween) {
-        RumbleCamTween += 0.02f;
+        RumbleCamTween += NW_HZ(0.02f, 0.016666668f);
         if (RumbleCamTween > RumbleCamTweenDest) {
             RumbleCamTween = RumbleCamTweenDest;
         }
     }
     if (RumbleCamTweenDest < RumbleCamTween) {
-        RumbleCamTween -= 0.02f;
+        RumbleCamTween -= NW_HZ(0.02f, 0.016666668f);
         if (RumbleCamTween < RumbleCamTweenDest) {
             RumbleCamTween = RumbleCamTweenDest;
         }
@@ -1663,8 +1663,8 @@ void ProcessGliderBombs(void)
                 continue;
             }
             if (enemy == 1) {
-                SeekHalfLife(&bomb->vel.x, 0.0f, 3.0f, 0.02f);
-                SeekHalfLife(&bomb->vel.z, 0.0f, 3.0f, 0.02f);
+                SeekHalfLife(&bomb->vel.x, 0.0f, 3.0f, NW_HZ(0.02f, 0.016666668f));
+                SeekHalfLife(&bomb->vel.z, 0.0f, 3.0f, NW_HZ(0.02f, 0.016666668f));
                 bomb->vel.y += bomb->gravity;
                 continue;
             }
@@ -1674,21 +1674,21 @@ void ProcessGliderBombs(void)
                 bomb->targetpntr = &bomb->target;
             }
             if (ProcessTimer(&bomb->droptimer)) {
-                SeekHalfLife(&bomb->gravity, 0.0f, 0.15f, 0.02f);
+                SeekHalfLife(&bomb->gravity, 0.0f, 0.15f, NW_HZ(0.02f, 0.016666668f));
                 bomb->vel.y += bomb->gravity;
                 speed = NuVecMag(&bomb->vel);
                 NuVecScale(&dir, &bomb->vel, 1.0f / speed);
-                speed += 0.02f;
+                speed += NW_HZ(0.02f, 0.016666668f);
                 if (speed > 6.0f) {
                     speed = 6.0f;
                 }
                 NuVecSub(&rel, bomb->targetpntr, &bomb->pos);
                 dist = NuVecMag(&rel);
                 if (speed != 0.0f) {
-                    NuVecScaleAccum(&rel, bomb->targetvelpntr, dist * 0.02f / speed);
+                    NuVecScaleAccum(&rel, bomb->targetvelpntr, dist * NW_HZ(0.02f, 0.016666668f) / speed);
                 }
                 NuVecNorm(&rel, &rel);
-                SeekHalfLifeNUVEC(&dir, &rel, 0.1f, 0.02f);
+                SeekHalfLifeNUVEC(&dir, &rel, 0.1f, NW_HZ(0.02f, 0.016666668f));
                 NuVecNorm(&dir, &dir);
                 NuVecScale(&bomb->vel, &dir, speed);
             } else {
@@ -1957,7 +1957,7 @@ void ProcessJeepRock(struct jeeprock_s *rock)
                 rock->fireblob = 2;
             }
         } else {
-            NuVecScaleAccum(&rock->atlas.ball_pos, &rock->atlas.ball_vel, 0.02f);
+            NuVecScaleAccum(&rock->atlas.ball_pos, &rock->atlas.ball_vel, NW_HZ(0.02f, 0.016666668f));
             rock->pos = rock->atlas.ball_pos;
         }
     }
@@ -2008,7 +2008,7 @@ void ProcessGunBoat(struct gunboat_s *boat)
     f32 delta;
     f32 rate;
 
-    MyAnimateModelNew(&boat->draw, 0.59999996f);
+    MyAnimateModelNew(&boat->draw, NW_HZ(0.59999996f, 0.5f));
     if (boat->action != 2) {
         if (CollideGliderBombs(&boat->pos, SetNuVecPntr(1.0f, 1.0f, 1.0f), 0, 0.0f)) {
             AddGameDebris(0x43, &GliderBombCollisionPos);
@@ -2060,7 +2060,7 @@ void ProcessGunBoat(struct gunboat_s *boat)
             rate = delta * 90.0f / 5.0f;
         }
         boat->firepitchmom = rate;
-        boat->firepitch += rate * 0.02f;
+        boat->firepitch += rate * NW_HZ(0.02f, 0.016666668f);
         delta = Rationalise360f(targetyaw - boat->fireyaw);
         if (10.0f < delta) {
             rate = 180.0f;
@@ -2070,7 +2070,7 @@ void ProcessGunBoat(struct gunboat_s *boat)
             rate = delta * 180.0f / 10.0f;
         }
         boat->fireyawmom = rate;
-        boat->fireyaw += rate * 0.02f;
+        boat->fireyaw += rate * NW_HZ(0.02f, 0.016666668f);
         if (ProcessTimer(&boat->bursttimer)) {
             boat->fireframe = 0;
             boat->bursttimer = 3.0f;
@@ -2091,13 +2091,13 @@ void ProcessGunBoat(struct gunboat_s *boat)
         break;
     case 2:
         if (ProcessTimer(&boat->sunktimer)) {
-            boat->pos.y += 0.01f;
+            boat->pos.y += NW_HZ(0.01f, 0.008333334f);
             if (0.0f < boat->pos.y) {
                 boat->pos.y = 0.0f;
                 boat->action = 0;
             }
         } else {
-            boat->pos.y -= 0.01f;
+            boat->pos.y -= NW_HZ(0.01f, 0.008333334f);
         }
         if ((jonframe1 & 3) == 0) {
             pos.x = boat->pos.x;
@@ -2362,7 +2362,7 @@ void ProcessBigGun(struct biggun_s *gun)
                 rate = delta * 90.0f / 5.0f;
             }
             gun->firepitchmom = rate;
-            gun->firepitch += rate * 0.02f;
+            gun->firepitch += rate * NW_HZ(0.02f, 0.016666668f);
             delta = Rationalise360f(targetyaw - gun->fireyaw);
             if (10.0f < delta) {
                 rate = 180.0f;
@@ -2372,7 +2372,7 @@ void ProcessBigGun(struct biggun_s *gun)
                 rate = delta * 180.0f / 10.0f;
             }
             gun->fireyawmom = rate;
-            gun->fireyaw += rate * 0.02f;
+            gun->fireyaw += rate * NW_HZ(0.02f, 0.016666668f);
             if (ProcessTimer(&gun->bursttimer) && inrange) {
                 gun->fireframe = 0;
                 gun->bursttimer = 10.0f;
@@ -2487,7 +2487,7 @@ void InitBattleShip(struct nuvec_s *pos, f32 angle, s32 index)
     ship->gooscale = SetNuVec(0.0f, 0.0f, 0.0f);
     ship->gootimer.x = (f32)index / 6.0f;
     ship->gootimer.y = (f32)(index + 1) / 6.0f;
-    ship->goospeed = (ship->gootimer.x * 0.1f + 0.2f) * 0.02f;
+    ship->goospeed = (ship->gootimer.x * 0.1f + 0.2f) * NW_HZ(0.02f, 0.016666668f);
     if (1.0f <= ship->gootimer.y) {
         ship->gootimer.y -= 1.0f;
     }
@@ -3048,7 +3048,7 @@ void ControlAtlas(struct NEWBUGGY *Atlas, struct nupad_s *Pad, f32 DeltaTime)
     ctrl.x = anx;
     ctrl.z = -anz;
     ctrl.y = 0.0f;
-    if (GameTimer.frame < 50) {
+    if (GameTimer.frame < NW_HZ(50, 60)) {
         ctrl.x = ctrl.z = 0.0f;
     }
     Atlas->inputmag = NuVecMag(&ctrl);
@@ -3213,7 +3213,7 @@ void ProcessAtlas(struct NEWBUGGY *atlas)
     atlas->rotquat_delta = SetNuQuat(0.0f, 0.0f, 0.0f, 1.0f);
     atlas->ball_lastpos = atlas->ball_pos;
     ProcessTimer(&atlas->boosttimer);
-    StepAtlas(atlas, 0.02f);
+    StepAtlas(atlas, NW_HZ(0.02f, 0.016666668f));
     if (atlas->type == 1) {
         CheckAtlasGround(atlas);
     } else if (Level == 0x16 && (atlas->onground & 3)) {
@@ -3629,8 +3629,8 @@ void ProcessPlatformsAtlas(struct NEWBUGGY *atlas, f32 dt)
     NuVecAdd(&atlas->ball_pos, &atlas->ball_pos, &move);
     push = NuVecMagSqr(&move);
     len = NuFsqrt(push);
-    push -= DotProduct(&move, &atlas->ball_vel) * 0.02f * 0.8f;
-    len *= 0.02f;
+    push -= DotProduct(&move, &atlas->ball_vel) * NW_HZ(0.02f, 0.016666668f) * 0.8f;
+    len *= NW_HZ(0.02f, 0.016666668f);
     scale = push / len;
     if (push > 0.0f) {
         NuVecScaleAccum(&atlas->ball_vel, &move, scale);
@@ -3687,7 +3687,7 @@ inline void CheckAtlasVortex(struct NEWBUGGY *b)
     dist = NuVecMag(&rel);
     if (dist < 1.0f) {
         /* Retail constant: one ulp below 0.1f. */
-        NuVecScaleAccum(&b->ball_vel, &rel, 0.099999994f / dist);
+        NuVecScaleAccum(&b->ball_vel, &rel, NW_HZ(0.099999994f, 0.083333336f) / dist);
     }
 }
 
@@ -3974,7 +3974,7 @@ void ProcessSatellite(struct satellite_s *sat)
     short vol;
     struct nuvec_s vec;
 
-    MyAnimateModelNew(&sat->draw, 0.59999996f);
+    MyAnimateModelNew(&sat->draw, NW_HZ(0.59999996f, 0.5f));
     NuVecRotateY(&vec, SetNuVecPntr(0.0f, 0.0f, 18.0f),
                  (sat->angle + sat->station->satelliteangle) * 182.04445f);
     NuVecMtxTransform(&sat->pos, &vec, &sat->station->mtx);
@@ -3992,8 +3992,8 @@ void ProcessSatellite(struct satellite_s *sat)
         AddGameDebris(0x17, &sat->pos);
         MyGameSfx(0xCD, &sat->pos, 0x7FFF);
     }
-    SeekAngHalfLife360f(&sat->tilt[0], sat->tiltdest[0], 1.0f, 0.02f);
-    SeekAngHalfLife360f(&sat->tilt[1], sat->tiltdest[1], 1.0f, 0.02f);
+    SeekAngHalfLife360f(&sat->tilt[0], sat->tiltdest[0], 1.0f, NW_HZ(0.02f, 0.016666668f));
+    SeekAngHalfLife360f(&sat->tilt[1], sat->tiltdest[1], 1.0f, NW_HZ(0.02f, 0.016666668f));
     id = -1;
     vol = 0;
     if (Level == 0x1A) {
@@ -4139,7 +4139,7 @@ void ProcessSpaceStation(struct spacestation_s *station)
         MyGameSfx(0xD7, 0, HITSHIELDVOL);
         station->shieldgreen = 0;
     }
-    station->satelliteangle += 0.59999996f;
+    station->satelliteangle += NW_HZ(0.59999996f, 0.5f);
     if (station->hitpoints <= 0 || station->explode != 0) {
         station->active = 0;
         AddGameDebris(0x47, &station->pos);
@@ -4455,7 +4455,7 @@ void TeleportManager(void)
 void MoveZoffaUFO(struct zoffa_s *ufo)
 {
     struct nuvec_s rel;
-    f32 turnspeed = 1.1999999f;
+    f32 turnspeed = NW_HZ(1.1999999f, 1.0f);
     s32 oldmode;
     s32 close;
     f32 oldyaw;
@@ -4466,7 +4466,7 @@ void MoveZoffaUFO(struct zoffa_s *ufo)
     if (ufo->seen) {
         ufo->notseentimer = 0.0f;
     } else {
-        ufo->notseentimer += 0.02f;
+        ufo->notseentimer += NW_HZ(0.02f, 0.016666668f);
     }
     if (5.0f < ufo->notseentimer) {
         ufo->notseentimer = 5.0f;
@@ -4474,7 +4474,7 @@ void MoveZoffaUFO(struct zoffa_s *ufo)
     if (ufo->infront) {
         ufo->notinfronttimer = 0.0f;
     } else {
-        ufo->notinfronttimer += 0.02f;
+        ufo->notinfronttimer += NW_HZ(0.02f, 0.016666668f);
     }
     if (10.0f < ufo->notinfronttimer) {
         ufo->notinfronttimer = 10.0f;
@@ -4484,13 +4484,13 @@ void MoveZoffaUFO(struct zoffa_s *ufo)
     }
     ProcessTimer(&ufo->keepsamevelocitytimer);
     ufo->draw.Anim.oldaction = ufo->draw.Anim.action;
-    MyAnimateModelNew(&ufo->draw, 0.59999996f);
+    MyAnimateModelNew(&ufo->draw, NW_HZ(0.59999996f, 0.5f));
     ufo->playercloseandvisible = 0;
     ProcessTimer(&ufo->noteleporttimer);
     if (ufo->fireframe != 0) {
         ufo->fireframe--;
     }
-    ufo->firetimer -= 0.02f;
+    ufo->firetimer -= NW_HZ(0.02f, 0.016666668f);
     if (ufo->firetimer < 0.0f) {
         ufo->firetimer = 0.0f;
     }
@@ -4537,7 +4537,7 @@ void MoveZoffaUFO(struct zoffa_s *ufo)
     }
     ZoffaSmoke(ufo);
     if (ufo->terminaldive) {
-        ufo->destpitch += 0.19999999f;
+        ufo->destpitch += NW_HZ(0.19999999f, 0.16666667f);
         if (45.0f < ufo->destpitch) {
             ufo->destpitch = 45.0f;
         }
@@ -4584,7 +4584,7 @@ void MoveZoffaUFO(struct zoffa_s *ufo)
             ufo->visibletimer = 12.0f;
             CurrentAggressor = ufo;
         } else {
-            ufo->visibletimer -= 0.02f;
+            ufo->visibletimer -= NW_HZ(0.02f, 0.016666668f);
             if (ufo->visibletimer <= 0.0f) {
                 ufo->visibletimer = 0.0f;
                 ufo->active = 1;
@@ -4672,21 +4672,21 @@ void MoveZoffaUFO(struct zoffa_s *ufo)
     } else {
         ufo->yaw = ufo->destyaw;
     }
-    rollrate = Rationalise360f(ufo->yaw - oldyaw) / 0.02f;
+    rollrate = Rationalise360f(ufo->yaw - oldyaw) / NW_HZ(0.02f, 0.016666668f);
     if (rollrate == 0.0f) {
-        SeekHalfLife(&ufo->roll, rollrate, 0.6f, 0.02f);
+        SeekHalfLife(&ufo->roll, rollrate, 0.6f, NW_HZ(0.02f, 0.016666668f));
     } else {
-        SeekHalfLife(&ufo->roll, rollrate, 0.3f, 0.02f);
+        SeekHalfLife(&ufo->roll, rollrate, 0.3f, NW_HZ(0.02f, 0.016666668f));
     }
-    SeekHalfLife(&ufo->pitch, ufo->destpitch, 0.6f, 0.02f);
+    SeekHalfLife(&ufo->pitch, ufo->destpitch, 0.6f, NW_HZ(0.02f, 0.016666668f));
     if (ufo->infront) {
         if (Level == 0x1A) {
-            SeekHalfLife(&ufo->speed, 18.0f, 0.8f, 0.02f);
+            SeekHalfLife(&ufo->speed, 18.0f, 0.8f, NW_HZ(0.02f, 0.016666668f));
         } else {
-            SeekHalfLife(&ufo->speed, 14.0f, 0.8f, 0.02f);
+            SeekHalfLife(&ufo->speed, 14.0f, 0.8f, NW_HZ(0.02f, 0.016666668f));
         }
     } else {
-        SeekHalfLife(&ufo->speed, 10.0f, 0.8f, 0.02f);
+        SeekHalfLife(&ufo->speed, 10.0f, 0.8f, NW_HZ(0.02f, 0.016666668f));
     }
     {
         {
@@ -4699,9 +4699,9 @@ void MoveZoffaUFO(struct zoffa_s *ufo)
             NuVecMtxRotate(&ufo->vel, &rel, &m);
         }
     }
-    ufo->pos.x += ufo->vel.x * 0.02f;
-    ufo->pos.y += ufo->vel.y * 0.02f;
-    ufo->pos.z += ufo->vel.z * 0.02f;
+    ufo->pos.x += ufo->vel.x * NW_HZ(0.02f, 0.016666668f);
+    ufo->pos.y += ufo->vel.y * NW_HZ(0.02f, 0.016666668f);
+    ufo->pos.z += ufo->vel.z * NW_HZ(0.02f, 0.016666668f);
     if (Level_GliderCeiling - 3.0f < ufo->pos.y) {
         ufo->pos.y = Level_GliderCeiling - 3.0f;
     }
@@ -4755,7 +4755,7 @@ void MoveZoffaUFO(struct zoffa_s *ufo)
     }
     if (ufo->firenow) {
         if (ufo->seen || (Level != 0xD && Level != 0x12)) {
-            ufo->lockedontimer += 0.02f;
+            ufo->lockedontimer += NW_HZ(0.02f, 0.016666668f);
         }
         if (0.25f <= ufo->lockedontimer) {
             ufo->lockedontimer = 0.25f;
@@ -4769,7 +4769,7 @@ void MoveZoffaUFO(struct zoffa_s *ufo)
                 ufo->firebursttimer = 0.75f;
             }
         } else {
-            ufo->firebursttimer += 0.02f;
+            ufo->firebursttimer += NW_HZ(0.02f, 0.016666668f);
             if (0.75f < ufo->firebursttimer) {
                 ufo->firebursttimer = 0.75f;
             }
@@ -4790,11 +4790,11 @@ void MoveZoffaUFO(struct zoffa_s *ufo)
             NuVecMtxRotateVU0(&dir, SetNuVecPntr(0.0f, -ZoffaAlter, -80.0f), &firemtx);
             NuVecMtxRotateVU0(&firepos, &ZoffaFirePosA, &firemtx);
             NuVecAdd(&firepos, &firepos, &ufo->pos);
-            NuVecScaleAccum(&firepos, &dir, -0.02f);
+            NuVecScaleAccum(&firepos, &dir, -NW_HZ(0.02f, 0.016666668f));
             AddGliderBullet(&firemtx, &firepos, &dir, 1);
             NuVecMtxRotateVU0(&firepos, &ZoffaFirePosB, &firemtx);
             NuVecAdd(&firepos, &firepos, &ufo->pos);
-            NuVecScaleAccum(&firepos, &dir, -0.02f);
+            NuVecScaleAccum(&firepos, &dir, -NW_HZ(0.02f, 0.016666668f));
             AddGliderBullet(&firemtx, &firepos, &dir, 1);
             ufo->fireframe = 3;
             if (ufo->nofiresound <= 0) {
@@ -4907,7 +4907,7 @@ void DrawAllHovaBlimps(void)
         }
     }
     jonemit += 60;
-    if (jonemit >= 150) {
+    if (jonemit >= NW_HZ(150, 180)) {
         jonemit = 0;
     }
     for (i = 0; i < 6; i++) {
@@ -4958,11 +4958,11 @@ void ProcessHovaBlimp(struct hovablimp_s *hova)
     s32 i;
 
     hova->draw.Anim.oldaction = hova->draw.Anim.action;
-    MyAnimateModelNew(&hova->draw, 0.59999996f);
-    SeekHalfLifeNUVEC(&hova->vel, &hova->targetvel, 1.0f, 0.02f);
+    MyAnimateModelNew(&hova->draw, NW_HZ(0.59999996f, 0.5f));
+    SeekHalfLifeNUVEC(&hova->vel, &hova->targetvel, 1.0f, NW_HZ(0.02f, 0.016666668f));
     newpos = hova->pos;
     maxdist2 = (Level_GliderRadius - 15.0f) * (Level_GliderRadius - 15.0f);
-    NuVecScaleAccum(&newpos, &hova->vel, 0.02f);
+    NuVecScaleAccum(&newpos, &hova->vel, NW_HZ(0.02f, 0.016666668f));
     dist = newpos.x * newpos.x + newpos.z * newpos.z;
     olddist = hova->pos.x * hova->pos.x + hova->pos.z * hova->pos.z;
     if (dist > maxdist2 && dist >= olddist) {
@@ -4991,9 +4991,9 @@ void ProcessHovaBlimp(struct hovablimp_s *hova)
         hova->thrustoff = frand() * 0.5f;
     }
     if (hova->thrust != 0) {
-        hova->vel.y += 0.06f;
+        hova->vel.y += NW_HZ(0.06f, 0.050000004f);
     } else {
-        hova->vel.y -= 0.12f;
+        hova->vel.y -= NW_HZ(0.12f, 0.10000001f);
     }
     if (hova->vel.y > 1.0f) {
         hova->vel.y = 1.0f;
@@ -5004,7 +5004,7 @@ void ProcessHovaBlimp(struct hovablimp_s *hova)
     if (hova->vel.y < 0.0f) {
         hova->angy += hova->vel.y * 5.0f;
     }
-    hova->pos.y += hova->vel.y * 0.02f;
+    hova->pos.y += hova->vel.y * NW_HZ(0.02f, 0.016666668f);
     CollideGliderBullets(&hova->pos, HovaRad, 1, 1.0f / HovaY, 1, 1);
     if (CollideGliderBullets(&hova->pos, HovaRad, 0, 1.0f / HovaY, 1, 0) != 0) {
         hova->hitpoints--;
@@ -5173,13 +5173,13 @@ s32 AddGliderBullet(struct numtx_s *m, struct nuvec_s *pos, struct nuvec_s *vel,
     b = GrabGliderBullet(enemy);
     if (b != 0) {
         if (enemy) {
-            b->life = 100;
+            b->life = NW_HZ(100, 120);
         } else if (Level == 0xD) {
-            b->life = 75;
+            b->life = NW_HZ(75, 90);
         } else if (Level == 0x1A) {
-            b->life = 37;
+            b->life = NW_HZ(37, 45);
         } else {
-            b->life = 150;
+            b->life = NW_HZ(150, 180);
         }
         if (enemy) {
             b->lastlife = b->life - 1;
@@ -5190,9 +5190,9 @@ s32 AddGliderBullet(struct numtx_s *m, struct nuvec_s *pos, struct nuvec_s *vel,
         b->mtx._30 = pos->x;
         b->mtx._31 = pos->y;
         b->mtx._32 = pos->z;
-        b->vel.x = vel->x * 0.02f;
-        b->vel.y = vel->y * 0.02f;
-        b->vel.z = vel->z * 0.02f;
+        b->vel.x = vel->x * NW_HZ(0.02f, 0.016666668f);
+        b->vel.y = vel->y * NW_HZ(0.02f, 0.016666668f);
+        b->vel.z = vel->z * NW_HZ(0.02f, 0.016666668f);
         return 1;
     }
     return 0;
@@ -5626,13 +5626,13 @@ void InitAsteroid(s32 stealth)
     }
     asteroid->anglex = frand() * 360.0f;
     asteroid->angley = frand() * 360.0f;
-    asteroid->spinx = (frand() - 0.5f) * 72.0f * 0.02f;
-    asteroid->spiny = (frand() - 0.5f) * 72.0f * 0.02f;
+    asteroid->spinx = (frand() - 0.5f) * 72.0f * NW_HZ(0.02f, 0.016666668f);
+    asteroid->spiny = (frand() - 0.5f) * 72.0f * NW_HZ(0.02f, 0.016666668f);
     asteroid->stealth = stealth;
     asteroid->active = 1;
     asteroid->hitpoints = 3;
     asteroid->scale = SetNuVec(2.0f, 2.0f, 2.0f);
-    NuVecScale(&asteroid->vel, &asteroid->vel, 0.02f);
+    NuVecScale(&asteroid->vel, &asteroid->vel, NW_HZ(0.02f, 0.016666668f));
 }
 
 
@@ -5697,9 +5697,9 @@ void ProcessAsteroid(struct asteroid_s *asteroid)
         NuMtxSetScale(&mTEMP, &scale);
         NuMtxRotateY(&mTEMP, frand() * 360.0f * 182.0444489f);
         NuMtxRotateX(&mTEMP, frand() * 360.0f * 182.0444489f);
-        dirs[0] = SetNuVec(0.0f, 0.0f, 0.099999994f);
-        dirs[1] = SetNuVec(0.0f, 0.099999994f, 0.0f);
-        dirs[2] = SetNuVec(0.099999994f, 0.0f, 0.0f);
+        dirs[0] = SetNuVec(0.0f, 0.0f, NW_HZ(0.099999994f, 0.083333336f));
+        dirs[1] = SetNuVec(0.0f, NW_HZ(0.099999994f, 0.083333336f), 0.0f);
+        dirs[2] = SetNuVec(NW_HZ(0.099999994f, 0.083333336f), 0.0f, 0.0f);
         for (i = 0; i < 3; i++) {
             if (i < 2) {
                 piece = FindFreeAsteroid(asteroid->hitpoints - 1);
@@ -5712,7 +5712,7 @@ void ProcessAsteroid(struct asteroid_s *asteroid)
             }
             piece->hitpoints--;
             NuVecMtxRotate(&piece->vel, &dirs[i], &mTEMP);
-            NuVecScaleAccum(&piece->pos, &piece->vel, 25.0f);
+            NuVecScaleAccum(&piece->pos, &piece->vel, NW_HZ(25.0f, 29.999998f));
         }
     }
     asteroid->active = 0;
@@ -6352,9 +6352,9 @@ void UnleashLighteningHail(struct nuvec_s *pos, s32 attnum)
     s32 skipleft;
     s32 i;
 
-    upspeed = HAILFLYUPSPEED * 0.02f;
+    upspeed = HAILFLYUPSPEED * NW_HZ(0.02f, 0.016666668f);
     memset(HailList, 0, sizeof(HailList));
-    NuVecScale(&vel, &LighteningHailVel, 0.02f);
+    NuVecScale(&vel, &LighteningHailVel, NW_HZ(0.02f, 0.016666668f));
     timer = 2.0f;
     fallxmin = LighteningFallXMin;
     fallx = LighteningFallXMax;
@@ -6457,8 +6457,8 @@ void ProcessLighteningHail(void)
                     hail->pos.z = PlayerGlider.Position.z;
                     hail->timer = 1.5f;
                     hail->vel.x = 0.0f;
-                    hail->vel.y = -HailFallSpeed * 0.02f;
-                    hail->vel.z = -Level_GliderSpeed * 0.02f;
+                    hail->vel.y = -HailFallSpeed * NW_HZ(0.02f, 0.016666668f);
+                    hail->vel.z = -Level_GliderSpeed * NW_HZ(0.02f, 0.016666668f);
                 } else if (hail->state == 4) {
                     hail->state = 0;
                 }
@@ -6499,7 +6499,7 @@ void ProcessWBBolts(void)
                 } else {
                     NuVecScale(&temp, &temp, bolt->seekspeed / dist);
                     temp.z = bolt->vel.z;
-                    SeekHalfLifeNUVEC(&bolt->vel, &temp, BOLTHOMESEEKTIME, 0.02f);
+                    SeekHalfLifeNUVEC(&bolt->vel, &temp, BOLTHOMESEEKTIME, NW_HZ(0.02f, 0.016666668f));
                 }
             }
             NuVecAdd(&bolt->pos, &bolt->pos, &bolt->vel);
@@ -6650,7 +6650,7 @@ void ProcessRumblePanel(void)
     }
     NumRockPanel = n;
     for (i = 0; i < NumRockPanel; i++) {
-        SeekHalfLife(&RockPanelData[i].x, RockPanelDest[i].x, RockPanelSlideSpeed, 0.02f);
+        SeekHalfLife(&RockPanelData[i].x, RockPanelDest[i].x, RockPanelSlideSpeed, NW_HZ(0.02f, 0.016666668f));
         RockPanelData[i].y = RockPanelDest[i].y;
         RockPanelData[i].z = RockPanelDest[i].z;
     }
@@ -6662,14 +6662,14 @@ void ProcessRumblePanel(void)
         RumbleDisplayY = 1.2f;
     }
     if (RumbleDisplayMode == 1) {
-        RumbleDisplayY -= DISPLAYYSPEED * 0.02f;
+        RumbleDisplayY -= DISPLAYYSPEED * NW_HZ(0.02f, 0.016666668f);
         if (RumbleDisplayY < 0.8f) {
             RumbleDisplayY = 0.8f;
             RumbleDisplayMode = 0;
         }
     }
     if (RumbleDisplayMode == -1) {
-        RumbleDisplayY += DISPLAYYSPEED * 0.02f;
+        RumbleDisplayY += DISPLAYYSPEED * NW_HZ(0.02f, 0.016666668f);
         if (RumbleDisplayY > 1.2f) {
             RumbleDisplayY = 1.2f;
             RumbleDisplayMode = 0;
@@ -6743,7 +6743,7 @@ void RumbleHeadUpDisplay(void)
     }
     if (FindNearestCreature(&player->obj.pos, 0xA7, &nearest) < 1000000.0f) {
         obj = 0xA4;
-        scale = (GameTimer.frame % 25 + 25) * RADARSCALE * DOTSCALE / 50.0f;
+        scale = (GameTimer.frame % NW_HZ(25, 30) + NW_HZ(25, 30)) * RADARSCALE * DOTSCALE / NW_HZ(50.0f, 60.0f);
         NuVecRotateY(&nearest, &nearest, angle);
         DrawPanel3DObject(obj, nearest.x * RADARSCALEX + RadarX, nearest.z * RADARSCALE + RadarY, RadarZ,
                           scale, scale, scale, 0, 0, 0, ObjTab[obj].obj.scene, ObjTab[obj].obj.special, 1);
@@ -6810,7 +6810,7 @@ void RumbleCam(struct cammtx_s *cam)
     }
     turn = Rationalise360f(angy - AngleY);
     dist = NuFsqrt(interest.x * interest.x + interest.z * interest.z);
-    limit = 3.6f;
+    limit = NW_HZ(3.6f, 3.0000002f);
     if (dist < 5.0f) {
         turn *= (dist / 5.0f) * (dist / 5.0f);
     }
@@ -6987,7 +6987,7 @@ void ProcessVehMasks(void)
         } else {
             mask->drawangy = 0.0f;
         }
-        MyAnimateModelNew(&mask->draw, 0.59999996f);
+        MyAnimateModelNew(&mask->draw, NW_HZ(0.59999996f, 0.5f));
     }
 }
 
@@ -7098,16 +7098,16 @@ struct nuvec_s *FireWBBolt(struct nuvec_s *pos, struct nuvec_s *vel, s32 type, f
         memset(bolt, 0, sizeof(struct wbbolt_s));
         bolt->owner = owner;
         bolt->pos = *pos;
-        NuVecScale(&bolt->vel, vel, 0.02f);
+        NuVecScale(&bolt->vel, vel, NW_HZ(0.02f, 0.016666668f));
         bolt->life = life;
         bolt->type = type;
         bolt->active = 2;
-        bolt->scale = oldscale + 0.02f / WBTYPE2SCALETIME;
+        bolt->scale = oldscale + NW_HZ(0.02f, 0.016666668f) / WBTYPE2SCALETIME;
         if (bolt->scale >= 1.0f) {
             bolt->scale = 1.0f;
         }
         if (bolt->type == 0) {
-            bolt->seekspeed = BOLTHOMESEEKSPEED * 0.02f;
+            bolt->seekspeed = BOLTHOMESEEKSPEED * NW_HZ(0.02f, 0.016666668f);
         } else {
             bolt->seekspeed = 0.0f;
         }
@@ -7403,8 +7403,8 @@ struct jeeprock_s *AddRockVel(struct nuvec_s *pos, struct nuvec_s *vel, f32 radi
         return 0;
     }
     memset(rock, 0, sizeof(struct jeeprock_s));
-    NuMtxSetRotationY(&mTEMP, frand() * 180.0f * 0.02f * 182.04445f);
-    NuMtxRotateX(&mTEMP, frand() * 720.0f * 0.02f * 182.04445f);
+    NuMtxSetRotationY(&mTEMP, frand() * 180.0f * NW_HZ(0.02f, 0.016666668f) * 182.04445f);
+    NuMtxRotateX(&mTEMP, frand() * 720.0f * NW_HZ(0.02f, 0.016666668f) * 182.04445f);
     NuMtxToQuat(&mTEMP, &spin);
     NuQuatNormalise(&spin, &spin);
     rock->pos = *pos;
@@ -7496,7 +7496,7 @@ void MoveAtlas(struct creature_s *c, struct nupad_s *pad)
     if (AtlasFrame > 0x11D) {
         kj++;
     }
-    ControlAtlas(atlas, pad, 0.02f);
+    ControlAtlas(atlas, pad, NW_HZ(0.02f, 0.016666668f));
     ProcessAtlas(atlas);
     c->obj.pos.x = atlas->ball_pos.x;
     c->obj.pos.y = atlas->ball_pos.y - D_00560D44[0];
@@ -7506,7 +7506,7 @@ void MoveAtlas(struct creature_s *c, struct nupad_s *pad)
     dz = c->obj.pos.z - c->obj.oldpos.z;
     c->obj.xz_distance = NuFsqrt(dx * dx + dz * dz);
     oldhdg = c->obj.hdg;
-    if (c->obj.pad_speed > 0.0f || c->obj.xz_distance > 0.01f) {
+    if (c->obj.pad_speed > 0.0f || c->obj.xz_distance > NW_HZ(0.01f, 0.008333334f)) {
         c->obj.thdg = NuAtan2D(dx, dz) + 0x8000;
     }
     c->obj.hdg = SeekRot(c->obj.hdg, c->obj.thdg, 4);
@@ -7855,7 +7855,7 @@ void ProcessWBIntro(void)
         FindSplineClosestPointAndDist(&WeatherBossIntroSpline, 0x300, &lookpos, &target, 0, 0);
         NuVecSub(&dir, &target, &WBIntroGliderPos);
         NuVecScale(&dir, &dir, 96.0 / fabs(dir.z));
-        NuVecScaleAccum(&WBIntroGliderPos, &dir, 0.02f);
+        NuVecScaleAccum(&WBIntroGliderPos, &dir, NW_HZ(0.02f, 0.016666668f));
         WBIntroDestTiltZ = dir.x * WBITILTZSCALE;
         WBIntroDestTiltX = dir.y * WBITILTXSCALE;
         PlayerGlider.Velocity = dir;
@@ -7959,7 +7959,7 @@ inline void ExplodeGlider(struct GLIDERSTRUCT *glider)
     }
     if (InvincibilityCHEAT == 0) {
         glider->Dead = 1;
-        FarmResetTimer = 50;
+        FarmResetTimer = NW_HZ(50, 60);
         if (TimeTrial != 0) {
             new_mode = GameMode;
         } else if (plr_lives.count != 0) {
@@ -7999,9 +7999,9 @@ void DeadGliderCoco(struct GLIDERSTRUCT *glider)
         AddGameDebris(0x18, &glider->Position);
     }
     glider->HitPoints = 0;
-    NuVecScaleAccum(&glider->Position, &glider->Velocity, 0.02f);
-    glider->TiltX += glider->CocoDeathSpinX * 0.02f;
-    glider->TiltZ += glider->CocoDeathSpinZ * 0.02f;
+    NuVecScaleAccum(&glider->Position, &glider->Velocity, NW_HZ(0.02f, 0.016666668f));
+    glider->TiltX += glider->CocoDeathSpinX * NW_HZ(0.02f, 0.016666668f);
+    glider->TiltZ += glider->CocoDeathSpinZ * NW_HZ(0.02f, 0.016666668f);
     if (ProcessTimer(&glider->CocoDeadTimer)) {
         glider->CocoDeadTimer = 1000000.0f;
         ExplodeGlider(glider);
@@ -8024,7 +8024,7 @@ void ProcessGliderMovementWB(struct GLIDERSTRUCT *glider)
         glider->Velocity.x = glider->TiltZ * WBTILTZSCALE;
         glider->Velocity.y = glider->TiltX * WBTILTXSCALE;
     }
-    NuVecScaleAccum(&glider->Position, &glider->Velocity, 0.02f);
+    NuVecScaleAccum(&glider->Position, &glider->Velocity, NW_HZ(0.02f, 0.016666668f));
     if (glider->Position.x > WBLIMX) {
         glider->Position.x = WBLIMX;
     }
@@ -8045,15 +8045,15 @@ void ProcessGliderMovementWB(struct GLIDERSTRUCT *glider)
         dest = 0.0f;
     }
     if (dest == 0.0f) {
-        SeekHalfLife(&glider->BarrelSpeedX, dest, WBBARRELSEEKSPEEDZERO, 0.02f);
+        SeekHalfLife(&glider->BarrelSpeedX, dest, WBBARRELSEEKSPEEDZERO, NW_HZ(0.02f, 0.016666668f));
     } else {
-        SeekHalfLife(&glider->BarrelSpeedX, dest, WBBARRELSEEKSPEEDNONZERO, 0.02f);
+        SeekHalfLife(&glider->BarrelSpeedX, dest, WBBARRELSEEKSPEEDNONZERO, NW_HZ(0.02f, 0.016666668f));
     }
     roll = SetNuVec(glider->BarrelSpeedX, 0.0f, 0.0f);
     NuVecRotateY(&roll, &roll, (s32)(glider->AngleY * 182.04445f));
-    glider->Position.x += roll.x * 0.02f;
-    glider->Position.y += roll.y * 0.02f;
-    glider->Position.z += roll.z * 0.02f;
+    glider->Position.x += roll.x * NW_HZ(0.02f, 0.016666668f);
+    glider->Position.y += roll.y * NW_HZ(0.02f, 0.016666668f);
+    glider->Position.z += roll.z * NW_HZ(0.02f, 0.016666668f);
 }
 
 extern void AddExtraLife(struct nuvec_s *pos, s32 pdeb);
@@ -8107,7 +8107,7 @@ void MoveGlider(struct creature_s *Cre, struct nupad_s *Pad)
         if (Glider->Dead > 0) {
             return;
         }
-        Glider->Dead = 0x32;
+        Glider->Dead = NW_HZ(0x32, 0x3C);
         AddGameDebris(0x18, &Glider->Position);
         return;
     }
@@ -8116,7 +8116,7 @@ void MoveGlider(struct creature_s *Cre, struct nupad_s *Pad)
     if (Level == 0x18) {
         ProcessGliderMovementWB(Glider);
     } else {
-        ProcessGliderMovement(Glider, 0.02f);
+        ProcessGliderMovement(Glider, NW_HZ(0.02f, 0.016666668f));
     }
     if (Level == 0x18) {
         ControlGliderWeatherBoss(Glider, Pad);
@@ -8151,7 +8151,7 @@ void MoveGlider(struct creature_s *Cre, struct nupad_s *Pad)
         Glider->HitTimer = Level_DeadTime;
     }
     if (Level != 0x18 && Glider->Dead == 0 && new_mode == -1 && new_level == -1
-        && GameTimer.frame > 0x32) {
+        && GameTimer.frame > NW_HZ(0x32, 0x3C)) {
         s32 Explode;
 
         Explode = (Glider->Position.y < 6.0f && Level == 0xD);
@@ -8225,7 +8225,7 @@ void MoveGlider(struct creature_s *Cre, struct nupad_s *Pad)
     Glider->ApparentVelocity = Glider->VelocityStack[Glider->StackIndx];
     Glider->PositionStack[Glider->StackIndx] = Glider->Position;
     Glider->VelocityStack[Glider->StackIndx] = Glider->Velocity;
-    NuVecScaleAccum(&Glider->PositionStack[Glider->StackIndx], &Glider->Velocity, 0.59999996f);
+    NuVecScaleAccum(&Glider->PositionStack[Glider->StackIndx], &Glider->Velocity, NW_HZ(0.59999996f, 0.5f));
     Glider->StackIndx++;
     if (Glider->StackIndx > 0x1D) {
         Glider->StackIndx = 0;
@@ -8501,7 +8501,7 @@ static inline void MoveZoffaUFOs(void)
     for (i = 0; i < 4; i++) {
         if (EnemyZoffa[i].active == 0) {
             if (PlayerGlider.AutoPilot == 0) {
-                EnemyZoffa[i].respawntimer -= 0.02f;
+                EnemyZoffa[i].respawntimer -= NW_HZ(0.02f, 0.016666668f);
                 if (EnemyZoffa[i].respawntimer < 0.0f) {
                     EnemyZoffa[i].respawntimer = 0.0f;
                 }
@@ -8587,7 +8587,7 @@ void ProcessFireFlyIntro(void)
     }
     if (FireFlyIntroOn != 0) {
         NuVecScale(&PlayerGlider.Velocity, &flatdir, Level_GliderSpeed);
-        NuVecScaleAccum(&PlayerGlider.Position, &PlayerGlider.Velocity, 0.02f);
+        NuVecScaleAccum(&PlayerGlider.Position, &PlayerGlider.Velocity, NW_HZ(0.02f, 0.016666668f));
     }
     GliderIntroInterest = PlayerGlider.Position;
     if (FireFlyIntroAction != FireFlyIntroOldAction) {
@@ -8717,7 +8717,7 @@ void MovePlane(struct plane_s *plane)
             PlayerGlider.ForceTurn = action;
             GameSfx(0x82, &player->obj.pos);
             NewRumble(&player->rumble, 0x7F);
-            NewBuzz(&player->rumble, 5);
+            NewBuzz(&player->rumble, NW_HZ(5, 6));
             break;
         case 2:
             if (ProcessTimer(&plane->actiontimer) != 0) {
@@ -8728,7 +8728,7 @@ void MovePlane(struct plane_s *plane)
             plane->active = 0;
             break;
         }
-        NuVecScaleAccum(&plane->pos, &plane->vel, 0.02f);
+        NuVecScaleAccum(&plane->pos, &plane->vel, NW_HZ(0.02f, 0.016666668f));
         PlayerGlider.AutoPilot = grabglider;
         if (grabglider != 0) {
             NuVecAdd(&PlayerGlider.Position, &plane->pos, &ZepplinGliderOffset);
@@ -8737,7 +8737,7 @@ void MovePlane(struct plane_s *plane)
             PlayerGlider.TiltZ = 0.0f;
             PlayerGlider.Velocity = plane->vel;
         }
-        MyAnimateModelNew(&plane->draw, 0.59999996f);
+        MyAnimateModelNew(&plane->draw, NW_HZ(0.59999996f, 0.5f));
     }
 }
 
@@ -8746,7 +8746,7 @@ void ProcessFarmLevel(struct nupad_s *pad)
 {
     FarmFrame++;
     if (GliderCamHighTimer > 0.0f) {
-        GliderCamHighTimer -= 0.02f;
+        GliderCamHighTimer -= NW_HZ(0.02f, 0.016666668f);
     } else {
         GliderCamHighTimer = 0.0f;
     }
@@ -8842,7 +8842,7 @@ void GliderCam(struct cammtx_s *cam)
     campos.y = cam->m._31;
     campos.z = cam->m._32;
     introcam = campos;
-    SeekHalfLifeNUVEC(&introcam, &GliderIntroCamPos, SeekGliderCamTime, 0.02f);
+    SeekHalfLifeNUVEC(&introcam, &GliderIntroCamPos, SeekGliderCamTime, NW_HZ(0.02f, 0.016666668f));
     if ((Level != 0x12 && Level != 0x1A) || FireFlyIntroOn == 0) {
         tilt = PlayerGlider.CamTiltX;
         lookpos = PlayerGlider.Position;
@@ -8857,16 +8857,16 @@ void GliderCam(struct cammtx_s *cam)
         }
         NuVecRotateX(&offset, &offset, tilt * 182.0444489f);
         if (FlyingLevelExtro != 0) {
-            SeekAngLimHalfLife360f(&ExtroAngOff, ExtroTargAng, 120.0f, 0.3f, 0.02f);
+            SeekAngLimHalfLife360f(&ExtroAngOff, ExtroTargAng, 120.0f, 0.3f, NW_HZ(0.02f, 0.016666668f));
             NuVecScale(&extropos, &offset, 1.0 - fabs(ExtroAngOff) / 180.0);
             NuVecScaleAccum(&extropos, &ExtroIdealPos, fabs(ExtroAngOff) / 180.0);
             if (fabs(Rationalise360f(ExtroAngOff - ExtroTargAng)) < ExtroChangeVal) {
-                NuVecScaleAccum(&ExtroStillCamPos, &ExtroStillVelocity, 0.02f);
-                NuVecScaleAccum(&ExtroStillInterest, &ExtroStillVelocity, 0.02f);
+                NuVecScaleAccum(&ExtroStillCamPos, &ExtroStillVelocity, NW_HZ(0.02f, 0.016666668f));
+                NuVecScaleAccum(&ExtroStillInterest, &ExtroStillVelocity, NW_HZ(0.02f, 0.016666668f));
                 ideal = ExtroStillCamPos;
                 FlyingLevelVictoryDance = 1;
                 lookpos = ExtroStillInterest;
-                SeekHalfLifeNUVEC(&ExtroStillVelocity, &v000, ExtroSeekZeroTime, 0.02f);
+                SeekHalfLifeNUVEC(&ExtroStillVelocity, &v000, ExtroSeekZeroTime, NW_HZ(0.02f, 0.016666668f));
             } else {
                 NuVecRotateY(&ideal, &extropos, (PlayerGlider.CamAngleY + ExtroAngOff) * 182.0444489f);
                 NuVecAdd(&ideal, &ideal, &lookpos);
@@ -8884,7 +8884,7 @@ void GliderCam(struct cammtx_s *cam)
         campos.y = cam->m._31;
         campos.z = cam->m._32;
         if (PlayerGlider.TerminalDive != 0 || PlayerGlider.Dead != 0 || PlayerGlider.CocoDead != 0) {
-            SeekHalfLifeNUVEC(&LastVel, SetNuVecPntr(0.0f, 0.0f, 0.0f), 0.5f, 0.02f);
+            SeekHalfLifeNUVEC(&LastVel, SetNuVecPntr(0.0f, 0.0f, 0.0f), 0.5f, NW_HZ(0.02f, 0.016666668f));
             NuVecAdd(&campos, &campos, &LastVel);
         } else {
             if (PlayerGlider.AutoPilot != 0) {
@@ -8893,7 +8893,7 @@ void GliderCam(struct cammtx_s *cam)
                 seek = SeekGliderCamTime;
             }
             LastVel = campos;
-            SeekHalfLifeNUVEC(&campos, &ideal, seek, 0.02f);
+            SeekHalfLifeNUVEC(&campos, &ideal, seek, NW_HZ(0.02f, 0.016666668f));
             if ((Level == 0x12 || Level == 0x1A) && FireFlyIntroTween != 0.0f && FFTWEENTIME != 0.0f) {
                 tween = FireFlyIntroTween / FFTWEENTIME;
                 untween = 1.0f - tween;
@@ -9030,7 +9030,7 @@ void ProcessEarthBossLevel(struct nupad_s *pad)
         damage = mag;
         hitpower = mag * 3.0f;
         NewRumble(&player->rumble, hitpower);
-        NewBuzz(&player->rumble, hitpower / 6);
+        NewBuzz(&player->rumble, hitpower / NW_HZ(6, 5));
         if (InvincibilityCHEAT == 0 && VehicleLevelImmune == 0) {
             PlayerAtlas.desthitpoints = PlayerAtlas.ball_health - damage;
         }
@@ -9049,14 +9049,14 @@ void ProcessEarthBossLevel(struct nupad_s *pad)
         bump = bump * 25.0f / 20.0f;
         bumppower = bump * 3.0f;
         NewRumble(&player->rumble, bumppower);
-        NewBuzz(&player->rumble, bumppower / 6);
+        NewBuzz(&player->rumble, bumppower / NW_HZ(6, 5));
     }
     PlayerAtlas.ball_beenhit = 0;
     if (PlayerAtlas.hitpointcounter != 0) {
         PlayerAtlas.hitpointcounter--;
     } else if (PlayerAtlas.desthitpoints < PlayerAtlas.ball_health) {
         PlayerAtlas.ball_health--;
-        PlayerAtlas.hitpointcounter = 5;
+        PlayerAtlas.hitpointcounter = NW_HZ(5, 6);
     }
     if (PlayerAtlas.ball_health <= 0) {
         if (PlayerAtlas.owner->obj.dead == 0) {
@@ -9365,7 +9365,7 @@ void ProcessEarthBossActions(struct NEWBUGGY *boss)
         UpdateRumbleCamTween();
         return;
     }
-    SeekHalfLife(&RumbleCamVal, 0.0f, BumpSpeed, 0.02f);
+    SeekHalfLife(&RumbleCamVal, 0.0f, BumpSpeed, NW_HZ(0.02f, 0.016666668f));
     NuVecSub(&rel, &RumbleCamPos, &boss->ball_pos);
     boss->destcrunchy = NuAtan2D(-rel.x, -rel.z) / 182.04445f;
     if (GetRumbleTotalRoks() > 0 && GetRumblePlayerRoks() == GetRumbleTotalRoks() && boss->whacko == 0) {
@@ -9503,12 +9503,12 @@ void ProcessEarthBossActions(struct NEWBUGGY *boss)
     if (boss->ball_action != 7 && boss->ball_action != 1 && boss->ball_action != 2) {
         diff = Rationalise360f(boss->destcrunchy - boss->crunchy);
         if (diff >= 0.0f) {
-            diff -= 7.2f;
+            diff -= NW_HZ(7.2f, 6.0000005f);
             if (diff < 0.0f) {
                 diff = 0.0f;
             }
         } else {
-            diff += 7.2f;
+            diff += NW_HZ(7.2f, 6.0000005f);
             if (diff > 0.0f) {
                 diff = 0.0f;
             }
@@ -9602,7 +9602,7 @@ void ProcessEarthBossActions(struct NEWBUGGY *boss)
         break;
     case 6:
         if ((boss->onground & 3) && (boss->ball_pos.y < -2.0f || boss->numattacks > 0)) {
-            SeekHalfLifeNUVEC(&boss->ball_vel, &v000, 0.2f, 0.02f);
+            SeekHalfLifeNUVEC(&boss->ball_vel, &v000, 0.2f, NW_HZ(0.02f, 0.016666668f));
             if (NuVecMagSqr(&boss->ball_vel) < 0.5f) {
                 if (boss->whacko != 0) {
                     boss->ball_action = 0xB;
@@ -9623,7 +9623,7 @@ void ProcessEarthBossActions(struct NEWBUGGY *boss)
         }
         if (boss->crunch.Anim.action == 0x19) {
             f32 time = boss->crunch.Anim.anim_time;
-            f32 last = time - boss->crunch.Model->animlist[0x19]->speed * 0.59999996f;
+            f32 last = time - boss->crunch.Model->animlist[0x19]->speed * NW_HZ(0.59999996f, 0.5f);
 
             if (time >= 52.0f && last < 52.0f) {
                 MyGameSfx(0x54, &rumble_sfx_pos, BOSSLANDVOL);
@@ -9684,8 +9684,8 @@ void ProcessEarthBossActions(struct NEWBUGGY *boss)
     if (boss->ball_action != 9) {
         boss->interestpoint = boss->ball_pos;
     }
-    MyAnimateModelNew(&boss->shell, 0.59999996f);
-    MyAnimateModelNew(&boss->crunch, 0.59999996f);
+    MyAnimateModelNew(&boss->shell, NW_HZ(0.59999996f, 0.5f));
+    MyAnimateModelNew(&boss->crunch, NW_HZ(0.59999996f, 0.5f));
     if (JonnyOn != 0) {
         JonnyParticles(&rumble_sfx_pos);
     }
@@ -9777,7 +9777,7 @@ void GliderFire(struct GLIDERSTRUCT *glider, struct nupad_s *pad)
         NuVecMtxRotateVU0(&spacetargetdir, SetNuVecPntr(0.0f, -3.5f, -133.33333f), &mat);
         NuVecMtxRotateVU0(&GliderTargetPos, SetNuVecPntr(0.0f, -0.1f, 0.0f), &mat);
         NuVecAdd(&GliderTargetPos, &GliderTargetPos, &glider->Position);
-        NuVecScaleAccum(&GliderTargetPos, &spacetargetdir, 0.74f);
+        NuVecScaleAccum(&GliderTargetPos, &spacetargetdir, NW_HZ(0.74f, 0.741666675f));
         break;
     case 0xD:
         NuMtxSetRotationZ(&mat, (s32)(glider->TiltZ * 182.04445f));
@@ -9823,14 +9823,14 @@ void GliderFire(struct GLIDERSTRUCT *glider, struct nupad_s *pad)
         NuVecMtxRotateVU0(&spacevel, SetNuVecPntr(-SpaceFirePosA.x / 0.75f, 0.0f, -120.0f), &mat);
         NuVecMtxRotateVU0(&spacepos, &SpaceFirePosA, &mat);
         NuVecAdd(&spacepos, &spacepos, &glider->Position);
-        NuVecScaleAccum(&spacepos, &spacevel, -0.01f);
+        NuVecScaleAccum(&spacepos, &spacevel, -NW_HZ(0.01f, 0.008333334f));
         AddGliderBullet(&mat, &spacepos, &spacevel, 0);
         NuVecMtxRotateVU0(&spacevel, SetNuVecPntr(-SpaceFirePosB.x / 0.75f, 0.0f, -120.0f), &mat);
         NuVecMtxRotateVU0(&spacepos, &SpaceFirePosB, &mat);
         NuVecAdd(&spacepos, &spacepos, &glider->Position);
-        NuVecScaleAccum(&spacepos, &spacevel, -0.01f);
+        NuVecScaleAccum(&spacepos, &spacevel, -NW_HZ(0.01f, 0.008333334f));
         AddGliderBullet(&mat, &spacepos, &spacevel, 0);
-        glider->FireTimer = 0.12f;
+        glider->FireTimer = NW_HZ(0.12f, 0.10000001f);
         MyGameSfx(0xCF, &spacepos, 0x1FFF);
         NewBuzz(&player->rumble, 3);
         break;
@@ -9847,7 +9847,7 @@ void GliderFire(struct GLIDERSTRUCT *glider, struct nupad_s *pad)
         if (AddGliderBullet(&mat, &tornpos, &tornfiredir, 0) == 0) {
             goto end;
         }
-        glider->FireTimer = 0.12f;
+        glider->FireTimer = NW_HZ(0.12f, 0.10000001f);
         GameSfx(0x8B, &tornpos);
         NewBuzz(&player->rumble, 3);
         break;
@@ -9868,7 +9868,7 @@ void GliderFire(struct GLIDERSTRUCT *glider, struct nupad_s *pad)
         if (AddGliderBullet(&mat, &wbpos, &wbveldir, 0) == 0) {
             goto end;
         }
-        glider->FireTimer = WBBULLETFIRERATE * 0.02f;
+        glider->FireTimer = WBBULLETFIRERATE * NW_HZ(0.02f, 0.016666668f);
         GameSfx(0x55, (struct nuvec_s *)&glider->Cre->mtxLOCATOR[1][0]._30);
         NewBuzz(&player->rumble, 3);
         break;
@@ -9878,7 +9878,7 @@ void GliderFire(struct GLIDERSTRUCT *glider, struct nupad_s *pad)
             glider->TargetTimer = 0.0f;
             glider->TargetedTime = 0.0f;
         } else {
-            glider->TargetedTime += 0.02f;
+            glider->TargetedTime += NW_HZ(0.02f, 0.016666668f);
         }
         if (glider->TargetOn != 0) {
             if (StillLockedOnTarget(glider->MovingTargetPoint) == 0) {
@@ -9955,15 +9955,15 @@ inline s32 AddGliderBomb(struct nuvec_s *pos, struct nuvec_s *vel, f32 angy, s32
 
     bomb = GrabGliderBomb(enemy);
     if (bomb != 0) {
-        bomb->life = 500;
+        bomb->life = NW_HZ(500, 600);
         bomb->pos = *pos;
         bomb->vel = *vel;
-        NuVecScale(&bomb->vel, vel, 0.02f);
+        NuVecScale(&bomb->vel, vel, NW_HZ(0.02f, 0.016666668f));
         bomb->angy = angy;
         if (enemy) {
-            bomb->gravity = -0.004f;
+            bomb->gravity = -NW_HZ(0.004f, 0.0033333336f);
         } else {
-            bomb->gravity = -0.004f;
+            bomb->gravity = -NW_HZ(0.004f, 0.0033333336f);
             if (Level == 0x24) {
                 bomb->targetpntr = targetpoint;
                 bomb->targetmoving = enemy;
@@ -9997,7 +9997,7 @@ void ProcessBattleShip(struct battleship_s *ship)
     s32 locator;
     s32 i;
 
-    MyAnimateModelNew(&ship->draw, 0.59999996f);
+    MyAnimateModelNew(&ship->draw, NW_HZ(0.59999996f, 0.5f));
     if (ship->hitpoints > 0) {
         CollideGliderBullets(&ship->pos, 6.0f, 1, 1.0f, 0, 1);
     }
@@ -10036,9 +10036,9 @@ void ProcessBattleShip(struct battleship_s *ship)
         }
         ClockOff();
     }
-    SeekAngHalfLife360f(&ship->pitch, ship->destpitch, 1.0f, 0.02f);
-    SeekAngHalfLife360f(&ship->roll, ship->destroll, 1.0f, 0.02f);
-    SeekHalfLife(&ship->pos.y, ship->desty, 1.0f, 0.02f);
+    SeekAngHalfLife360f(&ship->pitch, ship->destpitch, 1.0f, NW_HZ(0.02f, 0.016666668f));
+    SeekAngHalfLife360f(&ship->roll, ship->destroll, 1.0f, NW_HZ(0.02f, 0.016666668f));
+    SeekHalfLife(&ship->pos.y, ship->desty, 1.0f, NW_HZ(0.02f, 0.016666668f));
     for (i = 0; i < 3 - ship->hitpoints; i++) {
         if (jonframe1 % 3 == i) {
             locator = BSTab[i];
@@ -10106,9 +10106,9 @@ void ControlGliderWeatherBoss(struct GLIDERSTRUCT *glider, struct nupad_s *pad)
         }
         if ((glider->BarrelRoll < -1 || glider->BarrelRoll > 1) 
             || glider->TiltZ > 30.0f || glider->TiltZ < -30.0f) {
-            SeekHalfLife(&glider->BarrelDelta, 7.2f, 0.05f, 0.02f);
+            SeekHalfLife(&glider->BarrelDelta, NW_HZ(7.2f, 6.0000005f), 0.05f, NW_HZ(0.02f, 0.016666668f));
         } else if (glider->TiltZ > 1.0f || glider->TiltZ < -1.0f) {
-            glider->BarrelDelta = (f32)fabs(glider->TiltZ * 20.0f * 0.02f * 0.5f);
+            glider->BarrelDelta = (f32)fabs(glider->TiltZ * 20.0f * NW_HZ(0.02f, 0.016666668f) * 0.5f);
         } else {
             glider->BarrelDelta = 1.0f;
         }
@@ -10264,18 +10264,20 @@ void ControlGlider(struct GLIDERSTRUCT *glider, struct nupad_s *pad)
 
     if (Level == 0x1A) {
         if (glider->DestTiltX == 0.0f) {
-            SeekAngHalfLife360f(&glider->TiltX, glider->DestTiltX, CRASHTEROIDSSeekTiltXTimeZero, 0.02f);
+            SeekAngHalfLife360f(&glider->TiltX, glider->DestTiltX, CRASHTEROIDSSeekTiltXTimeZero,
+                                NW_HZ(0.02f, 0.016666668f));
         } else {
-            SeekAngHalfLife360f(&glider->TiltX, glider->DestTiltX, CRASHTEROIDSSeekTiltXTimeNonZero, 0.02f);
+            SeekAngHalfLife360f(&glider->TiltX, glider->DestTiltX, CRASHTEROIDSSeekTiltXTimeNonZero,
+                                NW_HZ(0.02f, 0.016666668f));
         }
     } else if (Level == 0xD) {
         if (glider->DestTiltX == 0.0f) {
-            SeekAngHalfLife360f(&glider->TiltX, glider->DestTiltX, TORNSeekTiltXTimeZero, 0.02f);
+            SeekAngHalfLife360f(&glider->TiltX, glider->DestTiltX, TORNSeekTiltXTimeZero, NW_HZ(0.02f, 0.016666668f));
         } else {
-            SeekAngHalfLife360f(&glider->TiltX, glider->DestTiltX, TORNSeekTiltXTimeNonZero, 0.02f);
+            SeekAngHalfLife360f(&glider->TiltX, glider->DestTiltX, TORNSeekTiltXTimeNonZero, NW_HZ(0.02f, 0.016666668f));
         }
     } else {
-        SeekAngHalfLife360f(&glider->TiltX, glider->DestTiltX, 0.2f, 0.02f);
+        SeekAngHalfLife360f(&glider->TiltX, glider->DestTiltX, 0.2f, NW_HZ(0.02f, 0.016666668f));
     }
 
     if (glider->BarrelRoll != 0) {
@@ -10287,9 +10289,9 @@ void ControlGlider(struct GLIDERSTRUCT *glider, struct nupad_s *pad)
             glider->BarrelRoll = -1;
         }
         if ((u32)(glider->BarrelRoll + 1) > 2 || glider->TiltZ > 30.0f || glider->TiltZ < -30.0f) {
-            SeekHalfLife(&glider->BarrelDelta, 7.2f, 0.05f, 0.02f);
+            SeekHalfLife(&glider->BarrelDelta, NW_HZ(7.2f, 6.0000005f), 0.05f, NW_HZ(0.02f, 0.016666668f));
         } else if (glider->TiltZ > 1.0f || glider->TiltZ < -1.0f) {
-            absval = glider->TiltZ * 20.0f * 0.02f * 0.5f;
+            absval = glider->TiltZ * 20.0f * NW_HZ(0.02f, 0.016666668f) * 0.5f;
             if (absval < 0.0) {
                 absval = -absval;
             }
@@ -10376,11 +10378,11 @@ void ControlGlider(struct GLIDERSTRUCT *glider, struct nupad_s *pad)
     }
 
     if (glider->OverideTiltZ != 0.0f) {
-        SeekAngHalfLife360f(&glider->TiltZ, glider->DestTiltZ, SeekTiltZOveride, 0.02f);
+        SeekAngHalfLife360f(&glider->TiltZ, glider->DestTiltZ, SeekTiltZOveride, NW_HZ(0.02f, 0.016666668f));
     } else if (glider->DestTiltZ == 0.0f) {
-        SeekAngHalfLife360f(&glider->TiltZ, glider->DestTiltZ, SeekTiltZZero, 0.02f);
+        SeekAngHalfLife360f(&glider->TiltZ, glider->DestTiltZ, SeekTiltZZero, NW_HZ(0.02f, 0.016666668f));
     } else {
-        SeekAngHalfLife360f(&glider->TiltZ, glider->DestTiltZ, SeekTiltZNonZero, 0.02f);
+        SeekAngHalfLife360f(&glider->TiltZ, glider->DestTiltZ, SeekTiltZNonZero, NW_HZ(0.02f, 0.016666668f));
     }
 }
 
@@ -10428,7 +10430,7 @@ void ProcessGliderMovement(struct GLIDERSTRUCT *glider, f32 dt)
     }
 
     if (glider->InTornadoTime != 0.0f) {
-        glider->AngleY += glider->TornadoSpin * 0.02f * glider->InTornadoTime;
+        glider->AngleY += glider->TornadoSpin * NW_HZ(0.02f, 0.016666668f) * glider->InTornadoTime;
     } else if (glider->BarrelRoll == 0) {
         if (Level == 0x18) {
             glider->AngleY = 0.0f;
@@ -10470,7 +10472,7 @@ void ProcessGliderMovement(struct GLIDERSTRUCT *glider, f32 dt)
         } else {
             glider->TargetSpeed = -Level_GliderSpeed;
         }
-        SeekHalfLife(&glider->Speed, glider->TargetSpeed, 1.0f, 0.02f);
+        SeekHalfLife(&glider->Speed, glider->TargetSpeed, 1.0f, NW_HZ(0.02f, 0.016666668f));
         target.z = glider->Speed * pitchscale;
         target.x = 0.0f;
         target.y = 0.0f;

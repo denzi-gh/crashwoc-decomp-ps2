@@ -15,6 +15,7 @@
  */
 
 #include "nu_libc.h"
+#include "nu_port.h"
 
 #include "numath/numtx.h"
 #include "numath/nuvec.h"
@@ -424,7 +425,7 @@ start_anim:
     chase->status = 2;
     JudderGameCamera(&GameCam[0], 0.5f, 0);
     GameSfx(0x3B, 0);
-    NewBuzz(&player->rumble, 0x19);
+    NewBuzz(&player->rumble, NW_HZ(0x19, 0x1E));
 }
 
 
@@ -489,7 +490,7 @@ void UpdateChase(struct chase_s *chase, struct obj_s *obj) {
     }
 
     if ((obj->dead == 0 || Level != 0x11) && holding == 0) {
-        t = 0.02f;
+        t = NW_HZ(0.02f, 0.016666668f);
         if (LivesLost != 0) {
             j = LivesLost;
             if (j > 5) {
@@ -524,7 +525,7 @@ void UpdateChase(struct chase_s *chase, struct obj_s *obj) {
             continue;
         }
         if (chase->status == 2) {
-            t = 0.1200000048f;
+            t = NW_HZ(0.1200000048f, 0.1f);
             oldpos = chase->pos[j];
             PointAlongSpline(chase->spl_CHASER[j], ratio, &pos, &chase->yrot[j], 0);
             chase->pos[j].x = pos.x;
@@ -691,7 +692,7 @@ void UpdateChase(struct chase_s *chase, struct obj_s *obj) {
                 k = chase->action[j];
             }
             chase->anim[j].newaction = k;
-            UpdateAnimPacket(model, &chase->anim[j], 0.59999996f, 0.0f);
+            UpdateAnimPacket(model, &chase->anim[j], NW_HZ(0.59999996f, 0.5f), 0.0f);
         }
     }
 
