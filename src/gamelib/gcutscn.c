@@ -1688,6 +1688,7 @@ void instNuGCutCamSysUpdate(struct instNUGCUTSCENE_s *scene, float time) {
 
     if (camdef->stateanim && StateAnimEvaluate(camdef->stateanim, &camsys->next_switch, &camchange, time)) {
         camsys->current = camchange;
+        NW_INTERP_SNAP();
     }
     for (; camsys->next_tgt < camsys->count && time >= camsys->targets[camsys->next_tgt].frame; camsys->next_tgt++) {
         tgt = &camsys->targets[camsys->next_tgt];

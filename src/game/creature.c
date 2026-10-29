@@ -4836,6 +4836,7 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
     r2 = r2 * r2;
 
     for (i = 0; i < count; i++, c++) {
+        NW_INTERP_KEY(c);
         vflag = c->obj.flags & 1;
         if (vflag == 0) {
             goto novehicle;
@@ -5409,6 +5410,7 @@ void DrawCreatures(struct creature_s *c, s32 count, s32 render, s32 shadow)
         NW_WIDE_ONLY(if (wide_far) c->obj.draw_frame = 0;)
         c->anim_processed = 1;
     }
+    NW_INTERP_KEY(0);
 
     glass_draw = 0;
     glass_phase = 0;
