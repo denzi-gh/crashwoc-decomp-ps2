@@ -149,7 +149,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016d5e0:CrcChain"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0062:0016d700:VU1_DmaGetStatusI"
