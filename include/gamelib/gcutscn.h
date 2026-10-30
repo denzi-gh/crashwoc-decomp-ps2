@@ -35,19 +35,20 @@ struct instNUGCUTCAM_s {
 struct NUGCUTCAM_s {
     struct numtx_s mtx;                 /* 0x00 */
     unsigned char flags;                /* 0x40 */
-    char pad41;                         /* 0x41 */
+    unsigned char id;                   /* 0x41 */
     unsigned char anim_ix;              /* 0x42 */
-    char pad43[0x50 - 0x43];            /* 0x43 */
+    unsigned char pad[13];              /* 0x43 */
 }; /* 0x50 */
 
 struct NUGCUTCAMSYS_s {
-    unsigned int count;                 /* 0x00 */
-    struct NUGCUTCAM_s *cams;           /* 0x04 */
-    struct nuanimdata2_s *anim;         /* 0x08 */
-    struct NUSTATEANIM_s *stateanim;    /* 0x0C camera switches */
-    unsigned char first_camera;         /* 0x10 */
-    signed char remap[1];               /* 0x11 camera id -> cams index */
-}; /* 0x14 */
+    unsigned int ncutcams;              /* 0x00 */
+    struct NUGCUTCAM_s *cutcams;        /* 0x04 */
+    struct nuanimdata2_s *camanim;      /* 0x08 */
+    struct NUSTATEANIM_s *camchanges;   /* 0x0C camera switches */
+    char initial_camid;                 /* 0x10 */
+    signed char remap_table[10];        /* 0x11 camera id -> cutcams index */
+    unsigned char pad;                  /* 0x1B */
+}; /* 0x1C */
 
 struct instNUGCUTCAMSYS_s {
     struct NUGCUTCAMTGT_s *targets;     /* 0x00 */
@@ -61,22 +62,24 @@ struct instNUGCUTCAMSYS_s {
 
 /* One locator of a cutscene definition. */
 struct NUGCUTLOCATOR_s {
-    char pad[0x4C];                     /* 0x00 */
-    float value;                        /* 0x4C */
+    struct numtx_s mtx;                 /* 0x00 */
+    struct nuvec_s pivot;               /* 0x40 */
+    float rate;                         /* 0x4C */
     struct nuanimdata2_s *anim;         /* 0x50 */
-    char pad54[4];                      /* 0x54 */
+    int direction;                      /* 0x54 GC DWARF: LOCATORDIRECTION */
     unsigned char flags;                /* 0x58 */
-    unsigned char type;                 /* 0x59 index into NUGCUTLOCATORSYS_s.types */
+    unsigned char locator_type;         /* 0x59 index into NUGCUTLOCATORSYS_s.types */
     unsigned char joint_ix;             /* 0x5A 0xFF = not on a joint */
-    char pad5B[0x64 - 0x5B];            /* 0x5B */
+    char pad;                           /* 0x5B */
+    float param1;                       /* 0x5C */
+    float param2;                       /* 0x60 */
 }; /* 0x64 */
 
 struct NUGCUTLOCATORTYPE_s {
     char *name;                         /* 0x00 */
     unsigned char flags;                /* 0x04 */
-    char pad5;                          /* 0x05 */
-    unsigned short fn;                  /* 0x06 */
-    char pad8[4];                       /* 0x08 */
+    unsigned short ix;                  /* 0x06 debris effect or locator function */
+    char pad;                           /* 0x08 */
 }; /* 0x0C */
 
 struct NUGCUTLOCATORSYS_s {
@@ -99,14 +102,14 @@ struct instNUGCUTLOCATORSYS_s {
 struct NUGCUTRIGID_s {
     struct numtx_s mtx;                 /* 0x00 */
     char *name;                         /* 0x40 */
-    struct nuhspecial_s obj;            /* 0x44 */
+    struct nuhspecial_s special;        /* 0x44 */
     struct nuanimdata2_s *anim;         /* 0x4C */
-    struct NUSTATEANIM_s *stateanim;    /* 0x50 */
+    struct NUSTATEANIM_s *visibiltyanim; /* 0x50 sic (GC DWARF) */
     struct NUGCUTLOCATOR_s *locators;   /* 0x54 index on disk until fixed up */
     unsigned char flags;                /* 0x58 */
     unsigned char nlocators;            /* 0x59 */
     unsigned char first_locator;        /* 0x5A 0xFF = none */
-    char pad5B;                         /* 0x5B */
+    char pad;                           /* 0x5B */
 }; /* 0x5C */
 
 struct NUGCUTRIGIDSYS_s {
@@ -125,10 +128,10 @@ struct instNUGCUTRIGIDSYS_s {
 }; /* 0x04 */
 
 struct NUGCUTTRIGGER_s {
-    short target;                       /* 0x00 */
-    char pad2[2];                       /* 0x02 */
-    char *name;                         /* 0x04 */
-    struct NUSTATEANIM_s *anim;         /* 0x08 */
+    short ix;                           /* 0x00 */
+    short pad;                          /* 0x02 */
+    char *triggername;                  /* 0x04 */
+    struct NUSTATEANIM_s *enableflag1anim; /* 0x08 */
 }; /* 0x0C */
 
 struct NUGCUTTRIGGERSYS_s {
@@ -155,18 +158,19 @@ struct NUGCUTBBOX_s {
 struct NUGCUTCHAR_s {
     struct numtx_s mtx;                 /* 0x00 start matrix */
     char *name;                         /* 0x40 */
-    void *char_anim;                    /* 0x44 */
-    void *joint_anim;                   /* 0x48 */
-    void *face_anim;                    /* 0x4C */
+    struct nuanimdata2_s *char_anim;    /* 0x44 */
+    struct nuanimdata2_s *joint_anim;   /* 0x48 */
+    struct nuanimdata2_s *face_anim;    /* 0x4C */
     void *character;                    /* 0x50 model, bound by the find-characters callback */
     struct NUGCUTLOCATOR_s *locators;   /* 0x54 index on disk until fixed up */
-    char pad58[4];                      /* 0x58 */
+    float animrate;                     /* 0x58 */
     unsigned char flags;                /* 0x5C 0x2 = per-instance data (CharacterCreateData) */
-    char pad5D;                         /* 0x5D */
+    unsigned char animix;               /* 0x5D */
     unsigned char nlocators;            /* 0x5E */
-    char pad5F;                         /* 0x5F */
+    unsigned char type;                 /* 0x5F */
     unsigned char first_locator;        /* 0x60 0xFF = none */
-    char pad61[0x64 - 0x61];            /* 0x61 */
+    unsigned char blendframes;          /* 0x61 */
+    char pad[2];                        /* 0x62 */
 }; /* 0x64 */
 
 struct NUGCUTCHARSYS_s {
