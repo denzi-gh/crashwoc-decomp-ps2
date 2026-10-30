@@ -1301,14 +1301,14 @@ u64 CrcChain(void *addr, int uncached)
             break;
         }
         tot += ((u64 *)tag)[1];
-        n = tag->qwc;
-        if (n) {
-            int i;
-            for (i = 0; i < n; i++) {
-                tot += *lptr++;
-                tot += *lptr++;
+        do {
+            if (tag->qwc) {
+                for (n = 0; n < tag->qwc; n++) {
+                    tot += *lptr++;
+                    tot += *lptr++;
+                }
             }
-        }
+        } while (0);
         tag = next;
     }
     return tot;

@@ -646,6 +646,7 @@ float *GenStrips(SkinPrimDef *defs, float *pkt, int base, int cnt, int *used, in
     int cur;
     int next;
     int length;
+    int relative;
 
     callcnt++;
     stripptr = pkt;
@@ -668,21 +669,25 @@ float *GenStrips(SkinPrimDef *defs, float *pkt, int base, int cnt, int *used, in
                 }
             }
         }
-        cur = best;
-        if (cur < 0) {
+        if (best < 0) {
             return stripptr;
         }
+        cur = best;
         length = 1;
-        start = cur - base;
+        relative = cur - base;
+        used[relative] = length;
+        start = relative;
         do {
-            used[cur - base] = length;
             next = FindStripNext(cur, base, cnt, length, used);
             if (next == -1) {
                 used[start] = length;
                 stritot += length;
                 break;
             }
-            AddStripTri(next, cur, length++);
+            AddStripTri(next, cur, length);
+            length++;
+            relative = next - base;
+            used[relative] = length;
             cur = next;
         } while (1);
     } while (1);

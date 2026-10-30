@@ -1005,203 +1005,208 @@ u8 *NuCvtDmaTriCFromIdx(u8 **dma, struct nuvtx_tc1_s *vtx, short *idx, int nidx,
     if (size > 0xFFFFF) {
         NuErrorProlog(nucvtgeo_srcfile, 0x556)(dma_size_msg, size, nidx);
     }
-    start = *dma;
-    nucvtgeo_lasttag = (struct nudmatag_s *)start;
-    p = vpDmaTag_Cnt(start);
-    p[-14] = 5;
-    if (NuCvtPntOn) {
-        *(u32 *)p = 0x30000000;
-        p += 4;
-        *(u32 *)p = NuCvtPntSpan[0].i;
-        p += 4;
-        *(u32 *)p = NuCvtPntSpan[1].i;
-        p += 4;
-        *(u32 *)p = NuCvtPntSpan[2].i;
-        p += 4;
-        *(u32 *)p = 0;
-        p += 4;
-    }
-    *(u32 *)p = 0x6C010056;
-    p += 4;
-    *(u32 *)p = fan.w[0];
-    p += 4;
-    *(u32 *)p = fan.w[1];
-    p += 4;
-    *(u32 *)p = fan.w[2];
-    p += 4;
-    *(u32 *)p = fan.w[3];
-    p += 4;
-    while (nidx) {
-        batch = nidx > 42 ? 42 : nidx;
-        strip.tag.nloop = batch;
-        *(u32 *)p = 0x6C0180D2;
-        p += 4;
-        *(u32 *)p = strip.w[0];
-        p += 4;
-        *(u32 *)p = strip.w[1];
-        p += 4;
-        *(u32 *)p = strip.w[2];
-        p += 4;
-        *(u32 *)p = strip.w[3];
-        p += 4;
+    {
+        /* Scope the packet count after size validation to preserve spill order. */
+        int remaining = nidx;
+
+        start = *dma;
+        nucvtgeo_lasttag = (struct nudmatag_s *)start;
+        p = vpDmaTag_Cnt(start);
+        p[-14] = 5;
         if (NuCvtPntOn) {
-            *(u32 *)p = 0x6C018002;
+            *(u32 *)p = 0x30000000;
             p += 4;
-            *(u32 *)p = batch * 3;
+            *(u32 *)p = NuCvtPntSpan[0].i;
             p += 4;
-            *(float *)p = NuCvtPntSpan[0].f - NuCvtPntMid.x;
+            *(u32 *)p = NuCvtPntSpan[1].i;
             p += 4;
-            *(float *)p = NuCvtPntSpan[1].f - NuCvtPntMid.y;
+            *(u32 *)p = NuCvtPntSpan[2].i;
             p += 4;
-            *(float *)p = NuCvtPntSpan[2].f - NuCvtPntMid.z;
-            p += 4;
-        } else {
-            *(u32 *)p = 0x6D018002;
-            p += 4;
-            *(u16 *)p = batch * 3;
-            p += 2;
-            *(u16 *)p = 0;
-            p += 2;
-            *(u16 *)p = 0;
-            p += 2;
-            *(u16 *)p = 0;
-            p += 2;
-        }
-        *(u32 *)p = 0x01000103;
-        p += 4;
-        if (NuCvtPntOn) {
-            *(u32 *)p = 0x05000001;
-            p += 4;
-            *(u32 *)p = (batch << 16) | 0x6D008003;
-            p += 4;
-        } else {
-            *(u32 *)p = (batch << 16) | 0x6C008003;
+            *(u32 *)p = 0;
             p += 4;
         }
-        for (i = 0; i < batch; i++) {
-            if (!NuCvtPntOn) {
-                *(float *)p = vtx[idx[i]].pnt.x;
+        *(u32 *)p = 0x6C010056;
+        p += 4;
+        *(u32 *)p = fan.w[0];
+        p += 4;
+        *(u32 *)p = fan.w[1];
+        p += 4;
+        *(u32 *)p = fan.w[2];
+        p += 4;
+        *(u32 *)p = fan.w[3];
+        p += 4;
+        while (remaining) {
+            batch = remaining > 42 ? 42 : remaining;
+            strip.tag.nloop = batch;
+            *(u32 *)p = 0x6C0180D2;
+            p += 4;
+            *(u32 *)p = strip.w[0];
+            p += 4;
+            *(u32 *)p = strip.w[1];
+            p += 4;
+            *(u32 *)p = strip.w[2];
+            p += 4;
+            *(u32 *)p = strip.w[3];
+            p += 4;
+            if (NuCvtPntOn) {
+                *(u32 *)p = 0x6C018002;
                 p += 4;
-                *(float *)p = vtx[idx[i]].pnt.y;
+                *(u32 *)p = batch * 3;
                 p += 4;
-                *(float *)p = vtx[idx[i]].pnt.z;
+                *(float *)p = NuCvtPntSpan[0].f - NuCvtPntMid.x;
                 p += 4;
-                *(float *)p = vtx[idx[i]].nrm.x;
+                *(float *)p = NuCvtPntSpan[1].f - NuCvtPntMid.y;
+                p += 4;
+                *(float *)p = NuCvtPntSpan[2].f - NuCvtPntMid.z;
+                p += 4;
             } else {
-                packed[0].f = NuCvtPntSpan[0].f + (vtx[idx[i]].pnt.x - NuCvtPntMid.x);
-                packed[1].f = NuCvtPntSpan[1].f + (vtx[idx[i]].pnt.y - NuCvtPntMid.y);
-                packed[2].f = NuCvtPntSpan[2].f + (vtx[idx[i]].pnt.z - NuCvtPntMid.z);
-                *(u16 *)p = packed[0].i - NuCvtPntSpan[0].i;
+                *(u32 *)p = 0x6D018002;
+                p += 4;
+                *(u16 *)p = batch * 3;
                 p += 2;
-                *(u16 *)p = packed[1].i - NuCvtPntSpan[1].i;
-                p += 2;
-                *(u16 *)p = packed[2].i - NuCvtPntSpan[2].i;
-                p += 2;
-                *(u16 *)p = vtx[idx[i]].nrm.x;
-            }
-            if (i % 3 < 2) {
-                *(u16 *)p = 0x8001;
-            } else {
                 *(u16 *)p = 0;
+                p += 2;
+                *(u16 *)p = 0;
+                p += 2;
+                *(u16 *)p = 0;
+                p += 2;
+            }
+            *(u32 *)p = 0x01000103;
+            p += 4;
+            if (NuCvtPntOn) {
+                *(u32 *)p = 0x05000001;
+                p += 4;
+                *(u32 *)p = (batch << 16) | 0x6D008003;
+                p += 4;
+            } else {
+                *(u32 *)p = (batch << 16) | 0x6C008003;
+                p += 4;
+            }
+            for (i = 0; i < batch; i++) {
+                if (!NuCvtPntOn) {
+                    *(float *)p = vtx[idx[i]].pnt.x;
+                    p += 4;
+                    *(float *)p = vtx[idx[i]].pnt.y;
+                    p += 4;
+                    *(float *)p = vtx[idx[i]].pnt.z;
+                    p += 4;
+                    *(float *)p = vtx[idx[i]].nrm.x;
+                } else {
+                    packed[0].f = NuCvtPntSpan[0].f + (vtx[idx[i]].pnt.x - NuCvtPntMid.x);
+                    packed[1].f = NuCvtPntSpan[1].f + (vtx[idx[i]].pnt.y - NuCvtPntMid.y);
+                    packed[2].f = NuCvtPntSpan[2].f + (vtx[idx[i]].pnt.z - NuCvtPntMid.z);
+                    *(u16 *)p = packed[0].i - NuCvtPntSpan[0].i;
+                    p += 2;
+                    *(u16 *)p = packed[1].i - NuCvtPntSpan[1].i;
+                    p += 2;
+                    *(u16 *)p = packed[2].i - NuCvtPntSpan[2].i;
+                    p += 2;
+                    *(u16 *)p = vtx[idx[i]].nrm.x;
+                }
+                if (i % 3 < 2) {
+                    *(u16 *)p = 0x8001;
+                } else {
+                    *(u16 *)p = 0;
+                }
+                if (NuCvtPntOn) {
+                    p += 2;
+                } else {
+                    p += 4;
+                }
             }
             if (NuCvtPntOn) {
-                p += 2;
+                *(u32 *)p = 0x05000000;
+                p += 4;
+            }
+            if (NuCvtUvOn) {
+                *(u32 *)p = 0x05000001;
+                p += 4;
+            }
+            if (fast) {
+                *(u32 *)p = (batch << 16) | 0x65008004;
             } else {
-                p += 4;
+                *(u32 *)p = (batch << 16) | 0x6D008004;
             }
-        }
-        if (NuCvtPntOn) {
-            *(u32 *)p = 0x05000000;
             p += 4;
-        }
-        if (NuCvtUvOn) {
-            *(u32 *)p = 0x05000001;
-            p += 4;
-        }
-        if (fast) {
-            *(u32 *)p = (batch << 16) | 0x65008004;
-        } else {
-            *(u32 *)p = (batch << 16) | 0x6D008004;
-        }
-        p += 4;
-        for (i = 0; i < batch; i++) {
-            if (i % 3 == 0) {
-                info_tricount++;
-                minu = NUCVT_MIN(vtx[idx[i]].tc[0], NUCVT_MIN(vtx[idx[i + 1]].tc[0], vtx[idx[i + 2]].tc[0]));
-                minv = NUCVT_MIN(vtx[idx[i]].tc[1], NUCVT_MIN(vtx[idx[i + 1]].tc[1], vtx[idx[i + 2]].tc[1]));
-                minu = floor(minu);
-                minv = floor(minv);
-            }
-            *(short *)p = (vtx[idx[i]].tc[0] - minu) * 4096.0f;
-            p += 2;
-            *(short *)p = (vtx[idx[i]].tc[1] - minv) * 4096.0f;
-            p += 2;
-            if (!fast) {
-                *(short *)p = vtx[idx[i]].nrm.y * 4096.0f;
-                p += 2;
-                *(short *)p = vtx[idx[i]].nrm.z * 4096.0f;
-                p += 2;
-            }
-        }
-        if (NuCvtUvOn) {
-            *(u32 *)p = 0x05000000;
-            p += 4;
-        }
-        *(u32 *)p = (batch << 16) | 0x6E00C005;
-        p += 4;
-        if (show_strip) {
             for (i = 0; i < batch; i++) {
-                *(u32 *)p = 0x80FF0000;
+                if (i % 3 == 0) {
+                    info_tricount++;
+                    minu = NUCVT_MIN(vtx[idx[i]].tc[0], NUCVT_MIN(vtx[idx[i + 1]].tc[0], vtx[idx[i + 2]].tc[0]));
+                    minv = NUCVT_MIN(vtx[idx[i]].tc[1], NUCVT_MIN(vtx[idx[i + 1]].tc[1], vtx[idx[i + 2]].tc[1]));
+                    minu = floor(minu);
+                    minv = floor(minv);
+                }
+                *(short *)p = (vtx[idx[i]].tc[0] - minu) * 4096.0f;
+                p += 2;
+                *(short *)p = (vtx[idx[i]].tc[1] - minv) * 4096.0f;
+                p += 2;
+                if (!fast) {
+                    *(short *)p = vtx[idx[i]].nrm.y * 4096.0f;
+                    p += 2;
+                    *(short *)p = vtx[idx[i]].nrm.z * 4096.0f;
+                    p += 2;
+                }
+            }
+            if (NuCvtUvOn) {
+                *(u32 *)p = 0x05000000;
                 p += 4;
             }
-        } else {
-            switch (mtl->attrib.colour) {
-            case 0:
-                if (mtl->attrib.lighting == NUMTL_ALPHA_BLEND) {
-                    for (i = 0; i < batch; i++) {
-                        *p++ = ((int)(mtl->diffuse.r * 255.0f) & 0xFF) >> shift;
-                        *p++ = ((int)(mtl->diffuse.g * 255.0f) & 0xFF) >> shift;
-                        *p++ = ((int)(mtl->diffuse.b * 255.0f) & 0xFF) >> shift;
-                        *p++ = mtl->alpha * 127.0f;
-                    }
-                } else {
-                    for (i = 0; i < batch; i++) {
-                        *p++ = 0;
-                        *p++ = 0;
-                        *p++ = 0;
-                        *p++ = mtl->alpha * 127.0f;
-                    }
-                }
-                break;
-            case 1:
-                NuCvtGeoAddColourRef((unsigned int)p);
+            *(u32 *)p = (batch << 16) | 0x6E00C005;
+            p += 4;
+            if (show_strip) {
                 for (i = 0; i < batch; i++) {
-                    *p++ = vtx[idx[i]].rgba.r >> shift;
-                    *p++ = vtx[idx[i]].rgba.g >> shift;
-                    *p++ = vtx[idx[i]].rgba.b >> shift;
-                    *p++ = ((vtx[idx[i]].diffuse >> 24) & 0xFF) >> 1;
-                    colour.w = vtx[idx[i]].diffuse;
-                    lit.c.b = colour.c.b * 0.3f;
-                    lit.c.g = colour.c.g * 0.3f;
-                    lit.c.r = colour.c.r * 1.0f;
-                    lit.c.a = colour.c.a;
-                    if (colourref_on) {
-                        u32 blue = HALVE_BLUE(colour, shift);
-
-                        colourref_cur->pair[colourref_cur->count].colour = HALVE_ALPHA_RED_GREEN(colour, shift) | blue;
-                        colourref_cur->pair[colourref_cur->count].lit = HALVE_COLOUR(lit, shift);
-                        colourref_cur->count++;
-                    }
+                    *(u32 *)p = 0x80FF0000;
+                    p += 4;
                 }
-                break;
+            } else {
+                switch (mtl->attrib.colour) {
+                case 0:
+                    if (mtl->attrib.lighting == NUMTL_ALPHA_BLEND) {
+                        for (i = 0; i < batch; i++) {
+                            *p++ = ((int)(mtl->diffuse.r * 255.0f) & 0xFF) >> shift;
+                            *p++ = ((int)(mtl->diffuse.g * 255.0f) & 0xFF) >> shift;
+                            *p++ = ((int)(mtl->diffuse.b * 255.0f) & 0xFF) >> shift;
+                            *p++ = mtl->alpha * 127.0f;
+                        }
+                    } else {
+                        for (i = 0; i < batch; i++) {
+                            *p++ = 0;
+                            *p++ = 0;
+                            *p++ = 0;
+                            *p++ = mtl->alpha * 127.0f;
+                        }
+                    }
+                    break;
+                case 1:
+                    NuCvtGeoAddColourRef((unsigned int)p);
+                    for (i = 0; i < batch; i++) {
+                        *p++ = vtx[idx[i]].rgba.r >> shift;
+                        *p++ = vtx[idx[i]].rgba.g >> shift;
+                        *p++ = vtx[idx[i]].rgba.b >> shift;
+                        *p++ = ((vtx[idx[i]].diffuse >> 24) & 0xFF) >> 1;
+                        colour.w = vtx[idx[i]].diffuse;
+                        lit.c.b = colour.c.b * 0.3f;
+                        lit.c.g = colour.c.g * 0.3f;
+                        lit.c.r = colour.c.r * 1.0f;
+                        lit.c.a = colour.c.a;
+                        if (colourref_on) {
+                            u32 blue = HALVE_BLUE(colour, shift);
+
+                            colourref_cur->pair[colourref_cur->count].colour = HALVE_ALPHA_RED_GREEN(colour, shift) | blue;
+                            colourref_cur->pair[colourref_cur->count].lit = HALVE_COLOUR(lit, shift);
+                            colourref_cur->count++;
+                        }
+                    }
+                    break;
+                }
             }
+            *(u32 *)p = 0x01000101;
+            p += 4;
+            *(u32 *)p = 0x14000300;
+            p += 4;
+            idx += batch;
+            remaining -= batch;
         }
-        *(u32 *)p = 0x01000101;
-        p += 4;
-        *(u32 *)p = 0x14000300;
-        p += 4;
-        idx += batch;
-        nidx -= batch;
     }
     *dma = vpDmaTag_Close(p);
     return start;
