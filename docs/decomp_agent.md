@@ -280,7 +280,7 @@ them (GCC 2.95 emits a string constant even for unreachable code).
 ### Per-unit data workflow
 
 Preconditions: every `[[function]]` of the unit is `matching`; the unit is in
-no open `decomp/*` PR or running batch, and no open `nuworld-host` PR touches it.
+no open `decomp/*` PR or running batch.
 
 0. Branch off an up-to-date `main`; `python tools/gen_ninja.py`; on the base,
    `python tools/check_codegen.py --build --snapshot` (wait for it).
@@ -389,9 +389,8 @@ Rules for type refactors:
    disassembly), model it with a union rather than picking one view.
 5. Where retail provably used an implicit declaration or a mismatched
    prototype, the PS2 build keeps it. `main` holds no host code: the NuWorld
-   port's `NW_HOST` guards and `nu_port.h` seams live only on the
-   `nuworld-host` branch, where `main` is merged in (docs/pipeline.md, "The
-   nuworld-host branch").
+   port's `NW_HOST` guards and `nu_port.h` seams are patches in its own
+   repository (docs/pipeline.md, "NuWorld").
 6. Headers hold types, `extern` declarations and prototypes only, and no
    alias `#define`s (`#define fseed D_0062EA68` would rename every `fseed` in
    every includer); the readable alias stays in the `.c` file.
