@@ -13,7 +13,7 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0218:00272288:_strtod_r"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0218:00273188:strtod"
