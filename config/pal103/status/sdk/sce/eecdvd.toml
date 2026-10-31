@@ -85,7 +85,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0149:002666c8:sceCdInit"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0149:002669a8:sceCdDiskReady"
