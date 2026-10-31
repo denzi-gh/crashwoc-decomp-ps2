@@ -171,7 +171,8 @@ class _Recorder:
 
 
 class TestOrchestration(unittest.TestCase):
-    # NuRndrSetLocalMtx is `asm` in the committed nustream manifest; report it 100%.
+    # The nustream manifest is read with NuRndrSetLocalMtx back at `asm`;
+    # the report scores it 100%.
     FAKE_REPORT = {"units": [{
         "name": "nu3d/nustream", "measures": {},
         "functions": [{"name": "NuRndrSetLocalMtx",
@@ -180,11 +181,18 @@ class TestOrchestration(unittest.TestCase):
     def setUp(self):
         self._orig = {k: getattr(decomp, k)
                       for k in ("run", "_regen_graph", "_graph_stale",
-                                "_load_json")}
+                                "_load_json", "manifest_functions")}
         decomp._regen_graph = lambda version: None
         decomp._graph_stale = lambda *a, **k: False
         decomp._load_json = lambda rel: (
             self.FAKE_REPORT if rel.endswith("report.json") else {})
+        real = self._orig["manifest_functions"]
+
+        def as_asm(path):
+            rows, profile = real(path)
+            return [(fid, name, "asm" if name == "NuRndrSetLocalMtx" else state)
+                    for fid, name, state in rows], profile
+        decomp.manifest_functions = as_asm
 
     def tearDown(self):
         for k, v in self._orig.items():
