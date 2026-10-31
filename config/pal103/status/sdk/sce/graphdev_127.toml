@@ -13,7 +13,7 @@ complete = false
 
 [[function]]
 id = "pal103:unit-0127:002611a8:sceGsResetGraph"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0127:00261338:sceGsGetGParam"

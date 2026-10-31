@@ -1091,6 +1091,155 @@ def _sonyize_seg(seg, profile="default"):
     return out
 
 
+# Profile `sce`: the retail 2.9 `as` pads a backward PC-relative branch (not
+# `j`) with nops until five words precede it from the target label (the R5900
+# short-loop erratum), unless a branch or jump lies in the counted words.
+# ee-gcc pads true short loops itself, but the assembler misjudges the length
+# when the label sits in an earlier frag of six or more words: it then counts
+# only the words from the label to that frag's end (_strtod_r 0x00272934,
+# 0x00272D80; probed). A frag ends at an alignment, at `.org` and after every
+# `%hi` lui, including the one a symbolic load or `la` macro starts with.
+_PCREL_BRANCH_OPS = (_BRANCH_OPS - {"j", "jr", "jal", "jalr"}) | frozenset(
+    op + "l" for op in ("beq", "bne", "beqz", "bnez", "blez", "bgtz", "bltz",
+                        "bgez", "bltzal", "bgezal", "bc1t", "bc1f"))
+_SHORT_LOOP_WORDS = 5
+_LISTING_RE = re.compile(r"^\s*(\d+) ([0-9a-f]{4,}) [0-9A-F]+")
+_LISTING_MORE_RE = re.compile(r"^\s*(\d+)\s+[0-9A-F]+\s*$")
+_SYMBOL_OPERAND_RE = re.compile(r"(?<![\w$%.])[A-Za-z_][\w.]*")
+_ORG_RE = re.compile(r"^\s*\.org\b")
+
+
+def _backward_target(line, labels):
+    """The already defined compiler label a PC-relative branch line targets."""
+    m = _MNEMONIC_RE.match(line)
+    if not m or m.group(1) not in _PCREL_BRANCH_OPS:
+        return None
+    target = line[m.end():].split("#", 1)[0].split(",")[-1].strip()
+    if target.startswith("$L") and target in labels:
+        return target
+    return None
+
+
+def _hi_breaks_frag(line, words):
+    """Does this instruction line (`words` long) start with a `%hi` lui?"""
+    m = _MNEMONIC_RE.match(line)
+    if not m or _is_branch(line):
+        return False
+    operands = line[m.end():].split("#", 1)[0]
+    return "%hi(" in operands or (
+        words > 1 and bool(_SYMBOL_OPERAND_RE.search(operands)))
+
+
+def _listing_words(lines, g_flag):
+    """{line index: [address, words]} from a decompals `as` listing."""
+    import tempfile
+    rows = {}
+    with tempfile.TemporaryDirectory() as tmp:
+        src, lst = Path(tmp) / "unit.s", Path(tmp) / "unit.lst"
+        src.write_text("\n".join(lines) + "\n")
+        proc = subprocess.run(
+            [tool_path(AS), "-EL", "-march=r5900", g_flag, "-no-pad-sections",
+             f"-al={lst}", "-o", str(Path(tmp) / "unit.o"), str(src)],
+            capture_output=True, text=True)
+        if proc.returncode != 0:
+            raise HybridError(f"assembling the short-loop listing failed:\n"
+                              f"{proc.stderr}")
+        for row in lst.read_text().splitlines():
+            m = _LISTING_RE.match(row)
+            if m:
+                rows[int(m.group(1)) - 1] = [int(m.group(2), 16), 1]
+                continue
+            m = _LISTING_MORE_RE.match(row)
+            if m and int(m.group(1)) - 1 in rows:
+                rows[int(m.group(1)) - 1][1] += 1
+    return rows
+
+
+def _sce_short_loop_pads(lines, g_flag):
+    """Profile `sce`: write out the short-loop nops the retail `as` adds (see
+    _PCREL_BRANCH_OPS), measured on a decompals listing. Retail slices branch
+    to `.L` labels and already carry their nops; only compiler `$L` branches
+    are considered."""
+    lines = [l for line in lines for l in line.split("\n")]
+    seen = set()
+    for line in lines:
+        label = _LOCAL_LABEL_RE.match(line)
+        if label:
+            seen.add(label.group(1))
+        if _backward_target(line, seen):
+            break
+    else:
+        return lines
+    words = _listing_words(lines, g_flag)
+    labels = {}                 # label -> (address, frag)
+    starts, ends = {}, {}       # frag -> its first / past-last address
+    frag, started, pending = 0, False, []
+    cur = shift = 0
+    in_data, reorder = False, True
+    pads, branches = {}, []     # branches: word addresses, ascending
+    for index, line in enumerate(lines):
+        if _ENTER_DATA_RE.match(line):
+            in_data = True
+        elif _LEAVE_DATA_RE.match(line):
+            in_data = False
+        m = _SET_REORDER_RE.match(line)
+        if in_data or m:
+            reorder = m.group(1) is None if m else reorder
+            continue
+        label = _LOCAL_LABEL_RE.match(line)
+        if label:
+            if started:
+                labels[label.group(1)] = (cur, frag)
+            else:
+                pending.append(label.group(1))
+            continue
+        if _ALIGN_RE.match(line) or _ORG_RE.match(line):
+            if _ORG_RE.match(line):
+                shift = 0       # absolute: earlier pads ate into the fill
+            if started:
+                ends[frag], frag, started = cur, frag + 1, False
+            continue
+        if index not in words or not _MNEMONIC_RE.match(line):
+            continue
+        addr, count = words[index]
+        addr += shift
+        if not started:
+            starts[frag], started = addr, True
+        for name in pending:
+            labels[name] = (addr, frag)
+        pending = []
+        target = _backward_target(line, labels)
+        if target:
+            at, home = labels[target]
+            end = ends[home] if home != frag and \
+                ends[home] - starts[home] >= 4 * 6 else addr
+            loop = (end - at) // 4
+            if loop < _SHORT_LOOP_WORDS and \
+                    bisect.bisect_left(branches, at) == \
+                    bisect.bisect_left(branches, end):
+                pads[index] = (_SHORT_LOOP_WORDS - loop, reorder)
+                shift += 4 * (_SHORT_LOOP_WORDS - loop)
+                addr += 4 * (_SHORT_LOOP_WORDS - loop)
+        if _is_branch(line) or _MNEMONIC_RE.match(line).group(1) in \
+                _PCREL_BRANCH_OPS:
+            branches.append(addr)
+        cur = addr + 4 * count
+        if _hi_breaks_frag(line, count):
+            ends[frag], frag = addr + 4, frag + 1
+            starts[frag] = addr + 4
+    if not pads:
+        return lines
+    out = []
+    for index, line in enumerate(lines):
+        if index in pads:
+            n, in_reorder = pads[index]
+            nops = ["\tnop"] * n
+            out += ["\t.set\tnoreorder", *nops, "\t.set\treorder"] \
+                if in_reorder else nops
+        out.append(line)
+    return out
+
+
 def _unit_end(unit_dir, version="pal103"):
     """End address of a unit: the next unit's start, or the .text end."""
     from declib.asmtext import load_text_target
@@ -2321,6 +2470,9 @@ def _splice_unit(prologue, seg_by_name, functions, unit_dir, link_set,
         else:
             body_lines += _slice_lines(version, unit_dir, name, addr)
     out_lines += body_lines
+    if profile == "sce":
+        out_lines = _sce_short_loop_pads(out_lines,
+                                         profile_g_flag(profile, version))
     return out_lines
 
 

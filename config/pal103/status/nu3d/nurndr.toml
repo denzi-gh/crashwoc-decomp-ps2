@@ -141,7 +141,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00126900:NuHGobjEvalDwaBlend"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0040:00126c28:NuHGobjEvalDwaBlend2"

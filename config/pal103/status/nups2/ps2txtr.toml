@@ -17,7 +17,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0059:00166330:GenTextureLoad"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0059:001670a8:GenPaletteLoad"

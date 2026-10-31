@@ -57,7 +57,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00111538:NuRndrSetLocalMtx"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0030:00111650:NuRndrSetXYOffset"

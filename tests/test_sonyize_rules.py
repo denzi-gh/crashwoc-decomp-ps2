@@ -257,5 +257,80 @@ class TestParseFile(unittest.TestCase):
         self.assertTrue(any("inl.h" in l for l in segments[1][1]))
 
 
+def _fake_listing(lines, _g_flag):
+    """One word per instruction line, laid out back to back."""
+    words, addr = {}, 0
+    for index, line in enumerate(lines):
+        if re.match(r"^\s+[a-z]", line):
+            words[index] = [addr, 1]
+            addr += 4
+    return words
+
+
+class TestSceShortLoopPads(unittest.TestCase):
+    # Probed on the 2.9 `as` (profile sce); retail _strtod_r 0x00272934.
+
+    A = "\taddu\t$2,$2,$3"
+    BNE = ["\t.set\tnoreorder", "\tbne\t$2,$0,$L1", "\tnop", "\t.set\treorder"]
+
+    def pads(self, lines):
+        from unittest import mock
+        import gen_hybrid
+        with mock.patch.object(gen_hybrid, "_listing_words", _fake_listing):
+            out = gen_hybrid._sce_short_loop_pads(lines, "-G0")
+        branch = next(i for i, l in enumerate(out) if "bne" in l)
+        n = 0
+        while out[branch - 1 - n].strip() == "nop":
+            n += 1
+        return n, out
+
+    def test_label_in_big_frag_counts_to_frag_end(self):
+        # six words before the label, then label / addu / %hi lui: the
+        # assembler sees a two-word loop however far the branch is.
+        n, _out = self.pads([self.A] * 6 + ["$L1:", self.A,
+                            "\tlui\t$3,%hi(sym)"] + [self.A] * 8 + self.BNE)
+        self.assertEqual(n, 3)
+
+    def test_label_in_small_frag_uses_true_distance(self):
+        n, _out = self.pads([self.A] * 2 + ["$L1:", self.A, "\t.p2align\t2"]
+                            + [self.A] * 8 + self.BNE)
+        self.assertEqual(n, 0)
+
+    def test_true_short_loop_in_one_frag(self):
+        n, _out = self.pads(["\t.p2align\t3", "$L1:"] + [self.A] * 3
+                            + self.BNE)
+        self.assertEqual(n, 2)
+
+    def test_jump_in_counted_words_blocks_padding(self):
+        # retail sceCdSync: `jal sceCdDelayThread` inside a 3-word loop.
+        n, _out = self.pads(["\t.p2align\t3", "$L1:", "\t.set\tnoreorder",
+                             "\tjal\tg", "\tnop", "\t.set\treorder", self.A]
+                            + self.BNE)
+        self.assertEqual(n, 0)
+
+    def test_jump_past_the_frag_end_does_not_block(self):
+        n, _out = self.pads([self.A] * 6 + ["$L1:", self.A, "\t.p2align\t2",
+                             "\t.set\tnoreorder", "\tjal\tg", "\tnop",
+                             "\t.set\treorder", self.A] + self.BNE)
+        self.assertEqual(n, 4)
+
+    def test_retail_slice_label_is_left_alone(self):
+        lines = [self.A] * 6 + [".L1:", self.A, "\t.p2align\t2", self.A,
+                                "\tbnez\t$2,.L1", "\tnop"]
+        from unittest import mock
+        import gen_hybrid
+        with mock.patch.object(gen_hybrid, "_listing_words", _fake_listing):
+            self.assertEqual(gen_hybrid._sce_short_loop_pads(lines, "-G0"),
+                             lines)
+
+    def test_reorder_branch_pads_in_a_noreorder_block(self):
+        _n, out = self.pads([self.A] * 6 + ["$L1:", self.A, "\t.p2align\t2",
+                             self.A, "\tbne\t$2,$0,$L1"])
+        branch = out.index("\tbne\t$2,$0,$L1")
+        self.assertEqual(out[branch - 6:branch],
+                         ["\t.set\tnoreorder"] + ["\tnop"] * 4
+                         + ["\t.set\treorder"])
+
+
 if __name__ == "__main__":
     unittest.main()

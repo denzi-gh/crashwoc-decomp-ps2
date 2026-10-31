@@ -29,11 +29,11 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0048:0014d9e8:NuGHGWriteGobj"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0048:0014dc50:NuGHGWrite"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0048:0014ed60:NuGHGRead"

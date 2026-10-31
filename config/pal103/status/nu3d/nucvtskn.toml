@@ -45,7 +45,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0050:00156938:NuPs2CreateSkinDma"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0050:00156fa8:SortPrimdefs"

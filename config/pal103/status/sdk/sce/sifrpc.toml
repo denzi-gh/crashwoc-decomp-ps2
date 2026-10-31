@@ -61,15 +61,15 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0255:0027bb18:_request_call"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0255:0027bba8:sceSifCallRpc"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0255:0027bd98:sceSifCheckStatRpc"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0255:0027bdd8:sceSifSetRpcQueue"

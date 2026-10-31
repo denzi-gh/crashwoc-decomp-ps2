@@ -92,7 +92,7 @@ typedef struct PadIopBuffer {
 
 typedef struct PadSlot {
     PadDmaFrame *dma;
-    PadIopCommand *command;
+    void *command;
     void *iop_addr;
     int dma_id;
     int opened;
@@ -103,6 +103,15 @@ typedef struct PadVrefParam {
     unsigned char param[12];
 } PadVrefParam;
 
+typedef struct PadRpcOpen {
+    int command;
+    int port;
+    int slot;
+    int result;
+    void *addr;
+    void *iop_addr;
+} PadRpcOpen;
+
 typedef struct PadRpcBuffer {
     int command;
     union {
@@ -111,7 +120,6 @@ typedef struct PadRpcBuffer {
             int slot;
             int result;
             int param;
-            void *iop_addr;
         } common;
         struct {
             int port;
@@ -284,6 +292,7 @@ int scePadEnd(void) {
 int scePadPortOpen(int port, int slot, void *addr) {
     PadDmaFrame *frame;
     PadIopCommand *command;
+    PadRpcOpen *rpc;
     int i;
 
     if ((unsigned int)addr & 0x3F) {
@@ -308,21 +317,22 @@ int scePadPortOpen(int port, int slot, void *addr) {
         frame->length = 0;
         frame++;
     }
-    pad_rpc.command = 1;
-    pad_rpc.u.common.port = port;
-    pad_rpc.u.common.slot = slot;
-    pad_rpc.u.common.param = (int)addr;
-    if (sceSifCallRpc(&pad_clients[0], 1, 0, &pad_rpc, 128, &pad_rpc, 128, 0, 0) < 0) {
+    rpc = (PadRpcOpen *)&pad_rpc;
+    rpc->command = 1;
+    rpc->port = port;
+    rpc->slot = slot;
+    rpc->addr = addr;
+    if (sceSifCallRpc(&pad_clients[0], 1, 0, rpc, 128, rpc, 128, 0, 0) < 0) {
         return 0;
     }
     command = &pad_commands[port][slot].command;
     pad_slots[port][slot].opened = 1;
+    pad_slots[port][slot].iop_addr = rpc->iop_addr;
+    pad_slots[port][slot].dma = addr;
+    pad_slots[port][slot].command = command;
     command->sequence = 0;
     pad_slots[port][slot].dma_id = 0;
-    pad_slots[port][slot].dma = addr;
-    pad_slots[port][slot].iop_addr = pad_rpc.u.common.iop_addr;
-    pad_slots[port][slot].command = command;
-    return pad_rpc.u.common.result;
+    return rpc->result;
 }
 
 

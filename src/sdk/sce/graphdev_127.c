@@ -29,7 +29,7 @@ extern sceGsGParam D_00610850;
 #define gs_gparam D_00610850
 
 sceGsGParam *sceGsGetGParam(void);
-void GsPutIMR(u64 imr);
+u64 GsPutIMR(u64 imr);
 void SetGsCrt(short interlace, short omode, short ffmode);
 int DisableIntc(int cause);
 int RemoveIntcHandler(int cause, int handler_id);

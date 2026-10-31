@@ -69,6 +69,16 @@ void sceResetttyinit(void) {
 }
 
 
+void VSync(void) {
+    INTC_STAT = INTC_VBLANK_START;
+wait:
+    if (!(INTC_STAT_SAMPLE & INTC_VBLANK_START)) {
+        goto wait;
+    }
+    INTC_STAT = INTC_VBLANK_START;
+}
+
+
 long VSync2(void) {
     volatile int vsync_seen;
     volatile long vsync_count;

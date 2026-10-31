@@ -100,7 +100,7 @@ extern volatile int sceCdCbfunc_number[];
 extern unsigned int _sceCd_ncmdrdata[];
 extern unsigned int _sceCd_scmdrdata[];
 extern unsigned int _sceCd_scmdsdata[];
-extern int _sceCd_ee_read_mode;
+extern volatile int _sceCd_ee_read_mode;
 extern sceSifClientData _sceCd_cd_ncmd;
 extern sceSifClientData _sceCd_cd_scmd;
 
@@ -108,7 +108,7 @@ extern int D_00610994[];
 extern int D_00610998[];
 extern int D_0061099C[];
 extern volatile int D_006109A0[];
-extern int D_006109A4[];
+extern volatile int D_006109A4[];
 extern int D_006109B8[];
 extern int D_006109BC[];
 extern int D_006109C0[];
@@ -643,14 +643,14 @@ int sceCdInit(int mode)
     sceSifInitRpc(0);
     init_th_id = GetThreadId();
     init_seq = 1;
-    icmd_bind = -1;
     sf_bind = -1;
     ncmd_bind = -1;
     scmd_bind = -1;
     scmd_dr_bind = -1;
+    it_bind = -1;
+    icmd_bind = -1;
     _sceCd_ee_read_mode = 0;
     init_count++;
-    it_bind = -1;
     while (1) {
         bind = sceSifBindRpc(&init_client, 0x80000592, 0);
         if (bind < 0) {
@@ -676,9 +676,9 @@ int sceCdInit(int mode)
         init_seq = 0;
         return 0;
     }
-    status = *(int *)UNCACHED(&_sceCd_scmdrdata[3]);
     drv_version = *(int *)UNCACHED(&_sceCd_scmdrdata[1]);
     mod_version = *(int *)UNCACHED(&_sceCd_scmdrdata[2]);
+    status = *(int *)UNCACHED(&_sceCd_scmdrdata[3]);
     result = 1;
     if (status != 0xff) {
         if (status == 0xfe) {
@@ -689,9 +689,6 @@ int sceCdInit(int mode)
     }
     init_seq = 0;
     switch (mode) {
-    case 0:
-    case 1:
-        break;
     case 5:
         if (cd_debug > 0) {
             scePrintf(exit_msg);
@@ -700,10 +697,14 @@ int sceCdInit(int mode)
         ncmd_semid = -1;
         scmd_semid = -1;
         cb_sema = -1;
-        return result;
+        break;
+    case 0:
+    case 1:
+    default:
+        cmd_sem_init();
+        PowerOffCB();
+        break;
     }
-    cmd_sem_init();
-    PowerOffCB();
     return result;
 }
 

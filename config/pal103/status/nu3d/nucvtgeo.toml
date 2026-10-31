@@ -61,7 +61,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0049:00154cd0:NuPs2CreateRenderStream"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0049:00155140:NuPs2DestroyRenderStream"

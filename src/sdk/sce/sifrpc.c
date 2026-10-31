@@ -207,6 +207,7 @@ extern int DeleteSema(int sema);
 extern int WaitSema(int sema);
 extern int iSignalSema(int sema);
 extern void SleepThread(void);
+extern int iWakeupThread(int tid);
 typedef void (*SifCmdHandler)(void *packet, void *data);
 
 extern void sceSifInitCmd(void);
@@ -225,7 +226,7 @@ extern unsigned int isceSifSendCmd(int cid, void *packet, int packet_size,
 void _request_end(SifRpcRendPkt *request, void *data);
 void _request_rdata(SifRpcOtherDataPkt *request, SifRpcData *rpc_data);
 void _request_bind(SifRpcBindPkt *request, SifRpcData *rpc_data);
-void _request_call(void *request, SifRpcData *rpc_data);
+void _request_call(SifRpcPacket *request, SifRpcData *rpc_data);
 
 
 void sceSifInitRpc(unsigned int mode) {
@@ -488,26 +489,58 @@ int sceSifBindRpc(sceSifClientData *cd, unsigned int request, unsigned int mode)
 }
 
 
+void _request_call(SifRpcPacket *request, SifRpcData *rpc_data) {
+    sceSifServeData *serve;
+    sceSifQueueData *queue;
+    unsigned int pkt_addr;
+    unsigned int client;
+
+    serve = (sceSifServeData *)request->call.server;
+    queue = serve->base;
+    if (queue->start == 0) {
+        queue->start = serve;
+    } else {
+        queue->end->next = serve;
+    }
+    queue->end = serve;
+    pkt_addr = request->header.pkt_addr;
+    client = request->call.client;
+    serve->paddr = (void *)pkt_addr;
+    serve->client = (sceSifClientData *)client;
+    serve->fno = request->call.rpc_number;
+    serve->size = request->call.send_size;
+    serve->receive = request->call.receive;
+    serve->rsize = request->call.rsize;
+    serve->rmode = request->call.rmode;
+    serve->rid = request->header.rec_id;
+    if (queue->key >= 0 && queue->active == 0) {
+        iWakeupThread(queue->key);
+    }
+}
+
+
 int sceSifCallRpc(sceSifClientData *cd, unsigned int fno, unsigned int mode, void *send, int ssize,
                   void *receive, int rsize, sceSifEndFunc end_func, void *end_param) {
-    SifRpcCallPkt *packet;
+    SifRpcPacket *packet;
+    SifRpcCallPkt *call;
     SemaParam sema;
 
-    packet = &_sceRpcGetPacket(&_sif_rpc_data)->call;
+    packet = _sceRpcGetPacket(&_sif_rpc_data);
     if (packet == 0) {
         return -1;
     }
+    call = &packet->call;
+    cd->hdr.rpc_id = packet->header.rpc_id;
     cd->end_param = end_param;
     cd->hdr.pkt_addr = packet;
-    cd->hdr.rpc_id = packet->header.rpc_id;
     cd->end_function = end_func;
-    packet->rpc_number = fno;
-    packet->send_size = ssize;
-    packet->receive = receive;
-    packet->rsize = rsize;
+    packet->call.rpc_number = fno;
+    packet->call.send_size = ssize;
+    call->receive = receive;
+    packet->call.rsize = rsize;
     packet->header.pkt_addr = (unsigned int)packet;
-    packet->server = cd->serve;
-    packet->client = (unsigned int)cd;
+    call->server = cd->serve;
+    packet->call.client = (unsigned int)cd;
     if ((mode & SIF_RPC_M_NOWBDC) == 0) {
         if (send == receive) {
             sceSifWriteBackDCache(send, ssize < rsize ? rsize : ssize);
@@ -522,33 +555,43 @@ int sceSifCallRpc(sceSifClientData *cd, unsigned int fno, unsigned int mode, voi
     }
     if (mode & SIF_RPC_M_NOWAIT) {
         if (end_func == 0) {
-            packet->rmode = 0;
+            packet->call.rmode = 0;
         } else {
-            packet->rmode = 1;
+            packet->call.rmode = 1;
         }
         cd->hdr.sema_id = -1;
         if (sceSifSendCmd(SIF_CMD_RPC_CALL, packet, sizeof(SifRpcPacket), send, cd->buff, ssize) != 0) {
             return 0;
         }
-        _sceRpcFreePacket((SifRpcPacket *)packet);
+        _sceRpcFreePacket(packet);
         return -2;
     }
     sema.initCount = 0;
     sema.maxCount = 1;
     cd->hdr.sema_id = CreateSema(&sema);
     if (cd->hdr.sema_id < 0) {
-        _sceRpcFreePacket((SifRpcPacket *)packet);
+        _sceRpcFreePacket(packet);
         return -3;
     }
-    packet->rmode = 1;
+    packet->call.rmode = 1;
     if (sceSifSendCmd(SIF_CMD_RPC_CALL, packet, sizeof(SifRpcPacket), send, cd->buff, ssize) == 0) {
         DeleteSema(cd->hdr.sema_id);
-        _sceRpcFreePacket((SifRpcPacket *)packet);
+        _sceRpcFreePacket(packet);
         return -2;
     }
     WaitSema(cd->hdr.sema_id);
     DeleteSema(cd->hdr.sema_id);
     return 0;
+}
+
+
+int sceSifCheckStatRpc(sceSifClientData *cd) {
+    SifRpcPktHeader *packet = (SifRpcPktHeader *)cd->hdr.pkt_addr;
+
+    if (packet == 0 || cd->hdr.rpc_id != packet->rpc_id || !(packet->rec_id & PACKET_F_ALLOC)) {
+        return 0;
+    }
+    return 1;
 }
 
 
