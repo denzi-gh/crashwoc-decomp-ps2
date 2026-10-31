@@ -33,7 +33,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0060:001693d0:NuPs2InitVideo"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0060:00169870:NuPs2VideoScreenDump"
