@@ -25,4 +25,4 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0055:00163230:NuTexCreateLuminanceMultiplyMap"
-state = "asm"
+state = "matching"
