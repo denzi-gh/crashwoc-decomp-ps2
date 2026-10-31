@@ -345,8 +345,8 @@ objdiff report is a *measurement* layered on top; it can never move a byte gate.
 
 The first matched unit is [src/nucore/nulist.c](../src/nucore/nulist.c):
 `NuListGetHead` and `NuListGetTail` are byte-identical to retail. (Not every
-runtime function is C - `strlen`, for one, is hand-written r5900 SIMD assembly
-in the retail build and stays as asm.)
+runtime function was C - `strlen`, for one, is hand-written r5900 SIMD assembly
+in the retail build and is carried as file-scope asm in `src/`.)
 
 This step needs both toolchains at once - an EE GCC compiler and the PS2
 binutils - so it runs in the [Containerfile](../Containerfile) image, which pairs

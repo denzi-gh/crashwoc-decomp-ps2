@@ -324,6 +324,20 @@ entirely hand-written (labels in delay slots, no compiler shape) is one asm
 body. Never use inline asm or `register asm` variables to steer scheduling or
 register allocation.
 
+The 22 units retail assembled from `.s`/`.S` sources (the `.mdebug` file name
+says so: `crt0.s`, `klib.s`, the r5900 newlib string routines, the engine's
+`*vu0.s`, `asmmem.s`, `asmdma.s`, `asmgobj.s`, `asmstrm.s`, `numath.s`) are
+`src/<unit>.c` files of file-scope asm, one block per function
+(`.text`/`.globl`/`.ent`/`.end` inside, so gen_hybrid sees a function and no
+compiler epilogue is added; `.text` because gcc leaves the section of the data
+it emitted first). The engine units' `.data` (`vec_none` ...) is one asm block
+too, `.data`/`.type`/`.size`/label/`.float` as the `.s` source wrote it: ee-gcc
+aligns every C aggregate to 8, and two of these units place it 4-aligned. Write GPRs as numbers (the SN and Sony assemblers reject
+`$ra`) and the VU0 operands `ACC`, `Q`, `I` bare (gen_hybrid adds the `$` the
+decompals `as` needs). An instruction the assemblers cannot encode (`vclipw`,
+`vsqrt`, the EE `sqrt.s`) and a short-loop branch SN's `as` would pad with a
+nop retail lacks are `.word`s with the instruction in a comment.
+
 ### Types and shared headers
 
 Every type shared by more than one unit is defined once in `include/`, with a
