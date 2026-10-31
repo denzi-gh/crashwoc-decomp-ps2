@@ -61,7 +61,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001ba090:eduicbRenderGradPick"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001ba380:eduiItemGreyPickCreate"
@@ -85,7 +85,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001bc2d0:eduicbRenderTexturePick"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0085:001bc8b0:eduiItemSliderCreate"
