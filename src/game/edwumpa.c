@@ -58,8 +58,8 @@ extern void DrawCameraTarget(struct nuvec_s *pos);
 extern void NuFntScale(s32 x, s32 y);
 extern void *eduiMenuCreate(s32 x, s32 y, s32 w, s32 h, void *font,
                             void *cancelcb, void *arg);
-extern void *eduiItemSelCreate(s32 a0, void *tmpl, s32 a2, s32 a3, void *cb,
-                               void *label);
+extern void *eduiItemSelCreate(s32 data, void *style, s32 on, s32 group, void *select,
+                               void *text);
 extern void eduiMenuAddItem(void *menu, void *item);
 extern void NuFntSetPen(s32 colour);
 extern void NuFntPrintEx(s32 x, s32 y, s32 colour, char *fmt, ...);

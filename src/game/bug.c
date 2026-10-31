@@ -48,7 +48,7 @@ extern f32 temp_fALONG;
 
 extern s32 NearestSplinePoint(struct nuvec_s *pos, struct nugspline_s *spl);
 extern void PointAlongSpline(struct nugspline_s *spl, f32 ratio,
-                             struct nuvec_s *out, void *a3, void *a4);
+                             struct nuvec_s *out, void *yrot, void *xrot);
 extern void GetALONG(struct nuvec_s *pos, void *rpos, s32 iRAIL, s32 iALONG,
                      s32 info);
 

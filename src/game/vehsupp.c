@@ -657,7 +657,7 @@ struct MYSPLINE {
 };
 
 extern void PointAlongSpline(struct nugspline_s *spl, f32 ratio,
-                             struct nuvec_s *out, void *a3, void *a4);
+                             struct nuvec_s *out, void *yrot, void *xrot);
 
 void FindSplineTargetPoint(struct MYSPLINE *Spline, s32 Control,
                            struct nuvec_s *Point, struct nuvec_s *TargetPoint,
