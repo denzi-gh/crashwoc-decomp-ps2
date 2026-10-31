@@ -395,12 +395,12 @@ class TestSelectTextObjects(unittest.TestCase):
 
         # 3. Two stable anchors guard against a shared bug in both derivations:
         #    unit 7 (nucore/nulist) has long-promoted matching code; unit 0
-        #    (crt0) is hand-written asm that can never match.
+        #    (crt0) is hand-written asm carried as file-scope asm in C.
         by_unit = dict(objs)
         self.assertTrue(str(by_unit[7]).replace("\\", "/").endswith(
             "build/pal103/matching/nucore/nulist.o"))
         self.assertTrue(str(by_unit[0]).replace("\\", "/").endswith(
-            "expected/pal103/000_crt0.s.o"))
+            "build/pal103/matching/sdk/sce/crt0.o"))
 
 
 class TestDispatchTranslation(unittest.TestCase):

@@ -182,6 +182,11 @@ _JREG_RE = re.compile(
 # `.word` would get a hazard nop after mfc1/mtc1 that retail does not have.
 _CVTWS_RE = re.compile(r"^(\s*)cvt\.w\.s(?:\s+)\$f(\d+)\s*,\s*\$f(\d+)\s*$")
 
+# VU0 macro operands ACC, Q and I: SN's and Sony's `as` take them bare, the
+# decompals `as` only `$`-prefixed.
+_VU_OP_RE = re.compile(r"^(\s*v[a-z]\w*(?:\.[xyzw]+)?\s+)(.*)$")
+_VU_SPECIAL_RE = re.compile(r"(?<![\w$])(ACC|Q|I)\b")
+
 # R5900 mtc1 hazard: SN's `as` pads a nop after `mtc1 rX,$fN` (or an inline
 # `li.s`, also across a label) iff the next instruction reads $fN or its
 # even/odd pair mate; the decompals `as` pads only exact dependencies.
@@ -909,6 +914,9 @@ def _sonyize(line):
     m = _CVTWS_RE.match(line)
     if m:
         return f"{m.group(1)}trunc.w.s\t$f{m.group(2)},$f{m.group(3)}"
+    m = _VU_OP_RE.match(line)
+    if m:
+        return m.group(1) + _VU_SPECIAL_RE.sub(r"$\1", m.group(2))
     return line
 
 
@@ -1254,6 +1262,21 @@ def _unit_end(unit_dir, version="pal103"):
         return min(later)
     _elf, text_addr, _off, text_size = load_text_target(version)
     return text_addr + text_size
+
+
+def _unit_start(unit_dir, version="pal103"):
+    """Where a unit's object starts: its TU run (asmdma's run begins at the
+    included nu2api.i code), or .text itself for the first unit (crt0 carries
+    the loader words ahead of _start)."""
+    from declib.asmtext import load_text_target
+    from declib.tu import load_tu_runs
+    runs = load_tu_runs()
+    index = int(unit_dir.split("-")[1])
+    start = next(a for u, a in runs if u == index)
+    if start == min(a for _u, a in runs):
+        _elf, text_addr, _off, _size = load_text_target(version)
+        return text_addr
+    return start
 
 
 def _manifest_functions(data):
@@ -2437,6 +2460,11 @@ def _splice_unit(prologue, seg_by_name, functions, unit_dir, link_set,
     body_lines = []
     mapper_box = [None]
     base = functions[0][0]
+    first_from_c = functions[0][1] in seg_by_name if report_base \
+        else functions[0][2] in LINK_SETS[link_set]
+    if first_from_c and not report_base:
+        # C for the first function also carries any code ahead of it.
+        base = _unit_start(unit_dir, version)
     ends = [a for a, _n, _s in functions[1:]] + [unit_end]
     for (addr, name, state), end in zip(functions, ends):
         # The report base keys off "did the compiler produce C for this

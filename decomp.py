@@ -370,7 +370,7 @@ def main(argv=None):
                         help="`toolchain`, `setup`, or a src/<unit>.c path")
     parser.add_argument("--version", default="pal103")
     parser.add_argument("--no-promote", action="store_true",
-                        help="inspect only; do not auto-promote 100% functions")
+                        help="inspect only; do not auto-promote 100%% functions")
     args = parser.parse_args(argv)
 
     if args.command == "toolchain":

@@ -1,0 +1,71 @@
+/*
+ * Unit: sdk/newlib/libc/machine/r5900/memcpy
+ *
+ * Hand-written assembly in retail (memcpy.S): each function is one
+ * asm body (docs/decomp_agent.md, "Inline assembly").
+ *
+ * Functions:
+ *   0x00270e7c memcpy
+ */
+
+
+__asm__(
+    ".text\n"
+    ".globl  memcpy\n"
+    ".ent    memcpy\n"
+    ".set    noreorder\n"
+    ".set    noat\n"
+    "memcpy:\n"
+    "    daddu   $8, $4, $0\n"
+    "    sltiu   $2, $6, 0x20\n"
+    "    bnez    $2, .Lmemcpy_3\n"
+    "     daddu   $3, $8, $0\n"
+    "    or      $2, $5, $8\n"
+    "    andi    $2, $2, 0xF\n"
+    "    bnel    $2, $0, .Lmemcpy_4\n"
+    "     addiu   $6, $6, -0x1\n"
+    "    daddu   $7, $8, $0\n"
+    ".Lmemcpy_1:\n"
+    "    lq      $3, 0x0($5)\n"
+    "    addiu   $6, $6, -0x20\n"
+    "    addiu   $5, $5, 0x10\n"
+    "    sltiu   $4, $6, 0x20\n"
+    "    sq      $3, 0x0($7)\n"
+    "    addiu   $7, $7, 0x10\n"
+    "    lq      $2, 0x0($5)\n"
+    "    addiu   $5, $5, 0x10\n"
+    "    sq      $2, 0x0($7)\n"
+    "    beqz    $4, .Lmemcpy_1\n"
+    "     addiu   $7, $7, 0x10\n"
+    "    sltiu   $2, $6, 0x8\n"
+    "    bnez    $2, .Lmemcpy_3\n"
+    "     daddu   $3, $7, $0\n"
+    ".Lmemcpy_2:\n"
+    "    ld      $3, 0x0($5)\n"
+    "    addiu   $6, $6, -0x8\n"
+    "    addiu   $5, $5, 0x8\n"
+    "    sltiu   $2, $6, 0x8\n"
+    "    sd      $3, 0x0($7)\n"
+    "    beqz    $2, .Lmemcpy_2\n"
+    "     addiu   $7, $7, 0x8\n"
+    "    daddu   $3, $7, $0\n"
+    ".Lmemcpy_3:\n"
+    "    addiu   $6, $6, -0x1\n"
+    ".Lmemcpy_4:\n"
+    "    addiu   $2, $0, -0x1\n"
+    "    beq     $6, $2, .Lmemcpy_6\n"
+    "     daddu   $4, $2, $0\n"
+    ".Lmemcpy_5:\n"
+    "    lbu     $2, 0x0($5)\n"
+    "    addiu   $6, $6, -0x1\n"
+    "    addiu   $5, $5, 0x1\n"
+    "    sb      $2, 0x0($3)\n"
+    "    nop\n"
+    "    bne     $6, $4, .Lmemcpy_5\n"
+    "     addiu   $3, $3, 0x1\n"
+    ".Lmemcpy_6:\n"
+    "    jr      $31\n"
+    "     daddu   $2, $8, $0\n"
+    ".set    at\n"
+    ".set    reorder\n"
+    ".end    memcpy\n");
