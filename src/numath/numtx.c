@@ -465,24 +465,24 @@ void NuMtxSubR(struct numtx_s *m,struct numtx_s *m0,struct numtx_s *m1) {
 void NuMtxOrth(struct numtx_s* m)
 {
     float mag;
-    float t1;
-    float t2;
-    float t3;
-    float t4;
+    float x;
+    float y;
+    float inv;
+    float z;
     
 	mag = NuFsqrt(m->_00 * m->_00 + m->_01 * m->_01 + m->_02 * m->_02);
-	t3 = 1.0f / mag;
-	m->_00 = m->_00 * t3;
-	m->_01 = m->_01 * t3;
-	m->_02 = m->_02 * t3;
+	inv = 1.0f / mag;
+	m->_00 = m->_00 * inv;
+	m->_01 = m->_01 * inv;
+	m->_02 = m->_02 * inv;
 	mag = NuFsqrt(m->_10 * m->_10 + m->_11 * m->_11 + m->_12 * m->_12);
-	t3 = 1.0f / mag;
-	t1 = m->_10 * t3;
-	t2 = m->_11 * t3;
-	t4 = m->_12 * t3;
-	m->_20 = m->_01 * t4 - m->_02 * t2;
-	m->_21 = m->_02 * t1 - m->_00 * t4;
-	m->_22 = m->_00 * t2 - m->_01 * t1;
+	inv = 1.0f / mag;
+	x = m->_10 * inv;
+	y = m->_11 * inv;
+	z = m->_12 * inv;
+	m->_20 = m->_01 * z - m->_02 * y;
+	m->_21 = m->_02 * x - m->_00 * z;
+	m->_22 = m->_00 * y - m->_01 * x;
 	m->_10 = m->_21 * m->_02 - m->_22 * m->_01;
 	m->_11 = m->_22 * m->_00 - m->_20 * m->_02;
 	m->_12 = m->_20 * m->_01 - m->_21 * m->_00;

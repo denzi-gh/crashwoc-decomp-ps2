@@ -393,7 +393,7 @@ static inline int tbslotEnd(TbSet *set, int slot)
 {
     unsigned int elapsed;
 
-    set = set != 0 ? set : D_0062F034;
+    set = set != 0 ? set : tb_main_set;
     slot &= 0xF;
     elapsed = EE_T1_COUNT - set->begin[slot];
     if (elapsed > 0xFFFF) {
@@ -1210,7 +1210,7 @@ void tbslotReset(TbSet *set, int slot)
 {
     int current;
 
-    set = set != 0 ? set : D_0062F034;
+    set = set != 0 ? set : tb_main_set;
     slot &= 0xF;
     current = set->current[slot] ^ 1;
     set->current[slot] = current;
@@ -1220,7 +1220,7 @@ void tbslotReset(TbSet *set, int slot)
 
 int tbslotLastValue(struct TbSet *set, int slot)
 {
-    set = set != 0 ? set : D_0062F034;
+    set = set != 0 ? set : tb_main_set;
     slot &= 0xF;
     return set->values[slot][set->current[slot]];
 }
@@ -1228,7 +1228,7 @@ int tbslotLastValue(struct TbSet *set, int slot)
 
 void tbslotBeginFn(TbSet *set, int slot)
 {
-    set = set != 0 ? set : D_0062F034;
+    set = set != 0 ? set : tb_main_set;
     slot &= 0xF;
     set->begin[slot] = EE_T1_COUNT;
     set->name[slot] = 0;
@@ -1237,7 +1237,7 @@ void tbslotBeginFn(TbSet *set, int slot)
 
 void tbslotBeginExFn(struct TbSet *set, int slot, char *name)
 {
-    set = set != 0 ? set : D_0062F034;
+    set = set != 0 ? set : tb_main_set;
     slot &= 0xF;
     set->begin[slot] = EE_T1_COUNT;
     set->name[slot] = name;
@@ -1250,7 +1250,7 @@ int tbslotEndFn(TbSet *set, int slot)
     int over;
     unsigned int lim = 0xFFFF;
 
-    set = set != 0 ? set : D_0062F034;
+    set = set != 0 ? set : tb_main_set;
     slot &= 0xF;
     /* The narrow index preserves the retail compiler's address-copy sequence. */
     elapsed = EE_T1_COUNT - set->begin[(unsigned char)slot];

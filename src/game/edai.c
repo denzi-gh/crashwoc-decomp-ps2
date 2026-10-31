@@ -36,10 +36,15 @@
 
 extern void *edai_active_menu;
 extern s32 D_00631C3C;
+#define edai_terrainlock D_00631C3C
 extern s32 D_00631C38;
+#define edai_count D_00631C38
 extern s32 D_00631C40;
+#define edai_levelaitype D_00631C40
 extern s32 D_00631C44;
+#define edai_aitype D_00631C44
 extern s32 D_00631C48;
+#define edai_ipoint D_00631C48
 extern void *edai_options_menu;
 extern struct eduimenu_s *edai_selecttype_menu;
 extern struct nuvec_s edai_cam_pos;
@@ -54,8 +59,11 @@ extern f32 EShadY;
 extern f32 ShadRoofY;
 extern f32 D_0062E34C;
 extern f32 D_0063334C;
+#define edai_surface_y D_0063334C
 extern f32 D_00633350;
+#define edai_layer_y D_00633350
 extern f32 D_00633354;
+#define edai_roof_y D_00633354
 
 extern void eduiMenuDestroy(void *menu);
 extern void eduiMenuProcess(void *menu, struct nupad_s *pad);
@@ -76,7 +84,9 @@ extern void ResetWumpa(void);
 
 extern s32 LEVELAICOUNT;
 extern s32 D_00631C4C;
+#define edai_highlight_i_atab D_00631C4C
 extern s32 D_00631C50;
+#define edai_highlight_i_point D_00631C50
 
 extern struct aitype_s AIType[];
 
@@ -125,6 +135,7 @@ extern void edcamSetPos(struct nuvec_s *pos);
 extern struct gtimer_s GlobalTimer;
 extern struct numtx_s mTEMP;
 extern s32 D_005CD1D0[8];
+#define edai_rgba D_005CD1D0
 
 extern void NuHGobjRndr(struct NUHGOBJ_s *hobj, struct numtx_s *m, s32 nlayers,
                         s16 *layer);
@@ -132,10 +143,10 @@ extern void NuRndrLine3dDbg(f32 x0, f32 y0, f32 z0, f32 x1, f32 y1, f32 z1,
                             u32 colour);
 extern void *eduiMenuCreate(s32 x, s32 y, s32 w, s32 h, void *font,
                             void *cancelcb, void *arg);
-extern void *eduiItemSelCreate(s32 a0, void *tmpl, s32 a2, s32 a3, void *cb,
-                               void *label);
-extern void *eduiItemToggleCreate(s32 a0, void *tmpl, s32 a2, s32 a3, void *cb,
-                                  void *label);
+extern void *eduiItemSelCreate(s32 data, void *style, s32 on, s32 group, void *select,
+                               void *text);
+extern void *eduiItemToggleCreate(s32 data, void *style, s32 on, s32 group, void *select,
+                                  void *text);
 extern void *eduiMenuAddItem(void *menu, void *item);
 extern void *eduiItemCheckCreate(u32 value, void *style, s32 checked,
                                  s32 group, void *cb, void *label);
@@ -145,7 +156,7 @@ extern s32 eduiMenuAttach(void *menu, void *child);
 void edaiCbCancelOptMenu(void);
 void edaicbSelectType(struct eduimenu_s *parent);
 void edaicbSaveAIData(struct eduimenu_s *menu);
-void edaicbTerrainToggle(s32 a0, u8 *item);
+void edaicbTerrainToggle(struct eduimenu_s *menu, struct eduiitem_s *item);
 void edaicbSetType(struct eduimenu_s *menu, struct eduiitem_s *item);
 void edaiCbCancelSelectType(void);
 
@@ -161,7 +172,7 @@ void edaiHIGHLIGHT(void)
     s32 j;
     f32 best;
 
-    D_00631C4C = -1;
+    edai_highlight_i_atab = -1;
     for (i = 0; i < LEVELAICOUNT; i++) {
         struct aitype_s *t = &AIType[AITab[i].ai_type];
         s32 n = t->points;
@@ -172,10 +183,10 @@ void edaiHIGHLIGHT(void)
             NuVecSub(&d, &edai_cam_pos, &AITab[i].pos[j]);
             distsq = d.x * d.x + d.y * d.y + d.z * d.z;
             if (distsq < 0.25f) {
-                if (D_00631C4C == -1 || distsq < best) {
-                    D_00631C4C = i;
+                if (edai_highlight_i_atab == -1 || distsq < best) {
+                    edai_highlight_i_atab = i;
                     best = distsq;
-                    D_00631C50 = j;
+                    edai_highlight_i_point = j;
                 }
             }
         }
@@ -189,12 +200,12 @@ void AdjustPosY(struct nuvec_s *pos)
     s32 found;
     double d;
 
-    if (D_00631C3C == 0) {
+    if (edai_terrainlock == 0) {
         return;
     }
     found = 0;
-    if (D_0063334C != 2000000.0f) {
-        y = D_0063334C;
+    if (edai_surface_y != 2000000.0f) {
+        y = edai_surface_y;
         d = y - pos->y;
         if (d < 0.0) {
             d = 0.0 - d;
@@ -202,27 +213,27 @@ void AdjustPosY(struct nuvec_s *pos)
         best = d;
         found = 1;
     }
-    if (D_00633350 != 2000000.0f) {
+    if (edai_layer_y != 2000000.0f) {
         if (found) {
-            d = D_00633350 - pos->y;
+            d = edai_layer_y - pos->y;
             if (d < 0.0) {
                 d = 0.0 - d;
             }
         }
         if (!found || d < best) {
-            y = D_00633350;
+            y = edai_layer_y;
             found = 1;
         }
     }
-    if (D_00633354 != 2000000.0f) {
+    if (edai_roof_y != 2000000.0f) {
         if (found) {
-            d = D_00633354 - pos->y;
+            d = edai_roof_y - pos->y;
             if (d < 0.0) {
                 d = 0.0 - d;
             }
         }
         if (!found || d < best) {
-            y = D_00633354;
+            y = edai_roof_y;
             found = 1;
         }
     }
@@ -237,7 +248,7 @@ void edaiJUMP(void)
     s32 best;
     f32 bestdist;
 
-    if (D_00631C48 > 0) {
+    if (edai_ipoint > 0) {
         return;
     }
     best = -1;
@@ -268,10 +279,10 @@ void edaicbSelectType(struct eduimenu_s *parent)
                                           edaiCbCancelSelectType, D_006203E8);
     if (edai_selecttype_menu != 0) {
         eduiMenuAddItem(edai_selecttype_menu,
-                        eduiItemCheckCreate(-1, &buf, D_00631C40 == -1, 1,
+                        eduiItemCheckCreate(-1, &buf, edai_levelaitype == -1, 1,
                                             edaicbSetType, D_00631C78));
         for (i = 0; i < LEVELAITYPES; i++) {
-            sel = (D_00631C40 == i);
+            sel = (edai_levelaitype == i);
             eduiMenuAddItem(edai_selecttype_menu,
                             eduiItemCheckCreate(i, &buf, sel, 1,
                                                 edaicbSetType,
@@ -297,13 +308,13 @@ void edaiDrawInfo(void)
     strupr(tbuf);
     NuFntPrintEx(0x400, 0x100, 0, (char *)D_00631C58, tbuf);
     NuFntPrintEx(0x400, 0x200, 0, (char *)D_00620378, LEVELAICOUNT, 0x60);
-    strcpy(tbuf, (D_00631C40 >= 0) ? (char *)D_005C9520[D_00631C44]
+    strcpy(tbuf, (edai_levelaitype >= 0) ? (char *)D_005C9520[edai_aitype]
                                    : (char *)D_00631C60);
     strupr(tbuf);
     NuFntPrintEx(0x400, 0x300, 0, (char *)D_00620390, tbuf);
-    if (D_00631C40 >= 0) {
-        struct aitype_s *t = &AIType[D_00631C44];
-        NuFntPrintEx(0x400, 0x400, 0, (char *)D_006203A0, D_00631C48 + 1,
+    if (edai_levelaitype >= 0) {
+        struct aitype_s *t = &AIType[edai_aitype];
+        NuFntPrintEx(0x400, 0x400, 0, (char *)D_006203A0, edai_ipoint + 1,
                      t->points);
     }
     NuFntPrintEx(0x400, 0xD00, 0, (char *)D_006203B0, edai_cam_pos.x,
@@ -398,36 +409,36 @@ void edaiDRAW(void)
                     NuHGobjRndr(CModel[CRemap[character]].obj, &mTEMP, 1, 0);
                 }
             }
-            DrawAxes(pos, ang, D_005CD1D0[j], 0.125f);
+            DrawAxes(pos, ang, edai_rgba[j], 0.125f);
             if (count > 1) {
                 if (j < count - 1) {
                     next = pos + 1;
                     NuRndrLine3dDbg(pos->x, pos->y, pos->z,
-                                    next->x, next->y, next->z, D_005CD1D0[j]);
+                                    next->x, next->y, next->z, edai_rgba[j]);
                 }
             }
         }
     }
-    if (D_00631C48 != 0) {
-        for (j = 0; j < D_00631C48; j++) {
+    if (edai_ipoint != 0) {
+        for (j = 0; j < edai_ipoint; j++) {
             pos = &AITab[i].pos[j];
-            DrawAxes(pos, ang, D_005CD1D0[j], 0.125f);
+            DrawAxes(pos, ang, edai_rgba[j], 0.125f);
         }
         next = &edai_cam_pos;
         NuRndrLine3dDbg(pos->x, pos->y, pos->z,
-                        next->x, next->y, next->z, D_005CD1D0[j - 1]);
+                        next->x, next->y, next->z, edai_rgba[j - 1]);
         pos = AITab[i].pos;
     } else {
         pos = &edai_cam_pos;
     }
-    if (D_00631C4C != -1) {
-        DrawCube(&AITab[D_00631C4C].pos[D_00631C50], ang, 0.125f);
-    } else if (D_00631C40 >= 0 && GlobalTimer.frame % 50 < 25) {
-        character = AIType[D_00631C44].character;
+    if (edai_highlight_i_atab != -1) {
+        DrawCube(&AITab[edai_highlight_i_atab].pos[edai_highlight_i_point], ang, 0.125f);
+    } else if (edai_levelaitype >= 0 && GlobalTimer.frame % 50 < 25) {
+        character = AIType[edai_aitype].character;
         v.x = v.y = v.z = CData[character].scale * 0.5f;
         NuMtxSetScale(&mTEMP, &v);
         NuMtxRotateY(&mTEMP,
-                     (D_00631C48 == 0)
+                     (edai_ipoint == 0)
                          ? ang + 0x8000
                          : NuAtan2D(edai_cam_pos.x - pos->x,
                                     edai_cam_pos.z - pos->z) + 0x8000);
@@ -436,19 +447,19 @@ void edaiDRAW(void)
             NuHGobjRndr(CModel[CRemap[character]].obj, &mTEMP, 1, 0);
         }
     }
-    if (D_00631C3C != 0) {
+    if (edai_terrainlock != 0) {
         v.x = edai_cam_pos.x;
         v.z = edai_cam_pos.z;
-        if (D_0063334C != 2000000.0f) {
-            v.y = D_0063334C;
+        if (edai_surface_y != 2000000.0f) {
+            v.y = edai_surface_y;
             DrawAxes(&v, 0x2000, 0xFF00FF, 0.125f);
         }
-        if (D_00633350 != 2000000.0f) {
-            v.y = D_00633350;
+        if (edai_layer_y != 2000000.0f) {
+            v.y = edai_layer_y;
             DrawAxes(&v, 0x2000, 0xFF00FF, 0.125f);
         }
-        if (D_00633354 != 2000000.0f) {
-            v.y = D_00633354;
+        if (edai_roof_y != 2000000.0f) {
+            v.y = edai_roof_y;
             DrawAxes(&v, 0x2000, 0xFF00FF, 0.125f);
         }
     }
@@ -471,7 +482,7 @@ void edaiInit(void)
         eduiMenuAddItem(edai_options_menu,
                         eduiItemToggleCreate(1, &buf, 0, 1, edaicbTerrainToggle,
                                              D_00620418));
-        edui_last_item->on = D_00631C3C;
+        edui_last_item->on = edai_terrainlock;
     }
 }
 
@@ -492,33 +503,33 @@ void edaiDoInput(struct nupad_s *pad)
     if (pad->paddata_db & 0x80) {
         edai_active_menu = edai_options_menu;
     }
-    if ((pad->paddata_db & 0x40) && LEVELAICOUNT != 0x60 && D_00631C40 >= 0) {
-        AITab[LEVELAICOUNT].pos[D_00631C48] = edai_cam_pos;
-        AdjustPosY(&AITab[LEVELAICOUNT].pos[D_00631C48]);
-        type = &AIType[D_00631C44];
-        if (++D_00631C48 == type->points) {
-            AITab[LEVELAICOUNT].ai_type = D_00631C44;
+    if ((pad->paddata_db & 0x40) && LEVELAICOUNT != 0x60 && edai_levelaitype >= 0) {
+        AITab[LEVELAICOUNT].pos[edai_ipoint] = edai_cam_pos;
+        AdjustPosY(&AITab[LEVELAICOUNT].pos[edai_ipoint]);
+        type = &AIType[edai_aitype];
+        if (++edai_ipoint == type->points) {
+            AITab[LEVELAICOUNT].ai_type = edai_aitype;
             LEVELAICOUNT++;
             ResetAI();
-            D_00631C48 = 0;
+            edai_ipoint = 0;
         }
     }
     if (pad->paddata_db & 0x10) {
-        if (D_00631C4C != -1) {
+        if (edai_highlight_i_atab != -1) {
             LEVELAICOUNT--;
-            if (D_00631C4C < LEVELAICOUNT) {
-                for (i = D_00631C4C; i < LEVELAICOUNT; i++) {
+            if (edai_highlight_i_atab < LEVELAICOUNT) {
+                for (i = edai_highlight_i_atab; i < LEVELAICOUNT; i++) {
                     AITab[i] = AITab[i + 1];
                 }
             }
             ResetAI();
-            D_00631C4C = -1;
+            edai_highlight_i_atab = -1;
         }
     }
     if (pad->paddata & 0x20) {
-        if (D_00631C4C != -1) {
-            AITab[D_00631C4C].pos[D_00631C50] = edai_cam_pos;
-            AdjustPosY(&AITab[D_00631C4C].pos[D_00631C50]);
+        if (edai_highlight_i_atab != -1) {
+            AITab[edai_highlight_i_atab].pos[edai_highlight_i_point] = edai_cam_pos;
+            AdjustPosY(&AITab[edai_highlight_i_atab].pos[edai_highlight_i_point]);
         }
     }
     if (pad->paddata & 0x100) {
@@ -535,9 +546,9 @@ void edaiCbCancelSelectType(void)
 void edaicbSetType(struct eduimenu_s *menu, struct eduiitem_s *item)
 {
     s32 t = item->value;
-    D_00631C48 = 0;
-    D_00631C40 = t;
-    D_00631C44 = LevelAIType[t];
+    edai_ipoint = 0;
+    edai_levelaitype = t;
+    edai_aitype = LevelAIType[t];
 }
 
 void edaicbSaveAIData(struct eduimenu_s *menu)
@@ -546,9 +557,9 @@ void edaicbSaveAIData(struct eduimenu_s *menu)
     eduiCreateMessageMenu(menu, D_006203F8, 1);
 }
 
-void edaicbTerrainToggle(s32 a0, u8 *item)
+void edaicbTerrainToggle(struct eduimenu_s *menu, struct eduiitem_s *item)
 {
-    D_00631C3C = item[0x10];
+    edai_terrainlock = item->on;
 }
 
 void edaiCbCancelOptMenu(void)
@@ -574,8 +585,8 @@ void edaiEnter(void)
     ResetCrates();
     ResetWumpa();
     ResetAI();
-    if (D_00631C40 >= LEVELAITYPES) {
-        D_00631C40 = -1;
+    if (edai_levelaitype >= LEVELAITYPES) {
+        edai_levelaitype = -1;
     }
     if (edai_used == 0) {
         if (PLAYERCOUNT != 0) {
@@ -586,7 +597,7 @@ void edaiEnter(void)
         edcamSetPosAng(pos, 0, 0);
         edai_used = 1;
     }
-    D_00631C48 = 0;
+    edai_ipoint = 0;
 }
 
 s32 edaiProc(struct nupad_s *pad)
@@ -594,20 +605,20 @@ s32 edaiProc(struct nupad_s *pad)
     if (screendump) {
         return 0;
     }
-    D_00631C38 += 6;
+    edai_count += 6;
     if (edai_active_menu) {
         eduiMenuProcess(edai_active_menu, pad);
         return 0;
     }
     edaiHIGHLIGHT();
-    if (D_00631C3C != 0) {
-        D_0063334C = NewShadowMask(&edai_cam_pos, 0.0f, -1);
-        D_00633350 = EShadY;
-        D_00633354 = ShadRoofY;
+    if (edai_terrainlock != 0) {
+        edai_surface_y = NewShadowMask(&edai_cam_pos, 0.0f, -1);
+        edai_layer_y = EShadY;
+        edai_roof_y = ShadRoofY;
     } else {
-        D_0063334C = D_0062E34C;
-        D_00633350 = D_0062E34C;
-        D_00633354 = D_0062E34C;
+        edai_surface_y = D_0062E34C;
+        edai_layer_y = D_0062E34C;
+        edai_roof_y = D_0062E34C;
     }
     edaiDoInput(pad);
     if (pad->paddata_db & 0x800) {

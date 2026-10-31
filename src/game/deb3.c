@@ -117,15 +117,6 @@ extern void Draw3DCharacter(struct nuvec_s *pos, s32 xrot, s32 yrot, s32 z,
                             struct CharacterModel *model, f32 scale, s32 action,
                             f32 anim_time, s32 last);
 
-struct CortLight_s {
-    int unk00;
-    int unk04;
-    int unk08;
-    int unk0C;
-    int unk10;
-    int unk14;
-};
-
 extern int lcrunch;
 extern int wdir;
 extern int wtimer;

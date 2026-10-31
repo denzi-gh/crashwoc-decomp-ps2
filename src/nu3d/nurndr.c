@@ -322,7 +322,7 @@ extern unsigned char D_0062ECA8[];
 
 extern unsigned int D_00689A80[];
 #define default_skin_weights D_00689A80
-extern u32 *vpDmaTag_RetEx(void *buf, u32 a1, u32 a2);
+extern u32 *vpDmaTag_RetEx(void *buf, u32 vif0, u32 vif1);
 extern u32 *vpDmaTag_Close(void *p);
 extern u32 *vpDmaTag_RefEx(void *packet, void *addr, int qwc, u32 vif1);
 extern u32 D_006ACAA0[];
@@ -5816,7 +5816,7 @@ u32 *NuRndrCreateBlendShapeDeformerWeightsArray(u32 count) {
 void NuRndrDeformerWeightsArrayInit(void) {
     u32 *p;
 
-    p = vpDmaTag_RetEx(D_00689A80, 0x13000000, 0x01000101);
+    p = vpDmaTag_RetEx(default_skin_weights, 0x13000000, 0x01000101);
     *p++ = 0x60010063;
     *p = 0;
     vpDmaTag_Close(p + 1);

@@ -731,13 +731,13 @@ extern f32 FindNearestCreature(struct nuvec_s *pos, s32 type,
 extern void RumbleCam(struct cammtx_s *cam);
 extern void GliderCam(struct cammtx_s *cam);
 extern void JeepCam(struct cammtx_s *cam);
-extern void JeepCamFollowAng(struct cammtx_s *cam, s32 a1);
+extern void JeepCamFollowAng(struct cammtx_s *cam, s32 snap);
 extern void JeepCamIntro(struct cammtx_s *cam);
 extern void NuCameraSet(struct nucamera_s *cam);
 extern u16 TurnRot(u16 a, u16 b, s32 rate);
 extern u16 SeekRot(u16 a, u16 dist, s32 rate);
 extern void PointAlongSpline(struct nugspline_s *spl, f32 ratio,
-                             struct nuvec_s *pos, void *a3, void *a4);
+                             struct nuvec_s *pos, void *yrot, void *xrot);
 
 inline f32 LookUpDownRail(struct obj_s *obj, u16 angle, s32 mode) {
     s32 dyrot;

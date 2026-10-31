@@ -23,8 +23,10 @@ extern struct font3dobj_s Font3DObjTab[];
 extern f32 D_0062E350;
 extern f32 D_0062E354;                  /* animation frames per game frame */
 #define anim_step D_0062E354
-extern char D_005CD7B0[];   /* j_bd */
-extern char D_005CD808[];   /* j_bc */
+extern char D_005CD7B0[];
+#define j_bd D_005CD7B0
+extern char D_005CD808[];
+#define j_bc D_005CD808
 
 extern s32 qrand(void);
 
@@ -49,11 +51,11 @@ extern f32 D_0062E358, D_0062E35C, D_0062E360;
 extern struct numtl_s **nurndr_forced_mtl_table;
 
 extern s32 DrawPanel3DObject(s32 i, f32 x, f32 y, f32 z, f32 sx, f32 sy,
-                              f32 sz, s32 a1, s32 a2, s32 rot, void *scene,
-                              void *special, s32 last);
+                              f32 sz, s32 xrot, s32 yrot, s32 zrot, void *scene,
+                              void *special, s32 rot);
 extern void DrawPanel3DCharacter(s32 i, f32 x, f32 y, f32 z, f32 sx, f32 sy,
-                                 f32 sz, s32 a1, s32 a2, s32 a3, s32 action,
-                                 f32 anim_time, s32 last);
+                                 f32 sz, s32 xrot, s32 yrot, s32 zrot, s32 action,
+                                 f32 anim_time, s32 rot);
 
 
 void InitFont3D(struct nugscn_s *gscn) {
@@ -317,7 +319,7 @@ void Update3DFontObjects(void) {
 inline s32 CombinationCharacterBD(char c0, char c1) {
     char *p;
 
-    for (p = D_005CD7B0; *p != '\0'; p += 2) {
+    for (p = j_bd; *p != '\0'; p += 2) {
         if (c0 == *p && c1 == p[1]) {
             return 1;
         }
@@ -328,7 +330,7 @@ inline s32 CombinationCharacterBD(char c0, char c1) {
 inline s32 CombinationCharacterBC(char c0, char c1) {
     char *p;
 
-    for (p = D_005CD808; *p != '\0'; p += 2) {
+    for (p = j_bc; *p != '\0'; p += 2) {
         if (c0 == *p && c1 == p[1]) {
             return 1;
         }
