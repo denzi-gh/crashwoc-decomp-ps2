@@ -983,6 +983,7 @@ int sceIoctl(int fd, int req, void *argp)
     int rv;
     int i;
     FsIob *iob;
+    int wait = 1;
 
     iob = get_iob(fd);
     _sceFsWaitS(FS_IOCTL);
@@ -1048,7 +1049,9 @@ int sceIoctl(int fd, int req, void *argp)
         DeleteSema(sema);
         return -SCE_EAGAIN;
     }
-    WaitSema(sema);
+    if (wait) {
+        WaitSema(sema);
+    }
     DeleteSema(sema);
     return result;
 }
