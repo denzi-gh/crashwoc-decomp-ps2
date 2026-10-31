@@ -29,7 +29,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:00264938:scePadPortOpen"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0148:00264b20:scePadPortClose"
