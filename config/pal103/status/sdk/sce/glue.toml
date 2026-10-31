@@ -17,7 +17,7 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0248:00279120:VSync"
-state = "asm"
+state = "matching"
 
 [[function]]
 id = "pal103:unit-0248:00279160:VSync2"
