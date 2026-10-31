@@ -964,20 +964,12 @@ void NuFPatchTesselateGrid(s32 depth, struct nufpatch_s *patch, f32 scale, f32 d
     struct nufpatch_s split[4];
 
     if (depth == 1) {
-        {
-            f32 k = scale;
-            struct numtx_s *m = (struct numtx_s *)patch->pnt;
-            fpatchScaleMtx(m, k);
-        }
-        {
-            f32 k = scale;
-            struct numtx_s *m = (struct numtx_s *)patch->nrm;
-            fpatchScaleMtx(m, k);
-        }
-        {
-            struct nuvec4_s *n = patch->nrm;
-            n += 4;
-        }
+        struct nuvec4_s *n;
+
+        fpatchScaleMtx((struct numtx_s *)patch->pnt, scale);
+        fpatchScaleMtx((struct numtx_s *)patch->nrm, scale);
+        n = patch->nrm;
+        n += 4;
         **grid = *patch;
         (*grid)++;
     } else {
