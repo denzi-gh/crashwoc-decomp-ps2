@@ -169,49 +169,25 @@ typedef struct GsTestReg {
     u64 pad13 : 45;
 } GsTestReg;
 
-extern struct numtl_s *D_00633078;
-#define GlobalMtl D_00633078
-
-extern int nurndr_shadowson;
-
 extern struct numtl_s *numtl_defaultmtl3d;
 
 extern float NuRndrWaterLevel;
 extern u32 NuRndrWaterTint;
 extern int NuRndrShadMaskCount;
 
-extern int D_002D4110[4][2];
-#define oldfaceon_uvindex D_002D4110
-extern int D_002D4130[4][2];
-#define faceon_uvindex D_002D4130
 extern void NuVec4ScaleXYZVU0(struct nuvec4_s *dst, struct nuvec4_s *src, float scale);
 extern void NuVecConvertToIntVU0(void *dst, struct nuvec_s *src);
-extern int D_002D4150[4][2];
-#define facey_uvindex D_002D4150
 
-extern struct nurndrfoot_s NuRndrFootData[];
 extern int NuRndrFootFree;
 extern u32 testfootcol;
 
-extern char D_00614770[];
-#define nurndr_file D_00614770
-extern char D_00614790[];
-
 extern int NuHGobjRndrMtxDwa(struct NUHGOBJ_s *hobj, struct numtx_s *wm, int nlayers, short *layer,
                              struct numtx_s *mtx_array, float **dwa);
-extern int D_0062EC78;
-#define hgobj_enabled D_0062EC78
 extern void NuMtxMulArrayVU0(struct numtx_s *dst, struct numtx_s *a, struct numtx_s *b, int count);
-extern struct numtx_s D_00681A40[];
-#define hgobj_anim_mtx D_00681A40
-extern struct numtx_s D_00685A40[];
-#define hgobj_blend_mtx D_00685A40
 extern void NuHGobjEval(struct NUHGOBJ_s *hobj, int njanims, struct NUJOINTANIM_s *janim, struct numtx_s *mtx_array);
 extern void NuMtxSetRotateXYZVU0(struct numtx_s *m, struct nuangvec_s *a);
 extern void NuMtxMulVU0(struct numtx_s *dst, struct numtx_s *a, struct numtx_s *b);
 extern u32 *NuRndrCreateBlendShapeDeformerWeightsArray(u32 count);
-extern struct numtx_s D_0067DA40[];
-#define hgobj_joint_mtx D_0067DA40
 extern int NuRndrStreamTri3dClip(struct nuvtx_tc1_s *verts, int count, struct numtx_s *mtx,
                                  struct rndrstream_s *stream);
 extern int NuRndrStreamTriStrip3dClip(struct nuvtx_tc1_s *verts, int count, struct numtx_s *mtx,
@@ -220,6 +196,7 @@ extern void NuRndrOTFlush(void);
 extern void NuFntInit(void);
 extern void NuRndrDeformerWeightsArrayInit(void);
 extern void NuRndrOTInit(void);
+extern u32 *NuRndrCylCapMakeData(void);
 extern u32 *NuRndrCylMakeData(void);
 extern void NuRndrShadowDirCol(struct nuvec_s *dir, u32 col);
 extern u32 *NRCylCapData;
@@ -236,10 +213,6 @@ extern void *NuScratchAlloc32(u32 size);
 extern void NuScratchRelease(void);
 
 extern int NuRndrShadowCnt;
-extern struct numtx_s D_00689A40;
-#define rndr_identity_mtx D_00689A40
-extern struct nuvec_s D_00614760;
-#define default_light_dir D_00614760
 
 extern void NuLgtArcLaserDraw(int mode);
 extern void NuRndrShadowStencil(int paused, struct nuvec_s *pos);
@@ -278,17 +251,20 @@ typedef struct ottri_s {
     struct nuvutri_s *tri;
 } ottri_s;
 
-extern int D_0062EC70;
-#define first_time D_0062EC70
-extern nurndrotitem_s D_006A5AA0[];
-#define ot_item_pool D_006A5AA0
+static u32 *skinjointmtx;
+static struct numtl_s *globalmtl;
+static int otitembuffcnt;
+static struct numtx_s rndr_node_offset;
+static u32 null_dwa[8];
+static nurndrotbin_s otitem[0x1000];
+static nurndrotitem_s otitembuff[0x400];
+static u32 ot_tritag[16];
+static u32 ot_cliptritag[8];
+/* DMA packets built once: cylinder caps, cylinders, light fan. */
+static u32 NuRndrBuff[3][128];
 
 extern float XFormVuTriZ(float *depth, struct nuvutri_s *tri, struct numtx_s *mtx, int count);
 extern u32 *vpDmaTag_Ret(u32 *packet);
-
-extern float otscale;
-extern nurndrotbin_s D_00689AA0[];
-#define ot_bins D_00689AA0
 
 extern ottri_s *ot_tri[];
 extern ottri_s ot_tribuff[];
@@ -296,45 +272,18 @@ extern ottri_s *ot_free;
 extern int ot_highest;
 extern float NuTrigTable[];
 
-extern struct nuvec_s curlight;
 extern u32 curlightcol;
 extern u32 *NRFanData;
 extern u32 *NuRndrShadowLightFan(void);
-extern int testflipold;
-extern float testmultl;
 extern GsFrameReg cur_rt;
 extern int NuLgtHSurf[18];
 extern struct numtl_s *NuLgtSurf[18];
 extern struct numtl_s *NuLgtGreyNZMat;
 extern struct numtl_s *NuLightAddMat;
-extern struct nuvec_s NuRndrShadBox[2];
-extern int D_00633070;
-#define shadow_wobble_ang D_00633070
-extern int D_0063306C;
-#define shadow_spin_ang D_0063306C
-extern struct nuvec_s lightfan[];
-extern u32 *nurndr_lightfan;
-extern u32 D_006ACF00[];
-#define lightfan_packet D_006ACF00
 
-extern struct nugspline_s *NuRndrShadMasks[];
-extern unsigned char D_0062ECA8[];
-
-extern unsigned int D_00689A80[];
-#define default_skin_weights D_00689A80
 extern u32 *vpDmaTag_RetEx(void *buf, u32 vif0, u32 vif1);
 extern u32 *vpDmaTag_Close(void *p);
 extern u32 *vpDmaTag_RefEx(void *packet, void *addr, int qwc, u32 vif1);
-extern u32 D_006ACAA0[];
-#define ot_open_packet D_006ACAA0
-extern u32 D_006ACAE0[];
-#define ot_close_packet D_006ACAE0
-extern int D_0063307C;
-#define ot_batch_free D_0063307C
-extern u32 D_006ACB00[];
-#define cylcap_packet D_006ACB00
-extern u32 D_006ACD00[];
-#define cyl_packet D_006ACD00
 
 
 extern struct rndrstream_s *rndrstream_2d;
@@ -347,7 +296,6 @@ extern int PS2_REZ_W;
 extern int PS2_REZ_H;
 extern int PS2_VCNTR_X;
 extern int PS2_VCNTR_Y;
-extern int tri2dz;
 
 extern void NuRndrStreamLink(struct rndrstream_s *stream);
 extern struct rndrstream_s *rndrstream_system;
@@ -355,7 +303,6 @@ extern int nurndr_half_offset;
 extern void NuPs2DisableAutoScreenSwap(void);
 extern int NuPs2ScreenSwap(int vsync);
 extern void NuPs2FlushVRam(int a, int b, int c);
-extern int debug_flush_vram;
 extern int nutex_total_xfer_this_frame;
 extern int nutex_peak_xfer_per_frame;
 extern int nurndr_tritot_this_frame;
@@ -363,11 +310,6 @@ extern struct rndrstream_s *rndrstream_fx;
 extern struct numtx_s numtx_identity;
 extern int NuRndrStreamQuadShad(struct rndrstream_s *stream);
 extern int NuRndrStreamQuadWRip(struct rndrstream_s *stream, short *visible);
-
-
-extern NuRndrShadType NuRndrShadPolDat[];
-
-
 
 
 extern u32 *vpDmaTag_CntEx(u32 *packet, u32 vif0, u32 vif1);
@@ -381,11 +323,6 @@ extern u32 *NuRndrFxBlueAndGreenData(u32 code, void *fx);
 extern u32 *vpDmaTag_CallEx(u32 *packet, void *addr, u32 vif0, u32 vif1);
 extern u32 *vpDmaTag_Copy(u32 *packet, struct DmaTag *tag);
 extern u32 *vpDmaTag_RepointCopy(u32 *packet, struct DmaTag *tag, u32 addr);
-extern int skinskipix;
-extern u32 *D_00633074;
-#define skin_mtx_buffer D_00633074
-extern char D_00614820[];
-#define err_skin_no_mtl D_00614820
 
 extern int shadstorecnt;
 
@@ -395,10 +332,6 @@ extern int testdone;
 extern int testdone2;
 extern struct numtl_s *NuLightAddMat2;
 extern void NuCameraSet(struct nucamera_s *cam);
-extern unsigned char D_002D3F50[];
-#define quad_adc_flags D_002D3F50
-extern unsigned char D_002D4008[];
-#define tri_adc_flags D_002D4008
 
 extern void NuPs2GetCurrentBackBuffer(GsFrameReg *reg);
 extern void NuPs2GetCurrentFrontBuffer(GsFrameReg *reg);
@@ -409,22 +342,23 @@ extern int nurndr_pixel_p2w;
 extern int nurndr_pixel_p2h;
 extern u32 *NuPs2CopyCurrentZBuffer(u32 *packet);
 
-extern int D_0062EC60;
-#define nurndr_gscnobj_enable D_0062EC60
-extern int D_0062EC5C;
-#define nurndr_debug_geom D_0062EC5C
-extern char D_006147A8[];
-#define err_geom_no_mtl D_006147A8
-extern char D_006147C8[];
-#define err_fgeom_no_mtl D_006147C8
-extern struct numtl_s *nurndr_forced_mtl;
-extern struct numtl_s **nurndr_forced_mtl_table;
 extern void NuRndrOTInsertTriBatch(struct numtx_s *mtx, int clip, struct numtl_s *mtl, struct nuvutri_s *tris,
                                    int count);
 extern u32 *vpDmaTag_Call(u32 *packet, void *addr);
 extern struct NuPs2GsReg D_002EA1A0;
 #define NuPs2ZBufReg0 D_002EA1A0
 extern u32 *vpDmaTag_Cnt(u32 *packet);
+
+int nurndr_shadowson = 1;
+u32 *nurndr_lightfan = 0;
+struct numtl_s *nurndr_forced_mtl = 0;
+struct numtl_s **nurndr_forced_mtl_table = 0;
+int debug_flush_vram = 0;
+static int geom_dbg = 0;
+static int gobj_enabled = 1;
+int skinskipix = -1;
+float otscale = 2.0f;
+float ottri_scale = 3.0f;
 
 void NuRndrSetZBuffer(struct rndrstream_s *stream, int zbuffer) {
     GsFrameReg frame;
@@ -685,6 +619,47 @@ void NuRndrGradClear(int mode, int topcolour, int bottomcolour, float depth) {
 }
 
 
+inline void NuRndrInitEx(int streamsize) {
+    int i;
+
+    NuRndrStreamInit(streamsize);
+    NuFntInit();
+    NuMtxSetIdentity(&rndr_node_offset);
+    NuRndrDeformerWeightsArrayInit();
+    NuRndrOTInit();
+    NRCylCapData = NuRndrCylCapMakeData();
+    NRCylData = NuRndrCylMakeData();
+    NuRndrShadowDirCol(&(struct nuvec_s){0.0f, -0.75f, -0.75f}, 0x10808080);
+    NuRndrShadowCnt = 0;
+    for (i = 0; i < 32; i++) {
+        NuRndrWaterRipDat[i].timer = 0;
+    }
+}
+
+
+inline void NuRndrInit(void) {
+    int i;
+
+    NuRndrStreamInit(0x100000);
+    NuFntInit();
+    NuMtxSetIdentity(&rndr_node_offset);
+    NuRndrDeformerWeightsArrayInit();
+    NuRndrOTInit();
+    NRCylCapData = NuRndrCylCapMakeData();
+    NRCylData = NuRndrCylMakeData();
+    NuRndrShadowDirCol(&(struct nuvec_s){0.0f, -0.75f, -0.75f}, 0x10808080);
+    NuRndrShadowCnt = 0;
+    for (i = 0; i < 32; i++) {
+        NuRndrWaterRipDat[i].timer = 0;
+    }
+}
+
+
+inline void NuRndrStarfield(void) {
+    NuErrorProlog("..\\nu2crash.ps2\\nu3d\\nurndr.c", 0x5D5)("unsupported guff");
+}
+
+
 int NuRndrGScnObj(struct nugobj_s *gobj, struct numtx_s *wm) {
     struct numtx_s mtx;
     struct numtx_s offset;
@@ -700,7 +675,7 @@ int NuRndrGScnObj(struct nugobj_s *gobj, struct numtx_s *wm) {
     struct nufaceongeom_s *fgeom;
 
     clip = -1;
-    if (!nurndr_gscnobj_enable) {
+    if (!gobj_enabled) {
         return 1;
     }
     n = gobj->ngobjs;
@@ -735,14 +710,14 @@ int NuRndrGScnObj(struct nugobj_s *gobj, struct numtx_s *wm) {
                 geomidx = -1;
                 do {
                 geomidx++;
-                if (nurndr_debug_geom && geomidx != nurndr_debug_geom) {
+                if (geom_dbg && geomidx != geom_dbg) {
                     continue;
                 }
                 mtl = nurndr_forced_mtl;
                 if (!mtl) {
                     mtl = geom->mtl;
                     if (!mtl) {
-                        NuDebugMsgProlog(nurndr_file, 0x62B)(err_geom_no_mtl);
+                        NuDebugMsgProlog("..\\nu2crash.ps2\\nu3d\\nurndr.c", 0x62B)("Warning - geom has no material");
                     }
                 }
                 if (nurndr_forced_mtl_table && mtl->special_id) {
@@ -785,7 +760,7 @@ int NuRndrGScnObj(struct nugobj_s *gobj, struct numtx_s *wm) {
             for (fgeom = gobj->faceon_geom; fgeom; fgeom = fgeom->next) {
                 mtl = fgeom->mtl;
                 if (!mtl) {
-                    NuDebugMsgProlog(nurndr_file, 0x666)(err_fgeom_no_mtl);
+                    NuDebugMsgProlog("..\\nu2crash.ps2\\nu3d\\nurndr.c", 0x666)("Warning - fgeom has no material");
                 }
                 if (mtl != lastmtl) {
                     rndrstream_3d = &mtl->rs;
@@ -864,7 +839,7 @@ int NuRndrGobj(struct nugobj_s *gobj, struct numtx_s *wm) {
             for (geom = gobj->geom; geom; geom = geom->next) {
                 mtl = geom->mtl;
                 if (!mtl) {
-                    NuDebugMsgProlog(nurndr_file, 0x6D5)(err_geom_no_mtl);
+                    NuDebugMsgProlog("..\\nu2crash.ps2\\nu3d\\nurndr.c", 0x6D5)("Warning - geom has no material");
                 } else if (nurndr_forced_mtl) {
                     mtl = nurndr_forced_mtl;
                 } else if (nurndr_forced_mtl_table && mtl->special_id) {
@@ -894,7 +869,7 @@ int NuRndrGobj(struct nugobj_s *gobj, struct numtx_s *wm) {
             }
             for (fgeom = gobj->faceon_geom; fgeom; fgeom = fgeom->next) {
                 if (!fgeom->mtl) {
-                    NuDebugMsgProlog(nurndr_file, 0x707)(err_fgeom_no_mtl);
+                    NuDebugMsgProlog("..\\nu2crash.ps2\\nu3d\\nurndr.c", 0x707)("Warning - fgeom has no material");
                 }
                 faceonmtl = fgeom->mtl;
                 if (faceonmtl != lastmtl) {
@@ -1176,7 +1151,7 @@ int NuRndrGobjSkin(struct nugobj_s *gobj, struct numtx_s *wm, int njoints, struc
                 mtl = geom->mtl;
             }
             if (!mtl) {
-                NuDebugMsgProlog(nurndr_file, 0x8E5)(err_skin_no_mtl);
+                NuDebugMsgProlog("..\\nu2crash.ps2\\nu3d\\nurndr.c", 0x8E5)("No Material!!!");
             } else if (nurndr_forced_mtl_table && mtl->special_id) {
                 if (nurndr_forced_mtl_table[mtl->special_id]) {
                     mtl = nurndr_forced_mtl_table[mtl->special_id];
@@ -1198,7 +1173,7 @@ int NuRndrGobjSkin(struct nugobj_s *gobj, struct numtx_s *wm, int njoints, struc
                         if (weights) {
                             rndrstream_3d->ptr.u32 = vpDmaTag_CallEx(rndrstream_3d->ptr.u32, weights, 0, 0);
                         } else {
-                            rndrstream_3d->ptr.u32 = vpDmaTag_CallEx(rndrstream_3d->ptr.u32, default_skin_weights, 0, 0);
+                            rndrstream_3d->ptr.u32 = vpDmaTag_CallEx(rndrstream_3d->ptr.u32, null_dwa, 0, 0);
                         }
                         ((unsigned char *)rndrstream_3d->ptr.u32)[-14] = 4;
                     }
@@ -1212,7 +1187,7 @@ int NuRndrGobjSkin(struct nugobj_s *gobj, struct numtx_s *wm, int njoints, struc
                         break;
                     case 0x30:
                         rndrstream_3d->ptr.u32 = vpDmaTag_RepointCopy(rndrstream_3d->ptr.u32, tag,
-                            tag->addr + (u32)skin_mtx_buffer);
+                            tag->addr + (u32)skinjointmtx);
                         tag++;
                         break;
                     case 0x50:
@@ -1257,6 +1232,17 @@ void NuRndrShadowInit(unsigned char *image) {
 
 
 int NuRndrStreamQuad3dClip(struct nuvtx_tc1_s *verts, int count, void *mtx, struct rndrstream_s *stream) {
+    static unsigned char kickval[180] = {
+        1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0,
+        1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0,
+        1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0,
+        1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0,
+        1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0,
+        1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0,
+        1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0,
+        1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0,
+        1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0,
+    };
     GifTagQuad strip;
     GifTagQuad fan;
     int n;
@@ -1300,7 +1286,7 @@ int NuRndrStreamQuad3dClip(struct nuvtx_tc1_s *verts, int count, void *mtx, stru
             *stream->ptr.f32++ = verts[v].pnt.x;
             *stream->ptr.f32++ = verts[v].pnt.y;
             *stream->ptr.f32++ = verts[v].pnt.z;
-            *stream->ptr.u32++ = quad_adc_flags[i] + 0x7FFF;
+            *stream->ptr.u32++ = kickval[i] + 0x7FFF;
             *stream->ptr.s32++ = (int)(verts[v].tc[0] * 4096.0f);
             *stream->ptr.s32++ = (int)(verts[v].tc[1] * 4096.0f);
             *stream->ptr.u32++ = 0;
@@ -1319,7 +1305,7 @@ int NuRndrStreamQuad3dClip(struct nuvtx_tc1_s *verts, int count, void *mtx, stru
 void NuRndrOTInit(void) {
     u32 *packet;
 
-    packet = ot_open_packet;
+    packet = ot_tritag;
     packet = vpDmaTag_RefEx(packet, packet + 4, 0, 0x6C0180D2);
     ((u16 *)packet)[-8] = 2;
     *((u64 *)packet)++ = 0x3002400000008003ULL;
@@ -1331,14 +1317,14 @@ void NuRndrOTInit(void) {
     *((u16 *)packet)++ = 0;
     *packet = 0x1400030A;
 
-    packet = ot_close_packet;
+    packet = ot_cliptritag;
     packet = vpDmaTag_RefEx(packet, packet + 4, 0, 0x6C010056);
     ((u16 *)packet)[-8] = 1;
     *((u64 *)packet)++ = 0x3002C00000008000ULL;
     *((u64 *)packet)++ = 0x512;
 
-    ot_batch_free = 0x400;
-    memset(ot_bins, 0, 0x1000 * sizeof(nurndrotbin_s));
+    otitembuffcnt = 0x400;
+    memset(otitem, 0, 0x1000 * sizeof(nurndrotbin_s));
 }
 
 
@@ -1353,7 +1339,7 @@ inline void NuRndrOTInsertItem(nurndrotitem_s *item) {
     if (index > 0xFFF) {
         index = 0xFFF;
     }
-    bin = &ot_bins[index];
+    bin = &otitem[index];
     item->next = bin->head;
     bin->head = item;
 }
@@ -1389,6 +1375,7 @@ inline int OTTriInsert(struct nuvutri_s *tri, float depth) {
 
 void NuRndrOTInsertTriBatch(struct numtx_s *mtx, int clip, struct numtl_s *mtl, struct nuvutri_s *tris,
                             int count) {
+    static int first_time = 1;
     struct numtx_s local;
     struct numtx_s caminv;
     float depth[0x800];
@@ -1421,7 +1408,7 @@ void NuRndrOTInsertTriBatch(struct numtx_s *mtx, int clip, struct numtl_s *mtl, 
         mtx = &numtx_identity;
         xform = &caminv;
     }
-    if (!ot_batch_free) {
+    if (!otitembuffcnt) {
         return;
     }
     z = &depth[0x7FF];
@@ -1441,8 +1428,8 @@ void NuRndrOTInsertTriBatch(struct numtx_s *mtx, int clip, struct numtl_s *mtl, 
     mtxcopy = NuRndrStreamAlloc(4);
     *mtxcopy = *mtx;
     packet = NuRndrStreamAlloc(0);
-    ot_batch_free--;
-    item = &ot_item_pool[ot_batch_free];
+    otitembuffcnt--;
+    item = &otitembuff[otitembuffcnt];
     slot = &ot_tri[ot_highest];
     item->dma = packet;
     item->mtx = mtxcopy;
@@ -1562,6 +1549,13 @@ int NuRndrStreamTriStrip3dClip(struct nuvtx_tc1_s *verts, int count, struct numt
 
 int NuRndrStreamTri3dClip(struct nuvtx_tc1_s *verts, int count, struct numtx_s *mtx,
                           struct rndrstream_s *stream) {
+    static unsigned char kickval[135] = {
+        1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0,
+        1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0,
+        1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0,
+        1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0,
+        1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0,
+    };
     GifTagQuad strip;
     GifTagQuad fan;
     int n;
@@ -1616,7 +1610,7 @@ int NuRndrStreamTri3dClip(struct nuvtx_tc1_s *verts, int count, struct numtx_s *
             *stream->ptr.f32++ = verts[v].pnt.y;
             *stream->ptr.f32++ = verts[v].pnt.z;
             *stream->ptr.f32 = verts[v].nrm.x;
-            *stream->ptr.u8 = tri_adc_flags[i];
+            *stream->ptr.u8 = kickval[i];
             stream->ptr.u32++;
             *stream->ptr.s32++ = (int)(verts[v].tc[0] * 4096.0f);
             *stream->ptr.s32++ = (int)(verts[v].tc[1] * 4096.0f);
@@ -2135,7 +2129,7 @@ u32 *NuRndrCylCapMakeData(void) {
     strip.dword[1] = 0x512;
     fan.dword[0] = 0x3002C00000008000ULL;
     fan.dword[1] = 0x512;
-    packet = cylcap_packet;
+    packet = NuRndrBuff[0];
     base = packet;
     packet = vpDmaTag_RetEx(base, 0, 0x6C010056);
     *packet++ = fan.word[0];
@@ -2217,7 +2211,7 @@ u32 *NuRndrCylMakeData(void) {
     strip.dword[1] = 0x512;
     fan.dword[0] = 0x3002C00000008000ULL;
     fan.dword[1] = 0x512;
-    packet = cyl_packet;
+    packet = NuRndrBuff[1];
     base = packet;
     packet = vpDmaTag_RetEx(base, 0, 0x6C010056);
     *packet++ = fan.word[0];
@@ -2312,8 +2306,19 @@ void NuRndrShadowStack(struct nuvec_s *light) {
 }
 
 
+int testflipold = 1;
+
+inline void NuHGobjRndr(void *hobj, struct numtx_s *mtx, int nlayers, short *layer) {
+    static struct numtx_s mtx_array[256];
+
+    NuHGobjEval(hobj, 0, 0, mtx_array);
+    NuHGobjRndrMtxDwa(hobj, mtx, nlayers, layer, mtx_array, 0);
+}
+
+
 int NuHGobjRndrMtxDwa(struct NUHGOBJ_s *hobj, struct numtx_s *wm, int nlayers, short *layer,
                       struct numtx_s *mtx_array, float **dwa) {
+    static int hgobj_enabled = 1;
     struct numtx_s mtx;
     struct NUSHADOWDATA_s *shadow;
     float *weights;
@@ -2385,8 +2390,8 @@ int NuHGobjRndrMtxDwa(struct NUHGOBJ_s *hobj, struct numtx_s *wm, int nlayers, s
             }
         }
         if (hobj->layers[ix].skin_gobj != 0 || hobj->layers[ix].blend_skin_gobj != 0) {
-            skin_mtx_buffer = NuRndrStreamAlloc(hobj->num_joints * 4);
-            NuMtxMulArrayVU0((struct numtx_s *)skin_mtx_buffer, hobj->INV_WT, mtx_array, hobj->num_joints);
+            skinjointmtx = NuRndrStreamAlloc(hobj->num_joints * 4);
+            NuMtxMulArrayVU0((struct numtx_s *)skinjointmtx, hobj->INV_WT, mtx_array, hobj->num_joints);
             if (hobj->layers[ix].skin_gobj != 0) {
                 rv |= NuRndrGobjSkin(hobj->layers[ix].skin_gobj, wm, hobj->num_joints, mtx_array, (u32 *)weights,
                                      vis);
@@ -2581,6 +2586,7 @@ void NuHGobjEvalAnim2(struct NUHGOBJ_s *hobj, struct nuanimdata2_s *animdata, fl
 
 int NuHGobjRndrAnim(struct NUHGOBJ_s *hobj, struct numtx_s *wm, int layer, struct nuanimdata_s *animdata, float time,
                     struct nuanimdata_s *faceanim, float facetime) {
+    static struct numtx_s mtx_array[256];
     struct numtx_s local;
     struct numtx_s mtx;
     struct nuvec_s scale[256];
@@ -2609,7 +2615,7 @@ int NuHGobjRndrAnim(struct NUHGOBJ_s *hobj, struct numtx_s *wm, int layer, struc
         NuAnimDataCalcTime(animdata, time, &atime);
         chunk = animdata->chunks[atime.chunk];
         for (i = 0; i < hobj->num_joints; i++) {
-            wt = &hgobj_anim_mtx[i];
+            wt = &mtx_array[i];
             curveset = chunk->animcurvesets[i];
             if (curveset != 0) {
                 if ((curveset->flags & 0x1a) != 0 || (hobj->joints[i].flags & 8) != 0) {
@@ -2626,17 +2632,17 @@ int NuHGobjRndrAnim(struct NUHGOBJ_s *hobj, struct numtx_s *wm, int layer, struc
             if ((u8)hobj->joints[i].parent_ix == 0xff) {
                 *wt = *m;
             } else {
-                NuMtxMulVU0(wt, m, &hgobj_anim_mtx[(u8)hobj->joints[i].parent_ix]);
+                NuMtxMulVU0(wt, m, &mtx_array[(u8)hobj->joints[i].parent_ix]);
             }
         }
     } else {
         for (i = 0; i < hobj->num_joints; i++) {
-            wt = &hgobj_anim_mtx[i];
+            wt = &mtx_array[i];
             m = &hobj->T[i];
             if ((u8)hobj->joints[i].parent_ix == 0xff) {
                 NuMtxMul(wt, m, wm);
             } else {
-                NuMtxMul(wt, m, &hgobj_anim_mtx[(u8)hobj->joints[i].parent_ix]);
+                NuMtxMul(wt, m, &mtx_array[(u8)hobj->joints[i].parent_ix]);
             }
         }
     }
@@ -2660,7 +2666,7 @@ int NuHGobjRndrAnim(struct NUHGOBJ_s *hobj, struct numtx_s *wm, int layer, struc
     if (hobj->layers[layer].gobjs != 0) {
         for (i = 0; i < hobj->num_joints; i++) {
             if (hobj->layers[layer].gobjs[i] != 0) {
-                NuMtxMulVU0(&mtx, &hgobj_anim_mtx[i], wm);
+                NuMtxMulVU0(&mtx, &mtx_array[i], wm);
                 rv |= NuRndrGobj(hobj->layers[layer].gobjs[i], &mtx);
             }
         }
@@ -2668,19 +2674,19 @@ int NuHGobjRndrAnim(struct NUHGOBJ_s *hobj, struct numtx_s *wm, int layer, struc
     if (hobj->layers[layer].blend_gobjs != 0) {
         for (i = 0; i < hobj->num_joints; i++) {
             if (hobj->layers[layer].blend_gobjs[i] != 0) {
-                NuMtxMulVU0(&mtx, &hgobj_anim_mtx[i], wm);
+                NuMtxMulVU0(&mtx, &mtx_array[i], wm);
                 rv |= NuRndrGobj(hobj->layers[layer].blend_gobjs[i], &mtx);
             }
         }
     }
     if (hobj->layers[layer].skin_gobj != 0 || hobj->layers[layer].blend_skin_gobj != 0) {
-        skin_mtx_buffer = NuRndrStreamAlloc(hobj->num_joints * 4);
-        NuMtxMulArrayVU0((struct numtx_s *)skin_mtx_buffer, hobj->INV_WT, hgobj_anim_mtx, hobj->num_joints);
+        skinjointmtx = NuRndrStreamAlloc(hobj->num_joints * 4);
+        NuMtxMulArrayVU0((struct numtx_s *)skinjointmtx, hobj->INV_WT, mtx_array, hobj->num_joints);
         if (hobj->layers[layer].skin_gobj != 0) {
-            rv |= NuRndrGobjSkin(hobj->layers[layer].skin_gobj, wm, hobj->num_joints, hgobj_anim_mtx, 0, vis);
+            rv |= NuRndrGobjSkin(hobj->layers[layer].skin_gobj, wm, hobj->num_joints, mtx_array, 0, vis);
         }
         if (hobj->layers[layer].blend_skin_gobj != 0) {
-            rv |= NuRndrGobjSkin(hobj->layers[layer].blend_skin_gobj, wm, hobj->num_joints, hgobj_anim_mtx,
+            rv |= NuRndrGobjSkin(hobj->layers[layer].blend_skin_gobj, wm, hobj->num_joints, mtx_array,
                                  (u32 *)weights, vis);
         }
     }
@@ -3113,6 +3119,7 @@ void NuHGobjEvalAnimBlend2(struct NUHGOBJ_s *hobj, struct nuanimdata2_s *animdat
 
 int NuHGobjRndrAnimBlend(struct NUHGOBJ_s *hobj, struct numtx_s *wm, int layer, struct nuanimdata_s *animdata1,
                          struct nuanimdata_s *animdata2, float time1, float time2, float blend) {
+    static struct numtx_s mtx_array[256];
     struct numtx_s local;
     struct numtx_s mtx;
     struct nuvec_s scale[256];
@@ -3138,7 +3145,7 @@ int NuHGobjRndrAnimBlend(struct NUHGOBJ_s *hobj, struct numtx_s *wm, int layer, 
     NuAnimDataCalcTime(animdata2, time2, &atime2);
     chunk2 = animdata2->chunks[atime2.chunk];
     for (i = 0; i < hobj->num_joints; i++) {
-        wt = &hgobj_blend_mtx[i];
+        wt = &mtx_array[i];
         if (chunk1->animcurvesets[i] != 0 && chunk2->animcurvesets[i] != 0) {
             NuAnimCurveSetApplyBlendToJoint2(chunk1->animcurvesets[i], &atime1, chunk2->animcurvesets[i], &atime2,
                                              blend, &hobj->joints[i], &scale[i],
@@ -3150,14 +3157,14 @@ int NuHGobjRndrAnimBlend(struct NUHGOBJ_s *hobj, struct numtx_s *wm, int layer, 
         if ((u8)hobj->joints[i].parent_ix == 0xff) {
             *wt = *m;
         } else {
-            NuMtxMulVU0(wt, m, &hgobj_blend_mtx[(u8)hobj->joints[i].parent_ix]);
+            NuMtxMulVU0(wt, m, &mtx_array[(u8)hobj->joints[i].parent_ix]);
         }
     }
     rv = 0;
     if (hobj->layers[layer].gobjs != 0) {
         for (i = 0; i < hobj->num_joints; i++) {
             if (hobj->layers[layer].gobjs[i] != 0) {
-                NuMtxMulVU0(&mtx, &hgobj_blend_mtx[i], wm);
+                NuMtxMulVU0(&mtx, &mtx_array[i], wm);
                 rv |= NuRndrGobj(hobj->layers[layer].gobjs[i], &mtx);
             }
         }
@@ -3165,19 +3172,19 @@ int NuHGobjRndrAnimBlend(struct NUHGOBJ_s *hobj, struct numtx_s *wm, int layer, 
     if (hobj->layers[layer].blend_gobjs != 0) {
         for (i = 0; i < hobj->num_joints; i++) {
             if (hobj->layers[layer].blend_gobjs[i] != 0) {
-                NuMtxMulVU0(&mtx, &hgobj_blend_mtx[i], wm);
+                NuMtxMulVU0(&mtx, &mtx_array[i], wm);
                 rv |= NuRndrGobj(hobj->layers[layer].blend_gobjs[i], &mtx);
             }
         }
     }
     if (hobj->layers[layer].skin_gobj != 0 || hobj->layers[layer].blend_skin_gobj != 0) {
-        skin_mtx_buffer = NuRndrStreamAlloc(hobj->num_joints * 4);
-        NuMtxMulArrayVU0((struct numtx_s *)skin_mtx_buffer, hobj->INV_WT, hgobj_blend_mtx, hobj->num_joints);
+        skinjointmtx = NuRndrStreamAlloc(hobj->num_joints * 4);
+        NuMtxMulArrayVU0((struct numtx_s *)skinjointmtx, hobj->INV_WT, mtx_array, hobj->num_joints);
         if (hobj->layers[layer].skin_gobj != 0) {
-            rv |= NuRndrGobjSkin(hobj->layers[layer].skin_gobj, wm, hobj->num_joints, hgobj_blend_mtx, 0, vis);
+            rv |= NuRndrGobjSkin(hobj->layers[layer].skin_gobj, wm, hobj->num_joints, mtx_array, 0, vis);
         }
         if (hobj->layers[layer].blend_skin_gobj != 0) {
-            rv |= NuRndrGobjSkin(hobj->layers[layer].blend_skin_gobj, wm, hobj->num_joints, hgobj_blend_mtx, 0,
+            rv |= NuRndrGobjSkin(hobj->layers[layer].blend_skin_gobj, wm, hobj->num_joints, mtx_array, 0,
                                  vis);
         }
     }
@@ -3763,6 +3770,17 @@ void NuRndrLineRect2di(int x, int y, int width, int height, int colour, struct n
 }
 
 
+int tri2dz = 1;
+float testmultl = 4.0f;
+float waveampx = 64.0f;
+float waveampy = 32.0f;
+int wavespeedx = 0x200;
+int wavespeedy = 0x200;
+int wavetime = 444;
+float wavescrollx = 128.0f;
+float wavescrolly = 32.0f;
+float wavescrspeed = 0.0f;
+
 void NuRndrTri2di(int *pnts, float *uvs, int count, int colour, struct numtl_s *mtl) {
     int i;
 
@@ -3966,7 +3984,10 @@ int NuRndrTriStripGif(u32 *data, int count, struct numtl_s *mtl) {
 }
 
 
+float my_factors[32] = { 0 };
+
 int NuRndrOldFaceOn(struct faceon_s *faceon, struct numtl_s *mtl, struct numtx_s *wm) {
+    static int uvidx[4][2] = { { 0, 1 }, { 2, 1 }, { 0, 3 }, { 2, 3 } };
     struct nuvec4_s pnts[4];
     struct nuvec_s pos;
     struct numtx_s *pcs;
@@ -4034,8 +4055,8 @@ int NuRndrOldFaceOn(struct faceon_s *faceon, struct numtl_s *mtl, struct numtx_s
         for (i = 0; i < 4; i++) {
             NuVec4MtxTransformH(&pnts[i], &pnts[i], pcs);
             pnts[i].w = 1.0f / pnts[i].w;
-            *rndrstream_3d->ptr.f32++ = faceon->tc[oldfaceon_uvindex[i][0]] * pnts[i].w;
-            *rndrstream_3d->ptr.f32++ = faceon->tc[oldfaceon_uvindex[i][1]] * pnts[i].w;
+            *rndrstream_3d->ptr.f32++ = faceon->tc[uvidx[i][0]] * pnts[i].w;
+            *rndrstream_3d->ptr.f32++ = faceon->tc[uvidx[i][1]] * pnts[i].w;
             *rndrstream_3d->ptr.f32++ = pnts[i].w;
             rndrstream_3d->ptr.u32++;
             *rndrstream_3d->ptr.u32++ = faceon->colour[0];
@@ -4055,6 +4076,7 @@ int NuRndrOldFaceOn(struct faceon_s *faceon, struct numtl_s *mtl, struct numtx_s
 
 
 int NuRndrFaceOn(struct faceon_s *faceon, struct numtl_s *mtl, struct numtx_s *wm) {
+    static int uvidx[4][2] = { { 0, 1 }, { 2, 1 }, { 0, 3 }, { 2, 3 } };
     struct nuvec4_s pnts[4];
     struct nuvec4_s pos;
     float ratiox;
@@ -4126,8 +4148,8 @@ int NuRndrFaceOn(struct faceon_s *faceon, struct numtl_s *mtl, struct numtx_s *w
         *((u64 *)rndrstream_3d->ptr.u32)++ = 0x3002400000008004ULL;
         *((u64 *)rndrstream_3d->ptr.u32)++ = 0x512;
         for (i = 0; i < 4; i++) {
-            *rndrstream_3d->ptr.f32++ = faceon->tc[faceon_uvindex[i][0]];
-            *rndrstream_3d->ptr.f32++ = faceon->tc[faceon_uvindex[i][1]];
+            *rndrstream_3d->ptr.f32++ = faceon->tc[uvidx[i][0]];
+            *rndrstream_3d->ptr.f32++ = faceon->tc[uvidx[i][1]];
             *rndrstream_3d->ptr.f32++ = 1.0f;
             rndrstream_3d->ptr.u32++;
             *rndrstream_3d->ptr.u32++ = faceon->colour[0];
@@ -4146,6 +4168,7 @@ int NuRndrFaceOn(struct faceon_s *faceon, struct numtl_s *mtl, struct numtx_s *w
 
 
 int NuRndrFaceY(struct faceon_s *faceon, struct numtl_s *mtl, struct numtx_s *wm) {
+    static int uvidx[4][2] = { { 0, 1 }, { 2, 1 }, { 0, 3 }, { 2, 3 } };
     struct nuvec4_s pnts[4];
     struct nuvec_s view;
     struct numtx_s *pcs;
@@ -4186,8 +4209,8 @@ int NuRndrFaceY(struct faceon_s *faceon, struct numtl_s *mtl, struct numtx_s *wm
         for (i = 0; i < 4; i++) {
             NuVec4MtxTransformH(&pnts[i], &pnts[i], pcs);
             pnts[i].w = 1.0f / pnts[i].w;
-            *rndrstream_3d->ptr.f32++ = faceon->tc[facey_uvindex[i][0]] * pnts[i].w;
-            *rndrstream_3d->ptr.f32++ = faceon->tc[facey_uvindex[i][1]] * pnts[i].w;
+            *rndrstream_3d->ptr.f32++ = faceon->tc[uvidx[i][0]] * pnts[i].w;
+            *rndrstream_3d->ptr.f32++ = faceon->tc[uvidx[i][1]] * pnts[i].w;
             *rndrstream_3d->ptr.f32++ = pnts[i].w;
             rndrstream_3d->ptr.u32++;
             *rndrstream_3d->ptr.u32++ = faceon->colour[0];
@@ -4280,8 +4303,19 @@ void NuRndrRectUVStream(struct rndrstream_s *stream, int x, int y, int width, in
 extern void NuVec4ScaleVU0(struct nuvec4_s *dst, struct nuvec4_s *src, float scale);
 extern struct rndrstream_s *rndrstream_3d_u;
 extern struct numtl_s *NuLgtBackBuff;
-extern float waveampx;
-extern float waveampy;
+
+struct nurndrscreenvtx_s Hazetab[33][21] = { 0 };
+NuRndrShadType NuRndrShadPolDat[128] = { 0 };
+struct nurndrwaterrip_s NuRndrWaterRipDat[32] = { 0 };
+struct nugspline_s *NuRndrShadMasks[32] = { 0 };
+struct nuvec_s NuRndrShadBox[2] = { 0 };
+struct nurndrshadstore_s shadstore[256] = { 0 };
+struct nurndrscreenvtx_s watertab[33][21] = { 0 };
+ottri_s *ot_tri[0x1000] = { 0 };
+ottri_s ot_tribuff[0x800] = { 0 };
+struct nuvec_s lightfan[9] = { 0 };
+struct nuvec_s curlight = { 0 };
+struct nurndrfoot_s NuRndrFootData[64] = { 0 };
 
 void NuRndrWater(void) {
     struct nuvec4_s nearpnt;
@@ -4701,7 +4735,7 @@ u32 *NuRndrShadowLightFan(void) {
     fan.dword[0] = 0x3002C00000008000ULL;
     fan.dword[1] = 0x512;
     if (nurndr_lightfan == 0) {
-        packet = vpDmaTag_RetEx(lightfan_packet, 0, 0x6C010056);
+        packet = vpDmaTag_RetEx(NuRndrBuff[2], 0, 0x6C010056);
         *packet++ = fan.word[0];
         *packet++ = fan.word[1];
         *packet++ = fan.word[2];
@@ -4748,11 +4782,13 @@ u32 *NuRndrShadowLightFan(void) {
         vpDmaTag_Close(packet);
         nurndr_lightfan = vertices;
     }
-    return lightfan_packet;
+    return NuRndrBuff[2];
 }
 
 
 void NuRndrShadowStencil(int paused, struct nuvec_s *pos) {
+    static int cursin;
+    static int cursin2;
     struct nuvec_s dir;
     struct nuvec4_s v;
     struct nuvec_s *pts;
@@ -4794,8 +4830,8 @@ void NuRndrShadowStencil(int paused, struct nuvec_s *pos) {
         return;
     }
     if (paused == 0) {
-        shadow_wobble_ang += 0xE74;
-        shadow_spin_ang += NuTrigTable[shadow_wobble_ang & 0xFFFF] * 1111.0f + 2111.0f;
+        cursin2 += 0xE74;
+        cursin += NuTrigTable[cursin2 & 0xFFFF] * 1111.0f + 2111.0f;
     }
     dir.x = pts[2].x;
     dir.z = pts[2].z;
@@ -4808,7 +4844,7 @@ void NuRndrShadowStencil(int paused, struct nuvec_s *pos) {
     mag = 2.0f / NuFsqrt(dir.x * dir.x + dir.z * dir.z);
     dir.x *= mag;
     dir.z *= mag;
-    wobble = NuTrigTable[(shadow_wobble_ang + 0x4000) & 0xFFFF] * 0.5f + NuTrigTable[shadow_spin_ang & 0xFFFF];
+    wobble = NuTrigTable[(cursin2 + 0x4000) & 0xFFFF] * 0.5f + NuTrigTable[cursin & 0xFFFF];
     dir.x = pos->x - pts[0].x - dir.x - wobble * (pts[0].x - pts[1].x) * 0.15f;
     dir.z = pos->z - pts[0].z - dir.z - wobble * (pts[0].z - pts[1].z) * 0.15f;
     mag = 2.0f / NuFsqrt(dir.x * dir.x + dir.z * dir.z);
@@ -5328,50 +5364,8 @@ int NuRndrStreamQuadWRip(struct rndrstream_s *stream, short *visible) {
 }
 
 
-void NuHGobjRndr(void *hobj, struct numtx_s *mtx, int nlayers, short *layer) {
-    NuHGobjEval(hobj, 0, 0, hgobj_joint_mtx);
-    NuHGobjRndrMtxDwa(hobj, mtx, nlayers, layer, hgobj_joint_mtx, 0);
-}
-
-
 int NuHGobjRndrMtx(void *hobj, struct numtx_s *mtx, int nlayers, short *layer, struct numtx_s *dwa) {
     return NuHGobjRndrMtxDwa(hobj, mtx, nlayers, layer, dwa, 0);
-}
-
-
-void NuRndrInitEx(int streamsize) {
-    int i;
-
-    NuRndrStreamInit(streamsize);
-    NuFntInit();
-    NuMtxSetIdentity(&rndr_identity_mtx);
-    NuRndrDeformerWeightsArrayInit();
-    NuRndrOTInit();
-    NRCylCapData = NuRndrCylCapMakeData();
-    NRCylData = NuRndrCylMakeData();
-    NuRndrShadowDirCol(&default_light_dir, 0x10808080);
-    NuRndrShadowCnt = 0;
-    for (i = 0; i < 32; i++) {
-        NuRndrWaterRipDat[i].timer = 0;
-    }
-}
-
-
-void NuRndrInit(void) {
-    int i;
-
-    NuRndrStreamInit(0x100000);
-    NuFntInit();
-    NuMtxSetIdentity(&rndr_identity_mtx);
-    NuRndrDeformerWeightsArrayInit();
-    NuRndrOTInit();
-    NRCylCapData = NuRndrCylCapMakeData();
-    NRCylData = NuRndrCylMakeData();
-    NuRndrShadowDirCol(&default_light_dir, 0x10808080);
-    NuRndrShadowCnt = 0;
-    for (i = 0; i < 32; i++) {
-        NuRndrWaterRipDat[i].timer = 0;
-    }
 }
 
 
@@ -5458,7 +5452,7 @@ int NuRndrSwapScreen(int target) {
 
 
 void NuRndrGlobalMtl(struct numtl_s *mtl) {
-    GlobalMtl = mtl;
+    globalmtl = mtl;
 }
 
 
@@ -5511,11 +5505,6 @@ void NuRndrParticleGroup(void *chunk, struct nurndrptlhead_s *list, struct numtl
     rndrstream_ptl->ptr.u32 = vpDmaTag_Call(rndrstream_ptl->ptr.u32, chunk);
     rndrstream_ptl->ptr.u32 = vpDmaTag_CntEx(rndrstream_ptl->ptr.u32, 0x13000000, 0);
     rndrstream_free = vpDmaTag_Next(rndrstream_ptl->ptr.u32, 0);
-}
-
-
-void NuRndrStarfield(void) {
-    NuErrorProlog(D_00614770, 0x5D5)(D_00614790);
 }
 
 
@@ -5794,8 +5783,41 @@ void NuRndrSplineSearch(void *spline) {
     int n;
 
     n = NuRndrShadMaskCount;
-    NuRndrShadMaskCount += NuSplineFindAllSub(spline, D_0062ECA8, &NuRndrShadMasks[n], 32 - n);
+    NuRndrShadMaskCount += NuSplineFindAllSub(spline, "stencil", &NuRndrShadMasks[n], 32 - n);
 }
+
+
+GsFrameReg cur_rt = { 0 };
+int nurndr_pixel_width = 0;
+int nurndr_pixel_height = 0;
+int nurndr_half_offset = 0;
+int nurndr_pixel_p2w = 0;
+int nurndr_pixel_p2h = 0;
+int NuRndrShadowCnt = 0;
+int NuRndrWaterRipCnt = 0;
+u32 *NRCylCapData = 0;
+u32 *NRCylData = 0;
+u32 *NRFanData = 0;
+int NuRndrShadMaskCount = 0;
+int nurndr_tritot_this_frame = 0;
+struct nurndrptlhead_s *testforcepart = 0;
+int DebugPart = 0;
+int shadstorecnt = 0;
+int testflip = 0;
+int testcntp = 0;
+ottri_s *ot_free = 0;
+int ot_highest = 0;
+int testdebug = 0;
+int testdone = 0;
+int testdone2 = 0;
+int testcnt = 0;
+int timev = 0;
+u32 curlightcol = 0;
+float NuRndrWaterLevel = 0.0f;
+u32 NuRndrWaterTint = 0;
+struct numtl_s *testmat = 0;
+int NuRndrFootFree = 0;
+u32 testfootcol = 0;
 
 
 u32 *NuRndrCreateBlendShapeDeformerWeightsArray(u32 count) {
@@ -5816,7 +5838,7 @@ u32 *NuRndrCreateBlendShapeDeformerWeightsArray(u32 count) {
 void NuRndrDeformerWeightsArrayInit(void) {
     u32 *p;
 
-    p = vpDmaTag_RetEx(default_skin_weights, 0x13000000, 0x01000101);
+    p = vpDmaTag_RetEx(null_dwa, 0x13000000, 0x01000101);
     *p++ = 0x60010063;
     *p = 0;
     vpDmaTag_Close(p + 1);
@@ -5839,15 +5861,15 @@ void NuRndrOTFlush(void) {
     mpgtag = 0;
     mtxmode = -1;
     mtl = 0;
-    if (ot_batch_free == 0x400) {
+    if (otitembuffcnt == 0x400) {
         return;
     }
     stream = rndrstream_ot_sort;
     NuRndrStreamLink(stream);
     NuRndrStreamSetMisc(stream);
     NuRndrStreamSetViewMtx(stream);
-    *((struct DmaTag *)stream->ptr.u32)++ = *(struct DmaTag *)ot_close_packet;
-    bin = &ot_bins[0xFFF];
+    *((struct DmaTag *)stream->ptr.u32)++ = *(struct DmaTag *)ot_cliptritag;
+    bin = &otitem[0xFFF];
     do {
         for (item = bin->head; item != 0; item = item->next) {
             if (item->mtl != mtl) {
@@ -5868,9 +5890,9 @@ void NuRndrOTFlush(void) {
         }
         bin->head = 0;
         bin--;
-    } while (bin >= ot_bins);
+    } while (bin >= otitem);
     rndrstream_free = vpDmaTag_Next(stream->ptr.u32, 0);
-    ot_batch_free = 0x400;
+    otitembuffcnt = 0x400;
 }
 
 

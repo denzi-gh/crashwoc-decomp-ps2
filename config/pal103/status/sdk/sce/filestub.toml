@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0256"
 source = "src/sdk/sce/filestub.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0256:0027c2c8:_sceFsIobSemaMK"
@@ -162,3 +162,69 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0256:0027f678:sceReadlink"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0256:00613380:_sceFs_q"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0256:00613400:_fs_init"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0256:00613404:_fs_semid"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0256:00613408:_fs_iob_semid"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0256:0061340c:_fs_fsq_semid"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0256:00613410:_fswildcard"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0256:00705180:ip0.48"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0256:007051c0:_send_data"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0256:00705e00:_rcv_data_rpc"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0256:00705e40:_rcv_data_cmd"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0256:00706280:_iob"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0256:00706480:_cd"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0256:007064a8:_fsversion"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0256:007064c0:_sif_FsRcv_Data"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x007064c0
+end = 0x00706500
+
+[[claim]]
+section = ".rodata"
+start = 0x0062c770
+end = 0x0062c7dd

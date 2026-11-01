@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0055"
 source = "src/nu3d/nutexcmp.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0055:00162b88:Blend16Pixels"
@@ -26,3 +26,8 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0055:00163230:NuTexCreateLuminanceMultiplyMap"
 state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x006160e0
+end = 0x006160fa

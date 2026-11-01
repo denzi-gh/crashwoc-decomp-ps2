@@ -16,10 +16,7 @@
 
 extern void *NuMemAllocFn(int size, char *file, int line);
 
-extern char D_00616000[];
-#define nutexcmp_srcfile D_00616000
-extern char D_006160E0[];
-#define underflow_msg D_006160E0
+#define nutexcmp_srcfile "..\\nu2crash.ps2\\nu3d\\nutexcmp.c"
 
 
 int Blend16Pixels(u32 *pixels, int *lo, int *hi)
@@ -336,7 +333,7 @@ void NuTexCreateLuminanceMultiplyMap(struct nutex_s *colourmap, struct nutex_s *
             }
             alpha = alpha / lum;
             if (alpha < 0) {
-                printf(underflow_msg);
+                printf("Alpha multiply underflow\n");
             }
             if (alpha > 255) {
                 alpha = 255;

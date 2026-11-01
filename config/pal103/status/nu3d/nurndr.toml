@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0040"
 source = "src/nu3d/nurndr.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0040:0011f030:NuRndrSetZBuffer"
@@ -466,3 +466,366 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0040:00130928:NuRndrAnglesZX"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:002d3f50:kickval.144"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:002d4008:kickval.170"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:002d4090:my_factors"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:002d4110:uvidx.310"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:002d4130:uvidx.314"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:002d4150:uvidx.318"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:002d4170:Hazetab"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:002d5718:NuRndrShadPolDat"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:002d6318:NuRndrWaterRipDat"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:002d6798:NuRndrShadMasks"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:002d6818:NuRndrShadBox"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:002d6830:shadstore"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:002db830:watertab"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:002dcdd8:ot_tri"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:002e0dd8:ot_tribuff"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:002e4dd8:lightfan"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:002e4e48:curlight"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:002e4e58:NuRndrFootData"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ec48:nurndr_shadowson"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ec4c:nurndr_lightfan"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ec50:nurndr_forced_mtl"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ec54:nurndr_forced_mtl_table"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ec58:debug_flush_vram"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ec5c:geom_dbg"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ec60:gobj_enabled"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ec64:skinskipix"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ec68:otscale"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ec6c:ottri_scale"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ec70:first_time.160"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ec74:testflipold"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ec78:hgobj_enabled.205"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ec7c:tri2dz"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ec80:testmultl"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ec84:waveampx"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ec88:waveampy"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ec8c:wavespeedx"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ec90:wavespeedy"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ec94:wavetime"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ec98:wavescrollx"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ec9c:wavescrolly"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062eca0:wavescrspeed"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ecb0:cur_rt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ecb8:nurndr_pixel_width"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ecbc:nurndr_pixel_height"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ecc0:nurndr_half_offset"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ecc4:nurndr_pixel_p2w"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ecc8:nurndr_pixel_p2h"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062eccc:NuRndrShadowCnt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ecd0:NuRndrWaterRipCnt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ecd4:NRCylCapData"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ecd8:NRCylData"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ecdc:NRFanData"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ece0:NuRndrShadMaskCount"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ece4:nurndr_tritot_this_frame"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ece8:testforcepart"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ecec:DebugPart"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ecf0:shadstorecnt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ecf4:testflip"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ecf8:testcntp"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ecfc:ot_free"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ed00:ot_highest"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ed04:testdebug"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ed08:testdone"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ed0c:testdone2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ed10:testcnt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ed14:timev"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ed18:curlightcol"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ed1c:NuRndrWaterLevel"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ed20:NuRndrWaterTint"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ed24:testmat"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ed28:NuRndrFootFree"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0062ed2c:testfootcol"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0063306c:cursin.370"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:00633070:cursin2.371"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:00633074:skinjointmtx"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:00633078:globalmtl"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0063307c:otitembuffcnt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:0067da40:mtx_array.201"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:00681a40:mtx_array.221"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:00685a40:mtx_array.243"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:00689a40:rndr_node_offset"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:00689a80:null_dwa"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:00689aa0:otitem"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:006a5aa0:otitembuff"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:006acaa0:ot_tritag"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:006acae0:ot_cliptritag"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0040:006acb00:NuRndrBuff"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x006acb00
+end = 0x006ad100
+
+[[claim]]
+section = ".rodata"
+start = 0x00614830
+end = 0x00614858
+
+[[claim]]
+section = ".sbss"
+start = 0x0063307c
+end = 0x00633080

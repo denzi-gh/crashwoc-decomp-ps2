@@ -33,37 +33,27 @@
 #include "game/creature.h"
 #include "nups2/ps2ctl.h"
 #include "edtools/edui.h"
+#include "edtools/edmain.h"
 
-extern void *edai_active_menu;
-extern s32 D_00631C3C;
-#define edai_terrainlock D_00631C3C
-extern s32 D_00631C38;
-#define edai_count D_00631C38
-extern s32 D_00631C40;
-#define edai_levelaitype D_00631C40
-extern s32 D_00631C44;
-#define edai_aitype D_00631C44
-extern s32 D_00631C48;
-#define edai_ipoint D_00631C48
-extern void *edai_options_menu;
-extern struct eduimenu_s *edai_selecttype_menu;
+static s32 edai_count = 0;
+static s32 edai_terrainlock = 1;
+static s32 edai_levelaitype = -1;
+static s32 edai_aitype = 0;
+static s32 edai_ipoint = 0;
+static s32 edai_highlight_i_atab = -1;
+static s32 edai_highlight_i_point = 0;
+static f32 edai_surface_y;
+static f32 edai_layer_y;
+static f32 edai_roof_y;
+
 extern struct nuvec_s edai_cam_pos;
 extern u8 LevelAIType[];
-extern u8 D_006203F8[];
 extern s32 screendump;
-extern s32 edai_used;
 extern s32 LEVELAITYPES;
 extern s32 PLAYERCOUNT;
 extern struct nuvec_s v000;
 extern f32 EShadY;
 extern f32 ShadRoofY;
-extern f32 D_0062E34C;
-extern f32 D_0063334C;
-#define edai_surface_y D_0063334C
-extern f32 D_00633350;
-#define edai_layer_y D_00633350
-extern f32 D_00633354;
-#define edai_roof_y D_00633354
 
 extern void eduiMenuDestroy(void *menu);
 extern void eduiMenuProcess(void *menu, struct nupad_s *pad);
@@ -83,21 +73,11 @@ extern void ResetCrates(void);
 extern void ResetWumpa(void);
 
 extern s32 LEVELAICOUNT;
-extern s32 D_00631C4C;
-#define edai_highlight_i_atab D_00631C4C
-extern s32 D_00631C50;
-#define edai_highlight_i_point D_00631C50
 
 extern struct aitype_s AIType[];
 
 extern s32 PANELOFF;
 extern char tbuf[];
-extern u8 D_00631C58[];
-extern u8 D_00631C60[];
-extern u8 D_00620378[];
-extern u8 D_00620390[];
-extern u8 D_006203A0[];
-extern u8 D_006203B0[];
 
 extern struct ldata_s *LDATA;
 
@@ -117,16 +97,6 @@ extern char *strupr(char *s);
 extern struct aitab_s AITab[];
 extern f32 NuTrigTable[];
 extern void *app_fnt;
-extern u8 D_00631C80[];
-
-struct edai_itemdef_s {
-    u8 data[16];
-};
-extern struct edai_itemdef_s D_006203D8;
-extern u8 D_006203E8[];
-extern u8 D_00620408[];
-extern u8 D_00620418[];
-extern u8 D_00631C78[];
 extern u8 D_005C9520[][0x1C];
 
 
@@ -134,8 +104,6 @@ extern void edcamSetPos(struct nuvec_s *pos);
 
 extern struct gtimer_s GlobalTimer;
 extern struct numtx_s mTEMP;
-extern s32 D_005CD1D0[8];
-#define edai_rgba D_005CD1D0
 
 extern void NuHGobjRndr(struct NUHGOBJ_s *hobj, struct numtx_s *m, s32 nlayers,
                         s16 *layer);
@@ -165,6 +133,14 @@ void edaiDRAW(void);
 void edaiDrawInfo(void);
 void edaiHIGHLIGHT(void);
 void edaiDoInput(struct nupad_s *pad);
+void edaiClose(void);
+void edaiEnter(void);
+s32 edaiProc(struct nupad_s *pad);
+void edaiRender(void);
+
+static s32 edai_rgba[8] = {
+    0xFF, 0x7FFF, 0xFFFF, 0xFF00, 0xFFFF00, 0xFF007F, 0xFF00FF, 0xFFFFFF
+};
 
 void edaiHIGHLIGHT(void)
 {
@@ -268,23 +244,26 @@ void edaiJUMP(void)
     }
 }
 
+void *edai_active_menu = 0;
+void *edai_options_menu = 0;
+struct eduimenu_s *edai_selecttype_menu = 0;
+
 void edaicbSelectType(struct eduimenu_s *parent)
 {
-    struct edai_itemdef_s buf;
+    struct eduistyle_s style = { { 0x80000000, 0x80FF0000 }, { 0x80808080, 0x80404040 } };
     s32 i;
     s32 sel;
 
-    buf = D_006203D8;
     edai_selecttype_menu = eduiMenuCreate(0x46, 0x46, 0xB4, 0xFA, app_fnt,
-                                          edaiCbCancelSelectType, D_006203E8);
+                                          edaiCbCancelSelectType, "Select AI type");
     if (edai_selecttype_menu != 0) {
         eduiMenuAddItem(edai_selecttype_menu,
-                        eduiItemCheckCreate(-1, &buf, edai_levelaitype == -1, 1,
-                                            edaicbSetType, D_00631C78));
+                        eduiItemCheckCreate(-1, &style, edai_levelaitype == -1, 1,
+                                            edaicbSetType, "None"));
         for (i = 0; i < LEVELAITYPES; i++) {
             sel = (edai_levelaitype == i);
             eduiMenuAddItem(edai_selecttype_menu,
-                            eduiItemCheckCreate(i, &buf, sel, 1,
+                            eduiItemCheckCreate(i, &style, sel, 1,
                                                 edaicbSetType,
                                                 D_005C9520[LevelAIType[i]]));
             if (sel == 1) {
@@ -306,18 +285,18 @@ void edaiDrawInfo(void)
     NuFntSetPen(-1);
     strcpy(tbuf, LDATA->path);
     strupr(tbuf);
-    NuFntPrintEx(0x400, 0x100, 0, (char *)D_00631C58, tbuf);
-    NuFntPrintEx(0x400, 0x200, 0, (char *)D_00620378, LEVELAICOUNT, 0x60);
+    NuFntPrintEx(0x400, 0x100, 0, "%s.AI", tbuf);
+    NuFntPrintEx(0x400, 0x200, 0, "LEVELAICOUNT:   %i/%i", LEVELAICOUNT, 0x60);
     strcpy(tbuf, (edai_levelaitype >= 0) ? (char *)D_005C9520[edai_aitype]
-                                   : (char *)D_00631C60);
+                                   : "NONE");
     strupr(tbuf);
-    NuFntPrintEx(0x400, 0x300, 0, (char *)D_00620390, tbuf);
+    NuFntPrintEx(0x400, 0x300, 0, "TYPE:   %s", tbuf);
     if (edai_levelaitype >= 0) {
         struct aitype_s *t = &AIType[edai_aitype];
-        NuFntPrintEx(0x400, 0x400, 0, (char *)D_006203A0, edai_ipoint + 1,
+        NuFntPrintEx(0x400, 0x400, 0, "POINT:   %i/%i", edai_ipoint + 1,
                      t->points);
     }
-    NuFntPrintEx(0x400, 0xD00, 0, (char *)D_006203B0, edai_cam_pos.x,
+    NuFntPrintEx(0x400, 0xD00, 0, "CURSOR:   X: %.2f   Y: %.2f   Z: %.2f", edai_cam_pos.x,
                  edai_cam_pos.y, edai_cam_pos.z);
 }
 
@@ -465,26 +444,41 @@ void edaiDRAW(void)
     }
 }
 
+inline void edaicbSaveAIData(struct eduimenu_s *menu)
+{
+    SaveAI();
+    eduiCreateMessageMenu(menu, "Saved OK", 1);
+}
+
 void edaiInit(void)
 {
-    struct edai_itemdef_s buf;
+    struct eduistyle_s style = { { 0x80000000, 0x80FF0000 }, { 0x80808080, 0x80404040 } };
 
-    buf = D_006203D8;
     edai_options_menu = eduiMenuCreate(0x46, 0x46, 0xB4, 0x12C, app_fnt,
-                                       edaiCbCancelOptMenu, D_00631C80);
+                                       edaiCbCancelOptMenu, "Options");
     if (edai_options_menu != 0) {
         eduiMenuAddItem(edai_options_menu,
-                        eduiItemSelCreate(1, &buf, 0, 0, edaicbSelectType,
-                                          D_006203E8));
+                        eduiItemSelCreate(1, &style, 0, 0, edaicbSelectType,
+                                          "Select AI type"));
         eduiMenuAddItem(edai_options_menu,
-                        eduiItemSelCreate(1, &buf, 0, 0, edaicbSaveAIData,
-                                          D_00620408));
+                        eduiItemSelCreate(1, &style, 0, 0, edaicbSaveAIData,
+                                          "Save AI data"));
         eduiMenuAddItem(edai_options_menu,
-                        eduiItemToggleCreate(1, &buf, 0, 1, edaicbTerrainToggle,
-                                             D_00620418));
+                        eduiItemToggleCreate(1, &style, 0, 1, edaicbTerrainToggle,
+                                             "Terrain lock"));
         edui_last_item->on = edai_terrainlock;
     }
 }
+
+struct edmainreg_s edaidesc = {
+    0, 0, "AI Editor", edaiInit, edaiClose, edaiEnter, 0, 0, 0, 0,
+    EDMAIN_BLOCKID('e', 'd', 'a', 'i'), edaiProc, edaiRender
+};
+struct nuvec_s edai_cam_pos = { 0.0f, 0.0f, 0.0f };
+s32 edai_used = 0;
+f32 edai_cam_dist = 0.0f;
+f32 edai_cam_ax = 0.0f;
+f32 edai_cam_ay = 0.0f;
 
 void edaiDoInput(struct nupad_s *pad)
 {
@@ -551,12 +545,6 @@ void edaicbSetType(struct eduimenu_s *menu, struct eduiitem_s *item)
     edai_aitype = LevelAIType[t];
 }
 
-void edaicbSaveAIData(struct eduimenu_s *menu)
-{
-    SaveAI();
-    eduiCreateMessageMenu(menu, D_006203F8, 1);
-}
-
 void edaicbTerrainToggle(struct eduimenu_s *menu, struct eduiitem_s *item)
 {
     edai_terrainlock = item->on;
@@ -616,9 +604,9 @@ s32 edaiProc(struct nupad_s *pad)
         edai_layer_y = EShadY;
         edai_roof_y = ShadRoofY;
     } else {
-        edai_surface_y = D_0062E34C;
-        edai_layer_y = D_0062E34C;
-        edai_roof_y = D_0062E34C;
+        edai_surface_y = 2000000.0f;
+        edai_layer_y = 2000000.0f;
+        edai_roof_y = 2000000.0f;
     }
     edaiDoInput(pad);
     if (pad->paddata_db & 0x800) {

@@ -103,6 +103,49 @@ static inline void PadUpdateSticks(struct nupad_s *pad) {
 }
 
 
+/* Defined (inline) before NuPs2ReadPad: their file-name string precedes its
+   jump table in retail .rodata. */
+inline void NuPs2ClosePad(struct nupad_s *pad) {
+    scePadPortClose(pad->port, pad->slot);
+    NuMemFreeFn(pad, "..\\nu2crash.ps2\\nups2\\ps2ctl.c", 0x84);
+}
+
+
+inline struct nupad_s *NuPs2OpenPad(s32 port, s32 slot) {
+    struct nupad_s *pad;
+    s32 i;
+
+    NuPs2InitIOP();
+    pad = NuMemAllocFn(sizeof(struct nupad_s), "..\\nu2crash.ps2\\nups2\\ps2ctl.c", 0x9A);
+    if (pad) {
+        memset(pad, 0, sizeof(struct nupad_s));
+        pad->port = port;
+        pad->slot = slot;
+        pad->stage = 0;
+        pad->l_rx = 1.0f;
+        pad->l_dx = 0.1f;
+        pad->l_ry = 1.0f;
+        pad->l_dy = 0.1f;
+        pad->r_rx = 1.0f;
+        pad->r_dx = 0.1f;
+        pad->r_ry = 1.0f;
+        pad->r_dy = 0.1f;
+        for (i = 0; i < 6; i++) {
+            pad->actdirect[i] = 0;
+            pad->actalign[i] = 0xFF;
+        }
+        pad->actalign[0] = 0;
+        pad->actalign[1] = 1;
+        if (!scePadPortOpen(pad->port, pad->slot,
+                            (void *)(((nuintptr)pad->dmabuf + 0x3F) & ~(nuintptr)0x3F))) {
+            NuMemFreeFn(pad, "..\\nu2crash.ps2\\nups2\\ps2ctl.c", 0xB8);
+            pad = 0;
+        }
+    }
+    return pad;
+}
+
+
 s32 NuPs2ReadPad(struct nupad_s *pad) {
     s32 state;
     s32 replay;
@@ -286,47 +329,6 @@ s32 NuPs2ReadPad(struct nupad_s *pad) {
         }
     }
     return pad->valid;
-}
-
-
-void NuPs2ClosePad(struct nupad_s *pad) {
-    scePadPortClose(pad->port, pad->slot);
-    NuMemFreeFn(pad, "..\\nu2crash.ps2\\nups2\\ps2ctl.c", 0x84);
-}
-
-
-struct nupad_s *NuPs2OpenPad(s32 port, s32 slot) {
-    struct nupad_s *pad;
-    s32 i;
-
-    NuPs2InitIOP();
-    pad = NuMemAllocFn(sizeof(struct nupad_s), "..\\nu2crash.ps2\\nups2\\ps2ctl.c", 0x9A);
-    if (pad) {
-        memset(pad, 0, sizeof(struct nupad_s));
-        pad->port = port;
-        pad->slot = slot;
-        pad->stage = 0;
-        pad->l_rx = 1.0f;
-        pad->l_dx = 0.1f;
-        pad->l_ry = 1.0f;
-        pad->l_dy = 0.1f;
-        pad->r_rx = 1.0f;
-        pad->r_dx = 0.1f;
-        pad->r_ry = 1.0f;
-        pad->r_dy = 0.1f;
-        for (i = 0; i < 6; i++) {
-            pad->actdirect[i] = 0;
-            pad->actalign[i] = 0xFF;
-        }
-        pad->actalign[0] = 0;
-        pad->actalign[1] = 1;
-        if (!scePadPortOpen(pad->port, pad->slot,
-                            (void *)(((nuintptr)pad->dmabuf + 0x3F) & ~(nuintptr)0x3F))) {
-            NuMemFreeFn(pad, "..\\nu2crash.ps2\\nups2\\ps2ctl.c", 0xB8);
-            pad = 0;
-        }
-    }
-    return pad;
 }
 
 

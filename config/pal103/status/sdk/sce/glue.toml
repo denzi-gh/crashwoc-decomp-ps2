@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0248"
 source = "src/sdk/sce/glue.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0248:00279110:sceResetttyinit"
@@ -73,4 +73,12 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0248:00279420:unlink"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0248:00612bb8:ttyinit"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0248:00612bbc:heap_ptr.30"
 state = "matching"

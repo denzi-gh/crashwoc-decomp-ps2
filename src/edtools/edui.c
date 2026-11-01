@@ -104,75 +104,20 @@
 #define EDUI_ITEM_TEXTUREPICK  11
 #define EDUI_ITEM_COLOURSLIDER 12
 
-extern char *D_004BFE58[4];
-extern char *D_004BFE68[4];
-extern char *D_006B40D8[4];
-extern s32 ui_bgmtl;
+s32 ui_bgmtl = 0;
+static f32 cliph = 0.0f;
+static f32 clips = 0.0f;
+static f32 clipv = 0.0f;
+static f32 clipg = 0.0f;
+static s32 item_width;
+static struct eduimenu_s *testmenu0;
+static struct eduimenu_s *submenu0;
+static struct eduimenu_s *submenu1;
+static struct numtl_s *uimtls[6];
+static char *textrow[4];
 extern s32 NuFntHeight;
 extern s32 NuFntBase;
 extern struct eduimenu_s *edui_messagemenu;
-extern struct eduimenu_s *D_00633238;
-extern struct eduimenu_s *D_0063324C;
-extern char D_0062F910[];
-extern char D_0062F968[];
-extern char D_0062F980[];
-extern char D_0062F988[];
-extern char D_0061A868[];
-extern char D_0061A878[];
-extern char D_0061A7A0[];
-extern f32 D_0062F8FC;
-extern f32 D_0062F900;
-extern f32 D_0062F904;
-extern f32 D_0062F908;
-extern s32 D_0062F970;
-extern s32 D_0062F974;
-extern void *D_0062F978;
-extern f32 D_0062F960;
-extern s32 D_0062F964;
-extern f32 D_0062F98C;
-extern s32 D_0062F990;
-extern s32 D_0063323C;
-extern s32 D_00633240;
-extern s32 D_00633244;
-extern s32 D_00633248;
-extern s32 D_00633250;
-extern struct eduimenu_s *D_00633254;
-extern struct eduimenu_s *D_00633258;
-extern struct eduimenu_s *D_0063325C;
-extern struct numtl_s *D_006B40C0[6];
-
-#define gpcfg_clip_h    D_0062F8FC
-#define gpcfg_clip_s    D_0062F900
-#define gpcfg_clip_v    D_0062F904
-#define gpcfg_clip_grey D_0062F908
-#define edui_up_repeat   D_0062F970
-#define edui_textpick_up_repeat    D_0063323C
-#define edui_textpick_down_repeat  D_00633240
-#define edui_textpick_left_repeat  D_00633244
-#define edui_textpick_right_repeat D_00633248
-#define edui_down_repeat D_0062F974
-#define edui_slider_speed  D_0062F960
-#define edui_slider_repeat D_0062F964
-#define edui_colourslider_speed  D_0062F98C
-#define edui_colourslider_repeat D_0062F990
-#define edui_test_sel   D_0062F978
-#define edui_test_menu  D_00633254
-#define edui_test_submenu0 D_00633258
-#define edui_test_submenu1 D_0063325C
-#define edui_item_width D_00633250
-#define edui_mtl        D_006B40C0
-#define edui_srcfile    D_0061A7A0
-#define edui_textpick_menu D_00633238
-#define edui_gradcfg_menu  D_0063324C
-#define edui_emptystr   D_0062F910
-#define edui_str_message D_0062F968
-#define edui_str_subsel  D_0062F980
-#define edui_str_sel     D_0062F988
-#define edui_str_gradpickadjust D_0061A868
-#define edui_str_colourpick     D_0061A878
-#define edui_keyboard_upper D_004BFE58
-#define edui_keyboard_lower D_004BFE68
-#define edui_keyboard       D_006B40D8
 
 extern s32 NuStrLen(char *str);
 extern void NuStrCpy(char *dst, char *src);
@@ -258,45 +203,45 @@ s32 eduicbRenderTexturePick(struct eduimenu_s *menu, struct eduiitem_s *item, s3
 
 
 void eduiInitMaterials(void) {
-    edui_mtl[0] = NuMtlCreate(1);
-    edui_mtl[0]->diffuse.r = 0.5f;
-    edui_mtl[0]->diffuse.g = 0.5f;
-    edui_mtl[0]->diffuse.b = 0.5f;
-    edui_mtl[0]->attrib.cull = 2;
-    edui_mtl[0]->attrib.zmode = 3;
-    edui_mtl[0]->alpha = 1.0f;
-    edui_mtl[0]->attrib.alpha = 0;
-    NuMtlUpdate(edui_mtl[0]);
+    uimtls[0] = NuMtlCreate(1);
+    uimtls[0]->diffuse.r = 0.5f;
+    uimtls[0]->diffuse.g = 0.5f;
+    uimtls[0]->diffuse.b = 0.5f;
+    uimtls[0]->attrib.cull = 2;
+    uimtls[0]->attrib.zmode = 3;
+    uimtls[0]->alpha = 1.0f;
+    uimtls[0]->attrib.alpha = 0;
+    NuMtlUpdate(uimtls[0]);
 
-    edui_mtl[1] = NuMtlCreate(1);
-    edui_mtl[1]->diffuse.r = 0.2f;
-    edui_mtl[1]->diffuse.g = 0.2f;
-    edui_mtl[1]->diffuse.b = 0.2f;
-    edui_mtl[1]->attrib.cull = 2;
-    edui_mtl[1]->attrib.zmode = 3;
-    edui_mtl[1]->alpha = 0.999f;
-    edui_mtl[1]->attrib.alpha = 3;
-    NuMtlUpdate(edui_mtl[1]);
+    uimtls[1] = NuMtlCreate(1);
+    uimtls[1]->diffuse.r = 0.2f;
+    uimtls[1]->diffuse.g = 0.2f;
+    uimtls[1]->diffuse.b = 0.2f;
+    uimtls[1]->attrib.cull = 2;
+    uimtls[1]->attrib.zmode = 3;
+    uimtls[1]->alpha = 0.999f;
+    uimtls[1]->attrib.alpha = 3;
+    NuMtlUpdate(uimtls[1]);
 
-    edui_mtl[2] = NuMtlCreate(1);
-    edui_mtl[2]->diffuse.r = 0.2f;
-    edui_mtl[2]->diffuse.g = 0.2f;
-    edui_mtl[2]->diffuse.b = 0.2f;
-    edui_mtl[2]->attrib.cull = 2;
-    edui_mtl[2]->attrib.zmode = 3;
-    edui_mtl[2]->alpha = 0.999f;
-    edui_mtl[2]->attrib.alpha = 2;
-    NuMtlUpdate(edui_mtl[2]);
+    uimtls[2] = NuMtlCreate(1);
+    uimtls[2]->diffuse.r = 0.2f;
+    uimtls[2]->diffuse.g = 0.2f;
+    uimtls[2]->diffuse.b = 0.2f;
+    uimtls[2]->attrib.cull = 2;
+    uimtls[2]->attrib.zmode = 3;
+    uimtls[2]->alpha = 0.999f;
+    uimtls[2]->attrib.alpha = 2;
+    NuMtlUpdate(uimtls[2]);
 
-    edui_mtl[3] = NuMtlCreate(1);
-    edui_mtl[3]->diffuse.r = 0.2f;
-    edui_mtl[3]->diffuse.g = 0.2f;
-    edui_mtl[3]->diffuse.b = 0.2f;
-    edui_mtl[3]->attrib.cull = 2;
-    edui_mtl[3]->attrib.zmode = 3;
-    edui_mtl[3]->alpha = 0.999f;
-    edui_mtl[3]->attrib.alpha = 1;
-    NuMtlUpdate(edui_mtl[3]);
+    uimtls[3] = NuMtlCreate(1);
+    uimtls[3]->diffuse.r = 0.2f;
+    uimtls[3]->diffuse.g = 0.2f;
+    uimtls[3]->diffuse.b = 0.2f;
+    uimtls[3]->attrib.cull = 2;
+    uimtls[3]->attrib.zmode = 3;
+    uimtls[3]->alpha = 0.999f;
+    uimtls[3]->attrib.alpha = 1;
+    NuMtlUpdate(uimtls[3]);
 }
 
 
@@ -357,6 +302,15 @@ static inline void eduiHSVToRGB(f32 h, f32 s, f32 v, f32 *r, f32 *g, f32 *b) {
 }
 
 
+inline void eduicbItemDestroy(struct eduimenu_s *menu, struct eduiitem_s *item) {
+    if (item->text) {
+        NuMemFreeFn(item->text, "..\\nu2crash.ps2\\edtools\\edui.c", 0x180);
+    }
+    NuMemFreeFn(item, "..\\nu2crash.ps2\\edtools\\edui.c", 0x182);
+    menu->cursor = menu->head;
+}
+
+
 s32 eduicbRenderSelWithClipColour(struct eduimenu_s *menu, struct eduiitem_s *item, s32 x, s32 y,
                                   s32 w, s32 highlight) {
     s32 height;
@@ -372,15 +326,15 @@ s32 eduicbRenderSelWithClipColour(struct eduimenu_s *menu, struct eduiitem_s *it
     item->y = y;
     texty = ((height * 8 - NuFntHeight) >> 1) + NuFntBase;
     NuRndrRect2di(x * 16, y * 8, w * 16, height * 8, item->style.colour[item->on],
-                  edui_mtl[ui_bgmtl]);
+                  uimtls[ui_bgmtl]);
     NuFntSetPen(item->style.pen[item->on]);
     NuFntPrintEx((x * 2 + w) * 8, y * 8 + texty, 2, item->text);
     if (item->type == EDUI_ITEM_GRADPICK) {
-        eduiHSVToRGB(gpcfg_clip_h, gpcfg_clip_s, gpcfg_clip_v, &r, &g, &b);
+        eduiHSVToRGB(cliph, clips, clipv, &r, &g, &b);
     } else {
-        r = gpcfg_clip_grey;
-        g = gpcfg_clip_grey;
-        b = gpcfg_clip_grey;
+        r = clipg;
+        g = clipg;
+        b = clipg;
     }
     colour = 0x80000000 + ((s32)(b * 255.0f) << 16) +
              ((s32)(g * 255.0f) << 8) + (s32)(r * 255.0f);
@@ -389,7 +343,7 @@ s32 eduicbRenderSelWithClipColour(struct eduimenu_s *menu, struct eduiitem_s *it
     colours[3] = colour;
     colours[1] = colour;
     NuRndrGradRect2di((x + w - 45) * 16, y * 8, 640, height * 8, colours,
-                      edui_mtl[ui_bgmtl]);
+                      uimtls[ui_bgmtl]);
     return height;
 }
 
@@ -410,7 +364,7 @@ s32 eduicbRenderCheck(struct eduimenu_s *menu, struct eduiitem_s *item, s32 x, s
     item->y = y;
     texty = ((height * 8 - NuFntHeight) >> 1) + NuFntBase;
     NuRndrRect2di(x * 16, y * 8, w * 16, height * 8, item->style.colour[0],
-                  edui_mtl[ui_bgmtl]);
+                  uimtls[ui_bgmtl]);
     NuFntSetPen(item->style.pen[0]);
     NuFntPrintEx(x * 16, y * 8 + texty, 0, item->text);
     left = (x + w - height) * 16 - 16;
@@ -426,7 +380,7 @@ s32 eduicbRenderCheck(struct eduimenu_s *menu, struct eduiitem_s *item, s32 x, s
         tick[5] = bottom;
         tick[6] = right;
         tick[7] = top;
-        NuRndrTriStrip2di(tick, 0, 4, item->style.pen[0], edui_mtl[0]);
+        NuRndrTriStrip2di(tick, 0, 4, item->style.pen[0], uimtls[0]);
     } else {
         box[0] = left;
         box[1] = (top + bottom) >> 1;
@@ -438,7 +392,7 @@ s32 eduicbRenderCheck(struct eduimenu_s *menu, struct eduiitem_s *item, s32 x, s
         box[7] = bottom;
         box[8] = left;
         box[9] = (top + bottom) >> 1;
-        NuRndrLineStrip2di(box, 0, 5, item->style.pen[0], edui_mtl[0]);
+        NuRndrLineStrip2di(box, 0, 5, item->style.pen[0], uimtls[0]);
     }
     return height;
 }
@@ -454,7 +408,7 @@ inline struct eduimenu_s *eduiMenuCreate(s32 x, s32 y, s32 w, s32 h, void *font,
     if (title) {
         size = NuStrLen(title) + sizeof(struct eduimenu_s) + 1;
     }
-    menu = NuMemAllocFn(size, edui_srcfile, 0x1A1);
+    menu = NuMemAllocFn(size, "..\\nu2crash.ps2\\edtools\\edui.c", 0x1A1);
     if (menu) {
         memset(menu, 0, size);
         menu->x = x;
@@ -549,12 +503,12 @@ inline void eduiMenuFitWidth(struct eduimenu_s *menu, s32 margin) {
 inline s32 eduiItemSetText(struct eduiitem_s *item, char *text) {
     if (item->text) {
         if (NuStrLen(item->text) < NuStrLen(text)) {
-            NuMemFreeFn(item->text, edui_srcfile, 0x24F);
+            NuMemFreeFn(item->text, "..\\nu2crash.ps2\\edtools\\edui.c", 0x24F);
             item->text = 0;
         }
     }
     if (!item->text) {
-        item->text = NuMemAllocFn(NuStrLen(text) + 1, edui_srcfile, 0x254);
+        item->text = NuMemAllocFn(NuStrLen(text) + 1, "..\\nu2crash.ps2\\edtools\\edui.c", 0x254);
         if (!item->text) {
             return 0;
         }
@@ -571,7 +525,7 @@ inline struct eduiitem_s *eduiItemSelCreate(void *data, struct eduistyle_s *styl
                                    char *text) {
     struct eduiitem_s *item;
 
-    item = NuMemAllocFn(0x48, edui_srcfile, 0x269);
+    item = NuMemAllocFn(0x48, "..\\nu2crash.ps2\\edtools\\edui.c", 0x269);
     if (item) {
         memset(item, 0, 0x48);
         item->type = EDUI_ITEM_SEL;
@@ -639,13 +593,16 @@ struct eduiitem_s *eduiItemToggleCreate(void *data, struct eduistyle_s *style, s
 }
 
 
+static char *textcaps[4] = { "1234567890", "QWERTYUIOP", "ASDFGHJKL_", "ZXCVBNM<>?" };
+static char *textlow[4] = { "1234567890", "qwertyuiop", "asdfghjkl_", "zxcvbnm<>?" };
+
 struct eduiitem_s *eduiItemTextPickCreate(void *data, struct eduistyle_s *style,
                                  void (*enter)(struct eduimenu_s *menu, struct eduiitem_s *item,
                                                u32 paddata),
                                  char *text) {
     struct eduiitem_s *item;
 
-    item = NuMemAllocFn(sizeof(struct eduiitem_s), edui_srcfile, 0x355);
+    item = NuMemAllocFn(sizeof(struct eduiitem_s), "..\\nu2crash.ps2\\edtools\\edui.c", 0x355);
     if (item) {
         memset(item, 0, sizeof(struct eduiitem_s));
         item->type = EDUI_ITEM_TEXTPICK;
@@ -658,10 +615,10 @@ struct eduiitem_s *eduiItemTextPickCreate(void *data, struct eduistyle_s *style,
         item->destroy = eduicbItemDestroy;
         eduiItemSetText(item, text);
         item->u.textpick.enter = enter;
-        edui_keyboard[0] = edui_keyboard_upper[0];
-        edui_keyboard[1] = edui_keyboard_upper[1];
-        edui_keyboard[2] = edui_keyboard_upper[2];
-        edui_keyboard[3] = edui_keyboard_upper[3];
+        textrow[0] = textcaps[0];
+        textrow[1] = textcaps[1];
+        textrow[2] = textcaps[2];
+        textrow[3] = textcaps[3];
         return item;
     }
     return 0;
@@ -669,27 +626,32 @@ struct eduiitem_s *eduiItemTextPickCreate(void *data, struct eduistyle_s *style,
 
 
 void eduiAddTextPickEnt(struct eduimenu_s *menu, struct eduiitem_s *pick) {
+    static struct eduimenu_s *tpent;
     struct eduistyle_s style = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
     struct eduiitem_s *item;
     struct eduiitem_s *owner;
 
     owner = pick;
 
-    edui_textpick_menu = eduiMenuCreate(owner->x + 10, owner->y + 10, 180, 50,
+    tpent = eduiMenuCreate(owner->x + 10, owner->y + 10, 180, 50,
                                         menu->font, 0, "Enter Text");
-    if (edui_textpick_menu) {
-        item = eduiItemTextPickCreate(pick, &style, tpentOnEnter, edui_emptystr);
-        eduiMenuAddItem(edui_textpick_menu, item);
-        eduiMenuAttach(menu, edui_textpick_menu);
+    if (tpent) {
+        item = eduiItemTextPickCreate(pick, &style, tpentOnEnter, "");
+        eduiMenuAddItem(tpent, item);
+        eduiMenuAttach(menu, tpent);
         item->style = owner->style;
         NuStrCpy(item->u.textpick.text, pick->u.textpick.text);
         item->u.textpick.active = 1;
-        eduiMenuFitWidth(edui_textpick_menu, 8);
+        eduiMenuFitWidth(tpent, 8);
     }
 }
 
 
 s32 eduicbProcessTextPick(struct eduimenu_s *menu, struct eduiitem_s *item, struct nupad_s *pad, f32 dt) {
+    static s32 up_rept;
+    static s32 down_rept;
+    static s32 left_rept;
+    static s32 right_rept;
     s32 up;
     s32 down;
     s32 left;
@@ -701,42 +663,42 @@ s32 eduicbProcessTextPick(struct eduimenu_s *menu, struct eduiitem_s *item, stru
         down = 0;
         up = 0;
         if (pad->paddata_db & 0x1000) {
-            edui_textpick_up_repeat = 20;
+            up_rept = 20;
             up = 1;
         }
-        if ((pad->paddata & 0x1000) && edui_textpick_up_repeat) {
-            if (--edui_textpick_up_repeat == 0) {
-                edui_textpick_up_repeat = 10;
+        if ((pad->paddata & 0x1000) && up_rept) {
+            if (--up_rept == 0) {
+                up_rept = 10;
                 up = 1;
             }
         }
         if (pad->paddata_db & 0x4000) {
-            edui_textpick_down_repeat = 20;
+            down_rept = 20;
             down = 1;
         }
-        if ((pad->paddata & 0x4000) && edui_textpick_down_repeat) {
-            if (--edui_textpick_down_repeat == 0) {
-                edui_textpick_down_repeat = 10;
+        if ((pad->paddata & 0x4000) && down_rept) {
+            if (--down_rept == 0) {
+                down_rept = 10;
                 down = 1;
             }
         }
         if (pad->paddata_db & 0x8000) {
-            edui_textpick_left_repeat = 20;
+            left_rept = 20;
             left = 1;
         }
-        if ((pad->paddata & 0x8000) && edui_textpick_left_repeat) {
-            if (--edui_textpick_left_repeat == 0) {
-                edui_textpick_left_repeat = 10;
+        if ((pad->paddata & 0x8000) && left_rept) {
+            if (--left_rept == 0) {
+                left_rept = 10;
                 left = 1;
             }
         }
         if (pad->paddata_db & 0x2000) {
-            edui_textpick_right_repeat = 20;
+            right_rept = 20;
             right = 1;
         }
-        if ((pad->paddata & 0x2000) && edui_textpick_right_repeat) {
-            if (--edui_textpick_right_repeat == 0) {
-                edui_textpick_right_repeat = 10;
+        if ((pad->paddata & 0x2000) && right_rept) {
+            if (--right_rept == 0) {
+                right_rept = 10;
                 right = 1;
             }
         }
@@ -753,20 +715,20 @@ s32 eduicbProcessTextPick(struct eduimenu_s *menu, struct eduiitem_s *item, stru
         if (left) {
             if (--item->u.textpick.col < 0) {
                 item->u.textpick.col =
-                    NuStrLen(edui_keyboard[item->u.textpick.row]) - 1;
+                    NuStrLen(textrow[item->u.textpick.row]) - 1;
             }
         }
         if (right) {
             item->u.textpick.col++;
             if (item->u.textpick.col >=
-                strlen(edui_keyboard[item->u.textpick.row])) {
+                strlen(textrow[item->u.textpick.row])) {
                 item->u.textpick.col = 0;
             }
         }
         if (pad->paddata_db & 0x40) {
             char key[2] = " ";
 
-            key[0] = edui_keyboard[item->u.textpick.row][item->u.textpick.col];
+            key[0] = textrow[item->u.textpick.row][item->u.textpick.col];
             NuStrCat(item->u.textpick.text, key);
         }
         if (pad->paddata_db & 0x80) {
@@ -780,16 +742,16 @@ s32 eduicbProcessTextPick(struct eduimenu_s *menu, struct eduiitem_s *item, stru
             }
         }
         if (pad->paddata_db & 0x20) {
-            if (edui_keyboard[1] == edui_keyboard_upper[1]) {
-                edui_keyboard[0] = edui_keyboard_lower[0];
-                edui_keyboard[1] = edui_keyboard_lower[1];
-                edui_keyboard[2] = edui_keyboard_lower[2];
-                edui_keyboard[3] = edui_keyboard_lower[3];
+            if (textrow[1] == textcaps[1]) {
+                textrow[0] = textlow[0];
+                textrow[1] = textlow[1];
+                textrow[2] = textlow[2];
+                textrow[3] = textlow[3];
             } else {
-                edui_keyboard[0] = edui_keyboard_upper[0];
-                edui_keyboard[1] = edui_keyboard_upper[1];
-                edui_keyboard[2] = edui_keyboard_upper[2];
-                edui_keyboard[3] = edui_keyboard_upper[3];
+                textrow[0] = textcaps[0];
+                textrow[1] = textcaps[1];
+                textrow[2] = textcaps[2];
+                textrow[3] = textcaps[3];
             }
         }
         return 1;
@@ -821,9 +783,9 @@ s32 eduicbRenderTextPick(struct eduimenu_s *menu, struct eduiitem_s *item, s32 x
     item->y = y;
     if (item->u.textpick.active) {
         w = (height * 10 < w) ? w : height * 10;
-        edui_item_width = w;
+        item_width = w;
         NuRndrRect2di(x * 16, y * 8, w * 16, (height * 5) << 3,
-                      item->style.colour[0], edui_mtl[ui_bgmtl]);
+                      item->style.colour[0], uimtls[ui_bgmtl]);
         for (row = 0; row < 4; row++) {
             py = (y + height * row) * 8;
             for (col = 0; col < 10; col++) {
@@ -832,7 +794,7 @@ s32 eduicbRenderTextPick(struct eduimenu_s *menu, struct eduiitem_s *item, s32 x
                 } else {
                     NuFntSetPen(item->style.pen[0]);
                 }
-                key[0] = edui_keyboard[row][col];
+                key[0] = textrow[row][col];
                 NuFntPrintEx((x + height * col) * 16, py + texty, 0, key);
             }
         }
@@ -842,7 +804,7 @@ s32 eduicbRenderTextPick(struct eduimenu_s *menu, struct eduiitem_s *item, s32 x
         return height * 5;
     }
     NuRndrRect2di(x * 16, y * 8, w * 16, (height * 2) << 3,
-                  item->style.colour[item->on], edui_mtl[ui_bgmtl]);
+                  item->style.colour[item->on], uimtls[ui_bgmtl]);
     NuFntSetPen(item->style.pen[item->on]);
     NuFntPrintEx((x * 2 + w) * 8, y * 8 + texty, 2, item->text);
     NuFntPrintEx((x * 2 + w) * 8, (y + height) * 8 + texty, 2, "\"%s\"",
@@ -852,23 +814,24 @@ s32 eduicbRenderTextPick(struct eduimenu_s *menu, struct eduiitem_s *item, s32 x
 
 
 void eduiAddGradPickCFG(struct eduimenu_s *menu, struct eduiitem_s *pick) {
+    static struct eduimenu_s *gpcfg;
     struct eduistyle_s style = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
     struct eduiitem_s *item;
     struct eduiitem_s *paste;
 
-    edui_gradcfg_menu = eduiMenuCreate(pick->x + 10, pick->y + 10, 180, 250,
+    gpcfg = eduiMenuCreate(pick->x + 10, pick->y + 10, 180, 250,
                                        menu->font, eduicbPickCFGCancel,
-                                       edui_str_gradpickadjust);
-    if (edui_gradcfg_menu) {
+                                       "GradPick Adjust");
+    if (gpcfg) {
         switch (pick->type) {
         case EDUI_ITEM_GRADPICK:
         default:
             item = eduiItemColourPickCreate(pick, &style, cbgpcfgCPPress,
-                                            edui_str_colourpick);
+                                            "Colourpick");
             break;
         case EDUI_ITEM_GREYGRADPICK:
             item = eduiItemGreyPickCreate(pick, &style, cbgpcfgCPPress,
-                                          edui_str_colourpick);
+                                          "Colourpick");
             break;
         }
         if (pick->u.grad.stage) {
@@ -876,14 +839,14 @@ void eduiAddGradPickCFG(struct eduimenu_s *menu, struct eduiitem_s *pick) {
                                      pick->u.grad.stage->s,
                                      pick->u.grad.stage->v);
         }
-        eduiMenuAddItem(edui_gradcfg_menu, item);
-        eduiMenuAddItem(edui_gradcfg_menu,
+        eduiMenuAddItem(gpcfg, item);
+        eduiMenuAddItem(gpcfg,
                         eduiItemSelCreate(pick, &style, 0, 0, cbgpcfgAdd,
                                           "Add"));
-        eduiMenuAddItem(edui_gradcfg_menu,
+        eduiMenuAddItem(gpcfg,
                         eduiItemSelCreate(pick, &style, 0, 0, cbgpcfgDel,
                                           "Del"));
-        eduiMenuAddItem(edui_gradcfg_menu,
+        eduiMenuAddItem(gpcfg,
                         eduiItemSelCreate(pick, &style, 0, 0, cbgpcfgCopy,
                                           "Copy"));
         edui_last_item->type = pick->type;
@@ -891,9 +854,9 @@ void eduiAddGradPickCFG(struct eduimenu_s *menu, struct eduiitem_s *pick) {
         if (paste) {
             paste->render = eduicbRenderSelWithClipColour;
         }
-        eduiMenuAddItem(edui_gradcfg_menu, paste);
+        eduiMenuAddItem(gpcfg, paste);
         edui_last_item->type = pick->type;
-        eduiMenuAttach(menu, edui_gradcfg_menu);
+        eduiMenuAttach(menu, gpcfg);
     }
 }
 
@@ -948,7 +911,7 @@ static inline struct eduigradstage_s *eduiGradStageInsert(struct eduiitem_s *pic
     struct eduigradstage_s *prev;
     struct eduigradstage_s *next;
 
-    stage = NuMemAllocFn(sizeof(struct eduigradstage_s), edui_srcfile, 0x521);
+    stage = NuMemAllocFn(sizeof(struct eduigradstage_s), "..\\nu2crash.ps2\\edtools\\edui.c", 0x521);
     if (stage) {
         memset(stage, 0, sizeof(struct eduigradstage_s));
         prev = 0;
@@ -1085,7 +1048,7 @@ static inline void eduiRndrGradRect(s32 x, s32 y, s32 w, s32 h, f32 lastpos, f32
     cols[0] = cols[2] = lastcol;
     cols[1] = cols[3] = col;
     NuRndrGradRect2di(x + (s32)(w * lastpos), y, (s32)(w * pos) - (s32)(w * lastpos), h,
-                      cols, edui_mtl[ui_bgmtl]);
+                      cols, uimtls[ui_bgmtl]);
 }
 
 
@@ -1100,7 +1063,7 @@ static inline void eduiRndrGradBar(s32 x, s32 y, s32 w, s32 h, f32 lastpos, f32 
     x <<= 4;
     w <<= 4;
     NuRndrGradRect2di(x + (s32)(w * lastpos), y, (s32)(w * pos) - (s32)(w * lastpos), h, cols,
-                      edui_mtl[ui_bgmtl]);
+                      uimtls[ui_bgmtl]);
 }
 
 
@@ -1118,7 +1081,7 @@ s32 eduicbRenderGradPick(struct eduimenu_s *menu, struct eduiitem_s *item, s32 x
     item->y = y;
     texty = ((height * 4 - NuFntHeight) >> 1) + NuFntBase;
     NuRndrRect2di(x * 16, y * 8, w * 16, height * 8, item->style.colour[item->on],
-                  edui_mtl[ui_bgmtl]);
+                  uimtls[ui_bgmtl]);
     NuFntSetPen(item->style.pen[item->on]);
     if (item->u.grad.flash && item->u.grad.stage) {
         NuFntPrintEx((x * 2 + w) * 8, y * 8 + texty, 2, "%1.03f",
@@ -1141,15 +1104,15 @@ s32 eduicbRenderGradPick(struct eduimenu_s *menu, struct eduiitem_s *item, s32 x
     for (stage = item->u.grad.first; stage; stage = stage->next) {
         px = ((s32)(stage->pos * (f32)w) + x - 2) * 16;
         NuRndrRect2di(px, (y + (height >> 1) - 2) * 8, 80,
-                      ((height >> 1) + 2) * 8, stage->colour, edui_mtl[0]);
+                      ((height >> 1) + 2) * 8, stage->colour, uimtls[0]);
         if (stage == item->u.grad.stage) {
             NuRndrLineRect2di(px, (y + (height >> 1) - 2) * 8, 80,
                               ((height >> 1) + 2) * 8, 0x80FFFFFF,
-                              edui_mtl[0]);
+                              uimtls[0]);
         } else {
             NuRndrLineRect2di(px, (y + (height >> 1) - 2) * 8, 80,
                               ((height >> 1) + 2) * 8, 0x80000000,
-                              edui_mtl[0]);
+                              uimtls[0]);
         }
     }
     return height;
@@ -1168,7 +1131,7 @@ inline struct eduiitem_s *eduiItemGradPickCreate(void *data, struct eduistyle_s 
                                         char *text) {
     struct eduiitem_s *item;
 
-    item = NuMemAllocFn(0x54, edui_srcfile, 0x597);
+    item = NuMemAllocFn(0x54, "..\\nu2crash.ps2\\edtools\\edui.c", 0x597);
     if (item) {
         memset(item, 0, 0x54);
         item->type = EDUI_ITEM_GRADPICK;
@@ -1219,7 +1182,7 @@ inline struct eduiitem_s *eduiItemColourPickCreate(void *data, struct eduistyle_
                                           char *text) {
     struct eduiitem_s *item;
 
-    item = NuMemAllocFn(0x68, edui_srcfile, 0x66A);
+    item = NuMemAllocFn(0x68, "..\\nu2crash.ps2\\edtools\\edui.c", 0x66A);
     if (item) {
         memset(item, 0, 0x68);
         item->type = EDUI_ITEM_COLOURPICK;
@@ -1266,7 +1229,7 @@ struct eduiitem_s *eduiItemTexturePickCreate(void *data, struct eduistyle_s *sty
                                     char *text) {
     struct eduiitem_s *item;
 
-    item = NuMemAllocFn(0x64, edui_srcfile, 0x75A);
+    item = NuMemAllocFn(0x64, "..\\nu2crash.ps2\\edtools\\edui.c", 0x75A);
     if (item) {
         memset(item, 0, 0x64);
         item->type = EDUI_ITEM_TEXTUREPICK;
@@ -1320,15 +1283,29 @@ void eduiItemSliderSetVal(struct eduiitem_s *item, f32 val) {
 inline void eduiItemSliderSetFmt(struct eduiitem_s *item, char *fmt) {
     if (item->u.slider.fmt) {
         if (NuStrLen(item->u.slider.fmt) < NuStrLen(fmt)) {
-            NuMemFreeFn(item->u.slider.fmt, edui_srcfile, 0x833);
-            item->u.slider.fmt = NuMemAllocFn(NuStrLen(fmt) + 1, edui_srcfile,
+            NuMemFreeFn(item->u.slider.fmt, "..\\nu2crash.ps2\\edtools\\edui.c", 0x833);
+            item->u.slider.fmt = NuMemAllocFn(NuStrLen(fmt) + 1, "..\\nu2crash.ps2\\edtools\\edui.c",
                                               0x834);
         }
     } else {
-        item->u.slider.fmt = NuMemAllocFn(NuStrLen(fmt) + 1, edui_srcfile,
+        item->u.slider.fmt = NuMemAllocFn(NuStrLen(fmt) + 1, "..\\nu2crash.ps2\\edtools\\edui.c",
                                           0x838);
     }
     NuStrCpy(item->u.slider.fmt, fmt);
+}
+
+
+inline struct eduiitem_s *eduiItemSliderCreateInt(void *data, void *style, s32 group, void *cb,
+                                  s32 val, s32 min, s32 max, char *text) {
+    struct eduiitem_s *item;
+
+    item = eduiItemSliderCreate(data, style, group, cb, val, min, max, text);
+    if (item) {
+        eduiItemSliderSetFmt(item, "(%d)");
+        item->render = eduicbRenderSliderInt;
+        item->u.slider.granularity = 1.0f;
+    }
+    return item;
 }
 
 
@@ -1338,7 +1315,7 @@ struct eduiitem_s *eduiItemSliderCreate(void *data, struct eduistyle_s *style, s
                                f32 min, f32 range, f32 val, char *text) {
     struct eduiitem_s *item;
 
-    item = NuMemAllocFn(0x64, edui_srcfile, 0x85C);
+    item = NuMemAllocFn(0x64, "..\\nu2crash.ps2\\edtools\\edui.c", 0x85C);
     if (item) {
         memset(item, 0, 0x64);
         item->type = EDUI_ITEM_SLIDER;
@@ -1368,20 +1345,6 @@ void eduiItemSliderSetGranularity(struct eduiitem_s *item, f32 granularity) {
 }
 
 
-struct eduiitem_s *eduiItemSliderCreateInt(void *data, void *style, s32 group, void *cb,
-                                  s32 val, s32 min, s32 max, char *text) {
-    struct eduiitem_s *item;
-
-    item = eduiItemSliderCreate(data, style, group, cb, val, min, max, text);
-    if (item) {
-        eduiItemSliderSetFmt(item, "(%d)");
-        item->render = eduicbRenderSliderInt;
-        item->u.slider.granularity = 1.0f;
-    }
-    return item;
-}
-
-
 struct eduiitem_s *eduiItemNumberCreate(void *data, void *style, s32 group, void *cb,
                                f32 val, f32 min, f32 max, char *text) {
     struct eduiitem_s *item;
@@ -1402,7 +1365,7 @@ struct eduiitem_s *eduiItemColourSliderCreate(void *data, struct eduistyle_s *st
                                      u8 b, char *text) {
     struct eduiitem_s *item;
 
-    item = NuMemAllocFn(0x68, edui_srcfile, 0xB40);
+    item = NuMemAllocFn(0x68, "..\\nu2crash.ps2\\edtools\\edui.c", 0xB40);
     if (item) {
         memset(item, 0, 0x68);
         item->type = EDUI_ITEM_COLOURSLIDER;
@@ -1440,7 +1403,7 @@ inline void eduiMenuDestroy(struct eduimenu_s *menu) {
         item->destroy(menu, item);
         menu->head = next;
     }
-    NuMemFreeFn(menu, edui_srcfile, 0x192);
+    NuMemFreeFn(menu, "..\\nu2crash.ps2\\edtools\\edui.c", 0x192);
 }
 
 
@@ -1458,6 +1421,8 @@ inline s32 eduiMenuDetach(struct eduimenu_s *menu) {
 
 
 s32 eduiMenuProcess(struct eduimenu_s *menu, f32 dt, struct nupad_s *pad) {
+    static s32 up_rept = 0;
+    static s32 down_rept = 0;
     struct eduimenu_s *parent;
     s32 up;
     s32 down;
@@ -1491,22 +1456,22 @@ s32 eduiMenuProcess(struct eduimenu_s *menu, f32 dt, struct nupad_s *pad) {
     down = 0;
     up = 0;
     if (pad->paddata_db & 0x1000) {
-        edui_up_repeat = 20;
+        up_rept = 20;
         up = 1;
     }
-    if ((pad->paddata & 0x1000) && edui_up_repeat) {
-        if (--edui_up_repeat == 0) {
-            edui_up_repeat = 10;
+    if ((pad->paddata & 0x1000) && up_rept) {
+        if (--up_rept == 0) {
+            up_rept = 10;
             up = 1;
         }
     }
     if (pad->paddata_db & 0x4000) {
-        edui_down_repeat = 20;
+        down_rept = 20;
         down = 1;
     }
-    if ((pad->paddata & 0x4000) && edui_down_repeat) {
-        if (--edui_down_repeat == 0) {
-            edui_down_repeat = 10;
+    if ((pad->paddata & 0x4000) && down_rept) {
+        if (--down_rept == 0) {
+            down_rept = 10;
             down = 1;
         }
     }
@@ -1679,7 +1644,7 @@ static inline void eduiRndrHueBand(s32 x, s32 y, s32 w, s32 h, f32 lastpos, f32 
         drawcols[3].comp[2] = cols[1].comp[2] + (n * (cols[3].comp[2] - cols[1].comp[2])) / steps;
         drawcols[3].comp[3] = cols[1].comp[3] + (n * (cols[3].comp[3] - cols[1].comp[3])) / steps;
         NuRndrGradRect2di(left, y + (n * h) / steps, right - left, h / steps,
-                          &drawcols[0].all, edui_mtl[ui_bgmtl]);
+                          &drawcols[0].all, uimtls[ui_bgmtl]);
         drawcols[0] = drawcols[2];
         drawcols[1] = drawcols[3];
     }
@@ -1710,10 +1675,10 @@ s32 eduicbRenderColourPick(struct eduimenu_s *menu, struct eduiitem_s *item, s32
     eduiRndrHueBand(x * 16, y * 8, w * 16, h, 5.0f / 6.0f, 1.0f, 0x80FF00FF, 0x800000FF);
     NuRndrLine2di(x * 16, (s32)(y + (s32)(f32)h * item->u.colour.brightness) * 8,
                   (x + w - 1) * 16, (s32)(y + h * item->u.colour.brightness) * 8, 0x80FFFFFF,
-                  edui_mtl[0]);
+                  uimtls[0]);
     NuRndrLine2di((s32)(x + w * item->u.colour.hue) * 16, y * 8,
                   (s32)(x + w * item->u.colour.hue) * 16, (y + h - 1) * 8, 0x80FFFFFF,
-                  edui_mtl[0]);
+                  uimtls[0]);
     y += h;
     h = w / 8;
     eduiHSVToRGB(item->u.colour.h, 1.0f, item->u.colour.v, &r, &g, &b);
@@ -1725,22 +1690,22 @@ s32 eduicbRenderColourPick(struct eduimenu_s *menu, struct eduiitem_s *item, s32
     eduiRndrGradRect(x * 16, y * 8, w * 16, h * 8, 0.0f, 1.0f, hvcol, hsvcol);
     NuRndrLine2di((s32)(x + 1 + (w - 2) * item->u.colour.s) * 16, y * 8,
                   (s32)(x + 1 + (w - 2) * item->u.colour.s) * 16, (y + (h >> 1) - 1) * 8,
-                  0x80FFFFFF, edui_mtl[0]);
+                  0x80FFFFFF, uimtls[0]);
     NuRndrLine2di((s32)(x + (w - 2) * item->u.colour.s) * 16, y * 8,
                   (s32)(x + (w - 2) * item->u.colour.s) * 16, (y + (h >> 1) - 1) * 8,
-                  0x80FFFFFF, edui_mtl[0]);
+                  0x80FFFFFF, uimtls[0]);
     NuRndrLine2di((s32)(x - 1 + (w - 2) * item->u.colour.s) * 16, y * 8,
                   (s32)(x - 1 + (w - 2) * item->u.colour.s) * 16, (y + (h >> 1) - 1) * 8,
-                  0x80FFFFFF, edui_mtl[0]);
+                  0x80FFFFFF, uimtls[0]);
     NuRndrLine2di((s32)(x + 1 + (w - 2) * item->u.colour.s) * 16, (y + (h >> 1)) * 8,
                   (s32)(x + 1 + (w - 2) * item->u.colour.s) * 16, (y + h - 1) * 8,
-                  0x80000000, edui_mtl[0]);
+                  0x80000000, uimtls[0]);
     NuRndrLine2di((s32)(x + (w - 2) * item->u.colour.s) * 16, (y + (h >> 1)) * 8,
                   (s32)(x + (w - 2) * item->u.colour.s) * 16, (y + h - 1) * 8,
-                  0x80000000, edui_mtl[0]);
+                  0x80000000, uimtls[0]);
     NuRndrLine2di((s32)(x - 1 + (w - 2) * item->u.colour.s) * 16, (y + (h >> 1)) * 8,
                   (s32)(x - 1 + (w - 2) * item->u.colour.s) * 16, (y + h - 1) * 8,
-                  0x80000000, edui_mtl[0]);
+                  0x80000000, uimtls[0]);
     y += h;
     eduiHSVToRGB(item->u.colour.h, item->u.colour.s, item->u.colour.v, &r, &g, &b);
     hsvcol = 0x80000000 + ((s32)(b * 255.0f) << 16) + ((s32)(g * 255.0f) << 8) +
@@ -1762,28 +1727,28 @@ s32 eduicbRenderGreyPick(struct eduimenu_s *menu, struct eduiitem_s *item, s32 x
     colours[1] = colours[3] = 0x80FFFFFF;
     NuRndrGradRect2di(x * 16 + (s32)(w * 16 * 0.0f), y * 8,
                       (s32)(w * 16 * 1.0f) - (s32)(w * 16 * 0.0f), height * 8,
-                      colours, edui_mtl[ui_bgmtl]);
+                      colours, uimtls[ui_bgmtl]);
     NuRndrLine2di((s32)(x + 1 + (w - 2) * item->u.colour.v) * 16, y * 8,
                   (s32)(x + 1 + (w - 2) * item->u.colour.v) * 16,
-                  (y + (height >> 1) - 1) * 8, 0x80FFFFFF, edui_mtl[0]);
+                  (y + (height >> 1) - 1) * 8, 0x80FFFFFF, uimtls[0]);
     NuRndrLine2di((s32)(x + (w - 2) * item->u.colour.v) * 16, y * 8,
                   (s32)(x + (w - 2) * item->u.colour.v) * 16,
-                  (y + (height >> 1) - 1) * 8, 0x80FFFFFF, edui_mtl[0]);
+                  (y + (height >> 1) - 1) * 8, 0x80FFFFFF, uimtls[0]);
     NuRndrLine2di((s32)(x - 1 + (w - 2) * item->u.colour.v) * 16, y * 8,
                   (s32)(x - 1 + (w - 2) * item->u.colour.v) * 16,
-                  (y + (height >> 1) - 1) * 8, 0x80FFFFFF, edui_mtl[0]);
+                  (y + (height >> 1) - 1) * 8, 0x80FFFFFF, uimtls[0]);
     NuRndrLine2di((s32)(x + 1 + (w - 2) * item->u.colour.v) * 16,
                   (y + (height >> 1)) * 8,
                   (s32)(x + 1 + (w - 2) * item->u.colour.v) * 16,
-                  (y + height - 1) * 8, 0x80000000, edui_mtl[0]);
+                  (y + height - 1) * 8, 0x80000000, uimtls[0]);
     NuRndrLine2di((s32)(x + (w - 2) * item->u.colour.v) * 16,
                   (y + (height >> 1)) * 8,
                   (s32)(x + (w - 2) * item->u.colour.v) * 16,
-                  (y + height - 1) * 8, 0x80000000, edui_mtl[0]);
+                  (y + height - 1) * 8, 0x80000000, uimtls[0]);
     NuRndrLine2di((s32)(x - 1 + (w - 2) * item->u.colour.v) * 16,
                   (y + (height >> 1)) * 8,
                   (s32)(x - 1 + (w - 2) * item->u.colour.v) * 16,
-                  (y + height - 1) * 8, 0x80000000, edui_mtl[0]);
+                  (y + height - 1) * 8, 0x80000000, uimtls[0]);
     return height;
 }
 
@@ -1895,15 +1860,15 @@ s32 eduicbRenderTexturePick(struct eduimenu_s *menu, struct eduiitem_s *item, s3
                     top + vscale, 0x80808080, item->u.texpick.mtl);
     for (i = 0; i < 2; i++) {
         NuRndrLine2di(x * 16, (s32)(y + (s32)(f32)height * sv[i]) * 8, (x + w - 1) * 16,
-                      (s32)(y + height * sv[i]) * 8, colours[i], edui_mtl[0]);
+                      (s32)(y + height * sv[i]) * 8, colours[i], uimtls[0]);
         NuRndrLine2di((s32)(x + w * su[i]) * 16, y * 8,
                       (s32)(x + w * su[i]) * 16, (y + height - 1) * 8, colours[i],
-                      edui_mtl[0]);
+                      uimtls[0]);
     }
     height = (NuFntHeight + (NuFntHeight >> 2)) >> 3;
     texty = ((height * 8 - NuFntHeight) >> 1) + NuFntBase;
     NuRndrRect2di(x * 16, (y + w) * 8, w * 16, height * 8,
-                  item->style.colour[item->on], edui_mtl[ui_bgmtl]);
+                  item->style.colour[item->on], uimtls[ui_bgmtl]);
     NuFntSetPen(item->style.pen[item->on]);
     NuFntPrintEx((x * 2 + w) * 8, (y + w) * 8 + texty, 2, "%1.03f,%1.03f",
                  item->u.texpick.u[item->u.texpick.corner] * 256.0f,
@@ -1913,6 +1878,8 @@ s32 eduicbRenderTexturePick(struct eduimenu_s *menu, struct eduiitem_s *item, s3
 
 
 s32 eduicbProcessSlider(struct eduimenu_s *menu, struct eduiitem_s *item, struct nupad_s *pad) {
+    static f32 dynascale = 0.0f;
+    static s32 rep_timer = 30;
     f32 step;
 
     step = 1.6276043e-05f;
@@ -1927,12 +1894,12 @@ s32 eduicbProcessSlider(struct eduimenu_s *menu, struct eduiitem_s *item, struct
                 item->u.slider.change(menu, item, pad->paddata);
             }
         }
-        edui_slider_repeat = 30;
+        rep_timer = 30;
         return 0;
     }
     if (pad->paddata & 4) {
-        edui_slider_repeat = MAX(edui_slider_repeat - 1, 0);
-        if (edui_slider_repeat && !(pad->paddata_db & 4)) {
+        rep_timer = MAX(rep_timer - 1, 0);
+        if (rep_timer && !(pad->paddata_db & 4)) {
             return 0;
         }
         item->u.slider.val =
@@ -1955,8 +1922,8 @@ s32 eduicbProcessSlider(struct eduimenu_s *menu, struct eduiitem_s *item, struct
         return 0;
     }
     if (pad->paddata & 8) {
-        edui_slider_repeat = MAX(edui_slider_repeat - 1, 0);
-        if (edui_slider_repeat && !(pad->paddata_db & 8)) {
+        rep_timer = MAX(rep_timer - 1, 0);
+        if (rep_timer && !(pad->paddata_db & 8)) {
             return 0;
         }
         item->u.slider.val =
@@ -1978,15 +1945,15 @@ s32 eduicbProcessSlider(struct eduimenu_s *menu, struct eduiitem_s *item, struct
         }
         return 0;
     }
-    edui_slider_repeat = 30;
+    rep_timer = 30;
     if (pad->rdata.l2_alg) {
         if (pad->rdata.r_algpad_r) {
-            edui_slider_speed *= 1.05;
+            dynascale *= 1.05;
             item->u.slider.frac =
                 MAX(0.0f, item->u.slider.frac -
-                               pad->rdata.l2_alg * edui_slider_speed);
+                               pad->rdata.l2_alg * dynascale);
         } else {
-            edui_slider_speed = 1.6276043e-07f;
+            dynascale = 1.6276043e-07f;
             item->u.slider.frac =
                 MAX(0.0f, item->u.slider.frac -
                                pad->rdata.l2_alg * step);
@@ -2001,12 +1968,12 @@ s32 eduicbProcessSlider(struct eduimenu_s *menu, struct eduiitem_s *item, struct
     }
     if (pad->rdata.r2_alg) {
         if (pad->rdata.r_algpad_r) {
-            edui_slider_speed *= 1.05;
+            dynascale *= 1.05;
             item->u.slider.frac =
                 MIN(1.0f, item->u.slider.frac +
-                               pad->rdata.r2_alg * edui_slider_speed);
+                               pad->rdata.r2_alg * dynascale);
         } else {
-            edui_slider_speed = 1.6276043e-07f;
+            dynascale = 1.6276043e-07f;
             item->u.slider.frac =
                 MIN(1.0f, item->u.slider.frac +
                                pad->rdata.r2_alg * step);
@@ -2019,7 +1986,7 @@ s32 eduicbProcessSlider(struct eduimenu_s *menu, struct eduiitem_s *item, struct
         }
         return 0;
     }
-    edui_slider_speed = 1.6276043e-07f;
+    dynascale = 1.6276043e-07f;
     return 0;
 }
 
@@ -2035,7 +2002,7 @@ s32 eduicbRenderSlider(struct eduimenu_s *menu, struct eduiitem_s *item, s32 x, 
     item->y = y;
     texty = ((height * 8 - NuFntHeight) >> 1) + NuFntBase;
     NuRndrRect2di(x * 16, y * 8, w * 16, height * 16,
-                  item->style.colour[item->on], edui_mtl[ui_bgmtl]);
+                  item->style.colour[item->on], uimtls[ui_bgmtl]);
     NuFntSetPen(item->style.pen[item->on]);
     if (item->u.slider.flash) {
         NuFntPrintEx((x * 2 + w) * 8, y * 8 + texty, 2, item->u.slider.fmt,
@@ -2052,15 +2019,15 @@ s32 eduicbRenderSlider(struct eduimenu_s *menu, struct eduiitem_s *item, s32 x, 
         NuRndrLine2di((s32)(x + 1 + (w - 2) * item->u.slider.frac) * 16, y * 8,
                       (s32)(x + 1 + (w - 2) * item->u.slider.frac) * 16,
                       (y + height - 1) * 8, item->style.pen[item->on],
-                      edui_mtl[0]);
+                      uimtls[0]);
         NuRndrLine2di((s32)(x + (w - 2) * item->u.slider.frac) * 16, y * 8,
                       (s32)(x + (w - 2) * item->u.slider.frac) * 16,
                       (y + height - 1) * 8, item->style.pen[item->on],
-                      edui_mtl[0]);
+                      uimtls[0]);
         NuRndrLine2di((s32)(x - 1 + (w - 2) * item->u.slider.frac) * 16, y * 8,
                       (s32)(x - 1 + (w - 2) * item->u.slider.frac) * 16,
                       (y + height - 1) * 8, item->style.pen[item->on],
-                      edui_mtl[0]);
+                      uimtls[0]);
     }
     return height * 2;
 }
@@ -2077,7 +2044,7 @@ s32 eduicbRenderSliderInt(struct eduimenu_s *menu, struct eduiitem_s *item, s32 
     item->y = y;
     texty = ((height * 8 - NuFntHeight) >> 1) + NuFntBase;
     NuRndrRect2di(x * 16, y * 8, w * 16, height * 16,
-                  item->style.colour[item->on], edui_mtl[0]);
+                  item->style.colour[item->on], uimtls[0]);
     NuFntSetPen(item->style.pen[item->on]);
     if (item->u.slider.flash) {
         NuFntPrintEx((x * 2 + w) * 8, y * 8 + texty, 2, item->u.slider.fmt,
@@ -2092,18 +2059,20 @@ s32 eduicbRenderSliderInt(struct eduimenu_s *menu, struct eduiitem_s *item, s32 
     y += height;
     NuRndrLine2di((s32)(x + 1 + w * item->u.slider.frac) * 16, y * 8,
                   (s32)(x + 1 + w * item->u.slider.frac) * 16,
-                  (y + height - 1) * 8, item->style.pen[item->on], edui_mtl[0]);
+                  (y + height - 1) * 8, item->style.pen[item->on], uimtls[0]);
     NuRndrLine2di((s32)(x + w * item->u.slider.frac) * 16, y * 8,
                   (s32)(x + w * item->u.slider.frac) * 16,
-                  (y + height - 1) * 8, item->style.pen[item->on], edui_mtl[0]);
+                  (y + height - 1) * 8, item->style.pen[item->on], uimtls[0]);
     NuRndrLine2di((s32)(x - 1 + w * item->u.slider.frac) * 16, y * 8,
                   (s32)(x - 1 + w * item->u.slider.frac) * 16,
-                  (y + height - 1) * 8, item->style.pen[item->on], edui_mtl[0]);
+                  (y + height - 1) * 8, item->style.pen[item->on], uimtls[0]);
     return height * 2;
 }
 
 
 s32 eduicbProcessColourSlider(struct eduimenu_s *menu, struct eduiitem_s *item, struct nupad_s *pad) {
+    static f32 dynascale = 0.0f;
+    static s32 rep_timer = 30;
     f32 step;
 
     step = 1.6276043e-05f;
@@ -2118,7 +2087,7 @@ s32 eduicbProcessColourSlider(struct eduimenu_s *menu, struct eduiitem_s *item, 
                 item->u.slider.change(menu, item, pad->paddata);
             }
         }
-        edui_colourslider_repeat = 30;
+        rep_timer = 30;
         return 0;
     }
     if ((pad->paddata & 1) && (pad->paddata & 2)) {
@@ -2132,12 +2101,12 @@ s32 eduicbProcessColourSlider(struct eduimenu_s *menu, struct eduiitem_s *item, 
                 item->u.slider.change(menu, item, pad->paddata);
             }
         }
-        edui_colourslider_repeat = 30;
+        rep_timer = 30;
         return 0;
     }
     if (pad->paddata & 4) {
-        edui_colourslider_repeat = MAX(edui_colourslider_repeat - 1, 0);
-        if (edui_colourslider_repeat && !(pad->paddata_db & 4)) {
+        rep_timer = MAX(rep_timer - 1, 0);
+        if (rep_timer && !(pad->paddata_db & 4)) {
             return 0;
         }
         item->u.slider.val =
@@ -2160,8 +2129,8 @@ s32 eduicbProcessColourSlider(struct eduimenu_s *menu, struct eduiitem_s *item, 
         return 0;
     }
     if (pad->paddata & 8) {
-        edui_colourslider_repeat = MAX(edui_colourslider_repeat - 1, 0);
-        if (edui_colourslider_repeat && !(pad->paddata_db & 8)) {
+        rep_timer = MAX(rep_timer - 1, 0);
+        if (rep_timer && !(pad->paddata_db & 8)) {
             return 0;
         }
         item->u.slider.val =
@@ -2183,15 +2152,15 @@ s32 eduicbProcessColourSlider(struct eduimenu_s *menu, struct eduiitem_s *item, 
         }
         return 0;
     }
-    edui_colourslider_repeat = 30;
+    rep_timer = 30;
     if (pad->rdata.l2_alg) {
         if (pad->rdata.r_algpad_r) {
-            edui_colourslider_speed *= 1.05;
+            dynascale *= 1.05;
             item->u.slider.frac =
                 MAX(0.0f, item->u.slider.frac -
-                               pad->rdata.l2_alg * edui_colourslider_speed);
+                               pad->rdata.l2_alg * dynascale);
         } else {
-            edui_colourslider_speed = 1.6276043e-07f;
+            dynascale = 1.6276043e-07f;
             item->u.slider.frac =
                 MAX(0.0f, item->u.slider.frac -
                                pad->rdata.l2_alg * step);
@@ -2206,12 +2175,12 @@ s32 eduicbProcessColourSlider(struct eduimenu_s *menu, struct eduiitem_s *item, 
     }
     if (pad->rdata.r2_alg) {
         if (pad->rdata.r_algpad_r) {
-            edui_colourslider_speed *= 1.05;
+            dynascale *= 1.05;
             item->u.slider.frac =
                 MIN(1.0f, item->u.slider.frac +
-                               pad->rdata.r2_alg * edui_colourslider_speed);
+                               pad->rdata.r2_alg * dynascale);
         } else {
-            edui_colourslider_speed = 1.6276043e-07f;
+            dynascale = 1.6276043e-07f;
             item->u.slider.frac =
                 MIN(1.0f, item->u.slider.frac +
                                pad->rdata.r2_alg * step);
@@ -2224,10 +2193,13 @@ s32 eduicbProcessColourSlider(struct eduimenu_s *menu, struct eduiitem_s *item, 
         }
         return 0;
     }
-    edui_colourslider_speed = 1.6276043e-07f;
+    dynascale = 1.6276043e-07f;
     return 0;
 }
 
+
+struct eduiitem_s *edui_last_item = 0;
+struct eduimenu_s *edui_messagemenu = 0;
 
 s32 eduicbRenderColourSlider(struct eduimenu_s *menu, struct eduiitem_s *item, s32 x, s32 y,
                              s32 w, s32 highlight) {
@@ -2242,7 +2214,7 @@ s32 eduicbRenderColourSlider(struct eduimenu_s *menu, struct eduiitem_s *item, s
     item->y = y;
     texty = ((height * 8 - NuFntHeight) >> 1) + NuFntBase;
     NuRndrRect2di(x * 16, y * 8, w * 16, height * 16,
-                  item->style.colour[item->on], edui_mtl[0]);
+                  item->style.colour[item->on], uimtls[0]);
     NuFntSetPen(item->style.pen[item->on]);
     NuFntPrintEx((x * 3 + w) * 8, y * 8 + texty, 2, item->u.slider.fmt,
                  (s32)item->u.slider.val);
@@ -2255,16 +2227,16 @@ s32 eduicbRenderColourSlider(struct eduimenu_s *menu, struct eduiitem_s *item, s
     colours[1] = colours[3] = colour;
     NuRndrGradRect2di(x * 16 + (s32)(width * 0.0f), y * 8,
                       (s32)width - (s32)(width * 0.0f), height * 8, colours,
-                      edui_mtl[ui_bgmtl]);
+                      uimtls[ui_bgmtl]);
     NuRndrLine2di((s32)(x + 1 + w * item->u.slider.frac) * 16, y * 8,
                   (s32)(x + 1 + w * item->u.slider.frac) * 16,
-                  (y + height - 1) * 8, item->style.pen[item->on], edui_mtl[0]);
+                  (y + height - 1) * 8, item->style.pen[item->on], uimtls[0]);
     NuRndrLine2di((s32)(x + w * item->u.slider.frac) * 16, y * 8,
                   (s32)(x + w * item->u.slider.frac) * 16,
-                  (y + height - 1) * 8, item->style.pen[item->on], edui_mtl[0]);
+                  (y + height - 1) * 8, item->style.pen[item->on], uimtls[0]);
     NuRndrLine2di((s32)(x - 1 + w * item->u.slider.frac) * 16, y * 8,
                   (s32)(x - 1 + w * item->u.slider.frac) * 16,
-                  (y + height - 1) * 8, item->style.pen[item->on], edui_mtl[0]);
+                  (y + height - 1) * 8, item->style.pen[item->on], uimtls[0]);
     return height * 2;
 }
 
@@ -2277,7 +2249,7 @@ void eduiCreateMessageMenu(struct eduimenu_s *parent, char *text, s32 error) {
     }
     edui_messagemenu = eduiMenuCreate(70, 70, 180, 250, parent->font,
                                       eduicbCancelMessageMenu,
-                                      edui_str_message);
+                                      "Message");
     if (edui_messagemenu) {
         eduiMenuAddItem(edui_messagemenu,
                         eduiItemSelCreate((void *)1, &style, 0, 0, 0, text));
@@ -2291,11 +2263,11 @@ void eduiCreateMessageMenu(struct eduimenu_s *parent, char *text, s32 error) {
 inline s32 eduiItemRender(struct eduiitem_s *item, s32 x, s32 y, s32 w, s32 highlight) {
     s32 height;
 
-    edui_item_width = w;
+    item_width = w;
     height = item->render(0, item, x, y, w, highlight);
     if (highlight) {
-        NuRndrLineRect2di(x * 16, y * 8, edui_item_width * 16, height * 8,
-                          0x80FFFFFF, edui_mtl[0]);
+        NuRndrLineRect2di(x * 16, y * 8, item_width * 16, height * 8,
+                          0x80FFFFFF, uimtls[0]);
     }
     return height;
 }
@@ -2316,7 +2288,7 @@ void eduiMenuRender(struct eduimenu_s *menu) {
         height = (NuFntHeight + (NuFntHeight >> 2)) >> 3;
         texty = ((height * 8 - NuFntHeight) >> 1) + NuFntBase;
         NuRndrRect2di(menu->x * 16, y * 8, menu->w * 16, height * 8,
-                      0x80000000, edui_mtl[ui_bgmtl]);
+                      0x80000000, uimtls[ui_bgmtl]);
         NuFntSetPen(0x80FFFFFF);
         NuFntPrintEx((menu->x + 1) * 16, y * 8 + texty, 0, menu->title);
         y += height;
@@ -2327,13 +2299,13 @@ void eduiMenuRender(struct eduimenu_s *menu) {
         if (item != menu->head) {
             height = (NuFntHeight + (NuFntHeight >> 2)) >> 4;
             NuRndrRect2di(menu->x * 16, y * 8, menu->w * 16, height * 8,
-                          0x80000000, edui_mtl[ui_bgmtl]);
+                          0x80000000, uimtls[ui_bgmtl]);
             NuRndrLine2di((menu->x * 2 + menu->w) * 8, (y + 1) * 8,
                           (menu->x * 2 + menu->w) * 8 - (height - 2) * 16,
-                          (y + height - 2) * 8, 0x80FFFFFF, edui_mtl[0]);
+                          (y + height - 2) * 8, 0x80FFFFFF, uimtls[0]);
             NuRndrLine2di((menu->x * 2 + menu->w) * 8, (y + 1) * 8,
                           (menu->x * 2 + menu->w) * 8 + (height - 2) * 16,
-                          (y + height - 2) * 8, 0x80FFFFFF, edui_mtl[0]);
+                          (y + height - 2) * 8, 0x80FFFFFF, uimtls[0]);
             y += height;
         }
         do {
@@ -2350,15 +2322,15 @@ void eduiMenuRender(struct eduimenu_s *menu) {
             if (item && y >= menu->y + menu->h) {
                 height = (NuFntHeight + (NuFntHeight >> 2)) >> 4;
                 NuRndrRect2di(menu->x * 16, y * 8, menu->w * 16, height * 8,
-                              0x80000000, edui_mtl[ui_bgmtl]);
+                              0x80000000, uimtls[ui_bgmtl]);
                 NuRndrLine2di((menu->x * 2 + menu->w) * 8,
                               (y + height - 2) * 8,
                               (menu->x * 2 + menu->w) * 8 - (height - 2) * 16,
-                              (y + 1) * 8, 0x80FFFFFF, edui_mtl[0]);
+                              (y + 1) * 8, 0x80FFFFFF, uimtls[0]);
                 NuRndrLine2di((menu->x * 2 + menu->w) * 8,
                               (y + height - 2) * 8,
                               (menu->x * 2 + menu->w) * 8 + (height - 2) * 16,
-                              (y + 1) * 8, 0x80FFFFFF, edui_mtl[0]);
+                              (y + 1) * 8, 0x80FFFFFF, uimtls[0]);
                 break;
             }
         } while (item);
@@ -2367,7 +2339,7 @@ void eduiMenuRender(struct eduimenu_s *menu) {
         }
     }
     NuRndrLineRect2di((menu->x - 1) * 16, (menu->y - 1) * 8, (menu->w + 2) * 16,
-                      (y - menu->y + 2) * 8, 0x80000000, edui_mtl[0]);
+                      (y - menu->y + 2) * 8, 0x80000000, uimtls[0]);
     if (menu->child) {
         eduiMenuRender(menu->child);
     }
@@ -2424,7 +2396,7 @@ s32 eduicbRenderSel(struct eduimenu_s *menu, struct eduiitem_s *item, s32 x, s32
     item->y = y;
     texty = ((height * 8 - NuFntHeight) >> 1) + NuFntBase;
     NuRndrRect2di(x * 16, y * 8, w * 16, height * 8,
-                  item->style.colour[item->on], edui_mtl[ui_bgmtl]);
+                  item->style.colour[item->on], uimtls[ui_bgmtl]);
     NuFntSetPen(item->style.pen[item->on]);
     switch (item->align) {
     case 0:
@@ -2442,18 +2414,9 @@ s32 eduicbRenderSel(struct eduimenu_s *menu, struct eduiitem_s *item, s32 x, s32
 }
 
 
-inline void eduicbItemDestroy(struct eduimenu_s *menu, struct eduiitem_s *item) {
-    if (item->text) {
-        NuMemFreeFn(item->text, edui_srcfile, 0x180);
-    }
-    NuMemFreeFn(item, edui_srcfile, 0x182);
-    menu->cursor = menu->head;
-}
-
-
 void eduicbItemSliderDestroy(struct eduimenu_s *menu, struct eduiitem_s *item) {
     if (item->u.slider.fmt) {
-        NuMemFreeFn(item->u.slider.fmt, edui_srcfile, 0x84F);
+        NuMemFreeFn(item->u.slider.fmt, "..\\nu2crash.ps2\\edtools\\edui.c", 0x84F);
     }
     eduicbItemDestroy(menu, item);
 }
@@ -2470,7 +2433,7 @@ s32 eduicbRenderNumber(struct eduimenu_s *menu, struct eduiitem_s *item, s32 x, 
     item->y = y;
     texty = ((height * 8 - NuFntHeight) >> 1) + NuFntBase;
     NuRndrRect2di(x * 16, y * 8, w * 16, height * 8,
-                  item->style.colour[item->on], edui_mtl[ui_bgmtl]);
+                  item->style.colour[item->on], uimtls[ui_bgmtl]);
     NuFntSetPen(item->style.pen[item->on]);
     NuStrCpy(text, item->text);
     NuStrCat(text, item->u.slider.fmt);
@@ -2505,7 +2468,7 @@ inline void eduiGradStageDelete(struct eduiitem_s *pick, struct eduigradstage_s 
     } else {
         pick->u.grad.stage = stage->prev;
     }
-    NuMemFreeFn(stage, edui_srcfile, 0x55B);
+    NuMemFreeFn(stage, "..\\nu2crash.ps2\\edtools\\edui.c", 0x55B);
 }
 
 
@@ -2513,7 +2476,7 @@ void eduicbItemGradPickDestroy(struct eduimenu_s *menu, struct eduiitem_s *item)
     while (item->u.grad.first) {
         eduiGradStageDelete(item, item->u.grad.first);
     }
-    NuMemFreeFn(item, edui_srcfile, 0x58C);
+    NuMemFreeFn(item, "..\\nu2crash.ps2\\edtools\\edui.c", 0x58C);
 }
 
 
@@ -2566,11 +2529,11 @@ void cbgpcfgCopy(struct eduimenu_s *menu, struct eduiitem_s *item, u32 buttons) 
     stage = pick->u.grad.stage;
     if (stage) {
         if (item->type == EDUI_ITEM_GRADPICK) {
-            gpcfg_clip_h = stage->h;
-            gpcfg_clip_s = stage->s;
-            gpcfg_clip_v = stage->v;
+            cliph = stage->h;
+            clips = stage->s;
+            clipv = stage->v;
         } else {
-            gpcfg_clip_grey = stage->v;
+            clipg = stage->v;
         }
     }
 }
@@ -2582,11 +2545,11 @@ void cbgpcfgPaste(struct eduimenu_s *menu, struct eduiitem_s *item, u32 buttons)
     pick = item->data;
     if (pick->u.grad.stage) {
         if (item->type == EDUI_ITEM_GRADPICK) {
-            eduiGradStageSetHSV(pick->u.grad.stage, gpcfg_clip_h, gpcfg_clip_s,
-                                gpcfg_clip_v);
+            eduiGradStageSetHSV(pick->u.grad.stage, cliph, clips,
+                                clipv);
         } else {
             eduiGradStageSetHSV(pick->u.grad.stage, 0.0f, 0.0f,
-                                gpcfg_clip_grey);
+                                clipg);
         }
     }
     eduiMenuDetach(menu);
@@ -2618,39 +2581,41 @@ void eduicbCancelMessageMenu(struct eduimenu_s *menu, struct eduiitem_s *item) {
 }
 
 
+static void *selection_value = 0;
+
 void CreateTestMenu(void *font) {
     struct eduistyle_s style = {{0x80000000, 0x80FF0000}, {0x80808080, 0x80404040}};
     struct eduiitem_s *grad;
 
     eduiInitMaterials();
-    edui_test_submenu1 = eduiMenuCreate(90, 90, 180, 50, font, 0, "SubMenu1");
-    if (edui_test_submenu1) {
-        eduiMenuAddItem(edui_test_submenu1,
+    submenu1 = eduiMenuCreate(90, 90, 180, 50, font, 0, "SubMenu1");
+    if (submenu1) {
+        eduiMenuAddItem(submenu1,
                         eduiItemSelCreate((void *)0, &style, 0, 1, cbSel,
                                           "Sub Sel 0"));
-        eduiMenuAddItem(edui_test_submenu1,
+        eduiMenuAddItem(submenu1,
                         eduiItemSelCreate((void *)1, &style, 0, 1, cbSel,
                                           "Sub Sel 1"));
-        eduiMenuAddItem(edui_test_submenu1,
+        eduiMenuAddItem(submenu1,
                         eduiItemSelCreate((void *)2, &style, 0, 1, cbSel,
                                           "Sub Sel 2"));
     }
-    edui_test_submenu0 = eduiMenuCreate(70, 70, 180, 50, font, 0, "SubMenu0");
-    if (edui_test_submenu0) {
-        eduiMenuAddItem(edui_test_submenu0,
+    submenu0 = eduiMenuCreate(70, 70, 180, 50, font, 0, "SubMenu0");
+    if (submenu0) {
+        eduiMenuAddItem(submenu0,
                         eduiItemSelCreate((void *)0, &style, 0, 1, cbSel,
-                                          edui_str_subsel));
-        eduiMenuAddItem(edui_test_submenu0,
-                        eduiItemSelCreate(edui_test_submenu1, &style, 0, 0,
+                                          "Sub Sel"));
+        eduiMenuAddItem(submenu0,
+                        eduiItemSelCreate(submenu1, &style, 0, 0,
                                           cbSubMenu, "Sub Menu 1.."));
-        eduiMenuAddItem(edui_test_submenu0,
+        eduiMenuAddItem(submenu0,
                         eduiItemSelCreate((void *)2, &style, 0, 1, cbSel,
-                                          edui_str_subsel));
+                                          "Sub Sel"));
     }
-    edui_test_menu = eduiMenuCreate(50, 50, 180, 50, font, 0, "Main Menu");
-    if (edui_test_menu) {
-        eduiMenuAddItem(edui_test_menu,
-                        eduiItemSelCreate(edui_test_submenu0, &style, 0, 0,
+    testmenu0 = eduiMenuCreate(50, 50, 180, 50, font, 0, "Main Menu");
+    if (testmenu0) {
+        eduiMenuAddItem(testmenu0,
+                        eduiItemSelCreate(submenu0, &style, 0, 0,
                                           cbSubMenu, "Sub Menu 0.."));
         grad = eduiItemGradPickCreate((void *)1, &style, cbGradChange,
                                       "GradPick");
@@ -2658,23 +2623,23 @@ void CreateTestMenu(void *font) {
             eduiGradStageInsert(grad, 0.0f, 0.0f, 0.0f, 0.0f);
             eduiGradStageInsert(grad, 1.0f, 0.0f, 0.0f, 1.0f);
         }
-        eduiMenuAddItem(edui_test_menu, grad);
+        eduiMenuAddItem(testmenu0, grad);
         grad = eduiItemGreyGradPickCreate((void *)1, &style, cbGradChange,
                                           "GreyGradPick");
         if (grad) {
             eduiGradStageInsert(grad, 0.0f, 0.0f, 0.0f, 0.0f);
             eduiGradStageInsert(grad, 1.0f, 0.0f, 0.0f, 1.0f);
         }
-        eduiMenuAddItem(edui_test_menu, grad);
-        eduiMenuAddItem(edui_test_menu,
+        eduiMenuAddItem(testmenu0, grad);
+        eduiMenuAddItem(testmenu0,
                         eduiItemSelCreate((void *)2, &style, 0, 1, cbSel,
-                                          edui_str_sel));
+                                          "Sel"));
     }
 }
 
 
 void cbSel(struct eduimenu_s *menu, struct eduiitem_s *item) {
-    edui_test_sel = item->data;
+    selection_value = item->data;
 }
 
 
@@ -2697,6 +2662,6 @@ void cbGradChange(struct eduimenu_s *menu, struct eduiitem_s *item) {
 
 
 void TestMenu(void *pad) {
-    eduiMenuProcess(edui_test_menu, 1.0f / 60.0f, pad);
-    eduiMenuRender(edui_test_menu);
+    eduiMenuProcess(testmenu0, 1.0f / 60.0f, pad);
+    eduiMenuRender(testmenu0);
 }

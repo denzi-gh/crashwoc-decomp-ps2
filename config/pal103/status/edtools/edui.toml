@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0085"
 source = "src/edtools/edui.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0085:001b7f00:eduiInitMaterials"
@@ -318,3 +318,125 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0085:001c1cc8:TestMenu"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0085:004bfe58:textcaps"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0085:004bfe68:textlow"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0085:0062f8f8:ui_bgmtl"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0085:0062f8fc:cliph"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0085:0062f900:clips"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0085:0062f904:clipv"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0085:0062f908:clipg"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0085:0062f960:dynascale.261"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0085:0062f964:rep_timer.262"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0085:0062f970:up_rept.290"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0085:0062f974:down_rept.291"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0085:0062f978:selection_value"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0085:0062f98c:dynascale.313"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0085:0062f990:rep_timer.314"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0085:0062f994:edui_last_item"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0085:0062f998:edui_messagemenu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0085:00633238:tpent.141"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0085:0063323c:up_rept.145"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0085:00633240:down_rept.146"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0085:00633244:left_rept.147"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0085:00633248:right_rept.148"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0085:0063324c:gpcfg.173"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0085:00633250:item_width"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0085:00633254:testmenu0"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0085:00633258:submenu0"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0085:0063325c:submenu1"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0085:006b40c0:uimtls"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0085:006b40d8:textrow"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x006b40d8
+end = 0x006b40e8
+
+[[claim]]
+section = ".sbss"
+start = 0x0063325c
+end = 0x00633260

@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0030"
 source = "src/nu3d/nustream.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0030:001103f8:NuRndrInitStreams"
@@ -166,3 +166,282 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0030:00112060:CheckRndrStream"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:002d3de0:rndrstream_specular_dir"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:002d3df0:rndrstream_specular_intensity"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:002d3e00:mask.168"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:002d3e08:camvec.184"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:002d3e20:rndrstream_rt_light_buffer"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062ea70:nurndr_maxstreamsize"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062ea74:rndrstream_buffid"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062ea78:rndrstream_oldzfix"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062ea7c:rndrstream_view_mtx_id"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062ea80:rndrstream_local_mtx_buffer_size"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062ea84:rndrstream_view_mtx_buffer_size"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062ea88:rndrstream_local_mtx_id"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062ea8c:rndrstream_scissor_id"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062ea8e:rndrstream_xyoffset_id"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062ea90:stream_start_offset"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062ea94:stream_start_automove"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062ea98:stream_start_automove_cnt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062ea9c:stream_start_automove_range"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062eaa0:sortstreams_enabled"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062eaa4:light_first_time.123"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062eaa8:spec_first_time.124"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062eaac:fx_first_time.125"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062eab0:localmtx_id.147"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062eab4:firsttime.148"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062eab8:viewmtx_id"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062eabc:firsttime.152"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062eac0:zbstate_set"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062eac8:rndrstream_end"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062ead0:rndrstream_start"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062ead4:rndrstream_3d"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062ead8:rndrstream_system"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062eadc:rndrstream_mtl_sort"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062eae0:rndrstream_faceon"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062eae4:rndrstream_2d"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062eae8:rndrstream_3d_u"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062eaec:rndrstream_3d_l"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062eaf0:rndrstream_ptl"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062eaf4:rndrstream_fx"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062eaf8:rndrstream_ot_sort"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062eb00:rndrstream_free"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062eb08:txtrstream_end"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062eb10:txtrstream_start"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062eb18:frame_base"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062eb1c:rndrstream_fx_microcode"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062eb20:rndrstream_rt_light_addr"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062eb28:rndrstream_fx_mtx_addr"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062eb30:rndrstream_last_mtx"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0062eb34:testfclip"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:00633020:rndrstream_a"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:00633024:rndrstream_b"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:00633028:numstreams"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0063302c:rndrstream_clip_flag"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:00633030:rndrstream_specular_addr"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:00633038:rndrstream_scissor"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:00633040:rndrstream_xyoffset"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:00679b40:rndrstreams"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0067a240:sortstreams"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0067a2c0:rndrstream_zfix_mtx"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0067a300:rndrstream_view_nozfix_mtx"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0067a340:rndrstream_local_mtx_buffer"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0067a3c0:rndrstream_view_mtx_buffer_vpc"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0067a460:rndrstream_view_mtx_buffer_scc"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0067a500:rndrstream_facey_buffer"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0067a520:rndrstream_specular_buffer"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0067a590:rndrstream_fx_mtx_buffer"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0030:0067a600:zbstatebuff"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x0067a600
+end = 0x0067a630
+
+[[claim]]
+section = ".rodata"
+start = 0x00614148
+end = 0x00614170
+
+[[claim]]
+section = ".sbss"
+start = 0x00633040
+end = 0x00633048

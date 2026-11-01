@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0050"
 source = "src/nu3d/nucvtskn.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0050:00155408:ShareEdge"
@@ -102,3 +102,158 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0050:00158f48:PrevPktIdx"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0050:002e9040:ei.81"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0050:002e9058:packet_unique"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0050:0062ef18:allocid"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0050:0062ef1c:prevvidlimit"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0050:0062ef20:callcnt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0050:0062ef28:skinbuffer_free"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0050:00633120:primdefs"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0050:00633124:primdefs_sorted"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0050:00633128:skinbuffer_base"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0050:0063312c:skinbuffer_size"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0050:00633130:pktcnt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0050:00633134:pkttot"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0050:00633138:pktvtxcolour"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0050:0063313c:pktcolourshift"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0050:00633140:pktgt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0050:00633148:pkthdr"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0050:00633150:pktupaddr"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0050:00633154:pktdupes"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0050:00633158:tritot"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0050:0063315c:stritot"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0050:00633160:prevvidcnt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0050:00633164:totaldupes"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0050:00633168:totalpts"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0050:00633170:stripptr"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0050:00633174:stripprimdefs"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0050:00633178:tmp_skinbuffer_base"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0050:00633180:tmp_skinbuffer_free"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0050:00633184:tmp_skinbuffer_size"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0050:006add18:stats"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0050:006add38:pktweights"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0050:006ae278:pktwcnts"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0050:006ae320:pktvid"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0050:006ae3c8:pktprim"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0050:006ae470:pktvrtix"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0050:006ae518:ptcache"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x006ae518
+end = 0x006ae524
+
+[[claim]]
+section = ".rodata"
+start = 0x006158c8
+end = 0x006158f1
+
+[[claim]]
+section = ".sbss"
+start = 0x00633184
+end = 0x00633188

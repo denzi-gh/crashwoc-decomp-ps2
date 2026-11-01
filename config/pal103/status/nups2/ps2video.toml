@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0060"
 source = "src/nups2/ps2video.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0060:001687c0:tbRender"
@@ -286,3 +286,233 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0060:0016b770:GetElapsedTime"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:002ea0d0:def_cols"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:002ea110:videocfg"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:002ea130:ps2video_display_cfg"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f028:dmachan_vif1"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f02c:nuvideo_global_vbcnt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f030:nuvideo_global_framerate"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f034:sys_tb"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f038:tb_peak_reset"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f03c:framestarttime"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f040:frameendtime"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f044:frametime"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f048:PS2_REZ_W"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f04c:PS2_REZ_H"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f050:PS2_VCNTR_X"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f054:PS2_VCNTR_Y"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f058:auto_screen_swap_enabled"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f05c:ps2video_novsync"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f064:nusound_irx_loaded"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f068:initialised.123"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f06c:vbe_set"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f070:vbe_chain"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f074:vbe_dis_cnt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f078:vbs_set"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f07c:vbs_chain"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f080:vbs_dis_cnt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f084:all_handlers_initialised"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f088:hold_last_chain"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f08c:channel1_waiting"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f090:channel2_waiting"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f094:ch2_ends"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f098:ch1_waits"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f09c:gs_dma_countdownval"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f0a0:gs_dma_countdown"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f0b0:frame_start_wait"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f0b4:crta"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f0b8:crtb"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f0bc:crtc"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f0c0:ps2video_ignore_frameout"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f0c4:nuvideo_progressive_scan"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f0c8:ps2_video_fmt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f0cc:ps2_zb_fmt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:0062f0d0:ps2_video_size"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:006331c0:odev"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:006331c4:frame"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:006331c8:threadid"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:006331cc:invbi"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:006331d0:nu_intc_vif1"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:006331d4:nu_intc_vblank_e"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:006331d8:nu_intc_vblank_s"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:006331dc:nu_dmac_vif1"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:006331e0:nu_dmac_gif"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:006331e8:displayx"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:006331f0:displayy"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:006331f8:elapsed_time"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0060:006b3730:gamma_table"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x006b3730
+end = 0x006b3b30
+
+[[claim]]
+section = ".sbss"
+start = 0x006331f8
+end = 0x006331fc

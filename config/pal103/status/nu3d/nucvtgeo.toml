@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0049"
 source = "src/nu3d/nucvtgeo.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0049:001505b0:NuCvtDmaFaceOn"
@@ -102,3 +102,97 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0049:001553d8:NuCvtDestroyPacketInfo"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0049:002e8fe0:stipcoltab"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0049:002e9020:NuCvtPntSpan"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0049:002e9030:NuCvtPntMid"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0049:0062eed0:show_strip"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0049:0062eed4:info_pktdata"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0049:0062eed8:nugscn_generate_packetinfo"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0049:0062eedc:colourref_enabled"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0049:0062eee0:colourref_offset"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0049:0062eee4:NuCvtPntEna"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0049:0062eee8:NuCvtMaxSpan"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0049:0062eef0:nucvtgeo_lasttag"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0049:0062eef4:info_tristripcount"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0049:0062eef8:info_tricount"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0049:0062eefc:info_stripcount"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0049:0062ef00:info_pktcnt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0049:0062ef04:info_pktsizecnt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0049:0062ef08:info_pktbuff"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0049:0062ef0c:NuCvtPntOn"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0049:0062ef10:NuCvtUvOn"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0049:00633118:colourref_start"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0049:0063311c:refhdr"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x00615690
+end = 0x006156a6
+
+[[claim]]
+section = ".sbss"
+start = 0x0063311c
+end = 0x00633120

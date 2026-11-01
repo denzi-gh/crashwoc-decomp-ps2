@@ -60,41 +60,14 @@ typedef struct Clut16 {
 extern int gs_botfree;
 extern int PS2_REZ_W;
 extern int PS2_REZ_H;
-extern int nutex_force_quantisation;
 extern int numtl_force_mipmap;
-extern int nutex_force_overbrighten;
 
-extern u8 *D_0062F018;
-#define quant_indices D_0062F018
-extern int D_0062F01C;
-#define quant_count D_0062F01C
-extern u32 D_006B3330[256];
-#define quant_palette D_006B3330
-extern s16 D_002EA0B0[16];
-#define psmt4_col96off D_002EA0B0
-
-extern char D_00616150[];
-#define ps2txtr_srcfile D_00616150
-extern char D_00616170[];
-#define quant_alpha_msg D_00616170
-extern char D_00616190[];
-#define quant_banner_msg D_00616190
-extern char D_006161C0[];
-#define quant_overflow_msg D_006161C0
-extern char D_006161F0[];
-#define ps2txtr_preload_msg D_006161F0
-extern char D_00616300[];
-#define ps2txtr_target_msg D_00616300
-extern char D_00616380[];
-#define ps2txtr_format_msg D_00616380
-extern char D_006163A0[];
-#define ps2txtr_quantised_msg D_006163A0
-extern char D_006163B8[];
-#define ps2txtr_width_msg D_006163B8
-extern char D_00616448[];
-#define ps2txtr_height_msg D_00616448
-extern char D_0062F020[];
-#define ps2txtr_assert_msg D_0062F020
+static s16 psmt4_col96off[16] = { 10, 11, 14, 15, 26, 27, 30, 31, 42, 43, 46, 47, 58, 59, 62, 63 };
+int nutex_force_quantisation = 0;
+int nutex_force_overbrighten = 0;
+static u8 *txbuff = 0;
+static int palcnt = 0;
+static u32 palette[256];
 
 extern void *NuMemAllocFn(int size, char *file, int line);
 extern void NuMemFreeFn(void *ptr, char *file, int line);
@@ -115,14 +88,14 @@ extern u8 *gsCloseGifPacket(u8 *cur);
 static inline int QuantAddColour(u32 colour) {
     int i;
 
-    for (i = 0; i < quant_count; i++) {
-        if (colour == quant_palette[i]) {
+    for (i = 0; i < palcnt; i++) {
+        if (colour == palette[i]) {
             return i;
         }
     }
     if (i < 256) {
-        quant_palette[i] = colour;
-        quant_count++;
+        palette[i] = colour;
+        palcnt++;
         return i;
     }
     return -1;
@@ -139,16 +112,16 @@ void QuantizeTexture(struct nutex_s *spec) {
     u8 *src;
 
     index = -1;
-    if (!quant_indices) {
-        quant_indices = NuMemAllocFn(0x40000, ps2txtr_srcfile, 0x180);
+    if (!txbuff) {
+        txbuff = NuMemAllocFn(0x40000, "..\\nu2crash.ps2\\nups2\\ps2txtr.c", 0x180);
     }
-    quant_count = 0;
+    palcnt = 0;
     switch (spec->type) {
     case 2:
     case 3:
         break;
     default:
-        NuDebugMsgProlog(ps2txtr_srcfile, 0x18B)(quant_alpha_msg);
+        NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2txtr.c", 0x18B)("Cannot quantise alpha textures");
         return;
     }
     pix = 0;
@@ -173,15 +146,21 @@ void QuantizeTexture(struct nutex_s *spec) {
                 break;
             }
             if (index == -1) {
-                quant_count = 0;
-                NuDebugMsgProlog(ps2txtr_srcfile, 0x1A9)(quant_banner_msg);
-                NuDebugMsgProlog(ps2txtr_srcfile, 0x1AA)(quant_overflow_msg, x, y);
-                NuDebugMsgProlog(ps2txtr_srcfile, 0x1AB)(quant_banner_msg);
+                palcnt = 0;
+                NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2txtr.c", 0x1A9)("***********************************************");
+                NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2txtr.c", 0x1AA)("*********too many colours at (%d, %d)**********", x, y);
+                NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2txtr.c", 0x1AB)("***********************************************");
                 return;
             }
-            quant_indices[pix++] = index;
+            txbuff[pix++] = index;
         }
     }
+}
+
+
+inline int GetTexturePreLoad(void) {
+    NuErrorProlog("..\\nu2crash.ps2\\nups2\\ps2txtr.c", 0x1CC)("dont call this");
+    return 0;
 }
 
 
@@ -307,7 +286,7 @@ int GenTextureLoad(struct nutex_s *spec, struct nups2tex_s *tex) {
         tex->upsize[tex->mipcount] = ((tbw * (halign << 6) * bpp / 8) + 0x1FFF) & 0xFFFFE000;
         allocsize = size + 0x90;
         allocsize += (allocsize + 0x7CFFF) / 0x7D000 * 32;
-        tex->mipdata[tex->mipcount] = NuMemAllocFn(allocsize, ps2txtr_srcfile, 0x250);
+        tex->mipdata[tex->mipcount] = NuMemAllocFn(allocsize, "..\\nu2crash.ps2\\nups2\\ps2txtr.c", 0x250);
         tex->reqsize[tex->mipcount] = allocsize;
         if (tex->mipdata[tex->mipcount]) {
             tex->tbw[tex->mipcount] = tbw;
@@ -614,7 +593,7 @@ int GenPaletteLoad(struct nutex_s *spec, struct nups2tex_s *tex) {
     }
     bufsize = size + 0x80;
     tex->palsize = 0x2000;
-    buf = NuMemAllocFn(bufsize, ps2txtr_srcfile, 0x3ED);
+    buf = NuMemAllocFn(bufsize, "..\\nu2crash.ps2\\nups2\\ps2txtr.c", 0x3ED);
     tex->paldata = buf;
     if (buf) {
         tex->palstreamsize = bufsize;
@@ -866,7 +845,7 @@ int NuPs2CreateRenderTarget(struct nutex_s *spec, struct nups2tex_s *tex) {
         size = (spec->width * spec->height * 4 + 15) & 0xFFFFFFF0;
         break;
     default:
-        NuErrorProlog(ps2txtr_srcfile, 0x578)(ps2txtr_target_msg);
+        NuErrorProlog("..\\nu2crash.ps2\\nups2\\ps2txtr.c", 0x578)("unsupported rendertarget type");
         break;
     }
     switch (spec->type) {
@@ -900,7 +879,7 @@ int NuPs2CreateRenderTarget(struct nutex_s *spec, struct nups2tex_s *tex) {
         tex->tbw[0] = ((spec->width + (align - 1)) & -align) / 64;
         break;
     default:
-        NuErrorProlog(ps2txtr_srcfile, 0x5A5)(ps2txtr_target_msg);
+        NuErrorProlog("..\\nu2crash.ps2\\nups2\\ps2txtr.c", 0x5A5)("unsupported rendertarget type");
         break;
     }
     size += 255;
@@ -999,30 +978,30 @@ int NuPs2TxCreate(struct nutex_s *spec, struct nups2tex_s *tex) {
         if (spec->type < 0x14) {
             return NuPs2CreateRenderTarget(spec, tex);
         }
-        NuErrorProlog(ps2txtr_srcfile, 0x640)(ps2txtr_format_msg);
+        NuErrorProlog("..\\nu2crash.ps2\\nups2\\ps2txtr.c", 0x640)("unsupported texture format");
         return 0;
     }
     memset(tex, 0, sizeof(struct nups2tex_s));
-    quant_count = 0;
+    palcnt = 0;
     if (nutex_force_quantisation) {
         QuantizeTexture(spec);
     }
-    if (quant_count) {
+    if (palcnt) {
         spec->type = 5;
         quantised = *spec;
         quantised.type = 5;
-        quantised.bits = quant_indices;
-        quantised.pal = (int *)quant_palette;
+        quantised.bits = txbuff;
+        quantised.pal = (int *)palette;
         spec = &quantised;
-        NuDebugMsgProlog(ps2txtr_srcfile, 0x653)(ps2txtr_quantised_msg, quant_count);
+        NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2txtr.c", 0x653)("Quantized - %d colours", palcnt);
     }
     tex->tw = Ps2TxValToPowerOfTwo(spec->width);
     tex->th = Ps2TxValToPowerOfTwo(spec->height);
     if (spec->width && 1 << tex->tw != spec->width) {
-        NuDebugMsgProlog(ps2txtr_srcfile, 0x65C)(ps2txtr_width_msg, spec->width);
+        NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2txtr.c", 0x65C)("\r\n*********************************************\r\nTexture width MUST be a power of two, not %d\r\n*********************************************", spec->width);
     }
     if (spec->height && 1 << tex->th != spec->height) {
-        NuDebugMsgProlog(ps2txtr_srcfile, 0x65F)(ps2txtr_height_msg, spec->height);
+        NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2txtr.c", 0x65F)("\r\n*********************************************\r\nTexture height MUST be a power of two, not %d\r\n*********************************************", spec->height);
     }
     tex->gsused = 0;
     if (spec->bits) {
@@ -1088,7 +1067,7 @@ u8 *NuPs2TxGenUpload(u8 *stream, struct nups2tex_s *tex, int addr) {
         if (tex->mipdata[i]) {
             if (wshift >= 5 || first) {
                 if (!((u32)tex->upsize[i] >> 8)) {
-                    NuErrorProlog(ps2txtr_srcfile, 0x6CD)(ps2txtr_assert_msg);
+                    NuErrorProlog("..\\nu2crash.ps2\\nups2\\ps2txtr.c", 0x6CD)("assert");
                 }
                 first = 0;
                 addr -= (u32)tex->upsize[i] >> 8;
@@ -1113,7 +1092,7 @@ u8 *NuPs2TxGenUpload(u8 *stream, struct nups2tex_s *tex, int addr) {
     }
     tex->palend = addr;
     if (tex->gsbase - tex->palend < tex->gsused) {
-        NuErrorProlog(ps2txtr_srcfile, 0x6EF)(ps2txtr_assert_msg);
+        NuErrorProlog("..\\nu2crash.ps2\\nups2\\ps2txtr.c", 0x6EF)("assert");
     }
     return p.b;
 }
@@ -1123,10 +1102,10 @@ int NuPs2TxDestroy(struct nups2tex_s *tex) {
     int i;
 
     for (i = 0; i < tex->mipcount; i++) {
-        NuMemFreeFn(tex->mipdata[i], ps2txtr_srcfile, 0x136);
+        NuMemFreeFn(tex->mipdata[i], "..\\nu2crash.ps2\\nups2\\ps2txtr.c", 0x136);
     }
     if (tex->paldata) {
-        NuMemFreeFn(tex->paldata, ps2txtr_srcfile, 0x139);
+        NuMemFreeFn(tex->paldata, "..\\nu2crash.ps2\\nups2\\ps2txtr.c", 0x139);
     }
     return 0;
 }
@@ -1195,10 +1174,4 @@ u64 Ps2TxGetTex0(struct nups2tex_s *tex) {
     return tex->tbp[0] | (u64)tex->tbw[0] << 14 | (u64)tex->psm << 20
          | (u64)tex->tw << 26 | (u64)tex->th << 30 | (u64)tex->tcc << 34
          | (u64)tex->cbp << 37 | (u64)tex->cpsm << 51 | (u64)cld << 61;
-}
-
-
-int GetTexturePreLoad(void) {
-    NuErrorProlog(ps2txtr_srcfile, 0x1CC)(ps2txtr_preload_msg);
-    return 0;
 }

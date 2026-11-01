@@ -72,106 +72,71 @@ extern void NuPs2CreateSkinSmooth(struct nugobj_s *gobj);
 extern SkinDmaTag *NuPs2CreateSkinDma(char **buffer, struct nugeom_s *geom, SkinPrimDef *defs, int cnt);
 extern int SortPrimdefs(SkinPrimDef *defs, int cnt);
 
-extern char D_006156B0[];
-extern char D_006156F8[];
-extern char D_00615710[];
-extern char D_00615728[];
-extern char D_00615748[];
-extern char D_00615760[];
-extern char D_00615778[];
-extern char D_00615798[];
-extern char D_006157D0[];
-extern char D_006157F8[];
-extern char D_00615838[];
-extern char D_00615868[];
-extern char D_006158A0[];
-extern char D_006158C8[];
-extern SkinPrimDef *D_00633120;
-extern SkinPrimDef *D_00633124;
-extern char *D_00633128;
-extern u32 D_0063312C;
-extern int D_00633130;
-extern int D_00633134;
-extern int D_00633138;
-extern int D_0063313C;
-extern u16 *D_00633140;
-extern u16 *D_00633148;
-extern u32 *D_00633150;
-extern int D_00633154;
-extern int D_00633158;
-extern int D_0063315C;
-extern int D_00633160;
-extern int D_00633164;
-extern int D_00633168;
-extern char *D_00633178;
-extern char *D_00633180;
-extern int D_00633184;
-extern char *skinbuffer_free;
-extern int D_0062EF18;
-extern int D_0062EF1C;
-extern int D_0062EF20;
-extern int D_006ADD18[8];
-extern float D_006ADD38[][8];
-extern int D_006AE278[];
-extern int D_006AE320[];
-extern SkinPrimDef *D_006AE3C8[];
-extern int D_006AE470[];
-extern float *D_00633170;
-extern SkinPrimDef *D_00633174;
-extern int D_006AE518[];
-extern int D_002E9040[3][2];
-extern int packet_unique[];
+#define nucvtskn_srcfile "..\\nu2crash.ps2\\nu3d\\nucvtskn.c"
 
-#define nucvtskn_srcfile D_006156B0
-#define point_idx_msg D_006156F8
-#define blend_offset_msg D_00615710
-#define blend_count_msg D_00615728
-#define more_unused_msg D_00615748
-#define all_used_msg D_00615760
-#define mtx_overflow_msg D_00615778
-#define no_skin_msg D_00615798
-#define collapsed_msg D_006157D0
-#define banner_msg D_006157F8
-#define dupes_msg D_00615838
-#define totals_msg D_00615868
-#define overflow_msg D_006158A0
-#define peak_msg D_006158C8
-#define primdefs D_00633120
-#define primdefs_sorted D_00633124
-#define skinbuffer D_00633128
-#define skinbuffer_size D_0063312C
-#define pktcnt D_00633130
-#define pkttot D_00633134
-#define pktvtxcolour D_00633138
-#define pktcolourshift D_0063313C
-#define pktgt D_00633140
-#define pkthdr D_00633148
-#define pktupaddr D_00633150
-#define pktdupes D_00633154
-#define tritot D_00633158
-#define stritot D_0063315C
-#define prevvidcnt D_00633160
-#define totaldupes D_00633164
-#define totalpts D_00633168
-#define allocid D_0062EF18
-#define prevvidlimit D_0062EF1C
-#define callcnt D_0062EF20
-#define stats D_006ADD18
-#define pktweights D_006ADD38
-#define pktwcnts D_006AE278
-#define pktvid D_006AE320
-#define pktprim D_006AE3C8
-#define pktvrtix D_006AE470
-#define stripptr D_00633170
-#define stripprimdefs D_00633174
-#define ptcache D_006AE518
-#define tri_edges D_002E9040
-#define saved_skinbuffer D_00633178
-#define saved_skinbuffer_free D_00633180
-#define saved_skinbuffer_size D_00633184
+static int allocid = 0;
+static int prevvidlimit = 100;
+static int callcnt = 0;
+/* The aligned(8) buffer and packet pointers are 8-aligned in retail. */
+char *skinbuffer_free __attribute__((aligned(8))) = 0;
+
+static SkinPrimDef *primdefs;
+static SkinPrimDef *primdefs_sorted;
+static char *skinbuffer_base;
+static u32 skinbuffer_size;
+static int pktcnt;
+static int pkttot;
+static int pktvtxcolour;
+static int pktcolourshift;
+static u16 *pktgt;
+static u16 *pkthdr __attribute__((aligned(8)));
+static u32 *pktupaddr __attribute__((aligned(8)));
+static int pktdupes;
+static int tritot;
+static int stritot;
+static int prevvidcnt;
+static int totaldupes;
+static int totalpts;
+static float *stripptr __attribute__((aligned(8)));
+static SkinPrimDef *stripprimdefs;
+static char *tmp_skinbuffer_base;
+static char *tmp_skinbuffer_free __attribute__((aligned(8)));
+static int tmp_skinbuffer_size;
+static int stats[8];
+static float pktweights[42][8];
+static int pktwcnts[42];
+static int pktvid[42];
+static SkinPrimDef *pktprim[42];
+static int pktvrtix[42];
+static int ptcache[3];
+
+void CloseSkinning(void);
+void InitSkinning(int size);
+void ResetSkinning(void);
+void NuPs2SetTempSkinBuffer(char *buffer, int size);
+void NuCvtSknInstFix(SkinDmaTag *tag);
+void NuCvtSknInstUnFix(SkinDmaTag *tag);
+int PrevPktIdx(int id);
+
+
+inline void InitSkinning(int size) {
+    skinbuffer_base = NuMemAllocFn(size, nucvtskn_srcfile, 0x4A);
+    skinbuffer_free = skinbuffer_base;
+    skinbuffer_size = size;
+    memset(skinbuffer_base, 0, size);
+}
+
+
+inline void CloseSkinning(void) {
+    if (skinbuffer_base) {
+        NuMemFreeFn(skinbuffer_base, nucvtskn_srcfile, 0x55);
+    }
+    skinbuffer_base = 0;
+}
 
 
 int ShareEdge(SkinPrimDef *defs, int a, int b) {
+    static int ei[3][2] = { { 0, 1 }, { 1, 2 }, { 2, 0 } };
     SkinPrimDef *pa;
     SkinPrimDef *pb;
     int i;
@@ -187,12 +152,12 @@ int ShareEdge(SkinPrimDef *defs, int a, int b) {
             if (pb->adj[j] != -1) {
                 continue;
             }
-            if (pa->vid[tri_edges[i][0]] == pb->vid[tri_edges[j][0]] && pa->vid[tri_edges[i][1]] == pb->vid[tri_edges[j][1]]) {
+            if (pa->vid[ei[i][0]] == pb->vid[ei[j][0]] && pa->vid[ei[i][1]] == pb->vid[ei[j][1]]) {
                 pa->adj[i] = b;
                 pb->adj[j] = a;
                 return 1;
             }
-            if (pa->vid[tri_edges[i][0]] == pb->vid[tri_edges[j][1]] && pa->vid[tri_edges[i][1]] == pb->vid[tri_edges[j][0]]) {
+            if (pa->vid[ei[i][0]] == pb->vid[ei[j][1]] && pa->vid[ei[i][1]] == pb->vid[ei[j][0]]) {
                 pa->adj[i] = b;
                 pb->adj[j] = a;
                 return 1;
@@ -201,6 +166,9 @@ int ShareEdge(SkinPrimDef *defs, int a, int b) {
     }
     return 0;
 }
+
+
+int packet_unique[42] = {0};
 
 
 VifWord *WriteWeights(VifWord *pkt, int addr, int cnt, float *weights) {
@@ -322,7 +290,7 @@ float *AddPointDataToPacket(float *pkt, SkinPrimDef *defs, int prim, int vtx, in
 
     start = pkt;
     if (vtx < 0 || vtx >= 3) {
-        NuErrorProlog(nucvtskn_srcfile, 0x142)(point_idx_msg);
+        NuErrorProlog(nucvtskn_srcfile, 0x142)("point idx out of range");
     }
     ptcache[2] = ptcache[1];
     ptcache[1] = ptcache[0];
@@ -448,7 +416,7 @@ u8 *GenModData(u8 *pkt, struct nugeom_s *geom, int *end, int stride) {
                             pkt += 4;
                             *(u32 *)pkt = i * stride + 3;
                             pkt += 4;
-                            NuDebugMsgProlog(nucvtskn_srcfile, 0x231)(blend_offset_msg, vid, offsets[vid].x, offsets[vid].y, offsets[vid].z);
+                            NuDebugMsgProlog(nucvtskn_srcfile, 0x231)("offset (%d) %f %f %f", vid, offsets[vid].x, offsets[vid].y, offsets[vid].z);
                         }
                     }
                 }
@@ -456,7 +424,7 @@ u8 *GenModData(u8 *pkt, struct nugeom_s *geom, int *end, int stride) {
             blended |= cnt;
             if (cnt) {
                 *(u32 *)unpack = cnt << 16 | 0x6C000039;
-                NuDebugMsgProlog(nucvtskn_srcfile, 0x23B)(blend_count_msg, ix, cnt);
+                NuDebugMsgProlog(nucvtskn_srcfile, 0x23B)("VTX Blending - ix: %d cnt:%d", ix, cnt);
                 hdr[4] = ix;
                 hdr[5] = cnt + 0x3A;
                 *(u32 *)pkt = 0x1400000C;
@@ -613,28 +581,16 @@ void AddStripTri(int prim, int prev, int first) {
             continue;
         }
         if (unused != -1) {
-            NuErrorProlog(nucvtskn_srcfile, 0x2E8)(more_unused_msg);
+            NuErrorProlog(nucvtskn_srcfile, 0x2E8)("more than one unused");
         }
         unused = i;
     }
     if (unused == -1) {
-        NuErrorProlog(nucvtskn_srcfile, 0x2ED)(all_used_msg);
+        NuErrorProlog(nucvtskn_srcfile, 0x2ED)("errm, all are used");
     }
     stripptr = AddPointDataToPacket(stripptr, stripprimdefs, prim, unused, 0);
 }
 
-
-/* Retail static names preserve GCC 2.95 GCSE choices in this loop. */
-#undef ptcache
-#undef stritot
-#undef stripptr
-#undef stripprimdefs
-#undef callcnt
-extern int ptcache[3];
-extern int stritot;
-extern float *stripptr;
-extern SkinPrimDef *stripprimdefs;
-extern int callcnt;
 
 float *GenStrips(SkinPrimDef *defs, float *pkt, int base, int cnt, int *used, int colour, int shift) {
     int best;
@@ -692,12 +648,6 @@ float *GenStrips(SkinPrimDef *defs, float *pkt, int base, int cnt, int *used, in
         } while (1);
     } while (1);
 }
-
-#define ptcache D_006AE518
-#define stritot D_0063315C
-#define stripptr D_00633170
-#define stripprimdefs D_00633174
-#define callcnt D_0062EF20
 
 
 SkinDmaTag *NuPs2CreateSkinDma(char **buffer, struct nugeom_s *geom, SkinPrimDef *defs, int cnt) {
@@ -936,7 +886,7 @@ static inline int AddMtxToPrimDef(SkinPrimDef *pd, int mtx) {
         }
     }
     if (i >= 8) {
-        NuDebugMsgProlog(nucvtskn_srcfile, 0x504)(mtx_overflow_msg);
+        NuDebugMsgProlog(nucvtskn_srcfile, 0x504)("AddMtxToPrimDef:nummtx exceeded");
         return 0;
     }
     pd->mtxid[i] = mtx;
@@ -965,7 +915,7 @@ void SetVtxSkinData(SkinPrimDef *pd, int vtx, struct nuvtx_tc1_s *verts, int vid
                 return;
             }
         }
-        NuDebugMsgProlog(nucvtskn_srcfile, 0x529)(no_skin_msg, vid);
+        NuDebugMsgProlog(nucvtskn_srcfile, 0x529)("Unable to determine vtx/skin relationship for vid %d", vid);
     }
 }
 
@@ -1044,7 +994,7 @@ void NuPs2CreateSkinNorm(struct nugobj_s *gobj) {
                 SetVtxSkinData(pd, 2, verts, prim->vid[i + 2], geom);
             }
             if (pd->vid[0] == pd->vid[1] || pd->vid[1] == pd->vid[2] || pd->vid[0] == pd->vid[2]) {
-                NuDebugMsgProlog(nucvtskn_srcfile, 0x580)(collapsed_msg);
+                NuDebugMsgProlog(nucvtskn_srcfile, 0x580)("Warning: collapsed polygon detected");
                 pd--;
                 cnt--;
             }
@@ -1070,13 +1020,13 @@ void NuPs2CreateSkinNorm(struct nugobj_s *gobj) {
         total += cnt;
     }
     if (dupes) {
-        NuDebugMsgProlog(nucvtskn_srcfile, 0x5A5)(banner_msg);
-        NuDebugMsgProlog(nucvtskn_srcfile, 0x5A6)(dupes_msg, dupes, total, 0);
-        NuDebugMsgProlog(nucvtskn_srcfile, 0x5A7)(totals_msg, tritot, stritot, totalpts, totaldupes, skinbuffer_free - start);
-        NuDebugMsgProlog(nucvtskn_srcfile, 0x5A8)(banner_msg);
+        NuDebugMsgProlog(nucvtskn_srcfile, 0x5A5)("********************************************************");
+        NuDebugMsgProlog(nucvtskn_srcfile, 0x5A6)("total mtx for gobj %d total prims %d IDsize %d", dupes, total, 0);
+        NuDebugMsgProlog(nucvtskn_srcfile, 0x5A7)("Tris %d StripTris %d Pts %d Dupes %d Used %d bytes", tritot, stritot, totalpts, totaldupes, skinbuffer_free - start);
+        NuDebugMsgProlog(nucvtskn_srcfile, 0x5A8)("********************************************************");
     }
-    if (skinbuffer_free - skinbuffer > skinbuffer_size) {
-        NuDebugMsgProlog(nucvtskn_srcfile, 0x5AB)(overflow_msg);
+    if (skinbuffer_free - skinbuffer_base > skinbuffer_size) {
+        NuDebugMsgProlog(nucvtskn_srcfile, 0x5AB)("Warning - skin buffer has overflowed");
     }
 }
 
@@ -1139,20 +1089,20 @@ void NuPs2CreateSkinSmoothOld(struct nugobj_s *gobj) {
                 common = i;
             }
         }
-        NuDebugMsgProlog(nucvtskn_srcfile, 0x5F9)(peak_msg, peak, common);
+        NuDebugMsgProlog(nucvtskn_srcfile, 0x5F9)("Peak mtx-poly %d most common mtx-poly %d", peak, common);
         geom->skindma = NuPs2CreateSkinDma(buffer, geom, primdefs_sorted, cnt);
         geom->dma_len = *buffer - (char *)geom->skindma;
         RelocateSkinDma(geom->skindma);
         total += cnt;
     }
     if (dupes) {
-        NuDebugMsgProlog(nucvtskn_srcfile, 0x604)(banner_msg);
-        NuDebugMsgProlog(nucvtskn_srcfile, 0x605)(dupes_msg, dupes, total, 0);
-        NuDebugMsgProlog(nucvtskn_srcfile, 0x606)(totals_msg, tritot, stritot, totalpts, totaldupes, skinbuffer_free - start);
-        NuDebugMsgProlog(nucvtskn_srcfile, 0x607)(banner_msg);
+        NuDebugMsgProlog(nucvtskn_srcfile, 0x604)("********************************************************");
+        NuDebugMsgProlog(nucvtskn_srcfile, 0x605)("total mtx for gobj %d total prims %d IDsize %d", dupes, total, 0);
+        NuDebugMsgProlog(nucvtskn_srcfile, 0x606)("Tris %d StripTris %d Pts %d Dupes %d Used %d bytes", tritot, stritot, totalpts, totaldupes, skinbuffer_free - start);
+        NuDebugMsgProlog(nucvtskn_srcfile, 0x607)("********************************************************");
     }
-    if (skinbuffer_free - skinbuffer > skinbuffer_size) {
-        NuDebugMsgProlog(nucvtskn_srcfile, 0x60A)(overflow_msg);
+    if (skinbuffer_free - skinbuffer_base > skinbuffer_size) {
+        NuDebugMsgProlog(nucvtskn_srcfile, 0x60A)("Warning - skin buffer has overflowed");
     }
 }
 
@@ -1212,20 +1162,20 @@ void NuPs2CreateSkinSmooth(struct nugobj_s *gobj) {
                 common = i;
             }
         }
-        NuDebugMsgProlog(nucvtskn_srcfile, 0x64C)(peak_msg, peak, common);
+        NuDebugMsgProlog(nucvtskn_srcfile, 0x64C)("Peak mtx-poly %d most common mtx-poly %d", peak, common);
         geom->skindma = NuPs2CreateSkinDma(buffer, geom, primdefs_sorted, cnt);
         geom->dma_len = *buffer - (char *)geom->skindma;
         RelocateSkinDma(geom->skindma);
         total += cnt;
     }
     if (dupes) {
-        NuDebugMsgProlog(nucvtskn_srcfile, 0x657)(banner_msg);
-        NuDebugMsgProlog(nucvtskn_srcfile, 0x658)(dupes_msg, dupes, total, 0);
-        NuDebugMsgProlog(nucvtskn_srcfile, 0x659)(totals_msg, tritot, stritot, totalpts, totaldupes, skinbuffer_free - start);
-        NuDebugMsgProlog(nucvtskn_srcfile, 0x65A)(banner_msg);
+        NuDebugMsgProlog(nucvtskn_srcfile, 0x657)("********************************************************");
+        NuDebugMsgProlog(nucvtskn_srcfile, 0x658)("total mtx for gobj %d total prims %d IDsize %d", dupes, total, 0);
+        NuDebugMsgProlog(nucvtskn_srcfile, 0x659)("Tris %d StripTris %d Pts %d Dupes %d Used %d bytes", tritot, stritot, totalpts, totaldupes, skinbuffer_free - start);
+        NuDebugMsgProlog(nucvtskn_srcfile, 0x65A)("********************************************************");
     }
-    if (skinbuffer_free - skinbuffer > skinbuffer_size) {
-        NuDebugMsgProlog(nucvtskn_srcfile, 0x65D)(overflow_msg);
+    if (skinbuffer_free - skinbuffer_base > skinbuffer_size) {
+        NuDebugMsgProlog(nucvtskn_srcfile, 0x65D)("Warning - skin buffer has overflowed");
     }
 }
 
@@ -1264,44 +1214,28 @@ void NuPs2DestroySkin(struct nugobj_s *gobj) {
 }
 
 
-void CloseSkinning(void) {
-    if (skinbuffer) {
-        NuMemFreeFn(skinbuffer, nucvtskn_srcfile, 0x55);
-    }
-    skinbuffer = 0;
+inline void ResetSkinning(void) {
+    skinbuffer_free = skinbuffer_base;
 }
 
 
-void InitSkinning(int size) {
-    skinbuffer = NuMemAllocFn(size, nucvtskn_srcfile, 0x4A);
-    skinbuffer_free = skinbuffer;
-    skinbuffer_size = size;
-    memset(skinbuffer, 0, size);
-}
-
-
-void ResetSkinning(void) {
-    skinbuffer_free = skinbuffer;
-}
-
-
-void NuPs2SetTempSkinBuffer(char *buffer, int size) {
+inline void NuPs2SetTempSkinBuffer(char *buffer, int size) {
     if (buffer) {
-        saved_skinbuffer = skinbuffer;
-        saved_skinbuffer_free = skinbuffer_free;
-        saved_skinbuffer_size = skinbuffer_size;
-        skinbuffer = buffer;
+        tmp_skinbuffer_base = skinbuffer_base;
+        tmp_skinbuffer_free = skinbuffer_free;
+        tmp_skinbuffer_size = skinbuffer_size;
+        skinbuffer_base = buffer;
         skinbuffer_free = buffer;
         skinbuffer_size = size;
     } else {
-        skinbuffer = saved_skinbuffer;
-        skinbuffer_free = saved_skinbuffer_free;
-        skinbuffer_size = saved_skinbuffer_size;
+        skinbuffer_base = tmp_skinbuffer_base;
+        skinbuffer_free = tmp_skinbuffer_free;
+        skinbuffer_size = tmp_skinbuffer_size;
     }
 }
 
 
-void NuCvtSknInstFix(SkinDmaTag *tag) {
+inline void NuCvtSknInstFix(SkinDmaTag *tag) {
     u32 base;
 
     base = (u32)tag;
@@ -1317,7 +1251,7 @@ void NuCvtSknInstFix(SkinDmaTag *tag) {
 }
 
 
-void NuCvtSknInstUnFix(SkinDmaTag *tag) {
+inline void NuCvtSknInstUnFix(SkinDmaTag *tag) {
     u32 base;
 
     base = (u32)tag;

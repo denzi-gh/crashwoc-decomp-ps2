@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0127"
 source = "src/sdk/sce/graphdev_127.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0127:002611a8:sceGsResetGraph"
@@ -17,4 +17,12 @@ state = "matching"
 
 [[function]]
 id = "pal103:unit-0127:00261338:sceGsGetGParam"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0127:00610840:__ps2_libinfo__"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0127:00610850:gp.6"
 state = "matching"

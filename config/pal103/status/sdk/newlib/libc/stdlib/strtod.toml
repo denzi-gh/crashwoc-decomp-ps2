@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0218"
 source = "src/sdk/newlib/libc/stdlib/strtod.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0218:00272288:_strtod_r"

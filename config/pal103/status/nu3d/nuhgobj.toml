@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0048"
 source = "src/nu3d/nuhgobj.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0048:0014c828:NuHGobjDestroyDynamic"
@@ -98,3 +98,12 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0048:001504c8:NuGHGFixupGobj"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0048:0062eecc:ghg_version"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x00615520
+end = 0x00615536

@@ -469,6 +469,15 @@ _WORD_PRIVATE_RE = re.compile(r"^\s*\.word\s+(\$L\w*)\s*$")
 FUNCTION_STATIC_RE = re.compile(r"^(.+)\.(\d+)$")
 
 
+class _PrivateBytes(bytes):
+    """A compiler-private aggregate's bytes plus the section it compiled into."""
+
+    def __new__(cls, data, section):
+        obj = super().__new__(cls, data)
+        obj.section = section
+        return obj
+
+
 class DataItem:
     """One labelled object the compiler emitted in a data section."""
 
@@ -603,7 +612,8 @@ def _split_sections(lines, stream=None):
         if payload and all(_WORD_LABEL_RE.match(p) for p in payload):
             private[item.name] = _JumpTable(len(payload))
         else:
-            private[item.name] = _assemble_data_bytes(item.lines)
+            private[item.name] = _PrivateBytes(_assemble_data_bytes(item.lines),
+                                               item.section)
     return text, private, items
 
 
@@ -674,6 +684,9 @@ class Lit4Mapper:
             (h(s["addr"]), h(s["addr"]) + h(s["size"]))
             for s in sections_spec["sections"]
             if s["name"] in _OWNED_INIT_DATA and h(s["size"]) > 0]
+        self._section_ranges = {
+            s["name"]: (h(s["addr"]), h(s["addr"]) + h(s["size"]))
+            for s in sections_spec["sections"] if s["name"] in _OWNED_INIT_DATA}
         # Per-unit data ranges: data_map.toml exactly tiles every data byte, so
         # a compiler-private aggregate with no named twin can borrow the unique
         # address in its own unit's range that holds the same bytes.
@@ -750,7 +763,8 @@ class Lit4Mapper:
                 break
         return []
 
-    def map_owned_data(self, slice_text, want, context, unit_dir=None):
+    def map_owned_data(self, slice_text, want, context, unit_dir=None,
+                       section=None):
         """Retail owned-data symbol a compiler-private initialized aggregate
         ($LCn) can borrow instead of owning data.
 
@@ -775,6 +789,13 @@ class Lit4Mapper:
                 self._address_of(s))}
             if len(private) == 1:
                 named = private
+            elif len(private) > 1 and section in self._section_ranges:
+                # `""` also starts an unrelated private aggregate (edui's
+                # style in .rodata); keep the slots in the compiled section.
+                lo, hi = self._section_ranges[section]
+                same = {s for s in private if lo <= self._address_of(s) < hi}
+                if len(same) == 1:
+                    named = same
         if len(named) == 1:
             return next(iter(named))
         if len(named) > 1:
@@ -1569,7 +1590,8 @@ def _rewrite_local_data(seg, local_data, version, unit_dir, name, addr,
             sym = jt_syms[lbl]
             externs.append(f"\t.extern\t{sym}, {val.count * 4}")
         else:
-            sym = mapper_box[0].map_owned_data(slice_text, val, name, unit_dir)
+            sym = mapper_box[0].map_owned_data(slice_text, val, name, unit_dir,
+                                               getattr(val, "section", None))
             externs.append(f"\t.extern\t{sym}, {len(val)}")
         rename[lbl] = sym
         # Same address under two spellings (D_0061F460 / D_0061f460) is one borrow.
@@ -1639,8 +1661,9 @@ def _registry_map(items, version, unit_dir):
     """[(item, registry symbol)] for the compiled named data objects.
 
     The k-th compiled `stem.N` is the k-th registry function static with
-    that stem in address order; every object must be a registry symbol of the
-    unit, in the registry's section."""
+    that stem in `.N` order (compile order; edui's .sdata `up_rept.290` sits
+    below its .sbss `up_rept.145`); every object must be a registry symbol of
+    the unit, in the registry's section."""
     from status import load_data_registry
     unit_index = int(unit_dir.split("-")[1])
     registry = load_data_registry(ROOT / "config" / version).get(unit_index, {})
@@ -1650,6 +1673,8 @@ def _registry_map(items, version, unit_dir):
     for sym in sorted(registry.values(), key=lambda s: s["address"]):
         if sym["scope"] == "function_static":
             stems.setdefault(sym["stem"], []).append(sym)
+    for candidates in stems.values():
+        candidates.sort(key=lambda s: int(s["name"].rsplit(".", 1)[1]))
     seen, out = {}, []
     for item in items:
         m = FUNCTION_STATIC_RE.match(item.name)
@@ -1844,6 +1869,12 @@ def _data_pieces(emit, unit_dir, version, bin_dir):
         rng = next((r for r in ranges if r["start"] <= sym["address"] < r["end"]
                     and r["section"] == sym["section"]), None)
         size = sym.get("size") or item.size
+        if size is None and item.section not in NOBITS_SECTIONS:
+            # gcc writes no `.size` for an unsized array (`int mask[] = {...}`).
+            try:
+                size = len(_assemble_data_bytes(item.lines)) or None
+            except (HybridError, ValueError):
+                size = None
         if rng is None or size is None or sym["address"] + size > rng["end"]:
             raise HybridError(f"{sym['name']}: not inside one owned range of "
                               f"{unit_dir} (data_map.toml)")

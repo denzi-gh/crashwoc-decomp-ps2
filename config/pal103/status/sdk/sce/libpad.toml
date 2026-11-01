@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0148"
 source = "src/sdk/sce/libpad.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0148:002645a8:_send_to_iop"
@@ -130,3 +130,49 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0148:002658e8:scePadSetWarningLevel"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0148:00610920:__ps2_libinfo__"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0148:00610930:isInit"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0148:00610934:isWarning"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0148:00610938:PadStateStr"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0148:00610958:ReqStateStr"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0148:006ffac0:padsif"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0148:006ffb10:PadInfo"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0148:006ffc00:dma_iop_data"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0148:006ffe00:buffer"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x006ffe00
+end = 0x006ffe80
+
+[[claim]]
+section = ".rodata"
+start = 0x0062b029
+end = 0x0062b059

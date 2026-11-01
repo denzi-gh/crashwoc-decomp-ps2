@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0039"
 source = "src/nu3d/nutex.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0039:0011c590:NuTexReadBitmapMMEx"
@@ -198,3 +198,135 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0039:0011eff8:NuTexGetTextAddr"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0039:002d3f20:tcaddr.210"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0039:002d3f30:mmag.211"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0039:002d3f40:mmin.212"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0039:0062ebe8:initialised"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0039:0062ebec:tinfo"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0039:0062ebf0:tpid"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0039:0062ebf4:nutex_alloc_cnt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0039:0062ebf8:gst_curr"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0039:0062ebfc:gst_head"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0039:0062ec00:gst_tail"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0039:0062ec04:nutex_reserve_sp"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0039:0062ec08:nutex_total_xfer_this_frame"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0039:0062ec0c:nutex_peak_xfer_per_frame"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0039:0062ec10:default_tinfo.75"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0039:0062ec24:txupload_on"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0039:0062ec28:nutex_use_path3"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0039:0062ec2c:nutex_display_lod"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0039:0062ec30:done.191"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0039:0062ec34:sys_mm_k"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0039:0062ec38:sys_mm_l"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0039:0062ec3c:gs_top"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0039:0062ec40:gs_botfree"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0039:0063305c:tex_allocmax"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0039:00633060:gs_ptr"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0039:00633064:gs_bottom"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0039:00633068:gs_tempaddr"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0039:0067d540:pgmtl.190"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0039:0067d640:nutex_reserve_stack"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x0067d640
+end = 0x0067da40
+
+[[claim]]
+section = ".data"
+start = 0x002d3f40
+end = 0x002d3f50
+
+[[claim]]
+section = ".rodata"
+start = 0x00614740
+end = 0x00614758
+
+[[claim]]
+section = ".sbss"
+start = 0x00633068
+end = 0x0063306c
