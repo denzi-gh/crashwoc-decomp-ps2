@@ -210,3 +210,8 @@ state = "matching"
 [[data]]
 id = "pal103:unit-0015:00293920:numtx_zero"
 state = "matching"
+
+[[claim]]
+section = ".data"
+start = 0x0029389c
+end = 0x002938a0

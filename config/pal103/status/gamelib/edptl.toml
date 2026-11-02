@@ -1073,6 +1073,11 @@ start = 0x006b3b30
 end = 0x006b3b3c
 
 [[claim]]
+section = ".data"
+start = 0x00484db0
+end = 0x00484dc0
+
+[[claim]]
 section = ".rodata"
 start = 0x00618c18
 end = 0x00618c44
@@ -1081,3 +1086,8 @@ end = 0x00618c44
 section = ".sbss"
 start = 0x00633218
 end = 0x0063321c
+
+[[claim]]
+section = ".sdata"
+start = 0x0062f2cc
+end = 0x0062f2d0

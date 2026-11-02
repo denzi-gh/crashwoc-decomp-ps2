@@ -186,6 +186,46 @@ class TestNeighbourAnchor(unittest.TestCase):
                                       bytes(32)))
 
 
+class TestLeadingPad(unittest.TestCase):
+    """The zeros the link puts before a unit's section are claimed when its
+    alignment accounts for exactly them (nusound's .bss: 0x6b40e8 ->
+    0x6b4100 under 32-byte alignment)."""
+
+    BASE, START = 0x006B4100, 0x006B40E8
+
+    def placed(self, align):
+        item = gen_hybrid.DataItem("nusound_client_data", ".bss", align)
+        return [_Placed(item, None, 0, [(0, bytes(16))], 16)]
+
+    def pad(self, align, data=None, plan=True):
+        from unittest import mock
+        with mock.patch.object(gen_hybrid, "_preceding_end",
+                               return_value=self.START):
+            return gen_hybrid._leading_pad(".bss", self.BASE,
+                                           self.placed(align), data or {},
+                                           "unit-0087", "pal103", plan)
+
+    def test_alignment_accounts_for_the_gap(self):
+        self.assertEqual(self.pad(5), 24)
+
+    def test_too_little_alignment_claims_nothing(self):
+        self.assertEqual(self.pad(3), 0)
+
+    def test_a_build_takes_the_pad_from_its_manifest_claim(self):
+        data = {"claim": [{"section": ".bss", "start": self.START,
+                           "end": self.BASE}]}
+        self.assertEqual(self.pad(5, data, plan=False), 24)
+        self.assertEqual(self.pad(5, {}, plan=False), 0)
+
+    def test_fill_shifts_the_objects_up(self):
+        base, placed = gen_hybrid._with_leading_pad(".bss", self.BASE,
+                                                    self.placed(5), 24)
+        self.assertEqual(base, self.START)
+        self.assertEqual([(p.offset, p.size) for p in placed],
+                         [(0, 24), (24, 16)])
+        self.assertEqual(placed[1].atoms, [(24, bytes(16))])
+
+
 class TestAtoms(unittest.TestCase):
     def item(self, *lines):
         item = gen_hybrid.DataItem("$L9", ".rodata", 2)

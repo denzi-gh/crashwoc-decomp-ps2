@@ -456,6 +456,11 @@ id = "pal103:unit-0095:006312ac:iBOXEXP"
 state = "matching"
 
 [[claim]]
+section = ".data"
+start = 0x00592abc
+end = 0x00592ac0
+
+[[claim]]
 section = ".rodata"
-start = 0x0061eca0
+start = 0x0061ec98
 end = 0x0061ee90

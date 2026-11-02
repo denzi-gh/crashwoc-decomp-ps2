@@ -193,5 +193,10 @@ state = "matching"
 
 [[claim]]
 section = ".rodata"
+start = 0x0061a5a3
+end = 0x0061a5a8
+
+[[claim]]
+section = ".rodata"
 start = 0x0061a6f0
 end = 0x0061a70d

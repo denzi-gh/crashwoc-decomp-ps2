@@ -42,3 +42,8 @@ state = "matching"
 [[data]]
 id = "pal103:unit-0026:0062ea68:fseed"
 state = "matching"
+
+[[claim]]
+section = ".sdata"
+start = 0x0062ea5f
+end = 0x0062ea60

@@ -110,7 +110,7 @@ end = 0x007068ec
 
 [[claim]]
 section = ".rodata"
-start = 0x0062c7e0
+start = 0x0062c7dd
 end = 0x0062c7e8
 
 [[claim]]

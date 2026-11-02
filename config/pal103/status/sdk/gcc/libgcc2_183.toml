@@ -18,3 +18,8 @@ state = "matching"
 [[data]]
 id = "pal103:unit-0183:006333c8:__DTOR_LIST__"
 state = "matching"
+
+[[claim]]
+section = ".sbss"
+start = 0x006333bc
+end = 0x006333c0

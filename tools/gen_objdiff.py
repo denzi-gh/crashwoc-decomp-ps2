@@ -143,7 +143,8 @@ def data_units(version):
     (gen_report_data.report_data_units) and their claimed spans get the
     report-data base and the manifest's `complete`; the rest have no base
     (0 matched). Names are `data/unit-NNNN` /
-    `data/unassigned/<section>_<addr>`. Pure.
+    `data/unassigned/<section>_<addr>`; the 0x80-byte orphan, in no
+    section, has none. Pure.
     """
     # Imported lazily: gen_data_objects pulls in the binutils path helpers,
     # which are irrelevant here (we never assemble), but keeping the import
@@ -156,6 +157,10 @@ def data_units(version):
               for stem, _m, complete in report_data_units(version)}
     units = []
     for stem, entries in object_groups(ranges):
+        if entries[0]["section"] == "orphan":
+            # In no section header (docs/pipeline.md): not data, so not
+            # measured; the image link still carries its bytes.
+            continue
         unit = {
             "name": f"data/{stem}",
             "target_path": f"expected/{version}/data/{stem}.o",

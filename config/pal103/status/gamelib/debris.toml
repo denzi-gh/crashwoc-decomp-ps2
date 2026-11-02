@@ -406,3 +406,8 @@ state = "matching"
 [[data]]
 id = "pal103:unit-0069:0062f2c8:debris_single_stack_index"
 state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x00617dc4
+end = 0x00617dc8

@@ -536,6 +536,21 @@ id = "pal103:unit-0117:00632a72:arrow_yrot"
 state = "matching"
 
 [[claim]]
+section = ".data"
+start = 0x005f265c
+end = 0x005f2660
+
+[[claim]]
+section = ".rodata"
+start = 0x006286d8
+end = 0x006286e0
+
+[[claim]]
 section = ".rodata"
 start = 0x00628728
 end = 0x00628734
+
+[[claim]]
+section = ".sdata"
+start = 0x0063298c
+end = 0x00632990

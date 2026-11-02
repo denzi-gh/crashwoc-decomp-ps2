@@ -168,6 +168,16 @@ id = "pal103:unit-0105:00633354:edai_roof_y"
 state = "matching"
 
 [[claim]]
+section = ".data"
+start = 0x005cd1cc
+end = 0x005cd1d0
+
+[[claim]]
+section = ".rodata"
+start = 0x00620375
+end = 0x00620378
+
+[[claim]]
 section = ".rodata"
 start = 0x00620418
 end = 0x00620432
@@ -176,3 +186,8 @@ end = 0x00620432
 section = ".sbss"
 start = 0x00633354
 end = 0x00633358
+
+[[claim]]
+section = ".sdata"
+start = 0x00631c34
+end = 0x00631c38

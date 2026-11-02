@@ -2825,6 +2825,16 @@ start = 0x006b75b0
 end = 0x006b75bc
 
 [[claim]]
+section = ".data"
+start = 0x005a6be4
+end = 0x005a6bf0
+
+[[claim]]
+section = ".rodata"
+start = 0x0061f2f1
+end = 0x0061f300
+
+[[claim]]
 section = ".rodata"
 start = 0x0061fa00
 end = 0x0061fa18
@@ -2833,3 +2843,8 @@ end = 0x0061fa18
 section = ".sbss"
 start = 0x006332ac
 end = 0x006332b0
+
+[[claim]]
+section = ".sdata"
+start = 0x0063131c
+end = 0x00631320

@@ -323,6 +323,11 @@ end = 0x002d3f50
 
 [[claim]]
 section = ".rodata"
+start = 0x00614582
+end = 0x00614590
+
+[[claim]]
+section = ".rodata"
 start = 0x00614740
 end = 0x00614758
 

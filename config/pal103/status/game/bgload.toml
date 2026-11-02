@@ -64,6 +64,16 @@ id = "pal103:unit-0120:006b7680:loadstackmem"
 state = "matching"
 
 [[claim]]
+section = ".bss"
+start = 0x006b7660
+end = 0x006b7680
+
+[[claim]]
+section = ".rodata"
+start = 0x00628791
+end = 0x00628798
+
+[[claim]]
 section = ".rodata"
 start = 0x006287c8
 end = 0x006287e9

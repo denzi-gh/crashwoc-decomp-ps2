@@ -335,7 +335,9 @@ class TestDataUnits(unittest.TestCase):
         from gen_data_objects import (load_claims, load_map, object_groups,
                                       split_claims)
         ranges = split_claims(load_map("pal103"), load_claims("pal103"))
-        stems = [stem for stem, _e in object_groups(ranges)]
+        # The orphan is in no section: not a data unit.
+        stems = [stem for stem, e in object_groups(ranges)
+                 if e[0]["section"] != "orphan"]
         units = data_units("pal103")
         # Exactly one unit per data object, name/target aligned.
         self.assertEqual(len(units), len(stems))

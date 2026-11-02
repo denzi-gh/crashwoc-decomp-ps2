@@ -74,3 +74,8 @@ state = "matching"
 [[data]]
 id = "pal103:unit-0100:00631940:LastJeepWithinBounds.79"
 state = "matching"
+
+[[claim]]
+section = ".data"
+start = 0x005b93e4
+end = 0x005b93e8

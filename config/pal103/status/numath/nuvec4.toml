@@ -74,3 +74,8 @@ state = "matching"
 [[data]]
 id = "pal103:unit-0014:00614000:nuvec4_w"
 state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x00613fa7
+end = 0x00613fb0

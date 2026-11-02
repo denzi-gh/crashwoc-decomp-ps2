@@ -100,6 +100,16 @@ id = "pal103:unit-0074:0062f744:edbits_base_scene"
 state = "matching"
 
 [[claim]]
+section = ".data"
+start = 0x004a7aa4
+end = 0x004a7aa8
+
+[[claim]]
+section = ".rodata"
+start = 0x0061997c
+end = 0x00619980
+
+[[claim]]
 section = ".rodata"
 start = 0x00619a70
 end = 0x00619aa0

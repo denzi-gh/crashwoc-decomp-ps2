@@ -2177,6 +2177,63 @@ def _whole_unit_layout(lines, stream, functions, item_syms, anchors, unit_dir,
     return out
 
 
+def _section_align(placed):
+    """The section alignment the assembler gives a unit's objects: the
+    largest of theirs."""
+    return 1 << max((p.item.align if p.item.align is not None
+                     else _NATURAL_ALIGN.get(_first_directive(p.item), 0))
+                    for p in placed)
+
+
+def _preceding_end(section, base, unit_dir, version):
+    """Where the data linked before `base` ends: the nearest owned range or
+    other unit's claim below it (planning only: reads every manifest)."""
+    from gen_data_objects import load_claims, load_map
+    ends = [r["end"] for r in load_map(version) if r["section"] == section
+            and r["owner"] != "unassigned" and r["end"] <= base]
+    ends += [end for sec, _s, end, unit in load_claims(version)
+             if unit != unit_dir and sec == section and end <= base]
+    return max(ends, default=None)
+
+
+def _leading_pad(section, base, placed, data, unit_dir, version, plan):
+    """Bytes the link puts before a whole-unit section: from where the data
+    before it ends up to `base`, kept only when the section's alignment
+    accounts for exactly that many zero bytes in data-map gaps (the linker
+    aligning this unit's section, not data). Planning derives the start from
+    the neighbours; a build takes it from its own manifest claim."""
+    if plan:
+        start = _preceding_end(section, base, unit_dir, version)
+    else:
+        start = next((s for sec, s, e in manifest_claims(data)
+                      if sec == section and s < base <= e), None)
+    if start is None or start >= base:
+        return 0
+    pad = base - start
+    if pad >= _section_align(placed) or (start + pad) % _section_align(placed):
+        return 0
+    ranges = tomllib.loads((ROOT / "config" / version / "data_map.toml")
+                           .read_text())["range"]
+    if any(r["section"] == section and r["owner"] != "unassigned"
+           and r["start"] < base and start < r["end"] for r in ranges):
+        return 0
+    if section not in NOBITS_SECTIONS and any(
+            _retail_bytes(version, section, start, base)):
+        return 0
+    return pad
+
+
+def _with_leading_pad(section, base, placed, pad):
+    """(base, placed) moved down by `pad` zero bytes of fill ahead of the
+    first object."""
+    for p in placed:
+        p.offset += pad
+        p.atoms = [(off + pad, atom) for off, atom in p.atoms]
+    fill = DataItem(f"$Lalign_{base - pad:08x}", section, 0)
+    fill.lines = []
+    return base - pad, [_Placed(fill, None, 0, [(0, bytes(pad))], pad)] + placed
+
+
 def _neighbour_window(section, unit_dir, version):
     """[lo, hi) of `section` between the ranges of the units linked just
     before and after this one, or None (the section is not laid out in
@@ -2443,6 +2500,10 @@ def _build_whole_unit(data, out_o, link_set, version, plan=False):
                                      base + p.offset + p.size)
                 p.atoms = [a for a in p.atoms if a[0] < p.offset] \
                     + [(p.offset, blob)]
+    for sec, (base, placed) in list(layout.items()):
+        pad = _leading_pad(sec, base, placed, data, unit_dir, version, plan)
+        if pad:
+            layout[sec] = _with_leading_pad(sec, base, placed, pad)
     piece_lines, pieces, retail, claims = _whole_unit_pieces(
         layout, unit_dir, version, out_o.parent / f"{out_o.stem}_data")
     if plan:

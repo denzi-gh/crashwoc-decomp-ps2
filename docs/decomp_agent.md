@@ -289,6 +289,15 @@ objects no code or pointer reaches, klib.s's `PsIIlibkernl2300` tag) is
 placed by its bytes: the one aligned match in the data-map gaps between
 the ranges of the units linked just before and after it.
 
+The zeros between two units' data are the linker aligning the later unit's
+section to its largest object alignment. `promote.py --complete` claims them
+for that unit when exactly that alignment accounts for them (it reads the
+neighbours' ranges and claims; a build re-derives the pad from its own
+claim, so no hybrid reads another unit's manifest). Where retail's start
+needs more alignment than the C's objects declare, the C is missing the
+original alignment: put the least that explains the pad on the section's
+first object (`__attribute__((aligned(64)))` on bgload's `loadstackmem`).
+
 ### Per-unit data workflow
 
 Preconditions: every `[[function]]` of the unit is `matching`; the unit is in

@@ -433,8 +433,18 @@ state = "matching"
 
 [[claim]]
 section = ".bss"
+start = 0x00679b28
+end = 0x00679b40
+
+[[claim]]
+section = ".bss"
 start = 0x0067a600
 end = 0x0067a630
+
+[[claim]]
+section = ".data"
+start = 0x002d3dd4
+end = 0x002d3de0
 
 [[claim]]
 section = ".rodata"

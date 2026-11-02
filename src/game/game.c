@@ -6610,7 +6610,7 @@ extern void GetALONG(struct nuvec_s *pos, RailPosition *rpos, s32 iRAIL, s32 iAL
                      s32 dir);
 extern void FindAnglesZX(struct nuvec_s *norm);
 
-s32 DemoLevel[4] = { 17, 12, 19, 32 };
+s32 DemoLevel[4] __attribute__((aligned(16))) = { 17, 12, 19, 32 };
 struct nuvec_s v000 = {0};
 struct nuvec_s v100 = { 1.0f, 0.0f, 0.0f };
 struct nuvec_s v010 = { 0.0f, 1.0f, 0.0f };

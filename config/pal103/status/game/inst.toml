@@ -54,3 +54,8 @@ state = "matching"
 [[data]]
 id = "pal103:unit-0092:00630a04:shaddatainst_pool"
 state = "matching"
+
+[[claim]]
+section = ".sdata"
+start = 0x006309fa
+end = 0x006309fc

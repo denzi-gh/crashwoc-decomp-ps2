@@ -120,8 +120,13 @@ id = "pal103:unit-0106:00631e64:font3d_ybottom"
 state = "matching"
 
 [[claim]]
+section = ".data"
+start = 0x005cd234
+end = 0x005cd238
+
+[[claim]]
 section = ".rodata"
-start = 0x00620440
+start = 0x00620432
 end = 0x00620510
 
 [[claim]]

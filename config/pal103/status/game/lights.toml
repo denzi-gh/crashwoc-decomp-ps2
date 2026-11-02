@@ -192,6 +192,21 @@ id = "pal103:unit-0111:00632790:NEGATIVECOUNT"
 state = "matching"
 
 [[claim]]
+section = ".data"
+start = 0x005cf5ec
+end = 0x005cf5f0
+
+[[claim]]
+section = ".rodata"
+start = 0x006251e5
+end = 0x006251e8
+
+[[claim]]
 section = ".rodata"
 start = 0x006251e8
 end = 0x006251f4
+
+[[claim]]
+section = ".sdata"
+start = 0x0063275c
+end = 0x00632760
