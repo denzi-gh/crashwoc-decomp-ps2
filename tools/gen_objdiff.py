@@ -116,6 +116,25 @@ def unit_table(version):
             for u, s, n, c in rows]
 
 
+def textless_units(version):
+    """[(index, name, category)] for the units with no .text run (proc-less
+    file descriptors: data-only units such as impure.c, ctype_.c), named
+    like unit_table names them; a name a .text unit already has gets the
+    unit index appended (libgcc2.c -> sdk/gcc/libgcc2_183)."""
+    raw = {int(r["index"]): r["name"] for r in parse_toml_blocks(
+        ROOT / "config" / version / "units.toml",
+        {"index": r"index = (\d+)", "name": r"name = '([^']*)'"})}
+    runs = {u for u, _a in load_tu_runs()}
+    taken = {re.sub(r"_\d{3}$", "", n) for _u, _s, n, _c in unit_table(version)}
+    out = []
+    for unit in sorted(set(raw) - runs):
+        category, name = classify(raw[unit])
+        name = re.sub(r"[^A-Za-z0-9_.\-/]", "_", name)
+        out.append((unit, f"{name}_{unit:03d}" if name in taken else name,
+                    category))
+    return out
+
+
 def data_units(version):
     """objdiff units for the expected data objects, in stem order.
 

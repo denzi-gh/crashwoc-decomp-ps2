@@ -24,9 +24,7 @@
 #include "nucore/nufpar.h"
 
 static int old_line_pos;
-extern char D_00613978[];
-
-#define nufpar_srcfile    D_00613978
+#define nufpar_srcfile    "..\\nu2crash.ps2\\nucore\\nufpar.c"
 
 extern int NuFileOpen(char *name, int mode);
 extern int NuFileRead(int handle, void *data, int size);

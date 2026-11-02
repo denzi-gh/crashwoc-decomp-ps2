@@ -30,8 +30,6 @@
 #include "numath/nuvec.h"
 #include "numath/nuvec4.h"
 
-extern struct numtx_s D_00614090;
-#define bez3_basis D_00614090
 
 
 struct nuvec_s *NuBezierCubicPatchEvaluatePartials(struct nuvec_s *out, struct nuvec_s *cp,
@@ -476,7 +474,12 @@ void NuBez3Subdiv(float *bez, float *left, float *right, float t)
 
 float NuBez3EvaluateX(struct nuvec4_s *bez, float t)
 {
-    struct numtx_s basis = bez3_basis;
+    struct numtx_s basis = {
+        -1.0f,  3.0f, -3.0f, 1.0f,
+         3.0f, -6.0f,  3.0f, 0.0f,
+        -3.0f,  3.0f,  0.0f, 0.0f,
+         1.0f,  0.0f,  0.0f, 0.0f
+    };
     struct nuvec4_s powers;
     struct nuvec4_s coef;
 

@@ -145,6 +145,47 @@ class TestLayout(unittest.TestCase):
             self.layout({"$LC1": 0x1000})
 
 
+class TestNeighbourAnchor(unittest.TestCase):
+    """An unanchored section (klib.s's version tag) is placed by its bytes
+    between the ranges of its link neighbours."""
+
+    TAG = b"PsIIlibkernl2300"
+
+    def placed(self, atoms, align=0):
+        item = gen_hybrid.DataItem("$Lps2_libinfo", ".data", align)
+        return [_Placed(item, None, 0, atoms, 16)]
+
+    def test_window_lies_between_the_link_neighbours(self):
+        # klib (245) sits between locale.c (231) and glue.c (248) in .data.
+        self.assertEqual(gen_hybrid._neighbour_window(".data", "unit-0245",
+                                                      "pal103"),
+                         (0x00612BA8, 0x00612BB8))
+
+    def anchor(self, placed, retail, window=(0x1000, 0x1020)):
+        from unittest import mock
+        with mock.patch.object(gen_hybrid, "_neighbour_window",
+                               return_value=window), \
+                mock.patch.object(gen_hybrid, "_retail_bytes",
+                                  return_value=retail):
+            return gen_hybrid._neighbour_anchor(".data", placed, "unit-0245",
+                                                "pal103")
+
+    def test_unique_match_places_the_section(self):
+        retail = bytes(8) + self.TAG + bytes(8)
+        self.assertEqual(self.anchor(self.placed([(0, self.TAG)]), retail),
+                         0x1008)
+
+    def test_ambiguous_or_misaligned_match_places_nothing(self):
+        self.assertIsNone(self.anchor(self.placed([(0, self.TAG)]),
+                                      self.TAG + self.TAG))
+        self.assertIsNone(self.anchor(self.placed([(0, self.TAG)], align=4),
+                                      bytes(8) + self.TAG + bytes(8)))
+
+    def test_relocations_never_place_by_bytes(self):
+        self.assertIsNone(self.anchor(self.placed([(0, ("word", "$LC0"))]),
+                                      bytes(32)))
+
+
 class TestAtoms(unittest.TestCase):
     def item(self, *lines):
         item = gen_hybrid.DataItem("$L9", ".rodata", 2)

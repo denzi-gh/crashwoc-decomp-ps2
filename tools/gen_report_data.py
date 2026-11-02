@@ -129,6 +129,10 @@ def build_report_data(manifest, out_o, version="pal103"):
         sizes = function_sizes(version).get(unit_index, {})
         offsets = defined_function_offsets(nm_bin, hybrid_o)
         starts = [sizes[n][0] for n in offsets if n in sizes]
+        if not data.get("function"):
+            # A data-only unit's .text is empty, so any base places it.
+            from declib.asmtext import load_text_target
+            starts = [load_text_target(version)[1]]
         if not starts:
             raise SystemExit(f"{hybrid_o}: no registry function to place "
                              ".text at")

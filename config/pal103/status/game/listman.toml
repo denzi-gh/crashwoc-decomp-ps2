@@ -46,3 +46,8 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0090:001cbcc0:NuLstGetPrev"
 state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x0061b600
+end = 0x0061b60c

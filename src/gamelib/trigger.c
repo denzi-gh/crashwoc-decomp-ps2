@@ -546,6 +546,28 @@ void DebugRenderTriggers(void)
             }
         }
     }
+
+    /* A compiled-out readout of the enable flags: retail keeps only its
+     * strings, the last in the unit's .rodata (0x00619f70-0x0061a088). */
+    if (0) {
+        printf("EnableFlags <%d>", 0);
+        printf("EnableFlag1 ON");
+        printf("EnableFlag1 OFF");
+        printf("EnableFlag2 ON");
+        printf("EnableFlag2 OFF");
+        printf("EnableFlag3 ON");
+        printf("EnableFlag3 OFF");
+        printf("EnableFlag4 ON");
+        printf("EnableFlag4 OFF");
+        printf("EnableFlag5 ON");
+        printf("EnableFlag5 OFF");
+        printf("EnableFlag6 ON");
+        printf("EnableFlag6 OFF");
+        printf("EnableFlag7 ON");
+        printf("EnableFlag7 OFF");
+        printf("EnableFlag8 ON");
+        printf("EnableFlag8 OFF");
+    }
 }
 
 

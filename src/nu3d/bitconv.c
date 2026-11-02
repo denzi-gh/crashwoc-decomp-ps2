@@ -19,8 +19,7 @@
 extern void *NuMemAllocFn(int size, char *file, int line);
 extern void NuMemFreeFn(void *ptr, char *file, int line);
 
-extern char D_00616130[];
-#define bitconv_srcfile D_00616130
+#define bitconv_srcfile "..\\nu2crash.ps2\\nu3d\\bitconv.c"
 
 int BlockConv4to32(u8 *in, u8 *out)
 {

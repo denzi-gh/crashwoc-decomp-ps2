@@ -26,3 +26,8 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0072:001a0fd8:CreateAlphaBlendTexturewh_32"
 state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x00619210
+end = 0x00619232

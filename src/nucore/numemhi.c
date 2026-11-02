@@ -24,6 +24,11 @@ void NuAllocHighInit(nusintptr base, int size)
 {
     NuHighBlock *block;
 
+    /* A compiled-out assertion: retail keeps only its "assert" message
+     * (.sdata 0x0062ea30); the condition and line are not recoverable. */
+    if (0) {
+        NuErrorProlog("..\\nu2crash.ps2\\nucore\\numemhi.c", 0)("assert");
+    }
     if (freep != 0) {
         NuErrorProlog("..\\nu2crash.ps2\\nucore\\numemhi.c", 0x2F)("NuAllocHighInit : Already initialised\n");
     }

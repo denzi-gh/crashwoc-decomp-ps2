@@ -341,7 +341,9 @@ def data_diff(project, target) -> dict:
                           unresolved=unresolved[:8], category="unresolved_symbol")
     funcs = tomllib.loads(project.path("config", project.version,
                                        "functions.toml").read_text())["function"]
-    base = min(f["address"] for f in funcs if f["unit"] == sym["unit"])
+    # A data-only unit's .text is empty, so any base places it.
+    base = min((f["address"] for f in funcs if f["unit"] == sym["unit"]),
+               default=asmtext.load_text_target(project.version)[1])
     with tempfile.TemporaryDirectory() as tmp:
         _text, pieces, symbols = verify.link_unit_at(out_o, base, report["pieces"],
                                                      defsyms, Path(tmp))

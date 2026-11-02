@@ -2125,10 +2125,13 @@ def _attach_ranks(lines, stream, functions):
     return out
 
 
-def _whole_unit_layout(lines, stream, functions, item_syms, anchors, unit_dir):
+def _whole_unit_layout(lines, stream, functions, item_syms, anchors, unit_dir,
+                       version="pal103"):
     """{section: (base, [_Placed])}: the unit's data objects in retail order,
     aligned as the assembler aligns them, each section anchored at the one
-    base address every known object agrees on."""
+    base address every known object agrees on. A section nothing anchors
+    (only private objects nothing references, klib.s's version tag) is
+    placed by its bytes between its link neighbours (_neighbour_anchor)."""
     ranks = _attach_ranks(lines, stream, functions)
     ordered = sorted(stream, key=lambda it: (ranks[id(it)], it.line))
     by_sec, cursors = {}, {}
@@ -2157,9 +2160,12 @@ def _whole_unit_layout(lines, stream, functions, item_syms, anchors, unit_dir):
             if addr is not None:
                 bases.setdefault(addr - p.offset, []).append((p, addr))
         if not bases:
-            raise HybridError(f"{unit_dir}: nothing anchors its {sec} data "
-                              f"({placed[0].label}...): no registry symbol and "
-                              f"no retail reference to it")
+            base = _neighbour_anchor(sec, placed, unit_dir, version)
+            if base is None:
+                raise HybridError(f"{unit_dir}: nothing anchors its {sec} data "
+                                  f"({placed[0].label}...): no registry symbol "
+                                  f"and no retail reference to it")
+            bases[base] = []
         base = max(bases, key=lambda b: len(bases[b]))
         if len(bases) > 1:
             bad_p, bad_addr = next(v[0] for b, v in bases.items() if b != base)
@@ -2169,6 +2175,45 @@ def _whole_unit_layout(lines, stream, functions, item_syms, anchors, unit_dir):
                 f"it at 0x{bad_addr:08x} (C order or definitions differ)")
         out[sec] = (base, placed)
     return out
+
+
+def _neighbour_window(section, unit_dir, version):
+    """[lo, hi) of `section` between the ranges of the units linked just
+    before and after this one, or None (the section is not laid out in
+    unit order there, or the unit is first or last)."""
+    from gen_data_objects import load_map
+    index = int(unit_dir.split("-")[1])
+    owned = [(int(r["owner"].split("-")[1]), r) for r in load_map(version)
+             if r["section"] == section and r["owner"].startswith("unit-")]
+    below = [r["end"] for u, r in owned if u < index]
+    above = [r["start"] for u, r in owned if u > index]
+    if not below or not above or max(below) >= min(above):
+        return None
+    return max(below), min(above)
+
+
+def _neighbour_anchor(section, placed, unit_dir, version):
+    """Base of an unanchored section: the one aligned address in its
+    neighbour window (only data-map gaps) holding exactly its bytes, or
+    None. Objects with relocations never place this way."""
+    if section not in PIECE_SECTIONS:
+        return None
+    window = _neighbour_window(section, unit_dir, version)
+    if window is None:
+        return None
+    end = max(p.offset + p.size for p in placed)
+    blob = bytearray(end)
+    for p in placed:
+        for off, atom in p.atoms:
+            if isinstance(atom, tuple):
+                return None
+            blob[off:off + len(atom)] = atom
+    lo, hi = window
+    retail = _retail_bytes(version, section, lo, hi)
+    align = 1 << max((p.item.align or 0) for p in placed)
+    hits = [lo + k for k in range(len(retail) - end + 1)
+            if (lo + k) % align == 0 and retail[k:k + end] == bytes(blob)]
+    return hits[0] if len(hits) == 1 else None
 
 
 def _data_pointer_anchors(stream, item_syms, version):
@@ -2388,7 +2433,7 @@ def _build_whole_unit(data, out_o, link_set, version, plan=False):
             raise HybridError(f"{lbl}: the code borrows 0x{labels[lbl]:08x}, "
                               f"retail data points at 0x{addr:08x}")
     layout = _whole_unit_layout(lines, stream, functions, item_syms, labels,
-                                unit_dir)
+                                unit_dir, version)
     for base, placed in layout.values():
         for p in placed:
             if p.sym and states.get(p.sym["address"]) == "retail":
@@ -2418,7 +2463,8 @@ def _build_whole_unit(data, out_o, link_set, version, plan=False):
     borrowed = []
     out_lines = _splice_unit(prologue, seg_by_name, functions, unit_dir,
                              link_set, version, report_base=False,
-                             unit_end=_unit_end(unit_dir), local_data={},
+                             unit_end=_unit_end(unit_dir) if functions else None,
+                             local_data={},
                              profile=profile, borrowed=borrowed)
     if borrowed:
         raise HybridError(f"{unit_dir}: whole-unit code still borrows "
@@ -2488,6 +2534,9 @@ def _splice_unit(prologue, seg_by_name, functions, unit_dir, link_set,
     else.
     """
     out_lines = list(prologue)
+    if not functions:
+        # A data-only unit (no procedures, no .text run): nothing to splice.
+        return out_lines
     body_lines = []
     mapper_box = [None]
     base = functions[0][0]
@@ -2568,7 +2617,8 @@ def build_hybrid(manifest_path, out_o, link_set="matching", version="pal103"):
     borrowed = []
     out_lines = _splice_unit(prologue, seg_by_name, functions, unit_dir,
                              link_set, version, report_base=False,
-                             unit_end=_unit_end(unit_dir), local_data=local_data,
+                             unit_end=_unit_end(unit_dir) if functions else None,
+                             local_data=local_data,
                              profile=data.get("profile", "default"),
                              borrowed=borrowed)
     pieces, retail = [], []
@@ -2626,7 +2676,8 @@ def build_report_object(manifest_path, out_o, version="pal103"):
         _compile_and_split(data, out_o, link_set, version, report=True)
     out_lines = _splice_unit(prologue, seg_by_name, functions, unit_dir,
                              link_set, version, report_base=True,
-                             unit_end=_unit_end(unit_dir), local_data=local_data,
+                             unit_end=_unit_end(unit_dir) if functions else None,
+                             local_data=local_data,
                              profile=data.get("profile", "default"))
     return _assemble_unit(out_o, out_lines,
                           profile_g_flag(data.get("profile", "default"), version))

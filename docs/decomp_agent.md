@@ -275,7 +275,19 @@ parsed, an `inline` function's statics and literals where it is defined or
 first inlined; a non-`static` `inline` function's own code goes to the end of
 the unit, which is how retail ends up with functions whose data sits far
 from their code), and the literals of dead statements kept when retail has
-them (GCC 2.95 emits a string constant even for unreachable code).
+them (GCC 2.95 emits a string constant even for unreachable code). When
+only the string survives (an assertion or debug print compiled out), a
+commented `if (0)` block in the function that emits it keeps it.
+
+A data-only unit (no procedures: newlib's `impure.c` and `ctype_.c`,
+libgcc2's `L_ctors` member, vu.c's preprocessed `ccAlaaaa.i`) is a
+`src/<unit>.c` of its data alone, at the path `gen_objdiff.textless_units`
+names (its report unit stays `data/unit-NNNN`). `promote.py --init` takes
+it, its hybrid has an empty `.text`, and the image link takes its pieces
+like any other provider's. A data section nothing anchors (only private
+objects no code or pointer reaches, klib.s's `PsIIlibkernl2300` tag) is
+placed by its bytes: the one aligned match in the data-map gaps between
+the ranges of the units linked just before and after it.
 
 ### Per-unit data workflow
 

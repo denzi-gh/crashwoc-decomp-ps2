@@ -76,6 +76,11 @@ id = "pal103:unit-0002:00633008:old_line_pos"
 state = "matching"
 
 [[claim]]
+section = ".rodata"
+start = 0x00613978
+end = 0x00613998
+
+[[claim]]
 section = ".sbss"
 start = 0x00633008
 end = 0x0063300c

@@ -13,8 +13,7 @@ typedef struct NuList {
 } NuList;
 
 
-extern char D_00613D50[];
-extern char D_0062EA38[];
+#define nulist_file "..\\nu2crash.ps2\\nucore\\nulist.c"
 
 
 int NuListCheck(NuList *list) {
@@ -27,12 +26,12 @@ int NuListCheck(NuList *list) {
     for (node = list->head; node; node = node->next) {
         count++;
         if (node->prev != prev) {
-            NuErrorProlog(D_00613D50, 0x38)(D_0062EA38);
+            NuErrorProlog(nulist_file, 0x38)("assert");
         }
         prev = node;
     }
     if (prev != list->tail) {
-        NuErrorProlog(D_00613D50, 0x3C)(D_0062EA38);
+        NuErrorProlog(nulist_file, 0x3C)("assert");
     }
     return count;
 }

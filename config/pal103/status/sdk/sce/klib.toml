@@ -558,3 +558,8 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0245:00279100:GetMemorySize"
 state = "matching"
+
+[[claim]]
+section = ".data"
+start = 0x00612ba8
+end = 0x00612bb8

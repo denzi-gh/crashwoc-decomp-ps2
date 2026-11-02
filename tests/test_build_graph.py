@@ -71,12 +71,17 @@ class TestEmitNinja(unittest.TestCase):
         # A hybrid is emitted per link set only where a function reaches the
         # state that set links from C: `matching` earns matching + report-current
         # objects, `matching`/`equivalent` earns the equivalent object. An
-        # all-`asm` unit (a fresh skeleton) earns none.
+        # all-`asm` unit (a fresh skeleton) earns none. A `matching` data
+        # entry counts as `matching` (a data-only unit has no functions).
         import tomllib
         has_matching = has_equiv = 0
         for m in (ROOT / "config" / "pal103" / "status").rglob("*.toml"):
+            manifest = tomllib.loads(m.read_text())
             states = {f.get("state", "asm")
-                      for f in tomllib.loads(m.read_text()).get("function", ())}
+                      for f in manifest.get("function", ())}
+            if any(d.get("state") == "matching"
+                   for d in manifest.get("data", ())):
+                states.add("matching")
             has_matching += "matching" in states
             has_equiv += bool(states & {"matching", "equivalent"})
         hybrid_edges = self.edges("hybrid")
@@ -342,6 +347,42 @@ class TestDataUnits(unittest.TestCase):
     def test_deterministic(self):
         from gen_objdiff import data_units
         self.assertEqual(data_units("pal103"), data_units("pal103"))
+
+
+class TestTextlessUnits(unittest.TestCase):
+    """Units with no .text run (data-only: impure.c, ctype_.c) get names
+    that never collide with a .text unit's."""
+
+    def test_names_and_collisions(self):
+        from gen_objdiff import textless_units, unit_table
+        rows = {u: n for u, n, _c in textless_units("pal103")}
+        runs = {u for u, _a in load_tu_runs()}
+        self.assertFalse(set(rows) & runs)
+        self.assertEqual(rows[194], "sdk/newlib/libc/reent/impure")
+        # libgcc2.c is also a name of .text units: the index disambiguates.
+        self.assertEqual(rows[183], "sdk/gcc/libgcc2_183")
+        text_names = {n for _u, _s, n, _c in unit_table("pal103")}
+        self.assertFalse(set(rows.values()) & text_names)
+
+
+class TestDataOnlyObjects(unittest.TestCase):
+    def test_data_only_hybrids_are_outside_the_text_runs(self):
+        from link_image import data_only_objects
+        objs = dict(data_only_objects("pal103", "matching"))
+        self.assertFalse(set(objs) & {u for u, _a in load_tu_runs()})
+        self.assertTrue(str(objs[194]).replace("\\", "/").endswith(
+            "build/pal103/matching/sdk/newlib/libc/reent/impure.o"))
+
+    def test_build_script_discards_their_empty_text(self):
+        from link_image import build_script
+        obj = Path("build/x/impure.o")
+        script = build_script(0x00100000, [Path("build/x/crt0.o")],
+                              0x00290000, [], {"sbss": 0x10, "bss": 0x10},
+                              {}, data_only_objs=[obj])
+        text = script.split(".vutext")[0]
+        self.assertNotIn("impure.o", text)
+        discard = next(l for l in script.splitlines() if "/DISCARD/" in l)
+        self.assertIn("build/x/impure.o(.text)", discard)
 
 
 class TestSelectTextObjects(unittest.TestCase):
