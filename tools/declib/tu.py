@@ -65,9 +65,17 @@ def load_tu_runs():
 
 
 def fold_auto_functions(lines):
-    """Fold an unreferenced splat auto-function that follows a registered
-    function in the same TU into it, so its symbol spans the registry extent
-    (sceSifWriteBackDCache's trailing `jr $ra` at 0x0027B364)."""
+    """Fold a splat auto-function that follows a registered function in the
+    same TU into it, so its symbol spans the registry extent
+    (sceSifWriteBackDCache's trailing `jr $ra` at 0x0027B364, the four
+    vpDmaTag_Close jump targets inside vpDmaTag_ChangeCopy at 0x0016EE78).
+
+    Only lead lines (blank, `nonmatching`, a standalone comment) and `nop`
+    padding may separate the two blocks; the padding joins the owner, as the
+    registry extent has it. An auto-function referenced only from code in its
+    own TU becomes the local label `.L<name>` (vpDmaTag_Close's
+    `%hi(func_0016EE78)`); one referenced from anywhere else stays a
+    function."""
     function_addrs = {int(r["address"], 16) for r in parse_toml_blocks(
         ROOT / "config" / "pal103" / "functions.toml",
         {"address": r"address = (0x[0-9A-Fa-f]+)"})}
@@ -87,20 +95,43 @@ def fold_auto_functions(lines):
                 or any(owner[1] < s <= addr for s in starts)):
             owner = None
             continue
-        prev = next(j for j in range(i - 1, -1, -1) if lines[j].strip()
-                    and not lines[j].startswith("nonmatching"))
-        if (out[prev] != f"endlabel {owner[0]}"
-                or len(re.findall(rf"\b{name}\b", text)) > 3):
+        prev = next(j for j in range(i - 1, -1, -1) if not is_lead(lines[j])
+                    and (asmtext.instr_at(lines, j) or (None, 1))[1] != 0)
+        refs = []
+        if len(re.findall(rf"\b{name}\b", text)) > 3:
+            refs = _local_references(lines, name, addr, starts)
+        if out[prev] != f"endlabel {owner[0]}" or refs is None:
             owner = None
             continue
         out[prev] = None
         for j in range(prev + 1, i + 1):
             if lines[j].startswith(("nonmatching", "glabel")):
                 out[j] = None
+        if refs:
+            out[i] = f".L{name}:"
+            for j in refs:
+                out[j] = re.sub(rf"\b{name}\b", f".L{name}", out[j])
         end = next(j for j in range(i, len(lines))
                    if lines[j] == f"endlabel {name}")
         out[end] = f"endlabel {owner[0]}"
     return [l for l in out if l is not None]
+
+
+def _local_references(lines, name, addr, starts):
+    """Line indices of the instructions referencing `name`, or None when one
+    lies outside the TU holding `addr` (a `.L` label does not reach it)."""
+    lo = max(s for s in starts if s <= addr)
+    hi = min((s for s in starts if s > addr), default=float("inf"))
+    pattern = re.compile(rf"\b{name}\b")
+    refs = []
+    for j, line in enumerate(lines):
+        if line.startswith(asmtext.DEF_PREFIXES) or not pattern.search(line):
+            continue
+        at = asmtext.instr_at(lines, j)
+        if at is None or not lo <= at[0] < hi:
+            return None
+        refs.append(j)
+    return refs
 
 
 def extent_end(addr, next_function, runs):
