@@ -253,7 +253,9 @@ def verify_manifest(reporter, manifest, version, elf, text_addr, text_off,
         if built is not None:
             built.add(manifest)
         hybrid_offsets = defined_function_offsets(nm_bin, hybrid_o)
-        base_addr = min(unit_sizes[n][0]
+        # Where the object's .text starts: code ahead of the first function
+        # (crt0's loader words, asmdma's included nu2api.i) shifts it down.
+        base_addr = min(unit_sizes[n][0] - hybrid_offsets[n]
                         for n in hybrid_offsets if n in unit_sizes)
         report = json.loads(data_report_path(hybrid_o).read_text())
         undef = undefined_externals(nm_bin, hybrid_o)

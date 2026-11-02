@@ -182,6 +182,47 @@ class TestTuRuns(unittest.TestCase):
         lines = self.AUTO + ["    /* 0 0 0 */  lui $t1, %hi(func_0027B364)"]
         self.assertEqual(tu.fold_auto_functions(lines), lines)
 
+    # asmdma's vpDmaTag_Close jump targets: a chain of auto-functions behind
+    # nop padding and `/* Handwritten function */` leads, the first one
+    # referenced from the same TU.
+    CC = "    /* 6FE60 0016EE60 0800A8DC */  ld         $t0, 0x8($a1)"
+    T1 = "    /* 6FE78 0016EE78 00008220 */  addi       $v0, $a0, 0x0"
+    PAD = "    /* 6FE94 0016EE94 00000000 */  nop"
+    T2 = "    /* 6FEB8 0016EEB8 000080AC */  sw         $zero, 0x0($a0)"
+    CL = "    /* 6FF58 0016EF58 6300083C */  lui        $t0, %hi(vpdmatag_curr)"
+    REF = "    /* 6FF60 0016EF60 1700093C */  lui        $t1, %hi({})"
+    CHAIN = ["glabel vpDmaTag_ChangeCopy", CC,
+             "endlabel vpDmaTag_ChangeCopy", "",
+             "/* Handwritten function */",
+             "nonmatching func_0016EE78, 0x1C", "",
+             "glabel func_0016EE78", T1,
+             "endlabel func_0016EE78", PAD, "",
+             "/* Handwritten function */",
+             "nonmatching func_0016EEB8, 0x24", "",
+             "glabel func_0016EEB8", T2,
+             "endlabel func_0016EEB8", "",
+             "/* Handwritten function */",
+             "nonmatching vpDmaTag_Close, 0x20", "",
+             "glabel vpDmaTag_Close", CL, REF.format("func_0016EE78"),
+             "endlabel vpDmaTag_Close"]
+
+    def test_auto_function_chain_folds_behind_padding_and_leads(self):
+        out = [l for l in tu.fold_auto_functions(self.CHAIN)
+               if l.strip() and not l.startswith("/*")]
+        self.assertEqual(out, [
+            "glabel vpDmaTag_ChangeCopy", self.CC,
+            ".Lfunc_0016EE78:", self.T1, self.PAD, self.T2,
+            "endlabel vpDmaTag_ChangeCopy",
+            "nonmatching vpDmaTag_Close, 0x20",
+            "glabel vpDmaTag_Close", self.CL, self.REF.format(".Lfunc_0016EE78"),
+            "endlabel vpDmaTag_Close"])
+
+    def test_auto_function_referenced_from_another_tu_stays(self):
+        # 0x0027B2B8 is sifcmd's: a `.L` label in asmdma cannot reach it.
+        lines = self.CHAIN[:10] + [
+            "    /* 17C2B8 0027B2B8 1700093C */  lui        $t1, %hi(func_0016EE78)"]
+        self.assertEqual(tu.fold_auto_functions(lines), lines)
+
     def test_extent_end_stops_at_the_next_run(self):
         runs = [(64, 0x0016E890), (65, 0x0016ECA4)]
         self.assertEqual(tu.extent_end(0x0016EC48, 0x0016ECE4, runs), 0x0016ECA4)

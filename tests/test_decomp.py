@@ -62,12 +62,19 @@ class TestResolveUnit(unittest.TestCase):
             decomp.resolve_unit("src/game/nosuchunit.c", "pal103")
 
     def test_rejects_missing_source_file(self):
-        # A real unit name whose src file does not exist in the tree.
+        # A real unit name whose src file does not exist: every unit has one in
+        # the real tree, so resolve under an empty temp ROOT.
+        import tempfile
         from gen_objdiff import unit_table
-        name = next(r[2] for r in unit_table("pal103")
-                    if not (ROOT / f"src/{r[2]}.c").is_file())
-        with self.assertRaises(decomp.DecompError) as ctx:
-            decomp.resolve_unit(f"src/{name}.c", "pal103")
+        name = next(r[2] for r in unit_table("pal103"))
+        with tempfile.TemporaryDirectory() as tmp:
+            orig = decomp.ROOT
+            decomp.ROOT = Path(tmp)
+            try:
+                with self.assertRaises(decomp.DecompError) as ctx:
+                    decomp.resolve_unit(f"src/{name}.c", "pal103")
+            finally:
+                decomp.ROOT = orig
         self.assertIn("does not exist", str(ctx.exception))
 
     def test_rejects_unit_without_manifest(self):
