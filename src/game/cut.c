@@ -475,10 +475,8 @@ s32 LoadCutComponents(struct cutscenedesc_s *csd, struct csc_s *chars) {
 }
 
 /* Reset the cutscene state and load movie `movie`: 0 = logos/title,
- * 1 = intro, 3 = outro, 4 = outro2. Returns whether a cutscene was loaded. */
-/* Near-match (state=asm), 652/696 bytes: same instructions; retail allocates
- * $v0 where this build picks $v1 for the switch's `1` and for &texanimbuff in
- * every case. No `case 2` (adding one emits a jump table retail lacks). */
+ * 1 = intro, 3 = outro, 4 = outro2. Returns whether a cutscene was loaded.
+ * There is no `case 2`: adding one emits a jump table retail lacks. */
 s32 LoadCutMovie(s32 movie) {
     union variptr_u buf;
     void *dat;

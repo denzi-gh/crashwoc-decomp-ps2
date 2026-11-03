@@ -2104,9 +2104,8 @@ extern s32 Draw3DObject(s32 object, struct nuvec_s *pos, u16 xrot, u16 yrot, u16
 extern s32 TimeTrial;
 extern void PickupBonusGem(s32 mask);
 
-/* state=asm, but byte-exact (compile-diff 400/400) since game_s uses the full
- * game.c layout: retail hoists &Game.level[5] (Game+0x8C) and reads flags at
- * +0x28. Not promoted yet. */
+/* Retail hoists &Game.level[5] (Game+0x8C) and reads its flags at +0x28,
+ * which needs game_s to carry the full game.c layout. */
 void CheckGates(struct obj_s *obj) {
     struct nugspline_s *spl;
     struct nuvec_s *p0;

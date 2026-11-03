@@ -72,7 +72,6 @@ struct nuvec_s NullNuVec = { 0.0f, 0.0f, 0.0f };
 
 extern void NuRndrLine3dDbg(s32 colour, f32 x0, f32 y0, f32 z0, f32 x1, f32 y1,
                             f32 z1);
-/* Earlier in this TU, still asm. */
 extern f32 ASin360f(f32 x);
 
 s32 ChrisJointOveride = 0;

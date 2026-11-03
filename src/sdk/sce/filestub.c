@@ -1844,20 +1844,20 @@ int sceSymlink(const char *existing, const char *newname)
         sceFsInit();
     }
     for (len = 0; len < FS_NAME_MAX; len++) {
-        if ((arg->existing[len] = existing[len]) == ' ') {
+        if ((arg->existing[len] = existing[len]) == '\0') {
             break;
         }
     }
     if (len == FS_NAME_MAX) {
-        arg->existing[FS_NAME_MAX - 1] = ' ';
+        arg->existing[FS_NAME_MAX - 1] = '\0';
     }
     for (len = 0; len < FS_NAME_MAX; len++) {
-        if ((arg->newname[len] = newname[len]) == ' ') {
+        if ((arg->newname[len] = newname[len]) == '\0') {
             break;
         }
     }
     if (len == FS_NAME_MAX) {
-        arg->newname[FS_NAME_MAX - 1] = ' ';
+        arg->newname[FS_NAME_MAX - 1] = '\0';
     }
     param.initCount = 0;
     param.maxCount = 1;
@@ -1897,12 +1897,12 @@ int sceReadlink(const char *name, char *buf, unsigned int buflen)
         sceFsInit();
     }
     for (len = 0; len < FS_NAME_MAX; len++) {
-        if ((arg->name[len] = name[len]) == ' ') {
+        if ((arg->name[len] = name[len]) == '\0') {
             break;
         }
     }
     if (len == FS_NAME_MAX) {
-        arg->name[FS_NAME_MAX - 1] = ' ';
+        arg->name[FS_NAME_MAX - 1] = '\0';
     }
     if (buflen >= FS_NAME_MAX) {
         buflen = FS_NAME_MAX - 1;
