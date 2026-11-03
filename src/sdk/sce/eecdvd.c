@@ -91,112 +91,46 @@ typedef struct CdSearchFileData {
 
 #define UNCACHED(p) ((void *)((unsigned int)(p) | 0x20000000))
 
-extern int SCE_CD_debug[];
-extern volatile int _sceCd_ncmd_semid[];
-extern volatile int _sceCd_scmd_semid[];
-extern volatile int _sceCd_c_cb_sem[];
-extern volatile int sceCdCbfunc_num[];
-extern volatile int sceCdCbfunc_number[];
-extern unsigned int _sceCd_ncmdrdata[];
-extern unsigned int _sceCd_scmdrdata[];
-extern unsigned int _sceCd_scmdsdata[];
-extern volatile int _sceCd_ee_read_mode;
+static char __ps2_libinfo__[16] = "PsIIlibcdvd 2300";
+int SCE_CD_debug = 0;
+static int cb_thid = 0;
+static int scmd_sema_keep_cmd = 0;
+static int ncmd_sema_keep_cmd = 0;
+static volatile int cb_semid = -1;
+static volatile int Init_seq = 0;
+volatile int _sceCd_ncmd_semid = -1;
+volatile int _sceCd_scmd_semid = -1;
+volatile int _sceCd_c_cb_sem = 0;
+volatile int _sceCd_ee_read_mode = 0;
+static int _ncmd_bind = -1;
+static int _icmd_bind = -1;
+static int _sf_bind = -1;
+static int _scmd_dr_bind = -1;
+static int _scmd_bind = -1;
+static int _it_bind = -1;
+
+extern volatile int sceCdCbfunc_num;
+extern volatile int sceCdCbfunc_number;
+extern unsigned int _sceCd_ncmdrdata[24];
+extern unsigned int _sceCd_scmdrdata[264];
+extern unsigned int _sceCd_scmdsdata[258];
 extern sceSifClientData _sceCd_cd_ncmd;
 extern sceSifClientData _sceCd_cd_scmd;
 
-extern int D_00610994[];
-extern int D_00610998[];
-extern int D_0061099C[];
-extern volatile int D_006109A0[];
-extern volatile int D_006109A4[];
-extern int D_006109B8[];
-extern int D_006109BC[];
-extern int D_006109C0[];
-extern int D_006109C4[];
-extern int D_006109C8[];
-extern int D_006109CC[];
-extern int D_006109D0[];
-extern void (*D_006FFE80[])(int);
-extern void (*D_006FFE84[])(void *);
-extern void *D_006FFE88[];
-extern int D_006FFE8C[];
-extern int D_006FFE90[];
-extern ThreadParam D_006FFE98[];
-extern ThreadParam D_006FFEC8[];
-extern CdSearchFileData D_006FFF00;
-extern unsigned int D_00700040[];
-extern sceSifClientData D_00700080;
-extern sceSifClientData D_007000A8;
-extern sceSifClientData D_007000D0;
-extern int D_00700100[];
-extern int D_00700110[];
-extern char D_0062B060[];
-extern char D_0062B088[];
-extern char D_0062B0A8[];
-extern char D_0062B0C0[];
-extern char D_0062B0D0[];
-extern char D_0062B0E0[];
-extern char D_0062B0F8[];
-extern char D_0062B120[];
-extern char D_0062B138[];
-extern char D_0062B148[];
-extern char D_0062B158[];
-extern char D_0062B180[];
-extern char D_0062B198[];
-extern char D_0062B1B8[];
-extern char D_0062B1C8[];
-extern char D_0062B1D8[];
-extern char D_0062B1F8[];
-
-#define cd_debug        (SCE_CD_debug[0])
-#define ncmd_semid      (_sceCd_ncmd_semid[0])
-#define scmd_semid      (_sceCd_scmd_semid[0])
-#define c_cb_sem        (_sceCd_c_cb_sem[0])
-#define cbfunc_num      (sceCdCbfunc_num[0])
-#define cbfunc_number   (sceCdCbfunc_number[0])
-#define cb_thread_id    (D_00610994[0])
-#define scmd_sema_keep  (D_00610998[0])
-#define ncmd_sema_keep  (D_0061099C[0])
-#define cb_sema         (D_006109A0[0])
-#define init_seq        (D_006109A4[0])
-#define ncmd_bind       (D_006109B8[0])
-#define icmd_bind       (D_006109BC[0])
-#define sf_bind         (D_006109C0[0])
-#define scmd_dr_bind    (D_006109C4[0])
-#define scmd_bind       (D_006109C8[0])
-#define it_bind         (D_006109CC[0])
-#define init_count      (D_006109D0[0])
-#define cb_func         (D_006FFE80[0])
-#define poff_func       (D_006FFE84[0])
-#define poff_arg        (D_006FFE88[0])
-#define poff_func_num   (D_006FFE8C[0])
-#define init_th_id      (D_006FFE90[0])
-#define init_th_param   (D_006FFE98[0])
-#define cb_th_param     (D_006FFEC8[0])
-#define sf_data         D_006FFF00
-#define sf_rdata        D_00700040
-#define sf_client       D_00700080
-#define init_client     D_007000A8
-#define init_mode       D_00700100
-#define dr_client       D_007000D0
-#define dr_mode         D_00700110
-#define cbloop_msg      D_0062B060
-#define sf_bind_err_msg D_0062B088
-#define sf_name_msg     D_0062B0A8
-#define sf_found_msg    D_0062B0C0
-#define sf_size_msg     D_0062B0D0
-#define sf_lsn_msg      D_0062B0E0
-#define ncmd_fail_msg   D_0062B0F8
-#define ncmd_bind_err_msg D_0062B120
-#define ncmd_wait_msg   D_0062B138
-#define scmd_wait_msg   D_0062B148
-#define scmd_fail_msg   D_0062B158
-#define scmd_bind_err_msg D_0062B180
-#define init_bind_err_msg D_0062B198
-#define exit_msg        D_0062B1B8
-#define dr_msg          D_0062B1C8
-#define dr_bind_err_msg D_0062B1D8
-#define dr_done_msg     D_0062B1F8
+static void (*sceCdCbfunc)(int);
+static void (*sceCdPoffCbfunc)(void *);
+static void *sceCdPoffCbdata;
+static int sceCdPoffCbfunc_num;
+static int my_thid;
+static ThreadParam my_th_info;
+static ThreadParam cb_tp;
+static CdSearchFileData _sf_data __attribute__((aligned(64)));
+static unsigned int sfrdata[16] __attribute__((aligned(64)));
+static sceSifClientData cdrdsf;
+static sceSifClientData cdit;
+static sceSifClientData cddr;
+static unsigned int _i_mode[4] __attribute__((aligned(16)));
+static unsigned int _dr_mode[4] __attribute__((aligned(16)));
 
 extern int CreateSema(SemaParam *param);
 extern int DeleteSema(int sema);
@@ -263,8 +197,8 @@ void *sceCdCallback(void (*func)(int))
         return 0;
     }
     DIntr();
-    old = cb_func;
-    cb_func = func;
+    old = sceCdCbfunc;
+    sceCdCbfunc = func;
     EIntr();
     return old;
 }
@@ -272,41 +206,41 @@ void *sceCdCallback(void (*func)(int))
 
 static void _sceCd_cd_callback(int *data)
 {
-    cbfunc_num = *data;
-    cbfunc_number = cbfunc_num;
-    if (cbfunc_num == 11) {
-        cbfunc_num = 0;
-        c_cb_sem = 0;
+    sceCdCbfunc_num = *data;
+    sceCdCbfunc_number = sceCdCbfunc_num;
+    if (sceCdCbfunc_num == 11) {
+        sceCdCbfunc_num = 0;
+        _sceCd_c_cb_sem = 0;
         return;
     }
-    iSignalSema(ncmd_semid);
-    if (cb_thread_id && cb_func) {
-        iSignalSema(cb_sema);
+    iSignalSema(_sceCd_ncmd_semid);
+    if (cb_thid && sceCdCbfunc) {
+        iSignalSema(cb_semid);
     } else {
-        c_cb_sem = 0;
+        _sceCd_c_cb_sem = 0;
     }
-    cbfunc_num = 0;
+    sceCdCbfunc_num = 0;
 }
 
 
 static void _Cdvd_cbLoop(void *arg)
 {
     while (1) {
-        WaitSema(cb_sema);
-        if (cbfunc_num == -1) {
-            c_cb_sem = 0;
-            *(int *)sceCdCbfunc_num = 0;
-            cb_thread_id = 0;
-            poff_func_num = 0;
+        WaitSema(cb_semid);
+        if (sceCdCbfunc_num == -1) {
+            _sceCd_c_cb_sem = 0;
+            *(int *)&sceCdCbfunc_num = 0;
+            cb_thid = 0;
+            sceCdPoffCbfunc_num = 0;
             ExitDeleteThread();
         }
-        if (cd_debug > 0) {
-            scePrintf(cbloop_msg, cb_func, cbfunc_number);
+        if (SCE_CD_debug > 0) {
+            scePrintf("sceCdCbfunc= %d sceCdCbfunc_num= %d\n", sceCdCbfunc, sceCdCbfunc_number);
         }
-        if (cb_func && cbfunc_number) {
-            cb_func(cbfunc_number);
+        if (sceCdCbfunc && sceCdCbfunc_number) {
+            sceCdCbfunc(sceCdCbfunc_number);
         }
-        c_cb_sem = 0;
+        _sceCd_c_cb_sem = 0;
     }
 }
 
@@ -317,18 +251,18 @@ int sceCdInitEeCB(int prio, void *stack, int stack_size)
 {
     int created = 1;
 
-    if (cb_thread_id == 0) {
-        init_th_id = GetThreadId();
-        ReferThreadStatus(init_th_id, &init_th_param);
-        cb_th_param.stackSize = stack_size;
-        cb_th_param.gpReg = _gp;
-        cb_th_param.entry = _Cdvd_cbLoop;
-        cb_th_param.stack = stack;
-        cb_th_param.initPriority = prio;
-        cb_thread_id = CreateThread(&cb_th_param);
-        StartThread(cb_thread_id, 0);
+    if (cb_thid == 0) {
+        my_thid = GetThreadId();
+        ReferThreadStatus(my_thid, &my_th_info);
+        cb_tp.stackSize = stack_size;
+        cb_tp.gpReg = _gp;
+        cb_tp.entry = _Cdvd_cbLoop;
+        cb_tp.stack = stack;
+        cb_tp.initPriority = prio;
+        cb_thid = CreateThread(&cb_tp);
+        StartThread(cb_thid, 0);
     } else {
-        ChangeThreadPriority(cb_thread_id, prio);
+        ChangeThreadPriority(cb_thid, prio);
         created = 0;
     }
     return created;
@@ -352,7 +286,7 @@ static void _sceCd_cd_read_intr(void *addr)
             dest[i] = data->buf2[i];
         }
     }
-    _sceCd_cd_callback((int *)sceCdCbfunc_num);
+    _sceCd_cd_callback((int *)&sceCdCbfunc_num);
 }
 
 
@@ -360,28 +294,28 @@ static void cmd_sem_init(void)
 {
     SemaParam param;
 
-    if (ncmd_semid == -1 || scmd_semid == -1) {
+    if (_sceCd_ncmd_semid == -1 || _sceCd_scmd_semid == -1) {
         param.initCount = 1;
         param.maxCount = 1;
         param.option = 0;
-        ncmd_semid = CreateSema(&param);
-        scmd_semid = CreateSema(&param);
+        _sceCd_ncmd_semid = CreateSema(&param);
+        _sceCd_scmd_semid = CreateSema(&param);
         param.initCount = 0;
-        cb_sema = CreateSema(&param);
-        c_cb_sem = 0;
+        cb_semid = CreateSema(&param);
+        _sceCd_c_cb_sem = 0;
     }
 }
 
 
 void cdvd_exit(void)
 {
-    if (cb_thread_id) {
-        cbfunc_num = -1;
-        SignalSema(cb_sema);
+    if (cb_thid) {
+        sceCdCbfunc_num = -1;
+        SignalSema(cb_semid);
     }
-    DeleteSema(ncmd_semid);
-    DeleteSema(scmd_semid);
-    DeleteSema(cb_sema);
+    DeleteSema(_sceCd_ncmd_semid);
+    DeleteSema(_sceCd_scmd_semid);
+    DeleteSema(cb_semid);
     DIntr();
     sceSifRemoveCmdHandler(0x80000012);
     EIntr();
@@ -392,13 +326,13 @@ void *sceCdPOffCallback(void (*func)(void *), void *addr)
 {
     void *old;
 
-    if (icmd_bind < 0) {
+    if (_icmd_bind < 0) {
         PowerOffCB();
     }
     DIntr();
-    old = poff_func;
-    poff_arg = addr;
-    poff_func = func;
+    old = sceCdPoffCbfunc;
+    sceCdPoffCbdata = addr;
+    sceCdPoffCbfunc = func;
     EIntr();
     return old;
 }
@@ -406,20 +340,20 @@ void *sceCdPOffCallback(void (*func)(void *), void *addr)
 
 static void _sceCd_Poff_Intr(void *data, void *arg)
 {
-    if (poff_func && !init_seq) {
-        poff_func(poff_arg);
+    if (sceCdPoffCbfunc && !Init_seq) {
+        sceCdPoffCbfunc(sceCdPoffCbdata);
     }
 }
 
 
 static int PowerOffCB(void)
 {
-    init_seq = 1;
+    Init_seq = 1;
     DIntr();
     sceSifAddCmdHandler(0x80000012, _sceCd_Poff_Intr, 0);
     EIntr();
-    init_seq = 0;
-    icmd_bind = 1;
+    Init_seq = 0;
+    _icmd_bind = 1;
     return 1;
 }
 
@@ -431,29 +365,29 @@ int sceCdSearchFile(sceCdlFILE *file, const char *name)
     int result;
 
     cmd_sem_init();
-    if (ncmd_semid != PollSema(ncmd_semid)) {
+    if (_sceCd_ncmd_semid != PollSema(_sceCd_ncmd_semid)) {
         return 0;
     }
-    ncmd_sema_keep = 1;
-    ReferThreadStatus(init_th_id, &init_th_param);
+    ncmd_sema_keep_cmd = 1;
+    ReferThreadStatus(my_thid, &my_th_info);
     if (sceCdSync(1)) {
-        SignalSema(ncmd_semid);
+        SignalSema(_sceCd_ncmd_semid);
         return 0;
     }
     sceSifInitRpc(0);
-    if (sf_bind < 0) {
+    if (_sf_bind < 0) {
         while (1) {
-            if (sceSifBindRpc(&sf_client, 0x80000597, 0) < 0) {
-                if (cd_debug > 0) {
-                    scePrintf(sf_bind_err_msg);
+            if (sceSifBindRpc(&cdrdsf, 0x80000597, 0) < 0) {
+                if (SCE_CD_debug > 0) {
+                    scePrintf("Libcdvd bind err CdSearchFile\n");
                 }
                 wait = 0x100000;
                 while (wait--) {
                 }
                 continue;
             }
-            if (sf_client.serve != 0) {
-                sf_bind = 0;
+            if (cdrdsf.serve != 0) {
+                _sf_bind = 0;
                 break;
             }
             wait = 0x100000;
@@ -462,34 +396,34 @@ int sceCdSearchFile(sceCdlFILE *file, const char *name)
         }
     }
     for (i = 0; i < 256; i++) {
-        if ((sf_data.name[i] = name[i]) == 0) {
+        if ((_sf_data.name[i] = name[i]) == 0) {
             break;
         }
     }
     if (i == 256) {
-        sf_data.name[255] = 0;
+        _sf_data.name[255] = 0;
     }
-    sf_data.eedata = &sf_data;
-    if (cd_debug > 0) {
-        scePrintf(sf_name_msg, sf_data.name);
+    _sf_data.eedata = &_sf_data;
+    if (SCE_CD_debug > 0) {
+        scePrintf("ee call cmd search %s\n", _sf_data.name);
     }
-    sceSifWriteBackDCache(&sf_data, sizeof(sf_data));
-    if (sceSifCallRpc(&sf_client, 0, 0, &sf_data, sizeof(sf_data), sf_rdata, 4, 0, 0) < 0) {
-        SignalSema(ncmd_semid);
+    sceSifWriteBackDCache(&_sf_data, sizeof(_sf_data));
+    if (sceSifCallRpc(&cdrdsf, 0, 0, &_sf_data, sizeof(_sf_data), sfrdata, 4, 0, 0) < 0) {
+        SignalSema(_sceCd_ncmd_semid);
         return 0;
     }
-    memcpy(file, UNCACHED(&sf_data), sizeof(sceCdlFILE));
-    if (cd_debug > 0) {
-        scePrintf(sf_found_msg, file->name);
+    memcpy(file, UNCACHED(&_sf_data), sizeof(sceCdlFILE));
+    if (SCE_CD_debug > 0) {
+        scePrintf("search name %s\n", file->name);
     }
-    if (cd_debug > 0) {
-        scePrintf(sf_size_msg, file->size);
+    if (SCE_CD_debug > 0) {
+        scePrintf("search size %d\n", file->size);
     }
-    if (cd_debug > 0) {
-        scePrintf(sf_lsn_msg, file->lsn);
+    if (SCE_CD_debug > 0) {
+        scePrintf("search loc lbn %d\n", file->lsn);
     }
-    result = *(int *)UNCACHED(sf_rdata);
-    SignalSema(ncmd_semid);
+    result = *(int *)UNCACHED(sfrdata);
+    SignalSema(_sceCd_ncmd_semid);
     return result;
 }
 
@@ -499,24 +433,24 @@ int _sceCd_ncmd_prechk(int cmd)
     int wait;
 
     cmd_sem_init();
-    if (ncmd_semid != PollSema(ncmd_semid)) {
-        if (cd_debug > 0) {
-            scePrintf(ncmd_fail_msg, cmd, ncmd_sema_keep);
+    if (_sceCd_ncmd_semid != PollSema(_sceCd_ncmd_semid)) {
+        if (SCE_CD_debug > 0) {
+            scePrintf("Ncmd fail sema cur_cmd:%d keep_cmd:%d\n", cmd, ncmd_sema_keep_cmd);
         }
         return 0;
     }
-    ncmd_sema_keep = cmd;
-    ReferThreadStatus(init_th_id, &init_th_param);
+    ncmd_sema_keep_cmd = cmd;
+    ReferThreadStatus(my_thid, &my_th_info);
     if (sceCdSync(1)) {
-        SignalSema(ncmd_semid);
+        SignalSema(_sceCd_ncmd_semid);
         return 0;
     }
     sceSifInitRpc(0);
-    if (ncmd_bind < 0) {
+    if (_ncmd_bind < 0) {
         while (1) {
             if (sceSifBindRpc(&_sceCd_cd_ncmd, 0x80000595, 0) < 0) {
-                if (cd_debug > 0) {
-                    scePrintf(ncmd_bind_err_msg);
+                if (SCE_CD_debug > 0) {
+                    scePrintf("Libcdvd bind err N CMD\n");
                 }
                 wait = 0x100000;
                 while (wait--) {
@@ -524,7 +458,7 @@ int _sceCd_ncmd_prechk(int cmd)
                 continue;
             }
             if (_sceCd_cd_ncmd.serve != 0) {
-                ncmd_bind = 0;
+                _ncmd_bind = 0;
                 break;
             }
             wait = 0x100000;
@@ -544,11 +478,11 @@ int sceCdNcmdDiskReady(void)
         return 0;
     }
     if (sceSifCallRpc(&_sceCd_cd_ncmd, 14, 0, 0, 0, _sceCd_ncmdrdata, 4, 0, 0) < 0) {
-        SignalSema(ncmd_semid);
+        SignalSema(_sceCd_ncmd_semid);
         return 0;
     }
     ready = *(int *)UNCACHED(_sceCd_ncmdrdata);
-    SignalSema(ncmd_semid);
+    SignalSema(_sceCd_ncmd_semid);
     return ready;
 }
 
@@ -556,15 +490,15 @@ int sceCdNcmdDiskReady(void)
 int sceCdSync(int mode)
 {
     if (mode == 0) {
-        if (cd_debug > 0) {
-            scePrintf(ncmd_wait_msg);
+        if (SCE_CD_debug > 0) {
+            scePrintf("N cmd wait\n");
         }
-        while (c_cb_sem || sceSifCheckStatRpc(&_sceCd_cd_ncmd)) {
+        while (_sceCd_c_cb_sem || sceSifCheckStatRpc(&_sceCd_cd_ncmd)) {
             sceCdDelayThread(60);
         }
         return 0;
     }
-    if (c_cb_sem || sceSifCheckStatRpc(&_sceCd_cd_ncmd)) {
+    if (_sceCd_c_cb_sem || sceSifCheckStatRpc(&_sceCd_cd_ncmd)) {
         return 1;
     }
     return 0;
@@ -574,8 +508,8 @@ int sceCdSync(int mode)
 int sceCdSyncS(int mode)
 {
     if (mode == 0) {
-        if (cd_debug > 0) {
-            scePrintf(scmd_wait_msg);
+        if (SCE_CD_debug > 0) {
+            scePrintf("S cmd wait\n");
         }
         while (sceSifCheckStatRpc(&_sceCd_cd_scmd)) {
             sceCdDelayThread(60);
@@ -591,24 +525,24 @@ int _sceCd_scmd_prechk(int cmd)
     int wait;
 
     cmd_sem_init();
-    if (scmd_semid != PollSema(scmd_semid)) {
-        if (cd_debug > 0) {
-            scePrintf(scmd_fail_msg, cmd, scmd_sema_keep);
+    if (_sceCd_scmd_semid != PollSema(_sceCd_scmd_semid)) {
+        if (SCE_CD_debug > 0) {
+            scePrintf("Scmd fail sema cur_cmd:%d keep_cmd:%d\n", cmd, scmd_sema_keep_cmd);
         }
         return 0;
     }
-    scmd_sema_keep = cmd;
-    ReferThreadStatus(init_th_id, &init_th_param);
+    scmd_sema_keep_cmd = cmd;
+    ReferThreadStatus(my_thid, &my_th_info);
     if (sceCdSyncS(1)) {
-        SignalSema(scmd_semid);
+        SignalSema(_sceCd_scmd_semid);
         return 0;
     }
     sceSifInitRpc(0);
-    if (scmd_bind < 0) {
+    if (_scmd_bind < 0) {
         while (1) {
             if (sceSifBindRpc(&_sceCd_cd_scmd, 0x80000593, 0) < 0) {
-                if (cd_debug > 0) {
-                    scePrintf(scmd_bind_err_msg);
+                if (SCE_CD_debug > 0) {
+                    scePrintf("Libcdvd bind err S cmd\n");
                 }
                 wait = 0x100000;
                 while (wait--) {
@@ -616,7 +550,7 @@ int _sceCd_scmd_prechk(int cmd)
                 continue;
             }
             if (_sceCd_cd_scmd.serve != 0) {
-                scmd_bind = 0;
+                _scmd_bind = 0;
                 break;
             }
             wait = 0x100000;
@@ -636,44 +570,45 @@ int sceCdInit(int mode)
     int status;
     int drv_version;
     int mod_version;
+    static int c_cnt = 0;
 
     if (sceCdSyncS(1)) {
         return 0;
     }
     sceSifInitRpc(0);
-    init_th_id = GetThreadId();
-    init_seq = 1;
-    sf_bind = -1;
-    ncmd_bind = -1;
-    scmd_bind = -1;
-    scmd_dr_bind = -1;
-    it_bind = -1;
-    icmd_bind = -1;
+    my_thid = GetThreadId();
+    Init_seq = 1;
+    _sf_bind = -1;
+    _ncmd_bind = -1;
+    _scmd_bind = -1;
+    _scmd_dr_bind = -1;
+    _it_bind = -1;
+    _icmd_bind = -1;
     _sceCd_ee_read_mode = 0;
-    init_count++;
+    c_cnt++;
     while (1) {
-        bind = sceSifBindRpc(&init_client, 0x80000592, 0);
+        bind = sceSifBindRpc(&cdit, 0x80000592, 0);
         if (bind < 0) {
-            if (cd_debug > 0) {
-                scePrintf(init_bind_err_msg, bind, init_count);
+            if (SCE_CD_debug > 0) {
+                scePrintf("Libcdvd bind err %d CD_Init %d\n", bind, c_cnt);
             }
             wait = 0x100000;
             while (wait--) {
             }
             continue;
         }
-        if (init_client.serve != 0) {
-            it_bind = 0;
+        if (cdit.serve != 0) {
+            _it_bind = 0;
             break;
         }
         wait = 0x100000;
         while (wait--) {
         }
     }
-    init_mode[0] = mode;
-    sceSifWriteBackDCache(init_mode, 4);
-    if (sceSifCallRpc(&init_client, 0, 0, init_mode, 4, _sceCd_scmdrdata, 0x10, 0, 0) < 0) {
-        init_seq = 0;
+    _i_mode[0] = mode;
+    sceSifWriteBackDCache(_i_mode, 4);
+    if (sceSifCallRpc(&cdit, 0, 0, _i_mode, 4, _sceCd_scmdrdata, 0x10, 0, 0) < 0) {
+        Init_seq = 0;
         return 0;
     }
     drv_version = *(int *)UNCACHED(&_sceCd_scmdrdata[1]);
@@ -682,21 +617,21 @@ int sceCdInit(int mode)
     result = 1;
     if (status != 0xff) {
         if (status == 0xfe) {
-            cd_debug = 1;
+            SCE_CD_debug = 1;
         } else if (drv_version / 0x100 < 2 || mod_version / 0x100 < 2) {
             result = 2;
         }
     }
-    init_seq = 0;
+    Init_seq = 0;
     switch (mode) {
     case 5:
-        if (cd_debug > 0) {
-            scePrintf(exit_msg);
+        if (SCE_CD_debug > 0) {
+            scePrintf("Libcdvd Exit\n");
         }
         cdvd_exit();
-        ncmd_semid = -1;
-        scmd_semid = -1;
-        cb_sema = -1;
+        _sceCd_ncmd_semid = -1;
+        _sceCd_scmd_semid = -1;
+        cb_semid = -1;
         break;
     case 0:
     case 1:
@@ -708,40 +643,51 @@ int sceCdInit(int mode)
     return result;
 }
 
+volatile int sceCdCbfunc_num = 0;
+volatile int sceCdCbfunc_number = 0;
+unsigned int _sceCd_ncmdrdata[24] __attribute__((aligned(64))) = { 0 };
+unsigned int _sceCd_ncmdsdata[1024] __attribute__((aligned(64))) = { 0 };
+CdReadIntrData _sceCd_rd_intr_data __attribute__((aligned(64))) = { 0 };
+int _sceCd_Read_cur_pos[4] __attribute__((aligned(64))) = { 0 };
+sceSifClientData _sceCd_cd_ncmd = { 0 };
+unsigned int _sceCd_scmdrdata[264] __attribute__((aligned(64))) = { 0 };
+unsigned int _sceCd_scmdsdata[258] __attribute__((aligned(64))) = { 0 };
+sceSifClientData _sceCd_cd_scmd = { 0 };
+
 
 int sceCdDiskReady(int mode)
 {
     int wait;
     int result;
 
-    if (cd_debug > 0) {
-        scePrintf(dr_msg);
+    if (SCE_CD_debug > 0) {
+        scePrintf("DiskReady 0\n");
     }
     cmd_sem_init();
-    if (scmd_semid != PollSema(scmd_semid)) {
+    if (_sceCd_scmd_semid != PollSema(_sceCd_scmd_semid)) {
         return 6;
     }
     if (sceCdSyncS(1)) {
-        SignalSema(scmd_semid);
+        SignalSema(_sceCd_scmd_semid);
         if (mode == 8) {
             return -1;
         }
         return 6;
     }
     sceSifInitRpc(0);
-    if (scmd_dr_bind < 0) {
+    if (_scmd_dr_bind < 0) {
         while (1) {
-            if (sceSifBindRpc(&dr_client, 0x8000059A, 0) < 0) {
-                if (cd_debug > 0) {
-                    scePrintf(dr_bind_err_msg);
+            if (sceSifBindRpc(&cddr, 0x8000059A, 0) < 0) {
+                if (SCE_CD_debug > 0) {
+                    scePrintf("Libcdvd bind err CdDiskReady\n");
                 }
                 wait = 0x100000;
                 while (wait--) {
                 }
                 continue;
             }
-            if (dr_client.serve != 0) {
-                scmd_dr_bind = 0;
+            if (cddr.serve != 0) {
+                _scmd_dr_bind = 0;
                 break;
             }
             wait = 0x100000;
@@ -749,20 +695,20 @@ int sceCdDiskReady(int mode)
             }
         }
     }
-    dr_mode[0] = mode;
-    sceSifWriteBackDCache(dr_mode, 4);
-    if (sceSifCallRpc(&dr_client, 0, 0, dr_mode, 4, _sceCd_scmdrdata, 4, 0, 0) < 0) {
-        SignalSema(scmd_semid);
+    _dr_mode[0] = mode;
+    sceSifWriteBackDCache(_dr_mode, 4);
+    if (sceSifCallRpc(&cddr, 0, 0, _dr_mode, 4, _sceCd_scmdrdata, 4, 0, 0) < 0) {
+        SignalSema(_sceCd_scmd_semid);
         if (mode == 8) {
             return -1;
         }
         return 6;
     }
-    if (cd_debug > 0) {
-        scePrintf(dr_done_msg);
+    if (SCE_CD_debug > 0) {
+        scePrintf("DiskReady ended\n");
     }
     result = *(int *)UNCACHED(_sceCd_scmdrdata);
-    SignalSema(scmd_semid);
+    SignalSema(_sceCd_scmd_semid);
     return result;
 }
 
@@ -778,10 +724,10 @@ int sceCdMmode(int media)
     _sceCd_scmdsdata[0] = media;
     sceSifWriteBackDCache(sdata, 4);
     if (sceSifCallRpc(&_sceCd_cd_scmd, 0x22, 0, sdata, 4, _sceCd_scmdrdata, 4, 0, 0) < 0) {
-        SignalSema(scmd_semid);
+        SignalSema(_sceCd_scmd_semid);
         return 0;
     }
     result = *(int *)UNCACHED(_sceCd_scmdrdata);
-    SignalSema(scmd_semid);
+    SignalSema(_sceCd_scmd_semid);
     return result;
 }

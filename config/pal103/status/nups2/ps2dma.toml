@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0062"
 source = "src/nups2/ps2dma.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0062:0016b9a0:GSRegDecode"
@@ -154,3 +154,140 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0062:0016d700:VU1_DmaGetStatusI"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0062:002ea460:tagnames"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0062:002ea480:marknames"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0062:002ea4e8:mark_suppressed"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0062:002ea550:dmatag.105"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0062:002ea560:dmatag.109"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0062:002ea570:dmatag.113"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0062:002ea580:dmatag.117"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0062:0062f0d8:debug_gs_list"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0062:0062f0dc:debug_dma_list"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0062:0062f0e0:ps2_scratch_free"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0062:0062f0e4:debug_dma_level"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0062:0062f0e8:decode_error"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0062:0062f188:find_mark"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0062:0062f18c:gs_dma_status"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0062:0062f190:vu1_dma_status"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0062:0062f194:crc_check"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0062:0062f198:gs_termaddr"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0062:0062f19c:wait_until_finished"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0062:0062f1a0:cycle_steal"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0062:0062f1a4:termaddr"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0062:0062f1a8:vpdmatag_curr"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0062:0062f1b0:gs_last_write"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0062:0062f1b8:gs_prev_write"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0062:0062f1c0:vu1_last_write"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0062:0062f1c8:vu1_prev_write"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0062:0062f1d0:old_crc"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0062:00633200:vt_curr"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0062:00633208:gt_curr"
+state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x00616a73
+end = 0x00616a80
+
+[[claim]]
+section = ".rodata"
+start = 0x00617860
+end = 0x00617880
+
+[[claim]]
+section = ".sbss"
+start = 0x006331fc
+end = 0x00633200
+
+[[claim]]
+section = ".sbss"
+start = 0x00633208
+end = 0x0063320c
+
+[[claim]]
+section = ".sdata"
+start = 0x0062f0d4
+end = 0x0062f0d8

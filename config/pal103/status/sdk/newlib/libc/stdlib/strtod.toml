@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0218"
 source = "src/sdk/newlib/libc/stdlib/strtod.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0218:00272288:_strtod_r"
@@ -22,3 +22,8 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0218:002731b8:strtodf"
 state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x0062bfca
+end = 0x0062bfd0

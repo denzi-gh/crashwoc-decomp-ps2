@@ -57,7 +57,7 @@ extern void NuPs2ScreenSwap(s32 mode);
 
 static s32 thread_id;
 static s32 sem_id;
-static u8 loadstackmem[0x48000];
+static u8 loadstackmem[0x48000] __attribute__((aligned(64)));
 extern int _gp;
 
 void VBlankFn(void);

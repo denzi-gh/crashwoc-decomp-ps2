@@ -155,23 +155,14 @@ typedef struct PadRpcBuffer {
     } u;
 } PadRpcBuffer;
 
-extern sceSifClientData D_006FFAC0[2];
-extern PadSlot D_006FFB10[2][4];
-extern PadIopBuffer D_006FFC00[2][4];
-extern PadRpcBuffer D_006FFE00;
-extern int D_00610930[];
-extern int D_00610934[];
-extern char *D_00610938[];
-extern char *D_00610958[];
+static char __ps2_libinfo__[16] = "PsIIlibpad  2300";
+static int isInit = 0;
+static int isWarning = 1;
 
-#define pad_clients     D_006FFAC0
-#define pad_slots       D_006FFB10
-#define pad_commands    D_006FFC00
-#define pad_rpc         D_006FFE00
-#define pad_initialized D_00610930
-#define pad_debug       D_00610934
-#define pad_state_names D_00610938
-#define pad_req_names   D_00610958
+static sceSifClientData padsif[2] __attribute__((aligned(64)));
+static PadSlot PadInfo[2][4];
+static PadIopBuffer dma_iop_data[2][4] __attribute__((aligned(64)));
+static PadRpcBuffer buffer __attribute__((aligned(64)));
 
 extern int sceSifCallRpc(sceSifClientData *client, unsigned int fno,
                          unsigned int mode, void *send, int ssize,
@@ -195,15 +186,15 @@ void _send_to_iop(int port, int slot) {
     char *dest;
     unsigned int id;
 
-    command = pad_slots[port][slot].command;
-    if (sceSifDmaStat(pad_slots[port][slot].dma_id) >= 0) {
-        if (pad_debug[0]) {
+    command = PadInfo[port][slot].command;
+    if (sceSifDmaStat(PadInfo[port][slot].dma_id) >= 0) {
+        if (isWarning) {
             printf("libpad: sceSifSetDma faild\n");
         }
         return;
     }
     command->sequence++;
-    dest = (char *)pad_slots[port][slot].iop_addr + ((command->sequence & 1) << 5);
+    dest = (char *)PadInfo[port][slot].iop_addr + ((command->sequence & 1) << 5);
     SyncDCache(command, command + 1);
     transfer[0].data = command;
     transfer[0].addr = dest;
@@ -211,11 +202,15 @@ void _send_to_iop(int port, int slot) {
     transfer[0].mode = 0;
     id = sceSifSetDma(transfer, 1);
     if (id == 0) {
-        if (pad_debug[0]) {
+        if (isWarning) {
             printf("libpad: sceSifSetDma faild\n");
         }
     }
-    pad_slots[port][slot].dma_id = id;
+    PadInfo[port][slot].dma_id = id;
+    /* retail keeps this message's literal from a disabled check */
+    if (0) {
+        printf("libpad: tPadDma Structure Invalid\n");
+    }
 }
 
 
@@ -223,10 +218,10 @@ int scePadInit(int mode) {
     int version;
     int wait;
 
-    pad_initialized[0] = 1;
+    isInit = 1;
     while (1) {
-        sceSifBindRpc(&pad_clients[0], 0x80000100, 0);
-        if (pad_clients[0].server != 0) {
+        sceSifBindRpc(&padsif[0], 0x80000100, 0);
+        if (padsif[0].server != 0) {
             break;
         }
         wait = 0x10000;
@@ -234,8 +229,8 @@ int scePadInit(int mode) {
         }
     }
     while (1) {
-        sceSifBindRpc(&pad_clients[1], 0x80000101, 0);
-        if (pad_clients[1].server != 0) {
+        sceSifBindRpc(&padsif[1], 0x80000101, 0);
+        if (padsif[1].server != 0) {
             break;
         }
         wait = 0x10000;
@@ -244,7 +239,7 @@ int scePadInit(int mode) {
     }
     version = scePadGetModVersion();
     if ((version >> 8) != 4) {
-        if (pad_debug[0]) {
+        if (isWarning) {
             printf("libpad: Module version mismatch ");
             printf("[libpad.a = %d.%d, padman.irx = %d.%d]\n", 4, 0, version >> 8, version & 0xFF);
         }
@@ -258,32 +253,32 @@ int scePadInit2(int mode) {
     int slot;
 
     for (slot = 0; slot < 4; slot++) {
-        pad_slots[0][slot].opened = 0;
-        pad_slots[0][slot].reserved[1] = 0;
-        pad_slots[0][slot].reserved[0] = 0;
-        pad_slots[1][slot].opened = 0;
-        pad_slots[1][slot].reserved[1] = 0;
-        pad_slots[1][slot].reserved[0] = 0;
+        PadInfo[0][slot].opened = 0;
+        PadInfo[0][slot].reserved[1] = 0;
+        PadInfo[0][slot].reserved[0] = 0;
+        PadInfo[1][slot].opened = 0;
+        PadInfo[1][slot].reserved[1] = 0;
+        PadInfo[1][slot].reserved[0] = 0;
     }
-    pad_rpc.command = 16;
-    pad_rpc.u.common.param = 0;
-    if (sceSifCallRpc(&pad_clients[0], 1, 0, &pad_rpc, 128, &pad_rpc, 128, 0, 0) < 0) {
+    buffer.command = 16;
+    buffer.u.common.param = 0;
+    if (sceSifCallRpc(&padsif[0], 1, 0, &buffer, 128, &buffer, 128, 0, 0) < 0) {
         return 0;
     }
-    return pad_rpc.u.common.result;
+    return buffer.u.common.result;
 }
 
 
 int scePadEnd(void) {
     int result;
 
-    pad_rpc.command = 15;
-    if (sceSifCallRpc(&pad_clients[0], 1, 0, &pad_rpc, 128, &pad_rpc, 128, 0, 0) < 0) {
+    buffer.command = 15;
+    if (sceSifCallRpc(&padsif[0], 1, 0, &buffer, 128, &buffer, 128, 0, 0) < 0) {
         return 0;
     }
-    result = pad_rpc.u.common.result;
+    result = buffer.u.common.result;
     if (result == 1) {
-        pad_initialized[0] = 0;
+        isInit = 0;
     }
     return result;
 }
@@ -296,13 +291,13 @@ int scePadPortOpen(int port, int slot, void *addr) {
     int i;
 
     if ((unsigned int)addr & 0x3F) {
-        if (pad_debug[0]) {
+        if (isWarning) {
             printf("libpad: buffer addr is not 64 byte align. %08x\n", addr);
         }
         return 0;
     }
-    if (pad_slots[port][slot].opened == 1) {
-        if (pad_debug[0]) {
+    if (PadInfo[port][slot].opened == 1) {
+        if (isWarning) {
             printf("libpad: pad port is already open [%d][%d]\n", port, slot);
         }
         return 0;
@@ -317,43 +312,43 @@ int scePadPortOpen(int port, int slot, void *addr) {
         frame->length = 0;
         frame++;
     }
-    rpc = (PadRpcOpen *)&pad_rpc;
+    rpc = (PadRpcOpen *)&buffer;
     rpc->command = 1;
     rpc->port = port;
     rpc->slot = slot;
     rpc->addr = addr;
-    if (sceSifCallRpc(&pad_clients[0], 1, 0, rpc, 128, rpc, 128, 0, 0) < 0) {
+    if (sceSifCallRpc(&padsif[0], 1, 0, rpc, 128, rpc, 128, 0, 0) < 0) {
         return 0;
     }
-    command = &pad_commands[port][slot].command;
-    pad_slots[port][slot].opened = 1;
-    pad_slots[port][slot].iop_addr = rpc->iop_addr;
-    pad_slots[port][slot].dma = addr;
-    pad_slots[port][slot].command = command;
+    command = &dma_iop_data[port][slot].command;
+    PadInfo[port][slot].opened = 1;
+    PadInfo[port][slot].iop_addr = rpc->iop_addr;
+    PadInfo[port][slot].dma = addr;
+    PadInfo[port][slot].command = command;
     command->sequence = 0;
-    pad_slots[port][slot].dma_id = 0;
+    PadInfo[port][slot].dma_id = 0;
     return rpc->result;
 }
 
 
 int scePadPortClose(int port, int slot) {
-    if (pad_slots[port][slot].opened == 0) {
+    if (PadInfo[port][slot].opened == 0) {
         return 0;
     }
-    pad_rpc.command = 14;
-    pad_rpc.u.common.port = port;
-    pad_rpc.u.common.slot = slot;
-    pad_rpc.u.common.param = 1;
-    if (sceSifCallRpc(&pad_clients[0], 1, 0, &pad_rpc, 128, &pad_rpc, 128, 0, 0) < 0) {
+    buffer.command = 14;
+    buffer.u.common.port = port;
+    buffer.u.common.slot = slot;
+    buffer.u.common.param = 1;
+    if (sceSifCallRpc(&padsif[0], 1, 0, &buffer, 128, &buffer, 128, 0, 0) < 0) {
         return 0;
     }
-    pad_slots[port][slot].opened = 0;
-    return pad_rpc.u.common.result;
+    PadInfo[port][slot].opened = 0;
+    return buffer.u.common.result;
 }
 
 
 PadDmaFrame *scePadGetDmaStr(int port, int slot) {
-    PadDmaFrame *frame = pad_slots[port][slot].dma;
+    PadDmaFrame *frame = PadInfo[port][slot].dma;
     int index = 0;
 
     SyncDCache(frame, &frame[2]);
@@ -365,7 +360,7 @@ PadDmaFrame *scePadGetDmaStr(int port, int slot) {
 
 
 int scePadGetFrameCount(int port, int slot) {
-    if (pad_slots[port][slot].opened == 0) {
+    if (PadInfo[port][slot].opened == 0) {
         return 0;
     }
     return scePadGetDmaStr(port, slot)->frame;
@@ -375,7 +370,7 @@ int scePadGetFrameCount(int port, int slot) {
 int scePadRead(int port, int slot, unsigned char *rdata) {
     PadDmaFrame *frame;
 
-    if (pad_slots[port][slot].opened == 0) {
+    if (PadInfo[port][slot].opened == 0) {
         return 0;
     }
     frame = scePadGetDmaStr(port, slot);
@@ -387,7 +382,7 @@ int scePadRead(int port, int slot, unsigned char *rdata) {
 int scePadGetState(int port, int slot) {
     PadDmaFrame *frame;
 
-    if (pad_slots[port][slot].opened == 0) {
+    if (PadInfo[port][slot].opened == 0) {
         return 99;
     }
     frame = scePadGetDmaStr(port, slot);
@@ -400,9 +395,13 @@ int scePadGetState(int port, int slot) {
 }
 
 
+static char *PadStateStr[8] = {
+    "DISCONNECT", "", "FINDCTP1", "", "", "EXECCMD", "STABLE", "ERROR"
+};
+
 void scePadStateIntToStr(unsigned int state, char *str) {
     if (state < 8) {
-        strcpy(str, pad_state_names[state]);
+        strcpy(str, PadStateStr[state]);
     } else {
         strcpy(str, "");
     }
@@ -410,7 +409,7 @@ void scePadStateIntToStr(unsigned int state, char *str) {
 
 
 int scePadSetReqState(int port, int slot, int state) {
-    if (pad_slots[port][slot].opened == 0) {
+    if (PadInfo[port][slot].opened == 0) {
         return 0;
     }
     scePadGetDmaStr(port, slot)->req_state = state;
@@ -419,16 +418,18 @@ int scePadSetReqState(int port, int slot, int state) {
 
 
 int scePadGetReqState(int port, int slot) {
-    if (pad_slots[port][slot].opened == 0) {
+    if (PadInfo[port][slot].opened == 0) {
         return 0;
     }
     return scePadGetDmaStr(port, slot)->req_state;
 }
 
 
+static char *ReqStateStr[3] = { "COMPLETE", "FAILED", "BUSY" };
+
 void scePadReqIntToStr(unsigned int state, char *str) {
     if (state < 4) {
-        strcpy(str, pad_req_names[state]);
+        strcpy(str, ReqStateStr[state]);
     } else {
         strcpy(str, "");
     }
@@ -438,7 +439,7 @@ void scePadReqIntToStr(unsigned int state, char *str) {
 int scePadInfoAct(int port, int slot, int actno, int term) {
     PadDmaFrame *frame;
 
-    if (pad_slots[port][slot].opened == 0) {
+    if (PadInfo[port][slot].opened == 0) {
         return 0;
     }
     frame = scePadGetDmaStr(port, slot);
@@ -470,7 +471,7 @@ int scePadInfoAct(int port, int slot, int actno, int term) {
 int scePadInfoComb(int port, int slot, int listno, int offs) {
     PadDmaFrame *frame;
 
-    if (pad_slots[port][slot].opened == 0) {
+    if (PadInfo[port][slot].opened == 0) {
         return 0;
     }
     frame = scePadGetDmaStr(port, slot);
@@ -503,7 +504,7 @@ int scePadInfoComb(int port, int slot, int listno, int offs) {
 int scePadInfoMode(int port, int slot, int term, int offs) {
     PadDmaFrame *frame;
 
-    if (pad_slots[port][slot].opened == 0) {
+    if (PadInfo[port][slot].opened == 0) {
         return 0;
     }
     frame = scePadGetDmaStr(port, slot);
@@ -546,18 +547,18 @@ int scePadInfoMode(int port, int slot, int term, int offs) {
 
 
 int scePadSetMainMode(int port, int slot, int mode, int lock) {
-    pad_rpc.command = 6;
-    pad_rpc.u.main_mode.port = port;
-    pad_rpc.u.main_mode.slot = slot;
-    pad_rpc.u.main_mode.mode = mode;
-    pad_rpc.u.main_mode.lock = lock;
-    if (sceSifCallRpc(&pad_clients[0], 1, 0, &pad_rpc, 128, &pad_rpc, 128, 0, 0) < 0) {
+    buffer.command = 6;
+    buffer.u.main_mode.port = port;
+    buffer.u.main_mode.slot = slot;
+    buffer.u.main_mode.mode = mode;
+    buffer.u.main_mode.lock = lock;
+    if (sceSifCallRpc(&padsif[0], 1, 0, &buffer, 128, &buffer, 128, 0, 0) < 0) {
         return 0;
     }
-    if (pad_rpc.u.main_mode.result == 1) {
+    if (buffer.u.main_mode.result == 1) {
         scePadSetReqState(port, slot, 2);
     }
-    return pad_rpc.u.main_mode.result;
+    return buffer.u.main_mode.result;
 }
 
 
@@ -568,7 +569,7 @@ int scePadSetActDirect(int port, int slot, const unsigned char *data) {
     if (scePadGetDmaStr(port, slot)->task != 1) {
         return 0;
     }
-    command = pad_slots[port][slot].command;
+    command = PadInfo[port][slot].command;
     for (i = 0; i < 6; i++) {
         command->data[i] = data[i];
     }
@@ -580,7 +581,7 @@ int scePadSetActDirect(int port, int slot, const unsigned char *data) {
 
 
 int scePadSetActAlign(int port, int slot, const unsigned char *data) {
-    PadRpcBuffer *rpc = &pad_rpc;
+    PadRpcBuffer *rpc = &buffer;
     int i;
 
     rpc->command = 8;
@@ -589,7 +590,7 @@ int scePadSetActAlign(int port, int slot, const unsigned char *data) {
     for (i = 0; i < 6; i++) {
         rpc->u.act_align.data[i] = data[i];
     }
-    if (sceSifCallRpc(&pad_clients[0], 1, 0, rpc, 128, rpc, 128, 0, 0) < 0) {
+    if (sceSifCallRpc(&padsif[0], 1, 0, rpc, 128, rpc, 128, 0, 0) < 0) {
         return 0;
     }
     if (rpc->u.act_align.result == 1) {
@@ -602,7 +603,7 @@ int scePadSetActAlign(int port, int slot, const unsigned char *data) {
 int scePadGetButtonMask(int port, int slot) {
     PadDmaFrame *frame;
 
-    if (pad_slots[port][slot].opened == 0) {
+    if (PadInfo[port][slot].opened == 0) {
         return 0;
     }
     frame = scePadGetDmaStr(port, slot);
@@ -621,22 +622,22 @@ int scePadGetButtonMask(int port, int slot) {
 
 
 int scePadSetButtonInfo(int port, int slot, int info) {
-    pad_rpc.command = 10;
-    pad_rpc.u.button_info.port = port;
-    pad_rpc.u.button_info.slot = slot;
-    pad_rpc.u.button_info.info = info;
-    if (sceSifCallRpc(&pad_clients[0], 1, 0, &pad_rpc, 128, &pad_rpc, 128, 0, 0) < 0) {
+    buffer.command = 10;
+    buffer.u.button_info.port = port;
+    buffer.u.button_info.slot = slot;
+    buffer.u.button_info.info = info;
+    if (sceSifCallRpc(&padsif[0], 1, 0, &buffer, 128, &buffer, 128, 0, 0) < 0) {
         return 0;
     }
-    if (pad_rpc.u.button_info.result == 1) {
+    if (buffer.u.button_info.result == 1) {
         scePadSetReqState(port, slot, 2);
     }
-    return pad_rpc.u.button_info.result;
+    return buffer.u.button_info.result;
 }
 
 
 int scePadInfoPressMode(int port, int slot) {
-    if (pad_slots[port][slot].opened == 0) {
+    if (PadInfo[port][slot].opened == 0) {
         return 0;
     }
     return scePadGetButtonMask(port, slot) == 0x3FFFF;
@@ -644,7 +645,7 @@ int scePadInfoPressMode(int port, int slot) {
 
 
 int scePadEnterPressMode(int port, int slot) {
-    if (pad_slots[port][slot].opened == 0) {
+    if (PadInfo[port][slot].opened == 0) {
         return 0;
     }
     return scePadSetButtonInfo(port, slot, 0xFFF);
@@ -652,7 +653,7 @@ int scePadEnterPressMode(int port, int slot) {
 
 
 int scePadExitPressMode(int port, int slot) {
-    if (pad_slots[port][slot].opened == 0) {
+    if (PadInfo[port][slot].opened == 0) {
         return 0;
     }
     return scePadSetButtonInfo(port, slot, 0);
@@ -660,53 +661,53 @@ int scePadExitPressMode(int port, int slot) {
 
 
 int scePadSetVrefParam(int port, int slot, const PadVrefParam *param) {
-    pad_rpc.command = 11;
-    pad_rpc.u.vref.port = port;
-    pad_rpc.u.vref.slot = slot;
-    pad_rpc.u.vref.param = *param;
-    if (sceSifCallRpc(&pad_clients[0], 1, 0, &pad_rpc, 128, &pad_rpc, 128, 0, 0) < 0) {
+    buffer.command = 11;
+    buffer.u.vref.port = port;
+    buffer.u.vref.slot = slot;
+    buffer.u.vref.param = *param;
+    if (sceSifCallRpc(&padsif[0], 1, 0, &buffer, 128, &buffer, 128, 0, 0) < 0) {
         return 0;
     }
-    if (pad_rpc.u.vref.result == 1) {
+    if (buffer.u.vref.result == 1) {
         scePadSetReqState(port, slot, 2);
     }
-    return pad_rpc.u.vref.result;
+    return buffer.u.vref.result;
 }
 
 
 int scePadGetPortMax(void) {
-    pad_rpc.command = 12;
-    if (sceSifCallRpc(&pad_clients[0], 1, 0, &pad_rpc, 128, &pad_rpc, 128, 0, 0) < 0) {
+    buffer.command = 12;
+    if (sceSifCallRpc(&padsif[0], 1, 0, &buffer, 128, &buffer, 128, 0, 0) < 0) {
         return 0;
     }
-    return pad_rpc.u.common.result;
+    return buffer.u.common.result;
 }
 
 
 int scePadGetSlotMax(int port) {
-    pad_rpc.command = 13;
-    pad_rpc.u.common.port = port;
-    if (sceSifCallRpc(&pad_clients[0], 1, 0, &pad_rpc, 128, &pad_rpc, 128, 0, 0) < 0) {
+    buffer.command = 13;
+    buffer.u.common.port = port;
+    if (sceSifCallRpc(&padsif[0], 1, 0, &buffer, 128, &buffer, 128, 0, 0) < 0) {
         return 0;
     }
-    return pad_rpc.u.common.result;
+    return buffer.u.common.result;
 }
 
 
 int scePadGetModVersion(void) {
-    pad_rpc.command = 18;
-    if (sceSifCallRpc(&pad_clients[0], 1, 0, &pad_rpc, 128, &pad_rpc, 128, 0, 0) < 0) {
+    buffer.command = 18;
+    if (sceSifCallRpc(&padsif[0], 1, 0, &buffer, 128, &buffer, 128, 0, 0) < 0) {
         return 0;
     }
-    return pad_rpc.u.common.result;
+    return buffer.u.common.result;
 }
 
 
 int scePadSetWarningLevel(int level) {
-    pad_rpc.command = 20;
-    pad_rpc.u.warning.level = level;
-    if (sceSifCallRpc(&pad_clients[0], 1, 0, &pad_rpc, 128, &pad_rpc, 128, 0, 0) < 0) {
+    buffer.command = 20;
+    buffer.u.warning.level = level;
+    if (sceSifCallRpc(&padsif[0], 1, 0, &buffer, 128, &buffer, 128, 0, 0) < 0) {
         return 0;
     }
-    return pad_rpc.u.warning.result;
+    return buffer.u.warning.result;
 }

@@ -1855,10 +1855,7 @@ extern f32 DotProduct(struct nuvec_s *a, struct nuvec_s *b);
 extern void InitBattleShip(struct nuvec_s *pos, f32 angle, s32 index);
 
 /* Whether `target` is still worth a lock-on: more than 10 units ahead of the
- * camera, within ~25 degrees of its view and with a clear line to the glider.
- * Near-match (state=asm): with NuVecSub prototyped (it used to be implicitly
- * declared here) the instruction stream equals retail's apart from the two
- * SN-as mtc1 hazard nops. */
+ * camera, within ~25 degrees of its view and with a clear line to the glider. */
 s32 StillLockedOnTarget(struct nuvec_s *target)
 {
     struct nuvec_s *fwd;

@@ -50,3 +50,8 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0018:0010be00:NuQuatLerp"
 state = "matching"
+
+[[claim]]
+section = ".rodata"
+start = 0x00614010
+end = 0x0061401c

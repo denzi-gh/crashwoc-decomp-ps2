@@ -171,17 +171,11 @@ typedef struct SifRpcData {
     sceSifQueueData *active_queue;
 } SifRpcData;
 
-extern int D_00613378[];
-extern SifRpcPacket D_00703940[];
-extern SifRpcPacket D_00704140[];
-extern SifRpcPacket D_00704940[];
-extern SifRpcData D_00705140;
-
-#define sif_rpc_initialized D_00613378
-#define _packet_buffer D_00703940
-#define _free_buffer D_00704140
-#define _free_buffer2 D_00704940
-#define _sif_rpc_data D_00705140
+static int _sceSifInitCheck = 0;
+static SifRpcPacket _packet_buffer[32] __attribute__((aligned(64)));
+static SifRpcPacket _free_buffer[32] __attribute__((aligned(64)));
+static SifRpcPacket _free_buffer2[32] __attribute__((aligned(64)));
+static SifRpcData _data_table __attribute__((aligned(64)));
 
 #define SIF_CMD_RPC_END   0x80000008
 #define SIF_CMD_RPC_BIND  0x80000009
@@ -233,28 +227,28 @@ void sceSifInitRpc(unsigned int mode) {
     SifCmdHeader *init_cmd;
 
     DIntr();
-    if (sif_rpc_initialized[0]) {
+    if (_sceSifInitCheck) {
         EIntr();
         return;
     }
-    sif_rpc_initialized[0] = 1;
+    _sceSifInitCheck = 1;
     EIntr();
     sceSifInitCmd();
     DIntr();
-    _sif_rpc_data.pkt_table = UNCACHED(_packet_buffer);
-    _sif_rpc_data.pkt_table_len = PACKET_TABLE_LEN;
-    _sif_rpc_data.unused1 = 0;
-    _sif_rpc_data.unused2 = 0;
-    _sif_rpc_data.rdata_table = UNCACHED(_free_buffer);
-    _sif_rpc_data.rdata_table_len = PACKET_TABLE_LEN;
-    _sif_rpc_data.client_table = UNCACHED(_free_buffer2);
-    _sif_rpc_data.client_table_len = PACKET_TABLE_LEN;
-    _sif_rpc_data.rdata_table_idx = 0;
-    _sif_rpc_data.pid = 1;
-    sceSifAddCmdHandler(SIF_CMD_RPC_END, (SifCmdHandler)_request_end, &_sif_rpc_data);
-    sceSifAddCmdHandler(SIF_CMD_RPC_BIND, (SifCmdHandler)_request_bind, &_sif_rpc_data);
-    sceSifAddCmdHandler(SIF_CMD_RPC_CALL, (SifCmdHandler)_request_call, &_sif_rpc_data);
-    sceSifAddCmdHandler(SIF_CMD_RPC_RDATA, (SifCmdHandler)_request_rdata, &_sif_rpc_data);
+    _data_table.pkt_table = UNCACHED(_packet_buffer);
+    _data_table.pkt_table_len = PACKET_TABLE_LEN;
+    _data_table.unused1 = 0;
+    _data_table.unused2 = 0;
+    _data_table.rdata_table = UNCACHED(_free_buffer);
+    _data_table.rdata_table_len = PACKET_TABLE_LEN;
+    _data_table.client_table = UNCACHED(_free_buffer2);
+    _data_table.client_table_len = PACKET_TABLE_LEN;
+    _data_table.rdata_table_idx = 0;
+    _data_table.pid = 1;
+    sceSifAddCmdHandler(SIF_CMD_RPC_END, (SifCmdHandler)_request_end, &_data_table);
+    sceSifAddCmdHandler(SIF_CMD_RPC_BIND, (SifCmdHandler)_request_bind, &_data_table);
+    sceSifAddCmdHandler(SIF_CMD_RPC_CALL, (SifCmdHandler)_request_call, &_data_table);
+    sceSifAddCmdHandler(SIF_CMD_RPC_RDATA, (SifCmdHandler)_request_rdata, &_data_table);
     EIntr();
     if (sceSifGetReg(SIF_SYSREG_RPCINIT)) {
         return;
@@ -270,7 +264,7 @@ void sceSifInitRpc(unsigned int mode) {
 
 void sceSifExitRpc(void) {
     sceSifExitCmd();
-    sif_rpc_initialized[0] = 0;
+    _sceSifInitCheck = 0;
 }
 
 
@@ -370,7 +364,7 @@ int sceSifGetOtherData(sceSifReceiveData *rd, void *src, void *dest, int size, u
     SifRpcOtherDataPkt *packet;
     SemaParam sema;
 
-    packet = &_sceRpcGetPacket(&_sif_rpc_data)->other;
+    packet = &_sceRpcGetPacket(&_data_table)->other;
     if (packet == 0) {
         return -1;
     }
@@ -454,7 +448,7 @@ int sceSifBindRpc(sceSifClientData *cd, unsigned int request, unsigned int mode)
 
     cd->command = 0;
     cd->serve = 0;
-    packet = &_sceRpcGetPacket(&_sif_rpc_data)->bind;
+    packet = &_sceRpcGetPacket(&_data_table)->bind;
     if (packet == 0) {
         return -1;
     }
@@ -525,7 +519,7 @@ int sceSifCallRpc(sceSifClientData *cd, unsigned int fno, unsigned int mode, voi
     SifRpcCallPkt *call;
     SemaParam sema;
 
-    packet = _sceRpcGetPacket(&_sif_rpc_data);
+    packet = _sceRpcGetPacket(&_data_table);
     if (packet == 0) {
         return -1;
     }
@@ -605,10 +599,10 @@ void sceSifSetRpcQueue(sceSifQueueData *qd, int key) {
     qd->start = 0;
     qd->end = 0;
     qd->next = 0;
-    if (_sif_rpc_data.active_queue == 0) {
-        _sif_rpc_data.active_queue = qd;
+    if (_data_table.active_queue == 0) {
+        _data_table.active_queue = qd;
     } else {
-        for (queue = _sif_rpc_data.active_queue; queue->next; queue = queue->next) {
+        for (queue = _data_table.active_queue; queue->next; queue = queue->next) {
         }
         queue->next = qd;
     }
@@ -665,8 +659,8 @@ sceSifQueueData *sceSifRemoveRpcQueue(sceSifQueueData *qd) {
     sceSifQueueData *queue;
 
     DIntr();
-    if ((queue = _sif_rpc_data.active_queue) == qd) {
-        _sif_rpc_data.active_queue = queue->next;
+    if ((queue = _data_table.active_queue) == qd) {
+        _data_table.active_queue = queue->next;
     } else {
         for (; queue; queue = queue->next) {
             if (queue->next == qd) {
@@ -717,9 +711,9 @@ void sceSifExecRequest(sceSifServeData *sd) {
     }
     DIntr();
     if (sd->rid & PACKET_F_CLIENT) {
-        reply = &_sceRpcGetFPacket2(&_sif_rpc_data, sd->rid >> 16)->rend;
+        reply = &_sceRpcGetFPacket2(&_data_table, sd->rid >> 16)->rend;
     } else {
-        reply = &_sceRpcGetFPacket(&_sif_rpc_data)->rend;
+        reply = &_sceRpcGetFPacket(&_data_table)->rend;
     }
     EIntr();
     reply->cid = SIF_CMD_RPC_CALL;

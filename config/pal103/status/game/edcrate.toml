@@ -272,6 +272,11 @@ id = "pal103:unit-0102:006332f8:edcrt_mcresult"
 state = "matching"
 
 [[claim]]
+section = ".data"
+start = 0x005c17e8
+end = 0x005c1800
+
+[[claim]]
 section = ".rodata"
 start = 0x0061ff68
 end = 0x0061ff9d
@@ -280,3 +285,8 @@ end = 0x0061ff9d
 section = ".sbss"
 start = 0x006332f8
 end = 0x006332fc
+
+[[claim]]
+section = ".sdata"
+start = 0x00631aac
+end = 0x00631ab0

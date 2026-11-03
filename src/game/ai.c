@@ -4040,16 +4040,7 @@ typedef s32 (*aieventfn_t)(struct creature_s *c, struct nuvec_s *pos);
  * conditions, jtbl_00620290 event kinds), then movement, rotation, terrain,
  * events and attack locators. FindNearestCreature, FindAILabel and the two
  * PlayerLateral tests are inlined.
- *
- * Faithful full-C near-match (state=asm): frame/reg_mask/freg_mask exact,
- * 3157/3838 instructions aligned (3759 by opcode). Blocked by nine SN-as
- * mtc1 hazard nops the decompals `as` drops (see the recorded blocker), then
- * by whole-function callee-saved numbering. Levers that mattered: the spill
- * slots 0x40..0x60 follow declaration order (oldhdg .. ai_type); `default`
- * is the first switch block; event cases are in source order 0,1,2,3,5,7,4,6;
- * the 0x8C label walk is a goto loop and 0x8D/0x8E a two-case switch; two
- * shared floats fa/fb land in $f20/$f21 (block-scoped temps push t to $f23);
- * one UpdateAnimPacket call with a ternary model. */
+ */
 void MoveCreature(struct creature_s *c)
 {
     struct nuvec_s v;

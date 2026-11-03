@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0149"
 source = "src/sdk/sce/eecdvd.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0149:00265950:CB_DelayTh"
@@ -94,3 +94,191 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0149:00266ba0:sceCdMmode"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:00610980:__ps2_libinfo__"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:00610990:SCE_CD_debug"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:00610994:cb_thid"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:00610998:scmd_sema_keep_cmd"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:0061099c:ncmd_sema_keep_cmd"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:006109a0:cb_semid"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:006109a4:Init_seq"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:006109a8:_sceCd_ncmd_semid"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:006109ac:_sceCd_scmd_semid"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:006109b0:_sceCd_c_cb_sem"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:006109b4:_sceCd_ee_read_mode"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:006109b8:_ncmd_bind"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:006109bc:_icmd_bind"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:006109c0:_sf_bind"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:006109c4:_scmd_dr_bind"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:006109c8:_scmd_bind"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:006109cc:_it_bind"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:006109d0:c_cnt.57"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:006109d4:sceCdCbfunc_num"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:006109d8:sceCdCbfunc_number"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:00610a00:_sceCd_ncmdrdata"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:00610a80:_sceCd_ncmdsdata"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:00611a80:_sceCd_rd_intr_data"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:00611b40:_sceCd_Read_cur_pos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:00611b50:_sceCd_cd_ncmd"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:00611b80:_sceCd_scmdrdata"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:00611fc0:_sceCd_scmdsdata"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:006123c8:_sceCd_cd_scmd"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:006ffe80:sceCdCbfunc"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:006ffe84:sceCdPoffCbfunc"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:006ffe88:sceCdPoffCbdata"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:006ffe8c:sceCdPoffCbfunc_num"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:006ffe90:my_thid"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:006ffe98:my_th_info"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:006ffec8:cb_tp"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:006fff00:_sf_data"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:00700040:sfrdata"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:00700080:cdrdsf"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:007000a8:cdit"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:007000d0:cddr"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:00700100:_i_mode"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0149:00700110:_dr_mode"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x00700110
+end = 0x00700120
+
+[[claim]]
+section = ".data"
+start = 0x00610964
+end = 0x00610980
+
+[[claim]]
+section = ".rodata"
+start = 0x0062b059
+end = 0x0062b060
+
+[[claim]]
+section = ".rodata"
+start = 0x0062b1f8
+end = 0x0062b209

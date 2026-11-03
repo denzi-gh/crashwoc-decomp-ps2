@@ -19,35 +19,100 @@
 #include "game/creature.h"
 #include "game/font3d.h"
 
-extern struct font3dobj_s Font3DObjTab[];
-extern f32 D_0062E350;
-extern f32 D_0062E354;                  /* animation frames per game frame */
-#define anim_step D_0062E354
-extern char D_005CD7B0[];
-#define j_bd D_005CD7B0
-extern char D_005CD808[];
-#define j_bc D_005CD808
+struct font3dtab_s Font3DTab[60] = {
+    { '0', { 0, 0 }, "no0" }, { '1', { 0, 0 }, "no1" },
+    { '2', { 0, 0 }, "no2" }, { '3', { 0, 0 }, "no3" },
+    { '4', { 0, 0 }, "no4" }, { '5', { 0, 0 }, "no5" },
+    { '6', { 0, 0 }, "no6" }, { '7', { 0, 0 }, "no7" },
+    { '8', { 0, 0 }, "no8" }, { '9', { 0, 0 }, "no9" },
+    { 'A', { 0, 0 }, "a" }, { 'B', { 0, 0 }, "b" }, { 'C', { 0, 0 }, "c" },
+    { 'D', { 0, 0 }, "d" }, { 'E', { 0, 0 }, "e" }, { 'F', { 0, 0 }, "f" },
+    { 'G', { 0, 0 }, "g" }, { 'H', { 0, 0 }, "h" }, { 'I', { 0, 0 }, "i" },
+    { 'J', { 0, 0 }, "j" }, { 'K', { 0, 0 }, "k" }, { 'L', { 0, 0 }, "l" },
+    { 'M', { 0, 0 }, "m" }, { 'N', { 0, 0 }, "n" }, { 'O', { 0, 0 }, "o" },
+    { 'P', { 0, 0 }, "p" }, { 'Q', { 0, 0 }, "q" }, { 'R', { 0, 0 }, "r" },
+    { 'S', { 0, 0 }, "s" }, { 'T', { 0, 0 }, "t" }, { 'U', { 0, 0 }, "u" },
+    { 'V', { 0, 0 }, "v" }, { 'W', { 0, 0 }, "w" }, { 'X', { 0, 0 }, "x" },
+    { 'Y', { 0, 0 }, "y" }, { 'Z', { 0, 0 }, "z" },
+    { '%', { 0, 0 }, "percent" },
+    { '/', { 0, 0 }, "forward_slash" },
+    { '?', { 0, 0 }, "question_mark" },
+    { '!', { 0, 0 }, "exclamation" },
+    { ':', { 0, 0 }, "colon" },
+    { '.', { 0, 0 }, "fullstop" },
+    { (char)0xFE, { 0, 0 }, "fullstop" },
+    { (char)0xF8, { 0, 0 }, "third" },
+    { '-', { 0, 0 }, "minus" },
+    { '+', { 0, 0 }, "plus" },
+    { '_', { 0, 0 }, "under_score" },
+    { '<', { 0, 0 }, "left_arrow" },
+    { '>', { 0, 0 }, "right_arrow" },
+    { '(', { 0, 0 }, "bracket_l" },
+    { ')', { 0, 0 }, "bracket_r" },
+    { 't', { 0, 0 }, "triangle" },
+    { 'o', { 0, 0 }, "circle" },
+    { 's', { 0, 0 }, "square" },
+    { 'x', { 0, 0 }, "cross" },
+    { ',', { 0, 0 }, "comma" },
+    { '=', { 0, 0 }, "equals" },
+    { '\'', { 0, 0 }, "apostrophe" },
+    { 'p', { 0, 0 }, "playstation" },
+    { 0 }
+};
+s32 font3d_initialised = 0;
+struct font3djchar_s Font3DAccentTab[7] = {
+    { { 0, 0 }, "ampersand" },
+    { { 0, 0 }, "accent2" },
+    { { 0, 0 }, "accent1" },
+    { { 0, 0 }, "accent" },
+    { { 0, 0 }, "accent4" },
+    { { 0, 0 }, "accent5" },
+    { { 0, 0 }, "bthing" }
+};
+struct font3dobj_s Font3DObjTab[26] = {
+    { 0x75, 1, -1, 1.0f, 0.09f },
+    { 3, 2, -1, 1.0f, 0.1f },
+    { 2, 2, -1, 1.0f, 0.1f },
+    { 1, 2, -1, 1.0f, 0.1f },
+    { 0x77, 1, -1, 1.0f, 0.125f },
+    { 0x76, 1, -1, 1.0f, 0.125f },
+    { 0xA7, 5, 0x22, 1.0f, 0.0625f },
+    { 0xA5, 5, 0x22, 1.0f, 0.0625f },
+    { 0xA6, 5, 0x22, 1.0f, 0.0625f },
+    { 0xA2, 5, 0x22, 1.0f, 0.0625f },
+    { 0xA4, 5, 0x22, 1.0f, 0.0625f },
+    { 0xA3, 5, 0x22, 1.0f, 0.0625f },
+    { -1, 0, -1, 1.0f, 0.125f }, { -1, 0, -1, 1.0f, 0.125f },
+    { -1, 0, -1, 1.0f, 0.125f }, { -1, 0, -1, 1.0f, 0.125f },
+    { -1, 0, -1, 1.0f, 0.125f }, { -1, 0, -1, 1.0f, 0.125f },
+    { -1, 0, -1, 1.0f, 0.125f }, { -1, 0, -1, 1.0f, 0.125f },
+    { -1, 0, -1, 1.0f, 0.125f }, { -1, 0, -1, 1.0f, 0.125f },
+    { -1, 0, -1, 1.0f, 0.125f }, { -1, 0, -1, 1.0f, 0.125f },
+    { -1, 0, -1, 1.0f, 0.125f }, { -1, 0, -1, 1.0f, 0.125f }
+};
+struct numtl_s *Font3DMtlTab[5][2] = { { 0 } };
+static char j_bd[82] =
+    "85868788898A8B8C8D8E8F90919293999A9B9C9DC5C6C7C8C9CACBCCCDCECFD0D1D2D3D9DADBDCDD";
+static char j_bc[22] = "999A9B9C9DD9DADBDCDD";
+signed char Font3DRemap[256] = { 0 };
+f32 FONT3DSIZE = 0.07f;
+f32 FONT3DYMUL = 2.0f;
+f32 FONT3D_JSCALEDX = 1.25f;
+f32 FONT3D_JSCALEX = 0.8f;
+f32 font3d_dx = 0.0f;
+f32 font3d_dy = 0.0f;
+f32 font3d_xleft = 0.0f;
+f32 font3d_xmid = 0.0f;
+f32 font3d_xright = 0.0f;
+f32 font3d_ytop = 0.0f;
+f32 font3d_ymid = 0.0f;
+f32 font3d_ybottom = 0.0f;
 
 extern s32 qrand(void);
-
-/* --- Font3D scene / material types (offsets verified from InitFont3D) --- */
-
-extern struct font3dtab_s Font3DTab[];
-extern struct font3djchar_s Font3DAccentTab[];
-extern signed char Font3DRemap[];
-extern struct numtl_s *Font3DMtlTab[5][2];
-extern s32 font3d_initialised;
-
-/* --- Text3D externs --- */
 
 extern struct objtab_s ObjTab[201];
 extern struct game_s Game;
 extern struct nugscn_s *font3d_scene;
-extern f32 font3d_dx, font3d_dy;
-extern f32 font3d_xleft, font3d_xright, font3d_xmid;
-extern f32 font3d_ytop, font3d_ybottom, font3d_ymid;
-extern f32 FONT3D_JSCALEDX, FONT3DYMUL, FONT3DSIZE;
-extern f32 D_0062E358, D_0062E35C, D_0062E360;
 extern struct numtl_s **nurndr_forced_mtl_table;
 
 extern s32 DrawPanel3DObject(s32 i, f32 x, f32 y, f32 z, f32 sx, f32 sy,
@@ -56,43 +121,6 @@ extern s32 DrawPanel3DObject(s32 i, f32 x, f32 y, f32 z, f32 sx, f32 sy,
 extern void DrawPanel3DCharacter(s32 i, f32 x, f32 y, f32 z, f32 sx, f32 sy,
                                  f32 sz, s32 xrot, s32 yrot, s32 zrot, s32 action,
                                  f32 anim_time, s32 rot);
-
-
-void InitFont3D(struct nugscn_s *gscn) {
-    struct numtl_s *mtl;
-    s32 i;
-
-    for (i = 0; Font3DTab[i].ascii != 0; i++) {
-        Font3DTab[i].obj.scene = 0;
-        Font3DTab[i].obj.special = 0;
-    }
-    for (i = 0; i < 256; i++) {
-        Font3DRemap[i] = -1;
-    }
-    for (i = 0; i < 7; i++) {
-        Font3DAccentTab[i].obj.scene = 0;
-        Font3DAccentTab[i].obj.special = 0;
-    }
-    if (gscn != 0) {
-        for (i = 0; Font3DTab[i].ascii != 0; i++) {
-            if (NuSpecialFind(gscn, &Font3DTab[i].obj, Font3DTab[i].name) != 0) {
-                Font3DRemap[Font3DTab[i].ascii] = i;
-            }
-        }
-        for (i = 0; i <= 6; i++) {
-            NuSpecialFind(gscn, &Font3DAccentTab[i].obj, Font3DAccentTab[i].name);
-        }
-        for (i = 0; i < gscn->nummtl; i++) {
-            mtl = gscn->mtls[i];
-            if (mtl->special_id == 1 || mtl->special_id == 2 ||
-                mtl->special_id == 3 || mtl->special_id == 4 ||
-                mtl->special_id == 5) {
-                Font3DMtlTab[mtl->special_id - 1][1] = mtl;
-            }
-        }
-    }
-    font3d_initialised = 1;
-}
 
 
 s32 RemapAccentedCharacter(char *c) {
@@ -111,13 +139,11 @@ s32 RemapAccentedCharacter(char *c) {
             *c = 'C';
             accent = 0;
             break;
-        case -0x24:
         case -0x66:
         case -0x7F:
             *c = 'U';
             accent = 1;
             break;
-        case -0x3c:
         case -0x72:
         case -0x7C:
             *c = 'A';
@@ -138,7 +164,6 @@ s32 RemapAccentedCharacter(char *c) {
             *c = 'O';
             accent = 1;
             break;
-        case -0x2F:
         case -0x5B:
         case -0x5C:
             *c = 'N';
@@ -160,7 +185,6 @@ s32 RemapAccentedCharacter(char *c) {
             accent = 3;
             break;
         case -0x2E:
-        case -0x36:
         case -0x78:
             *c = 'E';
             accent = 3;
@@ -180,13 +204,11 @@ s32 RemapAccentedCharacter(char *c) {
             *c = 'U';
             accent = 3;
             break;
-        case -0x37:
         case -0x70:
         case -0x7E:
             *c = 'E';
             accent = 4;
             break;
-        case -0x3F:
         case -0x4B:
         case -0x60:
             *c = 'A';
@@ -212,13 +234,11 @@ s32 RemapAccentedCharacter(char *c) {
             *c = 'Y';
             accent = 4;
             break;
-        case -0x40:
         case -0x49:
         case -0x7B:
             *c = 'A';
             accent = 5;
             break;
-        case -0x38:
         case -0x2C:
         case -0x76:
             *c = 'E';
@@ -252,7 +272,7 @@ void Reset3DFontObjects(void) {
     f32 rate;
 
     one = 1.0f;
-    rate = D_0062E350;
+    rate = 1.5259022e-05f;
     tab = Font3DObjTab;
     for (i = 0; i < 0x1a; i++, tab++) {
         tab->anim_time = one;
@@ -303,7 +323,7 @@ void Update3DFontObjects(void) {
                     ad = model->anmdata[tab->action];
                     if (ad != 0) {
                         al = model->animlist[tab->action];
-                        tab->anim_time += al->speed * anim_step;
+                        tab->anim_time += al->speed * 0.59999996f;
                         if (ad->time < tab->anim_time) {
                             WRAP_ANIM_TIME(tab->anim_time, ad, al);
                         }
@@ -313,6 +333,43 @@ void Update3DFontObjects(void) {
         }
     }
 }
+
+void InitFont3D(struct nugscn_s *gscn) {
+    struct numtl_s *mtl;
+    s32 i;
+
+    for (i = 0; Font3DTab[i].ascii != 0; i++) {
+        Font3DTab[i].obj.scene = 0;
+        Font3DTab[i].obj.special = 0;
+    }
+    for (i = 0; i < 256; i++) {
+        Font3DRemap[i] = -1;
+    }
+    for (i = 0; i < 7; i++) {
+        Font3DAccentTab[i].obj.scene = 0;
+        Font3DAccentTab[i].obj.special = 0;
+    }
+    if (gscn != 0) {
+        for (i = 0; Font3DTab[i].ascii != 0; i++) {
+            if (NuSpecialFind(gscn, &Font3DTab[i].obj, Font3DTab[i].name) != 0) {
+                Font3DRemap[Font3DTab[i].ascii] = i;
+            }
+        }
+        for (i = 0; i <= 6; i++) {
+            NuSpecialFind(gscn, &Font3DAccentTab[i].obj, Font3DAccentTab[i].name);
+        }
+        for (i = 0; i < gscn->nummtl; i++) {
+            mtl = gscn->mtls[i];
+            if (mtl->special_id == 1 || mtl->special_id == 2 ||
+                mtl->special_id == 3 || mtl->special_id == 4 ||
+                mtl->special_id == 5) {
+                Font3DMtlTab[mtl->special_id - 1][1] = mtl;
+            }
+        }
+    }
+    font3d_initialised = 1;
+}
+
 
 /* Inlined into Text3D; GCC emits the out-of-line copies at the end of the
  * unit, which is why both follow Text3D in retail. */
@@ -412,9 +469,9 @@ void Text3D(char *txt, f32 x, f32 y, f32 z, f32 scalex, f32 scaley, f32 scalez,
         }
     }
 
-    dx = scalex * D_0062E358;
+    dx = scalex * 0.1f;
     font3d_dx = dx;
-    dy = (scaley * D_0062E358) * FONT3DYMUL;
+    dy = (scaley * 0.1f) * FONT3DYMUL;
     font3d_dy = dy;
     i = align & 5;
     if (i == 4) {
@@ -496,8 +553,8 @@ void Text3D(char *txt, f32 x, f32 y, f32 z, f32 scalex, f32 scaley, f32 scalez,
                         x0 = x;
                     }
                     if (c == (char)0xFE) {
-                        x0 = x0 - dx * D_0062E35C;
-                        y0 = y + dy * D_0062E360;
+                        x0 = x0 - dx * 0.2f;
+                        y0 = y + dy * 0.3f;
                     } else {
                         y0 = y;
                     }

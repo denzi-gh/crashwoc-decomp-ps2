@@ -49,11 +49,10 @@ struct stat {
     long st_blocks;
 };
 
-extern int D_00612BB8[];
-extern char *D_00612BBC[];
+extern char D_0070698C[];
+#define _end D_0070698C
 
-#define tty_initialized D_00612BB8
-#define heap_ptr        (D_00612BBC[0])
+static int ttyinit = 0;
 
 extern int *__errno(void);
 extern void *EndOfHeap(void);
@@ -65,7 +64,7 @@ extern int sceTtyRead(char *buf, int len);
 
 
 void sceResetttyinit(void) {
-    tty_initialized[0] = 0;
+    ttyinit = 0;
 }
 
 
@@ -97,11 +96,11 @@ wait:
 
 int write(int fd, const char *buf, int len) {
     if (fd == 1 || fd == 2) {
-        if (!tty_initialized[0]) {
+        if (!ttyinit) {
             if (!sceTtyInit()) {
                 return -1;
             }
-            tty_initialized[0] = 1;
+            ttyinit = 1;
         }
         return sceTtyWrite(buf, len);
     }
@@ -111,11 +110,11 @@ int write(int fd, const char *buf, int len) {
 
 int read(int fd, char *buf, int len) {
     if (fd == 0) {
-        if (!tty_initialized[0]) {
+        if (!ttyinit) {
             if (!sceTtyInit()) {
                 return -1;
             }
-            tty_initialized[0] = 1;
+            ttyinit = 1;
         }
         return sceTtyRead(buf, len);
     }
@@ -149,6 +148,7 @@ void *sbrk(int incr) {
     int status;
     char *mp;
     char *ret;
+    static char *heap_ptr = _end;
 
     __asm__ volatile ("mfc0 %0, $12" : "=r"(intr));
     intr &= STATUS_EIE;

@@ -223,115 +223,91 @@ extern int NuRndrQuad2d(struct nuvtx2d_s *vtx, struct numtl_s *mtl);
 
 #define ExitHandler() __asm__ volatile ("sync\n\tei")
 
-extern int PS2_REZ_W;
-extern int PS2_REZ_H;
-extern int PS2_VCNTR_X;
-extern int PS2_VCNTR_Y;
-extern int D_006331C4;
-extern volatile int D_0062F03C;
-extern int D_006331F8;
-extern TbSet *D_0062F034;
-extern int displayx[2];
-extern int displayy[2];
-extern GsDispEnv ps2video_display_cfg[2];
-extern int D_0062F08C;
-extern int D_0062F090;
-extern int D_0062F094;
-extern int D_0062F098;
-extern int D_0062F09C;
-extern int D_0062F0A0;
 extern int gs_dma_status;
 extern int vu1_dma_status;
 extern int nutex_use_path3;
-extern struct NuPs2GsReg D_002EA190;
-extern struct NuPs2GsReg D_002EA1A0;
-extern struct NuPs2GsReg D_002EA300;
-extern struct NuPs2GsReg D_002EA310;
-extern char D_006164E0[];
-extern int D_0062F06C;
-extern int D_0062F074;
-extern int D_0062F078;
-extern int D_0062F080;
-extern int D_0062F058;
-extern struct NuVBlankHandler *D_0062F070;
-extern struct NuVBlankHandler *D_0062F07C;
-extern int D_006331CC;
-extern volatile int nuvideo_global_vbcnt;
-extern int D_002EA0D0[16];
-extern int D_0062F084;
-extern int D_006331D0;
-extern int D_006331D4;
-extern int D_006331D8;
-extern int D_006331DC;
-extern int D_006331E0;
-extern float D_006B3730[256];
-extern sceDmaChan *dmachan_vif1;
-extern int D_006331C8;
-extern int D_0062F068;
-extern int nusound_irx_loaded;
-extern unsigned int D_0062F040;
-extern unsigned int D_0062F044;
-extern int D_006331C0;
-extern int ps2video_ignore_frameout;
-extern int ps2video_novsync;
-extern unsigned int ps2_video_size;
-extern int nuvideo_progressive_scan;
 extern int nurndr_half_offset;
-extern int ps2_video_fmt;
-extern int ps2_zb_fmt;
-extern int nuvideo_global_framerate;
-extern int D_002EA118[6];
-extern struct NuPs2GsReg D_002EA210;
-extern struct NuPs2GsReg D_002EA380;
 extern void *system_font;
 extern int NuFntHeight;
 extern int NuFntBase;
-extern int tb_peak_reset;
 
-#define NuPs2FrameCount D_006331C4
-#define NuPs2SwapTime   D_0062F03C
-#define NuPs2SwapDelay  D_006331F8
-#define NuPs2DisplayX0  displayx[0]
-#define NuPs2DisplayX1  displayx[1]
-#define NuPs2DisplayY0  displayy[0]
-#define NuPs2DisplayY1  displayy[1]
-#define NuPs2DispEnv    ps2video_display_cfg
-#define idmac_vif1_waiting  D_0062F08C
-#define idmac_gs_waiting    D_0062F090
-#define idmac_gs_count      D_0062F094
-#define idmac_vif1_count    D_0062F098
-#define idmac_gs_burst      D_0062F09C
-#define idmac_gs_burst_left D_0062F0A0
-#define NuPs2FrameReg0  D_002EA190
-#define NuPs2ZBufReg0   D_002EA1A0
-#define NuPs2FrameReg1  D_002EA300
-#define NuPs2ZBufReg1   D_002EA310
-#define ps2video_file   D_006164E0
-#define vblank_end_handler    D_0062F06C
-#define vblank_end_disable    D_0062F074
-#define vblank_start_handler  D_0062F078
-#define vblank_start_disable  D_0062F080
-#define auto_screen_swap      D_0062F058
-#define vblank_end_list       D_0062F070
-#define vblank_start_list     D_0062F07C
-#define in_vblank_end         D_006331CC
-#define tb_default_colours    D_002EA0D0
-#define tb_main_set           D_0062F034
-#define handlers_installed    D_0062F084
-#define vif1_intc_id          D_006331D0
-#define vblank_end_intc_id    D_006331D4
-#define vblank_start_intc_id  D_006331D8
-#define vif1_dmac_id          D_006331DC
-#define gs_dmac_id            D_006331E0
-#define gamma_table           D_006B3730
-#define main_thread_id        D_006331C8
-#define iop_initialised       D_0062F068
-#define swap_now              D_0062F040
-#define swap_elapsed          D_0062F044
-#define field_parity          D_006331C0
-#define NuPs2Draw2FrameReg0   D_002EA210
-#define NuPs2Draw2FrameReg1   D_002EA380
-#define display_magh          D_002EA118
+/* GS register pairs of one draw environment (libgraph sceGsDrawEnv1/2). */
+struct GsDrawEnv {
+    struct NuPs2GsReg frame;      /* 0x00 */
+    struct NuPs2GsReg zbuf;       /* 0x10 */
+    struct NuPs2GsReg xyoffset;   /* 0x20 */
+    struct NuPs2GsReg scissor;    /* 0x30 */
+    struct NuPs2GsReg prmodecont; /* 0x40 */
+    struct NuPs2GsReg colclamp;   /* 0x50 */
+    struct NuPs2GsReg dthe;       /* 0x60 */
+    struct NuPs2GsReg test;       /* 0x70 */
+}; /* 0x80 */
+
+/* libgraph sceGsClear. */
+struct GsClear {
+    struct NuPs2GsReg testa;      /* 0x00 */
+    struct NuPs2GsReg prim;       /* 0x10 */
+    struct NuPs2GsReg rgbaq;      /* 0x20 */
+    struct NuPs2GsReg xyz2a;      /* 0x30 */
+    struct NuPs2GsReg xyz2b;      /* 0x40 */
+    struct NuPs2GsReg testb;      /* 0x50 */
+}; /* 0x60 */
+
+/* Double-buffered display and draw environments (libgraph sceGsDBuffDc). */
+struct GsDBuffDc {
+    GsDispEnv disp[2];            /* 0x000 */
+    u128 giftag0;                 /* 0x050 */
+    struct GsDrawEnv draw01;      /* 0x060 */
+    struct GsDrawEnv draw02;      /* 0x0E0 */
+    struct GsClear clear0;        /* 0x160 */
+    u128 giftag1;                 /* 0x1C0 */
+    struct GsDrawEnv draw11;      /* 0x1D0 */
+    struct GsDrawEnv draw12;      /* 0x250 */
+    struct GsClear clear1;        /* 0x2D0 */
+}; /* 0x330 */
+
+static u32 def_cols[16] = {
+    0x00000080, 0x44444480, 0x00008880, 0x0000FF80,
+    0x88000080, 0xFF000080, 0x88008880, 0xFF00FF80,
+    0x00880080, 0x00FF0080, 0x00888880, 0x00FFFF80,
+    0x88880080, 0xFFFF0080, 0x88888880, 0xFFFFFF80,
+};
+static int videocfg[6] = { 0 };
+struct GsDBuffDc ps2video_display_cfg = { 0 };
+
+sceDmaChan *dmachan_vif1 = 0;
+volatile int nuvideo_global_vbcnt = 0;
+int nuvideo_global_framerate = 60;
+static TbSet *sys_tb = 0;
+int tb_peak_reset = 0;
+static volatile int framestarttime = 0;
+static unsigned int frameendtime = 0;
+static unsigned int frametime = 0;
+int PS2_REZ_W = 0;
+int PS2_REZ_H = 0;
+int PS2_VCNTR_X = 0;
+int PS2_VCNTR_Y = 0;
+static int auto_screen_swap_enabled = 0;
+int ps2video_novsync = 0;
+
+extern int nuvideo_progressive_scan;
+extern int ps2_video_fmt;
+extern int ps2_zb_fmt;
+extern unsigned int ps2_video_size;
+
+static int odev;
+static int frame;
+static int threadid;
+static int invbi;
+static int nu_intc_vif1;
+static int nu_intc_vblank_e;
+static int nu_intc_vblank_s;
+static int nu_dmac_vif1;
+static int nu_dmac_gif;
+static int displayx[2];
+static int displayy[2];
+static int elapsed_time;
+static float gamma_table[256];
 
 
 inline void NuPs2FlushVRam(int r, int g, int b)
@@ -380,12 +356,12 @@ inline int GetElapsedTime(void)
 {
     int elapsed;
 
-    elapsed = EE_T1_COUNT - NuPs2SwapTime;
-    NuPs2SwapDelay = elapsed;
+    elapsed = EE_T1_COUNT - framestarttime;
+    elapsed_time = elapsed;
     if (elapsed < 0) {
-        NuPs2SwapDelay = elapsed + 0x10000;
+        elapsed_time = elapsed + 0x10000;
     }
-    return NuPs2SwapDelay;
+    return elapsed_time;
 }
 
 
@@ -393,7 +369,7 @@ static inline int tbslotEnd(TbSet *set, int slot)
 {
     unsigned int elapsed;
 
-    set = set != 0 ? set : tb_main_set;
+    set = set != 0 ? set : sys_tb;
     slot &= 0xF;
     elapsed = EE_T1_COUNT - set->begin[slot];
     if (elapsed > 0xFFFF) {
@@ -408,7 +384,7 @@ static inline void tbslotFlip(TbSet *set, int slot)
 {
     int current;
 
-    set = set != 0 ? set : tb_main_set;
+    set = set != 0 ? set : sys_tb;
     slot &= 0xF;
     current = set->current[slot] ^ 1;
     set->current[slot] = current;
@@ -421,7 +397,7 @@ static inline TbSet *tbsetAlloc(int *colours)
     TbSet *set;
     int i;
 
-    set = NuMemAllocFn(sizeof(TbSet), ps2video_file, 0x1CF);
+    set = NuMemAllocFn(sizeof(TbSet), "..\\nu2crash.ps2\\nups2\\ps2video.c", 0x1CF);
     if (set) {
         memset(set, 0, sizeof(TbSet));
         if (colours) {
@@ -429,33 +405,10 @@ static inline TbSet *tbsetAlloc(int *colours)
                 set->colour[i] = colours[i];
             }
         } else {
-            memcpy(set->colour, tb_default_colours, sizeof(set->colour));
+            memcpy(set->colour, def_cols, sizeof(set->colour));
         }
     }
     return set;
-}
-
-
-static inline void ps2videoAddAllHandlers(void)
-{
-    if (!handlers_installed) {
-        vif1_intc_id = AddIntcHandler(5, ifnVif1, 0);
-        EnableIntc(5);
-        vblank_end_list = 0;
-        vblank_end_intc_id = AddIntcHandler(3, ifnVBlankE, -1);
-        EnableIntc(3);
-        vblank_end_handler = 1;
-        vblank_start_list = 0;
-        sceGsSyncVCallback(ifnVBlankS);
-        vblank_start_intc_id = 0;
-        EnableIntc(2);
-        vblank_start_handler = 1;
-        vif1_dmac_id = AddDmacHandler(1, idmacVif1, 0);
-        EnableDmac(1);
-        gs_dmac_id = AddDmacHandler(2, idmacGs, 0);
-        EnableDmac(2);
-        handlers_installed = 1;
-    }
 }
 
 
@@ -473,7 +426,7 @@ void tbRender(TbSet *set)
 
     reset = 1;
     if (set == 0) {
-        set = tb_main_set;
+        set = sys_tb;
         reset = 0;
     }
     if (system_font) {
@@ -547,94 +500,123 @@ void NuPs2Init(void)
     sceDmaReset(1);
     dmachan_vif1 = sceDmaGetChan(1);
     dmachan_vif1->chcr |= 0x40;
-    main_thread_id = GetThreadId();
+    threadid = GetThreadId();
     EE_T1_MODE = 0x83;
-    tb_main_set = tbsetAlloc(0);
+    sys_tb = tbsetAlloc(0);
 }
+
+
+int nusound_irx_loaded = 0;
 
 
 void NuPs2InitIOP(void)
 {
-    if (!iop_initialised) {
-        iop_initialised = 1;
+    static int initialised = 0;
+
+    if (!initialised) {
+        initialised = 1;
 
         if (NuFileSifLoadModule("SYS\\SIO2MAN.IRX", 0, 0) < 0
             && NuFileSifLoadModule("SYS\\SIO2MAN.IRX", 0, 0) < 0
             && NuFileSifLoadModule("/usr/local/sce/iop/modules/SIO2MAN.IRX", 0, 0) < 0
             && sceSifLoadModule("host0:/usr/local/sce/iop/modules/sio2man.irx", 0, 0) < 0) {
-            printf("Can't load module sio2man
-");
+            printf("Can't load module sio2man\n");
             Exit(0);
         }
-        printf("Loaded module sio2man
-");
+        printf("Loaded module sio2man\n");
 
         if (NuFileSifLoadModule("SYS\\PADMAN.IRX", 0, 0) < 0
             && NuFileSifLoadModule("/usr/local/sce/iop/modules/PADMAN.IRX", 0, 0) < 0
             && sceSifLoadModule("host0:/usr/local/sce/iop/modules/padman.irx", 0, 0) < 0) {
-            printf("Can't load module padman
-");
+            printf("Can't load module padman\n");
             Exit(0);
         }
-        printf("Loaded module padman
-");
+        printf("Loaded module padman\n");
 
         if (NuFileSifLoadModule("SYS\\MCMAN.IRX", 0, 0) < 0
             && NuFileSifLoadModule("/usr/local/sce/iop/modules/MCMAN.IRX", 0, 0) < 0
             && sceSifLoadModule("host0:/usr/local/sce/iop/modules/mcman.irx", 0, 0) < 0) {
-            printf("Can't load module mcman
-");
+            printf("Can't load module mcman\n");
             Exit(0);
         }
-        printf("Loaded module mcman
-");
+        printf("Loaded module mcman\n");
 
         if (NuFileSifLoadModule("SYS\\MCSERV.IRX", 0, 0) < 0
             && NuFileSifLoadModule("/usr/local/sce/iop/modules/mcserv.irx", 0, 0) < 0
             && sceSifLoadModule("host0:/usr/local/sce/iop/modules/mcserv.irx", 0, 0) < 0) {
-            printf("Can't load module mcserv
-");
+            printf("Can't load module mcserv\n");
             Exit(0);
         }
-        printf("Loaded module mcserv
-");
+        printf("Loaded module mcserv\n");
 
         if (NuFileSifLoadModule("SYS\\LIBSD.IRX", 0, 0) < 0
             && NuFileSifLoadModule("/usr/local/sce/iop/modules/libsd.irx", 0, 0) < 0
             && sceSifLoadModule("host0:/usr/local/sce/iop/modules/libsd.irx", 0, 0) < 0) {
-            printf("Can't load module libsd
-");
+            printf("Can't load module libsd\n");
             Exit(0);
         }
-        printf("Loaded module libsd
-");
+        printf("Loaded module libsd\n");
 
         nusound_irx_loaded = 1;
         if (NuFileSifLoadModule("SYS\\NUSOUND.IRX", 0, 0) < 0
             && NuFileSifLoadModule("/usr/local/sce/iop/modules/nusound.irx", 0, 0) < 0
             && sceSifLoadModule("host0:/usr/local/sce/iop/modules/nusound.irx", 0, 0) < 0) {
-            printf("Can't load module nusound - sound services will be denied
-");
+            printf("Can't load module nusound - sound services will be denied\n");
             nusound_irx_loaded = 0;
         }
-        printf("Loaded module nusound
-");
+        printf("Loaded module nusound\n");
 
         if (NuFileSifLoadModule("SYS\\SDRDRV.IRX", 0, 0) < 0
             && NuFileSifLoadModule("/usr/local/sce/iop/modules/sdrdrv.irx", 0, 0) < 0
             && sceSifLoadModule("host0:/usr/local/sce/iop/modules/sdrdrv.irx", 0, 0) < 0) {
-            printf("Can't load module sdrdrv
-");
+            printf("Can't load module sdrdrv\n");
             Exit(0);
         }
-        printf("Loaded module sdrdrv
-");
+        printf("Loaded module sdrdrv\n");
 
-        printf("sceMcInit result %d
-", sceMcInit());
+        printf("sceMcInit result %d\n", sceMcInit());
         scePadInit(0);
         sceSifInitIopHeap();
         sceSdRemoteInit();
+    }
+}
+
+
+static int vbe_set = 0;
+static struct NuVBlankHandler *vbe_chain = 0;
+static int vbe_dis_cnt = 0;
+static int vbs_set = 0;
+static struct NuVBlankHandler *vbs_chain = 0;
+static int vbs_dis_cnt = 0;
+static int all_handlers_initialised = 0;
+int hold_last_chain = 0;
+static int channel1_waiting = 0;
+static int channel2_waiting = 0;
+static int ch2_ends = 0;
+static int ch1_waits = 0;
+static int gs_dma_countdownval = 4;
+static int gs_dma_countdown = 4;
+
+
+static inline void ps2videoAddAllHandlers(void)
+{
+    if (!all_handlers_initialised) {
+        nu_intc_vif1 = AddIntcHandler(5, ifnVif1, 0);
+        EnableIntc(5);
+        vbe_chain = 0;
+        nu_intc_vblank_e = AddIntcHandler(3, ifnVBlankE, -1);
+        EnableIntc(3);
+        vbe_set = 1;
+        vbs_chain = 0;
+        sceGsSyncVCallback(ifnVBlankS);
+        nu_intc_vblank_s = 0;
+        EnableIntc(2);
+        vbs_set = 1;
+        nu_dmac_vif1 = AddDmacHandler(1, idmacVif1, 0);
+        EnableDmac(1);
+        nu_dmac_gif = AddDmacHandler(2, idmacGs, 0);
+        EnableDmac(2);
+        all_handlers_initialised = 1;
     }
 }
 
@@ -653,28 +635,28 @@ int idmacGs(int channel)
             gs_dma_status = 0;
         }
         if (tag == 0x19) {
-            idmac_gs_count++;
-            if (idmac_vif1_waiting) {
+            ch2_ends++;
+            if (channel1_waiting) {
                 D_ENABLEW = 0x10000;
                 D2_CHCR |= 0x100;
                 D1_CHCR |= 0x100;
                 D_ENABLEW = 0;
-                idmac_vif1_waiting = 0;
+                channel1_waiting = 0;
             } else {
                 if (nutex_use_path3) {
                     addr = *(unsigned int *)addr | 0x20000000;
                     ((unsigned char *)addr)[3] &= 0x7F;
                 }
-                if (idmac_gs_burst_left) {
+                if (gs_dma_countdown) {
                     if (gs_dma_status) {
                         D_ENABLEW = 0x10000;
                         D2_CHCR |= 0x100;
                         D_ENABLEW = 0;
                     }
-                    idmac_gs_burst_left--;
+                    gs_dma_countdown--;
                 } else {
-                    idmac_gs_waiting = 1;
-                    idmac_gs_burst_left = idmac_gs_burst;
+                    channel2_waiting = 1;
+                    gs_dma_countdown = gs_dma_countdownval;
                 }
             }
         } else {
@@ -694,19 +676,19 @@ int idmacVif1(int channel)
         tadr = D1_TADR;
         packet = (unsigned char *)((D1_MADR & 0x7FFFFFFF) | 0x20000000);
         if (((D1_CHCR >> 16) & 0xFF) == 0x18) {
-            idmac_vif1_count++;
+            ch1_waits++;
             if (packet[-0xD] & 0x80) {
-                idmac_vif1_waiting = channel;
+                channel1_waiting = channel;
             } else {
                 D_ENABLEW = 0x10000;
                 D1_CHCR |= 0x100;
                 D_ENABLEW = 0;
             }
-            if (idmac_gs_waiting) {
+            if (channel2_waiting) {
                 D_ENABLEW = 0x10000;
                 D2_CHCR |= 0x100;
                 D_ENABLEW = 0;
-                idmac_gs_waiting = 0;
+                channel2_waiting = 0;
             }
         } else {
             tbslotEnd(0, 1);
@@ -788,43 +770,43 @@ void NuPs2InitVideo(int width, int height, int psm, int zpsm, int format)
     PS2_REZ_W = width;
     PS2_REZ_H = height;
     sceGsResetGraph(0, interlace, format, ffmode);
-    sceGsSetDefDBuffDc(NuPs2DispEnv, psm, width, height, 3, zpsm, 0);
-    field_parity = !sceGsSyncV(0);
-    NuPs2FrameCount = 0;
+    sceGsSetDefDBuffDc(ps2video_display_cfg.disp, psm, width, height, 3, zpsm, 0);
+    odev = !sceGsSyncV(0);
+    frame = 0;
     EE_T0_MODE = 0x9F;
     ps2videoAddAllHandlers();
     switch (PS2_REZ_W) {
     case 256:
-        display_magh[0] = 9;
+        videocfg[2] = 9;
         break;
     case 320:
-        display_magh[0] = 7;
+        videocfg[2] = 7;
         break;
     case 384:
-        display_magh[0] = 6;
+        videocfg[2] = 6;
         break;
     case 512:
-        display_magh[0] = 4;
+        videocfg[2] = 4;
         break;
     case 640:
-        display_magh[0] = 3;
+        videocfg[2] = 3;
         break;
     }
-    NuPs2DisplayX0 = (int)NuPs2DispEnv[0].display_reg & 0xFFF;
-    NuPs2DisplayY0 = (int)(NuPs2DispEnv[0].display_reg >> 12) & 0x7FF;
-    NuPs2DisplayX1 = (int)NuPs2DispEnv[1].display_reg & 0xFFF;
-    NuPs2DisplayY1 = (int)(NuPs2DispEnv[1].display_reg >> 12) & 0x7FF;
+    displayx[0] = (int)ps2video_display_cfg.disp[0].display_reg & 0xFFF;
+    displayy[0] = (int)(ps2video_display_cfg.disp[0].display_reg >> 12) & 0x7FF;
+    displayx[1] = (int)ps2video_display_cfg.disp[1].display_reg & 0xFFF;
+    displayy[1] = (int)(ps2video_display_cfg.disp[1].display_reg >> 12) & 0x7FF;
     NuPs2FlushVRam(0, 0, 0);
     GIF_MODE = 2;
 }
 
 
-static inline void ps2videoDumpRow(int fh, u8 *line, u128 *frame, int y)
+static inline void ps2videoDumpRow(int fh, u8 *line, u128 *pixels, int y)
 {
     u8 *src;
     int x;
 
-    src = (u8 *)(frame + y * PS2_REZ_W / 4);
+    src = (u8 *)(pixels + y * PS2_REZ_W / 4);
     for (x = 0; x < PS2_REZ_W; x++) {
         src[0] = gamma_table[src[0]];
         src[1] = gamma_table[src[1]];
@@ -842,7 +824,7 @@ void NuPs2VideoScreenDump(char *name, int lace, float gamma, int idx)
 {
     BmpFileHeader header;
     BmpInfoHeader info;
-    u128 *frame[2];
+    u128 *pixels[2];
     sceGsStoreImage image;
     char filename[256];
     u8 line[PS2_REZ_W * 3];
@@ -887,104 +869,115 @@ void NuPs2VideoScreenDump(char *name, int lace, float gamma, int idx)
     fh = NuFileOpen(filename, 1);
     NuFileWrite(fh, &header.type, 14);
     NuFileWrite(fh, &info, 40);
-    frame[0] = NuMemAllocFn(PS2_REZ_W * PS2_REZ_H * 4, ps2video_file, 0x861);
-    frame[1] = NuMemAllocFn(PS2_REZ_W * PS2_REZ_H * 4, ps2video_file, 0x862);
+    pixels[0] = NuMemAllocFn(PS2_REZ_W * PS2_REZ_H * 4, "..\\nu2crash.ps2\\nups2\\ps2video.c", 0x861);
+    pixels[1] = NuMemAllocFn(PS2_REZ_W * PS2_REZ_H * 4, "..\\nu2crash.ps2\\nups2\\ps2video.c", 0x862);
     while (VU1_DmaGetStatus()) {
     }
     sceGsSyncPath(0, 0);
-    buffer = ~(NuPs2FrameCount ^ field_parity) & 1;
+    buffer = ~(frame ^ odev) & 1;
     sceGsSetDefStoreImage(&image, buffer ? 0 : PS2_REZ_W * PS2_REZ_H / 64, PS2_REZ_W / 64, 0,
                           0, 0, PS2_REZ_W, PS2_REZ_H);
     FlushCache(0);
-    sceGsExecStoreImage(&image, frame[0]);
+    sceGsExecStoreImage(&image, pixels[0]);
     sceGsSyncPath(0, 0);
     if (lace) {
         sceGsSetDefStoreImage(&image, buffer ? PS2_REZ_W * PS2_REZ_H / 64 : 0, PS2_REZ_W / 64, 0,
                               0, 0, PS2_REZ_W, PS2_REZ_H);
         FlushCache(0);
-        sceGsExecStoreImage(&image, frame[1]);
+        sceGsExecStoreImage(&image, pixels[1]);
         sceGsSyncPath(0, 0);
     }
     y = PS2_REZ_H;
     do {
         y--;
         if (lace) {
-            ps2videoDumpRow(fh, line, frame[1], y);
+            ps2videoDumpRow(fh, line, pixels[1], y);
         }
-        ps2videoDumpRow(fh, line, frame[0], y);
+        ps2videoDumpRow(fh, line, pixels[0], y);
     } while (y != 0);
-    NuMemFreeFn(frame[0], ps2video_file, 0x891);
-    NuMemFreeFn(frame[1], ps2video_file, 0x892);
+    NuMemFreeFn(pixels[0], "..\\nu2crash.ps2\\nups2\\ps2video.c", 0x891);
+    NuMemFreeFn(pixels[1], "..\\nu2crash.ps2\\nups2\\ps2video.c", 0x892);
     NuFileClose(fh);
 }
+
+
+int frame_start_wait = 0;
+int crta = 1;
+int crtb = 2;
+int crtc = 1;
+int ps2video_ignore_frameout = 0;
+int nuvideo_progressive_scan = 0;
+int ps2_video_fmt = 0;
+int ps2_zb_fmt = 0;
+unsigned int ps2_video_size = 0;
 
 
 int NuPs2ScreenSwap(int vsync)
 {
     int half_offset;
 
-    if (!in_vblank_end) {
+    if (!invbi) {
         while (VU1_DmaGetStatus()) {
         }
         tbslotEnd(0, 0);
         sceGsSyncPath(0, 0);
     }
 
-    swap_now = EE_T1_COUNT;
-    swap_elapsed = swap_now - NuPs2SwapTime;
-    if (swap_elapsed > 0xFFFF) {
-        swap_elapsed += 0xFFFF;
+    frameendtime = EE_T1_COUNT;
+    frametime = frameendtime - framestarttime;
+    if (frametime > 0xFFFF) {
+        frametime += 0xFFFF;
     }
-    if (ps2video_ignore_frameout || in_vblank_end) {
-        swap_elapsed = 50;
+    if (ps2video_ignore_frameout || invbi) {
+        frametime = 50;
     }
 
     if (vsync) {
-        NuPs2FrameCount++;
+        frame++;
     } else {
-        NuDebugMsgProlog(ps2video_file, 0x921)("swap not");
+        NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2video.c", 0x921)("swap not");
     }
 
-    if (!in_vblank_end) {
+    if (!invbi) {
         if (ps2video_novsync) {
-            field_parity = 0;
+            odev = 0;
         } else {
-            field_parity = sceGsSyncV(0);
+            odev = sceGsSyncV(0);
         }
     } else {
-        field_parity = 1 - field_parity;
+        odev = 1 - odev;
     }
 
-    if (swap_elapsed <= ps2_video_size && !nuvideo_progressive_scan) {
-        sceGsSetHalfOffset((NuPs2FrameCount & 1) ? &NuPs2FrameReg1 : &NuPs2FrameReg0,
-                           PS2_VCNTR_X, PS2_VCNTR_Y, field_parity);
-        sceGsSetHalfOffset2((NuPs2FrameCount & 1) ? &NuPs2Draw2FrameReg0 : &NuPs2Draw2FrameReg1,
-                            PS2_VCNTR_X, PS2_VCNTR_Y, field_parity);
+    if (frametime <= ps2_video_size && !nuvideo_progressive_scan) {
+        sceGsSetHalfOffset((frame & 1) ? &ps2video_display_cfg.draw11.frame : &ps2video_display_cfg.draw01.frame,
+                           PS2_VCNTR_X, PS2_VCNTR_Y, odev);
+        sceGsSetHalfOffset2((frame & 1) ? &ps2video_display_cfg.draw02.frame : &ps2video_display_cfg.draw12.frame,
+                            PS2_VCNTR_X, PS2_VCNTR_Y, odev);
         half_offset = 1;
-        nurndr_half_offset = field_parity * 8;
+        nurndr_half_offset = odev * 8;
     } else {
-        sceGsSetHalfOffset((NuPs2FrameCount & 1) ? &NuPs2FrameReg1 : &NuPs2FrameReg0,
+        sceGsSetHalfOffset((frame & 1) ? &ps2video_display_cfg.draw11.frame : &ps2video_display_cfg.draw01.frame,
                            PS2_VCNTR_X, PS2_VCNTR_Y, 0);
-        sceGsSetHalfOffset2((NuPs2FrameCount & 1) ? &NuPs2Draw2FrameReg0 : &NuPs2Draw2FrameReg1,
+        sceGsSetHalfOffset2((frame & 1) ? &ps2video_display_cfg.draw02.frame : &ps2video_display_cfg.draw12.frame,
                             PS2_VCNTR_X, PS2_VCNTR_Y, 0);
         half_offset = 0;
         nurndr_half_offset = 0;
     }
 
-    if (!in_vblank_end) {
+    if (!invbi) {
         FlushCache(0);
     } else {
         iFlushCache(0);
     }
 
     if (vsync) {
-        sceGsSwapDBuffDc(NuPs2DispEnv, NuPs2FrameCount & 1);
+        sceGsSwapDBuffDc(ps2video_display_cfg.disp, frame & 1);
     } else {
         half_offset = 1;
     }
 
-    NuPs2SwapTime = EE_T1_COUNT;
-    if (!in_vblank_end) {
+    framestarttime = EE_T1_COUNT;
+    if (!invbi) {
         sceGsSyncPath(0, 0);
     }
     return half_offset;
@@ -1202,7 +1195,7 @@ struct TbSet *tbsetCreate(int *colours)
 
 void tbsetDestroy(TbSet *set)
 {
-    NuMemFreeFn(set, ps2video_file, 0x1E7);
+    NuMemFreeFn(set, "..\\nu2crash.ps2\\nups2\\ps2video.c", 0x1E7);
 }
 
 
@@ -1210,7 +1203,7 @@ void tbslotReset(TbSet *set, int slot)
 {
     int current;
 
-    set = set != 0 ? set : tb_main_set;
+    set = set != 0 ? set : sys_tb;
     slot &= 0xF;
     current = set->current[slot] ^ 1;
     set->current[slot] = current;
@@ -1220,7 +1213,7 @@ void tbslotReset(TbSet *set, int slot)
 
 int tbslotLastValue(struct TbSet *set, int slot)
 {
-    set = set != 0 ? set : tb_main_set;
+    set = set != 0 ? set : sys_tb;
     slot &= 0xF;
     return set->values[slot][set->current[slot]];
 }
@@ -1228,7 +1221,7 @@ int tbslotLastValue(struct TbSet *set, int slot)
 
 void tbslotBeginFn(TbSet *set, int slot)
 {
-    set = set != 0 ? set : tb_main_set;
+    set = set != 0 ? set : sys_tb;
     slot &= 0xF;
     set->begin[slot] = EE_T1_COUNT;
     set->name[slot] = 0;
@@ -1237,7 +1230,7 @@ void tbslotBeginFn(TbSet *set, int slot)
 
 void tbslotBeginExFn(struct TbSet *set, int slot, char *name)
 {
-    set = set != 0 ? set : tb_main_set;
+    set = set != 0 ? set : sys_tb;
     slot &= 0xF;
     set->begin[slot] = EE_T1_COUNT;
     set->name[slot] = name;
@@ -1250,7 +1243,7 @@ int tbslotEndFn(TbSet *set, int slot)
     int over;
     unsigned int lim = 0xFFFF;
 
-    set = set != 0 ? set : tb_main_set;
+    set = set != 0 ? set : sys_tb;
     slot &= 0xF;
     /* The narrow index preserves the retail compiler's address-copy sequence. */
     elapsed = EE_T1_COUNT - set->begin[(unsigned char)slot];
@@ -1264,7 +1257,7 @@ int tbslotEndFn(TbSet *set, int slot)
 void tbInit(void)
 {
     EE_T1_MODE = 0x83;
-    tb_main_set = tbsetAlloc(0);
+    sys_tb = tbsetAlloc(0);
 }
 
 
@@ -1282,10 +1275,10 @@ float NuPs2GetRenderHeight(void)
 
 void NuPs2VideoSetPos(int x, int y)
 {
-    NuPs2DispEnv[0].display.dx = NuPs2DisplayX0 + x;
-    NuPs2DispEnv[0].display.dy = NuPs2DisplayY0 + y;
-    NuPs2DispEnv[1].display.dx = NuPs2DisplayX1 + x;
-    NuPs2DispEnv[1].display.dy = NuPs2DisplayY1 + y;
+    ps2video_display_cfg.disp[0].display.dx = displayx[0] + x;
+    ps2video_display_cfg.disp[0].display.dy = displayy[0] + y;
+    ps2video_display_cfg.disp[1].display.dx = displayx[1] + x;
+    ps2video_display_cfg.disp[1].display.dy = displayy[1] + y;
 }
 
 
@@ -1300,12 +1293,12 @@ void *NuPs2GrabScreen(void *buf, int front, int x, int y, int w, int h)
     if (buf) {
         dest = buf;
     } else {
-        dest = NuMemAllocFn(w * h * 4, ps2video_file, 0x8A8);
+        dest = NuMemAllocFn(w * h * 4, "..\\nu2crash.ps2\\nups2\\ps2video.c", 0x8A8);
     }
     while (VU1_DmaGetStatus()) {
     }
     sceGsSyncPath(0, 0);
-    buffer = (NuPs2FrameCount ^ field_parity) & 1;
+    buffer = (frame ^ odev) & 1;
     back = 1 - buffer;
     if (front) {
         back = buffer;
@@ -1326,23 +1319,23 @@ void *NuPs2GrabScreen(void *buf, int front, int x, int y, int w, int h)
 
 void NuPs2EnableAutoScreenSwap(void)
 {
-    if (!auto_screen_swap) {
+    if (!auto_screen_swap_enabled) {
         while (VU1_DmaGetStatus()) {
         }
         sceGsSyncPath(0, 0);
         while (abs(GetElapsedTime()) < 50) {
         }
-        auto_screen_swap = 1;
+        auto_screen_swap_enabled = 1;
     }
 }
 
 
 void NuPs2DisableAutoScreenSwap(void)
 {
-    if (auto_screen_swap) {
+    if (auto_screen_swap_enabled) {
         while (abs(GetElapsedTime()) >= 100) {
         }
-        auto_screen_swap = 0;
+        auto_screen_swap_enabled = 0;
         sceGsSyncPath(0, 0);
     }
 }
@@ -1362,8 +1355,8 @@ void NuPs2GetViewport(struct nuviewport_s *vp)
 
 void NuEnableVBlankE(void)
 {
-    if (vblank_end_handler) {
-        if (--vblank_end_disable == 0) {
+    if (vbe_set) {
+        if (--vbe_dis_cnt == 0) {
             EnableIntc(3);
         }
     }
@@ -1372,11 +1365,11 @@ void NuEnableVBlankE(void)
 
 void NuDisableVBlankE(void)
 {
-    if (vblank_end_handler) {
-        if (vblank_end_disable == 0) {
+    if (vbe_set) {
+        if (vbe_dis_cnt == 0) {
             DisableIntc(3);
         }
-        vblank_end_disable++;
+        vbe_dis_cnt++;
     }
 }
 
@@ -1388,7 +1381,7 @@ void NuIntAddVBlankE(struct NuVBlankHandler *handler)
 
     DisableIntc(3);
     prev = 0;
-    cur = vblank_end_list;
+    cur = vbe_chain;
     while (cur && cur->priority <= handler->priority) {
         prev = cur;
         cur = cur->next;
@@ -1401,12 +1394,12 @@ void NuIntAddVBlankE(struct NuVBlankHandler *handler)
             handler->next->prev = handler;
         }
     } else {
-        if (vblank_end_list) {
-            vblank_end_list->prev = handler;
+        if (vbe_chain) {
+            vbe_chain->prev = handler;
         }
         handler->prev = 0;
-        handler->next = vblank_end_list;
-        vblank_end_list = handler;
+        handler->next = vbe_chain;
+        vbe_chain = handler;
     }
     EnableIntc(3);
 }
@@ -1418,7 +1411,7 @@ void NuIntRemVBlankE(struct NuVBlankHandler *handler)
     if (handler->prev) {
         handler->prev->next = handler->next;
     } else {
-        vblank_end_list = handler->next;
+        vbe_chain = handler->next;
     }
     if (handler->next) {
         handler->next->prev = handler->prev;
@@ -1429,8 +1422,8 @@ void NuIntRemVBlankE(struct NuVBlankHandler *handler)
 
 void NuEnableVBlankS(void)
 {
-    if (vblank_start_handler) {
-        if (--vblank_start_disable == 0) {
+    if (vbs_set) {
+        if (--vbs_dis_cnt == 0) {
             EnableIntc(2);
         }
     }
@@ -1439,11 +1432,11 @@ void NuEnableVBlankS(void)
 
 void NuDisableVBlankS(void)
 {
-    if (vblank_start_handler) {
-        if (vblank_start_disable == 0) {
+    if (vbs_set) {
+        if (vbs_dis_cnt == 0) {
             DisableIntc(2);
         }
-        vblank_start_disable++;
+        vbs_dis_cnt++;
     }
 }
 
@@ -1455,7 +1448,7 @@ void NuIntAddVBlankS(struct NuVBlankHandler *handler)
 
     DisableIntc(2);
     prev = 0;
-    cur = vblank_start_list;
+    cur = vbs_chain;
     while (cur && cur->priority <= handler->priority) {
         prev = cur;
         cur = cur->next;
@@ -1468,12 +1461,12 @@ void NuIntAddVBlankS(struct NuVBlankHandler *handler)
             handler->next->prev = handler;
         }
     } else {
-        if (vblank_start_list) {
-            vblank_start_list->prev = handler;
+        if (vbs_chain) {
+            vbs_chain->prev = handler;
         }
         handler->prev = 0;
-        handler->next = vblank_start_list;
-        vblank_start_list = handler;
+        handler->next = vbs_chain;
+        vbs_chain = handler;
     }
     EnableIntc(2);
 }
@@ -1485,7 +1478,7 @@ void NuIntRemVBlankS(struct NuVBlankHandler *handler)
     if (handler->prev) {
         handler->prev->next = handler->next;
     } else {
-        vblank_start_list = handler->next;
+        vbs_chain = handler->next;
     }
     if (handler->next) {
         handler->next->prev = handler->prev;
@@ -1496,13 +1489,13 @@ void NuIntRemVBlankS(struct NuVBlankHandler *handler)
 
 void NuEnableVBlank(void)
 {
-    if (vblank_start_handler) {
-        if (--vblank_start_disable == 0) {
+    if (vbs_set) {
+        if (--vbs_dis_cnt == 0) {
             EnableIntc(2);
         }
     }
-    if (vblank_end_handler) {
-        if (--vblank_end_disable == 0) {
+    if (vbe_set) {
+        if (--vbe_dis_cnt == 0) {
             EnableIntc(3);
         }
     }
@@ -1511,17 +1504,17 @@ void NuEnableVBlank(void)
 
 void NuDisableVBlank(void)
 {
-    if (vblank_end_handler) {
-        if (vblank_end_disable == 0) {
+    if (vbe_set) {
+        if (vbe_dis_cnt == 0) {
             DisableIntc(3);
         }
-        vblank_end_disable++;
+        vbe_dis_cnt++;
     }
-    if (vblank_start_handler) {
-        if (vblank_start_disable == 0) {
+    if (vbs_set) {
+        if (vbs_dis_cnt == 0) {
             DisableIntc(2);
         }
-        vblank_start_disable++;
+        vbs_dis_cnt++;
     }
 }
 
@@ -1542,10 +1535,10 @@ void ps2videoGetFreeMem(int *pages, int *bytes)
 
 void *NuPs2CopyCurrentBackBuffer(void *buf)
 {
-    if (NuPs2FrameCount & 1) {
-        memcpy(buf, &NuPs2FrameReg0, sizeof(struct NuPs2GsReg));
+    if (frame & 1) {
+        memcpy(buf, &ps2video_display_cfg.draw01.frame, sizeof(struct NuPs2GsReg));
     } else {
-        memcpy(buf, &NuPs2FrameReg1, sizeof(struct NuPs2GsReg));
+        memcpy(buf, &ps2video_display_cfg.draw11.frame, sizeof(struct NuPs2GsReg));
     }
     return (char *)buf + sizeof(struct NuPs2GsReg);
 }
@@ -1553,10 +1546,10 @@ void *NuPs2CopyCurrentBackBuffer(void *buf)
 
 void *NuPs2CopyCurrentFrontBuffer(void *buf)
 {
-    if (NuPs2FrameCount & 1) {
-        memcpy(buf, &NuPs2FrameReg1, sizeof(struct NuPs2GsReg));
+    if (frame & 1) {
+        memcpy(buf, &ps2video_display_cfg.draw11.frame, sizeof(struct NuPs2GsReg));
     } else {
-        memcpy(buf, &NuPs2FrameReg0, sizeof(struct NuPs2GsReg));
+        memcpy(buf, &ps2video_display_cfg.draw01.frame, sizeof(struct NuPs2GsReg));
     }
     return (char *)buf + sizeof(struct NuPs2GsReg);
 }
@@ -1564,10 +1557,10 @@ void *NuPs2CopyCurrentFrontBuffer(void *buf)
 
 void *NuPs2CopyCurrentZBuffer(void *buf)
 {
-    if (NuPs2FrameCount & 1) {
-        memcpy(buf, &NuPs2ZBufReg0, sizeof(struct NuPs2GsReg));
+    if (frame & 1) {
+        memcpy(buf, &ps2video_display_cfg.draw01.zbuf, sizeof(struct NuPs2GsReg));
     } else {
-        memcpy(buf, &NuPs2ZBufReg1, sizeof(struct NuPs2GsReg));
+        memcpy(buf, &ps2video_display_cfg.draw11.zbuf, sizeof(struct NuPs2GsReg));
     }
     return (char *)buf + sizeof(struct NuPs2GsReg);
 }
@@ -1575,30 +1568,30 @@ void *NuPs2CopyCurrentZBuffer(void *buf)
 
 void NuPs2GetCurrentBackBuffer(u64 *buf)
 {
-    if (NuPs2FrameCount & 1) {
-        *buf = NuPs2FrameReg0.data;
+    if (frame & 1) {
+        *buf = ps2video_display_cfg.draw01.frame.data;
     } else {
-        *buf = NuPs2FrameReg1.data;
+        *buf = ps2video_display_cfg.draw11.frame.data;
     }
 }
 
 
 void NuPs2GetCurrentFrontBuffer(u64 *buf)
 {
-    if (NuPs2FrameCount & 1) {
-        *buf = NuPs2FrameReg1.data;
+    if (frame & 1) {
+        *buf = ps2video_display_cfg.draw11.frame.data;
     } else {
-        *buf = NuPs2FrameReg0.data;
+        *buf = ps2video_display_cfg.draw01.frame.data;
     }
 }
 
 
 void NuPs2GetCurrentZBuffer(u64 *buf)
 {
-    if (NuPs2FrameCount & 1) {
-        *buf = NuPs2ZBufReg0.data;
+    if (frame & 1) {
+        *buf = ps2video_display_cfg.draw01.zbuf.data;
     } else {
-        *buf = NuPs2ZBufReg1.data;
+        *buf = ps2video_display_cfg.draw11.zbuf.data;
     }
 }
 
@@ -1642,21 +1635,21 @@ void NuIntAddAllHandlers(void)
 
 void NuIntRemoveAllHandlers(void)
 {
-    if (handlers_installed) {
-        vblank_end_handler = 0;
-        vblank_start_handler = 0;
+    if (all_handlers_initialised) {
+        vbe_set = 0;
+        vbs_set = 0;
         DisableDmac(2);
-        RemoveDmacHandler(2, gs_dmac_id);
+        RemoveDmacHandler(2, nu_dmac_gif);
         DisableDmac(1);
-        RemoveDmacHandler(1, vif1_dmac_id);
+        RemoveDmacHandler(1, nu_dmac_vif1);
         sceGsSyncVCallback(0);
         DisableIntc(3);
-        RemoveIntcHandler(3, vblank_end_intc_id);
+        RemoveIntcHandler(3, nu_intc_vblank_e);
         DisableIntc(5);
-        RemoveIntcHandler(5, vif1_intc_id);
-        vblank_end_list = 0;
-        vblank_start_list = 0;
-        handlers_installed = 0;
+        RemoveIntcHandler(5, nu_intc_vif1);
+        vbe_chain = 0;
+        vbs_chain = 0;
+        all_handlers_initialised = 0;
     }
 }
 
@@ -1672,14 +1665,14 @@ int ifnVBlankE(int ca)
 {
     struct NuVBlankHandler *handler;
 
-    in_vblank_end = 1;
-    if (auto_screen_swap) {
+    invbi = 1;
+    if (auto_screen_swap_enabled) {
         NuPs2ScreenSwap(1);
     }
-    for (handler = vblank_end_list; handler; handler = handler->next) {
+    for (handler = vbe_chain; handler; handler = handler->next) {
         handler->fn();
     }
-    in_vblank_end = 0;
+    invbi = 0;
     ExitHandler();
     return 1;
 }
@@ -1689,12 +1682,12 @@ int ifnVBlankS(int ca)
 {
     struct NuVBlankHandler *handler;
 
-    in_vblank_end = 1;
+    invbi = 1;
     nuvideo_global_vbcnt++;
-    for (handler = vblank_start_list; handler; handler = handler->next) {
+    for (handler = vbs_chain; handler; handler = handler->next) {
         handler->fn();
     }
-    in_vblank_end = 0;
+    invbi = 0;
     ExitHandler();
     return 1;
 }

@@ -132,6 +132,16 @@ id = "pal103:unit-0104:00633348:edwmp_i_wumpa"
 state = "matching"
 
 [[claim]]
+section = ".data"
+start = 0x005cd174
+end = 0x005cd178
+
+[[claim]]
+section = ".rodata"
+start = 0x006202e4
+end = 0x006202e8
+
+[[claim]]
 section = ".rodata"
 start = 0x00620358
 end = 0x00620375
@@ -140,3 +150,8 @@ end = 0x00620375
 section = ".sbss"
 start = 0x00633348
 end = 0x0063334c
+
+[[claim]]
+section = ".sdata"
+start = 0x00631bec
+end = 0x00631bf0

@@ -145,6 +145,87 @@ class TestLayout(unittest.TestCase):
             self.layout({"$LC1": 0x1000})
 
 
+class TestNeighbourAnchor(unittest.TestCase):
+    """An unanchored section (klib.s's version tag) is placed by its bytes
+    between the ranges of its link neighbours."""
+
+    TAG = b"PsIIlibkernl2300"
+
+    def placed(self, atoms, align=0):
+        item = gen_hybrid.DataItem("$Lps2_libinfo", ".data", align)
+        return [_Placed(item, None, 0, atoms, 16)]
+
+    def test_window_lies_between_the_link_neighbours(self):
+        # klib (245) sits between locale.c (231) and glue.c (248) in .data.
+        self.assertEqual(gen_hybrid._neighbour_window(".data", "unit-0245",
+                                                      "pal103"),
+                         (0x00612BA8, 0x00612BB8))
+
+    def anchor(self, placed, retail, window=(0x1000, 0x1020)):
+        from unittest import mock
+        with mock.patch.object(gen_hybrid, "_neighbour_window",
+                               return_value=window), \
+                mock.patch.object(gen_hybrid, "_retail_bytes",
+                                  return_value=retail):
+            return gen_hybrid._neighbour_anchor(".data", placed, "unit-0245",
+                                                "pal103")
+
+    def test_unique_match_places_the_section(self):
+        retail = bytes(8) + self.TAG + bytes(8)
+        self.assertEqual(self.anchor(self.placed([(0, self.TAG)]), retail),
+                         0x1008)
+
+    def test_ambiguous_or_misaligned_match_places_nothing(self):
+        self.assertIsNone(self.anchor(self.placed([(0, self.TAG)]),
+                                      self.TAG + self.TAG))
+        self.assertIsNone(self.anchor(self.placed([(0, self.TAG)], align=4),
+                                      bytes(8) + self.TAG + bytes(8)))
+
+    def test_relocations_never_place_by_bytes(self):
+        self.assertIsNone(self.anchor(self.placed([(0, ("word", "$LC0"))]),
+                                      bytes(32)))
+
+
+class TestLeadingPad(unittest.TestCase):
+    """The zeros the link puts before a unit's section are claimed when its
+    alignment accounts for exactly them (nusound's .bss: 0x6b40e8 ->
+    0x6b4100 under 32-byte alignment)."""
+
+    BASE, START = 0x006B4100, 0x006B40E8
+
+    def placed(self, align):
+        item = gen_hybrid.DataItem("nusound_client_data", ".bss", align)
+        return [_Placed(item, None, 0, [(0, bytes(16))], 16)]
+
+    def pad(self, align, data=None, plan=True):
+        from unittest import mock
+        with mock.patch.object(gen_hybrid, "_preceding_end",
+                               return_value=self.START):
+            return gen_hybrid._leading_pad(".bss", self.BASE,
+                                           self.placed(align), data or {},
+                                           "unit-0087", "pal103", plan)
+
+    def test_alignment_accounts_for_the_gap(self):
+        self.assertEqual(self.pad(5), 24)
+
+    def test_too_little_alignment_claims_nothing(self):
+        self.assertEqual(self.pad(3), 0)
+
+    def test_a_build_takes_the_pad_from_its_manifest_claim(self):
+        data = {"claim": [{"section": ".bss", "start": self.START,
+                           "end": self.BASE}]}
+        self.assertEqual(self.pad(5, data, plan=False), 24)
+        self.assertEqual(self.pad(5, {}, plan=False), 0)
+
+    def test_fill_shifts_the_objects_up(self):
+        base, placed = gen_hybrid._with_leading_pad(".bss", self.BASE,
+                                                    self.placed(5), 24)
+        self.assertEqual(base, self.START)
+        self.assertEqual([(p.offset, p.size) for p in placed],
+                         [(0, 24), (24, 16)])
+        self.assertEqual(placed[1].atoms, [(24, bytes(16))])
+
+
 class TestAtoms(unittest.TestCase):
     def item(self, *lines):
         item = gen_hybrid.DataItem("$L9", ".rodata", 2)

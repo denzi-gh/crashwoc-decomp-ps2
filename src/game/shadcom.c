@@ -35,7 +35,7 @@ extern u8 *vpDmaTag_Next(u8 *cur, s32 mode);
 
 u32 shadcol = 0x7FFFFFFF;
 
-static u32 pal0[16] = {
+static u32 pal0[16] __attribute__((aligned(32))) = {
     0x00000000, 0x20FFFFFF, 0x00000000, 0x20FFFFFF,
     0x00000000, 0x20FFFFFF, 0x00000000, 0x20FFFFFF,
     0x00000000, 0x20FFFFFF, 0x00000000, 0x20FFFFFF,

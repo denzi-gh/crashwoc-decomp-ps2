@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0255"
 source = "src/sdk/sce/sifrpc.c"
 profile = "sce"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0255:0027b368:sceSifInitRpc"
@@ -98,3 +98,28 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0255:0027c288:sceSifRpcLoop"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0255:00613378:_sceSifInitCheck"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0255:00703940:_packet_buffer"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0255:00704140:_free_buffer"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0255:00704940:_free_buffer2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0255:00705140:_data_table"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x00705140
+end = 0x0070516c

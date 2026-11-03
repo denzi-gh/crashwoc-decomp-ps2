@@ -101,55 +101,37 @@ extern u8 *vpDmaTag_Ret(u8 *cur);
 extern u8 *vpDmaTag_RefEx(u8 *cur, u32 addr, s32 qwc, u32 tag);
 extern void *NuMemAllocFn(int size, char *file, int line);
 
-extern int NuCvtPntEna;
-extern int NuCvtPntOn;
-extern int NuCvtUvOn;
-extern float NuCvtMaxSpan;
-extern NuFloatBits NuCvtPntSpan[3];
-extern struct nuvec_s NuCvtPntMid;
-extern struct nucvtpktinfo_s *info_pktdata;
-extern u8 *info_pktbuff;
-extern int info_pktcnt;
-extern int info_pktsizecnt;
-extern int nugscn_generate_packetinfo;
-extern int info_stripcount;
-extern int info_tristripcount;
-extern struct nudmatag_s *nucvtgeo_lasttag;
 extern int nugscn_generate_colourref;
-extern int info_tricount;
-extern int show_strip;
 
-extern int D_0062EEDC;
-extern int D_0062EEE0;
-extern struct nucolourref_s *D_00633118;
-extern struct nucolourref_s *D_0063311C;
-extern char D_00615538[];
-extern char D_00615558[];
-extern char D_00615568[];
-extern char D_00615668[];
-extern char D_00615678[];
-extern char D_00615590[];
-extern char D_006155A8[];
-extern char D_006155D8[];
-extern char D_00615608[];
-extern char D_00615638[];
-extern char D_00615690[];
+u32 stipcoltab[16] = {
+    0xFF000080, 0xFF000080, 0xFF000080, 0xFF200080, 0xFF400080, 0xFF800080, 0xFFC00080, 0xFFFF0080,
+    0xC0FF2080, 0x80FF4080, 0x40FF6080, 0x00FF8080, 0x00C0A080, 0x0080C080, 0x0040E080, 0x0000FF80,
+};
+NuFloatBits NuCvtPntSpan[3] = { 0 };
+struct nuvec_s NuCvtPntMid = { 0 };
 
-#define colourref_on D_0062EEDC
-#define colourref_offset D_0062EEE0
-#define colourref_list D_00633118
-#define colourref_cur D_0063311C
-#define nucvtgeo_srcfile D_00615538
-#define stream_align_msg D_00615558
-#define dma_size_msg D_00615568
-#define faceon_alpha_msg D_00615668
-#define faceon_type_msg D_00615678
-#define pkt_count_msg D_00615590
-#define u_high_msg D_006155A8
-#define v_high_msg D_006155D8
-#define u_low_msg D_00615608
-#define v_low_msg D_00615638
-#define prim_type_msg D_00615690
+int show_strip = 0;
+struct nucvtpktinfo_s *info_pktdata = 0;
+int nugscn_generate_packetinfo = 0;
+static int colourref_enabled = 0;
+static int colourref_offset = 0;
+int NuCvtPntEna = 1;
+float NuCvtMaxSpan = 32.0f;
+/* 8-aligned in retail */
+struct nudmatag_s *nucvtgeo_lasttag __attribute__((aligned(8))) = 0;
+int info_tristripcount = 0;
+int info_tricount = 0;
+int info_stripcount = 0;
+int info_pktcnt = 0;
+int info_pktsizecnt = 0;
+u8 *info_pktbuff = 0;
+int NuCvtPntOn = 0;
+int NuCvtUvOn = 0;
+
+static struct nucolourref_s *colourref_start;
+static struct nucolourref_s *refhdr;
+
+#define nucvtgeo_srcfile "..\\nu2crash.ps2\\nu3d\\nucvtgeo.c"
 
 #define NUMTL_ALPHA_BLEND 2
 #define NUPRIM_TRILIST 5
@@ -192,9 +174,9 @@ inline void NuCvtGeoFixup(struct nucolourref_s *ref, int offset) {
 
 
 inline void NuCvtGeoBeginColourRef(struct nucolourref_s *list) {
-    colourref_list = list;
-    colourref_on = 1;
-    colourref_cur = 0;
+    colourref_start = list;
+    colourref_enabled = 1;
+    refhdr = 0;
     colourref_offset = 0;
 }
 
@@ -203,8 +185,8 @@ inline struct nucolourref_s *NuCvtGeoEndColourRef(void) {
     struct nucolourref_s *end;
 
     NuCvtGeoAddColourRef(0);
-    end = NEXT_COLOURREF(colourref_cur);
-    colourref_on = 0;
+    end = NEXT_COLOURREF(refhdr);
+    colourref_enabled = 0;
     return end;
 }
 
@@ -303,14 +285,14 @@ inline void NuCvtSetMaxSpan(float span) {
 
 
 inline void NuCvtGeoAddColourRef(unsigned int addr) {
-    if (colourref_on) {
-        if (!colourref_cur) {
-            colourref_cur = colourref_list;
+    if (colourref_enabled) {
+        if (!refhdr) {
+            refhdr = colourref_start;
         } else {
-            colourref_cur = NEXT_COLOURREF(colourref_cur);
+            refhdr = NEXT_COLOURREF(refhdr);
         }
-        colourref_cur->addr_offset = addr + colourref_offset;
-        colourref_cur->count = 0;
+        refhdr->addr_offset = addr + colourref_offset;
+        refhdr->count = 0;
     }
 }
 
@@ -402,12 +384,12 @@ u8 *NuCvtDmaFaceOn(u8 **dma, struct nufaceon_s *faceon, int count, struct numtl_
             lit.c.g = colour.c.g * 0.3f;
             lit.c.r = colour.c.r * 1.0f;
             lit.c.a = colour.c.a;
-            if (colourref_on) {
+            if (colourref_enabled) {
                 u32 blue = HALVE_BLUE(colour, shift);
 
-                colourref_cur->pair[colourref_cur->count].colour = HALVE_ALPHA_RED_GREEN(colour, shift) | blue;
-                colourref_cur->pair[colourref_cur->count].lit = HALVE_COLOUR(lit, shift);
-                colourref_cur->count++;
+                refhdr->pair[refhdr->count].colour = HALVE_ALPHA_RED_GREEN(colour, shift) | blue;
+                refhdr->pair[refhdr->count].lit = HALVE_COLOUR(lit, shift);
+                refhdr->count++;
             }
         }
         *(u32 *)p = 0x01000101;
@@ -515,12 +497,12 @@ u8 *NuCvtDmaFaceY(u8 **dma, struct nufaceon_s *faceon, int count, struct numtl_s
             lit.c.g = colour.c.g * 0.3f;
             lit.c.r = colour.c.r * 1.0f;
             lit.c.a = colour.c.a;
-            if (colourref_on) {
+            if (colourref_enabled) {
                 u32 blue = HALVE_BLUE(colour, shift);
 
-                colourref_cur->pair[colourref_cur->count].colour = HALVE_ALPHA_RED_GREEN(colour, shift) | blue;
-                colourref_cur->pair[colourref_cur->count].lit = HALVE_COLOUR(lit, shift);
-                colourref_cur->count++;
+                refhdr->pair[refhdr->count].colour = HALVE_ALPHA_RED_GREEN(colour, shift) | blue;
+                refhdr->pair[refhdr->count].lit = HALVE_COLOUR(lit, shift);
+                refhdr->count++;
             }
         }
         *(u32 *)p = 0x01000101;
@@ -796,7 +778,7 @@ int NuCvtTriStreamCFromIdx(u8 **dma, struct nuvtx_tc1_s *vtx, short *idx, int ni
         nidx -= 3;
     }
     if ((u32)tri & 0xF) {
-        NuErrorProlog(nucvtgeo_srcfile, 0x3FB)(stream_align_msg);
+        NuErrorProlog(nucvtgeo_srcfile, 0x3FB)("Blaaargh");
     }
     *dma = (u8 *)tri;
     return count;
@@ -883,7 +865,7 @@ int NuCvtTriStripStreamCFromIdx(u8 **dma, struct nuvtx_tc1_s *vtx, short *idx, i
         left--;
     }
     if ((u32)tri & 0xF) {
-        NuErrorProlog(nucvtgeo_srcfile, 0x462)(stream_align_msg);
+        NuErrorProlog(nucvtgeo_srcfile, 0x462)("Blaaargh");
     }
     *dma = (u8 *)tri;
     return count;
@@ -1003,7 +985,7 @@ u8 *NuCvtDmaTriCFromIdx(u8 **dma, struct nuvtx_tc1_s *vtx, short *idx, int nidx,
     size = nidx * 9 + 4;
     size = (((nidx + 41) / 42) * 21 + size) * 4;
     if (size > 0xFFFFF) {
-        NuErrorProlog(nucvtgeo_srcfile, 0x556)(dma_size_msg, size, nidx);
+        NuErrorProlog(nucvtgeo_srcfile, 0x556)("vertex buffer too big %d (%d vrts)", size, nidx);
     }
     {
         /* Scope the packet count after size validation to preserve spill order. */
@@ -1189,12 +1171,12 @@ u8 *NuCvtDmaTriCFromIdx(u8 **dma, struct nuvtx_tc1_s *vtx, short *idx, int nidx,
                         lit.c.g = colour.c.g * 0.3f;
                         lit.c.r = colour.c.r * 1.0f;
                         lit.c.a = colour.c.a;
-                        if (colourref_on) {
+                        if (colourref_enabled) {
                             u32 blue = HALVE_BLUE(colour, shift);
 
-                            colourref_cur->pair[colourref_cur->count].colour = HALVE_ALPHA_RED_GREEN(colour, shift) | blue;
-                            colourref_cur->pair[colourref_cur->count].lit = HALVE_COLOUR(lit, shift);
-                            colourref_cur->count++;
+                            refhdr->pair[refhdr->count].colour = HALVE_ALPHA_RED_GREEN(colour, shift) | blue;
+                            refhdr->pair[refhdr->count].lit = HALVE_COLOUR(lit, shift);
+                            refhdr->count++;
                         }
                     }
                     break;
@@ -1236,7 +1218,7 @@ unsigned int NuCvtSizeDmaTriStripCFromIdx(short *idx, int nidx, struct numtl_s *
     dmasize = (((nidx + 41) / 42) * 21 + dmasize) * 4;
     words = 8;
     if (dmasize > 0xFFFFF) {
-        NuErrorProlog(nucvtgeo_srcfile, 0x64C)(dma_size_msg, dmasize, nidx);
+        NuErrorProlog(nucvtgeo_srcfile, 0x64C)("vertex buffer too big %d (%d vrts)", dmasize, nidx);
     }
     size = 0x24;
     if (NuCvtPntOn) {
@@ -1281,10 +1263,10 @@ unsigned int NuCvtSizeDmaTriStripCFromIdx(short *idx, int nidx, struct numtl_s *
             used = batch;
         }
         if (batch < 2) {
-            NuErrorProlog(nucvtgeo_srcfile, 0x693)(pkt_count_msg);
+            NuErrorProlog(nucvtgeo_srcfile, 0x693)("invalid pkt count");
         }
         if (batch > 42) {
-            NuErrorProlog(nucvtgeo_srcfile, 0x695)(pkt_count_msg);
+            NuErrorProlog(nucvtgeo_srcfile, 0x695)("invalid pkt count");
         }
         size += 4;
         size += 4;
@@ -1495,10 +1477,10 @@ u8 *NuCvtDmaTriStripCFromIdx(u8 **dma, struct nuvtx_tc1_s *vtx, short *idx, int 
             used = batch;
         }
         if (batch < 2) {
-            NuErrorProlog(nucvtgeo_srcfile, 0x7C1)(pkt_count_msg);
+            NuErrorProlog(nucvtgeo_srcfile, 0x7C1)("invalid pkt count");
         }
         if (batch > 42) {
-            NuErrorProlog(nucvtgeo_srcfile, 0x7C3)(pkt_count_msg);
+            NuErrorProlog(nucvtgeo_srcfile, 0x7C3)("invalid pkt count");
         }
         strip.dw[0] = 0x3002400000000000LL | (batch | 0x8000);
         strip.dw[1] = 0x512;
@@ -1672,16 +1654,16 @@ u8 *NuCvtDmaTriStripCFromIdx(u8 **dma, struct nuvtx_tc1_s *vtx, short *idx, int 
             du = vtx[idx[k]].tc[0] - minu;
             dv = vtx[idx[k]].tc[1] - minv;
             if (du > 15.0f) {
-                NuDebugMsgProlog(nucvtgeo_srcfile, 0x88F)(u_high_msg, du, left, minu);
+                NuDebugMsgProlog(nucvtgeo_srcfile, 0x88F)("texture U out of range > 15 (%f) [%d] <%f>", du, left, minu);
             }
             if (dv > 15.0f) {
-                NuDebugMsgProlog(nucvtgeo_srcfile, 0x891)(v_high_msg, dv, left, minv);
+                NuDebugMsgProlog(nucvtgeo_srcfile, 0x891)("texture V out of range > 15 (%f) [%d] <%f>", dv, left, minv);
             }
             if (du < -16.0f) {
-                NuDebugMsgProlog(nucvtgeo_srcfile, 0x893)(u_low_msg, du, left, minu);
+                NuDebugMsgProlog(nucvtgeo_srcfile, 0x893)("texture U out of range < -16 (%f) [%d] <%f>", du, left, minu);
             }
             if (dv < -16.0f) {
-                NuDebugMsgProlog(nucvtgeo_srcfile, 0x895)(v_low_msg, dv, left, minv);
+                NuDebugMsgProlog(nucvtgeo_srcfile, 0x895)("texture V out of range < -16 (%f) [%d] <%f>", dv, left, minv);
             }
             *(short *)p = du * 4096.0f;
             p += 2;
@@ -1744,14 +1726,14 @@ u8 *NuCvtDmaTriStripCFromIdx(u8 **dma, struct nuvtx_tc1_s *vtx, short *idx, int 
                     lit.c.g = colour.c.g * 0.3f;
                     lit.c.r = colour.c.r * 1.0f;
                     lit.c.a = colour.c.a;
-                    if (colourref_on) {
+                    if (colourref_enabled) {
                         u32 blue = (colour.w & 0xFF) >> shift;
 
-                        colourref_cur->pair[colourref_cur->count].colour = (colour.c.a >> 1) << 24 | (((colour.w >> 16) & 0xFF) >> shift) << 16
+                        refhdr->pair[refhdr->count].colour = (colour.c.a >> 1) << 24 | (((colour.w >> 16) & 0xFF) >> shift) << 16
                             | (((colour.w >> 8) & 0xFF) >> shift) << 8 | blue;
-                        colourref_cur->pair[colourref_cur->count].lit = (lit.c.a >> 1) << 24 | (((lit.w >> 16) & 0xFF) >> shift) << 16
+                        refhdr->pair[refhdr->count].lit = (lit.c.a >> 1) << 24 | (((lit.w >> 16) & 0xFF) >> shift) << 16
                             | (((lit.w >> 8) & 0xFF) >> shift) << 8 | ((lit.w & 0xFF) >> shift);
-                        colourref_cur->count++;
+                        refhdr->count++;
                     }
                     k++;
                     run--;
@@ -1814,7 +1796,7 @@ void NuPs2CreateFaceOn(struct nugobj_s *gobj) {
             NuCvtGeoBeginColourRef(colourref);
         }
         for (geom = gobj->faceon_geom; geom; geom = geom->next) {
-            NuDebugMsgProlog(nucvtgeo_srcfile, 0x942)(faceon_alpha_msg, geom->mtl->attrib.alpha);
+            NuDebugMsgProlog(nucvtgeo_srcfile, 0x942)("mtl alpha=%d", geom->mtl->attrib.alpha);
             geom->dmastream = dma;
             for (left = geom->nfaceons; left > 0;) {
                 n = left > 6000 ? 6000 : left;
@@ -1827,7 +1809,7 @@ void NuPs2CreateFaceOn(struct nugobj_s *gobj) {
                     NuCvtDmaFaceY(&dma, geom->faceons, n, geom->mtl);
                     break;
                 default:
-                    NuDebugMsgProlog(nucvtgeo_srcfile, 0x955)(faceon_type_msg, geom->faceon_type);
+                    NuDebugMsgProlog(nucvtgeo_srcfile, 0x955)("unknown faceon type =%d", geom->faceon_type);
                     break;
                 }
             }
@@ -1948,7 +1930,7 @@ void NuPs2CreateRenderStream(struct nugobj_s *gobj) {
                 }
                 break;
             default:
-                NuErrorProlog(nucvtgeo_srcfile, 0xA11)(prim_type_msg);
+                NuErrorProlog(nucvtgeo_srcfile, 0xA11)("Unsupported prim type");
                 break;
             }
         }
@@ -2014,7 +1996,7 @@ void NuPs2CreateRenderStream(struct nugobj_s *gobj) {
                         }
                         break;
                     default:
-                        NuErrorProlog(nucvtgeo_srcfile, 0xA67)(prim_type_msg);
+                        NuErrorProlog(nucvtgeo_srcfile, 0xA67)("Unsupported prim type");
                         break;
                     }
                 }

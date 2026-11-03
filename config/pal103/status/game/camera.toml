@@ -268,8 +268,13 @@ id = "pal103:unit-0093:00633268:ctmtl"
 state = "matching"
 
 [[claim]]
+section = ".data"
+start = 0x0058623c
+end = 0x00586240
+
+[[claim]]
 section = ".rodata"
-start = 0x0061d330
+start = 0x0061d324
 end = 0x0061d3a0
 
 [[claim]]

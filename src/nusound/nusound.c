@@ -150,7 +150,7 @@ int Release = 0x10;
 struct nuvec_s *NuSoundListenPos = 0;
 int NuSndSteroPitch = 0;
 extern int NoSoundPlease;
-static sceSifClientData nusound_client_data;
+static sceSifClientData nusound_client_data __attribute__((aligned(32)));
 static struct nusound_filename_info_s ADPCM_FileNames[300];
 
 #define camera_position D_002D3EF0

@@ -43,8 +43,7 @@ typedef struct {
     ((u_long)(dy) << 12) | ((u_long)(dw) << 32))
 #define GS_MAGH(w) (((w) + 2559) / (w))
 
-extern char D_0062AE50[];
-#define unsupported_mode_msg D_0062AE50
+#define unsupported_mode_msg "sceGsDefDispEnv:Not support displaymode for %d!!\n"
 
 sceGsGParam *sceGsGetGParam(void);
 int printf(const char *fmt, ...);

@@ -30,5 +30,5 @@ end = 0x00613fa7
 
 [[claim]]
 section = ".sdata"
-start = 0x0062ea40
+start = 0x0062ea3f
 end = 0x0062ea50

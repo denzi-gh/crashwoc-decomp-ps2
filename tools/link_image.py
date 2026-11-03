@@ -191,9 +191,18 @@ def select_text_objects(version, link_set, with_data=None, claims=None,
     return objs
 
 
+def data_only_objects(version, link_set):
+    """[(unit_index, object_path)] -- the hybrids of units with no .text run
+    (data-only: impure.c, ctype_.c, ...), which supply data pieces only."""
+    runs = {u for u, _a in load_tu_runs()}
+    return [(u, ROOT / "build" / version / link_set / p)
+            for u, p in sorted(manifest_units(version, link_set).items())
+            if u not in runs]
+
+
 def build_script(text_addr, text_objs, vutext_vaddr, map_ranges, nobits,
                  defsyms, providers=None, claimed=None, nobits_ranges=None,
-                 nobits_providers=None):
+                 nobits_providers=None, data_only_objs=()):
     """Link script: .text from TU objects, data sections from map ranges.
 
     `providers` maps a range owner (`unit-NNNN`) to the hybrid object that
@@ -204,7 +213,8 @@ def build_script(text_addr, text_objs, vutext_vaddr, map_ranges, nobits,
     section-relative, hence ABSOLUTE), and each section's end too.
     .sbss/.bss hold no file bytes: a `complete` unit's hybrid
     (`nobits_providers`) or a claimant supplies its `nobits_ranges` pieces,
-    every other byte is reserved space."""
+    every other byte is reserved space. `data_only_objs` (data-only hybrids)
+    supply pieces only; their empty .text is discarded."""
     providers = providers or {}
     claimed = claimed or {}
     nobits_providers = nobits_providers or {}
@@ -279,7 +289,9 @@ def build_script(text_addr, text_objs, vutext_vaddr, map_ranges, nobits,
     L.append(f"    _gp = 0x{_GP:08X};")
     # The expected data objects' .sbss/.bss sections are objdiff targets.
     L.append("    /DISCARD/ : { *(.pdr) *(.reginfo) *(.mdebug*) *(.comment) "
-             "*(.gnu.attributes) *(.split.sbss_*) *(.split.bss_*) }")
+             "*(.gnu.attributes) *(.split.sbss_*) *(.split.bss_*)"
+             + "".join(f" {p.as_posix()}(.text)" for p in data_only_objs)
+             + " }")
     L.append("}")
     L += [f"{n} = 0x{a:08X};" for n, a in sorted(defsyms.items())]
     return "\n".join(L) + "\n"
@@ -308,15 +320,17 @@ def link_image(reporter, version, link_set):
 
     with_data, claims, whole = set(), {}, set()
     text_objs = select_text_objects(version, link_set, with_data, claims, whole)
+    data_only = data_only_objects(version, link_set)
+    unit_objs = text_objs + data_only
     hybrid_count = sum(1 for _u, p in text_objs
                        if p.is_relative_to(ROOT / "build"))
     all_ranges = load_map(version)
     map_ranges = [r for r in all_ranges if r["section"] not in NOBITS_SECTIONS]
     nobits_ranges = [r for r in all_ranges if r["section"] in NOBITS_SECTIONS]
-    providers = {f"unit-{u:04d}": p for u, p in text_objs if u in with_data}
-    nobits_providers = {f"unit-{u:04d}": p for u, p in text_objs if u in whole}
+    providers = {f"unit-{u:04d}": p for u, p in unit_objs if u in with_data}
+    nobits_providers = {f"unit-{u:04d}": p for u, p in unit_objs if u in whole}
     try:
-        claimed = claimed_ranges(all_ranges, claims, dict(text_objs))
+        claimed = claimed_ranges(all_ranges, claims, dict(unit_objs))
     except ValueError as exc:
         reporter.result("Claimed gap ranges", False, str(exc))
         return None, None
@@ -328,7 +342,7 @@ def link_image(reporter, version, link_set):
                  if stem not in providers and stem not in claimed_stems]
 
     missing = [p.relative_to(ROOT).as_posix()
-               for p in [p for _u, p in text_objs] + data_objs
+               for p in [p for _u, p in unit_objs] + data_objs
                if not p.is_file()]
     reporter.result("All linked objects present", not missing,
                     None if not missing else
@@ -369,7 +383,7 @@ def link_image(reporter, version, link_set):
                         "-o", str(out_dir / "vutext.o"),
                         str(out_dir / "vutext.s")],
                        check=True, capture_output=True, text=True)
-        for _unit, obj in text_objs:
+        for _unit, obj in unit_objs:
             d, u = nm_defined_undefined(nm_bin, obj)
             defined |= d
             undefined |= u
@@ -388,7 +402,8 @@ def link_image(reporter, version, link_set):
 
     script = build_script(text_addr, [p for _u, p in text_objs],
                           vutext["vaddr"], map_ranges, nobits, defsyms,
-                          providers, claimed, nobits_ranges, nobits_providers)
+                          providers, claimed, nobits_ranges, nobits_providers,
+                          [p for _u, p in data_only])
     ld_script = out_dir / f"{link_set}.ld"
     ld_script.write_text(script)
     elf_out = out_dir / f"{link_set}.elf"
@@ -398,7 +413,7 @@ def link_image(reporter, version, link_set):
         for s in dict.fromkeys(r["section"] for r in map_ranges)]
     try:
         subprocess.run([ld_bin, "-EL", "-T", str(ld_script), "-o",
-                        str(elf_out), *[str(p) for _u, p in text_objs],
+                        str(elf_out), *[str(p) for _u, p in unit_objs],
                         str(out_dir / "vutext.o"),
                         *[str(p) for p in data_objs]],
                        check=True, capture_output=True, text=True)

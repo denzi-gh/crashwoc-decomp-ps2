@@ -11,8 +11,7 @@
 #include "nu3d/numtl.h"
 #include "nu3d/nutex.h"
 
-extern char D_00619210[];
-#define glutils_file D_00619210
+#define glutils_file "..\\nu2crash.ps2\\gamelib\\glutils.c"
 
 s32 NuFileLoadBuffer(char *name, void *buf, s32 max);
 void NuMemFreeFn(void *ptr, char *file, s32 line);

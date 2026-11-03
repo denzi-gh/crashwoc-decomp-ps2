@@ -237,8 +237,18 @@ state = "matching"
 
 [[claim]]
 section = ".bss"
+start = 0x006ae524
+end = 0x006ae528
+
+[[claim]]
+section = ".bss"
 start = 0x006aea68
 end = 0x006aff68
+
+[[claim]]
+section = ".rodata"
+start = 0x006158f1
+end = 0x00615900
 
 [[claim]]
 section = ".rodata"
@@ -249,6 +259,11 @@ end = 0x00615bd8
 section = ".sbss"
 start = 0x0063319c
 end = 0x006331a0
+
+[[claim]]
+section = ".sdata"
+start = 0x0062ef2c
+end = 0x0062ef30
 
 [[claim]]
 section = ".sdata"

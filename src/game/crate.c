@@ -457,10 +457,6 @@ extern f32 NuFileReadFloat(s32 h);
 extern char NuFileReadChar(s32 h);
 extern void NuFileClose(s32 h);
 
-/* Faithful near-match (state=asm), 92.5%: logic/offsets/version-branches exact
- * (drops GC NuFileExists, D_00631250 format, NUFILE_READ=0). Residual is 15
- * words in the version-check + loop-setup region -- gcc emits slti/5 where
- * retail materializes 4 for slt, cascading the loop preheader. Not steerable. */
 extern void HeightSortCrateData(void);
 
 void ConvertCrateData(void) {

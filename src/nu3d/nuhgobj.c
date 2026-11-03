@@ -56,9 +56,7 @@ extern void NuMtxMulVU0(struct numtx_s *dst, struct numtx_s *a, struct numtx_s *
 extern void NuCvtSknInstFix(struct SkinDmaTag *tag);
 extern void NuCvtSknInstUnFix(struct SkinDmaTag *tag);
 
-extern char D_00615290[];
-
-#define nuhgobj_file D_00615290
+#define nuhgobj_file "..\\nu2crash.ps2\\nu3d\\nuhgobj.c"
 
 #define NU_RELPTR(p) ((p) ? (void *)((char *)&(p) + (int)(p)) : 0)
 #define NU_OFFSET_PTR(off, base) ((void *)((int)(off) + (base)))
@@ -497,12 +495,6 @@ extern int NuFileLoadBuffer(char *name, void *buf, int size);
 extern int NuMemFileOpen(void *buf, int size, int mode);
 extern void NuFileClose(int fh);
 extern char *strlwr(char *s);
-extern char D_006152B0[];
-extern char D_006152D0[];
-extern char D_006152F0[];
-#define msg_hgobj_loading D_006152B0
-#define msg_hgobj_open_failed D_006152D0
-#define msg_hgobj_alloc_failed D_006152F0
 
 struct NUHGOBJ_s *NuHGobjLoad(char *file) {
     struct NUHGOBJ_s *hobj;
@@ -516,18 +508,18 @@ struct NUHGOBJ_s *NuHGobjLoad(char *file) {
     if (buf) {
         fh = NuMemFileOpen(buf, NuFileLoadBuffer(file, buf, size), 0);
         if (fh) {
-            NuDebugMsgProlog(nuhgobj_file, 0x1A8)(msg_hgobj_loading, strlwr(file));
+            NuDebugMsgProlog(nuhgobj_file, 0x1A8)("Reading scene file %s...", strlwr(file));
             NuFileBeginBlkRead(fh, 0x464F4748);
             hobj = NuHGobjCreate();
             ReadNuIFFHGobj(fh, hobj);
             NuFileEndBlkRead(fh);
             NuFileClose(fh);
         } else {
-            NuDebugMsgProlog(nuhgobj_file, 0x1B2)(msg_hgobj_open_failed, strlwr(file));
+            NuDebugMsgProlog(nuhgobj_file, 0x1B2)("Failed to open HGO file %s!", strlwr(file));
         }
         NuMemFreeFn(buf, nuhgobj_file, 0x1B4);
     } else {
-        NuErrorProlog(nuhgobj_file, 0x1B7)(msg_hgobj_alloc_failed, size);
+        NuErrorProlog(nuhgobj_file, 0x1B7)("Unable to allocate %d bytes", size);
     }
     return hobj;
 }
@@ -536,14 +528,6 @@ struct NUHGOBJ_s *NuHGobjLoad(char *file) {
 extern int NuFileReadInt(int fh);
 extern char NuFileReadChar(int fh);
 extern float NuFileReadFloat(int fh);
-extern char D_00615310[];
-extern char D_00615330[];
-extern char D_00615358[];
-extern char D_00615380[];
-#define msg_shadow_alloc_failed D_00615310
-#define msg_ellipsoid_alloc_failed D_00615330
-#define msg_cylinder_alloc_failed D_00615358
-#define msg_mesh_alloc_failed D_00615380
 
 void ReadNuIFFHGobjSet(int fh, struct NUHGOBJ_s *hobj) {
     struct NUSHADOWDATA_s *shadow;
@@ -635,7 +619,7 @@ void ReadNuIFFHGobjSet(int fh, struct NUHGOBJ_s *hobj) {
         if (numshadows) {
             hobj->shadow = NuMemAllocFn((numshadows + 1) * sizeof(struct NUSHADOWDATA_s), nuhgobj_file, 0x2B0);
             if (!hobj->shadow) {
-                NuErrorProlog(nuhgobj_file, 0x2B3)(msg_shadow_alloc_failed);
+                NuErrorProlog(nuhgobj_file, 0x2B3)("failed to alloc shadow data");
             }
             memset(hobj->shadow, 0, (numshadows + 1) * sizeof(struct NUSHADOWDATA_s));
             hobj->shadow[numshadows].joint = 0xFF;
@@ -649,7 +633,7 @@ void ReadNuIFFHGobjSet(int fh, struct NUHGOBJ_s *hobj) {
                     size = shadow->nellipsoids * 0x30;
                     shadow->ellipsoids = NuMemAllocFn(size, nuhgobj_file, 0x2C6);
                     if (!shadow->ellipsoids) {
-                        NuErrorProlog(nuhgobj_file, 0x2C8)(msg_ellipsoid_alloc_failed);
+                        NuErrorProlog(nuhgobj_file, 0x2C8)("failed to alloc shadow ellipsoids");
                     }
                     NuFileRead(fh, shadow->ellipsoids, size);
                 }
@@ -658,7 +642,7 @@ void ReadNuIFFHGobjSet(int fh, struct NUHGOBJ_s *hobj) {
                     size = shadow->ncylinders * 0x40;
                     shadow->cylinders = NuMemAllocFn(size, nuhgobj_file, 0x2D1);
                     if (!shadow->cylinders) {
-                        NuErrorProlog(nuhgobj_file, 0x2D3)(msg_cylinder_alloc_failed);
+                        NuErrorProlog(nuhgobj_file, 0x2D3)("failed to alloc shadow cylinders");
                     }
                     NuFileRead(fh, shadow->cylinders, size);
                 }
@@ -667,7 +651,7 @@ void ReadNuIFFHGobjSet(int fh, struct NUHGOBJ_s *hobj) {
                     size = shadow->nshadow_meshes * sizeof(struct NUSHADOWMESH_s);
                     shadow->shadow_meshes = NuMemAllocFn(size, nuhgobj_file, 0x2DC);
                     if (!shadow->shadow_meshes) {
-                        NuErrorProlog(nuhgobj_file, 0x2DE)(msg_mesh_alloc_failed);
+                        NuErrorProlog(nuhgobj_file, 0x2DE)("failed to alloc shadow_meshes");
                     }
                     memset(shadow->shadow_meshes, 0, size);
                     for (j = 0; j < shadow->nshadow_meshes; j++) {
@@ -899,37 +883,12 @@ inline void NuGHGFixupGobj(int base, struct nugobj_s *gobj, struct NUHGOBJ_s *ho
 extern void NuDisableVBlank(void);
 extern void NuEnableVBlank(void);
 extern NuMtlReadEventFunc NuMtlReadEvent;
-extern int D_0062EECC;
-extern char D_00615470[];
-extern char D_006154C0[];
-extern char D_00615510[];
-extern char D_00615520[];
-#define nughg_version D_0062EECC
-#define msg_ghg_file_old D_00615470
-#define msg_ghg_loader_old D_006154C0
-#define msg_ghg_reading D_00615510
-#define msg_ghg_read_size D_00615520
+static int ghg_version = 0;
 
 extern int NuFileOpen(char *file, enum nufilemode_e mode);
 extern int NuFileWrite(int fh, void *data, int size);
 extern void NuStrCpy(char *dst, char *src);
 extern int NuStrLen(char *str);
-extern char D_006153A0[];
-extern char D_006153B8[];
-extern char D_006153D0[];
-extern char D_006153E8[];
-extern char D_00615400[];
-extern char D_00615420[];
-extern char D_00615438[];
-extern char D_00615458[];
-#define msg_ghg_wrote_textures D_006153A0
-#define msg_ghg_wrote_materials D_006153B8
-#define msg_ghg_wrote_strings D_006153D0
-#define msg_ghg_wrote_joints D_006153E8
-#define msg_ghg_wrote_pois D_00615400
-#define msg_ghg_wrote_layer D_00615420
-#define msg_ghg_wrote_texanims D_00615438
-#define msg_ghg_wrote_shadow D_00615458
 
 void NuGHGWrite(struct NUHGOBJ_s *hobj, char *file, int size) {
     char *base;
@@ -955,7 +914,7 @@ void NuGHGWrite(struct NUHGOBJ_s *hobj, char *file, int size) {
         ptr = base;
         header = (struct nuhghhdr_s *)ptr;
         memset(header, 0, size);
-        header->version = nughg_version;
+        header->version = ghg_version;
         ptr = (char *)(((unsigned int)&header[1] + 3) & ~3);
         offsets = (int *)ptr;
         header->tbrdist = hobj->scale;
@@ -969,7 +928,7 @@ void NuGHGWrite(struct NUHGOBJ_s *hobj, char *file, int size) {
                 ptr += NuTexRecoverNativeData(hobj->tids[i], ptr, size);
             }
         }
-        NuDebugMsgProlog(nuhgobj_file, 0x444)(msg_ghg_wrote_textures, ptr - base);
+        NuDebugMsgProlog(nuhgobj_file, 0x444)("Written Textures %d", ptr - base);
 
         NuGHGAlign4(&ptr);
         offsets = (int *)ptr;
@@ -994,13 +953,13 @@ void NuGHGWrite(struct NUHGOBJ_s *hobj, char *file, int size) {
             }
             ptr += sizeof(struct numtl_s);
         }
-        NuDebugMsgProlog(nuhgobj_file, 0x45E)(msg_ghg_wrote_materials, ptr - base);
+        NuDebugMsgProlog(nuhgobj_file, 0x45E)("Written Materials %d", ptr - base);
 
         header->string_table = ptr - base;
         header->string_table_size = hobj->string_table_size;
         memcpy(ptr, hobj->string_table, hobj->string_table_size);
         ptr += hobj->string_table_size;
-        NuDebugMsgProlog(nuhgobj_file, 0x467)(msg_ghg_wrote_strings, ptr - base);
+        NuDebugMsgProlog(nuhgobj_file, 0x467)("Written String %d", ptr - base);
 
         header->num_joints = hobj->num_joints;
         NuGHGAlign16(&ptr);
@@ -1025,7 +984,7 @@ void NuGHGWrite(struct NUHGOBJ_s *hobj, char *file, int size) {
         for (i = 0; i < hobj->num_joint_ixs; i++) {
             *ptr++ = hobj->joint_ixs[i];
         }
-        NuDebugMsgProlog(nuhgobj_file, 0x486)(msg_ghg_wrote_joints, ptr - base);
+        NuDebugMsgProlog(nuhgobj_file, 0x486)("Written Joints %d", ptr - base);
 
         if (hobj->num_poi_ixs) {
             header->num_poi_ixs = hobj->num_poi_ixs;
@@ -1048,7 +1007,7 @@ void NuGHGWrite(struct NUHGOBJ_s *hobj, char *file, int size) {
                 pois++;
             }
         }
-        NuDebugMsgProlog(nuhgobj_file, 0x4A0)(msg_ghg_wrote_pois, ptr - base);
+        NuDebugMsgProlog(nuhgobj_file, 0x4A0)("Written Points of interest %d", ptr - base);
 
         NuGHGAlign4(&ptr);
         header->num_layers = hobj->num_layers;
@@ -1088,7 +1047,7 @@ void NuGHGWrite(struct NUHGOBJ_s *hobj, char *file, int size) {
             ptr = NuGHGWriteGobj(base, ptr, hobj, hobj->layers[i].skin_gobj, &layer->skin_gobj);
             ptr = NuGHGWriteGobj(base, ptr, hobj, hobj->layers[i].blend_skin_gobj,
                                  &layer->blend_skin_gobj);
-            NuDebugMsgProlog(nuhgobj_file, 0x4D2)(msg_ghg_wrote_layer, i, ptr - base);
+            NuDebugMsgProlog(nuhgobj_file, 0x4D2)("Written Layer(%d) %d", i, ptr - base);
             layer++;
         }
 
@@ -1153,7 +1112,7 @@ void NuGHGWrite(struct NUHGOBJ_s *hobj, char *file, int size) {
                     ptr += 2;
                 }
             }
-            NuDebugMsgProlog(nuhgobj_file, 0x538)(msg_ghg_wrote_texanims, ptr - base);
+            NuDebugMsgProlog(nuhgobj_file, 0x538)("Written animated textures %d", ptr - base);
         }
 
         header->shadow_data = 0;
@@ -1257,7 +1216,7 @@ void NuGHGWrite(struct NUHGOBJ_s *hobj, char *file, int size) {
                     }
                 }
             }
-            NuDebugMsgProlog(nuhgobj_file, 0x5C4)(msg_ghg_wrote_shadow, ptr - base);
+            NuDebugMsgProlog(nuhgobj_file, 0x5C4)("Written shadow data %d", ptr - base);
         }
 
         header->filesize = ptr - base;
@@ -1293,13 +1252,13 @@ struct NUHGOBJ_s *NuGHGRead(union variptr_u *buffer, char *file) {
     base = ptr.intaddr;
     if (NuFileLoadBuffer(file, ptr.voidptr, 0x7FFFFFFF) > 0) {
         header = ptr.voidptr;
-        if (header->version < nughg_version) {
-            NuErrorProlog(nuhgobj_file, 0x61D)(msg_ghg_file_old, header->version, nughg_version);
+        if (header->version < ghg_version) {
+            NuErrorProlog(nuhgobj_file, 0x61D)("GHG file is out of date - needs to be reconverted (FILE VER:%d SYS VER:%d)", header->version, ghg_version);
         }
-        if (header->version > nughg_version) {
-            NuErrorProlog(nuhgobj_file, 0x61F)(msg_ghg_loader_old, header->version, nughg_version);
+        if (header->version > ghg_version) {
+            NuErrorProlog(nuhgobj_file, 0x61F)("GHG loader is out of date - need newer 3d system (FILE VER:%d SYS VER:%d)", header->version, ghg_version);
         }
-        NuDebugMsgProlog(nuhgobj_file, 0x622)(msg_ghg_reading, file);
+        NuDebugMsgProlog(nuhgobj_file, 0x622)("Reading %s", file);
         hobj = (struct NUHGOBJ_s *)((ptr.intaddr + ((struct nuhghhdr_s *)ptr.voidptr)->filesize + 0xF) & ~0xF);
         ptr.voidptr = &hobj[1];
         memset(hobj, 0, sizeof(struct NUHGOBJ_s));
@@ -1448,7 +1407,7 @@ struct NUHGOBJ_s *NuGHGRead(union variptr_u *buffer, char *file) {
             }
         }
         ptr.intaddr = (ptr.intaddr + 0xF) & ~0xF;
-        NuDebugMsgProlog(nuhgobj_file, 0x70C)(msg_ghg_read_size, file, ptr.u8 - buffer->u8);
+        NuDebugMsgProlog(nuhgobj_file, 0x70C)("Read %s Used %d bytes", file, ptr.u8 - buffer->u8);
         *buffer = ptr;
     }
     return hobj;

@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0105"
 source = "src/game/edai.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0105:00236260:edaiHIGHLIGHT"
@@ -86,3 +86,108 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0105:00237d00:edaiRender"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0105:005cd1d0:edai_rgba"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0105:005cd1f0:edaidesc"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0105:005cd228:edai_cam_pos"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0105:00631c38:edai_count"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0105:00631c3c:edai_terrainlock"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0105:00631c40:edai_levelaitype"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0105:00631c44:edai_aitype"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0105:00631c48:edai_ipoint"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0105:00631c4c:edai_highlight_i_atab"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0105:00631c50:edai_highlight_i_point"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0105:00631c68:edai_active_menu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0105:00631c6c:edai_options_menu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0105:00631c70:edai_selecttype_menu"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0105:00631c88:edai_used"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0105:00631c8c:edai_cam_dist"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0105:00631c90:edai_cam_ax"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0105:00631c94:edai_cam_ay"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0105:0063334c:edai_surface_y"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0105:00633350:edai_layer_y"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0105:00633354:edai_roof_y"
+state = "matching"
+
+[[claim]]
+section = ".data"
+start = 0x005cd1cc
+end = 0x005cd1d0
+
+[[claim]]
+section = ".rodata"
+start = 0x00620375
+end = 0x00620378
+
+[[claim]]
+section = ".rodata"
+start = 0x00620418
+end = 0x00620432
+
+[[claim]]
+section = ".sbss"
+start = 0x00633354
+end = 0x00633358
+
+[[claim]]
+section = ".sdata"
+start = 0x00631c34
+end = 0x00631c38

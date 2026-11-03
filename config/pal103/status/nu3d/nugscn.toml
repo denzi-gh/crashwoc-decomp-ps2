@@ -430,10 +430,25 @@ end = 0x006add14
 
 [[claim]]
 section = ".rodata"
+start = 0x00614cff
+end = 0x00614d00
+
+[[claim]]
+section = ".rodata"
 start = 0x00615230
 end = 0x0061528c
 
 [[claim]]
 section = ".sbss"
+start = 0x0063308c
+end = 0x00633090
+
+[[claim]]
+section = ".sbss"
 start = 0x00633114
 end = 0x00633118
+
+[[claim]]
+section = ".sdata"
+start = 0x0062ee27
+end = 0x0062ee28

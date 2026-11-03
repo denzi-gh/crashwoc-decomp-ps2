@@ -77,5 +77,10 @@ state = "matching"
 
 [[claim]]
 section = ".bss"
+start = 0x00702a44
+end = 0x00702a48
+
+[[claim]]
+section = ".bss"
 start = 0x00702a48
 end = 0x00702a60

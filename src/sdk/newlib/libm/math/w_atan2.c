@@ -28,8 +28,7 @@ typedef enum {
 extern const _LIB_VERSION_TYPE __fdlib_version[];
 #define _LIB_VERSION (__fdlib_version[0])
 
-extern char D_0062B290[];
-#define atan2_name D_0062B290
+#define atan2_name "atan2"
 
 extern double __ieee754_atan2(double y, double x);
 extern int isnan(double x);

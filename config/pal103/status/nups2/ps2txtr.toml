@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0059"
 source = "src/nups2/ps2txtr.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0059:00165ff0:QuantizeTexture"
@@ -74,3 +74,52 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0059:00168788:GetTexturePreLoad"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0059:002ea0b0:psmt4_col96off"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0059:0062f010:nutex_force_quantisation"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0059:0062f014:nutex_force_overbrighten"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0059:0062f018:txbuff"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0059:0062f01c:palcnt"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0059:006b3330:palette"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x006b3330
+end = 0x006b3730
+
+[[claim]]
+section = ".rodata"
+start = 0x0061614f
+end = 0x00616150
+
+[[claim]]
+section = ".rodata"
+start = 0x00616448
+end = 0x006164d6
+
+[[claim]]
+section = ".sdata"
+start = 0x0062f00c
+end = 0x0062f010
+
+[[claim]]
+section = ".sdata"
+start = 0x0062f020
+end = 0x0062f027

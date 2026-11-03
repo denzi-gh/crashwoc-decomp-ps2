@@ -248,8 +248,9 @@ def check_manifest(path, version, root):
             # index like their objdiff unit name: graphdev_127.c.
             stem, dot, ext = retail_base.rpartition(".")
             indexed = f"{stem}_{unit_index:03d}{dot}{ext}"
-            # An assembly unit (crt0.s, memcpy.S) is carried as C of file-scope asm.
-            as_c = f"{stem}.c" if ext in ("s", "S") else None
+            # An assembly unit (crt0.s, memcpy.S) is carried as C of file-scope
+            # asm; a preprocessed temp unit (ccAlaaaa.i) as plain C.
+            as_c = f"{stem}.c" if ext in ("s", "S", "i") else None
             if Path(source).name not in (retail_base, indexed, as_c):
                 problems.append(
                     f"unit {unit_index} is '{retail_base}' in units.toml but "

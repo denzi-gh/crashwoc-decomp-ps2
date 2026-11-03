@@ -26,10 +26,8 @@ extern void *NuAllocHigh(int size);
 extern void *NuMemAllocFn(int size, char *file, int line);
 extern void NuMemFreeFn(void *ptr, char *file, int line);
 
-extern char D_00613CA0[];
-extern char D_0062EA20[];
-#define numemblk_file D_00613CA0
-#define msg_assert D_0062EA20
+#define numemblk_file "..\\nu2crash.ps2\\nucore\\numemblk.c"
+#define msg_assert "assert"
 
 
 NuMemBlk *NuMemBlkCreateHigh(unsigned int size, int count, int align)

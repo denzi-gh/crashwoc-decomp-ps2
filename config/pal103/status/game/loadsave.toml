@@ -138,3 +138,13 @@ state = "matching"
 [[data]]
 id = "pal103:unit-0119:00632b8c:SLOTPANELDY"
 state = "matching"
+
+[[claim]]
+section = ".data"
+start = 0x00609ecc
+end = 0x00609ed0
+
+[[claim]]
+section = ".sdata"
+start = 0x00632b17
+end = 0x00632b18

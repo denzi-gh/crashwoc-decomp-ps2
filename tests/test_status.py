@@ -217,6 +217,12 @@ class TestStatusValidator(unittest.TestCase):
         self.assertTrue(any("'nulist.c' in units.toml but source is 'other.c'"
                             in p for p in problems), problems)
 
+    def test_preprocessed_unit_takes_a_c_source(self):
+        # A preprocessed temp unit (ccAlaaaa.i) is carried as plain C.
+        units = self.tree.root / "config" / VERSION / "units.toml"
+        units.write_text(units.read_text().replace("nulist.c'", "nulist.i'"))
+        self.assertEqual(self.tree.problems(), [])
+
     def test_rejects_unknown_key(self):
         self.tree.manifest.write_text(
             self.tree.manifest.read_text() + "\nowner = \"me\"\n")

@@ -182,3 +182,8 @@ state = "matching"
 [[data]]
 id = "pal103:unit-0013:00293890:nuvec_z"
 state = "matching"
+
+[[claim]]
+section = ".data"
+start = 0x0029384d
+end = 0x00293850

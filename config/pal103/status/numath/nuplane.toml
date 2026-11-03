@@ -88,6 +88,11 @@ id = "pal103:unit-0019:0010d288:NuClipZPlane"
 state = "matching"
 
 [[claim]]
+section = ".rodata"
+start = 0x0061401c
+end = 0x00614020
+
+[[claim]]
 section = ".sdata"
-start = 0x0062ea58
+start = 0x0062ea54
 end = 0x0062ea5f

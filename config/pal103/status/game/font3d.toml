@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0106"
 source = "src/game/font3d.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0106:00237d58:RemapAccentedCharacter"
@@ -38,3 +38,103 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0106:00238ba0:CombinationCharacterBC"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0106:005cd238:Font3DTab"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0106:005cd5f8:Font3DAccentTab"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0106:005cd650:Font3DObjTab"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0106:005cd788:Font3DMtlTab"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0106:005cd7b0:j_bd"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0106:005cd808:j_bc"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0106:005cd820:Font3DRemap"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0106:00631e04:font3d_initialised"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0106:00631e38:FONT3DSIZE"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0106:00631e3c:FONT3DYMUL"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0106:00631e40:FONT3D_JSCALEDX"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0106:00631e44:FONT3D_JSCALEX"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0106:00631e48:font3d_dx"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0106:00631e4c:font3d_dy"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0106:00631e50:font3d_xleft"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0106:00631e54:font3d_xmid"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0106:00631e58:font3d_xright"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0106:00631e5c:font3d_ytop"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0106:00631e60:font3d_ymid"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0106:00631e64:font3d_ybottom"
+state = "matching"
+
+[[claim]]
+section = ".data"
+start = 0x005cd234
+end = 0x005cd238
+
+[[claim]]
+section = ".rodata"
+start = 0x00620432
+end = 0x00620510
+
+[[claim]]
+section = ".rodata"
+start = 0x006206d0
+end = 0x00620728
+
+[[claim]]
+section = ".sdata"
+start = 0x00631c98
+end = 0x00631e04

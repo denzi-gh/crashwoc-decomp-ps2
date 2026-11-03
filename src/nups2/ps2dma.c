@@ -138,69 +138,14 @@ typedef struct DmaTag *(*TagWalkFunc)(struct DmaTag *tag, void *user);
 #define GS_LABEL        0x62
 #define GS_NOP          0x7F
 
-extern struct DmaTag D_002EA550;
-extern struct DmaTag D_002EA560;
-extern struct DmaTag D_002EA570;
-extern struct DmaTag D_002EA580;
-extern u32 *D_0062F0E0;
-extern struct DmaTag *vpdmatag_curr;
-extern u32 *D_00633200;
-extern struct GifTag *D_00633208;
-extern int D_0062F0D8;
-extern int D_0062F0DC;
-extern char D_00616E00[];
-extern char D_00617850[];
-extern int gs_dma_status;
-extern int vu1_dma_status;
-extern struct DmaTag *vu1_last_write;
-extern struct DmaTag *vu1_prev_write;
-extern struct DmaTag *gs_last_write;
-extern struct DmaTag *gs_prev_write;
-extern struct DmaTag *gs_termaddr;
-extern struct DmaTag *termaddr;
-extern int cycle_steal;
-extern int D_0062F0E8;
-extern char D_006175F0[];
-extern char D_006170D0[], D_006170E0[], D_006170F8[], D_00617110[], D_00617120[];
-extern char D_00617130[], D_00617140[], D_00617158[], D_00617168[], D_00617180[];
-extern char D_00617190[], D_006171A8[], D_006171C0[], D_006171D0[], D_006171E8[];
-extern char D_00617200[], D_00617228[], D_00617250[], D_00617268[], D_00617280[];
-extern char D_006172A0[], D_006172C8[], D_006172E0[], D_006172F8[], D_00617310[];
-extern char D_00617330[], D_00617350[], D_00617368[], D_00617388[], D_006173A8[];
-extern char D_006173C0[], D_006173E0[], D_00617400[], D_00617418[], D_00617430[];
-extern char D_0062F100[], D_0062F108[];
-extern char *D_002EA460[];
-extern char *D_002EA480[];
-extern int D_002EA4E8[];
-extern int debug_dma_level;
-extern char D_00617748[];
-extern char D_00617760[];
-extern char D_00617778[];
-extern char D_00617788[];
-extern char D_006177B8[];
-extern char D_006177E0[];
-extern char D_00617800[];
-extern char D_00617820[];
-extern char D_00617068[];
-extern char D_00617078[];
-extern char D_00617098[];
-extern char D_006170B8[];
-extern char D_0062F0F0[];
-extern char D_0062F0F8[];
-extern char D_00616E20[];
-extern char D_00616E40[];
-extern char D_00616A80[], D_00616A90[], D_00616AA0[], D_00616AB0[], D_00616AC0[];
-extern char D_00616AD0[], D_00616AE0[], D_00616AF0[], D_00616B00[], D_00616B10[];
-extern char D_00616B20[], D_00616B30[], D_00616B40[], D_00616B50[], D_00616B60[];
-extern char D_00616B70[], D_00616B80[], D_00616B90[], D_00616BA0[], D_00616BB0[];
-extern char D_00616BC0[], D_00616BD0[], D_00616BE0[], D_00616BF0[], D_00616C00[];
-extern char D_00616C10[], D_00616C20[], D_00616C30[], D_00616C40[], D_00616C50[];
-extern char D_00616C60[], D_00616C70[], D_00616C80[], D_00616C90[], D_00616CA0[];
-extern char D_00616CB0[], D_00616CC0[], D_00616CD0[], D_00616CE0[], D_00616CF0[];
-extern char D_00616D00[], D_00616D10[], D_00616D20[], D_00616D30[], D_00616D40[];
-extern char D_00616D50[], D_00616D60[], D_00616D70[], D_00616D80[], D_00616D90[];
-extern char D_00616DA0[], D_00616DB0[], D_00616DC0[], D_00616DD0[], D_00616DE0[];
-extern char D_00616DF0[];
+static int debug_gs_list = 0;
+static int debug_dma_list = 0;
+static u32 *ps2_scratch_free = (u32 *)SCRATCHPAD_BASE;
+int debug_dma_level = 0;
+static int decode_error = 0;
+
+static u32 *vt_curr;
+static struct GifTag *gt_curr __attribute__((aligned(8)));
 
 extern void NuStrCat(char *dst, char *src);
 extern void TagWalk(struct DmaTag *tag, TagWalkFunc walker);
@@ -208,75 +153,6 @@ extern struct DmaTag *VifTagWalk(struct DmaTag *tag, void *user);
 int VU0_DmaGetStatus(void);
 int VU1_DmaGetStatus(void);
 
-#define dmatag_cnt      D_002EA550
-#define dmatag_ref      D_002EA560
-#define dmatag_end      D_002EA570
-#define dmatag_end_ex   D_002EA580
-#define nuscratch_ptr   D_0062F0E0
-#define giftag_curr     D_00633208
-#define vt_direct_curr  D_00633200
-#define gs_dma_walk     D_0062F0D8
-#define vu1_dma_walk    D_0062F0DC
-#define ps2dma_file     D_00616E00
-#define bad_status_msg  D_00617850
-#define vif_walk_abort  D_0062F0E8
-#define vif_walk_msg    D_006175F0
-#define vt_nop_fmt          D_006170D0
-#define vt_stcycl_fmt       D_006170E0
-#define vt_offset_fmt       D_006170F8
-#define vt_base_fmt         D_00617110
-#define vt_itop_fmt         D_00617120
-#define vt_stmod_fmt        D_00617130
-#define vt_mskpath3_fmt     D_00617140
-#define vt_mark_fmt         D_00617158
-#define vt_flushe_fmt       D_00617168
-#define vt_flush_fmt        D_00617180
-#define vt_flusha_fmt       D_00617190
-#define vt_mscal_fmt        D_006171A8
-#define vt_mscnt_fmt        D_006171C0
-#define vt_mscalf_fmt       D_006171D0
-#define vt_stmask_fmt       D_006171E8
-#define vt_strow_fmt        D_00617200
-#define vt_stcol_fmt        D_00617228
-#define vt_mpg_fmt          D_00617250
-#define vt_direct_fmt       D_00617268
-#define vt_direct_qw_fmt    D_00617280
-#define vt_directhl_fmt     D_006172A0
-#define vt_s32_fmt          D_006172C8
-#define vt_s16_fmt          D_006172E0
-#define vt_s8_fmt           D_006172F8
-#define vt_v2_32_fmt        D_00617310
-#define vt_v2_16_fmt        D_00617330
-#define vt_v2_8_fmt         D_00617350
-#define vt_v3_32_fmt        D_00617368
-#define vt_v3_16_fmt        D_00617388
-#define vt_v3_8_fmt         D_006173A8
-#define vt_v4_32_fmt        D_006173C0
-#define vt_v4_16_fmt        D_006173E0
-#define vt_v4_8_fmt         D_00617400
-#define vt_v4_5_fmt         D_00617418
-#define vt_unknown_fmt      D_00617430
-#define unpack_r_str        D_0062F100
-#define unpack_u_str        D_0062F108
-#define dmatag_id_names     D_002EA460
-#define dmatag_mark_names   D_002EA480
-#define dmatag_mark_quiet   D_002EA4E8
-#define null_tag_msg        D_00617748
-#define misaligned_tag_msg  D_00617760
-#define suppressed_str      D_00617778
-#define tag_fmt             D_00617788
-#define misaligned_ref_msg  D_006177B8
-#define overflow_msg        D_006177E0
-#define underflow_msg       D_00617800
-#define unknown_id_msg      D_00617820
-#define prim_fmt        D_00617068
-#define giftag_packed_fmt  D_00617078
-#define giftag_reglist_fmt D_00617098
-#define giftag_image_fmt   D_006170B8
-#define eop_str         D_0062F0F0
-#define empty_str       D_0062F0F8
-#define gs_packed_fmt   D_00616E20
-#define gs_reglist_fmt  D_00616E40
 
 
 void GSRegDecode(char *indent, u32 reg, u32 *data, int packed)
@@ -285,179 +161,179 @@ void GSRegDecode(char *indent, u32 reg, u32 *data, int packed)
 
     switch (reg) {
     case GS_PRIM:
-        name = D_00616A80;
+        name = "PRIM      ";
         break;
     case GS_RGBAQ:
-        name = D_00616A90;
+        name = "RGBAQ     ";
         break;
     case GS_ST:
-        name = D_00616AA0;
+        name = "ST        ";
         break;
     case GS_UV:
-        name = D_00616AB0;
+        name = "UV        ";
         break;
     case GS_XYZF2:
-        name = D_00616AC0;
+        name = "XYZF2     ";
         break;
     case GS_XYZ2:
-        name = D_00616AD0;
+        name = "XYZ2      ";
         break;
     case GS_FOG:
-        name = D_00616AE0;
+        name = "FOG       ";
         break;
     case GS_XYZF3:
-        name = D_00616AF0;
+        name = "XYZF3     ";
         break;
     case GS_XYZ3:
-        name = D_00616B00;
+        name = "XYZ3      ";
         break;
     case GS_XYOFFSET_1:
-        name = D_00616B10;
+        name = "XYOFFSET_1";
         break;
     case GS_XYOFFSET_2:
-        name = D_00616B20;
+        name = "XYOFFSET_2";
         break;
     case GS_PRMODECONT:
-        name = D_00616B30;
+        name = "PRMODECONT";
         break;
     case GS_PRMODE:
-        name = D_00616B40;
+        name = "PRMODE    ";
         break;
     case GS_TEX0_1:
-        name = D_00616B50;
+        name = "TEX0_1    ";
         break;
     case GS_TEX0_2:
-        name = D_00616B60;
+        name = "TEX0_2    ";
         break;
     case GS_TEX1_1:
-        name = D_00616B70;
+        name = "TEX1_1    ";
         break;
     case GS_TEX1_2:
-        name = D_00616B80;
+        name = "TEX1_2    ";
         break;
     case GS_TEX2_1:
-        name = D_00616B90;
+        name = "TEX2_1    ";
         break;
     case GS_TEX2_2:
-        name = D_00616BA0;
+        name = "TEX2_2    ";
         break;
     case GS_TEXCLUT:
-        name = D_00616BB0;
+        name = "TEXCLUT   ";
         break;
     case GS_SCANMSK:
-        name = D_00616BC0;
+        name = "SCANMSK   ";
         break;
     case GS_MIPTBP1_1:
-        name = D_00616BD0;
+        name = "MIPTBP1_1 ";
         break;
     case GS_MIPTBP1_2:
-        name = D_00616BE0;
+        name = "MIPTBP1_2 ";
         break;
     case GS_MIPTBP2_1:
-        name = D_00616BF0;
+        name = "MIPTBP2_1 ";
         break;
     case GS_MIPTBP2_2:
-        name = D_00616C00;
+        name = "MIPTBP2_2 ";
         break;
     case GS_CLAMP_1:
-        name = D_00616C10;
+        name = "CLAMP_1   ";
         break;
     case GS_CLAMP_2:
-        name = D_00616C20;
+        name = "CLAMP_2   ";
         break;
     case GS_TEXA:
-        name = D_00616C30;
+        name = "TEXA      ";
         break;
     case GS_FOGCOL:
-        name = D_00616C40;
+        name = "FOGCOL    ";
         break;
     case GS_TEXFLUSH:
-        name = D_00616C50;
+        name = "TEXFLUSH  ";
         break;
     case GS_SCISSOR_1:
-        name = D_00616C60;
+        name = "SCISSOR_1 ";
         break;
     case GS_SCISSOR_2:
-        name = D_00616C70;
+        name = "SCISSOR_2 ";
         break;
     case GS_ALPHA_1:
-        name = D_00616C80;
+        name = "ALPHA_1   ";
         break;
     case GS_ALPHA_2:
-        name = D_00616C90;
+        name = "ALPHA_2   ";
         break;
     case GS_DIMX:
-        name = D_00616CA0;
+        name = "DIMX      ";
         break;
     case GS_DTHE:
-        name = D_00616CB0;
+        name = "DTHE      ";
         break;
     case GS_COLCLAMP:
-        name = D_00616CC0;
+        name = "COLCLAMP  ";
         break;
     case GS_TEST_1:
-        name = D_00616CD0;
+        name = "TEST_1    ";
         break;
     case GS_TEST_2:
-        name = D_00616CE0;
+        name = "TEST_2    ";
         break;
     case GS_PABE:
-        name = D_00616CF0;
+        name = "PABE      ";
         break;
     case GS_FBA_1:
-        name = D_00616D00;
+        name = "FBA_1     ";
         break;
     case GS_FBA_2:
-        name = D_00616D10;
+        name = "FBA_2     ";
         break;
     case GS_FRAME_1:
-        name = D_00616D20;
+        name = "FRAME_1   ";
         break;
     case GS_FRAME_2:
-        name = D_00616D30;
+        name = "FRAME_2   ";
         break;
     case GS_ZBUF_1:
-        name = D_00616D40;
+        name = "ZBUF_1    ";
         break;
     case GS_ZBUF_2:
-        name = D_00616D50;
+        name = "ZBUF_2    ";
         break;
     case GS_BITBLTBUF:
-        name = D_00616D60;
+        name = "BITBLTBUF ";
         break;
     case GS_TRXPOS:
-        name = D_00616D70;
+        name = "TRXPOS    ";
         break;
     case GS_TRXREG:
-        name = D_00616D80;
+        name = "TRXREG    ";
         break;
     case GS_TRXDIR:
-        name = D_00616D90;
+        name = "TRXDIR    ";
         break;
     case GS_HWREG:
-        name = D_00616DA0;
+        name = "HWREG     ";
         break;
     case GS_SIGNAL:
-        name = D_00616DB0;
+        name = "SIGNAL    ";
         break;
     case GS_FINISH:
-        name = D_00616DC0;
+        name = "FINISH    ";
         break;
     case GS_LABEL:
-        name = D_00616DD0;
+        name = "LABEL     ";
         break;
     case GS_NOP:
-        name = D_00616DE0;
+        name = "NOP       ";
         break;
     default:
-        name = D_00616DF0;
+        name = "**UNKNOWN**";
         break;
     }
     if (packed) {
-        NuDebugMsgProlog(ps2dma_file, 0x107)(gs_packed_fmt, indent, name,
+        NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x107)("%s[p]GS %s %08x %08x %08x %08x", indent, name,
                                              data[3], data[2], data[1], data[0]);
     } else {
-        NuDebugMsgProlog(ps2dma_file, 0x10A)(gs_reglist_fmt, indent, name,
+        NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x10A)("%s[r]GS %s %08x %08x", indent, name,
                                              data[1], data[0]);
     }
 }
@@ -489,16 +365,16 @@ u64 *DirectDecode(u64 *packet, char *prefix, int qwc)
             count = nloop;
             packet += 2;
             if (gif->pre) {
-                sprintf(prim, prim_fmt, (int)gif->prim);
+                sprintf(prim, ",PRIM %08x", (int)gif->prim);
             } else {
                 prim[0] = 0;
             }
             if (gif->eop) {
-                eop = eop_str;
+                eop = ",EOP";
             } else {
-                eop = empty_str;
+                eop = "";
             }
-            NuDebugMsgProlog(ps2dma_file, 0x12E)(giftag_packed_fmt, indent, size - 1, prim, eop);
+            NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x12E)("%sGiftag(PACKED,QWC=%d%s%s)", indent, size - 1, prim, eop);
             while (count != 0) {
                 count--;
                 for (i = 0; i < nreg; i++) {
@@ -516,7 +392,7 @@ u64 *DirectDecode(u64 *packet, char *prefix, int qwc)
             size = gif->nloop * gif->nreg + 1;
             count = size - 1;
             packet += 2;
-            NuDebugMsgProlog(ps2dma_file, 0x146)(giftag_reglist_fmt, prefix, count);
+            NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x146)("%sGiftag(REGLIST,QWC=%d)", prefix, count);
             while (count != 0) {
                 GSRegDecode(indent, ((u32 *)packet)[2], (u32 *)packet, 0);
                 count--;
@@ -525,7 +401,7 @@ u64 *DirectDecode(u64 *packet, char *prefix, int qwc)
             break;
         default:
             size = gif->nloop + 1;
-            NuDebugMsgProlog(ps2dma_file, 0x152)(giftag_image_fmt, indent, size - 1);
+            NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x152)("%sGiftag(IMAGE,QWC=%d)", indent, size - 1);
             packet += size * 2;
             break;
         }
@@ -547,100 +423,100 @@ u32 *VTDecode(u32 *code, char *indent)
     switch ((vifcode >> 24) & 0x7F) {
     case 0x00:
         if (debug_dma_level > 0) {
-            NuDebugMsgProlog(ps2dma_file, 0x16C)(vt_nop_fmt, indent, start);
+            NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x16C)("%s%08d VT NOP", indent, start);
         }
         break;
     case 0x01:
         if (debug_dma_level > 0) {
-            NuDebugMsgProlog(ps2dma_file, 0x170)(vt_stcycl_fmt, indent, start,
+            NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x170)("%s%08d VT STCYCL(%d,%d)", indent, start,
                 (vifcode >> 8) & 0xFF, vifcode & 0xFF);
         }
         break;
     case 0x02:
         if (debug_dma_level > 0) {
-            NuDebugMsgProlog(ps2dma_file, 0x174)(vt_offset_fmt, indent, start);
+            NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x174)("%s%08d VT OFFSET", indent, start);
         }
         break;
     case 0x03:
         if (debug_dma_level > 0) {
-            NuDebugMsgProlog(ps2dma_file, 0x178)(vt_base_fmt, indent, start);
+            NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x178)("%s%08d VT BASE", indent, start);
         }
         break;
     case 0x04:
         if (debug_dma_level > 0) {
-            NuDebugMsgProlog(ps2dma_file, 0x17C)(vt_itop_fmt, indent, start);
+            NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x17C)("%s%08d VT ITOP", indent, start);
         }
         break;
     case 0x05:
         if (debug_dma_level > 0) {
-            NuDebugMsgProlog(ps2dma_file, 0x180)(vt_stmod_fmt, indent, start);
+            NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x180)("%s%08d VT STMOD", indent, start);
         }
         break;
     case 0x06:
         if (debug_dma_level > 0) {
-            NuDebugMsgProlog(ps2dma_file, 0x184)(vt_mskpath3_fmt, indent, start);
+            NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x184)("%s%08d VT MSKPATH3", indent, start);
         }
         break;
     case 0x07:
         if (debug_dma_level > 0) {
-            NuDebugMsgProlog(ps2dma_file, 0x188)(vt_mark_fmt, indent, start);
+            NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x188)("%s%08d VT MARK", indent, start);
         }
         break;
     case 0x10:
         if (debug_dma_level > 0) {
-            NuDebugMsgProlog(ps2dma_file, 0x18C)(vt_flushe_fmt, indent, start);
+            NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x18C)("%s%08d VT FLUSHE", indent, start);
         }
         break;
     case 0x11:
         if (debug_dma_level > 0) {
-            NuDebugMsgProlog(ps2dma_file, 0x190)(vt_flush_fmt, indent, start);
+            NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x190)("%s%08d VT FLUSH", indent, start);
         }
         break;
     case 0x13:
         if (debug_dma_level > 0) {
-            NuDebugMsgProlog(ps2dma_file, 0x194)(vt_flusha_fmt, indent, start);
+            NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x194)("%s%08d VT FLUSHA", indent, start);
         }
         break;
     case 0x14:
         if (debug_dma_level > 0) {
-            NuDebugMsgProlog(ps2dma_file, 0x198)(vt_mscal_fmt, indent, start,
+            NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x198)("%s%08d VT MSCAL(%08x)", indent, start,
                 vifcode & 0xFFFF);
         }
         break;
     case 0x17:
         if (debug_dma_level > 0) {
-            NuDebugMsgProlog(ps2dma_file, 0x19C)(vt_mscnt_fmt, indent, start);
+            NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x19C)("%s%08d VT MSCNT", indent, start);
         }
         break;
     case 0x15:
         if (debug_dma_level > 0) {
-            NuDebugMsgProlog(ps2dma_file, 0x1A0)(vt_mscalf_fmt, indent, start,
+            NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x1A0)("%s%08d VT MSCALF(%08x)", indent, start,
                 vifcode & 0xFFFF);
         }
         break;
     case 0x20:
         if (debug_dma_level > 0) {
-            NuDebugMsgProlog(ps2dma_file, 0x1A4)(vt_stmask_fmt, indent, start, code[0]);
+            NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x1A4)("%s%08d VT STMASK %08x", indent, start, code[0]);
         }
         code += 1;
         break;
     case 0x30:
         if (debug_dma_level > 0) {
-            NuDebugMsgProlog(ps2dma_file, 0x1A9)(vt_strow_fmt, indent, start,
+            NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x1A9)("%s%08d VT STROW %08x %08x %08x %08x", indent, start,
                 code[0], code[1], code[2], code[3]);
         }
         code += 4;
         break;
     case 0x31:
         if (debug_dma_level > 0) {
-            NuDebugMsgProlog(ps2dma_file, 0x1AE)(vt_stcol_fmt, indent, start,
+            NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x1AE)("%s%08d VT STCOL %08d %08d %08d %08d", indent, start,
                 code[0], code[1], code[2], code[3]);
         }
         code += 4;
         break;
     case 0x4A:
         if (debug_dma_level > 0) {
-            NuDebugMsgProlog(ps2dma_file, 0x1B3)(vt_mpg_fmt, indent, start,
+            NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x1B3)("%s%08d VT MPG(%d,%d)", indent, start,
                 vifcode & 0xFFFF, (vifcode >> 16) & 0xFF);
         }
         if ((vifcode & 0xFF0000) == 0) {
@@ -651,11 +527,11 @@ u32 *VTDecode(u32 *code, char *indent)
         break;
     case 0x50:
         if (debug_dma_level > 0) {
-            NuDebugMsgProlog(ps2dma_file, 0x1BB)(vt_direct_fmt, indent, start, (vifcode & 0xFFFF));
+            NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x1BB)("%s%08d VT DIRECT %d", indent, start, (vifcode & 0xFFFF));
         }
         if (debug_dma_level == 5) {
             for (i = 0; i < ((vifcode & 0xFFFF) > 10 ? 10 : (vifcode & 0xFFFF)); i++) {
-                NuDebugMsgProlog(ps2dma_file, 0x1BE)(vt_direct_qw_fmt, indent, i,
+                NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x1BE)("%s  %d - %08x %08x %08x %08x", indent, i,
                     code[i * 4 + 3], code[i * 4 + 2], code[i * 4 + 1], code[i * 4]);
             }
         }
@@ -665,7 +541,7 @@ u32 *VTDecode(u32 *code, char *indent)
         goto direct_advance;
     case 0x51:
         if (debug_dma_level > 0) {
-            NuDebugMsgProlog(ps2dma_file, 0x1C8)(vt_directhl_fmt, indent, start, (vifcode & 0xFFFF));
+            NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x1C8)("%s%08d VT DIRECT HL %d", indent, start, (vifcode & 0xFFFF));
         }
 direct_advance:
         code += (vifcode & 0xFFFF) * 4;
@@ -674,10 +550,10 @@ direct_advance:
         if ((vifcode & 0x60000000) == 0x60000000) {
             strcpy(name, "VT UNPACK");
             if (vifcode & 0x8000) {
-                strcat(name, unpack_r_str);
+                strcat(name, "R");
             }
             if (vifcode & 0x4000) {
-                strcat(name, unpack_u_str);
+                strcat(name, "(U)");
             }
             num = (vifcode >> 16) & 0xFF;
             if (num == 0) {
@@ -686,91 +562,91 @@ direct_advance:
             switch ((vifcode >> 24) & 0xF) {
             case 0:
                 if (debug_dma_level > 0) {
-                    NuDebugMsgProlog(ps2dma_file, 0x1DD)(vt_s32_fmt, indent, start, name,
+                    NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x1DD)("%s%08d %s S-32 %d to %d", indent, start, name,
                         num, vifcode & 0x3FF);
                 }
                 code = (u32 *)((u8 *)code + num * 4);
                 break;
             case 1:
                 if (debug_dma_level > 0) {
-                    NuDebugMsgProlog(ps2dma_file, 0x1E2)(vt_s16_fmt, indent, start, name,
+                    NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x1E2)("%s%08d %s S-16 %d to %d", indent, start, name,
                         num, vifcode & 0x3FF);
                 }
                 code = (u32 *)((u8 *)code + num * 2);
                 break;
             case 2:
                 if (debug_dma_level > 0) {
-                    NuDebugMsgProlog(ps2dma_file, 0x1E7)(vt_s8_fmt, indent, start, name,
+                    NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x1E7)("%s%08d %s S-8 %d to %d", indent, start, name,
                         num, vifcode & 0x3FF);
                 }
                 code = (u32 *)((u8 *)code + num);
                 break;
             case 4:
                 if (debug_dma_level > 0) {
-                    NuDebugMsgProlog(ps2dma_file, 0x1EC)(vt_v2_32_fmt, indent, start, name,
+                    NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x1EC)("%s%08d %s V2-32 %d to %d", indent, start, name,
                         num, vifcode & 0x3FF);
                 }
                 code = (u32 *)((u8 *)code + num * 8);
                 break;
             case 5:
                 if (debug_dma_level > 0) {
-                    NuDebugMsgProlog(ps2dma_file, 0x1F1)(vt_v2_16_fmt, indent, start, name,
+                    NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x1F1)("%s%08d %s V2-16 %d to %d", indent, start, name,
                         num, vifcode & 0x3FF);
                 }
                 code = (u32 *)((u8 *)code + num * 4);
                 break;
             case 6:
                 if (debug_dma_level > 0) {
-                    NuDebugMsgProlog(ps2dma_file, 0x1F6)(vt_v2_8_fmt, indent, start, name,
+                    NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x1F6)("%s%08d %s V2-8 %d to %d", indent, start, name,
                         num, vifcode & 0x3FF);
                 }
                 code = (u32 *)((u8 *)code + num * 2);
                 break;
             case 8:
                 if (debug_dma_level > 0) {
-                    NuDebugMsgProlog(ps2dma_file, 0x1FB)(vt_v3_32_fmt, indent, start, name,
+                    NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x1FB)("%s%08d %s V3-32 %d to %d", indent, start, name,
                         num, vifcode & 0x3FF);
                 }
                 code = (u32 *)((u8 *)code + num * 12);
                 break;
             case 9:
                 if (debug_dma_level > 0) {
-                    NuDebugMsgProlog(ps2dma_file, 0x200)(vt_v3_16_fmt, indent, start, name,
+                    NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x200)("%s%08d %s V3-16 %d to %d", indent, start, name,
                         num, vifcode & 0x3FF);
                 }
                 code = (u32 *)((u8 *)code + num * 6);
                 break;
             case 10:
                 if (debug_dma_level > 0) {
-                    NuDebugMsgProlog(ps2dma_file, 0x205)(vt_v3_8_fmt, indent, start, name,
+                    NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x205)("%s%08d %s V3-8 %d to %d", indent, start, name,
                         num, vifcode & 0x3FF);
                 }
                 code = (u32 *)((u8 *)code + num * 3);
                 break;
             case 12:
                 if (debug_dma_level > 0) {
-                    NuDebugMsgProlog(ps2dma_file, 0x20A)(vt_v4_32_fmt, indent, start, name,
+                    NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x20A)("%s%08d %s V4-32 %d to %d", indent, start, name,
                         num, vifcode & 0x3FF);
                 }
                 code = (u32 *)((u8 *)code + num * 16);
                 break;
             case 13:
                 if (debug_dma_level > 0) {
-                    NuDebugMsgProlog(ps2dma_file, 0x20F)(vt_v4_16_fmt, indent, start, name,
+                    NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x20F)("%s%08d %s V4-16 %d to %d", indent, start, name,
                         num, vifcode & 0x3FF);
                 }
                 code = (u32 *)((u8 *)code + num * 8);
                 break;
             case 14:
                 if (debug_dma_level > 0) {
-                    NuDebugMsgProlog(ps2dma_file, 0x214)(vt_v4_8_fmt, indent, start, name,
+                    NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x214)("%s%08d %s V4-8 %d to %d", indent, start, name,
                         num, vifcode & 0x3FF);
                 }
                 code = (u32 *)((u8 *)code + num * 4);
                 break;
             case 15:
                 if (debug_dma_level > 0) {
-                    NuDebugMsgProlog(ps2dma_file, 0x219)(vt_v4_5_fmt, indent, start, name,
+                    NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x219)("%s%08d %s V4-5 %d to %d", indent, start, name,
                         num, vifcode & 0x3FF);
                 }
                 code = (u32 *)((u8 *)code + num * 8);
@@ -780,7 +656,7 @@ direct_advance:
                 code = (u32 *)((u32)code + (4 - ((u32)code & 3)));
             }
         } else {
-            NuDebugMsgProlog(ps2dma_file, 0x222)(vt_unknown_fmt, indent, start, vifcode);
+            NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x222)("%s%08d Unknown Viftag (%08d)- stopping decode", indent, start, vifcode);
             for (;;) {
             }
         }
@@ -788,6 +664,69 @@ direct_advance:
     }
     return code;
 }
+
+
+inline struct DmaTag *VifTagWalk(struct DmaTag *tag, void *user)
+{
+    u32 *code;
+    u32 *end;
+
+    switch (tag->id >> 4) {
+    case 0:
+    case 3:
+    case 4:
+        VTDecode(&tag->vifcode[0], user);
+        VTDecode(&tag->vifcode[1], user);
+        return tag + 1;
+    }
+    code = tag->vifcode;
+    end = (u32 *)(tag->qwc * 16 + (u32)code + 8);
+    while (code < end) {
+        code = VTDecode(code, user);
+        if (decode_error) {
+            return (struct DmaTag *)code;
+        }
+    }
+    if (code != end) {
+        NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x251)("VIF code decoded length does not match dmatag length");
+        for (;;) {
+        }
+    }
+    return (struct DmaTag *)code;
+}
+
+
+static char *tagnames[8] = {
+    "REFE", "CNT ", "NEXT", "REF ", "REFS", "CALL", "RET ", "END "
+};
+
+static char *marknames[25] = {
+    "unknown", "MTL", "TXTRSET", "TXTRLOAD", "GEOMCALL", "GOBJDATA",
+    "SKINDATA", "SKINHDR", "SKINMTX", "BEGINSCENE FB", "BEGINSCENE FBT",
+    "BEGINSCENE ZB", "BEGINSCENE ZBS", "STREAMFLUSHLNK", "TEXTPRINT",
+    "CLEARSCREEN", "GRADCLEARSCREEN", "CLIPTRI3D", "CLIPQUAD3D",
+    "CLIPTRISTRIP3D", "MTXLOAD", "LIGHTLOAD", "FXMTXLOAD", "SPECLOAD", "FREE"
+};
+
+static int mark_suppressed[25] = {
+    0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+};
+
+static int find_mark = -1;
+
+int gs_dma_status = 0;
+int vu1_dma_status = 0;
+int crc_check = 0;
+struct DmaTag *gs_termaddr = 0;
+int wait_until_finished = 0;
+int cycle_steal = 0;
+struct DmaTag *termaddr = 0;
+struct DmaTag *vpdmatag_curr __attribute__((aligned(8))) = 0;
+struct DmaTag *gs_last_write __attribute__((aligned(8))) = 0;
+struct DmaTag *gs_prev_write __attribute__((aligned(8))) = 0;
+struct DmaTag *vu1_last_write __attribute__((aligned(8))) = 0;
+struct DmaTag *vu1_prev_write __attribute__((aligned(8))) = 0;
+u64 old_crc = 0;
 
 
 void TagWalk(struct DmaTag *tag, TagWalkFunc walker)
@@ -807,7 +746,7 @@ void TagWalk(struct DmaTag *tag, TagWalkFunc walker)
     indent_len = 0;
     depth = 0;
     if (tag == 0) {
-        NuDebugMsgProlog(ps2dma_file, 0x2B4)(null_tag_msg);
+        NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x2B4)("Duff frame pointer");
     }
     do {
         if (indent_len) {
@@ -815,7 +754,7 @@ void TagWalk(struct DmaTag *tag, TagWalkFunc walker)
         }
         indent[indent_len] = 0;
         if ((u32)tag & 0xF) {
-            NuDebugMsgProlog(ps2dma_file, 0x2BB)(misaligned_tag_msg);
+            NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x2BB)("** Misaligned DMATAG **");
             for (;;) {
             }
         }
@@ -825,19 +764,19 @@ void TagWalk(struct DmaTag *tag, TagWalkFunc walker)
         if (mark >= 26) {
             mark = 0;
         }
-        quiet = dmatag_mark_quiet[mark];
+        quiet = mark_suppressed[mark];
         if (depth) {
             quiet |= quiet_stack[depth - 1];
         }
         if (debug_dma_level > 0) {
             if (quiet) {
-                quiet_str = suppressed_str;
+                quiet_str = "<suppressed>";
             } else {
-                quiet_str = empty_str;
+                quiet_str = "";
             }
-            NuDebugMsgProlog(ps2dma_file, 0x2D5)(tag_fmt, indent, tag,
-                dmatag_id_names[tag->id >> 4], tag->qwc, tag->addr, tag->pad,
-                dmatag_mark_names[mark], quiet_str);
+            NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x2D5)("%s%08d TAG %s: QWC %d NEXT %08d MK %d (%s)%s", indent, tag,
+                tagnames[tag->id >> 4], tag->qwc, tag->addr, tag->pad,
+                marknames[mark], quiet_str);
         }
         if (!quiet) {
             walker(tag, indent);
@@ -848,13 +787,13 @@ void TagWalk(struct DmaTag *tag, TagWalkFunc walker)
             break;
         case 3:
             if (tag->addr & 0xF) {
-                NuDebugMsgProlog(ps2dma_file, 0x2FA)(misaligned_ref_msg);
+                NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x2FA)("** Misaligned DMATAG reference **");
             }
             tag++;
             break;
         case 4:
             if (tag->addr & 0xF) {
-                NuDebugMsgProlog(ps2dma_file, 0x303)(misaligned_ref_msg);
+                NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x303)("** Misaligned DMATAG reference **");
             }
             tag++;
             break;
@@ -863,7 +802,7 @@ void TagWalk(struct DmaTag *tag, TagWalkFunc walker)
             break;
         case 5:
             if (depth >= 2) {
-                NuDebugMsgProlog(ps2dma_file, 0x30C)(overflow_msg);
+                NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x30C)("***** Stack overflow ******");
                 return;
             }
             indent_len += 4;
@@ -875,7 +814,7 @@ void TagWalk(struct DmaTag *tag, TagWalkFunc walker)
             break;
         case 6:
             if (depth <= 0) {
-                NuDebugMsgProlog(ps2dma_file, 0x31A)(underflow_msg);
+                NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x31A)("***** Stack underflow ******");
                 return;
             }
             depth--;
@@ -885,11 +824,11 @@ void TagWalk(struct DmaTag *tag, TagWalkFunc walker)
         case 7:
             return;
         default:
-            NuDebugMsgProlog(ps2dma_file, 0x32A)(unknown_id_msg);
+            NuDebugMsgProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x32A)("Unknown tag id");
             for (;;) {
             }
         }
-    } while (!vif_walk_abort);
+    } while (!decode_error);
 }
 
 
@@ -909,14 +848,14 @@ u32 *gsBeginGifPacket(u32 *packet, int nloop, int eop, int pre, int prim,
     tag[0] = (nloop & 0x7FFF) | ((u64)(eop & 1) << 15)
         | ((u64)(pre & 1) << 46) | ((u64)(prim & 0x7FF) << 47)
         | ((u64)(flg & 3) << 58) | ((u64)nreg << 60);
-    giftag_curr = (struct GifTag *)tag;
+    gt_curr = (struct GifTag *)tag;
     return packet + 4;
 }
 
 
 u32 *gsCloseGifPacket(u32 *packet)
 {
-    struct GifTag *tag = giftag_curr;
+    struct GifTag *tag = gt_curr;
 
     switch (tag->flg) {
     case 0:
@@ -937,52 +876,52 @@ u32 *gsCloseGifPacket(u32 *packet)
 
 void NuScratchReset(void)
 {
-    nuscratch_ptr = (u32 *)SCRATCHPAD_BASE;
+    ps2_scratch_free = (u32 *)SCRATCHPAD_BASE;
 }
 
 
 u32 *NuScratchAlloc32(u32 size)
 {
-    u32 *previous = nuscratch_ptr;
+    u32 *previous = ps2_scratch_free;
     u32 *block = (u32 *)(((u32)previous + 3) & ~3U);
 
     size = (size + 3) & ~3U;
-    nuscratch_ptr = (u32 *)((u32)block + size);
-    *nuscratch_ptr = (u32)previous;
-    nuscratch_ptr++;
+    ps2_scratch_free = (u32 *)((u32)block + size);
+    *ps2_scratch_free = (u32)previous;
+    ps2_scratch_free++;
     return block;
 }
 
 
 u32 *NuScratchAlloc64(u32 size)
 {
-    u32 *previous = nuscratch_ptr;
+    u32 *previous = ps2_scratch_free;
     u32 *block = (u32 *)(((u32)previous + 7) & ~7U);
 
     size = (size + 3) & ~3U;
-    nuscratch_ptr = (u32 *)((u32)block + size);
-    *nuscratch_ptr = (u32)previous;
-    nuscratch_ptr++;
+    ps2_scratch_free = (u32 *)((u32)block + size);
+    *ps2_scratch_free = (u32)previous;
+    ps2_scratch_free++;
     return block;
 }
 
 
 u32 *NuScratchAlloc128(u32 size)
 {
-    u32 *previous = nuscratch_ptr;
+    u32 *previous = ps2_scratch_free;
     u32 *block = (u32 *)(((u32)previous + 15) & ~15U);
 
     size = (size + 3) & ~3U;
-    nuscratch_ptr = (u32 *)((u32)block + size);
-    *nuscratch_ptr = (u32)previous;
-    nuscratch_ptr++;
+    ps2_scratch_free = (u32 *)((u32)block + size);
+    *ps2_scratch_free = (u32)previous;
+    ps2_scratch_free++;
     return block;
 }
 
 
 void NuScratchRelease(void)
 {
-    nuscratch_ptr = (u32 *)nuscratch_ptr[-1];
+    ps2_scratch_free = (u32 *)ps2_scratch_free[-1];
 }
 
 
@@ -1000,35 +939,43 @@ struct DmaTag *vpDmaTag_Set(struct DmaTag *tag, u32 qwc, u32 id, u32 addr)
 
 struct DmaTag *vpDmaTag_Cnt(struct DmaTag *tag)
 {
+    static struct DmaTag dmatag = { { { 0, 0, 0x10 } }, 0, { 0, 0 } };
+
     vpdmatag_curr = tag;
-    *tag = dmatag_cnt;
+    *tag = dmatag;
+    return tag + 1;
+}
+
+
+inline struct DmaTag *vpDmaTag_Ref(struct DmaTag *tag, u32 addr)
+{
+    static struct DmaTag dmatag = { { { 0, 0, 0x30 } }, 0, { 0, 0 } };
+
+    vpdmatag_curr = tag;
+    dmatag.addr = addr;
+    *tag = dmatag;
     return tag + 1;
 }
 
 
 struct DmaTag *vpDmaTag_End(struct DmaTag *tag)
 {
+    static struct DmaTag dmatag = { { { 0, 0, 0x70 } }, 0, { 0, 0 } };
+
     vpdmatag_curr = tag;
-    *tag = dmatag_end;
+    *tag = dmatag;
     return tag + 1;
 }
 
 
 struct DmaTag *vpDmaTag_EndEx(struct DmaTag *tag, u32 vifcode0, u32 vifcode1)
 {
-    vpdmatag_curr = tag;
-    dmatag_end_ex.vifcode[0] = vifcode0;
-    dmatag_end_ex.vifcode[1] = vifcode1;
-    *tag = dmatag_end_ex;
-    return tag + 1;
-}
+    static struct DmaTag dmatag = { { { 0, 0, 0x70 } }, 0, { 0, 0 } };
 
-
-struct DmaTag *vpDmaTag_Ref(struct DmaTag *tag, u32 addr)
-{
     vpdmatag_curr = tag;
-    dmatag_ref.addr = addr;
-    *tag = dmatag_ref;
+    dmatag.vifcode[0] = vifcode0;
+    dmatag.vifcode[1] = vifcode1;
+    *tag = dmatag;
     return tag + 1;
 }
 
@@ -1054,12 +1001,12 @@ int GS_DmaGetStatus(void)
 {
     int status;
 
-    if (gs_dma_walk) {
-        gs_dma_walk = 0;
+    if (debug_gs_list) {
+        debug_gs_list = 0;
     }
     status = gs_dma_status;
     if (status == 0 && (GIF_CHCR & DMA_STR)) {
-        NuErrorProlog(ps2dma_file, 0x570)(bad_status_msg);
+        NuErrorProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x570)("bad status");
     }
     return status;
 }
@@ -1134,13 +1081,13 @@ int VU1_DmaGetStatus(void)
 {
     int status;
 
-    if (vu1_dma_walk) {
-        vu1_dma_walk = 0;
+    if (debug_dma_list) {
+        debug_dma_list = 0;
         TagWalk(vu1_last_write, VifTagWalk);
     }
     status = vu1_dma_status;
     if (status == 0 && (VIF1_CHCR & DMA_STR)) {
-        NuErrorProlog(ps2dma_file, 0x580)(bad_status_msg);
+        NuErrorProlog("..\\nu2crash.ps2\\nups2\\ps2dma.c", 0x580)("bad status");
     }
     return status;
 }
@@ -1201,7 +1148,7 @@ int GS_DmaGetWriteStatus(void)
 
 u32 *vtBeginDirect(u32 *packet, u32 irq)
 {
-    vt_direct_curr = packet;
+    vt_curr = packet;
     *packet = (irq << 31) | 0x50000000;
     return packet + 1;
 }
@@ -1211,7 +1158,7 @@ u32 *vtCloseDirect(u32 *packet)
 {
     u32 *last = packet - 1;
 
-    *vt_direct_curr |= (((u32)last - (u32)vt_direct_curr) >> 4) & 0xFFFF;
+    *vt_curr |= (((u32)last - (u32)vt_curr) >> 4) & 0xFFFF;
     return packet;
 }
 
@@ -1219,36 +1166,6 @@ u32 *vtCloseDirect(u32 *packet)
 struct DmaTag *VifTagDummy(struct DmaTag *tag, void *user)
 {
     return tag;
-}
-
-
-struct DmaTag *VifTagWalk(struct DmaTag *tag, void *user)
-{
-    u32 *code;
-    u32 *end;
-
-    switch (tag->id >> 4) {
-    case 0:
-    case 3:
-    case 4:
-        VTDecode(&tag->vifcode[0], user);
-        VTDecode(&tag->vifcode[1], user);
-        return tag + 1;
-    }
-    code = tag->vifcode;
-    end = (u32 *)(tag->qwc * 16 + (u32)code + 8);
-    while (code < end) {
-        code = VTDecode(code, user);
-        if (vif_walk_abort) {
-            return (struct DmaTag *)code;
-        }
-    }
-    if (code != end) {
-        NuDebugMsgProlog(ps2dma_file, 0x251)(vif_walk_msg);
-        for (;;) {
-        }
-    }
-    return (struct DmaTag *)code;
 }
 
 

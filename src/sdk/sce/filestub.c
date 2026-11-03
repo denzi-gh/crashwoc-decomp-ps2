@@ -371,36 +371,26 @@ typedef struct sceSifClientData {
     void *server;
 } sceSifClientData;
 
-extern int D_00613400;
-extern int D_00613404;
-extern int D_00613408;
-extern int D_0061340C;
-extern FsIob D_00706280[];
-extern FsRcvData D_00705E40;
-extern FsSendData D_007051C0;
-extern char D_00705E00[];
-extern char D_007064C0[];
-extern sceSifClientData D_00706480;
-extern volatile int _sceFs_q[];
-extern char D_007064A8[];
-extern char D_00612BB4[];
-extern char *D_00613410;
-extern int *D_00705180;
+volatile int _sceFs_q[32] = {
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+};
+static int _fs_init = 0;
+static int _fs_semid = -1;
+static int _fs_iob_semid = -1;
+static int _fs_fsq_semid = -1;
 
-#define fs_initialized  D_00613400
-#define fs_sema         D_00613404
-#define fs_iob_sema     D_00613408
-#define fs_io_sema      D_0061340C
-#define fs_iob          D_00706280
-#define fs_rcv_data     D_00705E40
-#define fs_send         D_007051C0
-#define fs_rcv_rpc      D_00705E00
-#define fs_cmd_data     D_007064C0
-#define fs_client       D_00706480
-#define fs_iop_version  D_007064A8
+static FsSendData _send_data __attribute__((aligned(64)));
+static char _rcv_data_rpc[64] __attribute__((aligned(64)));
+static FsRcvData _rcv_data_cmd __attribute__((aligned(64)));
+static FsIob _iob[FS_NIOB] __attribute__((aligned(64)));
+static sceSifClientData _cd;
+static char _fsversion[4];
+static char _sif_FsRcv_Data[64] __attribute__((aligned(64)));
+
+extern char D_00612BB4[];
+
 #define fs_ee_version   D_00612BB4
-#define fs_wildcard     D_00613410
-#define fs_ioctl_out    D_00705180
 
 extern int CreateSema(SemaParam *param);
 extern int WaitSema(int sema);
@@ -428,12 +418,12 @@ void _sceFsIobSemaMK(void)
 {
     SemaParam sema;
 
-    if (fs_iob_sema == -1) {
+    if (_fs_iob_semid == -1) {
         sema.initCount = 1;
         sema.maxCount = 1;
         sema.option = 0;
-        fs_iob_sema = CreateSema(&sema);
-        fs_io_sema = CreateSema(&sema);
+        _fs_iob_semid = CreateSema(&sema);
+        _fs_fsq_semid = CreateSema(&sema);
     }
 }
 
@@ -443,15 +433,15 @@ FsIob *new_iob(void)
     FsIob *iob;
 
     _sceFsIobSemaMK();
-    WaitSema(fs_iob_sema);
-    for (iob = fs_iob; iob < &fs_iob[FS_NIOB]; iob++) {
+    WaitSema(_fs_iob_semid);
+    for (iob = _iob; iob < &_iob[FS_NIOB]; iob++) {
         if (iob->flags == 0) {
             iob->flags = FS_IOB_BUSY;
-            SignalSema(fs_iob_sema);
+            SignalSema(_fs_iob_semid);
             return iob;
         }
     }
-    SignalSema(fs_iob_sema);
+    SignalSema(_fs_iob_semid);
     return 0;
 }
 
@@ -461,13 +451,13 @@ FsIob *get_iob(int fd)
     FsIob *iob;
 
     _sceFsIobSemaMK();
-    WaitSema(fs_iob_sema);
+    WaitSema(_fs_iob_semid);
     if (fd < 0 || fd >= FS_NIOB) {
-        SignalSema(fs_iob_sema);
+        SignalSema(_fs_iob_semid);
         return 0;
     }
-    iob = &fs_iob[fd];
-    SignalSema(fs_iob_sema);
+    iob = &_iob[fd];
+    SignalSema(_fs_iob_semid);
     return iob;
 }
 
@@ -484,16 +474,16 @@ void _sceFs_Rcv_Intr(void *pkt, void *param)
     char *dst;
     int i;
 
-    memcpy(&semid, UNCACHED(&fs_rcv_data.hdr.semid), 4);
-    memcpy(&code, UNCACHED(&fs_rcv_data.hdr.code), 4);
-    memcpy(&rcv_dest, UNCACHED(&fs_rcv_data.hdr.dest), 4);
-    memcpy(&rcv_size, UNCACHED(&fs_rcv_data.hdr.size), 4);
+    memcpy(&semid, UNCACHED(&_rcv_data_cmd.hdr.semid), 4);
+    memcpy(&code, UNCACHED(&_rcv_data_cmd.hdr.code), 4);
+    memcpy(&rcv_dest, UNCACHED(&_rcv_data_cmd.hdr.dest), 4);
+    memcpy(&rcv_size, UNCACHED(&_rcv_data_cmd.hdr.size), 4);
     if (semid >= 0) {
-        memcpy(rcv_dest, UNCACHED(&fs_rcv_data.result), rcv_size);
+        memcpy(rcv_dest, UNCACHED(&_rcv_data_cmd.result), rcv_size);
     }
     switch (code) {
     case 2:
-        split = UNCACHED(&fs_rcv_data.u.read);
+        split = UNCACHED(&_rcv_data_cmd.u.read);
         if (split->head_size > 0) {
             dst = split->head_dest;
             for (i = 0; i < split->head_size; i++) {
@@ -508,22 +498,22 @@ void _sceFs_Rcv_Intr(void *pkt, void *param)
         }
         break;
     case 11:
-        memcpy(&dest, UNCACHED(&fs_rcv_data.u.dread.dest), 4);
-        memcpy(dest, UNCACHED(fs_rcv_data.u.dread.dirent), sizeof(fs_rcv_data.u.dread.dirent));
+        memcpy(&dest, UNCACHED(&_rcv_data_cmd.u.dread.dest), 4);
+        memcpy(dest, UNCACHED(_rcv_data_cmd.u.dread.dirent), sizeof(_rcv_data_cmd.u.dread.dirent));
         break;
     case 12:
-        memcpy(&dest, UNCACHED(&fs_rcv_data.u.getstat.dest), 4);
-        memcpy(dest, UNCACHED(fs_rcv_data.u.getstat.stat), sizeof(fs_rcv_data.u.getstat.stat));
+        memcpy(&dest, UNCACHED(&_rcv_data_cmd.u.getstat.dest), 4);
+        memcpy(dest, UNCACHED(_rcv_data_cmd.u.getstat.stat), sizeof(_rcv_data_cmd.u.getstat.stat));
         break;
     case 23:
     case 25:
     case 26:
-        memcpy(&dest, UNCACHED(&fs_rcv_data.u.buf.dest), 4);
-        memcpy(&size, UNCACHED(&fs_rcv_data.u.buf.size), 4);
+        memcpy(&dest, UNCACHED(&_rcv_data_cmd.u.buf.dest), 4);
+        memcpy(&size, UNCACHED(&_rcv_data_cmd.u.buf.size), 4);
         if (size > 0x400) {
             size = 0x400;
         }
-        memcpy(dest, UNCACHED(fs_rcv_data.u.buf.data), size);
+        memcpy(dest, UNCACHED(_rcv_data_cmd.u.buf.data), size);
         break;
     }
     if (semid < 0) {
@@ -544,11 +534,11 @@ void _sceFsSemInit(void)
 {
     SemaParam sema;
 
-    if (fs_sema == -1) {
+    if (_fs_semid == -1) {
         sema.initCount = 1;
         sema.maxCount = 1;
         sema.option = 0;
-        fs_sema = CreateSema(&sema);
+        _fs_semid = CreateSema(&sema);
     }
 }
 
@@ -556,14 +546,14 @@ void _sceFsSemInit(void)
 int _sceFsWaitS(int code)
 {
     _sceFsSemInit();
-    WaitSema(fs_sema);
+    WaitSema(_fs_semid);
     return 0;
 }
 
 
 void _sceFsSigSema(void)
 {
-    SignalSema(fs_sema);
+    SignalSema(_fs_semid);
 }
 
 
@@ -575,13 +565,13 @@ int sceFsInit(void)
 
     sceSifInitRpc(0);
     DIntr();
-    sceSifAddCmdHandler(FS_CMD_RCV, _sceFs_Rcv_Intr, fs_cmd_data);
+    sceSifAddCmdHandler(FS_CMD_RCV, _sceFs_Rcv_Intr, _sif_FsRcv_Data);
     EIntr();
     while (1) {
-        if (sceSifBindRpc(&fs_client, FS_RPC_SERVER, 0) < 0) {
+        if (sceSifBindRpc(&_cd, FS_RPC_SERVER, 0) < 0) {
             return -1;
         }
-        if (fs_client.server != 0) {
+        if (_cd.server != 0) {
             break;
         }
         wait = FS_BIND_WAIT;
@@ -589,30 +579,32 @@ int sceFsInit(void)
         }
     }
     _sceFsIobSemaMK();
-    WaitSema(fs_iob_sema);
-    for (iob = fs_iob; iob < &fs_iob[FS_NIOB]; iob++) {
+    WaitSema(_fs_iob_semid);
+    for (iob = _iob; iob < &_iob[FS_NIOB]; iob++) {
         iob->flags = 0;
     }
-    SignalSema(fs_iob_sema);
-    cmd_buf = &fs_rcv_data;
-    if (sceSifCallRpc(&fs_client, FS_INIT, 0, &cmd_buf, 4, fs_rcv_rpc, 4, 0, 0) < 0) {
+    SignalSema(_fs_iob_semid);
+    cmd_buf = &_rcv_data_cmd;
+    if (sceSifCallRpc(&_cd, FS_INIT, 0, &cmd_buf, 4, _rcv_data_rpc, 4, 0, 0) < 0) {
         return -SCE_ECALLMISS;
     }
-    memcpy(fs_iop_version, UNCACHED(fs_rcv_rpc), 4);
-    fs_initialized = 1;
+    memcpy(_fsversion, UNCACHED(_rcv_data_rpc), 4);
+    _fs_init = 1;
     return 0;
 }
 
+
+static char *_fswildcard = "....";
 
 int _fs_version(void)
 {
     int mismatch = 0;
     char *ee_version = fs_ee_version;
-    char *iop_version = fs_iop_version;
+    char *iop_version = _fsversion;
 
     if (memcmp(iop_version, ee_version, 4) != 0
-        && memcmp(iop_version, fs_wildcard, 4) != 0) {
-        mismatch = memcmp(ee_version, fs_wildcard, 4) != 0;
+        && memcmp(iop_version, _fswildcard, 4) != 0) {
+        mismatch = memcmp(ee_version, _fswildcard, 4) != 0;
     }
     return mismatch;
 }
@@ -620,15 +612,15 @@ int _fs_version(void)
 
 int sceFsReset(void)
 {
-    fs_initialized = 0;
-    memset(fs_iop_version, 0, 4);
+    _fs_init = 0;
+    memset(_fsversion, 0, 4);
     return 0;
 }
 
 
 int sceOpen(const char *filename, int flag, ...)
 {
-    FsOpenArg *arg = &fs_send.open;
+    FsOpenArg *arg = &_send_data.open;
     va_list ap;
     SemaParam param;
     int result;
@@ -641,7 +633,7 @@ int sceOpen(const char *filename, int flag, ...)
 
     va_start(ap, flag);
     _sceFsWaitS(FS_OPEN);
-    if (!fs_initialized) {
+    if (!_fs_init) {
         sceFsInit();
     }
     if (_fs_version()) {
@@ -663,7 +655,7 @@ int sceOpen(const char *filename, int flag, ...)
     if (len == FS_NAME_MAX) {
         arg->name[FS_NAME_MAX - 1] = '\0';
     }
-    fd = iob - fs_iob;
+    fd = iob - _iob;
     arg->flags = flag & FS_OPEN_FLAG_MASK;
     arg->mode = mode;
     arg->fd = fd;
@@ -674,12 +666,12 @@ int sceOpen(const char *filename, int flag, ...)
     arg->semid = sema;
     arg->result = &result;
     arg->result_size = 4;
-    if (sceSifCallRpc(&fs_client, FS_OPEN, 0, &fs_send, sizeof(FsOpenArg), fs_rcv_rpc, 4, 0, 0) < 0) {
+    if (sceSifCallRpc(&_cd, FS_OPEN, 0, &_send_data, sizeof(FsOpenArg), _rcv_data_rpc, 4, 0, 0) < 0) {
         DeleteSema(sema);
         _sceFsSigSema();
         return -SCE_EAGAIN;
     }
-    rv = *(int *)UNCACHED(fs_rcv_rpc);
+    rv = *(int *)UNCACHED(_rcv_data_rpc);
     _sceFsSigSema();
     if (rv == 0) {
         DeleteSema(sema);
@@ -688,16 +680,16 @@ int sceOpen(const char *filename, int flag, ...)
     WaitSema(sema);
     DeleteSema(sema);
     if (result < 0) {
-        WaitSema(fs_iob_sema);
+        WaitSema(_fs_iob_semid);
         iob->flags = 0;
-        SignalSema(fs_iob_sema);
+        SignalSema(_fs_iob_semid);
         return result;
     }
     rv = fd;
-    WaitSema(fs_iob_sema);
+    WaitSema(_fs_iob_semid);
     iob->fd = result;
     iob->flags |= flag;
-    SignalSema(fs_iob_sema);
+    SignalSema(_fs_iob_semid);
     return rv;
 
 
@@ -706,7 +698,7 @@ int sceOpen(const char *filename, int flag, ...)
 
 int sceClose(int fd)
 {
-    FsCloseArg *arg = &fs_send.close;
+    FsCloseArg *arg = &_send_data.close;
     SemaParam param;
     int result;
     int sema;
@@ -715,7 +707,7 @@ int sceClose(int fd)
 
     iob = get_iob(fd);
     _sceFsWaitS(FS_CLOSE);
-    if (!fs_initialized) {
+    if (!_fs_init) {
         _sceFsSigSema();
         return -1;
     }
@@ -724,7 +716,7 @@ int sceClose(int fd)
         return -SCE_EBADF;
     }
     arg->fd = iob->fd;
-    arg->index = iob - fs_iob;
+    arg->index = iob - _iob;
     param.initCount = 0;
     param.maxCount = 1;
     param.option = 0;
@@ -732,13 +724,13 @@ int sceClose(int fd)
     arg->semid = sema;
     arg->result = &result;
     arg->result_size = 4;
-    if (sceSifCallRpc(&fs_client, FS_CLOSE, 0, arg, sizeof(FsCloseArg), fs_rcv_rpc, 4, 0, 0) < 0) {
+    if (sceSifCallRpc(&_cd, FS_CLOSE, 0, arg, sizeof(FsCloseArg), _rcv_data_rpc, 4, 0, 0) < 0) {
         DeleteSema(sema);
         _sceFsSigSema();
         return -SCE_EAGAIN;
     }
     iob->flags = 0;
-    rv = *(int *)UNCACHED(fs_rcv_rpc);
+    rv = *(int *)UNCACHED(_rcv_data_rpc);
     _sceFsSigSema();
     if (rv == 0) {
         DeleteSema(sema);
@@ -755,7 +747,7 @@ int sceClose(int fd)
 
 int sceLseek(int fd, int offset, int whence)
 {
-    FsLseekArg *arg = &fs_send.lseek;
+    FsLseekArg *arg = &_send_data.lseek;
     SemaParam param;
     int result;
     int sema;
@@ -766,7 +758,7 @@ int sceLseek(int fd, int offset, int whence)
 
     iob = get_iob(fd);
     _sceFsWaitS(FS_LSEEK);
-    if (!fs_initialized) {
+    if (!_fs_init) {
         _sceFsSigSema();
         return -1;
     }
@@ -779,7 +771,7 @@ int sceLseek(int fd, int offset, int whence)
     arg->offset = offset;
 
     arg->whence = whence;
-    arg->index = iob - fs_iob;
+    arg->index = iob - _iob;
     param.initCount = 0;
     param.maxCount = 1;
     param.option = 0;
@@ -788,7 +780,7 @@ int sceLseek(int fd, int offset, int whence)
     arg->result = &result;
     arg->result_size = 4;
     if (flags & FS_NOWAIT) {
-        WaitSema(fs_io_sema);
+        WaitSema(_fs_fsq_semid);
         for (i = 0; i < FS_NQUEUE; i++) {
             if (_sceFs_q[i] == -1) {
                 _sceFs_q[i] = arg->semid;
@@ -796,14 +788,14 @@ int sceLseek(int fd, int offset, int whence)
                 break;
             }
         }
-        SignalSema(fs_io_sema);
+        SignalSema(_fs_fsq_semid);
     }
-    if (sceSifCallRpc(&fs_client, FS_LSEEK, 0, &fs_send, sizeof(FsLseekArg), fs_rcv_rpc, 4, 0, 0) < 0) {
+    if (sceSifCallRpc(&_cd, FS_LSEEK, 0, &_send_data, sizeof(FsLseekArg), _rcv_data_rpc, 4, 0, 0) < 0) {
         DeleteSema(sema);
         _sceFsSigSema();
         return -SCE_EAGAIN;
     }
-    rv = *(int *)UNCACHED(fs_rcv_rpc);
+    rv = *(int *)UNCACHED(_rcv_data_rpc);
     _sceFsSigSema();
     if (rv == 0) {
         DeleteSema(sema);
@@ -821,7 +813,7 @@ int sceLseek(int fd, int offset, int whence)
 
 int sceRead(int fd, void *buf, int nbyte)
 {
-    FsReadArg *arg = &fs_send.read;
+    FsReadArg *arg = &_send_data.read;
     SemaParam param;
     int result;
     int sema;
@@ -832,7 +824,7 @@ int sceRead(int fd, void *buf, int nbyte)
 
     iob = get_iob(fd);
     _sceFsWaitS(FS_READ);
-    if (!fs_initialized) {
+    if (!_fs_init) {
         _sceFsSigSema();
         return -1;
     }
@@ -844,7 +836,7 @@ int sceRead(int fd, void *buf, int nbyte)
     arg->fd = iob->fd;
     arg->buf = buf;
     arg->size = nbyte;
-    arg->index = iob - fs_iob;
+    arg->index = iob - _iob;
     param.initCount = 0;
     param.maxCount = 1;
     param.option = 0;
@@ -853,7 +845,7 @@ int sceRead(int fd, void *buf, int nbyte)
     arg->result = &result;
     arg->result_size = 4;
     if (flags & FS_NOWAIT) {
-        WaitSema(fs_io_sema);
+        WaitSema(_fs_fsq_semid);
         for (i = 0; i < FS_NQUEUE; i++) {
             if (_sceFs_q[i] == -1) {
                 _sceFs_q[i] = arg->semid;
@@ -861,19 +853,19 @@ int sceRead(int fd, void *buf, int nbyte)
                 break;
             }
         }
-        SignalSema(fs_io_sema);
+        SignalSema(_fs_fsq_semid);
     }
     if (!(flags & FS_UNCACHED_BUF)) {
         sceSifWriteBackDCache(buf, nbyte);
     }
-    sceSifWriteBackDCache(&fs_rcv_data, FS_RCV_READ_SIZE);
+    sceSifWriteBackDCache(&_rcv_data_cmd, FS_RCV_READ_SIZE);
     sceSifWriteBackDCache(arg, sizeof(FsReadArg));
-    if (sceSifCallRpc(&fs_client, FS_READ, 0, &fs_send, sizeof(FsReadArg), fs_rcv_rpc, 4, 0, 0) < 0) {
+    if (sceSifCallRpc(&_cd, FS_READ, 0, &_send_data, sizeof(FsReadArg), _rcv_data_rpc, 4, 0, 0) < 0) {
         DeleteSema(sema);
         _sceFsSigSema();
         return -SCE_EAGAIN;
     }
-    rv = *(int *)UNCACHED(fs_rcv_rpc);
+    rv = *(int *)UNCACHED(_rcv_data_rpc);
     _sceFsSigSema();
     if (rv == 0) {
         DeleteSema(sema);
@@ -891,7 +883,7 @@ int sceRead(int fd, void *buf, int nbyte)
 
 int sceWrite(int fd, const void *buf, int nbyte)
 {
-    FsWriteArg *arg = &fs_send.write;
+    FsWriteArg *arg = &_send_data.write;
     SemaParam param;
     int result;
     int sema;
@@ -906,7 +898,7 @@ int sceWrite(int fd, const void *buf, int nbyte)
     _sceFsWaitS(FS_WRITE);
 
 
-    if (!fs_initialized) {
+    if (!_fs_init) {
         _sceFsSigSema();
         return -1;
     }
@@ -918,7 +910,7 @@ int sceWrite(int fd, const void *buf, int nbyte)
     arg->fd = iob->fd;
     arg->size = nbyte;
     arg->buf = buf;
-    arg->index = iob - fs_iob;
+    arg->index = iob - _iob;
     param.initCount = 0;
     param.maxCount = 1;
     param.option = 0;
@@ -927,7 +919,7 @@ int sceWrite(int fd, const void *buf, int nbyte)
     arg->result = &result;
     arg->result_size = 4;
     if (flags & FS_NOWAIT) {
-        WaitSema(fs_io_sema);
+        WaitSema(_fs_fsq_semid);
         for (i = 0; i < FS_NQUEUE; i++) {
             if (_sceFs_q[i] == -1) {
                 _sceFs_q[i] = arg->semid;
@@ -935,7 +927,7 @@ int sceWrite(int fd, const void *buf, int nbyte)
                 break;
             }
         }
-        SignalSema(fs_io_sema);
+        SignalSema(_fs_fsq_semid);
     }
     if (((unsigned int)buf & 0xf) == 0) {
         head = 0;
@@ -953,12 +945,12 @@ int sceWrite(int fd, const void *buf, int nbyte)
     for (len = 0; len < head; len++) {
         arg->head[len] = ((const char *)buf)[len];
     }
-    if (sceSifCallRpc(&fs_client, FS_WRITE, 0, &fs_send, sizeof(FsWriteArg), fs_rcv_rpc, 4, 0, 0) < 0) {
+    if (sceSifCallRpc(&_cd, FS_WRITE, 0, &_send_data, sizeof(FsWriteArg), _rcv_data_rpc, 4, 0, 0) < 0) {
         DeleteSema(sema);
         _sceFsSigSema();
         return -SCE_EAGAIN;
     }
-    rv = *(int *)UNCACHED(fs_rcv_rpc);
+    rv = *(int *)UNCACHED(_rcv_data_rpc);
     _sceFsSigSema();
     if (rv == 0) {
         DeleteSema(sema);
@@ -976,7 +968,7 @@ int sceWrite(int fd, const void *buf, int nbyte)
 
 int sceIoctl(int fd, int req, void *argp)
 {
-    FsIoctlArg *arg = &fs_send.ioctl;
+    FsIoctlArg *arg = &_send_data.ioctl;
     SemaParam param;
     int result;
     int sema;
@@ -984,11 +976,12 @@ int sceIoctl(int fd, int req, void *argp)
     int i;
     FsIob *iob;
     int wait = 1;
+    static int *ip0;
 
     iob = get_iob(fd);
     _sceFsWaitS(FS_IOCTL);
-    fs_ioctl_out = argp;
-    if (!fs_initialized) {
+    ip0 = argp;
+    if (!_fs_init) {
         sceFsInit();
     }
     if (iob == 0 || iob->flags == 0) {
@@ -999,26 +992,26 @@ int sceIoctl(int fd, int req, void *argp)
     arg->buflen = 0;
     switch (req) {
     case FS_IOCTL_PENDING:
-        WaitSema(fs_io_sema);
+        WaitSema(_fs_fsq_semid);
         for (i = 0; i < FS_NQUEUE; i++) {
             if (_sceFs_q[i] != -1) {
                 break;
             }
         }
         if (i == FS_NQUEUE) {
-            *fs_ioctl_out = 0;
+            *ip0 = 0;
         } else {
-            *fs_ioctl_out = 1;
+            *ip0 = 1;
         }
-        SignalSema(fs_io_sema);
+        SignalSema(_fs_fsq_semid);
         _sceFsSigSema();
         return 0;
     case FS_IOCTL_RESULT:
-        *(int *)argp = *(int *)UNCACHED(&fs_rcv_data.result);
+        *(int *)argp = *(int *)UNCACHED(&_rcv_data_cmd.result);
         _sceFsSigSema();
         return 0;
     case FS_IOCTL_RESULT64:
-        *(long *)argp = *(long *)UNCACHED(&fs_rcv_data.result);
+        *(long *)argp = *(long *)UNCACHED(&_rcv_data_cmd.result);
         _sceFsSigSema();
         return 0;
     }
@@ -1037,13 +1030,13 @@ int sceIoctl(int fd, int req, void *argp)
     arg->semid = sema;
     arg->result = &result;
     arg->result_size = 4;
-    sceSifWriteBackDCache(&fs_send, sizeof(FsIoctlArg));
-    if (sceSifCallRpc(&fs_client, FS_IOCTL, 0, &fs_send, sizeof(FsIoctlArg), fs_rcv_rpc, 4, 0, 0) < 0) {
+    sceSifWriteBackDCache(&_send_data, sizeof(FsIoctlArg));
+    if (sceSifCallRpc(&_cd, FS_IOCTL, 0, &_send_data, sizeof(FsIoctlArg), _rcv_data_rpc, 4, 0, 0) < 0) {
         DeleteSema(sema);
         _sceFsSigSema();
         return -SCE_EAGAIN;
     }
-    rv = *(int *)UNCACHED(fs_rcv_rpc);
+    rv = *(int *)UNCACHED(_rcv_data_rpc);
     _sceFsSigSema();
     if (rv == 0) {
         DeleteSema(sema);
@@ -1059,7 +1052,7 @@ int sceIoctl(int fd, int req, void *argp)
 
 int sceIoctl2(int fd, int request, void *argp, unsigned int arglen, void *bufp, unsigned int buflen)
 {
-    FsIoctlArg *arg = &fs_send.ioctl;
+    FsIoctlArg *arg = &_send_data.ioctl;
     SemaParam param;
     int result;
     int sema;
@@ -1068,7 +1061,7 @@ int sceIoctl2(int fd, int request, void *argp, unsigned int arglen, void *bufp, 
 
     iob = get_iob(fd);
     _sceFsWaitS(FS_IOCTL2);
-    if (!fs_initialized) {
+    if (!_fs_init) {
         sceFsInit();
     }
     if (iob == 0 || iob->flags == 0) {
@@ -1095,13 +1088,13 @@ int sceIoctl2(int fd, int request, void *argp, unsigned int arglen, void *bufp, 
     arg->result_size = 4;
     arg->buf = bufp;
     arg->buflen = buflen;
-    sceSifWriteBackDCache(&fs_send, sizeof(FsIoctlArg));
-    if (sceSifCallRpc(&fs_client, FS_IOCTL2, 0, &fs_send, sizeof(FsIoctlArg), fs_rcv_rpc, 4, 0, 0) < 0) {
+    sceSifWriteBackDCache(&_send_data, sizeof(FsIoctlArg));
+    if (sceSifCallRpc(&_cd, FS_IOCTL2, 0, &_send_data, sizeof(FsIoctlArg), _rcv_data_rpc, 4, 0, 0) < 0) {
         DeleteSema(sema);
         _sceFsSigSema();
         return -SCE_EAGAIN;
     }
-    rv = *(int *)UNCACHED(fs_rcv_rpc);
+    rv = *(int *)UNCACHED(_rcv_data_rpc);
     _sceFsSigSema();
     if (rv == 0) {
         DeleteSema(sema);
@@ -1118,7 +1111,7 @@ int _sceCallCode(const char *name, int code)
 
 
 
-    FsCallArg *arg = &fs_send.call;
+    FsCallArg *arg = &_send_data.call;
     SemaParam param;
     int result;
     int len;
@@ -1126,7 +1119,7 @@ int _sceCallCode(const char *name, int code)
     int accepted;
 
     _sceFsWaitS(code);
-    if (!fs_initialized) {
+    if (!_fs_init) {
         sceFsInit();
     }
     for (len = 0; len < FS_NAME_MAX; len++) {
@@ -1145,12 +1138,12 @@ int _sceCallCode(const char *name, int code)
     arg->semid = sema;
     arg->result = &result;
     arg->result_size = 4;
-    if (sceSifCallRpc(&fs_client, code, 0, &fs_send, 12 + len + 1, fs_rcv_rpc, 4, 0, 0) < 0) {
+    if (sceSifCallRpc(&_cd, code, 0, &_send_data, 12 + len + 1, _rcv_data_rpc, 4, 0, 0) < 0) {
         DeleteSema(sema);
         _sceFsSigSema();
         return -SCE_EAGAIN;
     }
-    accepted = *(int *)UNCACHED(fs_rcv_rpc);
+    accepted = *(int *)UNCACHED(_rcv_data_rpc);
     _sceFsSigSema();
     if (accepted == 0) {
         DeleteSema(sema);
@@ -1170,7 +1163,7 @@ int sceRemove(const char *name)
 
 int sceMkdir(const char *name, int mode)
 {
-    FsMkdirArg *arg = &fs_send.mkdir;
+    FsMkdirArg *arg = &_send_data.mkdir;
     SemaParam param;
     int result;
     int len;
@@ -1178,7 +1171,7 @@ int sceMkdir(const char *name, int mode)
     int accepted;
 
     _sceFsWaitS(FS_MKDIR);
-    if (!fs_initialized) {
+    if (!_fs_init) {
         sceFsInit();
     }
     for (len = 0; len < FS_NAME_MAX; len++) {
@@ -1198,12 +1191,12 @@ int sceMkdir(const char *name, int mode)
     arg->semid = sema;
     arg->result = &result;
     arg->result_size = 4;
-    if (sceSifCallRpc(&fs_client, FS_MKDIR, 0, &fs_send, 16 + len + 1, fs_rcv_rpc, 4, 0, 0) < 0) {
+    if (sceSifCallRpc(&_cd, FS_MKDIR, 0, &_send_data, 16 + len + 1, _rcv_data_rpc, 4, 0, 0) < 0) {
         DeleteSema(sema);
         _sceFsSigSema();
         return -SCE_EAGAIN;
     }
-    accepted = *(int *)UNCACHED(fs_rcv_rpc);
+    accepted = *(int *)UNCACHED(_rcv_data_rpc);
     _sceFsSigSema();
     if (accepted == 0) {
         DeleteSema(sema);
@@ -1222,7 +1215,7 @@ int sceRmdir(const char *name)
 
 int sceFormat(const char *dev, const char *blockdev, void *argp, int arglen)
 {
-    FsFormatArg *arg = &fs_send.format;
+    FsFormatArg *arg = &_send_data.format;
     SemaParam param;
     int result;
     int len;
@@ -1231,7 +1224,7 @@ int sceFormat(const char *dev, const char *blockdev, void *argp, int arglen)
     int accepted;
 
     _sceFsWaitS(FS_FORMAT);
-    if (!fs_initialized) {
+    if (!_fs_init) {
         sceFsInit();
     }
     for (len = 0; len < FS_NAME_MAX; len++) {
@@ -1269,13 +1262,13 @@ int sceFormat(const char *dev, const char *blockdev, void *argp, int arglen)
     arg->semid = sema;
     arg->result = &result;
     arg->result_size = 4;
-    sceSifWriteBackDCache(&fs_send, sizeof(FsFormatArg));
-    if (sceSifCallRpc(&fs_client, FS_FORMAT, 0, &fs_send, sizeof(FsFormatArg), fs_rcv_rpc, 4, 0, 0) < 0) {
+    sceSifWriteBackDCache(&_send_data, sizeof(FsFormatArg));
+    if (sceSifCallRpc(&_cd, FS_FORMAT, 0, &_send_data, sizeof(FsFormatArg), _rcv_data_rpc, 4, 0, 0) < 0) {
         DeleteSema(sema);
         _sceFsSigSema();
         return -SCE_EAGAIN;
     }
-    accepted = *(int *)UNCACHED(fs_rcv_rpc);
+    accepted = *(int *)UNCACHED(_rcv_data_rpc);
     _sceFsSigSema();
     if (accepted == 0) {
         DeleteSema(sema);
@@ -1289,14 +1282,14 @@ int sceFormat(const char *dev, const char *blockdev, void *argp, int arglen)
 
 int sceAddDrv(void *device)
 {
-    FsAddDrvArg *arg = &fs_send.adddrv;
+    FsAddDrvArg *arg = &_send_data.adddrv;
     SemaParam param;
     int result;
     int sema;
     int accepted;
 
     _sceFsWaitS(FS_ADDDRV);
-    if (!fs_initialized) {
+    if (!_fs_init) {
         sceFsInit();
     }
     arg->device = device;
@@ -1307,12 +1300,12 @@ int sceAddDrv(void *device)
     arg->semid = sema;
     arg->result = &result;
     arg->result_size = 4;
-    if (sceSifCallRpc(&fs_client, FS_ADDDRV, 0, arg, sizeof(FsAddDrvArg), fs_rcv_rpc, 4, 0, 0) < 0) {
+    if (sceSifCallRpc(&_cd, FS_ADDDRV, 0, arg, sizeof(FsAddDrvArg), _rcv_data_rpc, 4, 0, 0) < 0) {
         DeleteSema(sema);
         _sceFsSigSema();
         return -1;
     }
-    accepted = *(int *)UNCACHED(fs_rcv_rpc);
+    accepted = *(int *)UNCACHED(_rcv_data_rpc);
     _sceFsSigSema();
     if (accepted == 0) {
         DeleteSema(sema);
@@ -1340,22 +1333,22 @@ int sceDopen(const char *name)
     }
     fd = _sceCallCode(name, 9);
     if (fd < 0) {
-        WaitSema(fs_iob_sema);
+        WaitSema(_fs_iob_semid);
         iob->flags = 0;
-        SignalSema(fs_iob_sema);
+        SignalSema(_fs_iob_semid);
         return fd;
     }
-    WaitSema(fs_iob_sema);
+    WaitSema(_fs_iob_semid);
     iob->fd = fd;
-    fd = iob - fs_iob;
-    SignalSema(fs_iob_sema);
+    fd = iob - _iob;
+    SignalSema(_fs_iob_semid);
     return fd;
 }
 
 
 int sceDclose(int fd)
 {
-    FsCloseArg *arg = &fs_send.close;
+    FsCloseArg *arg = &_send_data.close;
     SemaParam param;
     int result;
     int sema;
@@ -1364,7 +1357,7 @@ int sceDclose(int fd)
 
     iob = get_iob(fd);
     _sceFsWaitS(FS_DCLOSE);
-    if (!fs_initialized) {
+    if (!_fs_init) {
         _sceFsSigSema();
         return -1;
     }
@@ -1380,13 +1373,13 @@ int sceDclose(int fd)
     arg->semid = sema;
     arg->result = &result;
     arg->result_size = 4;
-    if (sceSifCallRpc(&fs_client, FS_DCLOSE, 0, arg, sizeof(FsCloseArg), fs_rcv_rpc, 4, 0, 0) < 0) {
+    if (sceSifCallRpc(&_cd, FS_DCLOSE, 0, arg, sizeof(FsCloseArg), _rcv_data_rpc, 4, 0, 0) < 0) {
         DeleteSema(sema);
         _sceFsSigSema();
         return -SCE_EAGAIN;
     }
     iob->flags = 0;
-    rv = *(int *)UNCACHED(fs_rcv_rpc);
+    rv = *(int *)UNCACHED(_rcv_data_rpc);
     _sceFsSigSema();
     if (rv == 0) {
         DeleteSema(sema);
@@ -1403,7 +1396,7 @@ int sceDclose(int fd)
 
 int sceDread(int fd, void *dirent)
 {
-    FsReadArg *arg = &fs_send.read;
+    FsReadArg *arg = &_send_data.read;
     SemaParam param;
     int result;
     int sema;
@@ -1412,7 +1405,7 @@ int sceDread(int fd, void *dirent)
 
     iob = get_iob(fd);
     _sceFsWaitS(FS_DREAD);
-    if (!fs_initialized) {
+    if (!_fs_init) {
         _sceFsSigSema();
         return -1;
     }
@@ -1429,12 +1422,12 @@ int sceDread(int fd, void *dirent)
     arg->semid = sema;
     arg->result = &result;
     arg->result_size = 4;
-    if (sceSifCallRpc(&fs_client, FS_DREAD, 0, arg, sizeof(FsReadArg), fs_rcv_rpc, 4, 0, 0) < 0) {
+    if (sceSifCallRpc(&_cd, FS_DREAD, 0, arg, sizeof(FsReadArg), _rcv_data_rpc, 4, 0, 0) < 0) {
         WaitSema(sema);
         _sceFsSigSema();
         return -SCE_EAGAIN;
     }
-    rv = *(int *)UNCACHED(fs_rcv_rpc);
+    rv = *(int *)UNCACHED(_rcv_data_rpc);
     _sceFsSigSema();
     if (rv == 0) {
         DeleteSema(sema);
@@ -1448,7 +1441,7 @@ int sceDread(int fd, void *dirent)
 
 int sceGetstat(const char *name, sce_stat *stat)
 {
-    FsGetstatArg *arg = &fs_send.getstat;
+    FsGetstatArg *arg = &_send_data.getstat;
     SemaParam param;
     int result;
     int len;
@@ -1456,7 +1449,7 @@ int sceGetstat(const char *name, sce_stat *stat)
     int accepted;
 
     _sceFsWaitS(FS_GETSTAT);
-    if (!fs_initialized) {
+    if (!_fs_init) {
         sceFsInit();
     }
     for (len = 0; len < FS_NAME_MAX; len++) {
@@ -1476,12 +1469,12 @@ int sceGetstat(const char *name, sce_stat *stat)
     arg->semid = sema;
     arg->result = &result;
     arg->result_size = 4;
-    if (sceSifCallRpc(&fs_client, FS_GETSTAT, 0, &fs_send, 16 + len + 1, fs_rcv_rpc, 4, 0, 0) < 0) {
+    if (sceSifCallRpc(&_cd, FS_GETSTAT, 0, &_send_data, 16 + len + 1, _rcv_data_rpc, 4, 0, 0) < 0) {
         DeleteSema(sema);
         _sceFsSigSema();
         return -SCE_EAGAIN;
     }
-    accepted = *(int *)UNCACHED(fs_rcv_rpc);
+    accepted = *(int *)UNCACHED(_rcv_data_rpc);
     _sceFsSigSema();
     if (accepted == 0) {
         DeleteSema(sema);
@@ -1495,7 +1488,7 @@ int sceGetstat(const char *name, sce_stat *stat)
 
 int sceChstat(const char *name, sce_stat *stat, unsigned int cbit)
 {
-    FsChstatArg *arg = &fs_send.chstat;
+    FsChstatArg *arg = &_send_data.chstat;
     SemaParam param;
     int result;
     int len;
@@ -1503,7 +1496,7 @@ int sceChstat(const char *name, sce_stat *stat, unsigned int cbit)
     int accepted;
 
     _sceFsWaitS(FS_CHSTAT);
-    if (!fs_initialized) {
+    if (!_fs_init) {
         sceFsInit();
     }
     for (len = 0; len < FS_NAME_MAX; len++) {
@@ -1524,13 +1517,13 @@ int sceChstat(const char *name, sce_stat *stat, unsigned int cbit)
     arg->semid = sema;
     arg->result = &result;
     arg->result_size = 4;
-    sceSifWriteBackDCache(&fs_send, sizeof(FsChstatArg));
-    if (sceSifCallRpc(&fs_client, FS_CHSTAT, 0, &fs_send, 0x50 + len + 1, fs_rcv_rpc, 4, 0, 0) < 0) {
+    sceSifWriteBackDCache(&_send_data, sizeof(FsChstatArg));
+    if (sceSifCallRpc(&_cd, FS_CHSTAT, 0, &_send_data, 0x50 + len + 1, _rcv_data_rpc, 4, 0, 0) < 0) {
         DeleteSema(sema);
         _sceFsSigSema();
         return -SCE_EAGAIN;
     }
-    accepted = *(int *)UNCACHED(fs_rcv_rpc);
+    accepted = *(int *)UNCACHED(_rcv_data_rpc);
     _sceFsSigSema();
     if (accepted == 0) {
         DeleteSema(sema);
@@ -1544,7 +1537,7 @@ int sceChstat(const char *name, sce_stat *stat, unsigned int cbit)
 
 int sceRename(const char *oldname, const char *newname)
 {
-    FsRenameArg *arg = &fs_send.rename;
+    FsRenameArg *arg = &_send_data.rename;
     SemaParam param;
     int result;
     int len;
@@ -1552,7 +1545,7 @@ int sceRename(const char *oldname, const char *newname)
     int accepted;
 
     _sceFsWaitS(FS_RENAME);
-    if (!fs_initialized) {
+    if (!_fs_init) {
         sceFsInit();
     }
     for (len = 0; len < FS_NAME_MAX; len++) {
@@ -1578,13 +1571,13 @@ int sceRename(const char *oldname, const char *newname)
     arg->semid = sema;
     arg->result = &result;
     arg->result_size = 4;
-    sceSifWriteBackDCache(&fs_send, sizeof(FsRenameArg));
-    if (sceSifCallRpc(&fs_client, FS_RENAME, 0, &fs_send, sizeof(FsRenameArg), fs_rcv_rpc, 4, 0, 0) < 0) {
+    sceSifWriteBackDCache(&_send_data, sizeof(FsRenameArg));
+    if (sceSifCallRpc(&_cd, FS_RENAME, 0, &_send_data, sizeof(FsRenameArg), _rcv_data_rpc, 4, 0, 0) < 0) {
         DeleteSema(sema);
         _sceFsSigSema();
         return -SCE_EAGAIN;
     }
-    accepted = *(int *)UNCACHED(fs_rcv_rpc);
+    accepted = *(int *)UNCACHED(_rcv_data_rpc);
     _sceFsSigSema();
     if (accepted == 0) {
         DeleteSema(sema);
@@ -1603,7 +1596,7 @@ int sceChdir(const char *name)
 
 int sceSync(const char *name, int flag)
 {
-    FsSyncArg *arg = &fs_send.sync;
+    FsSyncArg *arg = &_send_data.sync;
     SemaParam param;
     int result;
     int len;
@@ -1611,7 +1604,7 @@ int sceSync(const char *name, int flag)
     int accepted;
 
     _sceFsWaitS(FS_SYNC);
-    if (!fs_initialized) {
+    if (!_fs_init) {
         sceFsInit();
     }
     for (len = 0; len < FS_NAME_MAX; len++) {
@@ -1630,12 +1623,12 @@ int sceSync(const char *name, int flag)
     arg->semid = sema;
     arg->result = &result;
     arg->result_size = 4;
-    if (sceSifCallRpc(&fs_client, FS_SYNC, 0, &fs_send, sizeof(FsSyncArg), fs_rcv_rpc, 4, 0, 0) < 0) {
+    if (sceSifCallRpc(&_cd, FS_SYNC, 0, &_send_data, sizeof(FsSyncArg), _rcv_data_rpc, 4, 0, 0) < 0) {
         DeleteSema(sema);
         _sceFsSigSema();
         return -SCE_EAGAIN;
     }
-    accepted = *(int *)UNCACHED(fs_rcv_rpc);
+    accepted = *(int *)UNCACHED(_rcv_data_rpc);
     _sceFsSigSema();
     if (accepted == 0) {
         DeleteSema(sema);
@@ -1649,7 +1642,7 @@ int sceSync(const char *name, int flag)
 
 int sceMount(const char *fsname, const char *devname, int flag, void *argp, int arglen)
 {
-    FsMountArg *arg = &fs_send.mount;
+    FsMountArg *arg = &_send_data.mount;
     SemaParam param;
     int result;
     int len;
@@ -1658,7 +1651,7 @@ int sceMount(const char *fsname, const char *devname, int flag, void *argp, int 
     int accepted;
 
     _sceFsWaitS(FS_MOUNT);
-    if (!fs_initialized) {
+    if (!_fs_init) {
         sceFsInit();
     }
     for (len = 0; len < FS_NAME_MAX; len++) {
@@ -1693,13 +1686,13 @@ int sceMount(const char *fsname, const char *devname, int flag, void *argp, int 
     arg->semid = sema;
     arg->result = &result;
     arg->result_size = 4;
-    sceSifWriteBackDCache(&fs_send, sizeof(FsMountArg));
-    if (sceSifCallRpc(&fs_client, FS_MOUNT, 0, &fs_send, sizeof(FsMountArg), fs_rcv_rpc, 4, 0, 0) < 0) {
+    sceSifWriteBackDCache(&_send_data, sizeof(FsMountArg));
+    if (sceSifCallRpc(&_cd, FS_MOUNT, 0, &_send_data, sizeof(FsMountArg), _rcv_data_rpc, 4, 0, 0) < 0) {
         DeleteSema(sema);
         _sceFsSigSema();
         return -SCE_EAGAIN;
     }
-    accepted = *(int *)UNCACHED(fs_rcv_rpc);
+    accepted = *(int *)UNCACHED(_rcv_data_rpc);
     _sceFsSigSema();
     if (accepted == 0) {
         DeleteSema(sema);
@@ -1717,7 +1710,7 @@ int sceUmount(const char *name)
 
 long sceLseek64(int fd, long offset, int whence)
 {
-    FsLseek64Arg *arg = &fs_send.lseek64;
+    FsLseek64Arg *arg = &_send_data.lseek64;
     SemaParam param;
     long result;
     int sema;
@@ -1728,7 +1721,7 @@ long sceLseek64(int fd, long offset, int whence)
 
     iob = get_iob(fd);
     _sceFsWaitS(FS_LSEEK64);
-    if (!fs_initialized) {
+    if (!_fs_init) {
         _sceFsSigSema();
         return -1;
     }
@@ -1740,7 +1733,7 @@ long sceLseek64(int fd, long offset, int whence)
     arg->fd = iob->fd;
     arg->offset = offset;
     arg->whence = whence;
-    arg->index = iob - fs_iob;
+    arg->index = iob - _iob;
     param.initCount = 0;
     param.maxCount = 1;
     param.option = 0;
@@ -1749,7 +1742,7 @@ long sceLseek64(int fd, long offset, int whence)
     arg->result = &result;
     arg->result_size = 8;
     if (flags & FS_NOWAIT) {
-        WaitSema(fs_io_sema);
+        WaitSema(_fs_fsq_semid);
         for (i = 0; i < FS_NQUEUE; i++) {
             if (_sceFs_q[i] == -1) {
                 _sceFs_q[i] = arg->semid;
@@ -1757,14 +1750,14 @@ long sceLseek64(int fd, long offset, int whence)
                 break;
             }
         }
-        SignalSema(fs_io_sema);
+        SignalSema(_fs_fsq_semid);
     }
-    if (sceSifCallRpc(&fs_client, FS_LSEEK64, 0, &fs_send, sizeof(FsLseek64Arg), fs_rcv_rpc, 4, 0, 0) < 0) {
+    if (sceSifCallRpc(&_cd, FS_LSEEK64, 0, &_send_data, sizeof(FsLseek64Arg), _rcv_data_rpc, 4, 0, 0) < 0) {
         DeleteSema(sema);
         _sceFsSigSema();
         return -SCE_EAGAIN;
     }
-    rv = *(int *)UNCACHED(fs_rcv_rpc);
+    rv = *(int *)UNCACHED(_rcv_data_rpc);
     _sceFsSigSema();
     if (rv == 0) {
         DeleteSema(sema);
@@ -1782,7 +1775,7 @@ long sceLseek64(int fd, long offset, int whence)
 
 int sceDevctl(const char *name, int cmd, void *argp, unsigned int arglen, void *bufp, unsigned int buflen)
 {
-    FsDevctlArg *arg = &fs_send.devctl;
+    FsDevctlArg *arg = &_send_data.devctl;
     SemaParam param;
     int result;
     int len;
@@ -1791,7 +1784,7 @@ int sceDevctl(const char *name, int cmd, void *argp, unsigned int arglen, void *
     int accepted;
 
     _sceFsWaitS(FS_DEVCTL);
-    if (!fs_initialized) {
+    if (!_fs_init) {
         sceFsInit();
     }
     for (len = 0; len < FS_NAME_MAX; len++) {
@@ -1819,13 +1812,13 @@ int sceDevctl(const char *name, int cmd, void *argp, unsigned int arglen, void *
     arg->result_size = 4;
     arg->buf = bufp;
     arg->buflen = buflen;
-    sceSifWriteBackDCache(&fs_send, sizeof(FsDevctlArg));
-    if (sceSifCallRpc(&fs_client, FS_DEVCTL, 0, &fs_send, sizeof(FsDevctlArg), fs_rcv_rpc, 4, 0, 0) < 0) {
+    sceSifWriteBackDCache(&_send_data, sizeof(FsDevctlArg));
+    if (sceSifCallRpc(&_cd, FS_DEVCTL, 0, &_send_data, sizeof(FsDevctlArg), _rcv_data_rpc, 4, 0, 0) < 0) {
         DeleteSema(sema);
         _sceFsSigSema();
         return -SCE_EAGAIN;
     }
-    accepted = *(int *)UNCACHED(fs_rcv_rpc);
+    accepted = *(int *)UNCACHED(_rcv_data_rpc);
     _sceFsSigSema();
     if (accepted == 0) {
         DeleteSema(sema);
@@ -1839,7 +1832,7 @@ int sceDevctl(const char *name, int cmd, void *argp, unsigned int arglen, void *
 
 int sceSymlink(const char *existing, const char *newname)
 {
-    FsSymlinkArg *arg = &fs_send.symlink;
+    FsSymlinkArg *arg = &_send_data.symlink;
     SemaParam param;
     int result;
     int len;
@@ -1847,24 +1840,24 @@ int sceSymlink(const char *existing, const char *newname)
     int accepted;
 
     _sceFsWaitS(FS_RENAME);
-    if (!fs_initialized) {
+    if (!_fs_init) {
         sceFsInit();
     }
     for (len = 0; len < FS_NAME_MAX; len++) {
-        if ((arg->existing[len] = existing[len]) == ' ') {
+        if ((arg->existing[len] = existing[len]) == '\0') {
             break;
         }
     }
     if (len == FS_NAME_MAX) {
-        arg->existing[FS_NAME_MAX - 1] = ' ';
+        arg->existing[FS_NAME_MAX - 1] = '\0';
     }
     for (len = 0; len < FS_NAME_MAX; len++) {
-        if ((arg->newname[len] = newname[len]) == ' ') {
+        if ((arg->newname[len] = newname[len]) == '\0') {
             break;
         }
     }
     if (len == FS_NAME_MAX) {
-        arg->newname[FS_NAME_MAX - 1] = ' ';
+        arg->newname[FS_NAME_MAX - 1] = '\0';
     }
     param.initCount = 0;
     param.maxCount = 1;
@@ -1873,12 +1866,12 @@ int sceSymlink(const char *existing, const char *newname)
     arg->semid = sema;
     arg->result = &result;
     arg->result_size = 4;
-    if (sceSifCallRpc(&fs_client, FS_SYMLINK, 0, &fs_send, sizeof(FsSymlinkArg), fs_rcv_rpc, 4, 0, 0) < 0) {
+    if (sceSifCallRpc(&_cd, FS_SYMLINK, 0, &_send_data, sizeof(FsSymlinkArg), _rcv_data_rpc, 4, 0, 0) < 0) {
         DeleteSema(sema);
         _sceFsSigSema();
         return -SCE_EAGAIN;
     }
-    accepted = *(int *)UNCACHED(fs_rcv_rpc);
+    accepted = *(int *)UNCACHED(_rcv_data_rpc);
     _sceFsSigSema();
     if (accepted == 0) {
         DeleteSema(sema);
@@ -1892,7 +1885,7 @@ int sceSymlink(const char *existing, const char *newname)
 
 int sceReadlink(const char *name, char *buf, unsigned int buflen)
 {
-    FsReadlinkArg *arg = &fs_send.readlink;
+    FsReadlinkArg *arg = &_send_data.readlink;
     SemaParam param;
     int result;
     int len;
@@ -1900,16 +1893,16 @@ int sceReadlink(const char *name, char *buf, unsigned int buflen)
     int accepted;
 
     _sceFsWaitS(FS_RENAME);
-    if (!fs_initialized) {
+    if (!_fs_init) {
         sceFsInit();
     }
     for (len = 0; len < FS_NAME_MAX; len++) {
-        if ((arg->name[len] = name[len]) == ' ') {
+        if ((arg->name[len] = name[len]) == '\0') {
             break;
         }
     }
     if (len == FS_NAME_MAX) {
-        arg->name[FS_NAME_MAX - 1] = ' ';
+        arg->name[FS_NAME_MAX - 1] = '\0';
     }
     if (buflen >= FS_NAME_MAX) {
         buflen = FS_NAME_MAX - 1;
@@ -1924,12 +1917,12 @@ int sceReadlink(const char *name, char *buf, unsigned int buflen)
     arg->semid = sema;
     arg->result = &result;
     arg->result_size = 4;
-    if (sceSifCallRpc(&fs_client, FS_READLINK, 0, &fs_send, sizeof(FsSymlinkArg), fs_rcv_rpc, 4, 0, 0) < 0) {
+    if (sceSifCallRpc(&_cd, FS_READLINK, 0, &_send_data, sizeof(FsSymlinkArg), _rcv_data_rpc, 4, 0, 0) < 0) {
         DeleteSema(sema);
         _sceFsSigSema();
         return -SCE_EAGAIN;
     }
-    accepted = *(int *)UNCACHED(fs_rcv_rpc);
+    accepted = *(int *)UNCACHED(_rcv_data_rpc);
     _sceFsSigSema();
     if (accepted == 0) {
         DeleteSema(sema);

@@ -124,52 +124,26 @@ typedef union BmpColour {
 #define NUTEX_MAX 0x400
 #define DMA_TAG_SIZE (sizeof(u64) * 2)
 
-extern struct nutexslot_s *D_0062EBEC;
-#define TexList D_0062EBEC
+static int initialised = 0;
+static struct nutexslot_s *tinfo = 0;
+static int tpid = 0;
+int nutex_alloc_cnt = 0;
+static int gst_curr = 0;
+static int gst_head = 0;
+static int gst_tail = 0;
+static int nutex_reserve_sp = 0;
+int nutex_total_xfer_this_frame = 0;
+int nutex_peak_xfer_per_frame = 0;
 
-extern int gs_botfree;
+static int tex_allocmax;
+static int gs_ptr;
+static int gs_bottom;
+static int gs_tempaddr;
+static int nutex_reserve_stack[256];
+
 extern int gs_top;
-extern int D_00633068;
-#define gs_tempfree D_00633068
-extern int D_00633060;
-#define gs_topfree D_00633060
-extern int D_00633064;
-#define gs_bot D_00633064
-
-extern int D_0062EC04;
-#define gs_reserve_sp D_0062EC04
-extern int D_0067D640[256];
-#define gs_reserve_stack D_0067D640
-
-extern int D_0062EBE8;
-#define nutex_initialised D_0062EBE8
-extern int D_0062EBF0;
-#define nutex_cnt D_0062EBF0
-extern int D_0063305C;
-#define nutex_max D_0063305C
-extern char *D_0062EC10;
-#define nutex_sysbuff D_0062EC10
-extern int D_0062EBF8;
-#define gs_wrap_frame D_0062EBF8
-extern int D_0062EBFC;
-#define gs_frame D_0062EBFC
-extern int D_0062EC00;
-#define gs_flush_cnt D_0062EC00
-extern int nutex_alloc_cnt;
-
+extern int gs_botfree;
 extern int numtl_force_mipmap;
-extern int sys_mm_k;
-extern int sys_mm_l;
-
-extern int D_002D3F20[4];
-#define nutex_wrap_mode D_002D3F20
-extern int D_002D3F30[4];
-#define nutex_mag_filter D_002D3F30
-extern int D_002D3F40[4];
-#define nutex_min_filter D_002D3F40
-
-extern char D_00614590[];
-#define nutex_srcfile D_00614590
 
 extern void ps2videoGetFreeMem(int *bot, int *top);
 extern int NuFileLoadBuffer(char *name, void *buf, int max);
@@ -182,34 +156,6 @@ extern int NuFileRead(int fh, void *buf, int size);
 extern int NuFilePos(int fh);
 extern int NuFileSeek(int fh, int offset, int origin);
 
-extern char D_0062EC18[];
-#define nutex_err_assert D_0062EC18
-extern char D_0062EC20[];
-#define nutex_err_doh D_0062EC20
-extern char D_006145B0[];
-#define nutex_err_overflow D_006145B0
-extern char D_006145C0[];
-#define nutex_err_bitcount D_006145C0
-extern char D_006146B8[];
-#define nutex_err_recover D_006146B8
-extern char D_00614600[];
-#define nutex_err_membitcount D_00614600
-
-extern char D_00614640[];
-#define nutex_err_alloc D_00614640
-extern char D_00614660[];
-#define nutex_err_accomodate D_00614660
-extern char D_00614690[];
-#define nutex_err_set D_00614690
-
-extern int D_0062EC30;
-#define nutex_page_initialised D_0062EC30
-extern struct numtl_s *D_0067D540[64];
-#define nutex_page_mtl D_0067D540
-extern unsigned short nutex_display_lod;
-
-extern int nutex_use_path3;
-extern int txupload_on;
 extern int nurndr_pixel_width;
 extern int nurndr_pixel_height;
 extern int nurndr_pixel_p2w;
@@ -235,18 +181,18 @@ extern void NuRndrRect(struct numtlrect_s *rect);
 static inline int NuTexFindFreeSlot(void) {
     int start;
 
-    start = nutex_cnt;
-    while (TexList[nutex_cnt].flags & NUTEX_VALID) {
-        nutex_cnt++;
-        if (start == nutex_cnt) {
+    start = tpid;
+    while (tinfo[tpid].flags & NUTEX_VALID) {
+        tpid++;
+        if (start == tpid) {
             return -1;
         }
-        if (nutex_cnt >= nutex_max) {
-            nutex_cnt = 0;
+        if (tpid >= tex_allocmax) {
+            tpid = 0;
         }
     }
     nutex_alloc_cnt++;
-    return nutex_cnt;
+    return tpid;
 }
 
 
@@ -255,12 +201,51 @@ inline int NuTexHasAlpha(int tex) {
 
     tex--;
     if (tex >= 0) {
-        type = TexList[tex].type;
+        type = tinfo[tex].type;
         if (type == 1 || type == 3) {
             return 1;
         }
     }
     return 0;
+}
+
+
+inline void NuTexInitEx(union variptr_u *buff, int count) {
+    int size;
+    struct nutexslot_s *list;
+
+    if (initialised) {
+        NuTexClose();
+    }
+    ps2videoGetFreeMem(&gs_bottom, 0);
+    size = count * sizeof(struct nutexslot_s);
+    list = (struct nutexslot_s *)((buff->intaddr + 15) & ~(nuintptr)0xF);
+    gs_botfree = gs_bottom;
+    gs_top = 0x4000;
+    gs_ptr = 0x4000;
+    gst_tail = 0;
+    gst_head = 0;
+    gst_curr = 0;
+    buff->voidptr = list;
+    tinfo = list;
+    memset(list, 0, size);
+    buff->u8 += size;
+    tex_allocmax = count;
+    initialised = 1;
+    tpid = 0;
+    nutex_alloc_cnt = 0;
+}
+
+
+inline void NuTexInit(void) {
+    static struct nutexslot_s *default_tinfo = 0;
+    union variptr_u buff;
+
+    if (!default_tinfo) {
+        default_tinfo = NuMemAllocFn(NUTEX_MAX * sizeof(struct nutexslot_s), "..\\nu2crash.ps2\\nu3d\\nutex.c", 0x1A2);
+    }
+    buff.voidptr = default_tinfo;
+    NuTexInitEx(&buff, NUTEX_MAX);
 }
 
 
@@ -293,7 +278,7 @@ struct nutex_s *NuTexReadBitmapMMEx(char *name, int mipmaps, union variptr_u *bu
 
     spec = 0;
     if (!name) {
-        NuErrorProlog(nutex_srcfile, 0x234)(nutex_err_assert);
+        NuErrorProlog("..\\nu2crash.ps2\\nu3d\\nutex.c", 0x234)("assert");
     }
     fh = NuFileOpen(name, 0);
     if (fh) {
@@ -301,10 +286,10 @@ struct nutex_s *NuTexReadBitmapMMEx(char *name, int mipmaps, union variptr_u *bu
             spec = (struct nutex_s *)((buff->intaddr + 15) & ~(nuintptr)0xF);
             buff->voidptr = (char *)spec + sizeof(struct nutex_s);
             if (buffend->u8 < buff->u8) {
-                NuErrorProlog(nutex_srcfile, 0x23B)(nutex_err_overflow);
+                NuErrorProlog("..\\nu2crash.ps2\\nu3d\\nutex.c", 0x23B)("Buffer overflow");
             }
         } else {
-            spec = NuMemAllocFn(sizeof(struct nutex_s), nutex_srcfile, 0x23E);
+            spec = NuMemAllocFn(sizeof(struct nutex_s), "..\\nu2crash.ps2\\nu3d\\nutex.c", 0x23E);
         }
         if (spec) {
             memset(spec, 0, sizeof(struct nutex_s));
@@ -347,7 +332,7 @@ struct nutex_s *NuTexReadBitmapMMEx(char *name, int mipmaps, union variptr_u *bu
                 }
                 break;
             default:
-                NuErrorProlog(nutex_srcfile, 0x26E)(nutex_err_bitcount, info.bitcount, name);
+                NuErrorProlog("..\\nu2crash.ps2\\nu3d\\nutex.c", 0x26E)("NuTexLoadBitmap:Bad BitCount <%d> on loading bitmap <%s>",info.bitcount, name);
                 break;
             }
             levels = mipmaps + 1;
@@ -370,10 +355,10 @@ struct nutex_s *NuTexReadBitmapMMEx(char *name, int mipmaps, union variptr_u *bu
                 spec->bits = buff->voidptr;
                 buff->u8 += total + palsize;
                 if (buffend->u8 < buff->u8) {
-                    NuErrorProlog(nutex_srcfile, 0x283)(nutex_err_overflow);
+                    NuErrorProlog("..\\nu2crash.ps2\\nu3d\\nutex.c", 0x283)("Buffer overflow");
                 }
             } else {
-                spec->bits = NuMemAllocFn(total + palsize, nutex_srcfile, 0x286);
+                spec->bits = NuMemAllocFn(total + palsize, "..\\nu2crash.ps2\\nu3d\\nutex.c", 0x286);
             }
             FlushCache(0);
             NuFileSeek(fh, file.offbits, pos);
@@ -382,10 +367,10 @@ struct nutex_s *NuTexReadBitmapMMEx(char *name, int mipmaps, union variptr_u *bu
                 row = (u8 *)((buff->intaddr + 15) & ~(nuintptr)0xF);
                 buff->u8 = row + rowbytes;
                 if (buffend->u8 < buff->u8) {
-                    NuErrorProlog(nutex_srcfile, 0x28F)(nutex_err_overflow);
+                    NuErrorProlog("..\\nu2crash.ps2\\nu3d\\nutex.c", 0x28F)("Buffer overflow");
                 }
             } else {
-                row = NuMemAllocFn(rowbytes, nutex_srcfile, 0x292);
+                row = NuMemAllocFn(rowbytes, "..\\nu2crash.ps2\\nu3d\\nutex.c", 0x292);
             }
             top = spec->bits;
             bottom = top + NuTexImgSize(spec->type, spec->width, spec->height) - rowbytes;
@@ -397,7 +382,7 @@ struct nutex_s *NuTexReadBitmapMMEx(char *name, int mipmaps, union variptr_u *bu
                 bottom -= rowbytes;
             }
             if (!buff) {
-                NuMemFreeFn(row, nutex_srcfile, 0x2A1);
+                NuMemFreeFn(row, "..\\nu2crash.ps2\\nu3d\\nutex.c", 0x2A1);
             }
             scale = 2;
             dst = spec->bits;
@@ -415,7 +400,7 @@ struct nutex_s *NuTexReadBitmapMMEx(char *name, int mipmaps, union variptr_u *bu
                         }
                     }
                 } else {
-                    NuErrorProlog(nutex_srcfile, 0x2B6)(nutex_err_doh);
+                    NuErrorProlog("..\\nu2crash.ps2\\nu3d\\nutex.c", 0x2B6)("Doh");
                 }
                 scale *= 2;
             }
@@ -445,7 +430,7 @@ struct nutex_s *NuTexReadBitmapMem(u8 *mem) {
     u8 *top;
     u8 *bottom;
 
-    spec = NuMemAllocFn(sizeof(struct nutex_s), nutex_srcfile, 0x2E9);
+    spec = NuMemAllocFn(sizeof(struct nutex_s), "..\\nu2crash.ps2\\nu3d\\nutex.c", 0x2E9);
     if (spec) {
         memset(spec, 0, sizeof(struct nutex_s));
         src = mem;
@@ -473,7 +458,7 @@ struct nutex_s *NuTexReadBitmapMem(u8 *mem) {
             memcpy(pal, src, 0x400);
             break;
         default:
-            NuErrorProlog(nutex_srcfile, 0x310)(nutex_err_membitcount, info.bitcount);
+            NuErrorProlog("..\\nu2crash.ps2\\nu3d\\nutex.c", 0x310)("NuTexLoadBitmap:Bad BitCount <%d> on loading memory bitmap",info.bitcount);
             break;
         }
         maxdim = info.height < info.width ? info.width : info.height;
@@ -484,11 +469,11 @@ struct nutex_s *NuTexReadBitmapMem(u8 *mem) {
         spec->mmcnt = 0;
         rowbytes = (spec->width * NuTexPixelSize(spec->type) + 7) / 8;
         size = NuTexImgSize(spec->type, spec->width, spec->height);
-        spec->bits = NuMemAllocFn(size + palsize, nutex_srcfile, 0x31F);
+        spec->bits = NuMemAllocFn(size + palsize, "..\\nu2crash.ps2\\nu3d\\nutex.c", 0x31F);
         FlushCache(0);
         src = mem + file.offbits;
         memcpy(spec->bits, src, size);
-        row = NuMemAllocFn(rowbytes, nutex_srcfile, 0x325);
+        row = NuMemAllocFn(rowbytes, "..\\nu2crash.ps2\\nu3d\\nutex.c", 0x325);
         top = spec->bits;
         bottom = top + NuTexImgSize(spec->type, spec->width, spec->height) - rowbytes;
         while (top < bottom) {
@@ -498,7 +483,7 @@ struct nutex_s *NuTexReadBitmapMem(u8 *mem) {
             memcpy(bottom, row, rowbytes);
             bottom -= rowbytes;
         }
-        NuMemFreeFn(row, nutex_srcfile, 0x32F);
+        NuMemFreeFn(row, "..\\nu2crash.ps2\\nu3d\\nutex.c", 0x32F);
         if (palsize) {
             spec->pal = (int *)((u8 *)spec->bits + NuTexImgSize(spec->type, spec->width, spec->height));
             memcpy(spec->pal, pal, palsize);
@@ -513,8 +498,8 @@ u8 *NuTexSetRenderTarget(u8 *stream, int tex) {
     int addr;
     u64 *gif;
 
-    if (TexList[tex - 1].flags & NUTEX_VALID) {
-        entry = &TexList[tex - 1];
+    if (tinfo[tex - 1].flags & NUTEX_VALID) {
+        entry = &tinfo[tex - 1];
         stream = vpDmaTag_CntEx(stream, 0x13000000, 0x50000000);
         stream[-0xE] = 10;
         gif = gsBeginGifPacket(vtBeginDirect(stream - 4, 0), 0, 1, 0, 0, 0, 1, 0xE);
@@ -546,21 +531,21 @@ int NuTexCreateEx(struct nutex_s *spec, void *extmem, int *extend) {
     NuDisableVBlank();
     slot = NuTexFindFreeSlot();
     if (slot >= 0) {
-        memset(&TexList[slot], 0, sizeof(struct nutexslot_s));
+        memset(&tinfo[slot], 0, sizeof(struct nutexslot_s));
         if (spec) {
-            TexList[slot].spec = *spec;
+            tinfo[slot].spec = *spec;
         }
         if (extmem) {
             NuMemSetExternal(extmem, extend);
         }
-        if (NuPs2TxCreate(&TexList[slot].spec, &TexList[slot].ps2tex)) {
-            TexList[slot].bits = 0;
-            TexList[slot].valid = 1;
+        if (NuPs2TxCreate(&tinfo[slot].spec, &tinfo[slot].ps2tex)) {
+            tinfo[slot].bits = 0;
+            tinfo[slot].valid = 1;
             if (extmem) {
-                TexList[slot].native = 1;
+                tinfo[slot].native = 1;
                 NuMemSetExternal(0, 0);
             } else {
-                TexList[slot].native = (spec == 0);
+                tinfo[slot].native = (spec == 0);
             }
             NuEnableVBlank();
             return slot + 1;
@@ -570,7 +555,7 @@ int NuTexCreateEx(struct nutex_s *spec, void *extmem, int *extend) {
         }
     }
     NuEnableVBlank();
-    NuErrorProlog(nutex_srcfile, 0x3CF)(nutex_err_alloc);
+    NuErrorProlog("..\\nu2crash.ps2\\nu3d\\nutex.c", 0x3CF)("Unable to allocate texture");
     return 0;
 }
 
@@ -580,11 +565,11 @@ int NuTexCreateStream(struct nutex_s *spec) {
 
     slot = NuTexFindFreeSlot();
     if (slot >= 0) {
-        TexList[slot].spec = *spec;
-        if (NuPs2TxCreate(spec, &TexList[slot].ps2tex)) {
-            TexList[slot].bits = 0;
-            TexList[slot].valid = 1;
-            TexList[slot].native = (spec == 0);
+        tinfo[slot].spec = *spec;
+        if (NuPs2TxCreate(spec, &tinfo[slot].ps2tex)) {
+            tinfo[slot].bits = 0;
+            tinfo[slot].valid = 1;
+            tinfo[slot].native = (spec == 0);
             return slot + 1;
         }
     }
@@ -592,10 +577,14 @@ int NuTexCreateStream(struct nutex_s *spec) {
 }
 
 
+int txupload_on = 1;
+int nutex_use_path3 = 0;
+int nutex_display_lod = 0;
+
 void NuTexAccomodateRS(struct rndrstream_s *rs, int tex) {
     u32 *prev;
 
-    gs_topfree = rs->gs_ptr;
+    gs_ptr = rs->gs_ptr;
     if (nutex_use_path3) {
         prev = rs->ptr.u32;
         rs->ptr.u8 = vpDmaTag_Next(prev, 0);
@@ -621,7 +610,7 @@ void NuTexAccomodateRS(struct rndrstream_s *rs, int tex) {
     } else {
         rs->ptr.u8 = NuTexAccomodate(rs->ptr.u8, tex);
     }
-    rs->gs_ptr = gs_topfree;
+    rs->gs_ptr = gs_ptr;
 }
 
 
@@ -631,33 +620,33 @@ u8 *NuTexAccomodate(u8 *stream, int tex) {
 
     if (tex > 0) {
         if (txupload_on) {
-            entry = &TexList[tex - 1];
+            entry = &tinfo[tex - 1];
             if (entry->flags & NUTEX_VALID) {
                 if (entry->type < 8U) {
                     ps2tex = &entry->ps2tex;
-                    if (gs_topfree - ps2tex->gsused < gs_botfree) {
-                        gs_topfree = gs_top;
-                        gs_wrap_frame = gs_frame;
+                    if (gs_ptr - ps2tex->gsused < gs_botfree) {
+                        gs_ptr = gs_top;
+                        gst_curr = gst_head;
                     }
-                    stream = NuPs2TxGenUpload(stream, ps2tex, gs_topfree);
+                    stream = NuPs2TxGenUpload(stream, ps2tex, gs_ptr);
                     ps2tex->uploaded = 1;
-                    gs_topfree -= ps2tex->gsused;
+                    gs_ptr -= ps2tex->gsused;
                 }
             } else {
-                NuErrorProlog(nutex_srcfile, 0x530)(nutex_err_accomodate);
+                NuErrorProlog("..\\nu2crash.ps2\\nu3d\\nutex.c", 0x530)("Attempted to accomodate released texture");
                 return stream;
             }
         } else {
-            entry = &TexList[tex - 1];
+            entry = &tinfo[tex - 1];
             if (entry->flags & NUTEX_VALID) {
                 if (entry->type >= 11U) {
                     return stream;
                 }
                 ps2tex = &entry->ps2tex;
-                gs_wrap_frame = gs_frame;
+                gst_curr = gst_head;
             }
-            gs_topfree = gs_top;
-            stream = NuPs2TxUploadPal(stream, ps2tex, gs_topfree);
+            gs_ptr = gs_top;
+            stream = NuPs2TxUploadPal(stream, ps2tex, gs_ptr);
             ps2tex->uploaded = 1;
         }
     }
@@ -670,15 +659,15 @@ u8 *NuTexSet(u8 *stream, int tex, char context) {
     u64 *gif;
 
     if (tex > 0) {
-        if (TexList[tex - 1].flags & NUTEX_VALID) {
-            ps2tex = &TexList[tex - 1].ps2tex;
+        if (tinfo[tex - 1].flags & NUTEX_VALID) {
+            ps2tex = &tinfo[tex - 1].ps2tex;
             stream = vpDmaTag_CntEx(stream, 0x13000000, 0x50000000);
             stream[-0xE] = 2;
             gif = gsBeginGifPacket(vtBeginDirect(stream - 4, 0), 0, 1, 0, 0, 0, 1, 0xE);
             gif = Ps2TxSetStateData(gif, ps2tex, 0, context);
             stream = vpDmaTag_Close(vtCloseDirect(gsCloseGifPacket(gif)));
         } else {
-            NuErrorProlog(nutex_srcfile, 0x57A)(nutex_err_set);
+            NuErrorProlog("..\\nu2crash.ps2\\nu3d\\nutex.c", 0x57A)("Attempted to set released texture");
         }
     } else if (tex < 0) {
         stream = vpDmaTag_CntEx(stream, 0x11000000, 0x50000000);
@@ -691,6 +680,8 @@ u8 *NuTexSet(u8 *stream, int tex, char context) {
 
 
 void NuTexDisplayTexturePage(int page, float depth) {
+    static struct numtl_s *pgmtl[64];
+    static int done = 0;
     struct numtlrect_s rect;
     struct nutexslot_s *entry;
     float x;
@@ -701,19 +692,19 @@ void NuTexDisplayTexturePage(int page, float depth) {
     int count;
     int i;
 
-    if (!nutex_page_initialised) {
+    if (!done) {
         for (count = 0; count < 64; count++) {
-            nutex_page_mtl[count] = 0;
+            pgmtl[count] = 0;
         }
-        nutex_page_initialised = 1;
+        done = 1;
     }
     x = 0.1f;
     y = x;
     count = 0;
     i = 0;
     rowh = 0.0f;
-    for (; page >= 0 && i < nutex_max; i++) {
-        entry = &TexList[i];
+    for (; page >= 0 && i < tex_allocmax; i++) {
+        entry = &tinfo[i];
         if (entry->flags & NUTEX_VALID) {
             w = NuVpVirtualWidth((float)(entry->width << 4));
             h = NuVpVirtualHeight((float)(entry->height << 3));
@@ -730,21 +721,21 @@ void NuTexDisplayTexturePage(int page, float depth) {
             }
             rowh = rowh < h ? h : rowh;
             if (page == 0) {
-                if (!nutex_page_mtl[count]) {
-                    nutex_page_mtl[count] = NuMtlCreate(1);
+                if (!pgmtl[count]) {
+                    pgmtl[count] = NuMtlCreate(1);
                 }
-                nutex_page_mtl[count]->attrib.alpha = NuTexHasAlpha(i + 1);
-                nutex_page_mtl[count]->attrib.filter = 2;
-                nutex_page_mtl[count]->attrib.zmode = 3;
-                nutex_page_mtl[count]->attrib.colour = 1;
-                nutex_page_mtl[count]->ambient.r = nutex_page_mtl[count]->ambient.g =
-                    nutex_page_mtl[count]->ambient.b = 1.0f;
-                nutex_page_mtl[count]->diffuse.r = nutex_page_mtl[count]->diffuse.g =
-                    nutex_page_mtl[count]->diffuse.b = 1.0f;
-                nutex_page_mtl[count]->tid = i + 1;
-                nutex_page_mtl[count]->L = 0;
-                nutex_page_mtl[count]->K = nutex_display_lod << 4;
-                NuMtlUpdate(nutex_page_mtl[count]);
+                pgmtl[count]->attrib.alpha = NuTexHasAlpha(i + 1);
+                pgmtl[count]->attrib.filter = 2;
+                pgmtl[count]->attrib.zmode = 3;
+                pgmtl[count]->attrib.colour = 1;
+                pgmtl[count]->ambient.r = pgmtl[count]->ambient.g =
+                    pgmtl[count]->ambient.b = 1.0f;
+                pgmtl[count]->diffuse.r = pgmtl[count]->diffuse.g =
+                    pgmtl[count]->diffuse.b = 1.0f;
+                pgmtl[count]->tid = i + 1;
+                pgmtl[count]->L = 0;
+                pgmtl[count]->K = nutex_display_lod << 4;
+                NuMtlUpdate(pgmtl[count]);
                 rect.x = x;
                 rect.y = y;
                 rect.w = w;
@@ -752,7 +743,7 @@ void NuTexDisplayTexturePage(int page, float depth) {
                 rect.z = depth;
                 rect.u0 = rect.v0 = 0.0f;
                 rect.u1 = rect.v1 = 1.0f;
-                rect.mtl = nutex_page_mtl[count];
+                rect.mtl = pgmtl[count];
                 NuRndrRect(&rect);
                 count++;
             }
@@ -772,9 +763,9 @@ int NuTexRecoverNativeDataEx(int tex, u8 *dest, int size, int header, int palett
     u8 *p;
     int level;
 
-    if (TexList[tex - 1].flags & NUTEX_VALID) {
+    if (tinfo[tex - 1].flags & NUTEX_VALID) {
         end = dest + size;
-        entry = &TexList[tex - 1];
+        entry = &tinfo[tex - 1];
         ps2tex = &entry->ps2tex;
         if (header) {
             hdr = (NuTexNativeHeader *)dest;
@@ -801,7 +792,7 @@ int NuTexRecoverNativeDataEx(int tex, u8 *dest, int size, int header, int palett
             p += pal->size;
             pal->size += sizeof(NuTexNativePal);
             if (p >= end) {
-                NuErrorProlog(nutex_srcfile, 0x67D)(nutex_err_recover);
+                NuErrorProlog("..\\nu2crash.ps2\\nu3d\\nutex.c", 0x67D)("Recovery buffer overflow");
             }
         }
         if (image) {
@@ -827,7 +818,7 @@ int NuTexRecoverNativeDataEx(int tex, u8 *dest, int size, int header, int palett
                 p += mip->size;
                 mip->size += sizeof(NuTexNativeMip);
                 if (p >= end) {
-                    NuErrorProlog(nutex_srcfile, 0x69E)(nutex_err_recover);
+                    NuErrorProlog("..\\nu2crash.ps2\\nu3d\\nutex.c", 0x69E)("Recovery buffer overflow");
                 }
             }
         }
@@ -861,7 +852,7 @@ int NuTexCreateNative(void *data) {
     slot = NuTexFindFreeSlot();
     if (slot >= 0) {
         if (hdr->cur.version == 0) {
-            entry = NuTexMarkNative(&TexList[slot]);
+            entry = NuTexMarkNative(&tinfo[slot]);
             ps2tex = &entry->ps2tex;
             chunk = (u8 *)hdr + sizeof(NuTexNativeHeader);
             entry->type = hdr->old.type;
@@ -907,9 +898,9 @@ int NuTexCreateNative(void *data) {
             return slot + 1;
         }
         if (hdr->cur.version == 1) {
-            TexList[slot].valid = 1;
-            TexList[slot].native = 1;
-            entry = &TexList[slot];
+            tinfo[slot].valid = 1;
+            tinfo[slot].native = 1;
+            entry = &tinfo[slot];
             ps2tex = &entry->ps2tex;
             chunk = (u8 *)hdr + sizeof(NuTexNativeHeader);
             entry->type = hdr->cur.type;
@@ -959,7 +950,15 @@ int NuTexCreateNative(void *data) {
 }
 
 
+int sys_mm_k = -69;
+int sys_mm_l = 0;
+int gs_top = 0;
+int gs_botfree = 0;
+
 u64 *NuTexWriteMaterialSettings(u64 *dst, struct numtl_s *mtl) {
+    static int tcaddr[4] = { 0, 1, 0, 0 };
+    static int mmag[4] = { 0, 1, 1, 0 };
+    static int mmin[4] = { 0, 1, 5, 0 };
     int k;
     int l;
     int filter;
@@ -975,7 +974,7 @@ u64 *NuTexWriteMaterialSettings(u64 *dst, struct numtl_s *mtl) {
     }
     filter = mtl->attrib.filter;
     if (mtl->tid > 0) {
-        ps2tex = &TexList[mtl->tid - 1].ps2tex;
+        ps2tex = &tinfo[mtl->tid - 1].ps2tex;
         if (filter == 2) {
             maxlevel = ps2tex->mipcount - 1;
         } else {
@@ -986,14 +985,14 @@ u64 *NuTexWriteMaterialSettings(u64 *dst, struct numtl_s *mtl) {
     }
     *dst++ = 1;
     *dst++ = 0x3F;
-    *dst++ = (u64)(maxlevel >= 0 ? maxlevel : 0) << 2 | (u64)nutex_mag_filter[filter] << 5
-           | (u64)nutex_min_filter[filter] << 6 | (u64)l << 19 | (u64)k << 32;
+    *dst++ = (u64)(maxlevel >= 0 ? maxlevel : 0) << 2 | (u64)mmag[filter] << 5
+           | (u64)mmin[filter] << 6 | (u64)l << 19 | (u64)k << 32;
     if (mtl->context) {
         *dst++ = 0x15;
     } else {
         *dst++ = 0x14;
     }
-    *dst++ = nutex_wrap_mode[mtl->attrib.utc] | (u64)nutex_wrap_mode[mtl->attrib.vtc] << 2;
+    *dst++ = tcaddr[mtl->attrib.utc] | (u64)tcaddr[mtl->attrib.vtc] << 2;
     if (mtl->context) {
         *dst++ = 9;
     } else {
@@ -1008,70 +1007,32 @@ int NuTexGetSysBuffSize(int count) {
 }
 
 
-inline void NuTexInitEx(union variptr_u *buff, int count) {
-    int size;
-    struct nutexslot_s *list;
-
-    if (nutex_initialised) {
-        NuTexClose();
-    }
-    ps2videoGetFreeMem(&gs_bot, 0);
-    size = count * sizeof(struct nutexslot_s);
-    list = (struct nutexslot_s *)((buff->intaddr + 15) & ~(nuintptr)0xF);
-    gs_botfree = gs_bot;
-    gs_top = 0x4000;
-    gs_topfree = 0x4000;
-    gs_flush_cnt = 0;
-    gs_frame = 0;
-    gs_wrap_frame = 0;
-    buff->voidptr = list;
-    TexList = list;
-    memset(list, 0, size);
-    buff->u8 += size;
-    nutex_max = count;
-    nutex_initialised = 1;
-    nutex_cnt = 0;
-    nutex_alloc_cnt = 0;
-}
-
-
-void NuTexInit(void) {
-    union variptr_u buff;
-
-    if (!nutex_sysbuff) {
-        nutex_sysbuff = NuMemAllocFn(NUTEX_MAX * sizeof(struct nutexslot_s), nutex_srcfile, 0x1A2);
-    }
-    buff.voidptr = nutex_sysbuff;
-    NuTexInitEx(&buff, NUTEX_MAX);
-}
-
-
 void NuTexClose(void) {
     int i;
 
-    for (i = 0; i < nutex_max; i++) {
-        if (TexList[i].bits) {
-            NuMemFreeFn(TexList[i].bits, nutex_srcfile, 0x1B0);
-            TexList[i].bits = 0;
+    for (i = 0; i < tex_allocmax; i++) {
+        if (tinfo[i].bits) {
+            NuMemFreeFn(tinfo[i].bits, "..\\nu2crash.ps2\\nu3d\\nutex.c", 0x1B0);
+            tinfo[i].bits = 0;
         }
-        if (TexList[i].flags & NUTEX_VALID) {
+        if (tinfo[i].flags & NUTEX_VALID) {
             NuTexDestroy(i + 1);
         }
     }
-    nutex_cnt = 0;
+    tpid = 0;
     nutex_alloc_cnt = 0;
-    nutex_initialised = 0;
+    initialised = 0;
 }
 
 
 int NuTexReserve(int size) {
     int addr;
 
-    if (gs_reserve_sp >= 256) {
+    if (nutex_reserve_sp >= 256) {
         return 0;
     }
     size += 255;
-    gs_reserve_stack[gs_reserve_sp++] = gs_botfree;
+    nutex_reserve_stack[nutex_reserve_sp++] = gs_botfree;
     addr = (gs_botfree + 31) & 0xFFFFFFE0;
     gs_botfree = addr + size / 256;
     return addr;
@@ -1079,9 +1040,9 @@ int NuTexReserve(int size) {
 
 
 void NuTexUnReserve(void) {
-    if (gs_reserve_sp) {
-        gs_reserve_sp--;
-        gs_botfree = gs_reserve_stack[gs_reserve_sp];
+    if (nutex_reserve_sp) {
+        nutex_reserve_sp--;
+        gs_botfree = nutex_reserve_stack[nutex_reserve_sp];
     }
 }
 
@@ -1104,14 +1065,14 @@ int NuTexCreate(struct nutex_s *spec) {
 void NuTexDestroy(int tex) {
     tex--;
     if (tex >= 0) {
-        if (!(TexList[tex].flags & NUTEX_NATIVE)) {
-            if (TexList[tex].bits) {
-                NuMemFreeFn(TexList[tex].bits, nutex_srcfile, 0x3F9);
-                TexList[tex].bits = 0;
+        if (!(tinfo[tex].flags & NUTEX_NATIVE)) {
+            if (tinfo[tex].bits) {
+                NuMemFreeFn(tinfo[tex].bits, "..\\nu2crash.ps2\\nu3d\\nutex.c", 0x3F9);
+                tinfo[tex].bits = 0;
             }
-            NuPs2TxDestroy(&TexList[tex].ps2tex);
+            NuPs2TxDestroy(&tinfo[tex].ps2tex);
         }
-        TexList[tex].flags &= ~NUTEX_VALID;
+        tinfo[tex].flags &= ~NUTEX_VALID;
         nutex_alloc_cnt--;
     }
 }
@@ -1120,7 +1081,7 @@ void NuTexDestroy(int tex) {
 short NuTexRef(int tex) {
     tex--;
     if (tex >= 0) {
-        return ++TexList[tex].refcount;
+        return ++tinfo[tex].refcount;
     }
     return 0;
 }
@@ -1129,7 +1090,7 @@ short NuTexRef(int tex) {
 short NuTexUnRef(int tex) {
     tex--;
     if (tex >= 0) {
-        return --TexList[tex].refcount;
+        return --tinfo[tex].refcount;
     }
     return 0;
 }
@@ -1138,7 +1099,7 @@ short NuTexUnRef(int tex) {
 int NuTexType(int tex) {
     tex--;
     if (tex >= 0) {
-        return TexList[tex].type;
+        return tinfo[tex].type;
     }
     return 0;
 }
@@ -1147,7 +1108,7 @@ int NuTexType(int tex) {
 int NuTexWidth(int tex) {
     tex--;
     if (tex >= 0) {
-        return TexList[tex].width;
+        return tinfo[tex].width;
     }
     return 0;
 }
@@ -1156,7 +1117,7 @@ int NuTexWidth(int tex) {
 int NuTexHeight(int tex) {
     tex--;
     if (tex >= 0) {
-        return TexList[tex].width;
+        return tinfo[tex].width;
     }
     return 0;
 }
@@ -1251,12 +1212,12 @@ int NuTexReadNative(char *name, char *buff, int size, int *loaded) {
 
 int NuTexGetPointers(int tex, struct nutexslot_s **entry, struct nups2tex_s **ps2tex) {
     tex--;
-    if (tex >= 0 && (TexList[tex].flags & NUTEX_VALID)) {
+    if (tex >= 0 && (tinfo[tex].flags & NUTEX_VALID)) {
         if (entry) {
-            *entry = &TexList[tex];
+            *entry = &tinfo[tex];
         }
         if (ps2tex) {
-            *ps2tex = &TexList[tex].ps2tex;
+            *ps2tex = &tinfo[tex].ps2tex;
         }
         return 1;
     }
@@ -1265,14 +1226,14 @@ int NuTexGetPointers(int tex, struct nutexslot_s **entry, struct nups2tex_s **ps
 
 
 void NuTexFlushTemp(void) {
-    gs_tempfree = gs_botfree;
+    gs_tempaddr = gs_botfree;
 }
 
 
 void NuTexAssignAddr(int tex, int addr) {
     if (tex > 0) {
         tex--;
-        TexList[tex].ps2tex.gsaddr = addr;
+        tinfo[tex].ps2tex.gsaddr = addr;
     }
 }
 
@@ -1280,9 +1241,9 @@ void NuTexAssignAddr(int tex, int addr) {
 void NuTexAssignTempAddr(int tex) {
     if (tex > 0) {
         tex--;
-        gs_tempfree = (gs_tempfree + 31) & 0xFFFFFFE0;
-        TexList[tex].ps2tex.gsaddr = gs_tempfree;
-        gs_tempfree += TexList[tex].ps2tex.reqsize[0];
+        gs_tempaddr = (gs_tempaddr + 31) & 0xFFFFFFE0;
+        tinfo[tex].ps2tex.gsaddr = gs_tempaddr;
+        gs_tempaddr += tinfo[tex].ps2tex.reqsize[0];
     }
 }
 
@@ -1290,7 +1251,7 @@ void NuTexAssignTempAddr(int tex) {
 int NuTexGetReqSize(int tex, int level) {
     if (tex > 0) {
         tex--;
-        return TexList[tex].ps2tex.reqsize[level] << 8;
+        return tinfo[tex].ps2tex.reqsize[level] << 8;
     }
     return 0;
 }
@@ -1300,7 +1261,7 @@ void NuTexCloneTempAddr(int dst, int src) {
     if (dst > 0 && src > 0) {
         dst--;
         src--;
-        TexList[dst].ps2tex.gsaddr = TexList[src].ps2tex.gsaddr;
+        tinfo[dst].ps2tex.gsaddr = tinfo[src].ps2tex.gsaddr;
     }
 }
 
@@ -1309,22 +1270,22 @@ void NuTexPalChange(int tex) {
     if (tex > 0) {
         /* Retail bug: called without the palette argument, which the
          * callee reads from $a1. */
-        ((void (*)(struct nups2tex_s *))NuPs2ChangeTexPal)(&TexList[tex - 1].ps2tex);
+        ((void (*)(struct nups2tex_s *))NuPs2ChangeTexPal)(&tinfo[tex - 1].ps2tex);
     }
 }
 
 
 void NuTexPalChangeStreamTemp(int tex, u32 *pal) {
     if (tex > 0) {
-        NuPs2ChangeTexPalStreamTemp(&TexList[tex - 1].ps2tex, pal);
+        NuPs2ChangeTexPalStreamTemp(&tinfo[tex - 1].ps2tex, pal);
     }
 }
 
 
 u64 NuTexGetTex0(int tex) {
     tex--;
-    if (tex >= 0 && (TexList[tex].flags & NUTEX_VALID)) {
-        return Ps2TxGetTex0(&TexList[tex].ps2tex);
+    if (tex >= 0 && (tinfo[tex].flags & NUTEX_VALID)) {
+        return Ps2TxGetTex0(&tinfo[tex].ps2tex);
     }
     return 0;
 }
@@ -1336,16 +1297,16 @@ u8 *NuTexSetPal(u8 *stream, int tex, int paltex, char context) {
     u64 *gif;
 
     if (tex > 0 && paltex > 0) {
-        if (TexList[tex - 1].flags & NUTEX_VALID) {
-            ps2tex = &TexList[tex - 1].ps2tex;
-            palette = &TexList[paltex - 1].ps2tex;
+        if (tinfo[tex - 1].flags & NUTEX_VALID) {
+            ps2tex = &tinfo[tex - 1].ps2tex;
+            palette = &tinfo[paltex - 1].ps2tex;
             stream = vpDmaTag_CntEx(stream, 0x13000000, 0x50000000);
             stream[-0xE] = 2;
             gif = gsBeginGifPacket(vtBeginDirect(stream - 4, 0), 0, 1, 0, 0, 0, 1, 0xE);
             gif = Ps2TxSetStateData(gif, ps2tex, palette, context);
             stream = vpDmaTag_Close(vtCloseDirect(gsCloseGifPacket(gif)));
         } else {
-            NuErrorProlog(nutex_srcfile, 0x5A4)(nutex_err_set);
+            NuErrorProlog("..\\nu2crash.ps2\\nu3d\\nutex.c", 0x5A4)("Attempted to set released texture");
         }
     }
     return stream;
@@ -1356,8 +1317,8 @@ void *NuTexSetZBuffer(void *stream, int tex) {
     struct nutexslot_s *entry;
     int addr;
 
-    if (TexList[tex - 1].flags & NUTEX_VALID) {
-        entry = &TexList[tex - 1];
+    if (tinfo[tex - 1].flags & NUTEX_VALID) {
+        entry = &tinfo[tex - 1];
         addr = entry->ps2tex.tbp[0];
         if (!addr) {
             addr = gs_botfree;
@@ -1373,8 +1334,8 @@ int NuTexGetTextAddr(int tex) {
     struct nutexslot_s *entry;
     int addr;
 
-    if (TexList[tex - 1].flags & NUTEX_VALID) {
-        entry = &TexList[tex - 1];
+    if (tinfo[tex - 1].flags & NUTEX_VALID) {
+        entry = &tinfo[tex - 1];
         addr = entry->ps2tex.tbp[0];
         if (!addr) {
             addr = gs_botfree;

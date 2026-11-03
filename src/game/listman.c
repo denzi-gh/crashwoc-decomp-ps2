@@ -39,7 +39,7 @@ struct nulnkhdr_s {
 extern void *NuMemAllocFn(int size, char *file, int line);
 extern void NuMemFreeFn(void *ptr, char *file, int line);
 
-extern char D_0061B600[];  /* "..\nu2crash.ps2\...\listman.c" filename string */
+#define listman_file ".\\listman.c"
 
 
 struct nulsthdr_s *NuLstCreate(int elcnt, int elsize) {
@@ -50,7 +50,7 @@ struct nulsthdr_s *NuLstCreate(int elcnt, int elsize) {
 
     list = (struct nulsthdr_s *)NuMemAllocFn(elcnt * (elsize + sizeof(struct nulnkhdr_s))
                                                  + sizeof(struct nulsthdr_s),
-                                             D_0061B600, 0x24);
+                                             listman_file, 0x24);
     if (list != 0) {
         list->free = (struct nulnkhdr_s *)(list + 1);
         list->head = 0;
@@ -73,7 +73,7 @@ struct nulsthdr_s *NuLstCreate(int elcnt, int elsize) {
 }
 
 void NuLstDestroy(struct nulsthdr_s *hdr) {
-    NuMemFreeFn(hdr, D_0061B600, 0x40);
+    NuMemFreeFn(hdr, listman_file, 0x40);
 }
 
 struct nulnkhdr_s *NuLstAllocBefore(struct nulnkhdr_s *at) {

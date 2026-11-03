@@ -624,6 +624,16 @@ id = "pal103:unit-0068:0062f284:testlock"
 state = "matching"
 
 [[claim]]
+section = ".data"
+start = 0x002ea9c8
+end = 0x002ea9d0
+
+[[claim]]
+section = ".rodata"
+start = 0x006178c4
+end = 0x006178d0
+
+[[claim]]
 section = ".rodata"
 start = 0x00617d70
 end = 0x00617dc4

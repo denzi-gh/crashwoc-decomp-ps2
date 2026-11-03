@@ -5,6 +5,13 @@
  * asm body (docs/decomp_agent.md, "Inline assembly").
  */
 
+/* The library version tag version.h puts in .data (no symbol in retail). */
+__asm__(
+    ".data\n"
+    "$Lps2_libinfo:\n"
+    "    .ascii  \"PsIIlibkernl2300\"\n"
+    ".text\n");
+
 /* Kernel call stubs: the call number goes in $3. */
 #define SYSCALL(name, number) __asm__(".globl " #name "\n.ent " #name "\n.set noreorder\n" #name ":\n    addiu   $3, $0, " #number "\n    syscall\n    jr      $31\n    nop\n.set reorder\n.end " #name "\n")
 

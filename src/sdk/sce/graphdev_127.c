@@ -25,8 +25,7 @@ typedef struct {
 
 #define INTC_VBLANK_S 2
 
-extern sceGsGParam D_00610850;
-#define gs_gparam D_00610850
+static char __ps2_libinfo__[16] = "PsIIlibgraph2300";
 
 sceGsGParam *sceGsGetGParam(void);
 u64 GsPutIMR(u64 imr);
@@ -73,5 +72,7 @@ void sceGsResetGraph(short mode, short inter, short omode, short ffmode)
 
 sceGsGParam *sceGsGetGParam(void)
 {
-    return &gs_gparam;
+    static sceGsGParam gp = { 1, 2, 1, 3, 0, 0 };
+
+    return &gp;
 }

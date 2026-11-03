@@ -182,7 +182,7 @@ typedef struct {
  * handle list then holds wall-spline point pointers up to a null slot. SCAN_SLOT is a slot in shorts. */
 #define SCAN_SLOT ((s32)(sizeof(tertype *) / sizeof(short)))
 
-struct nuvec_s ShadNorm = { 0.0f, 0.0f, 0.0f };
+struct nuvec_s ShadNorm __attribute__((aligned(16))) = { 0.0f, 0.0f, 0.0f };
 struct nuvec_s EShadNorm = { 0.0f, 0.0f, 0.0f };
 struct nuvec_s ShadRoofNorm = { 0.0f, 0.0f, 0.0f };
 struct nuvec_s EShadRoofNorm = { 0.0f, 0.0f, 0.0f };

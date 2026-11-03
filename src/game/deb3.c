@@ -147,7 +147,7 @@ void CoalBreak(struct deb3_s *deb);
 void RockSpark(struct deb3_s *deb);
 void CoalSpark(struct deb3_s *deb);
 
-u32 cortcols[21] = {
+u32 cortcols[21] __attribute__((aligned(16))) = {
     0x50400000, 0x50004000, 0x50000040, 0x50400040, 0x50404000, 0x50004040,
     0x50404040, 0x50400000, 0x50004000, 0x50000040, 0x50400040, 0x50404000,
     0x50004040, 0x50404040, 0x50400000, 0x50004000, 0x50000040, 0x50400040,

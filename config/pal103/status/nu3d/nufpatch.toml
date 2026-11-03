@@ -9,7 +9,7 @@ schema = 1
 unit = "pal103:unit-0054"
 source = "src/nu3d/nufpatch.c"
 profile = "default"
-complete = false
+complete = true
 
 [[function]]
 id = "pal103:unit-0054:0015b378:mtlSetDefaults"
@@ -130,3 +130,106 @@ state = "matching"
 [[function]]
 id = "pal103:unit-0054:00162ae0:testShadowCast"
 state = "matching"
+
+[[data]]
+id = "pal103:unit-0054:002e9598:nufpatch_stats"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0054:002e95c0:subLeft"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0054:002e9600:subRight"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0054:002e9640:subTop"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0054:002e9680:subBottom"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0054:002e96c0:submtx2"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0054:002e9780:stitchtable"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0054:002e9880:heightTable"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0054:0062efc0:vu_debug"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0054:0062efc4:randomTable"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0054:0062efc8:use_water_table"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0054:0062efd0:rs"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0054:0062efd4:patch_nokick"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0054:0062efd8:nufpatch_quit"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0054:0062efdc:lerpval"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0054:0062efe0:fast_index"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0054:006331a0:current_light_tid"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0054:006331a4:current_light_addr"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0054:006331a8:nufpatch_fadefar"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0054:006aff68:waterTable"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0054:006b0f68:light_texture"
+state = "matching"
+
+[[data]]
+id = "pal103:unit-0054:006b0f80:hb"
+state = "matching"
+
+[[claim]]
+section = ".bss"
+start = 0x006b0f80
+end = 0x006b1eb0
+
+[[claim]]
+section = ".sbss"
+start = 0x006331a8
+end = 0x006331ac
+
+[[claim]]
+section = ".sdata"
+start = 0x0062efbc
+end = 0x0062efc0

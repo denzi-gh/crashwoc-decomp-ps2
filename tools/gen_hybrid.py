@@ -469,6 +469,15 @@ _WORD_PRIVATE_RE = re.compile(r"^\s*\.word\s+(\$L\w*)\s*$")
 FUNCTION_STATIC_RE = re.compile(r"^(.+)\.(\d+)$")
 
 
+class _PrivateBytes(bytes):
+    """A compiler-private aggregate's bytes plus the section it compiled into."""
+
+    def __new__(cls, data, section):
+        obj = super().__new__(cls, data)
+        obj.section = section
+        return obj
+
+
 class DataItem:
     """One labelled object the compiler emitted in a data section."""
 
@@ -603,7 +612,8 @@ def _split_sections(lines, stream=None):
         if payload and all(_WORD_LABEL_RE.match(p) for p in payload):
             private[item.name] = _JumpTable(len(payload))
         else:
-            private[item.name] = _assemble_data_bytes(item.lines)
+            private[item.name] = _PrivateBytes(_assemble_data_bytes(item.lines),
+                                               item.section)
     return text, private, items
 
 
@@ -674,6 +684,9 @@ class Lit4Mapper:
             (h(s["addr"]), h(s["addr"]) + h(s["size"]))
             for s in sections_spec["sections"]
             if s["name"] in _OWNED_INIT_DATA and h(s["size"]) > 0]
+        self._section_ranges = {
+            s["name"]: (h(s["addr"]), h(s["addr"]) + h(s["size"]))
+            for s in sections_spec["sections"] if s["name"] in _OWNED_INIT_DATA}
         # Per-unit data ranges: data_map.toml exactly tiles every data byte, so
         # a compiler-private aggregate with no named twin can borrow the unique
         # address in its own unit's range that holds the same bytes.
@@ -750,7 +763,8 @@ class Lit4Mapper:
                 break
         return []
 
-    def map_owned_data(self, slice_text, want, context, unit_dir=None):
+    def map_owned_data(self, slice_text, want, context, unit_dir=None,
+                       section=None):
         """Retail owned-data symbol a compiler-private initialized aggregate
         ($LCn) can borrow instead of owning data.
 
@@ -775,6 +789,13 @@ class Lit4Mapper:
                 self._address_of(s))}
             if len(private) == 1:
                 named = private
+            elif len(private) > 1 and section in self._section_ranges:
+                # `""` also starts an unrelated private aggregate (edui's
+                # style in .rodata); keep the slots in the compiled section.
+                lo, hi = self._section_ranges[section]
+                same = {s for s in private if lo <= self._address_of(s) < hi}
+                if len(same) == 1:
+                    named = same
         if len(named) == 1:
             return next(iter(named))
         if len(named) > 1:
@@ -1569,7 +1590,8 @@ def _rewrite_local_data(seg, local_data, version, unit_dir, name, addr,
             sym = jt_syms[lbl]
             externs.append(f"\t.extern\t{sym}, {val.count * 4}")
         else:
-            sym = mapper_box[0].map_owned_data(slice_text, val, name, unit_dir)
+            sym = mapper_box[0].map_owned_data(slice_text, val, name, unit_dir,
+                                               getattr(val, "section", None))
             externs.append(f"\t.extern\t{sym}, {len(val)}")
         rename[lbl] = sym
         # Same address under two spellings (D_0061F460 / D_0061f460) is one borrow.
@@ -1639,8 +1661,9 @@ def _registry_map(items, version, unit_dir):
     """[(item, registry symbol)] for the compiled named data objects.
 
     The k-th compiled `stem.N` is the k-th registry function static with
-    that stem in address order; every object must be a registry symbol of the
-    unit, in the registry's section."""
+    that stem in `.N` order (compile order; edui's .sdata `up_rept.290` sits
+    below its .sbss `up_rept.145`); every object must be a registry symbol of
+    the unit, in the registry's section."""
     from status import load_data_registry
     unit_index = int(unit_dir.split("-")[1])
     registry = load_data_registry(ROOT / "config" / version).get(unit_index, {})
@@ -1650,6 +1673,8 @@ def _registry_map(items, version, unit_dir):
     for sym in sorted(registry.values(), key=lambda s: s["address"]):
         if sym["scope"] == "function_static":
             stems.setdefault(sym["stem"], []).append(sym)
+    for candidates in stems.values():
+        candidates.sort(key=lambda s: int(s["name"].rsplit(".", 1)[1]))
     seen, out = {}, []
     for item in items:
         m = FUNCTION_STATIC_RE.match(item.name)
@@ -1844,6 +1869,12 @@ def _data_pieces(emit, unit_dir, version, bin_dir):
         rng = next((r for r in ranges if r["start"] <= sym["address"] < r["end"]
                     and r["section"] == sym["section"]), None)
         size = sym.get("size") or item.size
+        if size is None and item.section not in NOBITS_SECTIONS:
+            # gcc writes no `.size` for an unsized array (`int mask[] = {...}`).
+            try:
+                size = len(_assemble_data_bytes(item.lines)) or None
+            except (HybridError, ValueError):
+                size = None
         if rng is None or size is None or sym["address"] + size > rng["end"]:
             raise HybridError(f"{sym['name']}: not inside one owned range of "
                               f"{unit_dir} (data_map.toml)")
@@ -2094,10 +2125,13 @@ def _attach_ranks(lines, stream, functions):
     return out
 
 
-def _whole_unit_layout(lines, stream, functions, item_syms, anchors, unit_dir):
+def _whole_unit_layout(lines, stream, functions, item_syms, anchors, unit_dir,
+                       version="pal103"):
     """{section: (base, [_Placed])}: the unit's data objects in retail order,
     aligned as the assembler aligns them, each section anchored at the one
-    base address every known object agrees on."""
+    base address every known object agrees on. A section nothing anchors
+    (only private objects nothing references, klib.s's version tag) is
+    placed by its bytes between its link neighbours (_neighbour_anchor)."""
     ranks = _attach_ranks(lines, stream, functions)
     ordered = sorted(stream, key=lambda it: (ranks[id(it)], it.line))
     by_sec, cursors = {}, {}
@@ -2126,9 +2160,12 @@ def _whole_unit_layout(lines, stream, functions, item_syms, anchors, unit_dir):
             if addr is not None:
                 bases.setdefault(addr - p.offset, []).append((p, addr))
         if not bases:
-            raise HybridError(f"{unit_dir}: nothing anchors its {sec} data "
-                              f"({placed[0].label}...): no registry symbol and "
-                              f"no retail reference to it")
+            base = _neighbour_anchor(sec, placed, unit_dir, version)
+            if base is None:
+                raise HybridError(f"{unit_dir}: nothing anchors its {sec} data "
+                                  f"({placed[0].label}...): no registry symbol "
+                                  f"and no retail reference to it")
+            bases[base] = []
         base = max(bases, key=lambda b: len(bases[b]))
         if len(bases) > 1:
             bad_p, bad_addr = next(v[0] for b, v in bases.items() if b != base)
@@ -2138,6 +2175,102 @@ def _whole_unit_layout(lines, stream, functions, item_syms, anchors, unit_dir):
                 f"it at 0x{bad_addr:08x} (C order or definitions differ)")
         out[sec] = (base, placed)
     return out
+
+
+def _section_align(placed):
+    """The section alignment the assembler gives a unit's objects: the
+    largest of theirs."""
+    return 1 << max((p.item.align if p.item.align is not None
+                     else _NATURAL_ALIGN.get(_first_directive(p.item), 0))
+                    for p in placed)
+
+
+def _preceding_end(section, base, unit_dir, version):
+    """Where the data linked before `base` ends: the nearest owned range or
+    other unit's claim below it (planning only: reads every manifest)."""
+    from gen_data_objects import load_claims, load_map
+    ends = [r["end"] for r in load_map(version) if r["section"] == section
+            and r["owner"] != "unassigned" and r["end"] <= base]
+    ends += [end for sec, _s, end, unit in load_claims(version)
+             if unit != unit_dir and sec == section and end <= base]
+    return max(ends, default=None)
+
+
+def _leading_pad(section, base, placed, data, unit_dir, version, plan):
+    """Bytes the link puts before a whole-unit section: from where the data
+    before it ends up to `base`, kept only when the section's alignment
+    accounts for exactly that many zero bytes in data-map gaps (the linker
+    aligning this unit's section, not data). Planning derives the start from
+    the neighbours; a build takes it from its own manifest claim."""
+    if plan:
+        start = _preceding_end(section, base, unit_dir, version)
+    else:
+        start = next((s for sec, s, e in manifest_claims(data)
+                      if sec == section and s < base <= e), None)
+    if start is None or start >= base:
+        return 0
+    pad = base - start
+    if pad >= _section_align(placed) or (start + pad) % _section_align(placed):
+        return 0
+    ranges = tomllib.loads((ROOT / "config" / version / "data_map.toml")
+                           .read_text())["range"]
+    if any(r["section"] == section and r["owner"] != "unassigned"
+           and r["start"] < base and start < r["end"] for r in ranges):
+        return 0
+    if section not in NOBITS_SECTIONS and any(
+            _retail_bytes(version, section, start, base)):
+        return 0
+    return pad
+
+
+def _with_leading_pad(section, base, placed, pad):
+    """(base, placed) moved down by `pad` zero bytes of fill ahead of the
+    first object."""
+    for p in placed:
+        p.offset += pad
+        p.atoms = [(off + pad, atom) for off, atom in p.atoms]
+    fill = DataItem(f"$Lalign_{base - pad:08x}", section, 0)
+    fill.lines = []
+    return base - pad, [_Placed(fill, None, 0, [(0, bytes(pad))], pad)] + placed
+
+
+def _neighbour_window(section, unit_dir, version):
+    """[lo, hi) of `section` between the ranges of the units linked just
+    before and after this one, or None (the section is not laid out in
+    unit order there, or the unit is first or last)."""
+    from gen_data_objects import load_map
+    index = int(unit_dir.split("-")[1])
+    owned = [(int(r["owner"].split("-")[1]), r) for r in load_map(version)
+             if r["section"] == section and r["owner"].startswith("unit-")]
+    below = [r["end"] for u, r in owned if u < index]
+    above = [r["start"] for u, r in owned if u > index]
+    if not below or not above or max(below) >= min(above):
+        return None
+    return max(below), min(above)
+
+
+def _neighbour_anchor(section, placed, unit_dir, version):
+    """Base of an unanchored section: the one aligned address in its
+    neighbour window (only data-map gaps) holding exactly its bytes, or
+    None. Objects with relocations never place this way."""
+    if section not in PIECE_SECTIONS:
+        return None
+    window = _neighbour_window(section, unit_dir, version)
+    if window is None:
+        return None
+    end = max(p.offset + p.size for p in placed)
+    blob = bytearray(end)
+    for p in placed:
+        for off, atom in p.atoms:
+            if isinstance(atom, tuple):
+                return None
+            blob[off:off + len(atom)] = atom
+    lo, hi = window
+    retail = _retail_bytes(version, section, lo, hi)
+    align = 1 << max((p.item.align or 0) for p in placed)
+    hits = [lo + k for k in range(len(retail) - end + 1)
+            if (lo + k) % align == 0 and retail[k:k + end] == bytes(blob)]
+    return hits[0] if len(hits) == 1 else None
 
 
 def _data_pointer_anchors(stream, item_syms, version):
@@ -2357,7 +2490,7 @@ def _build_whole_unit(data, out_o, link_set, version, plan=False):
             raise HybridError(f"{lbl}: the code borrows 0x{labels[lbl]:08x}, "
                               f"retail data points at 0x{addr:08x}")
     layout = _whole_unit_layout(lines, stream, functions, item_syms, labels,
-                                unit_dir)
+                                unit_dir, version)
     for base, placed in layout.values():
         for p in placed:
             if p.sym and states.get(p.sym["address"]) == "retail":
@@ -2367,6 +2500,10 @@ def _build_whole_unit(data, out_o, link_set, version, plan=False):
                                      base + p.offset + p.size)
                 p.atoms = [a for a in p.atoms if a[0] < p.offset] \
                     + [(p.offset, blob)]
+    for sec, (base, placed) in list(layout.items()):
+        pad = _leading_pad(sec, base, placed, data, unit_dir, version, plan)
+        if pad:
+            layout[sec] = _with_leading_pad(sec, base, placed, pad)
     piece_lines, pieces, retail, claims = _whole_unit_pieces(
         layout, unit_dir, version, out_o.parent / f"{out_o.stem}_data")
     if plan:
@@ -2387,7 +2524,8 @@ def _build_whole_unit(data, out_o, link_set, version, plan=False):
     borrowed = []
     out_lines = _splice_unit(prologue, seg_by_name, functions, unit_dir,
                              link_set, version, report_base=False,
-                             unit_end=_unit_end(unit_dir), local_data={},
+                             unit_end=_unit_end(unit_dir) if functions else None,
+                             local_data={},
                              profile=profile, borrowed=borrowed)
     if borrowed:
         raise HybridError(f"{unit_dir}: whole-unit code still borrows "
@@ -2457,6 +2595,9 @@ def _splice_unit(prologue, seg_by_name, functions, unit_dir, link_set,
     else.
     """
     out_lines = list(prologue)
+    if not functions:
+        # A data-only unit (no procedures, no .text run): nothing to splice.
+        return out_lines
     body_lines = []
     mapper_box = [None]
     base = functions[0][0]
@@ -2537,7 +2678,8 @@ def build_hybrid(manifest_path, out_o, link_set="matching", version="pal103"):
     borrowed = []
     out_lines = _splice_unit(prologue, seg_by_name, functions, unit_dir,
                              link_set, version, report_base=False,
-                             unit_end=_unit_end(unit_dir), local_data=local_data,
+                             unit_end=_unit_end(unit_dir) if functions else None,
+                             local_data=local_data,
                              profile=data.get("profile", "default"),
                              borrowed=borrowed)
     pieces, retail = [], []
@@ -2595,7 +2737,8 @@ def build_report_object(manifest_path, out_o, version="pal103"):
         _compile_and_split(data, out_o, link_set, version, report=True)
     out_lines = _splice_unit(prologue, seg_by_name, functions, unit_dir,
                              link_set, version, report_base=True,
-                             unit_end=_unit_end(unit_dir), local_data=local_data,
+                             unit_end=_unit_end(unit_dir) if functions else None,
+                             local_data=local_data,
                              profile=data.get("profile", "default"))
     return _assemble_unit(out_o, out_lines,
                           profile_g_flag(data.get("profile", "default"), version))

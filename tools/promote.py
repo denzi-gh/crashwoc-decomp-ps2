@@ -63,7 +63,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
-from gen_objdiff import unit_table
+from gen_objdiff import textless_units, unit_table
 from declib.tu import parse_toml_blocks
 from status import load_profile_names
 
@@ -173,8 +173,12 @@ def init_manifest(version, source, profile=None):
     name = src_rel.removeprefix("src/").removesuffix(".c")
     row = next((r for r in unit_table(version) if r[2] == name), None)
     if row is None:
+        # A data-only unit (no procedures): data/unit-NNNN in the report.
+        row = next(((u, None, n, c) for u, n, c in textless_units(version)
+                    if n == name), None)
+    if row is None:
         raise SystemExit(
-            f"promote --init: no .text unit is named '{name}' "
+            f"promote --init: no unit is named '{name}' "
             f"(see objdiff.json for the canonical unit names)")
     unit_index = row[0]
     category = row[3]

@@ -196,6 +196,16 @@ id = "pal103:unit-0115:0063292c:ttmtlcnt"
 state = "matching"
 
 [[claim]]
+section = ".data"
+start = 0x005d9960
+end = 0x005d9980
+
+[[claim]]
+section = ".rodata"
+start = 0x0062525b
+end = 0x00625260
+
+[[claim]]
 section = ".rodata"
 start = 0x00625298
 end = 0x006252aa

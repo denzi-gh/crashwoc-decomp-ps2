@@ -67,3 +67,13 @@ state = "matching"
 section = ".data"
 start = 0x002ea030
 end = 0x002ea0b0
+
+[[claim]]
+section = ".rodata"
+start = 0x0061612c
+end = 0x00616130
+
+[[claim]]
+section = ".rodata"
+start = 0x00616130
+end = 0x0061614f

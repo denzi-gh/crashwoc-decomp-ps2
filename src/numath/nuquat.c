@@ -25,12 +25,10 @@ struct nuquat_perm_s {
     int v[3];
 };
 
-extern struct nuquat_perm_s D_00614010;
-#define next_axis D_00614010
 
 void NuMtxToQuat(struct numtx_s *m, struct nuquat_s *q)
 {
-    struct nuquat_perm_s next = next_axis;
+    struct nuquat_perm_s next = { { 1, 2, 0 } };
     float result[4];
     float *mf = (float *)m;
     float trace = m->_00 + m->_11 + m->_22;
